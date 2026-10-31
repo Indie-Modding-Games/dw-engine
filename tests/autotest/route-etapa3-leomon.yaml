@@ -1,0 +1,33 @@
+# Stage 3 of the story with the keyboard, Leomon: from the savanna's lower path (run with --start gias07 and
+# --story-stage stage_3, docs/guides/prueba-vertical.md). The path's cells (51, script 73 section 0x33) start the
+# rescue: a Goburimon chases a Patamon and Leomon steps in, then leaves (trigger 196). Leomon waits in gias09; its
+# cells (51, script 75 section 0x33) only talk once 196 is set, and with the Leomonstone in the bag (item 118, the
+# tablet of the cave, route-etapa3-leomon-tablet.yaml; the route puts it in the bag) it reads its ancestors' words
+# and joins (trigger 248).
+name: etapa3-leomon
+device: keyboard
+timeout: 900
+steps:
+  - wait: {map: gias07, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.196: "false"}
+  - expect_setting: {story.trigger.248: "false"}
+  # The start leaves the player on the exit back to gias05: a few steps up the path first.
+  - script: place("player 0 -3500 2048")
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: gias07-rescue
+  - repeat: {times: 14, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.196: "true"}, timeout: 120}
+  - wait: {seconds: 3}
+  - screenshot: gias07-after
+  - script: give_item("leomonstone 1")
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: gias09, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: gias09
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: gias09-leomon
+  - repeat: {times: 16, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.248: "true"}, timeout: 120}
+  - wait: {seconds: 3}
+  - screenshot: gias09-after

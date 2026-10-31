@@ -85,7 +85,10 @@ stages:
   # de una etapa posterior queda cerrado hasta que su etapa se juega.
   # Etapa 3: Mt. Panorama (miha), Gear Savanna (gias, con la tienda secreta de cartas gias06b), la
   # cueva de Leomon (leom) y Trash Mountain (gomi). Entra por mayo02_2 a miha00 y por tunn03 y
-  # tunn03_2 a leom02.
+  # tunn03_2 a leom02. Su frontera: la salida de gias08 a stic01 (etapa 7) queda cerrada sola; la
+  # puerta de hierro de gias02 a fact05 (etapa 6) solo se abre con el disparador 328, y el
+  # vestíbulo de la Arena (room13) solo lleva a room20 y room19 con los disparadores 257 y 50, que
+  # la etapa no pone. Rutas: route-etapa3-*.yaml (docs/guides/prueba-vertical.md).
   - id: stage_3
     maps:
       - miha*

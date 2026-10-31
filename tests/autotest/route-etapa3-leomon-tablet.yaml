@@ -1,0 +1,29 @@
+# Stage 3 of the story with the keyboard, the Leomonstone: from the cave's mouth past the Drill Tunnel (run with
+# --start leom02 and --story-stage stage_3, docs/guides/prueba-vertical.md) the player goes down into Leomon's
+# ancestors' cave (leom01), past the cells where the player looks up at the cave (51), and walks onto the tablet's cells (52, script 109 section 0x34): the player reads it and
+# takes the Leomonstone (item 118, trigger 135) that Leomon in gias09 asks for (route-etapa3-leomon.yaml).
+name: etapa3-leomon-tablet
+device: keyboard
+timeout: 900
+steps:
+  - wait: {map: leom02, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.135: "false"}
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: leom01, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: leom01
+  # On the way, the cave's wide cells (51, section 0x33) stop the player for a look up at the cave (trigger 134).
+  - walk_to: {trigger: 52, stop_on_scene: true, timeout: 120}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: leom01-cave
+  - repeat: {times: 2, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.134: "true"}, timeout: 60}
+  - wait: {seconds: 2}
+  - walk_to: {trigger: 52, stop_on_scene: true, timeout: 120}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: leom01-tablet
+  - repeat: {times: 8, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.135: "true"}, timeout: 60}
+  - wait: {seconds: 2}
+  - screenshot: leom01-after

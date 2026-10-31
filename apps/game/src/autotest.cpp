@@ -406,7 +406,8 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
       step.stopOnClosed = reader.boolean(*stop);
     }
     if (const core::YamlNode* encounters = value.find("encounters")) {
-      step.encounters = reader.boolean(*encounters);
+      step.winEncounters = encounters->isScalar() && encounters->text() == "win";
+      step.encounters = step.winEncounters || reader.boolean(*encounters);
     }
     readCommon(reader, value, step);
   } else if (kind == "menu") {
@@ -572,6 +573,8 @@ struct Autotest::Progress {
   // The time walked before an encounter on the way, while it lasts (negative: none).
   double walked = -1.0;
   double lastAnswer = -1.0;
+  // walk_to with `encounters: win`: the running encounter's fight was told to end won.
+  bool encounterWon = false;
   // menu
   double lastTry = -1.0;
   // resize and fullscreen
@@ -1080,6 +1083,14 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
         host.ui->isVisible(BattleDocument) && settingText(host, "battle.phase") == "end";
     const bool textbox =
         !host.ui->isVisible(BattleDocument) && host.ui->isVisible(StoryTextboxDocument);
+    if (step.winEncounters && !progress.encounterWon && host.scripts != nullptr &&
+        host.ui->isVisible(BattleDocument) && settingText(host, "battle.phase") == "fight") {
+      progress.encounterWon = true;
+      if (auto ran = host.scripts->runString("battle_win(\"\")", "autotest"); !ran) {
+        failStep(ran.error().message);
+        return false;
+      }
+    }
     if ((endBox || textbox) && now - progress.lastAnswer > AnswerSeconds) {
       progress.lastAnswer = now;
       tapAction(device == AutotestDevice::Gamepad ? device : AutotestDevice::Keyboard, "confirm");
@@ -1089,6 +1100,7 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
   if (progress.walked >= 0.0) {
     core::logInfo("autotest: the encounter is over; planning again");
     progress.walked = -1.0;
+    progress.encounterWon = false;
     progress.lastPosition = position;
     progress.lastProgress = now;
     progress.lastClick = -1.0;

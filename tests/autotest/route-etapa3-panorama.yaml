@@ -1,0 +1,32 @@
+# Stage 3 of the story with the keyboard, Mt. Panorama: from the forest's crossroads (run with --start mayo02_2
+# and --story-stage stage_3, docs/guides/prueba-vertical.md) the player takes the path up the mountain (miha00),
+# crosses its plains (miha05, miha01) and the pass (miha02, miha04a) and comes down into Gear Savanna (gias00), the
+# stage's way in. The mountain's wild ones fight whoever walks into them: the walks win those fights at once
+# (encounters: win), the route's beat is the way, not the fights.
+name: etapa3-panorama
+device: keyboard
+timeout: 1200
+steps:
+  - wait: {map: mayo02_2, partner_within: 400, seconds: 2, timeout: 60}
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 180}
+  - wait: {map: miha00, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: miha00
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: miha05, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: miha05
+  - walk_to: {trigger: 112, encounters: win, timeout: 240}
+  - wait: {map: miha01, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: miha01
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: miha02, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: miha02
+  # The pass's lower end is a step cell (51, script 21 section 0x33) whose script takes the player down to miha04a
+  # (miha04b once Drimogemon dug its way up, trigger 126).
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: miha04a, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: miha04a
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: gias00, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: gias00

@@ -109,6 +109,9 @@ struct AutotestStep {
   bool stopOnClosed = false;
   // walk_to: an encounter on the way (a script holds the player, or a fight) is waited out.
   bool encounters = false;
+  // walk_to with `encounters: win`: the encounter's fight ends with the enemies beaten (the
+  // battle_win command) once it starts, so a route's partner never loses on the way.
+  bool winEncounters = false;
   bool flag = false; // menu open, fullscreen on
   // when: how many of the steps after it are its own, skipped when its conditions do not hold.
   std::size_t block = 0;

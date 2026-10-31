@@ -1,0 +1,41 @@
+# Stage 3 of the story with the keyboard, the Arena's lobby: in the lobby (run with --start room13 and --story-stage
+# stage_3, docs/guides/prueba-vertical.md) the player confirms at the desk (cells 81, script 168 section 0x51 ->
+# script 213): the first time the host welcomes the player (trigger 91); the second time the player says Yes to a
+# tournament, which opens the schedule (routine 18). The tournaments themselves are not this route's beat: it checks
+# that the lobby and the desk let the player go on, free, and back out to the city.
+name: etapa3-arena
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: room13, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.91: "false"}
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  - screenshot: room13
+  # The desk cells (81) run along the counter, in front of the host (133, -1154).
+  - walk_to: {point: [-50, -350], radius: 40, timeout: 120}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 0.5, timeout: 20}
+  - screenshot: desk-welcome
+  # Four pages; a press after the last would start the desk again.
+  - repeat: {times: 8, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.91: "true"}, timeout: 30}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 30}
+  # "Do you wanna enter the tournament?", then Yes (the first choice): routine 18, the schedule.
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 20}
+  - screenshot: desk-question
+  # The question's page, then the choice with the cursor on Yes; a press while a line types finishes it.
+  - repeat: {times: 6, steps: [{when: {hidden: tournament_schedule, steps: [{tap: {key: return}}]}}, {wait: {seconds: 2}}]}
+  - wait: {shown: tournament_schedule, seconds: 2, timeout: 30}
+  - screenshot: desk-schedule
+  # Back out of the schedule without entering a cup.
+  - repeat: {times: 3, steps: [{when: {shown: tournament_schedule, steps: [{tap: {key: escape}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {map: room13, hidden: tournament_schedule, seconds: 1, timeout: 30}
+  - repeat: {times: 3, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {map: room13, hidden: story_textbox, seconds: 2, timeout: 60}
+  - screenshot: room13-after
+  # The lobby's door (cells 52, section 0x34) takes the player back to the city.
+  - walk_to: {trigger: 52, timeout: 120}
+  - wait: {seconds: 4}
+  - screenshot: city

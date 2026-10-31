@@ -1,0 +1,60 @@
+# Stage 3 of the story with the keyboard, Gear Savanna: from the savanna's edge under the mountain (run with --start
+# gias00 and --story-stage stage_3, docs/guides/prueba-vertical.md) the player crosses gias01 to gias02, where
+# Elecmon shocks whoever touches it: the third touch (script 68 section 5, variable 33 counts them) wins it over and
+# it joins (trigger 218). Then on through gias03 to the savanna's crossroads (gias08), whose exit to Geko Swamp
+# (stic01, stage 7) stays closed with the lock's notice, and into Trash Mountain (gomi01, gomi02).
+name: etapa3-sabana
+device: keyboard
+timeout: 1200
+steps:
+  - wait: {map: gias00, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.218: "false"}
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  - walk_to: {trigger: 112, encounters: win, timeout: 240}
+  - wait: {map: gias01, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: gias01
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: gias02, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: gias02
+  # Elecmon runs a loop through its waypoints ((20, -417), (-1130, 433), (-326, -889)): the player waits on its
+  # path, facing the way it comes, and confirms when it is in front; the route puts it there (place) instead of
+  # waiting for its lap, whose length depends on the frame rate. Variable 33 counts the touches.
+  - script: place("player -670 -93 0")
+  - walk_to: {point: [-555, 8], radius: 90, timeout: 60}
+  - repeat: {times: 60, steps: [{when: {hidden: story_textbox, setting: {story.var.33: "0"}, steps: [{script: place("npc:5 -523 16 3072")}, {tap: {key: return}}]}}, {wait: {seconds: 0.5}}]}
+  - repeat: {times: 2, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.var.33: "1"}, hidden: story_textbox, seconds: 1, timeout: 60}
+  - script: place("player -670 -93 0")
+  - walk_to: {point: [-555, 8], radius: 90, timeout: 60}
+  - repeat: {times: 60, steps: [{when: {hidden: story_textbox, setting: {story.var.33: "1"}, steps: [{script: place("npc:5 -523 16 3072")}, {tap: {key: return}}]}}, {wait: {seconds: 0.5}}]}
+  - repeat: {times: 2, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.var.33: "2"}, hidden: story_textbox, seconds: 1, timeout: 60}
+  - script: place("player -670 -93 0")
+  - walk_to: {point: [-555, 8], radius: 90, timeout: 60}
+  - repeat: {times: 60, steps: [{when: {hidden: story_textbox, setting: {story.var.33: "2"}, steps: [{script: place("npc:5 -523 16 3072")}, {tap: {key: return}}]}}, {wait: {seconds: 0.5}}]}
+  - repeat: {times: 8, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  # The third touch wins it over: it walks off to the city.
+  - wait: {setting: {story.trigger.218: "true"}, hidden: story_textbox, seconds: 1, timeout: 120}
+  - screenshot: elecmon
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: gias03, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: gias03
+  - walk_to: {trigger: 112, encounters: win, timeout: 240}
+  - wait: {map: gias08, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: gias08
+  # The way north to the swamp's exit runs by the cells of the exit to Trash Mountain (114), which a walk can
+  # brush: the player and the partner are put up the northern path first (place, original axes).
+  - script: place("player 2550 1950 0")
+  - script: place("partner 2550 2150 0")
+  - walk_to: {trigger: 113, encounters: win, stop_on_closed: true, timeout: 240}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - screenshot: gias08-stic01-closed
+  - tap: {key: return}
+  - wait: {map: gias08, hidden: dialog, seconds: 1, timeout: 30}
+  - walk_to: {trigger: 114, encounters: win, timeout: 240}
+  - wait: {map: gomi01, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: gomi01
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: gomi02, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: gomi02
