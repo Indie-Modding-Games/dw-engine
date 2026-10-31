@@ -197,6 +197,11 @@ public:
   // The battle's rolls when they are the original's (useOriginalRolls), for the effect scripts
   // that run with the battle (EffectRunner::useRolls); nothing otherwise.
   [[nodiscard]] ruleset::Random* originalRolls() { return particleRolls_ ? &random_ : nullptr; }
+  // The draws of the original's sparks and fighter particles with the original's rolls, which the
+  // effect scripts' attacker particles share (EffectRunner::useRolls); nothing otherwise.
+  [[nodiscard]] ParticleRolls* particleRolls() {
+    return particleRolls_ ? &*particleRolls_ : nullptr;
+  }
   // Where the battle's rolls are (ruleset::Random::state), for a state trace to compare.
   [[nodiscard]] std::uint64_t rollState() const { return random_.state(); }
 

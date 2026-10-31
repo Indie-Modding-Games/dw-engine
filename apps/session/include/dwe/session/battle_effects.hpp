@@ -45,8 +45,11 @@ public:
   // What the battle's camera shows (EffectRunner::setView).
   void setView(const game::battle::EffectView& view) { runner_.setView(view); }
   // The scripts roll with the battle's rolls when those are the original's
-  // (game::battle::Battle::originalRolls, EffectRunner::useRolls); `rolls` must outlive this.
-  void useRolls(ruleset::Random* rolls) { runner_.useRolls(rolls); }
+  // (game::battle::Battle::originalRolls, EffectRunner::useRolls), with the battle's fighter
+  // particles (Battle::particleRolls); both must outlive this.
+  void useRolls(ruleset::Random* rolls, game::battle::ParticleRolls* particles = nullptr) {
+    runner_.useRolls(rolls, particles);
+  }
   // What the effects drew on the last frame, and the move whose effect/<move>/ a slot is.
   [[nodiscard]] const std::vector<game::battle::EffectDraw>& draws() const {
     return runner_.draws();

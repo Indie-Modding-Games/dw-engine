@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/effect_script.hpp>
+#include <dwe/game/battle/particle_rolls.hpp>
 #include <dwe/game/battle/state.hpp>
 #include <dwe/ruleset/random.hpp>
 
@@ -342,8 +343,14 @@ public:
   // come from `rolls` from now on, which must outlive this, instead of the runner's own sequence:
   // with the battle's rolls from the original's generator (Battle::originalRolls) they take the
   // original's numbers in the original's order (the effects run after the fighters each frame,
-  // BTL_battleTickFrame: tickObjects). Nothing goes back to the runner's own sequence.
-  void useRolls(ruleset::Random* rolls) { rolls_ = rolls; }
+  // BTL_battleTickFrame: tickObjects). Nothing goes back to the runner's own sequence. The
+  // particles the scripts put on the attacker (add_source_particles) then take the battle's
+  // fighter particles and their draws from `particles` (Battle::particleRolls), which must
+  // outlive this; without it they are skipped, as the game draws none.
+  void useRolls(ruleset::Random* rolls, ParticleRolls* particles = nullptr) {
+    rolls_ = rolls;
+    particles_ = particles;
+  }
   // What the battle's camera shows this frame (by default the original's screen and a camera
   // that looks along z).
   void setView(const EffectView& view) { view_ = view; }
@@ -560,6 +567,7 @@ private:
   const EffectBodies* bodies_ = nullptr;
   std::minstd_rand random_;
   ruleset::Random* rolls_ = nullptr;
+  ParticleRolls* particles_ = nullptr;
   std::vector<Slot> slots_;
   std::vector<std::optional<HeldSound>> held_;
   std::vector<EffectDraw> draws_;

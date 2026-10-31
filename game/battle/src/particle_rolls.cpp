@@ -38,8 +38,7 @@ void burn(ruleset::Random& random, int draws) {
 
 } // namespace
 
-void ParticleRolls::spawn(ruleset::Random& random, Spark spark, std::int32_t lifetime,
-                          bool shown) {
+void ParticleRolls::spawn(ruleset::Random& random, Spark spark, std::int32_t lifetime, bool shown) {
   const auto free = std::ranges::find_if(
       sparks_, [](const std::optional<SparkSlot>& slot) { return !slot.has_value(); });
   if (free == sparks_.end()) {
@@ -55,8 +54,8 @@ void ParticleRolls::spawn(ruleset::Random& random, Spark spark, std::int32_t lif
   } else if (spark == Spark::Block) {
     timer = BlockTimer;
   }
-  *free = SparkSlot{
-      .spark = spark, .state = 0, .timer = timer, .endFrame = lifetime + EndFramePadding};
+  *free =
+      SparkSlot{.spark = spark, .state = 0, .timer = timer, .endFrame = lifetime + EndFramePadding};
 }
 
 void ParticleRolls::tick(ruleset::Random& random) {
@@ -68,19 +67,28 @@ void ParticleRolls::tick(ruleset::Random& random) {
       tickSpark(random, slot);
     }
   }
-  for (std::optional<std::int32_t>& timer : fighterParticles_) {
-    if (!timer) {
-      continue;
+  for (FighterParticle& timer : fighterParticles_) {
+    if (timer) {
+      tickFighterParticle(random, timer);
     }
-    if (*timer <= 0) {
-      timer.reset();
-      continue;
-    }
-    if (*timer % BoneEvery == 0) {
-      burn(random, BoneDraws);
-    }
-    --*timer;
   }
+}
+
+void ParticleRolls::attach(ruleset::Random& random, std::int32_t timer) {
+  if (FighterParticle* added = addFighterParticle(random, timer)) {
+    tickFighterParticle(random, *added);
+  }
+}
+
+void ParticleRolls::tickFighterParticle(ruleset::Random& random, FighterParticle& timer) {
+  if (*timer <= 0) {
+    timer.reset();
+    return;
+  }
+  if (*timer % BoneEvery == 0) {
+    burn(random, BoneDraws);
+  }
+  --*timer;
 }
 
 void ParticleRolls::tickSpark(ruleset::Random& random, std::optional<SparkSlot>& slot) {
@@ -119,14 +127,16 @@ void ParticleRolls::tickSpark(ruleset::Random& random, std::optional<SparkSlot>&
   }
 }
 
-void ParticleRolls::addFighterParticle(ruleset::Random& random, std::int32_t timer) {
+ParticleRolls::FighterParticle* ParticleRolls::addFighterParticle(ruleset::Random& random,
+                                                                  std::int32_t timer) {
   const auto free = std::ranges::find_if(
-      fighterParticles_, [](const std::optional<std::int32_t>& slot) { return !slot.has_value(); });
+      fighterParticles_, [](const FighterParticle& slot) { return !slot.has_value(); });
   if (free == fighterParticles_.end()) {
-    return;
+    return nullptr;
   }
   *free = timer;
   burn(random, 1);
+  return &*free;
 }
 
 std::size_t ParticleRolls::sparks() const {
@@ -136,7 +146,7 @@ std::size_t ParticleRolls::sparks() const {
 
 std::size_t ParticleRolls::fighterParticles() const {
   return static_cast<std::size_t>(std::ranges::count_if(
-      fighterParticles_, [](const std::optional<std::int32_t>& slot) { return slot.has_value(); }));
+      fighterParticles_, [](const FighterParticle& slot) { return slot.has_value(); }));
 }
 
 } // namespace dwe::game::battle

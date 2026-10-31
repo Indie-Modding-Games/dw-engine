@@ -731,6 +731,37 @@ TEST_CASE("only 4 sparks roll at once; a spark the original never shows rolls an
   CHECK(unseen.sparks() == 0);
 }
 
+TEST_CASE("an effect's attacker particle draws its node, ticks on its own frame, then every 4th") {
+  // efe.c: addEntityParticleFX draws the node (1), and its object comes after the effects'
+  // engine, so tickEntityParticleFX runs it on the same frame: 12 % 4 == 0 draws 2. Then 2 more
+  // when its timer reaches 8 and 4, and it ends at 0 without drawing.
+  dwe::ruleset::Random random = dwe::ruleset::Random::original(1);
+  ParticleRolls particles;
+  dwe::ruleset::Random before = random;
+  particles.attach(random, 12);
+  CHECK(drawsBetween(before, random) == 3);
+  CHECK(particles.fighterParticles() == 1);
+  for (int frame = 1; frame <= 12; ++frame) {
+    before = random;
+    particles.tick(random);
+    CAPTURE(frame);
+    CHECK(drawsBetween(before, random) == (frame == 4 || frame == 8 ? 2 : 0));
+  }
+  CHECK(particles.fighterParticles() == 0);
+}
+
+TEST_CASE("an effect's attacker particle draws nothing while the 20 fighter particles are taken") {
+  dwe::ruleset::Random random = dwe::ruleset::Random::original(1);
+  ParticleRolls particles;
+  for (std::size_t particle = 0; particle < ParticleRolls::FighterParticleSlots; ++particle) {
+    particles.attach(random, 0x30);
+  }
+  CHECK(particles.fighterParticles() == ParticleRolls::FighterParticleSlots);
+  const dwe::ruleset::Random before = random;
+  particles.attach(random, 12);
+  CHECK(drawsBetween(before, random) == 0);
+}
+
 TEST_CASE("with the original's rolls a hit draws its spark after the damage roll, a block before") {
   // battle_main.c: BTL_tickAttackHits: a hit rolls its damage, then BTL_handleHitReaction starts
   // the spark (12 draws); a block starts its spark (8 draws) before the blocked melee damage roll.

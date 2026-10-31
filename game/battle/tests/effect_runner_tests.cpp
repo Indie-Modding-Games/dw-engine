@@ -1007,6 +1007,58 @@ init_script:
   CHECK(untouched.state() == dwe::ruleset::Random::original(0x5CF299CBU).state());
 }
 
+TEST_CASE("with the battle's particles an effect's attacker particle takes one and its draws") {
+  // battle_effect.c: BTL_addSourceEntityParticleFX (static_elect, every frame until it hits).
+  constexpr std::string_view SparkEffectYaml = R"(move: "made_up_spark"
+header:
+  sub_effect_count: 1
+)";
+  constexpr std::string_view SparkScriptYaml = R"(start_script:
+- label: "start"
+  at: "0x0100"
+  op: push_immediate
+  value: 12
+- at: "0x0106"
+  op: sub
+  sub: add_source_particles
+  args:
+    timer: 12
+- at: "0x0108"
+  op: return
+init_script:
+- label: "init"
+  at: "0x0120"
+  op: stop
+)";
+  const auto effect = dwe::core::parseYaml(SparkEffectYaml);
+  const auto script = dwe::core::parseYaml(SparkScriptYaml);
+  REQUIRE(effect.has_value());
+  REQUIRE(script.has_value());
+  auto read = dwe::assets::readEffectScript(*effect, *script);
+  REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+
+  RecordingSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::ruleset::Random rolls = dwe::ruleset::Random::original(0x5CF299CBU);
+  dwe::game::battle::ParticleRolls particles;
+  runner.useRolls(&rolls, &particles);
+  runner.start(runner.load(*read));
+  // The node's draw, then the particle's first tick (12 % 4 == 0): bone and offset.
+  dwe::ruleset::Random expected = dwe::ruleset::Random::original(0x5CF299CBU);
+  for (int draw = 0; draw < 3; ++draw) {
+    static_cast<void>(expected.next());
+  }
+  CHECK(rolls.state() == expected.state());
+  CHECK(particles.fighterParticles() == 1);
+
+  // Without the battle's particles (no original rolls) nothing is drawn.
+  EffectRunner own{sounds};
+  dwe::ruleset::Random untouched = dwe::ruleset::Random::original(0x5CF299CBU);
+  own.useRolls(&untouched);
+  own.start(own.load(*read));
+  CHECK(untouched.state() == dwe::ruleset::Random::original(0x5CF299CBU).state());
+}
+
 TEST_CASE("a bone's matrix adds up its chain in the console's fixed point, as the original does") {
   using dwe::game::battle::BonePose;
   // Agumon's bones 1 to 4 holding Spit Fire's breath (clip 46 from its frame 10), read from the

@@ -272,7 +272,7 @@ BTL_findHitEntity = { status = "portado", dwe = "game/battle/src/effect_runner_s
 BTL_printDebugValue = { status = "no-aplica", note = "depuración del original", what = "Escribe un valor de depuración." }
 BTL_renderParallaxSprites = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Capas en pantalla", what = "Dibuja capas de sprites con paralaje de un efecto." }
 BTL_renderScrollingBackground = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Capas en pantalla", what = "Dibuja un fondo que se desplaza durante una técnica." }
-BTL_addSourceEntityParticleFX = { status = "falta", what = "Lanza partículas desde el atacante.", note = "battle.md: Hueco" }
+BTL_addSourceEntityParticleFX = { status = "parcial", dwe = "game/battle/src/effect_runner_subops.cpp", note = "solo sus tiradas, con --original-rolls (battle.md)", what = "Lanza partículas desde el atacante." }
 BTL_renderParticleFlashSprite = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Destello de partícula", what = "Dibuja el destello de una partícula." }
 BTL_projectPositionToScreen = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Sprites en pantalla", what = "Proyecta una posición del efecto a la pantalla para sus sprites." }
 BTL_renderScreenSprite = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Sprites en pantalla", what = "Dibuja un sprite en pantalla de un efecto." }

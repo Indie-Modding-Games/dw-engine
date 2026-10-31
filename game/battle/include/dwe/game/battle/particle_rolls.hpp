@@ -31,6 +31,13 @@ public:
   void spawn(ruleset::Random& random, Spark spark, std::int32_t lifetime, bool shown = true);
   // One frame of the sparks and of the fighter particles they leave, with their draws.
   void tick(ruleset::Random& random);
+  // BTL_addSourceEntityParticleFX: an effect script puts a particle on its attacker
+  // (addEntityParticleFX, one draw for the node). The scripts run in the effects' engine object,
+  // which the battle adds before any spark or particle (BTL_initializeEFEEngine; in the Native
+  // Forest fight slot 9 of the world's objects, the first free one 15), so the particle's object
+  // comes after it and ticks on the frame it appears, after the effects (tickObjects goes by
+  // slot).
+  void attach(ruleset::Random& random, std::int32_t timer);
 
   // How many sparks and fighter particles are alive.
   [[nodiscard]] std::size_t sparks() const;
@@ -45,12 +52,17 @@ private:
   };
 
   void tickSpark(ruleset::Random& random, std::optional<SparkSlot>& slot);
-  // addEntityParticleFX: a particle on a bone of the fighter, one draw for the bone.
-  void addFighterParticle(ruleset::Random& random, std::int32_t timer);
+  using FighterParticle = std::optional<std::int32_t>;
+
+  // addEntityParticleFX: a particle on a bone of the fighter, one draw for the bone; the slot it
+  // took, none when all 20 are taken (then nothing is drawn).
+  FighterParticle* addFighterParticle(ruleset::Random& random, std::int32_t timer);
+  // tickEntityParticleFX: one frame of a particle.
+  static void tickFighterParticle(ruleset::Random& random, FighterParticle& timer);
 
   std::array<std::optional<SparkSlot>, SparkSlots> sparks_;
   // tickEntityParticleFX's timers.
-  std::array<std::optional<std::int32_t>, FighterParticleSlots> fighterParticles_;
+  std::array<FighterParticle, FighterParticleSlots> fighterParticles_;
 };
 
 } // namespace dwe::game::battle

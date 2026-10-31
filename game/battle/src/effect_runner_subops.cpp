@@ -591,6 +591,12 @@ bool EffectRunner::fighterOp(Slot& slot, std::string_view name,
     if (self.target) {
       ++targetFacings_;
     }
+  } else if (name == "add_source_particles") {
+    // BTL_addSourceEntityParticleFX: `timer` frames of a particle on a node of the attacker
+    // (addEntityParticleFX); only its draws, with the battle's (the game draws no such particle).
+    if (particles_ != nullptr && rolls_ != nullptr && !args.empty()) {
+      particles_->attach(*rolls_, args[0]);
+    }
   } else if (name == "target_hit_entity") {
     // BTL_setTargetToHitEntity makes the hit fighter the target, which is the battle's target.
   } else {
