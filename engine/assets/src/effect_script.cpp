@@ -58,6 +58,8 @@ constexpr std::uint32_t ByteMask = 0xFF;
 constexpr std::int64_t FreeInstanceFrame = -1;
 constexpr std::size_t Int32Size = 4;
 constexpr std::size_t Int16Size = 2;
+// A clut_colors colour: red, green, blue and STP.
+constexpr std::size_t ClutColorFields = 4;
 // battle_effect.c: EfeTechBoneOffset is 10 bytes; a negative type ends a list.
 constexpr std::size_t BoneOffsetEntrySize = 10;
 constexpr std::int64_t BoneOffsetsEnd = -1;
@@ -421,17 +423,7 @@ private:
   }
 
   core::Result<void> writeValues(const YamlNode& node, std::uint32_t at, std::size_t size) {
-    const YamlNode* values = node.find("values");
-    if (values == nullptr || !values->isSequence()) {
-      return {};
-    }
-    for (const YamlNode& value : values->items()) {
-      if (auto written = writeValue(node, value, at, size); !written) {
-        return written;
-      }
-      at += static_cast<std::uint32_t>(size);
-    }
-    return {};
+    return writeList(node, "values", at, size);
   }
 
   core::Result<void> writeBytes(const YamlNode& node, std::string_view key, std::uint32_t at) {
@@ -510,6 +502,49 @@ private:
     }
     if (*kind == "uv_keyframes") {
       return uvKeyframes(node, offset);
+    }
+    if (*kind == "clut_row") {
+      // A palette's 16-bit colours, as hex.
+      return writeList(node, "colors", offset, Int16Size);
+    }
+    if (*kind == "clut_colors") {
+      // Colours as rows of four 16-bit values: red, green, blue and STP.
+      return clutColors(node, offset);
+    }
+    return {};
+  }
+
+  core::Result<void> writeList(const YamlNode& node, std::string_view key, std::uint32_t at,
+                               std::size_t size) {
+    const YamlNode* list = node.find(key);
+    if (list == nullptr || !list->isSequence()) {
+      return {};
+    }
+    for (const YamlNode& value : list->items()) {
+      if (auto written = writeValue(node, value, at, size); !written) {
+        return written;
+      }
+      at += static_cast<std::uint32_t>(size);
+    }
+    return {};
+  }
+
+  core::Result<void> clutColors(const YamlNode& node, std::uint32_t at) {
+    const YamlNode* rows = node.find("colors");
+    if (rows == nullptr || !rows->isSequence()) {
+      return {};
+    }
+    for (const YamlNode& row : rows->items()) {
+      if (!row.isSequence() || row.items().size() != ClutColorFields) {
+        return core::fail(
+            std::format("line {}: a colour needs {} values", row.line(), ClutColorFields));
+      }
+      for (const YamlNode& value : row.items()) {
+        if (auto written = writeValue(node, value, at, Int16Size); !written) {
+          return written;
+        }
+        at += static_cast<std::uint32_t>(Int16Size);
+      }
     }
     return {};
   }

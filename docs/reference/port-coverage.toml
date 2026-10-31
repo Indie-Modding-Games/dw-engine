@@ -255,9 +255,9 @@ BTL_renderScreenFade = { status = "portado", dwe = "game/battle/src/effect_runne
 BTL_renderScreenOverlay = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Velos de pantalla", what = "Pinta un velo de color sobre la pantalla durante una técnica." }
 BTL_renderRingTube = { status = "falta", what = "Dibuja un tubo de anillos (rayos, torbellinos) de una técnica." }
 BTL_renderRadialWaves = { status = "falta", what = "Dibuja ondas que se abren en círculo de una técnica." }
-BTL_addClutLoadPrim = { status = "falta", what = "Cambia la paleta de un efecto mientras corre (destellos de color).", note = "battle.md: las cargas de CLUT se saltan" }
+BTL_addClutLoadPrim = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cargas de paleta", what = "Cambia la paleta de un efecto mientras corre (destellos de color)." }
 BTL_drawTMDScreenSpace = { status = "falta", what = "Dibuja un modelo del efecto pegado a la pantalla." }
-BTL_loadClutColors = { status = "falta", what = "Copia colores a la paleta de un efecto.", note = "battle.md: Hueco" }
+BTL_loadClutColors = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cargas de paleta", what = "Copia colores a la paleta de un efecto." }
 BTL_getCameraRotation = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cintas de luz", what = "Lee el giro de la cámara para orientar un efecto." }
 BTL_convertToViewSpace = { status = "falta", what = "Pasa una posición del efecto al espacio de la cámara.", note = "battle.md: Hueco" }
 BTL_render3DTexturedQuad = { status = "falta", what = "Dibuja un cuadro con textura en el mundo (llamas, rayos)." }

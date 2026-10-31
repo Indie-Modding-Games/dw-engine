@@ -241,6 +241,10 @@ bool EffectRunner::running(std::size_t slot) const {
              [](const SubEffect& subEffect) { return subEffect.tick.has_value(); });
 }
 
+const EffectPalettes& EffectRunner::palettes(std::size_t slot) const {
+  return slots_.at(slot).palettes;
+}
+
 // battle_effect.c: BTL_runEFEScript.
 void EffectRunner::run(std::size_t slot, std::uint32_t script) {
   slot_ = slot;

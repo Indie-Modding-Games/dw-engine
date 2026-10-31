@@ -5,8 +5,10 @@
 #include <dwe/ruleset/random.hpp>
 
 #include <array>
+#include <compare>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <random>
 #include <span>
@@ -259,6 +261,19 @@ struct EffectRibbon {
   bool operator==(const EffectRibbon&) const = default;
 };
 
+// A palette row of an effect's texture as its scripts rewrote it in the console's CLUT
+// (battle_effect.c: BTL_addClutLoadPrim, BTL_loadClutColors): the colours they wrote, in the
+// original's 16-bit form; the others stay the texture's. The change lasts until the effect is
+// loaded again.
+struct EffectPaletteRow {
+  static constexpr std::size_t Colors = 16;
+  std::array<std::optional<std::uint16_t>, Colors> colors{};
+
+  auto operator<=>(const EffectPaletteRow&) const = default;
+};
+// A slot's rewritten palette rows, by row of the effect's CLUT.
+using EffectPalettes = std::map<std::int32_t, EffectPaletteRow>;
+
 // What the battle's camera shows, for the effects that draw on the screen or face the camera.
 struct EffectView {
   // How much of the screen the battle shows, in the original's pixels (at least its 320 x 240):
@@ -357,6 +372,9 @@ public:
   void render();
   [[nodiscard]] const std::vector<EffectDraw>& draws() const { return draws_; }
 
+  // The palette rows the slot's scripts rewrote so far.
+  [[nodiscard]] const EffectPalettes& palettes(std::size_t slot) const;
+
   // Whether a sub-effect of the slot still runs.
   [[nodiscard]] bool running(std::size_t slot) const;
 
@@ -409,6 +427,7 @@ private:
     std::vector<FighterId> hitTargets;
     // Its init script failed (EFE_ACTIVE_SECTION -2): it never starts.
     bool failed = false;
+    EffectPalettes palettes;
   };
 
   // A particle of an emitter (battle_effect.c: EfeParticle): how far it still is from where it
@@ -498,6 +517,8 @@ private:
   void parallaxSprites(Slot& slot, const std::vector<std::int32_t>& args);
   void screenSprite(Slot& slot, const std::vector<std::int32_t>& args);
   void screenVeil(Slot& slot, const std::vector<std::int32_t>& args, bool fade);
+  void loadPalette(Slot& slot, std::int32_t row, std::int32_t first, std::int32_t colors,
+                   std::int32_t count, bool fields);
   void line(Slot& slot, const std::vector<std::int32_t>& args);
   void wireframeGrid(Slot& slot, const std::vector<std::int32_t>& args);
   void parallelLines(std::size_t slot, EffectVector a, EffectVector b, std::int32_t count,

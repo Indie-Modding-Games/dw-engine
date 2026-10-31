@@ -58,6 +58,14 @@ enum class SemiTransparency : std::uint8_t {
   AddQuarter, // B + F / 4
 };
 
+// A place in the console's VRAM: x in 16-bit units, y in rows.
+struct VramPoint {
+  std::uint32_t x = 0;
+  std::uint32_t y = 0;
+
+  bool operator==(const VramPoint&) const = default;
+};
+
 struct ModelMaterial {
   std::string name;
   glm::vec4 baseColor{1.0F};
@@ -69,6 +77,10 @@ struct ModelMaterial {
   bool unlit = false;
   bool doubleSided = false;
   SemiTransparency blending = SemiTransparency::Average;
+  // Where the original's texture of the material and its CLUT row sit in VRAM, in 16-bit units
+  // (extras.image, extras.clut), when the model says.
+  std::optional<VramPoint> texture;
+  std::optional<VramPoint> clut;
 };
 
 // A node's local transform as translation, rotation and scale.

@@ -685,3 +685,46 @@ TEST_CASE("wireframes project through the fixed effect camera from the screen's 
   CHECK(lines[4].order == 0x22);
   CHECK(lines[4].color == dwe::game::battle::EffectVector{.x = 1, .y = 2, .z = 3});
 }
+
+TEST_CASE("palette loads rewrite a row of the effect's palette from a colour on, and keep it") {
+  const std::string render = renderOf([](std::int32_t& at) {
+    return pushes(at, {"10000", "2", "base+0x00a0", "3"}) + subOf(at, "queue_clut_load", 4) +
+           pushes(at, {"3", "14", "3", "base+0x00e0"}) + subOf(at, "load_clut_colors", 4) +
+           pushes(at, {"4", "0", "17", "base+0x00e0"}) + subOf(at, "load_clut_colors", 4);
+  });
+  constexpr std::string_view Data = R"(- at: "0x00a0"
+  kind: clut_row
+  size: 40
+  colors: ["0x0001", "0x0002", "0x0003", "0x0004", "0x0005", "0x0006", "0x0007", "0x0008",
+           "0x0009", "0x000a", "0x000b", "0x000c", "0x000d", "0x000e", "0x000f", "0x0010",
+           "0x0011", "0x0012", "0x0013", "0x8014"]
+- at: "0x00e0"
+  kind: clut_colors
+  size: 24
+  colors:
+  - [31, 0, 0, 1]
+  - [0, 31, 0, 0]
+  - [1, 2, 3, 0]
+)";
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  const std::size_t slot = runner.load(renderingScript(render, Data));
+  REQUIRE(runner.start(slot, 0, 1).has_value());
+  runner.tick();
+  runner.render();
+  const dwe::game::battle::EffectPalettes& palettes = runner.palettes(slot);
+  // Row 2: the 16 colours from the fourth on.
+  REQUIRE(palettes.contains(2));
+  CHECK(palettes.at(2).colors[0] == 0x0004);
+  CHECK(palettes.at(2).colors[15] == 0x0013);
+  // Row 3: three colours from the 15th, red with STP and green; the third falls past the row.
+  REQUIRE(palettes.contains(3));
+  CHECK_FALSE(palettes.at(3).colors[13].has_value());
+  CHECK(palettes.at(3).colors[14] == 0x801F);
+  CHECK(palettes.at(3).colors[15] == 0x03E0);
+  // A count past 16 loads nothing.
+  CHECK_FALSE(palettes.contains(4));
+  // The rows stay as the scripts left them.
+  runner.tick();
+  CHECK(runner.palettes(slot).size() == 2);
+}

@@ -248,7 +248,9 @@ void BattleScreen::showEffects() const {
   std::vector<SceneEffect> shown;
   if (effects_) {
     for (const game::battle::EffectDraw& draw : effects_->draws()) {
-      shown.push_back({.move = effects_->moveOf(draw.slot), .shape = draw.shape});
+      shown.push_back({.move = effects_->moveOf(draw.slot),
+                       .shape = draw.shape,
+                       .palettes = effects_->palettesOf(draw.slot)});
     }
   }
   desc_.scene->setEffects(std::move(shown));

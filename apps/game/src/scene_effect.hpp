@@ -7,10 +7,12 @@
 namespace dwe::app {
 
 // A thing a technique's effect drew this battle frame (game::battle::EffectDraw), with the move
-// whose effect/<move>/ texture and model it uses (BattleScreen to FieldScene::setEffects).
+// whose effect/<move>/ texture and model it uses and the palette rows its scripts rewrote
+// (BattleScreen to FieldScene::setEffects).
 struct SceneEffect {
   std::string move;
   game::battle::EffectShape shape;
+  game::battle::EffectPalettes palettes;
 };
 
 } // namespace dwe::app

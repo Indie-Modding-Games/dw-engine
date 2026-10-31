@@ -13,6 +13,7 @@
 #include <format>
 #include <numbers>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -30,6 +31,8 @@ using game::battle::EffectCloud;
 using game::battle::EffectFlash;
 using game::battle::EffectMatrix;
 using game::battle::EffectModel;
+using game::battle::EffectPaletteRow;
+using game::battle::EffectPalettes;
 using game::battle::EffectSprite;
 using game::battle::EffectStreak;
 using game::battle::EffectVector;
@@ -44,6 +47,10 @@ constexpr float SpriteScaleUnit = 32.0F;
 constexpr float DegreesPerHalfTurn = 180.0F;
 // A line's colour bytes are its colour (drawLine2P: no texture to tint).
 constexpr float ByteOne = 255.0F;
+// The effects' textures are 4-bit (their metadata's mode indexed4).
+constexpr std::int32_t EffectTextureBits = 4;
+constexpr std::size_t RgbaChannels = 4;
+constexpr auto OpaqueAlpha = std::byte{0xFF};
 // The common effect sheet (ETCDAT/DEFEFF.TIM at 768, 384 of the console's VRAM) and the glow of
 // effect_common.c: renderFXParticle on it: u 0, v 160 of the page at 768, 256, CLUT row 489.
 constexpr std::string_view CommonSheet = "texture/etcdat/defeff";
@@ -108,7 +115,8 @@ assets::SpriteBlend spriteBlendOf(EffectBlend blend) {
 // A paletted image of the content with a row of its CLUT (its _meta palettes), its colours with
 // STP at SemiTransparentAlpha so a semi-transparent sprite mixes them (colorFromOriginal).
 core::Result<assets::Image> sheetImage(const assets::VirtualFileSystem& files,
-                                       const std::string& image, std::int32_t palette) {
+                                       const std::string& image, std::int32_t palette,
+                                       const EffectPaletteRow* rewritten) {
   auto png = assets::AssetId::parse(image);
   auto meta = assets::AssetId::parse(std::format("{}{}", image, assets::ImageMetaSuffix));
   if (!png || !meta) {
@@ -133,7 +141,10 @@ core::Result<assets::Image> sheetImage(const assets::VirtualFileSystem& files,
   }
   std::vector<assets::PaletteColor> colors;
   for (const std::uint16_t color : palettes->at(static_cast<std::size_t>(palette))) {
-    colors.push_back(assets::colorFromOriginal(color));
+    const std::size_t index = colors.size();
+    const bool written = rewritten != nullptr && index < rewritten->colors.size() &&
+                         rewritten->colors.at(index).has_value();
+    colors.push_back(assets::colorFromOriginal(written ? *rewritten->colors.at(index) : color));
   }
   return assets::applyPalette(*indexed, colors);
 }
@@ -141,22 +152,31 @@ core::Result<assets::Image> sheetImage(const assets::VirtualFileSystem& files,
 } // namespace
 
 core::Result<assets::Image> effectSheetImage(const assets::VirtualFileSystem& files,
-                                             const std::string& image, std::int32_t palette) {
-  return sheetImage(files, image, palette);
+                                             const std::string& image, std::int32_t palette,
+                                             const EffectPaletteRow* rewritten) {
+  return sheetImage(files, image, palette, rewritten);
 }
 
-std::optional<std::size_t> FieldScene::effectTexture(const std::string& move,
-                                                     std::int32_t palette) {
-  return sheetTexture(std::format("effect/{}/texture", move), palette);
+const EffectPaletteRow* rewrittenRow(const EffectPalettes& palettes, std::int32_t palette) {
+  const auto found = palettes.find(palette);
+  return found != palettes.end() ? &found->second : nullptr;
 }
 
-std::optional<std::size_t> FieldScene::sheetTexture(const std::string& name, std::int32_t palette) {
-  const auto key = std::pair{name, palette};
+std::optional<std::size_t> FieldScene::effectTexture(const std::string& move, std::int32_t palette,
+                                                     const EffectPalettes& palettes) {
+  return sheetTexture(std::format("effect/{}/texture", move), palette,
+                      rewrittenRow(palettes, palette));
+}
+
+std::optional<std::size_t> FieldScene::sheetTexture(const std::string& name, std::int32_t palette,
+                                                    const EffectPaletteRow* rewritten) {
+  const auto key =
+      std::tuple{name, palette, rewritten != nullptr ? std::optional{*rewritten} : std::nullopt};
   if (const auto found = effectTextures_.find(key); found != effectTextures_.end()) {
     return found->second;
   }
   std::optional<std::size_t> texture;
-  auto image = sheetImage(*files_, name, palette);
+  auto image = sheetImage(*files_, name, palette, rewritten);
   if (image) {
     if (auto added = mapRenderer_->addBillboardTexture(*image)) {
       texture = *added;
@@ -258,7 +278,7 @@ std::optional<std::size_t> FieldScene::flashTexture(std::int32_t u) {
     return found->second;
   }
   std::optional<std::size_t> texture;
-  auto sheet = sheetImage(*files_, std::string{LightSheet}, 0);
+  auto sheet = sheetImage(*files_, std::string{LightSheet}, 0, nullptr);
   if (sheet && (std::cmp_less(sheet->width, u + FlashQuarter) ||
                 std::cmp_less(sheet->height, FlashRow + FlashQuarter))) {
     sheet = core::fail(std::format("{} x {} texels, too small", sheet->width, sheet->height));
@@ -339,14 +359,34 @@ void FieldScene::addEffectFlash(const EffectFlash& flash,
                 ColorOne});
 }
 
-const FieldScene::EffectModelEntry* FieldScene::effectModel(const std::string& move) {
-  if (const auto found = effectModels_.find(move); found != effectModels_.end()) {
+// The effect's model with the palette rows its scripts rewrote: a material on the effect's
+// texture with a rewritten row of the texture's CLUT takes the texture in that row's colours, as
+// the console draws it from VRAM. Only the rows its materials read make another model.
+const FieldScene::EffectModelEntry* FieldScene::effectModel(const std::string& move,
+                                                            const EffectPalettes& palettes) {
+  EffectPalettes read;
+  if (!palettes.empty()) {
+    effectModel(move, {});
+    for (const std::int32_t row : effectModelRows_[move]) {
+      if (const auto found = palettes.find(row); found != palettes.end()) {
+        read.insert(*found);
+      }
+    }
+  }
+  const auto key = std::pair{move, read};
+  if (const auto found = effectModels_.find(key); found != effectModels_.end()) {
     return found->second ? &*found->second : nullptr;
   }
   std::optional<EffectModelEntry> entry;
   auto id = assets::AssetId::parse(std::format("effect/{}/model", move));
   auto data = id ? assets::loadModel(*files_, *id)
                  : core::Result<assets::ModelData>{std::unexpected{id.error()}};
+  if (data) {
+    std::set<std::int32_t> rows = repaintEffectModel(move, read, *data);
+    if (read.empty()) {
+      effectModelRows_[move] = std::move(rows);
+    }
+  }
   if (data) {
     if (auto handle = models_->add(*data)) {
       entry =
@@ -358,8 +398,57 @@ const FieldScene::EffectModelEntry* FieldScene::effectModel(const std::string& m
   if (!data) {
     core::logWarning("battle: no model for the effect of {}: {}", move, data.error().message);
   }
-  auto [at, inserted] = effectModels_.emplace(move, entry);
+  auto [at, inserted] = effectModels_.emplace(key, entry);
   return at->second ? &*at->second : nullptr;
+}
+
+// Repaints the materials of the model on the effect's texture whose CLUT row `palettes` rewrote;
+// returns the rows all of them read.
+std::set<std::int32_t> FieldScene::repaintEffectModel(const std::string& move,
+                                                      const EffectPalettes& palettes,
+                                                      assets::ModelData& data) const {
+  std::set<std::int32_t> rows;
+  const std::string name = std::format("effect/{}/texture", move);
+  auto meta = assets::AssetId::parse(std::format("{}{}", name, assets::ImageMetaSuffix));
+  auto metaBytes = meta ? files_->read(*meta)
+                        : core::Result<std::vector<std::byte>>{std::unexpected{meta.error()}};
+  auto page = metaBytes ? assets::parseMapTexturePage(
+                              EffectTextureBits, {},
+                              std::string_view{reinterpret_cast<const char*>(metaBytes->data()),
+                                               metaBytes->size()})
+                        : core::Result<assets::MapTexturePage>{std::unexpected{metaBytes.error()}};
+  if (!page) {
+    core::logDebug("battle: no place of the effect texture of {}: {}", move, page.error().message);
+    return rows;
+  }
+  for (const assets::ModelMaterial& material : data.materials) {
+    const assets::VramPoint at{.x = static_cast<std::uint32_t>(page->vramX),
+                               .y = static_cast<std::uint32_t>(page->vramY)};
+    if (!material.image || !material.texture || !material.clut || *material.texture != at ||
+        *material.image >= data.images.size()) {
+      continue;
+    }
+    const auto row = static_cast<std::int32_t>(material.clut->y) - page->clutRow;
+    rows.insert(row);
+    const auto found = palettes.find(row);
+    if (found == palettes.end()) {
+      continue;
+    }
+    auto image = sheetImage(*files_, name, row, &found->second);
+    assets::Image& target = data.images[*material.image];
+    if (!image || image->width != target.width || image->height != target.height) {
+      continue;
+    }
+    // The model's own images keep a colour with STP opaque: its material mixes it.
+    for (std::size_t alpha = RgbaChannels - 1; alpha < image->pixels.size();
+         alpha += RgbaChannels) {
+      if (image->pixels[alpha] == std::byte{assets::SemiTransparentAlpha}) {
+        image->pixels[alpha] = OpaqueAlpha;
+      }
+    }
+    target = std::move(*image);
+  }
+  return rows;
 }
 
 void FieldScene::addEffectBillboards(std::vector<render::MapBillboard>& billboards) {
@@ -380,7 +469,8 @@ void FieldScene::addEffectBillboards(std::vector<render::MapBillboard>& billboar
     if (sprite == nullptr || sprite->width <= 0 || sprite->height <= 0) {
       continue;
     }
-    const std::optional<std::size_t> texture = effectTexture(effect.move, sprite->clutRow);
+    const std::optional<std::size_t> texture =
+        effectTexture(effect.move, sprite->clutRow, effect.palettes);
     if (!texture) {
       continue;
     }
@@ -415,7 +505,7 @@ void FieldScene::submitEffectModels() {
     if (model == nullptr) {
       continue;
     }
-    const EffectModelEntry* entry = effectModel(effect.move);
+    const EffectModelEntry* entry = effectModel(effect.move, effect.palettes);
     if (entry == nullptr || model->object < 0 ||
         static_cast<std::size_t>(model->object) >= entry->joints) {
       continue;

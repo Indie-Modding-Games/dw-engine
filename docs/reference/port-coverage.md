@@ -83,7 +83,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 145 | 4 | 5 | 17 | 95 % |
-| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 191 | 4 | 35 | 55 | 84 % |
+| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 193 | 4 | 33 | 55 | 85 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 59 | 0 | 11 | 32 | 84 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1063 | 39 | 262 | 1074 | 79 % |
+| **Total** | 2438 funciones | 1065 | 39 | 260 | 1074 | 80 % |
 
 ## Batalla
 
@@ -131,7 +131,7 @@ La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cám
 
 Ficheros del decomp: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Portado 191, parcial 4, falta 35, no aplica 55.
+Portado 193, parcial 4, falta 33, no aplica 55.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -139,15 +139,13 @@ Portado 191, parcial 4, falta 35, no aplica 55.
 | `BTL_disableMapLayer` | `btl/battle_effect.c:2234` | falta (citada en docs) | Oculta una capa del mapa durante la técnica (fondos que cambian). | — |
 | `BTL_renderRingTube` | `btl/battle_effect.c:2461` | falta | Dibuja un tubo de anillos (rayos, torbellinos) de una técnica. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
 | `BTL_renderRadialWaves` | `btl/battle_effect.c:2600` | falta | Dibuja ondas que se abren en círculo de una técnica. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
-| `BTL_addClutLoadPrim` | `btl/battle_effect.c:2700` | falta (citada en docs) | Cambia la paleta de un efecto mientras corre (destellos de color). | battle.md: las cargas de CLUT se saltan |
 | `BTL_drawTMDScreenSpace` | `btl/battle_effect.c:2722` | falta | Dibuja un modelo del efecto pegado a la pantalla. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
-| `BTL_loadClutColors` | `btl/battle_effect.c:2744` | falta (citada en docs) | Copia colores a la paleta de un efecto. | battle.md: Hueco |
 | `BTL_convertToViewSpace` | `btl/battle_effect.c:2843` | falta | Pasa una posición del efecto al espacio de la cámara. | battle.md: Hueco |
 | `BTL_render3DTexturedQuad` | `btl/battle_effect.c:2902` | falta | Dibuja un cuadro con textura en el mundo (llamas, rayos). | solo lo cita la extracción del disco |
 | `BTL_render2DTexturedQuad` | `btl/battle_effect.c:3130` | falta | Dibuja un cuadro con textura en pantalla de un efecto. | solo lo cita la extracción del disco |
 | `BTL_addSourceEntityParticleFX` | `btl/battle_effect.c:4034` | falta (citada en docs) | Lanza partículas desde el atacante. | battle.md: Hueco |
 | `BTL_renderParticleFlashSprite` | `btl/battle_effect.c:4142` | falta | Dibuja el destello de una partícula. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
-| `BTL_interpolateClamped` | `btl/battle_effect.c:5207` | falta | Interpola un valor entre dos límites (color de cintas, radio de ondas). | `game/battle/src/effect_runner_prims.cpp:149` · solo lo usan dibujos que faltan |
+| `BTL_interpolateClamped` | `btl/battle_effect.c:5207` | falta | Interpola un valor entre dos límites (color de cintas, radio de ondas). | `game/battle/src/effect_runner_prims.cpp:152` · solo lo usan dibujos que faltan |
 | `BTL_setTMDObjectColor` | `btl/battle_effect.c:5829` | falta | Tiñe un objeto de un modelo (auras, brillos de estado). | — |
 | `BTL_tickFinisherAura` | `btl/battle_effect.c:5855` | falta | Anima el aura del remate cargado alrededor del compañero. | — |
 | `BTL_addFinisherAura` | `btl/battle_effect.c:6012` | falta | Pone el aura del remate cargado. | — |

@@ -92,13 +92,17 @@ Mix mixOf(EffectBlend blend) {
 } // namespace
 
 std::optional<FieldScene::PrimTexture>
-FieldScene::effectPrimTexture(const std::string& move, std::int32_t palette, TexelPart part) {
-  const auto key = std::tuple{move, palette, part};
+FieldScene::effectPrimTexture(const std::string& move, std::int32_t palette, TexelPart part,
+                              const game::battle::EffectPalettes& palettes) {
+  const game::battle::EffectPaletteRow* rewritten = rewrittenRow(palettes, palette);
+  const auto key = std::tuple{move, palette, part,
+                              rewritten != nullptr ? std::optional{*rewritten} : std::nullopt};
   if (const auto found = effectPrimTextures_.find(key); found != effectPrimTextures_.end()) {
     return found->second;
   }
   std::optional<PrimTexture> texture;
-  auto image = effectSheetImage(*files_, std::format("effect/{}/texture", move), palette);
+  auto image =
+      effectSheetImage(*files_, std::format("effect/{}/texture", move), palette, rewritten);
   if (image) {
     // Colours with STP come at SemiTransparentAlpha, the others opaque, colour 0 clear.
     for (std::size_t alpha = Channels - 1; alpha < image->pixels.size(); alpha += Channels) {
@@ -147,9 +151,10 @@ void FieldScene::addEffectPrims(std::vector<ScenePrim>& prims) {
     std::int32_t clutRow = 0;
     EffectBlend blend = EffectBlend::Opaque;
   };
-  const auto add = [&](const std::string& move, const Quad& quad) {
+  const auto add = [&](const SceneEffect& effect, const Quad& quad) {
     const auto part = [&](TexelPart texels, Mix mix) {
-      const std::optional<PrimTexture> texture = effectPrimTexture(move, quad.clutRow, texels);
+      const std::optional<PrimTexture> texture =
+          effectPrimTexture(effect.move, quad.clutRow, texels, effect.palettes);
       if (!texture) {
         return;
       }
@@ -176,7 +181,7 @@ void FieldScene::addEffectPrims(std::vector<ScenePrim>& prims) {
   struct Entry {
     const EffectScreenQuad* quad = nullptr;
     const EffectScreenLine* line = nullptr;
-    const std::string* move = nullptr;
+    const SceneEffect* effect = nullptr;
     std::int32_t order = 0;
     std::size_t index = 0;
   };
@@ -184,10 +189,10 @@ void FieldScene::addEffectPrims(std::vector<ScenePrim>& prims) {
   for (const SceneEffect& effect : effects_) {
     if (const auto* quad = std::get_if<EffectScreenQuad>(&effect.shape)) {
       quads.push_back(
-          {.quad = quad, .move = &effect.move, .order = quad->order, .index = quads.size()});
+          {.quad = quad, .effect = &effect, .order = quad->order, .index = quads.size()});
     } else if (const auto* line = std::get_if<EffectScreenLine>(&effect.shape)) {
       quads.push_back(
-          {.line = line, .move = &effect.move, .order = line->order, .index = quads.size()});
+          {.line = line, .effect = &effect, .order = line->order, .index = quads.size()});
     } else if (const auto* ribbon = std::get_if<EffectRibbon>(&effect.shape)) {
       // battle_effect.c: BTL_renderRibbonStrip: a POLY_GT4 between each two pairs of points, its
       // top corners in half the colour and its bottom ones in the colour, black at the ribbon's
@@ -210,7 +215,7 @@ void FieldScene::addEffectPrims(std::vector<ScenePrim>& prims) {
           strip.corners.at(k) = {.clip = toClip * glm::vec4{worldOf(points.at(k)), 1.0F},
                                  .shade = shades.at(k)};
         }
-        add(effect.move, strip);
+        add(effect, strip);
       }
     }
   }
@@ -265,7 +270,7 @@ void FieldScene::addEffectPrims(std::vector<ScenePrim>& prims) {
       quad.texels.at(i) = {static_cast<float>(screen.u + (right ? screen.texelWidth : 0)),
                            static_cast<float>(screen.v + (bottom ? screen.texelHeight : 0))};
     }
-    add(*entry.move, quad);
+    add(*entry.effect, quad);
   }
 }
 

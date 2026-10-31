@@ -35,7 +35,8 @@ struct Fixture {
   std::string materials =
       R"([{"name":"skin","pbrMetallicRoughness":{"baseColorTexture":{"index":0}},)"
       R"("alphaMode":"MASK","alphaCutoff":0.25,"doubleSided":true,)"
-      R"("extensions":{"KHR_materials_unlit":{}},"extras":{"blending":2}}])";
+      R"("extensions":{"KHR_materials_unlit":{}},)"
+      R"("extras":{"image":[576,256],"depth":0,"clut":[128,490],"blending":2}}])";
   std::string clipExtras =
       R"({"id":2,"frameCount":4,"hasScale":false,"ticksPerSecond":20,"tickCount":4,)"
       R"("endsInLoop":true,"rootMotionNode":0,"loops":[{"firstTick":1,"lastTick":3,"count":255}],)"
@@ -163,6 +164,8 @@ TEST_CASE("a skinned glb loads with its mesh, material, image, skin and clips") 
   CHECK(material.unlit);
   CHECK(material.doubleSided);
   CHECK(material.blending == SemiTransparency::Subtract);
+  CHECK(material.texture == dwe::assets::VramPoint{.x = 576, .y = 256});
+  CHECK(material.clut == dwe::assets::VramPoint{.x = 128, .y = 490});
   CHECK(material.image == 0U);
   REQUIRE(model->images.size() == 1);
   CHECK(model->images[0].width == 2);
@@ -261,6 +264,13 @@ TEST_CASE("a glb that breaks the model's rules is refused with the reason") {
     const auto model = parseModel(fixture.glb());
     REQUIRE_FALSE(model.has_value());
     CHECK(model.error().message.find("blending") != std::string::npos);
+  }
+  SUBCASE("a CLUT that is not a place in VRAM") {
+    Fixture fixture;
+    fixture.materials = R"([{"extras":{"clut":[128]}}])";
+    const auto model = parseModel(fixture.glb());
+    REQUIRE_FALSE(model.has_value());
+    CHECK(model.error().message.find("clut") != std::string::npos);
   }
 }
 

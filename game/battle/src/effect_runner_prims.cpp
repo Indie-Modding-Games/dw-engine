@@ -40,6 +40,9 @@ constexpr std::int32_t ScrollWidth = 0x140;
 constexpr std::int32_t ScrollHeight = 0x100;
 constexpr std::int32_t TilesLeft = 0xC0;
 constexpr std::int32_t TilesUp = 0x98;
+// BTL_loadClutColors: a colour's four 16-bit fields, each 5 bits up from the last.
+constexpr std::int32_t ClutColorFields = 4;
+constexpr std::int32_t ClutFieldShift = 5;
 // Both screen layers sort at entry 0x1e of the ordering table, in front of the world.
 constexpr std::int32_t ScreenLayerOrder = 0x1E;
 
@@ -257,6 +260,19 @@ bool EffectRunner::primOp(Slot& slot, std::string_view name,
     if (args.size() >= 3) {
       wireframeBox(slot, args);
     }
+  } else if (name == "queue_clut_load" && args.size() >= 4) {
+    // battle_effect.c: BTL_addClutLoadPrim: depth, palette row, colours, index: the 16 colours from
+    // the index on into the row, by a DR_LOAD at the depth's entry of the ordering table. The
+    // console loads them as it draws that entry, so the primitives behind it take them from the
+    // next frame on; here every primitive of the frame does.
+    loadPalette(slot, args[1], 0, args[2] + (args[3] * Int16Bytes),
+                static_cast<std::int32_t>(EffectPaletteRow::Colors), false);
+  } else if (name == "load_clut_colors" && args.size() >= 4) {
+    // battle_effect.c: BTL_loadClutColors: palette row, first colour, count, colours (LoadImage, at
+    // once); a count past 16 or below 1 loads nothing.
+    if (args[2] > 0 && args[2] <= static_cast<std::int32_t>(EffectPaletteRow::Colors)) {
+      loadPalette(slot, args[0], args[1], args[3], args[2], true);
+    }
   } else if (name == "get_camera_rotation" && !args.empty()) {
     // battle_effect.c: BTL_getCameraRotation: the angles (matrixToEuler2) of the camera's
     // view-to-world rotation.
@@ -265,6 +281,32 @@ bool EffectRunner::primOp(Slot& slot, std::string_view name,
     return false;
   }
   return true;
+}
+
+// Writes `count` colours from the slot's data at `colors` into palette row `row` from colour
+// `first` on: as 16-bit colours, or (`fields`) as four 16-bit values each, red, green, blue and STP
+// (BTL_loadClutColors: r | g << 5 | b << 10 | stp << 15, each added). A colour past the row's 16
+// lands in VRAM beside the palette, which no effect texture reads, so it is dropped.
+void EffectRunner::loadPalette(Slot& slot, std::int32_t row, std::int32_t first,
+                               std::int32_t colors, std::int32_t count, bool fields) {
+  EffectPaletteRow& palette = slot.palettes[row];
+  for (std::int32_t i = 0; i < count; ++i) {
+    std::int32_t color = 0;
+    if (fields) {
+      const std::int32_t at = colors + (i * ClutColorFields * Int16Bytes);
+      for (std::int32_t field = 0; field < ClutColorFields; ++field) {
+        color += read(slot, at + (field * Int16Bytes), EffectWidth::Int16)
+                 << (field * ClutFieldShift);
+      }
+    } else {
+      color = read(slot, colors + (i * Int16Bytes), EffectWidth::Int16);
+    }
+    const std::int32_t index = first + i;
+    if (index >= 0 && index < static_cast<std::int32_t>(EffectPaletteRow::Colors)) {
+      palette.colors.at(static_cast<std::size_t>(index)) =
+          static_cast<std::uint16_t>(color & UnsignedShortMask);
+    }
+  }
 }
 
 // battle_effect.c: BTL_renderScrollingBackground: tiles, tile offsets, scroll x and y, brightness.

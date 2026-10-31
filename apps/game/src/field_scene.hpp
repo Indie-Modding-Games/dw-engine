@@ -32,6 +32,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <span>
 #include <string>
 #include <string_view>
@@ -128,9 +129,14 @@ struct FieldStage {
 // The first state of the field effects' rolls (libc rand's increment).
 inline constexpr std::uint64_t FieldEffectsSeed = 0x3039;
 // field_scene_effects.cpp: a paletted image of the content (its asset id without the extension)
-// with a row of its CLUT (its _meta palettes), its colours with STP at SemiTransparentAlpha.
-core::Result<assets::Image> effectSheetImage(const assets::VirtualFileSystem& files,
-                                             const std::string& image, std::int32_t palette);
+// with a row of its CLUT (its _meta palettes) and the colours a script wrote over that row, its
+// colours with STP at SemiTransparentAlpha.
+core::Result<assets::Image>
+effectSheetImage(const assets::VirtualFileSystem& files, const std::string& image,
+                 std::int32_t palette, const game::battle::EffectPaletteRow* rewritten = nullptr);
+// The row of `palettes` a script rewrote for that palette, or nothing.
+const game::battle::EffectPaletteRow* rewrittenRow(const game::battle::EffectPalettes& palettes,
+                                                   std::int32_t palette);
 
 class FieldScene {
 public:
@@ -484,15 +490,22 @@ private:
     render::ModelHandle handle;
     std::size_t joints = 0;
   };
-  std::optional<std::size_t> effectTexture(const std::string& move, std::int32_t palette);
+  std::optional<std::size_t> effectTexture(const std::string& move, std::int32_t palette,
+                                           const game::battle::EffectPalettes& palettes);
   // A paletted image of the content (its asset id without the extension, e.g.
   // texture/etcdat/defeff) with a row of its CLUT, as a billboard texture.
-  std::optional<std::size_t> sheetTexture(const std::string& image, std::int32_t palette);
+  std::optional<std::size_t>
+  sheetTexture(const std::string& image, std::int32_t palette,
+               const game::battle::EffectPaletteRow* rewritten = nullptr);
   // One white texel, for the effects' flat-coloured lines.
   std::optional<std::size_t> plainTexture();
   // The flashes' glow: SPOT256's quarter at `u`, mirrored into the whole glow.
   std::optional<std::size_t> flashTexture(std::int32_t u);
-  const EffectModelEntry* effectModel(const std::string& move);
+  const EffectModelEntry* effectModel(const std::string& move,
+                                      const game::battle::EffectPalettes& palettes);
+  std::set<std::int32_t> repaintEffectModel(const std::string& move,
+                                            const game::battle::EffectPalettes& palettes,
+                                            assets::ModelData& data) const;
   void addEffectBillboards(std::vector<render::MapBillboard>& billboards);
   void addEffectStreak(const game::battle::EffectStreak& streak,
                        std::vector<render::MapBillboard>& billboards);
@@ -528,7 +541,8 @@ private:
     glm::vec2 size{1.0F};
   };
   std::optional<PrimTexture> effectPrimTexture(const std::string& move, std::int32_t palette,
-                                               TexelPart part);
+                                               TexelPart part,
+                                               const game::battle::EffectPalettes& palettes);
   void addEffectPrims(std::vector<ScenePrim>& prims);
   void animatePartnerClip(double seconds);
   // The partner's animation for its motion (partner.c: partnerTickWalking).
@@ -657,12 +671,19 @@ private:
   // or nothing for one that failed to load.
   std::map<std::optional<std::uint8_t>, std::optional<std::size_t>> groundItemTextures_;
   std::vector<SceneEffect> effects_;
-  std::map<std::pair<std::string, std::int32_t>, std::optional<std::size_t>> effectTextures_;
+  std::map<std::tuple<std::string, std::int32_t, std::optional<game::battle::EffectPaletteRow>>,
+           std::optional<std::size_t>>
+      effectTextures_;
   std::optional<std::optional<std::size_t>> plainTexture_;
   std::map<std::int32_t, std::optional<std::size_t>> flashTextures_;
-  std::map<std::tuple<std::string, std::int32_t, TexelPart>, std::optional<PrimTexture>>
+  std::map<std::tuple<std::string, std::int32_t, TexelPart,
+                      std::optional<game::battle::EffectPaletteRow>>,
+           std::optional<PrimTexture>>
       effectPrimTextures_;
-  std::map<std::string, std::optional<EffectModelEntry>, std::less<>> effectModels_;
+  std::map<std::pair<std::string, game::battle::EffectPalettes>, std::optional<EffectModelEntry>>
+      effectModels_;
+  // The CLUT rows of the effect's texture its model's materials read, by move.
+  std::map<std::string, std::set<std::int32_t>, std::less<>> effectModelRows_;
   std::optional<game::battle::StatusVisuals> statusVisuals_;
   std::vector<StatusBody> statusBodies_;
   std::map<std::pair<std::string, std::int32_t>, std::optional<StatusTexture>, std::less<>>

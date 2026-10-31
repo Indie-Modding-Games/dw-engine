@@ -52,6 +52,10 @@ public:
     return runner_.draws();
   }
   [[nodiscard]] const std::string& moveOf(std::size_t slot) const;
+  // The palette rows a slot's scripts rewrote (EffectRunner::palettes).
+  [[nodiscard]] const game::battle::EffectPalettes& palettesOf(std::size_t slot) const {
+    return runner_.palettes(slot);
+  }
 
 private:
   class Sounds final : public game::battle::EffectSounds {

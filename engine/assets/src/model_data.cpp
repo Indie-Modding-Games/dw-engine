@@ -116,6 +116,23 @@ core::Result<std::optional<std::uint32_t>> extrasNumber(const YamlNode& extras,
   return value;
 }
 
+// Reads an optional VRAM place of an extras mapping, an [x, y] pair.
+core::Result<std::optional<VramPoint>> extrasVram(const YamlNode& extras, std::string_view key,
+                                                  std::string_view owner) {
+  const YamlNode* node = extras.find(key);
+  if (node == nullptr || (node->isScalar() && node->text() == "null")) {
+    return std::nullopt;
+  }
+  if (node->isSequence() && node->items().size() == 2) {
+    const auto x = parseNumber<std::uint32_t>(node->items()[0].text());
+    const auto y = parseNumber<std::uint32_t>(node->items()[1].text());
+    if (x && y) {
+      return VramPoint{.x = *x, .y = *y};
+    }
+  }
+  return core::fail(std::format("{}: extras.{} must be an [x, y] place in VRAM", owner, key));
+}
+
 core::Result<bool> extrasFlag(const YamlNode& extras, std::string_view key,
                               std::string_view owner) {
   const YamlNode* node = extras.find(key);
@@ -365,6 +382,13 @@ private:
           return std::unexpected{blending.error()};
         }
         out.blending = static_cast<SemiTransparency>(blending->value_or(0));
+        auto texture = extrasVram(**extras, "image", owner);
+        auto clut = extrasVram(**extras, "clut", owner);
+        if (!texture || !clut) {
+          return std::unexpected{!texture ? texture.error() : clut.error()};
+        }
+        out.texture = *texture;
+        out.clut = *clut;
       }
       model_.materials.push_back(std::move(out));
     }
