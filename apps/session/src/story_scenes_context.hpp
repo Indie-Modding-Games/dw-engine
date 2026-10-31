@@ -74,6 +74,8 @@ struct StoryScenesContext {
   BoulderShown boulder;
   // The Angemon shrine's pedestal (map_object.c: ANGEMON_PEDESTAL_PROGRESS_X/_Z).
   AngemonPedestalShown pedestal;
+  // The mist's palettes (overworld.c: MIST_CLUT_Y), which nothing resets.
+  MistPalettes mist;
   // The recruit triggers as last seen, to tell a new resident.
   std::vector<bool> recruits;
   // A lost life or a death whose section has not run yet, and the egg box's egg (rules.death).

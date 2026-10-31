@@ -79,6 +79,7 @@ dwe_add_module(session
         src/story_routines/routine_new_game_menu.cpp
         src/story_routines/routine_object_animation.cpp
         src/story_routines/routine_remove_item.cpp
+        src/story_routines/routine_remove_mist.cpp
         src/story_routines/routine_save_menu.cpp
         src/story_routines/routine_screen_shake.cpp
         src/story_routines/routine_shop.cpp

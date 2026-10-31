@@ -251,3 +251,26 @@ TEST_CASE("the Beetle Cup entry writes the cup, the partner and the entry day of
   REQUIRE(entered);
   CHECK(std::holds_alternative<dwe::game::story::RoutineGoesOn>(*entered));
 }
+
+TEST_CASE("the mist goes in 7 frames from the boot palettes and in 1 once the trigger cleared it") {
+  using dwe::session::MistPalettes;
+  // overworld.c: MIST_CLUT_Y starts at 0x50 and 0x10; tickRemoveMist adds 0x10 a frame.
+  MistPalettes boot;
+  int frames = 1;
+  while (!dwe::session::removeMistOneFrame(boot)) {
+    ++frames;
+    REQUIRE(frames < 20);
+  }
+  CHECK(frames == 7);
+  CHECK(boot.mist05 == 0xc0);
+  CHECK(boot.others == 0x80);
+  // renderMist already put the palettes of no mist: the first tick ends it.
+  MistPalettes cleared{.mist05 = dwe::session::MistClearedMist05,
+                       .others = dwe::session::MistClearedOthers};
+  CHECK(dwe::session::removeMistOneFrame(cleared));
+  CHECK(cleared.mist05 == 0xc0);
+  CHECK(cleared.others == 0x80);
+  dwe::session::StoryScenesContext scenes{dwe::session::StoryScenesDesc{}};
+  REQUIRE(dwe::session::registerRemoveMistRoutine(scenes));
+  CHECK(scenes.routines.registered(37));
+}

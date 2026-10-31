@@ -85,6 +85,30 @@ inline constexpr std::int32_t ToyTownLidOpen = -0x400;
   return lid - ToyTownLidStep < ToyTownLidOpen ? ToyTownLidOpen : lid - ToyTownLidStep;
 }
 
+// The Misty Trees' mist (overworld.c: renderMist, MIST_CLUT_Y): the columns of the palettes its
+// second layer reads, one for mist05 (screen 0x77) and one for the other mist maps. Both start at
+// boot and never go back; 0xc0 and 0x80 are the palettes of no mist. The engine does not draw the
+// mist yet: this is the state its drawing reads.
+struct MistPalettes {
+  std::int32_t mist05 = 0x50;
+  std::int32_t others = 0x10;
+};
+inline constexpr std::int32_t MistClearedMist05 = 0xc0;
+inline constexpr std::int32_t MistClearedOthers = 0x80;
+// renderMist: with trigger 0x94 set, every frame drawn on a mist map but 0xdc clears the mist.
+inline constexpr std::int64_t MistGoneTrigger = 0x94;
+inline constexpr std::int32_t MistKeptScreen = 0xdc;
+// tickRemoveMist: a frame moves both columns 0x10 on; at 0xc0 the mist is gone.
+[[nodiscard]] constexpr bool removeMistOneFrame(MistPalettes& mist) {
+  mist.mist05 += 0x10;
+  mist.others += 0x10;
+  if (mist.mist05 >= MistClearedMist05) {
+    mist = {.mist05 = MistClearedMist05, .others = MistClearedOthers};
+    return true;
+  }
+  return false;
+}
+
 // spawn_sprite_at_entity (overworld.c: spawnSpriteAtEntity): the map's sprite `object` is moved,
 // centred, to where node `node` of the character with script id `character` shows.
 struct SpriteAtCharacter {

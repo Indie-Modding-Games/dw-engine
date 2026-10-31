@@ -47,6 +47,7 @@ core::Result<void> registerScreenShakeRoutine(StoryScenesContext& scenes);
 core::Result<void> registerAngemonPedestalRoutines(StoryScenesContext& scenes);
 core::Result<void> registerToyTownRoutines(StoryScenesContext& scenes);
 core::Result<void> registerBeetleCupEntryRoutine(StoryScenesContext& scenes);
+core::Result<void> registerRemoveMistRoutine(StoryScenesContext& scenes);
 
 // What routine 33 writes for an entry on `day` (from 0) with the partner of species number
 // `partnerSpecies`: variables 2, 3 and 4.

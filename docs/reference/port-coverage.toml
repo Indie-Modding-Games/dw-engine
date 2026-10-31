@@ -462,7 +462,7 @@ uploadModelTexture = { status = "no-aplica", note = "subida de textura del origi
 clearMapObjects = { status = "no-aplica", note = "limpieza del original", what = "Quita los objetos del mapa." }
 moveMapObjects = { status = "portado", dwe = "game/field/src/map_objects.cpp", what = "Mueve los objetos del mapa con el guion." }
 spawnSpriteAtEntity = { status = "portado", dwe = "apps/game/src/field_story_props.cpp", note = "Con tests de la sesión; las trampas de trop06 no se han visto saltar en una ruta.", what = "Pone un sprite (humo, signo) sobre un personaje." }
-tickRemoveMist = { status = "falta", what = "Disipa la niebla del mapa." }
+tickRemoveMist = { status = "portado", dwe = "apps/session/src/story_routines/routine_remove_mist.cpp", what = "Disipa la niebla del mapa.", note = "la niebla aún no se dibuja (renderMist)" }
 loadNPCModel = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Carga el modelo de un personaje del mapa." }
 NPCEntityTick = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Mueve a un personaje del mapa cada fotograma." }
 clearMapDigimon = { status = "portado", dwe = "game/field/src/npcs.cpp:102", what = "Quita los personajes del mapa." }
