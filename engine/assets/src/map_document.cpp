@@ -536,10 +536,10 @@ CollisionCell collisionCellAt(glm::vec3 world) {
 }
 
 CollisionCell originalCellAt(glm::vec3 world) {
-  // The original's whole units; a world position between two of them truncates as its integers
-  // would hold it.
-  const auto x = static_cast<std::int32_t>(world.x);
-  const auto z = static_cast<std::int32_t>(-world.z);
+  // The original's whole units: a world position is the nearest one, as a float a hair off a whole
+  // unit stands for it (a walk that glides along x -400 can sit at -399.99, the next cell over).
+  const auto x = static_cast<std::int32_t>(std::lround(world.x));
+  const auto z = static_cast<std::int32_t>(std::lround(-world.z));
   const auto size = static_cast<std::int32_t>(CollisionCellSize);
   return {.column = (x / size) + GridOrigin - (x < 0 ? 1 : 0),
           .row = GridOrigin - (z / size) - (z > 0 ? 1 : 0)};

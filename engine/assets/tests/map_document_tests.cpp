@@ -227,6 +227,12 @@ TEST_CASE("the original's cell of a point on a cell edge is the one away from 0"
   // Negative edges: x -100 is column 48, z -1700 is row 67.
   CHECK(originalCellAt(toWorldPosition({-100, 0, -1700})) ==
         CollisionCell{.column = 48, .row = 67});
+  // A position a hair off a whole unit is that unit: mgen98's MetalGreymon glides along x -400 at
+  // -399.99 or -400.01 and walks off to x -400, z -500 (column 45, row 55).
+  CHECK(originalCellAt(glm::vec3{-399.99F, 0.0F, 513.0F}) ==
+        originalCellAt(toWorldPosition({-400, 0, -500})));
+  CHECK(originalCellAt(glm::vec3{-400.01F, 0.0F, 513.0F}) ==
+        originalCellAt(toWorldPosition({-400, 0, -500})));
   // Away from the edges it is collisionCellAt.
   for (const glm::ivec3 point : {glm::ivec3{-2450, 0, -2525}, glm::ivec3{1750, 0, 1750},
                                  glm::ivec3{-1, 0, 1}, glm::ivec3{4999, 0, -4999}}) {

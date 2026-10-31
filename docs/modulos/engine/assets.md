@@ -43,7 +43,9 @@ giro del original ↔ yaw en radianes (`yawFromOriginal`, `forwardOfYaw`).
 `originalCellAt` da la celda como la cuenta el original (getModelTile: trunca hacia 0 y resta uno en el lado
 negativo), que en el borde exacto de una celda difiere de `collisionCellAt`: el punto (600, 1700) es la celda (56, 32)
 para el original y la (56, 33) por suelo. La usa el paseo de un script para saber si ya llegó: con la regla por suelo,
-la salida de Drimogemon en tunn09 oscilaba sin fin entre (598, 1697) y (609, 1717).
+la salida de Drimogemon en tunn09 oscilaba sin fin entre (598, 1697) y (609, 1717). Antes de contar redondea la posición a la unidad entera
+más cercana, como la guarda el original: MetalGreymon en mgen98 se desliza por x −400 a −399,99 y, truncada, esa
+posición caía en la columna de al lado y el paseo a (−400, −500) no acababa nunca.
 
 `ItemTable` (`item_table.hpp`) es `data/items`: por objeto, su id, su número en el original, el precio, el valor de
 mérito, la categoría de orden, dónde se usa y si se puede tirar; el nombre y la descripción son textos de la UI y no se
