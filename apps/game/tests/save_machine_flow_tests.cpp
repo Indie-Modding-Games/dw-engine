@@ -137,6 +137,31 @@ TEST_CASE("the save machine without registering asks to save, and no closes it")
   CHECK_FALSE(machine.registry.at(0).has_value());
 }
 
+TEST_CASE("the ending's save asks to save at once, and without a slot asks nothing") {
+  // main_menu.c: gameClearSave: TARGET_MENU 0x45, or -1 with no card or slot.
+  Machine machine;
+  machine.flow.openSaveQuestion(
+      {.hasSlot = true, .belowRookie = true, .playthrough = {.home = Slot1, .started = started()}});
+  REQUIRE(machine.flow.view() == SaveMachineView::SaveQuestion);
+  machine.flow.choose(Yes);
+  CHECK_FALSE(machine.flow.active());
+  CHECK(machine.flow.takeResult() == SaveResult::Saved);
+  CHECK(machine.writes == 1);
+
+  machine.flow.openSaveQuestion({.hasSlot = true,
+                                 .belowRookie = false,
+                                 .playthrough = {.home = Slot1, .started = started()}});
+  machine.flow.choose(No);
+  CHECK_FALSE(machine.flow.active());
+  CHECK(machine.writes == 1);
+
+  machine.flow.openSaveQuestion({.hasSlot = false,
+                                 .belowRookie = false,
+                                 .playthrough = {.home = std::nullopt, .started = started()}});
+  CHECK_FALSE(machine.flow.active());
+  CHECK(machine.writes == 1);
+}
+
 TEST_CASE("the save machine's notices: below Rookie, and a playthrough with no slot") {
   Machine machine;
   machine.open(true, true);

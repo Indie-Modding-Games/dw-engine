@@ -34,6 +34,7 @@ constexpr std::string_view TournamentsLostKey = "tournaments_lost";
 constexpr std::string_view MapKey = "map";
 constexpr std::string_view PositionKey = "position";
 constexpr std::string_view YawKey = "yaw";
+constexpr std::string_view ClearedKey = "cleared";
 constexpr std::string_view PartnerKey = "partner";
 constexpr std::string_view SystemsKey = "session";
 constexpr std::size_t PositionAxes = 3;
@@ -187,21 +188,37 @@ core::Result<void> TamerSave::read(const YamlNode& state) {
 
 core::Result<YamlNode> FieldSave::write() const {
   YamlNode node = YamlNode::mapping();
-  if (const std::optional<FieldPlace> place = state_->currentPlace()) {
+  if (const std::optional<FieldPlace> place = state_->continuePlace()) {
     node.set(std::string{MapKey}, YamlNode::scalar(place->map));
     node.set(std::string{PositionKey}, positionOf(place->spawn.position));
     node.set(std::string{YawKey}, scalarOf(place->spawn.yaw));
+  }
+  // main_menu.c: writeSavegame keeps MAIN_STATE; only a finished game's (2) is written.
+  if (state_->cleared) {
+    node.set(std::string{ClearedKey}, YamlNode::scalar("true"));
   }
   return node;
 }
 
 core::Result<void> FieldSave::read(const YamlNode& state) {
   YamlReader reader;
-  if (state.isMapping() && state.entries().empty()) {
+  state_->clearedMap.reset();
+  // main_menu.c: loadSavegame: MAIN_STATE comes back from the save; only a finished game's is
+  // written.
+  const YamlNode* cleared = state.isMapping() ? state.find(ClearedKey) : nullptr;
+  const bool finished = cleared != nullptr && reader.boolean(*cleared);
+  if (state.isMapping() && state.find(MapKey) == nullptr &&
+      state.entries().size() == (cleared != nullptr ? 1U : 0U)) {
+    // A game saved off the field keeps no place.
+    if (auto done = reader.finish(true, messages::FieldStateText); !done) {
+      return std::unexpected{done.error()};
+    }
     state_->savedPlace.reset();
+    state_->cleared = finished;
     return {};
   }
-  if (!reader.expectKeys(state, messages::FieldStateText, {MapKey, PositionKey, YawKey})) {
+  if (!reader.expectKeys(state, messages::FieldStateText, {MapKey, PositionKey, YawKey},
+                         {ClearedKey})) {
     return std::unexpected{reader.error(messages::FieldStateText)};
   }
   FieldPlace place;
@@ -217,6 +234,7 @@ core::Result<void> FieldSave::read(const YamlNode& state) {
     return std::unexpected{done.error()};
   }
   state_->savedPlace = std::move(*done);
+  state_->cleared = finished;
   return {};
 }
 

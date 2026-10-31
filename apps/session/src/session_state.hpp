@@ -11,6 +11,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 
 namespace dwe::session {
 
@@ -34,6 +35,10 @@ struct SessionState {
 
   // Where the player is now: on the attached field's map, else where the loaded save left them.
   [[nodiscard]] std::optional<FieldPlace> currentPlace() const;
+  // Where a save made now continues: the current place, on the map the ending's save names when
+  // there is one (main_menu.c: gameClearSave puts getFileCityTopMap in CURRENT_SCREEN and keeps the
+  // player's position).
+  [[nodiscard]] std::optional<FieldPlace> continuePlace() const;
 
   ruleset::GameClock clock;
   game::partner::PartnerRules partnerRules;
@@ -44,6 +49,10 @@ struct SessionState {
   bool playing = false;
   TamerState tamer;
   std::optional<FieldPlace> savedPlace;
+  // The game was finished (MAIN_STATE 2): a save made now loads into the after-game with its
+  // movie, and continues on `clearedMap` when the ending's save named one.
+  bool cleared = false;
+  std::optional<std::string> clearedMap;
   const game::field::Field* field = nullptr;
 };
 

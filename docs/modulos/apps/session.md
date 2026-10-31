@@ -86,7 +86,7 @@ de `clock` (con la velocidad que tenía).
 | `clock` | `elapsed_frames` y `pending_frames`: los fotogramas y la fracción que el siguiente tick completa |
 | `partner` | El estado del partner (`partner::toYaml`, versión `PartnerStateVersion`); una partida de la versión 1 sube con `partner::addVirusBackupSpecies` (la copia de la forma virus sin forma) |
 | `tamer` | `level` |
-| `field` | `map`, `position` y `yaw` del jugador; vacío sin mapa |
+| `field` | `map`, `position` y `yaw` del jugador; vacío sin mapa. `cleared: true` en una partida terminada (el `MAIN_STATE` 2 del original, `main_menu.c: gameClearSave`): al cargarla suena la película ED2 antes del campo; la máquina de guardar y el menú de dormir lo quitan (`MAIN_STATE` 1) |
 | `random` | `partner` y `session`: el estado del generador del partner y el de los sistemas, para que una partida cargada siga igual que la guardada; una partida de la versión 1 (solo `partner`) sigue los de los sistemas desde el del partner |
 | `inventory` | Los huecos, cuántos se usan y el dinero (`inventory::toYaml`, versión `SectionVersion`) |
 | `evolution` | Las formas ya criadas (`evolution::toYaml`, versión `EvolutionStateVersion`); la marca de objeto de evolución usado no se guarda, como en el original |

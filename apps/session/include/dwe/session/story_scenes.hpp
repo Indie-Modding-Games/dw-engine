@@ -12,7 +12,9 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
+#include <vector>
 
 namespace dwe::session {
 
@@ -65,6 +67,15 @@ struct NewGameStart {
   std::int32_t exit = 0;
 };
 
+// The ending's save (main_menu.c: gameClearSave): the versus registry's record it fills with the
+// partner's name, stats and discipline as another species with its own techniques
+// (awardMachinedramonData).
+struct EndingGift {
+  std::size_t slot = 0;
+  std::string species;
+  std::vector<std::string> techniques;
+};
+
 struct StoryScenesRules {
   game::story::StoryBattleRules battle;
   game::story::PartnerRoutineRules partner;
@@ -90,6 +101,8 @@ struct StoryScenesRules {
   std::int32_t newGameExit = 0;
   // Without it, the session gives the partner its new form at once and no script runs.
   std::optional<StoryDeathRules> death;
+  // Without it, the ending's save gives no record.
+  std::optional<EndingGift> ending;
 };
 
 core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& section);
@@ -119,6 +132,7 @@ enum class StoryScreen : std::uint8_t {
   NewGameMenu,        // routine 32, newGameStateMachine: the opening's questions and the names
   ForgetMoves,        // routine 47, lostAllLives: the reborn partner forgets moves, with its box
   SaveMenu,           // routine 48, tickSaveMachine
+  ClearSave,          // routine 54, gameClearSave and scriptTickMainMenu: the ending's save
   GymLibrary,         // routine 39, loadTrainingLibrary: the next course is not complete yet
   GymCourse,          // routine 7, the gym course pstat 254 picks, waited for to its end
 };

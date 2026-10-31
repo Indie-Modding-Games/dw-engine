@@ -250,6 +250,8 @@ void SleepScreen::fallAsleep() {
                  fadeFrame(), session_->homeSlot().has_value());
   // Without a slot the playthrough cannot be saved, so there is nothing to ask.
   if (session_->homeSlot() && session_->slots() != nullptr) {
+    // partner.c:338: the sleep's save menu plays on as a story game (MAIN_STATE 1).
+    session_->resumeStory();
     showMenu();
   } else {
     startFadeIn();

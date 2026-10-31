@@ -2,6 +2,7 @@
 #include <dwe/core/yaml.hpp>
 #include <dwe/session/story_scenes.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -14,6 +15,8 @@ namespace {
 constexpr std::string_view SectionText = "story_scenes";
 constexpr std::string_view OriginalChain = "original";
 constexpr std::string_view SeededChain = "seeded";
+// main_menu.c: a registry record keeps three moves.
+constexpr std::size_t RegisteredTechniques = 3;
 
 std::int64_t integerAt(assets::YamlReader& reader, const core::YamlNode& mapping,
                        std::string_view key) {
@@ -139,6 +142,28 @@ void readDeath(assets::YamlReader& reader, const core::YamlNode& node, StoryScen
   };
 }
 
+void readEnding(assets::YamlReader& reader, const core::YamlNode& node, StoryScenesRules& rules) {
+  if (!reader.expectKeys(node, "story_scenes.ending",
+                         {"gift_slot", "gift_species", "gift_techniques"})) {
+    return;
+  }
+  EndingGift gift{.slot = reader.integer<std::size_t>(reader.field(node, "gift_slot")),
+                  .species = reader.text(reader.field(node, "gift_species")),
+                  .techniques = {}};
+  const core::YamlNode& techniques = reader.field(node, "gift_techniques");
+  if (!techniques.isSequence()) {
+    reader.fail(techniques, "the techniques must be a list");
+    return;
+  }
+  for (const core::YamlNode& technique : techniques.items()) {
+    gift.techniques.push_back(reader.text(technique));
+  }
+  if (gift.techniques.size() > RegisteredTechniques) {
+    reader.fail(techniques, "a record keeps three techniques at most");
+  }
+  rules.ending = std::move(gift);
+}
+
 } // namespace
 
 core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& section) {
@@ -148,7 +173,7 @@ core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& sect
   if (!reader.expectKeys(
           root, SectionText,
           {"battle", "partner", "routines", "recruits", "new_game", "previous_screen"},
-          {"death"})) {
+          {"death", "ending"})) {
     return std::unexpected{reader.error(section.file)};
   }
   readBattle(reader, reader.field(root, "battle"), rules.battle);
@@ -159,6 +184,9 @@ core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& sect
   readOverrides(reader, reader.field(root, "previous_screen"), rules.screens);
   if (const core::YamlNode* death = root.find("death")) {
     readDeath(reader, *death, rules);
+  }
+  if (const core::YamlNode* ending = root.find("ending")) {
+    readEnding(reader, *ending, rules);
   }
   return reader.finish(std::move(rules), section.file);
 }

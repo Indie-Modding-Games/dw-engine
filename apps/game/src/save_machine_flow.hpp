@@ -61,6 +61,9 @@ public:
   [[nodiscard]] const std::optional<SaveDialog>& dialog() const { return dialog_; }
 
   void open(const SaveMachineFacts& facts);
+  // The ending's save (main_menu.c: gameClearSave): straight to the save's question (0x45), or
+  // nothing, the machine staying closed, when the playthrough has no slot (TARGET_MENU -1).
+  void openSaveQuestion(const SaveMachineFacts& facts);
   // The row confirmed in the open box.
   void choose(std::size_t row);
   void cancel();

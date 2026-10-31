@@ -1,5 +1,6 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/core/yaml.hpp>
 #include <dwe/game/story/story_state.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_lua.hpp>
@@ -8,7 +9,10 @@
 #include <doctest/doctest.h>
 
 #include <cstdint>
+#include <filesystem>
 #include <format>
+#include <fstream>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -314,6 +318,42 @@ TEST_CASE("routine 53 waits for the ending scene's sync and then ends the game")
   scenes.sync.finish();
   CHECK(std::holds_alternative<TaskDone>(waits->task->tick()));
   CHECK(scenes.gameEnded);
+}
+
+TEST_CASE("routine 54 asks for the ending's save and waits for it to close") {
+  // script_interp.c:1833: gameClearSave, then scriptTickMainMenu until CURRENT_MENU is -1.
+  const dwe::session::testing::TestPacks packs;
+  auto story = std::make_unique<dwe::session::StoryAdapter>(
+      dwe::session::StoryAdapterDesc{.files = &packs.files()});
+  dwe::session::StoryAdapter& state = *story;
+  std::vector<std::unique_ptr<dwe::session::SessionSystem>> systems;
+  systems.push_back(std::move(story));
+  const auto session = dwe::session::testing::newGameWith(packs, std::move(systems));
+  dwe::session::StoryScenesContext scenes{dwe::session::StoryScenesDesc{.story = &state}};
+  REQUIRE(dwe::session::registerClearSaveRoutine(scenes));
+  const auto started = scenes.routines.call(54);
+  REQUIRE(started);
+  REQUIRE(scenes.screenRequests.size() == 1);
+  CHECK(scenes.screenRequests.front().screen == dwe::session::StoryScreen::ClearSave);
+  CHECK(scenes.screenRequests.front().waits);
+}
+
+TEST_CASE("the game pack's ending gives record 39 as the ending's species with three techniques") {
+  // main_menu.c: awardMachinedramonData: species 0x73 and the animations 0x2E, 0x30 and 0x32,
+  // its moves[0], [2] and [4] (utils2.c: entityGetTechFromAnim).
+  std::ifstream in{std::filesystem::path{DWE_GAME_PACK} / "rules/original/story_scenes.yaml"};
+  REQUIRE(in);
+  const std::string text{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
+  auto node = dwe::core::parseYaml(text);
+  REQUIRE(node);
+  const auto rules = dwe::session::readStoryScenesRules(
+      {.name = "story_scenes", .owner = "original", .file = "story_scenes.yaml", .node = *node});
+  REQUIRE_MESSAGE(rules.has_value(), rules.error().message);
+  REQUIRE(rules->ending.has_value());
+  CHECK(rules->ending->slot == 39);
+  CHECK(rules->ending->species == "muge");
+  CHECK(rules->ending->techniques ==
+        std::vector<std::string>{"megaton_punch", "thunder_justice", "all_range_beam"});
 }
 
 TEST_CASE("routines 45 and 46 fade to white and back over the frames variable 254 holds") {

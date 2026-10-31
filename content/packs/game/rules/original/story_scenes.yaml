@@ -69,3 +69,10 @@ death:
     open: {slot: 8, sound: 4}
     move: {slot: 0, sound: 2}
     choose: {slot: 0, sound: 3}
+# El guardado del final (main_menu.c: gameClearSave, rutina 54): el registro 40 (39 desde 0) de los combates de versus
+# recibe una copia del compañero (nombre, estadísticas y disciplina) como Machinedramon con tres de sus técnicas
+# (awardMachinedramonData: animaciones 0x2E, 0x30 y 0x32, sus técnicas 1.ª, 3.ª y 5.ª).
+ending:
+  gift_slot: 39
+  gift_species: muge
+  gift_techniques: [megaton_punch, thunder_justice, all_range_beam]

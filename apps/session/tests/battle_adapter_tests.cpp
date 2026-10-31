@@ -6,7 +6,9 @@
 #include <dwe/game/partner/state.hpp>
 #include <dwe/game/save/autosave.hpp>
 #include <dwe/session/battle_adapter.hpp>
+#include <dwe/session/battle_registry.hpp>
 #include <dwe/session/evolution_adapter.hpp>
+#include <dwe/session/game_clear.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/partner_moves.hpp>
@@ -462,6 +464,38 @@ TEST_CASE("an evolution teaches the new form's move and sets the four places aga
   adapters.battle->evolveMoves(std::nullopt, {});
   CHECK(adapters.battle->moves().learned == learned);
   CHECK_FALSE(adapters.battle->moves().equipped.at(0).has_value());
+}
+
+TEST_CASE("the ending's save finishes the game and gives the registry's last record") {
+  // main_menu.c: gameClearSave (MAIN_STATE 2) and awardMachinedramonData: record 39 takes the
+  // partner's name, stats and discipline as another species with three of its techniques.
+  const TestPacks packs;
+  Adapters adapters;
+  const auto session = sessionWithBattle(packs, adapters);
+  dwe::session::BattleRegistry registry;
+  const auto partner = dwe::session::registeredPartnerOf(*session, *adapters.battle);
+  REQUIRE_MESSAGE(partner.has_value(), errorOf(partner));
+  const dwe::session::EndingGift gift{
+      .slot = 39, .species = "foe", .techniques = {"punch", "shot"}};
+  REQUIRE_FALSE(session->gameCleared());
+  const auto cleared = dwe::session::clearGame(*session, registry, *adapters.battle, gift, "fila");
+  REQUIRE_MESSAGE(cleared.has_value(), errorOf(cleared));
+  CHECK(session->gameCleared());
+  REQUIRE(registry.at(39).has_value());
+  const dwe::session::RegisteredPartner& record = *registry.at(39);
+  CHECK(record.species == "foe");
+  CHECK(record.name == partner->name);
+  CHECK(record.hp == partner->hp);
+  CHECK(record.brains == partner->brains);
+  CHECK(record.discipline == partner->discipline);
+  CHECK(record.techniques.at(0) == "punch");
+  CHECK(record.techniques.at(1) == "shot");
+  CHECK_FALSE(record.techniques.at(2).has_value());
+  // Without a gift the game is finished all the same and nothing is registered.
+  dwe::session::BattleRegistry empty;
+  REQUIRE(dwe::session::clearGame(*session, empty, *adapters.battle, std::nullopt, std::nullopt));
+  CHECK(session->gameCleared());
+  CHECK_FALSE(empty.at(39).has_value());
 }
 
 TEST_CASE("the partner's moves go in the save and come back") {

@@ -17,6 +17,7 @@ dwe_add_module(session
         src/curling_adapter.cpp
         src/poop_adapter.cpp
         src/cards_adapter.cpp
+        src/game_clear.cpp
         src/game_session.cpp
         src/game_systems.cpp
         src/gym_adapter.cpp
@@ -68,6 +69,7 @@ dwe_add_module(session
         src/story_routines/routine_beetle_cup_entry.cpp
         src/story_routines/routine_boss_and_ending_loads.cpp
         src/story_routines/routine_card_shop.cpp
+        src/story_routines/routine_clear_save.cpp
         src/story_routines/routine_close_text_box.cpp
         src/story_routines/routine_dirt_cart.cpp
         src/story_routines/routine_discard_item.cpp

@@ -88,20 +88,20 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 69 | 0 | 6 | 27 | 92 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 91 | 3 | 2 | 49 | 96 % |
-| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 76 | 1 | 1 | 46 | 98 % |
+| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 77 | 1 | 0 | 46 | 99 % |
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 95 | 1 | 0 | 2 | 99 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 0 | 0 | 9 | 100 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 37 | 1 | 0 | 12 | 99 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 39 | 0 | 0 | 17 | 100 % |
-| [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 9 | 0 | 2 | 24 | 82 % |
+| [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 10 | 0 | 1 | 24 | 91 % |
 | [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 30 | 6 | 58 | 355 | 35 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 0 | 0 | 91 | 315 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 32 | 3 | 3 | 10 | 88 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 19 | 1 | 10 | 14 | 65 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1122 | 39 | 220 | 1057 | 83 % |
+| **Total** | 2438 funciones | 1124 | 39 | 218 | 1057 | 83 % |
 
 ## Batalla
 
@@ -247,12 +247,11 @@ Título, menú de juego, ficha del compañero, bolsa, cajas de interfaz, fundido
 
 Ficheros del decomp: `main/fade.c`, `main/font.c`, `main/game_menu.c`, `main/inventory.c`, `main/main_menu.c`, `main/new_game.c`, `main/sjis.c`, `main/ui.c`.
 
-Portado 76, parcial 1, falta 1, no aplica 46.
+Portado 77, parcial 1, falta 0, no aplica 46.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `renderFeedingItem` | `main/game_menu.c:2245` | parcial | Dibuja el objeto en la mano al dar de comer. | `apps/game/src/feed_scene.cpp:81` · el objeto que se da de comer no se dibuja |
-| `scriptTickMainMenu` | `main/main_menu.c:5331` | falta | — | solo lo cita la extracción del disco |
 
 No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (22); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); limpieza de objetos y memoria del original: el motor libera lo suyo (3); texto en memoria de vídeo (2); utilidad (2); texto de interfaz (2); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (2); preparación del original (1); texto del original; el motor usa sus estilos (1); repetición del mando; la hace el motor (1); entrada del original (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); cuadros de interfaz del original; el motor usa su interfaz (1).
 
@@ -340,12 +339,11 @@ La partida en la tarjeta de memoria, la máquina de guardar y el registro para e
 
 Ficheros del decomp: `main/main_menu.c`.
 
-Portado 9, parcial 0, falta 2, no aplica 24.
+Portado 10, parcial 0, falta 1, no aplica 24.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `countRegisteredDigimon` | `main/main_menu.c:5136` | falta | Cuenta las criaturas registradas para el modo versus. | llega con el modo versus |
-| `awardMachinedramonData` | `main/main_menu.c:5299` | falta | Al acabar el juego, registra al jefe final para el modo versus. | `apps/session/include/dwe/session/battle_registry.hpp:48` |
 
 No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (16); tarjeta de memoria (4); tarjeta de memoria; el motor guarda en ficheros (1); gráficos, memoria o ficheros del hardware original: los sustituye el motor (1); suma de control de la tarjeta (1); suma de control de la tarjeta; el motor valida su fichero (1).
 
@@ -361,7 +359,7 @@ Portado 30, parcial 6, falta 58, no aplica 355.
 |---|---|---|---|---|
 | `updateTournamentRegistration` | `main/tournament.c:42` | falta (citada en docs) | Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa. | — |
 | `checkTournamentMedalConditions` | `main/tournament.c:168` | parcial | Mira si toca dar la medalla de los torneos. | `apps/session/src/story_routines/routine_tournament_medal.cpp:15` · la rutina 22 sigue al momento sin copas ganadas; no hay torneos |
-| `scriptCheckTournamentMedal` | `main/tournament.c:242` | parcial | Comprueba y da la medalla de los torneos. | `apps/session/include/dwe/session/story_scenes.hpp:112` · la rutina 22 se cierra sin pantalla |
+| `scriptCheckTournamentMedal` | `main/tournament.c:242` | parcial | Comprueba y da la medalla de los torneos. | `apps/session/include/dwe/session/story_scenes.hpp:125` · la rutina 22 se cierra sin pantalla |
 | `STD_addChampionScene` | `std/std_effect.c:1251` | falta (citada en docs) | Inicia la escena de celebración del campeón de la copa. | — |
 | `STD_tickChampionScene` | `std/std_effect.c:1259` | falta | Anima la escena del campeón: letras, giro de cámara y podio. | — |
 | `STD_addPodiumRenderer` | `std/std_effect.c:1380` | falta | Muestra el podio en la escena de premiación. | — |

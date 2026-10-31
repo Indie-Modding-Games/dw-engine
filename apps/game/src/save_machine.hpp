@@ -1,11 +1,16 @@
 #pragma once
 
 #include <dwe/assets/digimon_table.hpp>
+#include <dwe/assets/map_table.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/battle_registry.hpp>
+#include <dwe/session/city_adapter.hpp>
 #include <dwe/session/game_session.hpp>
+#include <dwe/session/story_scenes.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <optional>
+#include <string>
 #include <string_view>
 
 #include "save_machine_flow.hpp"
@@ -32,6 +37,11 @@ public:
     session::BattleRegistry* registry = nullptr;
     // The names of the species, for the boxes; may be null.
     const assets::DigimonTable* species = nullptr;
+    // For the ending's save: the File City screen it continues on, the maps that name it and the
+    // record it gives (story_scenes.ending); each may be null.
+    const session::CityAdapter* city = nullptr;
+    const assets::MapTable* maps = nullptr;
+    const session::StoryScenes* scenes = nullptr;
   };
 
   // Everything in `desc` must outlive the machine.
@@ -41,6 +51,9 @@ public:
   [[nodiscard]] bool active() const { return flow_.active(); }
 
   void open();
+  // Script routine 54 (main_menu.c: gameClearSave): the game is finished, the ending's record
+  // given, and the save's question asked; with no slot the machine closes at once.
+  void openClearSave();
 
   // The document's answers (save_machine_choose with the row, save_machine_cancel); false for any
   // other command.
@@ -51,6 +64,9 @@ public:
   [[nodiscard]] bool takeClosed();
 
 private:
+  [[nodiscard]] SaveMachineFacts facts() const;
+  // Where the ending's save continues: the map of getFileCityTopMap, if the maps name it.
+  [[nodiscard]] std::optional<std::string> clearedMap() const;
   void publish();
   void follow();
 

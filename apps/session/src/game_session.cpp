@@ -97,6 +97,14 @@ std::optional<FieldPlace> SessionState::currentPlace() const {
   return savedPlace;
 }
 
+std::optional<FieldPlace> SessionState::continuePlace() const {
+  std::optional<FieldPlace> place = currentPlace();
+  if (place && clearedMap) {
+    place->map = *clearedMap;
+  }
+  return place;
+}
+
 core::Result<std::unique_ptr<GameSession>> GameSession::create(SessionDesc desc) {
   if (desc.files == nullptr) {
     return core::fail(std::string{messages::NoFiles});
@@ -297,6 +305,8 @@ core::Result<void> GameSession::startNewGame(const NewGameChoice& choice) {
   }
   state_->tamer = {.level = start.tamerLevel};
   state_->savedPlace.reset();
+  state_->cleared = false;
+  state_->clearedMap.reset();
   file_ = {};
   file_.header.created = now();
   homeSlot_.reset();
@@ -475,6 +485,25 @@ const std::optional<FieldPlace>& GameSession::savedPlace() const {
 
 std::optional<FieldPlace> GameSession::currentPlace() const {
   return state_->currentPlace();
+}
+
+bool GameSession::gameCleared() const {
+  return state_->cleared;
+}
+
+void GameSession::markGameCleared(std::optional<std::string> continueMap) {
+  core::logDebug("[port:save] gameClearSave (main_menu.c:5322): MAIN_STATE 2, continues on {}",
+                 continueMap.value_or("the current map"));
+  state_->cleared = true;
+  state_->clearedMap = std::move(continueMap);
+}
+
+void GameSession::resumeStory() {
+  if (state_->cleared) {
+    core::logDebug("[port:save] openSaveMachine (main_menu.c:5276): MAIN_STATE 1");
+  }
+  state_->cleared = false;
+  state_->clearedMap.reset();
 }
 
 void GameSession::followMap() {
@@ -664,7 +693,7 @@ void GameSession::writeRequestedAutosave() {
 }
 
 game::save::SaveHeader GameSession::headerNow() const {
-  const std::optional<FieldPlace> place = state_->currentPlace();
+  const std::optional<FieldPlace> place = state_->continuePlace();
   game::save::SaveSummary summary{.slot = homeSlot_ ? slotName(*homeSlot_) : std::string{},
                                   .tamer = names_.tamer,
                                   .species = state_->partner.state().species,

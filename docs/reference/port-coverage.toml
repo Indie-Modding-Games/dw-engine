@@ -636,6 +636,7 @@ createShopBitsBox = { status = "parcial", dwe = "apps/game/src/shop_screen.cpp",
 createNinjamonEffect = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "rutina 38: apps/game/src/story_scene_glue.cpp", what = "Nube de humo de un personaje que desaparece." }
 renderNinjamonEffect = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "la deriva de los objetos y su orden 10 (MapDepthLayers::setOrderValue)", what = "Mueve el humo de un personaje que desaparece y lo esconde al acabar." }
 tickSaveMachine = { status = "portado", dwe = "apps/game/src/save_machine_flow.hpp", what = "La máquina de guardar que abre el guion: registro para el modo versus y guardado." }
+gameClearSave = { status = "portado", dwe = "apps/session/include/dwe/session/game_clear.hpp", note = "la rutina 54 abre la pregunta de guardar; la partida guardada vuelve terminada a la ciudad; sin medir en el original (Suposición)", what = "Guardado del final: marca la partida terminada y pregunta si guardar." }
 initTournamentSchedule = { status = "portado", dwe = "apps/game/src/tournament_schedule_screen.cpp:1", what = "Enseña el calendario de torneos." }
 scriptCheckTournamentMedal = { status = "parcial", note = "la rutina 22 se cierra sin pantalla", what = "Comprueba y da la medalla de los torneos." }
 scriptStartTournament = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", what = "Empieza un torneo." }
@@ -676,7 +677,7 @@ createByteSum = { status = "no-aplica", note = "suma de control de la tarjeta", 
 createSavegameChecksum = { status = "no-aplica", note = "suma de control de la tarjeta; el motor valida su fichero", what = "Calcula la suma de control de la partida." }
 countRegisteredDigimon = { status = "falta", what = "Cuenta las criaturas registradas para el modo versus.", note = "llega con el modo versus" }
 registerBattleData = { status = "portado", dwe = "apps/session/include/dwe/session/battle_registry.hpp", what = "Registra al compañero para el modo versus.", note = "el registro se guarda; el modo versus que lo usa llega en la fase 5" }
-awardMachinedramonData = { status = "falta", what = "Al acabar el juego, registra al jefe final para el modo versus." }
+awardMachinedramonData = { status = "portado", dwe = "apps/session/include/dwe/session/game_clear.hpp", note = "especie y técnicas en rules/original/story_scenes.yaml (ending); sin medir en el original (Suposición)", what = "Al acabar el juego, el último registro del modo versus toma el nombre y los atributos del compañero con la especie del jefe final." }
 TRN_saveBaseStats = { system = "training", status = "portado", dwe = "game/gym/src/stat_countup.cpp", what = "Guarda los stats antes de entrenar para contar lo ganado." }
 TRN_saveTrainingStartTime = { system = "training", status = "portado", dwe = "game/gym/src/course_flow.cpp", what = "Guarda la hora al empezar a entrenar." }
 

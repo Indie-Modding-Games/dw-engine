@@ -3,8 +3,10 @@
 #include <dwe/core/log.hpp>
 #include <dwe/screens/name_keys.hpp>
 #include <dwe/screens/screen_settings.hpp>
+#include <dwe/session/game_clear.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <variant>
@@ -38,17 +40,56 @@ SaveMachine::SaveMachine(const Desc& desc)
             *desc.registry,
             [desc] { return session::registeredPartnerOf(*desc.session, *desc.battle); }) {}
 
+SaveMachineFacts SaveMachine::facts() const {
+  const session::GameSession& session = *desc_.session;
+  return {.hasSlot = session.homeSlot().has_value() && session.slots() != nullptr,
+          .belowRookie = session.partner().species().level < game::partner::Level::Rookie,
+          .playthrough = {.home = session.homeSlot(), .started = session.playthroughStarted()}};
+}
+
 void SaveMachine::open() {
   if (active()) {
     return;
   }
-  session::GameSession& session = *desc_.session;
-  flow_.open(
-      {.hasSlot = session.homeSlot().has_value() && session.slots() != nullptr,
-       .belowRookie = session.partner().species().level < game::partner::Level::Rookie,
-       .playthrough = {.home = session.homeSlot(), .started = session.playthroughStarted()}});
+  // openSaveMachine: MAIN_STATE 1, a story game again.
+  desc_.session->resumeStory();
+  flow_.open(facts());
   frameSeconds_ = 0.0;
   closed_ = false;
+  follow();
+}
+
+std::optional<std::string> SaveMachine::clearedMap() const {
+  if (desc_.city == nullptr || desc_.maps == nullptr) {
+    return std::nullopt;
+  }
+  const std::optional<std::int32_t> screen = desc_.city->clearedMap();
+  const assets::MapEntry* entry = screen ? desc_.maps->findByOriginalIndex(*screen) : nullptr;
+  if (entry == nullptr) {
+    core::logWarning("[port:save] gameClearSave (main_menu.c:5324): no map {} to continue on",
+                     screen.value_or(-1));
+    return std::nullopt;
+  }
+  return entry->id;
+}
+
+void SaveMachine::openClearSave() {
+  if (active()) {
+    return;
+  }
+  static const std::optional<session::EndingGift> NoGift;
+  const std::optional<session::EndingGift>& gift =
+      desc_.scenes != nullptr ? desc_.scenes->rules().ending : NoGift;
+  if (auto cleared =
+          session::clearGame(*desc_.session, *desc_.registry, *desc_.battle, gift, clearedMap());
+      !cleared) {
+    core::logWarning("[port:save] awardMachinedramonData (main_menu.c:5299): {}",
+                     cleared.error().message);
+  }
+  flow_.openSaveQuestion(facts());
+  frameSeconds_ = 0.0;
+  // Without a slot nothing opens and the script goes on (scriptTickMainMenu sees CURRENT_MENU -1).
+  closed_ = !active();
   follow();
 }
 

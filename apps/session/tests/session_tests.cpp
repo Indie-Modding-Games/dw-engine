@@ -413,6 +413,53 @@ TEST_CASE("a save from before the summary gets one from its sections") {
   CHECK(summaryFromSections(file) == dwe::game::save::SaveSummary{});
 }
 
+TEST_CASE("a finished game saves where it continues and loads finished until a story save") {
+  // main_menu.c: gameClearSave sets MAIN_STATE 2 and CURRENT_SCREEN getFileCityTopMap, keeping the
+  // player's position; writeSavegame and loadSavegame keep MAIN_STATE; openSaveMachine sets 1.
+  const TestPacks packs;
+  const auto session = newGame(packs, nullptr);
+  SaveFile placed = session->saveFile().value();
+  dwe::core::YamlNode field = dwe::core::YamlNode::mapping();
+  field.set("map", dwe::core::YamlNode::scalar("tend"));
+  dwe::core::YamlNode position = dwe::core::YamlNode::sequence();
+  for (const char* axis : {"1", "2", "3"}) {
+    position.append(dwe::core::YamlNode::scalar(axis));
+  }
+  field.set("position", position);
+  field.set("yaw", dwe::core::YamlNode::scalar("0.5"));
+  placed.sections.at("field").state = field;
+  REQUIRE(session->loadFile(throughText(placed)));
+  CHECK_FALSE(session->gameCleared());
+
+  session->markGameCleared("fila");
+  const SaveFile finished = throughText(session->saveFile().value());
+  CHECK(finished.header.summary.map == "fila");
+  const auto loaded = newGame(packs, nullptr, 99);
+  REQUIRE(loaded->loadFile(finished));
+  CHECK(loaded->gameCleared());
+  REQUIRE(loaded->savedPlace().has_value());
+  CHECK(loaded->savedPlace()->map == "fila");
+  CHECK(loaded->savedPlace()->spawn.position.z == doctest::Approx(3.0F));
+  CHECK(loaded->savedPlace()->spawn.yaw == doctest::Approx(0.5F));
+
+  // A finished game saved again stays finished; once the story plays on it saves as one.
+  REQUIRE(loaded->loadFile(throughText(loaded->saveFile().value())));
+  CHECK(loaded->gameCleared());
+  loaded->resumeStory();
+  REQUIRE(loaded->loadFile(throughText(loaded->saveFile().value())));
+  CHECK_FALSE(loaded->gameCleared());
+  // A new game is never finished, and a game saved off the field keeps the mark.
+  session->markGameCleared(std::nullopt);
+  REQUIRE(session->startNewGame());
+  CHECK_FALSE(session->gameCleared());
+  session->markGameCleared(std::nullopt);
+  SaveFile placeless = session->saveFile().value();
+  CHECK(placeless.sections.at("field").state.find("map") == nullptr);
+  REQUIRE(loaded->loadFile(throughText(placeless)));
+  CHECK(loaded->gameCleared());
+  CHECK_FALSE(loaded->savedPlace().has_value());
+}
+
 TEST_CASE("a new day autosaves only when the ruleset says so") {
   const TestPacks packs;
   // The original ruleset turns it on (save.yaml: autosave.on_new_day).

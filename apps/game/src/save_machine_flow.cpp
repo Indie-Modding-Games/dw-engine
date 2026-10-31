@@ -56,6 +56,18 @@ void SaveMachineFlow::open(const SaveMachineFacts& facts) {
   core::logDebug("[port:save] openSaveMachine (main_menu.c:5273): {}", saveMachineViewName(view_));
 }
 
+void SaveMachineFlow::openSaveQuestion(const SaveMachineFacts& facts) {
+  if (active()) {
+    return;
+  }
+  playthrough_ = facts.playthrough;
+  frames_ = 0;
+  dialog_.reset();
+  replaced_.reset();
+  view_ = facts.hasSlot ? SaveMachineView::SaveQuestion : SaveMachineView::Closed;
+  core::logDebug("[port:save] gameClearSave (main_menu.c:5323): {}", saveMachineViewName(view_));
+}
+
 void SaveMachineFlow::choose(std::size_t row) {
   switch (view_) {
   case SaveMachineView::Register:

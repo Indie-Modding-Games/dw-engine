@@ -252,6 +252,22 @@
         }
       }
     },
+    "ending": {
+      "description": "The ending's save (main_menu.c: gameClearSave): the versus registry's record it fills with the partner's name and stats (awardMachinedramonData).",
+      "type": "object",
+      "required": ["gift_slot", "gift_species", "gift_techniques"],
+      "additionalProperties": false,
+      "properties": {
+        "gift_slot": { "description": "The registry's record, from 0.", "type": "integer", "minimum": 0 },
+        "gift_species": { "description": "The species id the record takes.", "type": "string", "minLength": 1 },
+        "gift_techniques": {
+          "description": "The record's three techniques, as move ids.",
+          "type": "array",
+          "maxItems": 3,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
     "previous_screen": {
       "description": "map.c: changeMap's previous-screen cases.",
       "type": "array",

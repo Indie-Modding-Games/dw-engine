@@ -135,13 +135,19 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   }
 }
 
-// script_interp.c: call_routine 48 opens the save machine (main_menu.c: openSaveMachine); the
-// script goes on once it closes.
+// script_interp.c: call_routine 48 opens the save machine (main_menu.c: openSaveMachine) and
+// call_routine 54 its save's question for the ending (gameClearSave); the script goes on once it
+// closes.
 bool StorySceneGlue::takeSaveMachine(const session::StoryScreenRequest& request) {
-  if (request.screen != session::StoryScreen::SaveMenu || saveMachine_ == nullptr) {
+  const bool machine = request.screen == session::StoryScreen::SaveMenu;
+  if ((!machine && request.screen != session::StoryScreen::ClearSave) || saveMachine_ == nullptr) {
     return false;
   }
-  saveMachine_->open();
+  if (machine) {
+    saveMachine_->open();
+  } else {
+    saveMachine_->openClearSave();
+  }
   saveMachineWaits_ = request.waits;
   return true;
 }

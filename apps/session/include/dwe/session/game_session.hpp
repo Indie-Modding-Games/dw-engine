@@ -199,6 +199,17 @@ public:
   // Where the player is now: on the attached field's map, else where the loaded save left them.
   [[nodiscard]] std::optional<FieldPlace> currentPlace() const;
 
+  // Whether the game was finished (the original's MAIN_STATE 2): the ending's save marks it and a
+  // save made then keeps it, so loading it plays the after-ending movie (main.c: main) before the
+  // field.
+  [[nodiscard]] bool gameCleared() const;
+  // gameClearSave: the game is finished, and saves continue on `continueMap` (the File City screen
+  // of getFileCityTopMap) at the player's position, or on the current map without one.
+  void markGameCleared(std::optional<std::string> continueMap);
+  // The save machine and the sleep's save play on as a story game (openSaveMachine and
+  // partnerTickSleep set MAIN_STATE 1).
+  void resumeStory();
+
   // What the care rules and the systems see of the rest of the game now (the tamer busy in a map
   // change, how the partner feels about the map).
   [[nodiscard]] game::partner::CareContext careContext() const;
