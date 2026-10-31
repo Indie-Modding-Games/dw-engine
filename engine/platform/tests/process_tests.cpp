@@ -2,9 +2,15 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <array>
+#include <chrono>
 #include <filesystem>
+#include <iterator>
+#include <optional>
 #include <string>
+#include <thread>
+#include <vector>
 
 namespace dwe::platform {
 namespace {
@@ -56,6 +62,41 @@ TEST_CASE("the executable's folder is the folder of the running tests") {
       std::filesystem::equivalent(*folder, std::filesystem::path{DWE_PROCESS_PROBE}.parent_path()));
   // No separator at the end: the folder's parent is the folder above it.
   CHECK(folder->filename() == std::filesystem::path{DWE_PROCESS_PROBE}.parent_path().filename());
+}
+
+} // namespace dwe::platform
+
+namespace dwe::platform {
+
+TEST_CASE("a child process's output and error lines are read as they come, then its exit code") {
+  const std::array<std::string, 4> arguments{DWE_PROCESS_PROBE, "4", "first line", "second"};
+  auto child = ChildProcess::start(arguments);
+  REQUIRE_MESSAGE(child.has_value(), child.error().message);
+  std::vector<std::string> lines;
+  std::optional<int> code;
+  // The probe ends at once; a generous limit keeps a broken read from hanging the tests.
+  const auto limit = std::chrono::steady_clock::now() + std::chrono::seconds{20};
+  while (!code && std::chrono::steady_clock::now() < limit) {
+    std::ranges::move(child->readLines(), std::back_inserter(lines));
+    code = child->exitCode();
+    if (!code) {
+      std::this_thread::sleep_for(std::chrono::milliseconds{5});
+    }
+  }
+  REQUIRE(code.has_value());
+  CHECK(*code == 4);
+  CHECK(std::ranges::find(lines, "first line") != lines.end());
+  CHECK(std::ranges::find(lines, "second") != lines.end());
+  // The standard error comes in the same lines.
+  CHECK(std::ranges::find(lines, "process probe: done") != lines.end());
+  CHECK(child->readLines().empty());
+}
+
+TEST_CASE("a child process that cannot start is an error") {
+  CHECK_FALSE(ChildProcess::start({}).has_value());
+  const std::array<std::string, 1> missing{
+      (std::filesystem::path{DWE_PROCESS_PROBE}.parent_path() / "no-such-program").string()};
+  CHECK_FALSE(ChildProcess::start(missing).has_value());
 }
 
 } // namespace dwe::platform
