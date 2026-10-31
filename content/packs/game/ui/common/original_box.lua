@@ -66,7 +66,7 @@ local function finish(document, animation)
   end
 end
 
-local function start(document, box_id, from, to, closing, done)
+local function start(document, box_id, from, to, closing, done, quiet)
   local box = document:get(box_id)
   if not original_box.enabled() then
     box:set_class("box-closed", closing)
@@ -88,13 +88,16 @@ local function start(document, box_id, from, to, closing, done)
     done = done,
   }
   table.insert(animations, animation)
-  ui.cue(closing and "box_close" or "box_open")
+  if not quiet then
+    ui.cue(closing and "box_close" or "box_open")
+  end
   original_box.tick(document, 0)
 end
 
--- Opens the box `box_id` from the rectangle `from`; `done` runs once it is in place.
-function original_box.open(document, box_id, from, done)
-  start(document, box_id, from, nil, false, done)
+-- Opens the box `box_id` from the rectangle `from`; `done` runs once it is in place. A `quiet` box
+-- does not sound box_open: its game plays its own sound instead.
+function original_box.open(document, box_id, from, done, quiet)
+  start(document, box_id, from, nil, false, done, quiet)
 end
 
 -- Closes the box `box_id` into the rectangle `to`; `done` runs once it is gone. The box keeps the

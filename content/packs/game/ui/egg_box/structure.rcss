@@ -5,3 +5,8 @@
 .egg {
 	display: block;
 }
+
+/* Only the eggs of the rebirth: the slots past them stay hidden over .egg's display. */
+.egg.hidden {
+	display: none;
+}

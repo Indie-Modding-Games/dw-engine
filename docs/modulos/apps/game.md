@@ -243,7 +243,18 @@ acabar el fundido a blanco (`MURD_removeLivesBox`). Si era la última, la caja v
 ya ido, en negro. Entonces corre la sección del mapa de despertar: los textos, la caja de los huevos (`EggBoxScreen`,
 documento `ui/egg_box`) y la rutina 4, que da al compañero su forma nueva y juega el renacer. Izquierda y derecha cambian
 de huevo y confirmar elige uno; no se puede salir sin elegir. Lo que no está: los sprites de los huevos en VRAM
-(`EGG_ICONS`), la animación de la caja y la carga del overlay; el documento enumera los huevos.
+(`EGG_ICONS`) y la carga del overlay; el documento enumera los huevos.
+
+- Igual: con el aspecto original la caja crece en 5 cuadros a 20 por segundo desde el cuadrado de 16 píxeles del centro
+  de la pantalla (`DOO2_openEggBox`: `createAnimatedUIBox(3, …)` desde `MAIN_D_80134B98` {-8, -8, 16, 16}) y, al elegir,
+  encoge en otros 5 de vuelta a él (`removeAnimatedUIBox(3, MAIN_D_80134BA4)`), con el contorno gris 0x808080 de
+  `renderUIBoxAnim` (`ui/common/original_box.lua`). Mientras crece no se mueve ni se elige huevo (`DOO2_tickEggInput`
+  espera a que `DOO2_tickEggBox` ponga `sparkleIndex` a 0); al abrir no suena el sonido de caja sino el suyo
+  (`stopSound`, `playSound(8, 4)`). La historia sigue cuando la caja ya encogió (`egg_box_closed`; el original devuelve 1
+  con `UI_BOX_DATA[3].state` 0). Con otro aspecto la caja abre y cierra al momento.
+- Hueco: la caja llega al rectángulo del panel del documento, no al de 168 x 80 píxeles (`MAIN_D_80134B90`
+  {-84, -70}) con los 4 iconos en fila (`DOO2_renderEggIcons`); la confirmación y el movimiento durante el crecimiento
+  aún suenan con los avisos genéricos de la UI.
 
 Los efectos de las dos escenas van en `DeathEffects` (`death_effects.cpp`, sin estado del motor, con pruebas) y se
 dibujan como primitivas sobre la escena (`ScenePrimDrawer`), con las piezas de la evolución (`addFlashPrims`,

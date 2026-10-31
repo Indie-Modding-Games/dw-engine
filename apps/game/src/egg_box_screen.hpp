@@ -14,7 +14,8 @@ inline constexpr std::string_view EggBoxDocument = "egg_box";
 
 // The egg box after a death (doo2.c: DOO2_openEggBox, DOO2_tickEggInput): the player takes the egg
 // the partner is reborn from, one per baby of the rebirth, and the story goes on once one is taken.
-// The box's animation and the eggs' sprites are not drawn: the document lists the eggs.
+// The document grows and shrinks the box (ui/egg_box/logic.lua); the eggs' sprites are not drawn:
+// it lists the eggs.
 class EggBoxScreen {
 public:
   // The session and the UI must outlive the screen.
@@ -22,7 +23,8 @@ public:
 
   // Takes the story's EggBox screen and opens the box; false for any other screen.
   bool take(const session::StoryScreenRequest& request, const session::StoryScenes& scenes);
-  // The document's commands: a move plays its sound, a choice closes the box.
+  // The document's commands: a move plays its sound, a choice takes the egg and the box closes once
+  // the document says it has shrunk away.
   bool handle(const ui::UiCommand& command);
   // Tells the story the egg taken and closes its screen, once.
   void update(session::StoryScenes& scenes);

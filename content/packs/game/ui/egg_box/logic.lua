@@ -2,10 +2,24 @@
 -- number of eggs (egg_box_eggs) and shows this document; it sends egg_box_move with the egg, from
 -- 0, when the egg changes, and egg_box_choose with the egg taken. Right moves to the next egg and
 -- left to the one before, around the box; the box opens on the first egg and cannot be left
--- without one.
+-- without one. Once the egg is taken and the box has shrunk away it sends egg_box_closed.
+--
+-- In the original look (ui/common/original_box.lua) the box grows out of the 16-pixel square in
+-- the middle of the screen (DOO2_openEggBox: MAIN_D_80134B98) and shrinks back into it once an egg
+-- is taken (MAIN_D_80134BA4); the eggs move and are taken only while it stands (DOO2_tickEggInput
+-- waits for DOO2_tickEggBox). It opens without the box sound: the game plays the egg box's own.
 
 local Slots = 8
 local egg = 0
+local taken = false
+-- One pixel of the original is 3dp.
+local dp = 3
+
+-- The 16-pixel square in the middle of the screen.
+local function middle_square(document)
+  local _, _, width, height = document:rect()
+  return { width / 2 - 8 * dp, height / 2 - 8 * dp, 16 * dp, 16 * dp }
+end
 
 local function count()
   return math.min(Slots, math.floor(ui.setting("egg_box_eggs") or 0))
@@ -29,14 +43,19 @@ local function focus(document)
   end
 end
 
-function choose(slot)
-  if slot <= count() then
-    ui.send("egg_box_choose", slot - 1)
+function choose(document, slot)
+  if taken or original_box.busy() or slot > count() then
+    return
   end
+  taken = true
+  ui.send("egg_box_choose", slot - 1)
+  original_box.close(document, "panel", middle_square(document), function()
+    ui.send("egg_box_closed", slot - 1)
+  end)
 end
 
 local function move(document, step)
-  if count() == 0 then
+  if taken or original_box.busy() or count() == 0 then
     return
   end
   egg = (egg + step) % count()
@@ -46,9 +65,19 @@ end
 
 function on_show(document)
   egg = 0
+  taken = false
   refresh(document)
   refresh_prompts(document)
   focus(document)
+  original_box.open(document, "panel", middle_square(document), nil, true)
+end
+
+function on_hide(document)
+  original_box.cancel(document)
+end
+
+function on_tick(document, seconds)
+  original_box.tick(document, seconds)
 end
 
 function on_setting(document, _name)
@@ -75,7 +104,7 @@ function on_action(document, action)
     return true
   end
   if action == "confirm" then
-    choose(egg + 1)
+    choose(document, egg + 1)
     return true
   end
   return action == "cancel" or action == "menu"

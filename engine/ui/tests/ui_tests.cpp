@@ -652,6 +652,58 @@ TEST_CASE("the original bag describes the slot under the cursor, also while an i
   CHECK(ui->elementText("partner_menu", "bag-description").empty());
 }
 
+TEST_CASE("the original egg box grows before its eggs move and shrinks before it closes") {
+  // doo2.c: DOO2_openEggBox grows the box out of the screen's middle; DOO2_tickEggInput ignores the
+  // eggs until it stands and ends once it has shrunk away (ui.c: 5 frames each way at 20 a second).
+  Content content;
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("egg_box", idOf("ui/egg_box/document")));
+  ui->setSetting("ui_skin", std::string{"original"});
+  ui->setSetting("egg_box_eggs", 4.0);
+  input::InputState input{input::defaultActionMap()};
+  ui->show("egg_box", true);
+  frame(*ui, input);
+  CHECK(ui->takeCues().empty());
+  CHECK_FALSE(ui->elementHasClass("egg_box", "box-outline", "hidden"));
+  CHECK(ui->elementHasClass("egg_box", "panel", "box-animating"));
+
+  // Growing: right and confirm do nothing.
+  press(*ui, input, input::keys::Right);
+  press(*ui, input, input::keys::Return);
+  CHECK(ui->takeCommands().empty());
+  settle(*ui, input);
+  CHECK(ui->elementHasClass("egg_box", "box-outline", "hidden"));
+  CHECK_FALSE(ui->elementHasClass("egg_box", "panel", "box-animating"));
+
+  // Standing: the egg moves and is taken; the box shrinks and only then says it is gone.
+  press(*ui, input, input::keys::Right);
+  CHECK(commandNames(*ui) == std::vector<std::string>{"egg_box_move"});
+  static_cast<void>(ui->takeCues());
+  press(*ui, input, input::keys::Return);
+  auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].name == "egg_box_choose");
+  CHECK(commands[0].value == UiValue{1.0});
+  CHECK(ui->takeCues() == std::vector<UiCue>{UiCue::Confirm, UiCue::BoxClose});
+  press(*ui, input, input::keys::Return);
+  CHECK(ui->takeCommands().empty());
+  settle(*ui, input);
+  CHECK(commandNames(*ui) == std::vector<std::string>{"egg_box_closed"});
+}
+
+TEST_CASE("the modern egg box takes the egg and closes at once") {
+  Content content;
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("egg_box", idOf("ui/egg_box/document")));
+  ui->setSetting("ui_skin", std::string{"modern"});
+  ui->setSetting("egg_box_eggs", 4.0);
+  input::InputState input{input::defaultActionMap()};
+  ui->show("egg_box", true);
+  frame(*ui, input);
+  press(*ui, input, input::keys::Return);
+  CHECK(commandNames(*ui) == std::vector<std::string>{"egg_box_choose", "egg_box_closed"});
+}
+
 TEST_CASE("the pause menu works with the keyboard alone") {
   Content content;
   auto ui = createUi(content.mount());

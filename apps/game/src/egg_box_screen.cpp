@@ -11,6 +11,7 @@ namespace {
 constexpr std::string_view EggsSetting = "egg_box_eggs";
 constexpr std::string_view MoveCommand = "egg_box_move";
 constexpr std::string_view ChooseCommand = "egg_box_choose";
+constexpr std::string_view ClosedCommand = "egg_box_closed";
 
 } // namespace
 
@@ -42,8 +43,18 @@ bool EggBoxScreen::take(const session::StoryScreenRequest& request,
 }
 
 bool EggBoxScreen::handle(const ui::UiCommand& command) {
-  if (!open_ || (command.name != MoveCommand && command.name != ChooseCommand)) {
+  if (!open_ || (command.name != MoveCommand && command.name != ChooseCommand &&
+                 command.name != ClosedCommand)) {
     return false;
+  }
+  if (command.name == ClosedCommand) {
+    // DOO2_tickEggInput ends once the box has shrunk away (UI_BOX_DATA[3].state 0).
+    if (chosen_.has_value()) {
+      ui_->hide(EggBoxDocument);
+      open_ = false;
+      over_ = true;
+    }
+    return true;
   }
   const double* egg = std::get_if<double>(&command.value);
   if (command.name == MoveCommand) {
@@ -54,11 +65,13 @@ bool EggBoxScreen::handle(const ui::UiCommand& command) {
     core::logWarning("[port:death] DOO2_tickEggInput (doo2.c:739): no such egg");
     return true;
   }
+  if (chosen_.has_value()) {
+    return true;
+  }
+  // DOO2_tickEggInput: the egg is taken with its sound and the box shrinks (removeAnimatedUIBox);
+  // the story goes on once the document says the box is gone.
   chosen_ = static_cast<std::size_t>(*egg);
   playSound(sounds_.transform([](const session::StoryEggBoxRules& box) { return box.choose; }));
-  ui_->hide(EggBoxDocument);
-  open_ = false;
-  over_ = true;
   return true;
 }
 

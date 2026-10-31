@@ -3,25 +3,27 @@
 	<title>Egg box</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/original_box.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
 	<div id="scrim">
 		<div id="panel">
 			<h1 id="title" text-key="egg_box.title"></h1>
-			<button id="egg-1" class="egg" onclick="choose(1)"></button>
-			<button id="egg-2" class="egg" onclick="choose(2)"></button>
-			<button id="egg-3" class="egg" onclick="choose(3)"></button>
-			<button id="egg-4" class="egg" onclick="choose(4)"></button>
-			<button id="egg-5" class="egg" onclick="choose(5)"></button>
-			<button id="egg-6" class="egg" onclick="choose(6)"></button>
-			<button id="egg-7" class="egg" onclick="choose(7)"></button>
-			<button id="egg-8" class="egg" onclick="choose(8)"></button>
+			<button id="egg-1" class="egg" onclick="choose(document, 1)"></button>
+			<button id="egg-2" class="egg" onclick="choose(document, 2)"></button>
+			<button id="egg-3" class="egg" onclick="choose(document, 3)"></button>
+			<button id="egg-4" class="egg" onclick="choose(document, 4)"></button>
+			<button id="egg-5" class="egg" onclick="choose(document, 5)"></button>
+			<button id="egg-6" class="egg" onclick="choose(document, 6)"></button>
+			<button id="egg-7" class="egg" onclick="choose(document, 7)"></button>
+			<button id="egg-8" class="egg" onclick="choose(document, 8)"></button>
 
 			<div id="prompts">
 				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="egg_box.take"></span></span>
 			</div>
 		</div>
 	</div>
+	<div id="box-outline" class="box-outline hidden"></div>
 </body>
 </rml>
