@@ -228,7 +228,7 @@
 #field-day-label { left: 213dp; }
 #field-year-digits, #field-day-digits { position: absolute; top: 15dp; height: 36dp; white-space: nowrap; font-size: 0dp; }
 #field-year-digits { left: 129dp; }
-#field-day-digits { left: 306dp; }
+#field-day-digits { left: 312dp; }
 .date-digit { display: inline-block; width: 21dp; height: 36dp; margin-right: 6dp; color: transparent; }
 .date-digit.hidden { display: none; }
 #field-date-separator { position: absolute; left: 9dp; top: 60dp; width: 372dp; height: 3dp; background-color: #90d9fa; border-top: 3dp #020202; border-bottom: 3dp #020202; }

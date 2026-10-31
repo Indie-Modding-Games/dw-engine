@@ -1,5 +1,6 @@
 #include "story_text_rows.hpp"
 
+#include <algorithm>
 #include <array>
 #include <charconv>
 #include <format>
@@ -73,6 +74,20 @@ void appendPageRows(std::vector<TextRow>& rows, std::string_view text) {
   }
 }
 
+std::size_t longestRow(const std::vector<TextRow>& rows, std::size_t first) {
+  std::size_t longest = 0;
+  for (std::size_t row = first; row < rows.size(); ++row) {
+    std::size_t characters = 0;
+    for (const TextRun& run : rows[row]) {
+      // UTF-8: every byte but a continuation byte starts a code point.
+      characters += static_cast<std::size_t>(std::ranges::count_if(
+          run.text, [](char byte) { return (static_cast<unsigned char>(byte) & 0xC0U) != 0x80U; }));
+    }
+    longest = std::max(longest, characters);
+  }
+  return longest;
+}
+
 screens::ScreenSettings textboxSettings(const TextboxLook& look, const std::vector<TextRow>& rows) {
   screens::ScreenSettings settings{
       {.name = std::format("{}.open", Prefix), .value = look.open},
@@ -88,6 +103,8 @@ screens::ScreenSettings textboxSettings(const TextboxLook& look, const std::vect
       {.name = std::format("{}.prompt", Prefix), .value = look.prompt},
       {.name = std::format("{}.cursor_row", Prefix),
        .value = look.cursorRow ? static_cast<double>(*look.cursorRow) : -1.0},
+      {.name = std::format("{}.cursor_columns", Prefix),
+       .value = look.cursorColumns ? static_cast<double>(*look.cursorColumns) : -1.0},
       {.name = std::format("{}.row_count", Prefix), .value = static_cast<double>(rows.size())},
       {.name = std::format("{}.top", Prefix), .value = look.top},
   };

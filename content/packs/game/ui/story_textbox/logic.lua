@@ -38,13 +38,29 @@ local function place_box(box, sized)
   box:set_property("margin-top", string.format("%ddp", -math.floor(height / 2)))
 end
 
+-- script_textbox.c: scriptShowSelection, the selection's bar is as wide as the page's longest line,
+-- 12 pixels a character and 2 more, at most 240, whichever option it marks. A skin that draws the
+-- bar shows .row.selected .bar.
+local function bar_width()
+  local columns = number("story_textbox.cursor_columns", -1)
+  if columns < 0 then
+    return nil
+  end
+  return string.format("%ddp", math.min(columns * 12 + 2, 240) * 3)
+end
+
 local function fill_rows(document)
   local count = number("story_textbox.row_count", 0)
   local cursor_row = number("story_textbox.cursor_row", -1)
+  local width = bar_width()
   for row = 0, max_rows - 1 do
     local element = document:get("row-" .. row)
     element:set_class("hidden", row >= count)
     element:set_class("selected", row == cursor_row)
+    element:set_class("barred", row == cursor_row and width ~= nil)
+    if row == cursor_row and width ~= nil then
+      document:get("row-" .. row .. "-bar"):set_property("width", width)
+    end
     local prefix = "story_textbox.row." .. row
     local runs = row < count and number(prefix .. ".runs", 0) or 0
     for run = 0, max_runs - 1 do

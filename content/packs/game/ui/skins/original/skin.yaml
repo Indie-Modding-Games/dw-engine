@@ -113,9 +113,11 @@ sprite_sheets:
       menu-cursor-corner: [0, 59, 4, 4]
       menu-cursor-bar: [4, 59, 4, 4]
       menu-cursor-side: [8, 59, 4, 4]
+  # Las cifras de la fecha (game_menu.c: renderDateDigits): FI_INFO con la CLUT 0x7f10 (fila 508, paleta 12). Las
+  # celdas de 8x12 sin su primera columna, que lleva píxeles de la cifra vecina y no se ve en el original.
   - name: ow-field-menu-digits
     image: texture/etcdat/fi_info
-    palette: 4
+    palette: 12
     original_size: [256, 64]
     dp_per_pixel: 3
     sprites:

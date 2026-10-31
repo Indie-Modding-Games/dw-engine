@@ -393,6 +393,7 @@ void NewGameInterview::showText(bool open) {
                          .cursorRow = waiting_ == Waiting::Selection
                                           ? std::optional<std::size_t>{1 + cursor_}
                                           : std::nullopt,
+                         .cursorColumns = std::nullopt,
                          // setupNewGameDialogueBox: the box at (-130, -78), 262 x 59.
                          .top = true};
   screens::publish(*ui_, textboxSettings(look, rows), TextboxRevisionSetting);

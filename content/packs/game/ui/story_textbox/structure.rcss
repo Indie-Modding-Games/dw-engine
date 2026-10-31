@@ -47,6 +47,11 @@ body {
 	width: 0dp;
 }
 
+/* The original look's selection bar (a skin shows it on .row.barred); the script sets its width. */
+.bar {
+	display: none;
+}
+
 .row.selected .cursor {
 	width: 18dp;
 	height: 18dp;

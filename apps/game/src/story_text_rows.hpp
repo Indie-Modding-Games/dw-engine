@@ -49,10 +49,16 @@ struct TextboxLook {
   bool prompt = false;
   // The row of a selection's cursor, counted from the box's first row.
   std::optional<std::size_t> cursorRow;
+  // How many characters the selection's bar spans: the page's longest row, its speaker's name left
+  // out (script_textbox.c: scriptShowSelection takes the longest line showTextbox wrote).
+  std::optional<std::size_t> cursorColumns;
   // The speech box at the top of the screen instead of the bottom (script_menu.c:
   // setupNewGameDialogueBox).
   bool top = false;
 };
+
+// The characters of the longest of `rows`, from `first` on: a character is a code point.
+[[nodiscard]] std::size_t longestRow(const std::vector<TextRow>& rows, std::size_t first);
 
 // The story_textbox document's settings for a box and its rows; publish them with
 // textboxRevisionSetting.

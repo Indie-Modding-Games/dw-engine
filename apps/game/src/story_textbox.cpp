@@ -112,6 +112,8 @@ void StoryTextbox::update(const FieldScene& scene, const assets::DigimonTable* s
       .cursorRow = view.cursor ? std::optional<std::size_t>{static_cast<std::size_t>(*view.cursor) +
                                                             (named ? 1U : 0U)}
                                : std::nullopt,
+      .cursorColumns = view.cursor ? std::optional<std::size_t>{longestRow(rows, named ? 1U : 0U)}
+                                   : std::nullopt,
       .top = false,
   };
   screens::publish(*ui_, textboxSettings(look, rows), TextboxRevisionSetting);

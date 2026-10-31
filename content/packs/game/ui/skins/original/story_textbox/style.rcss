@@ -23,7 +23,31 @@ body .row.selected .cursor {
 	background-color: transparent;
 }
 
+/* The bar starts a pixel left of the text and its light top line 2 pixels above the letters' tops (US build: 2 above
+   the row), 13 pixels high under that line,
+   as wide as the page's longest line (script_textbox.c: scriptShowSelection; gym sign: cursorWidth 86 for "Explain",
+   7 x 12 + 2). A box without that width keeps the bar under the option's words. */
+body .row {
+	position: relative;
+}
+
+body .row.barred .bar {
+	display: block;
+	position: absolute;
+	left: -3dp;
+	top: -3dp;
+	height: 39dp;
+	background-color: #525a63;
+	border-top: 3dp #b5b5b5;
+	z-index: -1;
+}
+
 body .row.selected .run {
 	background-color: #525a63;
 	border-top: 3dp #b5b5b5;
+}
+
+body .row.barred .run {
+	background-color: transparent;
+	border-top: 0dp;
 }
