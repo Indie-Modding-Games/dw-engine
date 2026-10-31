@@ -99,33 +99,40 @@ struct CharacterState {
   scene::Motion motion = scene::Motion::Idle;
 };
 
+// How a script's glide goes with the root motion of the clip the character plays (moveByClip): a
+// scripted walk's glide stands for it, a scripted move's adds to it.
+enum class ScriptGlide : std::uint8_t { ReplacesClipMotion, AddsToClipMotion };
+
 // A character a script holds (script_interp.c: scriptSetEntityWalking, scriptStartAnimation): it
 // glides at `velocity` (world units a second) with no collision, and plays `clip` (the original's
 // animation id) instead of the clip of its motion.
 struct ScriptedActor {
   glm::vec3 velocity{};
+  ScriptGlide glide = ScriptGlide::ReplacesClipMotion;
   std::optional<std::uint32_t> clip;
   // How many times a script started a clip: anim.c: startAnimation restarts even the clip that
   // plays, as each push of the gym's log does.
   std::uint32_t starts = 0;
-  // The clip's root motion under way (applyScriptedRootMotion): the start it belongs to, the
-  // clip's frame and the time toward the next frame.
-  std::uint32_t rootStarts = 0;
-  std::size_t rootFrame = 0;
-  float rootSeconds = 0.0F;
 };
 
-// The root motion of every clip of an NPC's model (anim.c: tickMomentum), which the app gives the
-// NPC once its model is in.
-struct NpcClipMotions {
+// The root motion of every clip of a character's model (anim.c: tickMomentum): the app gives it
+// to the player and the NPCs once their models are in, setPartnerClips to the partner.
+struct CharacterClipMotions {
   std::shared_ptr<const assets::ClipMotions> clips;
 };
 
-// One original frame of a scripted NPC clip's root motion (anim.c: tickAnimation,
-// applyRootMomentum): the step of the clip's next frame along the facing `yaw`, in world units.
-// Nothing once a clip that does not repeat has ended.
-std::optional<glm::vec3> scriptedRootStep(const assets::ClipMotion& clip, std::size_t frame,
-                                          float yaw);
+// A clip that carries its character by its root motion (Field::moveByClip): the clip's frame and
+// the time toward the next frame.
+struct ClipRootMotion {
+  std::uint32_t clip = 0;
+  std::size_t frame = 0;
+  float seconds = 0.0F;
+};
+
+// One original frame of a clip's root motion (anim.c: tickAnimation, applyRootMomentum): the step
+// of the clip's frame `frame` along the facing `yaw`, in world units. Nothing once a clip that
+// does not repeat has ended.
+std::optional<glm::vec3> clipRootStep(const assets::ClipMotion& clip, std::size_t frame, float yaw);
 
 // A 3D object of the map, a door model (map_object.c: loadDoors, Map3DObject), in world space.
 struct MapObject3D {
@@ -344,12 +351,20 @@ public:
   // A held character's scripted move, place, facing and clip. A place farther than half a cell
   // and a turn of more than an eighth are a jump, drawn at once; nearer ones are drawn as a move
   // over the tick.
-  void driveByScript(scene::Entity entity, glm::vec3 velocity);
+  void driveByScript(scene::Entity entity, glm::vec3 velocity,
+                     ScriptGlide glide = ScriptGlide::ReplacesClipMotion);
   void placeByScript(scene::Entity entity, glm::vec3 position);
   void turnByScript(scene::Entity entity, float yaw);
+  // The clip also carries the character by its root motion (moveByClip), as anim.c's
+  // tickAnimation runs on the player, the partner and every NPC each frame.
   void animateByScript(scene::Entity entity, std::uint32_t clip);
   // The held character's motion picks its clip again, as before any animateByScript.
   void releaseClipByScript(scene::Entity entity);
+  // `clip` carries the character by its root motion from its first frame, one step each frame of
+  // the original, along where it faces and with no collision test (anim.c: startAnimation sets
+  // animFlag 1, tickAnimation, applyRootMomentum), until it ends or a script glides the character
+  // (driveByScript); nothing stops it. The character needs CharacterClipMotions.
+  void moveByClip(scene::Entity entity, std::optional<std::uint32_t> clip);
   // Where the camera looks while a script holds it; nothing: at the player.
   [[nodiscard]] std::optional<glm::vec3> scriptCamera() const { return scriptCamera_; }
   // Pans the held camera to `focus` in `seconds` (map.c: tickCameraMovement).
@@ -507,9 +522,9 @@ private:
   void requestSeparation(std::string_view why);
   void watchOverlaps(float seconds);
   void tickScripted(float seconds);
-  // The NPCs that play a script's clip move by its root motion (anim.c: tickAnimation runs on
-  // every NPC each frame, overworld.c: NPCEntityTickOverworld), unless the script walks them.
-  void applyScriptedRootMotion(float seconds);
+  // The characters a clip carries (moveByClip) take their frames' root steps (anim.c:
+  // tickAnimation from tamerTickOverworld, partnerTickOverworld and NPCEntityTickOverworld).
+  void applyClipRootMotion(float seconds);
   void tickCare(float seconds);
   void tickCareWalk(float seconds);
   void tickCameraPan(float seconds);

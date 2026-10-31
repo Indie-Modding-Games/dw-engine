@@ -63,7 +63,8 @@ ya junto al jugador (más cerca de 2,5 radios, `getPartnerTamerCloseness` 2), an
 (le da una palmada) y el compañero la 0; al acabar la del jugador (31 fotogramas, 89 vblanks medidos) el compañero
 bosteza con la 11 (51 fotogramas, 150 vblanks) y se acuesta con la 9; el fundido a negro empieza 5 fotogramas antes
 del final de la 9 (57 vblanks después de empezarla). La 9 lleva al compañero hacia el jugador por su movimiento raíz
-(`applyRootMomentum`: 70 unidades medidas en el original y en dwe; `FieldScene::playPartnerClip(clip, true)`). El campo
+(`applyRootMomentum`: 70 unidades medidas en el original y en dwe; `FieldScene::playPartnerClip(clip, true)`, que
+lo mueve por `Field::moveByClip` como las animaciones de los guiones). El campo
 sigue (los NPC se mueven) mientras ellos juegan sus animaciones y durante los dos fundidos; solo espera con el menú de
 dormir. El fundido de entrada enseña al compañero de pie (animación 0) y al jugador en la última pose de la 8, hasta
 que recupera el control. Los números de las animaciones están en `care.yaml` (`sleep.scene`). Medido con un Agumon en

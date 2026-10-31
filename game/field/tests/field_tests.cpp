@@ -1453,7 +1453,7 @@ TEST_CASE("an NPC playing a script's clip moves by the clip's root motion") {
                       {.side = 10}};
   clips[Walk].steps = {{}, {.forward = 40}};
   clips[Walk].repeatFrom = 0;
-  world.registry().emplace<dwe::game::field::NpcClipMotions>(
+  world.registry().emplace<dwe::game::field::CharacterClipMotions>(
       npc, std::make_shared<const dwe::assets::ClipMotions>(std::move(clips)));
   const float yaw = world.registry().get<dwe::scene::Transform>(npc).yaw;
   const glm::vec3 forward = dwe::assets::forwardOfYaw(yaw);
@@ -1476,6 +1476,93 @@ TEST_CASE("an NPC playing a script's clip moves by the clip's root motion") {
   run(field, 1.0F);
   CHECK(groundDistance(*field.npcs().positionOf(6), before + (forward * 100.0F)) < 0.5F);
   field.holdForScript(false);
+}
+
+TEST_CASE("the player and the partner playing a script's clip move by the clip's root motion") {
+  // script_interp.c: scriptStartAnimation starts the clip on the player (0xFD) or the partner
+  // (0xFC); tamerTickOverworld and partnerTickOverworld run tickAnimation every frame, so the
+  // clip's root steps carry them as they carry an NPC (the partner's 40 hops it back 380 units).
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  constexpr std::int32_t Back = 40;
+  constexpr std::int32_t Hop = 17;
+  dwe::assets::ClipMotions clips;
+  clips[Back].steps = {{}, {.forward = -100}, {.forward = -100}, {.forward = -100}, {.side = 20}};
+  clips[Hop].steps = {{}, {.forward = -50}, {.forward = -50}};
+  dwe::assets::ClipMotions partnerClips = clips;
+  field.setPartnerClips(std::move(partnerClips));
+  world.registry().emplace<dwe::game::field::CharacterClipMotions>(
+      field.playerEntity(), std::make_shared<const dwe::assets::ClipMotions>(clips));
+  const auto& registry = world.registry();
+  const auto positionOf = [&registry](dwe::scene::Entity entity) {
+    return registry.get<dwe::scene::Transform>(entity).position;
+  };
+  const auto stepOf = [&registry](dwe::scene::Entity entity, float forwardUnits, float sideUnits) {
+    const glm::vec3 forward =
+        dwe::assets::forwardOfYaw(registry.get<dwe::scene::Transform>(entity).yaw);
+    const glm::vec3 side{forward.z, 0.0F, -forward.x};
+    return (forward * forwardUnits) + (side * sideUnits);
+  };
+  field.holdForScript(true);
+  const glm::vec3 playerHome = positionOf(field.playerEntity());
+  const glm::vec3 partnerHome = positionOf(field.partnerEntity());
+  field.animateByScript(field.partnerEntity(), Back);
+  field.animateByScript(field.playerEntity(), Hop);
+  run(field, 1.0F);
+  CHECK(groundDistance(positionOf(field.partnerEntity()) - partnerHome,
+                       stepOf(field.partnerEntity(), -300.0F, 20.0F)) < 0.01F);
+  CHECK(groundDistance(positionOf(field.playerEntity()) - playerHome,
+                       stepOf(field.playerEntity(), -100.0F, 0.0F)) < 0.01F);
+  // A clip started again starts from its first frame.
+  const glm::vec3 playerBefore = positionOf(field.playerEntity());
+  field.animateByScript(field.playerEntity(), Hop);
+  run(field, 1.0F);
+  CHECK(groundDistance(positionOf(field.playerEntity()) - playerBefore,
+                       stepOf(field.playerEntity(), -100.0F, 0.0F)) < 0.01F);
+  // A scripted move (tickEntityMoveTo, tickEntityMoveToAxis) adds to the clip's steps, as the
+  // original's Etemon falls from its tree in mayo04a, carried 349 units by its clip on the way.
+  const glm::vec3 partnerBefore = positionOf(field.partnerEntity());
+  field.animateByScript(field.partnerEntity(), Back);
+  field.driveByScript(field.partnerEntity(), glm::vec3{0.0F, -50.0F, 0.0F},
+                      dwe::game::field::ScriptGlide::AddsToClipMotion);
+  run(field, 1.0F);
+  const glm::vec3 partnerMoved = positionOf(field.partnerEntity()) - partnerBefore;
+  CHECK(groundDistance(partnerMoved, stepOf(field.partnerEntity(), -300.0F, 20.0F)) < 0.01F);
+  CHECK(partnerMoved.y == doctest::Approx(-50.0F).epsilon(0.02));
+  field.driveByScript(field.partnerEntity(), glm::vec3{0.0F});
+  // Let go, the clip no longer carries them.
+  field.animateByScript(field.partnerEntity(), Back);
+  field.holdForScript(false);
+  CHECK_FALSE(registry.all_of<dwe::game::field::ClipRootMotion>(field.partnerEntity()));
+  CHECK_FALSE(registry.all_of<dwe::game::field::ClipRootMotion>(field.playerEntity()));
+}
+
+TEST_CASE("a care scene's moving clip carries the partner until it stops") {
+  // The sleep scene's lie-down (partner.c: partnerTickSleep) moves by the same root steps as a
+  // script's clip (Field::moveByClip).
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  constexpr std::int32_t LieDown = 8;
+  dwe::assets::ClipMotions clips;
+  clips[LieDown].steps = {{}, {.forward = 30}, {.forward = 30}};
+  field.setPartnerClips(std::move(clips));
+  field.holdForCare(true);
+  const auto& registry = world.registry();
+  const glm::vec3 home = registry.get<dwe::scene::Transform>(field.partnerEntity()).position;
+  const glm::vec3 forward =
+      dwe::assets::forwardOfYaw(registry.get<dwe::scene::Transform>(field.partnerEntity()).yaw);
+  field.moveByClip(field.partnerEntity(), LieDown);
+  run(field, 1.0F);
+  const glm::vec3 moved = registry.get<dwe::scene::Transform>(field.partnerEntity()).position;
+  CHECK(groundDistance(moved - home, forward * 60.0F) < 0.01F);
+  field.moveByClip(field.partnerEntity(), LieDown);
+  field.moveByClip(field.partnerEntity(), std::nullopt);
+  run(field, 1.0F);
+  CHECK(groundDistance(registry.get<dwe::scene::Transform>(field.partnerEntity()).position, moved) <
+        0.01F);
+  field.holdForCare(false);
 }
 
 TEST_CASE("a partner placed by the player keeps off the NPCs, and a map entry checks them too") {

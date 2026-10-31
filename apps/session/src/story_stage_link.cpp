@@ -36,9 +36,9 @@ void StoryActorsLink::place(std::int64_t character, glm::vec3 position) {
   }
 }
 
-void StoryActorsLink::drive(std::int64_t character, glm::vec3 velocity) {
+void StoryActorsLink::drive(std::int64_t character, glm::vec3 velocity, game::story::Glide glide) {
   if (target_ != nullptr) {
-    target_->drive(character, velocity);
+    target_->drive(character, velocity, glide);
   }
 }
 

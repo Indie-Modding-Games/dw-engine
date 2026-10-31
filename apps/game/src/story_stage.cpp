@@ -109,9 +109,12 @@ void StoryStage::place(std::int64_t character, glm::vec3 position) {
   }
 }
 
-void StoryStage::drive(std::int64_t character, glm::vec3 velocity) {
+void StoryStage::drive(std::int64_t character, glm::vec3 velocity, game::story::Glide glide) {
   if (const auto entity = entityOf(character)) {
-    scene_->field().driveByScript(*entity, velocity);
+    scene_->field().driveByScript(*entity, velocity,
+                                  glide == game::story::Glide::Walk
+                                      ? game::field::ScriptGlide::ReplacesClipMotion
+                                      : game::field::ScriptGlide::AddsToClipMotion);
   }
 }
 

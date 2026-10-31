@@ -25,8 +25,8 @@ constexpr float JumpTurn = std::numbers::pi_v<float> / 4.0F;
 
 } // namespace
 
-std::optional<glm::vec3> scriptedRootStep(const assets::ClipMotion& clip, std::size_t frame,
-                                          float yaw) {
+std::optional<glm::vec3> clipRootStep(const assets::ClipMotion& clip, std::size_t frame,
+                                      float yaw) {
   const std::optional<assets::RootStep> step = clip.stepAt(frame);
   if (!step) {
     return std::nullopt;
@@ -60,6 +60,9 @@ void Field::holdForScript(bool held) {
     cameraPan_.reset();
     registry.remove<ScriptedActor>(player_);
     registry.remove<ScriptedActor>(partner_);
+    // tamer.c and partner.c start their own clips again: a script's clip no longer carries them.
+    registry.remove<ClipRootMotion>(player_);
+    registry.remove<ClipRootMotion>(partner_);
     // The NPCs the script drove stop gliding; one whose script animation is over (setActiveAnim
     // back to 0) is the NPCs' own again, and one still on its animation keeps it, as
     // NPC_ACTIVE_ANIM stays in the original until a script sets it back.
@@ -70,6 +73,7 @@ void Field::holdForScript(bool held) {
     for (const auto& [entity, scriptId] : scripted) {
       if (npcs_.scriptedAnimationOf(scriptId).value_or(0) == 0) {
         registry.remove<ScriptedActor>(entity);
+        registry.remove<ClipRootMotion>(entity);
       } else {
         registry.get<ScriptedActor>(entity).velocity = {};
       }
@@ -84,8 +88,10 @@ void Field::holdForScript(bool held) {
   registry.get<AnimationIntent>(partner_) = {};
 }
 
-void Field::driveByScript(scene::Entity entity, glm::vec3 velocity) {
-  world_->registry().get_or_emplace<ScriptedActor>(entity).velocity = velocity;
+void Field::driveByScript(scene::Entity entity, glm::vec3 velocity, ScriptGlide glide) {
+  auto& actor = world_->registry().get_or_emplace<ScriptedActor>(entity);
+  actor.velocity = velocity;
+  actor.glide = glide;
 }
 
 void Field::placeByScript(scene::Entity entity, glm::vec3 position) {
@@ -112,12 +118,25 @@ void Field::animateByScript(scene::Entity entity, std::uint32_t clip) {
   auto& scripted = world_->registry().get_or_emplace<ScriptedActor>(entity);
   scripted.clip = clip;
   ++scripted.starts;
+  moveByClip(entity, clip);
 }
 
 void Field::releaseClipByScript(scene::Entity entity) {
   if (auto* actor = world_->registry().try_get<ScriptedActor>(entity); actor != nullptr) {
     actor->clip.reset();
   }
+  moveByClip(entity, std::nullopt);
+}
+
+void Field::moveByClip(scene::Entity entity, std::optional<std::uint32_t> clip) {
+  entt::registry& registry = world_->registry();
+  if (!clip) {
+    registry.remove<ClipRootMotion>(entity);
+    return;
+  }
+  // anim.c: startAnimation restarts the clip on its first frame with no momentum, even the clip
+  // that plays.
+  registry.emplace_or_replace<ClipRootMotion>(entity, ClipRootMotion{.clip = *clip});
 }
 
 void Field::panCameraByScript(glm::vec3 focus, float seconds) {
@@ -132,36 +151,37 @@ void Field::shiftCameraByScript(glm::vec3 by) {
   scriptCamera_ = scriptCamera_.value_or(world_->registry().get<Transform>(player_).position) + by;
 }
 
-void Field::applyScriptedRootMotion(float seconds) {
+void Field::applyClipRootMotion(float seconds) {
   const float frame = rules_.transition.frameSeconds;
   entt::registry& registry = world_->registry();
-  const auto view = registry.view<const NpcTag, const NpcClipMotions, ScriptedActor, Transform>();
-  for (const auto [entity, tag, motions, actor, transform] : view.each()) {
-    // A walk the script drives glides at the clip's ground speed instead (driveByScript).
-    if (!actor.clip || motions.clips == nullptr || actor.velocity != glm::vec3{0.0F}) {
+  const auto view = registry.view<ClipRootMotion, const CharacterClipMotions, Transform>();
+  for (const auto [entity, motion, motions, transform] : view.each()) {
+    if (motions.clips == nullptr) {
       continue;
     }
-    // anim.c: startAnimation: the clip starts on its first frame with no momentum.
-    if (actor.rootStarts != actor.starts) {
-      actor.rootStarts = actor.starts;
-      actor.rootFrame = 0;
-      actor.rootSeconds = 0.0F;
-    }
-    const auto clip = motions.clips->find(static_cast<std::int32_t>(*actor.clip));
+    const auto clip = motions.clips->find(static_cast<std::int32_t>(motion.clip));
     if (clip == motions.clips->end()) {
       continue;
     }
-    actor.rootSeconds += seconds;
-    while (actor.rootSeconds >= frame) {
-      actor.rootSeconds -= frame;
+    // A walk the script drives glides at the clip's ground speed instead; a scripted move adds
+    // to the clip's steps (driveByScript). The clip's frames go on either way, as the drawn clip
+    // does.
+    const auto* scripted = registry.try_get<const ScriptedActor>(entity);
+    const bool glides = scripted != nullptr && scripted->velocity != glm::vec3{0.0F} &&
+                        scripted->glide == ScriptGlide::ReplacesClipMotion;
+    motion.seconds += seconds;
+    while (motion.seconds >= frame) {
+      motion.seconds -= frame;
       const std::optional<glm::vec3> step =
-          scriptedRootStep(clip->second, actor.rootFrame + 1, transform.yaw);
+          clipRootStep(clip->second, motion.frame + 1, transform.yaw);
       if (!step) {
-        actor.rootSeconds = 0.0F;
+        motion.seconds = 0.0F;
         break;
       }
-      ++actor.rootFrame;
-      transform.position += *step;
+      ++motion.frame;
+      if (!glides) {
+        transform.position += *step;
+      }
     }
   }
 }
@@ -192,7 +212,7 @@ void Field::tickScripted(float seconds) {
       [seconds](const ScriptedActor& actor, Transform& transform) {
         transform.position += actor.velocity * seconds;
       });
-  applyScriptedRootMotion(seconds);
+  applyClipRootMotion(seconds);
   tickCameraPan(seconds);
   // A scripted map change's fade in runs on while the script holds the player (map.c:
   // scriptTickChangeMap).

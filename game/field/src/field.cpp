@@ -439,7 +439,7 @@ void Field::tickNpcs(float seconds, bool playerFree) {
               .partner = {.centre = ground(registry.get<Transform>(partner_).position),
                           .half = rules_.partner.mover.radius},
               .playerFree = playerFree});
-  applyScriptedRootMotion(seconds);
+  applyClipRootMotion(seconds);
 }
 
 void Field::walkOut(float seconds) {
@@ -566,6 +566,11 @@ scene::Pose Field::drawnPose(scene::Entity entity, float alpha) const {
 }
 
 void Field::setPartnerClips(assets::ClipMotions clips) {
+  // A script's clip carries the partner by the same root motion (moveByClip).
+  if (!clips.empty()) {
+    world_->registry().emplace_or_replace<CharacterClipMotions>(
+        partner_, std::make_shared<const assets::ClipMotions>(clips));
+  }
   follow_.setClips(clips.empty()
                        ? defaultPartnerClips(rules_.partner.mover, rules_.transition.frameSeconds)
                        : std::move(clips));

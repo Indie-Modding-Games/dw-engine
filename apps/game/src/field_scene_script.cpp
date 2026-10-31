@@ -33,7 +33,7 @@ bool FieldScene::animateScripted(Actor& actor, double seconds) {
   }
   // The script moves the character at the clip's own ground speed, so the clip plays at its speed.
   // The drawn clip drops its root translation: the field moves the character, by the script's glide
-  // or, for an NPC standing still, by the clip's root steps (Field::applyScriptedRootMotion).
+  // or, standing still, by the clip's root steps (Field::moveByClip).
   actor.player->setSpeed(1.0F);
   static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
   return true;

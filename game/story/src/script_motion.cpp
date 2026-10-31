@@ -337,10 +337,10 @@ bool ScriptMotion::partnerSynced() const {
 void ScriptMotion::scriptBegins() {
   core::logDebug("{}", messages::formatMessage(messages::SlotsCleared, slots_.size()));
   // The original leaves a character it stops here walking on its animation until the script lets
-  // go; the engine stops it, as it has no root motion to keep.
+  // go: the glide stops and the walk clip's own root motion carries it on.
   for (const auto& [index, slot] : slots_) {
     if (index < FirstNonCharacterSlot && actors_->slotOf(slot.character)) {
-      actors_->drive(slot.character, {});
+      actors_->drive(slot.character, {}, Glide::Walk);
     }
   }
   slots_.clear();
@@ -453,7 +453,7 @@ bool ScriptMotion::tick(std::int64_t character, const Walk& move) {
     if (!actors_->slotOf(*move.target)) {
       core::logWarning("{}",
                        messages::formatMessage(messages::TargetGone, character, *move.target));
-      actors_->drive(character, {});
+      actors_->drive(character, {}, Glide::Walk);
       return true;
     }
     point = actors_->position(*move.target);
@@ -471,10 +471,10 @@ bool ScriptMotion::tick(std::int64_t character, const Walk& move) {
   const bool touching =
       move.target && actors_->wouldTouchCharacter(character, speed * rules_.frameSeconds);
   if (onCell || touching) {
-    actors_->drive(character, {});
+    actors_->drive(character, {}, Glide::Walk);
     return true;
   }
-  actors_->drive(character, assets::forwardOfYaw(yaw) * speed);
+  actors_->drive(character, assets::forwardOfYaw(yaw) * speed, Glide::Walk);
   return false;
 }
 
@@ -496,7 +496,7 @@ bool ScriptMotion::tick(std::int64_t character, MoveTo& move) {
     glm::vec3 step = (move.point - position) / frames(move.frames);
     step.y = 0.0F;
     move.perFrame = step;
-    actors_->drive(character, step / rules_.frameSeconds);
+    actors_->drive(character, step / rules_.frameSeconds, Glide::Move);
     return false;
   }
   const glm::vec3 step = *move.perFrame;
@@ -515,7 +515,7 @@ bool ScriptMotion::tick(std::int64_t character, MoveTo& move) {
   if (doneX || doneZ) {
     actors_->place(character, clamped);
   }
-  actors_->drive(character, velocity);
+  actors_->drive(character, velocity, Glide::Move);
   return doneX && doneZ;
 }
 
@@ -526,14 +526,14 @@ bool ScriptMotion::tick(std::int64_t character, MoveToAxis& move) {
   const float value = glm::dot(position, axis);
   if (!move.perFrame) {
     move.perFrame = (move.position - value) / frames(move.frames);
-    actors_->drive(character, axis * (*move.perFrame / rules_.frameSeconds));
+    actors_->drive(character, axis * (*move.perFrame / rules_.frameSeconds), Glide::Move);
     return false;
   }
   if (!reached(value, move.position, *move.perFrame)) {
     return false;
   }
   actors_->place(character, position + axis * (move.position - value));
-  actors_->drive(character, {});
+  actors_->drive(character, {}, Glide::Walk);
   return true;
 }
 

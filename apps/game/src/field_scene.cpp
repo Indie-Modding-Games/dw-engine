@@ -18,6 +18,7 @@
 #include <format>
 #include <iterator>
 #include <limits>
+#include <memory>
 #include <tuple>
 #include <utility>
 
@@ -226,6 +227,10 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
     return std::unexpected{player.error()};
   }
   scene->playerActor_ = std::move(*player);
+  // A script's clip carries the player by its root motion (Field::moveByClip).
+  scene->world_.registry().emplace_or_replace<game::field::CharacterClipMotions>(
+      scene->field_->playerEntity(),
+      std::make_shared<const assets::ClipMotions>(battleClipsOf(*scene->playerActor_->model)));
   auto partner =
       scene->loadActor(PartnerCharacter, scene->field_->partnerEntity(), rules->partner.mover);
   if (!partner) {
@@ -286,7 +291,12 @@ core::Result<void> FieldScene::enterOriginalMap(std::int32_t index, std::int32_t
 void FieldScene::playPartnerClip(std::optional<std::uint32_t> clipId, bool moves) {
   partnerClip_ = clipId;
   partnerClipStarted_ = false;
-  partnerClipMoves_ = moves && clipId.has_value();
+  // The clip's root motion carries the partner as a script's clip does (Field::moveByClip); a
+  // scene's clip that does not move it stops the one before.
+  const bool wasMoving = std::exchange(partnerClipMoves_, moves && clipId.has_value());
+  if (partnerClipMoves_ || wasMoving) {
+    field_->moveByClip(partnerActor_->entity, partnerClipMoves_ ? clipId : std::nullopt);
+  }
   // Back from the scene it stands again with a new wait.
   partnerLook_ = {};
   // The partner's motion picks its clip again from the next update.
@@ -328,17 +338,7 @@ void FieldScene::animatePartnerClip(double seconds) {
     }
     actor.player->setSpeed(1.0F);
   }
-  const glm::vec3 root = actor.player->advance(static_cast<float>(seconds));
-  if (!partnerClipMoves_ || (root.x == 0.0F && root.z == 0.0F)) {
-    return;
-  }
-  // The root motion is in the model's space, facing +z at yaw 0 (assets::forwardOfYaw).
-  const scene::Transform& transform = world_.registry().get<scene::Transform>(actor.entity);
-  const float sine = std::sin(transform.yaw);
-  const float cosine = std::cos(transform.yaw);
-  const glm::vec3 step{(root.x * cosine) + (root.z * sine), 0.0F,
-                       (root.z * cosine) - (root.x * sine)};
-  field_->placeByScript(actor.entity, transform.position + step);
+  static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
 }
 
 core::Result<std::unique_ptr<FieldScene::Actor>>

@@ -22,6 +22,12 @@ namespace dwe::game::story {
 inline constexpr std::int64_t PlayerScriptId = 0xFD;
 inline constexpr std::int64_t PartnerScriptId = 0xFC;
 
+// How a scripted glide goes with the clip the character plays: a walk stands for the walk clip's
+// root motion (tamer.c: tickEntityWalkTo only turns the character, the clip carries it); a move
+// adds to it (tickEntityMoveTo and tickEntityMoveToAxis step the position while anim.c:
+// tickAnimation still applies the clip's root motion).
+enum class Glide : std::uint8_t { Walk, Move };
+
 // The characters and the camera the story moves. The session implements it on the field; the
 // characters are named by script id.
 class ScriptActorsPort {
@@ -42,7 +48,7 @@ public:
   virtual void place(std::int64_t character, glm::vec3 position) = 0;
   // Moves the character at `velocity` (world units a second) with no collision until told
   // otherwise; zero stops it.
-  virtual void drive(std::int64_t character, glm::vec3 velocity) = 0;
+  virtual void drive(std::int64_t character, glm::vec3 velocity, Glide glide) = 0;
   // Plays the clip with the original's animation id; the script holds the character until it lets
   // go (tamer.c: tamerSetState, partner.c: partnerSetState).
   virtual void animate(std::int64_t character, std::int64_t animation) = 0;

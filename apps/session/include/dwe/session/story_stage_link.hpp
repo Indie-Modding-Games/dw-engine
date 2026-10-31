@@ -22,7 +22,7 @@ public:
   [[nodiscard]] float yaw(std::int64_t character) const override;
   void turn(std::int64_t character, float yaw) override;
   void place(std::int64_t character, glm::vec3 position) override;
-  void drive(std::int64_t character, glm::vec3 velocity) override;
+  void drive(std::int64_t character, glm::vec3 velocity, game::story::Glide glide) override;
   void animate(std::int64_t character, std::int64_t animation) override;
   [[nodiscard]] float groundSpeed(std::int64_t character, std::int64_t animation) const override;
   [[nodiscard]] bool wouldTouchCharacter(std::int64_t character, float step) const override;

@@ -52,7 +52,7 @@ void FieldScene::followNpcs() {
       continue;
     }
     // Its clips' root motion, which carries it while a script plays one (anim.c: tickAnimation).
-    world_.registry().emplace_or_replace<game::field::NpcClipMotions>(
+    world_.registry().emplace_or_replace<game::field::CharacterClipMotions>(
         entity, std::make_shared<const assets::ClipMotions>(battleClipsOf(*(*actor)->model)));
     npcActors_.push_back(std::move(*actor));
   }
