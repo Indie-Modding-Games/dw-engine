@@ -68,7 +68,7 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   }
   while (const auto screen = scenes.takeScreenRequest()) {
     if (shop_.take(*screen, scene) || itemKeeper_.take(*screen, scene) || gym_.take(*screen) ||
-        naming_.take(*screen) || tournament_.take(*screen, scenes) ||
+        naming_.take(*screen) || tournament_.take(*screen, scenes, scene) ||
         (eggBox_ != nullptr && eggBox_->take(*screen, scenes)) ||
         (discard_ != nullptr && discard_->take(*screen)) ||
         (jukebox_ != nullptr && jukebox_->take(*screen, scene)) ||

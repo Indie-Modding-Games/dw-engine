@@ -99,6 +99,21 @@ void FieldScene::setPosedProps(const assets::AssetId& model, std::vector<PropPla
   set.model = *handle;
 }
 
+void FieldScene::submitStageProps() {
+  for (const std::string& shown : stage_.shownProps) {
+    const auto found = props_.find(shown);
+    if (found == props_.end() || !found->second.model) {
+      continue;
+    }
+    for (const PropPlace& place : found->second.places) {
+      models_->submit({.model = *found->second.model,
+                       .world = place.world,
+                       .joints = place.joints,
+                       .tint = glm::vec4{1.0F}});
+    }
+  }
+}
+
 void FieldScene::submitProps() {
   for (const auto& [id, set] : props_) {
     if (!set.model) {

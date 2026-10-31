@@ -401,7 +401,7 @@ getMapSoundId = { status = "portado", dwe = "docs/formats/audio.md:24", what = "
 readMapTFS = { status = "no-aplica", note = "lectura del disco; la hace la extracción", what = "Lee las imágenes del fondo del mapa." }
 isInDaytimeTransition = { status = "falta", what = "Dice si el mapa está cambiando entre día y noche.", note = "sin búsqueda de la luz del día en el motor; comprobar" }
 handleTileUpdate = { status = "no-aplica", note = "carga de trozos del fondo del original", what = "Carga las partes del fondo según se mueve la cámara." }
-reinitializeAfterTournament = { status = "falta", what = "Vuelve al mapa tras un torneo.", note = "no hay torneos" }
+reinitializeAfterTournament = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", what = "Vuelve al mapa tras un torneo." }
 createMeramonShake = { status = "portado", dwe = "apps/session/src/story_routines/routine_screen_shake.cpp", what = "Empieza el temblor de pantalla de la escena del fuego de la montaña." }
 tickMeramonShake = { status = "parcial", dwe = "apps/game/src/field_story_props.cpp", note = "El desplazamiento del dibujo, sí; el cuadrado aditivo que crece (tpage 832,256) y el HUD que tiembla con él, no.", what = "Hace temblar la pantalla en esa escena." }
 cleanupGame = { status = "no-aplica", note = "limpieza del original", what = "Libera la partida al volver al título." }
@@ -896,14 +896,14 @@ STD_isVersusModelSceneFinished = { status = "falta", what = "Indica si terminó 
 STD_loadWinLoseModel = { status = "falta", what = "Calcula las curvas de entrada de los letreros de victoria/derrota y carga sus modelos." }
 STD_loadChampionModels = { status = "falta", what = "Prepara la órbita de cámara y coloca las letras del letrero de campeón." }
 STD_initializeChampionScene = { status = "falta", what = "Coloca al compañero en el centro con la pose de victoria y fija la cámara del campeón." }
-STD_placePlayer1 = { status = "falta", what = "Coloca al compañero en su lado de la arena para el combate." }
+STD_placePlayer1 = { status = "portado", dwe = "game/tournament/src/arena.cpp:1", what = "Coloca al compañero en su lado de la arena para el combate." }
 STD_getEntityIndex = { status = "no-aplica", note = "búsqueda genérica en la tabla de entidades", what = "Devuelve el índice de una entidad en la tabla." }
-STD_placePlayer2 = { status = "falta", what = "Coloca al rival en su lado de la arena para el combate." }
-STD_setPostIntroPosition = { status = "falta", what = "Deja al luchador en su posición final al terminar la presentación." }
+STD_placePlayer2 = { status = "portado", dwe = "game/tournament/src/arena.cpp:1", what = "Coloca al rival en su lado de la arena para el combate." }
+STD_setPostIntroPosition = { status = "portado", dwe = "game/tournament/src/arena.cpp:1", what = "Deja al luchador en su posición final al terminar la presentación." }
 STD_runIntro = { status = "falta", what = "Ejecuta la presentación del combate de copa con cámara y nombres." }
 STD_tickIntroName = { status = "falta", what = "Muestra el nombre del luchador durante la presentación." }
 STD_applyManualCamera = { status = "no-aplica", note = "cámara libre de depuración con el segundo mando", what = "Mueve la cámara a mano con el segundo mando." }
-STD_setCameraOrbit = { status = "falta", what = "Cámara que orbita según la distancia entre ambos luchadores." }
+STD_setCameraOrbit = { status = "portado", dwe = "game/tournament/src/arena.cpp:1", what = "Cámara que orbita según la distancia entre ambos luchadores." }
 STD_setCameraYXZ = { status = "falta", what = "Cámara que encuadra al compañero y al rival a la vez." }
 STD_setCameraToEntity = { status = "falta", what = "Cámara fija relativa al luchador enfocado según su orientación." }
 STD_tickVSPhase = { status = "falta", what = "Elige cada cuadro el modo de cámara activo del combate de copa." }
@@ -948,7 +948,7 @@ STD_getDigitCount = { status = "no-aplica", note = "cuenta genérica de dígitos
 STD_tickDigimonSenile = { status = "falta", what = "Mantiene al luchador en estado senil hasta que se agote su contador." }
 STD_initializePlayerMarker = { status = "falta", what = "Añade la marca que distingue a cada luchador en pantalla." }
 STD_getEntityIndex2 = { status = "no-aplica", note = "búsqueda genérica en la tabla de entidades", what = "Devuelve el índice de una entidad en la tabla." }
-STD_combatMain = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "el combate de copa es una batalla con reloj en el mapa actual; el rival no se dibuja", what = "Bucle principal de un combate de copa hasta el resultado." }
+STD_combatMain = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "el combate de copa es una batalla con reloj en la arena; el rival no se dibuja", what = "Bucle principal de un combate de copa hasta el resultado." }
 STD_startWalkingAnimation2 = { status = "falta", what = "Elige animación de caminar normal o cansada según la vida." }
 STD_applyPartnerStatsToFighter = { status = "falta", what = "Copia los valores del compañero a su ficha de luchador." }
 STD_tickFrames = { status = "no-aplica", note = "bucle de cuadros del original", what = "Avanza varios cuadros de juego seguidos." }
@@ -956,12 +956,12 @@ STD_selectMoveTarget = { status = "falta", what = "Elige el objetivo de la técn
 STD_applyMoveResult = { status = "falta", what = "Aplica el daño y efectos de una técnica que impacta." }
 STD_updateFighterStatusVisuals = { status = "falta", what = "Actualiza los efectos visibles de estados alterados del luchador." }
 STD_addCommandMenu = { status = "falta", what = "Muestra el menú de órdenes del jugador en la copa." }
-STD_initializeTournament = { status = "falta", what = "Prepara la arena de la copa: música, cámara, luces, escenario y efectos." }
+STD_initializeTournament = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "modelo, suelo y cámara de la arena; sin música propia, luces ni efectos de la copa", what = "Prepara la arena de la copa: música, cámara, luces, escenario y efectos." }
 STD_initializeOpponent = { status = "portado", dwe = "game/tournament/src/bracket.cpp:1", what = "Genera un rival de la copa con valores y técnicas según su nivel." }
-STD_runMatch = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "sin presentación ni cámara final", what = "Juega un combate de copa: presentación, combate y cámara final." }
+STD_runMatch = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "en la arena; sin presentación ni cámara final", what = "Juega un combate de copa: presentación, combate y cámara final." }
 STD_initializeCamera = { status = "falta", what = "Coloca la cámara inicial de la arena de copa." }
 STD_initializeLighting = { status = "no-aplica", note = "configuración de luces del original", what = "Configura las luces de la arena de copa." }
-STD_tournamentMain = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "sustitutos, cuadro, tres combates y recuperación; sin arena, cuadro animado ni escenas (tournament.md: Hueco)", what = "Flujo completo de la copa: cuadro, combates, resultados y premio." }
+STD_tournamentMain = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "arena, sustitutos, cuadro, tres combates y recuperación; sin cuadro animado ni escenas (tournament.md: Hueco)", what = "Flujo completo de la copa: cuadro, combates, resultados y premio." }
 VS_applyCamera = { status = "no-aplica", note = "aplicación de matrices de cámara del original", what = "Aplica rotación y traslación a la cámara." }
 VS_setCameraOrbit = { status = "falta", what = "Cámara del versus que orbita según la distancia entre luchadores." }
 VS_setCameraYXZ = { status = "falta", what = "Cámara del versus que encuadra a ambos luchadores." }

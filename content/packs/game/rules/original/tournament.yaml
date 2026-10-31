@@ -53,3 +53,17 @@ schedule:
   local_list_section: 11
   lines: {section: 1240, title: 1, ask: 2, ask_overlevel: 3, choice: 4}
   sounds: {slot: 0, refuse: 11}
+
+# La arena de las copas (std_setup.c: STD_initializeTournament, STD_loadArenaAssets; std_main.c: STD_placePlayer1/2,
+# STD_runIntro, STD_setCameraOrbit). Por número de arena: modelo y rejilla de colisión del pack, dónde empiezan los
+# luchadores (el partner en +start_x, el rival en -start_x) y cuánto camina cada uno hacia el centro en su
+# presentación. Las copas de betl02 (CURRENT_SCREEN 0x6a) usan la arena 1; las demás, la 0. La cámara del combate
+# mira a los luchadores desde un lado: su distancia por projection / distance_divisor, entre min_distance (1000 con
+# el combate en marcha) y max_distance, a eye_height del suelo y bajando drop hasta el punto medio.
+arena:
+  arenas:
+    - {model: "model/stddat/t_togi", collision: "arena/b_togi/collision", start_x: 2500, walk_in: 2000}
+    - {model: "model/stddat/b_togi", collision: "arena/b_togi/collision", start_x: 1800, walk_in: 1300}
+  second_arena_map: betl02
+  yaws: {partner: 1024, rival: 3072}
+  camera: {projection: 500, distance_divisor: 200, min_distance: 1000, max_distance: 4200, eye_height: 1000, drop: 700}

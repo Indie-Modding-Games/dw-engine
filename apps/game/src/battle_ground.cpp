@@ -30,8 +30,11 @@ bool FieldBattleGround::blocksStep(game::battle::Point from, game::battle::Point
                                    std::int32_t radius) const {
   // Only the line ahead of where the step ends counts, as in the original: a fighter whose edge
   // already overlaps a blocked cell may still step on to a free one.
+  // A stage of its own (a tournament arena) brings its ground.
+  const std::optional<assets::MapCollision>& staged = scene_->stage().ground;
   return game::field::stepCollides(
-      scene_->field().collision(), {static_cast<float>(from.x), 0.0F, static_cast<float>(from.z)},
+      staged ? *staged : scene_->field().collision(),
+      {static_cast<float>(from.x), 0.0F, static_cast<float>(from.z)},
       {static_cast<float>(to.x - from.x), static_cast<float>(to.z - from.z)},
       static_cast<float>(radius));
 }

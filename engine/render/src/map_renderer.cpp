@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstddef>
 #include <format>
+#include <optional>
 #include <span>
 #include <utility>
 #include <vector>
@@ -353,13 +354,29 @@ void MapRenderer::update(double animationSeconds, double fadeSeconds, glm::vec3 
   }
 }
 
+void MapRenderer::setStageCamera(const std::optional<MapCameraDesc>& desc) {
+  if (!desc) {
+    stageCamera_.reset();
+    return;
+  }
+  const glm::vec2 viewport = (stageCamera_ ? *stageCamera_ : camera_).viewportSize();
+  stageCamera_.emplace(*desc);
+  stageCamera_->setViewport(viewport);
+  stageCamera_->followBackgroundPixel(desc->backgroundSize * 0.5F);
+}
+
 void MapRenderer::prepare(PrepareContext& context) {
   if (!hasMap_) {
     return;
   }
   const rhi::Extent extent = context.extent();
-  camera_.setViewport({static_cast<float>(extent.width), static_cast<float>(extent.height)});
+  const glm::vec2 viewport{static_cast<float>(extent.width), static_cast<float>(extent.height)};
+  camera_.setViewport(viewport);
   camera_.follow(focus_);
+  if (stageCamera_) {
+    stageCamera_->setViewport(viewport);
+    stageCamera_->followBackgroundPixel(stageCamera_->desc().backgroundSize * 0.5F);
+  }
 }
 
 void MapRenderer::warnUploadFailure(std::size_t bytes) {
@@ -373,7 +390,7 @@ void MapRenderer::warnUploadFailure(std::size_t bytes) {
 }
 
 void MapRenderer::drawBackground(DrawContext& context) {
-  if (!hasMap_) {
+  if (!hasMap_ || stageCamera_) {
     return;
   }
   vertices_.clear();
@@ -408,11 +425,12 @@ void MapRenderer::drawLayers(DrawContext& context) {
   if (!hasMap_) {
     return;
   }
+  const MapCamera& shown = camera();
   // Far to near, one draw per run of quads with the same blend and texel filter.
   vertices_.clear();
   runs_.clear();
-  const glm::mat4 viewProjection = camera_.viewProjection();
-  const glm::vec3 right{camera_.view()[0][0], camera_.view()[1][0], camera_.view()[2][0]};
+  const glm::mat4 viewProjection = shown.viewProjection();
+  const glm::vec3 right{shown.view()[0][0], shown.view()[1][0], shown.view()[2][0]};
   const glm::uvec2 white{renderer_->whiteTexture().index, NoPalette};
   for (const MapMarker& marker : markers_) {
     const glm::vec3 side =
@@ -428,7 +446,7 @@ void MapRenderer::drawLayers(DrawContext& context) {
                {0.0F, 0.0F}, {1.0F, 1.0F}, white, marker.color);
     addToRun(SpriteBlend::Opaque, TexelFilter::All, first);
   }
-  const glm::vec3 up{camera_.view()[0][1], camera_.view()[1][1], camera_.view()[2][1]};
+  const glm::vec3 up{shown.view()[0][1], shown.view()[1][1], shown.view()[2][1]};
   for (const MapBillboard& billboard : billboards_) {
     if (billboard.texture >= billboardTextures_.size()) {
       continue;
@@ -469,7 +487,9 @@ void MapRenderer::drawLayers(DrawContext& context) {
                {billboard.color, blendAlpha(billboard.blend)});
     addToRun(billboard.blend, TexelFilter::SemiTransparent, semiStart);
   }
-  for (const DepthLayerQuad& quad : layers_.quads()) {
+  // A stage of its own has no depth layers of the map.
+  for (const DepthLayerQuad& quad :
+       stageCamera_ ? std::span<const DepthLayerQuad>{} : layers_.quads()) {
     if (quad.sprite >= placements_.size() ||
         placements_[quad.sprite].texture == assets::MapSpriteSheet::NoTexture) {
       continue;
@@ -479,7 +499,7 @@ void MapRenderer::drawLayers(DrawContext& context) {
     const glm::vec2 uvMin = glm::vec2{placement.texel} / texture.size;
     const glm::vec2 uvMax = glm::vec2{placement.texel + placement.size} / texture.size;
     const auto corners =
-        backgroundCorners(camera_, quad.position, quad.position + quad.size, quad.viewDepth);
+        backgroundCorners(shown, quad.position, quad.position + quad.size, quad.viewDepth);
     const glm::uvec2 textures{texture.id.index,
                               texture.timeOfDayPalette ? palettes_.index : NoPalette};
     const auto plainStart = static_cast<std::uint32_t>(vertices_.size());
@@ -496,8 +516,8 @@ void MapRenderer::drawLayers(DrawContext& context) {
     addToRun(quad.blend, TexelFilter::SemiTransparent, semiStart);
   }
   // Bars where the background does not reach, drawn last over everything (ADR 0020).
-  const PixelRect inside = camera_.backgroundRect();
-  const glm::vec2 viewport = camera_.viewportSize();
+  const PixelRect inside = shown.backgroundRect();
+  const glm::vec2 viewport = shown.viewportSize();
   const auto toClip = [viewport](glm::vec2 window) {
     return glm::vec4{(window / viewport * 2.0F) - 1.0F, 0.0F, 1.0F};
   };

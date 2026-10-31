@@ -124,6 +124,14 @@ struct FieldStage {
   std::uint64_t partnerHiddenBones = 0;
   // The scene's own primitives, back to front, drawn over the models with their depth.
   std::vector<ScenePrim> prims;
+  // A stage of the scene's own instead of the map (a tournament arena: std_setup.c:
+  // STD_initializeTournament): the camera everything is drawn and projected with, the map's
+  // background and depth layers left out (render::MapRenderer::setStageCamera), the effects kept.
+  std::optional<render::MapCameraDesc> view;
+  // The props (setProps) drawn while the scenery is hidden: the stage's own (STD_renderArena0).
+  std::vector<std::string> shownProps;
+  // The ground a battle is fought on instead of the map's (STD_loadArenaAssets: the arena's ATR).
+  std::optional<assets::MapCollision> ground;
 };
 
 // The first state of the field effects' rolls (libc rand's increment).
@@ -255,8 +263,9 @@ public:
 
   // The scene drawers for FrameDesc::scene, in order.
   [[nodiscard]] std::span<render::Drawer* const> drawers() {
-    return stage_.sceneryHidden ? std::span<render::Drawer* const>{stageDrawers_}
-                                : std::span<render::Drawer* const>{drawers_};
+    // A stage with a view of its own keeps the map renderer's drawers for the effects.
+    return stage_.sceneryHidden && !stage_.view ? std::span<render::Drawer* const>{stageDrawers_}
+                                                : std::span<render::Drawer* const>{drawers_};
   }
 
   // The ground point under a window pixel (drawable pixels, as MouseMoved gives), for
@@ -296,7 +305,7 @@ public:
   // change: map.c: changeToDeathMap).
   core::Result<void> enterOriginalMap(std::int32_t index, std::int32_t exit);
   // What a scene does to the picture; a default FieldStage gives the field its own back.
-  void setStage(const FieldStage& stage) { stage_ = stage; }
+  void setStage(const FieldStage& stage);
   [[nodiscard]] const FieldStage& stage() const { return stage_; }
   // Plays this clip of the partner (by the original's id, startAnimation) instead of the one its
   // motion picks, until nothing gives the partner back to its motion. A clip the model lacks is
@@ -581,6 +590,8 @@ private:
   // Draws them (map_object.c: renderDoors).
   void submitMapObjects();
   void submitProps();
+  // FieldStage::shownProps, while the scenery is hidden.
+  void submitStageProps();
   void followClock();
   void applyLighting();
   // The map's NPCs drawn as their species with models/partner's animations (field_scene_npcs.cpp):

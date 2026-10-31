@@ -24,7 +24,9 @@ auto rival = dwe::game::tournament::makeRival(*rules, cupNumber, species, random
   con P y, al elegir una, la pregunta y la elección de entrar. `TournamentAdapter::openSchedule` arma el calendario
   (`buildSchedule`, `cupOpen`) y `TournamentAdapter::enter` deja la inscripción (disparadores y variables 2 a 4).
 - **Combates**: `apps/game/src/story_tournament.cpp` juega los tres combates como batallas de tipo `Tournament` con
-  reloj (`BattleSetup::timeLimit`): sin huida, sin bolsa, sin premios ni cuidados al acabar.
+  reloj (`BattleSetup::timeLimit`): sin huida, sin bolsa, sin premios ni cuidados al acabar. Se juegan en la arena
+  (sección `arena` del ruleset): `FieldScene` dibuja su modelo con una cámara propia (`FieldStage::view`,
+  `render::MapRenderer::setStageCamera`) y la batalla pisa su rejilla (`FieldStage::ground`).
 - **Final**: `TournamentAdapter::finish` quita la inscripción (disparador 37), suma al historial (copas ganadas,
   perdidas, victorias), pone el disparador de la copa ganada (15 + copa) y deja las victorias en la variable 255,
   que lee el guion.
@@ -60,7 +62,12 @@ probable y está marcado en el código), **Hueco** (falta).
 | Entrar: disparadores 37, 38 y 39; variable 2 = día, o (día + 1) con 0x80 si es mañana; variable 4 = especie del partner | `dget.c: initTournamentSchedule` (estado 5) | `TournamentAdapter::enter`, `entryDay` | initTournamentSchedule: registration values | Igual |
 | Cancelar en la elección Entrar / No entrar | `showMapheadSelection` | `TournamentScheduleScreen::act` | - | Suposición: cuenta como «No entrar» |
 | Caja del título más ancha que la del original (108 píxeles) para que quepa el texto con esta fuente | `dget.c: buildScheduleLabels` | `tournament_schedule/structure.rcss` | - | Suposición: mismo centro y alto |
-| Arena, cámara de copa, presentación, cuadro animado, letreros de enfrentamiento/victoria/derrota, escena del campeón | `std_*.c` (`STD_runIntro`, `STD_addBracket`, `STD_addChampionScene`...) | - | - | Hueco: los combates se juegan en el mapa actual con la cámara de combate normal |
+| Arena: la 1 (B_TOGI) en las copas de betl02, si no la 0 (T_TOGI); su modelo en lugar del mapa, sin los personajes del mapa ni el jugador | `std_setup.c: STD_tournamentMain`, `STD_initializeTournament`, `STD_loadArenaAssets`, `STD_renderArena0/1` | `arenaFor`, `StoryTournament::enterArena`, `FieldStage::view`/`shownProps` | the arena, where the fighters stand, the orbit camera | Igual |
+| Suelo del combate: la rejilla de colisión de la arena (B_TOGI.ATR en las dos) | `std_setup.c: STD_loadArenaAssets` | `FieldStage::ground`, `FieldBattleGround::blocksStep` | - | Igual |
+| Luchadores al empezar: el partner en +500 y el rival en -500 (salen de ±2500 o ±1800 y la presentación los acerca 2000 o 1300) | `std_main.c: STD_placePlayer1/2`, `STD_runIntro`, `STD_setPostIntroPosition` | `arenaStart` | the arena, where the fighters stand, the orbit camera | Igual (como si se saltara la presentación) |
+| Cámara del combate: a un lado de los luchadores, su distancia × 500 / 200 entre 1000 y 4200 hacia atrás, 1000 de alto, mirando al punto medio 300 sobre el suelo; proyección 500 | `std_main.c: STD_setCameraOrbit`, `std_setup.c: STD_initializeCamera` | `arenaView`, `StoryTournament::showArena` | the arena, where the fighters stand, the orbit camera | Igual |
+| Al acabar la copa, el jugador y el partner vuelven a donde estaban en el mapa | `reinitializeAfterTournament` | `StoryTournament::leaveArena` | - | Suposición: el original recarga el mapa y el guion sigue desde ahí |
+| Presentación con cámara que persigue y nombres, acercamiento de la cámara con el letrero de inicio (distancia mínima de 200 a 4200 y vuelta a 1000), cuadro animado, escenas de victoria/derrota, escena del campeón, música y luces de la arena | `STD_runIntro`, `STD_startCameraChase`, `STD_addBracket`, `STD_addChampionScene`, `STD_initializeLighting` | - | - | Hueco: la copa usa la presentación y la música del combate normal |
 | Rival dibujado en el campo | `std_setup.c: STD_placePlayer2` | - | - | Hueco: la pantalla de combate solo dibuja personajes del mapa; el rival pelea pero no se ve |
 | Reloj en pantalla y aviso de tiempo agotado | `STD_tickFighterCounter`, `STD_addTimeoutWindow` | - | - | Hueco |
 | Menú de órdenes de la copa | `STD_addCommandMenu`, `STD_handleCommands` | menú de combate normal | - | Suposición: mismas órdenes que el combate normal |
@@ -68,6 +75,6 @@ probable y está marcado en el código), **Hueco** (falta).
 ## Tests
 
 `dwe_tournament_tests`: las listas de una copa en un guion, el calendario de inscripción (copas abiertas, cinco días,
-corte de las 10:00, día de entrada), el sorteo de rivales, el cuadro, los sustitutos, los
+corte de las 10:00, día de entrada), la arena (cuál, dónde empiezan los luchadores, la cámara), el sorteo de rivales, el cuadro, los sustitutos, los
 valores y técnicas de un rival y las victorias que ganan cada copa. `dwe_battle_tests` (`tournament_match_tests.cpp`):
 el combate de copa sin premios, la derrota al caer el partner, el reloj y el juicio al acabar el tiempo.

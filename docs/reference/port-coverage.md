@@ -84,7 +84,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 145 | 4 | 5 | 17 | 95 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 194 | 5 | 31 | 55 | 85 % |
-| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
+| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 74 | 4 | 4 | 14 | 93 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 69 | 0 | 6 | 27 | 92 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 88 | 3 | 4 | 50 | 94 % |
@@ -95,13 +95,13 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 39 | 0 | 0 | 17 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 9 | 0 | 2 | 24 | 82 % |
-| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 19 | 7 | 63 | 360 | 25 % |
+| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 25 | 8 | 58 | 358 | 32 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 0 | 0 | 91 | 315 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 32 | 3 | 3 | 10 | 88 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1087 | 39 | 244 | 1068 | 81 % |
+| **Total** | 2438 funciones | 1094 | 40 | 238 | 1066 | 81 % |
 
 ## Batalla
 
@@ -180,12 +180,11 @@ El jugador en el mapa, la rejilla de colisión, los warps, el seguimiento del co
 
 Ficheros del decomp: `main/aabb.c`, `main/map.c`, `main/map_collision.c`, `main/tamer.c`, `main/vecmath.c`.
 
-Portado 73, parcial 4, falta 5, no aplica 14.
+Portado 74, parcial 4, falta 4, no aplica 14.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `isInDaytimeTransition` | `main/map.c:4607` | falta | Dice si el mapa está cambiando entre día y noche. | sin búsqueda de la luz del día en el motor; comprobar |
-| `reinitializeAfterTournament` | `main/map.c:5445` | falta | Vuelve al mapa tras un torneo. | no hay torneos |
 | `tickMeramonShake` | `main/map.c:5482` | parcial | Hace temblar la pantalla en esa escena. | `apps/game/src/field_story_props.cpp` · El desplazamiento del dibujo, sí; el cuadrado aditivo que crece (tpage 832,256) y el HUD que tiembla con él, no. |
 | `getFileCityTopMap` | `main/map.c:5592` | parcial | Elige qué versión del mapa de la ciudad cargar según cuánto ha crecido. | `game/story/src/prosperity.cpp` · CityAdapter::clearedMap la elige; falta el guardado tras el final (rutina 0x36) que la usa |
 | `tamerTickOpening` | `main/tamer.c:1668` | falta | Escena de apertura del jugador. | `game/story/include/dwe/game/story/partner_routines.hpp:21` · la escena del compañero 5 acaba al momento |
@@ -361,7 +360,7 @@ Inscripción, calendario y el overlay de copas, que trae su propio motor de comb
 
 Ficheros del decomp: `dget/dget.c`, `main/tournament.c`, `std/std_effect.c`, `std/std_hud.c`, `std/std_main.c`, `std/std_setup.c`.
 
-Portado 19, parcial 7, falta 63, no aplica 360.
+Portado 25, parcial 8, falta 58, no aplica 358.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -383,12 +382,8 @@ Portado 19, parcial 7, falta 63, no aplica 360.
 | `STD_loadWinLoseModel` | `std/std_hud.c:1227` | falta | Calcula las curvas de entrada de los letreros de victoria/derrota y carga sus modelos. | — |
 | `STD_loadChampionModels` | `std/std_hud.c:1273` | falta | Prepara la órbita de cámara y coloca las letras del letrero de campeón. | solo lo cita la extracción del disco |
 | `STD_initializeChampionScene` | `std/std_hud.c:1371` | falta | Coloca al compañero en el centro con la pose de victoria y fija la cámara del campeón. | — |
-| `STD_placePlayer1` | `std/std_main.c:1568` | falta | Coloca al compañero en su lado de la arena para el combate. | — |
-| `STD_placePlayer2` | `std/std_main.c:1593` | falta | Coloca al rival en su lado de la arena para el combate. | `apps/game/src/story_tournament.cpp:11` |
-| `STD_setPostIntroPosition` | `std/std_main.c:1682` | falta | Deja al luchador en su posición final al terminar la presentación. | — |
-| `STD_runIntro` | `std/std_main.c:1885` | falta (citada en docs) | Ejecuta la presentación del combate de copa con cámara y nombres. | — |
+| `STD_runIntro` | `std/std_main.c:1885` | falta | Ejecuta la presentación del combate de copa con cámara y nombres. | `apps/game/src/story_tournament.cpp:157` |
 | `STD_tickIntroName` | `std/std_main.c:2063` | falta | Muestra el nombre del luchador durante la presentación. | — |
-| `STD_setCameraOrbit` | `std/std_main.c:2224` | falta | Cámara que orbita según la distancia entre ambos luchadores. | — |
 | `STD_setCameraYXZ` | `std/std_main.c:2266` | falta | Cámara que encuadra al compañero y al rival a la vez. | — |
 | `STD_setCameraToEntity` | `std/std_main.c:2286` | falta | Cámara fija relativa al luchador enfocado según su orientación. | — |
 | `STD_tickVSPhase` | `std/std_main.c:2306` | falta | Elige cada cuadro el modo de cámara activo del combate de copa. | — |
@@ -424,19 +419,19 @@ Portado 19, parcial 7, falta 63, no aplica 360.
 | `STD_addTimeoutWindow` | `std/std_main.c:4698` | falta (citada en docs) | Muestra el aviso de tiempo agotado del combate. | — |
 | `STD_tickDigimonSenile` | `std/std_main.c:4860` | falta | Mantiene al luchador en estado senil hasta que se agote su contador. | — |
 | `STD_initializePlayerMarker` | `std/std_main.c:5476` | falta | Añade la marca que distingue a cada luchador en pantalla. | — |
-| `STD_combatMain` | `std/std_main.c:5582` | parcial | Bucle principal de un combate de copa hasta el resultado. | `apps/game/src/story_tournament.cpp:1` · el combate de copa es una batalla con reloj en el mapa actual; el rival no se dibuja |
+| `STD_combatMain` | `std/std_main.c:5582` | parcial | Bucle principal de un combate de copa hasta el resultado. | `apps/game/src/story_tournament.cpp:1` · el combate de copa es una batalla con reloj en la arena; el rival no se dibuja |
 | `STD_startWalkingAnimation2` | `std/std_main.c:5652` | falta | Elige animación de caminar normal o cansada según la vida. | — |
 | `STD_applyPartnerStatsToFighter` | `std/std_main.c:5913` | falta | Copia los valores del compañero a su ficha de luchador. | — |
 | `STD_selectMoveTarget` | `std/std_main.c:6660` | falta | Elige el objetivo de la técnica del luchador. | — |
 | `STD_applyMoveResult` | `std/std_main.c:6839` | falta | Aplica el daño y efectos de una técnica que impacta. | — |
 | `STD_updateFighterStatusVisuals` | `std/std_main.c:6954` | falta | Actualiza los efectos visibles de estados alterados del luchador. | — |
 | `STD_addCommandMenu` | `std/std_main.c:7502` | falta (citada en docs) | Muestra el menú de órdenes del jugador en la copa. | — |
-| `STD_initializeTournament` | `std/std_setup.c:243` | falta | Prepara la arena de la copa: música, cámara, luces, escenario y efectos. | solo lo cita la extracción del disco |
-| `STD_runMatch` | `std/std_setup.c:401` | parcial | Juega un combate de copa: presentación, combate y cámara final. | `apps/game/src/story_tournament.cpp:1` · sin presentación ni cámara final |
-| `STD_initializeCamera` | `std/std_setup.c:415` | falta | Coloca la cámara inicial de la arena de copa. | — |
-| `STD_tournamentMain` | `std/std_setup.c:521` | parcial | Flujo completo de la copa: cuadro, combates, resultados y premio. | `apps/game/src/story_tournament.cpp:1` · sustitutos, cuadro, tres combates y recuperación; sin arena, cuadro animado ni escenas (tournament.md: Hueco) |
+| `STD_initializeTournament` | `std/std_setup.c:243` | parcial | Prepara la arena de la copa: música, cámara, luces, escenario y efectos. | `apps/game/src/story_tournament.cpp:1` · modelo, suelo y cámara de la arena; sin música propia, luces ni efectos de la copa |
+| `STD_runMatch` | `std/std_setup.c:401` | parcial | Juega un combate de copa: presentación, combate y cámara final. | `apps/game/src/story_tournament.cpp:1` · en la arena; sin presentación ni cámara final |
+| `STD_initializeCamera` | `std/std_setup.c:415` | falta (citada en docs) | Coloca la cámara inicial de la arena de copa. | — |
+| `STD_tournamentMain` | `std/std_setup.c:521` | parcial | Flujo completo de la copa: cuadro, combates, resultados y premio. | `apps/game/src/story_tournament.cpp:1` · arena, sustitutos, cuadro, tres combates y recuperación; sin cuadro animado ni escenas (tournament.md: Hueco) |
 
-No aplica: copias de otra función, que cuenta por las dos (300); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (27); limpieza de objetos y memoria del original: el motor libera lo suyo (16); búsqueda genérica en la tabla de entidades (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); utilidad genérica de reloj (1); lectura de punteros del guion del original (1); ajuste de UV de modelos del original (1); carga de modelos del original (1); cámara libre de depuración con el segundo mando (1); aplicación de proyección y punto de vista del original (1); asignación directa de valores de cámara (1); cálculo auxiliar de distancias (1); comprobación geométrica auxiliar (1); interpolación lineal genérica (1); cuenta genérica de dígitos (1); bucle de cuadros del original (1); configuración de luces del original (1).
+No aplica: copias de otra función, que cuenta por las dos (300); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (26); limpieza de objetos y memoria del original: el motor libera lo suyo (15); búsqueda genérica en la tabla de entidades (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); utilidad genérica de reloj (1); lectura de punteros del guion del original (1); ajuste de UV de modelos del original (1); carga de modelos del original (1); cámara libre de depuración con el segundo mando (1); aplicación de proyección y punto de vista del original (1); asignación directa de valores de cámara (1); cálculo auxiliar de distancias (1); comprobación geométrica auxiliar (1); interpolación lineal genérica (1); cuenta genérica de dígitos (1); bucle de cuadros del original (1); configuración de luces del original (1).
 
 ## Versus y demo
 

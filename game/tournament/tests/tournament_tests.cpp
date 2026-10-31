@@ -362,3 +362,42 @@ instructions:
   CHECK(sectionList(*node, 11) == std::vector<std::int32_t>{0x0C, 0x0D, 0x0E});
   CHECK(sectionList(*node, 12).empty());
 }
+
+TEST_CASE("std_setup.c STD_tournamentMain: the arena, where the fighters stand, the orbit camera") {
+  const auto bytes = dwe::assets::DiskFileSystem{}.readFile(
+      std::filesystem::path{DWE_GAME_PACK} / "rules" / "original" / "tournament.yaml");
+  REQUIRE(bytes);
+  auto node = dwe::core::parseYaml(
+      std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+  REQUIRE(node);
+  auto read = parseArenaRules(
+      {.name = "tournament", .owner = "test", .file = "tournament.yaml", .node = *node});
+  REQUIRE_MESSAGE(read, (read ? std::string{} : read.error().message));
+  const ArenaRules& rules = *read;
+  REQUIRE(rules.arenas.size() == 2);
+  // CURRENT_SCREEN 0x6a (betl02) takes arena 1, every other map arena 0.
+  CHECK(arenaFor(rules, "betl02") == 1);
+  CHECK(arenaFor(rules, "room13") == 0);
+  CHECK(rules.arenas.at(0).model == "model/stddat/t_togi");
+  CHECK(rules.arenas.at(1).collision == "arena/b_togi/collision");
+  // STD_placePlayer1/2 at +-2500 (+-1800), the intro walks 2000 (1300) in: both end at +-500.
+  CHECK(arenaStart(rules.arenas.at(0)).partner == ArenaPoint{.x = 500, .z = 0});
+  CHECK(arenaStart(rules.arenas.at(0)).rival == ArenaPoint{.x = -500, .z = 0});
+  CHECK(arenaStart(rules.arenas.at(1)).rival == ArenaPoint{.x = -500, .z = 0});
+  CHECK(rules.partnerYaw == 0x400);
+  CHECK(rules.rivalYaw == 0xC00);
+
+  // STD_setCameraOrbit: 1000 apart, the eye 2500 back (1000 * 500 / 200) on the side, 1000 up,
+  // looking at the midpoint 300 over the ground.
+  const ArenaView start = arenaView(rules.camera, {.x = 500, .z = 0}, {.x = -500, .z = 0});
+  CHECK(start.eye == std::array<std::int32_t, 3>{0, -1000, 2500});
+  CHECK(start.target == std::array<std::int32_t, 3>{0, -300, 0});
+  // At most 0x1068 back, at least STD_DEFAULT_CAM_MIN_DISTANCE (1000 in the match).
+  CHECK(arenaView(rules.camera, {.x = 2000, .z = 0}, {.x = -2000, .z = 0}).eye.at(2) == 4200);
+  CHECK(arenaView(rules.camera, {.x = 100, .z = 0}, {.x = -100, .z = 0}).eye.at(2) == 1000);
+  // Off the x axis: the side of the line from the partner to the rival, d * dz / dist and
+  // d * dx / dist from the midpoint.
+  const ArenaView turned = arenaView(rules.camera, {.x = 0, .z = 0}, {.x = 300, .z = 400});
+  CHECK(turned.eye == std::array<std::int32_t, 3>{1150, -1000, -550});
+  CHECK(turned.target == std::array<std::int32_t, 3>{150, -300, 200});
+}

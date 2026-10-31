@@ -1,6 +1,7 @@
 dwe_add_module(tournament
     LAYER game
     SOURCES
+        src/arena.cpp
         src/bracket.cpp
         src/cup_data.cpp
         src/rules.cpp

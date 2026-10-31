@@ -69,6 +69,11 @@ core::Result<void> TournamentAdapter::readRules(const ruleset::Ruleset& rules) {
     return std::unexpected{read.error()};
   }
   rules_ = std::move(*read);
+  auto arena = game::tournament::parseArenaRules(*section);
+  if (!arena) {
+    return std::unexpected{arena.error()};
+  }
+  arena_ = std::move(*arena);
   schedule_.reset();
   table_.reset();
   auto schedule = game::tournament::parseScheduleRules(*section);
@@ -173,6 +178,37 @@ core::Result<void> TournamentAdapter::begin(GameSession& session) {
                 cup_, bracket_->playerSlot, bracket_->opponents[0], bracket_->opponents[1],
                 bracket_->opponents[2]);
   return {};
+}
+
+core::Result<TournamentAdapter::ArenaStage>
+TournamentAdapter::arenaStage(std::string_view map) const {
+  if (!arena_ || desc_.files == nullptr) {
+    return core::fail("no arena rules");
+  }
+  const std::size_t index = game::tournament::arenaFor(*arena_, map);
+  const game::tournament::Arena& arena = arena_->arenas.at(index);
+  auto id = assets::AssetId::parse(arena.collision);
+  if (!id) {
+    return std::unexpected{id.error()};
+  }
+  auto bytes = desc_.files->read(*id);
+  if (!bytes) {
+    return std::unexpected{bytes.error()};
+  }
+  auto collision = assets::parseMapCollision(
+      std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+  if (!collision) {
+    return std::unexpected{collision.error()};
+  }
+  core::logDebug("[port:tournament] STD_initializeTournament (std_setup.c:243): arena {} ({}) "
+                 "for map {}",
+                 index, arena.model, map);
+  return ArenaStage{.model = arena.model,
+                    .collision = std::move(*collision),
+                    .start = game::tournament::arenaStart(arena),
+                    .partnerYaw = arena_->partnerYaw,
+                    .rivalYaw = arena_->rivalYaw,
+                    .camera = arena_->camera};
 }
 
 core::Result<BattleRequest> TournamentAdapter::matchRequest(GameSession& session,

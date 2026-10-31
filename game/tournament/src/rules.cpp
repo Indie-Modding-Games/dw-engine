@@ -45,6 +45,7 @@ constexpr std::string_view OpponentBaseStatsKey = "opponent_base_stats";
 constexpr std::string_view WinChancesKey = "win_chances";
 // The registration's part, which parseScheduleRules reads.
 constexpr std::string_view ScheduleKey = "schedule";
+constexpr std::string_view ArenaKey = "arena";
 constexpr std::size_t PairSize = 2;
 constexpr std::size_t LevelSize = 3;
 
@@ -139,7 +140,7 @@ core::Result<TournamentRules> parseTournamentRules(const ruleset::Section& secti
   if (!reader.expectKeys(root, SectionText,
                          {StoryKey, RivalsKey, WinsNeededKey, CupWinsNeededKey, StandInsKey,
                           TimeLimitKey, RecoveryDivisorKey, StatsKey, LevelsKey, FirstLevelKey,
-                          MovesKey, ScheduleKey})) {
+                          MovesKey, ScheduleKey, ArenaKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   TournamentRules rules;

@@ -441,6 +441,16 @@ core::Result<MapDocument> parseMapDocument(std::string_view yaml) {
   return reader.finish(std::move(document), "map data");
 }
 
+core::Result<MapCollision> parseMapCollision(std::string_view yaml) {
+  auto tree = core::parseYaml(yaml);
+  if (!tree) {
+    return std::unexpected{core::Error{std::format("collision: {}", tree.error().message)}};
+  }
+  YamlReader reader;
+  MapCollision collision = readCollision(reader, *tree);
+  return reader.finish(std::move(collision), "collision");
+}
+
 core::Result<AssetId> mapDataId(std::string_view mapId) {
   return AssetId::parse(std::format("map/{}/data", contentAssetPath(mapId)));
 }

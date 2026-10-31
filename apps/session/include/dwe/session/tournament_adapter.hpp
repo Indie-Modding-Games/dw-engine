@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/map_document.hpp>
 #include <dwe/game/battle/battle.hpp>
 #include <dwe/game/tournament/tournament.hpp>
 #include <dwe/session/battle_adapter.hpp>
@@ -11,6 +12,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace dwe::assets {
@@ -90,6 +92,18 @@ public:
   // partner's species.
   core::Result<void> enter(GameSession& session, std::size_t column);
 
+  // The arena of a cup entered on this map (STD_initializeTournament, STD_loadArenaAssets): its
+  // model, its collision grid, where the fighters stand and its camera.
+  struct ArenaStage {
+    std::string model;
+    assets::MapCollision collision;
+    game::tournament::ArenaStart start;
+    std::int32_t partnerYaw = 0;
+    std::int32_t rivalYaw = 0;
+    game::tournament::ArenaCamera camera;
+  };
+  core::Result<ArenaStage> arenaStage(std::string_view map) const;
+
 private:
   [[nodiscard]] const assets::DigimonRow* rowOfNumber(std::int32_t number) const;
   // The active map's script listing and its number.
@@ -106,6 +120,7 @@ private:
   std::size_t round_ = 0;
   std::int32_t wins_ = 0;
   bool lost_ = false;
+  std::optional<game::tournament::ArenaRules> arena_;
   std::optional<game::tournament::ScheduleRules> schedule_;
   std::optional<game::tournament::TournamentTable> table_;
   std::optional<MapHeadLineTables> lineTables_;

@@ -256,6 +256,10 @@ struct MapDocument {
 // Parses the text of `map/<id>/data`. Unknown and missing keys are errors.
 core::Result<MapDocument> parseMapDocument(std::string_view yaml);
 
+// Parses a collision grid of its own, as dwx writes a tournament arena's
+// (`arena/<name>/collision`: the `collision` mapping of a map's data at the root).
+core::Result<MapCollision> parseMapCollision(std::string_view yaml);
+
 // The asset id of a map's data, `map/<id>/data`; a namespaced id is a folder per part,
 // `map/<pack>/<name>/data` (ContentId::assetPath).
 core::Result<AssetId> mapDataId(std::string_view mapId);

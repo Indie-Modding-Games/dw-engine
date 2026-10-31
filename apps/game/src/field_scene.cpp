@@ -787,6 +787,8 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
     drawNpcs(animationSeconds, alpha);
     submitMapObjects();
     submitProps();
+  } else {
+    submitStageProps();
   }
   submitEffectModels();
   submitStatusModels();
@@ -913,6 +915,11 @@ void FieldScene::setPlayerYaw(float yaw) {
   auto& transform = world_.registry().get<scene::Transform>(playerActor_->entity);
   transform.yaw = yaw;
   transform.previousYaw = yaw;
+}
+
+void FieldScene::setStage(const FieldStage& stage) {
+  stage_ = stage;
+  mapRenderer_->setStageCamera(stage_.view);
 }
 
 const render::MapCamera* FieldScene::camera() const {

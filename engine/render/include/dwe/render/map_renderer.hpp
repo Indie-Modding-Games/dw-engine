@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -114,9 +115,14 @@ public:
 
   [[nodiscard]] bool hasMap() const { return hasMap_; }
 
-  // The map's camera: the view and projection models must be drawn with. Only valid with a map;
-  // sized to the frame being drawn once backgroundDrawer() has prepared it.
-  [[nodiscard]] const MapCamera& camera() const { return camera_; }
+  // A camera of a stage of its own instead of the map's (a tournament arena: std_setup.c:
+  // STD_initializeTournament): while set, camera() is it, centred on its background, and neither
+  // the background nor the depth layers are drawn (the models stand on the cleared frame); the
+  // markers, the billboards and the bars stay. Unset, the map's camera is back.
+  void setStageCamera(const std::optional<MapCameraDesc>& desc);
+  // The map's camera, or the stage's: the view and projection models must be drawn with. Only
+  // valid with a map; sized to the frame being drawn once backgroundDrawer() has prepared it.
+  [[nodiscard]] const MapCamera& camera() const { return stageCamera_ ? *stageCamera_ : camera_; }
 
   [[nodiscard]] MapDepthLayers& layers() { return layers_; }
 
@@ -199,6 +205,8 @@ private:
 
   // The default camera until a map is set; hasMap_ says whether it is one.
   MapCamera camera_{MapCameraDesc{}};
+  // setStageCamera's.
+  std::optional<MapCamera> stageCamera_;
   glm::vec3 focus_{0.0F};
   bool hasMap_ = false;
   MapDepthLayers layers_;

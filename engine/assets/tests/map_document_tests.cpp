@@ -310,3 +310,17 @@ TEST_CASE("a map document is loaded by id with its backgrounds and textures") {
   CHECK(missing.error().message.find("nowhere") != std::string::npos);
   CHECK_FALSE(dwe::assets::loadMapDocument(*vfs, "Bad/Id").has_value());
 }
+
+TEST_CASE("a collision grid of its own reads as a map's (a tournament arena's)") {
+  std::string text = "width: 100\nheight: 100\nencoding: \"legend\"\nlegend:\n"
+                     "- cell: \".\"\n  value: 0\n- cell: \"#\"\n  value: 128\nrows:\n";
+  for (int row = 0; row < MapCollision::Size; ++row) {
+    std::string cells(MapCollision::Size, row < 30 ? '#' : '.');
+    text += std::format("- \"{}\"\n", cells);
+  }
+  const auto collision = dwe::assets::parseMapCollision(text);
+  REQUIRE_MESSAGE(collision.has_value(), errorOf(collision));
+  CHECK(collision->isBlocked({.column = 50, .row = 29}));
+  CHECK_FALSE(collision->isBlocked({.column = 50, .row = 30}));
+  CHECK_FALSE(dwe::assets::parseMapCollision("width: 100\n").has_value());
+}

@@ -272,4 +272,68 @@ Schedule buildSchedule(const ScheduleRules& rules, const TournamentTable& table,
 // picked: 0 today, else tomorrow with the flag).
 std::int32_t entryDay(const ScheduleRules& rules, std::int32_t day, std::size_t column);
 
+// The arena the cups are fought in (std_setup.c: STD_initializeTournament, STD_loadArenaAssets;
+// std_main.c: STD_placePlayer1/2, STD_runIntro, STD_setCameraOrbit). Points are the original's
+// axes and units (y down).
+struct ArenaPoint {
+  std::int32_t x = 0;
+  std::int32_t z = 0;
+
+  friend bool operator==(const ArenaPoint&, const ArenaPoint&) = default;
+};
+
+// One arena: its model and collision grid in the packs, where the fighters stand when it opens
+// (the partner at +startX, the rival at -startX) and how far each walks in toward the other in its
+// intro (STD_runIntro: dist).
+struct Arena {
+  std::string model;
+  std::string collision;
+  std::int32_t startX = 0;
+  std::int32_t walkIn = 0;
+};
+
+// STD_setCameraOrbit: the camera looks across the fighters from the side, `eyeHeight` over the
+// ground, back from their midpoint by their distance times `projection` / `distanceDivisor`
+// within [minDistance, maxDistance] (minDistance being STD_DEFAULT_CAM_MIN_DISTANCE once the match
+// runs), tilted down so the midpoint shows `drop` under the eye.
+struct ArenaCamera {
+  std::int32_t projection = 0;
+  std::int32_t distanceDivisor = 1;
+  std::int32_t minDistance = 0;
+  std::int32_t maxDistance = 0;
+  std::int32_t eyeHeight = 0;
+  std::int32_t drop = 0;
+};
+
+struct ArenaRules {
+  // By the original's arena id (STD_ARENA_MODELS).
+  std::vector<Arena> arenas;
+  // The map whose cups use arena 1 (STD_tournamentMain: CURRENT_SCREEN 0x6a); the others use 0.
+  std::string secondArenaMap;
+  // setEntityRotation in STD_placePlayer1 and STD_placePlayer2.
+  std::int32_t partnerYaw = 0;
+  std::int32_t rivalYaw = 0;
+  ArenaCamera camera;
+};
+
+core::Result<ArenaRules> parseArenaRules(const ruleset::Section& section);
+
+// STD_tournamentMain: the arena of a cup entered on this map.
+[[nodiscard]] std::size_t arenaFor(const ArenaRules& rules, std::string_view map);
+
+// Where the fighters stand once the intro is over (STD_setPostIntroPosition: the start less the
+// walk in, toward the arena's centre).
+struct ArenaStart {
+  ArenaPoint partner;
+  ArenaPoint rival;
+};
+[[nodiscard]] ArenaStart arenaStart(const Arena& arena);
+
+// STD_setCameraOrbit: the eye and the point it looks at, in the original's axes (y down).
+struct ArenaView {
+  std::array<std::int32_t, 3> eye{};
+  std::array<std::int32_t, 3> target{};
+};
+[[nodiscard]] ArenaView arenaView(const ArenaCamera& camera, ArenaPoint partner, ArenaPoint rival);
+
 } // namespace dwe::game::tournament
