@@ -24,10 +24,12 @@ status.flatten: "Aplastado"
 result.mp_bonus_percent: " {amount} %{wait}"
 # {amount} son los bits ganados.
 result.bits: "Has ganado {amount} bits."
+# Como en el original, la caja no parte las filas: cada fila ({br}, {wait}) cabe en sus 156 píxeles con la fuente del
+# juego (unos 19 caracteres; el nombre de objeto más ancho ocupa 93).
 # {amount} es cuántas vidas ha perdido el compañero.
-result.lives_lost: "Tu compañero ha perdido{br}{color:7}{amount}{color:1} vida.{wait}"
+result.lives_lost: "Tu compañero perdió{br}{color:7}{amount}{color:1} vida.{wait}"
 # {name} es el nombre del objeto y {amount} cuántos se han perdido.
-result.item_lost: "Has perdido {color:7}{name}{color:1}{br}x{amount}.{wait}"
+result.item_lost: "Has perdido{br}{color:7}{name}{color:1} x{amount}.{wait}"
 # {name} es el nombre de quien se une a la ciudad.
 result.recruit_joined: "¡{color:7}{name}{color:1}{br}se mudará a la ciudad!{wait}"
 # La etiqueta corta delante de una cifra de curación o mejora sobre un luchador (aspecto moderno; el original dibuja

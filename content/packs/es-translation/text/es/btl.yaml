@@ -20,6 +20,6 @@
 "battle_effect_messages.0005": "{color:7}¡Aléjate!{br}¡Cambia de blanco!{br}"
 "battle_effect_messages.0006": "{color:7}¡Con calma!{br}"
 "battle_effect_messages.0007": "{color:7}¡Con todo!{br}"
-"battle_effect_messages.0008": "{color:1}¡Bono de gasto de MP!"
+"battle_effect_messages.0008": "{color:1}¡Bono de gasto MP!"
 "battle_effect_messages.0009": "reducido un"
 "battle_effect_messages.0010": "{br}{color:1}¡aprendida!{wait}"
