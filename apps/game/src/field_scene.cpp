@@ -819,6 +819,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   if (mapRenderer_->hasMap()) {
     addEffectPrims(prims);
     addStorySprites(prims);
+    prims.insert(prims.end(), storyScreenPrims_.begin(), storyScreenPrims_.end());
   }
   primDrawer_->set(std::move(prims), mapRenderer_->camera().scale());
   const scene::Pose player = field_->drawnPose(playerActor_->entity, alpha);

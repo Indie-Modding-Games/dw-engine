@@ -250,6 +250,9 @@ public:
   // The NPCs the story took off the map without unloading them (isOnMap = 0: eab.c:
   // EAB_startBuildup), not drawn until replaced; their owner sets them every frame.
   void setHiddenNpcs(std::vector<scene::Entity> npcs) { hiddenNpcs_ = std::move(npcs); }
+  // Primitives the story draws over the whole field picture, in front of everything the map draws
+  // and behind the interface, until replaced (the shake's red square: field_story_props.hpp).
+  void setStoryScreenPrims(std::vector<ScenePrim> prims) { storyScreenPrims_ = std::move(prims); }
   // While held the camera stays where it points: map.c: tickCameraFollowPlayer follows the player
   // only in its state 0, never in a battle, where the player runs back on screen.
   void holdCamera(bool held) { cameraHeld_ = held; }
@@ -783,6 +786,7 @@ private:
   std::map<std::string, PropSet> props_;
   std::vector<StorySprite> storySprites_;
   std::vector<scene::Entity> hiddenNpcs_;
+  std::vector<ScenePrim> storyScreenPrims_;
   void addStorySprites(std::vector<ScenePrim>& prims);
 };
 

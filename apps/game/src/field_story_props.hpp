@@ -9,6 +9,7 @@
 #include <string>
 
 #include "mood_bubble.hpp"
+#include "screen_shake.hpp"
 
 namespace dwe::assets {
 struct DigimonTable;
@@ -26,13 +27,14 @@ class BossArrivalScene;
 // The app's side of the story's props (session/story_props.hpp): it draws the Drill Tunnel's dirt
 // cart in front of the partner (map_object.c: renderDirtCartModel), the dirt pile, the boulder and
 // Trash Mountain's giant poop (renderDirtPile, renderBoulder, renderTrainingPoop) as models of the
-// packs, shakes the screen for routine 34 (map.c: tickMeramonShake), fades the screen to white and
-// back for routines 45 and 46 (fade.c: fadeToWhite, fadeFromWhite), hangs the shop rival's mood
-// bubble over its character (script_common.c: renderMonochromonMoodBubble), moves a map sprite to a
-// character's node (overworld.c: spawnSpriteAtEntity) and draws the Angemon shrine's pedestal
-// (renderAngemonPedestal) and Toy Town's gearbox and boxes, opening the selected box's lid a step
-// an original frame (renderGearbox, renderToyTownBoxes). Entering a map takes the cart, the pile,
-// the boulder, the pedestal, the gearbox and the boxes away (map_object.c: unloadMapParts).
+// packs, shakes and reddens the screen for routine 34 (map.c: tickMeramonShake), fades the screen
+// to white and back for routines 45 and 46 (fade.c: fadeToWhite, fadeFromWhite), hangs the shop
+// rival's mood bubble over its character (script_common.c: renderMonochromonMoodBubble), moves a
+// map sprite to a character's node (overworld.c: spawnSpriteAtEntity) and draws the Angemon
+// shrine's pedestal (renderAngemonPedestal) and Toy Town's gearbox and boxes, opening the selected
+// box's lid a step an original frame (renderGearbox, renderToyTownBoxes). Entering a map takes the
+// cart, the pile, the boulder, the pedestal, the gearbox and the boxes away (map_object.c:
+// unloadMapParts).
 class FieldStoryProps {
 public:
   // The scene must outlive this object.
@@ -62,6 +64,8 @@ private:
   // scriptIdToEntityId): the player, the partner or an NPC.
   [[nodiscard]] std::optional<scene::Entity> characterEntity(std::int64_t character) const;
   void showMoodBubble();
+  // The shake's red square over the screen (tickMeramonShake's POLY_FT4).
+  void showShakeSquare();
   void clearMapParts();
   void advanceLids(double seconds);
 
@@ -79,10 +83,8 @@ private:
   std::int32_t bigLid_ = 0;
   std::int32_t smallLid_ = 0;
   double lidSeconds_ = 0.0;
-  // The shake's frame (MERAMON_SHAKE_FRAME_COUNT), its drawing offset in original pixels and the
-  // time toward its next frame; no frame when it is not shaking.
-  std::optional<std::int32_t> shakeFrame_;
-  std::int32_t shakeOffset_ = 0;
+  // The shake and the time toward its next frame.
+  ScreenShake shake_;
   double shakeSeconds_ = 0.0;
   // The fade to white and the time toward its next frame.
   game::field::WhiteFade whiteFade_;

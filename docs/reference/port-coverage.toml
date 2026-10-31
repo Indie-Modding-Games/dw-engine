@@ -403,7 +403,7 @@ isInDaytimeTransition = { status = "falta", what = "Dice si el mapa está cambia
 handleTileUpdate = { status = "no-aplica", note = "carga de trozos del fondo del original", what = "Carga las partes del fondo según se mueve la cámara." }
 reinitializeAfterTournament = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", what = "Vuelve al mapa tras un torneo." }
 createMeramonShake = { status = "portado", dwe = "apps/session/src/story_routines/routine_screen_shake.cpp", what = "Empieza el temblor de pantalla de la escena del fuego de la montaña." }
-tickMeramonShake = { status = "parcial", dwe = "apps/game/src/field_story_props.cpp", note = "El desplazamiento del dibujo, sí; el cuadrado aditivo que crece (tpage 832,256) y el HUD que tiembla con él, no.", what = "Hace temblar la pantalla en esa escena." }
+tickMeramonShake = { status = "portado", dwe = "apps/game/src/screen_shake.hpp", note = "El desplazamiento del dibujo y el cuadrado sustractivo que crece (SPOT256, cian restado: la pantalla roja); en pantalla ancha el cuadrado crece en proporción.", what = "Hace temblar la pantalla en esa escena." }
 cleanupGame = { status = "no-aplica", note = "limpieza del original", what = "Libera la partida al volver al título." }
 getFileCityTopMap = { status = "parcial", dwe = "game/story/src/prosperity.cpp", what = "Elige qué versión del mapa de la ciudad cargar según cuánto ha crecido.", note = "CityAdapter::clearedMap la elige; falta el guardado tras el final (rutina 0x36) que la usa" }
 loadMapCollisionData = { status = "no-aplica", note = "lectura del disco; la colisión la extrae dwx", what = "Lee la rejilla de colisión del mapa." }

@@ -28,6 +28,7 @@
 
 #include "boss_arrival_scene.hpp"
 #include "field_scene.hpp"
+#include "scene_prims.hpp"
 
 namespace dwe::app {
 
@@ -64,29 +65,23 @@ constexpr std::string_view MoodBubbleImage = "map/{}/texture4/000";
 constexpr std::size_t MoodBubblePalette = 0;
 constexpr glm::vec2 MoodBubbleImageSize{5 * MoodBubble::Side, MoodBubble::Side};
 
-// map.c: tickMeramonShake removes itself on its 210th frame and puts the drawing offset back.
-constexpr std::int32_t ShakeFrames = 0xD2;
-
-// The step of the shake's drawing offset on a frame: 1 pixel, 2 from frame 31, 3 from 61, 2 from
-// 121 and 1 from 181, away on the even frames and back on the odd ones.
-std::int32_t shakeStep(std::int32_t frame) {
-  std::int32_t step = 1;
-  if (frame >= 0xB5) {
-    step = 1;
-  } else if (frame >= 0x79) {
-    step = 2;
-  } else if (frame >= 0x3D) {
-    step = 3;
-  } else if (frame >= 0x1F) {
-    step = 2;
-  }
-  return frame % 2 == 0 ? -step : step;
-}
-
 float radiansOf(std::int32_t originalAngle) {
   return static_cast<float>(originalAngle) * 2.0F * std::numbers::pi_v<float> /
          static_cast<float>(core::OriginalAnglePerTurn);
 }
+
+// tickMeramonShake's POLY_FT4: the glow image at VRAM (832, 384), 8-bit, with the CLUT at (0,
+// 0x1e7) (ETCDAT\SPOT256.TIM and its first palette), texels (64, 0) to (127, 63): a soft white
+// disc. Its colour is MERAMON_SHAKE_RED (0, never written), _GREEN and _BLUE (0xff) over 0x80, and
+// the tpage's semi-transparency is 2, the background minus the texel: cyan taken away, the screen
+// red.
+constexpr std::string_view ShakeImage = "texture/etcdat/spot256";
+constexpr glm::vec2 ShakeImageSize{128.0F, 128.0F};
+constexpr glm::vec2 ShakeTexel{64.0F, 0.0F};
+constexpr float ShakeTexels = 63.0F;
+constexpr glm::vec4 ShakeColor{0.0F, 255.0F / 128.0F, 255.0F / 128.0F, 1.0F};
+// The original's screen, in its pixels.
+constexpr glm::vec2 OriginalScreen{320.0F, 240.0F};
 
 // The ids are constants that parse; one that did not would only draw nothing.
 std::optional<assets::AssetId> modelId(std::string_view id) {
@@ -149,9 +144,8 @@ void FieldStoryProps::take(const session::StoryPropRequest& request) {
   } else if (std::holds_alternative<session::ScreenShakeStarted>(request)) {
     // createMeramonShake starts over from frame 0 and the offset the drawing has now.
     core::logDebug("[port:story] createMeramonShake (map.c:5472): the screen shakes {} frames",
-                   ShakeFrames);
-    shakeFrame_ = 0;
-    shakeOffset_ = 0;
+                   ScreenShake::Frames);
+    shake_.start();
     shakeSeconds_ = 0.0;
   } else if (const auto* sprite = std::get_if<session::SpriteAtCharacter>(&request)) {
     placeSprite(*sprite);
@@ -246,6 +240,39 @@ void FieldStoryProps::showMoodBubble() {
   scene_->setStorySprites(std::move(sprites));
 }
 
+void FieldStoryProps::showShakeSquare() {
+  std::vector<ScenePrim> prims;
+  const render::MapCamera* camera = scene_->camera();
+  const std::optional<rhi::TextureId> texture =
+      shake_.squareShown() && camera != nullptr ? scene_->sceneImage(ShakeImage) : std::nullopt;
+  if (texture) {
+    // The square is placed against the drawing offset, so it shakes with the picture. On a screen
+    // wider (or taller) than the original's it grows by as much, so the red reaches the edges as
+    // it does on 320 x 240; at 4:3 it is the original's size.
+    const glm::vec2 seen = camera->visibleSize() / OriginalScreen;
+    const float half = static_cast<float>(shake_.squareHalf()) * std::max({1.0F, seen.x, seen.y});
+    const glm::vec2 centre{static_cast<float>(shake_.offset()), 0.0F};
+    const glm::vec2 from = ShakeTexel / ShakeImageSize;
+    const glm::vec2 to = (ShakeTexel + glm::vec2{ShakeTexels}) / ShakeImageSize;
+    // At the near plane in the screen's centre: the original sorts it at ordering-table entry 9,
+    // in front of the map and the characters.
+    const glm::vec4 screenCentre{0.0F, 0.0F, 0.0F, 1.0F};
+    ScenePrim prim{.shape = ScenePrim::Shape::Quad,
+                   .color = ShakeColor,
+                   .texture = *texture,
+                   .blend = ScenePrimBlend::Subtractive};
+    prim.corners[0] = {
+        .clip = screenCentre, .offset = centre + glm::vec2{-half, -half}, .uv = from};
+    prim.corners[1] = {
+        .clip = screenCentre, .offset = centre + glm::vec2{half, -half}, .uv = {to.x, from.y}};
+    prim.corners[2] = {
+        .clip = screenCentre, .offset = centre + glm::vec2{-half, half}, .uv = {from.x, to.y}};
+    prim.corners[3] = {.clip = screenCentre, .offset = centre + glm::vec2{half, half}, .uv = to};
+    prims.push_back(prim);
+  }
+  scene_->setStoryScreenPrims(std::move(prims));
+}
+
 void FieldStoryProps::startWhiteFade(const session::WhiteFadeStarted& fade) {
   game::field::Field& field = scene_->field();
   if (fade.toWhite) {
@@ -305,18 +332,13 @@ void FieldStoryProps::advance(double seconds) {
     }
     scene_->field().setShade(whiteFade_.shade());
   }
-  if (!shakeFrame_) {
+  if (!shake_.busy()) {
     return;
   }
   shakeSeconds_ += seconds;
-  while (shakeFrame_ && shakeSeconds_ >= OriginalFrameSeconds) {
+  while (shake_.busy() && shakeSeconds_ >= OriginalFrameSeconds) {
     shakeSeconds_ -= OriginalFrameSeconds;
-    shakeOffset_ += shakeStep(*shakeFrame_);
-    ++*shakeFrame_;
-    if (*shakeFrame_ >= ShakeFrames) {
-      shakeFrame_.reset();
-      shakeOffset_ = 0;
-    }
+    shake_.frame();
   }
 }
 
@@ -408,7 +430,8 @@ void FieldStoryProps::show() {
         glm::translate(glm::mat4{1.0F}, assets::toWorldPosition({place->x, place->y, place->z})));
   }
   setProps(*scene_, TrainingPoopModel, std::move(poop));
-  scene_->setScreenShake({static_cast<float>(shakeOffset_), 0.0F});
+  scene_->setScreenShake({static_cast<float>(shake_.offset()), 0.0F});
+  showShakeSquare();
   showMoodBubble();
 }
 

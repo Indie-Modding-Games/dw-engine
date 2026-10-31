@@ -168,7 +168,9 @@ mapa) y las partículas como cuatro líneas lejanas; pone las animaciones 0x21 y
 y los sonidos 1, 2 y 3 de la ranura 8. Al acabar devuelve el escenario y la historia sigue
 (`StoryScenes::partnerSceneFinished`). Prueba con la ruta `_work/routes-e2/boss-arrival/route-mgen99.yaml` (partida
 nueva en mgen99 con todas las etapas): carga, llegada y combate contra el jefe.
-Mueve el temblor de la rutina 34 a 20 fotogramas por segundo y lo pasa a la cámara (`MapRenderer::setShake`), y lleva un
+Mueve el temblor de la rutina 34 (`screen_shake.hpp`: `ScreenShake`) a 20 fotogramas por segundo, lo pasa a la cámara
+(`MapRenderer::setShake`) y dibuja su cuadrado rojo sustractivo sobre la escena con `FieldScene::setStoryScreenPrims`
+(delante del mapa y de los personajes, detrás de la interfaz), y lleva un
 sprite del mapa al nodo de un personaje (`spawnSpriteAtEntity`, con `FieldScene::entityNodePoint` y
 `MapLayers::spriteSize`). La burbuja de humor de la rutina 28 (`mood_bubble.hpp`: `MoodBubble`) crece y sube a 20
 fotogramas por segundo y se dibuja con `FieldScene::setStorySprites`: un cuadro aditivo de la imagen
