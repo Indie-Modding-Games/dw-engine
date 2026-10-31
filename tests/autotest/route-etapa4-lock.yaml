@@ -1,0 +1,25 @@
+# Stage 4 of the story with the keyboard, the lock's border at the canyon's entrance: from gcan01 on a seeded game (run
+# with --start gcan01 --story-stage stage_4, docs/guides/prueba-vertical.md) the player walks into the west exit to the
+# Grey Lord's Mansion (dgha01, stage 7), which stays closed with the lock's message, and then back into the jungle
+# (trop03, stage 2), which is open. Freezeland's exits (stage 5) are walked into by route-etapa4-canon.yaml (gcan03)
+# and route-etapa4-fortaleza.yaml (gcan04_2); the bird transport's closed places by route-etapa4-birdramon.yaml.
+name: etapa4-lock
+device: keyboard
+timeout: 600
+steps:
+  - resize: [1280, 720]
+  - wait: {map: gcan01, seconds: 2, timeout: 60}
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  # The canyon's wild ones (three Goburimon at once) beat a fresh Champion: the player is put near each exit.
+  - script: place("player -1900 -200 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 112, stop_on_closed: true, timeout: 120}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - screenshot: gcan01-dgha01-closed
+  - tap: {key: return}
+  - wait: {map: gcan01, hidden: dialog, seconds: 1, timeout: 30}
+  - script: place("player 2900 -4300 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 110, timeout: 120}
+  - wait: {map: trop03, seconds: 2, timeout: 60}

@@ -97,6 +97,8 @@ stages:
       - gomi*
   # Etapa 4: Great Canyon (gcan) con el puente invisible y el ascensor, Ogre Fortress (ogre00-04) y
   # la casa de Birdramon (room12, que abre los viajes en el aire). Entra por trop03 a gcan01.
+  # Quedan cerradas solas las salidas a la etapa 5 y siguientes: gcan03, gcan04 y gcan04_2 a frzl01,
+  # gcan01 a dgha01 y, en el transporte en pájaro, koda00, frzl06, mist05 y betl01 (en rojo, sin cobrar).
   - id: stage_4
     maps:
       - gcan*

@@ -1,0 +1,114 @@
+# Stage 4 of the story with the keyboard, the Ogre Fortress: from gcan03 on a seeded game (run with --start gcan03
+# --story-stage stage_4, docs/guides/prueba-vertical.md), after the bandits' ambush (triggers 197, 198 and 155, written
+# here; route-etapa4-canon.yaml plays it). The elevator's "Press DOWN" (script 38, section 0x52) takes the player down to
+# gcan06 and on to the fortress gate (gcan05), whose guard, beaten by the ambush, steps aside and opens it (script 40,
+# section 0x05: trigger 200). Through ogre00, ogre01 and ogre02, whose guards run at the player and fight, to ogre03,
+# where Ogremon and his Goburimon fight at the throne (script 48, section 0x34), won with the debug command; the screen
+# fades to white and back (routines 45 and 46) and Ogremon flees (triggers 176 and 175). The lift behind the throne
+# (section 0x33, "Get in") drops the player in gcan02, whose path leads to the bridge (gcan04), where a voice asks for
+# help (trigger 182); its exit to Freezeland (frzl01, stage 5) stays closed with the lock's message.
+name: etapa4-fortaleza
+device: keyboard
+timeout: 1500
+steps:
+  - resize: [1280, 720]
+  - wait: {map: gcan03, seconds: 2, timeout: 60}
+  - script: story_set("trigger 197 on")
+  - script: story_set("trigger 198 on")
+  - script: story_set("trigger 155 on")
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  # The canyon's wild ones (three Goburimon at once) beat a fresh Champion, so the player is put near each goal and
+  # walks the rest.
+  - script: place("player 800 1000 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {point: [800, -1350], radius: 60, timeout: 60}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  # "Elevator", then the choice: Press DOWN is the second answer.
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - tap: {key: down}
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {map: gcan06, seconds: 3, timeout: 60}
+  - screenshot: gcan06
+  - script: place("player -1100 -1600 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 110, timeout: 60}
+  - wait: {map: gcan05, seconds: 3, timeout: 60}
+  - screenshot: gcan05
+  # The guard walks about in front of the gate; he and the player are put face to face at his spot.
+  - script: place("npc:5 -320 -1286 2048")
+  - script: place("player -320 -1450 0")
+  - wait: {seconds: 1}
+  - tap: {key: return}
+  - repeat: {times: 12, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.200: "true"}, timeout: 60}
+  - wait: {map: ogre00, seconds: 3, timeout: 60}
+  - screenshot: ogre00
+  - script: place("player 900 3100 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 111, timeout: 60}
+  - wait: {map: ogre01, seconds: 3, timeout: 60}
+  # The fortress guards run at the player as soon as the map opens ("Attack!", then a fight): each one that
+  # catches the player is beaten with the debug command; one met later on the walk fights on its own.
+  - repeat: {times: 8, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}, {wait: {shown: battle, seconds: 1, timeout: 120}}, {wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}}, {script: 'battle_win("")'}, {wait: {setting: {battle.phase: end}, timeout: 60}}, {repeat: {times: 10, steps: [{wait: {seconds: 1.0}}, {tap: {key: return}}]}}, {wait: {hidden: battle, seconds: 1, timeout: 60}}]}}, {wait: {seconds: 2}}]}
+  - script: place("player 1700 1800 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 111, encounters: true, timeout: 60}
+  - wait: {map: ogre02, seconds: 3, timeout: 60}
+  - screenshot: ogre02
+  # The fortress guards run at the player as soon as the map opens ("Attack!", then a fight): each one that
+  # catches the player is beaten with the debug command; one met later on the walk fights on its own.
+  - repeat: {times: 8, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}, {wait: {shown: battle, seconds: 1, timeout: 120}}, {wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}}, {script: 'battle_win("")'}, {wait: {setting: {battle.phase: end}, timeout: 60}}, {repeat: {times: 10, steps: [{wait: {seconds: 1.0}}, {tap: {key: return}}]}}, {wait: {hidden: battle, seconds: 1, timeout: 60}}]}}, {wait: {seconds: 2}}]}
+  - script: place("player -550 1550 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 111, encounters: true, timeout: 60}
+  - wait: {map: ogre03, seconds: 3, timeout: 60}
+  - screenshot: ogre03
+  - expect_setting: {story.trigger.175: "false"}
+  - script: place("player 0 1200 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 52, stop_on_scene: true, timeout: 60}
+  - repeat: {times: 30, steps: [{when: {hidden: battle, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {shown: battle, seconds: 1, timeout: 120}
+  - screenshot: ogre03-battle
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
+  - script: battle_win("")
+  - wait: {setting: {battle.phase: end}, timeout: 60}
+  - repeat: {times: 10, steps: [{wait: {seconds: 1.0}}, {tap: {key: return}}]}
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
+  - repeat: {times: 30, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.175: "true"}, timeout: 180}
+  - expect_setting: {story.trigger.176: "true"}
+  - wait: {seconds: 2}
+  - screenshot: ogre03-after
+  # The lift behind the throne: "Get in" is the first answer.
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
+  - wait: {shown: story_textbox, seconds: 0.5, timeout: 30}
+  - tap: {key: return}
+  - wait: {map: gcan02, seconds: 3, timeout: 120}
+  - screenshot: gcan02
+  - script: place("player 3200 2700 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 51, timeout: 60}
+  - wait: {map: gcan04, seconds: 3, timeout: 60}
+  - screenshot: gcan04
+  # On the bridge a voice from above asks for help: the ground bulges up since the fortress elevator went down
+  # (script 39, section 0x33, with triggers 175 and 180: trigger 182). route-etapa4-shellmon.yaml plays the rest.
+  - expect_setting: {story.trigger.182: "false"}
+  - script: place("player 1400 -950 2048")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 60}
+  - repeat: {times: 20, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.182: "true"}, timeout: 60}
+  - screenshot: gcan04-voice
+  # Its exit to Freezeland (frzl01, stage 5) stays closed.
+  - script: place("player 2900 -800 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 111, stop_on_closed: true, timeout: 120}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - screenshot: gcan04-frzl01-closed
+  - tap: {key: return}
+  - wait: {map: gcan04, hidden: dialog, seconds: 1, timeout: 30}

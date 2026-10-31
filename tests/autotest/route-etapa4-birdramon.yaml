@@ -1,0 +1,89 @@
+# Stage 4 of the story with the keyboard, Birdramon and the bird transport: from gcan03 on a seeded game (run with
+# --start gcan03 --story-stage stage_4, docs/guides/prueba-vertical.md). The elevator at the top of the canyon (script
+# 38, section 0x52, "Press UP") lifts the player to Birdramon's nest (gcan10); stepping in starts her scene and the
+# fight (script 124, section 0x33), won with the debug command, then she joins (trigger 221) and the story takes the
+# player to the city. The city's cell 53 leads to the carrier's house (room12): the carrier lists the places whose
+# trigger is set (routine 10). The route writes the triggers of the savanna (190, stage 3), the dino region (188,
+# stage 7) and Freezeland (351, stage 5) and 1800 bits: the canyon and the savanna are white, the dino region is red
+# although the bits pay for it (the stage lock keeps it closed) and choosing it only sounds, the bits stay; the canyon
+# is chosen, paid (1000) and flown to.
+name: etapa4-birdramon
+device: keyboard
+timeout: 1200
+steps:
+  - resize: [1280, 720]
+  - wait: {map: gcan03, seconds: 2, timeout: 60}
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  # The canyon's wild ones (three Goburimon at once) beat a fresh Champion: the player is put by the elevator.
+  - script: place("player 800 1000 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {point: [800, -1350], radius: 60, timeout: 60}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: gcan03-elevator
+  # "Elevator", then the choice: Press UP is the first answer.
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - tap: {key: return}
+  - wait: {map: gcan10, seconds: 3, timeout: 60}
+  - screenshot: gcan10
+  - expect_setting: {story.trigger.221: "false"}
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
+  - repeat: {times: 30, steps: [{when: {hidden: battle, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {shown: battle, seconds: 1, timeout: 120}
+  - screenshot: gcan10-battle
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
+  - script: battle_win("")
+  - wait: {setting: {battle.phase: end}, timeout: 60}
+  - repeat: {times: 10, steps: [{wait: {seconds: 1.0}}, {tap: {key: return}}]}
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
+  - repeat: {times: 24, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.221: "true"}, timeout: 120}
+  - screenshot: gcan10-joined
+  # Without Palmon, Vegiemon or the late city the story takes the player to twna05.
+  - wait: {map: twna05, seconds: 3, timeout: 120}
+  - walk_to: {trigger: 53, encounters: true, timeout: 240}
+  - wait: {map: room12, seconds: 2, timeout: 60}
+  - script: story_set("trigger 190 on")
+  - script: story_set("trigger 188 on")
+  - script: story_set("trigger 351 on")
+  - script: story_set("money 1800")
+  # The carrier stands at the back of the room; the player is put in front of him.
+  - script: place("player 0 -220 0")
+  - wait: {seconds: 1}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 20}
+  - repeat: {times: 8, steps: [{when: {hidden: bird_transport, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.2}}]}
+  - wait: {shown: bird_transport, seconds: 1, timeout: 20}
+  - tap: {key: return}
+  - wait: {setting: {bird.phase: list}, seconds: 1, timeout: 10}
+  - expect_setting: {bird.total: "4"}
+  - expect_setting: {bird.row.0.affordable: "true"}
+  - expect_setting: {bird.row.1.affordable: "true"}
+  - expect_setting: {bird.row.2.affordable: "false"}
+  - expect_setting: {bird.row.3.affordable: "false"}
+  - screenshot: room12-list
+  # The dino region: red, so the confirm only sounds and the list stays.
+  - tap: {key: down}
+  - tap: {key: down}
+  - wait: {setting: {bird.cursor: "2"}, timeout: 5}
+  - tap: {key: return}
+  - wait: {seconds: 1}
+  - expect_setting: {bird.phase: list}
+  - expect_setting: {bird.money: "1800"}
+  - screenshot: room12-closed-refused
+  # The canyon: the carrier asks, the choice's yes pays and the story flies the player there.
+  - tap: {key: up}
+  - tap: {key: up}
+  - wait: {setting: {bird.cursor: "0"}, timeout: 5}
+  - tap: {key: return}
+  - wait: {setting: {bird.phase: confirm}, timeout: 5}
+  - tap: {key: return}
+  - wait: {setting: {bird.phase: choice}, timeout: 5}
+  - screenshot: room12-choice
+  - tap: {key: return}
+  - wait: {hidden: bird_transport, seconds: 0.5, timeout: 10}
+  - repeat: {times: 6, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {map: gcan03, seconds: 3, timeout: 120}
+  - screenshot: gcan03-arrived

@@ -281,6 +281,41 @@ scripts/dev.sh run --content <carpeta> --start trop03 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-vegiemon.yaml --shots <capturas>/etapa2
 scripts/dev.sh run --content <carpeta> --start trop03 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-lock.yaml --shots <capturas>/etapa2
+
+- Las rutas de la Etapa 4 (el Gran Cañón y la fortaleza), con `--story-stage stage_4` (la etapa activa del ruleset
+  todavía es otra) y la partida sembrada; cada trozo empieza en su mapa y escribe con `story_set` los disparadores de
+  los trozos anteriores. `route-etapa4-yuramon.yaml` (`--start twna03`) habla con Yuramon en la ciudad: con 6 puntos de
+  prosperidad (variable 1, escrita) pide ayuda (disparador 124); con el puente del cañón hecho (103, escrito) cuenta
+  lo de los bandidos (197). `route-etapa4-canon.yaml` (`--start trop03`) entra en gcan01, cruza el puente (103), pasa
+  por gcan09 a gcan08_1, donde los bandidos tienden la emboscada (con el 197): gana el combate con `battle_win` (198 y
+  155), sigue a gcan03 y pisa su salida a Freezeland (etapa 5), que el candado deja cerrada.
+  `route-etapa4-birdramon.yaml` (`--start gcan03`) sube con el ascensor (Press UP) a gcan10, gana a Birdramon (221),
+  que lleva al jugador a la ciudad, y en la casa del transporte (room12) abre la lista de destinos con más pájaros
+  escritos y 1800 bits: los destinos que el candado cierra salen en rojo, no se pueden elegir y no cobran; vuela a
+  gcan03. `route-etapa4-fortaleza.yaml` (`--start gcan03`) baja con el ascensor (Press DOWN) a gcan06 y gcan05, cuyo
+  guardia se aparta tras la emboscada (200), cruza ogre00 a ogre03 (los guardias que lo alcanzan pelean y se ganan con
+  `battle_win`), gana a Ogremon en el trono (175 y 176), baja por el montacargas a gcan02 y sigue al puente (gcan04),
+  donde una voz pide ayuda (182), y pisa su salida cerrada a Freezeland. `route-etapa4-shellmon.yaml` (`--start
+  gcan02`) escribe lo que deja bajar con el ascensor de arriba del cañón a la fortaleza y volver andando (180 fuera,
+  181; el montacargas del trono volvería a poner el 180), sigue al otro puente (gcan04_2), donde Shellmon se une
+  (235), y su salida a Freezeland también queda cerrada.
+  `route-etapa4-lock.yaml` (`--start gcan01`) pisa la salida de gcan01 a dgha01 (etapa 7): sale el aviso del candado
+  y el jugador sigue en gcan01; luego vuelve a la jungla por trop03.
+
+```sh
+scripts/dev.sh run --content <carpeta> --start twna03 --story-stage stage_4 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa4-yuramon.yaml --shots <capturas>/etapa4
+scripts/dev.sh run --content <carpeta> --start trop03 --story-stage stage_4 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa4-canon.yaml --shots <capturas>/etapa4
+scripts/dev.sh run --content <carpeta> --start gcan03 --story-stage stage_4 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa4-birdramon.yaml --shots <capturas>/etapa4
+scripts/dev.sh run --content <carpeta> --start gcan03 --story-stage stage_4 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa4-fortaleza.yaml --shots <capturas>/etapa4
+scripts/dev.sh run --content <carpeta> --start gcan02 --story-stage stage_4 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa4-shellmon.yaml --shots <capturas>/etapa4
+scripts/dev.sh run --content <carpeta> --start gcan01 --story-stage stage_4 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa4-lock.yaml --shots <capturas>/etapa4
+```
 ```
 
 - Las rutas de la Etapa 3 (Mt. Panorama, Gear Savanna, la cueva de Leomon, Trash Mountain y el vestíbulo de la

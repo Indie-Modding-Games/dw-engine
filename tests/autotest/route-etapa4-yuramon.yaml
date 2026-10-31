@@ -1,0 +1,31 @@
+# Stage 4 of the story with the keyboard, the hint that opens the Great Canyon: from twna03 on a seeded game (run with
+# --start twna03 --story-stage stage_4, docs/guides/prueba-vertical.md). Yuramon, by the farm's fence, tells of the
+# invisible bridge at the canyon's entrance and sets trigger 124 (script 162, section 0x05) once the city has 6
+# prosperity points (variable 1). The seeded game has none, so the route writes them; on the way of the story they come
+# from the recruits of stages 1 and 2. After the bridge he tells of the bandits (197). route-etapa4-canon.yaml crosses it.
+name: etapa4-yuramon
+device: keyboard
+timeout: 300
+steps:
+  - resize: [1280, 720]
+  - wait: {map: twna03, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.124: "false"}
+  - script: story_set("var 1 6")
+  # Yuramon stands still south of the farm; the player is put just north of him, facing him.
+  - script: place("player -162 -2180 2048")
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 20}
+  - screenshot: yuramon
+  - repeat: {times: 8, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.2}}]}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 20}
+  - expect_setting: {story.trigger.124: "true"}
+  # Once the player has crossed the bridge (trigger 103, played by route-etapa4-canon.yaml; written here), Yuramon tells
+  # of the bandits who rob travellers in the canyon and sets trigger 197: their ambush in gcan08_1 waits for it.
+  - script: story_set("trigger 103 on")
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 20}
+  - screenshot: yuramon-bandits
+  - repeat: {times: 10, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.2}}]}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 20}
+  - expect_setting: {story.trigger.197: "true"}

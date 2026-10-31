@@ -1,0 +1,73 @@
+# Stage 4 of the story with the keyboard, the critical path through the Great Canyon: from trop03 on a seeded game (run
+# with --start trop03 --story-stage stage_4, docs/guides/prueba-vertical.md). With Yuramon's hint (trigger 124, written
+# here; route-etapa4-yuramon.yaml plays it) the player crosses the jungle's exit into gcan01 and steps on the invisible
+# bridge (script 36, section 0x33: trigger 103), walks over it to gcan09 and on to gcan08_1, where, with Yuramon's
+# rumor of the bandits (trigger 197, written), Ogremon and his two Goburimon ambush him (script 43, section 0x33: the
+# fight, then triggers 198 and 155). gcan08_1's north exit leads to gcan03, whose exit to Freezeland (frzl01, stage 5)
+# stays closed with the lock's message.
+name: etapa4-canon
+device: keyboard
+timeout: 1200
+steps:
+  - resize: [1280, 720]
+  - wait: {map: trop03, partner_within: 400, seconds: 2, timeout: 60}
+  - script: story_set("trigger 124 on")
+  # The jungle's and the canyon's wild ones fight whoever walks into them: a Champion partner wins those fights.
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  - walk_to: {trigger: 110, encounters: true, timeout: 180}
+  - wait: {map: gcan01, seconds: 3, timeout: 60}
+  - screenshot: gcan01
+  # The first cell of the invisible bridge: with the hint the player looks and finds it. The Goburimon by the path
+  # fight whoever touches them, so the player is put by the cliff's edge, where the script walks him back without it.
+  - script: place("player 73 900 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 60}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: gcan01-bridge
+  - repeat: {times: 5, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.103: "true"}, timeout: 60}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 30}
+  - walk_to: {trigger: 111, encounters: true, timeout: 180}
+  - wait: {map: gcan09, seconds: 3, timeout: 60}
+  - screenshot: gcan09
+  # gcan09 has no exit cells: the cells of section 0x34 at its north end take the player on to gcan08_1. The canyon's
+  # wild ones (three Goburimon at once) beat a fresh Champion, so the player is put near each goal and walks the rest.
+  - script: place("player -2000 3700 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 52, timeout: 120}
+  - wait: {map: gcan08_1, seconds: 3, timeout: 60}
+  - screenshot: gcan08_1
+  # Back in the city, Yuramon tells of the bandits once the bridge is crossed (script 162, section 0x05: trigger 197,
+  # played by route-etapa4-yuramon.yaml); the route writes it. The sign at the fork (section 0x51) only reads out:
+  # its choice is for a game that has not played the opening (trigger 54 clear).
+  - script: story_set("trigger 197 on")
+  # The bandits' road (section 0x33): Ogremon and two Goburimon jump out and fight.
+  - script: place("player 2200 -1500 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 60}
+  - repeat: {times: 30, steps: [{when: {hidden: battle, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {shown: battle, seconds: 1, timeout: 90}
+  - screenshot: gcan08_1-ambush
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
+  - script: battle_win("")
+  - wait: {setting: {battle.phase: end}, timeout: 60}
+  - repeat: {times: 10, steps: [{wait: {seconds: 1.0}}, {tap: {key: return}}]}
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
+  - repeat: {times: 12, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.198: "true"}, timeout: 120}
+  - expect_setting: {story.trigger.155: "true"}
+  - screenshot: gcan08_1-after
+  - script: place("player 1600 1900 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 111, timeout: 120}
+  - wait: {map: gcan03, seconds: 3, timeout: 60}
+  - screenshot: gcan03
+  # Freezeland is stage 5: its exit stays closed and the player stays in the canyon.
+  - script: place("player -4000 3300 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 111, stop_on_closed: true, timeout: 120}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - screenshot: gcan03-frzl01-closed
+  - tap: {key: return}
+  - wait: {map: gcan03, hidden: dialog, seconds: 1, timeout: 30}
