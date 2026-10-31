@@ -609,12 +609,18 @@
     "enemy_ai": {
       "type": "object",
       "required": [
-        "area_weight"
+        "area_weight",
+        "match_cautious_roll"
       ],
       "additionalProperties": false,
       "properties": {
         "area_weight": {
           "type": "integer"
+        },
+        "match_cautious_roll": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "A tournament rival is cautious one decision in this many (std_main.c: STD_tickEnemyAI)."
         }
       },
       "description": "The enemies' move choice (battle_main.c: BTL_selectEnemyMove)."

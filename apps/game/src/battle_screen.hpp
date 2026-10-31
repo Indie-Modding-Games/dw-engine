@@ -144,6 +144,7 @@ private:
   void placePlayer() const;
   void facePlayerToPartner(game::battle::Point partner) const;
   void tickVictory(double seconds);
+  void tickMatchEnd(double seconds);
   void startPoses();
   void tickPoses(double seconds);
   void releasePoses();
@@ -222,6 +223,9 @@ private:
   bool won_ = false;
   // The time left before the victory poses' sound, once a battle is won.
   std::optional<double> victoryPoseSeconds_;
+  // A tournament match's end: the time left of the winner's pose and the frames after it, while
+  // they run (the match has no end box).
+  std::optional<double> matchEndSeconds_;
   // The time the victory poses have played, while they do, and which of the two still plays.
   std::optional<double> posesSeconds_;
   bool playerPosing_ = false;

@@ -426,6 +426,16 @@
 	display: block;
 }
 
+/* A tournament match's clock stays through the winner's pose too (std_main.c: STD_deinitializeCombat removes it after
+   STD_removeCommandMenu). */
+#fight.after > #match-clock {
+	display: block;
+}
+
+#fight.after > #match-clock.hidden {
+	display: none;
+}
+
 #fight.after #command-cursor, #fight.after #command-name {
 	display: none;
 }

@@ -66,3 +66,25 @@ TEST_CASE("std_main.c STD_checkEndCondition: at time up the side that lost less 
   CHECK(result.draw == (partnerDamage == enemyDamage));
   CHECK((result.outcome == Outcome::Victory) == (partnerDamage < enemyDamage));
 }
+
+namespace {
+
+// Whether the enemy fought cautiously at any frame of the first `frames`.
+bool enemyEverCautious(Battle& battle, std::int64_t frames) {
+  bool cautious = false;
+  while (!battle.finished() && battle.state().frame < frames) {
+    battle.step();
+    cautious = cautious || battle.state().fighters.at(1).chargeMode == ChargeMode::Cautious;
+  }
+  return cautious;
+}
+
+} // namespace
+
+TEST_CASE(
+    "std_main.c STD_tickEnemyAI: a tournament rival is sometimes cautious, a field enemy not") {
+  Battle cup = startBattle(match(evenStats(3000, 300), evenStats(3000, 300), 99), 11);
+  CHECK(enemyEverCautious(cup, 1980));
+  Battle field = startBattle(duel(evenStats(3000, 300), evenStats(3000, 300)), 11);
+  CHECK_FALSE(enemyEverCautious(field, 1980));
+}

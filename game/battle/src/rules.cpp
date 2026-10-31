@@ -413,10 +413,11 @@ PartnerAiRules readPartnerAi(ValueReader& in, const YamlNode& node) {
 }
 
 EnemyAiRules readEnemyAi(ValueReader& in, const YamlNode& node) {
-  if (!in.group(node, "enemy_ai", {"area_weight"})) {
+  if (!in.group(node, "enemy_ai", {"area_weight", "match_cautious_roll"})) {
     return {};
   }
-  return {.areaWeight = in.count(node, "area_weight")};
+  return {.areaWeight = in.count(node, "area_weight"),
+          .matchCautiousRoll = in.positive(node, "match_cautious_roll")};
 }
 
 HitRules readHit(ValueReader& in, const YamlNode& node) {

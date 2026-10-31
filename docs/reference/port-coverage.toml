@@ -948,7 +948,7 @@ STD_getDigitCount = { status = "no-aplica", note = "cuenta genérica de dígitos
 STD_tickDigimonSenile = { status = "falta", what = "Mantiene al luchador en estado senil hasta que se agote su contador." }
 STD_initializePlayerMarker = { status = "falta", what = "Añade la marca que distingue a cada luchador en pantalla." }
 STD_getEntityIndex2 = { status = "no-aplica", note = "búsqueda genérica en la tabla de entidades", what = "Devuelve el índice de una entidad en la tabla." }
-STD_combatMain = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "el combate de copa es una batalla con reloj en la arena, con el rival dibujado", what = "Bucle principal de un combate de copa hasta el resultado." }
+STD_combatMain = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "el combate de copa es una batalla con reloj en la arena, con el rival dibujado, su modo de carga sorteado como STD_tickEnemyAI y sin caja de fin; faltan las escenas de victoria, derrota y empate", what = "Bucle principal de un combate de copa hasta el resultado." }
 STD_startWalkingAnimation2 = { status = "falta", what = "Elige animación de caminar normal o cansada según la vida." }
 STD_applyPartnerStatsToFighter = { status = "falta", what = "Copia los valores del compañero a su ficha de luchador." }
 STD_tickFrames = { status = "no-aplica", note = "bucle de cuadros del original", what = "Avanza varios cuadros de juego seguidos." }

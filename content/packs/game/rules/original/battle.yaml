@@ -208,6 +208,9 @@ partner_ai:
 enemy_ai:
   # Una técnica de área suma 20 si queda otro enemigo vivo.
   area_weight: 20
+  # En un combate de copa (std_main.c: STD_tickEnemyAI) el rival es prudente (modo 2) con 1 de 10 en cada decisión;
+  # si no, ofensivo o normal (0 o 1).
+  match_cautious_roll: 10
 
 # Acierto, bloqueo y contraataque (battle_main.c: BTL_calculateHitChance, BTL_tickAttackHits).
 hit:

@@ -211,6 +211,9 @@ struct PartnerAiRules {
 
 struct EnemyAiRules {
   std::int32_t areaWeight = 0;
+  // A tournament rival (std_main.c: STD_tickEnemyAI) is cautious one time in this many at each
+  // decision; otherwise it rolls aggressive or normal.
+  std::int32_t matchCautiousRoll = 0;
 };
 
 struct HitRules {

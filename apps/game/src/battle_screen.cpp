@@ -78,6 +78,12 @@ constexpr double VictoryPoseSeconds = VictoryPoseFrames * IntroFrameSeconds;
 // poses (startAnimation), and the end box opens once both clips have played through.
 constexpr std::uint32_t PlayerPoseClip = 0xb;
 constexpr std::uint32_t PartnerPoseClip = 0x2a;
+// std_main.c: STD_deinitializeCombat: a tournament match has no end box. The winner strikes its
+// pose (startAnimation 0x2a, again each time it plays through) for 100 frames when the partner won,
+// 120 when the rival did, then 20 frames pass and the match is over.
+constexpr int MatchWonFrames = 0x64;
+constexpr int MatchLostFrames = 0x78;
+constexpr int MatchAfterFrames = 0x14;
 // Before the fanfare the partner takes its stance, the healthy one whatever its HP.
 constexpr std::uint32_t VictoryStanceClip = 0x21;
 // The port's safeguard, not the original's: a pose that never plays through holds the box no longer
@@ -192,6 +198,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
 void BattleScreen::tick(double seconds) {
   syncBag();
   tickVictory(seconds);
+  tickMatchEnd(seconds);
   if (battle_) {
     tickBattle(seconds);
   } else {
@@ -480,6 +487,23 @@ void BattleScreen::tickVictory(double seconds) {
                  "playSound(0, 0x18)");
   playSound(VictoryPoseSound);
   startPoses();
+}
+
+void BattleScreen::tickMatchEnd(double seconds) {
+  if (!matchEndSeconds_) {
+    return;
+  }
+  if (partnerPosing_ && desc_.scene != nullptr && desc_.scene->partnerClipFinished()) {
+    desc_.scene->playPartnerClip(PartnerPoseClip);
+  }
+  *matchEndSeconds_ -= seconds;
+  if (*matchEndSeconds_ > 0.0) {
+    return;
+  }
+  matchEndSeconds_.reset();
+  core::logDebug("[port:tournament] STD_deinitializeCombat (std_main.c:4572): the match is over, "
+                 "with no end box");
+  close();
 }
 
 void BattleScreen::startPoses() {
@@ -795,13 +819,21 @@ void BattleScreen::finish() {
   const game::battle::BattleResult& result = *finished;
   outcome_ = result.outcome;
   won_ = result.outcome == game::battle::Outcome::Victory;
+  const bool match = result.kind == game::battle::BattleKind::Tournament;
   // battle_main.c: BTL_deinitializeCombat: without a victory the numbers go at once
-  // (removeEntityText).
-  if (!won_) {
+  // (removeEntityText); std_main.c: STD_deinitializeCombat removes them after any match.
+  if (!won_ || match) {
     numbers_.clear();
     publishNumbers();
   }
-  if (won_) {
+  if (match) {
+    if (won_ && desc_.scene != nullptr) {
+      desc_.scene->playPartnerClip(PartnerPoseClip);
+      partnerPosing_ = true;
+    }
+    matchEndSeconds_ = (won_ ? MatchWonFrames : MatchLostFrames) * IntroFrameSeconds +
+                       (MatchAfterFrames * IntroFrameSeconds);
+  } else if (won_) {
     standPartner(VictoryStanceClip, "BTL_handleVictorySequence (battle_main.c:886)");
     core::logDebug("[port:audio] BTL_handleVictorySequence (battle_main.c:889): the fanfare; "
                    "playSound(0, 0x15)");
@@ -831,8 +863,9 @@ void BattleScreen::finish() {
   view.countDelayFrames = hud.endCountDelayFrames;
   view.waitFrames = hud.endWaitFrames;
   screens::publish(*desc_.ui, screens::settingsOf(view), screens::BattleRevisionSetting);
-  desc_.ui->setSetting(BattlePhaseSetting,
-                       std::string{victoryPoseSeconds_ ? VictoryPhase : EndPhase});
+  desc_.ui->setSetting(
+      BattlePhaseSetting,
+      std::string{victoryPoseSeconds_ || matchEndSeconds_ ? VictoryPhase : EndPhase});
   ending_ = true;
 }
 
@@ -857,6 +890,7 @@ void BattleScreen::close() {
   }
   ending_ = false;
   victoryPoseSeconds_.reset();
+  matchEndSeconds_.reset();
   numbers_.clear();
   publishNumbers();
   publishHpBars();

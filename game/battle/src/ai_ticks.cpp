@@ -248,9 +248,17 @@ void tickEnemy(BattleContext& context, FighterId id, bool& stop) {
   if (!enemy.chasingAttacker) {
     setTarget(context, id, PartnerId);
   }
-  // The original makes an enemy off the screen cautious; the engine has no screen here (Hueco), so
-  // it rolls.
-  enemy.chargeMode = static_cast<ChargeMode>(context.random->below(2));
+  if (context.state->matchClock) {
+    // std_main.c: STD_tickEnemyAI: a tournament rival is cautious one time in ten, otherwise it
+    // rolls aggressive or normal.
+    enemy.chargeMode = context.random->below(context.rules->enemyAi.matchCautiousRoll) == 0
+                           ? ChargeMode::Cautious
+                           : static_cast<ChargeMode>(context.random->below(2));
+  } else {
+    // The original makes an enemy off the screen cautious; the engine has no screen here (Hueco),
+    // so it rolls.
+    enemy.chargeMode = static_cast<ChargeMode>(context.random->below(2));
+  }
   const std::array<bool, EquippedSlots> usable = usableSlots(context.view(), id);
   if (!anyUsable(usable)) {
     enemy.chargeMode = ChargeMode::Cautious;
