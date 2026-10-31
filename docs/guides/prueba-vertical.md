@@ -242,7 +242,15 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop04 --la
   `route-etapa2-centarumon.yaml` (`--start trop06`) cruza el bosque de la lotería de escaleras: la casilla de entrada
   echa a suertes cuál de los tres finales es el bueno (variable 116), la ruta sale por el carril que lleva a él (un
   bloque `when` por final), toma cada cruce que encuentra y Centarumon se une al final (236). Su viaje a koda00 queda
-  cerrado por el candado de la etapa 2 y el jugador sigue en trop06.
+  cerrado por el candado de la etapa 2 y el jugador sigue en trop06. Los tres finales reclutan igual (secciones 0x44,
+  0x45 y 0x46, la misma escena con otro carril); cuál sale depende de la semilla y de los fotogramas que el jugador
+  pasa en la casilla, así que puede cambiar con el motor.
+  `route-etapa2-vegiemon-rumor.yaml` (`--start twna03`) habla con Tanemon en el campo de Palmon, que cuenta lo de la
+  planta rara de la jungla y pone el disparador 86; lo hace con Palmon en la ciudad (246), sin Vegiemon (225), de 7 a
+  18 h y con 10 puntos de prosperidad (variable 1), que la ruta escribe con `story_set` porque la partida sembrada no
+  los tiene. `route-etapa2-vegiemon.yaml` (`--start trop03`) parte del 86 (escrito) y de la Rain Plant en la bolsa
+  (`give_item`; en la historia es el fruto que da el campo el día 15), pisa el brote, dice que sí a usar objetos y
+  elige la planta en el selector de la rutina 0 (variable 254 = 121): llueve sobre el brote y Vegiemon se une (225).
 
 ```sh
 scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop00 --lang en --seed 1 \
@@ -255,6 +263,10 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start tunn04 --la
     --autotest tests/autotest/route-etapa2-dirt.yaml --shots <capturas>/etapa2
 scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop06 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-centarumon.yaml --shots <capturas>/etapa2
+scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start twna03 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa2-vegiemon-rumor.yaml --shots <capturas>/etapa2
+scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop03 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa2-vegiemon.yaml --shots <capturas>/etapa2
 ```
 
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda

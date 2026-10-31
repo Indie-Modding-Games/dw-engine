@@ -1,0 +1,24 @@
+# Stage 2 of the story with the keyboard, the rumor that starts Vegiemon: from twna03, the city once Palmon lives in it,
+# on a seeded game (run with --start twna03 and the stage-2 lock, docs/guides/prueba-vertical.md). Tanemon, in Palmon's
+# field by the river, tells of a strange plant in the jungle and sets trigger 86 (script 162, section 0x51) when Palmon
+# has joined (246), Vegiemon has not (225), the hour is 7..18 and the city has 10 prosperity points (variable 1). The
+# seeded game has none of them, so the route writes the two story values first; on the way of the story they come from
+# Palmon and from the recruits of stages 1 and 2.
+name: etapa2-vegiemon-rumor
+device: keyboard
+timeout: 300
+steps:
+  - resize: [1280, 720]
+  - wait: {map: twna03, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.86: "false"}
+  - script: story_set("trigger 246 on")
+  - script: story_set("var 1 10")
+  - expect_setting: {story.var.1: "10"}
+  # The field's cells (81, confirm on them) in front of the seedbeds.
+  - walk_to: {point: [750, -850], radius: 60, timeout: 120}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: tanemon
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - expect_setting: {story.trigger.86: "true"}

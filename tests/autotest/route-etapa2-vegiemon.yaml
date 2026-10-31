@@ -1,0 +1,40 @@
+# Stage 2 of the story with the keyboard, Vegiemon: from trop03 on a seeded game (run with --start trop03 and the
+# stage-2 lock, docs/guides/prueba-vertical.md). The sprout's cells (51, script 15 section 0x33) only run once the
+# rumor set trigger 86 (route-etapa2-vegiemon-rumor) and give the Rain Plant (item 121) the city's field bears on the
+# fifteenth (script 162, section 0x53); the route writes the trigger and puts the plant in the bag. "Gonna use some
+# Items?" Yes opens routine 0, the item picker (openDiscardItem with trigger 3 set): the pick goes to variable 254,
+# routine 12 takes the plant from the bag, the rain cloud waters the sprout and Vegiemon comes out and joins (trigger
+# 225). The player stops by the sprout instead of running on into the jungle.
+name: etapa2-vegiemon
+device: keyboard
+timeout: 600
+steps:
+  - resize: [1280, 720]
+  - wait: {map: trop03, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.225: "false"}
+  - script: story_set("trigger 86 on")
+  - script: give_item("rain_plant 1")
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: sprout
+  - repeat: {times: 5, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  # Yes, then the Rain Plant (the seeded bag's only item) and "Is it OK?" Yes; a press the menu's first frame takes
+  # (or the choice's) is pressed again.
+  - tap: {key: return}
+  - wait: {seconds: 2}
+  - when: {hidden: discard_menu, steps: [{tap: {key: return}}]}
+  - wait: {shown: discard_menu, seconds: 1, timeout: 20}
+  - screenshot: item-menu
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - when: {shown: discard_menu, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - when: {shown: discard_menu, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.var.254: "121"}, timeout: 10}
+  - wait: {seconds: 12}
+  - screenshot: vegiemon
+  - repeat: {times: 28, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.225: "true"}, timeout: 120}
+  - wait: {seconds: 3}
+  - screenshot: after

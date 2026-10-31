@@ -624,7 +624,7 @@ namingSelectionRight = { status = "portado", dwe = "apps/game/src/naming_box.cpp
 namingSelectionDown = { status = "portado", dwe = "apps/game/src/naming_box.cpp", what = "Baja el cursor del cuadro de nombre." }
 
 # Routine screens the story asks for and the app closes at once (story_scene_glue.cpp:48)
-openDiscardItem = { status = "portado", dwe = "apps/session/src/discard_menu.cpp", what = "Pide tirar un objeto cuando la bolsa está llena al recibir otro." }
+openDiscardItem = { status = "portado", dwe = "apps/session/src/discard_menu.cpp", what = "Elige un objeto de la bolsa: el que se tira con la bolsa llena o, con el disparador 3, el que se da (Rain Plant de Vegiemon, regalos)." }
 openMeritShop = { status = "portado", dwe = "apps/game/src/merit_shop_screen.hpp:37", what = "Abre el intercambio de objetos por puntos de mérito.", note = "las cajas aparecen sin la animación de abrir" }
 openMojyamonShop = { status = "portado", dwe = "apps/session/include/dwe/session/item_trader.hpp:128", what = "Trueque de objetos: saludo, lista, pregunta, sí o no, cambio y despedida." }
 openJukebox = { status = "portado", dwe = "apps/game/src/jukebox_screen.hpp:44", what = "Abre la gramola." }
