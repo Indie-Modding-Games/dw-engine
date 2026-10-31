@@ -343,6 +343,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                     .session = game_.session.get(),
                     .sound = game_.session->sound(),
                     .ui = context.ui}),
+      birdScreen_({.transport = game_.systems.birdTransport,
+                   .session = game_.session.get(),
+                   .sound = game_.session->sound(),
+                   .ui = context.ui}),
       cardShopScreen_({.shop = game_.systems.cardShop, .ui = context.ui}),
       meritShopScreen_(
           {.shop = game_.systems.meritShop, .session = game_.session.get(), .ui = context.ui}),
@@ -373,6 +377,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachTournamentSchedule(&scheduleScreen_);
   storyScenes_.attachTrade(&tradeScreen_);
   tradeScreen_.setSpecies(species_ ? &*species_ : nullptr);
+  storyScenes_.attachBirdTransport(&birdScreen_);
+  birdScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyProps_.setSpecies(species_ ? &*species_ : nullptr);
   storyScenes_.attachCardShop(&cardShopScreen_);
   cardShopScreen_.setSpecies(species_ ? &*species_ : nullptr);
@@ -428,7 +434,7 @@ PlaySession::~PlaySession() {
         MeritShopDocument,         FieldItemNoticeDocument, AwardNoticeDocument,
         FishingBaitDocument,       FishingNoticeDocument,   FishingHudDocument,
         CurlingHudDocument,        EggBoxDocument,          NamingBoxDocument,
-        LivesBoxDocument}) {
+        LivesBoxDocument,          BirdTransportDocument}) {
     context_.ui->hide(document);
   }
 }
@@ -468,6 +474,7 @@ void PlaySession::pressItemKeeper(const input::InputState& input) {
   jukeboxScreen_.press(input);
   scheduleScreen_.press(input);
   tradeScreen_.press(input);
+  birdScreen_.press(input);
   cardShopScreen_.press(input);
   meritShopScreen_.press(input);
 }
@@ -496,7 +503,7 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
                          fieldRules ? std::optional{fieldRules->sleepSound} : std::nullopt);
   if (sleepScreen_.active() || shopScreen_.active() || itemKeeperScreen_.active() ||
       discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
-      cardShopScreen_.active() || meritShopScreen_.active() || scheduleScreen_.active()) {
+      birdScreen_.active() || cardShopScreen_.active() || meritShopScreen_.active() || scheduleScreen_.active()) {
     return;
   }
   // partner.c: partnerTickOverworld runs the partner's state: the care scenes below (praise and
@@ -613,7 +620,7 @@ bool PlaySession::handle(const ui::UiCommand& command) {
   if (eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
       itemKeeperScreen_.handle(command) || discardScreen_.handle(command) ||
       jukeboxScreen_.handle(command) || scheduleScreen_.handle(command) ||
-      tradeScreen_.handle(command) || cardShopScreen_.handle(command) ||
+      tradeScreen_.handle(command) || birdScreen_.handle(command) || cardShopScreen_.handle(command) ||
       meritShopScreen_.handle(command) || sleepScreen_.handle(command) ||
       saveMachine_.handle(command) || praiseScold_.handle(command) || feedScene_.handle(command) ||
       fieldToilet_.handle(command) || fieldPoop_.handle(command) ||
@@ -827,7 +834,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   });
   if (storyTextbox_) {
     storyTextbox_->cover(jukeboxScreen_.active() || scheduleScreen_.active() ||
-                         tradeScreen_.active() || cardShopScreen_.active() ||
+                         tradeScreen_.active() || birdScreen_.active() || cardShopScreen_.active() ||
                          meritShopScreen_.active());
     storyTextbox_->update(*scene_, species);
   }
@@ -884,7 +891,7 @@ bool PlaySession::paused() const {
          (sleepScreen_.active() && !sleepScreen_.fieldRuns()) || saveMachine_.active() ||
          toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
          shopScreen_.active() || itemKeeperScreen_.active() || discardScreen_.active() ||
-         jukeboxScreen_.active() || tradeScreen_.active() || cardShopScreen_.active() ||
+         jukeboxScreen_.active() || tradeScreen_.active() || birdScreen_.active() || cardShopScreen_.active() ||
          meritShopScreen_.active() || fieldItemsScreen_.active() || awardScreen_.active() ||
          scheduleScreen_.active();
 }

@@ -3,6 +3,7 @@
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/battle_registry.hpp>
+#include <dwe/session/bird_transport.hpp>
 #include <dwe/session/calendar_adapter.hpp>
 #include <dwe/session/card_shop.hpp>
 #include <dwe/session/cards_adapter.hpp>
@@ -153,6 +154,8 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   auto jukebox = std::make_unique<Jukebox>(JukeboxDesc{.files = &files, .story = story.get()});
   auto itemTrader = std::make_unique<ItemTrader>(
       ItemTraderDesc{.files = &files, .inventory = inventory.get(), .story = story.get()});
+  auto birdTransport = std::make_unique<BirdTransport>(
+      BirdTransportDesc{.files = &files, .inventory = inventory.get(), .story = story.get()});
   GameSystems game{.systems = {},
                    .evolution = evolution.get(),
                    .inventory = inventory.get(),
@@ -163,7 +166,8 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
                    .itemKeeper = itemKeeper.get(),
                    .discardMenu = discardMenu.get(),
                    .jukebox = jukebox.get(),
-                   .itemTrader = itemTrader.get()};
+                   .itemTrader = itemTrader.get(),
+                   .birdTransport = birdTransport.get()};
   // The story's scenes tick before the story, so what the app reported is seen the same tick.
   auto scenes = std::make_unique<StoryScenes>(StoryScenesDesc{.story = story.get(),
                                                               .evolution = evolution.get(),
@@ -183,6 +187,7 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   game.systems.push_back(std::move(discardMenu));
   game.systems.push_back(std::move(jukebox));
   game.systems.push_back(std::move(itemTrader));
+  game.systems.push_back(std::move(birdTransport));
   // The calendar runs a new game's day on the story after the story started it.
   game.calendar = calendar.get();
   game.systems.push_back(std::move(calendar));

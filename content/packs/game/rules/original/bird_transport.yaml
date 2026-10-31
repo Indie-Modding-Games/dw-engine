@@ -1,0 +1,35 @@
+# El transporte en pájaro que abre la historia (script_interp.c: CALL_ROUTINE 10 -> shop/script_menu.c:
+# tickBirdraTransport; apps/session: BirdTransport): el transportista lleva al jugador a un sitio a cambio de bits.
+
+# showMapHeadTextbox(..., 0x4d6): las frases del transportista son esta sección de MAPHEAD.
+lines_section: 1238
+# createShopBitsBox -> getShopkeeperLine: el cuadro del dinero dice la frase 6 («Bits {bits}») de la sección del
+# tendero; el transportista no está en la tabla de tenderos, así que es la del primero (0x4c4).
+bits_section: 1220
+# El número de cada frase dentro de la sección (resolveMapHeadEntry): «¿adónde te llevo?» (estado 0), la
+# despedida sin viaje (estado 6), «¿seguro? una vez allí no te puedo traer» (tickBirdraTransportMenu) y el
+# sí o no (estado 4).
+lines:
+  greeting: 4
+  farewell: 5
+  confirm: 6
+  choices: 7
+  bits: 6
+# Estado 5: el mapa y la entrada del destino van a las variables 247 y 248, y el guion sigue en la sección
+# 0x4e3 de MAPHEAD («Hold on tight!» y teleport con la variable 247).
+map_variable: 247
+entry_variable: 248
+travel_section: 1251
+# tickSelectionDialogue: con el trigger 0x31 puesto, cancelar no contesta el sí o no.
+choice_lock_trigger: 49
+# tickBirdraTransportMenu: playSound(0, 0xb) en un sitio que el dinero no paga.
+refuse_sound: {slot: 0, sound: 11}
+# BIRDRA_TRANSPORT_TARGETS: el índice de mapa del original, la entrada, el trigger que pone el sitio en la
+# lista (birdraFillTargetList) y el precio en bits.
+destinations:
+  - {map: 38, entry: 9, trigger: 221, cost: 1000}
+  - {map: 70, entry: 9, trigger: 190, cost: 1000}
+  - {map: 79, entry: 9, trigger: 188, cost: 1500}
+  - {map: 93, entry: 9, trigger: 351, cost: 2000}
+  - {map: 119, entry: 9, trigger: 147, cost: 2500}
+  - {map: 105, entry: 0, trigger: 210, cost: 2500}

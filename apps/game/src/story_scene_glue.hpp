@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "battle_screen.hpp"
+#include "bird_transport_screen.hpp"
 #include "card_shop_screen.hpp"
 #include "curling_screen.hpp"
 #include "death_scene.hpp"
@@ -56,6 +57,8 @@ public:
   void attachTournamentSchedule(TournamentScheduleScreen* schedule) { schedule_ = schedule; }
   // The item trader the story's TradeShop screen opens (call_routine 2).
   void attachTrade(TradeScreen* trade) { trade_ = trade; }
+  // The bird transport the story's BirdTransport screen opens (call_routine 10).
+  void attachBirdTransport(BirdTransportScreen* bird) { bird_ = bird; }
   // The card shop's menus the story's CardBuy and CardSell screens open (call_routine 14).
   void attachCardShop(CardShopScreen* cardShop) { cardShop_ = cardShop; }
   // The merit exchange the story's MeritShop screen opens (call_routine 1).
@@ -85,6 +88,7 @@ private:
   JukeboxScreen* jukebox_ = nullptr;
   TournamentScheduleScreen* schedule_ = nullptr;
   TradeScreen* trade_ = nullptr;
+  BirdTransportScreen* bird_ = nullptr;
   CardShopScreen* cardShop_ = nullptr;
   MeritShopScreen* meritShop_ = nullptr;
   // Whether the story waits on a scene of the death scene.

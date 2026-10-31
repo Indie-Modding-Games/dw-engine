@@ -39,6 +39,7 @@ sections:
   - discard_menu
   - jukebox
   - item_trader
+  - bird_transport
   - calendar
   - field_items
   - cards

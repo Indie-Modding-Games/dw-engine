@@ -64,6 +64,8 @@ struct StoryScenesContext {
   std::optional<game::story::BattleOutcome> battleOutcome;
   std::deque<StoryScreenRequest> screenRequests;
   bool screenOpen = false;
+  // Where the script goes on once the screen closes, when not after its call_routine.
+  std::optional<game::story::SectionRef> screenJump;
   std::optional<PartnerSceneRequest> partnerScene;
   std::deque<StoryPropRequest> propRequests;
 

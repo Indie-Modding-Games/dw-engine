@@ -60,6 +60,8 @@ schemas:
     - rules/*/jukebox
   ruleset_item_trader:
     - rules/*/item_trader
+  ruleset_bird_transport:
+    - rules/*/bird_transport
   ruleset_card_shop:
     - rules/*/card_shop
   ruleset_merit_shop:

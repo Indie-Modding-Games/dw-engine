@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: bird_transport",
+  "description": "rules/<id>/bird_transport.yaml: the bird transport the story opens (apps/session: BirdTransport; shop/script_menu.c: tickBirdraTransport).",
+  "type": "object",
+  "required": ["lines_section", "bits_section", "lines", "map_variable", "entry_variable", "travel_section", "choice_lock_trigger", "refuse_sound", "destinations"],
+  "additionalProperties": false,
+  "properties": {
+    "lines_section": { "description": "The MAPHEAD section of the carrier's lines.", "type": "integer", "minimum": 0 },
+    "bits_section": { "description": "The MAPHEAD section of the money box's line.", "type": "integer", "minimum": 0 },
+    "lines": {
+      "description": "The line of each step in that section.",
+      "type": "object",
+      "required": ["greeting", "farewell", "confirm", "choices", "bits"],
+      "additionalProperties": false,
+      "properties": {
+        "greeting": { "type": "integer", "minimum": 0 },
+        "farewell": { "type": "integer", "minimum": 0 },
+        "confirm": { "type": "integer", "minimum": 0 },
+        "choices": { "type": "integer", "minimum": 0 },
+        "bits": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "map_variable": { "description": "The story variable that gets the destination's map index.", "type": "integer", "minimum": 0, "maximum": 255 },
+    "entry_variable": { "description": "The story variable that gets the destination's entry.", "type": "integer", "minimum": 0, "maximum": 255 },
+    "travel_section": { "description": "The MAPHEAD section the script goes on at after the yes.", "type": "integer", "minimum": 0, "maximum": 65535 },
+    "choice_lock_trigger": { "description": "While set, cancel does not answer the yes-or-no.", "type": "integer", "minimum": 0, "maximum": 799 },
+    "refuse_sound": {
+      "description": "The sound of picking a place the money does not pay for.",
+      "type": "object",
+      "required": ["slot", "sound"],
+      "additionalProperties": false,
+      "properties": {
+        "slot": { "type": "integer", "minimum": 0 },
+        "sound": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "destinations": {
+      "description": "The places, in the menu's order; a place shows once its trigger is set.",
+      "type": "array",
+      "maxItems": 127,
+      "items": {
+        "type": "object",
+        "required": ["map", "entry", "trigger", "cost"],
+        "additionalProperties": false,
+        "properties": {
+          "map": { "description": "The original's map index.", "type": "integer", "minimum": 0, "maximum": 255 },
+          "entry": { "description": "The entry of the map.", "type": "integer", "minimum": 0, "maximum": 255 },
+          "trigger": { "description": "The trigger that puts the place on the list.", "type": "integer", "minimum": 0, "maximum": 799 },
+          "cost": { "description": "The price in bits.", "type": "integer", "minimum": 0, "maximum": 9999 }
+        }
+      }
+    }
+  }
+}

@@ -502,7 +502,7 @@ flipTextboxPage = { status = "portado", dwe = "game/story/src/dialogue.cpp", wha
 calculateItemMenuStrings = { status = "no-aplica", note = "texto de interfaz", what = "Monta los textos del menú de objetos." }
 calculateCardMenuStrings = { status = "portado", dwe = "apps/game/src/card_shop_screen.cpp", what = "Monta la lista del menú de cartas." }
 calculateMusicMenuStrings = { status = "portado", dwe = "apps/game/src/jukebox_screen.hpp:58", what = "Monta la lista de canciones de la gramola." }
-calculateBirdramonMenuStrings = { status = "falta", what = "Monta la lista de destinos del pájaro transportista.", note = "comprobar la pantalla de destinos" }
+calculateBirdramonMenuStrings = { status = "portado", dwe = "content/packs/game/ui/bird_transport/logic.lua", what = "Monta la lista de destinos del pájaro transportista: nombre, precio y rojo si no alcanza el dinero." }
 updateItemMenuLine = { status = "no-aplica", note = "texto de interfaz", what = "Rehace una línea del menú." }
 itemMenuCursorMoveToBottom = { status = "no-aplica", note = "cursor de interfaz", what = "Lleva el cursor al final." }
 itemMenuCursorMoveToTop = { status = "no-aplica", note = "cursor de interfaz", what = "Lleva el cursor al principio." }
@@ -598,8 +598,8 @@ itemKeeperFillItemList = { status = "portado", dwe = "apps/session/include/dwe/s
 createItemKeepWindow = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Abre las ventanas del guardián de objetos." }
 jukeboxFillTitleList = { status = "portado", dwe = "apps/session/include/dwe/session/jukebox.hpp:120", what = "Rellena la lista de la gramola." }
 createJukeboxMenu = { status = "portado", dwe = "apps/session/include/dwe/session/jukebox.hpp:130", what = "Abre la gramola." }
-birdraFillTargetList = { status = "portado", dwe = "game/field/src/script_warps.cpp", what = "Rellena los destinos del pájaro transportista." }
-createBirdraTransportMenu = { status = "portado", dwe = "content/packs/game/ui/destination_choice/logic.lua", what = "Abre la elección de destino del pájaro transportista." }
+birdraFillTargetList = { status = "portado", dwe = "apps/session/src/bird_transport.cpp", what = "Rellena los destinos del pájaro transportista: los de disparador puesto, marcados si el dinero alcanza." }
+createBirdraTransportMenu = { status = "portado", dwe = "apps/game/src/bird_transport_screen.cpp", what = "Abre la elección de destino del pájaro transportista (rutina 10)." }
 mojyaTradeFillItemList = { status = "portado", dwe = "apps/session/include/dwe/session/item_trader.hpp:100", what = "Rellena la lista del trueque de objetos: lo que tiene la bolsa y lo ya cambiado." }
 createMojyaTradeMenu = { status = "portado", dwe = "apps/game/src/trade_screen.hpp:44", what = "Abre el trueque de objetos." }
 setMojyaItemTradedTrigger = { status = "portado", dwe = "apps/session/include/dwe/session/item_trader.hpp:107", what = "Marca el objeto ya cambiado en el trueque." }
@@ -612,7 +612,7 @@ keeperMoveStack = { status = "portado", dwe = "apps/session/include/dwe/session/
 keeperScrollLeftToItem = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:33", what = "Guardián de objetos: la ventana de lo guardado enseña el objeto movido." }
 keeperScrollRightToItem = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:33", what = "Guardián de objetos: la ventana de la bolsa enseña el objeto movido." }
 tickJukeboxMenu = { status = "portado", dwe = "apps/session/include/dwe/session/jukebox.hpp:136", what = "Gramola: elige y toca una canción." }
-tickBirdraTransportMenu = { status = "portado", dwe = "game/field/src/script_warps.cpp", what = "Elige destino del pájaro transportista y viaja." }
+tickBirdraTransportMenu = { status = "portado", dwe = "apps/game/src/bird_transport_screen.cpp", what = "Elige destino del pájaro transportista y viaja." }
 tickMojyaTradeMenu = { status = "portado", dwe = "apps/game/src/trade_screen.hpp:44", what = "Trueque: elige el objeto a cambiar." }
 updateMojyaTradeStrings = { status = "portado", dwe = "apps/game/src/trade_screen.hpp:44", what = "Textos del trueque." }
 showNewGameDialogue = { status = "portado", dwe = "apps/game/src/new_game_interview.cpp", what = "Diálogo de la partida nueva." }

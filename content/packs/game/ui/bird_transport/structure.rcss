@@ -1,0 +1,189 @@
+/* The bird transport (shop/script_menu.c: tickBirdraTransport, createBirdraTransportMenu, renderBirdraTransportMenu,
+   script_common.c: createShopBitsBox). One pixel of the original is 3dp; the 320 x 240 screen is a 960 x 720dp frame
+   centred on a wide screen. Measured on the original with the routine forced at the item keeper's counter: the money
+   box from x 8 to 89 and y 15 to 47, the word from x 30 and the money right-aligned to end at x 67; the window from
+   x 90 to 309 and y 13 to 149; PLACE at (8, 6) and POINT at (162, 6) inside it; the rule at y 15; six rows 18 pixels
+   apart, the names from (8, 20) and the price ending at x 196, a name cut where the price starts (x 168); the cursor
+   202 x 18 at (5, 18); the scroll bar at x 210, 5 wide, from y 26 to 121, with its track at x 216. The speech box is
+   the story's. The skins give the look; this is the layout and a plain look for any skin. */
+
+body {
+	width: 100%;
+	height: 100%;
+}
+
+#frame {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+	margin-left: -480dp;
+}
+
+#bits-box, #window { display: none; }
+#frame.menu #bits-box, #frame.menu #window { display: block; }
+
+#bits-box {
+	position: absolute;
+	text-align: left;
+	left: 24dp;
+	top: 45dp;
+	width: 246dp;
+	height: 99dp;
+	padding: 6dp 0 0 63dp;
+	box-sizing: border-box;
+	border: 3dp #d0d0d0;
+	background-color: #000000c0;
+	font-size: 33dp;
+	line-height: 39dp;
+}
+
+.bits-row {
+	display: block;
+	height: 39dp;
+	white-space: pre;
+}
+
+#bits-value {
+	width: 111dp;
+	text-align: right;
+}
+
+#window {
+	position: absolute;
+	left: 270dp;
+	top: 39dp;
+	width: 660dp;
+	height: 411dp;
+	box-sizing: border-box;
+	border: 3dp #d0d0d0;
+	background-color: #000000c0;
+}
+
+.label {
+	position: absolute;
+	top: 18dp;
+	height: 21dp;
+	font-size: 21dp;
+	line-height: 21dp;
+}
+
+.label-place { left: 24dp; width: 60dp; }
+.label-point { left: 486dp; width: 60dp; }
+
+/* renderHorizontalLine: a dark line over a light one. */
+#rule {
+	position: absolute;
+	left: 9dp;
+	top: 42dp;
+	width: 636dp;
+	height: 6dp;
+	box-sizing: border-box;
+	border-top: 3dp #101010;
+	border-bottom: 3dp #b0b0b0;
+}
+
+/* renderItemMenuScrollBar: every row fits, so the bar fills its track. */
+#track {
+	position: absolute;
+	left: 648dp;
+	top: 84dp;
+	width: 3dp;
+	height: 282dp;
+	background-color: #6b8ca5;
+}
+
+#bar {
+	position: absolute;
+	left: 630dp;
+	top: 78dp;
+	width: 15dp;
+	height: 288dp;
+	box-sizing: border-box;
+	border-left: 3dp #6b8ca5;
+	background-color: #5a7384;
+}
+
+/* renderSelectionCursor: a grey bar with a light top and left edge and a dark bottom and right one. */
+#cursor {
+	position: absolute;
+	left: 15dp;
+	top: 54dp;
+	width: 606dp;
+	height: 54dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #b0b0b0 #121212 #121212 #b0b0b0;
+	background-color: #80808080;
+}
+
+.row {
+	position: absolute;
+	left: 24dp;
+	width: 570dp;
+	height: 54dp;
+	font-size: 33dp;
+	line-height: 33dp;
+	text-align: left;
+	white-space: pre;
+}
+
+#row-0 { top: 60dp; }
+#row-1 { top: 114dp; }
+#row-2 { top: 168dp; }
+#row-3 { top: 222dp; }
+#row-4 { top: 276dp; }
+#row-5 { top: 330dp; }
+
+.name {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 480dp;
+	height: 54dp;
+	overflow: hidden;
+}
+
+.cost {
+	position: absolute;
+	left: 480dp;
+	top: 0;
+	width: 84dp;
+	text-align: right;
+}
+
+/* calculateBirdramonMenuStrings: a place the money does not pay for is red (colour 3). */
+.row.unaffordable { color: #e03028; }
+
+#talk {
+	position: absolute;
+	left: 90dp;
+	top: 486dp;
+	width: 786dp;
+	height: 177dp;
+	padding: 6dp 15dp;
+	box-sizing: border-box;
+	background-color: #000000c0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 39dp;
+}
+
+.talk-row {
+	display: block;
+	height: 39dp;
+	white-space: pre;
+}
+
+.talk-row.hidden, #speaker.hidden { display: none; }
+
+#speaker { color: #f8f800; }
+#speaker.player { color: #d0d0d0; }
+
+/* A choice's row: renderDialogueSelectionCursor's grey bar with a light top line. */
+.talk-row .run { display: inline-block; padding: 0 3dp; }
+.talk-row.selected .run {
+	background-color: #525a63;
+	border-top: 3dp #b5b5b5;
+}

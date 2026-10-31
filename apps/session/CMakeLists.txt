@@ -32,6 +32,7 @@ dwe_add_module(session
         src/battle_effects.cpp
         src/discard_menu.cpp
         src/item_trader.cpp
+        src/bird_transport.cpp
         src/item_keeper.cpp
         src/jukebox.cpp
         src/card_shop.cpp
@@ -78,6 +79,7 @@ dwe_add_module(session
         src/story_routines/routine_merit_shop.cpp
         src/story_routines/routine_money_box.cpp
         src/story_routines/routine_mood_bubble.cpp
+        src/story_routines/routine_bird_transport.cpp
         src/story_routines/routine_new_game_menu.cpp
         src/story_routines/routine_object_animation.cpp
         src/story_routines/routine_remove_item.cpp

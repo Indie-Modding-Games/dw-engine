@@ -51,6 +51,9 @@ screens:
   # El trueque de objetos: las cajas del original.
   trade_menu:
     styles: [ui/skins/original/trade_menu/style]
+  # El transporte en pájaro: las cajas del original y los rótulos PLACE y POINT.
+  bird_transport:
+    styles: [ui/skins/original/bird_transport/style]
   # La tienda de cartas: las cajas y los rótulos del guardián, y la carta de cada rareza.
   card_shop:
     styles: [ui/skins/original/card_shop/style]
@@ -208,6 +211,8 @@ sprite_sheets:
       keeper-price-label: [20, 34, 20, 7]
       # El rótulo POINT de la lista del intercambio por méritos (script_common.c: renderItemMenu, ITEM_MENU_HEADER_UVS 2).
       keeper-point-label: [80, 48, 20, 7]
+      # El rótulo PLACE del transporte en pájaro (shop/script_menu.c: renderBirdraTransportMenu, ITEM_MENU_HEADER_UVS 6).
+      keeper-place-label: [56, 48, 20, 7]
   # La carta de cada rareza en las listas de la tienda de cartas (script_common.c: renderCardSprite, paleta 5).
   - name: card-rarity
     image: texture/etcdat/system_w

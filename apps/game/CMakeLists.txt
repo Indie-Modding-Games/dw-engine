@@ -78,6 +78,7 @@ dwe_add_app(game
         src/merit_shop_screen.cpp
         src/discard_screen.cpp
         src/trade_screen.cpp
+        src/bird_transport_screen.cpp
         src/item_keeper_screen.cpp
         src/jukebox_screen.cpp
         src/shop_screen.cpp

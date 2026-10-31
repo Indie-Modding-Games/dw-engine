@@ -87,9 +87,9 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 74 | 4 | 4 | 14 | 93 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 69 | 0 | 6 | 27 | 92 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
-| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 90 | 3 | 3 | 49 | 95 % |
+| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 91 | 3 | 2 | 49 | 96 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 76 | 1 | 1 | 46 | 98 % |
-| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 94 | 1 | 0 | 3 | 99 % |
+| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 95 | 1 | 0 | 2 | 99 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 0 | 0 | 9 | 100 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 37 | 1 | 0 | 12 | 99 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1103 | 38 | 235 | 1062 | 82 % |
+| **Total** | 2438 funciones | 1105 | 38 | 234 | 1061 | 82 % |
 
 ## Batalla
 
@@ -230,14 +230,13 @@ La máquina de scripts de eventos: órdenes, valores, cajas de texto y eleccione
 
 Ficheros del decomp: `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c`.
 
-Portado 90, parcial 3, falta 3, no aplica 49.
+Portado 91, parcial 3, falta 2, no aplica 49.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `tickShopBitsBox` | `main/script_common.c:1154` | parcial | Cuadro con el dinero del jugador que abre el guion. | `apps/game/src/shop_screen.cpp` · en la tienda sale y se actualiza al comprar o vender; la rutina 15 se cierra sin enseñarlo |
 | `createShopBitsBox` | `main/script_common.c:1757` | parcial | Enseña el dinero del jugador durante un diálogo. | `apps/game/src/shop_screen.cpp` · la tienda lo enseña de la primera elección a la despedida; la rutina 15 se cierra sin enseñar el cuadro |
 | `playShopSoundOnlyInSavannah` | `main/script_common.c:2371` | parcial | Toca el sonido de la tienda, solo en el mapa de la sabana. | `apps/session/src/card_shop.cpp` · la tienda de cartas y el intercambio por méritos lo tocan (trade_sound: (0, 0x17) solo en gias06b); el trueque de objetos todavía no |
-| `calculateBirdramonMenuStrings` | `main/script_common.c:2759` | falta | Monta la lista de destinos del pájaro transportista. | comprobar la pantalla de destinos |
 | `triggerSeadramonCutscene` | `main/script_common.c:3057` | falta (citada en docs) | Lanza la escena de la serpiente marina al pescarla. | — |
 | `tickBackgroundDialogue` | `main/script_textbox.c:861` | falta | Diálogo que corre sin parar el juego (comentarios de fondo). | comprobar |
 
@@ -264,13 +263,13 @@ Uso de objetos, comida y chips, tiendas, cartas, guardarropía y menús de guion
 
 Ficheros del decomp: `main/item.c`, `shop/script_menu.c`.
 
-Portado 94, parcial 1, falta 0, no aplica 3.
+Portado 95, parcial 1, falta 0, no aplica 2.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `handleChips` | `main/item.c:2248` | parcial | Usa un chip: sube un stat y lanza su sección de guion. | `content/packs/game/rules/original/inventory.yaml:59` · la sección de guion de un chip no corre (docs/modulos/apps/session.md:276) |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (3).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (2).
 
 ## Evolución
 
@@ -363,7 +362,7 @@ Portado 30, parcial 6, falta 58, no aplica 355.
 |---|---|---|---|---|
 | `updateTournamentRegistration` | `main/tournament.c:42` | falta (citada en docs) | Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa. | — |
 | `checkTournamentMedalConditions` | `main/tournament.c:168` | parcial | Mira si toca dar la medalla de los torneos. | `apps/session/src/story_routines/routine_tournament_medal.cpp:15` · la rutina 22 sigue al momento sin copas ganadas; no hay torneos |
-| `scriptCheckTournamentMedal` | `main/tournament.c:242` | parcial | Comprueba y da la medalla de los torneos. | `apps/session/include/dwe/session/story_scenes.hpp:110` · la rutina 22 se cierra sin pantalla |
+| `scriptCheckTournamentMedal` | `main/tournament.c:242` | parcial | Comprueba y da la medalla de los torneos. | `apps/session/include/dwe/session/story_scenes.hpp:112` · la rutina 22 se cierra sin pantalla |
 | `STD_addChampionScene` | `std/std_effect.c:1251` | falta (citada en docs) | Inicia la escena de celebración del campeón de la copa. | — |
 | `STD_tickChampionScene` | `std/std_effect.c:1259` | falta | Anima la escena del campeón: letras, giro de cámara y podio. | — |
 | `STD_addPodiumRenderer` | `std/std_effect.c:1380` | falta | Muestra el podio en la escena de premiación. | — |

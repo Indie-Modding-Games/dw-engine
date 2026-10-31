@@ -3,6 +3,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/game/story/partner_routines.hpp>
 #include <dwe/game/story/screen_history.hpp>
+#include <dwe/game/story/section_host.hpp>
 #include <dwe/game/story/story_battle.hpp>
 #include <dwe/session/session_system.hpp>
 #include <dwe/session/story_props.hpp>
@@ -99,6 +100,7 @@ enum class StoryScreen : std::uint8_t {
   DiscardItem,        // routine 0, openDiscardItem
   MeritShop,          // routine 1, openMeritShop
   TradeShop,          // routine 2, the item trader's shop (openMojyamonShop)
+  BirdTransport,      // routine 10, the bird transport (tickBirdraTransport)
   Tournament,         // routine 6, scriptStartTournament
   Shop,               // routine 8, openShop
   RecycleShop,        // routine 8 while the selling trigger is set, openRecycleShop
@@ -179,8 +181,9 @@ public:
   [[nodiscard]] std::optional<StoryScreenRequest> takeScreenRequest();
   // What the story puts on the field (story_props.hpp), in order, each once.
   [[nodiscard]] std::optional<StoryPropRequest> takePropRequest();
-  // The screen the story waits for is closed.
-  void screenClosed();
+  // The screen the story waits for is closed; with `jump`, the script goes on at that section
+  // instead of after its call_routine (tickBirdraTransport's state 5 moves the script pointer).
+  void screenClosed(std::optional<game::story::SectionRef> jump = std::nullopt);
   [[nodiscard]] std::optional<PartnerSceneRequest> takePartnerScene();
   // Whether routine 53 ended the game since the last call: the app closes it, plays the ending
   // movie and goes back to the title (main.c: main, MAIN_STATE 3).

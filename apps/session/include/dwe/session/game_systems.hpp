@@ -42,6 +42,7 @@ class ItemKeeper;
 class DiscardMenu;
 class Jukebox;
 class ItemTrader;
+class BirdTransport;
 class StoryAdapter;
 class StoryGameOrders;
 class StoryScenes;
@@ -90,6 +91,8 @@ struct GameSystems {
   Jukebox* jukebox = nullptr;
   // The item trader (CALL_ROUTINE 2).
   ItemTrader* itemTrader = nullptr;
+  // The bird transport (CALL_ROUTINE 10).
+  BirdTransport* birdTransport = nullptr;
   CalendarAdapter* calendar = nullptr;
   FieldItemsAdapter* fieldItems = nullptr;
   CardsAdapter* cards = nullptr;

@@ -246,6 +246,7 @@ private:
   JukeboxScreen jukeboxScreen_;
   TournamentScheduleScreen scheduleScreen_;
   TradeScreen tradeScreen_;
+  BirdTransportScreen birdScreen_;
   CardShopScreen cardShopScreen_;
   MeritShopScreen meritShopScreen_;
   FieldItemsScreen fieldItemsScreen_;

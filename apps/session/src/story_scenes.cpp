@@ -414,8 +414,9 @@ std::optional<StoryPropRequest> StoryScenes::takePropRequest() {
   return request;
 }
 
-void StoryScenes::screenClosed() {
+void StoryScenes::screenClosed(std::optional<game::story::SectionRef> jump) {
   context_->screenOpen = false;
+  context_->screenJump = jump;
 }
 
 std::optional<PartnerSceneRequest> StoryScenes::takePartnerScene() {

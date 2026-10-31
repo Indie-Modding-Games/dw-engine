@@ -1,6 +1,7 @@
 #include <dwe/core/log.hpp>
 
 #include <memory>
+#include <utility>
 
 #include "../story_scenes_context.hpp"
 #include "routines.hpp"
@@ -20,6 +21,9 @@ protected:
     if (scenes_->screenOpen) {
       return game::story::TaskRunning{};
     }
+    if (const auto jump = std::exchange(scenes_->screenJump, std::nullopt)) {
+      return game::story::TaskJump{.target = *jump};
+    }
     return game::story::TaskDone{};
   }
 
@@ -37,6 +41,7 @@ game::story::RoutineStart StoryScenesContext::openScreen(StoryScreenRequest requ
     return game::story::RoutineGoesOn{};
   }
   screenOpen = true;
+  screenJump.reset();
   return game::story::RoutineWaits{.task = std::make_shared<ScreenTask>(*this)};
 }
 

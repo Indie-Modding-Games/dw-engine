@@ -306,6 +306,36 @@ con la ruta `trade` en frzl14 (capturas `eng/`).
 | Sonido de la sabana | `playShopSoundOnlyInSavannah`: (0, 0x17) solo en la pantalla 0x83 | No está | — | Hueco: el trueque no está en ese mapa |
 | Títulos de las columnas | `MAIN_D_801307CC` («You have Will trade»), una sola cadena | `script_menu_trade_label`, partida en dos por los espacios | Ruta `trade` | Suposición |
 
+## Transporte en pájaro
+
+El transporte de la rutina 10 (`shop/script_menu.c: tickBirdraTransport`, `createBirdraTransportMenu`,
+`tickBirdraTransportMenu`, `renderBirdraTransportMenu`; `script_common.c: calculateBirdramonMenuStrings`,
+`createShopBitsBox`): saludo, cuadro de dinero y lista de destinos, «Are you sure?», sí o no del jugador y viaje o
+despedida. La sesión (`session::BirdTransport`) lleva las reglas; la pantalla `bird_transport` (`apps/game:
+BirdTransportScreen`) las enseña y, tras el sí, dice a la historia en qué sección sigue. Mientras está abierta, el
+cuadro de texto del guion se oculta. Medido con el original (rutina 10 forzada por RAM en el mostrador de room02;
+capturas `orig/` de `_work/routes-e2/bird-transport/`) y comprobado en dwe con la ruta de room12 (Intro para hablar,
+flechas para moverse, Intro para confirmar, Esc para cancelar).
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `bird.phase` | texto | `greeting`, `list`, `confirm`, `choice`, `farewell` o `closed` |
+| `bird.{speaker,player,line_key,bits_key}` | texto, claves | Quién habla (en el sí o no, el nombre del jugador), la frase (MAPHEAD 1238) y la del cuadro de dinero |
+| `bird.{money,cursor,choice,total}` | números | El dinero, la fila del cursor, la respuesta marcada (0 sí, 1 no) y cuántas filas hay |
+| `bird.row.<i>.{name,cost,affordable}` | clave, número, booleano | Cada destino: el nombre del mapa, el precio y si el dinero lo paga |
+
+| Comportamiento | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Ventana de la lista | De (90, 13) a (309, 149); PLACE en (8, 6) y POINT en (162, 6) (`ITEM_MENU_HEADER_UVS` 6 y 7); raya en y 15; seis filas cada 18 px desde (8, 20); el precio acaba en x 196 y el nombre se corta donde empieza; cursor de 202 × 18 en (5, 18); barra de 5 px en x 210 de y 26 a 121 | `bird_transport/structure.rcss` con esas medidas × 3 | Ruta de room12 | Igual |
+| Cuadro de dinero | `createShopBitsBox`: de (8, 15) a (89, 47), «Bits» desde x 30 y el dinero alineado a la derecha | `#bits-box` | Ruta de room12 | Igual |
+| Destino que no se puede pagar | Sin el bit 0x80: en rojo (color 3); confirmar suena `playSound(0, 0xb)` y no pasa nada | Fila `unaffordable` en rojo; `refuse_sound` | `birdraFillTargetList lists…`; ruta de room12 | Igual |
+| Nombre del destino | `MAP_NAME_PTR` del mapa, sin los espacios del cartel | La clave del nombre del mapa (`mapNameKeyOf`), recortada | Ruta de room12 | Igual |
+| Sí o no | `showMapheadSelection(7, 0xfd, 2)`: habla el jugador; arriba y abajo dan la vuelta; cancelar es «no» salvo con el disparador 0x31 (entonces suena 0xb) | Fase `choice` con esas reglas | `cancel answers no…` | Igual |
+| El sí | Estado 5: 247 = mapa, 248 = entrada, el dinero baja el precio y el guion salta a MAPHEAD 0x4e3 | `travel()` y `screenClosed(salto)` | `the yes writes the place…`, `routine 10 waits…`; ruta de room12 (llega a koda00 con 300 bits) | Igual |
+| Moverse y saltar a los extremos (Mayús mantenida, R1 en el mando) | `itemMenuCursorUp/Down`, con R1 a la primera o la última fila; no dan la vuelta | `BirdCursor` y la acción `walk` | `bird_cursor_tests.cpp` | Igual |
+| Sonidos | Cursor, confirmar y cancelar; abrir y cerrar las cajas | Las señales de la UI y el rechazo por `SoundPort` | — | Hueco: no suenan abrir y cerrar las cajas |
+| Fila marcada | El texto de la fila del cursor se apaga a gris | El cursor gris encima del texto, que sigue blanco | Ruta de room12 | Hueco |
+
 ## Tienda de cartas
 
 Los menús de la tienda de cartas de gias06b que abre la rutina 14 (`shop/script_menu.c: openBuyCardMenu`,
