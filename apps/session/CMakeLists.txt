@@ -64,6 +64,7 @@ dwe_add_module(session
         src/story_routines/opening_routines.cpp
         src/story_routines/routine_angemon_pedestal.cpp
         src/story_routines/routine_animation_loop.cpp
+        src/story_routines/routine_beetle_cup_entry.cpp
         src/story_routines/routine_card_shop.cpp
         src/story_routines/routine_close_text_box.cpp
         src/story_routines/routine_dirt_cart.cpp

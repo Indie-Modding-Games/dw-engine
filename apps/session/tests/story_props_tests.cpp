@@ -235,3 +235,19 @@ TEST_CASE("Toy Town's gearbox and boxes go on at once and the selected box's lid
   CHECK(frames == 11);
   CHECK(dwe::session::toyTownLidAfterFrame(lid) == -0x400);
 }
+
+TEST_CASE("the Beetle Cup entry writes the cup, the partner and the entry day of routine 33") {
+  // script_interp.c:1796: 0x95 on any day but 0x16, which writes 0x16.
+  const auto before = dwe::session::beetleCupEntry(3, 21);
+  CHECK(before.entryDay == 0x95);
+  CHECK(before.cup == 0x16);
+  CHECK(before.entrant == 21);
+  CHECK(dwe::session::beetleCupEntry(0x16, 1).entryDay == 0x16);
+  CHECK(dwe::session::beetleCupEntry(0x17, 1).entryDay == 0x95);
+  dwe::session::StoryScenesContext scenes{dwe::session::StoryScenesDesc{}};
+  REQUIRE(dwe::session::registerBeetleCupEntryRoutine(scenes));
+  // Without a game the routine only goes on.
+  const auto entered = scenes.routines.call(33);
+  REQUIRE(entered);
+  CHECK(std::holds_alternative<dwe::game::story::RoutineGoesOn>(*entered));
+}
