@@ -32,7 +32,8 @@ inline constexpr std::int64_t PageColor = 1;
 [[nodiscard]] std::vector<localization::TextArgument> colorArguments();
 
 // Appends a page's rows, split at its line breaks and colour markers, starting in PageColor; at
-// most as many rows as the document has room for.
+// most as many rows as the document has room for. From a {cell:00XX} tag on, the rows stay empty:
+// the original stops drawing the page there.
 void appendPageRows(std::vector<TextRow>& rows, std::string_view text);
 
 // How the story_textbox document draws the box (script_textbox.c: showTextbox).

@@ -47,3 +47,22 @@ TEST_CASE("textbox: a selection's bar spans the page's longest row, the speaker'
   CHECK(settingNumber(dwe::app::textboxSettings(look, rows), "story_textbox.cursor_columns") ==
         -1.0);
 }
+
+TEST_CASE("textbox: a page stops drawing at a cell of byte 0, its later rows kept empty") {
+  // story_054.text.0c02: drawString2 stops at the byte 0 and draws no more rows; the original
+  // shows "fades away, he'll " and an empty third row.
+  std::vector<TextRow> rows;
+  dwe::app::appendPageRows(
+      rows, "Sometimes, if MetalGreymon\nfades away, he'll {cell:0000}?reymon\ndigivolve into "
+            "SkullGreymon.");
+  REQUIRE(rows.size() == 3);
+  REQUIRE(rows[1].size() == 1);
+  CHECK(rows[1][0].text == "fades away, he'll ");
+  CHECK(rows[2].empty());
+
+  // Not a cell of byte 0: drawn as written.
+  rows.clear();
+  dwe::app::appendPageRows(rows, "A{cell:889F}B");
+  REQUIRE(rows.size() == 1);
+  CHECK(rows[0][0].text == "A{cell:889F}B");
+}

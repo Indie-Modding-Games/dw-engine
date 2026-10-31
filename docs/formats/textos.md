@@ -86,6 +86,12 @@ Texto de script: cada celda de control es `código, parámetro` (`showTextbox` e
 
 Un parámetro ignorado que no es 0 se guarda: `{tamer:raw=05}`. Una celda que no es ni carácter ni control conocido
 es `{cell:XXXX}`; una celda `00 xx` que no sigue a un salto de línea es un glifo más (`{cell:00XX}`).
+Al dibujarla, el original para: `drawString2` acaba en el byte 0 y `drawTextboxStrings` no dibuja más filas de la
+página, aunque `showTextbox` siga leyendo hasta el final y la página pase igual. El inglés tiene once
+`{cell:0000}` delante de restos de una línea más larga (`story_054.text.0c02` se ve «fades away, he'll» y nada más);
+dwe deja vacías las filas desde ahí (`appendPageRows`), medido en el original con un `00 00` escrito en la página
+de la máquina de guardado: solo sale «Oh that?» y la página siguiente sale entera. El español pone la etiqueta al
+final cuando traduce la intención de la línea.
 
 **Fin del texto.** El texto acaba en la primera celda `0D` seguida de un byte `00`; esa celda y la `00 xx` que la
 sigue son el final. Normalmente son `0D 00 00 00` y no se escriben; si llevan otros bytes se guardan con
