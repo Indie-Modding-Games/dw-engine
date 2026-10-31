@@ -1,6 +1,7 @@
 #include "field_story_props.hpp"
 
 #include <dwe/assets/asset_id.hpp>
+#include <dwe/assets/digimon_table.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/math.hpp>
@@ -13,9 +14,13 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
+#include <format>
 #include <numbers>
+#include <optional>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <variant>
@@ -51,6 +56,13 @@ constexpr float CartReach = 100.0F;
 
 // The original's field runs at 20 frames a second (main.c: gameLoop waits VSync(3)).
 constexpr double OriginalFrameSeconds = 1.0 / 20.0;
+// renderMonochromonMoodBubble's GsSPRITE: the faces of the image at VRAM (640, 0) with the CLUT at
+// (0, 486), the first 4-bit image of the map and its first palette row (overworld.c:
+// loadMapImage2); five faces of 32 x 32 in a row.
+constexpr std::string_view MoodBubbleImage = "map/{}/texture4/000";
+constexpr std::size_t MoodBubblePalette = 0;
+constexpr glm::vec2 MoodBubbleImageSize{5 * MoodBubble::Side, MoodBubble::Side};
+
 // map.c: tickMeramonShake removes itself on its 210th frame and puts the drawing offset back.
 constexpr std::int32_t ShakeFrames = 0xD2;
 
@@ -117,6 +129,9 @@ void FieldStoryProps::clearMapParts() {
   pedestal_.reset();
   gearbox_ = false;
   toyBoxes_ = false;
+  // The original's bubble object outlives the map, but every script takes it away before it ends
+  // and the next map's VRAM holds other pictures: it goes with the map.
+  moodBubble_.clear();
 }
 
 void FieldStoryProps::take(const session::StoryPropRequest& request) {
@@ -154,7 +169,77 @@ void FieldStoryProps::take(const session::StoryPropRequest& request) {
     selectedBox_ = box->box;
   } else if (const auto* fade = std::get_if<session::WhiteFadeStarted>(&request)) {
     startWhiteFade(*fade);
+  } else if (const auto* bubble = std::get_if<session::MoodBubbleShown>(&request)) {
+    takeMoodBubble(*bubble);
   }
+}
+
+std::optional<scene::Entity> FieldStoryProps::characterEntity(std::int64_t character) const {
+  const game::field::Field& field = scene_->field();
+  if (character == game::story::PlayerScriptId) {
+    return field.playerEntity();
+  }
+  if (character == game::story::PartnerScriptId) {
+    return field.partnerEntity();
+  }
+  if (std::in_range<std::int32_t>(character)) {
+    return field.npcs().entityOf(static_cast<std::int32_t>(character));
+  }
+  return std::nullopt;
+}
+
+void FieldStoryProps::takeMoodBubble(const session::MoodBubbleShown& bubble) {
+  if (!bubble.mood) {
+    // removeObject(0x1b1, 0): one bubble object goes.
+    moodBubble_.remove();
+    return;
+  }
+  // createMonochromonMoodBubble adds the object only for a character on the map.
+  if (!characterEntity(bubble.character)) {
+    core::logDebug("[port:story] createMonochromonMoodBubble (script_common.c:3038): no "
+                   "character {} on the map; no bubble",
+                   bubble.character);
+    return;
+  }
+  moodBubble_.show(bubble.character, *bubble.mood);
+  bubbleSeconds_ = 0.0;
+}
+
+void FieldStoryProps::showMoodBubble() {
+  std::vector<StorySprite> sprites;
+  const std::optional<scene::Entity> entity =
+      moodBubble_.shown() ? characterEntity(moodBubble_.character()) : std::nullopt;
+  if (entity && species_ != nullptr) {
+    // translateConditionFXToEntity: the condition point of the character's species.
+    const game::field::Field& field = scene_->field();
+    std::optional<std::string> speciesId;
+    if (const auto instance = field.npcs().instanceOf(static_cast<std::int32_t>(
+            std::clamp<std::int64_t>(moodBubble_.character(), 0, 0xFF)))) {
+      if (const assets::MapNpc* record =
+              field.npcs().record(*instance - game::field::FirstNpcInstance)) {
+        speciesId = record->digimon;
+      }
+    }
+    const assets::DigimonRow* row = speciesId ? species_->find(*speciesId) : nullptr;
+    if (row != nullptr && row->conditionFx) {
+      const auto& offset = row->conditionFx->offset;
+      const std::optional<glm::vec3> point = scene_->entityNodePoint(
+          *entity, row->conditionFx->node,
+          glm::vec3{static_cast<float>(offset[0]), static_cast<float>(offset[1]),
+                    static_cast<float>(offset[2])});
+      if (point) {
+        sprites.push_back({.point = *point,
+                           .image = std::format(MoodBubbleImage, scene_->field().mapId()),
+                           .palette = MoodBubblePalette,
+                           .imageSize = MoodBubbleImageSize,
+                           .texel = {static_cast<float>(moodBubble_.firstU()), 0.0F},
+                           .side = glm::vec2{static_cast<float>(MoodBubble::Side)},
+                           .scale = moodBubble_.scale(),
+                           .lift = static_cast<float>(moodBubble_.offset())});
+      }
+    }
+  }
+  scene_->setStorySprites(std::move(sprites));
 }
 
 void FieldStoryProps::startWhiteFade(const session::WhiteFadeStarted& fade) {
@@ -201,6 +286,13 @@ void FieldStoryProps::placeSprite(const session::SpriteAtCharacter& sprite) {
 
 void FieldStoryProps::advance(double seconds) {
   advanceLids(seconds);
+  if (moodBubble_.shown()) {
+    bubbleSeconds_ += seconds;
+    while (bubbleSeconds_ >= OriginalFrameSeconds) {
+      bubbleSeconds_ -= OriginalFrameSeconds;
+      moodBubble_.frame(characterEntity(moodBubble_.character()).has_value());
+    }
+  }
   if (whiteFade_.active()) {
     whiteSeconds_ += seconds;
     while (whiteFade_.active() && whiteSeconds_ >= OriginalFrameSeconds) {
@@ -312,6 +404,7 @@ void FieldStoryProps::show() {
   }
   setProps(*scene_, TrainingPoopModel, std::move(poop));
   scene_->setScreenShake({static_cast<float>(shakeOffset_), 0.0F});
+  showMoodBubble();
 }
 
 } // namespace dwe::app

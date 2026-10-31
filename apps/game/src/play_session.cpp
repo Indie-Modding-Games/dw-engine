@@ -373,6 +373,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachTournamentSchedule(&scheduleScreen_);
   storyScenes_.attachTrade(&tradeScreen_);
   tradeScreen_.setSpecies(species_ ? &*species_ : nullptr);
+  storyProps_.setSpecies(species_ ? &*species_ : nullptr);
   storyScenes_.attachCardShop(&cardShopScreen_);
   cardShopScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyScenes_.attachMeritShop(&meritShopScreen_);

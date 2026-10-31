@@ -104,6 +104,22 @@ struct MapChangeTiming {
 // looks a map's name up.
 [[nodiscard]] std::string mapNameKeyOf(const assets::MapTable& table, std::string_view mapId);
 
+// A GsSPRITE of an image of the packs at a world point, as the original sorts one into the ordering
+// table at the point's depth: its centre `lift` original pixels above where the point shows, `side`
+// original pixels wide and high times `scale`; the texels with STP add, the others are opaque (the
+// sprite's semi-transparency bit, mode 1).
+struct StorySprite {
+  glm::vec3 point{0.0F};
+  // An indexed image of the packs and the palette it is drawn with (FieldScene::stpSceneImage).
+  std::string image;
+  std::size_t palette = 0;
+  glm::vec2 imageSize{1.0F};
+  glm::vec2 texel{0.0F};
+  glm::vec2 side{0.0F};
+  float scale = 1.0F;
+  float lift = 0.0F;
+};
+
 // What a scene of the original (the evolution, the death) does to the field's picture.
 struct FieldStage {
   // setMapLayerEnabled(0) and *_setOtherEntitiesVisible(0) (evl.c, dooa.c, murd.c): the map and
@@ -189,10 +205,10 @@ public:
   [[nodiscard]] std::optional<glm::vec3> playerNodePoint(std::uint32_t node,
                                                          glm::vec3 offset) const;
   // The same point for any character drawn on the field: the player, the partner or an NPC, by
-  // its entity, with no offset (the node's origin); nothing for an entity not drawn or a node that
-  // is no joint of its skin.
-  [[nodiscard]] std::optional<glm::vec3> entityNodePoint(scene::Entity entity,
-                                                         std::uint32_t node) const;
+  // its entity (no offset: the node's origin); nothing for an entity not drawn or a node that is no
+  // joint of its skin.
+  [[nodiscard]] std::optional<glm::vec3> entityNodePoint(scene::Entity entity, std::uint32_t node,
+                                                         glm::vec3 offset = glm::vec3{0.0F}) const;
   // Turns the player in place.
   void setPlayerYaw(float yaw);
   // Moves everything the map draws by `offset` background pixels (render::MapCamera::setShake).
@@ -217,6 +233,9 @@ public:
     std::vector<glm::mat4> joints;
   };
   void setPosedProps(const assets::AssetId& model, std::vector<PropPlace> places);
+  // Screen sprites the story hangs at world points until replaced (the mood bubble:
+  // field_story_props.hpp).
+  void setStorySprites(std::vector<StorySprite> sprites) { storySprites_ = std::move(sprites); }
   // While held the camera stays where it points: map.c: tickCameraFollowPlayer follows the player
   // only in its state 0, never in a battle, where the player runs back on screen.
   void holdCamera(bool held) { cameraHeld_ = held; }
@@ -745,6 +764,8 @@ private:
     std::vector<PropPlace> places;
   };
   std::map<std::string, PropSet> props_;
+  std::vector<StorySprite> storySprites_;
+  void addStorySprites(std::vector<ScenePrim>& prims);
 };
 
 // Where the player stands on the window, in percent (the settings field.player_x and

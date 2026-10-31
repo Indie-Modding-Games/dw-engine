@@ -813,6 +813,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   }
   if (mapRenderer_->hasMap()) {
     addEffectPrims(prims);
+    addStorySprites(prims);
   }
   primDrawer_->set(std::move(prims), mapRenderer_->camera().scale());
   const scene::Pose player = field_->drawnPose(playerActor_->entity, alpha);
@@ -901,19 +902,47 @@ std::optional<glm::vec3> FieldScene::nodePoint(const Actor& actor, std::uint32_t
   return glm::vec3{world * jointSpace * glm::vec4{offset.x, -offset.y, -offset.z, 1.0F}};
 }
 
-std::optional<glm::vec3> FieldScene::entityNodePoint(scene::Entity entity,
-                                                     std::uint32_t node) const {
+std::optional<glm::vec3> FieldScene::entityNodePoint(scene::Entity entity, std::uint32_t node,
+                                                     glm::vec3 offset) const {
   if (playerActor_->entity == entity) {
-    return nodePoint(*playerActor_, node, glm::vec3{0.0F});
+    return nodePoint(*playerActor_, node, offset);
   }
   if (partnerActor_->entity == entity) {
-    return nodePoint(*partnerActor_, node, glm::vec3{0.0F});
+    return nodePoint(*partnerActor_, node, offset);
   }
   const auto found = std::ranges::find(npcActors_, entity, &Actor::entity);
   if (found == npcActors_.end()) {
     return std::nullopt;
   }
-  return nodePoint(**found, node, glm::vec3{0.0F});
+  return nodePoint(**found, node, offset);
+}
+
+void FieldScene::addStorySprites(std::vector<ScenePrim>& prims) {
+  const render::MapCamera& camera = mapRenderer_->camera();
+  const ScenePrimFrame frame{
+      .view = camera.view(), .projection = camera.projection(), .pixelScale = camera.scale()};
+  for (const StorySprite& sprite : storySprites_) {
+    const std::optional<rhi::TextureId> texture = stpSceneImage(sprite.image, sprite.palette);
+    if (!texture || frame.depth(sprite.point) <= 0.0F) {
+      continue;
+    }
+    // GsSortSprite: the sprite's centre (mx, my) on the point, scaled about it.
+    const glm::vec4 clip = frame.clip(sprite.point);
+    const glm::vec2 half = sprite.side * (sprite.scale / 2.0F);
+    const glm::vec2 from = sprite.texel / sprite.imageSize;
+    const glm::vec2 to = (sprite.texel + sprite.side) / sprite.imageSize;
+    ScenePrim prim{.shape = ScenePrim::Shape::Quad,
+                   .texture = *texture,
+                   .blend = ScenePrimBlend::Additive,
+                   .stpMask = true};
+    prim.corners[0] = {.clip = clip, .offset = {-half.x, -half.y - sprite.lift}, .uv = from};
+    prim.corners[1] = {
+        .clip = clip, .offset = {half.x, -half.y - sprite.lift}, .uv = {to.x, from.y}};
+    prim.corners[2] = {
+        .clip = clip, .offset = {-half.x, half.y - sprite.lift}, .uv = {from.x, to.y}};
+    prim.corners[3] = {.clip = clip, .offset = {half.x, half.y - sprite.lift}, .uv = to};
+    prims.push_back(prim);
+  }
 }
 
 void FieldScene::setPlayerYaw(float yaw) {

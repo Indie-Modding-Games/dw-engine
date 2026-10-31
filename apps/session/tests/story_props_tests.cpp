@@ -23,6 +23,7 @@
 using dwe::session::BoulderShown;
 using dwe::session::DirtCartShown;
 using dwe::session::DirtPileShown;
+using dwe::session::MoodBubbleShown;
 using dwe::session::ScreenShakeStarted;
 using dwe::session::SpriteAtCharacter;
 using dwe::session::StoryPropRequest;
@@ -341,4 +342,32 @@ TEST_CASE("routines 45 and 46 fade to white and back over the frames variable 25
   CHECK(std::get<WhiteFadeStarted>(taken[0]).frames == 40);
   CHECK_FALSE(std::get<WhiteFadeStarted>(taken[1]).toWhite);
   CHECK(std::get<WhiteFadeStarted>(taken[1]).frames == 20);
+}
+
+TEST_CASE(
+    "routine 28 puts the mood of variable 248 over the character of 247, and 5 takes it away") {
+  const dwe::session::testing::TestPacks packs;
+  auto story = std::make_unique<dwe::session::StoryAdapter>(
+      dwe::session::StoryAdapterDesc{.files = &packs.files()});
+  dwe::session::StoryAdapter& state = *story;
+  std::vector<std::unique_ptr<dwe::session::SessionSystem>> systems;
+  systems.push_back(std::move(story));
+  const auto session = dwe::session::testing::newGameWith(packs, std::move(systems));
+  dwe::session::StoryScenesContext scenes{dwe::session::StoryScenesDesc{.story = &state}};
+  REQUIRE(dwe::session::registerMoodBubbleRoutine(scenes));
+  // Script 199 (the canyon shop): set_pstat(247, 6), set_pstat(248, 3), call_routine(28); 248 = 5
+  // before the next question takes it away.
+  REQUIRE(state.state().setVariable(247, 6));
+  REQUIRE(state.state().setVariable(248, 3));
+  const auto shown = scenes.routines.call(28);
+  REQUIRE(shown);
+  CHECK(std::holds_alternative<dwe::game::story::RoutineGoesOn>(*shown));
+  REQUIRE(state.state().setVariable(248, 5));
+  REQUIRE(scenes.routines.call(28));
+  const auto taken = takeAll(scenes);
+  REQUIRE(taken.size() == 2);
+  CHECK(std::get<MoodBubbleShown>(taken[0]).character == 6);
+  CHECK(std::get<MoodBubbleShown>(taken[0]).mood == 3);
+  CHECK(std::get<MoodBubbleShown>(taken[1]).character == 6);
+  CHECK_FALSE(std::get<MoodBubbleShown>(taken[1]).mood.has_value());
 }

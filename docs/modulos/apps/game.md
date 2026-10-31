@@ -157,7 +157,10 @@ Lleva el fundido a blanco de las rutinas 45 y 46 (`game::field::WhiteFade`) a 20
 entre los fundidos, y un cambio de mapa quita el blanco (`fadeToBlack` borra el objeto 4005).
 Mueve el temblor de la rutina 34 a 20 fotogramas por segundo y lo pasa a la cámara (`MapRenderer::setShake`), y lleva un
 sprite del mapa al nodo de un personaje (`spawnSpriteAtEntity`, con `FieldScene::entityNodePoint` y
-`MapLayers::spriteSize`).
+`MapLayers::spriteSize`). La burbuja de humor de la rutina 28 (`mood_bubble.hpp`: `MoodBubble`) crece y sube a 20
+fotogramas por segundo y se dibuja con `FieldScene::setStorySprites`: un cuadro aditivo de la imagen
+`map/<mapa>/texture4/000` en el punto de condición de la especie (`conditionFx` de su fila y `entityNodePoint`); con
+un contenido extraído sin `condition_fx` no sale.
 
 Una caca en el campo tiene su escena (`partner.c: tickWildPoop`, estado 7), con `poop_piles.wild`: el jugador se para y
 mira al compañero, que corre hacia él hasta su distancia de correr (`Field::runPartnerUp`), se agacha (`squat_clip`),

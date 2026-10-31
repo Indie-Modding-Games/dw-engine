@@ -68,5 +68,6 @@ struct BeetleCupEntry {
 };
 BeetleCupEntry beetleCupEntry(std::int32_t day, std::int64_t partnerSpecies);
 core::Result<void> registerWhiteFadeRoutines(StoryScenesContext& scenes);
+core::Result<void> registerMoodBubbleRoutine(StoryScenesContext& scenes);
 
 } // namespace dwe::session

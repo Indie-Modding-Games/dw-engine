@@ -7,11 +7,11 @@
 
 // What the story's routines and orders put on the field the app draws besides the map and its
 // characters: the Drill Tunnel's dirt cart, dirt pile and boulder (map_object.c), Meramon's shake
-// (map.c: createMeramonShake), the fade to white (fade.c: fadeToWhite) and a map sprite moved to a
-// character (overworld.c: spawnSpriteAtEntity). The story keeps the state the original keeps for
-// them; each request carries what the app needs to draw, so the app only draws. The cart, the pile
-// and the boulder go away when the field loads a map, as the original's unloadMapParts removes
-// them.
+// (map.c: createMeramonShake), the fade to white (fade.c: fadeToWhite), the shop rival's mood
+// bubble (script_common.c: createMonochromonMoodBubble) and a map sprite moved to a character
+// (overworld.c: spawnSpriteAtEntity). The story keeps the state the original keeps for them; each
+// request carries what the app needs to draw, so the app only draws. The cart, the pile and the
+// boulder go away when the field loads a map, as the original's unloadMapParts removes them.
 namespace dwe::session {
 
 // The dirt pile's size counter starts at 15 when the game boots and never goes back
@@ -117,6 +117,14 @@ struct WhiteFadeStarted {
   std::int32_t frames = 0;
 };
 
+// Routine 28 (script_common.c: createMonochromonMoodBubble): the mood bubble over the character
+// with script id `character` (variable 247), face `mood` (variable 248, 0 to 4) of the map's
+// bubble image; no mood (248 is 5 or more) takes one bubble away.
+struct MoodBubbleShown {
+  std::int64_t character = 0;
+  std::optional<std::int32_t> mood;
+};
+
 // spawn_sprite_at_entity (overworld.c: spawnSpriteAtEntity): the map's sprite `object` is moved,
 // centred, to where node `node` of the character with script id `character` shows.
 struct SpriteAtCharacter {
@@ -128,7 +136,7 @@ struct SpriteAtCharacter {
 using StoryPropRequest =
     std::variant<DirtCartShown, DirtPileShown, BoulderShown, ScreenShakeStarted, SpriteAtCharacter,
                  AngemonPedestalShown, ToyTownGearboxShown, ToyTownBoxesShown, ToyTownBoxSelected,
-                 WhiteFadeStarted>;
+                 WhiteFadeStarted, MoodBubbleShown>;
 
 // Trash Mountain's giant poop: map.c: loadMap calls initializeTrainingPoop on map 0xa5 (gomi02) and
 // on no other, whatever the story, which puts ETCNA\TRY at TRAINING_POOP_TRANSLATION, unturned and

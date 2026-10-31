@@ -1,11 +1,18 @@
 #pragma once
 
 #include <dwe/game/field/white_fade.hpp>
+#include <dwe/scene/world.hpp>
 #include <dwe/session/story_props.hpp>
 
 #include <cstdint>
 #include <optional>
 #include <string>
+
+#include "mood_bubble.hpp"
+
+namespace dwe::assets {
+struct DigimonTable;
+} // namespace dwe::assets
 
 namespace dwe::session {
 class StoryScenes;
@@ -19,7 +26,8 @@ class FieldScene;
 // cart in front of the partner (map_object.c: renderDirtCartModel), the dirt pile, the boulder and
 // Trash Mountain's giant poop (renderDirtPile, renderBoulder, renderTrainingPoop) as models of the
 // packs, shakes the screen for routine 34 (map.c: tickMeramonShake), fades the screen to white and
-// back for routines 45 and 46 (fade.c: fadeToWhite, fadeFromWhite), moves a map sprite to a
+// back for routines 45 and 46 (fade.c: fadeToWhite, fadeFromWhite), hangs the shop rival's mood
+// bubble over its character (script_common.c: renderMonochromonMoodBubble), moves a map sprite to a
 // character's node (overworld.c: spawnSpriteAtEntity) and draws the Angemon shrine's pedestal
 // (renderAngemonPedestal) and Toy Town's gearbox and boxes, opening the selected box's lid a step
 // an original frame (renderGearbox, renderToyTownBoxes). Entering a map takes the cart, the pile,
@@ -28,6 +36,10 @@ class FieldStoryProps {
 public:
   // The scene must outlive this object.
   explicit FieldStoryProps(FieldScene& scene);
+
+  // The species table, for where a character's mood bubble hangs (its condition point); without it
+  // no bubble shows.
+  void setSpecies(const assets::DigimonTable* species) { species_ = species; }
 
   // Takes the story's requests, once a frame, after a map change is seen.
   void update(session::StoryScenes& scenes);
@@ -42,6 +54,11 @@ private:
   void take(const session::StoryPropRequest& request);
   void placeSprite(const session::SpriteAtCharacter& sprite);
   void startWhiteFade(const session::WhiteFadeStarted& fade);
+  void takeMoodBubble(const session::MoodBubbleShown& bubble);
+  // The entity of the character with this script id on the map (script_value.c:
+  // scriptIdToEntityId): the player, the partner or an NPC.
+  [[nodiscard]] std::optional<scene::Entity> characterEntity(std::int64_t character) const;
+  void showMoodBubble();
   void clearMapParts();
   void advanceLids(double seconds);
 
@@ -67,6 +84,10 @@ private:
   // The fade to white and the time toward its next frame.
   game::field::WhiteFade whiteFade_;
   double whiteSeconds_ = 0.0;
+  // The mood bubble and the time toward its next frame.
+  MoodBubble moodBubble_;
+  double bubbleSeconds_ = 0.0;
+  const assets::DigimonTable* species_ = nullptr;
 };
 
 } // namespace dwe::app
