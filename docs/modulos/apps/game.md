@@ -362,7 +362,9 @@ Suposiciones:
 (`save_machine_flow.cpp`) lleva los menús de `main_menu.c: tickMainMenu` 0x3C a 0x46 sin interfaz: registrar al
 compañero en una de las 39 ranuras (`session::BattleRegistry`), «¿Quieres guardar?», el aviso sin ranura (se cierra
 solo a los 0x79 cuadros del original) y el de por debajo de Novato. Guarda con `GameSaves`, como al dormir, y deshace el
-registro si el guardado no se escribe. El documento `ui/save_machine` dibuja las cajas del original donde el original
+registro si el guardado no se escribe. Si se abre mientras una escena de cuidados retiene al jugador
+(`GameSession::savesWait`), la apertura espera y la máquina sale al acabar la escena (regla de seguridad de dwe,
+[session](session.md#paridad-con-el-original)). El documento `ui/save_machine` dibuja las cajas del original donde el original
 las dibuja; el cursor se para en los extremos y solo suena al moverse. Detalle en
 [guardar-y-cargar.md, 3.7](../../architecture/guardar-y-cargar.md#37-máquina-de-guardado-y-fin-del-juego).
 

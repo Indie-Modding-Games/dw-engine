@@ -151,6 +151,8 @@ inline constexpr std::string_view ClockSpeedSet = "game: clock speed {}";
 inline constexpr std::string_view NotAManualSlot = "'{}' is not a save slot such as slot_01";
 inline constexpr std::string_view SaveCommandFailed = "game: save: {}";
 inline constexpr std::string_view SavedToSlot = "game: saved to {}";
+inline constexpr std::string_view SaveWaitsForCare =
+    "game: saving {} waits for the care scene to end";
 
 // The partner's events and the debug evolve command (partner_events.cpp, game.cpp).
 // The map's index, the reason (death_scene.cpp).
@@ -170,6 +172,8 @@ inline constexpr std::string_view PartnerEventNotShown =
     "game: partner event {} (value {}) is not shown yet";
 inline constexpr std::string_view EvolveFailed = "game: evolve: {}";
 inline constexpr std::string_view SaveMachineFailed = "game: save_machine: {}";
+inline constexpr std::string_view SaveMachineWaitsForCare =
+    "game: the save machine opens once the care scene ends";
 inline constexpr std::string_view GymFailed = "game: gym: {}";
 inline constexpr std::string_view EvolveRefused = "game: evolve: the partner cannot become {} now";
 

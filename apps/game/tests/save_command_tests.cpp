@@ -1,14 +1,19 @@
+#include <dwe/game/field/field.hpp>
 #include <dwe/game/save/slots.hpp>
 #include <dwe/game/save/storage.hpp>
+#include <dwe/scene/world.hpp>
 #include <dwe/script/script_vm.hpp>
 
 #include <doctest/doctest.h>
 
+#include <cmath>
+#include <cstdint>
 #include <memory>
 #include <ostream>
 #include <string_view>
 #include <utility>
 
+#include "game/field/tests/fixture.hpp"
 #include "save_command.hpp"
 #include "session_fixture.hpp"
 
@@ -103,4 +108,39 @@ TEST_CASE(
   run(*scripts, R"(save("slot_04"))");
   CHECK_FALSE(command.apply(*unsaved).has_value());
   CHECK_FALSE(written(storage, "slot_04.yaml"));
+}
+
+TEST_CASE("a save command waits while a care scene holds the field and saves once it ends") {
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  const auto session = newGame(packs, &storage);
+  dwe::scene::World world;
+  dwe::game::field::Field field(world, dwe::game::field::testing::originalRules());
+  const auto map = dwe::game::field::testing::roomMap("town");
+  REQUIRE(field.enterMap(map, 0).has_value());
+  session->attachField(field);
+  SaveCommand command;
+  const auto scripts = scriptsWith(command);
+
+  // Asked for during the partner's pile scene, the save stays queued while the scene plays.
+  field.holdForCare(true);
+  run(*scripts, R"(save("slot_05"))");
+  constexpr std::int32_t SceneTicks = 120;
+  for (std::int32_t tick = 0; tick < SceneTicks; ++tick) {
+    field.tick(static_cast<float>(dwe::session::testing::Tick));
+    session->tick(dwe::session::testing::Tick);
+    const auto waited = command.apply(*session);
+    REQUIRE_MESSAGE(waited.has_value(), errorOf(waited));
+  }
+  CHECK(command.pending());
+  CHECK_FALSE(written(storage, "slot_05.yaml"));
+
+  // The scene's end lets the next frame write it, once.
+  field.holdForCare(false);
+  session->tick(dwe::session::testing::Tick);
+  const auto saved = command.apply(*session);
+  REQUIRE_MESSAGE(saved.has_value(), errorOf(saved));
+  CHECK_FALSE(command.pending());
+  CHECK(written(storage, "slot_05.yaml"));
+  session->detachField();
 }

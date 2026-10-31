@@ -11,6 +11,8 @@
 #include <utility>
 #include <variant>
 
+#include "messages.hpp"
+
 namespace dwe::app {
 
 namespace {
@@ -48,8 +50,18 @@ SaveMachineFacts SaveMachine::facts() const {
           .playthrough = {.home = session.homeSlot(), .started = session.playthroughStarted()}};
 }
 
+bool SaveMachine::waitsForCare(Opening opening) {
+  if (!desc_.session->savesWait()) {
+    return false;
+  }
+  if (std::exchange(waiting_, opening) == Opening::None) {
+    core::logDebug("{}", messages::SaveMachineWaitsForCare);
+  }
+  return true;
+}
+
 void SaveMachine::open() {
-  if (active()) {
+  if (active() || waitsForCare(Opening::Machine)) {
     return;
   }
   // openSaveMachine: MAIN_STATE 1, a story game again.
@@ -75,7 +87,7 @@ std::optional<std::string> SaveMachine::clearedMap() const {
 }
 
 void SaveMachine::openClearSave() {
-  if (active()) {
+  if (active() || waitsForCare(Opening::ClearSave)) {
     return;
   }
   static const std::optional<session::EndingGift> NoGift;
@@ -109,6 +121,14 @@ bool SaveMachine::handle(const ui::UiCommand& command) {
 }
 
 void SaveMachine::tick(double seconds) {
+  if (waiting_ != Opening::None && !desc_.session->savesWait()) {
+    const Opening opening = std::exchange(waiting_, Opening::None);
+    if (opening == Opening::Machine) {
+      open();
+    } else {
+      openClearSave();
+    }
+  }
   if (!active()) {
     return;
   }

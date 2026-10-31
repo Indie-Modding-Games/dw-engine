@@ -28,16 +28,18 @@ public:
   void bind(script::ScriptVm& scripts);
 
   // Saves to the queued slot, if any, and logs it; nothing to do is a success. The caller decides
-  // what a failed save means: the game goes on, an autotest fails.
+  // what a failed save means: the game goes on, an autotest fails. While a care scene holds the
+  // field (GameSession::savesWait) the save stays queued and a later call writes it.
   core::Result<void> apply(session::GameSession& session);
 
-  // Whether a save is queued.
+  // Whether a save is queued, also while it waits for a care scene.
   [[nodiscard]] bool pending() const { return pending_.has_value(); }
 
 private:
   static core::Result<void> save(session::GameSession& session, std::string_view name);
 
   std::optional<std::string> pending_;
+  bool waitLogged_ = false;
 };
 
 } // namespace dwe::app

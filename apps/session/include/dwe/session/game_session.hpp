@@ -58,6 +58,10 @@ struct TamerRecord {
 // The most partners the player counts as raised; the count stays there (partner_impl.c:804).
 inline constexpr std::int32_t MaxRaisedCount = 99;
 
+// The longest a save waits for a care scene to end (GameSession::savesWait), in real seconds of
+// the scene: far more than any care scene lasts, so only a scene that never ends reaches it.
+inline constexpr double SaveWaitLimitSeconds = 60.0;
+
 // Which way a tamer level change the field announces went (tamer.c: TAMER_LEVELS_AWARDED).
 enum class TamerLevelChange : std::uint8_t { Up, Down };
 
@@ -168,8 +172,18 @@ public:
   // them.
   [[nodiscard]] core::Result<game::save::SaveFile> saveFile() const;
 
-  // Writes the playthrough to a slot. A manual slot becomes the playthrough's slot.
+  // Writes the playthrough to a slot at once. A manual slot becomes the playthrough's slot. Only
+  // the sleep's own save writes during its care scene; every other save asks savesWait() first.
   core::Result<void> save(game::save::SlotId slot);
+
+  // Whether a save must wait (a dwe safety rule, docs/modulos/apps/session.md): the field holds
+  // the player for a care scene (a pile, the toilet, a praise or scold, feeding, the sleep), whose
+  // state no save keeps, so a save written now would load with the scene gone and the partner's
+  // care running at once. The original never saves there: its save machine is a talk, which only
+  // the free player starts (tamer.c: checkMapInteraction in tamerTickWalkingState), and it has no
+  // autosave. A requested autosave, the save command and the save machine wait for the scene's
+  // end; after SaveWaitLimitSeconds of one scene they save anyway, so no save waits forever.
+  [[nodiscard]] bool savesWait() const;
 
   // The manual slot the playthrough saves to (docs/architecture/guardar-y-cargar.md): the one it
   // was loaded from or last saved to; loaded from an autosave, the one the autosave names; nothing
@@ -344,6 +358,8 @@ private:
   void routePartnerEvent(const game::partner::PartnerEvent& event);
   void changeTamerLevel(std::int32_t change);
   void advanceAutosaveWindow(double realSeconds);
+  // Counts how long the field has held the player for the current care scene.
+  void followCareHold(double realSeconds);
   void writeRequestedAutosave();
   // What every command of the player does after it: route the partner's events and write a
   // requested autosave.
@@ -379,6 +395,10 @@ private:
   std::unique_ptr<SessionMusic> music_;
   game::partner::AreaResponse area_ = game::partner::AreaResponse::Neutral;
   double playSeconds_ = 0.0;
+  // Real seconds of the care scene the field holds the player in now; 0 when it holds none.
+  double careHeldSeconds_ = 0.0;
+  // Whether the pending autosave already logged that it waits for the care scene.
+  bool autosaveWaitLogged_ = false;
   PlayerNames names_;
 };
 

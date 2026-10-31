@@ -24,10 +24,18 @@ void SaveCommand::bind(script::ScriptVm& scripts) {
 }
 
 core::Result<void> SaveCommand::apply(session::GameSession& session) {
-  const std::optional<std::string> pending = std::exchange(pending_, std::nullopt);
-  if (!pending) {
+  if (!pending_) {
     return {};
   }
+  // A dwe safety rule (GameSession::savesWait): the save stays queued until the care scene ends.
+  if (session.playing() && session.savesWait()) {
+    if (!std::exchange(waitLogged_, true)) {
+      core::logDebug("{}", core::formatMessage(messages::SaveWaitsForCare, *pending_));
+    }
+    return {};
+  }
+  waitLogged_ = false;
+  const std::optional<std::string> pending = std::exchange(pending_, std::nullopt);
   if (auto saved = save(session, *pending); !saved) {
     return core::fail(core::formatMessage(messages::SaveCommandFailed, saved.error().message));
   }

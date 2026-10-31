@@ -9,6 +9,7 @@
 #include <dwe/session/story_scenes.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -51,6 +52,9 @@ public:
   // Whether the machine's boxes are on screen.
   [[nodiscard]] bool active() const { return flow_.active(); }
 
+  // While a care scene holds the field (GameSession::savesWait, a dwe safety rule) either opening
+  // waits, the field and its scene running on, and tick opens the machine once the scene ends; the
+  // script that opened it waits for takeClosed as always.
   void open();
   // Script routine 54 (main_menu.c: gameClearSave): the game is finished, the ending's record
   // given, and the save's question asked; with no slot the machine closes at once.
@@ -59,12 +63,17 @@ public:
   // The document's answers (save_machine_choose with the row, save_machine_cancel); false for any
   // other command.
   bool handle(const ui::UiCommand& command);
-  // Counts the original's frames, 20 a second, for the notice that closes by itself.
+  // Counts the original's frames, 20 a second, for the notice that closes by itself; opens a
+  // waiting machine once the care scene is over.
   void tick(double seconds);
   // Whether the machine closed since the last call: the script that opened it goes on.
   [[nodiscard]] bool takeClosed();
 
 private:
+  enum class Opening : std::uint8_t { None, Machine, ClearSave };
+
+  // Whether `opening` must wait for a care scene; it is then the one that waits.
+  bool waitsForCare(Opening opening);
   [[nodiscard]] SaveMachineFacts facts() const;
   // Where the ending's save continues: the map of getFileCityTopMap, if the maps name it.
   [[nodiscard]] std::optional<std::string> clearedMap() const;
@@ -77,6 +86,7 @@ private:
   // Hidden with the machine too: a game ended over the open machine leaves no box behind.
   ShownDocument document_;
   bool closed_ = false;
+  Opening waiting_ = Opening::None;
 };
 
 } // namespace dwe::app

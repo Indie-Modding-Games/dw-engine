@@ -103,6 +103,8 @@ public:
   // asked, each once. The game then builds its SaveFile, records them (autosaveReasonNames) and
   // calls SaveSlots::autosave.
   std::optional<std::vector<AutosaveReason>> takeRequest();
+  // Whether an autosave was asked for and not taken yet.
+  [[nodiscard]] bool pending() const { return !pendingReasons_.empty(); }
 
 private:
   AutosaveRules rules_;

@@ -44,6 +44,10 @@ inline constexpr std::string_view LoadFailed = "loading {}: {}";
 inline constexpr std::string_view SaveFailed = "saving {}: {}";
 inline constexpr std::string_view AutosaveFailed = "autosave: {}";
 inline constexpr std::string_view Autosaved = "session: autosaved to {}";
+inline constexpr std::string_view AutosaveWaitsForCare =
+    "session: the autosave waits for the care scene to end";
+inline constexpr std::string_view SaveWaitOver =
+    "session: the care scene held the player {:.0f} s; saves no longer wait for it";
 inline constexpr std::string_view RulesChanged = "session: ruleset revision {} read";
 inline constexpr std::string_view RulesRefused =
     "session: the ruleset's new values cannot be used, the old ones stay: {}";

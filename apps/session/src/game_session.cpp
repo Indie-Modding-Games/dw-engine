@@ -432,7 +432,26 @@ void GameSession::tick(double realSeconds) {
   advanceGameTime(realSeconds);
   routePartnerEvents();
   advanceAutosaveWindow(realSeconds);
+  followCareHold(realSeconds);
   writeRequestedAutosave();
+}
+
+void GameSession::followCareHold(double realSeconds) {
+  const game::field::Field* field = state_->field;
+  if (field == nullptr || !field->heldForCare()) {
+    careHeldSeconds_ = 0.0;
+    return;
+  }
+  const bool waited = careHeldSeconds_ < SaveWaitLimitSeconds;
+  careHeldSeconds_ += realSeconds;
+  if (waited && careHeldSeconds_ >= SaveWaitLimitSeconds) {
+    core::logWarning("{}", formatMessage(messages::SaveWaitOver, SaveWaitLimitSeconds));
+  }
+}
+
+bool GameSession::savesWait() const {
+  const game::field::Field* field = state_->field;
+  return field != nullptr && field->heldForCare() && careHeldSeconds_ < SaveWaitLimitSeconds;
 }
 
 void GameSession::advanceGameTime(double realSeconds) {
@@ -684,6 +703,14 @@ void GameSession::writeRequestedAutosave() {
   if (!autosave_) {
     return;
   }
+  // A dwe safety rule (savesWait): the request stays pending until the care scene ends.
+  if (savesWait()) {
+    if (autosave_->pending() && !std::exchange(autosaveWaitLogged_, true)) {
+      core::logDebug("{}", messages::AutosaveWaitsForCare);
+    }
+    return;
+  }
+  autosaveWaitLogged_ = false;
   std::optional<std::vector<AutosaveReason>> reasons = autosave_->takeRequest();
   if (!reasons || !slots_ || !state_->playing) {
     return;

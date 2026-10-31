@@ -236,3 +236,56 @@ TEST_CASE(
   }
   CHECK(session->areaResponse() == AreaResponse::Neutral);
 }
+
+TEST_CASE("an autosave waits while a care scene holds the field and is written once it ends") {
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  const auto session = newGame(packs, &storage);
+  const Maps maps;
+  GameLoop loop(*session, maps);
+  static_cast<void>(loop.run(1));
+  CHECK_FALSE(session->savesWait());
+
+  // A new day asks for its autosave while the partner's pile scene holds the player.
+  loop.field().holdForCare(true);
+  CHECK(session->savesWait());
+  session->requestAutosave(AutosaveReason::NewDay);
+  constexpr std::int32_t SceneSeconds = 10;
+  const LoopRun held = loop.run(static_cast<std::int32_t>(std::lround(SceneSeconds / Tick)));
+  CHECK(held.autosaves.empty());
+  CHECK_FALSE(storage.read("autosave_01.yaml").value().has_value());
+
+  // The scene's end writes it on the next tick, with the reasons it was asked for.
+  loop.field().holdForCare(false);
+  CHECK_FALSE(session->savesWait());
+  const LoopRun released = loop.run(1);
+  REQUIRE(released.autosaves.size() == 1);
+  CHECK(released.autosaves.front().reasons == std::vector{AutosaveReason::NewDay});
+}
+
+TEST_CASE("a care scene that never ends keeps a save waiting only up to the wait limit") {
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  const auto session = newGame(packs, &storage);
+  const Maps maps;
+  GameLoop loop(*session, maps);
+  static_cast<void>(loop.run(1));
+
+  loop.field().holdForCare(true);
+  session->requestAutosave(AutosaveReason::NewDay);
+  const auto limitTicks =
+      static_cast<std::int32_t>(std::floor(dwe::session::SaveWaitLimitSeconds / Tick));
+  CHECK(loop.run(limitTicks - 2).autosaves.empty());
+  CHECK(session->savesWait());
+  // The limit passes with the field still held: the autosave is written anyway.
+  const LoopRun past = loop.run(4);
+  CHECK_FALSE(session->savesWait());
+  REQUIRE(past.autosaves.size() == 1);
+  CHECK(loop.field().heldForCare());
+
+  // The next care scene waits again from its start.
+  loop.field().holdForCare(false);
+  static_cast<void>(loop.run(1));
+  loop.field().holdForCare(true);
+  CHECK(session->savesWait());
+}
