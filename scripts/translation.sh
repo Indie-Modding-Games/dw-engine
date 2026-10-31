@@ -11,9 +11,19 @@ pack="${DWE_TRANSLATION_PACK:-$root/content/packs/es-translation}"
 reference_language="en"
 translation_dir="$pack/text/$language"
 lock_file="$translation_dir/.sources.lock"
-sources=(main btl std vs kar fish trn)
-# The slot of a key, zero-padded: main.move_names.0012.
+# The tables of the executable and the overlays (block.slot keys, decimal slots) and the prefix of
+# the story tables (story_NNN, one per event script, docs/formats/scripts.md#lua): text.<hex offset>
+# keys, found in the English and in the translation.
+fixed_sources=(main btl std vs kar fish trn)
+story_prefix=story_
+# The slot of a key, zero-padded: main.move_names.0012. A story key keeps its slot as extracted, the
+# offset of its instruction in four hex digits (story_049.text.3b66).
 slot_digits=4
+# A line of a story textbox: the original's lines are 30 characters at most (not counting the tags);
+# long reports the translated lines wider than this (or than the widest line of their English) and
+# the texts with more lines than their English and than a box (4 rows) holds.
+story_line_width=30
+story_box_rows=4
 
 # What is never written to the translation (docs/guides/traducir.md); the lock lists these ids so
 # coverage tells them from what is not translated yet. kept_english: the names that stay in English,
@@ -40,15 +50,18 @@ usage() {
   cat <<EOF
 Usage: scripts/translation.sh <command> [args]
 
-  status              Per source: strings, translated, kept in English, kept as the original,
-                      missing, stale
-  missing [source]    The ids with no translation and not kept, with their English (terminal only)
+  status [story]      Per source: strings, translated, kept in English, kept as the original,
+                      missing, stale; the story tables add up in one row, or one row each with
+                      "status story"
+  missing [source]    The ids with no translation and not kept, with their English (terminal only);
+                      source is a table (main, story_049) or "story" for every story table
   stale               The translated ids whose English changed since they were translated, with the
                       new English
   check               Every problem: keys the English does not have, tags that differ, kept ids that
                       are translated, stale ids; exits with 1 if there is any
   long                The translations longer than their English, with both lengths, to check that
-                      they fit
+                      they fit; for the story tables, the lines wider than the box's and the texts
+                      with more lines than the box
   lock                Write $lock_file: the hash of each translated id's English (an id already in
                       the lock keeps its hash, so a stale one stays stale) and the kept ids
   accept <id>...      Mark the given ids as revised: their hash in the lock becomes the current
@@ -77,8 +90,9 @@ english_dir() {
 # Prints "id<TAB>quoted text" for every string of a flat text table ("block.slot": "text",
 # docs/formats/textos.md), in file order; the text stays as YAML wrote it between the quotes.
 read_text_file() {
-  local source="$1" file="$2"
-  awk -v source="$source" -v digits="$slot_digits" '
+  local source="$1" file="$2" story=0
+  if [[ "$source" == "$story_prefix"* ]]; then story=1; fi
+  awk -v source="$source" -v digits="$slot_digits" -v story="$story" '
         function fail(message) {
             printf "translation.sh: %s:%d: %s\n", FILENAME, FNR, message > "/dev/stderr"
             exit 2
@@ -91,7 +105,12 @@ read_text_file() {
         /^(source|strings):/ {
             fail("the extraction format before flat tables: extract the disc again")
         }
-        /^"?[a-z0-9_]+\.[0-9]+"?: / {
+        story && /^"?[a-z0-9_]+\.[0-9a-f]+"?: / {
+            key = $1; sub(/:$/, "", key); gsub(/"/, "", key)
+            printf "%s.%s\t%s\n", source, key, quoted(substr($0, index($0, ": ") + 2))
+            next
+        }
+        !story && /^"?[a-z0-9_]+\.[0-9]+"?: / {
             key = $1; sub(/:$/, "", key); gsub(/"/, "", key)
             split(key, parts, ".")
             value = substr($0, index($0, ": ") + 2)
@@ -102,23 +121,36 @@ read_text_file() {
     ' "$file"
 }
 
-# Every English string of the sources, as id<TAB>quoted text.
-english_strings() {
-  local dir source
+# The sources: the fixed ones, then the story tables of the English and of the translation.
+find_sources() {
+  local dir file
   dir="$(english_dir)"
+  sources=("${fixed_sources[@]}")
+  while read -r file; do
+    sources+=("$file")
+  done < <(
+    for file in "$dir/$story_prefix"*.yaml "$translation_dir/$story_prefix"*.yaml; do
+      if [[ -f "$file" ]]; then basename "$file" .yaml; fi
+    done | LC_ALL=C sort -u
+  )
+}
+
+# Every string of the sources in a folder, as id<TAB>quoted text.
+strings_in() {
+  local dir="$1" source
   for source in "${sources[@]}"; do
     if [[ -f "$dir/$source.yaml" ]]; then read_text_file "$source" "$dir/$source.yaml"; fi
   done
 }
 
+# Every English string of the sources, as id<TAB>quoted text.
+english_strings() {
+  strings_in "$(english_dir)"
+}
+
 # Every translated string, as id<TAB>quoted text.
 translated_strings() {
-  local source
-  for source in "${sources[@]}"; do
-    if [[ -f "$translation_dir/$source.yaml" ]]; then
-      read_text_file "$source" "$translation_dir/$source.yaml"
-    fi
-  done
+  strings_in "$translation_dir"
 }
 
 # An awk function that undoes the escapes of a YAML double-quoted string, and fails on one the
@@ -138,19 +170,17 @@ awk_unquote='
         return out text
     }'
 
-# The text of a YAML double-quoted string read from stdin.
-unquote() {
-  awk "$awk_unquote"' BEGIN { RS = "^$" } { printf "%s", unquote($0) }'
-}
-
-# id<TAB>sha1 of each English string: the hex SHA-1 of its UTF-8 text.
+# id<TAB>sha1 of each English string: the hex SHA-1 of its UTF-8 text. awk unquotes each string into
+# NUL-separated id and text, and one Python process hashes them all (a sha1sum per string takes
+# minutes for the story tables).
 english_hashes() {
-  local id text hash
-  while IFS=$'\t' read -r id text; do
-    if [[ "$text" == *\\* ]]; then text="$(printf '%s' "$text" | unquote)"; fi
-    hash="$(printf '%s' "$text" | sha1sum)"
-    printf '%s\t%s\n' "$id" "${hash:0:40}"
-  done < <(english_strings)
+  awk -F '\t' "$awk_unquote"'{ printf "%s%c%s%c", $1, 0, unquote($2), 0 }' "$scratch/english" \
+    | python3 -c '
+import hashlib, sys
+fields = sys.stdin.buffer.read().split(b"\0")
+for at in range(0, len(fields) - 1, 2):
+    print(fields[at].decode() + "\t" + hashlib.sha1(fields[at + 1]).hexdigest())
+'
 }
 
 # id<TAB>sha1 of each id in the lock's sources.
@@ -216,16 +246,42 @@ ids_with_other_codes() {
         codes($2) != codes($3) { print $1 }'
 }
 
-# Prints id<TAB>characters of the translation > of the English for the
-# id<TAB>translation<TAB>English rows whose translation is longer.
+# For the id<TAB>translation<TAB>English rows: prints id<TAB>characters of the translation > of the
+# English for a longer translation of a table, and for a story text, id<TAB>line N: characters >
+# limit for each line wider than story_line_width and its English's widest line, and
+# id<TAB>lines: N > limit when it has more lines than its English and than a box holds. The
+# characters of a line do not count its tags.
 longer_translations() {
-  awk -F '\t' "$awk_unquote"'
+  awk -F '\t' -v story_id="^$story_prefix" -v width="$story_line_width" \
+    -v rows="$story_box_rows" "$awk_unquote"'
         function characters(text,    bytes) {
-            text = unquote(text); bytes = length(text)
+            bytes = length(text)
             return bytes - gsub(/[\200-\277]/, "", text)
         }
-        characters($2) > characters($3) {
-            printf "%s\t%d > %d\n", $1, characters($2), characters($3)
+        function visible(line) {
+            gsub(/\{\{|\}\}/, "_", line); gsub(/\{[^}]*\}/, "", line)
+            return characters(line)
+        }
+        function widest(text,    lines, n, i, most) {
+            n = split(text, lines, "\n"); most = 0
+            for (i = 1; i <= n; i++) if (visible(lines[i]) > most) most = visible(lines[i])
+            return most
+        }
+        {
+            translation = unquote($2); english = unquote($3)
+            if ($1 !~ story_id) {
+                if (characters(translation) > characters(english))
+                    printf "%s\t%d > %d\n", $1, characters(translation), characters(english)
+                next
+            }
+            limit = widest(english) > width ? widest(english) : width
+            n = split(translation, lines, "\n")
+            for (i = 1; i <= n; i++)
+                if (visible(lines[i]) > limit)
+                    printf "%s\tline %d: %d > %d\n", $1, i, visible(lines[i]), limit
+            most = split(english, lines, "\n")
+            if (most < rows) most = rows
+            if (n > most) printf "%s\tlines: %d > %d\n", $1, n, most
         }'
 }
 
@@ -238,6 +294,7 @@ scratch="$(mktemp -d)"
 trap 'rm -rf "$scratch"' EXIT
 
 load() {
+  find_sources
   english_strings >"$scratch/english"
   translated_strings >"$scratch/translated"
   kept_ids >"$scratch/kept_ids"
@@ -265,19 +322,30 @@ missing_rows() {
   rows_missing_from "$scratch/untranslated" "$scratch/kept"
 }
 
+# The pattern of the ids of a source, or of every story table for "story".
+source_pattern() {
+  if [[ "$1" == "${story_prefix%_}" ]]; then
+    echo "^${story_prefix}[0-9]+\."
+  else
+    echo "^$1\."
+  fi
+}
+
 command_status() {
+  (($# == 0)) || [[ "$*" == "${story_prefix%_}" ]] || fail "status takes no argument or story"
   load
   stale_rows >"$scratch/stale"
   missing_rows >"$scratch/missing"
   local columns=(english translated kept_english kept_original missing stale)
-  printf '%-6s' source
+  local rows=("${fixed_sources[@]}" "${story_prefix%_}") source file
+  if (($# > 0)); then rows=("${sources[@]:${#fixed_sources[@]}}"); fi
+  printf '%-9s' source
   printf ' %13s' strings "${columns[@]:1}"
   echo
-  local source file
-  for source in "${sources[@]}"; do
-    printf '%-6s' "$source"
+  for source in "${rows[@]}"; do
+    printf '%-9s' "$source"
     for file in "${columns[@]}"; do
-      printf ' %13s' "$(grep -c "^$source\." "$scratch/$file" || true)"
+      printf ' %13s' "$(grep -cE "$(source_pattern "$source")" "$scratch/$file" || true)"
     done
     echo
   done
@@ -286,7 +354,11 @@ command_status() {
 command_missing() {
   load
   local source="${1:-}"
-  missing_rows | grep "^${source:+$source\.}" || true
+  if [[ -z "$source" ]]; then
+    missing_rows
+  else
+    missing_rows | grep -E "$(source_pattern "$source")" || true
+  fi
 }
 
 command_stale() {
@@ -376,7 +448,7 @@ command_accept() {
 command="${1:-}"
 shift || true
 case "$command" in
-  status) command_status ;;
+  status) command_status "$@" ;;
   missing) command_missing "$@" ;;
   stale) command_stale ;;
   check) command_check ;;
