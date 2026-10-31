@@ -10,7 +10,20 @@ steps:
   # The menu with the keyboard: minimap on, off, then back to the skin's choice.
   - menu: open
   - screenshot: menu-open
-  - menu_select: open-minimap
+  # The original look keeps the minimap and the options among the PLAYER page's tools (Tab there), as the original's
+  # menu has only its six entries; the modern look lists them on the menu's first page.
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        # The page's box takes no input until it is in place (tickUIBox).
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - menu_select: player-minimap
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-minimap
   - menu_select: minimap-mode
   - expect_setting: {minimap: "on"}
   - menu_select: minimap-mode
@@ -36,9 +49,14 @@ steps:
   - screenshot: room08
   - resize: [800, 600]
   - screenshot: room08
-  # Across the room and back to the door, with the partner following.
+  # Across the room and back to the door, with the partner following. Jijimon stands in the middle of the room, in
+  # the straight line to the far end, so the walk goes between him and Botamon, west of him.
+  - walk_to: {point: [-260, -200], radius: 40}
+  - walk_to: {point: [-260, -650], radius: 40}
   - walk_to: {point: [-95, -900], radius: 80}
   - wait: {partner_within: 300, seconds: 0.5, timeout: 5}
+  - walk_to: {point: [-260, -650], radius: 40}
+  - walk_to: {point: [-260, -200], radius: 40}
   - walk_to: {trigger: 51}
   - wait: {map: twna01, partner_within: 400, seconds: 0.5}
   - screenshot: twna01-back

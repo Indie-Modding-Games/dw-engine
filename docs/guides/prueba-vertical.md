@@ -112,7 +112,10 @@ que se puede seguir usando el escritorio; un mando real sí llega. Las rutas de 
 - `route-keyboard.yaml`, `route-gamepad.yaml` y `route-mouse.yaml`: File City → casa del anciano → File City con
   cada dispositivo; abren el menú con ese dispositivo, ponen el minimapa en «Siempre», «Nunca» y otra vez «Según el aspecto», se paran detrás de
   una capa de profundidad de File City, cambian la ventana a 800x600, 1280x720, 1920x1080, 2560x1080 y pantalla
-  completa, y hacen capturas.
+  completa, y hacen capturas. Con el aspecto original, el minimapa y las opciones están entre las herramientas de la
+  página del jugador (Tab en ella), como el menú del original, que solo tiene sus seis entradas; `route-keyboard` y
+  `route-free-exploration` llegan a ellas por ahí con ese aspecto (pasos `when` con `ui_skin`) y por la primera
+  página del menú con el moderno.
 - `route-fade.yaml`: entra en la casa del anciano con el ratón y hace una captura en mitad del fundido, con el nombre
   del mapa a la vista en el idioma del juego (`--lang`), y otra al acabar.
 - `route-language.yaml`: empieza en el menú principal (`main_menu: true`), cambia el idioma desde él y lo devuelve,
