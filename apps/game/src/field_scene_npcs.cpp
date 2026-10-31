@@ -80,6 +80,19 @@ void FieldScene::drawNpcs(double animationSeconds, float alpha) {
   }
 }
 
+void FieldScene::drawShownNpc(double animationSeconds, float alpha) {
+  if (!stage_.shownNpc) {
+    return;
+  }
+  for (const std::unique_ptr<Actor>& actor : npcActors_) {
+    if (actor->entity == *stage_.shownNpc && world_.alive(actor->entity)) {
+      animate(*actor, animationSeconds);
+      playClipSounds(*actor);
+      submit(*actor, alpha, {});
+    }
+  }
+}
+
 bool FieldScene::place(const Placement& placement) {
   std::optional<scene::Entity> entity;
   switch (placement.who) {

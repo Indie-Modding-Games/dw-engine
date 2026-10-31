@@ -789,6 +789,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
     submitProps();
   } else {
     submitStageProps();
+    drawShownNpc(animationSeconds, alpha);
   }
   for (const auto& [id, actor] : stageFighters_) {
     animate(*actor, animationSeconds);

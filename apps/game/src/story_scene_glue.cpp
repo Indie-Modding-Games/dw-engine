@@ -105,6 +105,10 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
     curlingScene_ = false;
     scenes.partnerSceneFinished();
   }
+  if (bossScene_ && boss_->takeOver()) {
+    bossScene_ = false;
+    scenes.partnerSceneFinished();
+  }
   if (const auto partner = scenes.takePartnerScene()) {
     if (scenes.playsDeath() && death_ != nullptr && death_->play(partner->scene)) {
       deathScene_ = true;
@@ -115,6 +119,13 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
     if (partner->scene == game::story::PartnerScene::Curling && curling_ != nullptr &&
         curling_->start(scene)) {
       curlingScene_ = true;
+      return;
+    }
+    // tamer.c: tamerTickMachinedramonSpawn plays the final boss's arrival (EAB_tick) and sets
+    // SOME_SCRIPT_SYNC_BIT when it ends.
+    if (partner->scene == game::story::PartnerScene::BossAppears && boss_ != nullptr) {
+      boss_->startArrival();
+      bossScene_ = true;
       return;
     }
     core::logDebug("[port:partner] callDigimonRoutine {} (partner.c:1139): the app has no scene "

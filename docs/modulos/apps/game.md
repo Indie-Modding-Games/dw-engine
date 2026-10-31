@@ -160,6 +160,14 @@ La carga del jefe final de la rutina 40 la pasa a `BossArrivalScene` (`boss_arri
 `isOnMap = 0` de `EAB_startBuildup`), dibuja los anillos de `ETCHI/BOSS_EFE.TMD` girados media vuelta donde está, a la
 escala de cada fotograma y teñidos a 0x3c/0x80 (`EAB_setModelColor`, con el tinte de `FieldScene::PropPlace`), y pone
 el zumbido retenido de la ranura 8 (`playSound2(8, 0)`); al entrar en otro mapa lo quita todo.
+La rutina de compañero 8 (el estado 18 del jugador en el original) la juega la misma `BossArrivalScene` desde `StorySceneGlue`:
+la llegada pone un `FieldStage` con la pantalla restada a negro (`EAB_renderFlash`, un cuadro sustractivo delante de
+todo), el escenario, el jugador y el compañero ocultos y solo el jefe (`FieldStage::shownNpc`) con sus anillos
+(`shownProps`), la cámara girando alrededor del hueso raíz del jefe (`EAB_calculateCameraOrbit`, con la proyección del
+mapa) y las partículas como cuatro líneas lejanas; pone las animaciones 0x21 y 0x33 del jefe como un `play_animation`
+y los sonidos 1, 2 y 3 de la ranura 8. Al acabar devuelve el escenario y la historia sigue
+(`StoryScenes::partnerSceneFinished`). Prueba con la ruta `_work/routes-e2/boss-arrival/route-mgen99.yaml` (partida
+nueva en mgen99 con todas las etapas): carga, llegada y combate contra el jefe.
 Mueve el temblor de la rutina 34 a 20 fotogramas por segundo y lo pasa a la cámara (`MapRenderer::setShake`), y lleva un
 sprite del mapa al nodo de un personaje (`spawnSpriteAtEntity`, con `FieldScene::entityNodePoint` y
 `MapLayers::spriteSize`). La burbuja de humor de la rutina 28 (`mood_bubble.hpp`: `MoodBubble`) crece y sube a 20

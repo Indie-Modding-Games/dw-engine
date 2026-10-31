@@ -8,6 +8,7 @@
 
 #include "battle_screen.hpp"
 #include "bird_transport_screen.hpp"
+#include "boss_arrival_scene.hpp"
 #include "card_shop_screen.hpp"
 #include "curling_screen.hpp"
 #include "death_scene.hpp"
@@ -46,6 +47,8 @@ public:
   }
   // The stones game the story's curling scene plays (call_partner_routine 1).
   void attachCurling(CurlingScreen* curling) { curling_ = curling; }
+  // The final boss's arrival the story's partner routine 8 plays.
+  void attachBossArrival(BossArrivalScene* boss) { boss_ = boss; }
   // The scenes the story's lost lives, deaths and rebirths play on, and the egg box between them.
   void attachDeath(DeathScene* death) { death_ = death; }
   void attachEggBox(EggBoxScreen* eggBox) { eggBox_ = eggBox; }
@@ -96,6 +99,9 @@ private:
   CurlingScreen* curling_ = nullptr;
   // Whether the story waits on the stones game.
   bool curlingScene_ = false;
+  BossArrivalScene* boss_ = nullptr;
+  // Whether the story waits on the boss's arrival.
+  bool bossScene_ = false;
   StoryNaming naming_;
   SaveMachine* saveMachine_ = nullptr;
   // Whether the story waits on the save machine.

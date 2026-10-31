@@ -52,6 +52,14 @@ if (auto change = field.takeMapChange()) {
   0x15c a 0xd98 de alto, con `_sin` de 512 por vuelta). `effectLerp` es el `lerp` del original con su vuelta pasado
   `t1`. Suposición sin medir (no hay estado guardado cerca del jefe): el anillo nuevo cuenta un fotograma en el mismo en
   que nace, como si su objeto fuera detrás del de la carga en la tabla de objetos.
+  La llegada (rutina de compañero 8, `EAB_tick` y `EAB_tickSpawn`) cuenta desde el fotograma siguiente: del 45 la
+  pantalla se resta a negro (`blackout`); en el 50 el jefe vuelve con la animación 0x21, se para el zumbido y suena el 2,
+  la carga se quita y solo se ve el jefe (`othersHidden`, hasta el 319) con la cámara girando (`orbit`, del 50 al 318:
+  de 0x71c a 0x171c de ángulo hasta el 290, de 0xdac a 0xbb8 de distancia y de 0x258 a 0x32 de altura hasta el 320);
+  el negro vuelve a 0 en el 82; cada fotograma pone un anillo de llegada (vive 9) y 9 de cada 18 una partícula verde
+  (vive 86, crece de 8 a 0x9c4); en el 210 la animación 0x33; en el 320 vuelve todo, se quitan las partículas y suena el
+  3; los anillos siguen hasta el 329 y en el 340 la llegada acaba (`arrivalOver`). `solidShares` da cuánto del jefe se
+  dibuja sólido (de 0 a 16 hasta el 290), que el motor aún no usa. Suposición: sin medir en el original.
   `mapNameShown()` da el mapa cuyo nombre se ve, del fotograma 10 del fundido de salida hasta entrar en el mapa
   nuevo; la app lo busca en la tabla de mapas y el HUD lo pone delante del fundido. El fundido de salida sigue
   desde el tono que dejó el último (`FADE_PROGRESS`), también si corta un fundido de entrada a medias.

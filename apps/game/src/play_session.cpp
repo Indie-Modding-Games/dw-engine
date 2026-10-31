@@ -370,6 +370,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachGym(&gymScreen_);
   storyScenes_.attachTournament(game_.systems.tournament, &session);
   storyScenes_.attachCurling(&curlingScreen_);
+  storyScenes_.attachBossArrival(&bossArrival_);
   storyScenes_.attachDeath(&deathScene_);
   storyScenes_.attachEggBox(&eggBoxScreen_);
   storyScenes_.attachDiscard(&discardScreen_);

@@ -84,7 +84,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 145 | 4 | 5 | 17 | 95 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 194 | 5 | 31 | 55 | 85 % |
-| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 74 | 4 | 4 | 14 | 93 % |
+| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 75 | 4 | 3 | 14 | 94 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 69 | 0 | 6 | 27 | 92 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 91 | 3 | 2 | 49 | 96 % |
@@ -99,9 +99,9 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 0 | 0 | 91 | 315 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 32 | 3 | 3 | 10 | 88 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
-| [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 9 | 0 | 17 | 18 | 35 % |
+| [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 19 | 1 | 10 | 14 | 65 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1111 | 38 | 228 | 1061 | 82 % |
+| **Total** | 2438 funciones | 1122 | 39 | 220 | 1057 | 83 % |
 
 ## Batalla
 
@@ -180,7 +180,7 @@ El jugador en el mapa, la rejilla de colisión, los warps, el seguimiento del co
 
 Ficheros del decomp: `main/aabb.c`, `main/map.c`, `main/map_collision.c`, `main/tamer.c`, `main/vecmath.c`.
 
-Portado 74, parcial 4, falta 4, no aplica 14.
+Portado 75, parcial 4, falta 3, no aplica 14.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -190,7 +190,6 @@ Portado 74, parcial 4, falta 4, no aplica 14.
 | `tamerTickOpening` | `main/tamer.c:1668` | falta | Escena de apertura del jugador. | `game/story/include/dwe/game/story/partner_routines.hpp:21` · la escena del compañero 5 acaba al momento |
 | `tamerTickEnding` | `main/tamer.c:1682` | falta | Escena final del jugador antes del vídeo. | `apps/session/src/story_routines/routine_start_ending.cpp:38` · la escena 6 acaba al momento; solo se ve el vídeo final |
 | `tamerTickSicknessLostLife` | `main/tamer.c:1699` | parcial | Escena de perder una vida por enfermedad. | `apps/game/src/death_scene.cpp:125` · la restauración tras la vida perdida por enfermedad es un hueco (docs/modulos/game/battle.md:107) |
-| `tamerTickMachinedramonSpawn` | `main/tamer.c:1718` | falta | El jugador asiste a la aparición del jefe final. | la escena acaba al momento (story_scene_glue.cpp:58) |
 | `tamerTickBattleLostLife` | `main/tamer.c:1734` | parcial | Escena de perder una vida en combate. | `apps/game/src/death_scene.cpp:125` · la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:107) |
 
 No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (6); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (1); prueba de cajas del original (1); cálculo de pantalla del original (1); lectura del disco; la hace la extracción (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); carga de trozos del fondo del original (1); limpieza del original (1); lectura del disco; la colisión la extrae dwx (1).
@@ -566,17 +565,11 @@ El reproductor de vídeo, los créditos y la animación del final.
 
 Ficheros del decomp: `eab/eab.c`, `endi/endi.c`, `mov/mov.c`.
 
-Portado 9, parcial 0, falta 17, no aplica 18.
+Portado 19, parcial 1, falta 10, no aplica 14.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `EAB_addSpawnRing` | `eab/eab.c:276` | falta | Añade un anillo de la aparición del jefe final. | — |
-| `EAB_tickSpawnRing` | `eab/eab.c:298` | falta | Mueve y desvanece un anillo de la aparición. | — |
-| `EAB_tickSpawn` | `eab/eab.c:349` | falta | Escena de aparición del jefe final: destello, anillos, partículas, cámara y sonidos. | — |
-| `EAB_initializeParticles` | `eab/eab.c:462` | falta | Vacía la lista de partículas de la aparición. | — |
-| `EAB_setEntitiesVisible` | `eab/eab.c:490` | falta | Oculta a todos menos al jefe durante su aparición y luego los repone. | — |
-| `EAB_addParticle` | `eab/eab.c:513` | falta | Añade una partícula de luz a la aparición del jefe. | — |
-| `EAB_tickParticle` | `eab/eab.c:595` | falta | Mueve y apaga una partícula de la aparición. | — |
+| `EAB_tickSpawn` | `eab/eab.c:349` | parcial | Escena de aparición del jefe final: destello, anillos, partículas, cámara y sonidos. | `game/field/src/boss_arrival.cpp` · sin el dibujo en alambre del jefe, sin repetir la animación 0x33 al acabar y sin vabId 5; sin medir en el original |
 | `ENDI_setModelSemiTrans` | `endi/endi.c:115` | falta | Vuelve translúcido el modelo del compañero en el final. | el motor no tiene la escena del final, solo el vídeo |
 | `ENDI_updateEnding` | `endi/endi.c:159` | falta | Escena final: el compañero se desvanece, encoge, crece y sube convertido en luz. | — |
 | `ENDI_startParticles` | `endi/endi.c:227` | falta | Arranca las partículas de luz de la escena final. | — |
@@ -588,7 +581,7 @@ Portado 9, parcial 0, falta 17, no aplica 18.
 | `ENDI_clearParticles` | `endi/endi.c:355` | falta | Vacía la lista de partículas del final. | — |
 | `ENDI_tickEndingParticles` | `endi/endi.c:364` | falta | Mueve y apaga las partículas de luz del final. | — |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (9); limpieza de objetos y memoria del original: el motor libera lo suyo (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); descodificación de vídeo; el motor usa su propio reproductor (2); lectura en flujo del disco; el motor lee el vídeo de archivo (2); sincronía de hardware; el motor tiene su propio bucle (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (5); limpieza de objetos y memoria del original: el motor libera lo suyo (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); descodificación de vídeo; el motor usa su propio reproductor (2); lectura en flujo del disco; el motor lee el vídeo de archivo (2); sincronía de hardware; el motor tiene su propio bucle (1).
 
 ## Núcleo y plataforma
 

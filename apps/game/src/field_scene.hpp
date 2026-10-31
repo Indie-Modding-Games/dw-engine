@@ -127,6 +127,9 @@ struct FieldStage {
   bool sceneryHidden = false;
   // The partner's isOnMap = 0.
   bool partnerHidden = false;
+  // An NPC drawn while the scenery is hidden: the final boss alone on black (eab.c:
+  // EAB_setEntitiesVisible(0) keeps entity 2).
+  std::optional<scene::Entity> shownNpc;
   // The partner's posData->scale, 1 being its model's size.
   glm::vec3 partnerScale{1.0F};
   // The camera the models are drawn with instead of the map's (the scene's GS_VIEWPOINT).
@@ -629,6 +632,8 @@ private:
   // loaded when the story puts one on the map, dropped when it goes.
   void followNpcs();
   void drawNpcs(double animationSeconds, float alpha);
+  // FieldStage::shownNpc, while the scenery is hidden.
+  void drawShownNpc(double animationSeconds, float alpha);
   // The ground items' billboards (field_scene_ground_items.cpp).
   void drawGroundItems();
   std::optional<std::size_t> groundItemTexture(std::optional<std::uint8_t> palette);
