@@ -369,9 +369,15 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
     reader.expectKeys(value, "wait", {},
                       {"seconds", "ticks", "map", "partner_within", "player_near", "radius",
                        "menu_open", "map_name", "shown", "hidden", "partner_has", "setting",
-                       "partner_model", "timeout"});
+                       "partner_model", "confirm", "win_after", "timeout"});
     if (const core::YamlNode* ticks = value.find("ticks")) {
       step.ticks = reader.integer<std::uint64_t>(*ticks);
+    }
+    if (const core::YamlNode* confirm = value.find("confirm")) {
+      step.confirm = reader.boolean(*confirm);
+    }
+    if (const core::YamlNode* win = value.find("win_after")) {
+      step.winAfter = reader.number(*win);
     }
     readCondition(reader, value, step);
     readCommon(reader, value, step);
@@ -575,6 +581,9 @@ struct Autotest::Progress {
   double lastAnswer = -1.0;
   // walk_to with `encounters: win`: the running encounter's fight was told to end won.
   bool encounterWon = false;
+  // win_after: when the fight on screen showed (negative: none), and whether it was ended.
+  double battleSince = -1.0;
+  bool battleWon = false;
   // menu
   double lastTry = -1.0;
   // resize and fullscreen
@@ -594,7 +603,7 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   AutotestRoute route;
   reader.expectKeys(*document, "route", {"name", "device", "steps"},
                     {"gamepad", "timeout", "main_menu", "boot_screen", "language_first", "new_game",
-                     "load_save"});
+                     "load_save", "movies"});
   route.name = reader.text(reader.field(*document, "name"));
   const core::YamlNode& device = reader.field(*document, "device");
   if (const auto known = deviceNamed(reader.text(device))) {
@@ -623,6 +632,9 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
     if (route.languageFirst && !route.bootScreen) {
       reader.fail(*language, "language_first needs boot_screen: true");
     }
+  }
+  if (const core::YamlNode* movies = document->find("movies")) {
+    route.movies = reader.boolean(*movies);
   }
   if (const core::YamlNode* newGame = document->find("new_game")) {
     route.newGameChain = newGameChainNamed(reader.text(*newGame));
@@ -918,6 +930,22 @@ bool Autotest::whenStep(const AutotestHost& host, const AutotestStep& step) {
 
 bool Autotest::waitStep(const AutotestHost& host, const AutotestStep& step, double now) {
   const double waited = now - progress_->start;
+  if (step.confirm && host.ui != nullptr) {
+    // As a player through a long scene: each page of the story's textbox and each line of a
+    // fight's end box (battle_ui.c: handleBattleEndBox) takes a confirm; the fight itself plays.
+    const bool battle = host.ui->isVisible(BattleDocument);
+    const bool endBox = battle && settingText(host, "battle.phase") == "end";
+    // A selection (its cursor shows) is the route's to answer: confirm would take the first entry.
+    const std::string cursor = settingText(host, "story_textbox.cursor_row");
+    const bool selecting = cursor != "-1" && cursor != "-";
+    const bool textbox = !battle && !selecting && host.ui->isVisible(StoryTextboxDocument);
+    if ((endBox || textbox) && now - progress_->lastAnswer > AnswerSeconds) {
+      progress_->lastAnswer = now;
+      const AutotestDevice device = deviceOf(step);
+      tapAction(device == AutotestDevice::Gamepad ? device : AutotestDevice::Keyboard, "confirm");
+    }
+    winLongFight(host, step, now);
+  }
   if (waited < step.seconds || ticks_ - progress_->startTick < step.ticks) {
     return false;
   }
@@ -1383,6 +1411,29 @@ bool Autotest::menuSelectStep(const AutotestHost& host, const AutotestStep& step
   tapAction(device, direction);
   ++progress.attempts;
   return false;
+}
+
+void Autotest::winLongFight(const AutotestHost& host, const AutotestStep& step, double now) {
+  Progress& progress = *progress_;
+  const bool fighting =
+      host.ui->isVisible(BattleDocument) && settingText(host, "battle.phase") != "end";
+  if (!step.winAfter || !fighting) {
+    progress.battleSince = -1.0;
+    progress.battleWon = false;
+    return;
+  }
+  if (progress.battleSince < 0.0) {
+    progress.battleSince = now;
+  }
+  if (progress.battleWon || now - progress.battleSince < *step.winAfter ||
+      host.scripts == nullptr) {
+    return;
+  }
+  progress.battleWon = true;
+  core::logInfo("autotest: the fight lasted {:.0f} s; ending it with battle_win", *step.winAfter);
+  if (auto ran = host.scripts->runString("battle_win(\"\")", "autotest"); !ran) {
+    failStep(ran.error().message);
+  }
 }
 
 bool Autotest::scriptStep(const AutotestHost& host, const AutotestStep& step) {

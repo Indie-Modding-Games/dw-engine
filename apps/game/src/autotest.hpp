@@ -112,6 +112,12 @@ struct AutotestStep {
   // walk_to with `encounters: win`: the encounter's fight ends with the enemies beaten (the
   // battle_win command) once it starts, so a route's partner never loses on the way.
   bool winEncounters = false;
+  // wait: while it waits, the story's textbox pages and a fight's end box are confirmed, and a
+  // fight plays out on its own (a long scene played through).
+  bool confirm = false;
+  // wait with confirm: a fight on screen for this many seconds is ended
+  // with battle_win(""), as the debug command does (a route that checks a path, not the fight).
+  std::optional<double> winAfter;
   bool flag = false; // menu open, fullscreen on
   // when: how many of the steps after it are its own, skipped when its conditions do not hold.
   std::size_t block = 0;
@@ -142,6 +148,9 @@ struct AutotestRoute {
   // A save file to start from (load_save: <path>, relative to the route), as a bug report's route
   // does: the game loads it instead of starting a new game, and the field opens where it was saved.
   std::optional<std::filesystem::path> loadSave;
+  // Whether the game's movies play as without a route (movies: true), for a route that sees the
+  // ending through to its credits; without it, a moment's movie counts as played at once.
+  bool movies = false;
   std::vector<AutotestStep> steps;
 };
 
@@ -204,6 +213,8 @@ public:
   [[nodiscard]] bool startsAtBootScreen() const { return route_.bootScreen; }
   // Whether the language box comes before that screen (AutotestRoute::languageFirst).
   [[nodiscard]] bool asksLanguageFirst() const { return route_.languageFirst; }
+  // Whether the game's movies play (AutotestRoute::movies).
+  [[nodiscard]] bool playsMovies() const { return route_.movies; }
 
   // How the route's new game starts (AutotestRoute::newGameChain), if it says.
   [[nodiscard]] std::optional<session::NewGameChain> newGameChain() const {
@@ -273,6 +284,8 @@ private:
   void axis(platform::GamepadAxis moved, float value);
   // Presses and releases an action's control on a device: menu, confirm, cancel, up, down.
   void tapAction(AutotestDevice device, std::string_view action);
+  // win_after: ends a fight that has lasted the step's seconds with battle_win("").
+  void winLongFight(const AutotestHost& host, const AutotestStep& step, double now);
   void clickAt(glm::vec2 window, platform::MouseButton pressed = platform::MouseButton::Left);
   // Holds the left button down at a window point for a number of logic ticks: the player walks
   // towards it.

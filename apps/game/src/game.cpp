@@ -569,11 +569,11 @@ int runGame(const Options& requested) {
     core::logError("{}", fade.error().message);
     return EXIT_FAILURE;
   }
-  // The original's movies (docs/architecture/peliculas.md). None in an autotest: its routes start
-  // where they say.
+  // The original's movies (docs/architecture/peliculas.md). None in an autotest, whose routes start
+  // where they say, unless its route asks for them (movies: true).
   std::optional<MovieRules> movieRules;
   std::unique_ptr<MovieScreen> movies;
-  if (!autotest) {
+  if (!autotest || autotest->playsMovies()) {
     movieRules = loadMovieRules(files, options.ruleset);
     if (auto screen = MovieScreen::create(**renderer, sound); screen && movieRules) {
       movies = std::move(*screen);
@@ -1345,6 +1345,7 @@ int runGame(const Options& requested) {
     playerPortrait->reset();
   uiRenderer->reset();
   screenFade.reset();
+  movies.reset();
   renderer->reset();
   debugUi->reset();
   device->reset();
