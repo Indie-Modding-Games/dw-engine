@@ -11,7 +11,20 @@ steps:
   # The menu with a gamepad (a virtual one of the platform): minimap on, off, then back to the skin's choice.
   - menu: open
   - screenshot: menu-open
-  - menu_select: open-minimap
+  # The original look keeps the minimap and the options among the PLAYER page's tools (North there, the menu button);
+  # the modern look lists them on the menu's first page.
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        # The page's box takes no input until it is in place (tickUIBox).
+        - wait: {seconds: 0.5}
+        - tap: {button: north}
+        - menu_select: player-minimap
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-minimap
   - menu_select: minimap-mode
   - expect_setting: {minimap: "on"}
   - menu_select: minimap-mode

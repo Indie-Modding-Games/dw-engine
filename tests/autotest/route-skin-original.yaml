@@ -23,14 +23,33 @@ steps:
   - script: give_item("mp_floppy 1")
   - menu: open
   - screenshot: pause-menu
-  - menu_select: open-options
+  # The minimap and the options are among the PLAYER page's tools (Tab there), as the original's menu has only its six
+  # entries.
+  - menu_select: open-player
+  # The page's box takes no input until it is in place (tickUIBox).
+  - wait: {seconds: 0.5}
+  - screenshot: pause-player
+  - tap: {key: tab}
+  - menu_select: player-options
   - screenshot: pause-options
+  # Back to the tools, out of them to the PLAYER page, and back to the menu's first page, whose box closes and opens
+  # again from the player.
   - menu_select: options-back
+  - menu_select: player-back
+  - tap: {key: escape}
+  - wait: {seconds: 0.6}
   - menu_select: open-partner
   - wait: {shown: partner_menu, seconds: 0.5}
   - screenshot: partner-status
-  - menu_select: tab-items
-  - wait: {seconds: 0.3}
+  # The original look's partner entry holds the status and tech pages only, as the original's; the bag is the menu's
+  # ITEM entry, which the menu shows again when the partner's page closes.
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: open
+  # The menu's box takes no input until it is in place (tickUIBox).
+  - wait: {seconds: 0.6}
+  - menu_select: open-items
+  - wait: {shown: partner_menu, seconds: 0.3}
   - screenshot: partner-bag
   - menu_select: slot-0
   - screenshot: partner-bag-options
@@ -38,8 +57,11 @@ steps:
   - screenshot: partner-bag-sort
   - menu_select: sort-0
   - wait: {seconds: 0.3}
-  - menu_select: close
+  # The original look's bag has no tabs: cancel closes it, back to the menu, and the menu closes after it.
+  - tap: {key: escape}
   - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false}
   - script: battle("")
   - wait: {shown: battle, seconds: 1}
   - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}

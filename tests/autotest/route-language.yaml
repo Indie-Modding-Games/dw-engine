@@ -24,12 +24,36 @@ steps:
   - screenshot: field
   - menu: open
   - screenshot: pause-menu
-  - menu_select: open-minimap
+  # The original look keeps the minimap and the options among the PLAYER page's tools (Tab there); the modern look
+  # lists them on the menu's first page.
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        # The page's box takes no input until it is in place (tickUIBox).
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - menu_select: player-minimap
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-minimap
   - screenshot: pause-minimap
   - menu: close
   - wait: {menu_open: false}
   - menu: open
-  - menu_select: open-options
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        # The page's box takes no input until it is in place (tickUIBox).
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
   - screenshot: pause-options
   - menu: close
   - wait: {menu_open: false}

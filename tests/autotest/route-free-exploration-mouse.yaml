@@ -8,7 +8,21 @@ steps:
   - wait: {map: twna01, seconds: 1}
   - resize: [1280, 720]
   - menu: open
-  - menu_select: open-options
+  # The original look keeps the minimap and the options among the PLAYER page's tools; the modern look lists them on
+  # the menu's first page. The mouse has no way to the tools yet, so the route takes the PC's key for them (Tab) and
+  # clicks the rest.
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        # The page's box takes no input until it is in place (tickUIBox).
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
   - menu_select: free-exploration
   - expect_setting: {free_exploration: "true"}
   - menu: close

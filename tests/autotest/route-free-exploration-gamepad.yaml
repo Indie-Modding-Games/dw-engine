@@ -9,7 +9,20 @@ steps:
   - wait: {map: twna01, seconds: 1}
   - resize: [1280, 720]
   - menu: open
-  - menu_select: open-options
+  # The original look keeps the minimap and the options among the PLAYER page's tools (North there, the menu button);
+  # the modern look lists them on the menu's first page.
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        # The page's box takes no input until it is in place (tickUIBox).
+        - wait: {seconds: 0.5}
+        - tap: {button: north}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
   - menu_select: free-exploration
   - expect_setting: {free_exploration: "true"}
   - menu: close
@@ -20,7 +33,12 @@ steps:
   - tap: {button: east}
   - wait: {hidden: destination_choice, seconds: 0.5}
   - wait: {map: twna01}
-  # The elder's house through the warp table; its door's script leads to File City's 13 phases.
+  # The elder's house through the warp table; its door's script leads to File City's 13 phases. The new game's Jijimon
+  # stands by File City's entrance, in the straight line to the house; walk_to plans around the map's walls but not
+  # around NPCs, so the walk goes south of him first, as route-gamepad's.
+  - walk_to: {point: [-330, 1950], radius: 40}
+  - walk_to: {point: [300, 1950], radius: 40}
+  - walk_to: {point: [600, 300], radius: 40}
   - walk_to: {trigger: 112}
   - wait: {map: room08, partner_within: 400, seconds: 0.5}
   - walk_to: {trigger: 51}

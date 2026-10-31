@@ -11,7 +11,21 @@ steps:
   # The menu with the mouse: minimap on, off, then back to the skin's choice.
   - menu: open
   - screenshot: menu-open
-  - menu_select: open-minimap
+  # The original look keeps the minimap and the options among the PLAYER page's tools; the modern look lists them on
+  # the menu's first page. The mouse has no way to the tools yet, so the route takes the PC's key for them (Tab) and
+  # clicks the rest.
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        # The page's box takes no input until it is in place (tickUIBox).
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - menu_select: player-minimap
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-minimap
   - menu_select: minimap-mode
   - expect_setting: {minimap: "on"}
   - menu_select: minimap-mode

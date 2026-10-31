@@ -113,9 +113,11 @@ que se puede seguir usando el escritorio; un mando real sí llega. Las rutas de 
   cada dispositivo; abren el menú con ese dispositivo, ponen el minimapa en «Siempre», «Nunca» y otra vez «Según el aspecto», se paran detrás de
   una capa de profundidad de File City, cambian la ventana a 800x600, 1280x720, 1920x1080, 2560x1080 y pantalla
   completa, y hacen capturas. Con el aspecto original, el minimapa y las opciones están entre las herramientas de la
-  página del jugador (Tab en ella), como el menú del original, que solo tiene sus seis entradas; `route-keyboard` y
-  `route-free-exploration` llegan a ellas por ahí con ese aspecto (pasos `when` con `ui_skin`) y por la primera
-  página del menú con el moderno.
+  página del jugador (Tab en ella; Norte en el mando), como el menú del original, que solo tiene sus seis entradas;
+  las rutas que abren el minimapa o las opciones (`route-keyboard`, `route-gamepad`, `route-mouse`, `route-language`,
+  `route-field-hud` y las tres de la exploración libre) llegan a ellas por ahí con ese aspecto (pasos `when` con
+  `ui_skin`) y por la primera página del menú con el moderno. El ratón aún no tiene forma de abrir esas
+  herramientas, así que las rutas del ratón pulsan Tab para eso y hacen clic en lo demás.
 - `route-fade.yaml`: entra en la casa del anciano con el ratón y hace una captura en mitad del fundido, con el nombre
   del mapa a la vista en el idioma del juego (`--lang`), y otra al acabar.
 - `route-language.yaml`: empieza en el menú principal (`main_menu: true`), cambia el idioma desde él y lo devuelve,
@@ -174,9 +176,9 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   del compañero y un combate, y pasa al moderno desde las opciones del menú de pausa, con capturas de cada pantalla.
   Necesita `--mods tests/mods/ui_skin` y se corre en los dos idiomas, como `route-language.yaml`.
 - `route-skin-original.yaml`: el aspecto original en cada pantalla que dibuja, con una captura de cada una: el
-  título y su menú, el reloj y las barras del campo, el menú de pausa y sus opciones, la ficha y la bolsa del
-  compañero (con las opciones de un objeto y los órdenes), un combate y sus cuadros finales, y la burbuja del hambre
-  sobre el compañero a 1920x1080. Se corre en los dos idiomas.
+  título y su menú, el reloj y las barras del campo, el menú de pausa, la página del jugador y las opciones de sus
+  herramientas, la ficha del compañero (su entrada del menú) y la bolsa (la de los objetos, con las opciones de un objeto y
+  los órdenes), un combate y sus cuadros finales, y la burbuja del hambre sobre el compañero a 1920x1080. Se corre en los dos idiomas.
 - `route-scripted-loop.yaml`: una vuelta por cinco zonas desde una partida nueva con el teclado: File City (`twna01`)
   → la casa del anciano, `room08` (tabla de salidas del mapa) → File City (script) → `trai00` (tabla) → `mayo00`
   (tabla), donde juega el primer combate del bosque y el reclutamiento de Agumon → `twnb01` (warp del script del mapa,
