@@ -3,6 +3,7 @@
 #include <dwe/core/log.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstring>
 #include <span>
@@ -135,9 +136,14 @@ Rml::TextureHandle RenderBridge::LoadTexture(Rml::Vector2i& dimensions, const Rm
       return handleOf(borrowed->second);
     }
   }
-  // Optional runtime images have no file fallback (for example when a species has no model).
-  if (source.starts_with("runtime/"))
-    return 0;
+  // Optional runtime images have no file fallback (for example when a species has no model, or a
+  // test without a renderer): one the game has not bound draws as a transparent pixel, which RmlUi
+  // takes as loaded instead of warning that it could not load it.
+  if (source.starts_with("runtime/")) {
+    dimensions = {1, 1};
+    constexpr std::array<std::byte, 4> Transparent{};
+    return createTexture(dimensions, Transparent);
+  }
   auto image = sources_->load(source);
   if (!image) {
     core::logWarning("ui: {}", image.error().message);

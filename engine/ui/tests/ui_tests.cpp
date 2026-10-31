@@ -298,6 +298,20 @@ TEST_CASE("documents load through the virtual file system and run their scripts"
   CHECK_FALSE(ui->loadDocument("nothing", idOf("ui/test/missing")));
 }
 
+TEST_CASE("a runtime image the game has not bound loads as an empty one, without a warning") {
+  Content content;
+  content.add("ui/test/document.rml", R"rml(<rml>
+<head><link type="text/rcss" href="/ui/common/base.rcss"/></head>
+<body><img id="portrait" src="/runtime/portrait"/></body>
+</rml>)rml");
+  auto ui = createUi(content.mount());
+  const LogLines log;
+  REQUIRE(ui->loadDocument("test", idOf("ui/test/document")));
+  ui->show("test");
+  ui->update();
+  CHECK(log.count("runtime/portrait") == 0);
+}
+
 TEST_CASE("a mod's document loads and runs the game's scripts, but none of its own Lua") {
   const LogLines log;
   Content content;
