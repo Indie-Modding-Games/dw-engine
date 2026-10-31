@@ -1,0 +1,36 @@
+# Stage 7 of the story with the keyboard, Beetle Land (betl01-04): from betl01 on a seeded game (run with --start
+# betl01 and --story-stage stage_7), the route walks into every house of the land and back, under the lock.
+name: etapa7-betl
+device: keyboard
+timeout: 1200
+steps:
+  - wait: {map: betl01, partner_within: 400, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  # The wild ones fight on the way: a Champion partner, healed before each leg, and the fights won at once.
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  - script: give_item("sm_recovery 20")
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 111, encounters: win, timeout: 300}
+  - wait: {map: betl02, seconds: 1, timeout: 60}
+  - screenshot: betl02
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 111, encounters: win, timeout: 300}
+  - wait: {map: betl04, seconds: 1, timeout: 60}
+  - screenshot: betl04
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 110, encounters: win, timeout: 300}
+  - wait: {map: betl02, seconds: 1, timeout: 60}
+  - screenshot: betl02
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 112, encounters: win, timeout: 300}
+  - wait: {map: betl03, seconds: 1, timeout: 60}
+  - screenshot: betl03
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 110, encounters: win, timeout: 300}
+  - wait: {map: betl02, seconds: 1, timeout: 60}
+  - screenshot: betl02
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 110, encounters: win, timeout: 300}
+  - wait: {map: betl01, seconds: 1, timeout: 60}
+  - screenshot: betl01

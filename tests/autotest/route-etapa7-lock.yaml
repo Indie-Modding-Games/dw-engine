@@ -21,6 +21,8 @@ steps:
   - screenshot: dgha02-mgen11-closed
   - tap: {key: return}
   - wait: {map: dgha02, hidden: dialog, seconds: 2, timeout: 30}
+  # The cells' section waits until the player steps off them.
+  - walk_to: {point: [-82, -3900], radius: 100, timeout: 60}
   - script: story_set("var 16 0")
   - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
   - wait: {shown: story_textbox, seconds: 1, timeout: 30}

@@ -46,6 +46,8 @@ steps:
         - repeat: {times: 30, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
         - wait: {hidden: story_textbox, seconds: 1, timeout: 60}
   - expect_setting: {story.trigger.148: "true"}
+  # Jureimon stands by the way up to Toy Town's exit: round him by the clearing's left.
+  - walk_to: {point: [-3200, -800], radius: 150, encounters: win, timeout: 120}
   - walk_to: {trigger: 112, encounters: win, timeout: 240}
   - wait: {map: omoc01, seconds: 1, timeout: 60}
   - screenshot: toy-town

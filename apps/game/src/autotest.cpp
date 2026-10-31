@@ -218,9 +218,31 @@ std::optional<std::string> storySettingText(const game::story::StoryState& story
   return value ? std::optional<std::string>{std::to_string(*value)} : std::nullopt;
 }
 
+// Whether an NPC is on the map now, by its script id: field.npc.<id> is true or false (the story
+// puts some only now and then, such as the swamp's Otamamon).
+constexpr std::string_view FieldNpcSetting = "field.npc.";
+
+std::optional<std::string> fieldNpcText(const FieldScene& scene, std::string_view name) {
+  if (!name.starts_with(FieldNpcSetting)) {
+    return std::nullopt;
+  }
+  const std::string_view digits = name.substr(FieldNpcSetting.size());
+  std::int32_t scriptId = 0;
+  const auto [end, error] = std::from_chars(digits.data(), digits.data() + digits.size(), scriptId);
+  if (error != std::errc{} || end != digits.data() + digits.size()) {
+    return std::nullopt;
+  }
+  return scene.field().npcs().positionOf(scriptId) ? "true" : "false";
+}
+
 std::string settingText(const AutotestHost& host, std::string_view name) {
   if (name == FieldOverlapsSetting && host.scene != nullptr) {
     return std::to_string(host.scene->field().overlapEpisodes());
+  }
+  if (host.scene != nullptr) {
+    if (std::optional<std::string> npc = fieldNpcText(*host.scene, name)) {
+      return *std::move(npc);
+    }
   }
   if (host.story != nullptr) {
     if (std::optional<std::string> story = storySettingText(*host.story, name)) {

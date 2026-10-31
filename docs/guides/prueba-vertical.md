@@ -412,6 +412,43 @@ scripts/dev.sh run --content <carpeta> --start twna02 --lang en --seed 1 --story
     --autotest tests/autotest/route-etapa6-lock.yaml --shots <capturas>/etapa6
 ```
 
+- `route-etapa7-*.yaml`: la Etapa 7 (la ruta opcional, en cualquier orden) con `--story-stage stage_7`. No tiene un
+  suceso obligado: sus reclutas suben la prosperidad y, con 50 o más, Greymon en la ciudad (disparador 205) y un
+  compañero que ya no es de las formas pequeñas, la charla de Jijimon en su casa crecida abre Mt. Infinity (354).
+  `route-etapa7-montana.yaml` (`--start twna02`) escribe eso, evoluciona al compañero, habla con Jijimon (354) y
+  prueba el candado: la habitación de atrás (room11) y la casilla 56 a mgen01 son de la Etapa 8 y muestran el aviso.
+  `route-etapa7-lock.yaml` (`--start trop02`) entra por la jungla a la mansión (dgha01, cerrada en la Etapa 2) y pisa
+  en el cementerio (dgha02) las casillas 51 hacia la Back Dimension (mgen11, etapa 9, con la variable 16 a 2): aviso y
+  el jugador sigue en dgha02; sin ella, la escena de la «fuerza negra» lo hace volver.
+  `route-etapa7-mist.yaml` (`--start mist02`) cruza el bosque de la niebla: sus casillas mandan al azar al claro
+  siguiente, atrás o en círculo, y la décima vez llevan siempre al claro de Jureimon (mist05), cuyo encuentro (147) y
+  su relato quitan la niebla (148, rutina 37; la niebla aún no se dibuja, así que no tapa nada); sigue a Toy Town.
+  `route-etapa7-toy-cards.yaml` (`--start omoc01`) da con `story_set` las tres cartas que pide el coleccionista de Toy
+  Town, que se las queda (`take_card`) y da un objeto. `route-etapa7-fishing.yaml` (`--start mayo06`) saca la caña en
+  el lago (disparador 45 y carne de cebo), lanza y la guarda con Esc: la pesca no entra en la beta, pero no rompe
+  nada. `route-etapa7-stic.yaml` (`--start stic01`): hasta el disparador 319 el centro del pantano (stic02) está
+  cerrado y no se llega a Volume Villa; el Otamamon (sale una de cada tres veces, la ruta entra y sale hasta verlo con
+  `field.npc.9`) pelea, los Gekomon llevan al jugador a gkyo02, su jefe abre el pantano (319) y el camino recto de la
+  niebla (114), y la ruta vuelve por gkyo01 y el pantano abierto hasta mist01. `route-etapa7-betl`, `-saib` y `-koda`
+  recorren las salidas de Beetle Land, Overdell y el bosque de koda, ida y vuelta, ganando los combates del camino.
+
+```sh
+scripts/dev.sh run --content <carpeta> --start twna02 --lang en --seed 1 --story-stage stage_7 \
+    --autotest tests/autotest/route-etapa7-montana.yaml --shots <capturas>/etapa7
+scripts/dev.sh run --content <carpeta> --start trop02 --lang en --seed 1 --story-stage stage_7 \
+    --autotest tests/autotest/route-etapa7-lock.yaml --shots <capturas>/etapa7
+scripts/dev.sh run --content <carpeta> --start mist02 --lang en --seed 1 --story-stage stage_7 \
+    --autotest tests/autotest/route-etapa7-mist.yaml --shots <capturas>/etapa7
+scripts/dev.sh run --content <carpeta> --start omoc01 --lang en --seed 1 --story-stage stage_7 \
+    --autotest tests/autotest/route-etapa7-toy-cards.yaml --shots <capturas>/etapa7
+scripts/dev.sh run --content <carpeta> --start mayo06 --lang en --seed 1 --story-stage stage_7 \
+    --autotest tests/autotest/route-etapa7-fishing.yaml --shots <capturas>/etapa7
+for r in betl:betl01 stic:stic01 saib:saib01 koda:koda00; do
+    scripts/dev.sh run --content <carpeta> --start ${r#*:} --lang en --seed 1 --story-stage stage_7 \
+        --autotest tests/autotest/route-etapa7-${r%%:*}.yaml --shots <capturas>/etapa7
+done
+```
+
 - Las rutas de la Etapa 8 (Mt. Infinity y el final) y de la Etapa 9 (el post-juego) van en trozos encadenados por una
   carpeta de partidas (`--saves`): cada trozo guarda en `slot_01` y el siguiente la carga (`--load slot_01`).
   `route-etapa8-jijimon.yaml` (`--start room08`) escribe los reclutas de las etapas 1 a 7 (77 puntos de prosperidad;
@@ -587,7 +624,7 @@ steps:
 | `menu_select: <id>` | Enfoca y pulsa una entrada del menú abierto: el principal si se ve (`play`, `language`), si no el de pausa (`open-minimap`, `minimap-mode`...), si no el menú del compañero (también la bolsa que abre el combate: `slot-0`..., `opt-use`), la pantalla de combate (`command-0`..., `open-bag`), el selector de la exploración libre o, en la portada, el diálogo (`yes`, `no`, `ok`) y la lista de ranuras (`slot-1`..., `no-save`, `back`). Con teclado o mando mueve el foco abajo, arriba, a la derecha y a la izquierda hasta llegar; con el ratón hace clic en el centro de la entrada |
 | `script: <lua>` | Ejecuta una línea de los scripts del juego, como la consola; los comandos de depuración están más abajo |
 | `script_if: {script, <condiciones de wait>}` | Ejecuta el script solo si se cumplen ya todas las condiciones (las de `wait` salvo `map_name` y `seconds`); si no, sigue sin esperar y lo dice en el registro |
-| `expect_setting: {<nombre>: <valor>, timeout}` | Comprueba un ajuste publicado a la UI (`minimap: "off"`) o del estado del compañero; `field.overlaps` es cuántas veces dos personajes (o uno y una pared) se pisaron más de un segundo con el jugador libre (`expect_setting: {field.overlaps: 0}`); `story.trigger.<n>` (`"true"` o `"false"`) y `story.var.<n>` leen los disparadores y las variables de la historia, como el original los guarda en su estado de scripts (`wait: {setting: {story.trigger.249: "true"}}` espera a que Coelamon se una). Si no se cumple, el fallo dice el valor que leyó |
+| `expect_setting: {<nombre>: <valor>, timeout}` | Comprueba un ajuste publicado a la UI (`minimap: "off"`) o del estado del compañero; `field.overlaps` es cuántas veces dos personajes (o uno y una pared) se pisaron más de un segundo con el jugador libre (`expect_setting: {field.overlaps: 0}`); `story.trigger.<n>` (`"true"` o `"false"`) y `story.var.<n>` leen los disparadores y las variables de la historia, como el original los guarda en su estado de scripts (`wait: {setting: {story.trigger.249: "true"}}` espera a que Coelamon se una); `field.npc.<id>` (`"true"` o `"false"`) dice si el NPC con ese id de script está ahora en el mapa (el Otamamon del pantano sale solo a veces). Si no se cumple, el fallo dice el valor que leyó |
 | `remember: <nombre>` | Guarda el valor de un ajuste para un `expect_change` posterior |
 | `expect_change: {<nombre>: up \| down \| changed, timeout}` | Comprueba que el ajuste ha subido, bajado o cambiado desde el valor guardado (2 s por defecto) |
 | `repeat: {times, steps}` | Repite esos pasos en su sitio tantas veces |

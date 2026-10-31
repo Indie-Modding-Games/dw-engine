@@ -1,0 +1,53 @@
+# Stage 7 of the story with the keyboard, what opens stage 8: from twna02 on a seeded game (run with --start twna02 and
+# --story-stage stage_7). Stage 7 forces no event of its own: the recruits of the free route raise the city's
+# prosperity (variable 1), and once it is 50 or more, with Greymon in the city (trigger 205) and a partner past the
+# rookie forms, Jijimon's talk in his grown house (script 165 section 0x05, then script 210 section 0x33) tells of Mt.
+# Infinity (trigger 354). The route writes those (the seeded game reaches none) and evolves the partner, talks to him,
+# then tries the house's back room (room11) and crosses the gap to the mountain's gate (cells 58): the back room and the
+# gate's cells 56 to mgen01 are stage 8's, so they show the lock's notice and keep the player where he is.
+name: etapa7-montana
+device: keyboard
+timeout: 900
+steps:
+  - wait: {map: twna02, partner_within: 400, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  - script: story_set("var 1 50")
+  - script: story_set("var 16 1")
+  - script: story_set("trigger 205 on")
+  - script: story_set("trigger 201 on")
+  - script: story_set("trigger 243 on")
+  - script: story_set("trigger 203 on")
+  - script: story_set("trigger 88 on")
+  - expect_setting: {story.trigger.354: "false"}
+  - walk_to: {trigger: 52, encounters: win, timeout: 180}
+  - wait: {map: room10, seconds: 2, timeout: 60}
+  # Jijimon (original x -25, z 417); a click walks up to him, confirm talks.
+  - walk_to: {point: [-25, -100], radius: 100, timeout: 120}
+  - click: [-25, -417]
+  - wait: {seconds: 3}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: jijimon
+  - repeat: {times: 24, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 60}
+  - expect_setting: {story.trigger.354: "true"}
+  # The house's back room (room11, cells 112) is stage 8's: closed, with the notice.
+  - walk_to: {trigger: 112, stop_on_closed: true, timeout: 120}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - screenshot: room10-room11-closed
+  - tap: {key: return}
+  - wait: {map: room10, hidden: dialog, seconds: 1, timeout: 30}
+  # Back out, the city is the one grown to prosperity 50 (twna08); by the room's middle, as Tokomon stands in the
+  # left way down.
+  - walk_to: {point: [100, 0], radius: 100, timeout: 120}
+  - walk_to: {trigger: 51, timeout: 120}
+  - wait: {map: twna08, seconds: 2, timeout: 60}
+  - walk_to: {trigger: 58, stop_on_scene: true, encounters: win, timeout: 180}
+  - wait: {seconds: 4}
+  - walk_to: {trigger: 56, stop_on_closed: true, timeout: 120}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - screenshot: twna08-mgen01-closed
+  - tap: {key: return}
+  - wait: {map: twna08, hidden: dialog, seconds: 1, timeout: 30}

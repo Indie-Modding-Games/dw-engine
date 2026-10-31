@@ -1,0 +1,60 @@
+# Stage 7 of the story with the keyboard, the dinosaur region's forest (koda00-08): from koda00 on a seeded game (run
+# with --start koda00 and --story-stage stage_7), the route walks every exit of the forest and back, under the lock.
+name: etapa7-koda
+device: keyboard
+timeout: 1200
+steps:
+  - wait: {map: koda00, partner_within: 400, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  # The wild ones fight on the way: a Champion partner, healed before each leg, and the fights won at once.
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  - script: give_item("sm_recovery 20")
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 111, encounters: win, timeout: 300}
+  - wait: {map: koda01, seconds: 1, timeout: 60}
+  - screenshot: koda01
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 111, encounters: win, timeout: 300}
+  - wait: {map: koda02, seconds: 1, timeout: 60}
+  - screenshot: koda02
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 111, encounters: win, timeout: 300}
+  - wait: {map: koda03, seconds: 1, timeout: 60}
+  - screenshot: koda03
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 111, encounters: win, timeout: 300}
+  - wait: {map: koda04, seconds: 1, timeout: 60}
+  - screenshot: koda04
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 111, encounters: win, timeout: 300}
+  - wait: {map: koda05, seconds: 1, timeout: 60}
+  - screenshot: koda05
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 111, encounters: win, timeout: 300}
+  - wait: {map: koda06, seconds: 1, timeout: 60}
+  - screenshot: koda06
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 110, encounters: win, timeout: 300}
+  - wait: {map: koda05, seconds: 1, timeout: 60}
+  - screenshot: koda05
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 112, encounters: win, timeout: 300}
+  - wait: {map: koda08, seconds: 1, timeout: 60}
+  - screenshot: koda08
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 111, encounters: win, timeout: 300}
+  - wait: {map: koda07, seconds: 1, timeout: 60}
+  - screenshot: koda07
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 110, encounters: win, timeout: 300}
+  - wait: {map: koda08, seconds: 1, timeout: 60}
+  - screenshot: koda08
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 110, encounters: win, timeout: 300}
+  - wait: {map: koda05, seconds: 1, timeout: 60}
+  - screenshot: koda05
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 110, encounters: win, timeout: 300}
+  - wait: {map: koda04, seconds: 1, timeout: 60}
+  - screenshot: koda04

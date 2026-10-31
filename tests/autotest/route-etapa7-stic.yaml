@@ -1,0 +1,70 @@
+# Stage 7 of the story with the keyboard, the swamp's way (stic01-02, gkyo01-02): from stic01 on a seeded game (run with
+# --start stic01 and --story-stage stage_7). Until trigger 319 the swamp (stic02, script 134) keeps its middle closed
+# (set_rect_impassable), so the way to Volume Villa (cell 111) cannot be walked. The Otamamon there (script id 9, there
+# one time in three) picks a fight; after it the Gekomon carry the player to gkyo02, where their chief (script 135
+# section 0x05) opens the swamp (trigger 319) and the fog woods' straight way (trigger 114). The route walks back
+# through gkyo01 and the opened swamp into the fog woods (mist01).
+name: etapa7-stic
+device: keyboard
+timeout: 1200
+steps:
+  - wait: {map: stic01, partner_within: 400, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  # The wild ones fight on the way: a Champion partner, healed before each leg, and the fights won at once.
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  - script: give_item("sm_recovery 20")
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 111, encounters: win, timeout: 300}
+  - wait: {map: stic02, seconds: 2, timeout: 60}
+  - screenshot: stic02
+  - expect_setting: {story.trigger.319: "false"}
+  # The Otamamon comes one time in three (map head section 0x8b, store_random): out to stic01 and back until it is there.
+  - repeat:
+      times: 12
+      steps:
+        - when:
+            setting: {field.npc.9: "false"}
+            steps:
+              - walk_to: {trigger: 110, encounters: win, timeout: 300}
+              - wait: {map: stic01, seconds: 2, timeout: 60}
+              - walk_to: {trigger: 111, encounters: win, timeout: 300}
+              - wait: {map: stic02, seconds: 2, timeout: 60}
+  - expect_setting: {field.npc.9: "true"}
+  # The Otamamon (original x 217, z -2203) walks its waypoints: it is put there and a click talks to it.
+  - walk_to: {point: [217, 2500], radius: 100, encounters: win, timeout: 180}
+  - script: place("npc:9 217 -2203 0")
+  - click: [217, 2203]
+  - wait: {seconds: 3}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: otamamon
+  - repeat: {times: 7, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - screenshot: otamamon-choice
+  - tap: {key: return}
+  - wait: {shown: battle, seconds: 1, timeout: 120}
+  - screenshot: otamamon-battle
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 60}
+  - script: battle_win("")
+  - wait: {setting: {battle.phase: end}, timeout: 60}
+  - repeat: {times: 10, steps: [{wait: {seconds: 1.0}}, {tap: {key: return}}]}
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
+  - repeat: {times: 10, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {map: gkyo02, seconds: 2, timeout: 90}
+  - screenshot: gkyo02
+  - repeat: {times: 30, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.319: "true"}, timeout: 60}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 30}
+  - expect_setting: {story.trigger.114: "true"}
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 110, encounters: win, timeout: 300}
+  - wait: {map: gkyo01, partner_within: 400, seconds: 1, timeout: 60}
+  - screenshot: gkyo01
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 110, encounters: win, timeout: 300}
+  - wait: {map: stic02, seconds: 2, timeout: 60}
+  - screenshot: stic02-open
+  - script: use_item("sm_recovery")
+  - walk_to: {trigger: 112, encounters: win, timeout: 300}
+  - wait: {map: mist01, seconds: 1, timeout: 60}
+  - screenshot: mist01
