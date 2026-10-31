@@ -95,6 +95,9 @@ de `clock` (con la velocidad que tenía).
 | `story` | Los disparadores y las variables de la historia (`StoryAdapter`, versión 1, [game/story](../game/story.md)); guarda las variables 0 a 34, como el original, y la variable de «jugador quieto» como 0 si tiene su valor (`main_menu.c: writeSavegame`); al cargar, las demás empiezan a 0; una partida sin ella carga la historia como la deja una partida nueva, con los disparadores de criado (0x200 + número) de las formas que guardó la sección `evolution`, y lo registra |
 | `battle_registry` | Los compañeros registrados en la máquina de guardado para el modo versus (`BattleRegistry`, `main_menu.c: registerBattleData`): `partners`, cada uno con `slot` (0 a 39), `name`, `species`, `hp`, `mp`, `offense`, `defense`, `speed`, `brains`, `discipline` y `techniques` (tres ids de `data/moves` o `null`); una partida sin la sección empieza sin registrados |
 
+`savesWritten()` cuenta los guardados que la sesión escribió, en una ranura (`save`) o en una de autoguardado; el
+juego lo mira para enseñar el aviso de guardado ([game](game.md#aviso-de-guardado)).
+
 La cabecera lleva el ruleset, la versión del juego, el tiempo jugado y una etiqueta `<especie> <mapa>`. Cargar una
 partida de otro ruleset lo selecciona antes de leer las secciones. Al cargar, `savedPlace()` dice dónde empezar: el
 juego entra en ese mapa en esa posición (`FieldSceneDesc::startAt`).

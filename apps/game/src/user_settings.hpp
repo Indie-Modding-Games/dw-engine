@@ -28,6 +28,9 @@ struct UserSettings {
   // Smooth motion (smooth_motion: true, false): the characters and the camera are drawn gliding
   // between the original's 20 Hz frames; on when not chosen yet.
   std::optional<bool> smoothMotion = std::nullopt;
+  // The save indicator (save_notice: true, false): a small figure and "Saving" in a corner while
+  // the game saves; on when not chosen yet.
+  std::optional<bool> saveNotice = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

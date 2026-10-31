@@ -72,6 +72,8 @@
 #include "play_session.hpp"
 #include "player_chart.hpp"
 #include "remote_control.hpp"
+#include "save_figure.hpp"
+#include "save_indicator.hpp"
 #include "screenshot.hpp"
 #include "state_trace.hpp"
 #include "text_font_setting.hpp"
@@ -585,6 +587,22 @@ int runGame(const Options& requested) {
   } else {
     core::logWarning("Player portrait: {}", playerPortrait.error().message);
   }
+  // The save indicator's figure (save_indicator.hpp), from the player's content; without it the
+  // indicator shows its text alone.
+  auto saveFigure = SaveFigure::create(**renderer);
+  if (saveFigure) {
+    if (auto bound =
+            (*uiRenderer)->bindTexture(std::string{SaveFigureTexture}, (*saveFigure)->texture());
+        !bound) {
+      core::logError("Save figure: {}", bound.error().message);
+      return EXIT_FAILURE;
+    }
+    if (auto loaded = (*saveFigure)->load(files); !loaded) {
+      core::logWarning("Save figure: {}", loaded.error().message);
+    }
+  } else {
+    core::logWarning("Save figure: {}", saveFigure.error().message);
+  }
   // The map change's fade, subtracted from the scene before the UI is drawn (fade.c: renderFade).
   std::optional<render::ScreenFade> screenFade;
   if (auto fade = render::ScreenFade::create(**renderer)) {
@@ -650,6 +668,7 @@ int runGame(const Options& requested) {
   (*ui)->setSetting("fullscreen", settings.fullscreen);
   (*ui)->setSetting("ui_scale", settings.uiScale);
   (*ui)->setSetting("vsync", settings.vsync);
+  (*ui)->setSetting(SaveIndicatorFigureSetting, saveFigure && (*saveFigure)->loaded());
   TextFontChanger textFontChanger{**ui, userSettings, settingsFile};
   if (const auto font = startTextFont(options.textFont, userSettings.textFont)) {
     (*ui)->setTextFont(*font);
@@ -1343,6 +1362,9 @@ int runGame(const Options& requested) {
         !(*ui)->elementHasClass("pause_menu", "panel", "player-tools-open") &&
         !(*ui)->elementHasClass("pause_menu", "panel", "player-chart"))
       portraitScenes.push_back((*playerPortrait)->scene());
+    if (!showingMovie && saveFigure && (*saveFigure)->loaded() && flow.playing() != nullptr &&
+        flow.playing()->saveIndicatorShown())
+      portraitScenes.push_back((*saveFigure)->scene(frameSeconds));
     const bool drawn = (*renderer)->renderFrame({
         .clearColor = {0.0F, 0.0F, 0.0F, 1.0F},
         .scene = sceneDrawers,
@@ -1375,6 +1397,8 @@ int runGame(const Options& requested) {
     portrait->reset();
   if (playerPortrait)
     playerPortrait->reset();
+  if (saveFigure)
+    saveFigure->reset();
   uiRenderer->reset();
   screenFade.reset();
   movies.reset();

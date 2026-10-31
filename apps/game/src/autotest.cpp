@@ -120,11 +120,12 @@ std::string_view deviceName(AutotestDevice device) {
 }
 
 // The steps' names in routes, in the order of AutotestStep::Kind.
-constexpr std::array<std::string_view, 20> StepNames{
+constexpr std::array<std::string_view, 21> StepNames{
     "wait",          "walk_to",   "menu",       "menu_select", "expect_setting",
     "screenshot",    "resize",    "fullscreen", "press",       "release",
     "tap",           "axis",      "click",      "script",      "remember",
-    "expect_change", "script_if", "hold",       "when",        "expect_text_fits"};
+    "expect_change", "script_if", "hold",       "when",        "expect_text_fits",
+    "expect_clear"};
 
 // What an expect_text_fits step names to check every shown document.
 constexpr std::string_view AllDocuments = "all";
@@ -478,6 +479,11 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
     step.kind = Kind::ExpectTextFits;
     step.text = reader.text(value);
     // A box that is still opening fits once it is in place.
+    step.timeout = 1.0;
+  } else if (kind == "expect_clear") {
+    step.kind = Kind::ExpectClear;
+    step.text = reader.text(value);
+    // A window that is still opening or moving is clear once it is in place.
     step.timeout = 1.0;
   } else if (kind == "remember") {
     step.kind = Kind::Remember;
@@ -881,6 +887,8 @@ bool Autotest::runStep(const AutotestHost& host, const AutotestStep& step, doubl
     return whenStep(host, step);
   case Kind::ExpectTextFits:
     return textFitStep(host, step, now);
+  case Kind::ExpectClear:
+    return clearStep(host, step, now);
   case Kind::Hold:
     return holdStep();
   }
@@ -1502,6 +1510,46 @@ bool Autotest::textFitStep(const AutotestHost& host, const AutotestStep& step, d
     return false;
   }
   reportTextOverflows(std::move(overflows));
+  return true;
+}
+
+bool Autotest::clearStep(const AutotestHost& host, const AutotestStep& step, double now) {
+  if (host.ui == nullptr) {
+    failStep("the game has no UI");
+    return false;
+  }
+  if (!host.ui->isVisible(step.text)) {
+    failStep(std::format("{} is not shown", step.text));
+    return false;
+  }
+  const std::vector<ui::Ui::Rect> mine = host.ui->drawnRectsIn(step.text);
+  const std::vector<ui::Ui::Rect> others = host.ui->drawnRects(step.text);
+  std::size_t over = 0;
+  std::optional<std::pair<ui::Ui::Rect, ui::Ui::Rect>> first;
+  for (const ui::Ui::Rect& rect : mine) {
+    for (const ui::Ui::Rect& other : others) {
+      if (rect.left < other.right && other.left < rect.right && rect.top < other.bottom &&
+          other.top < rect.bottom) {
+        ++over;
+        if (!first) {
+          first.emplace(rect, other);
+        }
+      }
+    }
+  }
+  if (over == 0) {
+    return true;
+  }
+  if (now - progress_->start < step.timeout) {
+    return false;
+  }
+  const auto& [rect, other] = *first;
+  core::logError("autotest: step {}: {} lies over another document {} time(s), first ({:.0f}, "
+                 "{:.0f})-({:.0f}, {:.0f}) over ({:.0f}, {:.0f})-({:.0f}, {:.0f})",
+                 stepIndex_ + 1, step.text, over, rect.left, rect.top, rect.right, rect.bottom,
+                 other.left, other.top, other.right, other.bottom);
+  textFailures_.push_back(
+      std::format("step {}: {} lies over another document", stepIndex_ + 1, step.text));
   return true;
 }
 

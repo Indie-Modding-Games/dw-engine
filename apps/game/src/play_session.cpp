@@ -438,6 +438,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   const bool smooth = context.userSettings->smoothMotion.value_or(true);
   scene_->field().setSmoothMotion(smooth);
   context_.ui->setSetting(SmoothMotionSetting, smooth);
+  // The save indicator's document goes up before the HUD's, which takes the focus.
+  saveIndicator_.emplace(*context_.ui, game_.session->savesWritten(),
+                         context.userSettings->saveNotice.value_or(true));
   context_.ui->show("hud");
   // The tuning panel tunes the game's ruleset, sets the speed of its clock, pauses it and jumps it.
   // It is attached last and detached first, so it never points at a game half built or half gone.
@@ -684,6 +687,16 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     context_.ui->setSetting(SmoothMotionSetting, scene_->field().smoothMotion());
     return true;
   }
+  if (command.name == SaveNoticeSetting) {
+    if (const bool* notice = std::get_if<bool>(&command.value)) {
+      saveIndicator_->setEnabled(*notice);
+      context_.userSettings->saveNotice = *notice;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    return true;
+  }
   if (command.name == "to_title") {
     // Not over a sleep or a battle, whose state a later save would not see whole.
     if (!sleepScreen_.active() && !battleScreen_.active() && !saveMachine_.active() &&
@@ -920,6 +933,8 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   scene_->setPartnerMood(partner.conditions, partner.mood.happiness);
   scene_->update(frameSeconds, alpha, paused());
   keepFieldSnapshot(frameSeconds);
+  // Last, after every save this frame could write (the autosave, a command, the save machine).
+  saveIndicator_->update(session.savesWritten(), frameSeconds);
 }
 
 // partner_impl.c: handleConditionBubble: a partner whose only condition is sulking, in its normal

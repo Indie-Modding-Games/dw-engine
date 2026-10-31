@@ -477,3 +477,45 @@ de pausa, guardado en los ajustes del usuario) llega a `Field::setSmoothMotion` 
 personajes y la cámara se dibujan deslizándose entre los fotogramas de 1/20 s del original (`Field::drawnPose`, ver
 `docs/modulos/game/field.md`, «Interpolación»); apagado, cada uno se dibuja donde lo deja su tick, a saltos de
 fotograma como el original. La lógica es la misma en los dos casos.
+
+## Aviso de guardado
+
+Mejora opcional, encendida por defecto (el original no autoguarda y no dice nada cuando su máquina de guardado escribe):
+mientras el juego guarda, un Gabumon pequeño, de cuerpo entero y de perfil, va de un lado a otro, andando o corriendo,
+junto a «Guardando» («Saving» en inglés, clave `save.saving`) en la esquina inferior derecha. El ajuste `save_notice`
+(fila «Aviso de guardado» de las opciones del menú de pausa, guardado en los ajustes del usuario) llega a
+`SaveIndicator::setEnabled` desde `PlaySession`; apagado, no se ve nada.
+
+- **Cuándo.** `GameSession::savesWritten` cuenta cada guardado que la sesión escribe: el autoguardado, la máquina de
+  guardado, `save("slot_NN")`, el del menú de dormir y el de la ranura de una partida nueva. `SaveIndicator` lo mira al
+  final de `PlaySession::update`, cuando ya se escribió todo lo del frame, y con un guardado nuevo arranca
+  `SaveNotice`: entero 1,5 s desde la escritura y después se desvanece en 0,5 s; otro guardado en ese tiempo lo empieza
+  de nuevo. Un guardado que espera a que acabe una escena de cuidados (`savesWait`) no lo enseña hasta que se escribe.
+  El aviso nunca retrasa la escritura: solo mira el contador.
+- **Dónde.** El documento `ui/save_indicator` está mostrado toda la partida, transparente entre guardados (así está
+  siempre maquetado y no le quita el foco a un menú). Mientras se ve, `SaveIndicator` toma los rectángulos de lo que
+  dibujan los demás documentos (`Ui::drawnRects`: textos, cajas e imágenes; no las capas que tapan media ventana o más,
+  como el velo de la máquina de guardado) y lo sube desde su esquina hasta el sitio más bajo libre con 6dp de margen
+  (`liftClearOf`, ajuste `save_indicator.lift`, en píxeles), por ejemplo encima de las barras de felicidad y
+  disciplina del aspecto original. Si ningún sitio de su lado está libre, no se ve. Solo se vuelve a colocar cuando
+  algo le cae encima, para no seguir a una ventana que se desliza.
+- **La figura.** `SaveFigure` carga el modelo de Gabumon (la especie `gabu`) del contenido extraído del
+  jugador y sus clips de andar (el 2) y correr (el 4), los del compañero; si falta uno usa el otro y, sin ninguno, el 0.
+  Los usa sin el movimiento de raíz. Lo dibuja de perfil, entero y algo más alto que las mayúsculas del texto, en una
+  textura propia de 288x96 (`runtime/save-figure`) que el documento pinta como una tira de 72x24dp, solo los frames en
+  que el aviso se ve. `LaneRunner` lo lleva por un carril a lo ancho de la tira y en cada punta se da la vuelta en 0,2 s
+  mirando a la cámara. Cada vuelta anda o corre a la velocidad del compañero para ese paso (452 y 870 por segundo): casi
+  siempre alterna, y de vez en cuando repite (nunca dos veces seguidas). Lo decide un hash del número de vuelta, así que
+  es siempre igual y no toca el azar del juego. Mientras gira tiene las piernas quietas; si la vuelta nueva cambia de
+  clip, el giro funde la zancada en la que acabó con el principio del clip nuevo, sin saltos. Sin el modelo
+  (contenido incompleto) el ajuste `save_indicator.figure` es falso y el aviso enseña solo el texto. En git no hay nada
+  del modelo ni capturas.
+- **Aspecto.** En el aspecto original es una de las ventanas del original (`.original-box`) con el texto en la fuente
+  del aspecto original a 22dp (dos veces su celda de 11 píxeles); en el moderno, una píldora oscura.
+
+La ruta `route-save-indicator.yaml` lo comprueba con el guardado de la consola, el autoguardado de un cambio de mapa, la
+máquina de guardado y el menú de pausa abierto a 1280x720, y a 1920x1080 y 1024x768; cada captura pasa
+`expect_clear: save_indicator` (no pisa nada de otro documento) y `text_fit`. Al final apaga la opción y comprueba que
+un guardado no lo enseña. Tests: `the save notice holds ...`, `the figure trots its lane back and forth ...`, `the
+lane's laps mostly alternate ...`, `the indicator goes just above the windows ...`, `the indicator shows for each save
+written ...` y `the indicator moves up clear of a window ...` (`apps/game/tests/save_indicator_tests.cpp`).

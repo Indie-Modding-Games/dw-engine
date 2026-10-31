@@ -26,6 +26,7 @@ constexpr std::string_view TextFontKey = "text_font";
 constexpr std::string_view MinimapKey = "minimap";
 constexpr std::string_view FreeExplorationKey = "free_exploration";
 constexpr std::string_view SmoothMotionKey = "smooth_motion";
+constexpr std::string_view SaveNoticeKey = "save_notice";
 
 } // namespace
 
@@ -57,6 +58,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     if (const core::YamlNode* smooth = tree->find(SmoothMotionKey)) {
       settings.smoothMotion = reader.boolean(*smooth);
     }
+    if (const core::YamlNode* notice = tree->find(SaveNoticeKey)) {
+      settings.saveNotice = reader.boolean(*notice);
+    }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
 }
@@ -82,6 +86,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.smoothMotion) {
     root.set(std::string{SmoothMotionKey},
              core::YamlNode::scalar(*settings.smoothMotion ? "true" : "false"));
+  }
+  if (settings.saveNotice) {
+    root.set(std::string{SaveNoticeKey},
+             core::YamlNode::scalar(*settings.saveNotice ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

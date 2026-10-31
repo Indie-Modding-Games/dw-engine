@@ -185,6 +185,12 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   opciones, minimapa), la ficha, las técnicas y la bolsa del compañero con las opciones de un objeto, la máquina de
   guardar y un combate con sus cuadros finales, a 1280x720 y otra vez las páginas con más texto a 1920x1080. Se corre
   en los dos idiomas. Para mirar los textos de otra ruta sin tocarla, añádele `text_fit: true`.
+- `route-save-indicator.yaml`: el [aviso de guardado](../modulos/apps/game.md#aviso-de-guardado) desde una partida
+  nueva con el teclado: el guardado de la consola, el autoguardado al entrar en la casa del anciano, la máquina de
+  guardado y un guardado con el menú de pausa abierto a 1280x720, y otro a 1920x1080 y a 1024x768; cada captura
+  comprueba que el aviso no pisa ninguna ventana (`expect_clear`) y que los textos caben (`text_fit`). Al final apaga
+  la opción en el menú de pausa y comprueba que un guardado ya no lo enseña. Necesita `--saves` con una carpeta vacía.
+  Se corre en los dos idiomas.
 - `route-scripted-loop.yaml`: una vuelta por cinco zonas desde una partida nueva con el teclado: File City (`twna01`)
   → la casa del anciano, `room08` (tabla de salidas del mapa) → File City (script) → `trai00` (tabla) → `mayo00`
   (tabla), donde juega el primer combate del bosque y el reclutamiento de Agumon → `twnb01` (warp del script del mapa,
@@ -640,6 +646,7 @@ steps:
 | `when: {<condiciones de wait>, steps}` | Hace esos pasos solo si se cumplen ya todas las condiciones (como `script_if`); si no, se los salta y lo dice en el log. Sirve para lo que el juego echa a suertes al jugarlo (`when: {setting: {story.var.116: "1"}, steps: [...]}`) |
 | `screenshot: <nombre>` | Guarda `<ruta>-<NN>-<nombre>-<ancho>x<alto>.png` en `--shots` |
 | `expect_text_fits: <documento> \| all` | Comprueba que cada texto que se ve en ese documento de la UI (o en todos) cabe: dentro de la caja dibujada que lo rodea, de lo que lo recorta y de la ventana, sin cruzar el borde de otra caja ni pisar otro texto, con un píxel del original (3dp) de margen. Lo que tapa una caja opaca posterior no cuenta, ni una caja que se abre o se cierra. Espera hasta 1 s a que la caja quede en su sitio; si sigue sin caber, escribe cada texto en el log (`in <documento>, '<texto>' (<elemento>) is out of <caja> by <n> dp`) y la ruta sigue, pero acaba fallando |
+| `expect_clear: <documento>` | Comprueba que nada de lo que se ve de ese documento (texto, caja, imagen) pisa lo que dibuja otro documento mostrado (`Ui::drawnRects`, sin los velos que cubren media ventana o más), como el aviso de guardado. Espera hasta 1 s; si sigue pisando, escribe en el log la primera pareja de rectángulos y la ruta acaba fallando, como `expect_text_fits` |
 | `resize: [ancho, alto]` | Cambia la ventana y espera a que el render tenga ese tamaño |
 | `fullscreen: true \| false` | Pantalla completa |
 | `press`, `release`, `tap: {key \| button}`, `axis: {axis, value}`, `click: [x, z]` | Controles sueltos: teclas, botones y ejes del mando virtual, clic en un punto del suelo |

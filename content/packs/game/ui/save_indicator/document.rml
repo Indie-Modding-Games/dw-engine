@@ -1,0 +1,14 @@
+<rml>
+<head>
+	<title>Save indicator</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="indicator">
+		<img id="figure" src="/runtime/save-figure"/>
+		<span id="label" text-key="save.saving"></span>
+	</div>
+</body>
+</rml>

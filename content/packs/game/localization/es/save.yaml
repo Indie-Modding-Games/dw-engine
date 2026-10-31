@@ -60,3 +60,5 @@ slots.original.erase_slot: "BORRAR RANURA {number}"
 slots.original.erase_autosave: "BORRAR AUTOGUARDADO {number}"
 slots.original.no_save: "JUGAR SIN GUARDAR"
 slots.original.in_use: "Esta ranura ya tiene una aventura."
+# El aviso de guardado (una mejora del motor): junto a una figura pequeña mientras el juego guarda.
+saving: "Guardando"

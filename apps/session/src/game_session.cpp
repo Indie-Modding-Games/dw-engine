@@ -418,6 +418,7 @@ core::Result<void> GameSession::save(game::save::SlotId slot) {
         formatMessage(messages::SaveFailed, game::save::slotFileName(slot), saved.error().message));
   }
   file_ = std::move(*file);
+  ++savesWritten_;
   return {};
 }
 
@@ -727,6 +728,7 @@ void GameSession::writeRequestedAutosave() {
     return;
   }
   file_ = std::move(*file);
+  ++savesWritten_;
   autosaved_ = Autosave{.slot = *written, .reasons = std::move(*reasons)};
   core::logInfo("{}", formatMessage(messages::Autosaved, game::save::slotFileName(*written)));
 }

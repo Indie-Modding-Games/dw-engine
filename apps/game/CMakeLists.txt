@@ -75,6 +75,8 @@ dwe_add_app(game
         src/slot_description.cpp
         src/screenshot.cpp
         src/session_start.cpp
+        src/save_figure.cpp
+        src/save_indicator.cpp
         src/save_machine.cpp
         src/save_machine_flow.cpp
         src/gym_screen.cpp
@@ -164,7 +166,7 @@ if(BUILD_TESTING)
                                   src/death_effects.cpp src/ending_effects.cpp
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/minimap_setting.cpp
                                   src/pause_box.cpp src/place_command.cpp src/story_set_command.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
-                                  src/save_machine_flow.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_skin_setting.cpp src/user_settings.cpp)
+                                  src/save_indicator.cpp src/save_machine_flow.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_skin_setting.cpp src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution
                                                  dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render

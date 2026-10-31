@@ -318,6 +318,9 @@ public:
   void requestAutosave(game::save::AutosaveReason reason);
   // The autosave written since the last call, for the HUD and the autotests.
   [[nodiscard]] std::optional<Autosave> takeAutosaved();
+  // How many saves this session wrote, to a slot (save) or an autosave slot: what tells the game
+  // to show its save indicator, whoever saved.
+  [[nodiscard]] std::uint64_t savesWritten() const { return savesWritten_; }
 
   [[nodiscard]] double playSeconds() const { return playSeconds_; }
   [[nodiscard]] std::uint64_t seed() const { return seed_; }
@@ -399,6 +402,7 @@ private:
   double careHeldSeconds_ = 0.0;
   // Whether the pending autosave already logged that it waits for the care scene.
   bool autosaveWaitLogged_ = false;
+  std::uint64_t savesWritten_ = 0;
   PlayerNames names_;
 };
 

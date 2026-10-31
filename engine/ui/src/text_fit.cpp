@@ -344,4 +344,46 @@ std::vector<Ui::TextOverflow> findTextOverflows(Rml::ElementDocument& document,
   return found;
 }
 
+std::vector<Ui::Rect> findDrawnRects(Rml::ElementDocument& document, float windowWidth,
+                                     float windowHeight) {
+  std::vector<Ui::Rect> found;
+  if (!document.IsVisible()) {
+    return found;
+  }
+  const Rect window{.left = 0.0F, .top = 0.0F, .right = windowWidth, .bottom = windowHeight};
+  // A layer over half the window or more dims the game (a scrim); it is not a window.
+  const float layerArea = 0.5F * windowWidth * windowHeight;
+  const auto add = [&](const Rect& rect) {
+    const Rect inside{.left = std::max(rect.left, window.left),
+                      .top = std::max(rect.top, window.top),
+                      .right = std::min(rect.right, window.right),
+                      .bottom = std::min(rect.bottom, window.bottom)};
+    const float width = inside.right - inside.left;
+    const float height = inside.bottom - inside.top;
+    if (width <= 0.0F || height <= 0.0F || width * height >= layerArea) {
+      return;
+    }
+    found.push_back(
+        {.left = inside.left, .top = inside.top, .right = inside.right, .bottom = inside.bottom});
+  };
+  const auto walk = [&](this const auto& self, Rml::Element& element) -> void {
+    if (!element.IsVisible() || element.GetComputedValues().has_local_transform() ||
+        element.GetComputedValues().opacity() <= 0.0F) {
+      return;
+    }
+    if (auto* text = rmlui_dynamic_cast<Rml::ElementText*>(&element)) {
+      if (auto seenText = textOf(*text, windowWidth, windowHeight)) {
+        add(seenText->extent);
+      }
+    } else if (drawsItself(element) || element.GetTagName() == "img") {
+      add(borderRect(element));
+    }
+    for (int i = 0; i < element.GetNumChildren(); ++i) {
+      self(*element.GetChild(i));
+    }
+  };
+  walk(document);
+  return found;
+}
+
 } // namespace dwe::ui

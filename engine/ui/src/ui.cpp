@@ -1329,4 +1329,41 @@ std::vector<Ui::TextOverflow> Ui::overflowingTexts() const {
   return found;
 }
 
+std::optional<Ui::Rect> Ui::elementRect(std::string_view document,
+                                        std::string_view elementId) const {
+  const Impl::Document* found = impl_->find(document);
+  Rml::Element* element =
+      found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
+  if (element == nullptr) {
+    return std::nullopt;
+  }
+  const Rml::Vector2f offset = element->GetAbsoluteOffset(Rml::BoxArea::Border);
+  const Rml::Vector2f size = element->GetBox().GetSize(Rml::BoxArea::Border);
+  return Rect{
+      .left = offset.x, .top = offset.y, .right = offset.x + size.x, .bottom = offset.y + size.y};
+}
+
+std::vector<Ui::Rect> Ui::drawnRects(std::string_view exceptDocument) const {
+  std::vector<Rect> found;
+  const Rml::Vector2i size = impl_->context->GetDimensions();
+  for (const auto& [name, document] : impl_->documents) {
+    if (name == exceptDocument) {
+      continue;
+    }
+    auto rects =
+        findDrawnRects(*document.element, static_cast<float>(size.x), static_cast<float>(size.y));
+    found.insert(found.end(), rects.begin(), rects.end());
+  }
+  return found;
+}
+
+std::vector<Ui::Rect> Ui::drawnRectsIn(std::string_view document) const {
+  const Impl::Document* found = impl_->find(document);
+  if (found == nullptr) {
+    return {};
+  }
+  const Rml::Vector2i size = impl_->context->GetDimensions();
+  return findDrawnRects(*found->element, static_cast<float>(size.x), static_cast<float>(size.y));
+}
+
 } // namespace dwe::ui

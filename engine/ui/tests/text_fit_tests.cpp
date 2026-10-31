@@ -196,4 +196,53 @@ TEST_CASE("a hidden document's texts are not checked") {
   CHECK(ui->overflowingTexts().empty());
 }
 
+// A scrim over the window, a box, a box closed by the original look's animation, a hidden one, a
+// transparent one and an image, at 1280x720 (one pixel a dp).
+constexpr std::string_view Windows = R"(<rml>
+<head>
+<link type="text/rcss" href="../common/base.rcss"/>
+<style>
+body { width: 100%; height: 100%; font-family: Noto Sans; font-size: 20dp; color: #ffffff; }
+#scrim { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background-color: #00000080; }
+.box { position: absolute; background-color: #000080; }
+#window { left: 100dp; top: 100dp; width: 300dp; height: 60dp; }
+#closed { left: 100dp; top: 300dp; width: 300dp; height: 60dp; }
+#gone { left: 100dp; top: 400dp; width: 300dp; height: 60dp; display: none; }
+#faded { left: 100dp; top: 500dp; width: 300dp; height: 60dp; opacity: 0; }
+#picture { position: absolute; left: 1200dp; top: 600dp; width: 200dp; height: 50dp; }
+</style>
+</head>
+<body>
+<div id="scrim"></div>
+<div id="window" class="box"></div>
+<div id="closed" class="box box-closed"></div>
+<div id="gone" class="box"></div>
+<div id="faded" class="box"></div>
+<img id="picture"/>
+</body>
+</rml>
+)";
+
+TEST_CASE("the drawn rectangles of the other documents leave out scrims and what is not seen") {
+  Content content;
+  const assets::VirtualFileSystem& files = content.mount(Windows);
+  auto ui = uiWith(files, 1280, 720);
+  const std::vector<Ui::Rect> drawn = ui->drawnRects("save_indicator");
+  // The window, and the image cut at the window's edge; not the scrim over the whole window, the
+  // closed, hidden or transparent boxes.
+  REQUIRE(drawn.size() == 2);
+  CHECK(drawn[0] == Ui::Rect{.left = 100.0F, .top = 100.0F, .right = 400.0F, .bottom = 160.0F});
+  CHECK(drawn[1] == Ui::Rect{.left = 1200.0F, .top = 600.0F, .right = 1280.0F, .bottom = 650.0F});
+  CHECK(ui->drawnRects("fit").empty());
+  CHECK(ui->drawnRectsIn("fit") == drawn);
+  CHECK(ui->drawnRectsIn("save_indicator").empty());
+  CHECK(ui->elementRect("fit", "window") ==
+        Ui::Rect{.left = 100.0F, .top = 100.0F, .right = 400.0F, .bottom = 160.0F});
+  CHECK_FALSE(ui->elementRect("fit", "nothing").has_value());
+  ui->hide("fit");
+  ui->update();
+  CHECK(ui->drawnRects("save_indicator").empty());
+  CHECK(ui->drawnRectsIn("fit").empty());
+}
+
 } // namespace dwe::ui

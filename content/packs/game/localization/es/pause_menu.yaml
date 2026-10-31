@@ -41,6 +41,8 @@ ui_skin: "Aspecto de la interfaz"
 free_exploration: "Exploración libre"
 # Movimiento suave: los personajes y la cámara se deslizan entre los fotogramas del original (encendido por defecto).
 smooth_motion: "Movimiento suave"
+# Aviso de guardado: una figura pequeña y «Guardando» en una esquina mientras el juego guarda (encendido por defecto).
+save_notice: "Aviso de guardado"
 
 year_label: "Año"
 day_label: "Día"

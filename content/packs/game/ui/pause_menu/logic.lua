@@ -110,6 +110,10 @@ local options = {
   ["smooth-motion"] = function(_step)
     ui.send("smooth_motion", not ui.setting("smooth_motion"))
   end,
+  -- Save notice: a small figure and "Saving" in a corner while the game saves (on by default).
+  ["save-notice"] = function(_step)
+    ui.send("save_notice", not ui.setting("save_notice"))
+  end,
 }
 
 local function can_sleep()
@@ -564,6 +568,7 @@ local function refresh(document)
   document:get("ui-skin-value"):set_text(skin_choice.name())
   document:get("free-exploration-value"):set_text(on_off(ui.setting("free_exploration")))
   document:get("smooth-motion-value"):set_text(on_off(ui.setting("smooth_motion")))
+  document:get("save-notice-value"):set_text(on_off(ui.setting("save_notice")))
   refresh_player(document)
 end
 
@@ -826,7 +831,10 @@ end
 -- values one by one and the HUD's each frame it changes, and a whole refresh for each of them made
 -- opening the menu stall; any other setting refreshes the whole menu.
 function on_setting(document, name)
-  if name:sub(1, 4) == "hud." then
+  if name:sub(1, 15) == "save_indicator." then
+    -- The save indicator's own (ui/save_indicator), which change every frame while it fades.
+    return
+  elseif name:sub(1, 4) == "hud." then
     if name == "hud.clock.year" or name == "hud.clock.day" then
       draw_date_digits(document, "field-year-", 3, ui.setting("hud.clock.year"))
       draw_date_digits(document, "field-day-", 2, ui.setting("hud.clock.day"))

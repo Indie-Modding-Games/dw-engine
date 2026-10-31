@@ -264,6 +264,27 @@ public:
   // The texts of the shown documents that do not fit, as laid out by the last update().
   [[nodiscard]] std::vector<TextOverflow> overflowingTexts() const;
 
+  // A rectangle in pixels, as laid out by the last update().
+  struct Rect {
+    float left = 0.0F;
+    float top = 0.0F;
+    float right = 0.0F;
+    float bottom = 0.0F;
+
+    friend bool operator==(const Rect&, const Rect&) = default;
+  };
+  // The border box of an element of a document; nullopt if there is no such element.
+  [[nodiscard]] std::optional<Rect> elementRect(std::string_view document,
+                                                std::string_view elementId) const;
+  // What the player sees of the shown documents but one, within the window: each text's lines and
+  // each box (an element with a background, a border or a decorator) and image, left out when it
+  // or what holds it is hidden, transparent or under a transform (a box opening or closing). A
+  // layer over most of the window (a scrim that dims the game) is not a box and is left out too.
+  // For a notice that must stay clear of every window (the save indicator).
+  [[nodiscard]] std::vector<Rect> drawnRects(std::string_view exceptDocument) const;
+  // What the player sees of one shown document, the same way (nothing when it is hidden).
+  [[nodiscard]] std::vector<Rect> drawnRectsIn(std::string_view document) const;
+
 private:
   struct Impl;
 

@@ -59,3 +59,5 @@ slots.original.erase_slot: "ERASE SLOT {number}"
 slots.original.erase_autosave: "ERASE AUTOSAVE {number}"
 slots.original.no_save: "PLAY WITHOUT SAVING"
 slots.original.in_use: "This slot holds an adventure already."
+# The save indicator (an engine improvement): shown next to a small figure while the game saves.
+saving: "Saving"

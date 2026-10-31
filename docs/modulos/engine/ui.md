@@ -43,3 +43,10 @@ cuadro), con lo que lo recorta y con la ventana, y luego con los bordes de las c
 tapa una caja opaca posterior no cuenta. El margen es un píxel del original (3dp). Lo usan el paso de autotest
 `expect_text_fits` y la clave de ruta `text_fit` ([prueba vertical](../../guides/prueba-vertical.md#formato-de-una-ruta));
 sus casos están en `engine/ui/tests/text_fit_tests.cpp` (a 1280x720, 1920x1080, 1366x768 y 1024x768).
+
+`Ui::drawnRects(exceptDocument)` da los rectángulos de lo que el jugador ve en los documentos mostrados menos uno
+(textos, cajas con fondo, borde o decorador, e imágenes), recortados a la ventana; deja fuera lo oculto, lo
+transparente, lo que está bajo una transformación (una caja que se abre o se cierra) y las capas que cubren media
+ventana o más (un velo). `Ui::drawnRectsIn(document)` da lo mismo de un solo documento y `Ui::elementRect` la caja de
+un elemento. Los usan el aviso de guardado, para no pisar ninguna ventana ([game](../apps/game.md#aviso-de-guardado)),
+y el paso de autotest `expect_clear`.

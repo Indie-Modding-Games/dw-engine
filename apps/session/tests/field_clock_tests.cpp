@@ -254,6 +254,8 @@ TEST_CASE("an autosave waits while a care scene holds the field and is written o
   const LoopRun held = loop.run(static_cast<std::int32_t>(std::lround(SceneSeconds / Tick)));
   CHECK(held.autosaves.empty());
   CHECK_FALSE(storage.read("autosave_01.yaml").value().has_value());
+  // Nothing written yet: the save indicator waits for the write too.
+  CHECK(session->savesWritten() == 0);
 
   // The scene's end writes it on the next tick, with the reasons it was asked for.
   loop.field().holdForCare(false);
@@ -261,6 +263,12 @@ TEST_CASE("an autosave waits while a care scene holds the field and is written o
   const LoopRun released = loop.run(1);
   REQUIRE(released.autosaves.size() == 1);
   CHECK(released.autosaves.front().reasons == std::vector{AutosaveReason::NewDay});
+  CHECK(session->savesWritten() == 1);
+  // A save to a slot counts as well.
+  using dwe::game::save::SlotId;
+  using dwe::game::save::SlotKind;
+  REQUIRE(session->save(SlotId{.kind = SlotKind::Manual, .index = 1}).has_value());
+  CHECK(session->savesWritten() == 2);
 }
 
 TEST_CASE("a care scene that never ends keeps a save waiting only up to the wait limit") {

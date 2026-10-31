@@ -383,6 +383,9 @@
 				<button id="smooth-motion" class="option" onclick="adjust(document, 'smooth-motion', 1)">
 					<span class="label" text-key="pause_menu.smooth_motion"></span><span class="value" id="smooth-motion-value"></span>
 				</button>
+				<button id="save-notice" class="option" onclick="adjust(document, 'save-notice', 1)">
+					<span class="label" text-key="pause_menu.save_notice"></span><span class="value" id="save-notice-value"></span>
+				</button>
 				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 

@@ -52,6 +52,7 @@
 #include "partner_menu.hpp"
 #include "praise_scold_call.hpp"
 #include "save_command.hpp"
+#include "save_indicator.hpp"
 #include "save_machine.hpp"
 #include "session_start.hpp"
 #include "shop_screen.hpp"
@@ -174,6 +175,11 @@ public:
   // it, for --trace (state_trace.hpp).
   [[nodiscard]] TraceFrame traceFrame(std::uint64_t tick, const input::InputState& input) const;
 
+  // Whether the save indicator is on screen, so the app draws its figure this frame.
+  [[nodiscard]] bool saveIndicatorShown() const {
+    return saveIndicator_ && saveIndicator_->shown();
+  }
+
   // Saves the game to a slot (AppFlow, for a new game's slot).
   [[nodiscard]] core::Result<void> saveTo(game::save::SlotId slot) const {
     return game_.session->save(slot);
@@ -272,6 +278,8 @@ private:
   // Whether the dialog on screen is the story lock's message.
   bool lockNoticeShown_ = false;
   std::optional<MovieMoment> movieRequest_;
+  // Built once the HUD's settings are in, before its document is shown.
+  std::optional<SaveIndicator> saveIndicator_;
   // The last save of a free field (keepFieldSnapshot) and the real seconds since it was taken.
   std::optional<game::save::SaveFile> fieldSnapshot_;
   double snapshotSeconds_ = 0.0;

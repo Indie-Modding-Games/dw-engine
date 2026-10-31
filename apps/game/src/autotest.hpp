@@ -90,6 +90,9 @@ struct AutotestStep {
     ExpectTextFits, // expect_text_fits: <document> | all: every text the player sees in it fits its
                     // box (Ui::overflowingTexts); a text that does not fails the route at its end,
                     // after the remaining steps have checked theirs
+    ExpectClear,    // expect_clear: <document>: nothing the player sees in it (a text, a box, an
+                    // image) lies over what another shown document draws (Ui::drawnRects), as
+                    // the save indicator; failing as expect_text_fits
   };
   Kind kind = Kind::Wait;
   std::string text; // what the step is about: a control, an element, a name, a setting's value
@@ -274,6 +277,7 @@ private:
   bool scriptIfStep(const AutotestHost& host, const AutotestStep& step);
   bool whenStep(const AutotestHost& host, const AutotestStep& step);
   bool textFitStep(const AutotestHost& host, const AutotestStep& step, double now);
+  bool clearStep(const AutotestHost& host, const AutotestStep& step, double now);
   // The texts of `document` (or all) that do not fit now, logged and counted as a failure.
   void reportTextOverflows(std::vector<ui::Ui::TextOverflow> overflows);
   // What of the condition does not hold now, or empty if all of it does.

@@ -1,0 +1,89 @@
+# The save indicator (an engine improvement, docs/modulos/apps/game.md, «Aviso de guardado»): a small figure walking
+# next to "Saving" in the bottom right corner for each save the game writes, clear of every window. From a new game
+# with the keyboard: the save command, the map change's autosave and the save machine at 1280x720, the save command
+# with the pause menu open, then the save command at 1920x1080 and 1024x768. Each capture checks that the indicator
+# lies over nothing another document draws (expect_clear) and that every text fits (text_fit). Last, the pause menu's
+# option turns it off and a save shows nothing. Needs --saves with an empty folder; it runs once per language, like
+# route-language.yaml. How to run it: docs/guides/prueba-vertical.md.
+name: save-indicator
+device: keyboard
+timeout: 600
+text_fit: true
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {save_notice: "true"}
+  - script: save("slot_01")
+  - wait: {setting: {save_indicator.shown: true}, timeout: 5}
+  - expect_clear: save_indicator
+  - screenshot: save-command
+  - wait: {setting: {save_indicator.shown: false}, timeout: 10}
+  # The elder's house: the map change autosaves once the new map is in.
+  - walk_to: {point: [-330, 1950], radius: 40}
+  - walk_to: {point: [300, 1950], radius: 40}
+  - walk_to: {point: [600, 300], radius: 40}
+  - walk_to: {trigger: 112}
+  - wait: {map: room08, seconds: 0.2}
+  - wait: {setting: {save_indicator.shown: true}, timeout: 10}
+  - wait: {seconds: 0.3}
+  - expect_clear: save_indicator
+  - screenshot: autosave
+  - wait: {setting: {save_indicator.shown: false}, timeout: 10}
+  # The save machine: no to registering the partner, yes to saving.
+  - script: save_machine("")
+  - wait: {shown: save_machine, seconds: 1}
+  - tap: {key: down}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {setting: {save_indicator.shown: true}, timeout: 5}
+  - expect_clear: save_indicator
+  - screenshot: save-machine
+  - wait: {setting: {save_indicator.shown: false}, timeout: 10}
+  - when:
+      menu_open: true
+      steps:
+        - menu: close
+        - wait: {menu_open: false}
+  # Over the pause menu: clear of its panels, or not shown.
+  - menu: open
+  - wait: {seconds: 0.6}
+  - script: save("slot_01")
+  - wait: {seconds: 0.3}
+  - expect_clear: save_indicator
+  - screenshot: pause-menu
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {setting: {save_indicator.shown: false}, timeout: 10}
+  - resize: [1920, 1080]
+  - wait: {seconds: 0.5}
+  - script: save("slot_01")
+  - wait: {setting: {save_indicator.shown: true}, timeout: 5}
+  - expect_clear: save_indicator
+  - screenshot: save-command-1080
+  - wait: {setting: {save_indicator.shown: false}, timeout: 10}
+  - resize: [1024, 768]
+  - wait: {seconds: 0.5}
+  - script: save("slot_01")
+  - wait: {setting: {save_indicator.shown: true}, timeout: 5}
+  - expect_clear: save_indicator
+  - screenshot: save-command-768
+  - wait: {setting: {save_indicator.shown: false}, timeout: 10}
+  # The option off: a save shows nothing.
+  - resize: [1280, 720]
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-player
+  - wait: {seconds: 0.6}
+  - tap: {key: tab}
+  - wait: {seconds: 0.3}
+  - menu_select: player-options
+  - wait: {seconds: 0.3}
+  - menu_select: save-notice
+  - expect_setting: {save_notice: "false"}
+  - screenshot: option-off
+  - menu: close
+  - wait: {menu_open: false}
+  - script: save("slot_01")
+  - wait: {seconds: 0.5}
+  - expect_setting: {save_indicator.shown: "false"}

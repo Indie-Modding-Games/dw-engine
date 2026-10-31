@@ -41,6 +41,8 @@ ui_skin: "Interface style"
 free_exploration: "Free exploration"
 # Smooth motion: the characters and the camera glide between the original's frames (on by default).
 smooth_motion: "Smooth motion"
+# Save notice: a small figure and "Saving" in a corner while the game saves (on by default).
+save_notice: "Save notice"
 
 year_label: "Year"
 day_label: "Day"

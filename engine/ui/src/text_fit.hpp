@@ -22,4 +22,8 @@ namespace dwe::ui {
                                                               float windowWidth,
                                                               float windowHeight);
 
+// What the player sees of a laid out document, within the window (Ui::drawnRects).
+[[nodiscard]] std::vector<Ui::Rect> findDrawnRects(Rml::ElementDocument& document,
+                                                   float windowWidth, float windowHeight);
+
 } // namespace dwe::ui
