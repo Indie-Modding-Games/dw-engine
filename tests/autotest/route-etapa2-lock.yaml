@@ -1,5 +1,5 @@
 # Stage 2 of the story with the keyboard, the lock's border in the jungle: from trop03 on a seeded game (run with
-# --start trop03 and no --story-stage, so the ruleset's active stage decides) the player walks into the exit to the
+# --start trop03 --story-stage stage_2) the player walks into the exit to the
 # Great Canyon (gcan01, stage 4), which stays closed with the lock's message, then on to trop02 and into its exit to
 # the Grey Lord's Mansion (dgha01, stage 7), closed too. The player stays on the jungle map each time.
 name: etapa2-lock
