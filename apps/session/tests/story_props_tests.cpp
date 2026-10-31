@@ -371,3 +371,16 @@ TEST_CASE(
   CHECK(std::get<MoodBubbleShown>(taken[1]).character == 6);
   CHECK_FALSE(std::get<MoodBubbleShown>(taken[1]).mood.has_value());
 }
+
+TEST_CASE("routine 40 starts the final boss's charge on character 5 and goes on") {
+  // script_interp.c:1856: EAB_startBuildup(ENTITY_TABLE[scriptIdToEntityId(5)]); mgen99's script
+  // calls it right after set_digimon(115, slot 0).
+  dwe::session::StoryScenesContext scenes{dwe::session::StoryScenesDesc{}};
+  REQUIRE(dwe::session::registerBossBuildupRoutine(scenes));
+  const auto started = scenes.routines.call(40);
+  REQUIRE(started);
+  CHECK(std::holds_alternative<dwe::game::story::RoutineGoesOn>(*started));
+  const auto taken = takeAll(scenes);
+  REQUIRE(taken.size() == 1);
+  CHECK(std::get<dwe::session::BossBuildupStarted>(taken[0]).character == 5);
+}

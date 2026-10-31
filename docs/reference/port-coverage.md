@@ -99,9 +99,9 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 0 | 0 | 91 | 315 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 32 | 3 | 3 | 10 | 88 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
-| [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
+| [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 9 | 0 | 17 | 18 | 35 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1105 | 38 | 234 | 1061 | 82 % |
+| **Total** | 2438 funciones | 1111 | 38 | 228 | 1061 | 82 % |
 
 ## Batalla
 
@@ -566,15 +566,10 @@ El reproductor de vídeo, los créditos y la animación del final.
 
 Ficheros del decomp: `eab/eab.c`, `endi/endi.c`, `mov/mov.c`.
 
-Portado 3, parcial 0, falta 23, no aplica 18.
+Portado 9, parcial 0, falta 17, no aplica 18.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `EAB_setModelColor` | `eab/eab.c:159` | falta (citada en docs) | Tiñe el modelo del efecto de aparición del jefe final. | la aparición del jefe termina al instante |
-| `EAB_tickBuildup` | `eab/eab.c:187` | falta | Lanza anillos de energía periódicos antes de que aparezca el jefe final. | — |
-| `EAB_initializeRings` | `eab/eab.c:210` | falta | Vacía la lista de anillos de energía de la aparición. | — |
-| `EAB_addBuildupRing` | `eab/eab.c:219` | falta | Añade un anillo de energía de la carga previa. | — |
-| `EAB_tickBuildupRing` | `eab/eab.c:241` | falta | Mueve y desvanece un anillo de la carga previa. | — |
 | `EAB_addSpawnRing` | `eab/eab.c:276` | falta | Añade un anillo de la aparición del jefe final. | — |
 | `EAB_tickSpawnRing` | `eab/eab.c:298` | falta | Mueve y desvanece un anillo de la aparición. | — |
 | `EAB_tickSpawn` | `eab/eab.c:349` | falta | Escena de aparición del jefe final: destello, anillos, partículas, cámara y sonidos. | — |
@@ -582,7 +577,6 @@ Portado 3, parcial 0, falta 23, no aplica 18.
 | `EAB_setEntitiesVisible` | `eab/eab.c:490` | falta | Oculta a todos menos al jefe durante su aparición y luego los repone. | — |
 | `EAB_addParticle` | `eab/eab.c:513` | falta | Añade una partícula de luz a la aparición del jefe. | — |
 | `EAB_tickParticle` | `eab/eab.c:595` | falta | Mueve y apaga una partícula de la aparición. | — |
-| `EAB_startBuildup` | `eab/eab.c:649` | falta | Empieza la carga de energía previa a la aparición del jefe final. | solo la herramienta de extracción usa su modelo; el juego no la reproduce |
 | `ENDI_setModelSemiTrans` | `endi/endi.c:115` | falta | Vuelve translúcido el modelo del compañero en el final. | el motor no tiene la escena del final, solo el vídeo |
 | `ENDI_updateEnding` | `endi/endi.c:159` | falta | Escena final: el compañero se desvanece, encoge, crece y sube convertido en luz. | — |
 | `ENDI_startParticles` | `endi/endi.c:227` | falta | Arranca las partículas de luz de la escena final. | — |

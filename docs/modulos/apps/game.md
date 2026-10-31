@@ -155,6 +155,11 @@ con `FieldScene::setProps` (un juego de sitios por modelo); los quita al entrar 
 Lleva el fundido a blanco de las rutinas 45 y 46 (`game::field::WhiteFade`) a 20 fotogramas por segundo y lo pasa a
 `render::ScreenFade::setWhiteness`; el tono sale del de `Field` y vuelve a él, porque el original comparte `FADE_PROGRESS`
 entre los fundidos, y un cambio de mapa quita el blanco (`fadeToBlack` borra el objeto 4005).
+La carga del jefe final de la rutina 40 la pasa a `BossArrivalScene` (`boss_arrival_scene.cpp`), que lleva
+`game::field::BossArrival` a 20 fotogramas por segundo: quita al jefe de lo dibujado (`FieldScene::setHiddenNpcs`, el
+`isOnMap = 0` de `EAB_startBuildup`), dibuja los anillos de `ETCHI/BOSS_EFE.TMD` girados media vuelta donde está, a la
+escala de cada fotograma y teñidos a 0x3c/0x80 (`EAB_setModelColor`, con el tinte de `FieldScene::PropPlace`), y pone
+el zumbido retenido de la ranura 8 (`playSound2(8, 0)`); al entrar en otro mapa lo quita todo.
 Mueve el temblor de la rutina 34 a 20 fotogramas por segundo y lo pasa a la cámara (`MapRenderer::setShake`), y lleva un
 sprite del mapa al nodo de un personaje (`spawnSpriteAtEntity`, con `FieldScene::entityNodePoint` y
 `MapLayers::spriteSize`). La burbuja de humor de la rutina 28 (`mood_bubble.hpp`: `MoodBubble`) crece y sube a 20

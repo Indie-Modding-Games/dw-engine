@@ -802,11 +802,11 @@ KAR_registerThrownStone = { status = "portado", dwe = "game/curling/src/match.cp
 KAR_rotatePoint = { status = "no-aplica", note = "cálculo de dibujo de los modelos; aquí los marcadores no giran", what = "Gira un punto sobre la pista para posicionar piedras y marcas." }
 KAR_tickMatchState = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Máquina de estados de la partida: turnos, tiros, rondas y final." }
 checkCurlingMap = { status = "falta", what = "Al entrar en el mapa de curling carga el minijuego.", note = "el motor no tiene el minijuego" }
-EAB_setModelColor = { status = "falta", what = "Tiñe el modelo del efecto de aparición del jefe final.", note = "la aparición del jefe termina al instante" }
-EAB_tickBuildup = { status = "falta", what = "Lanza anillos de energía periódicos antes de que aparezca el jefe final." }
-EAB_initializeRings = { status = "falta", what = "Vacía la lista de anillos de energía de la aparición." }
-EAB_addBuildupRing = { status = "falta", what = "Añade un anillo de energía de la carga previa." }
-EAB_tickBuildupRing = { status = "falta", what = "Mueve y desvanece un anillo de la carga previa." }
+EAB_setModelColor = { status = "portado", dwe = "apps/game/src/boss_arrival_scene.cpp", what = "Tiñe el modelo del efecto de aparición del jefe final.", note = "tinte 0x3c/0x80 de los anillos al dibujarlos" }
+EAB_tickBuildup = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Lanza anillos de energía periódicos antes de que aparezca el jefe final.", note = "uno cada 6 fotogramas; sin medir en el original" }
+EAB_initializeRings = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Vacía la lista de anillos de energía de la aparición." }
+EAB_addBuildupRing = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Añade un anillo de energía de la carga previa." }
+EAB_tickBuildupRing = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Mueve y desvanece un anillo de la carga previa.", note = "vive 18 fotogramas; tamaño en bossRingScale" }
 EAB_addSpawnRing = { status = "falta", what = "Añade un anillo de la aparición del jefe final." }
 EAB_tickSpawnRing = { status = "falta", what = "Mueve y desvanece un anillo de la aparición." }
 EAB_tickSpawn = { status = "falta", what = "Escena de aparición del jefe final: destello, anillos, partículas, cámara y sonidos." }
@@ -814,7 +814,7 @@ EAB_initializeParticles = { status = "falta", what = "Vacía la lista de partíc
 EAB_setEntitiesVisible = { status = "falta", what = "Oculta a todos menos al jefe durante su aparición y luego los repone." }
 EAB_addParticle = { status = "falta", what = "Añade una partícula de luz a la aparición del jefe." }
 EAB_tickParticle = { status = "falta", what = "Mueve y apaga una partícula de la aparición." }
-EAB_startBuildup = { status = "falta", what = "Empieza la carga de energía previa a la aparición del jefe final.", note = "solo la herramienta de extracción usa su modelo; el juego no la reproduce" }
+EAB_startBuildup = { status = "portado", dwe = "apps/session/src/story_routines/routine_boss_buildup.cpp", what = "Empieza la carga de energía previa a la aparición del jefe final.", note = "rutina 40; la app esconde al jefe y dibuja los anillos (boss_arrival_scene.cpp)" }
 ENDI_setModelSemiTrans = { status = "falta", what = "Vuelve translúcido el modelo del compañero en el final.", note = "el motor no tiene la escena del final, solo el vídeo" }
 ENDI_updateEnding = { status = "falta", what = "Escena final: el compañero se desvanece, encoge, crece y sube convertido en luz." }
 ENDI_startParticles = { status = "falta", what = "Arranca las partículas de luz de la escena final." }

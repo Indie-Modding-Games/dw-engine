@@ -46,6 +46,12 @@ if (auto change = field.takeMapChange()) {
   fundido: `WhiteFade` (`white_fade.hpp`) es el fundido a blanco de las rutinas 45 y 46 (`fade.c: fadeToWhite`,
   `fadeFromWhite`), que sube `160 / (fotogramas + 1)` por fotograma desde ese tono hasta 160 y vuelve desde 160 menos
   un paso, dibuja sus fotogramas y se quita al siguiente (con 40 acaba en 40, no en 0).
+- **Llegada del jefe final** (`boss_arrival.hpp`, `BossArrival`, overlay EAB en fotogramas del original): la rutina 40
+  (`EAB_startBuildup`) quita al jefe del mapa y empieza la carga, que añade un anillo cada 6 fotogramas (`EAB_tickBuildup`;
+  vive 18, así que hay 3 a la vez) y nunca acaba sola; `bossRingScale` da su tamaño (de 0x10b8 a 0x614 de ancho y de
+  0x15c a 0xd98 de alto, con `_sin` de 512 por vuelta). `effectLerp` es el `lerp` del original con su vuelta pasado
+  `t1`. Suposición sin medir (no hay estado guardado cerca del jefe): el anillo nuevo cuenta un fotograma en el mismo en
+  que nace, como si su objeto fuera detrás del de la carga en la tabla de objetos.
   `mapNameShown()` da el mapa cuyo nombre se ve, del fotograma 10 del fundido de salida hasta entrar en el mapa
   nuevo; la app lo busca en la tabla de mapas y el HUD lo pone delante del fundido. El fundido de salida sigue
   desde el tono que dejó el último (`FADE_PROGRESS`), también si corta un fundido de entrada a medias.

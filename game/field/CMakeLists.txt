@@ -15,6 +15,7 @@ dwe_add_module(field
         src/player_trail.cpp
         src/partner_follow.cpp
         src/white_fade.cpp
+        src/boss_arrival.cpp
     DEPS core assets scene
     TEST_LIBS dwe::ruleset)
 

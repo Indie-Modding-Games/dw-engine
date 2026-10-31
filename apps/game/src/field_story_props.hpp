@@ -21,6 +21,7 @@ class StoryScenes;
 namespace dwe::app {
 
 class FieldScene;
+class BossArrivalScene;
 
 // The app's side of the story's props (session/story_props.hpp): it draws the Drill Tunnel's dirt
 // cart in front of the partner (map_object.c: renderDirtCartModel), the dirt pile, the boulder and
@@ -40,6 +41,8 @@ public:
   // The species table, for where a character's mood bubble hangs (its condition point); without it
   // no bubble shows.
   void setSpecies(const assets::DigimonTable* species) { species_ = species; }
+  // Where the final boss's charge goes (routine 40); without it the charge is not shown.
+  void setBossArrival(BossArrivalScene* boss) { boss_ = boss; }
 
   // Takes the story's requests, once a frame, after a map change is seen.
   void update(session::StoryScenes& scenes);
@@ -88,6 +91,7 @@ private:
   MoodBubble moodBubble_;
   double bubbleSeconds_ = 0.0;
   const assets::DigimonTable* species_ = nullptr;
+  BossArrivalScene* boss_ = nullptr;
 };
 
 } // namespace dwe::app

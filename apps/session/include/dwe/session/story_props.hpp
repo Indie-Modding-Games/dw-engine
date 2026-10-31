@@ -8,10 +8,11 @@
 // What the story's routines and orders put on the field the app draws besides the map and its
 // characters: the Drill Tunnel's dirt cart, dirt pile and boulder (map_object.c), Meramon's shake
 // (map.c: createMeramonShake), the fade to white (fade.c: fadeToWhite), the shop rival's mood
-// bubble (script_common.c: createMonochromonMoodBubble) and a map sprite moved to a character
-// (overworld.c: spawnSpriteAtEntity). The story keeps the state the original keeps for them; each
-// request carries what the app needs to draw, so the app only draws. The cart, the pile and the
-// boulder go away when the field loads a map, as the original's unloadMapParts removes them.
+// bubble (script_common.c: createMonochromonMoodBubble), a map sprite moved to a character
+// (overworld.c: spawnSpriteAtEntity) and the final boss's charge (eab.c: EAB_startBuildup). The
+// story keeps the state the original keeps for them; each request carries what the app needs to
+// draw, so the app only draws. The cart, the pile and the boulder go away when the field loads a
+// map, as the original's unloadMapParts removes them.
 namespace dwe::session {
 
 // The dirt pile's size counter starts at 15 when the game boots and never goes back
@@ -133,10 +134,17 @@ struct SpriteAtCharacter {
   std::int32_t object = 0;
 };
 
+// Routine 40 (eab.c: EAB_startBuildup): the final boss, the character with script id `character`,
+// leaves the map and the charge's rings rise where it stands until the partner's routine 8 brings
+// it back (game/field/boss_arrival.hpp).
+struct BossBuildupStarted {
+  std::int64_t character = 0;
+};
+
 using StoryPropRequest =
     std::variant<DirtCartShown, DirtPileShown, BoulderShown, ScreenShakeStarted, SpriteAtCharacter,
                  AngemonPedestalShown, ToyTownGearboxShown, ToyTownBoxesShown, ToyTownBoxSelected,
-                 WhiteFadeStarted, MoodBubbleShown>;
+                 WhiteFadeStarted, MoodBubbleShown, BossBuildupStarted>;
 
 // Trash Mountain's giant poop: map.c: loadMap calls initializeTrainingPoop on map 0xa5 (gomi02) and
 // on no other, whatever the story, which puts ETCNA\TRY at TRAINING_POOP_TRANSLATION, unturned and

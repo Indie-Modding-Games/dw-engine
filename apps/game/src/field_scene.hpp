@@ -231,11 +231,16 @@ public:
   struct PropPlace {
     glm::mat4 world{1.0F};
     std::vector<glm::mat4> joints;
+    // Multiplies the model's colours (eab.c: EAB_setModelColor sets its primitives' colour).
+    glm::vec4 tint{1.0F};
   };
   void setPosedProps(const assets::AssetId& model, std::vector<PropPlace> places);
   // Screen sprites the story hangs at world points until replaced (the mood bubble:
   // field_story_props.hpp).
   void setStorySprites(std::vector<StorySprite> sprites) { storySprites_ = std::move(sprites); }
+  // The NPCs the story took off the map without unloading them (isOnMap = 0: eab.c:
+  // EAB_startBuildup), not drawn until replaced; their owner sets them every frame.
+  void setHiddenNpcs(std::vector<scene::Entity> npcs) { hiddenNpcs_ = std::move(npcs); }
   // While held the camera stays where it points: map.c: tickCameraFollowPlayer follows the player
   // only in its state 0, never in a battle, where the player runs back on screen.
   void holdCamera(bool held) { cameraHeld_ = held; }
@@ -765,6 +770,7 @@ private:
   };
   std::map<std::string, PropSet> props_;
   std::vector<StorySprite> storySprites_;
+  std::vector<scene::Entity> hiddenNpcs_;
   void addStorySprites(std::vector<ScenePrim>& prims);
 };
 

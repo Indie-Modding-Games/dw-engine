@@ -80,6 +80,7 @@ dwe_add_module(session
         src/story_routines/routine_money_box.cpp
         src/story_routines/routine_mood_bubble.cpp
         src/story_routines/routine_bird_transport.cpp
+        src/story_routines/routine_boss_buildup.cpp
         src/story_routines/routine_new_game_menu.cpp
         src/story_routines/routine_object_animation.cpp
         src/story_routines/routine_remove_item.cpp

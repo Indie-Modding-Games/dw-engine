@@ -68,7 +68,7 @@ void FieldScene::setProps(const assets::AssetId& model, std::vector<glm::mat4> p
   std::vector<PropPlace> posed;
   posed.reserve(places.size());
   for (const glm::mat4& place : places) {
-    posed.push_back({.world = place, .joints = {}});
+    posed.push_back({.world = place, .joints = {}, .tint = glm::vec4{1.0F}});
   }
   setPosedProps(model, std::move(posed));
 }
@@ -109,7 +109,7 @@ void FieldScene::submitStageProps() {
       models_->submit({.model = *found->second.model,
                        .world = place.world,
                        .joints = place.joints,
-                       .tint = glm::vec4{1.0F}});
+                       .tint = place.tint});
     }
   }
 }
@@ -123,7 +123,7 @@ void FieldScene::submitProps() {
       models_->submit({.model = *set.model,
                        .world = place.world,
                        .joints = place.joints,
-                       .tint = sceneryTint()});
+                       .tint = place.tint * sceneryTint()});
     }
   }
 }

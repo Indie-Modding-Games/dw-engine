@@ -26,6 +26,7 @@
 #include "award_screen.hpp"
 #include "battle_ground.hpp"
 #include "battle_screen.hpp"
+#include "boss_arrival_scene.hpp"
 #include "bug_report.hpp"
 #include "care_commands.hpp"
 #include "curling_screen.hpp"
@@ -229,6 +230,7 @@ private:
   FieldToilet fieldToilet_;
   FieldPoop fieldPoop_;
   FieldStoryProps storyProps_;
+  BossArrivalScene bossArrival_;
   PartnerMenu partnerMenu_;
   FieldHud fieldHud_;
   SleepScreen sleepScreen_;

@@ -26,6 +26,7 @@
 #include <variant>
 #include <vector>
 
+#include "boss_arrival_scene.hpp"
 #include "field_scene.hpp"
 
 namespace dwe::app {
@@ -171,6 +172,9 @@ void FieldStoryProps::take(const session::StoryPropRequest& request) {
     startWhiteFade(*fade);
   } else if (const auto* bubble = std::get_if<session::MoodBubbleShown>(&request)) {
     takeMoodBubble(*bubble);
+  } else if (const auto* boss = std::get_if<session::BossBuildupStarted>(&request);
+             boss != nullptr && boss_ != nullptr) {
+    boss_->startBuildup(*boss);
   }
 }
 
@@ -385,7 +389,8 @@ void FieldStoryProps::show() {
     if (toyBoxes_) {
       places.push_back({.world = glm::translate(glm::mat4{1.0F}, assets::toWorldPosition(location)),
                         .joints = {glm::mat4{1.0F}, glm::rotate(glm::mat4{1.0F}, radiansOf(lid),
-                                                                glm::vec3{1.0F, 0.0F, 0.0F})}});
+                                                                glm::vec3{1.0F, 0.0F, 0.0F})},
+                        .tint = glm::vec4{1.0F}});
     }
     return places;
   };

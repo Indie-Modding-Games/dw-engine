@@ -290,14 +290,14 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
       feedScene_(*game_.session, *game_.systems.inventory, *game_.systems.fieldItems, *scene_),
       fieldToilet_(*game_.session, *game_.systems.fieldItems, *scene_),
       fieldPoop_(*game_.session, *game_.systems.poop, *scene_), storyProps_(*scene_),
-      partnerMenu_({.session = game_.session.get(),
-                    .inventory = game_.systems.inventory,
-                    .species = species_ ? &*species_ : nullptr,
-                    .ui = context.ui,
-                    .battle = game_.systems.battle,
-                    .story = game_.systems.story,
-                    .cards = game_.systems.cards,
-                    .feed = &feedScene_}),
+      bossArrival_(*scene_), partnerMenu_({.session = game_.session.get(),
+                                           .inventory = game_.systems.inventory,
+                                           .species = species_ ? &*species_ : nullptr,
+                                           .ui = context.ui,
+                                           .battle = game_.systems.battle,
+                                           .story = game_.systems.story,
+                                           .cards = game_.systems.cards,
+                                           .feed = &feedScene_}),
       fieldHud_(*context.ui, *game_.session),
       sleepScreen_(*game_.session, *context.ui, scene_->field().rules().transition),
       saveMachine_({.session = game_.session.get(),
@@ -380,6 +380,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachBirdTransport(&birdScreen_);
   birdScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyProps_.setSpecies(species_ ? &*species_ : nullptr);
+  storyProps_.setBossArrival(&bossArrival_);
+  bossArrival_.setSound(session.sound());
   storyScenes_.attachCardShop(&cardShopScreen_);
   cardShopScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyScenes_.attachMeritShop(&meritShopScreen_);
@@ -426,15 +428,30 @@ PlaySession::~PlaySession() {
   game_.session->detachField();
   storyLink_.reset();
   game_.systems.story->attachNpcs(nullptr);
-  for (const std::string_view document :
-       {std::string_view{"hud"},   BattleDocument,          PartnerMenuDocument,
-        DestinationChoiceDocument, SleepMenuDocument,       DialogDocument,
-        ShopMenuDocument,          ItemKeeperDocument,      DiscardMenuDocument,
-        JukeboxDocument,           TournamentScheduleDocument, TradeMenuDocument,       CardShopDocument,
-        MeritShopDocument,         FieldItemNoticeDocument, AwardNoticeDocument,
-        FishingBaitDocument,       FishingNoticeDocument,   FishingHudDocument,
-        CurlingHudDocument,        EggBoxDocument,          NamingBoxDocument,
-        LivesBoxDocument,          BirdTransportDocument}) {
+  for (const std::string_view document : {std::string_view{"hud"},
+                                          BattleDocument,
+                                          PartnerMenuDocument,
+                                          DestinationChoiceDocument,
+                                          SleepMenuDocument,
+                                          DialogDocument,
+                                          ShopMenuDocument,
+                                          ItemKeeperDocument,
+                                          DiscardMenuDocument,
+                                          JukeboxDocument,
+                                          TournamentScheduleDocument,
+                                          TradeMenuDocument,
+                                          CardShopDocument,
+                                          MeritShopDocument,
+                                          FieldItemNoticeDocument,
+                                          AwardNoticeDocument,
+                                          FishingBaitDocument,
+                                          FishingNoticeDocument,
+                                          FishingHudDocument,
+                                          CurlingHudDocument,
+                                          EggBoxDocument,
+                                          NamingBoxDocument,
+                                          LivesBoxDocument,
+                                          BirdTransportDocument}) {
     context_.ui->hide(document);
   }
 }
@@ -503,7 +520,8 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
                          fieldRules ? std::optional{fieldRules->sleepSound} : std::nullopt);
   if (sleepScreen_.active() || shopScreen_.active() || itemKeeperScreen_.active() ||
       discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
-      birdScreen_.active() || cardShopScreen_.active() || meritShopScreen_.active() || scheduleScreen_.active()) {
+      birdScreen_.active() || cardShopScreen_.active() || meritShopScreen_.active() ||
+      scheduleScreen_.active()) {
     return;
   }
   // partner.c: partnerTickOverworld runs the partner's state: the care scenes below (praise and
@@ -620,13 +638,13 @@ bool PlaySession::handle(const ui::UiCommand& command) {
   if (eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
       itemKeeperScreen_.handle(command) || discardScreen_.handle(command) ||
       jukeboxScreen_.handle(command) || scheduleScreen_.handle(command) ||
-      tradeScreen_.handle(command) || birdScreen_.handle(command) || cardShopScreen_.handle(command) ||
-      meritShopScreen_.handle(command) || sleepScreen_.handle(command) ||
-      saveMachine_.handle(command) || praiseScold_.handle(command) || feedScene_.handle(command) ||
-      fieldToilet_.handle(command) || fieldPoop_.handle(command) ||
-      fieldItemsScreen_.handle(command) || awardScreen_.handle(command) ||
-      fishingScreen_.handle(command) || battleScreen_.handle(command) ||
-      freeExploration_.handle(command)) {
+      tradeScreen_.handle(command) || birdScreen_.handle(command) ||
+      cardShopScreen_.handle(command) || meritShopScreen_.handle(command) ||
+      sleepScreen_.handle(command) || saveMachine_.handle(command) ||
+      praiseScold_.handle(command) || feedScene_.handle(command) || fieldToilet_.handle(command) ||
+      fieldPoop_.handle(command) || fieldItemsScreen_.handle(command) ||
+      awardScreen_.handle(command) || fishingScreen_.handle(command) ||
+      battleScreen_.handle(command) || freeExploration_.handle(command)) {
     return true;
   }
   if (command.name == "to_title") {
@@ -834,15 +852,17 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   });
   if (storyTextbox_) {
     storyTextbox_->cover(jukeboxScreen_.active() || scheduleScreen_.active() ||
-                         tradeScreen_.active() || birdScreen_.active() || cardShopScreen_.active() ||
-                         meritShopScreen_.active());
+                         tradeScreen_.active() || birdScreen_.active() ||
+                         cardShopScreen_.active() || meritShopScreen_.active());
     storyTextbox_->update(*scene_, species);
   }
   fieldPoop_.show();
   if (!paused()) {
     storyProps_.advance(frameSeconds);
+    bossArrival_.advance(frameSeconds);
   }
   storyProps_.show();
+  bossArrival_.show();
   fieldItemsScreen_.show(*scene_);
   const game::partner::PartnerState& partner = session.partner().state();
   scene_->setPartnerMood(partner.conditions, partner.mood.happiness);
@@ -891,9 +911,9 @@ bool PlaySession::paused() const {
          (sleepScreen_.active() && !sleepScreen_.fieldRuns()) || saveMachine_.active() ||
          toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
          shopScreen_.active() || itemKeeperScreen_.active() || discardScreen_.active() ||
-         jukeboxScreen_.active() || tradeScreen_.active() || birdScreen_.active() || cardShopScreen_.active() ||
-         meritShopScreen_.active() || fieldItemsScreen_.active() || awardScreen_.active() ||
-         scheduleScreen_.active();
+         jukeboxScreen_.active() || tradeScreen_.active() || birdScreen_.active() ||
+         cardShopScreen_.active() || meritShopScreen_.active() || fieldItemsScreen_.active() ||
+         awardScreen_.active() || scheduleScreen_.active();
 }
 
 float PlaySession::fadeLevel() const {

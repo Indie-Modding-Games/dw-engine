@@ -69,6 +69,11 @@ void FieldScene::drawNpcs(double animationSeconds, float alpha) {
     if (!world_.alive(actor->entity)) {
       continue;
     }
+    if (std::ranges::contains(hiddenNpcs_, actor->entity)) {
+      // Its clip runs on while it is not drawn.
+      animate(*actor, animationSeconds);
+      continue;
+    }
     animate(*actor, animationSeconds);
     playClipSounds(*actor);
     submit(*actor, alpha, {.tint = sceneryTint()});
