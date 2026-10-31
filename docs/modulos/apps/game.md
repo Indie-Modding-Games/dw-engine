@@ -92,7 +92,11 @@ va donde está, como antes. Si se atasca de camino, se para donde está.
 
 «Felicitar» y «Regañar» del menú del campo (Tab) juegan la escena del original (`partner.c: partnerTickPraiseScold`,
 `tamer.c: tamerTickPraiseScold`, en `praise_scold_call.cpp`). El menú se cierra, el jugador queda quieto mientras
-corre el tiempo y el compañero se acerca hasta quedar a su lado; los dos se miran. Al felicitar suena `playSound(0,
+corre el tiempo y el compañero se acerca hasta quedar a su lado; los dos se miran. Como al dormir, el campo sujeta al
+jugador (`Field::holdForCare`) y, si el compañero no está ya a su lado, lo lleva andando en línea recta hasta menos de
+2,5 radios (`walkPartnerToRange`; `partner.c: partnerTickPraiseScold` estados 0 y 1, `getPartnerTamerCloseness` igual
+a 2). Antes el compañero solo seguía al jugador, y el seguimiento se para entre 2,5 y 3,5 radios: un compañero quieto
+a esa distancia no llegaba nunca y la escena no acababa. Al felicitar suena `playSound(0,
 14)`, el jugador hace la animación 38 (la 39 si el compañero es campeón o más, salvo Mamemon, MetalMamemon y
 Digitamamon, que son bajos) y el compañero la 11. Al regañar suena `playSound(0, 13)`, el jugador hace la animación 7 y
 el compañero la 12, o la 25 si el regaño llega justo después de un rechazo o de una caca en el suelo

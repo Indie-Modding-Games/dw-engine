@@ -645,6 +645,30 @@ TEST_CASE("a care scene holds the player and walks the partner to a range, towar
   CHECK(field.player().position.x > 0.0F);
 }
 
+TEST_CASE("a care hold walks a partner from between 2.5 and 3.5 radii to beside the player") {
+  // partner.c: partnerTickSleep and partnerTickPraiseScold, sub states 0 and 1: the partner walks
+  // straight up until getPartnerTamerCloseness gives 2 (nearer than 2.5 radii), whatever the follow
+  // would do there (partnerTickWalking only walks once its condition clip has ended).
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  const MapDocument map = roomMap("room");
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  const float beside = field.rules().partner.walkDistance * field.rules().partner.mover.radius;
+  const float sprint = field.rules().partner.runDistance * field.rules().partner.mover.radius;
+  auto& partner = world.registry().get<dwe::scene::Transform>(field.partnerEntity());
+  dwe::scene::place(partner, {-(beside + sprint) / 2.0F, 0.0F, 0.0F}, 0.0F);
+  REQUIRE_FALSE(field.partnerBeside());
+
+  field.holdForCare(true);
+  field.walkPartnerToRange(beside);
+  for (int i = 0; i < 200 && field.partnerWalking(); ++i) {
+    field.tick(Tick);
+  }
+  CHECK_FALSE(field.partnerWalking());
+  CHECK(field.partnerBeside());
+  CHECK(field.player().position.x == doctest::Approx(0.0F));
+}
+
 TEST_CASE("a care scene runs the partner to a point and pans the camera, given back on release") {
   dwe::scene::World world;
   Field field{world, originalRules()};
