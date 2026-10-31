@@ -818,6 +818,32 @@ TEST_CASE("a skin does not change navigation: no shipped skin sets a nav propert
   }
 }
 
+TEST_CASE("no shipped skin paints a box's fill over its original-box border") {
+  // RmlUi paints the first decorator of a list on top, as CSS does with backgrounds: a gradient
+  // listed before original-box hides the border's lines and corner sprites.
+  const std::vector<std::filesystem::path> skinFiles = shippedSkinFiles();
+  REQUIRE_FALSE(skinFiles.empty());
+  int bordered = 0;
+  for (const std::filesystem::path& file : skinFiles) {
+    std::ifstream stream{file, std::ios::binary};
+    const std::string text{std::istreambuf_iterator<char>{stream},
+                           std::istreambuf_iterator<char>{}};
+    for (std::size_t at = text.find("decorator:"); at != std::string::npos;
+         at = text.find("decorator:", at + 1)) {
+      const std::string list = text.substr(at, text.find(';', at) - at);
+      const std::size_t border = list.find("original-box");
+      if (border == std::string::npos) {
+        continue;
+      }
+      ++bordered;
+      CAPTURE(assets::pathText(file));
+      CAPTURE(list);
+      CHECK(list.find("gradient(") > border);
+    }
+  }
+  CHECK(bordered > 0);
+}
+
 // A replacement document with the game's script, a script of its own, an inline script and an event
 // attribute.
 constexpr std::string_view OwnLuaDocument =

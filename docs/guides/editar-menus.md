@@ -123,7 +123,9 @@ Las cajas del aspecto original se abren y se cierran con el contorno gris del or
 `ui/common/original_box.lua` (`original_box.open`, `close`, `tick`, `cancel`, `busy`): el documento enlaza el script,
 pone `<div id="box-outline" class="box-outline hidden"></div>` bajo el `body` y llama a `tick` desde `on_tick` y a
 `cancel` desde `on_hide`. Fuera del aspecto original todo termina al momento. El borde de tres líneas es el decorador
-`original-box(3dp)`, o la clase `.original-box` de `skins/original/theme.rcss`.
+`original-box(3dp)`, o la clase `.original-box` de `skins/original/theme.rcss`. Si la caja añade un relleno propio
+(`vertical-gradient`), va al final de la lista de decoradores: RmlUi pinta encima el primero, como CSS con los fondos,
+y un relleno puesto delante tapa el borde.
 
 Un menú no cambia ajustes por su cuenta: envía el comando y muestra lo que la app publica en `on_setting`. Así sus
 etiquetas siempre dicen la verdad (por ejemplo, si la pantalla completa no se pudo activar).

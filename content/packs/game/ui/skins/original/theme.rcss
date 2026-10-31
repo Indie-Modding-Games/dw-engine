@@ -57,7 +57,8 @@ button:active {
    half opacity (the semi-transparent mode), the three- and four-line border the original-box decorator draws (black,
    light cyan #90D9FA and dark cyan #4A9FC5 lines, each one original pixel, 3dp) and the rounded corner sprites of
    SYSTEM_W. The border's 3dp keep the fill off the outer black line. A box with an opaque fill sets its own
-   background-color; one that adds a decorator repeats this list with its own first. Opening and closing animate with
+   background-color; one that adds a decorator repeats this list with its own last (RmlUi paints the first decorator on
+   top, as CSS does with backgrounds, so a fill listed first hides the border). Opening and closing animate with
    ui/common/original_box.lua. */
 .original-box {
 	border: 3dp transparent;

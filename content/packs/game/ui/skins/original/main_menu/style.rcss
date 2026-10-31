@@ -72,8 +72,9 @@
 	border: 3dp transparent;
 	border-radius: 0;
 	background-color: transparent;
-	decorator: vertical-gradient(#000060 #000020), original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
+		vertical-gradient(#000060 #000020);
 }
 
 #title {
@@ -139,8 +140,9 @@
 	flex-direction: column;
 	padding: 18dp 24dp 21dp 24dp;
 	border: 3dp transparent;
-	decorator: vertical-gradient(#000060 #000020), original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
+		vertical-gradient(#000060 #000020);
 }
 
 /* The display above outweighs the structure's .hidden, so hidden is said again here. */
@@ -190,8 +192,9 @@
 #battle-heading, #battle-message, #battle-answers {
 	box-sizing: border-box;
 	border: 3dp transparent;
-	decorator: vertical-gradient(#000060 #000020), original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
+		vertical-gradient(#000060 #000020);
 }
 
 #battle-heading {
