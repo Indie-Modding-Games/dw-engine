@@ -703,6 +703,9 @@ int runGame(const Options& requested) {
       core::logError("game: {}", started.error().message);
       return EXIT_FAILURE;
     }
+    if (const auto moment = flow.playing()->takeMovieRequest()) {
+      playMovie(*moment);
+    }
   } else if (playMovie(MovieMoment::Boot)) {
     titleAfterMovie = true;
   } else if (autotest && !autotest->startsAtBootScreen()) {
@@ -751,6 +754,10 @@ int runGame(const Options& requested) {
       // The load is not game time: the next frame must not run it as a burst of ticks.
       step.reset();
       previous = platform->nowSeconds();
+      // A finished game's movie plays before its field (main.c: main, MAIN_STATE 2).
+      if (const auto moment = flow.playing()->takeMovieRequest()) {
+        playMovie(*moment);
+      }
     }
   };
   // After a movie: the game that waited for it, or the title.

@@ -265,7 +265,14 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
   if (!scene) {
     return std::unexpected{scene.error()};
   }
-  return std::make_unique<PlaySession>(Key{}, context, std::move(*game), std::move(*scene));
+  const bool cleared = start.load.has_value() && session.gameCleared();
+  auto play = std::make_unique<PlaySession>(Key{}, context, std::move(*game), std::move(*scene));
+  if (cleared) {
+    // main.c: main, MAIN_STATE 2: a game saved after the ending plays ED2 before its field.
+    core::logDebug("[port:save] main (main.c:3474): a finished game, its movie first");
+    play->requestMovie(MovieMoment::ClearedLoad);
+  }
+  return play;
 }
 
 PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game,

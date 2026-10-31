@@ -196,8 +196,8 @@ public:
   [[nodiscard]] std::optional<std::string> reportSave(ReportSave& save) const;
 
   // The movie the game asks the app for (main.c: main): ED2 once a game saved after the ending is
-  // loaded (MAIN_STATE 2), EDR once the ending ends the game (MAIN_STATE 3). The ending's routines
-  // 53 and 54 (HIST-S7) ask for them. Taking the request clears it.
+  // loaded (MAIN_STATE 2, asked as the session is created), EDR once routine 53 ends the game
+  // (MAIN_STATE 3). Taking the request clears it.
   void requestMovie(MovieMoment moment) { movieRequest_ = moment; }
   [[nodiscard]] std::optional<MovieMoment> takeMovieRequest() {
     return std::exchange(movieRequest_, std::nullopt);
