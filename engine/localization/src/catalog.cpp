@@ -1,4 +1,6 @@
+#include <dwe/assets/file_system.hpp>
 #include <dwe/assets/text_table.hpp>
+#include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/localization/catalog.hpp>
 
@@ -90,30 +92,62 @@ struct UntranslatedTables {
   std::size_t texts = 0;
 };
 
+// The full keys a language's translations of the original's text keep from the fallback on
+// purpose: the kept_english and kept_original lists of each pack's lock (docs/formats/textos.md).
+// Dot files are not assets, so the lock is read from the pack's own files; a pack without one, or
+// with one that does not parse, keeps nothing (dwx validate reports the bad lock).
+using KeptKeys = std::set<std::string, std::less<>>;
+
+KeptKeys keptKeys(const assets::VirtualFileSystem& files, std::string_view language) {
+  KeptKeys kept;
+  for (const assets::MountedPack& pack : files.packs()) {
+    if (pack.fileSystem == nullptr) {
+      continue;
+    }
+    const auto bytes = pack.fileSystem->readFile(pack.root / assets::GameTextFolder / language /
+                                                 assets::SourcesLockFile);
+    if (!bytes) {
+      continue;
+    }
+    auto lock = assets::parseSourcesLock(
+        std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+    if (!lock) {
+      continue;
+    }
+    kept.merge(lock->keptEnglish);
+    kept.merge(lock->keptOriginal);
+  }
+  return kept;
+}
+
 // What a language misses of the fallback's tables: one line per pack for its whole tables (a
-// partial translation leaves hundreds out), then one per table that misses keys.
+// partial translation leaves hundreds out), then one per table that misses keys. Keys a lock
+// keeps on purpose are not missing.
 std::vector<std::string> missingTexts(const LanguageTables& fallback,
                                       const TablePacks& fallbackPacks, const LanguageTables& chosen,
-                                      std::string_view language) {
+                                      std::string_view language, const KeptKeys& kept) {
   std::vector<std::string> warnings;
   std::map<std::string, UntranslatedTables> untranslated;
   for (const auto& [name, table] : fallback) {
     const TextTableName translated{
         .kind = name.kind, .language = std::string{language}, .name = name.name};
     const auto found = chosen.find(translated);
+    std::vector<std::string_view> missing;
+    for (const auto& [key, text] : table) {
+      if ((found == chosen.end() || !found->second.contains(key)) && !kept.contains(key)) {
+        missing.push_back(key);
+      }
+    }
     if (found == chosen.end()) {
+      if (missing.empty()) {
+        continue;
+      }
       const auto pack = fallbackPacks.find(name);
       UntranslatedTables& tables =
           untranslated[pack == fallbackPacks.end() ? std::string{} : pack->second];
       tables.ids.push_back(tableIdText(name, FallbackLanguage));
-      tables.texts += table.size();
+      tables.texts += missing.size();
       continue;
-    }
-    std::vector<std::string_view> missing;
-    for (const auto& [key, text] : table) {
-      if (!found->second.contains(key)) {
-        missing.push_back(key);
-      }
     }
     if (!missing.empty()) {
       warnings.push_back(std::format(messages::MissingKeys, tableIdText(translated, language),
@@ -191,9 +225,9 @@ core::Result<void> Catalog::setLanguage(std::string_view language) {
     }
     chosen = std::move(*read);
   }
-  warnings_ = language == FallbackLanguage
-                  ? std::vector<std::string>{}
-                  : missingTexts(*fallback, fallbackPacks, chosen, language);
+  warnings_ = language == FallbackLanguage ? std::vector<std::string>{}
+                                           : missingTexts(*fallback, fallbackPacks, chosen,
+                                                          language, keptKeys(*files_, language));
   for (const std::string& warning : warnings_) {
     core::logWarning(messages::Warning, warning);
   }

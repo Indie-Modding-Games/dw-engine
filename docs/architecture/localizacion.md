@@ -77,7 +77,9 @@ Hay una sola búsqueda, por clave, igual en todas partes:
 | Nombre del mapa en el cambio de mapa | La app publica la clave en el ajuste `map_title_key` (de `FieldScene::nameKeyOf`, el único sitio que busca el nombre de un mapa) y el HUD la escribe con `t()`, también en su `on_language` |
 
 Una clave que no tiene el idioma elegido sale en inglés. Al cargar, el log avisa de cada tabla que falta y de las
-claves que faltan, con un máximo de cinco claves por aviso. Una clave que no tiene ni el inglés sale como la propia
+claves que faltan, con un máximo de cinco claves por aviso. Las claves que el lock de una traducción deja a
+propósito sin traducir (`kept_english` y `kept_original` de `text/<idioma>/.sources.lock`) no cuentan como que
+faltan: el español completo no avisa de nada (antes contaba 311). Una clave que no tiene ni el inglés sale como la propia
 clave (`menu.nothing`), para que se vea en pantalla. Los mensajes de log para desarrolladores no se traducen: son
 constantes en inglés en el `messages.hpp` de cada módulo.
 

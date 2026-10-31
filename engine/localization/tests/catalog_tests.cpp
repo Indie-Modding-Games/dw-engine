@@ -98,6 +98,22 @@ TEST_CASE("the tables a language has no translation of at all make one warning p
         "pack game has no es translation of 1 tables (1 texts), which show in en: text/en/shop");
 }
 
+TEST_CASE("the keys a translation's lock keeps on purpose are not missing") {
+  Packs packs;
+  packs.memory.addFile("base/text/en/btl.yaml", "names.0000: \"   \"\n");
+  packs.memory.addFile("mod/pack.yaml", "id: spanish_text\nversion: 1.0.0\nlayer: mods\n");
+  packs.memory.addFile("mod/text/es/main.yaml", "map_names.0001: Ciudad Archivo\n");
+  packs.memory.addFile(
+      "mod/text/es/.sources.lock",
+      "sources:\n  main.map_names.0001: \"0123456789abcdef0123456789abcdef01234567\"\n"
+      "kept_english: [main.map_names.0000]\nkept_original: [btl.names.0000]\n");
+  const Catalog catalog = loaded(packs.mount({"base", "game", "mod"}), "es");
+  // Only the menu's key: main keeps its other name in English and btl, untranslated, keeps all.
+  REQUIRE(catalog.warnings().size() == 1);
+  CHECK(catalog.warnings()[0].contains("menu.only_english"));
+  CHECK(catalog.text("main.map_names.0000") == "  Native Forest  ");
+}
+
 TEST_CASE("a key no table has shows as itself") {
   Packs packs;
   const Catalog catalog = loaded(packs.mount(), "es");
