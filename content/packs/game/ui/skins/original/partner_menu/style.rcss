@@ -537,8 +537,9 @@ button:focus .original-look, button.original-look:focus {
     position: absolute; left: 156dp; top: 27dp; width: 162dp; margin: 0;
 }
 #status-parameters .pool .bar { width: 312dp; }
+/* The values' cells start a pixel under the bar of the row above (at -12dp they covered its bottom line). */
 #status-parameters .value, #status-parameters .pool-max {
-    position: absolute; left: 156dp; top: -12dp; width: 162dp;
+    position: absolute; left: 156dp; top: -9dp; width: 162dp;
     text-align: center; white-space: nowrap;
 }
 #status-parameters .pool .value { left: 156dp; width: 126dp; }

@@ -179,6 +179,11 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   título y su menú, el reloj y las barras del campo, el menú de pausa, la página del jugador y las opciones de sus
   herramientas, la ficha del compañero (su entrada del menú) y la bolsa (la de los objetos, con las opciones de un objeto y
   los órdenes), un combate y sus cuadros finales, y la burbuja del hambre sobre el compañero a 1920x1080. Se corre en los dos idiomas.
+- `route-text-fit.yaml`: que cada texto cabe en su caja (`expect_text_fits` tras cada captura) en las pantallas del
+  aspecto original desde el campo: el menú de pausa y sus páginas (jugador, árbol, medallas, cartas, herramientas,
+  opciones, minimapa), la ficha, las técnicas y la bolsa del compañero con las opciones de un objeto, la máquina de
+  guardar y un combate con sus cuadros finales, a 1280x720 y otra vez las páginas con más texto a 1920x1080. Se corre
+  en los dos idiomas. Para mirar los textos de otra ruta sin tocarla, añádele `text_fit: true`.
 - `route-scripted-loop.yaml`: una vuelta por cinco zonas desde una partida nueva con el teclado: File City (`twna01`)
   → la casa del anciano, `room08` (tabla de salidas del mapa) → File City (script) → `trai00` (tabla) → `mayo00`
   (tabla), donde juega el primer combate del bosque y el reclutamiento de Agumon → `twnb01` (warp del script del mapa,
@@ -608,6 +613,7 @@ language_first: false     # true (con boot_screen): antes, la caja de idiomas, c
 new_game: seeded          # original: la partida nueva corre la apertura (por defecto seeded, el campo libre)
 load_save: save.yaml      # empieza cargando esa partida (relativa a la ruta), sin main_menu ni new_game
 movies: false             # true: las películas del juego salen como sin ruta (los créditos del final)
+text_fit: false           # true: cada captura comprueba además que los textos caben (como expect_text_fits: all)
 steps:
   - wait: {map: twna01, seconds: 1}
   - walk_to: {trigger: 112}
@@ -630,6 +636,7 @@ steps:
 | `repeat: {times, steps}` | Repite esos pasos en su sitio tantas veces |
 | `when: {<condiciones de wait>, steps}` | Hace esos pasos solo si se cumplen ya todas las condiciones (como `script_if`); si no, se los salta y lo dice en el log. Sirve para lo que el juego echa a suertes al jugarlo (`when: {setting: {story.var.116: "1"}, steps: [...]}`) |
 | `screenshot: <nombre>` | Guarda `<ruta>-<NN>-<nombre>-<ancho>x<alto>.png` en `--shots` |
+| `expect_text_fits: <documento> \| all` | Comprueba que cada texto que se ve en ese documento de la UI (o en todos) cabe: dentro de la caja dibujada que lo rodea, de lo que lo recorta y de la ventana, sin cruzar el borde de otra caja ni pisar otro texto, con un píxel del original (3dp) de margen. Lo que tapa una caja opaca posterior no cuenta, ni una caja que se abre o se cierra. Espera hasta 1 s a que la caja quede en su sitio; si sigue sin caber, escribe cada texto en el log (`in <documento>, '<texto>' (<elemento>) is out of <caja> by <n> dp`) y la ruta sigue, pero acaba fallando |
 | `resize: [ancho, alto]` | Cambia la ventana y espera a que el render tenga ese tamaño |
 | `fullscreen: true \| false` | Pantalla completa |
 | `press`, `release`, `tap: {key \| button}`, `axis: {axis, value}`, `click: [x, z]` | Controles sueltos: teclas, botones y ejes del mando virtual, clic en un punto del suelo |

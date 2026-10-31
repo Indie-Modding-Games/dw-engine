@@ -18,11 +18,22 @@ constexpr int UnderlinePixels = 1;
 // The lowercase letter whose height is the font's x-height.
 constexpr char32_t XHeightLetter = U'x';
 
-// How many times larger than its atlas the bitmap font draws at a font size: the whole multiple
-// nearest to the size over the cell height, so each atlas pixel is a square of screen pixels and
-// stays crisp.
-int bitmapScale(int size, int cellHeight) {
-  return std::max(1, static_cast<int>(std::lround(static_cast<double>(size) / cellHeight)));
+// How much past a whole multiple the bitmap font's scale may fall and still round down to it: a
+// window a few pixels smaller than the design height draws at the design's scale.
+constexpr double ScaleSlack = 0.1;
+
+// How many times larger than its atlas the bitmap font draws at a font size, with `dpRatio`
+// pixels per dp: a whole multiple, so each atlas pixel is a square of screen pixels and stays
+// crisp. At the design height (one pixel per dp) it is the multiple nearest to the size over the
+// cell height, as the boxes were laid out for; at any other height that multiple grows with the
+// window, rounded down, so the text never grows faster than its box. Rounding the size at each
+// height instead drew texts up to half a cell larger than at the design height and pushed them
+// out of their boxes (at 1920x1080, 36dp is 54 pixels: 5 times the 11-pixel cell where the boxes
+// grew 4.5 times).
+int bitmapScale(int size, int cellHeight, float dpRatio) {
+  const double ratio = dpRatio > 0.0F ? dpRatio : 1.0;
+  const long design = std::max(1L, std::lround(static_cast<double>(size) / ratio / cellHeight));
+  return std::max(1, static_cast<int>(static_cast<double>(design) * ratio + ScaleSlack));
 }
 
 Rml::Span<const Rml::byte> bytesOf(const assets::Image& image) {
@@ -164,13 +175,14 @@ bool FontEngine::isOriginalLook(const Rml::String& family) const {
 Rml::FontFaceHandle FontEngine::bitmapFaceHandle(const BitmapFont& font,
                                                  Rml::Style::FontStyle style,
                                                  Rml::Style::FontWeight weight, int size) {
+  const int scale = bitmapScale(size, font.cellHeight(), dpRatio_);
   const auto same = [&](const std::unique_ptr<BitmapFace>& face) {
-    return face->style == style && face->weight == weight && face->size == size;
+    return face->style == style && face->weight == weight && face->size == size &&
+           face->scale == scale;
   };
   if (auto found = std::ranges::find_if(faces_, same); found != faces_.end()) {
     return std::bit_cast<Rml::FontFaceHandle>(found->get());
   }
-  const int scale = bitmapScale(size, font.cellHeight());
   const int fallbackSize =
       std::max(1, static_cast<int>(std::lround(static_cast<float>(font.cellHeight() * scale) *
                                                look_.fallbackSize)));

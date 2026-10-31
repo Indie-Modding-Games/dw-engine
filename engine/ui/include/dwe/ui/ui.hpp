@@ -244,6 +244,26 @@ public:
   [[nodiscard]] std::optional<Point> elementCenter(std::string_view document,
                                                    std::string_view elementId) const;
 
+  // A text the player sees that does not fit: it sticks out of the box drawn round it (the nearest
+  // element with a background, a border or a decorator), is cut by an element that clips its
+  // content, leaves the window, crosses the edge of a box beside it or lies over another text, by
+  // more than one of the original's pixels (3dp). Texts under a later opaque box are hidden and
+  // left out. For tests and routes (expect_text_fits).
+  struct TextOverflow {
+    std::string document;
+    // The text's element, with its parents up to one with an id: "button#sleep > span.menu-label".
+    std::string element;
+    // The text as laid out, its lines joined with " / ".
+    std::string text;
+    // Where it goes, with the element as `element` names it: "out of div#panel", "across the edge
+    // of div#value", "over the text 'Level' (span#level)" or "off the window".
+    std::string box;
+    // How far, in dp, on its worst side.
+    float overflow = 0.0F;
+  };
+  // The texts of the shown documents that do not fit, as laid out by the last update().
+  [[nodiscard]] std::vector<TextOverflow> overflowingTexts() const;
+
 private:
   struct Impl;
 

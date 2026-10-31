@@ -87,6 +87,9 @@ struct AutotestStep {
               // ticks; back-to-back hold steps follow each other tick for tick (feedTick)
     When,     // when: {wait's conditions, steps}: its steps (the ones after it) run only if the
               // conditions all hold now
+    ExpectTextFits, // expect_text_fits: <document> | all: every text the player sees in it fits its
+                    // box (Ui::overflowingTexts); a text that does not fails the route at its end,
+                    // after the remaining steps have checked theirs
   };
   Kind kind = Kind::Wait;
   std::string text; // what the step is about: a control, an element, a name, a setting's value
@@ -151,6 +154,9 @@ struct AutotestRoute {
   // Whether the game's movies play as without a route (movies: true), for a route that sees the
   // ending through to its credits; without it, a moment's movie counts as played at once.
   bool movies = false;
+  // Whether each screenshot also checks that every text the player sees fits its box (text_fit:
+  // true), as expect_text_fits: all at that moment, for a route made for something else.
+  bool textFit = false;
   std::vector<AutotestStep> steps;
 };
 
@@ -267,6 +273,9 @@ private:
   bool scriptStep(const AutotestHost& host, const AutotestStep& step);
   bool scriptIfStep(const AutotestHost& host, const AutotestStep& step);
   bool whenStep(const AutotestHost& host, const AutotestStep& step);
+  bool textFitStep(const AutotestHost& host, const AutotestStep& step, double now);
+  // The texts of `document` (or all) that do not fit now, logged and counted as a failure.
+  void reportTextOverflows(std::vector<ui::Ui::TextOverflow> overflows);
   // What of the condition does not hold now, or empty if all of it does.
   [[nodiscard]] static std::string unmetCondition(const AutotestHost& host,
                                                   const AutotestCondition& until);
@@ -302,6 +311,8 @@ private:
   std::optional<std::filesystem::path> shots_;
   std::vector<std::string> skipKinds_;
   std::optional<std::string> result_; // empty on success, else the failure
+  // The expect_text_fits steps that found texts sticking out, for the route's result at its end.
+  std::vector<std::string> textFailures_;
   std::size_t stepIndex_ = 0;
   std::unique_ptr<Progress> progress_;
   double runStart_ = -1.0;

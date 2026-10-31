@@ -220,3 +220,30 @@
 #battle-answers button {
 	width: 120dp;
 }
+
+/* The boxes above sit on the original's 4:3 picture, in the middle of the screen: their places are from its middle,
+   so a 4:3 window (960dp wide), where that picture fills the width, keeps them on screen. */
+#press-start-text {
+	left: 50%;
+	margin-left: -480dp;
+}
+
+#panel {
+	left: 50%;
+	margin-left: -264dp;
+}
+
+#scrim.view-options #panel {
+	left: 50%;
+	margin-left: -468dp;
+}
+
+#language-box {
+	left: 50%;
+	margin-left: -318dp;
+}
+
+#battle-box {
+	left: 50%;
+	margin-left: -300dp;
+}

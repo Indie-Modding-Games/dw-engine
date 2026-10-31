@@ -48,7 +48,12 @@ button {
 	z-index: 50;
 }
 
+/* Opacity alone does not hide the box: RmlUi passes it down as a value a child may set again (the field menu's
+   unavailable entries and the player page's tabs do), which drew those children alone, without their box, for the
+   five frames of the outline. Shrunk to nothing, the box draws none of its children. Not hidden by visibility: a
+   hidden element takes no focus, and a box takes its focus before it opens. */
 .box-animating,
 .box-closed {
 	opacity: 0;
+	transform: scale(0);
 }

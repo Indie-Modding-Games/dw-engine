@@ -68,6 +68,19 @@
 	color: #fff371;
 }
 
+/* The settings pages (the engine's own, the original has none): a row is its label and its value on one line, 12
+   pixels like the other rows, and cuts what does not fit (the text-fit check finds it). The box is wide enough for the
+   longest pair of the packs' languages, Spanish's "Mostrar minimapa" and "Según el aspecto". */
+#panel.on-settings {
+	width: 780dp;
+	margin-left: -390dp;
+}
+.option {
+	height: 30dp;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
 .back {
 	margin-top: 6dp;
 	color: #b2b2b2;
@@ -271,8 +284,10 @@
 .player-tab-label { position: relative; left: 21dp; top: 9dp; white-space: nowrap; }
 #panel.on-player .player-line { position: absolute; margin: 0; padding: 0; height: 36dp; line-height: 36dp; font-size: 36dp; color: #fff371; }
 #panel.on-player .player-value { position: absolute; top: -3dp; float: none; color: #d6d6d6; }
-#player-name-line { left: 75dp; top: 21dp; }
-#panel.on-player #player-name { left: 120dp; top: 3dp; width: 216dp; white-space: nowrap; }
+/* The label ends 6dp before the name's box (the original's NAME begins 25 pixels in, and longer labels, Spanish
+   "Nombre", grow to the left); the name keeps its place in the box. */
+#player-name-line { left: 0; top: 21dp; width: 183dp; text-align: right; }
+#panel.on-player #player-name { left: 195dp; top: 3dp; width: 216dp; white-space: nowrap; text-align: left; }
 #player-level-line { left: 336dp; top: 105dp; }
 #panel.on-player #player-level, #panel.on-player #player-raised, #panel.on-player #player-medals { left: 270dp; width: 48dp; text-align: right; }
 #panel.on-player #player-rank { position: absolute; display: block; clear: none; left: 231dp; top: 51dp; width: 288dp; margin: 0; text-align: left; white-space: nowrap; }
@@ -391,7 +406,12 @@
 .page-prompt:last-child { margin-right: 0; }
 .prompt-key { color: #90a8f8; margin-right: 6dp; }
 .prompt-key.cancel-key { color: #3cff3c; }
-#chart-prompts { right: 30dp; top: 516dp; }
+/* The chart's prompts stay right of the rookie column, which reaches down past them: a key's name is wider than the
+   original's pad glyph, so this row is drawn a pixel tighter, closer together and nearer the edge. */
+#chart-prompts { right: 15dp; top: 516dp; letter-spacing: -3dp; }
+#chart-prompts .page-prompt { margin-right: 24dp; }
+#chart-prompts .page-prompt:last-child { margin-right: 0; }
+#chart-prompts .prompt-key { margin-right: 3dp; }
 #medals-prompts { right: 30dp; top: 519dp; }
 #cards-prompts { right: 30dp; top: 513dp; }
 .card-cell { position: absolute; width: 57dp; height: 57dp; box-sizing: border-box; border: 3dp #3c3c3c; border-top-color: #bebebe; border-left-color: #bebebe; background-color: #696969; }

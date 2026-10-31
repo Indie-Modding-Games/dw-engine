@@ -512,7 +512,8 @@ el color 1 de su CLUT, `0x6B5A`). Cualquier documento puede usarla para otro tex
 - **`FontEngine`** se instala sobre el motor de RmlUi al arrancar la UI y le pasa todas las familias menos
   `original-look`. Con `original`, esa familia dibuja cada glifo desde el atlas: un glifo responde a su carácter
   (`Ａ`) y a su equivalente ASCII (`A`), la tinta es blanca y la tiñe el `color` de RCSS, y crece en múltiplos enteros
-  (`round(tamaño / 11)`, al menos 1) con los píxeles en coordenadas enteras, así que se ve nítida a cualquier
+  (a 720 de alto, `round(tamaño / 11)`, al menos 1; a otra altura ese múltiplo por los píxeles por dp,
+  redondeado hacia abajo, para que el texto no crezca más que sus cajas) con los píxeles en coordenadas enteras, así que se ve nítida a cualquier
   resolución. Los caracteres que no tiene (ñ, á, ¿, ¡, paréntesis...) los dibuja la moderna en la misma línea base,
   al tamaño de la línea de mapa de bits por `fallback_size`; nunca se dibuja el glifo de sustitución del original.
   Sin la fuente extraída, `original` dibuja con la moderna (con un aviso en el log).

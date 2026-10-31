@@ -1,0 +1,137 @@
+# Every text fits its box (expect_text_fits after each capture) on the screens the original look styles from the
+# field, at 1280x720 and again at 1920x1080, where the bitmap font's whole-multiple scale and the boxes grow
+# differently: the pause menu and its pages (player, chart, medals, cards, tools, options, minimap), the partner's
+# status, techniques and bag with an item's options, the save machine and a battle with its end boxes.
+name: text-fit
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - script: give_item("meat 3")
+  - script: give_item("sm_recovery 2")
+  - script: give_item("mp_floppy 1")
+  - screenshot: field
+  - expect_text_fits: all
+  - menu: open
+  - wait: {seconds: 0.5}
+  - screenshot: pause-menu
+  - expect_text_fits: all
+  - menu_select: open-player
+  - wait: {seconds: 0.6}
+  - screenshot: player
+  - expect_text_fits: all
+  - menu_select: player-tab-chart
+  - wait: {seconds: 0.4}
+  - screenshot: player-chart
+  - expect_text_fits: all
+  - tap: {key: escape}
+  - wait: {seconds: 0.3}
+  - menu_select: player-tab-medals
+  - wait: {seconds: 0.4}
+  - screenshot: player-medals
+  - expect_text_fits: all
+  - tap: {key: escape}
+  - wait: {seconds: 0.3}
+  - menu_select: player-tab-card
+  - wait: {seconds: 0.4}
+  - screenshot: player-card
+  - expect_text_fits: all
+  - tap: {key: escape}
+  - wait: {seconds: 0.3}
+  - tap: {key: tab}
+  - wait: {seconds: 0.3}
+  - screenshot: player-tools
+  - expect_text_fits: all
+  - menu_select: player-options
+  - wait: {seconds: 0.3}
+  - screenshot: options
+  - expect_text_fits: all
+  - menu_select: options-back
+  - menu_select: player-minimap
+  - wait: {seconds: 0.3}
+  - screenshot: minimap
+  - expect_text_fits: all
+  - menu_select: minimap-back
+  - menu_select: player-back
+  - tap: {key: escape}
+  - wait: {seconds: 0.6}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.6}
+  - screenshot: partner-status
+  - expect_text_fits: all
+  - tap: {key: right}
+  - wait: {seconds: 0.5}
+  - screenshot: partner-tech
+  - expect_text_fits: all
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-items
+  - wait: {shown: partner_menu, seconds: 1}
+  - screenshot: partner-bag
+  - expect_text_fits: all
+  - tap: {key: return}
+  - wait: {seconds: 0.6}
+  - screenshot: partner-bag-options
+  - expect_text_fits: all
+  - tap: {key: escape}
+  - wait: {seconds: 0.4}
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - script: save_machine("")
+  - wait: {seconds: 1}
+  - screenshot: save-machine
+  - expect_text_fits: all
+  - tap: {key: escape}
+  - wait: {seconds: 1}
+  - when:
+      menu_open: true
+      steps:
+        - menu: close
+        - wait: {menu_open: false}
+  - script: battle("")
+  - wait: {shown: battle, seconds: 1}
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
+  - screenshot: battle
+  - expect_text_fits: all
+  - menu_select: command-2
+  - wait: {seconds: 4}
+  - screenshot: battle-2
+  - expect_text_fits: all
+  - menu_select: command-1
+  - wait: {seconds: 3}
+  - screenshot: battle-end
+  - expect_text_fits: all
+  - wait: {hidden: battle, timeout: 10}
+  # The same pages that hold the most text, at 1920x1080.
+  - resize: [1920, 1080]
+  - menu: open
+  - wait: {seconds: 0.6}
+  - screenshot: pause-menu-1080
+  - expect_text_fits: all
+  - menu_select: open-player
+  - wait: {seconds: 0.6}
+  - screenshot: player-1080
+  - expect_text_fits: all
+  - menu_select: player-tab-chart
+  - wait: {seconds: 0.4}
+  - screenshot: player-chart-1080
+  - expect_text_fits: all
+  - tap: {key: escape}
+  - wait: {seconds: 0.3}
+  - menu_select: player-tab-card
+  - wait: {seconds: 0.4}
+  - screenshot: player-card-1080
+  - expect_text_fits: all
+  - menu: close
+  - wait: {menu_open: false}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.6}
+  - screenshot: partner-status-1080
+  - expect_text_fits: all
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}

@@ -638,6 +638,8 @@ local function show_page(document, name, focus, tools)
   -- The original's menu box heads its icons with the date (game_menu.c: renderGameMenu); a skin
   -- shows it on the main page through the panel's class "on-main".
   document:get("panel"):set_class("on-main", name == "main")
+  -- The settings pages: a skin may give their label-and-value rows a wider box.
+  document:get("panel"):set_class("on-settings", name == "options" or name == "minimap")
   local first = name == "main"
       and ui.setting("ui_skin") == "original"
       and (fishing() ~= 0 and "fish" or "open-items")

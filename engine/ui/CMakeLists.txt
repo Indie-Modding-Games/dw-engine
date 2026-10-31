@@ -22,6 +22,7 @@ dwe_add_module(ui
         src/skin_catalog.cpp
         src/skin_styler.cpp
         src/sprite_sheet_rcss.cpp
+        src/text_fit.cpp
         src/text_font.cpp
         src/ui.cpp
         src/ui_renderer.cpp

@@ -120,11 +120,14 @@ std::string_view deviceName(AutotestDevice device) {
 }
 
 // The steps' names in routes, in the order of AutotestStep::Kind.
-constexpr std::array<std::string_view, 19> StepNames{
+constexpr std::array<std::string_view, 20> StepNames{
     "wait",          "walk_to",   "menu",       "menu_select", "expect_setting",
     "screenshot",    "resize",    "fullscreen", "press",       "release",
     "tap",           "axis",      "click",      "script",      "remember",
-    "expect_change", "script_if", "hold",       "when"};
+    "expect_change", "script_if", "hold",       "when",        "expect_text_fits"};
+
+// What an expect_text_fits step names to check every shown document.
+constexpr std::string_view AllDocuments = "all";
 
 // What an expect_change step asks of a setting against its remembered value.
 constexpr std::string_view ChangedUp = "up";
@@ -471,6 +474,11 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
         step.text != ChangedAtAll) {
       reader.fail(value, "expect_change is {name: up | down | changed}");
     }
+  } else if (kind == "expect_text_fits") {
+    step.kind = Kind::ExpectTextFits;
+    step.text = reader.text(value);
+    // A box that is still opening fits once it is in place.
+    step.timeout = 1.0;
   } else if (kind == "remember") {
     step.kind = Kind::Remember;
     step.name = reader.text(value);
@@ -625,7 +633,7 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   AutotestRoute route;
   reader.expectKeys(*document, "route", {"name", "device", "steps"},
                     {"gamepad", "timeout", "main_menu", "boot_screen", "language_first", "new_game",
-                     "load_save", "movies"});
+                     "load_save", "movies", "text_fit"});
   route.name = reader.text(reader.field(*document, "name"));
   const core::YamlNode& device = reader.field(*document, "device");
   if (const auto known = deviceNamed(reader.text(device))) {
@@ -657,6 +665,9 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   }
   if (const core::YamlNode* movies = document->find("movies")) {
     route.movies = reader.boolean(*movies);
+  }
+  if (const core::YamlNode* textFit = document->find("text_fit")) {
+    route.textFit = reader.boolean(*textFit);
   }
   if (const core::YamlNode* newGame = document->find("new_game")) {
     route.newGameChain = newGameChainNamed(reader.text(*newGame));
@@ -787,7 +798,9 @@ void Autotest::frame(const AutotestHost& host, std::uint64_t ticks, double now,
     runActions(ticks, events);
   }
   if (!finished() && stepIndex_ >= route_.steps.size() && actions_.empty()) {
-    result_ = std::string{};
+    result_ = textFailures_.empty() ? std::string{}
+                                    : std::format("{} text check(s) failed, the first: {}",
+                                                  textFailures_.size(), textFailures_.front());
   }
 }
 
@@ -865,6 +878,8 @@ bool Autotest::runStep(const AutotestHost& host, const AutotestStep& step, doubl
     return scriptIfStep(host, step);
   case Kind::When:
     return whenStep(host, step);
+  case Kind::ExpectTextFits:
+    return textFitStep(host, step, now);
   case Kind::Hold:
     return holdStep();
   }
@@ -1470,8 +1485,45 @@ bool Autotest::scriptStep(const AutotestHost& host, const AutotestStep& step) {
   return true;
 }
 
+bool Autotest::textFitStep(const AutotestHost& host, const AutotestStep& step, double now) {
+  if (host.ui == nullptr) {
+    failStep("the game has no UI");
+    return false;
+  }
+  std::vector<ui::Ui::TextOverflow> overflows = host.ui->overflowingTexts();
+  std::erase_if(overflows, [&step](const ui::Ui::TextOverflow& overflow) {
+    return step.text != AllDocuments && overflow.document != step.text;
+  });
+  if (overflows.empty()) {
+    return true;
+  }
+  if (now - progress_->start < step.timeout) {
+    return false;
+  }
+  reportTextOverflows(std::move(overflows));
+  return true;
+}
+
+void Autotest::reportTextOverflows(std::vector<ui::Ui::TextOverflow> overflows) {
+  if (overflows.empty()) {
+    return;
+  }
+  for (const ui::Ui::TextOverflow& overflow : overflows) {
+    core::logError("autotest: step {}: in {}, '{}' ({}) is {} by {:.1f} dp", stepIndex_ + 1,
+                   overflow.document, overflow.text, overflow.element, overflow.box,
+                   overflow.overflow);
+  }
+  const ui::Ui::TextOverflow& first = overflows.front();
+  textFailures_.push_back(std::format("step {}: {} text(s) do not fit, as '{}' in {}",
+                                      stepIndex_ + 1, overflows.size(), first.text,
+                                      first.document));
+}
+
 bool Autotest::screenshotStep(const AutotestHost& host, const AutotestStep& step) {
   Progress& progress = *progress_;
+  if (route_.textFit && !progress.shot && host.ui != nullptr) {
+    reportTextOverflows(host.ui->overflowingTexts());
+  }
   if (!shots_) {
     core::logInfo("autotest: screenshot {} skipped (no --shots folder)", step.text);
     return true;

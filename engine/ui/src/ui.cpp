@@ -23,6 +23,7 @@
 #include <cmath>
 #include <cstddef>
 #include <format>
+#include <iterator>
 #include <map>
 #include <optional>
 #include <span>
@@ -38,6 +39,7 @@
 #include "rml_interfaces.hpp"
 #include "scripting.hpp"
 #include "skin_styler.hpp"
+#include "text_fit.hpp"
 
 namespace dwe::ui {
 namespace {
@@ -871,7 +873,11 @@ struct Ui::Impl {
     desc.width = width;
     desc.height = height;
     context->SetDimensions({width, height});
-    context->SetDensityIndependentPixelRatio(dpRatioFor(width, height, desc.scale));
+    const float ratio = dpRatioFor(width, height, desc.scale);
+    if (fontEngine != nullptr) {
+      fontEngine->setDpRatio(ratio);
+    }
+    context->SetDensityIndependentPixelRatio(ratio);
   }
 
   void applyMinimap(Rml::ElementDocument& document) {
@@ -1305,6 +1311,22 @@ std::optional<Ui::Point> Ui::elementCenter(std::string_view document,
   const Rml::Vector2f offset = element->GetAbsoluteOffset(Rml::BoxArea::Border);
   const Rml::Vector2f size = element->GetBox().GetSize(Rml::BoxArea::Border);
   return Point{.x = offset.x + (size.x / 2.0F), .y = offset.y + (size.y / 2.0F)};
+}
+
+} // namespace dwe::ui
+
+namespace dwe::ui {
+
+std::vector<Ui::TextOverflow> Ui::overflowingTexts() const {
+  std::vector<TextOverflow> found;
+  const Rml::Vector2i size = impl_->context->GetDimensions();
+  for (const auto& [name, document] : impl_->documents) {
+    auto overflows = findTextOverflows(*document.element, name, dpRatio(),
+                                       static_cast<float>(size.x), static_cast<float>(size.y));
+    found.insert(found.end(), std::make_move_iterator(overflows.begin()),
+                 std::make_move_iterator(overflows.end()));
+  }
+  return found;
 }
 
 } // namespace dwe::ui

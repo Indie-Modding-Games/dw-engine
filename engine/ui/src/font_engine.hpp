@@ -27,6 +27,8 @@ public:
   // resources.
   void setTextFont(TextFont font) { textFont_ = font; }
   [[nodiscard]] TextFont textFont() const { return textFont_; }
+  // The context's pixels per dp, which sets how many times larger the bitmap font draws.
+  void setDpRatio(float ratio) { dpRatio_ = ratio; }
 
   void Initialize() override;
   void Shutdown() override;
@@ -84,6 +86,7 @@ private:
   OriginalLook look_;
   std::optional<BitmapFont> bitmap_;
   TextFont textFont_;
+  float dpRatio_ = 1.0F;
   std::vector<std::unique_ptr<BitmapFace>> faces_;
 };
 
