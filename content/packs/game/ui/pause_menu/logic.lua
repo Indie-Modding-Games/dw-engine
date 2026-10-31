@@ -347,11 +347,11 @@ local function refresh_medals(document)
   end
   local shown = (held[medal_index] or 0) ~= 0
   local base = string.format("player.medal.%d.", medal_index)
-  document:get("medal-name"):set_text(shown and (ui.setting(base .. "name") or "") or "")
+  document:get("medal-name"):set_text(shown and t(ui.setting(base .. "name") or "") or "")
   for line = 0, 2 do
     document
       :get("medal-line-" .. line)
-      :set_text(shown and (ui.setting(base .. "line." .. line) or "") or "")
+      :set_text(shown and t(ui.setting(base .. "line." .. line) or "") or "")
   end
   medals_cursor(document)
 end
