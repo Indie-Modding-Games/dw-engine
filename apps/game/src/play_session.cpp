@@ -7,6 +7,7 @@
 #include <dwe/game/inventory/inventory.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/scene/components.hpp>
+#include <dwe/session/cards_adapter.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/field_facts.hpp>
 #include <dwe/session/game_session.hpp>
@@ -22,6 +23,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <format>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -752,6 +754,13 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
         game::inventory::Inventory& bag = game_.systems.inventory->inventory();
         bag.spendMoney(bag.money());
         bag.addMoney(write->value);
+      }
+    } else if (write && write->kind == StoryWrite::Kind::Card) {
+      auto given = game_.systems.cards != nullptr
+                       ? applyCardWrite(*game_.systems.cards, *write)
+                       : core::fail(std::format("card {}: the game has no cards", write->number));
+      if (!given) {
+        write = std::unexpected{given.error()};
       }
     } else if (write) {
       if (auto written = applyStoryWrite(game_.systems.story->state(), *write); !written) {

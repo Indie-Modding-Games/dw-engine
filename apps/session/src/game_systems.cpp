@@ -102,6 +102,14 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
       core::logWarning("{}", cards.error().message);
     }
   }
+  // The fishing's tables too, or no map would have water and the pause menu would never offer Fish.
+  if (!tables.fishing) {
+    if (auto fishing = assets::loadFishingTable(files); fishing) {
+      tables.fishing = std::move(*fishing);
+    } else {
+      core::logWarning("{}", fishing.error().message);
+    }
+  }
   // The story owns the raised forms the evolution rules read; a save from before the story section
   // takes them from the evolution section, which is read first.
   auto story = std::make_unique<StoryAdapter>(StoryAdapterDesc{.files = &files});

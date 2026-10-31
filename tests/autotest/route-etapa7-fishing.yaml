@@ -1,0 +1,27 @@
+# Fishing is not part of the beta, but the player may try it: from mayo06 on a seeded game (run with --start mayo06 and
+# --story-stage stage_7), with the old rod (trigger 45) and food as bait, the pause menu offers Fish. The route takes
+# the rod out, picks the first bait, casts with confirm, waits and puts the rod away with cancel (Esc), then walks on:
+# nothing crashes and the field is the player's again.
+name: etapa7-fishing
+device: keyboard
+timeout: 400
+steps:
+  - wait: {map: mayo06, partner_within: 400, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  - script: story_set("trigger 45 on")
+  - script: give_item("meat 5")
+  - wait: {setting: {pause_menu.fishing: "2"}, seconds: 0.5, timeout: 30}
+  - menu: open
+  - menu_select: fish
+  - wait: {shown: fishing_bait, seconds: 1, timeout: 30}
+  - screenshot: bait
+  - tap: {key: return}
+  - wait: {seconds: 3}
+  - tap: {key: return}
+  - wait: {seconds: 10}
+  - screenshot: fishing
+  - repeat: {times: 6, steps: [{tap: {key: escape}}, {wait: {seconds: 1.5}}, {when: {shown: fishing_notice, steps: [{tap: {key: return}}]}}]}
+  - wait: {seconds: 3}
+  - screenshot: after
+  - walk_to: {trigger: 110, timeout: 180}
+  - wait: {map: mayo03, seconds: 1, timeout: 60}

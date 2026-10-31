@@ -1,0 +1,35 @@
+# Stage 7 of the story with the keyboard, the card collector of Toy Town: from omoc01 on a seeded game (run with
+# --start omoc01 and --story-stage stage_7). The collector (script 138, NPC 5) asks for three cards (19, 24 and 57,
+# given here with story_set); saying yes gives an item (107) and takes the three cards (take_card). The town's
+# people stand there only once it is freed (trigger 350, the map-head section): the route sets it and walks out to
+# omoc02 and back.
+name: etapa7-toy-cards
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: omoc01, partner_within: 400, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  - script: story_set("card 19 1")
+  - script: story_set("card 24 1")
+  - script: story_set("card 57 1")
+  - script: story_set("trigger 350 on")
+  - walk_to: {trigger: 111, encounters: win, timeout: 180}
+  - wait: {map: omoc02, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 110, encounters: win, timeout: 180}
+  - wait: {map: omoc01, partner_within: 400, seconds: 2, timeout: 60}
+  # The collector walks his waypoints: he is put by the player (place takes the original's axes) and a click on him
+  # walks up to him; confirm talks.
+  - walk_to: {point: [-495, 1500], radius: 100, encounters: win, timeout: 120}
+  - script: place("npc:5 -495 -1700 0")
+  - click: [-495, 1700]
+  - wait: {seconds: 3}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: collector
+  - repeat: {times: 2, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {seconds: 2}
+  - screenshot: collector-choice
+  - tap: {key: return}
+  - repeat: {times: 6, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: collector-done

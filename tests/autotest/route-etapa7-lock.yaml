@@ -10,13 +10,13 @@ timeout: 600
 steps:
   - wait: {map: trop02, partner_within: 400, seconds: 2, timeout: 60}
   - resize: [1280, 720]
-  - walk_to: {trigger: 110, encounters: true, win_battles: true, timeout: 180}
+  - walk_to: {trigger: 110, encounters: win, timeout: 180}
   - wait: {map: dgha01, partner_within: 400, seconds: 1, timeout: 60}
   - screenshot: dgha01
-  - walk_to: {trigger: 110, encounters: true, win_battles: true, timeout: 240}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
   - wait: {map: dgha02, partner_within: 400, seconds: 1, timeout: 60}
   - script: story_set("var 16 2")
-  - walk_to: {trigger: 51, encounters: true, win_battles: true, stop_on_closed: true, timeout: 240}
+  - walk_to: {trigger: 51, encounters: win, stop_on_closed: true, timeout: 240}
   - wait: {shown: dialog, seconds: 0.5, timeout: 30}
   - screenshot: dgha02-mgen11-closed
   - tap: {key: return}
@@ -27,5 +27,5 @@ steps:
   - screenshot: black-force
   - repeat: {times: 6, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
   - wait: {map: dgha02, hidden: story_textbox, seconds: 2, timeout: 30}
-  - walk_to: {trigger: 111, encounters: true, win_battles: true, timeout: 240}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
   - wait: {map: dgha01, seconds: 1, timeout: 60}

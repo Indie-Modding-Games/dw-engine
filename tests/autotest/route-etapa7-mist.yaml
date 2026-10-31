@@ -1,0 +1,51 @@
+# Stage 7 of the story with the keyboard, Misty Trees: from mist02 on a seeded game (run with --start mist02 and
+# --story-stage stage_7). While the fog stays the woods' step cells send the player at random (variable 110 against
+# a threshold) to the next clearing, back or round the loop; the deep cells count the tries (variable 120) and the
+# tenth always leads on to Jureimon's clearing (mist05), so the maze never traps the player. There his cells
+# (section 0x33) play the meeting (trigger 147: from then on the cells always lead on) and his tale, which lifts the
+# fog (trigger 148, routine 37; the fog is not drawn yet, so it hides nothing). The player goes on to Toy
+# Town (omoc01).
+name: etapa7-mist
+device: keyboard
+timeout: 1200
+steps:
+  - wait: {map: mist02, partner_within: 400, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  - expect_setting: {story.trigger.147: "false"}
+  # The woods' wild ones fight on the way. The fights are won with the debug command (encounters: win), but the enemy's
+  # life runs down over some frames and its hits land meanwhile: the partner is a Champion (the field's evolution
+  # scene takes about 20 seconds) and the loop heals it before every try.
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  - script: give_item("sm_recovery 20")
+  - repeat:
+      times: 16
+      steps:
+        - script: use_item("sm_recovery")
+        - when: {map: mist02, steps: [{walk_to: {trigger: 52, encounters: win, timeout: 240}}]}
+        - when: {map: mist03, steps: [{walk_to: {trigger: 53, encounters: win, timeout: 240}}]}
+        - when: {map: mist04, steps: [{walk_to: {trigger: 52, encounters: win, timeout: 240}}]}
+        - when: {map: mist07, steps: [{walk_to: {trigger: 52, encounters: win, timeout: 240}}]}
+        - wait: {seconds: 1.5}
+  - wait: {map: mist05, seconds: 1, timeout: 60}
+  - screenshot: mist05
+  - walk_to: {trigger: 51, stop_on_scene: true, encounters: win, timeout: 240}
+  - screenshot: meeting
+  - repeat: {times: 40, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 60}
+  - expect_setting: {story.trigger.147: "true"}
+  # The meeting goes on into his tale and lifts the fog; if it did not, his talk (original x -2017, z 1378) does.
+  - when:
+      setting: {story.trigger.148: "false"}
+      steps:
+        - walk_to: {point: [-1700, -1378], radius: 100, timeout: 120}
+        - click: [-2017, -1378]
+        - wait: {seconds: 3}
+        - tap: {key: return}
+        - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+        - repeat: {times: 30, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+        - wait: {hidden: story_textbox, seconds: 1, timeout: 60}
+  - expect_setting: {story.trigger.148: "true"}
+  - walk_to: {trigger: 112, encounters: win, timeout: 240}
+  - wait: {map: omoc01, seconds: 1, timeout: 60}
+  - screenshot: toy-town

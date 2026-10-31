@@ -1,6 +1,7 @@
 #include "story_set_command.hpp"
 
 #include <dwe/game/story/story_state.hpp>
+#include <dwe/session/cards_adapter.hpp>
 
 #include <charconv>
 #include <format>
@@ -36,9 +37,9 @@ core::Result<StoryWrite> storyWriteFromText(std::string_view text) {
     }
   }
   const auto usage = [&] {
-    return core::fail(
-        std::format("'{}': expected 'trigger <n> on|off', 'var <n> <0-255>' or 'money <0-{}>'",
-                    text, MoneyLimit));
+    return core::fail(std::format("'{}': expected 'trigger <n> on|off', 'var <n> <0-255>', "
+                                  "'money <0-{}>' or 'card <n> <1-255>'",
+                                  text, MoneyLimit));
   };
   if (words.size() == 2 && words[0] == "money") {
     const auto bits = integerOf(words[1]);
@@ -65,10 +66,20 @@ core::Result<StoryWrite> storyWriteFromText(std::string_view text) {
     }
     return StoryWrite{.kind = StoryWrite::Kind::Variable, .number = *number, .value = *value};
   }
+  if (words[0] == "card") {
+    const auto copies = integerOf(words[2]);
+    if (!copies || *copies < 1 || *copies > ByteLimit) {
+      return usage();
+    }
+    return StoryWrite{.kind = StoryWrite::Kind::Card, .number = *number, .value = *copies};
+  }
   return usage();
 }
 
 core::Result<void> applyStoryWrite(game::story::StoryState& state, const StoryWrite& write) {
+  if (write.kind == StoryWrite::Kind::Card) {
+    return core::fail(std::format("card {} is no story state", write.number));
+  }
   if (write.kind == StoryWrite::Kind::Trigger) {
     return state.setTrigger(write.number, write.value != 0);
   }
@@ -76,6 +87,18 @@ core::Result<void> applyStoryWrite(game::story::StoryState& state, const StoryWr
     return core::fail(std::string{"money goes to the bag, not to the story's state"});
   }
   return state.setVariable(write.number, static_cast<std::uint8_t>(write.value));
+}
+
+core::Result<void> applyCardWrite(session::CardsAdapter& cards, const StoryWrite& write) {
+  if (write.kind != StoryWrite::Kind::Card) {
+    return core::fail("not a card write");
+  }
+  for (std::int32_t copy = 0; copy < write.value; ++copy) {
+    if (auto given = cards.giveCopy(write.number); !given) {
+      return given;
+    }
+  }
+  return {};
 }
 
 } // namespace dwe::app
