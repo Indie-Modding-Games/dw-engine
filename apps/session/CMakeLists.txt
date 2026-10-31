@@ -87,6 +87,7 @@ dwe_add_module(session
         src/story_routines/routine_shop_overlay.cpp
         src/story_routines/routine_shop_tally.cpp
         src/story_routines/routine_smoke_effect.cpp
+        src/story_routines/routine_start_ending.cpp
         src/story_routines/routine_tournament.cpp
         src/story_routines/routine_tournament_medal.cpp
         src/story_routines/routine_tournament_schedule.cpp

@@ -51,6 +51,7 @@ core::Result<void> registerToyTownRoutines(StoryScenesContext& scenes);
 core::Result<void> registerBeetleCupEntryRoutine(StoryScenesContext& scenes);
 core::Result<void> registerRemoveMistRoutine(StoryScenesContext& scenes);
 core::Result<void> registerBossAndEndingLoadRoutines(StoryScenesContext& scenes);
+core::Result<void> registerStartEndingRoutine(StoryScenesContext& scenes);
 
 // The sound bank routine 51 or 52 loads into slot 8; nothing for another routine.
 std::optional<std::int32_t> loadRoutineSounds(game::story::RoutineNumber routine);

@@ -408,11 +408,14 @@ PlaySession::~PlaySession() {
   storyLink_.reset();
   game_.systems.story->attachNpcs(nullptr);
   for (const std::string_view document :
-       {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
-        SleepMenuDocument, DialogDocument, ShopMenuDocument, ItemKeeperDocument,
-        DiscardMenuDocument, JukeboxDocument, TradeMenuDocument, CardShopDocument, MeritShopDocument, FieldItemNoticeDocument,
-        AwardNoticeDocument, FishingBaitDocument, FishingNoticeDocument, FishingHudDocument,
-        CurlingHudDocument, EggBoxDocument, NamingBoxDocument, LivesBoxDocument}) {
+       {std::string_view{"hud"},   BattleDocument,          PartnerMenuDocument,
+        DestinationChoiceDocument, SleepMenuDocument,       DialogDocument,
+        ShopMenuDocument,          ItemKeeperDocument,      DiscardMenuDocument,
+        JukeboxDocument,           TradeMenuDocument,       CardShopDocument,
+        MeritShopDocument,         FieldItemNoticeDocument, AwardNoticeDocument,
+        FishingBaitDocument,       FishingNoticeDocument,   FishingHudDocument,
+        CurlingHudDocument,        EggBoxDocument,          NamingBoxDocument,
+        LivesBoxDocument}) {
     context_.ui->hide(document);
   }
 }
@@ -686,6 +689,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (game_.systems.scenes != nullptr) {
     storyScenes_.update(*game_.systems.scenes, battleScreen_, species, *scene_);
     storyProps_.update(*game_.systems.scenes);
+    if (game_.systems.scenes->takeGameEnded()) {
+      requestMovie(MovieMoment::Ending);
+    }
   }
   guardFactsChanged = commands.care.apply(session) || guardFactsChanged;
   if (std::exchange(commands.saveMachine, false)) {

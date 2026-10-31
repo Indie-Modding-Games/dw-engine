@@ -79,6 +79,8 @@ struct StoryScenesContext {
   MistPalettes mist;
   // The map routine 51 or 52 put its sound bank in slot 8 on, until the field leaves it.
   std::optional<std::string> routineSoundsMap;
+  // Routine 53's end: the game is over and the app plays the ending (MAIN_STATE 3).
+  bool gameEnded = false;
   // The recruit triggers as last seen, to tell a new resident.
   std::vector<bool> recruits;
   // A lost life or a death whose section has not run yet, and the egg box's egg (rules.death).

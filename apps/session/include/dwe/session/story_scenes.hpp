@@ -182,6 +182,9 @@ public:
   // The screen the story waits for is closed.
   void screenClosed();
   [[nodiscard]] std::optional<PartnerSceneRequest> takePartnerScene();
+  // Whether routine 53 ended the game since the last call: the app closes it, plays the ending
+  // movie and goes back to the title (main.c: main, MAIN_STATE 3).
+  [[nodiscard]] bool takeGameEnded();
   void partnerSceneFinished();
   // Whether the story plays the lost lives, the deaths and the rebirths as partner scenes; the app
   // then plays them when the story asks, not when the partner's events come.

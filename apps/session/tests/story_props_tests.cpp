@@ -290,3 +290,23 @@ TEST_CASE("routines 51 and 52 load the boss's and the ending's sound banks and g
   // Without a game nothing holds slot 8.
   CHECK_FALSE(scenes.routineSoundsMap.has_value());
 }
+
+TEST_CASE("routine 53 waits for the ending scene's sync and then ends the game") {
+  using dwe::game::story::RoutineWaits;
+  using dwe::game::story::TaskDone;
+  using dwe::game::story::TaskRunning;
+  dwe::session::StoryScenesContext scenes{dwe::session::StoryScenesDesc{}};
+  REQUIRE(dwe::session::registerStartEndingRoutine(scenes));
+  const auto started = scenes.routines.call(53);
+  REQUIRE(started);
+  const auto* waits = std::get_if<RoutineWaits>(&*started);
+  REQUIRE(waits != nullptr);
+  // The scene is playing: tamerTickEnding has not set SOME_SCRIPT_SYNC_BIT yet.
+  scenes.sync.begin();
+  CHECK(std::holds_alternative<TaskRunning>(waits->task->tick()));
+  CHECK(std::holds_alternative<TaskRunning>(waits->task->tick()));
+  CHECK_FALSE(scenes.gameEnded);
+  scenes.sync.finish();
+  CHECK(std::holds_alternative<TaskDone>(waits->task->tick()));
+  CHECK(scenes.gameEnded);
+}

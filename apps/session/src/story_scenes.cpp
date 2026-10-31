@@ -422,6 +422,10 @@ std::optional<PartnerSceneRequest> StoryScenes::takePartnerScene() {
   return std::exchange(context_->partnerScene, std::nullopt);
 }
 
+bool StoryScenes::takeGameEnded() {
+  return std::exchange(context_->gameEnded, false);
+}
+
 void StoryScenes::partnerSceneFinished() {
   context_->sync.finish();
   if (context_->desc.story != nullptr) {
