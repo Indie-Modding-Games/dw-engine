@@ -168,3 +168,31 @@ Los nombres de mapa se centran en 24 caracteres con espacios, como el original.
 | Player | Jugador |
 | Directional Pad | botones de dirección |
 | Press X | Presiona X |
+
+## Historia
+
+Los diálogos de los scripts de eventos (`text/es/story_<n>.yaml`). La línea de quien habla
+(`{color:7}Jijimon {color:1}\n`) se copia igual y los nombres de los personajes siguen en inglés.
+
+| Inglés | Español | Nota |
+|---|---|---|
+| Digivice | Digivice | |
+| Merit, Merit points | méritos, puntos de mérito | la tienda de cartas |
+| Card, Trading card | carta, carta coleccionable | |
+| Tournament Schedule | Calendario de torneos | |
+| Enter (a tournament), Register | inscribirse | |
+| Qualifications | Requisitos | |
+| Battle Royal | batalla campal | |
+| X joins the city! | ¡X se une a la ciudad! | en dos líneas si no cabe |
+| Begin / Explain / Quit | Empezar / Explicar / Salir | los entrenamientos |
+| Explain again / Bonus Try | Explicar otra vez / Intento extra | |
+| Slot game | Tragamonedas | |
+| Vending Machine | máquina expendedora | precios en cifras: «Carne: 300 Bits» |
+| Elevator | elevador | |
+| Ogre mode | Modo Ogro | |
+| Dimensional Key Chain | Llavero Dimensional | |
+| Lake Guardian | Guardián del Lago | |
+| Glacial / Speedy Time Zone | Zona de Tiempo Glacial / Veloz | |
+| Market manager | Encargado del mercado | |
+| Come again. | Vuelve pronto. | las tiendas |
+| See ya (opción) | Adiós | |
