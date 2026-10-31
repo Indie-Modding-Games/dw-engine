@@ -15,28 +15,42 @@ core::Result<ScreenFade> ScreenFade::create(Renderer& renderer) {
   if (!quads) {
     return std::unexpected{quads.error()};
   }
-  return ScreenFade{std::move(*quads), renderer.whiteTexture()};
+  auto whiteQuads = QuadBatch::create(renderer, rhi::BlendMode::Additive);
+  if (!whiteQuads) {
+    return std::unexpected{whiteQuads.error()};
+  }
+  return ScreenFade{std::move(*quads), std::move(*whiteQuads), renderer.whiteTexture()};
 }
 
 void ScreenFade::setDarkness(float darkness) {
   darkness_ = std::clamp(darkness, 0.0F, 1.0F);
 }
 
-void ScreenFade::draw(DrawContext& context) {
-  if (darkness_ <= 0.0F) {
-    return;
-  }
+void ScreenFade::setWhiteness(float whiteness) {
+  whiteness_ = std::clamp(whiteness, 0.0F, 1.0F);
+}
+
+void ScreenFade::cover(QuadBatch& quads, DrawContext& context, float amount, TextureId white) {
   // The quad follows the target, so it covers the window at any size.
-  quads_.clear();
-  quads_.add({.position = {0.0F, 0.0F},
-              .size = {static_cast<float>(context.extent().width),
-                       static_cast<float>(context.extent().height)},
-              .uvMin = {0.0F, 0.0F},
-              .uvMax = {1.0F, 1.0F},
-              .color = screenFadeColor(darkness_),
-              .texture = white_,
-              .sampler = rhi::SamplerKind::NearestClamp});
-  quads_.draw(context);
+  quads.clear();
+  quads.add({.position = {0.0F, 0.0F},
+             .size = {static_cast<float>(context.extent().width),
+                      static_cast<float>(context.extent().height)},
+             .uvMin = {0.0F, 0.0F},
+             .uvMax = {1.0F, 1.0F},
+             .color = screenFadeColor(amount),
+             .texture = white,
+             .sampler = rhi::SamplerKind::NearestClamp});
+  quads.draw(context);
+}
+
+void ScreenFade::draw(DrawContext& context) {
+  if (whiteness_ > 0.0F) {
+    cover(whiteQuads_, context, whiteness_, white_);
+  }
+  if (darkness_ > 0.0F) {
+    cover(quads_, context, darkness_, white_);
+  }
 }
 
 } // namespace dwe::render

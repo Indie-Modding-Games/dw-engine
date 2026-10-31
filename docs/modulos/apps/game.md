@@ -152,6 +152,9 @@ gigante de `gomi02` (`ETCNA/TRY.TMD`) no es semitransparente y no cambia.
 (`session/story_props.hpp`): la vagoneta del Drill Tunnel delante del compañero, a su radio más 100 y girada como él
 (`map_object.c: renderDirtCartModel`), el montón de tierra de tunn05 a la escala de su tamaño y la roca de tunn06, todos
 con `FieldScene::setProps` (un juego de sitios por modelo); los quita al entrar en otro mapa (`unloadMapParts`).
+Lleva el fundido a blanco de las rutinas 45 y 46 (`game::field::WhiteFade`) a 20 fotogramas por segundo y lo pasa a
+`render::ScreenFade::setWhiteness`; el tono sale del de `Field` y vuelve a él, porque el original comparte `FADE_PROGRESS`
+entre los fundidos, y un cambio de mapa quita el blanco (`fadeToBlack` borra el objeto 4005).
 Mueve el temblor de la rutina 34 a 20 fotogramas por segundo y lo pasa a la cámara (`MapRenderer::setShake`), y lleva un
 sprite del mapa al nodo de un personaje (`spawnSpriteAtEntity`, con `FieldScene::entityNodePoint` y
 `MapLayers::spriteSize`).

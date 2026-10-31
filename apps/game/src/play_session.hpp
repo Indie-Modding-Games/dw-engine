@@ -144,6 +144,8 @@ public:
 
   // How much the map change's or the sleep's fade takes away from the screen, from 0 to 1.
   [[nodiscard]] float fadeLevel() const;
+  // How much white the story's fade to white adds to the screen, from 0 to 1.
+  [[nodiscard]] float whiteLevel() const { return storyProps_.whiteness(); }
   // Feeds the story's textboxes the player's keys, once per tick while no menu takes them.
   void pressStory(const input::InputState& input);
   // Feeds the battle the buttons it reads outside its document: `extra`, the original's square,

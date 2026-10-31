@@ -97,6 +97,14 @@ void FieldStoryProps::update(session::StoryScenes& scenes) {
     mapId_ = mapId;
     clearMapParts();
   }
+  // A map change's fadeToBlack removes the fade to white (fade.c: removeObject(4005)) and fades out
+  // from the shade it left.
+  if (whiteFade_.active() && scene_->field().mapChangePending()) {
+    core::logDebug("[port:story] fadeToBlack (fade.c:73): the map change ends the fade to white "
+                   "at shade {}",
+                   whiteFade_.shade());
+    whiteFade_.stop();
+  }
   while (const auto request = scenes.takePropRequest()) {
     take(*request);
   }
@@ -144,7 +152,21 @@ void FieldStoryProps::take(const session::StoryPropRequest& request) {
     lidSeconds_ = 0.0;
   } else if (const auto* box = std::get_if<session::ToyTownBoxSelected>(&request)) {
     selectedBox_ = box->box;
+  } else if (const auto* fade = std::get_if<session::WhiteFadeStarted>(&request)) {
+    startWhiteFade(*fade);
   }
+}
+
+void FieldStoryProps::startWhiteFade(const session::WhiteFadeStarted& fade) {
+  game::field::Field& field = scene_->field();
+  if (fade.toWhite) {
+    // fadeToWhite leaves FADE_PROGRESS as the last fade left it.
+    whiteFade_.fadeOut(fade.frames, field.shadeNow().value_or(0));
+  } else {
+    whiteFade_.fadeIn(fade.frames);
+  }
+  whiteSeconds_ = 0.0;
+  field.setShade(whiteFade_.shade());
 }
 
 void FieldStoryProps::placeSprite(const session::SpriteAtCharacter& sprite) {
@@ -179,6 +201,14 @@ void FieldStoryProps::placeSprite(const session::SpriteAtCharacter& sprite) {
 
 void FieldStoryProps::advance(double seconds) {
   advanceLids(seconds);
+  if (whiteFade_.active()) {
+    whiteSeconds_ += seconds;
+    while (whiteFade_.active() && whiteSeconds_ >= OriginalFrameSeconds) {
+      whiteSeconds_ -= OriginalFrameSeconds;
+      whiteFade_.frame();
+    }
+    scene_->field().setShade(whiteFade_.shade());
+  }
   if (!shakeFrame_) {
     return;
   }

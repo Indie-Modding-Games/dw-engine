@@ -1185,6 +1185,7 @@ int runGame(const Options& requested) {
       core::logDebug("[port:save] main (main.c:3522-3527): back to the title screen");
       flow.toTitle();
       screenFade->setDarkness(0.0F);
+      screenFade->setWhiteness(0.0F);
       title.showBoot();
     }
     if (interview) {
@@ -1203,6 +1204,7 @@ int runGame(const Options& requested) {
       play->update(sessionCommands, autotest.get(), frameStats, gameSeconds,
                    static_cast<float>(step.alpha()));
       screenFade->setDarkness(play->fadeLevel());
+      screenFade->setWhiteness(play->whiteLevel());
       mapChangeView.show(play->scene(), play->fadeLevel());
       if (const auto moment = play->takeMovieRequest()) {
         // The ending closes the game before its movie, then the title (main.c: main, MAIN_STATE 3).

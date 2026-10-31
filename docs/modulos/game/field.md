@@ -42,6 +42,10 @@ if (auto change = field.takeMapChange()) {
 - **Fundido y nombre**: el cambio de mapa cuenta en fotogramas del original. `fadeLevel()` dice cuánto quita el
   fundido de la pantalla (0 nada, 1 negro), con la curva de `fade.c` (`fadeOutShade`, `fadeInShade` y
   `shadeDarkness` en `rules.hpp`): la app lo resta sobre la escena (`render::ScreenFade`), no lo mezcla con negro.
+  `shadeNow()` da el tono que guarda la pantalla (`FADE_PROGRESS`) y `setShade()` lo cambia cuando lo dibuja otro
+  fundido: `WhiteFade` (`white_fade.hpp`) es el fundido a blanco de las rutinas 45 y 46 (`fade.c: fadeToWhite`,
+  `fadeFromWhite`), que sube `160 / (fotogramas + 1)` por fotograma desde ese tono hasta 160 y vuelve desde 160 menos
+  un paso, dibuja sus fotogramas y se quita al siguiente (con 40 acaba en 40, no en 0).
   `mapNameShown()` da el mapa cuyo nombre se ve, del fotograma 10 del fundido de salida hasta entrar en el mapa
   nuevo; la app lo busca en la tabla de mapas y el HUD lo pone delante del fundido. El fundido de salida sigue
   desde el tono que dejó el último (`FADE_PROGRESS`), también si corta un fundido de entrada a medias.

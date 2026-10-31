@@ -540,8 +540,8 @@ scriptCompareMove = { status = "portado", dwe = "apps/session/src/partner_moves.
 
 # --- Menús
 initializeFadeData = { status = "no-aplica", note = "preparación del original", what = "Prepara los fundidos." }
-fadeToWhite = { status = "falta", what = "Funde la pantalla a blanco.", note = "rutina 45 del guion, sin registrar: sigue sin fundir" }
-fadeFromWhite = { status = "falta", what = "Vuelve del blanco.", note = "rutina 46 del guion, sin registrar" }
+fadeToWhite = { status = "portado", dwe = "game/field/src/white_fade.cpp", what = "Funde la pantalla a blanco." }
+fadeFromWhite = { status = "portado", dwe = "game/field/src/white_fade.cpp", what = "Vuelve del blanco." }
 clearTextArea = { status = "no-aplica", note = "texto en memoria de vídeo", what = "Borra una zona de texto." }
 clearTextSubArea = { status = "no-aplica", note = "texto en memoria de vídeo", what = "Borra parte de una zona de texto." }
 setTextColor = { status = "no-aplica", note = "texto del original; el motor usa sus estilos", what = "Cambia el color del texto." }

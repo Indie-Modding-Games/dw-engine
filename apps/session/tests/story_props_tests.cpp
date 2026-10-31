@@ -1,5 +1,7 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/game/story/story_state.hpp>
+#include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_lua.hpp>
 #include <dwe/session/story_props.hpp>
 
@@ -13,6 +15,7 @@
 #include <variant>
 #include <vector>
 
+#include "adapter_fixture.hpp"
 #include "apps/session/src/story_routines/routines.hpp"
 #include "apps/session/src/story_scenes_context.hpp"
 #include "story_lua_fixture.hpp"
@@ -23,6 +26,7 @@ using dwe::session::DirtPileShown;
 using dwe::session::ScreenShakeStarted;
 using dwe::session::SpriteAtCharacter;
 using dwe::session::StoryPropRequest;
+using dwe::session::WhiteFadeStarted;
 using story_play::Played;
 using story_play::SectionRef;
 using story_play::StoryPlay;
@@ -309,4 +313,32 @@ TEST_CASE("routine 53 waits for the ending scene's sync and then ends the game")
   scenes.sync.finish();
   CHECK(std::holds_alternative<TaskDone>(waits->task->tick()));
   CHECK(scenes.gameEnded);
+}
+
+TEST_CASE("routines 45 and 46 fade to white and back over the frames variable 254 holds") {
+  const dwe::session::testing::TestPacks packs;
+  auto story = std::make_unique<dwe::session::StoryAdapter>(
+      dwe::session::StoryAdapterDesc{.files = &packs.files()});
+  dwe::session::StoryAdapter& state = *story;
+  std::vector<std::unique_ptr<dwe::session::SessionSystem>> systems;
+  systems.push_back(std::move(story));
+  const auto session = dwe::session::testing::newGameWith(packs, std::move(systems));
+  dwe::session::StoryScenesContext scenes{dwe::session::StoryScenesDesc{.story = &state}};
+  scenes.rules.operandVariable = 254;
+  REQUIRE(dwe::session::registerWhiteFadeRoutines(scenes));
+  // ogre03's script 48: set_pstat(254, 40), call_routine(45) ... call_routine(46).
+  REQUIRE(state.state().setVariable(254, 40));
+  const auto out = scenes.routines.call(45);
+  REQUIRE(out);
+  CHECK(std::holds_alternative<dwe::game::story::RoutineGoesOn>(*out));
+  REQUIRE(state.state().setVariable(254, 20));
+  const auto in = scenes.routines.call(46);
+  REQUIRE(in);
+  CHECK(std::holds_alternative<dwe::game::story::RoutineGoesOn>(*in));
+  const auto taken = takeAll(scenes);
+  REQUIRE(taken.size() == 2);
+  CHECK(std::get<WhiteFadeStarted>(taken[0]).toWhite);
+  CHECK(std::get<WhiteFadeStarted>(taken[0]).frames == 40);
+  CHECK_FALSE(std::get<WhiteFadeStarted>(taken[1]).toWhite);
+  CHECK(std::get<WhiteFadeStarted>(taken[1]).frames == 20);
 }

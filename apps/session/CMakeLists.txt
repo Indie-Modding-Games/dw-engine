@@ -83,6 +83,7 @@ dwe_add_module(session
         src/story_routines/routine_remove_mist.cpp
         src/story_routines/routine_save_menu.cpp
         src/story_routines/routine_screen_shake.cpp
+        src/story_routines/routine_white_fade.cpp
         src/story_routines/routine_shop.cpp
         src/story_routines/routine_shop_overlay.cpp
         src/story_routines/routine_shop_tally.cpp

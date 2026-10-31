@@ -67,5 +67,6 @@ struct BeetleCupEntry {
   std::int64_t entrant = 0;
 };
 BeetleCupEntry beetleCupEntry(std::int32_t day, std::int64_t partnerSpecies);
+core::Result<void> registerWhiteFadeRoutines(StoryScenesContext& scenes);
 
 } // namespace dwe::session

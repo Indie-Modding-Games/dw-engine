@@ -217,6 +217,11 @@ public:
   // (everything: black). The original subtracts a grey from every pixel (fade.c: renderFade), and
   // the app draws it that way.
   [[nodiscard]] float fadeLevel() const;
+  // The shade the screen holds now (fade.c: FADE_PROGRESS), nothing when no fade has run.
+  [[nodiscard]] std::optional<std::int32_t> shadeNow() const;
+  // A fade the field does not run (the story's fade to white, WhiteFade) drew `shade`:
+  // FADE_PROGRESS is shared, so the next map change fades out from it.
+  void setShade(std::int32_t shade) { fadeProgress_ = shade; }
 
   // The map whose name the map change shows now: from the fade out's name frame until the new map
   // is entered (tamer.c: tamerTickChangeMap, map.c: addMapNameObject). Nothing otherwise.
@@ -474,8 +479,6 @@ private:
   bool touchNpcs();
   void tickNpcs(float seconds, bool playerFree);
   void leave(MapChange change);
-  // The shade the screen holds now (fade.c: FADE_PROGRESS), nothing when no fade has run.
-  [[nodiscard]] std::optional<std::int32_t> shadeNow() const;
   // The fade in's last frame is drawn: FADE_PROGRESS keeps its shade.
   void endFadeIn();
   // Whether the exit filter lets the player take this map change; a closed one is kept for
