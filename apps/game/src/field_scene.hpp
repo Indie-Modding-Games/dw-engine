@@ -201,6 +201,14 @@ public:
   // field_story_props.hpp); no places draws none of it. A model loads the first time it has
   // places; one that fails is logged once and not drawn.
   void setProps(const assets::AssetId& model, std::vector<glm::mat4> places);
+  // The same with a pose per copy: one matrix per joint of the model's skin, in model space (the
+  // original's linked objects, e.g. a box and its lid: map_object.c: renderToyTownBoxes); a pose
+  // whose count is not the skin's draws the rest pose.
+  struct PropPlace {
+    glm::mat4 world{1.0F};
+    std::vector<glm::mat4> joints;
+  };
+  void setPosedProps(const assets::AssetId& model, std::vector<PropPlace> places);
   // While held the camera stays where it points: map.c: tickCameraFollowPlayer follows the player
   // only in its state 0, never in a battle, where the player runs back on screen.
   void holdCamera(bool held) { cameraHeld_ = held; }
@@ -708,7 +716,7 @@ private:
   // setProps: each model asked for, its handle once loaded (none when it failed), and the copies.
   struct PropSet {
     std::optional<render::ModelHandle> model;
-    std::vector<glm::mat4> places;
+    std::vector<PropPlace> places;
   };
   std::map<std::string, PropSet> props_;
 };

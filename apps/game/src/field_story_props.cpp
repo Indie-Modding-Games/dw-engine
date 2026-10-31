@@ -34,6 +34,14 @@ constexpr std::string_view PileModel = "model/etcna/t_yama";
 constexpr std::string_view BoulderModel = "model/etcna/iwa";
 // map_object.c: spawnAngemonPedestal (ANGEMON_PEDESTAL_TMD).
 constexpr std::string_view PedestalModel = "model/etcna/abox";
+// map_object.c: spawnGearbox (GEARBOX_TMD, GEARBOX_LOCATION) and spawnToyTownBoxes (BIG_BOX_TMD,
+// SMALL_BOX_TMD and their locations). Each box is two linked objects, the box and its lid.
+constexpr std::string_view GearboxModel = "model/etcna/gand";
+constexpr glm::ivec3 GearboxLocation{-100, 0, 1700};
+constexpr std::string_view BigBoxModel = "model/etcna/bigbox";
+constexpr glm::ivec3 BigBoxLocation{500, -600, 600};
+constexpr std::string_view SmallBoxModel = "model/etcna/smabox";
+constexpr glm::ivec3 SmallBoxLocation{-400, -400, 600};
 // map_object.c: DIRT_PILE_LOCATION.
 constexpr glm::ivec3 PileLocation{2037, 0, 849};
 // map_object.c: initializeTrainingPoop (session::trainingPoopOn).
@@ -99,6 +107,8 @@ void FieldStoryProps::clearMapParts() {
   pileSize_.reset();
   boulder_.reset();
   pedestal_.reset();
+  gearbox_ = false;
+  toyBoxes_ = false;
 }
 
 void FieldStoryProps::take(const session::StoryPropRequest& request) {
@@ -123,6 +133,17 @@ void FieldStoryProps::take(const session::StoryPropRequest& request) {
     placeSprite(*sprite);
   } else if (const auto* pedestal = std::get_if<session::AngemonPedestalShown>(&request)) {
     pedestal_ = *pedestal;
+  } else if (std::holds_alternative<session::ToyTownGearboxShown>(request)) {
+    gearbox_ = true;
+  } else if (std::holds_alternative<session::ToyTownBoxesShown>(request)) {
+    // spawnToyTownBoxes closes both lids and selects no box.
+    toyBoxes_ = true;
+    selectedBox_ = 0;
+    bigLid_ = 0;
+    smallLid_ = 0;
+    lidSeconds_ = 0.0;
+  } else if (const auto* box = std::get_if<session::ToyTownBoxSelected>(&request)) {
+    selectedBox_ = box->box;
   }
 }
 
@@ -157,6 +178,7 @@ void FieldStoryProps::placeSprite(const session::SpriteAtCharacter& sprite) {
 }
 
 void FieldStoryProps::advance(double seconds) {
+  advanceLids(seconds);
   if (!shakeFrame_) {
     return;
   }
@@ -169,6 +191,21 @@ void FieldStoryProps::advance(double seconds) {
       shakeFrame_.reset();
       shakeOffset_ = 0;
     }
+  }
+}
+
+void FieldStoryProps::advanceLids(double seconds) {
+  // renderToyTownBoxes turns the selected box's lid once a frame it draws the boxes.
+  if (!toyBoxes_ ||
+      (selectedBox_ != session::ToyTownBigBox && selectedBox_ != session::ToyTownSmallBox)) {
+    lidSeconds_ = 0.0;
+    return;
+  }
+  lidSeconds_ += seconds;
+  while (lidSeconds_ >= OriginalFrameSeconds) {
+    lidSeconds_ -= OriginalFrameSeconds;
+    std::int32_t& lid = selectedBox_ == session::ToyTownBigBox ? bigLid_ : smallLid_;
+    lid = session::toyTownLidAfterFrame(lid);
   }
 }
 
@@ -213,6 +250,29 @@ void FieldStoryProps::show() {
         glm::translate(glm::mat4{1.0F}, assets::toWorldPosition({pedestal_->x, 0, pedestal_->z})));
   }
   setProps(*scene_, PedestalModel, std::move(pedestal));
+  // renderGearbox: unturned at its place.
+  std::vector<glm::mat4> gearbox;
+  if (gearbox_) {
+    gearbox.push_back(glm::translate(glm::mat4{1.0F}, assets::toWorldPosition(GearboxLocation)));
+  }
+  setProps(*scene_, GearboxModel, std::move(gearbox));
+  // renderToyTownBoxes: each box at its place, its lid (the second object, linked to the box)
+  // turned about its x axis by its progress.
+  const auto box = [this](const glm::ivec3 location, std::int32_t lid) {
+    std::vector<FieldScene::PropPlace> places;
+    if (toyBoxes_) {
+      places.push_back({.world = glm::translate(glm::mat4{1.0F}, assets::toWorldPosition(location)),
+                        .joints = {glm::mat4{1.0F}, glm::rotate(glm::mat4{1.0F}, radiansOf(lid),
+                                                                glm::vec3{1.0F, 0.0F, 0.0F})}});
+    }
+    return places;
+  };
+  if (const auto id = modelId(BigBoxModel)) {
+    scene_->setPosedProps(*id, box(BigBoxLocation, bigLid_));
+  }
+  if (const auto id = modelId(SmallBoxModel)) {
+    scene_->setPosedProps(*id, box(SmallBoxLocation, smallLid_));
+  }
   // renderTrainingPoop: drawn on its map while the map layer is (FieldScene leaves props out when
   // the scenery is hidden).
   std::vector<glm::mat4> poop;

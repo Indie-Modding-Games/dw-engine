@@ -65,6 +65,15 @@ void FieldScene::submitMapObjects() {
 }
 
 void FieldScene::setProps(const assets::AssetId& model, std::vector<glm::mat4> places) {
+  std::vector<PropPlace> posed;
+  posed.reserve(places.size());
+  for (const glm::mat4& place : places) {
+    posed.push_back({.world = place, .joints = {}});
+  }
+  setPosedProps(model, std::move(posed));
+}
+
+void FieldScene::setPosedProps(const assets::AssetId& model, std::vector<PropPlace> places) {
   const auto found = props_.find(model.str());
   if (found != props_.end()) {
     found->second.places = std::move(places);
@@ -95,8 +104,11 @@ void FieldScene::submitProps() {
     if (!set.model) {
       continue;
     }
-    for (const glm::mat4& place : set.places) {
-      models_->submit({.model = *set.model, .world = place, .joints = {}, .tint = sceneryTint()});
+    for (const PropPlace& place : set.places) {
+      models_->submit({.model = *set.model,
+                       .world = place.world,
+                       .joints = place.joints,
+                       .tint = sceneryTint()});
     }
   }
 }

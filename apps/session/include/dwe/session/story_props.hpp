@@ -57,6 +57,34 @@ struct AngemonPedestalShown {
   std::int32_t z = 1500;
 };
 
+// Routine 41 (map_object.c: spawnGearbox): the gearbox ETCNA\GAND of the Robot House (omoc03),
+// unturned at (-100, 0, 1700) in the original's axes. It also selects no box.
+struct ToyTownGearboxShown {};
+
+// Routine 43 (map_object.c: spawnToyTownBoxes): the Toy Mansion's (omoc08) big box ETCNA\BIGBOX at
+// (500, -600, 600) and small box ETCNA\SMABOX at (-400, -400, 600), lids closed, no box selected.
+struct ToyTownBoxesShown {};
+
+// Routines 42 and 44 (somethingToyTown, openToyTownBox) set the selected box from the operand
+// variable, as a signed byte; 41 and 43 set it to 0. While box 1 (the big one) or 2 (the small one)
+// is selected, its lid opens a step a drawn frame (renderToyTownBoxes).
+struct ToyTownBoxSelected {
+  std::int32_t box = 0;
+};
+// The box the operand variable picks: the routines read it as a signed byte.
+[[nodiscard]] constexpr std::int32_t toyTownBoxOf(std::int64_t operand) {
+  return static_cast<std::int8_t>(static_cast<std::uint8_t>(operand));
+}
+inline constexpr std::int32_t ToyTownBigBox = 1;
+inline constexpr std::int32_t ToyTownSmallBox = 2;
+// renderToyTownBoxes: the selected box's lid turns -100 about its x axis a frame, down to -0x400
+// (a quarter turn, 4096 a turn).
+inline constexpr std::int32_t ToyTownLidStep = 100;
+inline constexpr std::int32_t ToyTownLidOpen = -0x400;
+[[nodiscard]] constexpr std::int32_t toyTownLidAfterFrame(std::int32_t lid) {
+  return lid - ToyTownLidStep < ToyTownLidOpen ? ToyTownLidOpen : lid - ToyTownLidStep;
+}
+
 // spawn_sprite_at_entity (overworld.c: spawnSpriteAtEntity): the map's sprite `object` is moved,
 // centred, to where node `node` of the character with script id `character` shows.
 struct SpriteAtCharacter {
@@ -65,8 +93,9 @@ struct SpriteAtCharacter {
   std::int32_t object = 0;
 };
 
-using StoryPropRequest = std::variant<DirtCartShown, DirtPileShown, BoulderShown,
-                                      ScreenShakeStarted, SpriteAtCharacter, AngemonPedestalShown>;
+using StoryPropRequest =
+    std::variant<DirtCartShown, DirtPileShown, BoulderShown, ScreenShakeStarted, SpriteAtCharacter,
+                 AngemonPedestalShown, ToyTownGearboxShown, ToyTownBoxesShown, ToyTownBoxSelected>;
 
 // Trash Mountain's giant poop: map.c: loadMap calls initializeTrainingPoop on map 0xa5 (gomi02) and
 // on no other, whatever the story, which puts ETCNA\TRY at TRAINING_POOP_TRANSLATION, unturned and

@@ -43,5 +43,6 @@ core::Result<void> registerGymRoutines(StoryScenesContext& scenes);
 core::Result<void> registerDirtCartRoutines(StoryScenesContext& scenes);
 core::Result<void> registerScreenShakeRoutine(StoryScenesContext& scenes);
 core::Result<void> registerAngemonPedestalRoutines(StoryScenesContext& scenes);
+core::Result<void> registerToyTownRoutines(StoryScenesContext& scenes);
 
 } // namespace dwe::session

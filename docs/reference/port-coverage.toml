@@ -439,8 +439,8 @@ initializeChest = { status = "portado", dwe = "game/field/src/field_items.cpp", 
 loadWarpCrystals = { status = "falta", what = "Carga los cristales de teletransporte de un mapa." }
 spawnBoulder = { status = "portado", dwe = "apps/session/src/story_props.cpp", what = "Pone la roca que bloquea un paso." }
 initializeMedalModel = { status = "falta", what = "Carga el modelo de una medalla." }
-spawnToyTownBoxes = { status = "falta", what = "Pone las cajas de la ciudad de juguete." }
-spawnGearbox = { status = "falta", what = "Pone la caja de engranajes de la fábrica." }
+spawnToyTownBoxes = { status = "portado", dwe = "apps/session/src/story_routines/routine_toy_town.cpp", what = "Pone las cajas de la ciudad de juguete." }
+spawnGearbox = { status = "portado", dwe = "apps/session/src/story_routines/routine_toy_town.cpp", what = "Pone la caja de engranajes de la fábrica." }
 spawnAngemonPedestal = { status = "portado", dwe = "apps/session/src/story_routines/routine_angemon_pedestal.cpp", what = "Pone el pedestal que se mueve en el santuario." }
 initializeTrainingPoop = { status = "portado", dwe = "apps/session/include/dwe/session/story_props.hpp", what = "Pone la caca gigante de Trash Mountain." }
 emptyChests = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Marca vacíos los cofres ya abiertos." }

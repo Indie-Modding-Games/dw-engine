@@ -200,3 +200,38 @@ TEST_CASE("the Angemon pedestal starts at z 1500 and slides 10 a frame to 2000, 
   CHECK(std::get<AngemonPedestalShown>(steps[49]).x == 5);
   CHECK(scenes.pedestal.z == 2000);
 }
+
+TEST_CASE("Toy Town's gearbox and boxes go on at once and the selected box's lid opens a quarter") {
+  dwe::session::StoryScenesContext scenes{dwe::session::StoryScenesDesc{}};
+  REQUIRE(dwe::session::registerToyTownRoutines(scenes));
+  using dwe::game::story::RoutineGoesOn;
+  using dwe::session::ToyTownBoxSelected;
+  // map_object.c: spawnGearbox selects no box; spawnToyTownBoxes resets the lids itself.
+  const auto gearbox = scenes.routines.call(41);
+  const auto boxes = scenes.routines.call(43);
+  REQUIRE(gearbox);
+  REQUIRE(boxes);
+  CHECK(std::holds_alternative<RoutineGoesOn>(*gearbox));
+  CHECK(std::holds_alternative<RoutineGoesOn>(*boxes));
+  const auto taken = takeAll(scenes);
+  REQUIRE(taken.size() == 3);
+  CHECK(std::holds_alternative<dwe::session::ToyTownGearboxShown>(taken[0]));
+  CHECK(std::get<ToyTownBoxSelected>(taken[1]).box == 0);
+  CHECK(std::holds_alternative<dwe::session::ToyTownBoxesShown>(taken[2]));
+  CHECK(scenes.routines.registered(42));
+  CHECK(scenes.routines.registered(44));
+  // The operand is a signed byte.
+  CHECK(dwe::session::toyTownBoxOf(1) == dwe::session::ToyTownBigBox);
+  CHECK(dwe::session::toyTownBoxOf(2) == dwe::session::ToyTownSmallBox);
+  CHECK(dwe::session::toyTownBoxOf(255) == -1);
+  // renderToyTownBoxes: -100 a frame, held at -0x400 from the 11th frame.
+  std::int32_t lid = 0;
+  int frames = 0;
+  while (lid != dwe::session::ToyTownLidOpen) {
+    lid = dwe::session::toyTownLidAfterFrame(lid);
+    ++frames;
+    REQUIRE(frames < 20);
+  }
+  CHECK(frames == 11);
+  CHECK(dwe::session::toyTownLidAfterFrame(lid) == -0x400);
+}
