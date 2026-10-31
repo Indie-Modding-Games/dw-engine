@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -60,8 +61,11 @@ struct CoverageSummary {
 // Hashes every file of the volume and runs the extractor that takes it, on several threads; the run
 // is the same whatever the number of threads. An extractor that fails leaves its file partial, with
 // the error as an unknown; two outputs with the same asset id, or one in the tool's own folder
-// (dwx/), are an error of the tool.
-core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extractor> registry);
+// (dwx/), are an error of the tool. onFile, when given, is told after each file how many of them
+// are done, from one thread at a time.
+using FileProgress = std::function<void(std::size_t done, std::size_t total)>;
+core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extractor> registry,
+                                          const FileProgress& onFile = {});
 
 // Counts the files of each status and the bytes covered.
 CoverageSummary summarize(const ExtractionRun& run);

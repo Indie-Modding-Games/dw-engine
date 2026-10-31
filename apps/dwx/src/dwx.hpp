@@ -4,9 +4,13 @@
 #include <dwe/core/sha1.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <filesystem>
+#include <functional>
 #include <span>
+#include <string>
+#include <string_view>
 
 namespace dwe::dwx {
 
@@ -15,6 +19,9 @@ namespace dwe::dwx {
 constexpr int ExitOk = 0;
 constexpr int ExitUnknown = 1;
 constexpr int ExitFailed = 2;
+// dwx identify: a known release of the game that dwx extract cannot name the assets of (another
+// region's).
+constexpr int ExitUnsupported = 3;
 
 // Hashes a file in chunks, so a whole disc image never has to fit in memory.
 core::Result<core::Sha1Digest> hashFile(const std::filesystem::path& path);
@@ -34,14 +41,56 @@ int extractUiChart(const std::filesystem::path& executable, const std::filesyste
 // table.
 int listDisc(const std::filesystem::path& path, bool verifyImage);
 
+// What a disc image is, for the game's first start before it extracts one.
+enum class DiscKind : std::uint8_t {
+  // A release dwx extract knows the tables of.
+  Supported,
+  // A known release whose tables dwx does not know: another region's.
+  OtherVersion,
+  // No known release: another game, or no game at all.
+  Unknown,
+};
+
+struct DiscIdentity {
+  DiscKind kind = DiscKind::Unknown;
+  // The release's version ("us", "eu"...), empty when unknown.
+  std::string version;
+};
+
+// Reads the image's volume and boot executable and says which release it is. Fails when the image
+// cannot be read (a missing file, a CUE sheet whose BIN is missing, something that is not a disc
+// image).
+core::Result<DiscIdentity> identifyDisc(const std::filesystem::path& path);
+
+// dwx identify: prints "<kind> <version>" (supported us, other-version eu, unknown -) and exits
+// with ExitOk, ExitUnsupported or ExitUnknown, or ExitFailed when the image cannot be read.
+int identify(const std::filesystem::path& path);
+
+// How far an extraction is: a percent from 0 to 100 and the step it is in (ExtractStep).
+using ExtractProgress = std::function<void(int percent, std::string_view step)>;
+
+// The steps of an extraction, as dwx extract --progress names them.
+namespace ExtractStep {
+inline constexpr std::string_view Read = "read";
+inline constexpr std::string_view Extract = "extract";
+inline constexpr std::string_view Write = "write";
+inline constexpr std::string_view Check = "check";
+inline constexpr std::string_view Upscale = "upscale";
+inline constexpr std::string_view Done = "done";
+} // namespace ExtractStep
+
 // Writes the base pack and its coverage report from a disc image into a folder, then checks that
-// the engine mounts it. Progress goes to report and warnings to the standard error.
+// the engine mounts it. The report goes to report and warnings to the standard error; progress,
+// when given, is told each step and percent.
 core::Result<void> extractBasePack(const std::filesystem::path& path,
-                                   const std::filesystem::path& out, bool force, std::FILE* report);
+                                   const std::filesystem::path& out, bool force, std::FILE* report,
+                                   const ExtractProgress& progress = {});
 
 // dwx extract: writes the base pack and its coverage report from a disc image into a folder, then
-// checks that the engine mounts it.
-int extractDisc(const std::filesystem::path& path, const std::filesystem::path& out, bool force);
+// checks that the engine mounts it. With progress, also prints "progress <percent> <step>" lines
+// on the standard error as it goes, for the game's first start.
+int extractDisc(const std::filesystem::path& path, const std::filesystem::path& out, bool force,
+                bool progress = false);
 
 // dwx cook: cooks the pack in one folder into another, in the forms the game loads.
 int cook(const std::filesystem::path& pack, const std::filesystem::path& out);

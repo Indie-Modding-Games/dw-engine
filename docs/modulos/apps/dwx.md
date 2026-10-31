@@ -6,6 +6,15 @@ programa que lee imágenes de disco (regla 2 de [dependencias](../../architectur
 es un módulo (`dwe::dwx`) para que lo enlacen los tests; `src/main.cpp` es la línea de comandos (`dwx` sin argumentos
 la explica).
 
+## El primer arranque del juego (`dwx identify`, `dwx extract --progress`)
+
+La pantalla de primer arranque del juego ejecuta `dwx identify <imagen>`, que
+escribe `supported <versión>` (sale con 0), `other-version <versión>` para la versión de otra región cuyas tablas no
+conoce (3) o `unknown -` (1), y 2 si la imagen no se puede leer. Después ejecuta `dwx extract --progress`, que además
+del informe escribe en la salida de error una línea `progress <porcentaje> <paso>` por cada cambio (`read`,
+`extract` del 2 al 80 por archivos leídos, `write`, `check`, `upscale`, `done`). Los dos los prueba
+`tests/identify_tests.cpp`.
+
 ## La caché de desarrollo (`dwx extract --cache`)
 
 Con `--dev-assets` y `disc_image`, el juego y `dwe-sim` ejecutan `dwx extract --cache <carpeta> <imagen>` y montan la

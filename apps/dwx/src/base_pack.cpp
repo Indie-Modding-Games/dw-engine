@@ -156,12 +156,15 @@ struct FileWork {
 };
 
 // Hashes every file and runs the extractor that takes it, on several threads.
-std::vector<FileWork> extractFiles(const Disc& disc, std::span<const Extractor> registry) {
+std::vector<FileWork> extractFiles(const Disc& disc, std::span<const Extractor> registry,
+                                   const FileProgress& onFile) {
   SharedSectorSource shared{disc.source()};
   const Disc view{shared, disc.volume(), disc.info(), disc.tables()};
   const auto& files = disc.volume().files;
   std::vector<FileWork> work(files.size());
   std::atomic<std::size_t> next{0};
+  std::mutex progressMutex;
+  std::size_t done = 0;
   const auto worker = [&] {
     for (std::size_t i = next++; i < files.size(); i = next++) {
       FileWork& item = work[i];
@@ -174,6 +177,10 @@ std::vector<FileWork> extractFiles(const Disc& disc, std::span<const Extractor> 
             item.outputDigests.push_back(core::sha1(output.bytes));
           }
         }
+      }
+      if (onFile) {
+        const std::scoped_lock lock{progressMutex};
+        onFile(++done, files.size());
       }
     }
   };
@@ -246,10 +253,11 @@ std::string_view fileStatusName(FileStatus status) {
   return "unknown";
 }
 
-core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extractor> registry) {
+core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extractor> registry,
+                                          const FileProgress& onFile) {
   ExtractionRun run;
   std::set<std::string, std::less<>> ids{std::string{ManifestId}};
-  auto work = extractFiles(disc, registry);
+  auto work = extractFiles(disc, registry, onFile);
   std::vector<core::Sha1Digest> outputDigests;
   for (std::size_t i = 0; i < work.size(); ++i) {
     const auto& file = disc.volume().files[i];

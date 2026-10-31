@@ -26,6 +26,13 @@ void printUsage() {
   std::println(
       stderr,
       "      Hashes a disc image or an executable and says which known release it belongs to.");
+  std::println(stderr, "  dwx identify <image.cue|image.bin|image.iso>");
+  std::println(
+      stderr,
+      "      Says whether dwx extract supports the disc: prints \"supported <version>\" (exit 0),");
+  std::println(
+      stderr,
+      "      \"other-version <version>\" for another region's release (exit 3) or \"unknown -\" (exit 1).");
   std::println(stderr, "  dwx extract --list [--verify-image] <image.cue|image.bin|image.iso>");
   std::println(
       stderr,
@@ -34,7 +41,9 @@ void printUsage() {
       stderr,
       "      version by its executable and checks the executable's file table against the disc.");
   std::println(stderr, "      --verify-image also hashes the whole image file (slow).");
-  std::println(stderr, "  dwx extract [--out <folder>] [--force] <image.cue|image.bin|image.iso>");
+  std::println(
+      stderr,
+      "  dwx extract [--out <folder>] [--force] [--progress] <image.cue|image.bin|image.iso>");
   std::println(
       stderr,
       "      Writes the base pack (default content/base) and its coverage report, then checks that");
@@ -42,6 +51,9 @@ void printUsage() {
       stderr,
       "      the engine mounts it and opens every asset. A folder that dwx did not write is refused");
   std::println(stderr, "      unless --force, which writes into it without deleting anything.");
+  std::println(
+      stderr,
+      "      --progress prints \"progress <percent> <step>\" lines on the standard error as it goes.");
   std::println(stderr, "  dwx extract --cache <folder> <image.cue|image.bin|image.iso>");
   std::println(
       stderr,
@@ -109,7 +121,8 @@ void printUsage() {
   std::println(stderr, "      dwx validate --engine --with <content>/base content/packs/game.");
   std::println(
       stderr,
-      "Exit codes: 0 known and consistent (or written), 1 unknown or inconsistent, 2 error.");
+      "Exit codes: 0 known and consistent (or written), 1 unknown or inconsistent, 2 error, 3 another "
+      "region's release (identify).");
 }
 
 } // namespace
@@ -129,10 +142,14 @@ int main(int argc, char** argv) {
   if (command == "verify" && arguments.size() == 3) {
     return verify(arguments[2]);
   }
+  if (command == "identify" && arguments.size() == 3) {
+    return identify(arguments[2]);
+  }
   if (command == "extract") {
     bool list = false;
     bool verifyImage = false;
     bool force = false;
+    bool progress = false;
     std::optional<std::filesystem::path> out;
     std::optional<std::filesystem::path> cache;
     std::vector<std::string_view> paths;
@@ -145,6 +162,8 @@ int main(int argc, char** argv) {
         verifyImage = true;
       } else if (option == "--force") {
         force = true;
+      } else if (option == "--progress") {
+        progress = true;
       } else if (option == "--out" && i + 1 < options.size()) {
         out = options[++i];
       } else if (option == "--cache" && i + 1 < options.size()) {
@@ -154,14 +173,15 @@ int main(int argc, char** argv) {
       }
     }
     // --cache picks the folder itself and prints only it: it goes with no other option.
-    const bool optionsAgree = !cache || (!list && !verifyImage && !force && !out);
+    const bool optionsAgree =
+        (!cache || (!list && !verifyImage && !force && !out)) && (!progress || (!cache && !list));
     if (paths.size() == 1 && optionsAgree) {
       const std::filesystem::path image{paths.front()};
       if (cache) {
         return extractToCache(image, *cache);
       }
       return list ? listDisc(image, verifyImage)
-                  : extractDisc(image, out.value_or(DefaultOutFolder), force);
+                  : extractDisc(image, out.value_or(DefaultOutFolder), force, progress);
     }
   }
   if ((command == "cook" || command == "pack") && arguments.size() == 5) {
