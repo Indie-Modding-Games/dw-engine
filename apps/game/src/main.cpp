@@ -1,4 +1,9 @@
+#include <dwe/content/disc_install.hpp>
+#include <dwe/content/user_data.hpp>
+#include <dwe/platform/platform.hpp>
+
 #include <cstdlib>
+#include <optional>
 #include <span>
 
 #include "dev_views.hpp"
@@ -9,9 +14,15 @@
 
 int main(int argc, char** argv) {
   using namespace dwe::app;
-  const auto options = parseOptions(std::span{argv, static_cast<std::size_t>(argc)});
+  auto options = parseOptions(std::span{argv, static_cast<std::size_t>(argc)});
   if (!options) {
     return EXIT_FAILURE;
+  }
+  if (!options->contentGiven) {
+    const auto userData = dwe::platform::userDataFolder(dwe::content::UserDataOrganization,
+                                                        dwe::content::UserDataApplication);
+    options->content =
+        dwe::content::defaultContentFolder(userData ? std::optional{*userData} : std::nullopt);
   }
   if (options->listSaves) {
     return listSaves(*options);

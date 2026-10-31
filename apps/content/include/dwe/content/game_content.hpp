@@ -26,15 +26,15 @@ struct SkippedMod {
 // (docs/architecture/vfs.md).
 class GameContent {
 public:
-  // Mounts the packs of the content folder and of its packs/ folder, the team's packs from the
-  // source tree when those have no game pack, and the packs of each mods folder. With dev assets
-  // (off when empty, the default), the packs of their extracted content folders whose ids no normal
-  // pack has are mounted under every normal pack, so they only fill what the normal packs lack
-  // (selectDevPacks). The game's own packs, with the dev packs that fill their gaps, must all mount
-  // and declare a Lua API the engine has (assets::checkPackApi). A mod that cannot (a broken
-  // manifest, a missing dependency, another API) is left out and logged, and the rest still mount.
-  // Logs the stack, which packs come from the dev assets and which were left out, the mods left
-  // out, and the ids that packs override.
+  // Mounts the packs of the content folder and of its packs/ folder, the team's packs
+  // (teamPacksFolder: a package's or the source tree's) when those have no game pack, and the packs
+  // of each mods folder. With dev assets (off when empty, the default), the packs of their
+  // extracted content folders whose ids no normal pack has are mounted under every normal pack, so
+  // they only fill what the normal packs lack (selectDevPacks). The game's own packs, with the dev
+  // packs that fill their gaps, must all mount and declare a Lua API the engine has
+  // (assets::checkPackApi). A mod that cannot (a broken manifest, a missing dependency, another
+  // API) is left out and logged, and the rest still mount. Logs the stack, which packs come from
+  // the dev assets and which were left out, the mods left out, and the ids that packs override.
   static core::Result<std::unique_ptr<GameContent>>
   mount(const std::filesystem::path& content, std::span<const std::filesystem::path> mods,
         const assets::DevAssetSources& devAssets = {});

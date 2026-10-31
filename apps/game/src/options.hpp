@@ -19,9 +19,14 @@ namespace dwe::app {
 
 // What the command line asks for (see Usage). With no view option the game starts in the field.
 struct Options {
-  // The content folder: its packs, those in its packs/ folder, and the team's packs from the source
-  // tree when it has no game pack of its own.
+  // The content folder: its packs, those in its packs/ folder, and the team's packs (a package's or
+  // the source tree's) when it has no game pack of its own. Without --content, main picks
+  // content::defaultContentFolder: ./content when it has a base pack, else the one the first start
+  // installs in the user's data folder.
   std::filesystem::path content = "content";
+  // Whether --content (or --check-content) named it: a folder the player did not choose never asks
+  // for the disc.
+  bool contentGiven = false;
   // Folders with more packs, such as mods (--mods, may repeat). The VFS stacks them by layer and
   // priority.
   std::vector<std::filesystem::path> mods;

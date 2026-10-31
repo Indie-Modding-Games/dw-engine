@@ -57,6 +57,7 @@
 #include "control_socket.hpp"
 #include "dev_assets_banner.hpp"
 #include "field_scene.hpp"
+#include "first_run_screen.hpp"
 #include "frame_stats.hpp"
 #include "game_audio.hpp"
 #include "game_documents.hpp"
@@ -469,6 +470,21 @@ int runGame(const Options& requested) {
   }
   core::logInfo("game: validation layer {}, vsync {}",
                 validationState((*device)->validationEnabled()), options.vsync ? "on" : "off");
+  // The first start asks for the player's disc and reads it before anything mounts the content
+  // (first_run_screen.hpp).
+  if (needsFirstRun(options)) {
+    auto installed = runFirstRun(*platform, *window, **device, options.language);
+    if (!installed) {
+      core::logError("game: {}", installed.error().message);
+      return EXIT_FAILURE;
+    }
+    if (!*installed) {
+      core::logInfo("game: the first start ended without a disc");
+      exitCode = EXIT_SUCCESS;
+      return exitCode;
+    }
+    options.content = **installed;
+  }
   auto debugUi = debug::DebugUi::create(*window, **device);
   if (!debugUi) {
     core::logError("{}", debugUi.error().message);

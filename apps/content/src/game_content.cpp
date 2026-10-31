@@ -1,6 +1,7 @@
 #include <dwe/assets/dev_pack_selection.hpp>
 #include <dwe/assets/lua_api.hpp>
 #include <dwe/assets/pack_manifest.hpp>
+#include <dwe/content/disc_install.hpp>
 #include <dwe/content/game_content.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
@@ -68,12 +69,12 @@ core::Result<std::vector<assets::FoundPack>> findGamePacks(const assets::FileSys
       return std::unexpected{added.error()};
     }
   }
-  // The game pack lives in the source tree (content/packs/game); a content folder made by
-  // extraction alone has only the base pack.
+  // The game pack lives in the team's packs (a package's packs/ folder, or the source tree's
+  // content/packs); a content folder made by extraction alone has only the base pack.
   const bool hasGamePack = std::ranges::any_of(
       found, [](const assets::FoundPack& pack) { return pack.path.stem() == GamePackName; });
   if (!hasGamePack) {
-    if (auto added = add(DWE_TEAM_PACKS); !added) {
+    if (auto added = add(teamPacksFolder()); !added) {
       return std::unexpected{added.error()};
     }
   }

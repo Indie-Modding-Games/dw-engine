@@ -80,6 +80,7 @@ namespace {
 bool readOption(Options& options, std::string_view argument, std::string_view value) {
   if (argument == "--content" || argument == "--check-content") {
     options.content = value;
+    options.contentGiven = true;
     options.checkContent = options.checkContent || argument == "--check-content";
     return true;
   }

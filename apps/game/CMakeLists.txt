@@ -30,6 +30,7 @@ dwe_add_app(game
         src/field_scene_effects.cpp
         src/field_scene_status.cpp
         src/field_scene_effect_prims.cpp
+        src/first_run_screen.cpp
         src/battle_effect_bodies.cpp
         src/battle_motion.cpp
         src/field_scene_script.cpp
@@ -119,6 +120,12 @@ dwe_add_app(game
     OUTPUT_NAME dwe-game)
 
 dwe_add_shaders(game FILES shaders/test_scene.slang shaders/scene_prims.slang)
+
+# The first start's screen asks for the player's disc before the game's UI has any content to draw with, so it uses
+# Dear ImGui on the game's window and device (first_run_screen.hpp).
+find_package(imgui CONFIG REQUIRED)
+target_link_libraries(game PRIVATE imgui::imgui)
+
 
 # The version a save file names as the game that wrote it.
 target_compile_definitions(game PRIVATE DWE_GAME_VERSION="${PROJECT_VERSION}")
