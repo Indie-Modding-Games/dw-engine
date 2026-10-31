@@ -38,7 +38,8 @@ SaveMachine::SaveMachine(const Desc& desc)
                 desc.session->slots(),
                 [session = desc.session](game::save::SlotId slot) { return session->save(slot); }),
             *desc.registry,
-            [desc] { return session::registeredPartnerOf(*desc.session, *desc.battle); }) {}
+            [desc] { return session::registeredPartnerOf(*desc.session, *desc.battle); }),
+      document_(*desc.ui, SaveMachineDocument) {}
 
 SaveMachineFacts SaveMachine::facts() const {
   const session::GameSession& session = *desc_.session;
@@ -130,18 +131,14 @@ void SaveMachine::follow() {
     desc_.ui->setSetting("save.last_result", std::string{saveResultName(*result)});
   }
   if (!active()) {
-    if (shown_) {
-      desc_.ui->hide(SaveMachineDocument);
-      shown_ = false;
+    if (document_.shown()) {
+      document_.hide();
       closed_ = true;
     }
     return;
   }
   publish();
-  if (!shown_) {
-    desc_.ui->show(SaveMachineDocument, true);
-    shown_ = true;
-  }
+  document_.show(true);
 }
 
 // main_menu.c: drawMainMenuStrings for the machine's views (14 to 19): the partner's record, the

@@ -14,6 +14,7 @@
 #include <string_view>
 
 #include "save_machine_flow.hpp"
+#include "shown_document.hpp"
 
 namespace dwe::app {
 
@@ -73,7 +74,8 @@ private:
   Desc desc_;
   SaveMachineFlow flow_;
   double frameSeconds_ = 0.0;
-  bool shown_ = false;
+  // Hidden with the machine too: a game ended over the open machine leaves no box behind.
+  ShownDocument document_;
   bool closed_ = false;
 };
 
