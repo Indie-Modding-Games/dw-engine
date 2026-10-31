@@ -24,7 +24,8 @@ local function place_box(box, sized)
   if not sized then
     box:set_property("width", "786dp")
     box:set_property("height", "177dp")
-    box:set_property("margin-left", "-393dp")
+    -- setupDialogueBox: x -130 from the centre, 262 wide (structure.rcss).
+    box:set_property("margin-left", "-390dp")
     box:set_property("margin-top", "0dp")
     return
   end

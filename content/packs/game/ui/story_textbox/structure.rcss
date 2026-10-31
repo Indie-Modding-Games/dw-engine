@@ -1,9 +1,9 @@
 /* The story's textboxes (game/story: Dialogue). One pixel of the original is 3dp (240 lines over 720 dp).
 
    The speech box: 21 columns and 4 rows of 12 x 13 pixels, from x 30 to 292 and y 162 to 221 of the original's
-   320 x 240 screen (ui.c: setupDialogueBox), centred on a wide screen. A sized box (set_textbox_size) is centred on
-   the screen; the script sets its size. The text colours are the font's CLUT (font.c: FONT_CLUT, colour N of a
-   {color:N} tag). */
+   320 x 240 screen (script_textbox.c: setupDialogueBox, x -130 from the screen's centre: one pixel right of centred),
+   with the 4:3 screen centred on a wide one. A sized box (set_textbox_size) is centred on the screen; the script sets
+   its size. The text colours are the font's CLUT (font.c: FONT_CLUT, colour N of a {color:N} tag). */
 
 body {
 	width: 100%;
@@ -17,7 +17,7 @@ body {
 	top: 486dp;
 	width: 786dp;
 	height: 177dp;
-	margin-left: -393dp;
+	margin-left: -390dp;
 	padding: 6dp 15dp;
 	box-sizing: border-box;
 	background-color: #000000c0;
