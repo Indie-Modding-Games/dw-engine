@@ -17,14 +17,15 @@
 
 // What the technique effects draw as the original's own primitives rather than sprites or models
 // (battle_effect.c: BTL_renderScrollingBackground, BTL_renderParallaxSprites,
-// BTL_renderScreenSprite, BTL_renderScreenFade, BTL_renderScreenOverlay, BTL_renderRibbonStrip), as
-// scene primitives.
+// BTL_renderScreenSprite, BTL_renderScreenFade, BTL_renderScreenOverlay, BTL_renderEFELine,
+// BTL_renderWireframeGrid, BTL_renderWireframeBox, BTL_renderRibbonStrip), as scene primitives.
 namespace dwe::app {
 
 namespace {
 
 using game::battle::EffectBlend;
 using game::battle::EffectRibbon;
+using game::battle::EffectScreenLine;
 using game::battle::EffectScreenQuad;
 using game::battle::EffectVector;
 
@@ -174,13 +175,19 @@ void FieldScene::addEffectPrims(std::vector<ScenePrim>& prims) {
 
   struct Entry {
     const EffectScreenQuad* quad = nullptr;
+    const EffectScreenLine* line = nullptr;
     const std::string* move = nullptr;
+    std::int32_t order = 0;
     std::size_t index = 0;
   };
   std::vector<Entry> quads;
   for (const SceneEffect& effect : effects_) {
     if (const auto* quad = std::get_if<EffectScreenQuad>(&effect.shape)) {
-      quads.push_back({.quad = quad, .move = &effect.move, .index = quads.size()});
+      quads.push_back(
+          {.quad = quad, .move = &effect.move, .order = quad->order, .index = quads.size()});
+    } else if (const auto* line = std::get_if<EffectScreenLine>(&effect.shape)) {
+      quads.push_back(
+          {.line = line, .move = &effect.move, .order = line->order, .index = quads.size()});
     } else if (const auto* ribbon = std::get_if<EffectRibbon>(&effect.shape)) {
       // battle_effect.c: BTL_renderRibbonStrip: a POLY_GT4 between each two pairs of points, its
       // top corners in half the colour and its bottom ones in the colour, black at the ribbon's
@@ -208,15 +215,31 @@ void FieldScene::addEffectPrims(std::vector<ScenePrim>& prims) {
     }
   }
   std::ranges::sort(quads, [](const Entry& a, const Entry& b) {
-    return a.quad->order != b.quad->order ? a.quad->order > b.quad->order : a.index > b.index;
+    return a.order != b.order ? a.order > b.order : a.index > b.index;
   });
   for (const Entry& entry : quads) {
-    const EffectScreenQuad& screen = *entry.quad;
     const float viewDepth =
-        std::max(static_cast<float>(screen.order) * render::OrderingTableStep, render::MapNearClip);
+        std::max(static_cast<float>(entry.order) * render::OrderingTableStep, render::MapNearClip);
     const glm::vec4 onAxis = camera.projection() * glm::vec4{0.0F, 0.0F, -viewDepth, 1.0F};
     // The screen's centre at that depth: the corners move from it in original pixels.
     const glm::vec4 centre{0.0F, 0.0F, onAxis.z / onAxis.w, 1.0F};
+    if (entry.line != nullptr) {
+      // A LINE_F2: one pixel wide, the renderer's white texture in the colour.
+      const EffectScreenLine& line = *entry.line;
+      const Mix mix = mixOf(line.blend);
+      ScenePrim prim{.shape = ScenePrim::Shape::Line,
+                     .color = glm::vec4{flatColorOf(line.color), mix.alpha},
+                     .texture = renderer_->whiteTexture(),
+                     .blend = mix.blend};
+      prim.corners.at(0) = {
+          .clip = centre,
+          .offset = {static_cast<float>(line.from.x), static_cast<float>(line.from.y)}};
+      prim.corners.at(1) = {
+          .clip = centre, .offset = {static_cast<float>(line.to.x), static_cast<float>(line.to.y)}};
+      prims.push_back(prim);
+      continue;
+    }
+    const EffectScreenQuad& screen = *entry.quad;
     Quad quad{.tint = colorOf(screen.color), .clutRow = screen.clutRow, .blend = screen.blend};
     if (!screen.textured) {
       // A POLY_F4: the renderer's white texture in the colour, the whole quad mixed by its blend.

@@ -261,13 +261,13 @@ BTL_loadClutColors = { status = "falta", what = "Copia colores a la paleta de un
 BTL_getCameraRotation = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cintas de luz", what = "Lee el giro de la cámara para orientar un efecto." }
 BTL_convertToViewSpace = { status = "falta", what = "Pasa una posición del efecto al espacio de la cámara.", note = "battle.md: Hueco" }
 BTL_render3DTexturedQuad = { status = "falta", what = "Dibuja un cuadro con textura en el mundo (llamas, rayos)." }
-BTL_renderWireframeBox = { status = "falta", what = "Dibuja una caja de líneas de un efecto." }
+BTL_renderWireframeBox = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cámara fija, líneas y alambres", what = "Dibuja una caja de líneas de un efecto." }
 BTL_discardEFEOperand = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp", what = "Descarta un operando del script de efecto." }
-BTL_renderWireframeGrid = { status = "falta", what = "Dibuja una rejilla de líneas de un efecto." }
+BTL_renderWireframeGrid = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cámara fija, líneas y alambres", what = "Dibuja una rejilla de líneas de un efecto." }
 BTL_render2DTexturedQuad = { status = "falta", what = "Dibuja un cuadro con textura en pantalla de un efecto." }
-BTL_restoreCameraView = { status = "falta", what = "Devuelve la cámara del combate a su sitio tras una técnica.", note = "battle.md: Hueco" }
-BTL_setupFixedCamera = { status = "falta", what = "Fija la cámara en un punto para lucir una técnica.", note = "battle.md: Hueco" }
-BTL_renderEFELine = { status = "falta", what = "Dibuja una línea de un efecto." }
+BTL_restoreCameraView = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cámara fija, líneas y alambres", what = "Devuelve la cámara del combate a su sitio tras una técnica." }
+BTL_setupFixedCamera = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cámara fija, líneas y alambres", what = "Fija la cámara en un punto para lucir una técnica." }
+BTL_renderEFELine = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cámara fija, líneas y alambres", what = "Dibuja una línea de un efecto." }
 BTL_findHitEntity = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp:587", what = "Busca a quién alcanza el golpe de un efecto." }
 BTL_printDebugValue = { status = "no-aplica", note = "depuración del original", what = "Escribe un valor de depuración." }
 BTL_renderParallaxSprites = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Capas en pantalla", what = "Dibuja capas de sprites con paralaje de un efecto." }

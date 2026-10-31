@@ -120,16 +120,17 @@ ScenePrimDrawer::triangles(const std::vector<ScenePrim>& prims, float pixelScale
     };
     std::array<Vertex, 4> corners{};
     if (prim.shape == ScenePrim::Shape::Line) {
-      // One original pixel wide, across the line on screen.
+      // One original pixel wide, across the line on screen; its ends moved by their offsets.
       const ScenePrimCorner& a = prim.corners[0];
       const ScenePrimCorner& b = prim.corners[1];
-      const glm::vec2 from = glm::vec2{a.clip} / a.clip.w / toNdc;
-      const glm::vec2 to = glm::vec2{b.clip} / b.clip.w / toNdc;
+      const glm::vec2 from = (glm::vec2{a.clip} / a.clip.w / toNdc) + a.offset;
+      const glm::vec2 to = (glm::vec2{b.clip} / b.clip.w / toNdc) + b.offset;
       const glm::vec2 along = to - from;
       const float length = glm::length(along);
       const glm::vec2 across =
           length > 0.0F ? glm::vec2{-along.y, along.x} / length * 0.5F : glm::vec2{0.0F, 0.5F};
-      corners = {vertex(a, across), vertex(a, -across), vertex(b, across), vertex(b, -across)};
+      corners = {vertex(a, a.offset + across), vertex(a, a.offset - across),
+                 vertex(b, b.offset + across), vertex(b, b.offset - across)};
     } else {
       for (std::size_t i = 0; i < count; ++i) {
         corners.at(i) = vertex(prim.corners.at(i), prim.corners.at(i).offset);

@@ -171,6 +171,7 @@ void EffectRunner::stop(std::size_t slot, std::size_t section) {
 }
 
 void EffectRunner::tick() {
+  fixedCamera_ = false;
   for (std::size_t slot = 0; slot < slots_.size(); ++slot) {
     for (std::size_t index = 0; index < slots_[slot].subEffects.size(); ++index) {
       const SubEffect& subEffect = slots_[slot].subEffects[index];

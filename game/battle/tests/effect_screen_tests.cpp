@@ -566,3 +566,122 @@ TEST_CASE("a screen fade darkens the whole screen behind everything; an overlay 
   CHECK(quads[1].blend == EffectBlend::Subtract);
   CHECK(quads[1].order == 10);
 }
+
+namespace {
+
+std::vector<dwe::game::battle::EffectScreenLine> screenLines(const EffectRunner& runner) {
+  std::vector<dwe::game::battle::EffectScreenLine> lines;
+  for (const auto& draw : runner.draws()) {
+    if (const auto* line = std::get_if<dwe::game::battle::EffectScreenLine>(&draw.shape)) {
+      lines.push_back(*line);
+    }
+  }
+  return lines;
+}
+
+std::string pushes(std::int32_t& at, std::initializer_list<std::string_view> values) {
+  std::string out;
+  for (const std::string_view value : values) {
+    out += instruction(at, value.starts_with("base")
+                               ? std::format("  op: push_address\n  address: \"{}\"", value)
+                               : std::format("  op: push_immediate\n  value: {}", value));
+  }
+  return out;
+}
+
+std::string subOf(std::int32_t& at, std::string_view name, std::size_t count) {
+  std::string out = std::format("  op: sub\n  sub: {}\n  args:", name);
+  for (std::size_t i = 0; i < count; ++i) {
+    out += std::format("\n    a{}: 0", i);
+  }
+  return instruction(at, out);
+}
+
+} // namespace
+
+TEST_CASE("a line is drawn from the projection's centre, four times round at half the colour "
+          "with flag 0x20") {
+  const std::string render = renderOf([](std::int32_t& at) {
+    return pushes(at, {"10", "20", "30", "40", "base+0x00a0", "100", "0"}) +
+           subOf(at, "render_line", 7) +
+           pushes(at, {"10", "20", "30", "40", "base+0x00a0", "100", "32"}) +
+           subOf(at, "render_line", 7) +
+           pushes(at, {"10", "20", "30", "40", "base+0x00a0", "32", "0"}) +
+           subOf(at, "render_line", 7);
+  });
+  constexpr std::string_view Data = R"(- at: "0x00a0"
+  kind: color
+  size: 12
+  values: [200, 101, 7]
+)";
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::game::battle::EffectView view;
+  view.centre = {.x = 5, .y = -3};
+  runner.setView(view);
+  firstFrame(runner, renderingScript(render, Data));
+  const auto lines = screenLines(runner);
+  // The last sorts at entry 0x20, which is not drawn.
+  REQUIRE(lines.size() == 5);
+  CHECK(lines[0].from == EffectScreenPoint{.x = 15, .y = 17});
+  CHECK(lines[0].to == EffectScreenPoint{.x = 35, .y = 37});
+  CHECK(lines[0].color == dwe::game::battle::EffectVector{.x = 200, .y = 101, .z = 7});
+  CHECK(lines[0].blend == EffectBlend::Opaque);
+  CHECK(lines[0].order == 100);
+  CHECK(lines[1].from == EffectScreenPoint{.x = 16, .y = 17});
+  CHECK(lines[2].from == EffectScreenPoint{.x = 15, .y = 18});
+  CHECK(lines[1].color == dwe::game::battle::EffectVector{.x = 100, .y = 50, .z = 3});
+  CHECK(lines[1].blend == EffectBlend::Add);
+}
+
+TEST_CASE("wireframes project through the fixed effect camera from the screen's centre until it "
+          "is restored") {
+  const std::string render = renderOf([](std::int32_t& at) {
+    std::string out = subOf(at, "setup_fixed_camera", 0);
+    out += pushes(at, {"base+0x00d0"}) + subOf(at, "get_viewport_distance_2", 1);
+    // A 1000 x 1000 square at y 0 through the origin, two lines each way.
+    out += pushes(at, {"base+0x00a0", "base+0x00b0", "base+0x00c0", "-500", "500", "1", "-500",
+                       "500", "1", "0"}) +
+           subOf(at, "render_wireframe_grid", 10);
+    out += subOf(at, "restore_camera", 0);
+    return out + pushes(at, {"base+0x00a0", "base+0x00a0", "base+0x00c0"}) +
+           subOf(at, "render_wireframe_box", 3);
+  });
+  constexpr std::string_view Data = R"(- at: "0x00a0"
+  kind: vector
+  size: 12
+  values: [0, 0, 0]
+- at: "0x00b0"
+  kind: vector
+  size: 12
+  values: [0, 0, 0]
+- at: "0x00c0"
+  kind: color
+  size: 12
+  values: [1, 2, 3]
+- at: "0x00d0"
+  kind: int32
+  size: 4
+  value: 0
+)";
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::game::battle::EffectView view;
+  view.centre = {.x = 40, .y = 40};
+  view.projection = 900;
+  view.camera.t = {.x = 0, .y = 0, .z = 1000};
+  runner.setView(view);
+  firstFrame(runner, renderingScript(render, Data));
+  const auto lines = screenLines(runner);
+  // Two lines each way, then the box's 12 edges through the battle's camera: a zero box at the
+  // origin is the screen's centre.
+  REQUIRE(lines.size() == 4 + 12);
+  // The fixed camera (H 512, 2000 away): (-500, 0, -500) at depth 1500 is at x -171 and
+  // (-500, 0, 500) at depth 2500 at x -103, whatever the projection's centre.
+  CHECK(lines[0].from == EffectScreenPoint{.x = -171, .y = 0});
+  CHECK(lines[0].to == EffectScreenPoint{.x = -103, .y = 0});
+  CHECK(lines[0].order == 0xFFD);
+  CHECK(lines[4].from == EffectScreenPoint{.x = 0, .y = 0});
+  CHECK(lines[4].order == 0x22);
+  CHECK(lines[4].color == dwe::game::battle::EffectVector{.x = 1, .y = 2, .z = 3});
+}

@@ -14,7 +14,8 @@
 // What the technique effects draw as the original's own GPU primitives rather than sprites or
 // models: the layers, sprites and veils on the screen (battle_effect.c:
 // BTL_renderScrollingBackground, BTL_renderParallaxSprites, BTL_renderScreenSprite,
-// BTL_renderScreenFade, BTL_renderScreenOverlay) and the ribbons of light
+// BTL_renderScreenFade, BTL_renderScreenOverlay), the lines and wireframes (BTL_renderEFELine,
+// BTL_renderWireframeGrid, BTL_renderWireframeBox) and the ribbons of light
 // (BTL_renderRibbonStrip), as EffectRunner members.
 namespace dwe::game::battle {
 
@@ -100,6 +101,36 @@ constexpr std::int32_t ColorUnit = 0x80;
 // BTL_renderScreenOverlay: mode bit 2 makes it semi-transparent, bits 0 and 1 are the rate.
 constexpr std::int32_t OverlaySemiTransparentShift = 2;
 constexpr std::int32_t OverlayRateMask = 3;
+// BTL_setupFixedCamera: GsSetProjection(0x200) and a view from (0, 0, -0x7d0) at the origin, no
+// turn: GsWSMATRIX is the identity moved 0x7d0 along z.
+constexpr std::int32_t FixedProjection = 0x200;
+constexpr std::int32_t FixedDistance = 0x7D0;
+// BTL_renderEFELine: drawn between entries 0x20 and 0x1000 (both out); flag 0x20 draws it four
+// times a pixel round (BTL_LINE_OFFSET_X/Y) at half the colour, added (mode 5).
+constexpr std::int32_t LineNearest = 0x20;
+constexpr std::int32_t LineGlowFlag = 0x20;
+constexpr std::array<EffectScreenPoint, 4> LineGlowOffsets = {
+    EffectScreenPoint{.x = 1, .y = 0}, EffectScreenPoint{.x = 0, .y = 1},
+    EffectScreenPoint{.x = -1, .y = 0}, EffectScreenPoint{.x = 0, .y = -1}};
+constexpr std::int32_t Percent = 100;
+constexpr std::int32_t LineGlowPercent = 50;
+// BTL_renderParallelLines: a line is drawn when both ends are between 0x200 and 0x10000 of view
+// depth (worldPosToScreenPos: otz << 2), at entry 0xffd.
+constexpr std::int32_t GridNearest = 0x200;
+constexpr std::int32_t GridFarthest = 0x10000;
+constexpr std::int32_t GridOrder = 0xFFD;
+constexpr std::int32_t OtzMask = ~3;
+// BTL_renderWireframeBox: the box's corners (BTL_WIREFRAME_BOX_SIGN_X/Y/Z) and its four LINE_F4
+// (BTL_WIREFRAME_BOX_LINES), at entry 0x22.
+constexpr std::array<EffectVector, 8> BoxSigns = {
+    EffectVector{.x = -1, .y = -1, .z = -1}, EffectVector{.x = 1, .y = -1, .z = -1},
+    EffectVector{.x = 1, .y = 1, .z = -1},   EffectVector{.x = -1, .y = 1, .z = -1},
+    EffectVector{.x = -1, .y = -1, .z = 1},  EffectVector{.x = 1, .y = -1, .z = 1},
+    EffectVector{.x = 1, .y = 1, .z = 1},    EffectVector{.x = -1, .y = 1, .z = 1}};
+constexpr std::array<std::array<std::size_t, 4>, 4> BoxLines = {
+    std::array<std::size_t, 4>{0, 1, 2, 3}, std::array<std::size_t, 4>{5, 4, 7, 6},
+    std::array<std::size_t, 4>{1, 5, 6, 2}, std::array<std::size_t, 4>{4, 0, 3, 7}};
+constexpr std::int32_t BoxOrder = 0x22;
 // The GTE's perspective (RTPS): IR saturates at 0x7fff, SZ at 0xffff, H / SZ at 0x1ffff (also when
 // SZ is at most H / 2), the screen x and y at -0x400 and 0x3ff; the ordering-table entry is SZ / 16
 // (BTL_projectPositionToScreen: otz << 2 >> 4).
@@ -206,7 +237,26 @@ bool EffectRunner::primOp(Slot& slot, std::string_view name,
     const auto [pixel, depth] = project(vectorAt(slot, args[0]));
     write(slot, args[1], EffectWidth::Int32, pixel.x);
     write(slot, args[2], EffectWidth::Int32, pixel.y);
-    write(slot, args[3], EffectWidth::Int32, depth);
+    write(slot, args[3], EffectWidth::Int32, depth >> OrderShift);
+  } else if (name == "setup_fixed_camera") {
+    fixedCamera_ = true;
+  } else if (name == "restore_camera") {
+    fixedCamera_ = false;
+  } else if (name == "get_viewport_distance_2" && !args.empty()) {
+    // battle_effect.c: BTL_getViewportDistance2: the projection distance now in use.
+    write(slot, args[0], EffectWidth::Int32, fixedCamera_ ? FixedProjection : view_.projection);
+  } else if (name == "render_line") {
+    if (args.size() >= 7) {
+      line(slot, args);
+    }
+  } else if (name == "render_wireframe_grid") {
+    if (args.size() >= 10) {
+      wireframeGrid(slot, args);
+    }
+  } else if (name == "render_wireframe_box") {
+    if (args.size() >= 3) {
+      wireframeBox(slot, args);
+    }
   } else if (name == "get_camera_rotation" && !args.empty()) {
     // battle_effect.c: BTL_getCameraRotation: the angles (matrixToEuler2) of the camera's
     // view-to-world rotation.
@@ -379,23 +429,155 @@ void EffectRunner::screenVeil(Slot& slot, const std::vector<std::int32_t>& args,
 }
 
 std::pair<EffectScreenPoint, std::int32_t> EffectRunner::project(const EffectVector& world) const {
-  const EffectVector turned = fx::apply(view_.camera, fx::toShort(world));
+  EffectMatrix fixed;
+  fixed.t = {.x = 0, .y = 0, .z = FixedDistance};
+  const EffectMatrix& camera = fixedCamera_ ? fixed : view_.camera;
+  const EffectVector turned = fx::apply(camera, fx::toShort(world));
   const auto limited = [](std::int64_t value) {
     return std::clamp(value, -GteVectorLimit, GteVectorLimit);
   };
-  const std::int64_t x = limited(std::int64_t{turned.x} + view_.camera.t.x);
-  const std::int64_t y = limited(std::int64_t{turned.y} + view_.camera.t.y);
+  const std::int64_t x = limited(std::int64_t{turned.x} + camera.t.x);
+  const std::int64_t y = limited(std::int64_t{turned.y} + camera.t.y);
   const std::int64_t z =
-      std::clamp(std::int64_t{turned.z} + view_.camera.t.z, std::int64_t{0}, GteDepthLimit);
-  const std::int64_t h = view_.projection;
+      std::clamp(std::int64_t{turned.z} + camera.t.z, std::int64_t{0}, GteDepthLimit);
+  const std::int64_t h = fixedCamera_ ? FixedProjection : view_.projection;
   const std::int64_t q =
       h < z * 2 ? std::min((((h * GteDivideOne) / z) + 1) / 2, GteDivideLimit) : GteDivideLimit;
   const auto screen = [&](std::int64_t value) {
     return static_cast<std::int32_t>(
         std::clamp((value * q) >> GteFractionShift, GteScreenMin, GteScreenMax));
   };
-  return {EffectScreenPoint{.x = screen(x), .y = screen(y)},
-          static_cast<std::int32_t>(z >> OrderShift)};
+  return {EffectScreenPoint{.x = screen(x), .y = screen(y)}, static_cast<std::int32_t>(z)};
+}
+
+// battle_effect.c: BTL_renderEFELine: x0, y0, x1, y1 (from the projection's centre, as drawLine2P
+// takes them), colour, entry, flags.
+void EffectRunner::line(Slot& slot, const std::vector<std::int32_t>& args) {
+  const std::int32_t order = args[5];
+  if (order <= LineNearest || order >= OrderingTableEntries) {
+    return;
+  }
+  const EffectVector color = vectorAt(slot, args[4]);
+  const auto at = [&](std::int32_t x, std::int32_t y, EffectScreenPoint offset) {
+    return EffectScreenPoint{.x = x + offset.x + view_.centre.x,
+                             .y = y + offset.y + view_.centre.y};
+  };
+  const std::size_t index = static_cast<std::size_t>(&slot - slots_.data());
+  if ((args[6] & LineGlowFlag) == 0) {
+    draws_.push_back(
+        {.slot = index,
+         .shape = EffectScreenLine{
+             .from = at(args[0], args[1], {}),
+             .to = at(args[2], args[3], {}),
+             .color = {.x = color.x & ByteMask, .y = color.y & ByteMask, .z = color.z & ByteMask},
+             .order = order}});
+    return;
+  }
+  const auto half = [](std::int32_t channel) {
+    return (channel * LineGlowPercent / Percent) & ByteMask;
+  };
+  for (const EffectScreenPoint& offset : LineGlowOffsets) {
+    draws_.push_back({.slot = index,
+                      .shape = EffectScreenLine{
+                          .from = at(args[0], args[1], offset),
+                          .to = at(args[2], args[3], offset),
+                          .color = {.x = half(color.x), .y = half(color.y), .z = half(color.z)},
+                          .blend = EffectBlend::Add,
+                          .order = order}});
+  }
+}
+
+// battle_effect.c: BTL_renderWireframeGrid: origin, angles, colour, x1, x2, count across, z1, z2,
+// count along, y. The rectangle (x1..x2, y, z1..z2), turned by the angles (RotMatrixZYX) and moved
+// to the origin, is crossed by count + 1 lines each way.
+void EffectRunner::wireframeGrid(Slot& slot, const std::vector<std::int32_t>& args) {
+  const EffectVector origin = fx::toShort(vectorAt(slot, args[0]));
+  const EffectMatrix turn = fx::rotZYX(fx::toShort(vectorAt(slot, args[1])));
+  // An array of three int32 (BTL_renderParallelLines: setRGB0 of col[0..2]).
+  const EffectVector color = vectorAt(slot, args[2]);
+  const auto corner = [&](std::int32_t x, std::int32_t z) {
+    return fx::toShort(fx::apply(turn, {.x = int16(x), .y = int16(args[9]), .z = int16(z)}));
+  };
+  const EffectVector p0 = corner(args[3], args[6]);
+  const EffectVector p1 = corner(args[4], args[6]);
+  const EffectVector p2 = corner(args[3], args[7]);
+  const auto moved = [&](const EffectVector& p) {
+    return EffectVector{.x = origin.x + p.x, .y = origin.y + p.y, .z = origin.z + p.z};
+  };
+  const std::size_t index = static_cast<std::size_t>(&slot - slots_.data());
+  const auto step = [](const EffectVector& from, const EffectVector& to, std::int32_t count) {
+    return EffectVector{.x = int16((to.x - from.x) / count),
+                        .y = int16((to.y - from.y) / count),
+                        .z = int16((to.z - from.z) / count)};
+  };
+  const std::int32_t across = int16(args[5]);
+  const std::int32_t along = int16(args[8]);
+  if (across != 0) {
+    parallelLines(index, moved(p0), moved(p2), across, step(p0, p1, across), color);
+  }
+  if (along != 0) {
+    parallelLines(index, moved(p0), moved(p1), along, step(p0, p2, along), color);
+  }
+}
+
+// battle_effect.c: BTL_renderParallelLines: count + 1 lines from a to b, both moving by the step,
+// placed from the screen's centre whatever the drawing offset, opaque at entry 0xffd.
+void EffectRunner::parallelLines(std::size_t slot, EffectVector a, EffectVector b,
+                                 std::int32_t count, const EffectVector& step,
+                                 const EffectVector& color) {
+  const auto near = [](std::int32_t depth) {
+    depth &= OtzMask;
+    return depth > GridNearest && depth < GridFarthest;
+  };
+  for (std::int32_t i = 0; i <= count; ++i) {
+    const auto [from, fromDepth] = project(a);
+    const auto [to, toDepth] = project(b);
+    if (near(fromDepth) && near(toDepth)) {
+      draws_.push_back(
+          {.slot = slot,
+           .shape = EffectScreenLine{
+               .from = from,
+               .to = to,
+               .color = {.x = color.x & ByteMask, .y = color.y & ByteMask, .z = color.z & ByteMask},
+               .order = GridOrder}});
+    }
+    a = fx::toShort({.x = a.x + step.x, .y = a.y + step.y, .z = a.z + step.z});
+    b = fx::toShort({.x = b.x + step.x, .y = b.y + step.y, .z = b.z + step.z});
+  }
+}
+
+// battle_effect.c: BTL_renderWireframeBox: centre, half extents, colour. The box's eight corners,
+// turned by the instance's angles (RotMatrixZYX), its twelve edges as four LINE_F4 (three segments
+// each) placed from the screen's centre whatever the drawing offset, opaque at entry 0x22.
+void EffectRunner::wireframeBox(Slot& slot, const std::vector<std::int32_t>& args) {
+  const EffectMatrix turn =
+      fx::rotZYX(fx::toShort(vectorAt(slot, instanceAddress(RotationOffset))));
+  const EffectVector centre = fx::toShort(vectorAt(slot, args[0]));
+  const EffectVector extent = fx::toShort(vectorAt(slot, args[1]));
+  const EffectVector color = vectorAt(slot, args[2]);
+  std::array<EffectScreenPoint, BoxSigns.size()> corners{};
+  for (std::size_t i = 0; i < BoxSigns.size(); ++i) {
+    const EffectVector& sign = BoxSigns.at(i);
+    const EffectVector turned = fx::toShort(fx::apply(turn, {.x = int16(extent.x * sign.x),
+                                                             .y = int16(extent.y * sign.y),
+                                                             .z = int16(extent.z * sign.z)}));
+    corners.at(i) =
+        project(fx::toShort(
+                    {.x = turned.x + centre.x, .y = turned.y + centre.y, .z = turned.z + centre.z}))
+            .first;
+  }
+  const std::size_t index = static_cast<std::size_t>(&slot - slots_.data());
+  for (const auto& strip : BoxLines) {
+    for (std::size_t k = 1; k < strip.size(); ++k) {
+      draws_.push_back(
+          {.slot = index,
+           .shape = EffectScreenLine{
+               .from = corners.at(strip.at(k - 1)),
+               .to = corners.at(strip.at(k)),
+               .color = {.x = color.x & ByteMask, .y = color.y & ByteMask, .z = color.z & ByteMask},
+               .order = BoxOrder}});
+    }
+  }
 }
 
 // battle_effect.c: BTL_renderParallaxSprites: sprites, offset x and y. Each sprite of the list

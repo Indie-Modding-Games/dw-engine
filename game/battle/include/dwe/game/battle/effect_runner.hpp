@@ -232,6 +232,20 @@ struct EffectScreenQuad {
   bool operator==(const EffectScreenQuad&) const = default;
 };
 
+// A one-pixel line a technique draws on the screen (battle_effect.c: BTL_renderEFELine,
+// BTL_renderParallelLines, BTL_renderWireframeBox: LINE_F2 and LINE_F4), from `from` to `to` in
+// pixels from the screen's centre, in its colour (255 is 1), mixed by blend, at entry `order` of
+// the ordering table.
+struct EffectScreenLine {
+  EffectScreenPoint from;
+  EffectScreenPoint to;
+  EffectVector color{255, 255, 255};
+  EffectBlend blend = EffectBlend::Opaque;
+  std::int32_t order = 0;
+
+  bool operator==(const EffectScreenLine&) const = default;
+};
+
 // A ribbon of light (battle_effect.c: BTL_renderRibbonStrip): nine quads between ten pairs of
 // world points, each quad the texture's 32 x 32 texels at (104, 0) with palette row 2, added, its
 // top edge in half the colour and its bottom edge in the colour (shaded, 128 is 1); the ends of
@@ -267,7 +281,7 @@ struct EffectView {
 };
 
 using EffectShape = std::variant<EffectSprite, EffectModel, EffectStreak, EffectCloud, EffectFlash,
-                                 EffectScreenQuad, EffectRibbon>;
+                                 EffectScreenQuad, EffectRibbon, EffectScreenLine>;
 
 // One thing a slot's render scripts drew this frame.
 struct EffectDraw {
@@ -484,7 +498,13 @@ private:
   void parallaxSprites(Slot& slot, const std::vector<std::int32_t>& args);
   void screenSprite(Slot& slot, const std::vector<std::int32_t>& args);
   void screenVeil(Slot& slot, const std::vector<std::int32_t>& args, bool fade);
-  // worldPosToScreenPos: a world point's pixel from the projection's centre and its view depth.
+  void line(Slot& slot, const std::vector<std::int32_t>& args);
+  void wireframeGrid(Slot& slot, const std::vector<std::int32_t>& args);
+  void parallelLines(std::size_t slot, EffectVector a, EffectVector b, std::int32_t count,
+                     const EffectVector& step, const EffectVector& color);
+  void wireframeBox(Slot& slot, const std::vector<std::int32_t>& args);
+  // worldPosToScreenPos: a world point's pixel from the projection's centre and its view depth
+  // (SZ), through the battle's camera or, after setup_fixed_camera, the effects' fixed one.
   [[nodiscard]] std::pair<EffectScreenPoint, std::int32_t> project(const EffectVector& world) const;
   void tickFx();
   void renderFx();
@@ -527,6 +547,9 @@ private:
   std::array<std::optional<Cloud>, 60> clouds_;
   std::array<std::optional<Flash>, 12> flashes_;
   EffectView view_;
+  // BTL_setupFixedCamera until BTL_restoreCameraView or the next frame (main.c: gameLoop sets the
+  // map's view again every frame).
+  bool fixedCamera_ = false;
 
   // The interpreter's registers (battle_effect.c: EFE_SCRIPT_*), valid while a script runs.
   std::size_t slot_ = 0;
