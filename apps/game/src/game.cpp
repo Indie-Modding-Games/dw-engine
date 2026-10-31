@@ -368,6 +368,30 @@ private:
   const int* exitCode_;
 };
 
+// Where a frame's time went, in the order the loop runs them; the slow frame's line names them.
+class FramePhases {
+public:
+  enum Phase : std::uint8_t { Ticks, Update, Ui, Render, Count };
+
+  void start(double now) {
+    last_ = now;
+    seconds_.fill(0.0);
+  }
+  void mark(Phase phase, double now) {
+    seconds_.at(phase) = now - last_;
+    last_ = now;
+  }
+  [[nodiscard]] std::string text() const {
+    return std::format("ticks {:.1f} ms, update {:.1f} ms, ui {:.1f} ms, render {:.1f} ms",
+                       seconds_.at(Ticks) * 1000.0, seconds_.at(Update) * 1000.0,
+                       seconds_.at(Ui) * 1000.0, seconds_.at(Render) * 1000.0);
+  }
+
+private:
+  double last_ = 0.0;
+  std::array<double, Count> seconds_{};
+};
+
 } // namespace
 
 int runGame(const Options& requested) {
@@ -755,6 +779,9 @@ int runGame(const Options& requested) {
   std::vector<platform::Event> events;
   std::uint64_t ticksRun = 0;
   double previous = platform->nowSeconds();
+  // Where the last frame's time went, for the slow frame's line: the ticks, the session's update,
+  // the UI's layout and the renderer.
+  FramePhases phases;
   bool running = true;
   debug::FrameStats overlayStats{};
   // Built once; the frame takes it by reference, so drawing it allocates nothing.
@@ -1061,9 +1088,10 @@ int runGame(const Options& requested) {
     // ticks count as slow.
     if (constexpr double SlowFrameSeconds = 1.5 * TickSeconds;
         frameSeconds > SlowFrameSeconds && ticksRun > 0) {
-      core::logInfo("game: slow frame, {:.1f} ms, at tick {}{}", frameSeconds * 1000.0, ticksRun,
-                    steady ? "" : " (expected: load, resize or capture)");
+      core::logInfo("game: slow frame, {:.1f} ms, at tick {}{} ({})", frameSeconds * 1000.0,
+                    ticksRun, steady ? "" : " (expected: load, resize or capture)", phases.text());
     }
+    phases.start(now);
 
     int ticks = step.advance(frameSeconds);
     // The control channel's pause: only the ticks it advances run, and the frame lasts as long as
@@ -1179,6 +1207,7 @@ int runGame(const Options& requested) {
       input.endTick();
       ++ticksRun;
     }
+    phases.mark(FramePhases::Ticks, platform->nowSeconds());
     if (control) {
       control->afterFrame(ticksRun);
       for (const std::string& reply : control->takeReplies()) {
@@ -1244,6 +1273,7 @@ int runGame(const Options& requested) {
     } else {
       sessionCommands.drop(autotest.get());
     }
+    phases.mark(FramePhases::Update, platform->nowSeconds());
     if (consoleUiSkin) {
       uiSkinChanger.change(*std::exchange(consoleUiSkin, std::nullopt));
     }
@@ -1269,6 +1299,7 @@ int runGame(const Options& requested) {
       (*ui)->reloadChanged();
     }
     (*ui)->update();
+    phases.mark(FramePhases::Ui, platform->nowSeconds());
 
     overlayStats = {
         .framesPerSecond = fps.framesPerSecond,
@@ -1319,6 +1350,7 @@ int runGame(const Options& requested) {
         .overlay = std::ref(drawOverlay),
         .textureScenes = portraitScenes,
     });
+    phases.mark(FramePhases::Render, platform->nowSeconds());
     if (!drawn || (control && control->idle())) {
       platform->waitForEvents(IdleWait);
     }

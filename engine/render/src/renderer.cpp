@@ -17,6 +17,12 @@ namespace {
 // The alignment of a texture copy's source in the upload memory: one RGBA8 pixel.
 constexpr std::size_t PixelAlignment = 4;
 
+// A texture's pixels kept until the upload: from plain pointers, a single block copy also in debug
+// builds, where the checked iterators copied a sprite sheet byte by byte.
+std::vector<std::byte> copied(std::span<const std::byte> pixels) {
+  return {pixels.data(), pixels.data() + pixels.size()};
+}
+
 } // namespace
 
 core::Result<std::unique_ptr<Renderer>> Renderer::create(rhi::Device& device,
@@ -234,10 +240,8 @@ core::Result<TextureId> Renderer::queueTexture(rhi::Extent extent,
   }
   auto texture = addTexture(std::move(*image));
   if (texture) {
-    pending_.push_back({.texture = *texture,
-                        .region = whole,
-                        .pixels = {pixels.begin(), pixels.end()},
-                        .initialize = true});
+    pending_.push_back(
+        {.texture = *texture, .region = whole, .pixels = copied(pixels), .initialize = true});
   }
   return texture;
 }
@@ -274,10 +278,8 @@ core::Result<void> Renderer::queueTextureUpdate(TextureId texture, const rhi::Re
     return core::fail(std::format("a {}x{} update does not fit in a frame's {} bytes of uploads",
                                   region.width, region.height, upload_.bytesPerFrame()));
   }
-  pending_.push_back({.texture = texture,
-                      .region = region,
-                      .pixels = {pixels.begin(), pixels.end()},
-                      .initialize = false});
+  pending_.push_back(
+      {.texture = texture, .region = region, .pixels = copied(pixels), .initialize = false});
   return {};
 }
 

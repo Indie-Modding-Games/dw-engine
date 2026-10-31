@@ -2,6 +2,8 @@
 
 #include <lodepng.h>
 
+#include <algorithm>
+#include <array>
 #include <format>
 
 namespace dwe::assets {
@@ -43,15 +45,31 @@ core::Result<IndexedImage> decodeIndexedPng(std::span<const std::byte> png) {
 }
 
 Image applyPalette(const IndexedImage& image, std::span<const PaletteColor> palette) {
+  // Every index's four bytes, made once: an index past the palette is transparent black. The loop
+  // writes through plain pointers, as the UI decodes whole sprite sheets with it and a checked
+  // access per byte made that slow in debug builds.
+  constexpr std::size_t Channels = 4;
+  constexpr std::size_t Indices = 256;
+  std::array<std::byte, Indices * Channels> colors{};
+  for (std::size_t index = 0; index < std::min(palette.size(), Indices); ++index) {
+    const PaletteColor& color = palette[index];
+    colors.at(index * Channels) = std::byte{color.red};
+    colors.at((index * Channels) + 1) = std::byte{color.green};
+    colors.at((index * Channels) + 2) = std::byte{color.blue};
+    colors.at((index * Channels) + 3) = std::byte{color.alpha};
+  }
+  const std::byte* const table = colors.data();
   Image result{.width = image.width, .height = image.height, .pixels = {}};
-  result.pixels.resize(image.indices.size() * 4);
-  std::size_t out = 0;
-  for (const std::uint8_t index : image.indices) {
-    const PaletteColor color = index < palette.size() ? palette[index] : PaletteColor{};
-    result.pixels[out++] = std::byte{color.red};
-    result.pixels[out++] = std::byte{color.green};
-    result.pixels[out++] = std::byte{color.blue};
-    result.pixels[out++] = std::byte{color.alpha};
+  result.pixels.resize(image.indices.size() * Channels);
+  std::byte* out = result.pixels.data();
+  const std::uint8_t* in = image.indices.data();
+  const std::uint8_t* const end = in + image.indices.size();
+  for (; in != end; ++in, out += Channels) {
+    const std::byte* color = table + (std::size_t{*in} * Channels);
+    out[0] = color[0];
+    out[1] = color[1];
+    out[2] = color[2];
+    out[3] = color[3];
   }
   return result;
 }

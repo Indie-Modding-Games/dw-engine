@@ -532,6 +532,8 @@ local function chart_move(document, action)
   end
 end
 
+local refresh_player
+
 local function refresh(document)
   refresh_medals(document)
   refresh_cards(document)
@@ -562,6 +564,11 @@ local function refresh(document)
   document:get("ui-skin-value"):set_text(skin_choice.name())
   document:get("free-exploration-value"):set_text(on_off(ui.setting("free_exploration")))
   document:get("smooth-motion-value"):set_text(on_off(ui.setting("smooth_motion")))
+  refresh_player(document)
+end
+
+-- The PLAYER page's own fields: its name, level, rank, bits, counts, items and play time.
+refresh_player = function(document)
   document:get("player-name"):set_text(ui.setting("player.name") or "")
   local level = ui.setting("player.level")
   document
@@ -815,8 +822,27 @@ function on_tick(document, seconds)
   end
 end
 
-function on_setting(document, _name)
-  refresh(document)
+-- A setting changed: only what reads it is drawn again. The game publishes the PLAYER page's
+-- values one by one and the HUD's each frame it changes, and a whole refresh for each of them made
+-- opening the menu stall; any other setting refreshes the whole menu.
+function on_setting(document, name)
+  if name:sub(1, 4) == "hud." then
+    if name == "hud.clock.year" or name == "hud.clock.day" then
+      draw_date_digits(document, "field-year-", 3, ui.setting("hud.clock.year"))
+      draw_date_digits(document, "field-day-", 2, ui.setting("hud.clock.day"))
+    end
+  elseif name:sub(1, 12) == "player.chart" then
+    refresh_chart(document)
+  elseif name:sub(1, 12) == "player.medal" then
+    refresh_medals(document)
+    refresh_player(document)
+  elseif name:sub(1, 11) == "player.card" then
+    refresh_cards(document)
+  elseif name:sub(1, 7) == "player." then
+    refresh_player(document)
+  else
+    refresh(document)
+  end
 end
 
 function on_device(document)

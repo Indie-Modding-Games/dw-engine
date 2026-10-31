@@ -12,20 +12,24 @@
 namespace dwe::ui {
 namespace {
 
-// RmlUi draws with premultiplied alpha; images from files have straight alpha.
-std::vector<std::byte> premultiplied(std::span<const std::byte> straight) {
+// RmlUi draws with premultiplied alpha; images from files have straight alpha. In place, through
+// plain pointers: whole sprite sheets go through it, and a checked access per byte made that slow
+// in debug builds. An opaque pixel stays as it is.
+void premultiply(std::vector<std::byte>& pixels) {
   constexpr std::size_t Channels = 4;
   constexpr unsigned MaxValue = 255;
-  std::vector<std::byte> pixels(straight.begin(), straight.end());
-  for (std::size_t pixel = 0; pixel + Channels <= pixels.size(); pixel += Channels) {
-    const auto alpha = std::to_integer<unsigned>(pixels[pixel + 3]);
+  std::byte* pixel = pixels.data();
+  std::byte* const end = pixel + (pixels.size() / Channels * Channels);
+  for (; pixel != end; pixel += Channels) {
+    const auto alpha = std::to_integer<unsigned>(pixel[3]);
+    if (alpha == MaxValue) {
+      continue;
+    }
     for (std::size_t channel = 0; channel < 3; ++channel) {
-      const auto value = std::to_integer<unsigned>(pixels[pixel + channel]);
-      pixels[pixel + channel] =
-          static_cast<std::byte>(((value * alpha) + (MaxValue / 2)) / MaxValue);
+      const auto value = std::to_integer<unsigned>(pixel[channel]);
+      pixel[channel] = static_cast<std::byte>(((value * alpha) + (MaxValue / 2)) / MaxValue);
     }
   }
-  return pixels;
 }
 
 // Renderer textures are handed to RmlUi as their generation in the high 32 bits and their index
@@ -150,7 +154,8 @@ Rml::TextureHandle RenderBridge::LoadTexture(Rml::Vector2i& dimensions, const Rm
     return 0;
   }
   dimensions = {static_cast<int>(image->width), static_cast<int>(image->height)};
-  const std::vector<std::byte> pixels = premultiplied(std::span<const std::byte>{image->pixels});
+  std::vector<std::byte> pixels = std::move(image->pixels);
+  premultiply(pixels);
   const Rml::TextureHandle texture = createTexture(dimensions, pixels);
   if (texture != 0 && TextureSources::isPixelArt(source)) {
     sharpTextures_.insert(texture);
