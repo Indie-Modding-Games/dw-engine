@@ -111,6 +111,15 @@ void StoryRunner::enterMap(std::int32_t map) {
   }
 }
 
+void StoryRunner::dropMapChangeArrival() {
+  if (!changingMap_ || continuations_.empty()) {
+    return;
+  }
+  if (auto* arrival = std::get_if<RunSection>(&continuations_.back())) {
+    arrival->section.reset();
+  }
+}
+
 core::Result<void> StoryRunner::setScript(std::int64_t script, std::int64_t map) {
   if (!isSectionNumber(script)) {
     return core::fail(messages::formatMessage(messages::NoSuchScript, script));

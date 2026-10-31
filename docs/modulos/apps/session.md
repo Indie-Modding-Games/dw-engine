@@ -128,7 +128,9 @@ historia los `sets_flags` del warp tomado.
   reglas qué etapa se juega (`[port:story-lock]`). `StoryAdapter::lock()` la responde y la app
   (`StoryFieldLink`) la aplica: una salida pisada, el cambio de mapa de un script o una sección de casilla hacia lo
   cerrado no ocurre y el diálogo muestra `closed_message` (el cambio de un script cerrado así no es un error en el log:
-  lo es solo si no hay mapa o nadie lo juega). Solo se cierran los cambios de mapa **nuevos**: una
+  lo es solo si no hay mapa o nadie lo juega). El cambio de script que no ocurre acaba el script en el mapa del
+  jugador sin la sección de llegada del otro mapa (`StoryRunner::dropMapChangeArrival`), y la casilla que lo lanzó no
+  vuelve a lanzar sus secciones hasta que el jugador sale de ella. Solo se cierran los cambios de mapa **nuevos**: una
   partida guardada más allá de la etapa no se rompe, el jugador se queda donde está y sale por cualquier salida hacia
   un mapa abierto. Un ruleset sin la sección no cierra nada. Abrir una etapa más es solo editar datos. La Etapa 1
   sale de la verificación E1-01 en el decomp. La activa es la 2 (la jungla y el Drill Tunnel), liberada con todas

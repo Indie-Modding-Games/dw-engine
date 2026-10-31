@@ -58,6 +58,12 @@ std::vector<std::int32_t> StoryFieldLink::openCellSections() {
   const std::string& map = scene_->field().mapId();
   std::vector<std::int32_t> open;
   std::vector<std::int32_t> closed;
+  if (stalledCell_) {
+    if (assets::collisionCellAt(scene_->field().player().position) == *stalledCell_) {
+      return open;
+    }
+    stalledCell_.reset();
+  }
   for (const std::int32_t section : scene_->field().cellSections()) {
     if (lock.sectionOpen(map, section)) {
       open.push_back(section);
@@ -93,6 +99,7 @@ void StoryFieldLink::afterMapChange() {
         table != nullptr ? table->find(scene_->field().mapId()) : nullptr;
     mapNumber_.reset();
     closedSections_.clear();
+    stalledCell_.reset();
     if (!story_->lock().mapOpen(scene_->field().mapId())) {
       core::logWarning("[port:story-lock] the player is on {}, beyond stage {}: they stay, and "
                        "only exits into open maps work",
@@ -121,6 +128,7 @@ bool StoryFieldLink::playMapChange(std::int32_t map, std::int32_t exit, bool sho
     core::logInfo("[port:story-lock] scriptTickChangeMap (map.c:5277): stage {} keeps {} closed; "
                   "the player stays on {}",
                   story_->lock().stage(), entry->id, scene_->field().mapId());
+    stalledCell_ = assets::collisionCellAt(scene_->field().player().position);
     noticeLock();
     return false;
   }

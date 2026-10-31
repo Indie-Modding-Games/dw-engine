@@ -61,7 +61,9 @@ void StoryAdapter::playUnplayedChange() {
   if (!runner_) {
     return;
   }
-  // The change the field could not play ends on the map the player is on.
+  // The change the field could not play ends on the map the player is on, without the arrival
+  // section meant for the other map.
+  runner_->dropMapChangeArrival();
   runner_->enterMap(*enteredMap_);
 }
 

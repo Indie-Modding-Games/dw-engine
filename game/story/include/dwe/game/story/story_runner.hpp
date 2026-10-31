@@ -127,6 +127,10 @@ public:
   // the map's map-head section at once, over whatever ran (map.c: changeMap); after a script's map
   // change the script goes on in the same frame (map.c: scriptTickChangeMap).
   void enterMap(std::int32_t map);
+  // The field did not play the script's map change (the story lock keeps the map closed): the
+  // arrival section the change left belongs to the other map's script and is dropped, so that
+  // enterMap with the map the player is on ends the script there.
+  void dropMapChangeArrival();
 
   // set_script: the map's script is `script`; once the section ends, the script's map-entry section
   // runs. The map was loaded by whoever entered it.

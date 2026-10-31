@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dwe/assets/map_document.hpp>
+
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -61,6 +63,10 @@ private:
   // The closed cell sections the player's cell asked for in the last tick: a step cell asks every
   // tick, and only its first ask shows the message.
   std::vector<std::int32_t> closedSections_;
+  // The cell the player stood on when the lock kept a script's map change from playing: its
+  // sections do not run again until the player steps off it, or the change and its message would
+  // repeat every frame.
+  std::optional<assets::CollisionCell> stalledCell_;
   bool lockNoticed_ = false;
 };
 
