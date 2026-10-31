@@ -17,7 +17,7 @@
 #
 # Mapas y salidas verificados en el decomp y en los scripts extraídos (E1-01:
 # _work/logs/plan/hitos-disparadores.md).
-active_stage: stage_1
+active_stage: stage_2
 closed_message: story_lock.closed_exit
 stages:
   # Etapa 1: la apertura, File City con sus casas y el Green Gym, y el Native Forest hasta el
@@ -64,7 +64,8 @@ stages:
   # Abre el lomo de Coelamon (mayo05 a trop01), mayo08a a trop00, las entradas del túnel desde
   # mayo01_2 y mayo02_2 y room14 (la casa que abre Drimogemon, disparador 238). Quedan cerradas
   # solas, por no estar en la lista, las salidas a la etapa 3 y siguientes: trop02 a dgha01,
-  # trop03 a gcan01, trop06 a koda00, tunn03 y tunn03_2 a leom02 y mayo02_2 a miha00.
+  # trop03 a gcan01, trop06 a koda00, tunn03 y tunn03_2 a leom02 y mayo02_2 a miha00, y los
+  # cambios de mapa de script de mayo11 y tunn08 a miha04b.
   - id: stage_2
     maps:
       - mayo11

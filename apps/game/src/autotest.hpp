@@ -105,6 +105,8 @@ struct AutotestStep {
   // walk_to: done when a story script takes hold of the player on the way (a step cell's scene),
   // with the scene left running for the next steps.
   bool stopOnScene = false;
+  // walk_to a trigger: done when the story lock keeps its exit closed and its notice shows.
+  bool stopOnClosed = false;
   // walk_to: an encounter on the way (a script holds the player, or a fight) is waited out.
   bool encounters = false;
   bool flag = false; // menu open, fullscreen on

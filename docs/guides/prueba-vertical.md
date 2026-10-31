@@ -213,18 +213,18 @@ for lang in en es; do
         --autotest tests/autotest/route-mod-map.yaml --shots <capturas>/$lang
 done
 ```
-- `route-etapa2.yaml` y `route-etapa2-jungla.yaml`: la Etapa 2 de la historia, con el candado abierto solo para la
-  prueba (`--story-stage stage_2`, sin tocar `active_stage`) y una partida sembrada que empieza en el mapa de cada
-  mitad. La del Drill Tunnel (`--start tunn06`) evoluciona al compañero a Champion, habla con el minero, ve rodar la
+- `route-etapa2.yaml` y `route-etapa2-jungla.yaml`: la Etapa 2 de la historia, con el candado tal como sale (la
+  etapa activa del ruleset es la 2: la jungla y el túnel abiertos, la etapa 3 y siguientes cerradas) y una partida
+  sembrada que empieza en el mapa de cada mitad. La del Drill Tunnel (`--start tunn06`) evoluciona al compañero a Champion, habla con el minero, ve rodar la
   roca (disparador 120), sigue a tunn07 y tunn08, donde tiembla la pantalla y empieza el combate con el monstruo de
   fuego, lo gana con `battle_win` y acaba con el disparador 209. La de la jungla (`--start trop04`) choca con el
   Betamon, que vuelve a la ciudad (204), pasa por trop01 y trop05 (en trop05 coloca al jugador junto a la salida, para
   no pelear con los salvajes del camino) y entra en el bosque de Amida (alerta, 137) y sube por su camino central:
 
 ```sh
-scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start tunn06 --lang en --seed 1 \
+scripts/dev.sh run --content <carpeta> --start tunn06 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2.yaml --shots <capturas>/etapa2
-scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop04 --lang en --seed 1 \
+scripts/dev.sh run --content <carpeta> --start trop04 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-jungla.yaml --shots <capturas>/etapa2
 ```
 
@@ -258,24 +258,29 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop04 --la
   los tiene. `route-etapa2-vegiemon.yaml` (`--start trop03`) parte del 86 (escrito) y de la Rain Plant en la bolsa
   (`give_item`; en la historia es el fruto que da el campo el día 15), pisa el brote, dice que sí a usar objetos y
   elige la planta en el selector de la rutina 0 (variable 254 = 121): llueve sobre el brote y Vegiemon se une (225).
+  `route-etapa2-lock.yaml` (`--start trop03`) pisa la frontera del candado en la jungla: la salida de trop03 a
+  gcan01 (etapa 4) y la de trop02 a dgha01 (etapa 7) no ocurren, sale el mensaje del candado y el jugador sigue en
+  el mapa de la jungla.
 
 ```sh
-scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop00 --lang en --seed 1 \
+scripts/dev.sh run --content <carpeta> --start trop00 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-coelamon.yaml --shots <capturas>/etapa2
-scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start tunn09 --lang en --seed 1 \
+scripts/dev.sh run --content <carpeta> --start tunn09 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-drimogemon.yaml --shots <capturas>/etapa2
-scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop01 --lang en --seed 4 \
+scripts/dev.sh run --content <carpeta> --start trop01 --lang en --seed 4 \
     --autotest tests/autotest/route-etapa2-piximon.yaml --shots <capturas>/etapa2
-scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start tunn04 --lang en --seed 1 \
+scripts/dev.sh run --content <carpeta> --start tunn04 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-dirt.yaml --shots <capturas>/etapa2
-scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop06 --lang en --seed 1 \
+scripts/dev.sh run --content <carpeta> --start trop06 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-centarumon.yaml --shots <capturas>/etapa2
-scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop06 --lang en --seed 1 \
+scripts/dev.sh run --content <carpeta> --start trop06 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-amida-trap.yaml --shots <capturas>/etapa2
-scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start twna03 --lang en --seed 1 \
+scripts/dev.sh run --content <carpeta> --start twna03 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-vegiemon-rumor.yaml --shots <capturas>/etapa2
-scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop03 --lang en --seed 1 \
+scripts/dev.sh run --content <carpeta> --start trop03 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-vegiemon.yaml --shots <capturas>/etapa2
+scripts/dev.sh run --content <carpeta> --start trop03 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa2-lock.yaml --shots <capturas>/etapa2
 ```
 
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
@@ -415,7 +420,7 @@ steps:
 |---|---|
 | `wait: {seconds, map, partner_within, player_near: [x, z], radius, menu_open, map_name, shown, hidden, partner_has, setting, partner_model, timeout}` | Espera los segundos y hasta que se cumplen las condiciones (todas las dadas). `map_name: <id>` espera a que un cambio de mapa enseñe el nombre de ese mapa, y entonces no mira las demás. `shown: <documento>` y `hidden: <documento>` esperan a que un documento de la UI (`battle`, `partner_menu`) se vea o deje de verse. `partner_has: <clave>` espera a que el compañero tenga ese estado, por la clave de la página de estado (`partner_menu.condition.sleepy`, `.hungry`, `.needs_toilet`, `.sick`...). `setting: {<nombre>: <valor>}` espera a que un ajuste tenga ese valor (`battle.phase: end`). `partner_model: <id>` espera a que el compañero se dibuje con ese modelo (`digimon/species_b/model`). `ticks: <n>` espera esos ticks de lógica (1/60 s cada uno) en vez de segundos de reloj |
 | `hold: {keys: [<tecla>...], ticks}` | Mantiene esas teclas pulsadas exactamente esos ticks de lógica (`keys: []`, ninguna) y las suelta después; los `hold` seguidos se encadenan sin huecos, tick a tick, aunque los frames vayan lentos. Para repetir una entrada al tick, como en la [traza de estado](traza-de-estado.md) |
-| `walk_to: {trigger \| point: [x, z], radius, walk, stop_on_warp, stop_on_scene, encounters, device, timeout}` | Camina con el dispositivo hasta las celdas con ese trigger (y el cambio de mapa que dispara) o hasta el punto; planifica con la colisión del mapa y evita los demás warps. `walk: true` anda en vez de correr. `stop_on_warp: true` acaba al empezar el cambio de mapa, sin esperar al mapa nuevo. `stop_on_scene: true` acaba en cuanto un script de la historia sujeta al jugador por el camino (la escena de una casilla de sección) y deja la escena en marcha para los pasos siguientes. Si pisa un objeto del suelo, confirma su aviso como lo haría el jugador y sigue. `encounters: true` aguanta un encuentro por el camino, que llega cuando quiere el tiempo (un monstruo salvaje se acerca, habla y empieza un combate): mientras un script sujeta al jugador o se ve el combate, deja de andar, pasa las páginas del cuadro de texto con confirmar (Intro, o South con el mando) cada segundo y deja que el combate acabe solo, pulsando confirmar también en su cuadro final, que escribe cada línea con una pulsación (el de un script no deja huir, como en el original; si se pierde, el jugador acaba en casa de Jijimon y la ruta lo verá); luego planifica de nuevo desde donde quedó el jugador. Ese tiempo no cuenta para el `timeout` del paso, sí para el de la ruta. Un elegidor de destinos de otra celda por el camino (el camino vuelve a pisar la celda en la que el jugador se quedó) se rechaza con cancelar y la caminata sigue |
+| `walk_to: {trigger \| point: [x, z], radius, walk, stop_on_warp, stop_on_scene, stop_on_closed, encounters, device, timeout}` | Camina con el dispositivo hasta las celdas con ese trigger (y el cambio de mapa que dispara) o hasta el punto; planifica con la colisión del mapa y evita los demás warps. `walk: true` anda en vez de correr. `stop_on_warp: true` acaba al empezar el cambio de mapa, sin esperar al mapa nuevo. `stop_on_scene: true` acaba en cuanto un script de la historia sujeta al jugador por el camino (la escena de una casilla de sección) y deja la escena en marcha para los pasos siguientes. `stop_on_closed: true` acaba cuando el candado de historia deja cerrada la salida y muestra su aviso (el diálogo `dialog`): el jugador sigue en el mapa. Si pisa un objeto del suelo, confirma su aviso como lo haría el jugador y sigue. `encounters: true` aguanta un encuentro por el camino, que llega cuando quiere el tiempo (un monstruo salvaje se acerca, habla y empieza un combate): mientras un script sujeta al jugador o se ve el combate, deja de andar, pasa las páginas del cuadro de texto con confirmar (Intro, o South con el mando) cada segundo y deja que el combate acabe solo, pulsando confirmar también en su cuadro final, que escribe cada línea con una pulsación (el de un script no deja huir, como en el original; si se pierde, el jugador acaba en casa de Jijimon y la ruta lo verá); luego planifica de nuevo desde donde quedó el jugador. Ese tiempo no cuenta para el `timeout` del paso, sí para el de la ruta. Un elegidor de destinos de otra celda por el camino (el camino vuelve a pisar la celda en la que el jugador se quedó) se rechaza con cancelar y la caminata sigue |
 | `menu: open \| close` | Abre o cierra el menú con el dispositivo (ratón: el botón «Menú» del HUD y clic derecho) |
 | `menu_select: <id>` | Enfoca y pulsa una entrada del menú abierto: el principal si se ve (`play`, `language`), si no el de pausa (`open-minimap`, `minimap-mode`...), si no el menú del compañero (también la bolsa que abre el combate: `slot-0`..., `opt-use`), la pantalla de combate (`command-0`..., `open-bag`), el selector de la exploración libre o, en la portada, el diálogo (`yes`, `no`, `ok`) y la lista de ranuras (`slot-1`..., `no-save`, `back`). Con teclado o mando mueve el foco abajo, arriba, a la derecha y a la izquierda hasta llegar; con el ratón hace clic en el centro de la entrada |
 | `script: <lua>` | Ejecuta una línea de los scripts del juego, como la consola; los comandos de depuración están más abajo |

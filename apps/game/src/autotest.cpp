@@ -380,7 +380,7 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
     step.timeout = 90.0;
     reader.expectKeys(value, "walk_to", {},
                       {"trigger", "point", "radius", "walk", "stop_on_warp", "stop_on_scene",
-                       "encounters", "device", "timeout"});
+                       "stop_on_closed", "encounters", "device", "timeout"});
     if (const core::YamlNode* trigger = value.find("trigger")) {
       step.trigger = reader.integer<std::int32_t>(*trigger);
     }
@@ -401,6 +401,9 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
     }
     if (const core::YamlNode* stop = value.find("stop_on_scene")) {
       step.stopOnScene = reader.boolean(*stop);
+    }
+    if (const core::YamlNode* stop = value.find("stop_on_closed")) {
+      step.stopOnClosed = reader.boolean(*stop);
     }
     if (const core::YamlNode* encounters = value.find("encounters")) {
       step.encounters = reader.boolean(*encounters);
@@ -1037,6 +1040,11 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
     return step.stopOnWarp;
   }
   if (step.stopOnScene && field.heldByScript()) {
+    releaseMovement();
+    return true;
+  }
+  // The story lock keeps the exit closed and says so in the dialog: the player stays on the map.
+  if (step.stopOnClosed && host.ui->isVisible("dialog")) {
     releaseMovement();
     return true;
   }

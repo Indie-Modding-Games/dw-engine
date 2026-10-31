@@ -131,8 +131,12 @@ historia los `sets_flags` del warp tomado.
   lo es solo si no hay mapa o nadie lo juega). Solo se cierran los cambios de mapa **nuevos**: una
   partida guardada más allá de la etapa no se rompe, el jugador se queda donde está y sale por cualquier salida hacia
   un mapa abierto. Un ruleset sin la sección no cierra nada. Abrir una etapa más es solo editar datos. La Etapa 1
-  sale de la verificación E1-01 en el decomp; las etapas 3 a 9 ya tienen sus mapas (de los scripts extraídos y las
-  salidas de los mapas) para probarlas con `--story-stage`, aunque `active_stage` no las alcance.
+  sale de la verificación E1-01 en el decomp. La activa es la 2 (la jungla y el Drill Tunnel), liberada con todas
+  sus rutas en PASS con el candado puesto (`docs/guides/prueba-vertical.md`): sus salidas a etapas posteriores
+  (trop02 a dgha01, trop03 a gcan01, tunn03 y tunn03_2 a leom02, mayo02_2 a miha00) y los cambios de mapa de script
+  hacia ellas (el viaje de Centarumon de trop06 a koda00, mayo11 y tunn08 a miha04b) no ocurren. Las etapas 3 a 9
+  ya tienen sus mapas (de los scripts extraídos y las salidas de los mapas) para probarlas con `--story-stage`,
+  aunque `active_stage` no las alcance.
 
 La historia es la única dueña de las formas criadas, como en el original (`setDigimonRaised` pone el disparador
 0x200 + número): `EvolutionAdapter` (con `EvolutionAdapterDesc::story`) las escribe ahí al evolucionar, al renacer y
