@@ -277,3 +277,29 @@ TEST_CASE("a section that never waits is stopped after the most resumes a frame 
   CHECK(std::ranges::count(host.log(), std::string{"resume 199:0x51 nil"}) ==
         StoryRunner::MaxResumesPerFrame);
 }
+
+TEST_CASE("a map change the field refuses ends on the same map without the arrival section") {
+  constexpr std::int32_t Map = 35;
+  constexpr SectionRef MapHead{.script = StoryRunner::MapHeadScript, .section = Map};
+  constexpr SectionRef Arrival{.script = 105, .section = 0x3c};
+  for (const bool refused : {false, true}) {
+    CAPTURE(refused);
+    ScriptedHost host;
+    host.define(MapHead, {SectionEnded{}});
+    host.define(Arrival, {SectionEnded{}});
+    host.define(Step, {Wait{MapChangeWait{.map = 226, .exit = 0, .arrival = Arrival.section}}});
+    StoryRunner runner = makeRunner(host);
+    runner.enterMap(Map);
+    REQUIRE(runner.setScript(Arrival.script, Map));
+    runFrames(runner, 1);
+    REQUIRE(runner.requestMapSection(Step.section, StartTiming::Now) == RequestOutcome::Accepted);
+    host.clearLog();
+    if (refused) {
+      runner.dropMapChangeArrival();
+    }
+    runner.enterMap(Map);
+    runFrames(runner, 3);
+    CHECK(std::ranges::contains(host.log(), std::string{"start 105:0x3c"}) == !refused);
+    CHECK_FALSE(runner.busy());
+  }
+}

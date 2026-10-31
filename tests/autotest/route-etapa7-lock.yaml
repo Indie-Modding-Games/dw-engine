@@ -1,0 +1,31 @@
+# Stage 7 of the story with the keyboard, the lock's border at the Grey Lord's Mansion: from trop02 on a seeded game
+# (run with --start trop02 and --story-stage stage_7). The jungle's exit to the mansion (dgha01), closed in stage 2,
+# is open now. In the mansion's graveyard (dgha02) the cells 51 (script 35 section 0x33) lead to the Back Dimension
+# (mgen11, stage 9) once variable 16 is 2, after the end of the game: the lock keeps it closed with its notice and the
+# player is put back off the cells. Without it the same cells stop a partner that is not of the dark kind (the "weird
+# black force" scene) and the player walks back.
+name: etapa7-lock
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: trop02, partner_within: 400, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  - walk_to: {trigger: 110, encounters: true, win_battles: true, timeout: 180}
+  - wait: {map: dgha01, partner_within: 400, seconds: 1, timeout: 60}
+  - screenshot: dgha01
+  - walk_to: {trigger: 110, encounters: true, win_battles: true, timeout: 240}
+  - wait: {map: dgha02, partner_within: 400, seconds: 1, timeout: 60}
+  - script: story_set("var 16 2")
+  - walk_to: {trigger: 51, encounters: true, win_battles: true, stop_on_closed: true, timeout: 240}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - screenshot: dgha02-mgen11-closed
+  - tap: {key: return}
+  - wait: {map: dgha02, hidden: dialog, seconds: 2, timeout: 30}
+  - script: story_set("var 16 0")
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: black-force
+  - repeat: {times: 6, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {map: dgha02, hidden: story_textbox, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 111, encounters: true, win_battles: true, timeout: 240}
+  - wait: {map: dgha01, seconds: 1, timeout: 60}
