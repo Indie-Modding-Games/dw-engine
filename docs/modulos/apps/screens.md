@@ -350,8 +350,9 @@ listas, lo que vale la carta y los sí o no, con la caja de puntos arriba a la i
 tapada (`cover()`), como la tienda de cartas. Controles: flechas para mover, Intro para aceptar, Esc para cancelar,
 Mayús con arriba o abajo salta al principio o al final (R1 en el mando). Prueba en dwe: ruta
 `_work/routes-e2/menus-qa/merit-shop/merit.yaml` (partida en gkyo02 con 150 méritos y las cartas 1, 2 y 3; capturas
-`eng/merit-*.png`). El original no se ha medido todavía (el emulador de referencia estaba ocupado): las medidas
-salen del decomp y de las ventanas iguales ya medidas (la de tirar un objeto y la de comprar cartas).
+`eng/merit-*.png`). Medido en el original el 2026-10-31 (rutina 1 forzada en room02 con 150 méritos y las cartas 1,
+2 y 3; `_work/routes-e2/measure-2026-10-31/merit-orig-vs-dwe.png`). Las x de la captura del emulador son las del juego;
+las y cuadran con `(y - 8) × 240 / 224` (224 líneas estiradas a 240), y con eso las cajas caen en las y del decomp.
 
 | Ajuste | Valor | Qué es |
 |---|---|---|
@@ -364,10 +365,10 @@ salen del decomp y de las ventanas iguales ya medidas (la de tirar un objeto y l
 | Comportamiento | Original (decomp) | dwe | Prueba | Estado |
 |---|---|---|---|---|
 | Saludo y opciones | Estado 0: «You want 'Merit' too?…» (línea 0); estado 3: abre la caja de puntos y el jugador elige «Show a … card / Use Merit points / See ya» (línea 1); el cursor vuelve a 0 | Fases `greeting` y `choice` | `eng/merit-02-greeting.png`, `merit-03-choice.png` | Igual |
-| Caja de puntos | `createShopBitsBox(0)`: la caja del dinero de la tienda (x 8 a 90, y 22 a 55) con «Points» y la cifra | `#points-box` con esas medidas | `eng/merit-04-card-list.png` | Suposición (sin medir en el original) |
-| Lista de cartas | Tipo 6: x 124 a 290, y 22 a 151, cursor de 146; MENU en (8, 5) y COUNT en (128, 5); las 64 cartas (vacías las que no tiene), nombre y copias, siempre blancas; «What did you bring?» (línea 5) | `#frame.list-cards`; el nombre se corta en la columna de las copias | `eng/merit-04-card-list.png` | Suposición (sin medir en el original) |
+| Caja de puntos | `createShopBitsBox(0)`: la caja del dinero de la tienda (x 8 a 90, y 22 a 55) con «Points» y la cifra | `#points-box` con esas medidas | `eng/merit-04-card-list.png`; medido: x 8 a 89, «Points» de x 30 a 75 y la cifra acaba en x 67 | Igual |
+| Lista de cartas | Tipo 6: x 124 a 290, y 22 a 151, cursor de 146; MENU en (8, 5) y COUNT en (128, 5); las 64 cartas (vacías las que no tiene), nombre y copias, siempre blancas; «What did you bring?» (línea 5) | `#frame.list-cards`; el nombre se corta 104 píxeles después de empezar | `eng/merit-04-card-list.png`; medido: caja de x 124 a 289, nombre desde x 150 con doce letras («H-Kabuterimo»), las copias acaban en x 271, barra de x 278 a 285 (antes dwe cortaba en once letras y las copias acababan en x 264) | Igual |
 | Lo que vale la carta | `createMeritCardTradeDialogue`: sonido (0, 3), la línea 7 más la rareza con `{shopvar}`; luego «Give it / Cancel» (línea 2) | Fases `card_worth` y `card_choice` | `eng/merit-05-card-worth.png`, `merit-06-card-choice.png` | Igual |
-| Lista de objetos | Tipo 7: x 105 a 295, cursor de 170; POINT (sprite 2) en (128, 5); los objetos con mérito y su precio (4 cifras), en rojo (3) los que no se pueden tomar; «What do you want?» (línea 6) | `#frame.list-items`; el precio en la columna de la tienda de cartas | `eng/merit-08-item-list.png` | Suposición (sin medir en el original) |
+| Lista de objetos | Tipo 7: x 105 a 295, cursor de 170; POINT (sprite 2) en (128, 5); los objetos con mérito y su precio (4 cifras), en rojo (3) los que no se pueden tomar; «What do you want?» (línea 6) | `#frame.list-items`; el nombre se corta como en las cartas | `eng/merit-08-item-list.png`; medido: caja de x 105 a 294, el precio acaba en x 264 (antes 260), barra de x 283 a 290 | Igual |
 | Tomar un objeto | `readSelectedItemMerit`: sonido (0, 3) y «OK / Cancel» (línea 3); sí resta y da el objeto | Fase `item_choice` | `eng/merit-09-item-choice.png`; 250 → 230 | Igual |
 | Fila vacía o que no se puede tomar | `playSound(0, 0xB)` | `MeritShop::playFailSound` | — | Igual |
 | Cancelar (Esc) | En una lista vuelve a las opciones (estado 0xa); en las opciones contesta «See ya» salvo con el disparador 49 | Fase `choice`; `choiceCancellable` | Ruta `merit-shop` | Igual |

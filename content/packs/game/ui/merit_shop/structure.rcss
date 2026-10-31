@@ -44,7 +44,7 @@ body {
 }
 
 #points-value {
-	width: 111dp;
+	width: 120dp;
 	text-align: right;
 }
 
@@ -97,14 +97,14 @@ body {
 .row {
 	position: absolute;
 	left: 21dp;
-	width: 405dp;
+	width: 426dp;
 	height: 54dp;
 	font-size: 33dp;
 	line-height: 33dp;
 	white-space: pre;
 }
 
-#frame.list-items .row { width: 450dp; }
+#frame.list-items .row { width: 462dp; }
 
 #row-0 { top: 51dp; }
 #row-1 { top: 105dp; }
@@ -131,8 +131,8 @@ body {
 
 .rarity.hidden, .icon.hidden { display: none; }
 
-/* The name runs until the number's column cuts it (the original writes the number over the name's tail): the item
-   list's price is the card shop's four-digit column, the card list's count two digits. */
+/* Measured on the original (2026-10-31): a name is cut 104 pixels after its start in both lists (twelve letters of
+   a card name show), the card count ends at x 271, an item's price at x 264 and the points at x 67. */
 .name {
 	position: absolute;
 	left: 54dp;
@@ -141,7 +141,6 @@ body {
 	overflow: hidden;
 }
 
-#frame.list-cards .name { width: 285dp; }
 
 .value {
 	position: absolute;
