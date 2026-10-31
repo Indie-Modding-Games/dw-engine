@@ -1,0 +1,69 @@
+# Stage 5 of the story with the keyboard, Angemon in the Ice Sanctuary: from icsa01 on a seeded game (run with
+# --start icsa01 and --story-stage stage_5) the player steps before the statue (script 93, section 0x33: trigger
+# 324), the partner walks to the pedestal and it slides aside (section 0x34, routine 50: trigger 323), the opening
+# under it leads down to icsa02, and the maze (icsa02, icsa07, icsa04, icsa05) to icsa06, where the blinding light
+# (routines 45 and 46, script 98) sets trigger 322, and back in icsa01 (whose entry runs routines 49 and 50 again).
+# Angemon's waking (trigger 220) is left out: see the end.
+name: etapa5-angemon
+device: keyboard
+timeout: 1200
+steps:
+  - wait: {map: icsa01, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.220: "false"}
+  - screenshot: icsa01
+  # The sanctuary's wild ones fight whoever walks into them and beat a seeded partner: the walks end those fights at
+  # once (`encounters: win`).
+  - script: evolve("garu")
+  - wait: {seconds: 30}
+  # The cells of section 0x33 lie before the statue (x -150..250, z -1300..-1000), those of section 0x34 across the
+  # hall south of it (z -300..-100).
+  - walk_to: {point: [50, -1150], radius: 60, stop_on_scene: true, timeout: 180}
+  - repeat: {times: 6, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.324: "true"}, timeout: 30}
+  - wait: {seconds: 2}
+  - walk_to: {point: [50, -200], radius: 60, stop_on_scene: true, timeout: 180}
+  - repeat: {times: 6, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.323: "true"}, timeout: 60}
+  - wait: {seconds: 3}
+  - screenshot: icsa01-pedestal
+  - walk_to: {trigger: 51, timeout: 180}
+  - wait: {map: icsa02, partner_within: 600, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 53, encounters: win, timeout: 240}
+  - wait: {map: icsa07, partner_within: 600, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 53, encounters: win, timeout: 240}
+  - wait: {map: icsa04, partner_within: 600, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 52, encounters: win, timeout: 240}
+  - wait: {map: icsa05, partner_within: 600, seconds: 1, timeout: 60}
+  # icsa05's BlueMeramon hits the partner for more than its whole life in the first instant of a fight, before the
+  # debug win lands, and the next fight finds it fainted (home to Jijimon): the player is put by the cells of the
+  # way on (E, top right of the hall) and the partner beside it, so the walk is a short one.
+  - script: place("player 2300 300 0")
+  - script: place("partner 2100 200 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 55, encounters: win, timeout: 240}
+  - wait: {map: icsa06, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: icsa06
+  # The cells of section 0x34 (x 0..200, z 1700..2000): the light whitens the screen (routine 45) and fades back
+  # (routine 46). The Icemon on the way pick fights, so the walk goes to a point (a fight's hold is not the scene).
+  - walk_to: {point: [100, 1850], radius: 60, encounters: win, timeout: 240}
+  - wait: {seconds: 1.5}
+  - screenshot: icsa06-light
+  - repeat: {times: 12, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.322: "true"}, timeout: 60}
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: icsa05, partner_within: 600, seconds: 1, timeout: 60}
+  # The same BlueMeramon: the player is put by the cells back to icsa01 (D, top left of the hall).
+  - script: place("player -2400 300 0")
+  - script: place("partner -2200 200 0")
+  - wait: {seconds: 0.5}
+  - walk_to: {trigger: 54, encounters: win, timeout: 240}
+  - wait: {map: icsa01, partner_within: 600, seconds: 1, timeout: 60}
+  # The map's entry section puts the pedestal back aside (routines 49 and 50) and holds the player a moment.
+  - wait: {seconds: 4}
+  # The statue stands lit (object 7) and the pedestal aside. Angemon's waking (section 5: "Oh? About that
+  # statue...", trigger 220) is not played: in the original's script the hall's cells reach it only with 220 already
+  # set, and it is otherwise the talk of NPC slot 0, which no script puts on the map; the original is yet to be
+  # measured there.
+  - screenshot: icsa01-back
+  - expect_setting: {story.trigger.322: "true"}
+  - expect_setting: {story.trigger.323: "true"}

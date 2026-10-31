@@ -1,0 +1,53 @@
+# Stage 5 of the story with the keyboard, the critical path's first half: from gcan04 on a seeded game (run with
+# --start gcan04 and --story-stage stage_5, docs/guides/prueba-vertical.md) the player leaves the Great Canyon for
+# Freezeland and crosses it (frzl01, frzl02, frzl03, frzl06, frzl12, frzl13) to the beach of frzl16, where Whamon (script 130, section 0x51)
+# offers the ride into the Secret Beach Cave (ogre10), and the player walks into the cave. The ride needs trigger
+# 175, which the Ogre Fortress (stage 4) sets; the seeded game has not got it, so the route writes it.
+name: etapa5
+device: keyboard
+timeout: 1200
+steps:
+  - wait: {map: gcan04, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.224: "false"}
+  - script: story_set("trigger 175 on")
+  # Freezeland's wild ones fight whoever walks into them and beat a seeded partner: the walks end those fights at
+  # once (`encounters: win`). Garurumon is not one of the forms the cold sends to Frigimon's hut (the step-on cells of
+  # every frzl map).
+  - script: evolve("garu")
+  - wait: {seconds: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: frzl01, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: frzl01
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: frzl02, partner_within: 600, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: frzl03, partner_within: 600, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: frzl06, partner_within: 600, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: frzl12, partner_within: 600, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: frzl13, partner_within: 600, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: frzl16, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: frzl16
+  # The cells of section 0x51 (x -2950..-2350, z -2450..-2050) face Whamon; as any cell of 80 to 109 they run on
+  # confirm.
+  - walk_to: {point: [-2650, -2250], radius: 60, encounters: win, timeout: 240}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: frzl16-whamon
+  # The first talk (trigger 352) ends on a question; its first answer takes the ride (warp_to 142, exit 1).
+  # Thirteen boxes, the question, and two more boxes on the ride; the presses stop once no box is left to close.
+  - repeat: {times: 14, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - repeat: {times: 10, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {map: ogre10, seconds: 2, timeout: 90}
+  - expect_setting: {story.trigger.352: "true"}
+  # The ride ends with section 0x3c of script 136: the player and the partner wade in from the sea and a voice
+  # calls from behind; then the cave is the player's (route-etapa5-whamon.yaml goes on from its inner exit).
+  - wait: {shown: story_textbox, seconds: 1, timeout: 90}
+  - screenshot: ogre10-voice
+  - repeat: {times: 4, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {hidden: story_textbox, seconds: 2, timeout: 60}
+  - walk_to: {point: [900, -400], radius: 120, timeout: 120}
+  - screenshot: ogre10

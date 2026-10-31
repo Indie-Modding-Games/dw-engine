@@ -1,0 +1,40 @@
+# Stage 5 of the story with the keyboard, the curling with Penguinmon: from frzl15 on a seeded game (run with
+# --start frzl15,2 and --story-stage stage_5) the player talks to Penguinmon (script 129 section 6, then script 206),
+# who takes the player to the ice of frzl17 (trigger 357). The cells of section 0x33 there start the match (partner
+# routine 1, the curling screen); the route throws every stone with confirm. The match's end writes the result in
+# variable 121 and takes the player back to frzl15, where section 0x0a of script 206 answers it: with a win
+# Penguinmon joins the city (trigger 257).
+name: etapa5-curling
+device: keyboard
+timeout: 1200
+steps:
+  - wait: {map: frzl15, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.257: "false"}
+  - screenshot: frzl15
+  # Penguinmon stands at (1792, 1185) in the original's axes: the player is put just south of it, facing it, and
+  # confirm talks (the walk planner finds no way up to it).
+  - script: place("player 1792 1310 0")
+  - script: place("npc:6 1792 1185 2048")
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 20}
+  - screenshot: frzl15-penguinmon
+  - repeat: {times: 9, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {map: frzl17, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.357: "true"}
+  - screenshot: frzl17
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
+  - wait: {shown: curling_hud, seconds: 1, timeout: 60}
+  - screenshot: frzl17-curling
+  # Confirm answers the match's question, takes each stone, its aim and the power meter wherever it stands.
+  - repeat: {times: 200, steps: [{tap: {key: return}}, {wait: {seconds: 0.8}}]}
+  - screenshot: frzl17-curling-late
+  - wait: {hidden: curling_hud, timeout: 300}
+  - wait: {map: frzl15, seconds: 2, timeout: 120}
+  - screenshot: frzl15-after
+  - repeat: {times: 10, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - when: {setting: {story.var.121: "0"}, steps: [{expect_setting: {story.trigger.257: "false"}}]}
+  - when: {setting: {story.var.121: "1"}, steps: [{wait: {setting: {story.trigger.257: "true"}, timeout: 60}}]}
+  - when: {setting: {story.var.121: "2"}, steps: [{wait: {setting: {story.trigger.257: "true"}, timeout: 60}}]}
+  - wait: {seconds: 2}
+  - screenshot: frzl15-end

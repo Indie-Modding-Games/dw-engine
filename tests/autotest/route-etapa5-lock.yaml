@@ -1,0 +1,13 @@
+# Stage 5 of the story with the keyboard, the lock's border in Freezeland: from frzl08 exit 1 on a seeded game (run
+# with --start frzl08,1 and --story-stage stage_5, by the exit to the Misty Trees) the player walks into the exit to
+# mist07 (stage 7), which stays closed with the lock's message; the player stays on frzl08.
+name: etapa5-lock
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: frzl08, partner_within: 400, seconds: 2, timeout: 60}
+  - walk_to: {trigger: 111, encounters: win, stop_on_closed: true, timeout: 180}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - screenshot: frzl08-mist07-closed
+  - tap: {key: return}
+  - wait: {map: frzl08, hidden: dialog, seconds: 1, timeout: 30}

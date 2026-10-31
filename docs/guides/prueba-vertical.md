@@ -346,6 +346,39 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start room13 --la
     --autotest tests/autotest/route-etapa3-arena.yaml --shots <capturas>/etapa3
 ```
 
+- `route-etapa5*.yaml`: la Etapa 5 de la historia (Freezeland y Whamon) con `--story-stage stage_5` y la partida
+  sembrada. Los salvajes de Freezeland vencen al compañero sembrado, así que las caminatas acaban sus combates al
+  momento (`encounters: win`), y cada ruta escribe con `story_set` los disparadores de etapas anteriores que necesita.
+  El camino que fuerza el original se juega en dos tramos: `route-etapa5.yaml` (`--start gcan04`) sale del Great
+  Canyon a frzl01, cruza frzl02, frzl03, frzl06, frzl12 y frzl13 hasta la playa de frzl16, habla con Whamon (casilla
+  0x51 del script 130, con el 175 de la Ogre Fortress), dice que sí al viaje (352) y entra en la cueva de ogre10 con
+  su escena (sección 0x3c, «una voz detrás»). `route-etapa5-whamon.yaml` (`--start ogre10,0`, la salida interior de
+  la cueva) entra en ogre11, donde Ogremon, sus dos Gabumon y WaruSeadramon pelean (script 137); la victoria pone el
+  150 y vuelve a ogre10 con la sección 6 del script 136: Ogremon vuela las rocas y huye, Whamon se une (224) y lleva
+  al jugador a frzl16. Con el 150, `route-etapa5-ogremon.yaml` (`--start tunn02`) vuelve al Drill Tunnel de la etapa
+  2: la emboscada de la sección 0x33 del script 26 sale, se gana y Ogremon se une (234).
+  `route-etapa5-angemon.yaml` (`--start icsa01`) pisa delante de la estatua (324), el compañero mueve el pedestal
+  (rutina 50, 323), baja por el laberinto (icsa02, icsa07, icsa04, icsa05) a icsa06, donde la luz (rutinas 45 y 46)
+  pone el 322, y vuelve a icsa01 (su entrada repite las rutinas 49 y 50); en icsa05 pone al jugador junto a las
+  salidas (`place`), porque BlueMeramon tumba al compañero sembrado. El despertar de Angemon (sección 5, 220) queda
+  fuera: en el script del original las casillas solo llegan a él con el 220 ya puesto, y si no es la charla con el
+  personaje 0 del mapa, que ningún script pone; falta medirlo en el original.
+  `route-etapa5-curling.yaml` (`--start frzl15,2`) habla con Penguinmon (357), juega la partida de curling de frzl17
+  confirmando cada tiro y vuelve a frzl15; si gana, Penguinmon se une (257). Frontera del candado:
+  `route-etapa5-lock.yaml` (`--start frzl08,1`) pisa la salida de frzl08 a mist07 (etapa 7) y
+  `route-etapa5-dock-lock.yaml` (`--start twna02`, con el 224 escrito) elige Factorial Town (fact01, etapa 6) en el
+  muelle de File City; las dos quedan cerradas con el aviso y el jugador sigue en el mapa.
+
+```sh
+for r in "route-etapa5 gcan04" "route-etapa5-whamon ogre10,0" "route-etapa5-ogremon tunn02" \
+         "route-etapa5-angemon icsa01" "route-etapa5-curling frzl15,2" "route-etapa5-lock frzl08,1" \
+         "route-etapa5-dock-lock twna02"; do
+    set -- $r
+    scripts/dev.sh run --content <carpeta> --start $2 --story-stage stage_5 --lang en --seed 1 \
+        --autotest tests/autotest/$1.yaml --shots <capturas>/etapa5
+done
+```
+
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
 los ajustes del usuario. Como no tiene las preguntas de la apertura ni las películas, su partida nueva empieza en la
 cadena sembrada (el campo libre de File City) salvo que la ruta diga `new_game: original`, como `route-etapa1`.

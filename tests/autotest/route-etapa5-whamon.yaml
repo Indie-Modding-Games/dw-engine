@@ -1,0 +1,46 @@
+# Stage 5 of the story with the keyboard, the critical path's second half: from ogre10 exit 0 on a seeded game (run
+# with --start ogre10,0 and --story-stage stage_5: the cave's inner exit, where route-etapa5.yaml leaves the player
+# after Whamon's ride) the player walks into the inner cave (ogre11), where Ogremon, his two Gabumon and
+# WaruSeadramon pick the fight (script 137, section 0x33); the win sets trigger 150 and the scene takes the player
+# back to ogre10 with section 6 of script 136: Ogremon blasts the rocks and runs off, and Whamon joins the city
+# (trigger 224) and takes the player back to the beach of frzl16. With 224 the dock of File City offers the trip to
+# Factorial Town (stage 6).
+name: etapa5-whamon
+device: keyboard
+timeout: 1200
+steps:
+  - wait: {map: ogre10, partner_within: 400, seconds: 2, timeout: 60}
+  - script: story_set("trigger 175 on")
+  - script: story_set("trigger 352 on")
+  - expect_setting: {story.trigger.150: "false"}
+  - expect_setting: {story.trigger.224: "false"}
+  - screenshot: ogre10
+  - script: evolve("garu")
+  - wait: {seconds: 30}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: ogre11, partner_within: 600, seconds: 1, timeout: 60}
+  - screenshot: ogre11
+  # The cells of section 0x33 cross the cave in front of Ogremon's gang.
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 240}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: ogre11-ogremon
+  # Sixteen boxes and the walks between them, then the fight; a spare press in the fight's menu is undone by the
+  # debug win below.
+  - repeat: {times: 20, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {shown: battle, seconds: 1, timeout: 120}
+  - screenshot: ogre11-battle
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
+  - script: battle_win("")
+  - wait: {setting: {battle.phase: end}, timeout: 60}
+  - repeat: {times: 10, steps: [{wait: {seconds: 1.0}}, {tap: {key: return}}]}
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
+  - screenshot: ogre11-after-battle
+  - repeat: {times: 8, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.150: "true"}, timeout: 60}
+  - wait: {map: ogre10, seconds: 2, timeout: 90}
+  - screenshot: ogre10-back
+  # Twenty-two boxes, the rocks and Whamon's talk; the presses stop once no box is left to close.
+  - repeat: {times: 60, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.224: "true"}, timeout: 120}
+  - wait: {map: frzl16, seconds: 2, timeout: 120}
+  - screenshot: frzl16-whamon-joined

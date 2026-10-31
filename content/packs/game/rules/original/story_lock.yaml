@@ -110,6 +110,11 @@ stages:
       - room12
   # Etapa 5: Freezeland (frzl, con el curling de frzl17), Ice Sanctuary (icsa), la cueva de Whamon
   # (ogre10 y ogre11) y la casa de Penguinmon (room20). Entra por gcan03, gcan04 y gcan04_2 a frzl01.
+  # Camino de la historia: la playa de frzl16, donde Whamon (con el 175 de la Ogre Fortress) lleva a
+  # ogre10; el combate de ogre11 pone el 150 (Ogremon se une luego en tunn02, 234) y Whamon se une
+  # (224), que abre el viaje del muelle de File City a fact01 (etapa 6). Quedan cerradas solas las
+  # salidas a etapas posteriores: frzl08 a mist07, el muelle (casilla 55 de twna02-13) a fact01 y
+  # frzl05 a mgen11 (solo en el post-juego, variable 16).
   - id: stage_5
     maps:
       - frzl*

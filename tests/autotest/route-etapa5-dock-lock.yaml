@@ -1,0 +1,23 @@
+# Stage 5 of the story with the keyboard, the lock's border at File City's dock: from twna02 on a seeded game (run
+# with --start twna02 and --story-stage stage_5) with Whamon in the city (trigger 224, which the route writes;
+# route-etapa5-whamon.yaml sets it in play) the cells of section 0x37 by the water offer the trips (script 162):
+# the first answer, Factorial Town (fact01, stage 6), stays closed with the lock's message and the player stays in
+# the city. Whamon himself shows in the water only when 224 is set before the map loads (section 0xfe), so here he
+# talks from out of sight.
+name: etapa5-dock-lock
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: twna02, partner_within: 400, seconds: 2, timeout: 60}
+  - script: story_set("trigger 224 on")
+  - walk_to: {trigger: 55, stop_on_scene: true, timeout: 240}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: twna02-dock
+  # Four boxes the first time (trigger 83), then the question, whose first answer is Factorial Town; the presses
+  # stop once no box is left.
+  - repeat: {times: 10, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - screenshot: twna02-fact01-closed
+  - tap: {key: return}
+  - wait: {map: twna02, hidden: dialog, seconds: 1, timeout: 30}
+  - expect_setting: {story.trigger.83: "true"}
