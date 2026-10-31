@@ -766,3 +766,41 @@ TEST_CASE("a particle flash draws its texels four times round its point, mirrore
   CHECK(quads[4].corners[0] == EffectScreenPoint{.x = -17, .y = 47});
   CHECK(quads[6].corners[0] == EffectScreenPoint{.x = 47, .y = 47});
 }
+
+TEST_CASE("an effect without sub-effects never runs its scripts") {
+  constexpr std::string_view EffectYaml = R"(move: "made_up_empty"
+header:
+  sub_effect_count: 0
+)";
+  // Both scripts work on a sub-effect, which it has none of.
+  constexpr std::string_view ScriptYaml = R"(start_script:
+- label: "start"
+  at: "0x0100"
+  op: sub
+  sub: hit_target
+- at: "0x0102"
+  op: stop
+init_script:
+- label: "init"
+  at: "0x0110"
+  op: sub
+  sub: hit_target
+- at: "0x0112"
+  op: stop
+data: []
+)";
+  const auto effect = dwe::core::parseYaml(EffectYaml);
+  const auto script = dwe::core::parseYaml(ScriptYaml);
+  REQUIRE(effect.has_value());
+  REQUIRE(script.has_value());
+  auto read = dwe::assets::readEffectScript(*effect, *script);
+  REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  const std::size_t slot = runner.load(std::move(*read));
+  CHECK_FALSE(runner.start(slot, 0, 1).has_value());
+  runner.tick();
+  runner.render();
+  CHECK_FALSE(runner.running(slot));
+  CHECK(runner.draws().empty());
+}

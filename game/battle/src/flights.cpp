@@ -92,6 +92,10 @@ std::optional<EffectLanding> ScriptedFlights::landing(std::string_view move, Fig
     bodies.setFrame(frame);
     const std::size_t facings = runner.targetFacings();
     runner.tick();
+    // The render scripts run too, as each battle frame runs them after the ticks
+    // (BTL_renderEFEEngine): some place their instance there (Magma Bomb's init_transform), which
+    // a sub-effect it spawns later starts from.
+    runner.render();
     if (runner.targetFacings() != facings) {
       facingTarget.push_back(frame);
     }

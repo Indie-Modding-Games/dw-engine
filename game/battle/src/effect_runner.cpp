@@ -130,6 +130,12 @@ std::size_t EffectRunner::load(assets::EffectScript script) {
   slot.script = std::move(script);
   slots_.push_back(std::move(slot));
   const std::size_t index = slots_.size() - 1;
+  if (slots_[index].subEffects.empty()) {
+    // Nothing for its scripts to run as (the original would write past its sub-effects): it never
+    // starts.
+    slots_[index].failed = true;
+    return index;
+  }
   // battle_effect.c: BTL_setupLoadedEFEFile runs the init script from sub-effect 0, with no
   // instance, a few instructions a frame while the slot loads; it has no sounds to time.
   subEffect_ = 0;
