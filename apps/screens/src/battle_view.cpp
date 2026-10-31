@@ -182,6 +182,9 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names) {
                    .charging = partnerCharging && state.finisher.charging,
                    .charge = partnerCharging ? state.finisher.charge : 0};
   view.reviveSeconds = reviveSecondsOf(battle);
+  if (state.matchClock) {
+    view.matchSeconds = state.matchClock->seconds;
+  }
   view.bagAvailable = battle.bagAvailable();
   view.bagOpen = battle.bagOpen();
   view.itemInFlight = battle.itemInFlight();
@@ -329,6 +332,9 @@ ScreenSettings settingsOf(const BattleView& view) {
   settings.push_back(
       {.name = std::string{ReviveSecondsSetting},
        .value = view.reviveSeconds ? static_cast<double>(*view.reviveSeconds) : NoValue});
+  settings.push_back(
+      {.name = std::string{MatchSecondsSetting},
+       .value = view.matchSeconds ? static_cast<double>(*view.matchSeconds) : NoValue});
   settings.push_back({.name = std::string{BagAvailableSetting}, .value = view.bagAvailable});
   settings.push_back({.name = std::string{BagOpenSetting}, .value = view.bagOpen});
   settings.push_back({.name = std::string{ItemInFlightSetting}, .value = view.itemInFlight});

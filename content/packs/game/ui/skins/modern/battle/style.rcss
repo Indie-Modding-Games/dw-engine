@@ -180,6 +180,32 @@
 	color: #9aa7b6;
 }
 
+/* A tournament match's clock (std_main.c: STD_renderFighterCounter): the seconds left, top centre. */
+#match-clock {
+	position: absolute;
+	left: 50%;
+	top: 48dp;
+	width: 120dp;
+	margin-left: -60dp;
+	padding: 6dp 0;
+	text-align: center;
+	background-color: #000000b0;
+	border-radius: 12dp;
+}
+
+.mc-side {
+	display: none;
+}
+
+.mc-digit {
+	display: inline-block;
+	font-size: 48dp;
+}
+
+#match-clock.hidden, .mc-digit.hidden {
+	display: none;
+}
+
 #revive {
 	position: absolute;
 	left: 0;

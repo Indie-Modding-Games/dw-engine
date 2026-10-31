@@ -244,3 +244,32 @@ TEST_CASE("a name whose row is unknown has no key") {
   CHECK(dwe::screens::commandLabelKey(Command::Change) == "btl.command_names.0006");
   CHECK(dwe::screens::commandLabelKey(Command::Technique1).empty());
 }
+
+TEST_CASE("std_main.c STD_renderFighterCounter: a tournament match shows its clock, others none") {
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  Battle plain = startBattle(duel(evenStats(900, 100), evenStats(700, 80)), 3);
+  const auto none = dwe::screens::battleViewOf(plain, names);
+  CHECK_FALSE(none.matchSeconds.has_value());
+  const dwe::screens::ScreenSettings noClock = dwe::screens::settingsOf(none);
+  const auto* hidden = settingNamed(noClock, dwe::screens::MatchSecondsSetting);
+  REQUIRE(hidden != nullptr);
+  CHECK(std::get<double>(hidden->value) < 0.0);
+
+  BattleSetup setup = duel(evenStats(900, 100), evenStats(700, 80));
+  setup.kind = BattleKind::Tournament;
+  setup.scripted = true;
+  setup.timeLimit = 99;
+  Battle match = startBattle(std::move(setup), 3);
+  CHECK(dwe::screens::battleViewOf(match, names).matchSeconds == 99);
+  // STD_tickFighterCounter: one second every 20 frames.
+  while (match.state().matchClock && match.state().matchClock->seconds == 99 && !match.finished()) {
+    match.step();
+  }
+  const auto view = dwe::screens::battleViewOf(match, names);
+  CHECK(view.matchSeconds == 98);
+  const dwe::screens::ScreenSettings clock = dwe::screens::settingsOf(view);
+  const auto* shown = settingNamed(clock, dwe::screens::MatchSecondsSetting);
+  REQUIRE(shown != nullptr);
+  CHECK(std::get<double>(shown->value) == 98.0);
+}

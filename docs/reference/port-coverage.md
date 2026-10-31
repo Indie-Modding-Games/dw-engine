@@ -95,13 +95,13 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 39 | 0 | 0 | 17 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 9 | 0 | 2 | 24 | 82 % |
-| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 25 | 8 | 58 | 358 | 32 % |
+| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 29 | 6 | 58 | 356 | 34 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 0 | 0 | 91 | 315 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 32 | 3 | 3 | 10 | 88 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1094 | 40 | 238 | 1066 | 81 % |
+| **Total** | 2438 funciones | 1098 | 38 | 238 | 1064 | 81 % |
 
 ## Batalla
 
@@ -360,7 +360,7 @@ Inscripción, calendario y el overlay de copas, que trae su propio motor de comb
 
 Ficheros del decomp: `dget/dget.c`, `main/tournament.c`, `std/std_effect.c`, `std/std_hud.c`, `std/std_main.c`, `std/std_setup.c`.
 
-Portado 25, parcial 8, falta 58, no aplica 358.
+Portado 29, parcial 6, falta 58, no aplica 356.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -400,8 +400,6 @@ Portado 25, parcial 8, falta 58, no aplica 358.
 | `STD_tickCameraIntro` | `std/std_main.c:2753` | falta | Avanza la secuencia de cámara de la presentación. | — |
 | `STD_startCameraIntro` | `std/std_main.c:2782` | falta | Inicia el recorrido de cámara entre los dos luchadores. | — |
 | `STD_applyEntityViewpoint` | `std/std_main.c:2854` | falta | Cámara anclada a la vista del luchador enfocado. | — |
-| `STD_addFighterCounter` | `std/std_main.c:2911` | parcial | Inicia el reloj de tiempo del combate de copa. | `game/battle/src/battle.cpp:1` · el reloj cuenta; no se dibuja |
-| `STD_tickFighterCounter` | `std/std_main.c:2920` | parcial | Descuenta el reloj del combate salvo cuando un luchador está caído. | `game/battle/src/battle.cpp:1` · el reloj cuenta; no se dibuja |
 | `STD_updateBracket` | `std/std_main.c:2949` | falta | Avanza el cuadro de eliminatorias al siguiente cruce y destaca al jugador. | — |
 | `STD_addBracketProjectile` | `std/std_main.c:3314` | falta | Lanza la marca animada que sube por el cuadro hacia el ganador. | — |
 | `STD_addBracketHitFlash` | `std/std_main.c:3336` | falta | Inicia el destello en una casilla del cuadro de eliminatorias. | — |
@@ -431,7 +429,7 @@ Portado 25, parcial 8, falta 58, no aplica 358.
 | `STD_initializeCamera` | `std/std_setup.c:415` | falta (citada en docs) | Coloca la cámara inicial de la arena de copa. | — |
 | `STD_tournamentMain` | `std/std_setup.c:521` | parcial | Flujo completo de la copa: cuadro, combates, resultados y premio. | `apps/game/src/story_tournament.cpp:1` · arena, sustitutos, cuadro, tres combates y recuperación; sin cuadro animado ni escenas (tournament.md: Hueco) |
 
-No aplica: copias de otra función, que cuenta por las dos (300); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (26); limpieza de objetos y memoria del original: el motor libera lo suyo (15); búsqueda genérica en la tabla de entidades (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); utilidad genérica de reloj (1); lectura de punteros del guion del original (1); ajuste de UV de modelos del original (1); carga de modelos del original (1); cámara libre de depuración con el segundo mando (1); aplicación de proyección y punto de vista del original (1); asignación directa de valores de cámara (1); cálculo auxiliar de distancias (1); comprobación geométrica auxiliar (1); interpolación lineal genérica (1); cuenta genérica de dígitos (1); bucle de cuadros del original (1); configuración de luces del original (1).
+No aplica: copias de otra función, que cuenta por las dos (300); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (24); limpieza de objetos y memoria del original: el motor libera lo suyo (15); búsqueda genérica en la tabla de entidades (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); utilidad genérica de reloj (1); lectura de punteros del guion del original (1); ajuste de UV de modelos del original (1); carga de modelos del original (1); cámara libre de depuración con el segundo mando (1); aplicación de proyección y punto de vista del original (1); asignación directa de valores de cámara (1); cálculo auxiliar de distancias (1); comprobación geométrica auxiliar (1); interpolación lineal genérica (1); cuenta genérica de dígitos (1); bucle de cuadros del original (1); configuración de luces del original (1).
 
 ## Versus y demo
 

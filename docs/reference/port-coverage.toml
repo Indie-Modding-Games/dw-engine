@@ -925,8 +925,8 @@ STD_tickCameraChase = { status = "falta", what = "Cámara que persigue al luchad
 STD_tickCameraIntro = { status = "falta", what = "Avanza la secuencia de cámara de la presentación." }
 STD_startCameraIntro = { status = "falta", what = "Inicia el recorrido de cámara entre los dos luchadores." }
 STD_applyEntityViewpoint = { status = "falta", what = "Cámara anclada a la vista del luchador enfocado." }
-STD_addFighterCounter = { status = "parcial", dwe = "game/battle/src/battle.cpp:1", note = "el reloj cuenta; no se dibuja", what = "Inicia el reloj de tiempo del combate de copa." }
-STD_tickFighterCounter = { status = "parcial", dwe = "game/battle/src/battle.cpp:1", note = "el reloj cuenta; no se dibuja", what = "Descuenta el reloj del combate salvo cuando un luchador está caído." }
+STD_addFighterCounter = { status = "portado", dwe = "game/battle/src/battle.cpp:1", note = "el reloj cuenta y la pantalla de combate lo dibuja (apps/screens/src/battle_view.cpp, match-clock)", what = "Inicia el reloj de tiempo del combate de copa." }
+STD_tickFighterCounter = { status = "portado", dwe = "game/battle/src/battle.cpp:1", note = "el reloj cuenta y la pantalla de combate lo dibuja", what = "Descuenta el reloj del combate salvo cuando un luchador está caído." }
 STD_updateBracket = { status = "falta", what = "Avanza el cuadro de eliminatorias al siguiente cruce y destaca al jugador." }
 STD_addBracketProjectile = { status = "falta", what = "Lanza la marca animada que sube por el cuadro hacia el ganador." }
 STD_addBracketHitFlash = { status = "falta", what = "Inicia el destello en una casilla del cuadro de eliminatorias." }

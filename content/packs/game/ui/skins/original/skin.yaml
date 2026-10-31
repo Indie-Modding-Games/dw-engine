@@ -528,6 +528,34 @@ sprite_sheets:
     sprites:
       anger-bubble: [184, 0, 24, 24]
       anger-mark: [200, 24, 16, 16]
+  # El reloj de un combate del torneo (std_main.c: STD_renderCounterDigits): el panel de TIME.TIM (página 0x2c0 de 8
+  # bits, v 0x78, CLUT (512, 255)) y, de la página (832, 0) de STDTIM con la CLUT (16, 480), las cifras de 12 x 15 en
+  # u = cifra x 12, v 0x30, y las dos piezas laterales de 8 x 18 en u 0x78 y 0x88.
+  - name: ow-std-clock-panel
+    image: texture/stddat/time
+    palette: 0
+    original_size: [66, 29]
+    dp_per_pixel: 3
+    sprites:
+      std-clock-panel: [0, 0, 66, 29]
+  - name: ow-std-clock
+    image: texture/stddat/stdtim/002
+    palette: 0
+    original_size: [256, 120]
+    dp_per_pixel: 3
+    sprites:
+      std-clock-digit-0: [0, 48, 12, 15]
+      std-clock-digit-1: [12, 48, 12, 15]
+      std-clock-digit-2: [24, 48, 12, 15]
+      std-clock-digit-3: [36, 48, 12, 15]
+      std-clock-digit-4: [48, 48, 12, 15]
+      std-clock-digit-5: [60, 48, 12, 15]
+      std-clock-digit-6: [72, 48, 12, 15]
+      std-clock-digit-7: [84, 48, 12, 15]
+      std-clock-digit-8: [96, 48, 12, 15]
+      std-clock-digit-9: [108, 48, 12, 15]
+      std-clock-side-1: [120, 48, 8, 18]
+      std-clock-side-2: [136, 48, 8, 18]
   # Las cifras del daño sobre los luchadores (utils2.c: drawEntityText): celdas de 8 x 8 en u = cifra x 8, v = 0xb7 de
   # la página (896, 256), que es la fila 55 de BI_IN, con la CLUT (256, 484), la paleta 4.
   - name: ow-battle-damage-digits

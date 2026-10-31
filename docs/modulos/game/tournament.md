@@ -69,7 +69,8 @@ probable y está marcado en el código), **Hueco** (falta).
 | Al acabar la copa, el jugador y el partner vuelven a donde estaban en el mapa | `reinitializeAfterTournament` | `StoryTournament::leaveArena` | - | Suposición: el original recarga el mapa y el guion sigue desde ahí |
 | Presentación con cámara que persigue y nombres, acercamiento de la cámara con el letrero de inicio (distancia mínima de 200 a 4200 y vuelta a 1000), cuadro animado, escenas de victoria/derrota, escena del campeón, música y luces de la arena | `STD_runIntro`, `STD_startCameraChase`, `STD_addBracket`, `STD_addChampionScene`, `STD_initializeLighting` | - | - | Hueco: la copa usa la presentación y la música del combate normal |
 | Rival dibujado en la arena: su especie con las animaciones de los personajes, en -500 mirando al partner (0xC00), quitado al acabar cada combate | `std_setup.c: STD_initializeOpponent`, `std_main.c: STD_placePlayer2`, `removeMapEntities` | `FieldScene::addStageFighter`, `StoryTournament::update` | - (ruta `arena`) | Igual |
-| Reloj en pantalla y aviso de tiempo agotado | `STD_tickFighterCounter`, `STD_addTimeoutWindow` | - | - | Hueco |
+| Reloj en pantalla todo el combate: el panel de TIME.TIM arriba en el centro, «1P» y «COM» a los lados y los segundos en dos cifras, sin el cero de las decenas por debajo de 10 | `std_main.c: STD_renderFighterCounter`, `STD_renderCounterDigits`, `STD_removeFighterCounter` | `BattleView::matchSeconds`, `ui/battle` (`match-clock`), aspecto original | battle view: STD_renderFighterCounter (ruta `clock`) | Igual |
+| Aviso de tiempo agotado: el texto de STDTIM y la caja con el daño hecho por cada luchador | `STD_addTimeoutWindow`, `STD_renderTimeoutText` | - | - | Hueco: el combate acaba con el juicio del tiempo sin el aviso |
 | Menú de órdenes de la copa | `STD_addCommandMenu`, `STD_handleCommands` | menú de combate normal | - | Suposición: mismas órdenes que el combate normal |
 
 ## Tests

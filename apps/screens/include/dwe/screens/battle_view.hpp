@@ -37,6 +37,7 @@ inline constexpr std::string_view BattleWaitSetting = "battle.end.wait_frames";
 inline constexpr std::string_view BagAvailableSetting = "battle.bag.available";
 inline constexpr std::string_view BagOpenSetting = "battle.bag.open";
 inline constexpr std::string_view ItemInFlightSetting = "battle.item_in_flight";
+inline constexpr std::string_view MatchSecondsSetting = "battle.match_seconds";
 
 // A fighter's bars and name (battle_hud.c: BTL_renderPartnerStatusBars; battle_main.c:
 // BTL_renderEnemyHPBars).
@@ -93,6 +94,9 @@ struct BattleView {
   // The seconds left to revive the fallen partner, once the countdown shows (command_menu.c:
   // BTL_renderDeathCountdown).
   std::optional<std::int32_t> reviveSeconds;
+  // A tournament match's clock, the seconds left, from the start of the match to its end
+  // (std_main.c: STD_addFighterCounter, STD_renderFighterCounter); no clock in other battles.
+  std::optional<std::int32_t> matchSeconds;
   // The tamer's bag: whether it can open, whether it is open and whether a thrown item is on its
   // way.
   bool bagAvailable = false;

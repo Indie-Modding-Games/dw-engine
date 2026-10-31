@@ -15,6 +15,8 @@ select:
     - texture/etcdat/feel_ef
     - texture/etcna/title2
     - texture/etcna/title256
+    - texture/stddat/time
+    - texture/stddat/stdtim/002
 scale: 4
 steps:
   - id: upscale

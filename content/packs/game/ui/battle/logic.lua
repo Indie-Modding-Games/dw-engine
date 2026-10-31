@@ -287,6 +287,32 @@ local function draw_revive(document)
   end
 end
 
+-- A tournament match's clock (std_main.c: STD_renderCounterDigits): two digits, the tens hidden
+-- under 10 (convertValueToDigits drops the leading zero), each a sprite class d-<digit> and the
+-- digit as text for the skins that draw text.
+local function draw_match_clock(document)
+  local seconds = number("battle.match_seconds")
+  lookup(document, "match-clock"):set_class("hidden", seconds < 0)
+  if seconds < 0 then
+    return
+  end
+  local shown = math.min(99, math.floor(seconds))
+  local digits = { math.floor(shown / 10), shown % 10 }
+  for place = 0, 1 do
+    local id = "mc-d-" .. place
+    local digit = digits[place + 1]
+    local visible = place == 1 or digit ~= 0
+    set_class(document, id, "hidden", not visible)
+    for glyph = 0, 9 do
+      set_class(document, id, "d-" .. glyph, visible and digit == glyph)
+    end
+    if visible and applied[id .. " text"] ~= tostring(digit) then
+      applied[id .. " text"] = tostring(digit)
+      lookup(document, id):set_text(tostring(digit))
+    end
+  end
+end
+
 -- The player's bag opens with its own button while the battle goes on (battle_tick.c:
 -- tamerTickBattle): the game shows the field's bag (ui/partner_menu, its items page) over the
 -- fight, and the command row waits under it (handleCommands returns while it is open).
@@ -1078,6 +1104,7 @@ local function draw(document)
   end
   draw_finisher(document)
   draw_revive(document)
+  draw_match_clock(document)
 end
 
 function choose(index)

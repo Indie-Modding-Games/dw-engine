@@ -543,6 +543,71 @@
 	color: #b2b2b2;
 }
 
+/* A tournament match's clock (std_main.c: STD_renderCounterDigits(-13, -97, 2, STD_TIMER, 3)), in pixels from the
+   screen's centre: TIME.TIM's 66 x 29 panel at (-33, -104), drawn under the rest; the 8 x 18 pieces of STDTIM (832, 0)
+   at u 0x78 and 0x88, v 0x30, at (-28, -99) and (20, -99); the digits, 12 x 15 at u = digit x 12, v 0x30, from
+   (-13, -97), 14 apart, the tens left out under 10. */
+#match-clock {
+	position: absolute;
+	left: 50%;
+	top: 48dp;
+	width: 198dp;
+	height: 87dp;
+	margin-left: -99dp;
+	padding: 0;
+	border-radius: 0;
+	background-color: transparent;
+	decorator: image(std-clock-panel);
+}
+
+.mc-side {
+	display: block;
+	position: absolute;
+	top: 15dp;
+	width: 24dp;
+	height: 54dp;
+}
+
+#mc-side-1 {
+	left: 15dp;
+	decorator: image(std-clock-side-1);
+}
+
+#mc-side-2 {
+	left: 159dp;
+	decorator: image(std-clock-side-2);
+}
+
+.mc-digit {
+	display: block;
+	position: absolute;
+	top: 21dp;
+	width: 36dp;
+	height: 45dp;
+	font-size: 0;
+	color: transparent;
+	font-effect: none;
+}
+
+#mc-d-0 {
+	left: 60dp;
+}
+
+#mc-d-1 {
+	left: 102dp;
+}
+
+.mc-digit.d-0 { decorator: image(std-clock-digit-0); }
+.mc-digit.d-1 { decorator: image(std-clock-digit-1); }
+.mc-digit.d-2 { decorator: image(std-clock-digit-2); }
+.mc-digit.d-3 { decorator: image(std-clock-digit-3); }
+.mc-digit.d-4 { decorator: image(std-clock-digit-4); }
+.mc-digit.d-5 { decorator: image(std-clock-digit-5); }
+.mc-digit.d-6 { decorator: image(std-clock-digit-6); }
+.mc-digit.d-7 { decorator: image(std-clock-digit-7); }
+.mc-digit.d-8 { decorator: image(std-clock-digit-8); }
+.mc-digit.d-9 { decorator: image(std-clock-digit-9); }
+
 #revive {
 	font-size: 33dp;
 	color: #d0d0d0;
