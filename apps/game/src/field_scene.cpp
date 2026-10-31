@@ -760,7 +760,8 @@ void FieldScene::submit(const Actor& actor, float alpha, const Look& look) {
                    .world = world,
                    .joints = joints,
                    .tint = look.tint,
-                   .lift = look.lift});
+                   .lift = look.lift,
+                   .additive = look.additive});
 }
 
 glm::vec4 FieldScene::sceneryTint() const {
@@ -783,7 +784,10 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   }
   models_->clear();
   if (!stage_.sceneryHidden) {
-    submit(*playerActor_, alpha, {.tint = sceneryTint()});
+    submit(*playerActor_, alpha,
+           {.scale = stage_.playerScale,
+            .tint = sceneryTint() * glm::vec4{glm::vec3{stage_.playerFade}, 1.0F},
+            .additive = stage_.playerAdditive});
     drawNpcs(animationSeconds, alpha);
     submitMapObjects();
     submitProps();

@@ -641,7 +641,7 @@ initTournamentSchedule = { status = "portado", dwe = "apps/game/src/tournament_s
 scriptCheckTournamentMedal = { status = "parcial", note = "la rutina 22 se cierra sin pantalla", what = "Comprueba y da la medalla de los torneos." }
 scriptStartTournament = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", what = "Empieza un torneo." }
 tamerTickOpening = { status = "falta", note = "la escena del compañero 5 acaba al momento", what = "Escena de apertura del jugador." }
-tamerTickEnding = { status = "falta", note = "la escena 6 acaba al momento; solo se ve el vídeo final", what = "Escena final del jugador antes del vídeo." }
+tamerTickEnding = { status = "portado", dwe = "apps/game/src/ending_scene.hpp", note = "la llamada 6 de la historia la juega en el campo y avisa a la historia al acabar; sin sombra del jugador porque el motor aún no la dibuja (Suposición: sin medir en el original)", what = "Escena final del jugador antes del vídeo." }
 KAR_start = { status = "portado", dwe = "apps/session/src/curling_adapter.cpp:1", what = "Empieza el minijuego de piedras." }
 tickPartnerToilet = { status = "portado", dwe = "apps/game/src/field_toilet.cpp", what = "El compañero usa el retrete." }
 
@@ -816,16 +816,16 @@ EAB_setEntitiesVisible = { status = "portado", dwe = "apps/game/src/boss_arrival
 EAB_addParticle = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Añade una partícula de luz a la aparición del jefe." }
 EAB_tickParticle = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Mueve y apaga una partícula de la aparición.", note = "86 fotogramas; dibujada como cuatro líneas en boss_arrival_scene.cpp" }
 EAB_startBuildup = { status = "portado", dwe = "apps/session/src/story_routines/routine_boss_buildup.cpp", what = "Empieza la carga de energía previa a la aparición del jefe final.", note = "rutina 40; la app esconde al jefe y dibuja los anillos (boss_arrival_scene.cpp)" }
-ENDI_setModelSemiTrans = { status = "falta", what = "Vuelve translúcido el modelo del compañero en el final.", note = "el motor no tiene la escena del final, solo el vídeo" }
-ENDI_updateEnding = { status = "falta", what = "Escena final: el compañero se desvanece, encoge, crece y sube convertido en luz." }
-ENDI_startParticles = { status = "falta", what = "Arranca las partículas de luz de la escena final." }
-ENDI_spawnParticle = { status = "falta", what = "Suelta una partícula de luz desde un hueso del compañero." }
-ENDI_releaseParticles = { status = "falta", what = "Libera las partículas para que suban solas." }
-ENDI_getParticleBase = { status = "falta", what = "Lee el punto de origen de las partículas del final." }
-ENDI_setParticleBase = { status = "falta", what = "Mueve el punto de origen de las partículas del final." }
-ENDI_stopParticles = { status = "falta", what = "Detiene las partículas de la escena final." }
-ENDI_clearParticles = { status = "falta", what = "Vacía la lista de partículas del final." }
-ENDI_tickEndingParticles = { status = "falta", what = "Mueve y apaga las partículas de luz del final." }
+ENDI_setModelSemiTrans = { status = "portado", dwe = "apps/game/src/ending_scene.hpp", note = "FieldStage::playerAdditive: el modelo se dibuja con mezcla aditiva", what = "Vuelve translúcido y aditivo el modelo del jugador en el final." }
+ENDI_updateEnding = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", note = "fotogramas a 20 por segundo: fundido 1-60, escala 60-80, subida 81-103, fin en 104 (Suposición: sin medir en el original)", what = "Escena final: el jugador se desvanece, encoge, crece y sube convertido en luz." }
+ENDI_startParticles = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", what = "Arranca las partículas de luz de la escena final." }
+ENDI_spawnParticle = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", note = "80 chispas, una por fotograma del 1 al 80", what = "Suelta una partícula de luz desde un hueso del jugador." }
+ENDI_releaseParticles = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", note = "cada chispa guarda su punto del mundo; el desfase de campos del original se anula al dibujar", what = "Libera las partículas para que suban solas." }
+ENDI_getParticleBase = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", note = "EndingEffects::rise", what = "Lee el punto de origen de las partículas del final." }
+ENDI_setParticleBase = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", note = "EndingEffects::rise", what = "Mueve el punto de origen de las partículas del final." }
+ENDI_stopParticles = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", what = "Detiene las partículas de la escena final." }
+ENDI_clearParticles = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", what = "Vacía la lista de partículas del final." }
+ENDI_tickEndingParticles = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", note = "vacía en el original", what = "Mueve y apaga las partículas de luz del final." }
 MOV_onSliceDecoded = { status = "no-aplica", what = "Copia a pantalla cada franja descodificada del vídeo.", note = "descodificación de vídeo; el motor usa su propio reproductor" }
 MOV_startStream = { status = "no-aplica", what = "Abre el flujo de vídeo desde el disco.", note = "lectura en flujo del disco; el motor lee el vídeo de archivo" }
 MOV_startRead = { status = "no-aplica", what = "Empieza a leer los sectores del vídeo.", note = "lectura en flujo del disco; el motor lee el vídeo de archivo" }

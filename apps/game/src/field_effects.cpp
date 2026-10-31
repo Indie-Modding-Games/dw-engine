@@ -315,6 +315,7 @@ void FieldEffects::clear() {
   sparks_.clear();
   healing_.reset();
   butterfly_.reset();
+  glows_.clear();
   pending_ = 0.0;
 }
 
@@ -476,6 +477,10 @@ std::vector<ScenePrim> FieldEffects::draw(const FieldEffectView& view) const {
                                                  (spread * direction.z) >> DirectionShift},
                   SparkParticleSize, color);
     }
+  }
+
+  for (const FieldGlow& glow : glows_) {
+    addParticle(sorted, view, glow.position, glow.size, glow.color);
   }
 
   // renderHealingParticles.

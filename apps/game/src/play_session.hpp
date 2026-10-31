@@ -240,6 +240,7 @@ private:
   std::unique_ptr<StoryFieldLink> storyLink_;
   EvolutionScene evolutionScene_;
   DeathScene deathScene_;
+  EndingScene endingScene_;
   EggBoxScreen eggBoxScreen_;
   GymScreen gymScreen_;
   ShopScreen shopScreen_;

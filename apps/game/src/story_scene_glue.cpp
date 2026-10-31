@@ -109,6 +109,10 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
     bossScene_ = false;
     scenes.partnerSceneFinished();
   }
+  if (endingScene_ && ending_->takeOver()) {
+    endingScene_ = false;
+    scenes.partnerSceneFinished();
+  }
   if (const auto partner = scenes.takePartnerScene()) {
     if (scenes.playsDeath() && death_ != nullptr && death_->play(partner->scene)) {
       deathScene_ = true;
@@ -126,6 +130,12 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
     if (partner->scene == game::story::PartnerScene::BossAppears && boss_ != nullptr) {
       boss_->startArrival();
       bossScene_ = true;
+      return;
+    }
+    // partner.c: callDigimonRoutine 6 gives the player its ending tick (tamerTickEnding), which
+    // sets SOME_SCRIPT_SYNC_BIT once endi.c's scene is over.
+    if (ending_ != nullptr && ending_->play(partner->scene)) {
+      endingScene_ = true;
       return;
     }
     core::logDebug("[port:partner] callDigimonRoutine {} (partner.c:1139): the app has no scene "

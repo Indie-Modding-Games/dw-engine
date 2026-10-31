@@ -303,17 +303,14 @@ bool ModelRenderer::submit(const ModelInstance& instance) {
                         .jointCount = count,
                         .tint = instance.tint,
                         .lift = instance.lift,
-                        .texelOffset = instance.texelOffset});
+                        .texelOffset = instance.texelOffset,
+                        .additive = instance.additive});
   return true;
 }
 
 void ModelRenderer::clear() {
   submitted_.clear();
   joints_.clear();
-}
-
-const rhi::GraphicsPipeline& ModelRenderer::pipeline(const Material& material) const {
-  return pipelines_[pipelineIndex(material.blend, material.doubleSided)];
 }
 
 void ModelRenderer::prepare(PrepareContext& context) {
@@ -348,7 +345,8 @@ void ModelRenderer::prepare(PrepareContext& context) {
                            .joints = joints->address,
                            .tint = instance.tint,
                            .lift = instance.lift,
-                           .texelOffset = instance.texelOffset});
+                           .texelOffset = instance.texelOffset,
+                           .additive = instance.additive});
     }
   }
   const std::size_t dropped = submitted - prepared_.size();
@@ -369,7 +367,11 @@ void ModelRenderer::record(rhi::CommandList& commands, const GpuModel& model,
                            const Prepared& instance, const Primitive& primitive,
                            const rhi::GraphicsPipeline*& bound) const {
   const Material& material = model.materials[primitive.material];
-  const rhi::GraphicsPipeline& wanted = pipeline(material);
+  const MaterialBlend blend =
+      instance.additive
+          ? MaterialBlend{.mode = rhi::BlendMode::Additive, .alpha = 1.0F, .translucent = true}
+          : material.blend;
+  const rhi::GraphicsPipeline& wanted = pipelines_[pipelineIndex(blend, material.doubleSided)];
   if (bound != &wanted) {
     commands.bindPipeline(wanted);
     bound = &wanted;
@@ -382,7 +384,7 @@ void ModelRenderer::record(rhi::CommandList& commands, const GpuModel& model,
                                    .texture = material.texture.index,
                                    .flags = material.flags,
                                    .alphaCutoff = material.alphaCutoff,
-                                   .blendAlpha = material.blend.alpha,
+                                   .blendAlpha = blend.alpha,
                                    .lift = glm::vec4{instance.lift, 0.0F},
                                    .uvOffset = instance.texelOffset / material.texels});
   commands.drawIndexed(primitive.indexCount, primitive.firstIndex, primitive.vertexOffset);
@@ -403,6 +405,10 @@ void ModelRenderer::drawOpaque(DrawContext& context) {
     if (model == nullptr) {
       continue;
     }
+    // An additive instance draws all of it with the translucent ones.
+    if (instance.additive) {
+      continue;
+    }
     for (const Primitive& primitive : model->primitives) {
       if (!model->materials[primitive.material].blend.translucent) {
         record(commands, *model, instance, primitive, bound);
@@ -418,11 +424,11 @@ void ModelRenderer::drawTranslucent(DrawContext& context) {
   translucentScratch_.clear();
   for (const Prepared& instance : prepared_) {
     const GpuModel* model = models_.find(instance.model);
-    if (model == nullptr || !model->hasTranslucent) {
+    if (model == nullptr || (!model->hasTranslucent && !instance.additive)) {
       continue;
     }
     for (const Primitive& primitive : model->primitives) {
-      if (model->materials[primitive.material].blend.translucent) {
+      if (instance.additive || model->materials[primitive.material].blend.translucent) {
         translucentScratch_.push_back({.viewDepth = instance.viewDepth,
                                        .model = model,
                                        .instance = &instance,

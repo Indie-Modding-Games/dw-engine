@@ -256,6 +256,22 @@ Suposiciones:
 - La mariposa no se ha medido en pantalla (el estado de solo enfurruñado no se pudo forzar por RAM); sus números son
   los de `renderButterfly`.
 
+## Escena final
+
+`EndingScene` juega la última escena (`call_partner_routine 6`, que pide la rutina 53; en el original, el tick final del
+jugador con `endi.c`). La lógica es `EndingEffects`, a 20 fotogramas por segundo: el jugador
+se dibuja con mezcla aditiva (`FieldStage::playerAdditive`) y sus colores bajan a negro del fotograma 1 al 60
+(`ENDI_fadeClut`) mientras sale una chispa por fotograma sobre un hueso (80 en total); del 60 al 78 encoge a 0x999 y
+crece a 0x1800 en el 80. Ahí suena el sonido 1 del banco de la rutina 52, las chispas dejan los huesos y suben juntas a
+450 unidades por fotograma, 20 menos cada uno, hasta el 103 (5290 en total). En el 104 se para el sonido y desaparecen;
+al fotograma siguiente la historia sigue (`SOME_SCRIPT_SYNC_BIT`), la rutina 53 acaba la partida y suena EDR. Las
+chispas se dibujan como las partículas del campo (`FieldEffects::setGlows`, `renderFXParticle`), con color y tamaño
+al azar en cada fotograma.
+
+- Suposición: el orden del primer fotograma (el arranque y el primer avance van en fotogramas distintos) y las cifras
+  están sacadas del decomp; falta medirlas en el original (`_work/tmp/measure-queue.md`).
+- Falta: la sombra del jugador, que el motor aún no dibuja (`PLAYER_SHADOW_ENABLED = 0`).
+
 ## Muerte y renacer
 
 `DeathScene` juega la vida perdida (`murd.c: MURD_tickScene`), la muerte (`dooa.c: DOOA_tickDissolve`) y el renacer

@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include "scene_prims.hpp"
@@ -82,6 +83,14 @@ struct FieldHealing {
   std::array<HealingMote, 20> rings{};
 };
 
+// A particle a scene places itself each frame (effect_common.c: renderFXParticle): the ending's
+// sparks (endi.c: ENDI_renderParticles).
+struct FieldGlow {
+  OriginalPoint position{0};
+  std::int32_t size = 0;
+  glm::ivec3 color{0};
+};
+
 // The butterfly that flies around the partner while it sulks (butterfly.c).
 struct FieldButterfly {
   std::int32_t frame = 0;
@@ -116,6 +125,8 @@ public:
   void setButterfly();
   void unsetButterfly() { butterfly_.reset(); }
   [[nodiscard]] bool hasButterfly() const { return butterfly_.has_value(); }
+  // The particles a scene draws this frame, in place of the last ones.
+  void setGlows(std::vector<FieldGlow> glows) { glows_ = std::move(glows); }
   // Everything gone (a map change: the original's objects of the field go with it).
   void clear();
 
@@ -134,7 +145,7 @@ public:
   [[nodiscard]] const std::optional<FieldHealing>& healing() const { return healing_; }
   [[nodiscard]] const std::optional<FieldButterfly>& butterfly() const { return butterfly_; }
   [[nodiscard]] bool empty() const {
-    return clouds_.empty() && sparks_.empty() && !healing_ && !butterfly_;
+    return clouds_.empty() && sparks_.empty() && !healing_ && !butterfly_ && glows_.empty();
   }
 
 private:
@@ -143,6 +154,7 @@ private:
   void tickHealing(FieldHealing& healing);
 
   ruleset::Random random_;
+  std::vector<FieldGlow> glows_;
   std::array<glm::ivec3, 50> directions_{};
   std::vector<FieldCloud> clouds_;
   std::vector<FieldSpark> sparks_;

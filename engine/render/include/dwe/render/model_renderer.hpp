@@ -54,6 +54,9 @@ struct ModelInstance {
   // Moves every texel coordinate by this many texels of each material's image, the image repeating
   // (the battle effects' UV animations, battle_effect.c: BTL_offsetEFEPrimitiveUVs).
   glm::vec2 texelOffset{0.0F};
+  // Draws every material semi-transparent and added to what is behind (B + F), whatever its own
+  // blend: a scene making a whole model a glow (endi.c: ENDI_setModelSemiTrans).
+  bool additive = false;
 };
 
 // How a material is blended, from its alpha mode and the original's semi-transparency equation.
@@ -146,6 +149,7 @@ private:
     glm::vec4 tint{1.0F};
     glm::vec3 lift{0.0F};
     glm::vec2 texelOffset{0.0F};
+    bool additive = false;
   };
   // An instance taken for the frame, with its joints in the upload ring.
   struct Prepared {
@@ -155,6 +159,7 @@ private:
     glm::vec4 tint{1.0F};
     glm::vec3 lift{0.0F};
     glm::vec2 texelOffset{0.0F};
+    bool additive = false;
   };
   struct Translucent {
     float viewDepth = 0.0F;
@@ -183,7 +188,6 @@ private:
 
   explicit ModelRenderer(Renderer& renderer)
       : renderer_(&renderer), opaque_(*this), translucent_(*this) {}
-  [[nodiscard]] const rhi::GraphicsPipeline& pipeline(const Material& material) const;
   void prepare(PrepareContext& context);
   void drawOpaque(DrawContext& context);
   void drawTranslucent(DrawContext& context);

@@ -14,6 +14,7 @@
 #include "death_scene.hpp"
 #include "discard_screen.hpp"
 #include "egg_box_screen.hpp"
+#include "ending_scene.hpp"
 #include "field_scene.hpp"
 #include "jukebox_screen.hpp"
 #include "merit_shop_screen.hpp"
@@ -51,6 +52,8 @@ public:
   void attachBossArrival(BossArrivalScene* boss) { boss_ = boss; }
   // The scenes the story's lost lives, deaths and rebirths play on, and the egg box between them.
   void attachDeath(DeathScene* death) { death_ = death; }
+  // The player's last scene (call_partner_routine 6, which routine 53 starts).
+  void attachEnding(EndingScene* ending) { ending_ = ending; }
   void attachEggBox(EggBoxScreen* eggBox) { eggBox_ = eggBox; }
   // The item menu the story's DiscardItem screen opens (call_routine 0).
   void attachDiscard(DiscardScreen* discard) { discard_ = discard; }
@@ -102,6 +105,9 @@ private:
   BossArrivalScene* boss_ = nullptr;
   // Whether the story waits on the boss's arrival.
   bool bossScene_ = false;
+  EndingScene* ending_ = nullptr;
+  // Whether the story waits on the ending.
+  bool endingScene_ = false;
   StoryNaming naming_;
   SaveMachine* saveMachine_ = nullptr;
   // Whether the story waits on the save machine.

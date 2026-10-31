@@ -17,6 +17,8 @@ dwe_add_app(game
         src/death_scene.cpp
         src/dev_assets_banner.cpp
         src/dev_views.cpp
+        src/ending_effects.cpp
+        src/ending_scene.cpp
         src/device_names.cpp
         src/evolution_effects.cpp
         src/field_effects.cpp
@@ -139,7 +141,7 @@ if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
     add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/control_json.cpp
                                   src/evolution_effects.cpp src/field_effects.cpp
-                                  src/death_effects.cpp
+                                  src/death_effects.cpp src/ending_effects.cpp
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/minimap_setting.cpp
                                   src/pause_box.cpp src/place_command.cpp src/story_set_command.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
                                   src/save_machine_flow.cpp src/sleep_steps.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_skin_setting.cpp src/user_settings.cpp)

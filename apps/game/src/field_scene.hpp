@@ -141,6 +141,12 @@ struct FieldStage {
   glm::vec3 partnerLift{0.0F};
   // The partner's bones not drawn by its model, one bit a bone (a scene draws them itself).
   std::uint64_t partnerHiddenBones = 0;
+  // The player's posData->scale, 1 being its model's size.
+  glm::vec3 playerScale{1.0F};
+  // How much of its colours the player keeps (endi.c: ENDI_fadeClut fades its palette to black).
+  float playerFade = 1.0F;
+  // The player drawn as additive light (endi.c: ENDI_setModelSemiTrans).
+  bool playerAdditive = false;
   // The scene's own primitives, back to front, drawn over the models with their depth.
   std::vector<ScenePrim> prims;
   // A stage of the scene's own instead of the map (a tournament arena: std_setup.c:
@@ -617,6 +623,7 @@ private:
     glm::vec4 tint{1.0F};
     glm::vec3 lift{0.0F};
     std::uint64_t hiddenBones = 0;
+    bool additive = false;
   };
   void submit(const Actor& actor, float alpha, const Look& look);
   // Places the map's 3D objects in the field and loads their models (map.c: loadMap, loadDoors).

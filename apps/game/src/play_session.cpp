@@ -327,6 +327,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                    .transition = scene_->field().rules().transition,
                    .ui = context.ui,
                    .species = species_ ? &*species_ : nullptr}),
+      endingScene_({.session = game_.session.get(),
+                    .scene = scene_.get(),
+                    .species = species_ ? &*species_ : nullptr,
+                    .frameSeconds = scene_->field().rules().transition.frameSeconds}),
       eggBoxScreen_(*game_.session, *context.ui),
       gymScreen_({.session = game_.session.get(),
                   .story = game_.systems.story,
@@ -382,6 +386,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachCurling(&curlingScreen_);
   storyScenes_.attachBossArrival(&bossArrival_);
   storyScenes_.attachDeath(&deathScene_);
+  storyScenes_.attachEnding(&endingScene_);
   storyScenes_.attachEggBox(&eggBoxScreen_);
   storyScenes_.attachDiscard(&discardScreen_);
   storyScenes_.attachJukebox(&jukeboxScreen_);
@@ -566,6 +571,7 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
   // the story asked for leaves it to the story's script.
   if (!battleScreen_.active()) {
     deathScene_.tick(TickSeconds);
+    endingScene_.tick(TickSeconds);
     if (deathScene_.holdsField()) {
       return;
     }
