@@ -4,7 +4,6 @@
 
 #include <cmath>
 #include <cstdint>
-#include <numbers>
 
 // The integer maths the KAR overlay leans on: libgte rcos/rsin (4096 a turn, 4096 for 1), ratan2
 // and SquareRoot0.
@@ -20,14 +19,9 @@ inline constexpr std::int32_t One = 4096;
   return core::original::rsin(angle);
 }
 
-// libgte ratan2 (from -2048 to 2048). Suposición: computed, not read from libgte's table, as the
-// battle's effects do (game/battle/src/effect_math.cpp); it lands within a unit of the table.
+// libgte ratan2 (from -2048 to 2048).
 [[nodiscard]] inline std::int32_t ratan2(std::int32_t y, std::int32_t x) {
-  if (y == 0 && x == 0) {
-    return 0;
-  }
-  const double angle = std::atan2(static_cast<double>(y), static_cast<double>(x));
-  return static_cast<std::int32_t>(std::lround(angle / (2.0 * std::numbers::pi) * Turn));
+  return core::original::ratan2(y, x);
 }
 
 // kar.c: KAR_distance: SquareRoot0 of the sum of the squares (rounded down), in 32 bits.

@@ -25,7 +25,37 @@ std::int32_t atanTable(std::int32_t index) {
   return static_cast<std::int32_t>(std::lround(radians / (2.0 * std::numbers::pi) * Turn));
 }
 
+// libgte's ratan2 table: entry i is atan((i + 0.5) / 1024) in angle units, plus 0.44, rounded
+// down. Checked against the disc's table: 1017 of the 1025 entries match and the other 8 sit
+// within 0.015 of a step and come out one unit off.
+constexpr std::int32_t RatanSteps = 1024;
+constexpr std::int64_t RatanWide = 0x7FE00000;
+std::int32_t ratanTable(std::int64_t index) {
+  const double radians = std::atan((static_cast<double>(index) + 0.5) / RatanSteps);
+  return static_cast<std::int32_t>(std::floor(radians / (2.0 * std::numbers::pi) * Turn + 0.44));
+}
+
 } // namespace
+
+std::int32_t ratan2(std::int32_t y, std::int32_t x) {
+  const std::int64_t absX = std::abs(static_cast<std::int64_t>(x));
+  const std::int64_t absY = std::abs(static_cast<std::int64_t>(y));
+  if (absX == 0 && absY == 0) {
+    return 0;
+  }
+  // The smaller side over the larger one in 1024ths, rounded down; a side past 2^21 divides by
+  // the larger one's 1024th instead so the shift cannot overflow.
+  const auto eighth = [](std::int64_t small, std::int64_t large) {
+    const std::int64_t index =
+        (small & RatanWide) != 0 ? small / (large >> 10) : (small * RatanSteps) / large;
+    return ratanTable(index);
+  };
+  std::int32_t angle = absY < absX ? eighth(absY, absX) : QuarterTurn - eighth(absX, absY);
+  if (x < 0) {
+    angle = HalfTurn - angle;
+  }
+  return y < 0 ? -angle : angle;
+}
 
 std::int32_t atan4096(std::int32_t dy, std::int32_t dx) {
   // The smaller side over the larger one, in 512ths and rounded down, picks an eighth of a turn's

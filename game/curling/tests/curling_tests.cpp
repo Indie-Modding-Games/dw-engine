@@ -150,6 +150,22 @@ TEST_CASE("setupMatch: the racks and the obstacles take the original's draws in 
   CHECK(match.throwingTeam() == 0);
 }
 
+TEST_CASE("ratan2: the table's steps at the smaller side over the larger one, rounded down") {
+  using dwe::core::original::ratan2;
+  // Read from the original's table: steps 2, 7 and 768 are 2, 5 and 420.
+  CHECK(ratan2(2, 1024) == 2);
+  CHECK(ratan2(7, 1024) == 5);
+  CHECK(ratan2(7, -1024) == 2048 - 5);
+  CHECK(ratan2(-7, -1024) == -(2048 - 5));
+  CHECK(ratan2(1024, 7) == 1024 - 5);
+  CHECK(ratan2(10, 1030) == 6);           // 10240 / 1030 rounds down to step 9
+  CHECK(ratan2(3 << 21, 1 << 23) == 420); // past 2^21 the larger side is cut to 1024ths first
+  CHECK(ratan2(1024, 1024) == 512);
+  CHECK(ratan2(-5, 0) == -1024);
+  CHECK(ratan2(0, -5) == 2048);
+  CHECK(ratan2(0, 0) == 0);
+}
+
 TEST_CASE("tickStones: a stone slides speed / weight a frame, keeps 98% and stops under 2") {
   const CurlingRules rules = originalRules();
   Random random{7};
