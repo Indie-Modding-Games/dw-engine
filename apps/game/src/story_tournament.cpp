@@ -5,6 +5,8 @@
 #include <dwe/render/map_camera.hpp>
 
 #include <cmath>
+#include <cstdint>
+#include <vector>
 
 #include "place_command.hpp"
 
@@ -15,6 +17,8 @@ namespace {
 // std_main.c: STD_placePlayer2: the rival starts across the field from the partner (a cup played
 // without its arena).
 constexpr std::int32_t RivalDistance = 1000;
+// The id the battle holds the rival under (FieldScene::addStageFighter), past any script id.
+constexpr std::int32_t RivalFighter = 0x1000;
 // The arena's camera centres on its own background, wide enough that no bars show at any window
 // size (the original draws the arena over its whole 320 x 240 screen).
 constexpr float ArenaBackgroundScale = 100.0F;
@@ -112,6 +116,7 @@ void StoryTournament::showArena(FieldScene& scene, game::tournament::ArenaPoint 
 }
 
 void StoryTournament::leaveArena(FieldScene& scene) {
+  scene.clearStageFighters();
   if (!arena_) {
     return;
   }
@@ -145,6 +150,8 @@ void StoryTournament::update(session::StoryScenes& scenes, BattleScreen& battle,
   if (!running_ || matchRunning_ || battle.active()) {
     return;
   }
+  // removeMapEntities after each match: the beaten (or winning) rival leaves the arena.
+  scene.clearStageFighters();
   if (!matchDue_) {
     end(scenes, scene);
     return;
@@ -161,7 +168,16 @@ void StoryTournament::update(session::StoryScenes& scenes, BattleScreen& battle,
     showArena(scene, arena_->start.partner, arena_->start.rival);
   }
   auto request = tournament_->matchRequest(*session_, partner, tamer, field.mapId(), rival);
-  auto started = request ? battle.start(std::move(*request), {}, true)
+  // STD_initializeOpponent's entity, placed by STD_placePlayer2: the battle holds it as it holds a
+  // map's NPC.
+  std::vector<std::int32_t> fighters;
+  if (request && arena_ && !request->enemies.empty() &&
+      scene.addStageFighter(RivalFighter, request->enemies.front().species,
+                            {static_cast<float>(rival.x), static_cast<float>(rival.z)},
+                            assets::yawFromOriginal(arena_->rivalYaw))) {
+    fighters.push_back(RivalFighter);
+  }
+  auto started = request ? battle.start(std::move(*request), std::move(fighters), true)
                          : core::Result<void>{std::unexpected{request.error()}};
   if (!started) {
     core::logWarning("[port:tournament] STD_runMatch (std_setup.c:401): {}; the tournament ends",

@@ -64,7 +64,8 @@ bool BattleScreen::offScreen(std::int32_t npc, float x, float z) const {
 
 std::vector<std::int32_t> BattleScreen::npcsOnScreen() const {
   std::vector<std::int32_t> shown;
-  if (desc_.scene == nullptr) {
+  // A stage that hides the map (a tournament arena: removeMapEntities) shows none of its NPCs.
+  if (desc_.scene == nullptr || desc_.scene->stage().sceneryHidden) {
     return shown;
   }
   for (const assets::MapNpc& record : desc_.scene->map().npcs) {

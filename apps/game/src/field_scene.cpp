@@ -790,6 +790,11 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   } else {
     submitStageProps();
   }
+  for (const auto& [id, actor] : stageFighters_) {
+    animate(*actor, animationSeconds);
+    playClipSounds(*actor);
+    submit(*actor, alpha, {});
+  }
   submitEffectModels();
   submitStatusModels();
   if (!stage_.partnerHidden) {

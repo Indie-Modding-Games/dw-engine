@@ -1,12 +1,18 @@
 #include <dwe/animation/animation_player.hpp>
+#include <dwe/assets/content_id.hpp>
+#include <dwe/assets/digimon_table.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/game/field/npcs.hpp>
 #include <dwe/scene/components.hpp>
 
 #include <algorithm>
+#include <format>
 #include <memory>
 #include <optional>
+#include <string>
+#include <string_view>
+#include <utility>
 
 #include "field_scene.hpp"
 #include "messages.hpp"
@@ -17,12 +23,21 @@ namespace {
 
 // anim.c: startAnimation switches clips at once.
 constexpr float FighterClipFadeSeconds = 0.0F;
+// A stage fighter is drawn as its species with models/partner's animations, as an NPC is
+// (field_scene_npcs.cpp), from the species' folder (story_npcs.cpp: speciesModel).
+constexpr std::string_view StageFighterCharacter = "models/partner";
+constexpr std::string_view SpeciesModelLeaf = "model";
 
 } // namespace
 
 FieldScene::Actor* FieldScene::fighterActor(std::optional<std::int32_t> npc) const {
   if (!npc) {
     return partnerActor_.get();
+  }
+  if (const auto staged = std::ranges::find(
+          stageFighters_, *npc, &std::pair<std::int32_t, std::unique_ptr<Actor>>::first);
+      staged != stageFighters_.end()) {
+    return staged->second.get();
   }
   const std::optional<scene::Entity> entity = field_->npcs().entityOf(*npc);
   if (!entity) {
@@ -144,6 +159,9 @@ void FieldScene::releaseFighters() {
   for (const std::unique_ptr<Actor>& actor : npcActors_) {
     release(*actor);
   }
+  for (const auto& [id, actor] : stageFighters_) {
+    release(*actor);
+  }
   // The partner stands again with a new wait before its gestures.
   partnerLook_ = {};
   fighterSecondsDue_ = 0.0;
@@ -152,6 +170,47 @@ void FieldScene::releaseFighters() {
   field_->releaseHandoff("battle");
   core::logDebug("[port:battle] BTL_battleMain (battle_main.c:778): the field takes the fighters "
                  "back where they stand");
+}
+
+bool FieldScene::addStageFighter(std::int32_t id, std::string_view species, glm::vec2 ground,
+                                 float yaw) {
+  const std::string model = std::format("{}/{}/{}", assets::SpeciesFolder,
+                                        assets::contentAssetPath(species), SpeciesModelLeaf);
+  auto modelId = assets::AssetId::parse(model);
+  if (!modelId) {
+    core::logWarning("field: the stage fighter {} ({}) is not drawn: {}", id, species,
+                     modelId.error().message);
+    return false;
+  }
+  const scene::Entity entity = world_.create();
+  entt::registry& registry = world_.registry();
+  scene::place(registry.emplace<scene::Transform>(entity), {ground.x, 0.0F, ground.y}, yaw);
+  registry.emplace<scene::ModelRef>(entity, model);
+  registry.emplace<scene::AnimationIntent>(entity, scene::AnimationIntent{});
+  const game::field::NpcRules& rules = field_->rules().npc;
+  auto actor = loadActor(StageFighterCharacter, entity,
+                         {.model = model,
+                          .radius = 0.0F,
+                          .walkSpeed = rules.walkSpeed,
+                          .runSpeed = rules.runSpeed,
+                          .turnSpeed = rules.turnSpeed},
+                         *modelId, MissingClips::Drop);
+  if (!actor) {
+    core::logWarning("field: the stage fighter {} ({}) is not drawn: {}", id, species,
+                     actor.error().message);
+    world_.destroy(entity);
+    return false;
+  }
+  stageFighters_.emplace_back(id, std::move(*actor));
+  return true;
+}
+
+void FieldScene::clearStageFighters() {
+  for (const auto& [id, actor] : stageFighters_) {
+    models_->remove(actor->handle);
+    world_.destroy(actor->entity);
+  }
+  stageFighters_.clear();
 }
 
 } // namespace dwe::app

@@ -382,7 +382,7 @@ Portado 25, parcial 8, falta 58, no aplica 358.
 | `STD_loadWinLoseModel` | `std/std_hud.c:1227` | falta | Calcula las curvas de entrada de los letreros de victoria/derrota y carga sus modelos. | — |
 | `STD_loadChampionModels` | `std/std_hud.c:1273` | falta | Prepara la órbita de cámara y coloca las letras del letrero de campeón. | solo lo cita la extracción del disco |
 | `STD_initializeChampionScene` | `std/std_hud.c:1371` | falta | Coloca al compañero en el centro con la pose de victoria y fija la cámara del campeón. | — |
-| `STD_runIntro` | `std/std_main.c:1885` | falta | Ejecuta la presentación del combate de copa con cámara y nombres. | `apps/game/src/story_tournament.cpp:157` |
+| `STD_runIntro` | `std/std_main.c:1885` | falta | Ejecuta la presentación del combate de copa con cámara y nombres. | `apps/game/src/story_tournament.cpp:164` |
 | `STD_tickIntroName` | `std/std_main.c:2063` | falta | Muestra el nombre del luchador durante la presentación. | — |
 | `STD_setCameraYXZ` | `std/std_main.c:2266` | falta | Cámara que encuadra al compañero y al rival a la vez. | — |
 | `STD_setCameraToEntity` | `std/std_main.c:2286` | falta | Cámara fija relativa al luchador enfocado según su orientación. | — |
@@ -419,7 +419,7 @@ Portado 25, parcial 8, falta 58, no aplica 358.
 | `STD_addTimeoutWindow` | `std/std_main.c:4698` | falta (citada en docs) | Muestra el aviso de tiempo agotado del combate. | — |
 | `STD_tickDigimonSenile` | `std/std_main.c:4860` | falta | Mantiene al luchador en estado senil hasta que se agote su contador. | — |
 | `STD_initializePlayerMarker` | `std/std_main.c:5476` | falta | Añade la marca que distingue a cada luchador en pantalla. | — |
-| `STD_combatMain` | `std/std_main.c:5582` | parcial | Bucle principal de un combate de copa hasta el resultado. | `apps/game/src/story_tournament.cpp:1` · el combate de copa es una batalla con reloj en la arena; el rival no se dibuja |
+| `STD_combatMain` | `std/std_main.c:5582` | parcial | Bucle principal de un combate de copa hasta el resultado. | `apps/game/src/story_tournament.cpp:1` · el combate de copa es una batalla con reloj en la arena, con el rival dibujado |
 | `STD_startWalkingAnimation2` | `std/std_main.c:5652` | falta | Elige animación de caminar normal o cansada según la vida. | — |
 | `STD_applyPartnerStatsToFighter` | `std/std_main.c:5913` | falta | Copia los valores del compañero a su ficha de luchador. | — |
 | `STD_selectMoveTarget` | `std/std_main.c:6660` | falta | Elige el objetivo de la técnica del luchador. | — |

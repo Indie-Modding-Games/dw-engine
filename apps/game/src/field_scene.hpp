@@ -349,6 +349,13 @@ public:
   [[nodiscard]] const assets::ModelData* fighterModel(std::optional<std::int32_t> npc) const;
   // The field takes the fighters back where they stand.
   void releaseFighters();
+  // A fighter of a stage of the scene's own that is no NPC of the map (a tournament's rival:
+  // std_setup.c: STD_initializeOpponent's entity, placed by std_main.c: STD_placePlayer2): drawn
+  // as this species with the NPCs' animations, scenery hidden or not, and held by the battle under
+  // `id` as an NPC is under its script id, until clearStageFighters. False, logged, when its model
+  // does not load.
+  bool addStageFighter(std::int32_t id, std::string_view species, glm::vec2 ground, float yaw);
+  void clearStageFighters();
   // A held fighter's pose now, one local transform per node of fighterModel(npc); nothing when the
   // field does not draw it.
   [[nodiscard]] std::optional<std::span<const assets::NodeTransform>>
@@ -723,6 +730,8 @@ private:
   game::story::SoundPort* sound_ = nullptr;
   std::function<std::optional<SpeciesBox>(std::string_view)> speciesBox_;
   std::vector<std::unique_ptr<Actor>> npcActors_;
+  // addStageFighter's, by id.
+  std::vector<std::pair<std::int32_t, std::unique_ptr<Actor>>> stageFighters_;
   // The NPCs whose model could not be loaded, logged once each.
   std::vector<scene::Entity> npcsNotShown_;
   // The battle time given to the held fighters since the last update, and in this update.
