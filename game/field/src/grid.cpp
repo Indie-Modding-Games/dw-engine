@@ -268,10 +268,19 @@ public:
     const auto nearV = static_cast<std::int32_t>(std::floor((from.z / LatticeStep) + Origin));
     // A character that stands closer to a wall than its probe (a map's arrival point can) walks
     // off it, the probe sliding along the wall: when no point around is reached straight, the
-    // usable ones are.
-    for (const bool straight : {true, false}) {
-      for (std::int32_t dv = 0; dv <= 1; ++dv) {
-        for (std::int32_t du = 0; du <= 1; ++du) {
+    // usable ones are; and when none of those is usable either (a battle's retreat can leave the
+    // player against a wall, its probe on the wall's cells), the usable ones a step further out.
+    struct SeedPass {
+      bool straight;
+      std::int32_t from;
+      std::int32_t to;
+    };
+    for (const SeedPass pass : {SeedPass{.straight = true, .from = 0, .to = 1},
+                                SeedPass{.straight = false, .from = 0, .to = 1},
+                                SeedPass{.straight = false, .from = -1, .to = 2}}) {
+      const bool straight = pass.straight;
+      for (std::int32_t dv = pass.from; dv <= pass.to; ++dv) {
+        for (std::int32_t du = pass.from; du <= pass.to; ++du) {
           const LatticePoint seed{.u = nearU + du, .v = nearV + dv};
           if (!insideLattice(seed) || !usable(seed, isGoal(seed))) {
             continue;

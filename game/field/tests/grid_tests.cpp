@@ -226,3 +226,19 @@ TEST_CASE("a step test only looks at the line ahead of where the step ends") {
   // A step that ends with the edge on the blocked line is stopped.
   CHECK(stepCollides(map.collision, {-30.0F, 0.0F, 1339.0F}, west, Kunemon));
 }
+
+TEST_CASE("a path starts from a wall's edge where no point around is usable") {
+  // trop01 after a wild fight: the battle's retreat left the player at x 2788, z 1494 (moved 2000
+  // west into the room here), on the bottom row of a block of wall. Every lattice point around it
+  // puts the probe on a wall cell; the walk starts from the usable ones a step further, and the
+  // player walks off the wall to them.
+  auto map = roomMap("room");
+  fill(map, {.column = 55, .row = 56}, {.column = 62, .row = 63}, Blocked);
+  fill(map, {.column = 55, .row = 64}, {.column = 57, .row = 64}, Blocked);
+  const glm::vec3 from{788.0F, 0.0F, 1494.0F};
+  const std::vector<CollisionCell> goal{{.column = 40, .row = 66}};
+  const auto path = findPath(map.collision, from, goal, Radius);
+  REQUIRE_FALSE(path.empty());
+  CHECK(path.back() == dwe::assets::collisionCellCenter(goal[0]));
+  CHECK(moveOnGrid(map.collision, from, {0.0F, 50.0F}, Radius).position.z > from.z);
+}
