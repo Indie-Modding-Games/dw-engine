@@ -1,0 +1,25 @@
+# Stage 6 of the story with the keyboard, Andromon's help from the city: from mayo02 on a seeded game (run with
+# --start mayo02 and --story-stage stage_6, docs/guides/prueba-vertical.md), after Andromon asked to look for help
+# in the city (trigger 328, route-etapa6-numemon). The bridge (mayo08b, built: trigger 232, written here) and its
+# cells to the city (52, script 11 section 0x34) pick which of the twnb maps to load by the recruits; the one with a Champion each of the four groups and the two
+# helpers (twnb13: triggers 231, 209, 236 and 205, written here) is where the help is found: its MAPHEAD section
+# 0xc0 sets trigger 329 when 328 is set. The next link is Andromon again (route-etapa6-andromon).
+name: etapa6-andromon-ciudad
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: mayo02, partner_within: 400, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  - script: story_set("trigger 232 on")
+  - script: story_set("trigger 231 on")
+  - script: story_set("trigger 209 on")
+  - script: story_set("trigger 236 on")
+  - script: story_set("trigger 205 on")
+  - script: story_set("trigger 328 on")
+  - expect_setting: {story.trigger.329: "false"}
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: mayo08b, partner_within: 400, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 52, encounters: win, timeout: 240}
+  - wait: {map: twnb13, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.329: "true"}
+  - screenshot: twnb13

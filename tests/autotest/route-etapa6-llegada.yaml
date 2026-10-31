@@ -1,0 +1,51 @@
+# Stage 6 of the story with the keyboard, the arrival: from twna02 on a seeded game (run with --start twna02 and
+# --story-stage stage_6, docs/guides/prueba-vertical.md). Whamon's ride (trigger 224, set in stage 5 by his cave)
+# waits on the city's shore cells (55, script 162 section 0x37): the first time he tells what he does (trigger 83),
+# then the choice "Factorial Town / Secret Beach Cave / Nowhere"; the first one lands on fact01. The player crosses
+# the town (fact02, fact03) down to the sewer (fact11a, fact11b): the first visit plays the partner's sniff (trigger
+# 340) and the Numemon there tells about the guard (trigger 342), the first link of Andromon's chain.
+name: etapa6-llegada
+device: keyboard
+timeout: 900
+steps:
+  - wait: {map: twna02, partner_within: 400, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  # The town's guards by day and its PlatinumSukamon by night fight whoever walks into them; the seeded rookie would
+  # lose, so the walks win those fights with the debug command (encounters: win).
+  - script: story_set("trigger 224 on")
+  - expect_setting: {story.trigger.83: "false"}
+  - walk_to: {trigger: 55, stop_on_scene: true, timeout: 180}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: whamon
+  - repeat: {times: 4, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - screenshot: whamon-choice
+  - tap: {key: return}
+  - wait: {map: fact01, seconds: 3, timeout: 90}
+  - expect_setting: {story.trigger.83: "true"}
+  - screenshot: fact01
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: fact02, partner_within: 400, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: fact03, partner_within: 400, seconds: 1, timeout: 60}
+  - screenshot: fact03
+  - walk_to: {trigger: 54, encounters: win, timeout: 240}
+  - wait: {map: fact11a, partner_within: 400, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: fact11b, seconds: 1, timeout: 60}
+  - wait: {setting: {story.trigger.340: "true"}, timeout: 60}
+  - wait: {seconds: 4}
+  - screenshot: fact11b
+  - repeat: {times: 10, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 30}
+  # Numemon (script id 5) sits by the far wall (original x 3352, z -772); a click on him walks up to him, facing him, and
+  # confirm talks.
+  - walk_to: {point: [3000, 772], radius: 100, timeout: 120}
+  - screenshot: near-numemon
+  - click: [3352, 772]
+  - wait: {seconds: 3}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: numemon
+  - wait: {setting: {story.trigger.342: "true"}, timeout: 10}
+  - repeat: {times: 12, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 30}

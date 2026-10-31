@@ -1,0 +1,67 @@
+# Stage 6 of the story with the keyboard, Andromon and Giromon join: from fact06 on a seeded game (run with
+# --start fact06 and --story-stage stage_6, docs/guides/prueba-vertical.md), with the help found in the city
+# (trigger 329, route-etapa6-andromon-ciudad; the earlier links are written). Andromon (script 151) hears the news
+# (trigger 330) and, talked to again, joins (trigger 240, prosperity + 3). With the city's help (329) and one of its
+# Champions (209, Greymon's group), the lift of fact07 (cells 81, script 152 section 0x51) goes to fact08a instead of
+# the power room, where Giromon (script 153) joins (trigger 241, prosperity + 3).
+name: etapa6-andromon
+device: keyboard
+timeout: 1200
+steps:
+  - wait: {map: fact06, partner_within: 400, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  - script: story_set("trigger 340 on")
+  - script: story_set("trigger 342 on")
+  - script: story_set("trigger 347 on")
+  - script: story_set("trigger 343 on")
+  - script: story_set("trigger 331 on")
+  - script: story_set("trigger 332 on")
+  - script: story_set("trigger 344 on")
+  - script: story_set("trigger 341 on")
+  - script: story_set("trigger 211 on")
+  - script: story_set("trigger 328 on")
+  - script: story_set("trigger 329 on")
+  - script: story_set("trigger 209 on")
+  - expect_setting: {story.trigger.240: "false"}
+  - remember: story.var.1
+  # Andromon (original x 200, z 336); a click walks up to him, confirm talks.
+  - walk_to: {point: [200, 0], radius: 100, timeout: 120}
+  - click: [200, -336]
+  - wait: {seconds: 3}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: andromon-news
+  - repeat: {times: 30, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 30}
+  - expect_setting: {story.trigger.330: "true"}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - repeat: {times: 5, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 30}
+  - expect_setting: {story.trigger.240: "true"}
+  - expect_change: {story.var.1: up}
+  - screenshot: andromon-joins
+  # Giromon: fact03, fact04 (its guards gone since 332), fact09, fact07 and its lift.
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: fact03, partner_within: 400, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 52, encounters: win, timeout: 240}
+  - wait: {map: fact04, partner_within: 400, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 52, encounters: win, timeout: 240}
+  - wait: {map: fact09, partner_within: 400, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: fact07, partner_within: 400, seconds: 1, timeout: 60}
+  - walk_to: {point: [-1400, -650], radius: 60, encounters: win, timeout: 240}
+  - tap: {key: return}
+  - wait: {map: fact08a, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.241: "false"}
+  # Giromon (original x 1257, z 479).
+  - walk_to: {point: [1550, -479], radius: 100, timeout: 120}
+  - click: [1257, -479]
+  - wait: {seconds: 3}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: giromon
+  - repeat: {times: 16, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.241: "true"}, timeout: 60}
+  - wait: {seconds: 2}
+  - screenshot: giromon-joins

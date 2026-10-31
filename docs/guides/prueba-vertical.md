@@ -379,6 +379,39 @@ for r in "route-etapa5 gcan04" "route-etapa5-whamon ogre10,0" "route-etapa5-ogre
 done
 ```
 
+- `route-etapa6-*.yaml`: la Etapa 6 (Factorial Town) con `--story-stage stage_6`, en eslabones que se reanudan con
+  `--start`; cada uno escribe con `story_set` los disparadores de los anteriores. Las caminatas ganan los combates del
+  camino con `encounters: win` (los guardias de día y PlatinumSukamon de noche). `route-etapa6-llegada.yaml` (`--start
+  twna02`) sube a Whamon en la orilla (casilla 55, disparador 224), elige Factorial Town, baja a la cloaca (340) y
+  habla con Numemon (342). `route-etapa6-guardia.yaml` (`--start fact03`) habla con el guardia de fact04 (347), con
+  Andromon en fact06 (343) y otra vez con el guardia por el turno (331); espera en fact03 con el reloj rápido a las
+  11:56, cuando fact04 no tiene guardias, pasa a fact09 (332) y fact07, baja con el ascensor (Intro en la casilla 81)
+  a la sala de máquinas (fact08b) y vence a Giromon: vuelve la luz (344). `route-etapa6-numemon.yaml` (`--start
+  fact06`) oye a Andromon (341), baja a la cloaca, vence a Numemon, que se une (211), y vuelve con Andromon (328).
+  `route-etapa6-andromon-ciudad.yaml` (`--start mayo02`) cruza el puente de mayo08b a twnb13 (329).
+  `route-etapa6-andromon.yaml` (`--start fact06`) habla con Andromon, que se une (330, 240), y vence a Giromon en
+  fact08a (241). `route-etapa6-metalmamemon.yaml` (`--start fact02 --seed 4`) se cruza con MetalMamemon (sale con un
+  3 % al entrar en fact02; la semilla 4 lo saca), dice que sí al reto y lo vence (227). `route-etapa6-lock.yaml`
+  (`--start twna02`) pisa la frontera: la casilla 56 de twna02 a mgen01 (etapa 8) muestra el aviso y el jugador sigue
+  en twna02, y con el disparador 220 la casilla 52 lleva a room10.
+
+```sh
+scripts/dev.sh run --content <carpeta> --start twna02 --lang en --seed 1 --story-stage stage_6 \
+    --autotest tests/autotest/route-etapa6-llegada.yaml --shots <capturas>/etapa6
+scripts/dev.sh run --content <carpeta> --start fact03 --lang en --seed 1 --story-stage stage_6 \
+    --autotest tests/autotest/route-etapa6-guardia.yaml --shots <capturas>/etapa6
+scripts/dev.sh run --content <carpeta> --start fact06 --lang en --seed 1 --story-stage stage_6 \
+    --autotest tests/autotest/route-etapa6-numemon.yaml --shots <capturas>/etapa6
+scripts/dev.sh run --content <carpeta> --start mayo02 --lang en --seed 1 --story-stage stage_6 \
+    --autotest tests/autotest/route-etapa6-andromon-ciudad.yaml --shots <capturas>/etapa6
+scripts/dev.sh run --content <carpeta> --start fact06 --lang en --seed 1 --story-stage stage_6 \
+    --autotest tests/autotest/route-etapa6-andromon.yaml --shots <capturas>/etapa6
+scripts/dev.sh run --content <carpeta> --start fact02 --lang en --seed 4 --story-stage stage_6 \
+    --autotest tests/autotest/route-etapa6-metalmamemon.yaml --shots <capturas>/etapa6
+scripts/dev.sh run --content <carpeta> --start twna02 --lang en --seed 1 --story-stage stage_6 \
+    --autotest tests/autotest/route-etapa6-lock.yaml --shots <capturas>/etapa6
+```
+
 - Las rutas de la Etapa 8 (Mt. Infinity y el final) y de la Etapa 9 (el post-juego) van en trozos encadenados por una
   carpeta de partidas (`--saves`): cada trozo guarda en `slot_01` y el siguiente la carga (`--load slot_01`).
   `route-etapa8-jijimon.yaml` (`--start room08`) escribe los reclutas de las etapas 1 a 7 (77 puntos de prosperidad;

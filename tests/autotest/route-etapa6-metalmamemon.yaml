@@ -1,0 +1,31 @@
+# Stage 6 of the story with the keyboard, MetalMamemon: from fact02 on a seeded game (run with --start fact02
+# --seed 4 and --story-stage stage_6, docs/guides/prueba-vertical.md). MetalMamemon only shows up in fact02 on a roll
+# of 0-2 out of 100 when the map loads (MAPHEAD section 0x99, variable 110); seed 4 rolls it. He talks when the player comes
+# near (script 147 section 0x09); "Yes" to his challenge starts the fight, and after it he joins whatever its end (trigger
+# 227, prosperity + 3).
+name: etapa6-metalmamemon
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: fact02, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  - expect_setting: {story.trigger.227: "false"}
+  # He stands in the middle of the yard (original x -1702, z -115) and talks when the player comes near.
+  - walk_to: {point: [-1702, -200], radius: 100, stop_on_scene: true, timeout: 120}
+  - when: {hidden: story_textbox, steps: [{click: [-1702, 115]}, {wait: {seconds: 3}}, {tap: {key: return}}]}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 60}
+  - screenshot: metalmamemon
+  - repeat: {times: 3, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {seconds: 1.5}
+  - screenshot: challenge
+  - tap: {key: return}
+  - wait: {shown: battle, seconds: 1, timeout: 60}
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 60}
+  - script: battle_win("")
+  - wait: {setting: {battle.phase: end}, timeout: 60}
+  - repeat: {times: 10, steps: [{wait: {seconds: 1.0}}, {tap: {key: return}}]}
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
+  - repeat: {times: 12, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.227: "true"}, timeout: 60}
+  - wait: {seconds: 2}
+  - screenshot: metalmamemon-joins

@@ -139,6 +139,8 @@ historia los `sets_flags` del warp tomado.
   hacia ellas (el viaje de Centarumon de trop06 a koda00, mayo11 y tunn08 a miha04b) no ocurren. Las etapas 3 a 9
   ya tienen sus mapas (de los scripts extraídos y las salidas de los mapas) para probarlas con `--story-stage`,
   aunque `active_stage` no las alcance.
+  La casa de Jijimon crecida (room10, la casilla 52 de twna02-13 con los disparadores 220 o 214 o prosperidad 50) es
+  de la Etapa 5, no de la 8.
 
 La historia es la única dueña de las formas criadas, como en el original (`setDigimonRaised` pone el disparador
 0x200 + número): `EvolutionAdapter` (con `EvolutionAdapterDesc::story`) las escribe ahí al evolucionar, al renacer y

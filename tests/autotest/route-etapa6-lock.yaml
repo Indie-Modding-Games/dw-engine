@@ -1,0 +1,30 @@
+# Stage 6 of the story with the keyboard, the lock's border in the city: from twna02 on a seeded game (run with
+# --start twna02 and --story-stage stage_6). With Mt. Infinity opened (trigger 354, and 88 so its guard's ambush at
+# the cells 57 is over) the cells 56 (script 162 section 0x38) would take the player to mgen01, a stage 8 map: the
+# lock keeps it closed with its notice and the player stays in the city. Jijimon's house is still open once the city
+# has grown (trigger 220, Angemon, or 214 or prosperity 50): the cells 52 (section 0x34) then lead to room10, its
+# bigger version, instead of room08.
+name: etapa6-lock
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: twna02, partner_within: 400, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  - script: story_set("trigger 354 on")
+  - script: story_set("trigger 88 on")
+  # The cells 58 (section 0x3a) walk the player over the gap to the mountain's gate once 354 is set.
+  - walk_to: {trigger: 58, stop_on_scene: true, encounters: win, timeout: 180}
+  - wait: {seconds: 4}
+  - walk_to: {trigger: 56, stop_on_closed: true, timeout: 120}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - screenshot: twna02-mgen01-closed
+  - tap: {key: return}
+  - wait: {map: twna02, hidden: dialog, seconds: 1, timeout: 30}
+  # The player is put back off the gate's cells (the lock's step-off): back over the gap by the cells 59.
+  - expect_setting: {story.trigger.354: "true"}
+  - walk_to: {trigger: 59, stop_on_scene: true, timeout: 60}
+  - wait: {seconds: 4}
+  - script: story_set("trigger 220 on")
+  - walk_to: {trigger: 52, encounters: win, stop_on_closed: true, timeout: 180}
+  - wait: {map: room10, seconds: 2, timeout: 60}
+  - screenshot: room10

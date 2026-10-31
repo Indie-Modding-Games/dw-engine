@@ -122,6 +122,9 @@ stages:
       - ogre10
       - ogre11
       - room20
+      # La casa de Jijimon cuando la ciudad ha crecido: la casilla 52 de twna02-13 lleva a room10 en
+      # vez de a room08 con Angemon (disparador 220, Ice Sanctuary), Monzaemon (214) o prosperidad 50.
+      - room10
   # Etapa 6: Factorial Town (fact) y sus secuencias (map_239-246 y map_250-252). Entra con Whamon
   # (casilla 55 de twna02-13 a fact01).
   - id: stage_6
@@ -143,10 +146,10 @@ stages:
       - stic*
       - gkyo*
       - omoc*
-  # Etapa 8: Mt. Infinity (mgen01-10, mgen98, mgen99), la segunda casa de Jijimon (room10, room11),
-  # room19 y el final (tend01, tend02). Entra por la casilla 56 de twna02-13 a mgen01. Rutas
-  # route-etapa8-*.yaml: Jijimon y Airdramon, la subida, el final hasta la portada y la frontera
-  # (frzl05 a mgen11 queda cerrada).
+  # Etapa 8: Mt. Infinity (mgen01-10, mgen98, mgen99), room11 (la casilla 57 de twna02-13 con el
+  # disparador 354), room19 y el final (tend01, tend02). Entra por la casilla 56 de twna02-13 a mgen01.
+  # Rutas route-etapa8-*.yaml: Jijimon y Airdramon, la subida, el final hasta la portada y la
+  # frontera (frzl05 a mgen11 queda cerrada).
   - id: stage_8
     maps:
       - mgen01
@@ -161,7 +164,6 @@ stages:
       - mgen10
       - mgen98
       - mgen99
-      - room10
       - room11
       - room19
       - tend*

@@ -1,0 +1,100 @@
+# Stage 6 of the story with the keyboard, the guard and the power room: from fact03 on a seeded game (run with
+# --start fact03 and --story-stage stage_6, docs/guides/prueba-vertical.md), after the sewer's Numemon told about the
+# guard (trigger 342, route-etapa6-llegada). The guard who blocks fact04's way on (script 149, NPC 11) says he is on
+# duty (trigger 347); Andromon in fact06 (script 151) asks for help (trigger 343); the guard, asked about his shift,
+# tells it changes at twelve (trigger 331). Between 11:55 and 12:05 (and 23:55 to 00:05) fact04 has no guards (MAPHEAD
+# section 0x9b), so the player comes back then and goes on to fact09 (trigger 332: the guards stay away from then
+# on), fact07 and the power room (fact08b): stepping in, Giromon fights and the power comes back (trigger 344).
+name: etapa6-guardia
+device: keyboard
+timeout: 1200
+steps:
+  - wait: {map: fact03, partner_within: 400, seconds: 2, timeout: 60}
+  - resize: [1280, 720]
+  - script: story_set("trigger 340 on")
+  - script: story_set("trigger 342 on")
+  - expect_setting: {story.trigger.347: "false"}
+  - walk_to: {trigger: 52, encounters: win, timeout: 240}
+  - wait: {map: fact04, partner_within: 400, seconds: 1, timeout: 60}
+  # The guard (original x 2792, z 156) stands across the way to fact09; a click walks up to him, confirm talks.
+  - walk_to: {point: [2500, -156], radius: 100, encounters: win, timeout: 120}
+  - click: [2792, -156]
+  - wait: {seconds: 3}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: guard
+  - repeat: {times: 14, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.347: "true"}, timeout: 30}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 30}
+  # Andromon, in fact06 behind fact03 (original x 200, z 336).
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: fact03, partner_within: 400, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 53, encounters: win, timeout: 240}
+  - wait: {map: fact06, partner_within: 400, seconds: 1, timeout: 60}
+  - walk_to: {point: [200, 0], radius: 100, timeout: 120}
+  - click: [200, -336]
+  - wait: {seconds: 3}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: andromon
+  - repeat: {times: 24, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.343: "true"}, timeout: 30}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 30}
+  # Back to the guard: "Time for shift change", then "When is shift change?".
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: fact03, partner_within: 400, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 52, encounters: win, timeout: 240}
+  - wait: {map: fact04, partner_within: 400, seconds: 1, timeout: 60}
+  - walk_to: {point: [2500, -156], radius: 100, encounters: win, timeout: 120}
+  - click: [2792, -156]
+  - wait: {seconds: 3}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - repeat: {times: 2, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - screenshot: guard-choice
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - tap: {key: return}
+  - wait: {seconds: 3}
+  - screenshot: guard-choice-2
+  - tap: {key: down}
+  - wait: {seconds: 1}
+  - tap: {key: return}
+  - repeat: {times: 4, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {hidden: story_textbox, seconds: 1, timeout: 30}
+  - expect_setting: {story.trigger.331: "true"}
+  # Out to fact03, by its door to fact04, until the shift change: the clock runs fast to 11:56.
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: fact03, partner_within: 400, seconds: 1, timeout: 60}
+  - walk_to: {point: [1900, 1000], radius: 100, encounters: win, timeout: 240}
+  - script: clock_speed("60")
+  - wait: {setting: {hud.clock.hour: "11"}, timeout: 60}
+  - script: clock_speed("4")
+  - wait: {setting: {hud.clock.minute: "56"}, timeout: 90}
+  - script: clock_speed("1")
+  - walk_to: {trigger: 52, encounters: win, timeout: 240}
+  - wait: {map: fact04, seconds: 3, timeout: 60}
+  - screenshot: no-guard
+  - walk_to: {trigger: 52, encounters: win, timeout: 240}
+  - wait: {map: fact09, seconds: 1, timeout: 60}
+  - expect_setting: {story.trigger.332: "true"}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: fact07, partner_within: 400, seconds: 1, timeout: 60}
+  # The lift's cells (81, confirm on them) take the player down to the power room.
+  - walk_to: {point: [-1400, -650], radius: 60, encounters: win, timeout: 240}
+  - tap: {key: return}
+  - wait: {map: fact08b, seconds: 2, timeout: 60}
+  - screenshot: fact08b
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
+  - repeat: {times: 20, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {shown: battle, seconds: 1, timeout: 120}
+  - screenshot: giromon-battle
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 60}
+  - script: battle_win("")
+  - wait: {setting: {battle.phase: end}, timeout: 60}
+  - repeat: {times: 10, steps: [{wait: {seconds: 1.0}}, {tap: {key: return}}]}
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
+  - repeat: {times: 12, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.344: "true"}, timeout: 60}
+  - wait: {seconds: 2}
+  - screenshot: power-back
