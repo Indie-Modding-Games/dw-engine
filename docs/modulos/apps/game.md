@@ -70,6 +70,16 @@ dormir. El fundido de entrada enseña al compañero de pie (animación 0) y al j
 que recupera el control. Los números de las animaciones están en `care.yaml` (`sleep.scene`). Medido con un Agumon en
 la ciudad (estado 3 del compañero escrito en RAM).
 
+Igual: sin HUD durante la escena. El original para el tiempo de juego en el primer fotograma de la escena
+(`partnerTickSleep` estado 0, `stopGameTime`) y no lo vuelve a poner en marcha hasta que el fundido de entrada pasa de
+34 (`startGameTime` con `FADE_IN_CURRENT` 35), y `clock.c: renderGameClock` saca el reloj y las barras mientras el
+tiempo está parado (50 píxeles por fotograma, de -135 a -220). Medido en twna01 de noche (07_field_night): el menú ya
+había sacado el reloj (-220); al elegir «Dormir» el menú pone el tiempo en marcha un fotograma (-170) y la escena lo
+para enseguida; el reloj vuelve a entrar con el fundido en 35. En dwe el campo sujeta al jugador con el tiempo parado
+(`Field::holdForCare(true, CareClock::Stops)`), así que `gameTimeRan` es falso y el HUD (reloj, «Tab Menú» y barras)
+se va desde que se elige «Dormir» hasta que el jugador recupera el control; el fotograma suelto del original no se
+copia.
+
 Igual: el compañero no se duerme solo. Con sueño hace su gesto (animación 0x11, `updateConditionAnimation`) y, si
 llega la hora de despertar sin dormir, es un descuido (`tickSleepMechanics`); en el original no hay cama ni otro
 sitio donde dormir que este menú.

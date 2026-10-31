@@ -669,6 +669,28 @@ TEST_CASE("a care hold walks a partner from between 2.5 and 3.5 radii to beside 
   CHECK(field.player().position.x == doctest::Approx(0.0F));
 }
 
+TEST_CASE("a sleep's care hold stops the game time, the other care scenes keep it") {
+  // partner.c: partnerTickSleep stops the game time from its first frame (stopGameTime), which
+  // slides the clock and the bars off (clock.c: renderGameClock); feeding, the toilet, praise and
+  // scold keep it running.
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  const MapDocument map = roomMap("room");
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+
+  field.holdForCare(true, dwe::game::field::CareClock::Stops);
+  field.tick(Tick);
+  CHECK(field.heldForCare());
+  CHECK_FALSE(field.gameTimeRan());
+  field.holdForCare(false);
+  field.tick(Tick);
+  CHECK(field.gameTimeRan());
+
+  field.holdForCare(true);
+  field.tick(Tick);
+  CHECK(field.gameTimeRan());
+}
+
 TEST_CASE("a care scene runs the partner to a point and pans the camera, given back on release") {
   dwe::scene::World world;
   Field field{world, originalRules()};

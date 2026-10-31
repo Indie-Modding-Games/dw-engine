@@ -142,6 +142,10 @@ struct MapObject3D {
   float yaw = 0.0F;
 };
 
+// Whether the game time runs while a care scene holds the player (partner.c: the care states keep
+// it running; partnerTickSleep stops it).
+enum class CareClock : std::uint8_t { Runs, Stops };
+
 // The field's logic for one map at a time (docs/reference/campo.md): the player moves by intents
 // with the original's grid collision, steps on triggers and warps, and the partner follows. Player
 // and partner are entities of the scene world, with the shared components the app draws (Transform,
@@ -328,8 +332,9 @@ public:
   // A care scene holds the player while the game time runs (partner.c: partnerTickFeedItem and
   // the other partner states that set tamer state 6): no input, no triggers and no following; the
   // camera stays on the player unless panCameraByScript moves it, and comes back on release. The
-  // partner stands unless walkPartnerToRange or walkPartnerTo moves it.
-  void holdForCare(bool held);
+  // partner stands unless walkPartnerToRange or walkPartnerTo moves it. A sleep holds them with the
+  // game time stopped (partner.c: partnerTickSleep, stopGameTime), which also slides the HUD off.
+  void holdForCare(bool held, CareClock clock = CareClock::Runs);
   [[nodiscard]] bool heldForCare() const { return careHeld_; }
   // While held for care: the partner walks until its ground distance to the player crosses
   // `range`, toward the player from farther and away from it from closer, while the player looks
@@ -664,6 +669,7 @@ private:
     scene::Motion motion = scene::Motion::Walk;
   };
   bool careHeld_ = false;
+  CareClock careClock_ = CareClock::Runs;
   std::optional<CareWalk> careWalk_;
   std::optional<glm::vec3> scriptCamera_;
   std::optional<CameraPan> cameraPan_;

@@ -165,7 +165,7 @@ void SleepScreen::tickField(FieldScene& scene, float seconds,
       // partner.c:281-289: sub state 0 stops the game time, holds the player (its state 6) and,
       // unless the partner is beside the player already, walks it straight up to the player (clip
       // 2, looking at the player every frame) until getPartnerTamerCloseness gives 2.
-      field.holdForCare(true);
+      field.holdForCare(true, game::field::CareClock::Stops);
       if (!field.partnerBeside()) {
         const game::field::PartnerRules& rules = field.rules().partner;
         field.walkPartnerToRange(rules.walkDistance * rules.mover.radius);

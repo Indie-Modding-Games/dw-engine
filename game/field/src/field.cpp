@@ -1137,7 +1137,10 @@ void Field::checkConfirm() {
   cellSections_.push_back(value);
 }
 
-void Field::holdForCare(bool held) {
+void Field::holdForCare(bool held, CareClock clock) {
+  if (held) {
+    careClock_ = clock;
+  }
   if (held == careHeld_) {
     return;
   }
@@ -1179,8 +1182,9 @@ void Field::walkPartnerToRange(float range) {
 }
 
 void Field::tickCare(float seconds) {
-  // clock.c: tickGameClock runs: the partner states that hold the player keep the game time.
-  gameTimeRan_ = true;
+  // clock.c: tickGameClock runs: the partner states that hold the player keep the game time, but
+  // the sleep's (partner.c: partnerTickSleep, stopGameTime).
+  gameTimeRan_ = careClock_ == CareClock::Runs;
   entt::registry& registry = world_->registry();
   registry.get<AnimationIntent>(player_) = {};
   tickCareWalk(seconds);
