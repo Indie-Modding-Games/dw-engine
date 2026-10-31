@@ -536,8 +536,11 @@ private:
   void tickCare(float seconds);
   void tickCareWalk(float seconds);
   void tickCameraPan(float seconds);
-  // One step of the partner's care walk along `heading`; whether it moved.
-  void stepCareWalk(glm::vec2 heading, float distance, scene::Motion motion, float seconds);
+  // One step of the partner's care walk along `heading`. A walk to a point does not collide: in
+  // partner state 6 and 9 (tickPartnerToilet, partnerTickEatShit) the clip's root motion carries
+  // the partner, with no partnerTickCollision, so it runs into the toilet's hut.
+  void stepCareWalk(glm::vec2 heading, float distance, scene::Motion motion, float seconds,
+                    bool collides);
 
   scene::World* world_;
   FieldRules rules_;

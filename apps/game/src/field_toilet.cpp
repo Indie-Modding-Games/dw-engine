@@ -66,10 +66,11 @@ bool FieldToilet::checkCell() {
     return true;
   }
   // partner.c: tickPartnerToilet sub state 0: the points at the partner's height, the camera to
-  // the second one, and a run to the first.
+  // the second one, and a run to the first. TOILET_DATA is on the original's axes: its z is the
+  // world's the other way (core::fromOriginalAxes).
   const float height = field.partner().position.y;
-  first_ = {static_cast<float>(toilet->x1), height, static_cast<float>(toilet->z1)};
-  second_ = {static_cast<float>(toilet->x2), height, static_cast<float>(toilet->z2)};
+  first_ = toilet->firstPoint(height);
+  second_ = toilet->secondPoint(height);
   rules_ = rules;
   field.holdForCare(true);
   field.panCameraByScript(second_, frames(rules->cameraFrames));

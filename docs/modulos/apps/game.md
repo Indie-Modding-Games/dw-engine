@@ -96,7 +96,20 @@ jugador queda quieto mientras corre el tiempo. La cámara va al baño en 20 cuad
 del baño (`TOILET_DATA`, que el paquete base trae en `maps.yaml`, `toilets`) y hace allí la animación del baño. Al
 acabarla, el compañero hace sus necesidades (`handleToilet`), la cámara vuelve y el compañero vuelve andando al primer
 punto. Entonces suena el sonido del baño. Sin `field_items.toilet_walk`, o en un mapa sin puntos de baño, el compañero
-va donde está, como antes. Si se atasca de camino, se para donde está.
+va donde está, como antes.
+
+Igual: los puntos de `TOILET_DATA` van en los ejes del original, con la z al revés que el mundo
+(`MapToilet::firstPoint`/`secondPoint`, `core::fromOriginalAxes`), y el compañero corre a ellos sin chocar con el
+mapa (`Field::walkPartnerTo`: en el estado 6 el clip lo lleva sin `partnerTickCollision`), así que entra en la caseta.
+Antes la z no se giraba: en twna02 el compañero corría hacia (−2122, −1930) en vez de (−2122, 1930), se atascaba a unas
+3800 unidades y la cámara se iba a un sitio vacío del mapa, así que la animación del baño no se veía. Medido en el
+original (2026-10-31, `01_field_outside_jijimon_house`, twna01, el mismo baño 8, condición 8 y el jugador en la
+casilla (32, 75)): Agumon corre desde (−1650, −2400) y pasa al segundo punto al pisar la casilla del primero, en
+(−2115, −1939), unos 45 vblanks después; llega a (−2251, −1266), ya dentro de la caseta, y hace la animación 10 (51
+fotogramas) con la cámara encima; luego vuelve andando (animación 2) al primer punto. dwe con la partida del usuario
+(twna02, Agumon): la cámara va a la caseta, el compañero entra, hace la animación 10 sobre el retrete y vuelve, sin
+atascos (`dwe_assets_tests`: "a toilet's points turn the original's z the other way into world space"; `field_tests`:
+"a care walk to a point goes through walls and ends on the point's cell").
 
 ## Felicitar y regañar
 

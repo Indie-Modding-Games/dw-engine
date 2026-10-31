@@ -1238,7 +1238,9 @@ void Field::tickCareWalk(float seconds) {
   const float distance = groundDistance(transform.position, target);
   bool there = false;
   if (toPoint) {
-    there = distance <= CareArrival;
+    // tickEntityWalkTo: there once on the point's cell (getModelTile).
+    there = distance <= CareArrival ||
+            assets::originalCellAt(transform.position) == assets::originalCellAt(target);
   } else {
     there = careWalk_->away ? distance > careWalk_->range : distance <= careWalk_->range;
   }
@@ -1263,20 +1265,24 @@ void Field::tickCareWalk(float seconds) {
   }
   // A walk to a point stops on it (tickEntityWalkTo); one to a range walks on until it crosses it.
   stepCareWalk(heading, toPoint ? distance : std::numeric_limits<float>::max(), careWalk_->motion,
-               seconds);
+               seconds, !toPoint);
 }
 
-void Field::stepCareWalk(glm::vec2 heading, float distance, Motion motion, float seconds) {
+void Field::stepCareWalk(glm::vec2 heading, float distance, Motion motion, float seconds,
+                         bool collides) {
   entt::registry& registry = world_->registry();
   auto& transform = registry.get<Transform>(partner_);
   const PartnerRules& rules = rules_.partner;
   const float expected =
       (motion == Motion::Run ? rules.mover.runSpeed : rules.mover.walkSpeed) * seconds;
-  const GridMove move = moveOnGrid(collision_, transform.position,
-                                   heading * std::min(expected, distance), rules.mover.radius);
-  const glm::vec3 reached = npcs_.blocks(transform.position, move.position, rules.mover.radius)
-                                ? transform.position
-                                : move.position;
+  const glm::vec2 step = heading * std::min(expected, distance);
+  glm::vec3 reached = transform.position + glm::vec3{step.x, 0.0F, step.y};
+  if (collides) {
+    const GridMove move = moveOnGrid(collision_, transform.position, step, rules.mover.radius);
+    reached = npcs_.blocks(transform.position, move.position, rules.mover.radius)
+                  ? transform.position
+                  : move.position;
+  }
   const float moved = groundDistance(reached, transform.position);
   transform.position = reached;
   transform.yaw = assets::yawOfDirection({heading.x, 0.0F, heading.y});

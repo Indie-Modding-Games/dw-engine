@@ -61,6 +61,20 @@ TEST_CASE("the map table reads every map and its tables") {
   CHECK(table->lightUpdates[1].trigger == std::optional<std::int32_t>{7});
 }
 
+TEST_CASE("a toilet's points turn the original's z the other way into world space") {
+  // TOILET_DATA[8], File City's: the cell the player stands on is (32, 75), world z 2500 to 2600,
+  // so its points are at world z 1930 and 1260, not -1930 and -1260.
+  const dwe::assets::MapToilet toilet{
+      .index = 8, .x1 = -2122, .z1 = -1930, .x2 = -2256, .z2 = -1260};
+  const glm::vec3 first = toilet.firstPoint(-12.0F);
+  CHECK(first.x == doctest::Approx(-2122.0F));
+  CHECK(first.y == doctest::Approx(-12.0F));
+  CHECK(first.z == doctest::Approx(1930.0F));
+  const glm::vec3 second = toilet.secondPoint(0.0F);
+  CHECK(second.x == doctest::Approx(-2256.0F));
+  CHECK(second.z == doctest::Approx(1260.0F));
+}
+
 TEST_CASE("a broken map table is refused") {
   SUBCASE("a missing key") {
     std::string text{FixtureTable};

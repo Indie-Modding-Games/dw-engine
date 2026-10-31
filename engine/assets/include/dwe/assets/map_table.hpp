@@ -64,13 +64,19 @@ struct MapDoorSet {
   std::array<MapDoor, 6> doors{};
 };
 
-// The toilet's rectangle on a map, in the original's x and z.
+// The toilet's two points on a map, in the original's x and z (TOILET_DATA): the partner runs to
+// the first, then to the second, where it goes (partner.c: tickPartnerToilet).
 struct MapToilet {
   std::int32_t index = 0;
   std::int32_t x1 = 0;
   std::int32_t z1 = 0;
   std::int32_t x2 = 0;
   std::int32_t z2 = 0;
+
+  // The points in world space at a height: the original's z is the world's the other way
+  // (core::fromOriginalAxes).
+  [[nodiscard]] glm::vec3 firstPoint(float height) const;
+  [[nodiscard]] glm::vec3 secondPoint(float height) const;
 };
 
 // Object instances of a map shown only by day or by night (utils2.c: updateMapLightState).

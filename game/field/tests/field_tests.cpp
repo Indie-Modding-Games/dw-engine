@@ -716,6 +716,29 @@ TEST_CASE("a care scene runs the partner to a point and pans the camera, given b
   CHECK_FALSE(field.scriptCamera().has_value());
 }
 
+TEST_CASE("a care walk to a point goes through walls and ends on the point's cell") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  // tickPartnerToilet: the partner runs into the toilet's hut, whose cells are walls; the clip's
+  // root motion carries it with no collision test, and tickEntityWalkTo ends on the point's cell.
+  MapDocument map = roomMap("room");
+  fill(map, {.column = 54, .row = 30}, {.column = 54, .row = 69}, Blocked);
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  auto& partner = world.registry().get<dwe::scene::Transform>(field.partnerEntity());
+  dwe::scene::place(partner, {0.0F, 0.0F, 300.0F}, 0.0F);
+  field.holdForCare(true);
+  // The point is in the middle of its cell: the walk ends once the partner steps into it.
+  const glm::vec3 point{850.0F, field.partner().position.y, 50.0F};
+  field.walkPartnerTo(point, Motion::Run);
+  for (int i = 0; i < 200 && field.partnerWalking(); ++i) {
+    field.tick(Tick);
+  }
+  CHECK_FALSE(field.partnerWalking());
+  CHECK(dwe::assets::originalCellAt(field.partner().position) ==
+        dwe::assets::originalCellAt(point));
+  CHECK(field.partner().position.x < 850.0F);
+}
+
 TEST_CASE("a pile's scene runs the partner up to the player, and leaves it where it is if near") {
   dwe::scene::World world;
   Field field{world, originalRules()};

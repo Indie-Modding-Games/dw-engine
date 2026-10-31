@@ -96,6 +96,24 @@ MapLightUpdate readLightUpdate(YamlReader& reader, const YamlNode& node) {
 
 } // namespace
 
+namespace {
+
+glm::vec3 toiletPoint(std::int32_t x, std::int32_t z, float height) {
+  glm::vec3 point = core::fromOriginalAxes({static_cast<float>(x), 0.0F, static_cast<float>(z)});
+  point.y = height;
+  return point;
+}
+
+} // namespace
+
+glm::vec3 MapToilet::firstPoint(float height) const {
+  return toiletPoint(x1, z1, height);
+}
+
+glm::vec3 MapToilet::secondPoint(float height) const {
+  return toiletPoint(x2, z2, height);
+}
+
 const MapEntry* MapTable::find(std::string_view id) const {
   const auto found = std::ranges::find(maps, id, &MapEntry::id);
   return found == maps.end() ? nullptr : &*found;
