@@ -313,6 +313,10 @@ void FieldStoryProps::placeSprite(const session::SpriteAtCharacter& sprite) {
   // spawnSpriteAtLocation centres the sprite on the point, in whole pixels.
   const glm::vec2 corner = glm::floor(pixel->pixel) - glm::floor(*size / 2.0F);
   scene_->mapLayers().setPosition(object, corner);
+  core::logDebug("[port:story] spawn_sprite_at_entity (overworld.c:992): sprite {} at background "
+                 "({}, {}), node {} of {} at ({:.0f}, {:.0f}, {:.0f})",
+                 sprite.object, corner.x, corner.y, sprite.node, sprite.character, point->x,
+                 point->y, point->z);
 }
 
 void FieldStoryProps::advance(double seconds) {

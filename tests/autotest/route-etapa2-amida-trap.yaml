@@ -1,0 +1,29 @@
+# Stage 2 of the story with the keyboard, a trap of the ladder lottery: from trop06 on a seeded game (run with
+# --start trop06 and the stage-2 lock, docs/guides/prueba-vertical.md) the player walks up the west lane past its first
+# crossing, which marks trigger 161 (section 0x37 of script 18), and back down to the lane's start (section 0x34),
+# which finds 161 set and springs the trap: the target mark flashes three times on the player's node 10
+# (spawn_sprite_at_entity, map sprites 44 and 45), the arrows fly, the partner is hurt and the player is thrown back
+# to the south. The trap's end clears the lane triggers 158..173.
+name: etapa2-amida-trap
+device: keyboard
+timeout: 600
+steps:
+  - resize: [1280, 720]
+  - wait: {map: trop06, partner_within: 400, seconds: 2, timeout: 60}
+  # The entry cell's scene: three boxes. Then off the cell.
+  - repeat: {times: 4, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - walk_to: {point: [0, 3600], radius: 100, timeout: 60}
+  # The forest's wild ones fight whoever walks into them: a Champion partner wins those fights by itself.
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  - walk_to: {point: [-1550, 3600], radius: 100, encounters: true, timeout: 180}
+  - walk_to: {point: [-1550, 3250], radius: 100, encounters: true, timeout: 180}
+  - walk_to: {point: [-1600, 1700], radius: 100, encounters: true, timeout: 180}
+  - expect_setting: {story.trigger.161: "true"}
+  # Back to the lane's start: the trap.
+  - walk_to: {point: [-1550, 3300], radius: 60, encounters: true, stop_on_scene: true, timeout: 180}
+  - wait: {seconds: 0.2}
+  - screenshot: trop06-trap-mark
+  - wait: {setting: {story.trigger.161: "false"}, seconds: 1, timeout: 30}
+  - expect_setting: {story.trigger.158: "false"}
+  - screenshot: trop06-trap-after
