@@ -283,9 +283,16 @@ std::string RemoteControl::heldNames() const {
 
 std::string RemoteControl::statusFields() const {
   const ControlStatus status = host_.status();
-  return std::format(R"(,"tick":{},"paused":{},"mode":{},"map":{},"held":{},"pending":{})", ticks_,
-                     paused_, jsonString(status.mode), jsonString(status.map), heldNames(),
-                     pending_);
+  std::string fields =
+      std::format(R"(,"tick":{},"paused":{},"mode":{},"map":{},"held":{},"pending":{})", ticks_,
+                  paused_, jsonString(status.mode), jsonString(status.map), heldNames(), pending_);
+  if (status.textures) {
+    fields += std::format(R"(,"textures":{})", *status.textures);
+  }
+  if (status.gpuBytes) {
+    fields += std::format(R"(,"gpu_bytes":{})", *status.gpuBytes);
+  }
+  return fields;
 }
 
 void RemoteControl::advanceBy(std::uint64_t ticks) {

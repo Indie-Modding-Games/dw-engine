@@ -113,6 +113,8 @@ public:
 
   // The memory allocator (VMA) of the device's buffers and images.
   [[nodiscard]] VmaAllocator allocator() const;
+  // Bytes of GPU memory the allocator holds for live buffers and images, over every heap.
+  [[nodiscard]] std::uint64_t allocatedBytes() const;
 
 private:
   struct Impl;

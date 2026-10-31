@@ -564,6 +564,18 @@ VmaAllocator Device::allocator() const {
   return impl_->allocator;
 }
 
+std::uint64_t Device::allocatedBytes() const {
+  const VkPhysicalDeviceMemoryProperties* memory = nullptr;
+  vmaGetMemoryProperties(impl_->allocator, &memory);
+  std::array<VmaBudget, VK_MAX_MEMORY_HEAPS> budgets{};
+  vmaGetHeapBudgets(impl_->allocator, budgets.data());
+  std::uint64_t bytes = 0;
+  for (std::uint32_t heap = 0; heap < memory->memoryHeapCount; ++heap) {
+    bytes += budgets.at(heap).statistics.allocationBytes;
+  }
+  return bytes;
+}
+
 NativeHandles Device::nativeHandles() const {
   const Impl& impl = *impl_;
   return NativeHandles{

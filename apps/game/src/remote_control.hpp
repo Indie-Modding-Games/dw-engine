@@ -70,6 +70,10 @@ ParsedControlRequest parseControlRequest(std::string_view line);
 struct ControlStatus {
   std::string mode;
   std::string map;
+  // For soak runs: the bindless table's slots in use and the GPU memory the allocator holds, when
+  // the game has a renderer.
+  std::optional<std::uint32_t> textures;
+  std::optional<std::uint64_t> gpuBytes;
 };
 
 // Called once a screenshot was written (its path) or could not be.

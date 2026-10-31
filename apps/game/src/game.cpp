@@ -825,6 +825,8 @@ int runGame(const Options& requested) {
   if (controlSocket) {
     const auto status = [&] {
       ControlStatus now;
+      now.textures = (*renderer)->bindless().used();
+      now.gpuBytes = (*device)->allocatedBytes();
       if (movies && movies->playing()) {
         now.mode = "movie";
       } else if (interview) {

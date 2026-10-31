@@ -41,7 +41,13 @@ struct FakeGame {
 
   ControlHost host() {
     return {
-        .status = [] { return ControlStatus{.mode = "field", .map = "twna01"}; },
+        .status =
+            [] {
+              return ControlStatus{.mode = "field",
+                                   .map = "twna01",
+                                   .textures = std::nullopt,
+                                   .gpuBytes = std::nullopt};
+            },
         .state = [this] { return state; },
         .runScript = [this](std::string_view code) -> dwe::core::Result<void> {
           scripts.emplace_back(code);
@@ -137,6 +143,20 @@ TEST_CASE("control requests are read with their fields, and wrong ones say why")
   CHECK(problem("not json").contains("json:"));
   // The id comes back even when the rest of the request is wrong.
   CHECK(writeJson(parseControlRequest(R"({"id":[1,2],"cmd":"x"})").id) == "[1,2]");
+}
+
+TEST_CASE("the status gives the textures and the GPU memory the game reports") {
+  FakeGame game;
+  ControlHost host = game.host();
+  host.status = [] {
+    return ControlStatus{.mode = "field", .map = "twna01", .textures = 812, .gpuBytes = 9437184};
+  };
+  RemoteControl control{std::move(host)};
+  control.receive(R"({"id":1,"cmd":"status"})");
+  const auto replies = control.takeReplies();
+  REQUIRE(replies.size() == 1);
+  CHECK(replies[0] == R"({"id":1,"ok":true,"tick":0,"paused":false,"mode":"field","map":"twna01",)"
+                      R"("held":[],"pending":0,"textures":812,"gpu_bytes":9437184})");
 }
 
 TEST_CASE("the dispatcher answers at once what needs no ticks") {
