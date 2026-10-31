@@ -116,8 +116,7 @@ GridMove moveOnGrid(const MapCollision& collision, glm::vec3 position, glm::vec2
   return move;
 }
 
-bool stepCollides(const MapCollision& collision, glm::vec3 position, glm::vec2 step,
-                  float radius) {
+bool stepCollides(const MapCollision& collision, glm::vec3 position, glm::vec2 step, float radius) {
   constexpr float Still = 0.5F;
   const float x = position.x + step.x;
   const float z = position.z + step.y;
@@ -267,23 +266,31 @@ public:
     constexpr auto Origin = static_cast<float>(GridOrigin * 2);
     const auto nearU = static_cast<std::int32_t>(std::floor((from.x / LatticeStep) + Origin));
     const auto nearV = static_cast<std::int32_t>(std::floor((from.z / LatticeStep) + Origin));
-    for (std::int32_t dv = 0; dv <= 1; ++dv) {
-      for (std::int32_t du = 0; du <= 1; ++du) {
-        const LatticePoint seed{.u = nearU + du, .v = nearV + dv};
-        if (!insideLattice(seed) || !usable(seed, isGoal(seed))) {
-          continue;
+    // A character that stands closer to a wall than its probe (a map's arrival point can) walks
+    // off it, the probe sliding along the wall: when no point around is reached straight, the
+    // usable ones are.
+    for (const bool straight : {true, false}) {
+      for (std::int32_t dv = 0; dv <= 1; ++dv) {
+        for (std::int32_t du = 0; du <= 1; ++du) {
+          const LatticePoint seed{.u = nearU + du, .v = nearV + dv};
+          if (!insideLattice(seed) || !usable(seed, isGoal(seed))) {
+            continue;
+          }
+          const glm::vec3 position = latticePosition(seed);
+          const GridMove move =
+              moveOnGrid(*collision_, from, {position.x - from.x, position.z - from.z}, radius_);
+          if (straight && (move.blockedX || move.blockedZ)) {
+            continue;
+          }
+          const int seedCost = static_cast<int>(std::lround(
+              glm::distance(from, position) / LatticeStep * static_cast<float>(StraightCost)));
+          const std::size_t index = latticeIndex(seed);
+          cost[index] = seedCost;
+          open.emplace(seedCost + heuristic(seed), index);
         }
-        const glm::vec3 position = latticePosition(seed);
-        const GridMove move =
-            moveOnGrid(*collision_, from, {position.x - from.x, position.z - from.z}, radius_);
-        if (move.blockedX || move.blockedZ) {
-          continue;
-        }
-        const int seedCost = static_cast<int>(std::lround(
-            glm::distance(from, position) / LatticeStep * static_cast<float>(StraightCost)));
-        const std::size_t index = latticeIndex(seed);
-        cost[index] = seedCost;
-        open.emplace(seedCost + heuristic(seed), index);
+      }
+      if (!open.empty()) {
+        break;
       }
     }
 

@@ -28,7 +28,9 @@ if (auto change = field.takeMapChange()) {
 
 - **Entrada** (`FieldInput`): `stick` es una dirección relativa a la cámara del mapa (x a la derecha de la pantalla,
   y hacia el fondo), de longitud 0 a 1; `run` corre; `moveTarget` es el clic para ir, que sigue un camino A* por la
-  rejilla hasta llegar, hasta que se use el stick o hasta `cancelTarget`.
+  rejilla hasta llegar, hasta que se use el stick o hasta `cancelTarget`. El camino sale también de un punto más
+  cerca de una pared que la sonda del personaje (la llegada de mgen12 desde mgen11): si ningún punto de alrededor se
+  alcanza en línea recta, valen los que se pueden pisar.
 - **Estado**: `mapId()`, `player()` y `partner()` (posición, yaw y movimiento), `collision()` para el minimapa,
   `path()` y `cameraForward()` para depurar. Cada tick, `AnimationIntent` de las dos entidades dice qué animación
   poner (quieto, andar, correr) y a qué velocidad, y `Transform` guarda la posición anterior para interpolar.

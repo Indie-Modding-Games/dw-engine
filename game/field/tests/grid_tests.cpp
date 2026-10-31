@@ -185,6 +185,19 @@ TEST_CASE("paths go around walls through passages a character fits in") {
   CHECK_FALSE(findPath(map.collision, from, goal, Radius).empty());
 }
 
+TEST_CASE("a path starts from a spot closer to a wall than the character's probe") {
+  // mgen12's arrival from mgen11 (x -40, z -663 on the original's axes) stands 40 units from the
+  // wall east of it, less than half the probe: no point around it is reached straight, and the
+  // character still walks off along the wall.
+  auto map = roomMap("room");
+  fill(map, {.column = 50, .row = 0}, {.column = 50, .row = 99}, Blocked);
+  const glm::vec3 from{-40.0F, 0.0F, 663.0F};
+  const std::vector<CollisionCell> goal{{.column = 40, .row = 56}};
+  const auto path = findPath(map.collision, from, goal, Radius);
+  REQUIRE_FALSE(path.empty());
+  CHECK(path.back() == dwe::assets::collisionCellCenter(goal[0]));
+}
+
 TEST_CASE("a path goes to the nearest of several goals") {
   auto map = roomMap("room");
   const glm::vec3 from{0.0F, 0.0F, 0.0F};
