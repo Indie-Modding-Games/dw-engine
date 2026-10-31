@@ -273,7 +273,13 @@ dibujan como primitivas sobre la escena (`ScenePrimDrawer`), con las piezas de l
   `DOOA_spawnBoneShards`); los trozos caen al suelo (`DOOA_updateShards`).
 - De 0xC0 a 0xD0 el compañero se aplasta y estira con `DOOA_DISSOLVE_SCALE_CURVE` y, pasado 300, salta altura + 100.
 - De 0xD2 a 0x135, un destello por cuadro baja desde encima de la cabeza hasta el suelo meciéndose 10 a cada lado
-  (modo 0, 8 cuadros, gris 60 + `rand() % 100`); en 0x135 los trozos empiezan a parpadear.
+  (modo 0, 8 cuadros, gris 60 + `rand() % 100`); en 0x135 los trozos empiezan a parpadear. Igual, medido en el
+  original (2026-10-31, estado `death_dooa_light_start`): 7 destellos vivos a la vez (progreso 1 a 7), profundidad
+  2512 y distancia de proyección 993 en el primero, escala 84, 167, 240, 298, 336, 358 (mitad de 6 a 23 píxeles);
+  en pantalla, halo de 40 píxeles y centro blanco de 20 en 320 × 240. dwe da las mismas escalas y, a 1280 × 720,
+  122 y 64 píxeles (41 y 21 del original). Antes salía tres veces más pequeño: con el campo oculto el mapa nuevo
+  de `changeToDeathMap` no se preparaba y su cámara se quedaba en 320 × 240, así que las primitivas de la escena se
+  dibujaban a escala 1 (`MapRenderer::setMap` conserva ahora el tamaño de la ventana).
 - En el renacer los trozos suben en espiral en el cuadro 10 y se cierran sobre el huevo en el 100 (`DOOA_setShardState`
   1 y 3). El huevo de `TAMA.TMD` (el del bebé, 6 piezas) sale en alambre desde el cuadro 1 y se rellena de 101 a 131;
   en 132 se quitan los trozos y hasta 152 hay un destello por cuadro sobre el huevo y rayos (`DOO2_renderSparkStreak`).

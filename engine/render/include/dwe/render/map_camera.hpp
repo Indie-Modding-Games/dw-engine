@@ -53,6 +53,9 @@ struct BackgroundPoint {
 class MapCamera {
 public:
   explicit MapCamera(const MapCameraDesc& desc);
+  // A camera for a viewport already known: a new map keeps the window's size, which the renderer
+  // only learns again when it next prepares the map (not while the scenery is hidden).
+  MapCamera(const MapCameraDesc& desc, glm::vec2 viewport);
 
   // Sets the viewport size in pixels and keeps the current focus. Sizes below one pixel count as
   // one.

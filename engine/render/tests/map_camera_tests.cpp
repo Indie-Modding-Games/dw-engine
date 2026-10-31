@@ -278,6 +278,19 @@ TEST_CASE("any viewport shows at least the original's window, wider or taller, n
   }
 }
 
+// The death scene hides the scenery while it changes map (DOOA_tickDissolve, changeToDeathMap):
+// the new map's camera is never prepared then, and its pixel scale sizes the scene's glows.
+TEST_CASE("a camera made for a known viewport has its scale and picture from the start") {
+  const MapCamera camera{mapCameraDesc(room), {1280.0F, 720.0F}};
+  CHECK(camera.scale() == doctest::Approx(3.0F));
+  CHECK(camera.viewportSize().x == doctest::Approx(1280.0F));
+  CHECK(camera.visibleSize().y == doctest::Approx(240.0F));
+  const auto point = camera.projectToBackground(mapCameraDesc(room).target);
+  REQUIRE(point.has_value());
+  CHECK(point.value_or(BackgroundPoint{}).pixel.x ==
+        doctest::Approx(camera.desc().backgroundSize.x / 2.0F));
+}
+
 TEST_CASE("the window follows the focus and stops at the background's edges") {
   MapCamera camera{mapCameraDesc(town)};
   camera.setViewport({1920.0F, 1080.0F});

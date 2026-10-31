@@ -43,6 +43,10 @@ MapCamera::MapCamera(const MapCameraDesc& desc)
   setViewport(OriginalScreenSize);
 }
 
+MapCamera::MapCamera(const MapCameraDesc& desc, glm::vec2 viewport) : MapCamera(desc) {
+  setViewport(viewport);
+}
+
 void MapCamera::setViewport(glm::vec2 size) {
   viewport_ = glm::max(size, glm::vec2{1.0F});
   scale_ = std::min(viewport_.x / OriginalScreenSize.x, viewport_.y / OriginalScreenSize.y);

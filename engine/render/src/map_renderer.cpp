@@ -198,7 +198,7 @@ void MapRenderer::releaseMap() {
   paletteRows_.clear();
   spriteTextures_.clear();
   placements_.clear();
-  camera_ = MapCamera{MapCameraDesc{}};
+  camera_ = MapCamera{MapCameraDesc{}, camera_.viewportSize()};
   hasMap_ = false;
   layers_ = {};
 }
@@ -257,7 +257,7 @@ core::Result<void> MapRenderer::setMap(const MapSceneData& scene, std::size_t va
   }
   placements_ = images.sprites.placements;
 
-  camera_ = MapCamera{scene.camera};
+  camera_ = MapCamera{scene.camera, camera_.viewportSize()};
   hasMap_ = true;
   if (scene.document.objects) {
     layers_ = MapDepthLayers{*scene.document.objects, camera_};
