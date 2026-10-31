@@ -373,7 +373,7 @@ findEFEDATFile = { status = "no-aplica", note = "lectura del disco", what = "Bus
 initializeEFE = { status = "no-aplica", note = "preparación del original", what = "Prepara el sistema de efectos." }
 getEFEDATEntry = { status = "no-aplica", note = "lectura del disco", what = "Da una entrada del fichero de efectos." }
 fillEFEXTable = { status = "no-aplica", note = "tabla de saltos del original", what = "Rellena la tabla de órdenes de efecto." }
-translateConditionFXToEntity = { status = "parcial", dwe = "apps/game/src/field_scene_fx.cpp", note = "solo la mariposa del compañero en el campo (CONDITION_FX_OFFSETS en la tabla de especies: condition_fx)", what = "Pega un efecto de estado a la posición de un personaje." }
+translateConditionFXToEntity = { status = "parcial", dwe = "apps/game/src/field_scene_status.cpp", note = "la mariposa del compañero y el veneno y la confusión del combate (CONDITION_FX_OFFSETS en la tabla de especies: condition_fx); la burbuja de necesidad del campo aún no toma la x y la z del punto (renderConditionBubble)", what = "Pega un efecto de estado a la posición de un personaje." }
 doSomethingWithSomePoints = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:47", what = "Prueba si un golpe en línea cruza la caja de un luchador." }
 DOOA_storeDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Guarda la altura de la criatura para la escena de renacer." }
 DOOA_getStoredDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Lee la altura guardada para la escena de renacer." }

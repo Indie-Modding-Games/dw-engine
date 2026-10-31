@@ -56,8 +56,9 @@ constexpr float BubbleFrameWidth = 16.0F;
 // renderSprite(..., 0x4EA4, 0x4EA4): scale 0x4EA4 * VIEWPORT_DISTANCE / depth, so a texel is
 // 0x4EA4 / 4096 world units whatever the depth.
 constexpr float BubbleTexelUnits = 0x4EA4 / One;
-// It rises from 50 to 200 units over the head and sways 20 units across the screen, 0x500 of _sin
-// (two and a half turns) over its 40 frames; drawn only between depths 0x200 and 0x10000.
+// It rises from 50 to 200 units over the condition point and sways 20 units across the screen,
+// 0x500 of _sin (two and a half turns) over its 40 frames; drawn only between depths 0x200 and
+// 0x10000.
 constexpr float BubbleRiseFrom = 0x32;
 constexpr float BubbleRiseTo = 0xC8;
 constexpr float BubbleSwayTurn = 0x500;
@@ -65,9 +66,9 @@ constexpr float BubbleSway = 0x14;
 constexpr float NearestDepth = 0x200;
 constexpr float FarthestDepth = 0x10000;
 
-// model/etcdat/feel_ef: three objects 0x78 units around and 0x78 over the head, a third of a turn
-// apart (0xAA of _sin), each turned by its roll, the spin and a third more (0x555), tilted 0xE3
-// about z (BTL_renderConfusionEffect; BTL_CONFUSION_SCALE is 1).
+// model/etcdat/feel_ef: three objects 0x78 units around and 0x78 over the condition point, a
+// third of a turn apart (0xAA of _sin), each turned by its roll, the spin and a third more (0x555),
+// tilted 0xE3 about z (BTL_renderConfusionEffect; BTL_CONFUSION_SCALE is 1).
 constexpr std::string_view ConfusionModel = "model/etcdat/feel_ef";
 constexpr float ConfusionRadius = 0x78;
 constexpr float ConfusionLift = 0x78;
@@ -260,8 +261,14 @@ std::optional<FieldScene::StatusAnchor> FieldScene::statusAnchor(std::size_t fig
   if (actor == nullptr) {
     return std::nullopt;
   }
-  return StatusAnchor{.feet = world_.registry().get<scene::Transform>(actor->entity).position,
-                      .body = body};
+  const glm::vec3 feet = world_.registry().get<scene::Transform>(actor->entity).position;
+  // translateConditionFXToEntity: the node of CONDITION_FX_OFFSETS with its offset turned by the
+  // node's matrix; a species without one (a pack's new species) hangs them over its height.
+  const glm::vec3 top = feet + glm::vec3{0.0F, static_cast<float>(body.height), 0.0F};
+  const std::optional<glm::vec3> condition =
+      body.conditionFx ? nodePoint(*actor, body.conditionFx->first, body.conditionFx->second)
+                       : std::nullopt;
+  return StatusAnchor{.feet = feet, .condition = condition.value_or(top), .body = body};
 }
 
 void FieldScene::addStatusBillboards(std::vector<render::MapBillboard>& billboards) {
@@ -271,8 +278,6 @@ void FieldScene::addStatusBillboards(std::vector<render::MapBillboard>& billboar
   const render::MapCamera& camera = mapRenderer_->camera();
   const glm::mat4& view = camera.view();
   const glm::vec3 right{view[0][0], view[1][0], view[2][0]};
-  // translateConditionFXToEntity: CONDITION_FX_OFFSETS is not in the content, so the visuals hang
-  // over the top of the body (its species' height) rather than at the species' own node.
   for (const auto& slot : statusVisuals_->bubbles()) {
     if (!slot) {
       continue;
@@ -286,10 +291,9 @@ void FieldScene::addStatusBillboards(std::vector<render::MapBillboard>& billboar
     const auto frames = static_cast<float>(StatusVisuals::BubbleFrames);
     const float sway =
         std::sin(sineRadiansOf(lerp(0.0F, BubbleSwayTurn, frames, frame))) * BubbleSway;
-    const glm::vec3 centre = anchor->feet +
+    const glm::vec3 centre = anchor->condition +
                              glm::vec3{static_cast<float>(slot->offsetX),
-                                       static_cast<float>(anchor->body.height) +
-                                           lerp(BubbleRiseFrom, BubbleRiseTo, frames, frame),
+                                       lerp(BubbleRiseFrom, BubbleRiseTo, frames, frame),
                                        -static_cast<float>(slot->offsetZ)} +
                              (right * sway);
     const float depth = camera.viewDepth(centre);
@@ -402,12 +406,11 @@ void FieldScene::submitStatusModels() {
       }
       for (std::int32_t object = 0; object < 3; ++object) {
         const auto angle = static_cast<float>(slot->angle + (object * ConfusionApart));
-        const glm::vec3 offset{std::sin(sineRadiansOf(angle)) * ConfusionRadius,
-                               -(static_cast<float>(anchor->body.height) + ConfusionLift),
+        const glm::vec3 offset{std::sin(sineRadiansOf(angle)) * ConfusionRadius, -ConfusionLift,
                                std::cos(sineRadiansOf(angle)) * ConfusionRadius};
         const std::int32_t facing = slot->offsets.at(static_cast<std::size_t>(object)) +
                                     slot->spin + ConfusionFacing + (object * ConfusionThird);
-        submit(*model, anchor->feet + worldOf(offset), rotationYZ(facing, ConfusionTilt));
+        submit(*model, anchor->condition + worldOf(offset), rotationYZ(facing, ConfusionTilt));
       }
     }
   }

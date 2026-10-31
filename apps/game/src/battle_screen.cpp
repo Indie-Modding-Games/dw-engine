@@ -282,6 +282,13 @@ void BattleScreen::showStatusVisuals() const {
     if (row != nullptr) {
       body.height = row->height;
       body.radius = row->radius;
+      if (row->conditionFx) {
+        const auto& offset = row->conditionFx->offset;
+        body.conditionFx =
+            std::pair{row->conditionFx->node,
+                      glm::vec3{static_cast<float>(offset[0]), static_cast<float>(offset[1]),
+                                static_cast<float>(offset[2])}};
+      }
     }
     bodies.push_back(body);
   }

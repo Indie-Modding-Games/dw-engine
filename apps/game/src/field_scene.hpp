@@ -354,6 +354,9 @@ public:
     std::optional<std::int32_t> npc;
     std::int32_t height = 0;
     std::int32_t radius = 0;
+    // CONDITION_FX_OFFSETS of its species: the model node and the offset from it (original axes)
+    // the poison and the confusion hang from; nothing for a species without one.
+    std::optional<std::pair<std::uint32_t, glm::vec3>> conditionFx;
   };
   // What the fighters' statuses show over them (game::battle::StatusVisuals), with the fighters by
   // their battle ids; nothing outside a battle (field_scene_status.cpp).
@@ -533,9 +536,12 @@ private:
   const EffectModelEntry* statusModel(std::string_view model);
   void addStatusBillboards(std::vector<render::MapBillboard>& billboards);
   void submitStatusModels();
-  // Where a fighter's status visuals hang: its actor's position (world axes) and its body.
+  // Where a fighter's status visuals hang: its actor's position (world axes), the point of its
+  // species' CONDITION_FX_OFFSETS (translateConditionFXToEntity; the top of the body without one)
+  // and its body.
   struct StatusAnchor {
     glm::vec3 feet{0.0F};
+    glm::vec3 condition{0.0F};
     StatusBody body;
   };
   [[nodiscard]] std::optional<StatusAnchor> statusAnchor(std::size_t fighter) const;
