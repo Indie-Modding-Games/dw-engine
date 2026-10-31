@@ -149,6 +149,27 @@ TEST_CASE("the yes writes the place to variables 247 and 248 and takes its price
   CHECK(bird.story->state().variable(248).value_or(0) == 9);
 }
 
+TEST_CASE("a place the story lock keeps closed is red and cannot be picked, so no bits go") {
+  // Coordinator's decision (2026-10-31): the port's stage lock must never take the money and leave
+  // the player in the carrier's house. With the canyon (map 0x26) open and the dino region (0x4f)
+  // closed, the dino region is red although the money pays for it.
+  const Transport bird;
+  REQUIRE(bird.story->state().setTrigger(CanyonTrigger, true));
+  REQUIRE(bird.story->state().setTrigger(DinoTrigger, true));
+  bird.setMoney(1800);
+  REQUIRE(bird.transport->open([](std::int32_t map) { return map == 0x26; }));
+  const auto& rows = bird.transport->rows();
+  REQUIRE(rows.size() == 2);
+  CHECK(rows[0].pickable());
+  CHECK(rows[1].affordable);
+  CHECK_FALSE(rows[1].open);
+  CHECK_FALSE(rows[1].pickable());
+  CHECK_FALSE(bird.transport->pick(1));
+  CHECK_FALSE(bird.transport->picked());
+  CHECK(bird.inventory->inventory().money() == 1800);
+  CHECK(bird.transport->pick(0));
+}
+
 TEST_CASE("cancel answers no to the yes-or-no unless trigger 0x31 is set") {
   const Transport bird;
   REQUIRE(bird.transport->open());

@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -75,15 +76,26 @@ struct BirdTransportRules {
 core::Result<BirdTransportRules> readBirdTransportRules(const ruleset::Section& section);
 
 // A row of the menu (birdraFillTargetList, calculateBirdramonMenuStrings): the destination's place
-// in the rules and whether the money pays for it (the 0x80 flag; red otherwise).
+// in the rules, whether the money pays for it (the 0x80 flag; red otherwise) and whether the port's
+// story lock lets the player be taken there (not a rule of the original: a closed place is red and
+// cannot be picked either, so the carrier never takes the money for a trip the lock stops).
 struct BirdRow {
   std::size_t destination = 0;
   bool affordable = false;
+  bool open = true;
+
+  [[nodiscard]] bool pickable() const { return affordable && open; }
 };
 
-// birdraFillTargetList: the destinations whose trigger is set, in the rules' order.
-[[nodiscard]] std::vector<BirdRow>
-birdRows(const BirdTransportRules& rules, const game::story::StoryState& story, std::int32_t money);
+// Whether the story lock lets the player be flown to a map, by the original's map index.
+using BirdPlaceOpen = std::function<bool(std::int32_t map)>;
+
+// birdraFillTargetList: the destinations whose trigger is set, in the rules' order. Without
+// `placeOpen` every place is open.
+[[nodiscard]] std::vector<BirdRow> birdRows(const BirdTransportRules& rules,
+                                            const game::story::StoryState& story,
+                                            std::int32_t money,
+                                            const BirdPlaceOpen& placeOpen = {});
 
 struct BirdTransportDesc {
   // The mounted packs, for script/maphead; they must outlive the transport.
@@ -113,7 +125,8 @@ public:
   core::Result<void> startNewGame(GameSession& session) override;
 
   // tickBirdraTransport state 0: the list. False (closed) without rules, money or story.
-  bool open();
+  // `placeOpen` (the story lock) marks the places the player may not be taken to.
+  bool open(const BirdPlaceOpen& placeOpen = {});
   void close();
   [[nodiscard]] bool isOpen() const { return open_; }
   [[nodiscard]] bool available() const { return rules_.has_value(); }
@@ -122,7 +135,7 @@ public:
   [[nodiscard]] const std::vector<BirdRow>& rows() const { return rows_; }
   [[nodiscard]] std::int32_t money() const;
   // tickBirdraTransportMenu's confirm: a row the money pays for is picked and the carrier asks;
-  // false for one it does not (the refusal sound).
+  // false for one it does not, or one the story lock keeps closed (the refusal sound).
   bool pick(std::size_t row);
   [[nodiscard]] std::optional<std::size_t> picked() const { return picked_; }
   // State 5, the yes: the map and entry variables, the money; the MAPHEAD section the script goes

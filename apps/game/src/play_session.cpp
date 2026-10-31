@@ -4,11 +4,13 @@
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/game/battle/combatant.hpp>
+#include <dwe/game/inventory/inventory.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/scene/components.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/field_facts.hpp>
 #include <dwe/session/game_session.hpp>
+#include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_scenes.hpp>
 #include <dwe/ui/minimap.hpp>
@@ -360,7 +362,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
       birdScreen_({.transport = game_.systems.birdTransport,
                    .session = game_.session.get(),
                    .sound = game_.session->sound(),
-                   .ui = context.ui}),
+                   .ui = context.ui,
+                   .story = game_.systems.story}),
       cardShopScreen_({.shop = game_.systems.cardShop, .ui = context.ui}),
       meritShopScreen_(
           {.shop = game_.systems.meritShop, .session = game_.session.get(), .ui = context.ui}),
@@ -742,7 +745,15 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     if (write && game_.systems.story == nullptr) {
       write = core::fail(std::string{messages::NoStory});
     }
-    if (write) {
+    if (write && write->kind == StoryWrite::Kind::Money) {
+      if (game_.systems.inventory == nullptr) {
+        write = core::fail(std::string{messages::NoGame});
+      } else {
+        game::inventory::Inventory& bag = game_.systems.inventory->inventory();
+        bag.spendMoney(bag.money());
+        bag.addMoney(write->value);
+      }
+    } else if (write) {
       if (auto written = applyStoryWrite(game_.systems.story->state(), *write); !written) {
         write = std::unexpected{written.error()};
       }

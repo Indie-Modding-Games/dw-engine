@@ -54,7 +54,14 @@ bool BirdTransportScreen::take(const session::StoryScreenRequest& request,
     }
   }
   maps_ = scene.mapTable();
-  if (desc_.transport == nullptr || !desc_.transport->open()) {
+  session::BirdPlaceOpen placeOpen;
+  if (desc_.story != nullptr && desc_.story->lock().locks()) {
+    placeOpen = [this](std::int32_t map) {
+      const assets::MapEntry* entry = maps_ != nullptr ? maps_->findByOriginalIndex(map) : nullptr;
+      return entry != nullptr && desc_.story->lock().mapOpen(entry->id);
+    };
+  }
+  if (desc_.transport == nullptr || !desc_.transport->open(placeOpen)) {
     return true;
   }
   cursor_ = {};
@@ -248,7 +255,7 @@ screens::ScreenSettings BirdTransportScreen::settings() const {
     out.push_back({.name = screens::listEntryName(RowList, i, "cost"),
                    .value = static_cast<double>(place.cost)});
     out.push_back(
-        {.name = screens::listEntryName(RowList, i, "affordable"), .value = rows[i].affordable});
+        {.name = screens::listEntryName(RowList, i, "affordable"), .value = rows[i].pickable()});
   }
   return out;
 }

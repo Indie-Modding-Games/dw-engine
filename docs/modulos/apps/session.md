@@ -320,7 +320,10 @@ escribe el mapa y la entrada del destino en las variables 247 y 248, cobra el pr
 despedida, 6 «Are you sure?», 7 sí o no; la del cuadro de dinero, la 6 de 1220), las variables, la sección del viaje,
 el disparador que impide cancelar el sí o no (49), el sonido de rechazo (0, 11) y los seis destinos de
 `BIRDRA_TRANSPORT_TARGETS` (mapa, entrada, disparador y precio); sin ella la rutina se cierra al momento. La pantalla
-`bird_transport` del juego (`apps/game: BirdTransportScreen`) lo enseña.
+`bird_transport` del juego (`apps/game: BirdTransportScreen`) lo enseña. Con el candado de historia, `open(placeOpen)`
+marca además los destinos cuyo mapa cierra la etapa (`BirdRow::open`): salen en rojo como los que no se pagan y `pick`
+los rechaza igual, así el transportista nunca cobra un viaje que el candado no deja hacer (decisión del coordinador,
+2026-10-31; no es regla del original).
 
 ### Tienda de cartas (`CardShop`)
 

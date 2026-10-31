@@ -121,7 +121,7 @@ core::Result<BirdTransportRules> readBirdTransportRules(const ruleset::Section& 
 }
 
 std::vector<BirdRow> birdRows(const BirdTransportRules& rules, const game::story::StoryState& story,
-                              std::int32_t money) {
+                              std::int32_t money, const BirdPlaceOpen& placeOpen) {
   std::vector<BirdRow> rows;
   for (std::size_t at = 0; at < rules.destinations.size(); ++at) {
     const BirdDestination& place = rules.destinations[at];
@@ -129,7 +129,9 @@ std::vector<BirdRow> birdRows(const BirdTransportRules& rules, const game::story
       continue;
     }
     // The 0x80 flag: the cost is at most the money.
-    rows.push_back({.destination = at, .affordable = place.cost <= money});
+    rows.push_back({.destination = at,
+                    .affordable = place.cost <= money,
+                    .open = !placeOpen || placeOpen(place.map)});
   }
   return rows;
 }
@@ -170,7 +172,7 @@ std::int32_t BirdTransport::money() const {
   return desc_.inventory != nullptr ? desc_.inventory->inventory().money() : 0;
 }
 
-bool BirdTransport::open() {
+bool BirdTransport::open(const BirdPlaceOpen& placeOpen) {
   if (!rules_ || desc_.inventory == nullptr || desc_.story == nullptr) {
     core::logDebug("[port:bird] tickBirdraTransport (shop/script_menu.c:987): no bird_transport "
                    "section, money or story; the routine closes at once");
@@ -183,7 +185,7 @@ bool BirdTransport::open() {
       core::logWarning("[port:bird] resolveMapHeadEntry: {}", tables.error().message);
     }
   }
-  rows_ = birdRows(*rules_, desc_.story->state(), money());
+  rows_ = birdRows(*rules_, desc_.story->state(), money(), placeOpen);
   picked_.reset();
   open_ = true;
   core::logDebug("[port:bird] tickBirdraTransport (shop/script_menu.c:987): state 0, {} places",
@@ -198,7 +200,11 @@ void BirdTransport::close() {
 }
 
 bool BirdTransport::pick(std::size_t row) {
-  if (row >= rows_.size() || !rows_[row].affordable) {
+  if (row >= rows_.size() || !rows_[row].pickable()) {
+    if (row < rows_.size() && !rows_[row].open) {
+      core::logInfo("[port:story-lock] the bird transport keeps map {} closed",
+                    rules_->destinations[rows_[row].destination].map);
+    }
     return false;
   }
   picked_ = row;

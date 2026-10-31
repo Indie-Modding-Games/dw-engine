@@ -22,11 +22,16 @@ TEST_CASE("story_set reads a trigger or a variable write") {
   CHECK(variable->kind == StoryWrite::Kind::Variable);
   CHECK(variable->number == 1);
   CHECK(variable->value == 10);
+  const auto money = storyWriteFromText("money 1800");
+  REQUIRE(money);
+  CHECK(money->kind == StoryWrite::Kind::Money);
+  CHECK(money->value == 1800);
 }
 
 TEST_CASE("story_set refuses what it cannot write") {
-  for (const auto* text : {"", "var 1", "var 1 256", "var 1 -1", "var x 2", "trigger 86 yes",
-                           "flag 1 2", "var 1 2 3"}) {
+  for (const auto* text :
+       {"", "var 1", "var 1 256", "var 1 -1", "var x 2", "trigger 86 yes", "flag 1 2", "var 1 2 3",
+        "money", "money -1", "money 1000000", "money 5 5"}) {
     CAPTURE(text);
     CHECK_FALSE(storyWriteFromText(text));
   }

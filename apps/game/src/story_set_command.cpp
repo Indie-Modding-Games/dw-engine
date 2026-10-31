@@ -14,6 +14,8 @@ namespace dwe::app {
 namespace {
 
 constexpr std::int32_t ByteLimit = 255;
+// battle_ui.c and script_interp.c (ADD_MONEY): the bits never pass 999999.
+constexpr std::int32_t MoneyLimit = 999999;
 
 std::optional<std::int32_t> integerOf(std::string_view text) {
   std::int32_t value = 0;
@@ -35,8 +37,16 @@ core::Result<StoryWrite> storyWriteFromText(std::string_view text) {
   }
   const auto usage = [&] {
     return core::fail(
-        std::format("'{}': expected 'trigger <n> on|off' or 'var <n> <0-255>'", text));
+        std::format("'{}': expected 'trigger <n> on|off', 'var <n> <0-255>' or 'money <0-{}>'",
+                    text, MoneyLimit));
   };
+  if (words.size() == 2 && words[0] == "money") {
+    const auto bits = integerOf(words[1]);
+    if (!bits || *bits < 0 || *bits > MoneyLimit) {
+      return usage();
+    }
+    return StoryWrite{.kind = StoryWrite::Kind::Money, .number = 0, .value = *bits};
+  }
   if (words.size() != 3) {
     return usage();
   }
@@ -61,6 +71,9 @@ core::Result<StoryWrite> storyWriteFromText(std::string_view text) {
 core::Result<void> applyStoryWrite(game::story::StoryState& state, const StoryWrite& write) {
   if (write.kind == StoryWrite::Kind::Trigger) {
     return state.setTrigger(write.number, write.value != 0);
+  }
+  if (write.kind == StoryWrite::Kind::Money) {
+    return core::fail(std::string{"money goes to the bag, not to the story's state"});
   }
   return state.setVariable(write.number, static_cast<std::uint8_t>(write.value));
 }

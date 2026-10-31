@@ -323,13 +323,14 @@ flechas para moverse, Intro para confirmar, Esc para cancelar).
 | `bird.phase` | texto | `greeting`, `list`, `confirm`, `choice`, `farewell` o `closed` |
 | `bird.{speaker,player,line_key,bits_key}` | texto, claves | Quién habla (en el sí o no, el nombre del jugador), la frase (MAPHEAD 1238) y la del cuadro de dinero |
 | `bird.{money,cursor,choice,total}` | números | El dinero, la fila del cursor, la respuesta marcada (0 sí, 1 no) y cuántas filas hay |
-| `bird.row.<i>.{name,cost,affordable}` | clave, número, booleano | Cada destino: el nombre del mapa, el precio y si el dinero lo paga |
+| `bird.row.<i>.{name,cost,affordable}` | clave, número, booleano | Cada destino: el nombre del mapa, el precio y si se puede elegir (el dinero lo paga y el candado de historia no cierra su mapa) |
 
 | Comportamiento | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
 | Ventana de la lista | De (90, 13) a (309, 149); PLACE en (8, 6) y POINT en (162, 6) (`ITEM_MENU_HEADER_UVS` 6 y 7); raya en y 15; seis filas cada 18 px desde (8, 20); el precio acaba en x 196 y el nombre se corta donde empieza; cursor de 202 × 18 en (5, 18); barra de 5 px en x 210 de y 26 a 121 | `bird_transport/structure.rcss` con esas medidas × 3 | Ruta de room12 | Igual |
 | Cuadro de dinero | `createShopBitsBox`: de (8, 15) a (89, 47), «Bits» desde x 30 y el dinero alineado a la derecha | `#bits-box` | Ruta de room12 | Igual |
 | Destino que no se puede pagar | Sin el bit 0x80: en rojo (color 3); confirmar suena `playSound(0, 0xb)` y no pasa nada | Fila `unaffordable` en rojo; `refuse_sound` | `birdraFillTargetList lists…`; ruta de room12 | Igual |
+| Destino cerrado por el candado de historia | No existe (el original no tiene candado) | En rojo como uno que no se paga; confirmar suena el rechazo y no cobra (`BirdRow::open`) | `a place the story lock keeps closed…`; `route-etapa4-birdramon` | Mejora del port (decisión del coordinador, 2026-10-31) |
 | Nombre del destino | `MAP_NAME_PTR` del mapa, sin los espacios del cartel | La clave del nombre del mapa (`mapNameKeyOf`), recortada | Ruta de room12 | Igual |
 | Sí o no | `showMapheadSelection(7, 0xfd, 2)`: habla el jugador; arriba y abajo dan la vuelta; cancelar es «no» salvo con el disparador 0x31 (entonces suena 0xb) | Fase `choice` con esas reglas | `cancel answers no…` | Igual |
 | El sí | Estado 5: 247 = mapa, 248 = entrada, el dinero baja el precio y el guion salta a MAPHEAD 0x4e3 | `travel()` y `screenClosed(salto)` | `the yes writes the place…`, `routine 10 waits…`; ruta de room12 (llega a koda00 con 300 bits) | Igual |

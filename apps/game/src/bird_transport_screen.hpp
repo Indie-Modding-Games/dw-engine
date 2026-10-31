@@ -6,6 +6,7 @@
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/bird_transport.hpp>
 #include <dwe/session/game_session.hpp>
+#include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_scenes.hpp>
 #include <dwe/ui/ui.hpp>
 
@@ -36,13 +37,17 @@ struct BirdTransportScreenDesc {
   const session::GameSession* session = nullptr;
   game::story::SoundPort* sound = nullptr;
   ui::Ui* ui = nullptr;
+  // The story lock: a place on a map it keeps closed is red and cannot be picked. Without it every
+  // place is open.
+  const session::StoryAdapter* story = nullptr;
 };
 
 // The bird transport the story opens (call_routine 10 -> shop/script_menu.c: tickBirdraTransport,
 // createBirdraTransportMenu, tickBirdraTransportMenu, renderBirdraTransportMenu,
 // calculateBirdramonMenuStrings), on the bird_transport document: the carrier asks where to, the
 // money box and the list of places with their price come up, the player picks one he can pay
-// for, the carrier asks again and the player says yes or no. The yes pays and the story goes on
+// for, the carrier asks again and the player says yes or no. A place the story lock keeps closed is
+// red like one the money does not pay for. The yes pays and the story goes on
 // at the MAPHEAD section that flies him there; the no or cancel get the farewell. The field and
 // the game time wait meanwhile.
 class BirdTransportScreen {
