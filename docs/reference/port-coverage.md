@@ -53,7 +53,7 @@ de inicio y los mapas cercanos, y reclutar.
 | 10 | El cuadro final del combate no dice la orden aprendida ni el bonus de MP | `battle_ui.c:297` `handleBattleEndBox`, `battle_hud.c` `BTL_appendCommandLearnedText`, `BTL_appendMPBonusText` | `apps/screens/include/dwe/screens/battle_view.hpp:116` |
 | 11 | Con la bolsa llena, recibir un objeto no pregunta cuál tirar: la rutina 0 se cierra al momento | `script_common.c:1815` `openDiscardItem` | `apps/session/src/story_routines/routine_discard_item.cpp` |
 | 12 | Sin medallas ni la escena de premio (medalla o nivel del jugador) | `script_common.c:3026` `unlockMedal`, `tamer.c:721` `checkMedalConditions`, `:793` `checkPendingAwards`, `:1751` `tamerTickAwardSomething` | — |
-| 13 | El cuadro del dinero que abre un diálogo no sale: la rutina 15 se cierra al momento (la tienda ya enseña el suyo; la guardarropía de objetos, la gramola, el intercambio por méritos, el trueque, las cartas y el humo de un personaje que desaparece ya están portados) | `script_common.c:1757` `createShopBitsBox` (rutina 15) | `apps/game/src/story_scene_glue.cpp:86`; `apps/session/src/story_routines/routine_money_box.cpp` |
+| 13 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, gramola, intercambio por méritos, trueque, cartas, el cuadro del dinero y el humo de un personaje que desaparece | `shop/script_menu.c` `tickItemKeeper`, `openJukebox`, `openMeritShop`, `openMojyamonShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox`; `overworld.c:777` `createNinjamonEffect` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 2, 9, 11, 14, 15 y 38 |
 | 14 | El compañero infeliz se distrae, pero no se ve la mariposa que persigue | `butterfly.c` `setButterfly`, `tickButterfly` | `game/partner/src/partner_tick.cpp:313` |
 | 15 | No hay partículas de curación al usar un objeto ni partículas de objeto en combate | `particle.c` `addHealingParticleEffect`, `tickHealingParticles`; `battle_effect.c` `BTL_addItemParticles` | — |
 | 16 | La pesca: la cámara no va al corcho ni se mueve con la cruceta, el sedal y las ondas no se dibujan, y el cebo es un marcador | `fish/fish.c` `FISH_panCameraTo`, `FISH_panCameraWithDPad`, `FISH_clipLineToRect`, `FISH_tickRipple`, `FISH_showBaitSprite` | `apps/game/src/fishing_screen.cpp:50`, `:231` |
@@ -85,7 +85,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 145 | 4 | 5 | 17 | 95 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 194 | 5 | 31 | 55 | 85 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
-| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 68 | 0 | 6 | 28 | 92 % |
+| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 69 | 0 | 6 | 27 | 92 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 88 | 3 | 4 | 50 | 94 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 74 | 1 | 3 | 46 | 96 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1075 | 40 | 253 | 1070 | 80 % |
+| **Total** | 2438 funciones | 1076 | 40 | 253 | 1069 | 80 % |
 
 ## Batalla
 
@@ -202,7 +202,7 @@ Los personajes del mapa y su IA de paseo, cofres, objetos del suelo y decorados 
 
 Ficheros del decomp: `main/anim.c`, `main/bubble.c`, `main/butterfly.c`, `main/drop_shadow.c`, `main/map_object.c`, `main/model.c`, `main/overworld.c`, `main/world_object.c`.
 
-Portado 68, parcial 0, falta 6, no aplica 28.
+Portado 69, parcial 0, falta 6, no aplica 27.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -213,7 +213,7 @@ Portado 68, parcial 0, falta 6, no aplica 28.
 | `tickCloseChestTray` | `main/map_object.c:1096` | falta | Anima la tapa del cofre al cerrarse. | — |
 | `activateMedalTexture` | `main/map_object.c:1193` | falta (citada en docs) | Pone la textura de la medalla ganada. | — |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (7); gráficos, memoria o ficheros del hardware original: los sustituye el motor (5); limpieza de objetos y memoria del original: el motor libera lo suyo (3); consulta interna (2); animación del original; el motor anima sus clips (1); recorte de dibujo (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); estado de dibujo (1); modelo vacío del original (1); preparación de modelos (1); lectura del disco; los modelos los extrae dwx (1); subida de textura del original (1); limpieza del original (1); tabla de objetos del original (1); bucle de objetos del original; el motor tiene su bucle (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (6); gráficos, memoria o ficheros del hardware original: los sustituye el motor (5); limpieza de objetos y memoria del original: el motor libera lo suyo (3); consulta interna (2); animación del original; el motor anima sus clips (1); recorte de dibujo (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); estado de dibujo (1); modelo vacío del original (1); preparación de modelos (1); lectura del disco; los modelos los extrae dwx (1); subida de textura del original (1); limpieza del original (1); tabla de objetos del original (1); bucle de objetos del original; el motor tiene su bucle (1).
 
 ## Compañero: IA y cuidado
 

@@ -223,11 +223,19 @@ cambiar de mapa.
   al pasar de x 160, los pone en la entrada 10 de la tabla de orden (`MapDepthLayers::setOrderValue`) y los esconde a
   los 60 cuadros.
 
+Medido en el original (2026-10-31): las nubes y chispas del gimnasio (`TRN_tickDefenseTraining`, estado
+`trn_def_normal_bonus`) las crea una rutina de la lista de objetos y `tickObjects` las avanza el mismo cuadro, así que
+se dibujan por primera vez en el estado 1 (la chispa enseña su destello en el segundo cuadro dibujado y dura uno menos);
+la nube de una caca (`createPoopPile`) se dibuja primero en el estado 0. `FieldEffects::Birth` lo distingue. Igual: la
+partícula 0 del anillo de curación divide 512 entre 0 (`512 / (i * 13 / 4)`); el código del original no comprueba el
+divisor (`div` sin `break`) y la división del procesador da -1 con un dividendo positivo, que es lo que se toma.
+
 Suposiciones:
 
 - Las 50 direcciones de las partículas y los números al azar usan una semilla propia, no la del juego.
-- La partícula 0 del anillo de curación divide por cero en el original (`512 / (i * 13 / 4)`); se toma -1.
 - Una especie nueva sin `condition_fx` no tiene mariposa.
+- La mariposa no se ha medido en pantalla (el estado de solo enfurruñado no se pudo forzar por RAM); sus números son
+  los de `renderButterfly`.
 
 ## Muerte y renacer
 

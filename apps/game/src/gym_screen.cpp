@@ -342,14 +342,17 @@ public:
     field.placeByScript(field.partnerEntity(), position);
   }
   std::string partnerSpecies() override { return desc_->session->partner().state().species; }
-  // efe.c: createCloudFX, createParticleFX(0, 0, point, NULL, 0) and removeAllCloudFX.
-  void addCloud(Point at) override { desc_->scene->fieldEffects().addCloud(at.x, at.z); }
+  // efe.c: createCloudFX, createParticleFX(0, 0, point, NULL, 0) and removeAllCloudFX, from the
+  // training's routine, one of the original's objects.
+  void addCloud(Point at) override {
+    desc_->scene->fieldEffects().addCloud(at.x, at.z, FieldEffects::Birth::InObjects);
+  }
   void addParticle(Point3 at) override {
     // A point without a height is at the partner's (its location.vy).
     const std::int32_t y =
         at.atPartnerHeight ? -static_cast<std::int32_t>(desc_->scene->field().partner().position.y)
                            : at.y;
-    desc_->scene->fieldEffects().addSpark(0, 0, {at.x, y, at.z}, 0);
+    desc_->scene->fieldEffects().addSpark(0, 0, {at.x, y, at.z}, 0, FieldEffects::Birth::InObjects);
   }
   void removeClouds() override { desc_->scene->fieldEffects().removeClouds(); }
   void closeTextbox() override { static_cast<void>(desc_->story->dialogue().closeBox(0)); }

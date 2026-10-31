@@ -377,7 +377,7 @@ translateConditionFXToEntity = { status = "parcial", dwe = "apps/game/src/field_
 doSomethingWithSomePoints = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:47", what = "Prueba si un golpe en línea cruza la caja de un luchador." }
 DOOA_storeDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Guarda la altura de la criatura para la escena de renacer." }
 DOOA_getStoredDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Lee la altura guardada para la escena de renacer." }
-tickHealingParticles = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "el anillo de la partícula 0 divide por cero: Suposición -1", what = "Mueve las partículas de curación al usar un objeto." }
+tickHealingParticles = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "el anillo de la partícula 0 divide por cero: el procesador da -1 (Igual)", what = "Mueve las partículas de curación al usar un objeto." }
 initializeHealingParticles = { status = "portado", dwe = "apps/game/src/field_effects.cpp", what = "Prepara las partículas de curación." }
 addHealingParticleEffect = { status = "portado", dwe = "apps/game/src/play_session.cpp", note = "qué objetos y si llevan anillo: inventory.yaml effects.healing_particles", what = "Lanza las partículas de curación sobre el compañero." }
 

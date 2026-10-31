@@ -247,15 +247,16 @@ std::int32_t FieldEffects::rand() {
   return static_cast<std::int32_t>(random_.next() & RandMask);
 }
 
-void FieldEffects::addCloud(std::int32_t x, std::int32_t z) {
+void FieldEffects::addCloud(std::int32_t x, std::int32_t z, Birth birth) {
   if (clouds_.size() >= MaxClouds) {
     return;
   }
-  clouds_.push_back({.x = x, .z = z, .state = 0});
+  // tickCloudFX the same frame when the maker is one of the objects.
+  clouds_.push_back({.x = x, .z = z, .state = birth == Birth::InObjects ? 1 : 0});
 }
 
 void FieldEffects::addSpark(std::int32_t kind, std::int32_t mode, OriginalPoint position,
-                            std::int32_t lifetime) {
+                            std::int32_t lifetime, Birth birth) {
   if (sparks_.size() >= MaxSparks) {
     return;
   }
@@ -282,6 +283,11 @@ void FieldEffects::addSpark(std::int32_t kind, std::int32_t mode, OriginalPoint 
   }
   spark.color = SparkColors.at(static_cast<std::size_t>(kind));
   spark.endFrame = lifetime + SparkEndExtra;
+  if (birth == Birth::InObjects) {
+    // tickParticleFX the same frame.
+    ++spark.state;
+    --spark.endFrame;
+  }
   sparks_.push_back(spark);
 }
 

@@ -117,6 +117,32 @@ TEST_CASE("field effects: a gym spark flashes on its second frame and spreads 25
   CHECK(effects.sparks().empty());
 }
 
+TEST_CASE("field effects: a gym's cloud and spark are first drawn a frame on, a pile's as made") {
+  // Measured in the original: TRN_tickDefenseTraining's createCloudFX and createParticleFX are run
+  // by tickObjects, which then ticks the new objects before renderObjects; createPoopPile's cloud
+  // is first drawn at state 0.
+  const FieldEffectView view = viewOf();
+  FieldEffects gym{Seed};
+  gym.addCloud(0, Ahead, FieldEffects::Birth::InObjects);
+  gym.addSpark(0, 0, {0, 0, Ahead}, 0, FieldEffects::Birth::InObjects);
+  CHECK(gym.clouds().front().state == 1);
+  CHECK(gym.sparks().front().state == 1);
+  // The spark's flash is on state 2: the next frame.
+  CHECK(countTexture(gym.draw(view), 4) == 0);
+  gym.tickFrame();
+  CHECK(countTexture(gym.draw(view), 4) == 8);
+  // It ends after the same 0x13 states, one frame sooner than one made outside the objects.
+  for (int frame = 2; frame < 0x12; ++frame) {
+    gym.tickFrame();
+  }
+  CHECK(gym.sparks().size() == 1);
+  gym.tickFrame();
+  CHECK(gym.sparks().empty());
+  FieldEffects pile{Seed};
+  pile.addCloud(0, Ahead);
+  CHECK(pile.clouds().front().state == 0);
+}
+
 TEST_CASE("field effects: the healing spiral drops from over the head and lasts 44 frames") {
   // particle.c: addHealingParticleEffect: y = -height - 70, radius * 12 / 10;
   // tickHealingParticles: one spiral particle a frame for 20 frames, lit 17 frames; the ring only

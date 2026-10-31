@@ -95,14 +95,20 @@ public:
   // The particles' 50 directions are rolled once, as initializeParticleFX does at boot.
   explicit FieldEffects(std::uint64_t seed);
 
+  // How a cloud or a spark comes: from a routine run by the original's object list (the gym's), so
+  // tickObjects also runs it on the frame it is made and it is first drawn one frame on (state 1),
+  // or from outside it (a pile of poop, createPoopPile), first drawn as made (state 0). Measured in
+  // the original: TRN_tickDefenseTraining's clouds and sparks, and createPoopPile's cloud.
+  enum class Birth : std::uint8_t { OutsideObjects, InObjects };
+
   // createCloudFX: at most 60 at once; the cloud's height is its own.
-  void addCloud(std::int32_t x, std::int32_t z);
+  void addCloud(std::int32_t x, std::int32_t z, Birth birth = Birth::OutsideObjects);
   // removeAllCloudFX.
   void removeClouds() { clouds_.clear(); }
   // createParticleFX(kind, count, position, NULL, lifetime): at most 4 at once; an unknown kind or
   // count makes none.
-  void addSpark(std::int32_t kind, std::int32_t mode, OriginalPoint position,
-                std::int32_t lifetime);
+  void addSpark(std::int32_t kind, std::int32_t mode, OriginalPoint position, std::int32_t lifetime,
+                Birth birth = Birth::OutsideObjects);
   // addHealingParticleEffect: one at a time; `feet` is where the partner stands, `height` and
   // `radius` its species' (DIGIMON_DATA). False when one is already running.
   bool addHealing(OriginalPoint feet, std::int32_t height, std::int32_t radius, bool ring);
