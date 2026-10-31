@@ -31,6 +31,10 @@ struct Push {
     float blendAlpha;
     // How far each texel that is not black moves to white, per channel (render::ModelInstance::lift).
     float4 lift;
+    // The texel coordinates' offset in texture units (render::ModelInstance::texelOffset); a texture
+    // with one repeats.
+    float2 uvOffset;
+    float2 padding;
 };
 
 [[vk::push_constant]]
@@ -60,14 +64,15 @@ VertexOut vertexMain(VertexIn input) {
     float4 world = mul(skin, float4(input.position, 1.0));
     output.position = mul(push.frame->viewProjection, world);
     output.normal = mul(skin, float4(input.normal, 0.0)).xyz;
-    output.uv = input.uv;
+    output.uv = input.uv + push.uvOffset;
     output.color = input.color;
     return output;
 }
 
 [shader("fragment")]
 float4 fragmentMain(VertexOut input) : SV_Target {
-    float4 texel = sampleTexture(push.texture, SamplerNearestClamp, input.uv);
+    uint sampler = any(push.uvOffset != 0.0) ? SamplerNearestRepeat : SamplerNearestClamp;
+    float4 texel = sampleTexture(push.texture, sampler, input.uv);
     if ((push.flags & FlagMask) != 0 && texel.a < push.alphaCutoff) {
         discard;
     }

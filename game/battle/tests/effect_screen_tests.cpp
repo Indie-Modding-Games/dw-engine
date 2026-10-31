@@ -728,3 +728,41 @@ TEST_CASE("palette loads rewrite a row of the effect's palette from a colour on,
   runner.tick();
   CHECK(runner.palettes(slot).size() == 2);
 }
+
+TEST_CASE("a particle flash draws its texels four times round its point, mirrored, in two rows") {
+  const std::string render = renderOf([](std::int32_t& at) {
+    return pushes(at, {"10", "20", "128", "0", "32", "32", "1024", "100", "1"}) +
+           subOf(at, "render_particle_flash", 9) +
+           pushes(at, {"10", "20", "128", "0", "32", "32", "1024", "32", "1"}) +
+           subOf(at, "render_particle_flash", 9) +
+           pushes(at, {"400", "20", "128", "0", "32", "32", "1024", "100", "1"}) +
+           subOf(at, "render_particle_flash", 9);
+  });
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::game::battle::EffectView view;
+  view.centre = {.x = 5, .y = -5};
+  runner.setView(view);
+  const std::vector<EffectScreenQuad> quads = firstFrame(runner, renderingScript(render, ""));
+  // Only the first: the second sorts in front of entry 0x21 and the third is off the screen.
+  REQUIRE(quads.size() == 8);
+  // 32 pixels a side; the top left copy's upper row, 16 high, its texels' upper half.
+  CHECK(quads[0].corners[0] == EffectScreenPoint{.x = -17, .y = -17});
+  CHECK(quads[0].corners[3] == EffectScreenPoint{.x = 15, .y = -1});
+  CHECK(quads[0].u == 128);
+  CHECK(quads[0].texelWidth == 31);
+  CHECK(quads[0].texelHeight == 15);
+  CHECK(quads[0].blend == EffectBlend::Add);
+  CHECK(quads[0].clutRow == 1);
+  CHECK(quads[0].order == 100);
+  // Its lower row ends on the point.
+  CHECK(quads[1].corners[0] == EffectScreenPoint{.x = -17, .y = -1});
+  CHECK(quads[1].corners[3] == EffectScreenPoint{.x = 15, .y = 15});
+  CHECK(quads[1].v == 16);
+  // The copy to the right starts at its far edge: its texels run the other way.
+  CHECK(quads[2].corners[0] == EffectScreenPoint{.x = 47, .y = -17});
+  CHECK(quads[2].corners[1] == EffectScreenPoint{.x = 15, .y = -17});
+  // The copy below starts at its bottom edge.
+  CHECK(quads[4].corners[0] == EffectScreenPoint{.x = -17, .y = 47});
+  CHECK(quads[6].corners[0] == EffectScreenPoint{.x = 47, .y = 47});
+}

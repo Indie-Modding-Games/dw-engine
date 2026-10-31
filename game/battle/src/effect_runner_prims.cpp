@@ -40,6 +40,15 @@ constexpr std::int32_t ScrollWidth = 0x140;
 constexpr std::int32_t ScrollHeight = 0x100;
 constexpr std::int32_t TilesLeft = 0xC0;
 constexpr std::int32_t TilesUp = 0x98;
+// BTL_renderParticleFlashSprite, renderParticleFlash: drawn from entry 0x21 (the sprite call lets
+// 0xa on, the drawing stops below 0x21) to the back; (x, y) within 0x400 x 0x200 of the centre;
+// scale 1024 is 1. Past 0x400 x 0x200 pixels a copy takes more columns, always 3 more than a
+// multiple of 4.
+constexpr std::int32_t FlashNearest = 0x21;
+constexpr std::int32_t FlashMaxX = 0x400;
+constexpr std::int32_t FlashMaxY = 0x200;
+constexpr std::int32_t FlashScaleShift = 10;
+constexpr std::int32_t FlashColumnBits = 3;
 // BTL_loadClutColors: a colour's four 16-bit fields, each 5 bits up from the last.
 constexpr std::int32_t ClutColorFields = 4;
 constexpr std::int32_t ClutFieldShift = 5;
@@ -260,6 +269,10 @@ bool EffectRunner::primOp(Slot& slot, std::string_view name,
     if (args.size() >= 3) {
       wireframeBox(slot, args);
     }
+  } else if (name == "render_particle_flash") {
+    if (args.size() >= 9) {
+      particleFlash(slot, args);
+    }
   } else if (name == "queue_clut_load" && args.size() >= 4) {
     // battle_effect.c: BTL_addClutLoadPrim: depth, palette row, colours, index: the 16 colours from
     // the index on into the row, by a DR_LOAD at the depth's entry of the ordering table. The
@@ -435,6 +448,86 @@ void EffectRunner::screenSprite(Slot& slot, const std::vector<std::int32_t>& arg
   quad.blend = EffectBlend::Add;
   quad.order = order;
   draws_.push_back({.slot = static_cast<std::size_t>(&slot - slots_.data()), .shape = quad});
+}
+
+// battle_effect.c: BTL_renderParticleFlashSprite (x, y, u, v, width, height, scale, entry, palette
+// row) and efe.c: renderParticleFlash: the texels drawn four times round (x, y) from the
+// projection's centre, mirrored to the right and below, each copy (scale * (side - 1) >> 10) + 1
+// pixels a side, added. Each copy is cut in cells as the original cuts it (two rows; more columns
+// and rows only past 0x400 x 0x200 pixels), the last cell ending on (x, y); a cell off the screen
+// is not drawn.
+void EffectRunner::particleFlash(Slot& slot, const std::vector<std::int32_t>& args) {
+  const std::int32_t order = args[7];
+  if (order < FlashNearest || order >= OrderingTableEntries) {
+    return;
+  }
+  const std::int32_t x = args[0];
+  const std::int32_t y = args[1];
+  if (std::abs(x) >= FlashMaxX || std::abs(y) >= FlashMaxY) {
+    return;
+  }
+  const std::int32_t scale = int16(args[6]);
+  const std::int32_t w1 = args[4] - 1;
+  const std::int32_t h1 = args[5] - 1;
+  std::int32_t sx = (scale * w1) >> FlashScaleShift;
+  std::int32_t sy = (scale * h1) >> FlashScaleShift;
+  if (sx <= 0 || sy <= 0) {
+    return;
+  }
+  ++sx;
+  ++sy;
+  std::int32_t cols = 0;
+  if (sx >= FlashMaxX || sy >= FlashMaxY) {
+    cols = (((sx + 1) / FlashMaxX) + 1) | FlashColumnBits;
+  }
+  const std::int32_t rows = ((sy + 1) / FlashMaxY) + 1;
+  const std::int32_t cellW = (sx + 1) / (cols + 1);
+  const std::int32_t cellH = (sy + 1) / (rows + 1);
+  const std::int32_t uStep = (w1 + 1) / (cols + 1);
+  const std::int32_t vStep = (h1 + 1) / (rows + 1);
+  // The screen's edges from the projection's centre.
+  const std::int32_t left = -(std::max(view_.screen.x, OriginalScreen.x) / 2) - view_.centre.x;
+  const std::int32_t right = left + std::max(view_.screen.x, OriginalScreen.x);
+  const std::int32_t top = -(std::max(view_.screen.y, OriginalScreen.y) / 2) - view_.centre.y;
+  const std::int32_t bottom = top + std::max(view_.screen.y, OriginalScreen.y);
+  const auto copy = [&](bool mirrorX, bool mirrorY) {
+    const std::int32_t stepX = mirrorX ? -cellW : cellW;
+    const std::int32_t stepY = mirrorY ? -cellH : cellH;
+    for (std::int32_t j = 0; j <= rows; ++j) {
+      const std::int32_t py = (mirrorY ? y + sy : y - sy) + (stepY * j);
+      if (std::max(py, py + stepY) < top || std::min(py, py + stepY) > bottom) {
+        continue;
+      }
+      for (std::int32_t i = 0; i <= cols; ++i) {
+        const std::int32_t px = (mirrorX ? x + sx : x - sx) + (stepX * i);
+        if (std::max(px, px + stepX) < left || std::min(px, px + stepX) > right) {
+          continue;
+        }
+        const std::int32_t farX = i == cols ? x : px + stepX;
+        const std::int32_t farY = j == rows ? y : py + stepY;
+        EffectScreenQuad quad;
+        quad.corners = {EffectScreenPoint{.x = px, .y = py}, EffectScreenPoint{.x = farX, .y = py},
+                        EffectScreenPoint{.x = px, .y = farY},
+                        EffectScreenPoint{.x = farX, .y = farY}};
+        for (EffectScreenPoint& corner : quad.corners) {
+          corner.x += view_.centre.x;
+          corner.y += view_.centre.y;
+        }
+        quad.u = args[2] + (uStep * i);
+        quad.v = args[3] + (vStep * j);
+        quad.texelWidth = uStep - 1;
+        quad.texelHeight = vStep - 1;
+        quad.clutRow = args[8];
+        quad.blend = EffectBlend::Add;
+        quad.order = order;
+        draws_.push_back({.slot = static_cast<std::size_t>(&slot - slots_.data()), .shape = quad});
+      }
+    }
+  };
+  copy(false, false);
+  copy(true, false);
+  copy(false, true);
+  copy(true, true);
 }
 
 // battle_effect.c: BTL_renderScreenFade (brightness) and BTL_renderScreenOverlay (entry, colour,

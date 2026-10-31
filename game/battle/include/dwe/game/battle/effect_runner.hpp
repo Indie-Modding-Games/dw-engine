@@ -517,6 +517,7 @@ private:
   void parallaxSprites(Slot& slot, const std::vector<std::int32_t>& args);
   void screenSprite(Slot& slot, const std::vector<std::int32_t>& args);
   void screenVeil(Slot& slot, const std::vector<std::int32_t>& args, bool fade);
+  void particleFlash(Slot& slot, const std::vector<std::int32_t>& args);
   void loadPalette(Slot& slot, std::int32_t row, std::int32_t first, std::int32_t colors,
                    std::int32_t count, bool fields);
   void line(Slot& slot, const std::vector<std::int32_t>& args);

@@ -51,6 +51,9 @@ struct ModelInstance {
   // tint and the light: the original brightening a model's palette (evl.c:
   // EVL_brightenDigimonClut).
   glm::vec3 lift{0.0F};
+  // Moves every texel coordinate by this many texels of each material's image, the image repeating
+  // (the battle effects' UV animations, battle_effect.c: BTL_offsetEFEPrimitiveUVs).
+  glm::vec2 texelOffset{0.0F};
 };
 
 // How a material is blended, from its alpha mode and the original's semi-transparency equation.
@@ -122,6 +125,8 @@ private:
     glm::vec4 baseColor{1.0F};
     MaterialBlend blend;
     bool doubleSided = false;
+    // The size of its image in texels (1 x 1 without one).
+    glm::vec2 texels{1.0F};
   };
   struct GpuModel {
     // The vertices, then the indices from indexOffset.
@@ -140,6 +145,7 @@ private:
     std::size_t jointCount = 0;
     glm::vec4 tint{1.0F};
     glm::vec3 lift{0.0F};
+    glm::vec2 texelOffset{0.0F};
   };
   // An instance taken for the frame, with its joints in the upload ring.
   struct Prepared {
@@ -148,6 +154,7 @@ private:
     std::uint64_t joints = 0;
     glm::vec4 tint{1.0F};
     glm::vec3 lift{0.0F};
+    glm::vec2 texelOffset{0.0F};
   };
   struct Translucent {
     float viewDepth = 0.0F;

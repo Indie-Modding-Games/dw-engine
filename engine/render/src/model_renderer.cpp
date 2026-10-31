@@ -67,9 +67,12 @@ struct ModelPush {
   float alphaCutoff = 0.5F;
   float blendAlpha = 1.0F;
   glm::vec4 lift{0.0F};
+  // The texel coordinates' offset in texture units; a texture with one repeats.
+  glm::vec2 uvOffset{0.0F};
+  glm::vec2 padding{0.0F};
 };
 static_assert(offsetof(ModelPush, baseColor) == 16 && offsetof(ModelPush, lift) == 48 &&
-                  sizeof(ModelPush) == 64,
+                  offsetof(ModelPush, uvOffset) == 64 && sizeof(ModelPush) == 80,
               "must match skinned_model.slang");
 
 constexpr std::array TranslucentModes{rhi::BlendMode::Alpha, rhi::BlendMode::Additive,
@@ -256,7 +259,11 @@ core::Result<ModelHandle> ModelRenderer::add(const assets::ModelData& model) {
          .alphaCutoff = cutoff,
          .baseColor = material.baseColor,
          .blend = blend,
-         .doubleSided = material.doubleSided});
+         .doubleSided = material.doubleSided,
+         .texels = material.image && *material.image < model.images.size()
+                       ? glm::vec2{static_cast<float>(model.images[*material.image].width),
+                                   static_cast<float>(model.images[*material.image].height)}
+                       : glm::vec2{1.0F}});
   }
   gpu.restJoints = restJointMatrices(model);
   return models_.insert(std::move(gpu));
@@ -295,7 +302,8 @@ bool ModelRenderer::submit(const ModelInstance& instance) {
                         .firstJoint = first,
                         .jointCount = count,
                         .tint = instance.tint,
-                        .lift = instance.lift});
+                        .lift = instance.lift,
+                        .texelOffset = instance.texelOffset});
   return true;
 }
 
@@ -339,7 +347,8 @@ void ModelRenderer::prepare(PrepareContext& context) {
                            .viewDepth = (camera_.view * instance.world[3]).z,
                            .joints = joints->address,
                            .tint = instance.tint,
-                           .lift = instance.lift});
+                           .lift = instance.lift,
+                           .texelOffset = instance.texelOffset});
     }
   }
   const std::size_t dropped = submitted - prepared_.size();
@@ -374,7 +383,8 @@ void ModelRenderer::record(rhi::CommandList& commands, const GpuModel& model,
                                    .flags = material.flags,
                                    .alphaCutoff = material.alphaCutoff,
                                    .blendAlpha = material.blend.alpha,
-                                   .lift = glm::vec4{instance.lift, 0.0F}});
+                                   .lift = glm::vec4{instance.lift, 0.0F},
+                                   .uvOffset = instance.texelOffset / material.texels});
   commands.drawIndexed(primitive.indexCount, primitive.firstIndex, primitive.vertexOffset);
 }
 

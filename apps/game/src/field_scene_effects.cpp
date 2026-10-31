@@ -517,10 +517,12 @@ void FieldScene::submitEffectModels() {
                                                      static_cast<float>(model->color->z)} /
                                                ColorOne
                                          : glm::vec3{1.0F};
-    models_->submit({.model = entry->handle,
-                     .world = glm::translate(glm::mat4{1.0F}, worldOf(model->transform.t)),
-                     .joints = joints,
-                     .tint = glm::vec4{color, 1.0F}});
+    models_->submit(
+        {.model = entry->handle,
+         .world = glm::translate(glm::mat4{1.0F}, worldOf(model->transform.t)),
+         .joints = joints,
+         .tint = glm::vec4{color, 1.0F},
+         .texelOffset = {static_cast<float>(model->uOffset), static_cast<float>(model->vOffset)}});
   }
 }
 
