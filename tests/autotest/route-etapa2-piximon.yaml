@@ -1,4 +1,4 @@
-# Stage 2 of the story with the keyboard, Piximon: from trop01 on a seeded game (run with --start trop01 --seed 3 and
+# Stage 2 of the story with the keyboard, Piximon: from trop01 on a seeded game (run with --start trop01 --seed 4 and
 # the stage-2 lock, docs/guides/prueba-vertical.md) the player talks to the Piximon of the jungle (section 5 of script
 # 13), accepts its challenge (the first answer), wins the fight with the debug command and Piximon flies off to the
 # city (trigger 255, the recruit).
@@ -10,7 +10,7 @@ steps:
   - wait: {map: trop01, partner_within: 400, seconds: 2, timeout: 60}
   - expect_setting: {story.trigger.255: "false"}
   - screenshot: trop01
-  # Piximon shows up on entering the jungle only on a roll of 3 in 100 (section 0x0c of script 0); seed 3 gives it.
+  # Piximon shows up on entering the jungle only on a roll of 3 in 100 (section 0x0c of script 0); seed 4 gives it.
   # It hovers about its home point (-768, -1235 in the original's axes) and talks on its own when the player comes
   # close: the walk ends when its scene takes the player.
   - script: evolve("grey")
