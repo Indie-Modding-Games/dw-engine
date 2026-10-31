@@ -73,6 +73,8 @@ dwe_add_app(dwx_cli
         src/main.cpp
     DEPS dwx
     OUTPUT_NAME dwx)
+# Next to the game in a package (scripts/package_linux.sh), where content::findDwx looks first.
+install(TARGETS dwx_cli RUNTIME DESTINATION bin)
 
 if(BUILD_TESTING)
     target_compile_definitions(dwe_dwx_tests PRIVATE

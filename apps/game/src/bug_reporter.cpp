@@ -29,9 +29,13 @@ constexpr double ToastSeconds = 2.5;
 // Reports made in the same second on the same map get a number: -2, -3...
 constexpr int MaxSameSecondReports = 100;
 
-// The source the game was built from, as git describes it: the commit, and -dirty with changes
-// not committed. The source folder is the build's; "unknown" without git or without the folder.
+// The source the game was built from: the commit a package was built from (DWE_BUILD_COMMIT), or
+// as git describes it: the commit, and -dirty with changes not committed. The source folder is the
+// build's; "unknown" without git or without the folder.
 std::string sourceCommit() {
+#ifdef DWE_BUILD_COMMIT
+  return DWE_BUILD_COMMIT;
+#else
 #ifdef _WIN32
   constexpr std::string_view NoErrors = "2>NUL";
   const auto open = [](const char* command) { return _popen(command, "r"); };
@@ -57,6 +61,7 @@ std::string sourceCommit() {
     output.pop_back();
   }
   return status == 0 && !output.empty() ? output : "unknown";
+#endif
 }
 
 std::tm localNow() {

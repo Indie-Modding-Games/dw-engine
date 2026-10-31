@@ -126,6 +126,18 @@ dwe_add_shaders(game FILES shaders/test_scene.slang shaders/scene_prims.slang)
 find_package(imgui CONFIG REQUIRED)
 target_link_libraries(game PRIVATE imgui::imgui)
 
+# A package's layout (scripts/package_linux.sh): the game in bin/ next to dwx, and the team's packs in packs/, where
+# content::teamPacksFolder finds them. Installing drops the build tree's runtime path, so the system's Vulkan loader is
+# the one used.
+install(TARGETS game RUNTIME DESTINATION bin)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/content/packs/ DESTINATION packs)
+
+# A package's bug reports (F12) name the commit it was built from; a development build asks git when a report is
+# written.
+set(DWE_BUILD_COMMIT "" CACHE STRING "The commit a package's bug reports name; empty asks git")
+if(DWE_BUILD_COMMIT)
+    target_compile_definitions(game PRIVATE DWE_BUILD_COMMIT="${DWE_BUILD_COMMIT}")
+endif()
 
 # The version a save file names as the game that wrote it.
 target_compile_definitions(game PRIVATE DWE_GAME_VERSION="${PROJECT_VERSION}")
