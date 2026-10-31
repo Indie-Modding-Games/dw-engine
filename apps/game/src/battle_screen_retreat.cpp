@@ -14,8 +14,9 @@ namespace dwe::app {
 namespace {
 
 // battle_setup.c: BTL_handleBattleIntro: the player runs back with its animation 3 and stands with
-// its animation 1, the field's standing clip.
+// its animation 1, its battle stance.
 constexpr std::uint32_t PlayerRunClip = 3;
+constexpr std::uint32_t PlayerStandClip = 1;
 
 game::battle::Point battlePointOf(glm::vec3 world) {
   return {.x = static_cast<std::int32_t>(std::lround(world.x)),
@@ -56,7 +57,7 @@ void BattleScreen::stepRetreat() {
   if (retreat_->step(desc_.ground, battle_->state().partner().position)) {
     core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:281): the player is back; "
                    "startAnimation(1), the timer jumps to 198");
-    desc_.scene->playPlayerSceneClip(std::nullopt);
+    standPlayer();
     intro_->playerBack();
   }
   placePlayer();
@@ -70,12 +71,19 @@ void BattleScreen::endRetreat() {
   }
   if (retreat_->running()) {
     retreat_->stop(battle_->state().partner().position);
-    desc_.scene->playPlayerSceneClip(std::nullopt);
+    standPlayer();
     placePlayer();
   }
   desc_.scene->field().playerTrail().keepOldest(static_cast<std::int32_t>(retreat_->wayLeft()));
   battle_->movePlayer(retreat_->position());
   retreat_.reset();
+}
+
+// startAnimation(ENTITY_TABLE[0], 1): the player stands in its battle stance, which plays on
+// through the fight (the original's battle frame ticks the player's animation as well) while the
+// field stands still; the field takes it back when the battle ends (endExit).
+void BattleScreen::standPlayer() const {
+  desc_.scene->playPlayerSceneClip(PlayerStandClip);
 }
 
 void BattleScreen::placePlayer() const {

@@ -124,8 +124,9 @@ public:
   // Where an enemy's anger mark hangs on the screen, `lift` world units over its feet; the field
   // scene knows (play_session.cpp).
   using EnemyAnchor = std::function<screens::AngerAnchor(const game::battle::Combatant&, float)>;
-  // Places the anger marks of the opening over the enemies, while they show.
-  void placeIntro(const EnemyAnchor& anchor);
+  // Once a drawn frame: places the anger marks of the opening over the enemies, while they show,
+  // and hands the opening's frame to its document.
+  void showIntro(const EnemyAnchor& anchor);
 
   // Takes the battle document's commands; false for any other command.
   bool handle(const ui::UiCommand& command);
@@ -142,6 +143,7 @@ private:
   void stepRetreat();
   void endRetreat();
   void placePlayer() const;
+  void standPlayer() const;
   void facePlayerToPartner(game::battle::Point partner) const;
   void tickVictory(double seconds);
   void tickMatchEnd(double seconds);

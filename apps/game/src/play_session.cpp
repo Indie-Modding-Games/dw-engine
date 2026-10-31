@@ -899,7 +899,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
                    field.heldForCare()
                        ? std::nullopt
                        : partnerBubbleOf(*scene_, species, session.partnerView().species));
-  battleScreen_.placeIntro([&](const game::battle::Combatant& enemy, float lift) {
+  battleScreen_.showIntro([&](const game::battle::Combatant& enemy, float lift) {
     return angerAnchorOf(*scene_, species, enemy, lift);
   });
   if (storyTextbox_) {

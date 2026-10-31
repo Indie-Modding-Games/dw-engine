@@ -59,7 +59,8 @@ el rótulo «BATTLE» con sus 155 piezas que llegan volando con su estela y parp
 (`battle_hud.c: BTL_renderBattleStartText`, `battle_setup.c: BTL_handleBattleIntro`) y su estallido
 (`BTL_renderBattleStartTextBurst`). Las piezas salen de una semilla, así que una ruta ve siempre la misma apertura.
 `battleIntroViewOf(intro, marcas)` y `settingsOf(vista, enemigos)` dan los ajustes que lee el documento, que redibuja
-con `battle.intro.revision`:
+con `battle.intro.revision`. El juego los publica una vez por fotograma dibujado (no por tick: un fotograma lento que
+hace varios ticks no redibuja varias veces) y el documento solo toca las piezas cuyo grupo cambió:
 
 | Ajuste | Valor | Qué es |
 |---|---|---|

@@ -528,7 +528,7 @@ void BattleScreen::tickPoses(double seconds) {
   *posesSeconds_ += seconds;
   const bool timedOut = *posesSeconds_ >= PoseGuardSeconds;
   if (playerPosing_ && (scene.playerClipPlayedThrough() || timedOut)) {
-    scene.playPlayerSceneClip(std::nullopt);
+    standPlayer();
     playerPosing_ = false;
   }
   if (partnerPosing_ && (scene.partnerClipFinished() || timedOut)) {
@@ -547,7 +547,7 @@ void BattleScreen::tickPoses(double seconds) {
 
 void BattleScreen::releasePoses() {
   if (playerPosing_) {
-    desc_.scene->playPlayerSceneClip(std::nullopt);
+    standPlayer();
   }
   if (partnerPosing_) {
     desc_.scene->playPartnerClip(std::nullopt);
@@ -609,15 +609,16 @@ void BattleScreen::tickIntro(double seconds) {
       publish();
     }
   }
-  publishIntro();
 }
 
-void BattleScreen::placeIntro(const EnemyAnchor& anchor) {
-  if (!intro_ || intro_->current() != screens::IntroStep::Anger) {
-    return;
-  }
-  for (std::size_t index = 0; index < introEnemies_.size(); ++index) {
-    angerAnchors_.at(index) = anchor(introEnemies_[index], intro_->angerLift());
+// Once a drawn frame, not once a tick: the banner's document redraws its hundred and more pieces
+// on each published frame, and a slow frame that runs several ticks would draw them again for
+// each, slowing the next frame further.
+void BattleScreen::showIntro(const EnemyAnchor& anchor) {
+  if (intro_ && intro_->current() == screens::IntroStep::Anger) {
+    for (std::size_t index = 0; index < introEnemies_.size(); ++index) {
+      angerAnchors_.at(index) = anchor(introEnemies_[index], intro_->angerLift());
+    }
   }
   publishIntro();
 }
@@ -817,6 +818,10 @@ void BattleScreen::finish() {
   if (!finished) {
     if (music != nullptr) {
       music->leaveBattle(false);
+    }
+    // No end box and no exit follow: the field takes the player back now.
+    if (desc_.scene != nullptr) {
+      desc_.scene->playPlayerSceneClip(std::nullopt);
     }
     return;
   }

@@ -72,6 +72,13 @@ TEST_CASE("the menu grows with brain, and a story battle has no flee") {
                                                     Command::Change, Command::Defend,
                                                     Command::Distance, Command::Technique2,
                                                     Command::Technique1, Command::YourCall});
+  // Equipped techniques open no command below brain 500: measured in the original at brain 70,
+  // three commands (finisher, flee, your call) with a technique equipped.
+  BattleSetup belowTechniques =
+      duel(evenStats(100, 499), evenStats(100, 50), {"punch", "shot", ""});
+  const std::vector<Command> belowMenu = startBattle(belowTechniques, 1).menu();
+  CHECK(std::ranges::find(belowMenu, Command::Technique1) == belowMenu.end());
+  CHECK(std::ranges::find(belowMenu, Command::Technique2) == belowMenu.end());
   smart.scripted = true;
   const std::vector<Command> scripted = startBattle(smart, 1).menu();
   CHECK(std::ranges::find(scripted, Command::Flee) == scripted.end());

@@ -39,7 +39,12 @@ local bag_open = false
 local intro_step = "done"
 local icon_classes = {}
 local frame_classes = {}
+-- What each banner piece shows now, by piece index (draw_banner): its numbers as published (false
+-- once hidden), its block's size and texture and its trail.
 local shown_pieces = {}
+local piece_size = {}
+local piece_texture = {}
+local piece_trail = {}
 
 local function setting(name, fallback)
   local value = ui.setting(name)
@@ -69,6 +74,7 @@ local function lookup(document, id)
     if found ~= nil then
       -- The document was loaded again (hot reload): none of what was set holds.
       applied = {}
+      shown_pieces, piece_size, piece_texture, piece_trail = {}, {}, {}, {}
     end
     found = document:get(id)
     elements[id] = found
@@ -923,61 +929,89 @@ local function draw_shout(document)
 end
 
 -- The banner's pieces come as seven numbers each, in the original's pixels (3dp each): x, y,
--- width, height, texture, trail and 1 for a trail on the left.
-local function banner_numbers()
-  local numbers = {}
-  for value in string.gmatch(setting("battle.intro.pieces", ""), "%S+") do
-    numbers[#numbers + 1] = tonumber(value)
+-- width, height, texture, trail and 1 for a trail on the left, each piece's group ending with a
+-- space.
+local piece_pattern = "((%S+) (%S+) (%S+) (%S+) (%S+) (%S+) (%S+) )"
+
+local function hide_piece(document, index)
+  if shown_pieces[index] == false then
+    return
   end
-  return numbers
+  shown_pieces[index] = false
+  set_class(document, "bp-" .. index, "hidden", true)
+  set_class(document, "bs-" .. index, "hidden", true)
 end
 
 -- A piece moves by its transform, not by left and top: the banner's hundred and more pieces fly in
 -- each frame and a transform leaves the document's layout as it was.
-local function draw_piece(document, index, piece)
-  local key = table.concat(piece, " ")
-  if shown_pieces[index] == key then
-    return
+local function draw_piece(document, index, x, y, width, height, texture, trail, left)
+  local block, shadow = lookup(document, "bp-" .. index), lookup(document, "bs-" .. index)
+  if not shown_pieces[index] then
+    set_class(document, "bp-" .. index, "hidden", false)
+    set_class(document, "bs-" .. index, "hidden", false)
   end
-  shown_pieces[index] = key
-  local block, shadow, trail = "bp-" .. index, "bs-" .. index, "bt-" .. index
-  set_class(document, block, "hidden", piece[1] == nil)
-  set_class(document, shadow, "hidden", piece[1] == nil)
-  if piece[1] == nil then
-    return
+  -- Only the transforms change while a piece flies: its size, texture and trail are set again only
+  -- when they change (a property set on an element is parsed again even when it is the same).
+  local size = width .. " " .. height
+  if piece_size[index] ~= size then
+    piece_size[index] = size
+    for _, element in ipairs({ block, shadow }) do
+      element:set_property("width", (width * 3) .. "dp")
+      element:set_property("height", (height * 3) .. "dp")
+    end
   end
-  local x, y = piece[1] * 3, piece[2] * 3
-  local width, height = piece[3] * 3, piece[4] * 3
-  for _, id in ipairs({ block, shadow }) do
-    set_property(document, id, "width", width .. "dp")
-    set_property(document, id, "height", height .. "dp")
-  end
-  set_property(document, block, "transform", "translate(" .. x .. "dp, " .. y .. "dp)")
+  x, y = x * 3, y * 3
+  block:set_property("transform", "translate(" .. x .. "dp, " .. y .. "dp)")
   -- The shadow lies 2 pixels down and right (battle_hud.c: BTL_renderBattleStartText).
-  set_property(document, shadow, "transform", "translate(" .. (x + 6) .. "dp, " .. (y + 6) .. "dp)")
-  for texture = 0, 2 do
-    set_class(document, block, "texture-" .. texture, piece[5] == texture)
+  shadow:set_property("transform", "translate(" .. (x + 6) .. "dp, " .. (y + 6) .. "dp)")
+  if piece_texture[index] ~= texture then
+    piece_texture[index] = texture
+    for shown = 0, 2 do
+      block:set_class("texture-" .. shown, texture == shown)
+    end
   end
-  local length = piece[6] * 3
-  set_class(document, trail, "hidden", length <= 0)
-  set_class(document, trail, "left", piece[7] == 1)
-  if length > 0 then
-    set_property(document, trail, "width", length .. "dp")
-    set_property(document, trail, "left", (piece[7] == 1 and -length or width) .. "dp")
+  local trail_key = trail .. " " .. left .. " " .. width
+  if piece_trail[index] ~= trail_key then
+    piece_trail[index] = trail_key
+    local trail_element = lookup(document, "bt-" .. index)
+    local length = trail * 3
+    trail_element:set_class("hidden", length <= 0)
+    trail_element:set_class("left", left == 1)
+    if length > 0 then
+      trail_element:set_property("width", length .. "dp")
+      trail_element:set_property("left", (left == 1 and -length or width * 3) .. "dp")
+    end
   end
 end
 
+-- Only the pieces whose numbers changed since the last draw are touched: once gathered, the banner
+-- stands still until it bursts.
 local function draw_banner(document)
-  local numbers = banner_numbers()
-  local count = math.floor(#numbers / 7)
-  for index = 0, banner_pieces - 1 do
-    local piece = {}
-    if index < count then
-      for field = 1, 7 do
-        piece[field] = numbers[index * 7 + field]
-      end
+  local index = 0
+  for group, x, y, width, height, texture, trail, left in
+    string.gmatch(setting("battle.intro.pieces", ""), piece_pattern)
+  do
+    if index >= banner_pieces then
+      break
     end
-    draw_piece(document, index, piece)
+    if shown_pieces[index] ~= group then
+      draw_piece(
+        document,
+        index,
+        tonumber(x),
+        tonumber(y),
+        tonumber(width),
+        tonumber(height),
+        tonumber(texture),
+        tonumber(trail),
+        tonumber(left)
+      )
+      shown_pieces[index] = group
+    end
+    index = index + 1
+  end
+  for rest = index, banner_pieces - 1 do
+    hide_piece(document, rest)
   end
   local banner = lookup(document, "banner")
   for flash = 0, 2 do

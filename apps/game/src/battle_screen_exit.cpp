@@ -195,6 +195,8 @@ void BattleScreen::tickExit(double seconds) {
 // fighters (they stay for the scene that follows, as mayo00's Agumon does).
 void BattleScreen::endExit() {
   if (desc_.scene != nullptr) {
+    // The player's battle stance gives way to the field's own clips.
+    desc_.scene->playPlayerSceneClip(std::nullopt);
     desc_.scene->releaseFighters();
     for (const std::int32_t npc : std::exchange(onScreenAtStart_, {})) {
       if (fixedFight_ && std::ranges::contains(enemyNpcs_, npc)) {
