@@ -1,0 +1,16 @@
+# Stage 8 of the story with the keyboard, the lock's border: on a seeded game (run with --story-stage stage_8 --start
+# frzl05) with the game cleared (trigger 50, written) and the draw on Freezeland (variable 16 = 1), the player steps
+# on frzl05's tile 51, whose script warps to the Back Dimension (mgen11, stage 9): the warp does not happen, the
+# lock's message shows and the player stays on frzl05.
+name: etapa8-lock
+device: keyboard
+timeout: 900
+steps:
+  - wait: {map: frzl05, seconds: 2, timeout: 300}
+  - script: story_set("trigger 50 on")
+  - script: story_set("var 16 1")
+  - walk_to: {trigger: 51, walk: true, encounters: win, stop_on_closed: true, timeout: 240}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 60}
+  - screenshot: frzl05-mgen11-closed
+  - tap: {key: return}
+  - wait: {map: frzl05, hidden: dialog, seconds: 1, timeout: 60}

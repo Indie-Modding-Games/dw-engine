@@ -1,0 +1,23 @@
+# Stage 9 of the story with the keyboard, the Back Dimension: on the cleared game chunk 3 of stage 8 saves (run with
+# --story-stage stage_9 --saves <dir> --load slot_01 --start frzl05) the way in is where the elder's draw sends the
+# player (variable 16: 1 Freezeland, 2 the Mansion, 3 the canyon); the route writes 1 and steps on frzl05's tile 51,
+# then goes mgen11, mgen12, mgen13 and out by mgen13's tile 52 to icsa08, the exit variable 16 picks.
+name: etapa9-back
+device: keyboard
+timeout: 1500
+steps:
+  - wait: {map: frzl05, seconds: 2, timeout: 600}
+  - expect_setting: {story.trigger.50: "true"}
+  - script: story_set("var 16 1")
+  - walk_to: {trigger: 51, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen11, seconds: 1, timeout: 120}
+  - screenshot: mgen11
+  - walk_to: {trigger: 52, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen12, seconds: 1, timeout: 120}
+  - screenshot: mgen12
+  - walk_to: {trigger: 52, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen13, seconds: 1, timeout: 120}
+  - screenshot: mgen13
+  - walk_to: {trigger: 52, walk: true, encounters: win, timeout: 240}
+  - wait: {map: icsa08, seconds: 1, timeout: 120}
+  - screenshot: icsa08

@@ -1,0 +1,29 @@
+# Stage 8 of the story with the keyboard, chunk 3 of 3: the summit and the ending. Run it on the save chunk 2 leaves
+# (--story-stage stage_8 --saves <dir> --load slot_01; or chunk 1's save with --start mgen99). On mgen99 the player
+# steps on the summit's tile (section 0x33 of script 184): the boss arrives (routines 51 and 40), the fight, then the
+# warp to the ending map (tend02 with 50 prosperity points or more), its scene (script 192, section 0x33), the
+# question to save the cleared game (Enter on "Yes"), the credits movie and the title. The route plays the movies.
+name: etapa8-final
+device: keyboard
+timeout: 2400
+movies: true
+steps:
+  - wait: {map: mgen99, seconds: 3, timeout: 120}
+  - screenshot: summit
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
+  - wait: {confirm: true, shown: battle, timeout: 600}
+  - screenshot: battle
+  # The last boss outlasts a written save's partner: after 20 s on screen the fight ends with battle_win.
+  - wait: {confirm: true, win_after: 20, setting: {story.trigger.50: "true"}, timeout: 900}
+  - screenshot: cleared
+  - wait: {confirm: true, map: tend02, seconds: 2, timeout: 300}
+  - screenshot: tend
+  - wait: {confirm: true, shown: save_machine, timeout: 600}
+  - screenshot: save-question
+  - repeat: {times: 4, steps: [{tap: {key: return}}, {wait: {seconds: 2.5}}]}
+  - wait: {hidden: save_machine, timeout: 120}
+  - screenshot: saved
+  # The elder's last words, the ending scene and the credits.
+  - repeat: {times: 8, steps: [{wait: {confirm: true, seconds: 15}}, {screenshot: ending}]}
+  - wait: {confirm: true, shown: main_menu, timeout: 900}
+  - screenshot: title

@@ -144,7 +144,9 @@ stages:
       - gkyo*
       - omoc*
   # Etapa 8: Mt. Infinity (mgen01-10, mgen98, mgen99), la segunda casa de Jijimon (room10, room11),
-  # room19 y el final (tend01, tend02). Entra por la casilla 56 de twna02-13 a mgen01.
+  # room19 y el final (tend01, tend02). Entra por la casilla 56 de twna02-13 a mgen01. Rutas
+  # route-etapa8-*.yaml: Jijimon y Airdramon, la subida, el final hasta la portada y la frontera
+  # (frzl05 a mgen11 queda cerrada).
   - id: stage_8
     maps:
       - mgen01
@@ -164,6 +166,8 @@ stages:
       - room19
       - tend*
   # Etapa 9: el post-juego, la Back Dimension (mgen11-16). Con ella están abiertos todos los mapas.
+  # Rutas route-etapa9-*.yaml sobre la partida terminada: el huevo y Digitamamon, y mgen11-13 desde
+  # frzl05. mgen14-16 no tienen entrada conocida en los scripts.
   - id: stage_9
     maps:
       - mgen11

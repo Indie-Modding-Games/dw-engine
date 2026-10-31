@@ -1,0 +1,18 @@
+# Stage 9 of the story with the keyboard, the post-game egg: on the cleared game chunk 3 of stage 8 saves (run with
+# --story-stage stage_9 --saves <dir> --load slot_01 --start mgen99) the summit's tile (section 0x33 of script 184,
+# trigger 50 set) shows the egg, its fight and Digitamamon, who joins the city (trigger 256). Loading the cleared
+# game plays its movie first.
+name: etapa9-huevo
+device: keyboard
+timeout: 1500
+movies: true
+steps:
+  - wait: {map: mgen99, seconds: 2, timeout: 600}
+  - expect_setting: {story.trigger.50: "true"}
+  - screenshot: summit
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
+  - wait: {confirm: true, shown: battle, timeout: 300}
+  - screenshot: battle
+  - wait: {confirm: true, win_after: 20, setting: {story.trigger.256: "true"}, timeout: 600}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
+  - screenshot: after

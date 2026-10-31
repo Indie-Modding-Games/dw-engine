@@ -379,6 +379,37 @@ for r in "route-etapa5 gcan04" "route-etapa5-whamon ogre10,0" "route-etapa5-ogre
 done
 ```
 
+- Las rutas de la Etapa 8 (Mt. Infinity y el final) y de la Etapa 9 (el post-juego) van en trozos encadenados por una
+  carpeta de partidas (`--saves`): cada trozo guarda en `slot_01` y el siguiente la carga (`--load slot_01`).
+  `route-etapa8-jijimon.yaml` (`--start room08`) escribe los reclutas de las etapas 1 a 7 (77 puntos de prosperidad;
+  guardar los vuelve a contar, como el original), da al compañero los chips de la tienda de méritos y la forma
+  Ultimate, habla con Jijimon (sección 0x33 del script 210, disparador 354), gana a Airdramon al salir de la casa
+  (`battle_win` si tarda), ve la escena de room11 y guarda en la ciudad. `route-etapa8-subida.yaml` cruza la puerta
+  (casilla 58), sube de mgen01 a mgen10, mgen98 y mgen99 andando (corriendo a pocos fps se pasa a la salida de bajada
+  junto a algunas llegadas) con los salvajes ganados al empezar; gana a los jefes de mgen06 (321) y mgen98 (326),
+  contesta a Megadramon con la primera respuesta (darse prisa: sin combate, el camino crítico) y guarda en mgen99.
+  `route-etapa8-final.yaml` (con `movies: true`) gana al jefe final (disparador 50), llega a tend02 (con 50 puntos o
+  más), dice que sí al guardado de fin de juego, ve los créditos y vuelve a la portada. `route-etapa9-huevo.yaml` y
+  `route-etapa9-back.yaml` cargan esa partida terminada: el huevo y Digitamamon en la cima (256), y la Back Dimension
+  de frzl05 por mgen11, mgen12 y mgen13 hasta icsa08. `route-etapa8-lock.yaml` (`--start frzl05`) pisa la entrada a
+  la Back Dimension con la etapa 8: el cambio de mapa del script no ocurre, sale el aviso y el jugador sigue en frzl05
+  (la casilla no vuelve a lanzar su sección hasta que el jugador sale de ella).
+
+```sh
+scripts/dev.sh run --content <carpeta> --story-stage stage_8 --start room08 --saves <partidas> --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa8-jijimon.yaml --shots <capturas>/etapa8
+scripts/dev.sh run --content <carpeta> --story-stage stage_8 --saves <partidas> --load slot_01 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa8-subida.yaml --shots <capturas>/etapa8
+scripts/dev.sh run --content <carpeta> --story-stage stage_8 --saves <partidas> --load slot_01 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa8-final.yaml --shots <capturas>/etapa8
+scripts/dev.sh run --content <carpeta> --story-stage stage_8 --start frzl05 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa8-lock.yaml --shots <capturas>/etapa8
+scripts/dev.sh run --content <carpeta> --story-stage stage_9 --saves <copia de partidas> --load slot_01 \
+    --start mgen99 --lang en --seed 1 --autotest tests/autotest/route-etapa9-huevo.yaml --shots <capturas>/etapa9
+scripts/dev.sh run --content <carpeta> --story-stage stage_9 --saves <copia de partidas> --load slot_01 \
+    --start frzl05 --lang en --seed 1 --autotest tests/autotest/route-etapa9-back.yaml --shots <capturas>/etapa9
+```
+
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
 los ajustes del usuario. Como no tiene las preguntas de la apertura ni las películas, su partida nueva empieza en la
 cadena sembrada (el campo libre de File City) salvo que la ruta diga `new_game: original`, como `route-etapa1`.

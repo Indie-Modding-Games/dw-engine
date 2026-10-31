@@ -1,0 +1,96 @@
+# Stage 8 of the story with the keyboard, chunk 1 of 3: from the elder's house (run with --start room08
+# --story-stage stage_8 --saves <dir>; the save in slot_01 starts chunk 2) the player talks to Jijimon, who sends him
+# up Mt. Infinity when the city has 50 prosperity points (script 210, section 0x33). Out of the house Airdramon
+# swoops down, the fight, the elder's scene in room11 and back to the city with the way up open (trigger 354).
+name: etapa8-jijimon
+device: keyboard
+timeout: 1800
+steps:
+  - wait: {map: room08, seconds: 2, timeout: 60}
+  # The recruits of stages 1 to 7 (recruit trigger 200 + species): all but the ones the ending and the post-game set
+  # (206, 207, 212, 254, 256) and the five whose works change the city's map (214, 220, 221, 225, 246). A save counts
+  # their prosperity again, as the original does before saving: 77 points, the 50 the elder asks for and more.
+  - script: 'for n = 203, 258 do if not ({[206]=1, [207]=1, [212]=1, [214]=1, [220]=1, [221]=1, [225]=1, [246]=1, [254]=1, [256]=1})[n] then story_set("trigger " .. n .. " on") end end'
+  - script: save("slot_01")
+  - expect_setting: {story.var.1: "77"}
+  # Mt. Infinity's wild ones and its bosses are the game's strongest: the partner gets the merit shop's chips, as a
+  # player who saved merit would have bought them (a refused one is offered again), and takes the Ultimate form.
+  - script: give_item("off_chip 18")
+  - script: give_item("def_chip 18")
+  - script: give_item("hp_chip 6")
+  - script: give_item("quick_chip 16")
+  - script: give_item("sup_recovery 20")
+  - script: give_item("large_mp 10")
+  - repeat:
+      times: 18
+      steps:
+        - script: 'use_item("off_chip")'
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("off_chip")'}
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("off_chip")'}
+        - wait: {seconds: 1.5}
+  - repeat:
+      times: 18
+      steps:
+        - script: 'use_item("def_chip")'
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("def_chip")'}
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("def_chip")'}
+        - wait: {seconds: 1.5}
+  - repeat:
+      times: 6
+      steps:
+        - script: 'use_item("hp_chip")'
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("hp_chip")'}
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("hp_chip")'}
+        - wait: {seconds: 1.5}
+  - repeat:
+      times: 16
+      steps:
+        - script: 'use_item("quick_chip")'
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("quick_chip")'}
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("quick_chip")'}
+        - wait: {seconds: 1.5}
+  - script: evolve("mtgr")
+  - wait: {seconds: 40}
+  # The chips raise the maximums; a full recovery fills them.
+  - script: use_item("sup_recovery")
+  - wait: {seconds: 1.5}
+  - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("sup_recovery")'}
+  - wait: {seconds: 1.5}
+  - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("sup_recovery")'}
+  - wait: {seconds: 1.5}
+  - screenshot: start
+  # The elder sits at the back of the room: the player walks up, stands facing him and talks (Enter).
+  - walk_to: {point: [2, -250], radius: 80, timeout: 60}
+  - script: place("player 2 320 2048")
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: talk
+  - wait: {confirm: true, setting: {story.trigger.354: "true"}, timeout: 200}
+  - screenshot: open
+  - wait: {confirm: true, hidden: story_textbox, seconds: 3, timeout: 120}
+  - screenshot: after
+  - walk_to: {trigger: 51, timeout: 90}
+  # Out of the house, Airdramon swoops down (section 0x39 of the city's script): the talk, the fight, then the
+  # elder's scene in room11 and back to the city with the way up open (trigger 354).
+  - wait: {confirm: true, shown: battle, timeout: 300}
+  - screenshot: airdramon
+  # The fight plays for a while; a partner that has not won by then wins with battle_win, as the route checks the
+  # path and not the fight.
+  - wait: {confirm: true, seconds: 40}
+  - when: {shown: battle, steps: [{script: 'battle_win("")'}]}
+  - wait: {confirm: true, map: room11, timeout: 600}
+  - screenshot: room11
+  - wait: {confirm: true, map: twna08, partner_within: 400, seconds: 3, timeout: 300}
+  - expect_setting: {story.trigger.354: "true"}
+  - screenshot: city
+  - script: save("slot_01")
+  - wait: {seconds: 2}
