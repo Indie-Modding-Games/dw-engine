@@ -441,14 +441,14 @@ spawnBoulder = { status = "portado", dwe = "apps/session/src/story_props.cpp", w
 initializeMedalModel = { status = "falta", what = "Carga el modelo de una medalla." }
 spawnToyTownBoxes = { status = "falta", what = "Pone las cajas de la ciudad de juguete." }
 spawnGearbox = { status = "falta", what = "Pone la caja de engranajes de la fábrica." }
-spawnAngemonPedestal = { status = "falta", what = "Pone el pedestal que se mueve en el santuario." }
+spawnAngemonPedestal = { status = "portado", dwe = "apps/session/src/story_routines/routine_angemon_pedestal.cpp", what = "Pone el pedestal que se mueve en el santuario." }
 initializeTrainingPoop = { status = "portado", dwe = "apps/session/include/dwe/session/story_props.hpp", what = "Pone la caca gigante de Trash Mountain." }
 emptyChests = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Marca vacíos los cofres ya abiertos." }
 isBoxOffScreen = { status = "no-aplica", note = "recorte de dibujo", what = "Dice si un objeto está fuera de la pantalla." }
 tickOpenChestTray = { status = "falta", what = "Anima la tapa del cofre al abrirse." }
 tickCloseChestTray = { status = "falta", what = "Anima la tapa del cofre al cerrarse." }
 decreaseDirtPileSize = { status = "portado", dwe = "apps/session/src/story_routines/routine_dirt_cart.cpp", what = "Encoge un montón de tierra al cavar." }
-moveAngemonPedestal = { status = "falta", what = "Mueve el pedestal del santuario." }
+moveAngemonPedestal = { status = "portado", dwe = "apps/session/src/story_routines/routine_angemon_pedestal.cpp", what = "Mueve el pedestal del santuario." }
 activateMedalTexture = { status = "falta", what = "Pone la textura de la medalla ganada." }
 loadDirtPileModel = { status = "portado", dwe = "apps/session/src/story_routines/routine_dirt_cart.cpp", what = "Carga el montón de tierra que se cava." }
 setEntityPosition = { status = "portado", dwe = "game/field/src/field_positions.cpp", what = "Pone a un personaje en una posición." }

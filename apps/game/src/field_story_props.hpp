@@ -18,8 +18,9 @@ class FieldScene;
 // cart in front of the partner (map_object.c: renderDirtCartModel), the dirt pile, the boulder and
 // Trash Mountain's giant poop (renderDirtPile, renderBoulder, renderTrainingPoop) as models of the
 // packs, shakes the screen for routine 34 (map.c: tickMeramonShake) and moves a map sprite to a
-// character's node (overworld.c: spawnSpriteAtEntity). Entering a map takes the cart, the pile and
-// the boulder away (map_object.c: unloadMapParts).
+// character's node (overworld.c: spawnSpriteAtEntity) and draws the Angemon shrine's pedestal
+// (renderAngemonPedestal). Entering a map takes the cart, the pile, the boulder and the pedestal
+// away (map_object.c: unloadMapParts).
 class FieldStoryProps {
 public:
   // The scene must outlive this object.
@@ -43,6 +44,7 @@ private:
   std::optional<std::int32_t> cartModel_;
   std::optional<std::int32_t> pileSize_;
   std::optional<session::BoulderShown> boulder_;
+  std::optional<session::AngemonPedestalShown> pedestal_;
   // The shake's frame (MERAMON_SHAKE_FRAME_COUNT), its drawing offset in original pixels and the
   // time toward its next frame; no frame when it is not shaking.
   std::optional<std::int32_t> shakeFrame_;

@@ -49,6 +49,14 @@ struct BoulderShown {
 // Routine 34 (createMeramonShake): the screen shakes for its frames.
 struct ScreenShakeStarted {};
 
+// Routines 49 and 50 (map_object.c: spawnAngemonPedestal, moveAngemonPedestal): the pedestal
+// ETCNA\ABOX of the Angemon shrine, drawn at (x, 0, z) in the original's axes. Routine 49 puts it
+// at (0, 0, 1500); routine 50 slides it 10 a frame to z 2000, x shaking between 5 and -5.
+struct AngemonPedestalShown {
+  std::int32_t x = 0;
+  std::int32_t z = 1500;
+};
+
 // spawn_sprite_at_entity (overworld.c: spawnSpriteAtEntity): the map's sprite `object` is moved,
 // centred, to where node `node` of the character with script id `character` shows.
 struct SpriteAtCharacter {
@@ -57,8 +65,8 @@ struct SpriteAtCharacter {
   std::int32_t object = 0;
 };
 
-using StoryPropRequest =
-    std::variant<DirtCartShown, DirtPileShown, BoulderShown, ScreenShakeStarted, SpriteAtCharacter>;
+using StoryPropRequest = std::variant<DirtCartShown, DirtPileShown, BoulderShown,
+                                      ScreenShakeStarted, SpriteAtCharacter, AngemonPedestalShown>;
 
 // Trash Mountain's giant poop: map.c: loadMap calls initializeTrainingPoop on map 0xa5 (gomi02) and
 // on no other, whatever the story, which puts ETCNA\TRY at TRAINING_POOP_TRANSLATION, unturned and

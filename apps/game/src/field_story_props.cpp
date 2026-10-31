@@ -32,6 +32,8 @@ namespace {
 constexpr std::array<std::string_view, 2> CartModels{"model/etcna/dosya", "model/etcna/hako"};
 constexpr std::string_view PileModel = "model/etcna/t_yama";
 constexpr std::string_view BoulderModel = "model/etcna/iwa";
+// map_object.c: spawnAngemonPedestal (ANGEMON_PEDESTAL_TMD).
+constexpr std::string_view PedestalModel = "model/etcna/abox";
 // map_object.c: DIRT_PILE_LOCATION.
 constexpr glm::ivec3 PileLocation{2037, 0, 849};
 // map_object.c: initializeTrainingPoop (session::trainingPoopOn).
@@ -96,6 +98,7 @@ void FieldStoryProps::clearMapParts() {
   cartModel_.reset();
   pileSize_.reset();
   boulder_.reset();
+  pedestal_.reset();
 }
 
 void FieldStoryProps::take(const session::StoryPropRequest& request) {
@@ -118,6 +121,8 @@ void FieldStoryProps::take(const session::StoryPropRequest& request) {
     shakeSeconds_ = 0.0;
   } else if (const auto* sprite = std::get_if<session::SpriteAtCharacter>(&request)) {
     placeSprite(*sprite);
+  } else if (const auto* pedestal = std::get_if<session::AngemonPedestalShown>(&request)) {
+    pedestal_ = *pedestal;
   }
 }
 
@@ -201,6 +206,13 @@ void FieldStoryProps::show() {
                                   radiansOf(boulder_->pitch), glm::vec3{1.0F, 0.0F, 0.0F}));
   }
   setProps(*scene_, BoulderModel, std::move(boulder));
+  // renderAngemonPedestal: unturned at (x, 0, z), while the map layer is drawn.
+  std::vector<glm::mat4> pedestal;
+  if (pedestal_) {
+    pedestal.push_back(
+        glm::translate(glm::mat4{1.0F}, assets::toWorldPosition({pedestal_->x, 0, pedestal_->z})));
+  }
+  setProps(*scene_, PedestalModel, std::move(pedestal));
   // renderTrainingPoop: drawn on its map while the map layer is (FieldScene leaves props out when
   // the scenery is hidden).
   std::vector<glm::mat4> poop;

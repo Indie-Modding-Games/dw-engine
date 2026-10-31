@@ -162,3 +162,41 @@ TEST_CASE("Trash Mountain has the giant poop, at the original's place, and no ot
   CHECK_FALSE(dwe::session::trainingPoopOn("tunn05").has_value());
   CHECK_FALSE(dwe::session::trainingPoopOn("").has_value());
 }
+
+TEST_CASE("the Angemon pedestal starts at z 1500 and slides 10 a frame to 2000, shaking in x") {
+  dwe::session::StoryScenesContext scenes{dwe::session::StoryScenesDesc{}};
+  REQUIRE(dwe::session::registerAngemonPedestalRoutines(scenes));
+  using dwe::game::story::RoutineGoesOn;
+  using dwe::game::story::RoutineWaits;
+  using dwe::game::story::TaskRunning;
+  using dwe::session::AngemonPedestalShown;
+  // map_object.c: spawnAngemonPedestal sets X 0 and Z 1500 and goes on.
+  const auto spawned = scenes.routines.call(49);
+  REQUIRE(spawned);
+  CHECK(std::holds_alternative<RoutineGoesOn>(*spawned));
+  const auto start = takeAll(scenes);
+  REQUIRE(start.size() == 1);
+  CHECK(std::get<AngemonPedestalShown>(start[0]).x == 0);
+  CHECK(std::get<AngemonPedestalShown>(start[0]).z == 1500);
+  // moveAngemonPedestal ticks from the next frame: 50 frames to z 2000.
+  const auto slid = scenes.routines.call(50);
+  REQUIRE(slid);
+  const auto* waits = std::get_if<RoutineWaits>(&*slid);
+  REQUIRE(waits != nullptr);
+  CHECK(std::holds_alternative<TaskRunning>(waits->task->tick()));
+  int frames = 0;
+  while (std::holds_alternative<TaskRunning>(waits->task->tick())) {
+    ++frames;
+    REQUIRE(frames < 100);
+  }
+  CHECK(frames + 1 == 50);
+  const auto steps = takeAll(scenes);
+  REQUIRE(steps.size() == 50);
+  // z 1510 is not a multiple of 20: x -5; z 1520 is: x 5.
+  CHECK(std::get<AngemonPedestalShown>(steps[0]).z == 1510);
+  CHECK(std::get<AngemonPedestalShown>(steps[0]).x == -5);
+  CHECK(std::get<AngemonPedestalShown>(steps[1]).x == 5);
+  CHECK(std::get<AngemonPedestalShown>(steps[49]).z == 2000);
+  CHECK(std::get<AngemonPedestalShown>(steps[49]).x == 5);
+  CHECK(scenes.pedestal.z == 2000);
+}

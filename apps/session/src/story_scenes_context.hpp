@@ -72,6 +72,8 @@ struct StoryScenesContext {
   // boulder (MAP_3D_OBJ[0]); story_props.hpp.
   std::int32_t dirtPileSize = DirtPileFullSize;
   BoulderShown boulder;
+  // The Angemon shrine's pedestal (map_object.c: ANGEMON_PEDESTAL_PROGRESS_X/_Z).
+  AngemonPedestalShown pedestal;
   // The recruit triggers as last seen, to tell a new resident.
   std::vector<bool> recruits;
   // A lost life or a death whose section has not run yet, and the egg box's egg (rules.death).
