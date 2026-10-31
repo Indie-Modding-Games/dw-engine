@@ -467,3 +467,11 @@ la enciende el ajuste `free_exploration` (menú de pausa, guardado en los ajuste
 esa ejecución). Cuando el campo para en una casilla con varios sitios, abre `ui/destination_choice` con los sitios
 (`exploration_place_name.N`, `exploration_place_map.N`, `exploration_places`, `exploration_story`) y pasa al campo
 lo que se elige (`choose_destination`) o quedarse (`stay_here`).
+
+## Movimiento suave
+
+Mejora opcional, encendida por defecto: el ajuste `smooth_motion` (fila «Movimiento suave» de las opciones del menú
+de pausa, guardado en los ajustes del usuario) llega a `Field::setSmoothMotion` desde `PlaySession`. Encendido, los
+personajes y la cámara se dibujan deslizándose entre los fotogramas de 1/20 s del original (`Field::drawnPose`, ver
+`docs/modulos/game/field.md`, «Interpolación»); apagado, cada uno se dibuja donde lo deja su tick, a saltos de
+fotograma como el original. La lógica es la misma en los dos casos.

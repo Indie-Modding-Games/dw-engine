@@ -74,16 +74,25 @@ bool Field::inWall(glm::vec3 position) const {
 }
 
 void Field::settle() {
-  beginTicks(tickSeconds_);
-  playerGlide_.on = false;
-  partnerGlide_.on = false;
+  // A tick without the field's ends the glides; one the field runs after this keeps them going.
+  // The glides' clocks move on in the field's tick only, once a tick.
+  if (!std::exchange(fieldRan_, false)) {
+    playerGlide_.on = false;
+    partnerGlide_.on = false;
+  }
+  beginTransforms();
 }
 
-void Field::beginTicks(float seconds) {
+void Field::beginTransforms() {
   entt::registry& registry = world_->registry();
   scene::beginTick(registry.get<Transform>(player_));
   scene::beginTick(registry.get<Transform>(partner_));
   npcs_.beginTick();
+}
+
+void Field::beginTicks(float seconds) {
+  fieldRan_ = true;
+  beginTransforms();
   playerGlide_.seconds += tickSeconds_;
   partnerGlide_.seconds += tickSeconds_;
   tickSeconds_ = seconds;

@@ -190,8 +190,13 @@ public:
   // Where to draw a character between the last two ticks (alpha from core::FixedStep). While the
   // last thing that moved the player or the partner was a frame's step, it glides over the frame's
   // ticks from where it was drawn when the frame began to where the step left it, so the steps
-  // look smooth; anything else is drawn as scene::interpolate draws it.
+  // look smooth; anything else is drawn as scene::interpolate draws it. With smooth motion off
+  // every character is drawn where its last tick left it, as the original draws its frames.
   [[nodiscard]] scene::Pose drawnPose(scene::Entity entity, float alpha) const;
+  // Smooth motion (the engine's, on by default): drawnPose glides and interpolates. The logic is
+  // the same either way; only the drawing changes.
+  void setSmoothMotion(bool on) { smoothMotion_ = on; }
+  [[nodiscard]] bool smoothMotion() const { return smoothMotion_; }
 
   // The warp the player stepped on, once the fade out has ended: after taking it the app loads the
   // map and calls enterMap.
@@ -431,9 +436,11 @@ public:
   // their summed half sides on both axes. The original's squares are wide, and a partner stopped
   // by the player on a diagonal overlaps it by a corner (partner.c:971 measures a circle).
   [[nodiscard]] static bool overlaps(const GroundSquare& a, const GroundSquare& b);
-  // Starts a tick of every character's transform without moving it, for the ticks the field does
-  // not run (a battle, the evolution, a sleep, the fishing, a menu, an item's notice): what they
-  // draw is where they stand, not a move from an older tick nor the rest of a frame's glide.
+  // Starts a tick of every character's transform without moving it. The game calls it at the
+  // start of every tick; when the field's own tick follows, a frame's glide goes on. On the ticks
+  // the field does not run (a battle, the evolution, a sleep, the fishing, a menu, an item's
+  // notice) what they draw is where they stand, not a move from an older tick nor the rest of a
+  // frame's glide, and the glides end.
   void settle();
   // The partner's collision size, its species' radius (the original's species table): it sizes
   // the grid collision, the NPCs' and the follow distances (partner.c:971), and asks for the
@@ -576,12 +583,16 @@ private:
     bool on = false;
   };
   void beginTicks(float seconds);
+  void beginTransforms();
   void startGlide(FrameGlide& glide, scene::Entity entity) const;
   void endGlide(FrameGlide& glide, scene::Entity entity) const;
   [[nodiscard]] std::optional<scene::Pose> glidePose(const FrameGlide& glide, scene::Entity entity,
                                                      float alpha) const;
   FrameGlide playerGlide_;
   FrameGlide partnerGlide_;
+  // Whether the field's tick ran since the last settle: the glides go on only then.
+  bool fieldRan_ = false;
+  bool smoothMotion_ = true;
   // Seconds since the current frame of the original began, not counting this tick.
   float frameClock_ = 0.0F;
   float tickSeconds_ = 0.0F;

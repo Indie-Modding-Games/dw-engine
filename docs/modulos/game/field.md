@@ -186,7 +186,11 @@ Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y
   `PlaySession::tick`), que hace anterior = actual en jugador, compañero y NPC; también `Field::tick` lo hace siempre,
   aunque solo corra el fundido de un cambio de mapa o la espera del mapa nuevo. Así, en los ticks en que el campo no
   corre (combate para los que no luchan, evolución, sueño, pesca, menús, aviso de objeto) nadie se dibuja deslizándose
-  desde donde lo dejó un tick viejo. Un salto de guion se dibuja de golpe: `placeByScript` a más de media casilla y
+  desde donde lo dejó un tick viejo, y el deslizamiento del fotograma acaba. Si tras `settle` corre el tick del campo,
+  el deslizamiento sigue: antes `settle` lo apagaba en cada tick y el jugador y el compañero se dibujaban un tercio
+  del paso deslizándose, luego el resto de golpe y dos ticks quietos (el «movimiento a tirones» que vio el usuario el
+  2026-10-31). Su reloj avanza una vez por tick del campo. Es una mejora opcional (`setSmoothMotion`, ajuste
+  `smooth_motion`, encendida por defecto): apagada, todos se dibujan donde los deja su tick, como el original. Un salto de guion se dibuja de golpe: `placeByScript` a más de media casilla y
   `turnByScript` de más de un octavo de vuelta igualan también el anterior; los pasos cortos (el gimnasio, el final de
   un deslizamiento) se siguen interpolando en su tick. `playerFacePartner` y el mirarse al acabar un paseo de cuidado
   (`entityLookAtLocation`) giran de golpe, como el original.
@@ -244,7 +248,8 @@ decomp no lo deja claro) o **Hueco** (falta).
 | Andar o pararse del compañero | `partner.c: getPartnerTamerCloseness`, solo la distancia | igual, también siguiendo el rastro | `field_tests`: seguimiento | Igual |
 | Rumbo del compañero con el jugador delante | recupera el que tenía (`partnerTickCollision`) | igual | oráculo `field_walk_seen` | Igual |
 | `place` de script | pone el personaje en su sitio | igual, sin regla de suelta | `field_tests`: "a placed partner stays ..." | Igual |
-| Dibujo del paso de fotograma | sin interpolación | `drawnPose` desliza el paso por 1/20 s | `field_tests`: "... drawn gliding over a frame's ticks" | Mejora documentada |
+| Dibujo del paso de fotograma | sin interpolación | `drawnPose` desliza el paso por 1/20 s, también con `settle` al principio de cada tick de la partida | `field_tests`: "... drawn gliding over a frame's ticks", "the game's ticks, each starting with settle, keep the frame's glide going". Medido en dwe (release, lavapipe a 320x180, corriendo en mayo01_2): antes el 36 % de los dibujos con el jugador en marcha lo dejaban quieto (coef. de variación de la velocidad dibujada 1,40); después el 4 % (los de arrancar y cambiar de mapa) y 0,32 | Mejora opcional (`smooth_motion`, encendida por defecto) |
+| Movimiento suave apagado | dibuja cada fotograma en su sitio | `drawnPose` sin deslizar ni interpolar | `field_tests`: "with smooth motion off the characters are drawn where their tick left them" | Igual (con la mejora apagada) |
 | Interpolación sin tick de campo y saltos de guion | sin interpolación | `settle`, `placeByScript`/`turnByScript` con salto | `field_tests`: "settling ...", "a script's jump ..." | Mejora documentada |
 | El jugador atraviesa al compañero | `tamer.c: checkMapInteraction` pasa al compañero como `source` a `entityCheckCollision`, que lo salta (`other != source`) | el jugador lo atraviesa; la vigilancia lo registra si se queda encima | ruta `control` | Igual |
 | Deslizamientos de guion contra paredes y NPC; `wouldTouchCharacter` sin NPC | — | sin cambiar; la regla de suelta arregla el resultado | — | Hueco |

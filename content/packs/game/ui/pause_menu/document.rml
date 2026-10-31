@@ -380,6 +380,9 @@
 				<button id="free-exploration" class="option" onclick="adjust(document, 'free-exploration', 1)">
 					<span class="label" text-key="pause_menu.free_exploration"></span><span class="value" id="free-exploration-value"></span>
 				</button>
+				<button id="smooth-motion" class="option" onclick="adjust(document, 'smooth-motion', 1)">
+					<span class="label" text-key="pause_menu.smooth_motion"></span><span class="value" id="smooth-motion-value"></span>
+				</button>
 				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 

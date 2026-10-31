@@ -39,6 +39,8 @@ vsync: "Sincronización vertical"
 ui_skin: "Aspecto de la interfaz"
 # Exploración libre: los scripts abren todos sus caminos, diga lo que diga la historia (apagada por defecto).
 free_exploration: "Exploración libre"
+# Movimiento suave: los personajes y la cámara se deslizan entre los fotogramas del original (encendido por defecto).
+smooth_motion: "Movimiento suave"
 
 year_label: "Año"
 day_label: "Día"

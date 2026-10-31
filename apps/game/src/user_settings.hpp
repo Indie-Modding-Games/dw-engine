@@ -25,6 +25,9 @@ struct UserSettings {
   // Free exploration (free_exploration: true, false): the scripts' map changes go anywhere they
   // can, whatever the story; off when not chosen yet.
   std::optional<bool> freeExploration = std::nullopt;
+  // Smooth motion (smooth_motion: true, false): the characters and the camera are drawn gliding
+  // between the original's 20 Hz frames; on when not chosen yet.
+  std::optional<bool> smoothMotion = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

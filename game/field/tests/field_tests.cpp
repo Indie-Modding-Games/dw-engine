@@ -171,6 +171,75 @@ TEST_CASE("the player and the partner are drawn gliding over a frame's ticks") {
   CHECK(field.drawnPose(player, 0.5F).position.x == doctest::Approx(300.0F));
 }
 
+TEST_CASE("the game's ticks, each starting with settle, keep the frame's glide going") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  field.setInput({.stick = {1.0F, 0.0F}, .run = true});
+  // As PlaySession::tick: settle, then the field's tick.
+  const auto gameTick = [&] {
+    field.settle();
+    field.tick(Tick);
+  };
+  for (int i = 0; i < 4; ++i) {
+    gameTick(); // the press's frame and the first step's
+  }
+  const dwe::scene::Entity player = field.playerEntity();
+  const dwe::scene::Entity partner = field.partnerEntity();
+  REQUIRE(field.player().position.x == doctest::Approx(50.0F));
+  // Drawn at 120 Hz over three frames of steps: the same advance every draw, 50 a frame of 1/20 s.
+  std::vector<float> drawn;
+  for (int i = 0; i < 9; ++i) {
+    drawn.push_back(field.drawnPose(player, 0.0F).position.x);
+    drawn.push_back(field.drawnPose(player, 0.5F).position.x);
+    gameTick();
+  }
+  for (std::size_t i = 1; i < drawn.size(); ++i) {
+    CHECK(drawn[i] - drawn[i - 1] == doctest::Approx(50.0F / 6.0F));
+  }
+  // The partner follows and glides the same way: no draw stands still between two of its steps.
+  std::vector<glm::vec3> partnerDrawn;
+  std::vector<glm::vec3> partnerAt;
+  for (int i = 0; i < 90; ++i) {
+    gameTick();
+    partnerDrawn.push_back(field.drawnPose(partner, 0.0F).position);
+    partnerAt.push_back(world.registry().get<dwe::scene::Transform>(partner).position);
+  }
+  int walking = 0;
+  for (std::size_t i = 0; i + 3 < partnerAt.size(); ++i) {
+    if (partnerAt[i + 3] != partnerAt[i] && partnerAt[i] != partnerAt[0]) {
+      ++walking;
+      CHECK(glm::distance(partnerDrawn[i + 1], partnerDrawn[i]) > 1.0F);
+    }
+  }
+  CHECK(walking > 30);
+  // A tick without the field's (a menu) draws everybody where they stand and ends the glides.
+  field.settle();
+  CHECK(field.drawnPose(player, 0.5F).position.x == doctest::Approx(field.player().position.x));
+  field.settle();
+  field.tick(Tick);
+  CHECK(field.drawnPose(player, 0.0F).position.x == doctest::Approx(field.player().position.x));
+}
+
+TEST_CASE("with smooth motion off the characters are drawn where their tick left them") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  CHECK(field.smoothMotion());
+  field.setSmoothMotion(false);
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  field.setInput({.stick = {1.0F, 0.0F}, .run = true});
+  run(field, 4.0F * Tick);
+  const dwe::scene::Entity player = field.playerEntity();
+  // The step's tick: the whole step at once, whatever the alpha, as the original's frame.
+  CHECK(field.drawnPose(player, 0.0F).position.x == doctest::Approx(50.0F));
+  CHECK(field.drawnPose(player, 0.5F).position.x == doctest::Approx(50.0F));
+  field.tick(Tick);
+  CHECK(field.drawnPose(player, 0.5F).position.x == doctest::Approx(50.0F));
+  // The logic is the same either way.
+  run(field, 2.0F * Tick);
+  CHECK(field.player().position.x == doctest::Approx(100.0F));
+}
+
 TEST_CASE("against a wall straight ahead the player turns 0x50 aside and slides") {
   auto map = roomMap("room");
   // A wall across the way up (world -Z), from z -500 to -600.

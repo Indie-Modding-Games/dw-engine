@@ -105,6 +105,11 @@ local options = {
   ["free-exploration"] = function(_step)
     ui.send("free_exploration", not ui.setting("free_exploration"))
   end,
+  -- Smooth motion: the characters and the camera glide between the original's frames (on by
+  -- default; off draws them where each frame leaves them, as the original).
+  ["smooth-motion"] = function(_step)
+    ui.send("smooth_motion", not ui.setting("smooth_motion"))
+  end,
 }
 
 local function can_sleep()
@@ -556,6 +561,7 @@ local function refresh(document)
   document:get("vsync-value"):set_text(on_off(ui.setting("vsync")))
   document:get("ui-skin-value"):set_text(skin_choice.name())
   document:get("free-exploration-value"):set_text(on_off(ui.setting("free_exploration")))
+  document:get("smooth-motion-value"):set_text(on_off(ui.setting("smooth_motion")))
   document:get("player-name"):set_text(ui.setting("player.name") or "")
   local level = ui.setting("player.level")
   document

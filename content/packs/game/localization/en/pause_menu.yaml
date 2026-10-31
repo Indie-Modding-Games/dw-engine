@@ -39,6 +39,8 @@ vsync: "Vertical sync"
 ui_skin: "Interface style"
 # Free exploration: the scripts open every way they have, whatever the story (off by default).
 free_exploration: "Free exploration"
+# Smooth motion: the characters and the camera glide between the original's frames (on by default).
+smooth_motion: "Smooth motion"
 
 year_label: "Year"
 day_label: "Day"

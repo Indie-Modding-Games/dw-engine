@@ -434,6 +434,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                      core::formatMessage(messages::PartnerModelNotShown,
                                          session.partnerView().species, shown.error().message));
   }
+  // Smooth motion (game::field::Field::setSmoothMotion), the engine's, on unless turned off.
+  const bool smooth = context.userSettings->smoothMotion.value_or(true);
+  scene_->field().setSmoothMotion(smooth);
+  context_.ui->setSetting(SmoothMotionSetting, smooth);
   context_.ui->show("hud");
   // The tuning panel tunes the game's ruleset, sets the speed of its clock, pauses it and jumps it.
   // It is attached last and detached first, so it never points at a game half built or half gone.
@@ -667,6 +671,17 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       fieldPoop_.handle(command) || fieldItemsScreen_.handle(command) ||
       awardScreen_.handle(command) || fishingScreen_.handle(command) ||
       battleScreen_.handle(command) || freeExploration_.handle(command)) {
+    return true;
+  }
+  if (command.name == SmoothMotionSetting) {
+    if (const bool* smooth = std::get_if<bool>(&command.value)) {
+      scene_->field().setSmoothMotion(*smooth);
+      context_.userSettings->smoothMotion = *smooth;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    context_.ui->setSetting(SmoothMotionSetting, scene_->field().smoothMotion());
     return true;
   }
   if (command.name == "to_title") {

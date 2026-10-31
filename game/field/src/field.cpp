@@ -544,7 +544,8 @@ void Field::endGlide(FrameGlide& glide, scene::Entity entity) const {
 std::optional<scene::Pose> Field::glidePose(const FrameGlide& glide, scene::Entity entity,
                                             float alpha) const {
   const auto& transform = world_->registry().get<Transform>(entity);
-  if (!glide.on || transform.position != glide.to.position || transform.yaw != glide.to.yaw) {
+  if (!glide.on || !fieldRan_ || transform.position != glide.to.position ||
+      transform.yaw != glide.to.yaw) {
     return std::nullopt;
   }
   const float frame = rules_.transition.frameSeconds;
@@ -556,6 +557,9 @@ std::optional<scene::Pose> Field::glidePose(const FrameGlide& glide, scene::Enti
 
 scene::Pose Field::drawnPose(scene::Entity entity, float alpha) const {
   const auto& transform = world_->registry().get<Transform>(entity);
+  if (!smoothMotion_) {
+    return {.position = transform.position, .yaw = transform.yaw};
+  }
   std::optional<scene::Pose> pose;
   if (entity == player_) {
     pose = glidePose(playerGlide_, entity, alpha);
