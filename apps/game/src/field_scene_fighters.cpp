@@ -47,6 +47,15 @@ FieldScene::Actor* FieldScene::fighterActor(std::optional<std::int32_t> npc) con
   return found != npcActors_.end() ? found->get() : nullptr;
 }
 
+void FieldScene::setNpcSoundSlot(scene::Entity npc, std::int64_t slot) {
+  const auto found = std::ranges::find(npcActors_, npc, &Actor::entity);
+  if (found == npcActors_.end()) {
+    return;
+  }
+  core::logDebug("[port:sound] entity {} vabId {}", static_cast<std::uint32_t>(npc), slot);
+  (*found)->soundSlot = slot;
+}
+
 // The battle moves the fighter's entity itself (battle_main.c: the fighters' positions and
 // rotations are their entities'), so the field finds it where the battle left it.
 bool FieldScene::holdFighter(std::optional<std::int32_t> npc, const FighterFigure& figure) {

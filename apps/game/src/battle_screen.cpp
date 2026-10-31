@@ -142,7 +142,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
                      *bodies_, &*bodies_);
     battle_->setFlights(&*flights_);
   }
-  desc_.session->useBattleSounds(true);
+  desc_.session->startBattleSounds();
   // btl.c: loadBattleData loads each enemy's species bank into slot 4 + its place.
   std::vector<std::string> enemySpecies;
   for (const game::battle::Combatant& enemy : introEnemies) {
@@ -805,7 +805,11 @@ void BattleScreen::finish() {
   }
   flights_.reset();
   bodies_.reset();
-  desc_.session->useBattleSounds(false);
+  // BTL_deinitializeCombat reloads the map's bank only after a victory; a tournament's match ends
+  // with the arena's bank again (std_setup.c: loadMapSounds(0x10)). A battle that never gave a
+  // result ends as a won one.
+  desc_.session->endBattleSounds(!finished || finished->outcome == game::battle::Outcome::Victory ||
+                                 finished->kind == game::battle::BattleKind::Tournament);
   session::SessionMusic* music = desc_.session->music();
   if (music != nullptr) {
     music->endBattle();

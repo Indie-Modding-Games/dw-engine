@@ -54,6 +54,8 @@ if (auto change = field.takeMapChange()) {
   que nace, como si su objeto fuera detrás del de la carga en la tabla de objetos.
   La llegada (rutina de compañero 8, `EAB_tick` y `EAB_tickSpawn`) cuenta desde el fotograma siguiente: del 45 la
   pantalla se resta a negro (`blackout`); en el 50 el jefe vuelve con la animación 0x21, se para el zumbido y suena el 2,
+  el jefe pasa a `vabId` 5 (`bossSoundSlot`: el banco 4 de sus clips suena de la ranura 5, la que cargó la rutina 51;
+  `FieldScene::setNpcSoundSlot`),
   la carga se quita y solo se ve el jefe (`othersHidden`, hasta el 319) con la cámara girando (`orbit`, del 50 al 318:
   de 0x71c a 0x171c de ángulo hasta el 290, de 0xdac a 0xbb8 de distancia y de 0x258 a 0x32 de altura hasta el 320);
   el negro vuelve a 0 en el 82; cada fotograma pone un anillo de llegada (vive 9) y 9 de cada 18 una partícula verde

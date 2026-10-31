@@ -35,11 +35,14 @@ public:
   // Slot 8 follows the map; the bank of the map before is let go.
   void enterMap(std::string_view mapId);
   // A scene's bank in slot 8 instead of the map's (sound_async.c: loadMapSounds2, as the evolution
-  // and death scenes load theirs); nothing gives slot 8 back to the map's bank.
+  // and death scenes load theirs); a new map or a won battle gives slot 8 back to the map's bank.
   void useSceneBank(std::optional<std::int32_t> soundId);
-  // A battle's bank in slot 8 (btl.c: loadBattleData, sound_async.c: loadSB) while it lasts; after
-  // it the map's or the scene's again, as the map's reload does (sound.c: loadMapSounds).
-  void useBattleBank(bool inBattle);
+  // A battle's bank in slot 8 (btl.c: loadBattleData, sound_async.c: loadSB).
+  void startBattleBank();
+  // The battle ended. A won battle loads the map's bank in slot 8 again, also over a scene's
+  // (battle_main.c: BTL_handleVictorySequence, loadMapSounds2(getMapSoundId)); a fled or lost one
+  // loads nothing, so the battle bank stays until a map or a scene loads another.
+  void endBattleBank(bool won);
   // Slots 3 and 4 follow the partner's species (sound.c: loadPartnerSounds, which the partner's
   // start, its evolution, evl.c, and its rebirth, dooa.c: loadVLALL, call with its new type): the
   // vlall entry of its type (a species no entry names takes the fallback one) and its vball entry.
@@ -49,6 +52,10 @@ public:
   // species (btl.c: loadBattleData, readVBALLSection(i + 4, type)). The slots keep them after the
   // battle, as the original does, until the next battle loads others.
   void useEnemyBanks(std::span<const std::string> species);
+  // One of slots 4 to 7 takes the vball entry of the original's species number `type`
+  // (sound_async.c: readVBALLSection), as routine 51 loads the final boss's into slot 5. Slot 4 is
+  // the partner's: it is left alone.
+  void useSpeciesBank(std::int64_t slot, std::int32_t type);
   void playSound(std::int64_t slot, std::int64_t sound) override;
   std::optional<std::int64_t> playHeldSound(std::int64_t slot, std::int64_t sound) override;
   void stopHeldSound(std::int64_t held) override;
@@ -73,12 +80,16 @@ private:
   std::optional<std::string> mapBank_;
   std::optional<std::string> sceneBank_;
   bool inBattle_ = false;
+  // A fled or lost battle's bank, still in slot 8.
+  bool battleBankKept_ = false;
   std::function<std::string()> partnerSpecies_;
-  // The species of the enemies in slots 5 to 7, empty for a slot no battle loaded.
-  std::array<std::string, 3> enemySpecies_;
-  // Species id -> folder, from the used_by of sound/vball/* and sound/vlall/*.
+  // The vball folders in slots 5 to 7, empty for a slot nothing loaded.
+  std::array<std::optional<std::string>, 3> enemyBanks_;
+  // Species id (and the original's number) -> folder, from the used_by of sound/vball/* and
+  // sound/vlall/*.
   bool speciesBanksRead_ = false;
   std::map<std::string, std::string, std::less<>> vballOf_;
+  std::map<std::int32_t, std::string> vballOfType_;
   std::map<std::string, std::string, std::less<>> vlallOf_;
   std::optional<std::string> vlallFallback_;
   std::map<std::string, audio::EffectBank, std::less<>> banks_;

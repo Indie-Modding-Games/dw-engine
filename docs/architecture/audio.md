@@ -261,14 +261,19 @@ publica la API `story` en `apps/session` y todavía no está en `main`:
 **Juego (2a).**
 - `game/story` declara `SoundPort` (`playSound(slot, value)`), como `StoryStatePort`; el runner no sabe de bancos.
 - `apps/session` lo implementa: ranura 0 → `sound/ss`, 1 → `sound/sl`, 8 → `sound/esall/<sound_id del mapa>`, o
-  `sound/sb` mientras dura un combate (`btl.c: loadBattleData` → `sound_async.c: loadSB`; al acabar vuelve el del
-  mapa, `useBattleBank`). El mapa en que arranca o se carga la partida también da su banco (`attachField`). Cada banco se carga la primera vez que su ranura lo pide, y el del mapa
+  `sound/sb` desde que empieza un combate (`btl.c: loadBattleData` → `sound_async.c: loadSB`, `startBattleBank`). Al
+  acabar, solo una victoria vuelve a cargar el del mapa, también encima del de una escena o rutina
+  (`battle_main.c: BTL_handleVictorySequence` → `loadMapSounds2(getMapSoundId)`; medido: `ACTIVE_MAP_SOUND_ID` vale -1
+  en combate, `11_battle_agumon`, y 0, el banco de mayo00, en el cuadro final tras ganar, `13_battle_end_box`); tras huir o perder el original no
+  recarga nada y `sound/sb` sigue en la ranura 8 hasta que un mapa o una escena cargan otro (`endBattleBank(won)`;
+  los combates de torneo vuelven al banco de la arena, `std_setup.c: loadMapSounds(0x10)`). El mapa en que arranca o se carga la partida también da su banco (`attachField`). Cada banco se carga la primera vez que su ranura lo pide, y el del mapa
   anterior se suelta al cambiar de mapa; un banco que no carga deja su ranura en silencio con un solo aviso. Las ranuras 3–7 no
   las piden los scripts del disco (§10, Q3), sino los clips (`anim.c: tickAnimation`, instrucción 0x4000): 3 y 4 son
   los bancos de la especie del compañero (`sound.c: loadPartnerSounds`: la entrada de `VLALL` de su tipo, o la 15
   fuera de 1–65, y la de `VBALL`), que siguen a la especie actual (`attachPartner`; el original los recarga al
   empezar, al evolucionar, `evl.c`, y al renacer, `dooa.c: loadVLALL`), y 5–7 los `VBALL` de los enemigos del último
-  combate (`btl.c: loadBattleData`: el enemigo i en la ranura 4 + i, `useEnemyBanks`), que siguen ahí tras él. La
+  combate (`btl.c: loadBattleData`: el enemigo i en la ranura 4 + i, `useEnemyBanks`), que siguen ahí tras él; la
+  rutina 51 pone en la 5 el del jefe final (`readVBALLSection(5, 0x73)`, `useSpeciesBank` por número de especie). La
   tabla tipo → entrada sale, como propone Q3, de `used_by.types` de cada `bank_meta.yaml` (y `used_by.fallback`),
   leída la primera vez que se pide una de esas ranuras.
 - `SoundPort` también tiene `playHeldSound(slot, value)` → asa y `stopHeldSound(asa)` (`sound.c: playSound2` y

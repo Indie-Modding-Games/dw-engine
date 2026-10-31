@@ -44,6 +44,9 @@ constexpr std::int32_t HumSound = 0;
 constexpr std::int32_t CallSound = 1;
 constexpr std::int32_t RiseSound = 2;
 constexpr std::int32_t LandSound = 3;
+// eab.c: EAB_tickSpawn sets the boss's stats.current.vabId to 5: its clips' own sounds play from
+// slot 5, the bank routine 51 loaded.
+constexpr std::int32_t BossOwnSlot = 5;
 constexpr std::int32_t BlackLevel = 0xff;
 // EAB_D_8006179C: the particles' strength by frame within 18; 0 adds none.
 constexpr std::array<std::int32_t, 18> ParticleStrength{1, 2, 3, 4, 5, 4, 3, 2, 1,
@@ -173,6 +176,7 @@ void BossArrival::tickArrival(glm::vec3 bossPoint, BossArrivalCues& cues) {
     cues.animation = RiseAnimation;
     cues.stopSounds = true;
     cues.heldSound = RiseSound;
+    cues.bossSoundSlot = BossOwnSlot;
   }
   if (phase_ == 1) {
     addRing(BossRingKind::Spawn);

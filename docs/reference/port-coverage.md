@@ -565,7 +565,7 @@ Portado 30, parcial 1, falta 0, no aplica 13.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `EAB_tickSpawn` | `eab/eab.c:349` | parcial | Escena de aparición del jefe final: destello, anillos, partículas, cámara y sonidos. | `game/field/src/boss_arrival.cpp` · sin el dibujo en alambre del jefe, sin repetir la animación 0x33 al acabar y sin vabId 5; sin medir en el original |
+| `EAB_tickSpawn` | `eab/eab.c:349` | parcial | Escena de aparición del jefe final: destello, anillos, partículas, cámara y sonidos. | `game/field/src/boss_arrival.cpp` · sin el dibujo en alambre del jefe y sin repetir la animación 0x33 al acabar; vabId 5 en BossArrivalCues::bossSoundSlot; sin medir en el original |
 
 No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (4); limpieza de objetos y memoria del original: el motor libera lo suyo (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); descodificación de vídeo; el motor usa su propio reproductor (2); lectura en flujo del disco; el motor lee el vídeo de archivo (2); sincronía de hardware; el motor tiene su propio bucle (1).
 

@@ -56,6 +56,14 @@ core::Result<void> registerStartEndingRoutine(StoryScenesContext& scenes);
 
 // The sound bank routine 51 or 52 loads into slot 8; nothing for another routine.
 std::optional<std::int32_t> loadRoutineSounds(game::story::RoutineNumber routine);
+// The species bank routine 51 also loads (sound_async.c: readVBALLSection(5, 0x73)): the slot and
+// the original's species number; nothing for another routine.
+struct RoutineSpeciesBank {
+  std::int64_t slot = 0;
+  std::int32_t type = 0;
+  bool operator==(const RoutineSpeciesBank&) const = default;
+};
+std::optional<RoutineSpeciesBank> loadRoutineSpeciesBank(game::story::RoutineNumber routine);
 // Gives slot 8 back to the map once the field is on another map than the one routine 51 or 52
 // loaded its bank on (map.c: loadMap).
 void dropRoutineSoundsOnNewMap(StoryScenesContext& scenes, GameSession& session);

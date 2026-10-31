@@ -132,7 +132,7 @@ TEST_CASE("a battle holds the battle bank in slot 8, and held sounds keep a hand
   SoundRig rig;
   session::SessionSound sound{rig.audio, rig.files};
   sound.enterMap("base:twna01");
-  sound.useBattleBank(true);
+  sound.startBattleBank();
   // The map's sound 5 is not in the battle bank; the battle's 34 is.
   sound.playSound(8, 5);
   CHECK(rig.audio.activeVoiceCount() == 0);
@@ -146,10 +146,46 @@ TEST_CASE("a battle holds the battle bank in slot 8, and held sounds keep a hand
   sound.stopHeldSound(held.value_or(0));
   sound.stopHeldSound(held.value_or(0)); // a second stop finds nothing to stop
 
-  // After the battle the map's bank is back.
-  sound.useBattleBank(false);
+  // After a won battle the map's bank is back.
+  sound.endBattleBank(true);
   sound.playSound(8, 5);
   CHECK(rig.audio.activeVoiceCount() == 3);
+}
+
+TEST_CASE("a won battle gives slot 8 back to the map's bank; a fled one keeps the battle's") {
+  SoundRig rig;
+  addBank(rig.memory, "esall/021", 1);
+  const assets::VirtualFileSystem files =
+      assets::VirtualFileSystem::mount(rig.memory, std::vector<std::filesystem::path>{"pack"})
+          .value();
+  session::SessionSound sound{rig.audio, files};
+  sound.enterMap("base:twna01");
+  // Routine 51's bank (0x15) in slot 8: the map's sound 5 is not in it.
+  sound.useSceneBank(0x15);
+  sound.playSound(8, 5);
+  CHECK(rig.audio.activeVoiceCount() == 0);
+
+  // battle_main.c: BTL_handleVictorySequence: loadMapSounds2(getMapSoundId) over the scene's.
+  sound.startBattleBank();
+  sound.endBattleBank(true);
+  sound.playSound(8, 5);
+  CHECK(rig.audio.activeVoiceCount() == 1);
+
+  // A fled battle reloads nothing: the battle bank stays until a map loads.
+  sound.startBattleBank();
+  sound.endBattleBank(false);
+  sound.playSound(8, 5);
+  sound.playSound(8, 34);
+  CHECK(rig.audio.activeVoiceCount() == 2);
+  sound.enterMap("base:twna01");
+  sound.playSound(8, 5);
+  CHECK(rig.audio.activeVoiceCount() == 3);
+  // A scene's bank replaces it too.
+  sound.startBattleBank();
+  sound.endBattleBank(false);
+  sound.useSceneBank(std::nullopt);
+  sound.playSound(8, 5);
+  CHECK(rig.audio.activeVoiceCount() == 4);
 }
 
 namespace {
@@ -248,4 +284,21 @@ TEST_CASE("slots 3 and 4 hold the partner's species banks, 5 to 7 the last battl
   sound.playSound(5, 50);
   sound.playSound(6, 50);
   CHECK(audio.activeVoiceCount() == 8);
+}
+
+TEST_CASE("a slot from 5 to 7 takes the vball entry of a species number") {
+  assets::MemoryFileSystem memory;
+  const assets::VirtualFileSystem files = speciesPack(memory);
+  audio::Audio audio{std::make_unique<audio::NullOutput>()};
+  session::SessionSound sound{audio, files};
+  // script_interp.c:1845: routine 51: readVBALLSection(5, 0x73); here number 17's entry.
+  sound.useSpeciesBank(5, 17);
+  sound.playSound(5, 51);
+  CHECK(audio.activeVoiceCount() == 1);
+  // A number no entry names leaves the slot silent; slot 4 is the partner's and stays out.
+  sound.useSpeciesBank(5, 99);
+  sound.playSound(5, 51);
+  sound.useSpeciesBank(4, 17);
+  sound.playSound(4, 51);
+  CHECK(audio.activeVoiceCount() == 1);
 }

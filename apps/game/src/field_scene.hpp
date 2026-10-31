@@ -250,6 +250,9 @@ public:
   // The NPCs the story took off the map without unloading them (isOnMap = 0: eab.c:
   // EAB_startBuildup), not drawn until replaced; their owner sets them every frame.
   void setHiddenNpcs(std::vector<scene::Entity> npcs) { hiddenNpcs_ = std::move(npcs); }
+  // The slot a map NPC's clips play their own sounds (bank 4) from: stats.current.vabId, which a
+  // battle or a scene sets (eab.c: EAB_tickSpawn). Nothing happens for another entity.
+  void setNpcSoundSlot(scene::Entity npc, std::int64_t slot);
   // Primitives the story draws over the whole field picture, in front of everything the map draws
   // and behind the interface, until replaced (the shake's red square: field_story_props.hpp).
   void setStoryScreenPrims(std::vector<ScenePrim> prims) { storyScreenPrims_ = std::move(prims); }

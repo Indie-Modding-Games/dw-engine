@@ -63,6 +63,8 @@ struct BossArrivalCues {
   // playSound2(8, n), a sound held to be stopped; playSound(8, n).
   std::optional<std::int32_t> heldSound;
   std::optional<std::int32_t> sound;
+  // The slot the boss's own sounds (its clips' bank 4) play from from now on.
+  std::optional<std::int32_t> bossSoundSlot;
 };
 
 // The camera of the arrival (EAB_calculateCameraOrbit): it looks at the boss's root bone 100 up,

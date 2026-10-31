@@ -127,6 +127,11 @@ void BossArrivalScene::play(const game::field::BossArrivalCues& cues) {
       }
     }
   }
+  if (cues.bossSoundSlot) {
+    if (const std::optional<scene::Entity> entity = boss()) {
+      scene_->setNpcSoundSlot(*entity, *cues.bossSoundSlot);
+    }
+  }
   if (sound_ == nullptr) {
     return;
   }

@@ -5,8 +5,10 @@
 #include <dwe/session/session_sound.hpp>
 
 #include <algorithm>
+#include <charconv>
 #include <format>
 #include <string>
+#include <system_error>
 #include <utility>
 
 namespace dwe::session {
@@ -51,6 +53,8 @@ void SessionSound::enterMap(std::string_view mapId) {
   }
   const assets::MapEntry* map = maps_ ? maps_->find(mapId) : nullptr;
   mapBank_.reset();
+  // map.c: loadMap loads the new map's bank over whatever slot 8 held.
+  battleBankKept_ = false;
   if (map != nullptr && map->soundId >= 0) {
     mapBank_ = bankFolderOf(map->soundId);
   }
@@ -59,6 +63,7 @@ void SessionSound::enterMap(std::string_view mapId) {
 
 void SessionSound::useSceneBank(std::optional<std::int32_t> soundId) {
   sceneBank_.reset();
+  battleBankKept_ = false;
   if (soundId) {
     sceneBank_ = bankFolderOf(*soundId);
   }
@@ -77,7 +82,8 @@ void SessionSound::dropUnusedBanks() {
   std::erase_if(banks_, [&](const auto& entry) {
     return entry.first != SystemBank && entry.first != SecondSystemBank &&
            entry.first != mapBank_ && entry.first != sceneBank_ &&
-           !(inBattle_ && entry.first == BattleBank) && !used.contains(entry.first);
+           !((inBattle_ || battleBankKept_) && entry.first == BattleBank) &&
+           !used.contains(entry.first);
   });
 }
 
@@ -86,16 +92,36 @@ void SessionSound::attachPartner(std::function<std::string()> species) {
 }
 
 void SessionSound::useEnemyBanks(std::span<const std::string> species) {
-  for (std::size_t index = 0; index < enemySpecies_.size(); ++index) {
+  for (std::size_t index = 0; index < enemyBanks_.size(); ++index) {
     // btl.c: loadBattleData loads only the slots of the enemies there are; the others keep theirs.
     if (index < species.size()) {
-      enemySpecies_.at(index) = species[index];
+      enemyBanks_.at(index) = speciesFolder(species[index], false);
       core::logDebug("[port:sound] readVBALLSection (sound_async.c:217): slot {} species {} "
                      "bank={}",
                      FirstEnemySlot + static_cast<std::int64_t>(index), species[index],
-                     folderOf(FirstEnemySlot + static_cast<std::int64_t>(index)).value_or("none"));
+                     enemyBanks_.at(index).value_or("none"));
     }
   }
+  dropUnusedBanks();
+}
+
+void SessionSound::useSpeciesBank(std::int64_t slot, std::int32_t type) {
+  if (slot < FirstEnemySlot || slot > LastEnemySlot) {
+    return;
+  }
+  if (!speciesBanksRead_) {
+    readSpeciesBanks();
+  }
+  const auto found = vballOfType_.find(type);
+  std::optional<std::string>& bank =
+      enemyBanks_.at(static_cast<std::size_t>(slot - FirstEnemySlot));
+  bank.reset();
+  if (found != vballOfType_.end()) {
+    bank = found->second;
+  }
+  core::logDebug("[port:sound] readVBALLSection (sound_async.c:217): slot {} type {} bank={}", slot,
+                 type, bank.value_or("none"));
+  dropUnusedBanks();
 }
 
 void SessionSound::readSpeciesBanks() {
@@ -128,6 +154,16 @@ void SessionSound::readSpeciesBanks() {
             species != nullptr && species->isScalar()) {
           folders.emplace(species->text(), folder);
         }
+        if (const core::YamlNode* number = type.isMapping() ? type.find("type") : nullptr;
+            !voices && number != nullptr && number->isScalar()) {
+          const std::string& digits = number->text();
+          std::int32_t value = 0;
+          if (const auto [end, error] =
+                  std::from_chars(digits.data(), digits.data() + digits.size(), value);
+              error == std::errc{} && end == digits.data() + digits.size()) {
+            vballOfType_.emplace(value, folder);
+          }
+        }
       }
     }
     if (voices && users->find("fallback") != nullptr) {
@@ -151,10 +187,23 @@ std::optional<std::string> SessionSound::speciesFolder(std::string_view species,
   return partnerBank ? vlallFallback_ : std::nullopt;
 }
 
-void SessionSound::useBattleBank(bool inBattle) {
-  inBattle_ = inBattle;
+void SessionSound::startBattleBank() {
+  inBattle_ = true;
+  battleBankKept_ = false;
+  core::logDebug("[port:sound] loadSB (sound_async.c:208): slot 8 bank={}",
+                 folderOf(MapSlot).value_or("none"));
+  dropUnusedBanks();
+}
+
+void SessionSound::endBattleBank(bool won) {
+  inBattle_ = false;
+  battleBankKept_ = !won;
+  if (won) {
+    sceneBank_.reset();
+  }
   core::logDebug("[port:sound] {}: slot 8 bank={}",
-                 inBattle ? "loadSB (sound_async.c:208)" : "loadMapSounds (sound.c:721)",
+                 won ? "BTL_handleVictorySequence (battle_main.c:893): loadMapSounds2"
+                     : "BTL_deinitializeCombat (battle_main.c:766): no victory, no reload",
                  folderOf(MapSlot).value_or("none"));
   dropUnusedBanks();
 }
@@ -242,9 +291,9 @@ std::optional<std::string> SessionSound::folderOf(std::int64_t slot) {
   case FirstEnemySlot:
   case FirstEnemySlot + 1:
   case LastEnemySlot:
-    return speciesFolder(enemySpecies_.at(static_cast<std::size_t>(slot - FirstEnemySlot)), false);
+    return enemyBanks_.at(static_cast<std::size_t>(slot - FirstEnemySlot));
   case MapSlot:
-    if (inBattle_) {
+    if (inBattle_ || battleBankKept_) {
       return std::string{BattleBank};
     }
     return sceneBank_ ? sceneBank_ : mapBank_;

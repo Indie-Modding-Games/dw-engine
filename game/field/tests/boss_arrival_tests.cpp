@@ -105,6 +105,8 @@ TEST_CASE("the arrival blacks out at 45, shows the boss alone at 50 and ends at 
   CHECK(rise.animation == 0x21);
   CHECK(rise.stopSounds);
   CHECK(rise.heldSound == 2);
+  // eab.c: EAB_tickSpawn gives the boss vabId 5 as it rises.
+  CHECK(rise.bossSoundSlot == 5);
   CHECK_FALSE(arrival.bossHidden());
   CHECK(arrival.othersHidden());
   CHECK_FALSE(arrival.charging());
@@ -117,7 +119,7 @@ TEST_CASE("the arrival blacks out at 45, shows the boss alone at 50 and ends at 
   // Frame 50 is 14 of 18: no particle yet.
   CHECK(arrival.particles().empty());
 
-  runTo(arrival, 82);
+  CHECK_FALSE(runTo(arrival, 82).bossSoundSlot.has_value());
   CHECK(arrival.blackout() == 0);
   runTo(arrival, 83);
   CHECK_FALSE(arrival.blackout().has_value());

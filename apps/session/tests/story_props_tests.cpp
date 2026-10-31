@@ -289,6 +289,10 @@ TEST_CASE("routines 51 and 52 load the boss's and the ending's sound banks and g
   CHECK(dwe::session::loadRoutineSounds(51) == 0x15);
   CHECK(dwe::session::loadRoutineSounds(52) == 0x14);
   CHECK_FALSE(dwe::session::loadRoutineSounds(50).has_value());
+  // script_interp.c:1845: 51 also loads the boss's own bank: readVBALLSection(5, 0x73).
+  CHECK(dwe::session::loadRoutineSpeciesBank(51) ==
+        dwe::session::RoutineSpeciesBank{.slot = 5, .type = 0x73});
+  CHECK_FALSE(dwe::session::loadRoutineSpeciesBank(52).has_value());
   dwe::session::StoryScenesContext scenes{dwe::session::StoryScenesDesc{}};
   REQUIRE(dwe::session::registerBossAndEndingLoadRoutines(scenes));
   for (const std::int64_t routine : {51, 52}) {

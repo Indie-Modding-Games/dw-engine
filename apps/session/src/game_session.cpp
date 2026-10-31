@@ -150,9 +150,21 @@ void GameSession::useSceneSounds(std::optional<std::int32_t> soundId) {
   }
 }
 
-void GameSession::useBattleSounds(bool inBattle) {
+void GameSession::startBattleSounds() {
   if (sound_) {
-    sound_->useBattleBank(inBattle);
+    sound_->startBattleBank();
+  }
+}
+
+void GameSession::endBattleSounds(bool won) {
+  if (sound_) {
+    sound_->endBattleBank(won);
+  }
+}
+
+void GameSession::useSpeciesSounds(std::int64_t slot, std::int32_t type) {
+  if (sound_) {
+    sound_->useSpeciesBank(slot, type);
   }
 }
 
