@@ -361,6 +361,9 @@ void ScriptMotion::scriptFrame() {
                          !std::holds_alternative<MoveTo>(it->second.move) &&
                          !std::holds_alternative<MoveToAxis>(it->second.move);
     if (resting && actors_->slotOf(it->second.character)) {
+      // The resting animation carries nobody: a walk a turn took the slot from stops here, as the
+      // original's walk clip stops carrying the character when the turn ends.
+      actors_->drive(it->second.character, {}, Glide::Walk);
       actors_->animate(it->second.character, RestingAnimation);
     }
     it = slots_.erase(it);

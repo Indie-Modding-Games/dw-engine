@@ -47,6 +47,14 @@ registra en la partida guardada y se lo da al campo.
 - **`StoryRules`**: las reglas del estado que sí ve el jugador, del ruleset. El valor de una variable va de 0 a
   `variableMax` (255 en el original): `set_pstat`, `add_to_pstat`, `reduce_pstat` y `store_random` se quedan en ese
   rango, como el tope de 255 y el suelo de 0 del original.
+- **`ScriptMotion`** (movimientos con guion, `script_interp.c: tickScriptedMovement`): cada personaje tiene un hueco;
+  una orden nueva sobre el mismo personaje ocupa su hueco y la anterior deja de contar. **Suposición** (leída del
+  decomp; la medida en el original está en cola): al acabar un giro o un paseo, el personaje vuelve a su animación de
+  reposo (la animación 0 del jugador, del compañero o del NPC) y se queda quieto. En el original es la animación la
+  que lo lleva, así que un paseo al que un `entity_look_at_entity` quitó el hueco sigue hasta que el giro acaba y
+  entonces para. Antes el motor guardaba la velocidad del paseo y el jugador seguía corriendo hasta la pared (trop03,
+  Vegiemon: de (-708, -2323) hasta (-4647, 3941) en ejes del original). Diferencia que queda: durante el giro el motor
+  mantiene la dirección del paseo en vez de torcerla con él (unos pocos fotogramas).
 - **Puertos** (`story_ports.hpp`): `StoryStatePort` (disparadores y variables; dice cuántos tiene: 800 y 256 son el
   conjunto base del original y un mod puede ampliarlo) y `StoryRandomPort` (el generador de la sesión, de 0 a 0x7FFF).
 
