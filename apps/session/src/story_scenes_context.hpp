@@ -15,6 +15,7 @@
 #include <deque>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace dwe::game::story {
@@ -76,6 +77,8 @@ struct StoryScenesContext {
   AngemonPedestalShown pedestal;
   // The mist's palettes (overworld.c: MIST_CLUT_Y), which nothing resets.
   MistPalettes mist;
+  // The map routine 51 or 52 put its sound bank in slot 8 on, until the field leaves it.
+  std::optional<std::string> routineSoundsMap;
   // The recruit triggers as last seen, to tell a new resident.
   std::vector<bool> recruits;
   // A lost life or a death whose section has not run yet, and the egg box's egg (rules.death).

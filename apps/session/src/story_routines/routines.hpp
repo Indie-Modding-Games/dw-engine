@@ -5,6 +5,7 @@
 #include <dwe/session/story_scenes.hpp>
 
 #include <cstdint>
+#include <optional>
 
 // The call_routine handlers, one file each (script_interp.c: scriptInstruction64to7E and
 // tickScript, SCRIPT_OP_CALL_ROUTINE). A lane that adds routines adds its file here and one line
@@ -12,6 +13,7 @@
 namespace dwe::session {
 
 struct StoryScenesContext;
+class GameSession;
 
 // A routine that opens a screen and, when `waits`, holds the section until the app closes it.
 core::Result<void> registerScreenRoutine(StoryScenesContext& scenes,
@@ -48,6 +50,13 @@ core::Result<void> registerAngemonPedestalRoutines(StoryScenesContext& scenes);
 core::Result<void> registerToyTownRoutines(StoryScenesContext& scenes);
 core::Result<void> registerBeetleCupEntryRoutine(StoryScenesContext& scenes);
 core::Result<void> registerRemoveMistRoutine(StoryScenesContext& scenes);
+core::Result<void> registerBossAndEndingLoadRoutines(StoryScenesContext& scenes);
+
+// The sound bank routine 51 or 52 loads into slot 8; nothing for another routine.
+std::optional<std::int32_t> loadRoutineSounds(game::story::RoutineNumber routine);
+// Gives slot 8 back to the map once the field is on another map than the one routine 51 or 52
+// loaded its bank on (map.c: loadMap).
+void dropRoutineSoundsOnNewMap(StoryScenesContext& scenes, GameSession& session);
 
 // What routine 33 writes for an entry on `day` (from 0) with the partner of species number
 // `partnerSpecies`: variables 2, 3 and 4.

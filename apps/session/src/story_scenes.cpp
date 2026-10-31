@@ -17,6 +17,7 @@
 #include <string>
 #include <utility>
 
+#include "story_routines/routines.hpp"
 #include "story_scenes_context.hpp"
 
 namespace dwe::session {
@@ -319,6 +320,7 @@ void StoryScenes::tick(GameSession& session, const ruleset::ClockAdvance& /*adva
   }
   watchRecruits(session);
   askForDeath(session);
+  dropRoutineSoundsOnNewMap(scenes, session);
 }
 
 void StoryScenes::routePartnerEvent(GameSession& /*session*/,

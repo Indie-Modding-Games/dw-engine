@@ -274,3 +274,19 @@ TEST_CASE("the mist goes in 7 frames from the boot palettes and in 1 once the tr
   REQUIRE(dwe::session::registerRemoveMistRoutine(scenes));
   CHECK(scenes.routines.registered(37));
 }
+
+TEST_CASE("routines 51 and 52 load the boss's and the ending's sound banks and go on") {
+  // script_interp.c:1846, 1853: loadMapSounds2(0x15) and loadMapSounds2(0x14).
+  CHECK(dwe::session::loadRoutineSounds(51) == 0x15);
+  CHECK(dwe::session::loadRoutineSounds(52) == 0x14);
+  CHECK_FALSE(dwe::session::loadRoutineSounds(50).has_value());
+  dwe::session::StoryScenesContext scenes{dwe::session::StoryScenesDesc{}};
+  REQUIRE(dwe::session::registerBossAndEndingLoadRoutines(scenes));
+  for (const std::int64_t routine : {51, 52}) {
+    const auto loaded = scenes.routines.call(routine);
+    REQUIRE(loaded);
+    CHECK(std::holds_alternative<dwe::game::story::RoutineGoesOn>(*loaded));
+  }
+  // Without a game nothing holds slot 8.
+  CHECK_FALSE(scenes.routineSoundsMap.has_value());
+}
