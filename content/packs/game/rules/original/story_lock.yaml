@@ -58,7 +58,9 @@ stages:
       - mayo08b
       - mayo10
   # Etapa 2: la jungla (Tropical Jungle, trop00-06) con Coelamon, Betamon, Centarumon y Vegiemon,
-  # y el Drill Tunnel (mayo11 y tunn01-10 con sus variantes) con Drimogemon, Meramon y Ogremon.
+  # y el Drill Tunnel (mayo11 y tunn01-10 con sus variantes) con Drimogemon y Meramon. Ogremon se
+  # une en tunn02 (disparador 234) solo con el 150, que pone ogre11 en la etapa 5: aquí su escena
+  # no sale y el túnel se cruza igual.
   # Abre el lomo de Coelamon (mayo05 a trop01), mayo08a a trop00, las entradas del túnel desde
   # mayo01_2 y mayo02_2 y room14 (la casa que abre Drimogemon, disparador 238). Quedan cerradas
   # solas, por no estar en la lista, las salidas a la etapa 3 y siguientes: trop02 a dgha01,

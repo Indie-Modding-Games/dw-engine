@@ -246,7 +246,8 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop04 --la
   bloque `when` por final), toma cada cruce que encuentra y Centarumon se une al final (236). Su viaje a koda00 queda
   cerrado por el candado de la etapa 2 y el jugador sigue en trop06. Los tres finales reclutan igual (secciones 0x44,
   0x45 y 0x46, la misma escena con otro carril); cuál sale depende de la semilla y de los fotogramas que el jugador
-  pasa en la casilla, así que puede cambiar con el motor.
+  pasa en la casilla, así que puede cambiar con el motor: hoy la semilla 1 lleva a la sección 0x44, la 5 a la
+  0x45 y la 2 a la 0x46; las tres reclutan.
   `route-etapa2-amida-trap.yaml` (`--start trop06`) sube por el carril oeste pasando su primer cruce (disparador 161,
   sección 0x37) y vuelve al inicio del carril (sección 0x34), que encuentra el 161 puesto y salta la trampa: la marca
   de diana parpadea sobre el nodo 10 del jugador (`spawn_sprite_at_entity`, sprites 44 y 45), vuelan las flechas y
