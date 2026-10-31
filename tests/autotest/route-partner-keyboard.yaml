@@ -1,6 +1,7 @@
-# The partner's menu with the keyboard: from the pause menu, the status page, the item bag (an item's options, using
-# it, moving it to another slot, the sort orders, the drop's question answered no) and the care page (praise). How to
-# run it: docs/guides/prueba-vertical.md.
+# The partner's menu with the keyboard, in the original look: from the pause menu, the status page; then the menu's
+# ITEM entry, the item bag (an item's options, using it, moving it to another slot, the sort orders, the drop's question
+# answered no). The original look's partner entry holds the status and tech pages only and its bag has no tabs, as the
+# original's; praising and scolding are field actions there. How to run it: docs/guides/prueba-vertical.md.
 name: partner-keyboard
 device: keyboard
 timeout: 300
@@ -11,25 +12,31 @@ steps:
   - script: give_item("meat 3")
   - script: give_item("sm_recovery 2")
   - script: give_item("mp_floppy 1")
+  # The field fades in from black first: the menu pauses the fade, and the partner comes for food only once it is over.
+  - wait: {setting: {screen_fade: 0}, timeout: 10}
   - menu: open
+  # The menu's box takes no input until it is in place (tickUIBox).
+  - wait: {seconds: 0.6}
   - menu_select: open-partner
   - wait: {shown: partner_menu, seconds: 0.5}
   - screenshot: partner-status
-  - menu_select: tab-items
-  - wait: {seconds: 0.5}
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-items
+  - wait: {shown: partner_menu, seconds: 0.5}
   - screenshot: partner-bag
   - menu_select: slot-0
   - screenshot: partner-bag-options
   - menu_select: opt-use
-  # startFeedingItem (game_menu.c): the menu closes and the partner comes for the meat; the bag opens again once
-  # the scene is over.
+  # startFeedingItem (game_menu.c): the menu closes and the partner comes for the meat.
   - wait: {hidden: partner_menu, timeout: 5}
   - wait: {seconds: 6}
   - menu: open
-  - menu_select: open-partner
+  - wait: {seconds: 0.6}
+  - menu_select: open-items
   - wait: {shown: partner_menu, seconds: 0.5}
-  - menu_select: tab-items
-  - wait: {seconds: 0.5}
   - screenshot: partner-bag-used
   - menu_select: slot-0
   - menu_select: opt-move
@@ -44,11 +51,14 @@ steps:
   - menu_select: slot-0
   - menu_select: opt-drop
   - screenshot: partner-bag-drop
+  # No leaves the question for the item's options; cancel closes them, then the bag, which has no tabs: back to the
+  # menu, which closes after it.
   - menu_select: confirm-no
-  - menu_select: tab-care
-  - menu_select: care-praise
-  - expect_setting: {partner.care_result: partner_menu.care_result.praised}
-  - screenshot: partner-care
-  - menu_select: close
+  - wait: {seconds: 0.3}
+  - tap: {key: escape}
+  - wait: {seconds: 0.3}
+  - tap: {key: escape}
   - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false}
   - screenshot: partner-closed

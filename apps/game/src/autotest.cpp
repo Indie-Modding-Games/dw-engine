@@ -619,6 +619,7 @@ struct Autotest::Progress {
   // resize and fullscreen
   rhi::Extent lastExtent{};
   int stableFrames = 0;
+  bool extentMoved = false;
   // screenshot: 0 waiting, 1 written, 2 failed
   std::shared_ptr<int> shot;
   std::shared_ptr<std::string> shotMessage;
@@ -1591,6 +1592,7 @@ bool Autotest::resizeStep(const AutotestHost& host, const AutotestStep& step, do
   if (extent.width != progress.lastExtent.width || extent.height != progress.lastExtent.height) {
     progress.lastExtent = extent;
     progress.stableFrames = 0;
+    progress.extentMoved = true;
     return false;
   }
   ++progress.stableFrames;
@@ -1601,7 +1603,17 @@ bool Autotest::resizeStep(const AutotestHost& host, const AutotestStep& step, do
   }
   if (step.kind == Kind::Fullscreen) {
     if (host.window->isFullscreen() != step.flag) {
-      return false;
+      if (progress.extentMoved || now - progress.start <= step.timeout / 2.0) {
+        return false;
+      }
+      // An X display with no window manager (Xvfb) ignores the request: the window neither
+      // changes mode nor size. The step is skipped there, as --skip-steps fullscreen would.
+      std::string note =
+          std::format("fullscreen {} skipped: the window manager did not apply it (window {}x{})",
+                      step.flag ? "on" : "off", extent.width, extent.height);
+      core::logWarning("autotest: {}", note);
+      skipped_.push_back(std::move(note));
+      return true;
     }
     core::logInfo("autotest: fullscreen {} at {}x{}", step.flag ? "on" : "off", extent.width,
                   extent.height);

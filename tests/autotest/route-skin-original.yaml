@@ -3,8 +3,9 @@
 # orders), a battle (the partner's bars, the commands, an enemy's bar) and its end boxes, and the need bubble over the
 # partner at 1920x1080. The original look is the packs' default, and an autotest reads no saved settings, so the route
 # needs no flag; it needs content extracted with the original look's sprites (dwx 2 or later): without them the game
-# starts with the modern skin and the first step fails. It runs once per language. How to run it:
-# docs/guides/prueba-vertical.md.
+# starts with the modern skin and the first step fails. It needs an empty saves folder of its own (--saves): Play
+# opens the slot list there, and the route starts the game without saving. It runs once per language.
+# How to run it: docs/guides/prueba-vertical.md.
 name: skin-original
 device: keyboard
 main_menu: true
@@ -15,7 +16,13 @@ steps:
   - expect_setting: {ui_skin: original}
   - screenshot: main-menu
   - menu_select: play
-  - wait: {map: twna01, hidden: main_menu, seconds: 1}
+  - wait: {shown: save_slots, seconds: 0.5}
+  - screenshot: slots-new
+  - menu_select: no-save
+  - wait: {shown: dialog, seconds: 0.5}
+  - screenshot: confirm-no-save
+  - menu_select: yes
+  - wait: {map: twna01, hidden: dialog, seconds: 1}
   - screenshot: field
   # The new game's bag is empty, as the original's: the debug give_item fills a few slots first.
   - script: give_item("meat 3")

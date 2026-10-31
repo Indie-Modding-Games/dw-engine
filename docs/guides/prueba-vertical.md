@@ -176,7 +176,8 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   del compañero y un combate, y pasa al moderno desde las opciones del menú de pausa, con capturas de cada pantalla.
   Necesita `--mods tests/mods/ui_skin` y se corre en los dos idiomas, como `route-language.yaml`.
 - `route-skin-original.yaml`: el aspecto original en cada pantalla que dibuja, con una captura de cada una: el
-  título y su menú, el reloj y las barras del campo, el menú de pausa, la página del jugador y las opciones de sus
+  título y su menú, la lista de ranuras y la pregunta de jugar sin guardar (necesita `--saves` con una carpeta vacía
+  propia, que el gate le da), el reloj y las barras del campo, el menú de pausa, la página del jugador y las opciones de sus
   herramientas, la ficha del compañero (su entrada del menú) y la bolsa (la de los objetos, con las opciones de un objeto y
   los órdenes), un combate y sus cuadros finales, y la burbuja del hambre sobre el compañero a 1920x1080. Se corre en los dos idiomas.
 - `route-text-fit.yaml`: que cada texto cabe en su caja (`expect_text_fits` tras cada captura) en las pantallas del
@@ -508,7 +509,9 @@ percentil 99. Las rutas comprueban que el partner sigue al jugador dentro de cad
 Una ventana no puede ser mayor que la parte usable del escritorio: en una pantalla de 1920x1080 con paneles, los
 pasos `resize` a 1920x1080 y 2560x1080 se saltan con un aviso (`resize to ... skipped: the desktop's usable area
 is ...`) y el informe los lista. Para cubrirlos, un Xvfb con Vulkan por software (lavapipe) sirve para comprobar el
-funcionamiento, no el rendimiento. Sin gestor de ventanas no hay pantalla completa, así que ese paso se salta:
+funcionamiento, no el rendimiento. Sin gestor de ventanas no hay pantalla completa: si a mitad de su `timeout` la
+ventana no ha cambiado ni de modo ni de tamaño, el paso `fullscreen` se salta solo con un aviso (`fullscreen on
+skipped: the window manager did not apply it`), y `--skip-steps fullscreen` lo salta sin esperar:
 
 ```sh
 Xvfb :23 -screen 0 2560x1440x24 -nolisten tcp &
