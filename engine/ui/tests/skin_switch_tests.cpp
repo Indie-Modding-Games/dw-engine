@@ -1016,18 +1016,22 @@ TEST_CASE("the original skin's player and partner pages switch tabs on a click")
   CHECK(ui->elementHasClass("partner_menu", "tab-status", "selected"));
 }
 
-// Publishes a small chart as the game does (apps/game/src/player_chart.cpp): two Fresh cells, two
-// Ultimate cells and the two the canonical stages call Mega (Phoenixmon and HerculesKabuterimon).
-void publishSmallChart(Ui& ui) {
+// Publishes a small chart as the game does (apps/game/src/player_chart.cpp), its first count
+// cells: two Fresh cells, two Ultimate cells and the two the canonical stages call Mega (Phoenixmon
+// and HerculesKabuterimon), then four more Fresh cells, two of them past the Fresh box's grid of
+// four (one below it, one on a taken place) as a ruleset's could be.
+void publishSmallChart(Ui& ui, std::size_t count) {
   struct Cell {
     std::string_view id;
     double x;
     double y;
   };
-  constexpr std::array<Cell, 6> Cells{
+  constexpr std::array<Cell, 10> Cells{
       Cell{.id = "fr1", .x = 30, .y = 43},   Cell{.id = "fr2", .x = 30, .y = 81},
       Cell{.id = "ul1", .x = 250, .y = 43},  Cell{.id = "houo", .x = 250, .y = 62},
-      Cell{.id = "hkab", .x = 274, .y = 43}, Cell{.id = "ul2", .x = 274, .y = 62}};
+      Cell{.id = "hkab", .x = 274, .y = 43}, Cell{.id = "ul2", .x = 274, .y = 62},
+      Cell{.id = "fr3", .x = 30, .y = 119},  Cell{.id = "fr4", .x = 30, .y = 157},
+      Cell{.id = "fr5", .x = 30, .y = 195},  Cell{.id = "fr6", .x = 30, .y = 43}};
   for (std::size_t i = 0; i < Cells.size(); ++i) {
     const std::string base = std::format("player.chart.{}.", i);
     ui.setSetting(base + "x", Cells.at(i).x);
@@ -1038,13 +1042,15 @@ void publishSmallChart(Ui& ui) {
     ui.setSetting(base + "id", std::string{Cells.at(i).id});
     ui.setSetting(base + "level", 5.0);
   }
-  ui.setSetting("player.chart.count", static_cast<double>(Cells.size()));
+  ui.setSetting("player.chart.count", static_cast<double>(count));
 }
 
-// The chart's pages (docs/modulos/apps/game.md, «Etapas canónicas»): without the canonical stages
-// one page as the original's; with them the Mega box is page 2, reached with Down past a column's
-// last cell, Down on the tab or the wheel, and left with Up.
-TEST_CASE("the original skin's chart turns to the Mega box's page and back") {
+// The chart's pages and Mega box (docs/modulos/apps/game.md, «Etapas canónicas»): the original's
+// one page while every box's cells fit its grid; the Mega box (the canonical stages or the Mega
+// step's Megas) as a sixth box on the same page; and the cells past a box's grid on a next page
+// with the same boxes, reached with Down past a column's last cell, Down on the tab, the wheel or
+// the arrow, and left with Up, the cursor in its column.
+TEST_CASE("the original skin's chart draws the Mega box and pages past a full box") {
   Content content;
   addOriginalArt(content);
   const assets::VirtualFileSystem& files = content.mount();
@@ -1054,7 +1060,8 @@ TEST_CASE("the original skin's chart turns to the Mega box's page and back") {
   loadScreens(*ui);
   ui->setSetting("ui_skin", std::string{"original"});
   ui->setSetting("canonical_stages", false);
-  publishSmallChart(*ui);
+  ui->setSetting("player.chart.mega", std::string{});
+  publishSmallChart(*ui, 6);
   input::InputState input{input::defaultActionMap()};
   const auto settle = [&] {
     for (int tick = 0; tick < 30; ++tick) {
@@ -1062,7 +1069,19 @@ TEST_CASE("the original skin's chart turns to the Mega box's page and back") {
     }
   };
   const auto focused = [&] { return ui->focusedElementId("pause_menu"); };
-  const auto onPage2 = [&] { return ui->elementHasClass("pause_menu", "chart-more", "up"); };
+  const auto pagesTop = [&] { return ui->styleProperty("pause_menu", "chart-pages", "top"); };
+  const auto left = [&](int cell) {
+    return ui->styleProperty("pause_menu", std::format("chart-cell-{}", cell), "left");
+  };
+  const auto top = [&](int cell) {
+    return ui->styleProperty("pause_menu", std::format("chart-cell-{}", cell), "top");
+  };
+  const auto chartHas = [&](std::string_view name) {
+    return ui->elementHasClass("pause_menu", "player-chart", name);
+  };
+  const auto offPage = [&](std::string_view element) {
+    return ui->elementHasClass("pause_menu", element, "off-page");
+  };
 
   ui->show("pause_menu", true);
   settle();
@@ -1072,9 +1091,14 @@ TEST_CASE("the original skin's chart turns to the Mega box's page and back") {
   settle();
   REQUIRE(ui->elementHasClass("pause_menu", "player-tab-chart", "selected"));
 
-  // Off: one page, no arrow; Down past the Fresh column's last cell stays there.
-  CHECK_FALSE(ui->elementHasClass("pause_menu", "player-chart", "chart-paged"));
-  CHECK_FALSE(ui->elementHasClass("pause_menu", "chart-cell-3", "off-page"));
+  // Every cell fits its box: the original's one page, five boxes, cells where the game puts them.
+  CHECK_FALSE(chartHas("chart-paged"));
+  CHECK_FALSE(chartHas("chart-mega"));
+  CHECK_FALSE(ui->elementHasClass("pause_menu", "panel", "chart-wide"));
+  CHECK(left(0) == "54dp");
+  CHECK(top(0) == "30dp");
+  CHECK(left(3) == "714dp");
+  CHECK(left(5) == "786dp");
   press(*ui, input, input::keys::Return);
   CHECK(focused() == "chart-cell-0");
   press(*ui, input, input::keys::Down);
@@ -1082,58 +1106,120 @@ TEST_CASE("the original skin's chart turns to the Mega box's page and back") {
   press(*ui, input, input::keys::Down);
   settle();
   CHECK(focused() == "chart-cell-1");
-  CHECK(ui->styleProperty("pause_menu", "chart-pages", "top") == "0dp");
+  CHECK(pagesTop() == "0dp");
 
-  // On: the Megas leave page 1 for page 2.
+  // The canonical stages: Phoenixmon and HerculesKabuterimon in the Mega box, a sixth box on the
+  // same page; the Champion and Ultimate columns closer so the six fit.
   ui->setSetting("canonical_stages", true);
   settle();
-  CHECK(ui->elementHasClass("pause_menu", "player-chart", "chart-paged"));
-  CHECK(ui->elementHasClass("pause_menu", "chart-cell-3", "off-page"));
-  CHECK(ui->elementHasClass("pause_menu", "chart-cell-4", "off-page"));
-  CHECK_FALSE(onPage2());
-  // Right from the Fresh cell goes to the Ultimate box on page 1, never to the Mega box.
+  CHECK(chartHas("chart-mega"));
+  CHECK_FALSE(chartHas("chart-paged"));
+  CHECK(ui->elementHasClass("pause_menu", "panel", "chart-wide"));
+  CHECK(left(3) == "855dp");
+  CHECK(top(3) == "30dp");
+  CHECK(left(4) == "855dp");
+  CHECK(top(4) == "87dp");
+  CHECK(left(2) == "687dp");
+  CHECK(left(5) == "753dp");
+  CHECK(top(5) == "87dp");
+  CHECK(left(0) == "54dp");
+  CHECK_FALSE(offPage("chart-cell-3"));
+  // Right from the Fresh column goes through the Ultimate box to the Mega box.
   press(*ui, input, input::keys::Right);
   CHECK(focused() == "chart-cell-2");
-  // Down past the column's last cell slides to page 2, onto Phoenixmon; the keys wait for the
-  // slide, and page 1's cells are hidden once it ends.
-  press(*ui, input, input::keys::Down);
+  press(*ui, input, input::keys::Right);
+  CHECK(focused() == "chart-cell-5");
+  press(*ui, input, input::keys::Right);
+  CHECK(focused() == "chart-cell-4");
+  press(*ui, input, input::keys::Up);
   CHECK(focused() == "chart-cell-3");
-  CHECK(onPage2());
-  CHECK(ui->styleProperty("pause_menu", "chart-pages", "top") != "-564dp");
-  CHECK_FALSE(ui->elementHasClass("pause_menu", "chart-cell-0", "off-page"));
+  press(*ui, input, input::keys::Escape);
+
+  // The Mega step's Megas (player.chart.mega) draw the Mega box without the canonical stages.
+  ui->setSetting("canonical_stages", false);
+  ui->setSetting("player.chart.mega", std::string{"ul2"});
   settle();
-  CHECK(ui->styleProperty("pause_menu", "chart-pages", "top") == "-564dp");
-  CHECK(ui->elementHasClass("pause_menu", "chart-cell-0", "off-page"));
-  CHECK_FALSE(ui->elementHasClass("pause_menu", "chart-cell-3", "off-page"));
-  press(*ui, input, input::keys::Down);
-  CHECK(focused() == "chart-cell-4");
+  CHECK(chartHas("chart-mega"));
+  CHECK(left(5) == "855dp");
+  CHECK(top(5) == "30dp");
+  CHECK(left(3) == "687dp");
+  CHECK(top(3) == "87dp");
+  ui->setSetting("player.chart.mega", std::string{});
+
+  // Six Fresh cells: four on page 1 where the game puts them, the two past the grid on page 2, in
+  // the Fresh box's first places; the arrows and the page number under the chart.
+  publishSmallChart(*ui, 10);
+  settle();
+  CHECK(chartHas("chart-paged"));
+  CHECK_FALSE(chartHas("chart-mega"));
+  CHECK(top(7) == "372dp");
+  CHECK(left(8) == "54dp");
+  CHECK(top(8) == "594dp");
+  CHECK(top(9) == "708dp");
+  CHECK(offPage("chart-cell-8"));
+  CHECK(offPage("chart-less"));
+  CHECK_FALSE(offPage("chart-more"));
+  CHECK(ui->elementText("pause_menu", "chart-page") == "1/2");
+  press(*ui, input, input::keys::Return);
+  CHECK(focused() == "chart-cell-3");
   press(*ui, input, input::keys::Left);
+  press(*ui, input, input::keys::Left);
+  CHECK(focused() == "chart-cell-0");
+  press(*ui, input, input::keys::Down);
+  press(*ui, input, input::keys::Down);
+  press(*ui, input, input::keys::Down);
+  CHECK(focused() == "chart-cell-7");
+  // Down past the column's last cell slides to page 2, onto the column's top cell there; the keys
+  // wait for the slide, and page 1's cells are hidden once it ends.
+  press(*ui, input, input::keys::Down);
+  CHECK(focused() == "chart-cell-8");
+  CHECK(pagesTop() != "-564dp");
+  CHECK_FALSE(offPage("chart-cell-0"));
+  CHECK_FALSE(offPage("chart-stage-other-0"));
+  settle();
+  CHECK(pagesTop() == "-564dp");
+  CHECK(offPage("chart-cell-0"));
+  CHECK_FALSE(offPage("chart-cell-8"));
+  CHECK(offPage("chart-stage-other-0"));
+  CHECK(ui->styleProperty("pause_menu", "chart-stage-0", "top") == "585dp");
+  CHECK_FALSE(offPage("chart-less"));
+  CHECK(offPage("chart-more"));
+  CHECK(ui->elementText("pause_menu", "chart-page") == "2/2");
+  press(*ui, input, input::keys::Down);
+  CHECK(focused() == "chart-cell-9");
   press(*ui, input, input::keys::Down);
   settle();
-  CHECK(focused() == "chart-cell-4");
-  // Up past Phoenixmon goes back to page 1, on the cell it left.
+  CHECK(focused() == "chart-cell-9");
+  CHECK(pagesTop() == "-564dp");
+  // Up past the column's first cell goes back to page 1, on the cell it left.
   press(*ui, input, input::keys::Up);
   press(*ui, input, input::keys::Up);
   settle();
-  CHECK_FALSE(onPage2());
-  CHECK(focused() == "chart-cell-2");
-  CHECK(ui->styleProperty("pause_menu", "chart-pages", "top") == "0dp");
+  CHECK(pagesTop() == "0dp");
+  CHECK(focused() == "chart-cell-7");
+  // From a column with nothing on page 2 the cursor goes to the nearest column there, and back.
+  press(*ui, input, input::keys::Right);
+  CHECK(focused() == "chart-cell-3");
+  press(*ui, input, input::keys::Down);
+  settle();
+  CHECK(pagesTop() == "-564dp");
+  CHECK(focused() == "chart-cell-8");
+  press(*ui, input, input::keys::Up);
+  settle();
+  CHECK(focused() == "chart-cell-3");
 
   // Out of the cells, Down and Up on the tab turn the page too.
   press(*ui, input, input::keys::Escape);
   CHECK(focused() == "player-tab-chart");
   press(*ui, input, input::keys::Down);
   settle();
-  CHECK(onPage2());
+  CHECK(pagesTop() == "-564dp");
   CHECK(focused() == "player-tab-chart");
-  press(*ui, input, input::keys::Return);
-  CHECK(focused() == "chart-cell-3");
-  press(*ui, input, input::keys::Escape);
   press(*ui, input, input::keys::Up);
   settle();
-  CHECK_FALSE(onPage2());
+  CHECK(pagesTop() == "0dp");
 
-  // The wheel over the chart turns it down and back up.
+  // The wheel over the chart turns it down and back up, and so do the arrows.
   const auto center = ui->elementCenter("pause_menu", "chart-stage-3");
   REQUIRE(center.has_value());
   const Ui::Point point = center.value_or(Ui::Point{});
@@ -1141,16 +1227,34 @@ TEST_CASE("the original skin's chart turns to the Mega box's page and back") {
   ui->update();
   static_cast<void>(ui->handleEvent(platform::MouseWheelMoved{.x = 0, .y = -1}));
   settle();
-  CHECK(onPage2());
+  CHECK(pagesTop() == "-564dp");
   static_cast<void>(ui->handleEvent(platform::MouseWheelMoved{.x = 0, .y = 1}));
   settle();
-  CHECK_FALSE(onPage2());
-
-  // Off again: one page.
-  ui->setSetting("canonical_stages", false);
+  CHECK(pagesTop() == "0dp");
+  REQUIRE(clickElement(*ui, "pause_menu", "chart-more"));
   settle();
-  CHECK_FALSE(ui->elementHasClass("pause_menu", "player-chart", "chart-paged"));
-  CHECK_FALSE(ui->elementHasClass("pause_menu", "chart-cell-3", "off-page"));
+  CHECK(pagesTop() == "-564dp");
+  REQUIRE(clickElement(*ui, "pause_menu", "chart-less"));
+  settle();
+  CHECK(pagesTop() == "0dp");
+
+  // The Mega box and a page 2 at once: six boxes on both pages.
+  ui->setSetting("canonical_stages", true);
+  settle();
+  CHECK(chartHas("chart-mega"));
+  CHECK(chartHas("chart-paged"));
+  CHECK(left(3) == "855dp");
+  CHECK(top(8) == "594dp");
+
+  // Back to the original's cells: one page, five boxes.
+  ui->setSetting("canonical_stages", false);
+  publishSmallChart(*ui, 6);
+  settle();
+  CHECK_FALSE(chartHas("chart-paged"));
+  CHECK_FALSE(chartHas("chart-mega"));
+  CHECK_FALSE(offPage("chart-cell-3"));
+  CHECK(left(3) == "714dp");
+  CHECK(pagesTop() == "0dp");
 }
 
 TEST_CASE("the modern skin's partner tabs switch the page on left and right, as the original's") {

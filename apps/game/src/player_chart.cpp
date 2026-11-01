@@ -153,12 +153,14 @@ void publishRulesetChart(ui::Ui& ui, const assets::VirtualFileSystem& files,
   const assets::EvolutionChart cells = chartWithExtraCells(*chart, *extra, *evolution, table);
   publishPlayerChart(ui, cells, table);
   publishChartPaths(ui, cells, *evolution);
-  // A cell right of the original's last column (the Ultimate box's second) widens the chart by
-  // a column.
-  constexpr std::int32_t OriginalLastColumn = 274;
-  const bool wide = std::ranges::any_of(
-      cells.entries, [](const assets::ChartCell& cell) { return cell.x > OriginalLastColumn; });
-  ui.setSetting("player.chart.wide", wide);
+  // The Mega step's Megas (its mega list): the chart draws them in a Mega box of their own.
+  std::string megas;
+  if (extra->megaStep) {
+    for (const std::string& mega : extra->megaStep->mega) {
+      megas += (megas.empty() ? "" : ",") + mega;
+    }
+  }
+  ui.setSetting("player.chart.mega", megas);
   core::logInfo("Chart: {} cells for ruleset {}", cells.entries.size(), rules.id());
 }
 
@@ -174,6 +176,7 @@ void loadPlayerChart(ui::Ui& ui, const assets::VirtualFileSystem& files) {
   const auto speciesId = assets::AssetId::parse("data/digimon");
   auto species = assets::loadDigimonTable(files, *speciesId);
   publishPlayerChart(ui, *chart, species ? &*species : nullptr);
+  ui.setSetting("player.chart.mega", std::string{});
   loadPlayerChartDetails(ui, files, *chart);
 }
 

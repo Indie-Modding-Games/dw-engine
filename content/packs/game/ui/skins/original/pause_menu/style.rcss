@@ -351,29 +351,36 @@
 #panel.on-player.player-tools-open #player-chart { display: none; }
 #panel.on-player .player-tab.unavailable { focus: none; tab-index: none; }
 .chart-stage { position: absolute; top: 21dp; height: 480dp; box-sizing: border-box; border: 3dp #bebebe; }
-#chart-stage-0 { left: 30dp; width: 105dp; border-color: #c8a0aa; border-right-color: #8c3c5a; border-bottom-color: #8c3c5a; background-color: #a55a73; }
-#chart-stage-1 { left: 141dp; width: 105dp; border-color: #a578a0; border-right-color: #4b1446; border-bottom-color: #4b1446; background-color: #6e2d5a; }
-#chart-stage-2 { left: 252dp; width: 105dp; height: 531dp; border-color: #5082c8; border-right-color: #0a375f; border-bottom-color: #0a375f; background-color: #0f5082; }
-#chart-stage-3 { left: 363dp; width: 321dp; border-color: #5aaf6e; border-right-color: #005a28; border-bottom-color: #005a28; background-color: #008741; }
-#chart-stage-4 { left: 690dp; width: 171dp; border-color: #d29669; border-right-color: #78411e; border-bottom-color: #78411e; background-color: #af642d; }
-/* A ruleset's cell right of the original's last column (the hidden content): a third column in the Ultimate box, and
-   the panel as wide as the original's screen. */
+.chart-stage.stage-0 { left: 30dp; width: 105dp; border-color: #c8a0aa; border-right-color: #8c3c5a; border-bottom-color: #8c3c5a; background-color: #a55a73; }
+.chart-stage.stage-1 { left: 141dp; width: 105dp; border-color: #a578a0; border-right-color: #4b1446; border-bottom-color: #4b1446; background-color: #6e2d5a; }
+.chart-stage.stage-2 { left: 252dp; width: 105dp; height: 531dp; border-color: #5082c8; border-right-color: #0a375f; border-bottom-color: #0a375f; background-color: #0f5082; }
+.chart-stage.stage-3 { left: 363dp; width: 321dp; border-color: #5aaf6e; border-right-color: #005a28; border-bottom-color: #005a28; background-color: #008741; }
+.chart-stage.stage-4 { left: 690dp; width: 171dp; border-color: #d29669; border-right-color: #78411e; border-bottom-color: #78411e; background-color: #af642d; }
+/* The Mega box (canonical_stages, or the Mega step's Megas): a sixth box right of the Ultimate one, as tall, and the
+   panel as wide as the original's screen. The Champion and Ultimate columns stand 66dp apart instead of 72 and their
+   boxes' sides 21dp, so the six fit inside the panel's frame, 30dp from it on both sides. */
 #panel.on-player.player-chart.chart-wide { width: 960dp; margin-left: -480dp; }
-#player-chart.chart-third #chart-stage-4 { width: 243dp; }
-/* The canonical stages' Mega box (canonical_stages) is a second page right below the chart (#chart-pages slides up a
-   page, 564dp, to show it): a full-height box in the middle, as wide as the Fresh box. #chart-clip, the panel's inside
-   (6dp in from the chart's top and bottom, which lie under the panel's frame), clips what slides past it (clip: always,
-   as RmlUi clips overflow only past the right and bottom edges), and the page out of view is hidden (.off-page). The arrow at the foot, under the Fresh and In-Training boxes, is the up arrow of
-   SYSTEM's battle sprites (BI_IN), turned over for down on page 1, as the save slots' marks. */
+.chart-stage.stage-5 { display: none; left: 837dp; width: 93dp; border-color: #e6a0a0; border-right-color: #6e1e28; border-bottom-color: #6e1e28; background-color: #a0323c; }
+#player-chart.chart-mega .chart-stage.stage-3 { width: 297dp; }
+#player-chart.chart-mega .chart-stage.stage-4 { left: 666dp; width: 165dp; }
+#player-chart.chart-mega .chart-stage.stage-5 { display: block; }
+/* A box with more cells than its grid holds goes on to a second page (a third...) with the same boxes, right below
+   the first in #chart-pages, which slides up a page (564dp) to show it; the boxes of the page it leaves are the
+   #chart-stage-other-<n> set. #chart-clip, the panel's inside (6dp in from the chart's top and bottom, which lie under
+   the panel's frame), clips what slides past it (clip: always, as RmlUi clips overflow only past the right and bottom
+   edges), and the cells of the pages out of view are hidden (.off-page). Under the Fresh and In-Training boxes, in the
+   same place on every page: the up arrow of SYSTEM's battle sprites (BI_IN) for a previous page, the page number, and
+   the arrow turned over for a next page, as the save slots' marks. */
 #chart-clip { position: absolute; left: 0; top: 6dp; width: 100%; height: 552dp; }
 #player-chart.chart-paged #chart-clip { clip: always; }
 #chart-pages { position: absolute; left: 0; top: 0; margin-top: -6dp; width: 100%; height: 564dp; }
-#chart-stage-5 { display: none; left: 393dp; top: 585dp; width: 105dp; border-color: #e6a0a0; border-right-color: #6e1e28; border-bottom-color: #6e1e28; background-color: #a0323c; }
-#player-chart.chart-mega #chart-stage-5 { display: block; }
 #player-chart .off-page { visibility: hidden; }
-#chart-more { display: none; position: absolute; left: 120dp; top: 510dp; width: 36dp; height: 36dp; decorator: image(battle-up-arrow scale-none center center); transform: scaleY(-1); }
-#player-chart.chart-paged #chart-more { display: block; }
-#chart-more.up { transform: none; }
+.chart-arrow, #chart-page { display: none; position: absolute; top: 510dp; height: 36dp; }
+.chart-arrow { width: 36dp; decorator: image(battle-up-arrow scale-none center center); }
+#chart-less { left: 63dp; }
+#chart-more { left: 177dp; transform: scaleY(-1); }
+#chart-page { left: 99dp; width: 78dp; font-size: 36dp; line-height: 36dp; color: #d6d6d6; text-align: center; white-space: nowrap; }
+#player-chart.chart-paged .chart-arrow, #player-chart.chart-paged #chart-page { display: block; }
 #panel.on-player .chart-cell, #panel.on-player .chart-cell:focus { position: absolute; width: 57dp; height: 57dp; margin: 0; padding: 0; border: 3dp #bebebe; border-right-color: #3c3c3c; border-bottom-color: #3c3c3c; box-sizing: border-box; background-color: #878787; }
 #panel.on-player .chart-cell.hidden, .chart-icon.hidden { display: none; }
 .chart-icon { display: block; width: 48dp; height: 48dp; pointer-events: none; }

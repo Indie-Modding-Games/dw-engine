@@ -32,12 +32,13 @@ local chart_index = 0
 local chart_cells = {}
 local chart_signature = ""
 local chart_flash = false
--- The chart's pages (docs/modulos/apps/game.md, «Etapas canónicas»): 2 while the Mega box is on;
--- the page shown, the slide between them and the page 1 cell the cursor left.
+-- The chart's pages (docs/modulos/apps/game.md, «Etapas canónicas»): more than one when a box has
+-- more cells than its grid holds; the page shown, the slide between two and the cell a page turn
+-- left (chart_turn).
 local chart_pages = 1
 local chart_page = 1
 local chart_slide = nil
-local chart_page1_index = 0
+local chart_return = nil
 local city_selecting = false
 local city_index = 0
 local city_cells = {}
@@ -176,8 +177,8 @@ local function draw_date_digits(document, prefix, count, value)
   end
 end
 
--- The chart's page height (dp): page 2 sits right below page 1 in #chart-pages, which slides up
--- to show it.
+-- The chart's page height (dp): the pages sit one under the other in #chart-pages, which slides up
+-- a page to show the next.
 local CHART_PAGE_HEIGHT = 564
 
 -- Where a chart cell's box goes (dp, in #chart-pages): the cell's own place on its page.
@@ -198,20 +199,37 @@ end
 
 -- The chart's cells: the original's 61, and the ones a ruleset's patches add (the hidden content).
 local ChartCells = 72
--- The Ultimate box's last column in the original (the chart's pixels); a ruleset's cell right of
--- it widens the box by a column.
-local LAST_ULTIMATE_COLUMN = 274
+
+local function chart_rows(first, count, step)
+  local rows = {}
+  for n = 1, count do
+    rows[n] = first + (n - 1) * step
+  end
+  return rows
+end
+
+-- The chart's stage boxes (docs/modulos/apps/game.md, «Etapas canónicas»), the columns and rows of
+-- their cells (the chart's pixels): the original's grid, Fresh and In-Training four cells 38 apart,
+-- Rookie nine 19 apart, Champion four columns and Ultimate two of eight. A page holds a box's grid
+-- at most; the cells past it go on to the next page, in the same box.
+local BOX_ROWS = chart_rows(43, 8, 19)
+local CHART_BOXES = {
+  { columns = { 30 }, rows = chart_rows(43, 4, 38) },
+  { columns = { 67 }, rows = chart_rows(43, 4, 38) },
+  { columns = { 104 }, rows = chart_rows(43, 9, 19) },
+  { columns = { 141, 165, 189, 213 }, rows = BOX_ROWS },
+  { columns = { 250, 274 }, rows = BOX_ROWS },
+  { columns = { 297 }, rows = BOX_ROWS },
+}
+local MEGA_BOX = 6
+-- With the Mega box, a sixth box right of the Ultimate one as tall, the Champion and Ultimate
+-- columns stand 22 pixels apart instead of 24, so the six fit the panel's frame.
+local MEGA_COLUMNS = { [4] = { 140, 162, 184, 206 }, [5] = { 241, 263 } }
 -- The canonical stages (an engine improvement, docs/modulos/apps/game.md, «Etapas canónicas»; the
 -- option canonical_stages, off by default): the species the series calls Mega leave the Ultimate
--- box for a Mega box on a second page of the chart, in this order. The rules still count them as
--- Ultimates. The cells they leave take the ruleset's cells of the third Ultimate column, in order,
--- so the box keeps the original's two columns.
+-- box for the Mega box, in this order, as the Mega step's Megas (player.chart.mega). The rules
+-- still count them as Ultimates.
 local MEGA_ORDER = { houo = 1, hkab = 2, mtet = 3, muge = 4 }
--- The Mega box's column on page 2 (the chart's pixels, as page 1's): one column in the middle of
--- the chart, its cells spread down the box as the Fresh box's four (38 apart) while they fit, 19
--- apart (the Ultimate box's) past that.
-local MEGA_COLUMN = 151
-local MEGA_TOP = 43
 local STAGE_KEYS = { "fresh", "in_training", "rookie", "champion", "ultimate" }
 
 local function canonical_stages()
@@ -231,78 +249,147 @@ local function stage_label(base)
   return key and t("pause_menu.chart_stage." .. key) or ""
 end
 
--- Where each cell goes: the cell the game gives it on page 1, or with the canonical stages the
--- Mega box on page 2 for a Mega and a freed Ultimate cell for one of the third column.
+-- A species' place in the Mega box (its order), or nil when it is not a Mega there.
+local function mega_rank(id)
+  if canonical_stages() and MEGA_ORDER[id] then
+    return MEGA_ORDER[id]
+  end
+  for mega in string.gmatch(ui.setting("player.chart.mega") or "", "[^,]+") do
+    if mega == id then
+      return MEGA_ORDER[id] or 100 -- after the series' Megas
+    end
+  end
+  return nil
+end
+
+-- The box of a cell the game puts at x: the one whose columns start at x or left of it.
+local function chart_box_of(x)
+  local box = 1
+  for n = 1, MEGA_BOX - 1 do
+    if x >= CHART_BOXES[n].columns[1] then
+      box = n
+    end
+  end
+  return box
+end
+
+-- Where each cell goes ({box, column, row, page}) and whether the Mega box is drawn. A cell at a
+-- free place of its box's grid keeps it on page 1, so the original's cells stay where the original
+-- draws them; the others (a Mega, a ruleset's cell past the grid or on a taken place) take their
+-- box's free places in order, down each column and then the next, page 1 first.
 local function chart_places(count)
   local places = {}
-  local canonical = canonical_stages()
-  local freed = {}
-  local third = {}
+  local taken = {}
+  local waiting = {}
+  for box = 1, MEGA_BOX do
+    taken[box] = {}
+    waiting[box] = {}
+  end
+  local function place_key(page, column, row)
+    return string.format("%d:%d:%d", page, column, row)
+  end
   local megas = {}
   for i = 0, count - 1 do
     local base = string.format("player.chart.%d.", i)
-    local x, y = ui.setting(base .. "x"), ui.setting(base .. "y")
-    local rank = canonical and MEGA_ORDER[ui.setting(base .. "id") or ""] or nil
+    local rank = mega_rank(ui.setting(base .. "id") or "")
     if rank then
       megas[#megas + 1] = { index = i, rank = rank }
-      if x <= LAST_ULTIMATE_COLUMN then
-        freed[#freed + 1] = { x = x, y = y }
-      end
     else
-      places[i] = { x = x, y = y, page = 1 }
-      if canonical and x > LAST_ULTIMATE_COLUMN then
-        third[#third + 1] = i
+      local box = chart_box_of(ui.setting(base .. "x"))
+      local column = index_of(CHART_BOXES[box].columns, ui.setting(base .. "x"))
+      local row = index_of(CHART_BOXES[box].rows, ui.setting(base .. "y"))
+      if column and row and not taken[box][place_key(1, column, row)] then
+        taken[box][place_key(1, column, row)] = true
+        places[i] = { box = box, column = column, row = row, page = 1 }
+      else
+        waiting[box][#waiting[box] + 1] = i
       end
-    end
-  end
-  table.sort(freed, function(a, b)
-    return a.x == b.x and a.y < b.y or a.x < b.x
-  end)
-  for n, i in ipairs(third) do
-    if freed[n] then
-      places[i] = { x = freed[n].x, y = freed[n].y, page = 1 }
     end
   end
   table.sort(megas, function(a, b)
-    return a.rank < b.rank
+    return a.rank == b.rank and a.index < b.index or a.rank < b.rank
   end)
-  local step = #megas <= 4 and 38 or 19
-  for n, mega in ipairs(megas) do
-    places[mega.index] = { x = MEGA_COLUMN, y = MEGA_TOP + (n - 1) * step, page = 2, mega = true }
+  for _, mega in ipairs(megas) do
+    waiting[MEGA_BOX][#waiting[MEGA_BOX] + 1] = mega.index
   end
-  return places
-end
-
--- The first cell of a chart page (top of its leftmost column), or nil.
-local function chart_first_cell(page)
-  local first = nil
-  for i, cell in ipairs(chart_cells) do
-    local best = first and chart_cells[first + 1]
-    if
-      cell.page == page
-      and (best == nil or cell.x < best.x or (cell.x == best.x and cell.y < best.y))
-    then
-      first = i - 1
+  for box = 1, MEGA_BOX do
+    local columns, rows = #CHART_BOXES[box].columns, #CHART_BOXES[box].rows
+    local page, column, row = 1, 1, 1
+    for _, i in ipairs(waiting[box]) do
+      while taken[box][place_key(page, column, row)] do
+        row = row + 1
+        if row > rows then
+          row, column = 1, column + 1
+          if column > columns then
+            column, page = 1, page + 1
+          end
+        end
+      end
+      taken[box][place_key(page, column, row)] = true
+      places[i] = { box = box, column = column, row = row, page = page }
     end
   end
-  return first
+  return places, #megas > 0
 end
 
--- Draws #chart-pages slid up by offset (dp), with the boxes of the pages in view: the others are
--- hidden, so the pointer does not hit them past the chart's edge (RmlUi clips drawing only).
-local function chart_page_view(document, offset, both)
-  document:get("chart-pages"):set_property("top", -offset .. "dp")
-  local function off(page)
-    return not both and page ~= chart_page
+-- The cell of a page in column x, or else in the column nearest it (the left one on a tie): its
+-- top cell, or its bottom one; nil on a page without cells.
+local function chart_column_cell(page, x, bottom)
+  local column = nil
+  for _, cell in ipairs(chart_cells) do
+    if cell.page == page then
+      local distance = math.abs(cell.x - x)
+      local best = column and math.abs(column - x)
+      if best == nil or distance < best or (distance == best and cell.x < column) then
+        column = cell.x
+      end
+    end
   end
-  for i = 0, 4 do
-    document:get("chart-stage-" .. i):set_class("off-page", off(1))
-  end
-  document:get("chart-stage-5"):set_class("off-page", off(2))
+  local found = nil
   for i, cell in ipairs(chart_cells) do
-    document:get("chart-cell-" .. (i - 1)):set_class("off-page", off(cell.page))
+    if cell.page == page and cell.x == column then
+      local best = found and chart_cells[found + 1]
+      if best == nil or (bottom and cell.y > best.y) or (not bottom and cell.y < best.y) then
+        found = i - 1
+      end
+    end
   end
-  document:get("chart-more"):set_class("up", chart_page == 2)
+  return found
+end
+
+-- The cursor's cell on a page: the cell it is on, or the top of its column there.
+local function chart_index_on(page)
+  local cell = chart_cells[chart_index + 1]
+  if cell and cell.page == page then
+    return chart_index
+  end
+  return chart_column_cell(page, cell and cell.x or 0, false) or 0
+end
+
+-- Draws #chart-pages slid up by offset (dp): the boxes of the page shown and, while it slides, of
+-- the page it leaves (other), each with its cells. The cells of the other pages are hidden, so the
+-- pointer does not hit them past the chart's edge (RmlUi clips drawing only). The arrows and the
+-- page number stay in place under the chart.
+local function chart_page_view(document, offset, other)
+  document:get("chart-pages"):set_property("top", -offset .. "dp")
+  for i = 0, MEGA_BOX - 1 do
+    document
+      :get("chart-stage-" .. i)
+      :set_property("top", ((chart_page - 1) * CHART_PAGE_HEIGHT + 21) .. "dp")
+    local leaving = document:get("chart-stage-other-" .. i)
+    leaving:set_class("off-page", other == nil)
+    if other then
+      leaving:set_property("top", ((other - 1) * CHART_PAGE_HEIGHT + 21) .. "dp")
+    end
+  end
+  for i, cell in ipairs(chart_cells) do
+    document
+      :get("chart-cell-" .. (i - 1))
+      :set_class("off-page", cell.page ~= chart_page and cell.page ~= other)
+  end
+  document:get("chart-less"):set_class("off-page", chart_page <= 1)
+  document:get("chart-more"):set_class("off-page", chart_page >= chart_pages)
+  document:get("chart-page"):set_text(string.format("%d/%d", chart_page, chart_pages))
 end
 
 -- Shows a page of the chart, sliding to it (0.2 seconds; at 20 steps a second as the original's
@@ -311,21 +398,17 @@ local function chart_go_page(document, page, index, instant)
   if page < 1 or page > chart_pages then
     return false
   end
-  local from = (chart_page - 1) * CHART_PAGE_HEIGHT
-  local cell = chart_cells[chart_index + 1]
-  if chart_page == 1 and cell and cell.page == 1 then
-    chart_page1_index = chart_index
-  end
+  local from = chart_page
   chart_page = page
   if index then
     chart_index = index
   end
-  if instant or from == (page - 1) * CHART_PAGE_HEIGHT then
+  if instant or from == page then
     chart_slide = nil
-    chart_page_view(document, (page - 1) * CHART_PAGE_HEIGHT, false)
+    chart_page_view(document, (page - 1) * CHART_PAGE_HEIGHT, nil)
   else
-    chart_slide = { from = from, to = (page - 1) * CHART_PAGE_HEIGHT, elapsed = 0 }
-    chart_page_view(document, from, true)
+    chart_slide = { from = from, elapsed = 0 }
+    chart_page_view(document, (from - 1) * CHART_PAGE_HEIGHT, from)
   end
   chart_cursor(document)
   if chart_selecting then
@@ -346,27 +429,45 @@ local function chart_slide_tick(document, seconds)
   end
   if progress >= 1 then
     chart_slide = nil
-    chart_page_view(document, (chart_page - 1) * CHART_PAGE_HEIGHT, false)
+    chart_page_view(document, (chart_page - 1) * CHART_PAGE_HEIGHT, nil)
     return false
   end
-  local offset = chart_slide.from + (chart_slide.to - chart_slide.from) * progress
-  chart_page_view(document, math.floor(offset + 0.5), true)
+  local from = chart_slide.from
+  local offset = ((from - 1) + (chart_page - from) * progress) * CHART_PAGE_HEIGHT
+  chart_page_view(document, math.floor(offset + 0.5), from)
   return true
 end
 
--- Page 2 from page 1 on its first cell, or page 1 from page 2 on the cell the cursor left.
+-- Turns to the next or the previous page, the cursor in the column it is in: on its top cell going
+-- down, its bottom one going up, or back on the cell it left when it turns straight back.
 local function chart_turn(document, page)
-  if page == chart_page or page > chart_pages then
+  if page < 1 or page > chart_pages or page == chart_page then
     return false
   end
-  return chart_go_page(document, page, page == 2 and chart_first_cell(2) or chart_page1_index)
+  local index
+  if chart_return and chart_return.page == page and chart_return.landed == chart_index then
+    index = chart_return.index
+  else
+    local cell = chart_cells[chart_index + 1]
+    index = chart_column_cell(page, cell and cell.x or 0, page < chart_page)
+  end
+  if index == nil then
+    return false
+  end
+  chart_return = { page = chart_page, index = chart_index, landed = index }
+  return chart_go_page(document, page, index)
 end
 
 local function refresh_chart(document)
   local count = math.min(ChartCells, tonumber(ui.setting("player.chart.count")) or 0)
   local raised_text = ui.setting("player.chart.raised") or ""
   local canonical = canonical_stages()
-  local signature = tostring(count) .. ":" .. raised_text .. ":" .. tostring(canonical)
+  local signature = table.concat({
+    tostring(count),
+    raised_text,
+    tostring(canonical),
+    ui.setting("player.chart.mega") or "",
+  }, ":")
   if signature == chart_signature then
     return
   end
@@ -376,29 +477,28 @@ local function refresh_chart(document)
     raised[tonumber(index)] = true
   end
   chart_cells = {}
-  local places = chart_places(count)
-  local wide, mega = false, false
+  local places, mega = chart_places(count)
+  -- The Mega box makes the panel as wide as the original's screen; more pages than one draw the
+  -- arrows and the page number under the chart.
+  chart_pages = 1
   for _, place in pairs(places) do
-    mega = mega or place.mega == true
-    wide = wide or (not place.mega and place.x > LAST_ULTIMATE_COLUMN)
+    chart_pages = math.max(chart_pages, place.page)
   end
-  -- A cell right of the original's last column widens the Ultimate box by a column, and the panel
-  -- as wide as the original's screen. The Mega box is a second page: page 1 stays the original's
-  -- chart, with an arrow down to it.
-  document:get("panel"):set_class("chart-wide", wide)
-  document:get("player-chart"):set_class("chart-third", wide)
+  document:get("panel"):set_class("chart-wide", mega)
   document:get("player-chart"):set_class("chart-mega", mega)
-  document:get("player-chart"):set_class("chart-paged", mega)
-  chart_pages = mega and 2 or 1
+  document:get("player-chart"):set_class("chart-paged", chart_pages > 1)
   for i = 0, ChartCells - 1 do
     local button = document:get("chart-cell-" .. i)
     button:set_class("hidden", i >= count)
     if i < count then
       local base = string.format("player.chart.%d.", i)
+      local place = places[i]
+      local box = CHART_BOXES[place.box]
+      local columns = mega and MEGA_COLUMNS[place.box] or box.columns
       local cell = {
-        x = places[i].x,
-        y = places[i].y,
-        page = places[i].page,
+        x = columns[place.column],
+        y = box.rows[place.row],
+        page = place.page,
         u = ui.setting(base .. "u"),
         v = ui.setting(base .. "v"),
         raised = raised[ui.setting(base .. "index")] == true,
@@ -415,17 +515,12 @@ local function refresh_chart(document)
       end
     end
   end
-  -- The cursor stays on a cell of the page shown; a chart without the Mega box is on page 1.
+  -- The cursor stays on the page shown while it still has cells.
   chart_page = math.min(chart_page, chart_pages)
   chart_slide = nil
-  local cell = chart_cells[chart_index + 1]
-  if cell == nil or cell.page ~= chart_page then
-    chart_index = chart_page == 2 and chart_first_cell(2) or 0
-  end
-  if not chart_cells[chart_page1_index + 1] or chart_cells[chart_page1_index + 1].page ~= 1 then
-    chart_page1_index = 0
-  end
-  chart_page_view(document, (chart_page - 1) * CHART_PAGE_HEIGHT, false)
+  chart_return = nil
+  chart_index = chart_index_on(chart_page)
+  chart_page_view(document, (chart_page - 1) * CHART_PAGE_HEIGHT, nil)
   chart_cursor(document)
 end
 
@@ -1247,7 +1342,7 @@ function show_player_tab(document, tab)
   end
   city_cursor(document)
   -- The chart opens on page 1.
-  chart_go_page(document, 1, chart_page == 1 and chart_index or chart_page1_index, true)
+  chart_go_page(document, 1, chart_index_on(1), true)
   document:get("player-tab-" .. tab):focus()
 end
 
@@ -1322,26 +1417,34 @@ local function chart_move(document, action)
   return false
 end
 
--- The wheel over the chart turns its page: down to the Mega box, up back to page 1.
+-- The wheel over the chart turns its page: down to the next, up to the previous.
 function chart_wheel(document, event)
   if chart_pages < 2 or chart_slide or chart_transition or chart_detail then
     return
   end
   local wheel = event.wheel
   if wheel > 0 then
-    chart_turn(document, 2)
+    chart_turn(document, chart_page + 1)
   elseif wheel < 0 then
-    chart_turn(document, 1)
+    chart_turn(document, chart_page - 1)
   end
   event:stop()
 end
 
--- The arrow at the chart's foot: a click turns the page.
-function chart_more(document)
+-- The arrows under the chart: a click turns to the next page (down) or the previous one (up).
+local function chart_arrow(document, step)
   if chart_pages < 2 or chart_slide or chart_transition or chart_detail then
     return
   end
-  chart_turn(document, chart_page == 1 and 2 or 1)
+  chart_turn(document, chart_page + step)
+end
+
+function chart_more(document)
+  chart_arrow(document, 1)
+end
+
+function chart_less(document)
+  chart_arrow(document, -1)
 end
 
 local refresh_player
@@ -1594,7 +1697,7 @@ function on_show(document)
   shown_document = document
   chart_detail = false
   chart_transition = nil
-  chart_go_page(document, 1, chart_page == 1 and chart_index or chart_page1_index, true)
+  chart_go_page(document, 1, chart_index_on(1), true)
   document:get("chart-detail-transition"):set_class("hidden", true)
   document:get("panel"):set_class("chart-detail-open", false)
   parents = {}
@@ -1797,9 +1900,9 @@ function on_action(document, action)
         return true
       end
       if action == "up" or action == "down" or action == "left" or action == "right" then
-        -- Down past a column's last cell turns to the Mega box's page, up past its first back.
-        if not chart_move(document, action) then
-          chart_turn(document, action == "down" and 2 or action == "up" and 1 or chart_page)
+        -- Down past a column's last cell turns to the next page, up past its first to the previous.
+        if not chart_move(document, action) and (action == "down" or action == "up") then
+          chart_turn(document, chart_page + (action == "down" and 1 or -1))
         end
         return true
       end
@@ -1835,13 +1938,12 @@ function on_action(document, action)
         chart_pick(document, chart_index)
         return true
       end
-      -- Up and down on the chart's tab turn its page while it has two.
+      -- Up and down on the chart's tab turn its page while it has more than one.
       if
         player_tab == "chart"
-        and chart_pages > 1
-        and (action == "down" and chart_page == 1 or action == "up" and chart_page == 2)
+        and (action == "down" or action == "up")
+        and chart_turn(document, chart_page + (action == "down" and 1 or -1))
       then
-        chart_turn(document, action == "down" and 2 or 1)
         return true
       end
     end

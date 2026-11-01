@@ -6,7 +6,9 @@
 # trigger 242) and Myotismon from Devimon (Myotismon rescued, trigger 129, at night). Each source comes from evolve,
 # the partner's values from partner_set (the requirement's stats, care and a weight inside the target's window and
 # outside the other targets'), and its counter one hour before the check; the clock then runs until the form changes. Each new partner is captured in the field and
-# on its status page, and the chart at the end (original look) with its new cells. Run it with --saves <empty folder>,
+# on its status page, and the chart at the end (original look) with its new cells: Panjyamon and Gigadramon on page 1,
+# MetalEtemon and Myotismon, past the Ultimate box's grid, on page 2 (Down past the Fresh box's last cell, MetalEtemon's
+# detail, Up back). Run it with --saves <empty folder>,
 # once per language (--lang en, --lang es); how to run it: docs/guides/prueba-vertical.md.
 # After each evolution the route waits for its scene to end (evolution.active), so partner_set writes the next values
 # on the field, however slow the machine, and confirms the rank notice an evolution may bring.
@@ -205,5 +207,22 @@ steps:
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: chart
+        - tap: {key: return}
+        - wait: {seconds: 0.3}
+        - repeat: {times: 4, steps: [{tap: {key: down}}, {wait: {seconds: 0.1}}]}
+        - wait: {seconds: 0.5}
+        - expect_text_fits: all
+        - screenshot: chart-page2
+        - tap: {key: return}
+        - wait: {seconds: 0.6}
+        - expect_text_fits: all
+        - screenshot: detail-page2
+        - tap: {key: escape}
+        - wait: {seconds: 0.4}
+        - tap: {key: up}
+        - wait: {seconds: 0.5}
+        - screenshot: chart-back
+        - tap: {key: escape}
+        - wait: {seconds: 0.3}
         - menu: close
         - wait: {menu_open: false}

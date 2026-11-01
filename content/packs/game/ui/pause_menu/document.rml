@@ -57,7 +57,8 @@
                 </div>
                 <div id="player-chart" class="player-native" onmousescroll="chart_wheel(document, event)">
                   <div id="chart-clip"><div id="chart-pages">
-                    <div class="chart-stage" id="chart-stage-0"></div><div class="chart-stage" id="chart-stage-1"></div><div class="chart-stage" id="chart-stage-2"></div><div class="chart-stage" id="chart-stage-3"></div><div class="chart-stage" id="chart-stage-4"></div><div class="chart-stage" id="chart-stage-5"></div>
+                    <div class="chart-stage stage-0" id="chart-stage-0"></div><div class="chart-stage stage-1" id="chart-stage-1"></div><div class="chart-stage stage-2" id="chart-stage-2"></div><div class="chart-stage stage-3" id="chart-stage-3"></div><div class="chart-stage stage-4" id="chart-stage-4"></div><div class="chart-stage stage-5" id="chart-stage-5"></div>
+                    <div class="chart-stage stage-0 off-page" id="chart-stage-other-0"></div><div class="chart-stage stage-1 off-page" id="chart-stage-other-1"></div><div class="chart-stage stage-2 off-page" id="chart-stage-other-2"></div><div class="chart-stage stage-3 off-page" id="chart-stage-other-3"></div><div class="chart-stage stage-4 off-page" id="chart-stage-other-4"></div><div class="chart-stage stage-5 off-page" id="chart-stage-other-5"></div>
                     <button id="chart-cell-0" class="chart-cell hidden" onclick="chart_pick(document, 0)"><img id="chart-icon-0" class="chart-icon hidden"/></button>
                     <button id="chart-cell-1" class="chart-cell hidden" onclick="chart_pick(document, 1)"><img id="chart-icon-1" class="chart-icon hidden"/></button>
                     <button id="chart-cell-2" class="chart-cell hidden" onclick="chart_pick(document, 2)"><img id="chart-icon-2" class="chart-icon hidden"/></button>
@@ -132,7 +133,7 @@
                     <button id="chart-cell-71" class="chart-cell hidden" onclick="chart_pick(document, 71)"><img id="chart-icon-71" class="chart-icon hidden"/></button>
                     <img id="chart-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/>
                   </div></div>
-                  <div id="chart-more" onclick="chart_more(document)"></div>
+                  <div id="chart-less" class="chart-arrow" onclick="chart_less(document)"></div><div id="chart-page"></div><div id="chart-more" class="chart-arrow" onclick="chart_more(document)"></div>
                   <div id="chart-prompts" class="page-prompts"><div class="page-prompt"><span id="chart-confirm-key" class="prompt-key confirm-key"></span><span class="prompt-text" text-key="pause_menu.chart_select"></span></div><div class="page-prompt"><span id="chart-cancel-key" class="prompt-key cancel-key"></span><span class="prompt-text" text-key="common.cancel"></span></div></div>
                 </div>
                 <div id="chart-detail" class="player-native">

@@ -1,10 +1,12 @@
 # The canonical stages (docs/modulos/apps/game.md, «Etapas canónicas»): a new game with the hidden content on, the option
-# among the pause menu's options turned on, and the chart: page 1 the original's with an arrow down, page 2 the Mega
-# box (Phoenixmon, HerculesKabuterimon and the hidden content's MetalEtemon) reached with Down past a column's last cell
-# and left with Up, its cells' stage names (Phoenixmon and MetalGreymon), then the option off again and the original
-# chart (the chart only in the original look, which draws it). Every text must fit its box, and the options
-# list, one row longer, scrolls to the new row. Run it with --saves <empty folder>, once per language (--lang en, --lang
-# es) and look (--ui-skin original, modern); how to run it: docs/guides/prueba-vertical.md.
+# among the pause menu's options turned on, and the chart: one page with six boxes, the Mega box (Phoenixmon,
+# HerculesKabuterimon and the hidden content's MetalEtemon) right of the Ultimate one, the stage names of a Mega and of
+# an Ultimate (Phoenixmon and MetalGreymon); then the option off again: the original's five boxes, whose Ultimate box
+# cannot hold the hidden content's MetalEtemon and Myotismon, which go to page 2 (arrows and page number under the
+# chart), reached with Down past the Ultimate column's last cell, and Up back to page 1 (the chart only in the original
+# look, which draws it). Every text must fit its box, and the options list, one row longer,
+# scrolls to the new row. Run it with --saves <empty folder>, once per language (--lang en, --lang es) and look
+# (--ui-skin original, modern); how to run it: docs/guides/prueba-vertical.md.
 name: canonical-stages
 device: keyboard
 timeout: 300
@@ -27,6 +29,7 @@ steps:
   - expect_setting: {canonical_stages: false}
   - expect_setting: {player.chart.58.id: houo}
   - expect_setting: {player.chart.59.id: hkab}
+  - expect_setting: {player.chart.62.id: mtet}
   # Phoenixmon (59) and MetalGreymon (12) raised (story triggers 0x200 + their number), so their cells open.
   - script: story_set("trigger 571 on")
   - script: story_set("trigger 524 on")
@@ -65,23 +68,15 @@ steps:
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: chart-canonical
-        # Down past the Fresh box's last cell slides to page 2, the Mega box, the cursor on Phoenixmon (its detail).
-        - tap: {key: return}
+        # Phoenixmon's detail, from the Mega box.
+        - menu_select: chart-cell-58
         - wait: {seconds: 0.3}
-        - repeat: {times: 4, steps: [{tap: {key: down}}, {wait: {seconds: 0.1}}]}
-        - wait: {seconds: 0.5}
-        - expect_text_fits: all
-        - screenshot: chart-mega-page
         - tap: {key: return}
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: detail-mega
         - tap: {key: escape}
         - wait: {seconds: 0.4}
-        # Up past Phoenixmon slides back to page 1, the cursor on the cell it left.
-        - tap: {key: up}
-        - wait: {seconds: 0.5}
-        - screenshot: chart-back
         - menu_select: chart-cell-11
         - wait: {seconds: 0.3}
         - tap: {key: return}
@@ -122,12 +117,25 @@ steps:
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: chart-original
-        - menu_select: chart-cell-11
+        # MetalGreymon's detail (the cursor still on its cell), then Down past its column's last cell (Etemon) slides to
+        # page 2, the cursor in the same column there, on MetalEtemon, and Up goes back to Etemon.
+        - tap: {key: return}
         - wait: {seconds: 0.3}
         - tap: {key: return}
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: detail-original
+        - tap: {key: escape}
+        - wait: {seconds: 0.4}
+        - repeat: {times: 8, steps: [{tap: {key: down}}, {wait: {seconds: 0.1}}]}
+        - wait: {seconds: 0.5}
+        - expect_text_fits: all
+        - screenshot: chart-page2
+        - tap: {key: up}
+        - wait: {seconds: 0.5}
+        - screenshot: chart-back
+        - tap: {key: escape}
+        - wait: {seconds: 0.3}
         - tap: {key: escape}
         - wait: {seconds: 0.4}
         - menu: close

@@ -24,7 +24,7 @@ assets::EvolutionChart chartWithExtraCells(const assets::EvolutionChart& chart,
                                            const assets::EvolutionTable& evolution,
                                            const assets::DigimonTable* species);
 // The chart of a game's ruleset: its cells and arrows from the ruleset's patched tables, published
-// again each time a game starts (player.chart.wide: a cell right of the original's last column).
+// again each time a game starts (player.chart.mega: the Mega step's Megas, comma-separated ids).
 void publishRulesetChart(ui::Ui& ui, const assets::VirtualFileSystem& files,
                          const ruleset::Ruleset& rules);
 // The medals chart's names and lines (player.medal.<n>.name, player.medal.<n>.line.<0-2>) and the

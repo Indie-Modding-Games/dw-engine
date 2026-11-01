@@ -3,10 +3,11 @@
 # of an ultimate (120 hours): MetalEtemon from Etemon (Etemon in the city, trigger 242) and Machinedramon from
 # Megadramon (Mt. Infinity finished, trigger 50). Each source comes from evolve, the partner's values from
 # partner_set, and its counter one hour before the check. Machinedramon is captured in the field (drawn at 0.6) and on
-# its status page, and the chart at the end (original look), then with the canonical stages on the chart's page 2 with
-# the four Megas and Machinedramon's detail. Run it with --saves <empty folder>, once per language
-# (--lang en, --lang es); how to run it: docs/guides/prueba-vertical.md. The ultimates of route-hidden-content.yaml,
-# without the step, never check again.
+# its status page; then Myotismon by evolve, and the chart at the end (original look): the two Megas in a sixth box,
+# the Mega box, and Myotismon on page 2, past the Ultimate box's grid (Down past the Fresh box's last cell, its detail,
+# Up back); then with the canonical stages one page with the four Megas and Machinedramon's detail. Run it with --saves
+# <empty folder>, once per language (--lang en, --lang es); how to run it: docs/guides/prueba-vertical.md. The
+# ultimates of route-hidden-content.yaml, without the step, never check again.
 name: mega-step
 device: keyboard
 timeout: 1800
@@ -95,7 +96,16 @@ steps:
   - menu: close
   - wait: {menu_open: false}
   - wait: {seconds: 0.5}
+  # Myotismon from the hidden content, so its cell on the chart's page 2 opens (a form past the original's raise flags is
+  # marked raised by evolving into it).
+  - script: evolve("vand")
+  - wait: {setting: {partner.name: main.digimon_names.0066}, timeout: 600}
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
   # The chart with the Megas (the original look draws it).
+  - expect_setting: {player.chart.63.id: muge}
+  - expect_setting: {player.chart.65.id: vand}
   - when:
       setting: {ui_skin: original}
       steps:
@@ -107,8 +117,27 @@ steps:
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: chart
-        # With the canonical stages the four Megas go to the chart's page 2 (Down past the Fresh box's last cell), and
-        # Machinedramon, the last, shows its detail.
+        # Down past the Fresh box's last cell slides to page 2, onto the nearest column with cells there: Myotismon, the
+        # Ultimate box's overflow. Up goes back to the cell it left.
+        - tap: {key: return}
+        - wait: {seconds: 0.3}
+        - repeat: {times: 4, steps: [{tap: {key: down}}, {wait: {seconds: 0.1}}]}
+        - wait: {seconds: 0.5}
+        - expect_text_fits: all
+        - screenshot: chart-page2
+        - tap: {key: return}
+        - wait: {seconds: 0.6}
+        - expect_text_fits: all
+        - screenshot: detail-myotismon
+        - tap: {key: escape}
+        - wait: {seconds: 0.4}
+        - tap: {key: up}
+        - wait: {seconds: 0.5}
+        - screenshot: chart-back
+        - tap: {key: escape}
+        - wait: {seconds: 0.3}
+        # With the canonical stages the four Megas fill the Mega box, and Phoenixmon and HerculesKabuterimon's places
+        # in the Ultimate box take Myotismon: one page. Machinedramon shows its detail.
         - tap: {key: tab}
         - menu_select: player-options
         - wait: {seconds: 0.4}
@@ -122,13 +151,15 @@ steps:
         - wait: {seconds: 0.6}
         - menu_select: player-tab-chart
         - wait: {seconds: 0.6}
+        - expect_text_fits: all
+        - screenshot: chart-canonical
+        # Machinedramon is the Mega box's last cell: Down to the foot of the cursor's column, then Right to the Mega box.
         - tap: {key: return}
         - wait: {seconds: 0.3}
-        - repeat: {times: 4, steps: [{tap: {key: down}}, {wait: {seconds: 0.1}}]}
-        - wait: {seconds: 0.5}
-        - expect_text_fits: all
-        - screenshot: chart-mega-page
-        - repeat: {times: 3, steps: [{tap: {key: down}}, {wait: {seconds: 0.1}}]}
+        - repeat: {times: 8, steps: [{tap: {key: down}}, {wait: {seconds: 0.1}}]}
+        - repeat: {times: 12, steps: [{tap: {key: right}}, {wait: {seconds: 0.1}}]}
+        - wait: {seconds: 0.3}
+        - screenshot: chart-machinedramon
         - tap: {key: return}
         - wait: {seconds: 0.6}
         - expect_text_fits: all

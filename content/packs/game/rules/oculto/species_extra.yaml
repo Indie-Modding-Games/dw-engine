@@ -51,7 +51,7 @@ species:
       battles: 100
     gate: { triggers: [242] }
     evolves_from: [scum, nume]
-    # La tercera columna de Ultra (el árbol se ensancha).
+    # Fuera de la rejilla de Ultra: el árbol la pone en un hueco libre de la caja, o en la página siguiente.
     chart: { x: 298, y: 81, icon: etem, palette: 2 }
   # Myotismon (Ultra), que el disco solo trae como jefe: filas diseñadas (ganancias, crianza copiada de Devimon con la
   # carne de comida favorita), el remate de Devimon (death_claw) en su primera ranura vacía y los puntos de lanzamiento

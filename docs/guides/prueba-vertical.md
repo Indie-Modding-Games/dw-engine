@@ -205,31 +205,36 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   de pausa abierto (el reloj se va con su caja) y la opción apagada desde el menú. Cada captura con la caja comprueba
   que no pisa nada del HUD ni de otro documento (`expect_clear: hud#field-time`) y que los textos caben (`text_fit`).
   Se corre en los dos idiomas y con los dos aspectos (`--ui-skin original` y `modern`).
-- `route-hidden-content.yaml`: el [contenido oculto](../modulos/apps/game.md#contenido-oculto) desde el menú
-  principal con el teclado: la pantalla de reglas de la partida nueva (con las reglas del original y con el contenido
-  oculto encendido), el árbol con 65 casillas y las cuatro formas nuevas por la revisión natural: Panjyamon desde
-  Penguinmon, Gigadramon desde Seadramon, MetalEtemon desde Sukamon y Myotismon desde Devimon (`story_set` para las
-  puertas, `evolve` para la forma de origen, `partner_set` para los valores y `clock_speed` hasta la revisión; para
-  Myotismon el reloj corre antes hasta las 19:00, `hud.clock.hour`, y la revisión cae de noche). Captura cada compañero nuevo en
-  el campo y en su ficha, y el árbol con las casillas nuevas en el aspecto original, con `text_fit`. Tras cada
-  evolución espera a que su escena acabe (el ajuste `evolution.active`, `"true"` mientras corre) y confirma el aviso
-  del nivel de domador si sale, así que vale también en una máquina lenta.
-  Se corre en los dos idiomas, con `--saves` en una carpeta vacía.
+- `route-hidden-content.yaml`: el [contenido oculto](../modulos/apps/game.md#contenido-oculto) desde el menú principal
+  con el teclado: la pantalla de reglas de la partida nueva (con las reglas del original y con el contenido oculto
+  encendido), el árbol con 65 casillas y las cuatro formas nuevas por la revisión natural: Panjyamon desde Penguinmon,
+  Gigadramon desde Seadramon, MetalEtemon desde Sukamon y Myotismon desde Devimon (`story_set` para las puertas,
+  `evolve` para la forma de origen, `partner_set` para los valores y `clock_speed` hasta la revisión; para Myotismon
+  el reloj corre antes hasta las 19:00, `hud.clock.hour`, y la revisión cae de noche). Captura cada compañero nuevo en
+  el campo y en su ficha, y el árbol con las casillas nuevas en el aspecto original (Panjyamon y Gigadramon en la
+  página 1, MetalEtemon y Myotismon, que no caben en la caja de Ultra, en la página 2, con el detalle de MetalEtemon),
+  con `text_fit`. Tras cada evolución espera a que su escena acabe (el ajuste `evolution.active`, `"true"` mientras
+  corre) y confirma el aviso del nivel de domador si sale, así que vale también en una máquina lenta. Se corre en los
+  dos idiomas, con `--saves` en una carpeta vacía.
 - `route-hidden-content-off.yaml`: lo mismo con las reglas del original: el árbol sigue con 61 casillas y el mismo
   Penguinmon evoluciona a la forma que elige el original. Se corre en los dos idiomas, con `--saves` en una carpeta
   vacía.
 - `route-mega-step.yaml`: el paso Ultra → Mega ([evolución](../modulos/game/evolution.md#paso-ultra--mega)): una
-  partida nueva con el contenido oculto y el paso Mega encendidos, el árbol con 66 casillas, MetalEtemon desde
-  Etemon y Machinedramon desde Megadramon por la revisión de un ultra (120 h). Captura la pantalla de reglas, los dos
-  Megas en el campo (Machinedramon a 0,6) y la ficha de Machinedramon, y el árbol en el aspecto original; luego
-  enciende las etapas canónicas y captura la página 2 del árbol con los cuatro Megas y el detalle de Machinedramon,
-  con `text_fit`. Se corre en los dos idiomas y los dos aspectos, con `--saves` en una carpeta vacía.
-- `route-canonical-stages.yaml`: las [etapas canónicas](../modulos/apps/game.md#etapas-canónicas) en una partida
-  nueva con el contenido oculto: enciende la opción (la lista de opciones se desplaza hasta la fila nueva), captura
-  el árbol (página 1 con la flecha), baja con Abajo a la página 2 con la caja Mega, abre el detalle de Phoenixmon,
-  vuelve con Arriba a la página 1 y abre el de MetalGreymon (marcados como criados con `story_set`), la apaga y
-  captura el árbol del original. El árbol solo en la piel original. Se corre en los dos idiomas y las dos
-  pieles, con `--saves` en una carpeta vacía.
+  partida nueva con el contenido oculto y el paso Mega encendidos, el árbol con 66 casillas, MetalEtemon desde Etemon
+  y Machinedramon desde Megadramon por la revisión de un ultra (120 h). Captura la pantalla de reglas, los dos Megas
+  en el campo (Machinedramon a 0,6) y la ficha de Machinedramon; hace evolucionar a Myotismon (`evolve`, para que su
+  casilla se abra) y captura el árbol en el aspecto original: los dos Megas en la caja Mega, a la derecha de la de
+  Ultra en la misma página, y Myotismon, que no cabe en la caja de Ultra, en la página 2 (Abajo desde la última
+  casilla de Bebé I, su detalle y Arriba de vuelta); luego enciende las etapas canónicas y captura el árbol de una
+  página con los cuatro Megas y el detalle de Machinedramon, con `text_fit`. Se corre en los dos idiomas y los dos
+  aspectos, con `--saves` en una carpeta vacía.
+- `route-canonical-stages.yaml`: las [etapas canónicas](../modulos/apps/game.md#etapas-canónicas) en una partida nueva
+  con el contenido oculto: enciende la opción (la lista de opciones se desplaza hasta la fila nueva), captura el árbol
+  de una página con las seis cajas (la caja Mega a la derecha de la de Ultra), abre el detalle de Phoenixmon y el de
+  MetalGreymon (marcados como criados con `story_set`), la apaga y captura el árbol del original con flechas y número
+  de página y el detalle de MetalGreymon, baja con Abajo desde Etemon a la página 2 (MetalEtemon y Myotismon, que no
+  caben en la caja de Ultra, en la misma columna) y vuelve con Arriba a la página 1. El árbol solo en la piel
+  original. Se corre en los dos idiomas y las dos pieles, con `--saves` en una carpeta vacía.
 - `route-city-tab.yaml`: la [pestaña Ciudad](../modulos/apps/screens.md#pestaña-ciudad-mejora-de-dwe) desde una
   partida nueva con siete especies unidas a la ciudad (`story_set`): abre la página del jugador con el teclado, va a la
   pestaña, pone el cursor en una que vive en la ciudad, en una que falta y en un campeón unido, a 1280x720 y otra vez a
