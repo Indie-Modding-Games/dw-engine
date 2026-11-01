@@ -75,6 +75,11 @@ Un disparador o una variable que el estado no tiene, pasar una guarda, un salto 
 `jump_return` sin nada a lo que volver son errores: la orden falla (la sección lo ve como un error de Lua) o el
 runner acaba el script y lo anota en el registro de errores. Es la lista de la Q11 del diseño; nada más es un error.
 
+Hablar con un personaje cuya sección no está en el guion del mapa no es un error: en el original
+`getScriptSection` da un puntero nulo, el intérprete lee los bytes de la dirección 0 y el guion acaba al momento
+(medido en el original con el personaje 0 de room08 apuntado a la sección 0x60: no pasa nada). Así le pasa al
+tendero de cartas de gias06b, el personaje 5 del guion 126, que solo tiene las secciones 0x51 y 0x52 del mostrador.
+
 ## Pruebas
 
 Los tests del módulo usan un `SectionHost` con pasos fijos y puertos falsos, sin Lua. La paridad de efectos sobre el

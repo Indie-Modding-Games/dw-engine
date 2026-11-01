@@ -303,3 +303,16 @@ TEST_CASE("a map change the field refuses ends on the same map without the arriv
     CHECK_FALSE(runner.busy());
   }
 }
+
+TEST_CASE("script_interp.c callScriptSection: a talk on a section the script lacks ends at once") {
+  ScriptedHost host;
+  StoryRunner runner = makeRunner(host);
+  REQUIRE(runner.request(Talk, StartTiming::Now, SectionSource::Event) == RequestOutcome::Accepted);
+  CHECK_FALSE(runner.busy());
+  CHECK(host.open() == 0);
+  // The next talk runs as usual.
+  host.define(Talk, {SectionEnded{}});
+  REQUIRE(runner.request(Talk, StartTiming::Now, SectionSource::Event) == RequestOutcome::Accepted);
+  CHECK(host.log() ==
+        std::vector<std::string>{"start 105:0x6", "resume 105:0x6 nil", "close 105:0x6"});
+}

@@ -40,6 +40,10 @@ inline constexpr std::string_view RequestDropped =
     "story: section {:#x} of script {} dropped: script {} is running";
 inline constexpr std::string_view SectionFailedLog = "story: script {} section {:#x} failed: {}";
 inline constexpr std::string_view SectionMissing = "story: script {} has no section {:#x}: {}";
+// script_interp.c: callScriptSection for a section the script lacks (an NPC with none of its own).
+inline constexpr std::string_view PortTalkWithoutSection =
+    "[port:story] callScriptSection (script_interp.c:2244): script {} has no section {:#x}; the "
+    "talk ends at once";
 inline constexpr std::string_view TooDeep =
     "story: script {} section {:#x} jumps from {} subroutine calls deep, past the guard of {}";
 inline constexpr std::string_view ReturnWithNothing =

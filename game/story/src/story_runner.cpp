@@ -258,6 +258,20 @@ void StoryRunner::beginScript(SectionRef section, SectionSource source) {
 }
 
 void StoryRunner::startSection(SectionRef section) {
+  // script_interp.c: getScriptSection gives a null pointer for a section the script lacks, and the
+  // interpreter reads the bytes at address 0, which end the script at once (measured: an NPC talk
+  // whose section is missing does nothing). A talk or a step on such a section is no error.
+  if (source_ == SectionSource::Event) {
+    auto handle = host_->start(section);
+    if (!handle) {
+      core::logDebug("{}", messages::formatMessage(messages::PortTalkWithoutSection, section.script,
+                                                   section.section));
+      return;
+    }
+    sections_.push_back({.ref = section, .handle = *handle});
+    run(std::nullopt);
+    return;
+  }
   if (openSection(section)) {
     run(std::nullopt);
   }
