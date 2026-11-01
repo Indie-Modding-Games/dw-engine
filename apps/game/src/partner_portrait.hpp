@@ -21,8 +21,9 @@ class PartnerPortrait {
 public:
   static core::Result<std::unique_ptr<PartnerPortrait>> create(render::Renderer& renderer);
   ~PartnerPortrait();
+  // `scale` is the species' size in the field (a ruleset's species patches: field_scale).
   core::Result<void> load(const assets::VirtualFileSystem& files, std::string_view species,
-                          const assets::RaiseRow& raise);
+                          const assets::RaiseRow& raise, float scale = 1.0F);
   render::TextureId texture() const { return texture_; }
   // Plays this clip (an original animation id) from now on, from its start when it changes; a clip
   // the model lacks plays its idle. A clip that does not repeat starts again once it ends.

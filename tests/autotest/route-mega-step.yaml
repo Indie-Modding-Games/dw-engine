@@ -1,0 +1,108 @@
+# The Ultimate to Mega step (docs/modulos/game/evolution.md, «Contenido oculto»): a new game from the main menu with
+# the keyboard, its rules screen with the hidden content and the Mega step on, and the two Megas by the natural check
+# of an ultimate (120 hours): MetalEtemon from Etemon (Etemon in the city, trigger 242) and Machinedramon from
+# Megadramon (Mt. Infinity finished, trigger 50). Each source comes from evolve, the partner's values from
+# partner_set, and its counter one hour before the check. Machinedramon is captured in the field (drawn at 0.6) and on
+# its status page, and the chart at the end (original look). Run it with --saves <empty folder>, once per language
+# (--lang en, --lang es); how to run it: docs/guides/prueba-vertical.md. The ultimates of route-hidden-content.yaml,
+# without the step, never check again.
+name: mega-step
+device: keyboard
+timeout: 1800
+main_menu: true
+new_game_rules: true
+text_fit: true
+steps:
+  - resize: [1280, 720]
+  - wait: {shown: main_menu, seconds: 1, timeout: 60}
+  - menu_select: play
+  - wait: {shown: save_slots, seconds: 0.5, timeout: 30}
+  - menu_select: slot-1
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - menu_select: yes
+  - wait: {shown: new_game_rules, seconds: 0.5, timeout: 30}
+  - menu_select: rules-hidden
+  - wait: {seconds: 0.3}
+  - menu_select: rules-mega
+  - wait: {seconds: 0.3}
+  - expect_text_fits: all
+  - screenshot: rules-mega
+  - menu_select: rules-start
+  - wait: {map: twna01, hidden: new_game_rules, seconds: 2, timeout: 120}
+  # The hidden content's four cells and Machinedramon's join the original's 61.
+  - expect_setting: {player.chart.count: 66}
+  # MetalEtemon (Mega) from Etemon.
+  - script: story_set("trigger 242 on")
+  - script: evolve("etem")
+  - wait: {setting: {partner.name: main.digimon_names.0042}, timeout: 600}
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  # A new player rank on evolving shows its notice, which holds the field and the clock until confirmed.
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  - script: clock_speed("0")
+  - script: partner_set("hp 50")
+  - script: partner_set("mp 50")
+  - script: partner_set("defense 50")
+  - script: partner_set("offense 500")
+  - script: partner_set("speed 500")
+  - script: partner_set("brains 400")
+  - script: partner_set("care 0")
+  - script: partner_set("weight 20")
+  - script: partner_set("battles 100")
+  - script: partner_set("hours 119")
+  - script: clock_speed("120")
+  - wait: {setting: {partner.name: main.digimon_names.0065}, timeout: 600}
+  - script: clock_speed("0")
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  - screenshot: field-metaletemon
+  # Machinedramon (Mega) from Megadramon; HP and MP count tenths.
+  - script: story_set("trigger 50 on")
+  - script: evolve("mgdr")
+  - wait: {setting: {partner.name: main.digimon_names.0054}, timeout: 600}
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  - script: clock_speed("0")
+  - script: partner_set("hp 8000")
+  - script: partner_set("mp 6000")
+  - script: partner_set("offense 700")
+  - script: partner_set("defense 600")
+  - script: partner_set("speed 400")
+  - script: partner_set("brains 400")
+  - script: partner_set("care 0")
+  - script: partner_set("battles 150")
+  - script: partner_set("hours 119")
+  - script: clock_speed("120")
+  - wait: {setting: {partner.name: main.digimon_names.0115}, timeout: 600}
+  - script: clock_speed("0")
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  - screenshot: field-machinedramon
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.8}
+  - expect_text_fits: all
+  - screenshot: status-machinedramon
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  # The chart with the Megas (the original look draws it).
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu: open
+        - wait: {seconds: 0.6}
+        - menu_select: open-player
+        - wait: {seconds: 0.6}
+        - menu_select: player-tab-chart
+        - wait: {seconds: 0.6}
+        - expect_text_fits: all
+        - screenshot: chart
+        - menu: close
+        - wait: {menu_open: false}

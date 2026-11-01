@@ -1361,8 +1361,18 @@ int runGame(const Options& requested) {
         portraitSpecies = species;
         (*portrait)->clear();
         const auto* raise = portraitRaise ? portraitRaise->find(species) : nullptr;
+        // A form the ruleset's species patches add (the hidden content) is only in its table.
+        std::optional<assets::RaiseTable> patched;
+        if (raise == nullptr) {
+          if (auto table = flow.playing()->raiseTable(files); table) {
+            patched = std::move(*table);
+            raise = patched->find(species);
+          }
+        }
         if (raise) {
-          if (auto loaded = (*portrait)->load(files, species, *raise); !loaded)
+          if (auto loaded =
+                  (*portrait)->load(files, species, *raise, flow.playing()->speciesScale(species));
+              !loaded)
             core::logWarning("Status portrait {}: {}", species, loaded.error().message);
         } else {
           core::logWarning("Status portrait {}: no raise-table placement", species);

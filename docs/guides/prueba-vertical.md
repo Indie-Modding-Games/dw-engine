@@ -208,8 +208,9 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
 - `route-hidden-content.yaml`: el [contenido oculto](../modulos/apps/game.md#contenido-oculto) desde el menú
   principal con el teclado: la pantalla de reglas de la partida nueva (con las reglas del original y con el contenido
   oculto encendido), el árbol con 65 casillas y las cuatro formas nuevas por la revisión natural: Panjyamon desde
-  Penguinmon, Gigadramon desde Seadramon, MetalEtemon desde Sukamon y Myotismon desde Devimon, de noche (`story_set` para las puertas, `evolve` para la
-  forma de origen, `partner_set` para los valores y `clock_speed` hasta la revisión). Captura cada compañero nuevo en
+  Penguinmon, Gigadramon desde Seadramon, MetalEtemon desde Sukamon y Myotismon desde Devimon (`story_set` para las
+  puertas, `evolve` para la forma de origen, `partner_set` para los valores y `clock_speed` hasta la revisión; para
+  Myotismon el reloj corre antes hasta las 19:00, `hud.clock.hour`, y la revisión cae de noche). Captura cada compañero nuevo en
   el campo y en su ficha, y el árbol con las casillas nuevas en el aspecto original, con `text_fit`. Tras cada
   evolución espera a que su escena acabe (el ajuste `evolution.active`, `"true"` mientras corre) y confirma el aviso
   del nivel de domador si sale, así que vale también en una máquina lenta.
@@ -217,6 +218,11 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
 - `route-hidden-content-off.yaml`: lo mismo con las reglas del original: el árbol sigue con 61 casillas y el mismo
   Penguinmon evoluciona a la forma que elige el original. Se corre en los dos idiomas, con `--saves` en una carpeta
   vacía.
+- `route-mega-step.yaml`: el paso Ultra → Mega ([evolución](../modulos/game/evolution.md#paso-ultra--mega)): una
+  partida nueva con el contenido oculto y el paso Mega encendidos, el árbol con 66 casillas, MetalEtemon desde
+  Etemon y Machinedramon desde Megadramon por la revisión de un ultra (120 h). Captura la pantalla de reglas, los dos
+  Megas en el campo (Machinedramon a 0,6) y la ficha de Machinedramon, y el árbol en el aspecto original, con
+  `text_fit`. Se corre en los dos idiomas y los dos aspectos, con `--saves` en una carpeta vacía.
 - `route-canonical-stages.yaml`: las [etapas canónicas](../modulos/apps/game.md#etapas-canónicas) en una partida
   nueva con el contenido oculto: enciende la opción (la lista de opciones se desplaza hasta la fila nueva), captura
   el árbol con la caja Mega y el detalle de Phoenixmon y de MetalGreymon (marcados como criados con `story_set`), la

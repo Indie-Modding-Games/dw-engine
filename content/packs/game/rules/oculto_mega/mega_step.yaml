@@ -1,0 +1,48 @@
+# El paso Ultra → Mega (docs/architecture/rulesets.md, «Paso a Mega»). Números de diseño nuestros: un Ultra revisa a
+# las 120 horas con la puntuación de siempre; llegar a Mega da 72 horas de vida y sube el nivel de criador. En las
+# demás reglas un Mega sigue contando como nivel 5.
+check_hours: 120
+lifetime_hours: 72
+tamer_level_chance: 100
+mega: [mtet, muge]
+species:
+  # MetalEtemon sale de Etemon (no de Sukamon y Numemon) con los mismos requisitos; la puerta y la celda siguen.
+  mtet:
+    requirement:
+      from: etem
+      offense: 500
+      speed: 500
+      brains: 400
+      care: 0
+      care_is_maximum: true
+      weight: 20
+      battles: 100
+    evolves_from: [etem]
+  # Machinedramon (Mega), que el disco solo trae como jefe: filas diseñadas (ganancias, crianza de Megadramon con
+  # siete comidas en vez de seis y peso 70 en vez de 50). Puerta: Mt. Infinity terminado (disparador 50, que el
+  # guion 184 pone tras el combate final). De compañero lucha como tipo 3 (el del jefe es 0) y su Infinity Cannon
+  # pega 240 con 1 iframe; el jefe conserva la de la tabla.
+  muge:
+    requirement:
+      hp: 800
+      mp: 600
+      offense: 700
+      defense: 600
+      speed: 400
+      brains: 400
+      battles: 150
+      techs: 45
+    gate: { triggers: [50] }
+    evolves_from: [mgdr, ggdr]
+    stats_gains: { hp: 9999, mp: 9999, offense: 999, defense: 900, speed: 700, brains: 800 }
+    raise: { copy: mgdr, default_weight: 70, hunger_times: [2, 5, 9, 12, 16, 19, 22, -1] }
+    partner_type: 3
+    partner_moves:
+      infinity_cannon: { power: 240, iframes: 1 }
+    # Mismos sustitutos que Myotismon (species_extra.yaml): su modelo de enemigo tampoco tiene los clips de cuidado
+    # ni de gimnasio. Su remate (técnica 6) es suyo.
+    clips: { 3: 2, 5: 42, 7: 19, 8: 46, 9: 1, 10: 1, 11: 43, 12: 41, 13: 19, 14: 1, 15: 1, 16: 1, 17: 1, 18: 34,
+             21: 33, 22: 33, 23: 36, 24: 36, 25: 36, 27: 37 }
+    # Es enorme (radio 400 frente a 220 de Megadramon): en el campo se dibuja a 0,6.
+    field_scale: 0.6
+    chart: { x: 298, y: 119, icon: mgdr, palette: 2 }

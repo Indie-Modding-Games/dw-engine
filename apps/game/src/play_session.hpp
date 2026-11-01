@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/digimon_table.hpp>
+#include <dwe/assets/raise_table.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/debug/debug_ui.hpp>
@@ -217,6 +218,12 @@ public:
   [[nodiscard]] const game::partner::Conditions& partnerConditions() const {
     return game_.session->partner().state().conditions;
   }
+  // The game's raise table with its ruleset's species patches: where the status portrait places a
+  // form the patches add (the hidden content), which the disc's table lacks.
+  [[nodiscard]] core::Result<assets::RaiseTable>
+  raiseTable(const assets::VirtualFileSystem& files) const;
+  // A species' size in the field (its patch's field_scale, else 1), which the portrait keeps too.
+  [[nodiscard]] float speciesScale(std::string_view species) const;
 
   // What a bug report says of the game now (bug_report.hpp; the app fills in the build and the
   // date).

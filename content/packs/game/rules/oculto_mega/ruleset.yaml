@@ -1,0 +1,10 @@
+# El contenido oculto con el paso Ultra → Mega (opción de partida nueva, apagada por defecto): un Ultra vuelve a
+# evolucionar a un Mega. MetalEtemon pasa a salir de Etemon y Machinedramon de Megadramon y Gigadramon. Diseño:
+# docs/modulos/game/evolution.md, «Contenido oculto». Formato: docs/architecture/rulesets.md.
+id: oculto_mega
+name: "Original + contenido oculto + paso Mega"
+version: 0.1.0
+description: "El contenido oculto, con el paso de Ultra a Mega: MetalEtemon desde Etemon y Machinedramon."
+extends: oculto
+sections:
+  - mega_step

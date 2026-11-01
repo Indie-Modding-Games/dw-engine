@@ -436,4 +436,54 @@ TEST_CASE("the user's disc, extracted: the hidden content's paths and gates") {
   CHECK(evolution.outlook(night, {}).next != vand);
 }
 
+// The Mega step on the user's disc: MetalEtemon comes from Etemon and Machinedramon from Megadramon
+// and Gigadramon, each picked by an ultimate's check with the route's values.
+TEST_CASE("the user's disc, extracted: the Mega step's paths") {
+  const assets::DiskFileSystem disk;
+  const auto vfs = mountContent(disk);
+  if (!vfs) {
+    MESSAGE(Skipping);
+    return;
+  }
+  const auto ruleset = ruleset::loadRuleset(*vfs, "oculto_mega");
+  REQUIRE_MESSAGE(ruleset.has_value(), errorOf(ruleset));
+  auto loaded = Evolution::load(*vfs, *ruleset);
+  REQUIRE_MESSAGE(loaded.has_value(), errorOf(loaded));
+  const Evolution& evolution = *loaded;
+  const auto targetsOf = [&](std::string_view id) {
+    const auto targets = evolution.tables().pathTargets(idOf(evolution, id));
+    return std::vector<Species>{targets.begin(), targets.end()};
+  };
+  const Species mtet = idOf(evolution, "mtet");
+  const Species muge = idOf(evolution, "muge");
+  CHECK(targetsOf("etem") == std::vector<Species>{mtet});
+  const auto fromSukamon = targetsOf("scum");
+  CHECK(std::ranges::find(fromSukamon, mtet) == fromSukamon.end());
+  CHECK(targetsOf("mgdr") == std::vector<Species>{muge});
+  CHECK(targetsOf("ggdr") == std::vector<Species>{muge});
+  struct Case {
+    std::string_view from;
+    std::string_view target;
+    std::int32_t trigger;
+    std::int32_t weight;
+  };
+  for (const Case& each : {Case{.from = "etem", .target = "mtet", .trigger = 242, .weight = 20},
+                           Case{.from = "mgdr", .target = "muge", .trigger = 50, .weight = 50}}) {
+    CAPTURE(each.target);
+    const Species target = idOf(evolution, each.target);
+    EvolutionInputs meeting = inputsMeeting(evolution, idOf(evolution, each.from), target);
+    meeting.weight = each.weight;
+    meeting.tamerFree = true;
+    const std::int32_t trigger = each.trigger;
+    meeting.trigger = [trigger](std::int32_t set) { return set == trigger; };
+    meeting.battles = 150;
+    meeting.evolutionTimer = 120;
+    CHECK(evolution.outlook(meeting, {}).checkHours == 120);
+    const auto scored = evolution.report(meeting, {}, target);
+    REQUIRE(scored);
+    CHECK(scored->points >= evolution.rules().requirements.passPoints);
+    CHECK(evolution.outlook(meeting, {}).next == target);
+  }
+}
+
 } // namespace dwe::game::evolution

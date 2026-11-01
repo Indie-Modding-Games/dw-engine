@@ -660,7 +660,7 @@ campo usa el de la línea de órdenes (`--ruleset`, `original` por defecto).
 
 Con el ruleset, el árbol de evolución de la página del jugador (`player_chart.cpp`: `publishRulesetChart`) lee los
 caminos de las tablas del ruleset y añade las casillas nuevas (`player.chart.count`: 61 en el original, 65 con el
-contenido oculto); la caja de Ultra gana una tercera columna (y el panel se ensancha a 960dp) cuando una casilla cae a la derecha de la
+contenido oculto y 66 con el paso Mega); la caja de Ultra gana una tercera columna (y el panel se ensancha a 960dp) cuando una casilla cae a la derecha de la
 última columna del original (`player.chart.wide`).
 Una forma nueva usa el icono de otra especie con otra paleta hasta que haya iconos propios.
 

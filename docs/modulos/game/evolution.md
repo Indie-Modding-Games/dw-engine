@@ -154,13 +154,39 @@ especie](../../architecture/rulesets.md#parches-por-especie)), con números de d
 
 Tests: `game/evolution/tests/hidden_tests.cpp` (puerta de disparadores y hora, puerta de copa, paso Mega),
 `clip stand-ins fill only the clips a model lacks, with copies of ones it has` (`engine/assets/tests/model_data_tests.cpp`),
-`the user's disc, extracted: the hidden content's paths and gates` (`extracted_tests.cpp`, con `DWE_CONTENT`: los
+`the user's disc, extracted: the hidden content's paths and gates` y `the user's disc, extracted: the Mega step's
+paths` (`extracted_tests.cpp`, con `DWE_CONTENT`: los
 destinos tras los del original y cada camino elegido por la revisión),
 `the game pack's hidden content rulesets follow their schemas and read` (`engine/ruleset/tests/species_extra_tests.cpp`)
 y `extra_prizes: the hidden content's species patches give each new form's item`
 (`game/tournament/tests/cup_extras_tests.cpp`), `a species past the raised triggers is kept apart, and a new game clears it`
-(`apps/session/tests/evolution_adapter_tests.cpp`). Rutas: `route-hidden-content.yaml` y
-`route-hidden-content-off.yaml` ([prueba vertical](../../guides/prueba-vertical.md)).
+(`apps/session/tests/evolution_adapter_tests.cpp`). Rutas: `route-hidden-content.yaml`,
+`route-hidden-content-off.yaml` y `route-mega-step.yaml` ([prueba vertical](../../guides/prueba-vertical.md)).
+
+### Paso Ultra → Mega
+
+Otra opción de partida nueva, apagada por defecto y solo con el contenido oculto: el ruleset `oculto_mega`
+(`extends: oculto`) añade la sección `mega_step` (`rules/oculto_mega/mega_step.yaml`). Un ultra vuelve a revisar a
+las 120 horas con la misma puntuación; llegar a Mega reinicia el contador, da 72 horas de vida y sube el nivel de
+criador (`tamer_level_chance: 100`). Un Mega es el último paso. En las demás reglas (entrenamiento, torneos,
+prosperidad) un Mega sigue contando como nivel 5.
+
+| Forma | Desde | Requisito | Puerta |
+|---|---|---|---|
+| MetalEtemon (Mega) | Etemon (en vez de Sukamon y Numemon) | el de antes: ataque 500, velocidad 500, cerebro 400; 0 errores; peso 20 ± 5; 100 batallas o venir de Etemon | la de antes (disparador 242) |
+| Machinedramon (Mega) | Megadramon, Gigadramon | HP 8000, MP 6000, ataque 700, defensa 600, velocidad 400, cerebro 400; 150 batallas | Mt. Infinity terminado (disparador 50, que el guion 184 pone tras el combate final; suposición) |
+
+- **Machinedramon de compañero.** Filas diseñadas: ganancias 9999/9999/999/900/700/800 y crianza de Megadramon con
+  siete comidas en vez de seis y peso 70. Lucha como tipo 3 (virus; el jefe es 0, sin tipo: `partner_type`) y su
+  Infinity Cannon pega 240 con 1 iframe en vez de 777 con 38 (`partner_moves`). `BattleAdapter` añade esa copia al
+  catálogo de técnicas (`MoveCatalog::addVariant`: mismo id, después de la tabla) y `Combatant::moveVariants` la usa
+  solo para el compañero; el jefe y cualquier otro luchador siguen con la de la tabla. Tiene los mismos sustitutos de
+  clips que Myotismon y en el campo se dibuja a 0,6 (`field_scale`: radio 400 frente a 220 de Megadramon).
+- **Sin la opción** nada cambia: un ultra no vuelve a revisar y Machinedramon no se alcanza.
+
+Tests: `a partner's move variant replaces the table's move for it alone` (`game/battle/tests/battle_tests.cpp`),
+`a ruleset's species patches give the partner its own type and move values`
+(`apps/session/tests/battle_adapter_tests.cpp`) y los de «Contenido oculto».
 
 Las etapas canónicas (Supremo/Mega para Phoenixmon, HerculesKabuterimon, MetalEtemon y Machinedramon) son solo de la
 UI: las reglas siguen viendo nivel 5 ([game.md](../apps/game.md#etapas-canónicas)).

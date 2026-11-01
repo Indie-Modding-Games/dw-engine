@@ -1098,6 +1098,17 @@ void PlaySession::showButterfly(bool partnerNormal, const session::GameSession& 
   effects.setButterfly();
 }
 
+core::Result<assets::RaiseTable>
+PlaySession::raiseTable(const assets::VirtualFileSystem& files) const {
+  return ruleset::loadPatchedRaiseTable(files, game_.session->rules().current());
+}
+
+float PlaySession::speciesScale(std::string_view species) const {
+  const ruleset::SpeciesExtra extra = speciesExtraOf(*game_.session);
+  const ruleset::SpeciesPatch* patch = extra.find(species);
+  return patch != nullptr ? patch->fieldScale.value_or(1.0F) : 1.0F;
+}
+
 screens::ScreenSettings PlaySession::partnerStatus() const {
   return partnerMenu_.statusSettings();
 }

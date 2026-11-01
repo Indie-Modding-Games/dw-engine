@@ -882,6 +882,8 @@ button:focus .original-look, button.original-look:focus {
    Los offsets descuentan el borde de 1px de la página. */
 #status-head { left: 117dp; top: 60dp; }
 #status-name { width: 294dp; height: 42dp; box-sizing: border-box; padding: 0; line-height: 36dp; }
+/* A name past the 12 letters the box holds (Machinedramon) gets a wider one, short of the profile headings. */
+#status-name.long { width: 324dp; }
 #status-species-line { left: 0; top: 108dp; width: 894dp; }
 #status-age-line, #status-weight-line { left: 0; top: 156dp; width: 894dp; }
 #status-species, #status-age, #status-weight {

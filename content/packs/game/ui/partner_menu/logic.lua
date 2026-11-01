@@ -153,7 +153,11 @@ local function draw_status(document)
   -- species on its own line.
   local species = text(setting("partner.name", ""))
   local nickname = setting("partner.nickname", "")
-  document:get("status-name"):set_text(nickname ~= "" and nickname or species)
+  local shown = nickname ~= "" and nickname or species
+  local name_box = document:get("status-name")
+  name_box:set_text(shown)
+  -- The box holds 12 letters; a longer name (Machinedramon) widens it.
+  name_box:set_class("long", ((utf8 and utf8.len(shown)) or #shown) > 12)
   document:get("status-species"):set_text(species)
   document
     :get("status-lives")

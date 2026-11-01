@@ -101,8 +101,8 @@ struct GamePackRuleset {
   std::string_view id;
   std::string_view section;
 };
-constexpr std::array<GamePackRuleset, 1> HiddenRulesets{
-    {{.id = "oculto", .section = "species_extra"}}};
+constexpr std::array<GamePackRuleset, 2> HiddenRulesets{
+    {{.id = "oculto", .section = "species_extra"}, {.id = "oculto_mega", .section = "mega_step"}}};
 
 std::string_view textOf(std::span<const std::byte> bytes) {
   return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
@@ -155,6 +155,7 @@ TEST_CASE("the game pack's hidden content rulesets follow their schemas and read
     const auto extra = readSpeciesExtra(*ruleset);
     REQUIRE_MESSAGE(extra.has_value(), errorOf(extra));
     CHECK_FALSE(extra->empty());
+    CHECK(extra->megaStep.has_value() == (hidden.section == "mega_step"));
   }
 }
 

@@ -149,6 +149,17 @@ El juego añade `partner.care_result` (`partner_menu.care_result.praised` o `sco
 por punto de la barra (`game_menu.c: renderDigimonStatsView`: `renderBox(..., virusBar * 3, 6, ...)`); aquí se llena
 en proporción a su máximo del ruleset. Es una diferencia solo de aspecto y se queda.
 
+**Nombre largo en la ficha.** La caja del nombre del aspecto original cabe 12 letras. Con el
+[contenido oculto](game.md#contenido-oculto) Machinedramon tiene 13: `partner_menu/logic.lua` pone la clase `long` a
+`#status-name` y la caja se ensancha (324dp en vez de 294dp) sin llegar a los títulos del perfil. Con un nombre de
+12 letras o menos nada cambia.
+
+**Retrato de una forma nueva.** El retrato de la ficha se coloca con la fila de crianza de la especie (`view`), que
+`game.cpp` lee de la tabla del disco. Las formas que añaden los parches del ruleset (Myotismon, Machinedramon) solo
+están en la tabla parcheada, así que para ellas pide `PlaySession::raiseTable` (la del ruleset de la partida, con
+`ruleset::loadPatchedRaiseTable`), y lo escala como en el campo (`PlaySession::speciesScale`, el `field_scale` del
+parche: Machinedramon a 0,6). Un clip que su modelo no tiene juega el 0.
+
 **Combate (decisiones del responsable de diseño, 2026-10-21).** El panel de HP de un enemigo lleva su nombre hasta que
 exista la escena 3D del combate; el título de la caja final («Has escapado.» al huir) se queda como desviación de
 accesibilidad. La bolsa que lanzaba al confirmar la ranura se retiró el 2026-10-30 (QA-M19): el combate abre la

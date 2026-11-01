@@ -44,7 +44,8 @@ PartnerPortrait::~PartnerPortrait() {
 }
 
 core::Result<void> PartnerPortrait::load(const assets::VirtualFileSystem& files,
-                                         std::string_view species, const assets::RaiseRow& raise) {
+                                         std::string_view species, const assets::RaiseRow& raise,
+                                         float scale) {
   clear();
   const auto id =
       assets::AssetId::parse(std::format("digimon/{}/model", assets::contentAssetPath(species)));
@@ -70,9 +71,10 @@ core::Result<void> PartnerPortrait::load(const assets::VirtualFileSystem& files,
   static_cast<void>(pose_->advance(0.0F));
   const auto joints = pose_->jointMatrices();
   joints_.assign(joints.begin(), joints.end());
-  world_ = glm::translate(glm::mat4{1.F}, glm::vec3{static_cast<float>(raise.view[0]),
-                                                    -static_cast<float>(raise.view[1]),
-                                                    -static_cast<float>(raise.view[2])});
+  world_ = glm::scale(glm::translate(glm::mat4{1.F}, glm::vec3{static_cast<float>(raise.view[0]),
+                                                               -static_cast<float>(raise.view[1]),
+                                                               -static_cast<float>(raise.view[2])}),
+                      glm::vec3{scale});
   return {};
 }
 
