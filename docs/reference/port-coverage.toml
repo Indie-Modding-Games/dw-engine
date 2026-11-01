@@ -406,7 +406,7 @@ reinitializeAfterTournament = { status = "portado", dwe = "apps/game/src/story_t
 createMeramonShake = { status = "portado", dwe = "apps/session/src/story_routines/routine_screen_shake.cpp", what = "Empieza el temblor de pantalla de la escena del fuego de la montaña." }
 tickMeramonShake = { status = "portado", dwe = "apps/game/src/screen_shake.hpp", note = "El desplazamiento del dibujo y el cuadrado sustractivo que crece (SPOT256, cian restado: la pantalla roja); en pantalla ancha el cuadrado crece en proporción.", what = "Hace temblar la pantalla en esa escena." }
 cleanupGame = { status = "no-aplica", note = "limpieza del original", what = "Libera la partida al volver al título." }
-getFileCityTopMap = { status = "parcial", dwe = "game/story/src/prosperity.cpp", what = "Elige qué versión del mapa de la ciudad cargar según cuánto ha crecido.", note = "CityAdapter::clearedMap la elige; falta el guardado tras el final (rutina 0x36) que la usa" }
+getFileCityTopMap = { status = "portado", dwe = "apps/session/src/game_session.cpp", what = "Elige qué versión del mapa de la ciudad cargar según cuánto ha crecido.", note = "CityAdapter::clearedMap la elige; el guardado del final (rutina 0x36) la guarda en clearedMap y la partida sigue ahí" }
 loadMapCollisionData = { status = "no-aplica", note = "lectura del disco; la colisión la extrae dwx", what = "Lee la rejilla de colisión del mapa." }
 setupTamerOnWarp = { status = "portado", dwe = "game/field/src/script_warps.cpp", what = "Coloca al jugador al llegar por un warp." }
 tamerTick = { status = "portado", dwe = "apps/game/src/play_session.cpp", what = "Mueve al jugador cada fotograma según su estado." }
@@ -497,7 +497,7 @@ itemMenuCursorBottom = { status = "no-aplica", note = "cursor de interfaz; lo ha
 itemMenuCursorDown = { status = "no-aplica", note = "cursor de interfaz; lo hace la pantalla", what = "Baja el cursor." }
 createItemMenuDescriptionBox = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Abre el cuadro de descripción del objeto." }
 updateItemMenuSubTextboxLine = { status = "no-aplica", note = "texto de interfaz", what = "Rehace una línea del cuadro auxiliar." }
-playShopSoundOnlyInSavannah = { status = "parcial", dwe = "apps/session/src/card_shop.cpp", what = "Toca el sonido de la tienda, solo en el mapa de la sabana.", note = "la tienda de cartas y el intercambio por méritos lo tocan (trade_sound: (0, 0x17) solo en gias06b); el trueque de objetos todavía no" }
+playShopSoundOnlyInSavannah = { status = "portado", dwe = "apps/session/src/card_shop.cpp", what = "Toca el sonido de la tienda, solo en el mapa de la sabana.", note = "la tienda de cartas y el intercambio por méritos lo tocan (trade_sound: (0, 0x17) solo en gias06b); el trueque de objetos está en gcan08_2 y gcan10, así que en el original tampoco suena" }
 showMapHeadTextbox = { status = "portado", dwe = "apps/session/src/map_head_lines.cpp", what = "Enseña el texto de cabecera del mapa." }
 flipTextboxPage = { status = "portado", dwe = "game/story/src/dialogue.cpp", what = "Pasa la página del cuadro de texto." }
 calculateItemMenuStrings = { status = "no-aplica", note = "texto de interfaz", what = "Monta los textos del menú de objetos." }
@@ -532,7 +532,7 @@ pollNextTwoScriptShorts = { status = "no-aplica", note = "lectura de operandos; 
 forceUpdateBGM = { status = "portado", dwe = "apps/session/src/session_music.cpp", what = "Fuerza a revisar la música del mapa (día o noche)." }
 scriptUnloadModel = { status = "portado", dwe = "game/story/src/orders_npc.cpp", what = "Orden de guion: quita un modelo." }
 initializeTextbox = { status = "portado", dwe = "game/story/src/dialogue.cpp", what = "Prepara el cuadro de texto." }
-tickBackgroundDialogue = { status = "falta", what = "Diálogo que corre sin parar el juego (comentarios de fondo).", note = "comprobar" }
+tickBackgroundDialogue = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Diálogo que corre sin parar el juego (comentarios de fondo).", note = "modo 3 del cuadro de texto: la frase del tendero sale con la lista sin esperar botón" }
 tickScriptDialogueBox = { status = "portado", dwe = "apps/game/src/story_textbox.cpp", what = "Avanza el cuadro de diálogo del guion." }
 showTextboxReady = { status = "portado", dwe = "apps/game/src/story_textbox.cpp", what = "Enseña la marca de seguir del cuadro de texto." }
 intToStringSJIS = { status = "no-aplica", note = "codificación de texto del original", what = "Pasa un número a texto." }
@@ -641,7 +641,7 @@ gameClearSave = { status = "portado", dwe = "apps/session/include/dwe/session/ga
 initTournamentSchedule = { status = "portado", dwe = "apps/game/src/tournament_schedule_screen.cpp:1", what = "Enseña el calendario de torneos." }
 scriptCheckTournamentMedal = { status = "portado", dwe = "apps/session/src/story_routines/routine_tournament_medal.cpp:1", what = "Comprueba y da la medalla de los torneos." }
 scriptStartTournament = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", what = "Empieza un torneo." }
-tamerTickOpening = { status = "falta", note = "la escena del compañero 5 acaba al momento", what = "Escena de apertura del jugador." }
+tamerTickOpening = { status = "portado", dwe = "apps/game/src/story_scene_glue.cpp", note = "solo la llama la sala de pruebas (rutina 5): espera dos fotogramas y vuelve a encender el mapa; en el motor acaba al momento", what = "Escena de apertura del jugador." }
 tamerTickEnding = { status = "portado", dwe = "apps/game/src/ending_scene.hpp", note = "la llamada 6 de la historia la juega en el campo y avisa a la historia al acabar; sin sombra del jugador porque el motor aún no la dibuja (Suposición: sin medir en el original)", what = "Escena final del jugador antes del vídeo." }
 KAR_start = { status = "portado", dwe = "apps/session/src/curling_adapter.cpp:1", what = "Empieza el minijuego de piedras." }
 tickPartnerToilet = { status = "portado", dwe = "apps/game/src/field_toilet.cpp", what = "El compañero usa el retrete." }

@@ -138,6 +138,9 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
       endingScene_ = true;
       return;
     }
+    // callDigimonRoutine 5 gives the player its opening tick (tamerTickOpening). Only the debug
+    // room's script calls it: it waits two frames and turns the map layer back on, which the engine
+    // needs for nothing, so it is over at once here like any routine without a scene.
     core::logDebug("[port:partner] callDigimonRoutine {} (partner.c:1139): the app has no scene "
                    "for it yet, over at once",
                    static_cast<int>(partner->scene));

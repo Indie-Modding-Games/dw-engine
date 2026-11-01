@@ -140,7 +140,9 @@ void ShopScreen::choose(std::int32_t choice) {
 }
 
 void ShopScreen::showList(Mode mode) {
-  // openShop states 4 and 5: shopFillBuyItemList, shopFillSellItemList.
+  // openShop states 4 and 5: shopFillBuyItemList, shopFillSellItemList. The keeper's line comes
+  // with the list and needs no press (SCRIPT_TEXTBOX_MODE 3: script_textbox.c:
+  // tickBackgroundDialogue goes on once the page is out; the engine prints it whole at once).
   mode_ = mode;
   const session::ShopLines& lines = desc_.shop->rules().lines;
   line_ = mode == Mode::Buy ? lines.buyPrompt : lines.sellPrompt;
