@@ -1,0 +1,39 @@
+# Stage 5 of the story with the keyboard, Angemon joins: from icsa02 on a seeded game (run with --start icsa02 and
+# --story-stage stage_5), the first floor of the Ice Sanctuary maze, with the triggers route-etapa5-angemon.yaml plays
+# written (324 before the statue, 323 the pedestal aside). The way back up to icsa01 (cells of section 0x33 of
+# script 94) warps to icsa01's exit 1; once the light of icsa06 shone (322) the warp runs section 5 of script 93 on
+# arrival: "Oh? About that statue...", the statue wakes as Angemon, walks off and joins the city (trigger 220).
+# Without 322 the same cells warp with no section, and the statue stays one.
+name: angemon
+device: keyboard
+timeout: 900
+steps:
+  - wait: {map: icsa02, partner_within: 600, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.220: "false"}
+  - script: story_set("trigger 324 on")
+  - script: story_set("trigger 323 on")
+  # The sanctuary's wild ones fight whoever walks into them and beat a seeded partner: the walks end those fights at
+  # once (`encounters: win`).
+  - script: evolve("garu")
+  - wait: {seconds: 30}
+  # Before the light: back up to icsa01 with nothing on arrival.
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: icsa01, partner_within: 600, seconds: 4, timeout: 60}
+  - expect_setting: {story.trigger.220: "false"}
+  - screenshot: icsa01-statue
+  # Down again through the opening under the pedestal (section 0x33 of script 93 with 323), and the light written.
+  - walk_to: {trigger: 51, timeout: 180}
+  - wait: {map: icsa02, partner_within: 600, seconds: 2, timeout: 60}
+  - script: story_set("trigger 322 on")
+  - walk_to: {trigger: 51, stop_on_scene: true, encounters: win, timeout: 240}
+  - wait: {map: icsa01, timeout: 60}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 60}
+  - screenshot: icsa01-about-the-statue
+  # "Ah!": the statue wakes as Angemon (NPC slot 0 set by the section); twelve more boxes, then Angemon walks off
+  # south and the last box says he joins.
+  - repeat: {times: 3, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - screenshot: icsa01-angemon-awake
+  - repeat: {times: 18, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.220: "true"}, timeout: 60}
+  - wait: {seconds: 2}
+  - screenshot: icsa01-angemon-joins

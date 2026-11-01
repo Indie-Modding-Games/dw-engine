@@ -3,7 +3,7 @@
 # 324), the partner walks to the pedestal and it slides aside (section 0x34, routine 50: trigger 323), the opening
 # under it leads down to icsa02, and the maze (icsa02, icsa07, icsa04, icsa05) to icsa06, where the blinding light
 # (routines 45 and 46, script 98) sets trigger 322, and back in icsa01 (whose entry runs routines 49 and 50 again).
-# Angemon's waking (trigger 220) is left out: see the end.
+# Angemon's waking (trigger 220) is left out: see the end and route-angemon.yaml.
 name: etapa5-angemon
 device: keyboard
 timeout: 1200
@@ -61,9 +61,9 @@ steps:
   # The map's entry section puts the pedestal back aside (routines 49 and 50) and holds the player a moment.
   - wait: {seconds: 4}
   # The statue stands lit (object 7) and the pedestal aside. Angemon's waking (section 5: "Oh? About that
-  # statue...", trigger 220) is not played: in the original's script the hall's cells reach it only with 220 already
-  # set, and it is otherwise the talk of NPC slot 0, which no script puts on the map; the original is yet to be
-  # measured there.
+  # statue...", trigger 220) is not played here: it runs on arrival when the player comes back up from icsa02 (cells
+  # of section 0x33 of script 94: warp_to 97, 1, 5 with 322), which route-angemon.yaml plays; this route comes back
+  # through icsa05.
   - screenshot: icsa01-back
   - expect_setting: {story.trigger.322: "true"}
   - expect_setting: {story.trigger.323: "true"}

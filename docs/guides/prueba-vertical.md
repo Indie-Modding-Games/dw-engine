@@ -401,9 +401,13 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start room13 --la
   `route-etapa5-angemon.yaml` (`--start icsa01`) pisa delante de la estatua (324), el compañero mueve el pedestal
   (rutina 50, 323), baja por el laberinto (icsa02, icsa07, icsa04, icsa05) a icsa06, donde la luz (rutinas 45 y 46)
   pone el 322, y vuelve a icsa01 (su entrada repite las rutinas 49 y 50); en icsa05 pone al jugador junto a las
-  salidas (`place`), porque BlueMeramon tumba al compañero sembrado. El despertar de Angemon (sección 5, 220) queda
-  fuera: en el script del original las casillas solo llegan a él con el 220 ya puesto, y si no es la charla con el
-  personaje 0 del mapa, que ningún script pone; falta medirlo en el original.
+  salidas (`place`), porque BlueMeramon tumba al compañero sembrado. El despertar de Angemon lo juega
+  `route-angemon.yaml` (`--start icsa02`, con el 324 y el 323 escritos): la subida de icsa02 a icsa01 (casillas de la
+  sección 0x33 del script 94) lleva a la salida 1 de icsa01 y, con el 322 de la luz, corre al llegar la sección 5 del
+  script 93 (`warp_to` 97, 1, 5): «Oh? About that statue...», la estatua despierta como Angemon, se va hacia el sur y
+  se une a la ciudad (220). Sin el 322 la misma subida no corre nada y la estatua sigue quieta. Para el jugador: tras
+  la luz de icsa06, volver a icsa01 por la escalera de icsa02 (no por la salida de icsa05). La sección 0x34 de icsa01
+  también salta a la sección 5, pero solo con el 220 ya puesto, así que en el original no hace nada.
   `route-etapa5-curling.yaml` (`--start frzl15,2`) habla con Penguinmon (357), juega la partida de curling de frzl17
   confirmando cada tiro y vuelve a frzl15; si gana, Penguinmon se une (257). Frontera del candado:
   `route-etapa5-lock.yaml` (`--start frzl08,1`) pisa la salida de frzl08 a mist07 (etapa 7) y
@@ -412,7 +416,7 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start room13 --la
 
 ```sh
 for r in "route-etapa5 gcan04" "route-etapa5-whamon ogre10,0" "route-etapa5-ogremon tunn02" \
-         "route-etapa5-angemon icsa01" "route-etapa5-curling frzl15,2" "route-etapa5-lock frzl08,1" \
+         "route-etapa5-angemon icsa01" "route-angemon icsa02" "route-etapa5-curling frzl15,2" "route-etapa5-lock frzl08,1" \
          "route-etapa5-dock-lock twna02"; do
     set -- $r
     scripts/dev.sh run --content <carpeta> --start $2 --story-stage stage_5 --lang en --seed 1 \
