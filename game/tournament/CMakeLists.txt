@@ -4,6 +4,7 @@ dwe_add_module(tournament
         src/arena.cpp
         src/bracket.cpp
         src/bracket_animation.cpp
+        src/champion_show.cpp
         src/cup_data.cpp
         src/cup_extras.cpp
         src/match_show.cpp

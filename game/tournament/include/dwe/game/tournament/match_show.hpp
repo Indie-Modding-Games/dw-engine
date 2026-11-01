@@ -220,6 +220,8 @@ struct LetterPose {
   std::size_t object = 0;
   ShowPoint location{};
   ShowPoint rotation{};
+  // Its height's scale, 4096 for none (the champion's title is drawn twice as tall).
+  std::int32_t scaleY = 0x1000;
 };
 struct LetterScene {
   std::vector<LetterPose> letters;
