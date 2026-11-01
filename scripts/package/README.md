@@ -52,7 +52,8 @@ on the first screen and in the game's options.
 Everything the game writes is in `~/.local/share/indie-modding-games/dwe/` (or under `$XDG_DATA_HOME` when it is
 set):
 
-- `content/`: what the game read from your disc. Delete it to read the disc again.
+- `content/`: what the game read from your disc. Delete it to read the disc again. When an update of the game
+  reads the disc differently, the game asks for it again by itself; your saves and settings stay as they are.
 - `saves/`: your saved games.
 - `settings.yaml`: your choices (language, look, minimap).
 - `reports/`: your bug reports.

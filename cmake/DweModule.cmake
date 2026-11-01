@@ -29,6 +29,12 @@ function(dwe_use_utf8 target)
 endfunction()
 
 option(DWE_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+# A package build (scripts/package_linux.sh) names no folder of the build machine: the programs find their packs next
+# to the executable instead of in the source tree, and source file names (__FILE__) are relative to it.
+option(DWE_PACKAGE "Build the programs of a package, without the build machine's folders" OFF)
+if(DWE_PACKAGE AND NOT MSVC)
+    add_compile_options("-ffile-prefix-map=${PROJECT_SOURCE_DIR}/=")
+endif()
 set(DWE_SANITIZERS "" CACHE STRING "Sanitizers to enable, separated by semicolons (address;undefined)")
 
 function(_dwe_layer_index layer out)

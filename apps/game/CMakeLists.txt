@@ -146,16 +146,15 @@ endif()
 
 # The version a save file names as the game that wrote it.
 target_compile_definitions(game PRIVATE DWE_GAME_VERSION="${PROJECT_VERSION}")
-# A bug report names the commit of the source the game was built from (git describe in this folder).
-target_compile_definitions(game PRIVATE DWE_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
-
-# Until the asset pipeline exists, the scripts are read from the source tree, so editing them reloads them live.
-target_compile_definitions(game PRIVATE DWE_GAME_SCRIPTS="${CMAKE_CURRENT_SOURCE_DIR}/scripts")
-
-# The UI demo reads the team's packs (menus, HUD, fonts) from the source tree, so editing them reloads them live.
-target_compile_definitions(game PRIVATE DWE_TEAM_PACKS="${PROJECT_SOURCE_DIR}/content/packs")
-# The game pack (models/*.yaml), which the model viewer mounts over the extracted content.
-target_compile_definitions(game PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game")
+# A development build reads from the source tree, so editing reloads live; a package build (DWE_PACKAGE) names no
+# folder of the build machine: it finds the team's packs next to the executable (content::teamPacksFolder) and its
+# bug reports name DWE_BUILD_COMMIT.
+if(NOT DWE_PACKAGE)
+    # A bug report names the commit of the source the game was built from (git describe in this folder).
+    target_compile_definitions(game PRIVATE DWE_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    # The test scene's script, which a package does not ship.
+    target_compile_definitions(game PRIVATE DWE_GAME_SCRIPTS="${CMAKE_CURRENT_SOURCE_DIR}/scripts")
+endif()
 
 # The game is an executable, so its tests build the sources they check into a test program of their own: the player's
 # settings (settings.yaml), how the UI skin is chosen at start and changed, the minimap mode, the save and place debug

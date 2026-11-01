@@ -1,6 +1,8 @@
+#include <dwe/assets/extractor_version.hpp>
 #include <dwe/assets/file_system.hpp>
 #include <dwe/content/disc_install.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/core/yaml.hpp>
 #include <dwe/platform/process.hpp>
 
 #include <algorithm>
@@ -9,6 +11,7 @@
 #include <charconv>
 #include <format>
 #include <fstream>
+#include <iterator>
 #include <ranges>
 #include <string>
 #include <system_error>
@@ -32,6 +35,12 @@ constexpr int IdentifyOtherVersion = 3;
 // bundled recipe grows next to it.
 constexpr std::string_view TeamPacksFolderName = "packs";
 constexpr std::string_view GamePackFolderName = "game";
+// The keys of the install record.
+constexpr std::string_view RecordVersionKey = "extractor_version";
+constexpr std::string_view RecordImageKey = "disc_image";
+constexpr std::string_view RecordComment =
+    "# Written by the game when it read the player's disc; another extractor version reads it "
+    "again.\n";
 
 std::string trimmed(std::string_view text) {
   while (!text.empty() && std::isspace(static_cast<unsigned char>(text.front())) != 0) {
@@ -83,13 +92,73 @@ std::filesystem::path defaultContentFolder(const std::optional<std::filesystem::
   return *userData / InstalledContentFolderName;
 }
 
+std::optional<InstallRecord> readInstallRecord(const std::filesystem::path& content) {
+  std::ifstream stream{content / InstallRecordFileName, std::ios::binary};
+  if (!stream) {
+    return std::nullopt;
+  }
+  const std::string text{std::istreambuf_iterator<char>{stream}, {}};
+  const auto tree = core::parseYaml(text);
+  if (!tree || !tree->isMapping()) {
+    return std::nullopt;
+  }
+  const core::YamlNode* version = tree->find(RecordVersionKey);
+  if (version == nullptr || !version->isScalar()) {
+    return std::nullopt;
+  }
+  InstallRecord record;
+  const std::string& digits = version->text();
+  const auto [end, error] =
+      std::from_chars(digits.data(), digits.data() + digits.size(), record.extractorVersion);
+  if (error != std::errc{} || end != digits.data() + digits.size()) {
+    return std::nullopt;
+  }
+  if (const core::YamlNode* image = tree->find(RecordImageKey);
+      image != nullptr && image->isScalar()) {
+    const std::string& path = image->text();
+    record.image = std::filesystem::path{std::u8string{path.begin(), path.end()}};
+  }
+  return record;
+}
+
+core::Result<void> writeInstallRecord(const std::filesystem::path& content,
+                                      const InstallRecord& record) {
+  core::YamlNode root = core::YamlNode::mapping();
+  root.set(std::string{RecordVersionKey},
+           core::YamlNode::scalar(std::to_string(record.extractorVersion)));
+  root.set(
+      std::string{RecordImageKey},
+      core::YamlNode::scalar(assets::pathText(record.image), core::YamlNode::ScalarStyle::Quoted));
+  auto yaml = core::emitYaml(root);
+  if (!yaml) {
+    return std::unexpected{yaml.error()};
+  }
+  const std::filesystem::path file = content / InstallRecordFileName;
+  std::ofstream stream{file, std::ios::binary | std::ios::trunc};
+  stream << RecordComment << *yaml;
+  if (!stream.flush()) {
+    return core::fail(std::format("cannot write {}", assets::pathText(file)));
+  }
+  return {};
+}
+
+bool installIsOutdated(const std::filesystem::path& content) {
+  if (!hasBasePack(content)) {
+    return false;
+  }
+  const auto record = readInstallRecord(content);
+  return !record || record->extractorVersion != assets::ExtractorVersion;
+}
+
 std::vector<std::filesystem::path>
 teamPacksCandidates(const std::optional<std::filesystem::path>& executableFolder) {
   std::vector<std::filesystem::path> candidates;
   if (executableFolder) {
     candidates.push_back(executableFolder->parent_path() / TeamPacksFolderName);
   }
+#ifdef DWE_TEAM_PACKS
   candidates.emplace_back(DWE_TEAM_PACKS);
+#endif
   return candidates;
 }
 
@@ -101,7 +170,7 @@ std::filesystem::path teamPacksFolder() {
       return candidate;
     }
   }
-  return candidates.back();
+  return candidates.empty() ? std::filesystem::path{TeamPacksFolderName} : candidates.back();
 }
 
 std::vector<std::string> missingCueFiles(const std::filesystem::path& image) {
@@ -318,6 +387,17 @@ void DiscInstall::finishExtraction(int exitCode) {
   if (!hasBasePack(content_)) {
     fail(InstallProblem::ExtractFailed, dwxError(output_));
     return;
+  }
+  // Without its record the next start would read the disc again: a failure here is only logged.
+  std::error_code absolute;
+  std::filesystem::path image = std::filesystem::absolute(image_, absolute);
+  if (absolute) {
+    image = image_;
+  }
+  if (auto recorded = writeInstallRecord(
+          content_, {.extractorVersion = assets::ExtractorVersion, .image = image});
+      !recorded) {
+    core::logWarning("first run: {}", recorded.error().message);
   }
   percent_ = 100;
   step_ = "done";

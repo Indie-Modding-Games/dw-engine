@@ -57,6 +57,11 @@ struct DiscIdentity {
   std::string version;
 };
 
+// What a release is for dwx extract: supported when the tables of its executable are located (the
+// US release today), another region's when it is a known release whose tables are not, unknown for
+// no known release (an empty version).
+[[nodiscard]] DiscKind discKind(std::string_view version);
+
 // Reads the image's volume and boot executable and says which release it is. Fails when the image
 // cannot be read (a missing file, a CUE sheet whose BIN is missing, something that is not a disc
 // image).

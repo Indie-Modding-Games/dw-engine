@@ -4,6 +4,7 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/content/disc_install.hpp>
 #include <dwe/core/fixed_step.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/debug/debug_ui.hpp>
@@ -103,8 +104,8 @@ int runDevView(const Options& options) {
   std::unique_ptr<TestScene> testScene;
   std::unique_ptr<ModelViewer> modelViewer;
   if (options.modelViewer) {
-    auto viewer =
-        ModelViewer::create(**renderer, options.content, DWE_GAME_PACK, options.characters);
+    auto viewer = ModelViewer::create(**renderer, options.content,
+                                      dwe::content::teamPacksFolder() / "game", options.characters);
     if (!viewer) {
       core::logError("{}", viewer.error().message);
       return EXIT_FAILURE;
@@ -140,10 +141,12 @@ int runDevView(const Options& options) {
     return EXIT_FAILURE;
   }
   (*scripts)->bindInput(input);
+#ifdef DWE_GAME_SCRIPTS
   if (auto loaded = (*scripts)->runFile(std::filesystem::path{DWE_GAME_SCRIPTS} / "main.lua");
       !loaded) {
     core::logError("{}", loaded.error().message);
   }
+#endif
 
   core::FixedStep step{TickSeconds, MaxFrameSeconds};
   FpsCounter fps;

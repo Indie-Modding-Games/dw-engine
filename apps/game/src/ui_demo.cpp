@@ -8,6 +8,7 @@
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/raise_table.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/content/disc_install.hpp>
 #include <dwe/core/fixed_step.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/battle/rules.hpp>
@@ -64,8 +65,8 @@ constexpr bool Validation = false;
 constexpr bool Validation = true;
 #endif
 
-// The packs of the content folder and the team's packs from the source tree, mounted together. The
-// opened archives must outlive the file system mounted from them.
+// The packs of the content folder and the team's packs (content::teamPacksFolder), mounted
+// together. The opened archives must outlive the file system mounted from them.
 struct MountedContent {
   assets::OpenedPacks opened;
   assets::VirtualFileSystem files;
@@ -74,7 +75,7 @@ struct MountedContent {
 core::Result<MountedContent> mountContent(const assets::FileSystem& disk,
                                           const std::filesystem::path& content) {
   std::vector<assets::FoundPack> found;
-  for (const std::filesystem::path& folder : {content, std::filesystem::path{DWE_TEAM_PACKS}}) {
+  for (const std::filesystem::path& folder : {content, dwe::content::teamPacksFolder()}) {
     auto packs = assets::findPacks(disk, folder);
     if (!packs) {
       return std::unexpected{packs.error()};

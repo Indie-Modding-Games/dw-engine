@@ -22,6 +22,26 @@ inline constexpr std::string_view InstalledContentFolderName = "content";
 inline constexpr std::string_view PartialContentFolderName = "content.partial";
 // The base pack's folder in a content folder, as dwx extract writes it.
 inline constexpr std::string_view BasePackFolderName = "base";
+// The record an install leaves in the installed content folder (InstallRecord).
+inline constexpr std::string_view InstallRecordFileName = "install.yaml";
+
+// What the installed content was read from: the extractor version of the dwx that wrote it
+// (assets::ExtractorVersion) and the player's disc image, so a game with another version reads the
+// same disc again without asking where it is.
+struct InstallRecord {
+  int extractorVersion = 0;
+  std::filesystem::path image;
+};
+
+// The record of a content folder; nothing when it has none or it cannot be read.
+[[nodiscard]] std::optional<InstallRecord> readInstallRecord(const std::filesystem::path& content);
+// Writes the record of a content folder.
+core::Result<void> writeInstallRecord(const std::filesystem::path& content,
+                                      const InstallRecord& record);
+// Whether an installed content folder must be read from the disc again: it has a base pack, but no
+// record (an install older than the record) or one of another extractor version. The player's saves
+// and settings are not in it, so reading again never touches them.
+[[nodiscard]] bool installIsOutdated(const std::filesystem::path& content);
 
 // Whether a content folder has the base pack that dwx extract writes (base/pack.yaml).
 [[nodiscard]] bool hasBasePack(const std::filesystem::path& content);
@@ -34,11 +54,11 @@ defaultContentFolder(const std::optional<std::filesystem::path>& userData);
 
 // Where the team's packs (content/packs: the game pack and the translations) are looked for, in
 // order: packs/ next to the executable's folder (a package: bin/dwe-game and packs/), then the
-// source tree's.
+// source tree's in a development build (a package build names no folder of the build machine).
 [[nodiscard]] std::vector<std::filesystem::path>
 teamPacksCandidates(const std::optional<std::filesystem::path>& executableFolder);
 
-// The first candidate that has a game pack; the source tree's when none has.
+// The first candidate that has a game pack; else the last candidate (./packs when there is none).
 [[nodiscard]] std::filesystem::path teamPacksFolder();
 
 // The files a CUE sheet names (FILE "<name>" ...) that are not next to it. Nothing for an image

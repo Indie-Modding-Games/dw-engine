@@ -9,8 +9,11 @@ solo Linux; Windows queda para más adelante.
 scripts/package_linux.sh --out <carpeta>
 ```
 
-Compila el preset `linux-clang-release` en el contenedor (`scripts/dev.sh`) con `DWE_BUILD_COMMIT`, para que los
-reportes F12 del jugador nombren el commit, y deja en `<carpeta>` el tarball
+Compila el preset `linux-clang-package` en el contenedor (`scripts/dev.sh`) con `DWE_BUILD_COMMIT`, para que los
+reportes F12 del jugador nombren el commit. Ese preset es el de release con `DWE_PACKAGE` y el triplete
+`x64-linux-libcxx-package`: los programas no llevan ninguna carpeta de la máquina que compila (buscan `packs/` junto
+al ejecutable, y los nombres de fuentes del proyecto y de las librerías van relativos con `-ffile-prefix-map`), y el
+script se niega a empaquetar si `strings` encuentra la raíz del repositorio o `/home/` en un programa. Deja en `<carpeta>` el tarball
 `dwe-beta-<versión>-<commit>-linux-x86_64.tar.xz` y, aparte, los símbolos de depuración de los dos programas.
 `--no-build` empaqueta el build tal como está. El script se niega a empaquetar si encuentra un paquete `base`:
 **nunca se distribuye nada leído de un disco**.
@@ -42,7 +45,21 @@ Cuando esa carpeta no tiene paquete base, antes de montar nada el juego abre la 
    jugador, igual que una imagen que no se puede leer.
 3. Ejecuta `dwx extract --progress --out <datos>/content.partial/base` y muestra el paso y el porcentaje de las
    líneas `progress <porcentaje> <paso>`. Con la imagen norteamericana tarda menos de un minuto y ocupa unos 1,5 GB.
-4. Mueve `base/` y `ui_original/` a `<datos>/content/` y el juego sigue como siempre, hasta la pantalla de título.
+4. Mueve `base/` y `ui_original/` a `<datos>/content/`, escribe `<datos>/content/install.yaml` (la
+   `ExtractorVersion` del `dwx` que lo leyó y la ruta absoluta de la imagen) y el juego sigue como siempre, hasta la
+   pantalla de título.
+
+Si el contenido instalado tiene paquete base pero su `install.yaml` falta o es de otra `ExtractorVersion` (el juego
+se actualizó y lee el disco de otra forma), la misma pantalla se abre con el título «El juego se actualizó», explica
+que hay que leer el disco otra vez y trae escrita la imagen de la última vez: basta con Intro. Solo se reemplazan los
+paquetes de `content/`; las partidas (`saves/`) y los ajustes (`settings.yaml`) están fuera y no se tocan. Salir
+cierra el juego sin montar el contenido viejo.
+
+Un disco de otra región (EU o JP, que `dwx` reconoce por la huella del ejecutable pero cuyas tablas no conoce) se
+rechaza en `dwx identify` con `other-version <versión>` y la pantalla dice cuál es («la versión europea del
+juego») y que por ahora solo se lee la norteamericana. Antes `identify` daba `supported` a esas versiones porque
+tienen una entrada (sin direcciones) en `executableLayouts`; ahora solo es `supported` la que tiene sus tablas
+localizadas.
 
 Cerrar la ventana o pulsar Detener mata a `dwx` y borra la carpeta parcial. La pantalla usa Dear ImGui porque la UI
 del juego necesita el contenido que todavía no existe; sus textos están en `localization/<idioma>/first_run` del
@@ -59,5 +76,4 @@ reportes F12 van a los datos del usuario, como en desarrollo.
 
 ## Pendiente
 
-- Releer el disco solo cuando cambie `ExtractorVersion` (hoy se borra `content/` a mano).
 - AppImage y paquete de Windows.

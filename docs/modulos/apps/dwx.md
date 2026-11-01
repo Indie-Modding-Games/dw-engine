@@ -9,8 +9,8 @@ la explica).
 ## El primer arranque del juego (`dwx identify`, `dwx extract --progress`)
 
 La pantalla de primer arranque del juego ejecuta `dwx identify <imagen>`, que
-escribe `supported <versión>` (sale con 0), `other-version <versión>` para la versión de otra región cuyas tablas no
-conoce (3) o `unknown -` (1), y 2 si la imagen no se puede leer. Después ejecuta `dwx extract --progress`, que además
+escribe `supported <versión>` (sale con 0), `other-version <versión>` para una versión conocida de otra región cuyas tablas
+no están localizadas (3; hoy `eu`, `jp` y `jp_rev1`, que se reconocen por la huella del ejecutable) o `unknown -` (1), y 2 si la imagen no se puede leer. Después ejecuta `dwx extract --progress`, que además
 del informe escribe en la salida de error una línea `progress <porcentaje> <paso>` por cada cambio (`read`,
 `extract` del 2 al 80 por archivos leídos, `write`, `check`, `upscale`, `done`). Los dos los prueba
 `tests/identify_tests.cpp`.
@@ -32,7 +32,9 @@ definitivo. En Windows no se puede volcar una carpeta, así que ahí se confía 
 
 ### Cuándo subir `ExtractorVersion`
 
-`ExtractorVersion` (`src/disc_cache.hpp`) es la versión de lo que `dwx extract` escribe. **Súbela en el mismo commit
+`ExtractorVersion` (`engine/assets/include/dwe/assets/extractor_version.hpp`, compartida con el juego) es la
+versión de lo que `dwx extract` escribe; el juego vuelve a leer el disco del jugador cuando su contenido instalado
+es de otra versión. **Súbela en el mismo commit
 que cambie la salida para el mismo disco**: un extractor nuevo o cambiado, otro nombre o formato de un fichero, otro
 `pack.yaml` o informe de cobertura. Si no, la caché de los demás sigue sirviendo la salida vieja sin avisar.
 

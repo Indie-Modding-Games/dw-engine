@@ -115,6 +115,17 @@ TEST_CASE("a disc whose executable is no known release is unknown") {
   CHECK(identity->version.empty());
 }
 
+TEST_CASE(
+    "only a release whose tables are located is supported; other known releases are another region's") {
+  CHECK(discKind("us") == DiscKind::Supported);
+  // The EU and JP releases are known by their executables' digests, but their tables are not
+  // located.
+  CHECK(discKind("eu") == DiscKind::OtherVersion);
+  CHECK(discKind("jp") == DiscKind::OtherVersion);
+  CHECK(discKind("jp_rev1") == DiscKind::OtherVersion);
+  CHECK(discKind("") == DiscKind::Unknown);
+}
+
 TEST_CASE("a disc with no boot executable is unknown") {
   const TempFolder temp;
   fixtures::IsoBuilder builder;

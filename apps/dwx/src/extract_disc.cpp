@@ -49,6 +49,15 @@ std::string_view kindName(DiscKind kind) {
 
 } // namespace
 
+DiscKind discKind(std::string_view version) {
+  if (version.empty()) {
+    return DiscKind::Unknown;
+  }
+  // Every known release has a layout, but only those whose tables are located can be extracted.
+  const auto layout = formats::exe::findExecutableLayout(version);
+  return layout && layout->digimonData.located() ? DiscKind::Supported : DiscKind::OtherVersion;
+}
+
 core::Result<DiscIdentity> identifyDisc(const std::filesystem::path& path) {
   auto image = formats::disc::DiscImage::open(path);
   if (!image) {
@@ -59,12 +68,8 @@ core::Result<DiscIdentity> identifyDisc(const std::filesystem::path& path) {
     return std::unexpected{volume.error()};
   }
   const DiscDescription description = describeDisc(*image, *volume);
-  DiscIdentity identity{.kind = DiscKind::Unknown, .version = description.info.version};
-  if (!identity.version.empty()) {
-    identity.kind = formats::exe::findExecutableLayout(identity.version) ? DiscKind::Supported
-                                                                         : DiscKind::OtherVersion;
-  }
-  return identity;
+  return DiscIdentity{.kind = discKind(description.info.version),
+                      .version = description.info.version};
 }
 
 int identify(const std::filesystem::path& path) {

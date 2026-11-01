@@ -35,6 +35,8 @@ constexpr int MaxSameSecondReports = 100;
 std::string sourceCommit() {
 #ifdef DWE_BUILD_COMMIT
   return DWE_BUILD_COMMIT;
+#elif !defined(DWE_SOURCE_DIR)
+  return "unknown";
 #else
 #ifdef _WIN32
   constexpr std::string_view NoErrors = "2>NUL";

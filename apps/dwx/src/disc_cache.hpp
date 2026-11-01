@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/extractor_version.hpp>
 #include <dwe/core/error.hpp>
 
 #include <chrono>
@@ -14,10 +15,9 @@
 // image without a manual extraction.
 namespace dwe::dwx {
 
-// The version of what dwx extract writes from a disc. Bump it whenever the base pack written from
-// the same disc changes, so a dev cache extracts the disc again instead of serving the old output.
-// The fingerprint test of the disc cache fails until it is bumped (docs/modulos/apps/dwx.md).
-inline constexpr int ExtractorVersion = 9;
+// The version of what dwx extract writes from a disc (assets/extractor_version.hpp, where it is
+// bumped): a dev cache extracts the disc again instead of serving an older version's output.
+inline constexpr int ExtractorVersion = assets::ExtractorVersion;
 
 // The folder of an entry that holds the base pack, as in an extracted content folder.
 inline constexpr std::string_view BasePackFolder = "base";

@@ -232,7 +232,13 @@ std::string problemText(const Texts& tr, const content::DiscInstall& install) {
   case content::InstallProblem::NotTheGame:
     return tr("error.not_the_game");
   case content::InstallProblem::OtherRegion: {
-    const std::array arguments{localization::TextArgument{.name = "version", .value = detail}};
+    // dwx identify names the release (eu, jp, jp_rev1); the player reads which one it is.
+    const std::string key = std::format("region.{}", detail);
+    std::string region = tr(key);
+    if (region == std::format("{}.{}", TextTable, key)) {
+      region = tr("region.other");
+    }
+    const std::array arguments{localization::TextArgument{.name = "region", .value = region}};
     return tr("error.other_region", arguments);
   }
   case content::InstallProblem::ExtractFailed: {
@@ -274,8 +280,27 @@ std::filesystem::path typedPath(std::string_view text) {
 } // namespace
 
 bool needsFirstRun(const Options& options) {
-  return !options.contentGiven && !options.devAssets && !options.autotest && !options.control &&
-         !content::hasBasePack(options.content);
+  if (options.contentGiven || options.devAssets || options.autotest || options.control) {
+    return false;
+  }
+  if (!content::hasBasePack(options.content)) {
+    return true;
+  }
+  // Only the content the first start installed has a record: a ./content of dwx extract does not.
+  const auto userData =
+      platform::userDataFolder(content::UserDataOrganization, content::UserDataApplication);
+  if (!userData) {
+    return false;
+  }
+  std::error_code error;
+  const bool installed = std::filesystem::equivalent(
+      options.content, *userData / content::InstalledContentFolderName, error);
+  if (installed && content::installIsOutdated(options.content)) {
+    core::logInfo("first run: the installed content is of another extractor version; reading the "
+                  "disc again");
+    return true;
+  }
+  return false;
 }
 
 core::Result<std::optional<std::filesystem::path>>
@@ -310,6 +335,13 @@ runFirstRun(platform::Platform& platform, platform::Window& window, rhi::Device&
   }
 
   std::array<char, PathCapacity> path{};
+  // A game of another extractor version than the installed content's reads the same disc again: the
+  // screen says why and fills in the image the record names.
+  const bool update =
+      userData && content::installIsOutdated(*userData / content::InstalledContentFolderName);
+  const std::optional<content::InstallRecord> record =
+      update ? content::readInstallRecord(*userData / content::InstalledContentFolderName)
+             : std::nullopt;
   std::optional<content::DiscInstall> install;
   bool focusPath = true;
   std::vector<platform::Event> events;
@@ -329,6 +361,9 @@ runFirstRun(platform::Platform& platform, platform::Window& window, rhi::Device&
     std::ranges::copy(text.substr(0, size), path.begin());
     path.at(size) = '\0';
   };
+  if (record && !record->image.empty()) {
+    setPath(assets::pathText(record->image));
+  }
 
   for (;;) {
     events.clear();
@@ -373,11 +408,11 @@ runFirstRun(platform::Platform& platform, platform::Window& window, rhi::Device&
                  ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
                      ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PushFont(nullptr, TitleSize);
-    ImGui::TextUnformatted(tr("title").c_str());
+    ImGui::TextUnformatted(tr(update ? "update_title" : "title").c_str());
     ImGui::PopFont();
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::TextWrapped("%s", tr("intro").c_str());
+    ImGui::TextWrapped("%s", tr(update ? "update_intro" : "intro").c_str());
     ImGui::Spacing();
     ImGui::TextWrapped("%s", tr("space").c_str());
     if (userData) {

@@ -5,15 +5,15 @@
 # (docs/guides/beta-linux.md).
 #
 # Usage: scripts/package_linux.sh [--no-build] [--out <folder>]
-#   --no-build   package the release build as it is (build/linux-clang-release), without building it
-#   first --out        where the tarball goes (default build/package); a folder outside the
-#   repository is fine
+#   --no-build   package the build as it is (build/linux-clang-package), without building it first
+#   --out        where the tarball goes (default build/package); a folder outside the repository is
+#                fine
 # The build runs in the development container (scripts/dev.sh); packaging needs only bash, tar and
 # xz on the host.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-preset="linux-clang-release"
+preset="linux-clang-package"
 build_dir="$root/build/$preset"
 stage_root="$root/build/package-stage"
 out_dir="$root/build/package"
@@ -31,7 +31,7 @@ while (($#)); do
       shift
       ;;
     -h | --help)
-      sed -n '2,9p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -71,6 +71,16 @@ for program in dwe-game dwx; do
   objcopy --add-gnu-debuglink="$out_dir/$name-debug/$program.debug" "$stage/bin/$program"
 done
 
+# No folder of the build machine may ship: a package build (DWE_PACKAGE) finds its packs next to the
+# executable, and the sources' and the libraries' file names are relative.
+for program in dwe-game dwx; do
+  if strings -n 6 "$stage/bin/$program" | grep -F -q -e "$root" -e "/home/"; then
+    echo "package_linux: $program names a folder of the build machine:" >&2
+    strings -n 6 "$stage/bin/$program" | grep -F -e "$root" -e "/home/" | head -5 >&2
+    exit 1
+  fi
+done
+
 # Nothing extracted from a disc may ship: the team's packs only, with no base pack and no extracted
 # asset.
 if find "$stage" -name pack.yaml -exec grep -l '^id: base$' {} + | grep -q .; then
@@ -95,7 +105,7 @@ printf '%s\n' "$commit" >"$stage/VERSION"
 # library's (linked statically).
 licences="$stage/licenses"
 mkdir -p "$licences"
-for copyright in "$build_dir"/vcpkg_installed/x64-linux-libcxx/share/*/copyright; do
+for copyright in "$build_dir"/vcpkg_installed/x64-linux-libcxx-package/share/*/copyright; do
   port="$(basename "$(dirname "$copyright")")"
   [[ "$port" == vcpkg-* ]] || cp "$copyright" "$licences/$port.txt"
 done
