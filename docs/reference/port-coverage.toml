@@ -195,7 +195,7 @@ BTL_initializeBattleStartTextBurst = { status = "portado", dwe = "apps/screens/s
 BTL_isBattleStartTextFinished = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:44", what = "Dice si el rótulo de inicio terminó, para empezar a luchar." }
 BTL_initializePartnerStatusBars = { status = "portado", dwe = "apps/screens/src/partner_bars.cpp:24", what = "Monta las barras de vida y MP del compañero en el HUD." }
 BTL_tickPartnerStatusBars = { status = "portado", dwe = "apps/screens/src/partner_bars.cpp:30", what = "Actualiza las barras de vida y MP del compañero." }
-BTL_tickPartnerWaypointTrail = { status = "falta", what = "Durante el combate, guarda el rastro de casillas del compañero para que luego vuelva junto al jugador sin atascarse.", note = "relacionado con la vuelta tras un combate de historia" }
+BTL_tickPartnerWaypointTrail = { status = "portado", dwe = "game/field/src/partner_follow.cpp", what = "Durante el combate, guarda el rastro de casillas del compañero para que luego vuelva junto al jugador sin atascarse." }
 BTL_resetFlatten = { status = "portado", dwe = "game/battle/src/status_effects.cpp:54", what = "Devuelve al luchador aplastado a su forma." }
 BTL_getMoveWithHighestDistance = { status = "portado", dwe = "game/battle/src/fighter_actions.cpp:437", what = "El mayor alcance de las técnicas del rival, para que el compañero guarde distancia." }
 BTL_maintainDistanceRange = { status = "portado", dwe = "game/battle/src/movement.cpp:447", what = "Mantiene al luchador entre una distancia mínima y una máxima del objetivo." }
@@ -236,7 +236,7 @@ resetStatsAfterCombat = { status = "portado", dwe = "game/battle/src/aftermath.c
 isScreenConcave = { status = "portado", dwe = "apps/game/src/battle_screen_exit.cpp", what = "Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate.", note = "lista concave_maps de battle.yaml; con pared en la línea recta no se unen" }
 loadBattleDataTick = { status = "no-aplica", note = "carga asíncrona del original", what = "Espera a que el combate termine de cargar." }
 setCombatTextPosition = { status = "portado", dwe = "apps/game/src/battle_screen.cpp:188", what = "Coloca sobre el luchador las cifras de daño y curación que suben." }
-initializeEntityText = { status = "parcial", dwe = "apps/screens/src/damage_numbers.cpp:1", what = "Prepara las cifras flotantes (daño, curación) de cada luchador.", note = "el daño de golpes, bloqueos y veneno sí (battle.md: Números de daño); faltan las cifras con icono de objetos y mejoras" }
+initializeEntityText = { status = "portado", dwe = "apps/screens/include/dwe/screens/damage_numbers.hpp", what = "Prepara las cifras flotantes (daño, curación) de cada luchador.", note = "las colas vacías; las cifras con icono de objetos y mejoras están en battle.md" }
 
 # --- Efectos de batalla
 BTL_initializeParticleEmitters = { status = "portado", dwe = "game/battle/include/dwe/game/battle/effect_runner.hpp", note = "battle.md: Emisores de partículas (los emisores vacíos del EffectRunner)", what = "Prepara los emisores de partículas de las técnicas." }

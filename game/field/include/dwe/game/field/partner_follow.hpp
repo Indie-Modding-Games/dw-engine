@@ -93,6 +93,13 @@ public:
 
   // One frame of the original (20 a second).
   void tick(const Frame& frame);
+  // One battle frame, after the fighters moved (battle_main.c: BTL_tickPartnerWaypointTrail): when
+  // the fighting partner changes cell out of the player's sight, the cell it left goes at the head
+  // of the trail (the one it heads for first) unless the head is still in its own sight, so after
+  // the fight it walks back the way it came. `startBattleTrail` takes its cell as the last one.
+  void startBattleTrail(OriginalPoint partner) { battleCell_ = cellOf(partner); }
+  void tickBattleTrail(const assets::MapCollision& map, OriginalPoint player,
+                       OriginalPoint partner);
 
   [[nodiscard]] OriginalPoint position() const { return position_; }
   [[nodiscard]] std::int32_t rotation() const { return rotation_; }
@@ -164,6 +171,8 @@ private:
   std::int32_t trailCurrent_ = 0;
   std::int32_t trailCount_ = 0;
   assets::CollisionCell playerCell_{};
+  // PARTNER_PREVIOUS_TILE: the partner's cell in the last battle frame.
+  assets::CollisionCell battleCell_{};
 };
 
 } // namespace dwe::game::field

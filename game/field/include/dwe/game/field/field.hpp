@@ -421,6 +421,10 @@ public:
   // partner to make room on foot first (makeRoomForPlayer). An NPC put on the map or let go asks
   // for the same check by itself.
   void releaseHandoff(std::string_view why);
+  // A battle's frames (battle_main.c: BTL_tickPartnerWaypointTrail): the fighting partner's cells
+  // out of the player's sight go on its trail, which the release after the battle keeps.
+  void startBattleTrail(glm::vec3 partner);
+  void tickBattleTrail(glm::vec3 partner);
   // Puts the player, the partner or an NPC at a place and facing at once, drawn there with no move
   // in between (the console's place command, which starts a run where a trace of the original
   // starts). It lets go as above, but nothing moves them off it: no release check and no making
@@ -605,6 +609,8 @@ private:
   scene::AnimationIntent partnerIntent_;
 
   std::string mapId_;
+  // A battle started its partner's trail: the next release keeps it.
+  bool battleTrail_ = false;
   assets::MapCollision collision_;
   assets::MapRegions regions_;
   std::vector<assets::MapWarp> warps_;

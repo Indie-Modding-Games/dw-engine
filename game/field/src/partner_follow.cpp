@@ -2,6 +2,7 @@
 #include <dwe/game/field/partner_follow.hpp>
 #include <dwe/game/field/player_trail.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstdlib>
@@ -383,6 +384,32 @@ void PartnerFollow::tickTrail(const Frame& frame) {
     }
   }
   playerCell_ = player;
+}
+
+void PartnerFollow::tickBattleTrail(const assets::MapCollision& map, OriginalPoint player,
+                                    OriginalPoint partner) {
+  const CollisionCell cell = cellOf(partner);
+  const auto at = [&](std::int32_t index) -> CollisionCell& {
+    return trail_.at(static_cast<std::size_t>(index % TrailCapacity));
+  };
+  if (cell != battleCell_) {
+    if (!sightBlocked(map, cellOf(player), cell)) {
+      forgetTrail(player);
+    } else if (trailCount_ == 0) {
+      forgetTrail(player);
+      at(trailCurrent_) = battleCell_;
+      ++trailCount_;
+    } else if (sightBlocked(map, cell, at(trailCurrent_))) {
+      // The trail moves back one place and the left cell becomes its head; a full trail drops its
+      // newest cell (the original's ring of 30 wraps onto it).
+      for (std::int32_t n = std::min(trailCount_, TrailCapacity - 1); n > 0; --n) {
+        at(trailCurrent_ + n) = at(trailCurrent_ + n - 1);
+      }
+      at(trailCurrent_) = battleCell_;
+      trailCount_ = std::min(trailCount_ + 1, TrailCapacity);
+    }
+  }
+  battleCell_ = cell;
 }
 
 void PartnerFollow::setIdle(const PartnerMood& mood) {

@@ -109,12 +109,33 @@ void Field::setPartnerRadius(float radius) {
   requestSeparation("partner size");
 }
 
+namespace {
+
+OriginalPoint fieldPointOf(glm::vec3 world) {
+  return {.x = static_cast<std::int32_t>(std::lround(world.x)),
+          .z = static_cast<std::int32_t>(std::lround(-world.z))};
+}
+
+} // namespace
+
+void Field::startBattleTrail(glm::vec3 partner) {
+  follow_.startBattleTrail(fieldPointOf(partner));
+  battleTrail_ = true;
+}
+
+void Field::tickBattleTrail(glm::vec3 partner) {
+  const glm::vec3 player = world_->registry().get<Transform>(player_).position;
+  follow_.tickBattleTrail(collision_, fieldPointOf(player), fieldPointOf(partner));
+}
+
 void Field::releaseHandoff(std::string_view why) {
   // Where the partner followed the player before the hold says nothing now: the trail, the stuck
-  // time and the player's last cell start over, as on entering a map.
+  // time and the player's last cell start over, as on entering a map. A battle keeps the trail its
+  // partner left (battle_main.c: BTL_tickPartnerWaypointTrail), which the partner walks back.
   const glm::vec3 player = world_->registry().get<Transform>(player_).position;
-  follow_.forgetTrail({.x = static_cast<std::int32_t>(std::lround(player.x)),
-                       .z = static_cast<std::int32_t>(std::lround(-player.z))});
+  if (!std::exchange(battleTrail_, false)) {
+    follow_.forgetTrail(fieldPointOf(player));
+  }
   partnerStuckSeconds_ = 0.0F;
   lastPlayerCell_ = assets::collisionCellAt(player);
   requestSeparation(why);

@@ -182,6 +182,8 @@ private:
   // battle_screen_exit.cpp: what the battle leaves on the map.
   [[nodiscard]] bool offScreen(std::int32_t npc, float x, float z) const;
   [[nodiscard]] std::vector<std::int32_t> npcsOnScreen() const;
+  // The fighting partner on the field's ground, in world axes.
+  [[nodiscard]] glm::vec3 partnerWorld() const;
   // The NPCs not fighting that run off as the battle opens (battle_setup.c: BTL_handleBattleIntro).
   void startFlight();
   // Where the run-off marks hang, `lift` over each runner's species height, as the anger marks.

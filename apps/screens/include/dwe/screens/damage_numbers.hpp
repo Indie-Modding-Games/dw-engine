@@ -70,7 +70,8 @@ public:
            std::optional<WindowFraction> feet, NumberIcon icon = NumberIcon::None);
   // One battle frame: each queue moves and draws its numbers (renderEntityText).
   void step();
-  // Takes every number away (removeEntityText for each fighter).
+  // Takes every number away (removeEntityText for each fighter); a new DamageNumbers starts with
+  // every queue empty (entity_text.c: initializeEntityText).
   void clear();
 
   [[nodiscard]] bool empty() const;

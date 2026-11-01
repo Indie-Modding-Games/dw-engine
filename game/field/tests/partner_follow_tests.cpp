@@ -6,6 +6,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 namespace {
 
@@ -134,4 +135,33 @@ TEST_CASE("the partner's cell and its centre are the original's") {
   CHECK(PartnerFollow::cellOf({.x = 150, .z = -150}) ==
         dwe::assets::CollisionCell{.column = 51, .row = 51});
   CHECK(PartnerFollow::centreOf({.column = 51, .row = 51}) == OriginalPoint{.x = 150, .z = -150});
+}
+
+TEST_CASE("battle_main.c BTL_tickPartnerWaypointTrail: a fighting partner out of sight leaves "
+          "its cells at the head of the trail") {
+  using dwe::assets::CollisionCell;
+  using dwe::assets::MapCollision;
+  MapCollision map;
+  // A wall between the player and the partner, and a second one past the partner.
+  for (std::int32_t row = 35; row <= 65; ++row) {
+    map.setValue({.column = 52, .row = row}, MapCollision::BlockedBit);
+    map.setValue({.column = 55, .row = row}, MapCollision::BlockedBit);
+  }
+  const OriginalPoint player{.x = 0, .z = 0};
+  PartnerFollow follow;
+  follow.forgetTrail(player);
+  follow.startBattleTrail({.x = 350, .z = 0});
+  // The same cell: nothing.
+  follow.tickBattleTrail(map, player, {.x = 360, .z = -10});
+  CHECK(follow.trail().empty());
+  // Out of sight with no trail: the cell it left starts it.
+  follow.tickBattleTrail(map, player, {.x = 450, .z = 0});
+  CHECK(follow.trail() == std::vector<CollisionCell>{{.column = 53, .row = 50}});
+  // Past the second wall the head is out of its sight: the cell it left goes in front.
+  follow.tickBattleTrail(map, player, {.x = 650, .z = 0});
+  CHECK(follow.trail() ==
+        std::vector<CollisionCell>{{.column = 54, .row = 50}, {.column = 53, .row = 50}});
+  // Back in the player's sight: no trail.
+  follow.tickBattleTrail(map, player, {.x = -250, .z = 0});
+  CHECK(follow.trail().empty());
 }

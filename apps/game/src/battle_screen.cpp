@@ -223,6 +223,11 @@ void BattleScreen::tick(double seconds) {
   showFighters(seconds);
 }
 
+glm::vec3 BattleScreen::partnerWorld() const {
+  const game::battle::Point at = battle_->state().partner().position;
+  return {static_cast<float>(at.x), 0.0F, static_cast<float>(at.z)};
+}
+
 void BattleScreen::tickBattle(double seconds) {
   if (intro_) {
     tickIntro(seconds);
@@ -236,6 +241,10 @@ void BattleScreen::tickBattle(double seconds) {
     // the frame began.
     facePlayerToPartner(*partnerBeforeFrame_);
     partnerBeforeFrame_ = battle_->state().partner().position;
+    // battle_main.c: BTL_battleMain: BTL_tickPartnerWaypointTrail after the fighters moved.
+    if (desc_.scene != nullptr) {
+      desc_.scene->field().tickBattleTrail(partnerWorld());
+    }
     if (effects_) {
       if (const render::MapCamera* camera =
               desc_.scene != nullptr ? desc_.scene->camera() : nullptr) {
@@ -617,6 +626,9 @@ void BattleScreen::tickIntro(double seconds) {
         sound->playSound(0, BurstSound);
       }
     } else if (after == screens::IntroStep::Done) {
+      if (desc_.scene != nullptr) {
+        desc_.scene->field().startBattleTrail(partnerWorld());
+      }
       core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:328): GAME_STATE 1, "
                      "the fight starts; command strip timer {}",
                      menu_.frames());
