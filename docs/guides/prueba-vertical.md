@@ -372,7 +372,13 @@ scripts/dev.sh run --content <carpeta> --start gcan01 --story-stage stage_4 --la
   (196), pone la Leomonstone en la bolsa y entra en gias09, donde Leomon lee la tablilla y se une (248).
   `route-etapa3-arena.yaml` (`--start room13`) confirma en el mostrador del vestíbulo de la Arena (casillas 81): la
   bienvenida (91) y, a la segunda, la inscripción, que abre el calendario (rutina 18); el jugador vuelve a quedar
-  libre y sale a la ciudad por la puerta (casillas 52). Los torneos son de otra entrega.
+  libre y sale a la ciudad por la puerta (casillas 52). `route-etapa3-tournaments.yaml` (`--start room13`, en y es)
+  juega dos copas: se inscribe en la Grade C de hoy, a las 10:00 pisa la puerta del estadio (casilla 54, rutina 6),
+  ve la tarjeta del grado y el cuadro, y pierde el primer combate (`battle_lose`): premio de participación, sin copa
+  ganada (el compañero queda con un quinto de PV y la ruta lo cura con un objeto). Luego se inscribe en la Grade D de
+  mañana, pasa la noche, gana los tres combates (`battle_win`) con el cuadro antes de cada uno y la subida del
+  campeón al final, y comprueba el disparador de la copa ganada (15), las 3 victorias (variable 255) y el dinero del
+  premio en la bolsa.
 
 ```sh
 scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start mayo02_2 --lang en --seed 1 \
@@ -385,6 +391,8 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start gias07 --la
     --autotest tests/autotest/route-etapa3-leomon.yaml --shots <capturas>/etapa3
 scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start room13 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa3-arena.yaml --shots <capturas>/etapa3
+scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start room13 --lang es --seed 1 \
+    --autotest tests/autotest/route-etapa3-tournaments.yaml --shots <capturas>/etapa3
 ```
 
 - `route-etapa5*.yaml`: la Etapa 5 de la historia (Freezeland y Whamon) con `--story-stage stage_5` y la partida
@@ -739,6 +747,7 @@ fase 4:
 | `battle("")` | Empieza un combate contra el primer NPC del mapa que puede luchar; `battle("2,3")`, contra esos NPC del mapa (su número en la lista de NPC del mapa). Con `story:` delante (`battle("story:2")`) es un combate de la historia: no se puede huir y los enemigos no gastan MP |
 | `place("<quién> <x> <z> <rotación>")` | Pone al jugador (`player`), al compañero (`partner`) o al NPC de ese id de script (`npc:6`) en ese punto del suelo y con esa rotación, en los ejes y unidades del original (z hacia dentro de la pantalla, 4096 por vuelta); conserva su altura. Para empezar una comparación con el original en el mismo sitio ([traza de estado](traza-de-estado.md)) |
 | `battle_win("")` | Termina el combate en curso con los enemigos vencidos: caen como con un golpe final y siguen la victoria, los objetos y las estadísticas ganadas |
+| `battle_lose("")` | Lo contrario: el compañero cae como con un golpe final y el combate se pierde (para probar un torneo perdido) |
 | `give_item("<id> <cantidad>")` | Mete objetos en la bolsa (`give_item("meat 3")`) |
 | `story_set("trigger <n> on\|off")`, `story_set("var <n> <valor>")`, `story_set("money <bits>")`, `story_set("card <n> <copias>")` | Escribe un disparador o una variable de la historia, como el original los guarda en su estado de scripts, sin correr ningún script (`story_set("var 1 10")`: diez puntos de prosperidad), el dinero que lleva el jugador (de 0 a 999999), o da copias de una carta como `give_card` (`story_set("card 19 1")`). Para empezar una ruta en un punto de la historia al que la partida sembrada no llega |
 | `evolve("<especie>")` | Hace evolucionar al compañero a esa forma como un guion de mapa (`evolve("species_b")`); el campo lo dibuja con su modelo |
