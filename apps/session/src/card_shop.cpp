@@ -5,7 +5,9 @@
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 
+#include <algorithm>
 #include <format>
+#include <iterator>
 #include <string>
 #include <utility>
 
@@ -35,6 +37,7 @@ constexpr std::string_view TradeSoundKey = "trade_sound";
 constexpr std::string_view MapKey = "map";
 constexpr std::string_view SlotKey = "slot";
 constexpr std::string_view SoundKey = "sound";
+constexpr std::string_view PackPriceKey = "pack_price";
 // The save section of the stock; a sold slot is saved as SoldCard.
 constexpr std::string_view ShopSaveName = "card_shop";
 
@@ -65,7 +68,8 @@ core::Result<CardShopRules> readCardShopRules(const ruleset::Section& section) {
   const YamlNode& root = section.node;
   if (!reader.expectKeys(root, CardShopSection,
                          {StockKey, SellDivisorKey, LinesSectionKey, LinesKey, ConfirmSectionKey,
-                          ConfirmLineKey, FailSoundKey, TradeSoundKey})) {
+                          ConfirmLineKey, FailSoundKey, TradeSoundKey},
+                         {PackPriceKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   CardShopRules rules{.stock = {},
@@ -76,7 +80,8 @@ core::Result<CardShopRules> readCardShopRules(const ruleset::Section& section) {
                       .confirmLine = nonNegative(reader, root, ConfirmLineKey),
                       .failSound = {},
                       .tradeMap = {},
-                      .tradeSound = {}};
+                      .tradeSound = {},
+                      .packPrice = 0};
   const YamlNode& fail = reader.field(root, FailSoundKey);
   if (reader.expectKeys(fail, FailSoundKey, {SlotKey, SoundKey})) {
     rules.failSound = soundCue(reader, fail);
@@ -101,6 +106,12 @@ core::Result<CardShopRules> readCardShopRules(const ruleset::Section& section) {
     rules.lines = {.today = nonNegative(reader, lines, TodayKey),
                    .soldOut = nonNegative(reader, lines, SoldOutKey),
                    .sellPrompt = nonNegative(reader, lines, SellPromptKey)};
+  }
+  if (const auto price = reader.optionalInteger<std::int32_t>(root, PackPriceKey)) {
+    rules.packPrice = *price;
+    if (reader.ok() && *price < 0) {
+      reader.fail(reader.field(root, PackPriceKey), "pack_price cannot be negative");
+    }
   }
   if (reader.ok() && rules.sellDivisor == 0) {
     reader.fail(reader.field(root, SellDivisorKey), "sell_divisor cannot be 0");
@@ -254,6 +265,47 @@ std::optional<PackCard> CardShop::drawPackCard() {
     return std::nullopt;
   }
   return desc_.cards->drawPackCard(session_->random());
+}
+
+std::int32_t CardShop::packLimit() const {
+  if (!rules_ || rules_->packPrice <= 0) {
+    return 1;
+  }
+  return 1 + (money() / rules_->packPrice);
+}
+
+std::vector<PackCard> CardShop::openPacks(std::int32_t packs) {
+  std::vector<PackCard> drawn;
+  const std::int32_t count = std::clamp(packs, 1, packLimit());
+  for (std::int32_t pack = 0; pack < count; ++pack) {
+    // Script 126: reduce_money(500) for every pack but the first, which it paid before routine 14.
+    if (pack > 0) {
+      desc_.inventory->inventory().spendMoney(rules_->packPrice);
+    }
+    // rollCardPack: the pack's draws, one after the other (a draw with no card gives none).
+    for (std::int32_t draw = 0; draw < packDraws(); ++draw) {
+      if (std::optional<PackCard> card = drawPackCard()) {
+        drawn.push_back(*card);
+      }
+    }
+  }
+  core::logDebug("[port:cards] bulk purchase: {} packs, {} cards, {} bits left", count,
+                 drawn.size(), money());
+  return drawn;
+}
+
+std::vector<PackSummaryRow> summarizePacks(const std::vector<PackCard>& drawn) {
+  std::vector<PackSummaryRow> rows;
+  for (const PackCard& card : drawn) {
+    auto row = std::ranges::find(rows, card.card, &PackSummaryRow::card);
+    if (row == rows.end()) {
+      rows.push_back({.card = card.card, .count = 0, .isNew = card.copiesBefore == 0});
+      row = std::prev(rows.end());
+    }
+    ++row->count;
+  }
+  std::ranges::sort(rows, {}, &PackSummaryRow::card);
+  return rows;
 }
 
 std::vector<game::inventory::CardOffer> CardShop::offers() const {

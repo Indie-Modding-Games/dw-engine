@@ -45,6 +45,8 @@ smooth_motion: "Movimiento suave"
 save_notice: "Aviso de guardado"
 # Hora en dígitos: la hora del juego como HH:MM en una caja pequeña bajo el reloj del campo (encendido por defecto).
 digital_time: "Hora en dígitos"
+# Cambios en lote: el trueque de objetos y los sobres de la tienda preguntan cuántos de una vez (encendido por defecto).
+bulk_trades: "Cambios en lote"
 
 year_label: "Año"
 day_label: "Día"

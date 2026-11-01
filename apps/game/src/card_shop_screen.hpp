@@ -13,6 +13,7 @@
 #include <string_view>
 #include <vector>
 
+#include "bulk_amount.hpp"
 #include "discard_screen.hpp"
 #include "field_scene.hpp"
 
@@ -31,7 +32,9 @@ struct CardShopScreenDesc {
 // day's stock with its prices and the "is it OK?" box (createSingleCardShopMenu,
 // tickSingleCardShop), or the cards held with what the shop pays and the amount box
 // (createItemMenuAmountBox, tickItemMenuAmountBox). The keeper talks over the list. A trade closes
-// the menu; the field and the game time wait meanwhile.
+// the menu; the field and the game time wait meanwhile. With the bulk trades on (an engine
+// improvement), routine 14's pack opens here instead: "How many packs?" in the amount box, then the
+// cards they gave, grouped, on the list.
 class CardShopScreen {
 public:
   explicit CardShopScreen(CardShopScreenDesc desc);
@@ -39,7 +42,7 @@ public:
   void setSpecies(const assets::DigimonTable* species) { species_ = species; }
   // Whether a menu is open: the field, the game time and the game's menu wait meanwhile.
   [[nodiscard]] bool active() const;
-  // Takes the story's CardBuy and CardSell screens; false for any other screen.
+  // Takes the story's CardBuy, CardSell and CardPacks screens; false for any other screen.
   bool take(const session::StoryScreenRequest& request, const FieldScene& scene);
   // Takes the document's commands while a menu is open; false for any other command.
   bool handle(const ui::UiCommand& command);
@@ -50,7 +53,7 @@ public:
   void update(session::StoryScenes& scenes);
 
 private:
-  enum class Phase : std::uint8_t { Closed, Talk, List, Confirm, Amount };
+  enum class Phase : std::uint8_t { Closed, Talk, List, Confirm, Amount, Packs, Summary };
 
   // A row of the list as the window shows it: the card (none for an empty row), the price shown,
   // the copies (the sell list's count), whether it can be picked and whether the player holds none.
@@ -66,6 +69,8 @@ private:
   void actInList(std::string_view action);
   void actInConfirm(std::string_view action);
   void actInAmount(std::string_view action);
+  void actInPacks(std::string_view action);
+  void actInSummary(std::string_view action);
   void pick();
   void close();
   [[nodiscard]] std::vector<Row> rows() const;
@@ -88,6 +93,11 @@ private:
   // SHOP_AMOUNT in the amount box, and the card it sells.
   std::int32_t amount_ = 0;
   std::optional<std::int32_t> picked_;
+  // The bulk purchase: how many packs, and what they gave.
+  BulkAmount packs_;
+  std::int32_t packsOpened_ = 0;
+  std::int32_t cardsDrawn_ = 0;
+  std::vector<session::PackSummaryRow> summary_;
   bool jumpHeld_ = false;
   bool tenHeld_ = false;
   // Whether the story waits for the menu to close.

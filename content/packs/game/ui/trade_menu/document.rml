@@ -15,6 +15,16 @@
 			<div class="row" id="row-1"><span class="mark" id="mark-1">-</span><span class="give" id="give-1"></span><span class="get" id="get-1"></span></div>
 			<div class="row" id="row-2"><span class="mark" id="mark-2">-</span><span class="give" id="give-2"></span><span class="get" id="get-2"></span></div>
 		</div>
+		<div id="amount" class="original-box original-look">
+			<div id="amount-title"></div>
+			<div class="rule" id="amount-rule-top"></div>
+			<div id="amount-give"></div>
+			<div id="amount-most"></div>
+			<div id="amount-inset"></div>
+			<div id="amount-value"></div>
+			<div class="rule" id="amount-rule-bottom"></div>
+			<div id="amount-get"></div>
+		</div>
 		<div id="talk" class="original-box original-look">
 			<div class="talk-row speaker" id="speaker"></div>
 			<div class="talk-row" id="talk-0"><span class="run" id="talk-run-0"></span></div>

@@ -228,6 +228,8 @@ private:
   void showButterfly(bool partnerNormal, const session::GameSession& session);
   // Shows the story lock's message in the dialog, unless the dialog is on screen already.
   void showLockNotice(const std::string& textKey);
+  // The bulk trades (bulk_amount.hpp), on the trader's screen, the card shop and the pause menu.
+  void setBulkTrades(bool enabled);
 
   PlayContext context_;
   GameStart game_;

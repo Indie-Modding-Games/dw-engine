@@ -185,6 +185,43 @@ TradeOutcome makeTrade(const ItemTraderRules& rules, std::size_t table, std::siz
   return TradeOutcome::Traded;
 }
 
+std::int32_t tradeLimit(const ItemTraderRules& rules, std::size_t table, std::size_t row,
+                        game::inventory::Inventory& bag, const assets::ItemTable& items,
+                        const game::story::StoryState& story) {
+  const std::vector<TradeRow> rows = tradeRows(rules, table, bag, items, story);
+  if (row >= rows.size()) {
+    return 0;
+  }
+  const TradeRow& trade = rows[row];
+  // The same bag moves as makeTrade's, on the real bag, which is then put back as it was.
+  const game::inventory::InventoryState before = bag.state();
+  std::int32_t made = 0;
+  while (bag.countOf(trade.give) != 0 && bag.add(trade.get, 1).taken()) {
+    bag.remove(trade.give, 1);
+    ++made;
+  }
+  if (auto restored = bag.restore(before); !restored) {
+    core::logWarning("[port:trader] bulk trade: {}", restored.error().message);
+  }
+  return made;
+}
+
+std::int32_t makeTrades(const ItemTraderRules& rules, std::size_t table, std::size_t row,
+                        std::int32_t count, game::inventory::Inventory& bag,
+                        const assets::ItemTable& items, game::story::StoryState& story) {
+  std::int32_t made = 0;
+  while (made < count) {
+    const std::vector<TradeRow> rows = tradeRows(rules, table, bag, items, story);
+    // tickMojyaTradeMenu only lets an item the bag holds be offered.
+    if (row >= rows.size() || !rows[row].owned ||
+        makeTrade(rules, table, row, bag, items, story) != TradeOutcome::Traded) {
+      break;
+    }
+    ++made;
+  }
+  return made;
+}
+
 ItemTrader::ItemTrader(ItemTraderDesc desc) : desc_(desc) {}
 
 ItemTrader::~ItemTrader() = default;
@@ -304,6 +341,25 @@ TradeOutcome ItemTrader::trade() {
   core::logDebug("[port:trader] openMojyamonShop (shop/script_menu.c:1088): state 5, row {}, {}",
                  *offeredRow_, outcome == TradeOutcome::Traded ? "traded" : "bag full");
   return outcome;
+}
+
+std::int32_t ItemTrader::tradeLimit() const {
+  if (!rules_ || !visit_ || !offeredRow_) {
+    return 0;
+  }
+  return session::tradeLimit(*rules_, table_, *offeredRow_, desc_.inventory->inventory(), items(),
+                             desc_.story->state());
+}
+
+std::int32_t ItemTrader::tradeMany(std::int32_t count) {
+  if (!rules_ || !visit_ || !offeredRow_) {
+    return 0;
+  }
+  const std::int32_t made = makeTrades(*rules_, table_, *offeredRow_, count,
+                                       desc_.inventory->inventory(), items(), desc_.story->state());
+  core::logDebug("[port:trader] bulk trade: row {}, {} of {} asked made", *offeredRow_, made,
+                 count);
+  return made;
 }
 
 bool ItemTrader::choiceCancellable() const {

@@ -73,7 +73,7 @@ body {
 .row {
 	position: absolute;
 	left: 24dp;
-	width: 630dp;
+	width: 639dp;
 	height: 54dp;
 	font-size: 33dp;
 	line-height: 33dp;
@@ -98,6 +98,9 @@ body {
 	display: inline-block;
 	width: 348dp;
 }
+
+/* As the original: with the mark the second column moves about 9 pixels, not the mark's 11. */
+.row.traded .give { width: 342dp; }
 
 /* calculateItemListStrings: an item the bag does not hold is red (colour 3); what the trader gives stays white. */
 .row.missing .give { color: #e03028; }
@@ -132,4 +135,58 @@ body {
 .talk-row.selected .run {
 	background-color: #525a63;
 	border-top: 3dp #b5b5b5;
+}
+
+/* The bulk trade's "How many?" (an engine improvement, the bulk_trades option): the amount box's shape (the card
+   shop's createItemMenuAmountBox). While it is up the list shrinks to its titles and the picked row, and the box sits
+   between that and the speech box with a clear gap (12dp) to each: the title, a rule, what the bag gives, the count in
+   its inset with the most beside it, a rule and what the trader gives. */
+#frame.amount #window { height: 138dp; }
+
+#amount {
+	position: absolute;
+	left: 216dp;
+	top: 270dp;
+	width: 645dp;
+	height: 204dp;
+	box-sizing: border-box;
+	background-color: #000000e0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 33dp;
+	display: none;
+}
+
+#frame.amount #amount { display: block; }
+
+#amount-title, #amount-give, #amount-most, #amount-get {
+	position: absolute;
+	left: 27dp;
+	white-space: pre;
+}
+
+#amount-title { top: 9dp; }
+#amount-give { top: 57dp; }
+#amount-most { top: 102dp; }
+#amount-get { top: 159dp; }
+#amount-value { position: absolute; left: 447dp; top: 102dp; width: 150dp; text-align: right; }
+
+#amount .rule {
+	position: absolute;
+	height: 3dp;
+	background-color: #63849c;
+}
+
+#amount-rule-top { left: 9dp; top: 48dp; width: 621dp; }
+#amount-rule-bottom { left: 9dp; top: 147dp; width: 621dp; }
+
+#amount-inset {
+	position: absolute;
+	left: 480dp;
+	top: 96dp;
+	width: 129dp;
+	height: 48dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #000000 #6b849c #6b849c #000000;
 }

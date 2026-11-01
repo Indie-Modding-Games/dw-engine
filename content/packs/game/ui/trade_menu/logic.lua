@@ -4,11 +4,13 @@
 -- trader's name, a text key; empty on the yes-or-no), .player (the player's name, on the
 -- yes-or-no), .line_key (what the trader says, or the yes-or-no's lines), .offered_key (the item
 -- the line's {item:pstat=N} names), .label_key (the two column titles), .choice, .cursor, .total
--- and trade.row.<n>.give/get/owned/traded. Every button goes to the game as trade_action.
+-- and trade.row.<n>.give/get/owned/traded. The bulk trade (an engine improvement) adds the phase
+-- amount, "How many?" over the list, with trade.amount.value and .most. Every button goes to the
+-- game as trade_action.
 
 local Rows = 3
 -- The menu stays up while the trader asks about the offered item (states 3 and 4).
-local MenuPhases = { list = true, confirm = true, choice = true }
+local MenuPhases = { list = true, confirm = true, choice = true, amount = true }
 
 local function number(name)
   return math.floor(tonumber(ui.setting(name)) or 0)
@@ -45,14 +47,18 @@ local function columns(label)
   return table.concat(words, " ", 1, half), table.concat(words, " ", half + 1)
 end
 
-local function draw_menu(document)
+local function draw_menu(document, phase)
   local give, get = columns(text("trade.label_key"))
   document:get("label-give"):set_text(give)
   document:get("label-get"):set_text(get)
   local total = number("trade.total")
+  local cursor = number("trade.cursor")
+  -- The bulk trade's box covers the lower rows: the picked row moves up to the first one.
+  local picking = phase == "amount"
   for row = 0, Rows - 1 do
-    local prefix = "trade.row." .. row .. "."
-    local shown = row < total
+    local source = picking and cursor or row
+    local prefix = "trade.row." .. source .. "."
+    local shown = source < total and (not picking or row == 0)
     document:get("give-" .. row):set_text(shown and text(prefix .. "give") or "")
     document:get("get-" .. row):set_text(shown and text(prefix .. "get") or "")
     -- calculateItemListStrings: an item the bag does not hold is red (colour 3), and a trade made
@@ -64,7 +70,7 @@ local function draw_menu(document)
   end
   document
     :get("cursor")
-    :set_property("top", string.format("%ddp", 75 + 54 * number("trade.cursor")))
+    :set_property("top", string.format("%ddp", 75 + 54 * (picking and 0 or cursor)))
 end
 
 local function draw_talk(document, phase)
@@ -98,10 +104,29 @@ local function draw_talk(document, phase)
   end
 end
 
+-- The bulk trade's box: the row under the cursor, times the count.
+local function draw_amount(document)
+  local prefix = "trade.row." .. number("trade.cursor") .. "."
+  local count = number("trade.amount.value")
+  document:get("amount-title"):set_text(t("bulk.how_many"))
+  document
+    :get("amount-give")
+    :set_text(t("bulk.give", { count = count, item = text(prefix .. "give") }))
+  document
+    :get("amount-get")
+    :set_text(t("bulk.get", { count = count, item = text(prefix .. "get") }))
+  document:get("amount-most"):set_text(t("bulk.most", { most = number("trade.amount.most") }))
+  document:get("amount-value"):set_text(tostring(count))
+end
+
 local function refresh(document)
   local phase = ui.setting("trade.phase") or "closed"
   document:get("frame"):set_class("menu", MenuPhases[phase] == true)
-  draw_menu(document)
+  document:get("frame"):set_class("amount", phase == "amount")
+  if phase == "amount" then
+    draw_amount(document)
+  end
+  draw_menu(document, phase)
   draw_talk(document, phase)
 end
 

@@ -50,6 +50,9 @@ struct CardShopRules {
   // playShopSoundOnlyInSavannah (MAIN_D_801345C0): a trade plays this sound, only on this map.
   std::string tradeMap;
   SoundCue tradeSound;
+  // The price of a pack the card shop's script charges (script 126: `money >= 500`, then
+  // reduce_money(500) before routine 14); 0 (left out) turns the bulk purchase off.
+  std::int32_t packPrice = 0;
 };
 
 core::Result<CardShopRules> readCardShopRules(const ruleset::Section& section);
@@ -65,6 +68,17 @@ struct CardShopDesc {
   CardsAdapter* cards = nullptr;
   InventoryAdapter* inventory = nullptr;
 };
+
+// A card of the bulk purchase's summary: how many copies the packs gave, and whether the player
+// held none before them.
+struct PackSummaryRow {
+  std::int32_t card = 0;
+  std::int32_t count = 0;
+  bool isNew = false;
+};
+
+// The cards of some packs grouped by card, in card order.
+[[nodiscard]] std::vector<PackSummaryRow> summarizePacks(const std::vector<PackCard>& drawn);
 
 // The card shop the story opens (CALL_ROUTINE 14): the stock a new day rolls (SCRIPT_STATE
 // smth[0..5], saved with the game), the pack's draws, one card bought from the stock and copies
@@ -108,6 +122,17 @@ public:
   [[nodiscard]] std::int32_t packDraws() const;
   std::optional<PackCard> drawPackCard();
 
+  // The bulk purchase (an engine improvement, the bulk_trades option): whether routine 14 lets the
+  // player open more packs at once.
+  void setBulkPacks(bool enabled) { bulkPacks_ = enabled; }
+  [[nodiscard]] bool bulkPacks() const { return bulkPacks_ && rules_ && rules_->packPrice > 0; }
+  // The most packs one order opens: the one the script has paid and one more per pack price the
+  // money still covers.
+  [[nodiscard]] std::int32_t packLimit() const;
+  // Opens `packs` packs (clamped to 1..packLimit) exactly as that many single purchases would: for
+  // each pack after the first (paid by the script) the price, then the pack's draws in order.
+  std::vector<PackCard> openPacks(std::int32_t packs);
+
   // hasAnyCardToBuy: the stock as the buy list shows it.
   [[nodiscard]] std::vector<game::inventory::CardOffer> offers() const;
   // tickSingleCardShop's yes: the card of the slot is bought (one copy, its price paid) and the
@@ -147,6 +172,7 @@ private:
   std::vector<std::int32_t> stock_;
   // A save without the stock: it is rolled once the game is loaded.
   bool rollAfterLoad_ = false;
+  bool bulkPacks_ = false;
   // The session whose generator the rolls use: the last one that ticked, loaded or started a game.
   GameSession* session_ = nullptr;
   // MAPHEAD's sections as jump tables of text keys, read on the first visit.

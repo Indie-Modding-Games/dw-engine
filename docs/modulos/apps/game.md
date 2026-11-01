@@ -547,3 +547,11 @@ HUD ni de otro documento, ver [UI](../engine/ui.md)) y `text_fit`. Tests: `the f
 digits as HH:MM while the option is on` (`engine/ui/tests/ui_tests.cpp`), `one part of a document is checked against
 the rest of it but the panel round it` (`engine/ui/tests/text_fit_tests.cpp`) y los ajustes del usuario
 (`apps/game/tests/user_settings_tests.cpp`).
+
+## Cambios en lote
+
+Mejora opcional, encendida por defecto: el ajuste `bulk_trades` (fila «Cambios en lote» de las opciones del menú de
+pausa, guardado en los ajustes del usuario) llega desde `PlaySession::setBulkTrades` a `TradeScreen::setBulk` y a
+`CardShop::setBulkPacks`. Encendido, el trueque de objetos y los sobres de la tienda de cartas preguntan cuántos de una
+vez; apagado, van de uno en uno como el original. Las reglas y la prueba de igualdad están en
+[screens.md](screens.md#cambios-en-lote).

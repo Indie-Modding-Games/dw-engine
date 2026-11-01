@@ -39,7 +39,14 @@ body {
 	width: 666dp;
 }
 
-#frame.phase-talk #window { display: none; }
+#frame.phase-talk #window, #frame.phase-packs #window { display: none; }
+
+/* The bulk purchase (an engine improvement): the summary is the sell list's window, with the count column and no
+   price; "How many packs?" is the amount box. */
+#frame.mode-packs #window {
+	left: 267dp;
+	width: 666dp;
+}
 
 .label {
 	position: absolute;
@@ -50,7 +57,20 @@ body {
 .label-menu { left: 21dp; width: 60dp; }
 .label-price { left: 381dp; width: 60dp; }
 .label-count { left: 543dp; width: 66dp; display: none; }
-#frame.mode-sell .label-count { display: block; }
+#frame.mode-sell .label-count, #frame.mode-packs .label-count { display: block; }
+#frame.mode-packs .label-price { display: none; }
+
+/* The summary's column titles are words (bulk.card and bulk.copies), not the skin's MENU and COUNT labels. */
+#frame.mode-packs .label {
+	top: 9dp;
+	height: 27dp;
+	font-size: 24dp;
+	line-height: 27dp;
+	white-space: pre;
+}
+
+#frame.mode-packs .label-menu { width: 300dp; }
+#frame.mode-packs .label-count { left: 459dp; width: 150dp; text-align: right; }
 
 /* renderSelectionCursor: a grey bar with a light top and left edge and a dark bottom and right one. */
 #cursor {
@@ -65,7 +85,7 @@ body {
 	background-color: #80808080;
 }
 
-#frame.mode-sell #cursor { width: 606dp; }
+#frame.mode-sell #cursor, #frame.mode-packs #cursor { width: 606dp; }
 
 .row {
 	position: absolute;
@@ -136,7 +156,7 @@ body {
 	background-color: #354b5c;
 }
 
-#frame.mode-sell .scrollbar { left: 627dp; }
+#frame.mode-sell .scrollbar, #frame.mode-packs .scrollbar { left: 627dp; }
 
 .thumb {
 	position: absolute;
@@ -232,7 +252,7 @@ body {
 	display: none;
 }
 
-#frame.phase-amount #amount { display: block; }
+#frame.phase-amount #amount, #frame.phase-packs #amount { display: block; }
 
 #amount .rarity { left: 27dp; top: 18dp; }
 #amount-name { position: absolute; left: 75dp; top: 18dp; white-space: pre; }

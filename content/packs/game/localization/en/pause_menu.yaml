@@ -45,6 +45,8 @@ smooth_motion: "Smooth motion"
 save_notice: "Save notice"
 # Digital time: the game time as HH:MM in a small box under the field's clock (on by default).
 digital_time: "Digital time"
+# Bulk trades: the item trader and the card shop's packs ask how many at once (on by default).
+bulk_trades: "Bulk trades"
 
 year_label: "Year"
 day_label: "Day"

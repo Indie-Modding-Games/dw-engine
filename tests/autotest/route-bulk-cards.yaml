@@ -1,0 +1,83 @@
+# The bulk card packs (an engine improvement, docs/modulos/apps/screens.md, «Cambios en lote»): the card shop of
+# gias06b with 5000 bits. "Buy a pack of three" and "I'll buy it" pay the first pack as the original's script does;
+# routine 14 then asks "How many packs?" (right +1, up +10 stopping at the most, 10, then left -1) and shows the cards they gave, grouped, the new
+# ones in yellow. Each capture checks that the texts fit (text_fit). From a new game: --story-stage all --new-game
+# --start gias06b.
+name: bulk-cards
+device: keyboard
+timeout: 300
+text_fit: true
+steps:
+  - wait: {map: gias06b, seconds: 1.5, timeout: 90}
+  - resize: [1280, 720]
+  - expect_setting: {bulk_trades: "true"}
+  - script: story_set("money 5000")
+  - script: story_set("trigger 139 on")
+  - script: place("player -650 1250 0")
+  - wait: {seconds: 0.5}
+  - screenshot: shop-counter
+  # The clerk greets twice, then the player's choices.
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 10}
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - screenshot: shop-choice
+  # I'll buy a card -> Buy a pack of three -> (the price) -> I'll buy it -> "Open the pack right away."
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - tap: {key: return}
+  - wait: {shown: card_shop, timeout: 10}
+  - wait: {seconds: 0.5}
+  - expect_setting: {card_shop.phase: packs}
+  - expect_setting: {card_shop.packs.most: "10"}
+  - screenshot: packs-1
+  - tap: {key: right}
+  - wait: {seconds: 0.2}
+  - tap: {key: up}
+  - wait: {seconds: 0.2}
+  - tap: {key: left}
+  - wait: {seconds: 0.3}
+  - expect_setting: {card_shop.packs.value: "9"}
+  - expect_setting: {card_shop.packs.total: "4500"}
+  - screenshot: packs-9
+  - resize: [1920, 1080]
+  - wait: {seconds: 0.5}
+  - screenshot: packs-1080
+  - resize: [1024, 768]
+  - wait: {seconds: 0.5}
+  - screenshot: packs-768
+  - resize: [1280, 720]
+  - wait: {seconds: 0.3}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {card_shop.phase: summary}
+  - expect_setting: {card_shop.packs.opened: "9"}
+  - screenshot: summary
+  - tap: {key: down}
+  - tap: {key: down}
+  - tap: {key: down}
+  - tap: {key: down}
+  - tap: {key: down}
+  - tap: {key: down}
+  - wait: {seconds: 0.3}
+  - screenshot: summary-scrolled
+  - resize: [1920, 1080]
+  - wait: {seconds: 0.5}
+  - screenshot: summary-1080
+  - resize: [1024, 768]
+  - wait: {seconds: 0.5}
+  - screenshot: summary-768
+  - resize: [1280, 720]
+  - wait: {seconds: 0.3}
+  - tap: {key: return}
+  - wait: {hidden: card_shop, timeout: 5}
+  - wait: {seconds: 1.5}
+  - screenshot: after

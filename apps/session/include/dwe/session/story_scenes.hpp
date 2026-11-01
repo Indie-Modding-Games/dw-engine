@@ -135,6 +135,7 @@ enum class StoryScreen : std::uint8_t {
   ClearSave,          // routine 54, gameClearSave and scriptTickMainMenu: the ending's save
   GymLibrary,         // routine 39, loadTrainingLibrary: the next course is not complete yet
   GymCourse,          // routine 7, the gym course pstat 254 picks, waited for to its end
+  CardPacks,          // routine 14's pack with the bulk purchase on: how many packs, then the cards
 };
 
 // A screen a routine asks the app for. `waits`: the script waits until the app closes it.

@@ -47,3 +47,6 @@ screens:
   # La caja de los huevos tras una muerte, también.
   egg_box:
     styles: [ui/skins/modern/pause_menu/style]
+  # El intercambio de objetos: su ventana a la izquierda, lejos del minimapa.
+  trade_menu:
+    styles: [ui/skins/modern/trade_menu/style]

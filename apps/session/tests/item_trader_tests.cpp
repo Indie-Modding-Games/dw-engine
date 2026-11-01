@@ -28,9 +28,11 @@ using dwe::session::ItemTrader;
 using dwe::session::ItemTraderDesc;
 using dwe::session::ItemTraderRules;
 using dwe::session::makeTrade;
+using dwe::session::makeTrades;
 using dwe::session::SessionSystem;
 using dwe::session::StoryAdapter;
 using dwe::session::StoryAdapterDesc;
+using dwe::session::tradeLimit;
 using dwe::session::TradeOutcome;
 using dwe::session::tradeRows;
 using dwe::session::testing::evolutionAdapter;
@@ -219,4 +221,84 @@ TEST_CASE("openMojyamonShop takes the table from variable 249 and writes 255 the
   CHECK_FALSE(visit.choiceCancellable());
   visit.close();
   CHECK_FALSE(visit.visit());
+}
+
+TEST_CASE("bulk trade: N trades at once leave the bag and the triggers as N single trades") {
+  const ItemTraderRules rules = madeUpRules();
+  constexpr std::int32_t Held = 21;
+  for (const std::int32_t asked : {1, 2, 7, Held}) {
+    CAPTURE(asked);
+    Inventory single = emptyBag();
+    Inventory bulk = emptyBag();
+    StoryState singleStory;
+    StoryState bulkStory;
+    single.add(items::handleOf(items::Bun), Held);
+    bulk.add(items::handleOf(items::Bun), Held);
+    for (std::int32_t trade = 0; trade < asked; ++trade) {
+      REQUIRE(makeTrade(rules, 0, 1, single, items::fixtureItems(), singleStory) ==
+              TradeOutcome::Traded);
+    }
+    CHECK(makeTrades(rules, 0, 1, asked, bulk, items::fixtureItems(), bulkStory) == asked);
+    CHECK(bulk.state() == single.state());
+    for (std::int32_t trigger = FirstTraded; trigger <= AllTraded; ++trigger) {
+      CHECK(triggerSet(bulkStory, trigger) == triggerSet(singleStory, trigger));
+    }
+    CHECK(bulk.countOf(items::handleOf(items::Bun)) == Held - asked);
+    CHECK(bulk.countOf(items::handleOf(items::Ether)) == asked);
+  }
+}
+
+TEST_CASE("bulk trade: the limit is what the bag holds and takes, and the bag is left as it was") {
+  const ItemTraderRules rules = madeUpRules();
+  StoryState story;
+  // 21 held and room: all 21.
+  Inventory bag = emptyBag();
+  bag.add(items::handleOf(items::Bun), 21);
+  const auto before = bag.state();
+  CHECK(tradeLimit(rules, 0, 1, bag, items::fixtureItems(), story) == 21);
+  CHECK(bag.state() == before);
+  // None held: none, and a bulk of five makes none.
+  Inventory none = emptyBag();
+  CHECK(tradeLimit(rules, 0, 1, none, items::fixtureItems(), story) == 0);
+  CHECK(makeTrades(rules, 0, 1, 5, none, items::fixtureItems(), story) == 0);
+  CHECK_FALSE(triggerSet(story, FirstTraded + 1));
+  // Asking for more than held stops when the item runs out.
+  Inventory few = emptyBag();
+  few.add(items::handleOf(items::Bun), 3);
+  CHECK(makeTrades(rules, 0, 1, 10, few, items::fixtureItems(), story) == 3);
+  CHECK(few.countOf(items::handleOf(items::Bun)) == 0);
+  CHECK(few.countOf(items::handleOf(items::Ether)) == 3);
+}
+
+TEST_CASE("bulk trade: a full bag stops it where single trades would stop") {
+  const ItemTraderRules rules = madeUpRules();
+  StoryState story;
+  StoryState singleStory;
+  // The bag full but for the offered item's stack: the first trade has no room (giveItem first).
+  Inventory full = emptyBag();
+  full.add(items::handleOf(items::Steak), 5);
+  for (std::int32_t filler = 0; full.hasRoomFor(items::handleOf(items::Tonic)); ++filler) {
+    REQUIRE(filler < items::FillerCount);
+    full.add(items::filler(filler), 1);
+  }
+  CHECK(tradeLimit(rules, 0, 0, full, items::fixtureItems(), story) == 0);
+  CHECK(makeTrades(rules, 0, 0, 5, full, items::fixtureItems(), story) == 0);
+  CHECK(full.countOf(items::handleOf(items::Steak)) == 5);
+  // A tight bag: limit, bulk and single trades agree on where they stop and on the bag after.
+  Inventory tight = emptyBag();
+  tight.add(items::handleOf(items::Steak), 99);
+  for (std::int32_t filler = 0; filler < items::FillerCount; ++filler) {
+    tight.add(items::filler(filler), 1);
+  }
+  Inventory single = emptyBag();
+  REQUIRE(single.restore(tight.state()));
+  std::int32_t singles = 0;
+  while (single.countOf(items::handleOf(items::Steak)) != 0 &&
+         makeTrade(rules, 0, 0, single, items::fixtureItems(), singleStory) ==
+             TradeOutcome::Traded) {
+    ++singles;
+  }
+  CHECK(tradeLimit(rules, 0, 0, tight, items::fixtureItems(), story) == singles);
+  CHECK(makeTrades(rules, 0, 0, 99, tight, items::fixtureItems(), story) == singles);
+  CHECK(tight.state() == single.state());
 }

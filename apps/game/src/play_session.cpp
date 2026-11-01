@@ -31,6 +31,7 @@
 #include <variant>
 
 #include "battle_trigger.hpp"
+#include "bulk_amount.hpp"
 #include "common.hpp"
 #include "messages.hpp"
 #include "partner_events.hpp"
@@ -443,6 +444,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   // The save indicator's document goes up before the HUD's, which takes the focus.
   saveIndicator_.emplace(*context_.ui, game_.session->savesWritten(),
                          context.userSettings->saveNotice.value_or(true));
+  setBulkTrades(context.userSettings->bulkTrades.value_or(true));
   context_.ui->show("hud");
   // The tuning panel tunes the game's ruleset, sets the speed of its clock, pauses it and jumps it.
   // It is attached last and detached first, so it never points at a game half built or half gone.
@@ -665,6 +667,14 @@ void PlaySession::showLockNotice(const std::string& textKey) {
   lockNoticeShown_ = true;
 }
 
+void PlaySession::setBulkTrades(bool enabled) {
+  tradeScreen_.setBulk(enabled);
+  if (game_.systems.cardShop != nullptr) {
+    game_.systems.cardShop->setBulkPacks(enabled);
+  }
+  context_.ui->setSetting(BulkTradesSetting, enabled);
+}
+
 bool PlaySession::handle(const ui::UiCommand& command) {
   if (eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
       itemKeeperScreen_.handle(command) || discardScreen_.handle(command) ||
@@ -693,6 +703,16 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     if (const bool* digits = std::get_if<bool>(&command.value)) {
       context_.ui->setSetting(DigitalTimeSetting, *digits);
       context_.userSettings->digitalTime = *digits;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    return true;
+  }
+  if (command.name == BulkTradesSetting) {
+    if (const bool* bulk = std::get_if<bool>(&command.value)) {
+      setBulkTrades(*bulk);
+      context_.userSettings->bulkTrades = *bulk;
       if (context_.settingsFile) {
         saveUserSettings(*context_.settingsFile, *context_.userSettings);
       }

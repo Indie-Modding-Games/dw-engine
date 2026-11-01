@@ -80,6 +80,15 @@ core::Result<void> registerCardShopRoutine(StoryScenesContext& scenes) {
                                     .waits = true});
         }
         CardShop* shop = scenes.desc.cardShop;
+        // The bulk purchase (an engine improvement, the bulk_trades option): with money for more
+        // than the pack the script has paid, the app asks how many packs and shows their cards.
+        if (shop != nullptr && shop->available() && shop->bulkPacks() && shop->packLimit() > 1) {
+          return scenes.openScreen({.screen = StoryScreen::CardPacks,
+                                    .routine = routine,
+                                    .first = scenes.operand(),
+                                    .second = 0,
+                                    .waits = true});
+        }
         if (shop == nullptr || scenes.desc.story == nullptr || !shop->open(CardShopKind::Pack)) {
           core::logDebug("[port:cards] rollCardPack (shop/script_menu.c:679): no card shop; the "
                          "pack is over at once");

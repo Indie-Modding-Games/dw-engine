@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <string_view>
 
+#include "bulk_amount.hpp"
 #include "field_scene.hpp"
 
 namespace dwe::app {
@@ -40,12 +41,16 @@ struct TradeScreenDesc {
 // createMojyaTradeMenu, tickMojyaTradeMenu, updateMojyaTradeStrings), on the trade_menu document:
 // the trader greets and asks, the player picks a row of the table (what the bag gives, what the
 // trader gives), the trader asks again and the player says yes or no; the trade or the farewell
-// closes the visit. The field and the game time wait meanwhile.
+// closes the visit. The field and the game time wait meanwhile. With the bulk trades on (an engine
+// improvement), an item the bag could trade more than once first asks "How many?"; the yes then
+// makes that many single trades.
 class TradeScreen {
 public:
   explicit TradeScreen(TradeScreenDesc desc);
 
   void setSpecies(const assets::DigimonTable* species) { species_ = species; }
+  // The bulk_trades option (on by default).
+  void setBulk(bool enabled) { bulk_ = enabled; }
   // Whether a visit is open: the field, the game time and the game's menu wait meanwhile.
   [[nodiscard]] bool active() const;
   // Takes the story's TradeShop screen, with the trader the operand (variable 254) names on the
@@ -68,12 +73,14 @@ public:
     Thanks,   // state 5: line 13, the trade made
     BagFull,  // state 5: line 14, the bag did not take the item
     Farewell, // state 6: line 10
+    Amount,   // the bulk trade's "How many?" (an engine improvement), before line 11
   };
   [[nodiscard]] Phase phase() const { return phase_; }
 
 private:
   void act(std::string_view action);
   void actInList(std::string_view action);
+  void actInAmount(std::string_view action);
   void close();
   [[nodiscard]] std::int32_t rowCount() const;
   [[nodiscard]] std::string playerName() const;
@@ -86,6 +93,10 @@ private:
   // DIALOGUE_SELECTION.current: 0 yes, 1 no.
   std::int32_t choice_ = 0;
   bool jumpHeld_ = false;
+  bool bulk_ = true;
+  // The bulk trade's count while it is picked, and the trades the yes makes.
+  BulkAmount amount_;
+  std::int32_t count_ = 1;
   // Whether the story waits for the visit to close.
   bool waiting_ = false;
 };

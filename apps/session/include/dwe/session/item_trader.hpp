@@ -108,6 +108,20 @@ TradeOutcome makeTrade(const ItemTraderRules& rules, std::size_t table, std::siz
                        game::inventory::Inventory& bag, const assets::ItemTable& items,
                        game::story::StoryState& story);
 
+// The bulk trade (an engine improvement, the bulk_trades option): how many single trades of row
+// `row` would go through one after the other, each needing the offered item in the bag and the new
+// one taking a place (makeTrade's giveItem first). The bag is tried and left as it was.
+[[nodiscard]] std::int32_t tradeLimit(const ItemTraderRules& rules, std::size_t table,
+                                      std::size_t row, game::inventory::Inventory& bag,
+                                      const assets::ItemTable& items,
+                                      const game::story::StoryState& story);
+
+// `count` single trades of row `row` in a row, each exactly makeTrade: it stops at the first one
+// the bag refuses or once the offered item runs out. Returns how many were made.
+std::int32_t makeTrades(const ItemTraderRules& rules, std::size_t table, std::size_t row,
+                        std::int32_t count, game::inventory::Inventory& bag,
+                        const assets::ItemTable& items, game::story::StoryState& story);
+
 // Who trades: the NPC the routine's variable 254 names, by species.
 struct ItemTraderVisit {
   std::string traderSpecies;
@@ -156,6 +170,10 @@ public:
   [[nodiscard]] std::optional<assets::ItemHandle> offered() const;
   // The yes: makeTrade for the offered row.
   TradeOutcome trade();
+  // The bulk trade: how many of the offered row the bag allows (tradeLimit), and that many yeses
+  // at once (makeTrades); 0 without an offer.
+  [[nodiscard]] std::int32_t tradeLimit() const;
+  std::int32_t tradeMany(std::int32_t count);
   // Whether cancel answers no to the yes-or-no (the lock trigger is clear).
   [[nodiscard]] bool choiceCancellable() const;
 

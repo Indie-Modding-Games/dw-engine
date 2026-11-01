@@ -187,3 +187,105 @@ TEST_CASE("a pack's card puts its species in variable 249 once the cards have th
   REQUIRE(digimon.has_value());
   CHECK(*digimon == 7);
 }
+
+namespace {
+
+// What a run of packs leaves: every card's copies, the money, the generator and the cards drawn.
+struct PackRun {
+  std::vector<std::int32_t> copies;
+  std::int32_t money = 0;
+  std::uint64_t random = 0;
+  std::vector<std::int32_t> drawn;
+};
+
+PackRun runOf(const Shop& shop, const std::vector<dwe::session::PackCard>& drawn) {
+  PackRun run;
+  for (std::int32_t card = 0; card < 3; ++card) {
+    run.copies.push_back(shop.cards->copies(card));
+  }
+  run.money = shop.money();
+  run.random = shop.session->random().state();
+  for (const auto& card : drawn) {
+    run.drawn.push_back(card.card);
+  }
+  return run;
+}
+
+constexpr std::uint64_t PackSeed = 0x5eed;
+
+} // namespace
+
+TEST_CASE("bulk packs: N packs at once give the cards, money and generator of N single packs") {
+  for (const std::int32_t packs : {1, 2, 5, 9}) {
+    CAPTURE(packs);
+    const Shop single;
+    const Shop bulk;
+    for (const Shop* shop : {&single, &bulk}) {
+      shop->setMoney(5000);
+      shop->session->random().restoreState(PackSeed);
+      REQUIRE(shop->shop().open(CardShopKind::Pack));
+    }
+    // N single purchases: script 126 charges 500, then routine 14 draws the pack's three cards.
+    std::vector<dwe::session::PackCard> singles;
+    for (std::int32_t pack = 0; pack < packs; ++pack) {
+      single.inventory->inventory().spendMoney(500);
+      for (std::int32_t draw = 0; draw < single.shop().packDraws(); ++draw) {
+        if (auto card = single.shop().drawPackCard()) {
+          singles.push_back(*card);
+        }
+      }
+    }
+    // The bulk order: the script charges the first pack, openPacks the rest.
+    bulk.inventory->inventory().spendMoney(500);
+    REQUIRE(bulk.shop().packLimit() >= packs);
+    const auto opened = bulk.shop().openPacks(packs);
+    const PackRun a = runOf(single, singles);
+    const PackRun b = runOf(bulk, opened);
+    CHECK(b.copies == a.copies);
+    CHECK(b.money == a.money);
+    CHECK(b.money == 5000 - 500 * packs);
+    CHECK(b.random == a.random);
+    CHECK(b.drawn == a.drawn);
+  }
+}
+
+TEST_CASE("bulk packs: the money limits the packs, and asking for none or too many is clamped") {
+  const Shop shop;
+  REQUIRE(shop.shop().rules().packPrice == 500);
+  shop.shop().setBulkPacks(true);
+  CHECK(shop.shop().bulkPacks());
+  // After the script's 500: 1 499 bits cover two more packs.
+  shop.setMoney(1499);
+  CHECK(shop.shop().packLimit() == 3);
+  // The made-up table lacks some rarities, so a draw may give no card; the price is what counts.
+  static_cast<void>(shop.shop().openPacks(10));
+  CHECK(shop.money() == 499);
+  // No money left: only the paid pack.
+  shop.setMoney(0);
+  CHECK(shop.shop().packLimit() == 1);
+  const std::uint64_t before = shop.session->random().state();
+  static_cast<void>(shop.shop().openPacks(0));
+  CHECK(shop.money() == 0);
+  CHECK(shop.session->random().state() != before);
+  shop.shop().setBulkPacks(false);
+  CHECK_FALSE(shop.shop().bulkPacks());
+}
+
+TEST_CASE("bulk packs: the summary groups the cards and marks the ones held none of before") {
+  using dwe::session::PackCard;
+  const std::vector<PackCard> drawn{{.card = 5, .line = 0, .copiesBefore = 0},
+                                    {.card = 2, .line = 0, .copiesBefore = 3},
+                                    {.card = 5, .line = 0, .copiesBefore = 1},
+                                    {.card = 2, .line = 0, .copiesBefore = 4},
+                                    {.card = 9, .line = 0, .copiesBefore = 0}};
+  const auto rows = dwe::session::summarizePacks(drawn);
+  REQUIRE(rows.size() == 3);
+  CHECK(rows[0].card == 2);
+  CHECK(rows[0].count == 2);
+  CHECK_FALSE(rows[0].isNew);
+  CHECK(rows[1].card == 5);
+  CHECK(rows[1].count == 2);
+  CHECK(rows[1].isNew);
+  CHECK(rows[2].card == 9);
+  CHECK(rows[2].isNew);
+}

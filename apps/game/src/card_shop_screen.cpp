@@ -24,7 +24,8 @@ constexpr std::int32_t No = 1;
 constexpr std::int32_t AmountStep = 10;
 
 const char* phaseName(std::uint8_t phase) {
-  constexpr std::array<const char*, 5> Names{"closed", "talk", "list", "confirm", "amount"};
+  constexpr std::array<const char*, 7> Names{"closed", "talk",  "list",   "confirm",
+                                             "amount", "packs", "summary"};
   return phase < Names.size() ? Names.at(phase) : "?";
 }
 
@@ -38,11 +39,12 @@ bool CardShopScreen::active() const {
 
 bool CardShopScreen::take(const session::StoryScreenRequest& request, const FieldScene& scene) {
   const bool buying = request.screen == session::StoryScreen::CardBuy;
-  if (!buying && request.screen != session::StoryScreen::CardSell) {
+  const bool packs = request.screen == session::StoryScreen::CardPacks;
+  if (!buying && !packs && request.screen != session::StoryScreen::CardSell) {
     return false;
   }
   waiting_ = request.waits;
-  kind_ = buying ? CardShopKind::Buy : CardShopKind::Sell;
+  kind_ = buying ? CardShopKind::Buy : (packs ? CardShopKind::Pack : CardShopKind::Sell);
   if (desc_.shop == nullptr || !desc_.shop->open(kind_)) {
     return true;
   }
@@ -58,7 +60,15 @@ bool CardShopScreen::take(const session::StoryScreenRequest& request, const Fiel
   list_ = {};
   choice_ = Yes;
   picked_.reset();
+  summary_.clear();
   desc_.ui->show(CardShopDocument, true);
+  if (packs) {
+    // The bulk purchase: the script has paid one pack; the count starts there.
+    packs_.reset(desc_.shop->packLimit());
+    phase_ = Phase::Packs;
+    core::logDebug("[port:cards] bulk purchase: up to {} packs", packs_.most);
+    return true;
+  }
   // openBuyCardMenu state 0: without a card left in the stock the keeper says so and the menu does
   // not open (hasAnyCardToBuy).
   if (buying && !game::inventory::hasCardOnSale(desc_.shop->offers())) {
@@ -99,6 +109,9 @@ void CardShopScreen::press(const input::InputState& input) {
   if (phase_ == Phase::Amount && input.wasPressed("extra") && picked_) {
     amount_ = desc_.shop->cards().copies(*picked_);
   }
+  if (phase_ == Phase::Packs && input.wasPressed("extra")) {
+    packs_.act("extra");
+  }
 }
 
 void CardShopScreen::act(std::string_view action) {
@@ -120,6 +133,41 @@ void CardShopScreen::act(std::string_view action) {
   case Phase::Amount:
     actInAmount(action);
     return;
+  case Phase::Packs:
+    actInPacks(action);
+    return;
+  case Phase::Summary:
+    actInSummary(action);
+    return;
+  }
+}
+
+void CardShopScreen::actInPacks(std::string_view action) {
+  if (packs_.act(action)) {
+    return;
+  }
+  if (action != "confirm" && action != "cancel") {
+    return;
+  }
+  // Cancel keeps the one pack the script has paid. Each pack is a single purchase: its price, then
+  // its draws, in the same order (CardShop::openPacks).
+  const std::int32_t count = action == "confirm" ? packs_.value : 1;
+  const std::vector<session::PackCard> drawn = desc_.shop->openPacks(count);
+  packsOpened_ = count;
+  cardsDrawn_ = static_cast<std::int32_t>(drawn.size());
+  summary_ = session::summarizePacks(drawn);
+  list_ = {};
+  phase_ = Phase::Summary;
+}
+
+void CardShopScreen::actInSummary(std::string_view action) {
+  const auto count = static_cast<std::int32_t>(summary_.size());
+  if (action == "up") {
+    jumpHeld_ ? list_.toTop() : list_.up();
+  } else if (action == "down") {
+    jumpHeld_ ? list_.toBottom(count) : list_.down(count);
+  } else if (action == "confirm" || action == "cancel") {
+    close();
   }
 }
 
@@ -217,6 +265,7 @@ void CardShopScreen::close() {
   desc_.ui->hide(CardShopDocument);
   desc_.shop->close();
   picked_.reset();
+  summary_.clear();
   phase_ = Phase::Closed;
 }
 
@@ -234,6 +283,16 @@ void CardShopScreen::update(session::StoryScenes& scenes) {
 std::vector<CardShopScreen::Row> CardShopScreen::rows() const {
   std::vector<Row> shown;
   const session::CardShop& shop = *desc_.shop;
+  if (kind_ == CardShopKind::Pack) {
+    for (const session::PackSummaryRow& row : summary_) {
+      shown.push_back({.card = row.card,
+                       .price = 0,
+                       .copies = row.count,
+                       .choosable = true,
+                       .unheld = row.isNew});
+    }
+    return shown;
+  }
   if (kind_ == CardShopKind::Buy) {
     for (const game::inventory::CardOffer& offer : shop.offers()) {
       if (offer.card == SoldCard) {
@@ -285,6 +344,7 @@ screens::ScreenSettings CardShopScreen::settings() const {
   const session::CardShop& shop = *desc_.shop;
   const session::CardShopLines& lines = shop.rules().lines;
   const bool buying = kind_ == CardShopKind::Buy;
+  const bool packs = kind_ == CardShopKind::Pack;
   std::int32_t line = buying ? lines.today : lines.sellPrompt;
   if (phase_ == Phase::Talk) {
     line = lines.soldOut;
@@ -292,10 +352,10 @@ screens::ScreenSettings CardShopScreen::settings() const {
   const std::vector<Row> shown = rows();
   screens::ScreenSettings out{
       {.name = "card_shop.phase", .value = std::string{phaseName(std::to_underlying(phase_))}},
-      {.name = "card_shop.mode", .value = std::string{buying ? "buy" : "sell"}},
+      {.name = "card_shop.mode", .value = std::string{packs ? "packs" : (buying ? "buy" : "sell")}},
       {.name = "card_shop.speaker",
        .value = screens::NameKeys{species_, nullptr, nullptr}.species(keeperSpecies_)},
-      {.name = "card_shop.line_key", .value = shop.lineKey(line)},
+      {.name = "card_shop.line_key", .value = packs ? std::string{} : shop.lineKey(line)},
       {.name = "card_shop.total", .value = static_cast<double>(shown.size())},
       {.name = "card_shop.top", .value = static_cast<double>(list_.top)},
       {.name = "card_shop.cursor", .value = static_cast<double>(list_.cursor)},
@@ -312,6 +372,9 @@ screens::ScreenSettings CardShopScreen::settings() const {
     std::string ink;
     if (card && buying) {
       ink = !row->choosable ? "stuck" : (row->unheld ? "new" : "");
+    } else if (card && packs && row->unheld) {
+      // The bulk purchase's summary marks a card the player held none of with the same ink.
+      ink = "new";
     }
     out.push_back({.name = screens::listEntryName(RowList, entry, "name"),
                    .value = card ? cardName(*row->card) : std::string{}});
@@ -322,6 +385,21 @@ screens::ScreenSettings CardShopScreen::settings() const {
     out.push_back({.name = screens::listEntryName(RowList, entry, "rarity"),
                    .value = static_cast<double>(card ? rarityOf(*row->card) : -1)});
     out.push_back({.name = screens::listEntryName(RowList, entry, "ink"), .value = ink});
+  }
+  if (packs) {
+    std::int32_t fresh = 0;
+    for (const session::PackSummaryRow& row : summary_) {
+      fresh += row.isNew ? 1 : 0;
+    }
+    const std::int64_t price = shop.rules().packPrice;
+    out.push_back({.name = "card_shop.packs.value", .value = static_cast<double>(packs_.value)});
+    out.push_back({.name = "card_shop.packs.most", .value = static_cast<double>(packs_.most)});
+    out.push_back({.name = "card_shop.packs.price", .value = static_cast<double>(price)});
+    out.push_back(
+        {.name = "card_shop.packs.total", .value = static_cast<double>(price * packs_.value)});
+    out.push_back({.name = "card_shop.packs.opened", .value = static_cast<double>(packsOpened_)});
+    out.push_back({.name = "card_shop.packs.cards", .value = static_cast<double>(cardsDrawn_)});
+    out.push_back({.name = "card_shop.packs.new", .value = static_cast<double>(fresh)});
   }
   if (picked_ && phase_ == Phase::Amount) {
     const std::int32_t price = shop.sellPrice(*picked_).value_or(0);

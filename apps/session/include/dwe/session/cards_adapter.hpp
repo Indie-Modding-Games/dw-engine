@@ -21,6 +21,8 @@ class StoryAdapter;
 struct PackCard {
   std::int32_t card = 0;
   std::int32_t line = 0;
+  // The copies the player held before this draw.
+  std::int32_t copiesBefore = 0;
 };
 
 // The player's cards: the `cards` rules, data/cards and the `cards` save section. Without the

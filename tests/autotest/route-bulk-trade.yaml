@@ -1,0 +1,134 @@
+# The bulk trade (an engine improvement, docs/modulos/apps/screens.md, «Cambios en lote»): the item trader of frzl14
+# (table 1) with 21 Giant Meat in the bag. Picking the row asks "How many?": right +1, up +10, left -1, then the
+# yes makes that many single trades. Each capture checks that the texts fit (text_fit), and the list and the box are
+# checked to lie over nothing another document draws (expect_clear), the modern look's minimap included. Last, the
+# pause menu's option turns it off and the same row goes straight to the trader's question, as the original. From a
+# new game: --story-stage all --new-game --start frzl14; runs with both skins (--ui-skin modern) and both languages.
+name: bulk-trade
+device: keyboard
+timeout: 300
+text_fit: true
+steps:
+  - wait: {map: frzl14, seconds: 1.5, timeout: 90}
+  - resize: [1280, 720]
+  - expect_setting: {bulk_trades: "true"}
+  - script: give_item("giant_meat 21")
+  - script: place("player 2012 -3581 0")
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {seconds: 2.0}
+  - tap: {key: return}
+  - wait: {shown: trade_menu, timeout: 8}
+  - wait: {seconds: 1.0}
+  - expect_setting: {trade.phase: greeting}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {trade.phase: list}
+  - expect_clear: trade_menu
+  - resize: [1024, 768]
+  - wait: {seconds: 0.5}
+  - expect_clear: trade_menu
+  - screenshot: trade-list-768
+  - resize: [1280, 720]
+  - wait: {seconds: 0.3}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {trade.phase: amount}
+  - expect_setting: {trade.amount.value: "1"}
+  - expect_clear: trade_menu
+  - screenshot: trade-amount-1
+  - tap: {key: right}
+  - wait: {seconds: 0.2}
+  - tap: {key: up}
+  - wait: {seconds: 0.2}
+  - tap: {key: left}
+  - wait: {seconds: 0.3}
+  - expect_setting: {trade.amount.value: "11"}
+  - screenshot: trade-amount-11
+  - resize: [1920, 1080]
+  - wait: {seconds: 0.5}
+  - expect_clear: trade_menu
+  - screenshot: trade-amount-1080
+  - resize: [1024, 768]
+  - wait: {seconds: 0.5}
+  - expect_clear: trade_menu
+  - screenshot: trade-amount-768
+  - resize: [1280, 720]
+  - wait: {seconds: 0.3}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {trade.phase: confirm}
+  - screenshot: trade-ask
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {trade.phase: choice}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {trade.phase: thanks}
+  - screenshot: trade-thanks
+  - tap: {key: return}
+  - wait: {hidden: trade_menu, timeout: 5}
+  - wait: {seconds: 1.5}
+  # Again: 10 left, so the most is 10 and up stops there.
+  - tap: {key: return}
+  - wait: {seconds: 2.0}
+  - tap: {key: return}
+  - wait: {shown: trade_menu, timeout: 8}
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {trade.row.0.traded: true}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {trade.phase: amount}
+  - expect_setting: {trade.amount.most: "10"}
+  - tap: {key: up}
+  - tap: {key: up}
+  - wait: {seconds: 0.3}
+  - expect_setting: {trade.amount.value: "10"}
+  - screenshot: trade-amount-most
+  # Cancel goes back to the list; Escape there says goodbye.
+  - tap: {key: escape}
+  - wait: {seconds: 0.3}
+  - expect_setting: {trade.phase: list}
+  - tap: {key: escape}
+  - wait: {seconds: 0.5}
+  - expect_setting: {trade.phase: farewell}
+  - tap: {key: return}
+  - wait: {hidden: trade_menu, timeout: 5}
+  - wait: {seconds: 1.0}
+  # The option off: the row goes straight to the question, one trade at a time. The options are on the player's page
+  # in the original look and on their own page in the modern one.
+  - menu: open
+  - wait: {seconds: 0.6}
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.6}
+        - tap: {key: tab}
+        - wait: {seconds: 0.3}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.3}
+  - menu_select: bulk-trades
+  - expect_setting: {bulk_trades: "false"}
+  - screenshot: option-off
+  - menu: close
+  - wait: {menu_open: false}
+  - tap: {key: return}
+  - wait: {seconds: 2.0}
+  - tap: {key: return}
+  - wait: {shown: trade_menu, timeout: 8}
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {trade.phase: confirm}
+  - screenshot: trade-single
+  - tap: {key: escape}
+  - wait: {seconds: 0.3}

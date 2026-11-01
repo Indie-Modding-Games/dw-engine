@@ -34,6 +34,9 @@ struct UserSettings {
   // The time in digits (digital_time: true, false): a small box with the game time as HH:MM under
   // the field HUD's dial clock; on when not chosen yet.
   std::optional<bool> digitalTime = std::nullopt;
+  // Bulk trades (bulk_trades: true, false): the item trader and the card shop's packs ask how many
+  // at once; on when not chosen yet.
+  std::optional<bool> bulkTrades = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

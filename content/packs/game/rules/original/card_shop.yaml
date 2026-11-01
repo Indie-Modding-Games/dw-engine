@@ -25,3 +25,7 @@ fail_sound: {slot: 0, sound: 11}
 # playShopSoundOnlyInSavannah: una compra o una venta toca playSound(0, 0x17) solo en la pantalla 131 (MAIN_D_801345C0),
 # la propia tienda de cartas; medido en el original el 2026-10-30.
 trade_sound: {map: gias06b, slot: 0, sound: 23}
+# El precio de un sobre que cobra el script de la tienda (script 126: «money >= 500» y reduce_money(500) antes de la
+# rutina 14). Solo lo usa la compra en lote del motor (opción bulk_trades): cada sobre de más cobra este precio y saca
+# sus cartas como una compra suelta. Sin la clave no hay compra en lote.
+pack_price: 500

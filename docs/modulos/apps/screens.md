@@ -300,7 +300,7 @@ con la ruta `trade` en frzl14 (capturas `eng/`).
 |---|---|---|---|---|
 | Ventana de la lista | `createMojyaTradeMenu`: caja de (72, 40) a (295, 123); títulos en (bx + 20, by + 5) y (bx + 122, by + 5); raya en (4, 21) de 215; filas cada 18 px desde by + 27, nombre en bx + 8 y lo que da el otro 116 px más a la derecha; cursor de 212 × 18 | `trade_menu/structure.rcss` con esas medidas × 3 | Ruta `trade` | Igual |
 | Lo que la bolsa no tiene | `mojyaTradeFillItemList` (sin el bit 0x80): en rojo (color 3); confirmar suena `playSound(0, 0xb)` y no pasa nada | Fila `missing` en rojo; `refuse_sound` | `mojyaTradeFillItemList marks…`; ruta `trade` | Igual |
-| Cambio ya hecho | `updateMojyaTradeStrings`: un «-» amarillo (color 7) delante; el nombre se corre unos 12 px y la otra columna unos 9 | La marca y las dos columnas se corren 11 px | Ruta `trade` | Suposición: misma corrida en las dos columnas |
+| Cambio ya hecho | El original (texto de la lista de cambios): un «-» amarillo (color 7) delante; el nombre se corre unos 12 px y la otra columna unos 9 | La marca corre el nombre 11 px y la otra columna 9 (`.row.traded .give`) | Ruta `trade`; `route-bulk-trade` (en español «Piloto auto.» ya cabe con la marca) | Suposición: el nombre 11 px en vez de 12 |
 | Frases | MAPHEAD 1238: 8 saludo, 9 «What will you give me?», 11 «You'll really give me…?», 12 sí o no, 13 «Thanks!», 14 «Too many Items.», 10 despedida | `item_trader.lines` | `the item trader reads the original ruleset…` | Igual |
 | Sí o no | `showMapheadSelection(0xc, 0xfd, 2)`: habla el jugador; la barra mide la opción más larga × 12 + 2 px; arriba y abajo dan la vuelta; cancelar es «no» salvo con el disparador 0x31 (entonces suena 0xb) | Fase `choice` con esas reglas | Ruta `trade`; `openMojyamonShop takes the table…` | Igual |
 | Moverse y saltar a los extremos (Mayús mantenida, R1 en el mando) | `itemMenuCursorUp/Down`, con R1 a la primera o la última fila; las filas no dan la vuelta | `TradeCursor` y la acción `walk` | Ruta `trade` | Igual |
@@ -373,6 +373,66 @@ la 3).
 | Fallo y trato | `playSound(0, 0xB)` en una fila vacía o que no se puede pagar; `playShopSoundOnlyInSavannah`: (0, 0x17) solo en gias06b | `CardShop::playFailSound`, `playTradeSound` | `the card shop's rules carry the fail sound ...` | Igual |
 | El cuadro del guion bajo la tienda | `showMapHeadTextbox`: el tendero habla en la caja de abajo mientras la lista está abierta | La caja del guion se esconde y la tienda pinta la suya en el mismo sitio | `dwe_buy_list.png` | Igual |
 | Animación al abrir y cerrar las cajas | Las cajas crecen al abrirse | Aparecen de golpe | — | Hueco |
+
+## Cambios en lote
+
+Mejora del motor, opcional y encendida por defecto: el ajuste `bulk_trades` (fila «Cambios en lote» de las opciones
+del menú de pausa, guardado en los ajustes del usuario como `smooth_motion` y `save_notice`) deja hacer de una vez
+varios trueques del mismo objeto y abrir varios sobres de cartas, en vez de abrir el diálogo una vez por unidad.
+Apagado, todo va de uno en uno como el original. Cada unidad sigue las reglas del original al pie de la letra; solo
+cambia cuántas veces se recorre el diálogo.
+
+**Reglas del original por unidad** (leídas en el decomp con dw-data y medidas en el original el 2026-10-30, ver
+«Cambio de objetos» y «Tienda de cartas»):
+
+- Trueque (rutina 2, estado 5 de `shop/script_menu.c:1088`): `giveItem(lo que da el comerciante, 1)` primero; si la
+  bolsa lo acepta, `removeItem(lo que da el jugador, 1)` y se pone el disparador del cambio (5 + número del cambio; el
+  14 cuando están los nueve). Sin sitio, «Too many Items.» y no cambia nada. Solo se puede ofrecer un objeto que la
+  bolsa tiene. No hay tiradas aleatorias.
+- Sobre (script 126 de gias06b y rutina 14, `rollCardPack`): el guion pide 500 bits (`money >= 500` para ofrecerlo),
+  los cobra (`reduce_money 500`) y la rutina saca 3 cartas, cada una con `rollCard` (rareza con `randomLimit(100)`,
+  luego una carta de esa rareza) y su copia (como mucho 9). Después el guion corre la rutina 22 (medallas). No hay
+  límite de sobres por día.
+
+**Cómo se mantiene la igualdad.** El lote no tiene reglas propias: repite la unidad.
+
+- Trueque: `makeTrades` llama N veces a `makeTrade` (la misma función del sí de siempre) y para en el primer cambio
+  que la bolsa rechaza o cuando se acaba el objeto. El máximo del cuadro (`tradeLimit`) prueba esos mismos cambios en
+  la bolsa y la deja como estaba: cuenta lo que tiene el jugador y el sitio que queda, también el que libera una pila
+  que se acaba.
+- Sobres: el guion cobra el primero como siempre; `CardShop::openPacks(N)` cobra cada sobre de más (`pack_price: 500`
+  en `card_shop.yaml`, el precio del script) y saca sus 3 cartas en el mismo orden con el mismo generador, así que con
+  la misma semilla salen las mismas cartas que con N compras sueltas seguidas. El máximo es 1 + dinero / 500. La
+  rutina 22 corre una vez al final; como solo mira la colección, que solo crece, el resultado es el mismo.
+
+**Pantalla.** Trueque: al elegir una fila que se podría cambiar más de una vez, la caja «¿Cuántos?» (`trade_menu`,
+fase `amount`) enseña lo que se da y lo que se recibe por la cantidad. Mientras está, la lista se queda en sus títulos
+y la fila elegida, y la caja va entre la lista y el cuadro de texto con 12dp libres a cada lado; luego vienen la pregunta del comerciante, el
+sí o no y «Thanks!» como siempre. Sobres: con dinero para más de un sobre, la rutina 14 abre la pantalla `CardPacks`
+(`card_shop`, modo `packs`): «¿Cuántos sobres?» en la caja de cantidad de la venta (precio, cantidad y total), y
+después la lista de las cartas que salieron, agrupadas, con los títulos «Carta» y «Copias» en palabras (no los rótulos
+MENU y COUNT de la tienda), cuántas de cada una y en amarillo las
+que el jugador no tenía (la misma tinta que la compra del original). Sin dinero para un segundo sobre, la rutina
+sigue con los cuadros de texto del original. Controles: izquierda y derecha ±1, arriba y abajo ±10 (paran en 1 y en
+el máximo), Supr (el botón oeste del mando) pone el máximo, Intro acepta, Esc cancela (en el trueque vuelve a la lista;
+en los sobres abre solo el ya pagado).
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `bulk_trades` | booleano | La opción |
+| `trade.amount.{value,most}` | números | La cantidad del trueque y el máximo |
+| `card_shop.packs.{value,most,price,total}` | números | Los sobres elegidos, el máximo, el precio y el total |
+| `card_shop.packs.{opened,cards,new}` | números | Lo que salió: sobres, cartas y cartas nuevas |
+
+| Comportamiento | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| N trueques de una vez | N veces el estado 5 | `makeTrades` = N × `makeTrade` | `bulk trade: N trades at once leave the bag and the triggers as N single trades` | Mejora del motor (igual por unidad) |
+| Máximo del trueque | — | `tradeLimit`: objeto que tiene y sitio de la bolsa | `bulk trade: the limit is…`, `bulk trade: a full bag stops it…` | Mejora del motor |
+| N sobres de una vez | N veces 500 bits y 3 `rollCard` | `openPacks`: mismas cartas, dinero y estado del generador | `bulk packs: N packs at once give the cards, money and generator of N single packs` | Mejora del motor (igual por unidad) |
+| Máximo de sobres | `money >= 500` por sobre | 1 + dinero / 500 | `bulk packs: the money limits the packs…` | Mejora del motor |
+| Resumen | Un cuadro por carta | Lista agrupada, nuevas en amarillo | `bulk packs: the summary groups…`; ruta `route-bulk-cards` | Mejora del motor |
+| Cantidad | — | `BulkAmount` | `bulk_amount_tests.cpp`; rutas `route-bulk-trade` y `route-bulk-cards` | Mejora del motor |
+| Trueque en el aspecto moderno | — | La lista y la caja a la izquierda del marco (`left: 30dp`), lejos del minimapa | Ruta `route-bulk-trade` (`expect_clear` a 1280x720, 1920x1080 y 1024x768) | Libre con el minimapa mediano en cualquier proporción y el grande en pantalla ancha |
 
 ## Intercambio por méritos
 

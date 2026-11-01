@@ -25,8 +25,8 @@ constexpr std::int32_t Yes = 0;
 constexpr std::size_t PlayerNameSlot = 0;
 
 const char* phaseName(TradeScreen::Phase phase) {
-  constexpr std::array<const char*, 8> Names{"closed", "greeting", "list",     "confirm",
-                                             "choice", "thanks",   "bag_full", "farewell"};
+  constexpr std::array<const char*, 9> Names{"closed", "greeting", "list",     "confirm", "choice",
+                                             "thanks", "bag_full", "farewell", "amount"};
   const auto at = static_cast<std::size_t>(std::to_underlying(phase));
   return at < Names.size() ? Names.at(at) : "?";
 }
@@ -57,6 +57,7 @@ bool TradeScreen::take(const session::StoryScreenRequest& request, const FieldSc
   }
   cursor_ = {};
   choice_ = Yes;
+  count_ = 1;
   phase_ = Phase::Greeting;
   desc_.ui->show(TradeMenuDocument, true);
   return true;
@@ -83,6 +84,9 @@ void TradeScreen::press(const input::InputState& input) {
   if (phase_ != Phase::Closed) {
     jumpHeld_ = input.isDown("walk");
   }
+  if (phase_ == Phase::Amount && input.wasPressed("extra")) {
+    amount_.act("extra");
+  }
 }
 
 void TradeScreen::act(std::string_view action) {
@@ -98,6 +102,9 @@ void TradeScreen::act(std::string_view action) {
   case Phase::List:
     actInList(action);
     return;
+  case Phase::Amount:
+    actInAmount(action);
+    return;
   case Phase::Confirm:
     if (action == "confirm") {
       // State 4: the yes-or-no, on yes.
@@ -109,6 +116,9 @@ void TradeScreen::act(std::string_view action) {
     if (action == "up" || action == "down") {
       // tickSelectionDialogue: the cursor wraps around.
       choice_ = (choice_ + (action == "up" ? ChoiceCount - 1 : 1)) % ChoiceCount;
+    } else if (action == "confirm" && choice_ == Yes && count_ > 1) {
+      // The bulk trade: that many state 5s at once; the first the bag refuses ends them.
+      phase_ = desc_.trader->tradeMany(count_) > 0 ? Phase::Thanks : Phase::BagFull;
     } else if (action == "confirm" && choice_ == Yes) {
       // State 5: the trade; the menu closes.
       phase_ =
@@ -149,11 +159,32 @@ void TradeScreen::actInList(std::string_view action) {
     // tickMojyaTradeMenu: an item the bag holds goes on to the question; one it does not hold
     // only sounds (playSound(0, 0xb)).
     if (desc_.trader->offer(static_cast<std::size_t>(cursor_.row))) {
+      count_ = 1;
+      // The bulk trade: an item the bag could trade more than once asks how many first.
+      if (const std::int32_t limit = bulk_ ? desc_.trader->tradeLimit() : 0; limit > 1) {
+        amount_.reset(limit);
+        phase_ = Phase::Amount;
+        return;
+      }
       phase_ = Phase::Confirm;
     } else if (desc_.sound != nullptr) {
       const session::TraderSound& refuse = desc_.trader->rules().refuseSound;
       desc_.sound->playSound(refuse.slot, refuse.sound);
     }
+  }
+}
+
+void TradeScreen::actInAmount(std::string_view action) {
+  if (amount_.act(action)) {
+    return;
+  }
+  if (action == "confirm") {
+    count_ = amount_.value;
+    phase_ = Phase::Confirm;
+  } else if (action == "cancel") {
+    // Back to the list, as before the item was picked.
+    count_ = 1;
+    phase_ = Phase::List;
   }
 }
 
@@ -213,6 +244,7 @@ screens::ScreenSettings TradeScreen::settings() const {
     break;
   case Phase::Closed:
   case Phase::List:
+  case Phase::Amount:
     break;
   }
   const std::string& speaker = trader.visit() ? trader.visit()->traderSpecies : std::string{};
@@ -230,6 +262,10 @@ screens::ScreenSettings TradeScreen::settings() const {
       {.name = "trade.label_key", .value = screens::mainLabelKey(LabelBlock, 0)},
       {.name = "trade.choice", .value = static_cast<double>(choice_)},
       {.name = "trade.cursor", .value = static_cast<double>(cursor_.row)},
+      // The bulk trade: the count while it is picked, then the count the yes trades.
+      {.name = "trade.amount.value",
+       .value = static_cast<double>(phase_ == Phase::Amount ? amount_.value : count_)},
+      {.name = "trade.amount.most", .value = static_cast<double>(amount_.most)},
   };
   const std::vector<session::TradeRow> rows = trader.rows();
   out.push_back({.name = "trade.total", .value = static_cast<double>(rows.size())});

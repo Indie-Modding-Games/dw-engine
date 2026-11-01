@@ -118,6 +118,10 @@ local options = {
   ["digital-time"] = function(_step)
     ui.send("digital_time", not ui.setting("digital_time"))
   end,
+  -- Bulk trades: the item trader and the card shop's packs ask how many at once (on by default).
+  ["bulk-trades"] = function(_step)
+    ui.send("bulk_trades", not ui.setting("bulk_trades"))
+  end,
 }
 
 local function can_sleep()
@@ -574,6 +578,7 @@ local function refresh(document)
   document:get("smooth-motion-value"):set_text(on_off(ui.setting("smooth_motion")))
   document:get("save-notice-value"):set_text(on_off(ui.setting("save_notice")))
   document:get("digital-time-value"):set_text(on_off(ui.setting("digital_time")))
+  document:get("bulk-trades-value"):set_text(on_off(ui.setting("bulk_trades")))
   refresh_player(document)
 end
 

@@ -17,6 +17,7 @@ body #confirm, body #amount {
 .label-menu { decorator: image(keeper-menu-label scale-none left top); }
 .label-price { decorator: image(keeper-price-label scale-none left top); }
 .label-count { decorator: image(keeper-count-label scale-none left top); }
+#frame.mode-packs .label-menu, #frame.mode-packs .label-count { decorator: none; font-family: original-look; color: #d0d0d0; }
 
 .rarity-0 { decorator: image(card-rarity-0 scale-none left top); }
 .rarity-1 { decorator: image(card-rarity-1 scale-none left top); }

@@ -164,7 +164,7 @@ std::optional<PackCard> CardsAdapter::drawPackCard(ruleset::Random& random) {
                                                  drawn->card, set.error().message));
     }
   }
-  return PackCard{.card = drawn->card, .line = drawn->line};
+  return PackCard{.card = drawn->card, .line = drawn->line, .copiesBefore = drawn->copiesBefore};
 }
 
 namespace {

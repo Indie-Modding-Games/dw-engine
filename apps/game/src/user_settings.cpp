@@ -28,6 +28,7 @@ constexpr std::string_view FreeExplorationKey = "free_exploration";
 constexpr std::string_view SmoothMotionKey = "smooth_motion";
 constexpr std::string_view SaveNoticeKey = "save_notice";
 constexpr std::string_view DigitalTimeKey = "digital_time";
+constexpr std::string_view BulkTradesKey = "bulk_trades";
 
 } // namespace
 
@@ -65,6 +66,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     if (const core::YamlNode* digits = tree->find(DigitalTimeKey)) {
       settings.digitalTime = reader.boolean(*digits);
     }
+    if (const core::YamlNode* bulk = tree->find(BulkTradesKey)) {
+      settings.bulkTrades = reader.boolean(*bulk);
+    }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
 }
@@ -98,6 +102,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.digitalTime) {
     root.set(std::string{DigitalTimeKey},
              core::YamlNode::scalar(*settings.digitalTime ? "true" : "false"));
+  }
+  if (settings.bulkTrades) {
+    root.set(std::string{BulkTradesKey},
+             core::YamlNode::scalar(*settings.bulkTrades ? "true" : "false"));
   }
   return core::emitYaml(root);
 }
