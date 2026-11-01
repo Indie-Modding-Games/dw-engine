@@ -111,6 +111,7 @@ dwe_add_app(game
         src/story_shop.cpp
         src/story_tournament.cpp
         src/tournament_bracket_screen.cpp
+        src/tournament_match_screen.cpp
         src/tournament_schedule_screen.cpp
         src/field_items_screen.cpp
         src/award_screen.cpp

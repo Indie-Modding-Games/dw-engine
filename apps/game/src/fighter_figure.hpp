@@ -28,6 +28,9 @@ struct FighterFigure {
   // The flattening's body scale (x, y, z) and the paper sprite drawn instead of the model
   // (battle_main.c: BTL_applyFlattenScale; model.c: renderFlatDigimon).
   glm::vec3 scale{1.0F};
+  // How far above where it stands it is drawn (std_effect.c: STD_tickChampionScene lifts the
+  // partner on the podium); its screen points (fighterNodeOnWindow) stay where it stands.
+  float rise = 0.0F;
   std::optional<game::battle::FlatSprite> flatSprite = std::nullopt;
 };
 

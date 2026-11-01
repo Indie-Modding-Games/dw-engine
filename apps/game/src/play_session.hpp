@@ -113,6 +113,7 @@ struct SessionCommands {
   std::optional<std::string> battle;
   bool battleWin = false;
   bool battleLose = false;
+  std::optional<std::string> battleTimeUp;
   std::optional<std::string> evolution;
   CareCommands care;
   SaveCommand save;
@@ -293,6 +294,7 @@ private:
   JukeboxScreen jukeboxScreen_;
   TournamentScheduleScreen scheduleScreen_;
   TournamentBracketScreen bracketScreen_;
+  TournamentMatchScreen matchScreen_;
   TradeScreen tradeScreen_;
   BirdTransportScreen birdScreen_;
   CardShopScreen cardShopScreen_;

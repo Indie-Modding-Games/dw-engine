@@ -115,6 +115,7 @@ inline constexpr std::string_view NoNpcToPlace = "the map has no NPC with script
 inline constexpr std::string_view BattleWinFailed = "game: battle_win: {}";
 inline constexpr std::string_view BattleLoseFailed = "game: battle_lose: {}";
 inline constexpr std::string_view NoFight = "no fight is running";
+inline constexpr std::string_view BattleTimeUpFailed = "game: battle_time_up: {}";
 inline constexpr std::string_view BattleStarted = "game: battle against {} on {}";
 inline constexpr std::string_view BattleFinished = "game: battle over: {}";
 inline constexpr std::string_view BattleDropLost = "game: no room on the ground for the dropped {}";

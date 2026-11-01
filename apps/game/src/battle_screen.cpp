@@ -513,7 +513,7 @@ void BattleScreen::tickVictory(double seconds) {
 }
 
 void BattleScreen::tickMatchEnd(double seconds) {
-  if (!matchEndSeconds_) {
+  if (!matchEndSeconds_ || matchEndHeld_) {
     return;
   }
   if (partnerPosing_ && desc_.scene != nullptr && desc_.scene->partnerClipFinished()) {
@@ -933,6 +933,16 @@ bool BattleScreen::defeatEnemies() {
     return false;
   }
   battle_->defeatEnemies();
+  return true;
+}
+
+bool BattleScreen::runOutClock(std::string_view side) {
+  if (!battle_ || intro_ || ending_) {
+    return false;
+  }
+  battle_->runOutClock(side == "win"    ? std::optional{true}
+                       : side == "lose" ? std::optional{false}
+                                        : std::nullopt);
   return true;
 }
 

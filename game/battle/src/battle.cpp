@@ -338,6 +338,29 @@ void Battle::defeatPartner() {
   partner.pendingDamage = std::max(partner.pendingDamage, partner.hp);
 }
 
+void Battle::runOutClock(std::optional<bool> partnerWins) {
+  if (!state_.matchClock || state_.fighters.size() < 2) {
+    return;
+  }
+  // Wide enough that a hit still landing before the judgement does not turn it round.
+  constexpr std::int32_t Margin = 200;
+  Fighter& partner = state_.fighters.at(0);
+  Fighter& enemy = state_.fighters.at(1);
+  const std::int32_t partnerLost = state_.matchClock->partnerStartHp - partner.hp;
+  const std::int32_t enemyLost = state_.matchClock->enemyStartHp - enemy.hp;
+  const auto lose = [](Fighter& fighter, std::int32_t hp) {
+    fighter.hp = std::max(1, fighter.hp - std::max(0, hp));
+  };
+  if (!partnerWins) {
+    lose(partnerLost < enemyLost ? partner : enemy, std::abs(partnerLost - enemyLost));
+  } else if (*partnerWins) {
+    lose(enemy, partnerLost - enemyLost + Margin);
+  } else {
+    lose(partner, enemyLost - partnerLost + Margin);
+  }
+  state_.matchClock->seconds = 0;
+}
+
 void Battle::pressFinisherCharge() {
   chargePressed_ = true;
 }

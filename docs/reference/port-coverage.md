@@ -95,13 +95,13 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 81 | 64 | 9 | 8 | 85 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 39 | 39 | 0 | 0 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 11 | 10 | 0 | 1 | 91 % |
-| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 100 | 48 | 4 | 48 | 50 % |
+| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 108 | 89 | 4 | 15 | 84 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 91 | 0 | 0 | 91 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 39 | 38 | 1 | 0 | 99 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 31 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 49 | 49 | 0 | 0 | 100 % |
-| **Total** | 1401 funciones a portar | 1401 | 1226 | 22 | 153 | 88 % |
+| **Total** | 1409 funciones a portar | 1409 | 1267 | 22 | 120 | 91 % |
 
 ## Batalla
 
@@ -262,62 +262,29 @@ Inscripción, calendario y el overlay de copas, que trae su propio motor de comb
 
 Ficheros del decomp: `dget/dget.c`, `main/tournament.c`, `std/std_effect.c`, `std/std_hud.c`, `std/std_main.c`, `std/std_setup.c`.
 
-Portado 48, parcial 4, falta 48.
+Portado 89, parcial 4, falta 15.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `updateTournamentRegistration` | `main/tournament.c:42` | falta (citada en docs) | Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa. | — |
-| `STD_addChampionScene` | `std/std_effect.c:1251` | falta (citada en docs) | Inicia la escena de celebración del campeón de la copa. | — |
-| `STD_tickChampionScene` | `std/std_effect.c:1259` | falta | Anima la escena del campeón: letras, giro de cámara y podio. | — |
-| `STD_addPodiumRenderer` | `std/std_effect.c:1380` | falta | Muestra el podio en la escena de premiación. | — |
-| `STD_addLoseScene` | `std/std_effect.c:1401` | falta | Inicia la escena de derrota con barrido aleatorio de la pantalla. | — |
-| `STD_tickLoseScene` | `std/std_effect.c:1423` | falta | Anima la escena de derrota del combate de copa. | — |
-| `STD_addWinScene` | `std/std_effect.c:1516` | falta | Inicia la escena de victoria del combate de copa. | — |
-| `STD_tickWinScene` | `std/std_effect.c:1546` | falta | Anima el letrero de victoria del combate de copa. | — |
-| `STD_handleCommands` | `std/std_hud.c:504` | falta (citada en docs) | Navega y confirma las órdenes al compañero en el combate de copa, incluido el remate. | — |
-| `STD_tickTamerTournament` | `std/std_hud.c:540` | falta | Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes. | `game/battle/include/dwe/game/battle/battle.hpp:170` |
-| `STD_addVersusModelScene` | `std/std_hud.c:1168` | falta (citada en docs) | Inicia la animación del letrero de enfrentamiento antes del combate. | — |
-| `STD_tickVersusModelScene` | `std/std_hud.c:1173` | falta | Anima el letrero de enfrentamiento entre ambos luchadores. | — |
-| `STD_isVersusModelSceneFinished` | `std/std_hud.c:1213` | falta | Indica si terminó la animación del letrero de enfrentamiento. | — |
-| `STD_loadWinLoseModel` | `std/std_hud.c:1227` | falta | Calcula las curvas de entrada de los letreros de victoria/derrota y carga sus modelos. | — |
-| `STD_loadChampionModels` | `std/std_hud.c:1273` | falta | Prepara la órbita de cámara y coloca las letras del letrero de campeón. | solo lo cita la extracción del disco |
-| `STD_initializeChampionScene` | `std/std_hud.c:1371` | falta | Coloca al compañero en el centro con la pose de victoria y fija la cámara del campeón. | — |
-| `STD_runIntro` | `std/std_main.c:1885` | falta | Ejecuta la presentación del combate de copa con cámara y nombres. | `apps/game/src/story_tournament.cpp:196` |
-| `STD_tickIntroName` | `std/std_main.c:2063` | falta | Muestra el nombre del luchador durante la presentación. | — |
+| `STD_tickChampionScene` | `std/std_effect.c:1259` | parcial | Anima la escena del campeón: letras, giro de cámara y podio. | `game/tournament/src/champion_show.cpp:1` · falta el brillo que recorre cada letra (copia dentro de la memoria de vídeo) |
+| `STD_tickTamerTournament` | `std/std_hud.c:540` | parcial | Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes. | `game/battle/src/battle.cpp:1` · las órdenes sí; select no oculta las barras de vida |
 | `STD_setCameraYXZ` | `std/std_main.c:2266` | falta | Cámara que encuadra al compañero y al rival a la vez. | — |
 | `STD_setCameraToEntity` | `std/std_main.c:2286` | falta | Cámara fija relativa al luchador enfocado según su orientación. | — |
-| `STD_tickVSPhase` | `std/std_main.c:2306` | falta | Elige cada cuadro el modo de cámara activo del combate de copa. | — |
-| `STD_setViewpointRotationFromEntity` | `std/std_main.c:2347` | falta | Cámara que gira junto con el luchador enfocado. | — |
 | `STD_setCameraLookAtEntity` | `std/std_main.c:2358` | falta | Cámara que mira hacia el luchador enfocado. | — |
 | `STD_applyRotatingCamera` | `std/std_main.c:2394` | falta | Cámara que gira lento alrededor de la arena tras el combate. | — |
-| `STD_setVSPhase` | `std/std_main.c:2445` | falta | Activa el control de cámara de la copa con el modo indicado. | — |
-| `STD_selectRandomCamera` | `std/std_main.c:2457` | falta | Elige un ángulo de cámara al azar en técnicas y lanza victoria o derrota al final. | — |
-| `STD_setRandomViewpoint` | `std/std_main.c:2487` | falta | Elige al azar un punto de vista preestablecido sobre un luchador. | — |
-| `STD_setChampionCamera` | `std/std_main.c:2526` | falta | Encuadra al compañero según su tamaño para la escena de campeón. | — |
-| `STD_setViewpointFromBone` | `std/std_main.c:2551` | falta | Sitúa la cámara relativa a un hueso del luchador. | — |
-| `STD_updateCameraLerp` | `std/std_main.c:2580` | falta | Interpola la cámara de presentación entre sus etapas. | — |
-| `STD_tickCameraChase` | `std/std_main.c:2652` | falta | Cámara que persigue al luchador que corre durante la presentación. | — |
-| `STD_tickCameraIntro` | `std/std_main.c:2753` | falta | Avanza la secuencia de cámara de la presentación. | — |
-| `STD_startCameraIntro` | `std/std_main.c:2782` | falta | Inicia el recorrido de cámara entre los dos luchadores. | — |
-| `STD_applyEntityViewpoint` | `std/std_main.c:2854` | falta | Cámara anclada a la vista del luchador enfocado. | — |
-| `STD_combatSetup` | `std/std_main.c:3939` | falta | Prepara los datos de combate del compañero y del rival en la copa. | — |
-| `STD_tickBattle` | `std/std_main.c:4431` | falta | Avanza un cuadro del combate de copa. | — |
 | `STD_areAllEnemyDigimonDead` | `std/std_main.c:4626` | falta | Indica si todos los rivales del combate han caído. | — |
-| `STD_tickBattleResultScreen` | `std/std_main.c:4641` | falta | Gestiona la pantalla de resultado tras el combate de copa. | — |
-| `STD_addTimeoutWindow` | `std/std_main.c:4698` | falta (citada en docs) | Muestra el aviso de tiempo agotado del combate. | — |
+| `STD_tickBattleResultScreen` | `std/std_main.c:4641` | parcial | Gestiona la pantalla de resultado tras el combate de copa. | `apps/game/src/story_tournament.cpp:1` · TIME UP, la caja de daño y el empate; el que pierde no se desploma tras la caja |
 | `STD_tickDigimonSenile` | `std/std_main.c:4860` | falta | Mantiene al luchador en estado senil hasta que se agote su contador. | — |
 | `STD_initializePlayerMarker` | `std/std_main.c:5476` | falta | Añade la marca que distingue a cada luchador en pantalla. | — |
-| `STD_combatMain` | `std/std_main.c:5582` | parcial | Bucle principal de un combate de copa hasta el resultado. | `apps/game/src/story_tournament.cpp:1` · el combate de copa es una batalla con reloj en la arena, con el rival dibujado, su modo de carga sorteado como STD_tickEnemyAI y sin caja de fin; faltan las escenas de victoria, derrota y empate |
 | `STD_startWalkingAnimation2` | `std/std_main.c:5652` | falta | Elige animación de caminar normal o cansada según la vida. | — |
 | `STD_applyPartnerStatsToFighter` | `std/std_main.c:5913` | falta | Copia los valores del compañero a su ficha de luchador. | — |
 | `STD_selectMoveTarget` | `std/std_main.c:6660` | falta | Elige el objetivo de la técnica del luchador. | — |
 | `STD_applyMoveResult` | `std/std_main.c:6839` | falta | Aplica el daño y efectos de una técnica que impacta. | — |
 | `STD_updateFighterStatusVisuals` | `std/std_main.c:6954` | falta | Actualiza los efectos visibles de estados alterados del luchador. | — |
-| `STD_addCommandMenu` | `std/std_main.c:7502` | falta (citada en docs) | Muestra el menú de órdenes del jugador en la copa. | — |
+| `STD_addCommandMenu` | `std/std_main.c:7502` | falta | Muestra el menú de órdenes del jugador en la copa. | — |
 | `STD_initializeTournament` | `std/std_setup.c:243` | parcial | Prepara la arena de la copa: música, cámara, luces, escenario y efectos. | `apps/game/src/story_tournament.cpp:1` · modelo, suelo y cámara de la arena; sin música propia, luces ni efectos de la copa |
-| `STD_runMatch` | `std/std_setup.c:401` | parcial | Juega un combate de copa: presentación, combate y cámara final. | `apps/game/src/story_tournament.cpp:1` · en la arena; sin presentación ni cámara final |
 | `STD_initializeCamera` | `std/std_setup.c:415` | falta (citada en docs) | Coloca la cámara inicial de la arena de copa. | — |
-| `STD_tournamentMain` | `std/std_setup.c:521` | parcial | Flujo completo de la copa: cuadro, combates, resultados y premio. | `apps/game/src/story_tournament.cpp:1` · arena, sustitutos, cuadro animado, tres combates y recuperación; sin escenas de victoria, derrota ni podio (tournament.md: Hueco) |
 
 ## Versus y demo
 
@@ -459,6 +426,6 @@ Portado 49, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-1037 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+1029 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

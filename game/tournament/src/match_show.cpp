@@ -391,7 +391,8 @@ void MatchCamera::tickBanner(bool showing) {
 }
 
 void MatchCamera::tickFight(bool busy, ruleset::Random& random) {
-  minDistance_ = orbit_.minDistance;
+  // The burst's pull back in, 400 a frame, if the banner left it out.
+  minDistance_ = std::max(minDistance_ - 400, orbit_.minDistance);
   ++frame_;
   // STD_tickBattle: the corner's timer runs down to the orbit.
   if (timer_ != 0) {

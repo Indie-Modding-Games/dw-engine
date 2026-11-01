@@ -66,6 +66,19 @@ public:
   void attachTournamentBracket(TournamentBracketScreen* bracket) {
     tournament_.attachBracket(bracket);
   }
+  // What a cup match shows (StoryTournament::attachMatch).
+  void attachTournamentMatch(TournamentMatchScreen* screen, const session::BattleAdapter* battle,
+                             const assets::DigimonTable* species) {
+    tournament_.attachMatch(screen, battle, species);
+  }
+  // Once per engine tick, and the confirm button for it.
+  void tickTournament(double seconds, BattleScreen& battle, FieldScene& scene) {
+    tournament_.tick(seconds, battle, scene);
+  }
+  void pressTournamentConfirm() { tournament_.pressConfirm(); }
+  // A cup's intro plays: the field waits.
+  [[nodiscard]] bool tournamentIntro() const { return tournament_.introPlaying(); }
+  [[nodiscard]] float tournamentFade() const { return tournament_.fadeLevel(); }
   // The item trader the story's TradeShop screen opens (call_routine 2).
   void attachTrade(TradeScreen* trade) { trade_ = trade; }
   // The bird transport the story's BirdTransport screen opens (call_routine 10).

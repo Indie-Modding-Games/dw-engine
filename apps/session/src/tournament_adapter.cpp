@@ -249,6 +249,7 @@ TournamentAdapter::arenaStage(std::string_view map) const {
   return ArenaStage{.model = arena.model,
                     .collision = std::move(*collision),
                     .start = game::tournament::arenaStart(arena),
+                    .walkIn = arena.walkIn,
                     .partnerYaw = arena_->partnerYaw,
                     .rivalYaw = arena_->rivalYaw,
                     .camera = arena_->camera};

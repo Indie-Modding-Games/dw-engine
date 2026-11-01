@@ -2,3 +2,13 @@
 bracket.round: "Ronda {round}"
 bracket.final: "Final"
 bracket.champion: "Campeón"
+# Un combate de copa: los datos de la presentación (STD_renderIntroStats) y la caja del daño al agotarse el tiempo
+# (STD_renderTimeoutWindow).
+match.hp: "PV"
+match.mp: "PM"
+match.offense: "Ataque"
+match.defense: "Defensa"
+match.speed: "Velocidad"
+match.brains: "Inteligencia"
+match.damage: "Daño"
+match.time_up: "TIEMPO"

@@ -1,10 +1,12 @@
 # Stage 3 of the story with the keyboard, two Arena cups (run with --start room13 and --story-stage stage_3, in en and
 # in es; docs/guides/prueba-vertical.md). At the desk (cells 81, script 168 section 0x51 -> script 213) the player
 # registers for Grade C today (routine 18); at 10:00 the door's step cell (54, section 0x36) starts the cup (routine 6):
-# the grade's card, the bracket before the match, and the partner loses its first match (battle_lose): no cup won,
-# 0 wins and the participation prize (script 214). Then the player registers for Grade D tomorrow, the night passes,
-# and the cup is won with three wins (battle_win), each match after its board and the champion's climb at the end:
-# cup 0's won trigger (15, saved with the story), 3 wins and the winner's prize money in the bag.
+# the grade's card, the bracket before the match, the match's intro (each fighter runs in with its stats), and the
+# partner loses its first match on time (battle_time_up "lose": TIME UP, the damage box, the lost match's letters):
+# no cup won, 0 wins and the participation prize (script 214). Then the player registers for Grade D tomorrow, the
+# night passes, and the cup is won with three wins (battle_win, then on time with battle_time_up "win", then
+# battle_win), each match after its board, then the champion's climb and the champion scene on the podium: cup 0's
+# won trigger (15, saved with the story), 3 wins and the winner's prize money in the bag.
 name: etapa3-tournaments
 device: keyboard
 timeout: 1500
@@ -44,9 +46,26 @@ steps:
   - wait: {shown: tournament_bracket, timeout: 60}
   - wait: {seconds: 1}
   - screenshot: cup-c-card
+  # STD_runIntro: the partner's name comes in, then it runs in and its stats count up; then the rival's.
+  - wait: {shown: tournament_match, timeout: 120}
+  - wait: {seconds: 1.2}
+  - screenshot: cup-c-intro-name
+  - wait: {seconds: 2.5}
+  - screenshot: cup-c-intro-stats
   - wait: {setting: {battle.phase: fight}, seconds: 2, timeout: 120}
   - screenshot: cup-c-match
-  - script: battle_lose("")
+  - wait: {seconds: 4}
+  - screenshot: cup-c-match-camera
+  # The clock runs out with the partner behind: TIME UP, from frame 60 the damage box, then the lost match's letters.
+  - script: battle_time_up("lose")
+  - wait: {shown: tournament_match, timeout: 30}
+  - wait: {seconds: 1}
+  - screenshot: cup-c-time-up
+  - wait: {seconds: 2.5}
+  - screenshot: cup-c-damage-box
+  - wait: {seconds: 3}
+  - wait: {seconds: 4.5}
+  - screenshot: cup-c-lose-letters
   - wait: {hidden: battle, seconds: 1, timeout: 120}
   # Script 214: the participation prize, then the lobby.
   - repeat: {times: 12, steps: [{when: {shown: story_textbox, steps: [{screenshot: cup-c-prize}, {tap: {key: return}}]}}, {wait: {seconds: 2}}]}
@@ -99,11 +118,24 @@ steps:
   - wait: {setting: {battle.phase: fight}, seconds: 2, timeout: 120}
   - screenshot: cup-d-match
   - script: battle_win("")
+  # The rival falls: the won match's letters fly in under the circling camera.
+  - wait: {seconds: 4.5}
+  - screenshot: cup-d-win-letters
   - wait: {shown: tournament_bracket, timeout: 120}
   - wait: {seconds: 2}
   - screenshot: cup-d-bracket-2
+  # The second match is won on time; the confirm button cuts each fighter's intro short.
+  - wait: {shown: tournament_match, timeout: 120}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
   - wait: {setting: {battle.phase: fight}, seconds: 1, timeout: 120}
-  - script: battle_win("")
+  - script: battle_time_up("win")
+  - wait: {shown: tournament_match, timeout: 30}
+  - wait: {seconds: 3.5}
+  - screenshot: cup-d-damage-box
+  - wait: {seconds: 8}
+  - screenshot: cup-d-win-on-time
   - wait: {shown: tournament_bracket, timeout: 120}
   - wait: {setting: {battle.phase: fight}, seconds: 1, timeout: 120}
   - script: battle_win("")
@@ -111,6 +143,13 @@ steps:
   - wait: {seconds: 2}
   - screenshot: cup-d-champion
   - wait: {hidden: tournament_bracket, timeout: 60}
+  # The champion scene: the title spins in, the podium lifts the partner, it poses.
+  - wait: {seconds: 3.5}
+  - screenshot: cup-d-champion-title
+  - wait: {seconds: 4}
+  - screenshot: cup-d-podium-lift
+  - wait: {seconds: 3.5}
+  - screenshot: cup-d-champion-pose
   # Script 214: the winner's money and item, then the medals' script (204).
   - repeat: {times: 12, steps: [{when: {shown: story_textbox, steps: [{screenshot: cup-d-prize}, {tap: {key: return}}]}}, {wait: {seconds: 2}}]}
   - wait: {map: room13, hidden: story_textbox, seconds: 1, timeout: 60}

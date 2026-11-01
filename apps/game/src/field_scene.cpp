@@ -793,9 +793,11 @@ void FieldScene::submit(const Actor& actor, float alpha, const Look& look) {
   }
   const scene::Pose pose = field_->drawnPose(actor.entity, alpha);
   const glm::vec3 scale = actor.fighter ? look.scale * actor.fighter->scale : look.scale;
-  const glm::mat4 world = glm::scale(glm::rotate(glm::translate(glm::mat4{1.0F}, pose.position),
-                                                 pose.yaw, glm::vec3{0.0F, 1.0F, 0.0F}),
-                                     scale);
+  const glm::vec3 rise{0.0F, actor.fighter ? actor.fighter->rise : 0.0F, 0.0F};
+  const glm::mat4 world =
+      glm::scale(glm::rotate(glm::translate(glm::mat4{1.0F}, pose.position + rise), pose.yaw,
+                             glm::vec3{0.0F, 1.0F, 0.0F}),
+                 scale);
   std::span<const glm::mat4> joints = actor.player->jointMatrices();
   std::vector<glm::mat4> kept;
   if (look.hiddenBones != 0) {

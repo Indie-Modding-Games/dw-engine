@@ -884,52 +884,52 @@ updateTournamentRegistration = { status = "falta", what = "Valida la inscripció
 minutesOfDay = { status = "no-aplica", note = "utilidad genérica de reloj", what = "Convierte la hora actual del juego en minutos del día." }
 getCupDataJumpTable = { status = "portado", dwe = "game/tournament/src/cup_data.cpp:1", what = "Busca en el guion del mapa los datos de una copa por sección e id." }
 getCupDataJumpTableEntry = { status = "no-aplica", note = "lectura de punteros del guion del original", what = "Resuelve una entrada de la tabla de saltos de los datos de copa." }
-STD_addChampionScene = { status = "falta", what = "Inicia la escena de celebración del campeón de la copa." }
-STD_tickChampionScene = { status = "falta", what = "Anima la escena del campeón: letras, giro de cámara y podio." }
-STD_addPodiumRenderer = { status = "falta", what = "Muestra el podio en la escena de premiación." }
-STD_addLoseScene = { status = "falta", what = "Inicia la escena de derrota con barrido aleatorio de la pantalla." }
-STD_tickLoseScene = { status = "falta", what = "Anima la escena de derrota del combate de copa." }
-STD_addWinScene = { status = "falta", what = "Inicia la escena de victoria del combate de copa." }
-STD_tickWinScene = { status = "falta", what = "Anima el letrero de victoria del combate de copa." }
-STD_handleCommands = { status = "falta", what = "Navega y confirma las órdenes al compañero en el combate de copa, incluido el remate." }
-STD_tickTamerTournament = { status = "falta", what = "Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes." }
+STD_addChampionScene = { status = "portado", dwe = "game/tournament/src/champion_show.cpp:1", note = "la glue en apps/game/src/story_tournament.cpp", what = "Inicia la escena de celebración del campeón de la copa." }
+STD_tickChampionScene = { status = "parcial", dwe = "game/tournament/src/champion_show.cpp:1", note = "falta el brillo que recorre cada letra (copia dentro de la memoria de vídeo)", what = "Anima la escena del campeón: letras, giro de cámara y podio." }
+STD_addPodiumRenderer = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "el podio de la arena (T_DAI o B_DAI) sube con el compañero", what = "Muestra el podio en la escena de premiación." }
+STD_addLoseScene = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "letras de derrota y barrido; las dibuja apps/game/src/story_tournament.cpp", what = "Inicia la escena de derrota con barrido aleatorio de la pantalla." }
+STD_tickLoseScene = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", what = "Anima la escena de derrota del combate de copa." }
+STD_addWinScene = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "letras de victoria; las dibuja apps/game/src/story_tournament.cpp", what = "Inicia la escena de victoria del combate de copa." }
+STD_tickWinScene = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", what = "Anima el letrero de victoria del combate de copa." }
+STD_handleCommands = { status = "portado", dwe = "game/battle/src/battle.cpp:1", note = "la tira de órdenes del combate sin huir (combate fijo) y el remate", what = "Navega y confirma las órdenes al compañero en el combate de copa, incluido el remate." }
+STD_tickTamerTournament = { status = "parcial", dwe = "game/battle/src/battle.cpp:1", note = "las órdenes sí; select no oculta las barras de vida", what = "Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes." }
 STD_offsetTMDObjectUVs = { status = "no-aplica", note = "ajuste de UV de modelos del original", what = "Desplaza las coordenadas de textura de una pieza de modelo." }
 STD_loadVersusSceneModel = { status = "no-aplica", note = "carga de modelos del original", what = "Carga y coloca el modelo del letrero de enfrentamiento." }
-STD_addVersusModelScene = { status = "falta", what = "Inicia la animación del letrero de enfrentamiento antes del combate." }
-STD_tickVersusModelScene = { status = "falta", what = "Anima el letrero de enfrentamiento entre ambos luchadores." }
-STD_isVersusModelSceneFinished = { status = "falta", what = "Indica si terminó la animación del letrero de enfrentamiento." }
-STD_loadWinLoseModel = { status = "falta", what = "Calcula las curvas de entrada de los letreros de victoria/derrota y carga sus modelos." }
-STD_loadChampionModels = { status = "falta", what = "Prepara la órbita de cámara y coloca las letras del letrero de campeón." }
-STD_initializeChampionScene = { status = "falta", what = "Coloca al compañero en el centro con la pose de victoria y fija la cámara del campeón." }
+STD_addVersusModelScene = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "el letrero del empate (DRAW) tras el tiempo agotado", what = "Inicia la animación del letrero de enfrentamiento antes del combate." }
+STD_tickVersusModelScene = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", what = "Anima el letrero de enfrentamiento entre ambos luchadores." }
+STD_isVersusModelSceneFinished = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", what = "Indica si terminó la animación del letrero de enfrentamiento." }
+STD_loadWinLoseModel = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "las curvas como constantes con cita; el modelo es el extraído (model/stddat/win_lose)", what = "Calcula las curvas de entrada de los letreros de victoria/derrota y carga sus modelos." }
+STD_loadChampionModels = { status = "portado", dwe = "game/tournament/src/champion_show.cpp:1", note = "órbita y letras; el podio se elige por el modelo de la arena", what = "Prepara la órbita de cámara y coloca las letras del letrero de campeón." }
+STD_initializeChampionScene = { status = "portado", dwe = "game/tournament/src/champion_show.cpp:1", what = "Coloca al compañero en el centro con la pose de victoria y fija la cámara del campeón." }
 STD_placePlayer1 = { status = "portado", dwe = "game/tournament/src/arena.cpp:1", what = "Coloca al compañero en su lado de la arena para el combate." }
 STD_getEntityIndex = { status = "no-aplica", note = "búsqueda genérica en la tabla de entidades", what = "Devuelve el índice de una entidad en la tabla." }
 STD_placePlayer2 = { status = "portado", dwe = "game/tournament/src/arena.cpp:1", what = "Coloca al rival en su lado de la arena para el combate." }
 STD_setPostIntroPosition = { status = "portado", dwe = "game/tournament/src/arena.cpp:1", what = "Deja al luchador en su posición final al terminar la presentación." }
-STD_runIntro = { status = "falta", what = "Ejecuta la presentación del combate de copa con cámara y nombres." }
-STD_tickIntroName = { status = "falta", what = "Muestra el nombre del luchador durante la presentación." }
+STD_runIntro = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "la lógica en game/tournament/src/match_show.cpp (MatchIntro); sin la música propia de cada luchador", what = "Ejecuta la presentación del combate de copa con cámara y nombres." }
+STD_tickIntroName = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "el original en inglés no dibuja letras; el aspecto moderno escribe el nombre", what = "Muestra el nombre del luchador durante la presentación." }
 STD_applyManualCamera = { status = "no-aplica", note = "cámara libre de depuración con el segundo mando", what = "Mueve la cámara a mano con el segundo mando." }
 STD_setCameraOrbit = { status = "portado", dwe = "game/tournament/src/arena.cpp:1", what = "Cámara que orbita según la distancia entre ambos luchadores." }
 STD_setCameraYXZ = { status = "falta", what = "Cámara que encuadra al compañero y al rival a la vez." }
 STD_setCameraToEntity = { status = "falta", what = "Cámara fija relativa al luchador enfocado según su orientación." }
-STD_tickVSPhase = { status = "falta", what = "Elige cada cuadro el modo de cámara activo del combate de copa." }
-STD_setViewpointRotationFromEntity = { status = "falta", what = "Cámara que gira junto con el luchador enfocado." }
+STD_tickVSPhase = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "estados 1 (órbita) y 6 (esquina) de MatchCamera", what = "Elige cada cuadro el modo de cámara activo del combate de copa." }
+STD_setViewpointRotationFromEntity = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", what = "Cámara que gira junto con el luchador enfocado." }
 STD_setCameraLookAtEntity = { status = "falta", what = "Cámara que mira hacia el luchador enfocado." }
 STD_applyViewpoint = { status = "no-aplica", note = "aplicación de proyección y punto de vista del original", what = "Aplica el punto de vista actual de la cámara." }
 STD_applyRotatingCamera = { status = "falta", what = "Cámara que gira lento alrededor de la arena tras el combate." }
 STD_setCameraParams = { status = "no-aplica", note = "asignación directa de valores de cámara", what = "Fija rotación y traslación de la cámara." }
-STD_setVSPhase = { status = "falta", what = "Activa el control de cámara de la copa con el modo indicado." }
-STD_selectRandomCamera = { status = "falta", what = "Elige un ángulo de cámara al azar en técnicas y lanza victoria o derrota al final." }
-STD_setRandomViewpoint = { status = "falta", what = "Elige al azar un punto de vista preestablecido sobre un luchador." }
-STD_setChampionCamera = { status = "falta", what = "Encuadra al compañero según su tamaño para la escena de campeón." }
+STD_setVSPhase = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "el cambio de estado de cámara lo lleva StoryTournament", what = "Activa el control de cámara de la copa con el modo indicado." }
+STD_selectRandomCamera = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "en la versión US solo se llama con el modo 5: letras y cámara final", what = "Elige un ángulo de cámara al azar en técnicas y lanza victoria o derrota al final." }
+STD_setRandomViewpoint = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "solo el punto de vista 4, el único que usa la copa", what = "Elige al azar un punto de vista preestablecido sobre un luchador." }
+STD_setChampionCamera = { status = "portado", dwe = "game/tournament/src/champion_show.cpp:1", what = "Encuadra al compañero según su tamaño para la escena de campeón." }
 STD_getFighterDistance = { status = "no-aplica", note = "cálculo auxiliar de distancias", what = "Calcula el porcentaje de distancia entre dos luchadores y un punto." }
-STD_setViewpointFromBone = { status = "falta", what = "Sitúa la cámara relativa a un hueso del luchador." }
-STD_updateCameraLerp = { status = "falta", what = "Interpola la cámara de presentación entre sus etapas." }
+STD_setViewpointFromBone = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "sin los huesos del modelo: el pie del luchador y la mitad de su altura (Suposición)", what = "Sitúa la cámara relativa a un hueso del luchador." }
+STD_updateCameraLerp = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", what = "Interpola la cámara de presentación entre sus etapas." }
 STD_isPositionNearEntity = { status = "no-aplica", note = "comprobación geométrica auxiliar", what = "Indica si un punto está cerca de una entidad." }
 STD_interpolateClamped2 = { status = "no-aplica", note = "interpolación lineal genérica", what = "Interpola un valor con límites." }
-STD_tickCameraChase = { status = "falta", what = "Cámara que persigue al luchador que corre durante la presentación." }
-STD_tickCameraIntro = { status = "falta", what = "Avanza la secuencia de cámara de la presentación." }
-STD_startCameraIntro = { status = "falta", what = "Inicia el recorrido de cámara entre los dos luchadores." }
-STD_applyEntityViewpoint = { status = "falta", what = "Cámara anclada a la vista del luchador enfocado." }
+STD_tickCameraChase = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", what = "Cámara que persigue al luchador que corre durante la presentación." }
+STD_tickCameraIntro = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", what = "Avanza la secuencia de cámara de la presentación." }
+STD_startCameraIntro = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", what = "Inicia el recorrido de cámara entre los dos luchadores." }
+STD_applyEntityViewpoint = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", what = "Cámara anclada a la vista del luchador enfocado." }
 STD_addFighterCounter = { status = "portado", dwe = "game/battle/src/battle.cpp:1", note = "el reloj cuenta y la pantalla de combate lo dibuja (apps/screens/src/battle_view.cpp, match-clock)", what = "Inicia el reloj de tiempo del combate de copa." }
 STD_tickFighterCounter = { status = "portado", dwe = "game/battle/src/battle.cpp:1", note = "el reloj cuenta y la pantalla de combate lo dibuja", what = "Descuenta el reloj del combate salvo cuando un luchador está caído." }
 STD_updateBracket = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Avanza el cuadro de eliminatorias al siguiente cruce y destaca al jugador." }
@@ -943,17 +943,17 @@ STD_isBracketFinished = { status = "portado", dwe = "game/tournament/src/bracket
 STD_tickBracketHitFlash = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Anima el destello de una casilla del cuadro." }
 STD_addBracketIntro = { status = "portado", dwe = "apps/game/src/tournament_bracket_screen.cpp:1", what = "Inicia la presentación del cuadro al empezar la copa." }
 STD_tickBracketIntro = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Anima la presentación del cuadro de eliminatorias." }
-STD_combatSetup = { status = "falta", what = "Prepara los datos de combate del compañero y del rival en la copa." }
+STD_combatSetup = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "el acercamiento de cámara con el letrero; la penalización por enfermedad o herida la aplica game/battle/src/battle.cpp", what = "Prepara los datos de combate del compañero y del rival en la copa." }
 STD_checkEndCondition = { status = "portado", dwe = "game/battle/src/battle.cpp:1", what = "Comprueba fin de combate por KO o tiempo y decide ganador." }
-STD_tickBattle = { status = "falta", what = "Avanza un cuadro del combate de copa." }
+STD_tickBattle = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "la parte de cámara (MatchCamera::tickFight); el resto es el combate de game/battle", what = "Avanza un cuadro del combate de copa." }
 STD_areAllEnemyDigimonDead = { status = "falta", what = "Indica si todos los rivales del combate han caído." }
-STD_tickBattleResultScreen = { status = "falta", what = "Gestiona la pantalla de resultado tras el combate de copa." }
-STD_addTimeoutWindow = { status = "falta", what = "Muestra el aviso de tiempo agotado del combate." }
+STD_tickBattleResultScreen = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "TIME UP, la caja de daño y el empate; el que pierde no se desploma tras la caja", what = "Gestiona la pantalla de resultado tras el combate de copa." }
+STD_addTimeoutWindow = { status = "portado", dwe = "apps/game/src/tournament_match_screen.cpp:1", what = "Muestra el aviso de tiempo agotado del combate." }
 STD_getDigitCount = { status = "no-aplica", note = "cuenta genérica de dígitos", what = "Cuenta los dígitos de un número." }
 STD_tickDigimonSenile = { status = "falta", what = "Mantiene al luchador en estado senil hasta que se agote su contador." }
 STD_initializePlayerMarker = { status = "falta", what = "Añade la marca que distingue a cada luchador en pantalla." }
 STD_getEntityIndex2 = { status = "no-aplica", note = "búsqueda genérica en la tabla de entidades", what = "Devuelve el índice de una entidad en la tabla." }
-STD_combatMain = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "el combate de copa es una batalla con reloj en la arena, con el rival dibujado, su modo de carga sorteado como STD_tickEnemyAI y sin caja de fin; faltan las escenas de victoria, derrota y empate", what = "Bucle principal de un combate de copa hasta el resultado." }
+STD_combatMain = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "batalla con reloj en la arena, con el rival dibujado, su modo de carga sorteado como STD_tickEnemyAI y sin caja de fin; letras de victoria, derrota y empate", what = "Bucle principal de un combate de copa hasta el resultado." }
 STD_startWalkingAnimation2 = { status = "falta", what = "Elige animación de caminar normal o cansada según la vida." }
 STD_applyPartnerStatsToFighter = { status = "falta", what = "Copia los valores del compañero a su ficha de luchador." }
 STD_tickFrames = { status = "no-aplica", note = "bucle de cuadros del original", what = "Avanza varios cuadros de juego seguidos." }
@@ -963,10 +963,10 @@ STD_updateFighterStatusVisuals = { status = "falta", what = "Actualiza los efect
 STD_addCommandMenu = { status = "falta", what = "Muestra el menú de órdenes del jugador en la copa." }
 STD_initializeTournament = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "modelo, suelo y cámara de la arena; sin música propia, luces ni efectos de la copa", what = "Prepara la arena de la copa: música, cámara, luces, escenario y efectos." }
 STD_initializeOpponent = { status = "portado", dwe = "game/tournament/src/bracket.cpp:1", what = "Genera un rival de la copa con valores y técnicas según su nivel." }
-STD_runMatch = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "en la arena; sin presentación ni cámara final", what = "Juega un combate de copa: presentación, combate y cámara final." }
+STD_runMatch = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "en la arena, con presentación, cámara de copa y cámara final", what = "Juega un combate de copa: presentación, combate y cámara final." }
 STD_initializeCamera = { status = "falta", what = "Coloca la cámara inicial de la arena de copa." }
 STD_initializeLighting = { status = "no-aplica", note = "configuración de luces del original", what = "Configura las luces de la arena de copa." }
-STD_tournamentMain = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "arena, sustitutos, cuadro animado, tres combates y recuperación; sin escenas de victoria, derrota ni podio (tournament.md: Hueco)", what = "Flujo completo de la copa: cuadro, combates, resultados y premio." }
+STD_tournamentMain = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "arena, sustitutos, cuadro animado, tres combates, recuperación y escena del campeón en el podio", what = "Flujo completo de la copa: cuadro, combates, resultados y premio." }
 VS_applyCamera = { status = "no-aplica", note = "aplicación de matrices de cámara del original", what = "Aplica rotación y traslación a la cámara." }
 VS_setCameraOrbit = { status = "falta", what = "Cámara del versus que orbita según la distancia entre luchadores." }
 VS_setCameraYXZ = { status = "falta", what = "Cámara del versus que encuadra a ambos luchadores." }

@@ -108,6 +108,8 @@ public:
     std::string model;
     assets::MapCollision collision;
     game::tournament::ArenaStart start;
+    // How far each fighter runs in during the intro, to its start (STD_runIntro).
+    std::int32_t walkIn = 0;
     std::int32_t partnerYaw = 0;
     std::int32_t rivalYaw = 0;
     game::tournament::ArenaCamera camera;

@@ -54,6 +54,10 @@ screens:
   # El cuadro de la copa: sin nombres ni ronda, como el original en inglés.
   tournament_bracket:
     styles: [ui/skins/original/tournament_bracket/style]
+  # Lo que muestra un combate de copa: sin el nombre de la presentación, como el original en inglés, las cifras y
+  # TIME UP con los sprites de ow-std-match y la caja del tiempo agotado con la ventana del original.
+  tournament_match:
+    styles: [ui/skins/original/tournament_match/style]
   # El trueque de objetos: las cajas del original.
   trade_menu:
     styles: [ui/skins/original/trade_menu/style]
@@ -579,6 +583,26 @@ sprite_sheets:
       std-clock-digit-9: [108, 48, 12, 15]
       std-clock-side-1: [120, 48, 8, 18]
       std-clock-side-2: [136, 48, 8, 18]
+  # Lo que dibuja un combate de copa con la misma página de STDTIM (std_main.c: STD_renderIntroStatNumber,
+  # STD_tickBattleResultScreen): las cifras de 12 x 12 de los datos y del daño en u = cifra x 12, v 32, y TIME UP,
+  # 144 x 24 en (0, 8).
+  - name: ow-std-match
+    image: texture/stddat/stdtim/002
+    palette: 0
+    original_size: [256, 120]
+    dp_per_pixel: 3
+    sprites:
+      std-time-up: [0, 8, 144, 24]
+      std-intro-digit-0: [0, 32, 12, 12]
+      std-intro-digit-1: [12, 32, 12, 12]
+      std-intro-digit-2: [24, 32, 12, 12]
+      std-intro-digit-3: [36, 32, 12, 12]
+      std-intro-digit-4: [48, 32, 12, 12]
+      std-intro-digit-5: [60, 32, 12, 12]
+      std-intro-digit-6: [72, 32, 12, 12]
+      std-intro-digit-7: [84, 32, 12, 12]
+      std-intro-digit-8: [96, 32, 12, 12]
+      std-intro-digit-9: [108, 32, 12, 12]
   # Las cifras del daño sobre los luchadores (utils2.c: drawEntityText): celdas de 8 x 8 en u = cifra x 8, v = 0xb7 de
   # la página (896, 256), que es la fila 55 de BI_IN, con la CLUT (256, 484), la paleta 4.
   - name: ow-battle-damage-digits

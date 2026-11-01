@@ -120,10 +120,21 @@ public:
   bool defeatEnemies();
   // The battle_lose debug command: the partner falls at once; false when no fight is running.
   bool defeatPartner();
+  // The battle_time_up debug command: a cup match's clock runs out, `side` ("win", "lose" or ""
+  // for a draw) having dealt more damage; false when no fight is running.
+  bool runOutClock(std::string_view side);
   // The battle on screen until its end box closes, for a bug report and --trace; nothing otherwise.
   [[nodiscard]] const game::battle::Battle* battle() const { return battle_ ? &*battle_ : nullptr; }
   // The map NPCs the enemies are, in the battle's order.
   [[nodiscard]] std::span<const std::int32_t> enemyNpcs() const { return enemyNpcs_; }
+  // The opening's banner is on screen (a cup's camera pulls out meanwhile: std_main.c:
+  // STD_combatSetup).
+  [[nodiscard]] bool introShowing() const { return intro_.has_value(); }
+  // A cup match's end waits while the cup shows what follows the time running out (std_main.c:
+  // STD_tickBattleResultScreen runs before STD_deinitializeCombat).
+  void holdMatchEnd(bool hold) { matchEndHeld_ = hold; }
+  // A cup match is over and its end (the winner's pose) plays.
+  [[nodiscard]] bool matchEnding() const { return matchEndSeconds_.has_value(); }
 
   // One logic tick of the battle and the view of it. The battle runs once its opening is over.
   void tick(double seconds);
@@ -247,6 +258,7 @@ private:
   // A tournament match's end: the time left of the winner's pose and the frames after it, while
   // they run (the match has no end box).
   std::optional<double> matchEndSeconds_;
+  bool matchEndHeld_ = false;
   // The time the victory poses have played, while they do, and which of the two still plays.
   std::optional<double> posesSeconds_;
   bool playerPosing_ = false;

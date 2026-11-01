@@ -1,0 +1,132 @@
+/* What a cup match shows over the arena (std/std_main.c, std_hud.c). One pixel of the original is 3dp; the 320 x 240
+   screen is a 960 x 720dp frame centred on a wide screen, positions from the screen's centre (y down). From the
+   decomp:
+   - the intro's name (STD_renderIntroName): the US version draws no letters; the modern look writes the name, a
+     letter every 4 frames, its row sliding up once whole;
+   - the intro's stats (STD_renderIntroStats): six 48 x 12 labels at (-100, i * 16 - 28), a bar 8 high at
+     (-50, i * 16 - 26), value * 100 / limit wide (at least 1), colour (0x50, 0xc8, 0x50), and once counted the
+     values in 12 x 12 digits of stdtim 002 (v 32) at (52, i * 16 - 28), right-aligned in 4;
+   - TIME UP (STD_tickBattleResultScreen): stdtim 002, 144 x 24 at (0, 8), drawn at (-72, -12);
+   - the damage box (STD_addTimeoutWindow, STD_renderTimeoutWindow): 264 x 54 at (-132, -27), the partner's name at
+     (6, 6) and the rival's at (138, 6), each in 120, the label 48 x 24 at (108, 24), the damage the partner dealt
+     under its name centred in 48 at (42, 30), the damage it took under the rival's at (174, 30);
+   - the lost match's wipe (STD_renderLoseScene): 32 columns 10 pixels wide from the left edge, half dark
+     (attribute 0x40000000), their heights from the top. */
+
+body {
+	width: 100%;
+	height: 100%;
+}
+
+#frame {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+	margin-left: -480dp;
+}
+
+#wipe {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+	margin-left: -480dp;
+}
+
+.column {
+	position: absolute;
+	top: 0;
+	width: 30dp;
+	height: 0;
+	background-color: #00000080;
+}
+
+#name {
+	position: absolute;
+	left: 0;
+	width: 960dp;
+	text-align: center;
+	font-size: 66dp;
+	color: #fff371;
+}
+
+#stats, #time-up, #damage-box {
+	position: absolute;
+}
+
+#stats {
+	left: 0;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+}
+
+.label {
+	position: absolute;
+	width: 144dp;
+	height: 36dp;
+	font-size: 26dp;
+	line-height: 36dp;
+}
+
+.bar {
+	position: absolute;
+	height: 24dp;
+	background-color: #50c850;
+}
+
+.digit {
+	position: absolute;
+	width: 36dp;
+	height: 36dp;
+	font-size: 30dp;
+	line-height: 36dp;
+	text-align: center;
+}
+
+#time-up {
+	left: 264dp;
+	top: 324dp;
+	width: 432dp;
+	height: 72dp;
+	font-size: 66dp;
+	line-height: 72dp;
+	text-align: center;
+	color: #fff371;
+}
+
+#damage-box {
+	left: 84dp;
+	top: 279dp;
+	width: 792dp;
+	height: 162dp;
+	background-color: #000000a0;
+	border: 3dp #808080;
+	box-sizing: border-box;
+}
+
+.fighter {
+	position: absolute;
+	top: 18dp;
+	width: 360dp;
+	height: 36dp;
+	text-align: center;
+	line-height: 36dp;
+}
+
+#partner-name { left: 18dp; }
+#rival-name { left: 414dp; }
+
+#damage-label {
+	position: absolute;
+	left: 284dp;
+	top: 72dp;
+	width: 224dp;
+	height: 72dp;
+	text-align: center;
+	font-size: 30dp;
+	line-height: 36dp;
+}

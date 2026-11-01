@@ -32,7 +32,7 @@ struct ShowView {
   friend bool operator==(const ShowView&, const ShowView&) = default;
 };
 
-// A fighter's size (DIGIMON_DATA: height and radius).
+// A fighter's size (its species' height and radius).
 struct ShowBody {
   std::int32_t height = 0;
   std::int32_t radius = 0;

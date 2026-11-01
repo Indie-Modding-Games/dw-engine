@@ -2,3 +2,13 @@
 bracket.round: "Round {round}"
 bracket.final: "Final"
 bracket.champion: "Champion"
+# A cup match: the intro's stats box (STD_renderIntroStats) and the damage box after the time ran out
+# (STD_renderTimeoutWindow).
+match.hp: "HP"
+match.mp: "MP"
+match.offense: "Offense"
+match.defense: "Defense"
+match.speed: "Speed"
+match.brains: "Brains"
+match.damage: "Damage"
+match.time_up: "TIME UP"

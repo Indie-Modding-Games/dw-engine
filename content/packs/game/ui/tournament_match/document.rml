@@ -1,0 +1,53 @@
+<rml>
+<head>
+	<title>Tournament match</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="wipe">
+		<div class="column" id="column-0"></div><div class="column" id="column-1"></div>
+		<div class="column" id="column-2"></div><div class="column" id="column-3"></div>
+		<div class="column" id="column-4"></div><div class="column" id="column-5"></div>
+		<div class="column" id="column-6"></div><div class="column" id="column-7"></div>
+		<div class="column" id="column-8"></div><div class="column" id="column-9"></div>
+		<div class="column" id="column-10"></div><div class="column" id="column-11"></div>
+		<div class="column" id="column-12"></div><div class="column" id="column-13"></div>
+		<div class="column" id="column-14"></div><div class="column" id="column-15"></div>
+		<div class="column" id="column-16"></div><div class="column" id="column-17"></div>
+		<div class="column" id="column-18"></div><div class="column" id="column-19"></div>
+		<div class="column" id="column-20"></div><div class="column" id="column-21"></div>
+		<div class="column" id="column-22"></div><div class="column" id="column-23"></div>
+		<div class="column" id="column-24"></div><div class="column" id="column-25"></div>
+		<div class="column" id="column-26"></div><div class="column" id="column-27"></div>
+		<div class="column" id="column-28"></div><div class="column" id="column-29"></div>
+		<div class="column" id="column-30"></div><div class="column" id="column-31"></div>
+	</div>
+	<div id="frame">
+		<div id="name" class="original-look"></div>
+		<div id="stats">
+			<div class="label original-look" id="label-0"></div><div class="bar" id="bar-0"></div>
+			<div class="label original-look" id="label-1"></div><div class="bar" id="bar-1"></div>
+			<div class="label original-look" id="label-2"></div><div class="bar" id="bar-2"></div>
+			<div class="label original-look" id="label-3"></div><div class="bar" id="bar-3"></div>
+			<div class="label original-look" id="label-4"></div><div class="bar" id="bar-4"></div>
+			<div class="label original-look" id="label-5"></div><div class="bar" id="bar-5"></div>
+			<div class="digit" id="digit-0-0"></div><div class="digit" id="digit-0-1"></div><div class="digit" id="digit-0-2"></div><div class="digit" id="digit-0-3"></div>
+			<div class="digit" id="digit-1-0"></div><div class="digit" id="digit-1-1"></div><div class="digit" id="digit-1-2"></div><div class="digit" id="digit-1-3"></div>
+			<div class="digit" id="digit-2-0"></div><div class="digit" id="digit-2-1"></div><div class="digit" id="digit-2-2"></div><div class="digit" id="digit-2-3"></div>
+			<div class="digit" id="digit-3-0"></div><div class="digit" id="digit-3-1"></div><div class="digit" id="digit-3-2"></div><div class="digit" id="digit-3-3"></div>
+			<div class="digit" id="digit-4-0"></div><div class="digit" id="digit-4-1"></div><div class="digit" id="digit-4-2"></div><div class="digit" id="digit-4-3"></div>
+			<div class="digit" id="digit-5-0"></div><div class="digit" id="digit-5-1"></div><div class="digit" id="digit-5-2"></div><div class="digit" id="digit-5-3"></div>
+		</div>
+		<div id="time-up"></div>
+		<div id="damage-box">
+			<div class="fighter original-look" id="partner-name"></div>
+			<div class="fighter original-look" id="rival-name"></div>
+			<div class="original-look" id="damage-label"></div>
+			<div class="digit" id="dealt-0"></div><div class="digit" id="dealt-1"></div><div class="digit" id="dealt-2"></div><div class="digit" id="dealt-3"></div>
+			<div class="digit" id="taken-0"></div><div class="digit" id="taken-1"></div><div class="digit" id="taken-2"></div><div class="digit" id="taken-3"></div>
+		</div>
+	</div>
+</body>
+</rml>

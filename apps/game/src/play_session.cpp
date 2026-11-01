@@ -266,6 +266,9 @@ void SessionCommands::drop(Autotest* autotest) {
   if (std::exchange(battleLose, false)) {
     dropped(messages::BattleLoseFailed);
   }
+  if (std::exchange(battleTimeUp, std::nullopt)) {
+    dropped(messages::BattleTimeUpFailed);
+  }
   if (!std::exchange(placements, {}).empty()) {
     dropped(messages::PlaceFailed);
   }
@@ -308,6 +311,8 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
   scripts.bindCommand(BattleCommand, [this](std::string_view npcs) { battle = std::string{npcs}; });
   scripts.bindCommand(BattleWinCommand, [this](std::string_view) { battleWin = true; });
   scripts.bindCommand(BattleLoseCommand, [this](std::string_view) { battleLose = true; });
+  scripts.bindCommand(BattleTimeUpCommand,
+                      [this](std::string_view side) { battleTimeUp = std::string{side}; });
   scripts.bindCommand(PlaceCommand,
                       [this](std::string_view where) { placements.emplace_back(where); });
   scripts.bindCommand(StorySetCommand,
@@ -454,10 +459,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                       .session = game_.session.get(),
                       .species = species_ ? &*species_ : nullptr,
                       .ui = context.ui}),
-      tradeScreen_({.trader = game_.systems.itemTrader,
-                    .session = game_.session.get(),
-                    .sound = game_.session->sound(),
-                    .ui = context.ui}),
+      matchScreen_(context.ui), tradeScreen_({.trader = game_.systems.itemTrader,
+                                              .session = game_.session.get(),
+                                              .sound = game_.session->sound(),
+                                              .ui = context.ui}),
       birdScreen_({.transport = game_.systems.birdTransport,
                    .session = game_.session.get(),
                    .sound = game_.session->sound(),
@@ -495,6 +500,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachJukebox(&jukeboxScreen_);
   storyScenes_.attachTournamentSchedule(&scheduleScreen_);
   storyScenes_.attachTournamentBracket(&bracketScreen_);
+  storyScenes_.attachTournamentMatch(&matchScreen_, game_.systems.battle,
+                                     species_ ? &*species_ : nullptr);
   storyScenes_.attachTrade(&tradeScreen_);
   tradeScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyScenes_.attachBirdTransport(&birdScreen_);
@@ -582,19 +589,33 @@ PlaySession::~PlaySession() {
   game_.session->detachField();
   storyLink_.reset();
   game_.systems.story->attachNpcs(nullptr);
-  for (const std::string_view document : {std::string_view{"hud"},    BattleDocument,
-                                          PartnerMenuDocument,        DestinationChoiceDocument,
-                                          SleepMenuDocument,          DialogDocument,
-                                          ShopMenuDocument,           ItemKeeperDocument,
-                                          DiscardMenuDocument,        JukeboxDocument,
-                                          TournamentScheduleDocument, TournamentBracketDocument,
-                                          TradeMenuDocument,          CardShopDocument,
-                                          MeritShopDocument,          FieldItemNoticeDocument,
-                                          AwardNoticeDocument,        FishingBaitDocument,
-                                          FishingNoticeDocument,      FishingHudDocument,
-                                          CurlingHudDocument,         EggBoxDocument,
-                                          NamingBoxDocument,          LivesBoxDocument,
-                                          BirdTransportDocument,      MoneyBoxDocument}) {
+  for (const std::string_view document : {std::string_view{"hud"},
+                                          BattleDocument,
+                                          PartnerMenuDocument,
+                                          DestinationChoiceDocument,
+                                          SleepMenuDocument,
+                                          DialogDocument,
+                                          ShopMenuDocument,
+                                          ItemKeeperDocument,
+                                          DiscardMenuDocument,
+                                          JukeboxDocument,
+                                          TournamentScheduleDocument,
+                                          TournamentBracketDocument,
+                                          TournamentMatchDocument,
+                                          TradeMenuDocument,
+                                          CardShopDocument,
+                                          MeritShopDocument,
+                                          FieldItemNoticeDocument,
+                                          AwardNoticeDocument,
+                                          FishingBaitDocument,
+                                          FishingNoticeDocument,
+                                          FishingHudDocument,
+                                          CurlingHudDocument,
+                                          EggBoxDocument,
+                                          NamingBoxDocument,
+                                          LivesBoxDocument,
+                                          BirdTransportDocument,
+                                          MoneyBoxDocument}) {
     context_.ui->hide(document);
   }
 }
@@ -647,6 +668,9 @@ void PlaySession::pressBattle(const input::InputState& input) {
   if (input.wasPressed("extra")) {
     battleScreen_.pressFinisher();
   }
+  if (input.wasPressed("confirm")) {
+    storyScenes_.pressTournamentConfirm();
+  }
 }
 
 void PlaySession::tick(const game::field::FieldInput& intent, const FishingButtons& fishing) {
@@ -659,13 +683,14 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
   sleepScreen_.tick(TickSeconds);
   saveMachine_.tick(TickSeconds);
   bracketScreen_.tick(TickSeconds);
+  storyScenes_.tickTournament(TickSeconds, battleScreen_, *scene_);
   const auto& fieldRules = game_.systems.fieldItems->rules();
   sleepScreen_.tickField(*scene_, static_cast<float>(TickSeconds),
                          fieldRules ? std::optional{fieldRules->sleepSound} : std::nullopt);
   if (sleepScreen_.active() || shopScreen_.active() || itemKeeperScreen_.active() ||
       discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
       birdScreen_.active() || cardShopScreen_.active() || meritShopScreen_.active() ||
-      scheduleScreen_.active() || bracketScreen_.playing()) {
+      scheduleScreen_.active() || bracketScreen_.playing() || storyScenes_.tournamentIntro()) {
     return;
   }
   // partner.c: partnerTickOverworld runs the partner's state: the care scenes below (praise and
@@ -1004,6 +1029,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (std::exchange(commands.battleWin, false) && !battleScreen_.defeatEnemies()) {
     core::logWarning("{}", core::formatMessage(messages::BattleWinFailed, messages::NoFight));
   }
+  if (const auto side = std::exchange(commands.battleTimeUp, std::nullopt);
+      side && !battleScreen_.runOutClock(*side)) {
+    core::logWarning("{}", core::formatMessage(messages::BattleTimeUpFailed, messages::NoFight));
+  }
   if (std::exchange(commands.battleLose, false) && !battleScreen_.defeatPartner()) {
     core::logWarning("{}", core::formatMessage(messages::BattleLoseFailed, messages::NoFight));
   }
@@ -1209,11 +1238,13 @@ bool PlaySession::paused() const {
          shopScreen_.active() || itemKeeperScreen_.active() || discardScreen_.active() ||
          jukeboxScreen_.active() || tradeScreen_.active() || birdScreen_.active() ||
          cardShopScreen_.active() || meritShopScreen_.active() || fieldItemsScreen_.active() ||
-         awardScreen_.active() || scheduleScreen_.active() || bracketScreen_.playing();
+         awardScreen_.active() || scheduleScreen_.active() || bracketScreen_.playing() ||
+         storyScenes_.tournamentIntro();
 }
 
 float PlaySession::fadeLevel() const {
-  return std::max({scene_->field().fadeLevel(), sleepScreen_.fadeLevel(), deathScene_.fadeLevel()});
+  return std::max({scene_->field().fadeLevel(), sleepScreen_.fadeLevel(), deathScene_.fadeLevel(),
+                   storyScenes_.tournamentFade()});
 }
 
 namespace {
