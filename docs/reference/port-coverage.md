@@ -85,10 +85,10 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 154 | 154 | 0 | 0 | 100 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 230 | 194 | 5 | 31 | 85 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 82 | 79 | 2 | 1 | 98 % |
-| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 78 | 76 | 0 | 2 | 97 % |
+| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 78 | 78 | 0 | 0 | 100 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 49 | 0 | 0 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 96 | 93 | 2 | 1 | 98 % |
-| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 78 | 77 | 1 | 0 | 99 % |
+| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 79 | 78 | 1 | 0 | 99 % |
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 96 | 95 | 1 | 0 | 99 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 29 | 0 | 0 | 100 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 38 | 37 | 1 | 0 | 99 % |
@@ -101,7 +101,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 30 | 1 | 0 | 98 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 49 | 48 | 1 | 0 | 99 % |
-| **Total** | 1391 funciones a portar | 1391 | 1175 | 30 | 186 | 86 % |
+| **Total** | 1392 funciones a portar | 1392 | 1178 | 30 | 184 | 86 % |
 
 ## Batalla
 
@@ -178,12 +178,7 @@ Los personajes del mapa y su IA de paseo, cofres, objetos del suelo y decorados 
 
 Ficheros del decomp: `main/anim.c`, `main/bubble.c`, `main/butterfly.c`, `main/drop_shadow.c`, `main/map_object.c`, `main/model.c`, `main/overworld.c`, `main/world_object.c`.
 
-Portado 76, parcial 0, falta 2.
-
-| Función | Decomp | Estado | Qué hace | Motor / nota |
-|---|---|---|---|---|
-| `initializeMedalModel` | `main/map_object.c:656` | falta | Carga el modelo de una medalla. | preparación de tablas, objetos o recursos del original: el motor monta los suyos |
-| `activateMedalTexture` | `main/map_object.c:1193` | falta (citada en docs) | Pone la textura de la medalla ganada. | — |
+Portado 78, parcial 0, falta 0.
 
 ## Compañero: IA y cuidado
 
@@ -213,7 +208,7 @@ Título, menú de juego, ficha del compañero, bolsa, cajas de interfaz, fundido
 
 Ficheros del decomp: `main/fade.c`, `main/font.c`, `main/game_menu.c`, `main/inventory.c`, `main/main_menu.c`, `main/new_game.c`, `main/sjis.c`, `main/ui.c`.
 
-Portado 77, parcial 1, falta 0.
+Portado 78, parcial 1, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -515,6 +510,6 @@ Portado 48, parcial 1, falta 0.
 
 ## Fuera de las cuentas
 
-1047 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+1046 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

@@ -305,6 +305,7 @@
                   <div id="medal-line-0" class="medal-text medal-line"></div>
                   <div id="medal-line-1" class="medal-text medal-line"></div>
                   <div id="medal-line-2" class="medal-text medal-line"></div>
+                  <img id="medal-figure" class="hidden" src="/runtime/medal-figure"/>
                   <div id="medals-prompts" class="page-prompts"><div class="page-prompt"><span id="medals-confirm-key" class="prompt-key confirm-key"></span><span class="prompt-text" text-key="pause_menu.chart_select"></span></div><div class="page-prompt"><span id="medals-cancel-key" class="prompt-key cancel-key"></span><span class="prompt-text" text-key="common.cancel"></span></div></div>
                 </div>
                 <div id="player-cards-view" class="player-native">

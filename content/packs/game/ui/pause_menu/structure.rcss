@@ -27,6 +27,7 @@
 #chart-detail-transition { display: none; }
 
 #player-medals-view { display: none; }
+#medal-figure { display: none; }
 #player-cards-view { display: none; }
 
 /* The player page's City tab (a dwe addition): shown while the panel has the class "player-city"; each skin places it. */

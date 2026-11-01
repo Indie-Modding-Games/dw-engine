@@ -951,16 +951,20 @@ local function medals_cursor(document)
 end
 
 -- renderMedalView: a medal the player holds shows without its dark cover, and the one under the
--- selector (held) shows its name and its three lines below the medals.
+-- selector (held) shows its name and its three lines below the medals, and turns in the right box
+-- (renderDigiviceMedals): its cell is marked `showing` for the game, which draws it into
+-- #medal-figure.
 local function refresh_medals(document)
   local held = number_list("player.medals.held")
+  local shown = (held[medal_index] or 0) ~= 0
   for i = 0, 14 do
     local cell = document:get("medal-" .. i)
     cell:set_property("left", ((25 + (i % 5) * 38) * 3) .. "dp")
     cell:set_property("top", ((27 + math.floor(i / 5) * 24) * 3) .. "dp")
     cell:set_class("held", (held[i] or 0) ~= 0)
+    cell:set_class("showing", shown and i == medal_index)
   end
-  local shown = (held[medal_index] or 0) ~= 0
+  document:get("medal-figure"):set_class("hidden", not shown)
   local base = string.format("player.medal.%d.", medal_index)
   document:get("medal-name"):set_text(shown and t(ui.setting(base .. "name") or "") or "")
   for line = 0, 2 do

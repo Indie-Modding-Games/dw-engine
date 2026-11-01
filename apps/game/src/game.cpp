@@ -64,6 +64,8 @@
 #include "game_audio.hpp"
 #include "game_documents.hpp"
 #include "language.hpp"
+#include "medal_figure.hpp"
+#include "medal_sheet.hpp"
 #include "messages.hpp"
 #include "minimap_setting.hpp"
 #include "movie_screen.hpp"
@@ -608,6 +610,21 @@ int runGame(const Options& requested) {
     }
   } else {
     core::logWarning("Save figure: {}", saveFigure.error().message);
+  }
+  // The medal that turns on the medals page (medal_figure.hpp); without it the page shows none.
+  auto medalFigure = MedalFigure::create(**renderer);
+  if (medalFigure) {
+    if (auto bound =
+            (*uiRenderer)->bindTexture(std::string{MedalFigureTexture}, (*medalFigure)->texture());
+        !bound) {
+      core::logError("Medal figure: {}", bound.error().message);
+      return EXIT_FAILURE;
+    }
+    if (auto loaded = (*medalFigure)->load(files); !loaded) {
+      core::logWarning("Medal figure: {}", loaded.error().message);
+    }
+  } else {
+    core::logWarning("Medal figure: {}", medalFigure.error().message);
   }
   // The map change's fade, subtracted from the scene before the UI is drawn (fade.c: renderFade).
   std::optional<render::ScreenFade> screenFade;
@@ -1390,6 +1407,20 @@ int runGame(const Options& requested) {
         !(*ui)->elementHasClass("pause_menu", "panel", "player-tools-open") &&
         !(*ui)->elementHasClass("pause_menu", "panel", "player-chart"))
       portraitScenes.push_back((*playerPortrait)->scene());
+    // game_menu.c: renderMedalView draws the medal (renderDigiviceMedals) while the selected medal
+    // is held: the page marks that cell `showing`.
+    if (!showingMovie && medalFigure && (*medalFigure)->loaded() &&
+        (*ui)->isVisible("pause_menu") &&
+        (*ui)->elementHasClass("pause_menu", "panel", "player-medals") &&
+        !(*ui)->elementHasClass("pause_menu", "panel", "player-tools-open")) {
+      for (std::int32_t medal = 0; medal < MedalCount; ++medal) {
+        if ((*ui)->elementHasClass("pause_menu", std::format("medal-{}", medal), "showing")) {
+          (*medalFigure)->show(medal);
+          portraitScenes.push_back((*medalFigure)->scene(frameSeconds));
+          break;
+        }
+      }
+    }
     if (!showingMovie && saveFigure && (*saveFigure)->loaded() && flow.playing() != nullptr &&
         flow.playing()->saveIndicatorShown())
       portraitScenes.push_back((*saveFigure)->scene(frameSeconds));
@@ -1427,6 +1458,8 @@ int runGame(const Options& requested) {
     playerPortrait->reset();
   if (saveFigure)
     saveFigure->reset();
+  if (medalFigure)
+    medalFigure->reset();
   uiRenderer->reset();
   screenFade.reset();
   movies.reset();

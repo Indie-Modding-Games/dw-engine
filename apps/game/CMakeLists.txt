@@ -80,6 +80,7 @@ dwe_add_app(game
         src/screenshot.cpp
         src/session_start.cpp
         src/sign_dump.cpp
+        src/medal_figure.cpp
         src/save_figure.cpp
         src/save_indicator.cpp
         src/save_machine.cpp

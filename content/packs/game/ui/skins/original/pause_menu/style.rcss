@@ -442,6 +442,10 @@
 #medals-cursor { position: absolute; width: 72dp; height: 72dp; pointer-events: none; }
 #medals-cursor.hidden { display: none; }
 #medals-name-box { left: 153dp; top: 327dp; width: 531dp; height: 45dp; }
+/* renderDigiviceMedals: the held medal under the selector turns in the right box; the game draws the whole screen as
+   the original's MEDAL_VIEW sees it, so the image covers the screen from the page's corner, (11, 32) of the screen. */
+#player-medals-view #medal-figure { display: block; position: absolute; left: -33dp; top: -96dp; width: 960dp; height: 720dp; pointer-events: none; }
+#player-medals-view #medal-figure.hidden { display: none; }
 
 /* The card list (game_menu.c: renderCardsView): "Card List" in colour 3 at (-36, -80) from the screen's centre, which
    is (113, 8) of the page; 66 slots that renderBorderBox draws 18 x 18 with a #BEBEBE line on the top and the left, a
