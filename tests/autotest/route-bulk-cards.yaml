@@ -1,8 +1,9 @@
 # The bulk card packs (an engine improvement, docs/modulos/apps/screens.md, «Cambios en lote»): the card shop of
 # gias06b with 5000 bits. "Buy a pack of three" and "I'll buy it" pay the first pack as the original's script does;
 # routine 14 then asks "How many packs?" (right +1, up +10 stopping at the most, 10, then left -1) and shows the cards they gave, grouped, the new
-# ones in yellow. Each capture checks that the texts fit (text_fit). From a new game: --story-stage all --new-game
-# --start gias06b.
+# ones in yellow. Each capture checks that the texts fit (text_fit) and that the shop's boxes lie over nothing
+# another document draws (expect_clear), the modern look's minimap included. From a new game: --story-stage all
+# --new-game --start gias06b; runs with both skins (--ui-skin modern).
 name: bulk-cards
 device: keyboard
 timeout: 300
@@ -38,6 +39,7 @@ steps:
   - wait: {seconds: 0.5}
   - expect_setting: {card_shop.phase: packs}
   - expect_setting: {card_shop.packs.most: "10"}
+  - expect_clear: card_shop
   - screenshot: packs-1
   - tap: {key: right}
   - wait: {seconds: 0.2}
@@ -47,12 +49,15 @@ steps:
   - wait: {seconds: 0.3}
   - expect_setting: {card_shop.packs.value: "9"}
   - expect_setting: {card_shop.packs.total: "4500"}
+  - expect_clear: card_shop
   - screenshot: packs-9
   - resize: [1920, 1080]
   - wait: {seconds: 0.5}
+  - expect_clear: card_shop
   - screenshot: packs-1080
   - resize: [1024, 768]
   - wait: {seconds: 0.5}
+  - expect_clear: card_shop
   - screenshot: packs-768
   - resize: [1280, 720]
   - wait: {seconds: 0.3}
@@ -60,6 +65,7 @@ steps:
   - wait: {seconds: 0.5}
   - expect_setting: {card_shop.phase: summary}
   - expect_setting: {card_shop.packs.opened: "9"}
+  - expect_clear: card_shop
   - screenshot: summary
   - tap: {key: down}
   - tap: {key: down}
@@ -71,9 +77,11 @@ steps:
   - screenshot: summary-scrolled
   - resize: [1920, 1080]
   - wait: {seconds: 0.5}
+  - expect_clear: card_shop
   - screenshot: summary-1080
   - resize: [1024, 768]
   - wait: {seconds: 0.5}
+  - expect_clear: card_shop
   - screenshot: summary-768
   - resize: [1280, 720]
   - wait: {seconds: 0.3}

@@ -548,6 +548,26 @@ digits as HH:MM while the option is on` (`engine/ui/tests/ui_tests.cpp`), `one p
 the rest of it but the panel round it` (`engine/ui/tests/text_fit_tests.cpp`) y los ajustes del usuario
 (`apps/game/tests/user_settings_tests.cpp`).
 
+## Minimapa bajo las ventanas
+
+Regla de dwe (el original no tiene minimapa): el minimapa del HUD nunca se dibuja encima de una ventana, con cualquier
+aspecto, tamaño de ventana y tamaño de minimapa. Cada frame, antes de maquetar la UI, `MinimapCover`
+(`apps/game/src/minimap_setting.hpp`) mira la última maqueta: si algo que dibuja otro documento mostrado
+(`Ui::drawnRects`: el menú de pausa, la página del compañero, la ventana de un comerciante o de la tienda de cartas, un
+cuadro de resumen) pisa la caja de `#minimap`, publica `hud.minimap_covered` y el script del HUD pone la clase
+`covered`, que lo deja en su sitio sin dibujarlo (`visibility: hidden` en `ui/hud/structure.rcss`, común a todos los
+aspectos). Vuelve cuando nada lo ha pisado durante 0,25 s (`MinimapCover::HoldSeconds`), para que una caja que se
+cierra con una transformación, que `drawnRects` no cuenta, no lo destape mientras encoge. Las ventanas no se mueven:
+donde no llegan a su esquina (el menú de pausa moderno a 1280x720 o 1920x1080 con el minimapa grande) el minimapa se
+sigue viendo.
+
+La ruta `route-minimap-clear.yaml` pone el minimapa siempre visible y grande y comprueba con `expect_clear` el menú de
+pausa, la página del compañero y el minimapa con el menú cerrado a 1280x720, 1920x1080 y 1024x768 (a 1024x768 el menú
+moderno lo tapa y el minimapa se esconde); `route-bulk-cards.yaml` y `route-bulk-trade.yaml` (esta con el minimapa
+grande a 4:3) comprueban igual la tienda de cartas y el trueque. Tests: `the minimap hides while a window lies over it
+and shows a moment after it leaves` y `the HUD draws no minimap under a window, whatever the window`
+(`apps/game/tests/minimap_setting_tests.cpp`).
+
 ## Cambios en lote
 
 Mejora opcional, encendida por defecto: el ajuste `bulk_trades` (fila «Cambios en lote» de las opciones del menú de

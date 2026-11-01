@@ -1,9 +1,10 @@
 # The bulk trade (an engine improvement, docs/modulos/apps/screens.md, «Cambios en lote»): the item trader of frzl14
 # (table 1) with 21 Giant Meat in the bag. Picking the row asks "How many?": right +1, up +10, left -1, then the
 # yes makes that many single trades. Each capture checks that the texts fit (text_fit), and the list and the box are
-# checked to lie over nothing another document draws (expect_clear), the modern look's minimap included. Last, the
-# pause menu's option turns it off and the same row goes straight to the trader's question, as the original. From a
-# new game: --story-stage all --new-game --start frzl14; runs with both skins (--ui-skin modern) and both languages.
+# checked to lie over nothing another document draws (expect_clear), the modern look's minimap included, at its largest
+# size. Last, the pause menu's option turns it off and the same row goes straight to the trader's question, as the
+# original. From a new game: --story-stage all --new-game --start frzl14; runs with both skins (--ui-skin modern) and
+# both languages.
 name: bulk-trade
 device: keyboard
 timeout: 300
@@ -12,6 +13,17 @@ steps:
   - wait: {map: frzl14, seconds: 1.5, timeout: 90}
   - resize: [1280, 720]
   - expect_setting: {bulk_trades: "true"}
+  # The modern look's minimap at its largest, which the trader's window reaches at 4:3.
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu: open
+        - wait: {seconds: 0.6}
+        - menu_select: open-minimap
+        - menu_select: minimap-size
+        - expect_setting: {minimap_size: large}
+        - menu: close
+        - wait: {menu_open: false}
   - script: give_item("giant_meat 21")
   - script: place("player 2012 -3581 0")
   - wait: {seconds: 0.5}

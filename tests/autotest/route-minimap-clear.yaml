@@ -1,0 +1,96 @@
+# The HUD's minimap stays clear of every window (docs/modulos/apps/game.md, «Minimapa bajo las ventanas»): with the
+# minimap on at its largest size, the pause menu's pages and the partner's page lie over nothing another document
+# draws (expect_clear) at 1280x720, 1920x1080 and 1024x768: where a window reaches the minimap's corner, the minimap
+# hides while it is open (has_class hud#minimap.covered) and shows again once it closes. Every capture checks that the
+# texts fit (text_fit); the partner's page has no capture here (its modern layout is another route's). Made for the modern look (--ui-skin modern), whose minimap shows on auto; it runs with the
+# original look too, and once per language. How to run it: docs/guides/prueba-vertical.md.
+name: minimap-clear
+device: keyboard
+timeout: 300
+text_fit: true
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - menu: open
+  - wait: {seconds: 0.6}
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.6}
+        - tap: {key: tab}
+        - wait: {seconds: 0.3}
+        - menu_select: player-minimap
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-minimap
+  - wait: {seconds: 0.3}
+  # Auto, then on; medium, then large.
+  - menu_select: minimap-mode
+  - expect_setting: {minimap: "on"}
+  - menu_select: minimap-size
+  - expect_setting: {minimap_size: large}
+  - wait: {seconds: 0.3}
+  - expect_clear: pause_menu
+  - screenshot: minimap-page
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  # The field with the menu closed: the minimap is there, over nothing.
+  - expect_setting: {has_class.hud#minimap.covered: "false"}
+  - expect_clear: hud#minimap
+  - screenshot: field
+  # The pause menu and the partner's page at 1280x720.
+  - menu: open
+  - wait: {seconds: 0.6}
+  - expect_clear: pause_menu
+  - screenshot: pause
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.6}
+  - expect_clear: partner_menu
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  - expect_setting: {has_class.hud#minimap.covered: "false"}
+  - expect_clear: hud#minimap
+  - resize: [1920, 1080]
+  - wait: {seconds: 0.5}
+  # At 1920x1080, where the pause menu reaches the minimap.
+  - menu: open
+  - wait: {seconds: 0.6}
+  - expect_clear: pause_menu
+  - screenshot: pause
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.6}
+  - expect_clear: partner_menu
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  - expect_setting: {has_class.hud#minimap.covered: "false"}
+  - expect_clear: hud#minimap
+  - resize: [1024, 768]
+  - wait: {seconds: 0.5}
+  # At 1024x768 the modern look's pause menu reaches the minimap's corner: the minimap hides while it is open.
+  - menu: open
+  - wait: {seconds: 0.6}
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - expect_setting: {has_class.hud#minimap.covered: "true"}
+  - expect_clear: pause_menu
+  - screenshot: pause
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.6}
+  - expect_clear: partner_menu
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  - expect_setting: {has_class.hud#minimap.covered: "false"}
+  - expect_clear: hud#minimap

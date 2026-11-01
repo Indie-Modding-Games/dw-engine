@@ -195,6 +195,10 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   comprueba que el aviso no pisa ninguna ventana (`expect_clear`) y que los textos caben (`text_fit`). Al final apaga
   la opción en el menú de pausa y comprueba que un guardado ya no lo enseña. Necesita `--saves` con una carpeta vacía.
   Se corre en los dos idiomas.
+- `route-minimap-clear.yaml`: el [minimapa bajo las ventanas](../modulos/apps/game.md#minimapa-bajo-las-ventanas)
+  desde una partida nueva con el teclado: el minimapa siempre visible y grande, y el menú de pausa y la página del
+  compañero a 1280x720, 1920x1080 y 1024x768 sin pisar nada (`expect_clear`), con el minimapa de vuelta al cerrarlos.
+  Hecha para el aspecto moderno (`--ui-skin modern`); también pasa con el original. Se corre en los dos idiomas.
 - `route-digital-time.yaml`: la [hora en dígitos](../modulos/apps/game.md#hora-en-dígitos) bajo el reloj del HUD
   desde una partida nueva con el teclado: las 08:00 a 1280x720, 1920x1080 y 1024x768, la noche (las 20:00), el menú
   de pausa abierto (el reloj se va con su caja) y la opción apagada desde el menú. Cada captura con la caja comprueba

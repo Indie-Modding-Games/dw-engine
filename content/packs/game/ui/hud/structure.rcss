@@ -6,3 +6,9 @@
 	position: absolute;
 	transform: translate(-50%, -100%);
 }
+
+/* While a window lies over the minimap the game hides it (hud.minimap_covered): it keeps its place, so the game can
+   tell when nothing lies there any more, and draws nothing. */
+#minimap.covered {
+	visibility: hidden;
+}

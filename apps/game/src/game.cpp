@@ -781,6 +781,7 @@ int runGame(const Options& requested) {
   bool reportAsked = false;
 
   FrameStats frameStats;
+  MinimapCover minimapCover;
   AutotestHost host{
       .platform = &*platform,
       .window = &*window,
@@ -1316,6 +1317,8 @@ int runGame(const Options& requested) {
       }
     }
     bugReporter.update(**ui, frameSeconds);
+    // From the last frame's layout: the minimap hides under any window over it.
+    minimapCover.update(**ui, frameSeconds);
     if (options.tuning) {
       (*ui)->reloadChanged();
     }

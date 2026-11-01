@@ -32,6 +32,9 @@ local function refresh(document)
   -- hides it. A battle hides it too: its HP bars and end box take that corner.
   minimap:set_class("auto", mode == "auto")
   minimap:set_class("hidden", mode == "off" or ui.setting("battle.active") == true)
+  -- The game hides it while a window lies over it (hud.minimap_covered, apps/game:
+  -- minimap_setting.hpp), whatever the skin.
+  minimap:set_class("covered", ui.setting("hud.minimap_covered") == true)
   local size = ui.setting("minimap_size")
   if not sizes[size] then
     size = "medium"
@@ -356,6 +359,8 @@ function on_setting(document, name)
     -- bubble again.
     refresh(document)
     draw_field(document)
+  elseif name == "hud.minimap_covered" then
+    refresh(document)
   elseif string.find(name, "^hud%.") then
     if string.find(name, "%.label$") then
       draw_field_labels(document)
