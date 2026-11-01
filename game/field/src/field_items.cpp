@@ -1,4 +1,5 @@
 #include <dwe/core/log.hpp>
+#include <dwe/core/math.hpp>
 #include <dwe/game/field/field_items.hpp>
 
 #include <algorithm>
@@ -61,6 +62,8 @@ bool FieldItems::spawnChest(const Chest& chest) {
   core::logDebug("[port:field_items] spawnChest (map_object.c:841): slot {} trigger {} taken {}",
                  *slot, chest.trigger, chest.taken);
   chests_[*slot] = chest;
+  // spawnChest: a chest whose trigger is set shows its drawer out.
+  chests_[*slot]->tray = chest.taken ? ChestTrayOut : 0;
   return true;
 }
 
@@ -88,7 +91,7 @@ std::optional<std::size_t> FieldItems::offerPickup(assets::CollisionCell cell) {
 std::optional<std::size_t> FieldItems::chestInReach(assets::CollisionCell cell) const {
   for (std::size_t slot = 0; slot < chests_.size(); ++slot) {
     if (const std::optional<Chest>& chest = chests_[slot];
-        chest && inReach(cell, assets::collisionCellAt(chest->position))) {
+        chest && inReach(cell, chestReachCell(*chest))) {
       return slot;
     }
   }
@@ -100,6 +103,69 @@ void FieldItems::remove(std::size_t slot) {
     core::logDebug("[port:field_items] deleteDroppedItem (item.c:2458): slot {}", slot);
     ground_[slot].reset();
   }
+}
+
+glm::vec3 chestPlace(const Chest& chest) {
+  // spawnChest: location = (column * 100 - 4950, 0, 4950 - row * 100), the cell's centre, which in
+  // world space is (column - 50) * 100 + 50 on both axes (assets::collisionCellAt).
+  const assets::CollisionCell cell = assets::collisionCellAt(chest.position);
+  constexpr float Cell = 100.0F;
+  constexpr std::int32_t Middle = 50;
+  return {static_cast<float>(cell.column - Middle) * Cell + Cell / 2.0F, 0.0F,
+          static_cast<float>(cell.row - Middle) * Cell + Cell / 2.0F};
+}
+
+assets::CollisionCell chestReachCell(const Chest& chest) {
+  // spawnChest: tileY += 4 for 0, -= 4 for 0x800; tileX -= 4 for 0x400, += 4 for 0xc00. The
+  // original's rows and the world's are numbered alike (assets::collisionCellAt).
+  constexpr std::int32_t Ahead = 4;
+  constexpr std::int32_t Quarter = core::OriginalAnglePerTurn / 4;
+  assets::CollisionCell cell = assets::collisionCellAt(chest.position);
+  switch (chest.rotation) {
+  case 0:
+    cell.row += Ahead;
+    break;
+  case 2 * Quarter:
+    cell.row -= Ahead;
+    break;
+  case Quarter:
+    cell.column -= Ahead;
+    break;
+  case 3 * Quarter:
+    cell.column += Ahead;
+    break;
+  default:
+    break;
+  }
+  return cell;
+}
+
+bool FieldItems::slideTrayOut(std::size_t chest) {
+  if (chest >= chests_.size() || !chests_[chest]) {
+    return true;
+  }
+  // map_object.c: tickOpenChestTray: vz -= 20, done (at -160) once past -159.
+  std::int32_t& tray = chests_[chest]->tray;
+  tray -= ChestTrayStep;
+  if (tray <= ChestTrayOut) {
+    tray = ChestTrayOut;
+    return true;
+  }
+  return false;
+}
+
+bool FieldItems::slideTrayIn(std::size_t chest) {
+  if (chest >= chests_.size() || !chests_[chest]) {
+    return true;
+  }
+  // map_object.c: tickCloseChestTray: vz += 20, done (at 0) once it reaches 0.
+  std::int32_t& tray = chests_[chest]->tray;
+  tray += ChestTrayStep;
+  if (tray >= 0) {
+    tray = 0;
+    return true;
+  }
+  return false;
 }
 
 void FieldItems::markTaken(std::size_t chest) {

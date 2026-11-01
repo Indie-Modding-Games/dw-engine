@@ -172,6 +172,22 @@ TEST_CASE("Trash Mountain has the giant poop, at the original's place, and no ot
   CHECK_FALSE(dwe::session::trainingPoopOn("").has_value());
 }
 
+TEST_CASE("map_object.c loadWarpCrystals: the ice sanctuary's three maps have their crystals") {
+  const auto icsa05 = dwe::session::warpCrystalsOn("icsa05");
+  REQUIRE(icsa05.size() == 4);
+  CHECK(icsa05[0].x == 2237);
+  CHECK(icsa05[0].z == -1667);
+  CHECK(icsa05[3].x == -2358);
+  CHECK(icsa05[3].z == 419);
+  REQUIRE(dwe::session::warpCrystalsOn("icsa06").size() == 1);
+  const auto icsa07 = dwe::session::warpCrystalsOn("icsa07");
+  REQUIRE(icsa07.size() == 2);
+  CHECK(icsa07[1].z == -3358);
+  // loadMap calls it only on maps 101 to 103: the case for 104 (icsa08) never runs.
+  CHECK(dwe::session::warpCrystalsOn("icsa08").empty());
+  CHECK(dwe::session::warpCrystalsOn("gomi02").empty());
+}
+
 TEST_CASE("the Angemon pedestal starts at z 1500 and slides 10 a frame to 2000, shaking in x") {
   dwe::session::StoryScenesContext scenes{dwe::session::StoryScenesDesc{}};
   REQUIRE(dwe::session::registerAngemonPedestalRoutines(scenes));

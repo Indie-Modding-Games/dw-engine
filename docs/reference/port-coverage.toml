@@ -437,7 +437,8 @@ unsetButterfly = { status = "portado", dwe = "apps/game/src/play_session.cpp", n
 clearChests = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Vacía los cofres del mapa al salir." }
 loadDirtCartModel = { status = "portado", dwe = "apps/session/src/story_routines/routine_dirt_cart.cpp", what = "Carga la vagoneta de tierra de la mina." }
 initializeChest = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Prepara los cofres de la partida." }
-loadWarpCrystals = { status = "falta", what = "Carga los cristales de teletransporte de un mapa." }
+loadWarpCrystals = { status = "portado", dwe = "apps/session/include/dwe/session/story_props.hpp", what = "Carga los cristales de teletransporte de un mapa.", note = "solo en icsa05, icsa06 e icsa07 (mapas 101 a 103), sea cual sea la historia" }
+renderWarpCrystals = { status = "portado", dwe = "apps/game/src/field_story_props.cpp", what = "Dibuja los cristales de teletransporte." }
 spawnBoulder = { status = "portado", dwe = "apps/session/src/story_props.cpp", what = "Pone la roca que bloquea un paso." }
 initializeMedalModel = { status = "falta", what = "Carga el modelo de una medalla." }
 spawnToyTownBoxes = { status = "portado", dwe = "apps/session/src/story_routines/routine_toy_town.cpp", what = "Pone las cajas de la ciudad de juguete." }
@@ -446,8 +447,9 @@ spawnAngemonPedestal = { status = "portado", dwe = "apps/session/src/story_routi
 initializeTrainingPoop = { status = "portado", dwe = "apps/session/include/dwe/session/story_props.hpp", what = "Pone la caca gigante de Trash Mountain." }
 emptyChests = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Marca vacíos los cofres ya abiertos." }
 isBoxOffScreen = { status = "no-aplica", note = "recorte de dibujo", what = "Dice si un objeto está fuera de la pantalla." }
-tickOpenChestTray = { status = "falta", what = "Anima la tapa del cofre al abrirse." }
-tickCloseChestTray = { status = "falta", what = "Anima la tapa del cofre al cerrarse." }
+tickOpenChestTray = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Saca el cajón del cofre al abrirlo (20 por fotograma hasta 160)." }
+tickCloseChestTray = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Mete el cajón del cofre cuando la bolsa está llena (20 por fotograma)." }
+renderChest = { status = "portado", dwe = "apps/game/src/field_items_screen.cpp", what = "Dibuja los cofres del mapa con su cajón." }
 decreaseDirtPileSize = { status = "portado", dwe = "apps/session/src/story_routines/routine_dirt_cart.cpp", what = "Encoge un montón de tierra al cavar." }
 moveAngemonPedestal = { status = "portado", dwe = "apps/session/src/story_routines/routine_angemon_pedestal.cpp", what = "Mueve el pedestal del santuario." }
 activateMedalTexture = { status = "falta", what = "Pone la textura de la medalla ganada." }

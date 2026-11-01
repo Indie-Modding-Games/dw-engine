@@ -1,7 +1,9 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string_view>
 #include <variant>
 
@@ -159,6 +161,39 @@ struct TrainingPoop {
 // The poop on the map `mapId`, if that map has it.
 [[nodiscard]] constexpr std::optional<TrainingPoop> trainingPoopOn(std::string_view mapId) {
   return mapId == "gomi02" ? std::optional{TrainingPoop{}} : std::nullopt;
+}
+
+// The ice sanctuary's teleport crystals: map.c: loadMap calls loadWarpCrystals on maps 101 to 103
+// (icsa05, icsa06, icsa07), whatever the story, which puts ETCNA\WARP there (addWarpCrystal): two
+// linked objects, unturned, the first at (x, WarpCrystalHeight, z) and the second
+// WarpCrystalHeight further from it. renderWarpCrystals draws them while the map layer is. In the
+// original's axes (y down).
+struct WarpCrystal {
+  std::int32_t x = 0;
+  std::int32_t z = 0;
+};
+inline constexpr std::int32_t WarpCrystalHeight = -188;
+
+inline constexpr std::array<WarpCrystal, 4> Icsa05Crystals{{{.x = 2237, .z = -1667},
+                                                            {.x = -2237, .z = -1667},
+                                                            {.x = 2358, .z = 419},
+                                                            {.x = -2358, .z = 419}}};
+inline constexpr std::array<WarpCrystal, 1> Icsa06Crystals{{{.x = 0, .z = 0}}};
+inline constexpr std::array<WarpCrystal, 2> Icsa07Crystals{
+    {{.x = 2376, .z = -127}, {.x = 1566, .z = -3358}}};
+
+// The crystals on the map `mapId`; none on the other maps.
+[[nodiscard]] constexpr std::span<const WarpCrystal> warpCrystalsOn(std::string_view mapId) {
+  if (mapId == "icsa05") {
+    return Icsa05Crystals;
+  }
+  if (mapId == "icsa06") {
+    return Icsa06Crystals;
+  }
+  if (mapId == "icsa07") {
+    return Icsa07Crystals;
+  }
+  return {};
 }
 
 } // namespace dwe::session

@@ -32,7 +32,8 @@ class BossArrivalScene;
 // rival's mood bubble over its character (script_common.c: renderMonochromonMoodBubble), moves a
 // map sprite to a character's node (overworld.c: spawnSpriteAtEntity) and draws the Angemon
 // shrine's pedestal (renderAngemonPedestal) and Toy Town's gearbox and boxes, opening the selected
-// box's lid a step an original frame (renderGearbox, renderToyTownBoxes). Entering a map takes the
+// box's lid a step an original frame (renderGearbox, renderToyTownBoxes), and the ice sanctuary's
+// teleport crystals (renderWarpCrystals). Entering a map takes the
 // cart, the pile, the boulder, the pedestal, the gearbox and the boxes away (map_object.c:
 // unloadMapParts).
 class FieldStoryProps {

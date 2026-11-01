@@ -24,6 +24,9 @@ inline constexpr std::string_view DropItemCommand = "drop_item";
 // checkItemPickup, tamerTickPickupItem, checkChestCollision, tamerTickTakeChest): the player walks
 // onto an item, or confirms next to a chest, a notice names the item, and on confirm it goes to
 // the bag; with the bag full a second notice says so and the item stays. The field waits meanwhile.
+// A chest slides its drawer out before its notice shows, and back in when the bag is full
+// (map_object.c: tickOpenChestTray, tickCloseChestTray); the chests are drawn with their drawers
+// (renderChest).
 class FieldItemsScreen {
 public:
   // The adapters, the UI and the sound (nullptr: silent) must outlive this object.
@@ -34,21 +37,25 @@ public:
   [[nodiscard]] bool active() const { return step_ != Step::None; }
 
   // Before the field ticks, while it is idle: offers the item under the player, or, on `confirm`,
-  // the chest in reach. Returns whether it took the confirm, which the field then does not see.
-  bool tick(const game::field::Field& field, bool confirm);
+  // the chest in reach, and slides an open chest's drawer by `seconds`. Returns whether it took the
+  // confirm, which the field then does not see.
+  bool tick(const game::field::Field& field, bool confirm, double seconds);
 
   // Takes the notice's answer; false for any other command.
   bool handle(const ui::UiCommand& command);
 
   // Hands the scene the items on the ground of the map shown, once a frame: those with an icon
-  // (ItemEntry::iconPalette) are drawn (item.c: renderDroppedItem).
+  // (ItemEntry::iconPalette) are drawn (item.c: renderDroppedItem), and the chests.
   void show(FieldScene& scene) const;
 
 private:
-  enum class Step : std::uint8_t { None, GroundItem, Chest, BagFull, Empty };
+  // Opening: the chest's drawer slides out before its notice.
+  enum class Step : std::uint8_t { None, GroundItem, Opening, Chest, BagFull, Empty };
 
   void show(Step step, std::string_view text, assets::ItemHandle item);
   void close();
+  // Slides the open chest's drawer by whole original frames of `seconds`.
+  void slideTray(double seconds);
 
   session::FieldItemsAdapter* items_;
   const session::InventoryAdapter* inventory_;
@@ -56,6 +63,10 @@ private:
   game::story::SoundPort* sound_;
   Step step_ = Step::None;
   std::size_t slot_ = 0;
+  // The chest's drawer goes back in (the bag was full); the notice waits for it.
+  bool closing_ = false;
+  // The time toward the drawer's next original frame.
+  double traySeconds_ = 0.0;
 };
 
 } // namespace dwe::app

@@ -53,6 +53,8 @@ constexpr glm::ivec3 SmallBoxLocation{-400, -400, 600};
 constexpr glm::ivec3 PileLocation{2037, 0, 849};
 // map_object.c: initializeTrainingPoop (session::trainingPoopOn).
 constexpr std::string_view TrainingPoopModel = "model/etcna/try";
+// map_object.c: loadWarpCrystals (WARP_CRYSTAL_TMD).
+constexpr std::string_view WarpCrystalModel = "model/etcna/warp";
 // renderDirtCartModel puts the cart the partner's radius plus 100 in front of it.
 constexpr float CartReach = 100.0F;
 
@@ -434,6 +436,20 @@ void FieldStoryProps::show() {
         glm::translate(glm::mat4{1.0F}, assets::toWorldPosition({place->x, place->y, place->z})));
   }
   setProps(*scene_, TrainingPoopModel, std::move(poop));
+  // renderWarpCrystals: each crystal unturned at its place, its second object (linked to the first)
+  // WarpCrystalHeight further on (the original's y is down: core::fromOriginalAxes).
+  std::vector<FieldScene::PropPlace> crystals;
+  for (const session::WarpCrystal& crystal : session::warpCrystalsOn(field.mapId())) {
+    const glm::ivec3 place{crystal.x, session::WarpCrystalHeight, crystal.z};
+    const glm::vec3 above =
+        core::fromOriginalAxes(glm::vec3{0.0F, session::WarpCrystalHeight, 0.0F});
+    crystals.push_back({.world = glm::translate(glm::mat4{1.0F}, assets::toWorldPosition(place)),
+                        .joints = {glm::mat4{1.0F}, glm::translate(glm::mat4{1.0F}, above)},
+                        .tint = glm::vec4{1.0F}});
+  }
+  if (const auto id = modelId(WarpCrystalModel)) {
+    scene_->setPosedProps(*id, std::move(crystals));
+  }
   scene_->setScreenShake({static_cast<float>(shake_.offset()), 0.0F});
   showShakeSquare();
   showMoodBubble();
