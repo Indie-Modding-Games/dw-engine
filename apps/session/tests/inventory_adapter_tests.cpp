@@ -244,6 +244,20 @@ TEST_CASE("a chip raises the stats through the partner's gains and may lower the
   CHECK(session->partner().state().stats.base[Stat::Brain] == before.stats.base[Stat::Brain] + 50);
 }
 
+TEST_CASE("item.c handleChips: the auto pilot chip asks once for its map-head section") {
+  const TestPacks packs;
+  Adapters adapters;
+  auto session = sessionWithItems(packs, adapters);
+  CHECK_FALSE(adapters.inventory->takeScriptSection().has_value());
+  adapters.inventory->inventory().add(items::handleOf(items::ScriptChip), 1);
+  const auto used = adapters.inventory->use(*session, items::handleOf(items::ScriptChip));
+  REQUIRE_MESSAGE(used.has_value(), errorOf(used));
+  REQUIRE(used->outcome == UseOutcome::Used);
+  // case 0x16: section 0x4dd.
+  CHECK(adapters.inventory->takeScriptSection() == 0x4DD);
+  CHECK_FALSE(adapters.inventory->takeScriptSection().has_value());
+}
+
 TEST_CASE("the partner never takes some items, and nothing is used up") {
   const TestPacks packs;
   Adapters adapters;

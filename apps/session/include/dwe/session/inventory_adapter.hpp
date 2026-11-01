@@ -91,6 +91,11 @@ public:
   [[nodiscard]] std::optional<game::inventory::HealingParticles> takeHealingParticles() {
     return std::exchange(pendingHealing_, std::nullopt);
   }
+  // The MAPHEAD section the last item used in the field asks the story for (item.c: handleChips,
+  // the auto pilot chip), once: the game asks the story, which drops it while a script runs.
+  [[nodiscard]] std::optional<std::int32_t> takeScriptSection() {
+    return std::exchange(pendingSection_, std::nullopt);
+  }
 
 private:
   class Serializer;
@@ -107,6 +112,7 @@ private:
   std::unique_ptr<Serializer> serializer_;
   std::function<void(const std::vector<game::inventory::Stack>&)> lossListener_;
   std::optional<game::inventory::HealingParticles> pendingHealing_;
+  std::optional<std::int32_t> pendingSection_;
 };
 
 } // namespace dwe::session

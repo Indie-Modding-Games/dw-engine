@@ -1031,6 +1031,17 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (fieldIdle && !paused()) {
     fieldPoop_.update();
   }
+  // item.c: handleChips: the auto pilot chip calls its map-head section if no script runs; the
+  // story drops the request otherwise, and the chip is gone either way.
+  if (const auto section = game_.systems.inventory->takeScriptSection(); section) {
+    const auto outcome =
+        game_.systems.story->request({.script = game::story::StoryRunner::MapHeadScript,
+                                      .section = static_cast<std::uint16_t>(*section)},
+                                     game::story::StartTiming::NextFrame);
+    core::logDebug("[port:items] handleChips (item.c:2260): section {} of the map-head script {}",
+                   *section,
+                   outcome == game::story::RequestOutcome::Accepted ? "asked for" : "dropped");
+  }
   // particle.c: addHealingParticleEffect, from the item the partner just took in the field.
   if (const auto healing = game_.systems.inventory->takeHealingParticles(); healing) {
     const assets::DigimonRow* row =

@@ -89,7 +89,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 49 | 0 | 0 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 96 | 95 | 0 | 1 | 99 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 79 | 79 | 0 | 0 | 100 % |
-| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 96 | 95 | 1 | 0 | 99 % |
+| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 96 | 96 | 0 | 0 | 100 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 29 | 0 | 0 | 100 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 38 | 37 | 1 | 0 | 99 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 81 | 64 | 9 | 8 | 85 % |
@@ -101,7 +101,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 30 | 1 | 0 | 98 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 49 | 48 | 1 | 0 | 99 % |
-| **Total** | 1392 funciones a portar | 1392 | 1181 | 27 | 184 | 86 % |
+| **Total** | 1392 funciones a portar | 1392 | 1182 | 26 | 184 | 86 % |
 
 ## Batalla
 
@@ -214,11 +214,7 @@ Uso de objetos, comida y chips, tiendas, cartas, guardarropía y menús de guion
 
 Ficheros del decomp: `main/item.c`, `shop/script_menu.c`.
 
-Portado 95, parcial 1, falta 0.
-
-| Función | Decomp | Estado | Qué hace | Motor / nota |
-|---|---|---|---|---|
-| `handleChips` | `main/item.c:2248` | parcial | Usa un chip: sube un stat y lanza su sección de guion. | `content/packs/game/rules/original/inventory.yaml:59` · la sección de guion de un chip no corre (docs/modulos/apps/session.md:276) |
+Portado 96, parcial 0, falta 0.
 
 ## Evolución
 

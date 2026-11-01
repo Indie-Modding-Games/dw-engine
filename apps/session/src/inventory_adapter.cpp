@@ -128,7 +128,10 @@ public:
     if (effect.evolution && adapter_->desc_.evolution != nullptr) {
       adapter_->desc_.evolution->useItem(*session_, effect.item);
     }
-    // Gap: a script chip's section waits for the script VM (phase 4).
+    // item.c: handleChips case 0x16: callScriptSection(0, 0x4dd, 0) while no script runs.
+    if (effect.scriptSection) {
+      adapter_->pendingSection_ = *effect.scriptSection;
+    }
   }
 
 private:
