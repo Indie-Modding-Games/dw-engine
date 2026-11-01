@@ -688,6 +688,11 @@
 	decorator: image(anger-mark scale-none center center), image(anger-bubble);
 }
 
+/* An NPC not fighting runs off (btl.c: setFleeBubble(id, 1)): the next bubble and face in BI_IN. */
+.anger.flee {
+	decorator: image(flee-mark scale-none center center), image(flee-bubble);
+}
+
 .bp {
 	background-color: transparent;
 }

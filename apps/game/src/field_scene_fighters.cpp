@@ -128,7 +128,7 @@ bool FieldScene::animateFighter(Actor& actor) const {
   if (!actor.fighter) {
     return false;
   }
-  actor.player->setSpeed(1.0F);
+  actor.player->setSpeed(actor.fighter->pace);
   // A frozen clip stands on its frame (anim.c: tickAnimation skips an entity without animFlag 1).
   static_cast<void>(
       actor.player->advance(actor.fighter->frozen ? 0.0F : static_cast<float>(fighterSeconds_)));

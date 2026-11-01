@@ -32,6 +32,9 @@ core::Result<assets::DigimonTable> speciesTable(const assets::VirtualFileSystem&
 // first NPC that can fight.
 core::Result<std::vector<std::size_t>> npcsOf(std::string_view argument);
 
+// Whether a map NPC has a species with stats to fight with.
+[[nodiscard]] bool canFight(const assets::MapNpc& npc, const assets::DigimonTable& species);
+
 // A battle against the map's NPCs, and the script id of the NPC each enemy is, in the enemies'
 // order: the battle screen shows each enemy on its NPC.
 struct MapBattle {

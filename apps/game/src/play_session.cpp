@@ -24,12 +24,16 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <format>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "battle_trigger.hpp"
 #include "bulk_amount.hpp"
@@ -135,6 +139,22 @@ void startBattle(BattleScreen& screen, const assets::DigimonTable* species, cons
     auto request = mapBattleRequest(scene.field(), scene.map(), *species, *chosen);
     if (!request) {
       return std::unexpected{request.error()};
+    }
+    // Without NPC numbers this is the battle touching the first NPC that can fight starts: the
+    // others on screen may join it, as in the story's battles with no predefined enemies.
+    if (chosen->empty() && !story && !request->enemyNpcs.empty()) {
+      std::vector<std::int32_t> enemies{request->enemyNpcs.front()};
+      std::ranges::copy(screen.joiningNpcs(enemies.front(), false), std::back_inserter(enemies));
+      std::vector<std::size_t> indices;
+      const auto& records = scene.map().npcs;
+      for (const std::int32_t npc : enemies) {
+        const auto found = std::ranges::find(records, npc, &assets::MapNpc::scriptId);
+        indices.push_back(static_cast<std::size_t>(found - records.begin()));
+      }
+      request = mapBattleRequest(scene.field(), scene.map(), *species, indices);
+      if (!request) {
+        return std::unexpected{request.error()};
+      }
     }
     request->request.scripted = story;
     return screen.start(std::move(request->request), std::move(request->enemyNpcs));

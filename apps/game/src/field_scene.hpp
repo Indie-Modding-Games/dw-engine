@@ -605,6 +605,8 @@ private:
   std::optional<StatusTexture> statusTexture(std::string_view image, std::int32_t palette);
   const EffectModelEntry* statusModel(std::string_view model);
   void addStatusBillboards(std::vector<render::MapBillboard>& billboards);
+  // A flattened fighter's paper sprite (model.c: renderFlatDigimon).
+  void addFlatFighterBillboards(std::vector<render::MapBillboard>& billboards);
   void submitStatusModels();
   // Where a fighter's status visuals hang: its actor's position (world axes), the point of its
   // species' CONDITION_FX_OFFSETS (translateConditionFXToEntity; the top of the body without one)

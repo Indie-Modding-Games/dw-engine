@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "battle_effect_bodies.hpp"
+#include "battle_ground.hpp"
 #include "fighter_figure.hpp"
 
 namespace dwe::app {
@@ -86,8 +87,8 @@ struct BattleScreenDesc {
 // the game loop's ticks, passes the player's commands to it, publishes its view, and once it ends
 // gives the result to the session and shows the end box until the player closes it. The rules are
 // the battle's; this only shows and forwards.
-// An NPC leaving the battle's ground after a victory: the field shows it on `figure`; it walks to
-// its flee point once it has got up.
+// An NPC leaving the battle's ground, as the battle opens or after a victory: the field shows it on
+// `figure`; it walks to its flee point (after a victory, once it has got up).
 struct Leaver {
   std::int32_t npc = 0;
   FighterFigure figure;
@@ -103,6 +104,10 @@ public:
   // (FLEE_DISABLED): its enemies stay on the map after it.
   core::Result<void> start(session::BattleRequest request, std::vector<std::int32_t> enemyNpcs,
                            bool fixedFight = false);
+
+  // The script ids of the NPCs on screen that join a battle with no predefined enemies, started by
+  // touching `touched` (btl.c: handleBattleStart); rolls the session's random numbers.
+  [[nodiscard]] std::vector<std::int32_t> joiningNpcs(std::int32_t touched, bool fixedFight);
 
   // Whether the battle, its end box, the beaten enemies' exit or the command strip going back up
   // is on screen: the field and the game clock wait meanwhile.
@@ -177,6 +182,13 @@ private:
   // battle_screen_exit.cpp: what the battle leaves on the map.
   [[nodiscard]] bool offScreen(std::int32_t npc, float x, float z) const;
   [[nodiscard]] std::vector<std::int32_t> npcsOnScreen() const;
+  // The NPCs not fighting that run off as the battle opens (battle_setup.c: BTL_handleBattleIntro).
+  void startFlight();
+  // Where the run-off marks hang, `lift` over each runner's species height, as the anger marks.
+  [[nodiscard]] std::vector<screens::AngerAnchor> runOffAnchors(float lift) const;
+  [[nodiscard]] screens::AngerAnchor keptOnScreen(screens::AngerAnchor anchor) const;
+  [[nodiscard]] bool stepFlight(double seconds);
+  void endFlight();
   void startExit();
   [[nodiscard]] float walkSpeed(std::int32_t npc) const;
   void startWalk(Leaver& leaver) const;
@@ -199,6 +211,7 @@ private:
   std::optional<game::battle::Battle> battle_;
   // What the effects read of the fighters; it outlives effects_.
   std::optional<BattleEffectBodies> bodies_;
+  std::optional<FighterGround> ground_;
   std::optional<session::BattleEffects> effects_;
   // When the techniques' effects reach their targets (game::battle::ScriptedFlights), from the
   // effect scripts and the bodies.
@@ -215,6 +228,8 @@ private:
   std::optional<screens::BattleIntro> intro_;
   std::vector<game::battle::Combatant> introEnemies_;
   std::vector<screens::AngerAnchor> angerAnchors_;
+  // The run-off marks over the NPCs on screen that are not fighting (btl.c: setFleeBubble(id, 1)).
+  std::vector<screens::AngerAnchor> fleeAnchors_;
   double introSeconds_ = 0.0;
   // The player running back while the banner shows (BTL_handleBattleIntro).
   std::optional<game::battle::PlayerRetreat> retreat_;
@@ -247,6 +262,9 @@ private:
   // isOnScreen from the last field tick): the battle's end takes those off the map.
   bool fixedFight_ = false;
   std::vector<std::int32_t> onScreenAtStart_;
+  // The NPCs running off during the opening, and how long they have run.
+  std::vector<Leaver> fleers_;
+  double fleeSeconds_ = 0.0;
   // The NPCs leaving after a victory (BTL_handleVictorySequence), each on its own figure, and how
   // long they have walked.
   struct Exit {

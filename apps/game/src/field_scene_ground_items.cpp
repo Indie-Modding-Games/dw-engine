@@ -118,6 +118,7 @@ void FieldScene::drawGroundItems() {
   }
   addEffectBillboards(billboards);
   addStatusBillboards(billboards);
+  addFlatFighterBillboards(billboards);
   mapRenderer_->setBillboards(billboards);
 }
 

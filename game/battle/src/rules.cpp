@@ -646,9 +646,9 @@ RewardRules readRewards(ValueReader& in, const YamlNode& node) {
 
 JoiningRules readJoining(ValueReader& in, const YamlNode& node) {
   JoiningRules joining;
-  if (!in.group(
-          node, "joining",
-          {"chances", "untyped_chance", "bell_item", "bell_roll", "repel_item", "repel_roll"})) {
+  if (!in.group(node, "joining",
+                {"chances", "untyped_chance", "bell_item", "bell_roll", "repel_item", "repel_roll"},
+                {"concave_maps"})) {
     return joining;
   }
   const std::span<const YamlNode> rows =
@@ -664,6 +664,11 @@ JoiningRules readJoining(ValueReader& in, const YamlNode& node) {
   joining.bellRoll = in.any(node, "bell_roll");
   joining.repelItem = in.text(node, "repel_item");
   joining.repelRoll = in.any(node, "repel_roll");
+  if (const YamlNode* maps = node.find("concave_maps")) {
+    for (const YamlNode& map : in.yaml().sequence(*maps, "concave_maps")) {
+      joining.concaveMaps.push_back(in.yaml().text(map));
+    }
+  }
   return joining;
 }
 

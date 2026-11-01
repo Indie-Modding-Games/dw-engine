@@ -48,6 +48,9 @@ struct ScriptedBattle {
   std::vector<std::int64_t> enemies;
   // The fight cannot be fled (btl.c: handleBattleStart, FLEE_DISABLED).
   bool fixedFight = false;
+  // No predefined enemies: the other NPCs on screen may join the touched one (btl.c:
+  // handleBattleStart rolls them by the flee table).
+  bool joinable = false;
 };
 
 class StoryBattlePort {

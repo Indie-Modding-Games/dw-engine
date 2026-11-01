@@ -360,6 +360,9 @@ struct JoiningRules {
   std::int32_t bellRoll = 0;
   std::string repelItem;
   std::int32_t repelRoll = 0;
+  // The maps where an NPC behind a wall from the player or the partner does not join (btl.c:
+  // isScreenConcave, CONCAVE_SCREENS).
+  std::vector<std::string> concaveMaps;
 };
 
 // Engine values for what the original's animations and map collision decide (Hueco until measured).

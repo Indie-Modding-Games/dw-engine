@@ -51,6 +51,32 @@ enum class Pose : std::uint8_t {
   Fainted,
 };
 
+// The sprites a flattened fighter is drawn as instead of its model (model.c: renderFlatDigimon,
+// entity->flatSprite): two walking frames that take turns, its shot and its hurt frame.
+enum class FlatSprite : std::uint8_t { Walk = 0, WalkAlt = 1, Shot = 2, Hurt = 3 };
+
+// How a fighter's flattening shows (battle_main.c: BTL_applyFlattenScale): the scale of its body
+// across (x and z) and up, and the paper sprite it is drawn as, if any. The scale is 1 outside the
+// squash at each end of the flattening.
+struct FlatLook {
+  float across = 1.0F;
+  float up = 1.0F;
+  std::optional<FlatSprite> sprite;
+  // renderFlatDigimon's entity->flatTimer: the frames the walking sprite has shown, which turns it
+  // each tenth.
+  std::int32_t walkFrames = 0;
+};
+
+// The body scale BTL_applyFlattenScale sets for a flattening timer (BTL_applyStretchScale,
+// BTL_applySquashScale): stretches and squashes that grow faster toward the middle, the body
+// gone at 4 and growing back to its size from 3 to 0. Nothing outside 0 to 63, where the original
+// leaves the scale as it was.
+struct FlattenScale {
+  float across = 1.0F;
+  float up = 1.0F;
+};
+[[nodiscard]] std::optional<FlattenScale> flattenScale(std::int32_t flatFrames);
+
 // The animation a fighter shows, by the original's animation id (anim.c: startAnimation; the same
 // ids for every species, the moves' from FirstMoveAnimation on): what the view plays on its model.
 // The battle picks it as the original starts it; nothing here draws.
@@ -66,6 +92,8 @@ struct ShownClip {
   Pose pose = Pose::Standing;
   // The clip's frames played (anim.c: animFrame): its root motion and its end go by it.
   std::size_t frame = 0;
+  // The flattening's scale and sprite.
+  FlatLook flat;
 };
 
 // A unit vector scaled by FacingScale: where a fighter looks.

@@ -383,6 +383,10 @@ joining:
   bell_roll: -50
   repel_item: enemy_repel
   repel_roll: 20
+  # isScreenConcave (CONCAVE_SCREENS, US 0x8012BB20): en estos mapas no se une quien tenga una pared en la línea recta
+  # (map.c: isLinearPathBlocked) desde el jugador o desde el partner.
+  concave_maps: [mgen01, mgen02, mgen03, mgen04, mgen05, mgen11, mgen12, mgen13, mgen06, mgen07, mgen08, mgen09, mgen10,
+                 fact09, frzl13, mayo03, trop02, icsa05]
 
 # battle_effect.c: BTL_checkTechCompatibility busca el tipo original del atacante (effect_common.c: getOriginalType,
 # su tabla de tipos originales) en la lista de huesos de cada efecto: las variantes de enemigo y las de la historia usan las

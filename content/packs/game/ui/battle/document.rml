@@ -131,6 +131,14 @@
 		<div id="anger-0" class="anger hidden"></div>
 		<div id="anger-1" class="anger hidden"></div>
 		<div id="anger-2" class="anger hidden"></div>
+		<div id="flee-0" class="anger flee hidden"></div>
+		<div id="flee-1" class="anger flee hidden"></div>
+		<div id="flee-2" class="anger flee hidden"></div>
+		<div id="flee-3" class="anger flee hidden"></div>
+		<div id="flee-4" class="anger flee hidden"></div>
+		<div id="flee-5" class="anger flee hidden"></div>
+		<div id="flee-6" class="anger flee hidden"></div>
+		<div id="flee-7" class="anger flee hidden"></div>
 		<div id="banner">
 		<div id="banner-shadows">
 			<div id="bs-0" class="bs hidden"></div>

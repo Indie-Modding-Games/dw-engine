@@ -6,7 +6,10 @@
 #include <dwe/game/battle/text_keys.hpp>
 #include <dwe/game/inventory/use.hpp>
 #include <dwe/game/story/story_ports.hpp>
+#include <dwe/render/map_camera.hpp>
 #include <dwe/screens/bag_view.hpp>
+
+#include <glm/common.hpp>
 
 #include <algorithm>
 #include <array>
@@ -124,9 +127,15 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   }
   battle_.emplace(std::move(*battle));
   partnerBeforeFrame_.reset();
-  battle_->setGround(desc_.ground);
   effects_.reset();
   enemyNpcs_ = std::move(enemyNpcs);
+  // The ground also knows where the field draws the fighters' models (BTL_tickEnemyAI projects an
+  // enemy's node 1).
+  ground_.reset();
+  if (desc_.ground != nullptr && desc_.scene != nullptr) {
+    ground_.emplace(*desc_.ground, *desc_.scene, enemyNpcs_);
+  }
+  battle_->setGround(ground_ ? &*ground_ : desc_.ground);
   bodies_.emplace(*battle_, desc_.scene, desc_.species, enemyNpcs_);
   // The fighters move and time their animations by their models' clips, and the techniques fly as
   // their effect scripts do.
@@ -183,6 +192,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   publishMenu();
   introEnemies_ = std::move(introEnemies);
   angerAnchors_.assign(introEnemies_.size(), std::nullopt);
+  fleeAnchors_.clear();
   introSeconds_ = 0.0;
   retreat_.reset();
   core::logDebug("[port:battle] handleBattleStart (btl.c:237): {} anger bubbles; "
@@ -430,7 +440,10 @@ void BattleScreen::takeFigures() {
          .clip = static_cast<std::uint32_t>(fighter.shown.clip),
          .starts = fighter.shown.starts,
          .frozen = fighter.shown.frozen,
-         .soundSlot = PartnerSoundSlot + static_cast<std::int64_t>(figures_.size())});
+         .soundSlot = PartnerSoundSlot + static_cast<std::int64_t>(figures_.size()),
+         .pace = 1.0F,
+         .scale = {fighter.shown.flat.across, fighter.shown.flat.up, fighter.shown.flat.across},
+         .flatSprite = fighter.shown.flat.sprite});
   }
   partnerStance_ = static_cast<std::uint32_t>(game::battle::stanceClipOf(state.partner()));
 }
@@ -575,6 +588,7 @@ void BattleScreen::tickIntro(double seconds) {
     const screens::IntroStep before = intro_->current();
     if (before == screens::IntroStep::Banner) {
       stepRetreat();
+      intro_->holdBurst(!stepFlight(IntroFrameSeconds));
     }
     intro_->step();
     const screens::IntroStep after = intro_->current();
@@ -588,6 +602,7 @@ void BattleScreen::tickIntro(double seconds) {
       core::logDebug("[port:battle] BTL_initializeCommandMenu (command_menu.c:153): the command "
                      "strip drops in");
       startRetreat();
+      startFlight();
       core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:226): the banner "
                      "gathers; playSound(0, 0x10)");
       if (sound != nullptr) {
@@ -595,6 +610,7 @@ void BattleScreen::tickIntro(double seconds) {
       }
     } else if (after == screens::IntroStep::Burst) {
       endRetreat();
+      endFlight();
       core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:321): the banner "
                      "bursts; playSound(0, 0x11)");
       if (sound != nullptr) {
@@ -614,10 +630,30 @@ void BattleScreen::tickIntro(double seconds) {
 // Once a drawn frame, not once a tick: the banner's document redraws its hundred and more pieces
 // on each published frame, and a slow frame that runs several ticks would draw them again for
 // each, slowing the next frame further.
+// btl.c: renderFleeBubble keeps each mark within 140 pixels of the original screen's centre across
+// and 100 up and down, so the mark of an NPC at the edge still shows.
+screens::AngerAnchor BattleScreen::keptOnScreen(screens::AngerAnchor anchor) const {
+  const render::MapCamera* camera = desc_.scene != nullptr ? desc_.scene->camera() : nullptr;
+  if (!anchor || camera == nullptr || camera->scale() <= 0.0F) {
+    return anchor;
+  }
+  constexpr glm::vec2 MarkReach{140.0F, 100.0F};
+  const glm::vec2 viewport = camera->viewportSize();
+  const glm::vec2 pixel{anchor->x * viewport.x, anchor->y * viewport.y};
+  const glm::vec2 fromCentre =
+      glm::clamp((pixel - (viewport / 2.0F)) / camera->scale(), -MarkReach, MarkReach);
+  const glm::vec2 kept = ((fromCentre * camera->scale()) + (viewport / 2.0F)) / viewport;
+  return screens::WindowFraction{.x = kept.x, .y = kept.y};
+}
+
 void BattleScreen::showIntro(const EnemyAnchor& anchor) {
   if (intro_ && intro_->current() == screens::IntroStep::Anger) {
     for (std::size_t index = 0; index < introEnemies_.size(); ++index) {
-      angerAnchors_.at(index) = anchor(introEnemies_[index], intro_->angerLift());
+      angerAnchors_.at(index) = keptOnScreen(anchor(introEnemies_[index], intro_->angerLift()));
+    }
+    fleeAnchors_ = runOffAnchors(intro_->angerLift());
+    for (screens::AngerAnchor& flee : fleeAnchors_) {
+      flee = keptOnScreen(flee);
     }
   }
   publishIntro();
@@ -625,7 +661,8 @@ void BattleScreen::showIntro(const EnemyAnchor& anchor) {
 
 void BattleScreen::publishIntro() const {
   const screens::BattleIntroView view =
-      intro_ ? screens::battleIntroViewOf(*intro_, angerAnchors_) : screens::BattleIntroView{};
+      intro_ ? screens::battleIntroViewOf(*intro_, angerAnchors_, fleeAnchors_)
+             : screens::BattleIntroView{};
   screens::publish(*desc_.ui, screens::settingsOf(view, introEnemies_.size()),
                    screens::IntroRevisionSetting);
 }

@@ -210,10 +210,10 @@ BTL_getFighterSlot = { status = "no-aplica", note = "índice interno", what = "D
 BTL_addBlockedAttack = { status = "portado", dwe = "game/battle/src/attack_hits.cpp", what = "Apunta que un ataque ya golpeó a un luchador para que no golpee dos veces." }
 BTL_startHitAnimation = { status = "portado", dwe = "game/battle/src/shown_clips.cpp:110", what = "Pone la animación de recibir golpe, de frente o por la espalda." }
 BTL_getDistanceSquared = { status = "no-aplica", note = "cálculo auxiliar", what = "Distancia al cuadrado entre dos luchadores." }
-BTL_applyFlattenScale = { status = "falta", what = "Aplasta el modelo del luchador aplastado.", note = "el estado existe; falta comprobar la escala del modelo en pantalla" }
+BTL_applyFlattenScale = { status = "portado", dwe = "game/battle/src/shown_clips.cpp", what = "Aplasta el modelo del luchador aplastado.", note = "escala por etapas y cambio al dibujo plano (FlatLook); el campo la aplica al modelo" }
 BTL_addStatusEffectVisual = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:28", what = "Pone sobre el luchador el efecto visual de su estado (veneno, confusión, aturdimiento)." }
-BTL_applyStretchScale = { status = "falta", what = "Estira el modelo al recuperarse del aplastado." }
-BTL_applySquashScale = { status = "falta", what = "Encoge el modelo en el aplastado." }
+BTL_applyStretchScale = { status = "portado", dwe = "game/battle/src/shown_clips.cpp", what = "Estira el modelo al recuperarse del aplastado." }
+BTL_applySquashScale = { status = "portado", dwe = "game/battle/src/shown_clips.cpp", what = "Encoge el modelo en el aplastado." }
 BTL_clearPoison = { status = "portado", dwe = "game/battle/src/status_effects.cpp:54", what = "Cura el veneno." }
 BTL_healFlatten = { status = "portado", note = "", what = "Cura el aplastado y pasa a su recuperación." }
 BTL_addPoisonStatusVisual = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:28", what = "Pone las burbujas de veneno sobre el luchador." }
@@ -231,9 +231,9 @@ BTL_initializeDeathCountdown = { status = "portado", dwe = "apps/screens/include
 BTL_addDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Enseña la cuenta atrás del compañero caído." }
 BTL_tickDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Baja la cuenta atrás del compañero caído." }
 handleFleeing = { status = "portado", dwe = "game/battle/src/ai_ticks.cpp:431", what = "Huida del combate: el compañero corre y el combate acaba si lo logra." }
-NPCEntityTickBattle = { status = "parcial", note = "los personajes que no luchan no huyen al empezar; se van andando tras ganar (battle.md: Hueco)", what = "Mueve a los personajes del mapa que no luchan durante el combate (huyen)." }
+NPCEntityTickBattle = { status = "portado", dwe = "apps/game/src/battle_screen_exit.cpp", what = "Mueve a los personajes del mapa que no luchan durante el combate (huyen).", note = "huyen al empezar y tras ganar con la animación a doble ritmo (animFlag 4)" }
 resetStatsAfterCombat = { status = "portado", dwe = "game/battle/src/aftermath.cpp", what = "Quita al compañero los cambios temporales de stats al acabar el combate." }
-isScreenConcave = { status = "falta", what = "Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate.", note = "va con la huida de los que no luchan" }
+isScreenConcave = { status = "portado", dwe = "apps/game/src/battle_screen_exit.cpp", what = "Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate.", note = "lista concave_maps de battle.yaml; con pared en la línea recta no se unen" }
 loadBattleDataTick = { status = "no-aplica", note = "carga asíncrona del original", what = "Espera a que el combate termine de cargar." }
 setCombatTextPosition = { status = "portado", dwe = "apps/game/src/battle_screen.cpp:188", what = "Coloca sobre el luchador las cifras de daño y curación que suben." }
 initializeEntityText = { status = "parcial", dwe = "apps/screens/src/damage_numbers.cpp:1", what = "Prepara las cifras flotantes (daño, curación) de cada luchador.", note = "el daño de golpes, bloqueos y veneno sí (battle.md: Números de daño); faltan las cifras con icono de objetos y mejoras" }
@@ -1079,8 +1079,8 @@ checkTournamentMedalConditions = { status = "portado", dwe = "game/tournament/sr
 
 # --- Gaps the module docs list (Hueco rows) on functions the code names
 handleBattleEndBox = { status = "portado", dwe = "apps/screens/src/battle_view.cpp:239", note = "falta el sonido de la cuenta (docs/modulos/game/battle.md)", what = "Cuadro final del combate: objetos, lesión, técnicas, stats y dinero." }
-BTL_tickEnemyAI = { status = "parcial", note = "el rival fuera de pantalla no es prudente (docs/modulos/game/battle.md:119)", what = "IA de los rivales: elige técnica, se acerca y ataca." }
-BTL_handleBattleIntro = { status = "parcial", note = "los personajes que no luchan no huyen al empezar (docs/modulos/game/battle.md:126)", what = "Entrada al combate: quién se une, quién huye y el rótulo de inicio." }
+BTL_tickEnemyAI = { status = "portado", what = "IA de los rivales: elige técnica, se acerca y ataca.", note = "el rival con el cuerpo (nodo 1) fuera de la caja central de 200 x 160 es prudente" }
+BTL_handleBattleIntro = { status = "portado", what = "Entrada al combate: quién se une, quién huye y el rótulo de inicio.", note = "se unen por la tabla de huida; los demás en pantalla huyen y el rótulo espera; los de fuera de pantalla dejan el mapa" }
 tamerTickBattleLostLife = { status = "parcial", note = "la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:107)", what = "Escena de perder una vida en combate." }
 tamerTickSicknessLostLife = { status = "parcial", note = "la restauración tras la vida perdida por enfermedad es un hueco (docs/modulos/game/battle.md:107)", what = "Escena de perder una vida por enfermedad." }
 handleChips = { status = "parcial", note = "la sección de guion de un chip no corre (docs/modulos/apps/session.md:276)", what = "Usa un chip: sube un stat y lanza su sección de guion." }

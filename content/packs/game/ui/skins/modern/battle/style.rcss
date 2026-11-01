@@ -484,6 +484,11 @@
 	background-color: #d03030;
 }
 
+/* An NPC not fighting runs off (btl.c: setFleeBubble(id, 1)). */
+.anger.flee {
+	background-color: #3070d0;
+}
+
 #banner {
 	position: absolute;
 	left: 50%;

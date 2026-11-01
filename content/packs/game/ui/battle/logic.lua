@@ -8,6 +8,8 @@ local max_commands = 11
 local finisher_segments = 6
 local finisher_marks = 8
 local max_anger = 3
+-- The marks over the NPCs not fighting, which run off (battle.intro.flee).
+local max_flee = 8
 -- Four fighters with up to 8 numbers each, of up to 4 digits (entity_text.c: ENTITY_TEXT_DATA).
 local max_numbers = 32
 local number_digits = 4
@@ -681,19 +683,23 @@ end
 
 -- The battle's opening (apps/screens: battle_intro.hpp): the anger marks over the enemies, then the
 -- "BATTLE" banner flying together, flashing and bursting over the battle's HUD.
-local function draw_anger(document)
-  local scale = number("battle.intro.anger.scale") / 100
-  for index = 0, max_anger - 1 do
-    local mark = lookup(document, "anger-" .. index)
-    local shown = intro_step == "anger"
-      and setting(entry("battle.intro.anger", index, "shown"), false)
+local function draw_marks(document, list, prefix, count, scale)
+  for index = 0, count - 1 do
+    local mark = lookup(document, prefix .. index)
+    local shown = intro_step == "anger" and setting(entry(list, index, "shown"), false)
     mark:set_class("hidden", not shown)
     if shown then
-      mark:set_property("left", setting(entry("battle.intro.anger", index, "x"), 0) .. "%")
-      mark:set_property("top", setting(entry("battle.intro.anger", index, "y"), 0) .. "%")
+      mark:set_property("left", setting(entry(list, index, "x"), 0) .. "%")
+      mark:set_property("top", setting(entry(list, index, "y"), 0) .. "%")
       mark:set_property("transform", string.format("scale(%.2f)", scale))
     end
   end
+end
+
+local function draw_anger(document)
+  local scale = number("battle.intro.anger.scale") / 100
+  draw_marks(document, "battle.intro.anger", "anger-", max_anger, scale)
+  draw_marks(document, "battle.intro.flee", "flee-", max_flee, scale)
 end
 
 -- The numbers over the fighters (apps/screens: damage_numbers.hpp) come as seven values each: the

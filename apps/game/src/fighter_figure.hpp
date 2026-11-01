@@ -1,6 +1,11 @@
 #pragma once
 
+#include <dwe/game/battle/state.hpp>
+
+#include <glm/vec3.hpp>
+
 #include <cstdint>
+#include <optional>
 
 namespace dwe::app {
 
@@ -17,6 +22,13 @@ struct FighterFigure {
   std::uint32_t starts = 0;
   bool frozen = false;
   std::int64_t soundSlot = 4;
+  // How fast its clip runs: 2 for an NPC that runs off (animFlag 4: battle_tick.c:
+  // NPCEntityTickBattle ticks its animation twice a frame, so its root motion goes twice as far).
+  float pace = 1.0F;
+  // The flattening's body scale (x, y, z) and the paper sprite drawn instead of the model
+  // (battle_main.c: BTL_applyFlattenScale; model.c: renderFlatDigimon).
+  glm::vec3 scale{1.0F};
+  std::optional<game::battle::FlatSprite> flatSprite = std::nullopt;
 };
 
 } // namespace dwe::app

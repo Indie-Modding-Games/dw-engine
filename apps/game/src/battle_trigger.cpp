@@ -22,10 +22,6 @@ namespace {
 
 constexpr char NpcSeparator = ',';
 
-bool canFight(const assets::MapNpc& npc, const assets::DigimonTable& species) {
-  return npc.digimon && species.find(*npc.digimon) != nullptr && npc.hp > 0;
-}
-
 // The battle's positions are the field's, in world axes, on the ground.
 game::battle::Point battlePointOf(glm::vec3 world) {
   return {.x = static_cast<std::int32_t>(std::lround(world.x)),
@@ -42,6 +38,10 @@ glm::vec3 fieldPositionOf(const game::field::Field& field, const assets::MapNpc&
 }
 
 } // namespace
+
+bool canFight(const assets::MapNpc& npc, const assets::DigimonTable& species) {
+  return npc.digimon && species.find(*npc.digimon) != nullptr && npc.hp > 0;
+}
 
 core::Result<assets::DigimonTable> speciesTable(const assets::VirtualFileSystem& files,
                                                 const ruleset::Ruleset& rules) {

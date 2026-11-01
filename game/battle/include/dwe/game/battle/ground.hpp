@@ -2,6 +2,7 @@
 
 #include <dwe/game/battle/combatant.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 
@@ -33,6 +34,13 @@ public:
                                                                  std::int32_t height) const = 0;
   // Whether the map's tiles stop a step of a fighter of `radius` (map.c: checkMapCollision).
   [[nodiscard]] virtual bool blocksStep(Point from, Point to, std::int32_t radius) const = 0;
+  // Where node `node` of a fighter's model (0 the partner, k the k-th enemy) shows on the
+  // original's screen as its pose leaves it (the GTE projection of posData[node]); nothing when the
+  // ground does not draw the fighter.
+  [[nodiscard]] virtual std::optional<ScreenPoint>
+  fighterNodeOnScreen(std::size_t /*fighter*/, std::uint32_t /*node*/) const {
+    return std::nullopt;
+  }
 };
 
 } // namespace dwe::game::battle

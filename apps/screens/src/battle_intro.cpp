@@ -264,7 +264,7 @@ void BattleIntro::stepBanner() {
   }
   const bool wasGathered = gathered_;
   gathered_ = std::ranges::all_of(pieces_, [](const Piece& piece) { return piece.trail == 0; });
-  if (wasGathered && frame_ >= BannerFrames) {
+  if (wasGathered && frame_ >= BannerFrames && !burstHeld_) {
     step_ = IntroStep::Burst;
     flash_ = 0;
   }
@@ -377,13 +377,16 @@ std::vector<BannerPiece> BattleIntro::pieces() const {
   return shown;
 }
 
-BattleIntroView battleIntroViewOf(const BattleIntro& intro, std::vector<AngerAnchor> anger) {
+BattleIntroView battleIntroViewOf(const BattleIntro& intro, std::vector<AngerAnchor> anger,
+                                  std::vector<AngerAnchor> flee) {
   const bool angry = intro.current() == IntroStep::Anger;
   if (!angry) {
     anger.assign(anger.size(), std::nullopt);
+    flee.assign(flee.size(), std::nullopt);
   }
   return {.step = intro.current(),
           .anger = std::move(anger),
+          .flee = std::move(flee),
           .angerScale = angry ? intro.angerScale() : 0,
           .flash = intro.flash(),
           .pieces = intro.pieces()};
@@ -403,6 +406,15 @@ ScreenSettings settingsOf(const BattleIntroView& view, std::size_t enemies) {
     settings.push_back({.name = listEntryName(IntroAngerList, index, XField),
                         .value = anchor ? rounded(anchor->x * Percent) : 0.0});
     settings.push_back({.name = listEntryName(IntroAngerList, index, YField),
+                        .value = anchor ? rounded(anchor->y * Percent) : 0.0});
+  }
+  for (std::size_t index = 0; index < FleeMarkSlots; ++index) {
+    const AngerAnchor anchor = index < view.flee.size() ? view.flee[index] : std::nullopt;
+    settings.push_back(
+        {.name = listEntryName(IntroFleeList, index, ShownField), .value = anchor.has_value()});
+    settings.push_back({.name = listEntryName(IntroFleeList, index, XField),
+                        .value = anchor ? rounded(anchor->x * Percent) : 0.0});
+    settings.push_back({.name = listEntryName(IntroFleeList, index, YField),
                         .value = anchor ? rounded(anchor->y * Percent) : 0.0});
   }
   return settings;

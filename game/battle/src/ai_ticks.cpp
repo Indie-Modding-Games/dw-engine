@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <vector>
 
@@ -13,6 +14,22 @@ namespace {
 constexpr std::int32_t Hundred = 100;
 // A wait ends when its counter drops under this (battle_main.c: cooldown < 2).
 constexpr std::int32_t WaitEndsBelow = 2;
+
+// BTL_tickEnemyAI projects an enemy's node 1 and tests it with isOffScreen(out, 0xc8, 0xa0): off
+// when more than half of 200 across or 160 down from the screen's centre.
+constexpr std::uint32_t EnemyBodyNode = 1;
+constexpr std::int32_t OffScreenHalfWidth = 0xc8 / 2;
+constexpr std::int32_t OffScreenHalfHeight = 0xa0 / 2;
+
+// Unknown (no ground, or it does not draw the fighter): on screen, so the enemy rolls.
+bool enemyOffScreen(const BattleContext& context, FighterId id) {
+  if (context.ground == nullptr) {
+    return false;
+  }
+  const std::optional<ScreenPoint> body = context.ground->fighterNodeOnScreen(id, EnemyBodyNode);
+  return body && (body->x < -OffScreenHalfWidth || body->x > OffScreenHalfWidth ||
+                  body->y < -OffScreenHalfHeight || body->y > OffScreenHalfHeight);
+}
 
 std::size_t randomIndex(ruleset::Random& random, std::size_t count) {
   return static_cast<std::size_t>(random.below(static_cast<std::int32_t>(count)));
@@ -254,9 +271,11 @@ void tickEnemy(BattleContext& context, FighterId id, bool& stop) {
     enemy.chargeMode = context.random->below(context.rules->enemyAi.matchCautiousRoll) == 0
                            ? ChargeMode::Cautious
                            : static_cast<ChargeMode>(context.random->below(2));
+  } else if (enemyOffScreen(context, id)) {
+    // battle_main.c:631-640: an enemy whose body (node 1) is off a 200 x 160 box in the middle of
+    // the screen (map.c: isOffScreen) is cautious, with no roll.
+    enemy.chargeMode = ChargeMode::Cautious;
   } else {
-    // The original makes an enemy off the screen cautious; the engine has no screen here (Hueco),
-    // so it rolls.
     enemy.chargeMode = static_cast<ChargeMode>(context.random->below(2));
   }
   const std::array<bool, EquippedSlots> usable = usableSlots(context.view(), id);

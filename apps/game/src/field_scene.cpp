@@ -782,10 +782,16 @@ game::partner::FieldAnimation FieldScene::partnerAnimation(const Actor& actor, s
 }
 
 void FieldScene::submit(const Actor& actor, float alpha, const Look& look) {
+  // model.c: renderDigimon draws no bone of a flattened fighter: its paper sprite stands in
+  // (addFlatFighterBillboards).
+  if (actor.fighter && actor.fighter->flatSprite) {
+    return;
+  }
   const scene::Pose pose = field_->drawnPose(actor.entity, alpha);
+  const glm::vec3 scale = actor.fighter ? look.scale * actor.fighter->scale : look.scale;
   const glm::mat4 world = glm::scale(glm::rotate(glm::translate(glm::mat4{1.0F}, pose.position),
                                                  pose.yaw, glm::vec3{0.0F, 1.0F, 0.0F}),
-                                     look.scale);
+                                     scale);
   std::span<const glm::mat4> joints = actor.player->jointMatrices();
   std::vector<glm::mat4> kept;
   if (look.hiddenBones != 0) {

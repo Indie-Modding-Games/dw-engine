@@ -9,6 +9,17 @@
 
 namespace dwe::app {
 
+namespace {
+
+// The original's screen is the 320 x 240 middle of the window, at the camera's scale.
+game::battle::ScreenPoint originalScreenPoint(const render::MapCamera& camera, glm::vec2 pixel) {
+  const glm::vec2 fromCentre = (pixel - (camera.viewportSize() / 2.0F)) / camera.scale();
+  return {.x = static_cast<std::int32_t>(std::lround(fromCentre.x)),
+          .y = static_cast<std::int32_t>(std::lround(fromCentre.y))};
+}
+
+} // namespace
+
 std::optional<game::battle::ScreenPoint>
 FieldBattleGround::screenPointOf(game::battle::Point ground, std::int32_t height) const {
   const render::MapCamera* camera = scene_->camera();
@@ -20,10 +31,22 @@ FieldBattleGround::screenPointOf(game::battle::Point ground, std::int32_t height
   if (!pixel) {
     return std::nullopt;
   }
-  // The original's screen is the 320 x 240 middle of the window, at the camera's scale.
-  const glm::vec2 fromCentre = (*pixel - (camera->viewportSize() / 2.0F)) / camera->scale();
-  return game::battle::ScreenPoint{.x = static_cast<std::int32_t>(std::lround(fromCentre.x)),
-                                   .y = static_cast<std::int32_t>(std::lround(fromCentre.y))};
+  return originalScreenPoint(*camera, *pixel);
+}
+
+std::optional<game::battle::ScreenPoint>
+FighterGround::fighterNodeOnScreen(std::size_t fighter, std::uint32_t node) const {
+  const render::MapCamera* camera = scene_->camera();
+  if (camera == nullptr || fighter > enemyNpcs_->size()) {
+    return std::nullopt;
+  }
+  const std::optional<std::int32_t> npc =
+      fighter == 0 ? std::nullopt : std::optional{(*enemyNpcs_)[fighter - 1]};
+  const std::optional<glm::vec2> fraction = scene_->fighterNodeOnWindow(npc, node);
+  if (!fraction) {
+    return std::nullopt;
+  }
+  return originalScreenPoint(*camera, *fraction * camera->viewportSize());
 }
 
 bool FieldBattleGround::blocksStep(game::battle::Point from, game::battle::Point to,

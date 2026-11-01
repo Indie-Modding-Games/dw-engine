@@ -53,15 +53,16 @@ core::Result<std::shared_ptr<StoryTask>> StoryBattles::startBattle() {
 }
 
 core::Result<ScriptedBattle> StoryBattles::enemies() {
-  ScriptedBattle battle{.enemies = {}, .fixedFight = fixedFight()};
+  ScriptedBattle battle{.enemies = {}, .fixedFight = fixedFight(), .joinable = false};
   const auto predefined = state_->variable(rules_.predefinedVariable);
   if (!predefined) {
     return std::unexpected{predefined.error()};
   }
   if (*predefined == 0) {
     // btl.c: handleBattleStart: without a predefined battle the enemy is the NPC the player talked
-    // to. The original also lets other NPCs on screen join by the flee table's roll; here they
-    // stay out.
+    // to; the other NPCs on screen may join it by the flee table's roll, which the battle screen
+    // makes (it knows who is on screen).
+    battle.joinable = true;
     if (const auto talked = battle_->talkedTo()) {
       if (const auto entity = battle_->entityOf(*talked)) {
         core::logDebug("{}",

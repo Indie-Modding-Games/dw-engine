@@ -163,7 +163,8 @@ bool StorySceneGlue::takeSaveMachine(const session::StoryScreenRequest& request)
 }
 
 // The enemies are the map's NPCs by script id (MapNpc::scriptId). A battle with none predefined is
-// the one against the NPC the player talked to (btl.c: handleBattleStart), which the story names.
+// the one against the NPC the player talked to (btl.c: handleBattleStart), which the story names,
+// with the NPCs on screen that join it.
 void StorySceneGlue::startBattle(session::StoryScenes& scenes, BattleScreen& battle,
                                  const assets::DigimonTable* species, const FieldScene& scene,
                                  const game::story::ScriptedBattle& request) {
@@ -173,6 +174,16 @@ void StorySceneGlue::startBattle(session::StoryScenes& scenes, BattleScreen& bat
     for (std::size_t index = 0; index < mapNpcs.size(); ++index) {
       if (mapNpcs[index].scriptId == enemy) {
         npcs.push_back(index);
+      }
+    }
+  }
+  if (request.joinable && npcs.size() == 1) {
+    for (const std::int32_t joiner :
+         battle.joiningNpcs(mapNpcs[npcs.front()].scriptId, request.fixedFight)) {
+      for (std::size_t index = 0; index < mapNpcs.size(); ++index) {
+        if (mapNpcs[index].scriptId == joiner) {
+          npcs.push_back(index);
+        }
       }
     }
   }

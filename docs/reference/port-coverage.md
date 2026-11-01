@@ -1,17 +1,15 @@
 # Cobertura del port
 
 Qué funciones del decomp tiene ya el motor, sistema por sistema, para cerrar los huecos antes de que el jugador los
-encuentre jugando. El objetivo es PC, así que solo cuentan las funciones a portar, cada una en uno de tres estados:
+encuentre jugando. Cada función del índice del decomp está en uno de cuatro estados:
 
 - **Portado:** el código del motor la hace. Casi siempre la nombra en un comentario o en un log (`[port:...]`); si no,
   una entrada manual dice dónde está.
 - **Parcial:** el motor hace una parte; la nota dice qué falta.
 - **Falta:** el motor no la hace.
-
-Las funciones atadas a la consola quedan fuera de todas las cifras: el motor las sustituye por lo suyo (gráficos,
-sonido, disco y memoria del hardware original, cuadros y cursores de su interfaz, tablas internas, depuración,
-lectura de operandos de los scripts, que se pasan a Lua) o son copias del código de batalla que llevan los overlays
-de torneos, versus y el segundo gimnasio. El final de la página dice cuántas son y cómo listarlas.
+- **No aplica:** el motor la sustituye por lo suyo y no hay que portarla: gráficos, sonido, disco y memoria del
+  hardware original, cuadros y cursores de su interfaz, lectura de operandos de los scripts (que se pasan a Lua) y
+  las copias del código de batalla que llevan los overlays de torneos, versus y el segundo gimnasio.
 
 ## Cómo se hace
 
@@ -22,8 +20,8 @@ cuenta como falta: nombran las funciones del original para encontrar sus tablas.
 hace («not drawn yet», «not ported», `TODO`) deja la función en parcial. Las citas solo por línea (`partner.c:906`) no
 se usan: el índice no tiene las funciones estáticas y la línea cae a menudo en la vecina.
 
-Después aplica `docs/reference/port-coverage.toml`: el sistema de cada fichero del decomp, las reglas que apartan
-lo atado a la consola (estado `no-aplica`) y las decisiones a mano por función (estado, nota, sitio en el motor y qué hace). Escribe la parte de esta
+Después aplica `docs/reference/port-coverage.toml`: el sistema de cada fichero del decomp, las reglas de «no
+aplica» y las decisiones a mano por función (estado, nota, sitio en el motor y qué hace). Escribe la parte de esta
 página que va entre las dos marcas; el resto se edita a mano.
 
 ```sh
@@ -84,10 +82,10 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 
 | Sistema | Ficheros del decomp | A portar | Portado | Parcial | Falta | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
-| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 154 | 145 | 4 | 5 | 95 % |
+| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 154 | 152 | 1 | 1 | 99 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 230 | 194 | 5 | 31 | 85 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 82 | 77 | 3 | 2 | 96 % |
-| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 75 | 69 | 0 | 6 | 92 % |
+| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 76 | 70 | 0 | 6 | 92 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 49 | 0 | 0 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 96 | 91 | 3 | 2 | 96 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 78 | 77 | 1 | 0 | 99 % |
@@ -103,7 +101,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 30 | 1 | 0 | 98 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 49 | 48 | 1 | 0 | 99 % |
-| **Total** | 1388 funciones a portar | 1388 | 1155 | 36 | 197 | 85 % |
+| **Total** | 1389 funciones a portar | 1389 | 1163 | 33 | 193 | 85 % |
 
 ## Batalla
 
@@ -111,18 +109,11 @@ El combate normal: órdenes, IA, daño, estados, HUD, inicio y final, aprendizaj
 
 Ficheros del decomp: `btl/battle_hud.c`, `btl/battle_main.c`, `btl/battle_setup.c`, `btl/command_menu.c`, `btl/command_shout.c`, `main/battle_tick.c`, `main/battle_ui.c`, `main/btl.c`, `main/entity_text.c`.
 
-Portado 145, parcial 4, falta 5.
+Portado 152, parcial 1, falta 1.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `BTL_tickEnemyAI` | `btl/battle_main.c:515` | parcial | IA de los rivales: elige técnica, se acerca y ataca. | `content/packs/game/rules/original/battle.yaml:10` · el rival fuera de pantalla no es prudente (docs/modulos/game/battle.md:119) |
 | `BTL_tickPartnerWaypointTrail` | `btl/battle_main.c:702` | falta | Durante el combate, guarda el rastro de casillas del compañero para que luego vuelva junto al jugador sin atascarse. | relacionado con la vuelta tras un combate de historia |
-| `BTL_applyFlattenScale` | `btl/battle_main.c:2673` | falta | Aplasta el modelo del luchador aplastado. | el estado existe; falta comprobar la escala del modelo en pantalla |
-| `BTL_applyStretchScale` | `btl/battle_main.c:2715` | falta | Estira el modelo al recuperarse del aplastado. | — |
-| `BTL_applySquashScale` | `btl/battle_main.c:2721` | falta | Encoge el modelo en el aplastado. | — |
-| `BTL_handleBattleIntro` | `btl/battle_setup.c:207` | parcial | Entrada al combate: quién se une, quién huye y el rótulo de inicio. | `apps/game/src/battle_screen.cpp:68` · los personajes que no luchan no huyen al empezar (docs/modulos/game/battle.md:126) |
-| `NPCEntityTickBattle` | `main/battle_tick.c:308` | parcial | Mueve a los personajes del mapa que no luchan durante el combate (huyen). | los personajes que no luchan no huyen al empezar; se van andando tras ganar (battle.md: Hueco) |
-| `isScreenConcave` | `main/btl.c:128` | falta | Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate. | va con la huida de los que no luchan |
 | `initializeEntityText` | `main/entity_text.c:71` | parcial | Prepara las cifras flotantes (daño, curación) de cada luchador. | `apps/screens/src/damage_numbers.cpp:1` · el daño de golpes, bloqueos y veneno sí (battle.md: Números de daño); faltan las cifras con icono de objetos y mejoras |
 
 ## Efectos de batalla
@@ -194,7 +185,7 @@ Los personajes del mapa y su IA de paseo, cofres, objetos del suelo y decorados 
 
 Ficheros del decomp: `main/anim.c`, `main/bubble.c`, `main/butterfly.c`, `main/drop_shadow.c`, `main/map_object.c`, `main/model.c`, `main/overworld.c`, `main/world_object.c`.
 
-Portado 69, parcial 0, falta 6.
+Portado 70, parcial 0, falta 6.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -537,6 +528,6 @@ Portado 48, parcial 1, falta 0.
 
 ## Fuera de las cuentas
 
-1050 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+1049 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

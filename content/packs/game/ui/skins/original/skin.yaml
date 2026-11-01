@@ -542,6 +542,9 @@ sprite_sheets:
     sprites:
       anger-bubble: [184, 0, 24, 24]
       anger-mark: [200, 24, 16, 16]
+      # La de quien no lucha y huye (setFleeBubble(id, 1)): el globo y la cara siguientes.
+      flee-bubble: [208, 0, 24, 24]
+      flee-mark: [216, 24, 16, 16]
   # El reloj de un combate del torneo (std_main.c: STD_renderCounterDigits): el panel de TIME.TIM (página 0x2c0 de 8
   # bits, v 0x78, CLUT (512, 255)) y, de la página (832, 0) de STDTIM con la CLUT (16, 480), las cifras de 12 x 15 en
   # u = cifra x 12, v 0x30, y las dos piezas laterales de 8 x 18 en u 0x78 y 0x88.

@@ -1152,6 +1152,13 @@
         },
         "repel_roll": {
           "type": "integer"
+        },
+        "concave_maps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Maps where an NPC behind a wall from the player or the partner does not join (btl.c: isScreenConcave)."
         }
       },
       "description": "Which enemies on screen join a battle (btl.c: handleBattleStart)."

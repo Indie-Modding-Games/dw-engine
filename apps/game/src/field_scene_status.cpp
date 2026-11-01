@@ -1,6 +1,7 @@
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/image_palettes.hpp>
 #include <dwe/assets/indexed_image.hpp>
+#include <dwe/assets/map_document.hpp>
 #include <dwe/assets/map_images.hpp>
 #include <dwe/assets/model_data.hpp>
 #include <dwe/core/log.hpp>
@@ -269,6 +270,56 @@ std::optional<FieldScene::StatusAnchor> FieldScene::statusAnchor(std::size_t fig
       body.conditionFx ? nodePoint(*actor, body.conditionFx->first, body.conditionFx->second)
                        : std::nullopt;
   return StatusAnchor{.feet = feet, .condition = condition.value_or(top), .body = body};
+}
+
+// model.c: renderFlatDigimon: a flattened fighter is a 15 x 15 sprite of its own texture (u 0xE0
+// or 0xF0, v 0x60 for the walking frames and 0x70 for the shot and the hurt one) in its CLUT's
+// last row (clutPage + 0x3C0: black and white), on an upright card as tall and as wide as its
+// species, along its facing, scaled as its body.
+constexpr std::int32_t FlatPalette = 15;
+constexpr float FlatFirstU = 0xE0;
+constexpr float FlatSecondU = 0xF0;
+constexpr float FlatWalkV = 0x60;
+constexpr float FlatPoseV = 0x70;
+constexpr glm::vec2 FlatTexels{15.0F, 15.0F};
+constexpr std::string_view SpeciesTextureLeaf = "texture";
+
+void FieldScene::addFlatFighterBillboards(std::vector<render::MapBillboard>& billboards) {
+  for (const StatusBody& body : statusBodies_) {
+    const Actor* actor = fighterActor(body.npc);
+    if (actor == nullptr || !actor->fighter || !actor->fighter->flatSprite) {
+      continue;
+    }
+    const std::string& model = actor->character.model.str();
+    const std::size_t leaf = model.rfind('/');
+    if (leaf == std::string::npos) {
+      continue;
+    }
+    const std::string image = std::format("{}/{}", model.substr(0, leaf), SpeciesTextureLeaf);
+    const std::optional<StatusTexture> texture = statusTexture(image, FlatPalette);
+    if (!texture) {
+      continue;
+    }
+    using game::battle::FlatSprite;
+    const FlatSprite sprite = *actor->fighter->flatSprite;
+    const float u =
+        sprite == FlatSprite::Walk || sprite == FlatSprite::Shot ? FlatFirstU : FlatSecondU;
+    const float v =
+        sprite == FlatSprite::Walk || sprite == FlatSprite::WalkAlt ? FlatWalkV : FlatPoseV;
+    const auto& transform = world_.registry().get<scene::Transform>(actor->entity);
+    const glm::vec3 scale = actor->fighter->scale;
+    const auto height = static_cast<float>(body.height);
+    billboards.push_back(
+        {.centre = transform.position + glm::vec3{0.0F, height * scale.y / 2.0F, 0.0F},
+         .size = {height * scale.z, height * scale.y},
+         .flat = false,
+         .texture = texture->texture,
+         .texel = glm::vec2{u, v} * texture->texelScale,
+         .texels = FlatTexels * texture->texelScale,
+         .blend = assets::SpriteBlend::Opaque,
+         .color = glm::vec3{1.0F},
+         .card = assets::forwardOfYaw(transform.yaw)});
+  }
 }
 
 void FieldScene::addStatusBillboards(std::vector<render::MapBillboard>& billboards) {

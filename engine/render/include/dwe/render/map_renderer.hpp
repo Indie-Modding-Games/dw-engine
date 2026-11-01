@@ -50,6 +50,9 @@ struct MapBillboard {
   // its turn on screen around it, clockwise in radians (GsSPRITE mx, my and rotate).
   glm::vec2 pivot{0.5F};
   float turn = 0.0F;
+  // An upright card that does not face the camera: the unit world direction its texels run along
+  // (left to right), standing on the world's up. A flat one ignores it.
+  std::optional<glm::vec3> card = std::nullopt;
 };
 
 // How long the original fades the background palette when the time of day changes: 25 frames of its

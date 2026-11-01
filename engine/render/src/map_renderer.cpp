@@ -494,10 +494,16 @@ void MapRenderer::drawLayers(DrawContext& context) {
     const float sine = std::sin(billboard.turn);
     const glm::vec3 screenRight = (right * cosine) - (up * sine);
     const glm::vec3 screenUp = (up * cosine) + (right * sine);
-    const glm::vec3 across = billboard.flat ? glm::vec3{half.x, 0.0F, 0.0F} : screenRight * half.x;
-    const glm::vec3 along = billboard.flat ? glm::vec3{0.0F, 0.0F, -half.y} : screenUp * half.y;
+    const bool card = !billboard.flat && billboard.card.has_value();
+    const glm::vec3 across = billboard.flat ? glm::vec3{half.x, 0.0F, 0.0F}
+                             : card         ? *billboard.card * half.x
+                                            : screenRight * half.x;
+    const glm::vec3 along = billboard.flat ? glm::vec3{0.0F, 0.0F, -half.y}
+                            : card         ? glm::vec3{0.0F, half.y, 0.0F}
+                                           : screenUp * half.y;
     // The pivot on the centre: the quad's middle moves away from it.
-    const glm::vec2 shift = billboard.flat ? glm::vec2{0.0F} : (glm::vec2{0.5F} - billboard.pivot);
+    const glm::vec2 shift =
+        billboard.flat || card ? glm::vec2{0.0F} : (glm::vec2{0.5F} - billboard.pivot);
     const glm::vec3 middle = billboard.centre + (screenRight * (shift.x * billboard.size.x)) -
                              (screenUp * (shift.y * billboard.size.y));
     const auto clip = [&viewProjection](glm::vec3 world) {

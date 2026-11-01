@@ -20,6 +20,10 @@ inline constexpr std::string_view IntroRevisionSetting = "battle.intro.revision"
 inline constexpr std::string_view IntroStepSetting = "battle.intro.step";
 inline constexpr std::string_view IntroAngerList = "battle.intro.anger";
 inline constexpr std::string_view IntroAngerScaleSetting = "battle.intro.anger.scale";
+// The marks over the NPCs not fighting, which run off (btl.c: setFleeBubble(id, 1)): the bubble
+// next to the anger mark's in the same texture, with its own face. Up to the map's other 8 NPCs.
+inline constexpr std::string_view IntroFleeList = "battle.intro.flee";
+inline constexpr std::size_t FleeMarkSlots = 8;
 inline constexpr std::string_view IntroFlashSetting = "battle.intro.flash";
 inline constexpr std::string_view IntroPiecesSetting = "battle.intro.pieces";
 
@@ -64,6 +68,9 @@ public:
   // The player has stopped running back (BTL_handleBattleIntro sets its timer to 198): the banner
   // bursts once its pieces are in place.
   void playerBack();
+  // The NPCs not fighting are still running off: the banner waits for them before it bursts
+  // (BTL_handleBattleIntro loops until all of them are off screen).
+  void holdBurst(bool held) { burstHeld_ = held; }
   [[nodiscard]] IntroStep current() const { return step_; }
   [[nodiscard]] bool done() const { return step_ == IntroStep::Done; }
 
@@ -105,6 +112,7 @@ private:
   std::int32_t flash_ = 0;
   std::int32_t flashFrames_ = 0;
   bool gathered_ = false;
+  bool burstHeld_ = false;
   std::array<Piece, BannerPieceCount> pieces_{};
 };
 
@@ -115,13 +123,16 @@ private:
 struct BattleIntroView {
   IntroStep step = IntroStep::Done;
   std::vector<AngerAnchor> anger;
+  // The run-off marks, as the anger marks and with their scale.
+  std::vector<AngerAnchor> flee;
   std::int32_t angerScale = 0;
   std::int32_t flash = 0;
   std::vector<BannerPiece> pieces;
 };
 
 [[nodiscard]] BattleIntroView battleIntroViewOf(const BattleIntro& intro,
-                                                std::vector<AngerAnchor> anger);
+                                                std::vector<AngerAnchor> anger,
+                                                std::vector<AngerAnchor> flee = {});
 
 // The view as the settings the battle document reads; the anger list has `enemies` entries.
 [[nodiscard]] ScreenSettings settingsOf(const BattleIntroView& view, std::size_t enemies);

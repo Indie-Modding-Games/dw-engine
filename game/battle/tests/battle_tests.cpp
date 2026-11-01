@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <map>
@@ -417,6 +418,62 @@ TEST_CASE("flattening squashes, flattens for 224 to 304 frames and squashes back
   CHECK(enemy.moveRange == 0);
 }
 
+TEST_CASE("the flattening's squash scales the body and swaps it for the paper sprite") {
+  // battle_main.c: BTL_applyFlattenScale: 4096ths of the body, angles in 4096ths of a turn.
+  CHECK_FALSE(flattenScale(0x40).has_value());
+  CHECK_FALSE(flattenScale(-1).has_value());
+  const auto first = flattenScale(0x3F); // stretch at angle 16
+  REQUIRE(first.has_value());
+  CHECK(first->up == doctest::Approx(1.0F + std::sin(16.0F * 2.0F * 3.14159265F / 4096.0F)));
+  const auto squashed = flattenScale(0x2F); // squash at angle 16
+  REQUIRE(squashed.has_value());
+  CHECK(squashed->across > 1.0F);
+  CHECK(squashed->up < 1.0F);
+  CHECK(flattenScale(5)->up == doctest::Approx(0.5F));
+  CHECK(flattenScale(4)->up == doctest::Approx(0.0F));
+  CHECK(flattenScale(3)->across == doctest::Approx(0.25F));
+  CHECK(flattenScale(0)->up == doctest::Approx(1.0F));
+
+  Bench bench{duel(evenStats(1000, 100), evenStats(500, 100))};
+  BattleContext context = bench.context();
+  applyMoveStatus(context, 1, Bench::move("squash"));
+  Fighter& enemy = bench.fighter(1);
+  enemy.status.flatFrames = 65;
+  bool sawSprite = false;
+  for (int frame = 0; frame < 65; ++frame) {
+    tickStatusEffects(context);
+    updateShownClips(context);
+    if (enemy.status.flatFrames == 4) {
+      CHECK(enemy.shown.flat.up == doctest::Approx(0.0F));
+      CHECK_FALSE(enemy.shown.flat.sprite.has_value());
+    }
+    if (enemy.status.flatFrames == 3) {
+      sawSprite = enemy.shown.flat.sprite.has_value();
+    }
+  }
+  CHECK(sawSprite);
+  REQUIRE(enemy.status.flattened);
+  // renderFlatDigimon: the walking frames take turns every tenth frame.
+  const std::optional<FlatSprite> walking = enemy.shown.flat.sprite;
+  REQUIRE(walking.has_value());
+  CHECK((*walking == FlatSprite::Walk || *walking == FlatSprite::WalkAlt));
+  int turns = 0;
+  for (int frame = 0; frame < 20; ++frame) {
+    const std::optional<FlatSprite> before = enemy.shown.flat.sprite;
+    tickStatusEffects(context);
+    updateShownClips(context);
+    turns += before != enemy.shown.flat.sprite ? 1 : 0;
+  }
+  CHECK(turns == 2);
+  const std::int32_t left = enemy.status.flatFrames;
+  for (int frame = 0; frame < left; ++frame) {
+    tickStatusEffects(context);
+    updateShownClips(context);
+  }
+  CHECK_FALSE(enemy.shown.flat.sprite.has_value());
+  CHECK(enemy.shown.flat.up == doctest::Approx(1.0F));
+}
+
 TEST_CASE("support moves raise the caster's stats by their percentages") {
   BattleSetup setup = duel(evenStats(1000, 200), evenStats(1000, 100), {"muscle_charge"});
   Battle battle = startBattle(setup, 3);
@@ -607,7 +664,54 @@ public:
   }
 };
 
+// An open ground that draws every fighter's body at one point of the screen.
+class BodyAtGround final : public BattleGround {
+public:
+  explicit BodyAtGround(ScreenPoint body) : body_(body) {}
+  [[nodiscard]] std::optional<ScreenPoint> screenPointOf(Point /*ground*/,
+                                                         std::int32_t /*height*/) const override {
+    return ScreenPoint{};
+  }
+  [[nodiscard]] bool blocksStep(Point /*from*/, Point /*to*/,
+                                std::int32_t /*radius*/) const override {
+    return false;
+  }
+  [[nodiscard]] std::optional<ScreenPoint> fighterNodeOnScreen(std::size_t /*fighter*/,
+                                                               std::uint32_t node) const override {
+    CHECK(node == 1);
+    return body_;
+  }
+
+private:
+  ScreenPoint body_;
+};
+
+// Whether the enemy fought cautiously at any frame of the first `frames`.
+bool everCautious(Battle& battle, std::int64_t frames) {
+  bool cautious = false;
+  while (!battle.finished() && battle.state().frame < frames) {
+    battle.step();
+    cautious = cautious || battle.state().fighters.at(1).chargeMode == ChargeMode::Cautious;
+  }
+  return cautious;
+}
+
 } // namespace
+
+TEST_CASE("battle_main.c BTL_tickEnemyAI: an enemy whose body is off the screen's middle box is "
+          "cautious") {
+  // isOffScreen(out, 0xc8, 0xa0): more than 100 across or 80 down from the centre.
+  for (const ScreenPoint body : {ScreenPoint{.x = 101, .y = 0}, ScreenPoint{.x = 0, .y = -81}}) {
+    const BodyAtGround off{body};
+    Battle battle = startBattle(duel(evenStats(3000, 300), evenStats(3000, 300)), 11);
+    battle.setGround(&off);
+    CHECK(everCautious(battle, 600));
+  }
+  const BodyAtGround edge{{.x = 100, .y = 80}};
+  Battle battle = startBattle(duel(evenStats(3000, 300), evenStats(3000, 300)), 11);
+  battle.setGround(&edge);
+  CHECK_FALSE(everCautious(battle, 1980));
+}
 
 TEST_CASE("behind walls on every side the fighters only close in to strike, as the melee walk "
           "goes untested") {

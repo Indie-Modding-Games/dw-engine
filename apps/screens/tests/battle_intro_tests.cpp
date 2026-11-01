@@ -37,3 +37,18 @@ TEST_CASE("the banner stays 200 frames unless the player is back, then until its
   // Back late, two more frames.
   CHECK(bannerFrames(150) == 151);
 }
+
+TEST_CASE("the banner waits for the NPCs that run off before it bursts") {
+  BattleIntro intro(1);
+  while (intro.current() == IntroStep::Anger) {
+    intro.step();
+  }
+  std::int32_t frames = 0;
+  while (intro.current() == IntroStep::Banner && frames < 1000) {
+    ++frames;
+    // battle_setup.c: BTL_handleBattleIntro loops until every one of them is off screen.
+    intro.holdBurst(frames < 260);
+    intro.step();
+  }
+  CHECK(frames == 260);
+}
