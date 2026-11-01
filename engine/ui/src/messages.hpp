@@ -44,6 +44,8 @@ inline constexpr std::string_view TextFontChanged = "ui: original look text font
 // Images named by documents and style sheets (image_reference.cpp): the asset id, then the
 // problem's values.
 inline constexpr std::string_view BadPaletteNumber = "'{}' is not a palette number";
+inline constexpr std::string_view BadImageOption =
+    "'{}' is not an image option: palette=<number> or tone=grey";
 inline constexpr std::string_view NoImage = "no image {} in the packs";
 inline constexpr std::string_view ImageTooLarge =
     "the image {} is {}x{}, larger than {} on a side for the UI";

@@ -133,15 +133,42 @@ void CityAdapter::recalculate() {
   if (!rules_) {
     return;
   }
-  auto points =
-      game::story::recalculateProsperity(story_->state(), rules_->prosperity, [this](auto species) {
-        const auto found = levels_.find(species);
-        return found == levels_.end() ? 0 : found->second;
-      });
+  auto points = game::story::recalculateProsperity(
+      story_->state(), rules_->prosperity, [this](auto species) { return levelOf(species); });
   if (!points) {
     core::logWarning(
         "{}", core::formatMessage(progress_messages::ProsperityFailed, points.error().message));
   }
+}
+
+std::int32_t CityAdapter::levelOf(std::int32_t species) const {
+  const auto found = levels_.find(species);
+  return found == levels_.end() ? 0 : found->second;
+}
+
+std::vector<game::story::CityResident> CityAdapter::residents() const {
+  if (!rules_) {
+    return {};
+  }
+  auto residents = game::story::cityResidents(story_->state(), rules_->prosperity,
+                                              [this](auto species) { return levelOf(species); });
+  if (!residents) {
+    core::logWarning(
+        "{}", core::formatMessage(progress_messages::ResidentsFailed, residents.error().message));
+    return {};
+  }
+  return std::move(*residents);
+}
+
+std::optional<std::int32_t> CityAdapter::prosperity() const {
+  if (!rules_) {
+    return std::nullopt;
+  }
+  auto points = story_->state().variable(rules_->prosperity.pointsVariable);
+  if (!points) {
+    return std::nullopt;
+  }
+  return *points;
 }
 
 std::optional<std::int32_t> CityAdapter::clearedMap() const {

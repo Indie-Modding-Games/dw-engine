@@ -20,6 +20,27 @@ namespace dwe::ui {
 // What follows an image's path to pick one palette of an indexed image:
 // `texture/stddat/time.png?palette=3`.
 inline constexpr std::string_view PaletteQuery = "?palette=";
+// What follows an image's path, or its palette after `&`, to draw it in another tone:
+// `texture/etcdat/sboy?palette=15&tone=grey`.
+inline constexpr std::string_view PaletteOption = "palette";
+inline constexpr std::string_view ToneOption = "tone";
+inline constexpr std::string_view GreyToneName = "grey";
+
+// The tone an image is drawn in. Grey is a light grey silhouette that keeps the image's shading and
+// shape: an item, a species or a place the player has not reached yet.
+enum class ImageTone : std::uint8_t { Natural, Grey };
+
+// The grey a pixel of a grey image takes from its luma (0 to 255): from GreyToneDarkest for black
+// to GreyToneLightest for white: a soft grey that keeps the image's shading, never as bright as the
+// image in colour.
+inline constexpr std::uint8_t GreyToneDarkest = 64;
+inline constexpr std::uint8_t GreyToneLightest = 176;
+constexpr std::uint8_t greyToneOf(std::uint8_t red, std::uint8_t green, std::uint8_t blue) {
+  // Rec. 601 luma in 8.8 fixed point: 77 + 150 + 29 = 256.
+  const unsigned luma = ((77U * red) + (150U * green) + (29U * blue)) >> 8U;
+  constexpr unsigned span = GreyToneLightest - GreyToneDarkest;
+  return static_cast<std::uint8_t>(GreyToneDarkest + ((luma * span) / 255U));
+}
 
 // The file types an image may come from: an extracted or edited PNG, or a texture `dwx cook` or a
 // remaster made.
@@ -60,14 +81,18 @@ inline constexpr std::uint64_t MaxUiImageFileBytes =
 // An image a document or a style sheet names. The extension in its path is ignored: the image is
 // the asset, and whichever file provides it is read, so a remaster's `.ktx2` that overrides a
 // `.png` keeps every `.png` reference working. A palette other than the one the file holds picks a
-// row of the image's metadata (`<id>_meta.yaml`).
+// row of the image's metadata (`<id>_meta.yaml`). A tone other than Natural recolours the pixels
+// once, when the image is loaded, so drawing it costs what any image costs.
 struct ImageReference {
   assets::AssetId asset;
   std::optional<std::size_t> palette;
+  ImageTone tone = ImageTone::Natural;
 };
 
 // Reads a reference as RmlUi passes it, already joined to the document's folder: `ui/x/frame.png`,
-// `/texture/stddat/time?palette=3`.
+// `/texture/stddat/time?palette=3`, `/texture/etcdat/sboy?palette=15&tone=grey`,
+// `ui/x/a?tone=grey`. Options are `name=value` pairs after `?`, joined by `&`, in any order; an
+// unknown one fails.
 core::Result<ImageReference> parseImageReference(std::string_view path);
 
 // Whether the UI draws an image as the disc's pixel art, with sharp texel edges at any size
@@ -75,7 +100,8 @@ core::Result<ImageReference> parseImageReference(std::string_view path);
 // sprites are. Any other image is filtered.
 bool isPixelArt(const ImageReference& reference);
 
-// The text of a reference, as a style sheet writes it: `/texture/stddat/time?palette=3`.
+// The text of a reference, as a style sheet writes it: `/texture/stddat/time?palette=3`, the
+// palette first and the tone after it.
 std::string imageReferenceText(const ImageReference& reference);
 
 // The size of an image in pixels, from the header of its file only.
@@ -97,7 +123,10 @@ core::Result<ImageSize> imageSize(const assets::VirtualFileSystem& files,
                                   const ImageReference& reference);
 
 // Loads the pixels of an image: a PNG of any kind or a KTX2 texture. A palette needs an indexed PNG
-// and its metadata with at least that many palettes.
+// and its metadata with at least that many palettes. The tone applies last, to any of them.
+// Recolours every pixel of an RGBA image in a tone, keeping its alpha.
+void applyImageTone(assets::Image& image, ImageTone tone);
+
 core::Result<assets::Image> loadImage(const assets::VirtualFileSystem& files,
                                       const ImageReference& reference);
 

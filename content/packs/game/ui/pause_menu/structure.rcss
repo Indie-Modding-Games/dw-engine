@@ -28,3 +28,8 @@
 
 #player-medals-view { display: none; }
 #player-cards-view { display: none; }
+
+/* The player page's City tab (a dwe addition): shown while the panel has the class "player-city"; each skin places it. */
+#player-city-view { display: none; }
+#panel.player-city #player-city-view { display: block; }
+.city-cell.hidden, #city-cursor.hidden, .city-icon.hidden { display: none; }

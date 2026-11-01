@@ -8,7 +8,7 @@ local first_entry = {
   main = "continue",
   minimap = "minimap-mode",
   options = "display-mode",
-  player = "player-minimap",
+  player = "player-city",
 }
 -- The entry of the main page that opened each page, focused again when going back.
 local opener = { minimap = "open-minimap", options = "open-options", player = "open-player" }
@@ -32,6 +32,11 @@ local chart_index = 0
 local chart_cells = {}
 local chart_signature = ""
 local chart_flash = false
+local city_selecting = false
+local city_index = 0
+local city_cells = {}
+local city_signature = ""
+local city_cursor_cell = nil
 
 local minimap_sizes = { "small", "medium", "large" }
 -- Whether the HUD shows the minimap: as the skin decides (auto), always (on) or never (off).
@@ -453,6 +458,164 @@ local function card_move(document, action)
   cards_cursor(document)
 end
 
+-- The City tab (a dwe addition, docs/modulos/apps/screens.md): every species that can join the
+-- city, grouped by level, in colour once it lives there and as a silhouette while it is missing;
+-- the prosperity and how many joined. The game publishes the lists (player.city.*) from the city's
+-- rules; the icons and names are the evolution chart's (player.chart.*). Drawn again only when
+-- those change; a cursor step redraws two cells and the footer.
+local city_slots = 64
+-- Both looks lay the grid out 12 to a row (style.rcss). The original look's cells are 73dp apart
+-- from (10, 84) of the page, and its cursor is a frame 3dp outside the selected one.
+local city_columns = 12
+local city_original_left = 10
+local city_original_top = 84
+local city_original_pitch = 73
+local city_cursor_outside = 3
+-- A missing resident's icon: the same image in its grey tone (engine/ui image_reference.hpp).
+local city_grey_tone = "tone=grey"
+
+local function original_skin()
+  return ui.setting("ui_skin") == "original"
+end
+
+local function city_footer(document)
+  local cell = city_cells[city_index + 1]
+  local shown = city_selecting and cell ~= nil
+  document:get("city-name"):set_text(shown and cell.name or "")
+  document:get("city-points"):set_text(shown and string.format("+%d", cell.points) or "")
+end
+
+local function city_cursor(document)
+  local cell = city_cells[city_index + 1]
+  local shown = city_selecting and cell ~= nil
+  if city_cursor_cell ~= nil and city_cursor_cell ~= city_index then
+    document:get("city-cell-" .. city_cursor_cell):set_class("cursor", false)
+  end
+  city_cursor_cell = shown and city_index or nil
+  if shown then
+    document:get("city-cell-" .. city_index):set_class("cursor", true)
+  end
+  local cursor = document:get("city-cursor")
+  cursor:set_class("hidden", not shown)
+  if shown then
+    local column = city_index % city_columns
+    local row = math.floor(city_index / city_columns)
+    cursor:set_property(
+      "left",
+      (city_original_left + column * city_original_pitch - city_cursor_outside) .. "dp"
+    )
+    cursor:set_property(
+      "top",
+      (city_original_top + row * city_original_pitch - city_cursor_outside) .. "dp"
+    )
+  end
+  city_footer(document)
+end
+
+local function refresh_city(document)
+  local chart_count = math.floor(tonumber(ui.setting("player.chart.count")) or 0)
+  local signature = table.concat({
+    ui.setting("player.city.species") or "",
+    ui.setting("player.city.recruited") or "",
+    tostring(ui.setting("player.city.prosperity") or 0),
+    tostring(chart_count),
+  }, ";")
+  if signature == city_signature then
+    return
+  end
+  city_signature = signature
+  local by_species = {}
+  for i = 0, chart_count - 1 do
+    local index = tonumber(ui.setting(string.format("player.chart.%d.index", i)))
+    if index then
+      by_species[math.floor(index)] = string.format("player.chart.%d.", i)
+    end
+  end
+  local species = number_list("player.city.species")
+  local levels = number_list("player.city.levels")
+  local points = number_list("player.city.points")
+  local recruited = number_list("player.city.recruited")
+  city_cells = {}
+  local joined = 0
+  for i = 0, city_slots - 1 do
+    local button = document:get("city-cell-" .. i)
+    local number = species[i]
+    button:set_class("hidden", number == nil)
+    if number ~= nil then
+      local base = by_species[number]
+      local cell = {
+        name = base and t(ui.setting(base .. "name") or "") or "",
+        points = points[i] or 0,
+        recruited = (recruited[i] or 0) ~= 0,
+      }
+      city_cells[i + 1] = cell
+      if cell.recruited then
+        joined = joined + 1
+      end
+      for level = 3, 5 do
+        button:set_class("level-" .. level, levels[i] == level)
+      end
+      button:set_class("missing", not cell.recruited)
+      local icon = document:get("city-icon-" .. i)
+      icon:set_class("hidden", base == nil)
+      if base then
+        local source = "/" .. ui.setting(base .. "source")
+        if not cell.recruited then
+          source = source .. (source:find("?", 1, true) and "&" or "?") .. city_grey_tone
+        end
+        icon:set_attribute("src", source)
+        icon:set_attribute(
+          "rect",
+          string.format("%d %d 16 16", ui.setting(base .. "u"), ui.setting(base .. "v"))
+        )
+      end
+    end
+  end
+  document
+    :get("city-prosperity")
+    :set_text(tostring(math.floor(tonumber(ui.setting("player.city.prosperity")) or 0)))
+  document:get("city-residents"):set_text(string.format("%d/%d", joined, #city_cells))
+  if city_index >= #city_cells then
+    city_index = 0
+  end
+  city_cursor(document)
+end
+
+function city_pick(document, index)
+  if not city_cells[index + 1] then
+    return
+  end
+  city_index = index
+  city_selecting = true
+  city_cursor(document)
+  document:get("city-cell-" .. index):focus()
+end
+
+-- Left and right stop at the row's ends, up at the first row; down from a full row onto a shorter
+-- last one lands on its last cell.
+local function city_move(document, action)
+  local columns = city_columns
+  local count = #city_cells
+  local column = city_index % columns
+  local target = city_index
+  if action == "left" and column ~= 0 then
+    target = city_index - 1
+  elseif action == "right" and column ~= columns - 1 and city_index + 1 < count then
+    target = city_index + 1
+  elseif action == "up" and city_index >= columns then
+    target = city_index - columns
+  elseif action == "down" then
+    if city_index + columns < count then
+      target = city_index + columns
+    elseif math.floor(city_index / columns) < math.floor((count - 1) / columns) then
+      target = count - 1
+    end
+  end
+  if target ~= city_index then
+    city_pick(document, target)
+  end
+end
+
 function show_player_tab(document, tab)
   chart_detail = false
   chart_transition = nil
@@ -474,6 +637,13 @@ function show_player_tab(document, tab)
   document:get("panel"):set_class("player-medals", tab == "medals")
   document:get("player-tab-card"):set_class("selected", tab == "card")
   document:get("panel"):set_class("player-cards", tab == "card")
+  document:get("player-tab-city"):set_class("selected", tab == "city")
+  document:get("panel"):set_class("player-city", tab == "city")
+  city_selecting = false
+  if tab == "city" then
+    refresh_city(document)
+  end
+  city_cursor(document)
   chart_cursor(document)
   document:get("player-tab-" .. tab):focus()
 end
@@ -550,6 +720,7 @@ local function refresh(document)
   refresh_medals(document)
   refresh_cards(document)
   refresh_chart(document)
+  refresh_city(document)
   draw_date_digits(document, "field-year-", 3, ui.setting("hud.clock.year"))
   draw_date_digits(document, "field-day-", 2, ui.setting("hud.clock.day"))
   local original = ui.setting("ui_skin") == "original"
@@ -628,7 +799,7 @@ local function refresh_prompts(document)
   document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
   -- The player page's prompts name the key of the device in use (a PC game: the keyboard's keys
   -- first, a pad's buttons when a pad plays), not the disc's fixed pad glyphs.
-  for _, page in ipairs({ "chart", "medals", "cards" }) do
+  for _, page in ipairs({ "chart", "medals", "cards", "city" }) do
     document:get(page .. "-confirm-key"):set_text(ui.prompt("confirm"))
     document:get(page .. "-cancel-key"):set_text(ui.prompt("cancel"))
   end
@@ -644,11 +815,15 @@ local function show_page(document, name, focus, tools)
     document:get("player-tab-player"):set_class("selected", true)
     document:get("player-tab-chart"):set_class("selected", false)
     document:get("player-tab-medals"):set_class("selected", false)
+    document:get("player-tab-city"):set_class("selected", false)
     chart_cursor(document)
+    city_selecting = false
+    city_cursor(document)
   end
   current = name
   document:get("panel"):set_class("player-chart", name == "player" and player_tab == "chart")
   document:get("panel"):set_class("player-medals", name == "player" and player_tab == "medals")
+  document:get("panel"):set_class("player-city", name == "player" and player_tab == "city")
   player_tools_open = tools == true
   document:get("panel"):set_class("player-tools-open", player_tools_open)
   document
@@ -708,7 +883,24 @@ local function close_menu(document)
   end)
 end
 
+-- The modern look's City entry on the player page: the view takes the page until Back.
+function open_city(document)
+  show_player_tab(document, "city")
+  document:get("title"):set_text(t("pause_menu.player_tab_city"))
+  city_pick(document, city_index)
+end
+
+local function close_city(document)
+  show_player_tab(document, "player")
+  document:get("title"):set_text(t("pause_menu.title.player"))
+  document:get("player-city"):focus()
+end
+
 function back(document)
+  if current == "player" and player_tab == "city" and not original_skin() then
+    close_city(document)
+    return
+  end
   if current == "player" and player_tools_open then
     player_tools_open = false
     document:get("panel"):set_class("player-tools-open", false)
@@ -851,6 +1043,9 @@ function on_setting(document, name)
     end
   elseif name:sub(1, 12) == "player.chart" then
     refresh_chart(document)
+    refresh_city(document)
+  elseif name:sub(1, 11) == "player.city" then
+    refresh_city(document)
   elseif name:sub(1, 12) == "player.medal" then
     refresh_medals(document)
     refresh_player(document)
@@ -888,7 +1083,27 @@ function on_action(document, action)
     end
     return true
   end
+  if current == "player" and player_tab == "city" and not original_skin() then
+    if action == "up" or action == "down" or action == "left" or action == "right" then
+      city_move(document, action)
+      return true
+    end
+    if action == "confirm" then
+      return true
+    end
+  end
   if current == "player" and not player_tools_open and ui.setting("ui_skin") == "original" then
+    if player_tab == "city" and city_selecting then
+      if action == "cancel" then
+        city_selecting = false
+        city_cursor(document)
+        document:get("player-tab-city"):focus()
+      elseif action == "up" or action == "down" or action == "left" or action == "right" then
+        city_move(document, action)
+      end
+      return true
+    end
+
     if player_tab == "medals" and medals_selecting then
       if action == "cancel" then
         medals_selecting = false
@@ -943,11 +1158,15 @@ function on_action(document, action)
       end
     else
       if action == "right" or action == "left" then
-        -- tickPlayerMenu: the four pages are always there, in this order.
-        local tabs = { "player", "chart", "medals", "card" }
+        -- tickPlayerMenu: the four pages are always there, in this order; dwe adds the City tab.
+        local tabs = { "player", "chart", "medals", "card", "city" }
         local current_index = index_of(tabs, player_tab)
         local delta = action == "left" and -1 or 1
         show_player_tab(document, tabs[math.max(1, math.min(#tabs, current_index + delta))])
+        return true
+      end
+      if action == "confirm" and player_tab == "city" then
+        city_pick(document, city_index)
         return true
       end
       if action == "confirm" and player_tab == "card" then

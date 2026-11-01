@@ -8,9 +8,9 @@
 
 namespace dwe::game::story {
 
-core::Result<std::uint8_t> recalculateProsperity(StoryState& state, const ProsperityRules& rules,
-                                                 const SpeciesLevel& level) {
-  std::uint8_t points = 0;
+core::Result<std::vector<CityResident>>
+cityResidents(const StoryState& state, const ProsperityRules& rules, const SpeciesLevel& level) {
+  std::vector<CityResident> residents;
   for (std::int32_t species = rules.firstSpecies; species < rules.endSpecies; ++species) {
     const std::int32_t speciesLevel = level ? level(species) : 0;
     if (speciesLevel < rules.minLevel) {
@@ -20,11 +20,26 @@ core::Result<std::uint8_t> recalculateProsperity(StoryState& state, const Prospe
     if (!recruited) {
       return std::unexpected{recruited.error()};
     }
-    if (!*recruited) {
-      continue;
-    }
     const bool onePoint = std::ranges::contains(rules.onePointSpecies, species);
-    points = static_cast<std::uint8_t>(points + (onePoint ? 1 : speciesLevel - rules.levelOffset));
+    residents.push_back({.species = species,
+                         .level = speciesLevel,
+                         .points = onePoint ? 1 : speciesLevel - rules.levelOffset,
+                         .recruited = *recruited});
+  }
+  return residents;
+}
+
+core::Result<std::uint8_t> recalculateProsperity(StoryState& state, const ProsperityRules& rules,
+                                                 const SpeciesLevel& level) {
+  auto residents = cityResidents(state, rules, level);
+  if (!residents) {
+    return std::unexpected{residents.error()};
+  }
+  std::uint8_t points = 0;
+  for (const CityResident& resident : *residents) {
+    if (resident.recruited) {
+      points = static_cast<std::uint8_t>(points + resident.points);
+    }
   }
   if (auto written = state.setVariable(rules.pointsVariable, points); !written) {
     return std::unexpected{written.error()};

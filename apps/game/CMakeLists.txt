@@ -58,6 +58,7 @@ dwe_add_app(game
         src/partner_events.cpp
         src/partner_menu.cpp
         src/player_chart.cpp
+        src/player_city.cpp
         src/partner_portrait.cpp
         src/partner_tab.cpp
         src/pause_box.cpp
@@ -158,14 +159,14 @@ target_compile_definitions(game PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/con
 # The game is an executable, so its tests build the sources they check into a test program of their own: the player's
 # settings (settings.yaml), how the UI skin is chosen at start and changed, the minimap mode, the save and place debug
 # commands, the state trace's lines, the control channel's requests, the title screen's and the game's save flows,
-# the battle's root steps of a model, the discard menu's list and the trade menu's cursor.
+# the battle's root steps of a model, the discard menu's list, the trade menu's cursor and the player page's City tab.
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
     add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/control_json.cpp
                                   src/evolution_effects.cpp src/field_effects.cpp
                                   src/death_effects.cpp src/ending_effects.cpp
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/minimap_setting.cpp
-                                  src/pause_box.cpp src/place_command.cpp src/story_set_command.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
+                                  src/pause_box.cpp src/place_command.cpp src/player_city.cpp src/story_set_command.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
                                   src/save_indicator.cpp src/save_machine_flow.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_skin_setting.cpp src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution

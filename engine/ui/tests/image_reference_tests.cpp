@@ -188,6 +188,68 @@ TEST_CASE("an image reference names an asset, with or without an extension, and 
   CHECK_FALSE(parseImageReference("Texture/Time.png").has_value());
 }
 
+TEST_CASE("an image reference may ask for a grey tone, with or without a palette, in any order") {
+  auto both = parseImageReference("/texture/etcdat/sboy?palette=15&tone=grey");
+  REQUIRE_MESSAGE(both.has_value(), both.error().message);
+  CHECK(both->asset.str() == "texture/etcdat/sboy");
+  CHECK(both->palette == std::optional<std::size_t>{15});
+  CHECK(both->tone == ImageTone::Grey);
+  CHECK(isPixelArt(*both));
+  CHECK(imageReferenceText(*both) == "/texture/etcdat/sboy?palette=15&tone=grey");
+
+  auto reversed = parseImageReference("texture/etcdat/sboy?tone=grey&palette=15");
+  REQUIRE(reversed.has_value());
+  CHECK(imageReferenceText(*reversed) == "/texture/etcdat/sboy?palette=15&tone=grey");
+
+  auto toneOnly = parseImageReference("ui/skins/modern/frame.png?tone=grey");
+  REQUIRE(toneOnly.has_value());
+  CHECK_FALSE(toneOnly->palette.has_value());
+  CHECK(imageReferenceText(*toneOnly) == "/ui/skins/modern/frame?tone=grey");
+
+  CHECK(parseImageReference("texture/time.png")->tone == ImageTone::Natural);
+  CHECK_FALSE(parseImageReference("texture/time.png?tone=sepia").has_value());
+  CHECK_FALSE(parseImageReference("texture/time.png?palette=1&").has_value());
+  CHECK_FALSE(parseImageReference("texture/time.png?size=2").has_value());
+  CHECK_FALSE(parseImageReference("texture/time.png?tone").has_value());
+}
+
+TEST_CASE("a grey image is a light grey silhouette: its shading kept, its alpha untouched") {
+  CHECK(greyToneOf(0, 0, 0) == GreyToneDarkest);
+  CHECK(greyToneOf(255, 255, 255) == GreyToneLightest);
+  // Brighter colours stay brighter: green weighs most, then red, then blue.
+  CHECK(greyToneOf(0, 255, 0) > greyToneOf(255, 0, 0));
+  CHECK(greyToneOf(255, 0, 0) > greyToneOf(0, 0, 255));
+
+  const Packs packs;
+  auto grey = packs.load("texture/sheet.png?palette=1&tone=grey");
+  REQUIRE_MESSAGE(grey.has_value(), grey.error().message);
+  const auto toned = [](int red, int green, int blue, int alpha) {
+    const auto value = greyToneOf(static_cast<std::uint8_t>(red), static_cast<std::uint8_t>(green),
+                                  static_cast<std::uint8_t>(blue));
+    return rgba(value, value, value, alpha);
+  };
+  CHECK(pixelAt(*grey, 0) == toned(0, 0, 0, 0));
+  CHECK(pixelAt(*grey, 1) == toned(255, 0, 0, 255));
+  CHECK(pixelAt(*grey, 2) == toned(0, 255, 0, 255));
+  CHECK(pixelAt(*grey, 3) == toned(0, 0, 255, 255));
+  // Any image takes a tone, not only the disc's indexed ones.
+  auto user = packs.load("ui/user_frame.png?tone=grey");
+  REQUIRE(user.has_value());
+  CHECK(pixelAt(*user, 0) == rgba(GreyToneLightest, GreyToneLightest, GreyToneLightest, 255));
+
+  // The same image in its natural tone is a separate texture, left as it was.
+  TextureSources sources{*packs.files};
+  RenderBridge bridge{sources, nullptr};
+  Rml::Vector2i size;
+  const Rml::TextureHandle natural = bridge.LoadTexture(size, "/texture/sheet.png?palette=1");
+  const Rml::TextureHandle silhouette =
+      bridge.LoadTexture(size, "/texture/sheet.png?palette=1&tone=grey");
+  REQUIRE(natural != 0);
+  REQUIRE(silhouette != 0);
+  CHECK(natural != silhouette);
+  CHECK(bridge.drawsSharp(silhouette));
+}
+
 TEST_CASE(
     "the disc's pixel art, an indexed image drawn with a palette, is drawn sharp; any other image is filtered") {
   const auto sprite = parseImageReference("/texture/etcdat/feel_ef?palette=1");

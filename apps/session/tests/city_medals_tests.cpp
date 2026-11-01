@@ -131,6 +131,24 @@ TEST_CASE("a finished game continues on the File City screen of how the city gre
   CHECK(city->clearedMap() == 0xb0);
 }
 
+TEST_CASE("the city lists who can live in it, who joined and the prosperity the scripts see") {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable}};
+  const auto [session, story, city, medals] = progressSession(packs);
+  set(*story, 200 + 11);
+  REQUIRE(story->state().setVariable(1, 7).has_value());
+  const auto residents = city->residents();
+  REQUIRE(residents.size() == 3);
+  CHECK(residents[0].species == 3);
+  CHECK_FALSE(residents[0].recruited);
+  CHECK(residents[1].species == 5);
+  CHECK(residents[1].points == 2);
+  CHECK(residents[2].species == 11);
+  CHECK(residents[2].points == 1);
+  CHECK(residents[2].recruited);
+  // The variable as the scripts left it, until the next load or save rebuilds it.
+  CHECK(city->prosperity() == 7);
+}
+
 TEST_CASE("the field's medal check gives a medal once and leaves its notice due") {
   const TestPacks packs{{"data/digimon.yaml", digimonTable}};
   const auto [session, story, city, medals] = progressSession(packs);

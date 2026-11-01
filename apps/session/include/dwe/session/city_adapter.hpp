@@ -46,12 +46,19 @@ public:
   void recalculate();
   // The File City screen a game saved after the ending continues on (map.c: getFileCityTopMap).
   [[nodiscard]] std::optional<std::int32_t> clearedMap() const;
+  // Every species that can live in the city, whether it joined and the points it adds, for the
+  // player page's City tab (a dwe addition); empty without the rules.
+  [[nodiscard]] std::vector<game::story::CityResident> residents() const;
+  // The prosperity the scripts read now (the points variable); nothing without the rules.
+  [[nodiscard]] std::optional<std::int32_t> prosperity() const;
 
 private:
   StoryAdapter* story_;
   std::optional<CityRules> rules_;
   // Each species' level by its number, from the story's digimon table.
   std::unordered_map<std::int32_t, std::int32_t> levels_;
+
+  [[nodiscard]] std::int32_t levelOf(std::int32_t species) const;
 };
 
 } // namespace dwe::session

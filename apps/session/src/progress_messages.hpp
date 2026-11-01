@@ -11,6 +11,7 @@ inline constexpr std::string_view CitySectionText = "the city section";
 inline constexpr std::string_view ProsperityText = "prosperity";
 inline constexpr std::string_view ClearedMapText = "a cleared_map choice";
 inline constexpr std::string_view ProsperityFailed = "city: the prosperity was not rebuilt: {}";
+inline constexpr std::string_view ResidentsFailed = "city: the residents were not read: {}";
 inline constexpr std::string_view ClearedMapFailed = "city: {}";
 
 inline constexpr std::string_view MedalsSectionText = "the medals section";

@@ -17,7 +17,7 @@ La UI del juego (menús y HUD) vive en `engine/ui`, en la capa de servicios, sob
 | Textos | Los textos salen del `localization::Catalog` que da la app (`UiDesc::texts`; sin él, la UI carga el inglés): `text-key` en el RML, `t()` en Lua, y `refreshTexts()` al cambiar de idioma ([localización](localizacion.md)) |
 | `FontEngine` (`src/font_engine.*`), `BitmapFont` | El motor de fuentes de RmlUi con la familia `original-look` encima: dibuja con la fuente de mapa de bits del original o con la moderna, según el ajuste `text_font` (ver [Aspecto original](#aspecto-original)); el resto de familias va al motor de RmlUi (FreeType) |
 | Aspectos (`SkinCatalog`, `src/skin_styler.*`) | Los aspectos que ofrecen los paquetes (`ui/skins/<id>/skin.yaml`) y las hojas de estilo que cada uno pone sobre cada documento; ver [Aspectos](#aspectos) |
-| Imágenes (`image_reference.*`) | Lo que nombra una imagen de RCSS o RML: un asset sin extensión y, si se pide, una paleta (`?palette=N`) |
+| Imágenes (`image_reference.*`) | Lo que nombra una imagen de RCSS o RML: un asset sin extensión y, si se piden, una paleta (`?palette=N`) y un tono (`tone=grey`, unidos con `&`) |
 | `buildMinimap` | Dibuja el minimapa desde una rejilla de celdas (`MinimapGrid`) y da el `MinimapLayout` que sitúa posiciones del mundo en la imagen |
 
 `ui` no conoce el juego: recibe valores planos (la rejilla del minimapa, las posiciones de los marcadores, los
@@ -494,6 +494,12 @@ transparente, el resto opaco). Pedir una paleta a una imagen sin metadatos es un
 imagen cuyo archivo es una KTX2 también (`PaletteNeedsPng`): pasa cuando un remaster reemplaza la PNG indexada con
 una KTX2, que ya no tiene paletas, así que un aspecto que use `?palette=` de esa imagen se queda sin ella; el
 remaster tiene que dar las variantes que necesite como imágenes propias.
+
+`?tone=grey` (o `&tone=grey` tras la paleta) dibuja cualquier imagen, PNG o KTX2, como silueta gris claro: cada píxel
+toma un gris de su luminancia (Rec. 601) entre `GreyToneDarkest` (64) y `GreyToneLightest` (176) y conserva su alfa,
+así que la forma y el sombreado se reconocen y nunca brilla tanto como en color. Se aplica una vez, al cargar la
+imagen (`applyImageTone`); la misma imagen en color y en gris son dos texturas, y una opción que no se conoce es un
+error en el log (`BadImageOption`).
 
 ## Aspecto original
 

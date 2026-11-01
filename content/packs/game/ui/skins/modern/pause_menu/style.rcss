@@ -54,3 +54,28 @@
 .prompt {
 	margin-left: 18dp;
 }
+
+/* The player page's City view (a dwe addition): the prosperity and the residents, a grid of every species that can join,
+   coloured by level (rookies blue, champions green, ultimates brown), its icon three times its size and a light grey
+   silhouette while it is missing, and the selected one's name and points. The original look extends this one and places
+   the tab its own way (#panel.on-player), so these rules leave it alone. */
+#panel.player-city:not(.on-player) { width: 726dp; }
+#panel.player-city:not(.on-player) .player-line, #panel.player-city:not(.on-player) #player-tools { display: none; }
+#panel:not(.on-player) #city-header { position: relative; height: 32dp; font-size: 18dp; line-height: 26dp; }
+#panel:not(.on-player) #city-prosperity-label, #panel:not(.on-player) #city-residents-label { color: #9aa7b6; }
+#panel:not(.on-player) #city-prosperity-label { position: absolute; left: 0; top: 0; }
+#panel:not(.on-player) #city-prosperity-box { position: absolute; left: 130dp; top: 0; width: 56dp; height: 26dp; border-radius: 4dp; background-color: #0c1118; }
+#panel:not(.on-player) #city-prosperity { display: block; padding-right: 8dp; text-align: right; font-weight: bold; color: #f0a73a; }
+#panel:not(.on-player) #city-residents-label { position: absolute; right: 70dp; top: 0; }
+#panel:not(.on-player) #city-residents { position: absolute; right: 0; top: 0; width: 64dp; text-align: right; font-weight: bold; }
+#panel:not(.on-player) #city-rule, #panel:not(.on-player) #city-cursor, #panel:not(.on-player) #city-name-box, #panel:not(.on-player) #city-prompts { display: none; }
+#panel:not(.on-player) #city-grid { width: 720dp; padding-top: 6dp; border-top: 1dp #2e3a4a; }
+#panel:not(.on-player) .city-cell, #panel:not(.on-player) .city-cell:focus { float: left; position: relative; width: 56dp; height: 56dp; margin: 0 4dp 4dp 0; padding: 0; border: 2dp transparent; border-radius: 6dp; box-sizing: border-box; background-color: #2a3442; }
+#panel:not(.on-player) .city-cell.level-3 { background-color: #1d4f7a; }
+#panel:not(.on-player) .city-cell.level-4 { background-color: #1f6b3e; }
+#panel:not(.on-player) .city-cell.level-5 { background-color: #7a4a26; }
+#panel:not(.on-player) .city-cell.cursor { border-color: #f0a73a; }
+#panel:not(.on-player) .city-icon { position: absolute; left: 2dp; top: 2dp; width: 48dp; height: 48dp; pointer-events: none; }
+#panel:not(.on-player) #city-footer { clear: both; position: relative; height: 30dp; margin-top: 6dp; font-size: 18dp; line-height: 30dp; }
+#panel:not(.on-player) #city-name { position: absolute; left: 0; top: 0; }
+#panel:not(.on-player) #city-points { position: absolute; right: 0; top: 0; font-weight: bold; color: #7ad37a; }

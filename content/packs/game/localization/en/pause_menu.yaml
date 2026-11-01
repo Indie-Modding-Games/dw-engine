@@ -51,8 +51,10 @@ bulk_trades: "Bulk trades"
 year_label: "Year"
 day_label: "Day"
 player_tab_chart: "Chart"
-player_tab_medals: "Med."
+# The five tabs of the player page share the box's width, so the whole word fits.
+player_tab_medals: "Medals"
 player_tab_card: "Card"
+player_tab_city: "City"
 player_raised: "Raised"
 player_items: "Items"
 player_medals: "Medals"
@@ -68,3 +70,7 @@ chart_level.5: "Ultimate"
 
 medals_chart: "Medals Chart"
 card_list: "Card List"
+
+# The City tab (a dwe addition): who already lives in the city and who is missing, with their prosperity points.
+city_prosperity: "Prosperity"
+city_residents: "Residents"

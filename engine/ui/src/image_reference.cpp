@@ -40,6 +40,40 @@ core::Result<std::size_t> parsePalette(std::string_view text) {
   return palette;
 }
 
+// What the options after an image's path ask for.
+struct ImageOptions {
+  std::optional<std::size_t> palette;
+  ImageTone tone = ImageTone::Natural;
+};
+
+// Reads the options after an image's path: `palette=3&tone=grey`.
+core::Result<ImageOptions> parseImageOptions(std::string_view options) {
+  ImageOptions parsed;
+  while (true) {
+    const std::size_t end = options.find('&');
+    const std::string_view option = options.substr(0, end);
+    const std::size_t equals = option.find('=');
+    const std::string_view name = option.substr(0, equals);
+    const std::string_view value =
+        equals == std::string_view::npos ? std::string_view{} : option.substr(equals + 1);
+    if (equals != std::string_view::npos && name == PaletteOption) {
+      auto number = parsePalette(value);
+      if (!number) {
+        return std::unexpected{number.error()};
+      }
+      parsed.palette = *number;
+    } else if (equals != std::string_view::npos && name == ToneOption && value == GreyToneName) {
+      parsed.tone = ImageTone::Grey;
+    } else {
+      return core::fail(core::formatMessage(messages::BadImageOption, option));
+    }
+    if (end == std::string_view::npos) {
+      return parsed;
+    }
+    options.remove_prefix(end + 1);
+  }
+}
+
 core::Result<assets::Image> decodeKtx2Image(std::span<const std::byte> bytes) {
   auto texture = assets::decodeKtx2(bytes, assets::TexelEncoding::Rgba8);
   if (!texture) {
@@ -90,20 +124,21 @@ core::Result<ImageReference> parseImageReference(std::string_view path) {
   while (path.starts_with('/')) {
     path.remove_prefix(1);
   }
-  std::optional<std::size_t> palette;
-  if (const std::size_t query = path.find(PaletteQuery); query != std::string_view::npos) {
-    auto number = parsePalette(path.substr(query + PaletteQuery.size()));
-    if (!number) {
-      return std::unexpected{number.error()};
+  ImageOptions options;
+  if (const std::size_t query = path.find('?'); query != std::string_view::npos) {
+    auto parsed = parseImageOptions(path.substr(query + 1));
+    if (!parsed) {
+      return std::unexpected{parsed.error()};
     }
-    palette = *number;
+    options = *parsed;
     path = path.substr(0, query);
   }
   auto asset = assets::AssetId::parse(withoutExtension(path));
   if (!asset) {
     return std::unexpected{asset.error()};
   }
-  return ImageReference{.asset = std::move(*asset), .palette = palette};
+  return ImageReference{
+      .asset = std::move(*asset), .palette = options.palette, .tone = options.tone};
 }
 
 bool isPixelArt(const ImageReference& reference) {
@@ -114,6 +149,10 @@ std::string imageReferenceText(const ImageReference& reference) {
   std::string text = "/" + reference.asset.str();
   if (reference.palette) {
     text += std::string{PaletteQuery} + std::to_string(*reference.palette);
+  }
+  if (reference.tone == ImageTone::Grey) {
+    text += reference.palette ? "&" : "?";
+    text += std::string{ToneOption} + "=" + std::string{GreyToneName};
   }
   return text;
 }
@@ -214,6 +253,35 @@ core::Result<ImageSize> imageSize(const assets::VirtualFileSystem& files,
   return headerSize(reference, *file);
 }
 
+void applyImageTone(assets::Image& image, ImageTone tone) {
+  if (tone == ImageTone::Natural) {
+    return;
+  }
+  for (std::size_t pixel = 0; pixel + 3 < image.pixels.size(); pixel += BytesPerRgbaPixel) {
+    const auto grey = std::byte{greyToneOf(std::to_integer<std::uint8_t>(image.pixels[pixel]),
+                                           std::to_integer<std::uint8_t>(image.pixels[pixel + 1]),
+                                           std::to_integer<std::uint8_t>(image.pixels[pixel + 2]))};
+    image.pixels[pixel] = grey;
+    image.pixels[pixel + 1] = grey;
+    image.pixels[pixel + 2] = grey;
+  }
+}
+
+namespace {
+
+core::Result<assets::Image> decodeImage(const assets::VirtualFileSystem& files,
+                                        const ImageReference& reference, const ImageFile& file) {
+  if (reference.palette) {
+    return applyMetaPalette(files, reference, file.bytes);
+  }
+  if (file.extension == Ktx2Extension) {
+    return decodeKtx2Image(file.bytes);
+  }
+  return assets::decodePng(file.bytes);
+}
+
+} // namespace
+
 core::Result<assets::Image> loadImage(const assets::VirtualFileSystem& files,
                                       const ImageReference& reference) {
   auto file = readImageFile(files, reference);
@@ -224,13 +292,11 @@ core::Result<assets::Image> loadImage(const assets::VirtualFileSystem& files,
   if (auto size = headerSize(reference, *file); !size) {
     return std::unexpected{size.error()};
   }
-  if (reference.palette) {
-    return applyMetaPalette(files, reference, file->bytes);
+  auto image = decodeImage(files, reference, *file);
+  if (image) {
+    applyImageTone(*image, reference.tone);
   }
-  if (file->extension == Ktx2Extension) {
-    return decodeKtx2Image(file->bytes);
-  }
-  return assets::decodePng(file->bytes);
+  return image;
 }
 
 } // namespace dwe::ui

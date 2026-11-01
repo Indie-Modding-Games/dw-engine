@@ -51,8 +51,10 @@ bulk_trades: "Cambios en lote"
 year_label: "Año"
 day_label: "Día"
 player_tab_chart: "Árbol"
+# Las cinco pestañas de la ficha comparten el ancho del recuadro; «Medallas» no cabe junto a las otras cuatro.
 player_tab_medals: "Med."
-player_tab_card: "Cart."
+player_tab_card: "Cartas"
+player_tab_city: "Ciudad"
 player_raised: "Criados"
 player_items: "Objetos"
 player_medals: "Medallas"
@@ -68,3 +70,7 @@ chart_level.5: "Definitivo"
 
 medals_chart: "Medallero"
 card_list: "Lista de cartas"
+
+# La pestaña Ciudad (una mejora de dwe): quién vive ya en la ciudad y quién falta, con sus puntos de prosperidad.
+city_prosperity: "Prosperidad"
+city_residents: "Residentes"

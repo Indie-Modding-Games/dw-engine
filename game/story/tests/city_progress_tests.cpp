@@ -9,6 +9,8 @@
 
 using dwe::game::story::checkMedalConditions;
 using dwe::game::story::CityMapChoice;
+using dwe::game::story::CityResident;
+using dwe::game::story::cityResidents;
 using dwe::game::story::clearedCityMap;
 using dwe::game::story::hasMedal;
 using dwe::game::story::MedalFacts;
@@ -87,6 +89,36 @@ TEST_CASE("the prosperity clears a registration without a cup and counts no unre
   CHECK(state.variable(1).value() == 0);
   CHECK_FALSE(state.trigger(37).value());
   CHECK_FALSE(state.trigger(39).value());
+}
+
+TEST_CASE("the city's residents are the species the prosperity counts, with their points") {
+  StoryState state;
+  set(state, 200 + 5);
+  set(state, 200 + 11);
+  auto residents = cityResidents(state, prosperityRules(), levelOf);
+  REQUIRE(residents.has_value());
+  // The rookie 4, the champions 5 and 11 and the ultimate 6; the in-training 7 and the species the
+  // table does not have never join.
+  REQUIRE(residents->size() == 4);
+  const auto at = [&](std::size_t i) { return (*residents)[i]; };
+  CHECK(at(0).species == 4);
+  CHECK(at(0).points == 1);
+  CHECK_FALSE(at(0).recruited);
+  CHECK(at(1).species == 5);
+  CHECK(at(1).points == 2);
+  CHECK(at(1).recruited);
+  CHECK(at(2).species == 6);
+  CHECK(at(2).level == 5);
+  CHECK(at(2).points == 3);
+  CHECK(at(3).species == 11);
+  CHECK(at(3).points == 1);
+  CHECK(at(3).recruited);
+  // The recruited ones' points are what the next rebuild writes.
+  std::int32_t sum = 0;
+  for (const CityResident& resident : *residents) {
+    sum += resident.recruited ? resident.points : 0;
+  }
+  CHECK(recalculateProsperity(state, prosperityRules(), levelOf).value() == sum);
 }
 
 TEST_CASE("a finished game continues on the File City screen of how far the city grew") {

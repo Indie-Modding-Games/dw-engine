@@ -21,7 +21,9 @@ todos los paquetes montados (un mod añade un aspecto añadiendo una carpeta) y 
 de todos los documentos abiertos sin recargarlos, con los mismos ids y scripts. Los documentos solo enlazan
 `ui/common/base.rcss`; el resto del estilo es del aspecto. Las imágenes se piden sin depender de la extensión (una
 KTX2 del remaster responde a `.png`) y una imagen indexada se dibuja con otra paleta de sus metadatos con
-`?palette=N`. Detalles en
+`?palette=N`. Cualquier imagen se dibuja como silueta gris claro con `tone=grey` (`?tone=grey`, o
+`?palette=N&tone=grey`): cada píxel toma un gris de su luminancia, entre 64 y 176, con su alfa; se recolorea una vez
+al cargarla, así que dibujarla cuesta lo mismo que la original (lo usa la pestaña Ciudad para quien aún falta). Detalles en
 [docs/architecture/ui.md](../../architecture/ui.md); cómo editar menús en
 [docs/guides/editar-menus.md](../../guides/editar-menus.md).
 

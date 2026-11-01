@@ -43,6 +43,21 @@ using SpeciesLevel = std::function<std::int32_t(std::int32_t species)>;
 core::Result<std::uint8_t> recalculateProsperity(StoryState& state, const ProsperityRules& rules,
                                                  const SpeciesLevel& level);
 
+// One species that can live in the city: those recalculatePPandArena counts, with the points it
+// adds and whether its recruit trigger is set.
+struct CityResident {
+  std::int32_t species = 0;
+  std::int32_t level = 0;
+  std::int32_t points = 0;
+  bool recruited = false;
+};
+
+// Every species that can join the city, in number order, as recalculatePPandArena walks them
+// (main.c:3902); a trigger outside the story is an error. Its sum over the recruited ones is the
+// prosperity the next rebuild writes.
+core::Result<std::vector<CityResident>>
+cityResidents(const StoryState& state, const ProsperityRules& rules, const SpeciesLevel& level);
+
 // One File City screen: the first whose triggers are all set is the one.
 struct CityMapChoice {
   std::vector<std::int32_t> triggers;

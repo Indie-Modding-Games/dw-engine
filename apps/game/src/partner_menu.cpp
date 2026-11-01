@@ -19,6 +19,7 @@
 
 #include "bag_slots.hpp"
 #include "messages.hpp"
+#include "player_city.hpp"
 
 namespace dwe::app {
 namespace {
@@ -122,7 +123,9 @@ core::Result<void> PartnerMenu::useItem(std::string_view id) {
 }
 
 void PartnerMenu::update() {
-  if (desc_.ui->isVisible(PauseMenuDocument) && desc_.session->playing()) {
+  const bool pauseMenuOpened = !pauseMenuOpen_;
+  pauseMenuOpen_ = desc_.ui->isVisible(PauseMenuDocument) && desc_.session->playing();
+  if (pauseMenuOpen_) {
     desc_.ui->setSetting("player.name", desc_.session->names().tamer);
     desc_.ui->setSetting("player.level", static_cast<double>(desc_.session->tamer().level));
     desc_.ui->setSetting("player.bits", static_cast<double>(desc_.inventory->inventory().money()));
@@ -157,6 +160,9 @@ void PartnerMenu::update() {
         raised += std::to_string(index);
       }
       desc_.ui->setSetting("player.chart.raised", std::move(raised));
+    }
+    if (desc_.city != nullptr && pauseMenuOpened) {
+      publishCityTab(*desc_.ui, cityTab(desc_.city->residents()), desc_.city->prosperity());
     }
   }
   if (desc_.ui->isVisible(PartnerMenuDocument)) {

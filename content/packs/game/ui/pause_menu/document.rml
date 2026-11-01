@@ -34,6 +34,7 @@
                   <button id="player-tab-chart" class="player-tab" onclick="show_player_tab(document, 'chart')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_chart"></span></button>
                   <button id="player-tab-medals" class="player-tab" onclick="show_player_tab(document, 'medals')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_medals"></span></button>
                   <button id="player-tab-card" class="player-tab" onclick="show_player_tab(document, 'card')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_card"></span></button>
+                  <button id="player-tab-city" class="player-tab" onclick="show_player_tab(document, 'city')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_city"></span></button>
                 </div>
                 <div id="player-profile">
                 <div id="player-portrait-clip" class="player-native"><img id="player-portrait" src="/runtime/player-portrait"/></div>
@@ -345,7 +346,90 @@
                   <div id="card-count-box" class="original-box box-closed"><span id="card-count"></span></div>
                   <div id="cards-prompts" class="page-prompts"><div class="page-prompt"><span id="cards-confirm-key" class="prompt-key confirm-key"></span><span class="prompt-text" text-key="pause_menu.chart_select"></span></div><div class="page-prompt"><span id="cards-cancel-key" class="prompt-key cancel-key"></span><span class="prompt-text" text-key="common.cancel"></span></div></div>
                 </div>
+                <div id="player-city-view">
+                  <div id="city-header">
+                    <div id="city-prosperity-label" text-key="pause_menu.city_prosperity"></div>
+                    <div id="city-prosperity-box" class="player-inset"><span id="city-prosperity"></span></div>
+                    <div id="city-residents-label" text-key="pause_menu.city_residents"></div>
+                    <div id="city-residents"></div>
+                  </div>
+                  <div id="city-rule" class="medals-rule"><span class="first"></span><span class="light"></span><span class="last"></span></div>
+                  <div id="city-grid">
+                    <button id="city-cell-0" class="city-cell hidden" onclick="city_pick(document, 0)"><img id="city-icon-0" class="city-icon"/></button>
+                    <button id="city-cell-1" class="city-cell hidden" onclick="city_pick(document, 1)"><img id="city-icon-1" class="city-icon"/></button>
+                    <button id="city-cell-2" class="city-cell hidden" onclick="city_pick(document, 2)"><img id="city-icon-2" class="city-icon"/></button>
+                    <button id="city-cell-3" class="city-cell hidden" onclick="city_pick(document, 3)"><img id="city-icon-3" class="city-icon"/></button>
+                    <button id="city-cell-4" class="city-cell hidden" onclick="city_pick(document, 4)"><img id="city-icon-4" class="city-icon"/></button>
+                    <button id="city-cell-5" class="city-cell hidden" onclick="city_pick(document, 5)"><img id="city-icon-5" class="city-icon"/></button>
+                    <button id="city-cell-6" class="city-cell hidden" onclick="city_pick(document, 6)"><img id="city-icon-6" class="city-icon"/></button>
+                    <button id="city-cell-7" class="city-cell hidden" onclick="city_pick(document, 7)"><img id="city-icon-7" class="city-icon"/></button>
+                    <button id="city-cell-8" class="city-cell hidden" onclick="city_pick(document, 8)"><img id="city-icon-8" class="city-icon"/></button>
+                    <button id="city-cell-9" class="city-cell hidden" onclick="city_pick(document, 9)"><img id="city-icon-9" class="city-icon"/></button>
+                    <button id="city-cell-10" class="city-cell hidden" onclick="city_pick(document, 10)"><img id="city-icon-10" class="city-icon"/></button>
+                    <button id="city-cell-11" class="city-cell hidden" onclick="city_pick(document, 11)"><img id="city-icon-11" class="city-icon"/></button>
+                    <button id="city-cell-12" class="city-cell hidden" onclick="city_pick(document, 12)"><img id="city-icon-12" class="city-icon"/></button>
+                    <button id="city-cell-13" class="city-cell hidden" onclick="city_pick(document, 13)"><img id="city-icon-13" class="city-icon"/></button>
+                    <button id="city-cell-14" class="city-cell hidden" onclick="city_pick(document, 14)"><img id="city-icon-14" class="city-icon"/></button>
+                    <button id="city-cell-15" class="city-cell hidden" onclick="city_pick(document, 15)"><img id="city-icon-15" class="city-icon"/></button>
+                    <button id="city-cell-16" class="city-cell hidden" onclick="city_pick(document, 16)"><img id="city-icon-16" class="city-icon"/></button>
+                    <button id="city-cell-17" class="city-cell hidden" onclick="city_pick(document, 17)"><img id="city-icon-17" class="city-icon"/></button>
+                    <button id="city-cell-18" class="city-cell hidden" onclick="city_pick(document, 18)"><img id="city-icon-18" class="city-icon"/></button>
+                    <button id="city-cell-19" class="city-cell hidden" onclick="city_pick(document, 19)"><img id="city-icon-19" class="city-icon"/></button>
+                    <button id="city-cell-20" class="city-cell hidden" onclick="city_pick(document, 20)"><img id="city-icon-20" class="city-icon"/></button>
+                    <button id="city-cell-21" class="city-cell hidden" onclick="city_pick(document, 21)"><img id="city-icon-21" class="city-icon"/></button>
+                    <button id="city-cell-22" class="city-cell hidden" onclick="city_pick(document, 22)"><img id="city-icon-22" class="city-icon"/></button>
+                    <button id="city-cell-23" class="city-cell hidden" onclick="city_pick(document, 23)"><img id="city-icon-23" class="city-icon"/></button>
+                    <button id="city-cell-24" class="city-cell hidden" onclick="city_pick(document, 24)"><img id="city-icon-24" class="city-icon"/></button>
+                    <button id="city-cell-25" class="city-cell hidden" onclick="city_pick(document, 25)"><img id="city-icon-25" class="city-icon"/></button>
+                    <button id="city-cell-26" class="city-cell hidden" onclick="city_pick(document, 26)"><img id="city-icon-26" class="city-icon"/></button>
+                    <button id="city-cell-27" class="city-cell hidden" onclick="city_pick(document, 27)"><img id="city-icon-27" class="city-icon"/></button>
+                    <button id="city-cell-28" class="city-cell hidden" onclick="city_pick(document, 28)"><img id="city-icon-28" class="city-icon"/></button>
+                    <button id="city-cell-29" class="city-cell hidden" onclick="city_pick(document, 29)"><img id="city-icon-29" class="city-icon"/></button>
+                    <button id="city-cell-30" class="city-cell hidden" onclick="city_pick(document, 30)"><img id="city-icon-30" class="city-icon"/></button>
+                    <button id="city-cell-31" class="city-cell hidden" onclick="city_pick(document, 31)"><img id="city-icon-31" class="city-icon"/></button>
+                    <button id="city-cell-32" class="city-cell hidden" onclick="city_pick(document, 32)"><img id="city-icon-32" class="city-icon"/></button>
+                    <button id="city-cell-33" class="city-cell hidden" onclick="city_pick(document, 33)"><img id="city-icon-33" class="city-icon"/></button>
+                    <button id="city-cell-34" class="city-cell hidden" onclick="city_pick(document, 34)"><img id="city-icon-34" class="city-icon"/></button>
+                    <button id="city-cell-35" class="city-cell hidden" onclick="city_pick(document, 35)"><img id="city-icon-35" class="city-icon"/></button>
+                    <button id="city-cell-36" class="city-cell hidden" onclick="city_pick(document, 36)"><img id="city-icon-36" class="city-icon"/></button>
+                    <button id="city-cell-37" class="city-cell hidden" onclick="city_pick(document, 37)"><img id="city-icon-37" class="city-icon"/></button>
+                    <button id="city-cell-38" class="city-cell hidden" onclick="city_pick(document, 38)"><img id="city-icon-38" class="city-icon"/></button>
+                    <button id="city-cell-39" class="city-cell hidden" onclick="city_pick(document, 39)"><img id="city-icon-39" class="city-icon"/></button>
+                    <button id="city-cell-40" class="city-cell hidden" onclick="city_pick(document, 40)"><img id="city-icon-40" class="city-icon"/></button>
+                    <button id="city-cell-41" class="city-cell hidden" onclick="city_pick(document, 41)"><img id="city-icon-41" class="city-icon"/></button>
+                    <button id="city-cell-42" class="city-cell hidden" onclick="city_pick(document, 42)"><img id="city-icon-42" class="city-icon"/></button>
+                    <button id="city-cell-43" class="city-cell hidden" onclick="city_pick(document, 43)"><img id="city-icon-43" class="city-icon"/></button>
+                    <button id="city-cell-44" class="city-cell hidden" onclick="city_pick(document, 44)"><img id="city-icon-44" class="city-icon"/></button>
+                    <button id="city-cell-45" class="city-cell hidden" onclick="city_pick(document, 45)"><img id="city-icon-45" class="city-icon"/></button>
+                    <button id="city-cell-46" class="city-cell hidden" onclick="city_pick(document, 46)"><img id="city-icon-46" class="city-icon"/></button>
+                    <button id="city-cell-47" class="city-cell hidden" onclick="city_pick(document, 47)"><img id="city-icon-47" class="city-icon"/></button>
+                    <button id="city-cell-48" class="city-cell hidden" onclick="city_pick(document, 48)"><img id="city-icon-48" class="city-icon"/></button>
+                    <button id="city-cell-49" class="city-cell hidden" onclick="city_pick(document, 49)"><img id="city-icon-49" class="city-icon"/></button>
+                    <button id="city-cell-50" class="city-cell hidden" onclick="city_pick(document, 50)"><img id="city-icon-50" class="city-icon"/></button>
+                    <button id="city-cell-51" class="city-cell hidden" onclick="city_pick(document, 51)"><img id="city-icon-51" class="city-icon"/></button>
+                    <button id="city-cell-52" class="city-cell hidden" onclick="city_pick(document, 52)"><img id="city-icon-52" class="city-icon"/></button>
+                    <button id="city-cell-53" class="city-cell hidden" onclick="city_pick(document, 53)"><img id="city-icon-53" class="city-icon"/></button>
+                    <button id="city-cell-54" class="city-cell hidden" onclick="city_pick(document, 54)"><img id="city-icon-54" class="city-icon"/></button>
+                    <button id="city-cell-55" class="city-cell hidden" onclick="city_pick(document, 55)"><img id="city-icon-55" class="city-icon"/></button>
+                    <button id="city-cell-56" class="city-cell hidden" onclick="city_pick(document, 56)"><img id="city-icon-56" class="city-icon"/></button>
+                    <button id="city-cell-57" class="city-cell hidden" onclick="city_pick(document, 57)"><img id="city-icon-57" class="city-icon"/></button>
+                    <button id="city-cell-58" class="city-cell hidden" onclick="city_pick(document, 58)"><img id="city-icon-58" class="city-icon"/></button>
+                    <button id="city-cell-59" class="city-cell hidden" onclick="city_pick(document, 59)"><img id="city-icon-59" class="city-icon"/></button>
+                    <button id="city-cell-60" class="city-cell hidden" onclick="city_pick(document, 60)"><img id="city-icon-60" class="city-icon"/></button>
+                    <button id="city-cell-61" class="city-cell hidden" onclick="city_pick(document, 61)"><img id="city-icon-61" class="city-icon"/></button>
+                    <button id="city-cell-62" class="city-cell hidden" onclick="city_pick(document, 62)"><img id="city-icon-62" class="city-icon"/></button>
+                    <button id="city-cell-63" class="city-cell hidden" onclick="city_pick(document, 63)"><img id="city-icon-63" class="city-icon"/></button>
+                  </div>
+                  <div id="city-cursor" class="hidden"></div>
+                  <div id="city-footer">
+                    <div id="city-name-box" class="player-inset"></div>
+                    <div id="city-name"></div>
+                    <div id="city-points"></div>
+                  </div>
+                  <div id="city-prompts" class="page-prompts"><div class="page-prompt"><span id="city-confirm-key" class="prompt-key confirm-key"></span><span class="prompt-text" text-key="pause_menu.chart_select"></span></div><div class="page-prompt"><span id="city-cancel-key" class="prompt-key cancel-key"></span><span class="prompt-text" text-key="common.cancel"></span></div></div>
+                </div>
                 <div id="player-tools">
+				<button id="player-city" onclick="open_city(document)" text-key="pause_menu.player_tab_city"></button>
 				<button id="player-minimap" onclick="open_page(document, 'minimap')" text-key="pause_menu.minimap"></button>
 				<button id="player-options" onclick="open_page(document, 'options')" text-key="pause_menu.options"></button>
 				<button id="player-to-title" onclick="ui.send('to_title')" text-key="pause_menu.to_title"></button>

@@ -7,6 +7,7 @@
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/cards_adapter.hpp>
+#include <dwe/session/city_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/story_adapter.hpp>
@@ -61,6 +62,8 @@ struct PartnerMenuDesc {
   session::StoryAdapter* story = nullptr;
   // The player's cards, for the player page's card list; it may be null.
   const session::CardsAdapter* cards = nullptr;
+  // The city, for the player page's City tab; it may be null.
+  const session::CityAdapter* city = nullptr;
   // The field's feeding scene, which the bag's Use starts when it can; null: the bag uses the
   // item at once.
   FeedScene* feed = nullptr;
@@ -110,6 +113,9 @@ private:
   PartnerMenuDesc desc_;
   game::inventory::UseContext bagContext_ = game::inventory::UseContext::Field;
   double extraPresses_ = 0.0;
+  // Whether the pause menu was open last frame: the City tab is read once each time it opens, since
+  // nothing recruits while the game is paused.
+  bool pauseMenuOpen_ = false;
 };
 
 } // namespace dwe::app

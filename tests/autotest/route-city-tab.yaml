@@ -1,0 +1,58 @@
+# The player page's City tab (a dwe addition, docs/modulos/apps/screens.md, «Pestaña Ciudad»): who already lives in the
+# city and who is missing. From a new game with seven species recruited and their 13 prosperity points (story_set),
+# the keyboard opens the pause menu's player page, steps right to the City tab and Enter starts the cursor on the first
+# rookie (in colour); right moves it onto a missing one (a grey silhouette) and down and right onto a recruited champion.
+# The same at 1920x1080 and 1024x768. Every capture checks that the texts fit (text_fit). It runs once per language
+# and once per skin (--ui-skin modern: the player page's City entry); the original look's five tabs
+# must fit their whole words (text_fit). How to run it: docs/guides/prueba-vertical.md.
+name: city-tab
+device: keyboard
+timeout: 300
+text_fit: true
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - script: story_set("trigger 203 on")
+  - script: story_set("trigger 217 on")
+  - script: story_set("trigger 218 on")
+  - script: story_set("trigger 221 on")
+  - script: story_set("trigger 223 on")
+  - script: story_set("trigger 212 on")
+  - script: story_set("trigger 241 on")
+  - script: story_set("var 1 13")
+  - menu: open
+  - wait: {seconds: 0.5}
+  - menu_select: open-player
+  - wait: {seconds: 0.6}
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - repeat: {times: 4, steps: [{tap: {key: right}}, {wait: {seconds: 0.1}}]}
+        - tap: {key: return}
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: player-city
+  - wait: {seconds: 0.4}
+  - expect_setting: {player.city.residents: 7}
+  - expect_setting: {player.city.total: 50}
+  - expect_setting: {player.city.prosperity: 13}
+  - screenshot: city-recruited
+  - tap: {key: right}
+  - wait: {seconds: 0.2}
+  - screenshot: city-missing
+  - tap: {key: down}
+  # Both looks' rows hold 12: the sixth cell of the second row is the same champion.
+  - repeat: {times: 5, steps: [{tap: {key: right}}, {wait: {seconds: 0.1}}]}
+  - wait: {seconds: 0.2}
+  - screenshot: city-champion
+  - resize: [1920, 1080]
+  - wait: {seconds: 0.4}
+  - screenshot: city-champion
+  - resize: [1024, 768]
+  - wait: {seconds: 0.4}
+  - screenshot: city-champion
+  - tap: {key: escape}
+  - wait: {seconds: 0.4}
+  - tap: {key: escape}
+  - wait: {seconds: 0.6}

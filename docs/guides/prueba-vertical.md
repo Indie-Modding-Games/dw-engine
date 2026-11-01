@@ -196,6 +196,11 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   de pausa abierto (el reloj se va con su caja) y la opción apagada desde el menú. Cada captura con la caja comprueba
   que no pisa nada del HUD ni de otro documento (`expect_clear: hud#field-time`) y que los textos caben (`text_fit`).
   Se corre en los dos idiomas y con los dos aspectos (`--ui-skin original` y `modern`).
+- `route-city-tab.yaml`: la [pestaña Ciudad](../modulos/apps/screens.md#pestaña-ciudad-mejora-de-dwe) desde una
+  partida nueva con siete especies unidas a la ciudad (`story_set`): abre la página del jugador con el teclado, va a la
+  pestaña, pone el cursor en una que vive en la ciudad, en una que falta y en un campeón unido, a 1280x720 y otra vez a
+  1920x1080 y a 1024x768, con `text_fit`. Se corre en los dos idiomas y, además, con `--ui-skin modern` (la entrada
+  «Ciudad» de la página del jugador).
 - `route-scripted-loop.yaml`: una vuelta por cinco zonas desde una partida nueva con el teclado: File City (`twna01`)
   → la casa del anciano, `room08` (tabla de salidas del mapa) → File City (script) → `trai00` (tabla) → `mayo00`
   (tabla), donde juega el primer combate del bosque y el reclutamiento de Agumon → `twnb01` (warp del script del mapa,
