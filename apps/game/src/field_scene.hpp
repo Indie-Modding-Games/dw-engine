@@ -63,6 +63,14 @@ struct GroundItemSprite {
   std::uint8_t palette = 0;
 };
 
+// An item in the player's hand (game_menu.c: renderFeedingItem): its icon at one of the player's
+// model nodes, without a shadow.
+struct HeldItemSprite {
+  std::uint32_t node = 0;
+  std::int32_t icon = 0;
+  std::uint8_t palette = 0;
+};
+
 struct FieldSceneDesc {
   // The map and exit to start at; field/warps' start when not given.
   std::optional<std::string> startMap;
@@ -233,6 +241,8 @@ public:
   // The items on the ground, drawn as their icons over their shadows (item.c: renderDroppedItem)
   // until replaced. The images load on first use; one that fails is logged and not drawn.
   void setGroundItems(std::vector<GroundItemSprite> items) { groundItems_ = std::move(items); }
+  // The item the player holds out, drawn until replaced; nullopt for none.
+  void setHeldItem(std::optional<HeldItemSprite> item) { heldItem_ = item; }
   // Copies of a model of the packs drawn on the map at these world transforms until replaced for
   // that model (the partner's poop piles: partner_impl.c: renderPoop; the story's props:
   // field_story_props.hpp); no places draws none of it. A model loads the first time it has
@@ -775,6 +785,7 @@ private:
   std::uint32_t mapSerial_ = 0;
   std::vector<render::MapMarker> extraMarkers_;
   std::vector<GroundItemSprite> groundItems_;
+  std::optional<HeldItemSprite> heldItem_;
   // The billboard textures of the items' image by palette, and of the shadow (nullopt as the key),
   // or nothing for one that failed to load.
   std::map<std::optional<std::uint8_t>, std::optional<std::size_t>> groundItemTextures_;

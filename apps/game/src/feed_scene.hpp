@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <optional>
 
+#include "feed_item.hpp"
 #include "field_scene.hpp"
 
 namespace dwe::app {
@@ -49,6 +50,8 @@ private:
 
   void offer();
   void finish();
+  // Shows or hides the item in the player's hand for the step (renderFeedingItem).
+  void showItem();
   [[nodiscard]] float frames(std::int32_t count) const;
 
   session::GameSession* session_;

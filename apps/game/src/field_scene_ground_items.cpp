@@ -98,16 +98,16 @@ void FieldScene::drawGroundItems() {
                             .color = glm::vec3{ShadowShade}});
     }
   }
-  for (const GroundItemSprite& item : groundItems_) {
-    const std::optional<std::size_t> icon = groundItemTexture(item.palette);
+  const auto addIcon = [&](glm::vec3 centre, std::int32_t number, std::uint8_t palette) {
+    const std::optional<std::size_t> icon = groundItemTexture(palette);
     if (!icon) {
-      continue;
+      return;
     }
-    const std::int32_t u = (item.icon % IconsPerRow) * IconSide;
-    const std::int32_t v = (item.icon / IconsPerRow) * IconSide;
+    const std::int32_t u = (number % IconsPerRow) * IconSide;
+    const std::int32_t v = (number / IconsPerRow) * IconSide;
     const glm::vec2 texels{u == LastIconTexel ? IconSide - 1 : IconSide,
                            v == LastIconTexel ? IconSide - 1 : IconSide};
-    billboards.push_back({.centre = item.position,
+    billboards.push_back({.centre = centre,
                           .size = glm::vec2{IconWorldSide},
                           .flat = false,
                           .texture = *icon,
@@ -115,6 +115,15 @@ void FieldScene::drawGroundItems() {
                           .texels = texels,
                           .blend = assets::SpriteBlend::Opaque,
                           .color = glm::vec3{1.0F}});
+  };
+  for (const GroundItemSprite& item : groundItems_) {
+    addIcon(item.position, item.icon, item.palette);
+  }
+  // game_menu.c: renderFeedingItem: the item at the player's node, through renderOverworldItem.
+  if (heldItem_) {
+    if (const std::optional<glm::vec3> hand = playerNodePoint(heldItem_->node, glm::vec3{0.0F})) {
+      addIcon(*hand, heldItem_->icon, heldItem_->palette);
+    }
   }
   addEffectBillboards(billboards);
   addStatusBillboards(billboards);

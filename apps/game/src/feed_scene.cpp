@@ -77,13 +77,46 @@ void FeedScene::offer() {
   if (session_->sound() != nullptr) {
     session_->sound()->playSound(feed.sound.slot, feed.sound.sound);
   }
-  core::logDebug("[port:feed] partnerTickFeedItem (partner.c:459): the player holds it out; the "
-                 "item is not drawn (renderFeedingItem)");
+  core::logDebug("[port:feed] partnerTickFeedItem (partner.c:459): the player holds it out "
+                 "(renderFeedingItem)");
   seconds_ = 0.0F;
   step_ = Step::Offer;
+  showItem();
+}
+
+void FeedScene::showItem() {
+  FeedItemPhase phase = FeedItemPhase::Walking;
+  switch (step_) {
+  case Step::Offer:
+    phase = FeedItemPhase::Offering;
+    break;
+  case Step::Eat:
+    phase = FeedItemPhase::Eating;
+    break;
+  case Step::Refuse:
+    phase = FeedItemPhase::Refusing;
+    break;
+  case Step::Shrug:
+    phase = FeedItemPhase::Shrugging;
+    break;
+  case Step::None:
+  case Step::Walk:
+    break;
+  }
+  const float frame = seconds_ / frames(1);
+  std::optional<HeldItemSprite> held;
+  if (item_ && feedItemHeld(phase, static_cast<std::int32_t>(frame))) {
+    const assets::ItemEntry& entry = inventory_->items().at(*item_);
+    if (entry.iconPalette) {
+      held =
+          HeldItemSprite{.node = FeedItemNode, .icon = entry.index, .palette = *entry.iconPalette};
+    }
+  }
+  scene_->setHeldItem(held);
 }
 
 void FeedScene::finish() {
+  scene_->setHeldItem(std::nullopt);
   scene_->setPlayerClip(std::nullopt);
   scene_->playPartnerClip(std::nullopt);
   scene_->field().holdForCare(false);
@@ -99,6 +132,7 @@ bool FeedScene::tick(float seconds) {
   session_->tick(seconds);
   scene_->finishTick();
   seconds_ += seconds;
+  showItem();
   const session::FeedRules& feed = *feed_;
   switch (step_) {
   case Step::Walk:

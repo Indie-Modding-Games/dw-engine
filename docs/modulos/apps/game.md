@@ -44,12 +44,14 @@ dura, la muerte y la evolución esperan, porque el jugador no está libre. Al ab
 (`startFeedingItem` pone `IS_IN_MENU = 0`). Las escenas de cuidado esperan a que un clip acabe su primera vuelta, también
 si tiene bucle (`FieldScene::partnerClipFinished`, `playerClipPlayedThrough`); con un clip en bucle, el rechazo no
 terminaba nunca. Sin el bloque `feed` del ruleset, la bolsa usa
-el objeto al momento, como antes. `use_item` de la consola también lo usa al momento.
+el objeto al momento, como antes. `use_item` de la consola también lo usa al momento. Desde que el jugador lo tiende
+hasta el cuadro 11 de la animación de comer (o hasta el final del rechazo), el icono del objeto sale de cara a la cámara
+en el nodo 9 del modelo del jugador, sin sombra (`renderFeedingItem`, `addObject(0xfa7)`/`removeObject`;
+`FieldScene::setHeldItem`, `feed_item.hpp`; captura `w11-missing/shots/feed-item-after.png`).
 
 Diferencias con el original:
 
 - El compañero decide si lo toma al elegir el objeto, no al tendérselo: es la misma tirada, un momento antes.
-- El objeto en la mano del jugador no se dibuja (`renderFeedingItem`).
 - Si el compañero se atasca contra una pared, se para donde está; el original sigue andando.
 
 ## Dormir

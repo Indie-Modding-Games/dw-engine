@@ -557,7 +557,7 @@ isUIBoxAvailable = { status = "no-aplica", note = "cuadros de interfaz del origi
 tickPlayerMenu = { status = "portado", dwe = "apps/game/src/player_chart.cpp", what = "Ficha del jugador: datos, medallas, cartas y tabla de evoluciones." }
 handleGameMenuSelection = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Ejecuta la opción elegida del menú de juego." }
 removeOneSelectedItem = { status = "portado", dwe = "apps/game/src/care_commands.cpp", what = "Gasta el objeto elegido al darlo." }
-renderFeedingItem = { status = "parcial", note = "el objeto que se da de comer no se dibuja", what = "Dibuja el objeto en la mano al dar de comer." }
+renderFeedingItem = { status = "portado", dwe = "apps/game/src/feed_item.hpp", note = "el icono en el nodo 9 del jugador desde que lo tiende hasta el cuadro 11 de comer o el final del rechazo", what = "Dibuja el objeto en la mano al dar de comer." }
 getEquippedSlot = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Da la ranura de una técnica equipada." }
 equipMove = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Equipa una técnica en una ranura." }
 sortArray = { status = "no-aplica", note = "utilidad", what = "Ordena una lista." }
