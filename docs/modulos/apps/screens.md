@@ -128,6 +128,8 @@ actualizan son el contrato de datos de cualquier aspecto: están en [ui.md](../.
 | `partner.stat.<i>.{label,value,min,max}` | clave, números | Las barras de ataque, defensa, velocidad y cerebro, sobre 999 |
 | `partner.meter.<i>.{label,value,min,max,two_tone}` | clave, números, booleano | Felicidad, disciplina y virus, con sus límites del ruleset. Felicidad y disciplina son barras de dos tonos: la barra se llena del mínimo a la mitad del rango y vuelve a llenarse en otro color de la mitad al máximo (`game_menu.c: renderDigimonStatsView`) |
 | `partner.condition.<i>.key` | clave | Lo que le pasa ahora (sueño, cansancio, hambre, baño, enfado, herida, enfermedad) |
+| `partner.tiredness.{label,value,min,max}` | clave, números | Extra que el original no enseña: el cansancio (0–100, `PartnerState::tiredness`) como barra simple. La página lo dibuja con la opción `status_extras` ([extras de la ficha](#extras-de-la-ficha)) |
+| `partner.care_mistakes` | número | Extra que el original no enseña: los errores de cuidado con este compañero (`careMistakes`), con la misma opción |
 | `partner.profile.special.<i>` | número | Especialidades de especie (0–6); -1 representa una posición ausente. |
 | `partner.profile.type` | número | Tipo original de especie; 0 no dibuja icono. |
 | `partner.profile.active` | número | Patrón de actividad de SpeciesCare; -1 cuando falta la fuente. La presentación original toma los rótulos del texto local del disco. |
@@ -156,6 +158,29 @@ bolsa del campo con su caja de opciones. Están en la tabla de paridad del [pág
 se regaña al compañero en el campo, junto a él (`partner.c: partnerTickPraiseScold`, `tamer.c: tamerTickPraiseScold`),
 no desde un menú. La pestaña del menú del compañero (`partner_praise`, `partner_scold`) se queda, sin cambiar nada,
 hasta que exista esa interacción en el campo; entonces se quita (TODO en `apps/game/src/partner_menu.hpp`).
+
+### Extras de la ficha
+
+Mejora opcional, encendida por defecto (el original no enseña ni el cansancio ni los errores de cuidado, aunque los
+usa: el cansancio para el estado «cansado», los errores para la evolución). El ajuste `status_extras` (fila «Extras de
+la ficha», «Status extras» en inglés, de las opciones del menú de pausa, guardado en los ajustes del usuario) llega
+como ajuste de la UI desde `PlaySession`; `partner_menu/logic.lua` (`draw_extras`) pone con él la clase
+`status-extras` en `#scrim` y dibuja los dos valores, que `partnerStatusViewOf` publica siempre. No cambia ninguna
+regla. Apagado, la página es la de siempre.
+
+- **Piel original.** Los errores van al final de la fila de la edad y el peso, una cifra en un recuadro como los
+  suyos tras el rótulo «Errores» («Mistakes») en el cian de los rótulos de campo. El cansancio es una cuarta barra de
+  la condición, con el icono de la necesidad «cansado», su palabra corta («Cansado», «Tired») y la tira azul de las
+  barras del original, sin número como las demás. Para que quepan las cuatro, la vida y las barras suben y se juntan
+  (filas cada 36dp) y el hueco del modelo es 6dp más bajo.
+- **Piel moderna.** Los errores son una línea más bajo el peso (las líneas del perfil se juntan un poco) y el
+  cansancio una cuarta barra de los cuidados, «Cansancio» («Tiredness») con su número; la página crece una fila.
+
+La ruta `route-status-extras.yaml` da al compañero cansancio (dos entrenamientos) y un error de cuidado (el reloj
+rápido hasta que se le pasa una comida), abre la ficha con la opción encendida a 1280x720 y 1920x1080, la apaga en el
+menú de pausa y la abre otra vez como el original, con `text_fit`; se corre en los dos idiomas y con las dos pieles.
+Tests: `the status page's extras carry the tiredness and the care mistakes the original hides`
+(`apps/screens/tests/partner_status_view_tests.cpp`) y los ajustes del usuario (`apps/game/tests/user_settings_tests.cpp`).
 
 ## Menú del juego (aspecto original)
 

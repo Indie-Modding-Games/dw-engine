@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <ostream>
 #include <string>
+#include <string_view>
+#include <variant>
 #include <vector>
 
 namespace {
@@ -30,6 +32,8 @@ dwe::session::PartnerView partner() {
   view.happiness = {.value = -10, .min = -100, .max = 100};
   view.discipline = {.value = 40, .min = 0, .max = 100};
   view.virusBar = {.value = 2, .min = 0, .max = 16};
+  view.tiredness = {.value = 35, .min = 0, .max = 100};
+  view.careMistakes = 4;
   view.conditions.set(Condition::Hungry);
   view.conditions.set(Condition::Sick);
   return view;
@@ -90,4 +94,38 @@ TEST_CASE("the status page shows what the original's does, in its order") {
   CHECK(std::ranges::any_of(settings, [](const dwe::screens::ScreenSetting& setting) {
     return setting.name == "partner.pool.1.max";
   }));
+}
+
+TEST_CASE("the status page's extras carry the tiredness and the care mistakes the original hides") {
+  const dwe::screens::NameKeys names{nullptr, nullptr, nullptr};
+  const auto view = dwe::screens::partnerStatusViewOf(partner(), names);
+  CHECK(view.tiredness == dwe::screens::MeterView{.labelKey = "partner_menu.tiredness",
+                                                  .value = 35,
+                                                  .min = 0,
+                                                  .max = 100,
+                                                  .twoTone = false});
+  CHECK(view.careMistakes == 4);
+  // The original's three bars stay as they are; the tiredness is not one of them.
+  CHECK(view.meters.size() == 3);
+
+  const auto settings = dwe::screens::settingsOf(view);
+  const auto valueOf = [&settings](std::string_view name) -> const dwe::screens::ScreenSetting* {
+    const auto found =
+        std::ranges::find_if(settings, [name](const dwe::screens::ScreenSetting& setting) {
+          return setting.name == name;
+        });
+    return found == settings.end() ? nullptr : &*found;
+  };
+  const auto* tired = valueOf("partner.tiredness.value");
+  REQUIRE(tired != nullptr);
+  CHECK(std::get<double>(tired->value) == doctest::Approx(35.0));
+  const auto* top = valueOf("partner.tiredness.max");
+  REQUIRE(top != nullptr);
+  CHECK(std::get<double>(top->value) == doctest::Approx(100.0));
+  const auto* label = valueOf("partner.tiredness.label");
+  REQUIRE(label != nullptr);
+  CHECK(std::get<std::string>(label->value) == "partner_menu.tiredness");
+  const auto* mistakes = valueOf("partner.care_mistakes");
+  REQUIRE(mistakes != nullptr);
+  CHECK(std::get<double>(mistakes->value) == doctest::Approx(4.0));
 }

@@ -50,6 +50,9 @@ bulk_trades: "Cambios en lote"
 # Requisitos de evolución: el árbol de la tabla dice qué pide cada destino y cómo va el compañero (encendido por defecto).
 evolution_requirements: "Requisitos de evolución"
 translated_signs: "Carteles traducidos"
+# Extras de la ficha: la barra de cansancio y los errores de cuidado del compañero en su ficha, que el original esconde
+# (encendido por defecto).
+status_extras: "Extras de la ficha"
 
 year_label: "Año"
 day_label: "Día"

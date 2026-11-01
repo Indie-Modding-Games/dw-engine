@@ -43,6 +43,9 @@ struct UserSettings {
   // Translated signs (translated_signs: true, false): the signs painted in the maps are written in
   // the player's language; on when not chosen yet.
   std::optional<bool> translatedSigns = std::nullopt;
+  // The status page's extras (status_extras: true, false): the partner's tiredness bar and its care
+  // mistakes, which the original keeps hidden; on when not chosen yet.
+  std::optional<bool> statusExtras = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

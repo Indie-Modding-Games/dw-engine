@@ -502,6 +502,9 @@
 				<button id="translated-signs" class="option" onclick="adjust(document, 'translated-signs', 1)">
 					<span class="label" text-key="pause_menu.translated_signs"></span><span class="value" id="translated-signs-value"></span>
 				</button>
+				<button id="status-extras" class="option" onclick="adjust(document, 'status-extras', 1)">
+					<span class="label" text-key="pause_menu.status_extras"></span><span class="value" id="status-extras-value"></span>
+				</button>
 				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 

@@ -126,6 +126,28 @@ local function draw_meter(document, index)
   document:get(prefix .. "-high"):set_property("width", high .. "%")
 end
 
+-- The page's extras, which the original keeps hidden (the status_extras option, on by default):
+-- the tiredness as a plain bar after the care meters and the count of care mistakes. The original
+-- look names the bar with the tired need's word, short like the other bars' names.
+local function draw_extras(document)
+  local extras = ui.setting("status_extras") ~= false
+  document:get("scrim"):set_class("status-extras", extras)
+  if not extras then
+    return
+  end
+  local original = ui.setting("ui_skin") == "original"
+  local value = number("partner.tiredness.value")
+  local fill = percent(value, number("partner.tiredness.min"), number("partner.tiredness.max"))
+  document:get("tiredness-label"):set_text(
+    original and t("partner_menu.condition.tired") or text(setting("partner.tiredness.label", ""))
+  )
+  document:get("tiredness"):set_text(tostring(value))
+  document
+    :get("tiredness-fill")
+    :set_property("width", original and (math.floor(fill / 2) * 3 .. "dp") or (fill .. "%"))
+  document:get("status-mistakes-value"):set_text(tostring(number("partner.care_mistakes")))
+end
+
 local function draw_status(document)
   -- The partner's own name when the player gave one, else its species' (PARTNER_ENTITY.name); the
   -- species on its own line.
@@ -214,6 +236,7 @@ local function draw_status(document)
     document:get("meter-1-label"):set_text(words[1] or "")
     document:get("meter-2-label"):set_text(words[3] or "")
   end
+  draw_extras(document)
   local count = number("partner.condition.count")
   for index = 0, max_conditions - 1 do
     local condition = document:get("condition-" .. index)
@@ -822,6 +845,7 @@ function on_setting(document, name)
   end
   if
     name == "partner.revision"
+    or name == "status_extras"
     or name == "bag.revision"
     or name == "bag.result"
     or name == "partner.care_result"

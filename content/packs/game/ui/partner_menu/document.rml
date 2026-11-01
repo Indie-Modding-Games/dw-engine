@@ -48,7 +48,9 @@
 					<div class="bar-row"><span class="label original-look" id="meter-0-label"></span><span class="status-native-happiness"></span><div class="bar meter"><div class="fill" id="meter-0-fill"></div><div class="fill high" id="meter-0-high"></div></div><span class="value original-look" id="meter-0"></span></div>
 					<div class="bar-row"><span class="label original-look" id="meter-1-label"></span><div class="bar meter"><div class="fill" id="meter-1-fill"></div><div class="fill high" id="meter-1-high"></div></div><span class="value original-look" id="meter-1"></span></div>
 					<div class="bar-row"><span class="label original-look" id="meter-2-label"></span><div class="bar meter"><div class="fill" id="meter-2-fill"></div><div class="fill high" id="meter-2-high"></div></div><span class="value original-look" id="meter-2"></span></div>
+					<div class="bar-row status-extra" id="tiredness-row"><span class="label original-look" id="tiredness-label"></span><div class="bar meter"><div class="fill" id="tiredness-fill"></div></div><span class="value original-look" id="tiredness"></span></div>
 				</div>
+				<div id="status-mistakes" class="status-extra"><span id="status-mistakes-label" class="original-look" text-key="partner_menu.care_mistakes"></span><span id="status-mistakes-value" class="original-look"></span></div>
 				<div id="conditions"><span class="condition original-look hidden" id="condition-0"></span><span class="condition original-look hidden" id="condition-1"></span><span class="condition original-look hidden" id="condition-2"></span><span class="condition original-look hidden" id="condition-3"></span><span class="condition original-look hidden" id="condition-4"></span><span class="condition original-look hidden" id="condition-5"></span><span class="condition original-look hidden" id="condition-6"></span><span class="original-look" id="no-condition" text-key="partner_menu.condition.none"></span></div>
 			</div>
 

@@ -16,6 +16,10 @@ lives: "Lives {lives}"
 happiness: "Happiness"
 discipline: "Discipline"
 virus: "Virus"
+# The status page's extras (the status_extras option), which the original hides: the tiredness bar and the count of
+# care mistakes.
+tiredness: "Tiredness"
+care_mistakes: "Mistakes"
 condition.none: "In good shape"
 condition.sleepy: "Sleepy"
 condition.tired: "Tired"

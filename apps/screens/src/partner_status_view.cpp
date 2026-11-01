@@ -25,6 +25,7 @@ constexpr std::array<Stat, 4> BarStats{Stat::Offense, Stat::Defense, Stat::Speed
 constexpr std::string_view HappinessLabel = "partner_menu.happiness";
 constexpr std::string_view DisciplineLabel = "partner_menu.discipline";
 constexpr std::string_view VirusLabel = "partner_menu.virus";
+constexpr std::string_view TirednessLabel = "partner_menu.tiredness";
 
 constexpr std::array<std::pair<Condition, std::string_view>, game::partner::ConditionCount>
     ConditionLabels{{
@@ -86,6 +87,8 @@ PartnerStatusView partnerStatusViewOf(const session::PartnerView& partner, const
                          .meters = {meterOf(HappinessLabel, partner.happiness, true),
                                     meterOf(DisciplineLabel, partner.discipline, true),
                                     meterOf(VirusLabel, partner.virusBar, false)},
+                         .tiredness = meterOf(TirednessLabel, partner.tiredness, false),
+                         .careMistakes = partner.careMistakes,
                          .conditionKeys = {}};
   for (std::size_t index = 0; index < PoolStats.size(); ++index) {
     const Stat stat = PoolStats.at(index);
@@ -218,6 +221,16 @@ ScreenSettings settingsOf(const PartnerStatusView& view) {
   for (std::size_t index = 0; index < view.meters.size(); ++index) {
     addMeter(settings, PartnerMeterList, index, view.meters[index]);
   }
+  const std::string tiredness{PartnerTirednessSetting};
+  settings.push_back({.name = tiredness + ".label", .value = view.tiredness.labelKey});
+  settings.push_back(
+      {.name = tiredness + ".value", .value = static_cast<double>(view.tiredness.value)});
+  settings.push_back(
+      {.name = tiredness + ".min", .value = static_cast<double>(view.tiredness.min)});
+  settings.push_back(
+      {.name = tiredness + ".max", .value = static_cast<double>(view.tiredness.max)});
+  settings.push_back({.name = std::string{PartnerCareMistakesSetting},
+                      .value = static_cast<double>(view.careMistakes)});
   settings.push_back({.name = countName(PartnerConditionList),
                       .value = static_cast<double>(view.conditionKeys.size())});
   for (std::size_t index = 0; index < view.conditionKeys.size(); ++index) {

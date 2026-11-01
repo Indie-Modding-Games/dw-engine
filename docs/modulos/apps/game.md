@@ -634,3 +634,11 @@ muestra las texturas originales.
   recargar el mapa.
 - **`--dump-signs`** (`sign_dump.cpp`) escribe las imágenes de un mapa con rejilla para escribir overlays
   ([guía](../../guides/carteles.md)).
+
+## Extras de la ficha
+
+Mejora opcional, encendida por defecto: el ajuste `status_extras` (fila «Extras de la ficha», «Status extras» en
+inglés, de las opciones del menú de pausa, guardado en los ajustes del usuario) llega como ajuste de la UI desde
+`PlaySession` (`StatusExtrasSetting`). Encendido, la ficha del compañero enseña su barra de cansancio y sus errores de
+cuidado, que el original esconde; apagado, la ficha es la del original. Dónde va cada uno en cada piel y la ruta:
+[screens.md](screens.md#extras-de-la-ficha).

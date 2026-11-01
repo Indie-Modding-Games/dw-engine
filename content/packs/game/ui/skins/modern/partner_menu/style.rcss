@@ -298,3 +298,20 @@ button:focus .original-look, button.original-look:focus {
 #conditions { position: absolute; left: 200dp; top: 150dp; width: 512dp; margin: 0; }
 #status-parameters { position: absolute; left: 0; top: 196dp; width: 712dp; margin: 0; }
 #status-condition { position: absolute; left: 0; top: 382dp; width: 712dp; margin: 0; }
+
+/* The page's extras, which the original keeps hidden (the status_extras option, on by default;
+   docs/modulos/apps/screens.md): the care mistakes as a line under the weight, the profile's lines a little closer to
+   make room, and the tiredness as a fourth care bar, the page a row taller. Off, the page is as above. The original
+   skin's style puts them in its own places. */
+#page-status .status-extra { display: none; }
+#scrim.status-extras #page-status { height: 500dp; }
+#scrim.status-extras #status-species-line { top: 46dp; }
+#scrim.status-extras #status-age-line { top: 74dp; }
+#scrim.status-extras #status-weight-line { top: 102dp; }
+#scrim.status-extras #status-mistakes {
+	display: block; position: absolute; left: 200dp; top: 130dp; width: 512dp; margin: 0; font-size: 22dp;
+}
+#status-mistakes-value { float: right; }
+#scrim.status-extras #conditions { top: 162dp; }
+#scrim.status-extras #tiredness-row { display: flex; }
+#tiredness-fill { background-color: #b49cff; }

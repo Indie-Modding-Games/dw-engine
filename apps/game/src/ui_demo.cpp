@@ -737,6 +737,8 @@ int runUiDemo(const UiDemoOptions& options) {
   status.meters = {{"partner_menu.happiness", 75, -100, 100, true},
                    {"partner_menu.discipline", 25, 0, 100, true},
                    {"partner_menu.virus", 10, 0, 100, false}};
+  status.tiredness = {"partner_menu.tiredness", 40, 0, 100, false};
+  status.careMistakes = 2;
   status.techniques[0] = screens::TechniqueView{
       .nameKey = "dev.technique", .power = 123, .mpCost = 45, .range = 2, .effect = 1};
   status.techniques[2] = screens::TechniqueView{

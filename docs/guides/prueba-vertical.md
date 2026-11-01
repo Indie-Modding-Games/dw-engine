@@ -215,6 +215,11 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   descubrir («???») y descubiertas, la vista original, el peso movido con bayas grandes y el gráfico a 1280x720, 1920x1080 y 1024x768 (`text_fit`,
   `expect_clear`); al final apaga y enciende la opción. Necesita `--saves` con una carpeta vacía (o una copia de una
   partida con Agumon y `--load`). Se corre en los dos idiomas.
+- `route-status-extras.yaml`: los [extras de la ficha](../modulos/apps/screens.md#extras-de-la-ficha) del
+  compañero desde una partida nueva con el teclado: dos entrenamientos (cansancio) y el reloj rápido hasta un error de
+  cuidado, la ficha con la opción encendida a 1280x720 y 1920x1080, la opción apagada desde el menú de pausa y la ficha
+  otra vez como el original, con `text_fit`. Se corre en los dos idiomas y con los dos aspectos (`--ui-skin original`
+  y `modern`).
 - `route-scripted-loop.yaml`: una vuelta por cinco zonas desde una partida nueva con el teclado: File City (`twna01`)
   → la casa del anciano, `room08` (tabla de salidas del mapa) → File City (script) → `trai00` (tabla) → `mayo00`
   (tabla), donde juega el primer combate del bosque y el reclutamiento de Agumon → `twnb01` (warp del script del mapa,

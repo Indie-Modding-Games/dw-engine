@@ -16,6 +16,10 @@ lives: "Vidas {lives}"
 happiness: "Felicidad"
 discipline: "Disciplina"
 virus: "Virus"
+# Los extras de la ficha (la opción status_extras), que el original esconde: la barra de cansancio y la cuenta de
+# errores de cuidado.
+tiredness: "Cansancio"
+care_mistakes: "Errores"
 condition.none: "En buena forma"
 condition.sleepy: "Con sueño"
 condition.tired: "Cansado"

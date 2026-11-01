@@ -50,6 +50,9 @@ bulk_trades: "Bulk trades"
 # Evolution requirements: the chart's tree tells what each target asks and how the partner stands (on by default).
 evolution_requirements: "Evolution requirements"
 translated_signs: "Translated signs"
+# Status extras: the partner's tiredness bar and care mistakes on its status page, which the original hides (on by
+# default).
+status_extras: "Status extras"
 
 year_label: "Year"
 day_label: "Day"

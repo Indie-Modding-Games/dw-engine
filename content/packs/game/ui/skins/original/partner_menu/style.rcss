@@ -1067,3 +1067,31 @@ button:focus .original-look, button.original-look:focus {
 #scrim.status-text .tech-category.category-left { left: -108dp; width: 102dp; text-align: right; }
 #scrim.status-text .tech-category.category-right { width: 120dp; }
 .tech-columns { text-transform: none; }
+
+/* The page's extras, which the original keeps hidden (the status_extras option, on by default;
+   docs/modulos/apps/screens.md). The care mistakes go at the end of the age and weight row, a number in an inset like
+   theirs after a label in the cyan of the field labels; the tiredness is a fourth condition bar with the tired need's
+   icon and the blue strip, with no number like the others. Life and the bars move up and closer (rows 36dp apart,
+   the model's area 6dp shorter) so the four bars fit the page. The modern skin's places for the profile are undone. */
+#page-status .status-extra { display: none; }
+#scrim.status-extras #page-status .status-extra { display: block; }
+#scrim.status-extras #page-status { height: 570dp; }
+#scrim.status-extras #status-species-line { top: 108dp; }
+#scrim.status-extras #status-age-line, #scrim.status-extras #status-weight-line { top: 156dp; }
+#scrim.status-extras #conditions { top: 294dp; }
+#scrim.status-extras #status-mistakes { left: 0; top: 156dp; width: 894dp; height: 42dp; font-size: 33dp; }
+#status-mistakes-label {
+    position: absolute; left: 456dp; top: 0; width: 309dp; height: 42dp; font-size: 22dp; line-height: 42dp;
+    color: #52def7; text-align: right; white-space: nowrap;
+}
+#status-mistakes-value {
+    position: absolute; float: none; left: 771dp; top: 0; width: 78dp; height: 42dp; box-sizing: border-box; margin: 0;
+    padding: 0; line-height: 36dp; border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0;
+    background-color: #354b5c;
+}
+#scrim.status-extras #partner-portrait-clip { height: 153dp; }
+#scrim.status-extras #status-life-label, #scrim.status-extras #status-life-hearts { top: 375dp; }
+#scrim.status-extras #status-condition { top: 414dp; }
+#scrim.status-extras #status-condition .bar-row { height: 36dp; }
+#tiredness-label { decorator: image(status-condition-tired scale-none left top); }
+#status-condition #tiredness-fill { background-color: transparent; decorator: image(status-meter-blue scale-none left top); }

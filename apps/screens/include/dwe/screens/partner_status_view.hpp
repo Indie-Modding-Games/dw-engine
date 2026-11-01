@@ -32,6 +32,10 @@ inline constexpr std::string_view PartnerPoolList = "partner.pool";
 inline constexpr std::string_view PartnerStatList = "partner.stat";
 inline constexpr std::string_view PartnerMeterList = "partner.meter";
 inline constexpr std::string_view PartnerConditionList = "partner.condition";
+// What the original keeps hidden, for the page's extras (the status_extras option): the tiredness
+// bar (partner.tiredness.label, .value, .min, .max) and the count of care mistakes.
+inline constexpr std::string_view PartnerTirednessSetting = "partner.tiredness";
+inline constexpr std::string_view PartnerCareMistakesSetting = "partner.care_mistakes";
 
 // A bar of the status page: its label, value and range. A two-tone bar fills its whole width once
 // from the minimum to the middle of the range, then fills it again in a second colour from the
@@ -86,6 +90,10 @@ struct PartnerStatusView {
   // Offense, defense, speed and brain, with the original's labels (main.stat_labels).
   std::array<MeterView, 4> stats;
   std::vector<MeterView> meters;
+  // Extras the original does not show (the page draws them with the status_extras option): the
+  // tiredness, 0 to 100, as a plain bar, and the care mistakes made with this partner.
+  MeterView tiredness;
+  std::int32_t careMistakes = 0;
   // The keys of the conditions it has (partner_menu.condition.<name>).
   std::vector<std::string> conditionKeys;
   std::array<TechniqueChoiceView, 56> techniqueChoices{};

@@ -450,6 +450,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   const bool translatedSigns = context.userSettings->translatedSigns.value_or(true);
   scene_->setTranslatedSigns(translatedSigns);
   context_.ui->setSetting(TranslatedSignsSetting, translatedSigns);
+  // The status page's extras (the tiredness and the care mistakes), on unless turned off.
+  context_.ui->setSetting(StatusExtrasSetting, context.userSettings->statusExtras.value_or(true));
   // The save indicator's document goes up before the HUD's, which takes the focus.
   saveIndicator_.emplace(*context_.ui, game_.session->savesWritten(),
                          context.userSettings->saveNotice.value_or(true));
@@ -735,6 +737,16 @@ bool PlaySession::handle(const ui::UiCommand& command) {
         saveUserSettings(*context_.settingsFile, *context_.userSettings);
       }
       context_.ui->setSetting(EvolutionRequirementsSetting, *shown);
+    }
+    return true;
+  }
+  if (command.name == StatusExtrasSetting) {
+    if (const bool* extras = std::get_if<bool>(&command.value)) {
+      context_.ui->setSetting(StatusExtrasSetting, *extras);
+      context_.userSettings->statusExtras = *extras;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
     }
     return true;
   }

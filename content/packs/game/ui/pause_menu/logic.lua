@@ -136,6 +136,11 @@ local options = {
   ["translated-signs"] = function(_step)
     ui.send("translated_signs", not ui.setting("translated_signs"))
   end,
+  -- Status extras: the partner's tiredness bar and care mistakes on its status page (on by
+  -- default; off leaves the original page).
+  ["status-extras"] = function(_step)
+    ui.send("status_extras", ui.setting("status_extras") == false)
+  end,
 }
 
 local function can_sleep()
@@ -1138,6 +1143,7 @@ local function refresh(document)
     :get("evolution-requirements-value")
     :set_text(on_off(ui.setting("evolution_requirements") ~= false))
   document:get("translated-signs-value"):set_text(on_off(ui.setting("translated_signs")))
+  document:get("status-extras-value"):set_text(on_off(ui.setting("status_extras") ~= false))
   refresh_player(document)
 end
 

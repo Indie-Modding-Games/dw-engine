@@ -75,6 +75,10 @@ inline constexpr std::string_view SmoothMotionSetting = "smooth_motion";
 inline constexpr std::string_view DigitalTimeSetting = "digital_time";
 // The pause menu's "Translated signs" (FieldScene::setTranslatedSigns).
 inline constexpr std::string_view TranslatedSignsSetting = "translated_signs";
+// The status page's extras: a UI setting and the pause menu's command with the same name (true or
+// false), on by default. The partner's menu (ui/partner_menu) shows the tiredness bar and the care
+// mistakes with it.
+inline constexpr std::string_view StatusExtrasSetting = "status_extras";
 
 // What every game uses of the app; all of it outlives the games.
 struct PlayContext {
