@@ -38,6 +38,10 @@ public:
   // Handles a command of the title screen's documents; false when it is not one of theirs.
   bool handle(const ui::UiCommand& command);
 
+  // Whether the "Press Start" screen shows and waits for Start (runLandingScreen), as the main
+  // menu's script says with title_landing: only there does the boot movie come back on its own.
+  [[nodiscard]] bool landing() const { return landing_; }
+
   // The game a command chose to start, once.
   [[nodiscard]] std::optional<PlayStart> takeStart();
 
@@ -58,6 +62,7 @@ private:
   SaveFlow flow_;
   std::optional<PlayStart> start_;
   bool listShown_ = false;
+  bool landing_ = false;
 };
 
 } // namespace dwe::app

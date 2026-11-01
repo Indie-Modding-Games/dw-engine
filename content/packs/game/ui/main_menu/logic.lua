@@ -47,7 +47,16 @@ local FadeSeconds = 40 * Frame
 -- frame.
 local BlinkSeconds = 60 * Frame
 -- runLandingScreen goes back to the boot movie after 600 frames (0x258) without Start; the game
--- counts that itself (title idle ticks), this only shows the screen.
+-- counts that itself, only while this says the screen waits for Start (title_landing). The menu and
+-- the language box never go back to the movie, as the original's main menu.
+local landing = false
+
+local function set_landing(now)
+  if now ~= landing then
+    landing = now
+    ui.send("title_landing", now)
+  end
+end
 
 -- The fade: how dark the screen is (1 black), and where it goes.
 local darkness = 0.0
@@ -286,6 +295,7 @@ end
 local function set_view(document, name, focus)
   view = name
   leaving = false
+  set_landing(name == "boot")
   blink = 0.0
   lay_out(document)
   document:get(focus):focus()
@@ -317,6 +327,8 @@ end
 
 function leave_boot(_document)
   if view == "boot" and not leaving then
+    -- Start ends the countdown (runLandingScreen: goto fade).
+    set_landing(false)
     leaving = true
     fade_target = 1.0
     pending_view = "menu"
@@ -440,6 +452,8 @@ function close_language(document)
 end
 
 function on_show(document)
+  -- The game forgets the screen whenever it shows or hides the title (TitleScreen::showMenu).
+  landing = false
   refresh_prompts(document)
   was_original = original(document)
   if original(document) and ui.setting("title.boot") == true then

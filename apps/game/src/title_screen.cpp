@@ -77,6 +77,7 @@ void TitleScreen::showBoot() {
 
 void TitleScreen::showMenu(bool boot) {
   listShown_ = false;
+  landing_ = false;
   screens::ScreenSettings settings = flow_.titleSettings();
   // Read by the main menu as it shows (title.boot): whether it starts at the "Press Start" screen.
   settings.push_back({.name = "title.boot", .value = boot});
@@ -85,6 +86,7 @@ void TitleScreen::showMenu(bool boot) {
 }
 
 void TitleScreen::hide() {
+  landing_ = false;
   ui_->hide(MainMenuDocument);
   ui_->hide(SaveSlotsDocument);
   ui_->hide(DialogDocument);
@@ -92,6 +94,12 @@ void TitleScreen::hide() {
 
 bool TitleScreen::handle(const ui::UiCommand& command) {
   const std::string& name = command.name;
+  if (name == "title_landing") {
+    const bool* landing = std::get_if<bool>(&command.value);
+    landing_ = landing != nullptr && *landing;
+    // Sent each time the screen is entered or left: not a choice of the player's to log.
+    return true;
+  }
   if (name == "play") {
     if (flow_.keepsSaves()) {
       showList(SlotListMode::NewGame);

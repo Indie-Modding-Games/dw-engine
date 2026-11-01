@@ -729,8 +729,10 @@ int runGame(const Options& requested) {
   std::optional<PlayStart> startAfterInterview;
   bool titleAfterMovie = false;
   bool moviePlayed = false;
-  // The title's ticks without input, and whether the boot movie plays again after them
-  // (runLandingScreen); not when it could not play.
+  // The ticks the "Press Start" screen has shown, and whether the boot movie plays again after them
+  // (runLandingScreen: a countdown from its start that only Start leaves, whatever else is pressed;
+  // the main menu, its slot lists and the language box never go back to the movie); not when it
+  // could not play.
   std::uint32_t titleIdleTicks = 0;
   bool replayBootMovie = true;
   const auto playMovie = [&](MovieMoment moment) {
@@ -1045,9 +1047,6 @@ int runGame(const Options& requested) {
           key != nullptr && key->key == input::keys::Return && key->down && !key->repeat) {
         typedEnter = true;
       }
-      if (isPointerOrKey(event) || std::holds_alternative<platform::GamepadButtonChanged>(event)) {
-        titleIdleTicks = 0;
-      }
       if (const auto* moved = std::get_if<platform::MouseMoved>(&event)) {
         mouse.pointerMoved(*moved);
       }
@@ -1177,10 +1176,11 @@ int runGame(const Options& requested) {
         ++ticksRun;
         continue;
       }
-      if (flow.playing() == nullptr && movies && replayBootMovie &&
-          ++titleIdleTicks >= movieRules->landingIdleFrames) {
-        core::logDebug("[port:movie] runLandingScreen (main.c:3604): {} ticks without input on the "
-                       "title, the boot movie again",
+      if (flow.playing() != nullptr || !title.landing()) {
+        titleIdleTicks = 0;
+      } else if (movies && replayBootMovie && ++titleIdleTicks >= movieRules->landingIdleFrames) {
+        core::logDebug("[port:movie] runLandingScreen (main.c:3604): {} ticks on the \"Press "
+                       "Start\" screen without Start, the boot movie again",
                        movieRules->landingIdleFrames);
         titleIdleTicks = 0;
         replayBootMovie = playMovie(MovieMoment::Boot);

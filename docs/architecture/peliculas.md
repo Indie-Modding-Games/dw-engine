@@ -64,8 +64,11 @@ apps/game (MovieScreen) ──► engine/video ──► engine/assets (VFS por 
   reanudar la música llega con la música (VAN-01 tramo 3), y el fundido desde negro tras la película, a la fase 5.
 - **Película que falta** (paquete sin `movie/`): aviso en el log y se sigue el flujo, como `CdSearchFile` fallido
   en US.
-- **Estados de la app** (`game.cpp`): arranque → OP1 → portada; portada sin entrada `landing_idle_frames` ticks
-  (cualquier tecla, ratón o botón reinicia la cuenta, porque la portada de dwe es el menú) → OP1 → portada;
+- **Estados de la app** (`game.cpp`): arranque → OP1 → portada; pantalla «Press Start» `landing_idle_frames` ticks
+  sin Start → OP1 → portada. Como `runLandingScreen`, la cuenta empieza al entrar en esa pantalla y solo Start la
+  corta (otras teclas no la reinician); el menú de inicio, las listas de ranuras y la caja de idiomas nunca vuelven
+  a la película, como el `runMainMenu` del original. El guion del menú avisa con `title_landing`; el aspecto
+  moderno, sin esa pantalla, no vuelve a la película;
   partida nueva → OP2 → mapa inicial; `PlaySession::requestMovie` es el gancho de ED2 (tras cargar una partida
   terminada, la partida espera) y de EDR (cierra la partida → EDR → portada), que HIST-S7 llama al portar las
   rutinas 53 y 54. Un autotest y los arranques directos (`--new-game`, `--load`, `--start`) no ven películas.
