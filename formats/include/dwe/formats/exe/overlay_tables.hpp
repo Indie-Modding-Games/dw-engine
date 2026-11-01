@@ -142,6 +142,28 @@ struct BattleArena {
   bool operator==(const BattleArena&) const = default;
 };
 
+// A fighter's path up the tournament bracket (std_main.c: STD_BRACKET_PATHS): its x at each step
+// and whether its sprite faces right there.
+struct BracketPath {
+  std::array<std::int16_t, 8> x{};
+  std::array<std::uint8_t, 8> flip{};
+
+  bool operator==(const BracketPath&) const = default;
+};
+
+// The bracket the tournament draws between matches (std_main.c: STD_updateBracket,
+// STD_renderBracketDigimon, STD_renderBracketProjectile). Empty in an overlay without one.
+struct BracketTables {
+  std::vector<std::int16_t> rowY;               // STD_BRACKET_ROW_Y: a step's y
+  std::vector<std::int8_t> hopY;                // STD_BRACKET_HOP_Y: the winner's hop
+  std::vector<BracketPath> paths;               // by slot
+  std::vector<std::uint8_t> spritePalettes;     // STD_DIGIMON_SPRITE_CLUT, by species
+  std::vector<std::uint8_t> projectileIcons;    // STD_BRACKET_PROJECTILE_ICONS, by species
+  std::vector<std::uint8_t> projectilePalettes; // STD_BRACKET_PROJECTILE_CLUTS, by icon - 1
+
+  bool operator==(const BracketTables&) const = default;
+};
+
 // The tables of a battle overlay. The tournament (STD) has all of them; the versus mode (VS) only
 // cameras and arenas.
 struct BattleStageTables {
@@ -153,6 +175,7 @@ struct BattleStageTables {
   std::vector<CameraPreset> cameraPresets;
   std::vector<BattleArena>
       arenas; // the arenas with files; entries whose paths are all null are left out
+  BracketTables bracket;
 
   bool operator==(const BattleStageTables&) const = default;
 };
@@ -167,6 +190,13 @@ struct BattleStageLayout {
   TableLocation arenaCollisions;
   TableLocation arenaModelCounts; // u8[], in the main executable
   TableLocation arenaTextureCounts;
+  // The bracket's tables; not located = the overlay has no bracket.
+  TableLocation bracketRowY;
+  TableLocation bracketHopY;
+  TableLocation bracketPaths; // records of 8 x then 8 flips
+  TableLocation spritePalettes;
+  TableLocation projectileIcons;
+  TableLocation projectilePalettes;
 };
 
 // TRN_TRAINING_ANIM_IDS: per partner type, the animation and the frame the hit lands on.

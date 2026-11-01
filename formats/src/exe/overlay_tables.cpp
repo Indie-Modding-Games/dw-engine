@@ -55,7 +55,13 @@ constexpr std::array Layouts = {
                     .arenaTextures = {.address = 0x8007A338, .count = 3},
                     .arenaCollisions = {.address = 0x8007A358, .count = 3},
                     .arenaModelCounts = {.address = 0x801347FC, .count = 2},
-                    .arenaTextureCounts = {.address = 0x801347FE, .count = 2}},
+                    .arenaTextureCounts = {.address = 0x801347FE, .count = 2},
+                    .bracketRowY = {.address = 0x8007A48C, .count = 8},
+                    .bracketHopY = {.address = 0x8007A474, .count = 24},
+                    .bracketPaths = {.address = 0x8007A598, .count = 8},
+                    .spritePalettes = {.address = 0x8007A49C, .count = 112},
+                    .projectileIcons = {.address = 0x8007A50C, .count = 112},
+                    .projectilePalettes = {.address = 0x8007A57C, .count = 16}},
         .versus = {.opponentBaseStats = {},
                    .grades = {},
                    .winChances = {},
@@ -64,7 +70,13 @@ constexpr std::array Layouts = {
                    .arenaTextures = {.address = 0x800705FC, .count = 3},
                    .arenaCollisions = {.address = 0x80070630, .count = 3},
                    .arenaModelCounts = {.address = 0x80134A5C, .count = 3},
-                   .arenaTextureCounts = {.address = 0x80134A60, .count = 3}},
+                   .arenaTextureCounts = {.address = 0x80134A60, .count = 3},
+                   .bracketRowY = {},
+                   .bracketHopY = {},
+                   .bracketPaths = {},
+                   .spritePalettes = {},
+                   .projectileIcons = {},
+                   .projectilePalettes = {}},
         .training = {.animations = {.address = 0x8008F050, .count = 67},
                      .learnableMoves = {.address = 0x8008F14C, .count = 7},
                      .learnableMovesWidth = 8,
@@ -410,6 +422,51 @@ core::Result<FishingTables> readFishingTables(const MemoryImage& overlay,
   return tables;
 }
 
+// STD_BRACKET_PATHS and the bracket's other tables (std_main.c).
+core::Result<BracketTables> readBracket(const MemoryImage& overlay,
+                                        const BattleStageLayout& layout) {
+  constexpr std::size_t PathSize = 24;
+  BracketTables bracket;
+  auto rowY = readValues<std::int16_t>(overlay, layout.bracketRowY, "bracket rows");
+  if (!rowY) {
+    return std::unexpected{rowY.error()};
+  }
+  auto hopY = readValues<std::int8_t>(overlay, layout.bracketHopY, "bracket hop");
+  if (!hopY) {
+    return std::unexpected{hopY.error()};
+  }
+  auto sprites = readValues<std::uint8_t>(overlay, layout.spritePalettes, "sprite palettes");
+  if (!sprites) {
+    return std::unexpected{sprites.error()};
+  }
+  auto icons = readValues<std::uint8_t>(overlay, layout.projectileIcons, "projectile icons");
+  if (!icons) {
+    return std::unexpected{icons.error()};
+  }
+  auto iconPalettes =
+      readValues<std::uint8_t>(overlay, layout.projectilePalettes, "projectile palettes");
+  if (!iconPalettes) {
+    return std::unexpected{iconPalettes.error()};
+  }
+  auto paths = tableBytes(overlay, layout.bracketPaths, PathSize, "bracket paths");
+  if (!paths) {
+    return std::unexpected{paths.error()};
+  }
+  ByteCursor c{*paths};
+  for (std::size_t i = 0; i < layout.bracketPaths.count; ++i) {
+    BracketPath path;
+    std::ranges::generate(path.x, [&c] { return c.i16(); });
+    std::ranges::generate(path.flip, [&c] { return c.u8(); });
+    bracket.paths.push_back(path);
+  }
+  bracket.rowY = std::move(*rowY);
+  bracket.hopY = std::move(*hopY);
+  bracket.spritePalettes = std::move(*sprites);
+  bracket.projectileIcons = std::move(*icons);
+  bracket.projectilePalettes = std::move(*iconPalettes);
+  return bracket;
+}
+
 core::Result<BattleStageTables> readBattleStageTables(const MemoryImage& overlay,
                                                       const MemoryImage& executable,
                                                       const BattleStageLayout& layout) {
@@ -452,6 +509,13 @@ core::Result<BattleStageTables> readBattleStageTables(const MemoryImage& overlay
     return std::unexpected{arenas.error()};
   }
   tables.arenas = std::move(*arenas);
+  if (layout.bracketPaths.located()) {
+    auto bracket = readBracket(overlay, layout);
+    if (!bracket) {
+      return std::unexpected{bracket.error()};
+    }
+    tables.bracket = std::move(*bracket);
+  }
   return tables;
 }
 

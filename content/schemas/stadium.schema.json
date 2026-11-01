@@ -86,6 +86,86 @@
           }
         }
       }
+    },
+    "bracket": {
+      "description": "The bracket drawn between matches (std_main.c: STD_updateBracket, STD_renderBracketDigimon, STD_renderBracketProjectile). Missing in an older extraction.",
+      "type": "object",
+      "required": [
+        "row_y",
+        "hop_y",
+        "paths",
+        "sprite_palettes",
+        "projectile_icons",
+        "projectile_palettes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "row_y": {
+          "description": "STD_BRACKET_ROW_Y: the y of each step up the bracket, from the screen's centre.",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "hop_y": {
+          "description": "STD_BRACKET_HOP_Y: the winner's hop, added to its row's y frame by frame.",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "paths": {
+          "description": "STD_BRACKET_PATHS: by slot, the x of each step and whether the sprite faces right there.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "x",
+              "flip"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "x": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "minItems": 8,
+                "maxItems": 8
+              },
+              "flip": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "minItems": 8,
+                "maxItems": 8
+              }
+            }
+          }
+        },
+        "sprite_palettes": {
+          "description": "STD_DIGIMON_SPRITE_CLUT: the palette of each species' bracket sprite.",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "projectile_icons": {
+          "description": "STD_BRACKET_PROJECTILE_ICONS: each species' shot icon (1 = the first).",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "projectile_palettes": {
+          "description": "STD_BRACKET_PROJECTILE_CLUTS: the palette of each shot icon (icon - 1).",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
     }
   }
 }

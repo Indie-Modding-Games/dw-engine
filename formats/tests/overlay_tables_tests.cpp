@@ -213,6 +213,19 @@ struct BattleFixture {
     layout.arenaTextureCounts = {.address = executable.place(3), .count = 3};
     executable.u8(layout.arenaModelCounts.address + 1, 4);
     executable.u8(layout.arenaTextureCounts.address + 1, 2);
+    layout.bracketRowY = {.address = overlay.place(4), .count = 2};
+    overlay.i16(layout.bracketRowY.address + 2, -25);
+    layout.bracketHopY = {.address = overlay.place(2), .count = 2};
+    overlay.u8(layout.bracketHopY.address + 1, 0x1a);
+    layout.bracketPaths = {.address = overlay.place(48), .count = 2};
+    overlay.i16(layout.bracketPaths.address + 24 + 2, -110);
+    overlay.u8(layout.bracketPaths.address + 24 + 16 + 3, 1);
+    layout.spritePalettes = {.address = overlay.place(3), .count = 3};
+    overlay.u8(layout.spritePalettes.address + 2, 6);
+    layout.projectileIcons = {.address = overlay.place(3), .count = 3};
+    overlay.u8(layout.projectileIcons.address + 1, 13);
+    layout.projectilePalettes = {.address = overlay.place(2), .count = 2};
+    overlay.u8(layout.projectilePalettes.address, 3);
   }
 
   // Three pointers: two strings and a null.
@@ -253,6 +266,14 @@ TEST_CASE("the tables of a battle overlay are read, with the arena counts from t
   CHECK(tables->arenas[1].collision == "\\A\\ONE.ATR");
   CHECK(tables->arenas[1].modelCount == 4);
   CHECK(tables->arenas[1].textureCount == 2);
+  CHECK(tables->bracket.rowY == std::vector<std::int16_t>{0, -25});
+  CHECK(tables->bracket.hopY == std::vector<std::int8_t>{0, 0x1a});
+  REQUIRE(tables->bracket.paths.size() == 2);
+  CHECK(tables->bracket.paths[1].x[1] == -110);
+  CHECK(tables->bracket.paths[1].flip[3] == 1);
+  CHECK(tables->bracket.spritePalettes == std::vector<std::uint8_t>{0, 0, 6});
+  CHECK(tables->bracket.projectileIcons[1] == 13);
+  CHECK(tables->bracket.projectilePalettes == std::vector<std::uint8_t>{3, 0});
 
   const auto stadium = battleStageToYaml(*tables, "stadium");
   REQUIRE(stadium.documents.size() == 1);
@@ -264,11 +285,14 @@ TEST_CASE("the tables of a battle overlay are read, with the arena counts from t
   versus.opponentBaseStats = {};
   versus.grades = {};
   versus.winChances = {};
+  versus.bracketPaths = {};
   const auto versusTables = readBattleStageTables(overlay, *exe, versus);
   REQUIRE(versusTables.has_value());
   CHECK(versusTables->opponentBaseStats.empty());
   const auto yaml = battleStageToYaml(*versusTables, "versus");
   CHECK(yaml.documents[0].document.find("grades") == nullptr);
+  CHECK(yaml.documents[0].document.find("bracket") == nullptr);
+  CHECK(stadium.documents[0].document.find("bracket") != nullptr);
   CHECK(checkAgainstSchema(yaml.documents[0].document, "versus").empty());
 }
 

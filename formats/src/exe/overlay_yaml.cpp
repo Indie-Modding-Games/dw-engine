@@ -186,6 +186,24 @@ TablesYaml battleStageToYaml(const BattleStageTables& tables, const std::string&
   }
   root.set("camera_presets", std::move(cameras));
   root.set("arenas", std::move(arenas));
+  if (!tables.bracket.paths.empty()) {
+    const BracketTables& bracket = tables.bracket;
+    YamlNode paths = YamlNode::sequence();
+    for (const BracketPath& path : bracket.paths) {
+      YamlNode node = YamlNode::mapping();
+      node.set("x", numbers(path.x));
+      node.set("flip", numbers(path.flip));
+      paths.append(std::move(node));
+    }
+    YamlNode node = YamlNode::mapping();
+    node.set("row_y", numbers(bracket.rowY));
+    node.set("hop_y", numbers(bracket.hopY));
+    node.set("paths", std::move(paths));
+    node.set("sprite_palettes", numbers(bracket.spritePalettes));
+    node.set("projectile_icons", numbers(bracket.projectileIcons));
+    node.set("projectile_palettes", numbers(bracket.projectilePalettes));
+    root.set("bracket", std::move(node));
+  }
   TablesYaml out;
   out.documents.push_back({.name = name, .document = std::move(root)});
   return out;

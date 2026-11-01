@@ -83,7 +83,7 @@ Digimon. Cada documento tiene su esquema en `content/schemas`.
 | Overlay | Documento | Tablas |
 |---|---|---|
 | FISH | `fishing` | Probabilidad de cada cebo, probabilidad de picar por profundidad y tipo de pez, tipos de pez, las dos curvas de orilla de la prueba de agua y los dos mapas de pesca (zonas de cada pez, horas y ruta de la serpiente marina, sprite) |
-| STD | `stadium` | Stat base de los rivales por torneo, TIM del grado de cada torneo, probabilidad de victoria por niveles, cámaras y arenas |
+| STD | `stadium` | Stat base de los rivales por torneo, TIM del grado de cada torneo, probabilidad de victoria por niveles, cámaras, arenas y el cuadro del torneo (`bracket`: filas, salto, caminos de cada hueco, paleta del sprite y disparo de cada especie) |
 | VS | `versus` | Cámaras y arenas |
 | TRN | `training` | Animación y frame del golpe por compañero, técnicas que enseña el entrenamiento y sus pesos, tiras de la tragaperras, asistencias y puntos de entrenamiento por mapa |
 
