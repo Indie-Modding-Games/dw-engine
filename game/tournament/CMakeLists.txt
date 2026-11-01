@@ -3,6 +3,7 @@ dwe_add_module(tournament
     SOURCES
         src/arena.cpp
         src/bracket.cpp
+        src/bracket_animation.cpp
         src/cup_data.cpp
         src/rules.cpp
         src/schedule.cpp
