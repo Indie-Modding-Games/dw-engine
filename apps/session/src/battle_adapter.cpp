@@ -14,6 +14,7 @@
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/messages.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -223,12 +224,40 @@ core::Result<void> BattleAdapter::readRules(const ruleset::Ruleset& rules) {
   if (!battleRules) {
     return std::unexpected{battleRules.error()};
   }
+  // A ruleset's species patches (the hidden content): the species whose effect points a new
+  // partner's moves use (effects.original_types).
+  auto extra = ruleset::readSpeciesExtra(rules);
+  if (!extra) {
+    return std::unexpected{extra.error()};
+  }
+  for (const auto& [id, patch] : extra->species) {
+    if (patch.effectType) {
+      battleRules->effects.originalTypes.insert_or_assign(id, *patch.effectType);
+    }
+  }
   if (!desc_.moves) {
     return core::fail(std::string{messages::BattleNeedsTables});
   }
   auto catalog = game::battle::MoveCatalog::build(*desc_.moves, *battleRules);
   if (!catalog) {
     return std::unexpected{catalog.error()};
+  }
+  partnerTypes_.clear();
+  partnerVariants_.clear();
+  for (const auto& [id, patch] : extra->species) {
+    if (patch.partnerType) {
+      partnerTypes_.insert_or_assign(
+          id, static_cast<game::battle::DigimonType>(std::clamp(
+                  *patch.partnerType, 0, static_cast<int>(game::battle::DigimonType::Virus))));
+    }
+    for (const auto& [move, change] : patch.partnerMoves) {
+      const auto ref = catalog->find(move);
+      if (!ref) {
+        return core::fail(formatMessage(messages::UnknownPartnerMove, id, move));
+      }
+      partnerVariants_[id].insert_or_assign(
+          move, catalog->addVariant(*ref, change.power, change.iframes));
+    }
   }
   auto movesSection = rules.requireSection(PartnerMovesSection);
   if (!movesSection) {
@@ -326,6 +355,13 @@ BattleAdapter::partnerCombatant(const GameSession& session) const {
     return core::fail(formatMessage(messages::UnknownPartnerSpecies, partner.species));
   }
   game::battle::Combatant fighter = game::battle::combatantOf(*row);
+  if (const auto type = partnerTypes_.find(partner.species); type != partnerTypes_.end()) {
+    fighter.type = type->second;
+  }
+  if (const auto variants = partnerVariants_.find(partner.species);
+      variants != partnerVariants_.end()) {
+    fighter.moveVariants = variants->second;
+  }
   const StatBlock& base = partner.stats.base;
   fighter.stats = {.maxHp = base[Stat::Hp],
                    .maxMp = base[Stat::Mp],

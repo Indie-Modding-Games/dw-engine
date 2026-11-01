@@ -14,6 +14,7 @@
 
 #include <array>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -170,6 +171,11 @@ private:
   std::unique_ptr<game::battle::BattleRules> rules_;
   std::unique_ptr<game::battle::MoveCatalog> catalog_;
   PartnerMoveRules moveRules_;
+  // What a ruleset's species patches change for a partner of a species (the hidden content): the
+  // type it fights with and its own versions of moves (move id -> the catalog's variant).
+  std::map<std::string, game::battle::DigimonType, std::less<>> partnerTypes_;
+  std::map<std::string, std::map<std::string, std::size_t, std::less<>>, std::less<>>
+      partnerVariants_;
   PartnerMoves moves_;
   std::unique_ptr<Serializer> serializer_;
   std::optional<std::uint32_t> originalRolls_;

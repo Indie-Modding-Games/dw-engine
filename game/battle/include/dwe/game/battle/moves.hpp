@@ -79,6 +79,11 @@ public:
   [[nodiscard]] MoveRef flattenedShot() const { return flattenedShot_; }
   // The moves learned along with another one (utils2.c: learnMove).
   [[nodiscard]] std::vector<MoveRef> learnedWith(MoveRef move) const;
+  // A copy of a move with its own power and invulnerable frames, for one fighter (a ruleset's
+  // species patches): the same id and number, after every move of the table, so find() and the
+  // lookups by number keep returning the table's.
+  MoveRef addVariant(MoveRef move, std::optional<std::int32_t> power,
+                     std::optional<std::int32_t> iframes);
 
 private:
   std::vector<BattleMove> moves_;

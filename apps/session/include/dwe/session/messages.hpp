@@ -94,6 +94,8 @@ inline constexpr std::string_view BattleWithoutBag =
 inline constexpr std::string_view NoMoveTable = "the ruleset names no {} table";
 inline constexpr std::string_view UnknownPartnerSpecies =
     "battle: the partner's species '{}' is not in data/digimon";
+inline constexpr std::string_view UnknownPartnerMove =
+    "species_extra: {}'s partner_moves names '{}', which is not in the moves table";
 inline constexpr std::string_view MovePlaceOutside =
     "battle: place {} is not one of the {} equipped places";
 inline constexpr std::string_view MoveNotLearned = "battle: the partner has not learned '{}'";

@@ -1,9 +1,10 @@
 -- The rules of a new game (docs/modulos/game/evolution.md, «Contenido oculto»): the original's, or
--- the original's with its hidden content (Panjyamon, Gigadramon and MetalEtemon by evolution), and
--- with it the Ultimate to Mega step. Both start off. The title screen shows this document before
--- the new game starts; it sends new_game_rules with the ruleset id the choice names (original,
--- oculto or oculto_mega), or new_game_rules_back. The save records the ruleset. A test route
--- reaches it only when it asks (new_game_rules: true); the others start with the original's rules.
+-- the original's with its hidden content (Panjyamon, Gigadramon, MetalEtemon and Myotismon by
+-- evolution), and with it the Ultimate to Mega step. Both start off. The title screen shows this
+-- document before the new game starts; it sends new_game_rules with the ruleset id the choice
+-- names (original, oculto or oculto_mega), or new_game_rules_back. The save records the ruleset.
+-- A test route reaches it only when it asks (new_game_rules: true); the others start with the
+-- original's rules.
 
 local hidden = false
 local mega = false

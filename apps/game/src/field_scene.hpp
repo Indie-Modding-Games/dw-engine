@@ -329,6 +329,17 @@ public:
   void attachSpeciesRadius(std::function<float(std::string_view)> radius) {
     speciesRadius_ = std::move(radius);
   }
+  // The clips a species' model lacks and the clip played instead (a ruleset's species patches:
+  // clips), for showPartnerSpecies. Without it a model must have every partner clip.
+  using ClipStandIns = std::map<std::uint32_t, std::uint32_t>;
+  void attachSpeciesClips(std::function<ClipStandIns(std::string_view)> clips) {
+    speciesClips_ = std::move(clips);
+  }
+  // The size a species' partner is drawn at in the field, 1 for the original's (a ruleset's species
+  // patches: field_scale); its radius scales with it.
+  void attachSpeciesScale(std::function<float(std::string_view)> scale) {
+    speciesScale_ = std::move(scale);
+  }
   // The box of a species in the species table, which says whether its entity shows on screen.
   struct SpeciesBox {
     float radius = 0.0F;
@@ -538,7 +549,7 @@ private:
   loadActor(std::string_view characterId, scene::Entity entity,
             const game::field::MoverRules& rules,
             const std::optional<assets::AssetId>& otherModel = std::nullopt,
-            MissingClips missingClips = MissingClips::Refuse);
+            MissingClips missingClips = MissingClips::Refuse, const ClipStandIns& standIns = {});
   core::Result<void> enterMap(const std::string& mapId, std::int32_t exit,
                               std::optional<assets::SpawnPoint> at = std::nullopt);
   void animate(Actor& actor, double seconds);
@@ -785,6 +796,10 @@ private:
   // The field rules' partner mover, for a partner loaded again with another species' model.
   game::field::MoverRules partnerMover_;
   std::function<float(std::string_view)> speciesRadius_;
+  std::function<ClipStandIns(std::string_view)> speciesClips_;
+  std::function<float(std::string_view)> speciesScale_;
+  // The partner species' size (attachSpeciesScale), times the scenes' partnerScale.
+  float partnerSpeciesScale_ = 1.0F;
   game::story::SoundPort* sound_ = nullptr;
   std::function<std::optional<SpeciesBox>(std::string_view)> speciesBox_;
   std::vector<std::unique_ptr<Actor>> npcActors_;

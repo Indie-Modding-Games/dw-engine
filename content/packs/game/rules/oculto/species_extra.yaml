@@ -53,6 +53,34 @@ species:
     evolves_from: [scum, nume]
     # La tercera columna de Ultra (el árbol se ensancha).
     chart: { x: 298, y: 81, icon: etem, palette: 2 }
+  # Myotismon (Ultra), que el disco solo trae como jefe: filas diseñadas (ganancias, crianza copiada de Devimon con la
+  # carne de comida favorita), el remate de Devimon (death_claw) en su primera ranura vacía y los puntos de lanzamiento
+  # de Devimon. Puerta: Myotismon rescatado en el laboratorio de la Mansión de Grey Lord (disparador 129) y solo de
+  # noche (20 a 6).
+  vand:
+    requirement:
+      mp: 500
+      speed: 400
+      brains: 500
+      care: 5
+      care_is_maximum: true
+      weight: 30
+      discipline: 80
+    gate: { triggers: [129], hours: { from: 20, to: 6 } }
+    evolves_from: [devi, bake]
+    stats_gains: { hp: 6000, mp: 7000, offense: 600, defense: 500, speed: 700, brains: 700 }
+    raise: { copy: devi, favorite_food: meat }
+    moves: [death_claw]
+    effect_type: devi
+    # Su modelo de enemigo no tiene los clips de cuidado ni de gimnasio: cada uno juega otro suyo (id que falta: id
+    # que juega). Andar mal anda; contento celebra; descontento, rechazar y el enfurruñado de siempre se enfurruñan;
+    # comer es su técnica 0; dormir, el baño y los estados se quedan quietos de mal humor; acostarse cae; tras el baño
+    # o el regaño encaja un golpe; cansado es el cansancio del combate; los gimnasios usan la guardia y el bloqueo; su
+    # remate (técnica 5) juega su técnica 0.
+    clips: { 3: 2, 5: 42, 7: 19, 8: 46, 9: 1, 10: 1, 11: 43, 12: 41, 13: 19, 14: 1, 15: 1, 16: 1, 17: 1, 18: 34,
+             21: 33, 22: 33, 23: 36, 24: 36, 25: 36, 27: 37, 51: 46 }
+    chart: { x: 298, y: 100, icon: devi, palette: 2 }
+
 # Premios de más por copa ganada, que los torneos suman a los de tournament.yaml (mismo formato: copa y objeto por su
 # número en data/tournaments y data/items), así que este ruleset no copia la sección de torneos del original. El
 # objeto que el disco tiene para cada forma nueva: Noble Mane en la Copa Animal (20, grado Z), Giga Hand en la Copa

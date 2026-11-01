@@ -10,6 +10,7 @@
 #include <cmath>
 #include <format>
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
 #include <span>
@@ -958,6 +959,27 @@ core::Result<ModelData> loadModel(const VirtualFileSystem& vfs, const AssetId& i
     return core::fail(std::format("model {}: {}", id.str(), model.error().message));
   }
   return model;
+}
+
+std::vector<std::uint32_t> addClipStandIns(ModelData& model,
+                                           const std::map<std::uint32_t, std::uint32_t>& standIns) {
+  std::vector<std::uint32_t> added;
+  for (const auto& [missing, copied] : standIns) {
+    if (model.findClip(missing) != nullptr) {
+      continue;
+    }
+    const AnimationClip* source = model.findClip(copied);
+    if (source == nullptr) {
+      continue;
+    }
+    AnimationClip clip = *source;
+    clip.name = std::format("{} as {}", source->name, missing);
+    clip.id = missing;
+    // The copy goes at the end, which may move the clips: the source is not used past here.
+    model.clips.push_back(std::move(clip));
+    added.push_back(missing);
+  }
+  return added;
 }
 
 } // namespace dwe::assets

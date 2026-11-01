@@ -100,7 +100,8 @@ struct Adapters {
 };
 
 std::unique_ptr<GameSession> sessionWithBattle(const TestPacks& packs, Adapters& adapters,
-                                               MemorySaveStorage* storage = nullptr) {
+                                               MemorySaveStorage* storage = nullptr,
+                                               std::string_view rulesetId = "original") {
   auto inventory =
       std::make_unique<InventoryAdapter>(InventoryAdapterDesc{.files = &packs.files(),
                                                               .items = items::fixtureItems(),
@@ -115,7 +116,7 @@ std::unique_ptr<GameSession> sessionWithBattle(const TestPacks& packs, Adapters&
   std::vector<std::unique_ptr<SessionSystem>> systems;
   systems.push_back(std::move(inventory));
   systems.push_back(std::move(battle));
-  return newGameWith(packs, std::move(systems), storage);
+  return newGameWith(packs, std::move(systems), storage, 7, rulesetId);
 }
 
 // A session with the evolution adapter on `fixture`'s forms counting the battle adapter's learned
@@ -257,6 +258,32 @@ TEST_CASE("the partner fights with its stats, HP, MP and the moves at its equipp
   CHECK(fighter->moves.at(0) == "punch");
   CHECK_FALSE(fighter->moves.at(1).has_value());
   CHECK(fighter->moves.at(dwe::game::battle::FinisherSlot) == "big_finish");
+}
+
+TEST_CASE("a ruleset's species patches give the partner its own type and move values") {
+  // A ruleset with the hidden content's partner fields for the made-up partner.
+  const TestPacks packs{
+      {"rules/patched/ruleset.yaml",
+       "id: patched\nname: patched\nversion: 0.1.0\ndescription: test\nextends: original\n"
+       "sections:\n  - species_extra\n"},
+      {"rules/patched/species_extra.yaml",
+       "species:\n  agum:\n    partner_type: 3\n    partner_moves:\n"
+       "      punch: { power: 240, iframes: 1 }\n"}};
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters, nullptr, "patched");
+  const auto fighter = adapters.battle->partnerCombatant(*session);
+  REQUIRE_MESSAGE(fighter.has_value(), errorOf(fighter));
+  CHECK(fighter->type == dwe::game::battle::DigimonType::Virus);
+  const auto variant = fighter->moveVariants.find("punch");
+  REQUIRE(variant != fighter->moveVariants.end());
+  const auto& catalog = adapters.battle->catalog();
+  CHECK(catalog.at(variant->second).power == 240);
+  CHECK(catalog.at(variant->second).iframes == 1);
+  // Everyone else's punch is the table's.
+  const auto table = catalog.find("punch");
+  REQUIRE(table.has_value());
+  CHECK(variant->second != *table);
+  CHECK(catalog.at(*table).power == 30);
 }
 
 TEST_CASE("the partner fights with its own charge mode, 0 unless something changed it") {

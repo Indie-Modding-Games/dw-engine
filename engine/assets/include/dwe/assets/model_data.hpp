@@ -8,6 +8,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <span>
 #include <string>
@@ -186,6 +187,12 @@ struct ModelData {
   // The clip with this name, or nullptr.
   [[nodiscard]] const AnimationClip* findClip(std::string_view name) const;
 };
+
+// Fills the clips a model lacks with copies of others (a stand-in id -> the id it copies): an
+// enemy model made a partner (the hidden content) has no care or gym clips. A clip the model has,
+// or one whose stand-in it lacks too, is left alone. The ids added, in order.
+std::vector<std::uint32_t> addClipStandIns(ModelData& model,
+                                           const std::map<std::uint32_t, std::uint32_t>& standIns);
 
 // The most a model may have. The extracted ones stay far below; the limits keep a hostile file
 // bounded.

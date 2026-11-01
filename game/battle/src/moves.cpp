@@ -103,6 +103,16 @@ std::optional<MoveRef> MoveCatalog::find(std::string_view id) const {
   return static_cast<MoveRef>(found - moves_.begin());
 }
 
+MoveRef MoveCatalog::addVariant(MoveRef move, std::optional<std::int32_t> power,
+                                std::optional<std::int32_t> iframes) {
+  BattleMove variant = moves_.at(move);
+  variant.power = power.value_or(variant.power);
+  variant.iframes = iframes.value_or(variant.iframes);
+  variant.learnable = false;
+  moves_.push_back(std::move(variant));
+  return moves_.size() - 1;
+}
+
 std::vector<MoveRef> MoveCatalog::learnedWith(MoveRef move) const {
   std::vector<MoveRef> together;
   for (const auto& [first, second] : learnedTogether_) {

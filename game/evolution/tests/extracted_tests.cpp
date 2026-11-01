@@ -364,9 +364,12 @@ TEST_CASE("the user's disc, extracted: the hidden content's paths and gates") {
   CHECK(targetsOf("penm").back() == idOf(evolution, "panj"));
   CHECK(targetsOf("panj") ==
         std::vector<Species>{idOf(evolution, "andr"), idOf(evolution, "mame")});
+  // Devimon's last target is Myotismon, after Gigadramon.
   for (const std::string_view from : {"tyra", "devi", "aird", "sead"}) {
-    CHECK_MESSAGE(targetsOf(from).back() == idOf(evolution, "ggdr"), from);
+    const auto targets = targetsOf(from);
+    CHECK_MESSAGE(std::ranges::find(targets, idOf(evolution, "ggdr")) != targets.end(), from);
   }
+  CHECK(targetsOf("tyra").back() == idOf(evolution, "ggdr"));
   CHECK(targetsOf("scum").back() == idOf(evolution, "mtet"));
   CHECK(targetsOf("nume").back() == idOf(evolution, "mtet"));
   // The original's targets keep their order.
@@ -412,6 +415,25 @@ TEST_CASE("the user's disc, extracted: the hidden content's paths and gates") {
     CHECK(scored->points >= evolution.rules().requirements.passPoints);
     CHECK(evolution.outlook(meeting, {}).next == target);
   }
+
+  // Myotismon from Devimon, with the route's values: only at night.
+  const Species vand = idOf(evolution, "vand");
+  CHECK(targetsOf("devi").back() == vand);
+  CHECK(targetsOf("bake").back() == vand);
+  EvolutionInputs night = inputsMeeting(evolution, idOf(evolution, "devi"), vand);
+  night.weight = 30;
+  night.discipline = 80;
+  night.tamerFree = true;
+  night.evolutionTimer = 1000;
+  night.trigger = [](std::int32_t set) { return set == 129; };
+  night.hourOfDay = 22;
+  const auto scored = evolution.report(night, {}, vand);
+  REQUIRE(scored);
+  CHECK(scored->gateMet);
+  CHECK(scored->points >= evolution.rules().requirements.passPoints);
+  CHECK(evolution.outlook(night, {}).next == vand);
+  night.hourOfDay = 12;
+  CHECK(evolution.outlook(night, {}).next != vand);
 }
 
 } // namespace dwe::game::evolution

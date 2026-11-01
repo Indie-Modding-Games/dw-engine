@@ -258,8 +258,9 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
 
 core::Result<void> FieldScene::showPartnerSpecies(std::string_view species) {
   // map.c and partner.c size the partner by its species' radius in the species table.
+  partnerSpeciesScale_ = speciesScale_ ? speciesScale_(species) : 1.0F;
   if (speciesRadius_) {
-    field_->setPartnerRadius(speciesRadius_(species));
+    field_->setPartnerRadius(speciesRadius_(species) * partnerSpeciesScale_);
   }
   auto model = assets::AssetId::parse(speciesModelOf(species));
   if (!model) {
@@ -268,7 +269,9 @@ core::Result<void> FieldScene::showPartnerSpecies(std::string_view species) {
   if (model->str() == partnerModel().str()) {
     return {};
   }
-  auto partner = loadActor(PartnerCharacter, partnerActor_->entity, partnerMover_, *model);
+  const ClipStandIns standIns = speciesClips_ ? speciesClips_(species) : ClipStandIns{};
+  auto partner = loadActor(PartnerCharacter, partnerActor_->entity, partnerMover_, *model,
+                           MissingClips::Refuse, standIns);
   if (!partner) {
     return std::unexpected{partner.error()};
   }
@@ -344,7 +347,8 @@ void FieldScene::animatePartnerClip(double seconds) {
 core::Result<std::unique_ptr<FieldScene::Actor>>
 FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
                       const game::field::MoverRules& rules,
-                      const std::optional<assets::AssetId>& otherModel, MissingClips missingClips) {
+                      const std::optional<assets::AssetId>& otherModel, MissingClips missingClips,
+                      const ClipStandIns& standIns) {
   const auto id = assets::AssetId::parse(characterId);
   if (!id) {
     return std::unexpected{id.error()};
@@ -362,6 +366,10 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
   auto model = assets::loadModel(*files_, character->model);
   if (!model) {
     return core::fail(std::format("{}: {}", character->model.str(), model.error().message));
+  }
+  for (const std::uint32_t clip : assets::addClipStandIns(*model, standIns)) {
+    core::logDebug("field: {} plays clip {} as {}", character->model.str(), clip,
+                   standIns.at(clip));
   }
   if (missingClips == MissingClips::Drop) {
     for (const std::string& animation : assets::dropMissingClips(*character, *model)) {
@@ -839,7 +847,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   submitStatusModels();
   if (!stage_.partnerHidden) {
     submit(*partnerActor_, alpha,
-           {.scale = stage_.partnerScale,
+           {.scale = stage_.partnerScale * partnerSpeciesScale_,
             .lift = stage_.partnerLift,
             .hiddenBones = stage_.partnerHiddenBones});
   }

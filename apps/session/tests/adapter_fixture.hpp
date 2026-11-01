@@ -12,6 +12,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -34,9 +35,10 @@ inline std::shared_ptr<const game::partner::SpeciesTable> fixtureFormsTable() {
 inline std::unique_ptr<GameSession> newGameWith(const TestPacks& packs,
                                                 std::vector<std::unique_ptr<SessionSystem>> systems,
                                                 game::save::SaveStorage* storage = nullptr,
-                                                std::uint64_t seed = 7) {
+                                                std::uint64_t seed = 7,
+                                                std::string_view rulesetId = "original") {
   auto session = GameSession::create({.files = &packs.files(),
-                                      .rulesetId = "original",
+                                      .rulesetId = std::string{rulesetId},
                                       .rules = std::nullopt,
                                       .species = fixtureFormsTable(),
                                       .seed = seed,

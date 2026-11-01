@@ -207,8 +207,8 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   Se corre en los dos idiomas y con los dos aspectos (`--ui-skin original` y `modern`).
 - `route-hidden-content.yaml`: el [contenido oculto](../modulos/apps/game.md#contenido-oculto) desde el menú
   principal con el teclado: la pantalla de reglas de la partida nueva (con las reglas del original y con el contenido
-  oculto encendido), el árbol con 64 casillas y las tres formas nuevas por la revisión natural: Panjyamon desde
-  Penguinmon, Gigadramon desde Seadramon y MetalEtemon desde Sukamon (`story_set` para las puertas, `evolve` para la
+  oculto encendido), el árbol con 65 casillas y las cuatro formas nuevas por la revisión natural: Panjyamon desde
+  Penguinmon, Gigadramon desde Seadramon, MetalEtemon desde Sukamon y Myotismon desde Devimon, de noche (`story_set` para las puertas, `evolve` para la
   forma de origen, `partner_set` para los valores y `clock_speed` hasta la revisión). Captura cada compañero nuevo en
   el campo y en su ficha, y el árbol con las casillas nuevas en el aspecto original, con `text_fit`. Tras cada
   evolución espera a que su escena acabe (el ajuste `evolution.active`, `"true"` mientras corre) y confirma el aviso
@@ -775,6 +775,6 @@ fase 4:
 | `sleep("")` | Lo acuesta, si tiene sueño |
 | `scold("")` | Lo regaña, como «Regañar» en la pestaña de cuidados |
 | `train("<lugar> <curso>")` | Una sesión de entrenamiento (`train("trn brain")`) |
-| `partner_set("<valor> <número>")` | Escribe un valor del compañero, de 0 a 99999: `hp`, `mp`, `offense`, `defense`, `speed`, `brains` (los stats base, HP y MP en sus unidades), `weight`, `care` (errores de cuidado), `battles` y `hours` (el contador de evolución) (`partner_set("hours 71")`). Para dejar al compañero justo antes de una revisión de evolución |
+| `partner_set("<valor> <número>")` | Escribe un valor del compañero, de 0 a 99999: `hp`, `mp`, `offense`, `defense`, `speed`, `brains` (los stats base, HP y MP en sus unidades), `weight`, `care` (errores de cuidado), `battles`, `hours` (el contador de evolución) y `discipline` (disciplina, dentro de los límites del ánimo) (`partner_set("hours 71")`). Para dejar al compañero justo antes de una revisión de evolución |
 | `clock_speed("<multiplicador>")` | Acelera el reloj: 1 es un minuto de juego por segundo real, 600 son diez horas |
 | `save("slot_NN")` | Guarda la partida en ese hueco manual (`save("slot_01")`), hasta que exista la pantalla de guardar; los huecos de autoguardado no se escriben a mano. Un autotest solo guarda con `--saves` |

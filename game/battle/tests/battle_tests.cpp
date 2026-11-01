@@ -51,6 +51,27 @@ TEST_CASE("the fighters start with the setup's values: reserve, buff uses, finis
   CHECK(battle.state().frame == 1);
 }
 
+TEST_CASE("a partner's move variant replaces the table's move for it alone") {
+  MoveCatalog moves = testCatalog();
+  const MoveRef punch = refOf(moves, "punch");
+  const MoveRef variant = moves.addVariant(punch, 240, 1);
+  CHECK(variant != punch);
+  CHECK(moves.at(variant).id == "punch");
+  CHECK(moves.at(variant).power == 240);
+  CHECK(moves.at(variant).iframes == 1);
+  CHECK_FALSE(moves.at(variant).learnable);
+  // The table's move keeps its values and its id still finds it.
+  CHECK(moves.at(punch).power == 30);
+  CHECK(refOf(moves, "punch") == punch);
+
+  BattleSetup setup = duel(evenStats(500, 100), evenStats(500, 100));
+  setup.partner.moveVariants.emplace("punch", variant);
+  auto battle = Battle::start(std::move(setup), originalRules(), moves, originalStrategies(), 1);
+  REQUIRE_MESSAGE(battle, errorOf(battle));
+  CHECK(battle->state().partner().moves.at(0) == variant);
+  CHECK(battle->state().fighters.at(1).moves.at(0) == punch);
+}
+
 TEST_CASE("a sick partner loses a fifth of its offense, defense, speed and brain") {
   BattleSetup setup = duel(evenStats(100, 100), evenStats(100, 100));
   setup.condition.sick = true;

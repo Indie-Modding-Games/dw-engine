@@ -13,6 +13,7 @@ TEST_CASE("partner_set reads a value's name and an amount") {
   REQUIRE(care.has_value());
   CHECK(care->kind == PartnerWrite::Kind::CareMistakes);
   CHECK(partnerWriteFromText("hours 120")->kind == PartnerWrite::Kind::Hours);
+  CHECK(partnerWriteFromText("discipline 80")->kind == PartnerWrite::Kind::Discipline);
   CHECK_FALSE(partnerWriteFromText("offense").has_value());
   CHECK_FALSE(partnerWriteFromText("luck 3").has_value());
   CHECK_FALSE(partnerWriteFromText("hp -1").has_value());

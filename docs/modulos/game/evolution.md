@@ -108,7 +108,7 @@ hay que extraerlo de nuevo.
 
 Mejora opcional, apagada por defecto: el ruleset `oculto` («Original + contenido oculto», `extends: original`) da un
 camino natural a tres formas que el disco trae completas pero que el original solo da con objetos: Panjyamon
-(campeón), Gigadramon y MetalEtemon (ultras). Se elige al empezar una partida nueva
+(campeón), Gigadramon y MetalEtemon (ultras), y a Myotismon (ultra), que el disco solo trae como jefe. Se elige al empezar una partida nueva
 ([pantalla de reglas](../apps/game.md#contenido-oculto)) y queda en la partida guardada; el ruleset `original` sigue
 igual. Los objetos que las dan (`noble_mane`, `giga_hand`, `metalbanana`) siguen funcionando con los dos.
 
@@ -120,6 +120,7 @@ especie](../../architecture/rulesets.md#parches-por-especie)), con números de d
 | Panjyamon | Elecmon, Penguinmon | ataque 150, defensa 100, velocidad 120; 0–2 errores; peso 25 ± 5; 30 técnicas o venir de Penguinmon | Leomon vive en la ciudad (disparador 248) |
 | Gigadramon | Tyrannomon, Devimon, Airdramon, Seadramon | HP 4000, MP 4000, ataque 500, defensa 400, velocidad 300, cerebro 300; 0–5 errores; peso 60 ± 5; 60 batallas | Copa Metálica (16) ganada alguna vez |
 | MetalEtemon | Sukamon, Numemon | ataque 500, velocidad 500, cerebro 400; 0 errores; peso 20 ± 5; 100 batallas o venir de Sukamon | Etemon vencido y en la ciudad (disparador 242) |
+| Myotismon | Devimon, Bakemon | MP 5000, velocidad 400, cerebro 500; 0–5 errores; peso 30 ± 5; disciplina 80 | Myotismon rescatado en el laboratorio de la Mansión de Grey Lord (disparador 129, fin del guion 64) y de noche (20 a 6) |
 
 - **Puertas.** `SpeciesGate` (disparadores de la historia, hora del día, copa ganada) se mira antes de puntuar: si
   no se cumple, el destino no puntúa (`OriginalScoring` da 0 puntos y `RequirementReport::gateMet` es `false`), así
@@ -135,6 +136,15 @@ especie](../../architecture/rulesets.md#parches-por-especie)), con números de d
   abierta. Los premios van en `extra_prizes` del mismo fichero, que los torneos suman a los de `tournament.yaml`:
   Noble Mane (126) en la Copa Animal (20, grado Z), Giga Hand (125) en la Copa Metálica (16, grado M) y Metalbanana
   (127) en la Copa Basura (17, grado T).
+- **Myotismon de compañero.** No tiene filas en el disco, así que el parche las diseña: ganancias
+  6000/7000/600/500/700/700, crianza copiada de Devimon con la carne de comida favorita y el remate de Devimon
+  (`death_claw`) en su primera ranura vacía (la 5). `effect_type: devi` da a sus técnicas los puntos de lanzamiento
+  de Devimon (`BattleAdapter` lo pone en `effects.original_types`). Su modelo es de enemigo y no tiene los clips de
+  cuidado ni de gimnasio: `clips` dice cuál juega en lugar de cada uno (anda mal → anda, contento → victoria,
+  comer → técnica 0, dormir y estados → quieto de mal humor, cansado → cansancio del combate, gimnasios → guardia y
+  bloqueo; el remate, clip 51, juega la técnica 0). `FieldScene::loadActor` los añade al cargar al compañero con
+  `assets::addClipStandIns`, que copia el clip que existe con el id que falta y nunca pisa uno propio; así la carga
+  del compañero sigue negándose a un modelo al que le falte un clip (`MissingClips::Refuse`).
 - **Criadas.** Las especies desde 0x3f no caben en los disparadores de criado del original (200 + especie hasta
   0x3e): `StoryAdapter` las guarda en su propia lista, que va en la sección de evolución de la partida y que una
   partida nueva vacía. El árbol las da por descubiertas con ella; la medalla de las 61 sigue contando solo las del
@@ -143,6 +153,7 @@ especie](../../architecture/rulesets.md#parches-por-especie)), con números de d
   paso Mega para una ultra cuando el ruleset lo trae).
 
 Tests: `game/evolution/tests/hidden_tests.cpp` (puerta de disparadores y hora, puerta de copa, paso Mega),
+`clip stand-ins fill only the clips a model lacks, with copies of ones it has` (`engine/assets/tests/model_data_tests.cpp`),
 `the user's disc, extracted: the hidden content's paths and gates` (`extracted_tests.cpp`, con `DWE_CONTENT`: los
 destinos tras los del original y cada camino elegido por la revisión),
 `the game pack's hidden content rulesets follow their schemas and read` (`engine/ruleset/tests/species_extra_tests.cpp`)

@@ -28,7 +28,8 @@ struct PartnerWrite {
     Weight,
     CareMistakes,
     Battles,
-    Hours
+    Hours,
+    Discipline
   };
   Kind kind = Kind::Hp;
   std::int32_t value = 0;

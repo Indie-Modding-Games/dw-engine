@@ -1,10 +1,11 @@
 # The hidden content (docs/modulos/game/evolution.md, «Contenido oculto»): a new game from the main menu with the keyboard,
-# its rules screen (the original's rules first, then the hidden content on), and the three forms the disc has but only
-# gives by item, each reached by the natural check: Panjyamon from Penguinmon (Leomon in the city, trigger 248),
-# Gigadramon from Seadramon (the Metalic Cup won, trigger 15 + 16) and MetalEtemon from Sukamon
-# (Etemon in the city, trigger 242). Each source comes from evolve, the partner's values from partner_set (the
-# requirement's stats, care and a weight inside the target's window and outside the other targets'), and its counter
-# one hour before the check; the clock then runs until the form changes. Each new partner is captured in the field and
+# its rules screen (the original's rules first, then the hidden content on), and the four forms the disc has but only
+# gives by item or as a boss, each reached by the natural check: Panjyamon from Penguinmon (Leomon in the city,
+# trigger 248),
+# Gigadramon from Seadramon (the Metalic Cup won, trigger 15 + 16), MetalEtemon from Sukamon (Etemon in the city,
+# trigger 242) and Myotismon from Devimon (Myotismon rescued, trigger 129, at night). Each source comes from evolve,
+# the partner's values from partner_set (the requirement's stats, care and a weight inside the target's window and
+# outside the other targets'), and its counter one hour before the check; the clock then runs until the form changes. Each new partner is captured in the field and
 # on its status page, and the chart at the end (original look) with its new cells. Run it with --saves <empty folder>,
 # once per language (--lang en, --lang es); how to run it: docs/guides/prueba-vertical.md.
 # After each evolution the route waits for its scene to end (evolution.active), so partner_set writes the next values
@@ -32,8 +33,8 @@ steps:
   - screenshot: rules-hidden
   - menu_select: rules-start
   - wait: {map: twna01, hidden: new_game_rules, seconds: 2, timeout: 120}
-  # The hidden content's three cells join the original's 61.
-  - expect_setting: {player.chart.count: 64}
+  # The hidden content's four cells join the original's 61.
+  - expect_setting: {player.chart.count: 65}
   # Panjyamon (champion) from Penguinmon: the rookie checks from 72 hours.
   - script: story_set("trigger 248 on")
   - script: evolve("penm")
@@ -143,6 +144,50 @@ steps:
   - wait: {shown: partner_menu, seconds: 0.8}
   - expect_text_fits: all
   - screenshot: status-metaletemon
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  # Myotismon (ultimate) from Devimon, only at night (20 to 6) once Myotismon is rescued (trigger 129); the clock runs
+  # until the night check. HP and MP count tenths. Its enemy model lacks the care clips, which the patch's stand-ins
+  # fill.
+  - script: story_set("trigger 129 on")
+  - script: evolve("devi")
+  - wait: {setting: {partner.name: main.digimon_names.0006}, timeout: 600}
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  # A new player rank on evolving shows its notice, which holds the field and the clock until confirmed.
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  # The clock first runs to 19:00, so the check comes at nightfall and the hungry hours before it do not move the
+  # weight and the care mistakes out of the requirement.
+  - script: clock_speed("120")
+  - wait: {setting: {hud.clock.hour: 19}, timeout: 900}
+  - script: clock_speed("0")
+  - script: partner_set("hp 50")
+  - script: partner_set("mp 5000")
+  - script: partner_set("offense 50")
+  - script: partner_set("defense 50")
+  - script: partner_set("speed 400")
+  - script: partner_set("brains 500")
+  - script: partner_set("care 0")
+  - script: partner_set("weight 30")
+  - script: partner_set("discipline 80")
+  - script: partner_set("hours 143")
+  - script: clock_speed("120")
+  - wait: {setting: {partner.name: main.digimon_names.0066}, timeout: 600}
+  - script: clock_speed("0")
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  # A new player rank on evolving shows its notice, which holds the field and the clock until confirmed.
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  - screenshot: field-myotismon
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.8}
+  - expect_text_fits: all
+  - screenshot: status-myotismon
   - tap: {key: escape}
   - wait: {hidden: partner_menu, timeout: 5}
   - menu: close

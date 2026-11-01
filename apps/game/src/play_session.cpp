@@ -6,6 +6,7 @@
 #include <dwe/game/battle/combatant.hpp>
 #include <dwe/game/inventory/inventory.hpp>
 #include <dwe/ruleset/ruleset.hpp>
+#include <dwe/ruleset/species_extra.hpp>
 #include <dwe/scene/components.hpp>
 #include <dwe/session/cards_adapter.hpp>
 #include <dwe/session/evolution_adapter.hpp>
@@ -169,6 +170,17 @@ std::optional<assets::DigimonTable> speciesOf(const assets::VirtualFileSystem& f
     return std::nullopt;
   }
   return std::move(*species);
+}
+
+// The ruleset's species patches (the hidden content): what the field draws differently for a
+// species. None, with a warning, when they do not read.
+ruleset::SpeciesExtra speciesExtraOf(session::GameSession& session) {
+  auto extra = ruleset::readSpeciesExtra(session.rules().current());
+  if (!extra) {
+    core::logWarning("species patches: {}", extra.error().message);
+    return {};
+  }
+  return std::move(*extra);
 }
 
 } // namespace
@@ -443,6 +455,16 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   scene_->attachSpeciesRadius([this](std::string_view species) {
     const auto* row = species_ ? species_->find(species) : nullptr;
     return row != nullptr ? static_cast<float>(row->radius) : 0.0F;
+  });
+  const ruleset::SpeciesExtra extra = speciesExtraOf(session);
+  scene_->attachSpeciesClips([extra](std::string_view species) {
+    const ruleset::SpeciesPatch* patch = extra.find(species);
+    return patch != nullptr ? FieldScene::ClipStandIns{patch->clips.begin(), patch->clips.end()}
+                            : FieldScene::ClipStandIns{};
+  });
+  scene_->attachSpeciesScale([extra](std::string_view species) {
+    const ruleset::SpeciesPatch* patch = extra.find(species);
+    return patch != nullptr ? patch->fieldScale.value_or(1.0F) : 1.0F;
   });
   scene_->attachSound(session.sound(), [this](std::string_view species) {
     const auto* row = species_ ? species_->find(species) : nullptr;

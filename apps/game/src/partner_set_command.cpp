@@ -2,6 +2,7 @@
 
 #include <dwe/game/partner/partner.hpp>
 
+#include <algorithm>
 #include <array>
 #include <charconv>
 #include <cstddef>
@@ -21,16 +22,18 @@ using Kind = PartnerWrite::Kind;
 
 constexpr std::int32_t ValueLimit = 99999;
 
-constexpr std::array<std::pair<std::string_view, Kind>, 10> Names{{{"hp", Kind::Hp},
-                                                                   {"mp", Kind::Mp},
-                                                                   {"offense", Kind::Offense},
-                                                                   {"defense", Kind::Defense},
-                                                                   {"speed", Kind::Speed},
-                                                                   {"brains", Kind::Brains},
-                                                                   {"weight", Kind::Weight},
-                                                                   {"care", Kind::CareMistakes},
-                                                                   {"battles", Kind::Battles},
-                                                                   {"hours", Kind::Hours}}};
+constexpr std::array<std::pair<std::string_view, Kind>, 11> Names{
+    {{"hp", Kind::Hp},
+     {"mp", Kind::Mp},
+     {"offense", Kind::Offense},
+     {"defense", Kind::Defense},
+     {"speed", Kind::Speed},
+     {"brains", Kind::Brains},
+     {"weight", Kind::Weight},
+     {"care", Kind::CareMistakes},
+     {"battles", Kind::Battles},
+     {"hours", Kind::Hours},
+     {"discipline", Kind::Discipline}}};
 
 std::optional<std::int32_t> integerOf(std::string_view text) {
   std::int32_t value = 0;
@@ -69,7 +72,7 @@ core::Result<PartnerWrite> partnerWriteFromText(std::string_view text) {
   }
   const auto usage = [&] {
     return core::fail(std::format("'{}': expected '<hp|mp|offense|defense|speed|brains|weight|"
-                                  "care|battles|hours> <0-{}>'",
+                                  "care|battles|hours|discipline> <0-{}>'",
                                   text, ValueLimit));
   };
   if (words.size() != 2) {
@@ -102,6 +105,13 @@ void applyPartnerWrite(game::partner::Partner& partner, const PartnerWrite& writ
     counters.hours = write.value;
     partner.setEvolutionCounters(counters);
     return;
+  case Kind::Discipline: {
+    // Set in place, as a story order would, between 0 and 100.
+    game::partner::PartnerState changed = state;
+    changed.mood.discipline = std::clamp(write.value, 0, 100);
+    partner.takeStoryChange(std::move(changed));
+    return;
+  }
   default:
     break;
   }

@@ -288,6 +288,29 @@ TEST_CASE("a clip keeps the sounds its stream plays, in tick order") {
                                                             {.tick = 3, .bank = 4, .sound = 53}});
 }
 
+TEST_CASE("clip stand-ins fill only the clips a model lacks, with copies of ones it has") {
+  dwe::assets::ModelData model;
+  dwe::assets::AnimationClip walk;
+  walk.name = "walk";
+  walk.id = 2U;
+  walk.duration = 1.5F;
+  dwe::assets::AnimationClip idle;
+  idle.name = "idle";
+  idle.id = 0U;
+  model.clips.push_back(walk);
+  model.clips.push_back(idle);
+  const std::vector<std::uint32_t> added =
+      dwe::assets::addClipStandIns(model, {{3U, 2U}, {0U, 2U}, {9U, 7U}});
+  // 3 copies the walk; 0 is the model's own; 9's stand-in is missing too.
+  CHECK(added == std::vector<std::uint32_t>{3U});
+  const auto* limp = model.findClip(3U);
+  REQUIRE(limp != nullptr);
+  CHECK(limp->duration == doctest::Approx(1.5F));
+  CHECK(limp->name == "walk as 3");
+  CHECK(model.findClip(0U)->name == "idle");
+  CHECK(model.findClip(9U) == nullptr);
+}
+
 TEST_CASE("a hostile glb cannot make the reader allocate without bound") {
   SUBCASE("indices with no buffer view, four billion of them") {
     Fixture fixture;

@@ -37,7 +37,9 @@ resolveMoves(const Combatant& combatant, const MoveCatalog& moves, Side side) {
     if (!id) {
       continue;
     }
-    const std::optional<MoveRef> ref = moves.find(*id);
+    const auto variant = combatant.moveVariants.find(*id);
+    const std::optional<MoveRef> ref =
+        variant != combatant.moveVariants.end() ? std::optional{variant->second} : moves.find(*id);
     if (!ref) {
       return core::fail(messages::formatMessage(messages::UnknownMove, *id));
     }

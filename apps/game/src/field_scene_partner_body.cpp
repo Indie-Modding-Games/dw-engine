@@ -79,7 +79,7 @@ glm::mat4 FieldScene::PartnerBody::world() const {
   const auto& transform = owner_->world_.registry().get<scene::Transform>(actor.entity);
   return glm::scale(glm::rotate(glm::translate(glm::mat4{1.0F}, transform.position), transform.yaw,
                                 glm::vec3{0.0F, 1.0F, 0.0F}),
-                    owner_->stage_.partnerScale);
+                    owner_->stage_.partnerScale * owner_->partnerSpeciesScale_);
 }
 
 std::optional<glm::vec3> FieldScene::PartnerBody::bonePoint(std::uint32_t bone) const {
