@@ -63,8 +63,22 @@ core::Result<void> checkPartnerMovesSection(const ruleset::Section& section);
 core::YamlNode toYaml(const PartnerMoves& moves);
 core::Result<PartnerMoves> partnerMovesFromYaml(const core::YamlNode& node);
 
+// script_common.c: lostAllLives: the reborn partner may forget the moves numbered below this.
+inline constexpr std::int32_t ForgettableMoves = 0x3A;
+
+// lostAllLives: how many of the moves it knows the reborn partner forgets: (10 - trainer level) * 2
+// percent of them, rounded half up; none at trainer level 10 or more.
+[[nodiscard]] std::int32_t movesToForget(std::int32_t known, std::int32_t trainerLevel);
+
+// utils2.c: unlearnMove: the original numbers whose learned bits forgetting a move clears. The
+// mask is 16 bits wide, so the upper sixteen moves of the move's word of 32 always go with it (an
+// original bug); 0x30 clears 0x2C's bit and 0x37 and 0x39 only that upper half.
+[[nodiscard]] std::vector<std::int32_t> movesClearedBy(std::int32_t number);
+
 // Adds a learned move, keeping the list sorted; false if it was known.
 bool learn(PartnerMoves& moves, std::string_view move);
+// Removes a learned move; false if it was not known.
+bool forget(PartnerMoves& moves, std::string_view move);
 [[nodiscard]] bool knows(const PartnerMoves& moves, std::string_view move);
 
 } // namespace dwe::session

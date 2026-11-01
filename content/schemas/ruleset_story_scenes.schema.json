@@ -252,6 +252,34 @@
         }
       }
     },
+    "forget_moves": {
+      "description": "Routine 47 (script_common.c: lostAllLives): the reborn partner forgets moves, each with a box. Without it the routine goes on at once.",
+      "type": "object",
+      "required": ["count_variable", "line", "lines_section", "move_variable"],
+      "additionalProperties": false,
+      "properties": {
+        "lines_section": {
+          "description": "The MAPHEAD section of the box's line (0x4D8).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "line": {
+          "description": "The box's line in that section.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "move_variable": {
+          "description": "The variable the forgotten move's number goes to, for the line to name it.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "count_variable": {
+          "description": "The variable that counts the boxes left.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
     "ending": {
       "description": "The ending's save (main_menu.c: gameClearSave): the versus registry's record it fills with the partner's name and stats (awardMachinedramonData).",
       "type": "object",

@@ -12,6 +12,7 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "story_game_context.hpp"
 #include "story_game_messages.hpp"
@@ -334,6 +335,53 @@ core::Result<bool> BattleAdapter::knowsMoveNumber(std::int64_t number) const {
     }
   }
   return core::fail(msg::formatMessage(msg::NoSuchMove, number));
+}
+
+std::vector<std::int32_t> BattleAdapter::knownMoveNumbers() const {
+  std::vector<std::int32_t> known;
+  if (catalog_ == nullptr) {
+    return known;
+  }
+  for (game::battle::MoveRef move = 0; move < catalog_->size(); ++move) {
+    const game::battle::BattleMove& entry = catalog_->at(move);
+    if (entry.index < ForgettableMoves && knows(moves_, entry.id)) {
+      known.push_back(entry.index);
+    }
+  }
+  std::ranges::sort(known);
+  const auto repeats = std::ranges::unique(known);
+  known.erase(repeats.begin(), repeats.end());
+  return known;
+}
+
+std::vector<std::string> BattleAdapter::unlearnMoveNumber(const GameSession& session,
+                                                          std::int32_t number) {
+  std::vector<std::string> forgotten;
+  if (catalog_ == nullptr) {
+    return forgotten;
+  }
+  // The first place whose move is this one empties (stats.base.moves[i] = 0xFF).
+  if (const assets::DigimonRow* row = rowOf(session.partner().state().species)) {
+    for (std::optional<MoveSlot>& place : moves_.equipped) {
+      if (!place || *place < 0 || std::cmp_greater_equal(*place, row->moves.size())) {
+        continue;
+      }
+      const std::optional<std::string>& id = row->moves.at(static_cast<std::size_t>(*place));
+      const auto move = id ? catalog_->find(*id) : std::nullopt;
+      if (move && catalog_->at(*move).index == number) {
+        place.reset();
+        break;
+      }
+    }
+  }
+  const std::vector<std::int32_t> cleared = movesClearedBy(number);
+  for (game::battle::MoveRef move = 0; move < catalog_->size(); ++move) {
+    const game::battle::BattleMove& entry = catalog_->at(move);
+    if (std::ranges::contains(cleared, entry.index) && forget(moves_, entry.id)) {
+      forgotten.push_back(entry.id);
+    }
+  }
+  return forgotten;
 }
 
 std::int64_t scriptStatOf(const GameSession& session, ScriptStat stat) {

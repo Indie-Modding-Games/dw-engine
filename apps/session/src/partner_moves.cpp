@@ -169,4 +169,57 @@ bool canFinishTechniqueEdit(const PartnerMoves& moves, const assets::DigimonRow&
   return false;
 }
 
+namespace {
+
+// lostAllLives: the percent of the known moves is (base - trainer level) * 2, rounded at 50.
+constexpr std::int32_t ForgetLevelBase = 10;
+constexpr std::int32_t ForgetPercentPerLevel = 2;
+constexpr std::int32_t Hundred = 100;
+constexpr std::int32_t HalfHundred = 50;
+// unlearnMove: the learned bits are two words of 32, cleared through a 16-bit mask.
+constexpr std::int32_t WordBits = 32;
+constexpr std::uint32_t MaskBits = 0xFFFF;
+constexpr std::uint32_t SharedBit = 0x1000;
+
+} // namespace
+
+std::int32_t movesToForget(std::int32_t known, std::int32_t trainerLevel) {
+  std::int32_t hundredths = (ForgetLevelBase - trainerLevel) * ForgetPercentPerLevel * known;
+  if (hundredths <= 0) {
+    return 0;
+  }
+  if (hundredths % Hundred >= HalfHundred) {
+    hundredths += Hundred;
+  }
+  return hundredths / Hundred;
+}
+
+std::vector<std::int32_t> movesClearedBy(std::int32_t number) {
+  std::uint32_t mask = 0;
+  if (number == 0x2C || number == 0x30) {
+    mask = SharedBit;
+  } else if (number != 0x37 && number != 0x39) {
+    mask = (1U << static_cast<std::uint32_t>(number % WordBits)) & MaskBits;
+  }
+  // learnedMoves[number / 32] &= (mask ^ 0xFFFF): the bits the kept mask lacks go.
+  const std::uint32_t kept = mask ^ MaskBits;
+  std::vector<std::int32_t> cleared;
+  const std::int32_t word = number / WordBits;
+  for (std::int32_t bit = 0; bit < WordBits; ++bit) {
+    if ((kept & (1U << static_cast<std::uint32_t>(bit))) == 0) {
+      cleared.push_back((word * WordBits) + bit);
+    }
+  }
+  return cleared;
+}
+
+bool forget(PartnerMoves& moves, std::string_view move) {
+  const auto found = std::ranges::find(moves.learned, move);
+  if (found == moves.learned.end()) {
+    return false;
+  }
+  moves.learned.erase(found);
+  return true;
+}
+
 } // namespace dwe::session

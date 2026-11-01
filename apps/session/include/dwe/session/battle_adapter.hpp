@@ -147,6 +147,13 @@ public:
   // with it (utils2.c: learnMove), and whether it knows one (story_orders_partner.cpp).
   core::Result<void> learnMoveNumber(std::int64_t number);
   [[nodiscard]] core::Result<bool> knowsMoveNumber(std::int64_t number) const;
+  // The original numbers below ForgettableMoves of the moves the partner knows, from the lowest
+  // (script_common.c: lostAllLives's pool, hasMove).
+  [[nodiscard]] std::vector<std::int32_t> knownMoveNumbers() const;
+  // utils2.c: unlearnMove: the partner forgets the move with this original number and the ones
+  // its mask clears (movesClearedBy), and the first of the four places that holds it empties. The
+  // ids it forgot.
+  std::vector<std::string> unlearnMoveNumber(const GameSession& session, std::int32_t number);
   [[nodiscard]] const game::battle::BattleRules& rules() const;
   // The tables the battles read, once the rules are read; null before.
   [[nodiscard]] const assets::DigimonTable* digimonTable() const {

@@ -60,6 +60,16 @@ struct StoryDeathRules {
   StoryEggBoxRules eggBox;
 };
 
+// Routine 47 (script_common.c: lostAllLives): the reborn partner forgets moves, each with a box,
+// the line `line` of MAPHEAD's section `linesSection`, which names the move in `moveVariable`;
+// `countVariable` counts the boxes left.
+struct StoryForgetMovesRules {
+  std::int32_t linesSection = 0;
+  std::int32_t line = 0;
+  std::int64_t moveVariable = 0;
+  std::int64_t countVariable = 0;
+};
+
 // The numbers of the story_scenes section.
 // Where the field puts the player at a new game's start: a map by its number in the original.
 struct NewGameStart {
@@ -101,6 +111,8 @@ struct StoryScenesRules {
   std::int32_t newGameExit = 0;
   // Without it, the session gives the partner its new form at once and no script runs.
   std::optional<StoryDeathRules> death;
+  // Without it, routine 47 goes on at once and the partner keeps its moves.
+  std::optional<StoryForgetMovesRules> forgetMoves;
   // Without it, the ending's save gives no record.
   std::optional<EndingGift> ending;
 };
@@ -130,7 +142,6 @@ enum class StoryScreen : std::uint8_t {
   EndAnimationLoop,   // routine 55, setLoopCountToOne: the entity's animation plays once more
   ObjectAnimation,    // routine 21, resetMapObjectAnimation(pstat 247, pstat 248)
   NewGameMenu,        // routine 32, newGameStateMachine: the opening's questions and the names
-  ForgetMoves,        // routine 47, lostAllLives: the reborn partner forgets moves, with its box
   SaveMenu,           // routine 48, tickSaveMachine
   ClearSave,          // routine 54, gameClearSave and scriptTickMainMenu: the ending's save
   GymLibrary,         // routine 39, loadTrainingLibrary: the next course is not complete yet

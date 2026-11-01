@@ -142,6 +142,20 @@ void readDeath(assets::YamlReader& reader, const core::YamlNode& node, StoryScen
   };
 }
 
+void readForgetMoves(assets::YamlReader& reader, const core::YamlNode& node,
+                     StoryScenesRules& rules) {
+  if (!reader.expectKeys(node, "story_scenes.forget_moves",
+                         {"lines_section", "line", "move_variable", "count_variable"})) {
+    return;
+  }
+  rules.forgetMoves = StoryForgetMovesRules{
+      .linesSection = reader.integer<std::int32_t>(reader.field(node, "lines_section")),
+      .line = reader.integer<std::int32_t>(reader.field(node, "line")),
+      .moveVariable = integerAt(reader, node, "move_variable"),
+      .countVariable = integerAt(reader, node, "count_variable"),
+  };
+}
+
 void readEnding(assets::YamlReader& reader, const core::YamlNode& node, StoryScenesRules& rules) {
   if (!reader.expectKeys(node, "story_scenes.ending",
                          {"gift_slot", "gift_species", "gift_techniques"})) {
@@ -173,7 +187,7 @@ core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& sect
   if (!reader.expectKeys(
           root, SectionText,
           {"battle", "partner", "routines", "recruits", "new_game", "previous_screen"},
-          {"death", "ending"})) {
+          {"death", "ending", "forget_moves"})) {
     return std::unexpected{reader.error(section.file)};
   }
   readBattle(reader, reader.field(root, "battle"), rules.battle);
@@ -184,6 +198,9 @@ core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& sect
   readOverrides(reader, reader.field(root, "previous_screen"), rules.screens);
   if (const core::YamlNode* death = root.find("death")) {
     readDeath(reader, *death, rules);
+  }
+  if (const core::YamlNode* forget = root.find("forget_moves")) {
+    readForgetMoves(reader, *forget, rules);
   }
   if (const core::YamlNode* ending = root.find("ending")) {
     readEnding(reader, *ending, rules);

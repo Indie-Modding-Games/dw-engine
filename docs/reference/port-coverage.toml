@@ -712,7 +712,7 @@ isInvisible = { status = "portado", dwe = "game/field/src/npcs.cpp", note = "los
 startMovie = { status = "portado", dwe = "apps/game/src/movie_screen.cpp", what = "Empieza un vídeo." }
 handlePause = { status = "portado", dwe = "apps/game/src/pause_box.cpp", what = "Pausa del juego con Start: congela campo, combate y menús." }
 createPauseBox = { status = "portado", dwe = "content/packs/game/ui/pause_box/document.rml", what = "Cuadro de pausa." }
-unlearnMove = { status = "parcial", dwe = "apps/session/src/story_routines/routine_forget_moves.cpp", note = "la rutina de olvidar técnicas se cierra sin pantalla", what = "Hace olvidar una técnica al compañero." }
+unlearnMove = { status = "portado", dwe = "apps/session/src/partner_moves.cpp", what = "Hace olvidar una técnica al compañero." }
 isTamerOnScreen = { status = "no-aplica", note = "consulta de dibujo", what = "Dice si el jugador está en pantalla." }
 startTournament = { status = "portado", dwe = "apps/session/src/tournament_adapter.cpp:1", what = "Carga y juega un torneo; suma los ganados." }
 

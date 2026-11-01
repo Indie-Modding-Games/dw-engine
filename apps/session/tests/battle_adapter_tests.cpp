@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -471,6 +472,60 @@ TEST_CASE("a reborn partner equips one move again and keeps the learned ones") {
   CHECK(moves.equipped.at(0) == 0);
   CHECK_FALSE(moves.equipped.at(dwe::game::battle::FinisherSlot).has_value());
   CHECK(dwe::session::knows(moves, "dynamite_kick"));
+}
+
+TEST_CASE("script_common.c lostAllLives: (10 - trainer level) * 2 percent of the moves, rounded") {
+  // Trainer level 1, 20 moves: 18 % of 20 is 3.6, rounded to 4.
+  CHECK(dwe::session::movesToForget(20, 1) == 4);
+  // 18 % of 2 is 0.36: none.
+  CHECK(dwe::session::movesToForget(2, 1) == 0);
+  // 18 % of 3 is 0.54: one.
+  CHECK(dwe::session::movesToForget(3, 1) == 1);
+  CHECK(dwe::session::movesToForget(30, 10) == 0);
+  CHECK(dwe::session::movesToForget(0, 0) == 0);
+}
+
+TEST_CASE("utils2.c unlearnMove: the 16-bit mask also clears the upper half of the move's word") {
+  using dwe::session::movesClearedBy;
+  const auto upperHalf = [](std::int32_t word) {
+    std::vector<std::int32_t> moves;
+    for (std::int32_t bit = 16; bit < 32; ++bit) {
+      moves.push_back((word * 32) + bit);
+    }
+    return moves;
+  };
+  std::vector<std::int32_t> expected{1};
+  std::ranges::copy(upperHalf(0), std::back_inserter(expected));
+  CHECK(movesClearedBy(1) == expected);
+  // A move of the upper half: its own bit is among them.
+  CHECK(movesClearedBy(20) == upperHalf(0));
+  // 0x30 clears 0x2C's bit, and itself only through the upper half.
+  expected = {0x2C};
+  std::ranges::copy(upperHalf(1), std::back_inserter(expected));
+  CHECK(movesClearedBy(0x30) == expected);
+  CHECK(movesClearedBy(0x37) == upperHalf(1));
+}
+
+TEST_CASE("utils2.c unlearnMove: the partner forgets the move, its place empties, others go too") {
+  const TestPacks packs;
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters);
+  REQUIRE(adapters.battle->finish(*session, victory()).has_value());
+  REQUIRE(adapters.battle->learnMoveNumber(1).has_value());
+  REQUIRE(adapters.battle->learnMoveNumber(22).has_value());
+  REQUIRE(adapters.battle->equip(*session, 1, ShotPosition).has_value());
+  const std::vector<std::int32_t> known = adapters.battle->knownMoveNumbers();
+  CHECK(std::ranges::contains(known, 1));
+  CHECK(std::ranges::contains(known, 22));
+  CHECK(std::ranges::contains(known, 46));
+  const std::vector<std::string> forgotten = adapters.battle->unlearnMoveNumber(*session, 1);
+  // shot's bit, and aqua_magic (22) through the mask's upper half.
+  CHECK(std::ranges::contains(forgotten, "shot"));
+  CHECK(std::ranges::contains(forgotten, "aqua_magic"));
+  const PartnerMoves& moves = adapters.battle->moves();
+  CHECK_FALSE(moves.equipped.at(1).has_value());
+  CHECK(dwe::session::knows(moves, "dynamite_kick"));
+  CHECK_FALSE(dwe::session::knows(moves, "shot"));
 }
 
 TEST_CASE("an evolution teaches the new form's move and sets the four places again") {

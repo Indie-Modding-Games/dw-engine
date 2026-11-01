@@ -69,6 +69,14 @@ death:
     open: {slot: 8, sound: 4}
     move: {slot: 0, sound: 2}
     choose: {slot: 0, sound: 3}
+# La rutina 47 (script_common.c: lostAllLives): el renacido olvida (10 - nivel de domador) * 2 % de las técnicas que
+# sabe (de las 0x3A primeras), redondeando a partir de 50; cada una al azar (randomLimit) con su caja, la frase 7 de la
+# sección 0x4D8 de MAPHEAD, que nombra la técnica de la variable 243; la 244 cuenta las que faltan.
+forget_moves:
+  lines_section: 1240
+  line: 7
+  move_variable: 243
+  count_variable: 244
 # El guardado del final (main_menu.c: gameClearSave, rutina 54): el registro 40 (39 desde 0) de los combates de versus
 # recibe una copia del compañero (nombre, estadísticas y disciplina) como Machinedramon con tres de sus técnicas
 # (awardMachinedramonData: animaciones 0x2E, 0x30 y 0x32, sus técnicas 1.ª, 3.ª y 5.ª).
