@@ -15,14 +15,18 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include "battle_motion.hpp"
+#include "flame_texture.hpp"
 #include "messages.hpp"
 
 namespace dwe::app {
@@ -817,8 +821,56 @@ glm::vec4 FieldScene::sceneryTint() const {
   return {glm::vec3{1.0F - stage_.sceneryDarkness}, 1.0F};
 }
 
+void FieldScene::advanceFlames(double seconds) {
+  // The original's field draws 20 frames a second (main.c: gameLoop waits VSync(3)).
+  constexpr double OriginalFrameSeconds = 1.0 / 20.0;
+  flameSeconds_ += seconds;
+  std::optional<std::uint32_t> strip;
+  while (flameSeconds_ >= OriginalFrameSeconds) {
+    flameSeconds_ -= OriginalFrameSeconds;
+    if (const auto shown = flameStripFrame(++flameFrame_)) {
+      strip = shown;
+    }
+  }
+  if (!strip) {
+    return;
+  }
+  for (const std::unique_ptr<Actor>* actor : {&playerActor_, &partnerActor_}) {
+    if (*actor) {
+      flickerFlames(**actor, *strip);
+    }
+  }
+  for (const std::unique_ptr<Actor>& npc : npcActors_) {
+    if (npc) {
+      flickerFlames(*npc, *strip);
+    }
+  }
+  for (const auto& [id, fighter] : stageFighters_) {
+    flickerFlames(*fighter, *strip);
+  }
+}
+
+void FieldScene::flickerFlames(const Actor& actor, std::uint32_t strip) {
+  const std::optional<std::uint32_t> width = flameStripWidth(actor.character.model.str());
+  if (!width || !actor.model || actor.model->images.empty()) {
+    return;
+  }
+  const std::vector<std::byte> pixels =
+      flameStripPixels(actor.model->images.front(), *width, strip);
+  if (pixels.empty()) {
+    return;
+  }
+  if (auto updated = models_->updateImage(
+          actor.handle, 0, {.x = 0, .y = 0, .width = *width, .height = FlameStripRows}, pixels);
+      !updated) {
+    core::logWarning("field: {}: flame strip: {}", actor.character.model.str(),
+                     updated.error().message);
+  }
+}
+
 void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   const double animationSeconds = paused ? 0.0 : frameSeconds;
+  advanceFlames(animationSeconds);
   fighterSeconds_ = std::exchange(fighterSecondsDue_, 0.0);
   animate(*playerActor_, playerSceneClip_ ? frameSeconds : animationSeconds);
   playClipSounds(*playerActor_);

@@ -520,6 +520,11 @@ private:
     std::int64_t soundSlot = 0;
   };
 
+  // anim.c: animateEntityTexture: steps the original's frame count by `seconds` and puts the
+  // frame's flame strip on every flame species shown (flame_texture.hpp).
+  void advanceFlames(double seconds);
+  void flickerFlames(const Actor& actor, std::uint32_t strip);
+
   // A point in the space of one of an actor's model nodes (the original's object index), in
   // original axes and units, in the world; nothing if the node is no joint of the skin.
   [[nodiscard]] std::optional<glm::vec3> nodePoint(const Actor& actor, std::uint32_t node,
@@ -793,6 +798,9 @@ private:
       statusTextures_;
   std::map<std::string, std::optional<EffectModelEntry>, std::less<>> statusModels_;
   std::optional<MapChangeTiming> lastChange_;
+  // PLAYTIME_FRAMES for the flames (advanceFlames) and the time toward its next frame.
+  std::uint64_t flameFrame_ = 0;
+  double flameSeconds_ = 0.0;
   std::unique_ptr<Actor> playerActor_;
   std::unique_ptr<Actor> partnerActor_;
   // The field rules' partner mover, for a partner loaded again with another species' model.

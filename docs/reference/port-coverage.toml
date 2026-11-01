@@ -425,7 +425,7 @@ partnerGetState = { status = "no-aplica", note = "consulta interna", what = "Da 
 
 # --- NPC y objetos
 resetMomentumData = { status = "no-aplica", note = "animación del original; el motor anima sus clips", what = "Reinicia el impulso de la animación." }
-animateEntityTexture = { status = "falta", what = "Anima por código la textura de algunos personajes (ojos, brillos).", note = "docs/formats/modelos.md: no se extrae" }
+animateEntityTexture = { status = "portado", dwe = "apps/game/src/flame_texture.cpp", what = "Anima por código las llamas de las especies de fuego y de pájaro (franjas de su textura).", note = "docs/formats/modelos.md; sin medir en el original" }
 tickMomentum = { status = "portado", dwe = "apps/game/src/field_scene.cpp:485", what = "Mueve al personaje con el desplazamiento de su animación." }
 tickAnimation = { status = "portado", note = "Sonidos de clip (0x4000) en el campo, el combate y las escenas de cuidado: FieldScene::playClipSounds; bancos de la especie en SessionSound.", what = "Avanza la animación de un personaje." }
 animHandleKeyFrameInstruction = { status = "portado", dwe = "docs/formats/modelos.md:113", what = "Ejecuta una orden de fotograma clave de la animación." }

@@ -279,6 +279,19 @@ void ModelRenderer::remove(ModelHandle model) {
   }
 }
 
+core::Result<void> ModelRenderer::updateImage(ModelHandle model, std::size_t image,
+                                              const rhi::Rect& region,
+                                              std::span<const std::byte> pixels) {
+  const GpuModel* gpu = models_.find(model);
+  if (gpu == nullptr) {
+    return core::fail("model renderer: the model to update is not loaded");
+  }
+  if (image >= gpu->textures.size()) {
+    return core::fail(std::format("model renderer: the model has no image {}", image));
+  }
+  return renderer_->queueTextureUpdate(gpu->textures[image], region, pixels);
+}
+
 std::size_t ModelRenderer::jointCount(ModelHandle model) const {
   const GpuModel* gpu = models_.find(model);
   return gpu != nullptr ? gpu->restJoints.size() : 0;

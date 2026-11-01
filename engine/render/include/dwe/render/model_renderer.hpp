@@ -11,6 +11,7 @@
 #include <dwe/rhi/pipeline.hpp>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <span>
@@ -97,6 +98,11 @@ public:
   core::Result<ModelHandle> add(const assets::ModelData& model);
   // Frees a model and its textures. Its handle, and every copy of it, is rejected from then on.
   void remove(ModelHandle model);
+  // Replaces a region of one of the model's images (its index in ModelData::images) with RGBA8
+  // pixels (region.width * region.height * 4 bytes), queued like Renderer::queueTextureUpdate: the
+  // frames after see it. Fails for a handle that is not live or an image the model lacks.
+  core::Result<void> updateImage(ModelHandle model, std::size_t image, const rhi::Rect& region,
+                                 std::span<const std::byte> pixels);
   // How many joint matrices an instance of the model takes (0 for a handle that is not live).
   [[nodiscard]] std::size_t jointCount(ModelHandle model) const;
 
