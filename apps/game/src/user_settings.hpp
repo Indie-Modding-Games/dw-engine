@@ -31,6 +31,9 @@ struct UserSettings {
   // The save indicator (save_notice: true, false): a small figure and "Saving" in a corner while
   // the game saves; on when not chosen yet.
   std::optional<bool> saveNotice = std::nullopt;
+  // The time in digits (digital_time: true, false): a small box with the game time as HH:MM under
+  // the field HUD's dial clock; on when not chosen yet.
+  std::optional<bool> digitalTime = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

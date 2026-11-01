@@ -1518,12 +1518,27 @@ bool Autotest::clearStep(const AutotestHost& host, const AutotestStep& step, dou
     failStep("the game has no UI");
     return false;
   }
-  if (!host.ui->isVisible(step.text)) {
+  // "document" or "document#element": one part of a document, checked against the rest of it too.
+  const std::size_t hash = step.text.find('#');
+  const std::string_view document = std::string_view{step.text}.substr(0, hash);
+  const std::string_view element =
+      hash == std::string::npos ? std::string_view{} : std::string_view{step.text}.substr(hash + 1);
+  if (!host.ui->isVisible(document)) {
+    failStep(std::format("{} is not shown", document));
+    return false;
+  }
+  const std::vector<ui::Ui::Rect> mine =
+      element.empty() ? host.ui->drawnRectsIn(document) : host.ui->drawnRectsOf(document, element);
+  if (!element.empty() && mine.empty()) {
+    if (now - progress_->start < step.timeout) {
+      return false;
+    }
     failStep(std::format("{} is not shown", step.text));
     return false;
   }
-  const std::vector<ui::Ui::Rect> mine = host.ui->drawnRectsIn(step.text);
-  const std::vector<ui::Ui::Rect> others = host.ui->drawnRects(step.text);
+  const std::vector<ui::Ui::Rect> others = element.empty()
+                                               ? host.ui->drawnRects(document)
+                                               : host.ui->drawnRectsAround(document, element);
   std::size_t over = 0;
   std::optional<std::pair<ui::Ui::Rect, ui::Ui::Rect>> first;
   for (const ui::Ui::Rect& rect : mine) {

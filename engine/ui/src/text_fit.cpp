@@ -344,12 +344,23 @@ std::vector<Ui::TextOverflow> findTextOverflows(Rml::ElementDocument& document,
   return found;
 }
 
-std::vector<Ui::Rect> findDrawnRects(Rml::ElementDocument& document, float windowWidth,
-                                     float windowHeight) {
+std::vector<Ui::Rect> findDrawnRects(Rml::Element& root, float windowWidth, float windowHeight,
+                                     Rml::Element* leftOut) {
   std::vector<Ui::Rect> found;
-  if (!document.IsVisible()) {
+  if (!root.IsVisible(true)) {
     return found;
   }
+  const std::optional<Rect> leftOutRect =
+      leftOut != nullptr ? std::optional{borderRect(*leftOut)} : std::nullopt;
+  // A box round the element left out (its panel) holds it; one beside it does not.
+  const auto holdsLeftOut = [&](Rml::Element& element) {
+    if (!leftOutRect || !isAncestor(element, leftOut)) {
+      return false;
+    }
+    const Rect rect = borderRect(element);
+    return rect.left <= leftOutRect->left && rect.top <= leftOutRect->top &&
+           leftOutRect->right <= rect.right && leftOutRect->bottom <= rect.bottom;
+  };
   const Rect window{.left = 0.0F, .top = 0.0F, .right = windowWidth, .bottom = windowHeight};
   // A layer over half the window or more dims the game (a scrim); it is not a window.
   const float layerArea = 0.5F * windowWidth * windowHeight;
@@ -367,7 +378,8 @@ std::vector<Ui::Rect> findDrawnRects(Rml::ElementDocument& document, float windo
         {.left = inside.left, .top = inside.top, .right = inside.right, .bottom = inside.bottom});
   };
   const auto walk = [&](this const auto& self, Rml::Element& element) -> void {
-    if (!element.IsVisible() || element.GetComputedValues().has_local_transform() ||
+    if (&element == leftOut || !element.IsVisible() ||
+        element.GetComputedValues().has_local_transform() ||
         element.GetComputedValues().opacity() <= 0.0F) {
       return;
     }
@@ -375,14 +387,14 @@ std::vector<Ui::Rect> findDrawnRects(Rml::ElementDocument& document, float windo
       if (auto seenText = textOf(*text, windowWidth, windowHeight)) {
         add(seenText->extent);
       }
-    } else if (drawsItself(element) || element.GetTagName() == "img") {
+    } else if ((drawsItself(element) || element.GetTagName() == "img") && !holdsLeftOut(element)) {
       add(borderRect(element));
     }
     for (int i = 0; i < element.GetNumChildren(); ++i) {
       self(*element.GetChild(i));
     }
   };
-  walk(document);
+  walk(root);
   return found;
 }
 

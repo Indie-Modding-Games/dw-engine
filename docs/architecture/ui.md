@@ -275,7 +275,7 @@ ve lo que enseña el original. Las diferencias, todas del aspecto moderno:
 
 | Diferencia | Por qué |
 |---|---|
-| La hora en cifras (`HH:MM`, 24 horas) en vez de la esfera | Se lee de un vistazo a cualquier escala |
+| La hora en cifras (`HH:MM`, 24 horas) en vez de la esfera, con la opción `digital_time` (encendida por defecto; el aspecto original la pone en una caja bajo la esfera, ver [game](../modulos/apps/game.md#hora-en-dígitos)) | Se lee de un vistazo a cualquier escala |
 | El día y el año en el campo | El original solo los enseña en el menú del domador |
 | Las barras se llenan de forma continua, con su número, en vez de cuadritos | Más legible en pantallas grandes |
 | Las necesidades en un panel, siempre a la vista, resaltadas cuando están | El original solo tiene la burbuja sobre el compañero, que se pierde si no se le ve |

@@ -145,10 +145,17 @@ body {
 	margin-bottom: 6dp;
 }
 
+/* The time in figures goes with the option digital_time (the class digital on #field-clock), on by default; off,
+   the panel tells only the day. */
 #field-time {
+	display: none;
 	font-size: 24dp;
 	font-weight: bold;
 	color: #f2f5f8;
+}
+
+#field-clock.digital #field-time {
+	display: block;
 }
 
 #field-date {

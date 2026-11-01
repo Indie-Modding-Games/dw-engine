@@ -92,7 +92,9 @@ struct AutotestStep {
                     // after the remaining steps have checked theirs
     ExpectClear,    // expect_clear: <document>: nothing the player sees in it (a text, a box, an
                     // image) lies over what another shown document draws (Ui::drawnRects), as
-                    // the save indicator; failing as expect_text_fits
+                    // the save indicator; failing as expect_text_fits. <document>#<element>: that
+                    // element is shown and lies over nothing else, in its document or another
+                    // (Ui::drawnRectsAround), as the HUD's time in digits
   };
   Kind kind = Kind::Wait;
   std::string text; // what the step is about: a control, an element, a name, a setting's value

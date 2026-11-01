@@ -245,4 +245,50 @@ TEST_CASE("the drawn rectangles of the other documents leave out scrims and what
   CHECK(ui->drawnRectsIn("fit").empty());
 }
 
+// A panel holding a label, a clock with a time box under it, and a box beside the clock, at
+// 1280x720 (one pixel a dp).
+constexpr std::string_view Parts = R"(<rml>
+<head>
+<link type="text/rcss" href="../common/base.rcss"/>
+<style>
+body { width: 100%; height: 100%; font-family: Noto Sans; font-size: 20dp; color: #ffffff; }
+.box { position: absolute; background-color: #000080; }
+#panel { left: 600dp; top: 400dp; width: 300dp; height: 100dp; }
+#label { position: absolute; left: 10dp; top: 10dp; width: 100dp; height: 30dp; background-color: #800000; }
+#clock { left: 100dp; top: 100dp; width: 100dp; height: 100dp; }
+#time { position: absolute; left: 10dp; top: 110dp; width: 80dp; height: 30dp; background-color: #800000; }
+#beside { left: 210dp; top: 100dp; width: 50dp; height: 50dp; }
+#gone { display: none; }
+</style>
+</head>
+<body>
+<div id="panel" class="box"><div id="label"></div></div>
+<div id="clock" class="box"><div id="time"></div></div>
+<div id="beside" class="box"></div>
+<div id="gone"><div id="hidden-part" class="box"></div></div>
+</body>
+</rml>
+)";
+
+TEST_CASE("one part of a document is checked against the rest of it but the panel round it") {
+  Content content;
+  const assets::VirtualFileSystem& files = content.mount(Parts);
+  auto ui = uiWith(files, 1280, 720);
+  CHECK(ui->drawnRectsOf("fit", "time") ==
+        std::vector<Ui::Rect>{{.left = 110.0F, .top = 210.0F, .right = 190.0F, .bottom = 240.0F}});
+  // Around the time box: the panel, its label, the clock (which it hangs under, not inside) and the
+  // box beside it.
+  CHECK(ui->drawnRectsAround("fit", "time").size() == 4);
+  // Around the label: the panel holds it whole and is its frame, so it is left out.
+  const std::vector<Ui::Rect> aroundLabel = ui->drawnRectsAround("fit", "label");
+  CHECK(aroundLabel.size() == 3);
+  CHECK(std::ranges::find(
+            aroundLabel,
+            Ui::Rect{.left = 600.0F, .top = 400.0F, .right = 900.0F, .bottom = 500.0F}) ==
+        aroundLabel.end());
+  // A part inside a hidden element, or none, shows nothing.
+  CHECK(ui->drawnRectsOf("fit", "hidden-part").empty());
+  CHECK(ui->drawnRectsOf("fit", "nothing").empty());
+}
+
 } // namespace dwe::ui

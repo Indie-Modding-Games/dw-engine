@@ -114,6 +114,10 @@ local options = {
   ["save-notice"] = function(_step)
     ui.send("save_notice", not ui.setting("save_notice"))
   end,
+  -- Time in digits: the game time as HH:MM under the HUD's clock (on by default).
+  ["digital-time"] = function(_step)
+    ui.send("digital_time", not ui.setting("digital_time"))
+  end,
 }
 
 local function can_sleep()
@@ -569,6 +573,7 @@ local function refresh(document)
   document:get("free-exploration-value"):set_text(on_off(ui.setting("free_exploration")))
   document:get("smooth-motion-value"):set_text(on_off(ui.setting("smooth_motion")))
   document:get("save-notice-value"):set_text(on_off(ui.setting("save_notice")))
+  document:get("digital-time-value"):set_text(on_off(ui.setting("digital_time")))
   refresh_player(document)
 end
 

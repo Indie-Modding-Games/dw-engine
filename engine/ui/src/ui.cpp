@@ -1366,4 +1366,31 @@ std::vector<Ui::Rect> Ui::drawnRectsIn(std::string_view document) const {
   return findDrawnRects(*found->element, static_cast<float>(size.x), static_cast<float>(size.y));
 }
 
+std::vector<Ui::Rect> Ui::drawnRectsOf(std::string_view document,
+                                       std::string_view elementId) const {
+  const Impl::Document* found = impl_->find(document);
+  Rml::Element* element =
+      found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
+  if (element == nullptr) {
+    return {};
+  }
+  const Rml::Vector2i size = impl_->context->GetDimensions();
+  return findDrawnRects(*element, static_cast<float>(size.x), static_cast<float>(size.y));
+}
+
+std::vector<Ui::Rect> Ui::drawnRectsAround(std::string_view document,
+                                           std::string_view elementId) const {
+  const Impl::Document* holder = impl_->find(document);
+  Rml::Element* element =
+      holder != nullptr ? holder->element->GetElementById(std::string{elementId}) : nullptr;
+  std::vector<Rect> found;
+  const Rml::Vector2i size = impl_->context->GetDimensions();
+  for (const auto& [name, shown] : impl_->documents) {
+    auto rects = findDrawnRects(*shown.element, static_cast<float>(size.x),
+                                static_cast<float>(size.y), name == document ? element : nullptr);
+    found.insert(found.end(), rects.begin(), rects.end());
+  }
+  return found;
+}
+
 } // namespace dwe::ui

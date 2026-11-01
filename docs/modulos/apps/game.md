@@ -519,3 +519,31 @@ máquina de guardado y el menú de pausa abierto a 1280x720, y a 1920x1080 y 102
 un guardado no lo enseña. Tests: `the save notice holds ...`, `the figure trots its lane back and forth ...`, `the
 lane's laps mostly alternate ...`, `the indicator goes just above the windows ...`, `the indicator shows for each save
 written ...` y `the indicator moves up clear of a window ...` (`apps/game/tests/save_indicator_tests.cpp`).
+
+## Hora en dígitos
+
+Mejora opcional, encendida por defecto (el original solo tiene el reloj de esfera): bajo el reloj del HUD del campo, una
+caja pequeña dice la hora del juego en cifras, de 24 horas, «08:54». Es la hora y el minuto del día del juego, los
+mismos que mueven la aguja y el punto de la esfera (`hud.clock.hour` y `hud.clock.minute`). El ajuste `digital_time`
+(fila «Hora en dígitos», «Digital time» en inglés, de las opciones del menú de pausa, guardado en los ajustes del
+usuario) llega como ajuste de la UI desde `PlaySession`, y el script del HUD (`ui/hud/logic.lua`) pone con él la
+clase `digital` en `#field-clock`.
+
+- **Cuándo cambia.** El texto solo se escribe cuando cambia el minuto (o el idioma): el HUD redibuja su estado con
+  cada `hud.revision`, que el juego solo sube cuando algo cambia, y el script guarda la última hora escrita, así que un
+  frame sin cambios no construye ningún texto.
+- **Dónde.** Es parte del reloj (`#field-time` dentro de `#field-clock`), así que se ve y se esconde con él: el
+  campo parado (menús, combates, escenas) lo quita a la vez que el reloj se desliza fuera, y se funde con el HUD en los
+  cambios de mapa. En el aspecto original es una caja de 96dp de ancho con el marco de las ventanas del original
+  (`.original-box`) y el fondo negro, para leerse sobre cualquier suelo, centrada bajo la esfera, con las cifras en
+  blanco en la fuente del aspecto original a 22dp (el doble de su celda; la fuente de mapa de bits solo se dibuja a
+  múltiplos enteros y el triple no cabe en la caja). Con escalas no enteras (1920x1080 es x1,5) las esquinas del marco
+  no casan del todo con sus líneas, como en todas las cajas del aspecto original; en una caja tan baja se nota más. En
+  el moderno, que no dibuja la esfera, es la hora grande de su panel, y apagada el panel solo dice el día.
+
+La ruta `route-digital-time.yaml` hace capturas por la mañana a 1280x720, 1920x1080 y 1024x768, por la noche, con el
+menú de pausa y con la opción apagada; cada captura con la caja pasa `expect_clear: hud#field-time` (no pisa nada del
+HUD ni de otro documento, ver [UI](../engine/ui.md)) y `text_fit`. Tests: `the field clock tells the game time in
+digits as HH:MM while the option is on` (`engine/ui/tests/ui_tests.cpp`), `one part of a document is checked against
+the rest of it but the panel round it` (`engine/ui/tests/text_fit_tests.cpp`) y los ajustes del usuario
+(`apps/game/tests/user_settings_tests.cpp`).

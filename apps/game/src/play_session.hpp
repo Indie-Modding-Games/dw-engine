@@ -69,6 +69,9 @@ namespace dwe::app {
 // Smooth motion: a UI setting and the pause menu's command with the same name (true or false), on
 // by default (game::field::Field::setSmoothMotion).
 inline constexpr std::string_view SmoothMotionSetting = "smooth_motion";
+// The time in digits: a UI setting and the pause menu's command with the same name (true or false),
+// on by default. The field HUD (ui/hud) shows the game time as HH:MM under its dial clock with it.
+inline constexpr std::string_view DigitalTimeSetting = "digital_time";
 
 // What every game uses of the app; all of it outlives the games.
 struct PlayContext {

@@ -5,9 +5,10 @@
    coordinates plus 6 lines, the constant offset between where the original draws and the picture it shows. On a
    wide screen the clock keeps to the left edge and the bars to the right one, at the original's distances.
 
-   The panels the original lacks are hidden here: the time and date in figures, the bars' numbers and labels, the
-   needs panel, HP and MP. The menu button and the minimap stay as documented deltas: the button is how the pointer
-   opens the menu, and the minimap is the player's choice (hidden by default with this skin, see below). */
+   The panels the original lacks are hidden here: the date in figures, the bars' numbers and labels, the needs
+   panel, HP and MP. The menu button, the minimap and the time in digits stay as documented deltas: the button is how
+   the pointer opens the menu, the minimap is the player's choice (hidden by default with this skin, see below) and
+   the time in digits is an option, on by default, in a small box under the dial. */
 
 body {
 	pointer-events: none;
@@ -111,6 +112,30 @@ body {
 	display: none;
 }
 
+/* The time in digits (an engine improvement, on with the option digital_time: the class digital on #field-clock):
+   the game time as HH:MM in the frame of the original's windows (theme.rcss, .original-box: its border lines and
+   corner sprites) filled black so the figures read over any ground, centred under the dial (the dial's centre is
+   78dp from the clock's left), in white in the original-look font at twice its 11-pixel cells (22dp; the bitmap font
+   draws only at whole multiples, and three times is too wide for the box). */
+#field-clock.digital #field-time {
+	display: block;
+	position: absolute;
+	left: 30dp;
+	top: 162dp;
+	width: 96dp;
+	padding: 2dp 0;
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: #000000;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	font-family: original-look;
+	font-size: 22dp;
+	line-height: 20dp;
+	text-align: center;
+	color: #ffffff;
+}
+
 /* While a menu or a battle stops the field, the original slides the clock out to the left and the bars out to the
    right, 50 pixels a frame each, and back when the field runs again. The clock (clock.c: renderGameClock) moves
    CLOCK_OFFSET_X between -135, where it shows (its left bell at screen x 23, 69dp), and -220, 85 pixels further left
@@ -124,6 +149,15 @@ body {
 
 #field-status.shown #field-clock {
 	left: 69dp;
+}
+
+/* The time in digits leaves at once instead: a text out of the window is not one the player reads. */
+#field-status #field-clock.digital #field-time {
+	visibility: hidden;
+}
+
+#field-status.shown #field-clock.digital #field-time {
+	visibility: visible;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------

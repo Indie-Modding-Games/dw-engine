@@ -191,6 +191,11 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   comprueba que el aviso no pisa ninguna ventana (`expect_clear`) y que los textos caben (`text_fit`). Al final apaga
   la opción en el menú de pausa y comprueba que un guardado ya no lo enseña. Necesita `--saves` con una carpeta vacía.
   Se corre en los dos idiomas.
+- `route-digital-time.yaml`: la [hora en dígitos](../modulos/apps/game.md#hora-en-dígitos) bajo el reloj del HUD
+  desde una partida nueva con el teclado: las 08:00 a 1280x720, 1920x1080 y 1024x768, la noche (las 20:00), el menú
+  de pausa abierto (el reloj se va con su caja) y la opción apagada desde el menú. Cada captura con la caja comprueba
+  que no pisa nada del HUD ni de otro documento (`expect_clear: hud#field-time`) y que los textos caben (`text_fit`).
+  Se corre en los dos idiomas y con los dos aspectos (`--ui-skin original` y `modern`).
 - `route-scripted-loop.yaml`: una vuelta por cinco zonas desde una partida nueva con el teclado: File City (`twna01`)
   → la casa del anciano, `room08` (tabla de salidas del mapa) → File City (script) → `trai00` (tabla) → `mayo00`
   (tabla), donde juega el primer combate del bosque y el reclutamiento de Agumon → `twnb01` (warp del script del mapa,
@@ -646,7 +651,7 @@ steps:
 | `when: {<condiciones de wait>, steps}` | Hace esos pasos solo si se cumplen ya todas las condiciones (como `script_if`); si no, se los salta y lo dice en el log. Sirve para lo que el juego echa a suertes al jugarlo (`when: {setting: {story.var.116: "1"}, steps: [...]}`) |
 | `screenshot: <nombre>` | Guarda `<ruta>-<NN>-<nombre>-<ancho>x<alto>.png` en `--shots` |
 | `expect_text_fits: <documento> \| all` | Comprueba que cada texto que se ve en ese documento de la UI (o en todos) cabe: dentro de la caja dibujada que lo rodea, de lo que lo recorta y de la ventana, sin cruzar el borde de otra caja ni pisar otro texto, con un píxel del original (3dp) de margen. Lo que tapa una caja opaca posterior no cuenta, ni una caja que se abre o se cierra. Espera hasta 1 s a que la caja quede en su sitio; si sigue sin caber, escribe cada texto en el log (`in <documento>, '<texto>' (<elemento>) is out of <caja> by <n> dp`) y la ruta sigue, pero acaba fallando |
-| `expect_clear: <documento>` | Comprueba que nada de lo que se ve de ese documento (texto, caja, imagen) pisa lo que dibuja otro documento mostrado (`Ui::drawnRects`, sin los velos que cubren media ventana o más), como el aviso de guardado. Espera hasta 1 s; si sigue pisando, escribe en el log la primera pareja de rectángulos y la ruta acaba fallando, como `expect_text_fits` |
+| `expect_clear: <documento>` | Comprueba que nada de lo que se ve de ese documento (texto, caja, imagen) pisa lo que dibuja otro documento mostrado (`Ui::drawnRects`, sin los velos que cubren media ventana o más), como el aviso de guardado. Espera hasta 1 s; si sigue pisando, escribe en el log la primera pareja de rectángulos y la ruta acaba fallando, como `expect_text_fits`. Con `<documento>#<elemento>` comprueba solo ese elemento, que tiene que verse, contra lo demás de su documento y de los otros (`Ui::drawnRectsAround`, sin las cajas que lo rodean entero, su panel), como la hora en dígitos del HUD (`hud#field-time`) |
 | `resize: [ancho, alto]` | Cambia la ventana y espera a que el render tenga ese tamaño |
 | `fullscreen: true \| false` | Pantalla completa |
 | `press`, `release`, `tap: {key \| button}`, `axis: {axis, value}`, `click: [x, z]` | Controles sueltos: teclas, botones y ejes del mando virtual, clic en un punto del suelo |

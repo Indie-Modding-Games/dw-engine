@@ -43,6 +43,8 @@ free_exploration: "Exploración libre"
 smooth_motion: "Movimiento suave"
 # Aviso de guardado: una figura pequeña y «Guardando» en una esquina mientras el juego guarda (encendido por defecto).
 save_notice: "Aviso de guardado"
+# Hora en dígitos: la hora del juego como HH:MM en una caja pequeña bajo el reloj del campo (encendido por defecto).
+digital_time: "Hora en dígitos"
 
 year_label: "Año"
 day_label: "Día"

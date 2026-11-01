@@ -1,0 +1,66 @@
+# The time in digits (an engine improvement, docs/modulos/apps/game.md, «Hora en dígitos»): the game time as HH:MM in
+# a small box under the field HUD's dial clock. From a new game with the keyboard: the morning's 08:00 at 1280x720,
+# 1920x1080 and 1024x768, the evening, the pause menu (the clock and its box slide away), then the option off in the
+# pause menu. Each capture with the box checks that it lies over nothing else of the HUD or another document
+# (expect_clear: hud#field-time) and that every text fits (text_fit). Run it once per language and per skin
+# (--ui-skin original, modern); how to run it: docs/guides/prueba-vertical.md.
+name: digital-time
+device: keyboard
+timeout: 300
+text_fit: true
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {digital_time: "true"}
+  - expect_setting: {hud.shown: true}
+  # A new game starts at 8:00; the clock stands still for the captures.
+  - script: clock_speed("0")
+  - expect_setting: {hud.clock.hour: 8}
+  - wait: {seconds: 0.3}
+  - expect_clear: hud#field-time
+  - screenshot: morning
+  - resize: [1920, 1080]
+  - wait: {seconds: 0.5}
+  - expect_clear: hud#field-time
+  - screenshot: morning-1080
+  - resize: [1024, 768]
+  - wait: {seconds: 0.5}
+  - expect_clear: hud#field-time
+  - screenshot: morning-768
+  - resize: [1280, 720]
+  # Two game hours a real second until the evening, under the moon.
+  - script: clock_speed("120")
+  - wait: {setting: {hud.clock.hour: "20"}, timeout: 30}
+  - script: clock_speed("0")
+  - wait: {seconds: 0.3}
+  - expect_setting: {hud.shown: true}
+  - expect_clear: hud#field-time
+  - screenshot: night
+  # The pause menu stops the field: the clock leaves with its box.
+  - menu: open
+  - expect_setting: {hud.shown: false}
+  - wait: {seconds: 0.6}
+  - screenshot: menu-open
+  # The option, among the options: the PLAYER page's tools in the original look (Tab there), the menu's first page in
+  # the modern one.
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - wait: {seconds: 0.3}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.3}
+  - menu_select: digital-time
+  - expect_setting: {digital_time: "false"}
+  - screenshot: option-off-menu
+  - menu: close
+  - wait: {menu_open: false}
+  - expect_setting: {hud.shown: true}
+  - wait: {seconds: 0.5}
+  - screenshot: option-off

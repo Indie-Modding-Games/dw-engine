@@ -49,4 +49,7 @@ sus casos están en `engine/ui/tests/text_fit_tests.cpp` (a 1280x720, 1920x1080,
 transparente, lo que está bajo una transformación (una caja que se abre o se cierra) y las capas que cubren media
 ventana o más (un velo). `Ui::drawnRectsIn(document)` da lo mismo de un solo documento y `Ui::elementRect` la caja de
 un elemento. Los usan el aviso de guardado, para no pisar ninguna ventana ([game](../apps/game.md#aviso-de-guardado)),
-y el paso de autotest `expect_clear`.
+y el paso de autotest `expect_clear`. `Ui::drawnRectsOf(document, elementId)` da lo que se ve de un elemento y lo que contiene (nada si
+él o lo que lo contiene está oculto) y `Ui::drawnRectsAround(document, elementId)` lo que se ve de todos los documentos
+menos ese elemento y las cajas que lo rodean entero (su panel; una caja junto a él sí cuenta): con ellas `expect_clear`
+comprueba una parte de un documento contra el resto, como la hora en dígitos del HUD.

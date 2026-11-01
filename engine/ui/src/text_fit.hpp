@@ -6,6 +6,7 @@
 #include <vector>
 
 namespace Rml {
+class Element;
 class ElementDocument;
 } // namespace Rml
 
@@ -22,8 +23,11 @@ namespace dwe::ui {
                                                               float windowWidth,
                                                               float windowHeight);
 
-// What the player sees of a laid out document, within the window (Ui::drawnRects).
-[[nodiscard]] std::vector<Ui::Rect> findDrawnRects(Rml::ElementDocument& document,
-                                                   float windowWidth, float windowHeight);
+// What the player sees of a laid out document, or of one element of it, within the window
+// (Ui::drawnRects). `leftOut`, when given, and all it holds are left out, and so are the boxes
+// round it (an ancestor whose box holds it whole: its panel).
+[[nodiscard]] std::vector<Ui::Rect> findDrawnRects(Rml::Element& root, float windowWidth,
+                                                   float windowHeight,
+                                                   Rml::Element* leftOut = nullptr);
 
 } // namespace dwe::ui

@@ -13,7 +13,8 @@
 -- hint lose their class "shown" and each skin decides how they leave. Every skin draws this same
 -- document and script and differs only in its style sheets: a bar with the class "pips" fills in
 -- the original's 25 steps, and the dial (#field-clock-dial) and the class "night" on #field-clock
--- are there for a skin that draws the original's clock. #field-partner-bubble hangs over the
+-- are there for a skin that draws the original's clock; the class "digital" on #field-clock asks
+-- for the time in figures (#field-time) too (digital_time). #field-partner-bubble hangs over the
 -- partner's head (hud.partner.*) with the class of the need the original's bubble would show. How
 -- the partner feels about the map (hud.partner.area) puts the class "area-liked" or "area-disliked"
 -- on #field-status, where a skin can swap the happiness face as the original does.
@@ -141,13 +142,27 @@ local function draw_field_dial(document, hour, minute)
   dot:set_property("top", string.format("%.2f%%", 50 - hour_dot_radius_percent * math.cos(angle)))
 end
 
+-- The time in figures as last written, so a redraw for another value leaves it alone and it is only
+-- written again when the minute changes (or the language, which clears it).
+local drawn_time = nil
+
+-- The time in digits (digital_time, an engine improvement, on unless turned off): the class
+-- "digital" on #field-clock, where a skin shows #field-time.
+local function draw_digital(document)
+  document:get("field-clock"):set_class("digital", ui.setting("digital_time") ~= false)
+end
+
 local function draw_field_clock(document)
   local hour, minute = field_number("hud.clock.hour"), field_number("hud.clock.minute")
   draw_field_dial(document, hour, minute)
-  document:get("field-time"):set_text(t("hud.clock.time", {
+  local time = t("hud.clock.time", {
     hour = two_digits(hour),
     minute = two_digits(minute),
-  }))
+  })
+  if time ~= drawn_time then
+    document:get("field-time"):set_text(time)
+    drawn_time = time
+  end
   document:get("field-date"):set_text(t("hud.clock.date", {
     day = field_number("hud.clock.day"),
     year = field_number("hud.clock.year"),
@@ -302,6 +317,8 @@ end
 
 function on_show(document)
   refresh(document)
+  draw_digital(document)
+  drawn_time = nil
   refresh_fade(document)
   refresh_title(document)
   refresh_prompts(document)
@@ -319,6 +336,7 @@ function on_language(document)
   refresh_title(document)
   refresh_prompts(document)
   draw_field_labels(document)
+  drawn_time = nil
   draw_field_clock(document)
 end
 
@@ -331,6 +349,8 @@ function on_setting(document, name)
     draw_field(document)
   elseif name == "hud.partner.revision" then
     draw_bubble(document)
+  elseif name == "digital_time" then
+    draw_digital(document)
   elseif name == "ui_skin" then
     -- A new skin may set or clear classes the drawing reads (pips): draw the field status and the
     -- bubble again.

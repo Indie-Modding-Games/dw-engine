@@ -438,6 +438,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   const bool smooth = context.userSettings->smoothMotion.value_or(true);
   scene_->field().setSmoothMotion(smooth);
   context_.ui->setSetting(SmoothMotionSetting, smooth);
+  // The time in digits under the HUD's clock, the engine's, on unless turned off.
+  context_.ui->setSetting(DigitalTimeSetting, context.userSettings->digitalTime.value_or(true));
   // The save indicator's document goes up before the HUD's, which takes the focus.
   saveIndicator_.emplace(*context_.ui, game_.session->savesWritten(),
                          context.userSettings->saveNotice.value_or(true));
@@ -685,6 +687,16 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       }
     }
     context_.ui->setSetting(SmoothMotionSetting, scene_->field().smoothMotion());
+    return true;
+  }
+  if (command.name == DigitalTimeSetting) {
+    if (const bool* digits = std::get_if<bool>(&command.value)) {
+      context_.ui->setSetting(DigitalTimeSetting, *digits);
+      context_.userSettings->digitalTime = *digits;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
     return true;
   }
   if (command.name == SaveNoticeSetting) {

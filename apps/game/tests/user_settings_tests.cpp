@@ -17,7 +17,8 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
                               .minimap = "off",
                               .freeExploration = true,
                               .smoothMotion = false,
-                              .saveNotice = false};
+                              .saveNotice = false,
+                              .digitalTime = false};
   const auto text = formatUserSettings(settings);
   REQUIRE(text.has_value());
   CHECK(text->contains("ui_skin: test_contrast"));
@@ -30,6 +31,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK(read->freeExploration == std::optional<bool>{true});
   CHECK(read->smoothMotion == std::optional<bool>{false});
   CHECK(read->saveNotice == std::optional<bool>{false});
+  CHECK(read->digitalTime == std::optional<bool>{false});
 
   // A file from before the setting existed, or without the choice made, leaves it to the packs.
   const auto older = parseUserSettings("language: en\n");
@@ -39,6 +41,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK_FALSE(older->freeExploration.has_value());
   CHECK_FALSE(older->smoothMotion.has_value());
   CHECK_FALSE(older->saveNotice.has_value());
+  CHECK_FALSE(older->digitalTime.has_value());
   CHECK_FALSE(formatUserSettings(UserSettings{})->contains("ui_skin"));
 }
 

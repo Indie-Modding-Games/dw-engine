@@ -284,6 +284,15 @@ public:
   [[nodiscard]] std::vector<Rect> drawnRects(std::string_view exceptDocument) const;
   // What the player sees of one shown document, the same way (nothing when it is hidden).
   [[nodiscard]] std::vector<Rect> drawnRectsIn(std::string_view document) const;
+  // What the player sees of one element of a shown document and what it holds, the same way
+  // (nothing when it, or what holds it, is hidden or there is no such element).
+  [[nodiscard]] std::vector<Rect> drawnRectsOf(std::string_view document,
+                                               std::string_view elementId) const;
+  // What the player sees of every shown document but that element, what it holds and the boxes
+  // round it (an element whose box holds it whole: its panel). For a part of a document that must
+  // stay clear of the rest of it and of every window (the HUD's time in digits).
+  [[nodiscard]] std::vector<Rect> drawnRectsAround(std::string_view document,
+                                                   std::string_view elementId) const;
 
 private:
   struct Impl;

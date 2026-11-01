@@ -27,6 +27,7 @@ constexpr std::string_view MinimapKey = "minimap";
 constexpr std::string_view FreeExplorationKey = "free_exploration";
 constexpr std::string_view SmoothMotionKey = "smooth_motion";
 constexpr std::string_view SaveNoticeKey = "save_notice";
+constexpr std::string_view DigitalTimeKey = "digital_time";
 
 } // namespace
 
@@ -61,6 +62,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     if (const core::YamlNode* notice = tree->find(SaveNoticeKey)) {
       settings.saveNotice = reader.boolean(*notice);
     }
+    if (const core::YamlNode* digits = tree->find(DigitalTimeKey)) {
+      settings.digitalTime = reader.boolean(*digits);
+    }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
 }
@@ -90,6 +94,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.saveNotice) {
     root.set(std::string{SaveNoticeKey},
              core::YamlNode::scalar(*settings.saveNotice ? "true" : "false"));
+  }
+  if (settings.digitalTime) {
+    root.set(std::string{DigitalTimeKey},
+             core::YamlNode::scalar(*settings.digitalTime ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

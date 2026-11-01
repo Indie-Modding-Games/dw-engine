@@ -23,6 +23,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -1158,6 +1159,35 @@ TEST_CASE("the field clock is at night before 6:00 and from 17:00") {
     bumpFieldRevision(*ui);
     CHECK(ui->elementHasClass("hud", "field-clock", "night") == night);
   }
+}
+
+TEST_CASE("the field clock tells the game time in digits as HH:MM while the option is on") {
+  Content content;
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+  ui->show("hud");
+  ui->update();
+  // On before the game says anything (digital_time, on by default).
+  CHECK(ui->elementHasClass("hud", "field-clock", "digital"));
+  for (const auto& [hour, minute, text] :
+       {std::tuple{0.0, 0.0, "00:00"}, std::tuple{8.0, 54.0, "08:54"},
+        std::tuple{13.0, 5.0, "13:05"}, std::tuple{23.0, 59.0, "23:59"}}) {
+    CAPTURE(text);
+    ui->setSetting("hud.clock.hour", hour);
+    ui->setSetting("hud.clock.minute", minute);
+    bumpFieldRevision(*ui);
+    CHECK(ui->elementText("hud", "field-time") == text);
+  }
+  ui->setSetting("digital_time", false);
+  ui->update();
+  CHECK_FALSE(ui->elementHasClass("hud", "field-clock", "digital"));
+  // The time still follows the clock, ready for the option to come back on.
+  ui->setSetting("hud.clock.minute", 58.0);
+  bumpFieldRevision(*ui);
+  CHECK(ui->elementText("hud", "field-time") == "23:58");
+  ui->setSetting("digital_time", true);
+  ui->update();
+  CHECK(ui->elementHasClass("hud", "field-clock", "digital"));
 }
 
 namespace {
