@@ -24,6 +24,7 @@
 #include <dwe/ruleset/game_clock.hpp>
 #include <dwe/ruleset/random.hpp>
 #include <dwe/scene/world.hpp>
+#include <dwe/signs/map_signs.hpp>
 
 #include <array>
 #include <cstddef>
@@ -222,6 +223,9 @@ public:
   void setPlayerYaw(float yaw);
   // Moves everything the map draws by `offset` background pixels (render::MapCamera::setShake).
   void setScreenShake(glm::vec2 offset) { mapRenderer_->setShake(offset); }
+  // Whether the signs painted in the maps are written in the player's language (the pause menu's
+  // "Translated signs"; docs/modulos/engine/signs.md). The map shown follows at the next tick.
+  void setTranslatedSigns(bool translated) { translatedSigns_ = translated; }
   // More markers to draw with the click-to-move target's, until replaced (the fishing's bobber).
   void setExtraMarkers(std::vector<render::MapMarker> markers) {
     extraMarkers_ = std::move(markers);
@@ -644,6 +648,11 @@ private:
   // The map's NPCs drawn as their species with models/partner's animations (field_scene_npcs.cpp):
   // loaded when the story puts one on the map, dropped when it goes.
   void followNpcs();
+  // The map's signs: what the language and the option want now, painted into `images` (copies of
+  // signsOriginal_), and the map shown brought to it when they change.
+  [[nodiscard]] std::string signsKey() const;
+  void paintSigns(assets::MapImages& images);
+  void followSigns();
   void drawNpcs(double animationSeconds, float alpha);
   // FieldStage::shownNpc, while the scenery is hidden.
   void drawShownNpc(double animationSeconds, float alpha);
@@ -672,6 +681,13 @@ private:
   const assets::VirtualFileSystem* files_;
   render::Renderer* renderer_ = nullptr;
   std::unique_ptr<render::MapRenderer> mapRenderer_;
+  signs::MapSigns signs_{*files_};
+  // The map shown as its files have it, its sprites, and the key of the signs painted into it.
+  std::string signsMap_;
+  assets::MapImages signsOriginal_;
+  assets::MapObjects signsObjects_;
+  std::string signsKey_;
+  bool translatedSigns_ = true;
   std::unique_ptr<render::ModelRenderer> models_;
   std::unique_ptr<ScenePrimDrawer> primDrawer_;
   PartnerBody partnerBody_{*this};

@@ -49,6 +49,7 @@ digital_time: "Digital time"
 bulk_trades: "Bulk trades"
 # Evolution requirements: the chart's tree tells what each target asks and how the partner stands (on by default).
 evolution_requirements: "Evolution requirements"
+translated_signs: "Translated signs"
 
 year_label: "Year"
 day_label: "Day"

@@ -86,3 +86,5 @@ schemas:
     - rules/*/city
   ruleset_medals:
     - rules/*/medals
+  sign_overlay:
+    - signs/*

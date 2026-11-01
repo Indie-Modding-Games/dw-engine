@@ -30,6 +30,7 @@ constexpr std::string_view SaveNoticeKey = "save_notice";
 constexpr std::string_view DigitalTimeKey = "digital_time";
 constexpr std::string_view BulkTradesKey = "bulk_trades";
 constexpr std::string_view EvolutionRequirementsKey = "evolution_requirements";
+constexpr std::string_view TranslatedSignsKey = "translated_signs";
 
 } // namespace
 
@@ -73,6 +74,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     if (const core::YamlNode* shown = tree->find(EvolutionRequirementsKey)) {
       settings.evolutionRequirements = reader.boolean(*shown);
     }
+    if (const core::YamlNode* signs = tree->find(TranslatedSignsKey)) {
+      settings.translatedSigns = reader.boolean(*signs);
+    }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
 }
@@ -114,6 +118,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.evolutionRequirements) {
     root.set(std::string{EvolutionRequirementsKey},
              core::YamlNode::scalar(*settings.evolutionRequirements ? "true" : "false"));
+  }
+  if (settings.translatedSigns) {
+    root.set(std::string{TranslatedSignsKey},
+             core::YamlNode::scalar(*settings.translatedSigns ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

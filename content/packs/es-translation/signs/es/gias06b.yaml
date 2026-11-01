@@ -1,0 +1,16 @@
+# Spanish also writes the board's English line and the vertical banner of offers.
+signs:
+  - id: subtitle
+    region: [203, 66, 132, 13]
+    clear: {mode: diffuse, rect: [203, 66, 132, 13], color: "#6b6b6b"}
+    text: signs.gias06b_subtitle
+    size: 8
+    color: "#181818"
+  - id: sale
+    region: [297, 93, 15, 50]
+    clear: {mode: diffuse, rect: [297, 93, 15, 50], color: "#4a0808"}
+    text: signs.gias06b_sale
+    size: 9
+    vertical: true
+    line_spacing: 0.8
+    color: "#a8a0a0"

@@ -161,6 +161,13 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     options.uiDemoChart = value;
     return true;
   }
+  if (argument == "--dump-signs") {
+    options.dumpSigns.clear();
+    for (const auto part : std::views::split(value, ',')) {
+      options.dumpSigns.emplace_back(std::string_view{part});
+    }
+    return std::ranges::none_of(options.dumpSigns, &std::string::empty);
+  }
   if (argument == "--map") {
     options.maps.clear();
     for (const auto part : std::views::split(value, ',')) {

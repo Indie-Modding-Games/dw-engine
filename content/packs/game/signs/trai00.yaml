@@ -1,0 +1,22 @@
+# The big board of the training ground: "Battle course", in two lines that follow the board's slope.
+signs:
+  - id: title_top
+    region: [96, 0, 78, 76]
+    clear:
+      mode: diffuse
+      quad: [[98, 32], [173, -12], [173, 75], [98, 112]]
+    corners: [[96, 36], [170, 4], [170, 39], [96, 73]]
+    text: signs.trai00_title_top
+    size: 16
+    color: "#6e7826"
+    outline: {color: "#21426b", width: 1.5}
+    colors: region
+  - id: title_bottom
+    region: [96, 36, 78, 76]
+    clear: none
+    corners: [[96, 73], [170, 39], [171, 72], [96, 108]]
+    text: signs.trai00_title_bottom
+    size: 16
+    color: "#86285a"
+    outline: {color: "#21426b", width: 1.5}
+    colors: region

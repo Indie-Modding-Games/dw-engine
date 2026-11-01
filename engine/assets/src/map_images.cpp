@@ -151,35 +151,44 @@ std::int32_t mapSpriteOrderValue(const MapSprite& sprite, float viewDepth) {
   return order >= MapOrder::Limit ? MapOrder::Farthest : order;
 }
 
+const std::vector<PaletteColor>*
+mapClutPalette(std::int32_t clut, std::span<const MapTexturePage> pages,
+               std::span<const std::vector<PaletteColor>> backgroundPalettes) {
+  using Layout = MapVramLayout;
+  if (clut < 0) {
+    return backgroundPalettes.empty() ? nullptr : &backgroundPalettes.front();
+  }
+  if (clut < Layout::FourBitCluts) {
+    const auto firstFourBit = std::ranges::find_if(
+        pages, [](const MapTexturePage& page) { return page.bitsPerPixel == 4; });
+    if (firstFourBit == pages.end() || std::cmp_greater_equal(clut, firstFourBit->cluts.size())) {
+      return nullptr;
+    }
+    return &firstFourBit->cluts[static_cast<std::size_t>(clut)];
+  }
+  const std::int32_t row = clut + Layout::ClutRowBase;
+  // loadMapImage1 uploads an 8-bit page's CLUT unless it is for the time of day's row.
+  for (const MapTexturePage& page : pages) {
+    if (page.bitsPerPixel == 8 && page.clutRow == row && row != Layout::TimeOfDayRow &&
+        !page.cluts.empty()) {
+      return &page.cluts.front();
+    }
+  }
+  const std::int32_t background = row - Layout::FirstBackgroundPaletteRow;
+  if (background >= 0 && std::cmp_less(background, backgroundPalettes.size())) {
+    return &backgroundPalettes[static_cast<std::size_t>(background)];
+  }
+  return nullptr;
+}
+
 MapSpriteSheet buildMapSpriteSheet(std::span<const MapSprite> sprites,
                                    std::span<const MapTexturePage> pages,
                                    std::span<const std::vector<PaletteColor>> backgroundPalettes) {
   using Layout = MapVramLayout;
-  const auto firstFourBit = std::ranges::find_if(
-      pages, [](const MapTexturePage& page) { return page.bitsPerPixel == 4; });
-
   // The fixed palette a CLUT reference reads, or nullptr when nothing was uploaded there. clut -1
   // is not fixed.
   const auto fixedPalette = [&](std::int32_t clut) -> const std::vector<PaletteColor>* {
-    if (clut < Layout::FourBitCluts) {
-      if (firstFourBit == pages.end() || std::cmp_greater_equal(clut, firstFourBit->cluts.size())) {
-        return nullptr;
-      }
-      return &firstFourBit->cluts[static_cast<std::size_t>(clut)];
-    }
-    const std::int32_t row = clut + Layout::ClutRowBase;
-    // loadMapImage1 uploads an 8-bit page's CLUT unless it is for the time of day's row.
-    for (const MapTexturePage& page : pages) {
-      if (page.bitsPerPixel == 8 && page.clutRow == row && row != Layout::TimeOfDayRow &&
-          !page.cluts.empty()) {
-        return &page.cluts.front();
-      }
-    }
-    const std::int32_t background = row - Layout::FirstBackgroundPaletteRow;
-    if (background >= 0 && std::cmp_less(background, backgroundPalettes.size())) {
-      return &backgroundPalettes[static_cast<std::size_t>(background)];
-    }
-    return nullptr;
+    return mapClutPalette(clut, pages, backgroundPalettes);
   };
 
   MapSpriteSheet sheet;

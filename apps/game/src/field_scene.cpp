@@ -414,6 +414,11 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
       core::logWarning("{}", core::formatMessage(message, assets::warpIssueMessage(mapId, issue)));
     }
   }
+  signsMap_ = mapId;
+  signsOriginal_ = scene->images;
+  signsObjects_ = scene->document.objects.value_or(assets::MapObjects{});
+  signsKey_ = signsKey();
+  paintSigns(scene->images);
   const auto loaded = Clock::now();
   if (at) {
     field_->enterMapAt(scene->document, *at);
@@ -494,6 +499,36 @@ void FieldScene::finishTick() {
     }
   }
   followNpcs();
+  followSigns();
+}
+
+std::string FieldScene::signsKey() const {
+  const localization::Catalog* catalog = localization::catalogInUse();
+  if (!translatedSigns_ || catalog == nullptr) {
+    return "original";
+  }
+  return std::format("{}|{}", catalog->language(), catalog->revision());
+}
+
+void FieldScene::paintSigns(assets::MapImages& images) {
+  const localization::Catalog* catalog = localization::catalogInUse();
+  if (!translatedSigns_ || catalog == nullptr) {
+    return;
+  }
+  const signs::PaintedSigns& painted = signs_.painted(
+      signsOriginal_, &signsObjects_, signsMap_, catalog->language(), catalog->revision(),
+      [catalog](std::string_view key) { return catalog->text(key); });
+  signs::applySignPatches(images, painted.patches, signsObjects_.sprites);
+}
+
+void FieldScene::followSigns() {
+  if (signsMap_.empty() || signsKey() == signsKey_) {
+    return;
+  }
+  signsKey_ = signsKey();
+  assets::MapImages images = signsOriginal_;
+  paintSigns(images);
+  mapRenderer_->updateImages(images);
 }
 
 void FieldScene::playerFacePartner() {

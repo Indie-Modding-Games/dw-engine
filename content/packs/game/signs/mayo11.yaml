@@ -1,0 +1,39 @@
+# The fishermen's board by the lake, seen at an angle: its title, two rules and a scribbled answer (the blue
+# doodles stay).
+signs:
+  - id: title
+    region: [538, 507, 145, 133]
+    clear:
+      mode: diffuse
+      quad: [[557.0, 508.0], [675.0, 549.0], [655.0, 650.0], [539.0, 604.0]]
+      color: "#737373"
+      tolerance: 30
+    corners: [[564.2, 516.1], [671.8, 551.1], [668.8, 567.4], [561.2, 532.4]]
+    text: signs.mayo_rules_title
+    size: 12
+    color: "#731021"
+    colors: region
+  - id: rule_1
+    region: [538, 507, 145, 133]
+    clear: none
+    corners: [[560.4, 536.7], [668.0, 571.7], [665.4, 585.5], [557.8, 550.5]]
+    text: signs.mayo_rules_1
+    size: 9
+    color: "#101818"
+    colors: region
+  - id: rule_2
+    region: [538, 507, 145, 133]
+    clear: none
+    corners: [[557.5, 552.2], [665.1, 587.2], [662.6, 600.9], [554.9, 566.0]]
+    text: signs.mayo_rules_2
+    size: 9
+    color: "#101818"
+    colors: region
+  - id: graffiti
+    region: [538, 507, 145, 133]
+    clear: none
+    corners: [[572.5, 578.1], [661.4, 607.0], [657.1, 630.2], [568.2, 601.3]]
+    text: signs.mayo_rules_graffiti
+    size: 12
+    color: "#101818"
+    colors: region

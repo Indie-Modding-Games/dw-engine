@@ -1,0 +1,16 @@
+# The signpost of the crossroads: east to the cape of drift ice, west to the misty trees.
+signs:
+  - id: east
+    region: [567, 70, 37, 16]
+    clear: {mode: diffuse, rect: [567, 70, 37, 16], color: "#000808"}
+    text: signs.frzl06_east
+    size: 8
+    line_spacing: 0.85
+    color: "#ceefef"
+  - id: west
+    region: [529, 86, 31, 17]
+    clear: {mode: diffuse, rect: [529, 86, 31, 17], color: "#000808"}
+    text: signs.frzl06_west
+    size: 8
+    line_spacing: 0.85
+    color: "#5abd63"

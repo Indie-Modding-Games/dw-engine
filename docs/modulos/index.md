@@ -21,6 +21,7 @@ cada una están en las [reglas de dependencias](../architecture/dependency-rules
 | [script](engine/script.md) | Lua 5.5 con sol2 y la API versionada y aislada de los mods |
 | [ui](engine/ui.md) | La UI con RmlUi, con su lógica en Lua |
 | [localization](engine/localization.md) | Los textos que ve el jugador en su idioma |
+| [signs](engine/signs.md) | Los carteles pintados en los mapas, escritos otra vez en el idioma del jugador |
 | [ruleset](engine/ruleset.md) | El formato de ruleset, las estrategias por nombre y el reloj de juego |
 | [debug](engine/debug.md) | Consola y paneles de desarrollo con Dear ImGui |
 

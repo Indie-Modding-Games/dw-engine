@@ -40,6 +40,9 @@ struct UserSettings {
   // The evolution requirements on the chart (evolution_requirements: true, false); on when not
   // chosen yet.
   std::optional<bool> evolutionRequirements = std::nullopt;
+  // Translated signs (translated_signs: true, false): the signs painted in the maps are written in
+  // the player's language; on when not chosen yet.
+  std::optional<bool> translatedSigns = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

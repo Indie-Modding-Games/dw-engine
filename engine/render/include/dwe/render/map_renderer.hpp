@@ -82,6 +82,10 @@ public:
   // Nothing waits for the GPU: call it between frames, and the map draws in the next one. Fails,
   // keeping no map, when the map has no background palette or a texture cannot be made.
   core::Result<void> setMap(const MapSceneData& scene, std::size_t variant);
+  // Uploads the background's indices and the sprite textures again from `images`, the map set
+  // last with some pixels changed (the signs of another language): sizes and sprite textures must
+  // match it. Returns false, with a warning, when an upload fails.
+  bool updateImages(const assets::MapImages& images);
 
   // Switches to another palette variant, fading over fadeSeconds (0 switches at once). A switch
   // during a fade continues from the colours shown at that moment.

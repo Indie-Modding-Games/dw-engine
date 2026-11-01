@@ -7,3 +7,6 @@ description: "Traducción propia del equipo de los textos del original, como del
 dependencies:
   - id: base
     min_version: 0.1.0
+schemas:
+  sign_overlay:
+    - signs/*/*

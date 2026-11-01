@@ -499,6 +499,9 @@
 				<button id="evolution-requirements" class="option" onclick="adjust(document, 'evolution-requirements', 1)">
 					<span class="label" text-key="pause_menu.evolution_requirements"></span><span class="value" id="evolution-requirements-value"></span>
 				</button>
+				<button id="translated-signs" class="option" onclick="adjust(document, 'translated-signs', 1)">
+					<span class="label" text-key="pause_menu.translated_signs"></span><span class="value" id="translated-signs-value"></span>
+				</button>
 				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 

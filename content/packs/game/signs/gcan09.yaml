@@ -1,0 +1,24 @@
+# The shop's paper sign over the door. It flickers: a sprite with its own palette (page 2, clut 16) lights it
+# up every other frame over the background, so the lit copy gets the same text.
+signs:
+  - id: shop
+    region: [544, 69, 79, 25]
+    clear:
+      mode: diffuse
+      quad: [[545, 69], [623, 75.5], [622, 94], [543, 89]]
+    corners: [[547, 71], [621, 77], [620, 92], [545, 87]]
+    text: signs.gcan09_shop
+    size: 9
+    line_spacing: 0.9
+    color: "#302828"
+  - id: shop_lit
+    target: {page: 2, bits: 8, clut: 16}
+    region: [14, 115, 83, 29]
+    clear:
+      mode: diffuse
+      quad: [[17, 117], [95, 123.5], [94, 142], [15, 137]]
+    corners: [[19, 119], [93, 125], [92, 140], [17, 135]]
+    text: signs.gcan09_shop
+    size: 9
+    line_spacing: 0.9
+    color: "#302828"

@@ -132,6 +132,10 @@ local options = {
   ["evolution-requirements"] = function(_step)
     ui.send("evolution_requirements", ui.setting("evolution_requirements") == false)
   end,
+  -- Translated signs: the signs painted in the maps read in the player's language (on by default).
+  ["translated-signs"] = function(_step)
+    ui.send("translated_signs", not ui.setting("translated_signs"))
+  end,
 }
 
 local function can_sleep()
@@ -1133,6 +1137,7 @@ local function refresh(document)
   document
     :get("evolution-requirements-value")
     :set_text(on_off(ui.setting("evolution_requirements") ~= false))
+  document:get("translated-signs-value"):set_text(on_off(ui.setting("translated_signs")))
   refresh_player(document)
 end
 

@@ -272,6 +272,41 @@ core::Result<void> MapRenderer::setMap(const MapSceneData& scene, std::size_t va
   return {};
 }
 
+bool MapRenderer::updateImages(const assets::MapImages& images) {
+  if (!hasMap_ || images.sprites.textures.size() != spriteTextures_.size()) {
+    core::logWarning("map: the images to update do not match the map shown");
+    return false;
+  }
+  const auto upload = [this](TextureId texture, std::uint32_t width, std::uint32_t height,
+                             std::span<const std::byte> texels) {
+    const auto written = renderer_->queueTextureUpdate(
+        texture, {.x = 0, .y = 0, .width = width, .height = height}, texels);
+    if (!written) {
+      core::logWarning("map: cannot update a texture: {}", written.error().message);
+      return false;
+    }
+    return true;
+  };
+  bool ok = upload(backgroundIndices_, images.background.width, images.background.height,
+                   indexTexels(images.background.indices));
+  for (std::size_t index = 0; index < spriteTextures_.size(); ++index) {
+    const assets::MapSpriteSheet::Texture& source = images.sprites.textures[index];
+    if (source.timeOfDayPalette != spriteTextures_[index].timeOfDayPalette ||
+        static_cast<float>(source.width()) != spriteTextures_[index].size.x ||
+        static_cast<float>(source.height()) != spriteTextures_[index].size.y) {
+      core::logWarning("map: sprite texture {} changed shape; left as it was", index);
+      ok = false;
+      continue;
+    }
+    ok = (source.timeOfDayPalette ? upload(spriteTextures_[index].id, source.width(),
+                                           source.height(), indexTexels(source.indices.indices))
+                                  : upload(spriteTextures_[index].id, source.width(),
+                                           source.height(), source.colors.pixels)) &&
+         ok;
+  }
+  return ok;
+}
+
 bool MapRenderer::snapshotPalette() {
   const std::size_t snapshotRow = paletteRows_.size() - 1;
   std::vector<assets::PaletteColor>& snapshot = paletteRows_[snapshotRow];

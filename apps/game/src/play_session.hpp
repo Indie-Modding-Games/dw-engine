@@ -73,6 +73,8 @@ inline constexpr std::string_view SmoothMotionSetting = "smooth_motion";
 // The time in digits: a UI setting and the pause menu's command with the same name (true or false),
 // on by default. The field HUD (ui/hud) shows the game time as HH:MM under its dial clock with it.
 inline constexpr std::string_view DigitalTimeSetting = "digital_time";
+// The pause menu's "Translated signs" (FieldScene::setTranslatedSigns).
+inline constexpr std::string_view TranslatedSignsSetting = "translated_signs";
 
 // What every game uses of the app; all of it outlives the games.
 struct PlayContext {

@@ -46,6 +46,9 @@ struct Options {
   bool listSaves = false;
   // Set by --check-content: open every asset of the folder's packs and quit, without a window.
   bool checkContent = false;
+  // Set by --dump-signs <map>[,<map>...]: write the maps' images and their signs to --shots and
+  // quit, without a window (sign_dump.hpp).
+  std::vector<std::string> dumpSigns;
   int width = 1280;
   int height = 720;
   bool fullscreen = false;
@@ -134,7 +137,7 @@ inline constexpr std::string_view Usage =
     "[--new-game-chain original|seeded] [--clock-speed <x>] "
     "[--seed <n>] [--original-rolls <state>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] [--trace <file>] "
     "[--control <socket> [--control-paused]] | "
-    "--list-saves | --check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] "
+    "--list-saves | --check-content <folder> | --dump-signs <map>[,<map>...] --shots <folder> [--lang <language>] | --test-scene [--texture-churn] | --map <id>[,<id>...] "
     "[--focus <x>,<z>] | --ui-demo [--ui-demo-fishing] [--ui-demo-player] [--ui-demo-chart <layout.yaml>] [--ui-demo-chart-detail <layout.yaml>] [--ui-demo-chart-all-raised] [--ui-demo-bag-size <10|20|30>] "
     "[--virtual-gamepad <file>] | --model-viewer [character id...]";
 

@@ -77,6 +77,7 @@ dwe_add_app(game
         src/slot_description.cpp
         src/screenshot.cpp
         src/session_start.cpp
+        src/sign_dump.cpp
         src/save_figure.cpp
         src/save_indicator.cpp
         src/save_machine.cpp
@@ -121,7 +122,7 @@ dwe_add_app(game
         src/ui_demo.cpp
         src/ui_skin_setting.cpp
         src/user_settings.cpp
-    DEPS core platform audio video rhi assets localization animation render input script ui debug scene ruleset field partner save content session battle inventory screens story evolution gym fishing tournament curling
+    DEPS core platform audio video rhi assets localization animation render signs input script ui debug scene ruleset field partner save content session battle inventory screens story evolution gym fishing tournament curling
     OUTPUT_NAME dwe-game)
 
 dwe_add_shaders(game FILES shaders/test_scene.slang shaders/scene_prims.slang)
@@ -170,7 +171,7 @@ if(BUILD_TESTING)
                                   src/save_indicator.cpp src/save_machine_flow.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_skin_setting.cpp src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution
-                                                 dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render
+                                                 dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render dwe::signs
                                                  dwe::ruleset dwe_test_main)
     # The session's test packs and made-up species (session_fixture.hpp), for the save debug command.
     target_include_directories(dwe_game_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src

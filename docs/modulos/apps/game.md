@@ -618,3 +618,19 @@ opción. Tests: `apps/game/tests/chart_requirements_tests.cpp` (rangos, filas y 
 (los puntos del informe son los de la puntuación en cada mezcla de grupos; la forma que da `outlook` es la que elige
 `checkNatural`) y `the chart's outlook names the form the next check evolves the partner into`
 (`apps/session/tests/evolution_adapter_tests.cpp`).
+
+## Carteles traducidos
+
+Mejora opcional, encendida por defecto (la versión americana dejó muchos carteles de los mapas en japonés): los
+carteles pintados en los fondos se escriben otra vez en el idioma del jugador (módulo [signs](../engine/signs.md)). El
+ajuste `translated_signs` (fila «Carteles traducidos», «Translated signs» en inglés, de las opciones del menú de pausa,
+guardado en los ajustes del usuario) llega a `FieldScene::setTranslatedSigns` desde `PlaySession`; apagado, el mapa
+muestra las texturas originales.
+
+- **Al entrar en un mapa.** `FieldScene::enterMap` guarda las imágenes del mapa tal como se leyeron y pinta los
+  carteles del idioma antes de `MapRenderer::setMap`.
+- **Al cambiar el idioma o la opción.** `finishTick` compara la clave de lo pintado (idioma, revisión del catálogo y
+  opción) y, si cambió, sube otra vez el fondo y las texturas de los sprites (`MapRenderer::updateImages`) sin
+  recargar el mapa.
+- **`--dump-signs`** (`sign_dump.cpp`) escribe las imágenes de un mapa con rejilla para escribir overlays
+  ([guía](../../guides/carteles.md)).

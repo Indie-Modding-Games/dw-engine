@@ -446,6 +446,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   // The evolution requirements on the chart (an engine improvement), on unless turned off.
   context_.ui->setSetting(EvolutionRequirementsSetting,
                           context.userSettings->evolutionRequirements.value_or(true));
+  // The signs painted in the maps, in the player's language unless turned off.
+  const bool translatedSigns = context.userSettings->translatedSigns.value_or(true);
+  scene_->setTranslatedSigns(translatedSigns);
+  context_.ui->setSetting(TranslatedSignsSetting, translatedSigns);
   // The save indicator's document goes up before the HUD's, which takes the focus.
   saveIndicator_.emplace(*context_.ui, game_.session->savesWritten(),
                          context.userSettings->saveNotice.value_or(true));
@@ -731,6 +735,17 @@ bool PlaySession::handle(const ui::UiCommand& command) {
         saveUserSettings(*context_.settingsFile, *context_.userSettings);
       }
       context_.ui->setSetting(EvolutionRequirementsSetting, *shown);
+    }
+    return true;
+  }
+  if (command.name == TranslatedSignsSetting) {
+    if (const bool* translated = std::get_if<bool>(&command.value)) {
+      scene_->setTranslatedSigns(*translated);
+      context_.ui->setSetting(TranslatedSignsSetting, *translated);
+      context_.userSettings->translatedSigns = *translated;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
     }
     return true;
   }

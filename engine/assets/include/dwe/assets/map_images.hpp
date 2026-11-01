@@ -156,6 +156,14 @@ struct MapSpriteSheet {
   std::vector<Placement> placements;
 };
 
+// The palette a CLUT reference reads (overworld.c: buildMapOverlayPrim): for clut -1 the
+// background's first palette (the day's, which the time of day replaces), for 0-15 a row of the
+// first 4-bit page's CLUT, from 16 on the row clut + 468: an 8-bit page's CLUT uploaded there, or
+// else a background palette. nullptr when nothing was uploaded there.
+const std::vector<PaletteColor>*
+mapClutPalette(std::int32_t clut, std::span<const MapTexturePage> pages,
+               std::span<const std::vector<PaletteColor>> backgroundPalettes);
+
 // Resolves the page and palette of each sprite (overworld.c: buildMapOverlayPrim).
 // `backgroundPalettes` are the background's palettes (day, dusk, night, palette3...). A sprite with
 // clut -1 reads the palette of the time of day; one with clut 0-15 a row of the first 4-bit page's

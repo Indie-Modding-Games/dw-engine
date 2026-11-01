@@ -343,6 +343,10 @@ void useCatalog(const Catalog* catalog) {
   currentCatalog = catalog;
 }
 
+const Catalog* catalogInUse() {
+  return currentCatalog;
+}
+
 std::string tr(std::string_view key, std::span<const TextArgument> arguments) {
   return currentCatalog != nullptr ? currentCatalog->text(key, arguments) : std::string{key};
 }

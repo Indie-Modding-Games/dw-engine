@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sign overlay",
+  "description": "signs/<map>.yaml (every language) and signs/<language>/<map>.yaml (one language) of a pack: the signs painted in a map's images that the engine writes again in the player's language (engine/signs, docs/modulos/engine/signs.md). Pixels of the map image; colours #rrggbb or #rrggbbaa.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "signs": { "type": "array", "items": { "$ref": "#/$defs/sign" } },
+    "remove": {
+      "description": "Ids of signs of signs/<map>.yaml this language leaves as the original has them.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "color": { "type": "string", "pattern": "^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$" },
+    "rect": {
+      "description": "[x, y, width, height].",
+      "type": "array", "items": { "type": "integer" }, "minItems": 4, "maxItems": 4
+    },
+    "point": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+    "quad": {
+      "description": "Top left, top right, bottom right, bottom left.",
+      "type": "array", "items": { "$ref": "#/$defs/point" }, "minItems": 4, "maxItems": 4
+    },
+    "clearMode": { "enum": ["inpaint", "fill", "none", "diffuse"] },
+    "sign": {
+      "type": "object",
+      "required": ["id", "region", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "target": {
+          "description": "background (the default) or a texture page as a sprite names it.",
+          "type": ["string", "object"],
+          "pattern": "^background$",
+          "required": ["page"],
+          "additionalProperties": false,
+          "properties": {
+            "page": { "type": "integer", "minimum": 0 },
+            "bits": { "enum": [4, 8] },
+            "clut": { "type": "integer", "minimum": -1 }
+          }
+        },
+        "region": { "$ref": "#/$defs/rect" },
+        "corners": { "$ref": "#/$defs/quad" },
+        "box": { "$ref": "#/$defs/point" },
+        "clear": {
+          "description": "A mode alone (inpaint, fill, none, diffuse) or the mode with its settings.",
+          "type": ["string", "object"],
+          "pattern": "^(inpaint|fill|none|diffuse)$",
+          "additionalProperties": false,
+          "properties": {
+            "mode": { "$ref": "#/$defs/clearMode" },
+            "rect": { "$ref": "#/$defs/rect" },
+            "quad": { "$ref": "#/$defs/quad" },
+            "color": { "$ref": "#/$defs/color" },
+            "tolerance": { "type": "number", "minimum": 0 },
+            "grow": { "type": "integer", "minimum": 0, "maximum": 8 }
+          }
+        },
+        "text": { "description": "A localization key, such as signs.trai00_title_top.", "type": "string", "minLength": 1 },
+        "font": { "description": "A font of ui/fonts/, such as noto_sans_bold.", "type": "string", "minLength": 1 },
+        "size": { "type": "number", "exclusiveMinimum": 0 },
+        "letter_spacing": { "type": "number" },
+        "line_spacing": { "type": "number", "exclusiveMinimum": 0 },
+        "align": { "enum": ["left", "center", "right"] },
+        "valign": { "enum": ["top", "middle", "bottom"] },
+        "rotation": { "type": "number" },
+        "skew": { "type": "number", "minimum": -80, "maximum": 80 },
+        "vertical": { "type": "boolean" },
+        "fit": { "type": "boolean" },
+        "color": { "$ref": "#/$defs/color" },
+        "outline": {
+          "type": "object",
+          "required": ["color"],
+          "additionalProperties": false,
+          "properties": { "color": { "$ref": "#/$defs/color" }, "width": { "type": "number", "exclusiveMinimum": 0 } }
+        },
+        "glow": {
+          "type": "object",
+          "required": ["color"],
+          "additionalProperties": false,
+          "properties": {
+            "color": { "$ref": "#/$defs/color" },
+            "radius": { "type": "number", "exclusiveMinimum": 0 },
+            "strength": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "colors": { "enum": ["all", "region"] }
+      }
+    }
+  }
+}

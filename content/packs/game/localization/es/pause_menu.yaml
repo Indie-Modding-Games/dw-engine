@@ -49,6 +49,7 @@ digital_time: "Hora en dígitos"
 bulk_trades: "Cambios en lote"
 # Requisitos de evolución: el árbol de la tabla dice qué pide cada destino y cómo va el compañero (encendido por defecto).
 evolution_requirements: "Requisitos de evolución"
+translated_signs: "Carteles traducidos"
 
 year_label: "Año"
 day_label: "Día"

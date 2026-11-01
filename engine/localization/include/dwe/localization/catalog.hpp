@@ -103,6 +103,10 @@ private:
 // tr instead of passing a catalog.
 void useCatalog(const Catalog* catalog);
 
+// The catalog set with useCatalog, or nullptr: for code that follows the language itself (the
+// signs painted in a map follow its language and revision).
+[[nodiscard]] const Catalog* catalogInUse();
+
 // The text of a key in the player's language (Catalog::text) of the catalog set with useCatalog;
 // the key itself when none is set.
 [[nodiscard]] std::string tr(std::string_view key, std::span<const TextArgument> arguments = {});

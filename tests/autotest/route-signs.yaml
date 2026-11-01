@@ -1,0 +1,28 @@
+# The signs route: a map started with --start shows its signs in the run's language (--lang en or es), then the
+# pause menu turns "Translated signs" off and the map shows the original's. One run per map and language, each
+# with its own --shots folder; how to run it and the maps with signs: docs/guides/carteles.md.
+name: signs
+device: keyboard
+timeout: 120
+steps:
+  - resize: [1280, 720]
+  - wait: {seconds: 2}
+  - screenshot: signs
+  - menu: open
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        # The page's box takes no input until it is in place (tickUIBox).
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - menu_select: translated-signs
+  - expect_setting: {translated_signs: false}
+  - menu: close
+  - wait: {menu_open: false, seconds: 1}
+  - screenshot: original

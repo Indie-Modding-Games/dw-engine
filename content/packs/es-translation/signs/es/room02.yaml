@@ -1,0 +1,12 @@
+# The welcome mat at the door reads in English in the original; Spanish writes it again.
+signs:
+  - id: mat
+    region: [64, 258, 168, 70]
+    clear:
+      mode: diffuse
+      quad: [[126, 263], [224, 302.5], [167, 323], [69, 281.5]]
+      color: "#426b42"
+    corners: [[127, 264], [222, 302.5], [166, 322], [71, 281]]
+    text: signs.room02_mat
+    size: 16
+    color: "#ffce08"

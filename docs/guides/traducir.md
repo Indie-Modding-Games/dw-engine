@@ -115,3 +115,11 @@ traducción queda **obsoleta**:
 El diálogo de los scripts de eventos (`show_textbox` y `set_selection`) sale en `text/en/story_<n>.yaml`, una tabla
 por script, desde que los scripts pasaron a Lua; se traduce con el mismo flujo en `text/es/story_<n>.yaml`. Los
 nombres de los personajes que hablan o se nombran se quedan en inglés, letra por letra.
+
+## Carteles de los mapas
+
+Los carteles pintados en los fondos (la arena, los postes, las tiendas...) también se traducen. Sus textos son
+claves de `localization/<idioma>/signs.yaml` del paquete `game`, como el resto de textos del motor; lo que cambia es
+dónde y cómo se dibujan, que va en un overlay por mapa. Un cartel que el original ya tiene en inglés y solo hace falta
+en español va en `content/packs/es-translation/signs/es/<mapa>.yaml`. Cómo encontrar un cartel y escribir su
+overlay: [guía de carteles](carteles.md).

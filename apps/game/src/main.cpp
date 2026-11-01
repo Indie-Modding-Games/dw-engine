@@ -10,6 +10,7 @@
 #include "game.hpp"
 #include "options.hpp"
 #include "saves.hpp"
+#include "sign_dump.hpp"
 #include "ui_demo.hpp"
 
 int main(int argc, char** argv) {
@@ -26,6 +27,9 @@ int main(int argc, char** argv) {
   }
   if (options->listSaves) {
     return listSaves(*options);
+  }
+  if (!options->dumpSigns.empty()) {
+    return dumpSigns(*options);
   }
   if (options->checkContent) {
     return checkContentFolder(options->content);

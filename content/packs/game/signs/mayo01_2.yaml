@@ -1,0 +1,11 @@
+# The arrow sign on the rock, pointing to the mountain.
+signs:
+  - id: arrow
+    region: [282, 48, 55, 20]
+    clear:
+      mode: diffuse
+      quad: [[281, 55.5], [336, 48.5], [336, 60.5], [281, 67]]
+    corners: [[284, 56], [335, 50], [335, 60], [284, 66.5]]
+    text: signs.mayo01_2_arrow
+    size: 8
+    color: "#000000"

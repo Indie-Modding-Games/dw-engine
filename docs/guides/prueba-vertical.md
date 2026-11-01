@@ -51,8 +51,9 @@ El juego empieza donde dice `field/warps` del paquete `game` (`start`: `twna01`,
 | `--explore` | Empieza con la [exploración libre](../architecture/warps-de-script.md#exploración-libre) encendida en esta ejecución, sin guardarlo; sin él, el juego usa el ajuste del menú de pausa (apagado por defecto) |
 | `--skip-steps <tipo>[,<tipo>...]` | Salta los pasos de esos tipos (`fullscreen` en un X sin gestor de ventanas); el informe lo dice, y saltar `walk_to` o `wait` deja la ejecución en parcial (sale con 2) |
 
-Las vistas de desarrollo siguen disponibles: `--test-scene`, `--map <id>`, `--model-viewer`, `--ui-demo` y
-`--check-content <carpeta>`.
+Las vistas de desarrollo siguen disponibles: `--test-scene`, `--map <id>`, `--model-viewer`, `--ui-demo`,
+`--check-content <carpeta>` y `--dump-signs <mapa>[,<mapa>...] --shots <carpeta>` (las imágenes de un mapa con rejilla
+para escribir los [carteles](carteles.md)).
 
 ### Controles
 

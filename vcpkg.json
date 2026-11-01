@@ -24,6 +24,7 @@
     { "name": "imgui", "features": ["sdl3-binding", "vulkan-binding", "docking-experimental"] },
     "doctest",
     "lodepng",
+    "freetype",
     "zstd",
     "opus",
     "libopusenc",
