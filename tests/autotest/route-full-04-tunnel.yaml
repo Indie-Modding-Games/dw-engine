@@ -1,0 +1,192 @@
+# The full story chain, chunk 4: on chunk 3's save (koda00, Centarumon recruited) the player walks back through the
+# jungle and the forest to the Drill Tunnel (mayo01_2, mayo11, tunn01), beats the digger of tunn04 (trigger 140), takes
+# the miner's job in tunn05, loads the cart, dumps it in tunn01 and is paid (variables 17 and 18,
+# route-etapa2-dirt.yaml), then lets five days and more go by caring for the partner, as the miners clear the rest on
+# their own (variable 18 to 10). It ends saving in slot_01 in tunn05, with the way on to tunn06 open. The wild ones on
+# the way end won as they start (encounters: win). The chain: docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+name: full-04
+device: keyboard
+timeout: 1200
+steps:
+  - resize: [1280, 720]
+  - wait: {map: koda00, seconds: 2, timeout: 60}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: trop06, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 110, encounters: win, timeout: 300}
+  - wait: {map: trop05, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 300}
+  - wait: {map: trop01, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: trop00, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: mayo08a, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: mayo02, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: mayo01, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: mayo01_2, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 112, encounters: win, timeout: 240}
+  - wait: {map: mayo11, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: tunn01, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: tunn02, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 113, encounters: win, timeout: 240}
+  - wait: {map: tunn04, partner_within: 600, seconds: 2, timeout: 30}
+  - screenshot: tunn04
+  # The digger stands at (1061, -797) in the original's axes: the player stands just south of it, facing it, and
+  # confirm talks (route-etapa2-dirt.yaml). The Rookie partner does not beat him in time: after a while on screen
+  # the fight ends won (win_after).
+  - walk_to: {point: [1061, 600], radius: 150, encounters: win, timeout: 120}
+  - script: place("player 1061 -672 0")
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {confirm: true, shown: battle, seconds: 1, timeout: 60}
+  - wait: {confirm: true, win_after: 40, setting: {story.trigger.140: "true"}, timeout: 300}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
+  - screenshot: tunn04-after
+  - walk_to: {trigger: 110, encounters: win, timeout: 180}
+  - wait: {map: tunn02, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 112, encounters: win, timeout: 240}
+  - wait: {map: tunn05, seconds: 2, timeout: 30}
+  # The miner's job: the cells of section 0x33 in front of him; confirm takes it (the first answer).
+  - walk_to: {point: [2850, -1650], radius: 30, stop_on_scene: true, timeout: 180}
+  - repeat: {times: 20, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.2}}]}
+  - wait: {confirm: true, setting: {story.var.17: "2"}, timeout: 60}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 1, timeout: 60}
+  - walk_to: {point: [2050, -450], radius: 80, timeout: 120}
+  - tap: {key: return}
+  - wait: {confirm: true, setting: {story.var.17: "3"}, timeout: 60}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 1, timeout: 60}
+  - screenshot: tunn05-loaded
+  # To the dump of tunn01, clear of the goblin of tunn02.
+  - walk_to: {trigger: 110, encounters: win, timeout: 180}
+  - wait: {map: tunn02, seconds: 2, timeout: 30}
+  - walk_to: {point: [600, 650], radius: 150, encounters: win, timeout: 120}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: tunn01, seconds: 2, timeout: 30}
+  - walk_to: {point: [-150, -2000], radius: 80, stop_on_scene: true, timeout: 180}
+  - wait: {confirm: true, setting: {story.var.17: "4"}, timeout: 60}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 1, timeout: 60}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: tunn02, seconds: 2, timeout: 30}
+  - walk_to: {point: [600, 650], radius: 150, encounters: win, timeout: 120}
+  - walk_to: {trigger: 112, encounters: win, timeout: 240}
+  - wait: {map: tunn05, seconds: 2, timeout: 30}
+  - walk_to: {point: [2850, -1650], radius: 30, stop_on_scene: true, timeout: 180}
+  - wait: {confirm: true, setting: {story.var.18: "1"}, timeout: 60}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
+  - screenshot: tunn05-paid
+  # Five new days: stretches of about four hours each, with the care a player gives between them
+  # (route-loop-keyboard.yaml's loop), until the mine's day counter (variable 30) is 5; no more days go by than the
+  # miners need, as the partner's lifetime runs on. The food and the medicine stand for what a player buys in the city.
+  - script: give_item("medicine 20")
+  - script: give_item("meat 40")
+  - repeat:
+      times: 40
+      steps:
+        - when:
+            setting: {story.var.30: "0"}
+            steps:
+              - script: clock_speed("600")
+              - wait: {seconds: 0.4}
+              - script: clock_speed("1")
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - wait: {seconds: 0.1}
+              - script_if:
+                  partner_has: partner_menu.condition.sick
+                  setting: {bag.result: partner_menu.bag_result.refused}
+                  script: 'scold("")'
+              - wait: {seconds: 0.1}
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+              - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+              - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+              - wait: {seconds: 0.1}
+              - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - when:
+            setting: {story.var.30: "1"}
+            steps:
+              - script: clock_speed("600")
+              - wait: {seconds: 0.4}
+              - script: clock_speed("1")
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - wait: {seconds: 0.1}
+              - script_if:
+                  partner_has: partner_menu.condition.sick
+                  setting: {bag.result: partner_menu.bag_result.refused}
+                  script: 'scold("")'
+              - wait: {seconds: 0.1}
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+              - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+              - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+              - wait: {seconds: 0.1}
+              - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - when:
+            setting: {story.var.30: "2"}
+            steps:
+              - script: clock_speed("600")
+              - wait: {seconds: 0.4}
+              - script: clock_speed("1")
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - wait: {seconds: 0.1}
+              - script_if:
+                  partner_has: partner_menu.condition.sick
+                  setting: {bag.result: partner_menu.bag_result.refused}
+                  script: 'scold("")'
+              - wait: {seconds: 0.1}
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+              - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+              - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+              - wait: {seconds: 0.1}
+              - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - when:
+            setting: {story.var.30: "3"}
+            steps:
+              - script: clock_speed("600")
+              - wait: {seconds: 0.4}
+              - script: clock_speed("1")
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - wait: {seconds: 0.1}
+              - script_if:
+                  partner_has: partner_menu.condition.sick
+                  setting: {bag.result: partner_menu.bag_result.refused}
+                  script: 'scold("")'
+              - wait: {seconds: 0.1}
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+              - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+              - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+              - wait: {seconds: 0.1}
+              - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - when:
+            setting: {story.var.30: "4"}
+            steps:
+              - script: clock_speed("600")
+              - wait: {seconds: 0.4}
+              - script: clock_speed("1")
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - wait: {seconds: 0.1}
+              - script_if:
+                  partner_has: partner_menu.condition.sick
+                  setting: {bag.result: partner_menu.bag_result.refused}
+                  script: 'scold("")'
+              - wait: {seconds: 0.1}
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+              - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+              - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+              - wait: {seconds: 0.1}
+              - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+  - wait: {seconds: 30}
+  - walk_to: {trigger: 110, encounters: win, timeout: 180}
+  - wait: {map: tunn02, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 112, encounters: win, timeout: 240}
+  - wait: {map: tunn05, partner_within: 600, seconds: 2, timeout: 30}
+  - wait: {setting: {story.var.18: "10"}, timeout: 10}
+  - screenshot: tunn05-cleared
+  - script: save("slot_01")
+  - wait: {seconds: 2}

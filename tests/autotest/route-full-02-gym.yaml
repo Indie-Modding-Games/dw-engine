@@ -1,0 +1,118 @@
+# The full story chain, chunk 2: on chunk 1's save (by the broken bridge, mayo08b) the player walks back to the gym
+# by the village (trai00) and trains the partner there for thirty-two sessions, eight rounds of offense, defense,
+# speed and HP, caring for it after each as a player would (route-loop-keyboard.yaml's care: its favourite food when
+# hungry, the toilet, sleep when sleepy, a medicine when sick). This is the grinding the real game asks for before the
+# tunnel's digger and the boulder past it, which a fresh Rookie loses or cannot move. The food and the medicine stand
+# for what a player buys in the city. It ends saving in slot_01 at the gym. The chain: docs/guides/prueba-vertical.md
+# (scripts/story-chain.sh).
+name: full-02
+device: keyboard
+timeout: 1200
+steps:
+  - resize: [1280, 720]
+  - wait: {map: mayo08b, partner_within: 400, seconds: 2, timeout: 60}
+  - walk_to: {trigger: 111, encounters: win, timeout: 180}
+  - wait: {map: mayo02, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: mayo01, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: mayo01_2, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: mayo00, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: trai00, partner_within: 400, seconds: 2, timeout: 30}
+  - screenshot: gym
+  - script: give_item("medicine 20")
+  - script: give_item("meat 40")
+  # A round: one session of each course, each followed by the care; then, once the partner is tired, the hours go by
+  # (two game hours a real second) with the same care until it gets sleepy and sleeps, which rests it. An evolution on
+  # the way plays its scene and the care waits it out.
+  - repeat:
+      times: 8
+      steps:
+        - script: train("trn offense")
+        - wait: {seconds: 0.2}
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - wait: {seconds: 0.1}
+        - script_if:
+            partner_has: partner_menu.condition.sick
+            setting: {bag.result: partner_menu.bag_result.refused}
+            script: 'scold("")'
+        - wait: {seconds: 0.1}
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+        - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+        - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+        - wait: {seconds: 0.1}
+        - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - script: train("trn defense")
+        - wait: {seconds: 0.2}
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - wait: {seconds: 0.1}
+        - script_if:
+            partner_has: partner_menu.condition.sick
+            setting: {bag.result: partner_menu.bag_result.refused}
+            script: 'scold("")'
+        - wait: {seconds: 0.1}
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+        - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+        - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+        - wait: {seconds: 0.1}
+        - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - script: train("trn speed")
+        - wait: {seconds: 0.2}
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - wait: {seconds: 0.1}
+        - script_if:
+            partner_has: partner_menu.condition.sick
+            setting: {bag.result: partner_menu.bag_result.refused}
+            script: 'scold("")'
+        - wait: {seconds: 0.1}
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+        - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+        - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+        - wait: {seconds: 0.1}
+        - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - script: train("trn hp")
+        - wait: {seconds: 0.2}
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - wait: {seconds: 0.1}
+        - script_if:
+            partner_has: partner_menu.condition.sick
+            setting: {bag.result: partner_menu.bag_result.refused}
+            script: 'scold("")'
+        - wait: {seconds: 0.1}
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+        - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+        - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+        - wait: {seconds: 0.1}
+        - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - repeat:
+            times: 20
+            steps:
+              - when:
+                  partner_has: partner_menu.condition.tired
+                  steps:
+                    - script: clock_speed("120")
+                    - wait: {seconds: 0.5}
+                    - script: clock_speed("1")
+                    - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+                    - wait: {seconds: 0.1}
+                    - script_if:
+                        partner_has: partner_menu.condition.sick
+                        setting: {bag.result: partner_menu.bag_result.refused}
+                        script: 'scold("")'
+                    - wait: {seconds: 0.1}
+                    - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+                    - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+                    - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+                    - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+                    - wait: {seconds: 0.1}
+                    - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
+  - screenshot: gym-trained
+  - script: save("slot_01")
+  - wait: {seconds: 2}

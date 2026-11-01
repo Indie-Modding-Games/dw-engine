@@ -1,0 +1,29 @@
+# The full story chain, chunk 9: on chunk 8's save (mgen99) the summit and the ending, as route-etapa8-final.yaml
+# does: the summit's tile, the last fight (ended won after a while on screen, win_after), the ending map (tend02), the
+# question to save the cleared game (Enter on "Yes"), the credits movie and the title. The route plays the movies.
+# The chain: docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+name: full-09
+device: keyboard
+timeout: 1200
+movies: true
+steps:
+  - resize: [1280, 720]
+  - wait: {map: mgen99, seconds: 3, timeout: 120}
+  - screenshot: summit
+  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
+  - wait: {confirm: true, shown: battle, timeout: 600}
+  - screenshot: battle
+  # The last boss outlasts a written save's partner: after 20 s on screen the fight ends with battle_win.
+  - wait: {confirm: true, win_after: 20, setting: {story.trigger.50: "true"}, timeout: 900}
+  - screenshot: cleared
+  - wait: {confirm: true, map: tend02, seconds: 2, timeout: 300}
+  - screenshot: tend
+  - wait: {confirm: true, shown: save_machine, timeout: 600}
+  - screenshot: save-question
+  - repeat: {times: 4, steps: [{tap: {key: return}}, {wait: {seconds: 2.5}}]}
+  - wait: {hidden: save_machine, timeout: 120}
+  - screenshot: saved
+  # The elder's last words, the ending scene and the credits.
+  - repeat: {times: 8, steps: [{wait: {confirm: true, seconds: 15}}, {screenshot: ending}]}
+  - wait: {confirm: true, shown: main_menu, timeout: 900}
+  - screenshot: title

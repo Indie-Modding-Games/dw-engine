@@ -1,0 +1,59 @@
+# The full story chain, chunk 1: from the title screen ("Press Start", the main menu, a new game in slot 1) through
+# the opening (the waking scene and the elder's talk), File City, the gym and the Native Forest's first fight and
+# recruit, up to the broken bridge and the fight its Aruraumon starts. It ends saving in slot_01, where chunk 2
+# starts. The chain and its runner: docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+name: full-01
+device: keyboard
+timeout: 1200
+main_menu: true
+boot_screen: true
+new_game: original
+steps:
+  - resize: [1280, 720]
+  - wait: {seconds: 2}
+  - screenshot: boot
+  - tap: {key: return}
+  - wait: {shown: main_menu, seconds: 1, timeout: 60}
+  - screenshot: title
+  - menu_select: play
+  - wait: {shown: save_slots, seconds: 0.5, timeout: 30}
+  - menu_select: slot-1
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - menu_select: yes
+  # The opening: the waking scene on topn01, the elder's talk in his house, then File City.
+  - wait: {map: topn01, seconds: 1, timeout: 120}
+  - screenshot: topn01-wake
+  # The chain's waits confirm each box as it comes (confirm: true) instead of a fixed count of presses, which
+  # misses boxes on a loaded machine.
+  - wait: {confirm: true, map: room08, seconds: 1, timeout: 300}
+  - wait: {confirm: true, map: twna01, partner_within: 400, hidden: story_textbox, seconds: 2, timeout: 400}
+  - screenshot: twna01-free
+  # File City to the gym and on to the forest (route-etapa1.yaml's steps).
+  - walk_to: {trigger: 111}
+  - wait: {map: trai00, partner_within: 400, seconds: 0.5}
+  - walk_to: {trigger: 110}
+  - wait: {map: mayo00, seconds: 2}
+  - wait: {confirm: true, shown: battle, timeout: 120}
+  - screenshot: mayo00-battle
+  - wait: {confirm: true, hidden: battle, seconds: 1, timeout: 400}
+  - wait: {confirm: true, setting: {story.trigger.203: "true"}, timeout: 120}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
+  - screenshot: mayo00-recruit
+  - walk_to: {trigger: 52}
+  - wait: {map: mayo01_2, partner_within: 400, seconds: 0.5}
+  - walk_to: {trigger: 113}
+  - wait: {map: mayo01, partner_within: 400, seconds: 0.5}
+  - walk_to: {trigger: 113}
+  - wait: {map: mayo02, partner_within: 400, seconds: 0.5}
+  - walk_to: {trigger: 51}
+  - wait: {map: mayo08b, partner_within: 400, seconds: 0.5}
+  - screenshot: mayo08b-bridge
+  # The bridge's Aruraumon (route-etapa1.yaml: it only sees a player within 500 of its home on each axis).
+  - walk_to: {point: [-930, 2310], radius: 50, walk: true, timeout: 20}
+  - wait: {confirm: true, shown: battle, seconds: 1, timeout: 60}
+  - screenshot: mayo08b-battle
+  - wait: {confirm: true, hidden: battle, seconds: 2, timeout: 400}
+  - wait: {confirm: true, hidden: story_textbox, partner_within: 600, seconds: 3, timeout: 300}
+  - screenshot: after-bridge
+  - script: save("slot_01")
+  - wait: {seconds: 2}

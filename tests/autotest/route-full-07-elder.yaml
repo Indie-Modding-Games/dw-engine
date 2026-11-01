@@ -1,0 +1,123 @@
+# The full story chain, chunk 7: on chunk 6's save (File City, twna02) the elder's two scenes of the critical path.
+# THE SHORTCUT: the chain earns 10 of the prosperity points the elder asks for (Agumon, Betamon, Coelamon, Centarumon,
+# Meramon, Drimogemon); the other recruits are not chained yet (their stage routes start from written triggers, and
+# Leomon's cave asks for 45 points), so this chunk writes recruit triggers (200 + species) in two parts. First three
+# (Leomon, Elecmon, Shellmon) for the 15 points of the elder's first scene: in his house (room08) he sets trigger 87
+# and out of it Greymon comes to fight (script 162 section 0x39) and joins (205). Then the rest route-
+# etapa8-jijimon.yaml writes (77 points with Greymon's): in the grown house (room10) the elder tells of Mt. Infinity
+# (354), and out of it Airdramon swoops down, the fight, the elder's scene in room11 and back to the city (twna08).
+# Mt. Infinity's wild ones are the game's strongest: the partner gets the merit shop's chips, as a player who saved
+# merit would have bought them, and the fights end won after a few seconds on screen (win_after). It ends saving
+# in slot_01 on twna08. The chain: docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+name: full-07
+device: keyboard
+timeout: 1200
+steps:
+  - resize: [1280, 720]
+  - wait: {map: twna02, seconds: 2, timeout: 60}
+  # Shortcut, first part: three recruits of the free route (Leomon 248, Elecmon 218, Shellmon 235) bring the city to
+  # the 15 points the elder's Greymon scene asks for; a save counts them.
+  - script: story_set("trigger 248 on")
+  - script: story_set("trigger 218 on")
+  - script: story_set("trigger 235 on")
+  - script: save("slot_01")
+  - expect_setting: {story.var.1: "15"}
+  - walk_to: {trigger: 52, timeout: 120}
+  - wait: {map: room08, seconds: 2, timeout: 60}
+  # The elder sits at the back of the room: the player walks up, stands facing him and talks (Enter).
+  - walk_to: {point: [2, -250], radius: 80, timeout: 60}
+  - script: place("player 2 320 2048")
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - wait: {confirm: true, setting: {story.trigger.87: "true"}, timeout: 200}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 3, timeout: 120}
+  - walk_to: {trigger: 51, timeout: 90}
+  # Out of the house, on the square's tiles (57), Greymon comes to fight (script 162 section 0x39) and joins (205).
+  - wait: {map: twna02, seconds: 2, timeout: 60}
+  - walk_to: {trigger: 57, stop_on_scene: true, timeout: 90}
+  - wait: {confirm: true, shown: battle, timeout: 300}
+  - screenshot: greymon
+  # Greymon outlasts the chain's Champion (a Numemon lost it within 40 s): after a few seconds on screen the fight
+  # ends won (win_after).
+  - wait: {confirm: true, win_after: 8, setting: {story.trigger.205: "true"}, timeout: 600}
+  - wait: {confirm: true, hidden: story_textbox, partner_within: 600, seconds: 3, timeout: 120}
+  - screenshot: greymon-joined
+  # Shortcut, second part: the other recruits route-etapa8-jijimon.yaml writes; a save counts them (77 points).
+  - script: 'for n = 203, 258 do if not ({[206]=1, [207]=1, [212]=1, [214]=1, [220]=1, [221]=1, [225]=1, [246]=1, [254]=1, [256]=1})[n] then story_set("trigger " .. n .. " on") end end'
+  - script: save("slot_01")
+  - expect_setting: {story.var.1: "77"}
+  # The chips: a partner with little discipline often refuses one; a refusal is scolded away (the next item is
+  # taken), as in the game.
+  - script: give_item("off_chip 18")
+  - script: give_item("def_chip 18")
+  - script: give_item("hp_chip 6")
+  - script: give_item("quick_chip 16")
+  - script: give_item("sup_recovery 20")
+  - script: give_item("large_mp 10")
+  - repeat:
+      times: 18
+      steps:
+        - script: 'use_item("off_chip")'
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'scold("")'}
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("off_chip")'}
+        - wait: {seconds: 1.5}
+  - repeat:
+      times: 18
+      steps:
+        - script: 'use_item("def_chip")'
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'scold("")'}
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("def_chip")'}
+        - wait: {seconds: 1.5}
+  - repeat:
+      times: 6
+      steps:
+        - script: 'use_item("hp_chip")'
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'scold("")'}
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("hp_chip")'}
+        - wait: {seconds: 1.5}
+  - repeat:
+      times: 16
+      steps:
+        - script: 'use_item("quick_chip")'
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'scold("")'}
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("quick_chip")'}
+        - wait: {seconds: 1.5}
+  # The chips raise the maximums; a full recovery fills them.
+  - script: use_item("sup_recovery")
+  - wait: {seconds: 1.5}
+  - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'scold("")'}
+  - wait: {seconds: 1.5}
+  - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("sup_recovery")'}
+  - wait: {seconds: 1.5}
+  # With 50 points the elder's house is the grown one (cells 52, room10).
+  - walk_to: {trigger: 52, timeout: 120}
+  - wait: {map: room10, seconds: 2, timeout: 60}
+  # The elder (original x -25, z 417, route-etapa7-montana.yaml): a click walks up to him, Enter talks.
+  - walk_to: {point: [-25, -100], radius: 100, timeout: 120}
+  - click: [-25, -417]
+  - wait: {seconds: 3}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - wait: {confirm: true, setting: {story.trigger.354: "true"}, timeout: 200}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 3, timeout: 120}
+  - walk_to: {point: [100, 0], radius: 100, timeout: 120}
+  - walk_to: {trigger: 51, timeout: 90}
+  # Out of the house Airdramon swoops down: the fight, the elder's scene in room11 and back to the city.
+  - wait: {confirm: true, shown: battle, timeout: 300}
+  - screenshot: airdramon
+  # Airdramon too can beat the chain's Numemon within 40 s (the loss sends the player back into room10): the fight
+  # ends won after a few seconds on screen, as Greymon's.
+  - wait: {confirm: true, win_after: 8, map: room11, timeout: 600}
+  - wait: {confirm: true, map: twna08, partner_within: 600, seconds: 3, timeout: 300}
+  - screenshot: city
+  - script: save("slot_01")
+  - wait: {seconds: 2}

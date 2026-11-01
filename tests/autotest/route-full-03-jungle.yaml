@@ -1,0 +1,135 @@
+# The full story chain, chunk 3: on chunk 2's save (the gym, trai00) the player walks to the river of mayo05 and
+# waits there for the afternoon (hours 15..19), when Coelamon comes up and gives the ride across to the
+# jungle (script 6, section 0x33; trop01). Betamon in trop04 (204, route-etapa2-jungla.yaml); trop00, where the
+# bridge's side is seen ("Oh, a bridge!", trigger 185); back by mayo08a and mayo02 to mayo05, where Coelamon lies down
+# as the bridge (249, route-etapa2-coelamon.yaml); and over it again to the ladder lottery of trop06 and Centarumon
+# (236, route-etapa2-centarumon.yaml). The wild ones on the way end won as they start (encounters: win): the chain's
+# partner may still be a Rookie. Centarumon's scene ends in the forest past the lottery (koda00), where it saves in
+# slot_01. The chain: docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+name: full-03
+device: keyboard
+timeout: 1200
+steps:
+  - resize: [1280, 720]
+  - wait: {map: trai00, partner_within: 600, seconds: 2, timeout: 60}
+  - walk_to: {trigger: 110, encounters: win, timeout: 180}
+  - wait: {map: mayo00, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 52, encounters: win, timeout: 240}
+  - wait: {map: mayo01_2, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 113, encounters: win, timeout: 240}
+  - wait: {map: mayo01, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 113, encounters: win, timeout: 240}
+  - wait: {map: mayo02, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 112, encounters: win, timeout: 240}
+  - wait: {map: mayo04b, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: mayo05, partner_within: 600, seconds: 2, timeout: 30}
+  # The afternoon: the clock runs fast (an hour a second) until 16:00, then normal again; the map is entered anew so
+  # its entry section sees the hour.
+  - script: clock_speed("60")
+  - wait: {setting: {hud.clock.hour: "16"}, timeout: 40}
+  - script: clock_speed("1")
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: mayo04b, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: mayo05, partner_within: 600, seconds: 2, timeout: 30}
+  - screenshot: mayo05-afternoon
+  - walk_to: {point: [1250, -50], radius: 150, stop_on_scene: true, timeout: 120}
+  # Coelamon's offer: confirm takes the first answer, the ride.
+  - repeat: {times: 40, steps: [{when: {map: mayo05, shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.2}}]}
+  - wait: {map: trop01, partner_within: 600, seconds: 2, timeout: 60}
+  - walk_to: {trigger: 113, encounters: win, timeout: 240}
+  - wait: {map: trop04, partner_within: 600, seconds: 2, timeout: 30}
+  - walk_to: {point: [366, -1700], radius: 60, encounters: true, timeout: 120}
+  - wait: {confirm: true, setting: {story.trigger.204: "true"}, timeout: 120}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
+  - screenshot: trop04-betamon
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: trop01, partner_within: 600, seconds: 1, timeout: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: trop00, partner_within: 600, seconds: 2, timeout: 30}
+  # The cells of section 0x35 fence the bridge's side of the jungle (x -1450..-150).
+  - walk_to: {point: [-800, -1000], radius: 150, encounters: win, timeout: 120}
+  - wait: {confirm: true, setting: {story.trigger.185: "true"}, timeout: 60}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 1, timeout: 60}
+  - screenshot: trop00-bridge
+  # Back to the river of mayo05: Coelamon lies down as the bridge.
+  - walk_to: {trigger: 110, encounters: win, timeout: 180}
+  - wait: {map: mayo08a, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: mayo02, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 112, encounters: win, timeout: 240}
+  - wait: {map: mayo04b, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: mayo05, partner_within: 600, seconds: 2, timeout: 30}
+  - walk_to: {point: [1250, -50], radius: 150, stop_on_scene: true, timeout: 120}
+  - wait: {confirm: true, setting: {story.trigger.249: "true"}, timeout: 180}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 3, timeout: 120}
+  - screenshot: mayo05-coelamon
+  # Into the jungle again: mayo02's way north (cells 51) leads to mayo08a now that the bridge's side is known.
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: mayo04b, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 110, encounters: win, timeout: 240}
+  - wait: {map: mayo02, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: mayo08a, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 112, encounters: win, timeout: 240}
+  - wait: {map: trop00, partner_within: 600, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: trop01, partner_within: 600, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 112, encounters: win, timeout: 240}
+  - wait: {map: trop05, partner_within: 600, seconds: 1, timeout: 30}
+  - walk_to: {trigger: 110, encounters: win, timeout: 300}
+  # The ladder lottery (route-etapa2-centarumon.yaml): the entry cell's alert and the right end at random.
+  - wait: {map: trop06, seconds: 2, timeout: 30}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
+  - walk_to: {point: [0, 3600], radius: 100, timeout: 60}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 1, timeout: 60}
+  - screenshot: trop06
+  - when:
+      setting: {story.var.116: "0"}
+      steps:
+        - walk_to: {point: [-1550, 3600], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [-1550, 3250], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [-1600, 1700], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [0, 1700], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [0, 400], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [1550, 700], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [1550, -2200], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [0, -2150], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [0, -3000], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [-1600, -2900], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [-1600, -3550], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [-1600, -4000], radius: 60, stop_on_scene: true, timeout: 120}
+  - when:
+      setting: {story.var.116: "1"}
+      steps:
+        - walk_to: {point: [1550, 3600], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [1550, 3250], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [1550, 900], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [1550, 700], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [0, 700], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [0, -700], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [-1600, -750], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [-1600, -2750], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [0, -3000], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [0, -3700], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [0, -4000], radius: 60, stop_on_scene: true, timeout: 120}
+  - when:
+      setting: {story.var.116: "2"}
+      steps:
+        - walk_to: {point: [0, 3250], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [0, 1700], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [-1600, 1700], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [-1600, -750], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [0, -700], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [0, -2150], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [1550, -2200], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [1550, -3600], radius: 100, encounters: win, timeout: 180}
+        - walk_to: {point: [1550, -4000], radius: 60, stop_on_scene: true, timeout: 120}
+  - wait: {confirm: true, setting: {story.trigger.236: "true"}, timeout: 180}
+  # The scene ends taking the player on to the forest past the lottery (koda00).
+  - wait: {confirm: true, map: koda00, hidden: story_textbox, partner_within: 600, seconds: 2, timeout: 120}
+  - screenshot: koda00
+  - script: save("slot_01")
+  - wait: {seconds: 2}

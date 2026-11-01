@@ -507,6 +507,44 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_9 --saves <copia de p
     --start frzl05 --lang en --seed 1 --autotest tests/autotest/route-etapa9-back.yaml --shots <capturas>/etapa9
 ```
 
+#### La cadena completa
+
+Las rutas `tests/autotest/route-full-NN-*.yaml` juegan la historia entera en orden, de la portada a los créditos, con
+el candado tal como está (`active_stage`). Cada tramo empieza en la partida que el anterior guardó en `slot_01` (el
+primero, en la portada con una partida nueva) y dura menos de 20 minutos:
+
+| Tramo | Qué juega |
+|---|---|
+| 01 | Portada, partida nueva, la apertura, Agumon (203) y la pelea del puente roto (mayo08b) |
+| 02 | Vuelta al gimnasio (trai00): 32 sesiones con los cuidados después de cada una |
+| 03 | El paseo de Coelamon por la tarde, Betamon (204), el puente de Coelamon (249) y Centarumon (236) |
+| 04 | El túnel: el excavador (140), el trabajo de la mina (variables 17 y 18) y cinco días de cuidados |
+| 05 | La roca de tunn06 (120), Meramon (209) y Drimogemon (238); guarda en tunn09 |
+| 06 | La muerte de vejez del compañero, el renacer (se queda el nombre), el gimnasio y un campeón (Numemon) |
+| 07 | **Atajo**: el anciano (87), Greymon (205), el resto de reclutas escrito, Airdramon (354) y twna08 |
+| 08 | La subida a Mt. Infinity hasta mgen99 |
+| 09 | El jefe final, el guardado de fin de juego, los créditos y la portada |
+
+El compañero de la cadena muere de viejo hacia el día 12 (los cinco días del túnel y los tres de Drimogemon), así
+que el tramo 06 juega la muerte y el renacer de verdad: el anciano rechaza a un compañero de nivel novato o menor.
+
+`scripts/story-chain.sh` las corre en orden, se para en el primer tramo que falla y escribe una línea por tramo
+(`full-NN PASS 4m49s ...` o `full-NN FAIL ...: <motivo>`). Un tramo que falla se repite una vez antes de darlo por
+fallado (`CHAIN_RETRIES`), porque con la máquina cargada las rutas a veces llegan tarde. `--from NN` empieza en el
+tramo NN con la partida que dejó el anterior en `<salida>/saves/<NN-1>/`:
+
+```sh
+DISPLAY=:23 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json \
+    scripts/story-chain.sh --content <carpeta> --out <salida> [--from 03] [--to 05]
+```
+
+Atajos que la cadena declara (lo que una partida real ganaría jugando más): los salvajes del camino se ganan al
+empezar (`encounters: win`); los jefes que el compañero no gana a tiempo terminan ganados tras un rato
+(`win_after`); la comida, las medicinas y los chips están en la bolsa en vez de comprarse; el tiempo pasa deprisa
+(`clock_speed`) para esperar la tarde o los días del túnel; y el tramo 07 escribe en dos partes los reclutas de las
+etapas 4 a 7 (primero Leomon, Elecmon y Shellmon para los 15 puntos de la primera escena del anciano; luego el resto
+hasta 77 de prosperidad), que aún no tienen tramos encadenados: la cueva de Leomon pide 45 de prosperidad.
+
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
 los ajustes del usuario. Como no tiene las preguntas de la apertura ni las películas, su partida nueva empieza en la
 cadena sembrada (el campo libre de File City) salvo que la ruta diga `new_game: original`, como `route-etapa1`.

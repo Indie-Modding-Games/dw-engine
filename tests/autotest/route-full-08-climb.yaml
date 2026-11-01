@@ -1,0 +1,94 @@
+# The full story chain, chunk 8: on chunk 7's save (File City, twna08, the way up open) the player climbs Mt.
+# Infinity as route-etapa8-subida.yaml does: the gate (tile 58), mgen01 to mgen10, mgen98 and mgen99, with the forced
+# fights of mgen06 (321) and mgen98 (326) ended won after a while on screen (win_after) and Megadramon's question
+# answered "hurry up". The wild ones on the way end won as they start (encounters: win). It ends saving in slot_01
+# on mgen99. The chain: docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+name: full-08
+device: keyboard
+timeout: 1200
+steps:
+  - resize: [1280, 720]
+  - wait: {map: twna08, seconds: 2, timeout: 120}
+  # Airdramon's fight (chunk 7) can leave the partner on its last hit points: a full recovery from the bag first, as
+  # a player would before the climb. A partner with little discipline often refuses: a refusal is scolded away (the
+  # next item is taken), as in the game.
+  - script: use_item("sup_recovery")
+  - wait: {seconds: 1.5}
+  - repeat:
+      times: 3
+      steps:
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'scold("")'}
+        - wait: {seconds: 1.5}
+        - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("sup_recovery")'}
+        - wait: {seconds: 1.5}
+  - expect_setting: {bag.result: partner_menu.bag_result.used}
+  # The city's gate (tile 58) walks the player past the wall (section 0x3a); the path up starts at tile 56.
+  - walk_to: {trigger: 58, stop_on_scene: true, timeout: 240}
+  - wait: {seconds: 5}
+  - walk_to: {trigger: 56, timeout: 240}
+  - wait: {confirm: true, map: mgen01, seconds: 3, timeout: 120}
+  - screenshot: mgen01
+  - walk_to: {trigger: 51, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen02, seconds: 2, timeout: 120}
+  - walk_to: {trigger: 52, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen03, seconds: 2, timeout: 120}
+  - walk_to: {trigger: 51, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen04, seconds: 2, timeout: 120}
+  - walk_to: {trigger: 51, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen05, seconds: 2, timeout: 120}
+  - walk_to: {trigger: 51, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen06, seconds: 2, timeout: 120}
+  - screenshot: mgen06
+  - script: use_item("sup_recovery")
+  - wait: {seconds: 1.5}
+  - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'scold("")'}
+  - wait: {seconds: 1.5}
+  - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("sup_recovery")'}
+  - wait: {seconds: 1.5}
+  - walk_to: {trigger: 53, stop_on_scene: true, encounters: win, timeout: 240}
+  - wait: {confirm: true, shown: battle, timeout: 120}
+  - screenshot: mgen06-battle
+  # A boss outlasts a written save's partner: after some seconds on screen the fight ends with battle_win.
+  - wait: {confirm: true, win_after: 12, setting: {story.trigger.321: "true"}, timeout: 400}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
+  - walk_to: {trigger: 51, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen07, seconds: 2, timeout: 120}
+  - screenshot: mgen07
+  - walk_to: {trigger: 51, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen08, seconds: 2, timeout: 120}
+  - walk_to: {trigger: 51, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen09, seconds: 2, timeout: 120}
+  - walk_to: {trigger: 51, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen10, seconds: 2, timeout: 120}
+  - screenshot: mgen10
+  - script: use_item("sup_recovery")
+  - wait: {seconds: 1.5}
+  - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'scold("")'}
+  - wait: {seconds: 1.5}
+  - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("sup_recovery")'}
+  - wait: {seconds: 1.5}
+  - walk_to: {trigger: 53, stop_on_scene: true, encounters: win, timeout: 240}
+  # Megadramon's question: its cursor starts on the first answer (row 1 under the question), Enter takes it.
+  - wait: {confirm: true, setting: {story_textbox.cursor_row: "1"}, timeout: 120}
+  - screenshot: mgen10-choice
+  - tap: {key: return}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 3, timeout: 120}
+  - walk_to: {trigger: 51, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen98, seconds: 2, timeout: 120}
+  - screenshot: mgen98
+  - script: use_item("sup_recovery")
+  - wait: {seconds: 1.5}
+  - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'scold("")'}
+  - wait: {seconds: 1.5}
+  - script_if: {setting: {bag.result: partner_menu.bag_result.refused}, script: 'use_item("sup_recovery")'}
+  - wait: {seconds: 1.5}
+  - walk_to: {trigger: 53, walk: true, stop_on_scene: true, encounters: win, timeout: 240}
+  - wait: {confirm: true, shown: battle, timeout: 120}
+  - screenshot: mgen98-battle
+  - wait: {confirm: true, win_after: 20, setting: {story.trigger.326: "true"}, timeout: 400}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
+  - walk_to: {trigger: 52, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen99, seconds: 3, timeout: 120}
+  - screenshot: mgen99
+  - script: save("slot_01")
+  - wait: {seconds: 2}

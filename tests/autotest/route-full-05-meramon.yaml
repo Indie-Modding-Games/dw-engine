@@ -1,0 +1,120 @@
+# The full story chain, chunk 5: on chunk 4's save (tunn05, the pile cleared) the player goes on to the boulder of
+# tunn06, which the partner, a Champion by now, pushes for the miner (trigger 120, route-etapa2.yaml), and on to
+# tunn08, where the fire monster's fight ends with Meramon joining (209). Past Meramon the cave's side cells lead to
+# tunn07_2 and the digging Drimogemon of tunn09 (route-etapa2-drimogemon.yaml: the first talk, trigger 353; three
+# days with the partner's care; the thanks and the recruit, 238). It ends saving in slot_01 on tunn09. The chain:
+# docs/guides/prueba-vertical.md (scripts/story-chain.sh).
+name: full-05
+device: keyboard
+timeout: 1200
+steps:
+  - resize: [1280, 720]
+  - wait: {map: tunn05, seconds: 2, timeout: 60}
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: tunn06, partner_within: 600, seconds: 2, timeout: 30}
+  - screenshot: tunn06-boulder
+  # The boulder blocks the way north until the partner, a Champion by now, pushes it.
+  # The miner walks his waypoints just south of the boulder: he is put on his home point and the player runs up
+  # into him and talks (route-etapa2.yaml).
+  - walk_to: {point: [-897, 150], radius: 40}
+  - script: place("npc:5 -897 305 0")
+  - press: {key: up}
+  - wait: {seconds: 1.0}
+  - tap: {key: return}
+  - release: {key: up}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 20}
+  - wait: {confirm: true, setting: {story.trigger.120: "true"}, timeout: 120}
+  - wait: {confirm: true, map: tunn07, seconds: 2, timeout: 120}
+  - screenshot: tunn07
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: tunn08, seconds: 2, timeout: 30}
+  # The cells of section 0x33 across the cave start the scene and the fight; a Champion fresh from its evolution
+  # does not win it in time: after a while on screen the fight ends won (win_after).
+  - walk_to: {point: [-150, 1850], radius: 80, stop_on_scene: true}
+  - wait: {confirm: true, shown: battle, seconds: 1, timeout: 120}
+  - screenshot: tunn08-battle
+  - wait: {confirm: true, win_after: 40, setting: {story.trigger.209: "true"}, timeout: 400}
+  - wait: {confirm: true, hidden: story_textbox, partner_within: 600, seconds: 3, timeout: 120}
+  - screenshot: tunn08-meramon
+  # After Meramon the cave's side cells (52) lead to the tunnel Drimogemon digs.
+  - walk_to: {trigger: 52, encounters: win, timeout: 240}
+  - wait: {map: tunn07_2, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 112, encounters: win, timeout: 240}
+  - wait: {map: tunn07_3, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 51, encounters: win, timeout: 240}
+  - wait: {map: tunn09, partner_within: 600, seconds: 2, timeout: 30}
+  - screenshot: tunn09
+  - walk_to: {point: [-800, 1150], radius: 80, stop_on_scene: true, timeout: 120}
+  - wait: {confirm: true, setting: {story.trigger.353: "true"}, timeout: 60}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
+  # Three new days (variable 30 to 3, then no more), with the partner's care (the food and the medicine stand for
+  # what a player buys).
+  - script: give_item("medicine 10")
+  - script: give_item("meat 20")
+  - repeat:
+      times: 25
+      steps:
+        - when:
+            setting: {story.var.30: "0"}
+            steps:
+              - script: clock_speed("600")
+              - wait: {seconds: 0.4}
+              - script: clock_speed("1")
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - wait: {seconds: 0.1}
+              - script_if:
+                  partner_has: partner_menu.condition.sick
+                  setting: {bag.result: partner_menu.bag_result.refused}
+                  script: 'scold("")'
+              - wait: {seconds: 0.1}
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+              - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+              - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+              - wait: {seconds: 0.1}
+              - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - when:
+            setting: {story.var.30: "1"}
+            steps:
+              - script: clock_speed("600")
+              - wait: {seconds: 0.4}
+              - script: clock_speed("1")
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - wait: {seconds: 0.1}
+              - script_if:
+                  partner_has: partner_menu.condition.sick
+                  setting: {bag.result: partner_menu.bag_result.refused}
+                  script: 'scold("")'
+              - wait: {seconds: 0.1}
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+              - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+              - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+              - wait: {seconds: 0.1}
+              - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+        - when:
+            setting: {story.var.30: "2"}
+            steps:
+              - script: clock_speed("600")
+              - wait: {seconds: 0.4}
+              - script: clock_speed("1")
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - wait: {seconds: 0.1}
+              - script_if:
+                  partner_has: partner_menu.condition.sick
+                  setting: {bag.result: partner_menu.bag_result.refused}
+                  script: 'scold("")'
+              - wait: {seconds: 0.1}
+              - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+              - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+              - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+              - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+              - wait: {seconds: 0.1}
+              - wait: {confirm: true, hidden: story_textbox, seconds: 0.1, timeout: 60}
+  - wait: {seconds: 30}
+  - walk_to: {point: [-800, 1150], radius: 80, stop_on_scene: true, timeout: 120}
+  - wait: {confirm: true, setting: {story.trigger.238: "true"}, timeout: 180}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 60}
+  - screenshot: tunn09-drimogemon
+  - script: save("slot_01")
+  - wait: {seconds: 2}
