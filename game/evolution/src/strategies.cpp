@@ -1,6 +1,7 @@
 #include <dwe/game/evolution/messages.hpp>
 #include <dwe/game/evolution/strategies.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <memory>
@@ -28,17 +29,26 @@ StatValues requiredStats(const Requirement& requirement) {
   return {minimum.hp, minimum.mp, minimum.offense, minimum.defense, minimum.speed, minimum.brains};
 }
 
-bool meetsCareMistakes(const Requirement& requirement, const EvolutionInputs& inputs) {
-  if (requirement.careIsMaximum) {
-    return inputs.careMistakes <= requirement.careMistakes;
-  }
-  return inputs.careMistakes >= requirement.careMistakes;
+// The care mistakes point: at most the requirement with CareIsMaximumFlag, at least it otherwise.
+void reportCareMistakes(RequirementReport& report, const Requirement& requirement,
+                        const EvolutionInputs& inputs) {
+  report.careMistakes = requirement.careMistakes;
+  report.careIsMaximum = requirement.careIsMaximum;
+  report.careValue = inputs.careMistakes;
+  report.careMet = requirement.careIsMaximum ? inputs.careMistakes <= requirement.careMistakes
+                                             : inputs.careMistakes >= requirement.careMistakes;
 }
 
-bool meetsWeight(const Requirement& requirement, const EvolutionQuery& query) {
+// The weight point: within the margin of the weight asked for.
+void reportWeight(RequirementReport& report, const Requirement& requirement,
+                  const EvolutionQuery& query) {
   const std::int32_t margin = query.rules->requirements.weightMargin;
-  return requirement.weight - margin <= query.inputs->weight &&
-         query.inputs->weight <= requirement.weight + margin;
+  report.weight = requirement.weight;
+  report.weightMin = requirement.weight - margin;
+  report.weightMax = requirement.weight + margin;
+  report.weightValue = query.inputs->weight;
+  report.weightMet =
+      report.weightMin <= query.inputs->weight && query.inputs->weight <= report.weightMax;
 }
 
 // The index of the partner's highest compared stat. On a tie the original keeps the last one.
@@ -52,43 +62,55 @@ std::size_t highestStat(const StatValues& stats, bool tiePicksLast) {
   return highest;
 }
 
-// A rookie target scores when the partner's highest stat is one it favours; the others when every
-// stat reaches its minimum (a minimum of NoRequirement always does).
-bool meetsStats(const Requirement& requirement, const EvolutionQuery& query, Species target) {
+// The stats point. A rookie target scores when the partner's highest stat is one it favours; the
+// others when every stat reaches its minimum (a minimum of NoRequirement always does).
+void reportStats(RequirementReport& report, const Requirement& requirement,
+                 const EvolutionQuery& query, Species target) {
   const StatValues stats = comparedStats(query);
   const StatValues required = requiredStats(requirement);
-  if (query.tables->levelOf(target) == Level::Rookie) {
-    const bool tiePicksLast = query.rules->quirks.on(RookieStatTiePicksLast);
-    return required.at(highestStat(stats, tiePicksLast)) == FavouredStat;
-  }
+  const bool tiePicksLast = query.rules->quirks.on(RookieStatTiePicksLast);
+  report.favouredStats = query.tables->levelOf(target) == Level::Rookie;
+  report.highestStat = highestStat(stats, tiePicksLast);
+  const BaseStats& base = query.inputs->stats;
+  const StatValues raw{base.hp, base.mp, base.offense, base.defense, base.speed, base.brains};
   for (std::size_t i = 0; i < stats.size(); ++i) {
-    if (stats.at(i) < required.at(i)) {
-      return false;
-    }
+    StatLine& line = report.stats.at(i);
+    line.required = required.at(i);
+    line.value = stats.at(i);
+    line.stat = raw.at(i);
+    line.divisor = i < 2 ? query.rules->requirements.hpMpDivisor : 1;
+    line.met = report.favouredStats ? i == report.highestStat && line.required == FavouredStat
+                                    : line.value >= line.required;
   }
-  return true;
+  report.statsMet = report.favouredStats ? report.stats.at(report.highestStat).met
+                                         : std::ranges::all_of(report.stats, &StatLine::met);
 }
 
-bool meetsBattles(const Requirement& requirement, const EvolutionInputs& inputs) {
-  if (requirement.battles == NoRequirement) {
-    return false;
+void addBonus(RequirementReport& report, BonusKind kind, std::int32_t required, std::int32_t value,
+              bool isMaximum = false) {
+  if (required == NoRequirement) {
+    return;
   }
-  if (requirement.battlesAreMaximum) {
-    return inputs.battles <= requirement.battles;
-  }
-  return inputs.battles >= requirement.battles;
-}
-
-bool reaches(std::int32_t value, std::int32_t minimum) {
-  return minimum != NoRequirement && value >= minimum;
+  const bool met = isMaximum ? value <= required : value >= required;
+  report.bonus.push_back(
+      {.kind = kind, .required = required, .value = value, .isMaximum = isMaximum, .met = met});
 }
 
 // The bonus point: any one of the extra requirements.
-bool meetsBonus(const Requirement& requirement, const EvolutionInputs& inputs) {
-  return (requirement.from && inputs.species == *requirement.from) ||
-         reaches(inputs.discipline, requirement.discipline) ||
-         reaches(inputs.happiness, requirement.happiness) || meetsBattles(requirement, inputs) ||
-         reaches(inputs.learnedMoves, requirement.learnedMoves);
+void reportBonus(RequirementReport& report, const Requirement& requirement,
+                 const EvolutionInputs& inputs) {
+  if (requirement.from) {
+    report.bonus.push_back({.kind = BonusKind::From,
+                            .required = *requirement.from,
+                            .value = inputs.species,
+                            .met = inputs.species == *requirement.from});
+  }
+  addBonus(report, BonusKind::Discipline, requirement.discipline, inputs.discipline);
+  addBonus(report, BonusKind::Happiness, requirement.happiness, inputs.happiness);
+  addBonus(report, BonusKind::Battles, requirement.battles, inputs.battles,
+           requirement.battlesAreMaximum);
+  addBonus(report, BonusKind::LearnedMoves, requirement.learnedMoves, inputs.learnedMoves);
+  report.bonusMet = std::ranges::any_of(report.bonus, &BonusLine::met);
 }
 
 bool wasRaised(const EvolutionQuery& query, Species target) {
@@ -200,18 +222,29 @@ std::optional<Species> rookieTarget(const EvolutionQuery& query,
 
 } // namespace
 
-std::int32_t OriginalScoring::score(const EvolutionQuery& query, Species target,
-                                    std::optional<Species> currentBest) const {
+std::optional<RequirementReport> OriginalScoring::report(const EvolutionQuery& query,
+                                                         Species target) const {
   const Requirement* requirement = query.tables->requirement(target);
   if (requirement == nullptr) {
-    return 0;
+    return std::nullopt;
   }
-  const std::int32_t points =
-      static_cast<std::int32_t>(meetsCareMistakes(*requirement, *query.inputs)) +
-      static_cast<std::int32_t>(meetsWeight(*requirement, query)) +
-      static_cast<std::int32_t>(meetsStats(*requirement, query, target)) +
-      static_cast<std::int32_t>(meetsBonus(*requirement, *query.inputs));
-  return preferNew(query, target, currentBest, points);
+  RequirementReport report;
+  report.target = target;
+  report.passPoints = query.rules->requirements.passPoints;
+  reportCareMistakes(report, *requirement, *query.inputs);
+  reportWeight(report, *requirement, query);
+  reportStats(report, *requirement, query, target);
+  reportBonus(report, *requirement, *query.inputs);
+  report.points =
+      static_cast<std::int32_t>(report.careMet) + static_cast<std::int32_t>(report.weightMet) +
+      static_cast<std::int32_t>(report.statsMet) + static_cast<std::int32_t>(report.bonusMet);
+  return report;
+}
+
+std::int32_t OriginalScoring::score(const EvolutionQuery& query, Species target,
+                                    std::optional<Species> currentBest) const {
+  const auto scored = report(query, target);
+  return scored ? preferNew(query, target, currentBest, scored->points) : 0;
 }
 
 std::optional<Species> OriginalSelection::select(const EvolutionQuery& query,

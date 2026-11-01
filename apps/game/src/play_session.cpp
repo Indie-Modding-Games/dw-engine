@@ -311,6 +311,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                                            .cards = game_.systems.cards,
                                            .city = game_.systems.city,
                                            .feed = &feedScene_}),
+      chartRequirements_(*context.ui, game_.systems.evolution),
       fieldHud_(*context.ui, *game_.session),
       sleepScreen_(*game_.session, *context.ui, scene_->field().rules().transition),
       saveMachine_({.session = game_.session.get(),
@@ -442,6 +443,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   context_.ui->setSetting(SmoothMotionSetting, smooth);
   // The time in digits under the HUD's clock, the engine's, on unless turned off.
   context_.ui->setSetting(DigitalTimeSetting, context.userSettings->digitalTime.value_or(true));
+  // The evolution requirements on the chart (an engine improvement), on unless turned off.
+  context_.ui->setSetting(EvolutionRequirementsSetting,
+                          context.userSettings->evolutionRequirements.value_or(true));
   // The save indicator's document goes up before the HUD's, which takes the focus.
   saveIndicator_.emplace(*context_.ui, game_.session->savesWritten(),
                          context.userSettings->saveNotice.value_or(true));
@@ -720,6 +724,16 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     }
     return true;
   }
+  if (command.name == EvolutionRequirementsSetting) {
+    if (const bool* shown = std::get_if<bool>(&command.value)) {
+      context_.userSettings->evolutionRequirements = *shown;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+      context_.ui->setSetting(EvolutionRequirementsSetting, *shown);
+    }
+    return true;
+  }
   if (command.name == SaveNoticeSetting) {
     if (const bool* notice = std::get_if<bool>(&command.value)) {
       saveIndicator_->setEnabled(*notice);
@@ -889,6 +903,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   partnerMenu_.setBagContext(battleScreen_.active() ? game::inventory::UseContext::Battle
                                                     : game::inventory::UseContext::Field);
   partnerMenu_.update();
+  chartRequirements_.update(*game_.session);
   shopScreen_.update();
   itemKeeperScreen_.update();
   // tamer.c: the menu opens with no script, no fade and no text box; the field has no scripts or

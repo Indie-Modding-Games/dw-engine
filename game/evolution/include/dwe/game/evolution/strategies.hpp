@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/game/evolution/inputs.hpp>
+#include <dwe/game/evolution/report.hpp>
 #include <dwe/game/evolution/rules.hpp>
 #include <dwe/game/evolution/state.hpp>
 #include <dwe/game/evolution/tables.hpp>
@@ -37,6 +38,16 @@ public:
 
   [[nodiscard]] virtual std::int32_t score(const EvolutionQuery& query, Species target,
                                            std::optional<Species> currentBest) const = 0;
+
+  // What the target asks and how the partner stands, group by group, with the points the scoring
+  // gives before comparing with a best candidate; nothing when the strategy cannot tell or the
+  // target has no requirement.
+  [[nodiscard]] virtual std::optional<RequirementReport> report(const EvolutionQuery& query,
+                                                                Species target) const {
+    (void)query;
+    (void)target;
+    return std::nullopt;
+  }
 };
 
 // Picks the target of the periodic check, if any, once the counter has reached the level's hours.
@@ -62,6 +73,9 @@ class OriginalScoring final : public RequirementScoring {
 public:
   [[nodiscard]] std::int32_t score(const EvolutionQuery& query, Species target,
                                    std::optional<Species> currentBest) const override;
+  // The score is built from this report, so the two always agree.
+  [[nodiscard]] std::optional<RequirementReport> report(const EvolutionQuery& query,
+                                                        Species target) const override;
 };
 
 // The original game's selection (evolution.c: getFreshEvolutionTarget,

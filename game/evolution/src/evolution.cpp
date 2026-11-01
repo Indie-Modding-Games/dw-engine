@@ -204,6 +204,43 @@ std::optional<Species> Evolution::naturalTarget(const EvolutionInputs& inputs,
       {.tables = &tables_, .rules = &rules_, .inputs = &inputs, .state = &state}, *scoring_);
 }
 
+std::optional<RequirementReport> Evolution::report(const EvolutionInputs& inputs,
+                                                   const EvolutionState& state,
+                                                   Species target) const {
+  return scoring_->report(
+      {.tables = &tables_, .rules = &rules_, .inputs = &inputs, .state = &state}, target);
+}
+
+EvolutionOutlook Evolution::outlook(const EvolutionInputs& inputs,
+                                    const EvolutionState& state) const {
+  const Level level = tables_.levelOf(inputs.species);
+  EvolutionOutlook outlook;
+  outlook.species = inputs.species;
+  outlook.level = level;
+  outlook.evolutionTimer = inputs.evolutionTimer;
+  outlook.checkHours = checkHours(level);
+  if (!outlook.checkHours) {
+    return outlook;
+  }
+  const EvolutionQuery query{
+      .tables = &tables_, .rules = &rules_, .inputs = &inputs, .state = &state};
+  outlook.next = selection_->select(query, *scoring_);
+  if (level == Level::Baby) {
+    outlook.fixedTarget = outlook.next;
+    return outlook;
+  }
+  for (const Species target : tables_.pathTargets(inputs.species)) {
+    if (auto scored = scoring_->report(query, target)) {
+      outlook.targets.push_back(std::move(*scored));
+    }
+  }
+  if (level == Level::Rookie) {
+    outlook.fallback = tables_.find(rules_.fallback.rookieTarget);
+    outlook.fallbackHours = rules_.fallback.rookieHours;
+  }
+  return outlook;
+}
+
 // evolution.c: handleSpecialEvolutions: one roll for every rule; the last rule that holds wins.
 std::optional<Species> Evolution::specialTarget(const std::vector<SpecialRule>& specials,
                                                 const EvolutionInputs& inputs,

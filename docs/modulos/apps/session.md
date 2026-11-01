@@ -169,6 +169,8 @@ le dan las suyas en `.tables`) y registra su comprobación de sección y la secc
   `evolution.c: getNumMasteredMoves`, y las que nombre `mastered_move_ids`, como las que añade un paquete). El adaptador de batalla se
   crea después (necesita el inventario, que necesita la evolución), así que se le da con
   `setMoveSource(batalla)`; sin él, la evolución no ve técnicas aprendidas.
+- **Para el gráfico**: `outlook(sesión)` da el `EvolutionOutlook` del partner (con las mismas entradas y las formas
+  criadas al día) sin tocar la partida, para los requisitos de evolución del menú de pausa.
 - **Cuándo mira**: en cada tick en que corre el reloj de juego, `checkNatural` con los fotogramas corridos (una
   comprobación por fotograma, como `tickConditions`; el contador lo sube el partner; si no evoluciona, el adaptador
   deja el que devuelve), salvo en la hora protegida tras despertar (`HAS_IMMORTAL_HOUR`) o si la barra de virus se

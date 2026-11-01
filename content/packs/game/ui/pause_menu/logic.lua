@@ -127,6 +127,11 @@ local options = {
   ["bulk-trades"] = function(_step)
     ui.send("bulk_trades", not ui.setting("bulk_trades"))
   end,
+  -- Evolution requirements: the chart's tree tells what each target asks (on by default; off
+  -- leaves the original chart).
+  ["evolution-requirements"] = function(_step)
+    ui.send("evolution_requirements", ui.setting("evolution_requirements") == false)
+  end,
 }
 
 local function can_sleep()
@@ -186,6 +191,7 @@ local function refresh_chart(document)
         u = ui.setting(base .. "u"),
         v = ui.setting(base .. "v"),
         raised = raised[ui.setting(base .. "index")] == true,
+        species = math.tointeger(math.floor(tonumber(ui.setting(base .. "index")) or -1)),
       }
       chart_cells[i + 1] = cell
       button:set_property("left", ((cell.x - 12) * 3) .. "dp")
@@ -229,6 +235,355 @@ local function begin_chart_transition(document, closing)
   document:get("panel"):set_class("chart-detail-open", false)
   document:get("chart-detail-transition"):set_class("hidden", false)
   transition_box(document, closing and 4 or 0)
+end
+
+-- Evolution requirements (an engine improvement, docs/modulos/apps/game.md, «Requisitos de
+-- evolución»; the option evolution_requirements, on by default): in the chart's tree a cursor goes
+-- over the targets and a panel over the left box tells what the target asks. On the partner's own
+-- tree it also tells the partner's values and verdicts, the targets it qualifies for glow green and
+-- the rest dim. Every verdict comes from the game (evoreq.*); the menu only lays them out.
+local detail_targets = {}
+local detail_from = { cells = {}, lines = {} }
+local detail_focus = nil
+local detail_last_focus = 1
+local REQ_ROWS = 15
+-- The partner's next form or fallback when the player has not discovered it
+-- (chart_requirements.hpp).
+local UNDISCOVERED = -2
+local GLOW = { "#84f084", "#2c9a40" }
+local DIM = { "#5a5a5a", "#3a3a3a" }
+local GROUP_KEYS = { care = true, weight = true, stats = true, bonus = true }
+local STAT_KEYS = { hp = true, mp = true, off = true, def = true, spd = true, brn = true }
+
+local function requirements_on()
+  return ui.setting("evolution_requirements") ~= false and ui.setting("evoreq.ready") == true
+end
+
+local function numbers(text)
+  local values = {}
+  for value in string.gmatch(text or "", "-?%d+") do
+    values[#values + 1] = tonumber(value)
+  end
+  return values
+end
+
+local function split_rows(text)
+  local parts = {}
+  for part in string.gmatch(text or "", "[^|]+") do
+    parts[#parts + 1] = part
+  end
+  return parts
+end
+
+-- The partner's line: its form, counter, the level's hours, whether the check is due, what it
+-- would pick and the rookie's fallback; nil when the game publishes none.
+local function partner_outlook()
+  local values = numbers(ui.setting("evoreq.partner"))
+  if #values < 7 then
+    return nil
+  end
+  return {
+    species = values[1],
+    timer = values[2],
+    hours = values[3],
+    due = values[4] == 1,
+    next = values[5],
+    fallback = values[6],
+    fallback_hours = values[7],
+  }
+end
+
+-- The species of a chart cell, as a whole number (the settings are numbers with a fraction).
+local function chart_species(index)
+  local species = tonumber(ui.setting(string.format("player.chart.%d.index", index)))
+  return species and math.tointeger(math.floor(species)) or nil
+end
+
+-- A form the player has discovered: the chart draws it with its picture. Any other form is "???"
+-- and shows nothing of its requirement.
+local function discovered(species)
+  for _, cell in ipairs(chart_cells) do
+    if cell.species == species then
+      return cell.raised
+    end
+  end
+  return false
+end
+
+local function species_name(species)
+  for i, cell in ipairs(chart_cells) do
+    if cell.species == species and cell.raised then
+      return t(ui.setting(string.format("player.chart.%d.name", i - 1)) or "")
+    end
+  end
+  return t("pause_menu.evoreq.unknown")
+end
+
+-- The partner's outlook when the open tree is its own form, or nil.
+local function partner_tree()
+  local outlook = partner_outlook()
+  if outlook ~= nil and outlook.species == chart_species(chart_index) then
+    return outlook
+  end
+  return nil
+end
+
+-- The partner's score of a target: points, points to pass, groups, then a value and verdict per
+-- row; nil when the game publishes none.
+local function partner_values(species)
+  local parts = split_rows(ui.setting("evoreq.partner." .. species))
+  if #parts == 0 then
+    return nil
+  end
+  local score = numbers(parts[1])
+  local rows = {}
+  for i = 2, #parts do
+    local value, met = parts[i]:match("^(.-):(%d)$")
+    rows[#rows + 1] = { value = value or "", met = met == "1" }
+  end
+  return {
+    points = score[1] or 0,
+    groups = score[3] or 0,
+    passes = (score[1] or 0) >= (score[2] or 1),
+    rows = rows,
+  }
+end
+
+local function paint_target(document, target, colors, dim)
+  for index, slot in ipairs(target.lines) do
+    local band = (index - 1) % 3
+    local primary = colors and colors[1] or target.primary
+    local edge = colors and colors[2] or target.edge
+    document
+      :get("chart-detail-line-" .. slot)
+      :set_property("background-color", band == 1 and primary or edge)
+  end
+  document:get("chart-detail-cell-" .. target.cell_slot):set_class("chart-dim", dim)
+end
+
+-- One row of the panel: an optional tick or cross, the text and the partner's value.
+local function req_row(document, row, text, value, state, item)
+  local element = document:get("chart-req-row-" .. row)
+  element:set_class("hidden", false)
+  element:set_class("item", item == true)
+  element:set_class("title", state == "title")
+  local mark = document:get("chart-req-mark-" .. row)
+  mark:set_class("hidden", state ~= "met" and state ~= "unmet")
+  mark:set_class("met", state == "met")
+  mark:set_class("unmet", state == "unmet")
+  document:get("chart-req-label-" .. row):set_text(text)
+  local value_element = document:get("chart-req-value-" .. row)
+  value_element:set_text(value or "")
+  value_element:set_class("met", state == "met" or state == "value-met")
+  value_element:set_class("unmet", state == "unmet" or state == "value-unmet")
+end
+
+local function verdict(partner, row, group)
+  if partner == nil then
+    return group and "plain" or nil
+  end
+  local met = row ~= nil and row.met
+  if group then
+    return met and "met" or "unmet"
+  end
+  return met and "value-met" or "value-unmet"
+end
+
+-- The panel for the focused target.
+local function draw_requirements(document, outlook)
+  for row = 0, REQ_ROWS - 1 do
+    document:get("chart-req-row-" .. row):set_class("hidden", true)
+  end
+  local score = document:get("chart-req-score")
+  local next_line = document:get("chart-req-next")
+  score:set_text("")
+  next_line:set_text("")
+  local target = detail_targets[detail_focus]
+  if not target then
+    return
+  end
+  local source_level =
+    math.floor(ui.setting(string.format("player.chart.%d.level", chart_index)) or 0)
+  local hours = numbers(ui.setting("evoreq.hours"))[source_level]
+  local partner = outlook and partner_values(target.species) or nil
+  local row = 0
+  req_row(document, row, species_name(target.species), "", "title")
+  row = row + 1
+  local known = discovered(target.species)
+  local requirement = known and split_rows(ui.setting("evoreq.req." .. target.species)) or {}
+  if not known then
+    hours = nil
+  elseif source_level == 1 then
+    req_row(document, row, t("pause_menu.evoreq.always"), "", nil)
+    row = row + 1
+    requirement = {}
+  elseif #requirement == 0 then
+    requirement = { "special:" }
+  end
+  for index, entry in ipairs(requirement) do
+    if row >= REQ_ROWS - 1 then
+      break
+    end
+    local key, range = entry:match("^([^:]*):(.*)$")
+    local values = partner and partner.rows[index] or nil
+    local value = values and values.value or ""
+    if key == "special" then
+      req_row(document, row, t("pause_menu.evoreq.special"), "", nil)
+    elseif GROUP_KEYS[key] then
+      local text = t("pause_menu.evoreq." .. key)
+      if key == "care" or key == "weight" then
+        text = text .. " " .. range
+      elseif key == "stats" and range == "top" then
+        text = t("pause_menu.evoreq.stats_top")
+        value = value ~= "" and t("pause_menu.evoreq.stat." .. value) or ""
+      else
+        value = ""
+      end
+      req_row(document, row, text, value, verdict(partner, values, true))
+    elseif key == "from" then
+      req_row(
+        document,
+        row,
+        t("pause_menu.evoreq.from", { name = species_name(tonumber(range)) }),
+        "",
+        verdict(partner, values, false),
+        true
+      )
+    else
+      local name = STAT_KEYS[key] and t("pause_menu.evoreq.stat." .. key)
+        or t("pause_menu.evoreq." .. key)
+      req_row(
+        document,
+        row,
+        range ~= "" and (name .. " " .. range) or name,
+        value,
+        verdict(partner, values, false),
+        true
+      )
+    end
+    row = row + 1
+  end
+  -- The hours the level checks from; the partner's counter next to them.
+  if hours and row < REQ_ROWS then
+    if outlook then
+      req_row(
+        document,
+        row,
+        t("pause_menu.evoreq.time"),
+        t("pause_menu.evoreq.hours_of", { hours = outlook.timer, total = hours }),
+        outlook.due and "value-met" or "value-unmet"
+      )
+    else
+      req_row(
+        document,
+        row,
+        t("pause_menu.evoreq.time"),
+        t("pause_menu.evoreq.hours", { hours = hours }),
+        nil
+      )
+    end
+    row = row + 1
+  end
+  if outlook and outlook.fallback == target.species and row < REQ_ROWS then
+    req_row(
+      document,
+      row,
+      t("pause_menu.evoreq.fallback"),
+      t("pause_menu.evoreq.hours_of", { hours = outlook.timer, total = outlook.fallback_hours }),
+      outlook.timer >= outlook.fallback_hours and "value-met" or "value-unmet"
+    )
+  end
+  if partner and known and source_level ~= 1 and requirement[1] ~= "special:" then
+    score:set_text(t("pause_menu.evoreq.ready", { met = partner.points, total = partner.groups }))
+    score:set_class("met", partner.passes)
+    score:set_class("unmet", not partner.passes)
+  end
+  if outlook and outlook.next == target.species then
+    next_line:set_text(t("pause_menu.evoreq.next"))
+  elseif outlook and outlook.next == UNDISCOVERED then
+    -- A form not discovered yet: only that the check picks one.
+    next_line:set_text(t("pause_menu.evoreq.next_other", { name = species_name(outlook.next) }))
+  elseif outlook and outlook.next >= 0 then
+    -- The check would pick a form out of the tree: the rookie's fallback.
+    local inside = false
+    for _, other in ipairs(detail_targets) do
+      inside = inside or other.species == outlook.next
+    end
+    if not inside then
+      next_line:set_text(t("pause_menu.evoreq.next_other", { name = species_name(outlook.next) }))
+    end
+  end
+end
+
+-- Lays the requirements over the open tree, or the original tree when they are off.
+local function refresh_requirements(document)
+  if not chart_detail then
+    return
+  end
+  local on = requirements_on() and #detail_targets > 0
+  if not on then
+    detail_focus = nil
+  end
+  local outlook = on and partner_tree() or nil
+  for _, target in ipairs(detail_targets) do
+    if outlook then
+      local values = partner_values(target.species)
+      local passes = (values ~= nil and values.passes) or outlook.next == target.species
+      paint_target(document, target, passes and GLOW or DIM, not passes)
+    else
+      paint_target(document, target, nil, false)
+    end
+  end
+  local focused = detail_focus ~= nil
+  for _, slot in ipairs(detail_from.lines) do
+    document:get("chart-detail-line-" .. slot):set_class("hidden", focused)
+  end
+  for _, slot in ipairs(detail_from.cells) do
+    document:get("chart-detail-cell-" .. slot):set_class("hidden", focused)
+  end
+  document:get("chart-req"):set_class("hidden", not focused)
+  local cursor = document:get("chart-detail-cursor")
+  cursor:set_class("hidden", not focused)
+  if focused then
+    local target = detail_targets[detail_focus]
+    cursor:set_property("left", ((target.x - 14) * 3) .. "dp")
+    cursor:set_property("top", ((target.y - 32) * 3) .. "dp")
+    draw_requirements(document, outlook)
+  end
+end
+
+-- The cursor of the tree: up and down go over the targets, left leaves them for the original view
+-- and right comes back.
+local function detail_move(document, action)
+  if not requirements_on() or #detail_targets == 0 then
+    return
+  end
+  if detail_focus == nil then
+    if action == "right" or action == "up" or action == "down" then
+      detail_focus = math.min(detail_last_focus, #detail_targets)
+    end
+  elseif action == "left" then
+    detail_last_focus = detail_focus
+    detail_focus = nil
+  elseif action == "up" then
+    detail_focus = (detail_focus - 2) % #detail_targets + 1
+  elseif action == "down" then
+    detail_focus = detail_focus % #detail_targets + 1
+  end
+  refresh_requirements(document)
+end
+
+-- The first target the cursor takes: the one the partner's next check would pick, else the first.
+local function first_focus()
+  local outlook = partner_tree()
+  if outlook then
+    for index, target in ipairs(detail_targets) do
+      if target.species == outlook.next then
+        return index
+      end
+    end
+  end
+  return 1
 end
 
 local function open_chart_detail(document)
@@ -299,6 +654,8 @@ local function open_chart_detail(document)
       end
     end
   end
+  detail_targets = {}
+  detail_from = { cells = {}, lines = {} }
   for _, side in ipairs({ "from", "to" }) do
     local refs = {}
     local count = 0
@@ -318,17 +675,33 @@ local function open_chart_detail(document)
     for j = 0, length - 1 do
       local target = refs[j + 1]
       if target and target >= 0 then
-        draw_path(
-          offset + j,
-          side == "from" and "#e39407" or color(j * 2),
-          side == "from" and "#db6500" or color(j * 2 + 1)
-        )
-        draw_cell(
-          cell_slot,
-          target,
-          detail_value("sprites", offset + j, 0) + 159,
-          detail_value("sprites", offset + j, 1) + 119
-        )
+        local primary = side == "from" and "#e39407" or color(j * 2)
+        local edge = side == "from" and "#db6500" or color(j * 2 + 1)
+        local first_line = line_slot
+        draw_path(offset + j, primary, edge)
+        local x = detail_value("sprites", offset + j, 0) + 159
+        local y = detail_value("sprites", offset + j, 1) + 119
+        draw_cell(cell_slot, target, x, y)
+        local lines = {}
+        for slot = first_line, line_slot - 1 do
+          lines[#lines + 1] = slot
+        end
+        if side == "from" then
+          for _, slot in ipairs(lines) do
+            detail_from.lines[#detail_from.lines + 1] = slot
+          end
+          detail_from.cells[#detail_from.cells + 1] = cell_slot
+        else
+          detail_targets[#detail_targets + 1] = {
+            species = chart_species(target),
+            x = x,
+            y = y,
+            cell_slot = cell_slot,
+            lines = lines,
+            primary = primary,
+            edge = edge,
+          }
+        end
         cell_slot = cell_slot + 1
       end
     end
@@ -341,6 +714,13 @@ local function open_chart_detail(document)
       t("pause_menu.chart_level." .. tostring(math.floor(ui.setting(base .. "level") or 0)))
     )
   chart_detail = true
+  -- The targets top to bottom, for the cursor.
+  table.sort(detail_targets, function(a, b)
+    return a.y < b.y
+  end)
+  detail_focus = requirements_on() and #detail_targets > 0 and first_focus() or nil
+  detail_last_focus = detail_focus or 1
+  refresh_requirements(document)
   begin_chart_transition(document, false)
   document:get("player-tab-chart"):focus()
 end
@@ -750,6 +1130,9 @@ local function refresh(document)
   document:get("save-notice-value"):set_text(on_off(ui.setting("save_notice")))
   document:get("digital-time-value"):set_text(on_off(ui.setting("digital_time")))
   document:get("bulk-trades-value"):set_text(on_off(ui.setting("bulk_trades")))
+  document
+    :get("evolution-requirements-value")
+    :set_text(on_off(ui.setting("evolution_requirements") ~= false))
   refresh_player(document)
 end
 
@@ -1041,6 +1424,14 @@ function on_setting(document, name)
       draw_date_digits(document, "field-year-", 3, ui.setting("hud.clock.year"))
       draw_date_digits(document, "field-day-", 2, ui.setting("hud.clock.day"))
     end
+  elseif name:sub(1, 7) == "evoreq." then
+    -- The game sets evoreq.version last, once the rest of a change is in.
+    if name == "evoreq.version" or name == "evoreq.ready" then
+      refresh_requirements(document)
+    end
+  elseif name == "evolution_requirements" then
+    refresh(document)
+    refresh_requirements(document)
   elseif name:sub(1, 12) == "player.chart" then
     refresh_chart(document)
     refresh_city(document)
@@ -1080,6 +1471,8 @@ function on_action(document, action)
   if chart_detail then
     if action == "cancel" then
       begin_chart_transition(document, true)
+    elseif action == "up" or action == "down" or action == "left" or action == "right" then
+      detail_move(document, action)
     end
     return true
   end

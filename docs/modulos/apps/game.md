@@ -555,3 +555,46 @@ pausa, guardado en los ajustes del usuario) llega desde `PlaySession::setBulkTra
 `CardShop::setBulkPacks`. Encendido, el trueque de objetos y los sobres de la tienda de cartas preguntan cuántos de una
 vez; apagado, van de uno en uno como el original. Las reglas y la prueba de igualdad están en
 [screens.md](screens.md#cambios-en-lote).
+
+## Requisitos de evolución
+
+Mejora opcional, encendida por defecto (el gráfico de evolución del original solo dibuja las líneas): en la pestaña
+«Árbol» («Chart») de la página del jugador, al abrir una forma (Intro) el cursor pasa por sus evoluciones (flechas
+arriba y abajo; izquierda vuelve a la vista original con las formas de origen, derecha vuelve al cursor). Un panel a la
+izquierda dice lo que pide la evolución bajo el cursor: el rango de errores de cuidado, el de peso, cada stat mínimo
+(HP y MP en sus unidades, el original los compara divididos entre 10) o, para un destino de novato, que el stat más
+alto del partner sea uno de los preferidos, y las condiciones extra (forma previa, disciplina, felicidad, batallas,
+técnicas). Una evolución especial (sin errores ni peso) sale como «Evolución especial»; la de un bebé, «Siempre».
+
+En el árbol del propio compañero cada línea lleva al lado su valor actual, verde si cumple y rojo si no, y una marca
+(✓ o ✗) por grupo; abajo, «3 de 4 listos» y la hora de la revisión («Revisión 17/72 h»: el contador y las horas de su
+nivel; el fallback del novato con las suyas). La regla es la del original (`evolution.c: calculateRequirementScore`):
+un punto por grupo (errores de cuidado como mínimo, o como máximo con la marca 0x10; peso dentro de ±5; stats; un extra
+cualquiera) y pasa con 3 de 4; entre las que pasan, la elección de la revisión (la puntuación más alta en bebé grande,
+la media más alta de los stats pedidos en novato y campeón, con la preferencia por formas no criadas), y un novato sin
+candidata pasa a Numemon desde las 96 horas. La línea de la forma que elegiría la revisión brilla en verde y dice «La
+elige al revisar»; las demás se atenúan. Si la revisión elegiría otra forma, lo dice («Al revisar: …»).
+
+Una forma que el jugador aún no ha descubierto (la casilla gris, sin imagen: no está entre las criadas,
+`player.chart.raised`, la misma marca que usa el gráfico) sale como «???» y sin nada de su requisito, ni puntos ni
+brillo, en el árbol del compañero y en los de las demás especies; descubierta, lo enseña todo. Si la revisión elegiría
+una forma no descubierta, solo dice «Al revisar: ???» («Next check: ???»). `ChartRequirements` no publica los valores
+del partner de esas formas y da su número como -2 en `evoreq.partner` (`encodeOutlook`, `shownTargets`).
+
+Todo sale de `Evolution::outlook` y `Evolution::report` ([evolution.md](../game/evolution.md)), las mismas reglas que
+deciden la evolución: `ChartRequirements` (`chart_requirements.cpp`), mientras el menú de pausa se ve, publica una vez
+los requisitos de cada forma (`evoreq.req.<especie>`, «clave:rango|…») y las horas por nivel (`evoreq.hours`), y en
+cada fotograma en que algo cambia los valores del partner (`evoreq.partner`, `evoreq.partner.<especie>`) y sube
+`evoreq.version`; la lógica del menú (`pause_menu/logic.lua`) dibuja el panel y el cursor. El ajuste
+`evolution_requirements` (fila «Requisitos de evolución» de las opciones del menú de pausa, guardado en los ajustes del
+usuario) apagado deja el gráfico original. El gráfico solo existe en el aspecto original; la fila de la opción está en
+los dos.
+
+La ruta `route-evolution-requirements.yaml` abre el gráfico del compañero con el teclado (en una partida nueva todo
+destino es «???»), mueve el cursor, pasa por la vista original, descubre Greymon y Tyrannomon (disparadores 0x200 + su
+número), le da bayas grandes para mover el peso (con una Tyrannomon queda con 3 de 4; con tres la revisión elige
+Monochromon, sin descubrir: «Al revisar: ???») y lo abre de nuevo a 1280x720, 1920x1080 y 1024x768 con `text_fit` y `expect_clear: pause_menu`; al final apaga y enciende la
+opción. Tests: `apps/game/tests/chart_requirements_tests.cpp` (rangos, filas y formas no descubiertas), `game/evolution/tests/report_tests.cpp`
+(los puntos del informe son los de la puntuación en cada mezcla de grupos; la forma que da `outlook` es la que elige
+`checkNatural`) y `the chart's outlook names the form the next check evolves the partner into`
+(`apps/session/tests/evolution_adapter_tests.cpp`).

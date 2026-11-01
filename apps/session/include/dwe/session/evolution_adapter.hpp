@@ -83,6 +83,15 @@ public:
   [[nodiscard]] const game::evolution::EvolutionSceneRules* sceneRules() const {
     return evolution_ && evolution_->rules().scene ? &*evolution_->rules().scene : nullptr;
   }
+  // The evolution rules, or nullptr before they are read.
+  [[nodiscard]] const game::evolution::Evolution* evolution() const {
+    return evolution_ ? &*evolution_ : nullptr;
+  }
+  // How the partner stands toward the targets of its chart now, with the inputs and raised forms
+  // the next check would read (the evolution chart's requirements); nothing without rules or when
+  // its form is not in the tables.
+  [[nodiscard]] std::optional<game::evolution::EvolutionOutlook>
+  outlook(const GameSession& session) const;
   // The evolutions applied since the last call, oldest first, for the UI.
   [[nodiscard]] std::vector<game::evolution::EvolutionResult> takeEvolutions();
 

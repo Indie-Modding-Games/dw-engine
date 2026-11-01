@@ -65,6 +65,15 @@ evolution->rebirth(inputs, random);                                     // al mo
 - **`EvolutionState`**: formas ya criadas y la marca de objeto usado. `toYaml`/`fromYaml` guardan las formas por id,
   en la versión de sección `EvolutionStateVersion` (para las migraciones de `game/save`); la marca no se guarda, como
   en el original.
+- **Requisitos** (`report.hpp`): `report(inputs, state, destino)` da el `RequirementReport` de un destino con
+  requisito: lo que pide cada uno de los cuatro grupos (errores de cuidado, peso, stats, extra) y cómo está el partner,
+  con los puntos que suma la misma `OriginalScoring` que decide la evolución (`score` sale de él; sin la preferencia
+  por formas no criadas, que depende del mejor candidato). `outlook(inputs, state)` da el `EvolutionOutlook` del
+  partner para el gráfico de evolución: contador, horas de la revisión de su nivel, un informe por destino de su carta,
+  la forma que elegiría la próxima revisión con el partner tal como está (`next`, la misma `select` de
+  `checkNatural`) y el fallback del novato. Lo usa el gráfico del menú de pausa
+  ([game.md](../apps/game.md#requisitos-de-evolución)); los tests de `report_tests.cpp` comprueban que `next` es lo que
+  `checkNatural` elige al llegar la hora.
 - **Simulación** (`simulation.hpp`): `simulateRaisings(evolution, generador, n, semilla)` corre `n` crianzas con un
   generador de entradas y devuelve un histograma de destinos, para el panel de ajuste.
 

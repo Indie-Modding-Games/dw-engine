@@ -2,6 +2,7 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/game/evolution/inputs.hpp>
+#include <dwe/game/evolution/report.hpp>
 #include <dwe/game/evolution/result.hpp>
 #include <dwe/game/evolution/rules.hpp>
 #include <dwe/game/evolution/state.hpp>
@@ -54,6 +55,19 @@ public:
   [[nodiscard]] NaturalCheck checkNatural(const EvolutionInputs& inputs,
                                           const EvolutionState& state, const CheckSpan& span,
                                           ruleset::Random& random) const;
+
+  // What a target's requirement asks and how the partner of `inputs` stands toward it, as the
+  // section's scoring counts it: the same code the periodic check scores with. Nothing when the
+  // target has no requirement or the scoring cannot tell. The requirement's own values do not
+  // depend on the inputs.
+  [[nodiscard]] std::optional<RequirementReport>
+  report(const EvolutionInputs& inputs, const EvolutionState& state, Species target) const;
+
+  // How the partner stands toward each target of its chart and what the periodic check would pick
+  // with it as it is (the selection the check runs, without the counter's hours), for the evolution
+  // chart.
+  [[nodiscard]] EvolutionOutlook outlook(const EvolutionInputs& inputs,
+                                         const EvolutionState& state) const;
 
   // The partner's virus bar filled up (partner_impl.c: tickConditions; the care section owns the
   // limit and the form, given in `inputs.virusForm`): into the virus form, whatever the tamer does;

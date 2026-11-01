@@ -47,6 +47,8 @@ save_notice: "Save notice"
 digital_time: "Digital time"
 # Bulk trades: the item trader and the card shop's packs ask how many at once (on by default).
 bulk_trades: "Bulk trades"
+# Evolution requirements: the chart's tree tells what each target asks and how the partner stands (on by default).
+evolution_requirements: "Evolution requirements"
 
 year_label: "Year"
 day_label: "Day"
@@ -67,6 +69,37 @@ chart_level.2: "Training"
 chart_level.3: "Rookie"
 chart_level.4: "Champion"
 chart_level.5: "Ultimate"
+
+# Evolution requirements on the chart's tree (an engine improvement): the panel's lines. Ranges and values are numbers
+# the game writes; {name} is a form's name.
+evoreq.care: "Mistakes"
+evoreq.weight: "Weight"
+evoreq.stats: "Stats"
+evoreq.stats_top: "Top stat"
+evoreq.stat.hp: "HP"
+evoreq.stat.mp: "MP"
+evoreq.stat.off: "Off"
+evoreq.stat.def: "Def"
+evoreq.stat.spd: "Spd"
+evoreq.stat.brn: "Brn"
+evoreq.bonus: "Bonus, one of"
+evoreq.from: "From {name}"
+evoreq.disc: "Discipline"
+evoreq.happy: "Happiness"
+evoreq.battles: "Battles"
+evoreq.techs: "Techs"
+evoreq.special: "Special evolution"
+evoreq.always: "Always"
+evoreq.time: "Check at"
+evoreq.hours: "{hours} h"
+# The partner's evolution counter against the hours its level checks from.
+evoreq.hours_of: "{hours}/{total} h"
+evoreq.fallback: "If none else"
+# How many of the four groups are met.
+evoreq.ready: "{met} of {total} ready"
+evoreq.next: "Next check picks it"
+evoreq.next_other: "Next check: {name}"
+evoreq.unknown: "???"
 
 medals_chart: "Medals Chart"
 card_list: "Card List"

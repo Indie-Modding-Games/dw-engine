@@ -37,6 +37,9 @@ struct UserSettings {
   // Bulk trades (bulk_trades: true, false): the item trader and the card shop's packs ask how many
   // at once; on when not chosen yet.
   std::optional<bool> bulkTrades = std::nullopt;
+  // The evolution requirements on the chart (evolution_requirements: true, false); on when not
+  // chosen yet.
+  std::optional<bool> evolutionRequirements = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

@@ -8,6 +8,7 @@ dwe_add_app(game
         src/battle_screen_retreat.cpp
         src/battle_trigger.cpp
         src/care_commands.cpp
+        src/chart_requirements.cpp
         src/common.cpp
         src/content_mount.cpp
         src/control_json.cpp
@@ -162,7 +163,7 @@ target_compile_definitions(game PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/con
 # the battle's root steps of a model, the discard menu's list, the trade menu's cursor and the player page's City tab.
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
-    add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/control_json.cpp
+    add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/chart_requirements.cpp src/control_json.cpp
                                   src/evolution_effects.cpp src/field_effects.cpp
                                   src/death_effects.cpp src/ending_effects.cpp
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/minimap_setting.cpp

@@ -201,6 +201,11 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   pestaña, pone el cursor en una que vive en la ciudad, en una que falta y en un campeón unido, a 1280x720 y otra vez a
   1920x1080 y a 1024x768, con `text_fit`. Se corre en los dos idiomas y, además, con `--ui-skin modern` (la entrada
   «Ciudad» de la página del jugador).
+- `route-evolution-requirements.yaml`: los [requisitos de evolución](../modulos/apps/game.md#requisitos-de-evolución)
+  en el gráfico del compañero (Agumon, como en una partida nueva) con el teclado: el cursor por sus evoluciones sin
+  descubrir («???») y descubiertas, la vista original, el peso movido con bayas grandes y el gráfico a 1280x720, 1920x1080 y 1024x768 (`text_fit`,
+  `expect_clear`); al final apaga y enciende la opción. Necesita `--saves` con una carpeta vacía (o una copia de una
+  partida con Agumon y `--load`). Se corre en los dos idiomas.
 - `route-scripted-loop.yaml`: una vuelta por cinco zonas desde una partida nueva con el teclado: File City (`twna01`)
   → la casa del anciano, `room08` (tabla de salidas del mapa) → File City (script) → `trai00` (tabla) → `mayo00`
   (tabla), donde juega el primer combate del bosque y el reclutamiento de Agumon → `twnb01` (warp del script del mapa,

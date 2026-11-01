@@ -365,3 +365,29 @@ TEST_CASE("a save without the story section raises the forms its evolution secti
   CHECK(loaded.story->raised(TableFixture::index("species_b")));
   CHECK(loaded.story->raisedSpecies() == saved.story->raisedSpecies());
 }
+
+TEST_CASE("the chart's outlook names the form the next check evolves the partner into") {
+  const TestPacks packs;
+  TableFixture fixture;
+  fixture.setPath("koro", {"agum", "kune"});
+  fixture.requirement("agum").weight = 50;
+  fixture.requirement("kune").offense = dwe::game::evolution::FavouredStat;
+  EvolutionAdapter* adapter = nullptr;
+  auto session = sessionWithEvolution(packs, fixture, adapter);
+  changePartner(*session, [](PartnerState& state) {
+    state.species = "koro";
+    state.evolution.hours = 23;
+    state.weight = 0;
+    state.stats.base[Stat::Offense] = HighStat;
+  });
+  const auto outlook = adapter->outlook(*session);
+  REQUIRE(outlook.has_value());
+  CHECK_FALSE(outlook->due());
+  REQUIRE(outlook->targets.size() == 2);
+  CHECK_FALSE(outlook->targets.at(0).passes());
+  CHECK(outlook->targets.at(1).passes());
+  CHECK(outlook->next == TableFixture::index("kune"));
+  session->clock().setSpeed(GameHourPerSecond);
+  session->tick(1.0);
+  CHECK(session->partner().state().species == "kune");
+}

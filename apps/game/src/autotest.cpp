@@ -1437,11 +1437,11 @@ bool Autotest::menuSelectStep(const AutotestHost& host, const AutotestStep& step
     return false;
   }
   // Down through the page, then up if it does not wrap round, then right and left through a row
-  // (the battle's commands).
-  constexpr int DownTries = 8;
-  constexpr int UpTries = 16;
-  constexpr int RightTries = 28;
-  constexpr int MaxTries = 40;
+  // (the battle's commands). Enough downs for the longest page, the pause menu's options.
+  constexpr int DownTries = 12;
+  constexpr int UpTries = 24;
+  constexpr int RightTries = 36;
+  constexpr int MaxTries = 48;
   if (progress.attempts >= MaxTries) {
     failStep(std::format("cannot focus it; the focus is on '{}'", host.ui->focusedElementId(menu)));
     return false;

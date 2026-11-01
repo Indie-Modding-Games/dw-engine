@@ -47,6 +47,8 @@ save_notice: "Aviso de guardado"
 digital_time: "Hora en dígitos"
 # Cambios en lote: el trueque de objetos y los sobres de la tienda preguntan cuántos de una vez (encendido por defecto).
 bulk_trades: "Cambios en lote"
+# Requisitos de evolución: el árbol de la tabla dice qué pide cada destino y cómo va el compañero (encendido por defecto).
+evolution_requirements: "Requisitos de evolución"
 
 year_label: "Año"
 day_label: "Día"
@@ -67,6 +69,37 @@ chart_level.2: "Entrenamiento"
 chart_level.3: "Novato"
 chart_level.4: "Campeón"
 chart_level.5: "Definitivo"
+
+# Requisitos de evolución en el árbol de la tabla (una mejora del motor): las líneas del panel. Los rangos y valores son
+# números que escribe el juego; {name} es el nombre de una forma.
+evoreq.care: "Errores"
+evoreq.weight: "Peso"
+evoreq.stats: "Atributos"
+evoreq.stats_top: "Mayor atributo"
+evoreq.stat.hp: "HP"
+evoreq.stat.mp: "MP"
+evoreq.stat.off: "Atq"
+evoreq.stat.def: "Def"
+evoreq.stat.spd: "Vel"
+evoreq.stat.brn: "Int"
+evoreq.bonus: "Extra, uno de"
+evoreq.from: "De {name}"
+evoreq.disc: "Disciplina"
+evoreq.happy: "Felicidad"
+evoreq.battles: "Batallas"
+evoreq.techs: "Técnicas"
+evoreq.special: "Evolución especial"
+evoreq.always: "Siempre"
+evoreq.time: "Revisión"
+evoreq.hours: "{hours} h"
+# El contador de evolución del compañero frente a las horas desde las que revisa su nivel.
+evoreq.hours_of: "{hours}/{total} h"
+evoreq.fallback: "Si no hay otra"
+# Cuántos de los cuatro grupos se cumplen.
+evoreq.ready: "{met} de {total} listos"
+evoreq.next: "La elige al revisar"
+evoreq.next_other: "Al revisar: {name}"
+evoreq.unknown: "???"
 
 medals_chart: "Medallero"
 card_list: "Lista de cartas"

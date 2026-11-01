@@ -29,6 +29,7 @@ constexpr std::string_view SmoothMotionKey = "smooth_motion";
 constexpr std::string_view SaveNoticeKey = "save_notice";
 constexpr std::string_view DigitalTimeKey = "digital_time";
 constexpr std::string_view BulkTradesKey = "bulk_trades";
+constexpr std::string_view EvolutionRequirementsKey = "evolution_requirements";
 
 } // namespace
 
@@ -69,6 +70,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     if (const core::YamlNode* bulk = tree->find(BulkTradesKey)) {
       settings.bulkTrades = reader.boolean(*bulk);
     }
+    if (const core::YamlNode* shown = tree->find(EvolutionRequirementsKey)) {
+      settings.evolutionRequirements = reader.boolean(*shown);
+    }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
 }
@@ -106,6 +110,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.bulkTrades) {
     root.set(std::string{BulkTradesKey},
              core::YamlNode::scalar(*settings.bulkTrades ? "true" : "false"));
+  }
+  if (settings.evolutionRequirements) {
+    root.set(std::string{EvolutionRequirementsKey},
+             core::YamlNode::scalar(*settings.evolutionRequirements ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

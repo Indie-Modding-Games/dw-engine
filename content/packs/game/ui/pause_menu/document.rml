@@ -242,6 +242,26 @@
                   <div id="chart-detail-tree" text-key="pause_menu.chart_tree"></div>
                   <div id="chart-detail-level"></div>
                   <div id="chart-detail-name"></div>
+                  <div id="chart-req" class="player-inset hidden">
+                    <div id="chart-req-row-0" class="chart-req-row hidden"><span id="chart-req-mark-0" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-0" class="chart-req-label"></span><span id="chart-req-value-0" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-1" class="chart-req-row hidden"><span id="chart-req-mark-1" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-1" class="chart-req-label"></span><span id="chart-req-value-1" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-2" class="chart-req-row hidden"><span id="chart-req-mark-2" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-2" class="chart-req-label"></span><span id="chart-req-value-2" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-3" class="chart-req-row hidden"><span id="chart-req-mark-3" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-3" class="chart-req-label"></span><span id="chart-req-value-3" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-4" class="chart-req-row hidden"><span id="chart-req-mark-4" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-4" class="chart-req-label"></span><span id="chart-req-value-4" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-5" class="chart-req-row hidden"><span id="chart-req-mark-5" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-5" class="chart-req-label"></span><span id="chart-req-value-5" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-6" class="chart-req-row hidden"><span id="chart-req-mark-6" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-6" class="chart-req-label"></span><span id="chart-req-value-6" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-7" class="chart-req-row hidden"><span id="chart-req-mark-7" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-7" class="chart-req-label"></span><span id="chart-req-value-7" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-8" class="chart-req-row hidden"><span id="chart-req-mark-8" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-8" class="chart-req-label"></span><span id="chart-req-value-8" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-9" class="chart-req-row hidden"><span id="chart-req-mark-9" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-9" class="chart-req-label"></span><span id="chart-req-value-9" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-10" class="chart-req-row hidden"><span id="chart-req-mark-10" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-10" class="chart-req-label"></span><span id="chart-req-value-10" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-11" class="chart-req-row hidden"><span id="chart-req-mark-11" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-11" class="chart-req-label"></span><span id="chart-req-value-11" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-12" class="chart-req-row hidden"><span id="chart-req-mark-12" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-12" class="chart-req-label"></span><span id="chart-req-value-12" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-13" class="chart-req-row hidden"><span id="chart-req-mark-13" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-13" class="chart-req-label"></span><span id="chart-req-value-13" class="chart-req-value"></span></div>
+                    <div id="chart-req-row-14" class="chart-req-row hidden"><span id="chart-req-mark-14" class="chart-req-mark hidden"><span class="mark-a"></span><span class="mark-b"></span></span><span id="chart-req-label-14" class="chart-req-label"></span><span id="chart-req-value-14" class="chart-req-value"></span></div>
+                    <div id="chart-req-score"></div>
+                    <div id="chart-req-next"></div>
+                  </div>
+                  <img id="chart-detail-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/>
                 </div>
                 <div id="chart-detail-transition" class="hidden"></div>
                 <div id="player-medals-view" class="player-native">
@@ -475,6 +495,9 @@
 				</button>
 				<button id="bulk-trades" class="option" onclick="adjust(document, 'bulk-trades', 1)">
 					<span class="label" text-key="pause_menu.bulk_trades"></span><span class="value" id="bulk-trades-value"></span>
+				</button>
+				<button id="evolution-requirements" class="option" onclick="adjust(document, 'evolution-requirements', 1)">
+					<span class="label" text-key="pause_menu.evolution_requirements"></span><span class="value" id="evolution-requirements-value"></span>
 				</button>
 				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>

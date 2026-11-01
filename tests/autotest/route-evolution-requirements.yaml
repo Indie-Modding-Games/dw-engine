@@ -1,0 +1,171 @@
+# The evolution requirements on the chart (docs/modulos/apps/game.md, «Requisitos de evolución»): the partner's own
+# chart opened with the keyboard, the cursor over its targets (Up and Down), the original view (Left) and back, with
+# every text in its box and the panel over nothing else. On a new game no target is discovered yet: each one is "???"
+# with no requirement. Then Greymon and Tyrannomon are marked raised (story triggers 0x200 + their number), so the
+# chart shows theirs, and big berries move the partner's weight, one and then two more, and the chart is opened after
+# each: one berry takes the weight into Tyrannomon's range, which then has three of four groups and is the one the
+# next check picks; with three, the check picks Monochromon, still undiscovered, so the panel says only that it picks
+# "???". The last chart is also captured at 1920x1080 and 1024x768. Last, the option among the pause menu's options
+# turns the requirements off (the original chart) and on again. The partner must be Agumon, as on a new game; it also
+# runs on a save with Agumon as partner (--saves <copy> --load <slot>). It runs once per language, with --lang en and
+# --lang es.
+name: evolution-requirements
+device: keyboard
+timeout: 300
+text_fit: true
+steps:
+  - wait: {seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {evolution_requirements: true}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-player
+  - wait: {seconds: 0.6}
+  - menu_select: player-tab-chart
+  - wait: {seconds: 0.4}
+  - menu_select: chart-cell-2
+  - wait: {seconds: 0.3}
+  - tap: {key: return}
+  - wait: {seconds: 0.6}
+  - screenshot: undiscovered
+  - expect_text_fits: all
+  - expect_clear: pause_menu
+  - tap: {key: down}
+  - wait: {seconds: 0.3}
+  - screenshot: down
+  - expect_text_fits: all
+  - tap: {key: down}
+  - wait: {seconds: 0.3}
+  - screenshot: down-2
+  - expect_text_fits: all
+  # Left leaves the cursor and shows the original view, every form the partner came from and goes to.
+  - tap: {key: left}
+  - wait: {seconds: 0.3}
+  - screenshot: original-view
+  - tap: {key: right}
+  - wait: {seconds: 0.3}
+  - screenshot: back
+  - tap: {key: escape}
+  - wait: {seconds: 0.5}
+  - menu: close
+  - wait: {menu_open: false}
+  # Greymon (5) and Tyrannomon (8) discovered.
+  - script: story_set("trigger 517 on")
+  - script: story_set("trigger 520 on")
+  # One big berry: on a new game the weight reaches Tyrannomon's range.
+  - script: give_item("big_berry 3")
+  - script: use_item("big_berry")
+  - wait: {seconds: 0.3}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-player
+  - wait: {seconds: 0.6}
+  - menu_select: player-tab-chart
+  - wait: {seconds: 0.4}
+  - menu_select: chart-cell-2
+  - wait: {seconds: 0.3}
+  - tap: {key: return}
+  - wait: {seconds: 0.6}
+  - screenshot: fed
+  - expect_text_fits: all
+  - expect_clear: pause_menu
+  - tap: {key: up}
+  - wait: {seconds: 0.3}
+  - screenshot: fed-up
+  - expect_text_fits: all
+  - tap: {key: escape}
+  - wait: {seconds: 0.4}
+  - menu: close
+  - wait: {menu_open: false}
+  # Two more: the weight goes past it and the check picks Monochromon, undiscovered (on a new game).
+  - script: use_item("big_berry")
+  - wait: {seconds: 0.3}
+  - script: use_item("big_berry")
+  - wait: {seconds: 0.3}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-player
+  - wait: {seconds: 0.6}
+  - menu_select: player-tab-chart
+  - wait: {seconds: 0.4}
+  - menu_select: chart-cell-2
+  - wait: {seconds: 0.3}
+  - tap: {key: return}
+  - wait: {seconds: 0.6}
+  - screenshot: fed-more
+  - expect_text_fits: all
+  - expect_clear: pause_menu
+  - resize: [1920, 1080]
+  - wait: {seconds: 0.5}
+  - screenshot: fed-more
+  - expect_text_fits: all
+  - resize: [1024, 768]
+  - wait: {seconds: 0.5}
+  - screenshot: fed-more
+  - expect_text_fits: all
+  - resize: [1280, 720]
+  - wait: {seconds: 0.5}
+  - tap: {key: escape}
+  - wait: {seconds: 0.4}
+  - menu: close
+  - wait: {menu_open: false}
+  # The option: off leaves the original chart.
+  - menu: open
+  - wait: {seconds: 0.6}
+  # The original look keeps the options among the player page's tools (Tab there); the modern look lists them on
+  # the menu's first page.
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.4}
+  - menu_select: evolution-requirements
+  - expect_setting: {evolution_requirements: false}
+  - wait: {seconds: 0.3}
+  - screenshot: options-off
+  - expect_text_fits: all
+  - menu: close
+  - wait: {menu_open: false}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-player
+  - wait: {seconds: 0.6}
+  - menu_select: player-tab-chart
+  - wait: {seconds: 0.4}
+  - menu_select: chart-cell-2
+  - wait: {seconds: 0.3}
+  - tap: {key: return}
+  - wait: {seconds: 0.6}
+  - screenshot: off
+  - expect_text_fits: all
+  - tap: {key: escape}
+  - wait: {seconds: 0.4}
+  - menu: close
+  - wait: {menu_open: false}
+  - menu: open
+  - wait: {seconds: 0.6}
+  # The original look keeps the options among the player page's tools (Tab there); the modern look lists them on
+  # the menu's first page.
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.4}
+  - menu_select: evolution-requirements
+  - expect_setting: {evolution_requirements: true}
+  - menu: close
+  - wait: {menu_open: false}

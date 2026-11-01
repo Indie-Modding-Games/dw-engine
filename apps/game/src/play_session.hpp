@@ -29,6 +29,7 @@
 #include "boss_arrival_scene.hpp"
 #include "bug_report.hpp"
 #include "care_commands.hpp"
+#include "chart_requirements.hpp"
 #include "curling_screen.hpp"
 #include "death_scene.hpp"
 #include "egg_box_screen.hpp"
@@ -247,6 +248,8 @@ private:
   FieldStoryProps storyProps_;
   BossArrivalScene bossArrival_;
   PartnerMenu partnerMenu_;
+  // The evolution requirements on the pause menu's chart (an engine improvement).
+  ChartRequirements chartRequirements_;
   FieldHud fieldHud_;
   SleepScreen sleepScreen_;
   SaveMachine saveMachine_;

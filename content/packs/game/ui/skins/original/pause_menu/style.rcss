@@ -360,12 +360,37 @@
 .chart-detail-cell.hidden, .chart-detail-line.hidden { display: none; }
 .chart-detail-line { position: absolute; height: 3dp; transform-origin: 0dp 0dp; pointer-events: none; }
 #chart-detail-tree, #chart-detail-level, #chart-detail-name { position: absolute; font-size: 36dp; line-height: 36dp; color: #d6d6d6; white-space: nowrap; }
-#chart-detail-tree { left: 387dp; top: 27dp; color: #fff371; }
-#chart-detail-level { left: 81dp; top: 438dp; width: 324dp; text-align: center; }
-#chart-detail-name { left: 45dp; top: 495dp; width: 396dp; text-align: center; }
+#chart-detail-tree { left: 387dp; top: 21dp; color: #fff371; }
+#chart-detail-level { left: 81dp; top: 432dp; width: 324dp; text-align: center; }
+#chart-detail-name { left: 45dp; top: 486dp; width: 396dp; text-align: center; }
 
 #panel.on-player #chart-detail-transition { display: block; position: absolute; box-sizing: border-box; border: 3dp #808080; background-color: transparent; pointer-events: none; }
 #panel.on-player #chart-detail-transition.hidden { display: none; }
+/* Evolution requirements (an engine improvement, docs/modulos/apps/game.md): a panel over the tree's left box and a
+   cursor over the targets; ticks and crosses are two bars each. */
+#panel.on-player #chart-req { left: 51dp; top: 33dp; width: 294dp; height: 399dp; padding: 6dp 6dp; }
+#panel.on-player #chart-req.hidden, .chart-req-row.hidden, .chart-req-mark.hidden, #chart-detail-cursor.hidden { display: none; }
+.chart-req-row { position: relative; display: block; height: 22dp; line-height: 22dp; font-size: 22dp; color: #d6d6d6; white-space: nowrap; }
+.chart-req-row.title { color: #fff371; }
+.chart-req-mark { position: absolute; left: 0; top: 2dp; width: 18dp; height: 18dp; }
+.chart-req-mark span { position: absolute; display: block; height: 3dp; transform-origin: 0dp 0dp; }
+.chart-req-mark.met span { background-color: #84f084; }
+.chart-req-mark.met .mark-a { left: 1dp; top: 8dp; width: 9dp; transform: rotate(45deg); }
+.chart-req-mark.met .mark-b { left: 6dp; top: 15dp; width: 16dp; transform: rotate(-60deg); }
+.chart-req-mark.unmet span { background-color: #f06464; }
+.chart-req-mark.unmet .mark-a { left: 2dp; top: 2dp; width: 20dp; transform: rotate(45deg); }
+.chart-req-mark.unmet .mark-b { left: 2dp; top: 16dp; width: 20dp; transform: rotate(-45deg); }
+.chart-req-label { position: absolute; left: 24dp; top: 0; }
+.chart-req-row.title .chart-req-label { left: 0; }
+.chart-req-row.item .chart-req-label { left: 33dp; }
+.chart-req-value { position: absolute; right: 0; top: 0; text-align: right; }
+.chart-req-value.met, #chart-req-score.met, #chart-req-next { color: #84f084; }
+.chart-req-value.unmet, #chart-req-score.unmet { color: #f06464; }
+#chart-req-score, #chart-req-next { position: absolute; left: 9dp; right: 9dp; height: 22dp; line-height: 22dp; font-size: 22dp; text-align: center; white-space: nowrap; }
+#chart-req-score { top: 337dp; }
+#chart-req-next { top: 360dp; }
+#chart-detail-cursor { position: absolute; width: 72dp; height: 60dp; pointer-events: none; }
+.chart-detail-cell.chart-dim { opacity: 0.4; }
 
 #panel.on-player #player-medals-view { display: none; position: relative; height: 564dp; }
 #panel.on-player.player-medals #player-profile, #panel.on-player.player-medals #player-chart { display: none; }

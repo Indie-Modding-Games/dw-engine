@@ -399,6 +399,18 @@ EvolutionAdapter::itemTargetLevel(std::string_view item) const {
   return evolution_->tables().levelOf(*target);
 }
 
+std::optional<game::evolution::EvolutionOutlook>
+EvolutionAdapter::outlook(const GameSession& session) const {
+  const bool scriptRunning = desc_.story != nullptr && desc_.story->scriptRunning();
+  const auto inputs = inputsOf(session, scriptRunning);
+  if (!inputs) {
+    return std::nullopt;
+  }
+  game::evolution::EvolutionState state = state_;
+  syncRaised(desc_.story, state);
+  return evolution_->outlook(*inputs, state);
+}
+
 std::vector<game::evolution::EvolutionResult> EvolutionAdapter::takeEvolutions() {
   return std::exchange(evolutions_, {});
 }
