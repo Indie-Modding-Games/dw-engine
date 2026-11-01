@@ -328,8 +328,10 @@
 #player-items-line .rule-first { left: 0; right: 6dp; top: 0; }
 #player-items-line .rule-light { left: 3dp; right: 0; top: 3dp; }
 #player-items-line .rule-last { left: 3dp; right: 6dp; top: 6dp; }
-#player-portrait-clip { position: absolute; left: 0; top: 75dp; width: 306dp; height: 492dp; overflow: hidden; }
-#player-portrait { position: absolute; left: -33dp; top: -171dp; width: 960dp; height: 720dp; }
+/* The portrait is a picture only: its image reaches far past the clip, over the tabs, and the pointer would hit it
+   there, as RmlUi does not clip where the pointer hits. */
+#player-portrait-clip { position: absolute; left: 0; top: 75dp; width: 306dp; height: 492dp; overflow: hidden; pointer-events: none; }
+#player-portrait { position: absolute; left: -33dp; top: -171dp; width: 960dp; height: 720dp; pointer-events: none; }
 /* Tab opens the engine's utilities separately; they are not part of the original profile. */
 #panel.on-player.player-tools-open { top: 120dp; width: 552dp; height: auto; margin-left: -276dp; padding: 6dp 9dp 9dp 9dp; box-sizing: content-box; background-color: #2d384080; }
 #panel.on-player.player-tools-open #title, #panel.on-player.player-tools-open #prompts, #panel.on-player.player-tools-open #player-tools { display: block; }

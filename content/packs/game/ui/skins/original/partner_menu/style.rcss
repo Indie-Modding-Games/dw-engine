@@ -817,6 +817,9 @@ button:focus .original-look, button.original-look:focus {
 #scrim.digimon-screen #tab-tech { left: 225dp; width: 186dp; }
 #scrim.digimon-screen .tab.selected { height: 48dp; }
 .tab-edge { position: absolute; display: block; top: 0; height: 100%; pointer-events: none; }
+/* The partner's portrait is a picture only: its image reaches past its clip, over the tabs, and RmlUi does not clip
+   where the pointer hits, so a click there would land on it and not on the tab. */
+#partner-portrait-clip, #partner-portrait { pointer-events: none; }
 .tab-left { left: 0; width: 21dp; decorator: image(digimon-tab-left-idle); }
 .tab-middle { left: 21dp; right: 21dp; decorator: image(digimon-tab-middle-idle); }
 .tab-right { right: 0; width: 21dp; decorator: image(digimon-tab-right-idle); }

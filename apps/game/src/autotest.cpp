@@ -258,7 +258,30 @@ std::size_t savesFiles(const std::optional<std::filesystem::path>& folder) {
   return files;
 }
 
+// Whether an element of a document has a class: has_class.<document>#<element>.<class> is true or
+// false, as which tab a page shows (has_class.partner_menu#tab-tech.selected).
+constexpr std::string_view HasClassSetting = "has_class.";
+
+std::optional<std::string> hasClassText(const ui::Ui& ui, std::string_view name) {
+  if (!name.starts_with(HasClassSetting)) {
+    return std::nullopt;
+  }
+  const std::string_view rest = name.substr(HasClassSetting.size());
+  const std::size_t hash = rest.find('#');
+  const std::size_t dot = rest.rfind('.');
+  if (hash == std::string_view::npos || dot == std::string_view::npos || dot < hash) {
+    return std::nullopt;
+  }
+  return ui.elementHasClass(rest.substr(0, hash), rest.substr(hash + 1, dot - hash - 1),
+                            rest.substr(dot + 1))
+             ? "true"
+             : "false";
+}
+
 std::string settingText(const AutotestHost& host, std::string_view name) {
+  if (std::optional<std::string> hasClass = hasClassText(*host.ui, name)) {
+    return *std::move(hasClass);
+  }
   if (name == SavesFilesSetting) {
     return std::to_string(savesFiles(host.saves));
   }

@@ -1,6 +1,6 @@
 # The vertical slice's route with the mouse (click-to-move on the ground, the HUD's menu button, clicks on the
-# menu): File City to the elder's house and back, the menu and the minimap, and the window at each size. How to
-# run it: docs/guides/prueba-vertical.md.
+# menu): File City to the elder's house and back, the menu and the minimap, the tabs of the player's page (original
+# look) and of the partner's page, clicked, and the window at each size. How to run it: docs/guides/prueba-vertical.md.
 name: mouse
 device: mouse
 timeout: 600
@@ -20,6 +20,12 @@ steps:
         - menu_select: open-player
         # The page's box takes no input until it is in place (tickUIBox).
         - wait: {seconds: 0.5}
+        # A click on a tab shows its page, as Left and Right do.
+        - menu_select: player-tab-chart
+        - expect_setting: {has_class.pause_menu#player-tab-chart.selected: "true"}
+        - screenshot: menu-player-chart
+        - menu_select: player-tab-player
+        - expect_setting: {has_class.pause_menu#player-tab-player.selected: "true"}
         - tap: {key: tab}
         - menu_select: player-minimap
   - when:
@@ -69,3 +75,17 @@ steps:
   - fullscreen: false
   - resize: [1280, 720]
   - wait: {map: twna01, seconds: 0.5}
+  # The partner's page: a click on a tab shows its page.
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.6}
+  - menu_select: tab-tech
+  - expect_setting: {has_class.partner_menu#tab-tech.selected: "true"}
+  - screenshot: partner-tech
+  - menu_select: tab-status
+  - expect_setting: {has_class.partner_menu#tab-status.selected: "true"}
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false}

@@ -970,4 +970,49 @@ TEST_CASE(
   CHECK_FALSE(ui->elementHasClass("partner_menu", "scrim", "tech-help"));
 }
 
+// The portraits of the player and the partner reach past their clips over the tabs; a click on a
+// tab must land on it.
+TEST_CASE("the original skin's player and partner pages switch tabs on a click") {
+  Content content;
+  addOriginalArt(content);
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "es");
+  auto ui = createUi(files, texts);
+  REQUIRE(ui->skin() == "original");
+  loadScreens(*ui);
+  ui->setSetting("ui_skin", std::string{"original"});
+  input::InputState input{input::defaultActionMap()};
+  const auto settle = [&] {
+    for (int tick = 0; tick < 60; ++tick) {
+      frame(*ui, input);
+    }
+  };
+
+  // The pause menu's PLAYER page: each of its five tabs, clicked.
+  ui->show("pause_menu", true);
+  settle();
+  CHECK(clickElement(*ui, "pause_menu", "open-player"));
+  settle();
+  REQUIRE(ui->elementHasClass("pause_menu", "player-tab-player", "selected"));
+  for (const std::string_view tab : {"chart", "medals", "card", "city", "player"}) {
+    CAPTURE(tab);
+    const std::string id = std::format("player-tab-{}", tab);
+    static_cast<void>(clickElement(*ui, "pause_menu", id));
+    settle();
+    CHECK(ui->elementHasClass("pause_menu", id, "selected"));
+  }
+  ui->hide("pause_menu");
+
+  // The partner's page: Status and Tech.
+  ui->show("partner_menu", true);
+  settle();
+  REQUIRE(ui->elementHasClass("partner_menu", "tab-status", "selected"));
+  static_cast<void>(clickElement(*ui, "partner_menu", "tab-tech"));
+  settle();
+  CHECK(ui->elementHasClass("partner_menu", "tab-tech", "selected"));
+  static_cast<void>(clickElement(*ui, "partner_menu", "tab-status"));
+  settle();
+  CHECK(ui->elementHasClass("partner_menu", "tab-status", "selected"));
+}
+
 } // namespace dwe::ui
