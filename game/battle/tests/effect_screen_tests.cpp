@@ -589,12 +589,24 @@ std::string pushes(std::int32_t& at, std::initializer_list<std::string_view> val
   return out;
 }
 
+// copy_vector of the zero vector at base+0x00f0 into the instance's place and angles.
+std::string zeroInstance(std::int32_t& at);
+
 std::string subOf(std::int32_t& at, std::string_view name, std::size_t count) {
   std::string out = std::format("  op: sub\n  sub: {}\n  args:", name);
   for (std::size_t i = 0; i < count; ++i) {
     out += std::format("\n    a{}: 0", i);
   }
   return instruction(at, out);
+}
+
+std::string zeroInstance(std::int32_t& at) {
+  std::string out;
+  for (const std::string_view offset : {"instance+0x0004", "instance+0x0010"}) {
+    out += instruction(at, std::format("  op: push_address\n  address: \"{}\"", offset)) +
+           pushes(at, {"base+0x00f0"}) + subOf(at, "copy_vector", 2);
+  }
+  return out;
 }
 
 } // namespace
@@ -803,4 +815,228 @@ data: []
   runner.render();
   CHECK_FALSE(runner.running(slot));
   CHECK(runner.draws().empty());
+}
+
+TEST_CASE("battle_effect.c BTL_render2DTexturedQuad: a textured quad from a place and size or from "
+          "four points, from the projection's centre, mixed by its rate") {
+  const std::string render = renderOf([](std::int32_t& at) {
+    // x, y, width, height, entry, colour, u, v, texel width and height, palette row, rate.
+    std::string out =
+        pushes(at, {"10", "20", "30", "40", "256", "base+0x00a0", "1", "2", "3", "4", "2", "64"}) +
+        subOf(at, "render_2d_quad", 12);
+    out += pushes(at, {"base+0x00b0", "base+0x00c0", "base+0x00d0", "base+0x00e0", "300",
+                       "base+0x00a0", "0", "0", "31", "31", "0", "-32"}) +
+           subOf(at, "render_2d_quad", 12);
+    // Entry 0x20 is too near: nothing.
+    return out +
+           pushes(at, {"0", "0", "8", "8", "32", "base+0x00a0", "0", "0", "8", "8", "0", "0"}) +
+           subOf(at, "render_2d_quad", 12);
+  });
+  constexpr std::string_view Data = R"(- at: "0x00a0"
+  kind: color
+  size: 12
+  values: [100, 90, 80]
+- at: "0x00b0"
+  kind: vector
+  size: 12
+  values: [-5, -6, 0]
+- at: "0x00c0"
+  kind: vector
+  size: 12
+  values: [7, -6, 0]
+- at: "0x00d0"
+  kind: vector
+  size: 12
+  values: [-5, 8, 0]
+- at: "0x00e0"
+  kind: vector
+  size: 12
+  values: [9, 8, 0]
+)";
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::game::battle::EffectView view;
+  view.centre = {.x = 5, .y = 6};
+  runner.setView(view);
+  const std::vector<EffectScreenQuad> quads = firstFrame(runner, renderingScript(render, Data));
+  REQUIRE(quads.size() == 2);
+  CHECK(quads[0].corners == std::array<EffectScreenPoint, 4>{EffectScreenPoint{.x = 15, .y = 26},
+                                                             EffectScreenPoint{.x = 45, .y = 26},
+                                                             EffectScreenPoint{.x = 15, .y = 66},
+                                                             EffectScreenPoint{.x = 45, .y = 66}});
+  CHECK(quads[0].u == 1);
+  CHECK(quads[0].v == 2);
+  CHECK(quads[0].texelWidth == 3);
+  CHECK(quads[0].texelHeight == 4);
+  CHECK(quads[0].clutRow == 2);
+  CHECK(quads[0].blend == EffectBlend::Subtract);
+  CHECK(quads[0].order == 256);
+  CHECK(quads[0].color == dwe::game::battle::EffectVector{.x = 100, .y = 90, .z = 80});
+  CHECK(quads[1].corners[0] == EffectScreenPoint{.x = 0, .y = 0});
+  CHECK(quads[1].corners[3] == EffectScreenPoint{.x = 14, .y = 14});
+  CHECK(quads[1].blend == EffectBlend::Add);
+}
+
+TEST_CASE("battle_effect.c BTL_render3DTexturedQuad: four world points projected, at their average "
+          "depth") {
+  const std::string render = renderOf([](std::int32_t& at) {
+    return pushes(at, {"base+0x00b0", "base+0x00c0", "base+0x00d0", "base+0x00e0", "base+0x00a0",
+                       "0", "0", "15", "15", "1", "32"}) +
+           subOf(at, "render_3d_quad", 11);
+  });
+  constexpr std::string_view Data = R"(- at: "0x00a0"
+  kind: color
+  size: 12
+  values: [128, 128, 128]
+- at: "0x00b0"
+  kind: vector
+  size: 12
+  values: [-100, -100, 0]
+- at: "0x00c0"
+  kind: vector
+  size: 12
+  values: [100, -100, 0]
+- at: "0x00d0"
+  kind: vector
+  size: 12
+  values: [-100, 100, 0]
+- at: "0x00e0"
+  kind: vector
+  size: 12
+  values: [100, 100, 0]
+)";
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::game::battle::EffectView view;
+  view.camera.t = {.x = 0, .y = 0, .z = 1000};
+  view.projection = 512;
+  runner.setView(view);
+  const std::vector<EffectScreenQuad> quads = firstFrame(runner, renderingScript(render, Data));
+  REQUIRE(quads.size() == 1);
+  CHECK(quads[0].corners == std::array<EffectScreenPoint, 4>{EffectScreenPoint{.x = -52, .y = -52},
+                                                             EffectScreenPoint{.x = 51, .y = -52},
+                                                             EffectScreenPoint{.x = -52, .y = 51},
+                                                             EffectScreenPoint{.x = 51, .y = 51}});
+  CHECK(quads[0].order == 62);
+  CHECK(quads[0].clutRow == 1);
+  CHECK(quads[0].blend == EffectBlend::Add);
+}
+
+TEST_CASE("battle_effect.c BTL_renderRingTube: ten points a ring, a quad between each two rings, "
+          "every other ring's texels 24 to the right") {
+  const std::string render = renderOf([](std::int32_t& at) {
+    // Centre, two rings, radii, heights, grey levels, first ring's texels.
+    return pushes(at, {"base+0x00a0", "2", "base+0x00b0", "base+0x00b8", "base+0x00c0", "1"}) +
+           subOf(at, "render_ring_tube", 6);
+  });
+  constexpr std::string_view Data = R"(- at: "0x00a0"
+  kind: vector
+  size: 12
+  values: [0, 0, 0]
+- at: "0x00b0"
+  kind: int32_array
+  size: 8
+  values: [100, 100]
+- at: "0x00b8"
+  kind: int32_array
+  size: 8
+  values: [0, -100]
+- at: "0x00c0"
+  kind: int32_array
+  size: 8
+  values: [77, 0]
+)";
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::game::battle::EffectView view;
+  view.camera.t = {.x = 0, .y = 0, .z = 1000};
+  view.projection = 512;
+  runner.setView(view);
+  const std::vector<EffectScreenQuad> quads = firstFrame(runner, renderingScript(render, Data));
+  REQUIRE(quads.size() == 10);
+  // The first point of a ring is at +z (_sin(0x80)): 1100 deep, the centre of the screen; the
+  // next ring's is 100 above it.
+  CHECK(quads[0].corners[3] == EffectScreenPoint{.x = 0, .y = 0});
+  CHECK(quads[0].corners[2] == EffectScreenPoint{.x = 0, .y = -47});
+  CHECK(quads[0].order == 68);
+  CHECK(quads[0].u == 24);
+  CHECK(quads[0].texelWidth == 0x17);
+  CHECK(quads[0].texelHeight == 0x1F);
+  CHECK(quads[0].color == dwe::game::battle::EffectVector{.x = 77, .y = 77, .z = 77});
+  CHECK(quads[0].blend == EffectBlend::Add);
+  // The last quad closes the ring back to its first points.
+  CHECK(quads[9].corners[0] == quads[0].corners[2]);
+  CHECK(quads[9].corners[1] == quads[0].corners[3]);
+}
+
+TEST_CASE("battle_effect.c BTL_renderRadialWaves: six rays of 27 quads out from the instance, the "
+          "first and last quads with their own texels") {
+  const std::string render = renderOf([](std::int32_t& at) {
+    return zeroInstance(at) + pushes(at, {"base+0x00a0"}) + subOf(at, "render_radial_waves", 1);
+  });
+  constexpr std::string_view Data = R"(- at: "0x00a0"
+  kind: vector
+  size: 12
+  values: [4096, 4096, 4096]
+- at: "0x00f0"
+  kind: vector
+  size: 12
+  values: [0, 0, 0]
+)";
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::game::battle::EffectView view;
+  view.camera.t = {.x = 0, .y = 0, .z = 10000};
+  view.projection = 512;
+  runner.setView(view);
+  const std::vector<EffectScreenQuad> quads = firstFrame(runner, renderingScript(render, Data));
+  REQUIRE(quads.size() == 6 * 27);
+  CHECK(quads[0].u == 8);
+  CHECK(quads[0].texelWidth == 0xF);
+  CHECK(quads[1].u == 0);
+  CHECK(quads[1].v == 0x10);
+  CHECK(quads[26].u == 8);
+  for (const EffectScreenQuad& quad : quads) {
+    CHECK(quad.blend == EffectBlend::Add);
+    CHECK(quad.clutRow == 1);
+  }
+  // The first ray is turned 0x2aa round y (to the right and behind), its quads 1/5 of their
+  // radius wide.
+  CHECK(quads[0].corners[0].x > 0);
+}
+
+TEST_CASE("battle_effect.c BTL_disableMapLayer hides the map until the next tick; "
+          "BTL_drawTMDScreenSpace places a model in front of the camera") {
+  const std::string render = renderOf([](std::int32_t& at) {
+    return zeroInstance(at) + subOf(at, "disable_map_layer", 0) + pushes(at, {"0", "base+0x00a0"}) +
+           subOf(at, "draw_tmd_on_screen", 2);
+  });
+  constexpr std::string_view Data = R"(- at: "0x00a0"
+  kind: vector
+  size: 12
+  values: [4096, 4096, 4096]
+- at: "0x00f0"
+  kind: vector
+  size: 12
+  values: [0, 0, 0]
+)";
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::game::battle::EffectView view;
+  view.camera.t = {.x = 0, .y = 0, .z = 1000};
+  view.centre = {.x = 10, .y = 0};
+  runner.setView(view);
+  EffectScript script = renderingScript(render, Data);
+  script.modelObjects = 1;
+  firstFrame(runner, script);
+  CHECK(runner.mapHidden());
+  REQUIRE(runner.draws().size() == 1);
+  const auto* model = std::get_if<dwe::game::battle::EffectModel>(&runner.draws()[0].shape);
+  REQUIRE(model != nullptr);
+  // The instance's place (0, 0, 0) in view space, 10 left for the drawing offset: in the world,
+  // 1000 toward the camera.
+  CHECK(model->transform.t == dwe::game::battle::EffectVector{.x = -10, .y = 0, .z = -1000});
+  CHECK(model->transform.m[0][0] == 4096);
+  runner.tick();
+  CHECK_FALSE(runner.mapHidden());
 }

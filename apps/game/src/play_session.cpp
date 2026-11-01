@@ -8,6 +8,7 @@
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/ruleset/species_extra.hpp>
 #include <dwe/scene/components.hpp>
+#include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/cards_adapter.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/field_facts.hpp>
@@ -23,6 +24,7 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -31,6 +33,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -203,6 +206,42 @@ ruleset::SpeciesExtra speciesExtraOf(session::GameSession& session) {
   return std::move(*extra);
 }
 
+// learn_move("<move> [place]") (partner_events.hpp): the move learned and, with a place, equipped
+// there from the partner's species list.
+core::Result<void> learnMove(session::BattleAdapter* battle, const session::GameSession& session,
+                             const assets::DigimonTable* species, std::string_view lesson) {
+  const std::size_t gap = lesson.find(' ');
+  const std::string_view move = lesson.substr(0, gap);
+  std::optional<std::size_t> place;
+  if (gap != std::string_view::npos) {
+    const std::string_view text = lesson.substr(gap + 1);
+    std::size_t value = 0;
+    const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+    if (error != std::errc{} || end != text.data() + text.size()) {
+      return core::fail(core::formatMessage(messages::LearnMoveUsage, lesson));
+    }
+    place = value;
+  }
+  if (battle == nullptr || move.empty()) {
+    return core::fail(core::formatMessage(messages::LearnMoveUsage, lesson));
+  }
+  battle->learnMove(move);
+  if (!place) {
+    return {};
+  }
+  const std::string& partner = session.partner().state().species;
+  const assets::DigimonRow* row = species != nullptr ? species->find(partner) : nullptr;
+  if (row == nullptr) {
+    return core::fail(core::formatMessage(messages::LearnMoveNotInSpecies, partner, move));
+  }
+  const auto found = std::ranges::find(row->moves, std::optional<std::string>{move});
+  if (found == row->moves.end()) {
+    return core::fail(core::formatMessage(messages::LearnMoveNotInSpecies, partner, move));
+  }
+  return battle->equip(session, *place,
+                       static_cast<session::MoveSlot>(std::distance(row->moves.begin(), found)));
+}
+
 } // namespace
 
 void SessionCommands::drop(Autotest* autotest) {
@@ -235,6 +274,9 @@ void SessionCommands::drop(Autotest* autotest) {
   }
   if (!std::exchange(partnerWrites, {}).empty()) {
     dropped(messages::PartnerSetFailed);
+  }
+  if (!std::exchange(lessons, {}).empty()) {
+    dropped(messages::LearnMoveFailed);
   }
   if (std::exchange(saveMachine, false)) {
     dropped(messages::SaveMachineFailed);
@@ -272,6 +314,8 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
                       [this](std::string_view what) { storyWrites.emplace_back(what); });
   scripts.bindCommand(PartnerSetCommand,
                       [this](std::string_view what) { partnerWrites.emplace_back(what); });
+  scripts.bindCommand(LearnMoveCommand,
+                      [this](std::string_view move) { lessons.emplace_back(move); });
   scripts.bindCommand(EvolveCommand,
                       [this](std::string_view form) { evolution = std::string{form}; });
   care.bind(scripts);
@@ -946,6 +990,12 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     } else {
       core::logWarning("{}",
                        core::formatMessage(messages::PartnerSetFailed, write.error().message));
+    }
+  }
+  for (const std::string& lesson : std::exchange(commands.lessons, {})) {
+    if (auto learned = learnMove(game_.systems.battle, *game_.session, species, lesson); !learned) {
+      core::logWarning("{}",
+                       core::formatMessage(messages::LearnMoveFailed, learned.error().message));
     }
   }
   if (const auto npcs = std::exchange(commands.battle, std::nullopt)) {

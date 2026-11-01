@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <numbers>
+#include <utility>
 
 namespace dwe::game::battle::effect_math {
 
@@ -243,6 +244,18 @@ std::int32_t lerp(std::int32_t start, std::int32_t end, std::int32_t t0, std::in
     }
   }
   return result + start;
+}
+
+std::int32_t interpolateClamped(std::int32_t lo, std::int32_t hi, std::int32_t t,
+                                std::int32_t start, std::int32_t end) {
+  if (hi < lo) {
+    std::swap(lo, hi);
+  }
+  t = std::clamp(t, lo, hi);
+  if (lo >= t) {
+    return start;
+  }
+  return start + ((end - start) * (t - lo) / (hi - lo));
 }
 
 } // namespace dwe::game::battle::effect_math

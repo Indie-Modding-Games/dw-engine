@@ -158,18 +158,7 @@ constexpr std::int32_t OrderShift = 4;
 constexpr std::int32_t PositionOffset = 4;
 constexpr std::int32_t RotationOffset = 0x10;
 
-// battle_effect.c: BTL_interpolateClamped: from start to end as t goes from lo to hi.
-std::int32_t interpolateClamped(std::int32_t lo, std::int32_t hi, std::int32_t t,
-                                std::int32_t start, std::int32_t end) {
-  if (hi < lo) {
-    std::swap(lo, hi);
-  }
-  t = std::clamp(t, lo, hi);
-  if (lo >= t) {
-    return start;
-  }
-  return start + ((end - start) * (t - lo) / (hi - lo));
-}
+using fx::interpolateClamped;
 
 // The corners of an axis-aligned quad (setXYWH).
 std::array<EffectScreenPoint, 4> rectangle(std::int32_t x, std::int32_t y, std::int32_t width,
@@ -564,25 +553,45 @@ void EffectRunner::screenVeil(Slot& slot, const std::vector<std::int32_t>& args,
 }
 
 std::pair<EffectScreenPoint, std::int32_t> EffectRunner::project(const EffectVector& world) const {
-  EffectMatrix fixed;
-  fixed.t = {.x = 0, .y = 0, .z = FixedDistance};
-  const EffectMatrix& camera = fixedCamera_ ? fixed : view_.camera;
+  const Projection projected = projection(world);
+  return {projected.pixel, projected.depth};
+}
+
+// The GTE's perspective transform (RTPS): the flags' error bit (31) is set when a step saturates.
+EffectRunner::Projection EffectRunner::projection(const EffectVector& world) const {
+  const EffectMatrix camera = worldToScreen();
   const EffectVector turned = fx::apply(camera, fx::toShort(world));
-  const auto limited = [](std::int64_t value) {
-    return std::clamp(value, -GteVectorLimit, GteVectorLimit);
+  bool fault = false;
+  const auto limited = [&](std::int64_t value, std::int64_t lo, std::int64_t hi) {
+    fault = fault || value < lo || value > hi;
+    return std::clamp(value, lo, hi);
   };
-  const std::int64_t x = limited(std::int64_t{turned.x} + camera.t.x);
-  const std::int64_t y = limited(std::int64_t{turned.y} + camera.t.y);
-  const std::int64_t z =
-      std::clamp(std::int64_t{turned.z} + camera.t.z, std::int64_t{0}, GteDepthLimit);
+  const std::int64_t x =
+      limited(std::int64_t{turned.x} + camera.t.x, -GteVectorLimit, GteVectorLimit);
+  const std::int64_t y =
+      limited(std::int64_t{turned.y} + camera.t.y, -GteVectorLimit, GteVectorLimit);
+  const std::int64_t z = limited(std::int64_t{turned.z} + camera.t.z, 0, GteDepthLimit);
   const std::int64_t h = fixedCamera_ ? FixedProjection : view_.projection;
+  fault = fault || h >= z * 2;
   const std::int64_t q =
       h < z * 2 ? std::min((((h * GteDivideOne) / z) + 1) / 2, GteDivideLimit) : GteDivideLimit;
   const auto screen = [&](std::int64_t value) {
     return static_cast<std::int32_t>(
-        std::clamp((value * q) >> GteFractionShift, GteScreenMin, GteScreenMax));
+        limited((value * q) >> GteFractionShift, GteScreenMin, GteScreenMax));
   };
-  return {EffectScreenPoint{.x = screen(x), .y = screen(y)}, static_cast<std::int32_t>(z)};
+  const EffectScreenPoint pixel{.x = screen(x), .y = screen(y)};
+  return {.pixel = pixel, .depth = static_cast<std::int32_t>(z), .fault = fault};
+}
+
+// GsWSMATRIX: the battle's camera or, after setup_fixed_camera, the effects' fixed one (no turn,
+// FixedDistance ahead).
+EffectMatrix EffectRunner::worldToScreen() const {
+  if (!fixedCamera_) {
+    return view_.camera;
+  }
+  EffectMatrix fixed;
+  fixed.t = {.x = 0, .y = 0, .z = FixedDistance};
+  return fixed;
 }
 
 // battle_effect.c: BTL_renderEFELine: x0, y0, x1, y1 (from the projection's centre, as drawLine2P

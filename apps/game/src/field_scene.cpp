@@ -890,7 +890,9 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
             .tint = sceneryTint() * glm::vec4{glm::vec3{stage_.playerFade}, 1.0F},
             .additive = stage_.playerAdditive});
     drawNpcs(animationSeconds, alpha);
-    submitMapObjects();
+    if (!mapLayerHidden_) {
+      submitMapObjects();
+    }
     submitProps();
   } else {
     submitStageProps();

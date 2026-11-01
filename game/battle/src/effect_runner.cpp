@@ -178,6 +178,7 @@ void EffectRunner::stop(std::size_t slot, std::size_t section) {
 
 void EffectRunner::tick() {
   fixedCamera_ = false;
+  mapHidden_ = false;
   for (std::size_t slot = 0; slot < slots_.size(); ++slot) {
     for (std::size_t index = 0; index < slots_[slot].subEffects.size(); ++index) {
       const SubEffect& subEffect = slots_[slot].subEffects[index];
@@ -412,8 +413,8 @@ void EffectRunner::subOp(Slot& slot, const EffectInstruction& in) {
     }
   }
   if (transformOp(slot, in.sub, args) || vectorOp(slot, in.sub, args) ||
-      drawOp(slot, in.sub, args) || primOp(slot, in.sub, args) || fighterOp(slot, in.sub, args) ||
-      (touchBodies_ && touchOp(slot, in.sub, args)) ||
+      drawOp(slot, in.sub, args) || primOp(slot, in.sub, args) || quadOp(slot, in.sub, args) ||
+      fighterOp(slot, in.sub, args) || (touchBodies_ && touchOp(slot, in.sub, args)) ||
       (!touchBodies_ && fxOp(slot, in.sub, args))) {
     return;
   }

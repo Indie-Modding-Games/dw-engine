@@ -83,7 +83,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | Sistema | Ficheros del decomp | A portar | Portado | Parcial | Falta | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 154 | 154 | 0 | 0 | 100 % |
-| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 233 | 214 | 5 | 14 | 93 % |
+| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 238 | 230 | 5 | 3 | 98 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 82 | 79 | 2 | 1 | 98 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 78 | 78 | 0 | 0 | 100 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 49 | 0 | 0 | 100 % |
@@ -101,7 +101,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 31 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 49 | 49 | 0 | 0 | 100 % |
-| **Total** | 1395 funciones a portar | 1395 | 1204 | 24 | 167 | 87 % |
+| **Total** | 1400 funciones a portar | 1400 | 1220 | 24 | 156 | 88 % |
 
 ## Batalla
 
@@ -117,28 +117,17 @@ La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cám
 
 Ficheros del decomp: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Portado 214, parcial 5, falta 14.
+Portado 230, parcial 5, falta 3.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `BTL_markEFEFinished` | `btl/battle_effect.c:2221` | falta (citada en docs) | Marca el efecto como terminado para que la batalla siga. | mark_finished se salta (battle.md: Hueco) |
-| `BTL_disableMapLayer` | `btl/battle_effect.c:2234` | falta (citada en docs) | Oculta una capa del mapa durante la técnica (fondos que cambian). | — |
-| `BTL_renderRingTube` | `btl/battle_effect.c:2461` | falta | Dibuja un tubo de anillos (rayos, torbellinos) de una técnica. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
-| `BTL_renderRadialWaves` | `btl/battle_effect.c:2600` | falta | Dibuja ondas que se abren en círculo de una técnica. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
-| `BTL_drawTMDScreenSpace` | `btl/battle_effect.c:2722` | falta | Dibuja un modelo del efecto pegado a la pantalla. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
-| `BTL_convertToViewSpace` | `btl/battle_effect.c:2843` | falta | Pasa una posición del efecto al espacio de la cámara. | battle.md: Hueco |
-| `BTL_render3DTexturedQuad` | `btl/battle_effect.c:2902` | falta | Dibuja un cuadro con textura en el mundo (llamas, rayos). | solo lo cita la extracción del disco |
-| `BTL_render2DTexturedQuad` | `btl/battle_effect.c:3130` | falta | Dibuja un cuadro con textura en pantalla de un efecto. | solo lo cita la extracción del disco |
 | `BTL_addSourceEntityParticleFX` | `btl/battle_effect.c:4034` | parcial | Lanza partículas desde el atacante. | `game/battle/src/effect_runner_subops.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
-| `BTL_interpolateClamped` | `btl/battle_effect.c:5207` | falta | Interpola un valor entre dos límites (color de cintas, radio de ondas). | `game/battle/src/effect_runner_prims.cpp:161` · solo lo usan dibujos que faltan |
 | `BTL_tickAuraProjectile` | `btl/battle_effect.c:6051` | falta | Mueve un proyectil de aura. | — |
 | `BTL_initializeAuraProjectiles` | `btl/battle_effect.c:6123` | falta | Prepara los proyectiles de aura. | — |
 | `BTL_addAuraProjectile` | `btl/battle_effect.c:6137` | falta | Lanza un proyectil de aura. | — |
 | `tickParticleFX` | `main/efe.c:463` | parcial | Mueve las partículas de los efectos. | `apps/game/src/field_effects.cpp` · campo: las chispas sin luchador (gimnasio); batalla: solo sus tiradas, con --original-rolls (game/battle/src/particle_rolls.cpp, battle.md) |
 | `addEntityParticleFX` | `main/efe.c:611` | parcial | Lanza partículas pegadas a un luchador. | `game/battle/src/particle_rolls.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
-| `initializeEntityParticleFX` | `main/efe.c:633` | falta | Prepara las partículas pegadas a luchadores. | — |
 | `tickEntityParticleFX` | `main/efe.c:638` | parcial | Mueve las partículas pegadas a un luchador. | `game/battle/src/particle_rolls.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
-| `setEFEFlashOffset` | `main/efe.c:965` | falta | Mueve un destello de luz. | `apps/game/src/death_effects.hpp:150` |
 | `translateConditionFXToEntity` | `main/effect_common.c:307` | parcial | Pega un efecto de estado a la posición de un personaje. | `apps/game/src/field_scene_status.cpp` · la mariposa del compañero y el veneno y la confusión del combate (CONDITION_FX_OFFSETS en la tabla de especies: condition_fx); la burbuja de necesidad del campo aún no toma la x y la z del punto (renderConditionBubble) |
 
 ## Campo: movimiento, colisión y cámara
@@ -475,6 +464,6 @@ Portado 49, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-1043 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+1038 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

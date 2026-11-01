@@ -248,24 +248,24 @@ BTL_handleEFEFileLoaded = { status = "no-aplica", note = "carga asíncrona del o
 BTL_tickParticleEmitters = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Emisores de partículas", what = "Mueve las partículas que sueltan las técnicas." }
 BTL_initializeEFEEngine = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:122", what = "Arranca la máquina de efectos al empezar el combate." }
 BTL_runEFESlotScript = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:227", what = "Ejecuta el script de efecto de una ranura." }
-BTL_markEFEFinished = { status = "falta", what = "Marca el efecto como terminado para que la batalla siga.", note = "mark_finished se salta (battle.md: Hueco)" }
-BTL_disableMapLayer = { status = "falta", what = "Oculta una capa del mapa durante la técnica (fondos que cambian)." }
+BTL_markEFEFinished = { status = "no-aplica", note = "solo escribe en una tabla que nada lee (UNUSED_EFE_ARRAY); mark_finished no hace nada", what = "Marca el efecto como terminado para que la batalla siga." }
+BTL_disableMapLayer = { status = "portado", dwe = "game/battle/src/effect_runner_quads.cpp:192", note = "el mapa y sus objetos no se dibujan hasta el siguiente cuadro (DG Dimension); battle.md", what = "Oculta una capa del mapa durante la técnica (fondos que cambian)." }
 BTL_tickRibbonPoints = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cintas de luz", what = "Mueve los puntos de una cinta de luz de una técnica." }
 BTL_initializeRibbonPoints = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cintas de luz", what = "Prepara una cinta de luz de una técnica." }
 BTL_renderScreenFade = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Velos de pantalla", what = "Funde la pantalla a un color durante una técnica." }
 BTL_renderScreenOverlay = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Velos de pantalla", what = "Pinta un velo de color sobre la pantalla durante una técnica." }
-BTL_renderRingTube = { status = "falta", what = "Dibuja un tubo de anillos (rayos, torbellinos) de una técnica." }
-BTL_renderRadialWaves = { status = "falta", what = "Dibuja ondas que se abren en círculo de una técnica." }
+BTL_renderRingTube = { status = "portado", dwe = "game/battle/src/effect_runner_quads.cpp:206", note = "Meltdown; battle.md", what = "Dibuja un tubo de anillos (rayos, torbellinos) de una técnica." }
+BTL_renderRadialWaves = { status = "portado", dwe = "game/battle/src/effect_runner_quads.cpp:265", note = "Confused Storm; battle.md", what = "Dibuja ondas que se abren en círculo de una técnica." }
 BTL_addClutLoadPrim = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cargas de paleta", what = "Cambia la paleta de un efecto mientras corre (destellos de color)." }
-BTL_drawTMDScreenSpace = { status = "falta", what = "Dibuja un modelo del efecto pegado a la pantalla." }
+BTL_drawTMDScreenSpace = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp:476", note = "el modelo se coloca en el mundo donde la cámara lo vería; battle.md", what = "Dibuja un modelo del efecto pegado a la pantalla." }
 BTL_loadClutColors = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cargas de paleta", what = "Copia colores a la paleta de un efecto." }
 BTL_getCameraRotation = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cintas de luz", what = "Lee el giro de la cámara para orientar un efecto." }
-BTL_convertToViewSpace = { status = "falta", what = "Pasa una posición del efecto al espacio de la cámara.", note = "battle.md: Hueco" }
-BTL_render3DTexturedQuad = { status = "falta", what = "Dibuja un cuadro con textura en el mundo (llamas, rayos)." }
+BTL_convertToViewSpace = { status = "portado", dwe = "game/battle/src/effect_runner_quads.cpp:180", note = "ningún efecto del juego lo usa", what = "Pasa una posición del efecto al espacio de la cámara." }
+BTL_render3DTexturedQuad = { status = "portado", dwe = "game/battle/src/effect_runner_quads.cpp:153", note = "Spiral Sword; battle.md", what = "Dibuja un cuadro con textura en el mundo (llamas, rayos)." }
 BTL_renderWireframeBox = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cámara fija, líneas y alambres", what = "Dibuja una caja de líneas de un efecto." }
 BTL_discardEFEOperand = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp", what = "Descarta un operando del script de efecto." }
 BTL_renderWireframeGrid = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cámara fija, líneas y alambres", what = "Dibuja una rejilla de líneas de un efecto." }
-BTL_render2DTexturedQuad = { status = "falta", what = "Dibuja un cuadro con textura en pantalla de un efecto." }
+BTL_render2DTexturedQuad = { status = "portado", dwe = "game/battle/src/effect_runner_quads.cpp:116", note = "Charm Perfume, Reverse Program; battle.md", what = "Dibuja un cuadro con textura en pantalla de un efecto." }
 BTL_restoreCameraView = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cámara fija, líneas y alambres", what = "Devuelve la cámara del combate a su sitio tras una técnica." }
 BTL_setupFixedCamera = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cámara fija, líneas y alambres", what = "Fija la cámara en un punto para lucir una técnica." }
 BTL_renderEFELine = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cámara fija, líneas y alambres", what = "Dibuja una línea de un efecto." }
@@ -325,7 +325,7 @@ BTL_compareLess = { status = "portado", dwe = "game/battle/src/effect_runner.cpp
 BTL_compareNotEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: distinto." }
 BTL_compareEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: igual." }
 BTL_calculateAttackHitPosition = { status = "portado", dwe = "game/battle/src/movement.cpp:458", what = "Calcula en qué punto del cuerpo del objetivo cae un golpe." }
-BTL_interpolateClamped = { status = "falta", what = "Interpola un valor entre dos límites (color de cintas, radio de ondas).", note = "solo lo usan dibujos que faltan" }
+BTL_interpolateClamped = { status = "portado", dwe = "game/battle/src/effect_math.cpp:249", what = "Interpola un valor entre dos límites (color de cintas, radio de ondas)." }
 BTL_initializeEFESubOpcodeTable = { status = "no-aplica", note = "tabla de saltos del original", what = "Monta la tabla de subórdenes de efecto." }
 BTL_dispatchEFEOpcode = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Ejecuta una orden del script de efecto." }
 BTL_resetPoisonBubbles = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:127", what = "Reinicia las burbujas del veneno sobre un luchador." }
@@ -364,12 +364,12 @@ morphBuffModel = { status = "portado", dwe = "apps/game/src/field_scene_battle_v
 initializeParticleFX = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "campo: las 50 direcciones, con la semilla del motor (Suposición)", what = "Prepara las partículas de los efectos." }
 tickParticleFX = { status = "parcial", dwe = "apps/game/src/field_effects.cpp", note = "campo: las chispas sin luchador (gimnasio); batalla: solo sus tiradas, con --original-rolls (game/battle/src/particle_rolls.cpp, battle.md)", what = "Mueve las partículas de los efectos." }
 addEntityParticleFX = { status = "parcial", dwe = "game/battle/src/particle_rolls.cpp", note = "solo sus tiradas, con --original-rolls (battle.md)", what = "Lanza partículas pegadas a un luchador." }
-initializeEntityParticleFX = { status = "falta", what = "Prepara las partículas pegadas a luchadores." }
+initializeEntityParticleFX = { status = "portado", dwe = "game/battle/include/dwe/game/battle/particle_rolls.hpp:65", note = "los huecos empiezan libres al crear las tiradas", what = "Prepara las partículas pegadas a luchadores." }
 tickEntityParticleFX = { status = "parcial", dwe = "game/battle/src/particle_rolls.cpp", note = "solo sus tiradas, con --original-rolls (battle.md)", what = "Mueve las partículas pegadas a un luchador." }
 tickCloudFX = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Nubes (las de las técnicas); las del campo (gimnasio, cacas): apps/game/src/field_effects.cpp", what = "Mueve las nubes de humo y polvo de los efectos." }
 EFECreateFlash = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Destellos", what = "Crea un destello de luz de una técnica." }
 tickEFEFlash = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Destellos", what = "Anima un destello de luz." }
-setEFEFlashOffset = { status = "falta", what = "Mueve un destello de luz." }
+setEFEFlashOffset = { status = "portado", dwe = "apps/game/src/death_effects.cpp:295", note = "el vaivén de los destellos al morir (DOOA_tickDissolve)", what = "Mueve un destello de luz." }
 findEFEDATFile = { status = "no-aplica", note = "lectura del disco", what = "Busca el fichero de datos de efectos." }
 initializeEFE = { status = "no-aplica", note = "preparación del original", what = "Prepara el sistema de efectos." }
 getEFEDATEntry = { status = "no-aplica", note = "lectura del disco", what = "Da una entrada del fichero de efectos." }

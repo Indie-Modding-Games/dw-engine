@@ -49,6 +49,11 @@ using core::original::rsin;
 // vecmath.c: multiplyRotations: the YXZ angles of one turn after another.
 [[nodiscard]] Vector combineRotations(const Vector& first, const Vector& second);
 
+// battle_effect.c: BTL_interpolateClamped: from start to end as t goes from lo to hi (either way
+// round), held at the ends.
+[[nodiscard]] std::int32_t interpolateClamped(std::int32_t lo, std::int32_t hi, std::int32_t t,
+                                              std::int32_t start, std::int32_t end);
+
 // effect_common.c: lerp, with its wrap-around.
 [[nodiscard]] std::int32_t lerp(std::int32_t start, std::int32_t end, std::int32_t t0,
                                 std::int32_t t1, std::int32_t t);

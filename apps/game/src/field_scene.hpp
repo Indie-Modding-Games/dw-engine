@@ -326,8 +326,9 @@ public:
   // The scene drawers for FrameDesc::scene, in order.
   [[nodiscard]] std::span<render::Drawer* const> drawers() {
     // A stage with a view of its own keeps the map renderer's drawers for the effects.
-    return stage_.sceneryHidden && !stage_.view ? std::span<render::Drawer* const>{stageDrawers_}
-                                                : std::span<render::Drawer* const>{drawers_};
+    return (stage_.sceneryHidden && !stage_.view) || mapLayerHidden_
+               ? std::span<render::Drawer* const>{stageDrawers_}
+               : std::span<render::Drawer* const>{drawers_};
   }
 
   // The ground point under a window pixel (drawable pixels, as MouseMoved gives), for
@@ -437,6 +438,9 @@ public:
   // with the move's effect texture, objects of its effect model. Each texture and model loads on
   // first use; one that fails is logged and not drawn.
   void setEffects(std::vector<SceneEffect> effects) { effects_ = std::move(effects); }
+  // A technique hid the map's layer this frame (battle_effect.c: BTL_disableMapLayer,
+  // setMapLayerEnabled(0)): the map's picture and its objects are not drawn, the fighters are.
+  void setMapLayerHidden(bool hidden) { mapLayerHidden_ = hidden; }
   // A fighter as its status visuals see it: its actor (none for the partner) and its species'
   // height and radius (the species table).
   struct StatusBody {
@@ -817,6 +821,7 @@ private:
   // or nothing for one that failed to load.
   std::map<std::optional<std::uint8_t>, std::optional<std::size_t>> groundItemTextures_;
   std::vector<SceneEffect> effects_;
+  bool mapLayerHidden_ = false;
   std::map<std::tuple<std::string, std::int32_t, std::optional<game::battle::EffectPaletteRow>>,
            std::optional<std::size_t>>
       effectTextures_;

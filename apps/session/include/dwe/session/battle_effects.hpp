@@ -55,6 +55,8 @@ public:
     return runner_.draws();
   }
   [[nodiscard]] const std::string& moveOf(std::size_t slot) const;
+  // Whether a technique hid the map's layer this frame (EffectRunner::mapHidden).
+  [[nodiscard]] bool mapHidden() const { return runner_.mapHidden(); }
   // The palette rows a slot's scripts rewrote (EffectRunner::palettes).
   [[nodiscard]] const game::battle::EffectPalettes& palettesOf(std::size_t slot) const {
     return runner_.palettes(slot);

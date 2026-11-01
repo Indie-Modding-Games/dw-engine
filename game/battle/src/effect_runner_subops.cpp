@@ -473,6 +473,30 @@ bool EffectRunner::drawOp(Slot& slot, std::string_view name,
     model.uOffset = slot.uvAnims[*which].u;
     model.vOffset = slot.uvAnims[*which].v;
     draws_.push_back({.slot = index, .shape = model});
+  } else if (name == "draw_tmd_on_screen") {
+    // BTL_drawTMDScreenSpace: as draw_tmd_yxz, but the instance's place is in front of the camera
+    // (its view space, moved by the drawing offset's distance from the screen's centre); drawn
+    // here at the world place the camera sees there.
+    const std::optional<std::size_t> which = object(args[0]);
+    if (!which) {
+      return true;
+    }
+    const EffectVector turn = fx::toShort(vectorAt(slot, instanceAddress(RotationOffset)));
+    const EffectMatrix seen = fx::scaled(fx::rotYXZ(turn), vectorAt(slot, args[1]));
+    const EffectVector at = vectorAt(slot, instanceAddress(PositionOffset));
+    const EffectMatrix camera = worldToScreen();
+    const EffectMatrix back = fx::transposed(camera);
+    const EffectVector away{.x = at.x - view_.centre.x - camera.t.x,
+                            .y = at.y - view_.centre.y - camera.t.y,
+                            .z = at.z - camera.t.z};
+    EffectModel model;
+    model.object = args[0];
+    model.transform = fx::multiply(back, seen);
+    model.transform.t = fx::apply(back, away);
+    model.color = slot.objectColors[*which];
+    model.uOffset = slot.uvAnims[*which].u;
+    model.vOffset = slot.uvAnims[*which].v;
+    draws_.push_back({.slot = index, .shape = model});
   } else if (name == "set_model_object_color") {
     // BTL_setEFEModelObjectColor: each primitive's colour bytes.
     if (const std::optional<std::size_t> which = object(args[0])) {

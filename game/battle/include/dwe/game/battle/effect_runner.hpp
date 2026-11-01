@@ -378,6 +378,8 @@ public:
   // for draws(), until the next render.
   void render();
   [[nodiscard]] const std::vector<EffectDraw>& draws() const { return draws_; }
+  // Whether a script hid the map's layer this frame (battle_effect.c: BTL_disableMapLayer).
+  [[nodiscard]] bool mapHidden() const { return mapHidden_; }
 
   // The palette rows the slot's scripts rewrote so far.
   [[nodiscard]] const EffectPalettes& palettes(std::size_t slot) const;
@@ -535,6 +537,20 @@ private:
   // worldPosToScreenPos: a world point's pixel from the projection's centre and its view depth
   // (SZ), through the battle's camera or, after setup_fixed_camera, the effects' fixed one.
   [[nodiscard]] std::pair<EffectScreenPoint, std::int32_t> project(const EffectVector& world) const;
+  // The same with the GTE's error flag (bit 31): a step of the transform saturated.
+  struct Projection {
+    EffectScreenPoint pixel;
+    std::int32_t depth = 0;
+    bool fault = false;
+  };
+  [[nodiscard]] Projection projection(const EffectVector& world) const;
+  // The camera project() uses (GsWSMATRIX).
+  [[nodiscard]] EffectMatrix worldToScreen() const;
+  // The textured quads, tubes and waves, the screen-space model and the map's layer
+  // (effect_runner_quads.cpp); false for a sub-op that is not theirs.
+  bool quadOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
+  void ringTube(Slot& slot, const std::vector<std::int32_t>& args);
+  void radialWaves(Slot& slot, const std::vector<std::int32_t>& args);
   void tickFx();
   void renderFx();
   void playSound(std::int32_t sound);
@@ -580,6 +596,9 @@ private:
   // BTL_setupFixedCamera until BTL_restoreCameraView or the next frame (main.c: gameLoop sets the
   // map's view again every frame).
   bool fixedCamera_ = false;
+  // battle_effect.c: BTL_disableMapLayer: the map is not drawn until the next tick
+  // (BTL_tickEFEEngine enables it again first).
+  bool mapHidden_ = false;
 
   // The interpreter's registers (battle_effect.c: EFE_SCRIPT_*), valid while a script runs.
   std::size_t slot_ = 0;

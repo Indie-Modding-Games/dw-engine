@@ -280,6 +280,7 @@ void BattleScreen::showEffects() const {
     }
   }
   desc_.scene->setEffects(std::move(shown));
+  desc_.scene->setMapLayerHidden(battle_ && effects_ && effects_->mapHidden());
 }
 
 // battle_effect.c: the status visuals over the fighters (game::battle::StatusVisuals), with each

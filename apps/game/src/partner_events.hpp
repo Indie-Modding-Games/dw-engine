@@ -14,6 +14,10 @@ namespace dwe::app {
 // script makes it (EvolutionAdapter::evolveByScript). A debug aid until the map scripts run,
 // applied between frames.
 inline constexpr std::string_view EvolveCommand = "evolve";
+// And learn_move("<move> [place]"): the partner learns that move (and those learned with it) as the
+// gym's brains training teaches it and, with a place (0 to 3), equips it there, so a route can show
+// a technique the partner has not learned yet.
+inline constexpr std::string_view LearnMoveCommand = "learn_move";
 
 // Shows what the partner's events change on screen: an evolution or a rebirth draws the partner's
 // new species in the field. Nothing shows the others yet (the HUD's reactions come with the map

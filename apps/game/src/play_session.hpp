@@ -124,6 +124,8 @@ struct SessionCommands {
   std::vector<std::string> storyWrites;
   // partner_set("<value> <amount>") commands, in order (partner_set_command.hpp).
   std::vector<std::string> partnerWrites;
+  // learn_move("<move>") commands, in order (partner_events.hpp).
+  std::vector<std::string> lessons;
 
   void bind(script::ScriptVm& scripts);
   // Forgets what was queued with no game to apply it to, and says so; a route that asked for a save
