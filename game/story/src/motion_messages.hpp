@@ -38,6 +38,9 @@ inline constexpr std::string_view WaitNoCharacter =
 inline constexpr std::string_view SyncUnconnected =
     "[port:story-motion] wait_for_entity: the partner's sync has no owner yet (partner routines), "
     "so a cleared sync counts as raised";
+inline constexpr std::string_view MoveOverran =
+    "[port:story-motion] character {}: the move to ({}, {}) is {} frames past its {} and has not "
+    "got there (a clip's own steps carry it off); it ends on the point";
 inline constexpr std::string_view TargetGone =
     "[port:story-motion] slot {}: target {} is not on the map, the move ends";
 inline constexpr std::string_view MoveToCharacter =

@@ -166,6 +166,8 @@ private:
     std::int64_t frames = 1;
     std::optional<glm::vec3> perFrame;
     bool withCamera = false;
+    // The frames it has moved; one that runs long past its count ends on the point.
+    std::int64_t moved = 0;
   };
   struct MoveToAxis {
     std::int64_t axis = 0;

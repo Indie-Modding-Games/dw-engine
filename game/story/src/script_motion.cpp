@@ -35,6 +35,10 @@ constexpr std::int64_t WaitTrainingLoaded = 0xD6;
 // The slots below this are the characters', which go back to their first animation when a turn or
 // a walk ends (script_interp.c: tickScriptedMovement).
 constexpr std::int64_t FirstNonCharacterSlot = 10;
+// How many frames past its count a move to a point may run before it ends on the point. The
+// original's tickEntityMoveTo always gets there on time; a clip whose own steps carry the character
+// the other way would otherwise keep the script waiting for it for ever.
+constexpr std::int64_t MoveOverrunFrames = 40;
 constexpr std::int64_t RestingAnimation = 0;
 
 constexpr float Turn = 2.0F * std::numbers::pi_v<float>;
@@ -503,6 +507,14 @@ bool ScriptMotion::tick(std::int64_t character, MoveTo& move) {
     return false;
   }
   const glm::vec3 step = *move.perFrame;
+  if (++move.moved > move.frames + MoveOverrunFrames) {
+    core::logWarning("{}",
+                     messages::formatMessage(messages::MoveOverran, character, move.point.x,
+                                             move.point.z, move.moved - move.frames, move.frames));
+    actors_->place(character, glm::vec3{move.point.x, position.y, move.point.z});
+    actors_->drive(character, {}, Glide::Move);
+    return true;
+  }
   const bool doneX = reached(position.x, move.point.x, step.x);
   const bool doneZ = reached(position.z, move.point.z, step.z);
   glm::vec3 clamped = position;

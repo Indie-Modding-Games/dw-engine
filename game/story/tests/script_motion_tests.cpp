@@ -110,3 +110,43 @@ TEST_CASE("a turn that takes a walking character's slot stops the walk when it e
   }
   CHECK(floor.actors[PlayerScriptId].position == stopped);
 }
+
+TEST_CASE("a move to a point that never gets there ends on the point a little after its count") {
+  // mgen06's boss (script 194): entity_move_to(10, -4562, 41, 20) then wait_for_entity(10). If the
+  // character's own clip carries it off the line, it would never reach the point and the script
+  // would wait for ever; the move ends on the point once it runs well past its 20 frames.
+  constexpr std::int64_t Boss = 10;
+  Floor floor;
+  floor.actors[PlayerScriptId] = {.slot = 0, .position = {0.0F, 0.0F, 0.0F}};
+  floor.actors[Boss] = {.slot = 7, .position = {-4000.0F, 0.0F, 600.0F}};
+  ScriptMotion motion{floor, MotionRules{.frameSeconds = FrameSeconds}};
+  motion.moveTo(Boss, -4562, 41, 20);
+  const auto done = motion.waitFor(Boss);
+  int frame = 0;
+  for (; frame < 200 && !done(); ++frame) {
+    motion.scriptFrame();
+    // Something else holds the boss where it stands: the move's velocity never carries it.
+  }
+  REQUIRE(done());
+  CHECK(frame > 20);
+  CHECK(frame < 80);
+  CHECK(floor.actors[Boss].position.x == -4562.0F);
+  CHECK(floor.actors[Boss].position.z == -41.0F); // the script's z runs the other way
+  CHECK(floor.actors[Boss].velocity == glm::vec3{0.0F});
+}
+
+TEST_CASE("a move to a point still ends on its own count when nothing holds it back") {
+  constexpr std::int64_t Boss = 10;
+  Floor floor;
+  floor.actors[Boss] = {.slot = 7, .position = {-4000.0F, 0.0F, 600.0F}};
+  ScriptMotion motion{floor, MotionRules{.frameSeconds = FrameSeconds}};
+  motion.moveTo(Boss, -4562, 41, 20);
+  const auto done = motion.waitFor(Boss);
+  int frame = 0;
+  for (; frame < 200 && !done(); ++frame) {
+    motion.scriptFrame();
+    floor.step();
+  }
+  REQUIRE(done());
+  CHECK(frame <= 23);
+}
