@@ -2,6 +2,7 @@
 
 #include <dwe/game/field/boss_arrival.hpp>
 #include <dwe/render/camera.hpp>
+#include <dwe/ruleset/random.hpp>
 #include <dwe/scene/world.hpp>
 #include <dwe/session/story_props.hpp>
 
@@ -47,6 +48,8 @@ private:
   void play(const game::field::BossArrivalCues& cues);
   void stopSounds();
   [[nodiscard]] std::optional<scene::Entity> boss() const;
+  // The boss's scripted animation when its clip played through (anim.c: animFrame == frameCount).
+  [[nodiscard]] std::optional<std::int32_t> finishedAnimation() const;
   void leaveMapIfChanged();
   void showStage(std::optional<scene::Entity> entity);
   [[nodiscard]] std::optional<render::Camera> orbitCamera(scene::Entity entity) const;
@@ -64,6 +67,8 @@ private:
   bool staged_ = false;
   // Whether the story waits for the arrival.
   bool waiting_ = false;
+  // rand() for renderWireframed's grey.
+  ruleset::Random wireRandom_{0};
 };
 
 } // namespace dwe::app

@@ -814,7 +814,7 @@ EAB_addBuildupRing = { status = "portado", dwe = "game/field/src/boss_arrival.cp
 EAB_tickBuildupRing = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Mueve y desvanece un anillo de la carga previa.", note = "vive 18 fotogramas; tamaño en bossRingScale" }
 EAB_addSpawnRing = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Añade un anillo de la aparición del jefe final." }
 EAB_tickSpawnRing = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Mueve y desvanece un anillo de la aparición.", note = "vive 9 fotogramas" }
-EAB_tickSpawn = { status = "parcial", dwe = "game/field/src/boss_arrival.cpp", what = "Escena de aparición del jefe final: destello, anillos, partículas, cámara y sonidos.", note = "sin el dibujo en alambre del jefe y sin repetir la animación 0x33 al acabar; vabId 5 en BossArrivalCues::bossSoundSlot; sin medir en el original" }
+EAB_tickSpawn = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Escena de aparición del jefe final: destello, anillos, partículas, cámara y sonidos.", note = "alambre en apps/game/src/boss_arrival_scene.cpp; vabId 5 en BossArrivalCues::bossSoundSlot; sin medir en el original" }
 EAB_initializeParticles = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Vacía la lista de partículas de la aparición." }
 EAB_setEntitiesVisible = { status = "portado", dwe = "apps/game/src/boss_arrival_scene.cpp", what = "Oculta a todos menos al jefe durante su aparición y luego los repone.", note = "FieldStage: escenario y compañero ocultos, solo el jefe (shownNpc)" }
 EAB_addParticle = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Añade una partícula de luz a la aparición del jefe." }

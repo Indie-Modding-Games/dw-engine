@@ -112,27 +112,67 @@ std::vector<BodyFace> FieldScene::PartnerBody::boneFaces(std::uint32_t bone) con
 }
 
 rhi::TextureId FieldScene::partnerImage(std::uint32_t image) {
-  const assets::ModelData* model = partnerActor_->model.get();
-  if (partnerTexturesOf_ != model) {
-    for (const std::optional<rhi::TextureId>& texture : partnerTextures_) {
+  return cachedModelImage(*partnerActor_->model, image, partnerTexturesOf_, partnerTextures_);
+}
+
+glm::vec3 FieldScene::modelLight(glm::vec3 normal) const {
+  const render::ModelLighting& lighting = models_->lighting();
+  const float length = glm::length(normal);
+  glm::vec3 light = lighting.ambient;
+  if (length > 0.0F) {
+    for (const render::DirectionalLight& lamp : lighting.lights) {
+      const float along = glm::length(lamp.direction);
+      if (along > 0.0F) {
+        light += std::max(glm::dot(normal / length, -lamp.direction / along), 0.0F) * lamp.color;
+      }
+    }
+  }
+  return glm::clamp(light, glm::vec3{0.0F}, glm::vec3{2.0F});
+}
+
+std::vector<BodyFace> FieldScene::npcFaces(scene::Entity entity) {
+  const auto npc = std::ranges::find(npcActors_, entity, &Actor::entity);
+  if (npc == npcActors_.end() || !world_.alive(entity)) {
+    return {};
+  }
+  const Actor& actor = **npc;
+  const auto& transform = world_.registry().get<scene::Transform>(entity);
+  const glm::mat4 world = glm::rotate(glm::translate(glm::mat4{1.0F}, transform.position),
+                                      transform.yaw, glm::vec3{0.0F, 1.0F, 0.0F});
+  const auto joints = actor.player->jointMatrices();
+  std::vector<BodyFace> faces;
+  for (std::uint32_t bone = 0; bone < joints.size(); ++bone) {
+    std::vector<BodyFace> boneFaces =
+        objectFaces(*actor.model, bone, world * joints[bone], [&](std::uint32_t image) {
+          return cachedModelImage(*actor.model, image, npcTexturesOf_, npcTextures_);
+        });
+    faces.insert(faces.end(), boneFaces.begin(), boneFaces.end());
+  }
+  return faces;
+}
+
+rhi::TextureId FieldScene::cachedModelImage(const assets::ModelData& model, std::uint32_t image,
+                                            const assets::ModelData*& of,
+                                            std::vector<std::optional<rhi::TextureId>>& textures) {
+  if (of != &model) {
+    for (const std::optional<rhi::TextureId>& texture : textures) {
       if (texture && texture->index != renderer_->whiteTexture().index) {
         renderer_->destroyTexture(*texture);
       }
     }
-    partnerTextures_.assign(model->images.size(), std::nullopt);
-    partnerTexturesOf_ = model;
+    textures.assign(model.images.size(), std::nullopt);
+    of = &model;
   }
-  if (image >= partnerTextures_.size()) {
+  if (image >= textures.size()) {
     return renderer_->whiteTexture();
   }
-  std::optional<rhi::TextureId>& slot = partnerTextures_[image];
+  std::optional<rhi::TextureId>& slot = textures[image];
   if (!slot) {
-    const assets::Image& pixels = model->images[image];
+    const assets::Image& pixels = model.images[image];
     if (auto made = renderer_->queueTexture(extentOf(pixels), pixels.pixels)) {
       slot = *made;
     } else {
-      core::logWarning("field: no texture for the partner's image {}: {}", image,
-                       made.error().message);
+      core::logWarning("field: no texture for a model's image {}: {}", image, made.error().message);
       slot = renderer_->whiteTexture();
     }
   }

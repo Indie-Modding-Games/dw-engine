@@ -139,6 +139,9 @@ struct FieldStage {
   // An NPC drawn while the scenery is hidden: the final boss alone on black (eab.c:
   // EAB_setEntitiesVisible(0) keeps entity 2).
   std::optional<scene::Entity> shownNpc;
+  // The shown NPC's model is not drawn: the scene draws it itself, as wireframe (model.c:
+  // renderDigimon draws entity 2 with renderWireframed while ENTITY1_WIREFRAME_TOTAL is not 16).
+  bool shownNpcWired = false;
   // The partner's posData->scale, 1 being its model's size.
   glm::vec3 partnerScale{1.0F};
   // The camera the models are drawn with instead of the map's (the scene's GS_VIEWPOINT).
@@ -287,6 +290,12 @@ public:
 
   // The partner's bones and faces posed as it is drawn now, for a scene's effects.
   [[nodiscard]] const EvolutionBody& partnerBody() const { return partnerBody_; }
+  // How the models' lights brighten a face turned to `normal` (world space), 1 leaving its texels
+  // as they are, up to 2 (the models' shading: ambient plus the three lights).
+  [[nodiscard]] glm::vec3 modelLight(glm::vec3 normal) const;
+  // A map NPC's faces posed as it is drawn now, every bone's, textured with its model's images;
+  // none when the entity is not one of the map's NPCs.
+  [[nodiscard]] std::vector<BodyFace> npcFaces(scene::Entity entity);
   // An image of the base pack ("texture/etcdat/spot256", "...?palette=1") as a texture for scene
   // primitives, every drawn texel opaque (alpha 255); loaded once. Nothing when it cannot load.
   [[nodiscard]] std::optional<rhi::TextureId> sceneImage(std::string_view source);
@@ -703,6 +712,11 @@ private:
   };
   // The partner model's images as textures, made when a scene first asks.
   rhi::TextureId partnerImage(std::uint32_t image);
+  // A model's image from a cache of one model's textures (`of`, `textures`), made when first asked;
+  // the cache drops the textures of the model it held before.
+  rhi::TextureId cachedModelImage(const assets::ModelData& model, std::uint32_t image,
+                                  const assets::ModelData*& of,
+                                  std::vector<std::optional<rhi::TextureId>>& textures);
   // The tint of everything but the partner (FieldStage::sceneryDarkness).
   [[nodiscard]] glm::vec4 sceneryTint() const;
 
@@ -722,6 +736,9 @@ private:
   // The partner model whose images partnerTextures_ holds, and the textures by image.
   const assets::ModelData* partnerTexturesOf_ = nullptr;
   std::vector<std::optional<rhi::TextureId>> partnerTextures_;
+  // The same for the NPC a scene draws as wireframe (npcFaces).
+  const assets::ModelData* npcTexturesOf_ = nullptr;
+  std::vector<std::optional<rhi::TextureId>> npcTextures_;
   std::map<std::string, std::optional<rhi::TextureId>, std::less<>> sceneImages_;
   FieldEffects fieldEffects_{FieldEffectsSeed};
   ObjectSmoke objectSmoke_{FieldEffectsSeed};

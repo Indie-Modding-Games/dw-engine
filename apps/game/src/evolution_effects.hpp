@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <span>
 #include <vector>
@@ -70,10 +71,17 @@ struct EvolutionFlash {
 void addFlashPrims(const EvolutionFlash& flash, const ScenePrimFrame& frame, float focalLength,
                    rhi::TextureId image, std::vector<SortedPrim>& out);
 
+// model.c: renderWireframed's grey for an object's lines: WIREFRAME_COLOR_MIN + rand() %
+// (WIREFRAME_COLOR_MAX - WIREFRAME_COLOR_MIN).
+inline constexpr std::int32_t WireGreyMin = 0x37;
+inline constexpr std::int32_t WireGreyMax = 0xFF;
+
 // model.c: renderWireframed for one object: of its faces turned to the camera, those whose
 // WIREFRAME_RNG_TABLE entry is below `share` textured, the others as lines of `grey` (0 to 255).
+// `shade` gives a textured face's colour (NormalColorCol3's lighting); white without it.
 void addWiredFaces(std::span<const BodyFace> faces, std::int32_t share, std::int32_t grey,
-                   const ScenePrimFrame& frame, rhi::TextureId white, std::vector<SortedPrim>& out);
+                   const ScenePrimFrame& frame, rhi::TextureId white, std::vector<SortedPrim>& out,
+                   const std::function<glm::vec4(const BodyFace&)>& shade = {});
 
 // An expanding square on the ground (EVL_spawnParticle).
 struct EvolutionRing {

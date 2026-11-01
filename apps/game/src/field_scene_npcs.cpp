@@ -88,7 +88,9 @@ void FieldScene::drawShownNpc(double animationSeconds, float alpha) {
     if (actor->entity == *stage_.shownNpc && world_.alive(actor->entity)) {
       animate(*actor, animationSeconds);
       playClipSounds(*actor);
-      submit(*actor, alpha, {});
+      if (!stage_.shownNpcWired) {
+        submit(*actor, alpha, {});
+      }
     }
   }
 }

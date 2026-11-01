@@ -175,3 +175,39 @@ TEST_CASE("the arrival's particles keep the boss's place and fade over 86 frames
   CHECK(dwe::game::field::bossParticleHalfSide({.timer = 0}) == 8);
   CHECK(dwe::game::field::bossParticleHalfSide({.timer = 0x56}) == 0x9c4);
 }
+
+TEST_CASE("eab.c EAB_tickSpawn: the roar starts again when it reaches its last frame") {
+  BossArrival arrival;
+  static_cast<void>(arrival.startBuildup());
+  static_cast<void>(arrival.startArrival());
+  // Before the rise a finished roar starts again too (the check comes first on every frame).
+  CHECK(arrival.frame({}, 0x33).animation == 0x33);
+  // Another finished animation is left alone.
+  CHECK_FALSE(arrival.frame({}, 0x21).animation.has_value());
+  CHECK_FALSE(arrival.frame({}).animation.has_value());
+  // Frame 50: the rise's start wins over the roar's.
+  runTo(arrival, 49);
+  CHECK(arrival.frame({}, 0x33).animation == 0x21);
+  // Frame 210 starts the roar; after it, each finish starts it again until the arrival ends.
+  CHECK(runTo(arrival, 210).animation == 0x33);
+  CHECK(arrival.frame({}, 0x33).animation == 0x33);
+  runTo(arrival, 339);
+  CHECK(arrival.frame({}, 0x33).animation == 0x33);
+  CHECK_FALSE(arrival.arriving());
+  CHECK_FALSE(arrival.frame({}, 0x33).animation.has_value());
+}
+
+TEST_CASE("eab.c EAB_tickSpawn: the boss turns from wireframe to solid over frames 50 to 290") {
+  BossArrival arrival;
+  static_cast<void>(arrival.startBuildup());
+  static_cast<void>(arrival.startArrival());
+  runTo(arrival, 49);
+  CHECK(arrival.solidShares() == BossArrival::SolidShares);
+  runTo(arrival, 50);
+  CHECK(arrival.solidShares() == 0);
+  runTo(arrival, 170);
+  CHECK(arrival.solidShares() > 0);
+  CHECK(arrival.solidShares() < BossArrival::SolidShares);
+  runTo(arrival, 290);
+  CHECK(arrival.solidShares() == BossArrival::SolidShares);
+}

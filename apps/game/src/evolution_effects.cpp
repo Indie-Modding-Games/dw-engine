@@ -105,8 +105,6 @@ constexpr std::int32_t FullShare = 16;
 // the share; otherwise as lines of one grey a bone, 0x37 + rand() % 0xC8.
 constexpr std::array<std::int8_t, 16> WireTable{6,  3, 11, 8,  10, 13, 1, 4,
                                                 14, 7, 12, 15, 5,  2,  9, 0};
-constexpr std::int32_t WireGreyMin = 0x37;
-constexpr std::int32_t WireGreyMax = 0xFF;
 
 // efe.c: renderEFEFlash and renderParticleFlash: the glow is a 64 x 64 quarter of SPOT256 at
 // v 64 (u 0x40 for half 0, 0 for half 1), mirrored into four; its colour fades along math.c's sin
@@ -535,8 +533,8 @@ void addFlashPrims(const EvolutionFlash& flash, const ScenePrimFrame& frame, flo
 }
 
 void addWiredFaces(std::span<const BodyFace> faces, std::int32_t share, std::int32_t grey,
-                   const ScenePrimFrame& frame, rhi::TextureId white,
-                   std::vector<SortedPrim>& out) {
+                   const ScenePrimFrame& frame, rhi::TextureId white, std::vector<SortedPrim>& out,
+                   const std::function<glm::vec4(const BodyFace&)>& shade) {
   const glm::vec3 eye = eyeOf(frame.view);
   const glm::vec4 color{glm::vec3{static_cast<float>(grey) / LineOne}, 1.0F};
   for (const BodyFace& face : faces) {
@@ -545,8 +543,9 @@ void addWiredFaces(std::span<const BodyFace> faces, std::int32_t share, std::int
     }
     const float depth = meanDepth(frame, face);
     if (WireTable.at(face.index & 0xF) < share) {
-      out.push_back(SortedPrim{
-          .depth = depth, .prim = faceTriangles(frame, face, glm::vec3{0.0F}, glm::vec4{1.0F})});
+      out.push_back(SortedPrim{.depth = depth,
+                               .prim = faceTriangles(frame, face, glm::vec3{0.0F},
+                                                     shade ? shade(face) : glm::vec4{1.0F})});
       continue;
     }
     // LINE_F4: a triangle closed, a quad through 0 1 3 2.

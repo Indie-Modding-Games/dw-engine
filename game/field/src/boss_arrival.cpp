@@ -137,7 +137,8 @@ BossArrivalCues BossArrival::startArrival() {
   return cues;
 }
 
-BossArrivalCues BossArrival::frame(glm::vec3 bossPoint) {
+BossArrivalCues BossArrival::frame(glm::vec3 bossPoint,
+                                   std::optional<std::int32_t> finishedAnimation) {
   BossArrivalCues cues;
   blackout_.reset();
   orbit_.reset();
@@ -145,7 +146,7 @@ BossArrivalCues BossArrival::frame(glm::vec3 bossPoint) {
     tickBuildup();
   }
   if (arrivalFrame_) {
-    tickArrival(bossPoint, cues);
+    tickArrival(bossPoint, finishedAnimation, cues);
   }
   tickRings();
   tickParticles();
@@ -159,8 +160,13 @@ void BossArrival::tickBuildup() {
   }
 }
 
-void BossArrival::tickArrival(glm::vec3 bossPoint, BossArrivalCues& cues) {
+void BossArrival::tickArrival(glm::vec3 bossPoint, std::optional<std::int32_t> finishedAnimation,
+                              BossArrivalCues& cues) {
   const std::int32_t frame = ++*arrivalFrame_;
+  // The roar starts again each time it reaches its last frame (a later start this frame wins).
+  if (finishedAnimation == RoarAnimation) {
+    cues.animation = RoarAnimation;
+  }
   if (phase_ == 0) {
     if (frame >= BlackFrom) {
       blackout_ = BlackLevel;

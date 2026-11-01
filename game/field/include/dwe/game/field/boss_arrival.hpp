@@ -87,8 +87,11 @@ public:
   BossArrivalCues startBuildup();
   // The partner's routine 8: EAB_tick(entity, 0). The first frame of the arrival is the next one.
   BossArrivalCues startArrival();
-  // One frame of the original: `bossPoint` is where the boss stands (its posData location).
-  BossArrivalCues frame(glm::vec3 bossPoint);
+  // One frame of the original: `bossPoint` is where the boss stands (its posData location);
+  // `finishedAnimation` the animation the boss plays when it reached its last frame (animFrame ==
+  // frameCount), if it did.
+  BossArrivalCues frame(glm::vec3 bossPoint,
+                        std::optional<std::int32_t> finishedAnimation = std::nullopt);
   // A map change takes everything away.
   void clear() { *this = BossArrival{}; }
 
@@ -119,7 +122,8 @@ public:
 
 private:
   void tickBuildup();
-  void tickArrival(glm::vec3 bossPoint, BossArrivalCues& cues);
+  void tickArrival(glm::vec3 bossPoint, std::optional<std::int32_t> finishedAnimation,
+                   BossArrivalCues& cues);
   void addRing(BossRingKind kind);
   void addParticle(glm::vec3 point);
   void tickRings();

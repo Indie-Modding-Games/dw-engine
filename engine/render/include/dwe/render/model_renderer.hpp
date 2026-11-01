@@ -108,6 +108,7 @@ public:
 
   void setCamera(const Camera& camera) { camera_ = camera; }
   void setLighting(const ModelLighting& lighting) { lighting_ = lighting; }
+  [[nodiscard]] const ModelLighting& lighting() const { return lighting_; }
   // Draws the instance in the next frame; false (and nothing drawn) for a handle that is not live.
   // The joints are copied.
   bool submit(const ModelInstance& instance);

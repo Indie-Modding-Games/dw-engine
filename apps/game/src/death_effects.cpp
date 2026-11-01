@@ -140,10 +140,6 @@ constexpr glm::vec2 SparkImageSize{256.0F, 48.0F};
 constexpr std::array<glm::vec2, 3> SparkTexels{glm::vec2{95.0F, 32.0F}, glm::vec2{95.0F, 39.0F},
                                                glm::vec2{48.0F, 32.0F}};
 
-// model.c: renderWireframed's grey, WIREFRAME_COLOR_MIN + rand() % (MAX - MIN).
-constexpr std::int32_t WireGreyMin = 0x37;
-constexpr std::int32_t WireGreyMax = 0xFF;
-
 constexpr float TexturedOne = 128.0F;
 constexpr float TurnRadians = 2.0F * 3.14159265358979323846F;
 

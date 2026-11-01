@@ -70,7 +70,7 @@ de inicio y los mapas cercanos, y reclutar.
   humor), 34 (temblor de la escena del fuego), 40 (jefe final), 41–46 (engranajes, ciudad de juguete, fundidos a
   blanco), 49 (pedestal), 51 y 52 (final) y 54 (guardado de partida terminada) (`script_interp.c:1655-1960`).
 - **Escenas del compañero que acaban al momento:** retrete del guion, piedras, apertura, final y aparición del jefe
-  (`apps/game/src/story_scene_glue.cpp:58-66`); la de olvidar técnicas (rutina 47) tampoco tiene pantalla.
+  (`apps/game/src/story_scene_glue.cpp:58-66`).
 - **Año de 31 días al entrenar:** el original avanza el día con un año de 31 días tras entrenar; el motor usa el
   reloj, de 30. Decidido así (docs/modulos/game/partner.md:187).
 
@@ -99,9 +99,9 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 91 | 0 | 0 | 91 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 38 | 32 | 3 | 3 | 88 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
-| [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 30 | 1 | 0 | 98 % |
+| [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 31 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 49 | 49 | 0 | 0 | 100 % |
-| **Total** | 1392 funciones a portar | 1392 | 1183 | 25 | 184 | 86 % |
+| **Total** | 1392 funciones a portar | 1392 | 1184 | 24 | 184 | 86 % |
 
 ## Batalla
 
@@ -480,11 +480,7 @@ El reproductor de vídeo, los créditos y la animación del final.
 
 Ficheros del decomp: `eab/eab.c`, `endi/endi.c`, `mov/mov.c`.
 
-Portado 30, parcial 1, falta 0.
-
-| Función | Decomp | Estado | Qué hace | Motor / nota |
-|---|---|---|---|---|
-| `EAB_tickSpawn` | `eab/eab.c:349` | parcial | Escena de aparición del jefe final: destello, anillos, partículas, cámara y sonidos. | `game/field/src/boss_arrival.cpp` · sin el dibujo en alambre del jefe y sin repetir la animación 0x33 al acabar; vabId 5 en BossArrivalCues::bossSoundSlot; sin medir en el original |
+Portado 31, parcial 0, falta 0.
 
 ## Núcleo y plataforma
 

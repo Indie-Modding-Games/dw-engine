@@ -10,12 +10,15 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <numbers>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "evolution_effects.hpp"
 #include "field_scene.hpp"
 #include "scene_prims.hpp"
 
@@ -109,8 +112,16 @@ void BossArrivalScene::advance(double seconds) {
   seconds_ += seconds;
   while (seconds_ >= OriginalFrameSeconds) {
     seconds_ -= OriginalFrameSeconds;
-    play(arrival_.frame(point));
+    play(arrival_.frame(point, finishedAnimation()));
   }
+}
+
+std::optional<std::int32_t> BossArrivalScene::finishedAnimation() const {
+  const std::optional<scene::Entity> entity = boss();
+  if (!entity || !character_ || !scene_->clipPlayedThrough(*entity)) {
+    return std::nullopt;
+  }
+  return scene_->field().npcs().scriptedAnimationOf(static_cast<std::int32_t>(*character_));
 }
 
 void BossArrivalScene::play(const game::field::BossArrivalCues& cues) {
@@ -226,6 +237,29 @@ void BossArrivalScene::showStage(std::optional<scene::Entity> entity) {
                                            .viewport = {}});
   const ScenePrimFrame frame{
       .view = seen.view, .projection = seen.projection, .pixelScale = scene_->mapCamera().scale()};
+  // model.c: renderDigimon draws the boss (entity 2) with renderWireframed while
+  // ENTITY1_WIREFRAME_TOTAL is not 16: of its faces, those of the solid shares textured, the
+  // others as lines of one grey an object.
+  if (entity && arrival_.othersHidden() &&
+      arrival_.solidShares() != game::field::BossArrival::SolidShares) {
+    stage.shownNpcWired = true;
+    const std::vector<BodyFace> faces = scene_->npcFaces(*entity);
+    std::vector<SortedPrim> wired;
+    for (auto first = faces.begin(); first != faces.end();) {
+      const auto last = std::find_if(
+          first, faces.end(), [&](const BodyFace& face) { return face.bone != first->bone; });
+      const auto grey = WireGreyMin + static_cast<std::int32_t>(
+                                          wireRandom_.next() %
+                                          static_cast<std::uint32_t>(WireGreyMax - WireGreyMin));
+      addWiredFaces(std::span{first, last}, arrival_.solidShares(), grey, frame,
+                    scene_->whiteTexture(), wired, [this](const BodyFace& face) {
+                      return glm::vec4{scene_->modelLight(face.normal), 1.0F};
+                    });
+      first = last;
+    }
+    std::vector<ScenePrim> sorted = sortedPrims(std::move(wired));
+    stage.prims.insert(stage.prims.end(), sorted.begin(), sorted.end());
+  }
   // EAB_renderParticle: four lines round the point, sorted far (0xf9f), opaque.
   for (const game::field::BossParticle& particle : arrival_.particles()) {
     const auto half = static_cast<float>(game::field::bossParticleHalfSide(particle));
