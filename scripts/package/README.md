@@ -3,7 +3,7 @@
 dwe is a new PC engine for a classic creature-raising RPG from the late 1990s. It plays the original game with its
 own code, and reads the game's data from your own disc.
 
-This is an early test build. Only the first part of the story is open; later areas stay closed until they are ready.
+This is an early test build. The whole story is open, start to end; versus mode, full fishing and mods are not in yet.
 Expect bugs, and please report them (see below).
 
 ## What you need
