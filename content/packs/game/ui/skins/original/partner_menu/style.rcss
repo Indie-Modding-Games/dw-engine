@@ -1035,6 +1035,9 @@ button:focus .original-look, button.original-look:focus {
     decorator: none; top: 75dp; height: 27dp; font-size: 18dp; line-height: 27dp; text-align: center; white-space: nowrap;
 }
 #scrim.status-text #status-special-heading { left: 444dp; width: 168dp; color: #18ff10; }
+/* A long name keeps a gap before the written Special heading: a snug box and the heading a step right. */
+#scrim.status-text #status-name.long { width: 316dp; }
+#scrim.status-text.long-name #status-special-heading { left: 452dp; }
 #scrim.status-text #status-type-heading { left: 600dp; width: 84dp; color: #ffde00; }
 #scrim.status-text #status-active-heading { left: 690dp; width: 168dp; color: #ff39e7; }
 /* The condition's names in full: the bars move to the right edge to make room, and Life is one of them. */

@@ -157,7 +157,9 @@ local function draw_status(document)
   local name_box = document:get("status-name")
   name_box:set_text(shown)
   -- The box holds 12 letters; a longer name (Machinedramon) widens it.
-  name_box:set_class("long", ((utf8 and utf8.len(shown)) or #shown) > 12)
+  local long = ((utf8 and utf8.len(shown)) or #shown) > 12
+  name_box:set_class("long", long)
+  document:get("scrim"):set_class("long-name", long)
   document:get("status-species"):set_text(species)
   document
     :get("status-lives")

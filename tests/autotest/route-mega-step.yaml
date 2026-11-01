@@ -86,6 +86,8 @@ steps:
   - menu_select: open-partner
   - wait: {shown: partner_menu, seconds: 0.8}
   - expect_text_fits: all
+  # The ruleset's partner type (virus) shows, not the table's empty one.
+  - expect_setting: {partner.profile.type: 3}
   - screenshot: status-machinedramon
   - tap: {key: escape}
   - wait: {hidden: partner_menu, timeout: 5}
