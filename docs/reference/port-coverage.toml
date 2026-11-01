@@ -2,8 +2,9 @@
 #
 # [[system]]: the systems of the page, in its order, each with the decomp files it owns (paths under src/).
 # [[system_by_name]]: a function whose name matches goes to that system instead of its file's one (first match).
-# [[not_needed]]: what the engine replaces and is never ported as such (graphics, sound and disc plumbing). A rule
-#   marks the functions that match its pattern and/or files, and only those the code does not name.
+# [[not_needed]]: what is tied to the original console, which the engine replaces and never ports as such (graphics,
+#   sound and disc plumbing); status no-aplica, left out of every count on the page. A rule marks the functions that
+#   match its pattern and/or files, and only those the code does not name.
 # [twins]: the tournament and versus overlays carry copies of the battle code; a copy whose battle twin exists
 #   (STD_x or VS_x next to BTL_x) is not needed: the engine's battle covers both.
 # [functions.<name>]: the manual call for one function. status: portado, parcial, falta or no-aplica; note: why or

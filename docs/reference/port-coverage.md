@@ -1,15 +1,17 @@
 # Cobertura del port
 
 Qué funciones del decomp tiene ya el motor, sistema por sistema, para cerrar los huecos antes de que el jugador los
-encuentre jugando. Cada función del índice del decomp está en uno de cuatro estados:
+encuentre jugando. El objetivo es PC, así que solo cuentan las funciones a portar, cada una en uno de tres estados:
 
 - **Portado:** el código del motor la hace. Casi siempre la nombra en un comentario o en un log (`[port:...]`); si no,
   una entrada manual dice dónde está.
 - **Parcial:** el motor hace una parte; la nota dice qué falta.
 - **Falta:** el motor no la hace.
-- **No aplica:** el motor la sustituye por lo suyo y no hay que portarla: gráficos, sonido, disco y memoria del
-  hardware original, cuadros y cursores de su interfaz, lectura de operandos de los scripts (que se pasan a Lua) y
-  las copias del código de batalla que llevan los overlays de torneos, versus y el segundo gimnasio.
+
+Las funciones atadas a la consola quedan fuera de todas las cifras: el motor las sustituye por lo suyo (gráficos,
+sonido, disco y memoria del hardware original, cuadros y cursores de su interfaz, tablas internas, depuración,
+lectura de operandos de los scripts, que se pasan a Lua) o son copias del código de batalla que llevan los overlays
+de torneos, versus y el segundo gimnasio. El final de la página dice cuántas son y cómo listarlas.
 
 ## Cómo se hace
 
@@ -20,8 +22,8 @@ cuenta como falta: nombran las funciones del original para encontrar sus tablas.
 hace («not drawn yet», «not ported», `TODO`) deja la función en parcial. Las citas solo por línea (`partner.c:906`) no
 se usan: el índice no tiene las funciones estáticas y la línea cae a menudo en la vecina.
 
-Después aplica `docs/reference/port-coverage.toml`: el sistema de cada fichero del decomp, las reglas de «no
-aplica» y las decisiones a mano por función (estado, nota, sitio en el motor y qué hace). Escribe la parte de esta
+Después aplica `docs/reference/port-coverage.toml`: el sistema de cada fichero del decomp, las reglas que apartan
+lo atado a la consola (estado `no-aplica`) y las decisiones a mano por función (estado, nota, sitio en el motor y qué hace). Escribe la parte de esta
 página que va entre las dos marcas; el resto se edita a mano.
 
 ```sh
@@ -78,30 +80,30 @@ de inicio y los mapas cercanos, y reclutar.
 
 ## Resumen por sistema
 
-Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos «no aplica»).
+Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la consola quedan fuera. Cobertura = portado + medio parcial, sobre las funciones a portar.
 
-| Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
+| Sistema | Ficheros del decomp | A portar | Portado | Parcial | Falta | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
-| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 145 | 4 | 5 | 17 | 95 % |
-| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 194 | 5 | 31 | 55 | 85 % |
-| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 77 | 3 | 2 | 14 | 96 % |
-| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 69 | 0 | 6 | 27 | 92 % |
-| [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
-| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 91 | 3 | 2 | 49 | 96 % |
-| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 77 | 1 | 0 | 46 | 99 % |
-| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 95 | 1 | 0 | 2 | 99 % |
-| [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 0 | 0 | 9 | 100 % |
-| [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 37 | 1 | 0 | 12 | 99 % |
-| [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
-| [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 39 | 0 | 0 | 17 | 100 % |
-| [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 10 | 0 | 1 | 24 | 91 % |
-| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 48 | 4 | 48 | 349 | 50 % |
-| [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 0 | 0 | 91 | 315 | 0 % |
-| [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 32 | 3 | 3 | 10 | 88 % |
-| [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
-| [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 30 | 1 | 0 | 13 | 98 % |
-| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1155 | 36 | 197 | 1050 | 85 % |
+| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 154 | 145 | 4 | 5 | 95 % |
+| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 230 | 194 | 5 | 31 | 85 % |
+| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 82 | 77 | 3 | 2 | 96 % |
+| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 75 | 69 | 0 | 6 | 92 % |
+| [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 49 | 0 | 0 | 100 % |
+| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 96 | 91 | 3 | 2 | 96 % |
+| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 78 | 77 | 1 | 0 | 99 % |
+| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 96 | 95 | 1 | 0 | 99 % |
+| [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 29 | 0 | 0 | 100 % |
+| [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 38 | 37 | 1 | 0 | 99 % |
+| [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 81 | 64 | 9 | 8 | 85 % |
+| [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 39 | 39 | 0 | 0 | 100 % |
+| [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 11 | 10 | 0 | 1 | 91 % |
+| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 100 | 48 | 4 | 48 | 50 % |
+| [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 91 | 0 | 0 | 91 | 0 % |
+| [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 38 | 32 | 3 | 3 | 88 % |
+| [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
+| [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 30 | 1 | 0 | 98 % |
+| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 49 | 48 | 1 | 0 | 99 % |
+| **Total** | 1388 funciones a portar | 1388 | 1155 | 36 | 197 | 85 % |
 
 ## Batalla
 
@@ -109,7 +111,7 @@ El combate normal: órdenes, IA, daño, estados, HUD, inicio y final, aprendizaj
 
 Ficheros del decomp: `btl/battle_hud.c`, `btl/battle_main.c`, `btl/battle_setup.c`, `btl/command_menu.c`, `btl/command_shout.c`, `main/battle_tick.c`, `main/battle_ui.c`, `main/btl.c`, `main/entity_text.c`.
 
-Portado 145, parcial 4, falta 5, no aplica 17.
+Portado 145, parcial 4, falta 5.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -123,15 +125,13 @@ Portado 145, parcial 4, falta 5, no aplica 17.
 | `isScreenConcave` | `main/btl.c:128` | falta | Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate. | va con la huida de los que no luchan |
 | `initializeEntityText` | `main/entity_text.c:71` | parcial | Prepara las cifras flotantes (daño, curación) de cada luchador. | `apps/screens/src/damage_numbers.cpp:1` · el daño de golpes, bloqueos y veneno sí (battle.md: Números de daño); faltan las cifras con icono de objetos y mejoras |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (6); limpieza de objetos y memoria del original: el motor libera lo suyo (5); índice interno (2); estado interno del rastro del compañero (1); cálculo auxiliar (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); carga asíncrona del original (1).
-
 ## Efectos de batalla
 
 La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cámara, partículas, destellos.
 
 Ficheros del decomp: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Portado 194, parcial 5, falta 31, no aplica 55.
+Portado 194, parcial 5, falta 31.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -172,15 +172,13 @@ Portado 194, parcial 5, falta 31, no aplica 55.
 | `setEFEFlashOffset` | `main/efe.c:965` | falta | Mueve un destello de luz. | `apps/game/src/death_effects.hpp:150` |
 | `translateConditionFXToEntity` | `main/effect_common.c:307` | parcial | Pega un efecto de estado a la posición de un personaje. | `apps/game/src/field_scene_status.cpp` · la mariposa del compañero y el veneno y la confusión del combate (CONDITION_FX_OFFSETS en la tabla de especies: condition_fx); la burbuja de necesidad del campo aún no toma la x y la z del punto (renderConditionBubble) |
 
-No aplica: limpieza de objetos y memoria del original: el motor libera lo suyo (21); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (11); gráficos, memoria o ficheros del hardware original: los sustituye el motor (8); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); lectura del fichero de efecto; la hace la extracción (2); tabla de saltos del original (2); lectura del disco (2); dato auxiliar de la escena de renacer (2); tabla de ficheros del disco (1); carga asíncrona del original (1); depuración del original (1); preparación del original (1).
-
 ## Campo: movimiento, colisión y cámara
 
 El jugador en el mapa, la rejilla de colisión, los warps, el seguimiento del compañero y la cámara.
 
 Ficheros del decomp: `main/aabb.c`, `main/map.c`, `main/map_collision.c`, `main/tamer.c`, `main/vecmath.c`.
 
-Portado 77, parcial 3, falta 2, no aplica 14.
+Portado 77, parcial 3, falta 2.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -190,15 +188,13 @@ Portado 77, parcial 3, falta 2, no aplica 14.
 | `tamerTickSicknessLostLife` | `main/tamer.c:1699` | parcial | Escena de perder una vida por enfermedad. | `apps/game/src/death_scene.cpp:125` · la restauración tras la vida perdida por enfermedad es un hueco (docs/modulos/game/battle.md:107) |
 | `tamerTickBattleLostLife` | `main/tamer.c:1734` | parcial | Escena de perder una vida en combate. | `apps/game/src/death_scene.cpp:125` · la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:107) |
 
-No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (6); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (1); prueba de cajas del original (1); cálculo de pantalla del original (1); lectura del disco; la hace la extracción (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); carga de trozos del fondo del original (1); limpieza del original (1); lectura del disco; la colisión la extrae dwx (1).
-
 ## NPC y objetos del mapa
 
 Los personajes del mapa y su IA de paseo, cofres, objetos del suelo y decorados con lógica.
 
 Ficheros del decomp: `main/anim.c`, `main/bubble.c`, `main/butterfly.c`, `main/drop_shadow.c`, `main/map_object.c`, `main/model.c`, `main/overworld.c`, `main/world_object.c`.
 
-Portado 69, parcial 0, falta 6, no aplica 27.
+Portado 69, parcial 0, falta 6.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -209,17 +205,13 @@ Portado 69, parcial 0, falta 6, no aplica 27.
 | `tickCloseChestTray` | `main/map_object.c:1096` | falta | Anima la tapa del cofre al cerrarse. | — |
 | `activateMedalTexture` | `main/map_object.c:1193` | falta (citada en docs) | Pone la textura de la medalla ganada. | — |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (6); gráficos, memoria o ficheros del hardware original: los sustituye el motor (5); limpieza de objetos y memoria del original: el motor libera lo suyo (3); consulta interna (2); animación del original; el motor anima sus clips (1); recorte de dibujo (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); estado de dibujo (1); modelo vacío del original (1); preparación de modelos (1); lectura del disco; los modelos los extrae dwx (1); subida de textura del original (1); limpieza del original (1); tabla de objetos del original (1); bucle de objetos del original; el motor tiene su bucle (1).
-
 ## Compañero: IA y cuidado
 
 Hambre, sueño, baño, enfermedad, felicidad y disciplina, caca, muerte natural, paseo y órdenes.
 
 Ficheros del decomp: `main/partner.c`, `main/partner_impl.c`.
 
-Portado 49, parcial 0, falta 0, no aplica 2.
-
-No aplica: consulta interna (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1).
+Portado 49, parcial 0, falta 0.
 
 ## Guion e intérprete
 
@@ -227,7 +219,7 @@ La máquina de scripts de eventos: órdenes, valores, cajas de texto y eleccione
 
 Ficheros del decomp: `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c`.
 
-Portado 91, parcial 3, falta 2, no aplica 49.
+Portado 91, parcial 3, falta 2.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -237,21 +229,17 @@ Portado 91, parcial 3, falta 2, no aplica 49.
 | `triggerSeadramonCutscene` | `main/script_common.c:3057` | falta (citada en docs) | Lanza la escena de la serpiente marina al pescarla. | — |
 | `tickBackgroundDialogue` | `main/script_textbox.c:861` | falta | Diálogo que corre sin parar el juego (comentarios de fondo). | comprobar |
 
-No aplica: lectura de operandos; los scripts se pasan a Lua (12); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (9); texto de interfaz (5); cursor de interfaz; lo hace la pantalla (4); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); entrada del original (2); cursor de interfaz (2); cadenas del original (2); entrada del original; el motor tiene la suya (1); texto de interfaz; lo monta la pantalla (1); consulta interna (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); tabla de modelos del original (1); codificación de texto del original (1).
-
 ## Menús e interfaz
 
 Título, menú de juego, ficha del compañero, bolsa, cajas de interfaz, fundidos y texto.
 
 Ficheros del decomp: `main/fade.c`, `main/font.c`, `main/game_menu.c`, `main/inventory.c`, `main/main_menu.c`, `main/new_game.c`, `main/sjis.c`, `main/ui.c`.
 
-Portado 77, parcial 1, falta 0, no aplica 46.
+Portado 77, parcial 1, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `renderFeedingItem` | `main/game_menu.c:2245` | parcial | Dibuja el objeto en la mano al dar de comer. | `apps/game/src/feed_scene.cpp:81` · el objeto que se da de comer no se dibuja |
-
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (22); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); limpieza de objetos y memoria del original: el motor libera lo suyo (3); texto en memoria de vídeo (2); utilidad (2); texto de interfaz (2); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (2); preparación del original (1); texto del original; el motor usa sus estilos (1); repetición del mando; la hace el motor (1); entrada del original (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); cuadros de interfaz del original; el motor usa su interfaz (1).
 
 ## Objetos y tiendas
 
@@ -259,13 +247,11 @@ Uso de objetos, comida y chips, tiendas, cartas, guardarropía y menús de guion
 
 Ficheros del decomp: `main/item.c`, `shop/script_menu.c`.
 
-Portado 95, parcial 1, falta 0, no aplica 2.
+Portado 95, parcial 1, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `handleChips` | `main/item.c:2248` | parcial | Usa un chip: sube un stat y lanza su sección de guion. | `content/packs/game/rules/original/inventory.yaml:59` · la sección de guion de un chip no corre (docs/modulos/apps/session.md:276) |
-
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (2).
 
 ## Evolución
 
@@ -273,9 +259,7 @@ Elección del destino y la escena de evolución.
 
 Ficheros del decomp: `evl/evl.c`, `main/evl.c`, `main/evolution.c`.
 
-Portado 29, parcial 0, falta 0, no aplica 9.
-
-No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (4); gestión de memoria del original (1).
+Portado 29, parcial 0, falta 0.
 
 ## Entrenamiento
 
@@ -283,13 +267,11 @@ El gimnasio: tragaperras, cursos y recompensas.
 
 Ficheros del decomp: `trn/trn_brain.c`, `trn/trn_hud.c`, `trn/trn_off.c`, `trn/trn_reward.c`, `trn/trn_slots.c`, `trn/trn_speed.c`, `trn2/trn2_def_map108.c`, `trn2/trn2_hp_map107.c`, `trn2/trn2_hud.c`, `trn2/trn2_reward.c`, `trn2/trn2_slots.c`.
 
-Portado 37, parcial 1, falta 0, no aplica 12.
+Portado 37, parcial 1, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `TRN_advanceTrainingTime` | `trn/trn_reward.c:721` | parcial | Avanza la hora y el día tras una sesión de entrenamiento. | `content/packs/game/rules/original/care.yaml:229` · el original usa un año de 31 días al entrenar; el motor, el del reloj (30). Decidido así (partner.md:187) |
-
-No aplica: copias de otra función, que cuenta por las dos (9); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (1); solo con el resultado -2 de la ruleta, que nada produce: inalcanzable (1); igual que TRN_func_800888A0: solo con el resultado -2 de la ruleta, que nada produce: inalcanzable (1).
 
 ## Pesca
 
@@ -297,7 +279,7 @@ El minijuego de pesca.
 
 Ficheros del decomp: `fish/fish.c`, `fish/fish_model.c`, `main/fish.c`.
 
-Portado 64, parcial 9, falta 8, no aplica 39.
+Portado 64, parcial 9, falta 8.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -319,17 +301,13 @@ Portado 64, parcial 9, falta 8, no aplica 39.
 | `FISH_enableCameraControl` | `fish/fish.c:4703` | falta | Guarda la vista al sacar la caña para restaurarla al acabar. | No hay control de cámara propio de la pesca. |
 | `setFishingEnabled` | `main/fish.c:52` | parcial | Vuelve a permitir la pesca tras la escena de muerte o renacer del compañero. | `game/fishing/include/dwe/game/fishing/fishing.hpp:197` · Existe setDisabled, pero nada lo llama al acabar esas escenas. |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (21); limpieza de objetos y memoria del original: el motor libera lo suyo (4); Vacía en el original. (3); Reserva fija de memoria; el motor usa eventos. (2); Reserva fija de memoria; el motor emite eventos de onda. (2); Estado de caja de UI; lo sustituye el documento del menú de cebo. (1); Estado de caja de UI; lo sustituye el documento del aviso. (1); Carga de texturas y modelos; la hace el motor de render. (1); Función vacía de carga de modelo. (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); Carga de modelos; la hace el motor de assets. (1); Acceso a modelos cargados; lo hace el motor de render. (1).
-
 ## Muerte y renacer
 
 La escena de muerte, la de renacer y la caja de huevos.
 
 Ficheros del decomp: `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c`.
 
-Portado 39, parcial 0, falta 0, no aplica 17.
-
-No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (8); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (4); preparación de tablas, objetos o recursos del original: el motor monta los suyos (2); gestión de memoria del original (1); límite de destellos por cuadro del original; dwe limita los vivos (1); copias de otra función, que cuenta por las dos (1).
+Portado 39, parcial 0, falta 0.
 
 ## Guardado y carga
 
@@ -337,13 +315,11 @@ La partida en la tarjeta de memoria, la máquina de guardar y el registro para e
 
 Ficheros del decomp: `main/main_menu.c`.
 
-Portado 10, parcial 0, falta 1, no aplica 24.
+Portado 10, parcial 0, falta 1.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `countRegisteredDigimon` | `main/main_menu.c:5136` | falta | Cuenta las criaturas registradas para el modo versus. | llega con el modo versus |
-
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (16); tarjeta de memoria (4); tarjeta de memoria; el motor guarda en ficheros (1); gráficos, memoria o ficheros del hardware original: los sustituye el motor (1); suma de control de la tarjeta (1); suma de control de la tarjeta; el motor valida su fichero (1).
 
 ## Torneos
 
@@ -351,7 +327,7 @@ Inscripción, calendario y el overlay de copas, que trae su propio motor de comb
 
 Ficheros del decomp: `dget/dget.c`, `main/tournament.c`, `std/std_effect.c`, `std/std_hud.c`, `std/std_main.c`, `std/std_setup.c`.
 
-Portado 48, parcial 4, falta 48, no aplica 349.
+Portado 48, parcial 4, falta 48.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -408,15 +384,13 @@ Portado 48, parcial 4, falta 48, no aplica 349.
 | `STD_initializeCamera` | `std/std_setup.c:415` | falta (citada en docs) | Coloca la cámara inicial de la arena de copa. | — |
 | `STD_tournamentMain` | `std/std_setup.c:521` | parcial | Flujo completo de la copa: cuadro, combates, resultados y premio. | `apps/game/src/story_tournament.cpp:1` · arena, sustitutos, cuadro animado, tres combates y recuperación; sin escenas de victoria, derrota ni podio (tournament.md: Hueco) |
 
-No aplica: copias de otra función, que cuenta por las dos (299); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (20); limpieza de objetos y memoria del original: el motor libera lo suyo (13); búsqueda genérica en la tabla de entidades (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); utilidad genérica de reloj (1); lectura de punteros del guion del original (1); ajuste de UV de modelos del original (1); carga de modelos del original (1); cámara libre de depuración con el segundo mando (1); aplicación de proyección y punto de vista del original (1); asignación directa de valores de cámara (1); cálculo auxiliar de distancias (1); comprobación geométrica auxiliar (1); interpolación lineal genérica (1); cuenta genérica de dígitos (1); bucle de cuadros del original (1); configuración de luces del original (1).
-
 ## Versus y demo
 
 El modo versus de dos jugadores y la demo de combate del título.
 
 Ficheros del decomp: `main/sound.c`, `vs/vs_camera.c`, `vs/vs_combat.c`, `vs/vs_demo.c`, `vs/vs_effect.c`, `vs/vs_hud.c`, `vs/vs_intro.c`, `vs/vs_main.c`, `vs/vs_scene.c`, `vs/vs_select.c`.
 
-Portado 0, parcial 0, falta 91, no aplica 315.
+Portado 0, parcial 0, falta 91.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -512,15 +486,13 @@ Portado 0, parcial 0, falta 91, no aplica 315.
 | `VS__tickSelectBox` | `vs/vs_select.c:1053` | falta | Mueve y confirma la opción del cuadro de selección del versus. | — |
 | `VS__tickSelectMap` | `vs/vs_select.c:1166` | falta | Pantalla de elección del escenario del versus. | — |
 
-No aplica: copias de otra función, que cuenta por las dos (260); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (22); limpieza de objetos y memoria del original: el motor libera lo suyo (12); gráficos, memoria o ficheros del hardware original: los sustituye el motor (3); lectura de mandos del original (2); preparación de tablas, objetos o recursos del original: el motor monta los suyos (2); aplicación de matrices de cámara del original (1); aplicación de proyección y punto de vista del original (1); asignación directa de valores de cámara (1); cálculo auxiliar de distancias (1); comprobación geométrica auxiliar (1); interpolación lineal genérica (1); cuenta genérica de dígitos (1); función vacía en el original (1); carga de modelos del original (1); bucle de cuadros del original (1); configuración de luces del original (1); contador genérico de cuadros (1); carga de modelos, texturas y colisión del original (1); registro de dibujo del original (1).
-
 ## Minijuego de piedras
 
 El minijuego de piedras sobre hielo.
 
 Ficheros del decomp: `kar/kar.c`, `main/kar.c`.
 
-Portado 32, parcial 3, falta 3, no aplica 10.
+Portado 32, parcial 3, falta 3.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -531,17 +503,13 @@ Portado 32, parcial 3, falta 3, no aplica 10.
 | `KAR_tickHintBox` | `kar/kar.c:2085` | parcial | Anima el cuadro de ayuda con las instrucciones del curling. | `game/curling/src/match.cpp:1` · las páginas de ayuda se pasan, pero su texto no se muestra |
 | `checkCurlingMap` | `main/kar.c:8` | falta | Al entrar en el mapa de curling carga el minijuego. | el motor no tiene el minijuego |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (6); sale al empezar en el original: código muerto (2); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); cálculo de dibujo de los modelos; aquí los marcadores no giran (1).
-
 ## Audio
 
 Música, efectos de sonido y su carga.
 
 Ficheros del decomp: `main/sound.c`, `main/sound_async.c`.
 
-Portado 21, parcial 0, falta 0, no aplica 13.
-
-No aplica: arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (7); gráficos, memoria o ficheros del hardware original: los sustituye el motor (3); lectura del disco; la hace la extracción (1); secuenciador del original (1); voces del chip de sonido; el motor tiene su mezclador (1).
+Portado 21, parcial 0, falta 0.
 
 ## Vídeos y final
 
@@ -549,13 +517,11 @@ El reproductor de vídeo, los créditos y la animación del final.
 
 Ficheros del decomp: `eab/eab.c`, `endi/endi.c`, `mov/mov.c`.
 
-Portado 30, parcial 1, falta 0, no aplica 13.
+Portado 30, parcial 1, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `EAB_tickSpawn` | `eab/eab.c:349` | parcial | Escena de aparición del jefe final: destello, anillos, partículas, cámara y sonidos. | `game/field/src/boss_arrival.cpp` · sin el dibujo en alambre del jefe y sin repetir la animación 0x33 al acabar; vabId 5 en BossArrivalCues::bossSoundSlot; sin medir en el original |
-
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (4); limpieza de objetos y memoria del original: el motor libera lo suyo (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); descodificación de vídeo; el motor usa su propio reproductor (2); lectura en flujo del disco; el motor lee el vídeo de archivo (2); sincronía de hardware; el motor tiene su propio bucle (1).
 
 ## Núcleo y plataforma
 
@@ -563,12 +529,14 @@ Arranque, bucle principal, reloj, azar, matemáticas, ficheros, memoria y gráfi
 
 Ficheros del decomp: `main/_psstart.c`, `main/clock.c`, `main/file.c`, `main/file_queue.c`, `main/graphics.c`, `main/line.c`, `main/main.c`, `main/math.c`, `main/rng.c`, `main/utils.c`, `main/utils2.c`.
 
-Portado 48, parcial 1, falta 0, no aplica 37.
+Portado 48, parcial 1, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `unlearnMove` | `main/utils2.c:519` | parcial | Hace olvidar una técnica al compañero. | `apps/session/src/story_routines/routine_forget_moves.cpp` · la rutina de olvidar técnicas se cierra sin pantalla |
 
-No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (19); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (5); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (3); entrada del original (2); tabla de ficheros del disco (1); texturas del original (1); solo la demo de prueba (1); preparación del original (1); consulta de dibujo (1).
+## Fuera de las cuentas
+
+1050 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

@@ -13,9 +13,10 @@ repository, and classifies each function:
 - missing: nothing names it.
 
 Then the config (docs/reference/port-coverage.toml) puts each function in a system and applies the manual calls:
-rules that mark what the engine replaces (graphics, sound and disc plumbing: not needed), the copies of the battle
-code in the tournament and versus overlays, and per-function entries with a status, a note, the engine's location
-and a one-line description.
+rules that mark what is tied to the original console (graphics, sound and disc plumbing: left out of every count),
+the copies of the battle code in the tournament and versus overlays, and per-function entries with a status, a
+note, the engine's location and a one-line description. The page counts only the functions to port (ported, partial,
+missing); it gives the number of the ones left out and --list names them.
 
 It writes the generated part of docs/reference/port-coverage.md, between its two markers, and leaves the hand-written
 rest of the page as it is. --check exits 1 when the page is not up to date; --list prints one row per function.
@@ -255,9 +256,10 @@ def render(functions: list[Function], config: dict) -> str:
     totals = collections.Counter()
     out.append("## Resumen por sistema\n")
     out.append(
-        "Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos «no aplica»).\n"
+        "Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la consola quedan fuera. "
+        "Cobertura = portado + medio parcial, sobre las funciones a portar.\n"
     )
-    out.append("| Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |")
+    out.append("| Sistema | Ficheros del decomp | A portar | Portado | Parcial | Falta | Cobertura |")
     out.append("|---|---|---:|---:|---:|---:|---:|")
     for system in systems:
         fns = by_system.get(system["id"], [])
@@ -270,13 +272,13 @@ def render(functions: list[Function], config: dict) -> str:
             f" ({len(files)} ficheros)"
         )
         out.append(
-            f"| [{system['name']}](#{anchor(system['name'])}) | {shown} | {count[PORTED]} | {count[PARTIAL]} | "
-            f"{count[MISSING]} | {count[NOT_NEEDED]} | {percent(count[PORTED] + count[PARTIAL] / 2, needed)} |"
+            f"| [{system['name']}](#{anchor(system['name'])}) | {shown} | {needed} | {count[PORTED]} | "
+            f"{count[PARTIAL]} | {count[MISSING]} | {percent(count[PORTED] + count[PARTIAL] / 2, needed)} |"
         )
     needed = totals[PORTED] + totals[PARTIAL] + totals[MISSING]
     out.append(
-        f"| **Total** | {len(functions)} funciones | {totals[PORTED]} | {totals[PARTIAL]} | {totals[MISSING]} | "
-        f"{totals[NOT_NEEDED]} | {percent(totals[PORTED] + totals[PARTIAL] / 2, needed)} |"
+        f"| **Total** | {needed} funciones a portar | {needed} | {totals[PORTED]} | {totals[PARTIAL]} | "
+        f"{totals[MISSING]} | {percent(totals[PORTED] + totals[PARTIAL] / 2, needed)} |"
     )
     out.append("")
     for system in systems:
@@ -287,10 +289,7 @@ def render(functions: list[Function], config: dict) -> str:
             out.append(system["about"] + "\n")
         files = sorted({fn.path.removeprefix("src/") for fn in fns})
         out.append("Ficheros del decomp: " + ", ".join(f"`{f}`" for f in files) + ".\n")
-        out.append(
-            f"Portado {count[PORTED]}, parcial {count[PARTIAL]}, falta {count[MISSING]}, "
-            f"no aplica {count[NOT_NEEDED]}.\n"
-        )
+        out.append(f"Portado {count[PORTED]}, parcial {count[PARTIAL]}, falta {count[MISSING]}.\n")
         gaps = [fn for fn in fns if fn.status in (PARTIAL, MISSING)]
         if gaps:
             out.append("| Función | Decomp | Estado | Qué hace | Motor / nota |")
@@ -304,14 +303,13 @@ def render(functions: list[Function], config: dict) -> str:
                     f"{note or '—'} |"
                 )
             out.append("")
-        skipped = [fn for fn in fns if fn.status == NOT_NEEDED]
-        if skipped:
-            reasons = collections.Counter(
-                "copias de otra función, que cuenta por las dos" if fn.note.startswith("copia de") else fn.note or "—"
-                for fn in skipped
-            )
-            listed = "; ".join(f"{why} ({n})" for why, n in reasons.most_common())
-            out.append(f"No aplica: {listed}.\n")
+    out.append("## Fuera de las cuentas\n")
+    out.append(
+        f"{totals[NOT_NEEDED]} funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, "
+        "sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no "
+        "cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado "
+        "`no-aplica`).\n"
+    )
     return "\n".join(out).rstrip() + "\n"
 
 
