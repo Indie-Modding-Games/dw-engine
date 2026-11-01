@@ -6,6 +6,7 @@ dwe_add_module(tournament
         src/bracket_animation.cpp
         src/cup_data.cpp
         src/cup_extras.cpp
+        src/match_show.cpp
         src/rules.cpp
         src/schedule.cpp
     DEPS core assets ruleset)
