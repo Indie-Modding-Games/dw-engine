@@ -65,7 +65,8 @@ std::unique_ptr<game::save::DiskSaveStorage> saveStorageFor(const Options& optio
 
 core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const Options& options,
                                   bool keepsSaves, const PlayStart& play, audio::Audio* sound) {
-  GameStart start{.storage = saveStorageFor(options, keepsSaves),
+  // A game played without saving has no slots: its autosaves and saves are dropped.
+  GameStart start{.storage = play.withoutSaving ? nullptr : saveStorageFor(options, keepsSaves),
                   .session = nullptr,
                   .systems = session::createGameSystems(files)};
   start.systems.story->setStoryStage(options.storyStage);

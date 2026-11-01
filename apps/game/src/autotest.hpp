@@ -186,6 +186,8 @@ struct AutotestHost {
   // The story's triggers and variables (story.trigger.<n> and story.var.<n> settings); nothing
   // at the title screen.
   const game::story::StoryState* story = nullptr;
+  // The saves folder (--saves), whose files a route counts (saves.files); nothing without one.
+  std::optional<std::filesystem::path> saves;
 };
 
 class Autotest {

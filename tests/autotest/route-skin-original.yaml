@@ -4,7 +4,8 @@
 # partner at 1920x1080. The original look is the packs' default, and an autotest reads no saved settings, so the route
 # needs no flag; it needs content extracted with the original look's sprites (dwx 2 or later): without them the game
 # starts with the modern skin and the first step fails. It needs an empty saves folder of its own (--saves): Play
-# opens the slot list there, and the route starts the game without saving. It runs once per language.
+# opens the slot list there, and the route starts the game without saving, which writes nothing there: no save and no
+# autosave after the battle or the new day (saves.files stays 0). It runs once per language.
 # How to run it: docs/guides/prueba-vertical.md.
 name: skin-original
 device: keyboard
@@ -56,7 +57,8 @@ steps:
   # The menu's box takes no input until it is in place (tickUIBox).
   - wait: {seconds: 0.6}
   - menu_select: open-items
-  - wait: {shown: partner_menu, seconds: 0.3}
+  # The bag's box takes no input until it is in place (tickUIBox).
+  - wait: {shown: partner_menu, seconds: 0.6}
   - screenshot: partner-bag
   - menu_select: slot-0
   - screenshot: partner-bag-options
@@ -84,6 +86,9 @@ steps:
   - screenshot: battle-end
   # The end box closes by itself once its wait is over.
   - wait: {hidden: battle, timeout: 10}
+  # A battle's end asks for an autosave, which a game played without saving drops.
+  - wait: {seconds: 1}
+  - expect_setting: {saves.files: "0"}
   # Two game hours a real second until the partner is hungry, then the bubble over it at a larger size.
   - resize: [1920, 1080]
   - script: clock_speed("120")
@@ -98,3 +103,5 @@ steps:
   - expect_setting: {hud.partner.visible: true}
   - expect_setting: {hud.need.0.active: true}
   - screenshot: field-hungry-1080
+  # The new days the clock went through asked for autosaves too: the folder is still empty.
+  - expect_setting: {saves.files: "0"}

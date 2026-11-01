@@ -170,7 +170,11 @@ std::optional<SaveDialog> SaveFlow::choose(std::size_t entry) {
 }
 
 SaveDialog SaveFlow::chooseWithoutSaving() {
-  pending_ = PlayStart{};
+  pending_ = PlayStart{.load = std::nullopt,
+                       .backup = false,
+                       .saveTo = std::nullopt,
+                       .choice = std::nullopt,
+                       .withoutSaving = true};
   return {.text = "save.slots.no_save_warning", .file = {}, .question = true, .startOnYes = false};
 }
 

@@ -792,6 +792,8 @@ int runGame(const Options& requested) {
       .stats = &frameStats,
       .scripts = scripts->get(),
       .partner = &partnerStatus,
+      .story = nullptr,
+      .saves = options.saves,
   };
 
   core::FixedStep step{TickSeconds, MaxFrameSeconds};

@@ -21,6 +21,9 @@ struct PlayStart {
   std::optional<game::save::SlotId> saveTo;
   // What a new game's opening asked (main.c: newGameScene); nothing when it did not run.
   std::optional<session::NewGameChoice> choice;
+  // Play without saving (the title screen's slot list): the game gets no save slots, so it writes
+  // nothing, no autosave either, as its question warns.
+  bool withoutSaving = false;
 
   friend bool operator==(const PlayStart&, const PlayStart&) = default;
 };

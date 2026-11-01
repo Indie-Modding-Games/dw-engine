@@ -100,8 +100,13 @@ TEST_CASE("a new game lists the empty slots and is saved to the one chosen") {
   CHECK(flow.answer(true) ==
         PlayStart{.load = std::nullopt, .backup = false, .saveTo = Slot1, .choice = std::nullopt});
 
+  // Without saving, the game starts with no slot to save to and none to autosave in.
   CHECK(flow.chooseWithoutSaving().text == "save.slots.no_save_warning");
-  CHECK(flow.answer(true) == PlayStart{});
+  CHECK(flow.answer(true) == PlayStart{.load = std::nullopt,
+                                       .backup = false,
+                                       .saveTo = std::nullopt,
+                                       .choice = std::nullopt,
+                                       .withoutSaving = true});
 }
 
 TEST_CASE("continue lists the saves and says why one cannot be loaded") {

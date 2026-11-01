@@ -153,7 +153,9 @@ partner choca con un NPC (`main.c: initializeLoadedMap: 3821-3857`) no se hace e
 - **La ranura de la partida** (`SaveFlow`): se elige al empezar (ranura vacía o «sin guardar») o al continuar (la
   ranura que se carga). Todo guardado del jugador va a ella, sin preguntar, como en el original. `--load slot_NN` la
   fija a esa ranura; `--load autosave_NN`, a la que diga el autoguardado (abajo); una ruta sin carpeta de partidas
-  (`SessionDesc::storage` nulo) juega «sin guardar».
+  (`SessionDesc::storage` nulo) juega «sin guardar». «Jugar sin guardar» en la lista de ranuras también empieza sin
+  carpeta (`PlayStart::withoutSaving`): esa partida no escribe nada, ni guardados ni autoguardados, como avisa su
+  pregunta.
 - **Autoguardado y ranura**: cada autoguardado apunta a la ranura manual de su partida (`summary.slot`), así que
   continuar desde un autoguardado sigue guardando en la ranura de esa partida. Si no tiene (partida «sin guardar»),
   queda sin ranura.

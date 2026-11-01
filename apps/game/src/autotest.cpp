@@ -239,7 +239,29 @@ std::optional<std::string> fieldNpcText(const FieldScene& scene, std::string_vie
   return scene.field().npcs().positionOf(scriptId) ? "true" : "false";
 }
 
+// How many files the saves folder holds (--saves), its subfolders included: a game played without
+// saving must leave it empty.
+constexpr std::string_view SavesFilesSetting = "saves.files";
+
+std::size_t savesFiles(const std::optional<std::filesystem::path>& folder) {
+  std::error_code error;
+  if (!folder || !std::filesystem::is_directory(*folder, error)) {
+    return 0;
+  }
+  std::size_t files = 0;
+  for (std::filesystem::recursive_directory_iterator it{*folder, error}, end; !error && it != end;
+       it.increment(error)) {
+    if (it->is_regular_file(error)) {
+      ++files;
+    }
+  }
+  return files;
+}
+
 std::string settingText(const AutotestHost& host, std::string_view name) {
+  if (name == SavesFilesSetting) {
+    return std::to_string(savesFiles(host.saves));
+  }
   if (name == FieldOverlapsSetting && host.scene != nullptr) {
     return std::to_string(host.scene->field().overlapEpisodes());
   }
