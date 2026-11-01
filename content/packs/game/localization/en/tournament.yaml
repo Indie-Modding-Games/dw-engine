@@ -1,0 +1,4 @@
+# The cup's bracket, for skins that name the round (the original look shows none). {round} is 1 or 2.
+bracket.round: "Round {round}"
+bracket.final: "Final"
+bracket.champion: "Champion"

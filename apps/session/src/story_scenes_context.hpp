@@ -25,6 +25,7 @@ class StoryRunner;
 namespace dwe::session {
 
 class GameSession;
+class TournamentAdapter;
 
 // What the story's battles, scenes and routines share: the rules, the queues the app takes, and the
 // state the original keeps for them. The routines' files (story_routines/) work on it.
@@ -46,6 +47,8 @@ struct StoryScenesContext {
   std::optional<NewGameChain> chainOverride;
   std::optional<assets::DigimonTable> digimon;
   GameSession* session = nullptr;
+  // StoryScenes::attachTournament.
+  TournamentAdapter* tournament = nullptr;
   // Whether the ruleset has the section, and whether the orders are published in the story's VM.
   bool enabled = false;
   bool published = false;

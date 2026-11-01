@@ -1,0 +1,50 @@
+<rml>
+<head>
+	<title>Tournament bracket</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="shade"></div>
+	<div id="frame">
+		<img id="board"/>
+		<img class="slot" id="slot-0"/>
+		<img class="slot" id="slot-1"/>
+		<img class="slot" id="slot-2"/>
+		<img class="slot" id="slot-3"/>
+		<img class="slot" id="slot-4"/>
+		<img class="slot" id="slot-5"/>
+		<img class="slot" id="slot-6"/>
+		<img class="slot" id="slot-7"/>
+		<img class="shot" id="shot-0"/><img class="shot" id="shot-0-b"/>
+		<img class="shot" id="shot-1"/><img class="shot" id="shot-1-b"/>
+		<img class="shot" id="shot-2"/><img class="shot" id="shot-2-b"/>
+		<img class="shot" id="shot-3"/><img class="shot" id="shot-3-b"/>
+		<img class="shot" id="shot-4"/><img class="shot" id="shot-4-b"/>
+		<img class="shot" id="shot-5"/><img class="shot" id="shot-5-b"/>
+		<img class="shot" id="shot-6"/><img class="shot" id="shot-6-b"/>
+		<img class="shot" id="shot-7"/><img class="shot" id="shot-7-b"/>
+		<img class="flash" id="flash-0"/>
+		<img class="flash" id="flash-1"/>
+		<img class="flash" id="flash-2"/>
+		<img class="flash" id="flash-3"/>
+		<img class="flash" id="flash-4"/>
+		<img class="flash" id="flash-5"/>
+		<img class="flash" id="flash-6"/>
+		<img class="flash" id="flash-7"/>
+		<div class="name" id="name-0"></div>
+		<div class="name" id="name-1"></div>
+		<div class="name" id="name-2"></div>
+		<div class="name" id="name-3"></div>
+		<div class="name" id="name-4"></div>
+		<div class="name" id="name-5"></div>
+		<div class="name" id="name-6"></div>
+		<div class="name" id="name-7"></div>
+		<div id="label"></div>
+	</div>
+	<div id="intro-shade"></div>
+	<div id="card-frame"><img id="card"/></div>
+	<div id="blackout"></div>
+</body>
+</rml>

@@ -218,6 +218,10 @@ void StoryScenes::setNewGameChain(std::optional<NewGameChain> chain) {
   context_->chainOverride = chain;
 }
 
+void StoryScenes::attachTournament(TournamentAdapter* tournament) {
+  context_->tournament = tournament;
+}
+
 ruleset::SectionChecks StoryScenes::sectionChecks() const {
   return {
       {std::string{StoryScenesSection}, [](const ruleset::Section& section) -> core::Result<void> {

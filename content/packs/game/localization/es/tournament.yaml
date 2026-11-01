@@ -1,0 +1,4 @@
+# El cuadro de la copa, para las apariencias que dicen la ronda (la original no la muestra). {round} es 1 o 2.
+bracket.round: "Ronda {round}"
+bracket.final: "Final"
+bracket.champion: "Campeón"

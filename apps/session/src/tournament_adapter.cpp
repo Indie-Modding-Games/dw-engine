@@ -2,8 +2,12 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/yaml.hpp>
+#include <dwe/game/story/medals.hpp>
 #include <dwe/game/story/story_runner.hpp>
+#include <dwe/session/cards_adapter.hpp>
 #include <dwe/session/game_session.hpp>
+#include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/medals_adapter.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_game_orders.hpp>
 #include <dwe/session/tournament_adapter.hpp>
@@ -54,6 +58,11 @@ std::int32_t capped(std::int64_t value, std::int32_t limit) {
 core::Result<void> TournamentAdapter::readRules(const ruleset::Ruleset& rules) {
   rules_.reset();
   bracket_.reset();
+  bracketLayout_.reset();
+  bracketRules_.reset();
+  stadiumGrades_.clear();
+  extraPrizes_.clear();
+  medalRules_.reset();
   const ruleset::Section* section = rules.section(TournamentSectionName);
   if (section == nullptr || desc_.files == nullptr) {
     return {};
@@ -74,6 +83,30 @@ core::Result<void> TournamentAdapter::readRules(const ruleset::Ruleset& rules) {
     return std::unexpected{arena.error()};
   }
   arena_ = std::move(*arena);
+  auto bracketRules = game::tournament::parseBracketRules(*section);
+  if (!bracketRules) {
+    return std::unexpected{bracketRules.error()};
+  }
+  auto prizes = game::tournament::parseExtraPrizes(*section);
+  if (!prizes) {
+    return std::unexpected{prizes.error()};
+  }
+  extraPrizes_ = std::move(*prizes);
+  auto medal = game::tournament::parseTournamentMedalRules(*section);
+  if (!medal) {
+    return std::unexpected{medal.error()};
+  }
+  medalRules_ = std::move(*medal);
+  // An extraction made before dwx read the bracket's tables has none: the cups are fought without
+  // the board.
+  if (auto layout = game::tournament::parseBracketLayout(*stadium); !layout) {
+    core::logWarning("[port:tournament] STD_initializeBracket (std_main.c): {}; no bracket",
+                     layout.error().message);
+  } else if (*layout && *bracketRules) {
+    bracketLayout_ = std::move(**layout);
+    bracketRules_ = std::move(**bracketRules);
+    stadiumGrades_ = game::tournament::parseStadiumGrades(*stadium);
+  }
   schedule_.reset();
   table_.reset();
   auto schedule = game::tournament::parseScheduleRules(*section);
@@ -304,6 +337,7 @@ core::Result<std::int32_t> TournamentAdapter::finish(GameSession& session) {
     if (auto won = story.setTrigger(rules.wonTriggerBase + cup_, true); !won) {
       return std::unexpected{won.error()};
     }
+    giveExtraPrizes(cup_);
   } else {
     ++record.tournamentsLost;
   }
@@ -411,7 +445,11 @@ std::string TournamentAdapter::cupTextKey(std::int32_t cup) const {
 }
 
 std::string TournamentAdapter::lineKey(std::int32_t line) {
-  if (!schedule_ || desc_.files == nullptr) {
+  return schedule_ ? sectionLineKey(schedule_->linesSection, line) : std::string{};
+}
+
+std::string TournamentAdapter::sectionLineKey(std::int32_t section, std::int32_t line) {
+  if (desc_.files == nullptr) {
     return {};
   }
   if (!lineTables_) {
@@ -423,7 +461,7 @@ std::string TournamentAdapter::lineKey(std::int32_t line) {
     }
     lineTables_ = std::move(*tables);
   }
-  const auto table = lineTables_->find(schedule_->linesSection);
+  const auto table = lineTables_->find(section);
   const auto at = static_cast<std::size_t>(line);
   if (table == lineTables_->end() || line < 0 || at >= table->second.size()) {
     return {};
@@ -480,6 +518,92 @@ core::Result<void> TournamentAdapter::enter(GameSession& session, std::size_t co
                 "species {}",
                 day, partner->index);
   return {};
+}
+
+std::string TournamentAdapter::cardImage() const {
+  return bracketRules_ ? game::tournament::bracketCardImage(*bracketRules_, stadiumGrades_, cup_)
+                       : std::string{};
+}
+
+std::string TournamentAdapter::speciesId(std::int32_t number) const {
+  const assets::DigimonRow* row = rowOfNumber(number);
+  return row != nullptr ? row->id : std::string{};
+}
+
+bool TournamentAdapter::cupWon(std::int32_t cup) const {
+  if (!rules_ || desc_.story == nullptr) {
+    return false;
+  }
+  const auto set = desc_.story->state().trigger(rules_->wonTriggerBase + cup);
+  return set && *set;
+}
+
+void TournamentAdapter::giveExtraPrizes(std::int32_t cup) {
+  const std::vector<game::tournament::ExtraPrize> prizes = extraPrizes(cup);
+  if (prizes.empty()) {
+    return;
+  }
+  if (desc_.inventory == nullptr) {
+    core::logWarning("[port:tournament] extra prizes of cup {}: the game has no bag", cup);
+    return;
+  }
+  game::inventory::Inventory& bag = desc_.inventory->inventory();
+  for (const game::tournament::ExtraPrize& prize : prizes) {
+    if (prize.money != 0) {
+      bag.addMoney(prize.money);
+    }
+    if (!prize.item) {
+      continue;
+    }
+    const assets::ItemEntry* entry = desc_.inventory->items().findByOriginalIndex(*prize.item);
+    if (entry == nullptr) {
+      core::logWarning("[port:tournament] extra prize of cup {}: no item {}", cup, *prize.item);
+      continue;
+    }
+    const game::inventory::AddResult added =
+        bag.add(desc_.inventory->items().handleOf(*entry), prize.amount);
+    core::logInfo("[port:tournament] extra prize of cup {}: item {} x{} (added {})", cup,
+                  *prize.item, prize.amount, added.added);
+  }
+}
+
+core::Result<std::optional<std::string>> TournamentAdapter::awardMedal(GameSession& session) {
+  const std::optional<MedalsRules>* medalRules = medals_ != nullptr ? &medals_->rules() : nullptr;
+  if (!medalRules_ || !table_ || desc_.story == nullptr || medalRules == nullptr ||
+      !medalRules->has_value()) {
+    return core::fail("there are no tournament medal rules");
+  }
+  game::story::StoryState& story = desc_.story->state();
+  const game::story::MedalRules& rules = (*medalRules)->medals;
+  const game::tournament::TournamentMedalFacts facts{
+      .trigger =
+          [&story](std::int32_t trigger) {
+            const auto set = story.trigger(trigger);
+            return set && *set;
+          },
+      .tournamentWins = session.tamer().record.tournamentWins,
+      .cardCopies =
+          [this](std::int32_t card) {
+            return desc_.cards != nullptr ? desc_.cards->copies(card) : 0;
+          },
+      .hasMedal =
+          [&story, &rules](std::int32_t medal) {
+            const auto held = game::story::hasMedal(story, rules, medal);
+            return held && *held;
+          }};
+  const std::optional<std::int32_t> result =
+      game::tournament::tournamentMedal(*medalRules_, table_->medalIds, facts);
+  if (!result) {
+    return std::optional<std::string>{};
+  }
+  const std::int32_t medal = table_->medalIds.at(static_cast<std::size_t>(*result));
+  if (auto unlocked = game::story::unlockMedal(story, rules, medal); !unlocked) {
+    return std::unexpected{unlocked.error()};
+  }
+  core::logInfo("[port:tournament] scriptCheckTournamentMedal (tournament.c:254): result {}, "
+                "medal {}",
+                *result, medal);
+  return std::optional<std::string>{sectionLineKey(medalRules_->linesSection, *result)};
 }
 
 } // namespace dwe::session

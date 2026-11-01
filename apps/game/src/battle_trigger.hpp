@@ -21,6 +21,8 @@ inline constexpr std::string_view BattleCommand = "battle";
 inline constexpr std::string_view StoryBattlePrefix = "story:";
 // The debug command that ends the running fight with the enemies beaten: battle_win("").
 inline constexpr std::string_view BattleWinCommand = "battle_win";
+// And the one that ends it with the partner beaten: battle_lose("").
+inline constexpr std::string_view BattleLoseCommand = "battle_lose";
 
 // The Digimon table of the ruleset, for the battle's enemies and the names the screens show.
 core::Result<assets::DigimonTable> speciesTable(const assets::VirtualFileSystem& files,

@@ -1,0 +1,71 @@
+/* The cup's bracket (std/std_main.c: STD_drawBracket, STD_renderBracketDigimon, STD_renderBracketProjectile,
+   STD_tickBracketHitFlash, STD_renderBracketIntro). One pixel of the original is 3dp; the 320 x 240 screen is a
+   960 x 720dp frame centred on a wide screen, positions from the screen's centre (y down). From the decomp:
+   - a 0x20 grey half-transparent box over the whole screen, under the board (GsSortBoxFill, attribute 0x40000000);
+   - the board, stdtim 005, 256 x 135 at (-128, -97), its brightness 0x80 - STD_BRACKET_FADE;
+   - each fighter a 16 x 16 cell at its slot's (x, y), the same brightness, mirrored when it faces the other way;
+   - a shot an 8 x 8 cell, the winner's two (the second 8 lower); the hit flash 16 x 16 over the slot;
+   - the intro: a screen-wide shade (brightness MAIN_D_80135165) and the grade's card, 255 x 128 at (-128, -64)
+     (brightness MAIN_D_80135166).
+   The original adds the box's and the board's light (semi-transparent modes); here brightness is opacity, an
+   approximation. This is the layout and the modern look (the species' names under the first row and the round);
+   the skins give the look. */
+
+body {
+	width: 100%;
+	height: 100%;
+}
+
+#frame, #card-frame {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+	margin-left: -480dp;
+}
+
+/* The arena behind is drawn as wide as the window: the screen-wide boxes are too. */
+#shade, #intro-shade, #blackout {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+}
+
+#shade { background-color: #20202080; }
+#intro-shade { background-color: #000000; opacity: 0; }
+#blackout { background-color: #000000; opacity: 0; }
+
+#board { position: absolute; left: 96dp; top: 69dp; width: 768dp; height: 405dp; }
+#card { position: absolute; left: 96dp; top: 168dp; width: 765dp; height: 384dp; }
+
+.slot, .flash { position: absolute; width: 48dp; height: 48dp; }
+.shot { position: absolute; width: 24dp; height: 24dp; }
+.flipped { transform: scale(-1, 1); }
+.hidden { display: none; }
+
+.name {
+	position: absolute;
+	width: 120dp;
+	margin-left: -36dp;
+	font-size: 18dp;
+	line-height: 22dp;
+	text-align: center;
+	color: #f0f0f0;
+	font-effect: outline(2dp #000000);
+	white-space: nowrap;
+}
+
+#label {
+	position: absolute;
+	left: 0;
+	top: 24dp;
+	width: 960dp;
+	font-size: 36dp;
+	line-height: 42dp;
+	text-align: center;
+	color: #ffffff;
+	font-effect: outline(3dp #000000);
+}

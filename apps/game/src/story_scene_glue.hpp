@@ -61,6 +61,10 @@ public:
   void attachJukebox(JukeboxScreen* jukebox) { jukebox_ = jukebox; }
   // The tournaments' registration the story's TournamentSchedule screen opens (call_routine 18).
   void attachTournamentSchedule(TournamentScheduleScreen* schedule) { schedule_ = schedule; }
+  // The bracket the story's tournaments show before each match (call_routine 6).
+  void attachTournamentBracket(TournamentBracketScreen* bracket) {
+    tournament_.attachBracket(bracket);
+  }
   // The item trader the story's TradeShop screen opens (call_routine 2).
   void attachTrade(TradeScreen* trade) { trade_ = trade; }
   // The bird transport the story's BirdTransport screen opens (call_routine 10).

@@ -95,13 +95,13 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 39 | 0 | 0 | 17 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 10 | 0 | 1 | 24 | 91 % |
-| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 30 | 6 | 58 | 355 | 35 % |
+| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 45 | 4 | 48 | 352 | 48 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 0 | 0 | 91 | 315 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 32 | 3 | 3 | 10 | 88 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 30 | 1 | 0 | 13 | 98 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1137 | 38 | 207 | 1056 | 84 % |
+| **Total** | 2438 funciones | 1152 | 36 | 197 | 1053 | 84 % |
 
 ## Batalla
 
@@ -351,13 +351,11 @@ Inscripción, calendario y el overlay de copas, que trae su propio motor de comb
 
 Ficheros del decomp: `dget/dget.c`, `main/tournament.c`, `std/std_effect.c`, `std/std_hud.c`, `std/std_main.c`, `std/std_setup.c`.
 
-Portado 30, parcial 6, falta 58, no aplica 355.
+Portado 45, parcial 4, falta 48, no aplica 352.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `updateTournamentRegistration` | `main/tournament.c:42` | falta (citada en docs) | Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa. | — |
-| `checkTournamentMedalConditions` | `main/tournament.c:168` | parcial | Mira si toca dar la medalla de los torneos. | `apps/session/src/story_routines/routine_tournament_medal.cpp:15` · la rutina 22 sigue al momento sin copas ganadas; no hay torneos |
-| `scriptCheckTournamentMedal` | `main/tournament.c:242` | parcial | Comprueba y da la medalla de los torneos. | `apps/session/include/dwe/session/story_scenes.hpp:125` · la rutina 22 se cierra sin pantalla |
 | `STD_addChampionScene` | `std/std_effect.c:1251` | falta (citada en docs) | Inicia la escena de celebración del campeón de la copa. | — |
 | `STD_tickChampionScene` | `std/std_effect.c:1259` | falta | Anima la escena del campeón: letras, giro de cámara y podio. | — |
 | `STD_addPodiumRenderer` | `std/std_effect.c:1380` | falta | Muestra el podio en la escena de premiación. | — |
@@ -366,14 +364,14 @@ Portado 30, parcial 6, falta 58, no aplica 355.
 | `STD_addWinScene` | `std/std_effect.c:1516` | falta | Inicia la escena de victoria del combate de copa. | — |
 | `STD_tickWinScene` | `std/std_effect.c:1546` | falta | Anima el letrero de victoria del combate de copa. | — |
 | `STD_handleCommands` | `std/std_hud.c:504` | falta (citada en docs) | Navega y confirma las órdenes al compañero en el combate de copa, incluido el remate. | — |
-| `STD_tickTamerTournament` | `std/std_hud.c:540` | falta | Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes. | `game/battle/include/dwe/game/battle/battle.hpp:168` |
+| `STD_tickTamerTournament` | `std/std_hud.c:540` | falta | Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes. | `game/battle/include/dwe/game/battle/battle.hpp:170` |
 | `STD_addVersusModelScene` | `std/std_hud.c:1168` | falta (citada en docs) | Inicia la animación del letrero de enfrentamiento antes del combate. | — |
 | `STD_tickVersusModelScene` | `std/std_hud.c:1173` | falta | Anima el letrero de enfrentamiento entre ambos luchadores. | — |
 | `STD_isVersusModelSceneFinished` | `std/std_hud.c:1213` | falta | Indica si terminó la animación del letrero de enfrentamiento. | — |
 | `STD_loadWinLoseModel` | `std/std_hud.c:1227` | falta | Calcula las curvas de entrada de los letreros de victoria/derrota y carga sus modelos. | — |
 | `STD_loadChampionModels` | `std/std_hud.c:1273` | falta | Prepara la órbita de cámara y coloca las letras del letrero de campeón. | solo lo cita la extracción del disco |
 | `STD_initializeChampionScene` | `std/std_hud.c:1371` | falta | Coloca al compañero en el centro con la pose de victoria y fija la cámara del campeón. | — |
-| `STD_runIntro` | `std/std_main.c:1885` | falta | Ejecuta la presentación del combate de copa con cámara y nombres. | `apps/game/src/story_tournament.cpp:164` |
+| `STD_runIntro` | `std/std_main.c:1885` | falta | Ejecuta la presentación del combate de copa con cámara y nombres. | `apps/game/src/story_tournament.cpp:196` |
 | `STD_tickIntroName` | `std/std_main.c:2063` | falta | Muestra el nombre del luchador durante la presentación. | — |
 | `STD_setCameraYXZ` | `std/std_main.c:2266` | falta | Cámara que encuadra al compañero y al rival a la vez. | — |
 | `STD_setCameraToEntity` | `std/std_main.c:2286` | falta | Cámara fija relativa al luchador enfocado según su orientación. | — |
@@ -391,16 +389,6 @@ Portado 30, parcial 6, falta 58, no aplica 355.
 | `STD_tickCameraIntro` | `std/std_main.c:2753` | falta | Avanza la secuencia de cámara de la presentación. | — |
 | `STD_startCameraIntro` | `std/std_main.c:2782` | falta | Inicia el recorrido de cámara entre los dos luchadores. | — |
 | `STD_applyEntityViewpoint` | `std/std_main.c:2854` | falta | Cámara anclada a la vista del luchador enfocado. | — |
-| `STD_updateBracket` | `std/std_main.c:2949` | falta | Avanza el cuadro de eliminatorias al siguiente cruce y destaca al jugador. | — |
-| `STD_addBracketProjectile` | `std/std_main.c:3314` | falta | Lanza la marca animada que sube por el cuadro hacia el ganador. | — |
-| `STD_addBracketHitFlash` | `std/std_main.c:3336` | falta | Inicia el destello en una casilla del cuadro de eliminatorias. | — |
-| `STD_initializeBracket` | `std/std_main.c:3444` | falta | Reinicia el estado del cuadro de eliminatorias. | — |
-| `STD_addBracket` | `std/std_main.c:3544` | falta (citada en docs) | Muestra el cuadro de eliminatorias de la copa. | — |
-| `STD_tickBracket` | `std/std_main.c:3556` | falta | Anima el cuadro de eliminatorias entre combates. | — |
-| `STD_isBracketFinished` | `std/std_main.c:3577` | falta | Indica si terminó la animación del cuadro de eliminatorias. | — |
-| `STD_tickBracketHitFlash` | `std/std_main.c:3582` | falta | Anima el destello de una casilla del cuadro. | — |
-| `STD_addBracketIntro` | `std/std_main.c:3672` | falta | Inicia la presentación del cuadro al empezar la copa. | — |
-| `STD_tickBracketIntro` | `std/std_main.c:3686` | falta | Anima la presentación del cuadro de eliminatorias. | — |
 | `STD_combatSetup` | `std/std_main.c:3939` | falta | Prepara los datos de combate del compañero y del rival en la copa. | — |
 | `STD_tickBattle` | `std/std_main.c:4431` | falta | Avanza un cuadro del combate de copa. | — |
 | `STD_areAllEnemyDigimonDead` | `std/std_main.c:4626` | falta | Indica si todos los rivales del combate han caído. | — |
@@ -418,9 +406,9 @@ Portado 30, parcial 6, falta 58, no aplica 355.
 | `STD_initializeTournament` | `std/std_setup.c:243` | parcial | Prepara la arena de la copa: música, cámara, luces, escenario y efectos. | `apps/game/src/story_tournament.cpp:1` · modelo, suelo y cámara de la arena; sin música propia, luces ni efectos de la copa |
 | `STD_runMatch` | `std/std_setup.c:401` | parcial | Juega un combate de copa: presentación, combate y cámara final. | `apps/game/src/story_tournament.cpp:1` · en la arena; sin presentación ni cámara final |
 | `STD_initializeCamera` | `std/std_setup.c:415` | falta (citada en docs) | Coloca la cámara inicial de la arena de copa. | — |
-| `STD_tournamentMain` | `std/std_setup.c:521` | parcial | Flujo completo de la copa: cuadro, combates, resultados y premio. | `apps/game/src/story_tournament.cpp:1` · arena, sustitutos, cuadro, tres combates y recuperación; sin cuadro animado ni escenas (tournament.md: Hueco) |
+| `STD_tournamentMain` | `std/std_setup.c:521` | parcial | Flujo completo de la copa: cuadro, combates, resultados y premio. | `apps/game/src/story_tournament.cpp:1` · arena, sustitutos, cuadro animado, tres combates y recuperación; sin escenas de victoria, derrota ni podio (tournament.md: Hueco) |
 
-No aplica: copias de otra función, que cuenta por las dos (299); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (24); limpieza de objetos y memoria del original: el motor libera lo suyo (15); búsqueda genérica en la tabla de entidades (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); utilidad genérica de reloj (1); lectura de punteros del guion del original (1); ajuste de UV de modelos del original (1); carga de modelos del original (1); cámara libre de depuración con el segundo mando (1); aplicación de proyección y punto de vista del original (1); asignación directa de valores de cámara (1); cálculo auxiliar de distancias (1); comprobación geométrica auxiliar (1); interpolación lineal genérica (1); cuenta genérica de dígitos (1); bucle de cuadros del original (1); configuración de luces del original (1).
+No aplica: copias de otra función, que cuenta por las dos (299); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (21); limpieza de objetos y memoria del original: el motor libera lo suyo (15); búsqueda genérica en la tabla de entidades (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); utilidad genérica de reloj (1); lectura de punteros del guion del original (1); ajuste de UV de modelos del original (1); carga de modelos del original (1); cámara libre de depuración con el segundo mando (1); aplicación de proyección y punto de vista del original (1); asignación directa de valores de cámara (1); cálculo auxiliar de distancias (1); comprobación geométrica auxiliar (1); interpolación lineal genérica (1); cuenta genérica de dígitos (1); bucle de cuadros del original (1); configuración de luces del original (1).
 
 ## Versus y demo
 

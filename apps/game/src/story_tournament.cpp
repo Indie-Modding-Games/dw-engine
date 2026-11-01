@@ -66,7 +66,13 @@ bool StoryTournament::take(const session::StoryScreenRequest& request, session::
   }
   running_ = true;
   matchDue_ = true;
+  boardShown_ = false;
+  championDue_ = false;
   enterArena(scene);
+  // STD_initializeBracket, STD_addBracketIntro: 120 frames before the first board.
+  if (bracket_ != nullptr) {
+    bracket_->open();
+  }
   return true;
 }
 
@@ -112,6 +118,8 @@ void StoryTournament::showArena(FieldScene& scene, game::tournament::ArenaPoint 
                             .backgroundSize = render::OriginalScreenSize * ArenaBackgroundScale};
   stage.shownProps = {arena_->model};
   stage.ground = arena_->collision;
+  // STD_addBracket, STD_addBracketIntro: the partner is off the map while the board shows.
+  stage.partnerHidden = bracket_ != nullptr && bracket_->playing();
   scene.setStage(stage);
 }
 
@@ -135,6 +143,13 @@ void StoryTournament::leaveArena(FieldScene& scene) {
 void StoryTournament::matchOver(game::battle::Outcome outcome) {
   matchRunning_ = false;
   matchDue_ = tournament_->matchOver(*session_, outcome);
+  boardShown_ = false;
+  const bool won = outcome == game::battle::Outcome::Victory;
+  if (bracket_ != nullptr && bracket_->opened()) {
+    bracket_->matchOver(won);
+    // STD_tournamentMain: after the final won, STD_addBracket(2).
+    championDue_ = won && !matchDue_;
+  }
 }
 
 void StoryTournament::update(session::StoryScenes& scenes, BattleScreen& battle,
@@ -152,8 +167,25 @@ void StoryTournament::update(session::StoryScenes& scenes, BattleScreen& battle,
   }
   // removeMapEntities after each match: the beaten (or winning) rival leaves the arena.
   scene.clearStageFighters();
+  if (bracket_ != nullptr && bracket_->playing()) {
+    if (arena_) {
+      showArena(scene, arena_->start.partner, arena_->start.rival);
+    }
+    return;
+  }
+  const bool board = bracket_ != nullptr && bracket_->opened();
   if (!matchDue_) {
+    if (board && championDue_) {
+      championDue_ = false;
+      bracket_->show(game::tournament::BracketShow::Champion);
+      return;
+    }
     end(scenes, scene);
+    return;
+  }
+  if (board && !boardShown_) {
+    boardShown_ = true;
+    bracket_->show(game::tournament::BracketShow::Match);
     return;
   }
   const game::field::Field& field = scene.field();
@@ -192,6 +224,9 @@ void StoryTournament::update(session::StoryScenes& scenes, BattleScreen& battle,
 void StoryTournament::end(session::StoryScenes& scenes, FieldScene& scene) {
   running_ = false;
   matchDue_ = false;
+  if (bracket_ != nullptr) {
+    bracket_->close();
+  }
   leaveArena(scene);
   if (auto finished = tournament_->finish(*session_); !finished) {
     core::logWarning("[port:tournament] startTournament (utils2.c:662): {}",

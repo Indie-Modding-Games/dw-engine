@@ -40,6 +40,7 @@ constexpr std::string_view IdKey = "id";
 constexpr std::string_view IndexKey = "index";
 constexpr std::string_view GradeKey = "grade";
 constexpr std::string_view DayKey = "day";
+constexpr std::string_view MedalIdsKey = "medal_ids";
 
 // isTournamentEnabled: the requirements list is [triggers needed, wins needed, requirement type].
 enum class Requirement : std::uint8_t { None = 0, GradeAWon = 1, LocalList = 2 };
@@ -134,6 +135,11 @@ core::Result<TournamentTable> parseTournamentTable(const YamlNode& document) {
             std::format("{}: day {} lists an unknown cup '{}'", TableText, at, reader.text(id)));
       }
       table.days[at].push_back(found->second);
+    }
+  }
+  if (const YamlNode* medals = document.isMapping() ? document.find(MedalIdsKey) : nullptr) {
+    for (const YamlNode& medal : reader.sequence(*medals, MedalIdsKey)) {
+      table.medalIds.push_back(reader.integer<std::int32_t>(medal));
     }
   }
   if (!reader.ok()) {

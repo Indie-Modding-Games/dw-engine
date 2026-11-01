@@ -36,6 +36,7 @@
 #include "options.hpp"
 #include "screenshot.hpp"
 #include "story_text_rows.hpp"
+#include "tournament_bracket_screen.hpp"
 
 namespace dwe::app {
 namespace {
@@ -1161,7 +1162,10 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
     releaseMovement();
     return step.stopOnWarp;
   }
-  if (step.stopOnScene && field.heldByScript()) {
+  // A tournament's step cell (call_routine 6) takes the player to the arena: its board or its
+  // first match shows instead.
+  if (step.stopOnScene && (field.heldByScript() || host.ui->isVisible(TournamentBracketDocument) ||
+                           host.ui->isVisible(BattleDocument))) {
     releaseMovement();
     return true;
   }

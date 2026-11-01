@@ -67,3 +67,39 @@ arena:
   second_arena_map: betl02
   yaws: {partner: 1024, rival: 3072}
   camera: {projection: 500, distance_divisor: 200, min_distance: 1000, max_distance: 4200, eye_height: 1000, drop: 700}
+
+# El cuadro antes de cada combate del compañero (std_setup.c: STD_tournamentMain; std_main.c: STD_addBracketIntro,
+# STD_addBracket, STD_drawBracket, STD_tickBracketHitFlash). Va a 20 cuadros por segundo (VSync(3)). Sus sonidos son
+# los del banco 16 en la ranura 8 (loadMapSounds(0x10)); su música, playMusic(29, pista): 0 la presentación, 1 el
+# cuadro de un combate, 2 la subida del campeón. Tras la subida, fadeToBlack(10) y 11 cuadros. Las imágenes salen de
+# los datos extraídos del jugador: el tablero (stdtim 005), las dos páginas de sprites (000 y 001), las tarjetas de
+# grado (data/stadium: grades) y el destello del golpe, 16 x 16 en (0, 200) de la segunda página con su paleta 0.
+bracket:
+  frames_per_second: 20
+  sound_bank: 16
+  music: {font: 29, intro: 0, match: 1, champion: 2}
+  champion_fade: 10
+  champion_tail: 11
+  textures:
+    board: texture/stddat/stdtim/005
+    pages: [texture/stddat/stdtim/000, texture/stddat/stdtim/001]
+    cards: texture/stddat/grade
+  flash: {page: 1, u: 0, v: 200, size: 16, palette: 0}
+
+# Premios de más por copa ganada, además de los del guion de la arena (guion 214: dinero y objeto del ganador, del
+# segundo y la Giant Meat de participación). El original no tiene ninguno; un ruleset puede añadir
+# {cup: N, item: número del objeto, amount: cuántos} o {cup: N, money: bits}.
+extra_prizes: []
+
+# La medalla de los torneos (rutina 22 del guion; tournament.c: checkTournamentMedalConditions y
+# scriptCheckTournamentMedal). Grupos de copas (primer disparador de copa ganada y cuántas): todas ganadas dan el
+# resultado del grupo (0 a 3); 100 victorias en torneos el 4; las 66 cartas y el juego terminado (disparador 50) el 5.
+# Sólo cuenta la primera condición que se cumple: si su medalla ya está, no hay otra (rareza del original). La
+# medalla de cada resultado es data/tournaments: medal_ids; su texto, la frase `resultado` de la sección 0x4db de
+# MAPHEAD, sin nombre.
+medal:
+  cup_groups: [[15, 6], [21, 5], [26, 7], [33, 4]]
+  wins: 100
+  cards: 66
+  beaten_trigger: 50
+  lines_section: 1243

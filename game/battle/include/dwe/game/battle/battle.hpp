@@ -162,6 +162,8 @@ public:
   // A debug shortcut to the end of the fight: every enemy takes damage enough to fall, which then
   // runs as a beating blow would (fainting, the victory, the drops, the stat gains).
   void defeatEnemies();
+  // Its opposite: the partner takes damage enough to fall (a route that checks a lost fight).
+  void defeatPartner();
   // The tamer's bag (battle_tick.c: tamerTickBattle, inventory.c: addInventoryUI): it opens in a
   // battle with the tamer while the partner is not running away and no thrown item is on its way.
   // While it is open the partner takes no command; the battle goes on.

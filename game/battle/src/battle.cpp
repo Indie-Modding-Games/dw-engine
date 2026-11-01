@@ -328,6 +328,14 @@ void Battle::defeatEnemies() {
   }
 }
 
+void Battle::defeatPartner() {
+  if (state_.fighters.empty()) {
+    return;
+  }
+  Fighter& partner = state_.fighters.front();
+  partner.pendingDamage = std::max(partner.pendingDamage, partner.hp);
+}
+
 void Battle::pressFinisherCharge() {
   chargePressed_ = true;
 }

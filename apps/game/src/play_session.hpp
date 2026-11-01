@@ -62,6 +62,7 @@
 #include "story_field_link.hpp"
 #include "story_scene_glue.hpp"
 #include "story_textbox.hpp"
+#include "tournament_bracket_screen.hpp"
 #include "tournament_schedule_screen.hpp"
 #include "user_settings.hpp"
 
@@ -106,6 +107,7 @@ struct SessionCommands {
   std::optional<std::string> groundDrop;
   std::optional<std::string> battle;
   bool battleWin = false;
+  bool battleLose = false;
   std::optional<std::string> evolution;
   CareCommands care;
   SaveCommand save;
@@ -275,6 +277,7 @@ private:
   DiscardScreen discardScreen_;
   JukeboxScreen jukeboxScreen_;
   TournamentScheduleScreen scheduleScreen_;
+  TournamentBracketScreen bracketScreen_;
   TradeScreen tradeScreen_;
   BirdTransportScreen birdScreen_;
   CardShopScreen cardShopScreen_;

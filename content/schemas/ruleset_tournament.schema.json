@@ -427,6 +427,210 @@
           }
         }
       }
+    },
+    "bracket": {
+      "description": "How the bracket shows before each of the partner's matches (std_setup.c: STD_tournamentMain; std_main.c: STD_addBracketIntro, STD_addBracket, STD_drawBracket). Optional: without it the cups are fought without the board.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "frames_per_second",
+        "sound_bank",
+        "music",
+        "champion_fade",
+        "champion_tail",
+        "textures",
+        "flash"
+      ],
+      "properties": {
+        "frames_per_second": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sound_bank": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "music": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "font",
+            "intro",
+            "match",
+            "champion"
+          ],
+          "properties": {
+            "font": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "intro": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "match": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "champion": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "champion_fade": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "champion_tail": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "textures": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "board",
+            "pages",
+            "cards"
+          ],
+          "properties": {
+            "board": {
+              "type": "string",
+              "minLength": 1
+            },
+            "pages": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "cards": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "flash": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "page",
+            "u",
+            "v",
+            "size",
+            "palette"
+          ],
+          "properties": {
+            "page": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "u": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "v": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "size": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "palette": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "extra_prizes": {
+      "description": "Prizes a ruleset gives when a cup is won, besides the arena script's. The original has none.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cup"
+        ],
+        "properties": {
+          "cup": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "item": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "money": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "item"
+            ]
+          },
+          {
+            "required": [
+              "money"
+            ]
+          }
+        ]
+      }
+    },
+    "medal": {
+      "description": "The tournaments' medal (routine 22; tournament.c: checkTournamentMedalConditions, scriptCheckTournamentMedal).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cup_groups",
+        "wins",
+        "cards",
+        "beaten_trigger",
+        "lines_section"
+      ],
+      "properties": {
+        "cup_groups": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "wins": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cards": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "beaten_trigger": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lines_section": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
     }
   }
 }

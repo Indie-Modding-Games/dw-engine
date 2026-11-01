@@ -638,7 +638,7 @@ renderNinjamonEffect = { status = "portado", dwe = "apps/game/src/field_effects.
 tickSaveMachine = { status = "portado", dwe = "apps/game/src/save_machine_flow.hpp", what = "La máquina de guardar que abre el guion: registro para el modo versus y guardado." }
 gameClearSave = { status = "portado", dwe = "apps/session/include/dwe/session/game_clear.hpp", note = "la rutina 54 abre la pregunta de guardar; la partida guardada vuelve terminada a la ciudad y al cargarla suena ED2; sin medir en el original (Suposición)", what = "Guardado del final: marca la partida terminada y pregunta si guardar." }
 initTournamentSchedule = { status = "portado", dwe = "apps/game/src/tournament_schedule_screen.cpp:1", what = "Enseña el calendario de torneos." }
-scriptCheckTournamentMedal = { status = "parcial", note = "la rutina 22 se cierra sin pantalla", what = "Comprueba y da la medalla de los torneos." }
+scriptCheckTournamentMedal = { status = "portado", dwe = "apps/session/src/story_routines/routine_tournament_medal.cpp:1", what = "Comprueba y da la medalla de los torneos." }
 scriptStartTournament = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", what = "Empieza un torneo." }
 tamerTickOpening = { status = "falta", note = "la escena del compañero 5 acaba al momento", what = "Escena de apertura del jugador." }
 tamerTickEnding = { status = "portado", dwe = "apps/game/src/ending_scene.hpp", note = "la llamada 6 de la historia la juega en el campo y avisa a la historia al acabar; sin sombra del jugador porque el motor aún no la dibuja (Suposición: sin medir en el original)", what = "Escena final del jugador antes del vídeo." }
@@ -928,17 +928,17 @@ STD_startCameraIntro = { status = "falta", what = "Inicia el recorrido de cámar
 STD_applyEntityViewpoint = { status = "falta", what = "Cámara anclada a la vista del luchador enfocado." }
 STD_addFighterCounter = { status = "portado", dwe = "game/battle/src/battle.cpp:1", note = "el reloj cuenta y la pantalla de combate lo dibuja (apps/screens/src/battle_view.cpp, match-clock)", what = "Inicia el reloj de tiempo del combate de copa." }
 STD_tickFighterCounter = { status = "portado", dwe = "game/battle/src/battle.cpp:1", note = "el reloj cuenta y la pantalla de combate lo dibuja", what = "Descuenta el reloj del combate salvo cuando un luchador está caído." }
-STD_updateBracket = { status = "falta", what = "Avanza el cuadro de eliminatorias al siguiente cruce y destaca al jugador." }
-STD_addBracketProjectile = { status = "falta", what = "Lanza la marca animada que sube por el cuadro hacia el ganador." }
-STD_addBracketHitFlash = { status = "falta", what = "Inicia el destello en una casilla del cuadro de eliminatorias." }
-STD_initializeBracket = { status = "falta", what = "Reinicia el estado del cuadro de eliminatorias." }
+STD_updateBracket = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Avanza el cuadro de eliminatorias al siguiente cruce y destaca al jugador." }
+STD_addBracketProjectile = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Lanza la marca animada que sube por el cuadro hacia el ganador." }
+STD_addBracketHitFlash = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Inicia el destello en una casilla del cuadro de eliminatorias." }
+STD_initializeBracket = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Reinicia el estado del cuadro de eliminatorias." }
 STD_setupParticipants = { status = "portado", dwe = "game/tournament/src/bracket.cpp:1", what = "Reparte los ocho participantes de la copa en el cuadro." }
-STD_addBracket = { status = "falta", what = "Muestra el cuadro de eliminatorias de la copa." }
-STD_tickBracket = { status = "falta", what = "Anima el cuadro de eliminatorias entre combates." }
-STD_isBracketFinished = { status = "falta", what = "Indica si terminó la animación del cuadro de eliminatorias." }
-STD_tickBracketHitFlash = { status = "falta", what = "Anima el destello de una casilla del cuadro." }
-STD_addBracketIntro = { status = "falta", what = "Inicia la presentación del cuadro al empezar la copa." }
-STD_tickBracketIntro = { status = "falta", what = "Anima la presentación del cuadro de eliminatorias." }
+STD_addBracket = { status = "portado", dwe = "apps/game/src/tournament_bracket_screen.cpp:1", what = "Muestra el cuadro de eliminatorias de la copa." }
+STD_tickBracket = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Anima el cuadro de eliminatorias entre combates." }
+STD_isBracketFinished = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Indica si terminó la animación del cuadro de eliminatorias." }
+STD_tickBracketHitFlash = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Anima el destello de una casilla del cuadro." }
+STD_addBracketIntro = { status = "portado", dwe = "apps/game/src/tournament_bracket_screen.cpp:1", what = "Inicia la presentación del cuadro al empezar la copa." }
+STD_tickBracketIntro = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Anima la presentación del cuadro de eliminatorias." }
 STD_combatSetup = { status = "falta", what = "Prepara los datos de combate del compañero y del rival en la copa." }
 STD_checkEndCondition = { status = "portado", dwe = "game/battle/src/battle.cpp:1", what = "Comprueba fin de combate por KO o tiempo y decide ganador." }
 STD_tickBattle = { status = "falta", what = "Avanza un cuadro del combate de copa." }
@@ -962,7 +962,7 @@ STD_initializeOpponent = { status = "portado", dwe = "game/tournament/src/bracke
 STD_runMatch = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "en la arena; sin presentación ni cámara final", what = "Juega un combate de copa: presentación, combate y cámara final." }
 STD_initializeCamera = { status = "falta", what = "Coloca la cámara inicial de la arena de copa." }
 STD_initializeLighting = { status = "no-aplica", note = "configuración de luces del original", what = "Configura las luces de la arena de copa." }
-STD_tournamentMain = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "arena, sustitutos, cuadro, tres combates y recuperación; sin cuadro animado ni escenas (tournament.md: Hueco)", what = "Flujo completo de la copa: cuadro, combates, resultados y premio." }
+STD_tournamentMain = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "arena, sustitutos, cuadro animado, tres combates y recuperación; sin escenas de victoria, derrota ni podio (tournament.md: Hueco)", what = "Flujo completo de la copa: cuadro, combates, resultados y premio." }
 VS_applyCamera = { status = "no-aplica", note = "aplicación de matrices de cámara del original", what = "Aplica rotación y traslación a la cámara." }
 VS_setCameraOrbit = { status = "falta", what = "Cámara del versus que orbita según la distancia entre luchadores." }
 VS_setCameraYXZ = { status = "falta", what = "Cámara del versus que encuadra a ambos luchadores." }
@@ -1074,7 +1074,7 @@ BTL_removeItemParticles = { status = "no-aplica", note = "limpieza de objetos y 
 BTL_removeAllItemParticles = { status = "no-aplica", note = "limpieza de objetos y memoria del original: el motor libera lo suyo" }
 destroyItemMenuBox = { status = "no-aplica", note = "cuadros de interfaz del original" }
 FISH_applySavedCameraScroll = { system = "fishing", status = "falta", what = "Recupera el desplazamiento de cámara guardado al volver a la pesca.", note = "va con la cámara de la pesca, que falta" }
-checkTournamentMedalConditions = { status = "parcial", note = "la rutina 22 sigue al momento sin copas ganadas; no hay torneos", what = "Mira si toca dar la medalla de los torneos." }
+checkTournamentMedalConditions = { status = "portado", dwe = "game/tournament/src/cup_extras.cpp:1", what = "Mira si toca dar la medalla de los torneos." }
 
 # --- Gaps the module docs list (Hueco rows) on functions the code names
 handleBattleEndBox = { status = "portado", dwe = "apps/screens/src/battle_view.cpp:239", note = "falta el sonido de la cuenta (docs/modulos/game/battle.md)", what = "Cuadro final del combate: objetos, lesión, técnicas, stats y dinero." }

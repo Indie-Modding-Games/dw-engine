@@ -48,6 +48,9 @@ screens:
   # La inscripción a los torneos: las cajas del original y la barra de la elección.
   tournament_schedule:
     styles: [ui/skins/original/tournament_schedule/style]
+  # El cuadro de la copa: sin nombres ni ronda, como el original en inglés.
+  tournament_bracket:
+    styles: [ui/skins/original/tournament_bracket/style]
   # El trueque de objetos: las cajas del original.
   trade_menu:
     styles: [ui/skins/original/trade_menu/style]

@@ -27,9 +27,15 @@ auto rival = dwe::game::tournament::makeRival(*rules, cupNumber, species, random
   reloj (`BattleSetup::timeLimit`): sin huida, sin bolsa, sin premios ni cuidados al acabar. Se juegan en la arena
   (sección `arena` del ruleset): `FieldScene` dibuja su modelo con una cámara propia (`FieldStage::view`,
   `render::MapRenderer::setStageCamera`) y la batalla pisa su rejilla (`FieldStage::ground`).
+- **Cuadro**: `game::tournament::BracketAnimation` es el cuadro del original fotograma a fotograma (20 por segundo):
+  la presentación con la tarjeta del grado, el tablero antes de cada combate y la subida del campeón. Lo dibuja
+  `apps/game/src/tournament_bracket_screen.cpp` en el documento `ui/tournament_bracket` con las imágenes extraídas
+  del jugador (sección `bracket` del ruleset y `data/stadium: bracket`). Sin esas tablas la copa se juega sin cuadro.
 - **Final**: `TournamentAdapter::finish` quita la inscripción (disparador 37), suma al historial (copas ganadas,
-  perdidas, victorias), pone el disparador de la copa ganada (15 + copa) y deja las victorias en la variable 255,
-  que lee el guion.
+  perdidas, victorias), pone el disparador de la copa ganada (15 + copa), da los premios de más del ruleset
+  (`extra_prizes`) y deja las victorias en la variable 255, que lee el guion (sus premios son del guion 214).
+- **Medalla**: la rutina 22 (`TournamentAdapter::awardMedal`, sección `medal`) da la medalla de los torneos y su
+  frase.
 
 ## Paridad con el original
 
@@ -68,7 +74,16 @@ probable y está marcado en el código), **Hueco** (falta).
 | Luchadores al empezar: el partner en +500 y el rival en -500 (salen de ±2500 o ±1800 y la presentación los acerca 2000 o 1300) | `std_main.c: STD_placePlayer1/2`, `STD_runIntro`, `STD_setPostIntroPosition` | `arenaStart` | the arena, where the fighters stand, the orbit camera | Igual (como si se saltara la presentación) |
 | Cámara del combate: a un lado de los luchadores, su distancia × 500 / 200 entre 1000 y 4200 hacia atrás, 1000 de alto, mirando al punto medio 300 sobre el suelo; proyección 500 | `std_main.c: STD_setCameraOrbit`, `std_setup.c: STD_initializeCamera` | `arenaView`, `StoryTournament::showArena` | the arena, where the fighters stand, the orbit camera | Igual |
 | Al acabar la copa, el jugador y el partner vuelven a donde estaban en el mapa | `reinitializeAfterTournament` | `StoryTournament::leaveArena` | - | Suposición: el original recarga el mapa y el guion sigue desde ahí |
-| Presentación con cámara que persigue y nombres, acercamiento de la cámara con el letrero de inicio (distancia mínima de 200 a 4200 y vuelta a 1000), cuadro animado, escenas de victoria/derrota, escena del campeón, música y luces de la arena | `STD_runIntro`, `STD_startCameraChase`, `STD_addBracket`, `STD_addChampionScene`, `STD_initializeLighting` | - | - | Hueco: la copa usa la presentación y la música del combate normal |
+| Presentación con cámara que persigue y nombres, acercamiento de la cámara con el letrero de inicio (distancia mínima de 200 a 4200 y vuelta a 1000), escenas de victoria/derrota, escena del campeón en el podio y luces de la arena | `STD_runIntro`, `STD_startCameraChase`, `STD_addChampionScene`, `STD_initializeLighting` | - | - | Hueco: la copa usa la presentación y la música del combate normal; tras la subida del campeón no hay podio |
+| Tablas del cuadro (filas, salto del perdedor, camino de cada hueco, paleta de cada especie, icono y paleta de su disparo) leídas del ejecutable del jugador | `std_main.c: STD_BRACKET_ROW_Y`, `STD_BRACKET_HOP_Y`, `STD_BRACKET_PATHS`, `STD_DIGIMON_SPRITE_CLUT`, `STD_BRACKET_PROJECTILE_ICONS/CLUTS` | `dwx` (`data/stadium: bracket`), `parseBracketLayout` | data/stadium: the bracket's tables | Igual |
+| Presentación de la copa: tarjeta del grado (`STD_GRADES[copa]`) sobre el tablero oscurecido 100 fotogramas y fundido de 20 (120 en total), música 29 pista 0 | `std_setup.c: STD_tournamentMain`, `std_main.c: STD_addBracketIntro`, `STD_tickBracketIntro` | `BracketAnimation::startIntro`, `TournamentBracketScreen::open` | STD_addBracketIntro: the card shows 100 frames and fades for 20 | Igual (sacado del decomp; sin medir) |
+| Cuadro antes de cada combate: los ocho suben por el árbol, los combates que el partner no juega se resuelven con disparos (doble el del ganador), destello del golpe, el perdedor salta abajo; llega el combate del partner y el tablero se oscurece 3 por fotograma; música 29 pista 1, sonidos 5, 1, 3 y 4 del banco 16; a 20 fotogramas por segundo; el partner no está en el campo | `std_main.c: STD_addBracket`, `STD_updateBracket`, `STD_tickBracketProjectile`, `STD_tickBracketHitFlash`, `STD_removeBracket` | `BracketAnimation`, `TournamentBracketScreen`, `StoryTournament::update` | STD_updateBracket (tres casos) | Igual (sacado del decomp; sin medir) |
+| Dibujo del cuadro: caja gris 0x20 a media transparencia en toda la pantalla, tablero (stdtim 005) en (-128, -97), sprites de 16 × 16 de stdtim 000/001 con la paleta de su especie, espejo según el camino | `std_main.c: STD_drawBracket`, `STD_renderBracketDigimon`, `STD_renderBracketProjectile` | `ui/tournament_bracket` | - (ruta `tournaments`) | Suposición: el brillo (modos semitransparentes del original) se hace con opacidad; la sombra de la presentación (resta de un téxel desconocido) es un negro al 50 % de su brillo |
+| Subida del campeón tras la final (61 fotogramas, música 29 pista 2), fundido a negro de 10 y 11 fotogramas | `std_setup.c: STD_tournamentMain` (`STD_addBracket(2)`) | `BracketAnimation::show(Champion)`, `TournamentBracketScreen` | after a win the champion climbs to the top | Igual (sacado del decomp; sin medir) |
+| Nombres en el cuadro | `STD_drawBracket` (`renderBracketGlyph`, sin dibujo en la versión US) | apariencia moderna: nombre bajo cada hueco y la ronda (`localization/<idioma>/tournament.yaml`) | - | Igual en la apariencia original (sin nombres); la moderna es una mejora |
+| Premios de la copa: los del guion de la arena (dinero y objeto del ganador, del segundo, Giant Meat de participación); un ruleset puede añadir más por copa ganada | guion 214 (sección 0x33) | `extra_prizes` en `tournament.yaml`, `TournamentAdapter::giveExtraPrizes` | extra_prizes: a ruleset's prizes by cup | Igual (la lista del original está vacía) |
+| Copa ganada: disparador 15 + copa, guardado con los disparadores | `utils2.c: startTournament` | `TournamentAdapter::finish`, `cupWon` | - (ruta `tournaments`) | Igual |
+| Medalla de los torneos (rutina 22): grupos de copas (15-20, 21-25, 26-32, 33-36), 100 victorias, las 66 cartas con el juego terminado (50); sólo cuenta la primera condición que se cumple; da la medalla y su frase (sección 0x4db, sin nombre) y espera a que se cierre | `tournament.c: checkTournamentMedalConditions`, `scriptCheckTournamentMedal` | `tournamentMedal`, `TournamentAdapter::awardMedal`, rutina 22 | checkTournamentMedalConditions: the first group won, the wins, the cards | Igual |
 | Rival dibujado en la arena: su especie con las animaciones de los personajes, en -500 mirando al partner (0xC00), quitado al acabar cada combate | `std_setup.c: STD_initializeOpponent`, `std_main.c: STD_placePlayer2`, `removeMapEntities` | `FieldScene::addStageFighter`, `StoryTournament::update` | - (ruta `arena`) | Igual |
 | Reloj en pantalla todo el combate: el panel de TIME.TIM arriba en el centro, «1P» y «COM» a los lados y los segundos en dos cifras, sin el cero de las decenas por debajo de 10 | `std_main.c: STD_renderFighterCounter`, `STD_renderCounterDigits`, `STD_removeFighterCounter` | `BattleView::matchSeconds`, `ui/battle` (`match-clock`), aspecto original | battle view: STD_renderFighterCounter (ruta `clock`) | Igual |
 | Aviso de tiempo agotado: el texto de STDTIM y la caja con el daño hecho por cada luchador | `STD_addTimeoutWindow`, `STD_renderTimeoutText` | - | - | Hueco: el combate acaba con el juicio del tiempo sin el aviso |
@@ -76,7 +91,11 @@ probable y está marcado en el código), **Hueco** (falta).
 
 ## Tests
 
-`dwe_tournament_tests`: las listas de una copa en un guion, el calendario de inscripción (copas abiertas, cinco días,
+`dwe_tournament_tests`: el cuadro (tablas, celdas, presentación, combates con disparos, subida del campeón), las
+secciones `bracket`, `extra_prizes` y `medal` con la medalla de los torneos, las listas de una copa en un guion, el calendario de inscripción (copas abiertas, cinco días,
 corte de las 10:00, día de entrada), la arena (cuál, dónde empiezan los luchadores, la cámara), el sorteo de rivales, el cuadro, los sustitutos, los
 valores y técnicas de un rival y las victorias que ganan cada copa. `dwe_battle_tests` (`tournament_match_tests.cpp`):
 el combate de copa sin premios, la derrota al caer el partner, el reloj y el juicio al acabar el tiempo.
+
+Ruta: `tests/autotest/route-etapa3-tournaments.yaml` (en y es) entra en la copa C y pierde, y en la D al día
+siguiente y la gana (`docs/guides/prueba-vertical.md`).

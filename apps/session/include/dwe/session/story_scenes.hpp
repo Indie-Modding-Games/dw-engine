@@ -163,6 +163,7 @@ struct StoryScenesDesc {
 };
 
 struct StoryScenesContext;
+class TournamentAdapter;
 
 // The story's battles, partner scenes and routines (S6): it publishes start_battle,
 // call_partner_routine and call_routine in the story's script VM and registers the routines, and
@@ -182,6 +183,9 @@ public:
   // How a new game starts instead of the section's chain (--new-game-chain, an autotest route's
   // new_game); call it before the session reads its rules.
   void setNewGameChain(std::optional<NewGameChain> chain);
+  // The tournaments routine 22 gives the medal of (created after the scenes); without it the
+  // routine goes on at once.
+  void attachTournament(TournamentAdapter* tournament);
   // Reads the section and tells the story how a new game starts.
   core::Result<void> readRules(const ruleset::Ruleset& rules) override;
   core::Result<void> startNewGame(GameSession& session) override;

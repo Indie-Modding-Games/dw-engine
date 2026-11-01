@@ -211,9 +211,14 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
       std::make_unique<FishingAdapter>(*game.inventory, *game.story, std::move(tables.fishing));
   game.fishing = fishing.get();
   game.systems.push_back(std::move(fishing));
-  auto tournament = std::make_unique<TournamentAdapter>(
-      TournamentAdapterDesc{.files = &files, .story = game.story, .battle = game.battle});
+  auto tournament =
+      std::make_unique<TournamentAdapter>(TournamentAdapterDesc{.files = &files,
+                                                                .story = game.story,
+                                                                .battle = game.battle,
+                                                                .inventory = game.inventory,
+                                                                .cards = game.cards});
   game.tournament = tournament.get();
+  game.scenes->attachTournament(game.tournament);
   game.systems.push_back(std::move(tournament));
   auto curling = std::make_unique<CurlingAdapter>(CurlingAdapterDesc{.story = game.story});
   game.curling = curling.get();
@@ -230,6 +235,7 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
                                                                   .inventory = game.inventory,
                                                                   .cards = game.cards});
   game.medals = medals.get();
+  game.tournament->attachMedals(game.medals);
   game.systems.push_back(std::move(medals));
   auto registry = std::make_unique<BattleRegistry>();
   game.registry = registry.get();

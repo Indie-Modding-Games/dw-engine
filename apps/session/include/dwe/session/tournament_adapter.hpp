@@ -2,6 +2,8 @@
 
 #include <dwe/assets/map_document.hpp>
 #include <dwe/game/battle/battle.hpp>
+#include <dwe/game/tournament/bracket_animation.hpp>
+#include <dwe/game/tournament/cup_extras.hpp>
 #include <dwe/game/tournament/tournament.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/map_head_lines.hpp>
@@ -14,6 +16,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace dwe::assets {
 class VirtualFileSystem;
@@ -21,6 +24,9 @@ class VirtualFileSystem;
 
 namespace dwe::session {
 
+class CardsAdapter;
+class InventoryAdapter;
+class MedalsAdapter;
 class StoryAdapter;
 
 struct TournamentAdapterDesc {
@@ -29,6 +35,10 @@ struct TournamentAdapterDesc {
   const assets::VirtualFileSystem* files = nullptr;
   StoryAdapter* story = nullptr;
   BattleAdapter* battle = nullptr;
+  // The bag a ruleset's extra prizes go to and the cards the tournaments' medal counts; without
+  // them there are no extra prizes and no medal for the cards.
+  InventoryAdapter* inventory = nullptr;
+  CardsAdapter* cards = nullptr;
 };
 
 // A tournament the story starts (call_routine 6: tournament.c: scriptStartTournament, utils2.c:
@@ -104,10 +114,40 @@ public:
   };
   core::Result<ArenaStage> arenaStage(std::string_view map) const;
 
+  // The bracket the cup shows before each match (data/stadium's tables and tournament.yaml's
+  // bracket); nullptr for an extraction or a ruleset without them.
+  [[nodiscard]] const game::tournament::BracketLayout* bracketLayout() const {
+    return bracketLayout_ ? &*bracketLayout_ : nullptr;
+  }
+  [[nodiscard]] const game::tournament::BracketRules* bracketRules() const {
+    return bracketRules_ ? &*bracketRules_ : nullptr;
+  }
+  // The cup entered's grade card (STD_GRADES); empty when unknown.
+  [[nodiscard]] std::string cardImage() const;
+  // The id of the species with the original's number; empty when unknown.
+  [[nodiscard]] std::string speciesId(std::int32_t number) const;
+
+  // Whether the cup was ever won (its trigger, saved with the story's).
+  [[nodiscard]] bool cupWon(std::int32_t cup) const;
+  // The ruleset's extra prizes of a cup (tournament.yaml: extra_prizes).
+  [[nodiscard]] std::vector<game::tournament::ExtraPrize> extraPrizes(std::int32_t cup) const {
+    return game::tournament::extraPrizesOf(extraPrizes_, cup);
+  }
+
+  // The medals the tournaments' medal is given with (created after this adapter).
+  void attachMedals(MedalsAdapter* medals) { medals_ = medals; }
+  // Story routine 22 (tournament.c: scriptCheckTournamentMedal): the medal earned, if any, given
+  // now, and the key of its line (MAPHEAD, no speaker); nothing when none is earned.
+  core::Result<std::optional<std::string>> awardMedal(GameSession& session);
+
 private:
   [[nodiscard]] const assets::DigimonRow* rowOfNumber(std::int32_t number) const;
   // The active map's script listing and its number.
   core::Result<std::pair<std::uint16_t, core::YamlNode>> mapListing() const;
+  // The key of a line of a MAPHEAD section; empty when unknown.
+  [[nodiscard]] std::string sectionLineKey(std::int32_t section, std::int32_t line);
+  // Gives a won cup's extra prizes.
+  void giveExtraPrizes(std::int32_t cup);
 
   TournamentAdapterDesc desc_;
   std::optional<game::tournament::TournamentRules> rules_;
@@ -126,6 +166,12 @@ private:
   std::optional<MapHeadLineTables> lineTables_;
   // The cups' text keys of the schedule opened last, by cup.
   std::map<std::int32_t, std::string> cupTexts_;
+  std::optional<game::tournament::BracketLayout> bracketLayout_;
+  std::optional<game::tournament::BracketRules> bracketRules_;
+  std::vector<std::string> stadiumGrades_;
+  std::vector<game::tournament::ExtraPrize> extraPrizes_;
+  std::optional<game::tournament::TournamentMedalRules> medalRules_;
+  MedalsAdapter* medals_ = nullptr;
 };
 
 } // namespace dwe::session

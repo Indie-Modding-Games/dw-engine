@@ -224,6 +224,8 @@ core::Result<ScheduleRules> parseScheduleRules(const ruleset::Section& section);
 struct TournamentTable {
   std::vector<std::string> grades;
   std::vector<std::vector<std::int32_t>> days;
+  // The tournaments' medals by checkTournamentMedalConditions' result (TOURNAMENT_MEDAL_IDS).
+  std::vector<std::int32_t> medalIds;
 };
 core::Result<TournamentTable> parseTournamentTable(const core::YamlNode& document);
 
