@@ -940,6 +940,23 @@ function on_action(document, action)
       return true
     end
   end
+  -- The modern look's tabs: left and right on a tab open the page of the next one, as the original
+  -- look's status and tech pages do, and the focus stays on the tabs. Right from the last page's
+  -- tab goes on to Back, and left from Back opens the last page again.
+  if (action == "left" or action == "right") and not original_skin() and not in_battle() then
+    local step = action == "left" and -1 or 1
+    local at = document:get("close"):has_focus() and #pages + 1 or nil
+    for index, page in ipairs(pages) do
+      if document:get("tab-" .. page):has_focus() then
+        at = index
+      end
+    end
+    local next_page = at ~= nil and pages[at + step] or nil
+    if next_page ~= nil then
+      show_page(document, next_page, "tab-" .. next_page)
+      return true
+    end
+  end
   if
     current == "items"
     and ui.setting("ui_skin") == "original"

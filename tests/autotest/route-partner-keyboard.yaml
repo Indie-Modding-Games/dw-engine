@@ -1,7 +1,8 @@
 # The partner's menu with the keyboard, in the original look: from the pause menu, the status page; then the menu's
 # ITEM entry, the item bag (an item's options, using it, moving it to another slot, the sort orders, the drop's question
 # answered no). The original look's partner entry holds the status and tech pages only and its bag has no tabs, as the
-# original's; praising and scolding are field actions there. How to run it: docs/guides/prueba-vertical.md.
+# original's; praising and scolding are field actions there. Right and left on the status page's tabs switch to the
+# tech page and back, in both looks (--ui-skin modern too). How to run it: docs/guides/prueba-vertical.md.
 name: partner-keyboard
 device: keyboard
 timeout: 300
@@ -20,6 +21,12 @@ steps:
   - menu_select: open-partner
   - wait: {shown: partner_menu, seconds: 0.5}
   - screenshot: partner-status
+  # Right and left on the tabs switch the page, in both looks.
+  - tap: {key: right}
+  - expect_setting: {has_class.partner_menu#tab-tech.selected: "true"}
+  - screenshot: partner-tech
+  - tap: {key: left}
+  - expect_setting: {has_class.partner_menu#tab-status.selected: "true"}
   - tap: {key: escape}
   - wait: {hidden: partner_menu, timeout: 5}
   - menu: open

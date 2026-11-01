@@ -1015,4 +1015,40 @@ TEST_CASE("the original skin's player and partner pages switch tabs on a click")
   CHECK(ui->elementHasClass("partner_menu", "tab-status", "selected"));
 }
 
+TEST_CASE("the modern skin's partner tabs switch the page on left and right, as the original's") {
+  Content content;
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "en");
+  auto ui = createUi(files, texts);
+  REQUIRE(ui->skin() == "modern");
+  REQUIRE(ui->loadDocument("partner_menu", idOf("ui/partner_menu/document")));
+  ui->setSetting("ui_skin", std::string{"modern"});
+  input::InputState input{input::defaultActionMap()};
+  ui->show("partner_menu", true);
+  frame(*ui, input);
+  REQUIRE(ui->focusedElementId("partner_menu") == "tab-status");
+
+  // Right through every page, the focus staying on the tabs, then on to Back.
+  for (const std::string_view page : {"tech", "items", "care"}) {
+    CAPTURE(page);
+    press(*ui, input, input::keys::Right);
+    const std::string tab = std::format("tab-{}", page);
+    CHECK(ui->focusedElementId("partner_menu") == tab);
+    CHECK(ui->elementHasClass("partner_menu", tab, "selected"));
+    CHECK_FALSE(ui->elementHasClass("partner_menu", std::format("page-{}", page), "hidden"));
+  }
+  press(*ui, input, input::keys::Right);
+  CHECK(ui->focusedElementId("partner_menu") == "close");
+  CHECK(ui->elementHasClass("partner_menu", "tab-care", "selected"));
+  // Left from Back opens the last page again, and on back to the first.
+  press(*ui, input, input::keys::Left);
+  CHECK(ui->elementHasClass("partner_menu", "tab-care", "selected"));
+  for (int step = 0; step < 3; ++step) {
+    press(*ui, input, input::keys::Left);
+  }
+  CHECK(ui->focusedElementId("partner_menu") == "tab-status");
+  CHECK(ui->elementHasClass("partner_menu", "tab-status", "selected"));
+  CHECK(ui->elementHasClass("partner_menu", "page-tech", "hidden"));
+}
+
 } // namespace dwe::ui
