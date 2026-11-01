@@ -1,13 +1,18 @@
 #include "curling_screen.hpp"
 
+#include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/math.hpp>
 #include <dwe/input/input_state.hpp>
+#include <dwe/render/map_camera.hpp>
 #include <dwe/render/map_renderer.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <format>
 #include <numbers>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -44,6 +49,14 @@ constexpr std::string_view OpponentScoreSetting = "curling_hud.opponent";
 constexpr std::string_view StatusSetting = "curling_hud.status";
 constexpr std::string_view PromptSetting = "curling_hud.prompt";
 constexpr std::string_view PowerSetting = "curling_hud.power";
+// KAR_tickHintBox: the hint page's four lines (the speaker's name, then three), as text keys.
+constexpr std::array<std::string_view, 4> HintSettings{
+    "curling_hud.hint_name", "curling_hud.hint_1", "curling_hud.hint_2", "curling_hud.hint_3"};
+// KAR_drawHintPagePenguinmon, KAR_drawHintPageMetalMamemon: the opponent's lines among the texts
+// (KAR_D_8005AF58, KAR_D_8005B318), four a page.
+constexpr std::string_view FirstOpponentLines = "kar.penguinmon_dialogue.{:04}";
+constexpr std::string_view SecondOpponentLines = "kar.metalmamemon_dialogue.{:04}";
+constexpr std::int32_t HintLines = 4;
 constexpr double Hidden = -1.0;
 
 glm::vec4 colorOf(std::size_t team) {
@@ -105,6 +118,16 @@ std::string_view statusOf(const game::curling::Match& match) {
   }
 }
 
+// The first line of a hint page among the opponent's lines (KAR_D_8005B04C: the groups' pages one
+// after the other).
+std::int32_t hintLine(std::int32_t group, std::int32_t page) {
+  std::int32_t pages = 0;
+  for (std::int32_t index = 0; index < group; ++index) {
+    pages += game::curling::HintPages.at(static_cast<std::size_t>(index));
+  }
+  return (pages + page - 1) * HintLines;
+}
+
 } // namespace
 
 CurlingScreen::CurlingScreen(session::CurlingAdapter& curling, session::GameSession& session,
@@ -122,8 +145,10 @@ bool CurlingScreen::start(FieldScene& scene) {
   frameSeconds_ = 0.0;
   buttons_ = {};
   ui_->show(CurlingHudDocument, false);
+  shownRings_ = UnknownRings;
   showHud();
   showMarkers(scene);
+  showRings(scene, 0);
   return true;
 }
 
@@ -174,6 +199,7 @@ void CurlingScreen::frame(FieldScene& scene) {
     return;
   }
   showMarkers(scene);
+  showRings(scene, match->litRings());
   showHud();
 }
 
@@ -192,11 +218,49 @@ void CurlingScreen::follow(FieldScene& scene, const CurlingEvent& event) {
     field.shiftCameraByScript(to - field.scriptCamera().value_or(ground));
     break;
   }
+  case CurlingEvent::Kind::Scroll:
+    scroll(scene, event.a, event.b);
+    break;
   default:
-    // The throwers' animations, the rolling sound's stop and the hint pages' text are not drawn
-    // yet (docs/modulos/game/curling.md: Hueco).
+    // The throwers' animations and the rolling sound's stop are not played yet
+    // (docs/modulos/game/curling.md: Hueco).
     break;
   }
+}
+
+void CurlingScreen::scroll(FieldScene& scene, std::int32_t dx, std::int32_t dy) {
+  // moveCameraByOffset: the view moves by background pixels and stays inside the background
+  // (cameraIsAtEdge keeps cameraX in [0, width - 320]); the held camera moves to the ground point
+  // that ends up in the centre.
+  game::field::Field& field = scene.field();
+  const render::MapCamera& camera = scene.mapCamera();
+  const glm::vec3 focus = field.scriptCamera().value_or(field.player().position);
+  const std::optional<render::BackgroundPoint> at = camera.projectToBackground(focus);
+  if (!at) {
+    return;
+  }
+  const glm::vec2 half = render::OriginalScreenSize * 0.5F;
+  const glm::vec2 far = glm::max(half, camera.desc().backgroundSize - half);
+  const glm::vec2 pixel =
+      glm::clamp(at->pixel + glm::vec2{static_cast<float>(dx), static_cast<float>(dy)}, half, far);
+  if (const auto ground = camera.pickGround(camera.backgroundToWindow(pixel), focus.y)) {
+    field.shiftCameraByScript(*ground - focus);
+  }
+}
+
+void CurlingScreen::showRings(FieldScene& scene, std::uint32_t lit) {
+  // KAR_updateRingMarkers: setMapObjectsFlag shows a lit ring's objects and hides the others.
+  if (lit == shownRings_) {
+    return;
+  }
+  const std::span<const game::curling::Ring> rings = curling_->rings();
+  for (std::size_t ring = 0; ring < rings.size(); ++ring) {
+    const bool shown = ((lit >> ring) & 1U) != 0;
+    for (const std::int32_t object : rings.at(ring).objects) {
+      scene.setMapObjectFlag(object, shown ? 0 : assets::MapObjectInstance::HiddenFlag);
+    }
+  }
+  shownRings_ = lit;
 }
 
 void CurlingScreen::showMarkers(FieldScene& scene) const {
@@ -257,9 +321,22 @@ void CurlingScreen::showHud() {
                      match->throwingTeam() == static_cast<std::int32_t>(game::curling::PlayerTeam);
   const std::int32_t limit = std::max(curling_->powerLimit(), 1);
   ui_->setSetting(PowerSetting, gauge ? static_cast<double>(match->power()) / limit : Hidden);
+  const auto hint = match->hint();
+  const std::int32_t first = hint ? hintLine(hint->first, hint->second) : 0;
+  for (std::size_t line = 0; line < HintSettings.size(); ++line) {
+    std::string key;
+    if (hint) {
+      const std::int32_t at = first + static_cast<std::int32_t>(line);
+      key = match->opponent() == game::curling::Opponent::Penguinmon
+                ? std::format(FirstOpponentLines, at)
+                : std::format(SecondOpponentLines, at);
+    }
+    ui_->setSetting(HintSettings.at(line), key);
+  }
 }
 
 void CurlingScreen::end(FieldScene& scene) {
+  showRings(scene, 0);
   running_ = false;
   scene.setExtraMarkers({});
   ui_->hide(CurlingHudDocument);

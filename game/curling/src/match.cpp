@@ -60,6 +60,13 @@ constexpr std::int32_t HeldOffset = 0x50;
 constexpr std::int32_t ScoreLine = -0x564;
 constexpr std::int32_t OpponentRing = 0x10;
 constexpr std::int32_t RingMask = 0xF;
+// KAR_updateRingMarkers: the rings with map objects (MAIN_D_80134A48).
+constexpr std::size_t MarkedRings = 4;
+// KAR_handleAimScroll: the turn step past which Left and Right also scroll, and the pixels a frame
+// across and along the rink.
+constexpr std::int32_t ScrollTurnStep = 10;
+constexpr std::int32_t ScrollAcross = 8;
+constexpr std::int32_t ScrollAlong = 10;
 constexpr std::int32_t MinusRing = 3;
 // KAR_tickScoreTally: a scoring stone blinks 8 times, 10 frames apart after 12.
 constexpr std::int32_t BlinkFirst = 0xB;
@@ -250,6 +257,8 @@ std::span<const CurlingEvent> Match::tick(const CurlingButtons& buttons, ruleset
   }
   // KAR_tick.
   tickMatchState(buttons, random);
+  handleAimScroll(buttons);
+  updateRingMarkers();
   // KAR_renderReadyPrompt's counter.
   if (state_ == static_cast<std::int32_t>(Phase::Ready)) {
     if (blink_++ >= ReadyTop) {
@@ -265,6 +274,57 @@ std::span<const CurlingEvent> Match::tick(const CurlingButtons& buttons, ruleset
   }
   placeHeldStone();
   return events_;
+}
+
+void Match::handleAimScroll(const CurlingButtons& buttons) {
+  // KAR_handleAimScroll: while the player aims, Up and Down scroll the view; Left and Right too
+  // once the aim turns fast (ten frames held) or a hint is open.
+  if (state_ != static_cast<std::int32_t>(Phase::Aim) || team_ != 0) {
+    return;
+  }
+  std::int32_t dx = 0;
+  std::int32_t dy = 0;
+  if (turnStep_ >= ScrollTurnStep || turnStep_ <= -ScrollTurnStep || box_ != 0) {
+    dx += (buttons.left ? -ScrollAcross : 0) + (buttons.right ? ScrollAcross : 0);
+  }
+  dy += (buttons.up ? -ScrollAlong : 0) + (buttons.down ? ScrollAlong : 0);
+  if (dx != 0 || dy != 0) {
+    emit(CurlingEvent::Kind::Scroll, dx, dy);
+  }
+}
+
+void Match::updateRingMarkers() {
+  // KAR_updateRingMarkers: a ring lights while a sliding stone of either team is over it (each
+  // stone lights the first ring not yet lit that holds it), and in the tally while the counted
+  // stone shows in the ring it newly scored in.
+  litRings_ = 0;
+  const std::size_t rings = std::min(rules_->rings.size(), MarkedRings);
+  if (state_ == static_cast<std::int32_t>(Phase::Rolling)) {
+    for (std::size_t team = 0; team < ObstacleTeam; ++team) {
+      for (const Stone& stone : teams_.at(team).stones) {
+        if (stone.state <= 0 || stone.speed <= 0) {
+          continue;
+        }
+        for (std::size_t zone = 0; zone < rings; ++zone) {
+          const Ring& ring = rules_->rings.at(zone);
+          const std::uint32_t bit = 1U << zone;
+          if ((litRings_ & bit) == 0 &&
+              distance(stone.position.x - ring.x, stone.position.z - ring.z) < ring.radius) {
+            litRings_ |= bit;
+            break;
+          }
+        }
+      }
+    }
+  } else if (state_ == static_cast<std::int32_t>(Phase::Tally) && tallyStone_ >= 0) {
+    // The original reads the slot before the order's first when none is left (-1); here nothing.
+    const Stone& stone = stoneAt(thrownOrder_.at(static_cast<std::size_t>(tallyStone_)));
+    const std::int32_t ring = stone.ring & RingMask;
+    if (stone.ring != stone.previousRing && stone.state <= Blinking && ring != 0 &&
+        std::cmp_less_equal(ring, rings)) {
+      litRings_ = 1U << static_cast<std::uint32_t>(ring - 1);
+    }
+  }
 }
 
 void Match::placeHeldStone() {

@@ -106,7 +106,91 @@ TEST_CASE("curling.yaml: the section reads with the original's numbers") {
   CHECK(rules.rings.at(0).radius == 145);
   CHECK(rules.rings.at(2).points == -2);
   CHECK(rules.rings.at(3).x == -400);
+  // KAR_D_8005B450: the map objects of each ring.
+  CHECK(rules.rings.at(0).objects == std::vector<std::int32_t>{25});
+  CHECK(rules.rings.at(1).objects == std::vector<std::int32_t>{19, 20, 21, 22});
+  CHECK(rules.rings.at(3).objects == std::vector<std::int32_t>{13, 14, 15});
   CHECK(rules.perfectScore == 10);
+}
+
+TEST_CASE("updateRingMarkers: sliding stones light the first free ring they are over") {
+  const CurlingRules rules = originalRules();
+  Random random{7};
+  Match match{rules, Opponent::Penguinmon, random};
+  auto teams = emptyRink();
+  // Two stones sliding over the centre: the first lights it, the second the ring around it; a
+  // resting stone on the left target lights nothing.
+  teams.at(PlayerTeam).stones.at(0) = sliding({.x = 0, .z = -1718}, 300, Up);
+  teams.at(OpponentTeam).stones.at(0) = sliding({.x = 20, .z = -1700}, 300, Up);
+  teams.at(OpponentTeam).stones.at(1) = sliding({.x = -400, .z = -2318}, 0, 0);
+  match.setScene(teams, Phase::Rolling, PlayerTeam, 0);
+  CHECK(match.litRings() == 0);
+  match.tick({}, random);
+  CHECK(match.litRings() == 0b0011);
+
+  // Out of the rolling and the tally, every ring is dark.
+  match.setScene(teams, Phase::Select, PlayerTeam, 1);
+  match.tick({}, random);
+  CHECK(match.litRings() == 0);
+}
+
+TEST_CASE("updateRingMarkers: the tally lights the ring a stone newly scores in as it blinks") {
+  const CurlingRules rules = originalRules();
+  Random random{7};
+  Match match{rules, Opponent::Penguinmon, random};
+  auto teams = emptyRink();
+  teams.at(PlayerTeam).stones.at(0) = sliding({.x = -400, .z = -2318}, 0, 0);
+  for (std::size_t index = 1; index < StonesPerTeam; ++index) {
+    teams.at(PlayerTeam).stones.at(index).state = Waiting;
+    teams.at(OpponentTeam).stones.at(index).state = Waiting;
+  }
+  teams.at(OpponentTeam).stones.at(0).state = Waiting;
+  match.setScene(teams, Phase::Rings, PlayerTeam, 0);
+  std::int32_t lit = 0;
+  std::int32_t dark = 0;
+  for (std::int32_t frame = 0; frame < FrameCap && match.phase() != Phase::NextThrower; ++frame) {
+    match.tick({}, random);
+    if (match.phase() != Phase::Tally) {
+      continue;
+    }
+    CHECK((match.litRings() & ~0b1000U) == 0);
+    (match.litRings() != 0 ? lit : dark) += 1;
+  }
+  CHECK(lit > 0);
+  CHECK(dark > 0);
+  CHECK(match.litRings() == 0);
+}
+
+TEST_CASE("handleAimScroll: Up and Down scroll while the player aims, Left and Right once fast") {
+  const CurlingRules rules = originalRules();
+  Random random{7};
+  Match match{rules, Opponent::Penguinmon, random};
+  auto teams = emptyRink();
+  teams.at(PlayerTeam).stones.at(0).state = 0;
+  match.setScene(teams, Phase::Aim, PlayerTeam, 0);
+
+  CurlingButtons up;
+  up.up = true;
+  auto events = match.tick(up, random);
+  CHECK(Heard{{events.begin(), events.end()}}.has(CurlingEvent::Kind::Scroll, 0, -10));
+
+  CurlingButtons left;
+  left.left = true;
+  for (std::int32_t frame = 1; frame < 10; ++frame) {
+    events = match.tick(left, random);
+    CHECK(std::ranges::none_of(events, [](const CurlingEvent& event) {
+      return event.kind == CurlingEvent::Kind::Scroll;
+    }));
+  }
+  events = match.tick(left, random);
+  CHECK(Heard{{events.begin(), events.end()}}.has(CurlingEvent::Kind::Scroll, -8, 0));
+
+  // The opponent's aim scrolls nothing.
+  teams.at(OpponentTeam).stones.at(0).state = 0;
+  match.setScene(teams, Phase::Aim, OpponentTeam, 0);
+  events = match.tick(up, random);
+  CHECK(std::ranges::none_of(
+      events, [](const CurlingEvent& event) { return event.kind == CurlingEvent::Kind::Scroll; }));
 }
 
 TEST_CASE("setupMatch: the racks and the obstacles take the original's draws in order") {

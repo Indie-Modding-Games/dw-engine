@@ -1,7 +1,7 @@
 # The stones game (kar.c). {player} and {opponent} are the scores.
 score: "You {player}  -  {opponent} Rival"
-prompt.play: "Play"
-prompt.rules: "Hear the rules"
+prompt.play: "Start Game"
+prompt.rules: "Explain Game"
 status.select: "Pick a stone with Up and Down, then confirm."
 status.aim: "Turn the throw with Left and Right, then confirm."
 status.power: "Confirm when the gauge is where you want it."

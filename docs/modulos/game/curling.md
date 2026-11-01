@@ -19,7 +19,7 @@ if (match.finished()) { /* match.result(): 2, 1 o 0 */ }
   segundo). `session::CurlingAdapter` crea la partida y `apps/game/src/curling_screen.cpp` la juega en lugar del
   campo.
 - **Controles** (teclado primero): Arriba/Abajo (W/S o flechas) eligen piedra y opción, Izquierda/Derecha (A/D o
-  flechas) giran el tiro, Intro o Espacio confirman (piedra, dirección y fuerza cuando el indicador está donde se quiere).
+  flechas) giran el tiro (Arriba/Abajo desplazan la vista mientras se apunta), Intro o Espacio confirman (piedra, dirección y fuerza cuando el indicador está donde se quiere).
   En mando, la cruceta y el botón de confirmar.
 - **Final**: el resultado va a la variable 121 (`KAR_finishMatch`): 2 si el jugador gana con 10 puntos o más, 1 si
   gana, 0 si pierde o empata. El guion hace el resto: con 2 da una medalla (una sola vez) y, si el jugador
@@ -41,10 +41,12 @@ probable y está marcado en el código), **Hueco** (falta).
 | Partida: colocar, pregunta jugar/reglas, "Preparados", elegir, apuntar, fuerza, lanzar, recuento, turno del que menos ha tirado | `KAR_tickMatchState`, `KAR_tickYesNoPrompt`, `KAR_beginAiming`, `KAR_select*Stone`, `KAR_beginThrow` | `Match::tickMatchState` | whole match | Igual |
 | Rival: tiro directo si hay paso, si no rebote, piedra en anillo o al azar; fuerza inversa al rozamiento menos 600 o 500 | `KAR_chooseOpponentShot`, `KAR_findClearShotAngle`, `KAR_aimBankShot`, `KAR_aimAtStoneInRing`, `KAR_aimAtRandomStone`, `KAR_computeThrowPower` | `match.cpp` | whole match | Igual |
 | Resultado 2/1/0 en la variable 121 | `KAR_finishMatch` | `Match::result`, `CurlingAdapter::finish` | finish result | Igual |
-| Piedras, diana y lanzadores dibujados | `KAR_renderScene`, `KAR_updateRingMarkers` | `CurlingScreen::showMarkers` | - | Hueco: las piedras son marcadores de color sobre el mapa; sin modelos, sin giro, sin marcas de la diana |
-| Marcador, indicador de fuerza, pregunta, letrero de "Preparados" | `KAR_renderScores`, `KAR_renderPowerMeter`, `KAR_tickYesNoPrompt`, `KAR_renderReadyPrompt` | documento `curling_hud` | - | Suposición: textos propios en un panel, no los sprites del original |
-| Páginas de ayuda de las reglas | `KAR_drawHintPage*` | - | - | Hueco: se pasan con confirmar, pero su texto no se muestra |
-| Cámara que se desplaza con la cruceta al apuntar; flecha de puntería | `KAR_handleAimScroll`, `KAR_renderAimArrow` | marcador delante de la piedra | - | Hueco: la cámara solo salta a donde la manda la partida |
+| Piedras y lanzadores dibujados | `KAR_renderScene` | `CurlingScreen::showMarkers` | - | Hueco: las piedras son marcadores de color sobre el mapa; sin modelos ni giro |
+| Anillos de la diana que se iluminan: los que pisa una piedra en marcha (cada piedra enciende el primero libre que la contiene) y, en el recuento, el anillo nuevo de la piedra contada mientras parpadea | `KAR_updateRingMarkers` | `Match::updateRingMarkers`, `CurlingScreen::showRings`; los objetos del mapa de cada anillo en `rules/original/curling.yaml` | updateRingMarkers (dos) | Igual |
+| Marcador, indicador de fuerza, pregunta, letrero de "Preparados" | `KAR_renderScores`, `KAR_renderPowerMeter`, `KAR_tickYesNoPrompt`, `KAR_renderReadyPrompt` | documento `curling_hud` | - | Suposición: textos en un panel (las opciones de la pregunta con las palabras del original), no los sprites del original |
+| Páginas de ayuda de las reglas: el nombre del rival y tres líneas por página, del primer o el segundo rival | `KAR_tickHintBox`, `KAR_drawHintPage*` | `CurlingScreen::showHud` (textos `kar.*_dialogue`) | - | Suposición: el texto del original en la caja de diálogo de la historia, en su sitio (la del original está en el mismo); las cuatro líneas salen a la vez (el original escribe una por cuadro); las líneas nombran los botones del mando, como el original |
+| Al apuntar, Arriba/Abajo desplazan la vista 10 píxeles por cuadro e Izquierda/Derecha 8 cuando el giro ya va rápido (10 cuadros pulsado) o hay ayuda abierta, sin salir del fondo | `KAR_handleAimScroll`, `moveCameraByOffset` | `Match::handleAimScroll`, `CurlingScreen::scroll` | handleAimScroll | Igual |
+| Flecha de puntería | `KAR_renderAimArrow` | marcador delante de la piedra | - | Hueco: un marcador, no la flecha del original |
 | Animaciones de los lanzadores y del compañero | `KAR_tickMatchState`, `KAR_finishMatch` (`startAnimation`) | eventos `Animation` | - | Hueco: los personajes no se mueven |
 
 ## Tests

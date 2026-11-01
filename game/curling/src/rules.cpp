@@ -30,6 +30,7 @@ constexpr std::string_view XKey = "x";
 constexpr std::string_view ZKey = "z";
 constexpr std::string_view RadiusKey = "radius";
 constexpr std::string_view PointsKey = "points";
+constexpr std::string_view ObjectsKey = "objects";
 constexpr std::string_view PerfectScoreKey = "perfect_score";
 // The types a stone can have (KAR_D_8005AB8C holds 0 to 3; type 3 is pegged).
 constexpr std::int32_t TypeCount = 4;
@@ -51,11 +52,18 @@ std::array<std::int32_t, Size> fixed(YamlReader& reader, const YamlNode& parent,
 
 void readRings(YamlReader& reader, const YamlNode& root, CurlingRules& rules) {
   for (const YamlNode& ring : reader.sequence(reader.field(root, RingsKey), RingsKey)) {
-    if (reader.expectKeys(ring, RingsKey, {XKey, ZKey, RadiusKey, PointsKey})) {
-      rules.rings.push_back({.x = integer(reader, ring, XKey),
-                             .z = integer(reader, ring, ZKey),
-                             .radius = integer(reader, ring, RadiusKey),
-                             .points = integer(reader, ring, PointsKey)});
+    if (!reader.expectKeys(ring, RingsKey, {XKey, ZKey, RadiusKey, PointsKey}, {ObjectsKey})) {
+      continue;
+    }
+    Ring& read = rules.rings.emplace_back(Ring{.x = integer(reader, ring, XKey),
+                                               .z = integer(reader, ring, ZKey),
+                                               .radius = integer(reader, ring, RadiusKey),
+                                               .points = integer(reader, ring, PointsKey),
+                                               .objects = {}});
+    if (const YamlNode* objects = ring.find(ObjectsKey); objects != nullptr) {
+      for (const YamlNode& object : reader.sequence(*objects, ObjectsKey)) {
+        read.objects.push_back(reader.integer<std::int32_t>(object));
+      }
     }
   }
 }

@@ -6,6 +6,7 @@
 #include <dwe/session/game_session.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <cstdint>
 #include <string_view>
 
 namespace dwe::input {
@@ -41,6 +42,8 @@ public:
 private:
   void frame(FieldScene& scene);
   void follow(FieldScene& scene, const game::curling::CurlingEvent& event);
+  void scroll(FieldScene& scene, std::int32_t dx, std::int32_t dy);
+  void showRings(FieldScene& scene, std::uint32_t lit);
   void showMarkers(FieldScene& scene) const;
   void showHud();
   void end(FieldScene& scene);
@@ -54,6 +57,9 @@ private:
   double frameSeconds_ = 0.0;
   // What the buttons did since the last match frame.
   game::curling::CurlingButtons buttons_;
+  // The rings whose map objects show now (Match::litRings); none known before the first frame.
+  static constexpr std::uint32_t UnknownRings = ~0U;
+  std::uint32_t shownRings_ = UnknownRings;
 };
 
 } // namespace dwe::app

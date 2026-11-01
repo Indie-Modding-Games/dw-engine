@@ -32,6 +32,11 @@ public:
   // The power gauge's top (KAR_tickMatchState), 0 without rules.
   [[nodiscard]] std::int32_t powerLimit() const { return rules_ ? rules_->powerLimit : 0; }
   [[nodiscard]] const game::curling::Match* match() const { return match_ ? &*match_ : nullptr; }
+  // The target's rings and the map objects that light them, none without rules.
+  [[nodiscard]] std::span<const game::curling::Ring> rings() const {
+    return rules_ ? std::span<const game::curling::Ring>{rules_->rings}
+                  : std::span<const game::curling::Ring>{};
+  }
   // One frame of the original (20 a second); nothing when no match runs.
   std::span<const game::curling::CurlingEvent> play(GameSession& session,
                                                     const game::curling::CurlingButtons& buttons);

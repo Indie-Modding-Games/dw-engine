@@ -36,6 +36,9 @@ struct Ring {
   std::int32_t z = 0;
   std::int32_t radius = 0;
   std::int32_t points = 0;
+  // The map objects that light the ring while a stone slides over it or scores in it
+  // (KAR_D_8005B450: KAR_updateRingMarkers shows them, else hides them).
+  std::vector<std::int32_t> objects;
 };
 
 struct CurlingRules {
@@ -163,6 +166,9 @@ struct CurlingEvent {
     Animation,
     // The camera goes to a: x, b: z (tickCameraMoveTo; done at once here).
     Camera,
+    // The player scrolls the view while aiming, by a, b background pixels (KAR_handleAimScroll,
+    // moveCameraByOffset).
+    Scroll,
     // The match is over: a the result (KAR_finishMatch).
     Finished,
   };
@@ -209,6 +215,8 @@ public:
   [[nodiscard]] std::int32_t counter() const { return counter_; }
   // Whether "Ready" shows this frame (KAR_renderReadyPrompt).
   [[nodiscard]] bool readyShown() const { return state_ == 3 && (blink_ & 8) != 0; }
+  // Bit i set: ring i's map objects show this frame (KAR_updateRingMarkers).
+  [[nodiscard]] std::uint32_t litRings() const { return litRings_; }
   [[nodiscard]] bool finished() const {
     return state_ == static_cast<std::int32_t>(Phase::Finished);
   }
@@ -246,6 +254,8 @@ private:
   void tickMatchState(const CurlingButtons& buttons, ruleset::Random& random);
   void tickStones();
   void placeHeldStone();
+  void handleAimScroll(const CurlingButtons& buttons);
+  void updateRingMarkers();
   void checkStonesStopped();
   void updateCollisions();
   void bounceOffWall();
@@ -306,6 +316,7 @@ private:
   // The player's last thrown stone as the second opponent reads it (KAR_D_80063914).
   Stone lastPlayerStone_;
   std::int32_t result_ = 0;
+  std::uint32_t litRings_ = 0;
 };
 
 } // namespace dwe::game::curling

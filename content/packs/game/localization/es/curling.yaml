@@ -1,7 +1,7 @@
 # El juego de las piedras (kar.c). {player} y {opponent} son los puntos.
 score: "Tú {player}  -  {opponent} Rival"
 prompt.play: "Jugar"
-prompt.rules: "Oír las reglas"
+prompt.rules: "Cómo se juega"
 status.select: "Elige una piedra con Arriba y Abajo y confirma."
 status.aim: "Gira el tiro con Izquierda y Derecha y confirma."
 status.power: "Confirma cuando el indicador esté donde quieras."

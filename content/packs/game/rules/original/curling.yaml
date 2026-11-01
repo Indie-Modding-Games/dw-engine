@@ -25,11 +25,13 @@ opponent_power_offsets: [600, 500]
 
 # KAR_classifyStoneRings y KAR_tickScoreTally: los anillos de la diana (centro x, z, radio) y sus puntos; una piedra
 # cuenta en el primero que la contiene. Solo cuentan las piedras pasada la línea (z < -1380).
+# objects: los objetos del mapa que iluminan el anillo mientras una piedra pasa por él o puntúa en él
+# (KAR_updateRingMarkers; ocultos el resto del tiempo).
 rings:
-  - {x: 0, z: -1718, radius: 145, points: 2}
-  - {x: 0, z: -1718, radius: 375, points: 1}
-  - {x: 400, z: -2318, radius: 205, points: -2}
-  - {x: -400, z: -2318, radius: 205, points: 2}
+  - {x: 0, z: -1718, radius: 145, points: 2, objects: [25]}
+  - {x: 0, z: -1718, radius: 375, points: 1, objects: [19, 20, 21, 22]}
+  - {x: 400, z: -2318, radius: 205, points: -2, objects: [16, 17, 18]}
+  - {x: -400, z: -2318, radius: 205, points: 2, objects: [13, 14, 15]}
 
 # KAR_finishMatch: con más puntos que el rival se gana; con al menos 10, victoria perfecta.
 perfect_score: 10

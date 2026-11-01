@@ -2,14 +2,23 @@
 <head>
 	<title>Stones game</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="../story_textbox/structure.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
 	<script src="logic.lua"></script>
 </head>
 <body>
 	<div id="score"></div>
+	<div id="box" class="original-look hidden">
+		<div id="rows">
+			<div class="row color-7" id="hint_name"></div>
+			<div class="row color-1" id="hint_1"></div>
+			<div class="row color-1" id="hint_2"></div>
+			<div class="row color-1" id="hint_3"></div>
+		</div>
+	</div>
 	<div id="panel">
 		<div id="status"></div>
-		<div id="prompt">
+		<div id="question">
 			<div id="play" text-key="curling.prompt.play"></div>
 			<div id="rules" text-key="curling.prompt.rules"></div>
 		</div>

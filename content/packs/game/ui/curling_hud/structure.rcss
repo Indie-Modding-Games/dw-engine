@@ -1,5 +1,9 @@
 /* The stones game's information (kar.c: KAR_renderScores, KAR_renderPowerMeter, KAR_tickYesNoPrompt): the two
-   scores at the top, and at the bottom what the player does now, the play or rules prompt and the power gauge. */
+   scores at the top, and at the bottom what the player does now, the play or rules prompt and the power gauge.
+
+   The hint pages (KAR_tickHintBox) are the story's speech box (#box, ../story_textbox/structure.rcss): the hint box
+   opens at -130, 42, 262 x 59 from the screen's centre (MAIN_D_80134A28), the speech box's place, with four rows: the
+   speaker's name in text colour 7, then three lines in colour 1 (KAR_drawHintPagePenguinmon: setTextColor). */
 
 body { pointer-events: none; }
 #score {
@@ -25,8 +29,8 @@ body { pointer-events: none; }
 	border-radius: 6dp;
 	color: #ffffff;
 }
-#prompt div { padding: 2dp 8dp; }
-#prompt div.selected { background-color: #f0c04066; }
+#question div { padding: 2dp 8dp; }
+#question div.selected { background-color: #f0c04066; }
 #track {
 	height: 12dp;
 	margin-top: 6dp;

@@ -97,11 +97,11 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 11 | 10 | 0 | 1 | 91 % |
 | [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 100 | 48 | 4 | 48 | 50 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 91 | 0 | 0 | 91 | 0 % |
-| [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 38 | 32 | 3 | 3 | 88 % |
+| [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 39 | 38 | 1 | 0 | 99 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 31 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 49 | 49 | 0 | 0 | 100 % |
-| **Total** | 1400 funciones a portar | 1400 | 1220 | 24 | 156 | 88 % |
+| **Total** | 1401 funciones a portar | 1401 | 1226 | 22 | 153 | 88 % |
 
 ## Batalla
 
@@ -427,16 +427,11 @@ El minijuego de piedras sobre hielo.
 
 Ficheros del decomp: `kar/kar.c`, `main/kar.c`.
 
-Portado 32, parcial 3, falta 3.
+Portado 38, parcial 1, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `KAR_tick` | `kar/kar.c:973` | parcial | Bucle principal del minijuego de curling por cuadro. | `apps/game/src/curling_screen.cpp:1` · la partida corre a 20 cuadros por segundo; las piedras se dibujan como marcadores |
-| `KAR_handleAimScroll` | `kar/kar.c:1215` | falta (citada en docs) | Desplaza la cámara con la cruceta mientras el jugador apunta. | la cámara solo va a donde la manda la partida |
-| `KAR_updateRingMarkers` | `kar/kar.c:1248` | falta (citada en docs) | Marca en qué anillo de la diana está cada piedra. | sin marcas en la diana |
-| `KAR_tickYesNoPrompt` | `kar/kar.c:2032` | parcial | Pregunta sí/no del minijuego (confirmar tiro o jugar otra vez). | `game/curling/src/match.cpp:1` · la pregunta se muestra con texto propio |
-| `KAR_tickHintBox` | `kar/kar.c:2085` | parcial | Anima el cuadro de ayuda con las instrucciones del curling. | `game/curling/src/match.cpp:1` · las páginas de ayuda se pasan, pero su texto no se muestra |
-| `checkCurlingMap` | `main/kar.c:8` | falta | Al entrar en el mapa de curling carga el minijuego. | el motor no tiene el minijuego |
+| `KAR_tick` | `kar/kar.c:973` | parcial | Bucle principal del minijuego de curling por cuadro. | `apps/game/src/curling_screen.cpp:1` · la partida corre a 20 cuadros por segundo; las piedras se dibujan como marcadores, sin sus modelos |
 
 ## Audio
 
@@ -464,6 +459,6 @@ Portado 49, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-1038 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+1037 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->
