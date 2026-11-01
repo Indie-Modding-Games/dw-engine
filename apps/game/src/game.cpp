@@ -1,6 +1,7 @@
 #include "game.hpp"
 
 #include <dwe/assets/asset_id.hpp>
+#include <dwe/assets/character_model.hpp>
 #include <dwe/audio/output.hpp>
 #include <dwe/content/game_content.hpp>
 #include <dwe/core/fixed_step.hpp>
@@ -8,6 +9,7 @@
 #include <dwe/core/log_ring.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/debug/debug_ui.hpp>
+#include <dwe/game/partner/field_animation.hpp>
 #include <dwe/game/save/slots.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/input_state.hpp>
@@ -570,6 +572,10 @@ int runGame(const Options& requested) {
   if (!portraitRaise)
     core::logWarning("Status portrait: {}", portraitRaise.error().message);
   std::string portraitSpecies;
+  // The partner's animation names (models/partner.yaml): the same clip ids for every species.
+  auto portraitClips = assets::loadCharacterModel(files, *assets::AssetId::parse("models/partner"));
+  if (!portraitClips)
+    core::logWarning("Status portrait: {}", portraitClips.error().message);
   auto playerPortrait = PartnerPortrait::create(**renderer);
   if (playerPortrait) {
     if (auto bound =
@@ -1360,7 +1366,12 @@ int runGame(const Options& requested) {
           core::logWarning("Status portrait {}: no raise-table placement", species);
         }
       }
-      portraitScenes.push_back((*portrait)->scene());
+      // An addition: the model plays its idle, or the gesture of its first need, as on the field.
+      const auto animation = game::partner::statusAnimation(flow.playing()->partnerConditions());
+      const auto clip =
+          portraitClips ? portraitClips->clipOf(game::partner::nameOf(animation)) : std::nullopt;
+      (*portrait)->play(clip.value_or(0));
+      portraitScenes.push_back((*portrait)->scene(frameSeconds));
     }
     if (!showingMovie && playerPortrait && (*ui)->isVisible("pause_menu") &&
         (*ui)->elementHasClass("pause_menu", "panel", "on-player") &&

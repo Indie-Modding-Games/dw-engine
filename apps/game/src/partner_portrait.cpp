@@ -1,6 +1,5 @@
 #include "partner_portrait.hpp"
 
-#include <dwe/animation/animation_player.hpp>
 #include <dwe/assets/content_id.hpp>
 #include <dwe/assets/model_data.hpp>
 #include <dwe/render/camera.hpp>
@@ -54,15 +53,22 @@ core::Result<void> PartnerPortrait::load(const assets::VirtualFileSystem& files,
   auto data = assets::loadModel(files, *id);
   if (!data)
     return std::unexpected{data.error()};
-  animation::AnimationPlayer pose{*data};
-  if (!pose.play(0))
+  data_ = std::make_unique<assets::ModelData>(std::move(*data));
+  pose_.emplace(*data_);
+  clip_ = 0;
+  if (!pose_->play(clip_)) {
+    clear();
     return core::fail("Status model has no idle clip 0");
+  }
   // The extracted clip's time zero already represents the original's first tick.
-  auto model = models_->add(*data);
-  if (!model)
+  auto model = models_->add(*data_);
+  if (!model) {
+    clear();
     return std::unexpected{model.error()};
+  }
   model_ = *model;
-  const auto joints = pose.jointMatrices();
+  static_cast<void>(pose_->advance(0.0F));
+  const auto joints = pose_->jointMatrices();
   joints_.assign(joints.begin(), joints.end());
   world_ = glm::translate(glm::mat4{1.F}, glm::vec3{static_cast<float>(raise.view[0]),
                                                     -static_cast<float>(raise.view[1]),
@@ -70,16 +76,37 @@ core::Result<void> PartnerPortrait::load(const assets::VirtualFileSystem& files,
   return {};
 }
 
+void PartnerPortrait::play(std::uint32_t clip) {
+  if (!pose_ || clip == clip_)
+    return;
+  clip_ = clip;
+  if (!pose_->play(clip))
+    static_cast<void>(pose_->play(0));
+}
+
 void PartnerPortrait::clear() {
   models_->clear();
   if (model_)
     models_->remove(*model_);
   model_.reset();
+  pose_.reset();
+  data_.reset();
+  clip_ = 0;
   joints_.clear();
 }
 
-render::TextureScene PartnerPortrait::scene() {
+render::TextureScene PartnerPortrait::scene(double seconds) {
   models_->clear();
+  if (pose_) {
+    // The clip's root motion is left out: the model stays at its place on the page.
+    static_cast<void>(pose_->advance(static_cast<float>(seconds)));
+    if (pose_->finished()) {
+      static_cast<void>(pose_->play(*pose_->clip()));
+      static_cast<void>(pose_->advance(0.0F));
+    }
+    const auto joints = pose_->jointMatrices();
+    joints_.assign(joints.begin(), joints.end());
+  }
   if (model_)
     models_->submit({.model = *model_, .world = world_, .joints = joints_});
   return {.target = texture_, .drawers = drawers_};

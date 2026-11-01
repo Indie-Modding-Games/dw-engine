@@ -25,7 +25,7 @@
                 <div id="status-horizontal" class="status-decoration"><span class="separator-first"></span><span class="separator-light"></span><span class="separator-last"></span></div>
                 <div id="status-vertical" class="status-decoration"><span class="separator-first"></span><span class="separator-light"></span><span class="separator-last"></span></div>
                 <span id="status-name-label" class="status-decoration" text-key="partner_menu.name"></span>
-                <span id="status-special-heading" class="profile-meta"></span><span id="status-type-heading" class="profile-meta"></span><span id="status-active-heading" class="profile-meta"></span>
+                <span id="status-special-heading" class="profile-meta" text-key="partner_menu.profile.special"></span><span id="status-type-heading" class="profile-meta" text-key="partner_menu.profile.type"></span><span id="status-active-heading" class="profile-meta" text-key="partner_menu.profile.active"></span>
                 <div id="status-specials" class="profile-meta"><span id="status-special-0" class="status-special"></span><span id="status-special-1" class="status-special"></span><span id="status-special-2" class="status-special"></span></div>
                 <span id="status-type" class="profile-meta"></span><span id="status-active" class="profile-meta original-look"></span>
 				<div id="status-head">
@@ -127,13 +127,13 @@
 <button id="tech-choice-53" class="tech-choice" onclick="toggle_technique(document, 53)"><span class="tech-cell" id="tech-cell-53"></span><span class="tech-cell-shade"></span></button>
 <button id="tech-choice-54" class="tech-choice" onclick="toggle_technique(document, 54)"><span class="tech-cell" id="tech-cell-54"></span><span class="tech-cell-shade"></span></button>
 <button id="tech-choice-55" class="tech-choice" onclick="toggle_technique(document, 55)"><span class="tech-cell" id="tech-cell-55"></span><span class="tech-cell-shade"></span></button>
-<span class="tech-category category-0 category-left"></span><span class="tech-category category-0 category-right"></span>
-<span class="tech-category category-1 category-left"></span><span class="tech-category category-1 category-right"></span>
-<span class="tech-category category-2 category-left"></span><span class="tech-category category-2 category-right"></span>
-<span class="tech-category category-3 category-left"></span><span class="tech-category category-3 category-right"></span>
-<span class="tech-category category-4 category-left"></span><span class="tech-category category-4 category-right"></span>
-<span class="tech-category category-5 category-left"></span><span class="tech-category category-5 category-right"></span>
-<span class="tech-category category-6 category-left"></span><span class="tech-category category-6 category-right"></span>
+<span class="tech-category category-0 category-left" text-key="partner_menu.tech.category.0"></span><span class="tech-category category-0 category-right" text-key="partner_menu.tech.category.0"></span>
+<span class="tech-category category-1 category-left" text-key="partner_menu.tech.category.1"></span><span class="tech-category category-1 category-right" text-key="partner_menu.tech.category.1"></span>
+<span class="tech-category category-2 category-left" text-key="partner_menu.tech.category.2"></span><span class="tech-category category-2 category-right" text-key="partner_menu.tech.category.2"></span>
+<span class="tech-category category-3 category-left" text-key="partner_menu.tech.category.3"></span><span class="tech-category category-3 category-right" text-key="partner_menu.tech.category.3"></span>
+<span class="tech-category category-4 category-left" text-key="partner_menu.tech.category.4"></span><span class="tech-category category-4 category-right" text-key="partner_menu.tech.category.4"></span>
+<span class="tech-category category-5 category-left" text-key="partner_menu.tech.category.5"></span><span class="tech-category category-5 category-right" text-key="partner_menu.tech.category.5"></span>
+<span class="tech-category category-6 category-left" text-key="partner_menu.tech.category.6"></span><span class="tech-category category-6 category-right" text-key="partner_menu.tech.category.6"></span>
 <span class="tech-column column-0"></span>
 <span class="tech-column column-1"></span>
 <span class="tech-column column-2"></span>
@@ -142,7 +142,7 @@
 <span class="tech-column column-5"></span>
 <span class="tech-column column-6"></span>
 <span class="tech-column column-7"></span>
-</div><div id="tech-info" class="hidden"><span id="tech-info-heading"></span><span id="tech-info-tl" class="info-corner"></span><span id="tech-info-tr" class="info-corner"></span><span id="tech-info-bl" class="info-corner"></span><span id="tech-info-br" class="info-corner"></span><span id="tech-info-notch" class="info-corner"></span><div id="tech-info-name" class="original-look"></div><div id="tech-info-stats"><span class="info-label info-power" text-key="partner_menu.tech.power"></span><span class="info-colon info-power"></span><span class="info-value original-look info-power" id="tech-info-power"></span><span class="info-label info-mp" text-key="partner_menu.tech.mp"></span><span class="info-colon info-mp"></span><span class="info-value original-look info-mp" id="tech-info-mp"></span><span class="info-label info-range" text-key="partner_menu.tech.range"></span><span class="info-colon info-range"></span><span class="info-value original-look info-range" id="tech-info-range"></span><span class="info-label info-effect" text-key="partner_menu.tech.effect"></span><span class="info-colon info-effect"></span><span class="info-value original-look info-effect" id="tech-info-effect"></span></div></div><div id="tech-message"></div>
+</div><div id="tech-info" class="hidden"><span id="tech-info-heading" text-key="partner_menu.tech.data"></span><span id="tech-info-tl" class="info-corner"></span><span id="tech-info-tr" class="info-corner"></span><span id="tech-info-bl" class="info-corner"></span><span id="tech-info-br" class="info-corner"></span><span id="tech-info-notch" class="info-corner"></span><div id="tech-info-name" class="original-look"></div><div id="tech-info-stats"><span class="info-label info-power" text-key="partner_menu.tech.power"></span><span class="info-colon info-power"></span><span class="info-value original-look info-power" id="tech-info-power"></span><span class="info-label info-mp" text-key="partner_menu.tech.mp"></span><span class="info-colon info-mp"></span><span class="info-value original-look info-mp" id="tech-info-mp"></span><span class="info-label info-range" text-key="partner_menu.tech.range"></span><span class="info-colon info-range"></span><span class="info-value original-look info-range" id="tech-info-range"></span><span class="info-label info-effect" text-key="partner_menu.tech.effect"></span><span class="info-colon info-effect"></span><span class="info-value original-look info-effect" id="tech-info-effect"></span></div></div><div id="tech-message"></div>
             </div>
 
 			<div id="page-items" class="page hidden">

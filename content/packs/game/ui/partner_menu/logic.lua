@@ -161,12 +161,18 @@ local function draw_status(document)
   local pattern = math.floor(setting("partner.profile.active", -1))
   local activity = ""
   if pattern >= 0 and pattern < 5 then
-    local labels = original_label("status_view_labels", 2)
-    local joined = labels:gsub("%s+", "")
-    local starts, widths = { 1, 6, 9, 15, 21 }, { 5, 3, 6, 6, 6 }
-    if #labels == 36 and #joined == 26 then
-      local start = starts[pattern + 1]
-      activity = string.sub(joined, start, start + widths[pattern + 1] - 1)
+    -- The original draws one 48-pixel cell of this label per pattern: the words start at the
+    -- characters 1, 8, 17, 23 and 30 of each language's text (sunup, day, groggy, sleepy, sunset).
+    local characters = {}
+    for character in original_label("status_view_labels", 2):gmatch("[^\128-\191][\128-\191]*") do
+      characters[#characters + 1] = character
+    end
+    local starts = { 1, 8, 17, 23, 30 }
+    local first = starts[pattern + 1]
+    local last = pattern < 4 and starts[pattern + 2] - 1 or #characters
+    if #characters >= starts[5] then
+      activity =
+        table.concat(characters, "", first, math.min(last, #characters)):match("^%s*(.-)%s*$")
     end
   elseif pattern == 5 then
     activity = string.sub(original_label("status_view_labels", 1), -5)
@@ -200,7 +206,11 @@ local function draw_status(document)
   end
   document:get("meter-0-label"):set_class("negative", number("partner.meter.0.value") < 0)
   document:get("meter-1-label"):set_class("low", number("partner.meter.1.value") < 50)
-  if ui.setting("ui_skin") == "original" then
+  -- The original's labels are English pictures: other languages write them with the font
+  -- (status-text), and the condition names in full (the partner.meter labels).
+  local pictures = (ui.setting("language") or "en") == "en"
+  document:get("scrim"):set_class("status-text", not pictures)
+  if ui.setting("ui_skin") == "original" and pictures then
     document:get("meter-1-label"):set_text(words[1] or "")
     document:get("meter-2-label"):set_text(words[3] or "")
   end

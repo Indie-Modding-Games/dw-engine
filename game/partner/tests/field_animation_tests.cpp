@@ -59,6 +59,18 @@ TEST_CASE("the first condition in the original's order picks the gesture") {
         FieldAnimation::Sulking);
 }
 
+TEST_CASE("the status page's model shows its first need, else stands") {
+  CHECK(statusAnimation({}) == FieldAnimation::Idle);
+  CHECK(statusAnimation(conditionsOf({Condition::NeedsToilet})) == FieldAnimation::Toilet);
+  CHECK(statusAnimation(conditionsOf({Condition::NeedsToilet, Condition::Hungry})) ==
+        FieldAnimation::Toilet);
+  CHECK(statusAnimation(conditionsOf({Condition::Hungry, Condition::Sleepy})) ==
+        FieldAnimation::Hungry);
+  CHECK(statusAnimation(conditionsOf({Condition::Sleepy})) == FieldAnimation::Sleepy);
+  CHECK(statusAnimation(conditionsOf({Condition::Sick, Condition::NeedsToilet})) ==
+        FieldAnimation::Hurt);
+}
+
 TEST_CASE("the field animations have the model's names") {
   CHECK(nameOf(FieldAnimation::IdleTired) == "idle_tired");
   CHECK(nameOf(FieldAnimation::Sulking) == "sulking");

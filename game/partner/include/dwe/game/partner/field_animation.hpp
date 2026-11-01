@@ -48,4 +48,9 @@ struct MoodGestures {
 [[nodiscard]] FieldAnimation conditionAnimation(const Conditions& conditions,
                                                 std::int32_t happiness, MoodGestures mood);
 
+// The status page's model (an addition: the original's stats view poses it in its first idle frame,
+// game_menu.c: renderDigiviceEntity): the gesture of its first condition, in the field's order
+// (conditionAnimation), else its plain idle; its mood never changes it.
+[[nodiscard]] FieldAnimation statusAnimation(const Conditions& conditions);
+
 } // namespace dwe::game::partner

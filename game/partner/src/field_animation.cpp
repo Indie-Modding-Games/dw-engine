@@ -17,8 +17,8 @@ bool slowed(const Conditions& conditions) {
 
 std::string_view nameOf(FieldAnimation animation) {
   constexpr std::array<std::string_view, 13> Names{
-      "idle",   "idle_tired", "walk",   "walk_tired", "run",   "happy",  "unhappy",
-      "hurt",   "hungry",     "toilet", "sleepy",     "tired", "sulking"};
+      "idle", "idle_tired", "walk",   "walk_tired", "run",   "happy",  "unhappy",
+      "hurt", "hungry",     "toilet", "sleepy",     "tired", "sulking"};
   return Names.at(std::to_underlying(animation));
 }
 
@@ -63,6 +63,13 @@ FieldAnimation conditionAnimation(const Conditions& conditions, std::int32_t hap
     }
   }
   return idleAnimation(conditions);
+}
+
+FieldAnimation statusAnimation(const Conditions& conditions) {
+  if (conditions.none()) {
+    return FieldAnimation::Idle;
+  }
+  return conditionAnimation(conditions, 0, {});
 }
 
 } // namespace dwe::game::partner

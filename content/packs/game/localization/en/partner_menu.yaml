@@ -49,6 +49,11 @@ section.profile: "Profile"
 section.condition: "Condition"
 section.parameter: "Parameter"
 name: "Name"
+# The small headings of the profile's marks and of the technique details, where the original has pictures.
+profile.special: "Special"
+profile.type: "Type"
+profile.active: "Active"
+tech.data: "TECH. DATA"
 
 # Técnicas equipadas y golpe final.
 tab.tech: "Tech"
@@ -75,6 +80,15 @@ tech.effect.1: "Poison"
 tech.effect.2: "Confusion"
 tech.effect.3: "Stun"
 tech.effect.4: "Flatten"
+
+# The technique grid's rows, by specialty (the original draws them as pictures).
+tech.category.0: "FIRE"
+tech.category.1: "BATTLE"
+tech.category.2: "AIR"
+tech.category.3: "EARTH"
+tech.category.4: "ICE"
+tech.category.5: "MECH"
+tech.category.6: "FILTH"
 
 tech.change: "Change Techniques"
 tech.unavailable: "Learned techniques only"

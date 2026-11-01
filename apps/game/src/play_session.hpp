@@ -202,6 +202,9 @@ public:
   [[nodiscard]] std::string_view partnerSpecies() const {
     return game_.session->partner().state().species;
   }
+  [[nodiscard]] const game::partner::Conditions& partnerConditions() const {
+    return game_.session->partner().state().conditions;
+  }
 
   // What a bug report says of the game now (bug_report.hpp; the app fills in the build and the
   // date).

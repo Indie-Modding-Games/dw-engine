@@ -971,3 +971,99 @@ button:focus .original-look, button.original-look:focus {
 /* The portrait uses the original full-screen projection, clipped to Condition. */
 #partner-portrait-clip { position: absolute; left: 0; top: 216dp; width: 366dp; height: 330dp; overflow: hidden; }
 #partner-portrait { position: absolute; left: -33dp; top: -285dp; width: 960dp; height: 720dp; }
+
+/* ------------------------------------------------------------------------------------------------------------------
+   Improvements over the original's stats view (docs/modulos/apps/screens.md, "Ficha del compañero").
+
+   The model has its own area, right of the Condition heading and above the Life row, drawn at half the original's
+   size so that no heart, bar or need icon covers it (the original draws them over it). The need icons go under the
+   heading in two rows, and the Life row and the bars move down a little to make room. */
+#partner-portrait-clip { left: 192dp; top: 219dp; width: 168dp; height: 159dp; border-radius: 0; background-color: transparent; }
+#partner-portrait { left: -62dp; top: -150dp; width: 480dp; height: 360dp; }
+#conditions { left: 33dp; width: 156dp; height: 78dp; }
+#conditions .profile-condition-sick { left: 0; top: 0; }
+#conditions .profile-condition-injured { left: 39dp; top: 0; }
+#conditions .profile-condition-hungry { left: 78dp; top: 0; }
+#conditions .profile-condition-sleepy { left: 117dp; top: 0; }
+#conditions .profile-condition-sulking { left: 0; top: 42dp; }
+#conditions .profile-condition-tired { left: 39dp; top: 42dp; }
+#conditions .profile-condition-needs_toilet { left: 78dp; top: 42dp; }
+#status-life-label, #status-life-hearts { top: 381dp; }
+#status-condition { top: 423dp; }
+#status-condition .bar-row { height: 42dp; }
+
+/* The numbers are right-aligned in the original's four-digit fields (utils.c: renderNumber, 8 pixels a digit):
+   HP and MP now ending at x 75 and at most at x 135, the other stats at x 71. */
+#status-parameters .value, #status-parameters .pool-max { text-align: right; }
+#status-parameters .value { left: 117dp; width: 150dp; }
+#status-parameters .pool .value { left: 129dp; width: 150dp; }
+#status-parameters .pool-max { left: 309dp; width: 150dp; }
+
+/* The original's labels are English pictures; in other languages the page writes them with the font: headings in
+   the yellow of the Tech page's, field labels in the pictures' cyan, the small column headings in capitals with the
+   pictures' colours, the condition names in full and the stats with the glossary's abbreviations. */
+#status-special-heading, #status-type-heading, #status-active-heading, #tech-info-heading, .tech-category {
+    font-size: 0; color: transparent;
+}
+/* Headings in the yellow of the Tech page's. */
+#scrim.status-text #profile-heading, #scrim.status-text #condition-heading, #scrim.status-text #parameter-heading {
+    decorator: none; width: 330dp; height: 36dp; font-size: 33dp; line-height: 36dp; color: #fff371; white-space: nowrap;
+}
+#scrim.status-text #profile-heading, #scrim.status-text #condition-heading { left: 24dp; }
+#scrim.status-text #condition-heading { width: 201dp; }
+/* The model's area starts after the longer heading. */
+#scrim.status-text #partner-portrait-clip { left: 228dp; width: 132dp; }
+#scrim.status-text #partner-portrait { left: -80dp; }
+#scrim.status-text #parameter-heading { left: 390dp; }
+/* The field labels in the pictures' cyan, right-aligned before their insets, which move right to make room. */
+#scrim.status-text #status-name-label, #scrim.status-text #status-species-label,
+#scrim.status-text #status-age-label, #scrim.status-text #status-weight-label {
+    decorator: none; height: 36dp; font-size: 22dp; line-height: 36dp; color: #52def7; text-align: right; white-space: nowrap;
+}
+#scrim.status-text #status-name-label { left: 6dp; top: 63dp; width: 132dp; }
+#scrim.status-text #status-species-label, #scrim.status-text #status-age-label { left: 6dp; top: 3dp; width: 132dp; }
+#scrim.status-text #status-weight-label { left: 246dp; top: 3dp; width: 108dp; }
+#scrim.status-text #status-head { left: 141dp; }
+#scrim.status-text #status-species, #scrim.status-text #status-species-line #status-species { left: 141dp; width: 708dp; }
+#scrim.status-text #status-age { left: 141dp; }
+#scrim.status-text #status-weight { left: 360dp; }
+/* The marks' headings in the pictures' colours, centred over their marks. */
+#scrim.status-text #status-special-heading, #scrim.status-text #status-type-heading,
+#scrim.status-text #status-active-heading {
+    decorator: none; top: 75dp; height: 27dp; font-size: 18dp; line-height: 27dp; text-align: center; white-space: nowrap;
+}
+#scrim.status-text #status-special-heading { left: 444dp; width: 168dp; color: #18ff10; }
+#scrim.status-text #status-type-heading { left: 600dp; width: 84dp; color: #ffde00; }
+#scrim.status-text #status-active-heading { left: 690dp; width: 168dp; color: #ff39e7; }
+/* The condition's names in full: the bars move to the right edge to make room, and Life is one of them. */
+#scrim.status-text .status-native-happiness { display: none; }
+#scrim.status-text #status-condition .label, #scrim.status-text #status-life-label {
+    width: 171dp; color: #fff371; font-size: 22dp; line-height: 36dp; white-space: nowrap;
+}
+#scrim.status-text #status-condition .meter { left: 174dp; width: 150dp; }
+#scrim.status-text #status-life-hearts { left: 207dp; }
+/* The stats with the glossary's abbreviations, at the size of HP and MP. */
+#scrim.status-text #status-parameters #stat-2-label, #scrim.status-text #status-parameters #stat-3-label {
+    width: 153dp; color: #fff371;
+}
+#scrim.status-text #status-parameters #stat-2-label { decorator: image(stat-speed scale-none left center); }
+#scrim.status-text #status-parameters #stat-3-label { decorator: image(stat-brains scale-none left center); }
+/* The Tech page's column headings and the details' labels, grey like the pictures. */
+#scrim.status-text .tech-columns .tech-power, #scrim.status-text .tech-columns .tech-mp,
+#scrim.status-text .tech-columns .tech-range, #scrim.status-text .tech-columns .tech-effect,
+#scrim.status-text .info-label, #scrim.status-text #tech-info-heading {
+    decorator: none; height: 24dp; font-size: 18dp; line-height: 24dp; color: #d6d6d6; white-space: nowrap;
+}
+#scrim.status-text .tech-columns .tech-power { left: 486dp; width: 102dp; text-align: right; }
+#scrim.status-text .tech-columns .tech-mp { left: 636dp; width: 60dp; }
+#scrim.status-text .tech-columns .tech-range { left: 708dp; width: 78dp; }
+#scrim.status-text .tech-columns .tech-effect { left: 789dp; width: 99dp; }
+#scrim.status-text #tech-info-heading { top: 258dp; width: 111dp; height: 18dp; line-height: 18dp; text-align: center; background-color: #2d3840; }
+#scrim.status-text .info-label { width: 120dp; }
+#scrim.status-text .info-colon { left: 135dp; }
+#scrim.status-text .info-value { left: 165dp; width: 93dp; }
+/* The grid's rows by name, on each side of the grid. */
+#scrim.status-text .tech-category { decorator: none; height: 36dp; font-size: 22dp; line-height: 36dp; color: #d6d6d6; white-space: nowrap; }
+#scrim.status-text .tech-category.category-left { left: -108dp; width: 102dp; text-align: right; }
+#scrim.status-text .tech-category.category-right { width: 120dp; }
+.tech-columns { text-transform: none; }

@@ -70,7 +70,7 @@
 
 .line-value {
 	float: right;
-	margin-right: 16dp;
+	margin-right: 0;
 }
 
 .status-bars {
@@ -243,7 +243,7 @@ button:focus .original-look, button.original-look:focus {
 .tech-power, .tech-mp { width: 85dp; }
 .tech-range { width: 85dp; }
 .tech-effect { width: 140dp; }
-.tech-columns { padding-left: 280dp; font-size: 13dp; color: #9aa7b6; }
+.tech-columns { padding-left: 280dp; font-size: 13dp; color: #9aa7b6; text-transform: uppercase; }
 #final-heading { margin-top: 10dp; }
 #final-columns { display: none; }
 #tech-row-3 { margin-bottom: 18dp; }
@@ -254,6 +254,7 @@ button:focus .original-look, button.original-look:focus {
 #scrim.tech-editing #tech-row-3, #scrim.tech-editing #tech-change { display: none; }
 #scrim.tech-editing #tabs { pointer-events: none; }
 .tech-choice.unavailable { color: #717171; }
+.tech-action-symbol { margin-right: 9dp; }
 
 #tech-picker { width: 100%; }
 .tech-choice { display: inline-block; width: 23%; min-height: 32dp; font-size: 14dp; padding: 4dp; overflow: hidden; white-space: nowrap; }
@@ -277,3 +278,23 @@ button:focus .original-look, button.original-look:focus {
    sight under a lighter scrim. */
 #scrim.battle-bag { background-color: #05080c40; }
 #scrim.battle-bag #tabs { display: none; }
+
+/* The status page (the original skin's style loads after this one and overrides each of these rules): the model in
+   its own box at the top left (an addition: the original draws its stats over the
+   model), the profile beside it and the stats and care meters under both, so the page fits a 720-high window. */
+#page-status { position: relative; height: 470dp; }
+#partner-portrait-clip {
+	position: absolute; left: 0; top: 0; width: 180dp; height: 180dp; overflow: hidden;
+	border-radius: 10dp; background-color: #0e131a;
+}
+#partner-portrait { position: absolute; left: -65dp; top: -163dp; width: 512dp; height: 384dp; }
+#status-head { position: absolute; left: 200dp; top: 0; width: 512dp; margin: 0; }
+#status-species-line, #status-age-line, #status-weight-line {
+	display: block; position: absolute; left: 200dp; width: 512dp; margin: 0;
+}
+#status-species-line { top: 50dp; }
+#status-age-line { top: 82dp; }
+#status-weight-line { top: 114dp; }
+#conditions { position: absolute; left: 200dp; top: 150dp; width: 512dp; margin: 0; }
+#status-parameters { position: absolute; left: 0; top: 196dp; width: 712dp; margin: 0; }
+#status-condition { position: absolute; left: 0; top: 382dp; width: 712dp; margin: 0; }
