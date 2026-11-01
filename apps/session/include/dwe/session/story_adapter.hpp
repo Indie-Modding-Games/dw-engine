@@ -154,8 +154,8 @@ public:
   [[nodiscard]] game::story::StoryState newGameState(std::string_view firstPartner) const;
 
   // The raised species, by number: the story owns them as triggers 0x200 + number, as the original
-  // does (script_common.c: setDigimonRaised). A number with no trigger is never raised, and marking
-  // it is logged.
+  // does (script_common.c: setDigimonRaised). A number past the triggers' (the hidden content's
+  // partners) is kept apart and saved by the evolution section; a negative one is never raised.
   [[nodiscard]] bool raised(std::int32_t species) const;
   void markRaised(std::int32_t species);
   [[nodiscard]] std::set<std::int32_t> raisedSpecies() const;
@@ -219,6 +219,9 @@ private:
   std::int32_t fieldStartExit_ = 0;
   std::optional<assets::DigimonTable> digimon_;
   RaisedSource savedRaised_;
+  // The raised species with no trigger of their own (numbers from RaisedSpeciesLimit: the hidden
+  // content's partners); the evolution section saves them with the rest.
+  std::set<std::int32_t> extraRaised_;
   game::story::StoryState state_;
   std::unique_ptr<Serializer> serializer_;
   // Declared in the order they are built: the runner holds the host, the host the VM's coroutines,

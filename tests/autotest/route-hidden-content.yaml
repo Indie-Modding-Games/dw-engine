@@ -1,0 +1,162 @@
+# The hidden content (docs/modulos/game/evolution.md, «Contenido oculto»): a new game from the main menu with the keyboard,
+# its rules screen (the original's rules first, then the hidden content on), and the three forms the disc has but only
+# gives by item, each reached by the natural check: Panjyamon from Penguinmon (Leomon in the city, trigger 248),
+# Gigadramon from Seadramon (its cup gate is open until the tournaments record cups) and MetalEtemon from Sukamon
+# (Etemon in the city, trigger 242). Each source comes from evolve, the partner's values from partner_set (the
+# requirement's stats, care and a weight inside the target's window and outside the other targets'), and its counter
+# one hour before the check; the clock then runs until the form changes. Each new partner is captured in the field and
+# on its status page, and the chart at the end (original look) with its new cells. Run it with --saves <empty folder>,
+# once per language (--lang en, --lang es); how to run it: docs/guides/prueba-vertical.md.
+# After each evolution the route waits for its scene to end (evolution.active), so partner_set writes the next values
+# on the field, however slow the machine, and confirms the rank notice an evolution may bring.
+name: hidden-content
+device: keyboard
+timeout: 1800
+main_menu: true
+new_game_rules: true
+text_fit: true
+steps:
+  - resize: [1280, 720]
+  - wait: {shown: main_menu, seconds: 1, timeout: 60}
+  - menu_select: play
+  - wait: {shown: save_slots, seconds: 0.5, timeout: 30}
+  - menu_select: slot-1
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - menu_select: yes
+  - wait: {shown: new_game_rules, seconds: 0.5, timeout: 30}
+  - expect_text_fits: all
+  - screenshot: rules-original
+  - menu_select: rules-hidden
+  - wait: {seconds: 0.3}
+  - expect_text_fits: all
+  - screenshot: rules-hidden
+  - menu_select: rules-start
+  - wait: {map: twna01, hidden: new_game_rules, seconds: 2, timeout: 120}
+  # The hidden content's three cells join the original's 61.
+  - expect_setting: {player.chart.count: 64}
+  # Panjyamon (champion) from Penguinmon: the rookie checks from 72 hours.
+  - script: story_set("trigger 248 on")
+  - script: evolve("penm")
+  - wait: {setting: {partner.name: main.digimon_names.0057}, timeout: 600}
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  # A new player rank on evolving shows its notice, which holds the field and the clock until confirmed.
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  - script: clock_speed("0")
+  - script: partner_set("hp 50")
+  - script: partner_set("mp 50")
+  - script: partner_set("brains 50")
+  - script: partner_set("offense 150")
+  - script: partner_set("defense 100")
+  - script: partner_set("speed 120")
+  - script: partner_set("care 0")
+  - script: partner_set("weight 25")
+  - script: partner_set("hours 71")
+  - script: clock_speed("120")
+  - wait: {setting: {partner.name: main.digimon_names.0063}, timeout: 600}
+  - script: clock_speed("0")
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  # A new player rank on evolving shows its notice, which holds the field and the clock until confirmed.
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  - screenshot: field-panjyamon
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.8}
+  - expect_text_fits: all
+  - screenshot: status-panjyamon
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  # Gigadramon (ultimate) from Seadramon: the champion checks from 144 hours; HP and MP count tenths.
+  - script: evolve("sead")
+  - wait: {setting: {partner.name: main.digimon_names.0010}, timeout: 600}
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  # A new player rank on evolving shows its notice, which holds the field and the clock until confirmed.
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  - script: clock_speed("0")
+  - script: partner_set("hp 4000")
+  - script: partner_set("mp 4000")
+  - script: partner_set("offense 500")
+  - script: partner_set("defense 400")
+  - script: partner_set("speed 300")
+  - script: partner_set("brains 300")
+  - script: partner_set("care 0")
+  - script: partner_set("weight 63")
+  - script: partner_set("battles 60")
+  - script: partner_set("hours 143")
+  - script: clock_speed("120")
+  - wait: {setting: {partner.name: main.digimon_names.0064}, timeout: 600}
+  - script: clock_speed("0")
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  # A new player rank on evolving shows its notice, which holds the field and the clock until confirmed.
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  - screenshot: field-gigadramon
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.8}
+  - expect_text_fits: all
+  - screenshot: status-gigadramon
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  # MetalEtemon (ultimate) from Sukamon.
+  - script: story_set("trigger 242 on")
+  - script: evolve("scum")
+  - wait: {setting: {partner.name: main.digimon_names.0039}, timeout: 600}
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  # A new player rank on evolving shows its notice, which holds the field and the clock until confirmed.
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  - script: clock_speed("0")
+  - script: partner_set("hp 50")
+  - script: partner_set("mp 50")
+  - script: partner_set("defense 50")
+  - script: partner_set("offense 500")
+  - script: partner_set("speed 500")
+  - script: partner_set("brains 400")
+  - script: partner_set("care 0")
+  - script: partner_set("weight 24")
+  - script: partner_set("battles 100")
+  - script: partner_set("hours 143")
+  - script: clock_speed("120")
+  - wait: {setting: {partner.name: main.digimon_names.0065}, timeout: 600}
+  - script: clock_speed("0")
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  # A new player rank on evolving shows its notice, which holds the field and the clock until confirmed.
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  - screenshot: field-metaletemon
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.8}
+  - expect_text_fits: all
+  - screenshot: status-metaletemon
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  # The chart with the new cells (the original look draws it), and Panjyamon's requirement with its condition.
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu: open
+        - wait: {seconds: 0.6}
+        - menu_select: open-player
+        - wait: {seconds: 0.6}
+        - menu_select: player-tab-chart
+        - wait: {seconds: 0.6}
+        - expect_text_fits: all
+        - screenshot: chart
+        - menu: close
+        - wait: {menu_open: false}

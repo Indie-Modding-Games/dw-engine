@@ -80,6 +80,9 @@ struct RequirementReport {
   // Only the bonuses the requirement asks for, in the original's order.
   std::vector<BonusLine> bonus;
   bool bonusMet = false;
+  // The target's gate, when the ruleset gives it one (the hidden content): while it is closed the
+  // target scores no point at all.
+  std::optional<bool> gateMet;
 
   std::int32_t points = 0;
   std::int32_t passPoints = 0;

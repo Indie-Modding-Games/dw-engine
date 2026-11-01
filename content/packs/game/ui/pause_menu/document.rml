@@ -118,6 +118,17 @@
                   <button id="chart-cell-58" class="chart-cell hidden" onclick="chart_pick(document, 58)"><img id="chart-icon-58" class="chart-icon hidden"/></button>
                   <button id="chart-cell-59" class="chart-cell hidden" onclick="chart_pick(document, 59)"><img id="chart-icon-59" class="chart-icon hidden"/></button>
                   <button id="chart-cell-60" class="chart-cell hidden" onclick="chart_pick(document, 60)"><img id="chart-icon-60" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-61" class="chart-cell hidden" onclick="chart_pick(document, 61)"><img id="chart-icon-61" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-62" class="chart-cell hidden" onclick="chart_pick(document, 62)"><img id="chart-icon-62" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-63" class="chart-cell hidden" onclick="chart_pick(document, 63)"><img id="chart-icon-63" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-64" class="chart-cell hidden" onclick="chart_pick(document, 64)"><img id="chart-icon-64" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-65" class="chart-cell hidden" onclick="chart_pick(document, 65)"><img id="chart-icon-65" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-66" class="chart-cell hidden" onclick="chart_pick(document, 66)"><img id="chart-icon-66" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-67" class="chart-cell hidden" onclick="chart_pick(document, 67)"><img id="chart-icon-67" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-68" class="chart-cell hidden" onclick="chart_pick(document, 68)"><img id="chart-icon-68" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-69" class="chart-cell hidden" onclick="chart_pick(document, 69)"><img id="chart-icon-69" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-70" class="chart-cell hidden" onclick="chart_pick(document, 70)"><img id="chart-icon-70" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-71" class="chart-cell hidden" onclick="chart_pick(document, 71)"><img id="chart-icon-71" class="chart-icon hidden"/></button>
                   <img id="chart-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/>
                   <div id="chart-prompts" class="page-prompts"><div class="page-prompt"><span id="chart-confirm-key" class="prompt-key confirm-key"></span><span class="prompt-text" text-key="pause_menu.chart_select"></span></div><div class="page-prompt"><span id="chart-cancel-key" class="prompt-key cancel-key"></span><span class="prompt-text" text-key="common.cancel"></span></div></div>
                 </div>

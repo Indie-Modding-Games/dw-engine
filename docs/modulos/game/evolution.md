@@ -104,6 +104,49 @@ hay que extraerlo de nuevo.
 | `rookie_stat_tie_picks_last` | En un empate de stats de novato cuenta el último |
 | `timer_special_overrides_normal` | A las 360 horas de campeón, una especial fallida anula la elección normal (decidido por el responsable de diseño (2026-10-20): fiel al original) |
 
+## Contenido oculto
+
+Mejora opcional, apagada por defecto: el ruleset `oculto` («Original + contenido oculto», `extends: original`) da un
+camino natural a tres formas que el disco trae completas pero que el original solo da con objetos: Panjyamon
+(campeón), Gigadramon y MetalEtemon (ultras). Se elige al empezar una partida nueva
+([pantalla de reglas](../apps/game.md#contenido-oculto)) y queda en la partida guardada; el ruleset `original` sigue
+igual. Los objetos que las dan (`noble_mane`, `giga_hand`, `metalbanana`) siguen funcionando con los dos.
+
+Todo está en `rules/oculto/species_extra.yaml` (la sección de [parches por
+especie](../../architecture/rulesets.md#parches-por-especie)), con números de diseño nuestros, no datos del juego:
+
+| Forma | Desde | Requisito (3 de 4 grupos, como el original) | Puerta |
+|---|---|---|---|
+| Panjyamon | Elecmon, Penguinmon | ataque 150, defensa 100, velocidad 120; 0–2 errores; peso 25 ± 5; 30 técnicas o venir de Penguinmon | Leomon vive en la ciudad (disparador 248) |
+| Gigadramon | Tyrannomon, Devimon, Airdramon, Seadramon | HP 4000, MP 4000, ataque 500, defensa 400, velocidad 300, cerebro 300; 0–5 errores; peso 60 ± 5; 60 batallas | Copa Metálica ganada (gancho, ver abajo) |
+| MetalEtemon | Sukamon, Numemon | ataque 500, velocidad 500, cerebro 400; 0 errores; peso 20 ± 5; 100 batallas o venir de Sukamon | Etemon vencido y en la ciudad (disparador 242) |
+
+- **Puertas.** `SpeciesGate` (disparadores de la historia, hora del día, copa ganada) se mira antes de puntuar: si
+  no se cumple, el destino no puntúa (`OriginalScoring` da 0 puntos y `RequirementReport::gateMet` es `false`), así
+  que la revisión no lo elige y el panel de requisitos del árbol lo dice en la primera fila («Condición especial»).
+  `EvolutionInputs` trae `trigger` (lector de disparadores), `hourOfDay` y `cupWon`; sin lector, una puerta de
+  disparadores u hora está cerrada.
+- **Ranuras.** Cada destino nuevo toma la primera ranura libre de `to` **después** del último destino del origen, así
+  que en un empate gana el destino del original (el plan decía la ranura 0 para Elecmon; se cambió para no tocar la
+  prioridad de los destinos de siempre).
+- **Copas (pendiente de los torneos).** La puerta `cup` y la lista `cup_prizes` (`animal_cup` → `noble_mane`,
+  `metalic_cup` → `giga_hand`, `filth_cup` → `metalbanana`) son ganchos: mientras la sesión no registra copas ganadas,
+  `EvolutionInputs::cupWon` va vacío y la puerta de copa está **abierta**; nada entrega los premios todavía.
+- **Criadas.** Las especies desde 0x3f no caben en los disparadores de criado del original (200 + especie hasta
+  0x3e): `StoryAdapter` las guarda en su propia lista, que va en la sección de evolución de la partida y que una
+  partida nueva vacía. El árbol las da por descubiertas con ella; la medalla de las 61 sigue contando solo las del
+  original.
+- **Horas.** `Evolution::checkHoursFor(especie)` da las horas de revisión de una forma (las de su nivel, o las del
+  paso Mega para una ultra cuando el ruleset lo trae).
+
+Tests: `game/evolution/tests/hidden_tests.cpp` (puerta de disparadores y hora, puerta de copa, paso Mega),
+`the user's disc, extracted: the hidden content's paths and gates` (`extracted_tests.cpp`, con `DWE_CONTENT`: los
+destinos tras los del original y cada camino elegido por la revisión),
+`the game pack's hidden content rulesets follow their schemas and read` (`engine/ruleset/tests/species_extra_tests.cpp`)
+y `a species past the raised triggers is kept apart, and a new game clears it`
+(`apps/session/tests/evolution_adapter_tests.cpp`). Rutas: `route-hidden-content.yaml` y
+`route-hidden-content-off.yaml` ([prueba vertical](../../guides/prueba-vertical.md)).
+
 ## Paridad con el decomp
 
 | Regla | Decomp | Nuestro código / sección | Test | Estado |

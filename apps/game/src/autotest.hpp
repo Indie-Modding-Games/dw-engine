@@ -150,6 +150,9 @@ struct AutotestRoute {
   bool bootScreen = false;
   // Whether that screen comes after the language box, as the game shows it (language_first).
   bool languageFirst = false;
+  // Whether a new game from the main menu shows its rules screen (ui/new_game_rules) for the route
+  // to answer (new_game_rules); otherwise it starts with the command line's ruleset.
+  bool newGameRules = false;
   // How a new game starts (new_game); without it, on the seeded chain (a free field), so only
   // routes through the opening say original.
   std::optional<session::NewGameChain> newGameChain;
@@ -226,6 +229,8 @@ public:
   [[nodiscard]] bool startsAtBootScreen() const { return route_.bootScreen; }
   // Whether the language box comes before that screen (AutotestRoute::languageFirst).
   [[nodiscard]] bool asksLanguageFirst() const { return route_.languageFirst; }
+  // Whether a new game shows its rules screen (AutotestRoute::newGameRules).
+  [[nodiscard]] bool asksNewGameRules() const { return route_.newGameRules; }
   // Whether the game's movies play (AutotestRoute::movies).
   [[nodiscard]] bool playsMovies() const { return route_.movies; }
 

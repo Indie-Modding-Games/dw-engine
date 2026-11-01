@@ -205,6 +205,18 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   de pausa abierto (el reloj se va con su caja) y la opción apagada desde el menú. Cada captura con la caja comprueba
   que no pisa nada del HUD ni de otro documento (`expect_clear: hud#field-time`) y que los textos caben (`text_fit`).
   Se corre en los dos idiomas y con los dos aspectos (`--ui-skin original` y `modern`).
+- `route-hidden-content.yaml`: el [contenido oculto](../modulos/apps/game.md#contenido-oculto) desde el menú
+  principal con el teclado: la pantalla de reglas de la partida nueva (con las reglas del original y con el contenido
+  oculto encendido), el árbol con 64 casillas y las tres formas nuevas por la revisión natural: Panjyamon desde
+  Penguinmon, Gigadramon desde Seadramon y MetalEtemon desde Sukamon (`story_set` para las puertas, `evolve` para la
+  forma de origen, `partner_set` para los valores y `clock_speed` hasta la revisión). Captura cada compañero nuevo en
+  el campo y en su ficha, y el árbol con las casillas nuevas en el aspecto original, con `text_fit`. Tras cada
+  evolución espera a que su escena acabe (el ajuste `evolution.active`, `"true"` mientras corre) y confirma el aviso
+  del nivel de domador si sale, así que vale también en una máquina lenta.
+  Se corre en los dos idiomas, con `--saves` en una carpeta vacía.
+- `route-hidden-content-off.yaml`: lo mismo con las reglas del original: el árbol sigue con 61 casillas y el mismo
+  Penguinmon evoluciona a la forma que elige el original. Se corre en los dos idiomas, con `--saves` en una carpeta
+  vacía.
 - `route-city-tab.yaml`: la [pestaña Ciudad](../modulos/apps/screens.md#pestaña-ciudad-mejora-de-dwe) desde una
   partida nueva con siete especies unidas a la ciudad (`story_set`): abre la página del jugador con el teclado, va a la
   pestaña, pone el cursor en una que vive en la ciudad, en una que falta y en un campeón unido, a 1280x720 y otra vez a
@@ -698,6 +710,7 @@ timeout: 600              # segundos para toda la ruta
 main_menu: false          # true: empieza en el menú principal en vez de en el campo
 boot_screen: false        # true (con main_menu): la portada empieza en «Press Start»
 language_first: false     # true (con boot_screen): antes, la caja de idiomas, como al arrancar el juego
+new_game_rules: false     # true (con main_menu): la partida nueva pasa por la pantalla de reglas (si no, empieza con las del original)
 new_game: seeded          # original: la partida nueva corre la apertura (por defecto seeded, el campo libre)
 load_save: save.yaml      # empieza cargando esa partida (relativa a la ruta), sin main_menu ni new_game
 movies: false             # true: las películas del juego salen como sin ruta (los créditos del final)
@@ -757,5 +770,6 @@ fase 4:
 | `sleep("")` | Lo acuesta, si tiene sueño |
 | `scold("")` | Lo regaña, como «Regañar» en la pestaña de cuidados |
 | `train("<lugar> <curso>")` | Una sesión de entrenamiento (`train("trn brain")`) |
+| `partner_set("<valor> <número>")` | Escribe un valor del compañero, de 0 a 99999: `hp`, `mp`, `offense`, `defense`, `speed`, `brains` (los stats base, HP y MP en sus unidades), `weight`, `care` (errores de cuidado), `battles` y `hours` (el contador de evolución) (`partner_set("hours 71")`). Para dejar al compañero justo antes de una revisión de evolución |
 | `clock_speed("<multiplicador>")` | Acelera el reloj: 1 es un minuto de juego por segundo real, 600 son diez horas |
 | `save("slot_NN")` | Guarda la partida en ese hueco manual (`save("slot_01")`), hasta que exista la pantalla de guardar; los huecos de autoguardado no se escriben a mano. Un autotest solo guarda con `--saves` |

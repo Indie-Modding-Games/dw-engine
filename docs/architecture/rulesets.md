@@ -73,6 +73,34 @@ extends: original
 sections: [care]             # su care.yaml sustituye al de original; el reloj y las tablas son los de original
 ```
 
+### Parches por especie
+
+`extends` sustituye tablas enteras, y una tabla de evolución o de crianza entera es dato del disco que no se puede
+subir al repositorio. Un ruleset que añade compañeros (el [contenido oculto](../modulos/game/evolution.md#contenido-oculto))
+dice solo lo que añade en la sección `species_extra` (esquema `ruleset_species_extra`), por id de especie, y
+`dwe::ruleset::loadPatched{Digimon,Raise,Evolution}Table` (`engine/ruleset/include/dwe/ruleset/species_extra.hpp`)
+lo aplica sobre las tablas que el ruleset nombra:
+
+| Campo | Qué hace |
+|---|---|
+| `requirement` | Su fila de requisitos (formato de `EVOLUTION_REQS`: stats mínimos, errores, peso ± 5, un extra) |
+| `gate` | Lo que tiene que cumplirse antes de puntuar: `triggers` (disparadores de la historia), `hours` (`from`/`to`, hora del día; da la vuelta a medianoche si `to < from`) y `cup` (copa ganada; gancho de los torneos, abierta mientras no se registran) |
+| `evolves_from` | Formas que evolucionan a ella: toma la primera ranura libre de `to` tras el último destino de cada una |
+| `evolves_to` | Sus propios destinos, si no tiene fila de caminos |
+| `stats_gains` | Su fila de referencia de stats (`EVOLUTION_STATS_GAINS`) |
+| `raise` | Fila de crianza copiada de otra especie (`copy`) con valores cambiados (comida, peso, energía, horas de hambre) |
+| `moves` | Técnicas en las ranuras vacías de su fila de `digimon` |
+| `partner_type`, `partner_moves`, `effect_type` | El tipo con el que lucha de compañero, valores de técnica solo de compañero (`power`, `iframes`) y la especie cuyos efectos usan sus técnicas |
+| `clips`, `field_scale` | Clips del original que le faltan → el que se reproduce en su lugar, y su tamaño en el campo |
+| `chart` | Su casilla del árbol: `x`, `y` (píxeles del árbol), `icon` (casilla de otra especie) y `palette` |
+
+Un id que la tabla no tiene, o una fila de caminos sin ranura libre, es un error al cargar. La sección `mega_step`
+(esquema `ruleset_mega_step`) se lee junto a ella con `readSpeciesExtra`: `check_hours`, `lifetime_hours`,
+`tamer_level_chance`, la lista `mega` y un `species` opcional cuyas entradas sustituyen, campo a campo, las de
+`species_extra`. Las dos son
+secciones normales, así que siguen la regla de `extends`: un ruleset que nombra `species_extra` sustituye el fichero
+entero del que extiende.
+
 ### Rarezas: `quirks`
 
 El ruleset `original` reproduce todas las rarezas y bugs del original (decisión del responsable de diseño,

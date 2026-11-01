@@ -350,6 +350,21 @@ TEST_CASE(
   CHECK(made.evolution->state().raised.contains(scripted));
 }
 
+TEST_CASE("a species past the raised triggers is kept apart, and a new game clears it") {
+  const TestPacks packs;
+  const TableFixture fixture;
+  const auto made = sessionWithStory(packs, fixture);
+  // The hidden content's partners are numbered from 0x3f: no trigger of their own.
+  constexpr std::int32_t Hidden = dwe::session::RaisedSpeciesLimit + 2;
+  CHECK_FALSE(made.story->raised(Hidden));
+  made.story->markRaised(Hidden);
+  CHECK(made.story->raised(Hidden));
+  CHECK(made.story->raisedSpecies().contains(Hidden));
+  CHECK_FALSE(made.story->state().trigger(FirstRaisedTrigger + Hidden).value_or(false));
+  REQUIRE(made.story->startNewGame(*made.session).has_value());
+  CHECK_FALSE(made.story->raised(Hidden));
+}
+
 TEST_CASE("a save without the story section raises the forms its evolution section kept") {
   const TestPacks packs;
   const TableFixture fixture;

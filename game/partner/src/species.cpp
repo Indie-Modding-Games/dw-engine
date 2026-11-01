@@ -1,5 +1,6 @@
 #include <dwe/game/partner/messages.hpp>
 #include <dwe/game/partner/species.hpp>
+#include <dwe/ruleset/species_extra.hpp>
 
 #include <string>
 #include <utility>
@@ -59,19 +60,18 @@ core::Result<SpeciesTable> buildSpeciesTable(const assets::DigimonTable& digimon
 
 core::Result<SpeciesTable> loadSpeciesTable(const assets::VirtualFileSystem& vfs,
                                             const ruleset::Ruleset& ruleset) {
-  const assets::AssetId* digimonId = ruleset.table(DigimonTableRole);
-  if (digimonId == nullptr) {
+  if (ruleset.table(DigimonTableRole) == nullptr) {
     return core::fail(formatMessage(messages::NoTableRole, ruleset.id(), DigimonTableRole));
   }
-  const assets::AssetId* raiseId = ruleset.table(RaiseTableRole);
-  if (raiseId == nullptr) {
+  if (ruleset.table(RaiseTableRole) == nullptr) {
     return core::fail(formatMessage(messages::NoTableRole, ruleset.id(), RaiseTableRole));
   }
-  auto digimon = assets::loadDigimonTable(vfs, *digimonId);
+  // With the ruleset's species patches (the hidden content's raise rows and moves).
+  auto digimon = ruleset::loadPatchedDigimonTable(vfs, ruleset);
   if (!digimon) {
     return std::unexpected{digimon.error()};
   }
-  auto raise = assets::loadRaiseTable(vfs, *raiseId);
+  auto raise = ruleset::loadPatchedRaiseTable(vfs, ruleset);
   if (!raise) {
     return std::unexpected{raise.error()};
   }

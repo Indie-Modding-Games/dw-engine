@@ -244,6 +244,16 @@ public:
         "[port:story] loadSavegame (main_menu.c:5058): variables 0 to {} read, the rest {}",
         game::story::SavedVariableCount - 1, ResetUnsavedVariablesOnLoad ? "start at 0" : "kept");
     adapter_->state_ = *read;
+    // The species past the triggers' numbers (the hidden content's) are kept only as the evolution
+    // section's raised list, read before this section.
+    adapter_->extraRaised_.clear();
+    if (adapter_->savedRaised_) {
+      for (const std::int32_t species : adapter_->savedRaised_()) {
+        if (species >= RaisedSpeciesLimit) {
+          adapter_->extraRaised_.insert(species);
+        }
+      }
+    }
     return {};
   }
 
@@ -253,6 +263,7 @@ public:
   core::Result<void> readMissing() override {
     core::logWarning("{}", std::string{messages::StoryMissingInSave});
     adapter_->state_ = adapter_->newGameState({});
+    adapter_->extraRaised_.clear();
     if (adapter_->savedRaised_) {
       const std::set<std::int32_t> raised = adapter_->savedRaised_();
       for (const std::int32_t species : raised) {
@@ -342,12 +353,18 @@ core::Result<void> StoryAdapter::readRules(const ruleset::Ruleset& rules) {
 }
 
 bool StoryAdapter::raised(std::int32_t species) const {
-  return species >= 0 && species < RaisedSpeciesLimit &&
-         state_.trigger(FirstRaisedTrigger + species).value_or(false);
+  if (species >= RaisedSpeciesLimit) {
+    return extraRaised_.contains(species);
+  }
+  return species >= 0 && state_.trigger(FirstRaisedTrigger + species).value_or(false);
 }
 
 void StoryAdapter::markRaised(std::int32_t species) {
-  if (species < 0 || species >= RaisedSpeciesLimit) {
+  if (species >= RaisedSpeciesLimit) {
+    extraRaised_.insert(species);
+    return;
+  }
+  if (species < 0) {
     core::logWarning("{}",
                      formatMessage(messages::StoryRaisedUnnumbered, species, RaisedSpeciesLimit));
     return;
@@ -364,6 +381,7 @@ std::set<std::int32_t> StoryAdapter::raisedSpecies() const {
       species.insert(number);
     }
   }
+  species.insert(extraRaised_.begin(), extraRaised_.end());
   return species;
 }
 
@@ -498,6 +516,7 @@ game::story::RequestOutcome StoryAdapter::request(game::story::SectionRef sectio
 core::Result<void> StoryAdapter::startNewGame(GameSession& session) {
   randomPort_->bind(session.random());
   state_ = newGameState(session.partner().state().species);
+  extraRaised_.clear();
   core::logInfo("{}", formatMessage(messages::StoryNewGame, state_.triggersSet()));
   return {};
 }

@@ -17,6 +17,7 @@ namespace dwe::app {
 
 inline constexpr std::string_view SaveSlotsDocument = "save_slots";
 inline constexpr std::string_view DialogDocument = "dialog";
+inline constexpr std::string_view NewGameRulesDocument = "new_game_rules";
 
 // The title screen with no game: the main menu, the slot lists and their dialogs, shown and hidden
 // by the game as SaveFlow decides (docs/architecture/guardar-y-cargar.md, 3.4 and 3.5).
@@ -42,6 +43,10 @@ public:
   // menu's script says with title_landing: only there does the boot movie come back on its own.
   [[nodiscard]] bool landing() const { return landing_; }
 
+  // Whether a new game first asks its rules (ui/new_game_rules): always for the player; a test
+  // route only when it says so (new_game_rules), the others start with the command line's ruleset.
+  void setAsksRules(bool asks) { asksRules_ = asks; }
+
   // The game a command chose to start, once.
   [[nodiscard]] std::optional<PlayStart> takeStart();
 
@@ -55,12 +60,19 @@ private:
   void showDialog(const SaveDialog& dialog);
   // Back from a dialog that started nothing: to the list, or to the main menu without one.
   void back();
+  // A chosen game starts, or a new one asks its rules first.
+  void startOrAskRules(std::optional<PlayStart> start);
 
   ui::Ui* ui_;
   std::unique_ptr<game::save::DiskSaveStorage> storage_;
   std::optional<game::save::SaveSlots> slots_;
   SaveFlow flow_;
   std::optional<PlayStart> start_;
+  // The new game waiting for its rules.
+  std::optional<PlayStart> pending_;
+  bool asksRules_ = true;
+  // Whether the packs have the ruleset with the Mega step, which the rules offer.
+  bool megaOffered_ = false;
   bool listShown_ = false;
   bool landing_ = false;
 };

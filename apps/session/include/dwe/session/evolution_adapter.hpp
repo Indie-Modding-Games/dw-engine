@@ -9,6 +9,7 @@
 #include <dwe/session/session_system.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -102,6 +103,8 @@ private:
   [[nodiscard]] std::optional<game::evolution::EvolutionInputs> inputsOf(const GameSession& session,
                                                                          bool scriptRunning) const;
   [[nodiscard]] static std::string mapIdOf(const GameSession& session);
+  // Whether a story trigger is set, for the gates of the hidden content; empty without a story.
+  [[nodiscard]] std::function<bool(std::int32_t)> triggerReader() const;
   // Warns of each map a special rule asks for that is no map of data/maps, when the packs have a
   // map table: that rule never holds (dwx validate reports it too).
   void warnUnknownMaps(const game::evolution::SpecialRules& specials) const;
@@ -118,6 +121,8 @@ private:
   EvolutionAdapterDesc desc_;
   BattleAdapter* battle_ = nullptr;
   std::optional<game::evolution::Evolution> evolution_;
+  // The ruleset the tables were read for, when the adapter read them.
+  std::optional<std::string> tablesRuleset_;
   std::optional<assets::MapTable> maps_;
   game::evolution::EvolutionState state_;
   std::vector<game::evolution::EvolutionResult> evolutions_;

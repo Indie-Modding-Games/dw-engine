@@ -642,3 +642,29 @@ inglés, de las opciones del menú de pausa, guardado en los ajustes del usuario
 `PlaySession` (`StatusExtrasSetting`). Encendido, la ficha del compañero enseña su barra de cansancio y sus errores de
 cuidado, que el original esconde; apagado, la ficha es la del original. Dónde va cada uno en cada piel y la ruta:
 [screens.md](screens.md#extras-de-la-ficha).
+
+## Contenido oculto
+
+Mejora opcional, apagada por defecto: al empezar una partida nueva desde el menú principal (Jugar → ranura → «Sí»),
+la pantalla «Reglas de la partida» (`ui/new_game_rules`, «Game rules» en inglés) deja elegir las reglas antes de que
+la partida empiece. El cursor empieza en «Empezar»; «Contenido oculto: No/Sí» cambia entre el ruleset `original` y
+`oculto` (Panjyamon, Gigadramon y MetalEtemon también por evolución: [evolution.md](../game/evolution.md#contenido-oculto)),
+y cancelar vuelve a la lista de ranuras. La fila «Paso Ultra → Mega» solo sale con el contenido oculto encendido y
+cuando los paquetes traen el ruleset `oculto_mega` (`TitleScreen` publica `new_game_rules.mega`).
+
+No es un ajuste del usuario sino de la partida: `TitleScreen` guarda el id elegido en `PlayStart::rulesetId`, la
+sesión arranca con él y la cabecera de la partida guardada lo apunta (`rulesetId`). Al cargar, `rulesetFor`
+(`session_start.cpp`) lee esa cabecera antes de crear la sesión, para que las tablas que se montan una vez (especies
+del compañero, tablas de evolución, `digimon` del combate) salgan ya con los parches del ruleset; una partida sin el
+campo usa el de la línea de órdenes (`--ruleset`, `original` por defecto).
+
+Con el ruleset, el árbol de evolución de la página del jugador (`player_chart.cpp`: `publishRulesetChart`) lee los
+caminos de las tablas del ruleset y añade las casillas nuevas (`player.chart.count`: 61 en el original, 64 con el
+contenido oculto); la caja de Ultra gana una tercera columna (y el panel se ensancha a 960dp) cuando una casilla cae a la derecha de la
+última columna del original (`player.chart.wide`).
+Una forma nueva usa el icono de otra especie con otra paleta hasta que haya iconos propios.
+
+Las rutas de prueba solo ven esta pantalla si lo piden (`new_game_rules: true`); las demás empiezan con las reglas
+del original, como antes. `route-hidden-content.yaml` elige el contenido oculto y hace evolucionar al compañero a
+cada forma nueva; `route-hidden-content-off.yaml` deja el original y comprueba que todo sigue igual
+([prueba vertical](../../guides/prueba-vertical.md)).

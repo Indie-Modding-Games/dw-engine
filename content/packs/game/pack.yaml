@@ -28,6 +28,10 @@ schemas:
     - save/settings
   ruleset_life:
     - rules/*/life
+  ruleset_species_extra:
+    - rules/*/species_extra
+  ruleset_mega_step:
+    - rules/*/mega_step
   ruleset_training:
     - rules/*/training
   ruleset_inventory:

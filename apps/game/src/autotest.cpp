@@ -74,9 +74,9 @@ constexpr int StableFrames = 5;
 // The other documents menu_select picks from while they are open: the battle screen, the partner's
 // menu, free exploration's chooser, the title screen's slot list, the save dialog, the sleep
 // menu, the shop and the item keeper.
-constexpr std::array<std::string_view, 8> ScreenDocuments{
-    "partner_menu", "battle",     "destination_choice", "dialog",
-    "save_slots",   "sleep_menu", "shop_menu",          "item_keeper"};
+constexpr std::array<std::string_view, 9> ScreenDocuments{
+    "partner_menu", "battle",    "destination_choice", "dialog",        "save_slots",
+    "sleep_menu",   "shop_menu", "item_keeper",        "new_game_rules"};
 
 // The menu menu_select picks from: the main menu while it is open, then the pause menu, then the
 // battle screen or the partner's menu; the pause menu when none is open, so the step says so.
@@ -685,8 +685,8 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   assets::YamlReader reader;
   AutotestRoute route;
   reader.expectKeys(*document, "route", {"name", "device", "steps"},
-                    {"gamepad", "timeout", "main_menu", "boot_screen", "language_first", "new_game",
-                     "load_save", "movies", "text_fit"});
+                    {"gamepad", "timeout", "main_menu", "boot_screen", "language_first",
+                     "new_game_rules", "new_game", "load_save", "movies", "text_fit"});
   route.name = reader.text(reader.field(*document, "name"));
   const core::YamlNode& device = reader.field(*document, "device");
   if (const auto known = deviceNamed(reader.text(device))) {
@@ -714,6 +714,12 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
     route.languageFirst = reader.boolean(*language);
     if (route.languageFirst && !route.bootScreen) {
       reader.fail(*language, "language_first needs boot_screen: true");
+    }
+  }
+  if (const core::YamlNode* rules = document->find("new_game_rules")) {
+    route.newGameRules = reader.boolean(*rules);
+    if (route.newGameRules && !route.mainMenu) {
+      reader.fail(*rules, "new_game_rules needs main_menu: true");
     }
   }
   if (const core::YamlNode* movies = document->find("movies")) {

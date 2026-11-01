@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 
@@ -75,6 +76,13 @@ struct EvolutionInputs {
   // What was kept on turning into the virus form, if anything: the way back and its stats rebuild
   // read it.
   std::optional<VirusBackup> virusBackup = std::nullopt;
+  // What the gates of a ruleset's added targets read (ruleset/species_extra.hpp): whether a story
+  // trigger is set, the hour of the game day, and whether a cup was won. A gate that asks for
+  // something the inputs leave out stays closed, but for the cup: until the session records the
+  // cups won (the tournaments), a cup gate is open.
+  std::function<bool(std::int32_t)> trigger = {};
+  std::optional<std::int32_t> hourOfDay = std::nullopt;
+  std::function<bool(std::string_view)> cupWon = {};
 };
 
 // The stretch of game time a natural check covers. partner_impl.c: tickConditions checks once per

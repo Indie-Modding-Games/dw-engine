@@ -35,6 +35,9 @@ screens:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/save_slots/style]
   dialog:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/dialog/style]
+  # Las reglas de la partida nueva (contenido oculto, paso Ultra → Mega), también.
+  new_game_rules:
+    styles: [ui/skins/original/pause_menu/style, ui/skins/original/new_game_rules/style]
   sleep_menu:
     styles: [ui/skins/original/pause_menu/style]
   item_keeper:

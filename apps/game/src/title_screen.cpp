@@ -6,11 +6,14 @@
 #include <dwe/core/message.hpp>
 #include <dwe/game/save/settings.hpp>
 #include <dwe/ruleset/ruleset.hpp>
+#include <dwe/ruleset/ruleset_values.hpp>
 #include <dwe/screens/name_keys.hpp>
 #include <dwe/session/slot_names.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <variant>
@@ -23,6 +26,15 @@
 
 namespace dwe::app {
 namespace {
+
+// The game pack's ruleset with the Ultimate to Mega step, which the new game's rules offer when the
+// packs have it.
+constexpr std::string_view MegaRuleset = "oculto_mega";
+
+bool hasRuleset(const assets::VirtualFileSystem& files, std::string_view id) {
+  const std::vector<std::string> ids = ruleset::listRulesets(files);
+  return std::ranges::find(ids, id) != ids.end();
+}
 
 // The names of the saves' species and maps in the packs' tables; a table the packs lack leaves
 // its IDs unnamed.
@@ -65,7 +77,8 @@ TitleScreen::TitleScreen(const assets::VirtualFileSystem& files, const Options& 
                          bool keepsSaves, ui::Ui& ui)
     : ui_(&ui), storage_(saveStorageFor(options, keepsSaves)),
       slots_(slotsIn(files, storage_.get())),
-      flow_(slots_ ? &*slots_ : nullptr, namesOf(files, options)) {}
+      flow_(slots_ ? &*slots_ : nullptr, namesOf(files, options)),
+      megaOffered_(hasRuleset(files, MegaRuleset)) {}
 
 void TitleScreen::show() {
   showMenu(false);
@@ -90,6 +103,7 @@ void TitleScreen::hide() {
   ui_->hide(MainMenuDocument);
   ui_->hide(SaveSlotsDocument);
   ui_->hide(DialogDocument);
+  ui_->hide(NewGameRulesDocument);
 }
 
 bool TitleScreen::handle(const ui::UiCommand& command) {
@@ -104,7 +118,7 @@ bool TitleScreen::handle(const ui::UiCommand& command) {
     if (flow_.keepsSaves()) {
       showList(SlotListMode::NewGame);
     } else {
-      start_ = PlayStart{};
+      startOrAskRules(PlayStart{});
     }
   } else if (name == "continue") {
     showList(SlotListMode::Continue);
@@ -132,14 +146,26 @@ bool TitleScreen::handle(const ui::UiCommand& command) {
         back();
       }
     } else {
-      start_ = flow_.answer(yes != nullptr && *yes);
-      if (start_) {
+      auto start = flow_.answer(yes != nullptr && *yes);
+      if (start) {
         // The list stayed behind the question; the game starts without it.
         ui_->hide(SaveSlotsDocument);
+        startOrAskRules(std::move(start));
       } else {
         back();
       }
     }
+  } else if (name == "new_game_rules") {
+    const std::string* ruleset = std::get_if<std::string>(&command.value);
+    ui_->hide(NewGameRulesDocument);
+    if (pending_ && ruleset != nullptr) {
+      pending_->rulesetId = *ruleset;
+      start_ = std::exchange(pending_, std::nullopt);
+    }
+  } else if (name == "new_game_rules_back") {
+    ui_->hide(NewGameRulesDocument);
+    pending_.reset();
+    back();
   } else {
     return false;
   }
@@ -171,6 +197,19 @@ void TitleScreen::showDialog(const SaveDialog& dialog) {
   }
   screens::publish(*ui_, dialogSettings(dialog, true), "dialog.revision");
   ui_->show(DialogDocument, true);
+}
+
+void TitleScreen::startOrAskRules(std::optional<PlayStart> start) {
+  if (!start || start->load || !asksRules_) {
+    start_ = std::move(start);
+    return;
+  }
+  pending_ = std::move(start);
+  ui_->hide(MainMenuDocument);
+  ui_->hide(SaveSlotsDocument);
+  screens::publish(*ui_, {{.name = "new_game_rules.mega", .value = megaOffered_}},
+                   "new_game_rules.revision");
+  ui_->show(NewGameRulesDocument, true);
 }
 
 void TitleScreen::back() {

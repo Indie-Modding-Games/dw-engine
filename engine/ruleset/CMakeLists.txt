@@ -8,6 +8,7 @@ dwe_add_module(ruleset
         src/game_clock.cpp
         src/ruleset_values.cpp
         src/section_file.cpp
+        src/species_extra.cpp
     DEPS core assets)
 
 # The tests read the game pack and the schemas from the source tree.

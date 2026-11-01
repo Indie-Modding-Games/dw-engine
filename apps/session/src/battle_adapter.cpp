@@ -8,6 +8,7 @@
 #include <dwe/game/partner/partner.hpp>
 #include <dwe/game/save/autosave.hpp>
 #include <dwe/game/save/sections.hpp>
+#include <dwe/ruleset/species_extra.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
@@ -189,8 +190,11 @@ ruleset::SectionChecks BattleAdapter::sectionChecks() const {
 
 core::Result<void> BattleAdapter::loadTables(const ruleset::Ruleset& rules) {
   if (!desc_.digimon) {
-    auto digimon = loadTable<assets::DigimonTable>(desc_.files, rules, DigimonTableRole,
-                                                   assets::loadDigimonTable);
+    // With the ruleset's species patches (moves of the hidden content's partners).
+    auto digimon = desc_.files == nullptr || rules.table(DigimonTableRole) == nullptr
+                       ? loadTable<assets::DigimonTable>(desc_.files, rules, DigimonTableRole,
+                                                         assets::loadDigimonTable)
+                       : ruleset::loadPatchedDigimonTable(*desc_.files, rules);
     if (!digimon) {
       return std::unexpected{digimon.error()};
     }

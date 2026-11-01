@@ -176,10 +176,14 @@ local function chart_cursor(document)
   cursor:set_property("top", ((cell.y - 33) * 3) .. "dp")
 end
 
+-- The chart's cells: the original's 61, and the ones a ruleset's patches add (the hidden content).
+local ChartCells = 72
+
 local function refresh_chart(document)
-  local count = math.min(61, tonumber(ui.setting("player.chart.count")) or 0)
+  local count = math.min(ChartCells, tonumber(ui.setting("player.chart.count")) or 0)
   local raised_text = ui.setting("player.chart.raised") or ""
-  local signature = tostring(count) .. ":" .. raised_text
+  local wide = ui.setting("player.chart.wide") == true
+  local signature = tostring(count) .. ":" .. raised_text .. ":" .. tostring(wide)
   if signature == chart_signature then
     return
   end
@@ -189,7 +193,9 @@ local function refresh_chart(document)
     raised[tonumber(index)] = true
   end
   chart_cells = {}
-  for i = 0, 60 do
+  -- A cell right of the original's last column widens the Ultimate box and the panel by a column.
+  document:get("panel"):set_class("chart-wide", wide)
+  for i = 0, ChartCells - 1 do
     local button = document:get("chart-cell-" .. i)
     button:set_class("hidden", i >= count)
     if i < count then
@@ -261,7 +267,7 @@ local REQ_ROWS = 15
 local UNDISCOVERED = -2
 local GLOW = { "#84f084", "#2c9a40" }
 local DIM = { "#5a5a5a", "#3a3a3a" }
-local GROUP_KEYS = { care = true, weight = true, stats = true, bonus = true }
+local GROUP_KEYS = { care = true, weight = true, stats = true, bonus = true, gate = true }
 local STAT_KEYS = { hp = true, mp = true, off = true, def = true, spd = true, brn = true }
 
 local function requirements_on()

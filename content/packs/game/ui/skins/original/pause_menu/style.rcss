@@ -349,6 +349,10 @@
 #chart-stage-2 { left: 252dp; width: 105dp; height: 531dp; border-color: #5082c8; border-right-color: #0a375f; border-bottom-color: #0a375f; background-color: #0f5082; }
 #chart-stage-3 { left: 363dp; width: 321dp; border-color: #5aaf6e; border-right-color: #005a28; border-bottom-color: #005a28; background-color: #008741; }
 #chart-stage-4 { left: 690dp; width: 171dp; border-color: #d29669; border-right-color: #78411e; border-bottom-color: #78411e; background-color: #af642d; }
+/* A ruleset's cell right of the original's last column (the hidden content, player.chart.wide): a third column in the
+   Ultimate box, and the panel as wide as the original's screen. */
+#panel.on-player.player-chart.chart-wide { width: 960dp; margin-left: -480dp; }
+#panel.chart-wide #chart-stage-4 { width: 243dp; }
 #panel.on-player .chart-cell, #panel.on-player .chart-cell:focus { position: absolute; width: 57dp; height: 57dp; margin: 0; padding: 0; border: 3dp #bebebe; border-right-color: #3c3c3c; border-bottom-color: #3c3c3c; box-sizing: border-box; background-color: #878787; }
 #panel.on-player .chart-cell.hidden, .chart-icon.hidden { display: none; }
 .chart-icon { display: block; width: 48dp; height: 48dp; pointer-events: none; }

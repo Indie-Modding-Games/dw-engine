@@ -2,6 +2,7 @@
 #include <dwe/game/evolution/messages.hpp>
 #include <dwe/game/evolution/tables.hpp>
 #include <dwe/ruleset/ruleset.hpp>
+#include <dwe/ruleset/species_extra.hpp>
 
 #include <algorithm>
 #include <charconv>
@@ -241,11 +242,12 @@ core::Result<EvolutionTables> EvolutionTables::load(const assets::VirtualFileSys
       return std::unexpected{id->error()};
     }
   }
-  auto digimon = assets::loadDigimonTable(vfs, **digimonId);
+  // The ruleset's species patches (the hidden content) go over the disc's tables.
+  auto digimon = ruleset::loadPatchedDigimonTable(vfs, ruleset);
   if (!digimon) {
     return std::unexpected{digimon.error()};
   }
-  auto raise = assets::loadRaiseTable(vfs, **raiseId);
+  auto raise = ruleset::loadPatchedRaiseTable(vfs, ruleset);
   if (!raise) {
     return std::unexpected{raise.error()};
   }
@@ -253,7 +255,7 @@ core::Result<EvolutionTables> EvolutionTables::load(const assets::VirtualFileSys
   if (!moves) {
     return std::unexpected{moves.error()};
   }
-  auto evolution = assets::loadEvolutionTable(vfs, **evolutionId);
+  auto evolution = ruleset::loadPatchedEvolutionTable(vfs, ruleset);
   if (!evolution) {
     return std::unexpected{evolution.error()};
   }
@@ -261,7 +263,56 @@ core::Result<EvolutionTables> EvolutionTables::load(const assets::VirtualFileSys
   if (!itemEffects) {
     return std::unexpected{itemEffects.error()};
   }
-  return build(*digimon, *raise, *moves, *evolution, *itemEffects);
+  auto tables = build(*digimon, *raise, *moves, *evolution, *itemEffects);
+  if (!tables) {
+    return tables;
+  }
+  auto extra = ruleset::readSpeciesExtra(ruleset);
+  if (!extra) {
+    return std::unexpected{extra.error()};
+  }
+  if (auto used = tables->useExtra(*extra); !used) {
+    return std::unexpected{used.error()};
+  }
+  return tables;
+}
+
+core::Result<void> EvolutionTables::useExtra(const ruleset::SpeciesExtra& extra) {
+  gates_.clear();
+  megas_.clear();
+  megaStep_ = extra.megaStep;
+  const auto require = [&](std::string_view id) -> core::Result<Species> {
+    if (const auto species = find(id)) {
+      return *species;
+    }
+    return core::fail(
+        messages::formatMessage(messages::UnknownForm, ruleset::SpeciesExtraSection, id));
+  };
+  for (const auto& [id, patch] : extra.species) {
+    if (!patch.gate) {
+      continue;
+    }
+    auto species = require(id);
+    if (!species) {
+      return std::unexpected{species.error()};
+    }
+    gates_.insert_or_assign(*species, *patch.gate);
+  }
+  if (megaStep_) {
+    for (const std::string& id : megaStep_->mega) {
+      auto species = require(id);
+      if (!species) {
+        return std::unexpected{species.error()};
+      }
+      megas_.insert(*species);
+    }
+  }
+  return {};
+}
+
+const ruleset::SpeciesGate* EvolutionTables::gate(Species target) const {
+  const auto found = gates_.find(target);
+  return found == gates_.end() ? nullptr : &found->second;
 }
 
 const SpeciesData* EvolutionTables::species(Species species) const {

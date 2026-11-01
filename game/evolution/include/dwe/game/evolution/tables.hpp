@@ -7,12 +7,14 @@
 #include <dwe/assets/raise_table.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/game/evolution/inputs.hpp>
+#include <dwe/ruleset/species_extra.hpp>
 
 #include <array>
 #include <cstdint>
 #include <functional>
 #include <map>
 #include <optional>
+#include <set>
 #include <span>
 #include <string>
 #include <string_view>
@@ -133,6 +135,22 @@ public:
   // The form an item of the evolution item table leads to, or nothing.
   [[nodiscard]] std::optional<Species> itemTarget(std::string_view item) const;
 
+  // Takes the gates and the Mega step of a ruleset's species patches (ruleset/species_extra.hpp);
+  // the patches of the tables themselves are applied before build. An id the tables lack is an
+  // error.
+  core::Result<void> useExtra(const ruleset::SpeciesExtra& extra);
+
+  // The gate of a target, or nullptr: the target is not scored while it is closed.
+  [[nodiscard]] const ruleset::SpeciesGate* gate(Species target) const;
+
+  // The Ultimate to Mega step, or nullptr when the ruleset has none.
+  [[nodiscard]] const ruleset::MegaStep* megaStep() const {
+    return megaStep_ ? &*megaStep_ : nullptr;
+  }
+
+  // Whether a species is a Mega of the Mega step: it counts as Ultimate for every other rule.
+  [[nodiscard]] bool isMega(Species species) const { return megas_.contains(species); }
+
 private:
   std::map<Species, SpeciesData> species_;
   std::map<std::string, Species, std::less<>> speciesById_;
@@ -141,6 +159,9 @@ private:
   std::map<Species, std::vector<Species>> paths_;
   assets::MoveTable moves_;
   std::map<std::string, Species, std::less<>> itemTargets_;
+  std::map<Species, ruleset::SpeciesGate> gates_;
+  std::optional<ruleset::MegaStep> megaStep_;
+  std::set<Species> megas_;
 };
 
 } // namespace dwe::game::evolution

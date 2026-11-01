@@ -35,8 +35,10 @@
 #include "common.hpp"
 #include "messages.hpp"
 #include "partner_events.hpp"
+#include "partner_set_command.hpp"
 #include "partner_tab.hpp"
 #include "place_command.hpp"
+#include "player_chart.hpp"
 #include "story_map_edits.hpp"
 #include "story_set_command.hpp"
 #include "title_screen.hpp"
@@ -199,6 +201,9 @@ void SessionCommands::drop(Autotest* autotest) {
   if (!std::exchange(storyWrites, {}).empty()) {
     dropped(messages::StorySetFailed);
   }
+  if (!std::exchange(partnerWrites, {}).empty()) {
+    dropped(messages::PartnerSetFailed);
+  }
   if (std::exchange(saveMachine, false)) {
     dropped(messages::SaveMachineFailed);
   }
@@ -233,6 +238,8 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
                       [this](std::string_view where) { placements.emplace_back(where); });
   scripts.bindCommand(StorySetCommand,
                       [this](std::string_view what) { storyWrites.emplace_back(what); });
+  scripts.bindCommand(PartnerSetCommand,
+                      [this](std::string_view what) { partnerWrites.emplace_back(what); });
   scripts.bindCommand(EvolveCommand,
                       [this](std::string_view form) { evolution = std::string{form}; });
   care.bind(scripts);
@@ -250,6 +257,9 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
   }
   session::GameSession& session = *game->session;
   logRuleset(session.rules().current());
+  if (context.ui != nullptr) {
+    publishRulesetChart(*context.ui, *context.files, session.rules().current());
+  }
   // A loaded game starts where it was saved, unless --start says otherwise.
   const std::optional<session::FieldPlace> savedPlace =
       options.startMap ? std::nullopt : session.savedPlace();
@@ -461,6 +471,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   context_.ui->setSetting(TranslatedSignsSetting, translatedSigns);
   // The status page's extras (the tiredness and the care mistakes), on unless turned off.
   context_.ui->setSetting(StatusExtrasSetting, context.userSettings->statusExtras.value_or(true));
+  context_.ui->setSetting(EvolutionActiveSetting, false);
   // The save indicator's document goes up before the HUD's, which takes the focus.
   saveIndicator_.emplace(*context_.ui, game_.session->savesWritten(),
                          context.userSettings->saveNotice.value_or(true));
@@ -872,6 +883,14 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
       core::logWarning("{}", core::formatMessage(messages::StorySetFailed, write.error().message));
     }
   }
+  for (const std::string& what : std::exchange(commands.partnerWrites, {})) {
+    if (auto write = partnerWriteFromText(what)) {
+      applyPartnerWrite(game_.session->partner(), *write);
+    } else {
+      core::logWarning("{}",
+                       core::formatMessage(messages::PartnerSetFailed, write.error().message));
+    }
+  }
   if (const auto npcs = std::exchange(commands.battle, std::nullopt)) {
     startBattle(battleScreen_, species, *scene_, *npcs);
   }
@@ -974,6 +993,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     context_.ui->setSetting(BattleActiveSetting, battleScreen_.active());
   }
   battleRanLastFrame_ = battleScreen_.active();
+  if (evolutionRanLastFrame_ != evolutionScene_.active()) {
+    evolutionRanLastFrame_ = evolutionScene_.active();
+    context_.ui->setSetting(EvolutionActiveSetting, evolutionRanLastFrame_);
+  }
   if (guardFactsChanged) {
     scene_->refreshScriptWarps();
   }

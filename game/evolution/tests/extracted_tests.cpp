@@ -338,3 +338,80 @@ TEST_CASE(
 }
 
 } // namespace dwe::game::evolution
+
+namespace dwe::game::evolution {
+
+// The hidden content ruleset on the user's disc: its new targets sit after the original's in each
+// chart, and the gated targets evolve only with their gate open.
+TEST_CASE("the user's disc, extracted: the hidden content's paths and gates") {
+  const assets::DiskFileSystem disk;
+  const auto vfs = mountContent(disk);
+  if (!vfs) {
+    MESSAGE(Skipping);
+    return;
+  }
+  const auto ruleset = ruleset::loadRuleset(*vfs, "oculto");
+  REQUIRE_MESSAGE(ruleset.has_value(), errorOf(ruleset));
+  auto loaded = Evolution::load(*vfs, *ruleset);
+  REQUIRE_MESSAGE(loaded.has_value(), errorOf(loaded));
+  const Evolution& evolution = *loaded;
+  const EvolutionTables& tables = evolution.tables();
+  const auto targetsOf = [&](std::string_view id) {
+    const auto targets = tables.pathTargets(idOf(evolution, id));
+    return std::vector<Species>{targets.begin(), targets.end()};
+  };
+  CHECK(targetsOf("elec").back() == idOf(evolution, "panj"));
+  CHECK(targetsOf("penm").back() == idOf(evolution, "panj"));
+  CHECK(targetsOf("panj") ==
+        std::vector<Species>{idOf(evolution, "andr"), idOf(evolution, "mame")});
+  for (const std::string_view from : {"tyra", "devi", "aird", "sead"}) {
+    CHECK_MESSAGE(targetsOf(from).back() == idOf(evolution, "ggdr"), from);
+  }
+  CHECK(targetsOf("scum").back() == idOf(evolution, "mtet"));
+  CHECK(targetsOf("nume").back() == idOf(evolution, "mtet"));
+  // The original's targets keep their order.
+  CHECK(targetsOf("elec").front() == idOf(evolution, "leom"));
+
+  // Panjyamon from Penguinmon: met requirement, closed then open gate.
+  const Species panj = idOf(evolution, "panj");
+  EvolutionInputs inputs = inputsMeeting(evolution, idOf(evolution, "penm"), panj);
+  inputs.learnedMoves = 30;
+  bool leomonResident = false;
+  inputs.trigger = [&leomonResident](std::int32_t trigger) {
+    return trigger == 248 && leomonResident;
+  };
+  const auto report = evolution.report(inputs, {}, panj);
+  REQUIRE(report);
+  CHECK(report->gateMet == false);
+  leomonResident = true;
+  const auto open = evolution.report(inputs, {}, panj);
+  REQUIRE(open);
+  CHECK(open->gateMet == true);
+  CHECK(open->points >= evolution.rules().requirements.passPoints);
+
+  // Each new target is the one the check picks from its source, with the values the route sets.
+  struct Case {
+    std::string_view from;
+    std::string_view target;
+    std::int32_t trigger;
+    std::int32_t weight;
+  };
+  for (const Case& each : {Case{.from = "penm", .target = "panj", .trigger = 248, .weight = 25},
+                           Case{.from = "sead", .target = "ggdr", .trigger = 0, .weight = 63},
+                           Case{.from = "scum", .target = "mtet", .trigger = 242, .weight = 24}}) {
+    CAPTURE(each.target);
+    const Species target = idOf(evolution, each.target);
+    EvolutionInputs meeting = inputsMeeting(evolution, idOf(evolution, each.from), target);
+    meeting.weight = each.weight;
+    meeting.tamerFree = true;
+    meeting.evolutionTimer = 1000;
+    const std::int32_t trigger = each.trigger;
+    meeting.trigger = [trigger](std::int32_t set) { return set == trigger; };
+    const auto scored = evolution.report(meeting, {}, target);
+    REQUIRE(scored);
+    CHECK(scored->points >= evolution.rules().requirements.passPoints);
+    CHECK(evolution.outlook(meeting, {}).next == target);
+  }
+}
+
+} // namespace dwe::game::evolution

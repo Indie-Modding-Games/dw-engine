@@ -1,0 +1,61 @@
+# Parches por especie sobre las tablas del disco (docs/architecture/rulesets.md, «Parches por especie»). Son números
+# de diseño nuestros, no datos del juego: requisitos con el formato de EVOLUTION_REQS (stats mínimos, errores de
+# cuidado, peso ± margen y un punto extra; aprueba con 3 de 4), una puerta que el original no tiene (si no se cumple,
+# el destino ni puntúa) y la celda del árbol (píxeles del árbol; icono prestado de otra especie con otra paleta).
+# Cada destino nuevo toma la primera ranura libre de `to` tras el último destino del origen, así que en un empate
+# gana el destino del original.
+species:
+  # Panjyamon (Campeón): el discípulo del rey bestia. Puerta: Leomon vive en la ciudad (disparador 200 + 48).
+  panj:
+    requirement:
+      from: penm
+      offense: 150
+      defense: 100
+      speed: 120
+      care: 2
+      care_is_maximum: true
+      weight: 25
+      techs: 30
+    gate: { triggers: [248] }
+    evolves_from: [elec, penm]
+    # Los destinos de Leomon.
+    evolves_to: [andr, mame]
+    chart: { x: 189, y: 176, icon: leom, palette: 2 }
+  # Gigadramon (Ultra). Puerta: la Copa Metálica ganada; queda abierta hasta que los torneos registren las copas
+  # ganadas (gancho: EvolutionInputs::cupWon).
+  ggdr:
+    requirement:
+      hp: 400
+      mp: 400
+      offense: 500
+      defense: 400
+      speed: 300
+      brains: 300
+      care: 5
+      care_is_maximum: true
+      weight: 60
+      battles: 60
+    gate: { cup: metalic_cup }
+    evolves_from: [tyra, devi, aird, sead]
+    chart: { x: 274, y: 176, icon: mgdr, palette: 1 }
+  # MetalEtemon (Ultra; Mega con el paso Ultra → Mega). Puerta: Etemon vencido, que se une a la ciudad (200 + 42).
+  mtet:
+    requirement:
+      from: scum
+      offense: 500
+      speed: 500
+      brains: 400
+      care: 0
+      care_is_maximum: true
+      weight: 20
+      battles: 100
+    gate: { triggers: [242] }
+    evolves_from: [scum, nume]
+    # La tercera columna de Ultra (el árbol se ensancha).
+    chart: { x: 298, y: 81, icon: etem, palette: 2 }
+# Gancho para los torneos: el premio extra de cada copa ganada. Nada lo entrega todavía; lo leerá el adaptador de
+# torneos cuando llegue (cup = id de copa de data/tournaments).
+cup_prizes:
+  - { cup: animal_cup, item: noble_mane }
+  - { cup: metalic_cup, item: giga_hand }
+  - { cup: filth_cup, item: metalbanana }

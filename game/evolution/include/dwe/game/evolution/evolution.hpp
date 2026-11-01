@@ -124,6 +124,8 @@ private:
                                                           std::int64_t frames,
                                                           ruleset::Random& random) const;
   [[nodiscard]] std::optional<std::int32_t> checkHours(Level level) const;
+  // The hours of a species' level, or of the Mega step for an Ultimate that can still take it.
+  [[nodiscard]] std::optional<std::int32_t> checkHoursFor(Species species) const;
   [[nodiscard]] Species require(std::string_view id) const;
 
   // Applies EVL_applyEvolution's rules for a target.

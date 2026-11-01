@@ -4,6 +4,7 @@
 #include <dwe/game/partner/partner.hpp>
 #include <dwe/game/save/sections.hpp>
 #include <dwe/ruleset/game_clock.hpp>
+#include <dwe/ruleset/species_extra.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/game_session.hpp>
@@ -138,11 +139,16 @@ EvolutionAdapter::EvolutionAdapter(EvolutionAdapterDesc desc)
 EvolutionAdapter::~EvolutionAdapter() = default;
 
 ruleset::SectionChecks EvolutionAdapter::sectionChecks() const {
-  return {{std::string{game::evolution::EvolutionSection}, game::evolution::checkEvolutionSection}};
+  return {{std::string{game::evolution::EvolutionSection}, game::evolution::checkEvolutionSection},
+          {std::string{ruleset::SpeciesExtraSection}, ruleset::checkSpeciesExtraSection},
+          {std::string{ruleset::MegaStepSection}, ruleset::checkSpeciesExtraSection}};
 }
 
 core::Result<void> EvolutionAdapter::readRules(const ruleset::Ruleset& rules) {
-  if (!desc_.tables) {
+  // Tables read from the packs follow the ruleset: another ruleset patches them otherwise (its
+  // species_extra and mega_step sections).
+  const bool otherRuleset = tablesRuleset_ && *tablesRuleset_ != rules.id();
+  if (!desc_.tables || (otherRuleset && desc_.files != nullptr)) {
     if (desc_.files == nullptr) {
       return core::fail(std::string{messages::EvolutionNeedsTables});
     }
@@ -151,6 +157,7 @@ core::Result<void> EvolutionAdapter::readRules(const ruleset::Ruleset& rules) {
       return std::unexpected{tables.error()};
     }
     desc_.tables = std::move(*tables);
+    tablesRuleset_ = rules.id();
   }
   auto section = rules.requireSection(game::evolution::EvolutionSection);
   if (!section) {
@@ -446,7 +453,20 @@ std::optional<EvolutionInputs> EvolutionAdapter::inputsOf(const GameSession& ses
                          .tamerFree = session.careContext().tamerIdle,
                          .scriptPaused = !scriptRunning,
                          .virusForm = tables.find(session.partnerRules().care.toilet.virusForm),
-                         .virusBackup = backup};
+                         .virusBackup = backup,
+                         // The hidden content's gates: story triggers and the hour of the day. Cup
+                         // wins stay unset (the gate open) until the tournaments record them.
+                         .trigger = triggerReader(),
+                         .hourOfDay = session.clock().time().hour,
+                         .cupWon = {}};
+}
+
+std::function<bool(std::int32_t)> EvolutionAdapter::triggerReader() const {
+  const StoryAdapter* story = desc_.story;
+  if (story == nullptr) {
+    return {};
+  }
+  return [story](std::int32_t trigger) { return story->state().trigger(trigger).value_or(false); };
 }
 
 std::int32_t EvolutionAdapter::masteredMoves() const {

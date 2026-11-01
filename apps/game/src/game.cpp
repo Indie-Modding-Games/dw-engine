@@ -729,6 +729,8 @@ int runGame(const Options& requested) {
                                start);
   }};
   TitleScreen title{files, options, !autotest, **ui};
+  // A new game asks its rules (an addition); an autotest only when its route asks.
+  title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
   // What waits for the movie that plays: the title, or a game to start (main.c: main).
   std::optional<PlayStart> startAfterMovie;
   // The new game that waits for the opening's questions.

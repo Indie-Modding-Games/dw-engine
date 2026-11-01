@@ -1,0 +1,10 @@
+# El original con su contenido oculto (opción de partida nueva, apagada por defecto): Panjyamon, Gigadramon y
+# MetalEtemon, que el disco trae pero solo da por objeto, se alcanzan también evolucionando. Diseño aprobado:
+# docs/modulos/game/evolution.md, «Contenido oculto». Formato de los parches: docs/architecture/rulesets.md.
+id: oculto
+name: "Original + contenido oculto"
+version: 0.1.0
+description: "Las reglas del original, con Panjyamon, Gigadramon y MetalEtemon alcanzables por evolución."
+extends: original
+sections:
+  - species_extra

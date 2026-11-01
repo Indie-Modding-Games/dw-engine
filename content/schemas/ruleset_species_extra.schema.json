@@ -1,0 +1,361 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: species_extra",
+  "description": "rules/<id>/species_extra.yaml: patches by species id over the disc's tables (requirement and stat rows, targets in free path slots, raise rows, moves, gates, clip stand-ins, chart cells) for a ruleset that adds partners (engine/ruleset: species_extra.hpp; docs/architecture/rulesets.md).",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "$defs": {
+    "species": {
+      "description": "A species id of data/digimon.",
+      "type": "string",
+      "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$"
+    },
+    "move": {
+      "description": "A move's id in data/moves.",
+      "type": "string",
+      "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+      "entryReference": "data/moves"
+    },
+    "gate": {
+      "description": "What must hold before the target even scores.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "triggers": {
+          "description": "Story triggers that must be set.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "hours": {
+          "description": "Hours of the game day, from `from` to before `to`; wraps past midnight.",
+          "type": "object",
+          "required": [
+            "from",
+            "to"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "from": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            },
+            "to": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 24
+            }
+          }
+        },
+        "cup": {
+          "description": "A cup that must have been won (a hook: open until the tournaments record wins).",
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        }
+      }
+    },
+    "species_patch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requirement": {
+          "description": "Its EVOLUTION_REQS row; a value left out asks for nothing (-1).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "from": {
+              "$ref": "#/$defs/species",
+              "description": "The form whose partner gets the bonus point."
+            },
+            "hp": {
+              "description": "The least hp.",
+              "type": "integer",
+              "minimum": -1
+            },
+            "mp": {
+              "description": "The least mp.",
+              "type": "integer",
+              "minimum": -1
+            },
+            "offense": {
+              "description": "The least offense.",
+              "type": "integer",
+              "minimum": -1
+            },
+            "defense": {
+              "description": "The least defense.",
+              "type": "integer",
+              "minimum": -1
+            },
+            "speed": {
+              "description": "The least speed.",
+              "type": "integer",
+              "minimum": -1
+            },
+            "brains": {
+              "description": "The least brains.",
+              "type": "integer",
+              "minimum": -1
+            },
+            "care": {
+              "description": "The care mistakes: the most with care_is_maximum, else the least.",
+              "type": "integer",
+              "minimum": -1
+            },
+            "care_is_maximum": {
+              "type": "boolean"
+            },
+            "weight": {
+              "description": "The weight, give or take the rules' margin.",
+              "type": "integer",
+              "minimum": -1
+            },
+            "discipline": {
+              "description": "The least discipline (bonus point).",
+              "type": "integer",
+              "minimum": -1
+            },
+            "happiness": {
+              "description": "The least happiness (bonus point).",
+              "type": "integer",
+              "minimum": -1
+            },
+            "battles": {
+              "description": "The battles: the most with battles_are_maximum, else the least (bonus point).",
+              "type": "integer",
+              "minimum": -1
+            },
+            "battles_are_maximum": {
+              "type": "boolean"
+            },
+            "techs": {
+              "description": "The least moves learned (bonus point).",
+              "type": "integer",
+              "minimum": -1
+            }
+          }
+        },
+        "gate": {
+          "$ref": "#/$defs/gate"
+        },
+        "evolves_from": {
+          "description": "The forms that evolve into it: it takes the first free `to` slot after each one's last target.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/species"
+          }
+        },
+        "evolves_to": {
+          "description": "Its own targets, at most 6.",
+          "type": "array",
+          "maxItems": 6,
+          "items": {
+            "$ref": "#/$defs/species"
+          }
+        },
+        "stats_gains": {
+          "description": "Its EVOLUTION_STATS_GAINS row: the stats a partner that evolves into it is brought towards.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hp",
+            "mp",
+            "offense",
+            "defense",
+            "speed",
+            "brains"
+          ],
+          "properties": {
+            "hp": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "mp": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "offense": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "defense": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "speed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "brains": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "raise": {
+          "description": "A raise row copied from another species, with some values changed.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "copy"
+          ],
+          "properties": {
+            "copy": {
+              "$ref": "#/$defs/species"
+            },
+            "favorite_food": {
+              "description": "An item id of data/items.",
+              "type": "string",
+              "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+              "entryReference": "data/items"
+            },
+            "default_weight": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "energy_cap": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "energy_usage": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hunger_times": {
+              "description": "The 8 hours it gets hungry at; -1 for none.",
+              "type": "array",
+              "minItems": 8,
+              "maxItems": 8,
+              "items": {
+                "type": "integer",
+                "minimum": -1,
+                "maximum": 23
+              }
+            }
+          }
+        },
+        "moves": {
+          "description": "Moves put in the empty slots of its data/digimon row, in order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/move"
+          }
+        },
+        "partner_type": {
+          "description": "The type its partner fights with (0 vaccine, 1 data, 2 virus, 3 the rules' fourth).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "partner_moves": {
+          "description": "A move's values when its partner uses it; its enemy form keeps the table's.",
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "minProperties": 1,
+            "properties": {
+              "power": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "iframes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "effect_type": {
+          "$ref": "#/$defs/species",
+          "description": "The species whose effect points its moves use."
+        },
+        "clips": {
+          "description": "An original clip id it lacks -> the clip played instead.",
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[0-9]+$"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "field_scale": {
+          "description": "The size of the partner in the field; 1 is the original's.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 4
+        },
+        "chart": {
+          "description": "Its cell on the evolution chart, in the chart's pixels, and the icon it borrows.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "icon",
+            "palette"
+          ],
+          "properties": {
+            "x": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "y": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "icon": {
+              "$ref": "#/$defs/species"
+            },
+            "palette": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "species": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9_]+$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/species_patch"
+      }
+    },
+    "cup_prizes": {
+      "description": "A cup's extra prize (a hook for the tournaments: nothing gives it yet).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "cup",
+          "item"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "cup": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "item": {
+            "type": "string",
+            "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+            "entryReference": "data/items"
+          }
+        }
+      }
+    }
+  }
+}

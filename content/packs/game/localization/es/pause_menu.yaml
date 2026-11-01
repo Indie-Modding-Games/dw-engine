@@ -93,6 +93,8 @@ evoreq.happy: "Felicidad"
 evoreq.battles: "Batallas"
 evoreq.techs: "Técnicas"
 evoreq.special: "Evolución especial"
+# Una condición de un ruleset (el contenido oculto): un residente de la ciudad, la hora, una copa ganada.
+evoreq.gate: "Condición especial"
 evoreq.always: "Siempre"
 evoreq.time: "Revisión"
 evoreq.hours: "{hours} h"

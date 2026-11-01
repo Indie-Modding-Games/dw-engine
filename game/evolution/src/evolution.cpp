@@ -190,13 +190,26 @@ std::optional<std::int32_t> Evolution::checkHours(Level level) const {
   return std::nullopt;
 }
 
+std::optional<std::int32_t> Evolution::checkHoursFor(Species species) const {
+  const Level level = tables_.levelOf(species);
+  if (level == Level::Ultimate) {
+    // The Mega step (an option): an Ultimate that is not a Mega checks again from its hours.
+    const ruleset::MegaStep* step = tables_.megaStep();
+    if (step != nullptr && !tables_.isMega(species)) {
+      return step->checkHours;
+    }
+    return std::nullopt;
+  }
+  return checkHours(level);
+}
+
 Species Evolution::require(std::string_view id) const {
   return tables_.find(id).value_or(0);
 }
 
 std::optional<Species> Evolution::naturalTarget(const EvolutionInputs& inputs,
                                                 const EvolutionState& state) const {
-  const auto hours = checkHours(tables_.levelOf(inputs.species));
+  const auto hours = checkHoursFor(inputs.species);
   if (!hours || inputs.evolutionTimer < *hours) {
     return std::nullopt;
   }
@@ -218,7 +231,7 @@ EvolutionOutlook Evolution::outlook(const EvolutionInputs& inputs,
   outlook.species = inputs.species;
   outlook.level = level;
   outlook.evolutionTimer = inputs.evolutionTimer;
-  outlook.checkHours = checkHours(level);
+  outlook.checkHours = checkHoursFor(inputs.species);
   if (!outlook.checkHours) {
     return outlook;
   }

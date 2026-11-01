@@ -76,6 +76,11 @@ std::string weightRange(std::int32_t low, std::int32_t high) {
 
 std::vector<RequirementRow> requirementRows(const RequirementReport& report) {
   std::vector<RequirementRow> rows;
+  // A ruleset's gate (the hidden content's special condition): until it holds the target scores
+  // nothing.
+  if (report.gateMet) {
+    rows.push_back({.key = "gate", .range = {}, .value = {}, .met = *report.gateMet});
+  }
   if (report.careMistakes == NoRequirement && report.weight == NoRequirement) {
     rows.push_back({.key = "special", .range = {}, .value = {}, .met = report.passes()});
     return rows;

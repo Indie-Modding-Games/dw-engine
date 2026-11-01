@@ -1,0 +1,26 @@
+<rml>
+<head>
+	<title>New game rules</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<div id="panel">
+			<h1 id="title" text-key="new_game_rules.title"></h1>
+			<button id="rules-hidden" onclick="toggle(document, 'hidden')"></button>
+			<p id="about-hidden" class="about"></p>
+			<button id="rules-mega" onclick="toggle(document, 'mega')"></button>
+			<p id="about-mega" class="about"></p>
+			<button id="rules-start" onclick="start()" text-key="new_game_rules.start"></button>
+			<button id="back" class="back" onclick="back()" text-key="common.back"></button>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="common.back"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

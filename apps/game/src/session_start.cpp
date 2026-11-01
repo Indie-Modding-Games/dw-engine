@@ -2,6 +2,7 @@
 
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
+#include <dwe/game/save/settings.hpp>
 #include <dwe/game/save/slots.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/story_adapter.hpp>
@@ -48,6 +49,24 @@ core::Result<void> begin(session::GameSession& session, const PlayStart& start,
   return {};
 }
 
+// The ruleset a game plays with: a loaded game's is the one its save records, so the systems that
+// build their tables once (the partner's species, the evolution's tables) build them for it; a new
+// game's is the one the new game's rules screen chose, else the command line's.
+std::string rulesetFor(const assets::VirtualFileSystem& files, const Options& options,
+                       const PlayStart& play, game::save::SaveStorage* storage) {
+  if (play.load && storage != nullptr) {
+    if (auto settings = game::save::loadSaveSettings(files)) {
+      const game::save::SaveSlots slots{*storage, *settings};
+      auto file = play.backup ? slots.loadBackup(*play.load) : slots.load(*play.load);
+      if (file && !file->header.rulesetId.empty()) {
+        return file->header.rulesetId;
+      }
+    }
+    return options.ruleset;
+  }
+  return play.rulesetId.value_or(options.ruleset);
+}
+
 } // namespace
 
 std::unique_ptr<game::save::DiskSaveStorage> saveStorageFor(const Options& options,
@@ -74,16 +93,17 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
     start.systems.scenes->setNewGameChain(options.newGameChain);
   }
   const std::uint64_t seed = options.seed ? *options.seed : newSeed();
-  auto session = session::GameSession::create({.files = &files,
-                                               .rulesetId = options.ruleset,
-                                               .rules = std::nullopt,
-                                               .species = nullptr,
-                                               .seed = seed,
-                                               .storage = start.storage.get(),
-                                               .gameVersion = DWE_GAME_VERSION,
-                                               .wallClock = wallClock,
-                                               .sound = sound,
-                                               .systems = std::move(start.systems.systems)});
+  auto session = session::GameSession::create(
+      {.files = &files,
+       .rulesetId = rulesetFor(files, options, play, start.storage.get()),
+       .rules = std::nullopt,
+       .species = nullptr,
+       .seed = seed,
+       .storage = start.storage.get(),
+       .gameVersion = DWE_GAME_VERSION,
+       .wallClock = wallClock,
+       .sound = sound,
+       .systems = std::move(start.systems.systems)});
   if (!session) {
     return core::fail(core::formatMessage(messages::SessionFailed, session.error().message));
   }

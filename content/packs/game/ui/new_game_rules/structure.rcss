@@ -1,0 +1,7 @@
+/* How the new game's rules behave whatever the skin: the list wraps around. The look is the pause menu's (the skins'
+   pause_menu style). */
+
+#rules-hidden { nav-up: #back; }
+#back { nav-down: #rules-hidden; }
+#title { margin-bottom: 6dp; }
+.about { margin: 0 0 12dp 18dp; }

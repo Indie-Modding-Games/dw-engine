@@ -93,6 +93,8 @@ evoreq.happy: "Happiness"
 evoreq.battles: "Battles"
 evoreq.techs: "Techs"
 evoreq.special: "Special evolution"
+# A ruleset's condition (the hidden content): a city resident, the hour, a cup won.
+evoreq.gate: "Special condition"
 evoreq.always: "Always"
 evoreq.time: "Check at"
 evoreq.hours: "{hours} h"

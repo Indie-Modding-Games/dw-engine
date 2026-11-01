@@ -1,4 +1,6 @@
 #include <dwe/game/evolution/evolution.hpp>
+#include <dwe/game/evolution/strategies.hpp>
+#include <dwe/ruleset/species_extra.hpp>
 
 #include <doctest/doctest.h>
 
@@ -95,6 +97,34 @@ TEST_CASE("a rookie target names the partner's highest stat; a special one is a 
   const auto special = evolution.report(inputs, {}, TableFixture::index("nume"));
   REQUIRE(special.has_value());
   CHECK(keysOf(requirementRows(*special)) == std::vector<std::string>{"special"});
+}
+
+TEST_CASE("a ruleset's gate is the first row, met or not") {
+  TableFixture fixture;
+  fixture.requirement("panj").care = 2;
+  fixture.requirement("panj").weight = 25;
+  game::evolution::EvolutionTables tables = fixture.build();
+  dwe::ruleset::SpeciesExtra extra;
+  extra.species["panj"] =
+      dwe::ruleset::SpeciesPatch{.gate = dwe::ruleset::SpeciesGate{.triggers = {248}}};
+  REQUIRE(tables.useExtra(extra).has_value());
+  auto evolution = game::evolution::Evolution::create(
+      game::evolution::testing::originalRules(), std::move(tables),
+      std::make_unique<game::evolution::OriginalSelection>(),
+      std::make_unique<game::evolution::OriginalScoring>());
+  REQUIRE(evolution.has_value());
+  EvolutionInputs inputs = inputsOf("nume", 0);
+  inputs.trigger = [](std::int32_t trigger) { return trigger == 248; };
+  const auto open = evolution->report(inputs, {}, TableFixture::index("panj"));
+  REQUIRE(open.has_value());
+  const std::vector<RequirementRow> rows = requirementRows(open.value());
+  CHECK(keysOf(rows) == std::vector<std::string>{"gate", "care", "weight", "stats"});
+  CHECK(rows.front().met);
+  inputs.trigger = {};
+  const auto shut = evolution->report(inputs, {}, TableFixture::index("panj"));
+  REQUIRE(shut.has_value());
+  CHECK_FALSE(requirementRows(shut.value()).front().met);
+  CHECK(shut.value().points == 0);
 }
 
 TEST_CASE("the partner's line of the chart") {

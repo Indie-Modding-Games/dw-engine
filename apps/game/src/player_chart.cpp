@@ -5,8 +5,12 @@
 #include <dwe/assets/medal_table.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/ruleset/species_extra.hpp>
 
+#include <algorithm>
 #include <format>
+#include <optional>
+#include <string>
 
 namespace dwe::app {
 void publishChartDetailLayout(ui::Ui& ui, const assets::ChartDetailLayout& detail) {
@@ -42,33 +46,43 @@ void publishPlayerChart(ui::Ui& ui, const assets::EvolutionChart& chart,
   }
   ui.setSetting("player.chart.count", static_cast<double>(chart.entries.size()));
 }
+void publishChartPaths(ui::Ui& ui, const assets::EvolutionChart& chart,
+                       const assets::EvolutionTable& evolution) {
+  for (std::size_t i = 0; i < chart.entries.size(); ++i) {
+    // A cell with no path row (a new species with none) has no arrows.
+    for (std::size_t j = 0; j < 6; ++j) {
+      ui.setSetting(std::format("player.chart.{}.from.{}", i, j), -1.0);
+      ui.setSetting(std::format("player.chart.{}.to.{}", i, j), -1.0);
+    }
+    for (const auto& path : evolution.paths) {
+      if (!path.digimon || *path.digimon != chart.entries[i].digimon) {
+        continue;
+      }
+      const auto publishPaths = [&](std::string_view direction, const auto& refs) {
+        for (std::size_t j = 0; j < refs.size(); ++j) {
+          int target = refs[j] ? -2 : -1;
+          if (refs[j]) {
+            for (std::size_t k = 0; k < chart.entries.size(); ++k)
+              if (chart.entries[k].digimon == *refs[j])
+                target = static_cast<int>(k);
+          }
+          ui.setSetting(std::format("player.chart.{}.{}.{}", i, direction, j),
+                        static_cast<double>(target));
+        }
+      };
+      publishPaths("from", path.from);
+      publishPaths("to", path.to);
+    }
+  }
+  ui.setSetting("player.chart.detail.paths_ready", true);
+  core::logInfo("Chart detail: published {} evolution paths", evolution.paths.size());
+}
+
 void loadPlayerChartDetails(ui::Ui& ui, const assets::VirtualFileSystem& files,
                             const assets::EvolutionChart& chart) {
   const auto evolutionId = assets::AssetId::parse("data/evolution");
-  auto evolution = assets::loadEvolutionTable(files, *evolutionId);
-  if (evolution) {
-    for (std::size_t i = 0; i < chart.entries.size(); ++i) {
-      for (const auto& path : evolution->paths) {
-        if (!path.digimon || *path.digimon != chart.entries[i].digimon)
-          continue;
-        const auto publishPaths = [&](std::string_view direction, const auto& refs) {
-          for (std::size_t j = 0; j < refs.size(); ++j) {
-            int target = refs[j] ? -2 : -1;
-            if (refs[j]) {
-              for (std::size_t k = 0; k < chart.entries.size(); ++k)
-                if (chart.entries[k].digimon == *refs[j])
-                  target = static_cast<int>(k);
-            }
-            ui.setSetting(std::format("player.chart.{}.{}.{}", i, direction, j),
-                          static_cast<double>(target));
-          }
-        };
-        publishPaths("from", path.from);
-        publishPaths("to", path.to);
-      }
-    }
-    ui.setSetting("player.chart.detail.paths_ready", true);
-    core::logInfo("Chart detail: published {} evolution paths", evolution->paths.size());
+  if (auto evolution = assets::loadEvolutionTable(files, *evolutionId)) {
+    publishChartPaths(ui, chart, *evolution);
   }
   const auto detailId = assets::AssetId::parse("data/evolution_chart_detail");
   if (files.resolve(*detailId) != nullptr) {
@@ -79,6 +93,74 @@ void loadPlayerChartDetails(ui::Ui& ui, const assets::VirtualFileSystem& files,
       core::logWarning("Chart detail metadata: {}", detail.error().message);
   }
 }
+
+assets::EvolutionChart chartWithExtraCells(const assets::EvolutionChart& chart,
+                                           const ruleset::SpeciesExtra& extra,
+                                           const assets::EvolutionTable& evolution,
+                                           const assets::DigimonTable* species) {
+  assets::EvolutionChart result = chart;
+  for (const auto& [id, patch] : extra.species) {
+    if (!patch.chart) {
+      continue;
+    }
+    const bool onChart = std::ranges::any_of(
+        result.entries, [&](const assets::ChartCell& cell) { return cell.digimon == id; });
+    // Only a form some path leads to: a patch that adds none leaves the chart alone.
+    const bool reached = std::ranges::any_of(evolution.paths, [&](const auto& path) {
+      return std::ranges::find(path.to, std::optional<std::string>{id}) != path.to.end();
+    });
+    const auto icon =
+        std::ranges::find(chart.entries, patch.chart->icon, &assets::ChartCell::digimon);
+    if (onChart || !reached || icon == chart.entries.end()) {
+      continue;
+    }
+    const auto* row = species != nullptr ? species->find(id) : nullptr;
+    result.entries.push_back({.digimon = id,
+                              .index = row != nullptr ? row->index : 0,
+                              .x = patch.chart->x,
+                              .y = patch.chart->y,
+                              .u = icon->u,
+                              .v = icon->v,
+                              .palette = patch.chart->palette});
+  }
+  return result;
+}
+
+void publishRulesetChart(ui::Ui& ui, const assets::VirtualFileSystem& files,
+                         const ruleset::Ruleset& rules) {
+  const auto id = assets::AssetId::parse("data/evolution_chart");
+  if (files.resolve(*id) == nullptr) {
+    return;
+  }
+  auto chart = assets::loadEvolutionChart(files, *id);
+  if (!chart) {
+    core::logWarning("Chart metadata: {}", chart.error().message);
+    return;
+  }
+  auto evolution = ruleset::loadPatchedEvolutionTable(files, rules);
+  if (!evolution) {
+    core::logWarning("Chart paths: {}", evolution.error().message);
+    return;
+  }
+  auto extra = ruleset::readSpeciesExtra(rules);
+  if (!extra) {
+    core::logWarning("Chart cells: {}", extra.error().message);
+    extra = ruleset::SpeciesExtra{};
+  }
+  auto species = ruleset::loadPatchedDigimonTable(files, rules);
+  const assets::DigimonTable* table = species ? &*species : nullptr;
+  const assets::EvolutionChart cells = chartWithExtraCells(*chart, *extra, *evolution, table);
+  publishPlayerChart(ui, cells, table);
+  publishChartPaths(ui, cells, *evolution);
+  // A cell right of the original's last column (the Ultimate box's second) widens the chart by
+  // a column.
+  constexpr std::int32_t OriginalLastColumn = 274;
+  const bool wide = std::ranges::any_of(
+      cells.entries, [](const assets::ChartCell& cell) { return cell.x > OriginalLastColumn; });
+  ui.setSetting("player.chart.wide", wide);
+  core::logInfo("Chart: {} cells for ruleset {}", cells.entries.size(), rules.id());
+}
+
 void loadPlayerChart(ui::Ui& ui, const assets::VirtualFileSystem& files) {
   const auto id = assets::AssetId::parse("data/evolution_chart");
   if (files.resolve(*id) == nullptr)

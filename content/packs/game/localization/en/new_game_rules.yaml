@@ -1,0 +1,8 @@
+# The new game's rules (ui/new_game_rules): the original's or with its hidden content, and the Ultimate to Mega step.
+title: "Game rules"
+hidden: "Hidden content: {value}"
+hidden_off: "The original's rules."
+hidden_on: "Panjyamon, Gigadramon and MetalEtemon by evolution too."
+mega: "Ultimate → Mega step: {value}"
+mega_about: "An Ultimate can evolve into a Mega: MetalEtemon and Machinedramon."
+start: "Start"

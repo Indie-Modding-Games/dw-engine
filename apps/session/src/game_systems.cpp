@@ -1,6 +1,7 @@
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/ruleset/ruleset.hpp>
+#include <dwe/ruleset/species_extra.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/battle_registry.hpp>
 #include <dwe/session/bird_transport.hpp>
@@ -65,8 +66,11 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
   if (!effects) {
     return std::unexpected{effects.error()};
   }
-  auto digimon = loadRoleTable<assets::DigimonTable>(
-      files, rules, game::evolution::DigimonTableRole, assets::loadDigimonTable);
+  if (rules.table(game::evolution::DigimonTableRole) == nullptr) {
+    return core::fail(
+        messages::formatMessage(messages::NoMoveTable, game::evolution::DigimonTableRole));
+  }
+  auto digimon = ruleset::loadPatchedDigimonTable(files, rules);
   if (!digimon) {
     return std::unexpected{digimon.error()};
   }

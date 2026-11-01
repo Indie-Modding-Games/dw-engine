@@ -1,0 +1,52 @@
+# The hidden content left off (docs/modulos/game/evolution.md, «Contenido oculto»): a new game from the main menu with
+# the keyboard keeps the original's rules on its rules screen, and nothing changes: the chart has the original's 61
+# cells, and a Penguinmon with Leomon in the city (trigger 248) and the values that make Panjyamon with the hidden
+# content evolves into the original's pick instead, Frigimon. Run it with --saves <empty folder>, once per language
+# (--lang en, --lang es); how to run it: docs/guides/prueba-vertical.md.
+# After each evolution the route waits for its scene to end (evolution.active), so partner_set writes the next values
+# on the field, however slow the machine, and confirms the rank notice an evolution may bring.
+name: hidden-content-off
+device: keyboard
+timeout: 900
+main_menu: true
+new_game_rules: true
+text_fit: true
+steps:
+  - resize: [1280, 720]
+  - wait: {shown: main_menu, seconds: 1, timeout: 60}
+  - menu_select: play
+  - wait: {shown: save_slots, seconds: 0.5, timeout: 30}
+  - menu_select: slot-1
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - menu_select: yes
+  - wait: {shown: new_game_rules, seconds: 0.5, timeout: 30}
+  - screenshot: rules-original
+  - menu_select: rules-start
+  - wait: {map: twna01, hidden: new_game_rules, seconds: 2, timeout: 120}
+  - expect_setting: {player.chart.count: 61}
+  - script: story_set("trigger 248 on")
+  - script: evolve("penm")
+  - wait: {setting: {partner.name: main.digimon_names.0057}, timeout: 600}
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  # A new player rank on evolving shows its notice, which holds the field and the clock until confirmed.
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  - script: clock_speed("0")
+  - script: partner_set("hp 50")
+  - script: partner_set("mp 50")
+  - script: partner_set("brains 50")
+  - script: partner_set("offense 150")
+  - script: partner_set("defense 100")
+  - script: partner_set("speed 120")
+  - script: partner_set("care 0")
+  - script: partner_set("weight 25")
+  - script: partner_set("hours 71")
+  - script: clock_speed("120")
+  - wait: {setting: {partner.name: main.digimon_names.0023}, timeout: 600}
+  - script: clock_speed("0")
+  - wait: {setting: {evolution.active: "false"}, timeout: 600}
+  # A new player rank on evolving shows its notice, which holds the field and the clock until confirmed.
+  - wait: {seconds: 1}
+  - when: {shown: award_notice, steps: [{tap: {key: return}}, {wait: {hidden: award_notice, timeout: 10}}]}
+  - screenshot: field-original-pick
+  - expect_setting: {player.chart.count: 61}

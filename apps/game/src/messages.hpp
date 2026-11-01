@@ -106,6 +106,7 @@ inline constexpr std::string_view BattleAlreadyRunning = "a battle is already un
 inline constexpr std::string_view BattleStartFailed = "game: battle: {}";
 inline constexpr std::string_view PlaceFailed = "game: place: {}";
 inline constexpr std::string_view StorySetFailed = "game: story_set: {}";
+inline constexpr std::string_view PartnerSetFailed = "game: partner_set: {}";
 inline constexpr std::string_view NoStory = "the game has no story";
 inline constexpr std::string_view NoNpcToPlace = "the map has no NPC with script id {}";
 inline constexpr std::string_view BattleWinFailed = "game: battle_win: {}";

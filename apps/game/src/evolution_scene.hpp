@@ -18,6 +18,10 @@
 
 namespace dwe::app {
 
+// Whether the evolution scene runs (true or false), for the test routes: an evolution's values are
+// set once its scene has ended.
+inline constexpr std::string_view EvolutionActiveSetting = "evolution.active";
+
 struct EvolutionSceneDesc {
   session::GameSession* session = nullptr;
   FieldScene* scene = nullptr;

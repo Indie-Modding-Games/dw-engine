@@ -113,6 +113,20 @@ void reportBonus(RequirementReport& report, const Requirement& requirement,
   report.bonusMet = std::ranges::any_of(report.bonus, &BonusLine::met);
 }
 
+// A target's gate (ruleset/species_extra.hpp): every trigger set, the hour within its range and
+// the cup won; a cup gate is open while the inputs cannot tell (the tournaments' hook).
+bool gateOpen(const ruleset::SpeciesGate& gate, const EvolutionInputs& inputs) {
+  for (const std::int32_t trigger : gate.triggers) {
+    if (!inputs.trigger || !inputs.trigger(trigger)) {
+      return false;
+    }
+  }
+  if (gate.hours && (!inputs.hourOfDay || !gate.hours->holds(*inputs.hourOfDay))) {
+    return false;
+  }
+  return !gate.cup || !inputs.cupWon || inputs.cupWon(*gate.cup);
+}
+
 bool wasRaised(const EvolutionQuery& query, Species target) {
   const StatReference* reference = query.tables->statReference(target);
   return query.state->raised.contains(reference == nullptr ? target : reference->loads);
@@ -238,6 +252,12 @@ std::optional<RequirementReport> OriginalScoring::report(const EvolutionQuery& q
   report.points =
       static_cast<std::int32_t>(report.careMet) + static_cast<std::int32_t>(report.weightMet) +
       static_cast<std::int32_t>(report.statsMet) + static_cast<std::int32_t>(report.bonusMet);
+  if (const ruleset::SpeciesGate* gate = query.tables->gate(target)) {
+    report.gateMet = gateOpen(*gate, *query.inputs);
+    if (!*report.gateMet) {
+      report.points = 0;
+    }
+  }
   return report;
 }
 
@@ -258,8 +278,14 @@ std::optional<Species> OriginalSelection::select(const EvolutionQuery& query,
     return rookieTarget(query, scoring);
   case Level::Champion:
     return bestAverage(query, scoring);
-  case Level::None:
   case Level::Ultimate:
+    // The Mega step (an option): an Ultimate that is not a Mega picks among its Mega targets as a
+    // champion picks among its own.
+    if (query.tables->megaStep() != nullptr && !query.tables->isMega(query.inputs->species)) {
+      return bestAverage(query, scoring);
+    }
+    return std::nullopt;
+  case Level::None:
     return std::nullopt;
   }
   return std::nullopt;

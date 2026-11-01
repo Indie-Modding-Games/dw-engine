@@ -72,11 +72,20 @@ EvolutionResult EvolutionEffects::apply(const EvolutionInputs& inputs, const Evo
     result.statChange = changeOf(inputs.stats, gainedStats(inputs.stats, reference.stats));
     result.tamerLevelChance = inputs.scriptPaused ? tamerLevelChance(formData.level) : 0;
   }
+  // The Mega step (an option): a Mega counts as Ultimate, with its own life bonus and tamer level
+  // chance, and its counter starts again as on a change of level.
+  const ruleset::MegaStep* mega = tables_->megaStep();
+  const bool becomesMega =
+      mega != nullptr && tables_->isMega(form) && !tables_->isMega(inputs.species);
+  if (becomesMega && result.tamerLevelChance != 0) {
+    result.tamerLevelChance = mega->tamerLevelChance;
+  }
   if (formData.level == Level::Ultimate && !suppressed) {
-    result.lifetimeBonusHours = rules_->statGains.ultimateLifetimeHours;
+    result.lifetimeBonusHours =
+        becomesMega ? mega->lifetimeHours : rules_->statGains.ultimateLifetimeHours;
   }
   result.equippedMoves = equippedMoves(formData, result.learnedMove);
-  if (tables_->levelOf(inputs.species) != formData.level) {
+  if (tables_->levelOf(inputs.species) != formData.level || becomesMega) {
     result.evolutionTimer = 0;
   }
   if (reason == EvolutionReason::Virus) {

@@ -7,6 +7,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
 #include <utility>
 
 namespace dwe::app {
@@ -24,6 +25,10 @@ struct PlayStart {
   // Play without saving (the title screen's slot list): the game gets no save slots, so it writes
   // nothing, no autosave either, as its question warns.
   bool withoutSaving = false;
+  // The ruleset a new game plays with, as the new game's rules screen chose it (the original, or
+  // the original with the hidden content); nothing: the command line's --ruleset. A loaded game
+  // plays with the ruleset its save records.
+  std::optional<std::string> rulesetId = std::nullopt;
 
   friend bool operator==(const PlayStart&, const PlayStart&) = default;
 };
