@@ -668,3 +668,39 @@ Las rutas de prueba solo ven esta pantalla si lo piden (`new_game_rules: true`);
 del original, como antes. `route-hidden-content.yaml` elige el contenido oculto y hace evolucionar al compañero a
 cada forma nueva; `route-hidden-content-off.yaml` deja el original y comprueba que todo sigue igual
 ([prueba vertical](../../guides/prueba-vertical.md)).
+
+## Etapas canónicas
+
+Mejora opcional, apagada por defecto: el ajuste `canonical_stages` (fila «Etapas canónicas», «Canonical stages» en
+inglés, de las opciones del menú de pausa, guardado en los ajustes del usuario) llega como ajuste de la UI desde
+`PlaySession` (`CanonicalStagesSetting`). Solo cambia lo que el árbol de la página del jugador enseña; las reglas
+siguen contando a esas especies como nivel 5.
+
+| Etapa | Español | Inglés |
+|---|---|---|
+| huevo | Digihuevo | Digi-Egg |
+| nivel 1 | Bebé I | Fresh |
+| nivel 2 | Bebé II | In-Training |
+| nivel 3 | Infantil | Rookie |
+| nivel 4 | Maduro | Champion |
+| nivel 5 | Perfecto | Ultimate |
+| Mega | Supremo | Mega |
+| Ultra | Súper Supremo | Ultra |
+
+Huevo y Ultra quedan definidos (`pause_menu.chart_stage.*`) pero sin especies. Encendido, el detalle de una casilla
+dice su etapa canónica, y las especies que la serie llama Mega (`MEGA_CELLS` en `ui/pause_menu/logic.lua`: Phoenixmon,
+HerculesKabuterimon, y MetalEtemon y Machinedramon cuando el ruleset los trae) salen de la caja de Ultra a una caja Mega
+roja a su derecha (`#chart-stage-5`); el panel se ensancha a 960dp. Las casillas que dejan libres las ocupan, en orden,
+las de la tercera columna de Ultra que trae el ruleset, así que la caja de Ultra vuelve a sus dos columnas. Para saber
+qué especie es cada casilla, `publishPlayerChart` publica `player.chart.<n>.id`.
+
+Apagado, el árbol es el del original y sus nombres los de la [decisión 4 del glosario](../../guides/glosario-es.md);
+el nivel 5 se llama «Ultra» también en el árbol (antes «Definitivo»).
+
+La lista de opciones ya no cabe entera a 1280x720 en ninguna piel: se desplaza (`#page-options`, `overflow-y: auto`),
+la navegación lleva la fila enfocada a la vista y la rueda del ratón la mueve. La comprobación de textos no cuenta las
+filas que la lista deja fuera de su caja (`text_fit.cpp`); se comprueban al llegar a ellas.
+
+`route-canonical-stages.yaml` (en/es, piel original y moderna) enciende la opción con el contenido oculto, captura el
+árbol con la caja Mega y el detalle de Phoenixmon («Supremo») y de MetalGreymon, la apaga y captura el árbol original
+([prueba vertical](../../guides/prueba-vertical.md)).

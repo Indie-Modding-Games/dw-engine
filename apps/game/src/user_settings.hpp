@@ -46,6 +46,9 @@ struct UserSettings {
   // The status page's extras (status_extras: true, false): the partner's tiredness bar and its care
   // mistakes, which the original keeps hidden; on when not chosen yet.
   std::optional<bool> statusExtras = std::nullopt;
+  // The canonical stages (canonical_stages: true, false): the chart names the stages as the series
+  // does (Digi-Egg to Ultra) and draws a Mega box; off when not chosen yet.
+  std::optional<bool> canonicalStages = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

@@ -472,6 +472,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   // The status page's extras (the tiredness and the care mistakes), on unless turned off.
   context_.ui->setSetting(StatusExtrasSetting, context.userSettings->statusExtras.value_or(true));
   context_.ui->setSetting(EvolutionActiveSetting, false);
+  // The canonical stages on the chart, off unless turned on.
+  context_.ui->setSetting(CanonicalStagesSetting,
+                          context.userSettings->canonicalStages.value_or(false));
   // The save indicator's document goes up before the HUD's, which takes the focus.
   saveIndicator_.emplace(*context_.ui, game_.session->savesWritten(),
                          context.userSettings->saveNotice.value_or(true));
@@ -747,6 +750,16 @@ bool PlaySession::handle(const ui::UiCommand& command) {
         saveUserSettings(*context_.settingsFile, *context_.userSettings);
       }
       context_.ui->setSetting(EvolutionRequirementsSetting, *shown);
+    }
+    return true;
+  }
+  if (command.name == CanonicalStagesSetting) {
+    if (const bool* canonical = std::get_if<bool>(&command.value)) {
+      context_.ui->setSetting(CanonicalStagesSetting, *canonical);
+      context_.userSettings->canonicalStages = *canonical;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
     }
     return true;
   }

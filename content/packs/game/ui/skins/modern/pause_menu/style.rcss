@@ -42,6 +42,28 @@
 	color: #9aa7b6;
 }
 
+/* The options list scrolls once its rows pass the height a 1280x720 window leaves it; the focused row is scrolled into
+   view. */
+#page-options {
+	max-height: 480dp;
+	overflow-y: auto;
+}
+
+#page-options scrollbarvertical {
+	width: 6dp;
+	margin-left: 6dp;
+}
+
+#page-options scrollbarvertical slidertrack {
+	background-color: #0c1118;
+}
+
+#page-options scrollbarvertical sliderbar {
+	min-height: 24dp;
+	border-radius: 3dp;
+	background-color: #2e3a4a;
+}
+
 #prompts {
 	margin-top: 18dp;
 	padding-top: 12dp;

@@ -217,6 +217,11 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
 - `route-hidden-content-off.yaml`: lo mismo con las reglas del original: el árbol sigue con 61 casillas y el mismo
   Penguinmon evoluciona a la forma que elige el original. Se corre en los dos idiomas, con `--saves` en una carpeta
   vacía.
+- `route-canonical-stages.yaml`: las [etapas canónicas](../modulos/apps/game.md#etapas-canónicas) en una partida
+  nueva con el contenido oculto: enciende la opción (la lista de opciones se desplaza hasta la fila nueva), captura
+  el árbol con la caja Mega y el detalle de Phoenixmon y de MetalGreymon (marcados como criados con `story_set`), la
+  apaga y captura el árbol del original. El árbol solo en la piel original. Se corre en los dos idiomas y las dos
+  pieles, con `--saves` en una carpeta vacía.
 - `route-city-tab.yaml`: la [pestaña Ciudad](../modulos/apps/screens.md#pestaña-ciudad-mejora-de-dwe) desde una
   partida nueva con siete especies unidas a la ciudad (`story_set`): abre la página del jugador con el teclado, va a la
   pestaña, pone el cursor en una que vive en la ciudad, en una que falta y en un campeón unido, a 1280x720 y otra vez a

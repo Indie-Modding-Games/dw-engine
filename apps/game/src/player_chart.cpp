@@ -41,6 +41,7 @@ void publishPlayerChart(ui::Ui& ui, const assets::EvolutionChart& chart,
       ui.setSetting(base + key, static_cast<double>(value));
     ui.setSetting(base + "source", std::format("{}?palette={}", chart.image, cell.palette));
     const auto* row = species ? species->find(cell.digimon) : nullptr;
+    ui.setSetting(base + "id", cell.digimon);
     ui.setSetting(base + "name", row ? row->name : cell.digimon);
     ui.setSetting(base + "level", static_cast<double>(row ? row->level : 0));
   }

@@ -32,6 +32,7 @@ constexpr std::string_view BulkTradesKey = "bulk_trades";
 constexpr std::string_view EvolutionRequirementsKey = "evolution_requirements";
 constexpr std::string_view TranslatedSignsKey = "translated_signs";
 constexpr std::string_view StatusExtrasKey = "status_extras";
+constexpr std::string_view CanonicalStagesKey = "canonical_stages";
 
 } // namespace
 
@@ -80,6 +81,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* extras = tree->find(StatusExtrasKey)) {
       settings.statusExtras = reader.boolean(*extras);
+    }
+    if (const core::YamlNode* stages = tree->find(CanonicalStagesKey)) {
+      settings.canonicalStages = reader.boolean(*stages);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -130,6 +134,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.statusExtras) {
     root.set(std::string{StatusExtrasKey},
              core::YamlNode::scalar(*settings.statusExtras ? "true" : "false"));
+  }
+  if (settings.canonicalStages) {
+    root.set(std::string{CanonicalStagesKey},
+             core::YamlNode::scalar(*settings.canonicalStages ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

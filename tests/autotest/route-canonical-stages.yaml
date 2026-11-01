@@ -1,0 +1,124 @@
+# The canonical stages (docs/modulos/apps/game.md, «Etapas canónicas»): a new game with the hidden content on, the option
+# among the pause menu's options turned on, and the chart with the Mega box right of the Ultimate one (Phoenixmon,
+# HerculesKabuterimon and the hidden content's MetalEtemon), its cells' stage names (Phoenixmon and MetalGreymon), then the option off again and the
+# original chart (the chart only in the original look, which draws it). Every text must fit its box, and the options
+# list, one row longer, scrolls to the new row. Run it with --saves <empty folder>, once per language (--lang en, --lang
+# es) and look (--ui-skin original, modern); how to run it: docs/guides/prueba-vertical.md.
+name: canonical-stages
+device: keyboard
+timeout: 300
+main_menu: true
+new_game_rules: true
+text_fit: true
+steps:
+  - resize: [1280, 720]
+  - wait: {shown: main_menu, seconds: 1, timeout: 60}
+  - menu_select: play
+  - wait: {shown: save_slots, seconds: 0.5, timeout: 30}
+  - menu_select: slot-1
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - menu_select: yes
+  - wait: {shown: new_game_rules, seconds: 0.5, timeout: 30}
+  - menu_select: rules-hidden
+  - wait: {seconds: 0.3}
+  - menu_select: rules-start
+  - wait: {map: twna01, hidden: new_game_rules, seconds: 2, timeout: 120}
+  - expect_setting: {canonical_stages: false}
+  - expect_setting: {player.chart.58.id: houo}
+  - expect_setting: {player.chart.59.id: hkab}
+  # Phoenixmon (59) and MetalGreymon (12) raised (story triggers 0x200 + their number), so their cells open.
+  - script: story_set("trigger 571 on")
+  - script: story_set("trigger 524 on")
+  # The option on. The original look keeps the options among the player page's tools (Tab there); the modern look lists
+  # them on the menu's first page.
+  - menu: open
+  - wait: {seconds: 0.6}
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.4}
+  - menu_select: canonical-stages
+  - expect_setting: {canonical_stages: true}
+  - wait: {seconds: 0.3}
+  - screenshot: options-on
+  - expect_text_fits: all
+  - menu: close
+  - wait: {menu_open: false}
+  # The chart with the Mega box, and the stage names of a Mega and of an Ultimate (the original look draws the chart).
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu: open
+        - wait: {seconds: 0.6}
+        - menu_select: open-player
+        - wait: {seconds: 0.6}
+        - menu_select: player-tab-chart
+        - wait: {seconds: 0.6}
+        - expect_text_fits: all
+        - screenshot: chart-canonical
+        - menu_select: chart-cell-58
+        - wait: {seconds: 0.3}
+        - tap: {key: return}
+        - wait: {seconds: 0.6}
+        - expect_text_fits: all
+        - screenshot: detail-mega
+        - tap: {key: escape}
+        - wait: {seconds: 0.4}
+        - menu_select: chart-cell-11
+        - wait: {seconds: 0.3}
+        - tap: {key: return}
+        - wait: {seconds: 0.6}
+        - expect_text_fits: all
+        - screenshot: detail-ultimate
+        - tap: {key: escape}
+        - wait: {seconds: 0.4}
+        - menu: close
+        - wait: {menu_open: false}
+  # The option off: the original's names and boxes.
+  - menu: open
+  - wait: {seconds: 0.6}
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.4}
+  - menu_select: canonical-stages
+  - expect_setting: {canonical_stages: false}
+  - menu: close
+  - wait: {menu_open: false}
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu: open
+        - wait: {seconds: 0.6}
+        - menu_select: open-player
+        - wait: {seconds: 0.6}
+        - menu_select: player-tab-chart
+        - wait: {seconds: 0.6}
+        - expect_text_fits: all
+        - screenshot: chart-original
+        - menu_select: chart-cell-11
+        - wait: {seconds: 0.3}
+        - tap: {key: return}
+        - wait: {seconds: 0.6}
+        - expect_text_fits: all
+        - screenshot: detail-original
+        - tap: {key: escape}
+        - wait: {seconds: 0.4}
+        - menu: close
+        - wait: {menu_open: false}

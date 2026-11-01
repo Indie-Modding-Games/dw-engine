@@ -1493,7 +1493,7 @@ bool Autotest::menuSelectStep(const AutotestHost& host, const AutotestStep& step
   }
   // Down through the page, then up if it does not wrap round, then right and left through a row
   // (the battle's commands). Enough downs for the longest page, the pause menu's options.
-  constexpr int DownTries = 12;
+  constexpr int DownTries = 14;
   constexpr int UpTries = 24;
   constexpr int RightTries = 36;
   constexpr int MaxTries = 48;

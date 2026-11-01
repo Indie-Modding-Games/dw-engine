@@ -147,6 +147,9 @@ y `a species past the raised triggers is kept apart, and a new game clears it`
 (`apps/session/tests/evolution_adapter_tests.cpp`). Rutas: `route-hidden-content.yaml` y
 `route-hidden-content-off.yaml` ([prueba vertical](../../guides/prueba-vertical.md)).
 
+Las etapas canónicas (Supremo/Mega para Phoenixmon, HerculesKabuterimon, MetalEtemon y Machinedramon) son solo de la
+UI: las reglas siguen viendo nivel 5 ([game.md](../apps/game.md#etapas-canónicas)).
+
 ## Paridad con el decomp
 
 | Regla | Decomp | Nuestro código / sección | Test | Estado |

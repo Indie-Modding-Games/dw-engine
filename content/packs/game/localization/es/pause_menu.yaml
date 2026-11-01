@@ -53,6 +53,8 @@ translated_signs: "Carteles traducidos"
 # Extras de la ficha: la barra de cansancio y los errores de cuidado del compañero en su ficha, que el original esconde
 # (encendido por defecto).
 status_extras: "Extras de la ficha"
+# Etapas canónicas: el árbol nombra las etapas como la serie y dibuja una caja Mega (apagada por defecto).
+canonical_stages: "Etapas canónicas"
 
 year_label: "Año"
 day_label: "Día"
@@ -72,7 +74,17 @@ chart_level.1: "Bebé"
 chart_level.2: "Entrenamiento"
 chart_level.3: "Novato"
 chart_level.4: "Campeón"
-chart_level.5: "Definitivo"
+chart_level.5: "Ultra"
+# Las etapas con las etapas canónicas encendidas (chart_stage.<etapa>; huevo y ultra aún no tienen especies). Glosario:
+# docs/guides/glosario-es.md.
+chart_stage.egg: "Digihuevo"
+chart_stage.fresh: "Bebé I"
+chart_stage.in_training: "Bebé II"
+chart_stage.rookie: "Infantil"
+chart_stage.champion: "Maduro"
+chart_stage.ultimate: "Perfecto"
+chart_stage.mega: "Supremo"
+chart_stage.ultra: "Súper Supremo"
 
 # Requisitos de evolución en el árbol de la tabla (una mejora del motor): las líneas del panel. Los rangos y valores son
 # números que escribe el juego; {name} es el nombre de una forma.

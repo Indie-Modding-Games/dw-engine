@@ -141,6 +141,11 @@ local options = {
   ["status-extras"] = function(_step)
     ui.send("status_extras", ui.setting("status_extras") == false)
   end,
+  -- Canonical stages: the chart names the stages as the series does and draws a Mega box (off by
+  -- default; off leaves the original's names and boxes).
+  ["canonical-stages"] = function(_step)
+    ui.send("canonical_stages", ui.setting("canonical_stages") ~= true)
+  end,
 }
 
 local function can_sleep()
@@ -178,12 +183,78 @@ end
 
 -- The chart's cells: the original's 61, and the ones a ruleset's patches add (the hidden content).
 local ChartCells = 72
+-- The Ultimate box's last column in the original (the chart's pixels); a ruleset's cell right of
+-- it widens the box by a column.
+local LAST_ULTIMATE_COLUMN = 274
+-- The canonical stages (an engine improvement, docs/modulos/apps/game.md, «Etapas canónicas»; the
+-- option canonical_stages, off by default): the species the series calls Mega leave the Ultimate
+-- box for a Mega box right of it, at these cells (the chart's pixels). The rules still count them
+-- as Ultimates. The cells they leave take the ruleset's cells of the third Ultimate column, in
+-- order, so the box keeps the original's two columns.
+local MEGA_CELLS = {
+  houo = { x = 305, y = 43 },
+  hkab = { x = 305, y = 62 },
+  mtet = { x = 305, y = 81 },
+  muge = { x = 305, y = 100 },
+}
+local STAGE_KEYS = { "fresh", "in_training", "rookie", "champion", "ultimate" }
+
+local function canonical_stages()
+  return ui.setting("canonical_stages") == true
+end
+
+-- The stage label of a chart cell: the original's level names, or the canonical ones.
+local function stage_label(base)
+  local level = math.floor(ui.setting(base .. "level") or 0)
+  if not canonical_stages() then
+    return t("pause_menu.chart_level." .. tostring(level))
+  end
+  if MEGA_CELLS[ui.setting(base .. "id") or ""] then
+    return t("pause_menu.chart_stage.mega")
+  end
+  local key = STAGE_KEYS[level]
+  return key and t("pause_menu.chart_stage." .. key) or ""
+end
+
+-- Where each cell goes: the cell the game gives it, or with the canonical stages the Mega box for a
+-- Mega and a freed Ultimate cell for one of the third column.
+local function chart_places(count)
+  local places = {}
+  local canonical = canonical_stages()
+  local freed = {}
+  local third = {}
+  for i = 0, count - 1 do
+    local base = string.format("player.chart.%d.", i)
+    local x, y = ui.setting(base .. "x"), ui.setting(base .. "y")
+    local mega = canonical and MEGA_CELLS[ui.setting(base .. "id") or ""] or nil
+    if mega then
+      places[i] = { x = mega.x, y = mega.y, mega = true }
+      if x <= LAST_ULTIMATE_COLUMN then
+        freed[#freed + 1] = { x = x, y = y }
+      end
+    else
+      places[i] = { x = x, y = y }
+      if canonical and x > LAST_ULTIMATE_COLUMN then
+        third[#third + 1] = i
+      end
+    end
+  end
+  table.sort(freed, function(a, b)
+    return a.x == b.x and a.y < b.y or a.x < b.x
+  end)
+  for n, i in ipairs(third) do
+    if freed[n] then
+      places[i] = { x = freed[n].x, y = freed[n].y }
+    end
+  end
+  return places
+end
 
 local function refresh_chart(document)
   local count = math.min(ChartCells, tonumber(ui.setting("player.chart.count")) or 0)
   local raised_text = ui.setting("player.chart.raised") or ""
-  local wide = ui.setting("player.chart.wide") == true
-  local signature = tostring(count) .. ":" .. raised_text .. ":" .. tostring(wide)
+  local canonical = canonical_stages()
+  local signature = tostring(count) .. ":" .. raised_text .. ":" .. tostring(canonical)
   if signature == chart_signature then
     return
   end
@@ -193,16 +264,25 @@ local function refresh_chart(document)
     raised[tonumber(index)] = true
   end
   chart_cells = {}
-  -- A cell right of the original's last column widens the Ultimate box and the panel by a column.
-  document:get("panel"):set_class("chart-wide", wide)
+  local places = chart_places(count)
+  local wide, mega = false, false
+  for _, place in pairs(places) do
+    mega = mega or place.mega == true
+    wide = wide or (not place.mega and place.x > LAST_ULTIMATE_COLUMN)
+  end
+  -- A cell right of the original's last column widens the Ultimate box by a column; the Mega box
+  -- goes right of it. Either makes the panel as wide as the original's screen.
+  document:get("panel"):set_class("chart-wide", wide or mega)
+  document:get("player-chart"):set_class("chart-third", wide)
+  document:get("player-chart"):set_class("chart-mega", mega)
   for i = 0, ChartCells - 1 do
     local button = document:get("chart-cell-" .. i)
     button:set_class("hidden", i >= count)
     if i < count then
       local base = string.format("player.chart.%d.", i)
       local cell = {
-        x = ui.setting(base .. "x"),
-        y = ui.setting(base .. "y"),
+        x = places[i].x,
+        y = places[i].y,
         u = ui.setting(base .. "u"),
         v = ui.setting(base .. "v"),
         raised = raised[ui.setting(base .. "index")] == true,
@@ -723,11 +803,7 @@ local function open_chart_detail(document)
   end
   local base = string.format("player.chart.%d.", chart_index)
   document:get("chart-detail-name"):set_text(t(ui.setting(base .. "name") or ""))
-  document
-    :get("chart-detail-level")
-    :set_text(
-      t("pause_menu.chart_level." .. tostring(math.floor(ui.setting(base .. "level") or 0)))
-    )
+  document:get("chart-detail-level"):set_text(stage_label(base))
   chart_detail = true
   -- The targets top to bottom, for the cursor.
   table.sort(detail_targets, function(a, b)
@@ -1150,6 +1226,7 @@ local function refresh(document)
     :set_text(on_off(ui.setting("evolution_requirements") ~= false))
   document:get("translated-signs-value"):set_text(on_off(ui.setting("translated_signs")))
   document:get("status-extras-value"):set_text(on_off(ui.setting("status_extras") ~= false))
+  document:get("canonical-stages-value"):set_text(on_off(canonical_stages()))
   refresh_player(document)
 end
 

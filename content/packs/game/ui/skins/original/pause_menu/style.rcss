@@ -86,6 +86,13 @@
 	color: #b2b2b2;
 }
 
+/* The options list scrolls once its rows pass the height a 1280x720 window leaves it below the panel's top; the focused
+   row is scrolled into view. */
+#page-options { max-height: 456dp; overflow-y: auto; }
+#page-options scrollbarvertical { width: 6dp; margin-left: 6dp; }
+#page-options scrollbarvertical slidertrack { background-color: #2d3840; }
+#page-options scrollbarvertical sliderbar { min-height: 24dp; background-color: #90d9fa; }
+
 #prompts {
 	margin-top: 12dp;
 	padding-top: 6dp;
@@ -349,10 +356,13 @@
 #chart-stage-2 { left: 252dp; width: 105dp; height: 531dp; border-color: #5082c8; border-right-color: #0a375f; border-bottom-color: #0a375f; background-color: #0f5082; }
 #chart-stage-3 { left: 363dp; width: 321dp; border-color: #5aaf6e; border-right-color: #005a28; border-bottom-color: #005a28; background-color: #008741; }
 #chart-stage-4 { left: 690dp; width: 171dp; border-color: #d29669; border-right-color: #78411e; border-bottom-color: #78411e; background-color: #af642d; }
-/* A ruleset's cell right of the original's last column (the hidden content, player.chart.wide): a third column in the
-   Ultimate box, and the panel as wide as the original's screen. */
+/* A ruleset's cell right of the original's last column (the hidden content): a third column in the Ultimate box. The
+   canonical stages' Mega box (canonical_stages) goes right of the Ultimate box. Either makes the panel as wide as the
+   original's screen. */
 #panel.on-player.player-chart.chart-wide { width: 960dp; margin-left: -480dp; }
-#panel.chart-wide #chart-stage-4 { width: 243dp; }
+#player-chart.chart-third #chart-stage-4 { width: 243dp; }
+#chart-stage-5 { display: none; left: 867dp; width: 84dp; border-color: #e6a0a0; border-right-color: #6e1e28; border-bottom-color: #6e1e28; background-color: #a0323c; }
+#player-chart.chart-mega #chart-stage-5 { display: block; }
 #panel.on-player .chart-cell, #panel.on-player .chart-cell:focus { position: absolute; width: 57dp; height: 57dp; margin: 0; padding: 0; border: 3dp #bebebe; border-right-color: #3c3c3c; border-bottom-color: #3c3c3c; box-sizing: border-box; background-color: #878787; }
 #panel.on-player .chart-cell.hidden, .chart-icon.hidden { display: none; }
 .chart-icon { display: block; width: 48dp; height: 48dp; pointer-events: none; }

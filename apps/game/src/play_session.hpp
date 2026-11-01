@@ -80,6 +80,10 @@ inline constexpr std::string_view TranslatedSignsSetting = "translated_signs";
 // false), on by default. The partner's menu (ui/partner_menu) shows the tiredness bar and the care
 // mistakes with it.
 inline constexpr std::string_view StatusExtrasSetting = "status_extras";
+// The canonical stages: a UI setting and the pause menu's command with the same name (true or
+// false), off by default. The chart (ui/pause_menu) names the stages and draws the Mega box with
+// it.
+inline constexpr std::string_view CanonicalStagesSetting = "canonical_stages";
 
 // What every game uses of the app; all of it outlives the games.
 struct PlayContext {

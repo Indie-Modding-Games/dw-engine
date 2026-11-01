@@ -21,7 +21,8 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
                               .digitalTime = false,
                               .evolutionRequirements = false,
                               .translatedSigns = false,
-                              .statusExtras = false};
+                              .statusExtras = false,
+                              .canonicalStages = true};
   const auto text = formatUserSettings(settings);
   REQUIRE(text.has_value());
   CHECK(text->contains("ui_skin: test_contrast"));
@@ -38,6 +39,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK(read->evolutionRequirements == std::optional<bool>{false});
   CHECK(read->translatedSigns == std::optional<bool>{false});
   CHECK(read->statusExtras == std::optional<bool>{false});
+  CHECK(read->canonicalStages == std::optional<bool>{true});
 
   // A file from before the setting existed, or without the choice made, leaves it to the packs.
   const auto older = parseUserSettings("language: en\n");
@@ -51,6 +53,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK_FALSE(older->evolutionRequirements.has_value());
   CHECK_FALSE(older->translatedSigns.has_value());
   CHECK_FALSE(older->statusExtras.has_value());
+  CHECK_FALSE(older->canonicalStages.has_value());
   CHECK_FALSE(formatUserSettings(UserSettings{})->contains("ui_skin"));
 }
 

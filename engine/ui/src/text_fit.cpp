@@ -83,6 +83,12 @@ bool clips(const Rml::Element& element) {
          values.overflow_y() != Rml::Style::Overflow::Visible;
 }
 
+// An element whose content scrolls up and down (a list longer than its box).
+bool scrollsVertically(const Rml::Element& element) {
+  const Rml::Style::Overflow overflow = element.GetComputedValues().overflow_y();
+  return overflow == Rml::Style::Overflow::Auto || overflow == Rml::Style::Overflow::Scroll;
+}
+
 // The area inside an element's border, where its content and padding go.
 Rect paddingRect(Rml::Element& element) {
   const Rml::Vector2f offset = element.GetAbsoluteOffset(Rml::BoxArea::Padding);
@@ -294,6 +300,22 @@ std::vector<Ui::TextOverflow> findTextOverflows(Rml::ElementDocument& document,
     return false;
   };
   std::erase_if(texts, covered);
+  // A row a list has scrolled out of its box, wholly or in part, is not on screen: the player
+  // scrolls to it, and it is checked then. Past the sides it is still out of place.
+  const auto scrolledOut = [&](const SeenText& text) {
+    for (Rml::Element* element = text.owner; element != nullptr && element != &document;
+         element = element->GetParentNode()) {
+      if (scrollsVertically(*element)) {
+        const Rect inside = paddingRect(*element);
+        if (inside.top - text.extent.top > tolerance ||
+            text.extent.bottom - inside.bottom > tolerance) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+  std::erase_if(texts, scrolledOut);
 
   const auto report = [&](const SeenText& text, std::string against, float by) {
     found.push_back({.document = std::string{name},

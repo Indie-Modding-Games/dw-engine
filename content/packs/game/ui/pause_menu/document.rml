@@ -56,7 +56,7 @@
 				<div class="player-line" id="player-time-line"><span text-key="pause_menu.player_time"></span><span class="player-value" id="player-time"></span></div>
                 </div>
                 <div id="player-chart" class="player-native">
-                  <div class="chart-stage" id="chart-stage-0"></div><div class="chart-stage" id="chart-stage-1"></div><div class="chart-stage" id="chart-stage-2"></div><div class="chart-stage" id="chart-stage-3"></div><div class="chart-stage" id="chart-stage-4"></div>
+                  <div class="chart-stage" id="chart-stage-0"></div><div class="chart-stage" id="chart-stage-1"></div><div class="chart-stage" id="chart-stage-2"></div><div class="chart-stage" id="chart-stage-3"></div><div class="chart-stage" id="chart-stage-4"></div><div class="chart-stage" id="chart-stage-5"></div>
                   <button id="chart-cell-0" class="chart-cell hidden" onclick="chart_pick(document, 0)"><img id="chart-icon-0" class="chart-icon hidden"/></button>
                   <button id="chart-cell-1" class="chart-cell hidden" onclick="chart_pick(document, 1)"><img id="chart-icon-1" class="chart-icon hidden"/></button>
                   <button id="chart-cell-2" class="chart-cell hidden" onclick="chart_pick(document, 2)"><img id="chart-icon-2" class="chart-icon hidden"/></button>
@@ -515,6 +515,9 @@
 				</button>
 				<button id="status-extras" class="option" onclick="adjust(document, 'status-extras', 1)">
 					<span class="label" text-key="pause_menu.status_extras"></span><span class="value" id="status-extras-value"></span>
+				</button>
+				<button id="canonical-stages" class="option" onclick="adjust(document, 'canonical-stages', 1)">
+					<span class="label" text-key="pause_menu.canonical_stages"></span><span class="value" id="canonical-stages-value"></span>
 				</button>
 				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>

@@ -47,6 +47,7 @@ Decisión del responsable de diseño, 2026-10-20:
 | Tamer | domador | «nivel de domador» |
 | Digivolve | digievolucionar | «¡Digievoluciona a Greymon!» |
 | Fresh / In-Training / Rookie / Champion / Ultimate | Bebé / Entrenamiento / Novato / Campeón / Ultra | etapas |
+| Digi-Egg / Fresh / In-Training / Rookie / Champion / Ultimate / Mega / Ultra | Digihuevo / Bebé I / Bebé II / Infantil / Maduro / Perfecto / Supremo / Súper Supremo | etapas canónicas: solo con la opción `canonical_stages` (apagada por defecto; `docs/modulos/apps/game.md`, «Etapas canónicas»); sin ella valen las de la decisión 4, también en el árbol (antes decía «Definitivo») |
 | Raise | criar, crianza | |
 | Full (hambre) | saciar, lleno | «Sacia un poco al Digimon» |
 | Tiredness | cansancio | |

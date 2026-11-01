@@ -53,6 +53,8 @@ translated_signs: "Translated signs"
 # Status extras: the partner's tiredness bar and care mistakes on its status page, which the original hides (on by
 # default).
 status_extras: "Status extras"
+# Canonical stages: the chart names the stages as the series does and draws a Mega box (off by default).
+canonical_stages: "Canonical stages"
 
 year_label: "Year"
 day_label: "Day"
@@ -73,6 +75,15 @@ chart_level.2: "Training"
 chart_level.3: "Rookie"
 chart_level.4: "Champion"
 chart_level.5: "Ultimate"
+# The stages with the canonical stages on (chart_stage.<stage>; egg and ultra have no species yet).
+chart_stage.egg: "Digi-Egg"
+chart_stage.fresh: "Fresh"
+chart_stage.in_training: "In-Training"
+chart_stage.rookie: "Rookie"
+chart_stage.champion: "Champion"
+chart_stage.ultimate: "Ultimate"
+chart_stage.mega: "Mega"
+chart_stage.ultra: "Ultra"
 
 # Evolution requirements on the chart's tree (an engine improvement): the panel's lines. Ranges and values are numbers
 # the game writes; {name} is a form's name.

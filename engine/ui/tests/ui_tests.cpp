@@ -825,7 +825,8 @@ TEST_CASE("the pause menu works with a gamepad alone, and the prompts follow it"
 
 TEST_CASE("the pause menu works with the mouse alone") {
   Content content;
-  auto ui = createUi(content.mount());
+  FakeClock clock;
+  auto ui = createUi(content.mount(), &clock);
   REQUIRE(ui->loadDocument("pause_menu", idOf("ui/pause_menu/document")));
   ui->setSetting("fullscreen", false);
   input::InputState input{input::defaultActionMap()};
@@ -850,6 +851,12 @@ TEST_CASE("the pause menu works with the mouse alone") {
   ui->handleEvent(platform::MouseMoved{.x = vsyncAt.x, .y = vsyncAt.y});
   CHECK(ui->focusedElementId("pause_menu") == "vsync");
 
+  // The options list is longer than its box: the wheel scrolls it down to Back, smoothly.
+  CHECK(ui->handleEvent(platform::MouseWheelMoved{.x = 0.0F, .y = -20.0F}));
+  for (int i = 0; i < 60; ++i) {
+    clock.now += Tick;
+    frame(*ui, input);
+  }
   CHECK(click(*ui, input, "pause_menu", "options-back"));
   CHECK(ui->elementText("pause_menu", "title") == "Pause");
   // A click on the background keeps the focus on an entry, so the keyboard goes on from it.
