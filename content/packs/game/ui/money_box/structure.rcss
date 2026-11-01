@@ -1,0 +1,46 @@
+/* The money box the story opens over its talk (script_common.c: createShopBitsBox, renderShopBitsBox). One pixel of
+   the original is 3dp; the 320 x 240 screen is a 960 x 720dp frame centred on a wide screen. The same box as the shop's
+   (rect -0x98, -0x62, 0x52 x 0x21 from the centre), measured on the original with the shop forced in room02: x 8 to
+   90 and y 22 to 55, the word from x 30 and the money right-aligned to end at x 67. The skins give the look; this is the layout and
+   a plain look for any skin. */
+
+body {
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+#frame {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+	margin-left: -480dp;
+}
+
+#bits-box {
+	position: absolute;
+	text-align: left;
+	left: 24dp;
+	top: 66dp;
+	width: 246dp;
+	height: 99dp;
+	padding: 6dp 0 0 63dp;
+	box-sizing: border-box;
+	border: 3dp #d0d0d0;
+	background-color: #000000c0;
+	font-size: 33dp;
+	line-height: 39dp;
+}
+
+.bits-row {
+	display: block;
+	height: 39dp;
+	white-space: pre;
+}
+
+#bits-value {
+	width: 111dp;
+	text-align: right;
+}

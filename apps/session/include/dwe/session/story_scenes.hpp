@@ -124,7 +124,7 @@ enum class StoryScreen : std::uint8_t {
   TournamentSchedule, // routine 18, initTournamentSchedule
   TournamentMedal,    // routine 22, scriptCheckTournamentMedal
   EggBox,             // routine 29, DOO2_openEggBox and DOO2_tickEggInput
-  MoneyBox,           // routine 15, createShopBitsBox(1): shown, not waited for
+  MoneyBox,           // routine 15, createShopBitsBox(1): shown over the talk, not waited for
   SmokeEffect,        // routine 38, createNinjamonEffect: shown, not waited for
   CloseTextBox,       // routine 16, triggerBoxCloseFlag(2): the second text box closes
   EndAnimationLoop,   // routine 55, setLoopCountToOne: the entity's animation plays once more

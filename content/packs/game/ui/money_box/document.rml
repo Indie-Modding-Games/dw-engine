@@ -1,0 +1,16 @@
+<rml>
+<head>
+	<title>Money box</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="frame">
+		<div id="bits-box" class="original-box original-look">
+			<div class="bits-row" id="bits-label"></div>
+			<div class="bits-row" id="bits-value"></div>
+		</div>
+	</div>
+</body>
+</rml>

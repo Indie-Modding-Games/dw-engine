@@ -422,6 +422,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
       cardShopScreen_({.shop = game_.systems.cardShop, .ui = context.ui}),
       meritShopScreen_(
           {.shop = game_.systems.meritShop, .session = game_.session.get(), .ui = context.ui}),
+      moneyBoxScreen_({.shop = game_.systems.shop, .ui = context.ui}),
       fieldItemsScreen_(*game_.systems.fieldItems, *game_.systems.inventory, *context.ui,
                         game_.session->sound()),
       awardScreen_(game_.systems.medals, *game_.session, *context.ui, game_.session->sound()),
@@ -460,6 +461,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachCardShop(&cardShopScreen_);
   cardShopScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyScenes_.attachMeritShop(&meritShopScreen_);
+  storyScenes_.attachMoneyBox(&moneyBoxScreen_);
   meritShopScreen_.setSpecies(species_ ? &*species_ : nullptr);
   if (game_.systems.cards != nullptr) {
     game_.systems.cards->setDigimon(species_ ? &*species_ : nullptr);
@@ -548,7 +550,7 @@ PlaySession::~PlaySession() {
                                           FishingNoticeDocument,      FishingHudDocument,
                                           CurlingHudDocument,         EggBoxDocument,
                                           NamingBoxDocument,          LivesBoxDocument,
-                                          BirdTransportDocument}) {
+                                          BirdTransportDocument,      MoneyBoxDocument}) {
     context_.ui->hide(document);
   }
 }

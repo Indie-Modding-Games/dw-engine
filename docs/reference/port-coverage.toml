@@ -481,7 +481,7 @@ readSelectedItemMerit = { status = "portado", dwe = "apps/game/src/merit_shop_sc
 tickItemMenuDescriptionBox = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Enseña la descripción del objeto elegido en la tienda." }
 updateItemMenuAmountBoxString = { status = "portado", dwe = "apps/game/src/shop_screen.cpp:26", what = "Pone el número de la cantidad a comprar." }
 tickSingleCardShop = { status = "portado", dwe = "apps/game/src/card_shop_screen.cpp", what = "La caja «Is it OK?» con sí y no: la compra de una carta o el objeto que se tira.", note = "la compra de cartas (CardShopScreen) y el menú de tirar un objeto (DiscardScreen)" }
-tickShopBitsBox = { status = "parcial", dwe = "apps/game/src/shop_screen.cpp", what = "Cuadro con el dinero del jugador que abre el guion.", note = "en la tienda sale y se actualiza al comprar o vender; la rutina 15 se cierra sin enseñarlo" }
+tickShopBitsBox = { status = "portado", dwe = "apps/game/src/money_box_screen.cpp", what = "Cuadro con el dinero del jugador que abre el guion.", note = "en la tienda sale y se actualiza al comprar o vender; la rutina 15 lo enseña sobre la charla y la 16 lo cierra" }
 inputInit = { status = "no-aplica", note = "entrada del original", what = "Prepara la lectura del mando." }
 processInput = { status = "no-aplica", note = "entrada del original; el motor tiene la suya", what = "Lee el mando cada fotograma." }
 isKeyDown = { status = "no-aplica", note = "entrada del original", what = "Dice si un botón está pulsado." }
@@ -636,7 +636,7 @@ tickItemKeeper = { status = "portado", dwe = "apps/game/src/item_keeper_screen.h
 rollCardPack = { status = "portado", dwe = "apps/session/src/story_routines/routine_card_shop.cpp", what = "Saca las cartas de un sobre." }
 openBuyCardMenu = { status = "portado", dwe = "apps/session/src/story_routines/routine_card_shop.cpp", what = "Abre la compra de cartas." }
 openSellCardMenu = { status = "portado", dwe = "apps/session/src/story_routines/routine_card_shop.cpp", what = "Abre la venta de cartas." }
-createShopBitsBox = { status = "parcial", dwe = "apps/game/src/shop_screen.cpp", note = "la tienda lo enseña de la primera elección a la despedida; la rutina 15 se cierra sin enseñar el cuadro", what = "Enseña el dinero del jugador durante un diálogo." }
+createShopBitsBox = { status = "portado", dwe = "apps/game/src/money_box_screen.cpp", note = "la tienda lo enseña de la primera elección a la despedida; la rutina 15 lo enseña sobre la charla (MoneyBoxScreen)", what = "Enseña el dinero del jugador durante un diálogo." }
 createNinjamonEffect = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "rutina 38: apps/game/src/story_scene_glue.cpp", what = "Nube de humo de un personaje que desaparece." }
 renderNinjamonEffect = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "la deriva de los objetos y su orden 10 (MapDepthLayers::setOrderValue)", what = "Mueve el humo de un personaje que desaparece y lo esconde al acabar." }
 tickSaveMachine = { status = "portado", dwe = "apps/game/src/save_machine_flow.hpp", what = "La máquina de guardar que abre el guion: registro para el modo versus y guardado." }

@@ -18,6 +18,7 @@
 #include "field_scene.hpp"
 #include "jukebox_screen.hpp"
 #include "merit_shop_screen.hpp"
+#include "money_box_screen.hpp"
 #include "save_machine.hpp"
 #include "story_gym.hpp"
 #include "story_item_keeper.hpp"
@@ -73,6 +74,9 @@ public:
   void attachCardShop(CardShopScreen* cardShop) { cardShop_ = cardShop; }
   // The merit exchange the story's MeritShop screen opens (call_routine 1).
   void attachMeritShop(MeritShopScreen* meritShop) { meritShop_ = meritShop; }
+  // The money box the story's MoneyBox screen opens and its CloseTextBox closes (call_routines 15
+  // and 16).
+  void attachMoneyBox(MoneyBoxScreen* moneyBox) { moneyBox_ = moneyBox; }
   // The save machine the story's SaveMenu screen opens (call_routine 48).
   void attachSaveMachine(SaveMachine* machine) { saveMachine_ = machine; }
   // The naming box the story's renaming opens (call_routine 32).
@@ -101,6 +105,7 @@ private:
   BirdTransportScreen* bird_ = nullptr;
   CardShopScreen* cardShop_ = nullptr;
   MeritShopScreen* meritShop_ = nullptr;
+  MoneyBoxScreen* moneyBox_ = nullptr;
   // Whether the story waits on a scene of the death scene.
   bool deathScene_ = false;
   CurlingScreen* curling_ = nullptr;

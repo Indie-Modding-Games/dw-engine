@@ -60,6 +60,9 @@ screens:
   # El transporte en pájaro: las cajas del original y los rótulos PLACE y POINT.
   bird_transport:
     styles: [ui/skins/original/bird_transport/style]
+  # El cuadro del dinero que el guion abre sobre la charla: la caja del original.
+  money_box:
+    styles: [ui/skins/original/money_box/style]
   # La tienda de cartas: las cajas y los rótulos del guardián, y la carta de cada rareza.
   card_shop:
     styles: [ui/skins/original/card_shop/style]

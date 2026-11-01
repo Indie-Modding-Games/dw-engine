@@ -87,7 +87,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 82 | 79 | 2 | 1 | 98 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 78 | 78 | 0 | 0 | 100 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 49 | 0 | 0 | 100 % |
-| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 96 | 93 | 2 | 1 | 98 % |
+| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 96 | 95 | 0 | 1 | 99 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 79 | 78 | 1 | 0 | 99 % |
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 96 | 95 | 1 | 0 | 99 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 29 | 0 | 0 | 100 % |
@@ -101,7 +101,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 30 | 1 | 0 | 98 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 49 | 48 | 1 | 0 | 99 % |
-| **Total** | 1392 funciones a portar | 1392 | 1178 | 30 | 184 | 86 % |
+| **Total** | 1392 funciones a portar | 1392 | 1180 | 28 | 184 | 86 % |
 
 ## Batalla
 
@@ -194,12 +194,10 @@ La máquina de scripts de eventos: órdenes, valores, cajas de texto y eleccione
 
 Ficheros del decomp: `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c`.
 
-Portado 93, parcial 2, falta 1.
+Portado 95, parcial 0, falta 1.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `tickShopBitsBox` | `main/script_common.c:1154` | parcial | Cuadro con el dinero del jugador que abre el guion. | `apps/game/src/shop_screen.cpp` · en la tienda sale y se actualiza al comprar o vender; la rutina 15 se cierra sin enseñarlo |
-| `createShopBitsBox` | `main/script_common.c:1757` | parcial | Enseña el dinero del jugador durante un diálogo. | `apps/game/src/shop_screen.cpp` · la tienda lo enseña de la primera elección a la despedida; la rutina 15 se cierra sin enseñar el cuadro |
 | `triggerSeadramonCutscene` | `main/script_common.c:3057` | falta (citada en docs) | Lanza la escena de la serpiente marina al pescarla. | — |
 
 ## Menús e interfaz

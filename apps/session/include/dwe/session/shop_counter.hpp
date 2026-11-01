@@ -137,13 +137,16 @@ public:
   // The text key of a line of the open visit's keeper (getShopkeeperLine); empty when MAPHEAD's
   // listing does not have it.
   [[nodiscard]] std::string lineKey(std::int32_t line) const;
+  // The text key of a line of a keeper without opening a visit (getShopkeeperLine for the money
+  // box, script_common.c: createShopBitsBox); empty without a shop section or MAPHEAD's line.
+  [[nodiscard]] std::string keeperLineKey(const ShopVisit& visit, std::int32_t line);
 
 private:
   class StockPort;
   class RecyclePort;
   class Serializer;
 
-  [[nodiscard]] std::int32_t linesSection() const;
+  [[nodiscard]] std::int32_t linesSection(const ShopVisit& visit) const;
   core::Result<void> loadLines();
 
   ShopCounterDesc desc_;

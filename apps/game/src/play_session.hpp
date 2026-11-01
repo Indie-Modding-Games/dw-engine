@@ -295,6 +295,7 @@ private:
   BirdTransportScreen birdScreen_;
   CardShopScreen cardShopScreen_;
   MeritShopScreen meritShopScreen_;
+  MoneyBoxScreen moneyBoxScreen_;
   FieldItemsScreen fieldItemsScreen_;
   AwardScreen awardScreen_;
   PraiseScoldCall praiseScold_;

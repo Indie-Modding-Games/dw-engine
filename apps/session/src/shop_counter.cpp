@@ -262,7 +262,7 @@ void ShopCounter::open(ShopVisit visit) {
   core::logDebug("[port:shop] {}: keeper '{}'{}, lines section {}",
                  visit_->recycle ? "openRecycleShop (script_menu.c:584)"
                                  : "openShop (script_common.c:1618)",
-                 visit_->keeperSpecies, visit_->ownerless ? " (ownerless)" : "", linesSection());
+                 visit_->keeperSpecies, visit_->ownerless ? " (ownerless)" : "", linesSection(*visit_));
 }
 
 void ShopCounter::close() {
@@ -364,25 +364,44 @@ core::Result<std::int32_t> ShopCounter::sell(GameSession& session, assets::ItemH
 }
 
 std::string ShopCounter::lineKey(std::int32_t line) const {
-  if (!lineTables_ || line < 0) {
+  if (!lineTables_ || !visit_ || line < 0) {
     return {};
   }
-  const auto table = lineTables_->find(linesSection());
+  const auto table = lineTables_->find(linesSection(*visit_));
   if (table == lineTables_->end() || static_cast<std::size_t>(line) >= table->second.size()) {
     return {};
   }
   return table->second[static_cast<std::size_t>(line)];
 }
 
-std::int32_t ShopCounter::linesSection() const {
-  if (!rules_ || !visit_) {
+std::string ShopCounter::keeperLineKey(const ShopVisit& visit, std::int32_t line) {
+  if (!rules_ || line < 0) {
+    return {};
+  }
+  if (auto loaded = loadLines(); !loaded) {
+    core::logWarning("[port:shop] getShopkeeperLine (script_common.c:1174): {}",
+                     loaded.error().message);
+    return {};
+  }
+  if (!lineTables_) {
+    return {};
+  }
+  const auto table = lineTables_->find(linesSection(visit));
+  if (table == lineTables_->end() || static_cast<std::size_t>(line) >= table->second.size()) {
+    return {};
+  }
+  return table->second[static_cast<std::size_t>(line)];
+}
+
+std::int32_t ShopCounter::linesSection(const ShopVisit& visit) const {
+  if (!rules_) {
     return 0;
   }
-  if (visit_->ownerless) {
+  if (visit.ownerless) {
     return rules_->ownerlessLinesSection;
   }
   // getShopkeeperLine: a species data/shops does not list talks with the first keeper's lines.
-  const auto keeper = std::ranges::find(keepers_, visit_->keeperSpecies);
+  const auto keeper = std::ranges::find(keepers_, visit.keeperSpecies);
   const auto place = keeper == keepers_.end() ? 0 : std::distance(keepers_.begin(), keeper);
   return rules_->keeperLinesSection + static_cast<std::int32_t>(place);
 }
