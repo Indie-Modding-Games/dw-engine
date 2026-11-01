@@ -223,6 +223,8 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
                                                                 .cards = game.cards});
   game.tournament = tournament.get();
   game.scenes->attachTournament(game.tournament);
+  // A species' cup gate reads the cups won.
+  game.evolution->setCupSource(*game.tournament);
   game.systems.push_back(std::move(tournament));
   auto curling = std::make_unique<CurlingAdapter>(CurlingAdapterDesc{.story = game.story});
   game.curling = curling.get();

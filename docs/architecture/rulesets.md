@@ -84,7 +84,7 @@ lo aplica sobre las tablas que el ruleset nombra:
 | Campo | Qué hace |
 |---|---|
 | `requirement` | Su fila de requisitos (formato de `EVOLUTION_REQS`: stats mínimos, errores, peso ± 5, un extra) |
-| `gate` | Lo que tiene que cumplirse antes de puntuar: `triggers` (disparadores de la historia), `hours` (`from`/`to`, hora del día; da la vuelta a medianoche si `to < from`) y `cup` (copa ganada; gancho de los torneos, abierta mientras no se registran) |
+| `gate` | Lo que tiene que cumplirse antes de puntuar: `triggers` (disparadores de la historia), `hours` (`from`/`to`, hora del día; da la vuelta a medianoche si `to < from`) y `cup` (número de la copa en `data/tournaments`, ganada alguna vez: el disparador 15 + copa que ponen los torneos; abierta donde no hay torneos) |
 | `evolves_from` | Formas que evolucionan a ella: toma la primera ranura libre de `to` tras el último destino de cada una |
 | `evolves_to` | Sus propios destinos, si no tiene fila de caminos |
 | `stats_gains` | Su fila de referencia de stats (`EVOLUTION_STATS_GAINS`) |
@@ -100,6 +100,10 @@ Un id que la tabla no tiene, o una fila de caminos sin ranura libre, es un error
 `species_extra`. Las dos son
 secciones normales, así que siguen la regla de `extends`: un ruleset que nombra `species_extra` sustituye el fichero
 entero del que extiende.
+
+`species_extra` también puede traer `extra_prizes`, con el formato de `tournament.yaml` (`{cup, item, amount}` o
+`{cup, money}`, por número): `TournamentAdapter` los suma a los de la sección de torneos, así que un ruleset que
+extiende otro da premios de copa sin copiar su `tournament.yaml` entero.
 
 ### Rarezas: `quirks`
 

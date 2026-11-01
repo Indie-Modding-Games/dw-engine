@@ -84,17 +84,16 @@ TEST_CASE("a gated target scores only once its triggers are set, at its hours") 
   CHECK(report->points == 0);
 }
 
-TEST_CASE("a cup gate stays open until the session records cup wins") {
+TEST_CASE("a cup gate is open without the tournaments and shut until they record the cup won") {
   const TableFixture fixture = gatedFixture();
   ruleset::SpeciesExtra extra;
-  extra.species["panj"] =
-      ruleset::SpeciesPatch{.gate = ruleset::SpeciesGate{.cup = std::string{"some_cup"}}};
+  extra.species["panj"] = ruleset::SpeciesPatch{.gate = ruleset::SpeciesGate{.cup = 16}};
   const Evolution evolution = evolutionWith(fixture, extra);
   EvolutionInputs inputs = inputsOf("nume", 1000);
   CHECK(nextOf(evolution, inputs) == TableFixture::index("panj"));
-  inputs.cupWon = [](std::string_view) { return false; };
+  inputs.cupWon = [](std::int32_t) { return false; };
   CHECK_FALSE(nextOf(evolution, inputs));
-  inputs.cupWon = [](std::string_view cup) { return cup == "some_cup"; };
+  inputs.cupWon = [](std::int32_t cup) { return cup == 16; };
   CHECK(nextOf(evolution, inputs) == TableFixture::index("panj"));
 }
 

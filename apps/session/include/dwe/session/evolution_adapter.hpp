@@ -24,6 +24,7 @@ namespace dwe::session {
 
 class BattleAdapter;
 class StoryAdapter;
+class TournamentAdapter;
 
 // The save section of the evolution state.
 inline constexpr std::string_view EvolutionSaveName = "evolution";
@@ -64,6 +65,9 @@ public:
   // this), so it comes in here. The requirements read the learned moves from it and an evolution
   // gives it the new form's moves. Without it the requirements see no learned moves.
   void setMoveSource(BattleAdapter& battle) { battle_ = &battle; }
+  // The cups won, for a species' cup gate (the hidden content): the session's tournament adapter,
+  // built later, which must outlive this one. Without it a cup gate is open.
+  void setCupSource(const TournamentAdapter& tournament) { tournament_ = &tournament; }
 
   // An evolution item used on the partner (item.c: handleEvoItems); the inventory's command calls
   // it. Whether the partner evolved.
@@ -105,6 +109,8 @@ private:
   [[nodiscard]] static std::string mapIdOf(const GameSession& session);
   // Whether a story trigger is set, for the gates of the hidden content; empty without a story.
   [[nodiscard]] std::function<bool(std::int32_t)> triggerReader() const;
+  // Whether a cup was won, from the tournaments; nothing without them.
+  [[nodiscard]] std::function<bool(std::int32_t)> cupReader() const;
   // Warns of each map a special rule asks for that is no map of data/maps, when the packs have a
   // map table: that rule never holds (dwx validate reports it too).
   void warnUnknownMaps(const game::evolution::SpecialRules& specials) const;
@@ -120,6 +126,7 @@ private:
 
   EvolutionAdapterDesc desc_;
   BattleAdapter* battle_ = nullptr;
+  const TournamentAdapter* tournament_ = nullptr;
   std::optional<game::evolution::Evolution> evolution_;
   // The ruleset the tables were read for, when the adapter read them.
   std::optional<std::string> tablesRuleset_;

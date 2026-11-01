@@ -32,7 +32,7 @@ using testing::FixturePacks;
 constexpr std::string_view Extra = R"(species:
   newmon:
     requirement: { from: rookie_b, offense: 150, care: 2, care_is_maximum: true, weight: 25, techs: 30 }
-    gate: { triggers: [248], hours: { from: 20, to: 6 }, cup: some_cup }
+    gate: { triggers: [248], hours: { from: 20, to: 6 }, cup: 16 }
     evolves_from: [rookie_a, rookie_b]
     evolves_to: [ultimate_a]
     stats_gains: { hp: 6000, mp: 7000, offense: 600, defense: 500, speed: 700, brains: 700 }
@@ -43,8 +43,8 @@ constexpr std::string_view Extra = R"(species:
     clips: { 3: 2, 5: 42 }
     field_scale: 0.6
     chart: { x: 189, y: 176, icon: rookie_a, palette: 2 }
-cup_prizes:
-  - { cup: some_cup, item: mane }
+extra_prizes:
+  - { cup: 16, item: 125 }
 )";
 
 constexpr std::string_view Mega = R"(check_hours: 120
@@ -178,11 +178,11 @@ TEST_CASE("species_extra reads every patch of a species, and the Mega step repla
   CHECK(patch->gate->hours->holds(23));
   CHECK(patch->gate->hours->holds(2));
   CHECK_FALSE(patch->gate->hours->holds(12));
-  CHECK(patch->gate->cup == std::optional<std::string>{"some_cup"});
+  CHECK(patch->gate->cup == std::optional<std::int32_t>{16});
   CHECK(patch->clips.at(5) == 42);
   CHECK(patch->fieldScale == doctest::Approx(0.6));
   CHECK(patch->partnerMoves.at("cannon").power == 240);
-  CHECK(extra->cupPrizes.size() == 1);
+  CHECK(extra->extraPrizes);
   CHECK_FALSE(extra->megaStep);
   CHECK_FALSE(extra->isMega("newmon"));
 

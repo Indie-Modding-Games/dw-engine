@@ -1,7 +1,7 @@
 # The hidden content (docs/modulos/game/evolution.md, «Contenido oculto»): a new game from the main menu with the keyboard,
 # its rules screen (the original's rules first, then the hidden content on), and the three forms the disc has but only
 # gives by item, each reached by the natural check: Panjyamon from Penguinmon (Leomon in the city, trigger 248),
-# Gigadramon from Seadramon (its cup gate is open until the tournaments record cups) and MetalEtemon from Sukamon
+# Gigadramon from Seadramon (the Metalic Cup won, trigger 15 + 16) and MetalEtemon from Sukamon
 # (Etemon in the city, trigger 242). Each source comes from evolve, the partner's values from partner_set (the
 # requirement's stats, care and a weight inside the target's window and outside the other targets'), and its counter
 # one hour before the check; the clock then runs until the form changes. Each new partner is captured in the field and
@@ -71,7 +71,9 @@ steps:
   - menu: close
   - wait: {menu_open: false}
   - wait: {seconds: 0.5}
-  # Gigadramon (ultimate) from Seadramon: the champion checks from 144 hours; HP and MP count tenths.
+  # Gigadramon (ultimate) from Seadramon: the champion checks from 144 hours; HP and MP count tenths. Its gate is the
+  # Metalic Cup (16) won, which the tournaments record as trigger 15 + cup.
+  - script: story_set("trigger 31 on")
   - script: evolve("sead")
   - wait: {setting: {partner.name: main.digimon_names.0010}, timeout: 600}
   - wait: {setting: {evolution.active: "false"}, timeout: 600}

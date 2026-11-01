@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -100,6 +101,25 @@ TEST_CASE("extra_prizes: a ruleset's prizes by cup") {
   CHECK(extraPrizesOf(*prizes, 7)[0].amount == 2);
   CHECK(extraPrizesOf(*prizes, 0).empty());
   CHECK_FALSE(parseExtraPrizes(sectionOf("extra_prizes:\n- {cup: 1}\n")));
+}
+
+TEST_CASE("extra_prizes: the hidden content's species patches give each new form's item") {
+  const auto bytes = dwe::assets::DiskFileSystem{}.readFile(
+      std::filesystem::path{DWE_GAME_PACK} / "rules" / "oculto" / "species_extra.yaml");
+  REQUIRE(bytes);
+  auto node = dwe::core::parseYaml(
+      std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+  REQUIRE(node);
+  auto prizes = parseExtraPrizes(
+      {.name = "species_extra", .owner = "test", .file = "species_extra.yaml", .node = *node});
+  REQUIRE(prizes);
+  // Animal Cup: Noble Mane; Metalic Cup: Giga Hand; Filth Cup: Metalbanana (data/items).
+  for (const auto [cup, item] : {std::pair{20, 126}, std::pair{16, 125}, std::pair{17, 127}}) {
+    CAPTURE(cup);
+    const std::vector<ExtraPrize> found = extraPrizesOf(*prizes, cup);
+    REQUIRE(found.size() == 1);
+    CHECK(found[0].item == item);
+  }
 }
 
 TEST_CASE("checkTournamentMedalConditions: the first group won, the wins, the cards") {

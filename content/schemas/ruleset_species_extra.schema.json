@@ -52,9 +52,9 @@
           }
         },
         "cup": {
-          "description": "A cup that must have been won (a hook: open until the tournaments record wins).",
-          "type": "string",
-          "pattern": "^[a-z0-9_]+$"
+          "description": "A cup that must have been won: its number in data/tournaments (won when the tournaments set its trigger).",
+          "type": "integer",
+          "minimum": 0
         }
       }
     },
@@ -334,25 +334,31 @@
         "$ref": "#/$defs/species_patch"
       }
     },
-    "cup_prizes": {
-      "description": "A cup's extra prize (a hook for the tournaments: nothing gives it yet).",
+    "extra_prizes": {
+      "description": "Prizes given when a cup is won, added to tournament.yaml's extra_prizes (same format: cup and item by number; a prize gives an item or money).",
       "type": "array",
       "items": {
         "type": "object",
-        "required": [
-          "cup",
-          "item"
-        ],
         "additionalProperties": false,
+        "required": [
+          "cup"
+        ],
         "properties": {
           "cup": {
-            "type": "string",
-            "pattern": "^[a-z0-9_]+$"
+            "type": "integer",
+            "minimum": 0
           },
           "item": {
-            "type": "string",
-            "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
-            "entryReference": "data/items"
+            "type": "integer",
+            "minimum": 0
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "money": {
+            "type": "integer",
+            "minimum": 1
           }
         }
       }

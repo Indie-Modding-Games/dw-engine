@@ -43,11 +43,11 @@ struct HourRange {
 };
 
 // What must hold before a target is even scored: story triggers set, the hour of the day, and a
-// cup won. The cup is a hook for the tournaments: until the session records cup wins it is open.
+// cup won (its number in data/tournaments; open where no tournaments are run).
 struct SpeciesGate {
   std::vector<std::int32_t> triggers = {};
   std::optional<HourRange> hours = {};
-  std::optional<std::string> cup = {};
+  std::optional<std::int32_t> cup = {};
 
   friend bool operator==(const SpeciesGate&, const SpeciesGate&) = default;
 };
@@ -115,18 +115,14 @@ struct MegaStep {
   std::vector<std::string> mega = {};
 };
 
-// A cup's extra prize (a hook for the tournaments: nothing reads it until they land).
-struct CupPrize {
-  std::string cup = {};
-  std::string item = {};
-};
-
 struct SpeciesExtra {
   std::map<std::string, SpeciesPatch, std::less<>> species = {};
-  std::vector<CupPrize> cupPrizes = {};
+  // Whether the section gives cups extra prizes (extra_prizes, which the tournaments read and add
+  // to tournament.yaml's, so a ruleset that extends another need not copy its tournament section).
+  bool extraPrizes = false;
   std::optional<MegaStep> megaStep = {};
 
-  [[nodiscard]] bool empty() const { return species.empty() && cupPrizes.empty() && !megaStep; }
+  [[nodiscard]] bool empty() const { return species.empty() && !extraPrizes && !megaStep; }
   // The patch of a species, or nullptr.
   [[nodiscard]] const SpeciesPatch* find(std::string_view id) const;
   // Whether a species is a Mega of the Mega step.

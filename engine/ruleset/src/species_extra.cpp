@@ -18,7 +18,8 @@ using assets::YamlReader;
 using core::YamlNode;
 
 constexpr std::string_view SpeciesKey = "species";
-constexpr std::string_view CupPrizesKey = "cup_prizes";
+// Read by the tournaments (game/tournament: parseExtraPrizes), in the format of tournament.yaml.
+constexpr std::string_view ExtraPrizesKey = "extra_prizes";
 constexpr std::string_view CheckHoursKey = "check_hours";
 constexpr std::string_view LifetimeHoursKey = "lifetime_hours";
 constexpr std::string_view TamerLevelChanceKey = "tamer_level_chance";
@@ -112,7 +113,7 @@ SpeciesGate readGate(YamlReader& reader, const YamlNode& node) {
                            .to = hourOf(reader, reader.field(*hours, "to"))};
   }
   if (const YamlNode* cup = node.find("cup")) {
-    gate.cup = reader.text(*cup);
+    gate.cup = reader.integer<std::int32_t>(*cup);
   }
   return gate;
 }
@@ -289,15 +290,9 @@ void readSpecies(YamlReader& reader, const YamlNode& root, SpeciesExtra& extra) 
 core::Result<void> readExtraSection(const Section& section, SpeciesExtra& extra) {
   YamlReader reader;
   const YamlNode& root = section.node;
-  reader.expectKeys(root, section.name, {}, {SpeciesKey, CupPrizesKey});
+  reader.expectKeys(root, section.name, {}, {SpeciesKey, ExtraPrizesKey});
   readSpecies(reader, root, extra);
-  if (const YamlNode* prizes = root.find(CupPrizesKey)) {
-    for (const YamlNode& item : reader.sequence(*prizes, CupPrizesKey)) {
-      reader.expectKeys(item, CupPrizesKey, {"cup", "item"});
-      extra.cupPrizes.push_back({.cup = reader.text(reader.field(item, "cup")),
-                                 .item = reader.text(reader.field(item, "item"))});
-    }
-  }
+  extra.extraPrizes = root.find(ExtraPrizesKey) != nullptr;
   return reader.finish(std::monostate{}, section.file).transform([](auto) {});
 }
 

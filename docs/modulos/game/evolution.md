@@ -118,7 +118,7 @@ especie](../../architecture/rulesets.md#parches-por-especie)), con números de d
 | Forma | Desde | Requisito (3 de 4 grupos, como el original) | Puerta |
 |---|---|---|---|
 | Panjyamon | Elecmon, Penguinmon | ataque 150, defensa 100, velocidad 120; 0–2 errores; peso 25 ± 5; 30 técnicas o venir de Penguinmon | Leomon vive en la ciudad (disparador 248) |
-| Gigadramon | Tyrannomon, Devimon, Airdramon, Seadramon | HP 4000, MP 4000, ataque 500, defensa 400, velocidad 300, cerebro 300; 0–5 errores; peso 60 ± 5; 60 batallas | Copa Metálica ganada (gancho, ver abajo) |
+| Gigadramon | Tyrannomon, Devimon, Airdramon, Seadramon | HP 4000, MP 4000, ataque 500, defensa 400, velocidad 300, cerebro 300; 0–5 errores; peso 60 ± 5; 60 batallas | Copa Metálica (16) ganada alguna vez |
 | MetalEtemon | Sukamon, Numemon | ataque 500, velocidad 500, cerebro 400; 0 errores; peso 20 ± 5; 100 batallas o venir de Sukamon | Etemon vencido y en la ciudad (disparador 242) |
 
 - **Puertas.** `SpeciesGate` (disparadores de la historia, hora del día, copa ganada) se mira antes de puntuar: si
@@ -129,9 +129,12 @@ especie](../../architecture/rulesets.md#parches-por-especie)), con números de d
 - **Ranuras.** Cada destino nuevo toma la primera ranura libre de `to` **después** del último destino del origen, así
   que en un empate gana el destino del original (el plan decía la ranura 0 para Elecmon; se cambió para no tocar la
   prioridad de los destinos de siempre).
-- **Copas (pendiente de los torneos).** La puerta `cup` y la lista `cup_prizes` (`animal_cup` → `noble_mane`,
-  `metalic_cup` → `giga_hand`, `filth_cup` → `metalbanana`) son ganchos: mientras la sesión no registra copas ganadas,
-  `EvolutionInputs::cupWon` va vacío y la puerta de copa está **abierta**; nada entrega los premios todavía.
+- **Copas.** La puerta `cup` es el número de la copa en `data/tournaments`. `EvolutionAdapter::cupReader` la lee de
+  `TournamentAdapter::cupWon` (el disparador 15 + copa que pone la copa ganada y que se guarda con la partida); sin
+  torneos (`setCupSource` sin llamar, como en los tests del adaptador solo) `cupWon` va vacío y la puerta está
+  abierta. Los premios van en `extra_prizes` del mismo fichero, que los torneos suman a los de `tournament.yaml`:
+  Noble Mane (126) en la Copa Animal (20, grado Z), Giga Hand (125) en la Copa Metálica (16, grado M) y Metalbanana
+  (127) en la Copa Basura (17, grado T).
 - **Criadas.** Las especies desde 0x3f no caben en los disparadores de criado del original (200 + especie hasta
   0x3e): `StoryAdapter` las guarda en su propia lista, que va en la sección de evolución de la partida y que una
   partida nueva vacía. El árbol las da por descubiertas con ella; la medalla de las 61 sigue contando solo las del
@@ -143,7 +146,8 @@ Tests: `game/evolution/tests/hidden_tests.cpp` (puerta de disparadores y hora, p
 `the user's disc, extracted: the hidden content's paths and gates` (`extracted_tests.cpp`, con `DWE_CONTENT`: los
 destinos tras los del original y cada camino elegido por la revisión),
 `the game pack's hidden content rulesets follow their schemas and read` (`engine/ruleset/tests/species_extra_tests.cpp`)
-y `a species past the raised triggers is kept apart, and a new game clears it`
+y `extra_prizes: the hidden content's species patches give each new form's item`
+(`game/tournament/tests/cup_extras_tests.cpp`), `a species past the raised triggers is kept apart, and a new game clears it`
 (`apps/session/tests/evolution_adapter_tests.cpp`). Rutas: `route-hidden-content.yaml` y
 `route-hidden-content-off.yaml` ([prueba vertical](../../guides/prueba-vertical.md)).
 

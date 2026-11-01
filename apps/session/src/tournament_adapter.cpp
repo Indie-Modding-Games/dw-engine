@@ -4,6 +4,7 @@
 #include <dwe/core/yaml.hpp>
 #include <dwe/game/story/medals.hpp>
 #include <dwe/game/story/story_runner.hpp>
+#include <dwe/ruleset/species_extra.hpp>
 #include <dwe/session/cards_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
@@ -92,6 +93,15 @@ core::Result<void> TournamentAdapter::readRules(const ruleset::Ruleset& rules) {
     return std::unexpected{prizes.error()};
   }
   extraPrizes_ = std::move(*prizes);
+  // A ruleset's species patches add theirs (the hidden content's), so it need not copy this
+  // section.
+  if (const ruleset::Section* extra = rules.section(ruleset::SpeciesExtraSection)) {
+    auto more = game::tournament::parseExtraPrizes(*extra);
+    if (!more) {
+      return std::unexpected{more.error()};
+    }
+    extraPrizes_.insert(extraPrizes_.end(), more->begin(), more->end());
+  }
   auto medal = game::tournament::parseTournamentMedalRules(*section);
   if (!medal) {
     return std::unexpected{medal.error()};

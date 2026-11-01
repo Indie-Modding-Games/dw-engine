@@ -10,6 +10,7 @@
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/messages.hpp>
 #include <dwe/session/story_adapter.hpp>
+#include <dwe/session/tournament_adapter.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -454,11 +455,19 @@ std::optional<EvolutionInputs> EvolutionAdapter::inputsOf(const GameSession& ses
                          .scriptPaused = !scriptRunning,
                          .virusForm = tables.find(session.partnerRules().care.toilet.virusForm),
                          .virusBackup = backup,
-                         // The hidden content's gates: story triggers and the hour of the day. Cup
-                         // wins stay unset (the gate open) until the tournaments record them.
+                         // The hidden content's gates: story triggers, the hour of the day and
+                         // the cups won.
                          .trigger = triggerReader(),
                          .hourOfDay = session.clock().time().hour,
-                         .cupWon = {}};
+                         .cupWon = cupReader()};
+}
+
+std::function<bool(std::int32_t)> EvolutionAdapter::cupReader() const {
+  const TournamentAdapter* tournament = tournament_;
+  if (tournament == nullptr) {
+    return {};
+  }
+  return [tournament](std::int32_t cup) { return tournament->cupWon(cup); };
 }
 
 std::function<bool(std::int32_t)> EvolutionAdapter::triggerReader() const {

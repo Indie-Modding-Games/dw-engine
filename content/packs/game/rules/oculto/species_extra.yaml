@@ -21,8 +21,8 @@ species:
     # Los destinos de Leomon.
     evolves_to: [andr, mame]
     chart: { x: 189, y: 176, icon: leom, palette: 2 }
-  # Gigadramon (Ultra). Puerta: la Copa Metálica ganada; queda abierta hasta que los torneos registren las copas
-  # ganadas (gancho: EvolutionInputs::cupWon).
+  # Gigadramon (Ultra). Puerta: la Copa Metálica (copa 16 de data/tournaments) ganada alguna vez; los torneos la
+  # apuntan con el disparador 15 + copa (TournamentAdapter::cupWon).
   ggdr:
     requirement:
       hp: 400
@@ -35,7 +35,7 @@ species:
       care_is_maximum: true
       weight: 60
       battles: 60
-    gate: { cup: metalic_cup }
+    gate: { cup: 16 }
     evolves_from: [tyra, devi, aird, sead]
     chart: { x: 274, y: 176, icon: mgdr, palette: 1 }
   # MetalEtemon (Ultra; Mega con el paso Ultra → Mega). Puerta: Etemon vencido, que se une a la ciudad (200 + 42).
@@ -53,9 +53,11 @@ species:
     evolves_from: [scum, nume]
     # La tercera columna de Ultra (el árbol se ensancha).
     chart: { x: 298, y: 81, icon: etem, palette: 2 }
-# Gancho para los torneos: el premio extra de cada copa ganada. Nada lo entrega todavía; lo leerá el adaptador de
-# torneos cuando llegue (cup = id de copa de data/tournaments).
-cup_prizes:
-  - { cup: animal_cup, item: noble_mane }
-  - { cup: metalic_cup, item: giga_hand }
-  - { cup: filth_cup, item: metalbanana }
+# Premios de más por copa ganada, que los torneos suman a los de tournament.yaml (mismo formato: copa y objeto por su
+# número en data/tournaments y data/items), así que este ruleset no copia la sección de torneos del original. El
+# objeto que el disco tiene para cada forma nueva: Noble Mane en la Copa Animal (20, grado Z), Giga Hand en la Copa
+# Metálica (16, grado M) y Metalbanana en la Copa Basura (17, grado T).
+extra_prizes:
+  - { cup: 20, item: 126 }
+  - { cup: 16, item: 125 }
+  - { cup: 17, item: 127 }
