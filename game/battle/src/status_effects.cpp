@@ -306,6 +306,13 @@ void tickStatusEffects(BattleContext& context) {
   }
 }
 
+void removeFinisherAura(BattleContext& context) {
+  const std::optional<std::size_t> slot = context.state->finisher.auraSlot;
+  if (slot && context.visuals != nullptr) {
+    context.visuals->removeFinisherAura(*slot);
+  }
+}
+
 void removeStatusVisuals(BattleContext& context, FighterId id) {
   const StatusState& status = context.fighter(id).status;
   if (status.stunned) {

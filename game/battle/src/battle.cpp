@@ -488,7 +488,7 @@ const BattleEvents& Battle::step() {
     particleRolls_->tick(random_);
   }
   // The status visuals' world objects, with the bubbles' rolls.
-  statusVisuals_.tick(particleRolls_ ? random_ : statusVisuals_.ownRolls());
+  statusVisuals_.tick(particleRolls_ ? random_ : statusVisuals_.ownRolls(), state_.fighters);
   if (state_.fleeFrames) {
     ++*state_.fleeFrames;
   }

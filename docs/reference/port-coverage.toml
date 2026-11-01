@@ -341,26 +341,26 @@ BTL_resetStunSubEffects = { status = "portado", dwe = "game/battle/src/status_vi
 BTL_tickStunEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:159", what = "Anima el efecto visual del aturdimiento." }
 BTL_addStunSubEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:91", what = "Añade una estrella del aturdimiento." }
 BTL_tickStunSubEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:91", what = "Hace girar una estrella del aturdimiento." }
-BTL_setTMDObjectColor = { status = "falta", what = "Tiñe un objeto de un modelo (auras, brillos de estado)." }
-BTL_tickFinisherAura = { status = "falta", what = "Anima el aura del remate cargado alrededor del compañero." }
-BTL_addFinisherAura = { status = "falta", what = "Pone el aura del remate cargado." }
+BTL_setTMDObjectColor = { status = "portado", dwe = "apps/game/src/field_scene_battle_visuals.cpp:100", note = "el gris de los objetos del aura (0x3C y 0x5A sobre el 0x80 del fichero) como tinte del modelo", what = "Tiñe un objeto de un modelo (auras, brillos de estado)." }
+BTL_tickFinisherAura = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:238", what = "Anima el aura del remate cargado alrededor del compañero." }
+BTL_addFinisherAura = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:168", what = "Pone el aura del remate cargado." }
 BTL_tickAuraProjectile = { status = "falta", what = "Mueve un proyectil de aura." }
 BTL_initializeAuraProjectiles = { status = "falta", what = "Prepara los proyectiles de aura." }
 BTL_addAuraProjectile = { status = "falta", what = "Lanza un proyectil de aura." }
-BTL_initializeItemParticleVelocities = { status = "falta", what = "Da velocidades a las partículas de un objeto usado en combate." }
-BTL_tickItemParticles = { status = "falta", what = "Mueve las partículas de un objeto usado en combate." }
-BTL_initializeBattleItemParticles = { status = "falta", what = "Prepara las partículas de los objetos en combate." }
-BTL_addItemParticles = { status = "falta", what = "Lanza las partículas al usar un objeto en combate." }
-BTL_initializeBuffTrails = { status = "falta", what = "Prepara las estelas de una mejora de stats." }
-BTL_tickBuffDisk = { status = "falta", what = "Anima el disco de una mejora de stats." }
-BTL_addBuffTrails = { status = "falta", what = "Pone las estelas de una mejora de stats." }
-BTL_tickBuffTrails = { status = "falta", what = "Mueve las estelas de una mejora de stats." }
-BTL_initializeUnk3 = { status = "falta", what = "Prepara el disco de mejora de stats." }
-BTL_addBuffDiskEffect = { status = "falta", what = "Pone el disco de una mejora de stats." }
-BTL_tickBuffRings = { status = "falta", what = "Anima los anillos de una mejora de stats." }
-BTL_initializeUnk2 = { status = "falta", what = "Prepara los anillos de mejora de stats." }
-tickBuffModel = { status = "falta", what = "Anima el modelo que acompaña a una mejora de stats." }
-morphBuffModel = { status = "falta", what = "Alterna la paleta del modelo de mejora." }
+BTL_initializeItemParticleVelocities = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:121", note = "con las tiradas propias de los efectos, no las del combate (Suposición)", what = "Da velocidades a las partículas de un objeto usado en combate." }
+BTL_tickItemParticles = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:249", what = "Mueve las partículas de un objeto usado en combate." }
+BTL_initializeBattleItemParticles = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:119", what = "Prepara las partículas de los objetos en combate." }
+BTL_addItemParticles = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:186", what = "Lanza las partículas al usar un objeto en combate." }
+BTL_initializeBuffTrails = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:131", note = "con las tiradas propias de los efectos (Suposición)", what = "Prepara las estelas de una mejora de stats." }
+BTL_tickBuffDisk = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:270", what = "Anima el disco de una mejora de stats." }
+BTL_addBuffTrails = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:203", what = "Pone las estelas de una mejora de stats." }
+BTL_tickBuffTrails = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:293", what = "Mueve las estelas de una mejora de stats." }
+BTL_initializeUnk3 = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:119", what = "Prepara el disco de mejora de stats." }
+BTL_addBuffDiskEffect = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:203", what = "Pone el disco de una mejora de stats." }
+BTL_tickBuffRings = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:317", what = "Anima los anillos de una mejora de stats." }
+BTL_initializeUnk2 = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:149", note = "con las tiradas propias de los efectos (Suposición)", what = "Prepara los anillos de mejora de stats." }
+tickBuffModel = { status = "portado", dwe = "apps/game/src/field_scene_battle_visuals.cpp:248", note = "la paridad de los fotogramas del combate (StatusVisuals::frames)", what = "Anima el modelo que acompaña a una mejora de stats." }
+morphBuffModel = { status = "portado", dwe = "apps/game/src/field_scene_battle_visuals.cpp:153", note = "el disco se dibuja con la fila 491 o una copia del modelo con la 492", what = "Alterna la paleta del modelo de mejora." }
 initializeParticleFX = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "campo: las 50 direcciones, con la semilla del motor (Suposición)", what = "Prepara las partículas de los efectos." }
 tickParticleFX = { status = "parcial", dwe = "apps/game/src/field_effects.cpp", note = "campo: las chispas sin luchador (gimnasio); batalla: solo sus tiradas, con --original-rolls (game/battle/src/particle_rolls.cpp, battle.md)", what = "Mueve las partículas de los efectos." }
 addEntityParticleFX = { status = "parcial", dwe = "game/battle/src/particle_rolls.cpp", note = "solo sus tiradas, con --original-rolls (battle.md)", what = "Lanza partículas pegadas a un luchador." }

@@ -131,6 +131,7 @@ void cancelFinisherOf(BattleContext& context, FighterId id) {
     finisher.fighter.reset();
     finisher.auraFrames = 0;
     finisher.charging = false;
+    removeFinisherAura(context);
   }
 }
 

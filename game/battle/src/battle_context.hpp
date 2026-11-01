@@ -97,6 +97,8 @@ void cureStatus(BattleContext& context, FighterId id);
 // battle_main.c: BTL_removeStatusEffects: ends the visual of the fighter's statuses, before they
 // are cleared (faint, defeat, the flattening).
 void removeStatusVisuals(BattleContext& context, FighterId id);
+// battle_effect.c: BTL_removeFinisherAura(BTL_FINISHER_AURA_ID), when a finisher is lost.
+void removeFinisherAura(BattleContext& context);
 
 // The finisher gauge (battle_main.c: BTL_addFinisherProgress).
 void addFinisherProgress(BattleContext& context, FighterId id, std::int32_t amount);

@@ -58,6 +58,7 @@ game::battle::ThrownItem thrownItemOf(const game::inventory::ItemEffect& effect)
     item.reviveHpPercent = effect.revive->hpPercent;
   }
   item.curesStatus = effect.battleStatusCure.has_value();
+  item.cureRings = effect.battleStatusCure == 1;
   item.protects = effect.protects;
   if (effect.battleBoost) {
     const game::inventory::BattleBoost& boost = *effect.battleBoost;

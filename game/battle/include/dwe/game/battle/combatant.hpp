@@ -65,6 +65,8 @@ struct Combatant {
   DigimonType type = DigimonType::None;
   std::array<std::optional<std::int32_t>, SpeciesSpecials> specials{};
   std::int32_t radius = 0;
+  // The species data's height, which the effects over it scale with.
+  std::int32_t height = 0;
   CombatStats stats;
   std::int32_t hp = 0;
   std::int32_t mp = 0;

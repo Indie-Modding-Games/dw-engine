@@ -27,6 +27,7 @@ Combatant combatantOf(const assets::DigimonRow& species) {
   combatant.level = species.level;
   combatant.type = static_cast<DigimonType>(std::clamp(species.type, 0, HighestType));
   combatant.radius = species.radius;
+  combatant.height = species.height;
   combatant.dropItem = species.dropItem;
   combatant.dropChance = species.dropChance;
   for (std::size_t slot = 0; slot < SpeciesSpecials; ++slot) {

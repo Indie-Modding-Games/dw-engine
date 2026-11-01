@@ -40,6 +40,29 @@ void boost(Fighter& partner, const StatBoost& disk) {
   raise(partner.stats.speed, partner.startStats.speed, disk.speed);
 }
 
+// battle_main.c: BTL_healStatusEffect(1): the rings, in the colour of the last of poison,
+// confusion, stun and flattening the partner has, when it has any.
+void showCureRings(BattleContext& context, const Fighter& partner) {
+  using Kind = StatusVisuals::CureKind;
+  const StatusState& status = partner.status;
+  std::optional<Kind> kind;
+  if (status.poisoned) {
+    kind = Kind::Poison;
+  }
+  if (status.confused) {
+    kind = Kind::Confusion;
+  }
+  if (status.stunned) {
+    kind = Kind::Stun;
+  }
+  if (status.flattened || status.flatFrames != 0) {
+    kind = Kind::Flattening;
+  }
+  if (kind) {
+    context.visuals->addBuffRings(PartnerId, partner, *kind);
+  }
+}
+
 // item.c: the item's handler, now that it reached the partner. The healing ones show what they
 // heal over the partner (addEntityText(partner, 0, 0xb, value, icon)): the item's own amount, not
 // what the maximum let in; handleDoubleFloppy shows the HP and then the MP.
@@ -69,6 +92,9 @@ void land(BattleContext& context, const ThrownItem& item) {
     emitPartnerEvent(context, EventKind::MpRestored, item.mp);
   }
   if (item.curesStatus) {
+    if (item.cureRings && context.visuals != nullptr) {
+      showCureRings(context, partner);
+    }
     cureStatus(context, PartnerId);
   }
   if (item.protects) {
@@ -76,6 +102,10 @@ void land(BattleContext& context, const ThrownItem& item) {
   }
   if (item.boost) {
     boost(partner, *item.boost);
+    // main.c: handleBuffDisks ends with BTL_addBuffDiskEffect, unless the partner is down.
+    if (!partner.fainted && context.visuals != nullptr) {
+      context.visuals->addBuffDisk(PartnerId, partner);
+    }
   }
 }
 
@@ -100,6 +130,10 @@ void revivePartner(BattleContext& context, std::int32_t hp) {
   partner.pendingDamage = 0;
   standIdle(partner);
   state.deathFrames = 0;
+  // battle_setup.c: BTL_isBattleFinished: a finisher frozen by the fall ends with its aura.
+  if (state.finisher.fighter) {
+    removeFinisherAura(context);
+  }
   state.finisher.fighter.reset();
   state.finisher.auraFrames = 0;
   state.finisher.charging = false;
@@ -132,6 +166,10 @@ void tickThrownItem(BattleContext& context) {
   const ThrownItem item = thrown->item;
   thrown.reset();
   land(context, item);
+  // main.c: tickThrownItem: BTL_addItemParticles(ENTITY_TABLE[1]) after the item's handler.
+  if (context.visuals != nullptr) {
+    context.visuals->addItemParticles(PartnerId, context.fighter(PartnerId));
+  }
   emitPartnerEvent(context, EventKind::ItemLanded, 0);
 }
 

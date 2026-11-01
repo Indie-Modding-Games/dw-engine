@@ -18,6 +18,7 @@ dwe_add_module(battle
         src/particle_rolls.cpp
         src/status_effects.cpp
         src/status_visuals.cpp
+        src/status_visuals_effects.cpp
         src/movement.cpp
         src/shown_clips.cpp
         src/aftermath.cpp

@@ -903,6 +903,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   }
   submitEffectModels();
   submitStatusModels();
+  submitBattleVisualModels();
   if (!stage_.partnerHidden) {
     submit(*partnerActor_, alpha,
            {.scale = stage_.partnerScale * partnerSpeciesScale_,
@@ -919,6 +920,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   }
   if (mapRenderer_->hasMap()) {
     addEffectPrims(prims);
+    addBattleVisualPrims(prims);
     addStorySprites(prims);
     prims.insert(prims.end(), storyScreenPrims_.begin(), storyScreenPrims_.end());
   }

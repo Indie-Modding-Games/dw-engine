@@ -237,3 +237,24 @@ TEST_CASE("an enemy's HP bar shows after damage and hides after the HUD's frames
   CHECK(shown);
   CHECK(hiddenAgain);
 }
+
+TEST_CASE(
+    "main.c tickThrownItem: an item that lands bursts over the partner, a stat disk spins its "
+    "disk and a cure with rings shows them for the status it cures") {
+  Battle battle = startBattle(duel(evenStats(1000, 100), evenStats(1000, 100)), 4);
+  REQUIRE(battle.throwItem(disk(20)));
+  stepUntilLanded(battle);
+  const StatusVisuals& visuals = battle.statusVisuals();
+  CHECK(std::ranges::count_if(visuals.itemBursts(),
+                              [](const auto& slot) { return slot.has_value(); }) == 1);
+  REQUIRE(visuals.buffDisk().has_value());
+  CHECK(visuals.buffDisk()->fighter == PartnerId);
+  CHECK(visuals.buffTrails().has_value());
+  // No status: the cure shows no rings.
+  ThrownItem cure;
+  cure.curesStatus = true;
+  cure.cureRings = true;
+  REQUIRE(battle.throwItem(cure));
+  stepUntilLanded(battle);
+  CHECK_FALSE(battle.statusVisuals().buffRings().has_value());
+}

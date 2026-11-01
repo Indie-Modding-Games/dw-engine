@@ -61,6 +61,11 @@ void beginFinisher(BattleContext& context, FighterId id) {
   finisher.fighter = id;
   finisher.auraFrames = context.rules->finisher.auraFrames;
   finisher.charging = false;
+  // BTL_FINISHER_AURA_ID = BTL_addFinisherAura(entity, 0x50): the aura lasts as long as the
+  // freeze.
+  if (context.visuals != nullptr) {
+    finisher.auraSlot = context.visuals->addFinisherAura(id, finisher.auraFrames);
+  }
   if (id == PartnerId) {
     finisher.charge = 0;
     finisher.charging = true;

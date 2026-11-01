@@ -28,6 +28,8 @@ struct ThrownItem {
   std::optional<std::int32_t> reviveHpPercent;
   // Cures the partner's status effects (battle_main.c: BTL_healStatusEffect).
   bool curesStatus = false;
+  // Its cure shows the rings over the partner (BTL_healStatusEffect(1): BTL_addBuffRingsEffect).
+  bool cureRings = false;
   // Keeps new status effects off the partner (FIGHTER_FLAG_PROTECTED).
   bool protects = false;
   std::optional<StatBoost> boost;

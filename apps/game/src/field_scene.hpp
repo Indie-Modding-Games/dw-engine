@@ -628,7 +628,17 @@ private:
   };
   std::optional<StatusTexture> statusTexture(std::string_view image, std::int32_t palette);
   const EffectModelEntry* statusModel(std::string_view model);
+  // The model with the images of its materials on CLUT row `row` drawn with the palette `palette`
+  // of `image` instead (buff_model.c: morphBuffModel points DEFEFF's disk at another row).
+  const EffectModelEntry* repaintedStatusModel(std::string_view model, std::uint32_t row,
+                                               std::string_view image, std::int32_t palette);
   void addStatusBillboards(std::vector<render::MapBillboard>& billboards);
+  // field_scene_battle_visuals.cpp: the finisher's aura, the item burst, the stat disk and the
+  // cure's rings (game::battle::StatusVisuals): their models, glows and the sparks and trails as
+  // scene primitives.
+  void submitBattleVisualModels();
+  void addBattleVisualBillboards(std::vector<render::MapBillboard>& billboards);
+  void addBattleVisualPrims(std::vector<ScenePrim>& prims);
   // A flattened fighter's paper sprite (model.c: renderFlatDigimon).
   void addFlatFighterBillboards(std::vector<render::MapBillboard>& billboards);
   void submitStatusModels();

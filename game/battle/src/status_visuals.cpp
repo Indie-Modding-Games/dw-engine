@@ -89,7 +89,7 @@ void StatusVisuals::hide(FighterId fighter, Kind kind) {
   }
 }
 
-void StatusVisuals::tick(ruleset::Random& random) {
+void StatusVisuals::tick(ruleset::Random& random, std::span<const Fighter> fighters) {
   // BTL_tickPoisonEffect: a bubble on the first frame of every 30.
   for (std::optional<Poison>& poison : poisons_) {
     if (!poison) {
@@ -123,6 +123,7 @@ void StatusVisuals::tick(ruleset::Random& random) {
       ring.reset();
     }
   }
+  tickEffects(random, fighters);
 }
 
 void StatusVisuals::clear() {
@@ -132,6 +133,11 @@ void StatusVisuals::clear() {
   stuns_.fill(std::nullopt);
   stunRings_.fill(std::nullopt);
   shown_.clear();
+  finisherAuras_.fill(std::nullopt);
+  itemBursts_.fill(std::nullopt);
+  buffDisk_.reset();
+  buffTrails_.reset();
+  buffRings_.reset();
 }
 
 std::optional<std::size_t> StatusVisuals::shownBy(FighterId fighter) const {

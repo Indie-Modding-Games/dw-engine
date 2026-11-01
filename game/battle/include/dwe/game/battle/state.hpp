@@ -275,6 +275,9 @@ struct BattleCounters {
 struct FinisherState {
   std::optional<FighterId> fighter;
   std::int32_t auraFrames = 0;
+  // The slot of its aura in the status visuals (BTL_FINISHER_AURA_ID), which a lost finisher
+  // removes; it is not cleared when the aura ends by itself.
+  std::optional<std::size_t> auraSlot;
   std::int32_t charge = 0;
   bool charging = false;
 };

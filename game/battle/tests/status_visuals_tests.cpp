@@ -3,8 +3,10 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 #include "bench.hpp"
 
@@ -154,6 +156,104 @@ TEST_CASE("fainting and the flattening end the fighter's status visual") {
   REQUIRE(countOf(bench.visuals.confusions()) == 1);
   faint(context, PartnerId);
   CHECK(countOf(bench.visuals.confusions()) == 0);
+}
+
+TEST_CASE(
+    "battle_effect.c BTL_addFinisherAura: two slots, frame 0 to its duration, one roll a frame "
+    "for the outer object") {
+  StatusVisuals visuals;
+  dwe::ruleset::Random random{7};
+  REQUIRE(visuals.addFinisherAura(PartnerId, 0x50) == std::optional<std::size_t>{0});
+  REQUIRE(visuals.addFinisherAura(1, 0x50) == std::optional<std::size_t>{1});
+  CHECK_FALSE(visuals.addFinisherAura(2, 0x50).has_value());
+  visuals.removeFinisherAura(1);
+  const dwe::ruleset::Random before = random;
+  for (int frame = 0; frame < 0x50; ++frame) {
+    visuals.tick(random);
+  }
+  REQUIRE(visuals.finisherAuras()[0].has_value());
+  CHECK(visuals.finisherAuras()[0]->frame == 0x50);
+  CHECK(random.state() == advanced(before, 0x50).state());
+  visuals.tick(random);
+  CHECK_FALSE(visuals.finisherAuras()[0].has_value());
+  CHECK(random.state() == advanced(before, 0x50).state());
+}
+
+TEST_CASE("battle_effect.c BTL_tickItemParticles: 20 glows from over the head that fall and fade "
+          "over 25 frames, gone after 40") {
+  StatusVisuals visuals;
+  Fighter body;
+  body.combatant.height = 300;
+  body.position = {.x = 100, .z = -50};
+  dwe::ruleset::Random random{1};
+  visuals.addItemParticles(PartnerId, body);
+  const auto& burst = visuals.itemBursts()[0];
+  REQUIRE(burst.has_value());
+  CHECK(burst->origin == Point{.x = 100, .z = -50});
+  const StatusVisuals::ItemParticle start = burst->particles[0];
+  CHECK(start.position[1] == -300 * 16);
+  // Straight up at 0x230, tilted at most 500 of 4096 a turn.
+  CHECK(start.velocity[1] < -0x1C0);
+  visuals.tick(random);
+  CHECK(burst->particles[0].life == 0x18);
+  CHECK(burst->particles[0].position[1] == start.position[1] + start.velocity[1] + 0x36);
+  CHECK(burst->particles[0].brightness == 0xFF0 - 163);
+  for (int frame = 1; frame <= 0x28; ++frame) {
+    visuals.tick(random);
+  }
+  CHECK_FALSE(visuals.itemBursts()[0].has_value());
+}
+
+TEST_CASE("battle_effect.c BTL_tickBuffDisk: the disk grows from a third, spins 0x32 a frame and "
+          "ends after 0x43 frames; its trails rise from the feet") {
+  StatusVisuals visuals;
+  Fighter body;
+  body.combatant.radius = 200;
+  body.combatant.height = 200;
+  body.position = {.x = 0, .z = 0};
+  const std::vector<Fighter> fighters{body};
+  dwe::ruleset::Random random{1};
+  visuals.addBuffDisk(PartnerId, body);
+  visuals.tick(random, fighters);
+  REQUIRE(visuals.buffDisk().has_value());
+  CHECK(visuals.buffDisk()->scaleXZ == 0xBB8 / 3);
+  CHECK(visuals.buffDisk()->rotationY == 0x32);
+  const auto& trail = visuals.buffTrails()->trails[0];
+  CHECK(trail.life == 7);
+  CHECK(trail.corners[0][1] == 100);
+  CHECK(trail.corners[2][1] == 0x25);
+  // 160 to 198 from the feet for a radius of 200, 60 wide.
+  const auto reach = std::hypot(static_cast<double>(trail.corners[0][0]),
+                                static_cast<double>(trail.corners[0][2]));
+  CHECK(reach >= 160.0);
+  CHECK(reach <= 202.0);
+  for (int frame = 1; frame < 0x43; ++frame) {
+    visuals.tick(random, fighters);
+  }
+  REQUIRE(visuals.buffDisk().has_value());
+  CHECK(visuals.buffDisk()->scaleXZ < 0xBB8 * 2 / 10);
+  visuals.tick(random, fighters);
+  CHECK_FALSE(visuals.buffDisk().has_value());
+  CHECK_FALSE(visuals.buffTrails().has_value());
+}
+
+TEST_CASE("battle_effect.c BTL_addBuffRingsEffect: the rings scale with the radius and spark in "
+          "the cured status's colour") {
+  StatusVisuals visuals;
+  Fighter body;
+  body.combatant.radius = 100;
+  dwe::ruleset::Random random{1};
+  visuals.addBuffRings(PartnerId, body, StatusVisuals::CureKind::Confusion);
+  REQUIRE(visuals.buffRings().has_value());
+  CHECK(visuals.buffRings()->target == 4096 - 200);
+  CHECK(StatusVisuals::ringColor(visuals.buffRings()->kind) == StatusVisuals::Vec3{235, 150, 220});
+  visuals.tick(random);
+  CHECK(visuals.buffRings()->scale == (4096 - 200) / 3);
+  CHECK(visuals.buffRings()->rotations[1] == std::array<std::int32_t, 2>{0x258 + 12, 0x258 + 20});
+  for (int frame = 1; frame <= 0x41; ++frame) {
+    visuals.tick(random);
+  }
+  CHECK_FALSE(visuals.buffRings().has_value());
 }
 
 } // namespace battle_test
