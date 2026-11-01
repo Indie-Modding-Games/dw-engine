@@ -3,7 +3,8 @@
 # of an ultimate (120 hours): MetalEtemon from Etemon (Etemon in the city, trigger 242) and Machinedramon from
 # Megadramon (Mt. Infinity finished, trigger 50). Each source comes from evolve, the partner's values from
 # partner_set, and its counter one hour before the check. Machinedramon is captured in the field (drawn at 0.6) and on
-# its status page, and the chart at the end (original look). Run it with --saves <empty folder>, once per language
+# its status page, and the chart at the end (original look), then with the canonical stages on the chart's page 2 with
+# the four Megas and Machinedramon's detail. Run it with --saves <empty folder>, once per language
 # (--lang en, --lang es); how to run it: docs/guides/prueba-vertical.md. The ultimates of route-hidden-content.yaml,
 # without the step, never check again.
 name: mega-step
@@ -106,5 +107,33 @@ steps:
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: chart
+        # With the canonical stages the four Megas go to the chart's page 2 (Down past the Fresh box's last cell), and
+        # Machinedramon, the last, shows its detail.
+        - tap: {key: tab}
+        - menu_select: player-options
+        - wait: {seconds: 0.4}
+        - menu_select: canonical-stages
+        - expect_setting: {canonical_stages: true}
+        - menu: close
+        - wait: {menu_open: false}
+        - menu: open
+        - wait: {seconds: 0.6}
+        - menu_select: open-player
+        - wait: {seconds: 0.6}
+        - menu_select: player-tab-chart
+        - wait: {seconds: 0.6}
+        - tap: {key: return}
+        - wait: {seconds: 0.3}
+        - repeat: {times: 4, steps: [{tap: {key: down}}, {wait: {seconds: 0.1}}]}
+        - wait: {seconds: 0.5}
+        - expect_text_fits: all
+        - screenshot: chart-mega-page
+        - repeat: {times: 3, steps: [{tap: {key: down}}, {wait: {seconds: 0.1}}]}
+        - tap: {key: return}
+        - wait: {seconds: 0.6}
+        - expect_text_fits: all
+        - screenshot: detail-machinedramon
+        - tap: {key: escape}
+        - wait: {seconds: 0.4}
         - menu: close
         - wait: {menu_open: false}

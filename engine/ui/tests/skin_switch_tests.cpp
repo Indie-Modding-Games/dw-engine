@@ -1016,6 +1016,143 @@ TEST_CASE("the original skin's player and partner pages switch tabs on a click")
   CHECK(ui->elementHasClass("partner_menu", "tab-status", "selected"));
 }
 
+// Publishes a small chart as the game does (apps/game/src/player_chart.cpp): two Fresh cells, two
+// Ultimate cells and the two the canonical stages call Mega (Phoenixmon and HerculesKabuterimon).
+void publishSmallChart(Ui& ui) {
+  struct Cell {
+    std::string_view id;
+    double x;
+    double y;
+  };
+  constexpr std::array<Cell, 6> Cells{
+      Cell{.id = "fr1", .x = 30, .y = 43},   Cell{.id = "fr2", .x = 30, .y = 81},
+      Cell{.id = "ul1", .x = 250, .y = 43},  Cell{.id = "houo", .x = 250, .y = 62},
+      Cell{.id = "hkab", .x = 274, .y = 43}, Cell{.id = "ul2", .x = 274, .y = 62}};
+  for (std::size_t i = 0; i < Cells.size(); ++i) {
+    const std::string base = std::format("player.chart.{}.", i);
+    ui.setSetting(base + "x", Cells.at(i).x);
+    ui.setSetting(base + "y", Cells.at(i).y);
+    ui.setSetting(base + "u", 0.0);
+    ui.setSetting(base + "v", 0.0);
+    ui.setSetting(base + "index", static_cast<double>(i));
+    ui.setSetting(base + "id", std::string{Cells.at(i).id});
+    ui.setSetting(base + "level", 5.0);
+  }
+  ui.setSetting("player.chart.count", static_cast<double>(Cells.size()));
+}
+
+// The chart's pages (docs/modulos/apps/game.md, «Etapas canónicas»): without the canonical stages
+// one page as the original's; with them the Mega box is page 2, reached with Down past a column's
+// last cell, Down on the tab or the wheel, and left with Up.
+TEST_CASE("the original skin's chart turns to the Mega box's page and back") {
+  Content content;
+  addOriginalArt(content);
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "en");
+  auto ui = createUi(files, texts);
+  REQUIRE(ui->skin() == "original");
+  loadScreens(*ui);
+  ui->setSetting("ui_skin", std::string{"original"});
+  ui->setSetting("canonical_stages", false);
+  publishSmallChart(*ui);
+  input::InputState input{input::defaultActionMap()};
+  const auto settle = [&] {
+    for (int tick = 0; tick < 30; ++tick) {
+      frame(*ui, input);
+    }
+  };
+  const auto focused = [&] { return ui->focusedElementId("pause_menu"); };
+  const auto onPage2 = [&] { return ui->elementHasClass("pause_menu", "chart-more", "up"); };
+
+  ui->show("pause_menu", true);
+  settle();
+  REQUIRE(clickElement(*ui, "pause_menu", "open-player"));
+  settle();
+  press(*ui, input, input::keys::Right);
+  settle();
+  REQUIRE(ui->elementHasClass("pause_menu", "player-tab-chart", "selected"));
+
+  // Off: one page, no arrow; Down past the Fresh column's last cell stays there.
+  CHECK_FALSE(ui->elementHasClass("pause_menu", "player-chart", "chart-paged"));
+  CHECK_FALSE(ui->elementHasClass("pause_menu", "chart-cell-3", "off-page"));
+  press(*ui, input, input::keys::Return);
+  CHECK(focused() == "chart-cell-0");
+  press(*ui, input, input::keys::Down);
+  CHECK(focused() == "chart-cell-1");
+  press(*ui, input, input::keys::Down);
+  settle();
+  CHECK(focused() == "chart-cell-1");
+  CHECK(ui->styleProperty("pause_menu", "chart-pages", "top") == "0dp");
+
+  // On: the Megas leave page 1 for page 2.
+  ui->setSetting("canonical_stages", true);
+  settle();
+  CHECK(ui->elementHasClass("pause_menu", "player-chart", "chart-paged"));
+  CHECK(ui->elementHasClass("pause_menu", "chart-cell-3", "off-page"));
+  CHECK(ui->elementHasClass("pause_menu", "chart-cell-4", "off-page"));
+  CHECK_FALSE(onPage2());
+  // Right from the Fresh cell goes to the Ultimate box on page 1, never to the Mega box.
+  press(*ui, input, input::keys::Right);
+  CHECK(focused() == "chart-cell-2");
+  // Down past the column's last cell slides to page 2, onto Phoenixmon; the keys wait for the
+  // slide, and page 1's cells are hidden once it ends.
+  press(*ui, input, input::keys::Down);
+  CHECK(focused() == "chart-cell-3");
+  CHECK(onPage2());
+  CHECK(ui->styleProperty("pause_menu", "chart-pages", "top") != "-564dp");
+  CHECK_FALSE(ui->elementHasClass("pause_menu", "chart-cell-0", "off-page"));
+  settle();
+  CHECK(ui->styleProperty("pause_menu", "chart-pages", "top") == "-564dp");
+  CHECK(ui->elementHasClass("pause_menu", "chart-cell-0", "off-page"));
+  CHECK_FALSE(ui->elementHasClass("pause_menu", "chart-cell-3", "off-page"));
+  press(*ui, input, input::keys::Down);
+  CHECK(focused() == "chart-cell-4");
+  press(*ui, input, input::keys::Left);
+  press(*ui, input, input::keys::Down);
+  settle();
+  CHECK(focused() == "chart-cell-4");
+  // Up past Phoenixmon goes back to page 1, on the cell it left.
+  press(*ui, input, input::keys::Up);
+  press(*ui, input, input::keys::Up);
+  settle();
+  CHECK_FALSE(onPage2());
+  CHECK(focused() == "chart-cell-2");
+  CHECK(ui->styleProperty("pause_menu", "chart-pages", "top") == "0dp");
+
+  // Out of the cells, Down and Up on the tab turn the page too.
+  press(*ui, input, input::keys::Escape);
+  CHECK(focused() == "player-tab-chart");
+  press(*ui, input, input::keys::Down);
+  settle();
+  CHECK(onPage2());
+  CHECK(focused() == "player-tab-chart");
+  press(*ui, input, input::keys::Return);
+  CHECK(focused() == "chart-cell-3");
+  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::Up);
+  settle();
+  CHECK_FALSE(onPage2());
+
+  // The wheel over the chart turns it down and back up.
+  const auto center = ui->elementCenter("pause_menu", "chart-stage-3");
+  REQUIRE(center.has_value());
+  const Ui::Point point = center.value_or(Ui::Point{});
+  static_cast<void>(ui->handleEvent(platform::MouseMoved{.x = point.x, .y = point.y}));
+  ui->update();
+  static_cast<void>(ui->handleEvent(platform::MouseWheelMoved{.x = 0, .y = -1}));
+  settle();
+  CHECK(onPage2());
+  static_cast<void>(ui->handleEvent(platform::MouseWheelMoved{.x = 0, .y = 1}));
+  settle();
+  CHECK_FALSE(onPage2());
+
+  // Off again: one page.
+  ui->setSetting("canonical_stages", false);
+  settle();
+  CHECK_FALSE(ui->elementHasClass("pause_menu", "player-chart", "chart-paged"));
+  CHECK_FALSE(ui->elementHasClass("pause_menu", "chart-cell-3", "off-page"));
+}
+
 TEST_CASE("the modern skin's partner tabs switch the page on left and right, as the original's") {
   Content content;
   const assets::VirtualFileSystem& files = content.mount();

@@ -603,6 +603,14 @@ void Scripting::registerApi() {
         return result(
             lua, [&] { return *self.event != nullptr ? (*self.event)->GetType() : std::string{}; });
       }),
+      // How far a mousescroll event turned the wheel, positive down; 0 for any other event.
+      "wheel", sol::readonly_property([](const LuaEvent& self, sol::this_state lua) {
+        return result(lua, [&] {
+          return *self.event != nullptr
+                     ? static_cast<double>((*self.event)->GetParameter("wheel_delta_y", 0.0F))
+                     : 0.0;
+        });
+      }),
       "stop", [](const LuaEvent& self) {
         if (*self.event != nullptr) {
           (*self.event)->StopPropagation();

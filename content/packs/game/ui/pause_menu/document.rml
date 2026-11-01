@@ -55,81 +55,84 @@
 				<div class="player-line" id="player-bits-line"><span text-key="pause_menu.player_bits"></span><span class="player-value" id="player-bits"></span></div>
 				<div class="player-line" id="player-time-line"><span text-key="pause_menu.player_time"></span><span class="player-value" id="player-time"></span></div>
                 </div>
-                <div id="player-chart" class="player-native">
-                  <div class="chart-stage" id="chart-stage-0"></div><div class="chart-stage" id="chart-stage-1"></div><div class="chart-stage" id="chart-stage-2"></div><div class="chart-stage" id="chart-stage-3"></div><div class="chart-stage" id="chart-stage-4"></div><div class="chart-stage" id="chart-stage-5"></div>
-                  <button id="chart-cell-0" class="chart-cell hidden" onclick="chart_pick(document, 0)"><img id="chart-icon-0" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-1" class="chart-cell hidden" onclick="chart_pick(document, 1)"><img id="chart-icon-1" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-2" class="chart-cell hidden" onclick="chart_pick(document, 2)"><img id="chart-icon-2" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-3" class="chart-cell hidden" onclick="chart_pick(document, 3)"><img id="chart-icon-3" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-4" class="chart-cell hidden" onclick="chart_pick(document, 4)"><img id="chart-icon-4" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-5" class="chart-cell hidden" onclick="chart_pick(document, 5)"><img id="chart-icon-5" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-6" class="chart-cell hidden" onclick="chart_pick(document, 6)"><img id="chart-icon-6" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-7" class="chart-cell hidden" onclick="chart_pick(document, 7)"><img id="chart-icon-7" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-8" class="chart-cell hidden" onclick="chart_pick(document, 8)"><img id="chart-icon-8" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-9" class="chart-cell hidden" onclick="chart_pick(document, 9)"><img id="chart-icon-9" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-10" class="chart-cell hidden" onclick="chart_pick(document, 10)"><img id="chart-icon-10" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-11" class="chart-cell hidden" onclick="chart_pick(document, 11)"><img id="chart-icon-11" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-12" class="chart-cell hidden" onclick="chart_pick(document, 12)"><img id="chart-icon-12" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-13" class="chart-cell hidden" onclick="chart_pick(document, 13)"><img id="chart-icon-13" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-14" class="chart-cell hidden" onclick="chart_pick(document, 14)"><img id="chart-icon-14" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-15" class="chart-cell hidden" onclick="chart_pick(document, 15)"><img id="chart-icon-15" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-16" class="chart-cell hidden" onclick="chart_pick(document, 16)"><img id="chart-icon-16" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-17" class="chart-cell hidden" onclick="chart_pick(document, 17)"><img id="chart-icon-17" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-18" class="chart-cell hidden" onclick="chart_pick(document, 18)"><img id="chart-icon-18" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-19" class="chart-cell hidden" onclick="chart_pick(document, 19)"><img id="chart-icon-19" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-20" class="chart-cell hidden" onclick="chart_pick(document, 20)"><img id="chart-icon-20" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-21" class="chart-cell hidden" onclick="chart_pick(document, 21)"><img id="chart-icon-21" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-22" class="chart-cell hidden" onclick="chart_pick(document, 22)"><img id="chart-icon-22" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-23" class="chart-cell hidden" onclick="chart_pick(document, 23)"><img id="chart-icon-23" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-24" class="chart-cell hidden" onclick="chart_pick(document, 24)"><img id="chart-icon-24" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-25" class="chart-cell hidden" onclick="chart_pick(document, 25)"><img id="chart-icon-25" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-26" class="chart-cell hidden" onclick="chart_pick(document, 26)"><img id="chart-icon-26" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-27" class="chart-cell hidden" onclick="chart_pick(document, 27)"><img id="chart-icon-27" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-28" class="chart-cell hidden" onclick="chart_pick(document, 28)"><img id="chart-icon-28" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-29" class="chart-cell hidden" onclick="chart_pick(document, 29)"><img id="chart-icon-29" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-30" class="chart-cell hidden" onclick="chart_pick(document, 30)"><img id="chart-icon-30" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-31" class="chart-cell hidden" onclick="chart_pick(document, 31)"><img id="chart-icon-31" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-32" class="chart-cell hidden" onclick="chart_pick(document, 32)"><img id="chart-icon-32" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-33" class="chart-cell hidden" onclick="chart_pick(document, 33)"><img id="chart-icon-33" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-34" class="chart-cell hidden" onclick="chart_pick(document, 34)"><img id="chart-icon-34" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-35" class="chart-cell hidden" onclick="chart_pick(document, 35)"><img id="chart-icon-35" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-36" class="chart-cell hidden" onclick="chart_pick(document, 36)"><img id="chart-icon-36" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-37" class="chart-cell hidden" onclick="chart_pick(document, 37)"><img id="chart-icon-37" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-38" class="chart-cell hidden" onclick="chart_pick(document, 38)"><img id="chart-icon-38" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-39" class="chart-cell hidden" onclick="chart_pick(document, 39)"><img id="chart-icon-39" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-40" class="chart-cell hidden" onclick="chart_pick(document, 40)"><img id="chart-icon-40" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-41" class="chart-cell hidden" onclick="chart_pick(document, 41)"><img id="chart-icon-41" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-42" class="chart-cell hidden" onclick="chart_pick(document, 42)"><img id="chart-icon-42" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-43" class="chart-cell hidden" onclick="chart_pick(document, 43)"><img id="chart-icon-43" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-44" class="chart-cell hidden" onclick="chart_pick(document, 44)"><img id="chart-icon-44" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-45" class="chart-cell hidden" onclick="chart_pick(document, 45)"><img id="chart-icon-45" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-46" class="chart-cell hidden" onclick="chart_pick(document, 46)"><img id="chart-icon-46" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-47" class="chart-cell hidden" onclick="chart_pick(document, 47)"><img id="chart-icon-47" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-48" class="chart-cell hidden" onclick="chart_pick(document, 48)"><img id="chart-icon-48" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-49" class="chart-cell hidden" onclick="chart_pick(document, 49)"><img id="chart-icon-49" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-50" class="chart-cell hidden" onclick="chart_pick(document, 50)"><img id="chart-icon-50" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-51" class="chart-cell hidden" onclick="chart_pick(document, 51)"><img id="chart-icon-51" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-52" class="chart-cell hidden" onclick="chart_pick(document, 52)"><img id="chart-icon-52" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-53" class="chart-cell hidden" onclick="chart_pick(document, 53)"><img id="chart-icon-53" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-54" class="chart-cell hidden" onclick="chart_pick(document, 54)"><img id="chart-icon-54" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-55" class="chart-cell hidden" onclick="chart_pick(document, 55)"><img id="chart-icon-55" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-56" class="chart-cell hidden" onclick="chart_pick(document, 56)"><img id="chart-icon-56" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-57" class="chart-cell hidden" onclick="chart_pick(document, 57)"><img id="chart-icon-57" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-58" class="chart-cell hidden" onclick="chart_pick(document, 58)"><img id="chart-icon-58" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-59" class="chart-cell hidden" onclick="chart_pick(document, 59)"><img id="chart-icon-59" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-60" class="chart-cell hidden" onclick="chart_pick(document, 60)"><img id="chart-icon-60" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-61" class="chart-cell hidden" onclick="chart_pick(document, 61)"><img id="chart-icon-61" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-62" class="chart-cell hidden" onclick="chart_pick(document, 62)"><img id="chart-icon-62" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-63" class="chart-cell hidden" onclick="chart_pick(document, 63)"><img id="chart-icon-63" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-64" class="chart-cell hidden" onclick="chart_pick(document, 64)"><img id="chart-icon-64" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-65" class="chart-cell hidden" onclick="chart_pick(document, 65)"><img id="chart-icon-65" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-66" class="chart-cell hidden" onclick="chart_pick(document, 66)"><img id="chart-icon-66" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-67" class="chart-cell hidden" onclick="chart_pick(document, 67)"><img id="chart-icon-67" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-68" class="chart-cell hidden" onclick="chart_pick(document, 68)"><img id="chart-icon-68" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-69" class="chart-cell hidden" onclick="chart_pick(document, 69)"><img id="chart-icon-69" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-70" class="chart-cell hidden" onclick="chart_pick(document, 70)"><img id="chart-icon-70" class="chart-icon hidden"/></button>
-                  <button id="chart-cell-71" class="chart-cell hidden" onclick="chart_pick(document, 71)"><img id="chart-icon-71" class="chart-icon hidden"/></button>
-                  <img id="chart-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/>
+                <div id="player-chart" class="player-native" onmousescroll="chart_wheel(document, event)">
+                  <div id="chart-clip"><div id="chart-pages">
+                    <div class="chart-stage" id="chart-stage-0"></div><div class="chart-stage" id="chart-stage-1"></div><div class="chart-stage" id="chart-stage-2"></div><div class="chart-stage" id="chart-stage-3"></div><div class="chart-stage" id="chart-stage-4"></div><div class="chart-stage" id="chart-stage-5"></div>
+                    <button id="chart-cell-0" class="chart-cell hidden" onclick="chart_pick(document, 0)"><img id="chart-icon-0" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-1" class="chart-cell hidden" onclick="chart_pick(document, 1)"><img id="chart-icon-1" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-2" class="chart-cell hidden" onclick="chart_pick(document, 2)"><img id="chart-icon-2" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-3" class="chart-cell hidden" onclick="chart_pick(document, 3)"><img id="chart-icon-3" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-4" class="chart-cell hidden" onclick="chart_pick(document, 4)"><img id="chart-icon-4" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-5" class="chart-cell hidden" onclick="chart_pick(document, 5)"><img id="chart-icon-5" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-6" class="chart-cell hidden" onclick="chart_pick(document, 6)"><img id="chart-icon-6" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-7" class="chart-cell hidden" onclick="chart_pick(document, 7)"><img id="chart-icon-7" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-8" class="chart-cell hidden" onclick="chart_pick(document, 8)"><img id="chart-icon-8" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-9" class="chart-cell hidden" onclick="chart_pick(document, 9)"><img id="chart-icon-9" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-10" class="chart-cell hidden" onclick="chart_pick(document, 10)"><img id="chart-icon-10" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-11" class="chart-cell hidden" onclick="chart_pick(document, 11)"><img id="chart-icon-11" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-12" class="chart-cell hidden" onclick="chart_pick(document, 12)"><img id="chart-icon-12" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-13" class="chart-cell hidden" onclick="chart_pick(document, 13)"><img id="chart-icon-13" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-14" class="chart-cell hidden" onclick="chart_pick(document, 14)"><img id="chart-icon-14" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-15" class="chart-cell hidden" onclick="chart_pick(document, 15)"><img id="chart-icon-15" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-16" class="chart-cell hidden" onclick="chart_pick(document, 16)"><img id="chart-icon-16" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-17" class="chart-cell hidden" onclick="chart_pick(document, 17)"><img id="chart-icon-17" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-18" class="chart-cell hidden" onclick="chart_pick(document, 18)"><img id="chart-icon-18" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-19" class="chart-cell hidden" onclick="chart_pick(document, 19)"><img id="chart-icon-19" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-20" class="chart-cell hidden" onclick="chart_pick(document, 20)"><img id="chart-icon-20" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-21" class="chart-cell hidden" onclick="chart_pick(document, 21)"><img id="chart-icon-21" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-22" class="chart-cell hidden" onclick="chart_pick(document, 22)"><img id="chart-icon-22" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-23" class="chart-cell hidden" onclick="chart_pick(document, 23)"><img id="chart-icon-23" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-24" class="chart-cell hidden" onclick="chart_pick(document, 24)"><img id="chart-icon-24" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-25" class="chart-cell hidden" onclick="chart_pick(document, 25)"><img id="chart-icon-25" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-26" class="chart-cell hidden" onclick="chart_pick(document, 26)"><img id="chart-icon-26" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-27" class="chart-cell hidden" onclick="chart_pick(document, 27)"><img id="chart-icon-27" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-28" class="chart-cell hidden" onclick="chart_pick(document, 28)"><img id="chart-icon-28" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-29" class="chart-cell hidden" onclick="chart_pick(document, 29)"><img id="chart-icon-29" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-30" class="chart-cell hidden" onclick="chart_pick(document, 30)"><img id="chart-icon-30" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-31" class="chart-cell hidden" onclick="chart_pick(document, 31)"><img id="chart-icon-31" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-32" class="chart-cell hidden" onclick="chart_pick(document, 32)"><img id="chart-icon-32" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-33" class="chart-cell hidden" onclick="chart_pick(document, 33)"><img id="chart-icon-33" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-34" class="chart-cell hidden" onclick="chart_pick(document, 34)"><img id="chart-icon-34" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-35" class="chart-cell hidden" onclick="chart_pick(document, 35)"><img id="chart-icon-35" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-36" class="chart-cell hidden" onclick="chart_pick(document, 36)"><img id="chart-icon-36" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-37" class="chart-cell hidden" onclick="chart_pick(document, 37)"><img id="chart-icon-37" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-38" class="chart-cell hidden" onclick="chart_pick(document, 38)"><img id="chart-icon-38" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-39" class="chart-cell hidden" onclick="chart_pick(document, 39)"><img id="chart-icon-39" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-40" class="chart-cell hidden" onclick="chart_pick(document, 40)"><img id="chart-icon-40" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-41" class="chart-cell hidden" onclick="chart_pick(document, 41)"><img id="chart-icon-41" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-42" class="chart-cell hidden" onclick="chart_pick(document, 42)"><img id="chart-icon-42" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-43" class="chart-cell hidden" onclick="chart_pick(document, 43)"><img id="chart-icon-43" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-44" class="chart-cell hidden" onclick="chart_pick(document, 44)"><img id="chart-icon-44" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-45" class="chart-cell hidden" onclick="chart_pick(document, 45)"><img id="chart-icon-45" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-46" class="chart-cell hidden" onclick="chart_pick(document, 46)"><img id="chart-icon-46" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-47" class="chart-cell hidden" onclick="chart_pick(document, 47)"><img id="chart-icon-47" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-48" class="chart-cell hidden" onclick="chart_pick(document, 48)"><img id="chart-icon-48" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-49" class="chart-cell hidden" onclick="chart_pick(document, 49)"><img id="chart-icon-49" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-50" class="chart-cell hidden" onclick="chart_pick(document, 50)"><img id="chart-icon-50" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-51" class="chart-cell hidden" onclick="chart_pick(document, 51)"><img id="chart-icon-51" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-52" class="chart-cell hidden" onclick="chart_pick(document, 52)"><img id="chart-icon-52" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-53" class="chart-cell hidden" onclick="chart_pick(document, 53)"><img id="chart-icon-53" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-54" class="chart-cell hidden" onclick="chart_pick(document, 54)"><img id="chart-icon-54" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-55" class="chart-cell hidden" onclick="chart_pick(document, 55)"><img id="chart-icon-55" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-56" class="chart-cell hidden" onclick="chart_pick(document, 56)"><img id="chart-icon-56" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-57" class="chart-cell hidden" onclick="chart_pick(document, 57)"><img id="chart-icon-57" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-58" class="chart-cell hidden" onclick="chart_pick(document, 58)"><img id="chart-icon-58" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-59" class="chart-cell hidden" onclick="chart_pick(document, 59)"><img id="chart-icon-59" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-60" class="chart-cell hidden" onclick="chart_pick(document, 60)"><img id="chart-icon-60" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-61" class="chart-cell hidden" onclick="chart_pick(document, 61)"><img id="chart-icon-61" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-62" class="chart-cell hidden" onclick="chart_pick(document, 62)"><img id="chart-icon-62" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-63" class="chart-cell hidden" onclick="chart_pick(document, 63)"><img id="chart-icon-63" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-64" class="chart-cell hidden" onclick="chart_pick(document, 64)"><img id="chart-icon-64" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-65" class="chart-cell hidden" onclick="chart_pick(document, 65)"><img id="chart-icon-65" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-66" class="chart-cell hidden" onclick="chart_pick(document, 66)"><img id="chart-icon-66" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-67" class="chart-cell hidden" onclick="chart_pick(document, 67)"><img id="chart-icon-67" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-68" class="chart-cell hidden" onclick="chart_pick(document, 68)"><img id="chart-icon-68" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-69" class="chart-cell hidden" onclick="chart_pick(document, 69)"><img id="chart-icon-69" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-70" class="chart-cell hidden" onclick="chart_pick(document, 70)"><img id="chart-icon-70" class="chart-icon hidden"/></button>
+                    <button id="chart-cell-71" class="chart-cell hidden" onclick="chart_pick(document, 71)"><img id="chart-icon-71" class="chart-icon hidden"/></button>
+                    <img id="chart-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/>
+                  </div></div>
+                  <div id="chart-more" onclick="chart_more(document)"></div>
                   <div id="chart-prompts" class="page-prompts"><div class="page-prompt"><span id="chart-confirm-key" class="prompt-key confirm-key"></span><span class="prompt-text" text-key="pause_menu.chart_select"></span></div><div class="page-prompt"><span id="chart-cancel-key" class="prompt-key cancel-key"></span><span class="prompt-text" text-key="common.cancel"></span></div></div>
                 </div>
                 <div id="chart-detail" class="player-native">

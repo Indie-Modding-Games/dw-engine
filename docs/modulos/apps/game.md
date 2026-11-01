@@ -689,10 +689,29 @@ siguen contando a esas especies como nivel 5.
 
 Huevo y Ultra quedan definidos (`pause_menu.chart_stage.*`) pero sin especies. Encendido, el detalle de una casilla
 dice su etapa canónica, y las especies que la serie llama Mega (`MEGA_CELLS` en `ui/pause_menu/logic.lua`: Phoenixmon,
-HerculesKabuterimon, y MetalEtemon y Machinedramon cuando el ruleset los trae) salen de la caja de Ultra a una caja Mega
-roja a su derecha (`#chart-stage-5`); el panel se ensancha a 960dp. Las casillas que dejan libres las ocupan, en orden,
-las de la tercera columna de Ultra que trae el ruleset, así que la caja de Ultra vuelve a sus dos columnas. Para saber
-qué especie es cada casilla, `publishPlayerChart` publica `player.chart.<n>.id`.
+HerculesKabuterimon, y MetalEtemon y Machinedramon cuando el ruleset los trae) salen de la caja de Ultra a una segunda
+página del árbol. Las casillas que dejan libres las ocupan, en orden, las de la tercera columna de Ultra que trae el
+ruleset, así que la caja de Ultra vuelve a sus dos columnas. Para saber qué especie es cada casilla,
+`publishPlayerChart` publica `player.chart.<n>.id`.
+
+Página 1 es el árbol del original tal cual, con una flecha hacia abajo (la flecha hacia arriba de los sprites de
+combate, `battle-up-arrow`, volteada como en la lista de partidas) bajo las cajas de Bebé I y Bebé II. Página 2 es la
+caja Mega roja (`#chart-stage-5`) a toda la altura, en el centro y del ancho de la de Bebé I, con todas sus casillas
+grises (una por especie Mega, separadas como las cuatro de Bebé I mientras quepan cuatro) y la flecha hacia arriba en
+el mismo sitio. Para pasar de página:
+
+| Cómo | De la 1 a la 2 | De la 2 a la 1 |
+|---|---|---|
+| Cursor en el árbol | Abajo (flecha ↓, mando abajo) en la última casilla de una columna; el cursor va a la primera Mega | Arriba en la primera Mega; el cursor vuelve a la casilla que dejó |
+| Sin cursor (en la pestaña) | Abajo | Arriba |
+| Ratón | Rueda hacia abajo sobre el árbol, o clic en la flecha | Rueda hacia arriba, o clic en la flecha |
+
+El cambio es un deslizamiento de 0,2 s (`#chart-pages` sube 564dp dentro de `#chart-clip`, que recorta al interior del
+marco): a 20 pasos por segundo como las cajas del original, o continuo con «Movimiento suave». Mientras dura no se
+aceptan teclas, y al acabar la página que no se ve queda oculta (`.off-page`) para que el puntero no la toque. El
+cursor y el detalle funcionan igual en las dos páginas: elegir una Mega abre su árbol con la etapa «Supremo». La rueda
+llega a Lua con `event.wheel` ([editar menús](../../guides/editar-menus.md)). Sin especies Mega en el árbol (opción
+apagada) no hay flecha ni página 2, y el árbol es el del original píxel a píxel.
 
 Apagado, el árbol es el del original y sus nombres los de la [decisión 4 del glosario](../../guides/glosario-es.md);
 el nivel 5 se llama «Ultra» también en el árbol (antes «Definitivo»).
@@ -702,5 +721,7 @@ la navegación lleva la fila enfocada a la vista y la rueda del ratón la mueve.
 filas que la lista deja fuera de su caja (`text_fit.cpp`); se comprueban al llegar a ellas.
 
 `route-canonical-stages.yaml` (en/es, piel original y moderna) enciende la opción con el contenido oculto, captura el
-árbol con la caja Mega y el detalle de Phoenixmon («Supremo») y de MetalGreymon, la apaga y captura el árbol original
+árbol (página 1 con la flecha), baja a la página 2 con la caja Mega y abre el detalle de Phoenixmon («Supremo»), vuelve
+a la página 1 y abre el de MetalGreymon, la apaga y captura el árbol original; `route-mega-step.yaml` captura la página 2
+con los cuatro Megas y el detalle de Machinedramon
 ([prueba vertical](../../guides/prueba-vertical.md)).

@@ -356,13 +356,24 @@
 #chart-stage-2 { left: 252dp; width: 105dp; height: 531dp; border-color: #5082c8; border-right-color: #0a375f; border-bottom-color: #0a375f; background-color: #0f5082; }
 #chart-stage-3 { left: 363dp; width: 321dp; border-color: #5aaf6e; border-right-color: #005a28; border-bottom-color: #005a28; background-color: #008741; }
 #chart-stage-4 { left: 690dp; width: 171dp; border-color: #d29669; border-right-color: #78411e; border-bottom-color: #78411e; background-color: #af642d; }
-/* A ruleset's cell right of the original's last column (the hidden content): a third column in the Ultimate box. The
-   canonical stages' Mega box (canonical_stages) goes right of the Ultimate box. Either makes the panel as wide as the
-   original's screen. */
+/* A ruleset's cell right of the original's last column (the hidden content): a third column in the Ultimate box, and
+   the panel as wide as the original's screen. */
 #panel.on-player.player-chart.chart-wide { width: 960dp; margin-left: -480dp; }
 #player-chart.chart-third #chart-stage-4 { width: 243dp; }
-#chart-stage-5 { display: none; left: 867dp; width: 84dp; border-color: #e6a0a0; border-right-color: #6e1e28; border-bottom-color: #6e1e28; background-color: #a0323c; }
+/* The canonical stages' Mega box (canonical_stages) is a second page right below the chart (#chart-pages slides up a
+   page, 564dp, to show it): a full-height box in the middle, as wide as the Fresh box. #chart-clip, the panel's inside
+   (6dp in from the chart's top and bottom, which lie under the panel's frame), clips what slides past it (clip: always,
+   as RmlUi clips overflow only past the right and bottom edges), and the page out of view is hidden (.off-page). The arrow at the foot, under the Fresh and In-Training boxes, is the up arrow of
+   SYSTEM's battle sprites (BI_IN), turned over for down on page 1, as the save slots' marks. */
+#chart-clip { position: absolute; left: 0; top: 6dp; width: 100%; height: 552dp; }
+#player-chart.chart-paged #chart-clip { clip: always; }
+#chart-pages { position: absolute; left: 0; top: 0; margin-top: -6dp; width: 100%; height: 564dp; }
+#chart-stage-5 { display: none; left: 393dp; top: 585dp; width: 105dp; border-color: #e6a0a0; border-right-color: #6e1e28; border-bottom-color: #6e1e28; background-color: #a0323c; }
 #player-chart.chart-mega #chart-stage-5 { display: block; }
+#player-chart .off-page { visibility: hidden; }
+#chart-more { display: none; position: absolute; left: 120dp; top: 510dp; width: 36dp; height: 36dp; decorator: image(battle-up-arrow scale-none center center); transform: scaleY(-1); }
+#player-chart.chart-paged #chart-more { display: block; }
+#chart-more.up { transform: none; }
 #panel.on-player .chart-cell, #panel.on-player .chart-cell:focus { position: absolute; width: 57dp; height: 57dp; margin: 0; padding: 0; border: 3dp #bebebe; border-right-color: #3c3c3c; border-bottom-color: #3c3c3c; box-sizing: border-box; background-color: #878787; }
 #panel.on-player .chart-cell.hidden, .chart-icon.hidden { display: none; }
 .chart-icon { display: block; width: 48dp; height: 48dp; pointer-events: none; }

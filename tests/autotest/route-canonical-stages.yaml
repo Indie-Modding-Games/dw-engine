@@ -1,7 +1,8 @@
 # The canonical stages (docs/modulos/apps/game.md, «Etapas canónicas»): a new game with the hidden content on, the option
-# among the pause menu's options turned on, and the chart with the Mega box right of the Ultimate one (Phoenixmon,
-# HerculesKabuterimon and the hidden content's MetalEtemon), its cells' stage names (Phoenixmon and MetalGreymon), then the option off again and the
-# original chart (the chart only in the original look, which draws it). Every text must fit its box, and the options
+# among the pause menu's options turned on, and the chart: page 1 the original's with an arrow down, page 2 the Mega
+# box (Phoenixmon, HerculesKabuterimon and the hidden content's MetalEtemon) reached with Down past a column's last cell
+# and left with Up, its cells' stage names (Phoenixmon and MetalGreymon), then the option off again and the original
+# chart (the chart only in the original look, which draws it). Every text must fit its box, and the options
 # list, one row longer, scrolls to the new row. Run it with --saves <empty folder>, once per language (--lang en, --lang
 # es) and look (--ui-skin original, modern); how to run it: docs/guides/prueba-vertical.md.
 name: canonical-stages
@@ -64,14 +65,23 @@ steps:
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: chart-canonical
-        - menu_select: chart-cell-58
+        # Down past the Fresh box's last cell slides to page 2, the Mega box, the cursor on Phoenixmon (its detail).
+        - tap: {key: return}
         - wait: {seconds: 0.3}
+        - repeat: {times: 4, steps: [{tap: {key: down}}, {wait: {seconds: 0.1}}]}
+        - wait: {seconds: 0.5}
+        - expect_text_fits: all
+        - screenshot: chart-mega-page
         - tap: {key: return}
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: detail-mega
         - tap: {key: escape}
         - wait: {seconds: 0.4}
+        # Up past Phoenixmon slides back to page 1, the cursor on the cell it left.
+        - tap: {key: up}
+        - wait: {seconds: 0.5}
+        - screenshot: chart-back
         - menu_select: chart-cell-11
         - wait: {seconds: 0.3}
         - tap: {key: return}

@@ -118,6 +118,7 @@ API disponible:
 | `element:rect()` | Izquierda, arriba, ancho y alto del elemento en dp desde la esquina de la ventana |
 | `element.id`, `element:valid()` | Su id; si sigue existiendo |
 | `event.type`, `event:stop()` | En un atributo de evento: su tipo; parar la propagación |
+| `event.wheel` | En `onmousescroll`: cuánto giró la rueda, positivo hacia abajo (0 en otros eventos) |
 
 Las cajas del aspecto original se abren y se cierran con el contorno gris del original con
 `ui/common/original_box.lua` (`original_box.open`, `close`, `tick`, `cancel`, `busy`): el documento enlaza el script,

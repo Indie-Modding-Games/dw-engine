@@ -221,12 +221,14 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
 - `route-mega-step.yaml`: el paso Ultra → Mega ([evolución](../modulos/game/evolution.md#paso-ultra--mega)): una
   partida nueva con el contenido oculto y el paso Mega encendidos, el árbol con 66 casillas, MetalEtemon desde
   Etemon y Machinedramon desde Megadramon por la revisión de un ultra (120 h). Captura la pantalla de reglas, los dos
-  Megas en el campo (Machinedramon a 0,6) y la ficha de Machinedramon, y el árbol en el aspecto original, con
-  `text_fit`. Se corre en los dos idiomas y los dos aspectos, con `--saves` en una carpeta vacía.
+  Megas en el campo (Machinedramon a 0,6) y la ficha de Machinedramon, y el árbol en el aspecto original; luego
+  enciende las etapas canónicas y captura la página 2 del árbol con los cuatro Megas y el detalle de Machinedramon,
+  con `text_fit`. Se corre en los dos idiomas y los dos aspectos, con `--saves` en una carpeta vacía.
 - `route-canonical-stages.yaml`: las [etapas canónicas](../modulos/apps/game.md#etapas-canónicas) en una partida
   nueva con el contenido oculto: enciende la opción (la lista de opciones se desplaza hasta la fila nueva), captura
-  el árbol con la caja Mega y el detalle de Phoenixmon y de MetalGreymon (marcados como criados con `story_set`), la
-  apaga y captura el árbol del original. El árbol solo en la piel original. Se corre en los dos idiomas y las dos
+  el árbol (página 1 con la flecha), baja con Abajo a la página 2 con la caja Mega, abre el detalle de Phoenixmon,
+  vuelve con Arriba a la página 1 y abre el de MetalGreymon (marcados como criados con `story_set`), la apaga y
+  captura el árbol del original. El árbol solo en la piel original. Se corre en los dos idiomas y las dos
   pieles, con `--saves` en una carpeta vacía.
 - `route-city-tab.yaml`: la [pestaña Ciudad](../modulos/apps/screens.md#pestaña-ciudad-mejora-de-dwe) desde una
   partida nueva con siete especies unidas a la ciudad (`story_set`): abre la página del jugador con el teclado, va a la
