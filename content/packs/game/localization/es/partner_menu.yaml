@@ -6,8 +6,8 @@ tab.care: "Cuidados"
 # La especie del compañero, bajo su nombre propio (game_menu.c: drawDigimonStatsStrings).
 species: "Especie"
 age: "Edad"
-# {days} es la edad del compañero en días.
-age.value: "{days} días"
+# {days} es la edad del compañero en días; {days:día|días} elige la palabra por la cuenta (1 día, 2 días).
+age.value: "{days} {days:día|días}"
 weight: "Peso"
 # {weight} es el peso del compañero.
 weight.value: "{weight} G"

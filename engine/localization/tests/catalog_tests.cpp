@@ -165,6 +165,32 @@ TEST_CASE("placeholders are filled by name, and doubled braces are literal") {
   CHECK(numberText(0.75) == "0.75");
 }
 
+TEST_CASE("a plural placeholder picks the word for one only for a count of exactly 1") {
+  const auto days = [](std::string_view count) {
+    return formatText("{days} {days:día|días}",
+                      std::array{TextArgument{.name = "days", .value = std::string{count}}});
+  };
+  CHECK(days("1") == "1 día");
+  CHECK(days("2") == "2 días");
+  CHECK(days("0") == "0 días");
+  CHECK(days("1.5") == "1.5 días");
+  CHECK(days("") == " días");
+  CHECK(formatText("{n} card{n:|s}", std::array{TextArgument{.name = "n", .value = "1"}}) ==
+        "1 card");
+  CHECK(formatText("{n} card{n:|s}", std::array{TextArgument{.name = "n", .value = "3"}}) ==
+        "3 cards");
+  // Without its count, it stays as written, as any placeholder without an argument.
+  CHECK(formatText("{days:day|days}", {}) == "{days:day|days}");
+  CHECK(takesOne(1.0));
+  CHECK_FALSE(takesOne(0.0));
+  CHECK_FALSE(takesOne(-1.0));
+  CHECK_FALSE(takesOne(11.0));
+  const dwe::assets::PluralPlaceholder lives{.count = "amount", .one = "life", .other = "lives"};
+  CHECK(pluralWord(lives, "1") == "life");
+  CHECK(pluralWord(lives, "3") == "lives");
+  CHECK(pluralWord(lives, "one") == "lives");
+}
+
 TEST_CASE("the language changes at run time and an unknown one keeps the current") {
   Packs packs;
   Catalog catalog = loaded(packs.mount(), "en");

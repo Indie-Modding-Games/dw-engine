@@ -72,9 +72,24 @@ core::Result<TextTable> parseTextTable(const TextTableName& name, std::string_vi
 core::Result<TextTable> readTextTable(const VirtualFileSystem& fileSystem, const AssetId& id,
                                       const TextTableName& name);
 
+// A placeholder that picks a word by a count (docs/architecture/localizacion.md#plurales):
+// {days:day|days} is "day" when the argument days is 1 and "days" otherwise.
+struct PluralPlaceholder {
+  // The argument that holds the count.
+  std::string_view count;
+  // The word for one, and for any other count.
+  std::string_view one;
+  std::string_view other;
+};
+
+// The plural placeholder between a text's braces, as "days:day|days"; nothing when it is not one
+// (a name, or a control tag of the original's text such as "color:2").
+std::optional<PluralPlaceholder> pluralPlaceholderOf(std::string_view placeholder);
+
 // The placeholders of a text, sorted and without repeats: what is between { and }, as "count" for
-// {count} and "color:2" for a control tag of the original's text. {{ and }} are a literal brace. A
-// { without its } is an error.
+// {count} and "color:2" for a control tag of the original's text; a plural placeholder counts as
+// its argument ("days" for {days:day|days}), so each language words it its own way. {{ and }} are a
+// literal brace. A { without its } is an error.
 core::Result<std::vector<std::string>> placeholdersOf(std::string_view text);
 
 // Something a translation does differently from the reference table.

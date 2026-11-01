@@ -493,6 +493,21 @@ core::Result<TextTable> parseTextTable(const TextTableName& name, std::string_vi
   return reader.finish(std::move(table), context);
 }
 
+std::optional<PluralPlaceholder> pluralPlaceholderOf(std::string_view placeholder) {
+  const std::size_t colon = placeholder.find(':');
+  if (colon == std::string_view::npos || colon == 0) {
+    return std::nullopt;
+  }
+  const std::string_view forms = placeholder.substr(colon + 1);
+  const std::size_t bar = forms.find('|');
+  if (bar == std::string_view::npos || forms.find('|', bar + 1) != std::string_view::npos) {
+    return std::nullopt;
+  }
+  return PluralPlaceholder{.count = placeholder.substr(0, colon),
+                           .one = forms.substr(0, bar),
+                           .other = forms.substr(bar + 1)};
+}
+
 core::Result<std::vector<std::string>> placeholdersOf(std::string_view text) {
   std::set<std::string, std::less<>> found;
   std::size_t at = 0;
@@ -514,7 +529,9 @@ core::Result<std::vector<std::string>> placeholdersOf(std::string_view text) {
     if (close == std::string_view::npos) {
       return core::fail(std::format(messages::UnclosedPlaceholder, at));
     }
-    found.emplace(text.substr(at + 1, close - at - 1));
+    const std::string_view placeholder = text.substr(at + 1, close - at - 1);
+    const std::optional<PluralPlaceholder> plural = pluralPlaceholderOf(placeholder);
+    found.emplace(plural ? plural->count : placeholder);
     at = close + 1;
   }
   return std::vector<std::string>{std::make_move_iterator(found.begin()),

@@ -109,8 +109,28 @@ TEST_CASE("placeholders are what is between braces, and doubled braces are liter
   CHECK(placeholders("{count} of {total}, {count}") == std::vector<std::string>{"count", "total"});
   CHECK(placeholders("{{not}} one {color:2}") == std::vector<std::string>{"color:2"});
   CHECK(placeholders("plain").empty());
+  // A plural placeholder counts as its argument, whatever its words.
+  CHECK(placeholders("{days} {days:day|days}") == std::vector<std::string>{"days"});
+  CHECK(placeholders("{days} {days:día|días}") == std::vector<std::string>{"days"});
   CHECK_FALSE(placeholdersOf("{open").has_value());
   CHECK_FALSE(placeholdersOf("close}").has_value());
+}
+
+TEST_CASE("a plural placeholder is a count's name and its two words") {
+  const auto plural = pluralPlaceholderOf("days:day|days");
+  REQUIRE(plural.has_value());
+  CHECK(plural->count == "days");
+  CHECK(plural->one == "day");
+  CHECK(plural->other == "days");
+  CHECK_FALSE(pluralPlaceholderOf("days").has_value());
+  CHECK_FALSE(pluralPlaceholderOf("color:2").has_value());
+  CHECK_FALSE(pluralPlaceholderOf(":a|b").has_value());
+  CHECK_FALSE(pluralPlaceholderOf("n:a|b|c").has_value());
+  // A word may be empty: "{n:|s}" adds an s for any count but one.
+  const auto suffix = pluralPlaceholderOf("n:|s");
+  REQUIRE(suffix.has_value());
+  CHECK(suffix->one.empty());
+  CHECK(suffix->other == "s");
 }
 
 TEST_CASE("a translation is compared with its reference key by key") {

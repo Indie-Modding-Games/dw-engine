@@ -6,8 +6,8 @@ tab.care: "Care"
 # The partner's species, under its own name (game_menu.c: drawDigimonStatsStrings).
 species: "Species"
 age: "Age"
-# {days} is the partner's age in days.
-age.value: "{days} days"
+# {days} is the partner's age in days; {days:day|days} picks the word by the count (1 day, 2 days).
+age.value: "{days} {days:day|days}"
 weight: "Weight"
 # {weight} is the partner's weight.
 weight.value: "{weight} G"

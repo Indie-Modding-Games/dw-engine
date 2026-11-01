@@ -24,9 +24,9 @@ status.flatten: "Flattened"
 # waits. {amount} is the MP bonus in percent, after the original's "reduced by".
 result.mp_bonus_percent: " {amount}%!{wait}"
 # {amount} is the bits won.
-result.bits: "Won {amount} bits."
+result.bits: "Won {amount} {amount:bit|bits}."
 # {amount} is how many lives the partner lost.
-result.lives_lost: "Your partner lost{br}{color:7}{amount}{color:1} life.{wait}"
+result.lives_lost: "Your partner lost{br}{color:7}{amount}{color:1} {amount:life|lives}.{wait}"
 # {name} is the item's name and {amount} how many were lost.
 result.item_lost: "Lost {color:7}{name}{color:1}{br}x{amount}.{wait}"
 # {name} is the name of who joined the city.

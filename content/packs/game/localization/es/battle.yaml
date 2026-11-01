@@ -23,11 +23,11 @@ status.flatten: "Aplastado"
 # línea y espera. {amount} es el bonus de MP en porcentaje, tras el «reducido un» del original.
 result.mp_bonus_percent: " {amount} %{wait}"
 # {amount} son los bits ganados.
-result.bits: "Has ganado {amount} bits."
+result.bits: "Has ganado {amount} {amount:bit|bits}."
 # Como en el original, la caja no parte las filas: cada fila ({br}, {wait}) cabe en sus 156 píxeles con la fuente del
 # juego (unos 19 caracteres; el nombre de objeto más ancho ocupa 93).
 # {amount} es cuántas vidas ha perdido el compañero.
-result.lives_lost: "Tu compañero perdió{br}{color:7}{amount}{color:1} vida.{wait}"
+result.lives_lost: "Tu compañero perdió{br}{color:7}{amount}{color:1} {amount:vida|vidas}.{wait}"
 # {name} es el nombre del objeto y {amount} cuántos se han perdido.
 result.item_lost: "Has perdido{br}{color:7}{name}{color:1} x{amount}.{wait}"
 # {name} es el nombre de quien se une a la ciudad.

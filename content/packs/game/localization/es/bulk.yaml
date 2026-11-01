@@ -10,7 +10,7 @@ most: "Hasta {most}"
 # que cubre el dinero ({most}) y lo que salió: {packs} sobres, {cards} cartas, {new} nuevas.
 packs: "Sobres"
 packs_ask: "¿Cuántos sobres?\nPuedes abrir hasta {most}."
-packs_got: "{packs} sobres, {cards} cartas.\nLas nuevas, en amarillo: {new}."
+packs_got: "{packs} {packs:sobre|sobres}, {cards} {cards:carta|cartas}.\nLas nuevas, en amarillo: {new}."
 # Los títulos de las columnas del resumen de sobres.
 card: "Carta"
 copies: "Copias"

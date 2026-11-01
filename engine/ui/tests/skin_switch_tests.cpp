@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <variant>
 #include <vector>
 
@@ -1049,6 +1050,30 @@ TEST_CASE("the modern skin's partner tabs switch the page on left and right, as 
   CHECK(ui->focusedElementId("partner_menu") == "tab-status");
   CHECK(ui->elementHasClass("partner_menu", "tab-status", "selected"));
   CHECK(ui->elementHasClass("partner_menu", "page-tech", "hidden"));
+}
+
+TEST_CASE("the modern skin's partner age says day for one and days for any other count") {
+  Content content;
+  const assets::VirtualFileSystem& files = content.mount();
+  for (const auto& [language, one, two] :
+       {std::tuple{"en", "1 day", "2 days"}, std::tuple{"es", "1 día", "2 días"}}) {
+    CAPTURE(language);
+    const localization::Catalog texts = catalogIn(files, language);
+    auto ui = createUi(files, texts);
+    REQUIRE(ui->loadDocument("partner_menu", idOf("ui/partner_menu/document")));
+    ui->setSetting("ui_skin", std::string{"modern"});
+    ui->show("partner_menu", true);
+    double revision = 0.0;
+    const auto age = [&](double days) {
+      ui->setSetting("partner.age", days);
+      revision += 1.0;
+      ui->setSetting("partner.revision", revision);
+      ui->update();
+      return ui->elementText("partner_menu", "status-age");
+    };
+    CHECK(age(1.0) == one);
+    CHECK(age(2.0) == two);
+  }
 }
 
 } // namespace dwe::ui

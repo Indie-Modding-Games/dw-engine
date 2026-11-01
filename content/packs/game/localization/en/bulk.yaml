@@ -10,7 +10,7 @@ most: "Up to {most}"
 # money covers ({most}), and what they gave: {packs} packs, {cards} cards, {new} new ones.
 packs: "Packs"
 packs_ask: "How many packs?\nYou can open up to {most}."
-packs_got: "{packs} packs gave {cards} cards.\nNew ones are in yellow: {new}."
+packs_got: "{packs} {packs:pack|packs} gave {cards} {cards:card|cards}.\nNew ones are in yellow: {new}."
 # The column titles of the packs' summary.
 card: "Card"
 copies: "Copies"

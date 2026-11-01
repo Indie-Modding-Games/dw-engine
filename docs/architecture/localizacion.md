@@ -60,6 +60,15 @@ para la UI: `{br}` y `{wait}` son un salto de línea, `{color:N}` desaparece y l
 (`{digimon:pstat=3}`) se quedan escritas, para que se vea lo que falta. Quien dibuja el texto con colores y esperas
 (la caja de diálogo) lee el texto tal cual con `Catalog::find`.
 
+### Plurales
+
+Una palabra que cambia con una cuenta se escribe `{cuenta:singular|plural}`: `"{days} {days:día|días}"` da «1 día» y
+«2 días», y `"{days} {days:day|days}"` «1 day» y «2 days». La forma de uno sale solo con la cuenta exactamente 1
+(`localization::takesOne`), la regla del inglés y del español; 0, 1.5 o un valor que no es número toman la otra. Una
+forma puede ir vacía (`card{n:|s}`). El marcador cuenta como el de su argumento (`days`) al comparar idiomas, así cada
+uno pone sus propias palabras (`assets::pluralPlaceholderOf`, `localization::pluralWord`). Se usa en la edad del
+compañero, los bits y las vidas del cuadro final del combate y los sobres y cartas de la compra en lote.
+
 Cada idioma tiene que tener en cada clave el mismo conjunto de marcadores que el inglés. Así el orden de las palabras
 puede cambiar entre idiomas sin tocar el código.
 

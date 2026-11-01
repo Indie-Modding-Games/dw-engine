@@ -5,11 +5,13 @@
 #include <dwe/localization/catalog.hpp>
 
 #include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <format>
 #include <iterator>
 #include <map>
 #include <set>
+#include <system_error>
 #include <utility>
 
 #include "messages.hpp"
@@ -273,14 +275,29 @@ std::string formatText(std::string_view text, std::span<const TextArgument> argu
       continue;
     }
     const std::string_view name = text.substr(at + 1, close - at - 1);
+    const std::optional<assets::PluralPlaceholder> plural = assets::pluralPlaceholderOf(name);
+    const TextArgument* count = plural ? argumentNamed(arguments, plural->count) : nullptr;
     if (const TextArgument* argument = argumentNamed(arguments, name)) {
       formatted += argument->value;
+    } else if (count != nullptr) {
+      formatted += pluralWord(*plural, count->value);
     } else {
       formatted += plainTag(name).value_or(text.substr(at, close - at + 1));
     }
     at = close + 1;
   }
   return formatted;
+}
+
+bool takesOne(double count) {
+  return count == 1.0;
+}
+
+std::string_view pluralWord(const assets::PluralPlaceholder& plural, std::string_view count) {
+  double value = 0.0;
+  const auto [end, error] = std::from_chars(count.data(), count.data() + count.size(), value);
+  const bool number = error == std::errc{} && end == count.data() + count.size();
+  return number && takesOne(value) ? plural.one : plural.other;
 }
 
 std::string numberText(double value) {
