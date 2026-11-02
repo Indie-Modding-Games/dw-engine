@@ -49,6 +49,25 @@ public:
   // ran.
   [[nodiscard]] bool wasPressed(std::string_view action) const;
 
+  // True during the tick in which the action went down from a mouse button (a click).
+  [[nodiscard]] bool wasClicked(std::string_view action) const;
+
+  // True during the tick in which the action went down from a key or a gamepad's control, not a
+  // mouse button: a confirm that means the cursor's entry, whatever the pointer is on.
+  [[nodiscard]] bool wasPressedByKeyOrPad(std::string_view action) const;
+
+  // Where the pointer is in the window, in pixels as MouseMoved gives them; nothing until the
+  // platform reported it.
+  [[nodiscard]] std::optional<Vector2> pointer() const;
+
+  // True during the tick in which the player moved the pointer: a report of where it already was
+  // (a window that gains the focus reports it) does not count.
+  [[nodiscard]] bool pointerMoved() const { return pointerMoved_; }
+
+  // Keeps where the pointer is from a move the input does not handle (one the UI keeps for
+  // itself), so a click that follows lands where the pointer is. It is not a move of the player's.
+  void notePointer(const platform::MouseMoved& moved);
+
   // A direction from four actions, with a length of at most 1.
   [[nodiscard]] Vector2 vector(std::string_view left, std::string_view right, std::string_view up,
                                std::string_view down) const;
@@ -74,7 +93,7 @@ private:
   };
 
   [[nodiscard]] float bindingValue(const Binding& binding) const;
-  void notePressed(const Binding& changed);
+  void notePressed(const Binding& changed, bool byMouse);
   GamepadState* findGamepad(platform::GamepadId id);
   void useGamepad(platform::GamepadId id);
 
@@ -87,6 +106,10 @@ private:
   std::vector<ConnectedGamepad> gamepads_;
 
   std::unordered_set<std::string> pressedThisTick_;
+  // The actions of pressedThisTick_ that a mouse button pressed, and those a key or a gamepad did.
+  std::unordered_set<std::string> clickedThisTick_;
+  std::unordered_set<std::string> keyOrPadThisTick_;
+  bool pointerMoved_ = false;
   DeviceKind lastDevice_ = DeviceKind::KeyboardMouse;
   // Where the pointer was last reported, to tell a real move from a report of where it already was.
   std::optional<platform::MouseMoved> lastPointer_;

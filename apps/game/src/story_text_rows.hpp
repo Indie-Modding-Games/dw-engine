@@ -1,7 +1,9 @@
 #pragma once
 
+#include <dwe/input/input_state.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/screens/screen_settings.hpp>
+#include <dwe/ui/ui.hpp>
 
 #include <glm/vec2.hpp>
 
@@ -66,5 +68,21 @@ struct TextboxLook {
 [[nodiscard]] screens::ScreenSettings textboxSettings(const TextboxLook& look,
                                                       const std::vector<TextRow>& rows);
 inline constexpr std::string_view TextboxRevisionSetting = "story_textbox.revision";
+
+// Whether a window point lies in a rectangle the UI laid out; an empty one (a hidden element)
+// holds none.
+[[nodiscard]] bool rectHolds(const ui::Ui::Rect& rect, glm::vec2 point);
+
+// What the pointer does to a textbox selection in a tick (the engine's, the original has no
+// pointer): the option it moved onto and the option clicked, each from 0. The options are the rows
+// of the story_textbox document from row `first` on (after the speaker's name), as last laid out;
+// the caller checks how many there are. Nothing while the box is hidden or the pointer is on no
+// row.
+struct OptionPointer {
+  std::optional<std::size_t> pointed;
+  std::optional<std::size_t> clicked;
+};
+[[nodiscard]] OptionPointer optionPointer(const ui::Ui& ui, const input::InputState& input,
+                                          std::size_t first);
 
 } // namespace dwe::app

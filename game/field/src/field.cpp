@@ -315,12 +315,21 @@ void Field::startPlay() {
 void Field::setInput(const FieldInput& input) {
   input_ = input;
   if (input.cancelTarget) {
-    moveTarget_.reset();
-    path_.clear();
+    dropMoveTarget();
   }
-  if (input.moveTarget && !mapChangePending()) {
+  // A click while something holds the player is not a walk order: it would walk him once let go.
+  if (input.moveTarget && !mapChangePending() && !scriptHeld_ && !careHeld_) {
     planPath(*input.moveTarget);
   }
+}
+
+void Field::dropMoveTarget() {
+  if (moveTarget_ || !path_.empty()) {
+    core::logDebug("[field] the click-to-move target is dropped");
+  }
+  moveTarget_.reset();
+  path_.clear();
+  pathStallSeconds_ = 0.0F;
 }
 
 void Field::tick(float seconds) {
@@ -340,6 +349,8 @@ void Field::tick(float seconds) {
   if (leaving_ || pendingChange_ || waitingForMap_ || choice_ || mapId_.empty() || scriptHeld_ ||
       careHeld_) {
     overlapWatch_.clear();
+    // Held, the player has no click-to-move target to walk on to once let go.
+    dropMoveTarget();
   }
   if (leaving_) {
     walkOut(seconds);
@@ -376,6 +387,7 @@ void Field::tick(float seconds) {
     if (frame > fadeInFrames_) {
       endFadeIn();
     } else if (frame < fadeInFrames_ && fadeInHolds_) {
+      dropMoveTarget();
       registry.get<AnimationIntent>(player_) = {};
       tickNpcs(seconds, false);
       overlapWatch_.clear();

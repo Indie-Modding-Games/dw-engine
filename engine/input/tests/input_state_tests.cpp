@@ -153,3 +153,39 @@ TEST_CASE("walk is held with either shift key or the gamepad's west button") {
   CHECK(input.isDown("walk"));
   CHECK(input.lastDevice() == DeviceKind::Gamepad);
 }
+
+TEST_CASE("a click tells itself apart from a key's or a gamepad's press of the same action") {
+  InputState input = withGamepad();
+  input.handle(MouseButtonChanged{.button = MouseButton::Left, .down = true});
+  CHECK(input.wasPressed("confirm"));
+  CHECK(input.wasClicked("confirm"));
+  CHECK_FALSE(input.wasPressedByKeyOrPad("confirm"));
+  input.endTick();
+  CHECK_FALSE(input.wasClicked("confirm"));
+  input.handle(KeyChanged{.key = keys::Return, .down = true, .repeat = false});
+  CHECK(input.wasPressedByKeyOrPad("confirm"));
+  CHECK_FALSE(input.wasClicked("confirm"));
+  input.endTick();
+  input.handle(GamepadButtonChanged{.id = Pad, .button = GamepadButton::South, .down = true});
+  CHECK(input.wasPressedByKeyOrPad("confirm"));
+  CHECK_FALSE(input.wasClicked("confirm"));
+}
+
+TEST_CASE("the pointer's place is kept, and only a real move counts as moved for the tick") {
+  InputState input{defaultActionMap()};
+  CHECK_FALSE(input.pointer().has_value());
+  input.handle(MouseMoved{.x = 100.0F, .y = 50.0F});
+  REQUIRE(input.pointer().has_value());
+  CHECK(input.pointer()->x == 100.0F);
+  CHECK_FALSE(input.pointerMoved()); // the first report is where it was
+  input.endTick();
+  input.handle(MouseMoved{.x = 140.0F, .y = 50.0F});
+  CHECK(input.pointerMoved());
+  input.endTick();
+  CHECK_FALSE(input.pointerMoved());
+  // A move the UI kept for itself still places the pointer, without counting as the player's.
+  input.notePointer(MouseMoved{.x = 300.0F, .y = 200.0F});
+  CHECK(input.pointer()->x == 300.0F);
+  CHECK(input.pointer()->y == 200.0F);
+  CHECK_FALSE(input.pointerMoved());
+}

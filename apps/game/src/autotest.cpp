@@ -121,12 +121,12 @@ std::string_view deviceName(AutotestDevice device) {
 }
 
 // The steps' names in routes, in the order of AutotestStep::Kind.
-constexpr std::array<std::string_view, 21> StepNames{
+constexpr std::array<std::string_view, 22> StepNames{
     "wait",          "walk_to",   "menu",       "menu_select", "expect_setting",
     "screenshot",    "resize",    "fullscreen", "press",       "release",
     "tap",           "axis",      "click",      "script",      "remember",
     "expect_change", "script_if", "hold",       "when",        "expect_text_fits",
-    "expect_clear"};
+    "expect_clear",  "hover"};
 
 // What an expect_text_fits step names to check every shown document.
 constexpr std::string_view AllDocuments = "all";
@@ -594,9 +594,23 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
     if (!gamepadAxisNamed(step.text)) {
       reader.fail(value, "unknown gamepad axis");
     }
-  } else if (kind == "click") {
-    step.kind = Kind::Click;
-    step.point = readPoint(reader, value, "click");
+  } else if (kind == "click" || kind == "hover") {
+    step.kind = kind == "click" ? Kind::Click : Kind::Hover;
+    if (value.isMapping()) {
+      reader.expectKeys(value, kind, {}, {"element", "window"});
+      if (const core::YamlNode* element = value.find("element")) {
+        step.text = reader.text(*element);
+      } else if (const core::YamlNode* window = value.find("window")) {
+        step.point = readPoint(reader, *window, "window");
+        step.windowPoint = true;
+      } else {
+        reader.fail(value, std::format("{} takes element or window", kind));
+      }
+    } else if (step.kind == Kind::Hover) {
+      reader.fail(value, "hover takes element or window");
+    } else {
+      step.point = readPoint(reader, value, "click");
+    }
   } else {
     reader.fail(node, std::format("unknown step '{}'", kind));
   }
@@ -686,7 +700,8 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   AutotestRoute route;
   reader.expectKeys(*document, "route", {"name", "device", "steps"},
                     {"gamepad", "timeout", "main_menu", "boot_screen", "language_first",
-                     "new_game_rules", "new_game", "load_save", "movies", "text_fit"});
+                     "new_game_rules", "new_game_scene", "new_game", "load_save", "movies",
+                     "text_fit"});
   route.name = reader.text(reader.field(*document, "name"));
   const core::YamlNode& device = reader.field(*document, "device");
   if (const auto known = deviceNamed(reader.text(device))) {
@@ -720,6 +735,12 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
     route.newGameRules = reader.boolean(*rules);
     if (route.newGameRules && !route.mainMenu) {
       reader.fail(*rules, "new_game_rules needs main_menu: true");
+    }
+  }
+  if (const core::YamlNode* scene = document->find("new_game_scene")) {
+    route.newGameScene = reader.boolean(*scene);
+    if (route.newGameScene && !route.mainMenu) {
+      reader.fail(*scene, "new_game_scene needs main_menu: true");
     }
   }
   if (const core::YamlNode* movies = document->find("movies")) {
@@ -840,7 +861,9 @@ void Autotest::frame(const AutotestHost& host, std::uint64_t ticks, double now,
     }
     // A step that is done counts even past its timeout: the press that starts a new game ends the
     // step only once its release has gone through, and the load in between can run long.
-    if (host.scene == nullptr && (step.kind == Kind::WalkTo || step.kind == Kind::Click)) {
+    if (host.scene == nullptr &&
+        (step.kind == Kind::WalkTo ||
+         (step.kind == Kind::Click && step.text.empty() && !step.windowPoint))) {
       failStep(messages::NoGame);
     } else if (runStep(host, step, now)) {
       finishStep(now);
@@ -926,6 +949,7 @@ bool Autotest::runStep(const AutotestHost& host, const AutotestStep& step, doubl
   case Kind::Axis:
     return controlStep(host, step);
   case Kind::Click:
+  case Kind::Hover:
     return clickStep(host, step);
   case Kind::Script:
     return scriptStep(host, step);
@@ -1040,7 +1064,16 @@ bool Autotest::waitStep(const AutotestHost& host, const AutotestStep& step, doub
     if ((endBox || textbox) && now - progress_->lastAnswer > AnswerSeconds) {
       progress_->lastAnswer = now;
       const AutotestDevice device = deviceOf(step);
-      tapAction(device == AutotestDevice::Gamepad ? device : AutotestDevice::Keyboard, "confirm");
+      if (device == AutotestDevice::Mouse && textbox && host.renderer != nullptr) {
+        // With the mouse a page takes a click on the scene above the box, as a player clicks:
+        // never a walk order while the box holds the player.
+        const rhi::Extent extent = host.renderer->targetExtent();
+        constexpr float AboveTheBox = 0.3F;
+        clickAt({static_cast<float>(extent.width) / 2.0F,
+                 static_cast<float>(extent.height) * AboveTheBox});
+      } else {
+        tapAction(device == AutotestDevice::Gamepad ? device : AutotestDevice::Keyboard, "confirm");
+      }
     }
     winLongFight(host, step, now);
   }
@@ -1807,13 +1840,37 @@ bool Autotest::clickStep(const AutotestHost& host, const AutotestStep& step) {
   if (progress_->phase == 1) {
     return true;
   }
-  const glm::vec2 point = step.point.value_or(glm::vec2{0.0F});
-  const auto window = host.scene->worldToWindow({point.x, 0.0F, point.y});
+  std::optional<glm::vec2> window;
+  if (!step.text.empty()) {
+    const std::size_t hash = step.text.find('#');
+    const auto center = hash == std::string::npos
+                            ? std::nullopt
+                            : host.ui->elementCenter(std::string_view{step.text}.substr(0, hash),
+                                                     std::string_view{step.text}.substr(hash + 1));
+    if (!center) {
+      failStep("no such element");
+      return false;
+    }
+    window = glm::vec2{center->x, center->y};
+  } else if (step.windowPoint) {
+    window = step.point;
+  } else {
+    const glm::vec2 point = step.point.value_or(glm::vec2{0.0F});
+    window = host.scene->worldToWindow({point.x, 0.0F, point.y});
+  }
   if (!window) {
     failStep("the point is not in view");
     return false;
   }
-  clickAt(*window);
+  if (step.kind == Kind::Hover) {
+    actions_.push_back(
+        {.afterTicks = 0, .run = [at = *window](std::vector<platform::Event>& events) {
+           events.emplace_back(platform::MouseMoved{.x = at.x, .y = at.y});
+         }});
+    actions_.push_back({.afterTicks = TapTicks, .run = nullptr});
+  } else {
+    clickAt(*window);
+  }
   progress_->phase = 1;
   return false;
 }

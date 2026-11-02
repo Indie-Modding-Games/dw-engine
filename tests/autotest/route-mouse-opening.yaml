@@ -1,0 +1,88 @@
+# The opening with the mouse only: the old one's questions answered by clicking their options, both names
+# written by clicking the naming box's letters and OK, and the waking scene and the elder's talk clicked through to the
+# player free in File City.
+name: mouse-opening
+device: mouse
+timeout: 900
+main_menu: true
+new_game_scene: true
+new_game: original
+steps:
+  - resize: [1280, 720]
+  - wait: {shown: main_menu, seconds: 1, timeout: 60}
+  - menu_select: play
+  - wait: {shown: save_slots, seconds: 0.5, timeout: 30}
+  - menu_select: slot-1
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - menu_select: yes
+  - wait: {shown: story_textbox, seconds: 2, timeout: 120}
+  - screenshot: greeting
+  # Two lines, each closed by a click below the box.
+  - click: {window: [640, 500]}
+  - wait: {seconds: 1.2}
+  - click: {window: [640, 500]}
+  - wait: {setting: {story_textbox.cursor_row: "1"}, seconds: 1, timeout: 10}
+  # The first question: the pointer over "No" takes the cursor there; a click on it answers No.
+  - hover: {element: "story_textbox#row-2"}
+  - wait: {seconds: 0.5}
+  - screenshot: question-hover-no
+  - expect_setting: {story_textbox.cursor_row: "2"}
+  - click: {element: "story_textbox#row-2"}
+  - wait: {seconds: 1.2}
+  - click: {window: [640, 500]}
+  - wait: {seconds: 1.2}
+  - click: {window: [640, 500]}
+  - wait: {setting: {story_textbox.cursor_row: "1"}, seconds: 1, timeout: 10}
+  # The second question: a click off the options picks nothing; a click on the second one picks it.
+  - click: {window: [640, 600]}
+  - wait: {seconds: 0.6}
+  - expect_setting: {story_textbox.cursor_row: "1"}
+  - click: {element: "story_textbox#row-2"}
+  - wait: {seconds: 1.2}
+  - click: {window: [640, 500]}
+  - wait: {seconds: 1.2}
+  - click: {window: [640, 500]}
+  - wait: {shown: naming_box, seconds: 1, timeout: 10}
+  # The player's name: J and O clicked, then OK.
+  - hover: {element: "naming_box#cell-1-4"}
+  - wait: {seconds: 0.4}
+  - screenshot: naming-hover-j
+  - click: {element: "naming_box#cell-1-4"}
+  - wait: {seconds: 0.4}
+  - click: {element: "naming_box#cell-2-4"}
+  - wait: {seconds: 0.4}
+  - expect_setting: {naming_box.name.0: "J"}
+  - expect_setting: {naming_box.name.1: "O"}
+  - screenshot: naming-jo
+  - click: {element: "naming_box#button-ok"}
+  - wait: {hidden: naming_box, seconds: 1.2, timeout: 10}
+  - click: {window: [640, 500]}
+  - wait: {setting: {story_textbox.cursor_row: "1"}, seconds: 1, timeout: 10}
+  - click: {element: "story_textbox#row-1"}
+  - wait: {seconds: 1.2}
+  - click: {window: [640, 500]}
+  - wait: {shown: naming_box, seconds: 1, timeout: 10}
+  # The partner's name: a and b clicked, then OK.
+  - click: {element: "naming_box#cell-0-5"}
+  - wait: {seconds: 0.4}
+  - click: {element: "naming_box#cell-0-6"}
+  - wait: {seconds: 0.4}
+  - expect_setting: {naming_box.name.0: "a"}
+  - click: {element: "naming_box#button-ok"}
+  - wait: {hidden: naming_box, seconds: 1.2, timeout: 10}
+  - click: {window: [640, 500]}
+  - wait: {setting: {story_textbox.cursor_row: "1"}, seconds: 1, timeout: 10}
+  - click: {element: "story_textbox#row-1"}
+  - wait: {seconds: 1.2}
+  - click: {window: [640, 500]}
+  - wait: {seconds: 1.2}
+  - click: {window: [640, 500]}
+  # The waking scene and the elder's talk, each page clicked on the scene above the box.
+  - wait: {map: topn01, seconds: 1, timeout: 120}
+  - screenshot: topn01-wake
+  - wait: {confirm: true, map: room08, seconds: 1, timeout: 300}
+  - screenshot: room08
+  - wait: {confirm: true, map: twna01, partner_within: 400, hidden: story_textbox, seconds: 2, timeout: 400}
+  - screenshot: twna01-free
+  - wait: {seconds: 3}
+  - screenshot: twna01-after

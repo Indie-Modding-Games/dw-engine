@@ -938,6 +938,52 @@ TEST_CASE("click-to-move walks around walls to the target") {
   CHECK_FALSE(field.hasMoveTarget());
 }
 
+TEST_CASE("a click-to-move target never outlives a hold of the player") {
+  auto map = roomMap("room");
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(map, at(-1000.0F, 0.0F));
+  const glm::vec3 target{1000.0F, 0.0F, 0.0F};
+  run(field, 0.5F); // past the entry's fade
+
+  // A script (a talk) takes the player while he walks to a click: the target goes, and the player
+  // stands still once the script lets go.
+  field.setInput({.moveTarget = target});
+  REQUIRE(field.hasMoveTarget());
+  field.setInput({});
+  field.tick(Tick);
+  CHECK(field.playerFree());
+  field.holdForScript(true);
+  field.tick(Tick);
+  CHECK_FALSE(field.hasMoveTarget());
+  CHECK_FALSE(field.playerFree());
+  // A click while held (the one that closes a textbox) is no walk order either.
+  field.setInput({.moveTarget = target});
+  CHECK_FALSE(field.hasMoveTarget());
+  field.holdForScript(false);
+  field.setInput({});
+  const glm::vec3 released = field.player().position;
+  run(field, 1.0F);
+  CHECK(glm::distance(field.player().position, released) < 1.0F);
+
+  // The same for a care scene (praise, feeding, the toilet) ...
+  field.setInput({.moveTarget = target});
+  REQUIRE(field.hasMoveTarget());
+  field.holdForCare(true);
+  CHECK_FALSE(field.hasMoveTarget());
+  field.setInput({.moveTarget = target});
+  CHECK_FALSE(field.hasMoveTarget());
+  field.holdForCare(false);
+
+  // ... and for whatever runs instead of the field (a menu, a gym course, a battle), which drops
+  // it.
+  field.setInput({.moveTarget = target});
+  REQUIRE(field.hasMoveTarget());
+  field.dropMoveTarget();
+  CHECK_FALSE(field.hasMoveTarget());
+  CHECK(field.path().empty());
+}
+
 TEST_CASE("a click on a warp walks onto it") {
   MapDocument town = roomMap("town");
   fill(town, {.column = 50, .row = 40}, {.column = 52, .row = 41}, 112);

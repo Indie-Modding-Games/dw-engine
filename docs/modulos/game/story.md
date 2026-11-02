@@ -58,6 +58,17 @@ registra en la partida guardada y se lo da al campo.
 - **Puertos** (`story_ports.hpp`): `StoryStatePort` (disparadores y variables; dice cuántos tiene: 800 y 256 son el
   conjunto base del original y un mod puede ampliarlo) y `StoryRandomPort` (el generador de la sesión, de 0 a 0x7FFF).
 
+## El puntero en los diálogos
+
+Mejora para PC (el original no tiene puntero) que no cambia ninguna regla, así que no tiene opción: en una elección
+del cuadro de texto, `DialogueKeys::clicked` elige esa opción aunque el cursor esté en otra (con el sonido de
+confirmar), y `DialogueKeys::pointed` lleva el cursor a la opción bajo el puntero cuando éste se mueve, sin sonido:
+es el resaltado al pasar el ratón. Un índice fuera de las opciones no hace nada, y las teclas y el mando siguen como
+siempre. Quien llama da las filas: en el juego, `optionPointer` (`apps/game/src/story_text_rows.hpp`) mira las cajas
+`row-N` del documento `ui/story_textbox`. Fuera de una elección, un clic en cualquier sitio pasa la página, como
+confirmar; en una elección, un clic fuera de las opciones no hace nada (Intro o el mando eligen la del cursor). Tests:
+`game/story/tests/dialogue_pointer_tests.cpp`.
+
 ## Guardas del motor
 
 No son reglas del original sino redes contra scripts desbocados, muy por encima de lo que pide el disco:

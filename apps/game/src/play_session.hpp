@@ -158,8 +158,13 @@ public:
   [[nodiscard]] FieldScene& scene() { return *scene_; }
   [[nodiscard]] const FieldScene& scene() const { return *scene_; }
 
-  // One logic tick: the battle, or the field and the game time unless a menu pauses them.
+  // One logic tick: the battle, or the field and the game time unless a menu pauses them. A tick in
+  // which the field does not take the player's walk (a menu, a screen or scene that runs instead,
+  // a gym course) drops the click-to-move target, so the player never walks on to it afterwards.
   void tick(const game::field::FieldInput& intent, const FishingButtons& fishing);
+  // Whether a click on the ground is a walk order now: the last tick gave the field the player's
+  // walk and nothing held him (no script or textbox, care scene, map change or screen).
+  [[nodiscard]] bool walksByPointer() const;
 
   // Takes the UI's commands for the game (the battle, free exploration, the partner's menu); false
   // for any other.
@@ -245,6 +250,7 @@ public:
   }
 
 private:
+  void tickSystems(const game::field::FieldInput& intent, const FishingButtons& fishing);
   [[nodiscard]] bool paused() const;
   // What keeps the game from being saved as it is now (a battle, a script, a scene), or empty when
   // the field is free.
@@ -311,6 +317,8 @@ private:
   bool evolutionRanLastFrame_ = false;
   // Whether a command changed what the script warps' guards read (the partner's menu).
   bool guardFactsChanged_ = false;
+  // Whether this tick gave the field the player's walk (tick).
+  bool fieldWalks_ = false;
   // Whether the dialog on screen asks to go back to the title screen.
   bool toTitleAsked_ = false;
   bool toTitle_ = false;

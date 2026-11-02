@@ -76,7 +76,8 @@ struct AutotestStep {
     Release,
     Tap,
     Axis,     // axis: {axis, value}: a stick or trigger of the virtual gamepad
-    Click,    // click: [x, z]: a mouse click on a ground point
+    Click,    // click: [x, z]: a mouse click on a ground point; click: {element: <document>#<id>}
+              // on the centre of a UI element; click: {window: [x, y]} on a window pixel
     Script,   // script: <lua>: runs a line of the game's scripts, as the console does (battle("0"))
     Remember, // remember: <name>: keeps a setting's value for a later expect_change
     ExpectChange, // expect_change: {name: up | down | changed}: the setting moved from the
@@ -95,6 +96,8 @@ struct AutotestStep {
                     // the save indicator; failing as expect_text_fits. <document>#<element>: that
                     // element is shown and lies over nothing else, in its document or another
                     // (Ui::drawnRectsAround), as the HUD's time in digits
+    Hover,          // hover: as click's element and window forms, the pointer moved there with no
+                    // button
   };
   Kind kind = Kind::Wait;
   std::string text; // what the step is about: a control, an element, a name, a setting's value
@@ -106,6 +109,9 @@ struct AutotestStep {
   AutotestCondition until;
   std::optional<std::int32_t> trigger;
   std::optional<glm::vec2> point;
+  // click and hover: `point` is a window pixel, not a ground point (`text` names a UI element
+  // instead when it is set).
+  bool windowPoint = false;
   float radius = 60.0F;
   bool walk = false;
   // walk_to a trigger: done when its warp starts the map change, without waiting for the new map.
@@ -153,6 +159,9 @@ struct AutotestRoute {
   // Whether a new game from the main menu shows its rules screen (ui/new_game_rules) for the route
   // to answer (new_game_rules); otherwise it starts with the command line's ruleset.
   bool newGameRules = false;
+  // Whether a new game from the main menu asks the opening's questions and the names first
+  // (new_game_scene), as without a route; otherwise it starts without them.
+  bool newGameScene = false;
   // How a new game starts (new_game); without it, on the seeded chain (a free field), so only
   // routes through the opening say original.
   std::optional<session::NewGameChain> newGameChain;
@@ -231,6 +240,8 @@ public:
   [[nodiscard]] bool asksLanguageFirst() const { return route_.languageFirst; }
   // Whether a new game shows its rules screen (AutotestRoute::newGameRules).
   [[nodiscard]] bool asksNewGameRules() const { return route_.newGameRules; }
+  // Whether a new game asks the opening's questions (AutotestRoute::newGameScene).
+  [[nodiscard]] bool asksNewGameScene() const { return route_.newGameScene; }
   // Whether the game's movies play (AutotestRoute::movies).
   [[nodiscard]] bool playsMovies() const { return route_.movies; }
 

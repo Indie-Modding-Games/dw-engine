@@ -7,6 +7,8 @@
 #include <format>
 #include <utility>
 
+#include "story_text_rows.hpp"
+
 namespace dwe::app {
 
 namespace {
@@ -161,7 +163,20 @@ bool NamingBox::pressButtons(const input::InputState& input) {
     play(sounds_.confirm);
     return false;
   }
-  if (input.wasPressed("confirm")) {
+  // The engine's pointer: it takes the cursor to the cell or button it moves over or clicks.
+  const bool clicked = input.wasClicked("confirm");
+  std::optional<Spot> spot;
+  if (const auto pointer = input.pointer(); pointer && (clicked || input.pointerMoved())) {
+    spot = spotAt({pointer->x, pointer->y});
+  }
+  if (spot) {
+    button_ = spot->button;
+    side_ = spot->side;
+    row_ = spot->row;
+    column_ = spot->column;
+    typing_ = false;
+  }
+  if (input.wasPressedByKeyOrPad("confirm") || (clicked && spot)) {
     if (!button_) {
       write(letterAt(side_, row_, column_));
     } else if (*button_ == Button::Ok) {
@@ -183,6 +198,33 @@ bool NamingBox::pressButtons(const input::InputState& input) {
     repeatMoves(input);
   }
   return false;
+}
+
+std::optional<NamingBox::Spot> NamingBox::spotAt(glm::vec2 point) const {
+  const auto under = [&](const std::string& id) {
+    const auto rect = ui_->elementRect(NamingBoxDocument, id);
+    return rect && rectHolds(*rect, point);
+  };
+  if (under("button-back")) {
+    return Spot{.button = Button::Back};
+  }
+  if (under("button-ok")) {
+    return Spot{.button = Button::Ok};
+  }
+  for (std::size_t row = 0; row < sideRows(); ++row) {
+    if (!under(std::format("row-{}", row))) {
+      continue;
+    }
+    for (std::size_t column = 0; column < rules_.columns * 2; ++column) {
+      if (under(std::format("cell-{}-{}", row, column))) {
+        return Spot{.button = std::nullopt,
+                    .side = column / rules_.columns,
+                    .row = row,
+                    .column = column % rules_.columns};
+      }
+    }
+  }
+  return std::nullopt;
 }
 
 void NamingBox::repeatMoves(const input::InputState& input) {

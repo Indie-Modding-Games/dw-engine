@@ -388,7 +388,8 @@ entrevista o una caja de nombres, `menu` no abre el menú de pausa (allí salta 
 Aceptar), como el original, que no tiene pausa en esas pantallas. La película también se salta con `confirm` o
 `cancel` (Intro, Espacio, Esc): mejora para PC, el original solo lee Start; la pulsación que la arranca (la última
 respuesta de la entrevista) no cuenta. La misma caja de nombres sirve a la rutina 32 de
-los guiones (renombrar al jugador o al compañero, `StoryNaming`). No corre en un autotest, como las películas.
+los guiones (renombrar al jugador o al compañero, `StoryNaming`). No corre en un autotest, como las películas, salvo
+que la ruta diga `new_game_scene: true`.
 
 Tras el «sí» al nombre del jugador se pasa directo a «What's your Digimon's name?» (`newGameStateMachine`: estado
 0x18, línea 0x1D); «Good Name.» (línea 0x1F) solo sale tras el nombre del compañero (estado 0x1C).
@@ -428,6 +429,23 @@ página de estado del menú del compañero (con la especie en su propia línea, 
 la piel original la pone en la fila de debajo del nombre, como el original, con los estados a su derecha)
 y en las ranuras de partida (`nickname`, junto a la especie, `main_menu.c: drawMainMenuStrings`). El combate, el HUD
 y las escenas de evolución y de muerte muestran la especie o ningún nombre, como el original.
+
+Con el ratón (mejora para PC que no cambia reglas, sin opción; el original no tiene puntero): un clic fuera de una
+elección pasa la página, como confirmar. En las elecciones de Jijimon, un clic en una opción la elige y el puntero que
+pasa por encima lleva el cursor a ella sin sonido; un clic fuera de las opciones no elige nada. En la caja de nombres,
+un clic en una letra la escribe, en Atrás o en OK los pulsa, y en «Name» o en una fila vacía solo lleva el cursor; el
+puntero que se mueve por la rejilla lleva el cursor con él. Lo mismo vale para los diálogos de la historia
+(`docs/modulos/game/story.md`, «El puntero en los diálogos»). Un clic que se queda la UI (un cuadro de texto, una
+elección, la caja de nombres) nunca es una orden de andar: `PlaySession::walksByPointer` solo deja que el clic lleve al
+jugador cuando el campo lo mueve, está libre, no cambia de mapa y no corre ningún script ni cuadro de texto, y al
+quitarle el control (un diálogo, un menú, el gimnasio, el combate, una escena, un cambio de mapa) se suelta el destino
+que llevaba (`Field::dropMoveTarget`): antes, un clic para pasar una página de Koromon dejaba un destino que el jugador
+seguía al cerrar el diálogo, y lo mismo al acabar un entrenamiento. Al revés, un clic en el suelo lejos del jugador
+(a más de dos casillas, `MouseSteering::pressesInPlace`) solo lo lleva allí y no cuenta como confirmar en el campo:
+si no, al salir de una casilla de confirmar (la máquina de guardado junto a la puerta de Jijimon) cada clic volvía a
+hacer su pregunta. Cerca de él (sobre él, la máquina o quien tiene delante) el clic sigue siendo confirmar y habla o
+usa lo que hay. Rutas: `route-mouse-opening.yaml` (la apertura
+entera con el ratón) y `route-mouse-dialogue.yaml` (Koromon en el gimnasio, con `--start trai00`).
 
 Diferencias con el original: en el mando, `alt` está en el botón norte y no en el del círculo, que aquí es cancelar;
 las letras son de media anchura y no las de ancho fijo de la fuente del original; el mensaje de

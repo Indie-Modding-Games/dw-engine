@@ -154,6 +154,12 @@ void Dialogue::press(DialogueKeys pressed, bool confirmHeld) {
   latched_.cancel = latched_.cancel || pressed.cancel;
   latched_.up = latched_.up || pressed.up;
   latched_.down = latched_.down || pressed.down;
+  if (pressed.pointed) {
+    latched_.pointed = pressed.pointed;
+  }
+  if (pressed.clicked) {
+    latched_.clicked = pressed.clicked;
+  }
   confirmHeld_ = confirmHeld;
 }
 
@@ -340,6 +346,17 @@ void Dialogue::tickSizedPage(const DialogueKeys& keys) {
 }
 
 void Dialogue::tickSelection(const DialogueKeys& keys) {
+  const auto option = [this](std::optional<std::int64_t> row) {
+    return row && *row >= 0 && *row < optionCount_ ? row : std::nullopt;
+  };
+  // The engine's pointer: a click on an option picks it (as confirm on it would).
+  if (const auto clicked = option(keys.clicked); clicked && !keys.confirm) {
+    cursor_ = *clicked;
+    core::logDebug("[dialogue] the pointer clicked option {} of {}", cursor_, optionCount_);
+    play(rules_.advanceSound);
+    finish(ResumeValue{cursor_});
+    return;
+  }
   if (keys.confirm) {
     core::logDebug("{}", msg::formatMessage(msg::PortSelectionDone, cursor_, optionCount_));
     play(rules_.advanceSound);
@@ -368,6 +385,12 @@ void Dialogue::tickSelection(const DialogueKeys& keys) {
   } else if (keys.down) {
     cursor_ = cursor_ + 1 == optionCount_ ? 0 : cursor_ + 1;
   } else {
+    // The engine's hover: the cursor follows the pointer onto an option, silently.
+    if (const auto pointed = option(keys.pointed); pointed && *pointed != cursor_) {
+      cursor_ = *pointed;
+      core::logDebug("[dialogue] the pointer is on option {} of {}", cursor_, optionCount_);
+      publish();
+    }
     return;
   }
   core::logDebug("{}", msg::formatMessage(msg::PortCursor, cursor_, optionCount_));

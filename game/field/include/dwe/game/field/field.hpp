@@ -409,6 +409,13 @@ public:
 
   // Whether a click-to-move target is being followed.
   [[nodiscard]] bool hasMoveTarget() const { return moveTarget_.has_value(); }
+  // Drops the click-to-move target and its path: something took the player's control (a talk, a
+  // menu, a gym course, a battle, a scene, a map change), and the player must not walk on to it
+  // once it lets go. The field drops it by itself on every tick it holds the player.
+  void dropMoveTarget();
+  // Whether the last tick let the player move freely (no script, care scene, map change, choice
+  // or fade holding him), when a click on the ground may become a walk order.
+  [[nodiscard]] bool playerFree() const { return freeTick_; }
 
   // The ground direction away from the camera, from the map's camera: where "up" on the stick goes.
   [[nodiscard]] glm::vec3 cameraForward() const { return cameraForward_; }

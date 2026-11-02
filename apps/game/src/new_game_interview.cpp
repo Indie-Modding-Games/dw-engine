@@ -210,6 +210,17 @@ void NewGameInterview::take(const input::InputState& input) {
     constexpr std::size_t Choices = 2;
     // tickSelectionDialogue: the cursor wraps and moves with playSound(0, 2); confirm plays 3; the
     // scene keeps trigger 49 set, so cancel is refused (playSound(0, 0xB)).
+    // The engine's pointer (the original has none): the choices are the box's rows after the
+    // name; a click picks the one under it, and the cursor follows it over them without a sound.
+    // A click off them picks nothing.
+    const OptionPointer pointer = optionPointer(*ui_, input, 1);
+    const auto onChoice = [](std::optional<std::size_t> row) {
+      return row && *row < Choices ? row : std::nullopt;
+    };
+    const auto clicked = onChoice(pointer.clicked);
+    if (clicked) {
+      cursor_ = *clicked;
+    }
     if (input.wasPressed("move_up")) {
       cursor_ = (cursor_ + Choices - 1) % Choices;
       play(rules_.sounds.cursor);
@@ -220,13 +231,16 @@ void NewGameInterview::take(const input::InputState& input) {
       showText(true);
     } else if (input.wasPressed("cancel")) {
       play(rules_.sounds.refused);
-    } else if (input.wasPressed("confirm")) {
+    } else if (input.wasPressedByKeyOrPad("confirm") || clicked) {
       play(rules_.sounds.confirm);
       waiting_ = Waiting::Nothing;
       state_ = static_cast<std::uint8_t>(next_ + cursor_);
       core::logDebug(
           "[port:story] newGameStateMachine (script_menu.c:1144): choice {} → state {:#x}", cursor_,
           state_);
+    } else if (const auto pointed = onChoice(pointer.pointed); pointed && *pointed != cursor_) {
+      cursor_ = *pointed;
+      showText(true);
     }
     return;
   }

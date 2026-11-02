@@ -28,7 +28,10 @@ if (auto change = field.takeMapChange()) {
 
 - **Entrada** (`FieldInput`): `stick` es una dirección relativa a la cámara del mapa (x a la derecha de la pantalla,
   y hacia el fondo), de longitud 0 a 1; `run` corre; `moveTarget` es el clic para ir, que sigue un camino A* por la
-  rejilla hasta llegar, hasta que se use el stick o hasta `cancelTarget`. El camino sale también de un punto más
+  rejilla hasta llegar, hasta que se use el stick o hasta `cancelTarget`. Un clic mientras algo sujeta al jugador (un
+  script, el cuidado, un elegidor, el cambio de mapa o su fundido) no planifica nada, y el destino que hubiera se
+  suelta (`dropMoveTarget`): al soltarlo, el jugador no echa a andar solo. `PlaySession` lo suelta también en cada tick
+  en que el campo no lleva al jugador (una pantalla como el gimnasio, un menú, el combate). El camino sale también de un punto más
   cerca de una pared que la sonda del personaje (la llegada de mgen12 desde mgen11): si ningún punto de alrededor se
   alcanza en línea recta, valen los que se pueden pisar.
 - **Estado**: `mapId()`, `player()` y `partner()` (posición, yaw y movimiento), `collision()` para el minimapa,

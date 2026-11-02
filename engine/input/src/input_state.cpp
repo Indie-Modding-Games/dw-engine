@@ -52,7 +52,7 @@ void InputState::handle(const Event& event) {
     lastDevice_ = DeviceKind::KeyboardMouse;
     if (key->down) {
       keysDown_.insert(key->key);
-      notePressed(KeyBinding{key->key});
+      notePressed(KeyBinding{key->key}, false);
     } else {
       keysDown_.erase(key->key);
     }
@@ -60,7 +60,7 @@ void InputState::handle(const Event& event) {
     lastDevice_ = DeviceKind::KeyboardMouse;
     mouseButtons_[index(mouse->button)] = mouse->down;
     if (mouse->down) {
-      notePressed(MouseBinding{mouse->button});
+      notePressed(MouseBinding{mouse->button}, true);
     }
   } else if (std::holds_alternative<FocusLost>(event)) {
     keysDown_.clear();
@@ -77,6 +77,7 @@ void InputState::handle(const Event& event) {
     if (lastPointer_ &&
         std::hypot(moved->x - lastPointer_->x, moved->y - lastPointer_->y) >= MinTravel) {
       lastDevice_ = DeviceKind::KeyboardMouse;
+      pointerMoved_ = true;
     }
     lastPointer_ = *moved;
   } else if (std::holds_alternative<MouseWheelMoved>(event)) {
@@ -101,7 +102,7 @@ void InputState::handle(const Event& event) {
     useGamepad(button->id);
     state->buttons[index(button->button)] = button->down;
     if (button->down) {
-      notePressed(GamepadButtonBinding{button->button});
+      notePressed(GamepadButtonBinding{button->button}, false);
     }
   } else if (const auto* axis = std::get_if<GamepadAxisMoved>(&event)) {
     GamepadState* state = findGamepad(axis->id);
@@ -118,14 +119,21 @@ void InputState::handle(const Event& event) {
     for (const float direction : {1.0F, -1.0F}) {
       if (axisHalf(before, direction, deadzone_) < DownThreshold &&
           axisHalf(axis->value, direction, deadzone_) >= DownThreshold) {
-        notePressed(GamepadAxisBinding{.axis = axis->axis, .direction = direction});
+        notePressed(GamepadAxisBinding{.axis = axis->axis, .direction = direction}, false);
       }
     }
   }
 }
 
+void InputState::notePointer(const MouseMoved& moved) {
+  lastPointer_ = moved;
+}
+
 void InputState::endTick() {
   pressedThisTick_.clear();
+  clickedThisTick_.clear();
+  keyOrPadThisTick_.clear();
+  pointerMoved_ = false;
   gamepadLost_ = false;
 }
 
@@ -143,6 +151,21 @@ bool InputState::isDown(std::string_view action) const {
 
 bool InputState::wasPressed(std::string_view action) const {
   return pressedThisTick_.contains(std::string{action});
+}
+
+bool InputState::wasClicked(std::string_view action) const {
+  return clickedThisTick_.contains(std::string{action});
+}
+
+bool InputState::wasPressedByKeyOrPad(std::string_view action) const {
+  return keyOrPadThisTick_.contains(std::string{action});
+}
+
+std::optional<Vector2> InputState::pointer() const {
+  if (!lastPointer_) {
+    return std::nullopt;
+  }
+  return Vector2{.x = lastPointer_->x, .y = lastPointer_->y};
 }
 
 Vector2 InputState::vector(std::string_view left, std::string_view right, std::string_view up,
@@ -175,7 +198,7 @@ float InputState::bindingValue(const Binding& binding) const {
   return strongest;
 }
 
-void InputState::notePressed(const Binding& changed) {
+void InputState::notePressed(const Binding& changed, bool byMouse) {
   for (const ActionMap::Entry& entry : map_.entries()) {
     const bool bound = std::ranges::any_of(entry.bindings, [&](const Binding& binding) {
       return std::visit([&](const auto& control) { return sameControl(binding, control); },
@@ -183,6 +206,7 @@ void InputState::notePressed(const Binding& changed) {
     });
     if (bound) {
       pressedThisTick_.insert(entry.action);
+      (byMouse ? clickedThisTick_ : keyOrPadThisTick_).insert(entry.action);
     }
   }
 }

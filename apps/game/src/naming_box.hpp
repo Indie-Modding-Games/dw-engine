@@ -4,6 +4,8 @@
 #include <dwe/input/input_state.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <glm/vec2.hpp>
+
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -26,8 +28,10 @@ enum class NameTarget : std::uint8_t { Tamer, Partner };
 // full, and the cursor goes to OK); cancel takes the last letter back; alt goes to Back and menu to
 // OK; extra clears the whole name; OK takes a name that is not empty. The movement keys repeat
 // while held. The keyboard can also type the name: typed letters of the grid (and spaces) are
-// written, and Return takes the name once something was typed. It publishes naming_box.* settings
-// and takes the field's buttons, not the UI's focus.
+// written, and Return takes the name once something was typed. The pointer (the engine's, the
+// original has none) moves the cursor onto the cell or button it moves over, silently; a click on
+// a cell writes it and on Back or OK does what confirm there does; a click elsewhere does nothing.
+// It publishes naming_box.* settings and takes the field's buttons, not the UI's focus.
 class NamingBox {
 public:
   NamingBox(ui::Ui& ui, NamingRules rules, SceneSounds sounds);
@@ -54,12 +58,21 @@ public:
 
 private:
   enum class Button : std::uint8_t { Back, Ok };
+  // A place of the cursor: a button, or a cell by side, row and column.
+  struct Spot {
+    std::optional<Button> button;
+    std::size_t side = 0;
+    std::size_t row = 0;
+    std::size_t column = 0;
+  };
 
   [[nodiscard]] std::string letterAt(std::size_t side, std::size_t row, std::size_t column) const;
   [[nodiscard]] bool knows(std::string_view letter) const;
   [[nodiscard]] std::size_t sideRows() const { return rules_.rows.size() / 2; }
   bool takeTyping();
   bool pressButtons(const input::InputState& input);
+  // The cell or button under a window point, as the document was last laid out.
+  [[nodiscard]] std::optional<Spot> spotAt(glm::vec2 point) const;
   void repeatMoves(const input::InputState& input);
   void move(std::string_view action);
   void write(const std::string& letter);

@@ -674,6 +674,22 @@ void PlaySession::pressBattle(const input::InputState& input) {
 }
 
 void PlaySession::tick(const game::field::FieldInput& intent, const FishingButtons& fishing) {
+  fieldWalks_ = false;
+  tickSystems(intent, fishing);
+  if (!fieldWalks_) {
+    scene_->field().dropMoveTarget();
+  }
+}
+
+bool PlaySession::walksByPointer() const {
+  const game::field::Field& field = scene_->field();
+  const auto& story = game_.systems.story;
+  return fieldWalks_ && field.playerFree() && !field.mapChangePending() &&
+         (story == nullptr || !storyTextbox_ || !story->dialogue().view().open);
+}
+
+void PlaySession::tickSystems(const game::field::FieldInput& intent,
+                              const FishingButtons& fishing) {
   const ui::Ui& ui = *context_.ui;
   // Every tick starts with the characters where they stand: the screens below that run instead of
   // the field (a battle, the evolution, a sleep, the fishing, a menu) move them themselves or not
@@ -779,6 +795,7 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
     if (gymScreen_.active()) {
       fieldIntent = {};
     }
+    fieldWalks_ = !gymScreen_.active();
     // Without a course it only closes the last one's stats box.
     gymScreen_.tick(TickSeconds, intent);
     scene_->tick(fieldIntent, static_cast<float>(TickSeconds));

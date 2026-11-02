@@ -1,0 +1,31 @@
+# Run with --new-game --new-game-chain seeded --start trai00. Talking to Koromon at the gym with the mouse: clicks on
+# the scene turn the pages, a click on the second option picks it (not the cursor's), and the clicks never become
+# a walk order: once the talk ends the player still stands where he talked.
+name: mouse-dialogue
+device: mouse
+timeout: 240
+steps:
+  - resize: [1280, 720]
+  - wait: {map: trai00, seconds: 2, timeout: 60}
+  - script: place("player 919 -3150 0")
+  - wait: {seconds: 1}
+  - screenshot: near-koro
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1.5, timeout: 30}
+  - screenshot: talk-1
+  # A click on the scene, away from the box, closes the first page.
+  - click: {window: [1000, 150]}
+  - wait: {seconds: 1.5}
+  - click: {window: [1000, 150]}
+  - wait: {seconds: 1.5}
+  - screenshot: talk-2-selection
+  # A click on the second option ("Teach me how to train").
+  - click: {element: "story_textbox#row-2"}
+  - wait: {seconds: 1.5}
+  - screenshot: talk-3-after-option-click
+  - wait: {confirm: true, hidden: story_textbox, seconds: 0.5, timeout: 120}
+  - screenshot: talk-done
+  - wait: {seconds: 3}
+  - screenshot: after-talk
+  # The player must still stand where the talk left him.
+  - wait: {player_near: [919, 3150], radius: 40, timeout: 1}

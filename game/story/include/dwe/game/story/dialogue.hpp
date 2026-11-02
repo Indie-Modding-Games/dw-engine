@@ -122,6 +122,11 @@ struct DialogueKeys {
   bool cancel = false;
   bool up = false;
   bool down = false;
+  // The pointer (the engine's, the original has none): the selection's option it moved onto,
+  // from 0, which takes the cursor there without a sound, as the engine's menus follow the pointer;
+  // and the option clicked, which takes the cursor there and picks it, as confirm would.
+  std::optional<std::int64_t> pointed = std::nullopt;
+  std::optional<std::int64_t> clicked = std::nullopt;
 };
 
 // What a textbox does outside the story: hold the player still while someone speaks.

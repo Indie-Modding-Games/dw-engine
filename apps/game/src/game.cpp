@@ -215,14 +215,18 @@ public:
   // for itself, and a click there must still land where the pointer is, not where it was before.
   void pointerMoved(const platform::MouseMoved& moved) { pointer_ = {moved.x, moved.y}; }
 
-  // Takes the button events the UI did not.
-  void handle(const platform::Event& event, const FieldScene& scene) {
+  // Takes the button events the UI did not. `orders` says whether a press is a walk order now
+  // (PlaySession::walksByPointer): a press while a textbox, a scene or a screen holds the player is
+  // theirs (the confirm that closes a page), and neither walks to where it fell nor steers while
+  // held, then or once they let go.
+  void handle(const platform::Event& event, const FieldScene& scene, bool orders) {
     if (const auto* button = std::get_if<platform::MouseButtonChanged>(&event);
         button != nullptr && button->button == platform::MouseButton::Left) {
-      held_ = button->down;
+      held_ = button->down && orders;
       heldTicks_ = 0;
-      if (held_) {
-        target_ = scene.pickGround(pointer_);
+      // The release keeps the press's target: a click is a press and a release in the same frame.
+      if (button->down) {
+        target_ = held_ ? scene.pickGround(pointer_) : std::nullopt;
       }
     }
   }
@@ -266,7 +270,16 @@ public:
     target_.reset();
   }
 
+  // Whether a click that walks to `target` also presses confirm where the player stands: only near
+  // him (on him, the machine or the character in front of him). A click farther away only walks,
+  // or walking off a confirm cell (a save machine) would ask its question again with every click.
+  static bool pressesInPlace(glm::vec3 target, glm::vec3 player) {
+    return std::hypot(target.x - player.x, target.z - player.z) <= PressRadius;
+  }
+
 private:
+  // Two cells of the collision grid.
+  static constexpr float PressRadius = 200.0F;
   // A press longer than this (a quarter of a second) steers instead of only setting a target.
   static constexpr int HoldTicks = 15;
   // Closer to the pointer than this, the player stops instead of turning on the spot.
@@ -647,9 +660,10 @@ int runGame(const Options& requested) {
     }
   }
   // The new game's opening questions before its movie (main.c: newGameScene); none in an autotest,
-  // as the movies.
+  // as the movies, unless its route asks for them.
   const std::optional<NewGameSceneRules> newGameScene =
-      autotest ? std::nullopt : loadNewGameSceneRules(files, options.ruleset);
+      autotest && !autotest->asksNewGameScene() ? std::nullopt
+                                                : loadNewGameSceneRules(files, options.ruleset);
   std::unique_ptr<NewGameInterview> interview;
   // The opening plays the system sounds before any game exists (sound.c: playSound, bank 0).
   session::SessionSound openingSound{sound, files};
@@ -1097,11 +1111,16 @@ int runGame(const Options& requested) {
         if (button != nullptr) {
           mouse.release();
         }
+        // The input still knows where the pointer is, for the textboxes' and the naming box's
+        // clicks.
+        if (const auto* moved = std::get_if<platform::MouseMoved>(&event)) {
+          input.notePointer(*moved);
+        }
         continue;
       }
       input.handle(event);
       if (!(*ui)->capturesInput() && flow.playing() != nullptr) {
-        mouse.handle(event, flow.playing()->scene());
+        mouse.handle(event, flow.playing()->scene(), flow.playing()->walksByPointer());
       }
     }
 
@@ -1220,6 +1239,11 @@ int runGame(const Options& requested) {
       PlaySession* play = flow.playing();
       game::field::FieldInput intent;
       FishingButtons fishing;
+      // Something took the player's control (a talk, a scene, a screen): a held button stops
+      // steering and a click not yet taken is dropped.
+      if (play != nullptr && !play->walksByPointer()) {
+        mouse.release();
+      }
       if (play != nullptr && !(*ui)->capturesInput()) {
         const input::Vector2 move = input.vector("move_left", "move_right", "move_up", "move_down");
         // Up gives a negative y; the field's y points away from the camera.
@@ -1234,7 +1258,11 @@ int runGame(const Options& requested) {
         }
         // Escape, the right button or East drops a click-to-move target.
         intent.cancelTarget = input.wasPressed("cancel");
-        intent.confirm = input.wasPressed("confirm");
+        const bool clickWalksAway =
+            intent.moveTarget && !MouseSteering::pressesInPlace(
+                                     *intent.moveTarget, play->scene().field().player().position);
+        intent.confirm =
+            clickWalksAway ? input.wasPressedByKeyOrPad("confirm") : input.wasPressed("confirm");
         play->pressStory(input);
         fishing = {.confirmDown = input.isDown("confirm"),
                    .cancelPressed = intent.cancelTarget,

@@ -135,4 +135,28 @@ screens::ScreenSettings textboxSettings(const TextboxLook& look, const std::vect
   return settings;
 }
 
+bool rectHolds(const ui::Ui::Rect& rect, glm::vec2 point) {
+  return rect.right > rect.left && rect.bottom > rect.top && point.x >= rect.left &&
+         point.x < rect.right && point.y >= rect.top && point.y < rect.bottom;
+}
+
+OptionPointer optionPointer(const ui::Ui& ui, const input::InputState& input, std::size_t first) {
+  const bool moved = input.pointerMoved();
+  const bool clicked = input.wasClicked("confirm");
+  const auto pointer = input.pointer();
+  if ((!moved && !clicked) || !pointer || !ui.isVisible(StoryTextboxDocument)) {
+    return {};
+  }
+  const glm::vec2 point{pointer->x, pointer->y};
+  for (std::size_t row = first; row < MaxRows; ++row) {
+    const auto rect = ui.elementRect(StoryTextboxDocument, std::format("row-{}", row));
+    if (rect && rectHolds(*rect, point)) {
+      const std::size_t option = row - first;
+      return {.pointed = moved ? std::optional{option} : std::nullopt,
+              .clicked = clicked ? std::optional{option} : std::nullopt};
+    }
+  }
+  return {};
+}
+
 } // namespace dwe::app

@@ -121,6 +121,11 @@ que se puede seguir usando el escritorio; un mando real sí llega. Las rutas de 
   herramientas, así que las rutas del ratón pulsan Tab para eso y hacen clic en lo demás. `route-mouse` además hace
   clic en las pestañas de la página del jugador (aspecto original) y de la del compañero (Estado y Técnicas) y
   comprueba que cada clic enseña su página.
+- `route-mouse-opening.yaml`: la apertura entera con el ratón (`new_game_scene: true`): contesta las preguntas de
+  Jijimon con clics en las opciones (y comprueba que el puntero encima mueve el cursor y que un clic fuera no elige
+  nada), escribe los dos nombres con clics en las letras y en OK y pasa las páginas hasta File City.
+- `route-mouse-dialogue.yaml` (con `--new-game --new-game-chain seeded --start trai00`): habla con Koromon en el
+  gimnasio, elige la segunda opción con un clic y comprueba que el jugador no echa a andar al acabar.
 - `route-fade.yaml`: entra en la casa del anciano con el ratón y hace una captura en mitad del fundido, con el nombre
   del mapa a la vista en el idioma del juego (`--lang`), y otra al acabar.
 - `route-language.yaml`: empieza en el menú principal (`main_menu: true`), cambia el idioma desde él y lo devuelve,
@@ -603,7 +608,9 @@ hasta 77 de prosperidad), que aún no tienen tramos encadenados: la cueva de Leo
 
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
 los ajustes del usuario. Como no tiene las preguntas de la apertura ni las películas, su partida nueva empieza en la
-cadena sembrada (el campo libre de File City) salvo que la ruta diga `new_game: original`, como `route-etapa1`.
+cadena sembrada (el campo libre de File City) salvo que la ruta diga `new_game: original`, como `route-etapa1`. Las
+preguntas y la caja de nombres solo salen si la ruta dice `new_game_scene: true`. Con `device: mouse`, el
+`confirm: true` de `wait` pasa las páginas del cuadro de texto con un clic encima del cuadro en vez de con Intro.
 
 ```sh
 scripts/dev.sh run --content <carpeta> --autotest tests/autotest/route-keyboard.yaml --shots <carpeta de capturas>
@@ -730,6 +737,7 @@ boot_screen: false        # true (con main_menu): la portada empieza en «Press 
 language_first: false     # true (con boot_screen): antes, la caja de idiomas, como al arrancar el juego
 new_game_rules: false     # true (con main_menu): la partida nueva pasa por la pantalla de reglas (si no, empieza con las del original)
 new_game: seeded          # original: la partida nueva corre la apertura (por defecto seeded, el campo libre)
+new_game_scene: false     # true (con main_menu): la partida nueva pasa por las preguntas y los nombres de Jijimon
 load_save: save.yaml      # empieza cargando esa partida (relativa a la ruta), sin main_menu ni new_game
 movies: false             # true: las películas del juego salen como sin ruta (los créditos del final)
 text_fit: false           # true: cada captura comprueba además que los textos caben (como expect_text_fits: all)
@@ -760,6 +768,7 @@ steps:
 | `resize: [ancho, alto]` | Cambia la ventana y espera a que el render tenga ese tamaño |
 | `fullscreen: true \| false` | Pantalla completa |
 | `press`, `release`, `tap: {key \| button}`, `axis: {axis, value}`, `click: [x, z]` | Controles sueltos: teclas, botones y ejes del mando virtual, clic en un punto del suelo |
+| `click: {element: "<documento>#<id>"}`, `click: {window: [x, y]}`, `hover: {element \| window}` | Clic en el centro de un elemento de la UI ya maquetado (`story_textbox#row-2`, `naming_box#cell-1-4`, `naming_box#button-ok`) o en un punto de la ventana, en píxeles; `hover` solo lleva el puntero allí, sin pulsar. No necesitan el campo, así que sirven en la apertura |
 
 Las coordenadas son del mundo del motor (x, z en el suelo; 100 unidades por celda de colisión).
 
