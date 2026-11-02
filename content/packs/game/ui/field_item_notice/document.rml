@@ -7,7 +7,7 @@
 	<script src="logic.lua"></script>
 </head>
 <body>
-	<div id="box" class="original-look">
+	<div id="box" class="original-look" onclick="ui.send('field_item_notice_ok')">
 		<div id="rows">
 			<div class="row" id="item"></div>
 			<div class="row" id="text"></div>
