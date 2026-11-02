@@ -15,3 +15,9 @@ body #speaker.player { color: #d0d0d0; }
 
 .label-place { decorator: image(keeper-place-label scale-none left top); }
 .label-point { decorator: image(keeper-point-label scale-none left top); }
+
+/* The rows keep the original's size: the modern look this skin extends gives its own lists 22dp
+   (../../modern/original_lists/style.rcss). */
+.row {
+	font-size: 33dp;
+}

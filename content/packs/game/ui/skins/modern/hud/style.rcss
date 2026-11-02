@@ -68,7 +68,7 @@ body {
 	top: 20dp;
 	margin: 0;
 	padding: 6dp 14dp 6dp 8dp;
-	font-size: 15dp;
+	font-size: 14dp;
 	background-color: #0d121ab8;
 	border: 1dp #2e3a4a;
 }
@@ -121,7 +121,7 @@ body {
 	background-color: #0d121ab8;
 	border: 1dp #2e3a4a;
 	color: #c9d3de;
-	font-size: 15dp;
+	font-size: 14dp;
 }
 
 /* While a menu or a battle stops the field the panel is gone at once, as the minimap is when hidden. */
@@ -149,7 +149,7 @@ body {
    the panel tells only the day. */
 #field-time {
 	display: none;
-	font-size: 24dp;
+	font-size: 22dp;
 	font-weight: bold;
 	color: #f2f5f8;
 }

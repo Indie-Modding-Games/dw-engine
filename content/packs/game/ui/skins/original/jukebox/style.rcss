@@ -14,3 +14,9 @@ body #window, body #talk {
 .row, #talk { font-family: original-look; color: #d0d0d0; }
 body .row.playing { color: #94adff; }
 body #speaker { color: #f8f800; }
+
+/* The rows keep the original's size: the modern look this skin extends gives its own lists 22dp
+   (../../modern/original_lists/style.rcss). */
+.row {
+	font-size: 33dp;
+}

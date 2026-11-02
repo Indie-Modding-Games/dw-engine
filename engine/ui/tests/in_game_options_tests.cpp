@@ -50,7 +50,7 @@ TEST_CASE("the options key's start page opens the pause menu on its options, and
   for (const std::string_view skin : {"original", "modern"}) {
     CAPTURE(skin);
     Screen screen{"pause_menu"};
-    screen.ui->setSetting("ui_skin", std::string{skin});
+    screen.skin(skin);
     openOnOptions(screen);
     CHECK(screen.ui->isVisible("pause_menu"));
     CHECK_FALSE(screen.ui->elementHasClass("pause_menu", "page-options", "hidden"));
@@ -69,7 +69,7 @@ TEST_CASE("the options key's start page opens the pause menu on its options, and
 
 TEST_CASE("the options page lists every game option in a row of its own, and only those") {
   Screen screen{"pause_menu", "es"};
-  screen.ui->setSetting("ui_skin", std::string{"modern"});
+  screen.skin("modern");
   screen.ui->setSetting("free_exploration", false);
   screen.ui->setSetting("long_names", true);
   openOnOptions(screen);

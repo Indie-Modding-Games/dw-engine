@@ -22,3 +22,9 @@ body #window, body #talk, body #points-box {
 body .row.stuck { color: #e03028; }
 body #speaker { color: #f8f800; }
 body #speaker.player { color: #d0d0d0; }
+
+/* The rows keep the original's size: the modern look this skin extends gives its own lists 22dp
+   (../../modern/original_lists/style.rcss). */
+.row {
+	font-size: 33dp;
+}

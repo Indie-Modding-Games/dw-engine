@@ -53,3 +53,17 @@ screens:
   # El intercambio de objetos: su ventana a la izquierda, lejos del minimapa.
   trade_menu:
     styles: [ui/skins/modern/trade_menu/style]
+  # Las listas de las pantallas del original (tienda de cartas, guardaobjetos, tienda de méritos, tirar objetos,
+  # transporte del pájaro, gramola): sus filas con la escala de letra del aspecto moderno, no a 33dp.
+  card_shop:
+    styles: [ui/skins/modern/original_lists/style]
+  item_keeper:
+    styles: [ui/skins/modern/original_lists/style]
+  merit_shop:
+    styles: [ui/skins/modern/original_lists/style]
+  discard_menu:
+    styles: [ui/skins/modern/original_lists/style]
+  bird_transport:
+    styles: [ui/skins/modern/original_lists/style]
+  jukebox:
+    styles: [ui/skins/modern/original_lists/style]

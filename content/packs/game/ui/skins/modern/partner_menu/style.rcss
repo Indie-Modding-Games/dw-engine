@@ -190,7 +190,7 @@
 
 .care-hint {
 	margin-top: 8dp;
-	font-size: 16dp;
+	font-size: 14dp;
 	color: #9aa7b6;
 }
 
@@ -217,7 +217,7 @@
 	margin-top: 12dp;
 	padding-top: 10dp;
 	border-top: 1dp #2e3a4a;
-	font-size: 15dp;
+	font-size: 14dp;
 	color: #9aa7b6;
 	text-align: right;
 }
@@ -237,13 +237,13 @@ button:focus .original-look, button.original-look:focus {
 .pool-max { display: none; }
 
 #page-tech { min-height: 330dp; }
-.tech-heading { font-size: 24dp; color: #f0a73a; margin: 12dp 0; }
+.tech-heading { font-size: 22dp; color: #f0a73a; margin: 12dp 0; }
 .tech-row, .tech-columns { display: flex; min-height: 32dp; }
 .tech-name { width: 280dp; }
 .tech-power, .tech-mp { width: 85dp; }
 .tech-range { width: 85dp; }
 .tech-effect { width: 140dp; }
-.tech-columns { padding-left: 280dp; font-size: 13dp; color: #9aa7b6; text-transform: uppercase; }
+.tech-columns { padding-left: 280dp; font-family: "Noto Sans"; font-size: 14dp; color: #9aa7b6; }
 #final-heading { margin-top: 10dp; }
 #final-columns { display: none; }
 #tech-row-3 { margin-bottom: 18dp; }
@@ -258,10 +258,10 @@ button:focus .original-look, button.original-look:focus {
 
 #tech-picker { width: 100%; }
 .tech-choice { display: inline-block; width: 23%; min-height: 32dp; font-size: 14dp; padding: 4dp; overflow: hidden; white-space: nowrap; }
-#tech-message { font-size: 16dp; color: #f0a73a; margin-top: 8dp; }
+#tech-message { font-size: 14dp; color: #f0a73a; margin-top: 8dp; }
 
 .tech-category, .tech-column { display: none; }
-.tech-choice { width: 11%; height: 32dp; box-sizing: border-box; font-size: 10dp; }
+.tech-choice { width: 11%; height: 32dp; box-sizing: border-box; font-size: 14dp; }
 .tech-choice.equipped { border-color: #f0a73a; }
 
 .tab-edge { display: none; }

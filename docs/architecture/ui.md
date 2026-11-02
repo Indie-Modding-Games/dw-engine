@@ -501,6 +501,29 @@ así que la forma y el sombreado se reconocen y nunca brilla tanto como en color
 imagen (`applyImageTone`); la misma imagen en color y en gris son dos texturas, y una opción que no se conoce es un
 error en el log (`BadImageOption`).
 
+### Escala tipográfica
+
+El aspecto moderno usa cinco tamaños de letra para sus propios textos, y ninguno más (`ui/skins/modern/theme.rcss`):
+
+| Tamaño | Uso |
+|---|---|
+| 14dp | Leyendas: indicaciones de botones y sus teclas, ayudas, etiquetas pequeñas del HUD, cabeceras de columna (con la letra moderna) |
+| 18dp | Cuerpo: entradas de menú, mensajes |
+| 22dp | Etiquetas y valores: filas de listas y de páginas, encabezados de sección, la hora del HUD |
+| 30dp | Títulos: el de un panel, el nombre del mapa |
+| 48dp | Números grandes |
+
+Los textos con la letra del original (familia `original-look`, también los que la opción «Texto con aspecto original»
+dibuja así en el aspecto moderno) se quedan en múltiplos enteros de su celda de 11 píxeles (22dp, 33dp), los únicos
+tamaños que dibuja nítidos. Las listas de las pantallas del original que el aspecto moderno no estiliza aparte (tienda
+de cartas, guardaobjetos, tienda de méritos, tirar objetos, transporte del pájaro, gramola) toman 22dp para sus filas
+(`ui/skins/modern/original_lists/style.rcss`) en vez de los 33dp del original con la letra moderna. El combate
+conserva sus tamaños por ahora. El aspecto original no cambia: sus tamaños son los del original.
+
+Mayúsculas: el aspecto moderno no pone textos en mayúsculas con `text-transform`; un texto sale como está escrito en
+los textos del idioma. Las mayúsculas de las etiquetas copiadas del original en inglés (`POWER`, `RANG`, `SPEC`…) son
+las del original y se quedan.
+
 ## Aspecto original
 
 El texto que imita al original (de momento, el nombre del mapa del cambio de mapa) usa la clase `.original-look` de

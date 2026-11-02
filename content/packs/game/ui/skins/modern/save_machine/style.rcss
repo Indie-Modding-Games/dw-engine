@@ -20,6 +20,6 @@
 }
 
 #prompts {
-	font-size: 22dp;
+	font-size: 14dp;
 	color: #9aa7b6;
 }

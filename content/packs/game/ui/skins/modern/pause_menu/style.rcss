@@ -68,7 +68,7 @@
 	margin-top: 18dp;
 	padding-top: 12dp;
 	border-top: 1dp #2e3a4a;
-	font-size: 15dp;
+	font-size: 14dp;
 	color: #9aa7b6;
 	text-align: right;
 }

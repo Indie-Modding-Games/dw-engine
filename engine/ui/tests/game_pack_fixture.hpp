@@ -38,6 +38,39 @@ inline std::vector<std::byte> whitePng(unsigned width, unsigned height) {
   return {begin, begin + png.size()};
 }
 
+// An indexed stand-in with four palettes of 16 colours and its metadata (an image dwx extracts
+// with its palettes, docs/architecture/ui.md), which a skin's sprite sheet with a palette needs.
+inline std::vector<std::byte> indexedPng(unsigned width, unsigned height) {
+  lodepng::State state;
+  state.info_raw.colortype = LCT_PALETTE;
+  state.info_raw.bitdepth = 8;
+  state.info_png.color.colortype = LCT_PALETTE;
+  state.info_png.color.bitdepth = 8;
+  state.encoder.auto_convert = 0;
+  for (unsigned colour = 0; colour < 16; ++colour) {
+    const auto grey = static_cast<unsigned char>(colour * 16);
+    lodepng_palette_add(&state.info_png.color, grey, grey, grey, 255);
+    lodepng_palette_add(&state.info_raw, grey, grey, grey, 255);
+  }
+  const std::vector<unsigned char> pixels(std::size_t{width} * height, 1);
+  std::vector<unsigned char> png;
+  REQUIRE(lodepng::encode(png, pixels, width, height, state) == 0);
+  const auto* begin = reinterpret_cast<const std::byte*>(png.data());
+  return {begin, begin + png.size()};
+}
+
+inline std::string indexedMeta(unsigned width, unsigned height) {
+  std::string meta =
+      std::format("mode: indexed4\nwidth: {}\nheight: {}\npng: indexed\npng_palette: 0\n"
+                  "palettes:\n",
+                  width, height);
+  for (int palette = 0; palette < 4; ++palette) {
+    meta +=
+        "- \"0000 ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff\"\n";
+  }
+  return meta;
+}
+
 // The team pack from the source tree and a stand-in base pack, in memory.
 struct Content {
   assets::MemoryFileSystem memory;
@@ -71,6 +104,8 @@ struct Content {
           std::tuple{"texture/stddat/stdtim/002.png", 256U, 120U}}) {
       memory.addFile(std::filesystem::path{"packs/base"} / path, whitePng(width, height));
     }
+    memory.addFile("packs/base/map/trai00/texture4/001.png", indexedPng(256, 256));
+    memory.addFile("packs/base/map/trai00/texture4/001_meta.yaml", indexedMeta(256, 256));
     const auto location = [this](std::string_view root) {
       return assets::PackLocation{
           .fileSystem = &memory, .root = std::string{root}, .origin = assets::PackOrigin::Engine};
@@ -112,6 +147,12 @@ struct Screen {
     auto loaded = localization::Catalog::load(files, language);
     REQUIRE_MESSAGE(loaded.has_value(), loaded.error().message);
     return std::move(*loaded);
+  }
+
+  // Switches the UI to a skin, as the game does, and tells the documents' logic.
+  void skin(std::string_view id) {
+    REQUIRE_MESSAGE(ui->setSkin(id), id);
+    ui->setSetting("ui_skin", std::string{id});
   }
 
   // A key pressed for a frame and let go for another.

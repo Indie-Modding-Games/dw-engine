@@ -39,7 +39,7 @@ TEST_CASE(
   for (const std::string_view skin : {"original", "modern"}) {
     CAPTURE(skin);
     Screen screen{"story_textbox"};
-    screen.ui->setSetting("ui_skin", std::string{skin});
+    screen.skin(skin);
     screen.ui->show("story_textbox");
     // Two long names on one row: wider than the box in either font.
     publishSpeech(*screen.ui, std::format("{} and {}, look!", LongName, LongName), 1.0);
@@ -62,7 +62,7 @@ TEST_CASE("the naming box shows twelve letters inside the name's box in both ski
   for (const std::string_view skin : {"original", "modern"}) {
     CAPTURE(skin);
     Screen screen{"naming_box"};
-    screen.ui->setSetting("ui_skin", std::string{skin});
+    screen.skin(skin);
     screen.ui->setSetting("naming_box.length", 12.0);
     for (int letter = 0; letter < 12; ++letter) {
       screen.ui->setSetting(std::format("naming_box.name.{}", letter), std::string{"W"});
@@ -88,7 +88,7 @@ TEST_CASE("the naming box shows twelve letters inside the name's box in both ski
 
 TEST_CASE("the original look's player page widens the name's box for a name past six letters") {
   Screen screen{"pause_menu"};
-  screen.ui->setSetting("ui_skin", std::string{"original"});
+  screen.skin("original");
   screen.ui->setSetting("player.name", std::string{LongName});
   screen.ui->show("pause_menu", true);
   screen.frames();

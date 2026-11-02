@@ -559,7 +559,8 @@ button:focus .original-look, button.original-look:focus {
 }
 .tech-heading { position: absolute; left: 21dp; top: 3dp; color: #fff371; font-size: 36dp; }
 #final-heading { top: 219dp; width: 870dp; padding-top: 0; border-width: 0; }
-.tech-columns { position: absolute; left: 0; top: 36dp; width: 894dp; height: 24dp; font-size: 18dp; }
+/* The original's font for the column names when they are text (the modern look this skin extends gives them its own). */
+.tech-columns { position: absolute; left: 0; top: 36dp; width: 894dp; height: 24dp; font-family: original-look; font-size: 18dp; }
 #final-columns { top: 237dp; }
 .tech-row { position: absolute; left: 0; width: 894dp; height: 45dp; font-size: 36dp; }
 #tech-row-0 { top: 66dp; }
