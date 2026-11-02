@@ -56,6 +56,10 @@ inline constexpr std::string_view UnusableUiSkin = "game: cannot use the UI skin
 inline constexpr std::string_view UnknownSavedMinimap =
     "game: the saved minimap mode '{}' is unknown; using auto";
 
+// What walks the player (walk_control.cpp): a saved value that is not keys or mouse.
+inline constexpr std::string_view UnknownSavedWalkControl =
+    "game: the saved walk control '{}' is unknown; walking with the keys";
+
 // Free exploration (free_exploration.cpp) on from the start, by --explore or the saved setting.
 inline constexpr std::string_view FreeExplorationAtStart =
     "game: free exploration on: the scripts' map changes go anywhere they can, whatever the story";

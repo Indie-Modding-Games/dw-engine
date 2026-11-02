@@ -153,6 +153,10 @@ local options = {
   ["canonical-stages"] = function(_step)
     ui.send("canonical_stages", ui.setting("canonical_stages") ~= true)
   end,
+  -- Walk with: the keyboard and the pad (keys, the default) or the mouse, never both.
+  ["walk-control"] = function(_step)
+    ui.send("walk_control", ui.setting("walk_control") == "mouse" and "keys" or "mouse")
+  end,
 }
 
 local function can_sleep()
@@ -1489,6 +1493,8 @@ local function refresh(document)
   document:get("translated-signs-value"):set_text(on_off(ui.setting("translated_signs")))
   document:get("status-extras-value"):set_text(on_off(ui.setting("status_extras") ~= false))
   document:get("canonical-stages-value"):set_text(on_off(canonical_stages()))
+  local walk = ui.setting("walk_control") == "mouse" and "mouse" or "keys"
+  document:get("walk-control-value"):set_text(t("pause_menu.walk_control." .. walk))
   refresh_player(document)
 end
 

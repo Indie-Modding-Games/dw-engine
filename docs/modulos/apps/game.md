@@ -591,6 +591,20 @@ digits as HH:MM while the option is on` (`engine/ui/tests/ui_tests.cpp`), `one p
 the rest of it but the panel round it` (`engine/ui/tests/text_fit_tests.cpp`) y los ajustes del usuario
 (`apps/game/tests/user_settings_tests.cpp`).
 
+## Caminar con teclado o ratón
+
+Opción de dwe (el original solo tiene el mando): «Caminar con» (`walk_control` en `settings.yaml`: `keys` o
+`mouse`; `apps/game/src/walk_control.hpp`) dice qué mueve al jugador en el campo, y nunca son los dos a la vez. Por
+defecto es `keys`, como el original: WASD, las flechas y el mando lo mueven, y un clic en el suelo no lo lleva a
+ningún sitio ni lo arrastra al mantenerlo, así que un clic perdido nunca echa a andar al jugador. Con `mouse`, el clic
+en el suelo lo lleva allí y mantenerlo lo arrastra, y las direcciones del teclado y del mando no lo mueven. Los menús y
+los diálogos aceptan teclas y clics con las dos (un clic sigue siendo confirmar, y cerca del jugador habla o usa lo que
+tiene delante). Está en las opciones del menú de pausa (fila `walk-control`). Cambiarla suelta el destino que llevara
+el jugador (`WalkControlChanger`, `Field::dropMoveTarget`), así que no sigue andando hacia un clic de antes. Un
+autotest no lee `settings.yaml`: usa `mouse` en las rutas de ratón y `keys` en las demás, o lo que diga
+`walk_control` en la ruta. Tests: `apps/game/tests/walk_control_tests.cpp` (los dos modos y el cambio, que suelta el
+destino); ruta `route-walk-control.yaml`.
+
 ## Minimapa bajo las ventanas
 
 Regla de dwe (el original no tiene minimapa): el minimapa del HUD nunca se dibuja encima de una ventana, con cualquier

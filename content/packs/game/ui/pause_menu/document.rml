@@ -524,6 +524,9 @@
 				<button id="canonical-stages" class="option" onclick="adjust(document, 'canonical-stages', 1)">
 					<span class="label" text-key="pause_menu.canonical_stages"></span><span class="value" id="canonical-stages-value"></span>
 				</button>
+				<button id="walk-control" class="option" onclick="adjust(document, 'walk-control', 1)">
+					<span class="label" text-key="pause_menu.walk_control"></span><span class="value" id="walk-control-value"></span>
+				</button>
 				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 

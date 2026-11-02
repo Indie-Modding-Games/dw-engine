@@ -55,6 +55,9 @@ translated_signs: "Translated signs"
 status_extras: "Status extras"
 # Canonical stages: the chart names the stages as the series does and draws a Mega box (off by default).
 canonical_stages: "Canonical stages"
+walk_control: "Walk with"
+walk_control.keys: "Keyboard/pad"
+walk_control.mouse: "Mouse"
 
 year_label: "Year"
 day_label: "Day"

@@ -162,6 +162,10 @@ struct AutotestRoute {
   // Whether a new game from the main menu asks the opening's questions and the names first
   // (new_game_scene), as without a route; otherwise it starts without them.
   bool newGameScene = false;
+  // What walks the player (walk_control: keys, mouse; walk_control.hpp): the mouse for a mouse
+  // route, the keys otherwise. With the keys, a click on the ground (click: [x, z]) gives the walk
+  // order itself, as a shortcut of the route like place().
+  std::optional<bool> walksWithMouse;
   // How a new game starts (new_game); without it, on the seeded chain (a free field), so only
   // routes through the opening say original.
   std::optional<session::NewGameChain> newGameChain;
@@ -242,6 +246,12 @@ public:
   [[nodiscard]] bool asksNewGameRules() const { return route_.newGameRules; }
   // Whether a new game asks the opening's questions (AutotestRoute::newGameScene).
   [[nodiscard]] bool asksNewGameScene() const { return route_.newGameScene; }
+  // Whether the mouse walks the player (AutotestRoute::walksWithMouse).
+  [[nodiscard]] bool walksWithMouse() const {
+    return route_.walksWithMouse.value_or(route_.device == AutotestDevice::Mouse);
+  }
+  // The ground point of a click step the keys' walk control does not take as a click, once.
+  std::optional<glm::vec3> takeWalkOrder() { return std::exchange(walkOrder_, std::nullopt); }
   // Whether the game's movies play (AutotestRoute::movies).
   [[nodiscard]] bool playsMovies() const { return route_.movies; }
 
@@ -332,6 +342,7 @@ private:
   void failStep(std::string_view problem);
 
   AutotestRoute route_;
+  std::optional<glm::vec3> walkOrder_;
   std::optional<std::filesystem::path> shots_;
   std::vector<std::string> skipKinds_;
   std::optional<std::string> result_; // empty on success, else the failure

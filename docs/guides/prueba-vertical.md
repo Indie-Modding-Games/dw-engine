@@ -59,9 +59,9 @@ para escribir los [carteles](carteles.md)).
 
 | | Teclado y ratón | Mando |
 |---|---|---|
-| Moverse (relativo a la cámara) | WASD o flechas | Stick izquierdo o cruceta |
+| Moverse (relativo a la cámara; con la opción «Caminar con: Teclado/mando», la de por defecto) | WASD o flechas | Stick izquierdo o cruceta |
 | Andar en vez de correr | Mayúsculas (mantener) | Botón oeste (X en Xbox, cuadrado) o RB/R1 (mantener) |
-| Ir a un punto | Clic izquierdo en el suelo; mantener y mover lo arrastra | |
+| Ir a un punto (con «Caminar con: Ratón»; entonces las teclas y el mando no mueven al jugador) | Clic izquierdo en el suelo; mantener y mover lo arrastra | |
 | Olvidar el punto | Esc o clic derecho | Este (B, círculo) |
 | Menú | Tab o el botón «Menú» del HUD | Norte (Y, triángulo) |
 | Pausa (caja «Pause», todo se congela) | P o Pausa | Start |
@@ -126,6 +126,8 @@ que se puede seguir usando el escritorio; un mando real sí llega. Las rutas de 
   nada), escribe los dos nombres con clics en las letras y en OK y pasa las páginas hasta File City.
 - `route-mouse-dialogue.yaml` (con `--new-game --new-game-chain seeded --start trai00`): habla con Koromon en el
   gimnasio, elige la segunda opción con un clic y comprueba que el jugador no echa a andar al acabar.
+- `route-walk-control.yaml`: la opción «Caminar con»: con el teclado (por defecto) un clic en el suelo no mueve al
+  jugador; la cambia a ratón en el menú de pausa y comprueba que las flechas ya no lo mueven y un clic sí.
 - `route-fade.yaml`: entra en la casa del anciano con el ratón y hace una captura en mitad del fundido, con el nombre
   del mapa a la vista en el idioma del juego (`--lang`), y otra al acabar.
 - `route-language.yaml`: empieza en el menú principal (`main_menu: true`), cambia el idioma desde él y lo devuelve,
@@ -738,6 +740,7 @@ language_first: false     # true (con boot_screen): antes, la caja de idiomas, c
 new_game_rules: false     # true (con main_menu): la partida nueva pasa por la pantalla de reglas (si no, empieza con las del original)
 new_game: seeded          # original: la partida nueva corre la apertura (por defecto seeded, el campo libre)
 new_game_scene: false     # true (con main_menu): la partida nueva pasa por las preguntas y los nombres de Jijimon
+walk_control: keys        # keys | mouse: qué mueve al jugador (por defecto mouse si device es mouse, si no keys)
 load_save: save.yaml      # empieza cargando esa partida (relativa a la ruta), sin main_menu ni new_game
 movies: false             # true: las películas del juego salen como sin ruta (los créditos del final)
 text_fit: false           # true: cada captura comprueba además que los textos caben (como expect_text_fits: all)
@@ -768,7 +771,7 @@ steps:
 | `resize: [ancho, alto]` | Cambia la ventana y espera a que el render tenga ese tamaño |
 | `fullscreen: true \| false` | Pantalla completa |
 | `press`, `release`, `tap: {key \| button}`, `axis: {axis, value}`, `click: [x, z]` | Controles sueltos: teclas, botones y ejes del mando virtual, clic en un punto del suelo |
-| `click: {element: "<documento>#<id>"}`, `click: {window: [x, y]}`, `hover: {element \| window}` | Clic en el centro de un elemento de la UI ya maquetado (`story_textbox#row-2`, `naming_box#cell-1-4`, `naming_box#button-ok`) o en un punto de la ventana, en píxeles; `hover` solo lleva el puntero allí, sin pulsar. No necesitan el campo, así que sirven en la apertura |
+| `click: {element: "<documento>#<id>"}`, `click: {window: [x, y]}`, `hover: {element \| window}` | Clic en el centro de un elemento de la UI ya maquetado (`story_textbox#row-2`, `naming_box#cell-1-4`, `naming_box#button-ok`) o en un punto de la ventana, en píxeles; `hover` solo lleva el puntero allí, sin pulsar. No necesitan el campo, así que sirven en la apertura. Con `walk_control: keys`, `click: [x, z]` (el suelo) no hace clic: da la orden de ir allí directamente, como un atajo de la ruta igual que `place` |
 
 Las coordenadas son del mundo del motor (x, z en el suelo; 100 unidades por celda de colisión).
 

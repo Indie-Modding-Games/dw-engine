@@ -700,8 +700,8 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   AutotestRoute route;
   reader.expectKeys(*document, "route", {"name", "device", "steps"},
                     {"gamepad", "timeout", "main_menu", "boot_screen", "language_first",
-                     "new_game_rules", "new_game_scene", "new_game", "load_save", "movies",
-                     "text_fit"});
+                     "new_game_rules", "new_game_scene", "walk_control", "new_game", "load_save",
+                     "movies", "text_fit"});
   route.name = reader.text(reader.field(*document, "name"));
   const core::YamlNode& device = reader.field(*document, "device");
   if (const auto known = deviceNamed(reader.text(device))) {
@@ -741,6 +741,14 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
     route.newGameScene = reader.boolean(*scene);
     if (route.newGameScene && !route.mainMenu) {
       reader.fail(*scene, "new_game_scene needs main_menu: true");
+    }
+  }
+  if (const core::YamlNode* walk = document->find("walk_control")) {
+    const std::string control = reader.text(*walk);
+    if (control == "mouse" || control == "keys") {
+      route.walksWithMouse = control == "mouse";
+    } else {
+      reader.fail(*walk, "walk_control is keys or mouse");
     }
   }
   if (const core::YamlNode* movies = document->find("movies")) {
@@ -1856,6 +1864,11 @@ bool Autotest::clickStep(const AutotestHost& host, const AutotestStep& step) {
     window = step.point;
   } else {
     const glm::vec2 point = step.point.value_or(glm::vec2{0.0F});
+    if (!walksWithMouse()) {
+      // The keys walk the player, so a click would not: the step gives the walk order itself.
+      walkOrder_ = glm::vec3{point.x, 0.0F, point.y};
+      return true;
+    }
     window = host.scene->worldToWindow({point.x, 0.0F, point.y});
   }
   if (!window) {

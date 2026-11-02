@@ -1,0 +1,45 @@
+# What walks the player (docs/modulos/apps/game.md, «Caminar con teclado o ratón»): the keyboard and the pad by
+# default, the mouse once the option says so, never both. With the keys a click on the ground does not walk; the option
+# changes in the pause menu; with the mouse the keys do not walk and a click does.
+name: walk-control
+device: keyboard
+timeout: 300
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {walk_control: "keys"}
+  # A click on the ground, at a point of the window: the player stays.
+  - click: {window: [400, 520]}
+  - wait: {seconds: 1.5}
+  - wait: {player_near: [-2500, 2525], radius: 5, timeout: 0.5}
+  - screenshot: keys-click-stays
+  - walk_to: {point: [-330, 1950], radius: 40}
+  - menu: open
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - wait: {seconds: 0.3}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.3}
+  - menu_select: walk-control
+  - expect_setting: {walk_control: "mouse"}
+  - screenshot: option-mouse
+  - menu: close
+  - wait: {menu_open: false, seconds: 0.5}
+  # The keys no longer walk (place() takes the original's axes, its z the other way round).
+  - script: place("player -330 -1950 0")
+  - wait: {seconds: 0.5}
+  - hold: {keys: [up], ticks: 60}
+  - wait: {seconds: 0.5}
+  - wait: {player_near: [-330, 1950], radius: 5, timeout: 0.5}
+  - screenshot: mouse-keys-stay
+  # A click does.
+  - walk_to: {point: [300, 1950], radius: 40, device: mouse}
+  - screenshot: mouse-click-walks

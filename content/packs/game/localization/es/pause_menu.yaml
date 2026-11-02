@@ -55,6 +55,9 @@ translated_signs: "Carteles traducidos"
 status_extras: "Extras de la ficha"
 # Etapas canónicas: el árbol nombra las etapas como la serie y dibuja una caja Mega (apagada por defecto).
 canonical_stages: "Etapas canónicas"
+walk_control: "Caminar con"
+walk_control.keys: "Teclado/mando"
+walk_control.mouse: "Ratón"
 
 year_label: "Año"
 day_label: "Día"

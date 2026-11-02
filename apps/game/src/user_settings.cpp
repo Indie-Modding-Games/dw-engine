@@ -33,6 +33,7 @@ constexpr std::string_view EvolutionRequirementsKey = "evolution_requirements";
 constexpr std::string_view TranslatedSignsKey = "translated_signs";
 constexpr std::string_view StatusExtrasKey = "status_extras";
 constexpr std::string_view CanonicalStagesKey = "canonical_stages";
+constexpr std::string_view WalkControlKey = "walk_control";
 
 } // namespace
 
@@ -84,6 +85,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* stages = tree->find(CanonicalStagesKey)) {
       settings.canonicalStages = reader.boolean(*stages);
+    }
+    if (const core::YamlNode* walk = tree->find(WalkControlKey)) {
+      settings.walkControl = reader.text(*walk);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -138,6 +142,9 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.canonicalStages) {
     root.set(std::string{CanonicalStagesKey},
              core::YamlNode::scalar(*settings.canonicalStages ? "true" : "false"));
+  }
+  if (settings.walkControl) {
+    root.set(std::string{WalkControlKey}, core::YamlNode::scalar(*settings.walkControl));
   }
   return core::emitYaml(root);
 }

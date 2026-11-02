@@ -84,6 +84,7 @@
 #include "title_screen.hpp"
 #include "ui_skin_setting.hpp"
 #include "user_settings.hpp"
+#include "walk_control.hpp"
 
 namespace dwe::app {
 namespace {
@@ -700,6 +701,12 @@ int runGame(const Options& requested) {
   // (title.language_first; an addition, as a remaster's); an autotest only when its route asks.
   (*ui)->setSetting("title.language_first", autotest == nullptr || autotest->asksLanguageFirst());
   MinimapChanger minimapChanger{userSettings, settingsFile};
+  WalkControlChanger walkControl{userSettings, settingsFile};
+  // An autotest walks with the device of its route (it reads no settings file).
+  if (autotest) {
+    walkControl.use(autotest->walksWithMouse() ? WalkControl::Mouse : WalkControl::Keys, nullptr);
+  }
+  (*ui)->setSetting(WalkControlSetting, std::string{walkControlName(walkControl.control())});
   (*ui)->setSetting(MinimapSetting, std::string{startMinimapMode(userSettings.minimap)});
   (*ui)->setSetting("minimap_size", std::string{"medium"});
   (*ui)->setSetting("fullscreen", settings.fullscreen);
@@ -1120,7 +1127,9 @@ int runGame(const Options& requested) {
       }
       input.handle(event);
       if (!(*ui)->capturesInput() && flow.playing() != nullptr) {
-        mouse.handle(event, flow.playing()->scene(), flow.playing()->walksByPointer());
+        mouse.handle(event, flow.playing()->scene(),
+                     walkControl.control() == WalkControl::Mouse &&
+                         flow.playing()->walksByPointer());
       }
     }
 
@@ -1241,20 +1250,27 @@ int runGame(const Options& requested) {
       FishingButtons fishing;
       // Something took the player's control (a talk, a scene, a screen): a held button stops
       // steering and a click not yet taken is dropped.
-      if (play != nullptr && !play->walksByPointer()) {
+      if (play != nullptr &&
+          (walkControl.control() != WalkControl::Mouse || !play->walksByPointer())) {
         mouse.release();
       }
       if (play != nullptr && !(*ui)->capturesInput()) {
         const input::Vector2 move = input.vector("move_left", "move_right", "move_up", "move_down");
         // Up gives a negative y; the field's y points away from the camera.
-        intent.stick = {move.x, -move.y};
+        const WalkOrder walk =
+            walkOrderOf(walkControl.control(),
+                        {.keys = {move.x, -move.y},
+                         .clicked = mouse.take(),
+                         .steered = mouse.steer(
+                             play->scene(),
+                             glm::vec2{static_cast<float>((*renderer)->targetExtent().width),
+                                       static_cast<float>((*renderer)->targetExtent().height)})});
+        intent.stick = walk.stick;
         intent.run = !input.isDown("walk");
-        intent.moveTarget = mouse.take();
-        if (const auto held = mouse.steer(
-                play->scene(), glm::vec2{static_cast<float>((*renderer)->targetExtent().width),
-                                         static_cast<float>((*renderer)->targetExtent().height)});
-            held && move.x == 0.0F && move.y == 0.0F) {
-          intent.stick = *held;
+        intent.moveTarget = walk.moveTarget;
+        // A route's click on the ground walks there whatever walks the player (Autotest).
+        if (autotest && !intent.moveTarget) {
+          intent.moveTarget = autotest->takeWalkOrder();
         }
         // Escape, the right button or East drops a click-to-move target.
         intent.cancelTarget = input.wasPressed("cancel");
@@ -1295,6 +1311,13 @@ int runGame(const Options& requested) {
 
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
       if (flow.playing() != nullptr && flow.playing()->handle(command)) {
+        continue;
+      }
+      if (command.name == WalkControlSetting) {
+        PlaySession* play = flow.playing();
+        walkControl.change(command.value, play != nullptr ? &play->scene().field() : nullptr);
+        (*ui)->setSetting(WalkControlSetting, std::string{walkControlName(walkControl.control())});
+        mouse.release();
         continue;
       }
       if (flow.playing() == nullptr && title.handle(command)) {
