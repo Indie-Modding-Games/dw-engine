@@ -308,6 +308,10 @@
 #player-medals-line { left: 336dp; top: 498dp; }
 .player-inset { position: absolute; height: 45dp; box-sizing: border-box; border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0; background-color: #354b5c; }
 #player-name-box { left: 189dp; top: 18dp; width: 228dp; }
+/* A name longer than the original's six letters (the engine's long names, up to twelve) widens the box by a letter's
+   12 pixels each. */
+#panel.on-player.long-player-name #player-name-box { width: 444dp; }
+#panel.on-player.long-player-name #player-name { width: 432dp; }
 #player-level-box { left: 600dp; top: 96dp; width: 84dp; }
 #player-rank-box { left: 561dp; top: 150dp; width: 300dp; }
 #player-raised-box { left: 600dp; top: 207dp; width: 84dp; }

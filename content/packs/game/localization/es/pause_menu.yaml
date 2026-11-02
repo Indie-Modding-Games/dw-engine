@@ -58,6 +58,8 @@ canonical_stages: "Etapas canónicas"
 walk_control: "Caminar con"
 walk_control.keys: "Teclado/mando"
 walk_control.mouse: "Ratón"
+# Nombres largos: la caja de nombres admite hasta doce letras en vez de seis (encendido por defecto).
+long_names: "Nombres largos"
 
 year_label: "Año"
 day_label: "Día"

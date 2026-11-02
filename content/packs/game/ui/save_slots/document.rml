@@ -3,6 +3,7 @@
 	<title>Save slots</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/fit_text.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -34,7 +35,7 @@
 		<div id="more-down" class="hidden" onclick="scroll_rows(document, 1)"></div>
 		<!-- The original look's box with the focused save's summary. -->
 		<div id="detail" class="hidden">
-			<p id="detail-line-1"></p>
+			<p id="detail-line-1"><span id="detail-line-1-text"></span></p>
 			<p id="detail-line-2"></p>
 		</div>
 	</div>

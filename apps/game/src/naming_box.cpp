@@ -53,7 +53,12 @@ std::vector<std::string> lettersOfName(std::string_view name, std::size_t length
 } // namespace
 
 NamingBox::NamingBox(ui::Ui& ui, NamingRules rules, SceneSounds sounds)
-    : ui_(&ui), rules_(std::move(rules)), sounds_(sounds) {}
+    : ui_(&ui), rules_(std::move(rules)), length_(rules_.length), openLength_(rules_.length),
+      sounds_(sounds) {}
+
+void NamingBox::setLongNames(bool on) {
+  length_ = nameLength(rules_, on);
+}
 
 NamingBox::~NamingBox() {
   close();
@@ -61,7 +66,8 @@ NamingBox::~NamingBox() {
 
 void NamingBox::open(NameTarget target, std::string_view name) {
   target_ = target;
-  letters_ = lettersOfName(name, rules_.length);
+  openLength_ = length_;
+  letters_ = lettersOfName(name, openLength_);
   side_ = 0;
   row_ = 0;
   column_ = 0;
@@ -299,12 +305,12 @@ void NamingBox::write(const std::string& letter) {
     return;
   }
   // The last letter is written again once the name is full; then the cursor goes to OK.
-  if (letters_.size() == rules_.length) {
+  if (letters_.size() == openLength_) {
     letters_.back() = letter;
   } else {
     letters_.push_back(letter);
   }
-  if (letters_.size() == rules_.length) {
+  if (letters_.size() == openLength_) {
     goTo(Button::Ok);
   }
   play(sounds_.confirm);
@@ -315,7 +321,7 @@ void NamingBox::deleteLast() {
     return;
   }
   // namingDeleteLast: the American version steps back before it clears, so a full name loses two.
-  if (rules_.fullDeleteTakesTwo && letters_.size() == rules_.length && letters_.size() > 1) {
+  if (rules_.fullDeleteTakesTwo && letters_.size() == openLength_ && letters_.size() > 1) {
     letters_.resize(letters_.size() - 2);
   } else {
     letters_.pop_back();
@@ -349,7 +355,7 @@ void NamingBox::publish() {
   screens::ScreenSettings settings{
       {.name = std::format("{}.title", Prefix),
        .value = std::string{target_ == NameTarget::Tamer ? TamerTitle : PartnerTitle}},
-      {.name = std::format("{}.length", Prefix), .value = static_cast<double>(rules_.length)},
+      {.name = std::format("{}.length", Prefix), .value = static_cast<double>(openLength_)},
       {.name = std::format("{}.rows", Prefix), .value = static_cast<double>(sideRows())},
       {.name = std::format("{}.columns", Prefix), .value = static_cast<double>(columns)},
       {.name = std::format("{}.cursor_row", Prefix),
@@ -359,7 +365,7 @@ void NamingBox::publish() {
       {.name = std::format("{}.cursor_button", Prefix),
        .value = button_ ? static_cast<double>(std::to_underlying(*button_)) : NoCell},
   };
-  for (std::size_t letter = 0; letter < rules_.length; ++letter) {
+  for (std::size_t letter = 0; letter < openLength_; ++letter) {
     settings.push_back({.name = std::format("{}.name.{}", Prefix, letter),
                         .value = letter < letters_.size() ? letters_[letter] : std::string{}});
   }

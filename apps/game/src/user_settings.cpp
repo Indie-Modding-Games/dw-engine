@@ -34,6 +34,7 @@ constexpr std::string_view TranslatedSignsKey = "translated_signs";
 constexpr std::string_view StatusExtrasKey = "status_extras";
 constexpr std::string_view CanonicalStagesKey = "canonical_stages";
 constexpr std::string_view WalkControlKey = "walk_control";
+constexpr std::string_view LongNamesKey = "long_names";
 
 } // namespace
 
@@ -88,6 +89,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* walk = tree->find(WalkControlKey)) {
       settings.walkControl = reader.text(*walk);
+    }
+    if (const core::YamlNode* names = tree->find(LongNamesKey)) {
+      settings.longNames = reader.boolean(*names);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -145,6 +149,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   }
   if (settings.walkControl) {
     root.set(std::string{WalkControlKey}, core::YamlNode::scalar(*settings.walkControl));
+  }
+  if (settings.longNames) {
+    root.set(std::string{LongNamesKey},
+             core::YamlNode::scalar(*settings.longNames ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

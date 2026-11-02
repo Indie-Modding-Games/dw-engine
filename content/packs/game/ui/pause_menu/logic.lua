@@ -157,6 +157,11 @@ local options = {
   ["walk-control"] = function(_step)
     ui.send("walk_control", ui.setting("walk_control") == "mouse" and "keys" or "mouse")
   end,
+  -- Long names: the naming box takes names of up to twelve letters (on by default; off keeps the
+  -- original's six).
+  ["long-names"] = function(_step)
+    ui.send("long_names", ui.setting("long_names") == false)
+  end,
 }
 
 local function can_sleep()
@@ -1495,12 +1500,16 @@ local function refresh(document)
   document:get("canonical-stages-value"):set_text(on_off(canonical_stages()))
   local walk = ui.setting("walk_control") == "mouse" and "mouse" or "keys"
   document:get("walk-control-value"):set_text(t("pause_menu.walk_control." .. walk))
+  document:get("long-names-value"):set_text(on_off(ui.setting("long_names") ~= false))
   refresh_player(document)
 end
 
 -- The PLAYER page's own fields: its name, level, rank, bits, counts, items and play time.
 refresh_player = function(document)
-  document:get("player-name"):set_text(ui.setting("player.name") or "")
+  local name = ui.setting("player.name") or ""
+  document:get("player-name"):set_text(name)
+  -- A name longer than the original's six letters (the engine's long names) widens its box.
+  document:get("panel"):set_class("long-player-name", ((utf8 and utf8.len(name)) or #name) > 6)
   local level = ui.setting("player.level")
   document
     :get("player-level")

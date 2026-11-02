@@ -416,7 +416,8 @@ cancelar borra la última, y con el nombre lleno borra dos, como la versión ame
 (el círculo del original) a Atrás, y `extra` (su cuadrado) borra todo el nombre. A la vez se
 puede teclear: las letras de la rejilla y el espacio se escriben (otra tecla suena rechazada) e Intro acepta el
 nombre si se ha tecleado algo desde el último movimiento del cursor. El nombre del jugador empieza vacío, como en la
-versión americana.
+versión americana. Con la opción [nombres largos](#nombres-largos) (encendida por defecto) admite 12 letras en vez de
+6.
 
 Los sonidos son los del original (`playSound`, banco 0, sección `sounds`): cursor 2, confirmar 3 (una página, una
 elección, una letra, borrar), rechazo 0xB (cancelar una elección, porque la escena tiene puesto el disparador 49; un
@@ -699,6 +700,30 @@ inglés, de las opciones del menú de pausa, guardado en los ajustes del usuario
 `PlaySession` (`StatusExtrasSetting`). Encendido, la ficha del compañero enseña su barra de cansancio y sus errores de
 cuidado, que el original esconde; apagado, la ficha es la del original. Dónde va cada uno en cada piel y la ruta:
 [screens.md](screens.md#extras-de-la-ficha).
+
+## Nombres largos
+
+Mejora opcional, encendida por defecto (no cambia ninguna regla): el ajuste `long_names` (fila «Nombres largos»,
+«Long names» en inglés, de las opciones del menú de pausa, guardado en los ajustes del usuario) llega como ajuste de la
+UI desde `PlaySession` (`LongNamesSetting`). Encendido, la caja de nombres (la de la entrevista y la de la rutina 32)
+admite hasta 12 letras (`LongNameLength`, `naming_box.hpp`); apagado, las 6 del original (`naming.length` de
+`rules/original/new_game_scene.yaml`, `initializeNamingBuffer`). Doce es lo que cabe en la caja del nombre del
+original (149 píxeles, una letra cada 12), así que la caja de nombres no cambia de tamaño en ninguna piel. El cambio
+vale desde la siguiente caja que se abra; un nombre ya dado se queda como está.
+
+Dónde se dibuja un nombre y qué hace uno largo:
+
+| Lugar | Qué hace |
+|---|---|
+| Caja de nombres (`ui/naming_box`) | 12 casillas; caben en la caja del nombre de las dos pieles |
+| Cuadros de diálogo (`ui/story_textbox`, también la charla del torneo) | Una fila que el nombre hace más ancha que la caja se estrecha desde su borde izquierdo (`ui/common/fit_text.lua`); las filas que caben no se tocan, así que con nombres de 6 letras todo queda como el original |
+| Página del jugador (aspecto original) | Con más de 6 letras la caja del nombre crece 12 píxeles por letra (clase `long-player-name`) |
+| Ficha del compañero | Su caja ya cabe 12 letras (crece para un nombre de especie más largo) |
+| Lista de partidas (`ui/save_slots`) | La línea «nombre (especie)» se estrecha si no cabe |
+
+Medido: ruta de prueba con el jugador «WWWWWWWWWWWW» y el compañero «Bartholomews» (la clave de ruta `names`), y la
+caja de nombres en la entrevista (la clave `new_game_scene: true`); capturas antes/después
+en las dos pieles.
 
 ## Contenido oculto
 

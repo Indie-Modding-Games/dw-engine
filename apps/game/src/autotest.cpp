@@ -700,7 +700,7 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   AutotestRoute route;
   reader.expectKeys(*document, "route", {"name", "device", "steps"},
                     {"gamepad", "timeout", "main_menu", "boot_screen", "language_first",
-                     "new_game_rules", "new_game_scene", "walk_control", "new_game", "load_save",
+                     "new_game_rules", "new_game_scene", "walk_control", "new_game", "names", "load_save",
                      "movies", "text_fit"});
   route.name = reader.text(reader.field(*document, "name"));
   const core::YamlNode& device = reader.field(*document, "device");
@@ -763,10 +763,25 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
       reader.fail(*newGame, "new_game must be original or seeded");
     }
   }
+  if (const core::YamlNode* names = document->find("names")) {
+    if (reader.expectKeys(*names, "names", {}, {"player", "partner"})) {
+      session::NewGameChoice choice;
+      if (const core::YamlNode* player = names->find("player")) {
+        choice.tamerName = reader.text(*player);
+      }
+      if (const core::YamlNode* partner = names->find("partner")) {
+        choice.partnerName = reader.text(*partner);
+      }
+      route.names = std::move(choice);
+    }
+  }
   if (const core::YamlNode* save = document->find("load_save")) {
     route.loadSave = std::filesystem::path{reader.text(*save)};
     if (route.mainMenu || route.newGameChain) {
       reader.fail(*save, "load_save starts a saved game: no main_menu or new_game with it");
+    }
+    if (route.names) {
+      reader.fail(*save, "load_save keeps the save's names: no names with it");
     }
   }
   if (const core::YamlNode* timeout = document->find("timeout")) {

@@ -10,6 +10,7 @@
 #include <dwe/render/renderer.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/script/script_vm.hpp>
+#include <dwe/session/game_session.hpp>
 #include <dwe/session/story_scenes.hpp>
 #include <dwe/ui/ui.hpp>
 
@@ -169,6 +170,9 @@ struct AutotestRoute {
   // How a new game starts (new_game); without it, on the seeded chain (a free field), so only
   // routes through the opening say original.
   std::optional<session::NewGameChain> newGameChain;
+  // The names a new game starts with (names: {player, partner}), as if the opening's naming box had
+  // asked for them; an autotest skips that box, so without it the names stay unset.
+  std::optional<session::NewGameChoice> names;
   // A save file to start from (load_save: <path>, relative to the route), as a bug report's route
   // does: the game loads it instead of starting a new game, and the field opens where it was saved.
   std::optional<std::filesystem::path> loadSave;
@@ -258,6 +262,11 @@ public:
   // How the route's new game starts (AutotestRoute::newGameChain), if it says.
   [[nodiscard]] std::optional<session::NewGameChain> newGameChain() const {
     return route_.newGameChain;
+  }
+
+  // The names the route's new game starts with (AutotestRoute::names), if it says.
+  [[nodiscard]] const std::optional<session::NewGameChoice>& newGameNames() const {
+    return route_.names;
   }
 
   // The save the route starts from (AutotestRoute::loadSave), relative paths already made relative

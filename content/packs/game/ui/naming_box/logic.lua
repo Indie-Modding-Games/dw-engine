@@ -10,7 +10,8 @@
 
 local max_rows = 9
 local max_columns = 10
-local max_letters = 8
+-- The longest name the game asks for: the engine's long names (twelve letters, naming_box.hpp).
+local max_letters = 12
 
 local function number(name, default)
   return math.floor(ui.setting(name) or default)

@@ -58,6 +58,8 @@ canonical_stages: "Canonical stages"
 walk_control: "Walk with"
 walk_control.keys: "Keyboard/pad"
 walk_control.mouse: "Mouse"
+# Long names: the naming box takes names of up to twelve letters instead of six (on by default).
+long_names: "Long names"
 
 year_label: "Year"
 day_label: "Day"

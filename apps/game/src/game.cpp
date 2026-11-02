@@ -805,7 +805,7 @@ int runGame(const Options& requested) {
     if (auto started = flow.play({.load = options.load,
                                   .backup = false,
                                   .saveTo = std::nullopt,
-                                  .choice = std::nullopt});
+                                  .choice = autotest ? autotest->newGameNames() : std::nullopt});
         !started) {
       core::logError("game: {}", started.error().message);
       return EXIT_FAILURE;
@@ -899,7 +899,10 @@ int runGame(const Options& requested) {
       beginNewGame(start);
       return;
     }
-    auto made = NewGameInterview::create(**renderer, **ui, files, *newGameScene, &openingSound);
+    NewGameSceneRules sceneRules = *newGameScene;
+    sceneRules.naming.length = nameLength(sceneRules.naming, userSettings.longNames.value_or(true));
+    auto made =
+        NewGameInterview::create(**renderer, **ui, files, std::move(sceneRules), &openingSound);
     if (!made) {
       core::logWarning("new game scene: {}; the game starts without the questions",
                        made.error().message);

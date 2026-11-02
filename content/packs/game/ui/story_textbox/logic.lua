@@ -64,8 +64,10 @@ local function fill_rows(document)
     end
     local prefix = "story_textbox.row." .. row
     local runs = row < count and number(prefix .. ".runs", 0) or 0
+    local spans = {}
     for run = 0, max_runs - 1 do
       local span = document:get("row-" .. row .. "-run-" .. run)
+      spans[#spans + 1] = span
       local entry = prefix .. ".run." .. run
       local text = run < runs and ui.setting(entry .. ".text") or ""
       span:set_text(text)
@@ -74,6 +76,8 @@ local function fill_rows(document)
         span:set_class("color-" .. index, index == color)
       end
     end
+    -- A row a long name made wider than the box is squeezed into it (common/fit_text.lua).
+    fit_text.fit(element, spans)
   end
 end
 
@@ -102,4 +106,8 @@ end
 
 function on_language(document)
   refresh(document)
+end
+
+function on_tick(_document, _seconds)
+  fit_text.tick()
 end

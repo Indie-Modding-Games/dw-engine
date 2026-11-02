@@ -52,6 +52,9 @@ struct UserSettings {
   // What walks the player in the field (walk_control: keys, mouse; walk_control.hpp): the keyboard
   // and the pad, or the mouse, never both; the keys when not chosen yet.
   std::optional<std::string> walkControl = std::nullopt;
+  // Long names (long_names: true, false): the naming box takes names of up to LongNameLength
+  // letters (naming_box.hpp) instead of the ruleset's six; on when not chosen yet.
+  std::optional<bool> longNames = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

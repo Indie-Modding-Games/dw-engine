@@ -19,6 +19,16 @@ namespace dwe::app {
 
 inline constexpr std::string_view NamingBoxDocument = "naming_box";
 
+// The longest name with the "Long names" option (an engine improvement, docs/modulos/apps/game.md):
+// twelve letters, as many as the original's name box holds at its 12-pixel spacing (149 pixels
+// wide); without the option the ruleset's length, six letters in the original.
+inline constexpr std::size_t LongNameLength = 12;
+
+// The letters a name may have under `rules`, with or without the "Long names" option.
+[[nodiscard]] inline std::size_t nameLength(const NamingRules& rules, bool longNames) {
+  return longNames && rules.length < LongNameLength ? LongNameLength : rules.length;
+}
+
 // Whose name the box asks for (script_menu.c: NAMING_BOX_FLAG bit 0).
 enum class NameTarget : std::uint8_t { Tamer, Partner };
 
@@ -43,6 +53,11 @@ public:
 
   // Where the box's sounds play (playSound); none plays without it.
   void setSound(game::story::SoundPort* sound) { sound_ = sound; }
+
+  // The "Long names" option: names of up to LongNameLength letters, or the ruleset's length. It
+  // applies from the next open().
+  void setLongNames(bool on);
+  [[nodiscard]] std::size_t length() const { return length_; }
 
   // Opens the box with the name so far (initializeNamingBuffer copies the current name).
   void open(NameTarget target, std::string_view name);
@@ -84,6 +99,10 @@ private:
 
   ui::Ui* ui_;
   NamingRules rules_;
+  // The letters a name may have: the ruleset's, or LongNameLength with the option.
+  std::size_t length_ = 0;
+  // The length open() last took, which the box keeps while it is open.
+  std::size_t openLength_ = 0;
   SceneSounds sounds_;
   game::story::SoundPort* sound_ = nullptr;
   NameTarget target_ = NameTarget::Tamer;

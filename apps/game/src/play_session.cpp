@@ -522,6 +522,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
     namingBox_ = std::make_unique<NamingBox>(*context.ui, std::move(newGameScene->naming),
                                              newGameScene->sounds);
     namingBox_->setSound(session.sound());
+    namingBox_->setLongNames(context.userSettings->longNames.value_or(true));
     storyScenes_.attachNaming(namingBox_.get(), &session);
   }
   // A loaded game's partner may be another species than the game pack's partner model.
@@ -567,6 +568,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   // The status page's extras (the tiredness and the care mistakes), on unless turned off.
   context_.ui->setSetting(StatusExtrasSetting, context.userSettings->statusExtras.value_or(true));
   context_.ui->setSetting(EvolutionActiveSetting, false);
+  // Long names in the naming box, on unless turned off.
+  context_.ui->setSetting(LongNamesSetting, context.userSettings->longNames.value_or(true));
   // The canonical stages on the chart, off unless turned on.
   context_.ui->setSetting(CanonicalStagesSetting,
                           context.userSettings->canonicalStages.value_or(false));
@@ -889,6 +892,19 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     if (const bool* canonical = std::get_if<bool>(&command.value)) {
       context_.ui->setSetting(CanonicalStagesSetting, *canonical);
       context_.userSettings->canonicalStages = *canonical;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    return true;
+  }
+  if (command.name == LongNamesSetting) {
+    if (const bool* longNames = std::get_if<bool>(&command.value)) {
+      if (namingBox_ != nullptr) {
+        namingBox_->setLongNames(*longNames);
+      }
+      context_.ui->setSetting(LongNamesSetting, *longNames);
+      context_.userSettings->longNames = *longNames;
       if (context_.settingsFile) {
         saveUserSettings(*context_.settingsFile, *context_.userSettings);
       }

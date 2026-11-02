@@ -741,6 +741,7 @@ new_game_rules: false     # true (con main_menu): la partida nueva pasa por la p
 new_game: seeded          # original: la partida nueva corre la apertura (por defecto seeded, el campo libre)
 new_game_scene: false     # true (con main_menu): la partida nueva pasa por las preguntas y los nombres de Jijimon
 walk_control: keys        # keys | mouse: qué mueve al jugador (por defecto mouse si device es mouse, si no keys)
+names: {player: Ana, partner: Rex}  # los nombres de la partida nueva, como si la caja de nombres los hubiera pedido
 load_save: save.yaml      # empieza cargando esa partida (relativa a la ruta), sin main_menu ni new_game
 movies: false             # true: las películas del juego salen como sin ruta (los créditos del final)
 text_fit: false           # true: cada captura comprueba además que los textos caben (como expect_text_fits: all)

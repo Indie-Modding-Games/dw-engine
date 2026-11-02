@@ -237,7 +237,9 @@ local function refresh_detail(document)
     lines[1] = t(mode() == "new" and "save.slots.original.in_use" or "save.slots.empty")
   end
   document:get("detail"):set_class("hidden", row == nil)
-  document:get("detail-line-1"):set_text(lines[1])
+  document:get("detail-line-1-text"):set_text(lines[1])
+  -- A long name may make the line wider than the box (common/fit_text.lua).
+  fit_text.fit(document:get("detail-line-1"), { document:get("detail-line-1-text") })
   document:get("detail-line-2"):set_text(lines[2])
   document:get("detail-line-2"):set_class("hidden", lines[2] == "")
 end
@@ -340,6 +342,7 @@ function on_tick(document, _seconds)
   if original(document) then
     refresh_detail(document)
   end
+  fit_text.tick()
 end
 
 function on_show(document)

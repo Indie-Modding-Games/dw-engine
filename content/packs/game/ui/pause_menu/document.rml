@@ -527,6 +527,9 @@
 				<button id="walk-control" class="option" onclick="adjust(document, 'walk-control', 1)">
 					<span class="label" text-key="pause_menu.walk_control"></span><span class="value" id="walk-control-value"></span>
 				</button>
+				<button id="long-names" class="option" onclick="adjust(document, 'long-names', 1)">
+					<span class="label" text-key="pause_menu.long_names"></span><span class="value" id="long-names-value"></span>
+				</button>
 				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 
