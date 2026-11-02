@@ -88,6 +88,10 @@ public:
   // Starts `clip` on its frame `frame` (0 the frame it starts) with `fraction` of a unit
   // (1/32768ths) carried on each axis: a run that starts where a trace of the original starts.
   void playFrom(std::int32_t clip, std::size_t frame, OriginalPoint fraction = {});
+  // partner.c: partnerTickIdle: held by a script (partner state 11), the partner starts its idle
+  // clip 0 once and stands on it; the clip partnerTickWalking wants (PARTNER_ANIMATION) is kept for
+  // when the script lets it go.
+  void standHeld();
   // map.c: initializePartnerWaypoint: no trail, and the player's cell is the last one seen.
   void forgetTrail(OriginalPoint player);
 

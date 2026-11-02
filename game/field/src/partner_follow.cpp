@@ -162,6 +162,10 @@ void PartnerFollow::playFrom(std::int32_t clip, std::size_t frame, OriginalPoint
   clip_.held = 0;
 }
 
+void PartnerFollow::standHeld() {
+  startClip(PartnerIdleClip);
+}
+
 void PartnerFollow::forgetTrail(OriginalPoint player) {
   trailCurrent_ = 0;
   trailCount_ = 0;

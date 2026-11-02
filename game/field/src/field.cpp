@@ -581,7 +581,7 @@ void Field::setPartnerClips(assets::ClipMotions clips) {
 }
 
 std::optional<PartnerClip> Field::partnerFollowClip() const {
-  if (!partnerFollowing_) {
+  if (!partnerFollowing_ && !scriptHeld_) {
     return std::nullopt;
   }
   return follow_.clip();

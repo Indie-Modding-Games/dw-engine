@@ -316,8 +316,9 @@ public:
   void setPartnerRandom(std::function<std::int32_t(std::int32_t)> randomBelow) {
     partnerRandom_ = std::move(randomBelow);
   }
-  // The clip the partner plays while it follows the player, by the original's id; nothing while
-  // something else moves it (a script, a care scene, making room).
+  // The clip the partner plays while it follows the player, or while a script holds it (its idle
+  // clip 0 from the hold's start, partner.c: partnerTickIdle), by the original's id; nothing while
+  // something else moves it (a care scene, making room).
   [[nodiscard]] std::optional<PartnerClip> partnerFollowClip() const;
   // Starts the partner's `clip` on its frame `frame` where it stands, with `fraction` of a unit
   // carried (the original's axes, 1/32768ths): where a trace of the original catches it in the

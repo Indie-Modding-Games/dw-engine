@@ -51,9 +51,12 @@ void Field::holdForScript(bool held) {
     moveTarget_.reset();
     path_.clear();
     // A held partner stands on its idle clip until the script picks one (partner.c:
-    // partnerTickIdle, partner state 11, which callDigimonRoutine's routines 1, 5, 6 and 8 set).
+    // partnerTickIdle, partner state 11, which scriptPauseGame sets through
+    // setMovementEnabled(1, 1), as callDigimonRoutine's routines 1, 5, 6 and 8 do): no follow and
+    // no gesture while the script runs, however long the talk lasts.
     registry.emplace_or_replace<ScriptedActor>(player_);
     registry.emplace_or_replace<ScriptedActor>(partner_);
+    follow_.standHeld();
   } else {
     // script_interp.c: tickScript gives control, the camera and the clock back.
     scriptCamera_.reset();

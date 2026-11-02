@@ -27,6 +27,8 @@ using dwe::assets::MapDocument;
 using dwe::game::field::Field;
 using dwe::game::field::FieldInput;
 using dwe::game::field::MapChange;
+using dwe::game::field::PartnerClip;
+using dwe::game::field::PartnerIdleClip;
 using dwe::game::field::testing::fill;
 using dwe::game::field::testing::originalRules;
 using dwe::game::field::testing::roomMap;
@@ -628,6 +630,36 @@ TEST_CASE("a partner that cannot step for a second is placed behind the player")
   CHECK(partnerDistance(field) < 400.0F);
   // Behind the player, who faces +Z.
   CHECK(field.partner().position.z < field.player().position.z);
+}
+
+TEST_CASE("a script's hold stands the partner on its idle clip until it lets go") {
+  // overworld.c: setMovementEnabled(1, 1) from scriptPauseGame puts the partner in state 11;
+  // partner.c: partnerTickIdle starts its clip 0 once and nothing else runs. Measured on the
+  // original (04_jijimon_house_interior, talking to Tokomon while Agumon ran up): state 11 and
+  // animation 0 at once, still on it and in place 400 frames later with a direction held.
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(-1500.0F, 0.0F, Pi / 2.0F));
+  field.setInput({.stick = {1.0F, 0.0F}, .run = true});
+  run(field, 1.5F);
+  REQUIRE(field.partnerFollowClip());
+  CHECK(field.partnerFollowClip()->id != PartnerIdleClip);
+
+  const PartnerClip before = *field.partnerFollowClip();
+  field.holdForScript(true);
+  const std::optional<PartnerClip> held = field.partnerFollowClip();
+  REQUIRE(held);
+  CHECK(held->id == PartnerIdleClip);
+  CHECK(held->starts != before.starts);
+  const glm::vec3 where = field.partner().position;
+  run(field, 10.0F);
+  CHECK(field.partnerFollowClip() == held);
+  CHECK(field.partner().position == where);
+
+  // Let go, it follows again.
+  field.holdForScript(false);
+  run(field, 1.0F);
+  CHECK(field.partner().position != where);
 }
 
 TEST_CASE("after a script the partner makes room by the player, then stops") {
