@@ -310,8 +310,9 @@ ending:
   revive_countdown_shown_at: 20
 
 # El objeto que lanza el tamer (main.c: startThrowingItem, tickThrownItem): sale de la mano en el fotograma 7 de la
-# animación de lanzar y llega al partner 24 fotogramas después (time >= 0x18), siempre. Mientras vuela, la cuenta atrás
-# de la derrota se para (battle_setup.c: BTL_isBattleFinished).
+# animación de lanzar (que el objeto ve un fotograma adelantada) y vuela 24 pasos; el último lo deja en el partner
+# (time >= 0x18), siempre: medido, 29 fotogramas tras lanzarlo. Mientras vuela, la cuenta atrás de la derrota se para
+# (battle_setup.c: BTL_isBattleFinished).
 item_throw:
   release_frame: 7
   flight_frames: 24

@@ -176,11 +176,14 @@ public:
   [[nodiscard]] bool bagOpen() const { return state_.bagOpen; }
   core::Result<void> openBag();
   void closeBag();
-  // Throws an item at the partner (main.c: startThrowingItem): the bag closes and the item lands
-  // releaseFrame + flightFrames later, always on the partner (tickThrownItem). The defeat countdown
-  // waits while it flies.
+  // Throws an item at the partner (main.c: startThrowingItem): the bag closes, the item leaves the
+  // player's hand on frame releaseFrame of the throw and lands on the last of its flightFrames,
+  // always on the partner (tickThrownItem). The defeat countdown waits while it flies.
   core::Result<void> throwItem(ThrownItem item);
   [[nodiscard]] bool itemInFlight() const { return state_.thrownItem.has_value(); }
+  // The frame of the thrown item's flight (itemThrowHeight, stepItemFlight), or none while no item
+  // flies or it is still in the player's hand.
+  [[nodiscard]] std::optional<std::int32_t> thrownItemFlightFrame() const;
   // Whether the HUD shows a fighter's HP bar: always the partner's, an enemy's for a while after
   // damage (battle_main.c: BTL_renderEnemyHPBars).
   [[nodiscard]] bool hpBarShown(FighterId fighter) const;

@@ -395,6 +395,13 @@ core::Result<void> Battle::throwItem(ThrownItem item) {
   return {};
 }
 
+std::optional<std::int32_t> Battle::thrownItemFlightFrame() const {
+  if (!state_.thrownItem) {
+    return std::nullopt;
+  }
+  return flightFrameOf(*state_.thrownItem, rules_->itemThrow);
+}
+
 bool Battle::hpBarShown(FighterId fighter) const {
   return fighter == PartnerId ||
          state_.fighters.at(fighter).hpBarFrames < rules_->hud.enemyHpBarFrames;

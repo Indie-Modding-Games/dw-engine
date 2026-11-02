@@ -255,6 +255,7 @@ void BattleScreen::tickBattle(double seconds) {
     stepNumbers(frame);
     stepMenu(true);
     stepShout();
+    stepThrow();
   });
   publish();
   takeFigures();
@@ -839,6 +840,7 @@ void BattleScreen::throwItem(double slot) {
   } else {
     core::logInfo("{}", core::formatMessage(messages::BattleItemThrown,
                                             desc_.inventory->items().at(*item).id));
+    startThrow(*item);
   }
   publish();
 }
@@ -847,6 +849,7 @@ void BattleScreen::finish() {
   const std::optional<game::battle::BattleResult> finished =
       battle_ ? battle_->result() : std::nullopt;
   battle_.reset();
+  endThrow();
   publishHpBars();
   showStatusVisuals();
   if (effects_) {

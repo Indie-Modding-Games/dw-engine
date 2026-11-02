@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dwe/game/battle/combatant.hpp>
+
 #include <cstdint>
 #include <optional>
 
@@ -36,5 +38,21 @@ struct ThrownItem {
   // Whether it does nothing while the partner is down (the handlers check currentHP != 0).
   bool consciousOnly = false;
 };
+
+// The thrown item on its way from the player's hand to the partner (main.c: tickThrownItem,
+// TAMER_ITEM): its ground point in world axes and its height over the ground (up).
+struct ItemFlight {
+  Point point;
+  std::int32_t height = 0;
+};
+
+// main.c: ITEM_THROW_HEIGHT: the item's height on each frame of its flight, a parabola that starts
+// 0xF0 over the ground, tops at 0x34D on frame 11 and is down to 0x7D on frame 23.
+[[nodiscard]] std::int32_t itemThrowHeight(std::int32_t frame);
+
+// main.c: tickThrownItem: frame `frame` of the flight toward the partner standing at `partner`.
+// Frame 0 only rises; each later one covers 1 / (0x19 - frame) of the ground still between them.
+[[nodiscard]] ItemFlight stepItemFlight(const ItemFlight& flight, Point partner,
+                                        std::int32_t frame);
 
 } // namespace dwe::game::battle

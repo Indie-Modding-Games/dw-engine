@@ -125,6 +125,10 @@ void FieldScene::drawGroundItems() {
       addIcon(*hand, heldItem_->icon, heldItem_->palette);
     }
   }
+  // main.c: renderThrownItem: the thrown item through renderOverworldItem.
+  if (flyingItem_) {
+    addIcon(flyingItem_->position, flyingItem_->icon, flyingItem_->palette);
+  }
   addEffectBillboards(billboards);
   addStatusBillboards(billboards);
   addBattleVisualBillboards(billboards);

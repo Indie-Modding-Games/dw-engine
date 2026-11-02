@@ -71,6 +71,14 @@ struct HeldItemSprite {
   std::uint8_t palette = 0;
 };
 
+// An item flying through the air (main.c: renderThrownItem, the item the player throws in battle):
+// its icon at a world point, without a shadow.
+struct FlyingItemSprite {
+  glm::vec3 position{0.0F};
+  std::int32_t icon = 0;
+  std::uint8_t palette = 0;
+};
+
 struct FieldSceneDesc {
   // The map and exit to start at; field/warps' start when not given.
   std::optional<std::string> startMap;
@@ -246,6 +254,8 @@ public:
   void setGroundItems(std::vector<GroundItemSprite> items) { groundItems_ = std::move(items); }
   // The item the player holds out, drawn until replaced; nullopt for none.
   void setHeldItem(std::optional<HeldItemSprite> item) { heldItem_ = item; }
+  // The item flying through the air, drawn until replaced; nullopt for none.
+  void setFlyingItem(std::optional<FlyingItemSprite> item) { flyingItem_ = item; }
   // Copies of a model of the packs drawn on the map at these world transforms until replaced for
   // that model (the partner's poop piles: partner_impl.c: renderPoop; the story's props:
   // field_story_props.hpp); no places draws none of it. A model loads the first time it has
@@ -819,6 +829,7 @@ private:
   std::vector<render::MapMarker> extraMarkers_;
   std::vector<GroundItemSprite> groundItems_;
   std::optional<HeldItemSprite> heldItem_;
+  std::optional<FlyingItemSprite> flyingItem_;
   // The billboard textures of the items' image by palette, and of the shadow (nullopt as the key),
   // or nothing for one that failed to load.
   std::map<std::optional<std::uint8_t>, std::optional<std::size_t>> groundItemTextures_;

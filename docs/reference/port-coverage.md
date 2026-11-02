@@ -100,8 +100,8 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 39 | 38 | 1 | 0 | 99 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 31 | 0 | 0 | 100 % |
-| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 49 | 49 | 0 | 0 | 100 % |
-| **Total** | 1409 funciones a portar | 1409 | 1267 | 22 | 120 | 91 % |
+| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 50 | 50 | 0 | 0 | 100 % |
+| **Total** | 1410 funciones a portar | 1410 | 1268 | 22 | 120 | 91 % |
 
 ## Batalla
 
@@ -422,10 +422,10 @@ Arranque, bucle principal, reloj, azar, matemáticas, ficheros, memoria y gráfi
 
 Ficheros del decomp: `main/_psstart.c`, `main/clock.c`, `main/file.c`, `main/file_queue.c`, `main/graphics.c`, `main/line.c`, `main/main.c`, `main/math.c`, `main/rng.c`, `main/utils.c`, `main/utils2.c`.
 
-Portado 49, parcial 0, falta 0.
+Portado 50, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-1029 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+1028 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

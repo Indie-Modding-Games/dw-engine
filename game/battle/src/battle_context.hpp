@@ -107,6 +107,9 @@ void addFinisherProgress(BattleContext& context, FighterId id, std::int32_t amou
 // does when it lands (item.c), and the HUD's HP bars (battle_main.c: BTL_renderEnemyHPBars).
 void throwItem(BattleContext& context, const ThrownItem& item);
 void tickThrownItem(BattleContext& context);
+// The frame of the thrown item's flight, or none while it is still in the player's hand.
+[[nodiscard]] std::optional<std::int32_t> flightFrameOf(const ThrownItemState& thrown,
+                                                        const ItemThrowRules& rules);
 // HP and MP healed, each up to its maximum; nothing while the partner is down.
 void restorePartner(Fighter& partner, std::int32_t hp, std::int32_t mp);
 // Gets the fallen partner up with `hp` and resets every fighter's action (battle_setup.c:

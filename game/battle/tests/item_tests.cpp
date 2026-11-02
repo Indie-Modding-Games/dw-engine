@@ -29,10 +29,11 @@ ThrownItem disk(std::int32_t offense, bool ignoresLimit = false) {
   return item;
 }
 
-// main.c: tickThrownItem: the item leaves the hand at the release frame and flies the flight
-// frames.
+// main.c: tickThrownItem: the player's animation is a frame ahead of the item's ticks, so the item
+// leaves the hand on the throw's frame releaseFrame - 1 and lands on the step of its last flight
+// frame (measured in the original: release 7, flight 24, landed 29 frames after the throw).
 std::int32_t throwFrames(const BattleRules& rules) {
-  return rules.itemThrow.releaseFrame + rules.itemThrow.flightFrames;
+  return rules.itemThrow.releaseFrame - 1 + rules.itemThrow.flightFrames - 1;
 }
 
 Battle fallenPartner(std::uint64_t seed) {
@@ -122,6 +123,10 @@ TEST_CASE(
   REQUIRE(battle.throwItem(everything));
   const BattleEvents landed = stepUntilLanded(battle);
   REQUIRE(hasEvent(landed, EventKind::ItemLanded));
+  // BTL_buffStats shows the gain as handleBuffDisks computed it: the 30 up to the limit.
+  CHECK(amountsOf(landed, EventKind::OffenseRaised) ==
+        std::vector<std::int32_t>{130 - partner.stats.offense});
+  CHECK(amountsOf(landed, EventKind::DefenseRaised).empty());
   const Fighter& after = battle.state().partner();
   // Healed to the maximums when it landed; the frame may have drained some since (hp + pending
   // stays).
@@ -135,7 +140,8 @@ TEST_CASE(
   CHECK(battle.state().partner().stats.offense == 130);
   // The omni disk ignores the limit (omni_disk_ignores_limit) and only stops at the cap.
   REQUIRE(battle.throwItem(disk(20, true)));
-  stepUntilLanded(battle);
+  CHECK(amountsOf(stepUntilLanded(battle), EventKind::OffenseRaised) ==
+        std::vector<std::int32_t>{20});
   CHECK(battle.state().partner().stats.offense == 150);
 }
 
@@ -213,7 +219,41 @@ TEST_CASE("the throw's frames come from the ruleset") {
     battle.step();
     ++frames;
   }
-  CHECK(frames == rules.itemThrow.releaseFrame + 4);
+  CHECK(frames == throwFrames(rules));
+}
+
+TEST_CASE("main.c tickThrownItem: the item rises from the hand on a parabola toward the partner") {
+  // ITEM_THROW_HEIGHT: 0xF0 at first, 0x34D at the top on frame 11, 0x7D on the last frame.
+  CHECK(itemThrowHeight(0) == 0xF0);
+  CHECK(itemThrowHeight(1) == 0x159);
+  CHECK(itemThrowHeight(11) == 0x34D);
+  CHECK(itemThrowHeight(22) == 0xF0);
+  CHECK(itemThrowHeight(23) == 0x7D);
+  // Frame 0 only rises; frame 1 covers 1 / 24 of the ground, frame 23 half of what is left.
+  const ItemFlight hand{.point = {.x = 0, .z = 0}, .height = 200};
+  const Point partner{.x = 2400, .z = -480};
+  const ItemFlight first = stepItemFlight(hand, partner, 0);
+  CHECK(first.point == hand.point);
+  CHECK(first.height == 0xF0);
+  const ItemFlight second = stepItemFlight(first, partner, 1);
+  CHECK(second.point == Point{.x = 100, .z = -20});
+  const ItemFlight late =
+      stepItemFlight({.point = {.x = 2300, .z = -380}, .height = 0}, partner, 23);
+  CHECK(late.point == Point{.x = 2350, .z = -430});
+
+  // The flight's frames run while the item flies, none while it is in the hand.
+  Battle battle = startBattle(duel(evenStats(1000, 100), evenStats(1000, 100)), 4);
+  REQUIRE(battle.throwItem(healing(1)));
+  CHECK_FALSE(battle.thrownItemFlightFrame().has_value());
+  const ItemThrowRules& rules = battle.rules().itemThrow;
+  for (std::int32_t frame = 1; frame < rules.releaseFrame - 1; ++frame) {
+    battle.step();
+    CHECK_FALSE(battle.thrownItemFlightFrame().has_value());
+  }
+  battle.step();
+  CHECK(battle.thrownItemFlightFrame() == 0);
+  battle.step();
+  CHECK(battle.thrownItemFlightFrame() == 1);
 }
 
 TEST_CASE("an enemy's HP bar shows after damage and hides after the HUD's frames") {

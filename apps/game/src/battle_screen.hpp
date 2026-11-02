@@ -188,6 +188,13 @@ private:
   // and the document goes when the battle closed the bag or ended.
   void syncBag();
   void throwItem(double slot);
+  // battle_screen_throw.cpp: the player's throw and the item on its way to the partner (main.c:
+  // startThrowingItem, tickThrownItem, renderThrownItem), a battle frame at a time.
+  void startThrow(assets::ItemHandle item);
+  void stepThrow();
+  void holdThrown();
+  void showThrown() const;
+  void endThrow();
   void finish();
   void close();
   // battle_screen_exit.cpp: what the battle leaves on the map.
@@ -262,6 +269,15 @@ private:
   // The time the victory poses have played, while they do, and which of the two still plays.
   std::optional<double> posesSeconds_;
   bool playerPosing_ = false;
+  // The item the player threw, while it is in the hand or on its way, and whether the throw's clip
+  // still plays.
+  struct ThrownSprite {
+    std::int32_t icon = 0;
+    std::uint8_t palette = 0;
+    std::optional<game::battle::ItemFlight> flight;
+  };
+  std::optional<ThrownSprite> thrown_;
+  bool playerThrowing_ = false;
   bool partnerPosing_ = false;
   // The battle's map and the items its beaten enemies left: they land on the ground when the end
   // box closes (battle_ui.c: handleBattleEndBox calls spawnDroppedItems last).

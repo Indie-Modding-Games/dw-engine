@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 
 #include "battle_context.hpp"
 
@@ -10,6 +11,13 @@ namespace {
 constexpr std::int32_t WholePercent = 100;
 // item.c: handleRestore, case 0xc: the amount the whole revive adds, capped by the maximum.
 constexpr std::int32_t WholeRestoreHp = 9999;
+
+// main.c: ITEM_THROW_HEIGHT: 0x34D - 5 (frame - 11)^2 over the ground.
+constexpr std::int32_t ThrowTop = 0x34D;
+constexpr std::int32_t ThrowTopFrame = 11;
+constexpr std::int32_t ThrowBend = 5;
+// main.c: tickThrownItem: each step covers 1 / (0x19 - frame) of the ground left.
+constexpr std::int32_t FlightSteps = 0x19;
 
 void emitPartnerEvent(BattleContext& context, EventKind kind, std::int32_t amount) {
   context.emit({.kind = kind,
@@ -22,9 +30,12 @@ void emitPartnerEvent(BattleContext& context, EventKind kind, std::int32_t amoun
 }
 
 // main.c: handleBuffDisks: each stat goes up by its amount, but not past the limit taken from its
-// value when the battle started (INITIAL_COMBAT_STATS); BTL_buffStats keeps it within the cap.
-void boost(Fighter& partner, const StatBoost& disk) {
-  const auto raise = [&disk](std::int32_t& stat, std::int32_t start, std::int32_t amount) {
+// value when the battle started (INITIAL_COMBAT_STATS); BTL_buffStats keeps it within the cap and
+// shows the gain over the partner in green with the stat's icon (addEntityText(partner, 0, 0xb,
+// gain, 3 to 5)), as it computed it.
+void boost(BattleContext& context, Fighter& partner, const StatBoost& disk) {
+  const auto raise = [&context, &disk](std::int32_t& stat, std::int32_t start, std::int32_t amount,
+                                       EventKind shown) {
     if (amount == 0) {
       return;
     }
@@ -34,10 +45,11 @@ void boost(Fighter& partner, const StatBoost& disk) {
       gain = std::min(amount, limit - stat);
     }
     stat = std::min(stat + gain, disk.limitCap);
+    emitPartnerEvent(context, shown, gain);
   };
-  raise(partner.stats.offense, partner.startStats.offense, disk.offense);
-  raise(partner.stats.defense, partner.startStats.defense, disk.defense);
-  raise(partner.stats.speed, partner.startStats.speed, disk.speed);
+  raise(partner.stats.offense, partner.startStats.offense, disk.offense, EventKind::OffenseRaised);
+  raise(partner.stats.defense, partner.startStats.defense, disk.defense, EventKind::DefenseRaised);
+  raise(partner.stats.speed, partner.startStats.speed, disk.speed, EventKind::SpeedRaised);
 }
 
 // battle_main.c: BTL_healStatusEffect(1): the rings, in the colour of the last of poison,
@@ -101,7 +113,7 @@ void land(BattleContext& context, const ThrownItem& item) {
     partner.status.protectedFromStatus = true;
   }
   if (item.boost) {
-    boost(partner, *item.boost);
+    boost(context, partner, *item.boost);
     // main.c: handleBuffDisks ends with BTL_addBuffDiskEffect, unless the partner is down.
     if (!partner.fainted && context.visuals != nullptr) {
       context.visuals->addBuffDisk(PartnerId, partner);
@@ -110,6 +122,39 @@ void land(BattleContext& context, const ThrownItem& item) {
 }
 
 } // namespace
+
+std::int32_t itemThrowHeight(std::int32_t frame) {
+  const std::int32_t fromTop = frame - ThrowTopFrame;
+  return ThrowTop - (ThrowBend * fromTop * fromTop);
+}
+
+ItemFlight stepItemFlight(const ItemFlight& flight, Point partner, std::int32_t frame) {
+  ItemFlight next{.point = flight.point, .height = itemThrowHeight(frame)};
+  if (frame <= 0) {
+    return next;
+  }
+  const std::int32_t steps = FlightSteps - frame;
+  if (steps <= 0) {
+    next.point = partner;
+    return next;
+  }
+  next.point.x += (partner.x - flight.point.x) / steps;
+  next.point.z += (partner.z - flight.point.z) / steps;
+  return next;
+}
+
+std::optional<std::int32_t> flightFrameOf(const ThrownItemState& thrown,
+                                          const ItemThrowRules& rules) {
+  // main.c: tickThrownItem runs from the frame after the throw started the player's animation
+  // (startAnimation(ENTITY_TABLE[0], 6)), which has gone one frame on by then: on the k-th frame
+  // after the throw it shows frame k + 1. The item stays in the hand until it shows frame
+  // releaseFrame.
+  const std::int32_t frame = thrown.frames + 1 - rules.releaseFrame;
+  if (frame < 0) {
+    return std::nullopt;
+  }
+  return frame;
+}
 
 void restorePartner(Fighter& partner, std::int32_t hp, std::int32_t mp) {
   if (partner.fainted) {
@@ -160,7 +205,10 @@ void tickThrownItem(BattleContext& context) {
     return;
   }
   const ItemThrowRules& rules = context.rules->itemThrow;
-  if (++thrown->frames < rules.releaseFrame + rules.flightFrames) {
+  ++thrown->frames;
+  // The step of the flight's last frame lands it (TAMER_ITEM.time reaches 0x18 after it).
+  const std::optional<std::int32_t> flight = flightFrameOf(*thrown, rules);
+  if (!flight || *flight < rules.flightFrames - 1) {
     return;
   }
   const ThrownItem item = thrown->item;
