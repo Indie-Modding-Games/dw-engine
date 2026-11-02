@@ -227,6 +227,11 @@ public:
   // A fade the field does not run (the story's fade to white, WhiteFade) drew `shade`:
   // FADE_PROGRESS is shared, so the next map change fades out from it.
   void setShade(std::int32_t shade) { fadeProgress_ = shade; }
+  // Runs only the map change's fade in, for the ticks something else holds the field (a battle).
+  // fade.c: renderFadeIn is a drawn object (addObject 4005) that steps on every frame the game
+  // draws, whatever runs the logic, so a battle a script starts before the fade in ends (a story
+  // battle right after a map change) still sees the screen come back.
+  void tickFadeIn(float seconds);
 
   // The map whose name the map change shows now: from the fade out's name frame until the new map
   // is entered (tamer.c: tamerTickChangeMap, map.c: addMapNameObject). Nothing otherwise.

@@ -812,6 +812,16 @@ std::optional<std::int32_t> Field::shadeNow() const {
   return fadeProgress_;
 }
 
+void Field::tickFadeIn(float seconds) {
+  if (!fadeInSeconds_) {
+    return;
+  }
+  *fadeInSeconds_ += seconds;
+  if (fadeFrame(*fadeInSeconds_) > fadeInFrames_) {
+    endFadeIn();
+  }
+}
+
 void Field::endFadeIn() {
   fadeProgress_ = fadeInShade(rules_.transition, fadeInFrames_, fadeInFrames_);
   fadeInSeconds_.reset();

@@ -731,6 +731,8 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
   }
   scene_->holdCamera(battleScreen_.active());
   if (battleScreen_.active()) {
+    // fade.c: a fade in the battle started under runs on with the drawing.
+    scene_->field().tickFadeIn(static_cast<float>(TickSeconds));
     if (!ui.isVisible(MenuDocument)) {
       battleScreen_.tick(TickSeconds);
     }

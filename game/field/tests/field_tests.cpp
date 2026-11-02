@@ -1332,6 +1332,31 @@ TEST_CASE("play starts with a long fade in that holds no one, and a map change t
   CHECK(field.fadeLevel() == doctest::Approx(0.0F));
 }
 
+TEST_CASE("the fade in runs on while a battle holds the field") {
+  // fade.c: renderFadeIn is a drawn object: it steps on every drawn frame, a battle's too, so a
+  // battle started under the start of play's fade in does not stay dark.
+  MapDocument town = roomMap("town");
+  dwe::scene::World world;
+  const auto rules = originalRules();
+  const dwe::game::field::TransitionRules& transition = rules.transition;
+  Field field{world, rules};
+  REQUIRE(field.enterMap(town, 0).has_value());
+  field.startPlay();
+  CHECK(field.fadeLevel() == doctest::Approx(dwe::game::field::shadeDarkness(transition, 157)));
+  // The battle ticks only the fade in: 40 frames of 20 a second and the one that ends it.
+  for (int i = 0; i < 60; ++i) {
+    field.tickFadeIn(Tick);
+  }
+  CHECK(field.fadeLevel() > 0.0F);
+  for (int i = 0; i < 90; ++i) {
+    field.tickFadeIn(Tick);
+  }
+  CHECK(field.fadeLevel() == doctest::Approx(0.0F));
+  CHECK(field.shadeNow() == std::optional<std::int32_t>{40});
+  // Nothing else moved: no cell ran, no game time passed.
+  CHECK_FALSE(field.gameTimeRan());
+}
+
 TEST_CASE("a fade out started during a fade in goes on from the shade the fade in drew") {
   // fade.c: fadeToBlack adds its step to FADE_PROGRESS; a whole warp fade in leaves 20 there.
   const auto rules = originalRules();

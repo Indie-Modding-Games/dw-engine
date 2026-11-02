@@ -219,12 +219,7 @@ void Field::tickScripted(float seconds) {
   tickCameraPan(seconds);
   // A scripted map change's fade in runs on while the script holds the player (map.c:
   // scriptTickChangeMap).
-  if (fadeInSeconds_) {
-    *fadeInSeconds_ += seconds;
-    if (fadeFrame(*fadeInSeconds_) > fadeInFrames_) {
-      endFadeIn();
-    }
-  }
+  tickFadeIn(seconds);
 }
 
 } // namespace dwe::game::field
