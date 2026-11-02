@@ -28,3 +28,7 @@ node_modules/
 
 # Python bytecode of the scripts (scripts/gate)
 __pycache__/
+
+# The run logs of a local game, redirected from its console (game-out.txt, game-err.txt): never versioned
+/*-err.txt
+/*-out.txt
