@@ -1206,8 +1206,14 @@ int runGame(const Options& requested) {
       const bool menuHeld = flow.playing() == nullptr || (movies && movies->playing()) ||
                             interview || flow.playing()->holdsMenu();
       (*ui)->setMenuDocument(menuHeld ? std::string_view{} : MenuDocument);
+      // F10 or Select: the game menu's options page, straight away (docs/modulos/apps/game.md,
+      // «Opciones en partida»). From Start's pause it ends the pause first; with the menu open it
+      // closes it; over another menu or where the menu is held it does nothing.
+      const bool settingsAsked = !menuHeld && input.wasPressed("settings") &&
+                                 ((*ui)->isVisible(MenuDocument) || !(*ui)->capturesInput());
       // Start's pause freezes everything but the box, menus and battle included (handlePause).
-      if (const PauseStep pause = pauseBox.tick(input.wasPressed("pause"), !menuHeld);
+      if (const PauseStep pause = pauseBox.tick(
+              input.wasPressed("pause") || (settingsAsked && pauseBox.paused()), !menuHeld);
           pause.opened || pause.closed || pause.paused) {
         if (pause.opened) {
           (*ui)->show(PauseBoxDocument);
@@ -1223,6 +1229,18 @@ int runGame(const Options& requested) {
       }
       if (flow.playing() != nullptr && input.wasPressed("menu")) {
         publishPlayerPoint(**ui, flow.playing()->scene());
+      }
+      if (settingsAsked) {
+        const bool open = (*ui)->isVisible(MenuDocument);
+        if (open) {
+          (*ui)->hide(MenuDocument);
+        } else {
+          publishPlayerPoint(**ui, flow.playing()->scene());
+          (*ui)->setSetting(MenuStartPageSetting, std::string{"options"});
+          (*ui)->show(MenuDocument, true);
+          (*ui)->setSetting(MenuStartPageSetting, std::string{});
+        }
+        menuSounds.play(open ? ui::UiCue::Cancel : ui::UiCue::Confirm);
       }
       (*ui)->tick(input, TickSeconds);
       menuSounds.play((*ui)->takeCues());

@@ -2,117 +2,18 @@
 // name of up to twelve letters keep it inside their boxes, and leave the original's texts as they
 // are.
 
-#include <dwe/assets/file_system.hpp>
-#include <dwe/assets/virtual_file_system.hpp>
-#include <dwe/input/action_map.hpp>
-#include <dwe/input/input_state.hpp>
-#include <dwe/localization/catalog.hpp>
-#include <dwe/ui/ui.hpp>
-
 #include <doctest/doctest.h>
-#include <lodepng.h>
 
-#include <cstddef>
-#include <filesystem>
 #include <format>
-#include <fstream>
-#include <iterator>
-#include <memory>
 #include <string>
 #include <string_view>
-#include <tuple>
-#include <utility>
-#include <vector>
+
+#include "game_pack_fixture.hpp"
 
 namespace dwe::ui {
 namespace {
 
-std::vector<std::byte> whitePng(unsigned width, unsigned height) {
-  const std::vector<unsigned char> pixels(std::size_t{width} * height * 4, 255);
-  std::vector<unsigned char> png;
-  REQUIRE(lodepng::encode(png, pixels, width, height) == 0);
-  const auto* begin = reinterpret_cast<const std::byte*>(png.data());
-  return {begin, begin + png.size()};
-}
-
-// The team pack from the source tree and a stand-in base pack, in memory.
-struct Content {
-  assets::MemoryFileSystem memory;
-  std::unique_ptr<assets::VirtualFileSystem> files;
-
-  Content() {
-    const std::filesystem::path game = DWE_GAME_PACK;
-    for (const auto& entry : std::filesystem::recursive_directory_iterator{game}) {
-      if (!entry.is_regular_file()) {
-        continue;
-      }
-      std::ifstream stream{entry.path(), std::ios::binary};
-      const std::string bytes{std::istreambuf_iterator<char>{stream},
-                              std::istreambuf_iterator<char>{}};
-      memory.addFile(std::filesystem::path{"packs/game"} / entry.path().lexically_relative(game),
-                     bytes);
-    }
-    memory.addFile("packs/base/pack.yaml", "id: base\nversion: 0.1.0\nlayer: base\npriority: 0\n");
-    // Stand-ins for the drawings dwx extracts, which the original skin needs to be offered.
-    for (const auto& [path, width, height] :
-         {std::tuple{"texture/etcdat/system_w.png", 256U, 128U},
-          std::tuple{"texture/etcdat/fi_info.png", 256U, 64U},
-          std::tuple{"texture/etcdat/sboy.png", 256U, 256U},
-          std::tuple{"texture/etcdat/bi_in.png", 256U, 64U},
-          std::tuple{"texture/etcdat/feel_ef.png", 256U, 64U},
-          std::tuple{"texture/etcdat/btlcomnd.png", 256U, 64U},
-          std::tuple{"texture/etcna/title2.png", 320U, 240U},
-          std::tuple{"texture/etcna/title256.png", 320U, 256U},
-          std::tuple{"texture/stddat/time.png", 66U, 29U},
-          std::tuple{"texture/stddat/stdtim/002.png", 256U, 120U}}) {
-      memory.addFile(std::filesystem::path{"packs/base"} / path, whitePng(width, height));
-    }
-    const auto location = [this](std::string_view root) {
-      return assets::PackLocation{
-          .fileSystem = &memory, .root = std::string{root}, .origin = assets::PackOrigin::Engine};
-    };
-    auto mounted =
-        assets::VirtualFileSystem::mount({location("packs/base"), location("packs/game")});
-    REQUIRE_MESSAGE(mounted.has_value(), mounted.error().message);
-    files = std::make_unique<assets::VirtualFileSystem>(std::move(*mounted));
-  }
-};
-
-struct Screen {
-  Content content;
-  localization::Catalog texts;
-  std::unique_ptr<Ui> ui;
-  input::InputState input{input::defaultActionMap()};
-
-  explicit Screen(std::string_view document) : texts(catalog(*content.files)) {
-    auto made = Ui::create({.files = content.files.get(),
-                            .texts = &texts,
-                            .width = 1280,
-                            .height = 720,
-                            .clock = {},
-                            .scripts = {}});
-    REQUIRE_MESSAGE(made.has_value(), made.error().message);
-    ui = std::move(*made);
-    auto id = assets::AssetId::parse(std::format("ui/{}/document", document));
-    REQUIRE(id.has_value());
-    REQUIRE(ui->loadDocument(document, *id));
-  }
-
-  static localization::Catalog catalog(const assets::VirtualFileSystem& files) {
-    auto loaded = localization::Catalog::load(files, "en");
-    REQUIRE_MESSAGE(loaded.has_value(), loaded.error().message);
-    return std::move(*loaded);
-  }
-
-  // A few frames: the documents lay out and fit_text measures what they wrote.
-  void frames(int count = 5) {
-    for (int frame = 0; frame < count; ++frame) {
-      ui->tick(input, 1.0 / 60.0);
-      input.endTick();
-      ui->update();
-    }
-  }
-};
+using fixture::Screen;
 
 constexpr std::string_view LongName = "WWWWWWWWWWWW";
 

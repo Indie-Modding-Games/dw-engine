@@ -3,8 +3,10 @@
 	<title>Pause box</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
 </head>
 <body>
 	<div id="box"><span id="label" text-key="main.utils2_pause.0000"></span></div>
+	<p id="hint"></p>
 </body>
 </rml>

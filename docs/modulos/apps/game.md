@@ -725,6 +725,29 @@ Medido: ruta de prueba con el jugador «WWWWWWWWWWWW» y el compañero «Barthol
 caja de nombres en la entrevista (la clave `new_game_scene: true`); capturas antes/después
 en las dos pieles.
 
+## Opciones en partida
+
+Las opciones se cambian sin volver al título: la página «Opciones» del menú de pausa tiene las de pantalla (modo de
+ventana, escala, sincronía vertical), la piel, el idioma y el texto con aspecto original (las mismas órdenes que el
+menú del título: `language`, `text_font`) y, debajo, las opciones propias del motor.
+
+| Cómo se abre | Teclado | Mando |
+|---|---|---|
+| Directamente, también desde la pausa de Start (la cierra) | F10 | Select (Back) |
+| Desde el menú (aspecto moderno) | Tab, «Opciones» | Botón norte, «Opciones» |
+| Desde el menú (aspecto original) | Tab, «Jugador», Tab, «Opciones» | Botón norte, «Jugador», botón norte, «Opciones» |
+
+F10 es la acción `settings` (`defaultActionMap`): con el menú cerrado lo abre en la página de opciones
+(`pause_menu.start_page`, que lee su `on_show`), y Atrás desde ahí vuelve al juego; con el menú abierto lo cierra.
+Donde no hay menú de pausa (título, películas, entrevista, caja de nombres, gimnasio) o con otro menú abierto no hace
+nada. Bajo el recuadro de pausa se lee la tecla («F10 Opciones», con la del dispositivo en uso).
+
+Las opciones propias del motor salen de una lista, `ui/common/game_options.lua` (`game_options`): id de la fila,
+ajuste de la UI que publica el juego y que la fila envía como orden, texto, valor por defecto y, para las que no son
+sí/no, sus valores (`values`) y el prefijo de sus textos (`texts`). La página llena con ellas, en orden, las filas
+libres `option-slot-<n>` del documento (16) y les da el id de la opción, así que una opción nueva solo necesita su
+entrada en esa lista y que el juego atienda su ajuste; ningún documento necesita una fila propia.
+
 ## Contenido oculto
 
 Mejora opcional, apagada por defecto: al empezar una partida nueva desde el menú principal (Jugar → ranura → «Sí»),

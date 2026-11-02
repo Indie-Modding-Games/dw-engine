@@ -5,6 +5,7 @@
 	<link type="text/rcss" href="structure.rcss"/>
 	<script src="../common/ui_skin_choice.lua"></script>
 	<script src="../common/original_box.lua"></script>
+	<script src="../common/game_options.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -497,39 +498,29 @@
 				<button id="ui-skin" class="option" onclick="adjust(document, 'ui-skin', 1)">
 					<span class="label" text-key="pause_menu.ui_skin"></span><span class="value" id="ui-skin-value"></span>
 				</button>
-				<button id="free-exploration" class="option" onclick="adjust(document, 'free-exploration', 1)">
-					<span class="label" text-key="pause_menu.free_exploration"></span><span class="value" id="free-exploration-value"></span>
+				<button id="language" class="option" onclick="adjust(document, 'language', 1)">
+					<span class="label" text-key="main_menu.language"></span><span class="value" id="language-value"></span>
 				</button>
-				<button id="smooth-motion" class="option" onclick="adjust(document, 'smooth-motion', 1)">
-					<span class="label" text-key="pause_menu.smooth_motion"></span><span class="value" id="smooth-motion-value"></span>
+				<button id="text-font" class="option" onclick="adjust(document, 'text-font', 1)">
+					<span class="label" text-key="main_menu.text_font"></span><span class="value" id="text-font-value"></span>
 				</button>
-				<button id="save-notice" class="option" onclick="adjust(document, 'save-notice', 1)">
-					<span class="label" text-key="pause_menu.save_notice"></span><span class="value" id="save-notice-value"></span>
-				</button>
-				<button id="digital-time" class="option" onclick="adjust(document, 'digital-time', 1)">
-					<span class="label" text-key="pause_menu.digital_time"></span><span class="value" id="digital-time-value"></span>
-				</button>
-				<button id="bulk-trades" class="option" onclick="adjust(document, 'bulk-trades', 1)">
-					<span class="label" text-key="pause_menu.bulk_trades"></span><span class="value" id="bulk-trades-value"></span>
-				</button>
-				<button id="evolution-requirements" class="option" onclick="adjust(document, 'evolution-requirements', 1)">
-					<span class="label" text-key="pause_menu.evolution_requirements"></span><span class="value" id="evolution-requirements-value"></span>
-				</button>
-				<button id="translated-signs" class="option" onclick="adjust(document, 'translated-signs', 1)">
-					<span class="label" text-key="pause_menu.translated_signs"></span><span class="value" id="translated-signs-value"></span>
-				</button>
-				<button id="status-extras" class="option" onclick="adjust(document, 'status-extras', 1)">
-					<span class="label" text-key="pause_menu.status_extras"></span><span class="value" id="status-extras-value"></span>
-				</button>
-				<button id="canonical-stages" class="option" onclick="adjust(document, 'canonical-stages', 1)">
-					<span class="label" text-key="pause_menu.canonical_stages"></span><span class="value" id="canonical-stages-value"></span>
-				</button>
-				<button id="walk-control" class="option" onclick="adjust(document, 'walk-control', 1)">
-					<span class="label" text-key="pause_menu.walk_control"></span><span class="value" id="walk-control-value"></span>
-				</button>
-				<button id="long-names" class="option" onclick="adjust(document, 'long-names', 1)">
-					<span class="label" text-key="pause_menu.long_names"></span><span class="value" id="long-names-value"></span>
-				</button>
+				<!-- The game's options (ui/common/game_options.lua) fill these rows in order; the rest stay hidden. -->
+				<button id="option-slot-1" class="option hidden" onclick="adjust_slot(document, 1, 1)"><span class="label" id="option-slot-1-label"></span><span class="value" id="option-slot-1-value"></span></button>
+				<button id="option-slot-2" class="option hidden" onclick="adjust_slot(document, 2, 1)"><span class="label" id="option-slot-2-label"></span><span class="value" id="option-slot-2-value"></span></button>
+				<button id="option-slot-3" class="option hidden" onclick="adjust_slot(document, 3, 1)"><span class="label" id="option-slot-3-label"></span><span class="value" id="option-slot-3-value"></span></button>
+				<button id="option-slot-4" class="option hidden" onclick="adjust_slot(document, 4, 1)"><span class="label" id="option-slot-4-label"></span><span class="value" id="option-slot-4-value"></span></button>
+				<button id="option-slot-5" class="option hidden" onclick="adjust_slot(document, 5, 1)"><span class="label" id="option-slot-5-label"></span><span class="value" id="option-slot-5-value"></span></button>
+				<button id="option-slot-6" class="option hidden" onclick="adjust_slot(document, 6, 1)"><span class="label" id="option-slot-6-label"></span><span class="value" id="option-slot-6-value"></span></button>
+				<button id="option-slot-7" class="option hidden" onclick="adjust_slot(document, 7, 1)"><span class="label" id="option-slot-7-label"></span><span class="value" id="option-slot-7-value"></span></button>
+				<button id="option-slot-8" class="option hidden" onclick="adjust_slot(document, 8, 1)"><span class="label" id="option-slot-8-label"></span><span class="value" id="option-slot-8-value"></span></button>
+				<button id="option-slot-9" class="option hidden" onclick="adjust_slot(document, 9, 1)"><span class="label" id="option-slot-9-label"></span><span class="value" id="option-slot-9-value"></span></button>
+				<button id="option-slot-10" class="option hidden" onclick="adjust_slot(document, 10, 1)"><span class="label" id="option-slot-10-label"></span><span class="value" id="option-slot-10-value"></span></button>
+				<button id="option-slot-11" class="option hidden" onclick="adjust_slot(document, 11, 1)"><span class="label" id="option-slot-11-label"></span><span class="value" id="option-slot-11-value"></span></button>
+				<button id="option-slot-12" class="option hidden" onclick="adjust_slot(document, 12, 1)"><span class="label" id="option-slot-12-label"></span><span class="value" id="option-slot-12-value"></span></button>
+				<button id="option-slot-13" class="option hidden" onclick="adjust_slot(document, 13, 1)"><span class="label" id="option-slot-13-label"></span><span class="value" id="option-slot-13-value"></span></button>
+				<button id="option-slot-14" class="option hidden" onclick="adjust_slot(document, 14, 1)"><span class="label" id="option-slot-14-label"></span><span class="value" id="option-slot-14-value"></span></button>
+				<button id="option-slot-15" class="option hidden" onclick="adjust_slot(document, 15, 1)"><span class="label" id="option-slot-15-label"></span><span class="value" id="option-slot-15-value"></span></button>
+				<button id="option-slot-16" class="option hidden" onclick="adjust_slot(document, 16, 1)"><span class="label" id="option-slot-16-label"></span><span class="value" id="option-slot-16-value"></span></button>
 				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 

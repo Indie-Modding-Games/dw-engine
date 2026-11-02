@@ -14,6 +14,8 @@ local first_entry = {
 local opener = { minimap = "open-minimap", options = "open-options", player = "open-player" }
 
 local current = "main"
+-- Whether F10 opened the menu on its options page, which then goes back straight to the game.
+local options_direct = false
 local parents = {}
 local icon_time = 0
 local icon_flash = false
@@ -112,56 +114,19 @@ local options = {
   ["ui-skin"] = function(step)
     skin_choice.change(step)
   end,
-  -- Free exploration: the scripts' map changes go anywhere they can, whatever the story (off by
-  -- default).
-  ["free-exploration"] = function(_step)
-    ui.send("free_exploration", not ui.setting("free_exploration"))
+  -- The language and the original-looking text, as on the title's options (main_menu).
+  ["language"] = function(step)
+    local languages = ui.languages()
+    if #languages > 0 then
+      local index = index_of(languages, ui.setting("language")) or 1
+      ui.send("language", languages[cycle(languages, index, step)])
+    end
   end,
-  -- Smooth motion: the characters and the camera glide between the original's frames (on by
-  -- default; off draws them where each frame leaves them, as the original).
-  ["smooth-motion"] = function(_step)
-    ui.send("smooth_motion", not ui.setting("smooth_motion"))
+  ["text-font"] = function(_step)
+    ui.send("text_font", ui.setting("text_font") == "original" and "modern" or "original")
   end,
-  -- Save notice: a small figure and "Saving" in a corner while the game saves (on by default).
-  ["save-notice"] = function(_step)
-    ui.send("save_notice", not ui.setting("save_notice"))
-  end,
-  -- Time in digits: the game time as HH:MM under the HUD's clock (on by default).
-  ["digital-time"] = function(_step)
-    ui.send("digital_time", not ui.setting("digital_time"))
-  end,
-  -- Bulk trades: the item trader and the card shop's packs ask how many at once (on by default).
-  ["bulk-trades"] = function(_step)
-    ui.send("bulk_trades", not ui.setting("bulk_trades"))
-  end,
-  -- Evolution requirements: the chart's tree tells what each target asks (on by default; off
-  -- leaves the original chart).
-  ["evolution-requirements"] = function(_step)
-    ui.send("evolution_requirements", ui.setting("evolution_requirements") == false)
-  end,
-  -- Translated signs: the signs painted in the maps read in the player's language (on by default).
-  ["translated-signs"] = function(_step)
-    ui.send("translated_signs", not ui.setting("translated_signs"))
-  end,
-  -- Status extras: the partner's tiredness bar and care mistakes on its status page (on by
-  -- default; off leaves the original page).
-  ["status-extras"] = function(_step)
-    ui.send("status_extras", ui.setting("status_extras") == false)
-  end,
-  -- Canonical stages: the chart names the stages as the series does and draws a Mega box (off by
-  -- default; off leaves the original's names and boxes).
-  ["canonical-stages"] = function(_step)
-    ui.send("canonical_stages", ui.setting("canonical_stages") ~= true)
-  end,
-  -- Walk with: the keyboard and the pad (keys, the default) or the mouse, never both.
-  ["walk-control"] = function(_step)
-    ui.send("walk_control", ui.setting("walk_control") == "mouse" and "keys" or "mouse")
-  end,
-  -- Long names: the naming box takes names of up to twelve letters (on by default; off keeps the
-  -- original's six).
-  ["long-names"] = function(_step)
-    ui.send("long_names", ui.setting("long_names") == false)
-  end,
+  -- The game's own options are not here: game_options (ui/common/game_options.lua) lists them and
+  -- the option rows below the display ones show them (bind_option_rows).
 }
 
 local function can_sleep()
@@ -1458,6 +1423,47 @@ end
 
 local refresh_player
 
+-- The option rows the game's options fill (docs/modulos/apps/game.md, «Opciones en partida»): the
+-- document's free rows option-slot-<n>, given the option's id once so routes and the focus find
+-- them by it. option_rows[n] is the row of game_options[n].
+local option_rows = nil
+local max_option_rows = 16
+
+local function bind_option_rows(document)
+  if option_rows ~= nil then
+    return
+  end
+  option_rows = {}
+  for slot = 1, max_option_rows do
+    local row = document:get("option-slot-" .. slot)
+    local option = game_options[slot]
+    if option ~= nil then
+      row:set_attribute("id", option.id)
+      document:get("option-slot-" .. slot .. "-value"):set_attribute("id", option.id .. "-value")
+      row:set_class("hidden", false)
+      option_rows[slot] = row
+    end
+  end
+end
+
+local function refresh_option_rows(document)
+  bind_option_rows(document)
+  for slot, row in ipairs(option_rows) do
+    local option = game_options[slot]
+    document:get("option-slot-" .. slot .. "-label"):set_text(t(option.label))
+    document:get(option.id .. "-value"):set_text(game_options.text(option))
+    row:set_class("hidden", false)
+  end
+end
+
+-- The row of an option, confirmed (step 1) or moved left and right.
+function adjust_slot(_document, slot, step)
+  local option = game_options[tonumber(slot)]
+  if option ~= nil then
+    game_options.change(option, tonumber(step) or 1)
+  end
+end
+
 local function refresh(document)
   refresh_medals(document)
   refresh_cards(document)
@@ -1487,20 +1493,10 @@ local function refresh(document)
   document:get("ui-scale-value"):set_text(t("pause_menu.ui_scale.value", { percent = percent }))
   document:get("vsync-value"):set_text(on_off(ui.setting("vsync")))
   document:get("ui-skin-value"):set_text(skin_choice.name())
-  document:get("free-exploration-value"):set_text(on_off(ui.setting("free_exploration")))
-  document:get("smooth-motion-value"):set_text(on_off(ui.setting("smooth_motion")))
-  document:get("save-notice-value"):set_text(on_off(ui.setting("save_notice")))
-  document:get("digital-time-value"):set_text(on_off(ui.setting("digital_time")))
-  document:get("bulk-trades-value"):set_text(on_off(ui.setting("bulk_trades")))
-  document
-    :get("evolution-requirements-value")
-    :set_text(on_off(ui.setting("evolution_requirements") ~= false))
-  document:get("translated-signs-value"):set_text(on_off(ui.setting("translated_signs")))
-  document:get("status-extras-value"):set_text(on_off(ui.setting("status_extras") ~= false))
-  document:get("canonical-stages-value"):set_text(on_off(canonical_stages()))
-  local walk = ui.setting("walk_control") == "mouse" and "mouse" or "keys"
-  document:get("walk-control-value"):set_text(t("pause_menu.walk_control." .. walk))
-  document:get("long-names-value"):set_text(on_off(ui.setting("long_names") ~= false))
+  document:get("language-value"):set_text(t("language.name"))
+  local font = ui.setting("text_font") == "original" and "original" or "modern"
+  document:get("text-font-value"):set_text(t("main_menu.text_font." .. font))
+  refresh_option_rows(document)
   refresh_player(document)
 end
 
@@ -1662,7 +1658,9 @@ function back(document)
     document:get("player-tab-" .. player_tab):focus()
     return
   end
-  if current == "main" then
+  if current == "options" and options_direct then
+    ui.hide(document_name)
+  elseif current == "main" then
     close_menu(document)
   elseif current == "player" and original_box.enabled() then
     close_menu_box(document, function()
@@ -1719,7 +1717,12 @@ function on_show(document)
   icon_time = 0
   refresh(document)
   local entry = ui.setting("ui_skin") == "original" and ui.setting("pause_menu.start_entry") or nil
-  if ui.setting("pause_menu.preview_player") == true then
+  -- F10 (Select on a pad) opens the menu straight on its options page (pause_menu.start_page,
+  -- «Opciones en partida»); going back from there closes the menu.
+  options_direct = ui.setting("pause_menu.start_page") == "options"
+  if options_direct then
+    show_page(document, "options")
+  elseif ui.setting("pause_menu.preview_player") == true then
     parents.player = "main"
     show_page(document, "player")
     if ui.setting("player.chart.preview") == true then
@@ -2025,6 +2028,12 @@ function on_action(document, action)
       local entry = document:get(id)
       if entry ~= nil and entry:has_focus() then
         change(action == "left" and -1 or 1)
+        return true
+      end
+    end
+    for slot, row in ipairs(option_rows or {}) do
+      if row:has_focus() then
+        adjust_slot(document, slot, action == "left" and -1 or 1)
         return true
       end
     end

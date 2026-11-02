@@ -1,6 +1,8 @@
 title.main: "Pausa"
 title.minimap: "Minimapa"
 title.options: "Opciones"
+# Bajo el recuadro de pausa: la tecla que abre las opciones desde la pausa ({key}, como F10).
+settings_hint: "{key} Opciones"
 date: "Año {year}   Día {day}"
 continue: "Continuar"
 partner: "Compañero"

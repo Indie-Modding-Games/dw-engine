@@ -1,6 +1,8 @@
 title.main: "Pause"
 title.minimap: "Minimap"
 title.options: "Options"
+# Under the pause box: the key that opens the options from the pause ({key}, such as F10).
+settings_hint: "{key} Options"
 date: "Year {year}   Day {day}"
 continue: "Continue"
 partner: "Partner"

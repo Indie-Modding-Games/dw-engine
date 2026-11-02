@@ -113,6 +113,7 @@ En el menú, empieza una **Nueva partida** en una ranura vacía. Las partidas ex
 | Cancelar o volver | Esc o Retroceso | Botón este |
 | Abrir o cerrar el menú | Tab | Botón norte (triángulo) |
 | Pausa | P o Pausa | Start |
+| Opciones durante la partida | F10 | Select (Back) |
 
 | Guardar un reporte de bug | F12 | |
 

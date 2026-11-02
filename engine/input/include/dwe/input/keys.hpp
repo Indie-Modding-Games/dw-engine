@@ -26,6 +26,7 @@ constexpr KeyCode Tab = 43;
 constexpr KeyCode Space = 44;
 constexpr KeyCode Grave = 53;
 constexpr KeyCode F1 = 58;
+constexpr KeyCode F10 = 67;
 constexpr KeyCode F12 = 69;
 constexpr KeyCode Pause = 72;
 constexpr KeyCode Home = 74;

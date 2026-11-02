@@ -24,3 +24,15 @@ body {
 	border-radius: 8dp;
 	background-color: #1a1f27e0;
 }
+
+/* Under the box, the key that opens the options from the pause (F10, «Opciones en partida»): the engine's, not the
+   original's. */
+#hint {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 402dp;
+	text-align: center;
+	font-size: 18dp;
+	color: #c9d3de;
+}

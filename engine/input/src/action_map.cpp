@@ -52,6 +52,12 @@ ActionMap defaultActionMap() {
   map.bind("pause", KeyBinding{keys::Pause});
   map.bind("pause", GamepadButtonBinding{GamepadButton::Start});
 
+  // The game's options while playing (docs/modulos/apps/game.md, «Opciones en partida»): the game
+  // menu opens straight on its options page, also from Start's pause. The original's Select had no
+  // use on the field.
+  map.bind("settings", KeyBinding{keys::F10});
+  map.bind("settings", GamepadButtonBinding{GamepadButton::Back});
+
   map.bind("move_left", KeyBinding{keys::A});
   map.bind("move_left", KeyBinding{keys::Left});
   map.bind("move_left", GamepadButtonBinding{GamepadButton::DpadLeft});
