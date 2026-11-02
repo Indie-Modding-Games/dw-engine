@@ -1317,4 +1317,55 @@ TEST_CASE("the modern skin's partner age says day for one and days for any other
   }
 }
 
+TEST_CASE("the original skin's enemy HP bar fill is as wide as the HP left") {
+  Content content;
+  addOriginalArt(content);
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "en");
+  auto ui = createUi(files, texts);
+  REQUIRE(ui->loadDocument("battle", idOf("ui/battle/document")));
+  ui->setSetting("ui_skin", std::string{"original"});
+  ui->show("battle", true);
+  double revision = 0.0;
+  // One bar as apps/screens publishes it: enemy 1, its anchor, the corner, the fill's width in the
+  // original's pixels, its red and green tint (BTL_renderEnemyHPBars) and the HP.
+  const auto publish = [&](int fill, int red, int green, int hp) {
+    ui->setSetting("battle.hp_bars",
+                   std::format("1 50.0 40.0 20 -26 {} {} {} {} ", fill, red, green, hp));
+    revision += 1.0;
+    ui->setSetting("battle.hp_bars.revision", revision);
+    ui->update();
+  };
+  const auto dp = [&](std::string_view id, std::string_view property) {
+    return std::stod(ui->styleProperty("battle", id, property));
+  };
+  // Where the gradients the fill is drawn with end, in dp (3 a pixel): the fill's box does not
+  // clip them, so they must stop at the HP left themselves.
+  const auto drawnEnd = [&] {
+    double end = 0.0;
+    for (int segment = 0; segment < 3; ++segment) {
+      const std::string id = std::format("hb-1-s{}", segment);
+      if (!ui->elementHasClass("battle", id, "hidden")) {
+        end = std::max(end, dp(id, "left") + dp(id, "width"));
+      }
+    }
+    return end;
+  };
+
+  publish(50, 128, 255, 400);
+  CHECK(drawnEnd() == doctest::Approx(150.0));
+  // 250 HP of 400: 31 pixels, yellower.
+  publish(31, 196, 255, 250);
+  CHECK(drawnEnd() == doctest::Approx(93.0));
+  CHECK(dp("hb-1-fill", "width") == doctest::Approx(93.0));
+  // 87 of 400: 10 pixels, orange; the green channel's saturation lies past them.
+  publish(10, 255, 192, 87);
+  CHECK(drawnEnd() == doctest::Approx(30.0));
+  // Nothing left: no gradient shows.
+  publish(0, 255, 128, 0);
+  for (int segment = 0; segment < 3; ++segment) {
+    CHECK(ui->elementHasClass("battle", std::format("hb-1-s{}", segment), "hidden"));
+  }
+}
+
 } // namespace dwe::ui

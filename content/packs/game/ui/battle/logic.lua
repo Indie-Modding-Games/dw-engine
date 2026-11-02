@@ -800,20 +800,25 @@ local function saturation(tint)
   return nil
 end
 
--- The fill as gradients between where the channels saturate: the colour runs straight in each.
-local function draw_fill(document, enemy, red, green)
+-- The fill as gradients between where the channels saturate: the colour runs straight in each. The
+-- sprite is as wide as the HP left and shows the ramp's first pixels (GsSPRITE w), so the gradients
+-- stop at that width themselves: the fill's box does not clip what it holds.
+local function draw_fill(document, enemy, width, red, green)
   local cuts = { 0 }
   for _, tint in ipairs({ red, green }) do
     local pixel = saturation(tint)
-    if pixel ~= nil then
+    if pixel ~= nil and pixel < width then
       cuts[#cuts + 1] = pixel
     end
   end
   table.sort(cuts)
-  cuts[#cuts + 1] = fill_pixels
+  cuts[#cuts + 1] = width
   for segment = 0, 2 do
     local id = "hb-" .. enemy .. "-s" .. segment
     local from, to = cuts[segment + 1], cuts[segment + 2]
+    if to ~= nil and to <= from then
+      to = nil
+    end
     set_class(document, id, "hidden", to == nil)
     if to ~= nil then
       set_property(document, id, "left", pixels(from))
@@ -872,7 +877,13 @@ local function draw_hp_bars(document)
       set_property(document, id .. "-fill", "left", pixels(x + 2))
       set_property(document, id .. "-fill", "top", pixels(y + 2))
       set_property(document, id .. "-fill", "width", pixels(values[base + 6]))
-      draw_fill(document, enemy, values[base + 7], values[base + 8])
+      draw_fill(
+        document,
+        enemy,
+        math.max(0, math.min(fill_pixels, values[base + 6])),
+        values[base + 7],
+        values[base + 8]
+      )
       set_property(document, id .. "-value", "left", pixels(x + 33))
       set_property(document, id .. "-value", "top", pixels(y - 9))
       draw_hp_value(document, enemy, values[base + 9])
