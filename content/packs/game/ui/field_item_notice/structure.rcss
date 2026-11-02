@@ -4,6 +4,12 @@
    second (renderString at y 0x2D and 0x39). The name is TEXT_COLORS 15 (0x48, 0x54, 0x7C) over the font's ink
    #d0d0d0 (utils.c). */
 
+/* The story's box lets the clicks fall through to the field (../story_textbox/structure.rcss); this notice takes
+   them itself, as its own `confirm`: the mouse answers it by clicking the box (document.rml). */
+#box {
+	pointer-events: auto;
+}
+
 #item {
 	color: #7588c9;
 }

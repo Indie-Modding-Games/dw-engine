@@ -130,6 +130,10 @@ que se puede seguir usando el escritorio; un mando real sí llega. Las rutas de 
   jugador; la cambia a ratón en el menú de pausa y comprueba que las flechas ya no lo mueven y un clic sí.
 - `route-fade.yaml`: entra en la casa del anciano con el ratón y hace una captura en mitad del fundido, con el nombre
   del mapa a la vista en el idioma del juego (`--lang`), y otra al acabar.
+- `route-field-pickup-mouse.yaml`: el aviso de un objeto del suelo se responde con el ratón: `drop_item` deja la
+  carne a los pies del jugador, el aviso se muestra, un `click: {element: "field_item_notice#box"}` sobre su caja lo
+  cierra y el objeto entra en la bolsa (la caja del aviso también responde al clic, como el `confirm` del teclado y
+  el mando).
 - `route-language.yaml`: empieza en el menú principal (`main_menu: true`), cambia el idioma desde él y lo devuelve,
   entra al campo y abre el menú de pausa, con capturas de cada pantalla. Se corre una vez por idioma, cada una con
   su carpeta de capturas:
