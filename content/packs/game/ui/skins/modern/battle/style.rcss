@@ -237,15 +237,6 @@
 	margin-left: 12dp;
 }
 
-#item-in-flight {
-	position: absolute;
-	left: 0;
-	top: 36%;
-	width: 100%;
-	text-align: center;
-	font-size: 26dp;
-}
-
 /* The end box: the outcome, the stats with their raises counting up, the bits moving into the balance, then the lines
    of drops, injury and moves learned typed in two rows. */
 #end {
@@ -535,7 +526,7 @@
 
 /* Hidden wins over the display of the elements above. */
 #fight.hidden, #end.hidden, #charge.hidden, #revive.hidden, .command.hidden, .fighter.hidden, #balance.hidden,
-#commands.hidden, #item-in-flight.hidden, .bar-row.hidden, .gain-arrow.hidden,
+#commands.hidden, .bar-row.hidden, .gain-arrow.hidden,
 #intro.hidden, .anger.hidden, .bp.hidden, .bs.hidden, .bt.hidden, .command-frame.hidden, #command-cursor.hidden {
 	display: none;
 }

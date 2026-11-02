@@ -44,6 +44,5 @@ charge: "Charge the finisher!"
 charge_hint: "Press repeatedly"
 prompt.command: "Give the order"
 prompt.bag: "Items"
-# The bag in battle: the button that opens it and the line while an item flies.
+# The bag in battle: the button that opens it.
 bag.open: "Items"
-item_in_flight: "Here it comes!"

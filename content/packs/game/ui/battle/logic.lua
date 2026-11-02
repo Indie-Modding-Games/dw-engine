@@ -326,10 +326,6 @@ end
 -- fight, and the command row waits under it (handleCommands returns while it is open).
 local function draw_bag(document)
   lookup(document, "open-bag"):set_class("unavailable", not setting("battle.bag.available", false))
-  lookup(document, "item-in-flight"):set_class(
-    "hidden",
-    not setting("battle.item_in_flight", false)
-  )
 end
 
 -- The end boxes (battle_ui.c: handleBattleEndBox). The stats box counts each raise up a point a

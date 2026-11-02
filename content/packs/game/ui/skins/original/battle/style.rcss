@@ -718,14 +718,6 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The bag in battle is the field's (ui/partner_menu); the line while a thrown item flies. */
-
-#item-in-flight {
-	font-size: 33dp;
-	color: #d0d0d0;
-}
-
-/* ------------------------------------------------------------------------------------------------------------------
    The end boxes (battle_ui.c: handleBattleEndBox; capture battle_end_box_stats, battle_end_box_drop), 176 pixels wide
    in the middle of the screen. The stats box (createPostBattleStatsBox: -88, -78, 176 x 96; renderPostBattleStatsBox):
    six rows 13 pixels apart from its y 9, the label at x 10, the value at x 68 over a bar 2 pixels tall from x 64 to

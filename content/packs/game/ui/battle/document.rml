@@ -119,7 +119,6 @@
 
 		<div id="match-clock" class="hidden"><div id="mc-side-1" class="mc-side"></div><div id="mc-side-2" class="mc-side"></div><div id="mc-d-0" class="mc-digit hidden"></div><div id="mc-d-1" class="mc-digit hidden"></div></div>
 
-		<p id="item-in-flight" class="original-look hidden" text-key="battle.item_in_flight"></p>
 
 		<div id="prompts">
 			<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="battle.prompt.command"></span></span>
