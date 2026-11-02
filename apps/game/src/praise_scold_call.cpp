@@ -43,8 +43,10 @@ void PraiseScoldCall::gesture(FieldScene& scene, const session::FieldItemsRules*
   const session::PraiseScoldRules* clips =
       rules != nullptr && rules->praiseScold ? &*rules->praiseScold : nullptr;
   if (clips == nullptr) {
-    // Without the ruleset's clips it counts at once.
+    // Without the ruleset's clips it counts at once. The scene ends here, so the care hold the
+    // walk-up took has to go too (finish() is not reached on this path).
     apply();
+    scene.field().holdForCare(false);
     step_ = Step::None;
     return;
   }
