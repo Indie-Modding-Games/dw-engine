@@ -45,7 +45,7 @@ constexpr auto ComparisonNames = std::to_array<std::string_view>(
 
 template <typename T, std::size_t N>
 std::optional<T> named(const std::array<std::string_view, N>& names, std::string_view name) {
-  const auto* found = std::ranges::find(names, name);
+  const auto found = std::ranges::find(names, name);
   if (found == names.end()) {
     return std::nullopt;
   }

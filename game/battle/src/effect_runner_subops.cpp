@@ -356,10 +356,9 @@ bool EffectRunner::vectorOp(Slot& slot, std::string_view name,
   const auto apply3 = [&](Combine combine, const EffectVector& a, const EffectVector& b) {
     return EffectVector{.x = combine(a.x, b.x), .y = combine(a.y, b.y), .z = combine(a.z, b.z)};
   };
-  if (const auto* op = std::ranges::find(PairOps, name, &PairOp::name); op != PairOps.end()) {
+  if (const auto op = std::ranges::find(PairOps, name, &PairOp::name); op != PairOps.end()) {
     setVector(slot, args[0], apply3(op->combine, vectorAt(slot, args[0]), vectorAt(slot, args[1])));
-  } else if (const auto* scalar = std::ranges::find(ScalarOps, name, &PairOp::name);
-             scalar != ScalarOps.end()) {
+  } else if (const auto scalar = std::ranges::find(ScalarOps, name, &PairOp::name); scalar != ScalarOps.end()) {
     setVector(slot, args[0],
               apply3(scalar->combine, vectorAt(slot, args[0]),
                      {.x = args[1], .y = args[1], .z = args[1]}));

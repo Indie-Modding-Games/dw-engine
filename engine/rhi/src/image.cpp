@@ -1,4 +1,5 @@
 #include <dwe/core/assert.hpp>
+#include <dwe/core/log.hpp>
 #include <dwe/rhi/buffer.hpp>
 #include <dwe/rhi/image.hpp>
 

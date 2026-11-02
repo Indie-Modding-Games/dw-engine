@@ -256,7 +256,7 @@ void CurlingScreen::showRings(FieldScene& scene, std::uint32_t lit) {
   const std::span<const game::curling::Ring> rings = curling_->rings();
   for (std::size_t ring = 0; ring < rings.size(); ++ring) {
     const bool shown = ((lit >> ring) & 1U) != 0;
-    for (const std::int32_t object : rings.at(ring).objects) {
+    for (const std::int32_t object : rings[ring].objects) {
       scene.setMapObjectFlag(object, shown ? 0 : assets::MapObjectInstance::HiddenFlag);
     }
   }
