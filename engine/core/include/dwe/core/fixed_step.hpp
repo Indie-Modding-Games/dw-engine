@@ -17,7 +17,9 @@ public:
 
   // Adds the real time of a frame and returns how many ticks the logic must run now.
   constexpr int advance(double frameSeconds) {
-    accumulated_ += std::clamp(toNanoseconds(frameSeconds), std::int64_t{0}, maxFrameNanoseconds_);
+    takenNanoseconds_ =
+        std::clamp(toNanoseconds(frameSeconds), std::int64_t{0}, maxFrameNanoseconds_);
+    accumulated_ += takenNanoseconds_;
     int ticks = 0;
     while (accumulated_ >= tickNanoseconds_) {
       accumulated_ -= tickNanoseconds_;
@@ -26,9 +28,20 @@ public:
     return ticks;
   }
 
+  // The time the last advance took in, after the cap: how far the logic's timeline moved, the part
+  // of a tick still to come included. What is drawn between ticks (animations, fades) moves on by
+  // this, not by the frame's real time, so a stall or a slow machine never takes the drawing ahead
+  // of the logic, and a fast display moves both by the same.
+  [[nodiscard]] constexpr double takenSeconds() const {
+    return static_cast<double>(takenNanoseconds_) / NanosecondsPerSecond;
+  }
+
   // Forgets the time not yet run, after a pause the logic must not catch up on (a game that took
   // a while to load).
-  constexpr void reset() { accumulated_ = 0; }
+  constexpr void reset() {
+    accumulated_ = 0;
+    takenNanoseconds_ = 0;
+  }
 
   // How far the current moment is between the last tick and the next one, from 0 to 1.
   [[nodiscard]] constexpr double alpha() const {
@@ -52,6 +65,7 @@ private:
   std::int64_t tickNanoseconds_;
   std::int64_t maxFrameNanoseconds_;
   std::int64_t accumulated_ = 0;
+  std::int64_t takenNanoseconds_ = 0;
 };
 
 } // namespace dwe::core

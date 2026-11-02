@@ -472,6 +472,29 @@ esa ejecución). Cuando el campo para en una casilla con varios sitios, abre `ui
 (`exploration_place_name.N`, `exploration_place_map.N`, `exploration_places`, `exploration_story`) y pasa al campo
 lo que se elige (`choose_destination`) o quedarse (`stay_here`).
 
+## Ritmo del bucle
+
+El original corre un tick de lógica por imagen y espera tres refrescos (`main.c: gameLoop`, `VSync(3)`): 20 ticks por
+segundo. El reloj suma un fotograma por tick y un minuto cada 20 (`clock.c: tickGameClock`), y las animaciones avanzan
+un fotograma por tick (`anim.c: tickAnimation`). El juego corre la lógica a 60 ticks fijos por segundo
+(`core::FixedStep`, tope de 0,25 s por imagen) y cada sistema cuenta sus fotogramas de 1/20 s; lo que se dibuja entre
+ticks (los clips de los personajes, los fundidos, los efectos) avanza con el tiempo que tomó el paso
+(`FixedStep::takenSeconds`), con el mismo tope que los ticks, nunca con el tiempo real de la imagen.
+
+| Medida (30 s) | Original (DuckStation) | dwe a 45 fps (vsync) | dwe a 100 fps | dwe a 280-300 fps (sin vsync) | Estado |
+|---|---|---|---|---|---|
+| Reloj | 20 fotogramas/s, 1,00 min/s | 19,9-20,0 fotogramas/s | 20,0 | 20,0 | Igual |
+| Ticks de lógica | 20/s | 60/s (3 por fotograma original) | 60/s | 60/s | Igual |
+| Animación | 1 fotograma cada 3 refrescos (20/s) | 1,00 s de clip por s (clips de 20 ticks/s) | 1,00 | 1,00 | Igual |
+| Carrera del jugador | 50 unidades por tick, 1000/s | ~995/s | igual (tick fijo) | igual | Igual |
+| Combate | 20 fotogramas/s | 200 fotogramas en 10 s | 200 en 10 s | 200 en 10 s | Igual |
+| Tras un parón de 2 s (carga, tirón) | lógica y animación juntas | antes: clips +2 s, lógica +0,25 s; ahora los dos +0,25 s | | | Igual |
+
+Las pruebas `apps/game/tests/frame_pace_tests.cpp` corren el bucle a 30, 60, 144 y 240 imágenes por segundo, con
+imágenes irregulares (0,5 a 40 ms) y con un parón de 2 s, y comprueban los mismos ticks, el mismo reloj y el mismo
+tiempo de clip. Hueco: el clip de un personaje se muestrea por imagen, así que lo que la lógica lee de él (un clip que
+ya terminó, en las escenas de cuidado) puede llegar un tick antes o después según el ritmo de la pantalla.
+
 ## Movimiento suave
 
 Mejora opcional, encendida por defecto: el ajuste `smooth_motion` (fila «Movimiento suave» de las opciones del menú

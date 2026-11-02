@@ -1140,9 +1140,12 @@ int runGame(const Options& requested) {
     phases.start(now);
 
     int ticks = step.advance(frameSeconds);
+    // What is drawn between ticks (the characters' clips, fades, the scenes' effects) moves on by
+    // the logic's time, capped as the ticks are, never by more: a stall, a load or a slow machine
+    // would otherwise play the animations ahead of the clock and the field.
+    double gameSeconds = step.takenSeconds();
     // The control channel's pause: only the ticks it advances run, and the frame lasts as long as
     // they do, so what moves with the frame's time moves with them.
-    double gameSeconds = frameSeconds;
     if (control) {
       ticks = control->ticksThisFrame(ticks);
       if (control->paused()) {

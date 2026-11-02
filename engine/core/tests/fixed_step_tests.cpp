@@ -44,3 +44,17 @@ TEST_CASE("after a reset the next frame runs only its own ticks") {
   CHECK(step.alpha() == doctest::Approx(0.0));
   CHECK(step.advance(0.01) == 1);
 }
+
+TEST_CASE("the time taken in is the frame's, capped as the ticks are") {
+  FixedStep step{0.01, 0.25};
+  CHECK(step.takenSeconds() == doctest::Approx(0.0));
+  CHECK(step.advance(0.004) == 0);
+  CHECK(step.takenSeconds() == doctest::Approx(0.004));
+  CHECK(step.advance(10.0) == 25);
+  CHECK(step.takenSeconds() == doctest::Approx(0.25));
+  CHECK(step.advance(-1.0) == 0);
+  CHECK(step.takenSeconds() == doctest::Approx(0.0));
+  CHECK(step.advance(0.02) == 2);
+  step.reset();
+  CHECK(step.takenSeconds() == doctest::Approx(0.0));
+}
