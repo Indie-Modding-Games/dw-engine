@@ -695,6 +695,8 @@ private:
   bool careHeld_ = false;
   CareClock careClock_ = CareClock::Runs;
   std::optional<CareWalk> careWalk_;
+  // Seconds the partner's clip of its care walks has played, kept across walks on with it.
+  float careClipSeconds_ = 0.0F;
   std::optional<glm::vec3> scriptCamera_;
   std::optional<CameraPan> cameraPan_;
   std::vector<std::optional<MapObject3D>> mapObjects_;

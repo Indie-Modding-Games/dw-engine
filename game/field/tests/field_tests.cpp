@@ -29,6 +29,7 @@ using dwe::game::field::FieldInput;
 using dwe::game::field::MapChange;
 using dwe::game::field::PartnerClip;
 using dwe::game::field::PartnerIdleClip;
+using dwe::game::field::PartnerWalkClip;
 using dwe::game::field::testing::fill;
 using dwe::game::field::testing::originalRules;
 using dwe::game::field::testing::roomMap;
@@ -815,6 +816,37 @@ TEST_CASE("a care scene runs the partner to a point and pans the camera, given b
   CHECK(field.scriptCamera().value_or(glm::vec3{}).x == doctest::Approx(800.0F));
   field.holdForCare(false);
   CHECK_FALSE(field.scriptCamera().has_value());
+}
+
+TEST_CASE("a care walk walks from its first frame, and let go on its point the partner walks on") {
+  // partner.c: tickPartnerToilet: sub state 3 starts the walk clip 2 as it sets the walk back,
+  // sub state 4 lets the script go on the point with the clip still on, and partnerTickWalking
+  // goes on from it. Measured on the original (the toilet by the start's house): clip 2 from the
+  // frame the toilet clip ends, still clip 2 when state 1 takes over, and clip 0 only once it
+  // stops by the player.
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  auto& partner = world.registry().get<dwe::scene::Transform>(field.partnerEntity());
+  dwe::scene::place(partner, {900.0F, 0.0F, 300.0F}, 0.0F);
+  field.holdForCare(true);
+  const glm::vec3 point{900.0F, field.partner().position.y, 700.0F};
+  field.walkPartnerTo(point, Motion::Walk);
+  CHECK(field.partner().motion == Motion::Walk);
+  for (int i = 0; i < 400 && field.partnerWalking(); ++i) {
+    field.tick(Tick);
+    REQUIRE(field.partner().motion == Motion::Walk);
+  }
+  REQUIRE_FALSE(field.partnerWalking());
+
+  field.holdForCare(false);
+  const std::optional<PartnerClip> clip = field.partnerFollowClip();
+  REQUIRE(clip);
+  CHECK(clip->id == PartnerWalkClip);
+  CHECK(field.partner().motion == Motion::Walk);
+  field.tick(Tick);
+  REQUIRE(field.partnerFollowClip());
+  CHECK(field.partnerFollowClip()->id != PartnerIdleClip);
 }
 
 TEST_CASE("a care walk to a point goes through walls and ends on the point's cell") {

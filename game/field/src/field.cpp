@@ -1159,12 +1159,22 @@ void Field::holdForCare(bool held, CareClock clock) {
   path_.clear();
   partnerStuckSeconds_ = 0.0F;
   entt::registry& registry = world_->registry();
+  const Motion partnerMotion = registry.get<AnimationIntent>(partner_).motion;
   registry.get<AnimationIntent>(player_) = {};
   registry.get<AnimationIntent>(partner_) = {};
   core::logDebug("[port:care] tamerSetState({}) (partner.c: the care scenes hold the player)",
                  held ? "6" : "0");
   if (!held) {
     releaseHandoff("care");
+    // partner.c: tickPartnerToilet sub state 4 lets the script go with the walk clip still on, and
+    // partnerTickWalking (state 1) goes on from it: a partner let go walking walks on, it does not
+    // stand first.
+    if (!scriptHeld_ && (partnerMotion == Motion::Walk || partnerMotion == Motion::Run)) {
+      // On the clip's frame the walk got to: its pass goes on before the follow picks another.
+      const auto frame =
+          static_cast<std::size_t>(std::lround(careClipSeconds_ / rules_.transition.frameSeconds));
+      playPartnerFrom(partnerMotion == Motion::Run ? PartnerRunClip : PartnerWalkClip, frame, {});
+    }
   }
 }
 
@@ -1216,6 +1226,14 @@ void Field::walkPartnerTo(glm::vec3 point, Motion motion) {
   }
   careWalk_ = CareWalk{.range = 0.0F, .away = false, .point = point, .motion = motion};
   partnerStuckSeconds_ = 0.0F;
+  // tickEntityWalkTo's caller starts the clip as it sets the walk (startAnimation): the partner
+  // walks from this frame, not after a frame of standing. A walk on with the clip a walk just
+  // ended on goes on with it (tickPartnerToilet sub states 1 and 2 keep sub state 0's run).
+  auto& intent = world_->registry().get<AnimationIntent>(partner_);
+  if (intent.motion != motion) {
+    careClipSeconds_ = 0.0F;
+  }
+  intent = {.motion = motion, .speedScale = 1.0F};
 }
 
 void Field::runPartnerUp() {
@@ -1255,6 +1273,11 @@ void Field::tickCareWalk(float seconds) {
                      "stops there",
                      toPoint ? distance : std::abs(distance - careWalk_->range));
     }
+    // tickEntityWalkTo ends on the point with the walk clip still on (tickPartnerToilet sub
+    // states 1, 2 and 4): the next step starts its own clip.
+    if (toPoint && there) {
+      registry.get<AnimationIntent>(partner_) = {.motion = careWalk_->motion, .speedScale = 1.0F};
+    }
     careWalk_.reset();
     partnerStuckSeconds_ = 0.0F;
     if (!toPoint) {
@@ -1270,6 +1293,7 @@ void Field::tickCareWalk(float seconds) {
   // A walk to a point stops on it (tickEntityWalkTo); one to a range walks on until it crosses it.
   stepCareWalk(heading, toPoint ? distance : std::numeric_limits<float>::max(), careWalk_->motion,
                seconds, !toPoint);
+  careClipSeconds_ += seconds;
 }
 
 void Field::stepCareWalk(glm::vec2 heading, float distance, Motion motion, float seconds,

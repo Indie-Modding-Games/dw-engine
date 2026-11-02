@@ -576,6 +576,8 @@ void FieldScene::applyLighting() {
 }
 
 void FieldScene::animate(Actor& actor, double seconds) {
+  const bool partner = &actor == partnerActor_.get();
+  const bool followed = partner && std::exchange(partnerFollowDrawn_, false);
   if (animateFighter(actor)) {
     return;
   }
@@ -587,8 +589,7 @@ void FieldScene::animate(Actor& actor, double seconds) {
   if (animateScripted(actor, seconds)) {
     return;
   }
-  const bool partner = &actor == partnerActor_.get();
-  if (partner && animateFollowingPartner(actor, seconds)) {
+  if (partner && animateFollowingPartner(actor, seconds, followed)) {
     return;
   }
   const auto& intent = world_.registry().get<scene::AnimationIntent>(actor.entity);
@@ -676,7 +677,7 @@ bool FieldScene::onScreen(const Actor& actor) const {
   return false;
 }
 
-bool FieldScene::animateFollowingPartner(Actor& actor, double seconds) {
+bool FieldScene::animateFollowingPartner(Actor& actor, double seconds, bool followed) {
   // The field's follow picks the clip and moves the partner by its root motion, frame by frame
   // (game::field::PartnerFollow); the drawing plays that clip from its start each time it starts.
   const std::optional<game::field::PartnerClip> clip = field_->partnerFollowClip();
@@ -684,6 +685,12 @@ bool FieldScene::animateFollowingPartner(Actor& actor, double seconds) {
     return false;
   }
   const auto id = static_cast<std::uint32_t>(clip->id);
+  partnerFollowDrawn_ = true;
+  if (!followed && actor.motionClip == id) {
+    // The follow takes over the clip the partner already plays (a care walk let go walking,
+    // partner.c: tickPartnerToilet sub state 4): it goes on, not from its start.
+    partnerFollowStarts_ = clip->starts;
+  }
   if (actor.motionClip != id || partnerFollowStarts_ != clip->starts) {
     core::logDebug("[port:anim] startAnimation (anim.c:201): partner clip {} after {:.2f} s of "
                    "the last clip",

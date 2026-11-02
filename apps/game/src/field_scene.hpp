@@ -671,8 +671,8 @@ private:
   void animatePartnerClip(double seconds);
   // The partner's animation for its motion (partner.c: partnerTickWalking).
   // The partner while the field's follow moves it: the clip it picked; false when something
-  // else moves it.
-  bool animateFollowingPartner(Actor& actor, double seconds);
+  // else moves it. `followed`: whether the follow drew the partner's last frame too.
+  bool animateFollowingPartner(Actor& actor, double seconds, bool followed);
   // What the partner's conditions and happiness say to the field's follow.
   [[nodiscard]] game::field::PartnerMood partnerMood() const;
   game::partner::FieldAnimation partnerAnimation(const Actor& actor, scene::Motion motion,
@@ -791,6 +791,8 @@ private:
   ruleset::Random gestureRandom_{0};
   // The start count of the follow's clip the partner plays.
   std::uint32_t partnerFollowStarts_ = 0;
+  // Whether the follow drew the partner's last frame.
+  bool partnerFollowDrawn_ = false;
   // Whether the player's held clip is a scene's (playPlayerSceneClip), which runs while paused.
   bool playerSceneClip_ = false;
 
