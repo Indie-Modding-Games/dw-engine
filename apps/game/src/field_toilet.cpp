@@ -4,7 +4,7 @@
 #include <dwe/assets/map_table.hpp>
 #include <dwe/core/collision_triggers.hpp>
 #include <dwe/core/log.hpp>
-#include <dwe/game/partner/state.hpp>
+#include <dwe/game/partner/partner.hpp>
 #include <dwe/scene/components.hpp>
 
 #include <algorithm>
@@ -53,7 +53,7 @@ bool FieldToilet::checkCell() {
   game::field::Field& field = scene_->field();
   const assets::CollisionCell cell = assets::collisionCellAt(field.player().position);
   if (active() || field.collision().trigger(cell).value_or(0) != core::collision::ToiletTrigger ||
-      !session_->partner().state().conditions.has(game::partner::Condition::NeedsToilet)) {
+      !session_->partner().goesToToilet()) {
     return false;
   }
   const session::ToiletWalkRules* rules = toiletWalkOf(*fieldItems_);

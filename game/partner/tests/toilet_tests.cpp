@@ -97,6 +97,35 @@ TEST_CASE("care.md toilet: with a field the pile and its care effects wait for t
   CHECK(raising.state().evolution.careMistakes == 1);
 }
 
+TEST_CASE(
+    "care.md toilet: the urge runs only in the normal state with the player free, and a pile due "
+    "keeps the toilet cell from sending the partner") {
+  OriginalRuleset original;
+  Raising raising(original.rules());
+  putOffMeals(raising);
+  needToilet(raising);
+  CHECK(raising.partner().goesToToilet());
+  // partner_impl.c: tickPoopingMechanic runs from partnerTickNormal (state 1) and returns while
+  // tamerGetState() != 0: a care scene or a held player does not bring the pile closer, even with
+  // the urge already run out (urge -1).
+  raising.edit([](PartnerState& state) { state.toilet.urgeFrames = -1; });
+  const CareContext careScene{.partnerNormal = false, .fieldScenes = true};
+  const CareContext heldPlayer{.tamerIdle = false, .fieldScenes = true};
+  CHECK_FALSE(has(raising.playFrames(UrgeFrames, careScene), EventKind::PoopedOnGround));
+  CHECK_FALSE(has(raising.playFrames(UrgeFrames, heldPlayer), EventKind::PoopedOnGround));
+  CHECK_FALSE(raising.partner().wildPoopDue());
+  CHECK(raising.state().toilet.urgeFrames == -1);
+  CHECK(raising.partner().goesToToilet());
+  // Back in the normal state the run-out urge goes at once: the pile waits for its scene, which
+  // holds the player (tickWildPoop: tamerSetState(6)), so the toilet cell no longer sends it.
+  raising.playFrames(1, CareContext{.fieldScenes = true});
+  CHECK(raising.partner().wildPoopDue());
+  CHECK(raising.state().conditions.has(Condition::NeedsToilet));
+  CHECK_FALSE(raising.partner().goesToToilet());
+  raising.partner().leaveWildPile();
+  CHECK_FALSE(raising.partner().goesToToilet());
+}
+
 TEST_CASE("care.md toilet: a pile waiting for its scene comes at once once the field is gone") {
   OriginalRuleset original;
   Raising raising(original.rules());

@@ -412,6 +412,10 @@ void Partner::tickPoop(const FrameTime& time, const CareContext& context) {
   }
 }
 
+bool Partner::goesToToilet() const {
+  return state_.conditions.has(Condition::NeedsToilet) && !state_.toilet.wildPoopDue;
+}
+
 void Partner::poopOnGround() {
   // The partner held on as long as it could and no field plays the scene: all of it at once.
   leaveWildPile();

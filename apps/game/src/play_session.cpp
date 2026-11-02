@@ -1106,8 +1106,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     guardFactsChanged = fieldToilet_.checkCell() || guardFactsChanged;
   }
   // partner_impl.c: createPoopPile, tickPoopDetection: the piles the partner left, and the one a
-  // partner that eats piles finds.
-  if (fieldIdle && !paused()) {
+  // partner that eats piles finds; not once the toilet cell sent the partner off this frame (state
+  // 6: tickPoopDetection runs only in the normal state).
+  if (fieldIdle && !paused() && !fieldToilet_.active()) {
     fieldPoop_.update();
   }
   // item.c: handleChips: the auto pilot chip calls its map-head section if no script runs; the

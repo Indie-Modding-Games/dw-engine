@@ -87,6 +87,11 @@ public:
   // Goes at a toilet (handleToilet).
   void useToilet();
 
+  // Whether a toilet cell sends the partner to the toilet (tamer.c: checkMapInteraction): it needs
+  // it (condition 8) and no pile on the ground waits for its scene, which holds the player from its
+  // first frame (partner.c: tickWildPoop sets the player's state 6).
+  [[nodiscard]] bool goesToToilet() const;
+
   // The portable potty item (item.c: handlePortaPotty).
   void usePortableToilet();
 
