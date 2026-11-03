@@ -108,7 +108,7 @@ TEST_CASE("the disk storage removes a file into its backup, or with no copy") {
   CHECK_FALSE(storage.remove("slot_01.yaml", "a/b"));
 }
 
-TEST_CASE("an erased slot is empty and keeps its save as the backup") {
+TEST_CASE("an erased slot is empty and leaves no backup") {
   MemorySaveStorage storage;
   SaveSlots slots{storage, parseSaveSettings(Settings).value()};
   const SlotId first{.kind = SlotKind::Manual, .index = 1};
@@ -117,11 +117,12 @@ TEST_CASE("an erased slot is empty and keeps its save as the backup") {
   REQUIRE(slots.erase(first));
   const SlotInfo info = slots.list()[0];
   CHECK(info.state == SlotInfo::State::Empty);
-  CHECK(info.hasBackup);
-  CHECK(slots.loadBackup(first).value().header.label == "second");
-  // A new save to the erased slot keeps the erased one as the backup until the save after it.
+  CHECK_FALSE(info.hasBackup);
+  CHECK_FALSE(storage.read("slot_01.yaml").value().has_value());
+  CHECK_FALSE(storage.read("slot_01.yaml.bak").value().has_value());
+  // A new save to the erased slot has nothing to keep as the backup.
   REQUIRE(slots.save(first, fileLabelled("third", at(10))));
-  CHECK(slots.loadBackup(first).value().header.label == "second");
+  CHECK_FALSE(slots.loadBackup(first));
   CHECK(errorOf(slots.erase({.kind = SlotKind::Manual, .index = 4})) == "there is no save slot 4");
 }
 
@@ -205,12 +206,15 @@ TEST_CASE("erasing a manual slot erases its autosaves and leaves other playthrou
   SaveFile ofSecond = fileLabelled("second", at(9));
   ofSecond.header.summary.slot = "slot_02";
   REQUIRE(slots.save(autosaveOne, ofFirst));
+  // Two writes leave autosave_01 a .bak, which the erase has to drop too.
+  REQUIRE(slots.save(autosaveOne, ofFirst));
   REQUIRE(slots.save(autosaveTwo, ofSecond));
   REQUIRE(slots.save(first, fileLabelled("first", at(8))));
   REQUIRE(slots.save(second, fileLabelled("second", at(9))));
 
   REQUIRE(slots.erase(first));
   CHECK_FALSE(storage.read("autosave_01.yaml").value().has_value());
+  CHECK_FALSE(storage.read("autosave_01.yaml.bak").value().has_value());
   CHECK(storage.read("autosave_02.yaml").value().has_value());
   CHECK_FALSE(storage.read("slot_01.yaml").value().has_value());
   CHECK(storage.read("slot_02.yaml").value().has_value());

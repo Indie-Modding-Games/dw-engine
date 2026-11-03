@@ -129,7 +129,15 @@ core::Result<void> SaveSlots::erase(SlotId slot) {
   if (auto valid = checkSlot(slot); !valid) {
     return valid;
   }
-  if (auto removed = storage_->remove(slotFileName(slot), slotBackupName(slot)); !removed) {
+  // A slot's erase leaves nothing behind: its save and its .bak both go, so no backup of a save the
+  // player deleted is kept.
+  const auto eraseFiles = [this](SlotId target) -> core::Result<void> {
+    if (auto removed = storage_->remove(slotFileName(target), ""); !removed) {
+      return removed;
+    }
+    return storage_->remove(slotBackupName(target), "");
+  };
+  if (auto removed = eraseFiles(slot); !removed) {
     return removed;
   }
   // An autosave names the manual slot of its playthrough in its summary; erasing that playthrough
@@ -141,9 +149,7 @@ core::Result<void> SaveSlots::erase(SlotId slot) {
       const SlotId autosave{.kind = SlotKind::Autosave, .index = index};
       const SlotInfo info = readInfo(autosave);
       if (info.header && info.header->summary.slot == erased) {
-        if (auto removed =
-                storage_->remove(slotFileName(autosave), slotBackupName(autosave));
-            !removed) {
+        if (auto removed = eraseFiles(autosave); !removed) {
           return removed;
         }
       }
