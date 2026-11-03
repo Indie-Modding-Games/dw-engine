@@ -304,7 +304,6 @@ core::Result<void> StoryScenes::startNewGame(GameSession& session) {
   scenes.screens.start(scenes.rules.newGameMap, scenes.rules.newGameExit);
   scenes.battles->restoreCounters({});
   scenes.recruits.clear();
-  scenes.shopTally = 0;
   scenes.deathPending = false;
   scenes.dying = false;
   scenes.egg.reset();

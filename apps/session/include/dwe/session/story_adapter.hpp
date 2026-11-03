@@ -193,6 +193,12 @@ public:
   [[nodiscard]] game::story::StoryState& state() { return state_; }
   [[nodiscard]] const game::story::StoryState& state() const { return state_; }
 
+  // The shop's tally (script_interp.c: SHOP_VARIABLE): routines 30, 31 and 56 keep it and a page's
+  // {shopvar} shows it (script_textbox.c: showTextbox, code 0x10). A new game clears it; saves do
+  // not keep it, as the original's memory card does not.
+  [[nodiscard]] std::int64_t shopTally() const { return shopTally_; }
+  void setShopTally(std::int64_t tally) { shopTally_ = tally; }
+
 private:
   class Serializer;
   class StatePort;
@@ -223,6 +229,7 @@ private:
   // content's partners); the evolution section saves them with the rest.
   std::set<std::int32_t> extraRaised_;
   game::story::StoryState state_;
+  std::int64_t shopTally_ = 0;
   std::unique_ptr<Serializer> serializer_;
   // Declared in the order they are built: the runner holds the host, the host the VM's coroutines,
   // and the VM's published functions the ports and the orders.

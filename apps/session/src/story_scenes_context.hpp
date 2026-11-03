@@ -72,8 +72,6 @@ struct StoryScenesContext {
   std::optional<PartnerSceneRequest> partnerScene;
   std::deque<StoryPropRequest> propRequests;
 
-  // The shop's tally of routines 30, 31 and 56 (script_interp.c: SHOP_VARIABLE).
-  std::int64_t shopTally = 0;
   // The dirt pile's size (map_object.c: DIRT_PILE_SIZE_COUNTER), which nothing resets, and the
   // boulder (MAP_3D_OBJ[0]); story_props.hpp.
   std::int32_t dirtPileSize = DirtPileFullSize;

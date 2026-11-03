@@ -43,6 +43,9 @@ constexpr std::array VariableNames{
 constexpr std::string_view NumberPrefix = "num:pstat=";
 constexpr std::string_view TamerTag = "tamer";
 constexpr std::string_view PartnerTag = "partner";
+// The shop's tally (script_textbox.c: showTextbox, code 0x10: intToStringSJIS(SHOP_VARIABLE, 5, 1),
+// digits without leading blanks).
+constexpr std::string_view ShopVariableTag = "shopvar";
 // The player's name is the species table's first name until the game names the player
 // (script_value.c: getSpeakerName, speaker 0xFD: DIGIMON_NAME(0)).
 constexpr std::size_t PlayerNameSlot = 0;
@@ -246,6 +249,9 @@ std::string StoryTextbox::pageText(const std::string& key,
     if (tag == PartnerTag) {
       return partnerName(names);
     }
+    if (tag == ShopVariableTag) {
+      return std::to_string(story_->shopTally());
+    }
     const auto readVariable = [&](std::int32_t variable) -> std::optional<std::size_t> {
       const auto value = story_->state().variable(variable);
       return value ? std::optional<std::size_t>{*value} : std::nullopt;
@@ -263,7 +269,7 @@ std::string StoryTextbox::pageText(const std::string& key,
         return localization::tr(screens::mainLabelKey(named.block, *value));
       }
     }
-    // Money, merit, the shop's and the tournaments' numbers come with their systems.
+    // Money, merit and the tournaments' numbers come with their systems.
     core::logDebug("[port:dialogue] showTextbox (script_textbox.c:1054): {{{}}} is not filled yet",
                    tag);
     return std::nullopt;

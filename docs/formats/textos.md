@@ -79,7 +79,8 @@ Texto de script: cada celda de control es `código, parámetro` (`showTextbox` e
 | `11`, `12` | `{bgm:pstat=P}`, `{tournament:pstat=P}` | ídem |
 | `0A`, `0B` | `{bits}`, `{merit}` | ignorado |
 | `0C`, `0E`, `0F` | `{tab96}`, `{tab132}`, `{half}` | ignorado |
-| `10`, `13`, `14`, `15` | `{shopvar}`, `{tourn_won}`, `{tourn_wins}`, `{tourn_lost}` | ignorado |
+| `10` | `{shopvar}` | ignorado; al dibujar, el recuento de la tienda (`StoryAdapter::shopTally`) |
+| `13`, `14`, `15` | `{tourn_won}`, `{tourn_wins}`, `{tourn_lost}` | ignorado |
 | `16`–`1C` | `{col16}`... `{col1c}` | columnas fijas del US; ignorado |
 | `0D 00` | salto de línea (`\n`) | |
 | `0D xx` | `{newline:raw=XX}` | un salto con parámetro distinto de 0 |

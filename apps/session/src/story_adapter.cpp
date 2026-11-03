@@ -517,6 +517,7 @@ core::Result<void> StoryAdapter::startNewGame(GameSession& session) {
   randomPort_->bind(session.random());
   state_ = newGameState(session.partner().state().species);
   extraRaised_.clear();
+  shopTally_ = 0;
   core::logInfo("{}", formatMessage(messages::StoryNewGame, state_.triggersSet()));
   return {};
 }

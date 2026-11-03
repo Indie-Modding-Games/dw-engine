@@ -444,3 +444,33 @@ TEST_CASE("routine 40 starts the final boss's charge on character 5 and goes on"
   REQUIRE(taken.size() == 1);
   CHECK(std::get<dwe::session::BossBuildupStarted>(taken[0]).character == 5);
 }
+
+TEST_CASE("routines 30, 31 and 56 keep the shop's tally the story's pages show as {shopvar}") {
+  // script_interp.c:1787-1797: 0x1e clears SHOP_VARIABLE, 0x1f adds pstat 243 * 256 + pstat 244,
+  // 0x38 writes it back into them; the canyon shop's job (script 199) adds 40 and then 3 * 256
+  // + 32.
+  const dwe::session::testing::TestPacks packs;
+  auto story = std::make_unique<dwe::session::StoryAdapter>(
+      dwe::session::StoryAdapterDesc{.files = &packs.files()});
+  dwe::session::StoryAdapter& state = *story;
+  std::vector<std::unique_ptr<dwe::session::SessionSystem>> systems;
+  systems.push_back(std::move(story));
+  const auto session = dwe::session::testing::newGameWith(packs, std::move(systems));
+  dwe::session::StoryScenesContext scenes{dwe::session::StoryScenesDesc{.story = &state}};
+  scenes.rules.tallyHighVariable = 243;
+  scenes.rules.tallyLowVariable = 244;
+  REQUIRE(dwe::session::registerShopTallyRoutines(scenes));
+  state.setShopTally(77);
+  REQUIRE(scenes.routines.call(30));
+  CHECK(state.shopTally() == 0);
+  REQUIRE(state.state().setVariable(243, 0));
+  REQUIRE(state.state().setVariable(244, 40));
+  REQUIRE(scenes.routines.call(31));
+  REQUIRE(state.state().setVariable(243, 3));
+  REQUIRE(state.state().setVariable(244, 32));
+  REQUIRE(scenes.routines.call(31));
+  CHECK(state.shopTally() == 840);
+  REQUIRE(scenes.routines.call(56));
+  CHECK(state.state().variable(243).value_or(-1) == 3);
+  CHECK(state.state().variable(244).value_or(-1) == 72);
+}
