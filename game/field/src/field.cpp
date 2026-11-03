@@ -222,6 +222,7 @@ core::Result<void> Field::enterMap(const assets::MapDocument& map, std::int32_t 
   const bool walked = leavingWalks_;
   auto queued = std::exchange(queuedChange_, std::nullopt);
   enterMapAt(map, assets::warpSpawn(*warp));
+  shadeHeld_ = false;
   fadeInSeconds_ = 0.0F;
   fadeInFrames_ = rules_.transition.fadeInFrames;
   fadeInHolds_ = walked;
@@ -313,8 +314,27 @@ void Field::startPlay() {
   core::logDebug("[port:field] main (main.c:3494): play starts on {}: fadeFromBlack({}), the "
                  "player free",
                  mapId_, rules_.transition.startFadeInFrames);
+  shadeHeld_ = false;
   fadeInSeconds_ = 0.0F;
   fadeInFrames_ = rules_.transition.startFadeInFrames;
+  fadeInHolds_ = false;
+}
+
+void Field::holdShade(std::int32_t shade) {
+  fadeInSeconds_.reset();
+  fadeProgress_ = shade;
+  shadeHeld_ = true;
+}
+
+void Field::releaseShade() {
+  if (!std::exchange(shadeHeld_, false) || leaving_ || pendingChange_ || waitingForMap_) {
+    return;
+  }
+  core::logDebug("[port:field] fadeFromBlack (fade.c): no map change follows the held fade, the "
+                 "screen fades back in over {} frames",
+                 rules_.transition.fadeInFrames);
+  fadeInSeconds_ = 0.0F;
+  fadeInFrames_ = rules_.transition.fadeInFrames;
   fadeInHolds_ = false;
 }
 
@@ -498,6 +518,9 @@ float Field::fadeLevel() const {
   if (fadeInSeconds_) {
     return shadeDarkness(transition,
                          fadeInShade(transition, fadeFrame(*fadeInSeconds_), fadeInFrames_));
+  }
+  if (shadeHeld_ && fadeProgress_) {
+    return shadeDarkness(transition, *fadeProgress_);
   }
   return 0.0F;
 }
@@ -847,6 +870,7 @@ void Field::endFadeIn() {
 
 void Field::leave(MapChange change) {
   leavingFrom_ = shadeNow();
+  shadeHeld_ = false;
   leaving_ = std::move(change);
   leavingSeconds_ = 0.0F;
   leavingWalks_ = true;

@@ -160,8 +160,14 @@ private:
   void startRetreat();
   void stepRetreat();
   void endRetreat();
-  void placePlayer() const;
+  void placePlayer(game::battle::Point at, game::battle::Facing facing) const;
   void standPlayer() const;
+  // battle_screen_retreat.cpp: the player's run out when the partner is called back, and the fade
+  // to black over it.
+  void stepEscape();
+  void startEscape();
+  void fadeEscape();
+  void endEscape();
   void facePlayerToPartner(game::battle::Point partner) const;
   void tickVictory(double seconds);
   void tickMatchEnd(double seconds);
@@ -253,6 +259,10 @@ private:
   double introSeconds_ = 0.0;
   // The player running back while the banner shows (BTL_handleBattleIntro).
   std::optional<game::battle::PlayerRetreat> retreat_;
+  // The player running out once the partner is called back (handleFleeing), and the shade the
+  // screen held as its fade to black started.
+  std::optional<game::battle::PlayerFlight> escape_;
+  std::optional<std::int32_t> escapeShadeFrom_;
   // Where the partner stood as the fight's last frame began: the player looks there
   // (tamerTickBattle runs before BTL_battleMain moves the fighters).
   std::optional<game::battle::Point> partnerBeforeFrame_;

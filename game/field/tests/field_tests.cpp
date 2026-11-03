@@ -1470,6 +1470,42 @@ TEST_CASE("the fade in runs on while a battle holds the field") {
   CHECK_FALSE(field.gameTimeRan());
 }
 
+TEST_CASE("a shade held by a battle stays, a map change fades on from it and a release fades in") {
+  // battle_tick.c: handleCommands: a partner called back fades the screen to black (fadeToBlack)
+  // while the battle still runs; the field keeps that shade until a map change or a fade in.
+  MapDocument town = roomMap("town");
+  dwe::scene::World world;
+  const auto rules = originalRules();
+  const dwe::game::field::TransitionRules& transition = rules.transition;
+  Field field{world, rules};
+  REQUIRE(field.enterMap(town, 0).has_value());
+  field.startPlay();
+  field.holdShade(transition.shadeMax);
+  CHECK(field.shadeHeld());
+  CHECK(field.shadeNow() == std::optional<std::int32_t>{transition.shadeMax});
+  for (int i = 0; i < 30; ++i) {
+    field.tickFadeIn(Tick);
+  }
+  CHECK(field.fadeLevel() == doctest::Approx(1.0F));
+
+  SUBCASE("a scripted map change stays black") {
+    field.startScriptedMapChange({.map = "house", .exit = 0, .trigger = 0}, false);
+    CHECK_FALSE(field.shadeHeld());
+    CHECK(field.fadeLevel() == doctest::Approx(1.0F));
+    field.releaseShade();
+    CHECK(field.fadeLevel() == doctest::Approx(1.0F));
+  }
+  SUBCASE("a release with no map change fades back in") {
+    field.releaseShade();
+    CHECK_FALSE(field.shadeHeld());
+    CHECK(field.fadeLevel() > 0.0F);
+    for (int i = 0; i < 60; ++i) {
+      field.tickFadeIn(Tick);
+    }
+    CHECK(field.fadeLevel() == doctest::Approx(0.0F));
+  }
+}
+
 TEST_CASE("a fade out started during a fade in goes on from the shade the fade in drew") {
   // fade.c: fadeToBlack adds its step to FADE_PROGRESS; a whole warp fade in leaves 20 there.
   const auto rules = originalRules();

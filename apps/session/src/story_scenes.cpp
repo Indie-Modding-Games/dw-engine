@@ -1,3 +1,4 @@
+#include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/assert.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/evolution/tables.hpp>
@@ -34,6 +35,58 @@ constexpr std::int64_t PlayerScriptId = 0xFD;
 constexpr std::int64_t PartnerScriptId = 0xFC;
 constexpr std::int64_t PlayerEntity = 0;
 constexpr std::int64_t PartnerEntity = 1;
+
+// The save section of the previous screen (main_menu.c: writeSavegame keeps CURRENT_SCREEN,
+// CURRENT_EXIT, PREVIOUS_SCREEN and PREVIOUS_EXIT; main.c puts them back on a load).
+constexpr std::string_view ScreensSaveName = "screens";
+constexpr std::string_view ScreenKey = "screen";
+constexpr std::string_view ExitKey = "exit";
+constexpr std::string_view PreviousScreenKey = "previous_screen";
+constexpr std::string_view PreviousExitKey = "previous_exit";
+
+class ScreensSerializer final : public game::save::SectionSerializer {
+public:
+  explicit ScreensSerializer(game::story::ScreenHistory& screens) : screens_{&screens} {}
+
+  [[nodiscard]] core::Result<core::YamlNode> write() const override {
+    const game::story::ScreenPlace& place = screens_->place();
+    core::YamlNode root = core::YamlNode::mapping();
+    root.set(std::string{ScreenKey}, core::YamlNode::scalar(std::to_string(place.screen)));
+    root.set(std::string{ExitKey}, core::YamlNode::scalar(std::to_string(place.exit)));
+    root.set(std::string{PreviousScreenKey},
+             core::YamlNode::scalar(std::to_string(place.previousScreen)));
+    root.set(std::string{PreviousExitKey},
+             core::YamlNode::scalar(std::to_string(place.previousExit)));
+    return root;
+  }
+
+  core::Result<void> read(const core::YamlNode& state) override {
+    assets::YamlReader reader;
+    game::story::ScreenPlace place;
+    if (reader.expectKeys(state, ScreensSaveName,
+                          {ScreenKey, ExitKey, PreviousScreenKey, PreviousExitKey})) {
+      place.screen = reader.integer<std::int32_t>(reader.field(state, ScreenKey));
+      place.exit = reader.integer<std::int32_t>(reader.field(state, ExitKey));
+      place.previousScreen = reader.integer<std::int32_t>(reader.field(state, PreviousScreenKey));
+      place.previousExit = reader.integer<std::int32_t>(reader.field(state, PreviousExitKey));
+    }
+    auto read = reader.finish(place, ScreensSaveName);
+    if (!read) {
+      return std::unexpected{read.error()};
+    }
+    screens_->restore(*read);
+    return {};
+  }
+
+  // A save from before the section: the field's next map starts the history over.
+  core::Result<void> readMissing() override {
+    screens_->forget();
+    return {};
+  }
+
+private:
+  game::story::ScreenHistory* screens_;
+};
 
 } // namespace
 
@@ -210,7 +263,14 @@ bool StoryScenesContext::trigger(std::int64_t trigger) const {
 }
 
 StoryScenes::StoryScenes(StoryScenesDesc desc)
-    : context_{std::make_unique<StoryScenesContext>(desc)} {}
+    : context_{std::make_unique<StoryScenesContext>(desc)} {
+  context_->screensSave = std::make_unique<ScreensSerializer>(context_->screens);
+}
+
+core::Result<void> StoryScenes::addSaveSections(game::save::SaveSections& sections) {
+  return sections.add(std::string{ScreensSaveName}, *context_->screensSave,
+                      game::save::MigrationChain{});
+}
 
 StoryScenes::~StoryScenes() = default;
 
@@ -250,7 +310,11 @@ core::Result<void> StoryScenes::readRules(const ruleset::Ruleset& rules) {
     scenes.rules.newGameChain = *scenes.chainOverride;
   }
   scenes.enabled = true;
+  // New rules keep the place: a ruleset reloaded in play does not forget where the player came
+  // from.
+  const game::story::ScreenPlace kept = scenes.screens.place();
   scenes.screens = game::story::ScreenHistory{scenes.rules.screens};
+  scenes.screens.restore(kept);
   scenes.desc.story->seedNewGame(scenes.rules.newGameChain == NewGameChain::Seeded);
   scenes.digimon.reset();
   if (const assets::AssetId* table = rules.table(game::evolution::DigimonTableRole)) {

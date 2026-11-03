@@ -285,6 +285,12 @@ struct EndingRules {
   std::int32_t fleeIgnoresHitsFrom = 0;
   std::int32_t reviveFrames = 0;
   std::int32_t reviveCountdownShownAt = 0;
+  // battle_tick.c: handleCommands: on this flee frame, with the partner standing, the screen starts
+  // to fade to black over fleeFadeFrames (fadeToBlack(0x14)); handleFleeing: the player runs out
+  // toward a point this far past the spawn point it entered the map on.
+  std::int32_t fleeFadeFrom = 0;
+  std::int32_t fleeFadeFrames = 0;
+  std::int32_t fleeWayOut = 0;
 };
 
 // The item the tamer throws (main.c: startThrowingItem, tickThrownItem): it leaves the hand at this

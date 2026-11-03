@@ -476,6 +476,7 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
   map_ = std::move(*scene);
   mapNameKey_ = std::move(nameKey);
   ++mapSerial_;
+  arrival_ = {.exit = at ? std::nullopt : std::optional<std::int32_t>{exit}, .trigger = 0};
   // The map's objects go with it, the effects' too.
   fieldEffects_.clear();
   objectSmoke_.stop();
@@ -511,6 +512,8 @@ void FieldScene::finishTick() {
     if (auto entered = enterMap(change->map, change->exit); !entered) {
       // The field waits for a map that never comes: say why, once.
       core::logError("field: {}", entered.error().message);
+    } else {
+      arrival_.trigger = change->trigger;
     }
   }
   followNpcs();

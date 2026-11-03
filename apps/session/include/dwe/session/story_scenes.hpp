@@ -199,6 +199,8 @@ public:
   void attachTournament(TournamentAdapter* tournament);
   // Reads the section and tells the story how a new game starts.
   core::Result<void> readRules(const ruleset::Ruleset& rules) override;
+  // The previous screen a fled battle goes back to, saved as the original saves it.
+  core::Result<void> addSaveSections(game::save::SaveSections& sections) override;
   core::Result<void> startNewGame(GameSession& session) override;
   void tick(GameSession& session, const ruleset::ClockAdvance& advance) override;
   // A lost life or a death waits for the death section (rules.death).

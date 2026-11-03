@@ -21,6 +21,14 @@ intérprete de historia ([diseño](../../architecture/interprete-historia.md)) l
   como el original), y `variables`, las 35 primeras (0–34, las que guarda `main_menu.c: writeSavegame`); las demás
   solo viven mientras corre el juego.
 
+- `ScreenHistory`: la pantalla actual y la anterior con sus salidas (`map.c: changeMap`, `PREVIOUS_SCREEN`,
+  `PREVIOUS_EXIT`), adonde vuelve una huida (`script_interp.c`: `START_BATTLE`). `arrive` sigue cada cambio de mapa
+  que juega el campo (`StoryFieldLink::followScreen`): una salida a pie guarda su número de warp (trigger − 110,
+  `checkMapInteraction`), un cambio de guion la salida por la que se entró (`map.c: scriptTickChangeMap`).
+  La partida guardada lo lleva en la sección `screens` (`main_menu.c: writeSavegame` guarda las cuatro); una partida
+  sin ella, o un arranque en un mapa, empieza la historia en el mapa donde aparece. Antes (hasta 2026-11-03, #179)
+  nada lo movía tras la partida nueva y una huida llevaba al mapa de la partida nueva o al 0.
+
 No conoce a los demás sistemas: la sesión (`apps/session`, `StoryAdapter`) crea el estado de partida nueva, lo
 registra en la partida guardada y se lo da al campo.
 

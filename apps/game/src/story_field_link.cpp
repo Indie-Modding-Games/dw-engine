@@ -1,8 +1,10 @@
 #include "story_field_link.hpp"
 
 #include <dwe/assets/map_table.hpp>
+#include <dwe/core/collision_triggers.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/field/field.hpp>
+#include <dwe/game/story/screen_history.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_lock.hpp>
 
@@ -107,6 +109,7 @@ void StoryFieldLink::afterMapChange() {
     }
     if (entry != nullptr && entry->originalIndex) {
       mapNumber_ = entry->index;
+      followScreen(entry->index);
       story_->mapEntered(entry->index);
     } else {
       core::logDebug("[port:story] changeMap (map.c: changeMap): map {} has no number of the "
@@ -117,11 +120,30 @@ void StoryFieldLink::afterMapChange() {
   scene_->setStoryCells(mapNumber_.has_value() && story_->scriptsMap(*mapNumber_));
 }
 
+// map.c: changeMap: the screen left becomes the previous one; tamer.c: checkMapInteraction keeps
+// a walked warp's number as the previous exit, map.c: scriptTickChangeMap the exit left by.
+void StoryFieldLink::followScreen(std::int32_t map) {
+  if (screens_ == nullptr) {
+    return;
+  }
+  using core::collision::FirstWarpTrigger;
+  using core::collision::WarpTriggerCount;
+  const FieldScene::MapArrival& arrival = scene_->mapArrival();
+  const bool walked =
+      arrival.trigger >= FirstWarpTrigger && arrival.trigger < FirstWarpTrigger + WarpTriggerCount;
+  screens_->arrive(
+      {.screen = map,
+       .exit = arrival.exit,
+       .walkedWarp = walked ? std::optional<std::int32_t>{arrival.trigger - FirstWarpTrigger}
+                            : std::nullopt});
+}
+
 bool StoryFieldLink::playMapChange(std::int32_t map, std::int32_t exit, bool showName) {
   const assets::MapTable* table = scene_->mapTable();
   const assets::MapEntry* entry = table != nullptr ? table->findByOriginalIndex(map) : nullptr;
   if (entry == nullptr || !entry->hasFile()) {
     core::logError("[port:story] scriptTickChangeMap (map.c:5277): no map {} to change to", map);
+    scene_->field().releaseShade();
     return false;
   }
   if (!story_->lock().exitOpen(scene_->field().mapId(), entry->id)) {
@@ -130,6 +152,8 @@ bool StoryFieldLink::playMapChange(std::int32_t map, std::int32_t exit, bool sho
                   story_->lock().stage(), entry->id, scene_->field().mapId());
     stalledCell_ = assets::collisionCellAt(scene_->field().player().position);
     noticeLock();
+    // A fled battle's way back held the screen black for this change: it comes back.
+    scene_->field().releaseShade();
     return false;
   }
   scene_->startScriptedMapChange({.map = entry->id, .exit = exit, .trigger = 0}, showName);

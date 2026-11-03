@@ -39,6 +39,9 @@ inline constexpr std::string_view PortBattleWon =
 // The previous screen.
 inline constexpr std::string_view PortEnterScreen =
     "[port:story] changeMap (map.c:5331): screen {} exit {} (previous screen {} exit {})";
+inline constexpr std::string_view PortScreenStart =
+    "[port:story] changeMap (map.c:5331): on screen {} with no place kept: it is the previous "
+    "screen too, at exit {}";
 inline constexpr std::string_view PortScreenOverride =
     "[port:story] changeMap (map.c:5339): from {} to {}, the previous screen is {} exit {}";
 

@@ -3,6 +3,7 @@
 #include <dwe/game/battle/player_retreat.hpp>
 #include <dwe/game/field/field.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <utility>
@@ -60,7 +61,7 @@ void BattleScreen::stepRetreat() {
     standPlayer();
     intro_->playerBack();
   }
-  placePlayer();
+  placePlayer(retreat_->position(), retreat_->facing());
 }
 
 // After the banner (battle_setup.c:301-312): a player still running stops and turns to the partner,
@@ -72,7 +73,7 @@ void BattleScreen::endRetreat() {
   if (retreat_->running()) {
     retreat_->stop(battle_->state().partner().position);
     standPlayer();
-    placePlayer();
+    placePlayer(retreat_->position(), retreat_->facing());
   }
   desc_.scene->field().playerTrail().keepOldest(static_cast<std::int32_t>(retreat_->wayLeft()));
   battle_->movePlayer(retreat_->position());
@@ -86,17 +87,90 @@ void BattleScreen::standPlayer() const {
   desc_.scene->playPlayerSceneClip(PlayerStandClip);
 }
 
-void BattleScreen::placePlayer() const {
+void BattleScreen::placePlayer(game::battle::Point at, game::battle::Facing facing) const {
   game::field::Field& field = desc_.scene->field();
   glm::vec3 position = field.player().position;
-  const game::battle::Point at = retreat_->position();
   position.x = static_cast<float>(at.x);
   position.z = static_cast<float>(at.z);
-  const game::battle::Facing facing = retreat_->facing();
   field.placeByScript(field.playerEntity(), position);
   field.turnByScript(
       field.playerEntity(),
       assets::yawOfDirection({static_cast<float>(facing.x), 0.0F, static_cast<float>(facing.z)}));
+}
+
+// One battle frame of a flee (battle_tick.c: handleCommands with currentCommand 1): the player's
+// run starts on the first frame after the call back, then steps every frame; the fade follows.
+void BattleScreen::stepEscape() {
+  if (desc_.scene == nullptr || !battle_->state().fleeFrames) {
+    return;
+  }
+  if (!escape_) {
+    startEscape();
+    return;
+  }
+  escape_->step();
+  placePlayer(escape_->position(), escape_->facing());
+  fadeEscape();
+}
+
+// handleCommands, command 1 confirmed: startAnimation(3), and on the entry cell (TAMER_START_TILE)
+// the player turns to the way out of the map at once: MAP_WARPS' spawn of the exit it came in by
+// (CURRENT_EXIT), 3000 units on against the way it faced as it arrived.
+void BattleScreen::startEscape() {
+  game::field::Field& field = desc_.scene->field();
+  const game::field::PlayerTrail& trail = field.playerTrail();
+  const game::field::CharacterState player = field.player();
+  const game::battle::BattleRules& rules = battle_->rules();
+  std::optional<game::battle::Point> away;
+  if (const std::optional<std::int32_t> exit = desc_.scene->mapArrival().exit) {
+    if (const assets::MapWarp* warp = desc_.scene->map().warp(*exit)) {
+      const assets::SpawnPoint spawn = assets::warpSpawn(*warp);
+      away = game::battle::wayOut(battlePointOf(spawn.position), facingOfYaw(spawn.yaw),
+                                  rules.ending.fleeWayOut);
+    }
+  }
+  escape_.emplace(trail.newestFirst(), trail.start(), away, battlePointOf(player.position),
+                  facingOfYaw(player.yaw), rules.timing);
+  escapeShadeFrom_.reset();
+  desc_.scene->playPlayerSceneClip(PlayerRunClip);
+  placePlayer(escape_->position(), escape_->facing());
+  core::logDebug("[port:battle] handleCommands (battle_tick.c:54): the partner is called back; the "
+                 "player runs over {} kept cells, startAnimation(3){}",
+                 trail.newestFirst().size(), away ? "" : "; no exit taken, no way out to face");
+}
+
+// handleCommands: on flee frame 20, with the partner standing, fadeToBlack(0x14): fade.c's fade
+// out adds shadeMax / (frames + 1) to the shade the screen held (FADE_PROGRESS) every frame. The
+// field keeps the shade until the map change after the battle fades on from it.
+void BattleScreen::fadeEscape() {
+  const game::battle::EndingRules& ending = battle_->rules().ending;
+  const std::int32_t frame = *battle_->state().fleeFrames - ending.fleeFadeFrom;
+  game::field::Field& field = desc_.scene->field();
+  if (frame <= 0 || (!escapeShadeFrom_ && (frame != 1 || battle_->state().partner().defeated()))) {
+    return;
+  }
+  const game::field::TransitionRules& transition = field.rules().transition;
+  if (!escapeShadeFrom_) {
+    escapeShadeFrom_ =
+        field.shadeNow().value_or(game::field::fadeInShade(transition, transition.fadeInFrames));
+    core::logDebug("[port:battle] handleCommands (battle_tick.c:72): flee frame {}: "
+                   "fadeToBlack({}) from shade {}",
+                   ending.fleeFadeFrom, ending.fleeFadeFrames, *escapeShadeFrom_);
+  }
+  const std::int32_t step = transition.shadeMax / (ending.fleeFadeFrames + 1);
+  field.holdShade(std::min(transition.shadeMax, *escapeShadeFrom_ + (step * frame)));
+}
+
+// The battle is over: the way back keeps the cells the run did not reach.
+void BattleScreen::endEscape() {
+  if (!escape_) {
+    return;
+  }
+  if (desc_.scene != nullptr) {
+    desc_.scene->field().playerTrail().keepOldest(static_cast<std::int32_t>(escape_->wayLeft()));
+  }
+  escape_.reset();
+  escapeShadeFrom_.reset();
 }
 
 // battle_tick.c: tamerTickBattle: through the fight the player looks at the partner every frame,

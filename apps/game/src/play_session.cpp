@@ -487,6 +487,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   session.attachField(scene_->field());
   game_.systems.story->attachNpcs(&scene_->npcs());
   storyLink_ = std::make_unique<StoryFieldLink>(*game_.systems.story, *scene_);
+  if (game_.systems.scenes != nullptr) {
+    storyLink_->followScreens(&game_.systems.scenes->screens());
+  }
   storyScenes_.attachShop(game_.systems.shop);
   storyScenes_.attachItemKeeper(game_.systems.itemKeeper);
   itemKeeperScreen_.setSpecies(species_ ? &*species_ : nullptr);

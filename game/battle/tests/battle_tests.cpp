@@ -255,6 +255,40 @@ TEST_CASE("fleeing ends the battle after the flee frames") {
   CHECK(resultOf(battle).care.happiness == -10);
 }
 
+TEST_CASE("a partner called back takes no other command, the finisher included, and wins no bits") {
+  // battle_tick.c: handleCommands returns before reading the buttons while currentCommand is 1.
+  BattleSetup setup =
+      duel(evenStats(2000, 300), evenStats(2000, 100), {"punch", "", "", "big_finish"});
+  Battle battle = startBattle(setup, 11);
+  while (battle.state().partner().finisherProgress < battle.state().partner().finisherGoal &&
+         battle.state().frame < 5000) {
+    battle.step();
+  }
+  REQUIRE(battle.state().partner().finisherProgress == battle.state().partner().finisherGoal);
+  REQUIRE(battle.command(Command::Flee));
+  battle.step();
+  CHECK_FALSE(battle.command(Command::Finisher));
+  CHECK_FALSE(battle.command(Command::YourCall));
+  CHECK_FALSE(battle.command(Command::Flee));
+  CHECK_FALSE(battle.openBag());
+  std::int64_t steps = 1;
+  while (!battle.finished() && steps < 400) {
+    CHECK(battle.state().commands.current == Command::Flee);
+    CHECK_FALSE(battle.state().frozenByFinisher());
+    battle.step();
+    ++steps;
+  }
+  REQUIRE(battle.finished());
+  // The flee frames still end it on time, with nothing gained: BTL_deinitializeCombat skips
+  // BTL_handleVictorySequence (no bits, no drops, no stats) when the command is 1.
+  CHECK(steps == 42);
+  const BattleResult& fled = resultOf(battle);
+  CHECK(fled.outcome == Outcome::Fled);
+  CHECK(fled.bits == 0);
+  CHECK(fled.drops.empty());
+  CHECK(std::ranges::all_of(fled.statGains, [](std::int32_t gain) { return gain == 0; }));
+}
+
 TEST_CASE(
     "fleeing costs happiness and discipline and tires more; a battle that ends without MP tires 10 more") {
   // tamer.c: startBattle (a flight); partner_impl.c: handlePostBattleTiredness: +5, and with the MP

@@ -308,6 +308,11 @@ ending:
   # Tras caer, el partner aún puede revivir con un objeto durante 171 fotogramas; la cuenta se ve a los 20.
   revive_frames: 171
   revive_countdown_shown_at: 20
+  # Al huir, la pantalla funde a negro en 20 fotogramas desde el fotograma 20 (fadeToBlack(0x14)), y
+  # el jugador corre hacia la salida por la que entró: 3000 unidades tras su punto de aparición (handleFleeing).
+  flee_fade_from: 20
+  flee_fade_frames: 20
+  flee_way_out: 3000
 
 # El objeto que lanza el tamer (main.c: startThrowingItem, tickThrownItem): sale de la mano en el fotograma 7 de la
 # animación de lanzar (que el objeto ve un fotograma adelantada) y vuela 24 pasos; el último lo deja en el partner

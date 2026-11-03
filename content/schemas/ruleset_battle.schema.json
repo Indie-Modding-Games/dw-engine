@@ -864,7 +864,10 @@
         "flee_frames",
         "flee_ignores_hits_from",
         "revive_frames",
-        "revive_countdown_shown_at"
+        "revive_countdown_shown_at",
+        "flee_fade_from",
+        "flee_fade_frames",
+        "flee_way_out"
       ],
       "additionalProperties": false,
       "properties": {
@@ -879,9 +882,18 @@
         },
         "revive_countdown_shown_at": {
           "type": "integer"
+        },
+        "flee_fade_from": {
+          "type": "integer"
+        },
+        "flee_fade_frames": {
+          "type": "integer"
+        },
+        "flee_way_out": {
+          "type": "integer"
         }
       },
-      "description": "Fleeing and the revive countdown, in frames."
+      "description": "Fleeing and the revive countdown, in frames; the flee's fade to black and how far past the spawn point the player runs out."
     },
     "item_throw": {
       "type": "object",

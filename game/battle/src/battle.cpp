@@ -263,6 +263,11 @@ core::Result<void> Battle::command(Command command) {
   if (state_.bagOpen) {
     return core::fail(std::string{messages::BagOpen});
   }
+  // battle_tick.c: handleCommands: once the partner is called back it only runs (currentCommand 1
+  // returns before the buttons are read), the finisher's button included.
+  if (state_.fleeFrames) {
+    return core::fail(std::string{messages::Fleeing});
+  }
   if (std::ranges::find(state_.commands.menu, command) == state_.commands.menu.end()) {
     return core::fail(std::string{messages::CommandNotInMenu});
   }
@@ -289,16 +294,14 @@ core::Result<void> Battle::command(Command command) {
   case Command::Flee:
     commands.buffered = command;
     commands.current = command;
-    if (!state_.fleeFrames) {
-      state_.fleeFrames = 0;
-      pending().push_back({.kind = EventKind::FleeStarted,
-                           .fighter = PartnerId,
-                           .other = std::nullopt,
-                           .move = std::nullopt,
-                           .amount = 0,
-                           .status = StatusEffect::None,
-                           .command = Command::None});
-    }
+    state_.fleeFrames = 0;
+    pending().push_back({.kind = EventKind::FleeStarted,
+                         .fighter = PartnerId,
+                         .other = std::nullopt,
+                         .move = std::nullopt,
+                         .amount = 0,
+                         .status = StatusEffect::None,
+                         .command = Command::None});
     return {};
   case Command::Change:
     commands.changeTarget = true;

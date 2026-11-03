@@ -1,6 +1,7 @@
 #include "story_scene_glue.hpp"
 
 #include <dwe/core/log.hpp>
+#include <dwe/game/field/field.hpp>
 
 #include <cstddef>
 #include <vector>
@@ -32,6 +33,9 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
     scenes.battleFinished(storyOutcome(*outcome));
   } else if (outcome && tournament_.matchRunning()) {
     tournament_.matchOver(*outcome);
+  } else if (outcome == game::battle::Outcome::Fled) {
+    // A flee the story did not ask for has no map change after it: the black screen fades back in.
+    scene.field().releaseShade();
   }
   if (const auto request = scenes.takeBattleRequest()) {
     startBattle(scenes, battle, species, scene, *request);

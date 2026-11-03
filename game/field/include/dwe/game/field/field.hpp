@@ -237,6 +237,14 @@ public:
   // A fade the field does not run (the story's fade to white, WhiteFade) drew `shade`:
   // FADE_PROGRESS is shared, so the next map change fades out from it.
   void setShade(std::int32_t shade) { fadeProgress_ = shade; }
+  // A fade out another screen runs (a fled battle's fadeToBlack, battle_tick.c: handleCommands)
+  // drew `shade`: the screen keeps it after that screen ends, until a map change fades on from it
+  // or releaseShade fades it back in. A fade in under way stops.
+  void holdShade(std::int32_t shade);
+  // The held shade fades back in (fadeFromBlack(transition.fadeInFrames)), for when no map change
+  // follows; nothing when none is held.
+  void releaseShade();
+  [[nodiscard]] bool shadeHeld() const { return shadeHeld_; }
   // Runs only the map change's fade in, for the ticks something else holds the field (a battle).
   // fade.c: renderFadeIn is a drawn object (addObject 4005) that steps on every frame the game
   // draws, whatever runs the logic, so a battle a script starts before the fade in ends (a story
@@ -676,6 +684,8 @@ private:
   std::optional<std::int32_t> fadeProgress_;
   // The shade the running fade out started from.
   std::optional<std::int32_t> leavingFrom_;
+  // Whether the screen keeps fadeProgress_ while no fade of the field runs (holdShade).
+  bool shadeHeld_ = false;
 
   bool gameTimeRan_ = false;
   std::vector<TriggerStep> triggerSteps_;

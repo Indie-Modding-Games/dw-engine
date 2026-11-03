@@ -30,4 +30,26 @@ void ScreenHistory::enter(std::int32_t screen, std::int32_t exit) {
                                                place_.previousScreen, place_.previousExit));
 }
 
+void ScreenHistory::arrive(const ScreenArrival& arrival) {
+  if (place_.screen == NoScreen) {
+    core::logDebug("{}", messages::formatMessage(messages::PortScreenStart, arrival.screen,
+                                                 arrival.exit.value_or(0)));
+    start(arrival.screen, arrival.exit.value_or(0));
+    return;
+  }
+  if (!arrival.exit) {
+    if (place_.screen != arrival.screen) {
+      core::logDebug("{}", messages::formatMessage(messages::PortScreenStart, arrival.screen, 0));
+      start(arrival.screen, 0);
+    }
+    return;
+  }
+  if (arrival.walkedWarp) {
+    leaveByWarp(*arrival.walkedWarp);
+  } else {
+    leaveByScript();
+  }
+  enter(arrival.screen, *arrival.exit);
+}
+
 } // namespace dwe::game::story

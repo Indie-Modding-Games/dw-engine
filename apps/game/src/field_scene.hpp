@@ -525,6 +525,13 @@ public:
   [[nodiscard]] std::string nameKeyOf(std::string_view mapId) const;
   // Grows by one on every map entered, so the app notices a change (minimap, autotests).
   [[nodiscard]] std::uint32_t mapSerial() const { return mapSerial_; }
+  // How the map on screen was entered: the exit (none when entered at a place, as a loaded game is)
+  // and the collision value of the map change that led there (0 when none did).
+  struct MapArrival {
+    std::optional<std::int32_t> exit;
+    std::int32_t trigger = 0;
+  };
+  [[nodiscard]] const MapArrival& mapArrival() const { return arrival_; }
   [[nodiscard]] const std::optional<MapChangeTiming>& lastMapChange() const { return lastChange_; }
 
 private:
@@ -829,6 +836,7 @@ private:
   render::MapSceneData map_;
   std::string mapNameKey_;
   std::uint32_t mapSerial_ = 0;
+  MapArrival arrival_;
   std::vector<render::MapMarker> extraMarkers_;
   std::vector<GroundItemSprite> groundItems_;
   std::optional<HeldItemSprite> heldItem_;

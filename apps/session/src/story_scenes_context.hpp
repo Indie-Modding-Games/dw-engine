@@ -54,6 +54,8 @@ struct StoryScenesContext {
   bool published = false;
 
   game::story::ScreenHistory screens;
+  // The save section of `screens` (StoryScenes::addSaveSections).
+  std::unique_ptr<game::save::SectionSerializer> screensSave;
   game::story::SceneSync sync;
   game::story::RoutineTable routines;
   std::unique_ptr<game::story::StoryBattlePort> battlePort;

@@ -97,3 +97,61 @@ TEST_CASE("the player stops where its next step would leave the combat area, wal
   CHECK(retreat.position().x + timing.retreatRadius + timing.retreatStep > edge);
   CHECK(retreat.facing().x < 0);
 }
+
+TEST_CASE("a flight runs the way back to the entry cell and runs on the spot there") {
+  const TimingRules& timing = originalRules().timing;
+  // battle_tick.c: handleFleeing: the same way as the opening's run, newest cell first, then the
+  // entry cell, with no area to stop it; on the entry cell it faces the way out and animFlag 2
+  // keeps the root motion from moving it.
+  const std::vector<CollisionCell> way{{.column = 55, .row = 50}, {.column = 55, .row = 46}};
+  const CollisionCell entry{.column = 51, .row = 46};
+  const Point away{.x = -3000, .z = -350};
+  PlayerFlight flight(way, entry, away, {.x = 50, .z = 50}, FacingAway, timing);
+  bool passedFirst = false;
+  std::int32_t frames = 0;
+  while (!flight.held() && frames < 60) {
+    ++frames;
+    const Point before = flight.position();
+    flight.step();
+    const Point after = flight.position();
+    if (!flight.held()) {
+      // A run's step a frame until then.
+      const std::int64_t dx = after.x - before.x;
+      const std::int64_t dz = after.z - before.z;
+      CHECK((dx * dx) + (dz * dz) >= (timing.retreatStep - 1) * (timing.retreatStep - 1));
+    }
+    passedFirst = passedFirst || after.x >= 500;
+  }
+  CHECK(passedFirst);
+  REQUIRE(flight.held());
+  CHECK(flight.wayLeft() == 0);
+  CHECK(dwe::assets::collisionCellAt({static_cast<float>(flight.position().x), 0.0F,
+                                      static_cast<float>(flight.position().z)}) == entry);
+  // It faces west, the way out, and stays.
+  CHECK(flight.facing().x < 0);
+  const Point stays = flight.position();
+  for (int frame = 0; frame < 10; ++frame) {
+    flight.step();
+  }
+  CHECK(flight.position() == stays);
+}
+
+TEST_CASE("a flight that starts on the entry cell turns to the way out at once and stays") {
+  const TimingRules& timing = originalRules().timing;
+  const CollisionCell entry{.column = 51, .row = 46};
+  // handleCommands, case 1: on TAMER_START_TILE the player looks at the way out at once.
+  PlayerFlight flight({}, entry, Point{.x = 150, .z = 3000}, {.x = 150, .z = -350}, FacingAway,
+                      timing);
+  CHECK(flight.facing().z > 0);
+  flight.step();
+  CHECK(flight.held());
+  CHECK(flight.position() == Point{.x = 150, .z = -350});
+}
+
+TEST_CASE("the way out lies behind the spawn point, against the way the player arrives") {
+  // MAP_WARPS.rotation + 0x800 turning (0, 0, -3000): 3000 units back the way it came in.
+  CHECK(wayOut({.x = 100, .z = 200}, {.x = 0, .z = FacingScale}, 3000) ==
+        Point{.x = 100, .z = -2800});
+  CHECK(wayOut({.x = 100, .z = 200}, {.x = -FacingScale, .z = 0}, 3000) ==
+        Point{.x = 3100, .z = 200});
+}

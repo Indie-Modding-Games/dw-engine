@@ -1,5 +1,6 @@
 #include <dwe/game/battle/player_retreat.hpp>
 
+#include <optional>
 #include <utility>
 
 #include "battle_context.hpp"
@@ -81,6 +82,68 @@ bool PlayerRetreat::step(const BattleGround* ground, Point partner) {
 void PlayerRetreat::stop(Point partner) {
   running_ = false;
   lookAt(partner);
+}
+
+PlayerFlight::PlayerFlight(std::vector<assets::CollisionCell> way, assets::CollisionCell entry,
+                           std::optional<Point> away, Point from, Facing facing,
+                           const TimingRules& timing)
+    : way_(std::move(way)), entry_(entry), away_(away), position_(from), facing_(facing),
+      timing_(&timing), wayLeft_(way_.size()) {
+  // handleCommands, case 1: a player already on the entry cell turns to the way out at once.
+  if (cellOf(position_) == entry_ && away_) {
+    facing_ = facingToward(position_, *away_);
+  }
+}
+
+// handleFleeing: the next cell of the way back (counted reached once on it), else the entry cell,
+// and on the entry cell the way out. entityLookAtTile and entityLookAtLocation turn at once.
+void PlayerFlight::turn() {
+  const assets::CollisionCell cell = cellOf(position_);
+  if (wayLeft_ > 0) {
+    const assets::CollisionCell next = way_.at(way_.size() - wayLeft_);
+    facing_ = facingToward(position_, centreOf(next));
+    if (cell == next) {
+      --wayLeft_;
+    }
+    return;
+  }
+  if (cell != entry_) {
+    facing_ = facingToward(position_, centreOf(entry_));
+    return;
+  }
+  // On the entry cell it faces the way out and runs on the spot (animFlag 2: applyRootMomentum
+  // moves it no more).
+  if (away_) {
+    facing_ = facingToward(position_, *away_);
+  }
+  held_ = true;
+}
+
+// tamerTickBattle: tickAnimation carries the run's root motion a step on the way it faces; the
+// player is no fighter and tests no collision.
+void PlayerFlight::step() {
+  if (!held_) {
+    turn();
+  }
+  if (held_) {
+    return;
+  }
+  const std::int64_t x =
+      (static_cast<std::int64_t>(facing_.x) * timing_->retreatStep) + remainder_.x;
+  const std::int64_t z =
+      (static_cast<std::int64_t>(facing_.z) * timing_->retreatStep) + remainder_.z;
+  const Point whole = wholeUnits(x, z);
+  position_ = {.x = position_.x + whole.x, .z = position_.z + whole.z};
+  remainder_ = {
+      .x = static_cast<std::int32_t>(x - (static_cast<std::int64_t>(whole.x) * FacingScale)),
+      .z = static_cast<std::int32_t>(z - (static_cast<std::int64_t>(whole.z) * FacingScale))};
+}
+
+Point wayOut(Point spawn, Facing spawnFacing, std::int32_t distance) {
+  return {.x = spawn.x - static_cast<std::int32_t>(static_cast<std::int64_t>(spawnFacing.x) *
+                                                   distance / FacingScale),
+          .z = spawn.z - static_cast<std::int32_t>(static_cast<std::int64_t>(spawnFacing.z) *
+                                                   distance / FacingScale)};
 }
 
 } // namespace dwe::game::battle

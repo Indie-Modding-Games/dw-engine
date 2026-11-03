@@ -33,14 +33,31 @@ struct ScreenPlace {
   friend bool operator==(const ScreenPlace&, const ScreenPlace&) = default;
 };
 
+// How the player came onto a screen (the original's map id): through its exit `exit` after a walk
+// through warp `walkedWarp` of the screen left (tamer.c: checkMapInteraction) or after a script's
+// map change (map.c: scriptTickChangeMap), or with no exit at all: a loaded game or a start at a
+// place.
+struct ScreenArrival {
+  std::int32_t screen = 0;
+  std::optional<std::int32_t> exit;
+  std::optional<std::int32_t> walkedWarp;
+};
+
 class ScreenHistory {
 public:
+  // No screen of the original has this id.
+  static constexpr std::int32_t NoScreen = -1;
+  static constexpr ScreenPlace NoPlace{
+      .screen = NoScreen, .exit = 0, .previousScreen = NoScreen, .previousExit = 0};
+
   explicit ScreenHistory(ScreenHistoryRules rules = {}) : rules_{std::move(rules)} {}
 
   // A new game starts with both screens on the first map at its exit (map.c: initializeMap).
   void start(std::int32_t screen, std::int32_t exit);
   // A loaded game puts back what its save kept (main.c: the continue path).
   void restore(const ScreenPlace& place) { place_ = place; }
+  // A loaded game whose save kept no place: the next arrival starts over on its screen.
+  void forget() { place_ = NoPlace; }
   // A script's map change keeps the exit it leaves by as the previous exit before the change
   // (map.c: scriptTickChangeMap); a walk through warp `warp` keeps the warp's number
   // (tamer.c: checkMapInteraction).
@@ -52,11 +69,17 @@ public:
   // The player is on `screen` at `exit` (map.c: changeMap).
   void enter(std::int32_t screen, std::int32_t exit);
 
+  // Follows a map change the field played: the exit it left by, then the screen it is on. An
+  // arrival with no exit keeps the place when it is on that screen (a save put it back) and starts
+  // over on it otherwise; the first arrival with no place kept starts on it too.
+  void arrive(const ScreenArrival& arrival);
+
   [[nodiscard]] const ScreenPlace& place() const { return place_; }
 
 private:
   ScreenHistoryRules rules_;
-  ScreenPlace place_;
+  // Until a new game starts, a save puts a place back or the field enters a map: no screen.
+  ScreenPlace place_ = NoPlace;
 };
 
 } // namespace dwe::game::story

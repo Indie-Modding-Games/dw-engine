@@ -542,13 +542,18 @@ ConditionRules readCondition(ValueReader& in, const YamlNode& node) {
 EndingRules readEnding(ValueReader& in, const YamlNode& node) {
   if (!in.group(node, "ending",
                 {"flee_frames", "flee_ignores_hits_from", "revive_frames",
-                 "revive_countdown_shown_at"})) {
+                 "revive_countdown_shown_at", "flee_fade_from", "flee_fade_frames",
+                 "flee_way_out"})) {
     return {};
   }
   EndingRules ending{.fleeFrames = in.positive(node, "flee_frames"),
                      .fleeIgnoresHitsFrom = in.count(node, "flee_ignores_hits_from"),
                      .reviveFrames = in.positive(node, "revive_frames"),
-                     .reviveCountdownShownAt = in.count(node, "revive_countdown_shown_at")};
+                     .reviveCountdownShownAt = in.count(node, "revive_countdown_shown_at"),
+                     .fleeFadeFrom = in.count(node, "flee_fade_from"),
+                     .fleeFadeFrames = in.positive(node, "flee_fade_frames"),
+                     .fleeWayOut = in.count(node, "flee_way_out")};
+  in.ordered(node, "flee_fade_from", ending.fleeFadeFrom, "flee_frames", ending.fleeFrames);
   in.ordered(node, "flee_ignores_hits_from", ending.fleeIgnoresHitsFrom, "flee_frames",
              ending.fleeFrames);
   in.ordered(node, "revive_countdown_shown_at", ending.reviveCountdownShownAt, "revive_frames",

@@ -195,6 +195,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   fleeAnchors_.clear();
   introSeconds_ = 0.0;
   retreat_.reset();
+  endEscape();
   core::logDebug("[port:battle] handleBattleStart (btl.c:237): {} anger bubbles; "
                  "BTL_handleBattleIntro (battle_setup.c:207) follows",
                  introEnemies_.size());
@@ -256,6 +257,7 @@ void BattleScreen::tickBattle(double seconds) {
     stepMenu(true);
     stepShout();
     stepThrow();
+    stepEscape();
   });
   publish();
   takeFigures();
@@ -859,6 +861,12 @@ void BattleScreen::finish() {
   }
   flights_.reset();
   bodies_.reset();
+  const bool fled = finished && finished->outcome == game::battle::Outcome::Fled;
+  endEscape();
+  if (!fled && desc_.scene != nullptr) {
+    // A partner down under the flee's fade ends the battle another way: the screen comes back.
+    desc_.scene->field().releaseShade();
+  }
   // BTL_deinitializeCombat reloads the map's bank only after a victory; a tournament's match ends
   // with the arena's bank again (std_setup.c: loadMapSounds(0x10)). A battle that never gave a
   // result ends as a won one.
@@ -911,6 +919,14 @@ void BattleScreen::finish() {
     aftermath = session::BattleAftermath{};
   }
   drops_ = aftermath->drops;
+  if (result.outcome == game::battle::Outcome::Fled) {
+    // BTL_deinitializeCombat runs BTL_handleVictorySequence (the end box with its stats and bits)
+    // only for a battle not fled: the strip goes up under the black screen and the battle ends.
+    core::logDebug("[port:battle] BTL_deinitializeCombat (battle_main.c:767): fled, no end box");
+    ending_ = true;
+    close();
+    return;
+  }
   screens::BattleEndView view = screens::battleEndViewOf(result, *aftermath, names());
   const game::partner::CareLimits& limits = desc_.session->partnerRules().care.limits;
   for (const game::partner::Stat stat : game::partner::AllStats) {
