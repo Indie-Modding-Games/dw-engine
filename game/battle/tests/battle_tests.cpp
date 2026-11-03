@@ -212,6 +212,19 @@ TEST_CASE("a hit landing with the last enemy's fall still costs the partner its 
   CHECK(won.partnerHp == 1);
 }
 
+// battle_setup.c: BTL_isBattleFinished wins only while the partner's HP outlasts its damage buffer.
+// Measured in the original (Agumon against Agumon, both buffers lethal on one frame): both faint,
+// the countdown runs and the battle is lost; a buffer of HP - 1 wins with 1 HP left.
+TEST_CASE(
+    "a lethal hit landing with the last enemy's fall loses the battle, one short of it wins") {
+  const BattleResult lethal = partnerHitAsTheEnemyFalls(1, 0);
+  CHECK(lethal.outcome == Outcome::Defeat);
+  CHECK(lethal.livesLost == 1);
+  const BattleResult survives = partnerHitAsTheEnemyFalls(2, 1);
+  CHECK(survives.outcome == Outcome::Victory);
+  CHECK(survives.partnerHp == 1);
+}
+
 TEST_CASE("a lost battle gives the partner back the section's HP and MP, up to the maximums") {
   // dg 212, section 0x48 (the death map's script): add_stat 6 and 7; script_value.c:
   // enforceStatsLimits.

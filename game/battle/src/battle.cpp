@@ -486,7 +486,9 @@ const BattleEvents& Battle::step() {
     finish(Outcome::Defeat);
     return events_;
   }
-  if (!state_.matchClock && !partner.fainted && enemiesDown(state_)) {
+  // The win also needs the partner to outlive the damage still on its way: a lethal hit that lands
+  // with the last enemy's fall drains the partner to 0 HP, it faints and the countdown follows.
+  if (!state_.matchClock && !partner.fainted && !partner.defeated() && enemiesDown(state_)) {
     finish(Outcome::Victory);
     return events_;
   }
@@ -596,7 +598,7 @@ void Battle::finish(Outcome outcome, bool draw) {
   statusVisuals_.clear();
   // battle_main.c: BTL_handleVictorySequence ticks the battle frames (41 at least) before the end
   // box, so the partner's HP bar drains what damage is still on its way (measured: 300 pending at
-  // the win, 727 HP to 427).
+  // the win, 727 HP to 427). The win checked that the partner outlives it.
   if (outcome == Outcome::Victory) {
     Fighter& partner = state_.partner();
     partner.hp = std::max(partner.hp - partner.pendingDamage, 0);
