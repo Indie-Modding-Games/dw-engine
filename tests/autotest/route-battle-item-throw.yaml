@@ -1,0 +1,39 @@
+# The item thrown to the partner in battle (main.c: startThrowingItem, addThrownItem, renderThrownItem;
+# apps/game/src/battle_screen_throw.cpp): the player's throw clip plays and the item's icon leaves its
+# node 9 towards the partner. An MP Floppy is a battle-usable item (the chips are not in the original
+# ruleset: inventory.yaml's battle_colors are [1, 2] and their item_color is 0). Run with:
+# dwe-game --content <folder> --autotest tests/autotest/route-battle-item-throw.yaml
+name: battle-item-throw
+device: keyboard
+timeout: 180
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - script: give_item("mp_floppy 3")
+  - script: battle("")
+  - wait: {shown: battle, seconds: 1}
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
+  - screenshot: battle-start
+  # Cancel opens the field's bag while the battle goes on; Use throws the item once its box closes.
+  - tap: {key: escape}
+  - expect_setting: {battle.bag.open: true}
+  - wait: {shown: partner_menu, seconds: 0.8}
+  - expect_setting: {bag.slot.0.name: "main.item_names.0004"}
+  - expect_setting: {bag.slot.0.usable: "true"}
+  - menu_select: slot-0
+  - screenshot: bag-options
+  - menu_select: opt-use
+  - wait: {hidden: partner_menu, timeout: 5}
+  - expect_setting: {battle.item_in_flight: true}
+  - screenshot: throw-1
+  - wait: {seconds: 0.1}
+  - screenshot: throw-2
+  - wait: {seconds: 0.1}
+  - screenshot: throw-3
+  - wait: {seconds: 0.1}
+  - screenshot: throw-4
+  - wait: {seconds: 0.1}
+  - screenshot: throw-5
+  - wait: {seconds: 2}
+  - expect_setting: {battle.item_in_flight: false}
+  - screenshot: throw-done

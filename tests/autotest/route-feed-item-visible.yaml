@@ -1,0 +1,46 @@
+# The item held out while feeding the partner (game_menu.c: renderFeedingItem; partner.c:
+# partnerTickFeedItem): the player's offer animation plays with the item's icon at node 9. The route
+# makes the partner hungry, feeds it meat and captures the offer and eat frames. Run with:
+# dwe-game --content <folder> --autotest tests/autotest/route-feed-item-visible.yaml
+name: feed-item-visible
+device: keyboard
+timeout: 180
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - wait: {setting: {screen_fade: 0}, timeout: 10}
+  # A clear ground to the right of the map's centre, with the partner within feeding range, so the
+  # item in the hand is in the open (place() takes the original's axes: its z points the other way
+  # round). The camera follows the player after a moment.
+  - script: place("player 300 1950 0")
+  - script: place("partner 100 1950 0")
+  - wait: {seconds: 2}
+  - script: give_item("meat 3")
+  # Two game hours a real second until it is hungry: a full partner may refuse its food.
+  - script: clock_speed("120")
+  - wait: {partner_has: partner_menu.condition.hungry, timeout: 60}
+  - script: clock_speed("1")
+  - menu: open
+  - wait: {menu_open: true, seconds: 0.6, timeout: 5}
+  - menu_select: open-items
+  - wait: {shown: partner_menu, seconds: 0.5}
+  - expect_setting: {bag.slot.0.name: "main.item_names.0038"}
+  - expect_setting: {bag.slot.0.usable: "true"}
+  # The original box takes no input until it is in place (tickUIBox).
+  - wait: {seconds: 0.6}
+  - menu_select: slot-0
+  - screenshot: bag-options
+  - menu_select: opt-use
+  # startFeedingItem: the menu closes, the partner comes for the item and the player holds it out.
+  - wait: {hidden: partner_menu, timeout: 5}
+  - wait: {seconds: 0.2}
+  - screenshot: feed-offer-1
+  - wait: {seconds: 0.1}
+  - screenshot: feed-offer-2
+  - wait: {seconds: 0.1}
+  - screenshot: feed-offer-3
+  - wait: {seconds: 0.1}
+  - screenshot: feed-offer-4
+  - wait: {seconds: 0.1}
+  - screenshot: feed-offer-5
+  - wait: {seconds: 3}
+  - screenshot: feed-done
