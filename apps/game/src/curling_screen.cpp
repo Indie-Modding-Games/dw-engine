@@ -43,6 +43,8 @@ constexpr std::string_view StoneModel = "model/etcdat/karring";
 constexpr float RackDistance = 3320.0F;
 constexpr float RackProjection = 512.0F;
 constexpr float RackDepth = 0.5F;
+constexpr float RackTilt =
+    0x96 * 2.0F * std::numbers::pi_v<float> / static_cast<float>(core::OriginalAnglePerTurn);
 // KAR_renderScene: a stone in a hand is the hand's node (the player's 9, the second opponent's 4)
 // plus 0x78 down; the first opponent's stands 0x50 to its left on the ground (the match places it).
 constexpr std::uint32_t PlayerHandNode = 9;
@@ -50,6 +52,10 @@ constexpr std::uint32_t SecondOpponentHandNode = 4;
 constexpr float HeldDrop = 0x78;
 // frzl17's NPCs (script 131): the opponent the story spawns has script id 5, both of them.
 constexpr std::int32_t OpponentScriptId = 5;
+// The characters of the match's Animation events and facings.
+constexpr std::int32_t ThrowerPlayer = 0;
+constexpr std::int32_t ThrowerOpponent = 1;
+constexpr std::int32_t ThrowerPartner = 2;
 constexpr float AimWidth = 40.0F;
 constexpr float AimHeight = 20.0F;
 // How far ahead of the stone the aim's marker stands.
@@ -123,7 +129,12 @@ std::optional<glm::mat4> rackPlace(const render::MapCamera& camera,
     return std::nullopt;
   }
   const glm::vec3 at = eye + ((*under - eye) * RackDepth);
-  return turned(at, stone.spin, pixels / mapPixels * RackDepth);
+  // The racks' view looks straight at them: the stone faces the map camera as it faces that view,
+  // tipped 0x96 about the screen's x and turned by its spin (KAR_setupMatch, KAR_renderScene).
+  glm::mat4 place = glm::translate(glm::mat4{1.0F}, at) * glm::mat4{glm::mat3{eyeSpace}};
+  place = glm::rotate(place, RackTilt, glm::vec3{1.0F, 0.0F, 0.0F});
+  place = glm::rotate(place, assets::yawFromOriginal(stone.spin), glm::vec3{0.0F, 1.0F, 0.0F});
+  return glm::scale(place, glm::vec3{pixels / mapPixels * RackDepth});
 }
 
 std::string_view statusOf(const game::curling::Match& match) {
@@ -234,6 +245,7 @@ void CurlingScreen::frame(FieldScene& scene) {
   for (const CurlingEvent& event : curling_->play(*session_, buttons)) {
     follow(scene, event);
   }
+  faceCharacters(scene);
   const game::curling::Match* match = curling_->match();
   if (match == nullptr || match->finished()) {
     end(scene);
@@ -267,10 +279,60 @@ void CurlingScreen::follow(FieldScene& scene, const CurlingEvent& event) {
     scene.field().shiftCameraByScript(core::fromOriginalAxes(
         glm::vec3{static_cast<float>(event.a), 0.0F, static_cast<float>(event.b)}));
     break;
-  default:
-    // The throwers' animations and the rolling sound's stop are not played yet
-    // (docs/modulos/game/curling.md: Hueco).
+  case CurlingEvent::Kind::Animation:
+    animate(scene, event.a, event.b);
     break;
+  default:
+    // The rolling sound's stop is not played yet (docs/modulos/game/curling.md: Hueco).
+    break;
+  }
+}
+
+std::optional<scene::Entity> CurlingScreen::characterOf(const FieldScene& scene,
+                                                        std::int32_t who) const {
+  const game::field::Field& field = scene.field();
+  switch (who) {
+  case ThrowerPlayer:
+    return field.playerEntity();
+  case ThrowerOpponent:
+    return field.npcs().entityOf(OpponentScriptId);
+  case ThrowerPartner:
+    return field.partnerEntity();
+  default:
+    return std::nullopt;
+  }
+}
+
+void CurlingScreen::animate(FieldScene& scene, std::int32_t who, std::int32_t animation) {
+  // startAnimation on the throwers and the partner, held by the routine's script as the story's
+  // clips are: the player and the partner until the script lets go, the opponent until its
+  // animation goes back to 0 (StoryStage::animate).
+  const std::optional<scene::Entity> entity = characterOf(scene, who);
+  if (!entity || animation < 0) {
+    return;
+  }
+  game::field::Field& field = scene.field();
+  if (who == ThrowerOpponent) {
+    field.npcs().setScriptedAnimation(OpponentScriptId, animation);
+    if (animation == 0) {
+      field.releaseClipByScript(*entity);
+      return;
+    }
+  }
+  field.animateByScript(*entity, static_cast<std::uint32_t>(animation));
+}
+
+void CurlingScreen::faceCharacters(FieldScene& scene) const {
+  // The facing the match gave each character (rotation.vy), at once.
+  const game::curling::Match* match = curling_->match();
+  if (match == nullptr) {
+    return;
+  }
+  for (const std::int32_t who : {ThrowerPlayer, ThrowerOpponent, ThrowerPartner}) {
+    const std::optional<std::int32_t> facing = match->facing(static_cast<std::size_t>(who));
+    if (const std::optional<scene::Entity> entity = characterOf(scene, who); entity && facing) {
+      scene.setEntityYaw(*entity, assets::yawFromOriginal(*facing));
+    }
   }
 }
 

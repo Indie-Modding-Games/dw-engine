@@ -2,6 +2,7 @@
 
 #include <dwe/game/curling/curling.hpp>
 #include <dwe/game/story/story_ports.hpp>
+#include <dwe/scene/world.hpp>
 #include <dwe/session/curling_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/ui/ui.hpp>
@@ -53,6 +54,10 @@ private:
                                                    const game::curling::Stone& stone,
                                                    float ground) const;
   void showStones(FieldScene& scene) const;
+  [[nodiscard]] std::optional<scene::Entity> characterOf(const FieldScene& scene,
+                                                         std::int32_t who) const;
+  void animate(FieldScene& scene, std::int32_t who, std::int32_t animation);
+  void faceCharacters(FieldScene& scene) const;
   void showHud();
   void end(FieldScene& scene);
 

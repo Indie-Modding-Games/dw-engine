@@ -478,6 +478,11 @@ TEST_CASE("finishMatch: 2 a win of 10 or more, 1 a win, 0 a draw or a loss") {
     REQUIRE(match.finished());
     CHECK(match.result() == expected.result);
     CHECK(heard.has(CurlingEvent::Kind::Finished, expected.result, 0));
+    // The throwers and the partner turn to the camera in their pose.
+    for (std::size_t who = 0; who < 3; ++who) {
+      CHECK(match.facing(who) == 0x800);
+      CHECK(heard.has(CurlingEvent::Kind::Animation, static_cast<std::int32_t>(who), 2));
+    }
     CHECK(heard.has(CurlingEvent::Kind::Sound, 8, expected.result != 0 ? 7 : 8));
   }
 }
@@ -627,4 +632,54 @@ TEST_CASE("stoneDrawn: the racks fill one stone each ten frames after the start,
   teams.at(ObstacleTeam).stones.at(4).state = Out;
   match.setScene(teams, Phase::Select, PlayerTeam, 0);
   CHECK_FALSE(match.stoneDrawn(ObstacleTeam, 4));
+}
+
+TEST_CASE("facing: the thrower faces 0 to aim and turns against the aim, the stone slides so") {
+  // KAR_beginAiming: rotation 0 and the aim at -0x400; KAR_turnAimLeft / KAR_turnAimRight turn
+  // the thrower by -delta; state 8 gives the stone the thrower's facing (KAR_renderScene clears it
+  // in the player's hand and the second opponent's, not beside the first).
+  const CurlingRules rules = originalRules();
+  Random random{7};
+  Match match{rules, Opponent::Penguinmon, random};
+  CHECK_FALSE(match.facing(0).has_value());
+  Heard heard;
+  for (std::int32_t frame = 0; frame < 400 && match.phase() != Phase::Select; ++frame) {
+    CurlingButtons buttons;
+    buttons.confirmPressed = match.phase() == Phase::Prompt && match.promptOption().has_value();
+    const auto events = match.tick(buttons, random);
+    heard.events.insert(heard.events.end(), events.begin(), events.end());
+  }
+  REQUIRE(match.phase() == Phase::Select);
+  CHECK(match.facing(0) == 0);
+  CHECK(match.facing(1) == 0);
+  CHECK_FALSE(match.facing(2).has_value());
+
+  CurlingButtons confirm;
+  confirm.confirmPressed = true;
+  auto events = match.tick(confirm, random);
+  REQUIRE(match.phase() == Phase::Aim);
+  CHECK(Heard{{events.begin(), events.end()}}.has(CurlingEvent::Kind::Animation, 0, 0x23));
+  CHECK(match.facing(0) == 0);
+  CHECK(match.aimAngle() == -0x400);
+  CurlingButtons left;
+  left.left = true;
+  for (std::int32_t frame = 0; frame < 5; ++frame) {
+    match.tick(left, random);
+  }
+  CHECK(match.aimAngle() < -0x400);
+  CHECK(match.facing(0) == -0x400 - match.aimAngle());
+
+  // The first opponent's throw: its stone keeps the facing it let go with.
+  auto teams = emptyRink();
+  teams.at(OpponentTeam).stones.at(0).state = 0;
+  teams.at(OpponentTeam).stones.at(0).angle = -0x500;
+  teams.at(OpponentTeam).plannedPower = 1000;
+  match.setScene(teams, Phase::Aim, OpponentTeam, 0);
+  for (std::int32_t frame = 0; frame < FrameCap && match.phase() != Phase::Rolling; ++frame) {
+    match.tick({}, random);
+  }
+  REQUIRE(match.phase() == Phase::Rolling);
+  REQUIRE(match.facing(1).has_value());
+  CHECK(*match.facing(1) != 0);
+  CHECK(match.teams().at(OpponentTeam).stones.at(0).spin == *match.facing(1));
 }

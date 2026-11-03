@@ -242,6 +242,9 @@ public:
                                                          glm::vec3 offset = glm::vec3{0.0F}) const;
   // Turns the player in place.
   void setPlayerYaw(float yaw);
+  // Turns any character in place at once, drawn so this frame (a screen that runs instead of the
+  // field, which interpolates no turn).
+  void setEntityYaw(scene::Entity entity, float yaw);
   // Moves everything the map draws by `offset` background pixels (render::MapCamera::setShake).
   void setScreenShake(glm::vec2 offset) { mapRenderer_->setShake(offset); }
   // Whether the signs painted in the maps are written in the player's language (the pause menu's

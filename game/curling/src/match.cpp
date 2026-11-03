@@ -101,6 +101,8 @@ constexpr std::int32_t Rival = 1;
 constexpr std::int32_t Partner = 2;
 constexpr std::int32_t StandAnimation = 0;
 constexpr std::int32_t PoseAnimation = 2;
+// KAR_finishMatch: the throwers and the partner turn to face the camera.
+constexpr std::int32_t FinishFacing = 0x800;
 constexpr std::int32_t PlayerAim = 0x23;
 constexpr std::int32_t PlayerThrow = 0x24;
 constexpr std::int32_t PlayerRelease = 0x25;
@@ -371,12 +373,16 @@ void Match::placeHeldStone() {
       if (stone.state != InHand) {
         continue;
       }
+      // A stone in a hand keeps no spin, but beside the first opponent: a thrown stone slides
+      // turned as that one faced when it let go, the others straight.
       if (team_ == 0) {
         stone.position = playerHand_;
+        stone.spin = 0;
       } else if (opponent_ == Opponent::Penguinmon) {
         stone.position = {.x = OpponentMark.x - HeldOffset, .z = OpponentMark.z};
       } else {
         stone.position = opponentHand_;
+        stone.spin = 0;
       }
     }
   }
@@ -446,6 +452,7 @@ void Match::beginAiming() {
   }
   current().state = InHand;
   aim_ = AimStart;
+  face(throwerWho(), 0);
 }
 
 void Match::selectPreviousStone() {
@@ -471,6 +478,11 @@ void Match::selectNextStone() {
 void Match::turnAim(std::int32_t delta) {
   // KAR_turnAimLeft / KAR_turnAimRight: the thrower turns by -delta as the aim moves by delta.
   aim_ += shortOf(delta);
+  face(throwerWho(), shortOf(facing(static_cast<std::size_t>(throwerWho())).value_or(0) - delta));
+}
+
+std::optional<std::int32_t> Match::facing(std::size_t who) const {
+  return who < facing_.size() ? facing_.at(who) : std::nullopt;
 }
 
 void Match::beginThrow() {
@@ -489,6 +501,9 @@ void Match::finishMatch() {
     return;
   }
   state_ = static_cast<std::int32_t>(Phase::Finished);
+  face(Player, FinishFacing);
+  face(Partner, FinishFacing);
+  face(Rival, FinishFacing);
   animate(Player, PoseAnimation);
   animate(Partner, PoseAnimation);
   animate(Rival, PoseAnimation);
@@ -627,6 +642,8 @@ void Match::tickMatchState(const CurlingButtons& buttons, ruleset::Random& rando
     counter_ = 0;
     animate(Player, StandAnimation);
     animate(Rival, StandAnimation);
+    face(Player, 0);
+    face(Rival, 0);
     state_ = static_cast<std::int32_t>(Phase::Prompt);
     box_ = 0;
     break;
@@ -764,8 +781,10 @@ void Match::tickMatchState(const CurlingButtons& buttons, ruleset::Random& rando
           power_ = thrower.plannedPower;
         }
       } else if (row(OpponentTeam).plannedPower <= power_) {
-        // The original reads the opponent's planned power here for the demonstration's throw too.
+        // The original reads the opponent's planned power here for the demonstration's throw too,
+        // and its facing for the stone's.
         state_ = static_cast<std::int32_t>(Phase::Release);
+        current().spin = facing(static_cast<std::size_t>(Rival)).value_or(0);
         if (box_ != 0) {
           box_ = 1;
         }
@@ -773,6 +792,7 @@ void Match::tickMatchState(const CurlingButtons& buttons, ruleset::Random& rando
     } else if (buttons.confirmPressed) {
       state_ = static_cast<std::int32_t>(Phase::Release);
       current().angle = aim_;
+      current().spin = facing(static_cast<std::size_t>(Player)).value_or(0);
     }
     break;
   case Phase::Release:

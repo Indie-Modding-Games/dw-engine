@@ -224,6 +224,11 @@ public:
   [[nodiscard]] std::int32_t aimAngle() const { return aim_; }
   [[nodiscard]] std::int32_t power() const { return power_; }
   [[nodiscard]] Opponent opponent() const { return opponent_; }
+  // The facing (rotation.vy) the match gave a character (0 the player, 1 the opponent, 2 the
+  // partner): both throwers 0 at the start and when they aim, turned against the aim while aiming
+  // (KAR_turnAimLeft / KAR_turnAimRight), all three 0x800 at the end (KAR_finishMatch); nothing
+  // until the match turns it.
+  [[nodiscard]] std::optional<std::int32_t> facing(std::size_t who) const;
   // The play / rules prompt's highlighted option (0 play, 1 rules), while it is open.
   [[nodiscard]] std::optional<std::int32_t> promptOption() const;
   // The hint page shown: its group and page (from 1), while a box is open.
@@ -264,6 +269,9 @@ private:
   [[nodiscard]] Team& row(std::size_t team) { return teams_.at(team); }
   void animate(std::int32_t who, std::int32_t animation) {
     emit(CurlingEvent::Kind::Animation, who, animation);
+  }
+  void face(std::int32_t who, std::int32_t rotation) {
+    facing_.at(static_cast<std::size_t>(who)) = rotation;
   }
 
   // kar.c functions.
@@ -306,6 +314,7 @@ private:
   Opponent opponent_;
   std::array<Team, Teams> teams_{};
   std::vector<CurlingEvent> events_;
+  std::array<std::optional<std::int32_t>, 3> facing_{};
   Point playerHand_ = PlayerMark;
   Point opponentHand_;
 

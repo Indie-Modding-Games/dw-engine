@@ -1072,9 +1072,15 @@ void FieldScene::addStorySprites(std::vector<ScenePrim>& prims) {
 }
 
 void FieldScene::setPlayerYaw(float yaw) {
-  auto& transform = world_.registry().get<scene::Transform>(playerActor_->entity);
-  transform.yaw = yaw;
-  transform.previousYaw = yaw;
+  setEntityYaw(playerActor_->entity, yaw);
+}
+
+void FieldScene::setEntityYaw(scene::Entity entity, float yaw) {
+  auto* transform = world_.registry().try_get<scene::Transform>(entity);
+  if (transform != nullptr) {
+    transform->yaw = yaw;
+    transform->previousYaw = yaw;
+  }
 }
 
 void FieldScene::setStage(const FieldStage& stage) {
