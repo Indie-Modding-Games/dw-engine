@@ -143,6 +143,10 @@ public:
   // True while a modal document is shown: the game must ignore the input's actions.
   [[nodiscard]] bool capturesInput() const;
 
+  // True while a modal document is shown, without the tick in which the UI took a navigation
+  // command: the game's own shortcuts (the options' F10) still answer then.
+  [[nodiscard]] bool hasModal() const;
+
   // The commands the menus sent since the last call, oldest first.
   [[nodiscard]] std::vector<UiCommand> takeCommands();
 

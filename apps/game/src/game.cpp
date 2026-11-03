@@ -665,7 +665,6 @@ int runGame(const Options& requested) {
   const std::optional<NewGameSceneRules> newGameScene =
       autotest && !autotest->asksNewGameScene() ? std::nullopt
                                                 : loadNewGameSceneRules(files, options.ruleset);
-  std::unique_ptr<NewGameInterview> interview;
   // The opening plays the system sounds before any game exists (sound.c: playSound, bank 0).
   session::SessionSound openingSound{sound, files};
   const platform::PixelSize size = window->pixelSize();
@@ -684,6 +683,9 @@ int runGame(const Options& requested) {
     core::logError("{}", ui.error().message);
     return EXIT_FAILURE;
   }
+  // La caja de nombres del prólogo oculta sus documentos en su destructor: debe destruirse
+  // antes que la UI (los locales van en orden inverso).
+  std::unique_ptr<NewGameInterview> interview;
   // The skin goes on before the documents load, so they are styled once.
   applyStartUiSkin(**ui, startUiSkin(options.uiSkin, userSettings.uiSkin));
   UiSkinChanger uiSkinChanger{**ui, userSettings, settingsFile};
@@ -1048,6 +1050,8 @@ int runGame(const Options& requested) {
   }
   // A route run with the control channel ends without closing the game: the channel goes on.
   bool routeOver = false;
+  // Whether F10 opened the pause menu on its options page: F10 closes it then, and only then.
+  bool optionsDirect = false;
 
   while (running) {
     events.clear();
@@ -1208,9 +1212,14 @@ int runGame(const Options& requested) {
       (*ui)->setMenuDocument(menuHeld ? std::string_view{} : MenuDocument);
       // F10 or Select: the game menu's options page, straight away (docs/modulos/apps/game.md,
       // «Opciones en partida»). From Start's pause it ends the pause first; with the menu open it
-      // closes it; over another menu or where the menu is held it does nothing.
+      // switches it to the options page (or closes it when F10 opened it there); over another menu
+      // or where the menu is held it does nothing.
       const bool settingsAsked = !menuHeld && input.wasPressed("settings") &&
-                                 ((*ui)->isVisible(MenuDocument) || !(*ui)->capturesInput());
+                                 ((*ui)->isVisible(MenuDocument) || !(*ui)->hasModal());
+      // The menu was closed by another path: the next F10 opens it again, not closes it.
+      if (!(*ui)->isVisible(MenuDocument)) {
+        optionsDirect = false;
+      }
       // Start's pause freezes everything but the box, menus and battle included (handlePause).
       if (const PauseStep pause = pauseBox.tick(
               input.wasPressed("pause") || (settingsAsked && pauseBox.paused()), !menuHeld);
@@ -1231,14 +1240,20 @@ int runGame(const Options& requested) {
         publishPlayerPoint(**ui, flow.playing()->scene());
       }
       if (settingsAsked) {
-        const bool open = (*ui)->isVisible(MenuDocument);
+        const bool open = (*ui)->isVisible(MenuDocument) && optionsDirect;
         if (open) {
           (*ui)->hide(MenuDocument);
+          optionsDirect = false;
         } else {
+          // A menu another key opened (Tab) is already visible: the setting switches it to its
+          // options page in place, without closing and reopening its box.
           publishPlayerPoint(**ui, flow.playing()->scene());
           (*ui)->setSetting(MenuStartPageSetting, std::string{"options"});
-          (*ui)->show(MenuDocument, true);
+          if (!(*ui)->isVisible(MenuDocument)) {
+            (*ui)->show(MenuDocument, true);
+          }
           (*ui)->setSetting(MenuStartPageSetting, std::string{});
+          optionsDirect = true;
         }
         menuSounds.play(open ? ui::UiCue::Cancel : ui::UiCue::Confirm);
       }
@@ -1269,23 +1284,27 @@ int runGame(const Options& requested) {
       PlaySession* play = flow.playing();
       game::field::FieldInput intent;
       FishingButtons fishing;
-      // Something took the player's control (a talk, a scene, a screen): a held button stops
-      // steering and a click not yet taken is dropped.
-      if (play != nullptr &&
-          (walkControl.control() != WalkControl::Mouse || !play->walksByPointer())) {
+      // A click walks the player only while the mouse is the walk control and nothing holds him (a
+      // talk, a battle, a gym course, a screen). Elsewhere the click belongs to whatever is in
+      // front (a page, a menu, an option) and must not start a walk once it closes.
+      const bool pointerWalks = play != nullptr && walkControl.control() == WalkControl::Mouse &&
+                                !(*ui)->capturesInput() && play->walksByPointer();
+      if (!pointerWalks) {
         mouse.release();
       }
       if (play != nullptr && !(*ui)->capturesInput()) {
         const input::Vector2 move = input.vector("move_left", "move_right", "move_up", "move_down");
         // Up gives a negative y; the field's y points away from the camera.
-        const WalkOrder walk =
-            walkOrderOf(walkControl.control(),
-                        {.keys = {move.x, -move.y},
-                         .clicked = mouse.take(),
-                         .steered = mouse.steer(
-                             play->scene(),
-                             glm::vec2{static_cast<float>((*renderer)->targetExtent().width),
-                                       static_cast<float>((*renderer)->targetExtent().height)})});
+        const WalkOrder walk = walkOrderOf(
+            walkControl.control(),
+            {.keys = {move.x, -move.y},
+             .clicked = pointerWalks ? mouse.take() : std::nullopt,
+             .steered = pointerWalks
+                            ? mouse.steer(
+                                  play->scene(),
+                                  glm::vec2{static_cast<float>((*renderer)->targetExtent().width),
+                                            static_cast<float>((*renderer)->targetExtent().height)})
+                            : std::nullopt});
         intent.stick = walk.stick;
         intent.run = !input.isDown("walk");
         intent.moveTarget = walk.moveTarget;

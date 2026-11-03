@@ -1,0 +1,19 @@
+# A click made while a battle is up must not become a walk order: the battle document takes it, and the
+# field drops the target once the battle lets the player go. The player must still stand where the
+# battle found him. Run with: dwe-game --autotest tests/autotest/route-battle-mouse-no-walk.yaml --content <folder>.
+name: battle-mouse-no-walk
+device: mouse
+timeout: 180
+steps:
+  - wait: {map: twna01, seconds: 1}
+  # File City's entry, where the run starts.
+  - script: battle("")
+  - wait: {shown: battle, seconds: 0.5}
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
+  # The click falls on the battle screen, not on the field.
+  - click: {window: [640, 360]}
+  # win_after ends the fight with battle_win once it has been on screen for a moment.
+  - wait: {confirm: true, win_after: 1, hidden: battle, timeout: 60}
+  - wait: {seconds: 3}
+  # No stray walk order was left behind: the battle's intro may move the player one kept cell.
+  - wait: {player_near: [-2500, 2525], radius: 200, timeout: 2}

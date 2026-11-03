@@ -679,7 +679,9 @@ void PlaySession::pressBattle(const input::InputState& input) {
 void PlaySession::tick(const game::field::FieldInput& intent, const FishingButtons& fishing) {
   fieldWalks_ = false;
   tickSystems(intent, fishing);
-  if (!fieldWalks_) {
+  // A tick that did not leave the player walking freely (a talk, a battle, a gym course, a screen)
+  // drops the click's target, so the player does not walk on to it once he is let go.
+  if (!walksByPointer()) {
     scene_->field().dropMoveTarget();
   }
 }
@@ -687,7 +689,8 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
 bool PlaySession::walksByPointer() const {
   const game::field::Field& field = scene_->field();
   const auto& story = game_.systems.story;
-  return fieldWalks_ && field.playerFree() && !field.mapChangePending() &&
+  return fieldWalks_ && !battleScreen_.active() && field.playerFree() &&
+         !field.mapChangePending() &&
          (story == nullptr || !storyTextbox_ || !story->dialogue().view().open);
 }
 

@@ -1805,6 +1805,13 @@ function on_setting(document, name)
     if name == "evoreq.version" or name == "evoreq.ready" then
       refresh_requirements(document)
     end
+  elseif name == "pause_menu.start_page" then
+    -- F10 pressed with the menu already open: switch it to the options page in place, without
+    -- closing its box (which would leave it minimized on the player page).
+    if ui.setting(name) == "options" then
+      options_direct = true
+      show_page(document, "options")
+    end
   elseif name == "evolution_requirements" then
     refresh(document)
     refresh_requirements(document)
