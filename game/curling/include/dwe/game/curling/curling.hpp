@@ -154,7 +154,10 @@ struct CurlingEvent {
   enum class Kind : std::uint8_t {
     // a: the bank (0 menu, 8 the minigame's), b: the sound (playSound, playSound2).
     Sound,
-    // The rolling sound started at the release stops.
+    // The rolling sound at the release (playSound2 kept in MAIN_D_80135228): a the bank, b the
+    // sound, played so that SoundStop can stop it.
+    RollingSound,
+    // The rolling sound stops (KAR_tickMatchState state 0xC: stopSoundMask).
     SoundStop,
     // The play / rules prompt opened (a: the option shown, 0 play, 1 rules).
     Prompt,

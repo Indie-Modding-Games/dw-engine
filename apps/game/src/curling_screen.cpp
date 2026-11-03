@@ -288,13 +288,28 @@ void CurlingScreen::follow(FieldScene& scene, const CurlingEvent& event) {
     scene.field().shiftCameraByScript(core::fromOriginalAxes(
         glm::vec3{static_cast<float>(event.a), 0.0F, static_cast<float>(event.b)}));
     break;
+  case CurlingEvent::Kind::RollingSound:
+    if (sound_ != nullptr) {
+      stopRolling();
+      rolling_ = sound_->playHeldSound(event.a, event.b);
+    }
+    break;
+  case CurlingEvent::Kind::SoundStop:
+    stopRolling();
+    break;
   case CurlingEvent::Kind::Animation:
     animate(scene, event.a, event.b);
     break;
   default:
-    // The rolling sound's stop is not played yet (docs/modulos/game/curling.md: Hueco).
     break;
   }
+}
+
+void CurlingScreen::stopRolling() {
+  if (sound_ != nullptr && rolling_) {
+    sound_->stopHeldSound(*rolling_);
+  }
+  rolling_.reset();
 }
 
 std::optional<scene::Entity> CurlingScreen::characterOf(const FieldScene& scene,
@@ -546,6 +561,7 @@ void CurlingScreen::showHud() {
 void CurlingScreen::end(FieldScene& scene) {
   showRings(scene, 0);
   running_ = false;
+  stopRolling();
   if (const auto model = assets::AssetId::parse(StoneModel)) {
     scene.setPosedProps(*model, {});
   }

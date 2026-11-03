@@ -860,7 +860,7 @@ void Match::tickMatchState(const CurlingButtons& buttons, ruleset::Random& rando
     current().speed = shortOf(power_ + rules_->throwBonus);
     state_ = static_cast<std::int32_t>(Phase::Throwing);
     counter_ = 0;
-    sound(Bank, ReleaseSound);
+    emit(CurlingEvent::Kind::RollingSound, Bank, ReleaseSound);
     followFrom_ = current().position;
     break;
   case Phase::Throwing:

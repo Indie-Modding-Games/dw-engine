@@ -59,6 +59,7 @@ private:
                                                          std::int32_t who) const;
   void animate(FieldScene& scene, std::int32_t who, std::int32_t animation);
   void faceCharacters(FieldScene& scene) const;
+  void stopRolling();
   void showHud();
   void end(FieldScene& scene);
 
@@ -66,6 +67,8 @@ private:
   session::GameSession* session_;
   ui::Ui* ui_;
   game::story::SoundPort* sound_;
+  // The rolling sound's voices while a thrown stone slides (MAIN_D_80135228).
+  std::optional<std::int64_t> rolling_;
   bool running_ = false;
   bool over_ = false;
   double frameSeconds_ = 0.0;

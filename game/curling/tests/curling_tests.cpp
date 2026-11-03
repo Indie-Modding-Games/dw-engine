@@ -749,3 +749,30 @@ TEST_CASE("aimArrow: 15 dots 200 apart ahead of the thrower, off the walls, whil
   REQUIRE(match.phase() == Phase::Power);
   CHECK_FALSE(match.aimArrow().has_value());
 }
+
+TEST_CASE("the rolling sound starts at the release and stops when the rings are read") {
+  // KAR_tickMatchState: state 9 keeps playSound2(8, 0)'s voices, state 0xC stops them.
+  const CurlingRules rules = originalRules();
+  Random random{7};
+  Match match{rules, Opponent::Penguinmon, random};
+  auto teams = emptyRink();
+  Stone& held = teams.at(PlayerTeam).stones.at(0);
+  held.state = 0;
+  held.angle = Up;
+  held.position = PlayerMark;
+  match.setScene(teams, Phase::Release, PlayerTeam, 0);
+  auto events = match.tick({}, random);
+  CHECK(Heard{{events.begin(), events.end()}}.has(CurlingEvent::Kind::RollingSound, 8, 0));
+  bool stopped = false;
+  for (std::int32_t frame = 0; frame < FrameCap && !stopped; ++frame) {
+    const Phase before = match.phase();
+    events = match.tick({}, random);
+    for (const CurlingEvent& event : events) {
+      if (event.kind == CurlingEvent::Kind::SoundStop) {
+        CHECK(before == Phase::Rings);
+        stopped = true;
+      }
+    }
+  }
+  CHECK(stopped);
+}
