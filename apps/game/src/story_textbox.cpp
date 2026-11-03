@@ -65,7 +65,15 @@ std::optional<std::int32_t> numberAfter(std::string_view tag, std::string_view p
   return value;
 }
 
+// The character's record: the NPC on the map with that script id (script_value.c:
+// scriptIdToEntityId), else the map's first record with it.
 const assets::MapNpc* characterOf(const FieldScene& scene, std::int64_t script) {
+  if (std::in_range<std::int32_t>(script)) {
+    if (const assets::MapNpc* spawned =
+            scene.field().npcs().recordOf(static_cast<std::int32_t>(script))) {
+      return spawned;
+    }
+  }
   for (const assets::MapNpc& npc : scene.map().npcs) {
     if (npc.scriptId == script) {
       return &npc;

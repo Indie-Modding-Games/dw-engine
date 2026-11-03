@@ -1712,6 +1712,22 @@ TEST_CASE("the release rule takes a character out of a wall, and the player only
   }
 }
 
+TEST_CASE("a script id names the spawned NPC's record when the map has several with it") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  // A shop's keepers: two records with script id 5, the second of another species.
+  addNpc(map, 300.0F, 0.0F, 5);
+  const std::size_t keeper = addNpc(map, 600.0F, 0.0F, 5);
+  map.npcs[keeper].typeId = 2;
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  CHECK(field.npcs().recordOf(5) == nullptr);
+  REQUIRE(field.npcs().spawn(
+      {.slot = keeper, .species = 2, .autotalk = false, .model = "npc", .radius = 100.0F}));
+  REQUIRE(field.npcs().recordOf(5) != nullptr);
+  CHECK(field.npcs().recordOf(5)->typeId == 2);
+}
+
 TEST_CASE("an NPC put on the player stays where it was put; the player walks off it") {
   dwe::scene::World world;
   Field field{world, originalRules()};

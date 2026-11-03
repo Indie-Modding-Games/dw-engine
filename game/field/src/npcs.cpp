@@ -203,6 +203,11 @@ std::optional<glm::vec3> FieldNpcs::positionOf(std::int32_t scriptId) const {
                         : std::nullopt;
 }
 
+const assets::MapNpc* FieldNpcs::recordOf(std::int32_t scriptId) const {
+  const Npc* npc = find(scriptId);
+  return npc != nullptr ? record(npc->slot) : nullptr;
+}
+
 std::optional<std::size_t> FieldNpcs::instanceOf(std::int32_t scriptId) const {
   const Npc* npc = find(scriptId);
   return npc != nullptr ? std::optional{FirstNpcInstance + npc->slot} : std::nullopt;

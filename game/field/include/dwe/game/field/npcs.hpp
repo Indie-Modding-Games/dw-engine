@@ -106,6 +106,10 @@ public:
   [[nodiscard]] std::optional<scene::Entity> entityOf(std::int32_t scriptId) const;
   // Where an NPC on the map stands now, in world axes, by script id.
   [[nodiscard]] std::optional<glm::vec3> positionOf(std::int32_t scriptId) const;
+  // The record of the NPC on the map with that script id, or nothing: a map can hold several
+  // records with one script id (a shop's keepers), and only the spawned one is the character
+  // (script_value.c: getSpeakerName reads ENTITY_TABLE[scriptIdToEntityId(id)]->type).
+  [[nodiscard]] const assets::MapNpc* recordOf(std::int32_t scriptId) const;
   // Its entity instance, FirstNpcInstance + its record's slot (the scripts' move slot).
   [[nodiscard]] std::optional<std::size_t> instanceOf(std::int32_t scriptId) const;
 
