@@ -37,6 +37,13 @@ public:
     return rules_ ? std::span<const game::curling::Ring>{rules_->rings}
                   : std::span<const game::curling::Ring>{};
   }
+  // KAR_renderScene: where the throwers' hands are drawn this frame, the held stones' place;
+  // nothing when no match runs.
+  void setHands(game::curling::Point player, game::curling::Point opponent) {
+    if (match_) {
+      match_->setHands(player, opponent);
+    }
+  }
   // One frame of the original (20 a second); nothing when no match runs.
   std::span<const game::curling::CurlingEvent> play(GameSession& session,
                                                     const game::curling::CurlingButtons& buttons);

@@ -6,7 +6,11 @@
 #include <dwe/session/game_session.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <glm/vec3.hpp>
+
+#include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 
 namespace dwe::input {
@@ -21,8 +25,8 @@ inline constexpr std::string_view CurlingHudDocument = "curling_hud";
 
 // The stones game the story starts (call_partner_routine 1: kar.c, the KAR overlay): the match runs
 // instead of the field at the original's 20 frames a second, the camera goes where the match sends
-// it, and the scores, the prompt and the power gauge show on a document. The stones are drawn as
-// markers until their models are; the throwers stand where they are.
+// it, and the scores, the prompt and the power gauge show on a document. The stones are KARRING's
+// objects: on the ice, in a hand, or in the racks at the screen's sides.
 class CurlingScreen {
 public:
   // The adapter, the session, the UI and the sound (nullptr: silent) must outlive this object.
@@ -44,7 +48,11 @@ private:
   void follow(FieldScene& scene, const game::curling::CurlingEvent& event);
   void scroll(FieldScene& scene, std::int32_t dx, std::int32_t dy);
   void showRings(FieldScene& scene, std::uint32_t lit);
-  void showMarkers(FieldScene& scene) const;
+  void placeHands(FieldScene& scene);
+  [[nodiscard]] std::optional<glm::vec3> heldPoint(FieldScene& scene, std::size_t team,
+                                                   const game::curling::Stone& stone,
+                                                   float ground) const;
+  void showStones(FieldScene& scene) const;
   void showHud();
   void end(FieldScene& scene);
 

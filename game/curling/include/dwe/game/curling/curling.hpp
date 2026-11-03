@@ -185,6 +185,14 @@ struct CurlingEvent {
 // level), 7 lost, 8 won.
 inline constexpr std::array<std::int32_t, 9> HintPages{3, 2, 1, 4, 1, 1, 1, 1, 1};
 
+// KARRING.TMD (the stones' model, read by KAR_start): its object for a stone of `team`.
+// KAR_setupMatch links type * 3 + the team's model (KAR_D_8005AB80: 2 the player's, 1 the
+// opponent's, 0 the obstacles'); KAR_beginAiming links a spiked stone (type 3) taken in hand to its
+// team's type-0 look, and KAR_tickStones links the spiked one back (MAIN_D_80134A4C) when it pegs
+// itself to the ice.
+inline constexpr std::size_t StoneModelObjects = 12;
+[[nodiscard]] std::size_t stoneModelObject(std::size_t team, const Stone& stone);
+
 // The throwers' marks (KAR_tickMatchState state 0).
 inline constexpr Point PlayerMark{.x = -0x190, .z = 0x578};
 inline constexpr Point OpponentMark{.x = 0x190, .z = 0x578};
@@ -197,6 +205,12 @@ public:
   // One frame of the original (20 per second): KAR_tick's logic, then the stones' object tick
   // (KAR_tickStones), then where KAR_renderScene puts the stone in a hand.
   std::span<const CurlingEvent> tick(const CurlingButtons& buttons, ruleset::Random& random);
+
+  // Whether KAR_renderScene draws stone `index` of `team` this frame: the opponent's rack shows
+  // from the select phase on and only without a hint box (always while "Ready" blinks and from the
+  // turn's end on), the racks fill one stone each 60 of the intro counter before the demonstration
+  // throw, and a stone out (below -100) or blinking off in the tally (above 100) is not drawn.
+  [[nodiscard]] bool stoneDrawn(std::size_t team, std::size_t index) const;
 
   // Where the stone in a hand rides (KAR_renderScene: the player's bone 9, the second opponent's
   // bone 4, the first opponent's position less 80 in x). Without a model the marks stand in.
@@ -257,6 +271,7 @@ private:
   void tickMatchState(const CurlingButtons& buttons, ruleset::Random& random);
   void tickStones();
   void placeHeldStone();
+  [[nodiscard]] bool shownThisFrame(std::size_t team, std::size_t index) const;
   void handleAimScroll(const CurlingButtons& buttons);
   void updateRingMarkers();
   void checkStonesStopped();

@@ -553,3 +553,78 @@ TEST_CASE("a whole match with a fixed seed plays to its end, the same every time
     }
   }
 }
+
+TEST_CASE("stoneModelObject: KARRING's object by team and type, spiked stones plain in hand") {
+  // KAR_setupMatch: type * 3 + KAR_D_8005AB80 {2, 1, 0}; KAR_beginAiming links a spiked stone to
+  // its team's type 0 until KAR_tickStones pegs it (MAIN_D_80134A4C {11, 10, 9}).
+  const auto object = [](std::size_t team, std::int32_t type, std::int32_t state) {
+    Stone stone;
+    stone.type = type;
+    stone.state = state;
+    return stoneModelObject(team, stone);
+  };
+  CHECK(object(PlayerTeam, 0, Waiting) == 2);
+  CHECK(object(OpponentTeam, 0, Waiting) == 1);
+  CHECK(object(ObstacleTeam, 0, Sliding) == 0);
+  CHECK(object(OpponentTeam, 2, Waiting) == 7);
+  CHECK(object(PlayerTeam, 1, Sliding) == 5);
+  CHECK(object(PlayerTeam, 3, Waiting) == 11);
+  CHECK(object(PlayerTeam, 3, 0) == 2);
+  CHECK(object(OpponentTeam, 3, Sliding) == 1);
+  CHECK(object(PlayerTeam, 3, 2) == 11);
+  CHECK(object(OpponentTeam, 3, 3) == 10);
+  CHECK(object(ObstacleTeam, 3, Sliding) == 9);
+  for (std::size_t team = 0; team < Teams; ++team) {
+    for (std::int32_t type = 0; type < 4; ++type) {
+      CHECK(object(team, type, Waiting) < StoneModelObjects);
+    }
+  }
+}
+
+TEST_CASE("stoneDrawn: the racks fill one stone each ten frames after the start, then all show") {
+  // KAR_renderScene: before the demonstration throw a stone i shows once the intro counter
+  // (6 a frame in state 3) reaches i * 60 + 60; the opponent's rack shows while "Ready" blinks.
+  const CurlingRules rules = originalRules();
+  Random random{7};
+  Match match{rules, Opponent::Penguinmon, random};
+  std::array<std::int32_t, StonesPerTeam> firstShown{};
+  firstShown.fill(-1);
+  std::int32_t readyFrames = 0;
+  for (std::int32_t frame = 0; frame < 400 && match.phase() != Phase::Select; ++frame) {
+    CurlingButtons buttons;
+    buttons.confirmPressed = match.phase() == Phase::Prompt && match.promptOption().has_value();
+    match.tick(buttons, random);
+    if (match.phase() == Phase::Prompt || match.phase() == Phase::Placing) {
+      for (std::size_t team = 0; team < Teams; ++team) {
+        for (std::size_t index = 0; index < StonesPerTeam; ++index) {
+          CHECK_FALSE(match.stoneDrawn(team, index));
+        }
+      }
+    }
+    if (match.phase() != Phase::Ready) {
+      continue;
+    }
+    ++readyFrames;
+    for (std::size_t index = 0; index < StonesPerTeam; ++index) {
+      if (firstShown.at(index) < 0 && match.stoneDrawn(PlayerTeam, index)) {
+        firstShown.at(index) = readyFrames;
+        CHECK(match.stoneDrawn(OpponentTeam, index));
+      }
+    }
+  }
+  REQUIRE(match.phase() == Phase::Select);
+  for (std::size_t index = 1; index < StonesPerTeam; ++index) {
+    CAPTURE(index);
+    REQUIRE(firstShown.at(index - 1) > 0);
+    CHECK(firstShown.at(index) - firstShown.at(index - 1) == 10);
+  }
+  // Picking a stone: both racks show; a stone out of play does not.
+  for (std::size_t index = 0; index < StonesPerTeam; ++index) {
+    CHECK(match.stoneDrawn(PlayerTeam, index));
+    CHECK(match.stoneDrawn(OpponentTeam, index));
+  }
+  auto teams = match.teams();
+  teams.at(ObstacleTeam).stones.at(4).state = Out;
+  match.setScene(teams, Phase::Select, PlayerTeam, 0);
+  CHECK_FALSE(match.stoneDrawn(ObstacleTeam, 4));
+}

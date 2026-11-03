@@ -327,17 +327,44 @@ void Match::updateRingMarkers() {
   }
 }
 
+bool Match::shownThisFrame(std::size_t team, std::size_t index) const {
+  // KAR_renderScene's tests before it places a stone in a hand.
+  if (team == OpponentTeam && state_ != static_cast<std::int32_t>(Phase::Ready) &&
+      state_ < static_cast<std::int32_t>(Phase::Turn) &&
+      (box_ != 0 || state_ < static_cast<std::int32_t>(Phase::Select))) {
+    return false;
+  }
+  return state_ >= static_cast<std::int32_t>(Phase::DemoThrow) ||
+         counter_ >= (static_cast<std::int32_t>(index) * RackShowStep) + RackShowStep;
+}
+
+bool Match::stoneDrawn(std::size_t team, std::size_t index) const {
+  if (team >= Teams || index >= StonesPerTeam || !shownThisFrame(team, index)) {
+    return false;
+  }
+  // GsSortObject4J skips a stone below -100 (out) or above 100 (blinking off).
+  const std::int32_t state = teams_.at(team).stones.at(index).state;
+  return state >= -Blinking && state <= Blinking;
+}
+
+std::size_t stoneModelObject(std::size_t team, const Stone& stone) {
+  constexpr std::array<std::size_t, Teams> TeamModels{2, 1, 0};
+  constexpr std::int32_t Spiked = 3;
+  constexpr std::size_t Looks = 3;
+  const std::size_t model = TeamModels.at(std::min(team, Teams - 1));
+  const bool takenInHand = team != ObstacleTeam && stone.type == Spiked &&
+                           (stone.state == InHand || stone.state == Sliding);
+  if (takenInHand || stone.type < 0 || stone.type > Spiked) {
+    return model;
+  }
+  return (static_cast<std::size_t>(stone.type) * Looks) + model;
+}
+
 void Match::placeHeldStone() {
   // KAR_renderScene: a stone in a hand rides it (the stones it does not draw are not moved).
   for (std::size_t team = 0; team < Teams; ++team) {
     for (std::size_t index = 0; index < StonesPerTeam; ++index) {
-      if (team == OpponentTeam && state_ != static_cast<std::int32_t>(Phase::Ready) &&
-          state_ < static_cast<std::int32_t>(Phase::Turn) &&
-          (box_ != 0 || state_ < static_cast<std::int32_t>(Phase::Select))) {
-        continue;
-      }
-      if (state_ < static_cast<std::int32_t>(Phase::DemoThrow) &&
-          counter_ < (static_cast<std::int32_t>(index) * RackShowStep) + RackShowStep) {
+      if (!shownThisFrame(team, index)) {
         continue;
       }
       Stone& stone = teams_.at(team).stones.at(index);

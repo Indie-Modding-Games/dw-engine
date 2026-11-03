@@ -1,5 +1,6 @@
 #include "curling_screen.hpp"
 
+#include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/math.hpp>
@@ -7,11 +8,15 @@
 #include <dwe/render/map_camera.hpp>
 #include <dwe/render/map_renderer.hpp>
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <numbers>
+#include <optional>
 #include <span>
 #include <string>
 #include <utility>
@@ -28,21 +33,30 @@ using game::curling::Phase;
 
 // kar.c: KAR_tick runs once a frame of the original's 20 a second.
 constexpr double CurlingFrameSeconds = 1.0 / 20.0;
-// A stone's marker: as wide as two stones touch (KAR_updateCollisions: 0x96 apart), low.
-constexpr float StoneWidth = 150.0F;
-constexpr float StoneHeight = 40.0F;
+// KAR_start reads the stones' model (\ETCDAT\KARRING.TMD); KAR_renderScene draws one object of it
+// a stone (stoneModelObject).
+constexpr std::string_view StoneModel = "model/etcdat/karring";
+// KAR_renderScene: a waiting stone is drawn with the racks' own view, the eye 3320 in front of the
+// racks (KAR_D_8005B580) at GsSetProjection(0x200), over everything the map draws (its own ordering
+// table sorted in front). Here the stone goes on the ray through that point of the screen, part of
+// the way from the camera to the ground, at the size that view gives it.
+constexpr float RackDistance = 3320.0F;
+constexpr float RackProjection = 512.0F;
+constexpr float RackDepth = 0.5F;
+// KAR_renderScene: a stone in a hand is the hand's node (the player's 9, the second opponent's 4)
+// plus 0x78 down; the first opponent's stands 0x50 to its left on the ground (the match places it).
+constexpr std::uint32_t PlayerHandNode = 9;
+constexpr std::uint32_t SecondOpponentHandNode = 4;
+constexpr float HeldDrop = 0x78;
+// frzl17's NPCs (script 131): the opponent the story spawns has script id 5, both of them.
+constexpr std::int32_t OpponentScriptId = 5;
 constexpr float AimWidth = 40.0F;
 constexpr float AimHeight = 20.0F;
 // How far ahead of the stone the aim's marker stands.
 constexpr float AimReach = 450.0F;
 // The angles of the original: 4096 a turn (rcos, rsin).
 constexpr double AngleUnits = 4096.0;
-constexpr glm::vec4 PlayerColor{0.25F, 0.55F, 1.0F, 1.0F};
-constexpr glm::vec4 OpponentColor{1.0F, 0.3F, 0.25F, 1.0F};
-constexpr glm::vec4 ObstacleColor{0.6F, 0.6F, 0.65F, 1.0F};
 constexpr glm::vec4 SelectedColor{1.0F, 0.85F, 0.2F, 1.0F};
-// A pegged stone (type 3 that stopped) is drawn darker.
-constexpr float PeggedShade = 0.6F;
 
 constexpr std::string_view PlayerScoreSetting = "curling_hud.player";
 constexpr std::string_view OpponentScoreSetting = "curling_hud.opponent";
@@ -59,17 +73,6 @@ constexpr std::string_view SecondOpponentLines = "kar.metalmamemon_dialogue.{:04
 constexpr std::int32_t HintLines = 4;
 constexpr double Hidden = -1.0;
 
-glm::vec4 colorOf(std::size_t team) {
-  switch (team) {
-  case game::curling::PlayerTeam:
-    return PlayerColor;
-  case game::curling::OpponentTeam:
-    return OpponentColor;
-  default:
-    return ObstacleColor;
-  }
-}
-
 // Whether the stone is the one a thrower holds or throws (KAR_renderScene puts it in the hand).
 // A point of the rink (the match keeps the original's axes: Z into the screen) on the world's
 // ground.
@@ -80,10 +83,47 @@ glm::vec3 worldOf(std::int32_t x, std::int32_t z, float ground) {
   return world;
 }
 
-bool inHand(const game::curling::Match& match, std::size_t team, std::size_t index) {
-  const Phase phase = match.phase();
-  return std::cmp_equal(match.throwingTeam(), team) && match.selectedStone() == index &&
-         phase >= Phase::Aim && phase <= Phase::Throwing;
+// A stone of the model: its object shown, the others hidden (one joint each).
+FieldScene::PropPlace stonePlace(glm::mat4 world, std::size_t object) {
+  std::vector<glm::mat4> joints(game::curling::StoneModelObjects, glm::mat4{0.0F});
+  joints.at(object) = glm::mat4{1.0F};
+  return {.world = world, .joints = std::move(joints), .tint = glm::vec4{1.0F}};
+}
+
+glm::mat4 turned(glm::vec3 at, std::int32_t rotation, float scale = 1.0F) {
+  const glm::mat4 place =
+      glm::rotate(glm::translate(glm::mat4{1.0F}, at), assets::yawFromOriginal(rotation),
+                  glm::vec3{0.0F, 1.0F, 0.0F});
+  return glm::scale(place, glm::vec3{scale});
+}
+
+// Where a waiting stone is drawn: its point of the racks' view on the screen (x across, its height
+// down, about the screen's centre), as the map's camera shows a stone there.
+std::optional<glm::mat4> rackPlace(const render::MapCamera& camera,
+                                   const game::curling::Stone& stone, float ground) {
+  const float pixels = RackProjection / RackDistance;
+  const glm::vec2 offset{static_cast<float>(stone.position.x) * pixels,
+                         static_cast<float>(stone.height) * pixels};
+  const glm::vec2 window = (camera.viewportSize() * 0.5F) + (offset * camera.scale());
+  const std::optional<glm::vec3> under = camera.pickGround(window, ground);
+  if (!under) {
+    return std::nullopt;
+  }
+  // The map camera's pixels a unit across the screen there.
+  const glm::mat4 eyeSpace = glm::inverse(camera.view());
+  const glm::vec3 eye{eyeSpace[3]};
+  const glm::vec3 across = glm::normalize(glm::vec3{eyeSpace[0]});
+  const std::optional<glm::vec2> from = camera.worldToWindow(*under);
+  const std::optional<glm::vec2> to = camera.worldToWindow(*under + (across * 100.0F));
+  if (!from || !to) {
+    return std::nullopt;
+  }
+  const float mapPixels = glm::length(*to - *from) / camera.scale() / 100.0F;
+  if (mapPixels <= 0.0F) {
+    return std::nullopt;
+  }
+  const glm::vec3 at = eye + ((*under - eye) * RackDepth);
+  return turned(at, stone.spin, pixels / mapPixels * RackDepth);
 }
 
 std::string_view statusOf(const game::curling::Match& match) {
@@ -147,7 +187,7 @@ bool CurlingScreen::start(FieldScene& scene) {
   ui_->show(CurlingHudDocument, false);
   shownRings_ = UnknownRings;
   showHud();
-  showMarkers(scene);
+  showStones(scene);
   showRings(scene, 0);
   return true;
 }
@@ -183,6 +223,7 @@ bool CurlingScreen::takeOver() {
 }
 
 void CurlingScreen::frame(FieldScene& scene) {
+  placeHands(scene);
   const game::curling::CurlingButtons buttons = buttons_;
   buttons_.upPressed = false;
   buttons_.downPressed = false;
@@ -198,7 +239,7 @@ void CurlingScreen::frame(FieldScene& scene) {
     end(scene);
     return;
   }
-  showMarkers(scene);
+  showStones(scene);
   showRings(scene, match->litRings());
   showHud();
 }
@@ -268,38 +309,96 @@ void CurlingScreen::showRings(FieldScene& scene, std::uint32_t lit) {
   shownRings_ = lit;
 }
 
-void CurlingScreen::showMarkers(FieldScene& scene) const {
+void CurlingScreen::placeHands(FieldScene& scene) {
+  // KAR_renderScene places the stone in a hand where the hand is drawn: the match throws it from
+  // there.
   const game::curling::Match* match = curling_->match();
   if (match == nullptr) {
+    return;
+  }
+  const auto ground = [](std::optional<glm::vec3> point) -> std::optional<game::curling::Point> {
+    if (!point) {
+      return std::nullopt;
+    }
+    const glm::vec3 original = core::fromOriginalAxes(*point);
+    return game::curling::Point{.x = static_cast<std::int32_t>(std::lround(original.x)),
+                                .z = static_cast<std::int32_t>(std::lround(original.z))};
+  };
+  const game::field::Field& field = scene.field();
+  const auto player = ground(scene.entityNodePoint(field.playerEntity(), PlayerHandNode));
+  // The first opponent holds its stone beside it on the ground (Match::placeHeldStone).
+  std::optional<game::curling::Point> opponent;
+  const auto rival = field.npcs().entityOf(OpponentScriptId);
+  if (rival && match->opponent() == game::curling::Opponent::MetalMamemon) {
+    opponent = ground(scene.entityNodePoint(*rival, SecondOpponentHandNode));
+  }
+  curling_->setHands(player.value_or(game::curling::PlayerMark),
+                     opponent.value_or(game::curling::OpponentMark));
+}
+
+std::optional<glm::vec3> CurlingScreen::heldPoint(FieldScene& scene, std::size_t team,
+                                                  const game::curling::Stone& stone,
+                                                  float ground) const {
+  const game::curling::Match* match = curling_->match();
+  const game::field::Field& field = scene.field();
+  std::optional<glm::vec3> hand;
+  if (team == game::curling::PlayerTeam) {
+    hand = scene.entityNodePoint(field.playerEntity(), PlayerHandNode);
+  } else if (match != nullptr && match->opponent() == game::curling::Opponent::MetalMamemon) {
+    if (const auto rival = field.npcs().entityOf(OpponentScriptId)) {
+      hand = scene.entityNodePoint(*rival, SecondOpponentHandNode);
+    }
+  }
+  if (!hand) {
+    return worldOf(stone.position.x, stone.position.z, ground);
+  }
+  return glm::vec3{hand->x, hand->y - HeldDrop, hand->z};
+}
+
+void CurlingScreen::showStones(FieldScene& scene) const {
+  const auto model = assets::AssetId::parse(StoneModel);
+  const game::curling::Match* match = curling_->match();
+  if (!model) {
+    return;
+  }
+  if (match == nullptr) {
+    scene.setPosedProps(*model, {});
     scene.setExtraMarkers({});
     return;
   }
   const float ground = scene.field().player().position.y;
+  std::vector<FieldScene::PropPlace> stones;
   std::vector<render::MapMarker> markers;
   const auto& teams = match->teams();
   for (std::size_t team = 0; team < teams.size(); ++team) {
     for (std::size_t index = 0; index < teams[team].stones.size(); ++index) {
-      const game::curling::Stone& stone = teams[team].stones.at(index);
-      const bool held = inHand(*match, team, index);
-      if (stone.hidden() || (!stone.inPlay() && !held)) {
+      if (!match->stoneDrawn(team, index)) {
         continue;
       }
-      render::MapMarker marker;
-      marker.feet = worldOf(stone.position.x, stone.position.z, ground);
-      marker.width = StoneWidth;
-      marker.height = StoneHeight;
-      marker.color = held ? SelectedColor : colorOf(team);
-      if (stone.pegged()) {
-        marker.color = glm::vec4{glm::vec3{marker.color} * PeggedShade, marker.color.a};
+      const game::curling::Stone& stone = teams[team].stones.at(index);
+      const std::size_t object = game::curling::stoneModelObject(team, stone);
+      std::optional<glm::mat4> world;
+      if (stone.state < 0) {
+        world = rackPlace(scene.mapCamera(), stone, ground);
+      } else if (stone.state == 0) {
+        if (const auto at = heldPoint(scene, team, stone, ground)) {
+          world = turned(*at, 0);
+        }
+      } else {
+        world = turned(worldOf(stone.position.x, stone.position.z, ground), stone.spin);
       }
-      markers.push_back(marker);
-      if (held && match->phase() == Phase::Aim) {
+      if (world) {
+        stones.push_back(stonePlace(*world, object));
+      }
+      if (stone.state == 0 && match->phase() == Phase::Aim &&
+          std::cmp_equal(match->throwingTeam(), team)) {
         const double turn = 2.0 * std::numbers::pi * match->aimAngle() / AngleUnits;
         render::MapMarker aim;
         // KAR_beginThrow: the stone runs along (rcos, rsin) of the angle, on the original's axes.
-        aim.feet = marker.feet + core::fromOriginalAxes(
-                                     glm::vec3{static_cast<float>(std::cos(turn)) * AimReach, 0.0F,
-                                               static_cast<float>(std::sin(turn)) * AimReach});
+        aim.feet =
+            worldOf(stone.position.x, stone.position.z, ground) +
+            core::fromOriginalAxes(glm::vec3{static_cast<float>(std::cos(turn)) * AimReach, 0.0F,
+                                             static_cast<float>(std::sin(turn)) * AimReach});
         aim.width = AimWidth;
         aim.height = AimHeight;
         aim.color = SelectedColor;
@@ -307,6 +406,7 @@ void CurlingScreen::showMarkers(FieldScene& scene) const {
       }
     }
   }
+  scene.setPosedProps(*model, std::move(stones));
   scene.setExtraMarkers(std::move(markers));
 }
 
@@ -343,6 +443,9 @@ void CurlingScreen::showHud() {
 void CurlingScreen::end(FieldScene& scene) {
   showRings(scene, 0);
   running_ = false;
+  if (const auto model = assets::AssetId::parse(StoneModel)) {
+    scene.setPosedProps(*model, {});
+  }
   scene.setExtraMarkers({});
   ui_->hide(CurlingHudDocument);
   if (auto result = curling_->finish(); !result) {
