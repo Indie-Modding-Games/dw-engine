@@ -1,0 +1,28 @@
+# Stage 4 of the story with the keyboard, Monochromon in the city: it loads the game route-etapa4-monochromon.yaml
+# saved after he joined (trigger 247; run with --load slot_01 from that run's --saves folder, --start room06 and
+# --story-stage stage_4, docs/guides/prueba-vertical.md). The city's item shop (room06) has one shopkeeper at a time:
+# its map header (MAPHEAD section 0xd8) spawns him in slot 3 when 247 is set and his first talk (68) is not, and puts
+# 3 in variable 25. Confirmed at the counter (script 176, section 0x51), he says he opened his item shop and sets 68;
+# the box names him, not the map's first record with his script id.
+name: etapa4-monochromon-ciudad
+device: keyboard
+timeout: 300
+steps:
+  - resize: [1280, 720]
+  - wait: {map: room06, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.247: "true"}
+  - expect_setting: {story.trigger.68: "false"}
+  - expect_setting: {story.var.25: "3"}
+  - expect_setting: {field.npc.5: "true"}
+  - screenshot: room06-monochromon
+  # The counter's cells (C in the collision, trigger 81).
+  - script: place("player -300 100 2048")
+  - wait: {seconds: 1}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 20}
+  # The speaker is the keeper on the map (script id 5 has a record per keeper; the spawned one names it).
+  - expect_setting: {story_textbox.row.0.run.0.text: "Monochromon"}
+  - wait: {confirm: true, setting: {story_textbox.row.2.run.0.text: "I opened my Item shop."}, timeout: 30}
+  - screenshot: room06-item-shop-opened
+  - wait: {confirm: true, setting: {story.trigger.68: "true"}, timeout: 30}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 1, timeout: 30}

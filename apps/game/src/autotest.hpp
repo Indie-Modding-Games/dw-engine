@@ -130,6 +130,9 @@ struct AutotestStep {
   // wait: while it waits, the story's textbox pages and a fight's end box are confirmed, and a
   // fight plays out on its own (a long scene played through).
   bool confirm = false;
+  // wait with confirm and `answer: true`: a selection is answered too, with the entry its cursor
+  // is on (a long run of the same choice, such as a shop job's customers).
+  bool answer = false;
   // wait with confirm: a fight on screen for this many seconds is ended
   // with battle_win(""), as the debug command does (a route that checks a path, not the fight).
   std::optional<double> winAfter;

@@ -441,12 +441,15 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
     reader.expectKeys(value, "wait", {},
                       {"seconds", "ticks", "map", "partner_within", "player_near", "radius",
                        "menu_open", "map_name", "shown", "hidden", "partner_has", "setting",
-                       "partner_model", "confirm", "win_after", "timeout"});
+                       "partner_model", "confirm", "answer", "win_after", "timeout"});
     if (const core::YamlNode* ticks = value.find("ticks")) {
       step.ticks = reader.integer<std::uint64_t>(*ticks);
     }
     if (const core::YamlNode* confirm = value.find("confirm")) {
       step.confirm = reader.boolean(*confirm);
+    }
+    if (const core::YamlNode* answer = value.find("answer")) {
+      step.answer = reader.boolean(*answer);
     }
     if (const core::YamlNode* win = value.find("win_after")) {
       step.winAfter = reader.number(*win);
@@ -700,8 +703,8 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   AutotestRoute route;
   reader.expectKeys(*document, "route", {"name", "device", "steps"},
                     {"gamepad", "timeout", "main_menu", "boot_screen", "language_first",
-                     "new_game_rules", "new_game_scene", "walk_control", "new_game", "names", "load_save",
-                     "movies", "text_fit"});
+                     "new_game_rules", "new_game_scene", "walk_control", "new_game", "names",
+                     "load_save", "movies", "text_fit"});
   route.name = reader.text(reader.field(*document, "name"));
   const core::YamlNode& device = reader.field(*document, "device");
   if (const auto known = deviceNamed(reader.text(device))) {
@@ -1080,10 +1083,12 @@ bool Autotest::waitStep(const AutotestHost& host, const AutotestStep& step, doub
     // fight's end box (battle_ui.c: handleBattleEndBox) takes a confirm; the fight itself plays.
     const bool battle = host.ui->isVisible(BattleDocument);
     const bool endBox = battle && settingText(host, "battle.phase") == "end";
-    // A selection (its cursor shows) is the route's to answer: confirm would take the first entry.
+    // A selection (its cursor shows) is the route's to answer, unless it asks for `answer`:
+    // confirm takes the entry under the cursor.
     const std::string cursor = settingText(host, "story_textbox.cursor_row");
     const bool selecting = cursor != "-1" && cursor != "-";
-    const bool textbox = !battle && !selecting && host.ui->isVisible(StoryTextboxDocument);
+    const bool textbox =
+        !battle && (!selecting || step.answer) && host.ui->isVisible(StoryTextboxDocument);
     if ((endBox || textbox) && now - progress_->lastAnswer > AnswerSeconds) {
       progress_->lastAnswer = now;
       const AutotestDevice device = deviceOf(step);

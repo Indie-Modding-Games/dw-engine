@@ -26,6 +26,10 @@ TEST_CASE("story_set reads a trigger or a variable write") {
   REQUIRE(money);
   CHECK(money->kind == StoryWrite::Kind::Money);
   CHECK(money->value == 1800);
+  const auto tally = storyWriteFromText("tally 3200");
+  REQUIRE(tally);
+  CHECK(tally->kind == StoryWrite::Kind::Tally);
+  CHECK(tally->value == 3200);
 }
 
 TEST_CASE("story_set reads a card write as copies to give") {
@@ -40,12 +44,13 @@ TEST_CASE("story_set reads a card write as copies to give") {
   }
   dwe::game::story::StoryState state;
   CHECK_FALSE(applyStoryWrite(state, *card));
+  CHECK_FALSE(applyStoryWrite(state, *storyWriteFromText("tally 5")));
 }
 
 TEST_CASE("story_set refuses what it cannot write") {
   for (const auto* text :
        {"", "var 1", "var 1 256", "var 1 -1", "var x 2", "trigger 86 yes", "flag 1 2", "var 1 2 3",
-        "money", "money -1", "money 1000000", "money 5 5"}) {
+        "money", "money -1", "money 1000000", "money 5 5", "tally", "tally -1", "tally 32768"}) {
     CAPTURE(text);
     CHECK_FALSE(storyWriteFromText(text));
   }

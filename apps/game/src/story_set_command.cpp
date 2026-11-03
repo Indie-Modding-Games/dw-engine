@@ -17,6 +17,8 @@ namespace {
 constexpr std::int32_t ByteLimit = 255;
 // battle_ui.c and script_interp.c (ADD_MONEY): the bits never pass 999999.
 constexpr std::int32_t MoneyLimit = 999999;
+// script_interp.c (call_routine 31): the shops' tally is a 16-bit signed number.
+constexpr std::int32_t TallyLimit = 32767;
 
 std::optional<std::int32_t> integerOf(std::string_view text) {
   std::int32_t value = 0;
@@ -38,8 +40,8 @@ core::Result<StoryWrite> storyWriteFromText(std::string_view text) {
   }
   const auto usage = [&] {
     return core::fail(std::format("'{}': expected 'trigger <n> on|off', 'var <n> <0-255>', "
-                                  "'money <0-{}>' or 'card <n> <1-255>'",
-                                  text, MoneyLimit));
+                                  "'money <0-{}>', 'tally <0-{}>' or 'card <n> <1-255>'",
+                                  text, MoneyLimit, TallyLimit));
   };
   if (words.size() == 2 && words[0] == "money") {
     const auto bits = integerOf(words[1]);
@@ -47,6 +49,13 @@ core::Result<StoryWrite> storyWriteFromText(std::string_view text) {
       return usage();
     }
     return StoryWrite{.kind = StoryWrite::Kind::Money, .number = 0, .value = *bits};
+  }
+  if (words.size() == 2 && words[0] == "tally") {
+    const auto amount = integerOf(words[1]);
+    if (!amount || *amount < 0 || *amount > TallyLimit) {
+      return usage();
+    }
+    return StoryWrite{.kind = StoryWrite::Kind::Tally, .number = 0, .value = *amount};
   }
   if (words.size() != 3) {
     return usage();
@@ -85,6 +94,10 @@ core::Result<void> applyStoryWrite(game::story::StoryState& state, const StoryWr
   }
   if (write.kind == StoryWrite::Kind::Money) {
     return core::fail(std::string{"money goes to the bag, not to the story's state"});
+  }
+  if (write.kind == StoryWrite::Kind::Tally) {
+    return core::fail(
+        std::string{"the tally lives in the story adapter, not in the story's state"});
   }
   return state.setVariable(write.number, static_cast<std::uint8_t>(write.value));
 }

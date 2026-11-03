@@ -1,0 +1,116 @@
+# Stage 4 of the story with the keyboard, Monochromon's shop job: from gcan11 on a seeded game (run with --start gcan11
+# --story-stage stage_4, docs/guides/prueba-vertical.md). The player confirms on the counter's cells (script 49,
+# section 0x51), says he will try and serves the shop's 20 customers (scripts 199 to 202, section 0x33: the price
+# choices, routine 28's mood bubble, routine 31 adds each sale to the tally). After the 20th the shop's section 0x52
+# copies the tally into variables 243 and 244 (routine 56) and pays by variable 243, the tally's high byte.
+#
+# The first job is played through, every choice the first entry (raise the price); before the last customer's sale
+# the tally is written as almost nothing, so the job ends at the lowest pay whatever the random draws were: 500 bits,
+# the clock 8 hours on (store_date, add_minutes_to_date_at 480, advance_to_date_at) and the warp to gcan09's exit 2,
+# without trigger 247. As in the original, the player walks in again and Monochromon offers the job once more ("You
+# want to work?"). The second job's first customer is made the 20th and the tally written above the winning 3072
+# (variable 243 of 12 or more): that customer and the ending run through the script, the test speech, "Monochromon
+# joins the city!", 2000 bits, two points of prosperity (variable 1) and trigger 247. Back in the shop he is gone
+# (the map header spawns him only without 247). The run saves to slot_01; route-etapa4-monochromon-ciudad.yaml loads
+# it and finds him in the city's item shop.
+name: etapa4-monochromon
+device: keyboard
+timeout: 1500
+steps:
+  - resize: [1280, 720]
+  - wait: {map: gcan11, seconds: 2, timeout: 60}
+  - script: story_set("money 1000")
+  - script: story_set("var 1 0")
+  - expect_setting: {story.trigger.247: "false"}
+  - expect_setting: {field.npc.5: "true"}
+  - screenshot: gcan11
+  # The counter's cells (A in the collision, trigger 81) before Monochromon.
+  - script: place("player -450 -450 2048")
+  - wait: {seconds: 1}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 20}
+  - screenshot: gcan11-welcome
+  # The first job, played through with the keys: the talk, "I'll try", the 20 customers.
+  - wait: {confirm: true, answer: true, setting: {story.var.123: "1"}, timeout: 120}
+  - screenshot: gcan11-first-customer
+  - wait: {confirm: true, answer: true, setting: {story.trigger.101: "true"}, timeout: 400}
+  - screenshot: gcan11-half-way
+  - wait: {confirm: true, answer: true, setting: {story.var.123: "20"}, timeout: 400}
+  - script: story_set("tally 2")
+  - wait: {confirm: true, answer: true, setting: {story_textbox.row.1.run.0.text: "I think it's time."}, timeout: 120}
+  - wait: {confirm: true, setting: {story_textbox.row.1.run.0.text: "It could have been better,"}, timeout: 30}
+  - screenshot: gcan11-could-have-been-better
+  - wait: {confirm: true, setting: {story_textbox.row.0.run.0.text: "I got five hund bits!"}, timeout: 30}
+  - wait: {confirm: true, map: gcan09, seconds: 2, timeout: 60}
+  - screenshot: gcan09-after-loss
+  - expect_setting: {story.var.243: "0"}
+  - expect_setting: {story.trigger.247: "false"}
+  - expect_setting: {story.var.1: "0"}
+  - expect_setting: {hud.clock.hour: "16"}
+  - menu: open
+  - wait: {menu_open: true, seconds: 0.6, timeout: 10}
+  - menu_select: open-items
+  - wait: {shown: partner_menu, seconds: 0.5, timeout: 5}
+  - expect_setting: {bag.money: "1500"}
+  # The original look's bag has no tabs and no close button: cancel closes it.
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - wait: {seconds: 1}
+        - tap: {key: escape}
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: close
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false, seconds: 0.5, timeout: 10}
+  # Back into the shop (gcan09's exit 2): Monochromon is still there and offers the job again.
+  - walk_to: {trigger: 112, timeout: 60}
+  - wait: {map: gcan11, seconds: 2, timeout: 60}
+  - expect_setting: {field.npc.5: "true"}
+  - script: place("player -450 -450 2048")
+  - wait: {seconds: 1}
+  - tap: {key: return}
+  - wait: {confirm: true, setting: {story_textbox.row.1.run.0.text: "You want to work?"}, timeout: 30}
+  - screenshot: gcan11-work-again
+  - wait: {confirm: true, answer: true, setting: {story.var.123: "1"}, timeout: 120}
+  # The second job: its first customer is the 20th and the tally is past the winning 3072.
+  - script: story_set("var 123 20")
+  - script: story_set("tally 3200")
+  - wait: {confirm: true, answer: true, setting: {story_textbox.row.1.run.0.text: "I think it's time."}, timeout: 120}
+  - wait: {confirm: true, setting: {story_textbox.row.1.run.0.text: "Your wisdom, character and"}, timeout: 30}
+  - screenshot: gcan11-test-speech
+  - wait: {confirm: true, setting: {story_textbox.row.0.run.0.text: "Monochromon joins the city!"}, timeout: 60}
+  - screenshot: gcan11-joins-the-city
+  - wait: {confirm: true, setting: {story_textbox.row.0.run.0.text: "I got two thous bits!"}, timeout: 30}
+  - wait: {confirm: true, map: gcan09, seconds: 2, timeout: 60}
+  - screenshot: gcan09-after-win
+  - expect_setting: {story.trigger.247: "true"}
+  - expect_setting: {story.var.1: "2"}
+  - expect_setting: {hud.clock.hour: "0"}
+  - menu: open
+  - wait: {menu_open: true, seconds: 0.6, timeout: 10}
+  - menu_select: open-items
+  - wait: {shown: partner_menu, seconds: 0.5, timeout: 5}
+  - expect_setting: {bag.money: "3500"}
+  # The original look's bag has no tabs and no close button: cancel closes it.
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - wait: {seconds: 1}
+        - tap: {key: escape}
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: close
+  - wait: {hidden: partner_menu, timeout: 5}
+  - menu: close
+  - wait: {menu_open: false, seconds: 0.5, timeout: 10}
+  # The shop is empty now: the map header spawns Monochromon only without trigger 247.
+  - walk_to: {trigger: 112, timeout: 60}
+  - wait: {map: gcan11, seconds: 2, timeout: 60}
+  - expect_setting: {field.npc.5: "false"}
+  - screenshot: gcan11-empty
+  - script: save("slot_01")
+  - wait: {seconds: 2}

@@ -1043,6 +1043,8 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
         bag.spendMoney(bag.money());
         bag.addMoney(write->value);
       }
+    } else if (write && write->kind == StoryWrite::Kind::Tally) {
+      game_.systems.story->setShopTally(write->value);
     } else if (write && write->kind == StoryWrite::Kind::Card) {
       auto given = game_.systems.cards != nullptr
                        ? applyCardWrite(*game_.systems.cards, *write)

@@ -382,7 +382,17 @@ scripts/dev.sh run --content <carpeta> --start trop03 --lang en --seed 1 \
   donde una voz pide ayuda (182), y pisa su salida cerrada a Freezeland. `route-etapa4-shellmon.yaml` (`--start
   gcan02`) escribe lo que deja bajar con el ascensor de arriba del cañón a la fortaleza y volver andando (180 fuera,
   181; el montacargas del trono volvería a poner el 180), sigue al otro puente (gcan04_2), donde Shellmon se une
-  (235), y su salida a Freezeland también queda cerrada.
+  (235), y su salida a Freezeland también queda cerrada. `route-etapa4-monochromon.yaml` (`--start gcan11`) confirma
+  en el mostrador de Monochromon (guion 49, sección 0x51), dice que lo intenta y atiende con las teclas a los 20
+  clientes (guiones 199 a 202; `wait` con `confirm` y `answer`: siempre la primera opción); antes de la venta del último
+  escribe la cuenta casi a cero (`story_set("tally 2")`), así que el final paga lo mínimo pase lo que pase en los
+  sorteos: «It could have been better», 500 bits, el reloj 8 horas más tarde y el salto a la salida 2 de gcan09, sin
+  el 247. Vuelve a entrar y Monochromon ofrece el trabajo otra vez («You want to work?»); en el segundo, el primer
+  cliente pasa a ser el 20.º y la cuenta se escribe por encima de 3072 (variable 243 de 12): ese cliente y el final
+  corren por el guion (la prueba, «Monochromon joins the city!», 2000 bits, 2 puntos de prosperidad y el 247), y la
+  tienda queda vacía. Guarda en `slot_01`; `route-etapa4-monochromon-ciudad.yaml` (`--load slot_01 --start room06`
+  con la misma carpeta `--saves`) lo encuentra en la tienda de objetos de la ciudad (variable 25 a 3) y, al hablarle,
+  abre su tienda (68).
   `route-etapa4-lock.yaml` (`--start gcan01`) pisa la salida de gcan01 a dgha01 (etapa 7): sale el aviso del candado
   y el jugador sigue en gcan01; luego vuelve a la jungla por trop03.
 
@@ -399,6 +409,10 @@ scripts/dev.sh run --content <carpeta> --start gcan02 --story-stage stage_4 --la
     --autotest tests/autotest/route-etapa4-shellmon.yaml --shots <capturas>/etapa4
 scripts/dev.sh run --content <carpeta> --start gcan01 --story-stage stage_4 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa4-lock.yaml --shots <capturas>/etapa4
+scripts/dev.sh run --content <carpeta> --start gcan11 --story-stage stage_4 --lang en --seed 1 --saves <capturas>/saves \
+    --autotest tests/autotest/route-etapa4-monochromon.yaml --shots <capturas>/etapa4
+scripts/dev.sh run --content <carpeta> --load slot_01 --start room06 --story-stage stage_4 --lang en \
+    --saves <capturas>/saves --autotest tests/autotest/route-etapa4-monochromon-ciudad.yaml --shots <capturas>/etapa4
 ```
 ```
 
@@ -760,7 +774,7 @@ steps:
 | Paso | Qué hace |
 |---|---|
 | `wait: {seconds, map, partner_within, player_near: [x, z], radius, menu_open, map_name, shown, hidden, partner_has, setting, partner_model, timeout}` | Espera los segundos y hasta que se cumplen las condiciones (todas las dadas). `map_name: <id>` espera a que un cambio de mapa enseñe el nombre de ese mapa, y entonces no mira las demás. `shown: <documento>` y `hidden: <documento>` esperan a que un documento de la UI (`battle`, `partner_menu`) se vea o deje de verse. `partner_has: <clave>` espera a que el compañero tenga ese estado, por la clave de la página de estado (`partner_menu.condition.sleepy`, `.hungry`, `.needs_toilet`, `.sick`...). `setting: {<nombre>: <valor>}` espera a que un ajuste tenga ese valor (`battle.phase: end`). `partner_model: <id>` espera a que el compañero se dibuje con ese modelo (`digimon/species_b/model`). `ticks: <n>` espera esos ticks de lógica (1/60 s cada uno) en vez de segundos de reloj |
-| `wait: {confirm, win_after, ...}` | Además, `confirm: true` pulsa confirmar mientras espera, cada segundo, en el cuadro de texto de la historia (no en un elegidor, cuyo cursor se ve: ése lo contesta la ruta) y en el cuadro final de un combate, que se juega solo. `win_after: <s>` (con `confirm`) acaba con `battle_win` un combate que lleva ese tiempo en pantalla, para los jefes que el compañero de una partida escrita no gana |
+| `wait: {confirm, answer, win_after, ...}` | Además, `confirm: true` pulsa confirmar mientras espera, cada segundo, en el cuadro de texto de la historia (no en un elegidor, cuyo cursor se ve: ése lo contesta la ruta, salvo con `answer: true`, que elige la entrada bajo el cursor, para una tanda larga de la misma elección como los clientes del trabajo en la tienda) y en el cuadro final de un combate, que se juega solo. `win_after: <s>` (con `confirm`) acaba con `battle_win` un combate que lleva ese tiempo en pantalla, para los jefes que el compañero de una partida escrita no gana |
 | `hold: {keys: [<tecla>...], ticks}` | Mantiene esas teclas pulsadas exactamente esos ticks de lógica (`keys: []`, ninguna) y las suelta después; los `hold` seguidos se encadenan sin huecos, tick a tick, aunque los frames vayan lentos. Para repetir una entrada al tick, como en la [traza de estado](traza-de-estado.md) |
 | `walk_to: {trigger \| point: [x, z], radius, walk, stop_on_warp, stop_on_scene, stop_on_closed, encounters, device, timeout}` | Camina con el dispositivo hasta las celdas con ese trigger (y el cambio de mapa que dispara) o hasta el punto; planifica con la colisión del mapa y evita los demás warps. `walk: true` anda en vez de correr. `stop_on_warp: true` acaba al empezar el cambio de mapa, sin esperar al mapa nuevo. `stop_on_scene: true` acaba en cuanto un script de la historia sujeta al jugador por el camino (la escena de una casilla de sección) y deja la escena en marcha para los pasos siguientes. `stop_on_closed: true` acaba cuando el candado de historia deja cerrada la salida y muestra su aviso (el diálogo `dialog`): el jugador sigue en el mapa. Si pisa un objeto del suelo, confirma su aviso como lo haría el jugador y sigue. `encounters: true` aguanta un encuentro por el camino, que llega cuando quiere el tiempo (un monstruo salvaje se acerca, habla y empieza un combate): mientras un script sujeta al jugador o se ve el combate, deja de andar, pasa las páginas del cuadro de texto con confirmar (Intro, o South con el mando) cada segundo y deja que el combate acabe solo, pulsando confirmar también en su cuadro final, que escribe cada línea con una pulsación (el de un script no deja huir, como en el original; si se pierde, el jugador acaba en casa de Jijimon y la ruta lo verá); luego planifica de nuevo desde donde quedó el jugador. Ese tiempo no cuenta para el `timeout` del paso, sí para el de la ruta. Con `encounters: win` el combate del encuentro acaba ganado en cuanto empieza (como `battle_win`), para que el compañero de la ruta no pierda por el camino. Un elegidor de destinos de otra celda por el camino (el camino vuelve a pisar la celda en la que el jugador se quedó) se rechaza con cancelar y la caminata sigue |
 | `menu: open \| close` | Abre o cierra el menú con el dispositivo (ratón: el botón «Menú» del HUD y clic derecho) |
@@ -800,7 +814,7 @@ fase 4:
 | `battle_lose("")` | Lo contrario: el compañero cae como con un golpe final y el combate se pierde (para probar un torneo perdido) |
 | `battle_time_up("win")` | En un combate de copa, el tiempo se agota ya: con `"win"` el rival pierde PV hasta llevar 200 de daño más que el compañero (gana el compañero), con `"lose"` al revés y con `""` empatan (para probar el aviso de tiempo agotado) |
 | `give_item("<id> <cantidad>")` | Mete objetos en la bolsa (`give_item("meat 3")`) |
-| `story_set("trigger <n> on\|off")`, `story_set("var <n> <valor>")`, `story_set("money <bits>")`, `story_set("card <n> <copias>")` | Escribe un disparador o una variable de la historia, como el original los guarda en su estado de scripts, sin correr ningún script (`story_set("var 1 10")`: diez puntos de prosperidad), el dinero que lleva el jugador (de 0 a 999999), o da copias de una carta como `give_card` (`story_set("card 19 1")`). Para empezar una ruta en un punto de la historia al que la partida sembrada no llega |
+| `story_set("trigger <n> on\|off")`, `story_set("var <n> <valor>")`, `story_set("money <bits>")`, `story_set("card <n> <copias>")`, `story_set("tally <cantidad>")` | Escribe un disparador o una variable de la historia, como el original los guarda en su estado de scripts, sin correr ningún script (`story_set("var 1 10")`: diez puntos de prosperidad), el dinero que lleva el jugador (de 0 a 999999), la cuenta de las tiendas (de 0 a 32767: lo ganado en el trabajo de la tienda del cañón, que las rutinas 31 y 56 suman y copian a las variables 243 y 244), o da copias de una carta como `give_card` (`story_set("card 19 1")`). Para empezar una ruta en un punto de la historia al que la partida sembrada no llega |
 | `evolve("<especie>")` | Hace evolucionar al compañero a esa forma como un guion de mapa (`evolve("species_b")`); el campo lo dibuja con su modelo |
 | `use_item("<id>")` | Usa uno de la bolsa con el compañero, como «Usar» en la bolsa; el compañero puede rechazarlo |
 | `drop_item("<id>")` | Deja ese objeto en el suelo a los pies del jugador, como la caída de un enemigo vencido (`drop_item("meat")`) |
