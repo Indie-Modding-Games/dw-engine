@@ -1,0 +1,64 @@
+# The item keeper's warehouse entered from File City (the third bank route): from a seeded new game started in the
+# town twna02, the player walks to the bank's door (table warp, trigger 113 = the room02 exit's cells, rows 61-62 of
+# the town's collision), enters the bank, and opens the keeper the same way as route-bank: the first confirm on the
+# trigger-81 cells is the welcome (it sets trigger 51), the second writes the keeper's id 5 to variable 254 and calls
+# routine 11. Then yes to the question, one meat moved into `Keeping` (phase `windows`), goodbye with cancel and
+# confirm. Needs --content <extracted folder> --start twna02 --new-game --seed 1.
+name: bank-city
+device: keyboard
+timeout: 300
+# text_fit is left off on purpose: in es the HUD's digital time fails it (a separate bug), and the keeper's own
+# windows are still checked against overlaps with expect_clear.
+steps:
+  - wait: {map: twna02, partner_within: 400, seconds: 1.5, timeout: 60}
+  - resize: [1280, 720]
+  # A new game's bag is empty (like the original's): give_item puts the meat in its first slot before the walk.
+  - script: give_item("meat 5")
+  # The town fades in from black first.
+  - wait: {setting: {screen_fade: 0}, timeout: 10}
+  # The bank's door: the table warp cells (trigger 113) at the front of the bank building.
+  - walk_to: {trigger: 113, timeout: 240}
+  - wait: {map: room02, partner_within: 400, seconds: 1, timeout: 60}
+  - screenshot: bank-city-entered
+  # The keeper (script id 5) stands behind the counter; section 0x51 runs on the cells in front of it (trigger 81,
+  # the "B" cells of room02's collision, columns 49 to 53 and rows 49 to 51; the world (0, 0)). Cells 80 to 109 run
+  # on confirm.
+  - walk_to: {point: [0, 0], radius: 30, timeout: 120}
+  - tap: {key: return}
+  # The first talk is the welcome (script 171's first branch, which sets trigger 51); the pages go by with confirm
+  # while the box holds the player.
+  - wait: {shown: story_textbox, seconds: 0.3, timeout: 10}
+  - wait: {hidden: story_textbox, confirm: true, seconds: 0.5, timeout: 20}
+  - wait: {seconds: 0.5}
+  # The second talk: trigger 51 set, the section jumps to var 254 = 5 and call_routine(11); the keeper's screen opens.
+  - tap: {key: return}
+  - wait: {shown: item_keeper, confirm: true, seconds: 0.5, timeout: 15}
+  - expect_setting: {item_keeper.phase: ask}
+  - expect_clear: item_keeper
+  - screenshot: bank-city-ask
+  # The question takes a confirm to the yes-or-no, and the yes (cursor on it) opens the two windows.
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {item_keeper.phase: choice}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {item_keeper.phase: windows}
+  - expect_setting: {item_keeper.kept.total: "0"}
+  - expect_setting: {item_keeper.bag.0.count: "5"}
+  # Right to the bag's window; Enter moves one of the meat to the keeper.
+  - tap: {key: right}
+  - wait: {seconds: 0.3}
+  - tap: {key: return}
+  - wait: {seconds: 0.3}
+  - expect_setting: {item_keeper.kept.total: "1"}
+  - expect_setting: {item_keeper.kept.0.count: "1"}
+  - expect_setting: {item_keeper.bag.0.count: "4"}
+  - screenshot: bank-city-moved-one
+  # Cancel closes the windows (phase `farewell`); a press says goodbye and ends the visit. Once the visit is over the
+  # screen publishes nothing more: the last `item_keeper.phase` stays "farewell".
+  - tap: {key: escape}
+  - wait: {seconds: 0.5}
+  - expect_setting: {item_keeper.phase: farewell}
+  - tap: {key: return}
+  - wait: {hidden: item_keeper, seconds: 0.5, timeout: 10}
+  - screenshot: bank-city-after
