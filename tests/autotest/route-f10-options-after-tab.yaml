@@ -17,6 +17,7 @@ steps:
   - wait: {menu_open: true, seconds: 0.5, timeout: 5}
   - expect_setting: {has_class.pause_menu#page-options.hidden: "false"}
   - expect_setting: {has_class.pause_menu#page-main.hidden: "true"}
+  - expect_setting: {has_class.pause_menu#panel.box-closed: "false"}
   - screenshot: options-over-tab
   # F10 opened the options page, so the next F10 closes the menu.
   - tap: {key: f10}
@@ -29,6 +30,7 @@ steps:
   - tap: {key: f10}
   - wait: {menu_open: true, seconds: 0.5, timeout: 5}
   - expect_setting: {has_class.pause_menu#page-options.hidden: "false"}
+  - expect_setting: {has_class.pause_menu#panel.box-closed: "false"}
   - screenshot: options-after-tab
   - tap: {key: f10}
   - wait: {menu_open: false, seconds: 0.5, timeout: 5}
