@@ -1,0 +1,63 @@
+# The item keeper of the city (room02, script 171 section 0x51 -> call_routine(11), shop/script_menu.c:
+# tickItemKeeper, docs/modulos/apps/screens.md "Guardian de objetos"): from a seeded new game started in the bank the
+# player walks to the keeper Agumon's counter and confirms. The first confirm (no trigger 51) only greets (two pages,
+# and sets the trigger); a second confirm on the same cell writes the keeper's id 5 to variable 254 and calls routine
+# 11: the `item_keeper` screen asks (phase `ask`), takes the yes (phase `choice`, then `windows`), and moving one meat
+# with Enter grows `item_keeper.kept` while the bag's row shrinks. Escape says goodbye and closes. Needs --content
+# <extracted folder> --start room02 --new-game --seed 1.
+name: bank
+device: keyboard
+timeout: 180
+# text_fit is left off on purpose: in es the HUD's digital time fails it (a separate bug), and the keeper's own
+# windows are still checked against overlaps with expect_clear.
+steps:
+  - wait: {map: room02, partner_within: 400, seconds: 1.5, timeout: 60}
+  - resize: [1280, 720]
+  # A new game's bag is empty (like the original's): give_item puts the meat in its first slot.
+  - script: give_item("meat 5")
+  # The keeper (script id 5) stands behind the counter; section 0x51 runs on the cells in front of it (trigger 81,
+  # the "B" cells of room02's collision, columns 49 to 53 and rows 49 to 51; the world (0, 0)). Cells 80 to 109 run
+  # on confirm.
+  - walk_to: {point: [0, 0], radius: 30, timeout: 120}
+  - screenshot: bank-counter
+  - tap: {key: return}
+  # The first talk is the welcome (script 171's first branch, which sets trigger 51); the pages go by with confirm
+  # while the box holds the player.
+  - wait: {shown: story_textbox, seconds: 0.3, timeout: 10}
+  - wait: {hidden: story_textbox, confirm: true, seconds: 0.5, timeout: 20}
+  - screenshot: bank-welcome
+  - wait: {seconds: 0.5}
+  # The second talk: trigger 51 set, the section jumps to var 254 = 5 and call_routine(11); the keeper's screen opens.
+  - tap: {key: return}
+  - wait: {shown: item_keeper, confirm: true, seconds: 0.5, timeout: 15}
+  - expect_setting: {item_keeper.phase: ask}
+  - expect_clear: item_keeper
+  - screenshot: bank-ask
+  # The question takes a confirm to the yes-or-no, and the yes (cursor on it) opens the two windows.
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {item_keeper.phase: choice}
+  - screenshot: bank-choice
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {item_keeper.phase: windows}
+  - expect_setting: {item_keeper.kept.total: "0"}
+  - expect_setting: {item_keeper.bag.0.count: "5"}
+  # Right to the bag's window; Enter moves one of the meat to the keeper.
+  - tap: {key: right}
+  - wait: {seconds: 0.3}
+  - tap: {key: return}
+  - wait: {seconds: 0.3}
+  - expect_setting: {item_keeper.kept.total: "1"}
+  - expect_setting: {item_keeper.kept.0.count: "1"}
+  - expect_setting: {item_keeper.bag.0.count: "4"}
+  - screenshot: bank-moved-one
+  # Cancel closes the windows (phase `farewell`); a press says goodbye and ends the visit. Once the visit is over the
+  # screen publishes nothing more: the last `item_keeper.phase` stays "farewell".
+  - tap: {key: escape}
+  - wait: {seconds: 0.5}
+  - expect_setting: {item_keeper.phase: farewell}
+  - screenshot: bank-farewell
+  - tap: {key: return}
+  - wait: {hidden: item_keeper, seconds: 0.5, timeout: 10}
+  - screenshot: bank-after
