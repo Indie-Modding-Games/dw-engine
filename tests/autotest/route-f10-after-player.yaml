@@ -1,0 +1,34 @@
+# F10 opens the options after the player page or the partner menu was opened and closed.
+name: f10-after-player
+device: keyboard
+timeout: 180
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - wait: {setting: {screen_fade: 0}, timeout: 10}
+  # The pause menu's player page, then back and close.
+  - menu: open
+  - wait: {menu_open: true, seconds: 0.6, timeout: 5}
+  - menu_select: open-player
+  - wait: {seconds: 1}
+  - screenshot: player-page
+  - tap: {key: escape}
+  - wait: {seconds: 0.6}
+  - tap: {key: escape}
+  - wait: {menu_open: false, seconds: 1, timeout: 5}
+  - tap: {key: f10}
+  - wait: {menu_open: true, seconds: 0.5, timeout: 5}
+  - expect_setting: {has_class.pause_menu#page-options.hidden: "false"}
+  - screenshot: options-after-player
+  - tap: {key: f10}
+  - wait: {menu_open: false, seconds: 0.5, timeout: 5}
+  # The partner menu (open-partner), then close back into the pause menu.
+  - menu: open
+  - wait: {menu_open: true, seconds: 0.6, timeout: 5}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.6, timeout: 5}
+  - tap: {key: escape}
+  - wait: {hidden: partner_menu, seconds: 1, timeout: 5}
+  - tap: {key: f10}
+  - wait: {menu_open: true, seconds: 0.5, timeout: 5}
+  - expect_setting: {has_class.pause_menu#page-options.hidden: "false"}
+  - screenshot: options-after-partner

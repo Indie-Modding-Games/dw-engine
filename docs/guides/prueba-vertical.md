@@ -128,6 +128,8 @@ que se puede seguir usando el escritorio; un mando real sí llega. Las rutas de 
   gimnasio, elige la segunda opción con un clic y comprueba que el jugador no echa a andar al acabar.
 - `route-walk-control.yaml`: la opción «Caminar con»: con el teclado (por defecto) un clic en el suelo no mueve al
   jugador; la cambia a ratón en el menú de pausa y comprueba que las flechas ya no lo mueven y un clic sí.
+- `route-battle-mouse-no-walk.yaml`: con el ratón, un clic durante una batalla no deja una orden de andar encolada:
+  al cerrarse la batalla el jugador sigue donde estaba.
 - `route-fade.yaml`: entra en la casa del anciano con el ratón y hace una captura en mitad del fundido, con el nombre
   del mapa a la vista en el idioma del juego (`--lang`), y otra al acabar.
 - `route-field-pickup-mouse.yaml`: el aviso de un objeto del suelo se responde con el ratón: `drop_item` deja la

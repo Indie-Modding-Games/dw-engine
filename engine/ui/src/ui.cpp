@@ -657,11 +657,14 @@ struct Ui::Impl {
 
   void hide(std::string_view name) {
     Document* document = find(name);
+    // Always drop the name from the modal stack, even if the document was
+    // already hidden (e.g. closed by another path), so capturesInput() does
+    // not stay stuck true forever.
+    std::erase(modalStack, name);
     if (document == nullptr || !document->element->IsVisible()) {
       return;
     }
     document->element->Hide();
-    std::erase(modalStack, name);
     document->element->callHandler("on_hide");
   }
 
@@ -1171,11 +1174,22 @@ bool Ui::handleEvent(const platform::Event& event) {
 }
 
 void Ui::tick(const input::InputState& input, double seconds) {
+  // Defensive cleanup: drop any modal-stack entries whose documents are no
+  // longer visible, so a stale modal never keeps capturesInput() true.
+  auto& stack = impl_->modalStack;
+  std::erase_if(stack, [this](const std::string& name) {
+    const auto* d = impl_->find(name);
+    return d == nullptr || !d->element->IsVisible();
+  });
   impl_->tick(input, seconds);
 }
 
 bool Ui::capturesInput() const {
   return !impl_->modalStack.empty() || impl_->capturedThisTick;
+}
+
+bool Ui::hasModal() const {
+  return !impl_->modalStack.empty();
 }
 
 std::vector<UiCommand> Ui::takeCommands() {
