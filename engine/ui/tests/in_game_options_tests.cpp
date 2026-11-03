@@ -25,11 +25,11 @@ namespace {
 using fixture::Screen;
 
 // The game's options as ui/common/game_options.lua lists them, in order.
-constexpr std::array<std::string_view, 10> GameOptions{"free-exploration", "smooth-motion",
-                                                       "save-notice",      "digital-time",
-                                                       "bulk-trades",      "evolution-requirements",
-                                                       "translated-signs", "status-extras",
-                                                       "canonical-stages", "long-names"};
+constexpr std::array<std::string_view, 11> GameOptions{
+    "free-exploration", "smooth-motion", "save-notice",
+    "digital-time",     "bulk-trades",   "evolution-requirements",
+    "translated-signs", "status-extras", "canonical-stages",
+    "long-names",       "shop-job-bar"};
 
 void openOnOptions(Screen& screen) {
   screen.ui->setSetting("pause_menu.start_page", std::string{"options"});
@@ -82,7 +82,7 @@ TEST_CASE("the options page lists every game option in a row of its own, and onl
   CHECK(screen.ui->elementText("pause_menu", "free-exploration-value") == "No");
   CHECK(screen.ui->elementText("pause_menu", "long-names-value") == "Sí");
   // The rows the list does not fill stay hidden.
-  CHECK(screen.ui->elementHasClass("pause_menu", "option-slot-12", "hidden"));
+  CHECK(screen.ui->elementHasClass("pause_menu", "option-slot-13", "hidden"));
   CHECK(screen.ui->elementHasClass("pause_menu", "option-slot-16", "hidden"));
   // The language and the original-looking text, as on the title.
   CHECK(screen.ui->elementText("pause_menu", "language-value") == "Español");
@@ -130,7 +130,7 @@ game_options[#game_options + 1] = {
   CHECK(screen.ui->elementText("pause_menu", "movement-value") == "pause_menu.movement.keys");
   std::ignore = screen.ui->takeCommands();
   REQUIRE(
-      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "12", "1"}));
+      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "13", "1"}));
   CHECK(sent(screen.ui->takeCommands(), "movement", UiValue{std::string{"mouse"}}));
 }
 

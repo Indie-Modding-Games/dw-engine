@@ -1223,6 +1223,57 @@ TEST_CASE("the field clock tells the game time in digits as HH:MM while the opti
 
 namespace {
 
+void publishShopJob(Ui& ui, bool shown, double tally, double customer) {
+  ui.setSetting("shop_job.shown", shown);
+  ui.setSetting("shop_job.tally", tally);
+  ui.setSetting("shop_job.goal", 3072.0);
+  ui.setSetting("shop_job.better_pay", 1792.0);
+  ui.setSetting("shop_job.customer", customer);
+  ui.setSetting("shop_job.customers", 20.0);
+  const UiValue current = ui.setting("shop_job.revision");
+  const double* count = std::get_if<double>(&current);
+  ui.setSetting("shop_job.revision", (count == nullptr ? 0.0 : *count) + 1.0);
+  ui.update();
+}
+
+} // namespace
+
+TEST_CASE("the shop job's bar shows the tally against the join and the customers served") {
+  for (const std::string_view skin : {"original", "modern"}) {
+    CAPTURE(skin);
+    Content content;
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->setSetting("ui_skin", std::string{skin});
+    ui->show("hud");
+    ui->update();
+    // Hidden until the game says the job runs.
+    CHECK_FALSE(ui->elementHasClass("hud", "shop-job", "shown"));
+    publishShopJob(*ui, true, 960.0, 7.0);
+    CHECK(ui->elementHasClass("hud", "shop-job", "shown"));
+    CHECK(ui->elementText("hud", "shop-job-customers") == "Customers 7/20");
+    CHECK(ui->elementText("hud", "shop-job-tally") == "960 / 3072 bits");
+    CHECK(ui->styleProperty("hud", "shop-job-fill", "width") == "31.25%");
+    CHECK(ui->styleProperty("hud", "shop-job-mark-pay", "left") == "58.33%");
+    CHECK_FALSE(ui->elementHasClass("hud", "shop-job", "better"));
+    // The next mark to reach, on the right.
+    CHECK(ui->elementText("hud", "shop-job-next") == "Better pay from 1792");
+    publishShopJob(*ui, true, 2000.0, 15.0);
+    CHECK(ui->elementHasClass("hud", "shop-job", "better"));
+    CHECK_FALSE(ui->elementHasClass("hud", "shop-job", "joins"));
+    CHECK(ui->elementText("hud", "shop-job-next") == "Joins the city from 3072");
+    // Past the goal the fill stops at the end.
+    publishShopJob(*ui, true, 3200.0, 20.0);
+    CHECK(ui->elementHasClass("hud", "shop-job", "joins"));
+    CHECK(ui->styleProperty("hud", "shop-job-fill", "width") == "100%");
+    CHECK(ui->elementText("hud", "shop-job-next") == "Joins the city!");
+    publishShopJob(*ui, false, 3200.0, 20.0);
+    CHECK_FALSE(ui->elementHasClass("hud", "shop-job", "shown"));
+  }
+}
+
+namespace {
+
 void setFieldNeeds(Ui& ui, bool hunger, bool sleep, bool toilet, bool tired = false) {
   ui.setSetting("hud.need.0.active", hunger);
   ui.setSetting("hud.need.1.active", sleep);

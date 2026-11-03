@@ -85,6 +85,15 @@ game_options = {
   -- Long names: the naming box takes names of up to twelve letters (on by default; off keeps the
   -- original's six).
   { id = "long-names", setting = "long_names", label = "pause_menu.long_names", default = true },
+  -- Shop job bar: while the canyon shop's job runs, a bar under the top of the screen shows the
+  -- takings against what makes the shopkeeper join the city, and the customers served (on by
+  -- default; off leaves the original's screen).
+  {
+    id = "shop-job-bar",
+    setting = "shop_job_bar",
+    label = "pause_menu.shop_job_bar",
+    default = true,
+  },
 }
 
 -- The option's current value: what the game published, or its default.

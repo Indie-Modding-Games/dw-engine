@@ -62,6 +62,9 @@ walk_control.keys: "Teclado/mando"
 walk_control.mouse: "Ratón"
 # Nombres largos: la caja de nombres admite hasta doce letras en vez de seis (encendido por defecto).
 long_names: "Nombres largos"
+# Barra de la tienda: mientras dura el trabajo en la tienda del cañón, una barra enseña lo ganado frente a lo que hace
+# que el tendero se una y los clientes (encendida por defecto).
+shop_job_bar: "Barra de la tienda"
 
 year_label: "Año"
 day_label: "Día"

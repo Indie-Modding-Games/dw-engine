@@ -369,3 +369,59 @@ body {
 #menu-button:hover {
 	background-color: #2d3840c0;
 }
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The shop job's bar (an engine improvement, the option shop_job_bar; the original has none): one of the original's
+   boxes at the top centre, in the original-look font at twice its cells, with a bar in the field bars' colours, pink
+   up to the better pay's mark, blue past it and white once the shopkeeper joins. This sheet goes over the modern
+   skin's, so it sets again every property that one gives the bar. */
+
+#shop-job {
+	width: 600dp;
+	margin-left: -306dp;
+	padding: 6dp 9dp;
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: #000000c0;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	font-family: original-look;
+	font-size: 22dp;
+	line-height: 24dp;
+	color: #d0d0d0;
+}
+
+#shop-job-title {
+	font-weight: normal;
+}
+
+#shop-job-bar {
+	height: 12dp;
+	margin: 6dp 0;
+	border-radius: 0;
+	background-color: #303030;
+}
+
+#shop-job-fill {
+	border-radius: 0;
+	border-top: 3dp #f0b8d0;
+	background-color: #e05890;
+}
+
+#shop-job.better #shop-job-fill { border-top-color: #90c8f0; background-color: #0080d0; }
+#shop-job.joins #shop-job-fill { border-top-color: #ffffff; background-color: #d0d0d0; }
+
+.shop-job-mark {
+	width: 3dp;
+	margin-left: -1dp;
+	background-color: #fff371;
+}
+
+#shop-job-foot {
+	height: 24dp;
+	font-size: 22dp;
+}
+
+#shop-job-next {
+	color: #fff371;
+}

@@ -376,6 +376,26 @@ TEST_CASE("the game pack's ending gives record 39 as the ending's species with t
         std::vector<std::string>{"megaton_punch", "thunder_justice", "all_range_beam"});
 }
 
+TEST_CASE("the game pack's shop job joins from a tally of 3072 and pays better from 1792") {
+  // Script 49, section 0x52: after 20 customers (variable 123) it pays by variable 243, the high
+  // byte routine 56 writes: up to 6 the lowest pay, up to 11 the better one, from 12 the join.
+  std::ifstream in{std::filesystem::path{DWE_GAME_PACK} / "rules/original/story_scenes.yaml"};
+  REQUIRE(in);
+  const std::string text{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
+  auto node = dwe::core::parseYaml(text);
+  REQUIRE(node);
+  const auto rules = dwe::session::readStoryScenesRules(
+      {.name = "story_scenes", .owner = "original", .file = "story_scenes.yaml", .node = *node});
+  REQUIRE_MESSAGE(rules.has_value(), rules.error().message);
+  REQUIRE(rules->shopJob.has_value());
+  const dwe::session::ShopJobRules& job = *rules->shopJob;
+  CHECK(job.map == "gcan11");
+  CHECK(job.customersVariable == 123);
+  CHECK(job.customers == 20);
+  CHECK(job.tallyFrom(job.betterPayFrom) == 1792);
+  CHECK(job.tallyFrom(job.joinsFrom) == 3072);
+}
+
 TEST_CASE("routines 45 and 46 fade to white and back over the frames variable 254 holds") {
   const dwe::session::testing::TestPacks packs;
   auto story = std::make_unique<dwe::session::StoryAdapter>(

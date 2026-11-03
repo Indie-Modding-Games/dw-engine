@@ -409,6 +409,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                                            .feed = &feedScene_}),
       chartRequirements_(*context.ui, game_.systems.evolution),
       fieldHud_(*context.ui, *game_.session),
+      shopJobBar_(game_.systems.scenes != nullptr ? game_.systems.scenes->rules().shopJob
+                                                  : std::nullopt),
       sleepScreen_(*game_.session, *context.ui, scene_->field().rules().transition),
       saveMachine_({.session = game_.session.get(),
                     .ui = context.ui,
@@ -574,6 +576,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   context_.ui->setSetting(EvolutionActiveSetting, false);
   // Long names in the naming box, on unless turned off.
   context_.ui->setSetting(LongNamesSetting, context.userSettings->longNames.value_or(true));
+  // The shop job's progress bar, on unless turned off.
+  context_.ui->setSetting(ShopJobBarSetting, context.userSettings->shopJobBar.value_or(true));
   // The canonical stages on the chart, off unless turned on.
   context_.ui->setSetting(CanonicalStagesSetting,
                           context.userSettings->canonicalStages.value_or(false));
@@ -871,6 +875,16 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       }
     }
     context_.ui->setSetting(SmoothMotionSetting, scene_->field().smoothMotion());
+    return true;
+  }
+  if (command.name == ShopJobBarSetting) {
+    if (const bool* shown = std::get_if<bool>(&command.value)) {
+      context_.ui->setSetting(ShopJobBarSetting, *shown);
+      context_.userSettings->shopJobBar = *shown;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
     return true;
   }
   if (command.name == DigitalTimeSetting) {
@@ -1212,6 +1226,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
                    field.heldForCare()
                        ? std::nullopt
                        : partnerBubbleOf(*scene_, species, session.partnerView().species));
+  publishShopJob();
   battleScreen_.showIntro([&](const game::battle::Combatant& enemy, float lift) {
     return angerAnchorOf(*scene_, species, enemy, lift);
   });
@@ -1239,6 +1254,27 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   keepFieldSnapshot(frameSeconds);
   // Last, after every save this frame could write (the autosave, a command, the save machine).
   saveIndicator_->update(session.savesWritten(), frameSeconds);
+}
+
+// The shop job's bar (shop_job_bar.hpp): the customer count and the tally, published when they
+// change.
+void PlaySession::publishShopJob() {
+  ShopJobFrame frame{.enabled = context_.userSettings->shopJobBar.value_or(true),
+                     .map = scene_->field().mapId()};
+  const session::StoryAdapter* story = game_.systems.story;
+  if (story != nullptr && game_.systems.scenes != nullptr) {
+    if (const auto& job = game_.systems.scenes->rules().shopJob; job.has_value()) {
+      frame.customer =
+          story->state().variable(static_cast<std::int32_t>(job->customersVariable)).value_or(0);
+      frame.tally = story->shopTally();
+    }
+  }
+  const ShopJobBarView view = shopJobBar_.update(frame);
+  if (publishedShopJob_ == view) {
+    return;
+  }
+  screens::publish(*context_.ui, settingsOf(view), ShopJobRevisionSetting);
+  publishedShopJob_ = view;
 }
 
 // partner_impl.c: handleConditionBubble: a partner whose only condition is sulking, in its normal

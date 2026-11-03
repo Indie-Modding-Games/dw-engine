@@ -318,6 +318,44 @@ local function draw_field(document)
   pick_bubble(document)
 end
 
+-- The shop job's bar (shop_job_bar, an engine improvement, on unless turned off): while the canyon
+-- shop's job runs the game publishes shop_job.* (apps/game: shop_job_bar.hpp) and bumps
+-- shop_job.revision. The bar runs from nothing to the tally the shopkeeper joins from
+-- (shop_job.goal), with a mark where the better pay starts (shop_job.better_pay) and, under it,
+-- the next mark to reach; #shop-job takes the class "shown", and "better" or "joins" once the
+-- tally reaches a mark.
+local function draw_shop_job(document)
+  local panel = document:get("shop-job")
+  local shown = ui.setting("shop_job.shown") == true
+  panel:set_class("shown", shown)
+  if not shown then
+    return
+  end
+  local tally, goal = field_number("shop_job.tally"), field_number("shop_job.goal")
+  local better = field_number("shop_job.better_pay")
+  document
+    :get("shop-job-fill")
+    :set_property("width", string.format("%.2f%%", percent(tally, 0, goal)))
+  local mark = string.format("%.2f%%", percent(better, 0, goal))
+  document:get("shop-job-mark-pay"):set_property("left", mark)
+  panel:set_class("better", tally >= better and tally < goal)
+  panel:set_class("joins", tally >= goal)
+  local next_mark
+  if tally >= goal then
+    next_mark = t("hud.shop_job.joins")
+  elseif tally >= better then
+    next_mark = t("hud.shop_job.join_from", { tally = goal })
+  else
+    next_mark = t("hud.shop_job.better_pay", { tally = better })
+  end
+  document:get("shop-job-next"):set_text(next_mark)
+  document:get("shop-job-customers"):set_text(t("hud.shop_job.customers", {
+    served = field_number("shop_job.customer"),
+    total = field_number("shop_job.customers"),
+  }))
+  document:get("shop-job-tally"):set_text(t("hud.shop_job.tally", { tally = tally, goal = goal }))
+end
+
 function on_show(document)
   refresh(document)
   draw_digital(document)
@@ -327,6 +365,7 @@ function on_show(document)
   refresh_prompts(document)
   draw_field_labels(document)
   draw_field(document)
+  draw_shop_job(document)
 end
 
 function on_device(document)
@@ -341,6 +380,7 @@ function on_language(document)
   draw_field_labels(document)
   drawn_time = nil
   draw_field_clock(document)
+  draw_shop_job(document)
 end
 
 function on_setting(document, name)
@@ -354,6 +394,8 @@ function on_setting(document, name)
     draw_bubble(document)
   elseif name == "digital_time" then
     draw_digital(document)
+  elseif name == "shop_job.revision" then
+    draw_shop_job(document)
   elseif name == "ui_skin" then
     -- A new skin may set or clear classes the drawing reads (pips): draw the field status and the
     -- bubble again.
@@ -361,7 +403,7 @@ function on_setting(document, name)
     draw_field(document)
   elseif name == "hud.minimap_covered" then
     refresh(document)
-  elseif string.find(name, "^hud%.") then
+  elseif string.find(name, "^hud%.") or string.find(name, "^shop_job%.") then
     if string.find(name, "%.label$") then
       draw_field_labels(document)
     end

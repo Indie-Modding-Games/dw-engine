@@ -86,6 +86,27 @@ struct EndingGift {
   std::vector<std::string> techniques;
 };
 
+// Routine 56 (script_interp.c:1787) splits the shops' tally into a high byte (tally >> 8) and a low
+// byte: the scripts read the high one.
+inline constexpr int ShopTallyHighShift = 8;
+
+// The canyon shop's job (script 49, sections 0x51 and 0x52; the customers, scripts 199 to 202):
+// what the shop job's progress bar (an engine improvement) reads. The ending pays by the tally's
+// high byte (variable 243): below `betterPayFrom` the lowest pay, from it the better one, from
+// `joinsFrom` the shopkeeper joins the city.
+struct ShopJobRules {
+  std::string map;
+  std::int64_t customersVariable = 0;
+  std::int64_t customers = 0;
+  std::int64_t betterPayFrom = 0;
+  std::int64_t joinsFrom = 0;
+
+  // The tally whose high byte is `highByte`: where a pay starts.
+  [[nodiscard]] std::int64_t tallyFrom(std::int64_t highByte) const {
+    return highByte << ShopTallyHighShift;
+  }
+};
+
 struct StoryScenesRules {
   game::story::StoryBattleRules battle;
   game::story::PartnerRoutineRules partner;
@@ -115,6 +136,8 @@ struct StoryScenesRules {
   std::optional<StoryForgetMovesRules> forgetMoves;
   // Without it, the ending's save gives no record.
   std::optional<EndingGift> ending;
+  // Without it, no shop job shows a progress bar.
+  std::optional<ShopJobRules> shopJob;
 };
 
 core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& section);

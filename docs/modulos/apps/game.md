@@ -725,6 +725,19 @@ Medido: ruta de prueba con el jugador «WWWWWWWWWWWW» y el compañero «Barthol
 caja de nombres en la entrevista (la clave `new_game_scene: true`); capturas antes/después
 en las dos pieles.
 
+## Barra de la tienda
+
+Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no enseña cuánto lleva el jugador): mientras
+dura el trabajo en la tienda del cañón (gcan11, guion 49 y los clientes de los guiones 199 a 202), una barra arriba en el
+centro enseña lo ganado frente a la cuenta con la que Monochromon se une a la ciudad, con una marca donde empieza la
+paga mejor, y los clientes atendidos («Clientes 7/20»). El ajuste `shop_job_bar` (fila «Barra de la tienda», «Shop job
+bar» en inglés, de las opciones del menú de pausa, guardado en los ajustes del usuario) llega como ajuste de la UI desde
+`PlaySession` (`ShopJobBarSetting`).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Barra del trabajo en la tienda | No existe: el final (sección 0x52) paga por la variable 243, el byte alto de la cuenta que deja la rutina 56: hasta 6, 500 bits; de 7 a 11, 1500; desde 12, se une (2000 bits y el disparador 247) | `ShopJobBar` (`shop_job_bar.hpp`) lee la regla `story_scenes.shop_job` (mapa, variable 123 de clientes, 20 clientes, `better_pay_from: 7`, `joins_from: 12`) y la cuenta (`StoryAdapter::shopTally`); la barra va de 0 a 3072 (12 × 256, `ShopJobRules::tallyFrom`) con la marca en 1792 (7 × 256). Sale desde el primer cliente (la variable 123 sube en el mapa de la tienda) hasta que el jugador sale del mapa (el salto del final); una cuenta de un trabajo anterior no la enseña hasta el primer cliente del siguiente. Publica `shop_job.*` y sube `shop_job.revision`; el HUD (`ui/hud/logic.lua`, `#shop-job`) dibuja el relleno, la marca y los textos (los clientes, que no pasan de 20 aunque algún cliente cuente dos al irse, y la próxima marca a la derecha), con las clases `better` y `joins` al pasar cada marca, en las dos pieles | `shop_job_bar_tests.cpp` («the shop job's bar shows from the first customer…», «a count left over…», «…hidden with the option off…»); `the game pack's shop job joins from a tally of 3072…` (`story_props_tests.cpp`); captura a media partida en las dos pieles | Mejora (opción) |
+
 ## Opciones en partida
 
 Las opciones se cambian sin volver al título: la página «Opciones» del menú de pausa tiene las de pantalla (modo de

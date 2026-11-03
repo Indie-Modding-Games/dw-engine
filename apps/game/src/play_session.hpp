@@ -57,6 +57,7 @@
 #include "save_indicator.hpp"
 #include "save_machine.hpp"
 #include "session_start.hpp"
+#include "shop_job_bar.hpp"
 #include "shop_screen.hpp"
 #include "sleep_screen.hpp"
 #include "state_trace.hpp"
@@ -269,6 +270,8 @@ private:
   void keepFieldSnapshot(double frameSeconds);
   // The sulking partner's butterfly (butterfly.c), shown or taken away.
   void showButterfly(bool partnerNormal, const session::GameSession& session);
+  // The shop job's progress bar (shop_job_bar.hpp), published when what it shows changed.
+  void publishShopJob();
   // Shows the story lock's message in the dialog, unless the dialog is on screen already.
   void showLockNotice(const std::string& textKey);
   // The bulk trades (bulk_amount.hpp), on the trader's screen, the card shop and the pause menu.
@@ -293,6 +296,9 @@ private:
   // The evolution requirements on the pause menu's chart (an engine improvement).
   ChartRequirements chartRequirements_;
   FieldHud fieldHud_;
+  // The shop job's progress bar (an engine improvement) and what it last published.
+  ShopJobBar shopJobBar_;
+  std::optional<ShopJobBarView> publishedShopJob_;
   SleepScreen sleepScreen_;
   SaveMachine saveMachine_;
   // The story's textboxes, when the game runs the story.

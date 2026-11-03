@@ -13,7 +13,6 @@ namespace {
 constexpr game::story::RoutineNumber ClearTally = 30;
 constexpr game::story::RoutineNumber AddToTally = 31;
 constexpr game::story::RoutineNumber StoreTally = 56;
-constexpr std::int64_t ByteBits = 8;
 constexpr std::int64_t ByteMask = 0xFF;
 
 core::Result<void> writeVariable(StoryScenesContext& scenes, std::int64_t variable,
@@ -41,8 +40,9 @@ core::Result<void> registerShopTallyRoutines(StoryScenesContext& scenes) {
   auto added = scenes.routines.registerRoutine(
       AddToTally,
       [&scenes](game::story::RoutineNumber /*routine*/) -> core::Result<game::story::RoutineStart> {
-        const std::int64_t amount = (scenes.variable(scenes.rules.tallyHighVariable) << ByteBits) +
-                                    scenes.variable(scenes.rules.tallyLowVariable);
+        const std::int64_t amount =
+            (scenes.variable(scenes.rules.tallyHighVariable) << ShopTallyHighShift) +
+            scenes.variable(scenes.rules.tallyLowVariable);
         // The original adds it through a 16-bit signed number: an amount past 32767 subtracts.
         StoryAdapter& story = *scenes.desc.story;
         story.setShopTally(story.shopTally() +
@@ -58,8 +58,8 @@ core::Result<void> registerShopTallyRoutines(StoryScenesContext& scenes) {
       StoreTally,
       [&scenes](game::story::RoutineNumber /*routine*/) -> core::Result<game::story::RoutineStart> {
         const std::int64_t tally = scenes.desc.story->shopTally();
-        auto high =
-            writeVariable(scenes, scenes.rules.tallyHighVariable, (tally >> ByteBits) & ByteMask);
+        auto high = writeVariable(scenes, scenes.rules.tallyHighVariable,
+                                  (tally >> ShopTallyHighShift) & ByteMask);
         if (!high) {
           return std::unexpected{high.error()};
         }

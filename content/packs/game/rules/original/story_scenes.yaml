@@ -84,3 +84,13 @@ ending:
   gift_slot: 39
   gift_species: muge
   gift_techniques: [megaton_punch, thunder_justice, all_range_beam]
+# El trabajo en la tienda del cañón (guion 49, secciones 0x51 y 0x52; los clientes, guiones 199 a 202), para la barra
+# de progreso del trabajo (mejora del motor, opción shop_job_bar): en gcan11 la variable 123 cuenta los 20 clientes; al
+# acabar, la rutina 56 copia el byte alto de la cuenta a la variable 243 y el guion paga por ella: hasta 6, 500 bits;
+# desde 7, 1500; desde 12 (una cuenta de 3072 o más), Monochromon se une a la ciudad (2000 bits y el disparador 247).
+shop_job:
+  map: gcan11
+  customers_variable: 123
+  customers: 20
+  better_pay_from: 7
+  joins_from: 12

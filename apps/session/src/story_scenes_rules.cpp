@@ -178,6 +178,24 @@ void readEnding(assets::YamlReader& reader, const core::YamlNode& node, StorySce
   rules.ending = std::move(gift);
 }
 
+void readShopJob(assets::YamlReader& reader, const core::YamlNode& node, StoryScenesRules& rules) {
+  if (!reader.expectKeys(
+          node, "story_scenes.shop_job",
+          {"map", "customers_variable", "customers", "better_pay_from", "joins_from"})) {
+    return;
+  }
+  ShopJobRules job{.map = reader.text(reader.field(node, "map")),
+                   .customersVariable = integerAt(reader, node, "customers_variable"),
+                   .customers = integerAt(reader, node, "customers"),
+                   .betterPayFrom = integerAt(reader, node, "better_pay_from"),
+                   .joinsFrom = integerAt(reader, node, "joins_from")};
+  if (reader.ok() && (job.customers == 0 || job.betterPayFrom >= job.joinsFrom)) {
+    reader.fail(node, "a shop job has customers and its better pay comes before the join");
+    return;
+  }
+  rules.shopJob = std::move(job);
+}
+
 } // namespace
 
 core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& section) {
@@ -187,7 +205,7 @@ core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& sect
   if (!reader.expectKeys(
           root, SectionText,
           {"battle", "partner", "routines", "recruits", "new_game", "previous_screen"},
-          {"death", "ending", "forget_moves"})) {
+          {"death", "ending", "forget_moves", "shop_job"})) {
     return std::unexpected{reader.error(section.file)};
   }
   readBattle(reader, reader.field(root, "battle"), rules.battle);
@@ -204,6 +222,9 @@ core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& sect
   }
   if (const core::YamlNode* ending = root.find("ending")) {
     readEnding(reader, *ending, rules);
+  }
+  if (const core::YamlNode* job = root.find("shop_job")) {
+    readShopJob(reader, *job, rules);
   }
   return reader.finish(std::move(rules), section.file);
 }

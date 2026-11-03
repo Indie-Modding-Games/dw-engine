@@ -236,3 +236,50 @@ body {
 #field-partner-bubble {
 	display: none;
 }
+
+/* The shop job's bar (an engine improvement, the option shop_job_bar): a panel like the minimap's at the top centre;
+   the fill turns blue past the better pay's mark and green once the shopkeeper joins. */
+#shop-job {
+	width: 420dp;
+	margin-left: -220dp;
+	padding: 8dp 10dp 6dp 10dp;
+	border-radius: 12dp;
+	background-color: #0d121ab8;
+	border: 1dp #2e3a4a;
+	font-size: 14dp;
+	color: #c9d3de;
+}
+
+#shop-job-title {
+	font-weight: bold;
+}
+
+#shop-job-bar {
+	height: 10dp;
+	margin: 6dp 0 4dp 0;
+	border-radius: 5dp;
+	background-color: #2e3a4a;
+}
+
+#shop-job-fill {
+	border-radius: 5dp;
+	background-color: #f0a73a;
+}
+
+#shop-job.better #shop-job-fill { background-color: #5cc8ff; }
+#shop-job.joins #shop-job-fill { background-color: #6fdc6f; }
+
+.shop-job-mark {
+	width: 2dp;
+	margin-left: -1dp;
+	background-color: #ffffff;
+}
+
+#shop-job-foot {
+	height: 20dp;
+	font-size: 14dp;
+}
+
+#shop-job-next {
+	color: #8d9aab;
+}

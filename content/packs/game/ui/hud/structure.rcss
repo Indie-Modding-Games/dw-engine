@@ -12,3 +12,56 @@
 #minimap.covered {
 	visibility: hidden;
 }
+
+/* The shop job's bar (the option shop_job_bar): centred at the top of the screen, between the clock and the minimap,
+   only while the game shows it (the class shown). The script sizes the fill and puts the better pay's mark and its
+   label at their share of the bar (left in percent); the join's mark is the bar's end. */
+#shop-job {
+	display: none;
+	position: absolute;
+	top: 20dp;
+	left: 50%;
+}
+
+#shop-job.shown {
+	display: block;
+}
+
+#shop-job-head, #shop-job-foot {
+	display: block;
+	position: relative;
+}
+
+#shop-job-customers {
+	position: absolute;
+	right: 0;
+	top: 0;
+}
+
+#shop-job-bar {
+	display: block;
+	position: relative;
+}
+
+#shop-job-fill {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+}
+
+.shop-job-mark {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+}
+
+#shop-job-mark-join {
+	right: 0;
+}
+
+#shop-job-next {
+	position: absolute;
+	top: 0;
+	right: 0;
+}

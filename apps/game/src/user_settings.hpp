@@ -55,6 +55,9 @@ struct UserSettings {
   // Long names (long_names: true, false): the naming box takes names of up to LongNameLength
   // letters (naming_box.hpp) instead of the ruleset's six; on when not chosen yet.
   std::optional<bool> longNames = std::nullopt;
+  // The shop job's progress bar (shop_job_bar: true, false; shop_job_bar.hpp): the canyon shop's
+  // tally against the join while its job runs; on when not chosen yet.
+  std::optional<bool> shopJobBar = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

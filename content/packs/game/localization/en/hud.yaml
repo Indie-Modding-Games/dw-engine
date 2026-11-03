@@ -7,3 +7,12 @@ need.hunger: "Hunger"
 need.sleep: "Sleep"
 need.toilet: "Toilet"
 need.tired: "Tired"
+# The shop job's bar (the option shop_job_bar): its title, the customers served ({served} of {total}), the takings
+# against the total that makes the shopkeeper join ({tally} of {goal} bits) and the next mark: the better pay from
+# {tally}, the join from {tally}, then the join reached.
+shop_job.title: "Shop job"
+shop_job.customers: "Customers {served}/{total}"
+shop_job.tally: "{tally} / {goal} bits"
+shop_job.better_pay: "Better pay from {tally}"
+shop_job.join_from: "Joins the city from {tally}"
+shop_job.joins: "Joins the city!"

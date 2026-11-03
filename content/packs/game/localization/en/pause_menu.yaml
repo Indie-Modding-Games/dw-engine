@@ -62,6 +62,9 @@ walk_control.keys: "Keyboard/pad"
 walk_control.mouse: "Mouse"
 # Long names: the naming box takes names of up to twelve letters instead of six (on by default).
 long_names: "Long names"
+# Shop job bar: while the canyon shop's job runs, a bar shows the takings against the join and the customers (on by
+# default).
+shop_job_bar: "Shop job bar"
 
 year_label: "Year"
 day_label: "Day"

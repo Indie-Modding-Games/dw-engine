@@ -7,3 +7,12 @@ need.hunger: "Hambre"
 need.sleep: "Sueño"
 need.toilet: "Baño"
 need.tired: "Cansancio"
+# La barra del trabajo en la tienda (la opción shop_job_bar): su título, los clientes atendidos ({served} de {total}),
+# lo ganado frente a la cuenta con la que el tendero se une ({tally} de {goal} bits) y la próxima marca: la mejor
+# paga desde {tally}, la unión desde {tally} y luego la unión alcanzada.
+shop_job.title: "Trabajo en la tienda"
+shop_job.customers: "Clientes {served}/{total}"
+shop_job.tally: "{tally} / {goal} bits"
+shop_job.better_pay: "Mejor paga desde {tally}"
+shop_job.join_from: "Se une a la ciudad desde {tally}"
+shop_job.joins: "¡Se une a la ciudad!"

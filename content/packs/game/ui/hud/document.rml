@@ -34,6 +34,11 @@
 		</div>
 	</div>
 	<div id="field-partner-bubble"></div>
+	<div id="shop-job">
+		<div id="shop-job-head"><span id="shop-job-title" text-key="hud.shop_job.title"></span><span id="shop-job-customers"></span></div>
+		<div id="shop-job-bar"><div id="shop-job-fill"></div><div class="shop-job-mark" id="shop-job-mark-pay"></div><div class="shop-job-mark" id="shop-job-mark-join"></div></div>
+		<div id="shop-job-foot"><span id="shop-job-tally"></span><span id="shop-job-next"></span></div>
+	</div>
 	<div id="map-title" class="original-look"></div>
 </body>
 </rml>
