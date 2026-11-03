@@ -193,6 +193,52 @@ TEST_CASE("handleAimScroll: Up and Down scroll while the player aims, Left and R
       events, [](const CurlingEvent& event) { return event.kind == CurlingEvent::Kind::Scroll; }));
 }
 
+TEST_CASE("the camera follows the thrown stone by its step each frame until it stops") {
+  // KAR_tickMatchState state 0xB: moveCameraByDiff from the stone's place on the frame before.
+  const CurlingRules rules = originalRules();
+  Random random{7};
+  Match match{rules, Opponent::Penguinmon, random};
+  auto teams = emptyRink();
+  Stone& held = teams.at(PlayerTeam).stones.at(0);
+  held.state = 0;
+  held.angle = Up;
+  held.position = PlayerMark;
+  match.setScene(teams, Phase::Release, PlayerTeam, 0);
+  // The throw's last frame keeps where the stone is before its first slide.
+  Point start = PlayerMark;
+  for (std::int32_t frame = 0; frame < FrameCap && match.phase() != Phase::Rolling; ++frame) {
+    start = match.teams().at(PlayerTeam).stones.at(0).position;
+    const auto events = match.tick({}, random);
+    CHECK(std::ranges::none_of(events, [](const CurlingEvent& event) {
+      return event.kind == CurlingEvent::Kind::Follow;
+    }));
+  }
+  REQUIRE(match.phase() == Phase::Rolling);
+
+  Point followed = start;
+  std::int32_t steps = 0;
+  for (std::int32_t frame = 0; frame < FrameCap && match.phase() == Phase::Rolling; ++frame) {
+    // The state runs before the stones move: each step is the one of the frame before.
+    const Point before = match.teams().at(PlayerTeam).stones.at(0).position;
+    for (const CurlingEvent& event : match.tick({}, random)) {
+      if (event.kind != CurlingEvent::Kind::Follow) {
+        continue;
+      }
+      CHECK(event.a == before.x - followed.x);
+      CHECK(event.b == before.z - followed.z);
+      followed = before;
+      ++steps;
+    }
+  }
+  REQUIRE(match.phase() != Phase::Rolling);
+  const Point end = match.teams().at(PlayerTeam).stones.at(0).position;
+  CHECK(steps > 10);
+  CHECK(followed.x == end.x);
+  CHECK(followed.z == end.z);
+  // The weakest throw (no power) still slides well up the ice.
+  CHECK(end.z < start.z - 500);
+}
+
 TEST_CASE("setupMatch: the racks and the obstacles take the original's draws in order") {
   const CurlingRules rules = originalRules();
   constexpr std::uint32_t Seed = 0x1234ABCD;

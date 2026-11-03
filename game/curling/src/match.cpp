@@ -758,17 +758,24 @@ void Match::tickMatchState(const CurlingButtons& buttons, ruleset::Random& rando
     state_ = static_cast<std::int32_t>(Phase::Throwing);
     counter_ = 0;
     sound(Bank, ReleaseSound);
+    followFrom_ = current().position;
     break;
   case Phase::Throwing:
     if (counter_++ >= ThrowFrames) {
       counter_ = 0;
       current().state = Sliding;
+      followFrom_ = current().position;
       state_ = static_cast<std::int32_t>(Phase::Rolling);
     }
     break;
-  case Phase::Rolling:
-    // moveCameraByDiff: the camera follows the stone.
+  case Phase::Rolling: {
+    // moveCameraByDiff: the camera moves by the thrown stone's step. The state runs before the
+    // stones move, so the camera trails the stone by a frame as in the original.
+    const Point at = current().position;
+    emit(CurlingEvent::Kind::Follow, at.x - followFrom_.x, at.z - followFrom_.z);
+    followFrom_ = at;
     break;
+  }
   case Phase::Rings:
     emit(CurlingEvent::Kind::SoundStop);
     classifyStoneRings();

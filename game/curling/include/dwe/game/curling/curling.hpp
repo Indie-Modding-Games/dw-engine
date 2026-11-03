@@ -169,6 +169,9 @@ struct CurlingEvent {
     // The player scrolls the view while aiming, by a, b background pixels (KAR_handleAimScroll,
     // moveCameraByOffset).
     Scroll,
+    // While a thrown stone slides the camera follows it: it moves by the stone's step since the
+    // frame before, a: x, b: z (KAR_tickMatchState state 0xB, moveCameraByDiff).
+    Follow,
     // The match is over: a the result (KAR_finishMatch).
     Finished,
   };
@@ -315,6 +318,9 @@ private:
   std::array<ThrownStone, (StonesPerTeam * 2) + 1> thrownOrder_{}; // KAR_D_800639C0
   // The player's last thrown stone as the second opponent reads it (KAR_D_80063914).
   Stone lastPlayerStone_;
+  // Where the thrown stone was on the frame before, for the camera that follows it
+  // (KAR_D_800638F4).
+  Point followFrom_;
   std::int32_t result_ = 0;
   std::uint32_t litRings_ = 0;
 };

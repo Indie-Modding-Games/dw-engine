@@ -221,6 +221,11 @@ void CurlingScreen::follow(FieldScene& scene, const CurlingEvent& event) {
   case CurlingEvent::Kind::Scroll:
     scroll(scene, event.a, event.b);
     break;
+  case CurlingEvent::Kind::Follow:
+    // moveCameraByDiff: the held camera moves with the thrown stone, without the scroll's clamp.
+    scene.field().shiftCameraByScript(core::fromOriginalAxes(
+        glm::vec3{static_cast<float>(event.a), 0.0F, static_cast<float>(event.b)}));
+    break;
   default:
     // The throwers' animations and the rolling sound's stop are not played yet
     // (docs/modulos/game/curling.md: Hueco).
