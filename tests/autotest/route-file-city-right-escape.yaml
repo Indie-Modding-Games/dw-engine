@@ -1,0 +1,59 @@
+# From File City, walking out of the city to the gym and the forest, on to the broken bridge (mayo08b),
+# where an Aruraumon spawn walks up and starts the fight (btl.c: handleBattleStart). The player takes
+# a hit and escapes with Run (command-1). The money is set to 3000 before and checked after the escape.
+# Run with: dwe-game --content <folder> --new-game --new-game-chain seeded --story-stage all \
+#   --autotest tests/autotest/route-file-city-right-escape.yaml
+name: file-city-right-escape
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - wait: {setting: {screen_fade: 0}, timeout: 10}
+  - script: story_set("money 3000")
+  # Skip the forest's Agumon fight so the walk through mayo00 is clear (route-etapa1: trigger 203
+  # is its recruit, set when the fight is done).
+  - script: story_set("trigger 203 on")
+  # The natural exit of File City: north-east toward the gym.
+  - walk_to: {trigger: 111}
+  - wait: {map: trai00, partner_within: 400, seconds: 0.5}
+  - screenshot: in-gym
+  # The gym to the forest.
+  - walk_to: {trigger: 110}
+  - wait: {map: mayo00, seconds: 2, timeout: 60}
+  - screenshot: forest-entry
+  # The forest's maps to the bridge.
+  - walk_to: {trigger: 52}
+  - wait: {map: mayo01_2, partner_within: 400, seconds: 0.5, timeout: 60}
+  - walk_to: {trigger: 113}
+  - wait: {map: mayo01, partner_within: 400, seconds: 0.5, timeout: 60}
+  - walk_to: {trigger: 113}
+  - wait: {map: mayo02, partner_within: 400, seconds: 0.5, timeout: 60}
+  - walk_to: {trigger: 51}
+  - wait: {map: mayo08b, partner_within: 400, seconds: 0.5, timeout: 60}
+  - screenshot: at-bridge
+  # The bridge's Aruraumon starts the fight when the player is within 500 of its home (-930, 1868).
+  # Walking to [-930, 2310] puts the player just inside that rect; the NPC runs up and touches him.
+  - walk_to: {point: [-930, 2310], radius: 50, walk: true, timeout: 30}
+  # The spawn's touch shows its dialog lines first; confirm them until the battle opens.
+  - wait: {confirm: true, shown: battle, seconds: 1, timeout: 60}
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
+  - screenshot: bridge-battle
+  # Let the enemy land a hit.
+  - wait: {seconds: 4}
+  - screenshot: after-hit
+  # Run (the original's Start).
+  - menu_select: command-1
+  - wait: {hidden: battle, timeout: 30}
+  - screenshot: after-escape
+  # Fleeing the bridge's spawn sends the player back to File City (map 204, exit 9): wait for the
+  # map change to finish before touching the menus, which would hold the fade (the pause box freezes
+  # the field; route-full-01 waits the same way after the bridge).
+  - wait: {confirm: true, map: twna01, seconds: 1, timeout: 30}
+  - wait: {confirm: true, setting: {screen_fade: 0}, seconds: 1, timeout: 15}
+  - screenshot: back-at-file-city
+  # Open the bag to read what the escape left.
+  - menu: open
+  - wait: {menu_open: true, seconds: 0.6, timeout: 10}
+  - menu_select: open-items
+  - wait: {shown: partner_menu, seconds: 0.5, timeout: 5}
+  - expect_setting: {bag.money: "3000"}
