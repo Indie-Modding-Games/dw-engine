@@ -1,0 +1,49 @@
+# The recycle shop of gias06b (script 126, section 0x52, a confirm cell at the counter): "regular item" opens the
+# keeper's usual shop on the stock triggers the script sets, "recycled item" the recycle shop (routine 8 with trigger
+# 3, openRecycleShop), which with nothing in stock says so and ends the visit. The keeper speaks in the dialogue box
+# itself (showShopkeeperTextbox, box 0), so the player's choice leaves the screen as the shop opens. From a new game:
+# --story-stage all --new-game --start gias06b.
+name: recycle-shop
+device: keyboard
+timeout: 240
+steps:
+  - wait: {map: gias06b, seconds: 1.5, timeout: 90}
+  - resize: [1280, 720]
+  - script: story_set("money 5000")
+  - script: place("player 143 800 0")
+  - wait: {seconds: 0.5}
+  # "This's a Recycled Goods shop." -> the choice.
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 10}
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - screenshot: recycle-choice
+  # I want a regular item: the keeper's shop on the seven stock triggers, the choice gone.
+  - tap: {key: return}
+  - wait: {shown: shop_menu, timeout: 10}
+  - wait: {hidden: story_textbox, seconds: 0.5, timeout: 5}
+  - expect_setting: {shop.phase: talk}
+  - screenshot: regular-shop
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {shop.phase: choice}
+  # Leave: the farewell, then the visit ends.
+  - tap: {key: down}
+  - tap: {key: down}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {hidden: shop_menu, seconds: 1, timeout: 10}
+  # Again, I want a recycled item: nothing in stock on a new game, so the keeper says so.
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 10}
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - tap: {key: down}
+  - tap: {key: return}
+  - wait: {shown: shop_menu, timeout: 10}
+  - wait: {hidden: story_textbox, seconds: 0.5, timeout: 5}
+  - expect_setting: {shop.phase: talk}
+  - screenshot: recycle-empty
+  - tap: {key: return}
+  - wait: {hidden: shop_menu, seconds: 1, timeout: 10}

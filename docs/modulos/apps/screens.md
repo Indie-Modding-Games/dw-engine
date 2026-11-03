@@ -552,3 +552,21 @@ con el original (la rutina 8 forzada en room02 con 0 y 1234 bits; capturas `orig
 | Cuándo sale | `openShop` estado 3 (y `openRecycleShop`): con la primera elección; se queda en la lista, la cantidad y «¿Algo más?»; `triggerBoxCloseFlag(2)` la cierra en la despedida (estado 6) | `ShopScreen`: `bits_shown` desde la fase `choice` hasta `leave` | Ruta `shop` | Igual |
 | Se actualiza al comprar o vender | `UPDATE_SHOP_BIT_BOX` tras cada compra o venta | La cifra sale de `shop.money`, que el juego vuelve a publicar | Ruta `shop` (1234 → 1134) | Igual |
 | La rutina 15 (la caja durante un diálogo) | `CALL_ROUTINE 15` → `createShopBitsBox(1)`: la caja con la línea 6 del tendero que nombra la variable 254 y el dinero de ese momento (`tickShopBitsBox` solo la reescribe al volver a llamarla, como tras `reduce_money` en la tienda de cartas); `CALL_ROUTINE 16` (`triggerBoxCloseFlag(2)`) la cierra | `MoneyBoxScreen` en el documento `money_box`, con el mismo rect que la de la tienda; la 16 lo oculta | `money_box_tests.cpp`; `w11-missing/shots/money-box-after.png` (forzada en gias06b). Sin medir la rutina 15 en el original | Suposición |
+
+## Tienda de reciclaje (gias06b)
+
+La tienda de la Gear Savanna (script 126, sección 0x52: la casilla de confirmar del mostrador) pregunta «objeto normal,
+objeto reciclado o la próxima vez». «Normal» pone los siete triggers del surtido, quita el trigger 3 y llama a la
+rutina 8 (`openShop`); «reciclado» pone el trigger 3 y la rutina 8 abre `openRecycleShop`, que vende lo que quitaron
+las derrotas (`handleItemLoss`: el 30 % de las casillas ocupadas de la bolsa; las de `RECYCLABLE_ITEMS` pasan al
+surtido, hasta 99 de cada una). Reporte del probador (#175): «la tienda de reciclaje no funciona». Medido en dwe
+(`_work/routes-e2/recycle-shop-175/`): la compra normal (7 objetos), la de reciclaje con surtido (Restore 4000, Black
+Wing 5000; compra, «Gracias.», vuelve a la elección), la derrota que llena el surtido (3 de 10 casillas: `black_wing`,
+`rainbowhorn`, `flamingmane` ×2) y la tienda vacía («I don't have anything to sell.», línea 1, y fin de la visita)
+funcionaban; lo que fallaba era la elección, que seguía en pantalla bajo la tienda.
+
+| Comportamiento | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| La elección deja la pantalla al abrir la tienda | `openShop` y `openRecycleShop` hablan con `showShopkeeperTextbox` → `showMapHeadTextbox(idx, owner, 0, 0xff)`: la misma caja de diálogo 0 del guion, así que la frase del tendero sustituye a la elección | `PlaySession` tapa la caja del guion (`StoryTextbox::cover`) mientras `ShopScreen` está activa, como ya hacía con la tienda de cartas, el trueque y las demás; al cerrarse la tienda no vuelve hasta que el guion cambia de frase. Antes la elección «I want a regular item / recycled item / Next time» seguía debajo de la tienda | Ruta `route-recycle-shop.yaml` (falla antes: «story_textbox is still shown after 5 s»; pasa después, 36 de 36 pasos) | Igual |
+| Tienda de reciclaje vacía | `openRecycleShop` estado 0: sin surtido, línea 1 del tendero y fin (estado 2) | `ShopScreen::start`: `nothing_to_sell` (línea 1) y la visita se cierra | Ruta `route-recycle-shop.yaml` (`recycle-empty`) | Igual |
+| El trigger 3 tras el reciclaje | La rama «reciclado» del script lo deja puesto; las demás tiendas del original lo quitan antes de la rutina 8 | Igual: lo deja el script | — | Igual |

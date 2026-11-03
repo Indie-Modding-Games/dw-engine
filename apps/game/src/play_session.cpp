@@ -1211,9 +1211,13 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     return angerAnchorOf(*scene_, species, enemy, lift);
   });
   if (storyTextbox_) {
-    storyTextbox_->cover(jukeboxScreen_.active() || scheduleScreen_.active() ||
-                         tradeScreen_.active() || birdScreen_.active() ||
-                         cardShopScreen_.active() || meritShopScreen_.active());
+    // script_common.c: openShop and openRecycleShop speak in the dialogue box itself
+    // (showShopkeeperTextbox, box 0), so the choice that called routine 8 (the recycle shop's
+    // "regular or recycled") leaves the screen as the shop opens.
+    storyTextbox_->cover(shopScreen_.active() || jukeboxScreen_.active() ||
+                         scheduleScreen_.active() || tradeScreen_.active() ||
+                         birdScreen_.active() || cardShopScreen_.active() ||
+                         meritShopScreen_.active());
     storyTextbox_->update(*scene_, species);
   }
   fieldPoop_.show();
