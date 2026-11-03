@@ -9,11 +9,10 @@
 
 namespace dwe::app {
 
-// The shop job's progress bar (shop_job_bar, an engine improvement, on unless turned off): while
-// the canyon shop's job runs, the HUD shows the tally against what makes the shopkeeper join the
-// city, with a mark where the better pay starts, and the customers served. It changes no rule: it
-// reads the story's customer count and the shops' tally.
-inline constexpr std::string_view ShopJobBarSetting = "shop_job_bar";
+// The shop job's progress bar, one of the recruit bars (recruit_bar.hpp, the option
+// RecruitBarSetting): while the canyon shop's job runs, the HUD shows the tally against what makes
+// the shopkeeper join the city, with a mark where the better pay starts, and the customers served.
+// It changes no rule: it reads the story's customer count and the shops' tally.
 inline constexpr std::string_view ShopJobRevisionSetting = "shop_job.revision";
 
 struct ShopJobBarView {
@@ -30,7 +29,7 @@ struct ShopJobBarView {
 
 // What the bar reads from the game each frame.
 struct ShopJobFrame {
-  // The bar option (shop_job_bar).
+  // The recruit bars' option (RecruitBarSetting).
   bool enabled = true;
   std::string_view map;
   std::int64_t customer = 0;

@@ -52,4 +52,40 @@ body { pointer-events: none; }
 #hand { width: 72dp; height: 72dp; }
 
 #question .row.barred .bar { width: 282dp; }
+
+/* The recruit bar (an engine improvement, the option shop_job_bar; the original has none): two lines under the speech
+   box, at the bottom of the 4:3 screen (y 222 to 240), as wide as the box: the scores and the throws left, then how
+   the match stands and the perfect score while it can still be reached. The modern look's panel; the original look
+   gives it the original's box (../skins/original/curling_hud/style.rcss). */
+#recruit {
+	position: absolute;
+	left: 50%;
+	top: 664dp;
+	width: 786dp;
+	height: 54dp;
+	margin-left: -390dp;
+	padding: 3dp 12dp;
+	box-sizing: border-box;
+	border-radius: 8dp;
+	background-color: #0d121ab8;
+	border: 1dp #2e3a4a;
+	font-size: 18dp;
+	line-height: 23dp;
+	color: #c9d3de;
+}
+
+.recruit-line {
+	display: block;
+	position: relative;
+	height: 23dp;
+}
+
+#recruit-throws, #recruit-perfect {
+	position: absolute;
+	right: 0;
+	top: 0;
+}
+
+#recruit-perfect { color: #f0c040; }
+#recruit.ahead #recruit-standing { color: #6fdc6f; }
 .hidden { display: none; }

@@ -29,8 +29,10 @@ public:
   [[nodiscard]] bool enabled() const { return rules_.has_value(); }
   // KAR_start: a match from the start. Fails when there are no rules or no story.
   core::Result<void> begin(GameSession& session);
-  // The power gauge's top (KAR_tickMatchState), 0 without rules.
-  [[nodiscard]] std::int32_t powerLimit() const { return rules_ ? rules_->powerLimit : 0; }
+  // The stones game's rules, nullptr without them.
+  [[nodiscard]] const game::curling::CurlingRules* rules() const {
+    return rules_ ? &*rules_ : nullptr;
+  }
   [[nodiscard]] const game::curling::Match* match() const { return match_ ? &*match_ : nullptr; }
   // The target's rings and the map objects that light them, none without rules.
   [[nodiscard]] std::span<const game::curling::Ring> rings() const {

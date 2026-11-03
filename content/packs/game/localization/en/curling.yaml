@@ -1,3 +1,11 @@
 # The stones game (kar.c): the play or rules question (KAR_tickYesNoPrompt).
 prompt.play: "Start Game"
 prompt.rules: "Explain Game"
+# The recruit bar (the option shop_job_bar): the scores ({player} the player's, {opponent} the opponent's, {name} its
+# name), the throws left, how the match stands ({gap} points behind) and the perfect score while it can be reached.
+recruit.score: "You {player} - {opponent} {name}"
+recruit.throws: "Throws left {player} / {opponent}"
+recruit.ahead: "You're ahead: {name} joins the city"
+recruit.behind: "You're behind by {gap}"
+recruit.level: "Level"
+recruit.perfect: "Perfect score: medal"

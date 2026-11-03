@@ -35,6 +35,10 @@
 		<img id="score-0-units" class="digit" src="/map/frzl17/texture4/000?palette=1" rect="64 24 16 16"/>
 	</div>
 	<img id="hand" class="hidden" src="/map/frzl17/texture4/000?palette=8" rect="0 40 24 24"/>
+	<div id="recruit" class="hidden">
+		<div class="recruit-line"><span id="recruit-score"></span><span id="recruit-throws"></span></div>
+		<div class="recruit-line"><span id="recruit-standing"></span><span id="recruit-perfect"></span></div>
+	</div>
 	<div id="box" class="original-look hidden">
 		<div id="rows">
 			<div class="row color-7" id="hint_name"></div>

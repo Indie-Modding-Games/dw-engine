@@ -1,3 +1,12 @@
 # El juego de las piedras (kar.c): la pregunta de jugar o las reglas (KAR_tickYesNoPrompt).
 prompt.play: "Jugar"
 prompt.rules: "Cómo se juega"
+# La barra de reclutamiento (la opción shop_job_bar): los puntos ({player} los del jugador, {opponent} los del rival,
+# {name} su nombre), las tiradas que quedan, cómo va la partida ({gap} puntos por detrás) y la puntuación perfecta
+# mientras se pueda alcanzar.
+recruit.score: "Tú {player} - {opponent} {name}"
+recruit.throws: "Tiradas {player} / {opponent}"
+recruit.ahead: "Vas ganando: {name} se une a la ciudad"
+recruit.behind: "Vas perdiendo por {gap}"
+recruit.level: "Empate"
+recruit.perfect: "Puntuación perfecta: medalla"

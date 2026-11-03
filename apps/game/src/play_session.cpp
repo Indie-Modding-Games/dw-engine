@@ -576,8 +576,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   context_.ui->setSetting(EvolutionActiveSetting, false);
   // Long names in the naming box, on unless turned off.
   context_.ui->setSetting(LongNamesSetting, context.userSettings->longNames.value_or(true));
-  // The shop job's progress bar, on unless turned off.
-  context_.ui->setSetting(ShopJobBarSetting, context.userSettings->shopJobBar.value_or(true));
+  // The recruit bars (the shop job's and the stones game's), on unless turned off.
+  context_.ui->setSetting(RecruitBarSetting, context.userSettings->shopJobBar.value_or(true));
   // The canonical stages on the chart, off unless turned on.
   context_.ui->setSetting(CanonicalStagesSetting,
                           context.userSettings->canonicalStages.value_or(false));
@@ -879,9 +879,9 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     context_.ui->setSetting(SmoothMotionSetting, scene_->field().smoothMotion());
     return true;
   }
-  if (command.name == ShopJobBarSetting) {
+  if (command.name == RecruitBarSetting) {
     if (const bool* shown = std::get_if<bool>(&command.value)) {
-      context_.ui->setSetting(ShopJobBarSetting, *shown);
+      context_.ui->setSetting(RecruitBarSetting, *shown);
       context_.userSettings->shopJobBar = *shown;
       if (context_.settingsFile) {
         saveUserSettings(*context_.settingsFile, *context_.userSettings);

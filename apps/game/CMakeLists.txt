@@ -14,6 +14,7 @@ dwe_add_app(game
         src/content_mount.cpp
         src/control_json.cpp
         src/control_socket.cpp
+        src/curling_recruit_bar.cpp
         src/curling_screen.cpp
         src/death_effects.cpp
         src/death_scene.cpp
@@ -173,7 +174,7 @@ endif()
 # the battle's root steps of a model, the discard menu's list, the trade menu's cursor and the player page's City tab.
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
-    add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/chart_requirements.cpp src/control_json.cpp
+    add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/chart_requirements.cpp src/control_json.cpp src/curling_recruit_bar.cpp
                                   src/evolution_effects.cpp src/field_effects.cpp src/flame_texture.cpp
                                   src/death_effects.cpp src/ending_effects.cpp
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/money_box_screen.cpp src/minimap_setting.cpp
@@ -182,7 +183,7 @@ if(BUILD_TESTING)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution
                                                  dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render dwe::signs
-                                                 dwe::ruleset dwe_test_main)
+                                                 dwe::ruleset dwe::curling dwe_test_main)
     # The session's test packs and made-up species (session_fixture.hpp), for the save debug command.
     target_include_directories(dwe_game_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
                                                       ${PROJECT_SOURCE_DIR}/apps/session/tests

@@ -87,9 +87,10 @@ screens:
   # Las cajas de texto de la historia: la caja del original y su barra de selección.
   story_textbox:
     styles: [ui/skins/original/story_textbox/style]
-  # Las páginas de ayuda del juego de las piedras: la caja de diálogo de la historia, como el original.
+  # Las páginas de ayuda y la pregunta del juego de las piedras: la caja de diálogo de la historia, como el original;
+  # la barra de reclutamiento (una mejora del motor), en una caja del original.
   curling_hud:
-    styles: [ui/skins/original/story_textbox/style]
+    styles: [ui/skins/original/story_textbox/style, ui/skins/original/curling_hud/style]
   # La caja de vidas de una vida perdida: la caja del original, como la de la historia.
   lives_box:
     styles: [ui/skins/original/story_textbox/style]

@@ -725,18 +725,26 @@ Medido: ruta de prueba con el jugador «WWWWWWWWWWWW» y el compañero «Barthol
 caja de nombres en la entrevista (la clave `new_game_scene: true`); capturas antes/después
 en las dos pieles.
 
-## Barra de la tienda
+## Barras de reclutamiento
 
-Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no enseña cuánto lleva el jugador): mientras
-dura el trabajo en la tienda del cañón (gcan11, guion 49 y los clientes de los guiones 199 a 202), una barra arriba en el
-centro enseña lo ganado frente a la cuenta con la que Monochromon se une a la ciudad, con una marca donde empieza la
-paga mejor, y los clientes atendidos («Clientes 7/20»). El ajuste `shop_job_bar` (fila «Barra de la tienda», «Shop job
-bar» en inglés, de las opciones del menú de pausa, guardado en los ajustes del usuario) llega como ajuste de la UI desde
-`PlaySession` (`ShopJobBarSetting`).
+Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no enseña cuánto le falta al jugador):
+mientras un trabajo o una partida decide si alguien se une a la ciudad, una barra enseña cuánto falta. Una sola opción
+las enciende o apaga todas: el ajuste `shop_job_bar` (conserva la clave con la que entró; fila «Barra de reclutamiento»,
+«Recruit bar» en inglés, de las opciones del menú de pausa, guardado en los ajustes del usuario), que llega como ajuste
+de la UI desde `PlaySession` (`RecruitBarSetting`, `recruit_bar.hpp`).
+
+- **La tienda del cañón**: mientras dura el trabajo (gcan11, guion 49 y los clientes de los guiones 199 a 202), una barra
+  arriba en el centro enseña lo ganado frente a la cuenta con la que Monochromon se une a la ciudad, con una marca donde
+  empieza la paga mejor, y los clientes atendidos («Clientes 7/20»).
+- **El juego de las piedras**: durante la partida contra el primer rival (frzl17), dos líneas abajo, bajo la caja de
+  diálogo y sin tapar el HUD del original: los puntos de cada uno («Tú 3 - 1 Penguinmon»), las tiradas que les quedan,
+  cómo va («Vas ganando: Penguinmon se une a la ciudad», «Vas perdiendo por N», «Empate») y «Puntuación perfecta:
+  medalla» mientras se pueda alcanzar.
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
 | Barra del trabajo en la tienda | No existe: el final (sección 0x52) paga por la variable 243, el byte alto de la cuenta que deja la rutina 56: hasta 6, 500 bits; de 7 a 11, 1500; desde 12, se une (2000 bits y el disparador 247) | `ShopJobBar` (`shop_job_bar.hpp`) lee la regla `story_scenes.shop_job` (mapa, variable 123 de clientes, 20 clientes, `better_pay_from: 7`, `joins_from: 12`) y la cuenta (`StoryAdapter::shopTally`); la barra va de 0 a 3072 (12 × 256, `ShopJobRules::tallyFrom`) con la marca en 1792 (7 × 256). Sale desde el primer cliente (la variable 123 sube en el mapa de la tienda) hasta que el jugador sale del mapa (el salto del final); una cuenta de un trabajo anterior no la enseña hasta el primer cliente del siguiente. Publica `shop_job.*` y sube `shop_job.revision`; el HUD (`ui/hud/logic.lua`, `#shop-job`) dibuja el relleno, la marca y los textos (los clientes, que no pasan de 20 aunque algún cliente cuente dos al irse, y la próxima marca a la derecha), con las clases `better` y `joins` al pasar cada marca, en las dos pieles | `shop_job_bar_tests.cpp` («the shop job's bar shows from the first customer…», «a count left over…», «…hidden with the option off…»); `the game pack's shop job joins from a tally of 3072…` (`story_props_tests.cpp`); captura a media partida en las dos pieles | Mejora (opción) |
+| Barra de la partida de las piedras | No existe: el guion 206 (sección 0x0a, al volver a frzl15) lee el resultado que deja `KAR_finishMatch` en la variable 121: 0 pierde o empata (sin unión), 1 gana, 2 gana con 10 puntos o más (además la medalla, disparador 372); con 1 o 2 Penguinmon se une a la ciudad (disparador 257, prosperidad +1). Solo el primer rival se une | `curlingRecruitOf` (`curling_recruit_bar.hpp`) lee la partida (`Match::teams`: puntos y tiradas hechas); la puntuación perfecta sigue al alcance mientras las piedras del jugador que siguen en juego (en el soporte, en la mano o en el hielo) puedan sumar los 10 en el anillo que más vale (2), es decir, mientras ninguna haya salido. `CurlingScreen::showRecruitBar` publica `curling_recruit.*` y sube `curling_recruit.revision`; el documento `curling_hud` (`#recruit`) la dibuja en y 222 a 240 del original, en las dos pieles (la original con su caja). Sale solo en la partida del primer rival y se quita al acabar | `curling_recruit_bar_tests.cpp` («…shows only during a match, and not with the option off», «…follows the score and the throws left», «the perfect score shows while…»); capturas a media partida en las dos pieles | Mejora (opción) |
 
 ## Opciones en partida
 

@@ -39,6 +39,42 @@ local function place(element, x, y)
   element:set_property("margin-top", string.format("%ddp", y * dp))
 end
 
+-- The first opponent's name: the speaker of its hint pages (kar.c: KAR_D_8005AF58).
+local opponent_name = "kar.penguinmon_dialogue.0000"
+
+local function draw_recruit(document)
+  local shown = ui.setting("curling_recruit.shown") == true
+  document:get("recruit"):set_class("hidden", not shown)
+  if not shown then
+    return
+  end
+  local player = math.floor(ui.setting("curling_recruit.player") or 0)
+  local opponent = math.floor(ui.setting("curling_recruit.opponent") or 0)
+  local name = t(opponent_name)
+  document:get("recruit-score"):set_text(t("curling.recruit.score", {
+    player = player,
+    opponent = opponent,
+    name = name,
+  }))
+  document:get("recruit-throws"):set_text(t("curling.recruit.throws", {
+    player = math.floor(ui.setting("curling_recruit.player_throws") or 0),
+    opponent = math.floor(ui.setting("curling_recruit.opponent_throws") or 0),
+  }))
+  local standing
+  if player > opponent then
+    standing = t("curling.recruit.ahead", { name = name })
+  elseif player < opponent then
+    standing = t("curling.recruit.behind", { gap = opponent - player })
+  else
+    standing = t("curling.recruit.level")
+  end
+  local recruit = document:get("recruit")
+  recruit:set_class("ahead", player > opponent)
+  document:get("recruit-standing"):set_text(standing)
+  local perfect = ui.setting("curling_recruit.perfect") == true
+  document:get("recruit-perfect"):set_text(perfect and t("curling.recruit.perfect") or "")
+end
+
 local function refresh(document)
   for team = 0, 1 do
     for _, digit in ipairs({ "tens", "units" }) do
@@ -90,6 +126,7 @@ local function refresh(document)
     row:set_class("barred", selected)
   end
   document:get("box"):set_class("hidden", not hinted and prompt < 0)
+  draw_recruit(document)
 end
 
 function on_show(document)

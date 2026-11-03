@@ -85,9 +85,9 @@ game_options = {
   -- Long names: the naming box takes names of up to twelve letters (on by default; off keeps the
   -- original's six).
   { id = "long-names", setting = "long_names", label = "pause_menu.long_names", default = true },
-  -- Shop job bar: while the canyon shop's job runs, a bar under the top of the screen shows the
-  -- takings against what makes the shopkeeper join the city, and the customers served (on by
-  -- default; off leaves the original's screen).
+  -- Recruit bar: while a job or a match decides whether someone joins the city, a bar shows how
+  -- close the player is: the canyon shop's takings and customers, the stones game's points and
+  -- throws (on by default; off leaves the original's screen).
   {
     id = "shop-job-bar",
     setting = "shop_job_bar",

@@ -14,6 +14,8 @@
 #include <optional>
 #include <string_view>
 
+#include "curling_recruit_bar.hpp"
+
 namespace dwe::input {
 class InputState;
 } // namespace dwe::input
@@ -61,6 +63,8 @@ private:
   void faceCharacters(FieldScene& scene) const;
   void stopRolling();
   void showHud();
+  // The recruit bar (curling_recruit_bar.hpp), published when what it shows changed.
+  void showRecruitBar();
   void end(FieldScene& scene);
 
   session::CurlingAdapter* curling_;
@@ -77,6 +81,7 @@ private:
   // The rings whose map objects show now (Match::litRings); none known before the first frame.
   static constexpr std::uint32_t UnknownRings = ~0U;
   std::uint32_t shownRings_ = UnknownRings;
+  std::optional<CurlingRecruitView> publishedRecruit_;
 };
 
 } // namespace dwe::app

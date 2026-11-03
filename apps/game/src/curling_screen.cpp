@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "field_scene.hpp"
+#include "recruit_bar.hpp"
 
 namespace dwe::app {
 
@@ -84,6 +85,8 @@ constexpr std::string_view ChevronsSetting = "curling_hud.chevrons";
 constexpr std::string_view HandTeamSetting = "curling_hud.hand_team";
 constexpr std::string_view HandRowSetting = "curling_hud.hand_row";
 constexpr std::string_view PromptSetting = "curling_hud.prompt";
+// The recruit bar's revision (curling_recruit_bar.hpp): the document redraws it when it changes.
+constexpr std::string_view RecruitRevisionSetting = "curling_recruit.revision";
 // KAR_tickHintBox: the hint page's four lines (the speaker's name, then three), as text keys.
 constexpr std::array<std::string_view, 4> HintSettings{
     "curling_hud.hint_name", "curling_hud.hint_1", "curling_hud.hint_2", "curling_hud.hint_3"};
@@ -522,6 +525,7 @@ void CurlingScreen::showHud() {
   ui_->setSetting(HandRowSetting, hud.cursor ? static_cast<double>(hud.cursor->row) : 0.0);
   const std::optional<std::int32_t> option = match->promptOption();
   ui_->setSetting(PromptSetting, option ? static_cast<double>(*option) : Hidden);
+  showRecruitBar();
   const auto hint = match->hint();
   const std::int32_t first = hint ? hintLine(hint->first, hint->second) : 0;
   for (std::size_t line = 0; line < HintSettings.size(); ++line) {
@@ -536,6 +540,18 @@ void CurlingScreen::showHud() {
   }
 }
 
+void CurlingScreen::showRecruitBar() {
+  const game::curling::CurlingRules* rules = curling_->rules();
+  const CurlingRecruitView view =
+      rules != nullptr ? curlingRecruitOf(curling_->match(), *rules, recruitBarOn(*ui_))
+                       : CurlingRecruitView{};
+  if (publishedRecruit_ == view) {
+    return;
+  }
+  screens::publish(*ui_, settingsOf(view), RecruitRevisionSetting);
+  publishedRecruit_ = view;
+}
+
 void CurlingScreen::end(FieldScene& scene) {
   showRings(scene, 0);
   running_ = false;
@@ -544,6 +560,8 @@ void CurlingScreen::end(FieldScene& scene) {
     scene.setPosedProps(*model, {});
   }
   scene.setPointQuads({});
+  publishedRecruit_.reset();
+  screens::publish(*ui_, settingsOf(CurlingRecruitView{}), RecruitRevisionSetting);
   ui_->hide(CurlingHudDocument);
   if (auto result = curling_->finish(); !result) {
     core::logWarning("[port:curling] KAR_finishMatch (kar.c:945): {}", result.error().message);

@@ -53,6 +53,7 @@
 #include "options.hpp"
 #include "partner_menu.hpp"
 #include "praise_scold_call.hpp"
+#include "recruit_bar.hpp"
 #include "save_command.hpp"
 #include "save_indicator.hpp"
 #include "save_machine.hpp"
