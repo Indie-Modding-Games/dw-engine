@@ -54,6 +54,7 @@ private:
                                                    const game::curling::Stone& stone,
                                                    float ground) const;
   void showStones(FieldScene& scene) const;
+  void showAimArrow(FieldScene& scene, float ground) const;
   [[nodiscard]] std::optional<scene::Entity> characterOf(const FieldScene& scene,
                                                          std::int32_t who) const;
   void animate(FieldScene& scene, std::int32_t who, std::int32_t animation);

@@ -776,7 +776,7 @@ setFishingEnabled = { status = "parcial", dwe = "game/fishing/include/dwe/game/f
 KAR_setupMatch = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Prepara la partida de curling: piedras de cada equipo, obstáculos y rival." }
 KAR_tickStones = { status = "portado", dwe = "game/curling/src/physics.cpp:1", what = "Mueve las piedras sobre el hielo con su rozamiento y sus choques." }
 KAR_finishMatch = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Cierra la partida: poses finales y guarda el resultado (gana, gana por mucho o pierde)." }
-KAR_tick = { status = "parcial", dwe = "apps/game/src/curling_screen.cpp:1", note = "la partida corre a 20 cuadros por segundo; las piedras se dibujan como marcadores, sin sus modelos", what = "Bucle principal del minijuego de curling por cuadro." }
+KAR_tick = { status = "parcial", dwe = "apps/game/src/curling_screen.cpp:1", note = "la partida corre a 20 cuadros por segundo; piedras con sus modelos, animaciones y flecha de puntería como el original; el marcador, el indicador de fuerza, el letrero de Preparados y la mano sobre la piedra elegida son textos de panel o faltan", what = "Bucle principal del minijuego de curling por cuadro." }
 KAR_handleAimScroll = { status = "portado", dwe = "game/curling/src/match.cpp:279", note = "la vista se mueve en CurlingScreen::scroll (apps/game/src/curling_screen.cpp:231)", what = "Desplaza la cámara con la cruceta mientras el jugador apunta." }
 KAR_updateRingMarkers = { status = "portado", dwe = "game/curling/src/match.cpp:296", note = "los objetos de cada anillo están en rules/original/curling.yaml; los muestra CurlingScreen::showRings", what = "Marca en qué anillo de la diana está cada piedra." }
 KAR_checkStonesStopped = { status = "portado", dwe = "game/curling/src/physics.cpp:1", what = "Comprueba si todas las piedras se han detenido para pasar el turno." }
@@ -806,7 +806,7 @@ KAR_findClearShotAngle = { status = "portado", dwe = "game/curling/src/match.cpp
 KAR_setOpponentShot = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Fija el destino y la fuerza del tiro del rival." }
 KAR_aimAtRandomStone = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "El rival apunta a una piedra al azar." }
 KAR_registerThrownStone = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Apunta la piedra recién lanzada en la lista de lanzadas." }
-KAR_rotatePoint = { status = "no-aplica", note = "cálculo de dibujo de los modelos; aquí los marcadores no giran", what = "Gira un punto sobre la pista para posicionar piedras y marcas." }
+KAR_rotatePoint = { status = "portado", dwe = "apps/game/src/curling_screen.cpp", note = "gira la punta de la flecha de puntería en la pantalla", what = "Gira un punto sobre la pista para posicionar piedras y marcas." }
 KAR_tickMatchState = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Máquina de estados de la partida: turnos, tiros, rondas y final." }
 checkCurlingMap = { status = "no-aplica", what = "Al entrar en el mapa de curling carga el minijuego.", note = "solo carga del disco el módulo del minijuego al entrar en el mapa 136; el motor lo lleva siempre dentro" }
 EAB_setModelColor = { status = "portado", dwe = "apps/game/src/boss_arrival_scene.cpp", what = "Tiñe el modelo del efecto de aparición del jefe final.", note = "tinte 0x3c/0x80 de los anillos al dibujarlos" }

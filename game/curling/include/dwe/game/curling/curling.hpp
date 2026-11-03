@@ -191,6 +191,19 @@ inline constexpr std::array<std::int32_t, 9> HintPages{3, 2, 1, 4, 1, 1, 1, 1, 1
 // team's type-0 look, and KAR_tickStones links the spiked one back (MAIN_D_80134A4C) when it pegs
 // itself to the ice.
 inline constexpr std::size_t StoneModelObjects = 12;
+
+// KAR_renderAimArrow: the dotted line ahead of the stone in a hand while its thrower aims, 200
+// apart along the thrower's facing and mirrored off the side walls; the last one is the head.
+inline constexpr std::size_t AimDots = 15;
+struct AimArrow {
+  std::array<Point, AimDots> dots{};
+  // Each one's grey (setRGB0) over 0x80 for the texture as is: 0x40 to 0xFE, a wave down the line.
+  std::array<std::int32_t, AimDots> shades{};
+  // The one dot left out this frame, moving down the line.
+  std::size_t hidden = 0;
+  // The head's turn on the screen (KAR_rotatePoint's angle), from the dot before it.
+  std::int32_t headTurn = 0;
+};
 [[nodiscard]] std::size_t stoneModelObject(std::size_t team, const Stone& stone);
 
 // The throwers' marks (KAR_tickMatchState state 0).
@@ -229,6 +242,8 @@ public:
   // (KAR_turnAimLeft / KAR_turnAimRight), all three 0x800 at the end (KAR_finishMatch); nothing
   // until the match turns it.
   [[nodiscard]] std::optional<std::int32_t> facing(std::size_t who) const;
+  // The aim's dotted line this frame, while the thrower aims (states 6 and 7).
+  [[nodiscard]] const std::optional<AimArrow>& aimArrow() const { return arrow_; }
   // The play / rules prompt's highlighted option (0 play, 1 rules), while it is open.
   [[nodiscard]] std::optional<std::int32_t> promptOption() const;
   // The hint page shown: its group and page (from 1), while a box is open.
@@ -279,6 +294,7 @@ private:
   void tickMatchState(const CurlingButtons& buttons, ruleset::Random& random);
   void tickStones();
   void placeHeldStone();
+  void renderAimArrow();
   [[nodiscard]] bool shownThisFrame(std::size_t team, std::size_t index) const;
   void handleAimScroll(const CurlingButtons& buttons);
   void updateRingMarkers();
@@ -315,6 +331,8 @@ private:
   std::array<Team, Teams> teams_{};
   std::vector<CurlingEvent> events_;
   std::array<std::optional<std::int32_t>, 3> facing_{};
+  std::int32_t arrowGap_ = 0; // MAIN_D_80135238: the dot left out, three frames each
+  std::optional<AimArrow> arrow_;
   Point playerHand_ = PlayerMark;
   Point opponentHand_;
 

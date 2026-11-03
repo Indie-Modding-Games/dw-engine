@@ -683,3 +683,69 @@ TEST_CASE("facing: the thrower faces 0 to aim and turns against the aim, the sto
   CHECK(*match.facing(1) != 0);
   CHECK(match.teams().at(OpponentTeam).stones.at(0).spin == *match.facing(1));
 }
+
+TEST_CASE("aimArrow: 15 dots 200 apart ahead of the thrower, off the walls, while it aims") {
+  // KAR_renderAimArrow: states 6 and 7 only; the dots run along the thrower's facing from the
+  // stone, mirrored at x = +-0x2EE; one dot is left out, moving down the line every 3 frames.
+  const CurlingRules rules = originalRules();
+  Random random{7};
+  Match match{rules, Opponent::Penguinmon, random};
+  auto teams = emptyRink();
+  Stone& held = teams.at(PlayerTeam).stones.at(0);
+  held.state = 0;
+  held.position = PlayerMark;
+  match.setScene(teams, Phase::Select, PlayerTeam, 0);
+  CurlingButtons confirm;
+  confirm.confirmPressed = true;
+  match.tick(confirm, random);
+  REQUIRE(match.phase() == Phase::Aim);
+  match.tick({}, random);
+  REQUIRE(match.aimArrow().has_value());
+  {
+    // Facing 0: straight up the ice (-z) from the stone, 200 a dot.
+    const AimArrow& arrow = *match.aimArrow();
+    const Point from = match.teams().at(PlayerTeam).stones.at(0).position;
+    for (std::size_t dot = 0; dot < AimDots; ++dot) {
+      CAPTURE(dot);
+      CHECK(arrow.dots.at(dot).x == from.x);
+      CHECK(arrow.dots.at(dot).z == from.z - (200 * static_cast<std::int32_t>(dot + 1)));
+      CHECK(arrow.shades.at(dot) >= 0x40);
+      CHECK(arrow.shades.at(dot) < 0x40 + 0xBF);
+    }
+    // The head points along the line: ratan2 of straight up less 0xC00, turned back.
+    CHECK(arrow.headTurn == -((dwe::core::original::ratan2(200, 0) - 0xC00) % 0x1000));
+  }
+  // The gap moves one dot every three frames.
+  std::size_t hidden = match.aimArrow()->hidden;
+  std::int32_t moves = 0;
+  for (std::int32_t frame = 0; frame < 9; ++frame) {
+    match.tick({}, random);
+    if (match.aimArrow()->hidden != hidden) {
+      CHECK(match.aimArrow()->hidden == hidden + 1);
+      hidden = match.aimArrow()->hidden;
+      ++moves;
+    }
+  }
+  CHECK(moves == 3);
+
+  // Turned hard left the line meets the left wall and comes back.
+  CurlingButtons left;
+  left.left = true;
+  for (std::int32_t frame = 0; frame < 40; ++frame) {
+    match.tick(left, random);
+  }
+  REQUIRE(match.aimArrow().has_value());
+  for (const Point& dot : match.aimArrow()->dots) {
+    CHECK(dot.x >= -0x2EE);
+    CHECK(dot.x <= 0x2EE);
+  }
+  const auto& dots = match.aimArrow()->dots;
+  CHECK(std::ranges::any_of(dots, [&](const Point& dot) { return dot.x > dots.front().x; }));
+
+  // No line once the power gauge runs.
+  for (std::int32_t frame = 0; frame < FrameCap && match.phase() != Phase::Power; ++frame) {
+    match.tick(confirm, random);
+  }
+  REQUIRE(match.phase() == Phase::Power);
+  CHECK_FALSE(match.aimArrow().has_value());
+}

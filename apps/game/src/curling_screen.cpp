@@ -4,6 +4,7 @@
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/math.hpp>
+#include <dwe/core/original_math.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/render/map_camera.hpp>
 #include <dwe/render/map_renderer.hpp>
@@ -56,13 +57,21 @@ constexpr std::int32_t OpponentScriptId = 5;
 constexpr std::int32_t ThrowerPlayer = 0;
 constexpr std::int32_t ThrowerOpponent = 1;
 constexpr std::int32_t ThrowerPartner = 2;
-constexpr float AimWidth = 40.0F;
-constexpr float AimHeight = 20.0F;
-// How far ahead of the stone the aim's marker stands.
-constexpr float AimReach = 450.0F;
-// The angles of the original: 4096 a turn (rcos, rsin).
-constexpr double AngleUnits = 4096.0;
-constexpr glm::vec4 SelectedColor{1.0F, 0.85F, 0.2F, 1.0F};
+// KAR_renderAimArrow's POLY_FT4s: the image at VRAM (640, 0) with the CLUT at (0x80, 0x1E6), the
+// rink's first 4-bit image and its ninth palette (overworld.c: loadMapImage2 puts palette i at
+// x = 16 i); a dot of 16 x 16 at texels (0x18, 0x28), the head at (0x28, 0x28), 16 pixels square
+// on the screen about the point.
+constexpr std::string_view ArrowImage = "map/frzl17/texture4/000";
+constexpr glm::vec2 ArrowImageSize{256.0F, 88.0F};
+constexpr std::size_t ArrowPalette = 8;
+constexpr glm::vec2 DotTexel{0x18, 0x28};
+constexpr glm::vec2 HeadTexel{0x28, 0x28};
+constexpr float ArrowHalf = 8.0F;
+constexpr float ArrowSide = 16.0F;
+// The head's quad is 15 texels unless it points straight (setUVWH 16 at 0x800).
+constexpr std::int32_t StraightHead = 0x800;
+// A primitive's colour over 0x80 draws the texture as is.
+constexpr float ColorOne = 128.0F;
 
 constexpr std::string_view PlayerScoreSetting = "curling_hud.player";
 constexpr std::string_view OpponentScoreSetting = "curling_hud.opponent";
@@ -425,12 +434,11 @@ void CurlingScreen::showStones(FieldScene& scene) const {
   }
   if (match == nullptr) {
     scene.setPosedProps(*model, {});
-    scene.setExtraMarkers({});
+    scene.setPointQuads({});
     return;
   }
   const float ground = scene.field().player().position.y;
   std::vector<FieldScene::PropPlace> stones;
-  std::vector<render::MapMarker> markers;
   const auto& teams = match->teams();
   for (std::size_t team = 0; team < teams.size(); ++team) {
     for (std::size_t index = 0; index < teams[team].stones.size(); ++index) {
@@ -452,24 +460,57 @@ void CurlingScreen::showStones(FieldScene& scene) const {
       if (world) {
         stones.push_back(stonePlace(*world, object));
       }
-      if (stone.state == 0 && match->phase() == Phase::Aim &&
-          std::cmp_equal(match->throwingTeam(), team)) {
-        const double turn = 2.0 * std::numbers::pi * match->aimAngle() / AngleUnits;
-        render::MapMarker aim;
-        // KAR_beginThrow: the stone runs along (rcos, rsin) of the angle, on the original's axes.
-        aim.feet =
-            worldOf(stone.position.x, stone.position.z, ground) +
-            core::fromOriginalAxes(glm::vec3{static_cast<float>(std::cos(turn)) * AimReach, 0.0F,
-                                             static_cast<float>(std::sin(turn)) * AimReach});
-        aim.width = AimWidth;
-        aim.height = AimHeight;
-        aim.color = SelectedColor;
-        markers.push_back(aim);
-      }
     }
   }
   scene.setPosedProps(*model, std::move(stones));
-  scene.setExtraMarkers(std::move(markers));
+  showAimArrow(scene, ground);
+}
+
+void CurlingScreen::showAimArrow(FieldScene& scene, float ground) const {
+  // KAR_renderAimArrow: a dot a point, the last one the head turned along the line, each grey
+  // over the texture; one dot left out.
+  const game::curling::Match* match = curling_->match();
+  std::vector<PointQuad> quads;
+  if (match != nullptr && match->aimArrow()) {
+    const game::curling::AimArrow& arrow = *match->aimArrow();
+    for (std::size_t dot = 0; dot < game::curling::AimDots; ++dot) {
+      if (dot == arrow.hidden) {
+        continue;
+      }
+      const game::curling::Point at = arrow.dots.at(dot);
+      PointQuad quad{.point = worldOf(at.x, at.z, ground),
+                     .image = std::string{ArrowImage},
+                     .palette = ArrowPalette,
+                     .imageSize = ArrowImageSize};
+      const float grey = static_cast<float>(arrow.shades.at(dot)) / ColorOne;
+      quad.color = glm::vec4{grey, grey, grey, 1.0F};
+      if (dot + 1 < game::curling::AimDots) {
+        // setUVWH(0x18, 0x38, 16, -16) on (x-8, y+8), (x+8, y+8), (x-8, y-8), (x+8, y-8).
+        quad.offsets = {glm::vec2{-ArrowHalf, ArrowHalf}, glm::vec2{ArrowHalf, ArrowHalf},
+                        glm::vec2{-ArrowHalf, -ArrowHalf}, glm::vec2{ArrowHalf, -ArrowHalf}};
+        quad.texels = {DotTexel + glm::vec2{0.0F, ArrowSide},
+                       DotTexel + glm::vec2{ArrowSide, ArrowSide}, DotTexel,
+                       DotTexel + glm::vec2{ArrowSide, 0.0F}};
+      } else {
+        // The corners (-8, 8), (8, 8), (-8, -8), (8, -8) turned by KAR_rotatePoint.
+        const std::int32_t turn = arrow.headTurn;
+        const std::int32_t cosine = core::original::rcos(turn);
+        const std::int32_t sine = core::original::rsin(turn);
+        const auto turned = [&](std::int32_t x, std::int32_t z) {
+          return glm::vec2{static_cast<float>(((x * cosine) / 4096) - ((z * sine) / 4096)),
+                           static_cast<float>(((x * sine) / 4096) + ((z * cosine) / 4096))};
+        };
+        const auto half = static_cast<std::int32_t>(ArrowHalf);
+        quad.offsets = {turned(-half, half), turned(half, half), turned(-half, -half),
+                        turned(half, -half)};
+        const float side = turn == StraightHead ? ArrowSide : ArrowSide - 1.0F;
+        quad.texels = {HeadTexel, HeadTexel + glm::vec2{side, 0.0F},
+                       HeadTexel + glm::vec2{0.0F, side}, HeadTexel + glm::vec2{side, side}};
+      }
+      quads.push_back(std::move(quad));
+    }
+  }
+  scene.setPointQuads(std::move(quads));
 }
 
 void CurlingScreen::showHud() {
@@ -508,7 +549,7 @@ void CurlingScreen::end(FieldScene& scene) {
   if (const auto model = assets::AssetId::parse(StoneModel)) {
     scene.setPosedProps(*model, {});
   }
-  scene.setExtraMarkers({});
+  scene.setPointQuads({});
   ui_->hide(CurlingHudDocument);
   if (auto result = curling_->finish(); !result) {
     core::logWarning("[port:curling] KAR_finishMatch (kar.c:945): {}", result.error().message);

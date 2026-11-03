@@ -123,6 +123,20 @@ struct MapChangeTiming {
 // looks a map's name up.
 [[nodiscard]] std::string mapNameKeyOf(const assets::MapTable& table, std::string_view mapId);
 
+// A POLY_FT4 a minigame sorts at a world point's depth: its corners `offsets` original pixels
+// from where the point shows (in the quad's order: 0 1 2 and 2 1 3), textured with one palette of
+// an indexed image of the packs (texels, `imageSize` the whole image's) and its colour over 0x80;
+// drawn opaque, the image's 0x0000 colour left out.
+struct PointQuad {
+  glm::vec3 point{0.0F};
+  std::string image;
+  std::size_t palette = 0;
+  glm::vec2 imageSize{1.0F};
+  std::array<glm::vec2, 4> offsets{};
+  std::array<glm::vec2, 4> texels{};
+  glm::vec4 color{1.0F};
+};
+
 // A GsSPRITE of an image of the packs at a world point, as the original sorts one into the ordering
 // table at the point's depth: its centre `lift` original pixels above where the point shows, `side`
 // original pixels wide and high times `scale`; the texels with STP add, the others are opaque (the
@@ -288,6 +302,8 @@ public:
   // Primitives the story draws over the whole field picture, in front of everything the map draws
   // and behind the interface, until replaced (the shake's red square: field_story_props.hpp).
   void setStoryScreenPrims(std::vector<ScenePrim> prims) { storyScreenPrims_ = std::move(prims); }
+  // A minigame's quads at world points, until replaced (the curling's aim line).
+  void setPointQuads(std::vector<PointQuad> quads) { pointQuads_ = std::move(quads); }
   // While held the camera stays where it points: map.c: tickCameraFollowPlayer follows the player
   // only in its state 0, never in a battle, where the player runs back on screen.
   void holdCamera(bool held) { cameraHeld_ = held; }
@@ -901,7 +917,9 @@ private:
   std::vector<StorySprite> storySprites_;
   std::vector<scene::Entity> hiddenNpcs_;
   std::vector<ScenePrim> storyScreenPrims_;
+  std::vector<PointQuad> pointQuads_;
   void addStorySprites(std::vector<ScenePrim>& prims);
+  void addPointQuads(std::vector<ScenePrim>& prims);
 };
 
 // Where the player stands on the window, in percent (the settings field.player_x and

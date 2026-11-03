@@ -101,6 +101,15 @@ constexpr std::int32_t Rival = 1;
 constexpr std::int32_t Partner = 2;
 constexpr std::int32_t StandAnimation = 0;
 constexpr std::int32_t PoseAnimation = 2;
+// KAR_renderAimArrow: the dots 200 apart, mirrored off the walls at 0x2EE, the shade's wave over
+// 0xBF on 0x40, the gap three frames on each dot, the head turned a quarter less.
+constexpr std::int32_t ArrowStep = 200;
+constexpr std::int32_t ArrowWall = 0x2EE;
+constexpr std::int32_t ArrowShadeSpan = 0xBF;
+constexpr std::int32_t ArrowShadeBase = 0x40;
+constexpr std::int32_t ArrowGapTop = 0x28;
+constexpr std::int32_t ArrowGapFrames = 3;
+constexpr std::int32_t ArrowHeadTurn = 0xC00;
 // KAR_finishMatch: the throwers and the partner turn to face the camera.
 constexpr std::int32_t FinishFacing = 0x800;
 constexpr std::int32_t PlayerAim = 0x23;
@@ -259,6 +268,7 @@ std::span<const CurlingEvent> Match::tick(const CurlingButtons& buttons, ruleset
   }
   // KAR_tick.
   tickMatchState(buttons, random);
+  renderAimArrow();
   handleAimScroll(buttons);
   updateRingMarkers();
   // KAR_renderReadyPrompt's counter.
@@ -479,6 +489,52 @@ void Match::turnAim(std::int32_t delta) {
   // KAR_turnAimLeft / KAR_turnAimRight: the thrower turns by -delta as the aim moves by delta.
   aim_ += shortOf(delta);
   face(throwerWho(), shortOf(facing(static_cast<std::size_t>(throwerWho())).value_or(0) - delta));
+}
+
+void Match::renderAimArrow() {
+  // KAR_renderAimArrow, drawn in states 6 and 7 only.
+  if (state_ < static_cast<std::int32_t>(Phase::Aim) ||
+      state_ >= static_cast<std::int32_t>(Phase::Power)) {
+    arrow_.reset();
+    return;
+  }
+  // Its counters are unsigned 16-bit: the shade's (the intro counter, MAIN_D_80135252) moves by
+  // 0xBE a frame unless it is 0, which goes to 0xFFFF; the gap's runs 0 to 0x28.
+  const auto shadeCounter = static_cast<std::uint16_t>(counter_);
+  counter_ = shadeCounter != 0 ? static_cast<std::uint16_t>(shadeCounter - 1 + ArrowShadeSpan)
+                               : std::uint16_t{0xFFFF};
+  if (arrowGap_++ >= ArrowGapTop) {
+    arrowGap_ = 0;
+  }
+  const std::int32_t facing = facing_.at(static_cast<std::size_t>(throwerWho())).value_or(0);
+  const Point from = current().position;
+  AimArrow arrow;
+  arrow.hidden = static_cast<std::size_t>(arrowGap_ / ArrowGapFrames);
+  for (std::size_t dot = 0; dot < AimDots; ++dot) {
+    // RotMatrix about y then ApplyMatrixSV of (0, 0, -200 (i + 1)).
+    const std::int32_t length = -ArrowStep * static_cast<std::int32_t>(dot + 1);
+    std::int32_t x = from.x + ((kar::rsin(facing) * length) >> 12);
+    const std::int32_t z = from.z + ((kar::rcos(facing) * length) >> 12);
+    while (x < -ArrowWall || x > ArrowWall) {
+      if (x < -ArrowWall) {
+        x -= 2 * (x + ArrowWall);
+      }
+      if (x > ArrowWall) {
+        x -= 2 * (x - ArrowWall);
+      }
+    }
+    arrow.dots.at(dot) = {.x = x, .z = z};
+    const std::int32_t step = static_cast<std::int32_t>(dot) * ArrowShadeSpan;
+    std::int32_t shade = (static_cast<std::int32_t>(counter_) + (step / 15)) & 0xFF;
+    if (shade >= ArrowShadeSpan) {
+      shade = (shade - ArrowShadeSpan) & 0xFF;
+    }
+    arrow.shades.at(dot) = shade + ArrowShadeBase;
+  }
+  const Point head = arrow.dots.back();
+  const Point before = arrow.dots.at(AimDots - 2);
+  arrow.headTurn = -((ratan2(before.z - head.z, before.x - head.x) - ArrowHeadTurn) % 0x1000);
+  arrow_ = arrow;
 }
 
 std::optional<std::int32_t> Match::facing(std::size_t who) const {

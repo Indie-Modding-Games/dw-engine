@@ -939,6 +939,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
     addEffectPrims(prims);
     addBattleVisualPrims(prims);
     addStorySprites(prims);
+    addPointQuads(prims);
     prims.insert(prims.end(), storyScreenPrims_.begin(), storyScreenPrims_.end());
   }
   primDrawer_->set(std::move(prims), mapRenderer_->camera().scale());
@@ -1067,6 +1068,26 @@ void FieldScene::addStorySprites(std::vector<ScenePrim>& prims) {
     prim.corners[2] = {
         .clip = clip, .offset = {-half.x, half.y - sprite.lift}, .uv = {from.x, to.y}};
     prim.corners[3] = {.clip = clip, .offset = {half.x, half.y - sprite.lift}, .uv = to};
+    prims.push_back(prim);
+  }
+}
+
+void FieldScene::addPointQuads(std::vector<ScenePrim>& prims) {
+  const render::MapCamera& camera = mapRenderer_->camera();
+  const ScenePrimFrame frame{
+      .view = camera.view(), .projection = camera.projection(), .pixelScale = camera.scale()};
+  for (const PointQuad& quad : pointQuads_) {
+    const std::optional<rhi::TextureId> texture = stpSceneImage(quad.image, quad.palette);
+    if (!texture || frame.depth(quad.point) <= 0.0F) {
+      continue;
+    }
+    const glm::vec4 clip = frame.clip(quad.point);
+    ScenePrim prim{.shape = ScenePrim::Shape::Quad, .color = quad.color, .texture = *texture};
+    for (std::size_t corner = 0; corner < prim.corners.size(); ++corner) {
+      prim.corners.at(corner) = {.clip = clip,
+                                 .offset = quad.offsets.at(corner),
+                                 .uv = quad.texels.at(corner) / quad.imageSize};
+    }
     prims.push_back(prim);
   }
 }
