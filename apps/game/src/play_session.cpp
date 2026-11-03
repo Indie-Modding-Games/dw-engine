@@ -851,6 +851,14 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       battleScreen_.handle(command) || freeExploration_.handle(command)) {
     return true;
   }
+  // The HUD's menu button follows Tab's gate (the walking state's tick, tamer.c:520).
+  if (command.name == "open_menu") {
+    if (const std::string_view shutBy = menuShutBy(); !shutBy.empty()) {
+      core::logDebug("[port:menu] walking state (tamer.c:520): the menu stays shut ({})", shutBy);
+      return true;
+    }
+    return false;
+  }
   if (command.name == SmoothMotionSetting) {
     if (const bool* smooth = std::get_if<bool>(&command.value)) {
       scene_->field().setSmoothMotion(*smooth);

@@ -22,6 +22,7 @@
 #include "common.hpp"
 #include "partner_menu.hpp"
 #include "play_session.hpp"
+#include "player_menu_gate.hpp"
 
 namespace dwe::app {
 namespace {
@@ -91,6 +92,23 @@ std::string_view PlaySession::busyWith() const {
     return "script";
   }
   return {};
+}
+
+bool PlaySession::fadeProtected() const {
+  return scene_->field().fadeProtected() || fadeLevel() > 0.0F;
+}
+
+std::string_view PlaySession::menuShutBy() const {
+  const game::field::Field& field = scene_->field();
+  const auto& story = game_.systems.story;
+  const std::string_view shutBy = playerMenuShutBy({
+      .playerWalks = field.playerFree(),
+      .scriptRuns = field.heldByScript() || (story != nullptr && story->scriptRunning()),
+      .fadeProtected = fadeProtected(),
+      .dialogueShown = story != nullptr && storyTextbox_ && story->dialogue().view().open,
+      .busyWith = busyWith(),
+  });
+  return shutBy;
 }
 
 void PlaySession::keepFieldSnapshot(double frameSeconds) {

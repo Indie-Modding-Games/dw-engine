@@ -199,6 +199,12 @@ public:
   // Whether the menu button belongs to the game rather than opening the menu: a naming box takes
   // it, and a gym course takes it as the original's cancel.
   [[nodiscard]] bool holdsMenu() const;
+  // Why the game menu stays shut now (player_menu_gate.hpp: a fade, a script, the dialogue, a
+  // battle or scene, the player held), or empty when Tab or the HUD's button opens it.
+  [[nodiscard]] std::string_view menuShutBy() const;
+  // Whether a fade runs (fade.c: FADE_PROTECTION, or any other fade darkening the screen): the
+  // pause and F10's options wait for its end (utils2.c: handlePause).
+  [[nodiscard]] bool fadeProtected() const;
   void type(std::string_view text, bool enter);
 
   // Where the characters and the battle's fighters stand after this tick, and the buttons held in

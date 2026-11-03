@@ -535,6 +535,30 @@ TEST_CASE("a modal document takes the navigation and confirm clicks the focused 
   CHECK_FALSE(ui->capturesInput());
 }
 
+TEST_CASE("a shut menu does not open on the menu action, and opens again once let go") {
+  // The walking state's tick (tamer.c:520) opens the game menu only while nothing holds the player.
+  Content content;
+  content.add("ui/test/document.rml", TestDocument);
+  content.add("ui/test/logic.lua", TestLogic);
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("test", idOf("ui/test/document")));
+  input::InputState input{input::defaultActionMap()};
+
+  ui->setMenuDocument("test");
+  ui->setMenuShut(true);
+  press(*ui, input, input::keys::Tab);
+  CHECK_FALSE(ui->isVisible("test"));
+  CHECK_FALSE(ui->capturesInput());
+
+  ui->setMenuShut(false);
+  press(*ui, input, input::keys::Tab);
+  CHECK(ui->isVisible("test"));
+  // Shut while open, the menu still closes as it did.
+  ui->setMenuShut(true);
+  press(*ui, input, input::keys::Escape);
+  CHECK_FALSE(ui->isVisible("test"));
+}
+
 TEST_CASE("a menu a script shows modal again takes the navigation back") {
   // game_menu.c tickTriangleMenu: cancelling out of the bag or the partner's page returns to a menu
   // that still answers the pad. A plain ui.show would leave it on screen without any input.

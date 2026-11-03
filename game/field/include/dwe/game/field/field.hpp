@@ -225,6 +225,13 @@ public:
   // (everything: black). The original subtracts a grey from every pixel (fade.c: renderFade), and
   // the app draws it that way.
   [[nodiscard]] float fadeLevel() const;
+  // Whether a map change's fade runs (fade.c: FADE_PROTECTION): from the fade out's first frame
+  // (fadeToBlack sets it) until the fade in's end (renderFadeIn clears it on its last frame), one
+  // frame after the player walks again. It keeps the game menu and the pause shut (tamer.c:520,
+  // utils2.c: handlePause).
+  [[nodiscard]] bool fadeProtected() const {
+    return mapChangePending() || fadeInSeconds_.has_value();
+  }
   // The shade the screen holds now (fade.c: FADE_PROGRESS), nothing when no fade has run.
   [[nodiscard]] std::optional<std::int32_t> shadeNow() const;
   // A fade the field does not run (the story's fade to white, WhiteFade) drew `shade`:

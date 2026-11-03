@@ -1363,6 +1363,51 @@ TEST_CASE("a warp fades out while the player walks on, and fades in on the new m
   CHECK(field.player().position != glm::vec3{0.0F});
 }
 
+TEST_CASE("a map change's fade protects the game from the warp until the fade in's end") {
+  // fade.c: fadeToBlack sets FADE_PROTECTION on the fade out's first frame and renderFadeIn clears
+  // it on the frame after the fade in's last shade, one frame after the player walks again.
+  MapDocument town = roomMap("town");
+  fill(town, {.column = 50, .row = 40}, {.column = 52, .row = 41}, 112);
+  town.warps[2].targetMapId = "house";
+  town.warps[2].targetExit = 0;
+  MapDocument house = roomMap("house");
+  house.warps[0] = {.exit = 0,
+                    .spawn = {0, 0, 0},
+                    .rotation = 0,
+                    .targetMap = -1,
+                    .targetMapId = std::nullopt,
+                    .targetExit = -1};
+
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(town, at(0.0F, -600.0F, Pi));
+  CHECK_FALSE(field.fadeProtected());
+  field.setInput({.stick = {0.0F, 1.0F}});
+  for (int i = 0; i < 120 && !field.mapChangePending(); ++i) {
+    CHECK_FALSE(field.fadeProtected());
+    field.tick(Tick);
+  }
+  REQUIRE(field.mapChangePending());
+  CHECK(field.fadeProtected());
+  std::optional<MapChange> change;
+  for (int ticks = 0; ticks < 60 && !change; ++ticks) {
+    field.tick(Tick);
+    change = field.takeMapChange();
+    CHECK(field.fadeProtected());
+  }
+  REQUIRE(change.has_value());
+  REQUIRE(field.enterMap(house, change->exit).has_value());
+  CHECK(field.fadeProtected());
+  // Up to the fade in's 20th frame, when the player walks again, the protection holds.
+  run(field, 0.95F);
+  CHECK(field.playerFree());
+  CHECK(field.fadeProtected());
+  // The next frame draws no shade and ends it.
+  run(field, 0.05F);
+  CHECK(field.fadeLevel() == doctest::Approx(0.0F));
+  CHECK_FALSE(field.fadeProtected());
+}
+
 TEST_CASE("play starts with a long fade in that holds no one, and a map change then stays dark") {
   // main.c: main: fadeFromBlack(0x28) after the first map: a new game's arrival cell runs on the
   // first frame, and its scripted map change fades out from the fade in's dark first shade

@@ -1210,19 +1210,27 @@ int runGame(const Options& requested) {
       const bool menuHeld = flow.playing() == nullptr || (movies && movies->playing()) ||
                             interview || flow.playing()->holdsMenu();
       (*ui)->setMenuDocument(menuHeld ? std::string_view{} : MenuDocument);
+      // The walking state's tick (tamer.c:520): the game menu opens only while the player walks
+      // freely, with no script, fade or dialogue box running; utils2.c: handlePause: no pause
+      // during a fade (FADE_PROTECTION). F10's options open the same menu and follow both.
+      const bool menuShut = !menuHeld && !flow.playing()->menuShutBy().empty();
+      const bool fadeProtected = !menuHeld && flow.playing()->fadeProtected();
+      (*ui)->setMenuShut(menuShut);
       // F10 or Select: the game menu's options page, straight away (docs/modulos/apps/game.md,
       // «Opciones en partida»). From Start's pause it ends the pause first; with the menu open it
       // switches it to the options page (or closes it when F10 opened it there); over another menu
       // or where the menu is held it does nothing.
-      const bool settingsAsked = !menuHeld && input.wasPressed("settings") &&
-                                 ((*ui)->isVisible(MenuDocument) || !(*ui)->hasModal());
+      const bool settingsAsked =
+          !menuHeld && input.wasPressed("settings") &&
+          ((*ui)->isVisible(MenuDocument) || (!(*ui)->hasModal() && !menuShut));
       // The menu was closed by another path: the next F10 opens it again, not closes it.
       if (!(*ui)->isVisible(MenuDocument)) {
         optionsDirect = false;
       }
       // Start's pause freezes everything but the box, menus and battle included (handlePause).
-      if (const PauseStep pause = pauseBox.tick(
-              input.wasPressed("pause") || (settingsAsked && pauseBox.paused()), !menuHeld);
+      if (const PauseStep pause =
+              pauseBox.tick(input.wasPressed("pause") || (settingsAsked && pauseBox.paused()),
+                            !menuHeld && !fadeProtected);
           pause.opened || pause.closed || pause.paused) {
         if (pause.opened) {
           (*ui)->show(PauseBoxDocument);

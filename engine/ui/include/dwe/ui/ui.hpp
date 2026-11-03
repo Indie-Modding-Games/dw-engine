@@ -128,6 +128,9 @@ public:
 
   // The document the `menu` action opens, modal, when no other modal document is shown.
   void setMenuDocument(std::string_view name);
+  // While shut, the `menu` action does not open the menu document: the game holds it (a map
+  // change's fade, a script). Start still goes to the game.
+  void setMenuShut(bool shut);
 
   // Passes a platform event to the UI. Returns true when the UI took it, and the game must not see
   // it: clicks and wheel turns over the UI or while a modal document is shown, and the first

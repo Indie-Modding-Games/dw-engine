@@ -229,6 +229,7 @@ struct Ui::Impl {
   std::map<std::string, Document, std::less<>> documents;
   std::vector<std::string> modalStack;
   std::string menuDocument;
+  bool menuShut = false;
   Navigation navigation;
   std::vector<NavCommand> pendingSteps;
   bool capturedThisTick = false;
@@ -809,7 +810,7 @@ struct Ui::Impl {
   void step(NavCommand command) {
     Document* modal = topModal();
     if (modal == nullptr) {
-      if (command == NavCommand::Menu && find(menuDocument) != nullptr) {
+      if (command == NavCommand::Menu && !menuShut && find(menuDocument) != nullptr) {
         show(menuDocument, true);
         capturedThisTick = true;
       }
@@ -1167,6 +1168,10 @@ std::string_view Ui::skin() const {
 
 void Ui::setMenuDocument(std::string_view name) {
   impl_->menuDocument = name;
+}
+
+void Ui::setMenuShut(bool shut) {
+  impl_->menuShut = shut;
 }
 
 bool Ui::handleEvent(const platform::Event& event) {
