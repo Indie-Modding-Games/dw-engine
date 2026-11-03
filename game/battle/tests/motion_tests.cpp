@@ -166,9 +166,14 @@ TEST_CASE("a fighter with clips walks by its walk clip and a hit pushes it back 
         const Fighter& fighter = battle.state().fighters[id];
         const double moved = length(before[id], fighter.position);
         if (moved > 0.0) {
-          // anim.c: applyRootMomentum: the clip's step along the facing, no other motion.
+          // anim.c: applyRootMomentum: the clip's step along the facing, no other motion, less
+          // its move along a way the grace turn found blocked.
           if (fighter.shown.clip == Walk || fighter.shown.clip == WeakWalk) {
-            CHECK(moved == doctest::Approx(30.0).epsilon(0.05));
+            if (fighter.blockedWays == 0) {
+              CHECK(moved == doctest::Approx(30.0).epsilon(0.05));
+            } else {
+              CHECK(moved <= 30.5);
+            }
             ++walked;
           } else if (fighter.shown.clip == Hit) {
             CHECK(moved == doctest::Approx(20.0).epsilon(0.08));
@@ -597,4 +602,50 @@ TEST_CASE("a line or radius check hits the body toward its source, at the origin
   REQUIRE(turned.has_value());
   CHECK(turned->x == -3967);
   CHECK(turned->z == 1020);
+}
+
+namespace {
+
+// A ground with no walls, seen from straight above: 8 units a pixel, the lift up the screen.
+class AreaGround final : public BattleGround {
+public:
+  static constexpr std::int32_t UnitsPerPixel = 8;
+  [[nodiscard]] std::optional<ScreenPoint> screenPointOf(Point ground,
+                                                         std::int32_t height) const override {
+    return ScreenPoint{.x = ground.x / UnitsPerPixel, .y = (ground.z - height) / UnitsPerPixel};
+  }
+  [[nodiscard]] bool blocksStep(Point /*from*/, Point /*to*/,
+                                std::int32_t /*radius*/) const override {
+    return false;
+  }
+};
+
+} // namespace
+
+// map.c: collisionGrace turns a blocked fighter at most 0x50 a frame toward the first free way and
+// marks the ways it found blocked (animFlag bits 3 to 6); anim.c: applyRootMomentum drops the move
+// along them, so the walk slides along the edge instead of leaning out of the combat area. Without
+// that, these battles took a fighter's body up to 247 units (31 pixels) past the area.
+TEST_CASE("a fighter turning away from the combat area's edge does not walk out along it") {
+  const AreaGround ground;
+  const TimingRules& timing = originalRules().timing;
+  const std::int32_t halfWidth = timing.combatAreaWidth / 2 * AreaGround::UnitsPerPixel;
+  const std::int32_t halfHeight = timing.combatAreaHeight / 2 * AreaGround::UnitsPerPixel;
+  std::int32_t worst = 0;
+  for (std::uint64_t seed = 1; seed <= 6; ++seed) {
+    Battle battle = clippedBattle(clippedDuel(), seed, {.hitFrames = 12, .hitStep = -40});
+    battle.setGround(&ground);
+    while (!battle.finished() && battle.state().frame < 3000) {
+      battle.step();
+      for (const Fighter& fighter : battle.state().fighters) {
+        // The corners the step test projects: the near ones, on the ground and lifted.
+        const std::int32_t radius = fighter.combatant.radius;
+        const std::int32_t near = fighter.position.z - radius;
+        worst = std::max({worst, std::abs(fighter.position.x) + radius - halfWidth,
+                          near - halfHeight, timing.combatAreaCornerHeight - near - halfHeight});
+      }
+    }
+  }
+  // At most a walk step and a hit's push of the made-up clips (30 and 40) past it.
+  CHECK(worst <= 70);
 }

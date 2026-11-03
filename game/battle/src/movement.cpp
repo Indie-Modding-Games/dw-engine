@@ -293,11 +293,13 @@ Blocker blockerAhead(const BattleContext& context, FighterId id, Facing facing,
 }
 
 // map.c: entityCheckCollision on the fighter itself: what stops its next step facing `facing`.
-// The test lets the fighter's root step go again (it clears animFlag bit 1): a fighter that turns
-// away from what blocked it walks on the same frame.
+// The test lets the fighter's root step go again (it clears animFlag bits 1 and 3 to 6): a fighter
+// that turns away from what blocked it walks on the same frame.
 Blocker checkStep(BattleContext& context, FighterId id, Facing facing,
                   std::optional<FighterId> ignored = std::nullopt) {
-  context.fighter(id).rootHeld = false;
+  Fighter& fighter = context.fighter(id);
+  fighter.rootHeld = false;
+  fighter.blockedWays = 0;
   return blockerAhead(context, id, facing, false, ignored);
 }
 
@@ -329,12 +331,17 @@ void collisionGrace(BattleContext& context, FighterId id,
     return;
   }
   const std::int32_t start = angleOf(fighter.facing);
+  std::uint8_t blocked = 0;
   for (const std::int32_t way :
        GraceTurns.at(static_cast<std::size_t>(start / (QuarterTurn / 2)))) {
     if (freeAt(context, id, way, ignored)) {
       fighter.facing = facingOf(turnToward(start, way, GraceTurnStep));
+      // The turn is partial, so the step may still lean into a way found blocked: the root step
+      // drops that part of it (animFlag |= flags).
+      fighter.blockedWays = blocked;
       return;
     }
+    blocked |= static_cast<std::uint8_t>(1U << static_cast<unsigned>(way / QuarterTurn));
   }
   fighter.facing = facingOf(start + GraceNudge);
   fighter.rootHeld = true;
@@ -580,6 +587,7 @@ void testRootStep(BattleContext& context, FighterId id) {
   if (!fighter.clips) {
     return;
   }
+  fighter.blockedWays = 0;
   fighter.rootHeld =
       blockerAhead(context, id, fighter.facing, !walkClip(fighter.shown.clip)) != Blocker::None;
 }
@@ -601,8 +609,23 @@ void tickRootMotion(BattleContext& context) {
     // ApplyMatrixLV by the root's matrix: the model's x and z axes turned to the facing.
     const std::int64_t fx = fighter.facing.x;
     const std::int64_t fz = fighter.facing.z;
-    const std::int64_t x = (step->side * fz) + (step->forward * fx) + fighter.rootRemainder.x;
-    const std::int64_t z = (-step->side * fx) + (step->forward * fz) + fighter.rootRemainder.z;
+    std::int64_t moveX = (step->side * fz) + (step->forward * fx);
+    std::int64_t moveZ = (-step->side * fx) + (step->forward * fz);
+    // anim.c: applyRootMomentum: no move along a way collisionGrace found blocked.
+    for (std::int32_t quarter = 0; quarter < 4; ++quarter) {
+      if ((fighter.blockedWays & (1U << static_cast<unsigned>(quarter))) == 0) {
+        continue;
+      }
+      const Facing way = facingOf(quarter * QuarterTurn);
+      if (static_cast<std::int64_t>(way.x) * moveX > 0) {
+        moveX = 0;
+      }
+      if (static_cast<std::int64_t>(way.z) * moveZ > 0) {
+        moveZ = 0;
+      }
+    }
+    const std::int64_t x = moveX + fighter.rootRemainder.x;
+    const std::int64_t z = moveZ + fighter.rootRemainder.z;
     const Point whole = wholeUnits(x, z);
     fighter.position.x += whole.x;
     fighter.position.z += whole.z;

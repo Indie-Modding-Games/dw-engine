@@ -36,6 +36,7 @@ void start(Fighter& fighter, FighterId id, std::int32_t clip, std::string_view o
   ++fighter.shown.starts;
   fighter.shown.frame = 0;
   fighter.rootHeld = false;
+  fighter.blockedWays = 0;
   fighter.rootRemainder = {};
   core::logDebug("[port:battle] {}: fighter {} startAnimation({:#x}) for pose {}", origin, id, clip,
                  static_cast<int>(fighter.pose));

@@ -192,6 +192,9 @@ struct Fighter {
   // This frame's root step is held (anim.c: animFlag bit 1): the step ahead runs into something
   // (battle_main.c: BTL_tickFighterAction) or every way is blocked (map.c: collisionGrace).
   bool rootHeld = false;
+  // The ways collisionGrace found blocked before the free one it turns to (anim.c: animFlag bits
+  // 3 to 6), bit q for the quarter turn q * 0x400: the root step drops its move along any of them.
+  std::uint8_t blockedWays = 0;
   std::int32_t poseFrames = 0;
 
   std::optional<FighterId> target;
