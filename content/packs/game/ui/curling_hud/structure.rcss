@@ -1,44 +1,55 @@
-/* The stones game's information (kar.c: KAR_renderScores, KAR_renderPowerMeter, KAR_tickYesNoPrompt): the two
-   scores at the top, and at the bottom what the player does now, the play or rules prompt and the power gauge.
+/* The stones game's HUD (kar.c: KAR_tick's render calls), the original's sprites in both looks. One pixel of the
+   original is 3dp (240 lines over 720 dp); every sprite is placed from the screen's centre, as the original's
+   POLY_FT4s are (KAR_renderSprite: setXYWH from the draw offset at 160, 120), with the 4:3 screen centred on a wide
+   one. The sprites are the rink's first 4-bit image (VRAM 640, 0: map frzl17, texture4/000), each with its palette
+   (the CLUT's x over 16, at y 0x1E6). The later an element, the higher it draws: the original adds them to one slot
+   of the ordering table, so the last added is drawn first (name plates, start sign, gauge, scores, hand).
 
-   The hint pages (KAR_tickHintBox) are the story's speech box (#box, ../story_textbox/structure.rcss): the hint box
-   opens at -130, 42, 262 x 59 from the screen's centre (MAIN_D_80134A28), the speech box's place, with four rows: the
-   speaker's name in text colour 7, then three lines in colour 1 (KAR_drawHintPagePenguinmon: setTextColor). */
+   - KAR_renderNamePlates (KAR_D_8005B4F4): the player's portrait at -140, -95 (32 x 32, texels 0x70, 0x18,
+     palette 9) over its blue box at -130, -70 (48 x 32, texels 0x18, 0x38, palette 7); the opponent's at 100, -95
+     (texels 0x90, 0x18, palette 10; the second opponent's KAR_D_8005B558: 0xB0, 0x18, palette 12) over its red box
+     at 80, -70 (palette 8).
+   - KAR_renderScores: two digits of 16 x 16 (palette 1) at y -62, the units at x -105 and 104, the tens 16 left;
+     logic.lua picks the glyph (KAR_D_8005B4A0).
+   - KAR_renderReadyPrompt (KAR_D_8005B56C): the start sign at -52, 0 (151 x 10, texels 0x68, 0x3E, palette 11).
+   - KAR_renderPowerMeter (KAR_D_8005B4CC): the frame at -50 or 50, -50 (48 x 16, texels 0, 0x18, palette 7 the
+     player's, 8 the opponent's) and chevron i at the frame's x + 3 i - 3 (16 x 16, texels 0x30, 0x18, palette 7,
+     the tenth 3); logic.lua places them.
+   - KAR_renderStoneCursor (KAR_D_8005B478): the hand at -120 or 100, row * 30 - 45 (24 x 24, texels 0, 0x28,
+     palette 8); logic.lua places it.
+
+   The play or rules question (KAR_tickYesNoPrompt) and the hint pages (KAR_tickHintBox) open the same box at -130,
+   42, 262 x 59 from the screen's centre (MAIN_D_80134A10, MAIN_D_80134A28), the story's speech box (#box,
+   ../story_textbox/structure.rcss); the hint pages' rows: the speaker's name in text colour 7, then three lines in
+   colour 1 (KAR_drawHintPagePenguinmon: setTextColor). The question's selection bar is 94 pixels wide
+   (renderSelectionCursor 0x5E). */
 
 body { pointer-events: none; }
-#score {
-	position: absolute;
-	top: 24dp;
-	left: 50%;
-	margin-left: -160dp;
-	width: 320dp;
-	padding: 6dp 12dp;
-	text-align: center;
-	background-color: #10204ccc;
-	border-radius: 6dp;
-	color: #ffffff;
-}
-#panel {
+
+#plates img, #ready, #gauge img, #scores img, #hand {
 	position: absolute;
 	left: 50%;
-	bottom: 24dp;
-	margin-left: -260dp;
-	width: 520dp;
-	padding: 8dp 12dp;
-	background-color: #10204ccc;
-	border-radius: 6dp;
-	color: #ffffff;
+	top: 50%;
 }
-#question div { padding: 2dp 8dp; }
-#question div.selected { background-color: #f0c04066; }
-#track {
-	height: 12dp;
-	margin-top: 6dp;
-	background-color: #ffffff33;
-}
-#fill {
-	height: 12dp;
-	width: 0%;
-	background-color: #f0c040;
-}
+
+#player-face { margin-left: -420dp; margin-top: -285dp; width: 96dp; height: 96dp; }
+#player-box { margin-left: -390dp; margin-top: -210dp; width: 144dp; height: 96dp; }
+#opponent-face, #opponent-face-2 { margin-left: 300dp; margin-top: -285dp; width: 96dp; height: 96dp; }
+#opponent-box { margin-left: 240dp; margin-top: -210dp; width: 144dp; height: 96dp; }
+
+#score-0-tens { margin-left: -363dp; }
+#score-0-units { margin-left: -315dp; }
+#score-1-tens { margin-left: 264dp; }
+#score-1-units { margin-left: 312dp; }
+#scores img { margin-top: -186dp; width: 48dp; height: 48dp; }
+
+#ready { margin-left: -156dp; margin-top: 0dp; width: 453dp; height: 30dp; }
+
+#gauge-frame { width: 144dp; height: 48dp; }
+#gauge img { margin-top: -150dp; }
+.chevron { width: 48dp; height: 48dp; }
+
+#hand { width: 72dp; height: 72dp; }
+
+#question .row.barred .bar { width: 282dp; }
 .hidden { display: none; }

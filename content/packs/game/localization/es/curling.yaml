@@ -1,14 +1,3 @@
-# El juego de las piedras (kar.c). {player} y {opponent} son los puntos.
-score: "Tú {player}  -  {opponent} Rival"
+# El juego de las piedras (kar.c): la pregunta de jugar o las reglas (KAR_tickYesNoPrompt).
 prompt.play: "Jugar"
 prompt.rules: "Cómo se juega"
-status.select: "Elige una piedra con Arriba y Abajo y confirma."
-status.aim: "Gira el tiro con Izquierda y Derecha y confirma."
-status.power: "Confirma cuando el indicador esté donde quieras."
-status.rolling: "Las piedras se deslizan..."
-status.opponent: "Tira el rival."
-status.tally: "Contando los puntos..."
-status.ready: "¡Preparados!"
-status.rules: "Las reglas. Confirma para seguir."
-status.won: "¡Has ganado!"
-status.lost: "Has perdido..."

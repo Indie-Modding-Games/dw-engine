@@ -97,11 +97,11 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 11 | 10 | 0 | 1 | 91 % |
 | [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 108 | 89 | 4 | 15 | 84 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 91 | 0 | 0 | 91 | 0 % |
-| [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 41 | 40 | 1 | 0 | 99 % |
+| [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 44 | 44 | 0 | 0 | 100 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 31 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 50 | 50 | 0 | 0 | 100 % |
-| **Total** | 1412 funciones a portar | 1412 | 1270 | 22 | 120 | 91 % |
+| **Total** | 1415 funciones a portar | 1415 | 1274 | 21 | 120 | 91 % |
 
 ## Batalla
 
@@ -394,11 +394,7 @@ El minijuego de piedras sobre hielo.
 
 Ficheros del decomp: `kar/kar.c`, `main/kar.c`.
 
-Portado 40, parcial 1, falta 0.
-
-| Función | Decomp | Estado | Qué hace | Motor / nota |
-|---|---|---|---|---|
-| `KAR_tick` | `kar/kar.c:973` | parcial | Bucle principal del minijuego de curling por cuadro. | `apps/game/src/curling_screen.cpp:1` · la partida corre a 20 cuadros por segundo; piedras con sus modelos, animaciones y flecha de puntería como el original; el marcador, el indicador de fuerza, el letrero de Preparados y la mano sobre la piedra elegida son textos de panel o faltan |
+Portado 44, parcial 0, falta 0.
 
 ## Audio
 
@@ -426,6 +422,6 @@ Portado 50, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-1026 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+1023 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

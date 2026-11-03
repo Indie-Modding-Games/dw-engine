@@ -1,14 +1,3 @@
-# The stones game (kar.c). {player} and {opponent} are the scores.
-score: "You {player}  -  {opponent} Rival"
+# The stones game (kar.c): the play or rules question (KAR_tickYesNoPrompt).
 prompt.play: "Start Game"
 prompt.rules: "Explain Game"
-status.select: "Pick a stone with Up and Down, then confirm."
-status.aim: "Turn the throw with Left and Right, then confirm."
-status.power: "Confirm when the gauge is where you want it."
-status.rolling: "The stones slide..."
-status.opponent: "The rival throws."
-status.tally: "Counting the points..."
-status.ready: "Ready!"
-status.rules: "The rules. Confirm to go on."
-status.won: "You won!"
-status.lost: "You lost..."

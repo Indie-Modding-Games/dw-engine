@@ -207,6 +207,40 @@ std::optional<std::pair<std::int32_t, std::int32_t>> Match::hint() const {
   return std::pair{hintGroup_, box_};
 }
 
+std::array<std::int32_t, 2> scoreGlyphs(std::int32_t score) {
+  // KAR_renderScores: lo = score % 10, hi = score / 10 (C's truncation), the minus under zero.
+  const std::int32_t units = score % 10;
+  const std::int32_t tens = score < 0 ? MinusGlyph : score / 10;
+  return {tens, units < 0 ? -units : units};
+}
+
+std::int32_t powerChevrons(std::int32_t power) {
+  // KAR_renderPowerMeter: chevron i (1 to 10) shows when 250 i <= power.
+  std::int32_t chevrons = 0;
+  for (std::int32_t step = 1; step <= PowerChevrons; ++step) {
+    if (PowerChevronStep * step <= power) {
+      chevrons = step;
+    }
+  }
+  return chevrons;
+}
+
+HudView Match::hud() const {
+  HudView view;
+  view.scores = {scoreGlyphs(teams_.at(PlayerTeam).score),
+                 scoreGlyphs(teams_.at(OpponentTeam).score)};
+  if (state_ == static_cast<std::int32_t>(Phase::Select)) {
+    view.cursor = HudView::Cursor{.team = team_ != 0 ? 1 : 0, .row = selected_};
+  }
+  if (state_ == static_cast<std::int32_t>(Phase::Power) ||
+      state_ == static_cast<std::int32_t>(Phase::Release)) {
+    view.gauge = HudView::Gauge{.team = team_ != 0 ? 1 : 0, .chevrons = powerChevrons(power_)};
+  }
+  view.ready = readyShown();
+  view.secondOpponent = opponent_ == Opponent::MetalMamemon;
+  return view;
+}
+
 void Match::emit(CurlingEvent::Kind kind, std::int32_t a, std::int32_t b) {
   events_.push_back({.kind = kind, .a = a, .b = b});
 }

@@ -7,7 +7,34 @@
 	<script src="logic.lua"></script>
 </head>
 <body>
-	<div id="score"></div>
+	<div id="plates">
+		<img id="opponent-box" src="/map/frzl17/texture4/000?palette=8" rect="24 56 48 32"/>
+		<img id="opponent-face" src="/map/frzl17/texture4/000?palette=10" rect="144 24 32 32"/>
+		<img id="opponent-face-2" class="hidden" src="/map/frzl17/texture4/000?palette=12" rect="176 24 32 32"/>
+		<img id="player-box" src="/map/frzl17/texture4/000?palette=7" rect="24 56 48 32"/>
+		<img id="player-face" src="/map/frzl17/texture4/000?palette=9" rect="112 24 32 32"/>
+	</div>
+	<img id="ready" class="hidden" src="/map/frzl17/texture4/000?palette=11" rect="104 62 151 10"/>
+	<div id="gauge" class="hidden">
+		<img id="gauge-frame" src="/map/frzl17/texture4/000?palette=7" rect="0 24 48 16"/>
+		<img id="chevron-1" class="chevron" src="/map/frzl17/texture4/000?palette=7" rect="48 24 16 16"/>
+		<img id="chevron-2" class="chevron" src="/map/frzl17/texture4/000?palette=7" rect="48 24 16 16"/>
+		<img id="chevron-3" class="chevron" src="/map/frzl17/texture4/000?palette=7" rect="48 24 16 16"/>
+		<img id="chevron-4" class="chevron" src="/map/frzl17/texture4/000?palette=7" rect="48 24 16 16"/>
+		<img id="chevron-5" class="chevron" src="/map/frzl17/texture4/000?palette=7" rect="48 24 16 16"/>
+		<img id="chevron-6" class="chevron" src="/map/frzl17/texture4/000?palette=7" rect="48 24 16 16"/>
+		<img id="chevron-7" class="chevron" src="/map/frzl17/texture4/000?palette=7" rect="48 24 16 16"/>
+		<img id="chevron-8" class="chevron" src="/map/frzl17/texture4/000?palette=7" rect="48 24 16 16"/>
+		<img id="chevron-9" class="chevron" src="/map/frzl17/texture4/000?palette=7" rect="48 24 16 16"/>
+		<img id="chevron-10" class="chevron" src="/map/frzl17/texture4/000?palette=3" rect="48 24 16 16"/>
+	</div>
+	<div id="scores">
+		<img id="score-1-tens" class="digit" src="/map/frzl17/texture4/000?palette=1" rect="64 24 16 16"/>
+		<img id="score-1-units" class="digit" src="/map/frzl17/texture4/000?palette=1" rect="64 24 16 16"/>
+		<img id="score-0-tens" class="digit" src="/map/frzl17/texture4/000?palette=1" rect="64 24 16 16"/>
+		<img id="score-0-units" class="digit" src="/map/frzl17/texture4/000?palette=1" rect="64 24 16 16"/>
+	</div>
+	<img id="hand" class="hidden" src="/map/frzl17/texture4/000?palette=8" rect="0 40 24 24"/>
 	<div id="box" class="original-look hidden">
 		<div id="rows">
 			<div class="row color-7" id="hint_name"></div>
@@ -15,14 +42,10 @@
 			<div class="row color-1" id="hint_2"></div>
 			<div class="row color-1" id="hint_3"></div>
 		</div>
-	</div>
-	<div id="panel">
-		<div id="status"></div>
 		<div id="question">
-			<div id="play" text-key="curling.prompt.play"></div>
-			<div id="rules" text-key="curling.prompt.rules"></div>
+			<div class="row color-1" id="play"><span class="bar" id="play-bar"></span><span class="cursor"></span><span class="run" text-key="curling.prompt.play"></span></div>
+			<div class="row color-1" id="rules"><span class="bar" id="rules-bar"></span><span class="cursor"></span><span class="run" text-key="curling.prompt.rules"></span></div>
 		</div>
-		<div id="gauge"><div id="track"><div id="fill"></div></div></div>
 	</div>
 </body>
 </rml>

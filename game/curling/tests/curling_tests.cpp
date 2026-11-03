@@ -776,3 +776,68 @@ TEST_CASE("the rolling sound starts at the release and stops when the rings are 
   }
   CHECK(stopped);
 }
+
+TEST_CASE("hud: the scores' glyphs, the hand, the power chevrons and the start sign") {
+  // KAR_renderScores: tens and units, the minus glyph for the tens under zero.
+  CHECK(scoreGlyphs(0) == std::array<std::int32_t, 2>{0, 0});
+  CHECK(scoreGlyphs(7) == std::array<std::int32_t, 2>{0, 7});
+  CHECK(scoreGlyphs(12) == std::array<std::int32_t, 2>{1, 2});
+  CHECK(scoreGlyphs(-3) == std::array<std::int32_t, 2>{MinusGlyph, 3});
+  // KAR_renderPowerMeter: a chevron each 250, ten at most (measured: 1500 shows six).
+  CHECK(powerChevrons(0) == 0);
+  CHECK(powerChevrons(249) == 0);
+  CHECK(powerChevrons(250) == 1);
+  CHECK(powerChevrons(1500) == 6);
+  CHECK(powerChevrons(2499) == 9);
+  CHECK(powerChevrons(4000) == 10);
+
+  const CurlingRules rules = originalRules();
+  Random random{7};
+  Match match{rules, Opponent::Penguinmon, random};
+  CHECK_FALSE(match.hud().secondOpponent);
+  // KAR_renderReadyPrompt: frames 8 to 15, 24 to 31 and 40 to 47 of state 3 show the sign.
+  std::int32_t readyFrames = 0;
+  std::int32_t shown = 0;
+  for (std::int32_t frame = 0; frame < 400 && match.phase() != Phase::Select; ++frame) {
+    CurlingButtons buttons;
+    buttons.confirmPressed = match.phase() == Phase::Prompt && match.promptOption().has_value();
+    match.tick(buttons, random);
+    const HudView view = match.hud();
+    CHECK(view.cursor.has_value() == (match.phase() == Phase::Select));
+    CHECK_FALSE(view.gauge);
+    if (match.phase() == Phase::Ready) {
+      ++readyFrames;
+      shown += view.ready ? 1 : 0;
+    } else {
+      CHECK_FALSE(view.ready);
+    }
+  }
+  REQUIRE(match.phase() == Phase::Select);
+  CHECK(readyFrames > 48);
+  CHECK(shown == 24);
+  // KAR_renderStoneCursor: the hand on the thrower's selected stone while picking.
+  auto teams = match.teams();
+  teams.at(PlayerTeam).score = -2;
+  teams.at(OpponentTeam).score = 11;
+  match.setScene(teams, Phase::Select, OpponentTeam, 3);
+  HudView view = match.hud();
+  REQUIRE(view.cursor);
+  CHECK(view.cursor->team == 1);
+  CHECK(view.cursor->row == 3);
+  CHECK(view.scores.at(0) == std::array<std::int32_t, 2>{MinusGlyph, 2});
+  CHECK(view.scores.at(1) == std::array<std::int32_t, 2>{1, 1});
+  // KAR_renderPowerMeter: the gauge in states 8 and 9 only.
+  match.setScene(teams, Phase::Power, PlayerTeam, 0);
+  view = match.hud();
+  CHECK_FALSE(view.cursor);
+  REQUIRE(view.gauge);
+  CHECK(view.gauge->team == 0);
+  CHECK(view.gauge->chevrons == 0);
+  match.setScene(teams, Phase::Release, OpponentTeam, 0);
+  REQUIRE(match.hud().gauge);
+  match.setScene(teams, Phase::Rolling, OpponentTeam, 0);
+  CHECK_FALSE(match.hud().gauge);
+
+  Match second{rules, Opponent::MetalMamemon, random};
+  CHECK(second.hud().secondOpponent);
+}

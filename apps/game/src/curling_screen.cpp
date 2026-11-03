@@ -30,7 +30,6 @@ namespace dwe::app {
 namespace {
 
 using game::curling::CurlingEvent;
-using game::curling::Phase;
 
 // kar.c: KAR_tick runs once a frame of the original's 20 a second.
 constexpr double CurlingFrameSeconds = 1.0 / 20.0;
@@ -73,11 +72,18 @@ constexpr std::int32_t StraightHead = 0x800;
 // A primitive's colour over 0x80 draws the texture as is.
 constexpr float ColorOne = 128.0F;
 
-constexpr std::string_view PlayerScoreSetting = "curling_hud.player";
-constexpr std::string_view OpponentScoreSetting = "curling_hud.opponent";
-constexpr std::string_view StatusSetting = "curling_hud.status";
+// The HUD document's settings (ui/curling_hud/logic.lua).
+constexpr std::array<std::array<std::string_view, 2>, 2> ScoreSettings{{
+    {"curling_hud.score_0_tens", "curling_hud.score_0_units"},
+    {"curling_hud.score_1_tens", "curling_hud.score_1_units"},
+}};
+constexpr std::string_view SecondOpponentSetting = "curling_hud.second";
+constexpr std::string_view ReadySetting = "curling_hud.ready";
+constexpr std::string_view GaugeTeamSetting = "curling_hud.gauge_team";
+constexpr std::string_view ChevronsSetting = "curling_hud.chevrons";
+constexpr std::string_view HandTeamSetting = "curling_hud.hand_team";
+constexpr std::string_view HandRowSetting = "curling_hud.hand_row";
 constexpr std::string_view PromptSetting = "curling_hud.prompt";
-constexpr std::string_view PowerSetting = "curling_hud.power";
 // KAR_tickHintBox: the hint page's four lines (the speaker's name, then three), as text keys.
 constexpr std::array<std::string_view, 4> HintSettings{
     "curling_hud.hint_name", "curling_hud.hint_1", "curling_hud.hint_2", "curling_hud.hint_3"};
@@ -144,38 +150,6 @@ std::optional<glm::mat4> rackPlace(const render::MapCamera& camera,
   place = glm::rotate(place, RackTilt, glm::vec3{1.0F, 0.0F, 0.0F});
   place = glm::rotate(place, assets::yawFromOriginal(stone.spin), glm::vec3{0.0F, 1.0F, 0.0F});
   return glm::scale(place, glm::vec3{pixels / mapPixels * RackDepth});
-}
-
-std::string_view statusOf(const game::curling::Match& match) {
-  if (match.hint()) {
-    return "curling.status.rules";
-  }
-  const bool player = match.throwingTeam() == static_cast<std::int32_t>(game::curling::PlayerTeam);
-  switch (match.phase()) {
-  case Phase::Ready:
-    return match.readyShown() ? "curling.status.ready" : "";
-  case Phase::Select:
-    return player ? "curling.status.select" : "curling.status.opponent";
-  case Phase::Aim:
-    return player ? "curling.status.aim" : "curling.status.opponent";
-  case Phase::Power:
-    return player ? "curling.status.power" : "curling.status.opponent";
-  case Phase::OpponentPlan:
-    return "curling.status.opponent";
-  case Phase::Release:
-  case Phase::Throwing:
-  case Phase::Rolling:
-    return "curling.status.rolling";
-  case Phase::Rings:
-  case Phase::Tally:
-    return "curling.status.tally";
-  case Phase::Demo:
-  case Phase::DemoThrow:
-  case Phase::DemoCamera:
-    return "curling.status.rules";
-  default:
-    return "";
-  }
 }
 
 // The first line of a hint page among the opponent's lines (KAR_D_8005B04C: the groups' pages one
@@ -533,17 +507,21 @@ void CurlingScreen::showHud() {
   if (match == nullptr) {
     return;
   }
-  const auto& teams = match->teams();
-  ui_->setSetting(PlayerScoreSetting, static_cast<double>(teams[game::curling::PlayerTeam].score));
-  ui_->setSetting(OpponentScoreSetting,
-                  static_cast<double>(teams[game::curling::OpponentTeam].score));
-  ui_->setSetting(StatusSetting, std::string{statusOf(*match)});
+  const game::curling::HudView hud = match->hud();
+  for (std::size_t team = 0; team < ScoreSettings.size(); ++team) {
+    for (std::size_t digit = 0; digit < 2; ++digit) {
+      ui_->setSetting(ScoreSettings.at(team).at(digit),
+                      static_cast<double>(hud.scores.at(team).at(digit)));
+    }
+  }
+  ui_->setSetting(SecondOpponentSetting, hud.secondOpponent ? 1.0 : 0.0);
+  ui_->setSetting(ReadySetting, hud.ready ? 1.0 : 0.0);
+  ui_->setSetting(GaugeTeamSetting, hud.gauge ? static_cast<double>(hud.gauge->team) : Hidden);
+  ui_->setSetting(ChevronsSetting, hud.gauge ? static_cast<double>(hud.gauge->chevrons) : 0.0);
+  ui_->setSetting(HandTeamSetting, hud.cursor ? static_cast<double>(hud.cursor->team) : Hidden);
+  ui_->setSetting(HandRowSetting, hud.cursor ? static_cast<double>(hud.cursor->row) : 0.0);
   const std::optional<std::int32_t> option = match->promptOption();
   ui_->setSetting(PromptSetting, option ? static_cast<double>(*option) : Hidden);
-  const bool gauge = match->phase() == Phase::Power &&
-                     match->throwingTeam() == static_cast<std::int32_t>(game::curling::PlayerTeam);
-  const std::int32_t limit = std::max(curling_->powerLimit(), 1);
-  ui_->setSetting(PowerSetting, gauge ? static_cast<double>(match->power()) / limit : Hidden);
   const auto hint = match->hint();
   const std::int32_t first = hint ? hintLine(hint->first, hint->second) : 0;
   for (std::size_t line = 0; line < HintSettings.size(); ++line) {

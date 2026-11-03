@@ -209,6 +209,40 @@ struct AimArrow {
 };
 [[nodiscard]] std::size_t stoneModelObject(std::size_t team, const Stone& stone);
 
+// KAR_renderScores: a score's two glyphs, the tens and the units (0 to 9). Under zero the tens are
+// MinusGlyph and the units the last digit of the magnitude.
+inline constexpr std::int32_t MinusGlyph = 10;
+[[nodiscard]] std::array<std::int32_t, 2> scoreGlyphs(std::int32_t score);
+
+// KAR_renderPowerMeter: one chevron for each step of 250 the power has reached, at most 10.
+inline constexpr std::int32_t PowerChevronStep = 250;
+inline constexpr std::int32_t PowerChevrons = 10;
+[[nodiscard]] std::int32_t powerChevrons(std::int32_t power);
+
+// What the HUD's sprites show this frame (KAR_tick's render calls).
+struct HudView {
+  // KAR_renderScores: the player's and the opponent's score glyphs (scoreGlyphs).
+  std::array<std::array<std::int32_t, 2>, 2> scores{};
+  // KAR_renderStoneCursor: the hand over the selected stone while a stone is picked (state 5):
+  // the thrower's rack (0 the player's, 1 the opponent's) and the stone's row.
+  struct Cursor {
+    std::int32_t team = 0;
+    std::int32_t row = 0;
+  };
+  std::optional<Cursor> cursor;
+  // KAR_renderPowerMeter: the gauge beside the thrower while the power is set and at the release
+  // (states 8 and 9).
+  struct Gauge {
+    std::int32_t team = 0;
+    std::int32_t chevrons = 0;
+  };
+  std::optional<Gauge> gauge;
+  // KAR_renderReadyPrompt: the blinking start sign.
+  bool ready = false;
+  // KAR_renderNamePlates: the second opponent's portrait instead of the first's.
+  bool secondOpponent = false;
+};
+
 // The throwers' marks (KAR_tickMatchState state 0).
 inline constexpr Point PlayerMark{.x = -0x190, .z = 0x578};
 inline constexpr Point OpponentMark{.x = 0x190, .z = 0x578};
@@ -255,6 +289,8 @@ public:
   [[nodiscard]] std::int32_t counter() const { return counter_; }
   // Whether "Ready" shows this frame (KAR_renderReadyPrompt).
   [[nodiscard]] bool readyShown() const { return state_ == 3 && (blink_ & 8) != 0; }
+  // The HUD's sprites this frame.
+  [[nodiscard]] HudView hud() const;
   // Bit i set: ring i's map objects show this frame (KAR_updateRingMarkers).
   [[nodiscard]] std::uint32_t litRings() const { return litRings_; }
   [[nodiscard]] bool finished() const {
