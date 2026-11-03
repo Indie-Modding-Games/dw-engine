@@ -177,6 +177,41 @@ TEST_CASE("a partner that falls loses the battle when the countdown ends, unless
   CHECK(resultOf(battle).care.happiness == -30);
 }
 
+namespace {
+
+// A battle whose enemies are beaten at once, with the partner's last HP drain on the frame before
+// their fall ends it: at `hp` HP it is hit for `hp`, less `spared`.
+BattleResult partnerHitAsTheEnemyFalls(std::int32_t hp, std::int32_t spared) {
+  BattleSetup setup = duel(evenStats(400, 300), evenStats(40, 20));
+  Battle probe = startBattle(setup, 7);
+  probe.defeatEnemies();
+  runToEnd(probe);
+  REQUIRE(resultOf(probe).outcome == Outcome::Victory);
+  const std::int64_t endFrame = probe.state().frame;
+  setup.partner.hp = hp;
+  Battle battle = startBattle(setup, 7);
+  battle.defeatEnemies();
+  while (battle.state().frame < endFrame - 1) {
+    battle.step();
+  }
+  battle.defeatPartner();
+  battle.restorePartner(spared, 0);
+  runToEnd(battle);
+  REQUIRE(battle.finished());
+  return resultOf(battle);
+}
+
+} // namespace
+
+// battle_main.c: BTL_handleVictorySequence ticks the battle frames before the end box, so the
+// partner's HP bar drains the damage still on its way. Measured in the original: 300 pending as
+// the victory starts take the partner from 727 HP to 427.
+TEST_CASE("a hit landing with the last enemy's fall still costs the partner its HP") {
+  const BattleResult won = partnerHitAsTheEnemyFalls(4, 1);
+  CHECK(won.outcome == Outcome::Victory);
+  CHECK(won.partnerHp == 1);
+}
+
 TEST_CASE("a lost battle gives the partner back the section's HP and MP, up to the maximums") {
   // dg 212, section 0x48 (the death map's script): add_stat 6 and 7; script_value.c:
   // enforceStatsLimits.

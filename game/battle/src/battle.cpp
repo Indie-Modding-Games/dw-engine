@@ -594,6 +594,14 @@ BattleEvents Battle::advance(double seconds,
 void Battle::finish(Outcome outcome, bool draw) {
   // BTL_deinitializeCombat: BTL_removeStatusEffects for every fighter.
   statusVisuals_.clear();
+  // battle_main.c: BTL_handleVictorySequence ticks the battle frames (41 at least) before the end
+  // box, so the partner's HP bar drains what damage is still on its way (measured: 300 pending at
+  // the win, 727 HP to 427).
+  if (outcome == Outcome::Victory) {
+    Fighter& partner = state_.partner();
+    partner.hp = std::max(partner.hp - partner.pendingDamage, 0);
+    partner.pendingDamage = 0;
+  }
   result_ = settleBattle(outcome, setup_, state_, *rules_, *moves_, random_);
   if (state_.matchClock) {
     result_->timeUp = state_.matchClock->seconds == 0;
