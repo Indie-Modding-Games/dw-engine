@@ -94,10 +94,13 @@ struct PlayerNames {
   std::string partner;
 };
 
-// Where the player is: the map and the place on it, as a save keeps it.
+// Where the player is: the map and the place on it, as a save keeps it, and where the partner
+// stands (main_menu.c: writeSavegame keeps both); no partner place in a save from before it was
+// kept.
 struct FieldPlace {
   std::string map;
   assets::SpawnPoint spawn;
+  std::optional<assets::SpawnPoint> partner;
 };
 
 // An autosave the session wrote, and why: its reasons in the order they were first asked.

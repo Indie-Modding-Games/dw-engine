@@ -91,8 +91,11 @@ musicModeOf(const std::vector<std::unique_ptr<SessionSystem>>& systems) {
 std::optional<FieldPlace> SessionState::currentPlace() const {
   if (field != nullptr && !field->mapId().empty()) {
     const game::field::CharacterState player = field->player();
+    const game::field::CharacterState follower = field->partner();
     return FieldPlace{.map = field->mapId(),
-                      .spawn = {.position = player.position, .yaw = player.yaw}};
+                      .spawn = {.position = player.position, .yaw = player.yaw},
+                      .partner =
+                          assets::SpawnPoint{.position = follower.position, .yaw = follower.yaw}};
   }
   return savedPlace;
 }

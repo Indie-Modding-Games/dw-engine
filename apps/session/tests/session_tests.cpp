@@ -460,6 +460,52 @@ TEST_CASE("a finished game saves where it continues and loads finished until a s
   CHECK_FALSE(loaded->savedPlace().has_value());
 }
 
+TEST_CASE("a game saved on the field loads with the player's and the partner's places") {
+  // main_menu.c: writeSavegame keeps the player's and the partner's positions; loadSavegame and
+  // initializeLoadedMap put both back.
+  const TestPacks packs;
+  const auto session = newGame(packs, nullptr);
+  SaveFile placed = session->saveFile().value();
+  const auto axes = [](const char* x, const char* y, const char* z) {
+    dwe::core::YamlNode position = dwe::core::YamlNode::sequence();
+    for (const char* axis : {x, y, z}) {
+      position.append(dwe::core::YamlNode::scalar(axis));
+    }
+    return position;
+  };
+  dwe::core::YamlNode playerOnly = dwe::core::YamlNode::mapping();
+  playerOnly.set("map", dwe::core::YamlNode::scalar("room08"));
+  playerOnly.set("position", axes("-300", "0", "790"));
+  playerOnly.set("yaw", dwe::core::YamlNode::scalar("1.5"));
+  dwe::core::YamlNode field = playerOnly;
+  field.set("partner_position", axes("-196", "0", "1029"));
+  field.set("partner_yaw", dwe::core::YamlNode::scalar("-0.25"));
+  placed.sections.at("field").state = field;
+  REQUIRE(session->loadFile(throughText(placed)));
+
+  // Saved again, both places come back as they were.
+  const auto loaded = newGame(packs, nullptr, 11);
+  REQUIRE(loaded->loadFile(throughText(session->saveFile().value())));
+  const auto& place = loaded->savedPlace();
+  REQUIRE(place.has_value());
+  CHECK(place->map == "room08");
+  CHECK(place->spawn.position.x == doctest::Approx(-300.0F));
+  CHECK(place->spawn.position.z == doctest::Approx(790.0F));
+  CHECK(place->spawn.yaw == doctest::Approx(1.5F));
+  REQUIRE(place->partner.has_value());
+  CHECK(place->partner->position.x == doctest::Approx(-196.0F));
+  CHECK(place->partner->position.z == doctest::Approx(1029.0F));
+  CHECK(place->partner->yaw == doctest::Approx(-0.25F));
+
+  // A save from before the partner's place was kept loads without one: the field puts the partner
+  // next to the player.
+  placed.sections.at("field").state = playerOnly;
+  REQUIRE(loaded->loadFile(throughText(placed)));
+  REQUIRE(loaded->savedPlace().has_value());
+  CHECK_FALSE(loaded->savedPlace()->partner.has_value());
+  CHECK(loaded->saveFile().value().sections.at("field").state.find("partner_position") == nullptr);
+}
+
 TEST_CASE("a new day autosaves only when the ruleset says so") {
   const TestPacks packs;
   // The original ruleset turns it on (save.yaml: autosave.on_new_day).

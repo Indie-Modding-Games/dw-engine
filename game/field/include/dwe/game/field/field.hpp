@@ -168,8 +168,11 @@ public:
   // before the player can move. Fails if the map has no such exit.
   core::Result<void> enterMap(const assets::MapDocument& map, std::int32_t exit);
 
-  // Enters a map at a given place, without a fade in, for tests and debug tools.
-  void enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn);
+  // Enters a map at a given place, without a fade in, for a loaded game, tests and debug tools. The
+  // partner stands at `partner` when it is given and free (main.c: initializeLoadedMap puts it back
+  // where the save left it), else next to the player.
+  void enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn,
+                  std::optional<assets::SpawnPoint> partner = std::nullopt);
 
   // Play starts on the map just entered (main.c: main: fadeFromBlack(0x28) after initializeMap):
   // the fade in lasts `transition.startFadeInFrames` and holds no one, so the map's cells run from
@@ -533,6 +536,8 @@ private:
   // player from the camera steps off first; whether it took this tick.
   bool makeRoomForPlayer(float seconds);
   void placePartnerNearPlayer();
+  // Puts the partner at `spot` if it fits there clear of the others; whether it did.
+  bool placePartnerAt(const assets::SpawnPoint& spot);
   // A character's body for the release rule and the overlap watch.
   struct Body {
     scene::Entity entity{};

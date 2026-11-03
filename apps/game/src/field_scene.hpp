@@ -83,8 +83,10 @@ struct FieldSceneDesc {
   // The map and exit to start at; field/warps' start when not given.
   std::optional<std::string> startMap;
   std::int32_t startExit = 0;
-  // A place on startMap to start at instead of its exit, as a saved game keeps it.
+  // A place on startMap to start at instead of its exit, as a saved game keeps it, and the
+  // partner's there (next to the player when not given or taken).
   std::optional<assets::SpawnPoint> startAt;
+  std::optional<assets::SpawnPoint> startPartnerAt;
   // Without startMap: the map, by its number in the original, and the exit a new game starts at
   // (map.c: initializeMap), instead of field/warps' start.
   std::optional<std::int32_t> startOriginalMap;
@@ -589,7 +591,8 @@ private:
             const std::optional<assets::AssetId>& otherModel = std::nullopt,
             MissingClips missingClips = MissingClips::Refuse, const ClipStandIns& standIns = {});
   core::Result<void> enterMap(const std::string& mapId, std::int32_t exit,
-                              std::optional<assets::SpawnPoint> at = std::nullopt);
+                              std::optional<assets::SpawnPoint> at = std::nullopt,
+                              std::optional<assets::SpawnPoint> partnerAt = std::nullopt);
   void animate(Actor& actor, double seconds);
   // Plays the sounds the actor's clip just ran through (attachSound).
   void playClipSounds(const Actor& actor);

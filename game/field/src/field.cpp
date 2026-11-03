@@ -244,7 +244,8 @@ core::Result<void> Field::enterMap(const assets::MapDocument& map, std::int32_t 
   return {};
 }
 
-void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn) {
+void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn,
+                       std::optional<assets::SpawnPoint> partner) {
   mapId_ = map.id;
   collision_ = map.collision;
   regions_ = map.regions;
@@ -295,7 +296,12 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
   freeTick_ = false;
   playerGlide_.on = false;
   partnerGlide_.on = false;
-  placePartnerNearPlayer();
+  // main.c: initializeLoadedMap puts the partner back where the save left it. The original moves an
+  // NPC it lands on off the map (or both characters to the exit); dwe puts a partner whose spot is
+  // taken or off the grid next to the player instead.
+  if (!partner || !placePartnerAt(*partner)) {
+    placePartnerNearPlayer();
+  }
   partnerTeleports_ = 0;
   if (scriptHeld_) {
     scriptCamera_ = spawn.position;
@@ -1481,6 +1487,34 @@ bool Field::makeRoomForPlayer(float seconds) {
                  distance);
   partnerMakesRoom_ = false;
   return false;
+}
+
+bool Field::placePartnerAt(const assets::SpawnPoint& spot) {
+  const float radius = rules_.partner.mover.radius;
+  // entityCheckCollision there looks for an NPC under the partner; the player may stand close.
+  const GroundSquare there{.centre = ground(spot.position), .half = radius};
+  const std::vector<Body> others = bodies();
+  const bool clear = std::ranges::none_of(
+      others, [&](const Body& body) { return body.who >= 2 && overlaps(there, squareOf(body)); });
+  // The original puts it back without looking at the grid; a spot inside a wall (a save edited by
+  // hand or from another map) is the only one refused.
+  if (!clear || collision_.isBlocked(assets::collisionCellAt(spot.position))) {
+    core::logDebug(
+        "[port:field] initializeLoadedMap (main.c:3803): the partner's saved spot ({:.0f}, "
+        "{:.0f}) is taken, it stands next to the player",
+        spot.position.x, spot.position.z);
+    return false;
+  }
+  entt::registry& registry = world_->registry();
+  scene::place(registry.get<Transform>(partner_), spot.position, spot.yaw);
+  registry.get<AnimationIntent>(partner_) = {};
+  follow_.forgetTrail(originalPointOf(registry.get<Transform>(player_).position));
+  partnerStuckSeconds_ = 0.0F;
+  partnerFollowing_ = false;
+  core::logDebug("[port:field] initializeLoadedMap (main.c:3803): the partner back at its saved "
+                 "spot ({:.0f}, {:.0f})",
+                 spot.position.x, spot.position.z);
+  return true;
 }
 
 void Field::placePartnerNearPlayer() {

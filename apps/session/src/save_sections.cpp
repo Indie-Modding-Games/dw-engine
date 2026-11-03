@@ -35,6 +35,8 @@ constexpr std::string_view MapKey = "map";
 constexpr std::string_view PositionKey = "position";
 constexpr std::string_view YawKey = "yaw";
 constexpr std::string_view ClearedKey = "cleared";
+constexpr std::string_view PartnerPositionKey = "partner_position";
+constexpr std::string_view PartnerYawKey = "partner_yaw";
 constexpr std::string_view PartnerKey = "partner";
 constexpr std::string_view SystemsKey = "session";
 constexpr std::size_t PositionAxes = 3;
@@ -53,6 +55,15 @@ YamlNode positionOf(const glm::vec3& position) {
   axes.append(scalarOf(position.y));
   axes.append(scalarOf(position.z));
   return axes;
+}
+
+// A position of three axes, or the reader fails at the node.
+glm::vec3 positionIn(YamlReader& reader, const YamlNode& node, std::string_view what) {
+  const auto axes = reader.sequence(node, what, PositionAxes);
+  if (!reader.ok()) {
+    return {};
+  }
+  return {reader.number(axes[0]), reader.number(axes[1]), reader.number(axes[2])};
 }
 
 // A number parsed whole by std::from_chars, or the reader fails at the node.
@@ -192,6 +203,11 @@ core::Result<YamlNode> FieldSave::write() const {
     node.set(std::string{MapKey}, YamlNode::scalar(place->map));
     node.set(std::string{PositionKey}, positionOf(place->spawn.position));
     node.set(std::string{YawKey}, scalarOf(place->spawn.yaw));
+    // main_menu.c: writeSavegame keeps the partner's position too.
+    if (place->partner) {
+      node.set(std::string{PartnerPositionKey}, positionOf(place->partner->position));
+      node.set(std::string{PartnerYawKey}, scalarOf(place->partner->yaw));
+    }
   }
   // main_menu.c: writeSavegame keeps MAIN_STATE; only a finished game's (2) is written.
   if (state_->cleared) {
@@ -217,18 +233,21 @@ core::Result<void> FieldSave::read(const YamlNode& state) {
     state_->cleared = finished;
     return {};
   }
+  // The partner's place came after the player's: a save without it puts the partner next to him.
   if (!reader.expectKeys(state, messages::FieldStateText, {MapKey, PositionKey, YawKey},
-                         {ClearedKey})) {
+                         {ClearedKey, PartnerPositionKey, PartnerYawKey})) {
     return std::unexpected{reader.error(messages::FieldStateText)};
   }
   FieldPlace place;
   const YamlNode& map = reader.field(state, MapKey);
   place.map = reader.ok() ? reader.text(map) : std::string{};
-  const auto axes = reader.sequence(reader.field(state, PositionKey), PositionKey, PositionAxes);
-  if (reader.ok()) {
-    place.spawn.position = {reader.number(axes[0]), reader.number(axes[1]), reader.number(axes[2])};
-  }
+  place.spawn.position = positionIn(reader, reader.field(state, PositionKey), PositionKey);
   place.spawn.yaw = reader.number(reader.field(state, YawKey));
+  if (state.find(PartnerPositionKey) != nullptr) {
+    place.partner = assets::SpawnPoint{
+        .position = positionIn(reader, reader.field(state, PartnerPositionKey), PartnerPositionKey),
+        .yaw = reader.number(reader.field(state, PartnerYawKey))};
+  }
   auto done = reader.finish(std::move(place), messages::FieldStateText);
   if (!done) {
     return std::unexpected{done.error()};

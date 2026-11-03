@@ -354,6 +354,7 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
       {.startMap = savedPlace ? std::optional{savedPlace->map} : options.startMap,
        .startExit = options.startExit,
        .startAt = savedPlace ? std::optional{savedPlace->spawn} : std::nullopt,
+       .startPartnerAt = savedPlace ? savedPlace->partner : std::nullopt,
        .startOriginalMap =
            newGameStart ? std::optional{newGameStart->map} : std::optional<std::int32_t>{},
        .startOriginalExit = newGameStart ? newGameStart->exit : 0,

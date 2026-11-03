@@ -121,6 +121,28 @@ TEST_CASE("the same input gives the same move at any tick rate") {
   }
 }
 
+TEST_CASE("a loaded game puts the partner back where it stood, or next to the player if taken") {
+  // main.c: initializeLoadedMap restores the partner's saved position.
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F), at(600.0F, 400.0F, 1.0F));
+  CHECK(field.partner().position.x == doctest::Approx(600.0F));
+  CHECK(field.partner().position.z == doctest::Approx(400.0F));
+  CHECK(field.partner().yaw == doctest::Approx(1.0F));
+  // Close to the player is no reason to move it: only an NPC is (entityCheckCollision).
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F), at(100.0F, 150.0F));
+  CHECK(field.partner().position.x == doctest::Approx(100.0F));
+  CHECK(field.partner().position.z == doctest::Approx(150.0F));
+
+  // A spot off the room's free cells: next to the player, as a save without a partner place.
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F), at(5000.0F, 5000.0F));
+  const float beside = partnerDistance(field);
+  CHECK(beside > 0.0F);
+  CHECK(beside < 400.0F);
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  CHECK(partnerDistance(field) == doctest::Approx(beside));
+}
+
 TEST_CASE(
     "the player steps on the original's frames, turning on the press and stopping on release") {
   dwe::scene::World world;

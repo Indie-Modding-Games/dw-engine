@@ -250,7 +250,9 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
   scene->field_->setPartnerMood(scene->partnerMood());
 
   const std::optional<assets::SpawnPoint> startAt = desc.startMap ? desc.startAt : std::nullopt;
-  if (auto entered = scene->enterMap(startMap, startExit, startAt); !entered) {
+  if (auto entered = scene->enterMap(startMap, startExit, startAt,
+                                     startAt ? desc.startPartnerAt : std::nullopt);
+      !entered) {
     return std::unexpected{entered.error()};
   }
   if (!startAt) {
@@ -409,7 +411,8 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
 }
 
 core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t exit,
-                                        std::optional<assets::SpawnPoint> at) {
+                                        std::optional<assets::SpawnPoint> at,
+                                        std::optional<assets::SpawnPoint> partnerAt) {
   const auto start = Clock::now();
   auto scene = render::loadMapSceneData(*files_, mapId);
   if (!scene) {
@@ -433,7 +436,7 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
   paintSigns(scene->images);
   const auto loaded = Clock::now();
   if (at) {
-    field_->enterMapAt(scene->document, *at);
+    field_->enterMapAt(scene->document, *at, partnerAt);
   } else if (auto entered = field_->enterMap(scene->document, exit); !entered) {
     return core::fail(std::format("map {}: {}", mapId, entered.error().message));
   }

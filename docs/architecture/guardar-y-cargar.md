@@ -274,7 +274,10 @@ Un registro cuyo guardado no se escribe se deshace: el original lo guarda dentro
 `battle_registry.{hpp,cpp}`); una partida sin ella empieza sin registrados. El campo y el reloj esperan mientras la
 máquina está abierta. Las cajas son las del original, donde el original las dibuja (`ui/save_machine`, en los dos
 aspectos). El modo versus que lucha contra los registrados es de la fase 5 (pregunta 3). El guardado del fin del
-juego (rutina 54, `gameClearSave`: la ciudad como mapa de vuelta y la película al cargar) va en la 5b-2.
+juego (rutina 54, `gameClearSave`, 5b-2) está hecho: marca la partida terminada (`cleared: true` en la sección `field`,
+el `MAIN_STATE` 2), la guarda con la ciudad de `getFileCityTopMap` como mapa de vuelta y la posición del jugador, y al
+cargarla suena la película ED2 antes del campo (`apps/session/game_clear.hpp`, `SaveMachine::openClearSave`); la
+máquina y el menú de dormir vuelven a `MAIN_STATE` 1.
 
 ### 3.8 Volver a la portada
 
