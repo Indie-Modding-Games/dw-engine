@@ -18,6 +18,7 @@ steps:
   - tap: {key: f10}
   - wait: {menu_open: true, seconds: 0.5, timeout: 5}
   - expect_setting: {has_class.pause_menu#page-options.hidden: "false"}
+  - expect_setting: {has_class.pause_menu#panel.box-closed: "false"}
   - screenshot: options-after-player
   - tap: {key: f10}
   - wait: {menu_open: false, seconds: 0.5, timeout: 5}
@@ -31,4 +32,5 @@ steps:
   - tap: {key: f10}
   - wait: {menu_open: true, seconds: 0.5, timeout: 5}
   - expect_setting: {has_class.pause_menu#page-options.hidden: "false"}
+  - expect_setting: {has_class.pause_menu#panel.box-closed: "false"}
   - screenshot: options-after-partner

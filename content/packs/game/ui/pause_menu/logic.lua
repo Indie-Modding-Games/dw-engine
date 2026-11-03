@@ -1722,6 +1722,9 @@ function on_show(document)
   options_direct = ui.setting("pause_menu.start_page") == "options"
   if options_direct then
     show_page(document, "options")
+    -- The menu's box was closed the last time it went away (Esc, Tab, another menu): open it
+    -- again, or the options page would be there but its box would stay hidden.
+    open_menu_box(document)
   elseif ui.setting("pause_menu.preview_player") == true then
     parents.player = "main"
     show_page(document, "player")

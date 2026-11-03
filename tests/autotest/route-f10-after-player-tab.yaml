@@ -1,0 +1,22 @@
+# F10 opens the options after the player page was minimized with Tab in the original look.
+name: f10-after-player-tab
+device: keyboard
+timeout: 120
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - wait: {setting: {screen_fade: 0}, timeout: 10}
+  - menu: open
+  - wait: {menu_open: true, seconds: 0.6, timeout: 5}
+  - menu_select: open-player
+  - wait: {seconds: 1}
+  - screenshot: player-page
+  # Tab on the player page minimizes it into the tools panel.
+  - tap: {key: tab}
+  - wait: {seconds: 0.5}
+  - screenshot: player-minimized
+  # F10 must show the options page.
+  - tap: {key: f10}
+  - wait: {menu_open: true, seconds: 0.5, timeout: 5}
+  - expect_setting: {has_class.pause_menu#page-options.hidden: "false"}
+  - expect_setting: {has_class.pause_menu#panel.box-closed: "false"}
+  - screenshot: options-after-player-tab
