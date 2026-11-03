@@ -129,7 +129,33 @@ core::Result<void> SaveSlots::erase(SlotId slot) {
   if (auto valid = checkSlot(slot); !valid) {
     return valid;
   }
-  return storage_->remove(slotFileName(slot), slotBackupName(slot));
+  // A slot's erase leaves nothing behind: its save and its .bak both go, so no backup of a save the
+  // player deleted is kept.
+  const auto eraseFiles = [this](SlotId target) -> core::Result<void> {
+    if (auto removed = storage_->remove(slotFileName(target), ""); !removed) {
+      return removed;
+    }
+    return storage_->remove(slotBackupName(target), "");
+  };
+  if (auto removed = eraseFiles(slot); !removed) {
+    return removed;
+  }
+  // An autosave names the manual slot of its playthrough in its summary; erasing that playthrough
+  // erases its autosaves too, so no autosave of a deleted save is left behind.
+  if (slot.kind == SlotKind::Manual) {
+    std::string erased = slotFileName(slot);
+    erased.erase(erased.size() - SlotFileExtension.size());
+    for (std::int32_t index = 1; index <= autosaveSlots_; ++index) {
+      const SlotId autosave{.kind = SlotKind::Autosave, .index = index};
+      const SlotInfo info = readInfo(autosave);
+      if (info.header && info.header->summary.slot == erased) {
+        if (auto removed = eraseFiles(autosave); !removed) {
+          return removed;
+        }
+      }
+    }
+  }
+  return {};
 }
 
 core::Result<SaveFile> SaveSlots::readFile(SlotId slot, const std::string& name) const {
