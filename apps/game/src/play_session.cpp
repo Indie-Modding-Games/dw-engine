@@ -773,8 +773,10 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent,
       fishingScreen_.tick(*scene_, fishing, TickSeconds);
       return;
     }
-    // kar.c: the stones game runs instead of the field while the story waits on it.
+    // kar.c: the stones game runs instead of the field while the story waits on it. It starts on
+    // the arrival at the rink, under the map's fade in, which runs on with the drawing (fade.c).
     if (curlingScreen_.active()) {
+      scene_->field().tickFadeIn(static_cast<float>(TickSeconds));
       curlingScreen_.tick(*scene_, TickSeconds);
       return;
     }

@@ -290,7 +290,7 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn,
   lastPlayerCell_ = assets::collisionCellAt(spawn.position);
   // map.c: loadMap starts the way back on the cell the player enters on (initializeTamerWaypoints).
   playerTrail_.enter(lastPlayerCell_);
-  lastTrigger_ = collision_.trigger(lastPlayerCell_).value_or(0);
+  lastTrigger_ = collision_.trigger(assets::originalCellAt(spawn.position)).value_or(0);
   follow_.forgetTrail(originalPointOf(spawn.position));
   partnerStuckSeconds_ = 0.0F;
   partnerMakesRoom_ = false;
@@ -1118,11 +1118,13 @@ glm::vec2 Field::followPath(glm::vec3& position, float distance) {
 
 // tamer.c: checkMapInteraction and map_collision.c: getTileTrigger: 110-119 warp through exit value
 // - 110; the other values go to later systems. The original tests the cell every frame; this fires
-// on stepping onto it.
+// on stepping onto it. The cell is the one getTileTrigger reads (originalCellAt): on a cell's edge
+// it is the neighbour away from 0, as where frzl17's exit 1 puts the player (-400, 1400), on the
+// curling's start cell.
 void Field::checkTriggers() {
   exitClosedNow_ = false;
   const glm::vec3 position = world_->registry().get<Transform>(player_).position;
-  const CollisionCell cell = assets::collisionCellAt(position);
+  const CollisionCell cell = assets::originalCellAt(position);
   const std::int32_t value = collision_.trigger(cell).value_or(0);
   if (value != checkedCell_) {
     checkedCell_ = value;
@@ -1177,7 +1179,7 @@ void Field::checkConfirm() {
     return;
   }
   const glm::vec3 position = world_->registry().get<Transform>(player_).position;
-  const std::int32_t value = collision_.trigger(assets::collisionCellAt(position)).value_or(0);
+  const std::int32_t value = collision_.trigger(assets::originalCellAt(position)).value_or(0);
   if (warpViaOf(value) != WarpVia::Confirm) {
     return;
   }

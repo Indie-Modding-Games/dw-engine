@@ -1,7 +1,7 @@
 # Stage 5 of the story with the keyboard, the curling with Penguinmon: from frzl15 on a seeded game (run with
 # --start frzl15,2 and --story-stage stage_5) the player talks to Penguinmon (script 129 section 6, then script 206),
-# who takes the player to the ice of frzl17 (trigger 357). The cells of section 0x33 there start the match (partner
-# routine 1, the curling screen); the route throws every stone with confirm. The match's end writes the result in
+# who takes the player to the ice of frzl17 (trigger 357). Exit 1 puts the player on the cell of section 0x33, which
+# starts the match on arrival (partner routine 1, the curling screen); the route throws every stone with confirm. The match's end writes the result in
 # variable 121 and takes the player back to frzl15, where section 0x0a of script 206 answers it: with a win
 # Penguinmon joins the city (trigger 257).
 name: etapa5-curling
@@ -20,10 +20,9 @@ steps:
   - wait: {shown: story_textbox, seconds: 1, timeout: 20}
   - screenshot: frzl15-penguinmon
   - repeat: {times: 9, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
-  - wait: {map: frzl17, seconds: 2, timeout: 60}
+  - wait: {map: frzl17, timeout: 60}
   - expect_setting: {story.trigger.357: "true"}
-  - screenshot: frzl17
-  - walk_to: {trigger: 51, stop_on_scene: true, timeout: 120}
+  # The match starts on arrival: the player does not move.
   - wait: {shown: curling_hud, seconds: 1, timeout: 60}
   - screenshot: frzl17-curling
   # Confirm answers the match's question, takes each stone, its aim and the power meter wherever it stands.

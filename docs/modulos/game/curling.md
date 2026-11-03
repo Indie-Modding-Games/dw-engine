@@ -16,7 +16,8 @@ if (match.finished()) { /* match.result(): 2, 1 o 0 */ }
 
 - **Inicio**: el guion lo abre con `call_partner_routine(1)` al pisar la casilla de salida de la pista (frzl17,
   sección 0x33) después de hablar con el rival (variable 113 a 1, variable 122 con el rival: 0 el primero, 1 el
-  segundo). `session::CurlingAdapter` crea la partida y `apps/game/src/curling_screen.cpp` la juega en lugar del
+  segundo). El rival lleva al jugador a frzl17 por la salida 1, que lo deja encima de esa casilla: la partida
+  empieza al llegar, sin moverse. `session::CurlingAdapter` crea la partida y `apps/game/src/curling_screen.cpp` la juega en lugar del
   campo.
 - **Controles** (teclado primero): Arriba/Abajo (W/S o flechas) eligen piedra y opción, Izquierda/Derecha (A/D o
   flechas) giran el tiro (Arriba/Abajo desplazan la vista mientras se apunta), Intro o Espacio confirman (piedra, dirección y fuerza cuando el indicador está donde se quiere).
@@ -32,6 +33,7 @@ probable y está marcado en el código), **Hueco** (falta).
 
 | Regla | Decomp | Aquí | Test | Estado |
 |---|---|---|---|---|
+| La partida empieza al llegar a la pista | `script 131` sección 0x33, `checkMapInteraction`, `map_collision.c: getTileTrigger` | `Field::checkTriggers` lee la celda del original (`originalCellAt`) | `field_tests`: "a step cell is the one the original reads ..."; ruta `etapa5-curling` | Igual. Medido en el original (estado `curling_start` del MCP): al entrar por la salida 1 sale la pregunta sin moverse. Antes el jugador quedaba en la pista sin que pasara nada hasta salir de la celda y volver |
 | Piedras de cada equipo (tipo por tirada sobre la tabla, peso por tipo) y de 0 a 2 obstáculos | `kar.c: KAR_setupMatch` | `Match::setupMatch` | setupMatch draws | Igual (mismo orden de tiradas, `rand() % n`) |
 | Deslizamiento: avanza velocidad/peso, conserva el 98 %, se para bajo 2; las piedras con pinchos se clavan al pararse | `KAR_tickStones` | `tickStones` | tickStones | Igual |
 | Una piedra parada cerca de los lanzadores sale del juego | `KAR_checkStonesStopped` | `checkStonesStopped` | stopped stone goes out | Igual |

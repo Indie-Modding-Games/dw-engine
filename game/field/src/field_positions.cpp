@@ -233,7 +233,7 @@ std::int32_t Field::separateActors(std::string_view why) {
     ++moved;
     if (body.who == PlayerWho) {
       lastPlayerCell_ = assets::collisionCellAt(*spot);
-      lastTrigger_ = collision_.trigger(lastPlayerCell_).value_or(0);
+      lastTrigger_ = collision_.trigger(assets::originalCellAt(*spot)).value_or(0);
       moveTarget_.reset();
       path_.clear();
     } else {

@@ -1408,6 +1408,30 @@ TEST_CASE("a map change's fade protects the game from the warp until the fade in
   CHECK_FALSE(field.fadeProtected());
 }
 
+TEST_CASE("a step cell is the one the original reads, the neighbour away from 0 on an edge") {
+  // map_collision.c: getTileTrigger (getModelTile) truncates toward 0 and then takes one column
+  // less for x < 0 and one row less for z > 0: frzl17's exit 1 puts the player on (-400, 1400), the
+  // corner of four cells, and the curling's step cell (column 45, row 35) is the one it reads, so
+  // the match starts on arrival.
+  MapDocument rink = roomMap("rink");
+  rink.warps.at(1).spawn = {-400, 0, 1400};
+  const glm::vec3 spawn = dwe::assets::toWorldPosition({-400, 0, 1400});
+  const CollisionCell start = dwe::assets::originalCellAt(spawn);
+  CHECK(start == CollisionCell{.column = 45, .row = 35});
+  CHECK_FALSE(start == dwe::assets::collisionCellAt(spawn));
+  fill(rink, start, start, 51);
+
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  REQUIRE(field.enterMap(rink, 1).has_value());
+  field.startPlay();
+  field.tick(Tick);
+  CHECK(std::ranges::find(field.cellSections(), 51) != field.cellSections().end());
+  // Standing on it, the cell asks again every frame (tamer.c: checkMapInteraction).
+  field.tick(Tick);
+  CHECK(std::ranges::find(field.cellSections(), 51) != field.cellSections().end());
+}
+
 TEST_CASE("play starts with a long fade in that holds no one, and a map change then stays dark") {
   // main.c: main: fadeFromBlack(0x28) after the first map: a new game's arrival cell runs on the
   // first frame, and its scripted map change fades out from the fade in's dark first shade
