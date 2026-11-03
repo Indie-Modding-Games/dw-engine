@@ -67,6 +67,37 @@ std::string rulesetFor(const assets::VirtualFileSystem& files, const Options& op
   return play.rulesetId.value_or(options.ruleset);
 }
 
+// A playthrough played without saving has no slot, so an older one of those left autosaves whose
+// summary names no manual slot. Starting another without saving drops them: playing without saving
+// leaves no autosave behind. Autosaves that name a manual slot are left to it (erasing that slot
+// erases them, SaveSlots::erase).
+void eraseAutosavesWithoutSlot(const assets::VirtualFileSystem& files, const Options& options,
+                               bool keepsSaves) {
+  if (!keepsSaves && !options.saves) {
+    return;
+  }
+  const auto folder = savesFolder(options);
+  if (!folder) {
+    return;
+  }
+  const auto settings = game::save::loadSaveSettings(files);
+  if (!settings) {
+    return;
+  }
+  game::save::DiskSaveStorage storage{*folder};
+  game::save::SaveSlots slots{storage, *settings};
+  for (const game::save::SlotInfo& info : slots.list()) {
+    if (info.slot.kind != game::save::SlotKind::Autosave || !info.header ||
+        !info.header->summary.slot.empty()) {
+      continue;
+    }
+    if (auto erased = slots.erase(info.slot); !erased) {
+      core::logWarning("saves: could not drop the autosave without a slot: {}",
+                       erased.error().message);
+    }
+  }
+}
+
 } // namespace
 
 std::unique_ptr<game::save::DiskSaveStorage> saveStorageFor(const Options& options,
@@ -85,6 +116,9 @@ std::unique_ptr<game::save::DiskSaveStorage> saveStorageFor(const Options& optio
 core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const Options& options,
                                   bool keepsSaves, const PlayStart& play, audio::Audio* sound) {
   // A game played without saving has no slots: its autosaves and saves are dropped.
+  if (play.withoutSaving) {
+    eraseAutosavesWithoutSlot(files, options, keepsSaves);
+  }
   GameStart start{.storage = play.withoutSaving ? nullptr : saveStorageFor(options, keepsSaves),
                   .session = nullptr,
                   .systems = session::createGameSystems(files)};

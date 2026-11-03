@@ -192,6 +192,30 @@ TEST_CASE("slots are listed, saved, loaded and backed up") {
   CHECK_FALSE(slots.load({.kind = SlotKind::Autosave, .index = 3}));
 }
 
+TEST_CASE("erasing a manual slot erases its autosaves and leaves other playthroughs' alone") {
+  MemorySaveStorage storage;
+  SaveSlots slots{storage, parseSaveSettings(Settings).value()};
+  const SlotId first{.kind = SlotKind::Manual, .index = 1};
+  const SlotId second{.kind = SlotKind::Manual, .index = 2};
+  const SlotId autosaveOne{.kind = SlotKind::Autosave, .index = 1};
+  const SlotId autosaveTwo{.kind = SlotKind::Autosave, .index = 2};
+
+  SaveFile ofFirst = fileLabelled("first", at(8));
+  ofFirst.header.summary.slot = "slot_01";
+  SaveFile ofSecond = fileLabelled("second", at(9));
+  ofSecond.header.summary.slot = "slot_02";
+  REQUIRE(slots.save(autosaveOne, ofFirst));
+  REQUIRE(slots.save(autosaveTwo, ofSecond));
+  REQUIRE(slots.save(first, fileLabelled("first", at(8))));
+  REQUIRE(slots.save(second, fileLabelled("second", at(9))));
+
+  REQUIRE(slots.erase(first));
+  CHECK_FALSE(storage.read("autosave_01.yaml").value().has_value());
+  CHECK(storage.read("autosave_02.yaml").value().has_value());
+  CHECK_FALSE(storage.read("slot_01.yaml").value().has_value());
+  CHECK(storage.read("slot_02.yaml").value().has_value());
+}
+
 TEST_CASE("the list fills the summary of saves that have none with the game's reader") {
   MemorySaveStorage storage;
   SaveSlots slots{storage, parseSaveSettings(Settings).value()};
