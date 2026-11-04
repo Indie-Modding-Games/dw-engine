@@ -1223,6 +1223,12 @@ int runGame(const Options& requested) {
         gameSeconds = ticks * TickSeconds;
       }
     }
+    if (autotest && !routeOver) {
+      if (const int steered = autotest->ticksThisFrame(ticks); steered < ticks) {
+        ticks = steered;
+        gameSeconds = ticks * TickSeconds;
+      }
+    }
     sound.update(ticks * TickSeconds);
     for (int tick = 0; tick < ticks; ++tick) {
       if (autotest && !routeOver) {

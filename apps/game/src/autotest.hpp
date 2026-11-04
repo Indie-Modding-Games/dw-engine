@@ -241,6 +241,14 @@ public:
   // Notes a map change for the report.
   void mapChanged(const MapChangeTiming& timing);
 
+  // The logic ticks a frame runs, out of the `ticks` its time gives: a walk_to with the keys or
+  // the stick steers once a frame, so it caps them at SteeredTicks. A slow frame (a software
+  // renderer draws a few frames a second) would otherwise run its whole quarter second on the last
+  // frame's keys, and a run overshoots a turn of the path into a warp cell beside it (mgen02's way
+  // back down next to the arrival from below). The game's own ticks are fixed, so this only slows
+  // the route's clock.
+  [[nodiscard]] int ticksThisFrame(int ticks) const;
+
   [[nodiscard]] bool finished() const { return result_.has_value(); }
 
   // Whether the route starts at the main menu (AutotestRoute::mainMenu).
@@ -362,6 +370,8 @@ private:
   std::vector<std::string> textFailures_;
   std::size_t stepIndex_ = 0;
   std::unique_ptr<Progress> progress_;
+  // The most logic ticks a frame runs while a walk steers (ticksThisFrame): 15 turns a second.
+  static constexpr int SteeredTicks = 4;
   double runStart_ = -1.0;
   std::deque<Action> actions_;
   std::uint64_t lastActionTick_ = 0;
