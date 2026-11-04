@@ -30,6 +30,7 @@
 #include <dwe/session/story_game_orders.hpp>
 #include <dwe/session/story_scenes.hpp>
 #include <dwe/session/tournament_adapter.hpp>
+#include <dwe/session/weather_seed.hpp>
 
 #include <string_view>
 #include <utility>
@@ -250,6 +251,9 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   auto mapVisits = std::make_unique<MapVisits>();
   game.mapVisits = mapVisits.get();
   game.systems.push_back(std::move(mapVisits));
+  auto weather = std::make_unique<WeatherSeed>();
+  game.weather = weather.get();
+  game.systems.push_back(std::move(weather));
   return game;
 }
 

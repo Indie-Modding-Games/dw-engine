@@ -77,6 +77,7 @@ local entries = {
     "shadows",
     "enhanced-lighting",
     "vivid-colors",
+    "weather",
     "display-mode",
     "ui-scale",
     "quit",
@@ -200,6 +201,15 @@ local function refresh(document)
   end
   value("enhanced-lighting", on_off("enhanced_lighting"))
   value("vivid-colors", on_off("vivid_colors"))
+  -- The weather, on unless turned off (the game publishes it; an engine improvement).
+  local weather = ui.setting("weather") ~= false
+  value(
+    "weather",
+    t(
+      (orig and "main_menu.original.option.minimap." or "pause_menu.minimap_mode.")
+        .. (weather and "on" or "off")
+    )
+  )
   value(
     "display-mode",
     t(
@@ -275,7 +285,7 @@ local function lay_out(document)
   for _, id in ipairs({ "erase", "battle", "options" }) do
     show(id, orig and shown == "menu")
   end
-  for _, id in ipairs({ "language", "text-font", "ui-skin", "chibi-style", "quit" }) do
+  for _, id in ipairs({ "language", "text-font", "ui-skin", "chibi-style", "weather", "quit" }) do
     show(id, not orig or shown == "options")
   end
   for _, id in ipairs({
@@ -440,6 +450,9 @@ local options = {
   end,
   ["vivid-colors"] = function(_step)
     ui.send("vivid_colors", ui.setting("vivid_colors") == false)
+  end,
+  weather = function(_step)
+    ui.send("weather", ui.setting("weather") == false)
   end,
   ["display-mode"] = function(_step)
     ui.send("fullscreen", not ui.setting("fullscreen"))

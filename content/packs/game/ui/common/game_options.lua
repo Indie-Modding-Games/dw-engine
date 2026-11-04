@@ -172,6 +172,9 @@ game_options = {
     label = "pause_menu.vivid_colors",
     default = true,
   },
+  -- Weather: rain, snow, clouds and sun on the island's outdoor maps (on by default; off shows
+  -- every map as the original, which has no weather). It never changes a rule.
+  { id = "weather", setting = "weather", label = "pause_menu.weather", default = true },
 }
 
 -- The option's current value: what the game published, or its default.

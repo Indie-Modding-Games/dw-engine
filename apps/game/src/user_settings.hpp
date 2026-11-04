@@ -83,6 +83,9 @@ struct UserSettings {
   // Vivid colours (vivid_colors: true, false): vibrance, a gentle contrast and a soft bloom over
   // the field; on when not chosen.
   std::optional<bool> vividColors = std::nullopt;
+  // Whether the field shows the weather (weather: true, false; game::weather, an engine
+  // improvement); on when not chosen.
+  std::optional<bool> weather = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

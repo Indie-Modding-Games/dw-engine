@@ -44,6 +44,7 @@ constexpr std::string_view MinimapEnemiesKey = "minimap_enemies";
 constexpr std::string_view ShadowsKey = "shadows";
 constexpr std::string_view EnhancedLightingKey = "enhanced_lighting";
 constexpr std::string_view VividColorsKey = "vivid_colors";
+constexpr std::string_view WeatherKey = "weather";
 
 } // namespace
 
@@ -128,6 +129,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* vivid = tree->find(VividColorsKey)) {
       settings.vividColors = reader.boolean(*vivid);
+    }
+    if (const core::YamlNode* weather = tree->find(WeatherKey)) {
+      settings.weather = reader.boolean(*weather);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -223,6 +227,9 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.vividColors) {
     root.set(std::string{VividColorsKey},
              core::YamlNode::scalar(*settings.vividColors ? "true" : "false"));
+  }
+  if (settings.weather) {
+    root.set(std::string{WeatherKey}, core::YamlNode::scalar(*settings.weather ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

@@ -163,6 +163,11 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
     return std::unexpected{prims.error()};
   }
   scene->primDrawer_ = std::move(*prims);
+  auto weather = WeatherDrawer::create(renderer);
+  if (!weather) {
+    return std::unexpected{weather.error()};
+  }
+  scene->weatherDrawer_ = std::move(*weather);
   scene->renderer_ = &renderer;
   auto grade = render::SceneGrade::create(renderer);
   if (!grade) {
@@ -170,12 +175,15 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
   }
   scene->grade_ = std::move(*grade);
   scene->mapLights_ = loadMapLights(files);
+  // The weather over the map and its characters, under the screen primitives (the mist, the
+  // effects' flashes, the story's fades) and the interface.
   scene->drawers_ = {&scene->mapRenderer_->backgroundDrawer(),
                      &scene->mapRenderer_->groundDrawer(),
                      &scene->cameraSync_,
                      &scene->models_->opaque(),
                      &scene->mapRenderer_->layerDrawer(),
                      &scene->models_->translucent(),
+                     scene->weatherDrawer_.get(),
                      scene->primDrawer_.get()};
   scene->stageDrawers_ = {&scene->cameraSync_, &scene->models_->opaque(),
                           &scene->models_->translucent(), scene->primDrawer_.get()};
@@ -183,6 +191,12 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
   auto rules = game::field::loadFieldRules(files);
   if (!rules) {
     return core::fail(std::format("field/rules: {}", rules.error().message));
+  }
+  if (auto climate = game::weather::loadClimateRules(files)) {
+    scene->weatherBlend_ = game::weather::WeatherBlend{climate->fadeSeconds};
+    scene->climate_ = std::move(*climate);
+  } else {
+    core::logWarning("field: no weather: {}", climate.error().message);
   }
   auto warps = game::field::loadFieldWarps(files);
   if (!warps) {
@@ -461,6 +475,7 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
   time_ = render::timeOfDayAt(clockHour_, schedule_);
   fixedTime_ = fixedTime;
   outdoor_ = !fixedTime && scene->images.backgroundPalettes.size() > 1;
+  enterWeatherArea(mapId, fixedTime);
   if (auto set = mapRenderer_->setMap(*scene, scene->backgroundVariant(time_, fixedTime)); !set) {
     return core::fail(std::format("map {}: {}", mapId, set.error().message));
   }
@@ -1003,6 +1018,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   // lights switch when it ends.
   mapRenderer_->setFocusPixel(cameraPixel_);
   mapRenderer_->update(animationSeconds, frameSeconds, *cameraFocus_);
+  updateWeather(frameSeconds, paused);
   if (lightingDelay_ > 0.0) {
     lightingDelay_ -= frameSeconds;
     if (lightingDelay_ <= 0.0) {

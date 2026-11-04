@@ -94,6 +94,7 @@ de `clock` (con la velocidad que tenía).
 | `moves` | Las técnicas del partner: `learned` (ids de `data/moves`) y `equipped` (cuatro posiciones de la lista de la especie o `null`; la cuarta es el remate) |
 | `story` | Los disparadores y las variables de la historia (`StoryAdapter`, versión 1, [game/story](../game/story.md)); guarda las variables 0 a 34, como el original, y la variable de «jugador quieto» como 0 si tiene su valor (`main_menu.c: writeSavegame`); al cargar, las demás empiezan a 0; una partida sin ella carga la historia como la deja una partida nueva, con los disparadores de criado (0x200 + número) de las formas que guardó la sección `evolution`, y lo registra |
 | `battle_registry` | Los compañeros registrados en la máquina de guardado para el modo versus (`BattleRegistry`, `main_menu.c: registerBattleData`): `partners`, cada uno con `slot` (0 a 39), `name`, `species`, `hp`, `mp`, `offense`, `defense`, `speed`, `brains`, `discipline` y `techniques` (tres ids de `data/moves` o `null`); una partida sin la sección empieza sin registrados |
+| `weather` | `seed`: la semilla del clima del campo (`WeatherSeed`, mejora del motor, [game/weather](../game/weather.md)); una partida sin la sección la saca de la semilla de la sesión (`weatherSeedOf`) y la guarda en el siguiente guardado. No toca los números aleatorios del juego |
 
 `savesWritten()` cuenta los guardados que la sesión escribió, en una ranura (`save`) o en una de autoguardado; el
 juego lo mira para enseñar el aviso de guardado ([game](game.md#aviso-de-guardado)).

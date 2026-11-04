@@ -17,6 +17,8 @@
 #include <dwe/game/partner/field_animation.hpp>
 #include <dwe/game/partner/state.hpp>
 #include <dwe/game/story/story_ports.hpp>
+#include <dwe/game/weather/climate.hpp>
+#include <dwe/game/weather/look.hpp>
 #include <dwe/render/camera.hpp>
 #include <dwe/render/drawer.hpp>
 #include <dwe/render/map_renderer.hpp>
@@ -54,6 +56,7 @@
 #include "place_command.hpp"
 #include "scene_effect.hpp"
 #include "scene_prims.hpp"
+#include "weather_drawer.hpp"
 
 namespace dwe::ui {
 class Ui;
@@ -327,6 +330,19 @@ public:
   // The mist's palettes this frame (field_mist.hpp), from the story (session::StoryScenes::mistOn);
   // nothing draws no mist.
   void setMist(std::optional<MistPalettesShown> mist) { mistShown_ = mist; }
+  // The weather (game::weather, an engine improvement; field_scene_weather.cpp): the playthrough's
+  // seed (session::WeatherSeed), whether the option shows it (shown or hidden at once), and a kind
+  // forced on every map that has weather (--weather, for captures).
+  void setWeatherSeed(std::uint64_t seed);
+  void setWeatherEnabled(bool enabled);
+  void forceWeather(std::optional<game::weather::WeatherKind> kind);
+  [[nodiscard]] bool weatherEnabled() const { return weatherEnabled_; }
+  // The weather shown this frame, read-only, faded between kinds: its kind, cloud cover, rain,
+  // snow and sunshine, each 0 to 1 (WeatherLook). For the lighting pass (dim the light and the
+  // shadows under clouds) and the ambience; None on maps without weather or with the option off.
+  [[nodiscard]] const game::weather::WeatherLook& weather() const { return weatherBlend_.look(); }
+  // The climate area of the map shown (field/weather.yaml), nothing for a map without weather.
+  [[nodiscard]] const game::weather::ClimateArea* weatherArea() const { return weatherArea_; }
   // The original's number of the map shown (MapEntry::index), nothing for a map a pack added.
   [[nodiscard]] std::optional<std::int32_t> screenNumber() const;
   // A minigame's quads at world points, until replaced (the curling's aim line).
@@ -890,7 +906,7 @@ private:
   std::map<std::string, std::optional<std::vector<std::vector<BodyFace>>>, std::less<>>
       sceneModels_;
   CameraSync cameraSync_{*this};
-  std::array<render::Drawer*, 7> drawers_{};
+  std::array<render::Drawer*, 8> drawers_{};
   // The drawers while a scene hides the scenery: the models and the scene's primitives only.
   std::array<render::Drawer*, 4> stageDrawers_{};
   FieldStage stage_;
@@ -1030,6 +1046,22 @@ private:
   void addMist(std::vector<ScenePrim>& prims, double frameSeconds, bool paused);
   [[nodiscard]] std::optional<rhi::TextureId> mistTexture(std::int32_t palette);
   void releaseMistTextures();
+  // The weather (field_scene_weather.cpp): the pack's climate (none without field/weather), the
+  // map's area, the look shown and its drawer.
+  std::optional<game::weather::ClimateRules> climate_;
+  const game::weather::ClimateArea* weatherArea_ = nullptr;
+  std::uint64_t weatherSeed_ = 0;
+  bool weatherEnabled_ = true;
+  std::optional<game::weather::WeatherKind> forcedWeather_;
+  game::weather::WeatherBlend weatherBlend_;
+  double weatherSeconds_ = 0.0;
+  std::unique_ptr<WeatherDrawer> weatherDrawer_;
+  // The kind the weather fades to now: the area's for the game time, the forced one, or None.
+  [[nodiscard]] game::weather::WeatherKind weatherTarget() const;
+  // A map was entered: a map of another area (or none) shows its weather at once, one of the same
+  // area keeps fading where the last one was.
+  void enterWeatherArea(std::string_view mapId, bool fixedTimeOfDay);
+  void updateWeather(double frameSeconds, bool paused);
 };
 
 // Where the player stands on the window, in percent (the settings field.player_x and

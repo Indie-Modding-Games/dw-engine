@@ -1036,6 +1036,17 @@ solo para esa ejecución (capturas y rutas, que no leen los ajustes). `FieldScen
 | Luz por hora y luces del mapa | El original solo funde las paletas y sus tres luces de modelo con la hora (`map.c: updateTimeOfDay`) | Tinte suave sobre la escena y luces puntuales en píxeles del fondo, sin tocar la paleta ni el muestreo del mapa | `scene_light_tests.cpp` (tabla de luces, tintes, intensidades); `graphics_options_tests.cpp` («the game pack's light table…») | Mejora (opción) |
 | Colores vivos | No existe | Vibrance, contraste suave y brillo en la escena del campo, nunca en la UI | `in_game_options_tests.cpp` («…cycles the shadows and switches the light and the colours») | Mejora (opción) |
 
+## Clima
+
+Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no tiene clima): el ajuste `weather`
+(sí/no) se cambia en la fila «Clima» («Weather» en inglés) de las opciones en partida y en las opciones del título;
+se aplica al momento y se guarda en los ajustes del usuario. Las zonas, sus pesos y los mapas sin clima, la semilla,
+el dibujo y el sonido están en [game/weather](../game/weather.md). `--weather <clima>` fuerza uno para capturas.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Clima del campo | No existe | Despejado (sol de día), nublado (velo gris y sombras de nubes que pasan), lluvia ligera y fuerte (gotas inclinadas y salpicaduras, bucle de lluvia), nieve ligera y fuerte (copos con deriva, ráfagas de viento); por zona, cada 3 horas de juego, con fundido de 8 s; nunca en interiores, cuevas, salas de la ciudad ni mapas de hora fija; semilla propia guardada en la partida | `weather_tests.cpp`, `weather_seed_tests.cpp`, `weather_particles_tests.cpp` | Mejora (opción) |
+
 ## Contenido oculto
 
 Mejora opcional, apagada por defecto: al empezar una partida nueva desde el menú principal (Jugar → ranura → «Sí»),

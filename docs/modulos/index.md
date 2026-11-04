@@ -35,6 +35,7 @@ cada una están en las [reglas de dependencias](../architecture/dependency-rules
 | [field](game/field.md) | El campo: movimiento, colisión, disparadores, warps y seguimiento |
 | [inventory](game/inventory.md) | La bolsa, el dinero, el uso de objetos y las tiendas |
 | [fishing](game/fishing.md) | La pesca: la caña, el corcho, el sedal y los peces del agua |
+| [weather](game/weather.md) | El clima del campo (mejora, opción «Clima»): reglas por zona, semilla propia, fundidos |
 | [gym](game/gym.md) | El gimnasio del pueblo: la coreografía de los cursos y la cuenta de las ganancias |
 | [tournament](game/tournament.md) | Los torneos de la arena: rivales, cuadro, rivales generados y victorias |
 | [curling](game/curling.md) | El juego de las piedras sobre el hielo: deslizamiento, choques, puntos y el rival |

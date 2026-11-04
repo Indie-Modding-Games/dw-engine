@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Field weather",
+  "description": "field/weather.yaml of the game pack: the weather each area of the island can have (game/weather, an engine improvement: the original has no weather). Weather never changes a rule.",
+  "type": "object",
+  "required": [
+    "period_hours",
+    "keep_chance",
+    "fade_seconds",
+    "areas"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "period_hours": {
+      "description": "The weather may change every this many game hours.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 240
+    },
+    "keep_chance": {
+      "description": "The chance that a period keeps the weather of the one before.",
+      "type": "number",
+      "minimum": 0,
+      "exclusiveMaximum": 1
+    },
+    "fade_seconds": {
+      "description": "Real seconds a change of weather takes to fade in and out.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 120
+    },
+    "no_weather": {
+      "description": "Maps that never have weather. Maps with a fixed time of day (interiors, caves) never have it either.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9_]+\\*?$",
+        "description": "A map id (data/maps), or a prefix of ids ending in *."
+      }
+    },
+    "areas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "maps",
+          "weights"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "maps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]+\\*?$",
+              "description": "A map id (data/maps), or a prefix of ids ending in *."
+            }
+          },
+          "weights": {
+            "description": "How often the area rolls each weather; a weather left out never comes.",
+            "type": "object",
+            "additionalProperties": false,
+            "minProperties": 1,
+            "properties": {
+              "clear": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "cloudy": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "light_rain": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "heavy_rain": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "light_snow": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "heavy_snow": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

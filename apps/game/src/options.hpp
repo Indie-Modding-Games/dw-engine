@@ -2,6 +2,7 @@
 
 #include <dwe/core/math.hpp>
 #include <dwe/game/save/slots.hpp>
+#include <dwe/game/weather/climate.hpp>
 #include <dwe/render/map_scene.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/session/story_scenes.hpp>
@@ -86,6 +87,9 @@ struct Options {
   // The time of day to start at (the clock at 8:00, 16:00 or 20:00); the field rules' start hour
   // when not given.
   std::optional<render::TimeOfDay> time;
+  // A weather forced on every map that has weather (--weather clear|cloudy|rain|heavy-rain|snow|
+  // heavy-snow|none), for captures; the climate's own weather otherwise.
+  std::optional<game::weather::WeatherKind> weather;
   // The font of "original look" text (--text-font modern|original), instead of the packs' default;
   // for autotests.
   std::optional<ui::TextFont> textFont;
@@ -140,7 +144,7 @@ inline constexpr std::string_view Usage =
     "dwe-game [--content <folder>] [--mods <folder>]... [--dev-assets] [--ruleset <id>] [--story-stage <id>|all] "
     "[--saves <folder>] [--reports <folder>] [--size "
     "<width>x<height>] "
-    "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--chibi] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang "
+    "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--chibi] [--start <map>[,<exit>]] [--time day|dusk|night] [--weather <kind>] [--lang "
     "<language>] "
     "[--text-font modern|original] [--ui-skin <id>] [--graphics <option>=<value>[,...]] "
     "[--new-game | --load <slot>] "

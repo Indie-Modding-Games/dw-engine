@@ -19,6 +19,7 @@
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_game_orders.hpp>
 #include <dwe/session/story_scenes.hpp>
+#include <dwe/session/weather_seed.hpp>
 #include <dwe/ui/minimap.hpp>
 
 #include <glm/geometric.hpp>
@@ -609,6 +610,16 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   // Several needs in the partner's bubble at once, on unless turned off.
   context_.ui->setSetting(NeedBubbleStackSetting,
                           context.userSettings->needBubbleStack.value_or(true));
+  // The weather, on unless turned off: the playthrough's seed from the save, a kind --weather
+  // forces, and its sound.
+  if (game_.systems.weather != nullptr) {
+    scene_->setWeatherSeed(game_.systems.weather->seed());
+  }
+  scene_->forceWeather(context.options->weather);
+  const bool weather = context.userSettings->weather.value_or(true);
+  scene_->setWeatherEnabled(weather);
+  context_.ui->setSetting(WeatherSetting, weather);
+  weatherAmbience_ = std::make_unique<WeatherAmbience>(context.sound, *context.files);
   // The island map on M, on unless turned off.
   context_.ui->setSetting(WorldMapSetting, context.userSettings->worldMap.value_or(true));
   // The enemies on the minimap, on unless turned off.
@@ -1412,6 +1423,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   const game::partner::PartnerState& partner = session.partner().state();
   scene_->setPartnerMood(partner.conditions, partner.mood.happiness);
   scene_->update(frameSeconds, alpha, paused());
+  weatherAmbience_->update(scene_->weather(), frameSeconds);
   keepFieldSnapshot(frameSeconds);
   // Last, after every save this frame could write (the autosave, a command, the save machine).
   saveIndicator_->update(session.savesWritten(), frameSeconds);

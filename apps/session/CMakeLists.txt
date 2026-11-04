@@ -25,6 +25,7 @@ dwe_add_module(session
         src/item_use_rules.cpp
         src/map_head_lines.cpp
         src/map_visits.cpp
+        src/weather_seed.cpp
         src/partner_moves.cpp
         src/partner_view.cpp
         src/save_sections.cpp
@@ -103,7 +104,7 @@ dwe_add_module(session
         src/story_routines/routine_trade_shop.cpp
         src/story_routines/routine_variable_at_start.cpp
         src/story_routines/screen_routines.cpp
-    DEPS core assets audio scene ruleset field partner save evolution inventory battle story gym script fishing tournament curling
+    DEPS core assets audio scene ruleset field partner save evolution inventory battle story gym script fishing tournament curling weather
     # The story tests check the API against the Lua emitter and run its listings' reference.
     TEST_LIBS dwe::formats ${LUA_LIBRARIES})
 

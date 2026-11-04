@@ -1,0 +1,92 @@
+# Clima del campo (mejora del motor: el original no tiene clima; docs/modulos/game/weather.md).
+# El tiempo de cada zona sale de la semilla de clima de la partida, la zona y la hora del juego: no tira los números
+# aleatorios del juego y nunca cambia una regla (stats, encuentros, tiempos ni colisiones).
+#
+# Cada `period_hours` horas de juego la zona tira si sigue con el clima de antes (`keep_chance`) o saca uno nuevo
+# por sus pesos. Un cambio se funde en `fade_seconds` segundos reales. Todos los mapas de una zona comparten clima.
+# Pesos: clear (despejado, soleado de día), cloudy (nublado), light_rain, heavy_rain, light_snow, heavy_snow; un
+# clima que falta no sale nunca.
+period_hours: 3
+keep_chance: 0.45
+fade_seconds: 8
+# Sin clima: además de estos, los mapas con hora fija (interiores, cuevas, edificios) nunca lo tienen.
+no_weather:
+  # Túneles, salas, casas y tiendas de la ciudad, el vestíbulo del torneo y el monte Infinito.
+  - tunn*
+  - room*
+  - tend*
+  - topn*
+  - mgen*
+  # Mansiones, sótanos, laboratorio, santuario de hielo, cuevas y fortaleza.
+  - yaka*
+  - chka*
+  - saib*
+  - icsa*
+  - leom*
+  - ogre*
+  - gcan11
+areas:
+  # Bosque Nativo, punta Coela, lago Ojo de Dragón y el puente: bosque, lluvia corriente.
+  - id: native_forest
+    maps: [mayo*]
+    weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1 }
+  # Jungla tropical, manglar y bosque Amida: la zona más lluviosa.
+  - id: tropical_jungle
+    maps: [trop*]
+    weights: { clear: 3, cloudy: 2, light_rain: 3, heavy_rain: 2 }
+  # Monte Panorama: montaña, nubes a menudo.
+  - id: mt_panorama
+    maps: [miha*]
+    weights: { clear: 4, cloudy: 4, light_rain: 2, heavy_rain: 1 }
+  # Overdell: tierra gris, casi siempre nublado.
+  - id: overdell
+    maps: [dgha*]
+    weights: { clear: 1, cloudy: 5, light_rain: 3, heavy_rain: 1 }
+  # Gran Cañón: seco.
+  - id: great_canyon
+    maps: [gcan*]
+    weights: { clear: 7, cloudy: 3, light_rain: 1 }
+  # Sabana de engranajes: sol, alguna tormenta.
+  - id: gear_savanna
+    maps: [gias*]
+    weights: { clear: 6, cloudy: 3, light_rain: 1, heavy_rain: 1 }
+  # Región glaciar antigua: nieve, nunca lluvia.
+  - id: ancient_glacial
+    maps: [koda01, koda02, koda03]
+    weights: { clear: 2, cloudy: 3, light_snow: 4, heavy_snow: 2 }
+  # Regiones dino y veloz antiguas.
+  - id: ancient_regions
+    maps: [koda*]
+    weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1 }
+  # Freezeland: nieve, nunca lluvia.
+  - id: freezeland
+    maps: [frzl*]
+    weights: { clear: 2, cloudy: 2, light_snow: 4, heavy_snow: 3 }
+  # Tierra de los escarabajos: bosque.
+  - id: beetle_land
+    maps: [betl*]
+    weights: { clear: 4, cloudy: 3, light_rain: 2, heavy_rain: 1 }
+  # Árboles Brumosos: nublado y lluvia a menudo (la niebla es la del original).
+  - id: misty_trees
+    maps: [mist*]
+    weights: { clear: 1, cloudy: 4, light_rain: 3, heavy_rain: 1 }
+  # Pantano Geko: lluvia corriente.
+  - id: geko_swamp
+    maps: [stic*]
+    weights: { clear: 2, cloudy: 3, light_rain: 3, heavy_rain: 2 }
+  # Villa Volumen.
+  - id: volume_villa
+    maps: [gkyo*]
+    weights: { clear: 4, cloudy: 3, light_rain: 2 }
+  # Ciudad de los Juguetes.
+  - id: toy_town
+    maps: [omoc*]
+    weights: { clear: 5, cloudy: 3, light_rain: 1 }
+  # Ciudad Factorial y la montaña de basura: humo, nublado a menudo.
+  - id: factorial_town
+    maps: [fact*, gomi*]
+    weights: { clear: 3, cloudy: 4, light_rain: 2 }
+  # Ciudad File y el gimnasio verde.
+  - id: file_city
+    maps: [twna*, twnb*, trai*]
+    weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1 }

@@ -723,6 +723,7 @@ int runGame(const Options& requested) {
   (*ui)->setSetting(WalkControlSetting, std::string{walkControlName(walkControl.control())});
   (*ui)->setSetting(MinimapSetting, std::string{startMinimapMode(userSettings.minimap)});
   (*ui)->setSetting("minimap_size", std::string{"medium"});
+  (*ui)->setSetting(WeatherSetting, userSettings.weather.value_or(true));
   (*ui)->setSetting("fullscreen", settings.fullscreen);
   (*ui)->setSetting("ui_scale", settings.uiScale);
   (*ui)->setSetting("vsync", settings.vsync);
@@ -1413,6 +1414,20 @@ int runGame(const Options& requested) {
         walkControl.change(command.value, play != nullptr ? &play->scene().field() : nullptr);
         (*ui)->setSetting(WalkControlSetting, std::string{walkControlName(walkControl.control())});
         mouse.release();
+        continue;
+      }
+      if (command.name == WeatherSetting) {
+        // The weather (an engine improvement): shown or hidden at once, on the title screen too.
+        if (const bool* shown = std::get_if<bool>(&command.value)) {
+          userSettings.weather = *shown;
+          if (settingsFile) {
+            saveUserSettings(*settingsFile, userSettings);
+          }
+          if (PlaySession* play = flow.playing(); play != nullptr) {
+            play->scene().setWeatherEnabled(*shown);
+          }
+        }
+        (*ui)->setSetting(WeatherSetting, userSettings.weather.value_or(true));
         continue;
       }
       if (flow.playing() == nullptr && title.handle(command)) {
