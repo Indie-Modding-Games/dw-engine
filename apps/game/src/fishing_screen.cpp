@@ -348,6 +348,25 @@ void FishingScreen::tick(FieldScene& scene, const FishingButtons& buttons, doubl
   showGauge();
 }
 
+void FishingScreen::tickWater(FieldScene& scene, double seconds) {
+  game::fishing::Fishing* water = fishing_->fishing();
+  if (water == nullptr || active()) {
+    return;
+  }
+  frameSeconds_ += seconds;
+  while (frameSeconds_ >= FishingFrameSeconds) {
+    frameSeconds_ -= FishingFrameSeconds;
+    frame(scene);
+  }
+  showPrims(scene);
+}
+
+void FishingScreen::hideWater(FieldScene& scene) const {
+  if (fishing_->fishing() != nullptr) {
+    scene.setMinigamePrims({});
+  }
+}
+
 game::fishing::FishingInput FishingScreen::inputOf(const FieldScene& scene) const {
   const game::field::CharacterState& player = scene.field().player();
   const glm::vec3 facing = assets::forwardOfYaw(player.yaw);
@@ -505,7 +524,8 @@ void FishingScreen::showPrims(FieldScene& scene) const {
   const game::fishing::Fishing& water = *fishing_->fishing();
   const render::MapCamera* camera = scene.camera();
   std::vector<ScenePrim> prims;
-  if (camera == nullptr || !water.fishing()) {
+  // FISH_renderFishingWorld draws nothing while the fishing is off on the map.
+  if (camera == nullptr || water.disabled()) {
     scene.setMinigamePrims(std::move(prims));
     return;
   }

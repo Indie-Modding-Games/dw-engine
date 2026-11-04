@@ -19,7 +19,8 @@ auto out = water.tick(input, view, random);   // un fotograma del original (20 p
 ```
 
 - **Fotograma**: `tick` mueve la caña (`FISH_tickRod`) y luego el agua (`FISH_tickFishingWorld`). Se llama solo sin
-  ningún aviso abierto; los avisos salen como eventos `Message`.
+  ningún aviso abierto; los avisos salen como eventos `Message`. Con la caña guardada (sin `start`) solo mueve el
+  agua: la app lo llama en cada fotograma del mapa, no solo al pescar (ver «El agua sin la caña»).
 - **Pantalla**: `FishingView` pasa del mundo a la pantalla del fondo (píxeles desde su centro óptico, y hacia abajo)
   y al revés; las zonas de los peces y el agua están en esa pantalla, como en el original.
 - **Entrada**: `FishingInput` trae los botones del fotograma y dónde están la punta de la caña, la mano y el cebo, que
@@ -27,6 +28,22 @@ auto out = water.tick(input, view, random);   // un fotograma del original (20 p
 - **Salida**: `FishingOutput` trae los eventos (sonidos, animaciones del jugador, avisos, el menú del cebo, el cebo
   comido, la captura, lo enganchado, la serpiente en tierra, el final) y el giro del jugador en unidades del original.
   La sesión aplica a la bolsa y al partner lo que toca (`session::FishingAdapter::apply`).
+
+## El agua sin la caña
+
+En el original el agua es un objeto más del campo desde que se carga el mapa (`checkFishingMap` → `FISH_init` →
+`addObject(FISH_tickFishingWorld, FISH_renderFishingWorld)`), no algo del minijuego: los peces y la serpiente nadan y se
+ven siempre en el lago. La app lo hace igual (`PlaySession::tickWater` → `FishingScreen::tickWater`), después del
+campo y la sesión de cada tick, como `tickObjects` corre los objetos en el orden en que se añadieron (el jugador y el
+partner antes que el agua); así las tiradas de los peces van tras las del campo en cada fotograma.
+
+| Regla | Decomp | Aquí | Test | Estado |
+|---|---|---|---|---|
+| El agua avanza 20 veces por segundo desde que se entra al mapa, con la caña guardada, mientras se anda y con el menú de pausa abierto | `FISH_init`, `FISH_tickFishingWorld`, `tickObjects` (`gameLoop`, `pauseFrame`) | `PlaySession::tickWater`, `FishingScreen::tickWater` | `fishing_water_tests`: rod away | Igual. Medido en el lago (`fish_mayo06_rod_ready`, caña guardada): 32 peces en la reserva; su contador de fotogramas sube 20 cada 60 vblanks andando y también con el menú abierto. Antes dwe solo movía y dibujaba los peces con la caña fuera |
+| Los peces, la serpiente, las ondas y las marcas se dibujan siempre; la caña, el corcho, el sedal y el cebo solo al pescar | `FISH_renderFishingWorld` | `FishingScreen::showPrims` | captura `w20-fishC` | Igual. Peces como manchas azul oscuro junto a la orilla en los dos |
+| Con la pesca apagada en el mapa no se mueve, no tira y no se dibuja | `FISH_tickFishingWorld`, `FISH_renderFishingWorld` (`fishingDisabled`) | `Fishing::tick`, `showPrims` | switched off | Igual |
+| Mientras el partner evoluciona (estado 13) el agua ni avanza ni se ve | `FISH_tickFishingWorld`, `FISH_renderFishingWorld` (`PARTNER_STATE == 0xd`) | `PlaySession::tickWater` → `hideWater` | - | Igual en la regla; sin medir |
+| En combate el agua no avanza | - | `PlaySession::tickWater` | - | Suposición: el original corre `tickObjects` también en combate, pero no se ha medido si el objeto del agua sigue vivo; tras el combate el mapa se recarga y la reserva empieza de nuevo |
 
 ## Cámara, sedal y serpiente marina
 
@@ -42,7 +59,7 @@ La cámara de la pesca es la del original: `Fishing` guarda el centro de la vist
 | Con un aviso abierto la vista va al corcho (o a la captura) 16 píxeles por fotograma | `FISH_scrollViewToTarget`, `FISH_showTextBox` | `Fishing::scrollToNotice` | - | Igual |
 | El sedal va de la punta de la caña al corcho, recortado al borde de la vista y en trozos de 64 píxeles, del color de la tensión (blanco en reposo) | `FISH_drawFishingLine`, `FISH_clipLineToRect`, `FISH_updateTension` | `fishingLine`, `clipLineToRect`, `tensionColor` | clip, pieces, colour | Igual. La punta es la de la caña (`FISH_updateRodPose`) |
 | Los peces aparecen en cualquier zona del fondo, no solo en la vista | `FISH_isScreenPointVisible`, `FISH_randomPointInSpot` | `CameraView::screenMin/screenMax` | ruta de pesca | Igual. Antes la vista solo cubría lo visible y cada zona fuera de ella dejaba «no water in sight» en el log; ahora ninguno |
-| La serpiente: cinco piezas, cada una girada como la cabeza un fotograma después que la anterior, a 200, 175, 125 y 140 de distancia | `FISH_pushSeadramonSegment`, `FISH_drawSeadramon` | `pushSeaSerpentTurn`, `seaSerpentBody` | sea serpent | Igual en la forma. Suposición: sus caras leen un trozo de 8 x 8 de la página de textura que está vacío en la imagen extraída; se resta blanco, que da la silueta negra medida. Cada serpiente nueva empieza recta (en el original la historia es global) |
+| La serpiente: cinco piezas, cada una girada como la cabeza un fotograma después que la anterior, a 200, 175, 125 y 140 de distancia | `FISH_pushSeadramonSegment`, `FISH_drawSeadramon` | `pushSeaSerpentTurn`, `seaSerpentBody` | sea serpent | Igual en la forma. Suposición: sus caras leen un trozo de 8 x 8 de la página de textura que está vacío en la imagen extraída; se resta blanco, que da la silueta negra medida. Cada serpiente nueva empieza recta (en el original la historia es global). Las «rayas negras finas» que se ven sobre el agua a las 8 y a las 17 son esta serpiente vista desde la orilla: el original las muestra igual (medido en `fish_mayo06_rod_ready` a las 8: rayas negras de 1 a 2 píxeles y unos 70 de largo a 320 x 240; quitándola, desaparecen en los dos). Como dwe empieza a las 8:00, salía en todas las pruebas |
 | Con la serpiente en tierra la pesca se apaga en el mapa y empieza su escena | `tamerTickFishing`, `triggerSeadramonCutscene` | evento `SeaSerpentLanded` (valor: `sea_serpent.scene_section`, 0x4e4) → `StoryAdapter::request` | - | Igual: la sección 0x4e4 del guion de cabecera salta a la 82 del guion 7; sale la serpiente y «What the... oh no! It's the Lake Guardian!», como en el original |
 
 ## Marcas, ondas, cebo y aviso

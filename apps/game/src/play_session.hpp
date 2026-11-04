@@ -275,6 +275,7 @@ public:
 
 private:
   void tickSystems(const game::field::FieldInput& intent, const FishingButtons& fishing);
+  void tickWater();
   [[nodiscard]] bool paused() const;
   // What keeps the game from being saved as it is now (a battle, a script, a scene), or empty when
   // the field is free.

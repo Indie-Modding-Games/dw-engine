@@ -766,6 +766,7 @@ FISH_waterTestStub2 = { status = "no-aplica", what = "Prueba de agua vacía del 
 FISH_getBoneTransform = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:224", what = "Da la posición del hueso de la mano del jugador para la caña y el cebo." }
 FISH_endFishing = { status = "portado", dwe = "game/fishing/src/rod.cpp:403", what = "Guarda la caña, devuelve la cámara y deja al jugador quieto." }
 FISH_init = { status = "portado", dwe = "apps/session/src/fishing_adapter.cpp:153", what = "Prepara la pesca del mapa al entrar en uno con agua." }
+FISH_tickFishingWorld = { status = "portado", dwe = "apps/game/src/play_session.cpp:758", what = "Mueve el agua de un mapa de pesca (ondas, marcas, peces, serpiente) en cada fotograma.", note = "Desde que se entra al mapa, con la caña guardada y con el menú abierto, tras el campo; quieto con la pesca apagada, un aviso abierto o el partner evolucionando." }
 FISH_deinitialize = { status = "portado", dwe = "apps/session/src/fishing_adapter.cpp:140", what = "Cierra la pesca al dejar el mapa." }
 FISH_scrollCameraTo = { status = "portado", dwe = "game/fishing/src/view.cpp:28", what = "Desplaza el fondo del mapa hasta un punto de la pantalla.", note = "La app centra la cámara del mapa en ese píxel del fondo (MapRenderer::setFocusPixel)." }
 FISH_enableCameraControl = { status = "portado", dwe = "game/fishing/src/rod.cpp:148", what = "Guarda la vista al sacar la caña para restaurarla al acabar.", note = "La vista parte de donde la dejó el campo." }

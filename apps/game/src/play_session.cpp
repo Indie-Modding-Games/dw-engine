@@ -739,6 +739,7 @@ void PlaySession::pressBattle(const input::InputState& input) {
 void PlaySession::tick(const game::field::FieldInput& intent, const FishingButtons& fishing) {
   fieldWalks_ = false;
   tickSystems(intent, fishing);
+  tickWater();
   // A tick that did not leave the player walking freely (a talk, a battle, a gym course, a screen)
   // drops the click's target, so the player does not walk on to it once he is let go.
   if (!walksByPointer()) {
@@ -752,6 +753,20 @@ bool PlaySession::walksByPointer() const {
   return fieldWalks_ && !battleScreen_.active() && field.playerFree() &&
          !field.mapChangePending() &&
          (story == nullptr || !storyTextbox_ || !story->dialogue().view().open);
+}
+
+void PlaySession::tickWater() {
+  // fish.c: FISH_init adds the water of a fishing map as one of the field's objects, after the
+  // player's and the partner's; tickObjects runs them in that order every frame, under the pause
+  // menu too (main.c: gameLoop, utils.c: pauseFrame), so the fish roll after the field. The water
+  // skips the frames the partner evolves (FISH_tickFishingWorld, PARTNER_STATE 13).
+  if (evolutionScene_.active()) {
+    fishingScreen_.hideWater(*scene_);
+    return;
+  }
+  if (!battleScreen_.active()) {
+    fishingScreen_.tickWater(*scene_, TickSeconds);
+  }
 }
 
 void PlaySession::tickSystems(const game::field::FieldInput& intent,

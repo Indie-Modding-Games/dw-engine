@@ -39,8 +39,7 @@ struct FishingButtons {
 // takes out the rod, picks a bait, casts, waits for a bite, strikes and reels the fish in, with the
 // line's tension on a gauge and the original's notices. The field and the game time wait meanwhile
 // (clock.c: tickGameClock stops while isFishing). The view scrolls as the fishing's camera says,
-// the line and the sea serpent are drawn as the original's; the rod, the bobber and the fish are
-// drawn as markers until their models are.
+// the fish, the sea serpent, the rod, the bobber and the line are drawn as the original's.
 class FishingScreen {
 public:
   // The adapters, the session, the UI, the sound (nullptr: silent) and the story (nullptr: the sea
@@ -57,6 +56,14 @@ public:
   void update(bool fieldIdle);
   // One logic tick: the fishing runs at the original's 20 frames per second.
   void tick(FieldScene& scene, const FishingButtons& buttons, double seconds);
+  // One logic tick while the rod is away: the water of a fishing map runs as one of the field's
+  // objects from the map's load (FISH_init adds FISH_tickFishingWorld and its drawing), so the fish
+  // swim and show all the time, under the menus too. Nothing while the fishing runs (tick does) or
+  // on a map without water.
+  void tickWater(FieldScene& scene, double seconds);
+  // The partner evolves (FISH_tickFishingWorld and its drawing skip PARTNER_STATE 13): the water
+  // neither moves nor shows.
+  void hideWater(FieldScene& scene) const;
   // Takes the pause menu's fish, the bait menu's choice and the notices' answers; false for any
   // other command.
   bool handle(const ui::UiCommand& command);
