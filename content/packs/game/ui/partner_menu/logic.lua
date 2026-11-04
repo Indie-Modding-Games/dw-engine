@@ -525,15 +525,15 @@ local function draw_boxes(document)
 end
 
 local function draw_prompts(document)
-  document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
-  document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
+  document:get("prompt-confirm"):set_prompt("confirm")
+  document:get("prompt-cancel"):set_prompt("cancel")
   -- The tech page's Change Techniques and Cancel name the key of the device in use (a PC game: the
   -- keyboard's keys first, a pad's buttons when a pad plays), where the original draws its pad
   -- glyphs (game_menu.c: drawDigimonMovesText).
-  document:get("tech-change-icon"):set_text(ui.prompt("confirm"))
-  document:get("tech-cancel-icon"):set_text(ui.prompt("cancel"))
-  document:get("tech-help-key"):set_text(ui.prompt("extra"))
-  document:get("tech-help-cancel-key"):set_text(ui.prompt("confirm"))
+  document:get("tech-change-icon"):set_prompt("confirm")
+  document:get("tech-cancel-icon"):set_prompt("cancel")
+  document:get("tech-help-key"):set_prompt("extra")
+  document:get("tech-help-cancel-key"):set_prompt("confirm")
 end
 
 local function draw(document)

@@ -22,7 +22,7 @@
 			<div class="row" id="row-10"><span class="bar" id="row-10-bar"></span><span class="cursor" id="row-10-cursor"></span><span class="run" id="row-10-run-0"></span><span class="run" id="row-10-run-1"></span><span class="run" id="row-10-run-2"></span><span class="run" id="row-10-run-3"></span><span class="run" id="row-10-run-4"></span><span class="run" id="row-10-run-5"></span><span class="run" id="row-10-run-6"></span><span class="run" id="row-10-run-7"></span></div>
 			<div class="row" id="row-11"><span class="bar" id="row-11-bar"></span><span class="cursor" id="row-11-cursor"></span><span class="run" id="row-11-run-0"></span><span class="run" id="row-11-run-1"></span><span class="run" id="row-11-run-2"></span><span class="run" id="row-11-run-3"></span><span class="run" id="row-11-run-4"></span><span class="run" id="row-11-run-5"></span><span class="run" id="row-11-run-6"></span><span class="run" id="row-11-run-7"></span></div>
 		</div>
-		<div id="prompt" class="hidden"></div>
+		<div id="prompt" class="prompt-icon hidden"></div>
 	</div>
 </body>
 </rml>

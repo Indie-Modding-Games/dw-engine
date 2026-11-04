@@ -1545,13 +1545,13 @@ refresh_player = function(document)
 end
 
 local function refresh_prompts(document)
-  document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
-  document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
+  document:get("prompt-confirm"):set_prompt("confirm")
+  document:get("prompt-cancel"):set_prompt("cancel")
   -- The player page's prompts name the key of the device in use (a PC game: the keyboard's keys
   -- first, a pad's buttons when a pad plays), not the disc's fixed pad glyphs.
   for _, page in ipairs({ "chart", "medals", "cards", "city" }) do
-    document:get(page .. "-confirm-key"):set_text(ui.prompt("confirm"))
-    document:get(page .. "-cancel-key"):set_text(ui.prompt("cancel"))
+    document:get(page .. "-confirm-key"):set_prompt("confirm")
+    document:get(page .. "-cancel-key"):set_prompt("cancel")
   end
 end
 

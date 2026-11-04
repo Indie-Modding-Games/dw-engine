@@ -231,12 +231,14 @@ kept_ids() {
 }
 
 # Prints the ids of id<TAB>translation<TAB>English rows whose sets of {tags} and placeholders
-# differ.
+# differ. A {prompt:<action>} marker (the device's key or button, docs/architecture/ui.md) is the
+# translation's own: it names in a marker what the English names in words ("X button").
 ids_with_other_codes() {
   awk -F '\t' "$awk_unquote"'
         function codes(text,    list, code, sorted, i, j, n) {
             text = unquote(text)
             gsub(/\{\{|\}\}/, "", text)
+            gsub(/\{prompt:[a-z_]+\}/, "", text)
             n = 0
             while (match(text, /\{[^}]*\}/)) {
                 code = substr(text, RSTART, RLENGTH)

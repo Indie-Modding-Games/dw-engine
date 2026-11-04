@@ -53,6 +53,29 @@ button:active {
 	color: #d0d0d0;
 }
 
+/* Button glyphs (../../common/base.rcss): a shape of the original's pad is the original font's own character, drawn as
+   the text around it is, with no key frame round it, as the original writes its buttons in its texts; a face button
+   of another family is a round frame round its letter or position. */
+.glyph-char {
+	display: inline;
+}
+
+.family-shapes .glyph-art {
+	display: none;
+}
+
+.key.family-shapes {
+	min-width: 0dp;
+	padding: 0dp;
+	margin-right: 6dp;
+	border-width: 0dp;
+	font-size: 1em;
+}
+
+.key.glyph-face {
+	border-radius: 15dp;
+}
+
 /* The original's window (ui.c: renderUIBoxStatic, renderUIBoxBorder), for any document's box: the fill #2D3840 at
    half opacity (the semi-transparent mode), the three- and four-line border the original-box decorator draws (black,
    light cyan #90D9FA and dark cyan #4A9FC5 lines, each one original pixel, 3dp) and the rounded corner sprites of

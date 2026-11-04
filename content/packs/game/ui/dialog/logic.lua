@@ -34,7 +34,7 @@ end
 
 function on_show(document)
   refresh(document)
-  document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
+  document:get("prompt-confirm"):set_prompt("confirm")
   -- A question starts on no, so that confirming in a hurry does not overwrite a save, unless the
   -- game says it starts on yes (dialog.start_on_yes: the new game's question, as the original).
   local first = ui.setting("dialog.start_on_yes") == true and "yes" or "no"
@@ -50,7 +50,7 @@ function on_language(document)
 end
 
 function on_device(document)
-  document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
+  document:get("prompt-confirm"):set_prompt("confirm")
 end
 
 function on_action(_document, action)

@@ -678,15 +678,16 @@ local function tick_end(document, seconds)
 end
 
 local function draw_prompts(document)
-  lookup(document, "prompt-confirm"):set_text(ui.prompt("confirm"))
-  lookup(document, "prompt-charge"):set_text(ui.prompt("confirm"))
-  lookup(document, "prompt-cancel"):set_text(ui.prompt("cancel"))
+  lookup(document, "prompt-confirm"):set_prompt("confirm")
+  lookup(document, "prompt-charge"):set_prompt("confirm")
+  lookup(document, "prompt-cancel"):set_prompt("cancel")
   -- The original's square button calls the finisher (battle_tick.c: handleCommands); here it is
-  -- the `extra` action, so the gauge's box names its key or button instead of the square. A name
-  -- of more than two letters does not fit where the square was: a skin may move the box for it.
-  local finisher_key = ui.prompt("extra")
-  lookup(document, "prompt-finisher"):set_text(finisher_key)
-  lookup(document, "fight"):set_class("long-finisher-key", (utf8.len(finisher_key) or 0) > 2)
+  -- the `extra` action, so the gauge's box shows its key or button: the square itself on the
+  -- original's pad. A key's name of more than two letters does not fit where the square was: a
+  -- skin may move the box for it.
+  lookup(document, "prompt-finisher"):set_prompt("extra")
+  local long = ui.device() ~= "gamepad" and (utf8.len(ui.prompt("extra")) or 0) > 2
+  lookup(document, "fight"):set_class("long-finisher-key", long)
 end
 
 -- The battle's opening (apps/screens: battle_intro.hpp): the anger marks over the enemies, then the

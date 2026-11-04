@@ -215,20 +215,21 @@ local pointer = false
 -- confirm key on a keyboard, Start on a gamepad, a click with the mouse. The original names its
 -- Start button; this is the PC's.
 local function refresh_press(document)
+  -- The key or button is its glyph: the line is written in capitals around it.
   local text
   if ui.device() == "gamepad" then
-    text = t("main_menu.press_key", { key = ui.prompt("pause") })
+    text = upper(t("main_menu.press_key", { key = "@@" })):gsub("@@", "{prompt:pause}")
   elseif pointer then
-    text = t("main_menu.press_click")
+    text = upper(t("main_menu.press_click"))
   else
-    text = t("main_menu.press_key", { key = ui.prompt("confirm") })
+    text = upper(t("main_menu.press_key", { key = "@@" })):gsub("@@", "{prompt:confirm}")
   end
-  document:get("press-start-text"):set_text(upper(text))
+  document:get("press-start-text"):set_prompt_text(text)
 end
 
 local function refresh_prompts(document)
-  document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
-  document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
+  document:get("prompt-confirm"):set_prompt("confirm")
+  document:get("prompt-cancel"):set_prompt("cancel")
   refresh_press(document)
 end
 

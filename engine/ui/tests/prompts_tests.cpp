@@ -2,6 +2,7 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/keys.hpp>
+#include <dwe/ui/glyph_art.hpp>
 #include <dwe/ui/prompts.hpp>
 
 #include <doctest/doctest.h>
@@ -53,8 +54,9 @@ TEST_CASE("prompts name the control of the device in use, in the game pack's wor
   const input::ActionMap map = input::defaultActionMap();
   const GameTexts texts{"es"};
   const localization::Catalog& labels = *texts.catalog;
+  // The space bar is the first key of confirm.
   CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "confirm", labels) ==
-        "Intro");
+        "Espacio");
   CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "cancel", labels) ==
         "Esc");
   CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "menu", labels) == "Tab");
@@ -109,6 +111,160 @@ TEST_CASE("controls have stable names, and labels fall back to them") {
   CHECK(controlLabel("gamepad:south", GamepadFamily::Xbox, labels) == "A");
   CHECK(controlLabel("gamepad:south", GamepadFamily::PlayStation, labels) == "Cross");
   CHECK(controlLabel("gamepad:dpad_up", GamepadFamily::PlayStation, labels) == "D-pad up");
+}
+
+namespace {
+
+bool contains(std::string_view text, std::string_view part) {
+  return text.find(part) != std::string_view::npos;
+}
+
+} // namespace
+
+TEST_CASE("a glyph draws the key or button of the device in use, in its family's style") {
+  const input::ActionMap map = input::defaultActionMap();
+  const GameTexts english{"en"};
+  const localization::Catalog& labels = *english.catalog;
+  const auto glyph = [&](DeviceKind device, GamepadFamily family, std::string_view action) {
+    return promptGlyph(map, device, family, action, labels);
+  };
+
+  // The keyboard: the key bound first, on a cap, whatever gamepad was used before.
+  const PromptGlyph space = glyph(DeviceKind::KeyboardMouse, GamepadFamily::PlayStation, "confirm");
+  CHECK(space.kind == GlyphKind::Key);
+  CHECK(space.label == "Space");
+  CHECK(space.symbol == "@space");
+  CHECK(glyph(DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "cancel").symbol == "ESC");
+  CHECK(glyph(DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "menu").symbol == "TAB");
+  CHECK(glyph(DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "settings").symbol == "F10");
+
+  // Letters: A at the bottom on one family, on the right on another.
+  const PromptGlyph a = glyph(DeviceKind::Gamepad, GamepadFamily::Xbox, "confirm");
+  CHECK(a.kind == GlyphKind::Face);
+  CHECK(a.face == FaceStyle::Letters);
+  CHECK(a.position == "south");
+  CHECK(a.symbol == "A");
+  CHECK(glyph(DeviceKind::Gamepad, GamepadFamily::Steam, "menu").symbol == "Y");
+  CHECK(glyph(DeviceKind::Gamepad, GamepadFamily::Nintendo, "confirm").symbol == "B");
+  CHECK(glyph(DeviceKind::Gamepad, GamepadFamily::Nintendo, "cancel").symbol == "A");
+
+  // The shapes of the original's pad.
+  const PromptGlyph cross = glyph(DeviceKind::Gamepad, GamepadFamily::PlayStation, "confirm");
+  CHECK(cross.face == FaceStyle::Shapes);
+  CHECK(cross.shape == "cross");
+  CHECK(cross.symbol == "@cross");
+  CHECK(glyph(DeviceKind::Gamepad, GamepadFamily::PlayStation, "cancel").shape == "circle");
+  CHECK(glyph(DeviceKind::Gamepad, GamepadFamily::PlayStation, "extra").shape == "square");
+  CHECK(glyph(DeviceKind::Gamepad, GamepadFamily::PlayStation, "menu").shape == "triangle");
+
+  // A gamepad the game does not know: the button's position only.
+  const PromptGlyph south = glyph(DeviceKind::Gamepad, GamepadFamily::Generic, "confirm");
+  CHECK(south.face == FaceStyle::Positions);
+  CHECK(south.symbol == "@south");
+  CHECK(glyph(DeviceKind::Gamepad, GamepadFamily::Generic, "cancel").symbol == "@east");
+
+  // Other buttons: a cap with the family's name of the button.
+  const PromptGlyph start = glyph(DeviceKind::Gamepad, GamepadFamily::PlayStation, "pause");
+  CHECK(start.kind == GlyphKind::Button);
+  CHECK(start.symbol == "OPTIONS");
+  CHECK(glyph(DeviceKind::Gamepad, GamepadFamily::Xbox, "move_up").symbol == "@dpad_up");
+  CHECK(glyph(DeviceKind::Gamepad, GamepadFamily::Xbox, "debug_console").kind == GlyphKind::None);
+}
+
+TEST_CASE("a glyph follows rebinding") {
+  const GameTexts english{"en"};
+  const localization::Catalog& labels = *english.catalog;
+  input::ActionMap map;
+  map.bind("confirm", input::MouseBinding{platform::MouseButton::Left});
+  map.bind("confirm", input::GamepadAxisBinding{.axis = platform::GamepadAxis::RightTrigger,
+                                                .direction = 1.0F});
+  const PromptGlyph mouse =
+      promptGlyph(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "confirm", labels);
+  CHECK(mouse.kind == GlyphKind::Mouse);
+  CHECK(mouse.symbol == "LMB");
+  const PromptGlyph trigger =
+      promptGlyph(map, DeviceKind::Gamepad, GamepadFamily::Xbox, "confirm", labels);
+  CHECK(trigger.kind == GlyphKind::Stick);
+  CHECK(trigger.symbol == "RT");
+  map.bind("confirm", input::KeyBinding{input::keys::E});
+  map.bind("confirm", input::GamepadButtonBinding{platform::GamepadButton::East});
+  CHECK(
+      promptGlyph(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "confirm", labels).symbol ==
+      "E");
+  // The east button is now confirm: the circle on the original's pad.
+  CHECK(
+      promptGlyph(map, DeviceKind::Gamepad, GamepadFamily::PlayStation, "confirm", labels).shape ==
+      "circle");
+}
+
+TEST_CASE("a glyph's classes and markup let each skin draw it") {
+  const input::ActionMap map = input::defaultActionMap();
+  const GameTexts english{"en"};
+  const localization::Catalog& labels = *english.catalog;
+  const PromptGlyph space =
+      promptGlyph(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "confirm", labels);
+  const PromptGlyph cross =
+      promptGlyph(map, DeviceKind::Gamepad, GamepadFamily::PlayStation, "confirm", labels);
+
+  CHECK(promptClasses(space) == std::vector<std::string>{"glyph", "glyph-key"});
+  CHECK(promptClasses(cross) == std::vector<std::string>{"glyph", "glyph-face", "family-shapes",
+                                                         "face-south", "shape-cross"});
+  CHECK(isPromptClass("shape-cross"));
+  CHECK(isPromptClass("glyph-key"));
+  CHECK_FALSE(isPromptClass("key"));
+
+  CHECK(promptMarkup(space, false) == R"(<span class="glyph-label">Space</span>)");
+  // The classic icon: three drawings of a cap as wide as the space bar's symbol.
+  const std::string icon = promptMarkup(space, true);
+  CHECK(classicGlyphWidth(space) == 17);
+  CHECK(contains(icon, "width: 51dp; decorator: image(/glyph/classic/cap/@space/0)"));
+  CHECK(contains(icon, "frame-2"));
+  // A shape: the original font's character and the drawn shape; its icon's drawings are the
+  // skins' (the classic one has the original's own button).
+  CHECK(promptMarkup(cross, false) ==
+        R"(<span class="glyph-char">△</span><span class="glyph-art"></span>)");
+  CHECK(contains(promptMarkup(cross, true), R"(<span class="glyph-frame frame-1"></span>)"));
+  CHECK(promptMarkup(PromptGlyph{}, true).empty());
+}
+
+TEST_CASE("text markers and the original's button characters become the device's glyphs") {
+  const input::ActionMap map = input::defaultActionMap();
+  const GameTexts english{"en"};
+  const localization::Catalog& labels = *english.catalog;
+  DeviceKind device = DeviceKind::KeyboardMouse;
+  GamepadFamily family = GamepadFamily::Xbox;
+  const auto glyphOf = [&](std::string_view action) {
+    return promptGlyph(map, device, family, action, labels);
+  };
+
+  CHECK(
+      promptText("Press {prompt:confirm} <now>", false, glyphOf) ==
+      R"(Press <span class="key glyph glyph-key"><span class="glyph-label">Space</span></span> &lt;now&gt;)");
+  // A marker of an action with no control on this device shows nothing.
+  CHECK(promptText("a{prompt:nothing}b", false, glyphOf) == "ab");
+  // Our own texts keep their characters: "×" is a times sign there.
+  CHECK(promptText("Meat ×3", false, glyphOf) == "Meat ×3");
+
+  // The original's texts: the cross's cell ("△") is confirm, the triangle's ("×") the menu, and
+  // the curling's "X button" too.
+  const std::string slots = promptText("Use △ to match", true, glyphOf);
+  CHECK(contains(slots, "Space"));
+  CHECK_FALSE(contains(slots, "△"));
+  CHECK(contains(promptText("with × you can", true, glyphOf), "Tab"));
+  CHECK(contains(promptText("Press X button to throw it.", true, glyphOf),
+                 R"(</span> to throw it.)"));
+
+  // The same text follows the device in use.
+  device = DeviceKind::Gamepad;
+  CHECK(contains(promptText("Use △ to match", true, glyphOf), R"(glyph-label">A<)"));
+  CHECK(promptText("a{prompt:debug_console}b", false, glyphOf) == "ab");
+  family = GamepadFamily::PlayStation;
+  const std::string shapes = promptText("Use △ to match, ○ to count", true, glyphOf);
+  CHECK(contains(shapes, "shape-cross"));
+  // The circle of the original's text is alt, the north button here.
+  CHECK(contains(shapes, "shape-triangle"));
+  family = GamepadFamily::Generic;
+  CHECK(contains(promptText("{prompt:cancel}", false, glyphOf), "face-east"));
 }
 
 } // namespace dwe::ui

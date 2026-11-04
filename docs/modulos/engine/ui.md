@@ -65,3 +65,12 @@ y el paso de autotest `expect_clear`. `Ui::drawnRectsOf(document, elementId)` da
 él o lo que lo contiene está oculto) y `Ui::drawnRectsAround(document, elementId)` lo que se ve de todos los documentos
 menos ese elemento y las cajas que lo rodean entero (su panel; una caja junto a él sí cuenta): con ellas `expect_clear`
 comprueba una parte de un documento contra el resto, como la hora en dígitos del HUD.
+
+Los avisos de botones son glifos del último dispositivo usado (`prompts.hpp`: `promptGlyph`, `promptMarkup`,
+`promptText`; dibujos propios en `glyph_art.hpp`): con el teclado, la tecla asignada a la acción (Espacio para
+confirmar, Esc para cancelar) en una tecla dibujada; con un mando, el botón frontal en la posición que usa el juego
+con las letras de su familia, las cuatro formas del mando del original o, para un mando desconocido, solo su posición.
+Cambian en vivo al tocar otro dispositivo. Los 33 textos del original que nombran un botón con un carácter (○ □ △ ×,
+que la fuente moderna no tiene y salían como cuadros) pasan por el mismo sistema en la caja de la historia, y los
+textos propios escriben `{prompt:<acción>}`. Detalles en [docs/architecture/ui.md](../../architecture/ui.md),
+«Glifos de botones».

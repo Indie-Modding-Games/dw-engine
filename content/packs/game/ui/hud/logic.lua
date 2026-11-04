@@ -49,7 +49,7 @@ local function refresh(document)
 end
 
 local function refresh_prompts(document)
-  document:get("prompt-menu"):set_text(ui.prompt("menu"))
+  document:get("prompt-menu"):set_prompt("menu")
 end
 
 local panels = { "minimap", "menu-button", "field-status" }

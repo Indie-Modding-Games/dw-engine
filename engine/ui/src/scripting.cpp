@@ -484,6 +484,31 @@ Rml::EventListener* Scripting::ListenerInstancer::InstanceEventListener(const Rm
   return new LuaListener{value};
 }
 
+namespace {
+
+// Takes the last glyph's classes off an element and puts on this one's.
+void setPromptClasses(Rml::Element& element, const PromptGlyph& glyph) {
+  std::vector<std::string> stale;
+  const std::string classes = element.GetClassNames();
+  std::string_view names = classes;
+  while (!names.empty()) {
+    const std::size_t space = names.find(' ');
+    const std::string_view name = names.substr(0, space);
+    if (isPromptClass(name)) {
+      stale.emplace_back(name);
+    }
+    names = space == std::string_view::npos ? std::string_view{} : names.substr(space + 1);
+  }
+  for (const std::string& name : stale) {
+    element.SetClass(name, false);
+  }
+  for (const std::string& name : promptClasses(glyph)) {
+    element.SetClass(name, true);
+  }
+}
+
+} // namespace
+
 void Scripting::registerApi() {
   const script::ScriptCall scope{*vm_};
   sol::state& state = scope.lua();
@@ -512,6 +537,34 @@ void Scripting::registerApi() {
         if (self.element) {
           self.element->SetInnerRML(Rml::StringUtilities::EncodeRml(Rml::String{text}));
         }
+      },
+      // element:set_prompt(action, icon): the element becomes the glyph of the control that
+      // triggers the action on the device in use (prompts.hpp: promptClasses, promptMarkup); with
+      // icon, also the classic box's animated drawings.
+      "set_prompt",
+      [this](const LuaElement& self, std::string_view action, sol::optional<bool> icon,
+             sol::this_state lua) {
+        checkName(lua, action);
+        if (!self.element) {
+          return;
+        }
+        const PromptGlyph glyph = host_.glyph ? host_.glyph(action) : PromptGlyph{};
+        setPromptClasses(*self.element.get(), glyph);
+        self.element->SetInnerRML(promptMarkup(glyph, icon.value_or(false), self.element->GetId()));
+      },
+      // element:set_prompt_text(text, original): the text with its {prompt:<action>} markers
+      // drawn as glyphs; with original, a text of the original game, also its button characters.
+      "set_prompt_text",
+      [this](const LuaElement& self, std::string_view text, sol::optional<bool> original,
+             sol::this_state lua) {
+        checkText(lua, text);
+        if (!self.element) {
+          return;
+        }
+        self.element->SetInnerRML(
+            promptText(text, original.value_or(false), [this](std::string_view action) {
+              return host_.glyph ? host_.glyph(action) : PromptGlyph{};
+            }));
       },
       "text",
       [](const LuaElement& self, sol::this_state lua) {

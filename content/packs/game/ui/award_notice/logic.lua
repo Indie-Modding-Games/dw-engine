@@ -31,8 +31,19 @@ local function refresh(document)
   end
 end
 
+-- The confirm button in the box's corner (script_textbox.c: renderUIBox), as the device in use's
+-- glyph.
+local function refresh_prompt(document)
+  document:get("confirm-icon"):set_prompt("confirm", true)
+end
+
 function on_show(document)
+  refresh_prompt(document)
   refresh(document)
+end
+
+function on_device(document)
+  refresh_prompt(document)
 end
 
 function on_setting(document, _name)
@@ -40,6 +51,7 @@ function on_setting(document, _name)
 end
 
 function on_language(document)
+  refresh_prompt(document)
   refresh(document)
 end
 

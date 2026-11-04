@@ -91,8 +91,8 @@ end
 
 -- The prompts name the keys of the device in use.
 local function refresh_prompts(document)
-  document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
-  document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
+  document:get("prompt-confirm"):set_prompt("confirm")
+  document:get("prompt-cancel"):set_prompt("cancel")
 end
 
 function on_show(document)

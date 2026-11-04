@@ -322,6 +322,11 @@ struct Ui::Impl {
           return promptLabel(input != nullptr ? input->actionMap() : defaults, device, family,
                              action, *texts);
         },
+        .glyph = [this](std::string_view action) -> PromptGlyph {
+          static const input::ActionMap defaults = input::defaultActionMap();
+          return promptGlyph(input != nullptr ? input->actionMap() : defaults, device, family,
+                             action, *texts);
+        },
         .text =
             [this](std::string_view key, std::span<const localization::TextArgument> arguments) {
               return texts->text(key, arguments);

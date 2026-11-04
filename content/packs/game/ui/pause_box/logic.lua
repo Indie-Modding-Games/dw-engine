@@ -3,7 +3,7 @@
 -- en partida»), on the device in use.
 
 local function refresh_hint(document)
-  document:get("hint"):set_text(t("pause_menu.settings_hint", { key = ui.prompt("settings") }))
+  document:get("hint"):set_prompt_text(t("pause_menu.settings_hint", { key = "{prompt:settings}" }))
 end
 
 function on_show(document)

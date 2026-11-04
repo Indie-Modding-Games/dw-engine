@@ -59,23 +59,50 @@ body {
 	background-color: #f8f800;
 }
 
-#prompt {
+/* The confirm button the box shows while it waits, and the notices' one (#confirm-icon): the glyph of the device in
+   use (element:set_prompt("confirm", true), ../common/base.rcss), here as a small badge in the box's bottom right
+   corner that breathes slowly. The original look draws its own (skins/original/story_textbox/style.rcss). */
+.prompt-icon {
 	position: absolute;
-	right: 15dp;
+	right: 12dp;
 	bottom: 6dp;
-	width: 15dp;
-	height: 9dp;
-	background-color: #d0d0d0;
+	min-width: 14dp;
+	padding: 0 6dp;
+	border: 1dp #8a96a8;
+	border-radius: 5dp;
+	background-color: #1a1f27c0;
+	font-family: "Noto Sans";
+	font-size: 14dp;
+	font-weight: bold;
+	line-height: 22dp;
+	color: #e8edf3;
+	text-align: center;
+	animation: 0.9s sine-in-out infinite alternate prompt-icon-breathe;
 }
 
-.color-0 { color: #000000; }
-.color-1 { color: #d0d0d0; }
-.color-2 { color: #0000f8; }
-.color-3 { color: #e03028; }
-.color-4 { color: #f898d0; }
-.color-5 { color: #98d890; }
-.color-6 { color: #90a8f8; }
-.color-7 { color: #f8f800; }
-.color-8 { color: #000008; }
-.color-9 { color: #808080; }
-.color-10 { color: #e08858; }
+.prompt-icon.glyph-face {
+	padding: 0 4dp;
+	border-radius: 11dp;
+}
+
+.prompt-icon.glyph-none {
+	display: none;
+}
+
+@keyframes prompt-icon-breathe {
+	from { opacity: 1; }
+	to { opacity: 0.55; }
+}
+
+/* A glyph in a run (element:set_prompt_text) takes the run's colour, as the original's button characters do. */
+.color-0, .color-0 .key { color: #000000; }
+.color-1, .color-1 .key { color: #d0d0d0; }
+.color-2, .color-2 .key { color: #0000f8; }
+.color-3, .color-3 .key { color: #e03028; }
+.color-4, .color-4 .key { color: #f898d0; }
+.color-5, .color-5 .key { color: #98d890; }
+.color-6, .color-6 .key { color: #90a8f8; }
+.color-7, .color-7 .key { color: #f8f800; }
+.color-8, .color-8 .key { color: #000008; }
+.color-9, .color-9 .key { color: #808080; }
+.color-10, .color-10 .key { color: #e08858; }

@@ -94,7 +94,29 @@ recorte de RmlUi (`EnableClipMask`) no están implementadas: solo hacen falta pa
   del juego (`localization/<idioma>/prompt.yaml`): `prompt.key.enter`, `prompt.gamepad.south`, y
   `prompt.family.<familia>.<botón>` para los botones que cada familia nombra a su manera. Las letras, cifras y
   F1–F12 sin entrada se muestran tal cual. Cuando cambia el dispositivo, los documentos visibles reciben `on_device`;
-  cuando cambia el idioma, `on_language`.
+  cuando cambia el idioma, `on_language`. La tecla que se muestra es la primera de la acción: confirmar es Espacio
+  (también Intro).
+- **Glifos de botones:** los avisos no son texto sino el dibujo del control del último dispositivo, y cambian en vivo
+  al tocar otro (`on_device`). `element:set_prompt(acción)` (`promptGlyph`, `promptClasses` y `promptMarkup` de
+  `prompts.hpp`) pone en el elemento las clases del control y sus partes: `glyph-key` (tecla, con su nombre en una
+  tecla dibujada por el aspecto), `glyph-mouse`, `glyph-button` (Start, gatillos, cruceta) y `glyph-face` para los
+  cuatro botones frontales, con el estilo de la familia: `family-letters` (sus letras, de `prompt.family.*`: unas
+  familias tienen la A abajo y otras a la derecha), `family-shapes` (cruz, círculo, cuadrado y triángulo, el mando del
+  original, con `shape-cross`…) o `family-positions` para un mando que el juego no conoce (cuatro puntos con el de la
+  posición relleno). Las partes son `.glyph-label` (el nombre), `.glyph-char` (el carácter de la fuente del original
+  para una forma, que dibuja el aspecto clásico), `.glyph-art` (la forma o la posición dibujada por el motor en blanco,
+  la del aspecto moderno, cuya fuente no tiene ○ □ △) y, con `set_prompt(acción, true)`, los tres dibujos
+  `.glyph-frame` del botón animado del aspecto clásico. Todo el arte es nuestro: `glyph_art.hpp` dibuja por código las
+  rutas `/glyph/classic/button|cap/<símbolo>/<dibujo>` (un botón redondo de 16 x 12 o una tecla de 12 de alto al
+  estilo del original, con su parte de arriba hundiéndose un píxel por dibujo, y una letra de 3 x 5 propia) y
+  `/glyph/modern/<símbolo>` (64 x 64, suavizado), nunca logotipos de fabricantes.
+- **Marcadores en los textos:** `element:set_prompt_text(texto)` cambia cada `{prompt:<acción>}` del texto por el glifo
+  de esa acción (`promptText`); con `set_prompt_text(texto, true)`, para un texto del original, también sus caracteres
+  de botón y su «X button»: la cruz (que la extracción escribe «△», celda 77 de la fuente) es `confirm`, el triángulo
+  («×», celda 78) `menu` (el menú de juego y el cancelar del original), el círculo `alt` y el cuadrado `extra`, los
+  botones a los que el juego los asigna. Lo usan las filas de la caja de la historia, la ayuda del curling y los
+  textos con `{key}` de nuestros menús (`pause_menu.settings_hint`, «Pulsa …» de la portada). Una traducción escribe
+  el marcador donde el inglés nombra un botón con palabras (`scripts/translation.sh` no lo cuenta como etiqueta).
 - **Mando virtual:** `Platform::attachVirtualGamepad` conecta un mando de software que pasa por el mismo camino que uno
   real. Lo usan los tests de `platform` y la demo (`--virtual-gamepad`).
 

@@ -35,7 +35,7 @@ local function refresh(document)
 end
 
 local function refresh_prompts(document)
-  document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
+  document:get("prompt-confirm"):set_prompt("confirm")
 end
 
 local function focus(document)

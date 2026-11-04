@@ -32,8 +32,9 @@ const std::vector<Binding>& ActionMap::bindings(std::string_view action) const {
 ActionMap defaultActionMap() {
   ActionMap map;
 
-  map.bind("confirm", KeyBinding{keys::Return});
+  // The first key of an action is the one its button prompts show: the space bar confirms.
   map.bind("confirm", KeyBinding{keys::Space});
+  map.bind("confirm", KeyBinding{keys::Return});
   map.bind("confirm", MouseBinding{MouseButton::Left});
   map.bind("confirm", GamepadButtonBinding{GamepadButton::South});
 

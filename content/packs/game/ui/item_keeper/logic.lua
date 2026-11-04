@@ -99,9 +99,9 @@ end
 
 -- The help names the keys of the device in use: confirm moves one, alt ten and extra the stack.
 local function refresh_prompts(document)
-  document:get("key-one"):set_text(ui.prompt("confirm"))
-  document:get("key-ten"):set_text(ui.prompt("alt"))
-  document:get("key-all"):set_text(ui.prompt("extra"))
+  document:get("key-one"):set_prompt("confirm")
+  document:get("key-ten"):set_prompt("alt")
+  document:get("key-all"):set_prompt("extra")
 end
 
 function on_show(document)

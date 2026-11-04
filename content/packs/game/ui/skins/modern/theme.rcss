@@ -48,3 +48,9 @@ button:active {
 	text-align: center;
 	color: #e8edf3;
 }
+
+/* A face button's glyph (../../common/base.rcss) is round; a shape or position is the engine's white drawing. */
+.key.glyph-face {
+	padding: 1dp 4dp;
+	border-radius: 10dp;
+}

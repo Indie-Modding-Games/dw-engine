@@ -564,8 +564,14 @@ píxeles desde y 165 (`renderAwardSomethingTextbox`, `renderItemPickupTextbox`: 
 y el botón de confirmar de `script_textbox.c: renderUIBox`: 16 x 12 en (239, 43) desde la esquina del cuadro, tres
 dibujos de SYSTEM_W (u 0x4C + dibujo x 16, v 0xB7, paleta 12) que cambian cada 4 cuadros del campo
 (`TEXTBOX_OPEN_TIMER / 4 % 3`; medido en DuckStation: el contador sube 10 en 30 vblanks, 20 por segundo, y la cruz
-del botón cambia de altura cada 12 vblanks): una vuelta cada 0,6 s. Estilo:
-`ui/skins/original/notice_box/style.rcss`. El aspecto moderno deja su caja gris sin botón, a propósito.
+del botón cambia de altura cada 12 vblanks): una vuelta cada 0,6 s. El botón es el glifo del dispositivo en uso
+(`set_prompt("confirm", true)`, [docs/architecture/ui.md](../../architecture/ui.md), «Glifos de botones»): con un
+mando de la familia de formas, el propio botón del original (la cruz de SYSTEM_W); con el teclado, la tecla de
+confirmar (Espacio) dibujada al mismo estilo, 17 x 12, que crece a la izquierda desde el borde derecho del botón; con
+otro mando, su botón con su letra o su posición; las tres con la misma animación. El de la caja de la historia mientras
+espera (`renderScriptDialogueBox` lo dibuja con la misma función y en el mismo sitio) es el mismo. Estilo:
+`ui/skins/original/story_textbox/style.rcss`. El aspecto moderno lo dibuja como una pequeña tecla o botón en la esquina
+del cuadro que respira (opacidad de 1 a 0,55 en 0,9 s), con el nombre de la tecla o el dibujo del botón.
 
 Igual: el aviso de enfermedad. Cuando el compañero cae enfermo (`partner_impl.c: tickSicknessMechanics`, que pone al
 domador en el estado 0x14), el mismo cuadro sale con su nombre en el color 10 y «is Sick!» (`main.partner_impl_is_sick`)

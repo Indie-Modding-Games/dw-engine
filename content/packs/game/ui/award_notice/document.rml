@@ -3,7 +3,6 @@
 	<title>Award notice</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="../story_textbox/structure.rcss"/>
-	<link type="text/rcss" href="structure.rcss"/>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -13,7 +12,7 @@
 			<div class="row" id="line-2"><span id="text-2"></span></div>
 			<div class="row" id="line-3"><span id="text-3"></span></div>
 		</div>
-		<div id="confirm-icon"></div>
+		<div id="confirm-icon" class="prompt-icon"></div>
 	</div>
 </body>
 </rml>

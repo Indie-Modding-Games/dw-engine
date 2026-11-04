@@ -1,6 +1,0 @@
-/* The award notice: the story's speech box (../story_textbox/structure.rcss). The original's confirm button in its
-   bottom right corner is the original look's (skins/original/award_notice/style.rcss); without it the box shows none. */
-
-#confirm-icon {
-	display: none;
-}

@@ -57,3 +57,30 @@ button {
 	opacity: 0;
 	transform: scale(0);
 }
+
+/* Button glyphs (dwe/ui/prompts.hpp; docs/architecture/ui.md, «Glifos de botones»): element:set_prompt(action) puts
+   on a prompt's element the classes of the control the device in use has for that action (glyph-key, glyph-face with
+   family-letters, family-shapes or family-positions, face-south..., shape-cross...) and its parts: the label
+   (.glyph-label), the original font's character of a shape (.glyph-char, the classic skin draws it) and the drawn
+   shape or position (.glyph-art, white, drawn by the engine), and for an icon the classic skin's three drawings
+   (.glyph-frame). The shared look is the drawn art at the text's size; each skin styles the rest. */
+.glyph-char,
+.glyph-frame {
+	display: none;
+}
+
+.glyph-art {
+	display: inline-block;
+	width: 1.1em;
+	height: 1.1em;
+	vertical-align: middle;
+}
+
+.shape-cross .glyph-art { decorator: image(/glyph/modern/@cross); }
+.shape-circle .glyph-art { decorator: image(/glyph/modern/@circle); }
+.shape-square .glyph-art { decorator: image(/glyph/modern/@square); }
+.shape-triangle .glyph-art { decorator: image(/glyph/modern/@triangle); }
+.family-positions.face-south .glyph-art { decorator: image(/glyph/modern/@south); }
+.family-positions.face-east .glyph-art { decorator: image(/glyph/modern/@east); }
+.family-positions.face-west .glyph-art { decorator: image(/glyph/modern/@west); }
+.family-positions.face-north .glyph-art { decorator: image(/glyph/modern/@north); }

@@ -275,8 +275,8 @@ local function refresh(document)
 end
 
 local function refresh_prompts(document)
-  document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
-  document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
+  document:get("prompt-confirm"):set_prompt("confirm")
+  document:get("prompt-cancel"):set_prompt("cancel")
 end
 
 local function focus_first(document)

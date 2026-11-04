@@ -56,11 +56,11 @@ local function refresh(document)
 end
 
 local function refresh_prompts(document)
-  document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
-  document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
+  document:get("prompt-confirm"):set_prompt("confirm")
+  document:get("prompt-cancel"):set_prompt("cancel")
   -- Start on a gamepad (the original's OK button), Tab on a keyboard.
-  document:get("prompt-menu"):set_text(ui.prompt(ui.device() == "gamepad" and "pause" or "menu"))
-  document:get("prompt-extra"):set_text(ui.prompt("extra"))
+  document:get("prompt-menu"):set_prompt(ui.device() == "gamepad" and "pause" or "menu")
+  document:get("prompt-extra"):set_prompt("extra")
 end
 
 function on_show(document)

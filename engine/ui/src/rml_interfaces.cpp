@@ -1,6 +1,7 @@
 #include "rml_interfaces.hpp"
 
 #include <dwe/core/log.hpp>
+#include <dwe/ui/glyph_art.hpp>
 #include <dwe/ui/image_reference.hpp>
 
 #include <algorithm>
@@ -218,6 +219,10 @@ bool TextureSources::isPixelArt(std::string_view source) {
   if (source.starts_with(GeneratedPrefix)) {
     return false;
   }
+  // The classic glyphs are pixel art drawn at three dp a pixel; the modern ones are smooth.
+  if (source.starts_with(GlyphPrefix)) {
+    return source.starts_with(ClassicGlyphPrefix);
+  }
   const auto reference = parseImageReference(source);
   return reference && ui::isPixelArt(*reference);
 }
@@ -229,6 +234,9 @@ core::Result<assets::Image> TextureSources::load(std::string_view source) const 
       return core::fail(std::format("no generated image '{}'", source));
     }
     return found->second;
+  }
+  if (source.starts_with(GlyphPrefix)) {
+    return drawGlyph(source.substr(GlyphPrefix.size()));
   }
   auto reference = parseImageReference(source);
   if (!reference) {

@@ -13,9 +13,3 @@
 #item {
 	color: #7588c9;
 }
-
-/* The original's confirm button in the box's bottom right corner is the original look's
-   (skins/original/notice_box/style.rcss); without it the box shows none. */
-#confirm-icon {
-	display: none;
-}

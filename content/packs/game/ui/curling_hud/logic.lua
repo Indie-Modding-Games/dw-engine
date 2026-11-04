@@ -114,7 +114,9 @@ local function refresh(document)
   local hinted = (ui.setting("curling_hud.hint_name") or "") ~= ""
   for _, id in ipairs(hint_lines) do
     local key = ui.setting("curling_hud." .. id) or ""
-    document:get(id):set_text(key ~= "" and t(key) or "")
+    -- The original's help names its pad's buttons: they show as the device in use's
+    -- (set_prompt_text with original texts), the translation's {prompt:...} markers too.
+    document:get(id):set_prompt_text(key ~= "" and t(key) or "", true)
   end
   local prompt = number("prompt", -1)
   document:get("rows"):set_class("hidden", not hinted)
@@ -141,7 +143,9 @@ function on_language(document)
   refresh(document)
 end
 
-function on_device(_document) end
+function on_device(document)
+  refresh(document)
+end
 
 function on_action(_document, _action)
   return false

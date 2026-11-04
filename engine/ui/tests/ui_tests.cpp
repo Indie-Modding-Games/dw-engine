@@ -761,8 +761,9 @@ TEST_CASE("the pause menu works with the keyboard alone") {
   press(*ui, input, input::keys::Tab);
   REQUIRE(ui->isVisible("pause_menu"));
   CHECK(ui->focusedElementId("pause_menu") == "continue");
-  CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Enter");
-  CHECK(ui->elementText("pause_menu", "prompt-cancel") == "Esc");
+  CHECK(ui->elementText("pause_menu", "prompt-confirm").contains(">Space<"));
+  CHECK(ui->elementHasClass("pause_menu", "prompt-confirm", "glyph-key"));
+  CHECK(ui->elementText("pause_menu", "prompt-cancel").contains(">Esc<"));
 
   press(*ui, input, input::keys::Down);
   CHECK(ui->focusedElementId("pause_menu") == "open-minimap");
@@ -820,8 +821,11 @@ TEST_CASE("the pause menu works with a gamepad alone, and the prompts follow it"
   // Triangle opens the game menu, as on the original's pad.
   press(*ui, input, GamepadButton::North);
   REQUIRE(ui->isVisible("pause_menu"));
-  CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Cross");
-  CHECK(ui->elementText("pause_menu", "prompt-cancel") == "Circle");
+  // The original pad's family: its shapes, the cross and the circle.
+  CHECK(ui->elementHasClass("pause_menu", "prompt-confirm", "shape-cross"));
+  CHECK_FALSE(ui->elementHasClass("pause_menu", "prompt-confirm", "glyph-key"));
+  CHECK(ui->elementText("pause_menu", "prompt-confirm").contains("glyph-art"));
+  CHECK(ui->elementHasClass("pause_menu", "prompt-cancel", "shape-circle"));
 
   press(*ui, input, GamepadButton::DpadDown);
   press(*ui, input, GamepadButton::DpadDown);
@@ -846,7 +850,9 @@ TEST_CASE("the pause menu works with a gamepad alone, and the prompts follow it"
   // Touching the keyboard switches the prompts back.
   input.handle(platform::KeyChanged{.key = input::keys::Q, .down = true, .repeat = false});
   frame(*ui, input);
-  CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Enter");
+  CHECK(ui->elementText("pause_menu", "prompt-confirm").contains(">Space<"));
+  CHECK(ui->elementHasClass("pause_menu", "prompt-confirm", "glyph-key"));
+  CHECK_FALSE(ui->elementHasClass("pause_menu", "prompt-confirm", "shape-cross"));
 
   press(*ui, input, GamepadButton::East);
   press(*ui, input, GamepadButton::East);
@@ -1048,7 +1054,7 @@ TEST_CASE("the HUD's menu button asks the game to open the menu and names the ke
   ui->setSetting("hud.shown", true);
   ui->show("hud");
   ui->update();
-  CHECK(ui->elementText("hud", "prompt-menu") == "Tab");
+  CHECK(ui->elementText("hud", "prompt-menu").contains(">Tab<"));
   CHECK(click(*ui, input, "hud", "menu-button"));
   CHECK(commandNames(*ui) == std::vector<std::string>{"open_menu"});
   // A gamepad names its own button.
@@ -1574,7 +1580,7 @@ function unknown() ui.send(t("nobody.has.this")) end
   CHECK(ui->elementText("said", "said") == "150 %");
   CHECK(ui->elementText("hud", "minimap-name") == "Ciudad Archivo");
   CHECK(ui->elementText("pause_menu", "title") == "Pausa");
-  CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Intro");
+  CHECK(ui->elementText("pause_menu", "prompt-confirm").contains(">Espacio<"));
 
   REQUIRE(texts.setLanguage("en"));
   ui->refreshTexts();
@@ -1583,8 +1589,8 @@ function unknown() ui.send(t("nobody.has.this")) end
   CHECK(ui->elementText("said", "said") == "150%");
   CHECK(ui->elementText("hud", "minimap-name") == "File City &lt;A&gt;");
   CHECK(ui->elementText("pause_menu", "title") == "Pause");
-  CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Enter");
-  CHECK(ui->elementText("main_menu", "prompt-confirm") == "Enter");
+  CHECK(ui->elementText("pause_menu", "prompt-confirm").contains(">Space<"));
+  CHECK(ui->elementText("main_menu", "prompt-confirm").contains(">Space<"));
   CHECK(ui->elementText("main_menu", "language-value") == "English");
   const auto commands = ui->takeCommands();
   REQUIRE(commands.size() == 1);

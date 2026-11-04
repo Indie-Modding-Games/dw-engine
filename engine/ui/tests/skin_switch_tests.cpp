@@ -5,6 +5,7 @@
 #include <dwe/input/input_state.hpp>
 #include <dwe/input/keys.hpp>
 #include <dwe/localization/catalog.hpp>
+#include <dwe/platform/events.hpp>
 #include <dwe/ui/skin.hpp>
 #include <dwe/ui/ui.hpp>
 
@@ -434,8 +435,10 @@ TEST_CASE(
   // from x 160 of 1280); renderAwardSomethingTextbox and renderItemPickupTextbox copy the text
   // area's 12-pixel rows to y 45 from the centre (165) on, and script_textbox.c: renderUIBox draws
   // the confirm button, 16 x 12, at (239, 43) from the box's corner, one of three drawings for 4 of
-  // the field's 20 frames a second.
+  // the field's 20 frames a second. The button is the glyph of the device in use: the original's
+  // own with its pad's family, the engine's drawing of the key with the keyboard.
   constexpr double Frame = 1.0 / 20.0;
+  constexpr platform::GamepadId Pad = 3;
   Content content;
   addOriginalArt(content);
   const assets::VirtualFileSystem& files = content.mount();
@@ -451,6 +454,20 @@ TEST_CASE(
   ui.setSetting("award_notice.name", std::string{"Agumon"});
   ui.setSetting("award_notice.lines", std::string{"a,b,c"});
   ui.setSetting("field_item_notice.item", std::string{"Meat"});
+  input::InputState input{input::defaultActionMap()};
+  // A touch of a device makes it the one in use.
+  const auto touch = [&](const platform::Event& event) {
+    input.handle(event);
+    ui.tick(input, Tick);
+    input.endTick();
+    ui.update();
+  };
+  input.handle(platform::GamepadConnected{
+      .id = Pad, .family = platform::GamepadFamily::PlayStation, .name = "pad"});
+  touch(platform::GamepadButtonChanged{
+      .id = Pad, .button = platform::GamepadButton::LeftStick, .down = true});
+  touch(platform::GamepadButtonChanged{
+      .id = Pad, .button = platform::GamepadButton::LeftStick, .down = false});
 
   struct Notice {
     std::string_view document;
@@ -480,20 +497,35 @@ TEST_CASE(
       REQUIRE(line.has_value());
       CHECK(pixel(line->top) == doctest::Approx(165.0 + (12.0 * static_cast<double>(row))));
     }
-    const auto icon = ui.elementRect(notice.document, "confirm-icon");
+    const auto icon = ui.elementRect(notice.document, "confirm-icon-frame-0");
     REQUIRE(icon.has_value());
     CHECK(pixel(icon->left - box->left) == doctest::Approx(239.0));
     CHECK(pixel(icon->top - box->top) == doctest::Approx(43.0));
     CHECK(pixel(icon->right - icon->left) == doctest::Approx(16.0));
     CHECK(pixel(icon->bottom - icon->top) == doctest::Approx(12.0));
+    for (int drawing = 0; drawing < 3; ++drawing) {
+      CHECK(ui.styleProperty(notice.document, std::format("confirm-icon-frame-{}", drawing),
+                             "decorator")
+                .contains(std::format("confirm-icon-{}", drawing)));
+    }
 
-    // The drawing after running the UI frame by frame, as the game does, up to `seconds`.
+    // The drawing shown after running the UI frame by frame, as the game does, up to `seconds`:
+    // the three are stacked and only one is opaque at a time.
     const auto drawingAt = [&](double seconds) {
       while (clock.now < seconds) {
         clock.now = std::min(seconds, clock.now + Tick);
         ui.update();
       }
-      return ui.styleProperty(notice.document, "confirm-icon", "decorator");
+      int shown = -1;
+      for (int drawing = 0; drawing < 3; ++drawing) {
+        const std::string opacity = ui.styleProperty(
+            notice.document, std::format("confirm-icon-frame-{}", drawing), "opacity");
+        if (!opacity.empty() && std::stof(opacity) > 0.5F) {
+          CHECK(shown == -1);
+          shown = drawing;
+        }
+      }
+      return shown;
     };
     // The animation starts on the frame after the document shows.
     const double start = clock.now + Tick;
@@ -502,18 +534,35 @@ TEST_CASE(
         CAPTURE(turn);
         CAPTURE(drawing);
         const double at = start + Frame + (((turn * 3) + drawing) * 4 * Frame);
-        CHECK(drawingAt(at).contains(std::format("confirm-icon-{}", drawing)));
+        CHECK(drawingAt(at) == drawing);
       }
     }
     ui.hide(notice.document);
   }
 
-  // The modern skin keeps its own box, without the button.
+  // With the keyboard the button is the space bar's cap, in the same style and place: 17 pixels
+  // wide, it grows to the left from the button's right side. It switches while the box is open.
+  ui.show("award_notice");
+  ui.update();
+  touch(platform::KeyChanged{.key = input::keys::Q, .down = true, .repeat = false});
+  touch(platform::KeyChanged{.key = input::keys::Q, .down = false, .repeat = false});
+  const auto box = ui.elementRect("award_notice", "box");
+  const auto cap = ui.elementRect("award_notice", "confirm-icon-frame-0");
+  REQUIRE(box.has_value());
+  REQUIRE(cap.has_value());
+  CHECK(pixel(cap->right - box->left) == doctest::Approx(255.0));
+  CHECK(pixel(cap->right - cap->left) == doctest::Approx(17.0));
+  CHECK(ui.styleProperty("award_notice", "confirm-icon-frame-1", "decorator")
+            .contains("glyph/classic/cap/@space/1"));
+
+  // The modern skin draws its own badge with the key's name.
   REQUIRE(ui.setSkin("modern"));
   for (const std::string_view document : {"award_notice", "field_item_notice"}) {
     ui.show(document);
     ui.update();
-    CHECK(ui.drawnRectsOf(document, "confirm-icon").empty());
+    CHECK_FALSE(ui.drawnRectsOf(document, "confirm-icon").empty());
+    CHECK(ui.elementText(document, "confirm-icon").contains("Space"));
+    CHECK(ui.drawnRectsOf(document, "confirm-icon-frame-0").empty());
   }
 }
 

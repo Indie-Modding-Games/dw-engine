@@ -19,24 +19,4 @@ body .row {
 	line-height: 36dp;
 }
 
-/* The confirm button (script_textbox.c: renderUIBox): 16 x 12 pixels at 239 right of the box's left side and 43 below
-   its top (the box's border box; its 3dp transparent border is a pixel), drawn every frame the box is open, and one of
-   three drawings for 4 frames each of the field's 20 a second (TEXTBOX_OPEN_TIMER / 4 % 3): a turn every 0.6 s. A
-   decorator does not blend between two images, so each drawing holds until the next keyframe, which starts a hair
-   after the last one ends. */
-body #confirm-icon {
-	display: block;
-	position: absolute;
-	left: 714dp;
-	top: 126dp;
-	width: 48dp;
-	height: 36dp;
-	decorator: image(confirm-icon-0);
-	animation: 0.6s linear infinite confirm-icon-press;
-}
-
-@keyframes confirm-icon-press {
-	0%, 33.2% { decorator: image(confirm-icon-0); }
-	33.3%, 66.5% { decorator: image(confirm-icon-1); }
-	66.6%, 100% { decorator: image(confirm-icon-2); }
-}
+/* The confirm button in the box's bottom right corner is the speech box's (../story_textbox/style.rcss). */

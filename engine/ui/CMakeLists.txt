@@ -10,6 +10,7 @@ dwe_add_module(ui
         src/bitmap_font.cpp
         src/code_trust.cpp
         src/font_engine.cpp
+        src/glyph_art.cpp
         src/image_reference.cpp
         src/minimap.cpp
         src/minimap_disc.cpp

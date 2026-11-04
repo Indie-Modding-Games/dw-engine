@@ -70,7 +70,8 @@ local function fill_rows(document)
       spans[#spans + 1] = span
       local entry = prefix .. ".run." .. run
       local text = run < runs and ui.setting(entry .. ".text") or ""
-      span:set_text(text)
+      -- The original's button characters and the {prompt:...} markers are the device's glyphs.
+      span:set_prompt_text(text, true)
       local color = number(entry .. ".color", 1)
       for index = 0, max_color do
         span:set_class("color-" .. index, index == color)
@@ -94,7 +95,19 @@ local function refresh(document)
   document:get("prompt"):set_class("hidden", ui.setting("story_textbox.prompt") ~= true)
 end
 
+-- The confirm button the box shows while it waits (script_textbox.c: renderUIBox), as the device
+-- in use's glyph.
+local function refresh_prompt(document)
+  document:get("prompt"):set_prompt("confirm", true)
+end
+
 function on_show(document)
+  refresh_prompt(document)
+  refresh(document)
+end
+
+function on_device(document)
+  refresh_prompt(document)
   refresh(document)
 end
 
@@ -105,6 +118,7 @@ function on_setting(document, name)
 end
 
 function on_language(document)
+  refresh_prompt(document)
   refresh(document)
 end
 

@@ -1,3 +1,4 @@
+#include <dwe/ui/glyph_art.hpp>
 #include <dwe/ui/prompts.hpp>
 
 #include <algorithm>
@@ -257,6 +258,367 @@ std::string promptLabel(const input::ActionMap& map, input::DeviceKind device, G
                         std::string_view action, const localization::Catalog& texts) {
   const std::string control = promptControl(map, device, action);
   return control.empty() ? std::string{} : controlLabel(control, family, texts);
+}
+
+} // namespace dwe::ui
+
+namespace dwe::ui {
+namespace {
+
+using platform::GamepadFamily;
+
+constexpr std::string_view MousePrefix = "mouse:";
+
+// The shapes of the four face buttons by position, as the original's pad marks them.
+struct FaceShape {
+  std::string_view position;
+  std::string_view shape;
+  std::string_view character; // the original font's (originalShapeCharacter)
+};
+constexpr std::array FaceShapes{
+    FaceShape{.position = "south", .shape = "cross", .character = "\xE2\x96\xB3"}, // △
+    FaceShape{.position = "east", .shape = "circle", .character = "\xE2\x97\x8B"}, // ○
+    FaceShape{.position = "west", .shape = "square", .character = "\xE2\x96\xA1"}, // □
+    FaceShape{.position = "north", .shape = "triangle", .character = "\xC3\x97"},  // ×
+};
+
+// The original's texts that name a button, and the action the game binds that button to. The
+// font draws the cross in the cell the extraction writes as "△" and the triangle in "×"; a
+// corrected extraction ("✕") reads the same. The curling's help says "X button" in words.
+struct OriginalButton {
+  std::string_view text;
+  std::string_view action;
+};
+constexpr std::array OriginalButtons{
+    OriginalButton{.text = "X button", .action = "confirm"},
+    OriginalButton{.text = "\xE2\x96\xB3", .action = "confirm"}, // △, the cross's cell
+    OriginalButton{.text = "\xE2\x9C\x95", .action = "confirm"}, // ✕
+    OriginalButton{.text = "\xC3\x97", .action = "menu"},        // ×, the triangle's cell
+    OriginalButton{.text = "\xE2\x97\x8B", .action = "alt"},     // ○
+    OriginalButton{.text = "\xE2\x96\xA1", .action = "extra"},   // □
+};
+
+constexpr std::string_view MarkerOpen = "{prompt:";
+constexpr char MarkerClose = '}';
+
+// The keys whose cap shows a symbol or a short name instead of their label.
+struct KeySymbol {
+  std::string_view key;
+  std::string_view symbol;
+};
+constexpr std::array KeySymbols{
+    KeySymbol{.key = "space", .symbol = "@space"},
+    KeySymbol{.key = "enter", .symbol = "@enter"},
+    KeySymbol{.key = "keypad_enter", .symbol = "@enter"},
+    KeySymbol{.key = "backspace", .symbol = "@backspace"},
+    KeySymbol{.key = "up", .symbol = "@up"},
+    KeySymbol{.key = "down", .symbol = "@down"},
+    KeySymbol{.key = "left", .symbol = "@left"},
+    KeySymbol{.key = "right", .symbol = "@right"},
+    KeySymbol{.key = "escape", .symbol = "ESC"},
+    KeySymbol{.key = "tab", .symbol = "TAB"},
+    KeySymbol{.key = "delete", .symbol = "DEL"},
+    KeySymbol{.key = "insert", .symbol = "INS"},
+    KeySymbol{.key = "home", .symbol = "HOME"},
+    KeySymbol{.key = "end", .symbol = "END"},
+    KeySymbol{.key = "page_up", .symbol = "PGUP"},
+    KeySymbol{.key = "page_down", .symbol = "PGDN"},
+    KeySymbol{.key = "caps_lock", .symbol = "CAPS"},
+    KeySymbol{.key = "left_shift", .symbol = "SHIFT"},
+    KeySymbol{.key = "right_shift", .symbol = "SHIFT"},
+    KeySymbol{.key = "left_ctrl", .symbol = "CTRL"},
+    KeySymbol{.key = "right_ctrl", .symbol = "CTRL"},
+    KeySymbol{.key = "left_alt", .symbol = "ALT"},
+    KeySymbol{.key = "right_alt", .symbol = "ALT"},
+    KeySymbol{.key = "minus", .symbol = "-"},
+    KeySymbol{.key = "equals", .symbol = "="},
+    KeySymbol{.key = "comma", .symbol = ","},
+    KeySymbol{.key = "period", .symbol = "."},
+    KeySymbol{.key = "slash", .symbol = "@slash"},
+};
+
+// The longest text a cap draws: a longer label is cut (the drawing's font is the glyphs' own).
+constexpr std::size_t MaxSymbolText = 7;
+
+// A label in the capitals the drawn glyphs' font has (A-Z, 0-9, + and -), cut to MaxSymbolText.
+std::string symbolText(std::string_view label) {
+  std::string text;
+  for (const char c : label) {
+    const auto u = static_cast<unsigned char>(c);
+    if (std::isalnum(u) != 0 && u < 0x80) {
+      text += static_cast<char>(std::toupper(u));
+    } else if (c == '+' || c == '-') {
+      text += c;
+    }
+    if (text.size() == MaxSymbolText) {
+      break;
+    }
+  }
+  return text.empty() ? std::string{"?"} : text;
+}
+
+std::string keySymbol(std::string_view key, std::string_view label) {
+  for (const KeySymbol& named : KeySymbols) {
+    if (named.key == key) {
+      return std::string{named.symbol};
+    }
+  }
+  return symbolText(label);
+}
+
+std::string escapeRml(std::string_view text) {
+  std::string out;
+  out.reserve(text.size());
+  for (const char c : text) {
+    switch (c) {
+    case '&':
+      out += "&amp;";
+      break;
+    case '<':
+      out += "&lt;";
+      break;
+    case '>':
+      out += "&gt;";
+      break;
+    case '"':
+      out += "&quot;";
+      break;
+    default:
+      out += c;
+    }
+  }
+  return out;
+}
+
+std::string_view kindName(GlyphKind kind) {
+  switch (kind) {
+  case GlyphKind::Key:
+    return "key";
+  case GlyphKind::Mouse:
+    return "mouse";
+  case GlyphKind::Face:
+    return "face";
+  case GlyphKind::Button:
+    return "button";
+  case GlyphKind::Stick:
+    return "stick";
+  case GlyphKind::None:
+    break;
+  }
+  return "none";
+}
+
+std::string_view faceStyleName(FaceStyle style) {
+  switch (style) {
+  case FaceStyle::Shapes:
+    return "shapes";
+  case FaceStyle::Positions:
+    return "positions";
+  case FaceStyle::Letters:
+    break;
+  }
+  return "letters";
+}
+
+constexpr std::array PromptClassPrefixes{std::string_view{"glyph"}, std::string_view{"family-"},
+                                         std::string_view{"face-"}, std::string_view{"shape-"}};
+
+// The drawing's path (glyph_art.hpp): a round button for a face button, a cap for anything else.
+std::string classicArtSource(const PromptGlyph& glyph, int frame) {
+  const std::string_view base = glyph.kind == GlyphKind::Face ? "button" : "cap";
+  return std::format("/glyph/classic/{}/{}/{}", base, glyph.symbol, frame);
+}
+
+} // namespace
+
+FaceStyle faceStyleOf(GamepadFamily family) {
+  switch (family) {
+  case GamepadFamily::PlayStation:
+    return FaceStyle::Shapes;
+  case GamepadFamily::Xbox:
+  case GamepadFamily::Nintendo:
+  case GamepadFamily::Steam:
+    return FaceStyle::Letters;
+  case GamepadFamily::Generic:
+    break;
+  }
+  return FaceStyle::Positions;
+}
+
+std::string_view originalShapeCharacter(std::string_view shape) {
+  for (const FaceShape& face : FaceShapes) {
+    if (face.shape == shape) {
+      return face.character;
+    }
+  }
+  return {};
+}
+
+PromptGlyph promptGlyph(const input::ActionMap& map, input::DeviceKind device, GamepadFamily family,
+                        std::string_view action, const localization::Catalog& texts) {
+  PromptGlyph glyph;
+  glyph.control = promptControl(map, device, action);
+  if (glyph.control.empty()) {
+    return glyph;
+  }
+  glyph.label = controlLabel(glyph.control, family, texts);
+  if (glyph.control.starts_with(KeyPrefix)) {
+    glyph.kind = GlyphKind::Key;
+    glyph.symbol = keySymbol(std::string_view{glyph.control}.substr(KeyPrefix.size()), glyph.label);
+    return glyph;
+  }
+  if (glyph.control.starts_with(MousePrefix)) {
+    glyph.kind = GlyphKind::Mouse;
+    const std::string_view button = std::string_view{glyph.control}.substr(MousePrefix.size());
+    glyph.symbol = button == "left"     ? "LMB"
+                   : button == "right"  ? "RMB"
+                   : button == "middle" ? "MMB"
+                   : button == "back"   ? "M4"
+                                        : "M5";
+    return glyph;
+  }
+  const std::string_view button = std::string_view{glyph.control}.substr(GamepadPrefix.size());
+  const auto face = std::ranges::find(FaceShapes, button, &FaceShape::position);
+  if (face != FaceShapes.end()) {
+    glyph.kind = GlyphKind::Face;
+    glyph.face = faceStyleOf(family);
+    glyph.position = std::string{face->position};
+    switch (glyph.face) {
+    case FaceStyle::Shapes:
+      glyph.shape = std::string{face->shape};
+      glyph.symbol = std::format("@{}", face->shape);
+      break;
+    case FaceStyle::Positions:
+      glyph.symbol = std::format("@{}", face->position);
+      break;
+    case FaceStyle::Letters:
+      glyph.symbol = symbolText(glyph.label);
+      break;
+    }
+    return glyph;
+  }
+  if (button.starts_with("dpad_")) {
+    glyph.kind = GlyphKind::Button;
+    glyph.symbol = std::format("@{}", button);
+    return glyph;
+  }
+  if (button.ends_with("_stick") || button.ends_with("_trigger")) {
+    glyph.kind = GlyphKind::Stick;
+    glyph.symbol = std::format("{}{}", button.starts_with("left") ? 'L' : 'R',
+                               button.ends_with("_stick") ? 'S' : 'T');
+    return glyph;
+  }
+  glyph.kind = GlyphKind::Button;
+  glyph.symbol = symbolText(glyph.label);
+  return glyph;
+}
+
+std::vector<std::string> promptClasses(const PromptGlyph& glyph) {
+  std::vector<std::string> classes{"glyph", std::format("glyph-{}", kindName(glyph.kind))};
+  if (glyph.kind == GlyphKind::Face) {
+    classes.push_back(std::format("family-{}", faceStyleName(glyph.face)));
+    classes.push_back(std::format("face-{}", glyph.position));
+    if (!glyph.shape.empty()) {
+      classes.push_back(std::format("shape-{}", glyph.shape));
+    }
+  }
+  return classes;
+}
+
+bool isPromptClass(std::string_view name) {
+  return std::ranges::any_of(PromptClassPrefixes,
+                             [name](std::string_view prefix) { return name.starts_with(prefix); });
+}
+
+int classicGlyphWidth(const PromptGlyph& glyph) {
+  if (glyph.kind == GlyphKind::None) {
+    return 0;
+  }
+  return glyph.kind == GlyphKind::Face ? 16 : classicCapWidth(glyph.symbol);
+}
+
+std::string promptMarkup(const PromptGlyph& glyph, bool icon, std::string_view id) {
+  std::string markup;
+  if (glyph.kind == GlyphKind::None) {
+    return markup;
+  }
+  if (glyph.kind == GlyphKind::Face && glyph.face == FaceStyle::Shapes) {
+    markup = std::format(R"(<span class="glyph-char">{}</span><span class="glyph-art"></span>)",
+                         originalShapeCharacter(glyph.shape));
+  } else if (glyph.kind == GlyphKind::Face && glyph.face == FaceStyle::Positions) {
+    markup = R"(<span class="glyph-art"></span>)";
+  } else {
+    markup = std::format(R"(<span class="glyph-label">{}</span>)", escapeRml(glyph.label));
+  }
+  if (icon) {
+    // The shapes' drawings come from the skins' style sheets: the classic one has the original's
+    // own button for the cross.
+    const bool styled = glyph.kind == GlyphKind::Face && glyph.face == FaceStyle::Shapes;
+    const int width = classicGlyphWidth(glyph) * 3;
+    for (int frame = 0; frame < 3; ++frame) {
+      const std::string frameId =
+          id.empty() ? std::string{} : std::format(R"( id="{}-frame-{}")", escapeRml(id), frame);
+      if (styled) {
+        markup += std::format(R"(<span class="glyph-frame frame-{}"{}></span>)", frame, frameId);
+      } else {
+        markup += std::format(
+            R"(<span class="glyph-frame frame-{}"{} style="width: {}dp; decorator: image({});"></span>)",
+            frame, frameId, width, classicArtSource(glyph, frame));
+      }
+    }
+  }
+  return markup;
+}
+
+std::string promptSpan(const PromptGlyph& glyph) {
+  std::string classes = "key";
+  for (const std::string& name : promptClasses(glyph)) {
+    classes += ' ';
+    classes += name;
+  }
+  return std::format(R"(<span class="{}">{}</span>)", classes, promptMarkup(glyph, false));
+}
+
+std::string promptText(std::string_view text, bool originalButtons,
+                       const std::function<PromptGlyph(std::string_view)>& glyphOf) {
+  std::string out;
+  std::string plain;
+  const auto flush = [&] {
+    out += escapeRml(plain);
+    plain.clear();
+  };
+  while (!text.empty()) {
+    if (text.starts_with(MarkerOpen)) {
+      const std::size_t close = text.find(MarkerClose);
+      if (close != std::string_view::npos) {
+        const std::string_view action = text.substr(MarkerOpen.size(), close - MarkerOpen.size());
+        flush();
+        if (const PromptGlyph glyph = glyphOf(action); glyph.kind != GlyphKind::None) {
+          out += promptSpan(glyph);
+        }
+        text.remove_prefix(close + 1);
+        continue;
+      }
+    }
+    if (originalButtons) {
+      const auto named = std::ranges::find_if(
+          OriginalButtons, [text](const OriginalButton& b) { return text.starts_with(b.text); });
+      if (named != OriginalButtons.end()) {
+        if (const PromptGlyph glyph = glyphOf(named->action); glyph.kind != GlyphKind::None) {
+          flush();
+          out += promptSpan(glyph);
+        } else {
+          plain += named->text;
+        }
+        text.remove_prefix(named->text.size());
+        continue;
+      }
+    }
+    plain += text.front();
+    text.remove_prefix(1);
+  }
+  flush();
+  return out;
 }
 
 } // namespace dwe::ui

@@ -4,6 +4,7 @@
 #include <dwe/core/log.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/script/script_vm.hpp>
+#include <dwe/ui/prompts.hpp>
 #include <dwe/ui/ui.hpp>
 
 #include <RmlUi/Core/Element.h>
@@ -43,6 +44,8 @@ struct ScriptHost {
   std::function<bool(UiCommand)> send;
   std::function<UiValue(std::string_view)> setting;
   std::function<std::string(std::string_view)> prompt;
+  // The glyph of the control that triggers an action on the device in use (prompts.hpp).
+  std::function<PromptGlyph(std::string_view)> glyph;
   // The text of a key in the player's language with its placeholders filled.
   std::function<std::string(std::string_view, std::span<const localization::TextArgument>)> text;
   // The languages the player can choose.
