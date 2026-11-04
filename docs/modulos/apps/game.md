@@ -509,9 +509,19 @@ si hay una medalla o un nivel de domador pendiente, abre el cuadro de diálogo d
 las tres líneas de la medalla en el color 7 («Congratulations!», `main.tamer_messages.0005` a `0007`) o la del nivel
 (subida en el color 7, bajada en el 3), suena `award_sound` (0, 7) y el campo y el reloj esperan hasta confirmar
 (Intro / Espacio; cruz en el mando), que borra los dos avisos. Medido en el original: el cuadro sale con 999999 bits en
-twna01, el HUD se oculta mientras está y vuelve al cerrarlo (igual en dwe). Hueco: el icono de confirmar de la
-esquina del cuadro, como en el aviso de objetos. Las medallas son los disparadores 0x16c + medalla que la
-página del jugador ya lee (`StoryAdapter::hasMedal`).
+twna01, el HUD se oculta mientras está y vuelve al cerrarlo (igual en dwe). Las medallas son los disparadores 0x16c +
+medalla que la página del jugador ya lee (`StoryAdapter::hasMedal`).
+
+Igual en el aspecto original: el cuadro del aviso y el del aviso de objetos (`ui/field_item_notice`). Los dos son la
+caja de la historia (borde cian del original) en x 30 a 292, y 162 a 221 (`tamer.c`, los estados del jugador del
+premio y de coger un objeto: -130, 42, 262 x 59 desde el centro), con el relleno `UI_BOX_COLORS` 0, negro a la mitad
+(`createAnimatedUIBox` color 0, rasgo 2; medido: dentro del cuadro el campo queda a 0,46 de su luz), las filas de 12
+píxeles desde y 165 (`renderAwardSomethingTextbox`, `renderItemPickupTextbox`: `renderString` en y 45 desde el centro)
+y el botón de confirmar de `script_textbox.c: renderUIBox`: 16 x 12 en (239, 43) desde la esquina del cuadro, tres
+dibujos de SYSTEM_W (u 0x4C + dibujo x 16, v 0xB7, paleta 12) que cambian cada 4 cuadros del campo
+(`TEXTBOX_OPEN_TIMER / 4 % 3`; medido en DuckStation: el contador sube 10 en 30 vblanks, 20 por segundo, y la cruz
+del botón cambia de altura cada 12 vblanks): una vuelta cada 0,6 s. Estilo:
+`ui/skins/original/notice_box/style.rcss`. El aspecto moderno deja su caja gris sin botón, a propósito.
 
 Igual: el aviso de enfermedad. Cuando el compañero cae enfermo (`partner_impl.c: tickSicknessMechanics`, que pone al
 domador en el estado 0x14), el mismo cuadro sale con su nombre en el color 10 y «is Sick!» (`main.partner_impl_is_sick`)

@@ -81,9 +81,13 @@ screens:
   # La tienda, también, con la caja del dinero del original.
   shop_menu:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/shop_menu/style]
-  # El aviso de un objeto del suelo o de un cofre: la caja de diálogo de la historia, como el original.
+  # El aviso de un objeto del suelo o de un cofre: la caja de diálogo de la historia, como el original, con sus filas de
+  # 12 píxeles y el botón de confirmar animado (tamer.c: renderItemPickupTextbox).
   field_item_notice:
-    styles: [ui/skins/original/story_textbox/style]
+    styles: [ui/skins/original/story_textbox/style, ui/skins/original/notice_box/style]
+  # El aviso de un premio o de la enfermedad del compañero, igual (tamer.c: renderAwardSomethingTextbox).
+  award_notice:
+    styles: [ui/skins/original/story_textbox/style, ui/skins/original/notice_box/style]
   # Las cajas de texto de la historia: la caja del original y su barra de selección.
   story_textbox:
     styles: [ui/skins/original/story_textbox/style]
@@ -218,6 +222,18 @@ sprite_sheets:
       box-tr: [124, 16, 4, 4]
       box-bl: [120, 20, 4, 4]
       box-br: [124, 20, 4, 4]
+  # El botón de confirmar de una caja que espera al jugador, en tres dibujos de 16 x 12 en u = 0x4C + dibujo x 16, v 0xB7
+  # de la página (320, 0), que es la fila 55 de SYSTEM_W, con la CLUT (96, 500), la paleta 12 (script_textbox.c:
+  # renderUIBox).
+  - name: confirm-icon
+    image: texture/etcdat/system_w
+    palette: 12
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      confirm-icon-0: [76, 55, 16, 12]
+      confirm-icon-1: [92, 55, 16, 12]
+      confirm-icon-2: [108, 55, 16, 12]
   # Los rótulos MENU y COUNT de la tabla del guardián de objetos (script_menu.c: createItemKeepWindow, paleta 4).
   - name: keeper-labels
     image: texture/etcdat/system_w

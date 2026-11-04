@@ -413,6 +413,96 @@ TEST_CASE(
   }
 }
 
+TEST_CASE(
+    "the original skin's award and item notices are the original's box, rows and animated confirm button") {
+  // tamer.c: the player's award and item pickup states open the box at (-130, 42) from the
+  // screen's centre, 262 x 59 (x 30, y 162 of the 320 x 240 screen: 3 dp a pixel, the 4:3 screen
+  // from x 160 of 1280); renderAwardSomethingTextbox and renderItemPickupTextbox copy the text
+  // area's 12-pixel rows to y 45 from the centre (165) on, and script_textbox.c: renderUIBox draws
+  // the confirm button, 16 x 12, at (239, 43) from the box's corner, one of three drawings for 4 of
+  // the field's 20 frames a second.
+  constexpr double Frame = 1.0 / 20.0;
+  Content content;
+  addOriginalArt(content);
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "en");
+  FakeClock clock;
+  UiDesc desc{
+      .files = &files, .texts = &texts, .width = 1280, .height = 720, .clock = {}, .scripts = {}};
+  desc.clock = [&clock] { return clock.now; };
+  auto created = Ui::create(desc);
+  REQUIRE_MESSAGE(created.has_value(), created.error().message);
+  Ui& ui = **created;
+  REQUIRE(ui.skin() == "original");
+  ui.setSetting("award_notice.name", std::string{"Agumon"});
+  ui.setSetting("award_notice.lines", std::string{"a,b,c"});
+  ui.setSetting("field_item_notice.item", std::string{"Meat"});
+
+  struct Notice {
+    std::string_view document;
+    std::vector<std::string_view> rows;
+  };
+  const auto pixel = [](float dp) { return dp / 3.0F; };
+  for (const Notice& notice :
+       {Notice{.document = "award_notice", .rows = {"line-1", "line-2", "line-3"}},
+        Notice{.document = "field_item_notice", .rows = {"item", "text"}}}) {
+    CAPTURE(notice.document);
+    REQUIRE(ui.loadDocument(notice.document, idOf(std::format("ui/{}/document", notice.document))));
+    ui.show(notice.document);
+    ui.update();
+    const auto box = ui.elementRect(notice.document, "box");
+    REQUIRE(box.has_value());
+    CHECK(pixel(box->left - 160.0F) == doctest::Approx(30.0));
+    CHECK(pixel(box->top) == doctest::Approx(162.0));
+    CHECK(pixel(box->right - box->left) == doctest::Approx(262.0));
+    CHECK(pixel(box->bottom - box->top) == doctest::Approx(59.0));
+    // The box's look is the speech box's: the original's border, not the modern grey line.
+    CHECK(ui.styleProperty(notice.document, "box", "decorator").contains("original-box"));
+    // UI_BOX_COLORS 0, black, at half (createAnimatedUIBox color 0, feature 2).
+    CHECK(ui.styleProperty(notice.document, "box", "background-color") == "#00000080");
+    for (std::size_t row = 0; row < notice.rows.size(); ++row) {
+      CAPTURE(row);
+      const auto line = ui.elementRect(notice.document, notice.rows[row]);
+      REQUIRE(line.has_value());
+      CHECK(pixel(line->top) == doctest::Approx(165.0 + (12.0 * static_cast<double>(row))));
+    }
+    const auto icon = ui.elementRect(notice.document, "confirm-icon");
+    REQUIRE(icon.has_value());
+    CHECK(pixel(icon->left - box->left) == doctest::Approx(239.0));
+    CHECK(pixel(icon->top - box->top) == doctest::Approx(43.0));
+    CHECK(pixel(icon->right - icon->left) == doctest::Approx(16.0));
+    CHECK(pixel(icon->bottom - icon->top) == doctest::Approx(12.0));
+
+    // The drawing after running the UI frame by frame, as the game does, up to `seconds`.
+    const auto drawingAt = [&](double seconds) {
+      while (clock.now < seconds) {
+        clock.now = std::min(seconds, clock.now + Tick);
+        ui.update();
+      }
+      return ui.styleProperty(notice.document, "confirm-icon", "decorator");
+    };
+    // The animation starts on the frame after the document shows.
+    const double start = clock.now + Tick;
+    for (int turn = 0; turn < 2; ++turn) {
+      for (int drawing = 0; drawing < 3; ++drawing) {
+        CAPTURE(turn);
+        CAPTURE(drawing);
+        const double at = start + Frame + (((turn * 3) + drawing) * 4 * Frame);
+        CHECK(drawingAt(at).contains(std::format("confirm-icon-{}", drawing)));
+      }
+    }
+    ui.hide(notice.document);
+  }
+
+  // The modern skin keeps its own box, without the button.
+  REQUIRE(ui.setSkin("modern"));
+  for (const std::string_view document : {"award_notice", "field_item_notice"}) {
+    ui.show(document);
+    ui.update();
+    CHECK(ui.drawnRectsOf(document, "confirm-icon").empty());
+  }
+}
+
 TEST_CASE("a live switch restyles every document in place and keeps its state") {
   Content content;
   const assets::VirtualFileSystem& files = content.mount();

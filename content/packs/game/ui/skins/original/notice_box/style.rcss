@@ -1,0 +1,42 @@
+/* The notices that wait for the player in the original look, the boxes of the player's award and item pickup states:
+   the award notice (tamer.c: renderAwardSomethingTextbox) and the notice of an item on the ground or in a chest
+   (tamer.c: renderItemPickupTextbox). Both are the story's speech box (../story_textbox/style.rcss) at its place,
+   x 30 to 292 and y 162 to 221, with their text and the confirm button as the original draws them there.
+
+   The text: renderString copies rows of the text area, 12 pixels each, to x -125 and y 45, 57 and 69 from the
+   screen's centre, 5 pixels right of the box's left side and 3 below its top, where the speech box's first row starts
+   too, but 12 pixels apart, not the speech box's 13. */
+
+/* The box's fill is UI_BOX_COLORS 0, black, at half (createAnimatedUIBox color 0 with feature 2, a semi-transparent
+   GsBOXF): the field shows through at half its light (capture of the sickness notice: 0.46 of it), darker than the
+   speech box's. */
+body #box {
+	background-color: #00000080;
+}
+
+body .row {
+	height: 36dp;
+	line-height: 36dp;
+}
+
+/* The confirm button (script_textbox.c: renderUIBox): 16 x 12 pixels at 239 right of the box's left side and 43 below
+   its top (the box's border box; its 3dp transparent border is a pixel), drawn every frame the box is open, and one of
+   three drawings for 4 frames each of the field's 20 a second (TEXTBOX_OPEN_TIMER / 4 % 3): a turn every 0.6 s. A
+   decorator does not blend between two images, so each drawing holds until the next keyframe, which starts a hair
+   after the last one ends. */
+body #confirm-icon {
+	display: block;
+	position: absolute;
+	left: 714dp;
+	top: 126dp;
+	width: 48dp;
+	height: 36dp;
+	decorator: image(confirm-icon-0);
+	animation: 0.6s linear infinite confirm-icon-press;
+}
+
+@keyframes confirm-icon-press {
+	0%, 33.2% { decorator: image(confirm-icon-0); }
+	33.3%, 66.5% { decorator: image(confirm-icon-1); }
+	66.6%, 100% { decorator: image(confirm-icon-2); }
+}
