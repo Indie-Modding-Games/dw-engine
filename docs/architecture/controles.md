@@ -43,10 +43,10 @@ que muestran los avisos.
 | Acción | Teclado | Ratón | Mando | Uso |
 |---|---|---|---|---|
 | `confirm` | Espacio, Intro, **F** | Clic izq. | Sur | Elegir comando (batalla), aceptar, avanzar cajas de texto, clic del elemento enfocado. `F` es el alias de «usar/interactuar» junto a `WASD`; `Espacio` es el que muestran los avisos. |
-| `cancel` | Esc, Retroceso | Clic der. | Este | Volver / cerrar. |
+| `cancel` | Ctrl izq./der., Retroceso | Clic der. | Este | Volver / cerrar. `Esc` se liberó para `settings` (el menú clásico de pausa del PC); los avisos muestran el Ctrl. |
 | `menu` | Tab | — | Norte | Menú de pausa en campo; **en batalla abre la bolsa** (antes era `cancel`). |
 | `pause` | P | — | Start | Congela el tiempo; la caja de pausa se abre también desde batalla. Se quitó la tecla multimedia «Pausa». |
-| `settings` | (sin tecla) | — | Back | Opciones en partida. El teclado entra por el menú (`Tab`); el aviso bajo la caja de pausa solo sale en mando. |
+| `settings` | Esc, F10 | — | Back | Opciones en partida: abren el menú de pausa directo en su página de opciones, y lo cierran si ya estaba ahí. El aviso bajo la caja de pausa nombra la tecla del dispositivo. |
 | `world_map` | M | — | LeftShoulder | Mapa de la isla. Mejora de dwe; sin uso en el original. |
 | `move_left/right/up/down` | A/D/W/S o flechas | — | Cruceta o stick izq. | Movimiento del jugador y navegación de la UI. |
 | `walk` | Mayús. izq./der. | — | **RightShoulder (R1)** | Mantener para andar en vez de correr. Ya no comparte el oeste con `extra`. |
@@ -86,8 +86,9 @@ En campo:
 
 - `menu` abre el documento de pausa completo (`pause_menu`), con sus páginas: compañero, bolsa, opciones,
   guardar, salir.
-- `pause` (Start) muestra la caja de pausa simple; `settings` (F10) salta directo a la página de opciones.
-- `cancel` cierra el menú.
+- `pause` (Start) muestra la caja de pausa simple; `settings` (`Esc` o `F10` en teclado, Select en mando) salta
+  directo a la página de opciones, y la cierra si ya estaba abierto en ella.
+- `cancel` (`Ctrl` en teclado, Este en mando) cierra el menú.
 
 En batalla (`content/packs/game/ui/battle/logic.lua:on_action` y `apps/game/src/play_session.cpp:pressBattle`):
 
@@ -302,3 +303,28 @@ Cada fase es un PR independiente y jugable.
 
 Queda pendiente solo un detalle menor de UI: cómo se muestra la pista de «Opciones» de la caja de pausa en teclado
 sin tecla asignada (decidir en la fase 3).
+
+## Reasignación 2026-11: `Esc` abre las opciones; `cancel` pasa al `Ctrl`
+
+Decisión nueva, posterior al «Teclado moderno». El PC clásico usa `Esc` para el menú de pausa; aquí
+`Esc` pasará a la acción `settings` — el menú de opciones en partida, que desde la caja de pausa de
+Start o desde el campo abre el `pause_menu` directo en su página «Opciones», y lo cierra si ya estaba
+abierto en ella. Para que un pulso no dispare dos acciones a la vez, `cancel` deja `Esc` y se
+reúlica al par `Ctrl` (izquierdo y derecho, como los dos `Shift` del `walk`); se conservan además
+`Retroceso`, el clic derecho y el Este del mando.
+
+- `action_map.cpp`: `cancel` pierde `Escape` y gana `LeftCtrl`/`RightCtrl` (primera vinculación = la que
+  muestran los avisos: el Ctrl); `settings` gana `Escape` y `F10` en teclado, mantiene `Back` en mando.
+- `keys.hpp`: constantes nuevas `LeftCtrl = 224`, `RightCtrl = 228` (los códigos HID de la tabla de
+  `prompts.cpp`, que ya conocía «CTRL»).
+- Los avisos `{prompt:cancel}` salen solos: en teclado dibujan la cap «CTRL», y la pista de la caja de
+  pausa («Esc Opciones») vuelve a mostrarse también en teclado (`pause_box/logic.lua` ya no filtra por
+  dispositivo) — resuelve el detalle pendiente de la fase 3.
+- `device_names.cpp` (control remoto): nombres nuevos `left_ctrl`/`right_ctrl`; `escape` sigue
+  nombrando la tecla, que ahora hace `settings`.
+- Autotests: la tabla `Controls` de `autotest.cpp` pulsa `LeftCtrl` para `cancel`.
+- Tests: `action_map_tests.cpp` (Esc/F10 = `settings`, Ctrl = `cancel`), `prompts_tests.cpp` /
+  `prompt_glyphs_tests.cpp` (etiquetas), y los casos de UI que pulsaban `Escape` para volver pasan a
+  `LeftCtrl`.
+- Sobrescribe la decisión de 2026-10 «`settings`: sin atajo de teclado»: las opciones pasan a estar a
+  un `Esc`, no a un `Tab`.

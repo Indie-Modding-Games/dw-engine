@@ -52,7 +52,7 @@ TEST_CASE("the egg box's keys sound nothing of the menus': the game plays its ow
     static_cast<void>(screen.ui->takeCues());
     screen.press(input::keys::Right);
     screen.press(input::keys::Left);
-    screen.press(input::keys::Escape);
+    screen.press(input::keys::LeftCtrl);
     CHECK(screen.ui->takeCues().empty());
   }
 }

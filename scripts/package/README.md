@@ -35,7 +35,7 @@ Useful options: `./dwe --fullscreen`, `./dwe --lang en` or `./dwe --lang es`, `.
 |---|---|---|
 | Move | WASD or arrow keys | D-pad or left stick |
 | Confirm | Enter or Space | Bottom face button |
-| Cancel, back | Esc or Backspace | Right face button |
+| Cancel, back | Ctrl or Backspace | Right face button |
 | Open or close the menu | Tab | Top face button |
 | Pause | P or Pause | Start |
 | Save a bug report | F12 | |

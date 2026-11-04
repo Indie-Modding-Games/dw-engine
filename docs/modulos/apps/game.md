@@ -507,7 +507,7 @@ la del compañero tras el suyo, aunque la línea 0x1C sirva a las dos (capturas 
 cp06-partner-name-yesno). Mientras corren la película, la
 entrevista o una caja de nombres, `menu` no abre el menú de pausa (allí salta la película o lleva el cursor a
 Aceptar), como el original, que no tiene pausa en esas pantallas. La película también se salta con `confirm` o
-`cancel` (Intro, Espacio, Esc): mejora para PC, el original solo lee Start; la pulsación que la arranca (la última
+`cancel` (Intro o Espacio para confirmar, Ctrl o Retroceso para cancelar): mejora para PC, el original solo lee Start; la pulsación que la arranca (la última
 respuesta de la entrevista) no cuenta. La misma caja de nombres sirve a la rutina 32 de
 los guiones (renombrar al jugador o al compañero, `StoryNaming`). No corre en un autotest, como las películas, salvo
 que la ruta diga `new_game_scene: true`.
@@ -1033,7 +1033,7 @@ no. Un enemigo fuera de la vista del disco no se pinta (no se clava en el borde 
 
 Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no tiene mapa de la isla): la tecla M
 (L1 en el mando, la acción `world_map` de `defaultActionMap`) abre a pantalla completa un mapa de toda la isla, donde
-el jugador anda libre (sin menú, guion, fundido ni ventana abierta, como el menú de pausa). M o Esc (cancelar) lo
+el jugador anda libre (sin menú, guion, fundido ni ventana abierta, como el menú de pausa). M o Ctrl (cancelar) lo
 cierran. Mientras está abierto el juego se para (`PlaySession::paused`). El ajuste `world_map` (fila «Mapa de la
 isla», «Island map» en inglés, de las opciones; guardado en los ajustes del usuario) apaga la tecla; apagado, M sigue
 cerrando un mapa abierto.
@@ -1094,16 +1094,16 @@ menú del título: `language`, `text_font`) y, debajo, las opciones propias del 
 
 | Cómo se abre | Teclado | Mando |
 |---|---|---|
-| Directamente, también desde la pausa de Start (la cierra) | — (no atajo) | Select (Back) |
+| Directamente, también desde la pausa de Start (la cierra) | Esc (o F10) | Select (Back) |
 | Desde el menú (aspecto moderno) | Tab, «Opciones» | Botón norte, «Opciones» |
 | Desde el menú (aspecto original) | Tab, «Jugador», Tab, «Opciones» | Botón norte, «Jugador», botón norte, «Opciones» |
 
 `settings` (`defaultActionMap`) abre el menú de pausa en su página de opciones (`pause_menu.start_page`, que lee su
-`on_show`); Atrás desde ahí vuelve al juego, y con el menú abierto lo cierra. Solo tiene vinculación en el mando
-(Select/Back): en el **teclado no hay atajo**, las opciones se abren desde el menú con `Tab`. Donde no hay menú de
+`on_show`); Atrás desde ahí vuelve al juego, y con el menú abierto lo cierra. En teclado es `Esc` (o `F10`) — la tecla
+clásica de pausa del PC, liberada de `cancel`, que pasó al `Ctrl` — y en el mando Select/Back. Donde no hay menú de
 pausa (título, películas, entrevista, caja de nombres, gimnasio) o con otro menú abierto no hace nada. Bajo el
-recuadro de pausa se lee la tecla («Back Opciones») **solo en mando**; en teclado no se muestra porque `settings` no
-tiene tecla (`pause_box/logic.lua`).
+recuadro de pausa se lee la tecla del dispositivo en uso («Esc Opciones» en teclado, «Back Opciones» en mando)
+(`pause_box/logic.lua`).
 
 Las opciones propias del motor salen de una lista, `ui/common/game_options.lua` (`game_options`): id de la fila,
 ajuste de la UI que publica el juego y que la fila envía como orden, texto, valor por defecto y, para las que no son

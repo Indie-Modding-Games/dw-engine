@@ -531,7 +531,7 @@ TEST_CASE("a modal document takes the navigation and confirm clicks the focused 
   CHECK(commands[0].value == UiValue{std::string{"second"}});
 
   // Without an on_action handler, cancel closes the document.
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
   CHECK_FALSE(ui->isVisible("test"));
   CHECK_FALSE(ui->capturesInput());
 }
@@ -556,7 +556,7 @@ TEST_CASE("a shut menu does not open on the menu action, and opens again once le
   CHECK(ui->isVisible("test"));
   // Shut while open, the menu still closes as it did.
   ui->setMenuShut(true);
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
   CHECK_FALSE(ui->isVisible("test"));
 }
 
@@ -585,12 +585,12 @@ end
   CHECK(ui->isVisible("page"));
   CHECK(ui->capturesInput());
 
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
   CHECK_FALSE(ui->isVisible("page"));
   CHECK(ui->isVisible("menu"));
   CHECK(ui->capturesInput());
   // The menu answers again: cancel closes it.
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
   CHECK_FALSE(ui->isVisible("menu"));
   CHECK_FALSE(ui->capturesInput());
 }
@@ -818,7 +818,7 @@ TEST_CASE("the pause menu works with the keyboard alone") {
   CHECK(ui->focusedElementId("pause_menu") == "continue");
   CHECK(ui->elementText("pause_menu", "prompt-confirm").contains(">Space<"));
   CHECK(ui->elementHasClass("pause_menu", "prompt-confirm", "glyph-key"));
-  CHECK(ui->elementText("pause_menu", "prompt-cancel").contains(">Esc<"));
+  CHECK(ui->elementText("pause_menu", "prompt-cancel").contains(">Left Ctrl<"));
 
   press(*ui, input, input::keys::Down);
   CHECK(ui->focusedElementId("pause_menu") == "open-minimap");
@@ -846,10 +846,10 @@ TEST_CASE("the pause menu works with the keyboard alone") {
   CHECK(commands[0].value == UiValue{std::string{"large"}});
 
   // Cancel goes back to the entry that opened the page, then closes the menu.
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
   CHECK(ui->elementText("pause_menu", "title") == "Pause");
   CHECK(ui->focusedElementId("pause_menu") == "open-minimap");
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
   CHECK_FALSE(ui->isVisible("pause_menu"));
   CHECK_FALSE(ui->capturesInput());
 
@@ -1041,7 +1041,7 @@ TEST_CASE("the battle opens the field's bag: its Use throws once the bag has clo
   CHECK(ui->elementHasClass("partner_menu", "opt-use", "unavailable"));
   press(*ui, input, input::keys::Return);
   CHECK(ui->takeCommands().empty());
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
   CHECK(ui->focusedElementId("partner_menu") == "slot-1");
 
   // A usable one: Use closes the boxes and only then asks for the throw (tickInventoryUI's case 5:
@@ -1074,7 +1074,7 @@ TEST_CASE("the battle opens the field's bag: its Use throws once the bag has clo
 
   // Cancel closes it into the fight too.
   openBag(*ui, input, "battle");
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
   settleBoxes(*ui, input);
   CHECK_FALSE(ui->isVisible("partner_menu"));
   CHECK_FALSE(ui->isVisible("pause_menu"));
@@ -1094,7 +1094,7 @@ TEST_CASE("the field's bag uses an item at once and goes back to the pause menu"
   press(*ui, input, input::keys::Return);
   CHECK(commandNames(*ui) == std::vector<std::string>{"bag_use"});
   CHECK(ui->isVisible("partner_menu"));
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
   settleBoxes(*ui, input);
   CHECK_FALSE(ui->isVisible("partner_menu"));
   CHECK(ui->isVisible("pause_menu"));
@@ -1816,7 +1816,7 @@ TEST_CASE("the main menu changes the language with the keyboard and starts the g
   CHECK(commands[0].name == "language");
   CHECK(commands[0].value == UiValue{std::string{"en"}});
   // Cancel does not leave the main menu.
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
   CHECK(ui->isVisible("main_menu"));
 
   press(*ui, input, input::keys::Up);

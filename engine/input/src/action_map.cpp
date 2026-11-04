@@ -33,15 +33,19 @@ ActionMap defaultActionMap() {
   ActionMap map;
 
   // The first key of an action is the one its button prompts show: the space bar confirms. `F` is a
-  // second confirm, the interact key next to `WASD` (docs/architecture/controles.md): it stays after
-  // Space so the prompts keep naming the space bar.
+  // second confirm, the interact key next to `WASD` (docs/architecture/controles.md): it stays
+  // after Space so the prompts keep naming the space bar.
   map.bind("confirm", KeyBinding{keys::Space});
   map.bind("confirm", KeyBinding{keys::Return});
   map.bind("confirm", KeyBinding{keys::F});
   map.bind("confirm", MouseBinding{MouseButton::Left});
   map.bind("confirm", GamepadButtonBinding{GamepadButton::South});
 
-  map.bind("cancel", KeyBinding{keys::Escape});
+  // Cancel is the Ctrl pair on the keyboard (and Backspace, the mouse's right button and the pad's
+  // East elsewhere): `Escape` opened it too, until the keyboard's quick options took that key —
+  // pressing `Escape` on a menu would have fired `menu`-like settings and cancel at once.
+  map.bind("cancel", KeyBinding{keys::LeftCtrl});
+  map.bind("cancel", KeyBinding{keys::RightCtrl});
   map.bind("cancel", KeyBinding{keys::Backspace});
   map.bind("cancel", MouseBinding{MouseButton::Right});
   map.bind("cancel", GamepadButtonBinding{GamepadButton::East});
@@ -58,8 +62,10 @@ ActionMap defaultActionMap() {
 
   // The game's options while playing (docs/modulos/apps/game.md, «Opciones en partida»): the game
   // menu opens straight on its options page, also from Start's pause. The original's Select had no
-  // use on the field. On the keyboard there is no shortcut: options live one `Tab` away, inside the
-  // game menu, so no letter near `WASD` is spent on them.
+  // use on the field; on the keyboard `Escape` (the classic PC pause key) and `F10` take it: once
+  // opens the options page, once more closes it back to the field.
+  map.bind("settings", KeyBinding{keys::Escape});
+  map.bind("settings", KeyBinding{keys::F10});
   map.bind("settings", GamepadButtonBinding{GamepadButton::Back});
 
   // The island map (a dwe improvement; apps/game world_map.hpp): M, or the pad's left shoulder,

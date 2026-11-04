@@ -8,11 +8,21 @@
 using namespace dwe::input;
 using namespace dwe::platform;
 
-TEST_CASE("the pad's Select opens the game's options; the keyboard has no options key") {
-  // `settings` has no keyboard binding (docs/architecture/controles.md): options open from the menu.
+TEST_CASE("Escape and F10 open the game's options; cancel lives on the Ctrl pair") {
+  // `settings` takes the keyboard's `Escape` and `F10` (docs/architecture/controles.md): the quick
+  // options page, the PC's classic pause key.
   InputState input{defaultActionMap()};
-  input.handle(KeyChanged{.key = keys::F10, .down = true, .repeat = false});
-  CHECK_FALSE(input.wasPressed("settings"));
+  input.handle(KeyChanged{.key = keys::Escape, .down = true, .repeat = false});
+  CHECK(input.wasPressed("settings"));
+  CHECK_FALSE(input.wasPressed("cancel"));
+
+  InputState ten{defaultActionMap()};
+  ten.handle(KeyChanged{.key = keys::F10, .down = true, .repeat = false});
+  CHECK(ten.wasPressed("settings"));
+
+  InputState ctrl{defaultActionMap()};
+  ctrl.handle(KeyChanged{.key = keys::LeftCtrl, .down = true, .repeat = false});
+  CHECK(ctrl.wasPressed("cancel"));
 
   InputState pad{defaultActionMap()};
   pad.handle(GamepadConnected{.id = 7, .family = GamepadFamily::Generic, .name = "Pad"});
