@@ -26,7 +26,7 @@ script se niega a empaquetar si `strings` encuentra la raíz del repositorio o `
 | `bin/dwe-game`, `bin/dwx` | El juego y la herramienta que lee el disco, instalados con `cmake --install` (sin la ruta de librerías del árbol de build) y sin información de depuración. |
 | `packs/` | Los paquetes del equipo (`content/packs`): el paquete del juego y la traducción. `content::teamPacksFolder` los busca junto a la carpeta del ejecutable antes que en el árbol de fuentes. |
 | `licenses/` | Las licencias de las librerías (una por puerto de vcpkg), de la fuente Noto Sans y de libc++. |
-| `README.md`, `VERSION` | Lo que lee el jugador (`scripts/package/README.md`) y el commit. |
+| `README.md`, `VERSION`, `EXTRACTOR_VERSION` | Lo que lee el jugador (`scripts/package/README.md`), el commit y la `ExtractorVersion` de su `dwx` (el lanzador vuelve a leer el disco cuando cambia). |
 
 Requisitos del equipo del jugador: glibc 2.38 o más nueva, el cargador de Vulkan del sistema (`libvulkan.so.1`) y un
 controlador con Vulkan 1.3. libc++ va enlazada de forma estática; SDL abre X11 o Wayland y el audio del sistema en

@@ -52,6 +52,7 @@ cada una están en las [reglas de dependencias](../architecture/dependency-rules
 | [game](apps/game.md) | `dwe-game`, el ejecutable del juego |
 | [dwx](apps/dwx.md) | La herramienta de assets: extraer, validar, cocinar y empaquetar |
 | [sim](apps/sim.md) | `dwe-sim`: simulaciones de balance sin gráficos |
+| [launcher](apps/launcher.md) | El lanzador de escritorio: lee el disco, actualiza el juego y lo arranca |
 
 ## Otros
 
