@@ -13,19 +13,11 @@ namespace {
 
 constexpr std::int32_t One = 4096;
 constexpr double Turn = 4096.0;
-constexpr double HalfTurn512 = 256.0;
 constexpr std::int32_t AngleMask = 0xFFF;
 constexpr std::int32_t HalfTurn = 0x800;
 constexpr std::int32_t QuarterTurn = 0x400;
 constexpr std::int32_t ShortBits = 16;
 constexpr std::int32_t FixedShift = 12;
-
-// The tables of the original (math.c: SIN_LOOKUP_TABLE, libgte's rsin table) hold sin(x) * 4096
-// rounded; computing it gives the same values within a unit (suposición: the tables' own rounding
-// is not checked entry by entry).
-std::int32_t fixedSin(double turns) {
-  return static_cast<std::int32_t>(std::lround(std::sin(turns * 2.0 * std::numbers::pi) * One));
-}
 
 std::int32_t fixed(std::int64_t value) {
   return static_cast<std::int32_t>(value >> FixedShift);
@@ -102,11 +94,11 @@ Vector toShort(const Vector& v) {
 }
 
 std::int32_t sin512(std::int32_t angle) {
-  return fixedSin(static_cast<double>(angle & 0x1FF) / (2.0 * HalfTurn512));
+  return core::original::sin512(angle);
 }
 
 std::int32_t cos512(std::int32_t angle) {
-  return sin512(angle + 0x80);
+  return core::original::cos512(angle);
 }
 
 std::int32_t ratan2(std::int32_t y, std::int32_t x) {

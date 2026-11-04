@@ -2,8 +2,6 @@
 #include <dwe/core/original_math.hpp>
 #include <dwe/game/field/boss_arrival.hpp>
 
-#include <cmath>
-#include <numbers>
 
 namespace dwe::game::field {
 
@@ -11,7 +9,6 @@ namespace {
 
 constexpr std::int32_t One = 4096;
 constexpr std::int32_t QuarterTurn512 = 0x80;
-constexpr std::int32_t Turn512 = 0x200;
 
 // eab.c: EAB_tickBuildup counts 0 to 17 and adds a ring every 6.
 constexpr std::int32_t BuildupCycle = 18;
@@ -70,8 +67,7 @@ std::int32_t effectLerp(std::int32_t start, std::int32_t end, std::int32_t t0, s
 }
 
 std::int32_t sin512(std::int32_t angle) {
-  const double turns = static_cast<double>(angle & (Turn512 - 1)) / Turn512;
-  return static_cast<std::int32_t>(std::lround(std::sin(turns * 2.0 * std::numbers::pi) * One));
+  return core::original::sin512(angle);
 }
 
 BossRingScale bossRingScale(const BossRing& ring) {

@@ -145,9 +145,7 @@ constexpr float TurnRadians = 2.0F * 3.14159265358979323846F;
 
 // math.c _sin: 512 a turn, 4096 for 1.
 std::int32_t sin512(std::int32_t angle) {
-  constexpr std::int32_t TurnMask512 = 0x1FF;
-  constexpr std::int32_t Turn512To4096 = 8;
-  return core::original::rsin((angle & TurnMask512) * Turn512To4096);
+  return core::original::sin512(angle);
 }
 
 glm::ivec3 toOriginal(glm::vec3 world) {

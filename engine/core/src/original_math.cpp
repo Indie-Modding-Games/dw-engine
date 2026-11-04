@@ -1,7 +1,9 @@
 #include <dwe/core/original_math.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <numbers>
@@ -35,7 +37,48 @@ std::int32_t ratanTable(std::int64_t index) {
   return static_cast<std::int32_t>(std::floor(radians / (2.0 * std::numbers::pi) * Turn + 0.44));
 }
 
+// math.c: SIN_LOOKUP_TABLE: entry i is sin(i / 512 of a turn) * 4096 rounded down, i from 0 to 128.
+constexpr std::int32_t SinSteps = 128;
+constexpr std::int32_t Turn512 = 512;
+// sin's own rounding leaves a whole value (0 at 0, 4096 at a quarter turn) a hair under it.
+constexpr double WholeSlack = 1e-9;
+
+std::int32_t sinTable(std::int32_t index) {
+  static const std::array<std::int32_t, SinSteps + 1> table = [] {
+    std::array<std::int32_t, SinSteps + 1> entries{};
+    for (std::int32_t i = 0; i <= SinSteps; ++i) {
+      const double sine = std::sin(static_cast<double>(i) / Turn512 * 2.0 * std::numbers::pi);
+      entries.at(static_cast<std::size_t>(i)) =
+          static_cast<std::int32_t>(std::floor((sine * One) + WholeSlack));
+    }
+    return entries;
+  }();
+  return table.at(static_cast<std::size_t>(index));
+}
+
 } // namespace
+
+std::int32_t sin512(std::int32_t angle) {
+  // math.c:13: the angle wraps to a turn; each quarter reads the table forward or backward.
+  const std::int32_t a = angle & (Turn512 - 1);
+  constexpr std::int32_t Quarter = SinSteps;
+  constexpr std::int32_t Half = 2 * SinSteps;
+  if (a < Quarter) {
+    return sinTable(a);
+  }
+  if (a < Half) {
+    return sinTable(Half - a);
+  }
+  if (a < Half + Quarter) {
+    return -sinTable(a - Half);
+  }
+  return -sinTable(Turn512 - a);
+}
+
+std::int32_t cos512(std::int32_t angle) {
+  // math.c:27: _sin a quarter turn on.
+  return sin512(angle + SinSteps);
+}
 
 std::int32_t ratan2(std::int32_t y, std::int32_t x) {
   const std::int64_t absX = std::abs(static_cast<std::int64_t>(x));

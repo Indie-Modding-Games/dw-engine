@@ -127,10 +127,8 @@ constexpr std::int32_t FixedShift = 12;
 constexpr std::int32_t SizeShift = 10;
 
 // math.c _sin: 512 a turn (0x80 is a right angle), 4096 for 1; libgte rsin is 4096 a turn.
-constexpr std::int32_t TurnMask512 = 0x1FF;
-constexpr std::int32_t Turn512To4096 = 8;
 [[nodiscard]] std::int32_t sin512(std::int32_t angle) {
-  return core::original::rsin((angle & TurnMask512) * Turn512To4096);
+  return core::original::sin512(angle);
 }
 
 // Colours of 0x80 are 1 on a textured primitive; a line's are 0 to 255.

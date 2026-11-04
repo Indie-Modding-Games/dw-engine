@@ -40,8 +40,6 @@ constexpr std::int32_t CloudLife = 0xE;
 // looks.
 constexpr std::int32_t NodeEvery = 4;
 // math.c _sin and _cos: 512 a turn; libgte's rsin and rcos 4096.
-constexpr std::int32_t TurnMask512 = 0x1FF;
-constexpr std::int32_t Turn512To4096 = 8;
 constexpr std::int32_t FixedShift = 12;
 
 std::int32_t rand(ruleset::Random& random) {
@@ -49,10 +47,10 @@ std::int32_t rand(ruleset::Random& random) {
 }
 
 std::int32_t sin512(std::int32_t angle) {
-  return core::original::rsin((angle & TurnMask512) * Turn512To4096);
+  return core::original::sin512(angle);
 }
 std::int32_t cos512(std::int32_t angle) {
-  return core::original::rcos((angle & TurnMask512) * Turn512To4096);
+  return core::original::cos512(angle);
 }
 
 } // namespace
