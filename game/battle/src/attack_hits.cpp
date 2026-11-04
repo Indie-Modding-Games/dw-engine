@@ -1,6 +1,7 @@
 #include <dwe/core/log.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -14,12 +15,19 @@ namespace dwe::game::battle {
 namespace {
 
 constexpr std::int32_t Hundred = 100;
-// The original's sparks (ParticleRolls): a hit's lives the technique's invulnerable frames + 0x10
-// (BTL_startHitAnimation), a block's 0x11 (BTL_tickAttackHits); a technique's `special` 0..6 is
-// the hit spark's colour, any other shows none.
+// The original's sparks (HitParticles): a hit's lives the technique's invulnerable frames + 0x10
+// and takes the technique's `special` as its colour (BTL_startHitAnimation), a block's 0x11 and
+// the first colour (BTL_tickAttackHits).
 constexpr std::int32_t HitSparkFrames = 0x10;
 constexpr std::int32_t BlockSparkFrames = 0x11;
-constexpr std::int32_t SparkColours = 7;
+constexpr std::int32_t BlockSparkKind = 0;
+
+std::optional<std::array<std::int32_t, 3>> touchOf(const EffectLanding& landing) {
+  if (!landing.touch) {
+    return std::nullopt;
+  }
+  return std::array{landing.touch->x, landing.touch->y, landing.touch->z};
+}
 
 // Whom an attack released by `id` reaches when the battle cannot follow its effect. The original's
 // attack objects collide with the bodies on the ground; the engine sends them to their targets: a
@@ -185,6 +193,16 @@ Point hitPointOf(const BattleContext& context, const AttackInFlight& attack) {
   return bodyPointToward(defender.position, source, defender.combatant.radius);
 }
 
+// Where the spark of an attack bursts (the attack object's position): where its effect touched,
+// else the defender's body toward the attacker at half its height (suposición).
+HitParticles::Vec3 sparkPointOf(const BattleContext& context, const AttackInFlight& attack) {
+  if (attack.touch) {
+    return *attack.touch;
+  }
+  const Point at = hitPointOf(context, attack);
+  return {at.x, -(context.fighter(attack.defender).combatant.height >> 1), -at.z};
+}
+
 void hit(BattleContext& context, const AttackInFlight& attack) {
   const FighterId id = attack.defender;
   Fighter& fighter = context.fighter(id);
@@ -194,9 +212,8 @@ void hit(BattleContext& context, const AttackInFlight& attack) {
       context.strategies->damage->damage(context.view(), attack.attacker, id, attack.move);
   // BTL_handleHitReaction: the spark of the hit, unless the fighter is flattened.
   if (context.particles != nullptr && !fighter.status.flattened) {
-    context.particles->spawn(*context.random, ParticleRolls::Spark::Hit,
-                             move.iframes + HitSparkFrames,
-                             move.special >= 0 && move.special < SparkColours);
+    context.particles->spawn(context.particleRolls(), HitParticles::Spark::Hit, move.special,
+                             sparkPointOf(context, attack), id, move.iframes + HitSparkFrames);
   }
   context.state->counters.anyoneHit = true;
   context.state->counters.partnerHit = context.state->counters.partnerHit || id == PartnerId;
@@ -232,7 +249,8 @@ void block(BattleContext& context, const AttackInFlight& attack) {
   const HitRules& rules = context.rules->hit;
   // The block's spark (createParticleFX(0, 2, ...)), before the guard that is still up.
   if (context.particles != nullptr) {
-    context.particles->spawn(*context.random, ParticleRolls::Spark::Block, BlockSparkFrames);
+    context.particles->spawn(context.particleRolls(), HitParticles::Spark::Block, BlockSparkKind,
+                             sparkPointOf(context, attack), id, BlockSparkFrames);
   }
   if (fighter.blocking && fighter.invulnerableFrames > 0) {
     fighter.invulnerableFrames = rules.blockFrames;
@@ -322,6 +340,7 @@ AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId de
                         .age = std::nullopt,
                         .clip = std::nullopt,
                         .hitPoint = std::nullopt,
+                        .touch = std::nullopt,
                         .facingTarget = {}};
   if (!travels) {
     return flight;
@@ -340,6 +359,7 @@ AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId de
     flight.age = attack.frame;
     flight.clip = clip;
     flight.hitPoint = landing->at;
+    flight.touch = touchOf(*landing);
     flight.facingTarget = landing->facingTarget;
     return flight;
   }
@@ -426,6 +446,7 @@ void tickAttacksInFlight(BattleContext& context) {
               effectLanding(context, attack.attacker, attack.defender, attack.move, attack.clip)) {
         attack.framesLeft = std::max(landing->frame - *attack.age, 0);
         attack.hitPoint = landing->at;
+        attack.touch = touchOf(*landing);
         attack.facingTarget = landing->facingTarget;
       }
       ++*attack.age;

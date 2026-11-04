@@ -92,6 +92,29 @@ constexpr std::int32_t OrderMin = 0x20;
 constexpr std::int32_t OrderMax = 0x1000;
 constexpr float ShadeOne = 128.0F;
 
+// efe.c: renderEntityParticleFX: ENTITY_PARTICLE_FX_MODES: the world size, the first texels (v
+// from the page's 0x80, the image's row 0) and the texels across and down; the picture steps
+// (span + 1) across with the timer % 4. Colour 0x80, added.
+struct MoteLook {
+  float width;
+  float height;
+  float u;
+  float v;
+  float spanU;
+  float spanV;
+};
+constexpr float PageRowOfImage = 0x80;
+constexpr std::array<MoteLook, 9> MoteLooks{{{0x78, 0x50, 0x80, 0x80, 0x0F, 0x0F},
+                                             {0x78, 0x50, 0xC0, 0x80, 0x0F, 0x0F},
+                                             {0xC8, 0x50, 0x80, 0x90, 0x1F, 0x07},
+                                             {0xC8, 0x96, 0x80, 0x80, 0x0F, 0x0F},
+                                             {0xC8, 0x96, 0xC0, 0x80, 0x0F, 0x0F},
+                                             {0xFA, 0x64, 0x80, 0x90, 0x1F, 0x07},
+                                             {0x64, 0x64, 0x80, 0x80, 0x0F, 0x0F},
+                                             {0x64, 0x64, 0xC0, 0x80, 0x0F, 0x0F},
+                                             {0xC8, 0x64, 0x80, 0x90, 0x1F, 0x07}}};
+constexpr std::int32_t MoteSteps = 4;
+
 // particle.c: tickHealingParticles: the effect lasts 44 frames; the spiral drops one particle a
 // frame for 20 frames, a turn of 640 4096ths a frame, each lit for 17 frames and sized 15 to 84
 // (rolled every frame); the ring drops four a frame for 39 frames, each lit for 5, on a circle
@@ -255,6 +278,13 @@ void FieldEffects::addCloud(std::int32_t x, std::int32_t z, Birth birth) {
   clouds_.push_back({.x = x, .z = z, .state = birth == Birth::InObjects ? 1 : 0});
 }
 
+std::optional<glm::ivec3> FieldEffects::sparkColor(std::int32_t kind) {
+  if (kind < 0 || kind >= static_cast<std::int32_t>(SparkColors.size())) {
+    return std::nullopt;
+  }
+  return SparkColors.at(static_cast<std::size_t>(kind));
+}
+
 void FieldEffects::addSpark(std::int32_t kind, std::int32_t mode, OriginalPoint position,
                             std::int32_t lifetime, Birth birth) {
   if (sparks_.size() >= MaxSparks) {
@@ -278,10 +308,11 @@ void FieldEffects::addSpark(std::int32_t kind, std::int32_t mode, OriginalPoint 
     spark.spread[2][2] = spread();
     spark.spread[3][2] = (rand() % HitSizeRoll) + HitSizeFrom;
   }
-  if (kind < 0 || kind >= static_cast<std::int32_t>(SparkColors.size())) {
+  const std::optional<glm::ivec3> color = sparkColor(kind);
+  if (!color) {
     return;
   }
-  spark.color = SparkColors.at(static_cast<std::size_t>(kind));
+  spark.color = *color;
   spark.endFrame = lifetime + SparkEndExtra;
   if (birth == Birth::InObjects) {
     // tickParticleFX the same frame.
@@ -408,28 +439,29 @@ std::vector<ScenePrim> FieldEffects::draw(const FieldEffectView& view) const {
   const ScenePrimFrame& frame = view.frame;
 
   // renderCloudFX.
-  if (view.images.clouds) {
-    for (const FieldCloud& cloud : clouds_) {
-      const auto state = static_cast<std::size_t>(cloud.state);
-      const glm::vec3 world = worldOf({cloud.x, CloudY.at(state), cloud.z});
-      const float depth = frame.depth(world);
-      if (depth <= 0.0F || depth >= SpriteFarDepth) {
-        continue;
-      }
-      const float side = CloudSide * static_cast<float>(CloudScale.at(state)) / ScaleOne *
-                         view.focalLength / depth;
-      const auto u = static_cast<float>(CloudU.at(state));
-      sorted.push_back(
-          {.depth = depth,
-           .prim = upright(
-               frame.clip(world), glm::vec2{side / 2.0F}, {u, 0.0F}, glm::vec2{CloudSide},
-               EffectImageSize, *view.images.clouds,
-               glm::vec4{glm::vec3{static_cast<float>(CloudShade.at(state)) / ShadeOne}, 1.0F})});
+  const auto drawCloud = [&](const FieldCloud& cloud) {
+    if (!view.images.clouds) {
+      return;
     }
-  }
+    const auto state = static_cast<std::size_t>(cloud.state);
+    const glm::vec3 world = worldOf({cloud.x, CloudY.at(state), cloud.z});
+    const float depth = frame.depth(world);
+    if (depth <= 0.0F || depth >= SpriteFarDepth) {
+      return;
+    }
+    const float side =
+        CloudSide * static_cast<float>(CloudScale.at(state)) / ScaleOne * view.focalLength / depth;
+    const auto u = static_cast<float>(CloudU.at(state));
+    sorted.push_back(
+        {.depth = depth,
+         .prim = upright(
+             frame.clip(world), glm::vec2{side / 2.0F}, {u, 0.0F}, glm::vec2{CloudSide},
+             EffectImageSize, *view.images.clouds,
+             glm::vec4{glm::vec3{static_cast<float>(CloudShade.at(state)) / ShadeOne}, 1.0F})});
+  };
 
   // renderParticleFX.
-  for (const FieldSpark& spark : sparks_) {
+  const auto drawSpark = [&](const FieldSpark& spark) {
     const auto mode = static_cast<std::size_t>(spark.mode);
     if (spark.state == FlashState && view.images.glow) {
       for (std::size_t i = 0; i < static_cast<std::size_t>(FlashCounts.at(mode)); ++i) {
@@ -462,7 +494,7 @@ std::vector<ScenePrim> FieldEffects::draw(const FieldEffectView& view) const {
       }
     }
     if (spark.state >= spark.timer) {
-      continue;
+      return;
     }
     const glm::ivec3 color{originalLerp(spark.color.r, 0, 0, spark.timer, spark.state),
                            originalLerp(spark.color.g, 0, 0, spark.timer, spark.state),
@@ -476,6 +508,47 @@ std::vector<ScenePrim> FieldEffects::draw(const FieldEffectView& view) const {
                                                  (spread * direction.y) >> DirectionShift,
                                                  (spread * direction.z) >> DirectionShift},
                   SparkParticleSize, color);
+    }
+  };
+
+  // renderEntityParticleFX: the look's picture at the node, its size in world units (addFXPrim),
+  // pulled 0x37 ordering-table entries ahead.
+  const auto drawMote = [&](const FieldFighterMote& mote) {
+    if (!view.images.fighterParticles || mote.look < 0 ||
+        mote.look >= static_cast<std::int32_t>(MoteLooks.size())) {
+      return;
+    }
+    const MoteLook& look = MoteLooks.at(static_cast<std::size_t>(mote.look));
+    const float depth = frame.depth(mote.position);
+    const std::int32_t order = (static_cast<std::int32_t>(depth) / DepthUnit) - PrimPull;
+    if (depth <= 0.0F || order <= OrderMin || order >= OrderMax) {
+      return;
+    }
+    const glm::vec2 half = glm::vec2{look.width, look.height} * view.focalLength / depth / 2.0F;
+    const float step = static_cast<float>(((mote.timer % MoteSteps) + MoteSteps) % MoteSteps);
+    const glm::vec2 texel{look.u + ((look.spanU + 1.0F) * step), look.v - PageRowOfImage};
+    const glm::vec4 clip =
+        frame.clipNearer(mote.position, static_cast<float>(PrimPull * DepthUnit));
+    sorted.push_back({.depth = depth - static_cast<float>(PrimPull * DepthUnit),
+                      .prim = upright(clip, half, texel, {look.spanU, look.spanV}, EffectImageSize,
+                                      *view.images.fighterParticles, glm::vec4{1.0F})});
+  };
+
+  for (const FieldCloud& cloud : clouds_) {
+    drawCloud(cloud);
+  }
+  for (const FieldSpark& spark : sparks_) {
+    drawSpark(spark);
+  }
+  if (view.battle != nullptr) {
+    for (const FieldCloud& cloud : view.battle->clouds) {
+      drawCloud(cloud);
+    }
+    for (const FieldSpark& spark : view.battle->sparks) {
+      drawSpark(spark);
+    }
+    for (const FieldFighterMote& mote : view.battle->motes) {
+      drawMote(mote);
     }
   }
 

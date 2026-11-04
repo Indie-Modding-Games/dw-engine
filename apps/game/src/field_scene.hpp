@@ -9,6 +9,7 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
+#include <dwe/game/battle/hit_particles.hpp>
 #include <dwe/game/battle/status_visuals.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/game/field/rules.hpp>
@@ -516,6 +517,12 @@ public:
     statusVisuals_ = std::move(visuals);
     statusBodies_ = std::move(bodies);
   }
+  // The battle's hit sparks, the particles they leave on the fighters and their clouds
+  // (game::battle::HitParticles), drawn with the field's effects on the fighters of the last
+  // setStatusVisuals; nothing outside a battle (field_scene_fx.cpp).
+  void setHitParticles(std::optional<game::battle::HitParticles> particles) {
+    hitParticles_ = std::move(particles);
+  }
   // A flattened fighter's shot in flight (game::battle::FlattenedShot) and its sprite: where it is
   // on the battle's ground (the world's x and z), its height over the ground, the way it flies (a
   // unit vector on the ground) and the first texel column of its sprite in DEFEFF's strip
@@ -843,6 +850,7 @@ private:
   std::optional<std::pair<std::uint32_t, glm::vec3>> partnerConditionPoint_;
   // The effects' frame as the last update drew it.
   [[nodiscard]] std::vector<ScenePrim> drawEffects();
+  [[nodiscard]] FieldBattleParticles battleParticles() const;
   std::map<std::string, std::optional<std::vector<std::vector<BodyFace>>>, std::less<>>
       sceneModels_;
   CameraSync cameraSync_{*this};
@@ -923,6 +931,7 @@ private:
   std::map<std::string, std::set<std::int32_t>, std::less<>> effectModelRows_;
   std::optional<game::battle::StatusVisuals> statusVisuals_;
   std::vector<StatusBody> statusBodies_;
+  std::optional<game::battle::HitParticles> hitParticles_;
   std::map<std::pair<std::string, std::int32_t>, std::optional<StatusTexture>, std::less<>>
       statusTextures_;
   std::map<std::string, std::optional<EffectModelEntry>, std::less<>> statusModels_;

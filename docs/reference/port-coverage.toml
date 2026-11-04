@@ -273,7 +273,7 @@ BTL_findHitEntity = { status = "portado", dwe = "game/battle/src/effect_runner_s
 BTL_printDebugValue = { status = "no-aplica", note = "depuración del original", what = "Escribe un valor de depuración." }
 BTL_renderParallaxSprites = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Capas en pantalla", what = "Dibuja capas de sprites con paralaje de un efecto." }
 BTL_renderScrollingBackground = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Capas en pantalla", what = "Dibuja un fondo que se desplaza durante una técnica." }
-BTL_addSourceEntityParticleFX = { status = "parcial", dwe = "game/battle/src/effect_runner_subops.cpp", note = "solo sus tiradas, con --original-rolls (battle.md)", what = "Lanza partículas desde el atacante." }
+BTL_addSourceEntityParticleFX = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp", note = "HitParticles::attach; tiradas del combate con --original-rolls, si no las suyas (battle.md)", what = "Lanza partículas desde el atacante." }
 BTL_renderParticleFlashSprite = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Destello de partícula", what = "Dibuja el destello de una partícula." }
 BTL_projectPositionToScreen = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Sprites en pantalla", what = "Proyecta una posición del efecto a la pantalla para sus sprites." }
 BTL_renderScreenSprite = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Sprites en pantalla", what = "Dibuja un sprite en pantalla de un efecto." }
@@ -364,10 +364,10 @@ BTL_initializeUnk2 = { status = "portado", dwe = "game/battle/src/status_visuals
 tickBuffModel = { status = "portado", dwe = "apps/game/src/field_scene_battle_visuals.cpp:248", note = "la paridad de los fotogramas del combate (StatusVisuals::frames)", what = "Anima el modelo que acompaña a una mejora de stats." }
 morphBuffModel = { status = "portado", dwe = "apps/game/src/field_scene_battle_visuals.cpp:153", note = "el disco se dibuja con la fila 491 o una copia del modelo con la 492", what = "Alterna la paleta del modelo de mejora." }
 initializeParticleFX = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "campo: las 50 direcciones, con la semilla del motor (Suposición)", what = "Prepara las partículas de los efectos." }
-tickParticleFX = { status = "parcial", dwe = "apps/game/src/field_effects.cpp", note = "campo: las chispas sin luchador (gimnasio); batalla: solo sus tiradas, con --original-rolls (game/battle/src/particle_rolls.cpp, battle.md)", what = "Mueve las partículas de los efectos." }
-addEntityParticleFX = { status = "parcial", dwe = "game/battle/src/particle_rolls.cpp", note = "solo sus tiradas, con --original-rolls (battle.md)", what = "Lanza partículas pegadas a un luchador." }
-initializeEntityParticleFX = { status = "portado", dwe = "game/battle/include/dwe/game/battle/particle_rolls.hpp:65", note = "los huecos empiezan libres al crear las tiradas", what = "Prepara las partículas pegadas a luchadores." }
-tickEntityParticleFX = { status = "parcial", dwe = "game/battle/src/particle_rolls.cpp", note = "solo sus tiradas, con --original-rolls (battle.md)", what = "Mueve las partículas pegadas a un luchador." }
+tickParticleFX = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "campo: las chispas sin luchador (gimnasio); batalla: game/battle/src/hit_particles.cpp, con sus nubes y partículas (battle.md)", what = "Mueve las partículas de los efectos." }
+addEntityParticleFX = { status = "portado", dwe = "game/battle/src/hit_particles.cpp", note = "dibujo: apps/game/src/field_effects.cpp (battle.md)", what = "Lanza partículas pegadas a un luchador." }
+initializeEntityParticleFX = { status = "portado", dwe = "game/battle/include/dwe/game/battle/hit_particles.hpp:128", note = "los huecos empiezan libres al crear HitParticles", what = "Prepara las partículas pegadas a luchadores." }
+tickEntityParticleFX = { status = "portado", dwe = "game/battle/src/hit_particles.cpp", note = "dibujo: apps/game/src/field_effects.cpp (battle.md)", what = "Mueve las partículas pegadas a un luchador." }
 tickCloudFX = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Nubes (las de las técnicas); las del campo (gimnasio, cacas): apps/game/src/field_effects.cpp", what = "Mueve las nubes de humo y polvo de los efectos." }
 EFECreateFlash = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Destellos", what = "Crea un destello de luz de una técnica." }
 tickEFEFlash = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Destellos", what = "Anima un destello de luz." }
@@ -382,7 +382,7 @@ DOOA_storeDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena 
 DOOA_getStoredDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Lee la altura guardada para la escena de renacer." }
 tickHealingParticles = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "el anillo de la partícula 0 divide por cero: el procesador da -1 (Igual)", what = "Mueve las partículas de curación al usar un objeto." }
 initializeHealingParticles = { status = "portado", dwe = "apps/game/src/field_effects.cpp", what = "Prepara las partículas de curación." }
-addHealingParticleEffect = { status = "portado", dwe = "apps/game/src/play_session.cpp", note = "qué objetos y si llevan anillo: inventory.yaml effects.healing_particles", what = "Lanza las partículas de curación sobre el compañero." }
+addHealingParticleEffect = { status = "portado", dwe = "apps/game/src/play_session.cpp", note = "qué objetos y si llevan anillo: inventory.yaml effects.healing_particles; en combate, el objeto lanzado (battle_screen.cpp, HealingShown)", what = "Lanza las partículas de curación sobre el compañero." }
 
 # --- Campo
 findAABBHitEntity = { status = "portado", note = "solo en las comprobaciones de golpe de los efectos; el campo choca con su rejilla", dwe = "game/battle/src/effect_runner_subops.cpp:717", what = "Busca la entidad cuya caja toca otra." }

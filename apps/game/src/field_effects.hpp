@@ -30,6 +30,44 @@ struct FieldEffectImages {
   std::optional<rhi::TextureId> butterfly;
   // ETCDAT/SPOT256.TIM (128 x 128), the sparks' flash.
   std::optional<rhi::TextureId> glow;
+  // Entry 2 with palette 2 (CLUT 192, 490): the particles a spark leaves on a fighter.
+  std::optional<rhi::TextureId> fighterParticles;
+};
+
+// A cloud of smoke or dust (efe.c: CLOUD_FX_DATA): it rises and fades over 14 frames.
+struct FieldCloud {
+  std::int32_t x = 0;
+  std::int32_t z = 0;
+  std::int32_t state = 0;
+};
+
+// A spark of light that bursts into particles (efe.c: PARTICLE_FX_DATA).
+struct FieldSpark {
+  OriginalPoint position{0};
+  // createParticleFX's `count`: 0, 1 (a hit) or 2 (a block).
+  std::int32_t mode = 0;
+  glm::ivec3 color{0};
+  std::int32_t state = 0;
+  std::int32_t timer = 0;
+  std::int32_t endFrame = 0;
+  // spread[0..3][i]: each flash's offset and size.
+  std::array<std::array<std::int32_t, 3>, 4> spread{};
+};
+
+// A particle on a fighter's node (efe.c: renderEntityParticleFX): where the node is now (world
+// axes), which of ENTITY_PARTICLE_FX_MODES it looks like and its timer, which steps its picture.
+struct FieldFighterMote {
+  glm::vec3 position{0.0F};
+  std::int32_t look = 0;
+  std::int32_t timer = 0;
+};
+
+// What a battle adds to the frame (game::battle::HitParticles): its sparks and clouds, drawn as the
+// field's, and the particles on the fighters.
+struct FieldBattleParticles {
+  std::vector<FieldSpark> sparks;
+  std::vector<FieldCloud> clouds;
+  std::vector<FieldFighterMote> motes;
 };
 
 // What one drawn frame of the effects needs to know of the scene.
@@ -41,26 +79,8 @@ struct FieldEffectView {
   // Where each butterfly circles (effect_common.c: translateConditionFXToEntity of the partner),
   // in the world's axes; nothing draws none.
   std::optional<glm::vec3> butterflyCentre;
-};
-
-// A cloud of smoke or dust (efe.c: CLOUD_FX_DATA): it rises and fades over 14 frames.
-struct FieldCloud {
-  std::int32_t x = 0;
-  std::int32_t z = 0;
-  std::int32_t state = 0;
-};
-
-// A spark of light that bursts into particles (efe.c: PARTICLE_FX_DATA), without a fighter.
-struct FieldSpark {
-  OriginalPoint position{0};
-  // createParticleFX's `count`: 0, 1 (a hit) or 2 (a block).
-  std::int32_t mode = 0;
-  glm::ivec3 color{0};
-  std::int32_t state = 0;
-  std::int32_t timer = 0;
-  std::int32_t endFrame = 0;
-  // spread[0..3][i]: each flash's offset and size.
-  std::array<std::array<std::int32_t, 3>, 4> spread{};
+  // A battle's sparks, clouds and fighter particles; none outside one.
+  const FieldBattleParticles* battle = nullptr;
 };
 
 // One particle of the healing effect (particle.c: ParticleObjEntry).
@@ -114,6 +134,8 @@ public:
   void addCloud(std::int32_t x, std::int32_t z, Birth birth = Birth::OutsideObjects);
   // removeAllCloudFX.
   void removeClouds() { clouds_.clear(); }
+  // createParticleFX's colour of a kind (fx->r, g, b); none for an unknown kind.
+  [[nodiscard]] static std::optional<glm::ivec3> sparkColor(std::int32_t kind);
   // createParticleFX(kind, count, position, NULL, lifetime): at most 4 at once; an unknown kind or
   // count makes none.
   void addSpark(std::int32_t kind, std::int32_t mode, OriginalPoint position, std::int32_t lifetime,
@@ -136,8 +158,8 @@ public:
   // Real seconds of the field; whole frames of `frameSeconds` tick.
   void advance(double seconds, double frameSeconds, bool inMenu = false);
 
-  // The frame's primitives, back to front within each kind: the clouds, the sparks' flashes and
-  // particles, the healing particles and the butterfly.
+  // The frame's primitives, back to front: the clouds, the sparks' flashes and particles, the
+  // fighters' particles, the healing particles and the butterfly.
   [[nodiscard]] std::vector<ScenePrim> draw(const FieldEffectView& view) const;
 
   [[nodiscard]] const std::vector<FieldCloud>& clouds() const { return clouds_; }

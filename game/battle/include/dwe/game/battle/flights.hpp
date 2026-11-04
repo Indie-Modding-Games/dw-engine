@@ -22,6 +22,9 @@ namespace dwe::game::battle {
 struct EffectLanding {
   std::int32_t frame = 0;
   std::optional<Point> at;
+  // Where the effect touched, in the original's axes (the attack object's position): the hit's
+  // spark bursts there (createParticleFX).
+  std::optional<EffectVector> touch;
   // The attack frames, up to the touch, on which the effect turns the attacker to its target
   // (battle_effect.c: BTL_faceTargetEntity, the scripts' face_target): Spit Fire does it every
   // frame until its fire leaves.

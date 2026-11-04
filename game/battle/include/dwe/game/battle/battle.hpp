@@ -6,9 +6,9 @@
 #include <dwe/game/battle/events.hpp>
 #include <dwe/game/battle/flights.hpp>
 #include <dwe/game/battle/ground.hpp>
+#include <dwe/game/battle/hit_particles.hpp>
 #include <dwe/game/battle/items.hpp>
 #include <dwe/game/battle/moves.hpp>
-#include <dwe/game/battle/particle_rolls.hpp>
 #include <dwe/game/battle/rules.hpp>
 #include <dwe/game/battle/state.hpp>
 #include <dwe/game/battle/status_visuals.hpp>
@@ -197,19 +197,22 @@ public:
 
   // Rolls from here on with the original's generator from its state (ruleset::Random::original),
   // for an oracle run: the original's state as its fight began gives the same first decisions.
-  // The original's hit sparks also roll (ParticleRolls): their draws are spent here too, and the
-  // effect scripts take theirs from originalRolls().
+  // The original's hit sparks (HitParticles) then roll from it too, and the effect scripts take
+  // theirs from originalRolls().
   void useOriginalRolls(std::uint32_t state) {
     random_ = ruleset::Random::original(state);
-    particleRolls_.emplace();
+    originalRolls_ = true;
   }
   // The battle's rolls when they are the original's (useOriginalRolls), for the effect scripts
   // that run with the battle (EffectRunner::useRolls); nothing otherwise.
-  [[nodiscard]] ruleset::Random* originalRolls() { return particleRolls_ ? &random_ : nullptr; }
-  // The draws of the original's sparks and fighter particles with the original's rolls, which the
-  // effect scripts' attacker particles share (EffectRunner::useRolls); nothing otherwise.
-  [[nodiscard]] ParticleRolls* particleRolls() {
-    return particleRolls_ ? &*particleRolls_ : nullptr;
+  [[nodiscard]] ruleset::Random* originalRolls() { return originalRolls_ ? &random_ : nullptr; }
+  // The hit sparks, the particles they leave on the fighters and their clouds, which the effect
+  // scripts' attacker particles share (EffectRunner::useParticles), and the rolls they take: the
+  // battle's with the original's, else their own.
+  [[nodiscard]] HitParticles& hitParticles() { return hitParticles_; }
+  [[nodiscard]] const HitParticles& hitParticles() const { return hitParticles_; }
+  [[nodiscard]] ruleset::Random& particleRolls() {
+    return originalRolls_ ? random_ : hitParticles_.ownRolls();
   }
   // Where the battle's rolls are (ruleset::Random::state), for a state trace to compare.
   [[nodiscard]] std::uint64_t rollState() const { return random_.state(); }
@@ -260,8 +263,9 @@ private:
   const MoveCatalog* moves_;
   BattleStrategies strategies_;
   ruleset::Random random_;
-  // With the original's rolls only: the draws of its hit sparks.
-  std::optional<ParticleRolls> particleRolls_;
+  // Whether random_ is the original's generator (useOriginalRolls).
+  bool originalRolls_ = false;
+  HitParticles hitParticles_;
   StatusVisuals statusVisuals_;
   BattleSetup setup_;
   BattleState state_;

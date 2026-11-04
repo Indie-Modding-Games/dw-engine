@@ -104,6 +104,7 @@ std::optional<EffectLanding> ScriptedFlights::landing(std::string_view move, Fig
       return EffectLanding{.frame = frame,
                            .at = touch->onBody ? std::nullopt
                                                : std::optional{bodies.ground(touch->at)},
+                           .touch = touch->at,
                            .facingTarget = std::move(facingTarget)};
     }
     if (!runner.running(slot)) {

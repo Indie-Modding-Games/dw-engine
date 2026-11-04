@@ -221,7 +221,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
       sound != nullptr && desc_.files != nullptr) {
     effects_.emplace(*desc_.files, *sound);
     effects_->setBodies(*bodies_);
-    effects_->useRolls(battle_->originalRolls(), battle_->particleRolls());
+    effects_->useRolls(battle_->originalRolls(), &battle_->hitParticles());
   }
   map_ = map;
   drops_.clear();
@@ -315,6 +315,7 @@ void BattleScreen::tickBattle(double seconds) {
       effects_->frame(frame, battle_->moves());
     }
     stepNumbers(frame);
+    stepFieldEffects(frame);
     stepMenu(true);
     stepShout();
     stepThrow();
@@ -355,6 +356,7 @@ void BattleScreen::showStatusVisuals() const {
   }
   if (!battle_) {
     desc_.scene->setStatusVisuals(std::nullopt, {});
+    desc_.scene->setHitParticles(std::nullopt);
     desc_.scene->setFlattenedShots({});
     return;
   }
@@ -406,6 +408,30 @@ void BattleScreen::showStatusVisuals() const {
     bodies.push_back(body);
   }
   desc_.scene->setStatusVisuals(battle_->statusVisuals(), std::move(bodies));
+  desc_.scene->setHitParticles(battle_->hitParticles());
+}
+
+// The world's objects tick once a battle frame (BTL_battleTickFrame: tickObjects), the field's
+// effects among them; a thrown item's healing particles (item.c: addHealingParticleEffect) rise
+// over the partner from where it stands. They roll their own: with the original's rolls the battle
+// does not spend theirs (suposición, as the item particles' velocities).
+void BattleScreen::stepFieldEffects(const game::battle::BattleEvents& frame) const {
+  if (desc_.scene == nullptr) {
+    return;
+  }
+  FieldEffects& effects = desc_.scene->fieldEffects();
+  effects.tickFrame();
+  for (const game::battle::BattleEvent& event : frame) {
+    if (event.kind != game::battle::EventKind::HealingShown) {
+      continue;
+    }
+    const game::battle::Fighter& partner = battle_->state().partner();
+    // The original's axes: z the other way.
+    effects.addHealing({partner.position.x, 0, -partner.position.z}, partner.combatant.height,
+                       partner.combatant.radius, event.amount != 0);
+    core::logDebug("[port:battle] addHealingParticleEffect (particle.c): over the partner{}",
+                   event.amount != 0 ? ", with the ring" : "");
+  }
 }
 
 // battle_main.c: BTL_tickAttackHits adds the damage of a hit, and of a blocked melee attack, over

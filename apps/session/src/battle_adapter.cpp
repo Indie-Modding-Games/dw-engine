@@ -70,6 +70,11 @@ game::battle::ThrownItem thrownItemOf(const game::inventory::ItemEffect& effect)
                                          .ignoresLimit = boost.ignoresLimit};
   }
   item.consciousOnly = effect.consciousOnly;
+  // The medicines raise them only when they cure the sickness, which a throw never does.
+  if (effect.healingParticles && !effect.healingParticles->onlyIfSicknessCured) {
+    item.healingParticles = true;
+    item.healingRing = effect.healingParticles->ring;
+  }
   return item;
 }
 

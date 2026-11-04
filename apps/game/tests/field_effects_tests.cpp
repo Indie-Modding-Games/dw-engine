@@ -32,7 +32,8 @@ FieldEffectView viewOf() {
   view.images = {.clouds = dwe::rhi::TextureId{1},
                  .particles = dwe::rhi::TextureId{2},
                  .butterfly = dwe::rhi::TextureId{3},
-                 .glow = dwe::rhi::TextureId{4}};
+                 .glow = dwe::rhi::TextureId{4},
+                 .fighterParticles = dwe::rhi::TextureId{5}};
   return view;
 }
 
@@ -175,6 +176,28 @@ TEST_CASE("field effects: the healing spiral drops from over the head and lasts 
   ringed.tickFrame();
   // Four ring particles join the spiral's two.
   CHECK(countTexture(ringed.draw(view), 2) == 6);
+}
+
+TEST_CASE(
+    "field effects: a battle's fighter particle is its look's picture, stepped by its timer") {
+  // efe.c: renderEntityParticleFX: ENTITY_PARTICLE_FX_MODES[0] is 0x78 by 0x50 at (0x80, 0x80) in
+  // steps of 16 texels, timer % 4 of them, sized by the screen distance and added on.
+  FieldEffects effects{Seed};
+  dwe::app::FieldBattleParticles battle;
+  battle.motes.push_back({.position = {0.0F, 0.0F, -2000.0F}, .look = 0, .timer = 5});
+  FieldEffectView view = viewOf();
+  view.battle = &battle;
+  const std::vector<ScenePrim> prims = effects.draw(view);
+  REQUIRE(countTexture(prims, 5) == 1);
+  const ScenePrim& mote = prims.front();
+  CHECK(mote.blend == ScenePrimBlend::Additive);
+  CHECK(mote.corners[3].offset.x - mote.corners[0].offset.x == doctest::Approx(60.0F));
+  CHECK(mote.corners[3].offset.y - mote.corners[0].offset.y == doctest::Approx(40.0F));
+  CHECK(mote.corners[0].uv.x == doctest::Approx((0x80 + 16) / 256.0F));
+  CHECK(mote.color.r == doctest::Approx(1.0F));
+  // Without the battle's picture nothing is drawn.
+  view.images.fighterParticles.reset();
+  CHECK(countTexture(effects.draw(view), 5) == 0);
 }
 
 TEST_CASE("field effects: the butterfly flaps every 2 frames and waits in a menu") {

@@ -116,6 +116,7 @@ public:
         battle_ != nullptr ? battle_->state().fighters.at(attacker).position : Point{};
     return EffectLanding{.frame = frame_,
                          .at = at_.has_value() ? at_ : std::optional{attackerAt},
+                         .touch = std::nullopt,
                          .facingTarget = {}};
   }
 
@@ -361,8 +362,10 @@ public:
   [[nodiscard]] std::optional<EffectLanding>
   landing(std::string_view /*move*/, FighterId /*attacker*/, FighterId /*defender*/,
           std::optional<std::int32_t> /*clip*/) const override {
-    return EffectLanding{
-        .frame = asked_++ == 0 ? first_ : later_, .at = std::nullopt, .facingTarget = {}};
+    return EffectLanding{.frame = asked_++ == 0 ? first_ : later_,
+                         .at = std::nullopt,
+                         .touch = std::nullopt,
+                         .facingTarget = {}};
   }
 
 private:
@@ -381,11 +384,13 @@ public:
   landing(std::string_view /*move*/, FighterId attacker, FighterId /*defender*/,
           std::optional<std::int32_t> /*clip*/) const override {
     if (attacker != PartnerId) {
-      return EffectLanding{.frame = 3, .at = std::nullopt, .facingTarget = {}};
+      return EffectLanding{
+          .frame = 3, .at = std::nullopt, .touch = std::nullopt, .facingTarget = {}};
     }
     std::vector<std::int32_t> facing(static_cast<std::size_t>(facing_));
     std::ranges::iota(facing, 0);
-    return EffectLanding{.frame = frames_, .at = std::nullopt, .facingTarget = facing};
+    return EffectLanding{
+        .frame = frames_, .at = std::nullopt, .touch = std::nullopt, .facingTarget = facing};
   }
 
 private:

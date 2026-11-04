@@ -1,5 +1,5 @@
+#include <dwe/game/battle/hit_particles.hpp>
 #include <dwe/game/battle/joining.hpp>
-#include <dwe/game/battle/particle_rolls.hpp>
 #include <dwe/game/battle/simulation.hpp>
 #include <dwe/game/battle/text_keys.hpp>
 
@@ -875,7 +875,7 @@ int drawsBetween(dwe::ruleset::Random from, const dwe::ruleset::Random& to) {
   return -1;
 }
 
-using dwe::game::battle::ParticleRolls;
+using dwe::game::battle::HitParticles;
 
 } // namespace
 
@@ -894,8 +894,8 @@ TEST_CASE("the original's sparks draw on the original's frames: a hit, then 43 f
   CHECK(random.below(100) == 16);
   CHECK(random.below(100) == 25);
   CHECK(random.below(21) == 10);
-  ParticleRolls sparks;
-  sparks.spawn(random, ParticleRolls::Spark::Hit, 1 + 0x10);
+  HitParticles sparks;
+  sparks.spawn(random, HitParticles::Spark::Hit, 0, {}, 0, 1 + 0x10);
   for (int frame = 87; frame < 130; ++frame) {
     sparks.tick(random);
     const auto expected = recorded.find(frame);
@@ -914,9 +914,9 @@ TEST_CASE("the original's block spark draws 8 as it starts and nothing after") {
   // frame 69: charge mode 0 of 2 and its move, 29 of 120.
   dwe::ruleset::Random random = dwe::ruleset::Random::original(0xA42DBE4CU);
   CHECK(random.below(100) == 64);
-  ParticleRolls sparks;
+  HitParticles sparks;
   dwe::ruleset::Random before = random;
-  sparks.spawn(random, ParticleRolls::Spark::Block, 0x11);
+  sparks.spawn(random, HitParticles::Spark::Block, 0, {}, 0, 0x11);
   CHECK(drawsBetween(before, random) == 8);
   before = random;
   for (int frame = 22; frame < 69; ++frame) {
@@ -930,17 +930,17 @@ TEST_CASE("the original's block spark draws 8 as it starts and nothing after") {
 
 TEST_CASE("only 4 sparks roll at once; a spark the original never shows rolls and keeps no slot") {
   dwe::ruleset::Random random = dwe::ruleset::Random::original(1);
-  ParticleRolls sparks;
-  for (std::size_t spark = 0; spark < ParticleRolls::SparkSlots; ++spark) {
-    sparks.spawn(random, ParticleRolls::Spark::Block, 0x11);
+  HitParticles sparks;
+  for (std::size_t spark = 0; spark < HitParticles::SparkSlots; ++spark) {
+    sparks.spawn(random, HitParticles::Spark::Block, 0, {}, 0, 0x11);
   }
   dwe::ruleset::Random before = random;
-  sparks.spawn(random, ParticleRolls::Spark::Hit, 0x11);
+  sparks.spawn(random, HitParticles::Spark::Hit, 0, {}, 0, 0x11);
   CHECK(drawsBetween(before, random) == 0);
-  CHECK(sparks.sparks() == ParticleRolls::SparkSlots);
-  ParticleRolls unseen;
+  CHECK(sparks.sparks() == HitParticles::SparkSlots);
+  HitParticles unseen;
   before = random;
-  unseen.spawn(random, ParticleRolls::Spark::Hit, 0x11, false);
+  unseen.spawn(random, HitParticles::Spark::Hit, HitParticles::SparkKinds, {}, 0, 0x11);
   CHECK(drawsBetween(before, random) == 12);
   CHECK(unseen.sparks() == 0);
 }
@@ -950,9 +950,9 @@ TEST_CASE("an effect's attacker particle draws its node, ticks on its own frame,
   // engine, so tickEntityParticleFX runs it on the same frame: 12 % 4 == 0 draws 2. Then 2 more
   // when its timer reaches 8 and 4, and it ends at 0 without drawing.
   dwe::ruleset::Random random = dwe::ruleset::Random::original(1);
-  ParticleRolls particles;
+  HitParticles particles;
   dwe::ruleset::Random before = random;
-  particles.attach(random, 12);
+  particles.attach(random, 0, 12);
   CHECK(drawsBetween(before, random) == 3);
   CHECK(particles.fighterParticles() == 1);
   for (int frame = 1; frame <= 12; ++frame) {
@@ -966,14 +966,67 @@ TEST_CASE("an effect's attacker particle draws its node, ticks on its own frame,
 
 TEST_CASE("an effect's attacker particle draws nothing while the 20 fighter particles are taken") {
   dwe::ruleset::Random random = dwe::ruleset::Random::original(1);
-  ParticleRolls particles;
-  for (std::size_t particle = 0; particle < ParticleRolls::FighterParticleSlots; ++particle) {
-    particles.attach(random, 0x30);
+  HitParticles particles;
+  for (std::size_t particle = 0; particle < HitParticles::FighterParticleSlots; ++particle) {
+    particles.attach(random, 0, 0x30);
   }
-  CHECK(particles.fighterParticles() == ParticleRolls::FighterParticleSlots);
+  CHECK(particles.fighterParticles() == HitParticles::FighterParticleSlots);
   const dwe::ruleset::Random before = random;
-  particles.attach(random, 12);
+  particles.attach(random, 0, 12);
   CHECK(drawsBetween(before, random) == 0);
+}
+
+TEST_CASE("a hit's spark keeps the original's spreads, frames and fighter particle nodes") {
+  // Measured in the original (the Native Forest fight, vblank 28040): BTL_startHitAnimation calls
+  // createParticleFX(kind 1, count 1, (621, -85, 3464), the partner, 0x11) from the state
+  // 0x9AAB7223, which leaves PARTICLE_FX_DATA[0] with timer 22, endFrame 21 and these spreads.
+  dwe::ruleset::Random random = dwe::ruleset::Random::original(0x9AAB7223U);
+  HitParticles sparks;
+  sparks.spawn(random, HitParticles::Spark::Hit, 1, {621, -85, 3464}, 0, 0x11);
+  REQUIRE(sparks.sparkSlots()[0].has_value());
+  const HitParticles::SparkFx& spark = *sparks.sparkSlots()[0];
+  CHECK(spark.state == 0);
+  CHECK(spark.timer == 22);
+  CHECK(spark.endFrame == 21);
+  CHECK(spark.position == HitParticles::Vec3{621, -85, 3464});
+  using Row = std::array<std::int32_t, 3>;
+  CHECK(spark.spread[0] == Row{-44, -35, 81});
+  CHECK(spark.spread[1] == Row{80, -53, -45});
+  CHECK(spark.spread[2] == Row{8, 34, 41});
+  CHECK(spark.spread[3] == Row{403, 405, 393});
+  // Its first fighter particle (vblank 28067) rolls from the state 0x3EDD2D77 on the partner's
+  // 22 nodes: ENTITY_PARTICLE_FX_DATA[0] sits on node 11 with timer 22.
+  dwe::ruleset::Random node = dwe::ruleset::Random::original(0x3EDD2D77U);
+  HitParticles particles;
+  particles.setNodeCounts({22});
+  particles.attach(node, 0, 22);
+  REQUIRE(particles.fighterParticleSlots()[0].has_value());
+  CHECK(particles.fighterParticleSlots()[0]->node == 11);
+}
+
+TEST_CASE("a hit's spark puffs its clouds around the fighter's feet over its last 4 frames") {
+  // tickParticleFX: endFrame 3, 2, 1 and 0 leave endFrame + 2 clouds each (5 + 4 + 3 + 2), each at
+  // the fighter's radius plus up to half of it from where it stands; they last 14 frames.
+  dwe::ruleset::Random random = dwe::ruleset::Random::original(1);
+  std::vector<dwe::game::battle::Fighter> fighters(1);
+  fighters[0].position = {.x = 500, .z = -3000};
+  fighters[0].combatant.radius = 100;
+  HitParticles sparks;
+  sparks.spawn(random, HitParticles::Spark::Hit, 0, {}, 0, 0x11);
+  std::size_t most = 0;
+  for (int frame = 0; frame < 60; ++frame) {
+    sparks.tick(random, fighters);
+    most = std::max(most, sparks.clouds().size());
+    for (const HitParticles::Cloud& cloud : sparks.clouds()) {
+      const double dx = cloud.x - 500;
+      const double dz = cloud.z - 3000;
+      const double distance = std::sqrt((dx * dx) + (dz * dz));
+      CHECK(distance >= 98.0);
+      CHECK(distance <= 152.0);
+    }
+  }
+  CHECK(most == 14);
+  CHECK(sparks.empty());
 }
 
 TEST_CASE("with the original's rolls a hit draws its spark after the damage roll, a block before") {
@@ -992,10 +1045,9 @@ TEST_CASE("with the original's rolls a hit draws its spark after the damage roll
                                          .age = std::nullopt,
                                          .clip = std::nullopt,
                                          .hitPoint = std::nullopt,
+                                         .touch = std::nullopt,
                                          .facingTarget = {}});
-    ParticleRolls particles;
-    BattleContext context = bench.context();
-    context.particles = sparks ? &particles : nullptr;
+    BattleContext context = sparks ? bench.originalContext() : bench.context();
     tickAttackHits(context);
     return std::pair{bench.random, bench.fighter(1).pendingDamage};
   };
@@ -1011,7 +1063,7 @@ TEST_CASE("with the original's rolls a hit draws its spark after the damage roll
   CHECK(drawsBetween(start, blockWith) == drawsBetween(start, blockWithout) + 8);
 }
 
-TEST_CASE("without the original's rolls a battle draws nothing for sparks") {
+TEST_CASE("without the original's rolls a battle's sparks roll their own") {
   const BattleSetup setup = duel(evenStats(300, 150), evenStats(300, 150), {"punch"}, {"punch"});
   Battle plain = startBattle(setup, 99);
   CHECK(plain.originalRolls() == nullptr);

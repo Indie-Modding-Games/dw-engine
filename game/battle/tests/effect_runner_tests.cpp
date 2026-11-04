@@ -1016,6 +1016,12 @@ header:
   constexpr std::string_view SparkScriptYaml = R"(start_script:
 - label: "start"
   at: "0x0100"
+  op: spawn
+  count: 1
+  table: "base+0x0010"
+  stride: 28
+  ordinal: 0
+- at: "0x0102"
   op: push_immediate
   value: 12
 - at: "0x0106"
@@ -1029,6 +1035,12 @@ init_script:
 - label: "init"
   at: "0x0120"
   op: stop
+data:
+- at: "0x0010"
+  kind: instances
+  count: 1
+  stride: 28
+  free: true
 )";
   const auto effect = dwe::core::parseYaml(SparkEffectYaml);
   const auto script = dwe::core::parseYaml(SparkScriptYaml);
@@ -1040,9 +1052,9 @@ init_script:
   RecordingSounds sounds;
   EffectRunner runner{sounds};
   dwe::ruleset::Random rolls = dwe::ruleset::Random::original(0x5CF299CBU);
-  dwe::game::battle::ParticleRolls particles;
+  dwe::game::battle::HitParticles particles;
   runner.useRolls(&rolls, &particles);
-  runner.start(runner.load(*read));
+  runner.start(runner.load(*read), 0, 1);
   // The node's draw, then the particle's first tick (12 % 4 == 0): bone and offset.
   dwe::ruleset::Random expected = dwe::ruleset::Random::original(0x5CF299CBU);
   for (int draw = 0; draw < 3; ++draw) {
@@ -1050,12 +1062,20 @@ init_script:
   }
   CHECK(rolls.state() == expected.state());
   CHECK(particles.fighterParticles() == 1);
+  CHECK(particles.fighterParticleSlots()[0]->fighter == 0);
 
-  // Without the battle's particles (no original rolls) nothing is drawn.
+  // Without the original's rolls the particle rolls the particles' own: the battle's are left.
   EffectRunner own{sounds};
+  dwe::game::battle::HitParticles ownParticles;
+  own.useRolls(nullptr, &ownParticles);
+  own.start(own.load(*read), 0, 1);
+  CHECK(ownParticles.fighterParticles() == 1);
+
+  // Without the battle's particles nothing is put on the attacker.
+  EffectRunner none{sounds};
   dwe::ruleset::Random untouched = dwe::ruleset::Random::original(0x5CF299CBU);
-  own.useRolls(&untouched);
-  own.start(own.load(*read));
+  none.useRolls(&untouched);
+  none.start(none.load(*read), 0, 1);
   CHECK(untouched.state() == dwe::ruleset::Random::original(0x5CF299CBU).state());
 }
 

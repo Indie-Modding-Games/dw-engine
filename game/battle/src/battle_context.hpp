@@ -19,8 +19,10 @@ struct BattleContext {
   const PartnerCondition* condition = nullptr;
   const BattleGround* ground = nullptr;
   const AttackFlights* flights = nullptr;
-  // With the original's rolls only: the draws of its hit sparks (Battle::useOriginalRolls).
-  ParticleRolls* particles = nullptr;
+  // The hit sparks and what they leave (Battle::hitParticles).
+  HitParticles* particles = nullptr;
+  // Whether `random` is the original's generator (Battle::useOriginalRolls).
+  bool originalRolls = false;
   // What the fighters' statuses show over them (status_visuals.hpp).
   StatusVisuals* visuals = nullptr;
 
@@ -32,9 +34,13 @@ struct BattleContext {
             .partnerSick = condition->sick,
             .partnerInjured = condition->injured};
   }
-  // The rolls of the status visuals: the battle's when they are the original's, else their own.
+  // The rolls of the status visuals and of the hit sparks: the battle's when they are the
+  // original's, else their own.
   [[nodiscard]] ruleset::Random& visualRolls() const {
-    return particles != nullptr ? *random : visuals->ownRolls();
+    return originalRolls ? *random : visuals->ownRolls();
+  }
+  [[nodiscard]] ruleset::Random& particleRolls() const {
+    return originalRolls ? *random : particles->ownRolls();
   }
   [[nodiscard]] Fighter& fighter(FighterId id) const { return state->fighters.at(id); }
   void emit(BattleEvent event) const { events->push_back(event); }

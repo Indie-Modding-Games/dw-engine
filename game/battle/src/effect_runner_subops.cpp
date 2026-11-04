@@ -358,7 +358,8 @@ bool EffectRunner::vectorOp(Slot& slot, std::string_view name,
   };
   if (const auto op = std::ranges::find(PairOps, name, &PairOp::name); op != PairOps.end()) {
     setVector(slot, args[0], apply3(op->combine, vectorAt(slot, args[0]), vectorAt(slot, args[1])));
-  } else if (const auto scalar = std::ranges::find(ScalarOps, name, &PairOp::name); scalar != ScalarOps.end()) {
+  } else if (const auto scalar = std::ranges::find(ScalarOps, name, &PairOp::name);
+             scalar != ScalarOps.end()) {
     setVector(slot, args[0],
               apply3(scalar->combine, vectorAt(slot, args[0]),
                      {.x = args[1], .y = args[1], .z = args[1]}));
@@ -616,9 +617,10 @@ bool EffectRunner::fighterOp(Slot& slot, std::string_view name,
     }
   } else if (name == "add_source_particles") {
     // BTL_addSourceEntityParticleFX: `timer` frames of a particle on a node of the attacker
-    // (addEntityParticleFX); only its draws, with the battle's (the game draws no such particle).
-    if (particles_ != nullptr && rolls_ != nullptr && !args.empty()) {
-      particles_->attach(*rolls_, args[0]);
+    // (addEntityParticleFX).
+    if (particles_ != nullptr && self.source && !args.empty()) {
+      particles_->attach(rolls_ != nullptr ? *rolls_ : particles_->ownRolls(), *self.source,
+                         args[0]);
     }
   } else if (name == "target_hit_entity") {
     // BTL_setTargetToHitEntity makes the hit fighter the target, which is the battle's target.

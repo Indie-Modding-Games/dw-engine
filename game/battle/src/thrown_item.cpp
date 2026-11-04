@@ -112,6 +112,11 @@ void land(BattleContext& context, const ThrownItem& item) {
   if (item.protects) {
     partner.status.protectedFromStatus = true;
   }
+  // item.c: handleHPHealingItem, handleMPHealingItem, handleDoubleFloppy and handleRestore end
+  // with addHealingParticleEffect(partner, ring).
+  if (item.healingParticles) {
+    emitPartnerEvent(context, EventKind::HealingShown, item.healingRing ? 1 : 0);
+  }
   if (item.boost) {
     boost(context, partner, *item.boost);
     // main.c: handleBuffDisks ends with BTL_addBuffDiskEffect, unless the partner is down.

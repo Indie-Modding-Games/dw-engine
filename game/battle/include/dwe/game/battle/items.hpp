@@ -37,6 +37,10 @@ struct ThrownItem {
   std::optional<StatBoost> boost;
   // Whether it does nothing while the partner is down (the handlers check currentHP != 0).
   bool consciousOnly = false;
+  // The particles its handler raises over the partner (particle.c: addHealingParticleEffect), and
+  // whether a ring of them joins the spiral (hasParticle2).
+  bool healingParticles = false;
+  bool healingRing = false;
 };
 
 // The thrown item on its way from the player's hand to the partner (main.c: tickThrownItem,

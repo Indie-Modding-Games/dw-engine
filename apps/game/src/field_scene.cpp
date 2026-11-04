@@ -962,7 +962,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   }
   mapRenderer_->setShade(1.0F - stage_.sceneryDarkness);
   std::vector<ScenePrim> prims = stage_.prims;
-  if (!stage_.camera && !fieldEffects_.empty()) {
+  if (!stage_.camera && (!fieldEffects_.empty() || (hitParticles_ && !hitParticles_->empty()))) {
     std::ranges::move(drawEffects(), std::back_inserter(prims));
   }
   if (mapRenderer_->hasMap()) {

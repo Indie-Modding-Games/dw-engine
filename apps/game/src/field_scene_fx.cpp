@@ -23,6 +23,7 @@ constexpr std::string_view ButterflySheet = "texture/etcdat/etctim/003";
 constexpr std::size_t CloudPalette = 0;
 constexpr std::size_t ParticlePalette = 1;
 constexpr std::size_t ButterflyPalette = 2;
+constexpr std::size_t FighterParticlePalette = 2;
 constexpr std::string_view GlowImage = "texture/etcdat/spot256";
 // overworld.c: renderNinjamonEffect puts the smoke's objects in ordering-table entry 10.
 constexpr std::int32_t SmokeOrderValue = 10;
@@ -90,20 +91,69 @@ std::optional<rhi::TextureId> FieldScene::stpSceneImage(std::string_view asset,
 
 std::vector<ScenePrim> FieldScene::drawEffects() {
   const render::MapCamera& camera = mapRenderer_->camera();
-  FieldEffectView view{.frame = {.view = camera.view(),
-                                 .projection = camera.projection(),
-                                 .pixelScale = camera.scale()},
-                       .focalLength = camera.desc().focalLength,
-                       .images = {.clouds = stpSceneImage(EffectSheet, CloudPalette),
-                                  .particles = stpSceneImage(EffectSheet, ParticlePalette),
-                                  .butterfly = stpSceneImage(ButterflySheet, ButterflyPalette),
-                                  .glow = sceneImage(GlowImage)},
-                       .butterflyCentre = std::nullopt};
+  FieldEffectView view{
+      .frame = {.view = camera.view(),
+                .projection = camera.projection(),
+                .pixelScale = camera.scale()},
+      .focalLength = camera.desc().focalLength,
+      .images = {.clouds = stpSceneImage(EffectSheet, CloudPalette),
+                 .particles = stpSceneImage(EffectSheet, ParticlePalette),
+                 .butterfly = stpSceneImage(ButterflySheet, ButterflyPalette),
+                 .glow = sceneImage(GlowImage),
+                 .fighterParticles = stpSceneImage(EffectSheet, FighterParticlePalette)},
+      .butterflyCentre = std::nullopt,
+      .battle = nullptr};
   if (fieldEffects_.hasButterfly() && partnerConditionPoint_ && !stage_.partnerHidden) {
     view.butterflyCentre =
         nodePoint(*partnerActor_, partnerConditionPoint_->first, partnerConditionPoint_->second);
   }
+  const FieldBattleParticles battle = battleParticles();
+  if (hitParticles_) {
+    view.battle = &battle;
+  }
   return fieldEffects_.draw(view);
+}
+
+// efe.c: the battle's sparks and clouds as the field's, and each fighter particle on its node of
+// the fighter's model as it is posed now (bone->posMatrix.workm.t).
+FieldBattleParticles FieldScene::battleParticles() const {
+  FieldBattleParticles out;
+  if (!hitParticles_) {
+    return out;
+  }
+  using game::battle::HitParticles;
+  for (const std::optional<HitParticles::SparkFx>& spark : hitParticles_->sparkSlots()) {
+    const std::optional<glm::ivec3> color =
+        spark ? FieldEffects::sparkColor(spark->kind) : std::nullopt;
+    if (!color) {
+      continue;
+    }
+    out.sparks.push_back({.position = {spark->position[0], spark->position[1], spark->position[2]},
+                          .mode = static_cast<std::int32_t>(spark->spark),
+                          .color = *color,
+                          .state = spark->state,
+                          .timer = spark->timer,
+                          .endFrame = spark->endFrame,
+                          .spread = spark->spread});
+  }
+  for (const HitParticles::Cloud& cloud : hitParticles_->clouds()) {
+    out.clouds.push_back({.x = cloud.x, .z = cloud.z, .state = cloud.state});
+  }
+  for (const std::optional<HitParticles::FighterParticle>& particle :
+       hitParticles_->fighterParticleSlots()) {
+    if (!particle || particle->fighter >= statusBodies_.size()) {
+      continue;
+    }
+    const Actor* actor = fighterActor(statusBodies_[particle->fighter].npc);
+    const std::optional<glm::vec3> node =
+        actor != nullptr
+            ? nodePoint(*actor, static_cast<std::uint32_t>(particle->node), glm::vec3{0.0F})
+            : std::nullopt;
+    if (node) {
+      out.motes.push_back({.position = *node, .look = particle->look, .timer = particle->timer});
+    }
+  }
+  return out;
 }
 
 std::optional<glm::vec3> FieldScene::partnerConditionPoint() const {

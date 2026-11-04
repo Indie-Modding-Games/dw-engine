@@ -148,6 +148,9 @@ struct AttackInFlight {
   // is hit or blocks. Without one it turns to the attacker: where it stands as the hit lands for a
   // followed effect, its place at the release otherwise.
   std::optional<Point> hitPoint;
+  // Where the effect touches, in the original's axes (x, y down, z the world's negated): the
+  // spark of a hit or a block bursts there (createParticleFX's position).
+  std::optional<std::array<std::int32_t, 3>> touch;
   // The attack frames on which its effect turns the attacker to the defender (EffectLanding).
   std::vector<std::int32_t> facingTarget;
 };

@@ -222,9 +222,12 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
     }
     state.fighters.push_back(std::move(*enemy));
   }
+  std::vector<std::int32_t> nodeCounts;
   for (Fighter& each : state.fighters) {
     each.hpBarFrames = rules.hud.enemyHpBarFrames;
+    nodeCounts.push_back(each.combatant.boneCount);
   }
+  battle.hitParticles_.setNodeCounts(std::move(nodeCounts));
   Fighter& fighter = state.partner();
   if (setup.condition.sick || setup.condition.injured) {
     applySicknessPenalty(fighter, rules);
@@ -320,7 +323,8 @@ core::Result<void> Battle::command(Command command) {
                         .condition = &setup_.condition,
                         .ground = ground_,
                         .flights = flights_,
-                        .particles = particleRolls_ ? &*particleRolls_ : nullptr,
+                        .particles = &hitParticles_,
+                        .originalRolls = originalRolls_,
                         .visuals = &statusVisuals_};
   commands.delay = strategies_.obedience->commandDelay(context.view(), setup_.condition.discipline);
   return {};
@@ -443,7 +447,8 @@ BattleContext Battle::contextOf(BattleEvents& events) {
           .condition = &setup_.condition,
           .ground = ground_,
           .flights = flights_,
-          .particles = particleRolls_ ? &*particleRolls_ : nullptr,
+          .particles = &hitParticles_,
+          .originalRolls = originalRolls_,
           .visuals = &statusVisuals_};
 }
 
@@ -471,7 +476,8 @@ const BattleEvents& Battle::step() {
                         .condition = &setup_.condition,
                         .ground = ground_,
                         .flights = flights_,
-                        .particles = particleRolls_ ? &*particleRolls_ : nullptr,
+                        .particles = &hitParticles_,
+                        .originalRolls = originalRolls_,
                         .visuals = &statusVisuals_};
   if (state_.matchClock && endMatch()) {
     return events_;
@@ -519,11 +525,9 @@ const BattleEvents& Battle::step() {
   tickRootMotion(context);
   faceEffectTargets(context);
   // BTL_battleTickFrame: tickObjects, after the fighters: the sparks' draws of the frame.
-  if (particleRolls_) {
-    particleRolls_->tick(random_);
-  }
+  hitParticles_.tick(particleRolls(), state_.fighters);
   // The status visuals' world objects, with the bubbles' rolls.
-  statusVisuals_.tick(particleRolls_ ? random_ : statusVisuals_.ownRolls(), state_.fighters);
+  statusVisuals_.tick(originalRolls_ ? random_ : statusVisuals_.ownRolls(), state_.fighters);
   if (state_.fleeFrames) {
     ++*state_.fleeFrames;
   }

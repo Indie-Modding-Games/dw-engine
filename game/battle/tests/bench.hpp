@@ -27,13 +27,14 @@ struct Bench {
             .random = &random,
             .events = &events,
             .condition = &condition,
+            .particles = &particles,
             .visuals = &visuals};
   }
-  // The same with the original's rolls on (Battle::useOriginalRolls): the visuals roll the
-  // battle's.
+  // The same with the original's rolls on (Battle::useOriginalRolls): the visuals and the sparks
+  // roll the battle's.
   BattleContext originalContext() {
     BattleContext context = this->context();
-    context.particles = &particles;
+    context.originalRolls = true;
     return context;
   }
   Fighter& fighter(FighterId id) { return state.fighters.at(id); }
@@ -46,7 +47,7 @@ struct Bench {
   dwe::ruleset::Random random;
   BattleEvents events;
   StatusVisuals visuals;
-  ParticleRolls particles;
+  HitParticles particles;
 };
 
 } // namespace battle_test

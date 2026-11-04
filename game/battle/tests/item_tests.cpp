@@ -186,6 +186,23 @@ TEST_CASE("a thrown item shows the amounts it heals as the item reads them, HP b
   CHECK_FALSE(hasEvent(boosted, EventKind::MpRestored));
 }
 
+TEST_CASE("a healing item raises its particles over the partner after what it heals") {
+  // item.c: handleHPHealingItem and the other healing handlers end with
+  // addHealingParticleEffect(partner, ring); a disk raises none.
+  Battle battle = startBattle(duel(evenStats(1000, 100), evenStats(1000, 100)), 4);
+  ThrownItem potion = healing(500);
+  potion.healingParticles = true;
+  potion.healingRing = true;
+  REQUIRE(battle.throwItem(potion));
+  const BattleEvents landed = stepUntilLanded(battle);
+  CHECK(amountsOf(landed, EventKind::HealingShown) == std::vector<std::int32_t>{1});
+  const auto hp = std::ranges::find(landed, EventKind::HpRestored, &BattleEvent::kind);
+  const auto shown = std::ranges::find(landed, EventKind::HealingShown, &BattleEvent::kind);
+  CHECK(hp < shown);
+  REQUIRE(battle.throwItem(disk(20)));
+  CHECK_FALSE(hasEvent(stepUntilLanded(battle), EventKind::HealingShown));
+}
+
 TEST_CASE("a revive shows its share of the maximum HP, and the whole revive 9999") {
   Battle battle = fallenPartner(9);
   battle.step();
