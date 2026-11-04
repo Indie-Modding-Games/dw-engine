@@ -536,3 +536,33 @@
 	display: none;
 }
 
+
+/* The marks over the fighters of a cup match between two of the same species (std_main.c: STD_renderPlayerMarker):
+   a label with «1P» over the partner and «COM» over the rival, its bottom-left corner on the anchor logic.lua
+   places. */
+#player-marks {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.pm {
+	position: absolute;
+	margin-top: -48dp;
+	padding: 4dp 12dp;
+	font-size: 26dp;
+	color: #ffffff;
+	background-color: #000000b0;
+	border-radius: 10dp;
+	white-space: nowrap;
+}
+
+#pm-0 {
+	color: #ffd54a;
+}
+
+.pm.hidden {
+	display: none;
+}

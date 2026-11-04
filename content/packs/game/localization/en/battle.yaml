@@ -62,3 +62,6 @@ prompt.command: "Give the order"
 prompt.bag: "Items"
 # The bag in battle: the button that opens it.
 bag.open: "Items"
+# The marks over the fighters of a cup match between two of the same species (STD_renderPlayerMarker).
+mark.partner: "1P"
+mark.rival: "COM"

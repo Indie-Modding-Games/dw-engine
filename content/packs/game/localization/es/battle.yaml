@@ -61,3 +61,6 @@ prompt.command: "Dar la orden"
 prompt.bag: "Objetos"
 # La bolsa del domador en combate: el botón que la abre.
 bag.open: "Objetos"
+# The marks over the fighters of a cup match between two of the same species (STD_renderPlayerMarker).
+mark.partner: "1P"
+mark.rival: "COM"

@@ -606,6 +606,16 @@ sprite_sheets:
   # El reloj de un combate del torneo (std_main.c: STD_renderCounterDigits): el panel de TIME.TIM (página 0x2c0 de 8
   # bits, v 0x78, CLUT (512, 255)) y, de la página (832, 0) de STDTIM con la CLUT (16, 480), las cifras de 12 x 15 en
   # u = cifra x 12, v 0x30, y las dos piezas laterales de 8 x 18 en u 0x78 y 0x88.
+  # Las marcas de un combate de copa entre dos de la misma especie (std_main.c: STD_renderPlayerMarker): de la página
+  # (768, 0) de STDTIM con la CLUT (0, 481), «1P» en u 0xa0 y «COM» en u 0xd0, v 0xe0, 31 de alto.
+  - name: ow-std-marks
+    image: texture/stddat/stdtim/003
+    palette: 1
+    original_size: [256, 256]
+    dp_per_pixel: 3
+    sprites:
+      std-mark-partner: [160, 224, 48, 31]
+      std-mark-rival: [208, 224, 47, 31]
   - name: ow-std-clock-panel
     image: texture/stddat/time
     palette: 0

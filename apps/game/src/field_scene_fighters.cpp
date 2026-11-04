@@ -104,7 +104,8 @@ std::optional<glm::vec2> FieldScene::fighterFeetOnWindow(std::optional<std::int3
 }
 
 std::optional<glm::vec2> FieldScene::fighterNodeOnWindow(std::optional<std::int32_t> npc,
-                                                         std::uint32_t node) const {
+                                                         std::uint32_t node,
+                                                         float rightward) const {
   const Actor* actor = fighterActor(npc);
   if (actor == nullptr) {
     return std::nullopt;
@@ -113,7 +114,10 @@ std::optional<glm::vec2> FieldScene::fighterNodeOnWindow(std::optional<std::int3
   if (!point) {
     return std::nullopt;
   }
-  return worldToWindowFraction(*point);
+  // The view's first row is the camera's right in the world.
+  const glm::mat4& view = mapRenderer_->camera().view();
+  const glm::vec3 right{view[0][0], view[1][0], view[2][0]};
+  return worldToWindowFraction(*point + (right * rightward));
 }
 
 std::optional<glm::vec2> FieldScene::playerNodeOnWindow(std::uint32_t node) const {

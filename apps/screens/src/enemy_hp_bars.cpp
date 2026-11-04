@@ -82,4 +82,17 @@ ScreenSettings settingsOf(const std::vector<EnemyHpBar>& bars) {
   return {{.name = std::string{HpBarsSetting}, .value = std::move(text)}};
 }
 
+bool marksShown(bool match, std::string_view partnerSpecies, std::string_view rivalSpecies) {
+  return match && !partnerSpecies.empty() && partnerSpecies == rivalSpecies;
+}
+
+ScreenSettings settingsOf(const std::vector<PlayerMarker>& markers) {
+  std::string text;
+  for (const PlayerMarker& marker : markers) {
+    std::format_to(std::back_inserter(text), "{} {:.1f} {:.1f} ", marker.fighter,
+                   rounded(marker.anchor.x * Percent), rounded(marker.anchor.y * Percent));
+  }
+  return {{.name = std::string{MarkersSetting}, .value = std::move(text)}};
+}
+
 } // namespace dwe::screens

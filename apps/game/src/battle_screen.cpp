@@ -519,7 +519,28 @@ void BattleScreen::publishHpBars() const {
                                             .maxHp = fighter.stats.maxHp}));
     }
   }
-  screens::publish(*desc_.ui, screens::settingsOf(bars), screens::HpBarsRevisionSetting);
+  // std_main.c: STD_renderPlayerMarker: each mark over node 1 of its fighter, moved right by
+  // VIEWPORT_DISTANCE * (radius / 2) / (otz * 4), half the species' radius at the node's depth.
+  std::vector<screens::PlayerMarker> markers;
+  if (battle_ && camera != nullptr && desc_.species != nullptr) {
+    const auto& fighters = battle_->state().fighters;
+    if (fighters.size() > 1 && !enemyNpcs_.empty() &&
+        screens::marksShown(battle_->state().matchClock.has_value(), fighters[0].combatant.species,
+                            fighters[1].combatant.species)) {
+      const assets::DigimonRow* row = desc_.species->find(fighters[0].combatant.species);
+      const float half = row != nullptr ? static_cast<float>(row->radius) / 2.0F : 0.0F;
+      const std::array<std::optional<std::int32_t>, 2> npcs{std::nullopt, enemyNpcs_[0]};
+      for (std::size_t id = 0; id < npcs.size(); ++id) {
+        if (const std::optional<glm::vec2> node =
+                desc_.scene->fighterNodeOnWindow(npcs.at(id), HpBarNode, half)) {
+          markers.push_back({.fighter = id, .anchor = {.x = node->x, .y = node->y}});
+        }
+      }
+    }
+  }
+  screens::ScreenSettings settings = screens::settingsOf(bars);
+  std::ranges::move(screens::settingsOf(markers), std::back_inserter(settings));
+  screens::publish(*desc_.ui, settings, screens::HpBarsRevisionSetting);
 }
 
 // Each fighter's place, facing and clip are the battle's (battle_main.c: the fighters are the

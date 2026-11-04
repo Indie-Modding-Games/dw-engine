@@ -85,6 +85,7 @@ hace varios ticks no redibuja varias veces) y el documento solo toca las piezas 
 | Ajuste | Valor | Qué es |
 |---|---|---|
 | `battle.hp_bars` | texto | Las barras dibujadas en el último fotograma, nueve valores cada una: enemigo (1 a 3), x e y del ancla en % de la ventana, esquina de la barra desde ella en píxeles del original (x, y), ancho del relleno (0 a 50), tinte rojo y verde (128 tal cual, 255 el doble) y HP |
+| `battle.markers` | texto | Las marcas de un combate de copa entre dos de la misma especie (`std_main.c: STD_initializeCombat` llama a `STD_initializePlayerMarker` solo entonces; `STD_renderPlayerMarker`), tres valores cada una: luchador (0 el compañero, «1P»; 1 el rival, «COM») y x e y del ancla en % de la ventana: el nodo 1 de su modelo movido a la derecha media radio de la especie a su profundidad; la esquina de la marca, 32 píxeles por encima. El aspecto original dibuja las burbujas de STDTIM (página 768, 0; CLUT 0, 481; 48 × 31 y 47 × 31); el moderno, una etiqueta con el texto. Leído del decomp; Suposición: sin medir (no hay estado guardado de copa) |
 
 ## Caja de vidas
 

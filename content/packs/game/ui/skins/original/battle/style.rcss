@@ -984,3 +984,48 @@
 .end-name {
 	color: #fff371;
 }
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The marks over the fighters of a cup match between two of the same species (std_main.c: STD_renderPlayerMarker):
+   the «1P» bubble over the partner and the «COM» one over the rival, from STDTIM's page (768, 0) with the CLUT
+   (0, 481), 48 x 31 and 47 x 31 pixels, their top-left corner 32 pixels over the anchor logic.lua places. The words
+   are in the picture: the text logic.lua writes stays hidden, and the modern look's label (this look goes over it)
+   loses its box. */
+#player-marks {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+}
+
+/* Over the modern look's label: no box, no padding, no text. */
+.pm {
+	position: absolute;
+	width: 0;
+	height: 0;
+	padding: 0;
+	border-radius: 0;
+	background-color: #00000000;
+	color: #00000000;
+	font-size: 1dp;
+}
+
+.pm.hidden {
+	display: none;
+}
+
+#pm-0 {
+	color: #00000000;
+	decorator: image(std-mark-partner);
+	margin-top: -96dp;
+	width: 144dp;
+	height: 93dp;
+}
+
+#pm-1 {
+	decorator: image(std-mark-rival);
+	margin-top: -96dp;
+	width: 141dp;
+	height: 93dp;
+}

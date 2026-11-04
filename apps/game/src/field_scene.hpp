@@ -459,8 +459,11 @@ public:
   // (utils.c: getEntityScreenPos(entity, node): the origin of that object as the pose leaves it);
   // nothing when the field does not draw the fighter, the node is no joint of its skin or it is
   // behind the camera.
+  // `rightward` moves the point that many world units to the screen's right first (std_main.c:
+  // STD_renderPlayerMarker shifts its mark by the fighter's half radius at the node's depth).
   [[nodiscard]] std::optional<glm::vec2> fighterNodeOnWindow(std::optional<std::int32_t> npc,
-                                                             std::uint32_t node) const;
+                                                             std::uint32_t node,
+                                                             float rightward = 0.0F) const;
   // Where one node of the player's model shows in the window, as fractions of its size (utils.c:
   // getEntityScreenPos(ENTITY_TABLE[0], node), as for a fighter's); nothing when the node is no
   // joint of its skin or it is behind the camera.

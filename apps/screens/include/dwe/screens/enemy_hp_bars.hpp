@@ -10,6 +10,14 @@
 
 namespace dwe::screens {
 
+// The marks over the two fighters of a cup match between two of the same species (std_main.c:
+// STD_initializePlayerMarker, STD_renderPlayerMarker): MarkersSetting packs three values each, the
+// fighter (0 the partner's «1P», 1 the rival's «COM») and the anchor's x and y in percent of the
+// window: where the fighter's model node 1 shows, moved right by half the species' radius at its
+// depth. The mark's top-left corner is 32 of the original's pixels over the anchor. They go with
+// the HP bars' revision.
+inline constexpr std::string_view MarkersSetting = "battle.markers";
+
 // The settings of the enemies' HP bars on the battle document (ui/battle/document), which redraws
 // them on HpBarsRevisionSetting. HpBarsSetting packs the bars drawn on the last battle frame, nine
 // values each: the enemy (1 to 3), the anchor's x and y in percent of the window, the bar's
@@ -56,5 +64,18 @@ struct EnemyOnScreen {
 
 // The bars as the settings the battle document reads.
 [[nodiscard]] ScreenSettings settingsOf(const std::vector<EnemyHpBar>& bars);
+
+// One fighter's mark in a match between two of the same species.
+struct PlayerMarker {
+  std::size_t fighter = 0;
+  WindowFraction anchor;
+};
+
+// std_main.c: STD_initializeCombat adds the marks only when both fighters are of one species.
+[[nodiscard]] bool marksShown(bool match, std::string_view partnerSpecies,
+                              std::string_view rivalSpecies);
+
+// The marks as the settings the battle document reads.
+[[nodiscard]] ScreenSettings settingsOf(const std::vector<PlayerMarker>& markers);
 
 } // namespace dwe::screens

@@ -115,3 +115,19 @@ TEST_CASE("the HP bars pack nine values each for the battle document") {
   CHECK(std::get<std::string>(dwe::screens::settingsOf(std::vector<EnemyHpBar>{}).front().value)
             .empty());
 }
+
+TEST_CASE("std_main.c STD_initializePlayerMarker: the marks only in a match of one species") {
+  using dwe::screens::marksShown;
+  CHECK(marksShown(true, "agumon", "agumon"));
+  CHECK_FALSE(marksShown(true, "agumon", "gabumon"));
+  CHECK_FALSE(marksShown(false, "agumon", "agumon"));
+  CHECK_FALSE(marksShown(true, "", ""));
+  // STD_renderPlayerMarker: each fighter's anchor, in percent of the window.
+  const auto settings = dwe::screens::settingsOf(std::vector<dwe::screens::PlayerMarker>{
+      {.fighter = 0, .anchor = {.x = 0.25, .y = 0.5}},
+      {.fighter = 1, .anchor = {.x = 0.7512, .y = 0.4}},
+  });
+  REQUIRE(settings.size() == 1);
+  CHECK(settings.front().name == dwe::screens::MarkersSetting);
+  CHECK(std::get<std::string>(settings.front().value) == "0 25.0 50.0 1 75.1 40.0 ");
+}

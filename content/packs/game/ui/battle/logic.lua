@@ -1189,12 +1189,42 @@ function close_end()
   ui.send("battle_close")
 end
 
+-- The marks over the fighters of a cup match between two of the same species (apps/screens:
+-- enemy_hp_bars.hpp, std_main.c: STD_renderPlayerMarker) come as three values each: the fighter (0
+-- the partner, 1 the rival) and the anchor in percent of the window; the mark's corner is 32 pixels
+-- over it. The modern look writes «1P» and «COM» in it; the original look draws the bubbles.
+local function draw_player_marks(document)
+  local values = {}
+  for value in string.gmatch(setting("battle.markers", ""), "%S+") do
+    values[#values + 1] = tonumber(value)
+  end
+  local marks = {}
+  for base = 0, #values - 3, 3 do
+    marks[math.floor(values[base + 1])] = base
+  end
+  for fighter = 0, 1 do
+    local base = marks[fighter]
+    local id = "pm-" .. fighter
+    set_class(document, id, "hidden", base == nil)
+    if base ~= nil then
+      set_property(document, id, "left", values[base + 2] .. "%")
+      set_property(document, id, "top", values[base + 3] .. "%")
+      local label = text(fighter == 0 and "battle.mark.partner" or "battle.mark.rival")
+      if applied[id .. " text"] ~= label then
+        applied[id .. " text"] = label
+        lookup(document, id):set_text(label)
+      end
+    end
+  end
+end
+
 function on_show(document)
   draw(document)
   draw_motion(document)
   draw_bars(document)
   draw_damage(document)
   draw_hp_bars(document)
+  draw_player_marks(document)
   draw_shout(document)
   draw_prompts(document)
 end
@@ -1214,6 +1244,7 @@ function on_setting(document, name)
     draw_damage(document)
   elseif name == "battle.hp_bars.revision" then
     draw_hp_bars(document)
+    draw_player_marks(document)
   elseif name == "battle.shout.revision" then
     draw_shout(document)
   end

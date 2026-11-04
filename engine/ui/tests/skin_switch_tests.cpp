@@ -154,6 +154,7 @@ void addOriginalArt(Content& content) {
         Stand{.path = "texture/etcna/title256.png", .width = 320, .height = 256},
         Stand{.path = "texture/stddat/time.png", .width = 66, .height = 29},
         Stand{.path = "texture/stddat/stdtim/002.png", .width = 256, .height = 120},
+        Stand{.path = "texture/stddat/stdtim/003.png", .width = 256, .height = 256},
         Stand{.path = "map/trai00/texture4/001.png", .width = 256, .height = 256}}) {
     content.memory.addFile(std::filesystem::path{"packs/base"} / image.path,
                            whitePng(image.width, image.height));
