@@ -25,6 +25,8 @@ slots.no_save_warning: "You won't be able to save this game. Start anyway?"
 slots.full: "There are no free slots."
 confirm_new: "Record new adventure?"
 confirm_continue: "Continue this adventure?"
+# A save whose own autosave is newer: which to load ({when}: local date and time; {place}: the map).
+confirm_autosave: "Newer autosave: {place}, {when}. Continue from the autosave? No loads the saved game."
 # The dialog shows the save file's name below these.
 failed: "The game could not be saved."
 load_failed: "The game could not be loaded."

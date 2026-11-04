@@ -2,14 +2,23 @@
 -- (accept) about the save slots. The game publishes dialog.text (a text key), dialog.file (the save
 -- file it is about, or ""), dialog.question, dialog.start_on_yes and dialog.at_title (shown by the
 -- title screen, which a skin can style apart: the scrim's at-title class), and shows this document;
--- it sends dialog_answer, true only for yes. Cancel answers no.
+-- it sends dialog_answer, true only for yes. Cancel answers no. A question that offers a save (the
+-- newer autosave of the one being continued) also publishes dialog.when and dialog.place_key or
+-- dialog.place, its text's {when} and {place}.
 
 local function question()
   return ui.setting("dialog.question") == true
 end
 
+-- The offered save's place: the map's name, or its ID when the packs do not name it.
+local function place()
+  local key = ui.setting("dialog.place_key") or ""
+  return key ~= "" and t(key) or (ui.setting("dialog.place") or "")
+end
+
 local function refresh(document)
-  document:get("text"):set_text(t(ui.setting("dialog.text") or ""))
+  local args = { when = ui.setting("dialog.when") or "", place = place() }
+  document:get("text"):set_text(t(ui.setting("dialog.text") or "", args))
   local file = ui.setting("dialog.file") or ""
   document:get("file"):set_text(file)
   document:get("file"):set_class("hidden", file == "")

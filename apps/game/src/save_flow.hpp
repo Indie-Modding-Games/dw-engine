@@ -3,6 +3,7 @@
 #include <dwe/game/save/slots.hpp>
 #include <dwe/screens/screen_settings.hpp>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -24,6 +25,9 @@ enum class SlotListMode : std::uint8_t { NewGame, Continue, Erase };
 struct SaveNames {
   std::function<std::string(std::string_view)> species;
   std::function<std::string(std::string_view)> map;
+  // How a save's time reads in a question: the player's local time in the game; nothing reads it
+  // in UTC ("2026-11-03 19:31").
+  std::function<std::string(std::chrono::sys_seconds)> time = {};
 };
 
 // A message of the title screen: a text key, the save file it is about, and whether it asks yes or
@@ -34,6 +38,11 @@ struct SaveDialog {
   bool question = false;
   // A question starts on yes (the original's "Record new adventure?") instead of no.
   bool startOnYes = false;
+  // The save a question offers, for its text's {when} and {place}: when it was written, and where
+  // (the map's text key, or its ID when the packs do not name it).
+  std::string when = {};
+  std::string placeKey = {};
+  std::string place = {};
 
   friend bool operator==(const SaveDialog&, const SaveDialog&) = default;
 };
@@ -61,8 +70,13 @@ public:
   [[nodiscard]] std::optional<SaveDialog> choose(std::size_t entry);
   // A new game with no slot was chosen.
   [[nodiscard]] SaveDialog chooseWithoutSaving();
-  // The answer to the dialog shown last: the game to start, or nothing to go back to the list.
+  // The answer to the dialog shown last: the game to start, or nothing, to show the next question
+  // (nextQuestion) or else go back to the list. Continuing a manual save whose own autosave is
+  // newer asks first which of the two to load: yes loads the autosave, no (and cancel) the manual
+  // save, as the original, which has no autosave.
   [[nodiscard]] std::optional<PlayStart> answer(bool yes);
+  // The question an answer that started nothing leads to; nothing to go back to the list.
+  [[nodiscard]] const std::optional<SaveDialog>& nextQuestion() const { return next_; }
   // Whether the dialog shown last asks to erase a save; its answer goes to answerErase.
   [[nodiscard]] bool erasing() const { return pendingErase_.has_value(); }
   // The answer to the question to erase a save: erases it on yes. The notice to show when the save
@@ -79,6 +93,11 @@ private:
   std::vector<game::save::SlotInfo> entries_;
   std::optional<PlayStart> pending_;
   std::optional<game::save::SlotId> pendingErase_;
+  // The newest autosave of the manual save being continued, when it is newer than that save.
+  std::optional<game::save::SlotInfo> newerAutosave_;
+  // Whether the question shown last offers newerAutosave_.
+  bool offeringAutosave_ = false;
+  std::optional<SaveDialog> next_;
 };
 
 // A dialog as the settings of the dialog document; `atTitle` when the title screen shows it, over

@@ -25,6 +25,8 @@ slots.no_save_warning: "No podrás guardar esta partida. ¿Empezar igualmente?"
 slots.full: "No hay ranuras libres."
 confirm_new: "¿Grabar una nueva aventura?"
 confirm_continue: "¿Continuar esta aventura?"
+# Una partida cuyo autoguardado es más reciente: cuál cargar ({when}: fecha y hora locales; {place}: el mapa).
+confirm_autosave: "Autoguardado más reciente: {place}, {when}. ¿Continuar desde el autoguardado? «No» carga la partida guardada."
 # El diálogo enseña debajo el nombre del fichero de la partida.
 failed: "No se ha podido guardar la partida."
 load_failed: "No se ha podido cargar la partida."

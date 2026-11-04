@@ -17,6 +17,7 @@
 
 namespace {
 
+using dwe::app::dialogSettings;
 using dwe::app::PlayStart;
 using dwe::app::SaveDialog;
 using dwe::app::SaveFlow;
@@ -205,4 +206,72 @@ TEST_CASE("a game that did not start says whether the start or the save failed, 
                                  .file = "autosave_01.yaml",
                                  .question = false,
                                  .startOnYes = false});
+}
+
+TEST_CASE("continuing a save whose own autosave is newer offers the autosave apart") {
+  using namespace std::chrono;
+  MemorySaveStorage storage;
+  SaveSlots slots{storage, {.manualSlots = 2, .autosaveSlots = 3}};
+  constexpr SlotId Autosave2{.kind = SlotKind::Autosave, .index = 2};
+  constexpr SlotId Autosave3{.kind = SlotKind::Autosave, .index = 3};
+  const auto savedAt = [](SaveFile file, std::string slot, sys_seconds updated, std::string map) {
+    file.header.summary.slot = std::move(slot);
+    file.header.summary.map = std::move(map);
+    file.header.updated = updated;
+    return file;
+  };
+  const sys_seconds manualTime = sys_days{2026y / November / 3} + 19h + 30min;
+  REQUIRE(slots.save(Slot1, savedAt(saveOf("gabumon"), "slot_01", manualTime, "topn01")));
+  REQUIRE(slots.save(Slot2, savedAt(saveOf("agumon"), "slot_02", manualTime, "twna01")));
+  // Slot 1's playthrough has an older autosave and a newer one; slot 2's only an older one, and
+  // another playthrough's newer autosave does not count for it.
+  REQUIRE(
+      slots.save(Autosave1, savedAt(saveOf("gabumon"), "slot_01", manualTime - 5min, "room08")));
+  REQUIRE(
+      slots.save(Autosave2, savedAt(saveOf("gabumon"), "slot_01", manualTime + 2min, "twna01")));
+  REQUIRE(slots.save(Autosave3, savedAt(saveOf("agumon"), "slot_02", manualTime - 1min, "room08")));
+  SaveNames named = names();
+  named.map = [](std::string_view id) { return "maps." + std::string{id}; };
+  SaveFlow flow{&slots, named};
+  const ScreenSettings list = flow.open(SlotListMode::Continue);
+  REQUIRE(valueOf(list, "save.slot.0.number") == UiValue{1.0});
+  REQUIRE(valueOf(list, "save.slot.1.number") == UiValue{2.0});
+
+  // The slot is chosen and confirmed as always; then the newer autosave is a question of its own,
+  // on no, and no loads the manual save.
+  CHECK(flow.choose(0)->text == "save.confirm_continue");
+  CHECK_FALSE(flow.answer(true).has_value());
+  const SaveDialog offer{.text = "save.confirm_autosave",
+                         .file = {},
+                         .question = true,
+                         .startOnYes = false,
+                         .when = "2026-11-03 19:32",
+                         .placeKey = "maps.twna01",
+                         .place = "twna01"};
+  REQUIRE(flow.nextQuestion() == offer);
+  const ScreenSettings dialog = dialogSettings(*flow.nextQuestion(), true);
+  CHECK(valueOf(dialog, "dialog.when") == UiValue{std::string{"2026-11-03 19:32"}});
+  CHECK(valueOf(dialog, "dialog.place_key") == UiValue{std::string{"maps.twna01"}});
+  CHECK(flow.answer(false) ==
+        PlayStart{.load = Slot1, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt});
+  CHECK_FALSE(flow.nextQuestion().has_value());
+
+  // Yes loads the autosave, which keeps saving to slot 1 (its summary names it).
+  REQUIRE(flow.choose(0).has_value());
+  CHECK_FALSE(flow.answer(true).has_value());
+  REQUIRE(flow.nextQuestion().has_value());
+  CHECK(flow.answer(true) ==
+        PlayStart{
+            .load = Autosave2, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt});
+
+  // No to continuing goes back to the list without asking about the autosave.
+  REQUIRE(flow.choose(0).has_value());
+  CHECK_FALSE(flow.answer(false).has_value());
+  CHECK_FALSE(flow.nextQuestion().has_value());
+
+  // A save with no newer autosave of its own loads at once.
+  REQUIRE(flow.choose(1).has_value());
+  CHECK(flow.answer(true) ==
+        PlayStart{.load = Slot2, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt});
+  CHECK_FALSE(flow.nextQuestion().has_value());
 }

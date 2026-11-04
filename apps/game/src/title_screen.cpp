@@ -11,7 +11,10 @@
 #include <dwe/session/slot_names.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <cstddef>
+#include <ctime>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -36,8 +39,21 @@ bool hasRuleset(const assets::VirtualFileSystem& files, std::string_view id) {
   return std::ranges::find(ids, id) != ids.end();
 }
 
-// The names of the saves' species and maps in the packs' tables; a table the packs lack leaves
-// its IDs unnamed.
+// A save's time as the player's clock reads it.
+std::string localTimeOf(std::chrono::sys_seconds time) {
+  const std::time_t seconds = std::chrono::system_clock::to_time_t(time);
+  std::tm local{};
+#ifdef _WIN32
+  localtime_s(&local, &seconds);
+#else
+  localtime_r(&seconds, &local);
+#endif
+  return std::format("{:04}-{:02}-{:02} {:02}:{:02}", local.tm_year + 1900, local.tm_mon + 1,
+                     local.tm_mday, local.tm_hour, local.tm_min);
+}
+
+// The names of the saves' species and maps in the packs' tables, and their times in local time; a
+// table the packs lack leaves its IDs unnamed.
 SaveNames namesOf(const assets::VirtualFileSystem& files, const Options& options) {
   SaveNames names;
   if (auto rules = ruleset::loadRuleset(files, options.ruleset)) {
@@ -52,6 +68,7 @@ SaveNames namesOf(const assets::VirtualFileSystem& files, const Options& options
     auto maps = std::make_shared<const assets::MapTable>(std::move(*table));
     names.map = [maps](std::string_view id) { return mapNameKeyOf(*maps, id); };
   }
+  names.time = localTimeOf;
   return names;
 }
 
@@ -151,6 +168,8 @@ bool TitleScreen::handle(const ui::UiCommand& command) {
         // The list stayed behind the question; the game starts without it.
         ui_->hide(SaveSlotsDocument);
         startOrAskRules(std::move(start));
+      } else if (const auto& next = flow_.nextQuestion()) {
+        showDialog(*next);
       } else {
         back();
       }

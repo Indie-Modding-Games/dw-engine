@@ -731,18 +731,10 @@ void GameSession::writeRequestedAutosave() {
     return;
   }
   file_ = std::move(*file);
-  // The autosave is an extension of the manual save: it goes to the autosave slots (the history)
-  // and then replaces the playthrough's manual slot, whose previous file becomes its .bak backup
-  // (SaveSlots::save copies it before writing). A playthrough without a manual slot keeps only the
-  // autosave files.
-  if (homeSlot_ && homeSlot_->kind == game::save::SlotKind::Manual) {
-    if (auto saved = slots_->save(*homeSlot_, file_); !saved) {
-      core::logWarning("{}", formatMessage(messages::AutosaveFailed, saved.error().message));
-    } else {
-      core::logDebug("[port:save] autosave also replaced the manual slot {} ({} kept as .bak)",
-                     slotName(*homeSlot_), slotName(*homeSlot_));
-    }
-  }
+  // The autosave stays in the autosave slots, tied to the playthrough's manual slot by its summary
+  // (erasing that slot erases it, SaveSlots::erase). The manual slot keeps the player's own save,
+  // as the original, which has no autosave: continuing that slot loads it, and the title screen
+  // offers a newer autosave of it as a choice of its own (SaveFlow::answer).
   ++savesWritten_;
   autosaved_ = Autosave{.slot = *written, .reasons = std::move(*reasons)};
   core::logInfo("{}", formatMessage(messages::Autosaved, game::save::slotFileName(*written)));

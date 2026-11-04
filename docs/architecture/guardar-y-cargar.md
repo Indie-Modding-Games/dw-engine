@@ -158,7 +158,10 @@ partner choca con un NPC (`main.c: initializeLoadedMap: 3821-3857`) no se hace e
   pregunta.
 - **Autoguardado y ranura**: cada autoguardado apunta a la ranura manual de su partida (`summary.slot`), así que
   continuar desde un autoguardado sigue guardando en la ranura de esa partida. Si no tiene (partida «sin guardar»),
-  queda sin ranura.
+  queda sin ranura. El autoguardado va solo a sus ranuras (`autosave_NN`) y **nunca escribe en la ranura manual**:
+  esa guarda la última partida que guardó el jugador, como el original, que no autoguarda
+  (`GameSession::writeRequestedAutosave`). Borrar la ranura manual borra también sus autoguardados y sus `.bak`
+  (`SaveSlots::erase`).
 - **La lista** (`save_slots`, publicada como ajustes `save.slot.<n>.*`):
 
 | Columna | De dónde | Original |
@@ -205,6 +208,14 @@ tarjeta». Así `route-loop-keyboard` y las demás siguen igual, con el botón `
 «¿Continuar esta aventura?», **con el cursor en «Sí»** (mejora documentada: es la respuesta esperada; el original
 pregunta igual) → carga transaccional ([3.2](#32-los-estados-de-la-app)) → `Playing` con fundido desde negro.
 
+**Continuar una ranura carga la partida guardada a mano**, como el original. Si esa partida tiene un autoguardado
+suyo (`summary.slot` = la ranura) **más reciente** que ella (`updated`), tras el «Sí» sale una segunda pregunta,
+nunca un cambio en silencio: «Autoguardado más reciente: {lugar}, {fecha y hora}. ¿Continuar desde el autoguardado?
+«No» carga la partida guardada» (`save.confirm_autosave`; la hora es la local del jugador). Empieza en «No»; «Sí»
+carga el autoguardado más nuevo de esa partida, que sigue guardando en la misma ranura; «No» o cancelar cargan la
+partida guardada. Sin autoguardado más nuevo, el «Sí» carga sin más (`SaveFlow::answer`, `nextQuestion`). Los
+autoguardados siguen además en la lista como filas propias («CONTINUAR AUTOGUARDADO n»).
+
 Con el aspecto original la lista es la del original (`main_menu.c: renderSelectCardSlot`): una fila por ranura,
 «CONTINUAR RANURA n» y luego «CONTINUAR AUTOGUARDADO n», las vacías en gris y sin elegir, ocho a la vista con
 flechas si hay más. El juego publica cuántas hay de cada clase (`save.slots.manual`, `save.slots.autosave`). Bajo la
@@ -215,9 +226,8 @@ tiene (mejora documentada). La pregunta sale sobre la lista (`dialog.at_title`).
 
 `Borrar partida` (en gris sin partidas, como `Continuar`) → la misma lista con «BORRAR RANURA n» y las ranuras que este
 juego puede escribir (no las de un juego más nuevo) → «¿Borrar esta aventura?» **con el cursor en «No»** → la
-ranura queda vacía (`SaveSlots::erase`). El fichero no se pierde: pasa a ser la copia `.bak` de la ranura
-(`SaveStorage::remove`), así que un borrado por error se recupera a mano; la siguiente partida guardada en esa
-ranura la sustituye. Si no se puede borrar, aviso «save.erase_failed» y el error al registro. Tras borrar vuelve a la
+ranura queda vacía (`SaveSlots::erase`): se borran su fichero, su `.bak` y los autoguardados de esa partida (y sus
+`.bak`), así que no queda copia de una partida que el jugador borró. Si no se puede borrar, aviso «save.erase_failed» y el error al registro. Tras borrar vuelve a la
 lista. El original borra el fichero de la tarjeta sin copia (`main_menu.c: tickMainMenu`).
 
 ### 3.6 Dormir
@@ -309,6 +319,7 @@ Claves nuevas; los textos son nuestros, no los del disco.
 | `save.slots.full` | There are no free slots. | No hay ranuras libres. |
 | `save.confirm_new` | Record new adventure? | ¿Grabar una nueva aventura? |
 | `save.confirm_continue` | Continue this adventure? | ¿Continuar esta aventura? |
+| `save.confirm_autosave` | Newer autosave: {place}, {when}. Continue from the autosave? No loads the saved game. | Autoguardado más reciente: {place}, {when}. ¿Continuar desde el autoguardado? «No» carga la partida guardada. |
 | `save.sleep` | Go to sleep | Dormir |
 | `save.sleep_and_save` | Save and go to sleep | Guardar y dormir |
 | `save.ask_save` | Do you want to save? | ¿Quieres guardar? |
@@ -364,7 +375,8 @@ fichero (`dialog.file`).
 | Dormir: el partner no camina a la cama ni hay animaciones ni sonido del sueño (`partner.c: 281-321`) | Pendiente: VAN-04 | El fundido, el momento del guardado y el del despertar ya son los del original |
 | La máquina registra para el modo versus; el modo versus no está | Vanilla; el modo, pendiente (fase 5) | Pregunta 3 |
 | La máquina no enseña «Comprobando la tarjeta» ni «Guardando» | Sin equivalente | No hay tarjeta; el guardado de PC es inmediato |
-| Borrar partida en la portada; lo borrado queda como `.bak` | Vanilla + mejora documentada | Pregunta 4; la copia evita perder una partida por error |
+| Borrar partida en la portada; se borran también su `.bak` y sus autoguardados | Vanilla + mejora documentada | Pregunta 4; el original borra el fichero sin copia |
+| Continuar una ranura carga la partida guardada a mano; su autoguardado más reciente se ofrece aparte («¿Continuar desde el autoguardado?», empieza en «No») | Igual + mejora documentada | El original no autoguarda: cargar la ranura es cargar lo que guardó el jugador. Antes el autoguardado sustituía la ranura manual y la partida de la máquina se perdía (tarjeta #192) |
 | Las preguntas de continuar y borrar empiezan en «Sí» y «No» | Mejora documentada | La respuesta esperada y la segura |
 | Recolocar al partner si choca con un NPC al cargar | Pendiente | Pregunta 7 |
 
@@ -392,6 +404,10 @@ Corre en `en` y `es`. Cambios en el ejecutor: `shownMenu()` (`apps/game/src/auto
 - `game/save`: la cabecera v3 se escribe y se lee igual byte a byte; una partida v2 migra a v3 con el resumen vacío,
   y la lista lo rellena con el lector del juego. `apps/session`: el resumen sacado de las secciones; con secciones
   que faltan, vacío.
+- `SaveFlow`: continuar una ranura con un autoguardado suyo más nuevo pregunta aparte (no carga la manual, sí el
+  autoguardado, que sigue en la ranura); uno más viejo o de otra partida no pregunta (`save_flow_tests.cpp`).
+  `AppFlow`: cargar la ranura tras seguir jugando da la partida guardada, y el autoguardado, el estado de después
+  con la misma ranura (`app_flow_tests.cpp`).
 - `SaveFlow`: ranura de la partida al empezar, al continuar, desde un autoguardado y sin guardar; guardado al dormir
   con y sin ranura; fallo de escritura (`MemorySaveStorage::failNextWrite`) vuelve al menú; máquina y fin del juego
   con su mapa de vuelta.
