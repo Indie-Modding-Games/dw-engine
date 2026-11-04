@@ -74,6 +74,11 @@
 	color: #e9eef5;
 }
 
+/* The season after the day (the Seasons option), in the label's colour. */
+#panel:not(.skin-original) #field-season {
+	margin-left: 4dp;
+}
+
 /* An entry: a row 40dp high, its text at the left. The amber bar at its left edge is always there, transparent until
    the row takes the focus, so the text never moves. */
 #panel:not(.skin-original) button {

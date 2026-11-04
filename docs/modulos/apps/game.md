@@ -1047,6 +1047,22 @@ el dibujo y el sonido están en [game/weather](../game/weather.md). `--weather <
 |---|---|---|---|---|
 | Clima del campo | No existe | Despejado (sol de día), nublado (velo gris y sombras de nubes que pasan), lluvia ligera y fuerte (gotas inclinadas y salpicaduras, bucle de lluvia), nieve ligera y fuerte (copos con deriva, ráfagas de viento); por zona, cada 3 horas de juego, con fundido de 8 s; nunca en interiores, cuevas, salas de la ciudad ni mapas de hora fija; semilla propia guardada en la partida | `weather_tests.cpp`, `weather_seed_tests.cpp`, `weather_particles_tests.cpp` | Mejora (opción) |
 
+## Estaciones
+
+Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no tiene estaciones): el ajuste
+`seasons` (sí/no) se cambia en la fila «Estaciones» («Seasons» en inglés) de las opciones en partida y en las del
+título, justo debajo de «Clima»; se aplica al momento y se guarda en los ajustes del usuario. Apagada, el campo se ve
+y el clima sale exactamente como sin estaciones. Las reglas están en [game/weather](../game/weather.md#estaciones).
+`--season <estación>` fuerza una para capturas (su aspecto y su nombre; el clima sigue el calendario).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Estación del calendario | No existe | Primavera, verano, otoño e invierno, 3 días de juego cada una desde el año 0, día 0 (un partner nuevo ve las cuatro); fundido de 8 s al cambiar | `weather_tests.cpp` | Mejora (opción) |
+| Color del escenario | No existe | Solo en los mapas con clima: fondo y capas del mapa (nunca los personajes); primavera verdes frescos, verano luminoso y cálido, otoño follaje naranja y marrón, invierno frío y pálido; las zonas de clima propio (nieve, desierto, jungla) solo se empujan un poco | `weather_tests.cpp` | Mejora (opción) |
+| Pétalos y hojas | No existe | Pocos pétalos en primavera y hojas que caen en otoño, girando y con vaivén; menos con lluvia o nieve, más tenues de noche | `weather_particles_tests.cpp` | Mejora (opción) |
+| Clima por estación | No existe | Más sol en verano, más lluvia en primavera y otoño, nieve en invierno (parte de la lluvia cae como nieve donde la zona lo permite) | `weather_tests.cpp` | Mejora (opción) |
+| Nombre de la estación | No existe | En el menú de pausa (piel moderna), tras el día; nada con la opción apagada; la piel original no lo muestra | — | Mejora (opción) |
+
 ## Contenido oculto
 
 Mejora opcional, apagada por defecto: al empezar una partida nueva desde el menú principal (Jugar → ranura → «Sí»),

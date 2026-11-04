@@ -63,7 +63,10 @@ política para cualquier resolución, en el [ADR 0020](../../adr/0020-camara-de-
   sprites de lejos a cerca con prueba de profundidad `LessOrEqual` y su mezcla, y las bandas negras al final). Lo que
   haya entre los dos (los modelos) usa `camera().view()` y `camera().projection()` y queda tapado por las capas que
   tiene delante. `setMarkers` dibuja rectángulos de prueba de pie en el suelo. `setBillboards` dibuja cuadros con textura (de `addBillboardTexture`, que duran entre mapas) de pie y de cara a la cámara o tumbados en el suelo, opacos o semitransparentes como los sprites de las capas: los objetos del suelo y sus sombras (`item.c: renderDroppedItem`). Dibujar no reserva memoria: los
-  búferes de cada fotograma se reutilizan.
+  búferes de cada fotograma se reutilizan. `setGrade` (`MapGrade`, mejora para las estaciones de
+  [game/weather](../game/weather.md#estaciones)) colorea el fondo, las capas y los cuadros en el shader: los verdes
+  giran hacia otro tono, luego saturación, ganancia por canal y `lift`; las bandas nunca. Neutro por defecto: los
+  colores salen tal cual.
 - `dwe-game --map <id>[,<id>...]` lo enseña sin la escena de campo: `--time day|dusk|night`, `--focus x,z` y
   `--size AnchoxAlto`; las flechas mueven un marcador relativo a la cámara, el clic lo manda al punto del suelo, las
   acciones `debug_time_day`, `debug_time_dusk` y `debug_time_night` (1, 2 y 3) cambian la hora y `debug_next_map` (N)

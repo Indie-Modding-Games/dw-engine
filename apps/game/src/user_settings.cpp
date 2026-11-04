@@ -45,6 +45,7 @@ constexpr std::string_view ShadowsKey = "shadows";
 constexpr std::string_view EnhancedLightingKey = "enhanced_lighting";
 constexpr std::string_view VividColorsKey = "vivid_colors";
 constexpr std::string_view WeatherKey = "weather";
+constexpr std::string_view SeasonsKey = "seasons";
 
 } // namespace
 
@@ -132,6 +133,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* weather = tree->find(WeatherKey)) {
       settings.weather = reader.boolean(*weather);
+    }
+    if (const core::YamlNode* seasons = tree->find(SeasonsKey)) {
+      settings.seasons = reader.boolean(*seasons);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -230,6 +234,9 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   }
   if (settings.weather) {
     root.set(std::string{WeatherKey}, core::YamlNode::scalar(*settings.weather ? "true" : "false"));
+  }
+  if (settings.seasons) {
+    root.set(std::string{SeasonsKey}, core::YamlNode::scalar(*settings.seasons ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

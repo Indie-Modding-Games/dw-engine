@@ -724,6 +724,7 @@ int runGame(const Options& requested) {
   (*ui)->setSetting(MinimapSetting, std::string{startMinimapMode(userSettings.minimap)});
   (*ui)->setSetting("minimap_size", std::string{"medium"});
   (*ui)->setSetting(WeatherSetting, userSettings.weather.value_or(true));
+  (*ui)->setSetting(SeasonsSetting, userSettings.seasons.value_or(true));
   (*ui)->setSetting("fullscreen", settings.fullscreen);
   (*ui)->setSetting("ui_scale", settings.uiScale);
   (*ui)->setSetting("vsync", settings.vsync);
@@ -1428,6 +1429,20 @@ int runGame(const Options& requested) {
           }
         }
         (*ui)->setSetting(WeatherSetting, userSettings.weather.value_or(true));
+        continue;
+      }
+      if (command.name == SeasonsSetting) {
+        // The seasons (an engine improvement): shown or hidden at once, on the title screen too.
+        if (const bool* shown = std::get_if<bool>(&command.value)) {
+          userSettings.seasons = *shown;
+          if (settingsFile) {
+            saveUserSettings(*settingsFile, userSettings);
+          }
+          if (PlaySession* play = flow.playing(); play != nullptr) {
+            play->scene().setSeasonsEnabled(*shown);
+          }
+        }
+        (*ui)->setSetting(SeasonsSetting, userSettings.seasons.value_or(true));
         continue;
       }
       if (flow.playing() == nullptr && title.handle(command)) {

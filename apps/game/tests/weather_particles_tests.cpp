@@ -107,3 +107,30 @@ TEST_CASE("the cloud picture tiles") {
   }
   CHECK(seam < 40);
 }
+
+TEST_CASE("the seasons drop a few petals in spring and leaves in autumn, none when neutral") {
+  using dwe::game::weather::Season;
+  using dwe::game::weather::SeasonLook;
+  const auto clear = lookOf(WeatherKind::Clear);
+  CHECK(dwe::app::seasonQuads(SeasonLook{}, clear, frameAt(3.0)).empty());
+  const SeasonLook spring{.season = Season::Spring, .grade = {}, .petals = 1.0F};
+  const SeasonLook autumn{.season = Season::Autumn, .grade = {}, .petals = 0.0F, .leaves = 1.0F};
+  const auto petals = dwe::app::seasonQuads(spring, clear, frameAt(3.0));
+  const auto leaves = dwe::app::seasonQuads(autumn, clear, frameAt(3.0));
+  CHECK(countShape(petals, WeatherShape::Petal) ==
+        static_cast<std::size_t>(dwe::app::SeasonPetals));
+  CHECK(countShape(petals, WeatherShape::Leaf) == 0);
+  CHECK(countShape(leaves, WeatherShape::Leaf) == static_cast<std::size_t>(dwe::app::SeasonLeaves));
+  // Light: far fewer than the snow's flakes, and they move as time goes on.
+  CHECK(leaves.size() < static_cast<std::size_t>(dwe::app::HeavySnowFlakes) / 5);
+  const auto later = dwe::app::seasonQuads(autumn, clear, frameAt(4.0));
+  CHECK(later.size() == leaves.size());
+  CHECK(later[0].corners[0] != leaves[0].corners[0]);
+  CHECK(dwe::app::seasonQuads(autumn, clear, frameAt(3.0))[0].corners == leaves[0].corners);
+  // Fewer under heavy rain, dimmer at night.
+  const auto rainy = dwe::app::seasonQuads(autumn, lookOf(WeatherKind::HeavyRain), frameAt(3.0));
+  CHECK(rainy.size() < leaves.size() / 2 + 1);
+  CHECK(!rainy.empty());
+  const auto night = dwe::app::seasonQuads(autumn, clear, frameAt(3.0, 0.0F));
+  CHECK(night[0].color.r < leaves[0].color.r);
+}

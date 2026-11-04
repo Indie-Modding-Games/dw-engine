@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Field weather",
-  "description": "field/weather.yaml of the game pack: the weather each area of the island can have (game/weather, an engine improvement: the original has no weather). Weather never changes a rule.",
+  "description": "field/weather.yaml of the game pack: the weather each area of the island can have (game/weather, an engine improvement: the original has no weather). Weather and seasons never change a rule.",
   "type": "object",
   "required": [
     "period_hours",
@@ -99,7 +99,153 @@
                 "maximum": 1000
               }
             }
+          },
+          "season_strength": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "How much the seasons move the area (1 fully; less for a climate of its own)."
+          },
+          "snow_from_rain": {
+            "description": "Whether a cold season turns part of the area's rain into snow (default true).",
+            "type": "boolean"
           }
+        }
+      }
+    },
+    "seasons": {
+      "description": "Seasons (an engine improvement, the Seasons option): spring, summer, autumn and winter take turns every `days` game days from year 0, day 0.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "days",
+        "spring",
+        "summer",
+        "autumn",
+        "winter"
+      ],
+      "properties": {
+        "days": {
+          "description": "Game days each season lasts.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3000
+        },
+        "spring": {
+          "$ref": "#/$defs/season"
+        },
+        "summer": {
+          "$ref": "#/$defs/season"
+        },
+        "autumn": {
+          "$ref": "#/$defs/season"
+        },
+        "winter": {
+          "$ref": "#/$defs/season"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "season": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "odds": {
+          "description": "Multiplies the area's weight of each weather (1 leaves it as it is).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "clear": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "cloudy": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "light_rain": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "heavy_rain": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "light_snow": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "heavy_snow": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10
+            }
+          }
+        },
+        "rain_to_snow": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "The part of the rain that falls as snow in areas with snow_from_rain."
+        },
+        "grade": {
+          "description": "How the season colours the scenery (map background and depth layers, never the characters).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "foliage_hue": {
+              "description": "Hue in degrees the greens turn toward.",
+              "type": "number",
+              "minimum": 0,
+              "exclusiveMaximum": 360
+            },
+            "foliage": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "How far the greens turn, 0 to 1."
+            },
+            "saturation": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "gain": {
+              "description": "Red, green and blue multipliers.",
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2
+              }
+            },
+            "lift": {
+              "description": "Added to every channel: a paler picture.",
+              "type": "number",
+              "minimum": -0.5,
+              "maximum": 0.5
+            }
+          }
+        },
+        "petals": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Petals falling over the map, 0 to 1."
+        },
+        "leaves": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Leaves falling over the map, 0 to 1."
         }
       }
     }

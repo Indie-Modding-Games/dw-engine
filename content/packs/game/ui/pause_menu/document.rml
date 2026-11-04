@@ -13,7 +13,7 @@
 	<div id="scrim">
 		<div id="panel">
 			<h1 id="title"></h1>
-			<h1 id="title-date"><span id="field-year-label" text-key="pause_menu.year_label"></span><span id="field-year-digits"><span id="field-year-1" class="date-digit"></span><span id="field-year-2" class="date-digit"></span><span id="field-year-3" class="date-digit"></span></span><span id="field-day-label" text-key="pause_menu.day_label"></span><span id="field-day-digits"><span id="field-day-1" class="date-digit"></span><span id="field-day-2" class="date-digit"></span></span><span id="field-date-separator"></span></h1>
+			<h1 id="title-date"><span id="field-year-label" text-key="pause_menu.year_label"></span><span id="field-year-digits"><span id="field-year-1" class="date-digit"></span><span id="field-year-2" class="date-digit"></span><span id="field-year-3" class="date-digit"></span></span><span id="field-day-label" text-key="pause_menu.day_label"></span><span id="field-day-digits"><span id="field-day-1" class="date-digit"></span><span id="field-day-2" class="date-digit"></span></span><span id="field-season" class="hidden"></span><span id="field-date-separator"></span></h1>
 
 			<div id="page-main" class="page">
 				<button id="continue" class="menu-utility" autofocus="autofocus" onclick="resume()" text-key="pause_menu.continue"></button>

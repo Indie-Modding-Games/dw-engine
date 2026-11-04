@@ -12,6 +12,8 @@
 #fish.unavailable { opacity: 0.45; focus: none; tab-index: none; }
 /* The date over the main page is the original look's; other skins keep the page title. */
 #title-date { display: none; }
+/* The calendar's season next to the day (the Seasons option): only the modern skin shows it. */
+#field-season.hidden { display: none; }
 .field-menu-icon { display: none; }
 .player-line { margin: 9dp 0; }
 .player-value { float: right; }

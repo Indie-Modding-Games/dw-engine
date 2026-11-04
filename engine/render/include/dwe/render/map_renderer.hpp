@@ -56,6 +56,25 @@ struct MapBillboard {
   std::optional<glm::vec3> card = std::nullopt;
 };
 
+// A colour grade of the scenery (the background, the depth layers and the billboards; never the
+// models or the bars): greens turned toward another hue, then the saturation, a gain per channel
+// and a lift. An engine improvement (the seasons, game::weather); the neutral grade draws the
+// colours exactly as they are.
+struct MapGrade {
+  // Hue in degrees the greens turn toward, and how far, 0 to 1.
+  float foliageHue = 0.0F;
+  float foliage = 0.0F;
+  // 1 as it is, 0 grey.
+  float saturation = 1.0F;
+  glm::vec3 gain{1.0F};
+  // Added to every channel.
+  float lift = 0.0F;
+
+  [[nodiscard]] bool neutral() const {
+    return foliage <= 0.0F && saturation == 1.0F && gain == glm::vec3{1.0F} && lift == 0.0F;
+  }
+};
+
 // How long the original fades the background palette when the time of day changes: 25 frames of its
 // 20 per second (map.c: tickDaytimeTransition).
 inline constexpr double TimeOfDayFadeSeconds = 25.0 / MapDepthLayers::FramesPerSecond;
@@ -98,6 +117,9 @@ public:
   // Multiplies the background's and the depth layers' colours, from 1 (as they are) to 0 (black):
   // a scene fading the map's palettes to black.
   void setShade(float shade) { shade_ = shade; }
+  // Grades the scenery's colours (MapGrade), until changed; neutral by default.
+  void setGrade(const MapGrade& grade) { grade_ = grade; }
+  [[nodiscard]] const MapGrade& grade() const { return grade_; }
 
   // Advances the sprite animations by animationSeconds and the palette fade by fadeSeconds (a game
   // may pause one and not the other), and sets the world point the camera centres on. The camera
@@ -263,6 +285,7 @@ private:
   std::uint32_t toRow_ = 0;
   double fade_ = 1.0;
   float shade_ = 1.0F;
+  MapGrade grade_;
   double fadeSeconds_ = 0.0;
   // Per-frame buffers, kept to draw without allocating.
   std::vector<Vertex> vertices_;

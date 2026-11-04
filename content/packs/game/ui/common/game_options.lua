@@ -175,6 +175,10 @@ game_options = {
   -- Weather: rain, snow, clouds and sun on the island's outdoor maps (on by default; off shows
   -- every map as the original, which has no weather). It never changes a rule.
   { id = "weather", setting = "weather", label = "pause_menu.weather", default = true },
+  -- Seasons: spring, summer, autumn and winter take turns every few game days, colouring the
+  -- outdoor scenery, with petals or falling leaves and their own weather odds (on by default; off
+  -- shows every map and rolls the weather exactly as without seasons). It never changes a rule.
+  { id = "seasons", setting = "seasons", label = "pause_menu.seasons", default = true },
 }
 
 -- The option's current value: what the game published, or its default.

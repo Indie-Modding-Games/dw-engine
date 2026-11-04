@@ -78,6 +78,7 @@ local entries = {
     "enhanced-lighting",
     "vivid-colors",
     "weather",
+    "seasons",
     "display-mode",
     "ui-scale",
     "quit",
@@ -210,6 +211,15 @@ local function refresh(document)
         .. (weather and "on" or "off")
     )
   )
+  -- The seasons, on unless turned off (the game publishes it; an engine improvement).
+  local seasons = ui.setting("seasons") ~= false
+  value(
+    "seasons",
+    t(
+      (orig and "main_menu.original.option.minimap." or "pause_menu.minimap_mode.")
+        .. (seasons and "on" or "off")
+    )
+  )
   value(
     "display-mode",
     t(
@@ -285,7 +295,15 @@ local function lay_out(document)
   for _, id in ipairs({ "erase", "battle", "options" }) do
     show(id, orig and shown == "menu")
   end
-  for _, id in ipairs({ "language", "text-font", "ui-skin", "chibi-style", "weather", "quit" }) do
+  for _, id in ipairs({
+    "language",
+    "text-font",
+    "ui-skin",
+    "chibi-style",
+    "weather",
+    "seasons",
+    "quit",
+  }) do
     show(id, not orig or shown == "options")
   end
   for _, id in ipairs({
@@ -453,6 +471,9 @@ local options = {
   end,
   weather = function(_step)
     ui.send("weather", ui.setting("weather") == false)
+  end,
+  seasons = function(_step)
+    ui.send("seasons", ui.setting("seasons") == false)
   end,
   ["display-mode"] = function(_step)
     ui.send("fullscreen", not ui.setting("fullscreen"))

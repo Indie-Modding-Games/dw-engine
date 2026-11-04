@@ -619,6 +619,11 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   const bool weather = context.userSettings->weather.value_or(true);
   scene_->setWeatherEnabled(weather);
   context_.ui->setSetting(WeatherSetting, weather);
+  // The seasons, on unless turned off, and a season --season forces.
+  scene_->forceSeason(context.options->season);
+  const bool seasons = context.userSettings->seasons.value_or(true) && !context.options->seasonsOff;
+  scene_->setSeasonsEnabled(seasons);
+  context_.ui->setSetting(SeasonsSetting, seasons);
   weatherAmbience_ = std::make_unique<WeatherAmbience>(context.sound, *context.files);
   // The island map on M, on unless turned off.
   context_.ui->setSetting(WorldMapSetting, context.userSettings->worldMap.value_or(true));
@@ -1424,6 +1429,14 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   scene_->setPartnerMood(partner.conditions, partner.mood.happiness);
   scene_->update(frameSeconds, alpha, paused());
   weatherAmbience_->update(scene_->weather(), frameSeconds);
+  // The season's name next to the day in the menu, when it changes.
+  const auto season = scene_->season();
+  const std::string_view seasonName =
+      season ? game::weather::seasonName(*season) : std::string_view{};
+  if (seasonShown_ != seasonName) {
+    seasonShown_ = seasonName;
+    context_.ui->setSetting(SeasonNameSetting, std::string{seasonName});
+  }
   keepFieldSnapshot(frameSeconds);
   // Last, after every save this frame could write (the autosave, a command, the save machine).
   saveIndicator_->update(session.savesWritten(), frameSeconds);

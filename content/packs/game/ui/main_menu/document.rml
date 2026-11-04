@@ -47,6 +47,9 @@
 			<button id="weather" class="option hidden" onclick="change_option('weather', 1)">
 				<span class="label" text-key="pause_menu.weather"></span><span class="label-original" text-key="main_menu.original.option.weather"></span><span class="value" id="weather-value"></span>
 			</button>
+			<button id="seasons" class="option hidden" onclick="change_option('seasons', 1)">
+				<span class="label" text-key="pause_menu.seasons"></span><span class="label-original" text-key="main_menu.original.option.seasons"></span><span class="value" id="seasons-value"></span>
+			</button>
 			<button id="display-mode" class="option hidden" onclick="change_option('display-mode', 1)">
 				<span class="label" text-key="pause_menu.display_mode"></span><span class="label-original" text-key="main_menu.original.option.display_mode"></span><span class="value" id="display-mode-value"></span>
 			</button>

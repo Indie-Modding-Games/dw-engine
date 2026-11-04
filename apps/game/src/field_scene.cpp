@@ -194,6 +194,7 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
   }
   if (auto climate = game::weather::loadClimateRules(files)) {
     scene->weatherBlend_ = game::weather::WeatherBlend{climate->fadeSeconds};
+    scene->seasonBlend_ = game::weather::SeasonBlend{climate->fadeSeconds};
     scene->climate_ = std::move(*climate);
   } else {
     core::logWarning("field: no weather: {}", climate.error().message);

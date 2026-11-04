@@ -16,6 +16,17 @@ struct Push {
     uint texels;
     uint fromRow;
     uint toRow;
+    // The scenery's grade (render::MapGrade, the seasons): 0 leaves the colours as they are. Greens
+    // turn toward foliageHue (0 to 1 of the circle) by foliage, then the saturation, the gain and
+    // the lift.
+    uint graded;
+    float foliageHue;
+    float foliage;
+    float saturation;
+    float gainRed;
+    float gainGreen;
+    float gainBlue;
+    float lift;
 };
 
 // A texture without a palette texture: its texels are colours (rhi::TextureId::InvalidIndex).
@@ -81,6 +92,48 @@ float4 sampleSharp(uint texture, uint palette, float2 uv) {
     return lerp(top, bottom, blend.y);
 }
 
+float3 rgbToHsv(float3 c) {
+    const float high = max(c.r, max(c.g, c.b));
+    const float low = min(c.r, min(c.g, c.b));
+    const float range = high - low;
+    float hue = 0.0;
+    if (range > 1e-5) {
+        if (high == c.r) {
+            hue = (c.g - c.b) / range;
+        } else if (high == c.g) {
+            hue = 2.0 + (c.b - c.r) / range;
+        } else {
+            hue = 4.0 + (c.r - c.g) / range;
+        }
+        hue = frac(hue / 6.0 + 1.0);
+    }
+    return float3(hue, high > 0.0 ? range / high : 0.0, high);
+}
+
+float3 hsvToRgb(float3 c) {
+    const float3 k = saturate(abs(frac(c.x + float3(1.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0) - 1.0);
+    return c.z * lerp(float3(1.0, 1.0, 1.0), k, c.y);
+}
+
+// The season's grade of a scenery colour.
+float3 graded(float3 colour) {
+    if (push.foliage > 0.0) {
+        float3 hsv = rgbToHsv(colour);
+        // Foliage: yellow-greens to blue-greens (about 60 to 170 degrees) with some colour in them.
+        const float green = smoothstep(0.15, 0.23, hsv.x) * (1.0 - smoothstep(0.43, 0.5, hsv.x)) *
+                            smoothstep(0.08, 0.25, hsv.y) * smoothstep(0.04, 0.12, hsv.z);
+        // Darker greens (the trees' leaves) turn more than the bright ones (the grass).
+        const float turn = saturate(push.foliage * green * lerp(1.35, 0.7, smoothstep(0.25, 0.6, hsv.z)));
+        hsv.x = lerp(hsv.x, push.foliageHue, turn);
+        // Turned leaves are a little darker (brown) than the green they were.
+        hsv.z *= 1.0 - 0.12 * turn * step(push.foliageHue, 0.15);
+        colour = hsvToRgb(hsv);
+    }
+    const float luma = dot(colour, float3(0.299, 0.587, 0.114));
+    colour = lerp(float3(luma, luma, luma), colour, push.saturation);
+    return saturate(colour * float3(push.gainRed, push.gainGreen, push.gainBlue) + push.lift);
+}
+
 [shader("fragment")]
 float4 fragmentMain(VertexOut input) : SV_Target {
     const float4 texel = sampleSharp(input.textures.x, input.textures.y, input.uv);
@@ -92,5 +145,6 @@ float4 fragmentMain(VertexOut input) : SV_Target {
     if ((push.texels == 1 && stp) || (push.texels == 2 && !stp)) {
         discard;
     }
-    return float4(texel.rgb * input.color.rgb, input.color.a);
+    const float3 colour = push.graded != 0 ? graded(texel.rgb) : texel.rgb;
+    return float4(colour * input.color.rgb, input.color.a);
 }

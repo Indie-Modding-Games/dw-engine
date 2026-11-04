@@ -1464,6 +1464,16 @@ function adjust_slot(_document, slot, step)
   end
 end
 
+-- The calendar's season next to the day (the Seasons option, an engine improvement; the game
+-- publishes nothing with it off).
+local function draw_season(document)
+  local season = ui.setting("season")
+  local element = document:get("field-season")
+  local shown = type(season) == "string" and season ~= ""
+  element:set_text(shown and t("pause_menu.season." .. season) or "")
+  element:set_class("hidden", not shown)
+end
+
 local function refresh(document)
   refresh_medals(document)
   refresh_cards(document)
@@ -1471,6 +1481,7 @@ local function refresh(document)
   refresh_city(document)
   draw_date_digits(document, "field-year-", 3, ui.setting("hud.clock.year"))
   draw_date_digits(document, "field-day-", 2, ui.setting("hud.clock.day"))
+  draw_season(document)
   local original = ui.setting("ui_skin") == "original"
   document:get("panel"):set_class("use-menu-art", (ui.setting("language") or "en") == "en")
   document:get("sleep"):set_class("unavailable", not can_sleep())

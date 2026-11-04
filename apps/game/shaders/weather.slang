@@ -1,6 +1,7 @@
 // The field's weather (apps/game WeatherDrawer, an engine improvement): screen quads over the scene and under the UI,
-// shaded by kind: a flat tint, a rain streak that fades toward its tail, a soft snowflake, a splash ring and the
-// sky's veil (a flat tint under the moving cloud shadows, cut out of a tileable noise picture), in one pass.
+// shaded by kind: a flat tint, a rain streak that fades toward its tail, a soft snowflake, a splash ring, a falling leaf
+// or petal (the seasons) and the sky's veil (a flat tint under the moving cloud shadows, cut out of a tileable noise
+// picture), in one pass.
 import dwe.bindless;
 
 struct VertexIn {
@@ -69,6 +70,29 @@ float4 fragmentMain(VertexOut input) : SV_Target {
         const float r = length(input.uv * 2.0 - 1.0);
         alpha = saturate(1.0 - abs(r - 0.7) / 0.3) * step(r, 1.0);
         break;
+    }
+    case 5u: {
+        // Leaf: u along it, pointed at both ends, a darker rib down the middle.
+        const float along = input.uv.x * 2.0 - 1.0;
+        const float across = abs(input.uv.y * 2.0 - 1.0);
+        const float edge = 1.0 - along * along;
+        alpha = 1.0 - smoothstep(edge * 0.7, edge, across);
+        const float rib = 1.0 - 0.3 * (1.0 - smoothstep(0.06, 0.16, across)) * step(abs(along), 0.85);
+        const float a = alpha * input.color.a;
+        if (a <= 0.002) {
+            discard;
+        }
+        return float4(input.color.rgb * rib, a);
+    }
+    case 6u: {
+        // Petal: a soft oval, lighter in the middle.
+        const float r = length(input.uv * 2.0 - 1.0);
+        alpha = 1.0 - smoothstep(0.6, 1.0, r);
+        const float a = alpha * input.color.a;
+        if (a <= 0.002) {
+            discard;
+        }
+        return float4(lerp(input.color.rgb, float3(1.0, 1.0, 1.0), 0.15 * (1.0 - r)), a);
     }
     default:
         break;

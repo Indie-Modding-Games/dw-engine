@@ -343,6 +343,19 @@ public:
   [[nodiscard]] const game::weather::WeatherLook& weather() const { return weatherBlend_.look(); }
   // The climate area of the map shown (field/weather.yaml), nothing for a map without weather.
   [[nodiscard]] const game::weather::ClimateArea* weatherArea() const { return weatherArea_; }
+  // The seasons (game::weather, an engine improvement; field_scene_weather.cpp): whether the
+  // option shows them (shown or hidden at once; off draws and rolls the weather exactly as without
+  // seasons), and a season forced in place of the calendar's (--season, for captures: the look and
+  // the name; the weather keeps the calendar's odds).
+  void setSeasonsEnabled(bool enabled);
+  void forceSeason(std::optional<game::weather::Season> season);
+  [[nodiscard]] bool seasonsEnabled() const { return seasonsEnabled_; }
+  // The calendar's season (or the forced one), on every map; nothing with the option off or a pack
+  // without seasons.
+  [[nodiscard]] std::optional<game::weather::Season> season() const;
+  // The season shown this frame on the map, faded: its grade and its falling petals or leaves;
+  // neutral on maps without weather and with the option off.
+  [[nodiscard]] const game::weather::SeasonLook& seasonLook() const { return seasonBlend_.look(); }
   // The original's number of the map shown (MapEntry::index), nothing for a map a pack added.
   [[nodiscard]] std::optional<std::int32_t> screenNumber() const;
   // A minigame's quads at world points, until replaced (the curling's aim line).
@@ -1054,10 +1067,17 @@ private:
   bool weatherEnabled_ = true;
   std::optional<game::weather::WeatherKind> forcedWeather_;
   game::weather::WeatherBlend weatherBlend_;
+  bool seasonsEnabled_ = true;
+  std::optional<game::weather::Season> forcedSeason_;
+  game::weather::SeasonBlend seasonBlend_;
   double weatherSeconds_ = 0.0;
   std::unique_ptr<WeatherDrawer> weatherDrawer_;
   // The kind the weather fades to now: the area's for the game time, the forced one, or None.
   [[nodiscard]] game::weather::WeatherKind weatherTarget() const;
+  // The game hour since year 0 by the clock (0 without one).
+  [[nodiscard]] std::int64_t weatherHour() const;
+  // The season's look the map fades to now: the area's for the season, or neutral.
+  [[nodiscard]] game::weather::SeasonLook seasonTarget() const;
   // A map was entered: a map of another area (or none) shows its weather at once, one of the same
   // area keeps fading where the last one was.
   void enterWeatherArea(std::string_view mapId, bool fixedTimeOfDay);

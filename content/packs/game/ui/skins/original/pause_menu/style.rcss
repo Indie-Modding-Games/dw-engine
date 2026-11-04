@@ -251,6 +251,8 @@
 #field-day-digits { left: 312dp; }
 .date-digit { display: inline-block; width: 21dp; height: 36dp; margin-right: 6dp; color: transparent; }
 .date-digit.hidden { display: none; }
+/* The original's date has no room for the season (an engine improvement): only the modern skin shows it. */
+#field-season { display: none; }
 #field-date-separator { position: absolute; left: 9dp; top: 60dp; width: 372dp; height: 3dp; background-color: #90d9fa; border-top: 3dp #020202; border-bottom: 3dp #020202; }
 .digit-0 { decorator: image(menu-digit-0 scale-none center center); }
 .digit-1 { decorator: image(menu-digit-1 scale-none center center); }

@@ -72,4 +72,42 @@ void WeatherBlend::advance(WeatherKind target, double seconds) {
   shown_.sunshine = toward(shown_.sunshine, to.sunshine, step);
 }
 
+bool SeasonLook::neutral() const {
+  return grade == SeasonGrade{.foliageHue = grade.foliageHue} && petals <= 0.0F && leaves <= 0.0F;
+}
+
+SeasonLook seasonLookOf(const ClimateRules& rules, const ClimateArea& area, Season season) {
+  const SeasonRules& of = rules.season(season);
+  const float strength = std::clamp(area.seasonStrength, 0.0F, 1.0F);
+  return {.season = season,
+          .grade = seasonalGrade(rules, area, season),
+          .petals = of.petals * strength,
+          .leaves = of.leaves * strength};
+}
+
+void SeasonBlend::advance(const SeasonLook& target, double seconds) {
+  if (fadeSeconds_ <= 0.0F) {
+    shown_ = target;
+    return;
+  }
+  const auto step = static_cast<float>(std::max(seconds, 0.0) / fadeSeconds_);
+  // The foliage's hue only matters while it turns: from neutral it starts at the target's hue, and
+  // between two seasons it moves with the turn (a hue is up to 360 degrees away, the rest 1 or 2);
+  // toward neutral it stays while the turn fades out.
+  if (shown_.grade.foliage <= 0.0F) {
+    shown_.grade.foliageHue = target.grade.foliageHue;
+  }
+  const float hue = target.grade.foliage > 0.0F ? target.grade.foliageHue : shown_.grade.foliageHue;
+  shown_.season = target.season;
+  shown_.grade.foliageHue = toward(shown_.grade.foliageHue, hue, step * 360.0F);
+  shown_.grade.foliage = toward(shown_.grade.foliage, target.grade.foliage, step);
+  shown_.grade.saturation = toward(shown_.grade.saturation, target.grade.saturation, step);
+  for (std::size_t i = 0; i < shown_.grade.gain.size(); ++i) {
+    shown_.grade.gain.at(i) = toward(shown_.grade.gain.at(i), target.grade.gain.at(i), step);
+  }
+  shown_.grade.lift = toward(shown_.grade.lift, target.grade.lift, step);
+  shown_.petals = toward(shown_.petals, target.petals, step);
+  shown_.leaves = toward(shown_.leaves, target.leaves, step);
+}
+
 } // namespace dwe::game::weather

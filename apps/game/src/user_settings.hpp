@@ -86,6 +86,9 @@ struct UserSettings {
   // Whether the field shows the weather (weather: true, false; game::weather, an engine
   // improvement); on when not chosen.
   std::optional<bool> weather = std::nullopt;
+  // Whether the field shows the seasons (seasons: true, false; game::weather, an engine
+  // improvement); on when not chosen.
+  std::optional<bool> seasons = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

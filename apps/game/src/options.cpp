@@ -226,6 +226,11 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     options.weather = game::weather::weatherKindNamed(value);
     return options.weather.has_value();
   }
+  if (argument == "--season") {
+    options.seasonsOff = value == "none";
+    options.season = game::weather::seasonNamed(value);
+    return options.seasonsOff || options.season.has_value();
+  }
   if (argument == "--text-font") {
     options.textFont = ui::textFontNamed(value);
     return options.textFont.has_value();

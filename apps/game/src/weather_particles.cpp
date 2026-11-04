@@ -32,6 +32,19 @@ constexpr float SnowWind = 7.0F;
 constexpr float SnowSmallest = 0.7F;
 constexpr float SnowLargest = 1.9F;
 
+// Petals and leaves: sizes (half the length) in original pixels, falls in pixels a second.
+constexpr float PetalSmallest = 2.0F;
+constexpr float PetalLargest = 3.0F;
+constexpr float LeafSmallest = 3.0F;
+constexpr float LeafLargest = 4.4F;
+constexpr float FallingWind = 11.0F;
+// Under full rain or snow only this part of them falls.
+constexpr float FallingInWeather = 0.4F;
+constexpr std::array PetalColours{glm::vec3{1.0F, 0.72F, 0.84F}, glm::vec3{1.0F, 0.84F, 0.91F},
+                                  glm::vec3{0.95F, 0.58F, 0.76F}};
+constexpr std::array LeafColours{glm::vec3{0.90F, 0.48F, 0.12F}, glm::vec3{0.74F, 0.25F, 0.10F},
+                                 glm::vec3{0.93F, 0.71F, 0.20F}, glm::vec3{0.56F, 0.33F, 0.14F}};
+
 // Clouds: one tile of the noise covers this many background pixels, and they drift this fast.
 constexpr float CloudTile = 420.0F;
 constexpr glm::vec2 CloudWind{9.0F, 3.0F};
@@ -129,6 +142,17 @@ public:
     quads.push_back(quad);
   }
 
+  // A quad around a centre in original pixels, half sizes `half` along and across, turned by
+  // `angle` radians.
+  void turned(glm::vec2 centre, glm::vec2 half, float angle, glm::vec4 color, WeatherShape shape) {
+    const glm::vec2 along = glm::vec2{std::cos(angle), std::sin(angle)} * half.x;
+    const glm::vec2 across = glm::vec2{-std::sin(angle), std::cos(angle)} * half.y;
+    WeatherQuad quad{.color = color, .shape = shape};
+    quad.corners = {window(centre - along - across), window(centre + along - across),
+                    window(centre - along + across), window(centre + along + across)};
+    quads.push_back(quad);
+  }
+
   // A streak from its tail to its head, in original pixels, one window pixel wide at least.
   void streak(glm::vec2 tail, glm::vec2 head, glm::vec4 color) {
     const glm::vec2 from = window(tail);
@@ -215,7 +239,76 @@ void addSnow(Builder& out, const WeatherLook& look, const WeatherFrame& frame) {
   }
 }
 
+// Petals or leaves: `amount` of the most, falling slowly with the wind, swaying and tumbling.
+template <std::size_t Colours>
+void addFalling(Builder& out, float amount, float perScreen, bool leaves,
+                const std::array<glm::vec3, Colours>& colours, const WeatherFrame& frame) {
+  const float width = out.width() + (2.0F * Margin);
+  const float height = out.height() + (2.0F * Margin);
+  const Count count = countOf(perScreen, out.width(), amount);
+  const auto seconds = static_cast<float>(std::fmod(frame.seconds, 86400.0));
+  const float light = 0.45F + (0.55F * frame.daylight);
+  const float smallest = leaves ? LeafSmallest : PetalSmallest;
+  const float largest = leaves ? LeafLargest : PetalLargest;
+  // Petals and leaves of their own numbers, so turning one season into the other never moves the
+  // snow's flakes.
+  const std::uint64_t kind = leaves ? 0x1EAF0000ULL : 0x9E7A1000ULL;
+  constexpr float Tau = 2.0F * std::numbers::pi_v<float>;
+  for (std::size_t n = 0; n < count.whole; ++n) {
+    const std::uint64_t i = kind + n;
+    const float shown = n + 1 == count.whole ? count.last : 1.0F;
+    const float size = smallest + ((largest - smallest) * unit(i, 0, 1));
+    const float depth = 0.6F + (0.5F * (size - smallest) / (largest - smallest));
+    const float speed =
+        (leaves ? 15.0F + (12.0F * unit(i, 0, 2)) : 9.0F + (8.0F * unit(i, 0, 2))) * depth;
+    const float sway = (leaves ? 8.0F : 12.0F) + (10.0F * unit(i, 0, 3));
+    const float swayRate = 0.18F + (0.3F * unit(i, 0, 4));
+    const float phase = unit(i, 0, 5) * Tau;
+    const glm::vec2 at{
+        wrap((unit(i, 0, 6) * width) + (FallingWind * depth * seconds) +
+                 (sway * std::sin((Tau * swayRate * seconds) + phase)) - (frame.scroll.x * depth),
+             width) -
+            Margin,
+        wrap((unit(i, 0, 7) * height) + (speed * seconds) - (frame.scroll.y * depth), height) -
+            Margin};
+    // It turns as it sways and flips over (its width shrinks as it shows its edge).
+    const float spin = (unit(i, 0, 8) - 0.5F) * 3.0F;
+    const float angle =
+        phase + (spin * seconds) + (0.6F * std::sin((Tau * swayRate * seconds) + phase + 1.0F));
+    const float flip =
+        0.3F +
+        (0.7F * std::abs(std::cos((Tau * (0.3F + (0.5F * unit(i, 0, 9))) * seconds) + phase)));
+    const glm::vec3 colour =
+        colours.at(static_cast<std::size_t>(unit(i, 0, 10) * static_cast<float>(Colours)) %
+                   Colours) *
+        light;
+    out.turned(at, {size, size * (leaves ? 0.55F : 0.7F) * flip}, angle,
+               {colour, (leaves ? 0.95F : 0.9F) * shown},
+               leaves ? WeatherShape::Leaf : WeatherShape::Petal);
+  }
+}
+
 } // namespace
+
+std::vector<WeatherQuad> seasonQuads(const game::weather::SeasonLook& season,
+                                     const WeatherLook& weather, const WeatherFrame& frame) {
+  Builder out{frame};
+  if ((season.petals <= 0.0F && season.leaves <= 0.0F) || frame.scale <= 0.0F ||
+      frame.areaSize.x <= 0.0F || frame.areaSize.y <= 0.0F) {
+    return {};
+  }
+  WeatherFrame lit = frame;
+  lit.daylight = std::clamp(frame.daylight, 0.0F, 1.0F);
+  const float falling = 1.0F - ((1.0F - FallingInWeather) *
+                                std::clamp(std::max(weather.rain, weather.snow), 0.0F, 1.0F));
+  if (season.petals > 0.0F) {
+    addFalling(out, season.petals * falling, SeasonPetals, false, PetalColours, lit);
+  }
+  if (season.leaves > 0.0F) {
+    addFalling(out, season.leaves * falling, SeasonLeaves, true, LeafColours, lit);
+  }
+  return std::move(out.quads);
+}
 
 std::vector<WeatherQuad> weatherQuads(const WeatherLook& look, const WeatherFrame& frame) {
   Builder out{frame};

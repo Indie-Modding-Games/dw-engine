@@ -25,6 +25,10 @@ enum class WeatherShape : std::uint32_t {
   Clouds = 3,
   // A splash ring.
   Ring = 4,
+  // A falling leaf: pointed at both ends of u, a darker rib along it.
+  Leaf = 5,
+  // A falling petal: a soft oval, lighter in the middle.
+  Petal = 6,
 };
 
 enum class WeatherBlendMode : std::uint8_t { Alpha, Additive };
@@ -67,6 +71,13 @@ struct WeatherFrame {
 [[nodiscard]] std::vector<WeatherQuad> weatherQuads(const game::weather::WeatherLook& look,
                                                     const WeatherFrame& frame);
 
+// The season's falling petals (spring) or leaves (autumn) over the map, as rotated quads that
+// tumble and sway down: few and light, fewer under rain or snow, dimmer at night. A pure function
+// of the looks and the frame, as weatherQuads; nothing when the season shows none.
+[[nodiscard]] std::vector<WeatherQuad> seasonQuads(const game::weather::SeasonLook& season,
+                                                   const game::weather::WeatherLook& weather,
+                                                   const WeatherFrame& frame);
+
 // The cloud shadows' picture: a tileable value noise, `side` texels square, as RGBA (the noise in
 // every channel).
 [[nodiscard]] std::vector<std::byte> cloudNoisePixels(std::uint32_t side);
@@ -75,5 +86,8 @@ struct WeatherFrame {
 // wider window draws more, so the density stays the same.
 inline constexpr float HeavyRainDrops = 240.0F;
 inline constexpr float HeavySnowFlakes = 200.0F;
+// How many petals and leaves a full season draws over the original's screen width: light.
+inline constexpr float SeasonPetals = 18.0F;
+inline constexpr float SeasonLeaves = 14.0F;
 
 } // namespace dwe::app

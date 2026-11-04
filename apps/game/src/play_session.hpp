@@ -104,6 +104,11 @@ inline constexpr std::string_view NeedBubbleStackSetting = "need_bubble_stack";
 // The weather (an engine improvement, on unless turned off): a UI setting and the options'
 // command with the same name (true or false), on the title screen and in the game.
 inline constexpr std::string_view WeatherSetting = "weather";
+// The seasons (an engine improvement, on unless turned off): a UI setting and the options' command
+// with the same name (true or false), on the title screen and in the game.
+inline constexpr std::string_view SeasonsSetting = "seasons";
+// The calendar's season for the menus (spring, summer, autumn, winter; empty with the option off).
+inline constexpr std::string_view SeasonNameSetting = "season";
 
 // What every game uses of the app; all of it outlives the games.
 struct PlayContext {
@@ -355,6 +360,8 @@ private:
   WorldMapScreen worldMapScreen_;
   // The rain's and the wind's sound under the weather (an engine improvement).
   std::unique_ptr<WeatherAmbience> weatherAmbience_;
+  // The season last published to the menus (SeasonNameSetting).
+  std::optional<std::string_view> seasonShown_;
   CardShopScreen cardShopScreen_;
   MeritShopScreen meritShopScreen_;
   MoneyBoxScreen moneyBoxScreen_;

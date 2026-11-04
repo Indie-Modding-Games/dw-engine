@@ -45,7 +45,33 @@ struct MapPush {
   // The palette rows faded from and to.
   std::uint32_t fromRow = 0;
   std::uint32_t toRow = 0;
+  // The scenery's grade (MapGrade): 0 draws the colours as they are (the bars, a neutral grade).
+  std::uint32_t graded = 0;
+  float foliageHue = 0.0F;
+  float foliage = 0.0F;
+  float saturation = 1.0F;
+  float gainRed = 1.0F;
+  float gainGreen = 1.0F;
+  float gainBlue = 1.0F;
+  float lift = 0.0F;
 };
+
+// The push constants of a draw with the scenery's grade.
+MapPush withGrade(MapPush push, const MapGrade& grade) {
+  if (grade.neutral()) {
+    push.graded = 0;
+    return push;
+  }
+  push.graded = 1;
+  push.foliageHue = grade.foliageHue / 360.0F;
+  push.foliage = grade.foliage;
+  push.saturation = grade.saturation;
+  push.gainRed = grade.gain.r;
+  push.gainGreen = grade.gain.g;
+  push.gainBlue = grade.gain.b;
+  push.lift = grade.lift;
+  return push;
+}
 
 // The colours of a palette row; the background's indices are bytes.
 constexpr std::uint32_t PaletteColors = 256;
@@ -443,11 +469,12 @@ void MapRenderer::drawBackground(DrawContext& context) {
   }
   rhi::CommandList& commands = context.commands();
   commands.bindPipeline(pipelines_.background);
-  commands.pushConstants(MapPush{.pixelsPerTexel = camera_.scale(),
-                                 .fade = static_cast<float>(timeOfDayFadeShown(fade_)),
-                                 .texels = static_cast<std::uint32_t>(TexelFilter::All),
-                                 .fromRow = fromRow_,
-                                 .toRow = toRow_});
+  commands.pushConstants(withGrade(MapPush{.pixelsPerTexel = camera_.scale(),
+                                           .fade = static_cast<float>(timeOfDayFadeShown(fade_)),
+                                           .texels = static_cast<std::uint32_t>(TexelFilter::All),
+                                           .fromRow = fromRow_,
+                                           .toRow = toRow_},
+                                   grade_));
   commands.bindVertexBuffer(*upload);
   commands.draw(static_cast<std::uint32_t>(vertices_.size()));
 }
@@ -650,11 +677,12 @@ void MapRenderer::drawLayers(DrawContext& context) {
   // that colour in and leave a dark fringe that passes the alpha test. A huge pixelsPerTexel makes
   // map.slang's blend a step.
   constexpr float NearestSampling = 1.0e6F;
-  MapPush push{.pixelsPerTexel = NearestSampling,
-               .fade = static_cast<float>(fade_),
-               .texels = 0,
-               .fromRow = fromRow_,
-               .toRow = toRow_};
+  MapPush push = withGrade(MapPush{.pixelsPerTexel = NearestSampling,
+                                   .fade = static_cast<float>(fade_),
+                                   .texels = 0,
+                                   .fromRow = fromRow_,
+                                   .toRow = toRow_},
+                           grade_);
   for (const Run& run : runs_) {
     push.texels = static_cast<std::uint32_t>(run.texels);
     commands.bindPipeline(pipelineOf(run.blend));
@@ -664,6 +692,7 @@ void MapRenderer::drawLayers(DrawContext& context) {
   const auto barVertices = static_cast<std::uint32_t>(vertices_.size()) - barsStart;
   if (barVertices > 0) {
     push.texels = static_cast<std::uint32_t>(TexelFilter::All);
+    push.graded = 0;
     commands.bindPipeline(pipelines_.background);
     commands.pushConstants(push);
     commands.draw(barVertices, barsStart);

@@ -90,6 +90,11 @@ struct Options {
   // A weather forced on every map that has weather (--weather clear|cloudy|rain|heavy-rain|snow|
   // heavy-snow|none), for captures; the climate's own weather otherwise.
   std::optional<game::weather::WeatherKind> weather;
+  // A season forced in place of the calendar's (--season spring|summer|autumn|winter|none), for
+  // captures: its look and its name, with the Seasons option on.
+  std::optional<game::weather::Season> season;
+  // --season none: the seasons off, as the option turns them off, for comparisons.
+  bool seasonsOff = false;
   // The font of "original look" text (--text-font modern|original), instead of the packs' default;
   // for autotests.
   std::optional<ui::TextFont> textFont;
@@ -144,7 +149,7 @@ inline constexpr std::string_view Usage =
     "dwe-game [--content <folder>] [--mods <folder>]... [--dev-assets] [--ruleset <id>] [--story-stage <id>|all] "
     "[--saves <folder>] [--reports <folder>] [--size "
     "<width>x<height>] "
-    "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--chibi] [--start <map>[,<exit>]] [--time day|dusk|night] [--weather <kind>] [--lang "
+    "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--chibi] [--start <map>[,<exit>]] [--time day|dusk|night] [--weather <kind>] [--season <season>] [--lang "
     "<language>] "
     "[--text-font modern|original] [--ui-skin <id>] [--graphics <option>=<value>[,...]] "
     "[--new-game | --load <slot>] "

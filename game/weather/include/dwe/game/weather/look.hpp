@@ -49,4 +49,41 @@ private:
   WeatherLook shown_{};
 };
 
+// What the season looks like on screen: the scenery's grade and the petals or leaves falling, each
+// 0 to 1. Neutral (no grade, nothing falling) on maps without weather and with the option off.
+struct SeasonLook {
+  // The season being faded to (or shown); nothing when neutral.
+  std::optional<Season> season;
+  SeasonGrade grade;
+  float petals = 0.0F;
+  float leaves = 0.0F;
+
+  // Whether nothing of the season shows.
+  [[nodiscard]] bool neutral() const;
+
+  friend bool operator==(const SeasonLook&, const SeasonLook&) = default;
+};
+
+// The look a season settles on in an area (seasonalGrade and the season's particles, both moved
+// toward neutral by the area's seasonStrength).
+[[nodiscard]] SeasonLook seasonLookOf(const ClimateRules& rules, const ClimateArea& area,
+                                      Season season);
+
+// The season shown, fading toward the target look as the weather does: every part moves at most
+// 1 / fadeSeconds a second (the hue and the gain as far as their distance needs), so a new season
+// at midnight fades in over fadeSeconds.
+class SeasonBlend {
+public:
+  explicit SeasonBlend(float fadeSeconds = 8.0F) : fadeSeconds_(fadeSeconds) {}
+
+  void advance(const SeasonLook& target, double seconds);
+  void snap(const SeasonLook& target) { shown_ = target; }
+
+  [[nodiscard]] const SeasonLook& look() const { return shown_; }
+
+private:
+  float fadeSeconds_;
+  SeasonLook shown_{};
+};
+
 } // namespace dwe::game::weather
