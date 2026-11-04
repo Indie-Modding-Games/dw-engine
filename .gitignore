@@ -32,3 +32,8 @@ __pycache__/
 # The run logs of a local game, redirected from its console (game-out.txt, game-err.txt): never versioned
 /*-err.txt
 /*-out.txt
+
+# The launcher's fonts are copied from the game pack at build time (scripts/launcher.sh)
+/apps/launcher/ui/fonts/
+# Tauri's generated schemas
+/apps/launcher/src-tauri/gen/

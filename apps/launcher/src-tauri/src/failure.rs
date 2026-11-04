@@ -1,0 +1,73 @@
+//! What went wrong, as the page shows it: a stable code the page turns into a sentence in the
+//! player's language, and a detail (a path, a tool's own words) shown under it.
+
+use serde::Serialize;
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, thiserror::Error)]
+#[error("{code}: {detail}")]
+pub struct Failure {
+    pub code: &'static str,
+    pub detail: String,
+}
+
+impl Failure {
+    pub fn new(code: &'static str, detail: impl Into<String>) -> Self {
+        Self { code, detail: detail.into() }
+    }
+}
+
+/// The codes the page knows (ui/i18n.js has a sentence for each).
+pub mod code {
+    /// The picked file, or a file its CUE sheet names, is not there.
+    pub const MISSING_FILE: &str = "missing-file";
+    /// A disc format dwx does not read (ECM, PBP, RAR, CHD...).
+    pub const UNSUPPORTED_FORMAT: &str = "unsupported-format";
+    /// An archive that holds no disc image dwx reads.
+    pub const NO_IMAGE_IN_ARCHIVE: &str = "no-image-in-archive";
+    /// dwx cannot read it as a disc image.
+    pub const CANNOT_READ: &str = "cannot-read";
+    /// A disc image, but not of the game.
+    pub const NOT_THE_GAME: &str = "not-the-game";
+    /// The game, but another region's release.
+    pub const OTHER_REGION: &str = "other-region";
+    /// dwx extract failed, or its packs could not be moved into place.
+    pub const EXTRACT_FAILED: &str = "extract-failed";
+    /// No game is installed yet and none could be downloaded.
+    pub const NO_GAME: &str = "no-game";
+    /// The release server could not be reached.
+    pub const NETWORK: &str = "network";
+    /// The release server refused us: a private repository needs a token.
+    pub const AUTH: &str = "auth";
+    /// No release has a game package for this computer.
+    pub const NO_RELEASE: &str = "no-release";
+    /// A release file is not what its manifest says.
+    pub const BAD_CHECKSUM: &str = "bad-checksum";
+    /// A release file is not signed by the team's key.
+    pub const BAD_SIGNATURE: &str = "bad-signature";
+    /// This build has no public key to check updates with.
+    pub const NO_SIGNING_KEY: &str = "no-signing-key";
+    /// A manifest that cannot be read.
+    pub const BAD_MANIFEST: &str = "bad-manifest";
+    /// A file or folder could not be read or written.
+    pub const IO: &str = "io";
+    /// The system keyring cannot be used.
+    pub const KEYRING: &str = "keyring";
+    /// Another task is running.
+    pub const BUSY: &str = "busy";
+    /// The player stopped the task.
+    pub const CANCELLED: &str = "cancelled";
+    /// The disc the content was read from is no longer where it was.
+    pub const DISC_MOVED: &str = "disc-moved";
+    /// The game did not start, or stopped with an error.
+    pub const GAME_FAILED: &str = "game-failed";
+    /// There is no previous version to go back to.
+    pub const NO_PREVIOUS: &str = "no-previous";
+}
+
+impl From<std::io::Error> for Failure {
+    fn from(error: std::io::Error) -> Self {
+        Failure::new(code::IO, error.to_string())
+    }
+}
+
+pub type Result<T> = std::result::Result<T, Failure>;
