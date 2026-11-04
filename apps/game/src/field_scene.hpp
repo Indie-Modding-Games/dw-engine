@@ -871,6 +871,8 @@ private:
   // The map's NPCs drawn as their species with models/partner's animations (field_scene_npcs.cpp):
   // loaded when the story puts one on the map, dropped when it goes.
   void followNpcs();
+  // Drops the actors of the NPCs that left the map since (gone_actors.hpp).
+  void forgetGoneNpcs();
   // The map's signs: what the language and the option want now, painted into `images` (copies of
   // signsOriginal_), and the map shown brought to it when they change.
   [[nodiscard]] std::string signsKey() const;
