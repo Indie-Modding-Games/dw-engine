@@ -6,7 +6,11 @@ El render del juego, encima de `rhi`. Ver [render.md](../../architecture/render.
   ventana) y de las texturas (`TextureId`). `renderFrame` dibuja un frame: escena con profundidad → UI → overlay de
   depuración. `createPipeline` hace pipelines para un pase. Las texturas se crean y actualizan esperando
   (`createTexture`, `updateTexture`, en la carga) o en cola para el siguiente frame (`queueTexture`,
-  `queueTextureUpdate`, con el juego en marcha).
+  `queueTextureUpdate`, con el juego en marcha). Las copias en cola dejan libre una cuarta parte de la memoria de
+  subidas del frame (`DrawUploadShare`, `textureCopyFits` en `<dwe/render/upload_budget.hpp>`): los pases suben sus
+  vértices y matrices después de ellas, y antes un mapa recién cargado llenaba los 16 MiB con sus texturas y el
+  primer frame no podía subir los vértices del mapa («upload ring is out of room»). Lo que no cabe espera al frame
+  siguiente; una copia mayor que lo que queda sin la reserva va sola, la primera de su frame.
 - `Drawer`, `PrepareContext` y `DrawContext`: la interfaz por la que el mapa, los modelos y la UI preparan sus datos
   antes de los pases y graban sus draws en un pase.
 - `Camera`, `perspective`, `pixelProjection`: matrices para el clip space de Vulkan (Y hacia abajo, profundidad 0..1).
@@ -53,9 +57,10 @@ política para cualquier resolución, en el [ADR 0020](../../adr/0020-camara-de-
   entrada de la tabla de orden (`assets::mapSpriteOrderValue` con la profundidad de la cámara) y se dibuja como un
   plano a `orderValue · 16` de distancia; sus animaciones van a 20 fotogramas por segundo, como el campo del
   original. El orden de dibujo se calcula una vez al cargar; `quads()` solo rellena un búfer que guarda.
-- `MapRenderer` (`<dwe/render/map_renderer.hpp>`): dibuja un mapa con todo lo anterior en el pase de escena. Encola
-  (`queueTexture`, sin esperar a la GPU) el fondo como índices a su resolución nativa, una textura de paletas con una
-  fila por variante y otra para congelar un fundido interrumpido, y una textura por textura de la hoja de sprites,
+- `MapRenderer` (`<dwe/render/map_renderer.hpp>`): dibuja un mapa con todo lo anterior en el pase de escena. Sube
+  el fondo como índices a su resolución nativa, una textura de paletas con una fila por variante y otra para congelar
+  un fundido interrumpido, y una textura por textura de la hoja de sprites (en la carga, con `createTexture`: así
+  están en el primer frame del mapa sin pasar por la memoria de subidas),
   compartida por todas las horas: los sprites de `clut` −1 también son índices y miran la paleta de la hora en el
   shader. `update` avanza las animaciones y el fundido de la hora (`setVariant`, 25 fotogramas del original; un
   cambio a mitad de fundido sigue desde los colores que se ven) y guarda el foco; el `Drawer` del fondo ajusta la

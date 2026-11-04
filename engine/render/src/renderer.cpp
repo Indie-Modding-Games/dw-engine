@@ -1,6 +1,7 @@
 #include <dwe/core/log.hpp>
 #include <dwe/render/camera.hpp>
 #include <dwe/render/renderer.hpp>
+#include <dwe/render/upload_budget.hpp>
 #include <dwe/rhi/command_list.hpp>
 #include <dwe/rhi/frame_capture.hpp>
 
@@ -344,6 +345,7 @@ core::Result<TextureId> Renderer::addTexture(rhi::Image image) {
 
 void Renderer::applyPendingWrites(rhi::CommandList& commands) {
   std::vector<PendingWrite> later;
+  bool copied = false;
   for (PendingWrite& write : pending_) {
     const rhi::Image* image = findTexture(write.texture);
     if (image == nullptr) {
@@ -359,10 +361,14 @@ void Renderer::applyPendingWrites(rhi::CommandList& commands) {
     }
     // Once one copy waits, the ones after it wait too, so updates of a texture keep their order. A
     // copy that does not fit in this frame's upload memory waits for the next frame: many textures
-    // made at once (a skin's sprite sheets on its first frame) are not an error. One larger than a
-    // whole frame's memory never fits: the upload says so.
+    // made at once (a skin's sprite sheets on its first frame) are not an error. The copies leave a
+    // share of the memory to the passes, which upload their vertices after them: filling it all
+    // once left a map's first frame without room for its vertices. One larger than a whole
+    // frame's memory never fits: the upload says so.
     std::optional<rhi::UploadAllocation> staging;
-    const bool fits = upload_.fits(write.pixels.size(), PixelAlignment) ||
+    const bool fits = textureCopyFits(upload_.used(), write.pixels.size() + PixelAlignment,
+                                      upload_.bytesPerFrame(),
+                                      upload_.bytesPerFrame() / DrawUploadShare, !copied) ||
                       write.pixels.size() > upload_.bytesPerFrame();
     if (later.empty() && fits) {
       staging = upload_.upload(std::span<const std::byte>{write.pixels}, PixelAlignment);
@@ -371,6 +377,7 @@ void Renderer::applyPendingWrites(rhi::CommandList& commands) {
       later.push_back(std::move(write));
       continue;
     }
+    copied = true;
     commands.writeImage(*image, write.region, *staging);
   }
   pending_ = std::move(later);

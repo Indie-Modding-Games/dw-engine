@@ -281,9 +281,12 @@ core::Result<void> MapRenderer::setMap(const MapSceneData& scene, std::size_t va
     return std::unexpected{error};
   };
 
-  auto background =
-      makeTexture({.width = images.background.width, .height = images.background.height},
-                  indexTexels(images.background.indices));
+  // The map's textures are uploaded now, at load time, so its first frame already shows them all:
+  // queued, a large map's would share the next frame's upload memory with whatever else was
+  // queued and could wait a frame.
+  auto background = renderer_->createTexture(
+      {.width = images.background.width, .height = images.background.height},
+      indexTexels(images.background.indices));
   if (!background) {
     return fail(background.error());
   }
@@ -299,7 +302,7 @@ core::Result<void> MapRenderer::setMap(const MapSceneData& scene, std::size_t va
   for (const std::vector<assets::PaletteColor>& row : paletteRows_) {
     paletteTexels.insert(paletteTexels.end(), row.begin(), row.end());
   }
-  auto palettes = makeTexture(
+  auto palettes = renderer_->createTexture(
       {.width = PaletteColors, .height = static_cast<std::uint32_t>(paletteRows_.size())},
       std::as_bytes(std::span{paletteTexels}));
   if (!palettes) {
@@ -312,8 +315,8 @@ core::Result<void> MapRenderer::setMap(const MapSceneData& scene, std::size_t va
   for (const assets::MapSpriteSheet::Texture& source : images.sprites.textures) {
     const rhi::Extent extent{.width = source.width(), .height = source.height()};
     auto texture = source.timeOfDayPalette
-                       ? makeTexture(extent, indexTexels(source.indices.indices))
-                       : makeTexture(extent, source.colors.pixels);
+                       ? renderer_->createTexture(extent, indexTexels(source.indices.indices))
+                       : renderer_->createTexture(extent, source.colors.pixels);
     if (!texture) {
       return fail(texture.error());
     }
