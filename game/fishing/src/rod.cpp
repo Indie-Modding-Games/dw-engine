@@ -671,7 +671,7 @@ void Fishing::tickRod() {
       hooked_.reset();
       endFishing();
       disabled_ = true;
-      emitAt(FishingEventKind::SeaSerpentLanded, 0, ashore);
+      emitAt(FishingEventKind::SeaSerpentLanded, rules_.seaSerpent.sceneSection, ashore);
     }
     return;
   case RodState::Off:

@@ -3,8 +3,9 @@
 # orilla y los mapas) son data/fishing, que dwx extrae del disco; aquí van las reglas de su lógica.
 
 # FISH_findFishToBite: la serpiente marina pica con cualquier cebo, un 20 % cada 8 fotogramas. FISH_tickFishPopulation
-# mira cada 20 fotogramas si es su hora (seadramon_times / 100 de data/fishing).
-sea_serpent: {bite_chance: 20, bite_every: 8, check_every: 20}
+# mira cada 20 fotogramas si es su hora (seadramon_times / 100 de data/fishing). Ya en tierra, triggerSeadramonCutscene
+# llama a la sección 0x4e4 (1252) del guion de cabecera de mapa: la escena del guardián del lago.
+sea_serpent: {bite_chance: 20, bite_every: 8, check_every: 20, scene_section: 1252}
 
 # FISH_findFishToBite: cada 20 fotogramas pica un pez a 200 o menos del corcho, con el porcentaje de su clase para el
 # cebo (data/fishing: bite_chances). FISH_tickFish: el pez atraído por el cebo nada hacia el corcho desde menos de 600.

@@ -79,7 +79,7 @@ inline constexpr std::string_view NoGameClock = "field scene: no game clock";
 inline constexpr std::string_view NoPlayerClip = "field scene: the player has no clip {}";
 // The fishing (fishing_screen.cpp).
 inline constexpr std::string_view SeaSerpentScene =
-    "fishing: the sea serpent landed; its scene (MAPHEAD section 0x4e4) waits for the story runner";
+    "fishing: the sea serpent landed with no story to play its scene";
 
 // The title screen (title_screen.cpp).
 inline constexpr std::string_view TitleCommand = "game: command {}";

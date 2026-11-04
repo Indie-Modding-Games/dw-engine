@@ -102,7 +102,7 @@ enum class FishingEventKind : std::uint8_t {
   FishCaught,
   // Something that got stuck on the hook. value: its item.
   JunkCaught,
-  // The sea serpent reached the shore at position: its scene starts.
+  // The sea serpent reached the shore at position: its scene starts. value: its map-head section.
   SeaSerpentLanded,
   // The fishing ended; the player walks again.
   Ended,

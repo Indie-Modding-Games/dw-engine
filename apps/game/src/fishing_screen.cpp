@@ -148,8 +148,9 @@ private:
 FishingScreen::FishingScreen(session::FishingAdapter& fishing,
                              const session::InventoryAdapter& inventory,
                              session::GameSession& session, ui::Ui& ui,
-                             game::story::SoundPort* sound)
-    : fishing_{&fishing}, inventory_{&inventory}, session_{&session}, ui_{&ui}, sound_{sound} {}
+                             game::story::SoundPort* sound, session::StoryAdapter* story)
+    : fishing_{&fishing}, inventory_{&inventory}, session_{&session}, ui_{&ui}, sound_{sound},
+      story_{story} {}
 
 bool FishingScreen::active() const {
   const game::fishing::Fishing* water = fishing_->fishing();
@@ -332,7 +333,19 @@ void FishingScreen::follow(FieldScene& scene, const game::fishing::FishingOutput
       scene.setPlayerClip(std::nullopt);
       break;
     case FishingEventKind::SeaSerpentLanded:
-      core::logInfo("{}", messages::SeaSerpentScene);
+      // tamerTickFishing: triggerSeadramonCutscene (script_common.c:3057) calls the map-head
+      // section; the fishing stays off on the map (setFishingDisabled).
+      if (story_ != nullptr) {
+        const auto outcome = story_->request({.script = game::story::StoryRunner::MapHeadScript,
+                                              .section = static_cast<std::uint16_t>(event.value)},
+                                             game::story::StartTiming::NextFrame);
+        core::logDebug("[port:fishing] triggerSeadramonCutscene (script_common.c:3057): section "
+                       "{} of the map-head script {}",
+                       event.value,
+                       outcome == game::story::RequestOutcome::Accepted ? "asked for" : "dropped");
+      } else {
+        core::logInfo("{}", messages::SeaSerpentScene);
+      }
       break;
     default:
       break;

@@ -488,7 +488,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
       awardScreen_(game_.systems.medals, *game_.session, *context.ui, game_.session->sound()),
       praiseScold_(*game_.session, *context.ui),
       fishingScreen_(*game_.systems.fishing, *game_.systems.inventory, *game_.session, *context.ui,
-                     game_.session->sound()),
+                     game_.session->sound(), game_.systems.story),
       curlingScreen_(*game_.systems.curling, *game_.session, *context.ui, game_.session->sound()) {
   session::GameSession& session = *game_.session;
   if (game_.systems.story != nullptr) {

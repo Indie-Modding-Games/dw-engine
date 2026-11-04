@@ -29,6 +29,8 @@ struct SeaSerpentRules {
   std::int32_t biteEvery = 0;
   // How often the population looks for the sea serpent's hour.
   std::int32_t checkEvery = 0;
+  // The map-head section of the scene that plays once it is landed (triggerSeadramonCutscene).
+  std::int32_t sceneSection = 0;
 };
 
 struct BiteRules {

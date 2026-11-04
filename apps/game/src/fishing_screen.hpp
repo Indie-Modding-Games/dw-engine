@@ -5,6 +5,7 @@
 #include <dwe/session/fishing_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/story_adapter.hpp>
 #include <dwe/ui/ui.hpp>
 
 #include <cstdint>
@@ -42,9 +43,11 @@ struct FishingButtons {
 // drawn as markers until their models are.
 class FishingScreen {
 public:
-  // The adapters, the session, the UI and the sound (nullptr: silent) must outlive this object.
+  // The adapters, the session, the UI, the sound (nullptr: silent) and the story (nullptr: the sea
+  // serpent's scene does not play) must outlive this object.
   FishingScreen(session::FishingAdapter& fishing, const session::InventoryAdapter& inventory,
-                session::GameSession& session, ui::Ui& ui, game::story::SoundPort* sound);
+                session::GameSession& session, ui::Ui& ui, game::story::SoundPort* sound,
+                session::StoryAdapter* story);
 
   // Whether the player fishes or reads a fishing notice: the field waits meanwhile.
   [[nodiscard]] bool active() const;
@@ -82,6 +85,7 @@ private:
   session::GameSession* session_;
   ui::Ui* ui_;
   game::story::SoundPort* sound_;
+  session::StoryAdapter* story_;
   double frameSeconds_ = 0.0;
   // What the buttons did since the last fishing frame.
   bool confirmPressed_ = false;

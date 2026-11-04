@@ -520,7 +520,7 @@ showMapheadSelection = { status = "portado", dwe = "content/packs/game/ui/destin
 unlockMedal = { status = "portado", dwe = "game/story/src/medals.cpp", what = "Da una medalla al jugador." }
 hasMedal = { status = "portado", dwe = "game/story/src/medals.cpp", what = "Dice si el jugador tiene una medalla.", note = "también StoryAdapter::medalCount y medalsHeld para la página del jugador" }
 createMonochromonMoodBubble = { status = "portado", dwe = "apps/game/src/mood_bubble.hpp", what = "Burbuja de humor del cliente en la tienda de Monochromon (rutina 28).", note = "también renderMonochromonMoodBubble; la rutina en apps/session/src/story_routines/routine_mood_bubble.cpp" }
-triggerSeadramonCutscene = { status = "falta", what = "Lanza la escena de la serpiente marina al pescarla." }
+triggerSeadramonCutscene = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:335", what = "Lanza la escena de la serpiente marina al pescarla.", note = "Pide la sección 0x4e4 del guion de cabecera de mapa (regla sea_serpent.scene_section); se ve la escena del guardián del lago, como en el original." }
 initializeLoadedNPCModels = { status = "no-aplica", note = "tabla de modelos del original", what = "Vacía la tabla de modelos cargados." }
 popScriptStack = { status = "portado", dwe = "game/story/src/story_runner.cpp", what = "Vuelve de una subrutina del guion." }
 skipOneReadOneUShort = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee un operando del guion." }

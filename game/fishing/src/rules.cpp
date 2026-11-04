@@ -15,6 +15,7 @@ using core::YamlNode;
 
 constexpr std::string_view SectionText = "the fishing section";
 constexpr std::string_view CheckEveryKey = "check_every";
+constexpr std::string_view SceneSectionKey = "scene_section";
 constexpr std::string_view PickKey = "pick";
 constexpr std::string_view ShoreByYKey = "shore_by_y";
 constexpr std::string_view ItemKey = "item";
@@ -190,10 +191,12 @@ core::Result<FishingRules> parseFishingRules(const ruleset::Section& section) {
   }
   FishingRules rules;
   const YamlNode& serpent = reader.field(root, SeaSerpentKey);
-  if (reader.expectKeys(serpent, SeaSerpentKey, {BiteChanceKey, BiteEveryKey, CheckEveryKey})) {
+  if (reader.expectKeys(serpent, SeaSerpentKey,
+                        {BiteChanceKey, BiteEveryKey, CheckEveryKey, SceneSectionKey})) {
     rules.seaSerpent = {.biteChance = integer(reader, serpent, BiteChanceKey),
                         .biteEvery = integer(reader, serpent, BiteEveryKey),
-                        .checkEvery = integer(reader, serpent, CheckEveryKey)};
+                        .checkEvery = integer(reader, serpent, CheckEveryKey),
+                        .sceneSection = integer(reader, serpent, SceneSectionKey)};
   }
   const YamlNode& bites = reader.field(root, BitesKey);
   if (reader.expectKeys(bites, BitesKey, {EveryKey, ReachKey, AttractReachKey})) {
