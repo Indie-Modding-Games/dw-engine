@@ -7,6 +7,7 @@
 #include <bit>
 #include <cmath>
 #include <iterator>
+#include <string>
 #include <utility>
 
 namespace dwe::ui {
@@ -105,9 +106,11 @@ const Rml::FontMetrics& FontEngine::GetFontMetrics(Rml::FontFaceHandle handle) {
   return freeType_->GetFontMetrics(handle);
 }
 
-int FontEngine::GetStringWidth(Rml::FontFaceHandle handle, Rml::StringView string,
+int FontEngine::GetStringWidth(Rml::FontFaceHandle handle, Rml::StringView given,
                                const Rml::TextShapingContext& shaping,
                                Rml::Character priorCharacter) {
+  const std::string capitals = finishUppercase({given.begin(), given.size()});
+  const Rml::StringView string{capitals.data(), capitals.data() + capitals.size()};
   const BitmapFace* face = bitmapFace(handle);
   if (face == nullptr) {
     return freeType_->GetStringWidth(handle, string, shaping, priorCharacter);
@@ -123,10 +126,13 @@ int FontEngine::GetStringWidth(Rml::FontFaceHandle handle, Rml::StringView strin
 }
 
 int FontEngine::GenerateString(Rml::RenderManager& renderManager, Rml::FontFaceHandle faceHandle,
-                               Rml::FontEffectsHandle effectsHandle, Rml::StringView string,
+                               Rml::FontEffectsHandle effectsHandle, Rml::StringView given,
                                Rml::Vector2f position, Rml::ColourbPremultiplied colour,
                                float opacity, const Rml::TextShapingContext& shaping,
                                Rml::TexturedMeshList& meshList) {
+  // RmlUi's capitals leave accented letters small (text_font.hpp: finishUppercase).
+  const std::string capitals = finishUppercase({given.begin(), given.size()});
+  const Rml::StringView string{capitals.data(), capitals.data() + capitals.size()};
   const BitmapFace* face = bitmapFace(faceHandle);
   if (face == nullptr) {
     return freeType_->GenerateString(renderManager, faceHandle, effectsHandle, string, position,

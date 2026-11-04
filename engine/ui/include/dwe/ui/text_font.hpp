@@ -52,4 +52,10 @@ struct OriginalLook {
 // Reads ui/fonts/original_look.yaml.
 core::Result<OriginalLook> parseOriginalLook(std::string_view yaml);
 
+// A text RmlUi wrote in capitals (text-transform: uppercase) with its accented letters in capitals
+// too. RmlUi only changes the letters a to z, so "Regañar" came out "REGAñAR": a text with capital
+// letters a to z, none small, and a small accented Latin-1 letter is such a text, and those letters
+// go to capitals ("REGAÑAR"). Any other text comes back as it is ("Año", "día", "HP").
+[[nodiscard]] std::string finishUppercase(std::string_view text);
+
 } // namespace dwe::ui

@@ -4,6 +4,8 @@
 #include <dwe/core/yaml.hpp>
 #include <dwe/ui/text_font.hpp>
 
+#include <cstddef>
+#include <string>
 #include <utility>
 
 #include "messages.hpp"
@@ -68,6 +70,42 @@ core::Result<OriginalLook> parseOriginalLook(std::string_view yaml) {
     reader.fail(fallbackSize, messages::FallbackSizeNotPositive);
   }
   return reader.finish(std::move(look), messages::OriginalLookContext);
+}
+
+std::string finishUppercase(std::string_view text) {
+  // The UTF-8 lead byte of the Latin-1 letters from U+00C0, and the small ones' second bytes:
+  // U+00E0 to U+00FE but the division sign, each 0x20 past its capital.
+  constexpr unsigned char LatinLead = 0xC3;
+  constexpr unsigned char FirstSmall = 0xA0;
+  constexpr unsigned char LastSmall = 0xBE;
+  constexpr unsigned char DivisionSign = 0xB7;
+  constexpr unsigned char CaseOffset = 0x20;
+  bool capitals = false;
+  bool accented = false;
+  for (std::size_t i = 0; i < text.size(); ++i) {
+    const auto byte = static_cast<unsigned char>(text[i]);
+    if (byte >= 'a' && byte <= 'z') {
+      return std::string{text};
+    }
+    capitals = capitals || (byte >= 'A' && byte <= 'Z');
+    if (byte == LatinLead && i + 1 < text.size()) {
+      const auto next = static_cast<unsigned char>(text[i + 1]);
+      accented = accented || (next >= FirstSmall && next <= LastSmall && next != DivisionSign);
+    }
+  }
+  std::string result{text};
+  if (!capitals || !accented) {
+    return result;
+  }
+  for (std::size_t i = 0; i + 1 < result.size(); ++i) {
+    const auto next = static_cast<unsigned char>(result[i + 1]);
+    if (static_cast<unsigned char>(result[i]) == LatinLead && next >= FirstSmall &&
+        next <= LastSmall && next != DivisionSign) {
+      result[i + 1] = static_cast<char>(next - CaseOffset);
+      ++i;
+    }
+  }
+  return result;
 }
 
 } // namespace dwe::ui
