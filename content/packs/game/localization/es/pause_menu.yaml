@@ -27,6 +27,9 @@ minimap_mode: "Mostrar minimapa"
 # El minimapa redondo (una mejora del motor): se ve o no, con los dos aspectos.
 minimap_mode.on: "Sí"
 minimap_mode.off: "No"
+# Enemigos en el minimapa (una mejora del motor): un punto rojo por cada personaje del mapa que puede empezar una
+# batalla (encendido por defecto; apagado, el minimapa solo con el jugador y el compañero).
+minimap_enemies: "Enemigos en el minimapa"
 minimap_size: "Tamaño"
 minimap_size.small: "Pequeño"
 minimap_size.medium: "Mediano"

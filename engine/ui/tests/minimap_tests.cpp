@@ -189,6 +189,18 @@ TEST_CASE("the marker is an opaque arrow in a transparent square") {
   CHECK((pixelAt(marker, 16, 2) >> 8U) != 0xFFFFFFU); // in the outline colour
 }
 
+TEST_CASE(
+    "the enemies' marker is a round dot, white inside a dark outline, in a transparent square") {
+  const assets::Image dot = buildMinimapDot(32);
+  CHECK(dot.width == 32);
+  CHECK(dot.height == 32);
+  CHECK(pixelAt(dot, 0, 0) == 0);            // a corner is outside the dot
+  CHECK(pixelAt(dot, 16, 16) == 0xFFFFFFFF); // its middle is filled white, so a tint colours it
+  CHECK((pixelAt(dot, 16, 2) & 0xFFU) > 0);  // its edge is drawn
+  CHECK((pixelAt(dot, 16, 2) >> 8U) != 0xFFFFFFU);    // in the outline colour
+  CHECK(pixelAt(dot, 2, 16) == pixelAt(dot, 29, 16)); // round: the same on both sides
+}
+
 TEST_CASE("a map's collision becomes a minimap grid") {
   assets::MapDocument map;
   const auto cellAt = [](int column, int row) {

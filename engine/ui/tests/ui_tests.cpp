@@ -21,6 +21,7 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -1531,6 +1532,80 @@ TEST_CASE("the HUD shows the minimap of the current map round the player, north-
   ui->setMinimap(grid, "Casa");
   ui->update();
   CHECK(ui->elementText("hud", "minimap-name") == "Casa");
+}
+
+TEST_CASE("the minimap marks the enemies in view round the player, under the player's arrow") {
+  for (const std::string_view skin : {"original", "modern"}) {
+    CAPTURE(skin);
+    Content content;
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->setSetting("ui_skin", std::string{skin});
+    ui->show("hud");
+    MinimapGrid grid{
+        .columns = 4, .rows = 2, .cells = {}, .cellSize = 100.0F, .originX = 0.0F, .originZ = 0.0F};
+    grid.cells.assign(8, MinimapCell::Walkable);
+    ui->setMinimap(grid, "Bosque");
+    // The view's radius is the smallest (MinimapMinViewRadius: 800): an enemy 400 east of the
+    // player is half way to the rim, one 400 north of it half way up, and one 2000 away is out of
+    // view.
+    const MinimapMarker player{.x = 100.0F, .z = 100.0F, .facingX = 0.0F, .facingZ = -1.0F};
+    const std::array<MinimapMarker, 3> enemies{
+        MinimapMarker{.x = 500.0F, .z = 100.0F, .facingX = 0.0F, .facingZ = -1.0F},
+        MinimapMarker{.x = 100.0F, .z = -300.0F, .facingX = 0.0F, .facingZ = -1.0F},
+        MinimapMarker{.x = 2100.0F, .z = 100.0F, .facingX = 0.0F, .facingZ = -1.0F}};
+    ui->setMinimapMarkers(player, std::nullopt, enemies);
+    ui->update();
+    const auto frame = ui->elementRect("hud", "minimap-frame");
+    REQUIRE(frame.has_value());
+    const float centreX = (frame->left + frame->right) / 2.0F;
+    const float centreY = (frame->top + frame->bottom) / 2.0F;
+    const float discRadius = (frame->right - frame->left) / 2.0F;
+    const auto east = ui->elementCenter("hud", "minimap-enemy-1");
+    const auto north = ui->elementCenter("hud", "minimap-enemy-2");
+    REQUIRE(east.has_value());
+    REQUIRE(north.has_value());
+    CHECK(east->x - centreX == doctest::Approx(discRadius * 0.5F).epsilon(0.05));
+    CHECK(east->y == doctest::Approx(centreY).epsilon(0.02));
+    CHECK(north->x == doctest::Approx(centreX).epsilon(0.02));
+    CHECK(centreY - north->y == doctest::Approx(discRadius * 0.5F).epsilon(0.05));
+    CHECK(ui->styleProperty("hud", "minimap-enemy-1", "display") == "block");
+    // Out of view it is hidden, not pinned to the rim as the partner is.
+    CHECK(ui->styleProperty("hud", "minimap-enemy-3", "display") == "none");
+    CHECK(ui->elementHasClass("hud", "minimap-enemy-1", "enemy"));
+    // A dot, smaller than the player's arrow.
+    const auto dot = ui->elementRect("hud", "minimap-enemy-1");
+    const auto arrow = ui->elementRect("hud", "minimap-player");
+    REQUIRE(dot.has_value());
+    REQUIRE(arrow.has_value());
+    CHECK(dot->right - dot->left > 0.0F);
+    CHECK(dot->right - dot->left < arrow->right - arrow->left);
+
+    // The enemies move with the frames: the east one walks closer, the far one comes into view.
+    const std::array<MinimapMarker, 3> moved{
+        MinimapMarker{.x = 300.0F, .z = 100.0F, .facingX = 0.0F, .facingZ = -1.0F},
+        MinimapMarker{.x = 100.0F, .z = -300.0F, .facingX = 0.0F, .facingZ = -1.0F},
+        MinimapMarker{.x = 100.0F, .z = 500.0F, .facingX = 0.0F, .facingZ = -1.0F}};
+    ui->setMinimapMarkers(player, std::nullopt, moved);
+    ui->update();
+    const auto closer = ui->elementCenter("hud", "minimap-enemy-1");
+    const auto south = ui->elementCenter("hud", "minimap-enemy-3");
+    REQUIRE(closer.has_value());
+    REQUIRE(south.has_value());
+    CHECK(closer->x - centreX == doctest::Approx(discRadius * 0.25F).epsilon(0.05));
+    CHECK(ui->styleProperty("hud", "minimap-enemy-3", "display") == "block");
+    CHECK(south->y - centreY == doctest::Approx(discRadius * 0.5F).epsilon(0.05));
+
+    // One beaten or gone, then none (the option off): the dots left over hide.
+    ui->setMinimapMarkers(player, std::nullopt, std::span{moved}.first(1));
+    ui->update();
+    CHECK(ui->styleProperty("hud", "minimap-enemy-1", "display") == "block");
+    CHECK(ui->styleProperty("hud", "minimap-enemy-2", "display") == "none");
+    CHECK(ui->styleProperty("hud", "minimap-enemy-3", "display") == "none");
+    ui->setMinimapMarkers(player, std::nullopt);
+    ui->update();
+    CHECK(ui->styleProperty("hud", "minimap-enemy-1", "display") == "none");
+  }
 }
 
 // A UI that shows the texts of a catalog, as the game creates it.

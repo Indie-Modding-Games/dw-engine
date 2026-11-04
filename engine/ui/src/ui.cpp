@@ -212,6 +212,14 @@ struct Ui::Impl {
     std::optional<MarkerState> shown;
   };
 
+  // The enemies' dots in one document's hud::MinimapEnemies element: the dots made in it, in
+  // order, and what each one shows.
+  struct EnemyLayer {
+    Rml::ObserverPtr<Rml::Element> container;
+    std::vector<Rml::ObserverPtr<Rml::Element>> dots;
+    std::vector<std::optional<MarkerState>> shown;
+  };
+
   struct Minimap {
     MinimapLayout layout;
     std::string source; // the generated image's name, with the prefix
@@ -273,6 +281,7 @@ struct Ui::Impl {
   std::array<MarkerSlot, 2> markers{
       MarkerSlot{.id = hud::MinimapPlayer, .elements = {}, .shown = {}},
       MarkerSlot{.id = hud::MinimapPartner, .elements = {}, .shown = {}}};
+  std::vector<EnemyLayer> enemyLayers;
   bool markersStale = true;
   // The texts: the app's catalog, or ownTexts read from the packs when it gives none.
   const localization::Catalog* texts = nullptr;
@@ -963,6 +972,9 @@ struct Ui::Impl {
     for (MarkerSlot& slot : markers) {
       slot.shown.reset();
     }
+    for (EnemyLayer& layer : enemyLayers) {
+      std::ranges::fill(layer.shown, std::nullopt);
+    }
   }
 
   // Finds the markers' elements again, after documents were loaded or reloaded.
@@ -976,7 +988,39 @@ struct Ui::Impl {
         }
       }
     }
+    // A document that stayed keeps the dots made in it: they are found again, in their order.
+    enemyLayers.clear();
+    for (auto& [name, document] : documents) {
+      Rml::Element* container = document.element->GetElementById(Rml::String{hud::MinimapEnemies});
+      if (container == nullptr) {
+        continue;
+      }
+      EnemyLayer layer{.container = container->GetObserverPtr(), .dots = {}, .shown = {}};
+      for (int child = 0; child < container->GetNumChildren(); ++child) {
+        layer.dots.push_back(container->GetChild(child)->GetObserverPtr());
+      }
+      layer.shown.resize(layer.dots.size());
+      enemyLayers.push_back(std::move(layer));
+    }
     markersStale = false;
+  }
+
+  // Shows a marker's state on its element: placed with left and top in percent of the disc, turned
+  // with a rotate() transform when `turned`, or hidden.
+  static void showMarker(Rml::Element& element, const MarkerState& state, bool turned) {
+    if (!state.visible) {
+      element.SetProperty("display", "none");
+      return;
+    }
+    element.SetProperty("display", "block");
+    element.SetProperty("left", percent(static_cast<float>(state.u) / MarkerPositionSteps));
+    element.SetProperty("top", percent(static_cast<float>(state.v) / MarkerPositionSteps));
+    if (turned) {
+      element.SetProperty(
+          "transform",
+          std::format("rotate({:.1f}deg)", static_cast<float>(state.heading) / MarkerHeadingSteps));
+    }
+    element.SetClass("pinned", state.pinned);
   }
 
   // Places a marker at (u, v), in parts of the disc from its top left corner, turned to face
@@ -999,26 +1043,66 @@ struct Ui::Impl {
     }
     slot.shown = state;
     for (const Rml::ObserverPtr<Rml::Element>& element : slot.elements) {
-      if (!element) {
+      if (element) {
+        showMarker(*element.get(), state, true);
+      }
+    }
+  }
+
+  // The enemies' dots, where they stand from the player on the north-up disc; an enemy out of
+  // view (farther than MinimapEnemyRim) is hidden. Each layer gets as many dots as enemies, made
+  // the first time they are needed, and hides the rest.
+  void placeEnemies(const MinimapMarker& player, std::span<const MinimapMarker> enemies) {
+    std::vector<MarkerState> states;
+    if (minimap) {
+      states.reserve(enemies.size());
+      for (const MinimapMarker& enemy : enemies) {
+        const MinimapDiscPoint at = locateOnDisc(player.x, player.z, minimap->viewRadius, enemy.x,
+                                                 enemy.z, MinimapEnemyRim);
+        states.push_back(
+            at.pinned ? MarkerState{}
+                      : MarkerState{.visible = true,
+                                    .u = std::lround(std::clamp(0.5F + (at.x / 2.0F), 0.0F, 1.0F) *
+                                                     MarkerPositionSteps),
+                                    .v = std::lround(std::clamp(0.5F + (at.y / 2.0F), 0.0F, 1.0F) *
+                                                     MarkerPositionSteps),
+                                    .heading = 0,
+                                    .pinned = false});
+      }
+    }
+    for (EnemyLayer& layer : enemyLayers) {
+      if (!layer.container) {
         continue;
       }
-      if (!state.visible) {
-        element->SetProperty("display", "none");
-        continue;
+      while (layer.dots.size() < states.size()) {
+        Rml::ElementDocument* owner = layer.container->GetOwnerDocument();
+        if (owner == nullptr) {
+          break;
+        }
+        Rml::ElementPtr dot = owner->CreateElement("img");
+        dot->SetId(std::format("{}{}", hud::MinimapEnemyPrefix, layer.dots.size() + 1));
+        dot->SetClass("marker", true);
+        dot->SetClass("enemy", true);
+        dot->SetProperty("display", "none");
+        dot->SetAttribute("src", Rml::String{"generated:minimap_enemy"});
+        layer.dots.push_back(layer.container->AppendChild(std::move(dot))->GetObserverPtr());
+        layer.shown.emplace_back();
       }
-      element->SetProperty("display", "block");
-      element->SetProperty("left", percent(static_cast<float>(state.u) / MarkerPositionSteps));
-      element->SetProperty("top", percent(static_cast<float>(state.v) / MarkerPositionSteps));
-      element->SetProperty(
-          "transform",
-          std::format("rotate({:.1f}deg)", static_cast<float>(state.heading) / MarkerHeadingSteps));
-      element->SetClass("pinned", state.pinned);
+      for (std::size_t index = 0; index < layer.dots.size(); ++index) {
+        const MarkerState state = index < states.size() ? states[index] : MarkerState{};
+        if (layer.shown[index] == state || !layer.dots[index]) {
+          continue;
+        }
+        layer.shown[index] = state;
+        showMarker(*layer.dots[index].get(), state, false);
+      }
     }
   }
 
   // The disc follows the player, north-up: the player stays in its middle and the partner goes
   // where it stands from the player, pinned to the rim when it is out of view.
-  void placeMarkers(const MinimapMarker& player, const std::optional<MinimapMarker>& partner) {
+  void placeMarkers(const MinimapMarker& player, const std::optional<MinimapMarker>& partner,
+                    std::span<const MinimapMarker> enemies) {
     if (markersStale) {
       findMarkers();
     }
@@ -1032,6 +1116,7 @@ struct Ui::Impl {
           locateOnDisc(player.x, player.z, minimap->viewRadius, partner->x, partner->z, PartnerRim);
     }
     placeMarker(markers[1], partner, 0.5F + (at.x / 2.0F), 0.5F + (at.y / 2.0F), at.pinned);
+    placeEnemies(player, enemies);
   }
 
   void reloadChanged() {
@@ -1141,6 +1226,7 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
   }
   constexpr std::uint32_t MarkerSize = 64;
   impl->sources.setGenerated("minimap_marker", buildMinimapMarker(MarkerSize));
+  impl->sources.setGenerated("minimap_enemy", buildMinimapDot(MarkerSize));
   if (auto fonts = impl->loadFonts(); !fonts) {
     return std::unexpected{fonts.error()};
   }
@@ -1283,9 +1369,9 @@ void Ui::refreshTexts() {
   impl_->refreshTexts();
 }
 
-void Ui::setMinimapMarkers(const MinimapMarker& player,
-                           const std::optional<MinimapMarker>& partner) {
-  impl_->placeMarkers(player, partner);
+void Ui::setMinimapMarkers(const MinimapMarker& player, const std::optional<MinimapMarker>& partner,
+                           std::span<const MinimapMarker> enemies) {
+  impl_->placeMarkers(player, partner, enemies);
 }
 
 void Ui::update() {

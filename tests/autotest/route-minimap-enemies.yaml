@@ -1,0 +1,50 @@
+# The enemies on the minimap (an engine improvement, docs/modulos/apps/game.md, «Enemigos en el minimapa»): a dot for
+# each character on the map whose script section can start a battle. On the misty woods' second screen (run with
+# --start mist03 --story-stage all) three wild ones walk their paths: from the arrival two show east of the player;
+# placed between them all three show round it and move with the frames, one leaving the disc's view. Then the option
+# off in the pause menu: the dots go and the minimap shows the player and the partner only. Run it with both skins
+# (--ui-skin original, modern); how to run it: docs/guides/prueba-vertical.md.
+name: minimap-enemies
+device: keyboard
+timeout: 180
+steps:
+  - resize: [1280, 720]
+  - wait: {map: mist03, seconds: 1.5, timeout: 60}
+  - expect_setting: {minimap_enemies: "true"}
+  - screenshot: arrival
+  # Between the three wild ones (original axes).
+  - script: place("player -150 -2650 0")
+  - script: place("partner -50 -2550 0")
+  - wait: {seconds: 0.4}
+  - screenshot: among
+  - wait: {seconds: 1.2}
+  - screenshot: moving
+  # Away from them again before the menu, so none walks into the player meanwhile.
+  - script: place("player 450 -1500 0")
+  - script: place("partner 350 -1400 0")
+  - wait: {seconds: 0.3}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - wait: {seconds: 0.3}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.3}
+  # The row is the last but one of the long options page: up from its first row wraps to the back button, then the
+  # island map's row and this one.
+  - repeat: {times: 3, steps: [{tap: {key: up}}, {wait: {seconds: 0.15}}]}
+  - tap: {key: return}
+  - expect_setting: {minimap_enemies: "false"}
+  - screenshot: option-off-menu
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  - screenshot: option-off

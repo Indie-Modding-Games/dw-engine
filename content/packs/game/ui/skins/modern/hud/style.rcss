@@ -85,6 +85,16 @@ body {
 	image-color: #5cc8ff;
 }
 
+/* The enemies on the map (the option minimap_enemies): small red-orange dots with a dark outline, under the partner
+   and the player. */
+#minimap-enemies .enemy {
+	width: 10dp;
+	height: 10dp;
+	margin-left: -5dp;
+	margin-top: -5dp;
+	image-color: #ff5a36;
+}
+
 /* A partner out of view waits on the rim, dimmed. */
 #minimap-partner.pinned {
 	opacity: 0.6;

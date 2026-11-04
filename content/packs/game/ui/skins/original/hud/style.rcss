@@ -446,6 +446,14 @@ body {
 
 #minimap-player { image-color: #fff371; }
 #minimap-partner { image-color: #90d9fa; }
+/* The enemies (the option minimap_enemies): small orange-red dots, the modern skin's size. */
+#minimap-enemies .enemy {
+	width: 10dp;
+	height: 10dp;
+	margin-left: -5dp;
+	margin-top: -5dp;
+	image-color: #ff6a3a;
+}
 
 #minimap-clock {
 	margin-top: -6dp;

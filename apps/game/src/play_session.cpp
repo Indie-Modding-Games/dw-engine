@@ -611,6 +611,12 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                           context.userSettings->needBubbleStack.value_or(true));
   // The island map on M, on unless turned off.
   context_.ui->setSetting(WorldMapSetting, context.userSettings->worldMap.value_or(true));
+  // The enemies on the minimap, on unless turned off.
+  minimapEnemiesShown_ = context.userSettings->minimapEnemies.value_or(true);
+  context_.ui->setSetting(MinimapEnemiesSetting, minimapEnemiesShown_);
+  if (context.files != nullptr) {
+    minimapEnemies_.emplace(*context.files);
+  }
   // The canonical stages on the chart, off unless turned on.
   context_.ui->setSetting(CanonicalStagesSetting,
                           context.userSettings->canonicalStages.value_or(false));
@@ -984,6 +990,17 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     }
     return true;
   }
+  if (command.name == MinimapEnemiesSetting) {
+    if (const bool* shown = std::get_if<bool>(&command.value)) {
+      minimapEnemiesShown_ = *shown;
+      context_.ui->setSetting(MinimapEnemiesSetting, *shown);
+      context_.userSettings->minimapEnemies = *shown;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    return true;
+  }
   if (command.name == NeedBubbleStackSetting) {
     if (const bool* stacked = std::get_if<bool>(&command.value)) {
       context_.ui->setSetting(NeedBubbleStackSetting, *stacked);
@@ -1279,7 +1296,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     stats.skipNext(MapChangeSettleFrames);
   }
   const game::field::Field& field = scene_->field();
-  ui.setMinimapMarkers(markerOf(field.player()), markerOf(field.partner()));
+  ui.setMinimapMarkers(markerOf(field.player()), markerOf(field.partner()), minimapEnemyMarkers());
 
   partnerMenu_.setBagContext(battleScreen_.active() ? game::inventory::UseContext::Battle
                                                     : game::inventory::UseContext::Field);
@@ -1402,6 +1419,19 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
 
 // The shop job's bar (shop_job_bar.hpp): the customer count and the tally, published when they
 // change.
+std::vector<ui::MinimapMarker> PlaySession::minimapEnemyMarkers() {
+  if (!minimapEnemies_ || scene_ == nullptr) {
+    return {};
+  }
+  const game::story::StoryRunner* runner =
+      game_.systems.story != nullptr ? game_.systems.story->runner() : nullptr;
+  const std::set<std::int32_t>& fighting =
+      minimapEnemies_->sectionsOf(runner != nullptr ? runner->mapScript() : std::nullopt);
+  const game::field::FieldNpcs& npcs = scene_->field().npcs();
+  return minimapEnemies(minimapEnemiesShown_, scene_->map().npcs, fighting,
+                        [&](std::int32_t scriptId) { return npcs.positionOf(scriptId); });
+}
+
 void PlaySession::publishMinimapAllowed(const MinimapScene& scene) {
   const bool allowed = minimapAllowed(scene);
   if (minimapAllowed_ != allowed) {

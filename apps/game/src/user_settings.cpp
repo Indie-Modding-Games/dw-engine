@@ -40,6 +40,7 @@ constexpr std::string_view ContinuousMusicKey = "continuous_music";
 constexpr std::string_view NeedBubbleStackKey = "need_bubble_stack";
 constexpr std::string_view WorldMapKey = "world_map";
 constexpr std::string_view ChibiStyleKey = "chibi_style";
+constexpr std::string_view MinimapEnemiesKey = "minimap_enemies";
 
 } // namespace
 
@@ -112,6 +113,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* chibi = tree->find(ChibiStyleKey)) {
       settings.chibiStyle = reader.text(*chibi);
+    }
+    if (const core::YamlNode* enemies = tree->find(MinimapEnemiesKey)) {
+      settings.minimapEnemies = reader.boolean(*enemies);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -192,6 +196,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   }
   if (settings.chibiStyle) {
     root.set(std::string{ChibiStyleKey}, core::YamlNode::scalar(*settings.chibiStyle));
+  }
+  if (settings.minimapEnemies) {
+    root.set(std::string{MinimapEnemiesKey},
+             core::YamlNode::scalar(*settings.minimapEnemies ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

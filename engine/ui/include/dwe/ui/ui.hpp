@@ -59,6 +59,14 @@ inline constexpr std::string_view MinimapName = "minimap-name";
 // The markers, placed with left, top and a rotate() transform, and hidden with display: none.
 inline constexpr std::string_view MinimapPlayer = "minimap-player";
 inline constexpr std::string_view MinimapPartner = "minimap-partner";
+// The enemies on the map (an engine improvement; the original has no minimap): the UI fills this
+// element of #minimap-frame with one <img class="marker enemy"> per enemy in view, with the ids
+// MinimapEnemyPrefix 1, 2..., placed in percent of the frame as the partner, and hides the ones it
+// does not need (display: none). An enemy out of the disc's view (MinimapEnemyRim) is hidden, not
+// pinned. The element goes before the partner's and the player's markers so they draw over the
+// enemies.
+inline constexpr std::string_view MinimapEnemies = "minimap-enemies";
+inline constexpr std::string_view MinimapEnemyPrefix = "minimap-enemy-";
 } // namespace hud
 
 // The attribute that gives an element its text by key, in the player's language: <span
@@ -220,9 +228,11 @@ public:
   // TextKeyAttribute, the map's name, and whatever the shown documents' on_language handlers write.
   void refreshTexts();
 
-  // Moves the minimap markers (hud::MinimapPlayer and hud::MinimapPartner), every frame. Markers
-  // that did not move cost nothing.
-  void setMinimapMarkers(const MinimapMarker& player, const std::optional<MinimapMarker>& partner);
+  // Moves the minimap markers (hud::MinimapPlayer and hud::MinimapPartner) and the enemies' dots
+  // (hud::MinimapEnemies; their facing is not drawn), every frame. Markers that did not move cost
+  // nothing.
+  void setMinimapMarkers(const MinimapMarker& player, const std::optional<MinimapMarker>& partner,
+                         std::span<const MinimapMarker> enemies = {});
 
   // Lays out the documents and records their geometry for the renderer. Once per frame, before
   // drawing. Until the skin's sprite sheet images are all loaded it also loads one ahead of its

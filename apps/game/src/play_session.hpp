@@ -49,6 +49,7 @@
 #include "gym_screen.hpp"
 #include "item_keeper_screen.hpp"
 #include "jukebox_screen.hpp"
+#include "minimap_enemies.hpp"
 #include "minimap_setting.hpp"
 #include "movie_rules.hpp"
 #include "naming_box.hpp"
@@ -289,6 +290,8 @@ private:
   void publishShopJob();
   // Publishes hud.minimap_allowed when it changes.
   void publishMinimapAllowed(const MinimapScene& scene);
+  // The enemies the minimap marks now: none while minimap_enemies is off.
+  [[nodiscard]] std::vector<ui::MinimapMarker> minimapEnemyMarkers();
   // Shows the story lock's message in the dialog, unless the dialog is on screen already.
   // Opens the island map over the field, with the maps the player has visited.
   void openWorldMap();
@@ -315,6 +318,10 @@ private:
   // The evolution requirements on the pause menu's chart (an engine improvement).
   ChartRequirements chartRequirements_;
   FieldHud fieldHud_;
+  // The enemies on the minimap (an engine improvement, minimap_enemies): whether they show and
+  // the fighting sections of the map's script.
+  bool minimapEnemiesShown_ = true;
+  std::optional<MinimapEnemyFinder> minimapEnemies_;
   // The shop job's progress bar (an engine improvement) and what it last published.
   ShopJobBar shopJobBar_;
   std::optional<ShopJobBarView> publishedShopJob_;

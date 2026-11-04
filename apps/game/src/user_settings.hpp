@@ -71,6 +71,9 @@ struct UserSettings {
   // The chibi style (chibi_style: off, external, all; chibi_style.hpp): which characters are
   // drawn with a big head and short limbs.
   std::optional<std::string> chibiStyle = std::nullopt;
+  // The enemies on the minimap (minimap_enemies: true, false; minimap_enemies.hpp): a dot for each
+  // NPC on the map that can start a battle; on when not chosen yet.
+  std::optional<bool> minimapEnemies = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

@@ -26,12 +26,12 @@ namespace {
 using fixture::Screen;
 
 // The game's options as ui/common/game_options.lua lists them, in order.
-constexpr std::array<std::string_view, 16> GameOptions{
+constexpr std::array<std::string_view, 17> GameOptions{
     "free-exploration",  "smooth-motion", "save-notice",
     "digital-time",      "bulk-trades",   "evolution-requirements",
     "translated-signs",  "status-extras", "canonical-stages",
     "long-names",        "shop-job-bar",  "continuous-music",
-    "need-bubble-stack", "show-minimap",  "world-map",
+    "need-bubble-stack", "show-minimap",  "minimap-enemies", "world-map",
     "chibi-style"};
 
 // In the original look the menu's box grows in for 5 frames at 20 a second and ignores the keys
@@ -91,7 +91,7 @@ TEST_CASE("the options page lists every game option in a row of its own, and onl
   // The chibi style has three values: by default only the models from outside the original game.
   CHECK(screen.ui->elementText("pause_menu", "chibi-style-value") == "Modelos externos");
   // The rows the list does not fill stay hidden.
-  CHECK(screen.ui->elementHasClass("pause_menu", "option-slot-18", "hidden"));
+  CHECK(screen.ui->elementHasClass("pause_menu", "option-slot-19", "hidden"));
   // The language and the original-looking text, as on the title.
   CHECK(screen.ui->elementText("pause_menu", "language-value") == "Español");
   CHECK_FALSE(screen.ui->elementText("pause_menu", "text-font-value").empty());
@@ -101,7 +101,7 @@ TEST_CASE("the options page lists every game option in a row of its own, and onl
   REQUIRE(
       screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "1", "1"}));
   REQUIRE(
-      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "17", "1"}));
+      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "18", "1"}));
   REQUIRE(screen.ui->callScript("pause_menu", "adjust",
                                 std::vector<std::string>{"", "text-font", "1"}));
   const std::vector<UiCommand> commands = screen.ui->takeCommands();
@@ -141,7 +141,7 @@ game_options[#game_options + 1] = {
   CHECK(screen.ui->elementText("pause_menu", "movement-value") == "pause_menu.movement.keys");
   std::ignore = screen.ui->takeCommands();
   REQUIRE(
-      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "18", "1"}));
+      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "19", "1"}));
   CHECK(sent(screen.ui->takeCommands(), "movement", UiValue{std::string{"mouse"}}));
 }
 
@@ -167,6 +167,21 @@ TEST_CASE("the options page shows and hides the minimap with either look") {
                                   std::vector<std::string>{"", "15", "1"}));
     CHECK(sent(screen.ui->takeCommands(), "minimap", UiValue{std::string{"on"}}));
   }
+}
+
+TEST_CASE("the options page turns the enemies on the minimap on and off, next to the minimap") {
+  Screen screen{"pause_menu", "es"};
+  openOnOptions(screen);
+  CHECK_FALSE(screen.ui->elementHasClass("pause_menu", "minimap-enemies", "hidden"));
+  CHECK(screen.ui->elementText("pause_menu", "option-slot-16-label") == "Enemigos en el minimapa");
+  // On until the game says otherwise.
+  CHECK(screen.ui->elementText("pause_menu", "minimap-enemies-value") == "Sí");
+  std::ignore = screen.ui->takeCommands();
+  REQUIRE(
+      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "16", "1"}));
+  CHECK(sent(screen.ui->takeCommands(), "minimap_enemies", UiValue{false}));
+  screen.ui->setSetting("minimap_enemies", false);
+  CHECK(screen.ui->elementText("pause_menu", "minimap-enemies-value") == "No");
 }
 
 } // namespace dwe::ui

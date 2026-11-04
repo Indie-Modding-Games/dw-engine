@@ -82,6 +82,10 @@ struct MinimapPoint {
 // image-color) colours only its inside. size is its side in pixels.
 [[nodiscard]] assets::Image buildMinimapMarker(std::uint32_t size);
 
+// A marker for the enemies on the minimap: a round dot, white with a dark outline so a tint (RCSS
+// image-color) colours only its inside. size is its side in pixels.
+[[nodiscard]] assets::Image buildMinimapDot(std::uint32_t size);
+
 [[nodiscard]] MinimapPoint locateOnMinimap(const MinimapLayout& layout, float worldX, float worldZ);
 
 // The round HUD minimap (an engine improvement; the original has none) shows a disc of the map
@@ -116,6 +120,10 @@ struct MinimapDiscPoint {
   float y = 0.0F;
   bool pinned = false;
 };
+
+// How far out an enemy still shows, in parts of the disc's radius: one farther is out of view and
+// hidden (it is not pinned to the rim as the partner is), so its dot stays whole inside the disc.
+inline constexpr float MinimapEnemyRim = 0.92F;
 
 [[nodiscard]] MinimapDiscPoint locateOnDisc(float centreX, float centreZ, float viewRadius,
                                             float worldX, float worldZ, float rim);

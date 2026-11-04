@@ -27,7 +27,8 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
                               .continuousMusic = false,
                               .needBubbleStack = false,
                               .worldMap = std::nullopt,
-                              .chibiStyle = "all"};
+                              .chibiStyle = "all",
+                              .minimapEnemies = false};
   const auto text = formatUserSettings(settings);
   REQUIRE(text.has_value());
   CHECK(text->contains("ui_skin: test_contrast"));
@@ -49,6 +50,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK(read->continuousMusic == std::optional<bool>{false});
   CHECK(read->needBubbleStack == std::optional<bool>{false});
   CHECK(read->chibiStyle == std::optional<std::string>{"all"});
+  CHECK(read->minimapEnemies == std::optional<bool>{false});
 
   // A file from before the setting existed, or without the choice made, leaves it to the packs.
   const auto older = parseUserSettings("language: en\n");
@@ -67,6 +69,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK_FALSE(older->continuousMusic.has_value());
   CHECK_FALSE(older->needBubbleStack.has_value());
   CHECK_FALSE(older->chibiStyle.has_value());
+  CHECK_FALSE(older->minimapEnemies.has_value());
   CHECK_FALSE(formatUserSettings(UserSettings{})->contains("ui_skin"));
 }
 

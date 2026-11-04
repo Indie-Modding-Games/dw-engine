@@ -122,6 +122,14 @@ game_options = {
     texts = "pause_menu.minimap_mode",
     default = "on",
   },
+  -- Enemies on the minimap: a red dot for each character on the map that can start a battle, where
+  -- it stands (on by default; off leaves the minimap with the player and the partner only).
+  {
+    id = "minimap-enemies",
+    setting = "minimap_enemies",
+    label = "pause_menu.minimap_enemies",
+    default = true,
+  },
   -- Island map: M (or the pad's left shoulder) opens a map of the whole island with where the
   -- player is and where his map leads (on by default; off leaves the key without a use, as the
   -- original has no such map).

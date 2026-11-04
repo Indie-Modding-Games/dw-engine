@@ -37,7 +37,7 @@ sequenceDiagram
     App->>Game: tick del juego, sin acciones si ui.capturesInput()
     App->>Ui: takeCommands() y aplica cada comando
     App->>Ui: setSetting(...) con el estado real
-    App->>Ui: setMinimapMarkers(jugador, compañero)
+    App->>Ui: setMinimapMarkers(jugador, compañero, enemigos)
     App->>Ui: update() (layout y grabación)
     App->>App: renderFrame con el UiRenderer en FrameDesc::ui
 ```
@@ -171,6 +171,7 @@ un mod puede colocarlos y darles estilo como quiera, pero con estos ids y estos 
 | `minimap-frame` | `hud::MinimapFrame` | El disco: un aspecto le pone `decorator: minimap-disc(...)` y la UI le da la ventana del mapa; los marcadores van dentro, en porcentaje de su caja |
 | `minimap-name` | `hud::MinimapName` | Su texto es el nombre del mapa, el texto de la clave que da `setMinimap`, en el idioma del juego |
 | `minimap-player`, `minimap-partner` | `hud::MinimapPlayer`, `hud::MinimapPartner` | Los marcadores: `left`, `top` (en porcentaje del disco; el jugador siempre al 50 %), `transform: rotate(...)`, la clase `pinned` en el compañero fuera de la vista, y `display: none` sin marcador |
+| `minimap-enemies` | `hud::MinimapEnemies` | La capa de los enemigos, dentro del disco y antes de los marcadores del compañero y del jugador (que quedan encima): la UI le crea un hijo `<img class="marker enemy" id="minimap-enemy-N">` por enemigo (`hud::MinimapEnemyPrefix`, imagen `generated:minimap_enemy`: disco blanco con borde oscuro que el aspecto tiñe con `image-color`), con `left`, `top` como el compañero, y `display: none` en los que sobran o quedan fuera de la vista |
 
 El script del HUD (`ui/hud/logic.lua`) escribe además el día y la hora en `#minimap-day` y `#minimap-time`, y la
 marca del norte es el texto `hud.minimap.north` de `#minimap-north`.
@@ -185,6 +186,13 @@ desconocido se leen como `on` (este último se avisa en el log), y el comando an
 como `on` y `false` como `off` (`minimapModeOf`, `apps/game/src/minimap_setting.hpp`). La elección se guarda en el
 `settings.yaml` de los datos del usuario, como `ui_skin` y `text_font` (clave `minimap`, `MinimapChanger`; las
 autopruebas no lo tocan), y la partida siguiente empieza con ella (`startMinimapMode`).
+
+Los enemigos del mapa son otra opción: `setMinimapMarkers` recibe además la lista de enemigos (vacía con el ajuste
+`minimap_enemies` en `false`, fila «Enemigos en el minimapa»), que el juego saca de los personajes del mapa que
+pueden pelear ([game.md](../modulos/apps/game.md#enemigos-en-el-minimapa)). Cada uno va donde está respecto al
+jugador (`locateOnDisc`, hasta el 92 % del radio, `MinimapEnemyRim`); uno fuera de la vista se esconde. El disco va
+con el norte arriba y los puntos son redondos, así que no giran. Igual que los demás marcadores, la UI solo les
+cambia las propiedades cuando se mueven.
 
 ## Estado del campo
 

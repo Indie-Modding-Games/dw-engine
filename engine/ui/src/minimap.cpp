@@ -226,6 +226,51 @@ assets::Image buildMinimapMarker(std::uint32_t size) {
   return image;
 }
 
+assets::Image buildMinimapDot(std::uint32_t size) {
+  // A disc filling the square, with a dark ring round its white inside.
+  constexpr float Radius = 0.46F;
+  constexpr float Outline = 0.16F;
+  constexpr int Samples = 4;
+  constexpr std::uint32_t Edge = 0x101418;
+  assets::Image image{.width = size, .height = size, .pixels = {}};
+  image.pixels.resize(static_cast<std::size_t>(size) * size * 4);
+  for (std::uint32_t y = 0; y < size; ++y) {
+    for (std::uint32_t x = 0; x < size; ++x) {
+      int covered = 0;
+      int filled = 0;
+      for (int sy = 0; sy < Samples; ++sy) {
+        for (int sx = 0; sx < Samples; ++sx) {
+          const float px = ((static_cast<float>(x) + ((static_cast<float>(sx) + 0.5F) / Samples)) /
+                            static_cast<float>(size)) -
+                           0.5F;
+          const float py = ((static_cast<float>(y) + ((static_cast<float>(sy) + 0.5F) / Samples)) /
+                            static_cast<float>(size)) -
+                           0.5F;
+          const float distance = std::hypot(px, py);
+          if (distance <= Radius) {
+            ++covered;
+            if (distance <= Radius - Outline) {
+              ++filled;
+            }
+          }
+        }
+      }
+      if (covered == 0) {
+        continue;
+      }
+      // The colour is the mix of white and edge samples; alpha is the coverage.
+      const float share = static_cast<float>(filled) / static_cast<float>(covered);
+      auto mix = [&](int shift) {
+        const auto edge = static_cast<float>((Edge >> shift) & 0xFFU);
+        return static_cast<std::uint32_t>(std::lround((255.0F * share) + (edge * (1.0F - share))));
+      };
+      const auto alpha = static_cast<std::uint32_t>((covered * 255) / (Samples * Samples));
+      putPixel(image, x, y, (mix(16) << 24U) | (mix(8) << 16U) | (mix(0) << 8U) | alpha);
+    }
+  }
+  return image;
+}
+
 MinimapPoint locateOnMinimap(const MinimapLayout& layout, float worldX, float worldZ) {
   if (layout.columns <= 0 || layout.rows <= 0 || layout.cellSize <= 0.0F) {
     return {.u = 0.0F, .v = 0.0F};

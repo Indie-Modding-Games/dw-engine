@@ -27,6 +27,9 @@ minimap_mode: "Show minimap"
 # The round minimap (an engine improvement): shown or not, with either look.
 minimap_mode.on: "Yes"
 minimap_mode.off: "No"
+# Enemies on the minimap (an engine improvement): a red dot for each character on the map that can start a battle (on
+# by default; off, the minimap shows only the player and the partner).
+minimap_enemies: "Enemies on minimap"
 minimap_size: "Size"
 minimap_size.small: "Small"
 minimap_size.medium: "Medium"

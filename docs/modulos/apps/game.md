@@ -917,6 +917,34 @@ del menú, y se esconde bajo cualquier ventana (más arriba, «Minimapa bajo las
 |---|---|---|---|---|
 | Minimapa redondo en el HUD | No existe | Disco del mapa alrededor del jugador, con el norte (−Z) arriba, el nombre del mapa encima y el día y la hora debajo; el jugador en el centro con su orientación, el compañero donde está (en el borde si queda fuera); con los dos aspectos y la misma disposición: el moderno con aro brillante y pastillas; el original con el nombre y la hora en sus ventanas (borde cian con esquinas, fondo negro y su letra), el aro de cuatro franjas de sus bordes y la N y el jugador en su amarillo; un nombre largo se parte en líneas centradas. Se ve con `on` y fuera de combates, escenas y minijuegos | `minimap_setting_tests.cpp` («the minimap shows only while the field runs…», «the options page's minimap row hides the HUD's minimap at once and saves the choice», modos y guardado); `in_game_options_tests.cpp` («the options page shows and hides the minimap with either look»); `ui_tests.cpp` («the HUD shows the minimap unless it is off…», «…round the player, north-up»); `minimap_tests.cpp` y `minimap_disc_tests.cpp` (cálculo del disco y del aro); ruta `route-minimap-clear.yaml` | Mejora (opción) |
 
+## Enemigos en el minimapa
+
+Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no tiene minimapa): el ajuste
+`minimap_enemies` (`true` o `false`) se cambia en la fila «Enemigos en el minimapa» («Enemies on minimap» en inglés)
+de las opciones en partida, justo debajo de «Mostrar minimapa»; se aplica al momento y se guarda en los ajustes del
+usuario (clave `minimap_enemies`). Apagado, el minimapa queda como antes: solo el jugador y el compañero.
+
+Qué es un enemigo: el original no marca a ningún personaje del mapa como salvaje. Un personaje pelea porque su
+sección del guion del mapa (la que tiene su id de guion y corre al tocarlo o hablarle) llega a la orden de empezar un
+combate, que pelea con quien se habló. `fightingSections` (`apps/game/src/minimap_enemies.hpp`) recorre el listado
+del guion activo (`script/dg/<n>`, el que da `StoryRunner::mapScript()`) desde el principio de cada sección siguiendo
+saltos, condiciones, elecciones, `switch` y llamadas, y la sección pelea si llega a `start_battle`. El modo de
+seguimiento no sirve: muchos salvajes solo se giran hacia el jugador y algunos que persiguen solo hablan (en todos los
+mapas: modo 2, 102 que pelean y 73 que no; modo 12, 352 y 89). `MinimapEnemyFinder` lee el listado una vez por guion.
+`PlaySession::minimapEnemyMarkers` pone un punto por cada personaje del mapa que está en el campo
+(`NpcSet::positionOf`) y cuya sección pelea, una vez por id de guion; en cada frame lee dónde está, así que el punto
+sigue al personaje y desaparece cuando se descarga, se va del mapa o cae en combate (el combate lo quita del campo).
+
+Decisiones: un jefe de la historia o un reclutable cuya sección puede empezar un combate también lleva punto (el
+punto dice que tocarlo o hablarle puede acabar en pelea); los amigos, el compañero y los personajes que solo hablan,
+no. Un enemigo fuera de la vista del disco no se pinta (no se clava en el borde como el compañero). Sin guion del mapa
+(la historia no corre) no se marca nada. Un salto a otro guion (`jump_to_file`) no se sigue. Cómo se dibuja:
+[ui.md](../../architecture/ui.md#minimapa).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Enemigos en el minimapa | No existe | Un punto rojo anaranjado con borde oscuro por cada personaje del mapa que puede pelear, donde está, bajo la flecha del jugador; con los dos aspectos. Medido en dwe: en el segundo mapa de la niebla salen los tres salvajes y se mueven con ellos, uno sale de la vista; en el túnel (dos que persiguen pero solo hablan) y en el pueblo, ninguno. Apagado, ninguno | `minimap_enemies_tests.cpp` (secciones que pelean, amigos fuera, posiciones vivas, apagado, lector del listado); `ui_tests.cpp` («the minimap marks the enemies in view round the player, under the player's arrow»); `minimap_tests.cpp` (el punto); `in_game_options_tests.cpp` («the options page turns the enemies on the minimap on and off…»); `user_settings_tests`; ruta `route-minimap-enemies.yaml` | Mejora (opción) |
+
 ## Mapa de la isla
 
 Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no tiene mapa de la isla): la tecla M
