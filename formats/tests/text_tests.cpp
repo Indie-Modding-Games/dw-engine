@@ -159,7 +159,7 @@ TEST_CASE("byte string text that has no bytes is refused") {
 }
 
 TEST_CASE("every control code of script text has a tag that encodes back") {
-  REQUIRE(scriptControlTags().size() == 26);
+  REQUIRE(scriptControlTags().size() == 27);
   for (const auto& tag : scriptControlTags()) {
     for (const unsigned parameter : {0x00U, 0x05U}) {
       const std::string text =
@@ -196,7 +196,7 @@ TEST_CASE("script text keeps glyphs, new lines and odd cells") {
   bytes.insert(bytes.end(), tail.begin(), tail.end());
   const std::string text = roundTripScript(bytes);
   CHECK(text ==
-        "A .．{{}}'{cell:889F}{cell:4142}\n{newline:raw=07}{raw03:010203}{cell:0009}{cell:1D05}");
+        "A .．{{}}'{cell:889F}{cell:4142}\n{newline:raw=07}{raw03:010203}{stop:raw=09}{cell:1D05}");
 
   // Bytes after the final cells are not part of the run; final cells other than 0 are kept.
   const auto ended = decodeScriptText(bytesOf({0x82, 0x60, 0x0D, 0x01, 0x00, 0x02, 0xAA, 0xBB}));
@@ -209,12 +209,27 @@ TEST_CASE("script text keeps glyphs, new lines and odd cells") {
   CHECK(roundTripScript(bytesOf({0x0D, 0x00, 0x00, 0x00})).empty());
 }
 
+TEST_CASE("a zero cell is the stop tag, not a missing glyph") {
+  // story_054.text.0c02: the US line ends its drawing before the leftovers of a longer one.
+  std::vector<std::byte> bytes;
+  for (const unsigned code : {0x8268U, 0x0000U, 0x8148U, 0x0005U}) {
+    bytes.push_back(static_cast<std::byte>(code >> 8U));
+    bytes.push_back(static_cast<std::byte>(code & 0xFFU));
+  }
+  const auto tail = bytesOf({0x0D, 0x00, 0x00, 0x00});
+  bytes.insert(bytes.end(), tail.begin(), tail.end());
+  const std::string text = roundTripScript(bytes);
+  CHECK(text == "I{stop}?{stop:raw=05}");
+  CHECK(text.find("{cell:") == std::string::npos);
+}
+
 TEST_CASE("malformed script text is refused") {
   CHECK_FALSE(decodeScriptText(bytesOf({0x82, 0x60})).has_value());
   CHECK_FALSE(decodeScriptText(bytesOf({0x82, 0x60, 0x03, 0x01})).has_value());
   CHECK_FALSE(decodeScriptText(bytesOf({0x0D, 0x00, 0x00})).has_value());
   CHECK_FALSE(decodeScriptText(bytesOf({0x82})).has_value());
   for (const std::string_view bad : {"\n{cell:0041}",
+                                     "\n{stop}",
                                      "{end:0000}A",
                                      "{end:00}",
                                      "{cell:0D00}",

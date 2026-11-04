@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <format>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -59,6 +61,17 @@ TEST_CASE("textbox: a page stops drawing at a cell of byte 0, its later rows kep
   REQUIRE(rows[1].size() == 1);
   CHECK(rows[1][0].text == "fades away, he'll ");
   CHECK(rows[2].empty());
+
+  // dwx writes the zero cell as {stop}; the content of older versions has {cell:0000}.
+  for (const std::string_view stop : {"{stop}", "{stop:raw=05}"}) {
+    rows.clear();
+    dwe::app::appendPageRows(rows, std::format("Hey guys, if you want\nto get thru here,{}?nt\n"
+                                               "leave all your stuff!",
+                                               stop));
+    REQUIRE(rows.size() == 3);
+    CHECK(rows[1][0].text == "to get thru here,");
+    CHECK(rows[2].empty());
+  }
 
   // Not a cell of byte 0: drawn as written.
   rows.clear();
