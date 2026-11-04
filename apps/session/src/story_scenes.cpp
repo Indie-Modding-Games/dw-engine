@@ -494,6 +494,13 @@ bool StoryScenes::takeGameEnded() {
   return std::exchange(context_->gameEnded, false);
 }
 
+std::optional<MistLook> StoryScenes::mistOn(std::int32_t screen) {
+  StoryScenesContext& scenes = *context_;
+  const bool story = scenes.desc.story != nullptr && scenes.desc.story->statePort() != nullptr;
+  return mistThisFrame(screen, scenes.mist, story && scenes.trigger(MistGoneTrigger),
+                       story && scenes.trigger(SewerMistGoneTrigger));
+}
+
 void StoryScenes::partnerSceneFinished() {
   context_->sync.finish();
   if (context_->desc.story != nullptr) {

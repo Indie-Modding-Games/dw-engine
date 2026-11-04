@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <optional>
@@ -91,8 +92,8 @@ inline constexpr std::int32_t ToyTownLidOpen = -0x400;
 
 // The Misty Trees' mist (overworld.c: renderMist, MIST_CLUT_Y): the columns of the palettes its
 // second layer reads, one for mist05 (screen 0x77) and one for the other mist maps. Both start at
-// boot and never go back; 0xc0 and 0x80 are the palettes of no mist. The engine does not draw the
-// mist yet: this is the state its drawing reads.
+// boot and never go back; 0xc0 and 0x80 are the palettes of no mist. The field draws the mist with
+// the palettes mistThisFrame gives.
 struct MistPalettes {
   std::int32_t mist05 = 0x50;
   std::int32_t others = 0x10;
@@ -111,6 +112,43 @@ inline constexpr std::int32_t MistKeptScreen = 0xdc;
     return true;
   }
   return false;
+}
+
+// The screens renderMapOverlays draws the mist on: the Misty Trees but mist06 (115-119, 121) and
+// the two sewer screens 0xa3 and 0xdc (renderMist).
+inline constexpr std::array<std::int32_t, 8> MistScreens{115, 116, 117, 118, 119, 121, 0xa3, 0xdc};
+// mist05, the screen whose second layer reads MistPalettes::mist05.
+inline constexpr std::int32_t MistTreesCherrymonScreen = 0x77;
+// The sewer screens draw both layers with palette 0 until trigger 0x155 takes the mist away.
+inline constexpr std::array<std::int32_t, 2> SewerMistScreens{0xa3, 0xdc};
+inline constexpr std::int64_t SewerMistGoneTrigger = 0x155;
+// The palettes the mist's two layers read this frame, as the column of the CLUT row 0x1e6 over 16
+// (GetClut(x, 0x1e6)): a palette of the first 4-bit page of the map.
+struct MistLook {
+  std::int32_t backPalette = 0;
+  std::int32_t frontPalette = 0;
+};
+// renderMist on `screen`: nothing off the mist screens or on a sewer screen with trigger 0x155;
+// otherwise trigger 0x94 clears the mist (but on 0xdc) before the palettes are read, as every frame
+// drawn with it does. The back layer always reads palette 0; the front one palette 0 on the sewer
+// screens, else the column of mist05 or of the others.
+[[nodiscard]] constexpr std::optional<MistLook>
+mistThisFrame(std::int32_t screen, MistPalettes& mist, bool goneTrigger, bool sewerGoneTrigger) {
+  if (std::ranges::find(MistScreens, screen) == MistScreens.end()) {
+    return std::nullopt;
+  }
+  const bool sewer = std::ranges::find(SewerMistScreens, screen) != SewerMistScreens.end();
+  if (sewer && sewerGoneTrigger) {
+    return std::nullopt;
+  }
+  if (screen != MistKeptScreen && goneTrigger) {
+    mist = {.mist05 = MistClearedMist05, .others = MistClearedOthers};
+  }
+  constexpr std::int32_t ClutColumns = 16;
+  const std::int32_t column = sewer                                ? 0
+                              : screen == MistTreesCherrymonScreen ? mist.mist05
+                                                                   : mist.others;
+  return MistLook{.backPalette = 0, .frontPalette = column / ClutColumns};
 }
 
 // Routines 45 and 46 (fade.c: fadeToWhite, fadeFromWhite): the screen fades to white, or back from

@@ -4,7 +4,10 @@
 #include <dwe/core/log.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <format>
+#include <iterator>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -136,6 +139,81 @@ void FieldScene::advanceObjectSmoke(double seconds) {
       }
     }
   }
+}
+
+std::optional<std::int32_t> FieldScene::screenNumber() const {
+  const assets::MapEntry* entry = mapTable_ ? mapTable_->find(map_.document.id) : nullptr;
+  if (entry == nullptr || !entry->originalIndex) {
+    return std::nullopt;
+  }
+  return entry->index;
+}
+
+std::optional<rhi::TextureId> FieldScene::mistTexture(std::int32_t palette) {
+  if (const auto found = mistTextures_.find(palette); found != mistTextures_.end()) {
+    return found->second;
+  }
+  std::optional<rhi::TextureId> texture;
+  if (auto image = mistImage(map_.images, palette)) {
+    if (auto made = renderer_->queueTexture({.width = image->width, .height = image->height},
+                                            image->pixels)) {
+      texture = *made;
+    } else {
+      core::logWarning("field: no texture for the mist of {}: {}", map_.document.id,
+                       made.error().message);
+    }
+  } else {
+    // Palettes with no colour (the cleared mist's) and maps without the picture draw nothing.
+    core::logDebug("field: map {} has no mist picture with palette {}", map_.document.id, palette);
+  }
+  mistTextures_.emplace(palette, texture);
+  return texture;
+}
+
+void FieldScene::releaseMistTextures() {
+  for (const auto& [palette, texture] : mistTextures_) {
+    if (texture) {
+      renderer_->destroyTexture(*texture);
+    }
+  }
+  mistTextures_.clear();
+}
+
+void FieldScene::addMist(std::vector<ScenePrim>& prims, double frameSeconds, bool paused) {
+  const render::MapCamera& camera = mapRenderer_->camera();
+  const glm::vec2 scroll = camera.scroll();
+  const glm::ivec2 cameraNow{static_cast<std::int32_t>(std::floor(scroll.x)),
+                             static_cast<std::int32_t>(std::floor(scroll.y))};
+  const bool drawn = mistShown_ && !mapLayerHidden_ && !stage_.sceneryHidden && !stage_.camera;
+  // map.c: renderMap runs renderMist once a frame of the original, 20 a second, the pause
+  // menu's included (PLAYTIME_FRAMES counts on under it); the field's own pause stops it.
+  const double originalFrame = field_->rules().transition.frameSeconds;
+  if (!paused && originalFrame > 0.0) {
+    mistSeconds_ += frameSeconds;
+    while (mistSeconds_ >= originalFrame) {
+      mistSeconds_ -= originalFrame;
+      if (drawn) {
+        ++mistFrames_;
+        mist_.frame(cameraNow, mistFrames_ % 2 == 0);
+      } else {
+        mist_.keepCamera(cameraNow);
+      }
+    }
+  }
+  if (!drawn) {
+    return;
+  }
+  // Between two frames of the original the layers keep up with the camera, as they would on its
+  // next frame: no shudder against the background.
+  const glm::vec2 shift = glm::vec2{mist_.camera()} - scroll;
+  const render::PixelRect inside = camera.backgroundRect();
+  const glm::vec2 centre = camera.viewportSize() * 0.5F;
+  const float scale = camera.scale();
+  const glm::vec2 areaMin = (inside.origin - centre) / scale;
+  const glm::vec2 areaMax = (inside.origin + inside.size - centre) / scale;
+  const MistTextures textures{.back = mistTexture(mistShown_->back),
+                              .front = mistTexture(mistShown_->front)};
+  std::ranges::move(mistPrims(mist_, textures, shift, areaMin, areaMax), std::back_inserter(prims));
 }
 
 } // namespace dwe::app

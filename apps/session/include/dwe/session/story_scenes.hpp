@@ -243,6 +243,10 @@ public:
   // Whether routine 53 ended the game since the last call: the app closes it, plays the ending
   // movie and goes back to the title (main.c: main, MAIN_STATE 3).
   [[nodiscard]] bool takeGameEnded();
+  // What the mist of the field's `screen` draws this frame (story_props.hpp: mistThisFrame): its
+  // drawing reads the story's triggers and clears the mist's palettes as the original's renderMist
+  // does, once a frame drawn. Nothing off the mist screens.
+  [[nodiscard]] std::optional<MistLook> mistOn(std::int32_t screen);
   void partnerSceneFinished();
   // Whether the story plays the lost lives, the deaths and the rebirths as partner scenes; the app
   // then plays them when the story asks, not when the partner's events come.

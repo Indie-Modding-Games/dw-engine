@@ -300,6 +300,46 @@ TEST_CASE("the mist goes in 7 frames from the boot palettes and in 1 once the tr
   CHECK(scenes.routines.registered(37));
 }
 
+TEST_CASE("the mist shows on its screens with the palettes the story leaves (renderMist)") {
+  using dwe::session::MistLook;
+  using dwe::session::MistPalettes;
+  using dwe::session::mistThisFrame;
+  MistPalettes mist;
+  // renderMapOverlays: 115-119, 121, 0xa3 and 0xdc; not mist06 (120) nor File City.
+  CHECK_FALSE(mistThisFrame(120, mist, false, false).has_value());
+  CHECK_FALSE(mistThisFrame(204, mist, false, false).has_value());
+  // MIST_CLUT_Y 0x10 for mist01-04 and 07, 0x50 for mist05 (0x77): palettes 1 and 5.
+  const auto mist01 = mistThisFrame(115, mist, false, false);
+  REQUIRE(mist01.has_value());
+  CHECK(mist01->backPalette == 0);
+  CHECK(mist01->frontPalette == 1);
+  const auto mist05 = mistThisFrame(0x77, mist, false, false);
+  REQUIRE(mist05.has_value());
+  CHECK(mist05->frontPalette == 5);
+  // The sewer: palette 0 for both layers, whatever MIST_CLUT_Y holds; gone with trigger 0x155.
+  const auto sewer = mistThisFrame(0xa3, mist, false, false);
+  REQUIRE(sewer.has_value());
+  CHECK(sewer->frontPalette == 0);
+  CHECK_FALSE(mistThisFrame(0xdc, mist, false, true).has_value());
+  CHECK(mistThisFrame(117, mist, false, true).has_value());
+  // Trigger 0x94 on 0xdc leaves the palettes as they are; on any other mist screen it clears them
+  // for good (measured: MIST_CLUT_Y 0xc0 and 0x80 frames after setting it on mist01).
+  CHECK(mistThisFrame(0xdc, mist, true, false).has_value());
+  CHECK(mist.mist05 == 0x50);
+  const auto cleared = mistThisFrame(116, mist, true, false);
+  REQUIRE(cleared.has_value());
+  CHECK(cleared->backPalette == 0);
+  CHECK(cleared->frontPalette == 8);
+  CHECK(mist.mist05 == 0xc0);
+  CHECK(mist.others == 0x80);
+  // Off the trigger the palettes stay cleared; mist05 reads palette 12.
+  CHECK(mistThisFrame(0x77, mist, false, false)->frontPalette == 12);
+  // Off the mist screens nothing changes.
+  MistPalettes untouched;
+  CHECK_FALSE(mistThisFrame(1, untouched, true, false).has_value());
+  CHECK(untouched.mist05 == 0x50);
+}
+
 TEST_CASE("routines 51 and 52 load the boss's and the ending's sound banks and go on") {
   // script_interp.c:1846, 1853: loadMapSounds2(0x15) and loadMapSounds2(0x14).
   CHECK(dwe::session::loadRoutineSounds(51) == 0x15);

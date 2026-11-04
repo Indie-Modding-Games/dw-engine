@@ -118,6 +118,14 @@ void FieldStoryProps::update(session::StoryScenes& scenes) {
   while (const auto request = scenes.takePropRequest()) {
     take(*request);
   }
+  // renderMapOverlays draws the mist on its screens, with the palettes the story leaves.
+  std::optional<MistPalettesShown> mist;
+  if (const std::optional<std::int32_t> screen = scene_->screenNumber()) {
+    if (const std::optional<session::MistLook> look = scenes.mistOn(*screen)) {
+      mist = MistPalettesShown{.back = look->backPalette, .front = look->frontPalette};
+    }
+  }
+  scene_->setMist(mist);
 }
 
 void FieldStoryProps::clearMapParts() {

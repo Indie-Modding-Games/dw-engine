@@ -476,6 +476,9 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
     lastChange_ = std::move(timing);
   }
   map_ = std::move(*scene);
+  // The mist's pictures are the map's; its layers carry on (overworld.c keeps them across maps).
+  releaseMistTextures();
+  mistShown_.reset();
   mapNameKey_ = std::move(nameKey);
   ++mapSerial_;
   arrival_ = {.exit = at ? std::nullopt : std::optional<std::int32_t>{exit}, .trigger = 0};
@@ -956,6 +959,9 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
     addBattleVisualPrims(prims);
     addStorySprites(prims);
     addPointQuads(prims);
+    // The mist (ordering-table entry 20) in front of the map's characters and effects, behind the
+    // story's screen primitives (the shake's square, entry 9).
+    addMist(prims, frameSeconds, paused);
     prims.insert(prims.end(), storyScreenPrims_.begin(), storyScreenPrims_.end());
   }
   primDrawer_->set(std::move(prims), mapRenderer_->camera().scale());

@@ -43,6 +43,7 @@
 
 #include "evolution_effects.hpp"
 #include "field_effects.hpp"
+#include "field_mist.hpp"
 #include "fighter_figure.hpp"
 #include "place_command.hpp"
 #include "scene_effect.hpp"
@@ -302,6 +303,11 @@ public:
   // Primitives the story draws over the whole field picture, in front of everything the map draws
   // and behind the interface, until replaced (the shake's red square: field_story_props.hpp).
   void setStoryScreenPrims(std::vector<ScenePrim> prims) { storyScreenPrims_ = std::move(prims); }
+  // The mist's palettes this frame (field_mist.hpp), from the story (session::StoryScenes::mistOn);
+  // nothing draws no mist.
+  void setMist(std::optional<MistPalettesShown> mist) { mistShown_ = mist; }
+  // The original's number of the map shown (MapEntry::index), nothing for a map a pack added.
+  [[nodiscard]] std::optional<std::int32_t> screenNumber() const;
   // A minigame's quads at world points, until replaced (the curling's aim line).
   void setPointQuads(std::vector<PointQuad> quads) { pointQuads_ = std::move(quads); }
   // While held the camera stays where it points: map.c: tickCameraFollowPlayer follows the player
@@ -920,9 +926,20 @@ private:
   std::vector<StorySprite> storySprites_;
   std::vector<scene::Entity> hiddenNpcs_;
   std::vector<ScenePrim> storyScreenPrims_;
+  // The mist (overworld.c: renderMist): its layers, the original's frames drawn and the time
+  // toward the next one, and its textures for this map by palette.
+  std::optional<MistPalettesShown> mistShown_;
+  MistLayers mist_;
+  std::uint32_t mistFrames_ = 0;
+  double mistSeconds_ = 0.0;
+  std::map<std::int32_t, std::optional<rhi::TextureId>> mistTextures_;
   std::vector<PointQuad> pointQuads_;
   void addStorySprites(std::vector<ScenePrim>& prims);
   void addPointQuads(std::vector<ScenePrim>& prims);
+  // The mist's frames since the last update and its layers (field_mist.hpp).
+  void addMist(std::vector<ScenePrim>& prims, double frameSeconds, bool paused);
+  [[nodiscard]] std::optional<rhi::TextureId> mistTexture(std::int32_t palette);
+  void releaseMistTextures();
 };
 
 // Where the player stands on the window, in percent (the settings field.player_x and

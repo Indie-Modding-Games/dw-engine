@@ -468,7 +468,8 @@ uploadModelTexture = { status = "no-aplica", note = "subida de textura del origi
 clearMapObjects = { status = "no-aplica", note = "limpieza del original", what = "Quita los objetos del mapa." }
 moveMapObjects = { status = "portado", dwe = "game/field/src/map_objects.cpp", what = "Mueve los objetos del mapa con el guion." }
 spawnSpriteAtEntity = { status = "portado", dwe = "apps/game/src/field_story_props.cpp", note = "Con tests de la sesión; la trampa de trop06 se ve en route-etapa2-amida-trap y coincide con el original.", what = "Pone un sprite (humo, signo) sobre un personaje." }
-tickRemoveMist = { status = "portado", dwe = "apps/session/src/story_routines/routine_remove_mist.cpp", what = "Disipa la niebla del mapa.", note = "la niebla aún no se dibuja (renderMist)" }
+tickRemoveMist = { status = "portado", dwe = "apps/session/src/story_routines/routine_remove_mist.cpp", what = "Disipa la niebla del mapa.", note = "la niebla se dibuja con renderMist (apps/game field_mist.cpp)" }
+renderMist = { status = "portado", dwe = "apps/game/src/field_mist.cpp", what = "Dibuja la niebla de Misty Trees y de la cloaca: dos capas que siguen a la cámara.", note = "medido en mist01 y mist05; paletas por StoryScenes::mistOn" }
 loadNPCModel = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Carga el modelo de un personaje del mapa." }
 NPCEntityTick = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Mueve a un personaje del mapa cada fotograma." }
 clearMapDigimon = { status = "portado", dwe = "game/field/src/npcs.cpp:102", what = "Quita los personajes del mapa." }

@@ -258,6 +258,26 @@ cambiar de mapa.
   `ObjectSmoke` mueve los 41 primeros objetos del mapa a la derecha y abajo con pasos al azar, los devuelve a su sitio
   al pasar de x 160, los pone en la entrada 10 de la tabla de orden (`MapDepthLayers::setOrderValue`) y los esconde a
   los 60 cuadros.
+- Niebla de Misty Trees y de dos pantallas de la cloaca (`overworld.c: renderMist`, que llama `renderMapOverlays` en
+  las pantallas 115-119, 121, 0xa3 y 0xdc): `MistLayers` (`field_mist.cpp`) y `FieldScene::addMist`. Dos capas de la
+  misma imagen, los 256 x 200 téxeles de la página de 4 bits en x 0x2c0 de la VRAM (la segunda imagen de 4 bits del
+  mapa, o la única en la cloaca), estiradas sobre la pantalla de 320 x 240 y repetidas: la de atrás (paleta 0, tono
+  0x96, B + F/4) se mueve con la cámara y deriva 1 px a la izquierda cada dos cuadros; la de delante, en espejo
+  (tono 0x50, B + F), se mueve 12/10 de la cámara (truncado por cuadro, como el original) y deriva a la derecha; las dos
+  filas siguen solo los movimientos verticales de la cámara. Va delante del mapa, los personajes y sus efectos (entrada
+  20 de la tabla de orden) y detrás de la interfaz. La paleta de la capa de delante es la de `MIST_CLUT_Y` (columna /
+  16: 1 en mist01-04 y 07, 5 en mist05) y la da la historia (`StoryScenes::mistOn`, `story_props.hpp:
+  mistThisFrame`): el disparador 0x94 la deja en 8 / 12, sin color, y solo queda la capa de atrás; en la cloaca las dos
+  usan la paleta 0 y el disparador 0x155 quita la niebla. Entre dos cuadros del original las capas siguen a la cámara
+  para no temblar contra el fondo; en una ventana más ancha la niebla llega a sus bordes y no a las barras.
+
+| Niebla | Original (medido 2026-11-03, mist01 y mist05) | dwe | Estado |
+|---|---|---|---|
+| Deriva parado | `MIST_X_OFFSETS[0]` -51 y `MAIN_D_80134228[0]` +51 en 100 cuadros de `PLAYTIME_FRAMES`; sigue con el menú abierto | -1 / +1 cada cuadro par (10 px/s) | Igual |
+| Cámara | cámara +160 x, -47 y en 21 cuadros: capa de atrás -171 (-160 y la deriva), delante -177 con la deriva (12/10 truncado), filas +47 | misma cuenta (`field_mist_tests.cpp`) | Igual |
+| Paletas | `MIST_CLUT_Y` 0x50 / 0x10 al llegar; 0xc0 / 0x80 unos cuadros después de poner el disparador 0x94 | 5 / 1 y 12 / 8 | Igual |
+| Orden | cubre al jugador y al compañero; el reloj, las barras y el menú quedan encima | igual (contact sheet en `_work/tmp/w19-fog/`) | Igual |
+| Al entrar en un mapa | la cámara anterior (`CAMERA_X_PREVIOUS`) da un salto de fase; se envuelve un paso por cuadro | igual, con la cámara de dwe | Suposición (no medido) |
 
 Medido en el original (2026-10-31): las nubes y chispas del gimnasio (`TRN_tickDefenseTraining`, estado
 `trn_def_normal_bonus`) las crea una rutina de la lista de objetos y `tickObjects` las avanza el mismo cuadro, así que
