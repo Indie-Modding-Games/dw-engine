@@ -41,8 +41,8 @@ button:active {
 	min-width: 18dp;
 	padding: 1dp 8dp;
 	margin-right: 6dp;
-	border-radius: 5dp;
-	border: 1dp #c9d3de;
+	border-radius: 4dp;
+	border: 1dp #5d6a7c;
 	font-weight: bold;
 	font-size: 14dp;
 	text-align: center;

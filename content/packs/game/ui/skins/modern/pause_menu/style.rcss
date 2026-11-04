@@ -1,4 +1,15 @@
-/* The pause menu: a panel centred over the dimmed game. */
+/* The pause menu in the modern look: one panel centred over the dimmed game. Many screens share this sheet (the title
+   menu, the save slots, the dialogs, the shop, the sleep menu...), so it is the modern look's panel and entry.
+
+   The look (docs/architecture/ui.md, «Aspecto moderno»): a slate panel with a hairline border and rounded corners,
+   the title in bold over a hairline divider, entries as rows that the focus tints amber with an amber bar at their
+   left edge, the button prompts at the panel's foot. Sizes follow the type scale of ../theme.rcss: 30dp titles, 18dp
+   entries, 14dp captions. Colours:
+     #121922f2 panel, #263243 its border, #243042 dividers, #1a2330 insets
+     #e9eef5 text, #9aa8ba secondary text, #5d6a7c disabled text
+     #f2a93b accent (title, focus bar, values of the focused row), #f2a93b29 the focus tint
+   The original look extends this one and marks its panels with the class skin-original (its skin.yaml): the rules it
+   does not write itself are kept off its panels with #panel:not(.skin-original). */
 
 #scrim {
 	position: absolute;
@@ -6,7 +17,7 @@
 	top: 0;
 	width: 100%;
 	height: 100%;
-	background-color: #05080ca8;
+	background-color: #06090dc0;
 	/* Centres the panel without transforms, so the pointer hits where the layout says. */
 	display: flex;
 	align-items: center;
@@ -15,17 +26,91 @@
 
 #panel {
 	width: 440dp;
-	padding: 22dp 24dp 16dp 24dp;
-	border-radius: 14dp;
-	background-color: #151b24f0;
-	border: 1dp #2e3a4a;
+	padding: 20dp 20dp 14dp 20dp;
+	border-radius: 12dp;
+	background-color: #121922f2;
+	border: 1dp #263243;
+}
+
+/* The panel fades in when the menu opens: the page's logic puts .panel-enter on it for a frame (panel_enter.lua). */
+#panel:not(.skin-original) {
+	transition: opacity 0.14s cubic-out;
+}
+
+#panel:not(.skin-original).panel-enter {
+	opacity: 0;
 }
 
 #title {
 	font-size: 30dp;
 	font-weight: bold;
-	color: #f0a73a;
-	margin: 0 0 14dp 18dp;
+	color: #e9eef5;
+	margin: 0 0 12dp 0;
+	padding: 0 12dp 10dp 12dp;
+	border-bottom: 1dp #243042;
+}
+
+/* The main page's subtitle: the in-game date, «Year 1  Day 1», under the title (the original look draws it as the
+   menu's own heading). */
+#panel:not(.skin-original).on-main #title {
+	margin-bottom: 0;
+	padding-bottom: 0;
+	border-bottom: 0;
+}
+
+#panel:not(.skin-original).on-main #title-date {
+	display: block;
+	margin: 2dp 0 10dp 0;
+	padding: 0 12dp 10dp 12dp;
+	border-bottom: 1dp #243042;
+	font-size: 14dp;
+	font-weight: normal;
+	color: #9aa8ba;
+}
+
+#panel:not(.skin-original) #field-year-digits, #panel:not(.skin-original) #field-day-digits {
+	margin: 0 14dp 0 5dp;
+	font-weight: bold;
+	color: #e9eef5;
+}
+
+/* An entry: a row 40dp high, its text at the left. The amber bar at its left edge is always there, transparent until
+   the row takes the focus, so the text never moves. */
+#panel:not(.skin-original) button {
+	height: 40dp;
+	margin: 1dp 0;
+	padding: 0 12dp 0 9dp;
+	border-left: 3dp transparent;
+	border-radius: 6dp;
+	line-height: 40dp;
+	color: #c9d3de;
+	background-color: transparent;
+	transition: background-color color border-left-color 0.1s cubic-out;
+}
+
+#panel:not(.skin-original) button:hover {
+	background-color: #ffffff0d;
+}
+
+#panel:not(.skin-original) button:focus {
+	border-left-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
+}
+
+#panel:not(.skin-original) button:active {
+	background-color: #f2a93b47;
+}
+
+#panel:not(.skin-original) button.unavailable {
+	color: #5d6a7c;
+	opacity: 1;
+}
+
+/* Groups of the main page: the menu's own entries, the partner's and the player's, and leaving the game, a hairline
+   apart. */
+#panel:not(.skin-original).on-main #open-items, #panel:not(.skin-original).on-main #to-title {
+	margin-top: 9dp;
 }
 
 .option .label {
@@ -35,11 +120,16 @@
 .option .value {
 	float: right;
 	font-weight: bold;
+	color: #9aa8ba;
+}
+
+#panel:not(.skin-original) button.option:focus .value {
+	color: #f2a93b;
 }
 
 .back {
-	margin-top: 12dp;
-	color: #9aa7b6;
+	margin-top: 10dp;
+	color: #9aa8ba;
 }
 
 /* The options list scrolls once its rows pass the height a 1280x720 window leaves it; the focused row is scrolled into
@@ -50,26 +140,46 @@
 }
 
 #page-options scrollbarvertical {
-	width: 6dp;
-	margin-left: 6dp;
+	width: 4dp;
+	margin-left: 8dp;
 }
 
 #page-options scrollbarvertical slidertrack {
-	background-color: #0c1118;
+	background-color: #1a2330;
+	border-radius: 2dp;
 }
 
 #page-options scrollbarvertical sliderbar {
 	min-height: 24dp;
-	border-radius: 3dp;
-	background-color: #2e3a4a;
+	border-radius: 2dp;
+	background-color: #3a4a5e;
+}
+
+/* The player page's rows: a label and its value, as the options. */
+#panel:not(.skin-original) .player-line {
+	margin: 0;
+	padding: 6dp 12dp;
+	color: #9aa8ba;
+}
+
+#panel:not(.skin-original) .player-value {
+	font-weight: bold;
+	color: #e9eef5;
+}
+
+#panel:not(.skin-original) #player-profile {
+	margin-bottom: 8dp;
+	padding: 4dp 0;
+	border-radius: 8dp;
+	background-color: #1a2330;
 }
 
 #prompts {
-	margin-top: 18dp;
-	padding-top: 12dp;
-	border-top: 1dp #2e3a4a;
+	margin-top: 14dp;
+	padding-top: 10dp;
+	border-top: 1dp #243042;
 	font-size: 14dp;
-	color: #9aa7b6;
+	color: #9aa8ba;
 	text-align: right;
 }
 

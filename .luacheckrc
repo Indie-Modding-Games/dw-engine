@@ -13,7 +13,10 @@ ignore = { "212/_.*" }
 files["content/packs/*/ui/**/*.lua"] = {
   allow_defined_top = true,
   ignore = { "131" },
-  read_globals = { "ui", "t", "document_name", "skin_choice", "original_box", "bag_slot" },
+  read_globals = {
+    "ui", "t", "document_name", "skin_choice", "original_box", "bag_slot", "game_options",
+    "panel_enter",
+  },
 }
 
 -- The skin entry the main menu and the pause menu share, loaded into both documents.
@@ -24,6 +27,16 @@ files["content/packs/*/ui/common/ui_skin_choice.lua"] = {
 -- The original look's animated boxes, loaded into the menus that open and close them.
 files["content/packs/*/ui/common/original_box.lua"] = {
   globals = { "original_box" },
+}
+
+-- The menu panel's short fade when a document opens (only the look), loaded into the menus.
+files["content/packs/*/ui/common/panel_enter.lua"] = {
+  globals = { "panel_enter" },
+}
+
+-- The game options the menus share, loaded into the documents that show them.
+files["content/packs/*/ui/common/game_options.lua"] = {
+  globals = { "game_options" },
 }
 
 -- One bag slot (icon, name, count), loaded into the documents that list the bag.

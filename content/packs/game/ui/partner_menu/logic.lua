@@ -814,6 +814,7 @@ local function step_box(document, step)
 end
 
 function on_show(document)
+  panel_enter.start(document)
   status_condition_bob = nil
   tech_info_focus = nil
   editing_tech = false
@@ -866,6 +867,7 @@ end
 
 function on_tick(document, seconds)
   original_box.tick(document, seconds)
+  panel_enter.tick(document)
   tech_icon_time = tech_icon_time + seconds
   if current == "status" and ui.setting("ui_skin") == "original" then
     document:get("scrim"):set_class("status-alternate", math.floor(tech_icon_time * 20) % 10 >= 5)

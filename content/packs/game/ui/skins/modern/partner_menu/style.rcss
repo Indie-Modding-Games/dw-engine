@@ -315,3 +315,357 @@ button:focus .original-look, button.original-look:focus {
 #scrim.status-extras #conditions { top: 162dp; }
 #scrim.status-extras #tiredness-row { display: flex; }
 #tiredness-fill { background-color: #b49cff; }
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The modern look of the partner's menu (docs/architecture/ui.md, «Aspecto moderno»): the panel, entries and prompts
+   of the pause menu (../pause_menu/style.rcss), its type scale and its colours. Everything is written in the modern
+   font, also the texts the documents mark .original-look: the «Original-look text» option is for the texts that
+   imitate the original (the map's name, the story's box, the battle, the original's shop boxes), not for this look's
+   own menus. The original look extends this sheet and marks its panel skin-original, so these rules stay off it. */
+
+#panel:not(.skin-original) .original-look,
+#panel:not(.skin-original) ~ .box .original-look,
+#panel:not(.skin-original) ~ .box.original-look,
+#panel:not(.skin-original) ~ .box button.original-look {
+	font-family: "Noto Sans";
+}
+
+#panel:not(.skin-original) {
+	width: 760dp;
+	padding: 16dp 24dp 14dp 24dp;
+	border-radius: 12dp;
+	background-color: #121922f2;
+	border: 1dp #263243;
+	transition: opacity 0.14s cubic-out;
+}
+
+#panel:not(.skin-original).panel-enter {
+	opacity: 0;
+}
+
+/* The tabs: words in the secondary colour, the open page's in the text colour and bold over an amber underline. */
+#panel:not(.skin-original) #tabs {
+	margin-bottom: 14dp;
+	padding-bottom: 0;
+	border-bottom: 1dp #243042;
+}
+
+#panel:not(.skin-original) .tab {
+	display: inline-block;
+	height: 36dp;
+	margin: 0 4dp 0 0;
+	padding: 0 14dp;
+	border: 0;
+	border-bottom: 2dp transparent;
+	border-radius: 6dp 6dp 0 0;
+	line-height: 34dp;
+	font-size: 18dp;
+	color: #9aa8ba;
+	background-color: transparent;
+	transition: background-color color 0.1s cubic-out;
+}
+
+#panel:not(.skin-original) .tab:hover {
+	background-color: #ffffff0d;
+}
+
+#panel:not(.skin-original) .tab.selected {
+	font-weight: bold;
+	color: #e9eef5;
+	border-bottom-color: #f2a93b;
+}
+
+#panel:not(.skin-original) .tab:focus, #panel:not(.skin-original) .tab.selected:focus {
+	background-color: #f2a93b29;
+	color: #ffffff;
+}
+
+#panel:not(.skin-original) #close {
+	float: right;
+	margin-right: 0;
+}
+
+/* The status page: the portrait and the profile on top, the parameters and the condition below in two cards. */
+#panel:not(.skin-original) #page-status { height: 420dp; }
+#panel:not(.skin-original) #partner-portrait-clip { border-radius: 10dp; background-color: #1a2330; }
+
+#panel:not(.skin-original) #status-head {
+	height: 40dp;
+	font-size: 30dp;
+	font-weight: bold;
+	line-height: 40dp;
+	color: #e9eef5;
+}
+
+#panel:not(.skin-original) #status-name { color: #e9eef5; }
+
+/* The lives: a small amber pill at the profile's right. */
+#panel:not(.skin-original) #status-lives {
+	float: right;
+	margin-top: 8dp;
+	padding: 0 10dp;
+	height: 24dp;
+	border-radius: 12dp;
+	font-size: 14dp;
+	font-weight: bold;
+	line-height: 24dp;
+	color: #f2a93b;
+	background-color: #f2a93b29;
+}
+
+/* The profile's rows: a label and its value, 28dp apart. */
+#panel:not(.skin-original) .status-line,
+#panel:not(.skin-original) #status-mistakes {
+	height: 28dp;
+	font-size: 18dp;
+	line-height: 28dp;
+}
+
+#panel:not(.skin-original) .status-line .original-look,
+#panel:not(.skin-original) #status-mistakes-label {
+	color: #9aa8ba;
+}
+
+#panel:not(.skin-original) .status-line .line-value,
+#panel:not(.skin-original) #status-mistakes-value {
+	font-weight: bold;
+	color: #e9eef5;
+}
+
+#panel:not(.skin-original) #status-head,
+#panel:not(.skin-original) .status-line,
+#panel:not(.skin-original) #status-mistakes,
+#panel:not(.skin-original) #conditions { width: 560dp; }
+#panel:not(.skin-original) #status-species-line { top: 46dp; }
+#panel:not(.skin-original) #status-age-line { top: 74dp; }
+#panel:not(.skin-original) #status-weight-line { top: 102dp; }
+#panel:not(.skin-original) #status-mistakes { top: 130dp; }
+#panel:not(.skin-original) #conditions { top: 146dp; }
+#scrim.status-extras #panel:not(.skin-original) #conditions { top: 162dp; }
+
+/* The conditions (hungry, sleepy...): chips in the pink of the HUD's needs. */
+#panel:not(.skin-original) #conditions { font-size: 14dp; }
+#panel:not(.skin-original) .condition {
+	display: inline-block;
+	margin: 0 6dp 0 0;
+	padding: 0 10dp;
+	height: 24dp;
+	border-radius: 12dp;
+	line-height: 24dp;
+	font-weight: bold;
+	color: #f4a6e6;
+	background-color: #e07ad029;
+}
+
+#panel:not(.skin-original) #status-parameters,
+#panel:not(.skin-original) #status-condition {
+	top: 196dp;
+	width: 370dp;
+	height: 220dp;
+	box-sizing: border-box;
+	padding: 38dp 14dp 10dp 14dp;
+	border-radius: 10dp;
+	background-color: #1a2330;
+}
+
+#panel:not(.skin-original) #status-condition { left: 390dp; }
+
+/* The cards' headings, over the cards. */
+#panel:not(.skin-original) #parameter-heading,
+#panel:not(.skin-original) #condition-heading {
+	display: block;
+	position: absolute;
+	top: 208dp;
+	z-index: 2;
+	font-size: 14dp;
+	font-weight: bold;
+	color: #9aa8ba;
+	decorator: none;
+}
+
+#panel:not(.skin-original) #parameter-heading { left: 14dp; }
+#panel:not(.skin-original) #condition-heading { left: 404dp; }
+
+#panel:not(.skin-original) .bar-row {
+	display: flex;
+	align-items: center;
+	height: 28dp;
+	margin: 0;
+	font-size: 18dp;
+}
+
+#panel:not(.skin-original) .bar-row .label {
+	width: 64dp;
+	color: #9aa8ba;
+}
+
+#panel:not(.skin-original) #status-condition .bar-row .label { width: 96dp; }
+
+#panel:not(.skin-original) .bar {
+	flex: 1;
+	height: 6dp;
+	margin: 0 10dp;
+	border-radius: 3dp;
+	background-color: #263243;
+}
+
+#panel:not(.skin-original) .fill { border-radius: 3dp; }
+#panel:not(.skin-original) .stat .fill { background-color: #f2a93b; }
+#panel:not(.skin-original) #pool-0-fill { background-color: #6fd18f; }
+#panel:not(.skin-original) #pool-1-fill { background-color: #6fc3ff; }
+#panel:not(.skin-original) .meter .fill { background-color: #6fc3ff; }
+#panel:not(.skin-original) .meter .fill.high { background-color: #ffd34f; }
+#panel:not(.skin-original) #tiredness-fill { background-color: #b49cff; }
+
+#panel:not(.skin-original) .bar-row .value {
+	width: 88dp;
+	text-align: right;
+	font-weight: bold;
+	color: #e9eef5;
+}
+
+#panel:not(.skin-original) #status-condition .bar-row .value { width: 36dp; }
+
+/* The bag: two columns of slots, the item's icon at their left, its count at their right. */
+#panel:not(.skin-original) #bag-grid { margin: 0 -4dp; }
+
+#panel:not(.skin-original) .slot {
+	display: inline-block;
+	box-sizing: border-box;
+	width: 50%;
+	height: 44dp;
+	margin: 0;
+	padding: 0 12dp 0 9dp;
+	border: 0;
+	border-left: 3dp transparent;
+	border-radius: 6dp;
+	line-height: 44dp;
+	font-size: 22dp;
+	color: #e9eef5;
+	background-color: transparent;
+	transition: background-color color 0.1s cubic-out;
+}
+
+#panel:not(.skin-original) .slot:hover { background-color: #ffffff0d; }
+
+/* The slot whose options are open keeps its bar while the box has the focus. */
+#panel:not(.skin-original) .slot.picked {
+	border-left-color: #f2a93b;
+	background-color: #f2a93b1a;
+}
+
+#panel:not(.skin-original) .slot:focus {
+	border-left-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
+}
+
+#panel:not(.skin-original) .slot .original-look { color: #e9eef5; }
+#panel:not(.skin-original) .slot:focus .original-look { color: #ffffff; }
+#panel:not(.skin-original) .slot.dimmed .original-look { color: #5d6a7c; }
+/* An empty slot: its dash where an item's name starts, in the disabled colour. */
+#panel:not(.skin-original) .slot.empty .original-look { color: #5d6a7c; }
+#panel:not(.skin-original) .slot.empty .slot-name { padding-left: 42dp; }
+#panel:not(.skin-original) .slot.moving { border-left-color: #6fc3ff; background-color: #6fc3ff29; }
+
+#panel:not(.skin-original) .slot-icon {
+	display: inline-block;
+	width: 32dp;
+	height: 32dp;
+	margin: 0 10dp 0 0;
+	vertical-align: middle;
+}
+
+#panel:not(.skin-original) .slot .slot-count {
+	float: right;
+	font-size: 18dp;
+	font-weight: bold;
+	color: #9aa8ba;
+}
+
+#panel:not(.skin-original) #bag-description {
+	min-height: 48dp;
+	margin-top: 12dp;
+	padding: 12dp 14dp;
+	border: 0;
+	border-radius: 10dp;
+	font-size: 18dp;
+	color: #e9eef5;
+	background-color: #1a2330;
+}
+
+#panel:not(.skin-original) #bag-foot {
+	margin-top: 8dp;
+	font-size: 18dp;
+	color: #9aa8ba;
+}
+
+#panel:not(.skin-original) #bag-money { font-weight: bold; color: #f2a93b; }
+
+/* The care page and the tech page: the pause menu's entries. */
+#panel:not(.skin-original) #page-care button,
+#panel:not(.skin-original) #tech-change {
+	height: 40dp;
+	margin: 1dp 0;
+	padding: 0 12dp 0 9dp;
+	border: 0;
+	border-left: 3dp transparent;
+	border-radius: 6dp;
+	line-height: 40dp;
+	color: #c9d3de;
+	background-color: transparent;
+}
+
+#panel:not(.skin-original) #page-care button:focus,
+#panel:not(.skin-original) #tech-change:focus {
+	border-left-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
+}
+
+#panel:not(.skin-original) .tech-heading { font-size: 14dp; font-weight: bold; color: #9aa8ba; }
+#panel:not(.skin-original) .tech-row { font-size: 18dp; }
+
+/* The boxes over the bag (an item's options, the sort orders, the drop's question): a raised card with the entries of
+   the menu. */
+#panel:not(.skin-original) ~ .box {
+	padding: 8dp;
+	border: 1dp #3a4a5e;
+	border-radius: 10dp;
+	font-size: 18dp;
+	background-color: #18202bfa;
+}
+
+#panel:not(.skin-original) ~ .box button {
+	height: 40dp;
+	margin: 1dp 0;
+	padding: 0 12dp 0 9dp;
+	border: 0;
+	border-left: 3dp transparent;
+	border-radius: 6dp;
+	line-height: 40dp;
+	color: #c9d3de;
+	background-color: transparent;
+}
+
+#panel:not(.skin-original) ~ .box button:focus {
+	border-left-color: #f2a93b;
+	background-color: #f2a93b29;
+	color: #ffffff;
+}
+
+#panel:not(.skin-original) #prompts {
+	margin-top: 14dp;
+	padding-top: 10dp;
+	border-top: 1dp #243042;
+}
+
+/* What the page's logic hides stays hidden under the rules above. */
+#panel:not(.skin-original) .slot.hidden,
+#panel:not(.skin-original) .slot-icon.hidden,
+#panel:not(.skin-original) .condition.hidden,
+#panel:not(.skin-original) #no-condition.hidden {
+	display: none;
+}
+
+#panel:not(.skin-original) #status-name { font-weight: bold; }

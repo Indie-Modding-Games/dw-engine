@@ -34,6 +34,11 @@ constexpr double Tick = 1.0 / 60.0;
 constexpr std::array<std::string_view, 6> Screens{"hud",    "pause_menu",   "main_menu",
                                                   "battle", "partner_menu", "save_slots"};
 
+// The other screens that take the pause menu's panel and entries in both looks (skin.yaml).
+constexpr std::array<std::string_view, 11> PanelScreens{
+    "destination_choice", "dialog",       "new_game_rules", "sleep_menu", "gym_stats", "shop_menu",
+    "naming_box",         "fishing_bait", "fishing_notice", "gym_slots",  "egg_box"};
+
 assets::AssetId idOf(std::string_view text) {
   auto id = assets::AssetId::parse(text);
   REQUIRE(id.has_value());
@@ -304,7 +309,14 @@ TEST_CASE(
   CHECK(ui->skin() == "original");
   CHECK(texts.text(ui->skins().find("original")->nameKey) == "Original");
   loadScreens(*ui);
+  // The screens that share the pause menu's panel, whose panel the skin marks as its own
+  // (skin-original), so the modern look's rules stay off it.
+  for (const std::string_view screen : PanelScreens) {
+    REQUIRE(ui->loadDocument(screen, idOf(std::format("ui/{}/document", screen))));
+  }
   CHECK(ui->checkSkinDocuments().empty());
+  CHECK(ui->elementHasClass("pause_menu", "panel", "skin-original"));
+  CHECK(ui->elementHasClass("dialog", "panel", "skin-original"));
   // The skin marks the field bars to fill in whole pips, as the original.
   CHECK(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
   // Nothing in the skin is refused (RmlUi's own complaints come as warnings too). The stand-in
@@ -315,6 +327,7 @@ TEST_CASE(
   // A switch away takes the classes off, and back puts them on again.
   REQUIRE(ui->setSkin("modern"));
   CHECK_FALSE(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
+  CHECK_FALSE(ui->elementHasClass("pause_menu", "panel", "skin-original"));
   REQUIRE(ui->setSkin("original"));
   CHECK(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
 }
@@ -642,6 +655,7 @@ TEST_CASE("a skin's document classes go on when a document loads and come off on
 
   REQUIRE(ui->setSkin("modern"));
   CHECK_FALSE(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
+  CHECK_FALSE(ui->elementHasClass("pause_menu", "panel", "skin-original"));
   CHECK_FALSE(ui->elementHasClass("hud", "field-meter-0-bar", "wide"));
   CHECK_FALSE(ui->elementHasClass("hud", "field-pool-1-bar", "pips"));
   // A class of the document's own stays: only the classes a skin names come off.

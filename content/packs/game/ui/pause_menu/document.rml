@@ -5,6 +5,7 @@
 	<link type="text/rcss" href="structure.rcss"/>
 	<script src="../common/ui_skin_choice.lua"></script>
 	<script src="../common/original_box.lua"></script>
+	<script src="../common/panel_enter.lua"></script>
 	<script src="../common/game_options.lua"></script>
 	<script src="logic.lua"></script>
 </head>

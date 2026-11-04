@@ -1707,6 +1707,7 @@ function adjust(_document, id, step)
 end
 
 function on_show(document)
+  panel_enter.start(document)
   shown_document = document
   chart_detail = false
   chart_transition = nil
@@ -1744,6 +1745,7 @@ end
 
 function on_tick(document, seconds)
   original_box.tick(document, seconds)
+  panel_enter.tick(document)
   chart_slide_tick(document, seconds)
   if chart_transition then
     chart_transition.elapsed = chart_transition.elapsed + seconds

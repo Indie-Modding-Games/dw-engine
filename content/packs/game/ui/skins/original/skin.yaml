@@ -120,10 +120,38 @@ screens:
 # Las barras del estado del campo se llenan a cuadritos, 25 por barra (partner_impl.c: renderStatusBars).
 document_classes:
   # La portada y su lista de ranuras se maquetan como las del original (ui/main_menu/logic.lua, ui/save_slots/logic.lua).
+  # skin-original marca el panel de las pantallas que comparten las hojas del aspecto moderno (pause_menu,
+  # partner_menu): las reglas que ese aspecto no deja que este herede llevan #panel:not(.skin-original).
   main_menu:
-    panel: [title-original]
+    panel: [title-original, skin-original]
   save_slots:
-    panel: [slots-original]
+    panel: [slots-original, skin-original]
+  pause_menu:
+    panel: [skin-original]
+  partner_menu:
+    panel: [skin-original]
+  destination_choice:
+    panel: [skin-original]
+  dialog:
+    panel: [skin-original]
+  new_game_rules:
+    panel: [skin-original]
+  sleep_menu:
+    panel: [skin-original]
+  gym_stats:
+    panel: [skin-original]
+  shop_menu:
+    panel: [skin-original]
+  naming_box:
+    panel: [skin-original]
+  fishing_bait:
+    panel: [skin-original]
+  fishing_notice:
+    panel: [skin-original]
+  gym_slots:
+    panel: [skin-original]
+  egg_box:
+    panel: [skin-original]
   hud:
     field-meter-0-bar: [pips]
     field-meter-1-bar: [pips]
