@@ -918,14 +918,15 @@ menú del título: `language`, `text_font`) y, debajo, las opciones propias del 
 
 | Cómo se abre | Teclado | Mando |
 |---|---|---|
-| Directamente, también desde la pausa de Start (la cierra) | F10 | Select (Back) |
+| Directamente, también desde la pausa de Start (la cierra) | — (sin atajo: Tab, «Opciones») | Select (Back) |
 | Desde el menú (aspecto moderno) | Tab, «Opciones» | Botón norte, «Opciones» |
 | Desde el menú (aspecto original) | Tab, «Jugador», Tab, «Opciones» | Botón norte, «Jugador», botón norte, «Opciones» |
 
-F10 es la acción `settings` (`defaultActionMap`): con el menú cerrado lo abre en la página de opciones
+Select es la acción `settings` (`defaultActionMap`; el teclado no tiene atajo, las opciones están a un Tab, dentro del
+menú, [controles](../../architecture/controles.md)): con el menú cerrado lo abre en la página de opciones
 (`pause_menu.start_page`, que lee su `on_show`), y Atrás desde ahí vuelve al juego; con el menú abierto lo cierra.
 Donde no hay menú de pausa (título, películas, entrevista, caja de nombres, gimnasio) o con otro menú abierto no hace
-nada. Bajo el recuadro de pausa se lee la tecla («F10 Opciones», con la del dispositivo en uso).
+nada. Bajo el recuadro de pausa, solo con mando, se lee el botón («Select Opciones», con el glifo del mando en uso).
 
 Las opciones propias del motor salen de una lista, `ui/common/game_options.lua` (`game_options`): id de la fila,
 ajuste de la UI que publica el juego y que la fila envía como orden, texto, valor por defecto y, para las que no son
