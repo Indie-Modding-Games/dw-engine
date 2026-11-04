@@ -7,6 +7,7 @@ update_intro: "Esta versión del juego lee el disco de otra forma, así que nece
 space: "La lectura tarda unos minutos y ocupa unos 1,5 GB."
 destination: "Se guarda en {folder}"
 image_label: "Imagen del disco"
+image_filter: "Imagen del disco (cue, bin, iso)"
 browse: "Buscar..."
 drop_hint: "También puedes escribir la ruta, pegarla o soltar el archivo en esta ventana."
 install: "Leer el disco"

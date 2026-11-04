@@ -130,9 +130,13 @@ void SDLCALL onFilePicked(void* /*userdata*/, const char* const* files, int /*fi
   }
 }
 
-void openFileDialog(platform::Window& window) {
-  static constexpr std::array<SDL_DialogFileFilter, 2> Filters{
-      SDL_DialogFileFilter{.name = "Disc image (cue, bin, iso)", .pattern = "cue;bin;iso"},
+// `imageFilter` names the disc images in the dialog's list of file kinds, in the player's language.
+void openFileDialog(platform::Window& window, const std::string& imageFilter) {
+  // The dialog reads the filters until it calls back: they live as long as the program, and change
+  // only while no dialog is open.
+  static std::string filterName;
+  static std::array<SDL_DialogFileFilter, 2> filters{
+      SDL_DialogFileFilter{.name = "", .pattern = "cue;bin;iso"},
       SDL_DialogFileFilter{.name = "*", .pattern = "*"}};
   {
     PickedFile& picked = pickedFile();
@@ -142,9 +146,11 @@ void openFileDialog(platform::Window& window) {
     }
     picked.open = true;
   }
+  filterName = imageFilter;
+  filters.front().name = filterName.c_str();
   const char* home = SDL_GetUserFolder(SDL_FOLDER_HOME);
-  SDL_ShowOpenFileDialog(onFilePicked, nullptr, window.sdlWindow(), Filters.data(),
-                         static_cast<int>(Filters.size()), home, false);
+  SDL_ShowOpenFileDialog(onFilePicked, nullptr, window.sdlWindow(), filters.data(),
+                         static_cast<int>(filters.size()), home, false);
 }
 
 std::optional<std::string> takePickedFile() {
@@ -437,7 +443,7 @@ runFirstRun(platform::Platform& platform, platform::Window& window, rhi::Device&
         ImGui::InputText("##image", path.data(), path.size(), ImGuiInputTextFlags_EnterReturnsTrue);
     ImGui::SameLine();
     if (ImGui::Button(tr("browse").c_str())) {
-      openFileDialog(window);
+      openFileDialog(window, tr("image_filter"));
     }
     ImGui::TextDisabled("%s", tr("drop_hint").c_str());
     ImGui::Spacing();

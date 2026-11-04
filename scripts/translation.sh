@@ -31,6 +31,8 @@ story_box_rows=4
 # whole blocks, single ids (source.block.slot), every blank string and every string that is, but for
 # its surrounding spaces, a name of kept_name_block (the speaker lines of the curling hints).
 kept_english_blocks=(main.digimon_names)
+# The ids of kept_english_blocks that are a title in English words, not a name: they are translated.
+translated_name_ids=(main.digimon_names.0118)
 kept_original_blocks=(
   main.tournament_grades
   main.script_menu_hiragana_ka_row main.script_menu_lowercase_rows main.singles
@@ -206,13 +208,20 @@ kept_ids() {
   english_strings | awk -F '\t' -v english_pattern="$(blocks_pattern "${kept_english_blocks[@]}")" \
     -v original_pattern="$(blocks_pattern "${kept_original_blocks[@]}")" \
     -v name_block="$kept_name_block." \
-    -v ids="${kept_original_ids[*]}" '
+    -v ids="${kept_original_ids[*]}" -v titles="${translated_name_ids[*]}" '
         function trimmed(text) { gsub(/^ +| +$/, "", text); return text }
-        BEGIN { split(ids, list, " "); for (i in list) original_id[list[i]] = 1 }
-        { id[NR] = $1; text[NR] = $2; if (index($1, name_block) == 1) kept_name[trimmed($2)] = 1 }
+        BEGIN {
+            split(ids, list, " "); for (i in list) original_id[list[i]] = 1
+            split(titles, list, " "); for (i in list) title_id[list[i]] = 1
+        }
+        {
+            id[NR] = $1; text[NR] = $2
+            if (index($1, name_block) == 1 && !($1 in title_id)) kept_name[trimmed($2)] = 1
+        }
         END {
             for (i = 1; i <= NR; i++) {
                 name = trimmed(text[i])
+                if (id[i] in title_id) continue
                 if (id[i] ~ english_pattern) print "english\t" id[i]
                 else if (id[i] ~ original_pattern || id[i] in original_id || name == "" \
                     || name in kept_name)
