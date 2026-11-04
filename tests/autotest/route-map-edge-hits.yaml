@@ -1,0 +1,51 @@
+# The off-map fighters of #163, at the town's wall: NPC 8 (record 3) of File City is put on the south wall row with
+# the debug `place` (row 93 of twna01's collision grid is blocked ground, world z 4350, still on screen from the
+# new game's start), and the battle opens against him at his live spot there (battle("3"), apps/game/src/battle_
+# trigger.hpp). A few seconds of fight at the wall — the situation where, when a fighter's screen corners stopped
+# projecting, the combat area let it slip past the arena and the field took the fighters back off the map. The fix
+# holds the fighters inside (movement.cpp's arena-radius fallback, fix A) and puts a released NPC standing on
+# blocked ground back at his record's spot (FieldScene::releaseFighters, fix B — the run shows it in the log with
+# "the fight left NPC 8 ... stands at its record's spot again"). battle_win closes the fight; the end box types a
+# line per press; then the field is proof: the partner, released at the wall, must rejoin the player (partner_within
+# — a fighter stranded past the edge never comes back), and the town must still walk. A beaten NPC on screen when a
+# battle the player can run from began leaves the map with it (battle_main.c:783-808, as the original): the route
+# checks he left whole and not stuck somewhere, with field.npc.8 after. How to run it: docs/guides/prueba-vertical.md,
+# with --new-game --seed 1.
+name: map-edge-hits
+device: keyboard
+timeout: 300
+steps:
+  - wait: {map: twna01, seconds: 1, timeout: 60}
+  - resize: [1280, 720]
+  - script: give_item("sm_recovery 2")
+  # NPC 8 onto the south wall row: place takes the record's axes (z runs the other way), so -4350 is the world's
+  # row 93 — blocked ground, in the camera's box.
+  - script: place("npc:8 -161 -4350 0")
+  - wait: {seconds: 0.5}
+  - screenshot: npc-on-wall
+  - script: battle("3")
+  - wait: {shown: battle, timeout: 30}
+  # A few seconds of fight against the wall: the fighters walk and back away along it — where they used to escape.
+  - wait: {setting: {battle.phase: fight}, seconds: 3, timeout: 30}
+  - script: battle_win("")
+  - wait: {setting: {battle.phase: end}, timeout: 120}
+  # The end box types a line per press; the battle document goes when it is done.
+  - repeat: {times: 8, steps: [{wait: {seconds: 1.0}}, {tap: {key: return}}]}
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
+  # The field's own proof: the partner, released at the wall, follows the player back. A fighter left past the
+  # map's edge never closes the distance and this wait fails (timeout 60 s for the walk).
+  - wait: {partner_within: 600, timeout: 60}
+  - screenshot: partner-back
+  # NPC 8 was off screen when the battle opened, so (unlike an on-screen beaten NPC, which leaves the map with a
+  # battle the player can run from) he stays: field.npc.8 true. The fight, however, left him standing on the wall
+  # row — the release (the log: "the fight left NPC 8 at (-161, 4350), not free ground") put him back at his
+  # record's spot. Without fix B he would be past the town's wall: the walk below would find an empty street.
+  - expect_setting: {field.npc.8: "true"}
+  # The proof he is reachable again: the record's spot is (-103, 1623) of the world and the NPC is solid, so the
+  # walk cannot end on him: the player is placed 130 units west facing him (place ignores the bodies, and the
+  # confirm's reach covers the rest). His talk opening is the proof.
+  - script: place("player -233 -1623 1024")
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 0.5, timeout: 12}
+  - screenshot: npc-reachable

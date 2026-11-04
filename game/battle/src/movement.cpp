@@ -191,23 +191,41 @@ bool movesOutOfArea(ScreenPoint before, ScreenPoint after, std::int32_t width,
          (after.y > halfHeight && after.y > before.y);
 }
 
-} // namespace
+// The screen's rectangle as one step of a mover of `radius` reads it: whether a corner crosses it
+// outward, and whether a corner could not be projected at all.
+struct ScreenArea {
+  bool leaves = false;
+  bool unprojected = false;
+};
 
-// map.c: entityCheckCombatArea: the step leaves a rectangle of the screen. Two corners of the
-// mover's box are tested, as its loop over QUADRANTS ignores its inner index: the near left one on
-// the ground and the near right one corner_height up.
-bool leavesScreenArea(const BattleGround& ground, const TimingRules& timing, Point from, Point to,
-                      std::int32_t radius, std::int32_t width, std::int32_t height) {
+ScreenArea screenAreaCheck(const BattleGround& ground, const TimingRules& timing, Point from,
+                           Point to, std::int32_t radius, std::int32_t width,
+                           std::int32_t height) {
+  // map.c: entityCheckCombatArea: the step leaves a rectangle of the screen. Two corners of the
+  // mover's box are tested, as its loop over QUADRANTS ignores its inner index: the near left one
+  // on the ground and the near right one corner_height up.
   const std::array<std::pair<std::int32_t, std::int32_t>, 2> corners{
       {{-radius, 0}, {radius, timing.combatAreaCornerHeight}}};
-  return std::ranges::any_of(corners, [&](const std::pair<std::int32_t, std::int32_t>& corner) {
-    const auto [side, lift] = corner;
+  ScreenArea area;
+  for (const auto& [side, lift] : corners) {
     const std::optional<ScreenPoint> before =
         ground.screenPointOf({.x = from.x + side, .z = from.z - radius}, lift);
     const std::optional<ScreenPoint> after =
         ground.screenPointOf({.x = to.x + side, .z = to.z - radius}, lift);
-    return before && after && movesOutOfArea(*before, *after, width, height);
-  });
+    if (!before || !after) {
+      area.unprojected = true;
+      continue;
+    }
+    area.leaves = area.leaves || movesOutOfArea(*before, *after, width, height);
+  }
+  return area;
+}
+
+} // namespace
+
+bool leavesScreenArea(const BattleGround& ground, const TimingRules& timing, Point from, Point to,
+                      std::int32_t radius, std::int32_t width, std::int32_t height) {
+  return screenAreaCheck(ground, timing, from, to, radius, width, height).leaves;
 }
 
 namespace {
@@ -218,8 +236,18 @@ bool leavesCombatArea(const BattleContext& context, Point from, Point to, std::i
     return leavesArena(context, from, to);
   }
   const TimingRules& timing = context.rules->timing;
-  return leavesScreenArea(*context.ground, timing, from, to, radius, timing.combatAreaWidth,
-                          timing.combatAreaHeight);
+  const ScreenArea area = screenAreaCheck(*context.ground, timing, from, to, radius,
+                                          timing.combatAreaWidth, timing.combatAreaHeight);
+  if (area.leaves) {
+    return true;
+  }
+  // map.c: entityCheckCombatArea always compared its rectangle: the original's maths gave a
+  // number even for a corner behind the camera, so the step stayed held. The app's ground drops
+  // those projections; without a fallback the fighter walks out of the fight, of the screen and
+  // of the map unheld (the off-map fighters of #163). Keep it where a battle without any ground
+  // is kept: inside the ruleset's arena radius of where the fighters started (an engine
+  // improvement, docs/modulos/game/battle.md).
+  return area.unprojected && leavesArena(context, from, to);
 }
 
 // The leading edge of the mover's square, on each axis it moves along, against the square of
