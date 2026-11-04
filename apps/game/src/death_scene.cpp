@@ -614,6 +614,9 @@ void DeathScene::stepDissolve() {
     enterWakeMap();
     field.placeAt(field.partnerEntity(), savedFeet_, savedYaw_);
     scene_->playPartnerClip(lives_ > 0 ? rules.clips.alive : rules.clips.lastLife);
+    // dooa.c:401: DOOA_setOtherEntitiesVisible(0), setMapLayerEnabled(0) and
+    // DOOA_hideAllButPartner: the player and every NPC off the map (the partner goes at the vanish
+    // frame), whoever was on it remembered for the rebirth.
     stage_ = {};
     stage_.sceneryHidden = true;
     stage_.camera = render::Camera{
@@ -747,6 +750,9 @@ void DeathScene::stepRebirth() {
     }
     const glm::vec3 toPlayer = field.player().position;
     field.placeAt(field.partnerEntity(), glm::vec3{0.0F}, assets::yawOfDirection(toPlayer));
+    // dooa.c:1108: DOOA_setOtherEntitiesVisible(1), ENTITY_TABLE[2] on, DOOA_showPlayerAndPartner
+    // and then the partner off again (the egg stands for it until shownFrame): everyone who was on
+    // the map before the death, the player included, is drawn again.
     stage_ = {};
     stage_.partnerHidden = true;
   }

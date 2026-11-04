@@ -203,6 +203,17 @@ struct FieldStage {
   std::vector<std::string> shownProps;
   // The ground a battle is fought on instead of the map's (STD_loadArenaAssets: the arena's ATR).
   std::optional<assets::MapCollision> ground;
+
+  // Who of the field's characters the stage leaves drawn. The scenes take everyone but the partner
+  // off the map (evl.c: EVL_setOtherEntitiesVisible(0); dooa.c: DOOA_setOtherEntitiesVisible(0)
+  // and DOOA_hideAllButPartner), maybe the partner too, and put them back after
+  // (EVL_setOtherEntitiesVisible(1); DOOA_setOtherEntitiesVisible(1) and
+  // DOOA_showPlayerAndPartner). The original clears isOnMap and restores a saved copy; here the
+  // stage only masks the drawing, so a character hidden before a scene stays hidden after it.
+  [[nodiscard]] bool showsPlayer() const { return !sceneryHidden; }
+  [[nodiscard]] bool showsPartner() const { return !partnerHidden; }
+  // The map's characters: all while the scenery shows, else only shownNpc.
+  [[nodiscard]] bool showsNpcs() const { return !sceneryHidden; }
 };
 
 // The first state of the field effects' rolls (libc rand's increment).

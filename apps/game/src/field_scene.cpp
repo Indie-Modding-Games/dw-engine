@@ -956,11 +956,13 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
     playClipSounds(*partnerActor_);
   }
   models_->clear();
-  if (!stage_.sceneryHidden) {
+  if (stage_.showsPlayer()) {
     submit(*playerActor_, alpha,
            {.scale = stage_.playerScale,
             .tint = sceneryTint() * glm::vec4{glm::vec3{stage_.playerFade}, 1.0F},
             .additive = stage_.playerAdditive});
+  }
+  if (stage_.showsNpcs()) {
     drawNpcs(animationSeconds, alpha);
     if (!mapLayerHidden_) {
       submitMapObjects();
@@ -978,7 +980,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   submitEffectModels();
   submitStatusModels();
   submitBattleVisualModels();
-  if (!stage_.partnerHidden) {
+  if (stage_.showsPartner()) {
     submit(*partnerActor_, alpha,
            {.scale = stage_.partnerScale * partnerSpeciesScale_,
             .lift = stage_.partnerLift,

@@ -107,6 +107,45 @@ TEST_CASE("the evolution's objects live as long as the original's") {
   CHECK(effects.shards().empty());
 }
 
+TEST_CASE("a new evolution starts with none of the last one's objects and keeps the caps") {
+  // A made-up body of 40 bones, each with one triangle: more than the 30 shard sets and 16 rays.
+  class ManyBones final : public EvolutionBody {
+  public:
+    [[nodiscard]] std::optional<glm::vec3> bonePoint(std::uint32_t bone) const override {
+      return glm::vec3{0.0F, static_cast<float>(bone), 0.0F};
+    }
+    [[nodiscard]] std::vector<BodyFace> boneFaces(std::uint32_t bone) const override {
+      BodyFace face{.bone = bone, .index = 0, .count = 3};
+      face.normal = glm::vec3{0.0F, 0.0F, 1.0F};
+      return {face};
+    }
+    [[nodiscard]] std::uint32_t boneCount() const override { return 40; }
+  };
+  ManyBones body;
+  EvolutionEffects effects;
+  effects.start(body.boneCount(), glm::vec3{0.0F}, 1);
+  // EVL_initShardSets and EVL_resetSparks: 30 shard sets and 16 rays at most, whatever breaks.
+  for (std::uint32_t bone = 1; bone < body.boneCount(); ++bone) {
+    effects.burst(BurstFrame, body);
+  }
+  CHECK(effects.shards().size() == 30);
+  CHECK(effects.sparks().size() == 16);
+  for (std::int32_t frame = 0x6C; frame < 0x6C + 18; ++frame) {
+    effects.step(frame, body);
+  }
+  REQUIRE_FALSE(effects.rings().empty());
+  REQUIRE_FALSE(effects.flashes().empty());
+
+  // EVL_initEvoSequence: EVL_initShardSets, EVL_resetParticles and EVL_resetSparks free every
+  // table, so the next scene draws nothing of this one.
+  effects.start(body.boneCount(), glm::vec3{0.0F}, 2);
+  CHECK(effects.shards().empty());
+  CHECK(effects.sparks().empty());
+  CHECK(effects.rings().empty());
+  CHECK(effects.flashes().empty());
+  CHECK_FALSE(effects.boneWired(1));
+}
+
 TEST_CASE("the evolution's squares spawn nine frames in eighteen and fade over 0x56") {
   MadeUpBody body;
   EvolutionEffects effects;

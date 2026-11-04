@@ -226,6 +226,18 @@ original sobre la escena (`ScenePrimDrawer`, `scene_prims.cpp`):
 
 Medido en el original (forzado con la hora en `twna01`) y comparado por fotogramas con dwe en las mismas fases.
 
+- Igual, medido en el original (2026-11-04, estado `01_field_outside_jijimon_house` con `EVOLUTION_TARGET` 5): al
+  acabar el fundido (cuadro 0x20 del estado 0, 99 vblanks después de `EVL_initEvoSequence`)
+  `EVL_setOtherEntitiesVisible(0)` saca del mapa al jugador y a las dos NPC (la copia `EVL_D_80068938` guarda 1 en
+  las entidades 0, 6 y 8) y deja al compañero; en el estado 3 `EVL_setOtherEntitiesVisible(1)` los repone. dwe pone
+  `FieldStage::sceneryHidden` en el mismo cuadro (`showsPlayer`, `showsNpcs`) y lo quita con `stage_ = {}`
+  (`EvolutionScene::restore`). La etapa solo enmascara el dibujo, así que quien estaba oculto antes de la escena
+  sigue oculto después, como con la copia del original.
+- Igual: al empezar, `EVL_initShardSets`, `EVL_resetParticles` y `EVL_resetSparks` dejan libres los 30 grupos de
+  trozos, los 100 cuadrados y los 16 rayos; `EvolutionEffects::start` empieza con las listas vacías y los mismos topes
+  (prueba `a new evolution starts with none of the last one's objects and keeps the caps`). La alineación de la
+  memoria de trabajo no aplica.
+
 Suposiciones:
 
 - Los objetos avanzan el mismo cuadro en que nacen.
@@ -422,6 +434,13 @@ dibujan como primitivas sobre la escena (`ScenePrimDrawer`), con las piezas de l
   efecto 7) y sus caras vuelan 41 cuadros (`DOO2_buildShardSet`, `DOO2_tickShardSet`).
 - Los sonidos de la escena se paran donde el original llama a `stopSound` (0x8C, 0xBF, el final y el cuadro 10 del
   renacer).
+- Igual, medido en el original (2026-11-04, estados `death_dooa_light_start` y `death_egg_box_open`): al pasar al
+  mapa de despertar, `DOOA_setOtherEntitiesVisible(0)` y `DOOA_hideAllButPartner` dejan fuera del mapa a todos menos
+  al compañero (la copia `DOOA_SAVED_ENTITY_VISIBILITY` guarda 1 en las entidades 0, 2, 3 y 4 de `room08`); en el
+  cuadro 152 del renacer `DOOA_setOtherEntitiesVisible(1)`, la entidad 2 y `DOOA_showPlayerAndPartner` devuelven al
+  jugador y a las entidades 2 a 4, y el compañero vuelve a ocultarse bajo el huevo. dwe pone `sceneryHidden` en el
+  mismo paso y, en `swap_frame`, `stage_ = {}` con `partnerHidden` (`FieldStage::showsPlayer`, `showsNpcs`,
+  `showsPartner`; pruebas de `field_stage_tests.cpp`).
 
 Suposiciones:
 

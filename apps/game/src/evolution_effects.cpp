@@ -29,7 +29,7 @@ constexpr std::int32_t RingGreenFrom = 0x32;
 constexpr std::int32_t RingGreenTo = 0xE6;
 constexpr std::int32_t RingPatternMax = 5;
 // EVL_tickParticle and EVL_renderParticle: a square lives 0x56 frames, its half side growing from 8
-// to 0x9C4 and its colour fading to black; at most 100.
+// to 0x9C4 and its colour fading to black; at most 100 (the table EVL_resetParticles frees).
 constexpr std::int32_t RingLife = 0x56;
 constexpr std::int32_t RingSizeFrom = 8;
 constexpr std::int32_t RingSizeTo = 0x9C4;
@@ -42,7 +42,8 @@ constexpr std::int32_t BrightenUntil = 0xCD;
 constexpr std::int32_t PercentRoll = 100;
 
 // EVL_tickShardSet and EVL_renderShardSet: a broken bone's faces fly 0x1F frames, moved by their
-// normal times the timer over 60, their shade from 130 down to 54 (0x80 is 1); at most 30 sets.
+// normal times the timer over 60, their shade from 130 down to 54 (0x80 is 1); at most 30 sets
+// (EVL_initShardSets).
 constexpr std::int32_t ShardLife = 0x1F;
 constexpr std::int32_t ShardSpeed = 60;
 constexpr std::int32_t ShardShadeSpan = 74;
@@ -52,9 +53,9 @@ constexpr std::size_t MaxShardSets = 30;
 // The original's normals are 4096 long.
 constexpr float NormalLength = 4096.0F;
 
-// EVL_spawnSpark: at most 16 rays; EVL_renderSparkStreak: the ray reaches length^2 / distance past
-// the middle, length 400 to 500, its tip moved up to 80 each way, grey 10 to 137, from DEFEFF
-// (palette 1) at (95, 32), (95, 39), (48, 32), added.
+// EVL_spawnSpark: at most 16 rays (EVL_resetSparks); EVL_renderSparkStreak: the ray reaches
+// length^2 / distance past the middle, length 400 to 500, its tip moved up to 80 each way, grey 10
+// to 137, from DEFEFF (palette 1) at (95, 32), (95, 39), (48, 32), added.
 constexpr std::size_t MaxSparks = 16;
 constexpr std::int32_t SparkLengthFrom = 400;
 constexpr std::int32_t SparkLengthTo = 500;
@@ -191,6 +192,9 @@ std::int32_t originalLerp(std::int32_t start, std::int32_t end, std::int32_t t0,
 }
 
 void EvolutionEffects::start(std::uint32_t boneCount, glm::vec3 feet, std::uint32_t seed) {
+  // EVL_initEvoSequence (evl.c:1300): EVL_initShardSets, EVL_resetParticles and EVL_resetSparks
+  // mark the 30 shard sets, the 100 squares and the 16 rays free (timer or bone -1), so nothing of
+  // an earlier scene is drawn; here the lists start empty and the caps below keep the counts.
   clear();
   random_ = ruleset::Random::original(seed);
   boneCount_ = boneCount;

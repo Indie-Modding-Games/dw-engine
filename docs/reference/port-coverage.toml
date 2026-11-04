@@ -850,23 +850,23 @@ DOO2_buildShardSet = { status = "portado", what = "Parte el modelo del huevo en 
 DOO2_releaseAllShardSets = { status = "portado", what = "Quita todos los grupos de trozos del huevo." }
 DOOA_hasIrisClosed = { status = "portado", what = "Dice si el iris que se cierra ya tapa al compañero, para ocultarlo." }
 DOOA_initShardEffect = { status = "portado", what = "Prepara el efecto de trozos de alambre del compañero al morir." }
-DOOA_setOtherEntitiesVisible = { status = "portado", dwe = "apps/game/src/death_scene.cpp:355", what = "Oculta a todos menos al compañero en la muerte y luego los repone." }
-DOOA_hideAllButPartner = { status = "portado", dwe = "apps/game/src/death_scene.cpp:355", what = "Oculta todo salvo al compañero, jugador incluido." }
+DOOA_setOtherEntitiesVisible = { status = "portado", dwe = "apps/game/src/death_scene.cpp:617", what = "Oculta a todos menos al compañero en la muerte y luego los repone." }
+DOOA_hideAllButPartner = { status = "portado", dwe = "apps/game/src/death_scene.cpp:618", what = "Oculta todo salvo al compañero, jugador incluido." }
 DOOA_updateCutsceneCamera = { status = "portado", what = "Mueve la cámara de la muerte hacia el compañero y gira a su alrededor." }
 DOOA_spawnShardWave = { status = "portado", what = "Suelta una oleada de trozos de alambre desde cada hueso del compañero." }
 DOOA_toggleShardFlicker = { status = "portado", what = "Hace parpadear los trozos de alambre de la muerte." }
 DOOA_setShardState = { status = "portado", what = "Cambia la fase del efecto de trozos (subir, huevo, renacer)." }
-DOOA_showPlayerAndPartner = { status = "portado", dwe = "apps/game/src/death_scene.cpp:411", what = "Vuelve a mostrar al jugador y al compañero tras renacer." }
+DOOA_showPlayerAndPartner = { status = "portado", dwe = "apps/game/src/death_scene.cpp:753", what = "Vuelve a mostrar al jugador y al compañero tras renacer." }
 DOOA_getOrbitPosition = { status = "portado", what = "Calcula el punto de cámara que orbita al compañero en la muerte." }
 DOOA_updateShards = { status = "portado", what = "Mueve, encoge y apaga los trozos de alambre y la luz que sube." }
 DOOA_spawnBoneShards = { status = "portado", what = "Crea los trozos de alambre de un hueso del compañero." }
 MURD_storeDigimonTexture = { status = "no-aplica", what = "Guarda la paleta del compañero para fundirla a negro.", note = "copia de memoria de vídeo; el motor funde con su sombreado" }
 MURD_isDigimonLargerThanIris = { status = "portado", what = "Dice si el iris que se cierra ya tapa al compañero en una vida perdida." }
-EVL_initShardSets = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:216", what = "Prepara los grupos de trozos de la evolución." }
+EVL_initShardSets = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:195", what = "Prepara los grupos de trozos de la evolución." }
 EVL_setScratchTop = { status = "no-aplica", what = "Fija el tope de la memoria de trabajo de la evolución.", note = "gestión de memoria del original" }
-EVL_resetParticles = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:236", what = "Vacía las partículas de luz de la evolución." }
-EVL_resetSparks = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:236", what = "Vacía las chispas de la evolución." }
-EVL_setOtherEntitiesVisible = { status = "portado", dwe = "apps/game/src/evolution_scene.cpp:168", what = "Oculta a todos menos al compañero durante la evolución y luego los repone." }
+EVL_resetParticles = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:195", what = "Vacía las partículas de luz de la evolución." }
+EVL_resetSparks = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:195", what = "Vacía las chispas de la evolución." }
+EVL_setOtherEntitiesVisible = { status = "portado", dwe = "apps/game/src/evolution_scene.cpp:170", what = "Oculta a todos menos al compañero durante la evolución y luego los repone." }
 EVL_spawnParticle = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:290", what = "Crea una partícula de luz de la evolución." }
 EVL_releaseAllParticles = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:236", what = "Quita todas las partículas de la evolución." }
 EVL_tickShardSet = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:350", what = "Mueve un grupo de trozos que se desprenden del compañero al evolucionar." }

@@ -167,6 +167,10 @@ void EvolutionScene::step() {
       focalLength_ = mapFocalLength_;
       drop_ = 0.0F;
       recentre_ = 0.0F;
+      // evl.c:400: EVL_setOtherEntitiesVisible(0) and setMapLayerEnabled(0): the player and every
+      // NPC off the map, only the partner on black (FieldStage::showsPlayer). The stage only masks
+      // the drawing, so whoever was hidden before stays hidden after, as the saved isOnMap table
+      // of the original keeps it.
       stage_.sceneryHidden = true;
       scene_->setStage(stage_);
       setPhase(Phase::Closing);
@@ -296,8 +300,8 @@ void EvolutionScene::drawNewForm() {
 }
 
 void EvolutionScene::restore() {
-  // State 3 to 4 (evl.c:569): the scenery and the tamer come back, the map's sound bank, and the
-  // partner plays its last clip.
+  // State 3 to 4 (evl.c:569): EVL_setOtherEntitiesVisible(1) and setMapLayerEnabled(1), the
+  // scenery and the player come back, the map's sound bank, and the partner plays its last clip.
   stage_ = {};
   scene_->setStage(stage_);
   effects_.clear();
