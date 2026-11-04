@@ -693,7 +693,13 @@ void BattleScreen::tickIntro(double seconds) {
     }
     game::story::SoundPort* sound = desc_.session->sound();
     if (after == screens::IntroStep::Banner) {
-      menu_.open();
+      if (battle_ && battle_->state().matchClock) {
+        menu_.openForMatch();
+        core::logDebug("[port:tournament] STD_addCommandMenu (std_main.c:7504): the command strip "
+                       "stands at the foot of the screen");
+      } else {
+        menu_.open();
+      }
       publishMenu();
       core::logDebug("[port:battle] BTL_initializeCommandMenu (command_menu.c:153): the command "
                      "strip drops in");

@@ -443,6 +443,17 @@
 	display: none;
 }
 
+/* A cup match's strip (std_main.c: STD_addCommandMenu, STD_renderCommandMenu) stands at lines 68 to 100 from the
+   middle, 168 lines under the field battle's, and names the hovered command 14 lines over its top instead of under
+   it (STD_renderMoveName). logic.lua sets the class from the edges the game sends. */
+#commands.match {
+	top: 504dp;
+}
+
+#commands.match #command-name {
+	top: 0dp;
+}
+
 #fight.after > #commands {
 	display: block;
 }

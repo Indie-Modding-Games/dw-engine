@@ -20,6 +20,9 @@ local banner_pieces = 200
 -- command_menu.c: BTL_COMMAND_MENU_SLIDE_X and _Y), and the icons' height there.
 local strip_top = -100
 local strip_bottom = -68
+-- std_main.c: STD_addCommandMenu: in a cup match the strip stands at the screen's foot.
+local match_strip_top = 68
+local match_strip_bottom = 100
 local icon_height = 16
 -- Whether the strip's pieces carry a transform from its slide.
 local strip_moved = false
@@ -1054,7 +1057,10 @@ local function draw_motion(document)
   -- step.
   local top = number("battle.menu.top")
   local bottom = number("battle.menu.bottom")
-  local settled = top == strip_top and bottom == strip_bottom
+  -- A cup match's strip (STD_renderCommandMenu) stands still at the foot, its name above it.
+  local match = top == match_strip_top and bottom == match_strip_bottom
+  set_class(document, "commands", "match", match)
+  local settled = match or (top == strip_top and bottom == strip_bottom)
   local frame_transform, icon_transform = "none", "none"
   if not settled then
     local shift = string.format("translate(0dp, %ddp)", (top - strip_top) * 3)

@@ -12,14 +12,23 @@ namespace {
 constexpr std::array<std::int32_t, 8> SlideBottom{-120, -106, -94, -84, -77, -72, -69, -68};
 constexpr std::array<std::int32_t, 8> SlideTop{-152, -151, -148, -143, -136, -126, -114, -100};
 constexpr std::int32_t LastStep = 7;
+// std_main.c: STD_addCommandMenu: STD_COMMAND_MENU_TOP 0x44 and the bottom 0x20 under it.
+constexpr std::int32_t MatchTop = 0x44;
+constexpr std::int32_t MatchBottom = MatchTop + 0x20;
 constexpr std::uint8_t BlinkFrames = 8;
 // BTL_isCommandMenuClosed answers true when its count reaches 4.
 constexpr std::int32_t ClosedAsks = 4;
 
 } // namespace
 
+void CommandMenuMotion::openForMatch() {
+  open();
+  match_ = true;
+}
+
 void CommandMenuMotion::open() {
   state_ = State::Open;
+  match_ = false;
   bottomStep_ = 0;
   topStep_ = 0;
   timer_ = 0;
@@ -39,6 +48,12 @@ void CommandMenuMotion::step(bool fighting) {
   }
   ++timer_;
   if (state_ == State::Open) {
+    if (match_) {
+      if (fighting && timer_ % BlinkFrames == 0) {
+        blink_ = !blink_;
+      }
+      return;
+    }
     if (bottomStep_ < LastStep) {
       ++bottomStep_;
     }
@@ -59,6 +74,10 @@ void CommandMenuMotion::step(bool fighting) {
 }
 
 bool CommandMenuMotion::closed() {
+  if (match_ && state_ != State::Open) {
+    state_ = State::Gone;
+    return true;
+  }
   if (state_ == State::Open || topStep_ != 0 || bottomStep_ != 0) {
     return false;
   }
@@ -69,10 +88,16 @@ bool CommandMenuMotion::closed() {
 }
 
 std::int32_t CommandMenuMotion::top() const {
+  if (match_ && state_ != State::Gone) {
+    return MatchTop;
+  }
   return SlideTop.at(static_cast<std::size_t>(topStep_));
 }
 
 std::int32_t CommandMenuMotion::bottom() const {
+  if (match_ && state_ != State::Gone) {
+    return MatchBottom;
+  }
   return SlideBottom.at(static_cast<std::size_t>(bottomStep_));
 }
 

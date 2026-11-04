@@ -94,3 +94,24 @@ TEST_CASE("the command strip publishes its edges and blink") {
   CHECK(std::get<double>(settings.at(1).value) == -120.0);
   CHECK_FALSE(std::get<bool>(settings.at(2).value));
 }
+
+TEST_CASE("a cup match's strip stands at the foot of the screen and leaves at once") {
+  CommandMenuMotion menu;
+  menu.openForMatch();
+  // STD_addCommandMenu: STD_COMMAND_MENU_TOP 0x44, the bottom 0x20 under it, no slide.
+  CHECK(edges(menu) == std::pair{68, 100});
+  for (int frame = 1; frame <= 16; ++frame) {
+    menu.step(true);
+    CHECK(edges(menu) == std::pair{68, 100});
+    // STD_tickCommandMenu still swaps the hovered icon every 8 frames.
+    CHECK(menu.blink() == (frame >= 8 && frame < 16));
+  }
+  CHECK_FALSE(menu.closed());
+  menu.close();
+  // STD_removeCommandMenu: no slide back and no frames to wait.
+  CHECK(menu.closed());
+  CHECK_FALSE(menu.shown());
+  // A field battle after it slides again.
+  menu.open();
+  CHECK(edges(menu) == std::pair{-152, -120});
+}

@@ -27,6 +27,10 @@ class CommandMenuMotion {
 public:
   // BTL_initializeCommandMenu: the strip starts above the screen.
   void open();
+  // std_main.c: STD_addCommandMenu: in a cup match the strip stands at once at the screen's foot,
+  // lines 68 to 100, and never slides (STD_tickCommandMenu only counts and blinks); the match takes
+  // it away at once as it ends (STD_removeCommandMenu).
+  void openForMatch();
   // BTL_COMMAND_MENU_ACTIVE = 0: the strip goes back up.
   void close();
   // BTL_tickCommandMenu: one battle frame; fighting is the original's GAME_STATE 1, the only one
@@ -53,6 +57,7 @@ private:
   enum class State : std::uint8_t { Gone, Open, Closing };
 
   State state_ = State::Gone;
+  bool match_ = false;
   // BTL_COMMAND_MENU_Y_STEP and _X_STEP: the bottom's and the top's step, 0 to 7.
   std::int32_t bottomStep_ = 0;
   std::int32_t topStep_ = 0;
