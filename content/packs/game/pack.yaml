@@ -46,6 +46,8 @@ schemas:
     - ui/ui_skin
   ui_sounds:
     - ui/ui_sounds
+  world_map_layout:
+    - ui/world_map/layout
   ruleset_new_game:
     - rules/*/new_game
   ruleset_new_game_scene:

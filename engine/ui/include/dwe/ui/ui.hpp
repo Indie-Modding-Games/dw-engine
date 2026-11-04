@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/image.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/input/input_state.hpp>
@@ -209,6 +210,11 @@ public:
   // Replaces the minimap with a new map's: its walkable area and the key of its name
   // (localization::mapNameKey; empty for none), shown in the hud:: elements.
   void setMinimap(const MinimapGrid& grid, std::string_view mapNameKey);
+
+  // Gives the documents an image the app made (the island map), under a name of letters, digits
+  // and underscores, replacing the one it had: returns the source an <img src> or a decorator names
+  // it by now (`generated:<name>/<n>`), which changes with each call so RmlUi loads it again.
+  std::string setGeneratedImage(std::string_view name, assets::Image image);
 
   // Shows every text again after the catalog's language changed: the elements with a
   // TextKeyAttribute, the map's name, and whatever the shown documents' on_language handlers write.

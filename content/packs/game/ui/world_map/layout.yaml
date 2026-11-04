@@ -1,0 +1,75 @@
+# El mapa de la isla (tecla M), una mejora de dwe: el original no tiene mapa de la isla ni ninguna imagen de conjunto.
+# Las zonas se pintan a mano alzada desde estos datos (engine/ui: paintWorldMap): cada zona es un centro y un radio
+# sobre un lienzo de 1000 x 640 con el norte arriba, la tierra une las zonas vecinas en una sola isla y los caminos
+# unen los centros. La disposición es de dwe, dibujada a partir de las salidas de los mapas (data/maps y sus warps,
+# field/script_warps): las zonas que se conectan quedan vecinas.
+#
+# name es el renglón de main.map_names que da el nombre de la zona en el idioma del jugador; places, los renglones
+# (MapEntry::loadingName, el nombre que el original muestra al entrar) cuyos mapas caen en la zona. Un mapa con un
+# renglón que no esté en ninguna zona no se marca en el mapa.
+canvas: [1000, 640]
+regions:
+  - {id: file_city, name: 43, places: [8, 43, 44, 45, 46, 47, 48, 49, 53, 54, 55], at: [504, 301], radius: 39, colour: "#d9bf8a"}
+  - {id: mt_infinity, name: 59, places: [59, 67], at: [605, 263], radius: 35, colour: "#8d7f73"}
+  - {id: native_forest, name: 0, places: [0], at: [410, 272], radius: 44, colour: "#6f9a52"}
+  - {id: green_gym, name: 36, places: [36], at: [420, 364], radius: 23, colour: "#9cbf62"}
+  - {id: kunemon_bed, name: 68, places: [68], at: [497, 394], radius: 21, colour: "#7fa356"}
+  - {id: creature_bridge, name: 4, places: [4], at: [574, 364], radius: 19, colour: "#b9b47a"}
+  - {id: coela_point, name: 1, places: [1], at: [326, 394], radius: 25, colour: "#e0cd94"}
+  - {id: dragon_eye_lake, name: 2, places: [2], at: [292, 298], radius: 33, colour: "#7fb0b8"}
+  - {id: beetle_land, name: 58, places: [58], at: [190, 259], radius: 35, colour: "#8aa45a"}
+  - {id: drill_tunnel, name: 12, places: [3, 12, 13, 14, 15, 16, 17, 37], at: [322, 212], radius: 35, colour: "#9b8468"}
+  - {id: mt_panorama, name: 9, places: [7, 9, 10, 11], at: [440, 182], radius: 42, colour: "#a4a07c"}
+  - {id: gear_savanna, name: 30, places: [30], at: [590, 146], radius: 44, colour: "#c8b46a"}
+  - {id: trash_mountain, name: 56, places: [56], at: [672, 116], radius: 26, colour: "#8e8466"}
+  - {id: factorial_town, name: 52, places: [52, 57], at: [722, 216], radius: 35, colour: "#a29d92"}
+  - {id: geko_swamp, name: 41, places: [41, 42], at: [728, 306], radius: 30, colour: "#6f7f56"}
+  - {id: misty_trees, name: 38, places: [38], at: [797, 362], radius: 32, colour: "#7f9a86"}
+  - {id: toy_town, name: 50, places: [50, 61, 62, 63], at: [862, 278], radius: 26, colour: "#d39fb0"}
+  - {id: freezeland, name: 34, places: [34, 40, 60], at: [758, 451], radius: 48, colour: "#e8eef0"}
+  - {id: ice_sanctuary, name: 35, places: [35], at: [835, 503], radius: 25, colour: "#bcd6e2"}
+  - {id: secret_beach_cave, name: 51, places: [51], at: [682, 552], radius: 21, colour: "#e2cf98"}
+  - {id: great_canyon, name: 39, places: [20, 21, 22, 24, 26, 39], at: [586, 442], radius: 44, colour: "#c78c5c"}
+  - {id: ogre_fortress, name: 25, places: [23, 25], at: [620, 516], radius: 25, colour: "#8f6a58"}
+  - {id: tropical_jungle, name: 5, places: [5], at: [440, 446], radius: 42, colour: "#4f8a48"}
+  - {id: mangrove, name: 6, places: [6], at: [354, 488], radius: 30, colour: "#5f8a64"}
+  - {id: amida_forest, name: 69, places: [69], at: [275, 520], radius: 26, colour: "#5f7f48"}
+  - {id: ancient_dino, name: 31, places: [31, 32, 33], at: [180, 459], radius: 39, colour: "#b98c5f"}
+  - {id: overdell, name: 18, places: [18, 19], at: [490, 530], radius: 28, colour: "#8f8f88"}
+  - {id: grey_lords_mansion, name: 27, places: [27, 28, 29], at: [416, 557], radius: 23, colour: "#8a7a8f"}
+# Los caminos entre zonas que se conectan andando o por la puerta de un script (las salidas de cada mapa).
+roads:
+  - [file_city, native_forest]
+  - [file_city, creature_bridge]
+  - [file_city, green_gym]
+  - [file_city, mt_infinity]
+  - [native_forest, green_gym]
+  - [native_forest, coela_point]
+  - [native_forest, dragon_eye_lake]
+  - [native_forest, drill_tunnel]
+  - [native_forest, kunemon_bed]
+  - [native_forest, mt_panorama]
+  - [kunemon_bed, creature_bridge]
+  - [creature_bridge, tropical_jungle]
+  - [coela_point, tropical_jungle]
+  - [dragon_eye_lake, beetle_land]
+  - [drill_tunnel, mt_panorama]
+  - [mt_panorama, gear_savanna]
+  - [gear_savanna, trash_mountain]
+  - [gear_savanna, factorial_town]
+  - [gear_savanna, geko_swamp]
+  - [geko_swamp, misty_trees]
+  - [misty_trees, toy_town]
+  - [misty_trees, freezeland]
+  - [freezeland, great_canyon]
+  - [freezeland, ice_sanctuary]
+  - [freezeland, secret_beach_cave]
+  - [great_canyon, ogre_fortress]
+  - [great_canyon, tropical_jungle]
+  - [great_canyon, overdell]
+  - [tropical_jungle, overdell]
+  - [tropical_jungle, mangrove]
+  - [mangrove, amida_forest]
+  - [amida_forest, ancient_dino]
+  - [overdell, grey_lords_mansion]
+  - [mt_infinity, factorial_town]

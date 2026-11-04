@@ -20,6 +20,7 @@
 #include <dwe/session/item_keeper.hpp>
 #include <dwe/session/item_trader.hpp>
 #include <dwe/session/jukebox.hpp>
+#include <dwe/session/map_visits.hpp>
 #include <dwe/session/medals_adapter.hpp>
 #include <dwe/session/merit_shop.hpp>
 #include <dwe/session/messages.hpp>
@@ -246,6 +247,9 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   auto registry = std::make_unique<BattleRegistry>();
   game.registry = registry.get();
   game.systems.push_back(std::move(registry));
+  auto mapVisits = std::make_unique<MapVisits>();
+  game.mapVisits = mapVisits.get();
+  game.systems.push_back(std::move(mapVisits));
   return game;
 }
 

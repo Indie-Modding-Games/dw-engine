@@ -67,6 +67,9 @@ screens:
   # El transporte en pájaro: las cajas del original y los rótulos PLACE y POINT.
   bird_transport:
     styles: [ui/skins/original/bird_transport/style]
+  # El mapa de la isla (tecla M, una mejora de dwe): las cajas, la tinta y la letra del original.
+  world_map:
+    styles: [ui/skins/original/world_map/style]
   # El cuadro del dinero que el guion abre sobre la charla: la caja del original.
   money_box:
     styles: [ui/skins/original/money_box/style]

@@ -54,6 +54,7 @@ inline constexpr std::array GameDocuments{
     GameDocument{.name = "curling_hud", .asset = "ui/curling_hud/document"},
     GameDocument{.name = "bug_report", .asset = "ui/bug_report/document"},
     GameDocument{.name = "save_indicator", .asset = "ui/save_indicator/document"},
+    GameDocument{.name = "world_map", .asset = "ui/world_map/document"},
 };
 
 } // namespace dwe::app

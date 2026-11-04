@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Island map layout",
+  "description": "ui/world_map/layout.yaml of the game pack: the areas of the island map the M key opens and the roads between them (docs/modulos/apps/game.md). Each area lists the map names (main.map_names slots) whose maps lie in it.",
+  "type": "object",
+  "required": ["canvas", "regions"],
+  "additionalProperties": false,
+  "properties": {
+    "canvas": { "description": "The canvas the areas are placed on: [width, height], y down.", "$ref": "#/$defs/pair" },
+    "regions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "places", "at", "radius", "colour"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+          "name": { "description": "The main.map_names slot of the area's name.", "type": "integer", "minimum": 0, "maximum": 255 },
+          "places": { "description": "The main.map_names slots (a map's loading name) of the maps in the area.", "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+          "at": { "description": "The area's centre on the canvas.", "$ref": "#/$defs/pair" },
+          "radius": { "type": "number", "exclusiveMinimum": 0 },
+          "colour": { "description": "The land's colour.", "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }
+        }
+      }
+    },
+    "roads": {
+      "description": "Roads drawn between two areas, by id.",
+      "type": "array",
+      "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" } }
+    }
+  },
+  "$defs": {
+    "pair": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } }
+  }
+}

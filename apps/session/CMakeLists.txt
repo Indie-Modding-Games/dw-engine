@@ -24,6 +24,7 @@ dwe_add_module(session
         src/inventory_adapter.cpp
         src/item_use_rules.cpp
         src/map_head_lines.cpp
+        src/map_visits.cpp
         src/partner_moves.cpp
         src/partner_view.cpp
         src/save_sections.cpp

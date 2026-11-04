@@ -1273,6 +1273,10 @@ int runGame(const Options& requested) {
         }
         menuSounds.play(open ? ui::UiCue::Cancel : ui::UiCue::Confirm);
       }
+      // M: the island map (world_map.hpp), where the game menu could open; M or cancel close it.
+      if (PlaySession* play = flow.playing(); play != nullptr && !menuHeld) {
+        play->pressWorldMap(input, !menuShut && !fadeProtected && !(*ui)->hasModal());
+      }
       (*ui)->tick(input, TickSeconds);
       menuSounds.play((*ui)->takeCues());
       if (movies && movies->playing()) {

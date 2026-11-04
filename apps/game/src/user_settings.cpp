@@ -38,6 +38,7 @@ constexpr std::string_view LongNamesKey = "long_names";
 constexpr std::string_view ShopJobBarKey = "shop_job_bar";
 constexpr std::string_view ContinuousMusicKey = "continuous_music";
 constexpr std::string_view NeedBubbleStackKey = "need_bubble_stack";
+constexpr std::string_view WorldMapKey = "world_map";
 
 } // namespace
 
@@ -104,6 +105,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* stack = tree->find(NeedBubbleStackKey)) {
       settings.needBubbleStack = reader.boolean(*stack);
+    }
+    if (const core::YamlNode* worldMap = tree->find(WorldMapKey)) {
+      settings.worldMap = reader.boolean(*worldMap);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -177,6 +181,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.needBubbleStack) {
     root.set(std::string{NeedBubbleStackKey},
              core::YamlNode::scalar(*settings.needBubbleStack ? "true" : "false"));
+  }
+  if (settings.worldMap) {
+    root.set(std::string{WorldMapKey},
+             core::YamlNode::scalar(*settings.worldMap ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

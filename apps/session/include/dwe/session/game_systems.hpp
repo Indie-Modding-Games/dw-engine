@@ -48,6 +48,7 @@ class StoryGameOrders;
 class StoryScenes;
 class TournamentAdapter;
 class CurlingAdapter;
+class MapVisits;
 
 // The tables the game systems read. Loaded once, they are shared by many sessions (dwe-sim's runs);
 // a table left empty is read by its adapter from the packs.
@@ -70,9 +71,9 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
 // The game's systems as adapters for SessionDesc::systems, in the order they tick (evolution,
 // inventory, battle, the story's game orders, story scenes, story, gym, shop, item keeper, discard
 // menu, jukebox, item trader, calendar, field items, cards, card shop, merit exchange, fishing,
-// poop piles, city, medals, battle registry), and the adapters by type for the commands of the game
-// and its menus. The session owns the adapters once given them: the typed pointers are valid while
-// it lives.
+// poop piles, city, medals, battle registry, map visits), and the adapters by type for the
+// commands of the game and its menus. The session owns the adapters once given them: the typed
+// pointers are valid while it lives.
 struct GameSystems {
   std::vector<std::unique_ptr<SessionSystem>> systems;
   EvolutionAdapter* evolution = nullptr;
@@ -112,6 +113,8 @@ struct GameSystems {
   MedalsAdapter* medals = nullptr;
   // The partners registered at the save machine.
   BattleRegistry* registry = nullptr;
+  // The maps the player has stood on, for the island map.
+  MapVisits* mapVisits = nullptr;
 };
 
 // The adapters of every game system on the packs, which must outlive them, wired to each other: the

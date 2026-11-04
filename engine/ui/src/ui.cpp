@@ -267,6 +267,9 @@ struct Ui::Impl {
 
   std::optional<Minimap> minimap;
   int minimapGeneration = 0;
+  // The images the app made (Ui::setGeneratedImage): the source each name shows now.
+  std::map<std::string, std::string, std::less<>> appImages;
+  int appImageGeneration = 0;
   std::array<MarkerSlot, 2> markers{
       MarkerSlot{.id = hud::MinimapPlayer, .elements = {}, .shown = {}},
       MarkerSlot{.id = hud::MinimapPartner, .elements = {}, .shown = {}}};
@@ -917,6 +920,19 @@ struct Ui::Impl {
     forEachVisible([](Document& document) { document.element->callHandler(LanguageHandler); });
   }
 
+  std::string setGeneratedImage(std::string_view name, assets::Image image) {
+    if (const auto shown = appImages.find(name); shown != appImages.end()) {
+      Rml::ReleaseTexture(shown->second);
+      sources.dropGenerated(shown->second.substr(GeneratedPrefix.size()));
+      appImages.erase(shown);
+    }
+    const std::string generated = std::format("{}/{}", name, ++appImageGeneration);
+    std::string source = std::string{GeneratedPrefix} + generated;
+    sources.setGenerated(generated, std::move(image));
+    appImages.emplace(std::string{name}, source);
+    return source;
+  }
+
   void setMinimap(const MinimapGrid& grid, std::string_view mapNameKey) {
     if (minimap) {
       Rml::ReleaseTexture(minimap->source);
@@ -1252,6 +1268,10 @@ float Ui::dpRatio() const {
 
 void Ui::setMinimap(const MinimapGrid& grid, std::string_view mapNameKey) {
   impl_->setMinimap(grid, mapNameKey);
+}
+
+std::string Ui::setGeneratedImage(std::string_view name, assets::Image image) {
+  return impl_->setGeneratedImage(name, std::move(image));
 }
 
 void Ui::refreshTexts() {

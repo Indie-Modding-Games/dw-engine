@@ -1,0 +1,10 @@
+# El mapa de la isla que abre la tecla M (una mejora de dwe): su título, dónde está el jugador, los sitios a los que
+# lleva su mapa, la leyenda y la tecla de cerrar.
+title: "Mapa de la isla"
+here: "Estás en:"
+exits: "Desde aquí puedes ir a"
+no_exits: "No hay salida desde aquí"
+legend_here: "Estás aquí"
+legend_exit: "Se llega desde aquí"
+legend_unknown: "Sin visitar"
+close: "Cerrar"

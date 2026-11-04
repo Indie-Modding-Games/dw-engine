@@ -70,6 +70,7 @@
 #include "tournament_bracket_screen.hpp"
 #include "tournament_schedule_screen.hpp"
 #include "user_settings.hpp"
+#include "world_map_screen.hpp"
 
 namespace dwe::app {
 
@@ -204,6 +205,10 @@ public:
   void pressPartnerMenu(const input::InputState& input);
   // The stones game's arrows and confirm button, while it runs.
   void pressCurling(const input::InputState& input) { curlingScreen_.press(input); }
+  // The island map's key (world_map.hpp): opens the map when `canOpen` (the player walks freely and
+  // no window, pause or fade holds the game) and the option allows it, or closes it.
+  void pressWorldMap(const input::InputState& input, bool canOpen);
+  [[nodiscard]] bool worldMapOpen() const { return worldMapScreen_.isOpen(); }
   // What the keyboard typed, for the story's naming box while it is open (takesText).
   [[nodiscard]] bool takesText() const;
   // Whether the menu button belongs to the game rather than opening the menu: a naming box takes
@@ -284,6 +289,8 @@ private:
   // Publishes hud.minimap_allowed when it changes.
   void publishMinimapAllowed(const MinimapScene& scene);
   // Shows the story lock's message in the dialog, unless the dialog is on screen already.
+  // Opens the island map over the field, with the maps the player has visited.
+  void openWorldMap();
   void showLockNotice(const std::string& textKey);
   // The bulk trades (bulk_amount.hpp), on the trader's screen, the card shop and the pause menu.
   void setBulkTrades(bool enabled);
@@ -329,6 +336,7 @@ private:
   TournamentMatchScreen matchScreen_;
   TradeScreen tradeScreen_;
   BirdTransportScreen birdScreen_;
+  WorldMapScreen worldMapScreen_;
   CardShopScreen cardShopScreen_;
   MeritShopScreen meritShopScreen_;
   MoneyBoxScreen moneyBoxScreen_;

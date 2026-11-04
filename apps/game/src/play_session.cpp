@@ -14,6 +14,7 @@
 #include <dwe/session/field_facts.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/map_visits.hpp>
 #include <dwe/session/session_music.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_game_orders.hpp>
@@ -33,6 +34,7 @@
 #include <format>
 #include <iterator>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -479,6 +481,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                    .sound = game_.session->sound(),
                    .ui = context.ui,
                    .story = game_.systems.story}),
+      worldMapScreen_({.ui = context.ui, .files = context.files}),
       cardShopScreen_({.shop = game_.systems.cardShop, .ui = context.ui}),
       meritShopScreen_(
           {.shop = game_.systems.meritShop, .session = game_.session.get(), .ui = context.ui}),
@@ -598,6 +601,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   // Several needs in the partner's bubble at once, on unless turned off.
   context_.ui->setSetting(NeedBubbleStackSetting,
                           context.userSettings->needBubbleStack.value_or(true));
+  // The island map on M, on unless turned off.
+  context_.ui->setSetting(WorldMapSetting, context.userSettings->worldMap.value_or(true));
   // The canonical stages on the chart, off unless turned on.
   context_.ui->setSetting(CanonicalStagesSetting,
                           context.userSettings->canonicalStages.value_or(false));
@@ -648,7 +653,8 @@ PlaySession::~PlaySession() {
                                           NamingBoxDocument,
                                           LivesBoxDocument,
                                           BirdTransportDocument,
-                                          MoneyBoxDocument}) {
+                                          MoneyBoxDocument,
+                                          WorldMapDocument}) {
     context_.ui->hide(document);
   }
 }
@@ -679,6 +685,28 @@ void PlaySession::pressStory(const input::InputState& input) {
   }
   if (storyTextbox_) {
     storyTextbox_->press(input);
+  }
+}
+
+void PlaySession::openWorldMap() {
+  static const std::set<std::string, std::less<>> None;
+  const session::MapVisits* visits = game_.systems.mapVisits;
+  worldMapScreen_.open(*scene_, visits != nullptr ? visits->maps() : None);
+}
+
+void PlaySession::pressWorldMap(const input::InputState& input, bool canOpen) {
+  const ui::UiValue enabled = context_.ui->setting(WorldMapSetting);
+  const WorldMapKeyStep step = worldMapKeyStep({
+      .mapPressed = input.wasPressed(WorldMapAction),
+      .cancelPressed = false,
+      .open = worldMapScreen_.isOpen(),
+      .canOpen = canOpen && !paused() && menuShutBy().empty() && walksByPointer(),
+      .enabled = !std::holds_alternative<bool>(enabled) || std::get<bool>(enabled),
+  });
+  if (step == WorldMapKeyStep::Open) {
+    openWorldMap();
+  } else if (step == WorldMapKeyStep::Close) {
+    worldMapScreen_.close();
   }
 }
 
@@ -742,7 +770,8 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent,
   if (sleepScreen_.active() || shopScreen_.active() || itemKeeperScreen_.active() ||
       discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
       birdScreen_.active() || cardShopScreen_.active() || meritShopScreen_.active() ||
-      scheduleScreen_.active() || bracketScreen_.playing() || storyScenes_.tournamentIntro()) {
+      scheduleScreen_.active() || bracketScreen_.playing() || storyScenes_.tournamentIntro() ||
+      worldMapScreen_.isOpen()) {
     return;
   }
   // partner.c: partnerTickOverworld runs the partner's state: the care scenes below (praise and
@@ -913,6 +942,23 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       }
     }
     context_.ui->setSetting(SmoothMotionSetting, scene_->field().smoothMotion());
+    return true;
+  }
+  if (command.name == "world_map_action") {
+    if (const auto* action = std::get_if<std::string>(&command.value);
+        action != nullptr && *action == "cancel") {
+      worldMapScreen_.close();
+    }
+    return true;
+  }
+  if (command.name == WorldMapSetting) {
+    if (const bool* enabled = std::get_if<bool>(&command.value)) {
+      context_.ui->setSetting(WorldMapSetting, *enabled);
+      context_.userSettings->worldMap = *enabled;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
     return true;
   }
   if (command.name == NeedBubbleStackSetting) {
@@ -1415,7 +1461,7 @@ bool PlaySession::paused() const {
          jukeboxScreen_.active() || tradeScreen_.active() || birdScreen_.active() ||
          cardShopScreen_.active() || meritShopScreen_.active() || fieldItemsScreen_.active() ||
          awardScreen_.active() || scheduleScreen_.active() || bracketScreen_.playing() ||
-         storyScenes_.tournamentIntro();
+         storyScenes_.tournamentIntro() || worldMapScreen_.isOpen();
 }
 
 float PlaySession::fadeLevel() const {

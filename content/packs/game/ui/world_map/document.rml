@@ -1,0 +1,81 @@
+<rml>
+<head>
+	<title>Island map</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="backdrop"></div>
+	<div id="frame">
+		<div id="header">
+			<div id="title" text-key="world_map.title"></div>
+			<div id="here"><span id="here-label" text-key="world_map.here"></span><span id="here-name"></span></div>
+		</div>
+		<div id="map">
+			<img id="map-image"/>
+			<div id="labels">
+				<div class="region" id="region-0"></div>
+				<div class="region" id="region-1"></div>
+				<div class="region" id="region-2"></div>
+				<div class="region" id="region-3"></div>
+				<div class="region" id="region-4"></div>
+				<div class="region" id="region-5"></div>
+				<div class="region" id="region-6"></div>
+				<div class="region" id="region-7"></div>
+				<div class="region" id="region-8"></div>
+				<div class="region" id="region-9"></div>
+				<div class="region" id="region-10"></div>
+				<div class="region" id="region-11"></div>
+				<div class="region" id="region-12"></div>
+				<div class="region" id="region-13"></div>
+				<div class="region" id="region-14"></div>
+				<div class="region" id="region-15"></div>
+				<div class="region" id="region-16"></div>
+				<div class="region" id="region-17"></div>
+				<div class="region" id="region-18"></div>
+				<div class="region" id="region-19"></div>
+				<div class="region" id="region-20"></div>
+				<div class="region" id="region-21"></div>
+				<div class="region" id="region-22"></div>
+				<div class="region" id="region-23"></div>
+				<div class="region" id="region-24"></div>
+				<div class="region" id="region-25"></div>
+				<div class="region" id="region-26"></div>
+				<div class="region" id="region-27"></div>
+				<div class="region" id="region-28"></div>
+				<div class="region" id="region-29"></div>
+				<div class="region" id="region-30"></div>
+				<div class="region" id="region-31"></div>
+				<div class="region" id="region-32"></div>
+				<div class="region" id="region-33"></div>
+				<div class="region" id="region-34"></div>
+				<div class="region" id="region-35"></div>
+				<div class="region" id="region-36"></div>
+				<div class="region" id="region-37"></div>
+				<div class="region" id="region-38"></div>
+				<div class="region" id="region-39"></div>
+			</div>
+			<div id="marker" class="hidden"><div id="marker-pulse"></div><div id="marker-dot"></div></div>
+		</div>
+		<div id="exits">
+			<span id="exits-title" text-key="world_map.exits"></span>
+			<span class="exit-row hidden" id="exit-0"><span class="exit-name" id="exit-name-0"></span><span class="exit-area" id="exit-area-0"></span></span>
+			<span class="exit-row hidden" id="exit-1"><span class="exit-name" id="exit-name-1"></span><span class="exit-area" id="exit-area-1"></span></span>
+			<span class="exit-row hidden" id="exit-2"><span class="exit-name" id="exit-name-2"></span><span class="exit-area" id="exit-area-2"></span></span>
+			<span class="exit-row hidden" id="exit-3"><span class="exit-name" id="exit-name-3"></span><span class="exit-area" id="exit-area-3"></span></span>
+			<span class="exit-row hidden" id="exit-4"><span class="exit-name" id="exit-name-4"></span><span class="exit-area" id="exit-area-4"></span></span>
+			<span class="exit-row hidden" id="exit-5"><span class="exit-name" id="exit-name-5"></span><span class="exit-area" id="exit-area-5"></span></span>
+			<span class="exit-row hidden" id="exit-6"><span class="exit-name" id="exit-name-6"></span><span class="exit-area" id="exit-area-6"></span></span>
+			<span class="exit-row hidden" id="exit-7"><span class="exit-name" id="exit-name-7"></span><span class="exit-area" id="exit-area-7"></span></span>
+			<span id="no-exits" class="hidden" text-key="world_map.no_exits"></span>
+		</div>
+		<div id="footer">
+			<span class="legend-dot legend-here"></span><span class="legend" text-key="world_map.legend_here"></span>
+			<span class="legend-dot legend-exit"></span><span class="legend" text-key="world_map.legend_exit"></span>
+			<span class="legend-dot legend-unknown"></span><span class="legend" text-key="world_map.legend_unknown"></span>
+			<span id="close"><span class="key" id="close-key"></span><span text-key="world_map.close"></span></span>
+		</div>
+	</div>
+</body>
+</rml>

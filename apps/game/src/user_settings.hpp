@@ -66,6 +66,8 @@ struct UserSettings {
   // three of the partner's needs side by side in one balloon, most urgent first, instead of the
   // original's two taking turns; on when not chosen yet.
   std::optional<bool> needBubbleStack = std::nullopt;
+  // Whether M opens the island map (world_map: true, false; world_map.hpp); on when not chosen.
+  std::optional<bool> worldMap = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

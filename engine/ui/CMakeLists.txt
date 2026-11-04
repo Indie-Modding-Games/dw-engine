@@ -27,6 +27,7 @@ dwe_add_module(ui
         src/text_font.cpp
         src/ui.cpp
         src/ui_renderer.cpp
+        src/world_map.cpp
     DEPS core platform input assets render script
     PRIVATE_LIBS RmlUi::RmlUi sol2::sol2 ${LUA_LIBRARIES}
     # The image tests write indexed PNGs and KTX2 textures.

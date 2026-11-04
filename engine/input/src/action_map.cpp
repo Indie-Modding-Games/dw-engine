@@ -58,6 +58,11 @@ ActionMap defaultActionMap() {
   map.bind("settings", KeyBinding{keys::F10});
   map.bind("settings", GamepadButtonBinding{GamepadButton::Back});
 
+  // The island map (a dwe improvement; apps/game world_map.hpp): M, or the pad's left shoulder,
+  // which the original's field leaves without a use.
+  map.bind("world_map", KeyBinding{keys::M});
+  map.bind("world_map", GamepadButtonBinding{GamepadButton::LeftShoulder});
+
   map.bind("move_left", KeyBinding{keys::A});
   map.bind("move_left", KeyBinding{keys::Left});
   map.bind("move_left", GamepadButtonBinding{GamepadButton::DpadLeft});

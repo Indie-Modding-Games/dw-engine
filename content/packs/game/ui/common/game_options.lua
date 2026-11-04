@@ -122,6 +122,10 @@ game_options = {
     texts = "pause_menu.minimap_mode",
     default = "on",
   },
+  -- Island map: M (or the pad's left shoulder) opens a map of the whole island with where the
+  -- player is and where his map leads (on by default; off leaves the key without a use, as the
+  -- original has no such map).
+  { id = "world-map", setting = "world_map", label = "pause_menu.world_map", default = true },
 }
 
 -- The option's current value: what the game published, or its default.

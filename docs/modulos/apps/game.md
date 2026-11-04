@@ -869,6 +869,41 @@ del menú, y se esconde bajo cualquier ventana (más arriba, «Minimapa bajo las
 |---|---|---|---|---|
 | Minimapa redondo en el HUD | No existe | Disco del mapa alrededor del jugador, con el norte (−Z) arriba, el nombre del mapa encima y el día y la hora debajo; el jugador en el centro con su orientación, el compañero donde está (en el borde si queda fuera); con los dos aspectos, los dos con el mismo dibujo moderno (aro brillante y pastillas), que se lee mejor sobre los fondos del original que sus cajas. Se ve con `on` y fuera de combates, escenas y minijuegos | `minimap_setting_tests.cpp` («the minimap shows only while the field runs…», «the options page's minimap row hides the HUD's minimap at once and saves the choice», modos y guardado); `in_game_options_tests.cpp` («the options page shows and hides the minimap with either look»); `ui_tests.cpp` («the HUD shows the minimap unless it is off…», «…round the player, north-up»); `minimap_tests.cpp` y `minimap_disc_tests.cpp` (cálculo del disco y del aro); ruta `route-minimap-clear.yaml` | Mejora (opción) |
 
+## Mapa de la isla
+
+Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no tiene mapa de la isla): la tecla M
+(L1 en el mando, la acción `world_map` de `defaultActionMap`) abre a pantalla completa un mapa de toda la isla, donde
+el jugador anda libre (sin menú, guion, fundido ni ventana abierta, como el menú de pausa). M o Esc (cancelar) lo
+cierran. Mientras está abierto el juego se para (`PlaySession::paused`). El ajuste `world_map` (fila «Mapa de la
+isla», «Island map» en inglés, de las opciones; guardado en los ajustes del usuario) apaga la tecla; apagado, M sigue
+cerrando un mapa abierto.
+
+- **El dibujo**: el original no trae ninguna imagen de la isla, así que el motor la pinta al abrirla
+  (`ui::paintWorldMap`, `engine/ui/world_map.hpp`) desde `ui/world_map/layout.yaml` del paquete del juego (esquema
+  `world_map_layout`): cada zona con su centro, su radio y su color en un lienzo de 1000 × 640, y los caminos entre
+  zonas. La tierra es la unión suave de las zonas con una costa ondulada y entintada; cada punto de tierra es de la zona
+  más cercana (bordes punteados), con bajíos, ondas en el mar y caminos a trazos. Las zonas sin visitar se pintan
+  desvaídas hacia el color del pergamino. La imagen se registra como `generated:world_map/<n>` (`Ui::setGeneratedImage`)
+  y solo se repinta si cambian las zonas conocidas.
+- **Las zonas**: una zona agrupa los nombres que el original enseña al entrar en un mapa (`MapEntry::loadingName`, el
+  texto `main.map_names.<n>`), así que sus nombres salen traducidos y siguen al cambio de idioma. Su lugar en el lienzo
+  es de dwe, a mano, coherente con las salidas entre mapas.
+- **Dónde está el jugador**: la zona de su mapa, con un marcador que late sobre su nombre, y arriba «Estás en: lugar
+  (zona)».
+- **A dónde puede ir**: los lugares a los que llevan las salidas de su mapa: los saltos a pie cuya celda de disparo
+  (110 + salida) tiene el mapa (`checkMapInteraction`) y los cambios de mapa de sus guiones al pisar o
+  confirmar (`field/script_warps`), sin repetir y sin su propio lugar. Salen en una línea bajo el mapa y sus zonas
+  resaltadas.
+- **Visitado**: la sección de partida `map_visits` (`session::MapVisits`) guarda los mapas que ha pisado el jugador. Una
+  partida anterior sin la sección carga sin visitas: solo se conoce la zona donde está.
+- **Pieles**: la moderna, con su marco y sus colores; la original, con su caja (`.original-box`) y su fuente a 22dp en
+  el título, el lugar, las salidas y la leyenda. Los nombres de las zonas usan la fuente moderna pequeña en las dos
+  pieles, porque la del original a 22dp taparía la isla.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Mapa de la isla (M) | No existe | `WorldMapScreen` (`world_map_screen.hpp`) publica `world_map.*` y sube `world_map.revision`; el documento `world_map` lo dibuja. La lógica pura (zonas, conocidas, marcador, salidas, tecla) está en `world_map.hpp` | `world_map_tests.cpp` de `apps/game` («a map lies in the area…», «the player knows the areas…», «the marker stands on the centre…», «the exits are the walk warps…», «M opens the island map…», «the game pack's island layout…»); `world_map_tests.cpp` de `engine/ui` (el pintor); `map_visits_tests.cpp` (partida nueva y antigua); `in_game_options_tests`; capturas en las dos pieles y dos lugares con `text_fit` | Mejora (opción) |
+
 ## Opciones en partida
 
 Las opciones se cambian sin volver al título: la página «Opciones» del menú de pausa tiene las de pantalla (modo de
@@ -889,7 +924,7 @@ nada. Bajo el recuadro de pausa se lee la tecla («F10 Opciones», con la del di
 Las opciones propias del motor salen de una lista, `ui/common/game_options.lua` (`game_options`): id de la fila,
 ajuste de la UI que publica el juego y que la fila envía como orden, texto, valor por defecto y, para las que no son
 sí/no, sus valores (`values`) y el prefijo de sus textos (`texts`). La página llena con ellas, en orden, las filas
-libres `option-slot-<n>` del documento (16) y les da el id de la opción, así que una opción nueva solo necesita su
+libres `option-slot-<n>` del documento (17) y les da el id de la opción, así que una opción nueva solo necesita su
 entrada en esa lista y que el juego atienda su ajuste; ningún documento necesita una fila propia.
 
 ## Contenido oculto

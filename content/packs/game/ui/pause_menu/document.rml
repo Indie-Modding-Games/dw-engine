@@ -522,6 +522,7 @@
 				<button id="option-slot-14" class="option hidden" onclick="adjust_slot(document, 14, 1)"><span class="label" id="option-slot-14-label"></span><span class="value" id="option-slot-14-value"></span></button>
 				<button id="option-slot-15" class="option hidden" onclick="adjust_slot(document, 15, 1)"><span class="label" id="option-slot-15-label"></span><span class="value" id="option-slot-15-value"></span></button>
 				<button id="option-slot-16" class="option hidden" onclick="adjust_slot(document, 16, 1)"><span class="label" id="option-slot-16-label"></span><span class="value" id="option-slot-16-value"></span></button>
+				<button id="option-slot-17" class="option hidden" onclick="adjust_slot(document, 17, 1)"><span class="label" id="option-slot-17-label"></span><span class="value" id="option-slot-17-value"></span></button>
 				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 
