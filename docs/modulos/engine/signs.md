@@ -119,6 +119,7 @@ activada por defecto; desactivada, el mapa muestra las texturas originales.
 | `trai00` | Placa del soporte de abajo | GREEN GYM | GIMNASIO VERDE |
 | `twnb10`…`twnb17` | Placa de la tienda de herramientas y cartel de abierto (cada fase de la plaza) | (ya en inglés) | TIENDA DE OBJETOS / ESTAMOS ABIERTOS |
 | `twnb03`…`twnb06`, `twnb11`…`twnb14`, `twnb18`…`twnb21` | Nombre del restaurante en el mostrador | (ya en inglés) | RESTAURANTE |
+| `twna02`…`twna13`, `topn01`, `tend01`, `tend02` | Placa del banco de objetos junto a la granja | (ya en inglés) | BANCO DE OBJETOS |
 
 Pendientes y huecos: el inventario completo de carteles por mapa (qué queda y por qué) está en el seguimiento del
 trabajo de traducción; las palabras del mapa luminoso de `frzl03` están cortadas en muchos trozos de sprite y el overlay

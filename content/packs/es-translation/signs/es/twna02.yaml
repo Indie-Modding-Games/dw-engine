@@ -1,0 +1,15 @@
+# The item bank's plate by the farm, in English in the original; Spanish writes it again (its yellow stripe stays).
+signs:
+  - id: item_bank
+    region: [166, 246, 108, 46]
+    clear:
+      mode: diffuse
+      quad: [[168, 262], [271, 247], [271, 270], [168, 283.5]]
+      color: "#393131"
+      tolerance: 40
+    corners: [[176, 263.5], [268, 250.5], [268, 270], [176, 283]]
+    text: signs.twna_item_bank
+    size: 13
+    line_spacing: 0.85
+    color: "#f7ad00"
+    colors: region
