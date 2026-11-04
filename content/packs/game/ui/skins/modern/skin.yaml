@@ -16,6 +16,9 @@ screens:
     styles: [ui/skins/modern/partner_menu/style]
   battle:
     styles: [ui/skins/modern/battle/style]
+  # Los números sobre el compañero en el campo: los dígitos de la batalla.
+  field_numbers:
+    styles: [ui/skins/modern/battle/style]
   # El selector de la exploración libre usa el panel y las entradas del menú de pausa.
   destination_choice:
     styles: [ui/skins/modern/pause_menu/style]

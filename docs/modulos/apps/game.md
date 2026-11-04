@@ -279,6 +279,30 @@ cambiar de mapa.
 | Orden | cubre al jugador y al compañero; el reloj, las barras y el menú quedan encima | igual (contact sheet en `_work/tmp/w19-fog/`) | Igual |
 | Al entrar en un mapa | la cámara anterior (`CAMERA_X_PREVIOUS`) da un salto de fase; se envuelve un paso por cuadro | igual, con la cámara de dwe | Suposición (no medido) |
 
+- Reinicio de la animación de objetos del mapa (rutina 21, `overworld.c: resetMapObjectAnimation`):
+  `restartObjectAnimations` (`story_scene_glue.cpp`) pone a cero el reloj y el cuadro de los objetos 2D del mapa desde
+  la variable 247, tantos como dice la 248 (`MapDepthLayers::restartAnimation`). Las chispas de la descarga de
+  Elecmon (`gias02`, objeto 41) salen así desde su primer cuadro.
+- Cifras sobre el compañero en el campo (`entity_text.c: addEntityText`, `setCombatTextPosition`,
+  `renderEntityText`): `FieldNumbers` (`field_numbers.cpp`) toma el daño que hizo `deal_damage`
+  (`StoryGameOrders::takePartnerDamage`) y lo pone donde estaban los pies del compañero al añadirlo (en el campo no lo
+  sigue); avanza una vez por cuadro del campo (1/20 s) con el mismo bote y la misma cola que las de batalla
+  (`screens::DamageNumbers`), 31 cuadros. El documento `field_numbers` usa el estilo de las cifras de batalla de cada
+  aspecto. Un combate que empieza las quita.
+- `deal_damage` (`script_interp.c`, `scriptPauseGame(0xff)` antes del daño) congela el mundo en cuanto hace daño, no al
+  girar los personajes: así la caída del jugador (animación 17) y la del compañero (40) llegan al final.
+
+Medido en el original (2026-11-03, descarga de Elecmon en `gias02`, script 68, sección 5, tres veces): cada descarga
+quita el 20 % de la vida máxima (800 → 640 → 480 → 320) y enseña "160" sobre el compañero desde unos 10 vblanks
+después hasta los 94; a los 104 ya no está (31 cuadros del campo ≈ 93 vblanks). Las chispas salen pequeñas a los 10,
+grandes a los 18 y se van antes de los 30. El jugador retrocede unas 400 unidades y el compañero unas 380, y los dos
+caen; la cifra sigue a la vista con el cuadro de texto abierto. dwe: la cifra se ve hasta +94 y no a +106, el jugador
+retrocede 396 y el compañero 383, y las tres descargas dan 640, 480 y 320. Igual.
+
+Suposición: en dwe las chispas van 1 o 2 cuadros del campo por delante (grandes a +10 frente a +18) y el cuadro de
+texto se abre antes (+30 frente a +44..64; depende del giro de Elecmon, no medido). Las cifras de curación con objetos
+en el campo (`item.c`, `addEntityText`) aún no salen.
+
 Medido en el original (2026-10-31): las nubes y chispas del gimnasio (`TRN_tickDefenseTraining`, estado
 `trn_def_normal_bonus`) las crea una rutina de la lista de objetos y `tickObjects` las avanza el mismo cuadro, así que
 se dibujan por primera vez en el estado 1 (la chispa enseña su destello en el segundo cuadro dibujado y dura uno menos);

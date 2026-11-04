@@ -225,6 +225,10 @@ std::vector<StoryMapEdit> StoryGameOrders::takeMapEdits() {
   return std::exchange(context_->mapEdits, {});
 }
 
+std::vector<std::int32_t> StoryGameOrders::takePartnerDamage() {
+  return std::exchange(context_->partnerDamage, {});
+}
+
 void StoryGameOrders::bind(GameSession& session) {
   context_->session = &session;
   if (published_) {

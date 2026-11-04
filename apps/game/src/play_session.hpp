@@ -38,6 +38,7 @@
 #include "feed_scene.hpp"
 #include "field_hud.hpp"
 #include "field_items_screen.hpp"
+#include "field_numbers.hpp"
 #include "field_poop.hpp"
 #include "field_scene.hpp"
 #include "field_story_props.hpp"
@@ -329,6 +330,8 @@ private:
   MeritShopScreen meritShopScreen_;
   MoneyBoxScreen moneyBoxScreen_;
   FieldItemsScreen fieldItemsScreen_;
+  // The numbers over the partner the story's deal_damage shows on the field.
+  std::optional<FieldNumbers> fieldNumbers_;
   AwardScreen awardScreen_;
   PraiseScoldCall praiseScold_;
   FishingScreen fishingScreen_;

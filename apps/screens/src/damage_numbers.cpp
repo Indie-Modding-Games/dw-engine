@@ -5,6 +5,7 @@
 #include <format>
 #include <iterator>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace dwe::screens {
@@ -92,7 +93,7 @@ bool DamageNumbers::empty() const {
   return std::ranges::all_of(queues_, [](const Queue& queue) { return queue.entries.empty(); });
 }
 
-ScreenSettings settingsOf(const std::vector<ShownNumber>& shown) {
+ScreenSettings settingsOf(const std::vector<ShownNumber>& shown, std::string_view setting) {
   std::string text;
   for (const ShownNumber& number : shown) {
     std::format_to(std::back_inserter(text), "{:.1f} {:.1f} {} {} {} {} {} ",
@@ -100,7 +101,7 @@ ScreenSettings settingsOf(const std::vector<ShownNumber>& shown) {
                    number.y, number.value, static_cast<int>(number.colour),
                    static_cast<int>(number.icon));
   }
-  return {{.name = std::string{DamageNumbersSetting}, .value = std::move(text)}};
+  return {{.name = std::string{setting}, .value = std::move(text)}};
 }
 
 } // namespace dwe::screens

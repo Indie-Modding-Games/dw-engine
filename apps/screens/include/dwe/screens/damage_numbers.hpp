@@ -19,6 +19,9 @@ namespace dwe::screens {
 // (NumberColour) and the icon (NumberIcon).
 inline constexpr std::string_view DamageRevisionSetting = "battle.damage.revision";
 inline constexpr std::string_view DamageNumbersSetting = "battle.damage.numbers";
+// The same for the numbers over the partner on the field (ui/field_numbers/document).
+inline constexpr std::string_view FieldNumbersRevisionSetting = "field.numbers.revision";
+inline constexpr std::string_view FieldNumbersSetting = "field.numbers";
 
 // The tints a battle's numbers take (utils.c: TEXT_COLORS): 0, the digits as they are, for the
 // damage of a hit or a block (battle_main.c: BTL_tickAttackHits), and 0xc, red and blue only, for
@@ -99,7 +102,8 @@ private:
   std::vector<ShownNumber> shown_;
 };
 
-// The numbers as the settings the battle document reads.
-[[nodiscard]] ScreenSettings settingsOf(const std::vector<ShownNumber>& shown);
+// The numbers as the settings a document reads, under `setting` (the battle's by default).
+[[nodiscard]] ScreenSettings settingsOf(const std::vector<ShownNumber>& shown,
+                                        std::string_view setting = DamageNumbersSetting);
 
 } // namespace dwe::screens

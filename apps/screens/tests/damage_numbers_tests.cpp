@@ -124,6 +124,14 @@ TEST_CASE("the shown numbers pack as anchor percent, offset, value, colour and i
         "50.0 45.0 4 -12 123 12 0 50.0 45.0 0 -8 500 11 2 ");
 }
 
+TEST_CASE("the field's numbers pack the same under the field document's setting") {
+  const std::vector<ShownNumber> shown{{.anchor = Feet, .x = 0, .y = -8, .value = 160}};
+  const auto settings = dwe::screens::settingsOf(shown, dwe::screens::FieldNumbersSetting);
+  REQUIRE(settings.size() == 1);
+  CHECK(settings.front().name == "field.numbers");
+  CHECK(std::get<std::string>(settings.front().value) == "50.0 45.0 0 -8 160 0 0 ");
+}
+
 TEST_CASE("a healing or raise number keeps its icon and green tint while it bounces in its queue") {
   DamageNumbers numbers;
   numbers.add(0, 1500, NumberColour::Gain, Feet, NumberIcon::Hp);

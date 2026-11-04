@@ -2,8 +2,11 @@
 
 #include <dwe/core/log.hpp>
 #include <dwe/game/field/field.hpp>
+#include <dwe/render/map_layers.hpp>
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include "battle_trigger.hpp"
@@ -25,6 +28,16 @@ game::story::BattleOutcome storyOutcome(game::battle::Outcome outcome) {
 }
 
 } // namespace
+
+void restartObjectAnimations(render::MapDepthLayers& layers, std::int64_t first,
+                             std::int64_t count) {
+  core::logDebug("[port:story] resetMapObjectAnimation (overworld.c:1002): objects {} to {}", first,
+                 first + count - 1);
+  for (std::int64_t object = std::max<std::int64_t>(first, 0); object < first + count; ++object) {
+    // restartAnimation leaves an object the map lacks alone; the original writes past its objects.
+    layers.restartAnimation(static_cast<std::size_t>(object));
+  }
+}
 
 void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
                             const assets::DigimonTable* species, FieldScene& scene) {
@@ -91,6 +104,16 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
     // goes on.
     if (screen->screen == session::StoryScreen::SmokeEffect) {
       scene.startObjectSmoke();
+      if (screen->waits) {
+        scenes.screenClosed();
+      }
+      continue;
+    }
+    // Routine 21 (overworld.c: resetMapObjectAnimation): the `second` map objects from `first` play
+    // their sprites again from the first frame, as Elecmon's sparks each time it shocks the player;
+    // the section goes on.
+    if (screen->screen == session::StoryScreen::ObjectAnimation) {
+      restartObjectAnimations(scene.mapLayers(), screen->first, screen->second);
       if (screen->waits) {
         scenes.screenClosed();
       }

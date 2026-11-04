@@ -4,6 +4,7 @@
 #include <dwe/game/partner/state.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/game_session.hpp>
+#include <dwe/session/story_adapter.hpp>
 
 #include <algorithm>
 #include <array>
@@ -221,7 +222,12 @@ core::Result<ApiValue> hasCondition(const StoryGameContext& context, std::int64_
   return ApiValue{false};
 }
 
-core::Result<ApiValue> dealDamage(const StoryGameContext& context, std::int64_t variable) {
+core::Result<ApiValue> dealDamage(StoryGameContext& context, std::int64_t variable) {
+  // script_interp.c:1971: scriptPauseGame(0xff) first, so the player and the partner stay where
+  // the script puts them (and play what it plays) from this order on.
+  if (context.desc.story != nullptr && context.desc.story->runner() != nullptr) {
+    context.desc.story->runner()->freezeWorld();
+  }
   const auto percent = context.variable(variable);
   if (!percent) {
     return std::unexpected{percent.error()};
@@ -232,12 +238,13 @@ core::Result<ApiValue> dealDamage(const StoryGameContext& context, std::int64_t 
   if (partner.stats.currentHp - damage < LeastHpLeft) {
     damage = partner.stats.currentHp - LeastHpLeft;
   }
-  core::logDebug("[port:story] deal_damage (script_interp.c:1970): {}% of {} = {}, HP {} -> {}; "
-                 "the freeze and the damage number are not drawn yet",
+  core::logDebug("[port:story] deal_damage (script_interp.c:1970): {}% of {} = {}, HP {} -> {}",
                  *percent, partner.stats.base[Stat::Hp], damage, partner.stats.currentHp,
                  partner.stats.currentHp - damage);
   partner.stats.currentHp -= static_cast<std::int32_t>(damage);
   context.game().partner().takeStoryChange(std::move(partner));
+  // script_interp.c:1989: addEntityText(partner, 0, 0, damage, 0), the number over the partner.
+  context.partnerDamage.push_back(static_cast<std::int32_t>(damage));
   return ApiValue{};
 }
 
@@ -429,7 +436,9 @@ core::Result<void> publishPartnerOrders(script::ApiRegistry& api, StoryGameConte
             {names::ReduceMerit, oneOperand(&reduceMerit)},
             {names::RemoveCondition, oneOperand(&removeCondition)},
             {names::HasCondition, oneOperand(&hasCondition)},
-            {names::DealDamage, oneOperand(&dealDamage)},
+            {names::DealDamage, integerOrder<1>([&context](const Operands1& operands) {
+               return dealDamage(context, operands[0]);
+             })},
             {names::LearnMove, oneOperand(&learnMove)},
             {names::KnowsMove, oneOperand(&knowsMove)},
             {names::StorePartnerSpecies, oneOperand(&storePartnerSpecies)},

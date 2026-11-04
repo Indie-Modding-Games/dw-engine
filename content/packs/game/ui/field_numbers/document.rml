@@ -1,0 +1,20 @@
+<rml>
+<head>
+	<title>Field numbers</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="damage">
+		<div id="dn-0" class="dn hidden"><div id="di-0" class="di hidden"></div><div id="dd-0-0" class="dd hidden"></div><div id="dd-0-1" class="dd hidden"></div><div id="dd-0-2" class="dd hidden"></div><div id="dd-0-3" class="dd hidden"></div></div>
+		<div id="dn-1" class="dn hidden"><div id="di-1" class="di hidden"></div><div id="dd-1-0" class="dd hidden"></div><div id="dd-1-1" class="dd hidden"></div><div id="dd-1-2" class="dd hidden"></div><div id="dd-1-3" class="dd hidden"></div></div>
+		<div id="dn-2" class="dn hidden"><div id="di-2" class="di hidden"></div><div id="dd-2-0" class="dd hidden"></div><div id="dd-2-1" class="dd hidden"></div><div id="dd-2-2" class="dd hidden"></div><div id="dd-2-3" class="dd hidden"></div></div>
+		<div id="dn-3" class="dn hidden"><div id="di-3" class="di hidden"></div><div id="dd-3-0" class="dd hidden"></div><div id="dd-3-1" class="dd hidden"></div><div id="dd-3-2" class="dd hidden"></div><div id="dd-3-3" class="dd hidden"></div></div>
+		<div id="dn-4" class="dn hidden"><div id="di-4" class="di hidden"></div><div id="dd-4-0" class="dd hidden"></div><div id="dd-4-1" class="dd hidden"></div><div id="dd-4-2" class="dd hidden"></div><div id="dd-4-3" class="dd hidden"></div></div>
+		<div id="dn-5" class="dn hidden"><div id="di-5" class="di hidden"></div><div id="dd-5-0" class="dd hidden"></div><div id="dd-5-1" class="dd hidden"></div><div id="dd-5-2" class="dd hidden"></div><div id="dd-5-3" class="dd hidden"></div></div>
+		<div id="dn-6" class="dn hidden"><div id="di-6" class="di hidden"></div><div id="dd-6-0" class="dd hidden"></div><div id="dd-6-1" class="dd hidden"></div><div id="dd-6-2" class="dd hidden"></div><div id="dd-6-3" class="dd hidden"></div></div>
+		<div id="dn-7" class="dn hidden"><div id="di-7" class="di hidden"></div><div id="dd-7-0" class="dd hidden"></div><div id="dd-7-1" class="dd hidden"></div><div id="dd-7-2" class="dd hidden"></div><div id="dd-7-3" class="dd hidden"></div></div>
+	</div>
+</body>
+</rml>

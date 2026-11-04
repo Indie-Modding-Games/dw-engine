@@ -113,6 +113,9 @@ public:
   // The map edits the orders made since the last call, in order, for the field to apply to the map
   // it shows (story_map_edits.hpp). Edits made while no field is shown are dropped.
   [[nodiscard]] std::vector<StoryMapEdit> takeMapEdits();
+  // The damage deal_damage did to the partner since the last call, oldest first, for the field to
+  // show over the partner (script_interp.c:1989: addEntityText).
+  [[nodiscard]] std::vector<std::int32_t> takePartnerDamage();
 
 private:
   void bind(GameSession& session);

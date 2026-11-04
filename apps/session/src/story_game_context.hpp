@@ -66,6 +66,8 @@ struct StoryGameContext {
   std::optional<assets::DigimonTable> digimon;
   // The map edits the field has not taken yet.
   std::vector<StoryMapEdit> mapEdits;
+  // The damage deal_damage did that the field has not shown yet, oldest first.
+  std::vector<std::int32_t> partnerDamage;
 
   [[nodiscard]] GameSession& game() const;
   // A story variable, and a write that keeps the value within a variable's byte, logged.

@@ -119,6 +119,7 @@ dwe_add_app(game
         src/tournament_match_screen.cpp
         src/tournament_schedule_screen.cpp
         src/field_items_screen.cpp
+        src/field_numbers.cpp
         src/award_screen.cpp
         src/fishing_screen.cpp
         src/field_toilet.cpp
@@ -176,7 +177,7 @@ endif()
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
     add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/chart_requirements.cpp src/control_json.cpp src/curling_recruit_bar.cpp
-                                  src/evolution_effects.cpp src/field_effects.cpp src/field_mist.cpp src/flame_texture.cpp
+                                  src/evolution_effects.cpp src/field_effects.cpp src/field_mist.cpp src/field_numbers.cpp src/flame_texture.cpp
                                   src/death_effects.cpp src/ending_effects.cpp
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/money_box_screen.cpp src/minimap_setting.cpp
                                   src/pause_box.cpp src/place_command.cpp src/player_chart.cpp src/player_city.cpp src/partner_set_command.cpp src/story_set_command.cpp src/shop_job_bar.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp

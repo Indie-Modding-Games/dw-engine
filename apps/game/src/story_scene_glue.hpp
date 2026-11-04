@@ -28,7 +28,16 @@
 #include "tournament_schedule_screen.hpp"
 #include "trade_screen.hpp"
 
+namespace dwe::render {
+class MapDepthLayers;
+} // namespace dwe::render
+
 namespace dwe::app {
+
+// Story routine 21 (overworld.c: resetMapObjectAnimation): `count` map objects from `first` start
+// their sprite animations over from the first frame.
+void restartObjectAnimations(render::MapDepthLayers& layers, std::int64_t first,
+                             std::int64_t count);
 
 // The app's side of the story's scenes (session::StoryScenes): it starts the battles the story
 // asks for on the battle screen and reports their outcome; the menus and the partner's scenes the

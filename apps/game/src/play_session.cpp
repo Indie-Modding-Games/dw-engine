@@ -16,6 +16,7 @@
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/session_music.hpp>
 #include <dwe/session/story_adapter.hpp>
+#include <dwe/session/story_game_orders.hpp>
 #include <dwe/session/story_scenes.hpp>
 #include <dwe/ui/minimap.hpp>
 
@@ -596,6 +597,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                          context.userSettings->saveNotice.value_or(true));
   setBulkTrades(context.userSettings->bulkTrades.value_or(true));
   context_.ui->show("hud");
+  fieldNumbers_.emplace(*context_.ui, scene_->field().rules().transition.frameSeconds);
   // The tuning panel tunes the game's ruleset, sets the speed of its clock, pauses it and jumps it.
   // It is attached last and detached first, so it never points at a game half built or half gone.
   context_.debugUi->attachTuning(
@@ -829,6 +831,17 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent,
     storyLink_->afterFieldTick();
     game_.session->tick(TickSeconds);
     applyStoryMapEdits(*scene_, game_.systems.storyOrders);
+    if (game_.systems.storyOrders != nullptr) {
+      const std::vector<std::int32_t> damage = game_.systems.storyOrders->takePartnerDamage();
+      std::optional<screens::WindowFraction> feet;
+      if (!damage.empty()) {
+        if (const auto shown = scene_->fighterFeetOnWindow(std::nullopt)) {
+          feet = screens::WindowFraction{.x = shown->x, .y = shown->y};
+        }
+      }
+      fieldNumbers_->add(damage, feet);
+    }
+    fieldNumbers_->tick(TickSeconds);
     scene_->finishTick();
     // map.c: changeMap clears the last map's dropped items and chests as the new map loads, before
     // its head script spawns this map's: none of them is drawn over the new map's fade in.
@@ -1247,6 +1260,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
                       (battleRanLastFrame_ && !battleScreen_.active());
   if (battleRanLastFrame_ != battleScreen_.active()) {
     context_.ui->setSetting(BattleActiveSetting, battleScreen_.active());
+  }
+  // The battle draws its own numbers; the field's go with the field it leaves.
+  if (battleScreen_.active() && fieldNumbers_->active()) {
+    fieldNumbers_->clear();
   }
   battleRanLastFrame_ = battleScreen_.active();
   if (evolutionRanLastFrame_ != evolutionScene_.active()) {

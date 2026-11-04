@@ -27,6 +27,9 @@ screens:
     styles: [ui/skins/original/partner_menu/style]
   battle:
     styles: [ui/skins/original/battle/style]
+  # Los números sobre el compañero en el campo (entity_text.c: renderEntityText): los dígitos de la batalla.
+  field_numbers:
+    styles: [ui/skins/original/battle/style]
   # El selector de la exploración libre usa el panel y las entradas del menú de pausa.
   destination_choice:
     styles: [ui/skins/original/pause_menu/style]
