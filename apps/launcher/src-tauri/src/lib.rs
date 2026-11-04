@@ -34,6 +34,9 @@ pub struct AppState {
     /// The newest release, as the last check saw it.
     pub release: Mutex<Option<Release>>,
     pub tokens: Box<dyn TokenStore>,
+    /// What the keyring said last ("saved", "none", "unavailable"): asked once, then kept, so
+    /// drawing the page never waits on the keyring.
+    pub token_state: Mutex<Option<&'static str>>,
     pub game_running: AtomicBool,
 }
 
@@ -66,6 +69,7 @@ pub fn run() {
         cancel: Arc::new(AtomicBool::new(false)),
         release: Mutex::new(None),
         tokens: Box::new(token::Keyring),
+        token_state: Mutex::new(None),
         game_running: AtomicBool::new(false),
     };
     tauri::Builder::default()

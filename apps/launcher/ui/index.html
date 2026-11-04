@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>dwe</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="js/app.js"></script>
+  </head>
+  <body>
+    <div class="backdrop" id="backdrop" aria-hidden="true"></div>
+    <div class="shell">
+      <nav class="rail" id="rail" aria-label="Juegos">
+        <div class="rail-panel">
+          <ul class="rail-list" id="sidebar" data-slot="sidebar"></ul>
+          <button class="rail-settings" id="settingsButton" type="button">
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+              <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.4-2.1.9-1.4-.9-1.4-1.7-.3-.6-1.5.6-1.6-1.2-1.2-1.6.6-1.5-.6-.3-1.7L12 3.5l-1.4.9-.3 1.7-1.5.6-1.6-.6-1.2 1.2.6 1.6-.6 1.5-1.7.3-.9 1.4.9 1.4 1.7.3.6 1.5-.6 1.6 1.2 1.2 1.6-.6 1.5.6.3 1.7 1.4.9 1.4-.9.3-1.7 1.5-.6 1.6.6 1.2-1.2-.6-1.6.6-1.5Z" />
+            </svg>
+            <span class="sr-only" data-text="settings"></span>
+          </button>
+        </div>
+      </nav>
+
+      <main class="main" id="main">
+        <header class="brand">
+          <span class="brand-mark">dwe</span>
+          <span class="brand-sub" data-text="appSubtitle"></span>
+        </header>
+
+        <section class="view setup" id="setupView" hidden aria-labelledby="setupTitle">
+          <h1 id="setupTitle" data-text="setupTitle"></h1>
+          <p class="lead" data-text="setupLead"></p>
+          <ul class="game-cards" id="gameCards" role="list"></ul>
+          <div class="setup-bottom">
+            <button class="dropzone" id="dropzone" type="button" aria-describedby="dropHint">
+              <svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6" />
+                <circle cx="12" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6" />
+                <path d="M12 3v3M21 12h-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+              <span class="dropzone-title" id="dropTitle"></span>
+              <span class="dropzone-hint" id="dropHint"></span>
+              <span class="dropzone-hint muted" id="dropUnsupported"></span>
+            </button>
+            <aside class="privacy" aria-labelledby="privacyTitle">
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false">
+                <path d="M12 3 5 6v5c0 4.4 3 8.3 7 10 4-1.7 7-5.6 7-10V6l-7-3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                <path d="m9 12 2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <div>
+                <h2 id="privacyTitle" data-text="privacyTitle"></h2>
+                <p data-text="privacyBody"></p>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view home" id="homeView" hidden aria-labelledby="homeTitle">
+          <div class="hero">
+            <h1 id="homeTitle"></h1>
+            <p class="hero-meta" id="homeMeta"></p>
+          </div>
+          <div class="notice" id="notice" role="status" hidden></div>
+          <div class="tabs" data-slot="tabs">
+            <div class="tablist" id="tablist" role="tablist"></div>
+            <div class="tabpanels" id="tabpanels"></div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="action-bar" id="actionBar">
+        <div class="action-status">
+          <p class="action-text" id="actionText"></p>
+          <div class="progress" id="progress" hidden>
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <button class="link-button" id="secondaryAction" type="button" hidden></button>
+        </div>
+        <button class="stop-button" id="stopButton" type="button" hidden data-text="btnStop"></button>
+        <button class="pill" id="mainAction" type="button"></button>
+      </footer>
+    </div>
+
+    <dialog class="dialog settings" id="settingsDialog" aria-labelledby="settingsTitle">
+      <header class="dialog-header">
+        <h2 id="settingsTitle" data-text="settings"></h2>
+        <button class="icon-button" id="settingsClose" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <span class="sr-only" data-text="close"></span>
+        </button>
+      </header>
+      <div class="settings-sections" id="settingsSections" data-slot="settings"></div>
+    </dialog>
+
+    <dialog class="dialog message" id="messageDialog" aria-labelledby="messageTitle">
+      <h2 id="messageTitle"></h2>
+      <p id="messageBody"></p>
+      <pre id="messageLog" hidden></pre>
+      <div class="dialog-actions">
+        <button class="button primary" id="messageDismiss" type="button" data-text="dismiss"></button>
+      </div>
+    </dialog>
+
+    <div class="sr-only" id="live" aria-live="polite"></div>
+  </body>
+</html>

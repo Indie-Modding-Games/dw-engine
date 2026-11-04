@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="glowA" cx="0.72" cy="0.32" r="0.55">
+      <stop offset="0" stop-color="#14b8a6" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#14b8a6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="0.18" cy="0.85" r="0.5">
+      <stop offset="0" stop-color="#6366f1" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#6366f1" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0c1a2b"/>
+      <stop offset="1" stop-color="#060b14"/>
+    </linearGradient>
+    <pattern id="hex" width="84" height="146" patternUnits="userSpaceOnUse">
+      <path d="M42 0 L84 24 L84 73 L42 97 L0 73 L0 24 Z M42 97 L42 146" fill="none" stroke="#5eead4" stroke-opacity="0.07" stroke-width="1.5"/>
+    </pattern>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <rect width="1600" height="1000" fill="url(#hex)"/>
+  <rect width="1600" height="1000" fill="url(#glowA)"/>
+  <rect width="1600" height="1000" fill="url(#glowB)"/>
+  <g fill="none" stroke="#5eead4" stroke-linecap="round">
+    <circle cx="1150" cy="320" r="210" stroke-opacity="0.22" stroke-width="2"/>
+    <circle cx="1150" cy="320" r="300" stroke-opacity="0.12" stroke-width="2" stroke-dasharray="40 26"/>
+    <circle cx="1150" cy="320" r="410" stroke-opacity="0.07" stroke-width="2"/>
+  </g>
+  <path d="M1150 170 L1280 245 L1280 395 L1150 470 L1020 395 L1020 245 Z" fill="#0f2a33" fill-opacity="0.55" stroke="#5eead4" stroke-opacity="0.45" stroke-width="4"/>
+  <circle cx="1150" cy="320" r="64" fill="#2dd4bf" fill-opacity="0.75"/>
+  <circle cx="1150" cy="320" r="26" fill="#071019"/>
+  <path d="M0 860 C 300 780, 520 900, 820 840 S 1350 760, 1600 820 L1600 1000 L0 1000 Z" fill="#081521" fill-opacity="0.85"/>
+  <path d="M0 920 C 360 860, 640 960, 980 905 S 1420 860, 1600 900 L1600 1000 L0 1000 Z" fill="#050a12"/>
+</svg>

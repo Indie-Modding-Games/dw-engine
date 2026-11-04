@@ -111,11 +111,7 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
     let content = content::content_folder(&data);
     let installed = content::has_base_pack(&content);
     let record = content::read_record(&content);
-    let token = match state.tokens.get() {
-        Ok(Some(_)) => "saved",
-        Ok(None) => "none",
-        Err(_) => "unavailable",
-    };
+    let token = token_state(state);
     Status {
         language: settings.language.clone(),
         launcher_version: env!("CARGO_PKG_VERSION"),
@@ -140,6 +136,23 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
             unsupported: &disc::UNSUPPORTED_EXTENSIONS,
         },
     }
+}
+
+fn token_state(state: &AppState) -> &'static str {
+    let mut cached = state.token_state.lock().unwrap();
+    if let Some(value) = *cached {
+        return value;
+    }
+    let value = match state.tokens.get() {
+        Ok(Some(_)) => "saved",
+        Ok(None) => "none",
+        Err(failure) => {
+            log_line!("the system keyring cannot be used: {}", failure.detail);
+            "unavailable"
+        }
+    };
+    *cached = Some(value);
+    value
 }
 
 #[tauri::command]
@@ -335,11 +348,19 @@ pub async fn update_game(app: AppHandle, state: State<'_, AppState>) -> Result<S
     Ok(status_of(&app, &state))
 }
 
+/// Goes back to the previous game; like an update, reads the disc again when that game reads
+/// discs differently.
 #[tauri::command]
-pub fn rollback_game(app: AppHandle, state: State<'_, AppState>) -> Result<Status> {
+pub async fn rollback_game(app: AppHandle, state: State<'_, AppState>) -> Result<Status> {
     let _busy = state.begin()?;
-    let game = GameStore::new(&data_folder(&state)).rollback()?;
+    let data = data_folder(&state);
+    let game = GameStore::new(&data).rollback()?;
     log_line!("back to the game {}", game.version);
+    if content::is_outdated(&content::content_folder(&data), game.extractor_version) {
+        log_line!("the previous game reads discs differently: reading the disc again");
+        let source = remembered_disc(&state)?;
+        install_from(&app, &state, &source).await?;
+    }
     Ok(status_of(&app, &state))
 }
 
@@ -429,10 +450,12 @@ pub fn set_data_folder(app: AppHandle, state: State<'_, AppState>, path: Option<
 
 #[tauri::command]
 pub fn save_token(app: AppHandle, state: State<'_, AppState>, token: String) -> Result<Status> {
-    match token::clean(&token) {
-        Some(token) => state.tokens.set(&token)?,
-        None => state.tokens.clear()?,
-    }
+    let saved = match token::clean(&token) {
+        Some(token) => state.tokens.set(&token).map(|()| "saved"),
+        None => state.tokens.clear().map(|()| "none"),
+    };
+    let saved = saved.inspect_err(|f| log_line!("the token was not saved: {}", f.detail))?;
+    *state.token_state.lock().unwrap() = Some(saved);
     log_line!("the GitHub token was saved in the system keyring");
     *state.release.lock().unwrap() = None;
     Ok(status_of(&app, &state))
@@ -441,6 +464,7 @@ pub fn save_token(app: AppHandle, state: State<'_, AppState>, token: String) -> 
 #[tauri::command]
 pub fn clear_token(app: AppHandle, state: State<'_, AppState>) -> Result<Status> {
     state.tokens.clear()?;
+    *state.token_state.lock().unwrap() = Some("none");
     log_line!("the GitHub token was removed");
     Ok(status_of(&app, &state))
 }
