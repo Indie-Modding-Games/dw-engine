@@ -111,7 +111,7 @@ render::TextureScene PartnerPortrait::scene(double seconds) {
   }
   if (model_)
     models_->submit({.model = *model_, .world = world_, .joints = joints_});
-  return {.target = texture_, .drawers = drawers_};
+  return {.target = texture_, .drawers = drawers_, .keep = false};
 }
 
 } // namespace dwe::app

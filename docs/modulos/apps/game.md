@@ -991,6 +991,8 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
 
 - **Dónde**: `hd_scenery_setting.hpp` (`startHdScenery`, `HdSceneryChanger`) lee y guarda el ajuste; `PlaySession` lo
   pasa a la escena al empezar y `Game` al cambiarlo (`FieldScene::setHdScenery` → `render::MapRenderer::setHdScenery`).
+  La consola y las rutas lo cambian con `hd_scenery("on")` / `hd_scenery("off")`. Cada frame, `Game` pone el pase del
+  fondo de la escena (`FieldScene::hdSceneryScene`, nada con el escenario oculto) en `FrameDesc::textureScenes`.
 - **Colisiones**: la opción solo cambia cómo se muestrea el mapa en la GPU; el campo (`game/field`) no la ve.
 - **Opciones**: es la fila 22 de `ui/common/game_options.lua`, junto a las otras opciones gráficas; el documento de
   opciones pasa de 24 a 28 huecos (`option-slot-<n>`, `max_option_rows`) para que quepa y queden libres para las

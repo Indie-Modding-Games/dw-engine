@@ -146,7 +146,7 @@ render::TextureScene MedalFigure::scene(double seconds) {
                      .world = glm::rotate(glm::mat4{1.F}, yaw, glm::vec3{0.F, 1.F, 0.F}),
                      .joints = {}});
   }
-  return {.target = texture_, .drawers = drawers_};
+  return {.target = texture_, .drawers = drawers_, .keep = false};
 }
 
 } // namespace dwe::app

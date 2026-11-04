@@ -761,6 +761,12 @@ int runGame(const Options& requested) {
   (*scripts)->bindCommand(ui::TextFontSetting, [&consoleTextFont](std::string_view name) {
     consoleTextFont = std::string{name};
   });
+  // The console's and the routes' hd_scenery("on"|"off"), the options row's setting, applied
+  // between frames in the same way.
+  std::optional<bool> consoleHdScenery;
+  (*scripts)->bindCommand(HdScenerySetting, [&consoleHdScenery](std::string_view value) {
+    consoleHdScenery = value != "off";
+  });
   // The console's ui_skin("<id>"), the menus' skin setting, applied between frames in the same way.
   std::optional<std::string> consoleUiSkin;
   (*scripts)->bindCommand(ui::UiSkinSetting, [&consoleUiSkin](std::string_view id) {
@@ -1518,6 +1524,13 @@ int runGame(const Options& requested) {
     if (consoleTextFont) {
       textFontChanger.change(*std::exchange(consoleTextFont, std::nullopt));
     }
+    if (consoleHdScenery) {
+      const bool on = hdScenery.change(ui::UiValue{*std::exchange(consoleHdScenery, std::nullopt)});
+      if (PlaySession* play = flow.playing()) {
+        play->scene().setHdScenery(on);
+      }
+      (*ui)->setSetting(HdScenerySetting, on);
+    }
     if (movies) {
       movies->update(gameSeconds);
       if (moviePlayed && !movies->playing()) {
@@ -1566,6 +1579,12 @@ int runGame(const Options& requested) {
       sceneDrawers = interview->drawers();
     }
     std::vector<render::TextureScene> portraitScenes;
+    // HD scenery's background pass: what the scroll uncovered, before the scene pass reads it.
+    if (!showingMovie && flow.playing() != nullptr) {
+      if (const auto hdPass = flow.playing()->scene().hdSceneryScene()) {
+        portraitScenes.push_back(*hdPass);
+      }
+    }
     if (!showingMovie && portrait && flow.playing() != nullptr &&
         (*ui)->isVisible("partner_menu") &&
         !(*ui)->elementHasClass("partner_menu", "page-status", "hidden")) {

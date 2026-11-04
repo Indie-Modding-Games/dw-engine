@@ -1,10 +1,12 @@
 #include <dwe/render/camera.hpp>
+#include <dwe/render/hd_scenery_wrap.hpp>
 #include <dwe/render/quad_batch.hpp>
 #include <dwe/render/screen_fade.hpp>
 #include <dwe/render/upload_budget.hpp>
 
 #include <doctest/doctest.h>
 
+#include <array>
 #include <cstddef>
 #include <vector>
 
@@ -117,4 +119,54 @@ TEST_CASE("a texture copy larger than the reserve leaves goes alone, first in a 
   CHECK_FALSE(render::textureCopyFits(3 * MiB, 14 * MiB, PerFrame, Reserve, true));
   CHECK(render::textureCopyFits(0, 12 * MiB, PerFrame, Reserve, true));
   CHECK_FALSE(render::textureCopyFits(1, 12 * MiB, PerFrame, Reserve, true));
+}
+
+TEST_CASE("HD scenery filters the whole window first, then only what the scroll uncovered") {
+  const glm::ivec2 size{320, 240};
+  using Regions = std::vector<glm::ivec4>;
+  CHECK(render::hdUncoveredRegions(size, {5, 5}, false) == Regions{{0, 0, 320, 240}});
+  CHECK(render::hdUncoveredRegions(size, {0, 0}, true).empty());
+  CHECK(render::hdUncoveredRegions(size, {3, 0}, true) == Regions{{317, 0, 320, 240}});
+  CHECK(render::hdUncoveredRegions(size, {-2, 4}, true) ==
+        Regions{{0, 0, 2, 240}, {0, 236, 320, 240}});
+  CHECK(render::hdUncoveredRegions(size, {0, -240}, true) == Regions{{0, 0, 320, 240}});
+}
+
+TEST_CASE("HD scenery's wrapped target shows every window pixel's own background pixel") {
+  // A small window; each target pixel remembers which pixel of the scaled background it holds.
+  constexpr int Width = 7;
+  constexpr int Height = 5;
+  std::array<glm::ivec2, std::size_t{Width} * Height> target{};
+  const glm::ivec2 size{Width, Height};
+  const auto fill = [&](glm::ivec2 shift, glm::ivec2 moved, bool filled) {
+    for (const glm::ivec4& region : render::hdUncoveredRegions(size, moved, filled)) {
+      for (const glm::ivec3& across :
+           render::hdWrappedSpan(region.x + shift.x, region.z + shift.x, Width)) {
+        for (const glm::ivec3& down :
+             render::hdWrappedSpan(region.y + shift.y, region.w + shift.y, Height)) {
+          for (int y = 0; y < down.z; ++y) {
+            for (int x = 0; x < across.z; ++x) {
+              target[static_cast<std::size_t>(((down.y + y) * Width) + across.y + x)] = {
+                  across.x + x, down.x + y};
+            }
+          }
+        }
+      }
+    }
+  };
+  glm::ivec2 shift{-3, 2};
+  fill(shift, {}, false);
+  for (const glm::ivec2 next : {glm::ivec2{-1, 2}, glm::ivec2{4, 1}, glm::ivec2{4, -6},
+                                glm::ivec2{-2, -5}, glm::ivec2{12, 9}, glm::ivec2{11, 9}}) {
+    fill(next, next - shift, true);
+    shift = next;
+    const glm::ivec2 wrap = ((shift % size) + size) % size;
+    for (int y = 0; y < Height; ++y) {
+      for (int x = 0; x < Width; ++x) {
+        const glm::ivec2 held = (glm::ivec2{x, y} + wrap) % size;
+        CHECK(target[static_cast<std::size_t>((held.y * Width) + held.x)] ==
+              glm::ivec2{x, y} + shift);
+      }
+    }
+  }
 }

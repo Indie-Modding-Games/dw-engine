@@ -30,6 +30,9 @@ using TextureId = rhi::TextureId;
 struct TextureScene {
   TextureId target;
   std::span<Drawer* const> drawers;
+  // Draw over what the target holds instead of clearing it first (its depth is cleared anyway): for
+  // drawers that redraw only what changed.
+  bool keep = false;
 };
 
 struct RendererDesc {
@@ -112,6 +115,10 @@ public:
   // index is reused once the frames in flight finish. Ids that name no texture (destroyed already)
   // are ignored with a warning.
   void destroyTexture(TextureId texture);
+
+  // Whether a queued upload into the texture still waits: after the frame's copies (in
+  // Drawer::draw), one that did not fit in this frame.
+  [[nodiscard]] bool textureWritePending(TextureId texture) const;
 
   // The size of a texture, or nothing when the id names none.
   [[nodiscard]] std::optional<rhi::Extent> textureExtent(TextureId texture) const;

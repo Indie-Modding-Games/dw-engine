@@ -5,6 +5,7 @@
 #include <dwe/rhi/command_list.hpp>
 #include <dwe/rhi/frame_capture.hpp>
 
+#include <algorithm>
 #include <array>
 #include <format>
 #include <optional>
@@ -161,7 +162,9 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
     commands.prepareDepthTarget(target->depth);
     commands.beginRendering(
         {.extent = size,
-         .color = {.view = color->view(), .clear = std::array{0.F, 0.F, 0.F, 0.F}},
+         .color = {.view = color->view(),
+                   .clear =
+                       scene.keep ? std::nullopt : std::optional{std::array{0.F, 0.F, 0.F, 0.F}}},
          .depth = {.view = target->depth.view(), .clear = 1.F}});
     DrawContext targetContext{commands, upload_, Pass::Scene, size};
     for (Drawer* drawer : scene.drawers) {
@@ -329,6 +332,11 @@ core::Result<void> Renderer::queueTextureUpdate(TextureId texture, const rhi::Re
   pending_.push_back(
       {.texture = texture, .region = region, .pixels = copied(pixels), .initialize = false});
   return {};
+}
+
+bool Renderer::textureWritePending(TextureId texture) const {
+  return std::ranges::any_of(
+      pending_, [texture](const PendingWrite& write) { return write.texture == texture; });
 }
 
 core::Result<TextureId> Renderer::addTexture(rhi::Image image) {

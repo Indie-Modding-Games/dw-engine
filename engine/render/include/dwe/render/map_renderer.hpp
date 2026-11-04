@@ -11,6 +11,7 @@
 #include <dwe/render/renderer.hpp>
 #include <dwe/rhi/pipeline.hpp>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -127,8 +128,16 @@ public:
   // (MapCutouts) taking their colours from it. Only the look changes: the camera, every position,
   // which pixels are drawn and what covers what stay the original's. Off draws the original's
   // pixels, sharp.
-  void setHdScenery(bool on) { hdScenery_ = on; }
+  void setHdScenery(bool on);
   [[nodiscard]] bool hdScenery() const { return hdScenery_; }
+  // HD scenery's background pass for FrameDesc::textureScenes, while the map's background is shown
+  // with the option on: it keeps the background filtered in a target the window's size, which the
+  // background and the cut-outs then read with one load per pixel instead of filtering. The target
+  // wraps around as the camera scrolls (a pixel of the background scaled to the window stays at
+  // the same place in it), so a frame filters only the strip the scroll uncovered, and all of it
+  // when the colours, the window's size or the map change. Without the pass (the first frame, a
+  // frame after the window changed size) both filter on the fly, with the same result.
+  [[nodiscard]] std::optional<TextureScene> hdSceneryScene() const;
 
   // Advances the sprite animations by animationSeconds and the palette fade by fadeSeconds (a game
   // may pause one and not the other), and sets the world point the camera centres on. The camera
@@ -210,6 +219,15 @@ private:
     MapRenderer* owner_;
   };
 
+  class HdSceneryDrawer final : public Drawer {
+  public:
+    explicit HdSceneryDrawer(MapRenderer& owner) : owner_(&owner) {}
+    void draw(DrawContext& context) override { owner_->drawHdScenery(context); }
+
+  private:
+    MapRenderer* owner_;
+  };
+
   struct Pipelines {
     rhi::GraphicsPipeline background;
     rhi::GraphicsPipeline opaque;
@@ -224,6 +242,10 @@ private:
     TextureId id;
     glm::vec2 size{0.0F};
     bool timeOfDayPalette = false;
+    // For HD scenery, a time-of-day texture's indices and its colours with the palette resolved
+    // last, so the smooth filter reads one texel per tap.
+    std::vector<std::uint8_t> indices;
+    TextureId colors{};
   };
 
   // One vertex of map.slang.
@@ -264,10 +286,26 @@ private:
   // Adds a billboard's quads (and runs) to the frame's vertices, as `shown` sees it.
   void appendBillboard(const MapBillboard& billboard, const MapCamera& shown);
   [[nodiscard]] const rhi::GraphicsPipeline& pipelineOf(assets::SpriteBlend blend) const;
+  // HD scenery's background pass, into hdTarget_.
+  void drawHdScenery(DrawContext& context);
+  // Makes hdTarget_ the window's size (a new one when the window changed size).
+  void keepHdTarget(rhi::Extent extent);
+  void releaseHdTarget();
+  // Whether hdTarget_ holds what the window shows this frame, for targets of this size.
+  [[nodiscard]] bool hdTargetReady(rhi::Extent extent) const {
+    return hdTarget_.valid() && hdTargetFilled_ && hdTargetExtent_ == extent &&
+           hdFilledShift_ == hdShift_;
+  }
+  // Where hdTarget_ has the window's top-left pixel (MapPush::screenShiftX and Y).
+  [[nodiscard]] glm::uvec2 hdScreenShift() const;
   void addToRun(assets::SpriteBlend blend, TexelFilter texels, std::uint32_t first);
   // HD scenery reads the background's colours, not its indices: this keeps backgroundColors_ the
-  // background with the palette shown now (the fade's mix, as map.slang's texelAt makes it).
-  void resolveBackgroundColors();
+  // background with the palette shown now (the fade's mix, as map.slang's texelAt makes it). At
+  // load time a new texture is uploaded at once; later it is queued.
+  void resolveBackgroundColors(bool atLoad);
+  // Makes or updates `texture` with the colours of `indices` (width x height) in `palette`.
+  bool resolveColors(TextureId& texture, rhi::Extent extent, std::span<const std::uint8_t> indices,
+                     std::span<const assets::PaletteColor> palette, bool atLoad);
   void warnUploadFailure(std::size_t bytes);
 
   Renderer* renderer_;
@@ -276,6 +314,8 @@ private:
   BackgroundDrawer background_{*this};
   LayerDrawer foreground_{*this};
   GroundDrawer ground_{*this};
+  HdSceneryDrawer hdSceneryDrawer_{*this};
+  std::array<Drawer*, 1> hdSceneryDrawers_{&hdSceneryDrawer_};
 
   // The default camera until a map is set; hasMap_ says whether it is one.
   MapCamera camera_{MapCameraDesc{}};
@@ -300,6 +340,16 @@ private:
   TextureId backgroundColors_{};
   std::vector<assets::PaletteColor> resolvedPalette_;
   std::vector<assets::PaletteColor> resolvedTexels_;
+  // The background filtered at the window's size (Renderer::createSceneTexture) and its size. The
+  // background scaled to the window (pixel p of it at p * scale) is kept with its pixel u at u
+  // modulo the target's size; the window's pixel w shows the scaled background's w + hdShift_, the
+  // scroll in window pixels rounded (half a window pixel at most from where the quad is). The
+  // target holds the window's pixels for hdFilledShift_ when hdTargetFilled_.
+  TextureId hdTarget_{};
+  rhi::Extent hdTargetExtent_{};
+  glm::ivec2 hdShift_{0};
+  glm::ivec2 hdFilledShift_{0};
+  bool hdTargetFilled_ = false;
   std::vector<MapMarker> markers_;
   std::vector<SpriteTexture> billboardTextures_;
   std::vector<MapBillboard> billboards_;

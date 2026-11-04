@@ -854,7 +854,7 @@ un pre-escalado de índices no añade nada que el filtro no haga ya y gastaría 
 1. Lee 12 texels alrededor del punto (el 4 × 4 sin las esquinas) en colores: el fondo llega como una textura RGBA con
    la paleta que se ve ahora (`MapRenderer::resolveBackgroundColors`, que la rehace en la CPU solo cuando la paleta
    cambia: al cambiar de variante y en cada uno de los cinco escalones del fundido), así que cada texel es una lectura.
-   Los sprites que no son recortes del fondo siguen leyendo índices y paleta.
+   Los sprites que siguen la hora (`clut` −1) se resuelven igual; los demás sprites ya son colores.
 2. Con los gradientes de luma de los cuatro texels centrales (diferencias centrales) forma un tensor de estructura,
    mezclado bilinealmente: da la dirección del borde, su coherencia y su contraste, medido respecto al brillo local
    para que las paletas oscuras de la noche conserven sus bordes como las del día.
@@ -863,6 +863,9 @@ un pre-escalado de índices no añade nada que el filtro no haga ya y gastaría 
    cualquier escala. El lóbulo negativo es 1 en los bordes y con contraste (cada texel conserva su color en su
    centro: no se pierde detalle) y 0,75 en las zonas planas, donde funde el tramado del original en sombras suaves.
 4. Sujeta el resultado entre el mínimo y el máximo de los cuatro texels centrales: sin halos ni anillos.
+   Muchos píxeles caen justo en el centro de un texel (a escala 3, uno de cada tres), donde los 12 texels y la sujeción
+   pasan a los siguientes: el punto se mueve 1/512 de texel a la derecha y abajo para que el redondeo de cómo se dibujó
+   el cuadro no decida (sin eso, dos franjas del pase del fondo daban colores distintos en esas filas).
 5. **Transparencia y clases sin tocar**: los texels transparentes (clase 0) no pesan, así que no entra negro por los
    bordes, y solo se mezclan los de la clase del texel más cercano (opaco o STP): los STP se mezclan con lo de detrás
    en su propio pase y sus colores, a menudo oscuros, mancharían los opacos (salían puntos negros en los bordes de
@@ -897,17 +900,31 @@ walk») anda por una sala contra una pared, sobre un disparador y a un salto con
 tick da lo mismo: posiciones, giro, compañero, disparadores, cambio de mapa, dónde la cámara pone al jugador y qué
 elige un clic ahí.
 
+**El pase del fondo.** Con la opción encendida, `MapRenderer::hdSceneryScene` da un pase previo
+(`FrameDesc::textureScenes`) que guarda el fondo filtrado en una textura del tamaño de la ventana, sin sombrear y con
+la clase de cada píxel en el alfa. El fondo (`SamplingScreen`) y los recortes (`SamplingCutoutScreen`) la leen con una
+sola lectura por píxel, así que un recorte ya no repite el filtro. La textura no se filtra entera cada frame: guarda el
+fondo ampliado a la escala de la ventana con su píxel `u` en `u` módulo el tamaño de la ventana, así que al
+desplazarse la cámara lo ya filtrado sigue donde estaba y el frame solo filtra la franja que el desplazamiento
+descubre (`<dwe/render/hd_scenery_wrap.hpp>`; el pase dibuja encima de lo que había, `TextureScene::keep`). Se filtra
+entera al cambiar los colores (variante, escalones del fundido, carteles), el tamaño de la ventana o el mapa, y otra
+vez en el frame siguiente si los colores nuevos no cupieron en la memoria de subidas del suyo. El desplazamiento se
+redondea a píxeles de la ventana: lo que se ve queda como mucho a medio píxel de la ventana de donde cae el cuadro.
+Sin el pase (el primer frame, el que sigue a un cambio de tamaño) el fondo y los recortes filtran al vuelo, con el
+mismo resultado. Una ruta que anda por `trop01` y luego apaga y enciende la opción (que lo filtra todo de nuevo) da la
+misma imagen, salvo los personajes que se movieron entre las dos capturas.
+
 **Coste.** En llvmpipe a 1280 × 720, medido como tiempo de CPU por fotograma (la suma de los hilos de llvmpipe; la
-máquina tenía otros trabajos, así que los fps sueltos no sirven): la diferencia entre una ruta de 10 s y otra de 40 s
-dividida por sus fotogramas. `twna01`: 114 ms sin la opción, 172 con ella (el filtro del fondo, unos 55 ms; las capas
-casi nada). `trop01`, el peor por sus capas de follaje: 131 a 142 sin ella, 166 a 191 con solo el fondo filtrado y 241
-a 290 con las capas (los recortes repiten el filtro en cada píxel que tapan). Repartido en 12 hilos, el fondo suma
-unos 4,5 ms por fotograma y las capas de `trop01` otros 6: cabe en 60 fps en `twna01` y no en `trop01` (unos 45). En
-una GPU de verdad son 12 lecturas por píxel y no se nota. La primera versión, que leía índices y paleta en cada uno de
-los 12 texels, iba a la mitad: por eso el fondo se resuelve a colores en la CPU. Memoria: una textura RGBA del tamaño
-del fondo (5 MiB el mayor, 1280 × 1024). Pendiente: no dibujar un recorte donde no tiene nada detrás (sería el
-mismo color que el fondo), con una prueba de límites de profundidad o con el fondo filtrado en un objetivo propio que
-los recortes lean con una sola lectura; los dos tocan el renderizador fuera del muestreo del mapa.
+máquina tenía otros trabajos, así que los fps sueltos no sirven): la diferencia entre una ruta corta y otra 30 s más
+larga dividida por la diferencia de fotogramas. En `trop01`, el peor por sus capas de follaje, quieto: 142 a 152 ms
+sin la opción y 107 a 109 con ella; andando (la cámara se desplaza cada frame): 146 a 147 sin ella y 110 a 115 con
+ella. Con la opción cuesta menos que sin ella porque el fondo sin filtro lee índice y paleta en varias muestras por
+píxel y el pase deja una sola lectura. Un frame que lo filtra todo (un cambio de colores) cuesta lo que costaba la
+versión que filtraba en cada frame, unos 230 ms en llvmpipe, unos 100 más que sin la opción; las versiones
+anteriores, que filtraban el fondo cada frame (y los recortes otra vez debajo), iban de 166 a 290. En una GPU de verdad
+son 12 lecturas por píxel y no se nota. Memoria: una textura RGBA del tamaño del fondo (5 MiB el mayor, 1280 × 1024),
+las de los sprites que siguen la hora y la del pase, del tamaño de la ventana (3,5 MiB a 1280 × 720, 8 MiB a
+1920 × 1080).
 
 **Lo que no cubre.** Los modelos 3D, la UI y las pantallas propias (combate, minijuegos) no pasan por `map.slang`.
 

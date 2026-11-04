@@ -11,6 +11,9 @@ El render del juego, encima de `rhi`. Ver [render.md](../../architecture/render.
   vértices y matrices después de ellas, y antes un mapa recién cargado llenaba los 16 MiB con sus texturas y el
   primer frame no podía subir los vértices del mapa («upload ring is out of room»). Lo que no cabe espera al frame
   siguiente; una copia mayor que lo que queda sin la reserva va sola, la primera de su frame.
+  `textureWritePending` dice si una textura aún tiene una copia esperando.
+- `FrameDesc::textureScenes`: escenas que se dibujan en una textura propia (`createSceneTexture`) antes de los pases
+  de la ventana; con `TextureScene::keep` se dibuja encima de lo que la textura tenía en vez de borrarla.
 - `Drawer`, `PrepareContext` y `DrawContext`: la interfaz por la que el mapa, los modelos y la UI preparan sus datos
   antes de los pases y graban sus draws en un pase.
 - `Camera`, `perspective`, `pixelProjection`: matrices para el clip space de Vulkan (Y hacia abajo, profundidad 0..1).
@@ -73,12 +76,18 @@ política para cualquier resolución, en el [ADR 0020](../../adr/0020-camara-de-
   giran hacia otro tono, luego saturación, ganancia por canal y `lift`; las bandas nunca. Neutro por defecto: los
   colores salen tal cual.
 - `MapRenderer::setHdScenery` (por defecto encendido): el fondo y las capas se filtran en `map.slang` siguiendo los
-  bordes a la resolución de la ventana (`SamplingSmooth`); el fondo se lee como una textura RGBA con la paleta que se
-  ve (`resolveBackgroundColors`, rehecha solo cuando cambia la paleta). Apagado, cada cuadro usa `SamplingSharp` y la
+  bordes a la resolución de la ventana (`SamplingSmooth`); el fondo y los sprites que siguen la hora se leen como
+  texturas RGBA con la paleta que se ve (`resolveBackgroundColors`, rehechas solo cuando cambia la paleta).
+  `hdSceneryScene()` da el pase del fondo para `FrameDesc::textureScenes`: guarda el fondo filtrado en una textura
+  del tamaño de la ventana que da la vuelta al desplazarse la cámara (`<dwe/render/hd_scenery_wrap.hpp>`), así que
+  cada frame filtra solo la franja que el desplazamiento descubre, y entera cuando cambian los colores, el tamaño de
+  la ventana o el mapa. El fondo (`SamplingScreen`) y los recortes (`SamplingCutoutScreen`) la leen con una lectura
+  por píxel; sin el pase filtran al vuelo, con el mismo resultado. Apagado, cada cuadro usa `SamplingSharp` y la
   imagen es la del original exacta. Ver [Alta definición en el motor](../../architecture/remaster-pipeline.md#alta-definición-en-el-motor).
 - `MapCutouts` (`<dwe/render/map_cutouts.hpp>`, solo CPU): dice, por sprite y posición, si un sprite de las capas es
   un recorte exacto del fondo (`clut` −1, píxel entero, cada texel dibujado igual al índice del fondo debajo). Los
-  recortes se dibujan en `SamplingCutout`: su máscara y su clase son las del sprite, el color el del fondo filtrado.
+  recortes se dibujan en `SamplingCutout` (o `SamplingCutoutScreen`): su máscara y su clase son las del sprite, el
+  color el del fondo filtrado.
 - `dwe-game --map <id>[,<id>...]` lo enseña sin la escena de campo: `--time day|dusk|night`, `--focus x,z` y
   `--size AnchoxAlto`; las flechas mueven un marcador relativo a la cámara, el clic lo manda al punto del suelo, las
   acciones `debug_time_day`, `debug_time_dusk` y `debug_time_night` (1, 2 y 3) cambian la hora y `debug_next_map` (N)

@@ -32,6 +32,12 @@ struct Push {
     float gainGreen;
     float gainBlue;
     float lift;
+    // HD scenery: the background filtered at the window's pixels by its background pass, for SamplingScreen and
+    // SamplingCutoutScreen, and where it has the window's top-left pixel: it wraps around as the camera scrolls
+    // (render::MapRenderer::hdSceneryScene).
+    uint screen;
+    uint screenShiftX;
+    uint screenShiftY;
 };
 
 // A texture without a palette texture: its texels are colours (rhi::TextureId::InvalidIndex).
@@ -74,6 +80,13 @@ static const uint SamplingSmooth = 1;
 // HD scenery for a sprite cut out of the background: which texels are drawn and their class come from the sprite, the
 // colours from the background under it through sampleSmooth, so the sprite matches the background pixel for pixel.
 static const uint SamplingCutout = 2;
+// HD scenery's background pass: the background's colours through sampleSmooth into a target the window's size, where
+// the window shows something not filtered yet; its alpha the texels' class.
+static const uint SamplingPrefilter = 3;
+// The background, as that pass drew it at this pixel (push.screen): one load instead of the filter.
+static const uint SamplingScreen = 4;
+// A cut-out, its colours as that pass drew them at this pixel.
+static const uint SamplingCutoutScreen = 5;
 
 [shader("vertex")]
 VertexOut vertexMain(VertexIn input) {
@@ -193,6 +206,9 @@ static const float ContrastFloor = 0.2;
 static const float LobeFlat = 0.75;
 static const float LobeEdge = 1.0;
 
+// Texels the filter's sample point is moved right and down by (sampleSmooth).
+static const float SmoothBias = 1.0 / 512.0;
+
 float luma(float3 colour) {
     return dot(colour, float3(0.299, 0.587, 0.114));
 }
@@ -203,21 +219,61 @@ float smoothKernel(float x, float lobe) {
     return window * window * (1.0 - (lobe * x));
 }
 
-// HD scenery's filter: an edge-adaptive kernel over 12 texels, written for this engine. The background comes as its
-// colours with the palette shown now (render::MapRenderer resolves them when the palette changes), so each tap is one
-// load; sprites outside the background may still index a palette. The four middle texels'
-// gradients (on luma) give the local edge direction and how strong and coherent it is (a structure tensor); the kernel
+// The texels sampleSmooth reads.
+interface ITexels {
+    uint2 extent();
+    float4 at(int2 texel);
+};
+
+// Any texture of a draw, through its palette: draws with quads of several textures index the table non-uniformly.
+struct DrawTexels : ITexels {
+    uint texture;
+    uint palette;
+
+    uint2 extent() {
+        uint width;
+        uint height;
+        gTextures[NonUniformResourceIndex(texture)].GetDimensions(width, height);
+        return uint2(width, height);
+    }
+
+    float4 at(int2 texel) {
+        return texelAt(texture, palette, texel);
+    }
+};
+
+// The colours of the one texture a whole draw reads (the background pass draws a single quad): a uniform index,
+// cheaper on software rasterizers than the non-uniform one.
+struct UniformColours : ITexels {
+    uint texture;
+
+    uint2 extent() {
+        uint width;
+        uint height;
+        gTextures[texture].GetDimensions(width, height);
+        return uint2(width, height);
+    }
+
+    float4 at(int2 texel) {
+        return gTextures[texture].Load(int3(texel, 0));
+    }
+};
+
+// HD scenery's filter: an edge-adaptive kernel over 12 texels, written for this engine, read through `texels` (ITexels).
+// The background comes as its colours with the palette shown now (render::MapRenderer resolves them when the palette
+// changes), and so do the sprites that follow the time of day, so each tap is one load; other sprites may still index
+// a palette. The four middle texels' gradients (on luma) give the local edge direction and how strong and coherent it is (a structure tensor); the kernel
 // is then a bell squeezed across the edge and stretched along it, so edges come out as clean smooth lines at any
 // window size, while flat and noisy areas get a plain smooth bell. The result is clamped to the colours of the four
 // middle texels (no halos or ringing). Transparent texels (alpha class 0) carry no weight, so no dark fringe comes in
 // from them, and only texels of the nearest one's class (opaque or STP) mix; alpha is the nearest texel's class, so
-// what is drawn and what is STP keep the original's pixels. Colours are read through texelAt: after the palette fade,
-// which is therefore the original's.
-float4 sampleSmooth(uint texture, uint palette, float2 uv, float4 rect) {
-    uint width;
-    uint height;
-    gTextures[NonUniformResourceIndex(texture)].GetDimensions(width, height);
-    const float2 position = (uv * float2(width, height)) - 0.5;
+// what is drawn and what is STP keep the original's pixels. Colours are the ones after the palette fade, which is
+// therefore the original's.
+float4 sampleSmooth<T : ITexels>(T texels, float2 uv, float4 rect) {
+    // Pixel centres often fall exactly on a texel's centre (scale 3 puts every third one there), where the 12 taps and
+    // the clamp switch to the next texels: a hair to the right and down keeps them from switching with the rounding of
+    // how the quad was drawn, so the background pass's strips match one another (MapRenderer::hdSceneryScene).
+    const float2 position = (uv * float2(texels.extent())) - 0.5 + SmoothBias;
     const float2 base = floor(position);
     const float2 f = position - base;
     const int2 first = int2(rect.xy);
@@ -226,7 +282,7 @@ float4 sampleSmooth(uint texture, uint palette, float2 uv, float4 rect) {
     float4 values[12];
     [unroll]
     for (int tap = 0; tap < 12; ++tap) {
-        values[tap] = texelAt(texture, palette, clamp(int2(base) + SmoothTaps[tap], first, last));
+        values[tap] = texels.at(clamp(int2(base) + SmoothTaps[tap], first, last));
     }
     const float4 nearest = values[(f.x < 0.5 ? 3 : 4) + (f.y < 0.5 ? 0 : 4)];
     const bool nearestStp = nearest.a < 0.75;
@@ -319,12 +375,34 @@ float4 sampleSmooth(uint texture, uint palette, float2 uv, float4 rect) {
     return float4(clamp(sum / total, low, high), nearest.a);
 }
 
+// HD scenery's filtered background at a window pixel.
+float4 screenAt(float2 position) {
+    uint width;
+    uint height;
+    gTextures[push.screen].GetDimensions(width, height);
+    uint2 texel = uint2(position) + uint2(push.screenShiftX, push.screenShiftY);
+    texel.x -= texel.x >= width ? width : 0;
+    texel.y -= texel.y >= height ? height : 0;
+    return gTextures[push.screen].Load(int3(int2(texel), 0));
+}
+
 [shader("fragment")]
 float4 fragmentMain(VertexOut input) : SV_Target {
+    if (input.sampling.x == SamplingPrefilter) {
+        // The pass draws over what the target held: nothing past the background's edges.
+        if (any(input.uv < 0.0) || any(input.uv > 1.0)) {
+            return float4(0.0);
+        }
+        const UniformColours background = { input.textures.x };
+        return sampleSmooth(background, input.uv, input.rect);
+    }
     float4 texel;
     if (input.sampling.x == SamplingSmooth) {
-        texel = sampleSmooth(input.textures.x, input.textures.y, input.uv, input.rect);
-    } else if (input.sampling.x == SamplingCutout) {
+        const DrawTexels sprite = { input.textures.x, input.textures.y };
+        texel = sampleSmooth(sprite, input.uv, input.rect);
+    } else if (input.sampling.x == SamplingScreen) {
+        texel = screenAt(input.position.xy);
+    } else if (input.sampling.x == SamplingCutout || input.sampling.x == SamplingCutoutScreen) {
         // The sprite's nearest texel says whether it is drawn and its class; the background under it its colour.
         uint width;
         uint height;
@@ -334,8 +412,14 @@ float4 fragmentMain(VertexOut input) : SV_Target {
         if (mask.a < 0.25) {
             discard;
         }
-        const float4 colour = sampleSmooth(input.sampling.y, NoPalette, input.sourceUv, input.rect);
-        texel = float4(colour.rgb, mask.a);
+        float3 colour;
+        if (input.sampling.x == SamplingCutoutScreen) {
+            colour = screenAt(input.position.xy).rgb;
+        } else {
+            const DrawTexels background = { input.sampling.y, NoPalette };
+            colour = sampleSmooth(background, input.sourceUv, input.rect).rgb;
+        }
+        texel = float4(colour, mask.a);
     } else {
         texel = sampleSharp(input.textures.x, input.textures.y, input.uv);
     }

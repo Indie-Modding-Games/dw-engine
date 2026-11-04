@@ -57,7 +57,8 @@ public:
   // finish with it. For depth targets cleared every frame.
   void prepareDepthTarget(const Image& depth);
 
-  // A sampled color target, cleared every use. Call outside rendering; finish before sampling.
+  // A sampled color target, cleared or drawn over (its pixels kept) in each use. Call outside
+  // rendering; finish before sampling.
   void prepareSampledTarget(const Image& color);
   void finishSampledTarget(const Image& color);
 

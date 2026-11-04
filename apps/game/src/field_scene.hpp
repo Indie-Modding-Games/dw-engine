@@ -428,6 +428,14 @@ public:
                ? std::span<render::Drawer* const>{stageDrawers_}
                : std::span<render::Drawer* const>{drawers_};
   }
+  // HD scenery's background pass for FrameDesc::textureScenes, while drawers() draw the map
+  // (render::MapRenderer::hdSceneryScene).
+  [[nodiscard]] std::optional<render::TextureScene> hdSceneryScene() const {
+    if ((stage_.sceneryHidden && !stage_.view) || mapLayerHidden_) {
+      return std::nullopt;
+    }
+    return mapRenderer_->hdSceneryScene();
+  }
 
   // The field's enhanced graphics (field_scene_graphics.cpp; docs/architecture/render.md, «Paso de
   // luz y color»): the options the next updates draw with.

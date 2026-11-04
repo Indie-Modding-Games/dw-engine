@@ -80,11 +80,12 @@ void CommandList::initializeImage(const Image& image) {
 }
 
 void CommandList::prepareSampledTarget(const Image& color) {
-  transitionImage(
-      commands_, color.native(), VK_IMAGE_ASPECT_COLOR_BIT,
-      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-      VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-      VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+  transitionImage(commands_, color.native(), VK_IMAGE_ASPECT_COLOR_BIT,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                  VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                  VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                  VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
 }
 
 void CommandList::finishSampledTarget(const Image& color) {

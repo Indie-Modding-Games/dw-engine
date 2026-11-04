@@ -1,4 +1,5 @@
 #include <dwe/core/log.hpp>
+#include <dwe/render/hd_scenery_wrap.hpp>
 #include <dwe/render/map_renderer.hpp>
 #include <dwe/shaders/map.hpp>
 
@@ -63,6 +64,11 @@ struct MapPush {
   float gainGreen = 1.0F;
   float gainBlue = 1.0F;
   float lift = 0.0F;
+  // HD scenery's filtered background for Sampling::Screen and CutoutScreen, and where it has the
+  // window's top-left pixel (MapRenderer::hdScreenShift).
+  std::uint32_t screen = rhi::TextureId::InvalidIndex;
+  std::uint32_t screenShiftX = 0;
+  std::uint32_t screenShiftY = 0;
 };
 
 // The push constants of a draw with the scenery's grade.
@@ -89,7 +95,15 @@ constexpr std::uint32_t PaletteColors = 256;
 constexpr std::uint32_t NoPalette = rhi::TextureId::InvalidIndex;
 
 // How map.slang samples a quad's texels: its Sampling constants.
-enum class Sampling : std::uint32_t { Sharp = 0, Smooth = 1, Cutout = 2 };
+enum class Sampling : std::uint32_t {
+  Sharp = 0,
+  Smooth = 1,
+  Cutout = 2,
+  // HD scenery's background pass, and the reads of what it drew (MapPush::screen).
+  Prefilter = 3,
+  Screen = 4,
+  CutoutScreen = 5,
+};
 
 // A quad's sampling (map.slang): the original's pixels by default; with HD scenery the smooth
 // filter over `rect` (texels, first and last), reading the colours from `source` between
@@ -217,6 +231,7 @@ MapRenderer::MapRenderer(Renderer& renderer, Pipelines pipelines, TextureId blac
 
 MapRenderer::~MapRenderer() {
   releaseMap();
+  releaseHdTarget();
   for (const SpriteTexture& texture : billboardTextures_) {
     renderer_->destroyTexture(texture.id);
   }
@@ -242,7 +257,10 @@ core::Result<std::size_t> MapRenderer::addBillboardTexture(const assets::Image& 
   }
   billboardTextures_.push_back(
       {.id = *texture,
-       .size = {static_cast<float>(image.width), static_cast<float>(image.height)}});
+       .size = {static_cast<float>(image.width), static_cast<float>(image.height)},
+       .timeOfDayPalette = false,
+       .indices = {},
+       .colors = {}});
   return billboardTextures_.size() - 1;
 }
 
@@ -254,10 +272,14 @@ void MapRenderer::releaseMap() {
   }
   for (const SpriteTexture& sprite : spriteTextures_) {
     renderer_->destroyTexture(sprite.id);
+    if (sprite.colors.valid()) {
+      renderer_->destroyTexture(sprite.colors);
+    }
   }
   backgroundIndices_ = {};
   palettes_ = {};
   backgroundColors_ = {};
+  hdTargetFilled_ = false;
   backgroundIndexCopy_ = {};
   resolvedPalette_.clear();
   resolvedTexels_.clear();
@@ -323,7 +345,9 @@ core::Result<void> MapRenderer::setMap(const MapSceneData& scene, std::size_t va
     spriteTextures_.push_back(
         {.id = *texture,
          .size = {static_cast<float>(extent.width), static_cast<float>(extent.height)},
-         .timeOfDayPalette = source.timeOfDayPalette});
+         .timeOfDayPalette = source.timeOfDayPalette,
+         .indices = source.timeOfDayPalette ? source.indices.indices : std::vector<std::uint8_t>{},
+         .colors = {}});
   }
   placements_ = images.sprites.placements;
   cutouts_ = MapCutouts{images};
@@ -343,6 +367,9 @@ core::Result<void> MapRenderer::setMap(const MapSceneData& scene, std::size_t va
   fromRow_ = shown;
   toRow_ = shown;
   fade_ = 1.0;
+  if (hdScenery_) {
+    resolveBackgroundColors(true);
+  }
   return {};
 }
 
@@ -375,6 +402,9 @@ bool MapRenderer::updateImages(const assets::MapImages& images) {
       core::logWarning("map: sprite texture {} changed shape; left as it was", index);
       ok = false;
       continue;
+    }
+    if (source.timeOfDayPalette) {
+      spriteTextures_[index].indices = source.indices.indices;
     }
     ok = (source.timeOfDayPalette ? upload(spriteTextures_[index].id, source.width(),
                                            source.height(), indexTexels(source.indices.indices))
@@ -495,11 +525,131 @@ void MapRenderer::prepare(PrepareContext& context) {
     stageCamera_->followBackgroundPixel(stageCamera_->desc().backgroundSize * 0.5F);
   }
   if (hdScenery_ && !stageCamera_) {
-    resolveBackgroundColors();
+    resolveBackgroundColors(false);
+    keepHdTarget(extent);
+    hdShift_ = glm::ivec2{glm::round(camera_.scroll() * camera_.scale())};
   }
 }
 
-void MapRenderer::resolveBackgroundColors() {
+void MapRenderer::setHdScenery(bool on) {
+  hdScenery_ = on;
+  if (!on) {
+    releaseHdTarget();
+  }
+}
+
+std::optional<TextureScene> MapRenderer::hdSceneryScene() const {
+  if (!hasMap_ || !hdScenery_ || stageCamera_ || !hdTarget_.valid() || !backgroundColors_.valid()) {
+    return std::nullopt;
+  }
+  return TextureScene{.target = hdTarget_, .drawers = hdSceneryDrawers_, .keep = true};
+}
+
+void MapRenderer::keepHdTarget(rhi::Extent extent) {
+  if (hdTarget_.valid() && hdTargetExtent_ == extent) {
+    return;
+  }
+  // A frame that names the old target skips its pass and filters on the fly.
+  releaseHdTarget();
+  auto target = renderer_->createSceneTexture(extent);
+  if (!target) {
+    core::logWarning("map: cannot make the HD scenery's {}x{} target ({}); filtering on the fly",
+                     extent.width, extent.height, target.error().message);
+    return;
+  }
+  hdTarget_ = *target;
+  hdTargetExtent_ = extent;
+}
+
+void MapRenderer::releaseHdTarget() {
+  if (hdTarget_.valid()) {
+    renderer_->destroyTexture(std::exchange(hdTarget_, TextureId{}));
+  }
+  hdTargetExtent_ = {};
+  hdTargetFilled_ = false;
+}
+
+glm::uvec2 MapRenderer::hdScreenShift() const {
+  const glm::ivec2 size{static_cast<int>(hdTargetExtent_.width),
+                        static_cast<int>(hdTargetExtent_.height)};
+  if (size.x <= 0 || size.y <= 0) {
+    return glm::uvec2{0};
+  }
+  return glm::uvec2{((hdShift_ % size) + size) % size};
+}
+
+void MapRenderer::drawHdScenery(DrawContext& context) {
+  if (!hasMap_ || !hdScenery_ || stageCamera_ || !backgroundColors_.valid() ||
+      context.extent() != hdTargetExtent_) {
+    return;
+  }
+  const glm::ivec2 size{static_cast<int>(hdTargetExtent_.width),
+                        static_cast<int>(hdTargetExtent_.height)};
+  // The window's pixels to filter: all of them, or the strips the scroll uncovered since the target
+  // was last filled.
+  const std::vector<glm::ivec4> regions =
+      hdUncoveredRegions(size, hdShift_ - hdFilledShift_, hdTargetFilled_);
+  // Colours still waiting for the upload memory are filtered again once they are there.
+  hdTargetFilled_ = !renderer_->textureWritePending(backgroundColors_);
+  hdFilledShift_ = hdShift_;
+  if (regions.empty()) {
+    return;
+  }
+
+  // Each region is the scaled background's pixels region + hdShift_; they wrap around the target,
+  // so a region is drawn in up to four pieces, each a quad over the target's pixels it covers.
+  // The background's colours filtered there, unshaded: drawBackground and the cut-outs shade what
+  // they read. Alpha keeps each pixel's class, 0 where nothing is drawn (the shader gives 0 past
+  // the background's edges, where a pixel of the target may still hold another one).
+  const float scale = camera_.scale();
+  const glm::vec2 targetSize{size};
+  const float depth = MapCamera::depthBufferValue(MapFarClip);
+  vertices_.clear();
+  for (const glm::ivec4& region : regions) {
+    for (const glm::ivec3& across :
+         hdWrappedSpan(region.x + hdShift_.x, region.z + hdShift_.x, size.x)) {
+      for (const glm::ivec3& down :
+           hdWrappedSpan(region.y + hdShift_.y, region.w + hdShift_.y, size.y)) {
+        if (across.z <= 0 || down.z <= 0) {
+          continue;
+        }
+        const glm::vec2 targetMin = glm::vec2{across.y, down.y} / targetSize * 2.0F - 1.0F;
+        const glm::vec2 targetMax =
+            glm::vec2{across.y + across.z, down.y + down.z} / targetSize * 2.0F - 1.0F;
+        const glm::vec2 scaledMin{across.x, down.x};
+        const glm::vec2 scaledMax{across.x + across.z, down.x + down.z};
+        appendQuad(
+            vertices_,
+            {glm::vec4{targetMin, depth, 1.0F}, glm::vec4{targetMax.x, targetMin.y, depth, 1.0F},
+             glm::vec4{targetMin.x, targetMax.y, depth, 1.0F}, glm::vec4{targetMax, depth, 1.0F}},
+            scaledMin / scale / backgroundSize_, scaledMax / scale / backgroundSize_,
+            glm::uvec2{backgroundColors_.index, NoPalette}, glm::vec4{1.0F},
+            QuadSampling{.mode = Sampling::Prefilter,
+                         .rect = {0.0F, 0.0F, backgroundSize_ - 1.0F}});
+      }
+    }
+  }
+  const auto upload = context.upload().upload(std::span<const Vertex>{vertices_});
+  if (!upload) {
+    warnUploadFailure(vertices_.size() * sizeof(Vertex));
+    hdTargetFilled_ = false;
+    return;
+  }
+  rhi::CommandList& commands = context.commands();
+  commands.bindPipeline(pipelines_.background);
+  commands.pushConstants(MapPush{.pixelsPerTexel = scale,
+                                 .fade = 1.0F,
+                                 .texels = static_cast<std::uint32_t>(TexelFilter::All),
+                                 .fromRow = 0,
+                                 .toRow = 0,
+                                 .screen = rhi::TextureId::InvalidIndex,
+                                 .screenShiftX = 0,
+                                 .screenShiftY = 0});
+  commands.bindVertexBuffer(*upload);
+  commands.draw(static_cast<std::uint32_t>(vertices_.size()));
+}
+
+void MapRenderer::resolveBackgroundColors(bool atLoad) {
   // The colours texelAt shows: the two rows mixed by the fade (exact at either end).
   const double fade = timeOfDayFadeShown(fade_);
   const std::vector<assets::PaletteColor>& from = paletteRows_[fromRow_];
@@ -520,28 +670,53 @@ void MapRenderer::resolveBackgroundColors() {
   if (backgroundColors_.valid() && palette == resolvedPalette_) {
     return;
   }
-  const std::uint32_t width = backgroundIndexCopy_.width;
-  const std::uint32_t height = backgroundIndexCopy_.height;
-  resolvedTexels_.resize(backgroundIndexCopy_.indices.size());
-  for (std::size_t texel = 0; texel < resolvedTexels_.size(); ++texel) {
-    resolvedTexels_[texel] = palette[backgroundIndexCopy_.indices[texel]];
-  }
-  const auto texels = std::as_bytes(std::span{resolvedTexels_});
-  if (!backgroundColors_.valid()) {
-    auto texture = makeTexture({.width = width, .height = height}, texels);
-    if (!texture) {
-      core::logWarning("map: cannot make the HD scenery's background: {}", texture.error().message);
+  if (!resolveColors(backgroundColors_,
+                     {.width = backgroundIndexCopy_.width, .height = backgroundIndexCopy_.height},
+                     backgroundIndexCopy_.indices, palette, atLoad)) {
+    if (!backgroundColors_.valid()) {
       hdScenery_ = false;
-      return;
     }
-    backgroundColors_ = *texture;
-  } else if (const auto written = renderer_->queueTextureUpdate(
-                 backgroundColors_, {.x = 0, .y = 0, .width = width, .height = height}, texels);
-             !written) {
-    core::logWarning("map: cannot update the HD scenery's background: {}", written.error().message);
     return;
   }
+  hdTargetFilled_ = false;
+  for (SpriteTexture& sprite : spriteTextures_) {
+    if (sprite.timeOfDayPalette &&
+        !resolveColors(sprite.colors,
+                       {.width = static_cast<std::uint32_t>(sprite.size.x),
+                        .height = static_cast<std::uint32_t>(sprite.size.y)},
+                       sprite.indices, palette, atLoad)) {
+      return;
+    }
+  }
   resolvedPalette_ = std::move(palette);
+}
+
+bool MapRenderer::resolveColors(TextureId& texture, rhi::Extent extent,
+                                std::span<const std::uint8_t> indices,
+                                std::span<const assets::PaletteColor> palette, bool atLoad) {
+  resolvedTexels_.resize(indices.size());
+  for (std::size_t texel = 0; texel < indices.size(); ++texel) {
+    resolvedTexels_[texel] = palette[indices[texel]];
+  }
+  const auto texels = std::as_bytes(std::span{resolvedTexels_});
+  if (!texture.valid()) {
+    auto made = atLoad ? renderer_->createTexture(extent, texels) : makeTexture(extent, texels);
+    if (!made) {
+      core::logWarning("map: cannot make a texture of HD scenery's colours: {}",
+                       made.error().message);
+      return false;
+    }
+    texture = *made;
+    return true;
+  }
+  if (const auto written = renderer_->queueTextureUpdate(
+          texture, {.x = 0, .y = 0, .width = extent.width, .height = extent.height}, texels);
+      !written) {
+    core::logWarning("map: cannot update a texture of HD scenery's colours: {}",
+                     written.error().message);
+    return false;
+  }
+  return true;
 }
 
 void MapRenderer::warnUploadFailure(std::size_t bytes) {
@@ -559,15 +734,20 @@ void MapRenderer::drawBackground(DrawContext& context) {
     return;
   }
   vertices_.clear();
+  // HD scenery: what the background pass filtered this frame, else the filter on the fly.
   const bool smooth = hdScenery_ && backgroundColors_.valid();
-  appendQuad(
-      vertices_, backgroundCorners(camera_, {0.0F, 0.0F}, backgroundSize_, MapFarClip),
-      {0.0F, 0.0F}, {1.0F, 1.0F},
-      smooth ? glm::uvec2{backgroundColors_.index, NoPalette}
-             : glm::uvec2{backgroundIndices_.index, palettes_.index},
-      glm::vec4{glm::vec3{shade_}, 1.0F},
-      smooth ? QuadSampling{.mode = Sampling::Smooth, .rect = {0.0F, 0.0F, backgroundSize_ - 1.0F}}
-             : QuadSampling{});
+  const bool screen = smooth && hdTargetReady(context.extent());
+  QuadSampling sampling;
+  if (screen) {
+    sampling.mode = Sampling::Screen;
+  } else if (smooth) {
+    sampling = {.mode = Sampling::Smooth, .rect = {0.0F, 0.0F, backgroundSize_ - 1.0F}};
+  }
+  appendQuad(vertices_, backgroundCorners(camera_, {0.0F, 0.0F}, backgroundSize_, MapFarClip),
+             {0.0F, 0.0F}, {1.0F, 1.0F},
+             smooth ? glm::uvec2{backgroundColors_.index, NoPalette}
+                    : glm::uvec2{backgroundIndices_.index, palettes_.index},
+             glm::vec4{glm::vec3{shade_}, 1.0F}, sampling);
   const auto upload = context.upload().upload(std::span<const Vertex>{vertices_});
   if (!upload) {
     warnUploadFailure(vertices_.size() * sizeof(Vertex));
@@ -575,12 +755,17 @@ void MapRenderer::drawBackground(DrawContext& context) {
   }
   rhi::CommandList& commands = context.commands();
   commands.bindPipeline(pipelines_.background);
-  commands.pushConstants(withGrade(MapPush{.pixelsPerTexel = camera_.scale(),
-                                           .fade = static_cast<float>(timeOfDayFadeShown(fade_)),
-                                           .texels = static_cast<std::uint32_t>(TexelFilter::All),
-                                           .fromRow = fromRow_,
-                                           .toRow = toRow_},
-                                   grade_));
+  const glm::uvec2 shift = hdScreenShift();
+  commands.pushConstants(
+      withGrade(MapPush{.pixelsPerTexel = camera_.scale(),
+                        .fade = static_cast<float>(timeOfDayFadeShown(fade_)),
+                        .texels = static_cast<std::uint32_t>(TexelFilter::All),
+                        .fromRow = fromRow_,
+                        .toRow = toRow_,
+                        .screen = screen ? hdTarget_.index : rhi::TextureId::InvalidIndex,
+                        .screenShiftX = shift.x,
+                        .screenShiftY = shift.y},
+                grade_));
   commands.bindVertexBuffer(*upload);
   commands.draw(static_cast<std::uint32_t>(vertices_.size()));
 }
@@ -683,7 +868,10 @@ void MapRenderer::drawGround(DrawContext& context) {
                .fade = static_cast<float>(fade_),
                .texels = 0,
                .fromRow = fromRow_,
-               .toRow = toRow_};
+               .toRow = toRow_,
+               .screen = rhi::TextureId::InvalidIndex,
+               .screenShiftX = 0,
+               .screenShiftY = 0};
   for (const Run& run : runs_) {
     push.texels = static_cast<std::uint32_t>(run.texels);
     commands.bindPipeline(pipelineOf(run.blend));
@@ -722,12 +910,16 @@ void MapRenderer::drawLayers(DrawContext& context) {
   }
   // HD scenery: a cut-out of the background takes its colours from the background under it; any
   // other sprite smooths its own texels, inside its rectangle of the sheet.
-  const auto layerSampling = [this](const DepthLayerQuad& quad,
-                                    const assets::MapSpriteSheet::Placement& placement) {
+  const bool screen = hdScenery_ && backgroundColors_.valid() && hdTargetReady(context.extent());
+  const auto layerSampling = [this, screen](const DepthLayerQuad& quad,
+                                            const assets::MapSpriteSheet::Placement& placement) {
     if (!hdScenery_ || !backgroundColors_.valid()) {
       return QuadSampling{};
     }
     if (quad.size == glm::vec2{placement.size} && cutouts_.isCutout(quad.sprite, quad.position)) {
+      if (screen) {
+        return QuadSampling{.mode = Sampling::CutoutScreen};
+      }
       return QuadSampling{.mode = Sampling::Cutout,
                           .source = backgroundColors_.index,
                           .sourceMin = quad.position / backgroundSize_,
@@ -751,9 +943,12 @@ void MapRenderer::drawLayers(DrawContext& context) {
     const glm::vec2 uvMax = glm::vec2{placement.texel + placement.size} / texture.size;
     const auto corners =
         backgroundCorners(shown, quad.position, quad.position + quad.size, quad.viewDepth);
-    const glm::uvec2 textures{texture.id.index,
-                              texture.timeOfDayPalette ? palettes_.index : NoPalette};
     const QuadSampling sampling = layerSampling(quad, placement);
+    // Smoothed, a time-of-day sprite reads its colours resolved like the background's.
+    const glm::uvec2 textures =
+        sampling.mode == Sampling::Smooth && texture.colors.valid()
+            ? glm::uvec2{texture.colors.index, NoPalette}
+            : glm::uvec2{texture.id.index, texture.timeOfDayPalette ? palettes_.index : NoPalette};
     const auto plainStart = static_cast<std::uint32_t>(vertices_.size());
     appendQuad(vertices_, corners, uvMin, uvMax, textures, glm::vec4{glm::vec3{shade_}, 1.0F},
                sampling);
@@ -804,12 +999,17 @@ void MapRenderer::drawLayers(DrawContext& context) {
   // map.slang's blend a step.
   constexpr float NearestSampling = 1.0e6F;
   // The fade the background shows: sprites with clut -1 share its palette, as in the original.
-  MapPush push = withGrade(MapPush{.pixelsPerTexel = NearestSampling,
-                                   .fade = static_cast<float>(timeOfDayFadeShown(fade_)),
-                                   .texels = 0,
-                                   .fromRow = fromRow_,
-                                   .toRow = toRow_},
-                           grade_);
+  const glm::uvec2 shift = hdScreenShift();
+  MapPush push =
+      withGrade(MapPush{.pixelsPerTexel = NearestSampling,
+                        .fade = static_cast<float>(timeOfDayFadeShown(fade_)),
+                        .texels = 0,
+                        .fromRow = fromRow_,
+                        .toRow = toRow_,
+                        .screen = screen ? hdTarget_.index : rhi::TextureId::InvalidIndex,
+                        .screenShiftX = shift.x,
+                        .screenShiftY = shift.y},
+                grade_);
   for (const Run& run : runs_) {
     push.texels = static_cast<std::uint32_t>(run.texels);
     commands.bindPipeline(pipelineOf(run.blend));

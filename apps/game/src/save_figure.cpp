@@ -135,7 +135,7 @@ render::TextureScene SaveFigure::scene(double seconds) {
                     glm::vec3{0.F, 1.F, 0.F});
     models_->submit({.model = *model_, .world = world, .joints = joints_});
   }
-  return {.target = texture_, .drawers = drawers_};
+  return {.target = texture_, .drawers = drawers_, .keep = false};
 }
 
 } // namespace dwe::app
