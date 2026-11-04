@@ -35,6 +35,7 @@ void StatusVisuals::show(ruleset::Random& random, FighterId fighter, Kind kind,
   std::optional<std::size_t> slot;
   switch (kind) {
   case Kind::Poison:
+    // battle_effect.c: BTL_addPoisonEffect: the first of the 4 slots, its frame 0.
     if (const auto free = firstFree(poisons_); free != poisons_.end()) {
       *free = Poison{.fighter = fighter, .frame = 0};
       slot = static_cast<std::size_t>(free - poisons_.begin());

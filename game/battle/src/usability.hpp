@@ -1,10 +1,12 @@
 #pragma once
 
 #include <dwe/game/battle/strategies.hpp>
+#include <dwe/ruleset/random.hpp>
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
 namespace dwe::game::battle {
 
@@ -23,7 +25,14 @@ bool moveUsable(const BattleView& view, FighterId fighter, std::size_t slot);
 // moveUsable for every equipped slot (battle_main.c: BTL_getUsableMoves).
 std::array<bool, EquippedSlots> usableSlots(const BattleView& view, FighterId fighter);
 
-// Whether any slot is usable.
+// Whether any slot is usable (battle_main.c: BTL_hasAffordableMoves, which BTL_tickPartnerAI asks
+// over the same marks before the partner picks a move).
 bool anyUsable(const std::array<bool, EquippedSlots>& usable);
+
+// One of the marked slots at random (battle_main.c: BTL_getRandomUsableMove): the marked ones in
+// slot order, then one randomLimit over how many there are. Nothing, and no roll, when none is
+// marked (the original would read past its list).
+std::optional<std::size_t> randomUsableSlot(ruleset::Random& random,
+                                            const std::array<bool, EquippedSlots>& usable);
 
 } // namespace dwe::game::battle

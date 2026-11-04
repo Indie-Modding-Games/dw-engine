@@ -7,6 +7,7 @@
 
 #include "original_strategies.hpp"
 #include "targeting.hpp"
+#include "usability.hpp"
 
 namespace dwe::game::battle {
 
@@ -164,14 +165,7 @@ private:
     if (auto best = bestOf(values, marks, true)) {
       return best;
     }
-    std::vector<std::size_t> tied;
-    for (std::size_t slot = 0; slot < EquippedSlots; ++slot) {
-      if (marks.at(slot)) {
-        tied.push_back(slot);
-      }
-    }
-    return tied.at(
-        static_cast<std::size_t>(view.random->below(static_cast<std::int32_t>(tied.size()))));
+    return randomUsableSlot(*view.random, marks);
   }
 
   // battle_main.c: BTL_selectPartnerMove.

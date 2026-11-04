@@ -85,6 +85,9 @@ void tickAttacksInFlight(BattleContext& context);
 // target on this frame do it, after the fighters moved (BTL_battleTickFrame: tickObjects).
 void faceEffectTargets(BattleContext& context);
 void tickAttackHits(BattleContext& context);
+// battle_main.c: BTL_addBlockedAttack: notes the attack on its defender's guard; false when the
+// guard took it already, which keeps its spark from showing again.
+bool registerBlockedAttack(const BattleContext& context, const AttackInFlight& attack);
 void drainPendingDamage(BattleContext& context);
 // The attack of a fighter leaves it (its animation's release frame).
 void releaseAttack(BattleContext& context, FighterId id);
@@ -109,6 +112,10 @@ void cureStatus(BattleContext& context, FighterId id);
 // battle_main.c: BTL_removeStatusEffects: ends the visual of the fighter's statuses, before they
 // are cleared (faint, defeat, the flattening).
 void removeStatusVisuals(BattleContext& context, FighterId id);
+// battle_main.c: BTL_resetFlatten: back to its shape at once, the flattening and its timer gone.
+// The look follows from those (updateFlatLook): the paper sprite goes (flatSprite -1) and the
+// body's scale is the timer's 0, its full size.
+void resetFlatten(Fighter& fighter);
 // battle_effect.c: BTL_removeFinisherAura(BTL_FINISHER_AURA_ID), when a finisher is lost.
 void removeFinisherAura(BattleContext& context);
 
@@ -187,7 +194,9 @@ void walkToward(BattleContext& context, FighterId id, Point point);
 void approach(BattleContext& context, FighterId id, FighterId target);
 // battle_main.c: BTL_backAwayFromTarget: turns its back on the target and walks away.
 void backAwayFrom(BattleContext& context, FighterId id, FighterId target);
-// battle_main.c: BTL_maintainTargetDistance.
+// battle_main.c: BTL_maintainTargetDistance and BTL_maintainDistanceRange: nearer than the contact
+// reach plus the near band it backs away, farther than the reach plus the far band it walks up,
+// in between it stands and looks at the target (the walking band while it walks).
 void keepDistance(BattleContext& context, FighterId id, FighterId target);
 // battle_main.c: BTL_confusedRotate: a confused fighter turns at random.
 void turnAtRandom(BattleContext& context, Fighter& fighter);
@@ -206,6 +215,9 @@ bool leavesScreenArea(const BattleGround& ground, const TimingRules& timing, Poi
                       std::int32_t radius, std::int32_t width, std::int32_t height);
 // The integer square root, rounded down.
 std::int64_t integerSqrt(std::int64_t value);
+// The longest reach of a fighter's equipped moves, the finisher's too, as the squared distance the
+// move table gives (battle_main.c: BTL_getMoveWithHighestDistance); 0 with none.
+std::int64_t longestReach(const BattleContext& context, FighterId id);
 // battle_main.c: BTL_handlePartnerMoveCommand: the partner's flee, defend and distance commands
 // move it themselves; true when one did, which keeps it from attacking this frame.
 bool followMoveCommand(BattleContext& context);

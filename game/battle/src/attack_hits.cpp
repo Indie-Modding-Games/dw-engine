@@ -251,8 +251,10 @@ void block(BattleContext& context, const AttackInFlight& attack) {
   const FighterId id = attack.defender;
   Fighter& fighter = context.fighter(id);
   const HitRules& rules = context.rules->hit;
-  // The block's spark (createParticleFX(0, 2, ...)), before the guard that is still up.
-  if (context.particles != nullptr) {
+  // The block's spark (createParticleFX(0, 2, ...)), before the guard that is still up: once for
+  // each attack the guard takes (BTL_addBlockedAttack), so a move the same fighter casts again
+  // while the guard holds blocks without one (and without its rolls).
+  if (registerBlockedAttack(context, attack) && context.particles != nullptr) {
     context.particles->spawn(context.particleRolls(), HitParticles::Spark::Block, BlockSparkKind,
                              sparkPointOf(context, attack), id, BlockSparkFrames);
   }
@@ -375,6 +377,19 @@ AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId de
 }
 
 } // namespace
+
+bool registerBlockedAttack(const BattleContext& context, const AttackInFlight& attack) {
+  const BlockedAttack taken{.caster = attack.move == context.moves->flattenedShot()
+                                          ? std::nullopt
+                                          : std::optional{attack.attacker},
+                            .move = attack.move};
+  std::vector<BlockedAttack>& blocked = context.fighter(attack.defender).blockedAttacks;
+  if (std::ranges::contains(blocked, taken)) {
+    return false;
+  }
+  blocked.push_back(taken);
+  return true;
+}
 
 std::optional<EffectLanding> effectLanding(const BattleContext& context, FighterId attacker,
                                            FighterId defender, MoveRef move,

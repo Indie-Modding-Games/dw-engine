@@ -132,11 +132,25 @@ struct StatusState {
   [[nodiscard]] bool any() const { return poisoned || confused || stunned || flattened; }
 };
 
+// An attack a guard took (battle_main.c: BTL_addBlockedAttack keeps the attack's effect id and its
+// sub-effect in FighterData table1 and table2). The original's effect id is one per fighter and
+// equipped move, the same each time it casts it; every flattened fighter's shot shares effect
+// 0x179, whoever fires it (no caster here). The battle's moves have one hit each.
+struct BlockedAttack {
+  std::optional<FighterId> caster;
+  MoveRef move = 0;
+
+  friend bool operator==(const BlockedAttack&, const BlockedAttack&) = default;
+};
+
 // An attack on its way: from the moment the attacker's animation releases it until it reaches a
 // fighter.
 struct AttackInFlight {
   FighterId attacker = 0;
   FighterId defender = 0;
+  // The technique it carries from its release: the original finds it again from the attack's effect
+  // (battle_main.c: BTL_getAttackTech: the caster's effect slot that matches, or the flattened
+  // fighter's shot, effect 0x179, technique 0x79 = the ruleset's flattened_shot).
   MoveRef move = 0;
   Point origin;
   std::int32_t framesLeft = 0;
@@ -248,6 +262,9 @@ struct Fighter {
   std::int32_t invulnerableFrames = 0;
   // The attacks that reached it, one handled a frame.
   std::vector<AttackInFlight> incoming;
+  // The attacks its guard took since the guard went up, each sparking once (battle_main.c:
+  // BTL_addBlockedAttack); emptied as the guard drops (BTL_clearBlockedAttacks).
+  std::vector<BlockedAttack> blockedAttacks;
 
   StatusState status;
 
@@ -362,7 +379,8 @@ struct BattleState {
   // The living fighters other than `self` (battle_main.c: BTL_getRemainingEnemies): for the partner
   // the enemies, for an enemy the partner and the other enemies.
   [[nodiscard]] std::vector<FighterId> remainingOthers(FighterId self) const;
-  // The enemies not yet defeated.
+  // The enemies not yet defeated (battle_main.c: BTL_countLivingEnemies, BTL_isFighterDefeated for
+  // each).
   [[nodiscard]] std::int32_t livingEnemies() const;
   [[nodiscard]] bool frozenByFinisher() const { return finisher.fighter.has_value(); }
 };

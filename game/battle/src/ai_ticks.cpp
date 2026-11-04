@@ -75,11 +75,6 @@ bool isHeld(const Fighter& fighter) {
          fighter.fainted;
 }
 
-void resetFlatten(Fighter& fighter) {
-  fighter.status.flattened = false;
-  fighter.status.flatFrames = 0;
-}
-
 void clearStatusFlags(Fighter& fighter) {
   fighter.status.poisoned = false;
   fighter.status.confused = false;
@@ -294,6 +289,11 @@ void tickEnemy(BattleContext& context, FighterId id, bool& stop) {
 
 } // namespace
 
+void resetFlatten(Fighter& fighter) {
+  fighter.status.flattened = false;
+  fighter.status.flatFrames = 0;
+}
+
 void setTarget(BattleContext& context, FighterId id, std::optional<FighterId> target) {
   Fighter& fighter = context.fighter(id);
   if (fighter.target != target && target) {
@@ -368,18 +368,13 @@ void chooseConfusedMove(BattleContext& context, FighterId id) {
       setTarget(context, id, others.at(randomIndex(*context.random, others.size())));
     }
   }
-  const std::array<bool, EquippedSlots> usable = usableSlots(context.view(), id);
-  std::vector<std::size_t> slots;
-  for (std::size_t slot = 0; slot < EquippedSlots; ++slot) {
-    if (usable.at(slot)) {
-      slots.push_back(slot);
-    }
-  }
-  if (slots.empty()) {
+  const std::optional<std::size_t> slot =
+      randomUsableSlot(*context.random, usableSlots(context.view(), id));
+  if (!slot) {
     waitWithoutMove(context, id);
     return;
   }
-  queueMove(context, id, slots.at(randomIndex(*context.random, slots.size())));
+  queueMove(context, id, *slot);
 }
 
 void selectTarget(BattleContext& context, FighterId id, std::optional<FighterId> toward,

@@ -67,4 +67,19 @@ bool anyUsable(const std::array<bool, EquippedSlots>& usable) {
   return std::ranges::any_of(usable, [](bool slot) { return slot; });
 }
 
+std::optional<std::size_t> randomUsableSlot(ruleset::Random& random,
+                                            const std::array<bool, EquippedSlots>& usable) {
+  std::array<std::size_t, EquippedSlots> picked{};
+  std::size_t count = 0;
+  for (std::size_t slot = 0; slot < EquippedSlots; ++slot) {
+    if (usable.at(slot)) {
+      picked.at(count++) = slot;
+    }
+  }
+  if (count == 0) {
+    return std::nullopt;
+  }
+  return picked.at(static_cast<std::size_t>(random.below(static_cast<std::int32_t>(count))));
+}
+
 } // namespace dwe::game::battle

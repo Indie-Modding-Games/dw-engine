@@ -26,7 +26,10 @@ public:
   enum class StunStage : std::uint8_t { Countdown = 0, Flash = 1, Shrink = 2 };
 
   // The original's pools (BTL_POISON_EFFECTS, BTL_POISON_BUBBLES, BTL_CONFUSION_EFFECTS,
-  // BTL_STUN_EFFECTS, BTL_STUN_SUB_EFFECTS).
+  // BTL_STUN_EFFECTS, BTL_STUN_SUB_EFFECTS). Every battle starts with all of them free, frame -1
+  // (btl.c: loadBattleData: BTL_initializePoisonBubble, which runs BTL_resetPoisonBubbles;
+  // BTL_initializeConfusionEffect; BTL_initializeStunEffect, which runs BTL_resetStunSubEffects):
+  // each Battle has its own, empty as it starts, and clear() frees them as the battle ends.
   static constexpr std::size_t PoisonSlots = 4;
   static constexpr std::size_t BubbleSlots = 12;
   static constexpr std::size_t ConfusionSlots = 4;

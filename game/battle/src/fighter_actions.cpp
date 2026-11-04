@@ -458,6 +458,16 @@ void tickFighter(BattleContext& context, FighterId id) {
 
 } // namespace
 
+std::int64_t longestReach(const BattleContext& context, FighterId id) {
+  std::int64_t reach = 0;
+  for (const std::optional<MoveRef>& move : context.fighter(id).moves) {
+    if (move) {
+      reach = std::max(reach, context.moves->at(*move).distanceSquared);
+    }
+  }
+  return reach;
+}
+
 bool followMoveCommand(BattleContext& context) {
   if (context.state->frozenByFinisher()) {
     return false;
@@ -479,12 +489,7 @@ bool followMoveCommand(BattleContext& context) {
       return true;
     }
     const Fighter& target = context.fighter(*partner.target);
-    std::int64_t reach = 0;
-    for (const std::optional<MoveRef>& move : target.moves) {
-      if (move) {
-        reach = std::max(reach, context.moves->at(*move).distanceSquared);
-      }
-    }
+    std::int64_t reach = longestReach(context, *partner.target);
     reach += context.rules->spacing.keepAwayMarginSquared;
     if (isWalking(partner)) {
       reach += context.rules->spacing.keepAwayWalkingSquared;
@@ -662,6 +667,8 @@ void endAnimation(BattleContext& context, FighterId id) {
     }
     if (fighter.blocking) {
       fighter.blocking = false;
+      // battle_main.c: BTL_clearBlockedAttacks.
+      fighter.blockedAttacks.clear();
     } else {
       fighter.knockedBack = false;
       fighter.attack.reset();
@@ -690,8 +697,8 @@ void faint(BattleContext& context, FighterId id) {
     context.state->hitsOff = true;
   }
   removeStatusVisuals(context, id);
-  fighter.status.flattened = false;
-  fighter.status.flatFrames = 0;
+  // battle_main.c: BTL_faintDigimon.
+  resetFlatten(fighter);
   fighter.status.poisoned = false;
   fighter.status.confused = false;
   fighter.status.stunned = false;
