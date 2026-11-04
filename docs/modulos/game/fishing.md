@@ -44,3 +44,20 @@ La cámara de la pesca es la del original: `Fishing` guarda el centro de la vist
 | Los peces aparecen en cualquier zona del fondo, no solo en la vista | `FISH_isScreenPointVisible`, `FISH_randomPointInSpot` | `CameraView::screenMin/screenMax` | ruta de pesca | Igual. Antes la vista solo cubría lo visible y cada zona fuera de ella dejaba «no water in sight» en el log; ahora ninguno |
 | La serpiente: cinco piezas, cada una girada como la cabeza un fotograma después que la anterior, a 200, 175, 125 y 140 de distancia | `FISH_pushSeadramonSegment`, `FISH_drawSeadramon` | `pushSeaSerpentTurn`, `seaSerpentBody` | sea serpent | Igual en la forma. Suposición: sus caras leen un trozo de 8 x 8 de la página de textura que está vacío en la imagen extraída; se resta blanco, que da la silueta negra medida. Cada serpiente nueva empieza recta (en el original la historia es global) |
 | Con la serpiente en tierra la pesca se apaga en el mapa y empieza su escena | `tamerTickFishing`, `triggerSeadramonCutscene` | evento `SeaSerpentLanded` (valor: `sea_serpent.scene_section`, 0x4e4) → `StoryAdapter::request` | - | Igual: la sección 0x4e4 del guion de cabecera salta a la 82 del guion 7; sale la serpiente y «What the... oh no! It's the Lake Guardian!», como en el original |
+
+## Marcas, ondas, cebo y aviso
+
+Las marcas de picada y las ondas son dos reservas de 16 (`effects.hpp`: `MarkerPool`, `RipplePool`) que `Fishing`
+avanza en su fotograma de agua, antes de los peces; con un aviso abierto se quedan quietas. La app las dibuja con la
+imagen de pesca del mapa (`sprite_file` de `data/fishing`: `texture/etcdat/fishing2` en el lago) y su escala
+(`FishingMapEntry::scale`), y el cebo con el icono de su objeto (`FishingScreen::showPrims`). Medido en el lago
+(`fish_mayo06_waiting`, escribiendo las reservas del original).
+
+| Regla | Decomp | Aquí | Test | Estado |
+|---|---|---|---|---|
+| Al tirar la picada sobre un pez sale una marca: corazón si puede picar, cruz si no; vive 10 y se ve 9 fotogramas | `FISH_spawnMarker`, `FISH_tickMarker`, `FISH_tickMarkers`, `FISH_allocMarker` | `MarkerPool`, `Fishing::findFishToBite` | `fishing_effects_tests`: 9 frames, 16 at most | Igual. Medido: vida 10 en la tirada, 9 al acabar ese fotograma y 8 el siguiente (la caña va antes que el agua en el mismo fotograma). 16 x 16 píxeles de pantalla, con su punto abajo en el centro, delante de todo |
+| Al engancharse un pez se borran las marcas | `FISH_clearMarkers` | `Fishing::hookFish` | 16 at most | Igual |
+| Las ondas y salpicaduras pasan por su tabla y se quitan al acabar; el susto a los peces dura lo que su onda | `FISH_tickRipple`, `FISH_tickRipples`, `FISH_spawnRipple` | `stepRipple`, `RipplePool` | each kind, scaring ripple | Igual. La salpicadura dura 10 fotogramas; sin hueco libre no hay onda ni susto |
+| Una onda es una tarjeta en pie sobre el agua a lo largo de x, sumando, de escala del mapa por la suya | `FISH_drawRipple` | `addWaterSprites` | rectangles | Igual. En el lago (escala 0x3800) un anillo mide 3,5 unidades por téxel: unos pocos píxeles, tenues |
+| El cebo y la captura se ven con el icono de su objeto, un cuadrado de cara a la pantalla de 35 unidades a cada lado en el lago, solo sobre el agua | `FISH_showBaitSprite`, `FISH_drawBaitSprite` | `addBait` | ruta de pesca | Igual. Medido: la carne a unos 11 píxeles cerca del corcho |
+| El aviso se cierra con Confirmar tras 10 fotogramas abierto, o con Cancelar al momento, y suena como confirmar | `FISH_tickTextBox`, `FISH_closeTextBox` | `ui/fishing_notice/logic.lua` | `fishing_notice_tests` | Igual. Un Confirmar antes de medio segundo no hace nada ni suena |

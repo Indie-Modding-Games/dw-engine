@@ -65,6 +65,8 @@ public:
   [[nodiscard]] const game::fishing::Fishing* fishing() const {
     return fishing_ ? &*fishing_ : nullptr;
   }
+  // The data of the current map's fishing (its image and scale), or nullptr off a fishing map.
+  [[nodiscard]] const assets::FishingMapEntry* map() const { return fishing_ ? map_ : nullptr; }
 
   [[nodiscard]] FishingAvailability availability() const;
   // The best rod the player has (getBestFishingRod).
@@ -73,6 +75,8 @@ public:
   [[nodiscard]] std::vector<assets::ItemHandle> baits() const;
   // The item number Fishing::chooseBait takes for a bag item.
   [[nodiscard]] std::int32_t itemNumber(assets::ItemHandle item) const;
+  // The bag item of an item number (Fishing::baitItem), or nothing.
+  [[nodiscard]] std::optional<assets::ItemHandle> itemOfNumber(std::int32_t number) const;
 
   // Applies a tick's events: an eaten bait leaves the bag, a catch goes in it (FISH_tickRod), a
   // landed fish counts for the partner and the records, and the sea serpent stops fishing on the
@@ -85,7 +89,6 @@ public:
   [[nodiscard]] std::int32_t soundSlot() const { return rules_ ? rules_->sounds.slot : 0; }
 
 private:
-  [[nodiscard]] std::optional<assets::ItemHandle> itemOfNumber(std::int32_t number) const;
   [[nodiscard]] std::optional<std::int32_t> numberOf(std::string_view id) const;
   [[nodiscard]] std::optional<game::fishing::FishingTables> resolveTables() const;
   [[nodiscard]] std::optional<game::fishing::FishingPlace>
@@ -97,6 +100,7 @@ private:
   std::optional<assets::FishingTable> table_;
   std::optional<game::fishing::FishingRules> rules_;
   std::optional<game::fishing::Fishing> fishing_;
+  const assets::FishingMapEntry* map_ = nullptr;
   std::array<std::int32_t, 8> records_{};
 };
 

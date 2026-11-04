@@ -151,6 +151,7 @@ void FishingAdapter::enterMap(std::string_view mapId) {
     return;
   }
   fishing_.emplace(*rules_, std::move(*tables), std::move(*place));
+  map_ = map;
   core::logDebug("[port:fishing] checkFishingMap (main/fish.c:116): water on '{}'", mapId);
 }
 

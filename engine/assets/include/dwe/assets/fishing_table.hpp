@@ -64,6 +64,11 @@ struct FishingMapEntry {
   std::optional<std::size_t> shoreline;
   std::int32_t castRange = 0;
   std::vector<glm::ivec2> seaSerpentPath;
+  // FISHING_MAP_DATA's scale in 4096ths: world units per texel of the water's sprites.
+  std::int32_t scale = 0;
+  // The map's fishing image (its sprite_file) as an image of the base pack:
+  // "\\ETCDAT\\FISHING2.TIM" is "texture/etcdat/fishing2". Empty when the data has none.
+  std::string image;
 };
 
 struct FishingTable {

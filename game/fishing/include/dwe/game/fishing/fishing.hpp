@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/core/math.hpp>
+#include <dwe/game/fishing/effects.hpp>
 #include <dwe/game/fishing/rules.hpp>
 #include <dwe/game/fishing/view.hpp>
 #include <dwe/ruleset/random.hpp>
@@ -241,6 +242,10 @@ public:
   // The bait or the catch on its way to the hand; nothing while hidden.
   [[nodiscard]] std::optional<glm::vec3> bait() const;
   [[nodiscard]] std::int32_t baitItem() const { return bait_; }
+  // The marks over the fish that rolled a bite and the water's ripples, ticked with the water and
+  // kept while a message is open (FISH_tickFishingWorld waits on FISH_isTextBoxVisible).
+  [[nodiscard]] const MarkerPool& markers() const { return markers_; }
+  [[nodiscard]] const RipplePool& ripples() const { return ripples_; }
 
 private:
   struct Bobber {
@@ -251,12 +256,6 @@ private:
     float gravity = 0.0F;
     // The line's length while it swings from the rod; 0 when free.
     float lineLength = 0.0F;
-  };
-
-  struct Scare {
-    glm::vec3 position{0.0F};
-    float radius = 0.0F;
-    std::int32_t framesLeft = 0;
   };
 
   // The water (pond.cpp).
@@ -330,7 +329,8 @@ private:
 
   std::vector<Fish> pool_;
   std::int32_t scaredPause_ = 0;
-  std::optional<Scare> scare_;
+  MarkerPool markers_;
+  RipplePool ripples_;
   std::optional<Fish> hooked_;
   bool hookedEscaped_ = false;
   std::int32_t nibbleTime_ = 0;

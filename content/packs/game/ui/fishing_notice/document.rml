@@ -5,11 +5,12 @@
 	<link type="text/rcss" href="structure.rcss"/>
 	<script src="logic.lua"></script>
 </head>
-<body>
+<!-- own-sounds: the box sounds only when it closes (FISH_tickTextBox), not on every press. -->
+<body own-sounds="true">
 	<div id="scrim">
 		<div id="panel">
 			<p id="text"></p>
-			<button id="ok" autofocus="autofocus" onclick="ui.send('fishing_notice_ok')" text-key="common.accept"></button>
+			<button id="ok" autofocus="autofocus" onclick="close_notice()" text-key="common.accept"></button>
 
 			<div id="prompts">
 				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
