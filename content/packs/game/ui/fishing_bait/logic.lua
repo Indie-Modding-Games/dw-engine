@@ -23,10 +23,16 @@ local function bait_of(slot)
   return nil
 end
 
+-- FISH_renderBaitMenu draws an 8-pixel "x" and then the count in two digit cells, right-aligned
+-- (renderItemAmount(0, 2, ...)): "x 3", "x12". The original font has a plain x and no
+-- multiplication sign (its code draws a triangle), so the label uses the x for both looks.
 local function label_of(bait)
   local key = ui.setting("fishing_bait_name." .. bait) or ""
   local held = math.floor(ui.setting("fishing_bait_count." .. bait) or 0)
-  return t("fishing.bait.entry", { item = key ~= "" and t(key) or "?", count = held })
+  return t(
+    "fishing.bait.entry",
+    { item = key ~= "" and t(key) or "?", count = string.format("%2d", held) }
+  )
 end
 
 local function refresh(document)

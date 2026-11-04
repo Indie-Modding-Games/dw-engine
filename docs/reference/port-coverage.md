@@ -92,7 +92,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 96 | 96 | 0 | 0 | 100 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 29 | 0 | 0 | 100 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 38 | 37 | 1 | 0 | 99 % |
-| [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 93 | 93 | 0 | 0 | 100 % |
+| [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 95 | 95 | 0 | 0 | 100 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 40 | 40 | 0 | 0 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 11 | 11 | 0 | 0 | 100 % |
 | [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 111 | 106 | 5 | 0 | 98 % |
@@ -101,7 +101,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 30 | 30 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1436 funciones a portar | 1436 | 1337 | 8 | 91 | 93 % |
+| **Total** | 1438 funciones a portar | 1438 | 1339 | 8 | 91 | 93 % |
 
 ## Batalla
 
@@ -198,7 +198,7 @@ El minijuego de pesca.
 
 Ficheros del decomp: `fish/fish.c`, `fish/fish_model.c`, `main/fish.c`.
 
-Portado 93, parcial 0, falta 0.
+Portado 95, parcial 0, falta 0.
 
 ## Muerte y renacer
 
@@ -368,6 +368,6 @@ Portado 51, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-1002 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+1000 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

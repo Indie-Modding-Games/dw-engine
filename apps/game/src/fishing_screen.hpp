@@ -58,12 +58,13 @@ public:
   void tick(FieldScene& scene, const FishingButtons& buttons, double seconds);
   // One logic tick while the rod is away: the water of a fishing map runs as one of the field's
   // objects from the map's load (FISH_init adds FISH_tickFishingWorld and its drawing), so the fish
-  // swim and show all the time, under the menus too. Nothing while the fishing runs (tick does) or
-  // on a map without water.
+  // swim and show all the time, under the menus and in a battle too (BTL_battleTickFrame runs
+  // tickObjects). Nothing while the fishing runs (tick does) or on a map without water; water
+  // that went with the map still loaded (the partner's death) stops showing.
   void tickWater(FieldScene& scene, double seconds);
   // The partner evolves (FISH_tickFishingWorld and its drawing skip PARTNER_STATE 13): the water
   // neither moves nor shows.
-  void hideWater(FieldScene& scene) const;
+  void hideWater(FieldScene& scene);
   // Takes the pause menu's fish, the bait menu's choice and the notices' answers; false for any
   // other command.
   bool handle(const ui::UiCommand& command);
@@ -107,6 +108,8 @@ private:
   bool noticeShown_ = false;
   glm::vec3 noticeTarget_{0.0F};
   bool gaugeShown_ = false;
+  // Whether the scene draws this water's prims.
+  bool waterShown_ = false;
   std::optional<std::int32_t> offered_;
 };
 

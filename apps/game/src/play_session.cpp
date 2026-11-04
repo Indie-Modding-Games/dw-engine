@@ -793,15 +793,16 @@ bool PlaySession::walksByPointer() const {
 void PlaySession::tickWater() {
   // fish.c: FISH_init adds the water of a fishing map as one of the field's objects, after the
   // player's and the partner's; tickObjects runs them in that order every frame, under the pause
-  // menu too (main.c: gameLoop, utils.c: pauseFrame), so the fish roll after the field. The water
+  // menu too (main.c: gameLoop, utils.c: pauseFrame), so the fish roll after the field. A battle
+  // keeps it: BTL_battleTickFrame runs tickObjects after the fighters, and nothing removes the
+  // water (measured: FISH_tickFishingWorld ticks while the battle loads; the original then hangs,
+  // as the battle's code lands over the fishing's, a limit the game does not have). The water
   // skips the frames the partner evolves (FISH_tickFishingWorld, PARTNER_STATE 13).
   if (evolutionScene_.active()) {
     fishingScreen_.hideWater(*scene_);
     return;
   }
-  if (!battleScreen_.active()) {
-    fishingScreen_.tickWater(*scene_, TickSeconds);
-  }
+  fishingScreen_.tickWater(*scene_, TickSeconds);
 }
 
 void PlaySession::tickSystems(const game::field::FieldInput& intent,

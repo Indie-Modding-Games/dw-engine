@@ -79,6 +79,11 @@ public:
   [[nodiscard]] const assets::FishingMapEntry* map() const { return fishing_ ? map_ : nullptr; }
 
   [[nodiscard]] FishingAvailability availability() const;
+  // main/fish.c: deinitializeFishing: the partner's natural death (partnerTickDying) takes the
+  // water of the map away, fish, sea serpent, ripples and marks, until a map loads again
+  // (enterMap). Measured on mayo06: FISHING_DATA_PTR is NULL from the first dying frame and the
+  // serpent's lines leave the lake.
+  void leaveWater();
   // main/fish.c: setFishingDisabled and setFishingEnabled: the partner's evolution and death scenes
   // stop the fishing of the map while they run and give it back at their end; nothing off a
   // fishing map.
