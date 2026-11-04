@@ -104,6 +104,19 @@ signs:
   CHECK(sign.colors == SignColors::All);
 }
 
+TEST_CASE("a sign overlay reads a transparent clear for a sprite page") {
+  const SignOverlay overlay = parsed(R"(
+signs:
+  - id: lit
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 0, 96, 40]
+    clear: transparent
+    text: signs.lit
+)");
+  REQUIRE(overlay.signs.size() == 1);
+  CHECK(overlay.signs.front().clear.mode == SignClear::Mode::Transparent);
+}
+
 TEST_CASE("a sign overlay refuses what it does not understand") {
   CHECK(problem("signs:\n  - {id: a, region: [0, 0, 1, 1], text: k, colour: red}\n")
             .contains("colour"));

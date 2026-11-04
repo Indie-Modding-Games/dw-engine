@@ -1,0 +1,16 @@
+# This stage of the plaza: the restaurant's name on its counter, in English in the original; Spanish writes them
+# again.
+signs:
+  # The restaurant's name painted along the counter, in English in the original (the glow sprites over it stay).
+  - id: restaurant
+    region: [516, 30, 186, 80]
+    clear:
+      mode: diffuse
+      quad: [[514, 28], [706, 74], [706, 114], [514, 58]]
+      color: "#4a844a"
+      tolerance: 40
+    corners: [[519, 33], [700, 78], [698, 109], [517, 61]]
+    text: signs.twnb_restaurant
+    size: 24
+    color: "#6bc6bd"
+    colors: region

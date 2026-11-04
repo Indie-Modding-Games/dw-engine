@@ -68,12 +68,16 @@ struct SignClear {
     // area) by more than `tolerance` are removed, and filled from the board around them, ring by
     // ring: the board's frame and texture stay where they are.
     Diffuse,
+    // The pixels become the palette's see-through colour, so what is behind the image shows: the
+    // lettering of a sprite page drawn over the map (a lit board, a sign that glows). The new
+    // letters are drawn on it without soft edges, since nothing is there to blend them with.
+    Transparent,
   };
   Mode mode = Mode::Inpaint;
   // The rectangle cleared; the sign's region when missing.
   std::optional<PixelRect> rect;
-  // For fill and diffuse, only the pixels inside this quadrilateral of the rectangle (a board seen
-  // in perspective).
+  // For fill, diffuse and transparent, only the pixels inside this quadrilateral of the rectangle
+  // (a board seen in perspective).
   std::optional<std::array<PixelPoint, 4>> quad;
   std::optional<assets::PaletteColor> color;
   // Diffuse: how far from the board's colour a pixel may be and still be board (0-255, by the

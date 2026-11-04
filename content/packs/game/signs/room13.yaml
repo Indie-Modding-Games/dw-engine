@@ -1,0 +1,24 @@
+# The arena hall: the navy banner over the fighters' door (ひかえ, the waiting room) and the lit reception sign on the
+# desk (受付, which blinks with a sprite that reads ENTRY in English). The tournament board behind is a grid of glyphs
+# too small to read and stays.
+signs:
+  - id: waiting
+    region: [238, 0, 104, 42]
+    clear:
+      mode: diffuse
+      quad: [[242, 2], [339, 2], [339, 39], [244, 36]]
+      color: "#211852"
+      tolerance: 40
+    corners: [[245, 9], [337, 9], [337, 33], [245, 33]]
+    text: signs.room13_waiting
+    size: 13
+    color: "#efad94"
+    colors: region
+  - id: reception
+    region: [438, 132, 58, 36]
+    clear: {mode: diffuse, rect: [442, 137, 50, 28], color: "#080808", tolerance: 30}
+    corners: [[443, 141], [491, 141], [491, 163], [443, 163]]
+    text: signs.room13_reception
+    size: 10
+    color: "#f7c618"
+    colors: region

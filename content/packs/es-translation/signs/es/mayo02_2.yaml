@@ -1,0 +1,48 @@
+# The lit signpost below the mountain: five destinations in English on a sprite page laid over the board; Spanish
+# writes them again (the arrows stay).
+signs:
+  - id: jijimon
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 0, 144, 56]
+    clear: transparent
+    text: signs.mayo_led_jijimon
+    size: 18
+    line_spacing: 0.9
+    color: "#c68421"
+    colors: region
+  - id: town
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 56, 144, 56]
+    clear: transparent
+    text: signs.mayo_led_town
+    size: 18
+    line_spacing: 0.9
+    color: "#c68421"
+    colors: region
+  - id: panorama
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 112, 144, 48]
+    clear: transparent
+    text: signs.mayo_led_panorama
+    size: 18
+    line_spacing: 0.9
+    color: "#c68421"
+    colors: region
+  - id: drill
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 160, 144, 48]
+    clear: transparent
+    text: signs.mayo_led_drill
+    size: 18
+    line_spacing: 0.9
+    color: "#c68421"
+    colors: region
+  - id: forest
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 208, 144, 47]
+    clear: transparent
+    text: signs.mayo_led_forest
+    size: 18
+    line_spacing: 0.9
+    color: "#c68421"
+    colors: region

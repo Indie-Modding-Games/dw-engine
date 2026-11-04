@@ -1,0 +1,33 @@
+# This stage of the plaza: the tool shop's wall card and plate, in English in the original; Spanish writes them again.
+signs:
+  - id: open_top
+    region: [117, 144, 48, 33]
+    clear:
+      mode: diffuse
+      quad: [[119, 153], [158, 146], [162, 166.5], [124, 175.5]]
+      color: "#b5b5b5"
+    corners: [[121, 153.5], [157, 147.5], [158.6, 154.6], [122.4, 161]]
+    text: signs.twnb10_open_top
+    size: 7
+    color: "#181818"
+  - id: open
+    region: [117, 144, 48, 33]
+    clear: none
+    corners: [[122, 160.5], [158.6, 154], [161, 166], [124, 174]]
+    text: signs.twnb10_open
+    size: 12
+    color: "#bd0800"
+  # The tool shop's plate by the door, in English in the original: the icon on its left stays.
+  - id: tool_shop
+    region: [212, 158, 38, 26]
+    clear:
+      mode: diffuse
+      quad: [[214, 163], [241, 160.5], [243, 178.5], [216, 181]]
+      color: "#efefef"
+      tolerance: 60
+    corners: [[215, 164], [241, 161], [243, 177.5], [217, 179.5]]
+    text: signs.twnb10_tool_shop
+    size: 8
+    line_spacing: 0.85
+    color: "#101010"
+    colors: region

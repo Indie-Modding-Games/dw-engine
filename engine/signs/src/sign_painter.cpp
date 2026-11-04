@@ -90,7 +90,7 @@ public:
          PixelRect rect)
       : image_(&image), palette_(palette), rect_(rect),
         colors_(static_cast<std::size_t>(rect.width) * static_cast<std::size_t>(rect.height)),
-        changed_(colors_.size(), false) {
+        changed_(colors_.size(), false), clear_(colors_.size(), false) {
     for (std::int32_t y = rect.y; y < rect.y + rect.height; ++y) {
       for (std::int32_t x = rect.x; x < rect.x + rect.width; ++x) {
         colors_[slot(x, y)] = imageColor(x, y);
@@ -111,6 +111,16 @@ public:
     changed_[slot(x, y)] = true;
   }
   [[nodiscard]] bool changed(std::int32_t x, std::int32_t y) const { return changed_[slot(x, y)]; }
+  // A pixel made see-through by a transparent clear, until a letter is drawn on it.
+  void makeClear(std::int32_t x, std::int32_t y) {
+    clear_[slot(x, y)] = true;
+    changed_[slot(x, y)] = true;
+  }
+  [[nodiscard]] bool isClear(std::int32_t x, std::int32_t y) const { return clear_[slot(x, y)]; }
+  void setOpaque(std::int32_t x, std::int32_t y, const Color& color) {
+    set(x, y, color);
+    clear_[slot(x, y)] = false;
+  }
 
 private:
   [[nodiscard]] std::size_t slot(std::int32_t x, std::int32_t y) const {
@@ -123,6 +133,7 @@ private:
   PixelRect rect_;
   std::vector<Color> colors_;
   std::vector<bool> changed_;
+  std::vector<bool> clear_;
 };
 
 // The pixels just outside a rectangle, or its own edge where the image ends.
@@ -369,6 +380,17 @@ void clear(Canvas& canvas, const assets::IndexedImage& image, const SignClear& h
   }
   if (how.mode == SignClear::Mode::Diffuse) {
     diffuse(canvas, image, how, rect, area);
+    return;
+  }
+  if (how.mode == SignClear::Mode::Transparent) {
+    for (std::int32_t y = rect.y; y < rect.y + rect.height; ++y) {
+      for (std::int32_t x = rect.x; x < rect.x + rect.width; ++x) {
+        if (area[(static_cast<std::size_t>(y - rect.y) * static_cast<std::size_t>(rect.width)) +
+                 static_cast<std::size_t>(x - rect.x)]) {
+          canvas.makeClear(x, y);
+        }
+      }
+    }
     return;
   }
   const Ring ring = ringOf(rect, image);
@@ -869,6 +891,17 @@ PixelRect paintSign(assets::IndexedImage& image, std::span<const assets::Palette
   if (!quantizer.usable()) {
     return {};
   }
+  // The palette's see-through colour, for a transparent clear; without one there is nothing to
+  // clear to.
+  const auto transparentAt = std::ranges::find_if(
+      palette, [](const assets::PaletteColor& color) { return color.alpha == 0; });
+  const std::optional<std::uint8_t> seeThrough =
+      transparentAt == palette.end()
+          ? std::nullopt
+          : std::optional{static_cast<std::uint8_t>(transparentAt - palette.begin())};
+  if (sign.clear.mode == SignClear::Mode::Transparent && !seeThrough) {
+    return {};
+  }
   Canvas canvas{image, palette, touched};
   clear(canvas, image, sign.clear, cleared);
 
@@ -914,6 +947,15 @@ PixelRect paintSign(assets::IndexedImage& image, std::span<const assets::Palette
         if (std::max({letters, outline, glow}) < Untouched) {
           continue;
         }
+        if (canvas.isClear(x, y)) {
+          // Nothing to blend with: the pixel is a letter (or its outline) or stays see-through.
+          if (letters >= 0.5F) {
+            canvas.setOpaque(x, y, fill);
+          } else if (sign.outline && outline >= 0.5F) {
+            canvas.setOpaque(x, y, colorOf(sign.outline->color));
+          }
+          continue;
+        }
         Color color = canvas.at(x, y);
         if (sign.glow) {
           color = mix(color, colorOf(sign.glow->color), std::clamp(glow, 0.0F, 1.0F));
@@ -936,7 +978,7 @@ PixelRect paintSign(assets::IndexedImage& image, std::span<const assets::Palette
         continue;
       }
       image.indices[(static_cast<std::size_t>(y) * image.width) + static_cast<std::size_t>(x)] =
-          quantizer.nearest(canvas.at(x, y));
+          canvas.isClear(x, y) ? *seeThrough : quantizer.nearest(canvas.at(x, y));
       changed = unite(changed, {.x = x, .y = y, .width = 1, .height = 1});
     }
   }

@@ -1,0 +1,39 @@
+# The lit signpost by the forest's crossing: four destinations in English on a sprite page laid over the board;
+# Spanish writes them again (the arrows stay).
+signs:
+  - id: jijimon
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 0, 128, 64]
+    clear: transparent
+    text: signs.mayo_led_jijimon
+    size: 20
+    line_spacing: 0.9
+    color: "#c68421"
+    colors: region
+  - id: town
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 64, 136, 64]
+    clear: transparent
+    text: signs.mayo_led_town
+    size: 20
+    line_spacing: 0.9
+    color: "#c68421"
+    colors: region
+  - id: gym
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 128, 120, 64]
+    clear: transparent
+    text: signs.mayo_led_gym
+    size: 20
+    line_spacing: 0.9
+    color: "#c68421"
+    colors: region
+  - id: forest
+    target: {page: 2, bits: 8, clut: 16}
+    region: [0, 192, 120, 63]
+    clear: transparent
+    text: signs.mayo_led_forest
+    size: 20
+    line_spacing: 0.9
+    color: "#c68421"
+    colors: region

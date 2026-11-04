@@ -1,4 +1,4 @@
-# The card on the tool shop's wall reads in English in the original; Spanish writes it again.
+# This stage of the plaza: the tool shop's wall card and plate, in English in the original; Spanish writes them again.
 signs:
   - id: open_top
     region: [117, 144, 48, 33]

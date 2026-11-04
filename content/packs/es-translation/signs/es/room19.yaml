@@ -1,0 +1,12 @@
+# The reception sign blinks between the background (repainted for every language) and a sprite that reads ENTRY in
+# English (page 2, background palette): Spanish writes the sprite again too.
+signs:
+  - id: reception_lit
+    target: {page: 2, bits: 8, clut: -1}
+    region: [176, 112, 56, 32]
+    clear: {mode: diffuse, rect: [178, 114, 53, 28], color: "#080808", tolerance: 30}
+    corners: [[179, 117], [227, 117], [227, 139], [179, 139]]
+    text: signs.room13_reception
+    size: 10
+    color: "#f7c618"
+    colors: region

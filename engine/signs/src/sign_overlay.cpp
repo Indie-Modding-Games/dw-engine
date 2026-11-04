@@ -123,6 +123,7 @@ SignClear readClear(assets::YamlReader& reader, const core::YamlNode& node) {
       {.name = "fill", .value = SignClear::Mode::Fill},
       {.name = "none", .value = SignClear::Mode::None},
       {.name = "diffuse", .value = SignClear::Mode::Diffuse},
+      {.name = "transparent", .value = SignClear::Mode::Transparent},
   };
   if (node.isScalar()) {
     SignClear clear;

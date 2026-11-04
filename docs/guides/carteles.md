@@ -67,6 +67,8 @@ signs:
 - Copia los colores del original (el color de las letras, el contorno, el halo de un neón) y usa `colors: region`
   para que solo salgan colores que el cartel ya tenía.
 - El texto encoge solo hasta caber (`fit`); si queda muy pequeño, busca una traducción más corta.
+- Un cartel luminoso hecho con sprites semitransparentes sobre un tablero oscuro (los postes de `mayo00` o `gias00`) se
+  borra con `clear: transparent` en su página (`target`) y `colors: region`.
 
 Todos los campos están en el [módulo signs](../modulos/engine/signs.md) y en
 `content/schemas/sign_overlay.schema.json`.

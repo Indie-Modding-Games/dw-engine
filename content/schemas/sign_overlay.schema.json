@@ -23,7 +23,7 @@
       "description": "Top left, top right, bottom right, bottom left.",
       "type": "array", "items": { "$ref": "#/$defs/point" }, "minItems": 4, "maxItems": 4
     },
-    "clearMode": { "enum": ["inpaint", "fill", "none", "diffuse"] },
+    "clearMode": { "enum": ["inpaint", "fill", "none", "diffuse", "transparent"] },
     "sign": {
       "type": "object",
       "required": ["id", "region", "text"],
@@ -48,7 +48,7 @@
         "clear": {
           "description": "A mode alone (inpaint, fill, none, diffuse) or the mode with its settings.",
           "type": ["string", "object"],
-          "pattern": "^(inpaint|fill|none|diffuse)$",
+          "pattern": "^(inpaint|fill|none|diffuse|transparent)$",
           "additionalProperties": false,
           "properties": {
             "mode": { "$ref": "#/$defs/clearMode" },

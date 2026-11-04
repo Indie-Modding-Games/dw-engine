@@ -1,0 +1,30 @@
+# The lit signpost by the way into the town: its three destinations scroll in English on a sprite page laid over the
+# dark board; Spanish writes them again (the arrows stay).
+signs:
+  - id: town
+    target: {page: 1, bits: 8, clut: 16}
+    region: [0, 0, 96, 40]
+    clear: transparent
+    text: signs.gias00_town
+    size: 16
+    line_spacing: 0.9
+    color: "#d68410"
+    colors: region
+  - id: infinity
+    target: {page: 1, bits: 8, clut: 16}
+    region: [0, 40, 99, 32]
+    clear: transparent
+    text: signs.gias00_infinity
+    size: 13
+    line_spacing: 0.9
+    color: "#d68410"
+    colors: region
+  - id: trash
+    target: {page: 1, bits: 8, clut: 16}
+    region: [0, 72, 99, 32]
+    clear: transparent
+    text: signs.gias00_trash
+    size: 13
+    line_spacing: 0.9
+    color: "#d68410"
+    colors: region

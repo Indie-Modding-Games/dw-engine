@@ -1,0 +1,17 @@
+# The plate over the toilet hut: 公ウンコ, a pun on "public toilet" that swaps in a childish word for poo, in fat
+# yellow letters with a dark gold side.
+signs:
+  - id: toilet
+    region: [88, 196, 144, 58]
+    clear:
+      mode: diffuse
+      quad: [[92, 212], [230, 198], [230, 242], [94, 254]]
+      color: "#101010"
+      tolerance: 50
+    corners: [[99, 214], [225, 203], [225, 239], [100, 249]]
+    text: signs.gias08_toilet
+    size: 26
+    line_spacing: 0.9
+    color: "#f7b500"
+    outline: {color: "#735a00", width: 1}
+    colors: region

@@ -52,6 +52,7 @@ Los modos de `clear`:
 | `fill` | Un color: `color`, o la media del borde del rectángulo |
 | `diffuse` | Quita solo los píxeles que se alejan del color del tablero (`color`, o el más común) más de `tolerance`, los crece `grow` píxeles y los rellena desde el tablero de alrededor, anillo a anillo, con el grano del tablero; `quad` limita el borrado a un cuadrilátero |
 | `none` | No borra: el texto se dibuja encima (la segunda línea de un cartel ya borrado) |
+| `transparent` | Deja la zona transparente (el color de la paleta con alfa 0), para que se vea lo que hay detrás del sprite: las letras de una página de sprites que se pinta encima del mapa (los postes luminosos). Las letras nuevas se dibujan sin bordes suaves, porque no hay con qué mezclarlas |
 
 ## Cómo se pinta
 
@@ -102,18 +103,22 @@ activada por defecto; desactivada, el mapa muestra las texturas originales.
 | `frzl01` | Aviso junto a la estufa (letra ilegible en el original: se escribe el sentido) | NOTICE / Beware of the cold | AVISO / Cuidado con el frío |
 | `frzl06` | Postes del cruce | ICEBERG BEACH / MISTY TREES | PLAYA ICEBERG / BOSQUE BRUMOSO |
 | `frzl12` | Poste de la cresta, de lado (el mismo cartel que el este de `frzl06`) | ICEBERG BEACH | PLAYA ICEBERG |
+| `gias00` | Poste luminoso (página de sprites, `clear: transparent`) | (ya en inglés) | PUEBLO FACTORIAL / MTE. INFINITO / MTE. BASURA |
+| `gias08` | Cartel de la caseta del váter (juego de palabras) | PUBLIC POO | POPÓ PÚBLICO |
 | `gcan09` | Cartel de la tienda | MONOCHROME SHOP | TIENDA MONOCROMO |
 | `gias06b` | Título de la tienda de reciclaje | RECYCLED GOODS & CARDS | RECICLAJE Y CARTAS |
 | `gias06b` | Subtítulo y pancarta SALE | (ya en inglés) | TIENDA DE RECICLAJE Y CARTAS / REBAJAS |
 | `mayo01_2`, `mayo02_2` | Flechas al monte | MT. PANORAMA | MTE. PANORAMA |
+| `mayo00`, `mayo02_2` | Postes luminosos (página de sprites) | (ya en inglés) | CASA DE JIJIMON / CIUDAD FILE / GIMNASIO VERDE / BOSQUE NATIVO / MTE. PANORAMA / TÚNEL TALADRO |
 | `mayo10`, `mayo11` | Tablero de los pescadores (los garabatos azules se quedan) | ANGLER'S CODE y sus dos reglas | CÓDIGO DEL PESCADOR |
 | `mayo11` | Nombre del túnel sobre la boca | DRILL TUNNEL | TÚNEL TALADRO |
 | `omoc08` | Pintada roja en la pared de ladrillo | THE GANG / WAS HERE | LA BANDA / ESTUVO AQUÍ |
 | `room02` | Felpudo | (ya en inglés) | Bienvenido |
+| `room13`, `room19` | Pancarta de la sala de espera y letrero de la recepción de la arena | WAITING ROOM / RECEPTION | SALA DE ESPERA / RECEPCIÓN |
 | `trai00` | Tablero del curso de combate | BATTLE COURSE | CURSO DE COMBATE |
 | `trai00` | Placa del soporte de abajo | GREEN GYM | GIMNASIO VERDE |
-| `twnb10` | Placa de la tienda de herramientas | (ya en inglés) | TIENDA DE OBJETOS |
-| `twnb10` | Cartel de abierto | (ya en inglés) | ESTAMOS ABIERTOS |
+| `twnb10`…`twnb17` | Placa de la tienda de herramientas y cartel de abierto (cada fase de la plaza) | (ya en inglés) | TIENDA DE OBJETOS / ESTAMOS ABIERTOS |
+| `twnb03`…`twnb06`, `twnb11`…`twnb14`, `twnb18`…`twnb21` | Nombre del restaurante en el mostrador | (ya en inglés) | RESTAURANTE |
 
 Pendientes y huecos: el inventario completo de carteles por mapa (qué queda y por qué) está en el seguimiento del
 trabajo de traducción; las palabras del mapa luminoso de `frzl03` están cortadas en muchos trozos de sprite y el overlay

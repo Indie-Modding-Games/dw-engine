@@ -498,3 +498,27 @@ TEST_CASE("a diffuse clear removes only what differs from the board, inside its 
   CHECK(pixel(image, 0, 7) == 3);
   CHECK(pixel(image, 23, 7) == 3);
 }
+
+TEST_CASE("a transparent clear lets the sprite's backdrop show and draws hard-edged letters") {
+  const std::vector<PaletteColor> palette = testPalette();
+  // A lit sprite: old red lettering on a see-through page.
+  IndexedImage image = filled(64, 32, 20);
+  for (std::int32_t x = 10; x < 54; ++x) {
+    image.indices[(std::size_t{16} * 64) + static_cast<std::size_t>(x)] = 2;
+  }
+  Sign sign = textSign({.x = 8, .y = 4, .width = 48, .height = 24});
+  sign.clear.mode = SignClear::Mode::Transparent;
+  sign.colors = SignColors::All;
+
+  IndexedImage cleared = image;
+  paintSign(cleared, palette, sign, "", boldFont());
+  CHECK(countOf(cleared, 2) == 0);
+  CHECK(countOf(cleared, 20) == 64 * 32);
+
+  IndexedImage written = image;
+  paintSign(written, palette, sign, "LIT", boldFont());
+  CHECK(countOf(written, 2) == 0);
+  // Letters in the sign's colour with no greys blended at their edges; the rest stays see-through.
+  CHECK(countOf(written, 1) > 20);
+  CHECK(countOf(written, 1) + countOf(written, 20) == 64 * 32);
+}
