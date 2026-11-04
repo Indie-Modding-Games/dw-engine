@@ -187,23 +187,7 @@ void addLine(std::vector<SortedPrim>& out, const ScenePrimFrame& frame, glm::vec
 
 std::int32_t originalLerp(std::int32_t start, std::int32_t end, std::int32_t t0, std::int32_t t1,
                           std::int32_t t) {
-  if (t1 == t0) {
-    return 0;
-  }
-  const std::int32_t range = end - start;
-  std::int32_t result = (range * (t - t0)) / (t1 - t0);
-  if (range >= 0) {
-    result %= range + 1;
-    if (result < 0) {
-      result += range;
-    }
-  } else {
-    result %= range - 1;
-    if (result > 0) {
-      result += range;
-    }
-  }
-  return result + start;
+  return core::original::lerp(start, end, t0, t1, t);
 }
 
 void EvolutionEffects::start(std::uint32_t boneCount, glm::vec3 feet, std::uint32_t seed) {

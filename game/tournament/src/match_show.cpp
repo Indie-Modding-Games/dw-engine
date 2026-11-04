@@ -17,26 +17,7 @@ constexpr std::int32_t One = 4096;
 constexpr std::int32_t AngleMask = 0xfff;
 
 // effect_common.c: lerp, with its wrap-around past the ends.
-std::int32_t lerp(std::int32_t start, std::int32_t end, std::int32_t t0, std::int32_t t1,
-                  std::int32_t t) {
-  if (t1 == t0) {
-    return 0;
-  }
-  const std::int32_t range = end - start;
-  auto result = static_cast<std::int32_t>(static_cast<std::int64_t>(range) * (t - t0) / (t1 - t0));
-  if (range >= 0) {
-    result %= range + 1;
-    if (result < 0) {
-      result += range;
-    }
-  } else {
-    result %= range - 1;
-    if (result > 0) {
-      result += range;
-    }
-  }
-  return result + start;
-}
+using core::original::lerp;
 
 // STD_interpolateClamped2: from start to end as t goes from lo to hi, held at the ends.
 std::int32_t interpolateClamped(std::int32_t lo, std::int32_t hi, std::int32_t t,

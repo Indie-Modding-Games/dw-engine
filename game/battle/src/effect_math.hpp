@@ -55,7 +55,6 @@ using core::original::rsin;
                                               std::int32_t start, std::int32_t end);
 
 // effect_common.c: lerp, with its wrap-around.
-[[nodiscard]] std::int32_t lerp(std::int32_t start, std::int32_t end, std::int32_t t0,
-                                std::int32_t t1, std::int32_t t);
+using core::original::lerp;
 
 } // namespace dwe::game::battle::effect_math

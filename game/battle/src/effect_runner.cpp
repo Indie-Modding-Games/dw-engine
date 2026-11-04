@@ -50,6 +50,9 @@ constexpr std::array<std::string_view, 4> RegisteringHits = {"check_collision", 
 constexpr std::size_t RegisteringHitArg = 1;
 constexpr std::size_t TargetCollisionHitArg = 2;
 
+// BTL_EFE_COMPARISONS: the variable, widened with its sign, against the register; the branch is
+// taken when the comparison returns 0 (BTL_compareEqual, BTL_compareNotEqual, BTL_compareLess,
+// BTL_compareLessOrEqual, BTL_compareGreater, BTL_compareGreaterOrEqual).
 bool holds(EffectComparison comparison, std::int32_t variable, std::int32_t value) {
   switch (comparison) {
   case EffectComparison::Equal:
@@ -68,29 +71,59 @@ bool holds(EffectComparison comparison, std::int32_t variable, std::int32_t valu
   return false;
 }
 
-// variable <op>= value, or nothing for a division by zero (the original's result is undefined).
-std::optional<std::int32_t> apply(EffectOperator op, std::int32_t variable, std::int32_t value) {
-  const auto wide = static_cast<std::int64_t>(variable);
+// The processor's divide: by zero it answers -1 for a dividend from 0 up and 1 below it, with the
+// dividend as the remainder; the lowest number by -1 stays itself, remainder 0.
+std::int32_t quotient(std::int32_t dividend, std::int32_t divisor) {
+  if (divisor == 0) {
+    return dividend >= 0 ? -1 : 1;
+  }
+  return static_cast<std::int32_t>(static_cast<std::int64_t>(dividend) / divisor);
+}
+std::int32_t remainder(std::int32_t dividend, std::int32_t divisor) {
+  if (divisor == 0) {
+    return dividend;
+  }
+  return static_cast<std::int32_t>(static_cast<std::int64_t>(dividend) % divisor);
+}
+
+// variable <op>= register for one row of BTL_EFE_VARIABLE_OPERATORS (BTL_setInt8Variable,
+// BTL_addInt8Variable, BTL_subtractInt8Variable, BTL_multiplyInt8Variable, BTL_divideInt8Variable,
+// BTL_moduloInt8Variable, BTL_shiftLeftInt8Variable, BTL_shiftRightInt8Variable; the same eight
+// for 16 bits: BTL_setInt16Variable, BTL_addInt16Variable, BTL_subtractInt16Variable,
+// BTL_multiplyInt16Variable, BTL_divideInt16Variable, BTL_moduloInt16Variable,
+// BTL_shiftLeftInt16Variable, BTL_shiftRightInt16Variable; and for 32: BTL_setInt32Variable,
+// BTL_addInt32Variable, BTL_subtractInt32Variable, BTL_multiplyInt32Variable,
+// BTL_divideInt32Variable, BTL_moduloInt32Variable, BTL_shiftLeftInt32Variable,
+// BTL_shiftRightInt32Variable). The variable comes widened with its sign and the caller keeps its
+// low bytes. The 16-bit operators cut the register to 16 bits first, which only a divide or a
+// remainder can tell (a register of 0x10000 divides by zero); the 8-bit ones use it whole. A shift
+// takes the register's low five bits.
+std::int32_t apply(EffectOperator op, EffectWidth width, std::int32_t variable,
+                   std::int32_t value) {
+  if (width == EffectWidth::Int16) {
+    value = static_cast<std::int16_t>(value);
+  }
+  const auto bits = static_cast<std::uint32_t>(variable);
+  const auto other = static_cast<std::uint32_t>(value);
   switch (op) {
   case EffectOperator::Set:
     return value;
   case EffectOperator::Add:
-    return static_cast<std::int32_t>(wide + value);
+    return static_cast<std::int32_t>(bits + other);
   case EffectOperator::Subtract:
-    return static_cast<std::int32_t>(wide - value);
+    return static_cast<std::int32_t>(bits - other);
   case EffectOperator::Multiply:
-    return static_cast<std::int32_t>(wide * value);
+    return static_cast<std::int32_t>(bits * other);
   case EffectOperator::Divide:
-    return value == 0 ? std::nullopt : std::optional{static_cast<std::int32_t>(wide / value)};
+    return quotient(variable, value);
   case EffectOperator::Modulo:
-    return value == 0 ? std::nullopt : std::optional{static_cast<std::int32_t>(wide % value)};
+    return remainder(variable, value);
   case EffectOperator::ShiftLeft:
-    return static_cast<std::int32_t>(static_cast<std::uint32_t>(variable)
-                                     << (static_cast<std::uint32_t>(value) & ShiftMask));
+    return static_cast<std::int32_t>(bits << (other & ShiftMask));
   case EffectOperator::ShiftRight:
-    return variable >> (static_cast<std::uint32_t>(value) & ShiftMask);
+    return variable >> (other & ShiftMask);
   }
-  return std::nullopt;
+  return variable;
 }
 
 // rng.c: customRandom: a value from min to max, both included.
@@ -107,6 +140,8 @@ std::int32_t randomInRange(std::minstd_rand& random, std::int32_t min, std::int3
 
 } // namespace
 
+// The held sounds start free (battle_effect.c: BTL_clearEFESoundChannels, which the effect engine's
+// setup calls).
 EffectRunner::EffectRunner(EffectSounds& sounds, std::uint32_t seed)
     : sounds_(&sounds), random_(seed), held_(HeldSoundCount) {}
 
@@ -271,8 +306,9 @@ void EffectRunner::run(std::size_t slot, std::uint32_t script) {
   }
 }
 
-// One instruction (battle_effect.c: the handlers of BTL_jtbl_80073604). Returns the next one, or
-// nothing when the script stops.
+// One instruction (battle_effect.c: BTL_dispatchEFEOpcode: the handler of BTL_jtbl_80073604 its
+// opcode, the instruction's low byte, names). Returns the next one, or nothing when the script
+// stops.
 std::optional<std::size_t> EffectRunner::step(Slot& slot, std::size_t at) {
   const EffectInstruction& in = slot.script.instructions[at];
   const std::size_t next = at + 1;
@@ -304,9 +340,7 @@ std::optional<std::size_t> EffectRunner::step(Slot& slot, std::size_t at) {
   }
   case EffectOpcode::ApplyOperator: {
     const std::int32_t where = address(in.variable);
-    if (const auto value = apply(in.op, read(slot, where, in.width), register_)) {
-      write(slot, where, in.width, *value);
-    }
+    write(slot, where, in.width, apply(in.op, in.width, read(slot, where, in.width), register_));
     return next;
   }
   case EffectOpcode::BranchIf:

@@ -670,36 +670,71 @@ void EffectRunner::selectTarget(Slot& slot, bool random, std::int32_t argument) 
 
 namespace {
 
-// Whether the segment from (x0, z0) to (x1, z1) crosses the square of half-side `half` around
-// (cx, cz) (Liang-Barsky clipping).
-bool segmentCrossesSquare(std::int64_t x0, std::int64_t z0, std::int64_t x1, std::int64_t z1,
-                          std::int64_t cx, std::int64_t cz, std::int64_t half) {
-  double low = 0.0;
-  double high = 1.0;
-  const std::array<std::pair<double, double>, 4> edges{{
-      {static_cast<double>(-(x1 - x0)), static_cast<double>(x0 - (cx - half))},
-      {static_cast<double>(x1 - x0), static_cast<double>((cx + half) - x0)},
-      {static_cast<double>(-(z1 - z0)), static_cast<double>(z0 - (cz - half))},
-      {static_cast<double>(z1 - z0), static_cast<double>((cz + half) - z0)},
-  }};
-  for (const auto& [p, q] : edges) {
-    if (p == 0.0) {
-      if (q < 0.0) {
-        return false;
-      }
-      continue;
-    }
-    const double t = q / p;
-    if (p < 0.0) {
-      low = std::max(low, t);
-    } else {
-      high = std::min(high, t);
-    }
-    if (low > high) {
-      return false;
+// The processor's multiply, which keeps the low 32 bits of the product.
+std::int32_t wrappingProduct(std::int32_t a, std::int32_t b) {
+  return static_cast<std::int32_t>(static_cast<std::uint32_t>(a) * static_cast<std::uint32_t>(b));
+}
+
+// A point's place around a rectangle: 3, 4 or 5 left of it, across it or right of it, 3 less below
+// it and 3 more above it (4 is inside).
+std::int32_t regionOf(std::int16_t x, std::int16_t z, const std::array<std::int16_t, 4>& rect) {
+  std::int32_t code = 4;
+  if (rect[2] < x) {
+    code = 5;
+  } else if (x < rect[0]) {
+    code = 3;
+  }
+  if (rect[3] < z) {
+    code += 3;
+  } else if (z < rect[1]) {
+    code -= 3;
+  }
+  return code;
+}
+
+// effect_common.c: doSomethingWithSomePoints: whether the line from (x0, z0) to (x1, z1) touches
+// the rectangle of half-side `half` around (cx, cz), everything cut to 16 bits as the console's
+// short vectors keep it (the rectangle min x, min z, max x, max z). An end inside it touches; ends
+// on opposite sides (left and right, below and above, or opposite corners, even when the line
+// passes the corner by) touch; ends in one row or one column of the regions around it do not;
+// otherwise it touches when the rectangle's corners are not all on one side of the line, from the
+// cross products in 32 bits as the processor makes them (a product past 32 bits wraps, and a line
+// through the first corner never touches).
+bool lineTouchesRect(std::int32_t x0, std::int32_t z0, std::int32_t x1, std::int32_t z1,
+                     std::int32_t cx, std::int32_t cz, std::int32_t half) {
+  const auto cut = [](std::int32_t value) { return static_cast<std::int16_t>(value); };
+  const std::array<std::int16_t, 4> rect = {cut(cx - half), cut(cz - half), cut(cx + half),
+                                            cut(cz + half)};
+  const std::array<std::array<std::int16_t, 2>, 2> line = {
+      {{cut(x0), cut(z0)}, {cut(x1), cut(z1)}}};
+  std::array<std::int32_t, 2> code{};
+  for (std::size_t i = 0; i < line.size(); ++i) {
+    code.at(i) = regionOf(line.at(i)[0], line.at(i)[1], rect);
+    if (code.at(i) == 4) {
+      return true;
     }
   }
-  return true;
+  constexpr std::int32_t Opposite = 8;
+  constexpr std::int32_t RowSize = 3;
+  if (code[0] + code[1] == Opposite) {
+    return true;
+  }
+  if (code[0] / RowSize == code[1] / RowSize || code[0] % RowSize == code[1] % RowSize) {
+    return false;
+  }
+  const std::int32_t dx = line[1][0] - line[0][0];
+  const std::int32_t dz = line[1][1] - line[0][1];
+  const auto side = [&](std::int16_t x, std::int16_t z) {
+    const std::int32_t cornerX = x - line[0][0];
+    const std::int32_t cornerZ = z - line[0][1];
+    return static_cast<std::int32_t>(static_cast<std::uint32_t>(wrappingProduct(dx, cornerZ)) -
+                                     static_cast<std::uint32_t>(wrappingProduct(dz, cornerX)));
+  };
+  const std::int32_t first = side(rect[0], rect[1]);
+  const std::array<std::int32_t, 3> others = {side(rect[2], rect[1]), side(rect[0], rect[3]),
+                                              side(rect[2], rect[3])};
+  return std::ranges::any_of(
+      others, [first](std::int32_t other) { return wrappingProduct(first, other) < 0; });
 }
 
 // battle_effect.c: BTL_calculateAttackHitPosition: the point `radius` from the fighter's root
@@ -781,8 +816,8 @@ bool EffectRunner::touchOp(Slot& slot, std::string_view name,
     } else if (source) {
       // BTL_applyLineAttackHit: the line from the instance to the source crosses the fighter's
       // square.
-      hit = segmentCrossesSquare(at.x, at.z, source->location.x, source->location.z,
-                                 body->location.x, body->location.z, body->radius);
+      hit = lineTouchesRect(at.x, at.z, source->location.x, source->location.z, body->location.x,
+                            body->location.z, body->radius);
     }
     if (!hit) {
       continue;

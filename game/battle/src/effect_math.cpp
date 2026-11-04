@@ -224,28 +224,6 @@ Vector combineRotations(const Vector& first, const Vector& second) {
   return eulerYXZ(product(rotYXZ(first), rotYXZ(second)));
 }
 
-std::int32_t lerp(std::int32_t start, std::int32_t end, std::int32_t t0, std::int32_t t1,
-                  std::int32_t t) {
-  if (t1 == t0) {
-    return 0;
-  }
-  const std::int32_t range = end - start;
-  std::int32_t result =
-      static_cast<std::int32_t>(static_cast<std::int64_t>(range) * (t - t0) / (t1 - t0));
-  if (range >= 0) {
-    result %= range + 1;
-    if (result < 0) {
-      result += range;
-    }
-  } else {
-    result %= range - 1;
-    if (result > 0) {
-      result += range;
-    }
-  }
-  return result + start;
-}
-
 std::int32_t interpolateClamped(std::int32_t lo, std::int32_t hi, std::int32_t t,
                                 std::int32_t start, std::int32_t end) {
   if (hi < lo) {

@@ -1,4 +1,5 @@
 #include <dwe/assets/effect_script.hpp>
+#include <dwe/core/original_math.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/game/battle/effect_runner.hpp>
 #include <dwe/game/battle/flights.hpp>
@@ -12,6 +13,7 @@
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iterator>
 #include <optional>
@@ -1451,4 +1453,175 @@ TEST_CASE("a flash of mode 1 takes the sheet's other quarter, and one of mode 0x
   CHECK(dark[0].blend == dwe::game::battle::EffectBlend::Subtract);
   // An unknown mode makes nothing.
   CHECK(flashFrames(2, 2).empty());
+}
+
+namespace {
+
+// A made-up script that runs one operator on the variable at base+0 (`width` bytes, starting at
+// `variable`) with the register loaded from the 32-bit variable at base+4 (`value`), adds 100 to
+// it and plays it as a sound, so the sound tells the result.
+std::optional<std::int64_t> operatorResult(int width, std::int32_t variable, std::string_view op,
+                                           std::int32_t value) {
+  const std::string script = std::format(R"(start_script:
+- label: "start"
+  at: "0x0100"
+  op: load_variable
+  variable: "base+0x0004"
+  width: 4
+- at: "0x0110"
+  op: apply_operator
+  variable: "base+0x0000"
+  width: {0}
+  operator: {1}
+- at: "0x0120"
+  op: load_immediate
+  value: 100
+- at: "0x0130"
+  op: apply_operator
+  variable: "base+0x0000"
+  width: {0}
+  operator: add
+- at: "0x0140"
+  op: push_variable
+  variable: "base+0x0000"
+  width: {0}
+- at: "0x0150"
+  op: sub
+  sub: play_sound
+  args:
+    sound: 0
+- at: "0x0160"
+  op: return
+init_script:
+- label: "init"
+  at: "0x0170"
+  op: stop
+data:
+- at: "0x0000"
+  kind: variable
+  width: 4
+  value: {2}
+- at: "0x0004"
+  kind: variable
+  width: 4
+  value: {3}
+)",
+                                         width, op, variable, value);
+  const auto effect = dwe::core::parseYaml(R"(move: "made_up_sum"
+header:
+  sub_effect_count: 1
+)");
+  const auto parsed = dwe::core::parseYaml(script);
+  REQUIRE(effect.has_value());
+  REQUIRE(parsed.has_value());
+  auto read = dwe::assets::readEffectScript(*effect, *parsed);
+  REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+  RecordingSounds sounds;
+  EffectRunner runner{sounds};
+  runner.start(runner.load(std::move(*read)));
+  if (sounds.log.size() != 1) {
+    return std::nullopt;
+  }
+  return sounds.log.front().value - 100;
+}
+
+// Two fighters on the console's x and z: the source (0) at (sourceX, sourceZ), radius 100, and the
+// defender (1) at (defenderX, defenderZ) with a square `size` wide and tall.
+class PlacedPair final : public dwe::game::battle::EffectBodies {
+public:
+  PlacedPair(std::array<std::int32_t, 2> source, std::array<std::int32_t, 2> defender,
+             std::int32_t size)
+      : source_(source), defender_(defender), size_(size) {}
+
+  [[nodiscard]] std::optional<dwe::game::battle::EffectBody>
+  body(dwe::game::battle::FighterId fighter) const override {
+    if (fighter > 1) {
+      return std::nullopt;
+    }
+    const auto& at = fighter == 0 ? source_ : defender_;
+    return dwe::game::battle::EffectBody{.species = "hero",
+                                         .location = {.x = at[0], .y = 0, .z = at[1]},
+                                         .rotationY = 0,
+                                         .radius = fighter == 0 ? 100 : size_,
+                                         .height = fighter == 0 ? 100 : size_,
+                                         .standing = true};
+  }
+  [[nodiscard]] std::optional<dwe::game::battle::EffectMatrix>
+  node(dwe::game::battle::FighterId /*fighter*/, std::int32_t /*index*/) const override {
+    return std::nullopt;
+  }
+  [[nodiscard]] std::vector<dwe::game::battle::FighterId> fighters() const override {
+    return {0, 1};
+  }
+  [[nodiscard]] dwe::game::battle::Point
+  ground(const dwe::game::battle::EffectVector& at) const override {
+    return {.x = at.x, .z = -at.z};
+  }
+
+private:
+  std::array<std::int32_t, 2> source_;
+  std::array<std::int32_t, 2> defender_;
+  std::int32_t size_;
+};
+
+bool lineTouches(std::array<std::int32_t, 2> source, std::array<std::int32_t, 2> defender,
+                 std::int32_t size) {
+  RecordingSounds sounds;
+  EffectRunner runner{sounds};
+  const PlacedPair bodies{source, defender, size};
+  runner.setBodies(bodies);
+  runner.touchBodies(true);
+  const std::size_t slot = runner.load(placedBreath(true));
+  runner.start(slot, 0, 1);
+  runner.tick();
+  return !runner.touched().empty();
+}
+
+} // namespace
+
+TEST_CASE("an effect's operators work at their width as the processor does, dividing by zero too") {
+  // The processor's divide by zero gives -1 from 0 up and 1 below, the dividend as the remainder.
+  CHECK(operatorResult(1, 5, "divide", 0) == -1);
+  CHECK(operatorResult(1, -5, "divide", 0) == 1);
+  CHECK(operatorResult(4, 9, "divide", 0) == -1);
+  CHECK(operatorResult(1, 7, "modulo", 0) == 7);
+  // BTL_divideInt16Variable cuts the register to 16 bits: 0x10000 divides by zero.
+  CHECK(operatorResult(2, 1000, "divide", 0x10000) == -1);
+  CHECK(operatorResult(2, 1000, "modulo", 0x10000) == 1000);
+  // BTL_divideInt8Variable divides by the whole register: 100 / 0x100 is 0.
+  CHECK(operatorResult(1, 100, "divide", 0x100) == 0);
+  CHECK(operatorResult(1, -7, "modulo", 3) == -1);
+  // A shift takes the register's low five bits; an 8-bit result keeps its low byte.
+  CHECK(operatorResult(4, 1, "shift_left", 33) == 2);
+  CHECK(operatorResult(1, 0x60, "shift_left", 1) == -64);
+  CHECK(operatorResult(2, -0x100, "shift_right", 4) == -16);
+}
+
+TEST_CASE("a line check touches as doSomethingWithSomePoints does, not by plain geometry") {
+  // From the instance at the origin to a source at (1000, 100): a square of 40 around (900, 50)
+  // has the line's ends at opposite corners (below-left, above-right), which the original counts
+  // as a touch though the line passes over it (z about 90 there).
+  CHECK(lineTouches({1000, 100}, {900, 50}, 20));
+  // Both ends below the square: no touch.
+  CHECK_FALSE(lineTouches({1000, 100}, {500, 500}, 20));
+  // Across it: a touch.
+  CHECK(lineTouches({1000, 100}, {500, 50}, 20));
+  // One end below-left and the other right of it: the corners' sides decide. Under it, then
+  // through it.
+  CHECK_FALSE(lineTouches({100, 10}, {50, 12}, 3));
+  CHECK(lineTouches({100, 10}, {50, 7}, 3));
+  // The same under it but far off: the product of two corners' sides passes 32 bits and wraps
+  // negative, so the original counts a touch.
+  CHECK(lineTouches({1000, 100}, {500, 100}, 20));
+}
+
+TEST_CASE("the original's lerp keeps 32 bits of its product and wraps past its end") {
+  using dwe::core::original::lerp;
+  CHECK(lerp(0x10b8, 0x614, 1, 0x12, 1) == 0x10b8);
+  CHECK(lerp(0xff, 0, 0x32, 0x52, 0x42) == 0x80);
+  CHECK(lerp(0, 0x80, 0x32, 0x122, 0x13f) == 14);
+  CHECK(lerp(0, 0x80, 7, 7, 3) == 0);
+  // 0x10000 * 0x10000 keeps nothing: 0, where a 64-bit product gives 22937.
+  CHECK(lerp(0, 0x10000, 0, 100, 0x10000) == 0);
+  CHECK(lerp(0, 0x8000, 0, 2, 0x10000) == 32767);
 }

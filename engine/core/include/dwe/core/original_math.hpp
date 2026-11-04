@@ -17,4 +17,10 @@ namespace dwe::core::original {
 [[nodiscard]] std::int32_t rsin(std::int32_t angle);
 [[nodiscard]] std::int32_t rcos(std::int32_t angle);
 
+// effect_common.c:278 (lerp): from `start` at t0 to `end` at t1, 0 when t0 and t1 meet. Kept whole:
+// the product of the span and the time keeps only its low 32 bits, as the processor's multiply
+// does, and past t1 the result wraps around the span instead of stopping at `end`.
+[[nodiscard]] std::int32_t lerp(std::int32_t start, std::int32_t end, std::int32_t t0,
+                                std::int32_t t1, std::int32_t t);
+
 } // namespace dwe::core::original

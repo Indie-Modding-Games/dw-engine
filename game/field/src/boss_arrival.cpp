@@ -1,4 +1,5 @@
 #include <dwe/core/log.hpp>
+#include <dwe/core/original_math.hpp>
 #include <dwe/game/field/boss_arrival.hpp>
 
 #include <cmath>
@@ -65,23 +66,7 @@ constexpr std::int32_t OrbitHeightTo = 0x32;
 
 std::int32_t effectLerp(std::int32_t start, std::int32_t end, std::int32_t t0, std::int32_t t1,
                         std::int32_t t) {
-  if (t1 == t0) {
-    return 0;
-  }
-  const std::int32_t range = end - start;
-  std::int32_t result = (range * (t - t0)) / (t1 - t0);
-  if (range >= 0) {
-    result %= range + 1;
-    if (result < 0) {
-      result += range;
-    }
-  } else {
-    result %= range - 1;
-    if (result > 0) {
-      result += range;
-    }
-  }
-  return result + start;
+  return core::original::lerp(start, end, t0, t1, t);
 }
 
 std::int32_t sin512(std::int32_t angle) {

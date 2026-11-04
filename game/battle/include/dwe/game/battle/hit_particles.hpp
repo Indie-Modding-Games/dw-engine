@@ -125,6 +125,7 @@ private:
   ruleset::Random ownRolls_;
   std::vector<std::int32_t> nodeCounts_;
   std::array<std::optional<SparkFx>, SparkSlots> sparks_;
+  // Every slot starts free, as efe.c: initializeEntityParticleFX leaves them (timer -1).
   std::array<std::optional<FighterParticle>, FighterParticleSlots> fighterParticles_;
   std::vector<Cloud> clouds_;
 };

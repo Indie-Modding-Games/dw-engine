@@ -88,4 +88,30 @@ std::int32_t rcos(std::int32_t angle) {
   return rsin(angle + QuarterTurn);
 }
 
+std::int32_t lerp(std::int32_t start, std::int32_t end, std::int32_t t0, std::int32_t t1,
+                  std::int32_t t) {
+  if (t1 == t0) {
+    return 0;
+  }
+  const auto range = static_cast<std::int32_t>(static_cast<std::uint32_t>(end) -
+                                               static_cast<std::uint32_t>(start));
+  const auto elapsed = static_cast<std::uint32_t>(t) - static_cast<std::uint32_t>(t0);
+  const auto duration = static_cast<std::int64_t>(t1) - t0;
+  const auto product = static_cast<std::int32_t>(static_cast<std::uint32_t>(range) * elapsed);
+  auto result = static_cast<std::int32_t>(product / duration);
+  if (range >= 0) {
+    result = static_cast<std::int32_t>(result % (static_cast<std::int64_t>(range) + 1));
+    if (result < 0) {
+      result += range;
+    }
+  } else {
+    result = static_cast<std::int32_t>(result % (static_cast<std::int64_t>(range) - 1));
+    if (result > 0) {
+      result += range;
+    }
+  }
+  return static_cast<std::int32_t>(static_cast<std::uint32_t>(result) +
+                                   static_cast<std::uint32_t>(start));
+}
+
 } // namespace dwe::core::original

@@ -240,7 +240,7 @@ initializeEntityText = { status = "portado", dwe = "apps/screens/include/dwe/scr
 
 # --- Efectos de batalla
 BTL_initializeParticleEmitters = { status = "portado", dwe = "game/battle/include/dwe/game/battle/effect_runner.hpp", note = "battle.md: Emisores de partículas (los emisores vacíos del EffectRunner)", what = "Prepara los emisores de partículas de las técnicas." }
-BTL_clearEFESoundChannels = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:192", what = "Libera los sonidos sostenidos de los efectos." }
+BTL_clearEFESoundChannels = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:145", what = "Libera los sonidos sostenidos de los efectos." }
 BTL_getEFETextureSection = { status = "no-aplica", note = "lectura del fichero de efecto; la hace la extracción", what = "Busca la textura dentro del fichero de un efecto." }
 BTL_getEFEModelSection = { status = "no-aplica", note = "lectura del fichero de efecto; la hace la extracción", what = "Busca los modelos dentro del fichero de un efecto." }
 BTL_getEFEFileId = { status = "no-aplica", note = "tabla de ficheros del disco", what = "Da el fichero de efecto de una técnica." }
@@ -280,54 +280,54 @@ BTL_renderScreenSprite = { status = "portado", dwe = "game/battle/src/effect_run
 BTL_addCloudEffect = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Nubes", what = "Añade una nube de humo o polvo de una técnica." }
 BTL_addParticleEmitter = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Emisores de partículas", what = "Añade un emisor de partículas." }
 BTL_discardEFEOperandPair = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp", what = "Descarta dos operandos del script de efecto." }
-BTL_popEFEValueToVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: saca un valor de la pila a una variable." }
+BTL_popEFEValueToVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:311", what = "Orden de efecto: saca un valor de la pila a una variable." }
 BTL_dispatchEFESubOpcode = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp", what = "Orden de efecto: ejecuta una suborden." }
 BTL_callEFESubroutine = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:321", what = "Orden de efecto: llama a una subrutina." }
-BTL_pushEFEVariableAddress = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: mete la dirección de una variable en la pila." }
-BTL_pushEFEVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: mete una variable en la pila." }
-BTL_pushEFEImmediate = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: mete un número en la pila." }
-BTL_jumpEFEScript = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: salta." }
-BTL_stopEFEScript = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: para el script." }
-BTL_branchEFEOnComparison = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: salta si se cumple una comparación." }
-BTL_applyEFEVariableOperator = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Orden de efecto: opera una variable con el registro." }
-BTL_loadEFEIndexedVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: lee un elemento de una tabla." }
+BTL_pushEFEVariableAddress = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:311", what = "Orden de efecto: mete la dirección de una variable en la pila." }
+BTL_pushEFEVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:311", what = "Orden de efecto: mete una variable en la pila." }
+BTL_pushEFEImmediate = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:311", what = "Orden de efecto: mete un número en la pila." }
+BTL_jumpEFEScript = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:311", what = "Orden de efecto: salta." }
+BTL_stopEFEScript = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:311", what = "Orden de efecto: para el script." }
+BTL_branchEFEOnComparison = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:311", what = "Orden de efecto: salta si se cumple una comparación." }
+BTL_applyEFEVariableOperator = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Orden de efecto: opera una variable con el registro." }
+BTL_loadEFEIndexedVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:311", what = "Orden de efecto: lee un elemento de una tabla." }
 BTL_loadEFERandomValue = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:96", what = "Orden de efecto: carga un número al azar." }
-BTL_loadEFEVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: carga una variable." }
-BTL_loadEFEImmediate = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: carga un número." }
-BTL_shiftRightInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: desplaza a la derecha (32 bits)." }
-BTL_shiftLeftInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: desplaza a la izquierda (32 bits)." }
-BTL_moduloInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: resto (32 bits)." }
-BTL_divideInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: divide (32 bits)." }
-BTL_multiplyInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: multiplica (32 bits)." }
-BTL_subtractInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: resta (32 bits)." }
-BTL_addInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: suma (32 bits)." }
-BTL_setInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: asigna (32 bits)." }
-BTL_shiftRightInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: desplaza a la derecha (8 bits)." }
-BTL_shiftLeftInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: desplaza a la izquierda (8 bits)." }
-BTL_moduloInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: resto (8 bits)." }
-BTL_divideInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: divide (8 bits)." }
-BTL_multiplyInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: multiplica (8 bits)." }
-BTL_subtractInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: resta (8 bits)." }
-BTL_addInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: suma (8 bits)." }
-BTL_setInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: asigna (8 bits)." }
-BTL_shiftRightInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: desplaza a la derecha (16 bits)." }
-BTL_shiftLeftInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: desplaza a la izquierda (16 bits)." }
-BTL_moduloInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: resto (16 bits)." }
-BTL_divideInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: divide (16 bits)." }
-BTL_multiplyInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: multiplica (16 bits)." }
-BTL_subtractInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: resta (16 bits)." }
-BTL_addInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: suma (16 bits)." }
-BTL_setInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: asigna (16 bits)." }
-BTL_compareGreaterOrEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: mayor o igual." }
-BTL_compareGreater = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: mayor." }
-BTL_compareLessOrEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: menor o igual." }
-BTL_compareLess = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: menor." }
-BTL_compareNotEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: distinto." }
-BTL_compareEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: igual." }
+BTL_loadEFEVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:311", what = "Orden de efecto: carga una variable." }
+BTL_loadEFEImmediate = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:311", what = "Orden de efecto: carga un número." }
+BTL_shiftRightInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: desplaza a la derecha (32 bits)." }
+BTL_shiftLeftInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: desplaza a la izquierda (32 bits)." }
+BTL_moduloInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: resto (32 bits)." }
+BTL_divideInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: divide (32 bits)." }
+BTL_multiplyInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: multiplica (32 bits)." }
+BTL_subtractInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: resta (32 bits)." }
+BTL_addInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: suma (32 bits)." }
+BTL_setInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: asigna (32 bits)." }
+BTL_shiftRightInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: desplaza a la derecha (8 bits)." }
+BTL_shiftLeftInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: desplaza a la izquierda (8 bits)." }
+BTL_moduloInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: resto (8 bits)." }
+BTL_divideInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: divide (8 bits)." }
+BTL_multiplyInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: multiplica (8 bits)." }
+BTL_subtractInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: resta (8 bits)." }
+BTL_addInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: suma (8 bits)." }
+BTL_setInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: asigna (8 bits)." }
+BTL_shiftRightInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: desplaza a la derecha (16 bits)." }
+BTL_shiftLeftInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: desplaza a la izquierda (16 bits)." }
+BTL_moduloInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: resto (16 bits)." }
+BTL_divideInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: divide (16 bits)." }
+BTL_multiplyInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: multiplica (16 bits)." }
+BTL_subtractInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: resta (16 bits)." }
+BTL_addInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: suma (16 bits)." }
+BTL_setInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:101", what = "Operador de efecto: asigna (16 bits)." }
+BTL_compareGreaterOrEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:56", what = "Comparación de efecto: mayor o igual." }
+BTL_compareGreater = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:56", what = "Comparación de efecto: mayor." }
+BTL_compareLessOrEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:56", what = "Comparación de efecto: menor o igual." }
+BTL_compareLess = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:56", what = "Comparación de efecto: menor." }
+BTL_compareNotEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:56", what = "Comparación de efecto: distinto." }
+BTL_compareEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:56", what = "Comparación de efecto: igual." }
 BTL_calculateAttackHitPosition = { status = "portado", dwe = "game/battle/src/movement.cpp:458", what = "Calcula en qué punto del cuerpo del objetivo cae un golpe." }
 BTL_interpolateClamped = { status = "portado", dwe = "game/battle/src/effect_math.cpp:249", what = "Interpola un valor entre dos límites (color de cintas, radio de ondas)." }
 BTL_initializeEFESubOpcodeTable = { status = "no-aplica", note = "tabla de saltos del original", what = "Monta la tabla de subórdenes de efecto." }
-BTL_dispatchEFEOpcode = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Ejecuta una orden del script de efecto." }
+BTL_dispatchEFEOpcode = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:311", what = "Ejecuta una orden del script de efecto." }
 BTL_resetPoisonBubbles = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:127", what = "Reinicia las burbujas del veneno sobre un luchador." }
 BTL_addPoisonBubble = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:147", what = "Suelta una burbuja de veneno sobre el luchador envenenado." }
 BTL_tickPoisonBubble = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:91", what = "Hace subir una burbuja de veneno." }
@@ -366,7 +366,7 @@ morphBuffModel = { status = "portado", dwe = "apps/game/src/field_scene_battle_v
 initializeParticleFX = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "las 50 direcciones medidas en FX_PARTICLE_DATA (las tira al arrancar)", what = "Prepara las partículas de los efectos." }
 tickParticleFX = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "campo: las chispas sin luchador (gimnasio); batalla: game/battle/src/hit_particles.cpp, con sus nubes y partículas (battle.md)", what = "Mueve las partículas de los efectos." }
 addEntityParticleFX = { status = "portado", dwe = "game/battle/src/hit_particles.cpp", note = "dibujo: apps/game/src/field_effects.cpp (battle.md)", what = "Lanza partículas pegadas a un luchador." }
-initializeEntityParticleFX = { status = "portado", dwe = "game/battle/include/dwe/game/battle/hit_particles.hpp:128", note = "los huecos empiezan libres al crear HitParticles", what = "Prepara las partículas pegadas a luchadores." }
+initializeEntityParticleFX = { status = "portado", dwe = "game/battle/include/dwe/game/battle/hit_particles.hpp:129", note = "los huecos empiezan libres al crear HitParticles", what = "Prepara las partículas pegadas a luchadores." }
 tickEntityParticleFX = { status = "portado", dwe = "game/battle/src/hit_particles.cpp", note = "dibujo: apps/game/src/field_effects.cpp (battle.md)", what = "Mueve las partículas pegadas a un luchador." }
 tickCloudFX = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Nubes (las de las técnicas); las del campo (gimnasio, cacas): apps/game/src/field_effects.cpp", what = "Mueve las nubes de humo y polvo de los efectos." }
 EFECreateFlash = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Destellos", what = "Crea un destello de luz de una técnica." }
@@ -377,7 +377,7 @@ initializeEFE = { status = "no-aplica", note = "preparación del original", what
 getEFEDATEntry = { status = "no-aplica", note = "lectura del disco", what = "Da una entrada del fichero de efectos." }
 fillEFEXTable = { status = "no-aplica", note = "tabla de saltos del original", what = "Rellena la tabla de órdenes de efecto." }
 translateConditionFXToEntity = { status = "portado", dwe = "apps/game/src/field_scene_status.cpp", note = "la mariposa del compañero y el veneno y la confusión del combate (CONDITION_FX_OFFSETS en la tabla de especies: condition_fx); la burbuja de necesidad del campo toma la x y la z del punto (renderConditionBubble, apps/game/src/play_session.cpp partnerBubbleOf)", what = "Pega un efecto de estado a la posición de un personaje." }
-doSomethingWithSomePoints = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:47", what = "Prueba si un golpe en línea cruza la caja de un luchador." }
+doSomethingWithSomePoints = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp:703", what = "Prueba si un golpe en línea cruza la caja de un luchador." }
 DOOA_storeDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Guarda la altura de la criatura para la escena de renacer." }
 DOOA_getStoredDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Lee la altura guardada para la escena de renacer." }
 tickHealingParticles = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "el anillo de la partícula 0 divide por cero: el procesador da -1 (Igual)", what = "Mueve las partículas de curación al usar un objeto." }
