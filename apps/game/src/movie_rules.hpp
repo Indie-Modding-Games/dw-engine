@@ -22,6 +22,16 @@ enum class MovieMoment : std::uint8_t {
 };
 inline constexpr std::size_t MovieMomentCount = 4;
 
+// The movie main.c plays straight after another one: the ending's movie goes back round its loop to
+// the boot movie, and only then to the "Press Start" screen (main.c: main, playMovie(3, 1) and then
+// playMovie(0, 1) before runLandingScreen).
+[[nodiscard]] constexpr std::optional<MovieMoment> movieAfter(MovieMoment moment) {
+  if (moment == MovieMoment::Ending) {
+    return MovieMoment::Boot;
+  }
+  return std::nullopt;
+}
+
 // The movie of a moment and whether Start ends it (mov.c: MOV_playMovie skips all but EDR).
 struct MovieRule {
   std::string file;

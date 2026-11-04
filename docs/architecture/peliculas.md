@@ -18,7 +18,7 @@ rutas nuevos (regla «code now, test and fix in phase 5»). El formato cocinado 
 | 0 OP1: al arrancar y cada vez que la pantalla «pulsa Start» pasa 600 fotogramas sin que se pulse (bucle de demostración) | `main.c: main`, `runLandingScreen` |
 | 1 OP2: partida nueva, tras la escena de nombres y antes del mapa inicial (`MAPHEAD 0xCC`) | `main.c: main` (`MAIN_STATE` 0), `newGameScene` |
 | 2 ED2: al cargar una partida guardada tras el final (`mainState` 2 del guardado), antes de entrar en el mapa | `main.c: main` (`MAIN_STATE` 2), `main_menu.c: gameClearSave`, `loadSavegame` |
-| 3 EDR: al acabar el final (rutina 53 → `MAIN_STATE` 3), tras cerrar la partida; luego vuelve a la portada | `script_interp.c: tickScript` (caso 53), `main.c: main` |
+| 3 EDR: al acabar el final (rutina 53 → `MAIN_STATE` 3), tras cerrar la partida; luego OP1 y la portada | `script_interp.c: tickScript` (caso 53), `main.c: main` |
 
 Lo que no se porta (máquina de la PS1): la lectura en anillo del CD, el reintento de 2000 lecturas, los búferes del
 MDEC, VRAM y el doble búfer, el modo de 24 bits. La versión EU (otra tabla y otra posición) queda para la fase 5.
@@ -70,7 +70,8 @@ apps/game (MovieScreen) ──► engine/video ──► engine/assets (VFS por 
   a la película, como el `runMainMenu` del original. El guion del menú avisa con `title_landing`; el aspecto
   moderno, sin esa pantalla, no vuelve a la película;
   partida nueva → OP2 → mapa inicial; `PlaySession::requestMovie` es el gancho de ED2 (tras cargar una partida
-  terminada, la partida espera) y de EDR (cierra la partida → EDR → portada), que HIST-S7 llama al portar las
+  terminada, la partida espera) y de EDR (cierra la partida → EDR → OP1 → portada «Press Start»: el `main` del original da la vuelta a su
+  bucle y pone `playMovie(0, 1)` antes de `runLandingScreen`; `movieAfter`), que HIST-S7 llama al portar las
   rutinas 53 y 54. Un autotest y los arranques directos (`--new-game`, `--load`, `--start`) no ven películas.
 
 ## Tramos (≤ ~800 líneas cambiadas cada uno, sin docs)

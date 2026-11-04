@@ -782,6 +782,9 @@ int runGame(const Options& requested) {
   // the main menu, its slot lists and the language box never go back to the movie); not when it
   // could not play.
   std::uint32_t titleIdleTicks = 0;
+  // The movie that plays as soon as the current one is over (movieAfter: the boot movie after the
+  // ending's), before the title.
+  std::optional<MovieMoment> nextMovie;
   bool replayBootMovie = true;
   const auto playMovie = [&](MovieMoment moment) {
     if (!movies) {
@@ -879,6 +882,11 @@ int runGame(const Options& requested) {
   const auto afterMovie = [&] {
     core::logDebug("[port:movie] playMovie (main.c:3443): the movie is over; initializeMusic: no "
                    "music to start yet");
+    if (const auto next = std::exchange(nextMovie, std::nullopt); next && playMovie(*next)) {
+      // main.c: main goes round its loop: the boot movie, then the "Press Start" screen.
+      titleIdleTicks = 0;
+      return;
+    }
     if (startAfterMovie) {
       startPlaying(*std::exchange(startAfterMovie, std::nullopt));
     } else if (std::exchange(titleAfterMovie, false)) {
@@ -1414,6 +1422,7 @@ int runGame(const Options& requested) {
         if (*moment == MovieMoment::Ending) {
           flow.toTitle();
           titleAfterMovie = true;
+          nextMovie = movieAfter(*moment);
         }
         if (!playMovie(*moment)) {
           afterMovie();
