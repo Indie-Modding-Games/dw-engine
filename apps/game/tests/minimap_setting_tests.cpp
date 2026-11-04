@@ -274,7 +274,7 @@ TEST_CASE("the options page's minimap row hides the HUD's minimap at once and sa
   hud.ui->update();
   REQUIRE_FALSE(hud.ui->elementHasClass(dwe::app::HudDocument, dwe::app::MinimapPanel, "hidden"));
 
-  // F10's options page; its minimap row is the 15th of the game's options.
+  // the pad's Select options page; its minimap row is the 15th of the game's options.
   hud.ui->setSetting("pause_menu.start_page", std::string{"options"});
   hud.ui->show("pause_menu", true);
   hud.ui->setSetting("pause_menu.start_page", std::string{});

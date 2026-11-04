@@ -722,7 +722,7 @@ startTournament = { status = "portado", dwe = "apps/session/src/tournament_adapt
 # --- Fishing
 FISH_panCameraTo = { status = "portado", dwe = "game/fishing/src/view.cpp:32", what = "Desplaza la cámara hacia un punto (el corcho) con un límite por fotograma.", note = "Zona muerta 40 x 30 y 16 píxeles por fotograma; medido: al sacar la caña la vista está en (480, 8) en los dos y el vuelo la arrastra fotograma a fotograma." }
 FISH_panCameraToTamer = { status = "portado", dwe = "game/fishing/src/rod.cpp:463", what = "Devuelve la cámara al jugador antes del menú de cebo o al recoger.", note = "16 píxeles por fotograma, sin zona muerta." }
-FISH_panCameraWithDPad = { status = "portado", dwe = "game/fishing/src/rod.cpp:467", what = "Deja al jugador mover la vista con la cruceta mientras pesca.", note = "Con Inicio (mando: Norte) pulsado, 5 píxeles por fotograma; medido igual en el original (45 en 9 fotogramas)." }
+FISH_panCameraWithDPad = { status = "portado", dwe = "game/fishing/src/rod.cpp:467", what = "Deja al jugador mover la vista con la cruceta mientras pesca.", note = "Con E (mando: Norte) pulsado, 5 píxeles por fotograma; medido igual en el original (45 en 9 fotogramas)." }
 FISH_isWithinCastRange = { status = "portado", dwe = "game/fishing/src/rod.cpp:103", what = "Comprueba si el corcho o el pez está dentro del alcance desde el jugador." }
 FISH_isBaitMenuVisible = { status = "portado", dwe = "game/fishing/src/rod.cpp:432", what = "Dice si el menú de cebo sigue abierto para esperar la elección." }
 FISH_closeBaitMenu = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:177", what = "Cierra el menú de cebo." }

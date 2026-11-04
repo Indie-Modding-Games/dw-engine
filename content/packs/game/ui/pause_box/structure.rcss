@@ -25,7 +25,7 @@ body {
 	background-color: #1a1f27e0;
 }
 
-/* Under the box, the key that opens the options from the pause (F10, «Opciones en partida»): the engine's, not the
+/* Under the box, the key that opens the options from the pause (Select/Back en el mando, «Opciones en partida»; sin atajo en teclado): the engine's, not the
    original's. */
 #hint {
 	position: absolute;

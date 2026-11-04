@@ -1,7 +1,7 @@
 title.main: "Pause"
 title.minimap: "Minimap"
 title.options: "Options"
-# Under the pause box: the key that opens the options from the pause ({key}, such as F10).
+# Under the pause box: the key that opens the options from the pause ({key}, such as Select/Back on a pad; no shortcut on the keyboard).
 settings_hint: "{key} Options"
 date: "Year {year}   Day {day}"
 continue: "Continue"

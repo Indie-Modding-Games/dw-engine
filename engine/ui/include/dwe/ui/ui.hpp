@@ -156,7 +156,7 @@ public:
   [[nodiscard]] bool capturesInput() const;
 
   // True while a modal document is shown, without the tick in which the UI took a navigation
-  // command: the game's own shortcuts (the options' F10) still answer then.
+  // command: the game's own shortcuts (the options' Select on a pad) still answer then.
   [[nodiscard]] bool hasModal() const;
 
   // The commands the menus sent since the last call, oldest first.
