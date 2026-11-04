@@ -297,7 +297,10 @@ máquina y el menú de dormir vuelven a `MAIN_STATE` 1.
 Es una **mejora opcional de PC**, a propósito: el original no tiene forma de volver a la portada salvo acabar el
 juego ([1.6](#16-volver-a-la-portada)). No cambia reglas y quien no la use juega como en el original.
 
-`pause_menu` gana **«Guardar»**, el guardado rápido: envía `quick_save` → `PlaySession::quickSave` escribe la partida
+`pause_menu` gana **«Guardar»**, el guardado rápido: abre la página **Opciones** (`Esc` / `settings`) en cabeza, con
+**«Guardar»**, **«Volver a la portada»** y **«Salir del juego»** como sus tres primeras filas en los dos aspectos (en
+el moderno están también en la página principal; en el original, donde la rejilla de iconos se mantiene fiel, es el
+sitio visible). Con `quick_save` → `PlaySession::quickSave` escribe la partida
 en la ranura manual de la aventura (`GameSession::homeSlot`: la que la cargó o la que guardó por última vez) o, en una
 partida nueva que aún no ha guardado, en la primera ranura manual libre; sin ranuras libres, un `dialog` lo avisa
 (`save.slots.full`) y un fallo de escritura también (`save.failed`). Sirve en cualquier momento en que el menú pueda

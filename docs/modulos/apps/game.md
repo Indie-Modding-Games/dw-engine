@@ -1088,7 +1088,10 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
 
 ## Opciones en partida
 
-Las opciones se cambian sin volver al título: la página «Opciones» del menú de pausa tiene las de pantalla (modo de
+Las opciones se cambian sin volver al título: la página «Opciones» del menú de pausa abre con las tres acciones del
+juego — **«Guardar»** (guardado rápido, `quick_save`), **«Volver a la portada»** (`to_title`) y **«Salir del juego»**
+(`quit`), en los dos aspectos; en el moderno están también en la página principal, y en el original es el sitio visible
+donde la rejilla de iconos se mantiene fiel — y sigue con las de pantalla (modo de
 ventana, escala, sincronía vertical), la piel, el idioma y el texto con aspecto original (las mismas órdenes que el
 menú del título: `language`, `text_font`) y, debajo, las opciones propias del motor.
 

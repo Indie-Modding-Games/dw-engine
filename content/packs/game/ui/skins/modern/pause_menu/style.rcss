@@ -118,6 +118,11 @@
 	margin-top: 9dp;
 }
 
+/* The options page: the game's own actions (Save, back to title, quit) lead it, a hairline apart of the settings. */
+#panel:not(.skin-original) #options-quit {
+	margin-bottom: 11dp;
+}
+
 .option .label {
 	display: inline;
 }

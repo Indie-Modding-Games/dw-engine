@@ -489,6 +489,11 @@
 			</div>
 
 			<div id="page-options" class="page hidden">
+				<!-- The game's own actions, first so the quick options (Esc) open right on them
+				     (docs/architecture/guardar-y-cargar.md, 3.8); the settings rows follow. -->
+				<button id="options-save" class="option" onclick="ui.send('quick_save')" text-key="pause_menu.quick_save"></button>
+				<button id="options-to-title" class="option" onclick="ui.send('to_title')" text-key="pause_menu.to_title"></button>
+				<button id="options-quit" class="option" onclick="ui.send('quit')" text-key="pause_menu.quit"></button>
 				<button id="display-mode" class="option" onclick="adjust(document, 'display-mode', 1)">
 					<span class="label" text-key="pause_menu.display_mode"></span><span class="value" id="display-mode-value"></span>
 				</button>
