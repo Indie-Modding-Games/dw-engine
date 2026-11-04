@@ -144,8 +144,20 @@ Un documento oculto se actualiza al mostrarse, en su `on_show`.
   claves que el inglés no tiene.
 
 Los tests: `dwe_assets_tests` (`text_table_tests`) para el formato, los marcadores y la comprobación;
-`dwe_localization_tests` para la carga, el respaldo, la mezcla de paquetes y el cambio en caliente;
-`dwe_ui_tests` y `dwe_script_tests` para `text-key`, `t()`, `on_language` y el menú principal. La ruta
+`dwe_localization_tests` para la carga, el respaldo, la mezcla de paquetes y el cambio en caliente, y para que cada
+idioma del paquete del juego tenga las mismas claves que el inglés en los dos sentidos (`catalog_tests`);
+`dwe_ui_tests` y `dwe_script_tests` para `text-key`, `t()`, `on_language` y el menú principal.
+
+Reglas para que todo salga en el idioma elegido:
+
+| Regla | Cómo se comprueba |
+|---|---|
+| Ningún documento RML escribe palabras entre etiquetas (salvo `<title>`): usa `text-key` | `dwe_ui_tests` (`literal_text_tests`) |
+| Ningún Lua de la UI pasa palabras entre comillas a `set_text`: usa `t(clave)` | `dwe_ui_tests` (`literal_text_tests`) |
+| Las palabras dibujadas del original (MENU, COUNT, FINISH!!, PUSH...) solo salen en inglés: la UI pone la clase `use-menu-art` en el `body` de cada documento mientras el idioma es el de esos dibujos, y el aspecto pinta el texto de la clave sin ella | `dwe_ui_tests` (`menu_art_tests`) |
+| El rótulo que abre un combate dibuja la palabra de `battle.banner_shape` (celdas `#` de las piezas del original); el inglés da las mismas piezas del original | `dwe_screens_tests` (`battle_intro_tests`) |
+| `text-transform: uppercase` de RmlUi solo sube a-z: la fuente sube también las letras con tilde y la ñ de un texto ya en mayúsculas (`finishUppercase`) | `dwe_ui_tests` (`uppercase_tests`) |
+| En C++ solo los logs para desarrolladores son literales en inglés; lo que ve el jugador pasa por `tr()` | Revisión (no hay test barato) | La ruta
 `tests/autotest/route-language.yaml` corre una vez por idioma (ver [prueba vertical](../guides/prueba-vertical.md)).
 
 ## Añadir un texto
