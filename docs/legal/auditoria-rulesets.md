@@ -569,6 +569,10 @@ son (b) y no están aquí: son `data/fishing`, que `dwx` extrae del overlay FISH
 | `pacing.flattened_shot_every_frames` | 40 | a | Temporizador o duración. |
 | `pacing.flattened_shot_frames` | 30 | a | Temporizador o duración. |
 | `pacing.flattened_shot_release_frame` | 2 | a | Temporizador o duración. |
+| `pacing.flattened_shot_speed` | 35 | a | Distancia por fotograma. |
+| `pacing.flattened_shot_life_frames` | 58 | a | Temporizador o duración. |
+| `pacing.flattened_shot_half_width` | 45 | a | Distancia. |
+| `pacing.flattened_shot_half_height` | 200 | a | Distancia. |
 | `spacing.contact_margin` | 200 | a | Distancia. |
 | `spacing.standing.near_squared` | 0 | a | Distancia. |
 | `spacing.standing.far_squared` | 480000 | a | Distancia. |

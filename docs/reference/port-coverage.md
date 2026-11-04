@@ -83,9 +83,9 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | Sistema | Ficheros del decomp | A portar | Portado | Parcial | Falta | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 154 | 154 | 0 | 0 | 100 % |
-| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 238 | 230 | 5 | 3 | 98 % |
-| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 82 | 79 | 2 | 1 | 98 % |
-| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 78 | 78 | 0 | 0 | 100 % |
+| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 239 | 235 | 4 | 0 | 99 % |
+| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 82 | 80 | 2 | 0 | 99 % |
+| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 79 | 79 | 0 | 0 | 100 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 49 | 0 | 0 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 97 | 96 | 0 | 1 | 99 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 79 | 79 | 0 | 0 | 100 % |
@@ -101,7 +101,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 31 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1418 funciones a portar | 1418 | 1277 | 21 | 120 | 91 % |
+| **Total** | 1420 funciones a portar | 1420 | 1284 | 20 | 116 | 91 % |
 
 ## Batalla
 
@@ -117,18 +117,14 @@ La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cám
 
 Ficheros del decomp: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Portado 230, parcial 5, falta 3.
+Portado 235, parcial 4, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `BTL_addSourceEntityParticleFX` | `btl/battle_effect.c:4034` | parcial | Lanza partículas desde el atacante. | `game/battle/src/effect_runner_subops.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
-| `BTL_tickAuraProjectile` | `btl/battle_effect.c:6051` | falta | Mueve un proyectil de aura. | — |
-| `BTL_initializeAuraProjectiles` | `btl/battle_effect.c:6123` | falta | Prepara los proyectiles de aura. | — |
-| `BTL_addAuraProjectile` | `btl/battle_effect.c:6137` | falta | Lanza un proyectil de aura. | — |
 | `tickParticleFX` | `main/efe.c:463` | parcial | Mueve las partículas de los efectos. | `apps/game/src/field_effects.cpp` · campo: las chispas sin luchador (gimnasio); batalla: solo sus tiradas, con --original-rolls (game/battle/src/particle_rolls.cpp, battle.md) |
 | `addEntityParticleFX` | `main/efe.c:611` | parcial | Lanza partículas pegadas a un luchador. | `game/battle/src/particle_rolls.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
 | `tickEntityParticleFX` | `main/efe.c:638` | parcial | Mueve las partículas pegadas a un luchador. | `game/battle/src/particle_rolls.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
-| `translateConditionFXToEntity` | `main/effect_common.c:307` | parcial | Pega un efecto de estado a la posición de un personaje. | `apps/game/src/field_scene_status.cpp` · la mariposa del compañero y el veneno y la confusión del combate (CONDITION_FX_OFFSETS en la tabla de especies: condition_fx); la burbuja de necesidad del campo aún no toma la x y la z del punto (renderConditionBubble) |
 
 ## Campo: movimiento, colisión y cámara
 
@@ -136,11 +132,10 @@ El jugador en el mapa, la rejilla de colisión, los warps, el seguimiento del co
 
 Ficheros del decomp: `main/aabb.c`, `main/map.c`, `main/map_collision.c`, `main/tamer.c`, `main/vecmath.c`.
 
-Portado 79, parcial 2, falta 1.
+Portado 80, parcial 2, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `isInDaytimeTransition` | `main/map.c:4607` | falta | Dice si el mapa está cambiando entre día y noche. | sin búsqueda de la luz del día en el motor; comprobar |
 | `tamerTickSicknessLostLife` | `main/tamer.c:1699` | parcial | Escena de perder una vida por enfermedad. | `apps/game/src/death_scene.cpp:125` · la restauración tras la vida perdida por enfermedad es un hueco (docs/modulos/game/battle.md:107) |
 | `tamerTickBattleLostLife` | `main/tamer.c:1734` | parcial | Escena de perder una vida en combate. | `apps/game/src/death_scene.cpp:125` · la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:107) |
 
@@ -150,7 +145,7 @@ Los personajes del mapa y su IA de paseo, cofres, objetos del suelo y decorados 
 
 Ficheros del decomp: `main/anim.c`, `main/bubble.c`, `main/butterfly.c`, `main/drop_shadow.c`, `main/map_object.c`, `main/model.c`, `main/overworld.c`, `main/world_object.c`.
 
-Portado 78, parcial 0, falta 0.
+Portado 79, parcial 0, falta 0.
 
 ## Compañero: IA y cuidado
 
@@ -422,6 +417,6 @@ Portado 51, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-1020 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+1018 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <optional>
 #include <span>
 #include <string>
@@ -235,6 +236,9 @@ private:
 
   BattleScreenDesc desc_;
   std::optional<game::battle::Battle> battle_;
+  // data/battle's flattened_shots: each original type's shot sprite column, read on the first
+  // battle; empty when the packs have none (an extraction made before dwx read it).
+  std::optional<std::map<std::string, std::int32_t, std::less<>>> shotColumns_;
   // What the effects read of the fighters; it outlives effects_.
   std::optional<BattleEffectBodies> bodies_;
   std::optional<FighterGround> ground_;

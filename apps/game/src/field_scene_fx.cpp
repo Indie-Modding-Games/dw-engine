@@ -106,6 +106,13 @@ std::vector<ScenePrim> FieldScene::drawEffects() {
   return fieldEffects_.draw(view);
 }
 
+std::optional<glm::vec3> FieldScene::partnerConditionPoint() const {
+  if (!partnerConditionPoint_ || !partnerActor_) {
+    return std::nullopt;
+  }
+  return nodePoint(*partnerActor_, partnerConditionPoint_->first, partnerConditionPoint_->second);
+}
+
 void FieldScene::startObjectSmoke() {
   const render::MapDepthLayers& layers = mapLayers();
   std::vector<glm::ivec2> places;

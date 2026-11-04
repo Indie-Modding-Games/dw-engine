@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Battle",
+  "description": "battle.yaml: the tables of the regular battle's overlay (BTL_REL.BIN).",
+  "type": "object",
+  "required": [
+    "flattened_shots"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "flattened_shots": {
+      "description": "BTL_AURA_PROJECTILE_TYPES: per original species type, the sprite of the shot a flattened fighter fires (BTL_renderAuraProjectile): the first texel column of its 7 x 7 tile in the DEFEFF strip, before the 0x60 the renderer adds.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "digimon",
+          "sprite"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "digimon": {
+            "$ref": "#/$defs/reference"
+          },
+          "sprite": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "reference": {
+      "description": "The id of the referenced record, null for none, or the raw number when it is outside its table.",
+      "type": [
+        "string",
+        "integer",
+        "null"
+      ]
+    }
+  }
+}

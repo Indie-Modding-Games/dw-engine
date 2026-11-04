@@ -16,14 +16,17 @@
 #include "schema_check.hpp"
 
 using dwe::core::YamlNode;
+using dwe::formats::exe::BattleLayout;
 using dwe::formats::exe::BattleStageLayout;
 using dwe::formats::exe::battleStageToYaml;
+using dwe::formats::exe::battleToYaml;
 using dwe::formats::exe::findOverlayTablesLayout;
 using dwe::formats::exe::FishingLayout;
 using dwe::formats::exe::fishingToYaml;
 using dwe::formats::exe::MemoryImage;
 using dwe::formats::exe::Point16;
 using dwe::formats::exe::readBattleStageTables;
+using dwe::formats::exe::readBattleTables;
 using dwe::formats::exe::readFishingTables;
 using dwe::formats::exe::readTrainingTables;
 using dwe::formats::exe::ShorelineLocation;
@@ -432,4 +435,30 @@ TEST_CASE("the US overlay tables are located and other versions have none") {
   CHECK(us.training.learnableMoves.located());
   CHECK_FALSE(us.training2.learnableMoves.located());
   CHECK_FALSE(findOverlayTablesLayout("other").has_value());
+}
+
+TEST_CASE("the battle overlay's flattened shot sprites become the battle document") {
+  // battle_effect.c: BTL_AURA_PROJECTILE_TYPES: records of 12 bytes, the texel column at byte 10.
+  ImageBuilder image{OverlayBase};
+  BattleLayout layout;
+  layout.flattenedShotTypes = {.address = image.place(36), .count = 3};
+  image.i16(layout.flattenedShotTypes.address + 10, -1);
+  image.i16(layout.flattenedShotTypes.address + 22, 0x70);
+  image.i16(layout.flattenedShotTypes.address + 34, 0x10);
+  const auto tables = readBattleTables(MemoryImage::fromOverlay(image.text(), OverlayBase), layout);
+  REQUIRE(tables.has_value());
+  CHECK(tables->flattenedShotSprites == std::vector<std::int16_t>{-1, 0x70, 0x10});
+
+  const auto yaml = battleToYaml(*tables, fixtureIds());
+  REQUIRE(yaml.documents.size() == 1);
+  CHECK(yaml.documents[0].name == "battle");
+  const YamlNode& document = yaml.documents[0].document;
+  CHECK(checkAgainstSchema(document, "battle").empty());
+  // Type 0 has no sprite and is left out.
+  REQUIRE(at(document, "flattened_shots").items().size() == 2);
+  CHECK(at(document, "flattened_shots").items()[0].find("digimon")->text() == "mon_b");
+  CHECK(at(document, "flattened_shots").items()[1].find("sprite")->text() == "16");
+
+  CHECK_FALSE(readBattleTables(MemoryImage::fromOverlay(image.text(), OverlayBase), BattleLayout{})
+                  .has_value());
 }

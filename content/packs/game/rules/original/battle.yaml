@@ -114,6 +114,12 @@ pacing:
   # battle_main.c: BTL_tickFighterAction: el disparo del aplastado sale a los 2 fotogramas y su animación dura 30.
   flattened_shot_frames: 30
   flattened_shot_release_frame: 2
+  # battle_effect.c: BTL_addAuraProjectile, BTL_tickAuraProjectile: el disparo sale delante del pecho y avanza 35 por
+  # fotograma hacia donde miraba; dura 58 fotogramas y su caja mide 45 a cada lado y 200 hacia arriba y abajo.
+  flattened_shot_speed: 35
+  flattened_shot_life_frames: 58
+  flattened_shot_half_width: 45
+  flattened_shot_half_height: 200
 
 # Distancias que guarda cada uno (battle_main.c: BTL_maintainTargetDistance, BTL_getContactRangeSquared,
 # BTL_handlePartnerMoveCommand).

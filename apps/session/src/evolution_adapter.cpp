@@ -232,6 +232,14 @@ void EvolutionAdapter::tick(GameSession& session, const ruleset::ClockAdvance& a
   if (advance.frames <= 0 || !evolution_ || !session.partner().alive()) {
     return;
   }
+  // partner_impl.c: tickConditions returns before the evolution checks while the map's palette
+  // fades between times of day (map.c: isInDaytimeTransition, 25 frames from the top of the hour
+  // the fade starts at): an evolution due then waits for the fade to end.
+  if (daytimeFade_ && daytimeFade_()) {
+    core::logDebug("[port:field] isInDaytimeTransition (map.c): evolution check held by the "
+                   "time-of-day fade");
+    return;
+  }
   // partner_impl.c: tickConditions returns before the evolution checks during the hour after
   // waking (HAS_IMMORTAL_HOUR, IMMORTAL_HOUR == HOUR).
   const game::partner::PartnerState& partner = session.partner().state();

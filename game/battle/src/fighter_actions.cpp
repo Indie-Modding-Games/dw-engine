@@ -492,6 +492,7 @@ void tickFighterStates(BattleContext& context) {
   // a touch on frame t lands on frame t + 1.
   tickAttackHits(context);
   tickAttacksInFlight(context);
+  tickFlattenedShots(context);
   tickStatusEffects(context);
 }
 

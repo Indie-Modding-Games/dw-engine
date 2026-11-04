@@ -152,6 +152,24 @@ struct AttackInFlight {
   std::vector<std::int32_t> facingTarget;
 };
 
+// battle_effect.c: BTL_addAuraProjectile, BTL_tickAuraProjectile: the shot a flattened fighter
+// fires. It leaves from in front of its chest, flies straight the way the fighter faced and lands
+// on the first other fighter whose body its box touches, or fades after its frames.
+struct FlattenedShot {
+  FighterId attacker = 0;
+  MoveRef move = 0;
+  // Where it is on the battle's ground, and its height over it (half the attacker's).
+  Point at;
+  std::int32_t height = 0;
+  // Its step each frame on the ground, and the way it flies, which its sprite lies along.
+  Point step;
+  Facing facing;
+  // The frames it has flown: 1 on the frame it leaves.
+  std::int32_t frame = 0;
+};
+// BTL_initializeAuraProjectiles: eight at a time; one more is not fired.
+inline constexpr std::size_t FlattenedShotSlots = 8;
+
 // The attack a fighter is performing.
 struct ActiveAttack {
   MoveRef move = 0;
@@ -309,6 +327,7 @@ struct BattleState {
   // The enemy techniques seen, the ones the partner may learn (COMBAT_DATA player.usedMoves).
   std::vector<MoveRef> seenMoves;
   std::vector<AttackInFlight> inFlight;
+  std::array<std::optional<FlattenedShot>, FlattenedShotSlots> flattenedShots{};
   std::int64_t frame = 0;
   std::int32_t sharedCooldown = 0;
   // From the flee command on, the frames the partner has been running.

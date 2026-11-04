@@ -1,8 +1,10 @@
 #include "battle_screen.hpp"
 
+#include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
+#include <dwe/core/yaml.hpp>
 #include <dwe/game/battle/text_keys.hpp>
 #include <dwe/game/inventory/use.hpp>
 #include <dwe/game/story/story_ports.hpp>
@@ -10,16 +12,21 @@
 #include <dwe/screens/bag_view.hpp>
 
 #include <glm/common.hpp>
+#include <glm/geometric.hpp>
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iterator>
+#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -106,6 +113,54 @@ constexpr std::int64_t EndCountedSound = 0x17;
 // btl.c: loadBattleData: the partner's species bank is in slot 4 and enemy i's in slot 4 + i.
 constexpr std::int64_t PartnerSoundSlot = 4;
 
+// data/battle (dwx: BTL_AURA_PROJECTILE_TYPES): each original type's flattened shot sprite.
+constexpr std::string_view BattleData = "data/battle";
+
+std::map<std::string, std::int32_t, std::less<>>
+readShotColumns(const assets::VirtualFileSystem* files) {
+  std::map<std::string, std::int32_t, std::less<>> columns;
+  if (files == nullptr) {
+    return columns;
+  }
+  const auto skip = [](const core::Error& error) {
+    core::logWarning("[port:battle] {} is not read ({}): the flattened shots are not drawn",
+                     BattleData, error.message);
+  };
+  const auto id = assets::AssetId::parse(BattleData);
+  if (!id) {
+    skip(id.error());
+    return columns;
+  }
+  const auto bytes = files->read(*id);
+  if (!bytes) {
+    skip(bytes.error());
+    return columns;
+  }
+  const auto root = core::parseYaml(
+      std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+  if (!root) {
+    skip(root.error());
+    return columns;
+  }
+  const core::YamlNode* shots = root->find("flattened_shots");
+  if (shots == nullptr || !shots->isSequence()) {
+    return columns;
+  }
+  for (const core::YamlNode& shot : shots->items()) {
+    const core::YamlNode* digimon = shot.find("digimon");
+    const core::YamlNode* sprite = shot.find("sprite");
+    std::int32_t column = 0;
+    if (digimon == nullptr || sprite == nullptr || !sprite->isScalar()) {
+      continue;
+    }
+    const std::string& text = sprite->text();
+    if (std::from_chars(text.data(), text.data() + text.size(), column).ec == std::errc{}) {
+      columns.emplace(digimon->text(), column);
+    }
+  }
+  return columns;
+}
+
 } // namespace
 
 core::Result<void> BattleScreen::start(session::BattleRequest request,
@@ -126,6 +181,9 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
     return std::unexpected{battle.error()};
   }
   battle_.emplace(std::move(*battle));
+  if (!shotColumns_) {
+    shotColumns_ = readShotColumns(desc_.files);
+  }
   partnerBeforeFrame_.reset();
   effects_.reset();
   enemyNpcs_ = std::move(enemyNpcs);
@@ -294,9 +352,31 @@ void BattleScreen::showStatusVisuals() const {
   }
   if (!battle_) {
     desc_.scene->setStatusVisuals(std::nullopt, {});
+    desc_.scene->setFlattenedShots({});
     return;
   }
   const game::battle::BattleState& state = battle_->state();
+  // BTL_renderAuraProjectile: each shot with the sprite of its shooter's original type.
+  std::vector<FieldScene::ShotSprite> shots;
+  for (const std::optional<game::battle::FlattenedShot>& shot : state.flattenedShots) {
+    if (!shot || shot->attacker >= state.fighters.size() || !shotColumns_) {
+      continue;
+    }
+    const std::string_view type =
+        battle_->rules().effects.originalTypeOf(state.fighters[shot->attacker].combatant.species);
+    const auto column = shotColumns_->find(type);
+    if (column == shotColumns_->end()) {
+      continue;
+    }
+    const glm::vec2 facing{static_cast<float>(shot->facing.x), static_cast<float>(shot->facing.z)};
+    shots.push_back(
+        {.attacker = shot->attacker,
+         .at = {static_cast<float>(shot->at.x), static_cast<float>(shot->at.z)},
+         .height = static_cast<float>(shot->height),
+         .facing = glm::length(facing) > 0.0F ? glm::normalize(facing) : glm::vec2{0.0F, 1.0F},
+         .column = column->second});
+  }
+  desc_.scene->setFlattenedShots(std::move(shots));
   std::vector<FieldScene::StatusBody> bodies;
   for (std::size_t id = 0; id < state.fighters.size(); ++id) {
     FieldScene::StatusBody body;

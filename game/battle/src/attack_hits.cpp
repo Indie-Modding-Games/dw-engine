@@ -375,6 +375,12 @@ void releaseAttack(BattleContext& context, FighterId id) {
                 .amount = 0,
                 .status = StatusEffect::None,
                 .command = Command::None});
+  // battle_main.c: BTL_tickFighterAction: the flattened fighter's move is its shot, which flies on
+  // its own and lands on whoever it touches (BTL_addAuraProjectile).
+  if (attack.move == context.moves->flattenedShot()) {
+    fireFlattenedShot(context, id, attack.move);
+    return;
+  }
   // A followed melee move reaches its target as a shot does: its effect decides the touch.
   const std::vector<FighterId> reached = attack.followed && attack.target
                                              ? std::vector{*attack.target}

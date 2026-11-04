@@ -114,7 +114,8 @@ del ejecutable que no son tablas de juego, ni `REINCARNATE_BABY_TYPE` (DOOA).
 - Cabecera, código (no es un asset), datos, memoria guardada y palabra final: una nota cada una.
 - SHOP: una nota más con lo que hace el ejecutable con el fichero, y una por cada rango de su mapa de datos. Los rangos
   con copia en el ejecutable se comparan con ella y la nota dice si son iguales o cuántos bytes difieren.
-- Las tablas de FISH, STD, VS y TRN: `data/fishing`, `data/stadium`, `data/versus` y `data/training`.
+- Las tablas de FISH, STD, VS, TRN y BTL: `data/fishing`, `data/stadium`, `data/versus`, `data/training` y
+  `data/battle` (el dibujo del disparo del aplastado de cada especie).
 - Son `unknowns`: lo que `readOverlayParts` anota (también los rangos del mapa de datos que no cuadran), un overlay
   sin layout para la versión, un rango con copia que no se pudo comparar (sin ejecutable) y las tablas que no se
   pudieron leer.

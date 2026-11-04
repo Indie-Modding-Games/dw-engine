@@ -344,9 +344,9 @@ BTL_tickStunSubEffect = { status = "portado", dwe = "game/battle/src/status_visu
 BTL_setTMDObjectColor = { status = "portado", dwe = "apps/game/src/field_scene_battle_visuals.cpp:100", note = "el gris de los objetos del aura (0x3C y 0x5A sobre el 0x80 del fichero) como tinte del modelo", what = "Tiñe un objeto de un modelo (auras, brillos de estado)." }
 BTL_tickFinisherAura = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:238", what = "Anima el aura del remate cargado alrededor del compañero." }
 BTL_addFinisherAura = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:168", what = "Pone el aura del remate cargado." }
-BTL_tickAuraProjectile = { status = "falta", what = "Mueve un proyectil de aura." }
-BTL_initializeAuraProjectiles = { status = "falta", what = "Prepara los proyectiles de aura." }
-BTL_addAuraProjectile = { status = "falta", what = "Lanza un proyectil de aura." }
+BTL_tickAuraProjectile = { status = "portado", dwe = "game/battle/src/flattened_shots.cpp:98", note = "el disparo del luchador aplastado: 35 por fotograma, 58 fotogramas, caja 45/200; dibujado en apps/game/src/field_scene_battle_visuals.cpp:426", what = "Mueve un proyectil de aura." }
+BTL_initializeAuraProjectiles = { status = "portado", dwe = "game/battle/include/dwe/game/battle/state.hpp:171", note = "los 8 huecos empiezan libres con el estado del combate", what = "Prepara los proyectiles de aura." }
+BTL_addAuraProjectile = { status = "portado", dwe = "game/battle/src/flattened_shots.cpp:74", note = "el dibujo de cada especie sale del disco (data/battle: flattened_shots)", what = "Lanza un proyectil de aura." }
 BTL_initializeItemParticleVelocities = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:121", note = "con las tiradas propias de los efectos, no las del combate (Suposición)", what = "Da velocidades a las partículas de un objeto usado en combate." }
 BTL_tickItemParticles = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:249", what = "Mueve las partículas de un objeto usado en combate." }
 BTL_initializeBattleItemParticles = { status = "portado", dwe = "game/battle/src/status_visuals_effects.cpp:119", what = "Prepara las partículas de los objetos en combate." }
@@ -376,7 +376,7 @@ findEFEDATFile = { status = "no-aplica", note = "lectura del disco", what = "Bus
 initializeEFE = { status = "no-aplica", note = "preparación del original", what = "Prepara el sistema de efectos." }
 getEFEDATEntry = { status = "no-aplica", note = "lectura del disco", what = "Da una entrada del fichero de efectos." }
 fillEFEXTable = { status = "no-aplica", note = "tabla de saltos del original", what = "Rellena la tabla de órdenes de efecto." }
-translateConditionFXToEntity = { status = "parcial", dwe = "apps/game/src/field_scene_status.cpp", note = "la mariposa del compañero y el veneno y la confusión del combate (CONDITION_FX_OFFSETS en la tabla de especies: condition_fx); la burbuja de necesidad del campo aún no toma la x y la z del punto (renderConditionBubble)", what = "Pega un efecto de estado a la posición de un personaje." }
+translateConditionFXToEntity = { status = "portado", dwe = "apps/game/src/field_scene_status.cpp", note = "la mariposa del compañero y el veneno y la confusión del combate (CONDITION_FX_OFFSETS en la tabla de especies: condition_fx); la burbuja de necesidad del campo toma la x y la z del punto (renderConditionBubble, apps/game/src/play_session.cpp partnerBubbleOf)", what = "Pega un efecto de estado a la posición de un personaje." }
 doSomethingWithSomePoints = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:47", what = "Prueba si un golpe en línea cruza la caja de un luchador." }
 DOOA_storeDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Guarda la altura de la criatura para la escena de renacer." }
 DOOA_getStoredDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Lee la altura guardada para la escena de renacer." }
@@ -402,7 +402,7 @@ entityIsInEntity = { status = "portado", dwe = "game/field/src/grid.cpp", what =
 isOffScreen = { status = "no-aplica", note = "cálculo de pantalla del original", what = "Dice si un punto está fuera de la pantalla." }
 getMapSoundId = { status = "portado", dwe = "docs/formats/audio.md:24", what = "Da el banco de sonidos del mapa." }
 readMapTFS = { status = "no-aplica", note = "lectura del disco; la hace la extracción", what = "Lee las imágenes del fondo del mapa." }
-isInDaytimeTransition = { status = "falta", what = "Dice si el mapa está cambiando entre día y noche.", note = "sin búsqueda de la luz del día en el motor; comprobar" }
+isInDaytimeTransition = { status = "portado", dwe = "apps/game/src/field_scene.cpp:577", note = "el nombre va al revés: devuelve 1 sin fundido; su único uso frena la evolución natural del compañero durante el fundido de la paleta (apps/session/src/evolution_adapter.cpp)", what = "Dice si el mapa está cambiando entre día y noche." }
 handleTileUpdate = { status = "no-aplica", note = "carga de trozos del fondo del original", what = "Carga las partes del fondo según se mueve la cámara." }
 reinitializeAfterTournament = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", what = "Vuelve al mapa tras un torneo." }
 createMeramonShake = { status = "portado", dwe = "apps/session/src/story_routines/routine_screen_shake.cpp", what = "Empieza el temblor de pantalla de la escena del fuego de la montaña." }

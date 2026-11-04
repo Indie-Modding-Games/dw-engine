@@ -14,6 +14,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dwe::assets {
@@ -65,6 +66,10 @@ public:
   // this), so it comes in here. The requirements read the learned moves from it and an evolution
   // gives it the new form's moves. Without it the requirements see no learned moves.
   void setMoveSource(BattleAdapter& battle) { battle_ = &battle; }
+  // Whether the field's palette fades between times of day now (map.c: isInDaytimeTransition is
+  // its opposite): partner_impl.c: tickConditions checks no evolution meanwhile. Unset, it never
+  // does.
+  void setDaytimeFade(std::function<bool()> fading) { daytimeFade_ = std::move(fading); }
   // The cups won, for a species' cup gate (the hidden content): the session's tournament adapter,
   // built later, which must outlive this one. Without it a cup gate is open.
   void setCupSource(const TournamentAdapter& tournament) { tournament_ = &tournament; }
@@ -126,6 +131,7 @@ private:
 
   EvolutionAdapterDesc desc_;
   BattleAdapter* battle_ = nullptr;
+  std::function<bool()> daytimeFade_;
   const TournamentAdapter* tournament_ = nullptr;
   std::optional<game::evolution::Evolution> evolution_;
   // The ruleset the tables were read for, when the adapter read them.

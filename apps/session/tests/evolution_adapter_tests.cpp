@@ -168,6 +168,28 @@ TEST_CASE("no natural evolution in the hour after waking") {
   CHECK(adapter->takeEvolutions().empty());
 }
 
+TEST_CASE("no natural evolution while the field's palette fades between times of day") {
+  // partner_impl.c: tickConditions returns early while map.c: isInDaytimeTransition is 0.
+  const TestPacks packs;
+  const TableFixture fixture;
+  EvolutionAdapter* adapter = nullptr;
+  auto session = sessionWithEvolution(packs, fixture, adapter);
+  changePartner(*session, [](PartnerState& state) {
+    state.species = "bota";
+    state.evolution.hours = BabyHours;
+  });
+  bool fading = true;
+  adapter->setDaytimeFade([&fading] { return fading; });
+  session->clock().setSpeed(1.0);
+  session->tick(0.1);
+  CHECK(session->partner().state().species == "bota");
+  CHECK(adapter->takeEvolutions().empty());
+  // Once the fade ends, the next frame's check takes the evolution.
+  fading = false;
+  session->tick(0.1);
+  CHECK(session->partner().state().species == "koro");
+}
+
 TEST_CASE("no evolution before the check hour: the partner's counter keeps counting") {
   const TestPacks packs;
   const TableFixture fixture;

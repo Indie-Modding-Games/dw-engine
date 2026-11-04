@@ -276,7 +276,9 @@ TEST_CASE("the files a battle overlay carries are checked against the loose file
     const OverlayDisc fixture{files, "us"};
     const auto run = runOn(fixture);
     const FileReport& report = reportOf(run, "BTL_REL.BIN");
-    CHECK(report.status == FileStatus::Extracted);
+    // The fixture's executable has no known tables, so the battle tables stay unconverted.
+    CHECK(report.status == FileStatus::Partial);
+    CHECK(mentions(report.unknowns, "the gameplay tables in the data were not converted"));
     CHECK(mentions(report.notes, "[0x0, 0xD20): same bytes as ETCDAT/EX.TIM"));
     CHECK(mentions(report.notes, "same bytes as ETCDAT/DEFEFF.TMD"));
     CHECK(mentions(report.notes, "[0x4188, 0x41C8): header"));

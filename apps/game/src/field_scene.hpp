@@ -228,6 +228,10 @@ public:
   // Ends the tick: follows the clock's time of day, and loads the map of a warp the player stepped
   // on, keeping the partner.
   void finishTick();
+  // map.c: isInDaytimeTransition (inverted): the palette fade between times of day is under way,
+  // from the frame the clock enters the hour that starts it (before finishTick follows the clock,
+  // as the player's clock tick starts it before the partner's tickConditions) until it ends.
+  [[nodiscard]] bool daytimeFadeRunning() const;
   // The player turns to the partner (Field::playerFacePartner).
   void playerFacePartner();
   // Starts a logic tick of every character on the field without moving it (Field::settle): each
@@ -327,6 +331,9 @@ public:
 
   // The partner's bones and faces posed as it is drawn now, for a scene's effects.
   [[nodiscard]] const EvolutionBody& partnerBody() const { return partnerBody_; }
+  // Where the partner's condition effects hang now, in the world (effect_common.c:
+  // translateConditionFXToEntity); nothing for a species without that point or with no partner.
+  [[nodiscard]] std::optional<glm::vec3> partnerConditionPoint() const;
   // How the models' lights brighten a face turned to `normal` (world space), 1 leaving its texels
   // as they are, up to 2 (the models' shading: ambient plus the three lights).
   [[nodiscard]] glm::vec3 modelLight(glm::vec3 normal) const;
@@ -498,6 +505,19 @@ public:
     statusVisuals_ = std::move(visuals);
     statusBodies_ = std::move(bodies);
   }
+  // A flattened fighter's shot in flight (game::battle::FlattenedShot) and its sprite: where it is
+  // on the battle's ground (the world's x and z), its height over the ground, the way it flies (a
+  // unit vector on the ground) and the first texel column of its sprite in DEFEFF's strip
+  // (data/battle's flattened_shots, before BTL_renderAuraProjectile's 0x60).
+  struct ShotSprite {
+    std::size_t attacker = 0;
+    glm::vec2 at{0.0F};
+    float height = 0.0F;
+    glm::vec2 facing{0.0F, 1.0F};
+    std::int32_t column = 0;
+  };
+  // The shots drawn this frame; none outside a battle.
+  void setFlattenedShots(std::vector<ShotSprite> shots) { flattenedShots_ = std::move(shots); }
   // The map's camera, which a scene's camera starts from.
   [[nodiscard]] const render::MapCamera& mapCamera() const { return mapRenderer_->camera(); }
   // The model the partner is drawn with.
@@ -691,6 +711,8 @@ private:
   void submitBattleVisualModels();
   void addBattleVisualBillboards(std::vector<render::MapBillboard>& billboards);
   void addBattleVisualPrims(std::vector<ScenePrim>& prims);
+  // battle_effect.c: BTL_renderAuraProjectile: the flattened fighters' shots.
+  void addFlattenedShotPrims(std::vector<ScenePrim>& prims);
   // A flattened fighter's paper sprite (model.c: renderFlatDigimon).
   void addFlatFighterBillboards(std::vector<render::MapBillboard>& billboards);
   void submitStatusModels();
@@ -802,6 +824,7 @@ private:
   const assets::ModelData* npcTexturesOf_ = nullptr;
   std::vector<std::optional<rhi::TextureId>> npcTextures_;
   std::map<std::string, std::optional<rhi::TextureId>, std::less<>> sceneImages_;
+  std::vector<ShotSprite> flattenedShots_;
   FieldEffects fieldEffects_{FieldEffectsSeed};
   ObjectSmoke objectSmoke_{FieldEffectsSeed};
   double objectSmokeSeconds_ = 0.0;

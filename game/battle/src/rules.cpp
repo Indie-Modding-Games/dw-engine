@@ -267,7 +267,9 @@ PacingRules readPacing(ValueReader& in, const YamlNode& node) {
   if (!in.group(node, "pacing",
                 {"after_attack_frames", "no_move_frames", "ranged_patience_frames",
                  "ranged_band_percent", "flattened_shot_every_frames", "flattened_shot_frames",
-                 "flattened_shot_release_frame"})) {
+                 "flattened_shot_release_frame", "flattened_shot_speed",
+                 "flattened_shot_life_frames", "flattened_shot_half_width",
+                 "flattened_shot_half_height"})) {
     return {};
   }
   PacingRules pacing{.afterAttackFrames = in.count(node, "after_attack_frames"),
@@ -276,7 +278,11 @@ PacingRules readPacing(ValueReader& in, const YamlNode& node) {
                      .rangedBandPercent = in.percent(node, "ranged_band_percent"),
                      .flattenedShotEveryFrames = in.positive(node, "flattened_shot_every_frames"),
                      .flattenedShotFrames = in.positive(node, "flattened_shot_frames"),
-                     .flattenedShotReleaseFrame = in.count(node, "flattened_shot_release_frame")};
+                     .flattenedShotReleaseFrame = in.count(node, "flattened_shot_release_frame"),
+                     .flattenedShotSpeed = in.positive(node, "flattened_shot_speed"),
+                     .flattenedShotLifeFrames = in.positive(node, "flattened_shot_life_frames"),
+                     .flattenedShotHalfWidth = in.count(node, "flattened_shot_half_width"),
+                     .flattenedShotHalfHeight = in.count(node, "flattened_shot_half_height")};
   if (in.yaml().ok() && pacing.flattenedShotReleaseFrame >= pacing.flattenedShotFrames) {
     in.yaml().fail(node, messages::ShotAfterAttack);
   }

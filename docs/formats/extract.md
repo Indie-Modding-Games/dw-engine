@@ -206,8 +206,8 @@ ETCDAT/EX.TIM`; el asset sale de ese fichero), la cabecera, el código (no es un
 código con nombre en los símbolos del decomp), la memoria guardada (restos del build; en MOV, los buffers del
 decodificador) y la palabra final. Los datos de SHOP, que el decomp no compila para el US, van rango a rango con el
 mapa de su layout (tablas de saltos, textos, punteros y tablas), y los que el ejecutable también tiene se comparan con
-su copia. Las tablas de juego salen a `data/fishing`, `data/stadium`, `data/versus` y
-`data/training`; el número de objetos y TIM de las arenas se lee del ejecutable. TRN2 tiene las mismas tablas que TRN:
+su copia. Las tablas de juego salen a `data/fishing`, `data/stadium`, `data/versus`,
+`data/training` y `data/battle`; el número de objetos y TIM de las arenas se lee del ejecutable. TRN2 tiene las mismas tablas que TRN:
 se comparan y se anota.
 
 Queda parcial un overlay sin layout para la versión, uno que no cuadra con su layout, uno cuyo fichero incrustado no

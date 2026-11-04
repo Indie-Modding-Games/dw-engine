@@ -313,7 +313,11 @@
         "ranged_band_percent",
         "flattened_shot_every_frames",
         "flattened_shot_frames",
-        "flattened_shot_release_frame"
+        "flattened_shot_release_frame",
+        "flattened_shot_speed",
+        "flattened_shot_life_frames",
+        "flattened_shot_half_width",
+        "flattened_shot_half_height"
       ],
       "additionalProperties": false,
       "properties": {
@@ -336,6 +340,18 @@
           "type": "integer"
         },
         "flattened_shot_release_frame": {
+          "type": "integer"
+        },
+        "flattened_shot_speed": {
+          "type": "integer"
+        },
+        "flattened_shot_life_frames": {
+          "type": "integer"
+        },
+        "flattened_shot_half_width": {
+          "type": "integer"
+        },
+        "flattened_shot_half_height": {
           "type": "integer"
         }
       },

@@ -180,6 +180,7 @@ core::Result<assets::AssetId> modelContract(const GameTables* tables, std::size_
 
 const std::vector<DocumentSchema>& documentSchemas() {
   static const std::vector<DocumentSchema> schemas{
+      {.schema = "battle", .ids = {"data/battle"}},
       {.schema = "cards", .ids = {"data/cards"}},
       {.schema = "digimon", .ids = {"data/digimon"}},
       {.schema = "evolution", .ids = {"data/evolution"}},

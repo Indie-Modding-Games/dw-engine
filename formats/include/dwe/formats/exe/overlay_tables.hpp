@@ -251,6 +251,21 @@ struct TrainingLayout {
       spots; // at most count records; mapId -1 ends the list, stat -1 ends each map's spots
 };
 
+// The regular battle's tables (the BTL overlay).
+struct BattleTables {
+  // battle_effect.c: BTL_AURA_PROJECTILE_TYPES, by original species type: the first texel column
+  // of the flattened fighter's shot in the battle's DEFEFF strip, before the 0x60 that
+  // BTL_renderAuraProjectile adds; -1 for type 0, which has none. The record's other fields are
+  // the same for every type and nothing reads them.
+  std::vector<std::int16_t> flattenedShotSprites;
+
+  bool operator==(const BattleTables&) const = default;
+};
+
+struct BattleLayout {
+  TableLocation flattenedShotTypes; // records of 12 bytes, the texel column at byte 10
+};
+
 // The overlay tables of one version.
 struct OverlayTablesLayout {
   std::string_view version;
@@ -259,6 +274,7 @@ struct OverlayTablesLayout {
   BattleStageLayout versus;
   TrainingLayout training;
   TrainingLayout training2;
+  BattleLayout battle;
 };
 
 // Returns the overlay tables of a version, if the tools know them.
@@ -271,5 +287,6 @@ core::Result<BattleStageTables> readBattleStageTables(const MemoryImage& overlay
                                                       const BattleStageLayout& layout);
 core::Result<TrainingTables> readTrainingTables(const MemoryImage& overlay,
                                                 const TrainingLayout& layout);
+core::Result<BattleTables> readBattleTables(const MemoryImage& overlay, const BattleLayout& layout);
 
 } // namespace dwe::formats::exe

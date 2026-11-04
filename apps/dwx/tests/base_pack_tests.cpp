@@ -245,8 +245,8 @@ TEST_CASE("the base pack is written, mounts and is the same on every run") {
   CHECK(manifest->layer == dwe::assets::Layer::Base);
   // The manifest says which schema each document of the pack follows.
   REQUIRE(manifest->schemas.size() == names::documentSchemas().size());
-  CHECK(manifest->schemas.front().schema == "cards");
-  CHECK(manifest->schemas.front().ids == std::vector<std::string>{"data/cards"});
+  CHECK(manifest->schemas.front().schema == "battle");
+  CHECK(manifest->schemas.front().ids == std::vector<std::string>{"data/battle"});
 
   // The engine mounts the pack and opens every asset.
   const auto assets = checkBasePack(first, *run);

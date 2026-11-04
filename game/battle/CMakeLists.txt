@@ -15,6 +15,7 @@ dwe_add_module(battle
         src/ai_ticks.cpp
         src/fighter_actions.cpp
         src/attack_hits.cpp
+        src/flattened_shots.cpp
         src/particle_rolls.cpp
         src/status_effects.cpp
         src/status_visuals.cpp

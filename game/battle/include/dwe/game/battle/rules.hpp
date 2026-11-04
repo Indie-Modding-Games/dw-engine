@@ -129,6 +129,12 @@ struct PacingRules {
   std::int32_t flattenedShotEveryFrames = 0;
   std::int32_t flattenedShotFrames = 0;
   std::int32_t flattenedShotReleaseFrame = 0;
+  // The shot itself (BTL_tickAuraProjectile): its speed a frame, the frames it lives and the half
+  // sizes of its box, across and up.
+  std::int32_t flattenedShotSpeed = 0;
+  std::int32_t flattenedShotLifeFrames = 0;
+  std::int32_t flattenedShotHalfWidth = 0;
+  std::int32_t flattenedShotHalfHeight = 0;
 };
 
 // How close a fighter stays to its target while it waits, beyond the contact range.

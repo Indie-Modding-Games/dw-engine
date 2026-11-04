@@ -82,6 +82,12 @@ void tickAttackHits(BattleContext& context);
 void drainPendingDamage(BattleContext& context);
 // The attack of a fighter leaves it (its animation's release frame).
 void releaseAttack(BattleContext& context, FighterId id);
+// flattened_shots.cpp: the flattened fighter's shot (battle_effect.c: BTL_addAuraProjectile,
+// BTL_tickAuraProjectile). Fires it from where `id` stands, the way it faces; none while all the
+// slots fly.
+void fireFlattenedShot(BattleContext& context, FighterId id, MoveRef move);
+// Moves each shot a frame (tickObjects, after the fighters) and lands those that touch a fighter.
+void tickFlattenedShots(BattleContext& context);
 // When and where the effect of `move` that `attacker` plays with its clip `clip` touches
 // `defender`, both where they stand now (AttackFlights); nothing when the battle knows no flight
 // for it.

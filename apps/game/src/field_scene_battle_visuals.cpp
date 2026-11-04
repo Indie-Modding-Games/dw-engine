@@ -148,6 +148,13 @@ constexpr glm::vec3 TrailColor{200.0F, 255.0F, 180.0F};
 constexpr float TrailLife = 8.0F;
 // BTL_renderItemParticles: renderFXParticle(pos, 0x14, brightness >> 4).
 constexpr float ItemGlowSize = 0x14;
+// BTL_renderAuraProjectile: the shot's card (BTL_AURA_PROJECTILE_VERTEX_0..3: 50 each way) and its
+// texels: 7 x 7 from (column + 0x60, 0xA0 - 0x80) of DEFEFF with its palette 4.
+constexpr float ShotHalfSide = 50.0F;
+constexpr float ShotColumnBase = 0x60;
+constexpr float ShotTexelRow = 0x20;
+constexpr float ShotTexels = 7.0F;
+constexpr std::size_t ShotPalette = 4;
 
 } // namespace
 
@@ -409,6 +416,43 @@ void FieldScene::addBattleVisualPrims(std::vector<ScenePrim>& prims) {
       }
       prims.push_back(prim);
     }
+  }
+}
+
+// BTL_renderAuraProjectile: a 100 x 100 card standing along the way the shot flies, its texture's
+// left edge ahead and its top up: DEFEFF's 7 x 7 texels at (column + 0x60, 32) with palette 4
+// (getClut(192, 492)), colour 0x80. The console's semi-transparency (code |= 2, additive) only
+// mixes the palette's STP colours; the shots' white and dark texels are drawn whole.
+void FieldScene::addFlattenedShotPrims(std::vector<ScenePrim>& prims) {
+  if (flattenedShots_.empty()) {
+    return;
+  }
+  const std::optional<rhi::TextureId> sheet = stpSceneImage(CommonSheet, ShotPalette);
+  if (!sheet) {
+    return;
+  }
+  const render::MapCamera& camera = mapRenderer_->camera();
+  const ScenePrimFrame frame{
+      .view = camera.view(), .projection = camera.projection(), .pixelScale = camera.scale()};
+  for (const ShotSprite& shot : flattenedShots_) {
+    // The shot keeps the height it left at, over the ground its shooter stands on.
+    const std::optional<StatusAnchor> anchor = statusAnchor(shot.attacker);
+    const float ground = anchor ? anchor->feet.y : 0.0F;
+    const glm::vec3 centre{shot.at.x, ground + shot.height, shot.at.y};
+    const glm::vec3 ahead = glm::vec3{shot.facing.x, 0.0F, shot.facing.y} * ShotHalfSide;
+    const glm::vec3 up{0.0F, ShotHalfSide, 0.0F};
+    const glm::vec2 texel{static_cast<float>(shot.column) + ShotColumnBase, ShotTexelRow};
+    const glm::vec2 from = texel / SheetSize;
+    const glm::vec2 to = (texel + glm::vec2{ShotTexels}) / SheetSize;
+    ScenePrim prim{.shape = ScenePrim::Shape::Quad,
+                   .texture = *sheet,
+                   .blend = ScenePrimBlend::Additive,
+                   .stpMask = true};
+    prim.corners[0] = {.clip = frame.clip(centre + up + ahead), .uv = from};
+    prim.corners[1] = {.clip = frame.clip(centre + up - ahead), .uv = {to.x, from.y}};
+    prim.corners[2] = {.clip = frame.clip(centre - up + ahead), .uv = {from.x, to.y}};
+    prim.corners[3] = {.clip = frame.clip(centre - up - ahead), .uv = to};
+    prims.push_back(prim);
   }
 }
 

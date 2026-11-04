@@ -259,4 +259,28 @@ TablesYaml trainingToYaml(const TrainingTables& tables, const TableIds& ids) {
   return out;
 }
 
+TablesYaml battleToYaml(const BattleTables& tables, const TableIds& ids) {
+  constexpr std::int16_t NoSprite = -1;
+  std::vector<std::string> notes;
+  YamlNode shots = YamlNode::sequence();
+  for (std::size_t i = 0; i < tables.flattenedShotSprites.size(); ++i) {
+    const std::int16_t sprite = tables.flattenedShotSprites[i];
+    if (sprite == NoSprite) {
+      continue;
+    }
+    YamlNode node = YamlNode::mapping();
+    node.set("digimon",
+             reference<std::size_t>(ids.digimon, i, std::nullopt,
+                                    std::format("BTL_AURA_PROJECTILE_TYPES[{}]", i), notes));
+    node.set("sprite", number(sprite));
+    shots.append(std::move(node));
+  }
+  YamlNode root = YamlNode::mapping();
+  root.set("flattened_shots", std::move(shots));
+  TablesYaml out;
+  out.documents.push_back({.name = "battle", .document = std::move(root)});
+  out.notes = std::move(notes);
+  return out;
+}
+
 } // namespace dwe::formats::exe

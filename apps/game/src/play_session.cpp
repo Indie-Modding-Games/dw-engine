@@ -64,7 +64,9 @@ constexpr int MapChangeSettleFrames = 5;
 // top of its species' height (bubble.c: addConditionBubble: baseHeight = -height + 20) and rises 65
 // over its first 10 frames, where it settles (bubble.c: tickConditionBubble: activeHeight =
 // baseHeight - 65). Its bob of 12 up and down around that point is the skin's animation and is not
-// published.
+// published. Across the ground it hangs where the partner's condition effects do
+// (renderConditionBubble: translateConditionFXToEntity's x and z), over its feet without that
+// point.
 constexpr float BubbleDrop = 20.0F;
 constexpr float BubbleRise = 65.0F;
 
@@ -75,6 +77,10 @@ std::optional<screens::WindowFraction> partnerBubbleOf(const FieldScene& scene,
   const assets::DigimonRow* row = species != nullptr ? species->find(partnerSpecies) : nullptr;
   const float height = row != nullptr ? static_cast<float>(row->height) - BubbleDrop : 0.0F;
   glm::vec3 bubble = scene.field().partner().position;
+  if (const std::optional<glm::vec3> condition = scene.partnerConditionPoint()) {
+    bubble.x = condition->x;
+    bubble.z = condition->z;
+  }
   bubble.y += height + BubbleRise;
   const std::optional<glm::vec2> fraction = scene.worldToWindowFraction(bubble);
   if (!fraction) {
@@ -489,6 +495,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
     storyTextbox_.emplace(*context.ui, *game_.systems.story, session);
   }
   session.attachField(scene_->field());
+  // map.c: isInDaytimeTransition: the field's time-of-day fade holds the evolution checks.
+  game_.systems.evolution->setDaytimeFade(
+      [this] { return scene_ != nullptr && scene_->daytimeFadeRunning(); });
   game_.systems.story->attachNpcs(&scene_->npcs());
   storyLink_ = std::make_unique<StoryFieldLink>(*game_.systems.story, *scene_);
   if (game_.systems.scenes != nullptr) {
@@ -610,6 +619,7 @@ PlaySession::~PlaySession() {
   context_.device->waitIdle();
   context_.debugUi->detachTuning();
   game_.session->detachField();
+  game_.systems.evolution->setDaytimeFade({});
   storyLink_.reset();
   game_.systems.story->attachNpcs(nullptr);
   for (const std::string_view document : {std::string_view{"hud"},

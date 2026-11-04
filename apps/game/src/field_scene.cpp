@@ -576,6 +576,15 @@ void FieldScene::followClock() {
   }
 }
 
+bool FieldScene::daytimeFadeRunning() const {
+  if (lightingDelay_ > 0.0) {
+    return true;
+  }
+  const std::int32_t hour = clock_->time().hour;
+  return hour != clockHour_ && !fixedTime_ && render::timeOfDayChangesAt(hour, schedule_) &&
+         render::timeOfDayAt(hour, schedule_) != time_;
+}
+
 void FieldScene::applyLighting() {
   render::ModelLighting lighting = mapLighting_;
   const glm::vec3 scale = render::timeOfDayLightScale(time_, fixedTime_, schedule_);
@@ -957,6 +966,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   if (mapRenderer_->hasMap()) {
     addEffectPrims(prims);
     addBattleVisualPrims(prims);
+    addFlattenedShotPrims(prims);
     addStorySprites(prims);
     addPointQuads(prims);
     // The mist (ordering-table entry 20) in front of the map's characters and effects, behind the

@@ -27,9 +27,10 @@ constexpr std::int32_t EndOfMaps = -1;
 constexpr std::int16_t EndOfSpots = -1;
 
 // US addresses: dw_decomp config/us/symbols_fish.txt, symbols_std.txt, symbols_vs.txt,
-// symbols_trn.txt, symbols_trn2.txt and symbols.txt (the small tables in the executable). Counts:
-// the array declarations in src/fish/fish.c, src/std/std_main.c and std_setup.c, src/vs/vs_scene.c
-// and vs_camera.c, src/trn/trn_reward.c, trn_hud.c and trn_slots.c and their trn2 copies.
+// symbols_trn.txt, symbols_trn2.txt, symbols_btl.txt and symbols.txt (the small tables in the
+// executable). Counts: the array declarations in src/fish/fish.c, src/std/std_main.c and
+// std_setup.c, src/vs/vs_scene.c and vs_camera.c, src/trn/trn_reward.c, trn_hud.c and trn_slots.c
+// and their trn2 copies, and src/btl/battle_effect.c.
 constexpr std::array Layouts = {
     OverlayTablesLayout{
         .version = "us",
@@ -95,6 +96,7 @@ constexpr std::array Layouts = {
                       .slotReelWidth = 13,
                       .assistRolls = {.address = 0x8008DBC8, .count = 10},
                       .spots = {.address = 0x8008DB88, .count = 8}},
+        .battle = {.flattenedShotTypes = {.address = 0x8007383C, .count = 129}},
     },
 };
 
@@ -558,6 +560,22 @@ core::Result<TrainingTables> readTrainingTables(const MemoryImage& overlay,
   tables.slotReels = std::move(*reels);
   tables.assistRolls = std::move(*assist);
   tables.spots = std::move(*spots);
+  return tables;
+}
+
+core::Result<BattleTables> readBattleTables(const MemoryImage& overlay,
+                                            const BattleLayout& layout) {
+  constexpr std::size_t TypeSize = 12;
+  constexpr std::size_t SpriteAt = 10;
+  auto bytes = tableBytes(overlay, layout.flattenedShotTypes, TypeSize, "flattened shot types");
+  if (!bytes) {
+    return std::unexpected{bytes.error()};
+  }
+  BattleTables tables;
+  for (std::size_t i = 0; i < layout.flattenedShotTypes.count; ++i) {
+    ByteCursor c{bytes->subspan((i * TypeSize) + SpriteAt, 2)};
+    tables.flattenedShotSprites.push_back(static_cast<std::int16_t>(c.u16()));
+  }
   return tables;
 }
 

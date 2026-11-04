@@ -34,13 +34,15 @@ using formats::exe::TablesYaml;
 
 constexpr std::string_view OverlaySuffix = "_REL.BIN";
 constexpr std::string_view TrainingPath = "TRN_REL.BIN";
+constexpr std::string_view BattlePath = "BTL_REL.BIN";
 // The overlay of the movie player: what it stores past its data are the buffers of the decoder
 // (mov_bss_us.c).
 constexpr std::string_view MoviePath = "MOV_REL.BIN";
 
-constexpr std::array TablePaths = {std::string_view{"FISH_REL.BIN"},
-                                   std::string_view{"STD_REL.BIN"}, std::string_view{"VS_REL.BIN"},
-                                   TrainingPath, std::string_view{"TRN2_REL.BIN"}};
+constexpr std::array TablePaths = {
+    std::string_view{"FISH_REL.BIN"}, std::string_view{"STD_REL.BIN"},
+    std::string_view{"VS_REL.BIN"},   TrainingPath,
+    std::string_view{"TRN2_REL.BIN"}, BattlePath};
 
 bool hasGameplayTables(std::string_view path) {
   return std::ranges::contains(TablePaths, path);
@@ -264,6 +266,13 @@ core::Result<void> convertTables(const Disc& disc, std::span<const std::byte> fi
         "original keeps them");
     return addDocuments(formats::exe::battleStageToYaml(*read, stadium ? "stadium" : "versus"),
                         extraction);
+  }
+  if (path == BattlePath) {
+    const auto read = formats::exe::readBattleTables(overlay, tables->battle);
+    if (!read) {
+      return std::unexpected{read.error()};
+    }
+    return addDocuments(formats::exe::battleToYaml(*read, game->ids), extraction);
   }
   if (path == TrainingPath) {
     const auto read = formats::exe::readTrainingTables(overlay, tables->training);
