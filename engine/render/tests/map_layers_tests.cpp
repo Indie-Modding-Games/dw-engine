@@ -120,6 +120,29 @@ TEST_CASE(
                              [](const DepthLayerQuad& quad) { return quad.instance == 0; }));
 }
 
+TEST_CASE("a restarted animation shows its first frame for a whole original frame") {
+  // Elecmon's sparks on gias02 (object 41, frames of 1): routine 21 restarts them from the
+  // script; renderMapOverlays draws frame 0 that frame and only then counts it, so the next
+  // picture comes a whole frame (3 vblanks) later, whatever was left of the clock.
+  const MapCamera camera{dwe::render::mapCameraDesc(roomCamera)};
+  dwe::assets::MapObjects objects;
+  objects.sprites = {sprite(0, -1, {0, 0, 0}), sprite(0, -1, {0, 0, 0})};
+  objects.instances = {{.frames = {{.sprite = 0, .time = 1}, {.sprite = 1, .time = 1}},
+                        .x = 10,
+                        .y = 20,
+                        .flag = 0}};
+  MapDepthLayers layers{objects, camera};
+  layers.update(0.049);
+  layers.restartAnimation(0);
+  layers.update(0.017);
+  REQUIRE(layers.quads().size() == 1);
+  CHECK(layers.quads().front().sprite == 0);
+  layers.update(0.017);
+  CHECK(layers.quads().front().sprite == 0);
+  layers.update(0.017);
+  CHECK(layers.quads().front().sprite == 1);
+}
+
 TEST_CASE("in one ordering-table entry the instance added last is drawn first") {
   const MapCamera camera{dwe::render::mapCameraDesc(roomCamera)};
   dwe::assets::MapObjects objects;

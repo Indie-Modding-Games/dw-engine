@@ -165,6 +165,7 @@ void MapDepthLayers::restartAnimation(std::size_t instance) {
   if (instance < instances_.size()) {
     instances_[instance].frame = 0;
     instances_[instance].timer = 0;
+    pendingSeconds_ = 0.0;
   }
 }
 

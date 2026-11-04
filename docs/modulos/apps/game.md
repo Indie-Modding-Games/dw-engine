@@ -299,8 +299,14 @@ grandes a los 18 y se van antes de los 30. El jugador retrocede unas 400 unidade
 caen; la cifra sigue a la vista con el cuadro de texto abierto. dwe: la cifra se ve hasta +94 y no a +106, el jugador
 retrocede 396 y el compañero 383, y las tres descargas dan 640, 480 y 320. Igual.
 
-Suposición: en dwe las chispas van 1 o 2 cuadros del campo por delante (grandes a +10 frente a +18) y el cuadro de
-texto se abre antes (+30 frente a +44..64; depende del giro de Elecmon, no medido). Las cifras de curación con objetos
+Las chispas (objeto 41 de `gias02`, cinco cuadros de 1 fotograma) siguen el orden de `renderMapOverlays`: el script las
+reinicia (rutina 21), ese fotograma se dibuja el primer cuadro y solo después se cuenta, así que dura un fotograma entero;
+`MapDepthLayers::restartAnimation` reinicia también el reloj de 20 fotogramas por segundo, que antes podía pasar al segundo
+cuadro en el mismo fotograma. Medido en dwe tras el arreglo (2026-11-04, vblank a vblank desde la tecla): la cifra y la
+chispa pequeña a +6, la grande de +13 a +15, ya no están a +19; en el original la cifra y la chispa pequeña a +8..10, la
+grande a +16..18 y ya no están a +28. De la cifra a la chispa grande, 7 frente a 8: Igual dentro de un fotograma del campo.
+Suposición: toda la escena empieza unos 2 a 4 vblanks antes que en el original (la tecla llega antes al script, no las
+chispas), y el cuadro de texto se abre antes (+30 frente a +44..64; depende del giro de Elecmon, no medido). Las cifras de curación con objetos
 en el campo (`item.c`, `addEntityText`) aún no salen.
 
 Medido en el original (2026-10-31): las nubes y chispas del gimnasio (`TRN_tickDefenseTraining`, estado

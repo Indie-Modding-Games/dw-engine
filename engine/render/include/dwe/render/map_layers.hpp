@@ -79,7 +79,9 @@ public:
   void setOffset(std::size_t instance, glm::vec2 offset);
   [[nodiscard]] glm::vec2 offset(std::size_t instance) const;
   // Starts an instance's sprite animation over from its first frame
-  // (overworld.c: resetMapObjectAnimation).
+  // (overworld.c: resetMapObjectAnimation). The original restarts it from the script, before the
+  // frame's renderMapOverlays draws the first frame and only then counts it, so the first frame
+  // shows for a whole frame: the frame clock starts over with it.
   void restartAnimation(std::size_t instance);
 
 private:
