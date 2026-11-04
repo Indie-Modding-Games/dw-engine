@@ -45,16 +45,18 @@ body {
 #label-give { left: 60dp; }
 #label-get { left: 366dp; }
 
-/* renderHorizontalLine: a dark line over a light one. */
+/* renderHorizontalLine (script_common.c:2386): a pixel of dark (0x020202), one of blue grey (0xa08769, red last) and
+   one of dark again, measured in the original's trade menu. */
 #rule {
 	position: absolute;
 	left: 12dp;
 	top: 63dp;
 	width: 645dp;
-	height: 6dp;
+	height: 9dp;
 	box-sizing: border-box;
-	border-top: 3dp #101010;
-	border-bottom: 3dp #b0b0b0;
+	background-color: #6987a0;
+	border-top: 3dp #020202;
+	border-bottom: 3dp #020202;
 }
 
 /* renderSelectionCursor: a grey bar with a light top and left edge and a dark bottom and right one. */
@@ -171,14 +173,18 @@ body {
 #amount-get { top: 159dp; }
 #amount-value { position: absolute; left: 447dp; top: 102dp; width: 150dp; text-align: right; }
 
+/* renderHorizontalLine again: dark, blue grey and dark around the measured blue grey row. */
 #amount .rule {
 	position: absolute;
-	height: 3dp;
-	background-color: #63849c;
+	height: 9dp;
+	box-sizing: border-box;
+	background-color: #6987a0;
+	border-top: 3dp #020202;
+	border-bottom: 3dp #020202;
 }
 
-#amount-rule-top { left: 9dp; top: 48dp; width: 621dp; }
-#amount-rule-bottom { left: 9dp; top: 147dp; width: 621dp; }
+#amount-rule-top { left: 9dp; top: 45dp; width: 621dp; }
+#amount-rule-bottom { left: 9dp; top: 144dp; width: 621dp; }
 
 #amount-inset {
 	position: absolute;

@@ -365,6 +365,14 @@ el 6); los NPC se quedan quietos
 Al cerrar el menú cada uno vuelve a lo que le toque (el paso del jugador o el seguimiento del compañero). Prueba:
 `field_clock_tests.cpp`; comparación en `_work/tmp/w21-trfield/contact_sheet.png`.
 
+## Líneas de los menús
+
+`renderHorizontalLine` (`script_common.c:2386`) dibuja tres filas de un píxel: oscura (0x020202), gris azulada
+(0xa08769, el rojo al final: `#6987a0`) y oscura. Medido en el original: filas 100-102 y 139-141 de la caja de
+cantidad de la tienda de cartas, y 57-59 del menú de trueque. Antes el trueque y el transporte pintaban una oscura y
+una gris clara (`#b0b0b0`), y la tienda de cartas solo la azulada; ahora las tres (`card_shop`, `trade_menu`,
+`bird_transport`) llevan las tres filas. Igual.
+
 ## Escena final
 
 `EndingScene` juega la última escena (`call_partner_routine 6`, que pide la rutina 53; en el original, el tick final del

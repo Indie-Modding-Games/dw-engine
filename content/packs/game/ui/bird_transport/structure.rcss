@@ -72,16 +72,18 @@ body {
 .label-place { left: 24dp; width: 60dp; }
 .label-point { left: 486dp; width: 60dp; }
 
-/* renderHorizontalLine: a dark line over a light one. */
+/* renderHorizontalLine (script_common.c:2386): a pixel of dark (0x020202), one of blue grey (0xa08769, red last) and
+   one of dark again, measured in the original's trade menu. */
 #rule {
 	position: absolute;
 	left: 9dp;
 	top: 42dp;
 	width: 636dp;
-	height: 6dp;
+	height: 9dp;
 	box-sizing: border-box;
-	border-top: 3dp #101010;
-	border-bottom: 3dp #b0b0b0;
+	background-color: #6987a0;
+	border-top: 3dp #020202;
+	border-bottom: 3dp #020202;
 }
 
 /* renderItemMenuScrollBar: every row fits, so the bar fills its track. */

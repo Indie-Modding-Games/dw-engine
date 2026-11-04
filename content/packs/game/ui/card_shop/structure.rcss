@@ -260,14 +260,19 @@ body {
 #amount-value { position: absolute; left: 252dp; top: 126dp; width: 60dp; text-align: right; }
 #amount-total { position: absolute; left: 183dp; top: 192dp; width: 150dp; text-align: right; }
 
+/* renderHorizontalLine (script_common.c:2386): dark, blue grey and dark, a pixel each (the original's amount box: rows
+   100 to 102 and 139 to 141). */
 .rule {
 	position: absolute;
-	height: 3dp;
-	background-color: #63849c;
+	height: 9dp;
+	box-sizing: border-box;
+	background-color: #6987a0;
+	border-top: 3dp #020202;
+	border-bottom: 3dp #020202;
 }
 
-#amount-rule-top { left: 9dp; top: 66dp; width: 366dp; }
-#amount-rule-bottom { left: 33dp; top: 177dp; width: 318dp; }
+#amount-rule-top { left: 9dp; top: 63dp; width: 366dp; }
+#amount-rule-bottom { left: 33dp; top: 174dp; width: 318dp; }
 
 #amount-inset {
 	position: absolute;
