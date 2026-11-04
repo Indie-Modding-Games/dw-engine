@@ -5,8 +5,10 @@
 #quit { nav-down: #continue; }
 #minimap-mode { nav-up: #minimap-back; }
 #minimap-back { nav-down: #minimap-mode; }
-#display-mode { nav-up: #options-back; }
-#options-back { nav-down: #display-mode; }
+/* The options page's ring: the quick save leads it (docs/architecture/guardar-y-cargar.md, 3.8);
+   up from it wraps to Back and down from Back comes back to it; the rows between step by one. */
+#options-save { nav-up: #options-back; }
+#options-back { nav-down: #options-save; }
 /* Sleep is greyed while the partner is not sleepy, as in the original. */
 #sleep.unavailable { opacity: 0.45; focus: none; tab-index: none; }
 #fish.unavailable { opacity: 0.45; focus: none; tab-index: none; }

@@ -1,5 +1,6 @@
 # The pad's Select (Back) opens the options after the player page or the partner menu was opened and
-# closed. `settings` has no keyboard key, so this runs on a gamepad: back = Select, east = cancel.
+# closed: the same `settings` the keyboard reaches with Escape, run here on a gamepad: back = Select,
+# east = cancel.
 # Run with: dwe-game --content <folder> --autotest tests/autotest/route-settings-after-player.yaml
 name: settings-after-player
 device: gamepad
