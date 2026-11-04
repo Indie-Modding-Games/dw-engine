@@ -1270,9 +1270,10 @@ function on_language(document)
   draw(document)
 end
 
--- The battle cannot be left with cancel or the pause button: cancel opens the tamer's bag (the
--- original's own button), whose document then takes the buttons until it closes; confirm charges
--- the finisher while its aura lasts.
+-- The battle cannot be left with cancel or the pause button. `menu` opens the tamer's bag (the same
+-- button that opens the field's menu, whose items page this is), whose document then takes the
+-- buttons until it closes; confirm charges the finisher while its aura lasts; `cancel` does nothing
+-- on the fight itself (the UI's default for a modal's `cancel` would close the battle).
 function on_action(_document, action)
   -- Nothing answers while the battle opens, nor during the victory poses before the end box
   -- (BTL_handleVictorySequence reads no buttons until handleBattleEndBox), nor while the command
@@ -1294,9 +1295,9 @@ function on_action(_document, action)
   if bag_open then
     return true
   end
-  if action == "cancel" then
+  if action == "menu" then
     open_bag()
     return true
   end
-  return action == "menu" or action == "up" or action == "down"
+  return action == "cancel" or action == "up" or action == "down"
 end

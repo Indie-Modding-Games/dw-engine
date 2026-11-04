@@ -45,18 +45,18 @@ ActionMap defaultActionMap() {
 
   // The original's pad: Triangle opens the game menu on the field (game_menu.c: addGameMenu) and
   // Start pauses the game (utils2.c: handlePause). Where there is no game to pause (the title, a
-  // movie, a naming box) Start does what the original's Start does there, through `pause`.
+  // movie, a naming box) Start does what the original's Start does there, through `pause`. In
+  // battle the same `menu` opens the tamer's bag (battle_tick.c), as the field's menu shows it.
   map.bind("menu", KeyBinding{keys::Tab});
   map.bind("menu", GamepadButtonBinding{GamepadButton::North});
 
   map.bind("pause", KeyBinding{keys::P});
-  map.bind("pause", KeyBinding{keys::Pause});
   map.bind("pause", GamepadButtonBinding{GamepadButton::Start});
 
   // The game's options while playing (docs/modulos/apps/game.md, «Opciones en partida»): the game
   // menu opens straight on its options page, also from Start's pause. The original's Select had no
-  // use on the field.
-  map.bind("settings", KeyBinding{keys::F10});
+  // use on the field. On the keyboard there is no shortcut: options live one `Tab` away, inside the
+  // game menu, so no letter near `WASD` is spent on them.
   map.bind("settings", GamepadButtonBinding{GamepadButton::Back});
 
   // The island map (a dwe improvement; apps/game world_map.hpp): M, or the pad's left shoulder,
@@ -85,21 +85,22 @@ ActionMap defaultActionMap() {
   map.bind("move_down", GamepadAxisBinding{.axis = GamepadAxis::LeftY, .direction = 1.0F});
 
   // Held while moving: walk instead of running. Running is the default, as in the original, where
-  // R1 walked.
+  // R1 walked. Only the shoulder (and Shift on the keyboard): the west button belongs to `extra`
+  // alone, so holding it no longer walks (docs/architecture/controles.md).
   map.bind("walk", KeyBinding{keys::LeftShift});
   map.bind("walk", KeyBinding{keys::RightShift});
-  map.bind("walk", GamepadButtonBinding{GamepadButton::West});
   map.bind("walk", GamepadButtonBinding{GamepadButton::RightShoulder});
 
   // The original pad's other two face buttons (dw/input.h: ALT_BUTTON, the circle on the American
-  // version, and the square, 0x80). The naming box uses them to put the cursor on Back and to clear
-  // the whole name (script_menu.c: tickNamingBox). On the pad `alt` takes the north button because
-  // the east one is `cancel` here; on the keyboard both use keys that type no text. North is also
-  // `menu`; the naming box reads `alt` first.
-  map.bind("alt", KeyBinding{keys::Home});
+  // version, and the square, 0x80). On the pad `alt` takes the north button because the east one is
+  // `cancel` here. On the keyboard they live on `E` and `Q` for one-hand play: in the naming box
+  // `takeTyping` runs before the actions (naming_box.cpp), so typing `e` or `q` writes a letter and
+  // does not fire the shortcut; the pad keeps the shortcuts because its buttons don't type
+  // (docs/architecture/controles.md, «Teclado moderno»).
+  map.bind("alt", KeyBinding{keys::E});
   map.bind("alt", GamepadButtonBinding{GamepadButton::North});
 
-  map.bind("extra", KeyBinding{keys::Delete});
+  map.bind("extra", KeyBinding{keys::Q});
   map.bind("extra", GamepadButtonBinding{GamepadButton::West});
 
   map.bind("debug_console", KeyBinding{keys::Grave});
