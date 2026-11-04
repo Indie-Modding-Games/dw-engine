@@ -411,6 +411,7 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
   });
   actor->player = std::make_unique<animation::AnimationPlayer>(*actor->model);
   actor->chibi = chibiRigOf(actor->character.model, *actor->model, chibiOverrides_);
+  actor->originalModel = isOriginalModel(*files_, actor->character.model);
   return actor;
 }
 
@@ -841,10 +842,7 @@ void FieldScene::submit(const Actor& actor, float alpha, const Look& look) {
       glm::scale(glm::rotate(glm::translate(glm::mat4{1.0F}, pose.position + rise), pose.yaw,
                              glm::vec3{0.0F, 1.0F, 0.0F}),
                  scale);
-  // The chibi style reshapes the drawing only (chibi_style.hpp).
-  std::span<const glm::mat4> joints =
-      chibiStyle_ ? chibiJoints_.of(*actor.model, actor.chibi, *actor.player)
-                  : actor.player->jointMatrices();
+  std::span<const glm::mat4> joints = drawnJoints(actor);
   std::vector<glm::mat4> kept;
   if (look.hiddenBones != 0) {
     // A left-out bone folds to nothing (its faces collapse onto a point).
@@ -1052,7 +1050,7 @@ std::optional<glm::mat4> FieldScene::playerNodeTransform(std::uint32_t node) con
   if (!actor.model->skin) {
     return std::nullopt;
   }
-  const auto joints = actor.player->jointMatrices();
+  const auto joints = drawnJoints(actor);
   const auto& skin = *actor.model->skin;
   const auto found = std::ranges::find(skin.joints, node);
   const auto joint = static_cast<std::size_t>(found - skin.joints.begin());
@@ -1067,12 +1065,20 @@ std::optional<glm::mat4> FieldScene::playerNodeTransform(std::uint32_t node) con
          jointSpace;
 }
 
+std::span<const glm::mat4> FieldScene::drawnJoints(const Actor& actor) const {
+  // The chibi style reshapes the drawing only (chibi_style.hpp).
+  return drawsChibi(chibiMode_, actor.originalModel)
+             ? chibiJoints_.of(*actor.model, actor.chibi, *actor.player)
+             : actor.player->jointMatrices();
+}
+
 std::optional<glm::vec3> FieldScene::nodePoint(const Actor& actor, std::uint32_t node,
                                                glm::vec3 offset) const {
   if (!actor.model->skin) {
     return std::nullopt;
   }
-  const auto joints = actor.player->jointMatrices();
+  // Where the drawn bone is, so that an effect follows the chibi style's.
+  const auto joints = drawnJoints(actor);
   const auto& skin = *actor.model->skin;
   const auto found = std::ranges::find(skin.joints, node);
   const auto joint = static_cast<std::size_t>(found - skin.joints.begin());

@@ -111,7 +111,7 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
       settings.worldMap = reader.boolean(*worldMap);
     }
     if (const core::YamlNode* chibi = tree->find(ChibiStyleKey)) {
-      settings.chibiStyle = reader.boolean(*chibi);
+      settings.chibiStyle = reader.text(*chibi);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -191,8 +191,7 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
              core::YamlNode::scalar(*settings.worldMap ? "true" : "false"));
   }
   if (settings.chibiStyle) {
-    root.set(std::string{ChibiStyleKey},
-             core::YamlNode::scalar(*settings.chibiStyle ? "true" : "false"));
+    root.set(std::string{ChibiStyleKey}, core::YamlNode::scalar(*settings.chibiStyle));
   }
   return core::emitYaml(root);
 }

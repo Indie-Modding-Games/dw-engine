@@ -54,6 +54,7 @@
 #include "autotest.hpp"
 #include "bug_report.hpp"
 #include "bug_reporter.hpp"
+#include "chibi_style.hpp"
 #include "common.hpp"
 #include "content_mount.hpp"
 #include "control_socket.hpp"
@@ -704,6 +705,9 @@ int runGame(const Options& requested) {
   (*ui)->setSetting("title.language_first", autotest == nullptr || autotest->asksLanguageFirst());
   MinimapChanger minimapChanger{userSettings, settingsFile};
   WalkControlChanger walkControl{userSettings, settingsFile};
+  ChibiModeChanger chibiMode{userSettings, settingsFile};
+  (*ui)->setSetting(ChibiStyleSetting,
+                    std::string{chibiModeName(options.chibi ? ChibiMode::All : chibiMode.mode())});
   // An autotest walks with the device of its route (it reads no settings file).
   if (autotest) {
     walkControl.use(autotest->walksWithMouse() ? WalkControl::Mouse : WalkControl::Keys, nullptr);
@@ -1221,14 +1225,15 @@ int runGame(const Options& requested) {
       (*ui)->setMenuDocument(menuHeld ? std::string_view{} : MenuDocument);
       // The walking state's tick (tamer.c:520): the game menu opens only while the player walks
       // freely, with no script, fade or dialogue box running; utils2.c: handlePause: no pause
-      // during a fade (FADE_PROTECTION). The pad's Select options open the same menu and follow both.
+      // during a fade (FADE_PROTECTION). The pad's Select options open the same menu and follow
+      // both.
       const bool menuShut = !menuHeld && !flow.playing()->menuShutBy().empty();
       const bool fadeProtected = !menuHeld && flow.playing()->fadeProtected();
       (*ui)->setMenuShut(menuShut);
-      // Select/Back on a pad: the game menu's options page, straight away (docs/modulos/apps/game.md,
-      // «Opciones en partida»). From Start's pause it ends the pause first; with the menu open it
-      // switches it to the options page (or closes it when Select opened it there); over another menu
-      // or where the menu is held it does nothing.
+      // Select/Back on a pad: the game menu's options page, straight away
+      // (docs/modulos/apps/game.md, «Opciones en partida»). From Start's pause it ends the pause
+      // first; with the menu open it switches it to the options page (or closes it when Select
+      // opened it there); over another menu or where the menu is held it does nothing.
       const bool settingsAsked =
           !menuHeld && input.wasPressed("settings") &&
           ((*ui)->isVisible(MenuDocument) || (!(*ui)->hasModal() && !menuShut));
@@ -1375,6 +1380,15 @@ int runGame(const Options& requested) {
 
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
       if (flow.playing() != nullptr && flow.playing()->handle(command)) {
+        continue;
+      }
+      if (command.name == ChibiStyleSetting) {
+        // The chibi style, from the title's options or the game's (chibi_style.hpp).
+        const ChibiMode mode = chibiMode.change(command.value);
+        if (PlaySession* play = flow.playing()) {
+          play->scene().setChibiMode(mode);
+        }
+        (*ui)->setSetting(ChibiStyleSetting, std::string{chibiModeName(mode)});
         continue;
       }
       if (command.name == WalkControlSetting) {

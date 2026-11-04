@@ -1695,6 +1695,33 @@ TEST_CASE("the main menu changes the language with the keyboard and starts the g
   CHECK_FALSE(ui->isVisible("main_menu"));
 }
 
+TEST_CASE("the main menu's chibi style row cycles its three modes, external models by default") {
+  Content content;
+  VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "es");
+  auto ui = createUi(files, texts);
+  REQUIRE(ui->loadDocument("main_menu", idOf("ui/main_menu/document")));
+  ui->setSetting("language", std::string{"es"});
+  input::InputState input{input::defaultActionMap()};
+  ui->show("main_menu", true);
+  frame(*ui, input);
+  CHECK(ui->elementText("main_menu", "chibi-style-value") == "Modelos externos");
+  for (int step = 0; step < 8 && ui->focusedElementId("main_menu") != "chibi-style"; ++step) {
+    press(*ui, input, input::keys::Down);
+  }
+  REQUIRE(ui->focusedElementId("main_menu") == "chibi-style");
+  press(*ui, input, input::keys::Right);
+  auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].name == "chibi_style");
+  CHECK(commands[0].value == UiValue{std::string{"all"}});
+
+  // The menu shows what the game reports back.
+  ui->setSetting("chibi_style", std::string{"off"});
+  frame(*ui, input);
+  CHECK(ui->elementText("main_menu", "chibi-style-value") == "No");
+}
+
 TEST_CASE(
     "the main menu switches the text font and shows the one the game reports, in the player's language") {
   Content content;

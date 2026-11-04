@@ -88,6 +88,8 @@ TEST_CASE("the options page lists every game option in a row of its own, and onl
   CHECK(screen.ui->elementText("pause_menu", "option-slot-1-label") == "Exploración libre");
   CHECK(screen.ui->elementText("pause_menu", "free-exploration-value") == "No");
   CHECK(screen.ui->elementText("pause_menu", "long-names-value") == "Sí");
+  // The chibi style has three values: by default only the models from outside the original game.
+  CHECK(screen.ui->elementText("pause_menu", "chibi-style-value") == "Modelos externos");
   // The rows the list does not fill stay hidden.
   CHECK(screen.ui->elementHasClass("pause_menu", "option-slot-18", "hidden"));
   // The language and the original-looking text, as on the title.
@@ -98,10 +100,13 @@ TEST_CASE("the options page lists every game option in a row of its own, and onl
   std::ignore = screen.ui->takeCommands();
   REQUIRE(
       screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "1", "1"}));
+  REQUIRE(
+      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "17", "1"}));
   REQUIRE(screen.ui->callScript("pause_menu", "adjust",
                                 std::vector<std::string>{"", "text-font", "1"}));
   const std::vector<UiCommand> commands = screen.ui->takeCommands();
   CHECK(sent(commands, "free_exploration", UiValue{true}));
+  CHECK(sent(commands, "chibi_style", UiValue{std::string{"all"}}));
   CHECK(sent(commands, "text_font", UiValue{std::string{"original"}}));
 }
 

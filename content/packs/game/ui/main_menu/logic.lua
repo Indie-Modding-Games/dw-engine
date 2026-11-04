@@ -1,11 +1,11 @@
 -- The title screen's menu, with no game behind it. Like the pause menu it never changes a setting
--- itself: it sends the language, text_font, ui_skin, minimap, minimap_size, fullscreen and
--- ui_scale commands and shows what the game reports back (ui.setting). The skin entry is
--- common/ui_skin_choice.lua, shared with the pause menu.
+-- itself: it sends the language, text_font, ui_skin, chibi_style, minimap, minimap_size,
+-- fullscreen and ui_scale commands and shows what the game reports back (ui.setting). The skin
+-- entry is common/ui_skin_choice.lua, shared with the pause menu.
 --
 -- Two layouts of the same entries, as the skin marks #panel (document_classes):
 -- - The modern one: play (a new game), continue (greyed and skipped unless the game publishes
---   save.can_continue), the language, the text font, the skin, quit.
+--   save.can_continue), the language, the text font, the skin, the chibi style, quit.
 -- - The original look's (class title-original), the original's title screen (main.c: main):
 --   - "boot": the "Press Start" screen (runLandingScreen), when the game says so (title.boot).
 --     It fades in from black, its line blinks, and Start fades it out (40 frames each).
@@ -71,6 +71,7 @@ local entries = {
     "language",
     "text-font",
     "ui-skin",
+    "chibi-style",
     "minimap",
     "minimap-size",
     "display-mode",
@@ -94,6 +95,9 @@ local entries = {
 -- The round minimap: on (the default, also for the old auto) or off.
 local minimap_modes = { "on", "off" }
 local minimap_sizes = { "small", "medium", "large" }
+-- The chibi style (game_options.lua): off, the models from outside the original game (the
+-- default) or all.
+local chibi_modes = { "off", "external", "all" }
 local ui_scales = { 0.75, 0.9, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0 }
 
 local function original(document)
@@ -173,6 +177,9 @@ local function refresh(document)
   local font = ui.setting("text_font") == "original" and "original" or "modern"
   value("text-font", t("main_menu.text_font." .. font))
   value("ui-skin", skin_choice.name())
+  local chibi = index_of(chibi_modes, ui.setting("chibi_style")) and ui.setting("chibi_style")
+    or "external"
+  value("chibi-style", t("pause_menu.chibi_style." .. chibi))
   local mode = index_of(minimap_modes, ui.setting("minimap")) and ui.setting("minimap") or "on"
   value(
     "minimap",
@@ -256,7 +263,7 @@ local function lay_out(document)
   for _, id in ipairs({ "erase", "battle", "options" }) do
     show(id, orig and shown == "menu")
   end
-  for _, id in ipairs({ "language", "text-font", "ui-skin", "quit" }) do
+  for _, id in ipairs({ "language", "text-font", "ui-skin", "chibi-style", "quit" }) do
     show(id, not orig or shown == "options")
   end
   for _, id in ipairs({ "minimap", "minimap-size", "display-mode", "ui-scale" }) do
@@ -395,6 +402,9 @@ local options = {
   end,
   ["ui-skin"] = function(step)
     skin_choice.change(step)
+  end,
+  ["chibi-style"] = function(step)
+    ui.send("chibi_style", cycle(chibi_modes, ui.setting("chibi_style"), step, 2))
   end,
   minimap = function(step)
     ui.send("minimap", cycle(minimap_modes, ui.setting("minimap"), step, 1))

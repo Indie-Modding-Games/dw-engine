@@ -2,9 +2,46 @@
 # detección automática (animation::classifyChibi) se equivoca. La clave es la carpeta de la especie,
 # la de su modelo en el paquete base (<carpeta>/model). Cada especie puede llevar:
 #   off: true            la deja con su aspecto original
-#   shape: biped         forma del cuerpo: biped, quadruped, winged, serpent o unknown
+#   shape: biped         forma del cuerpo: biped, quadruped, winged, serpent o unknown (unknown: sin cambios)
 #   head: 4              el hueso (índice de articulación, el orden de objetos del original) que es la cabeza
 #   parts: {12: tail}    la parte que cuelga de ese hueso: head, neck, arm, leg, tail, wing u other
 #   scale: {head: 1.4}   factores que sustituyen a los de la forma (head, torso, neck, arm, leg, hand, foot, tail,
 #                        wing, girth), de 0.25 a 4
-species: {}
+#
+# Una forma que la detección no reconoce (unknown) se queda como está. Las especies de abajo se revisaron a mano
+# con el visor (--model-viewer <carpeta>/model --chibi).
+species:
+  # Ya tienen la cabeza y el cuerpo en una sola pieza redonda, o son bebés: el estilo solo les acortaría los
+  # miembros, así que se quedan como están.
+  bota: {off: true}
+  puni: {off: true}
+  poyo: {off: true}
+  yura: {off: true}
+  koro: {off: true}
+  tane: {off: true}
+  toko: {off: true}
+  tuno: {off: true}
+  puti: {off: true}
+  otam: {off: true}
+  mame: {off: true}
+  emam: {off: true}
+  mtma: {off: true}
+  emtm: {off: true}
+  nani: {off: true}
+  enan: {off: true}
+  giro: {off: true}
+  egir: {off: true}
+  tkka: {off: true}
+  igam: {off: true}
+  eiga: {off: true}
+  bake: {off: true}
+  ebak: {off: true}
+  soul: {off: true}
+  tens: {off: true}
+  gard: {off: true}
+  # La cabeza y la boca cuelgan de un cuello sin malla, girado hacia un lado en la pose de reposo.
+  etem: {head: 4}
+  eete: {head: 4}
+  # El brazo del bastón no cuelga (el bastón sube por encima de la cabeza): también es un brazo. Su cabeza
+  # es la barba (el pelo va en el tronco), que crece poco.
+  jiji: {parts: {7: arm}, scale: {head: 1.15}}

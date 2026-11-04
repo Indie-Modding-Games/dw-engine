@@ -275,10 +275,10 @@ public:
   // Whether the signs painted in the maps are written in the player's language (the pause menu's
   // "Translated signs"; docs/modulos/engine/signs.md). The map shown follows at the next tick.
   void setTranslatedSigns(bool translated) { translatedSigns_ = translated; }
-  // The chibi style (chibi_style.hpp): the characters drawn with a big head and short limbs, the
-  // drawing only.
-  void setChibiStyle(bool chibi) { chibiStyle_ = chibi; }
-  [[nodiscard]] bool chibiStyle() const { return chibiStyle_; }
+  // The chibi style (chibi_style.hpp): which characters are drawn with a big head and short limbs,
+  // the drawing only (and the points effects take from their bones).
+  void setChibiMode(ChibiMode mode) { chibiMode_ = mode; }
+  [[nodiscard]] ChibiMode chibiMode() const { return chibiMode_; }
   // More markers to draw with the click-to-move target's, until replaced (the fishing's bobber).
   void setExtraMarkers(std::vector<render::MapMarker> markers) {
     extraMarkers_ = std::move(markers);
@@ -632,8 +632,10 @@ private:
     bool shownWhenHeld = false;
     // The slot of its own species bank (stats.current.vabId), where its clips' bank 4 sounds play.
     std::int64_t soundSlot = 0;
-    // How the chibi style draws it (chibi_style.hpp).
+    // How the chibi style draws it (chibi_style.hpp), and whether its model is the original
+    // game's, which the default mode leaves as it is.
     animation::ChibiRig chibi{};
+    bool originalModel = true;
   };
 
   // anim.c: animateEntityTexture: steps the original's frame count by `seconds` and puts the
@@ -643,6 +645,8 @@ private:
 
   // A point in the space of one of an actor's model nodes (the original's object index), in
   // original axes and units, in the world; nothing if the node is no joint of the skin.
+  // The joint matrices an actor is drawn with: its pose's, or the chibi style's.
+  [[nodiscard]] std::span<const glm::mat4> drawnJoints(const Actor& actor) const;
   [[nodiscard]] std::optional<glm::vec3> nodePoint(const Actor& actor, std::uint32_t node,
                                                    glm::vec3 offset) const;
 
@@ -840,9 +844,9 @@ private:
   assets::MapObjects signsObjects_;
   std::string signsKey_;
   bool translatedSigns_ = true;
-  bool chibiStyle_ = false;
+  ChibiMode chibiMode_ = ChibiMode::External;
   animation::ChibiOverrides chibiOverrides_;
-  // Scratch for the matrices submit draws with the chibi style.
+  // Scratch for the matrices drawn with the chibi style.
   mutable ChibiJoints chibiJoints_;
   std::unique_ptr<render::ModelRenderer> models_;
   std::unique_ptr<ScenePrimDrawer> primDrawer_;

@@ -26,6 +26,9 @@
 			<button id="ui-skin" class="option" onclick="skin_choice.change(1)">
 				<span class="label" text-key="main_menu.ui_skin"></span><span class="label-original" text-key="main_menu.original.option.ui_skin"></span><span class="value" id="ui-skin-value"></span>
 			</button>
+			<button id="chibi-style" class="option" onclick="change_option('chibi-style', 1)">
+				<span class="label" text-key="pause_menu.chibi_style"></span><span class="label-original" text-key="main_menu.original.option.chibi_style"></span><span class="value" id="chibi-style-value"></span>
+			</button>
 			<button id="minimap" class="option hidden" onclick="change_option('minimap', 1)">
 				<span class="label" text-key="pause_menu.minimap_mode"></span><span class="label-original" text-key="main_menu.original.option.minimap"></span><span class="value" id="minimap-value"></span>
 			</button>

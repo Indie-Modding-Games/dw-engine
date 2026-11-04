@@ -121,7 +121,8 @@ struct ChibiRig {
   // A model that flies (its lowest point well above the floor) moves up or down by this instead,
   // which keeps its rest pose's lowest point where the original's is.
   std::optional<float> lift;
-  // False for a model the style leaves as it is (no skin, too few bones, or turned off).
+  // False for a model the style leaves as it is (no skin, too few bones, a shape the detection
+  // does not know, or turned off).
   bool active = false;
 };
 

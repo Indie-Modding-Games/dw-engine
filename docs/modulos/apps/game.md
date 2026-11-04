@@ -635,18 +635,34 @@ fotograma como el original. La lógica es la misma en los dos casos.
 
 ## Estilo chibi
 
-Mejora opcional y prototipo, apagada por defecto (el original no la tiene): el ajuste `chibi_style` (fila «Estilo
-chibi» de las opciones del menú de pausa, guardado en los ajustes del usuario) o `--chibi` en la línea de órdenes, para
-una ejecución, llegan a `Field::setChibiStyle` desde `PlaySession`. Encendido, el jugador, el compañero y los PNJ del
-campo se dibujan con la cabeza grande, el torso corto y los miembros cortos (`chibi_style.hpp`,
-`animation::buildChibiRig`, ver `docs/modulos/engine/animation.md`, «Estilo chibi»). Solo cambia el dibujo: las
-animaciones son las mismas, los pies siguen en el suelo en cada fotograma y las colisiones, velocidades y tamaños que
-lee la lógica son los del original. Cada modelo calcula su forma al cargarse; `models/chibi.yaml` del paquete del juego
-corrige una especie que la detección no entiende (apagarla, su forma, su cabeza, la parte de un hueso o sus factores).
+Mejora opcional y prototipo (el original no la tiene): dibuja un modelo con la cabeza grande, el torso corto y los
+miembros cortos (`chibi_style.hpp`, `animation::buildChibiRig`, ver `docs/modulos/engine/animation.md`, «Estilo
+chibi»), para que los modelos que no son del juego original (los de un mod o un `.glb` importado) se parezcan a los
+suyos. El ajuste `chibi_style` tiene tres valores:
+
+| Valor | Qué se dibuja chibi |
+|---|---|
+| `off` («No») | Nada |
+| `external` («Modelos externos», por defecto) | Los modelos que vienen de un paquete que no es del motor |
+| `all` («Todos») | Todos los modelos, también los del original |
+
+Se cambia en la fila «Estilo chibi» de las opciones del título y de las opciones del menú de pausa (Tab, «Opciones»;
+mando: Select), se aplica en el acto y se guarda en los ajustes del usuario; `--chibi` en la línea de órdenes fuerza
+«Todos» para una ejecución. El origen sale del paquete que gana al resolver el modelo en el sistema de archivos
+virtual (`isOriginalModel`): un modelo es del original si ese paquete es del motor y está en la capa base o remaster;
+uno de la capa de mods o de usuario es externo. `FieldScene::setChibiMode` lo aplica al jugador, al compañero, a los
+PNJ del campo y a los luchadores del combate, que son los mismos actores del campo.
+
+Solo cambia el dibujo: las animaciones son las mismas, los pies siguen en el suelo en cada fotograma y las colisiones,
+velocidades y tamaños que lee la lógica son los del original. Los puntos de los efectos que salen de un hueso
+(`nodePoint`, `bonePoint`) y las caras del compañero y de los PNJ siguen la silueta chibi (`drawnJoints`). Cada
+modelo calcula su forma al cargarse; un cuerpo que la detección no reconoce se queda como está, y `models/chibi.yaml`
+del paquete del juego corrige una especie (apagarla, su forma, la parte de un hueso o sus factores).
 
 `--model-viewer <especie>/model --chibi [--viewer-yaw <grados>]` enseña una especie quieta y andando, original y
-chibi una al lado de otra, de frente (0) o de lado (90). Quedan sin seguir la silueta chibi: las sombras, los puntos
-de los efectos que salen de un hueso (`nodePoint`, `bonePoint`), los retratos y el combate.
+chibi una al lado de otra, de frente (0) o de lado (90). Quedan sin seguir la silueta chibi las sombras y los
+retratos. Pruebas aisladas en `tests/chibi_style_tests.cpp` (un humanoide alto de cajas en un paquete de mod se dibuja
+chibi y uno del original no).
 
 ## Aviso de guardado
 

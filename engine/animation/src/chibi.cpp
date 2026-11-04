@@ -43,6 +43,15 @@ constexpr float ArmDrop = 0.1F;
 constexpr float WingBack = 0.15F;
 // Two joints closer than this (model units) are at the same place.
 constexpr float SamePlace = 1.0F;
+// A biped's head size (the largest side of its box) as a share of the height for which the head
+// factor is right (the player's character's), and how strongly a head of another size moves the
+// factor: a tall figure with a small head grows it more, one already drawn with a big head less.
+constexpr float HeadReference = 0.325F;
+constexpr float HeadEase = 0.2F;
+constexpr float MinHead = 1.3F;
+constexpr float MaxHead = 2.0F;
+// A hand bigger than this share of the height grows less, down to not at all.
+constexpr float HandReference = 0.22F;
 constexpr float MinFactor = 0.25F;
 constexpr float MaxFactor = 4.0F;
 
@@ -670,7 +679,7 @@ ChibiProportions defaultProportions(BodyShape shape) {
   case BodyShape::Unknown:
     break;
   }
-  return {.head = 1.4F};
+  return {};
 }
 
 core::Result<ChibiOverrides> parseChibiOverrides(std::string_view yaml) {
@@ -708,6 +717,50 @@ ChibiClassification classifyChibi(const ModelData& model, const ChibiOverride* o
 }
 
 namespace {
+
+// The largest side of the rest-pose box of the mesh of the bones under `top` (itself included),
+// as a share of the model's height.
+float shareUnder(const ModelData& model, const Skeleton& skeleton, std::uint32_t top) {
+  glm::vec3 low{Infinity};
+  glm::vec3 high{-Infinity};
+  for (const assets::ModelPrimitive& primitive : model.primitives) {
+    for (const assets::ModelVertex& vertex : primitive.vertices) {
+      const std::uint16_t joint = vertex.joints[0];
+      if (joint < skeleton.bones.size() && isUnder(skeleton, joint, top)) {
+        low = glm::min(low, vertex.position);
+        high = glm::max(high, vertex.position);
+      }
+    }
+  }
+  if (low.x > high.x) {
+    return 0.0F;
+  }
+  const glm::vec3 side = high - low;
+  return std::max({side.x, side.y, side.z}) / skeleton.height;
+}
+
+// The head and hand factors for the model's own sizes: a biped's head factor follows the size of
+// its head (HeadReference), and a hand that is already big grows less or not at all.
+void fitToSizes(const ModelData& model, const Skeleton& skeleton, const ChibiClassification& shape,
+                ChibiProportions& proportions) {
+  if (shape.shape == BodyShape::Biped && shape.head) {
+    const float share = shareUnder(model, skeleton, *shape.head);
+    if (share > 0.0F) {
+      proportions.head = std::clamp(proportions.head * std::pow(HeadReference / share, HeadEase),
+                                    MinHead, MaxHead);
+    }
+  }
+  float hand = 0.0F;
+  for (std::uint32_t joint = 0; joint < shape.parts.size(); ++joint) {
+    if (shape.parts[joint] == BodyPart::Arm &&
+        !hasChildIn(skeleton, joint, BodyPart::Arm, shape.parts)) {
+      hand = std::max(hand, shareUnder(model, skeleton, joint));
+    }
+  }
+  if (hand > 0.0F && proportions.hand > 1.0F) {
+    proportions.hand = std::clamp(proportions.hand * HandReference / hand, 1.0F, proportions.hand);
+  }
+}
 
 // Fills the rig's nodes and meshes from its classification and proportions.
 void shapeRig(const ModelData& model, const Detected& found, ChibiRig& rig) {
@@ -829,7 +882,12 @@ ChibiRig buildChibiRig(const ModelData& model, const ChibiOverride* override) {
   }
   rig.classification = found.classification;
   const ChibiClassification& shape = rig.classification;
+  // A body the detection does not understand is left as it is (an override can give its shape).
+  if (shape.shape == BodyShape::Unknown) {
+    return rig;
+  }
   rig.proportions = defaultProportions(shape.shape);
+  fitToSizes(model, skeleton, shape, rig.proportions);
   if (override != nullptr) {
     for (const auto& [name, factor] : override->scale) {
       if (float* proportion = proportionNamed(rig.proportions, name)) {

@@ -29,14 +29,17 @@ esqueleto y la malla de cada hueso:
   dos brazos un bípedo.
 
 `buildChibiRig` da a cada forma sus factores (`defaultProportions`; un bípedo: cabeza ×1,6, torso ×0,8, brazos ×0,7,
-piernas ×0,65, manos ×1,2, pies ×1,15) y los aplica sobre la pose animada en `computeChibiJointMatrices`: acerca los
-huesos de cada miembro, aplasta cada segmento a lo largo y lo ensancha un poco, escala la cabeza entera desde su hueso
-y acorta el tronco por su eje (arriba en un cuerpo erguido, adelante en uno a cuatro patas). En cada fotograma sube o
-baja el modelo para que el punto más bajo de las piernas quede donde el del original; un modelo que vuela (en reposo,
-por encima de 1/16 de su altura) se mueve una vez por todas. Si un brazo, la cola, un ala o la cabeza quedan por
-debajo del punto más bajo del original, esa parte se encoge un poco hasta que no. Las matrices de la lógica
-(`AnimationPlayer::jointMatrices`) no cambian.
+piernas ×0,65, manos ×1,2, pies ×1,15) y, en un bípedo, los ajusta al tamaño de sus partes en reposo: la cabeza crece
+más cuanto más pequeña es respecto a la altura (×1,6 con una cabeza de 0,325 de la altura, entre ×1,3 y ×2) y una mano
+que ya es grande no crece. Un cuerpo de forma desconocida se queda sin cambios. Los factores se aplican sobre la pose
+animada en `computeChibiJointMatrices`: acerca los huesos de cada miembro, aplasta cada segmento a lo largo y lo
+ensancha un poco, escala la cabeza entera desde su hueso y acorta el tronco por su eje (arriba en un cuerpo erguido,
+adelante en uno a cuatro patas). En cada fotograma sube o baja el modelo para que el punto más bajo de las piernas
+quede donde el del original; un modelo que vuela (en reposo, por encima de 1/16 de su altura) se mueve una vez por
+todas. Si un brazo, la cola, un ala o la cabeza quedan por debajo del punto más bajo del original, esa parte se encoge
+un poco hasta que no. Las matrices de la lógica (`AnimationPlayer::jointMatrices`) no cambian.
 
-Coste: una pasada más por los nodos y, por fotograma, los vértices de las piernas (unos cientos) de cada modelo.
+Coste: una pasada más por los nodos y, por fotograma, los puntos de apoyo de las piernas (entre 86 y 296, sin
+repetir) de cada modelo; con la compilación de depuración, el avance de la animación tarda una vez y media más.
 Pruebas aisladas en `tests/chibi_tests.cpp` (un bípedo de cajas, las correcciones y, con el contenido extraído, la
-forma y el suelo de siete especies de prueba).
+forma y el suelo de siete especies de prueba y las correcciones de `models/chibi.yaml`).

@@ -71,9 +71,12 @@ continuous_music: "Música continua"
 # Varias necesidades: la burbuja sobre el compañero enseña hasta tres de sus necesidades a la vez, la más urgente
 # primero (encendida por defecto; apagada, la del original: una cada vez, turnándose las dos más urgentes).
 need_bubble_stack: "Varias necesidades"
-# Estilo chibi: los personajes con la cabeza grande y las extremidades cortas, solo el dibujo (un prototipo,
-# apagado por defecto).
+# Estilo chibi: personajes con la cabeza grande y las extremidades cortas, solo el dibujo: no, solo los modelos
+# que no son del juego original (de mods o importados; por defecto) o todos.
 chibi_style: "Estilo chibi"
+chibi_style.off: "No"
+chibi_style.external: "Modelos externos"
+chibi_style.all: "Todos"
 
 year_label: "Año"
 day_label: "Día"

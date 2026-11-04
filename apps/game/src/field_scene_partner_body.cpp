@@ -87,7 +87,8 @@ std::optional<glm::vec3> FieldScene::PartnerBody::bonePoint(std::uint32_t bone) 
   if (!actor.model->skin) {
     return std::nullopt;
   }
-  const auto joints = actor.player->jointMatrices();
+  // The drawn bone (the chibi style's when it draws this model).
+  const auto joints = owner_->drawnJoints(actor);
   const auto& inverseBind = actor.model->skin->inverseBindMatrices;
   if (bone >= joints.size() || bone >= inverseBind.size()) {
     return std::nullopt;
@@ -103,7 +104,7 @@ std::uint32_t FieldScene::PartnerBody::boneCount() const {
 
 std::vector<BodyFace> FieldScene::PartnerBody::boneFaces(std::uint32_t bone) const {
   Actor& actor = *owner_->partnerActor_;
-  const auto joints = actor.player->jointMatrices();
+  const auto joints = owner_->drawnJoints(actor);
   if (bone >= joints.size()) {
     return {};
   }
@@ -139,7 +140,7 @@ std::vector<BodyFace> FieldScene::npcFaces(scene::Entity entity) {
   const auto& transform = world_.registry().get<scene::Transform>(entity);
   const glm::mat4 world = glm::rotate(glm::translate(glm::mat4{1.0F}, transform.position),
                                       transform.yaw, glm::vec3{0.0F, 1.0F, 0.0F});
-  const auto joints = actor.player->jointMatrices();
+  const auto joints = drawnJoints(actor);
   std::vector<BodyFace> faces;
   for (std::uint32_t bone = 0; bone < joints.size(); ++bone) {
     std::vector<BodyFace> boneFaces =

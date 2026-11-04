@@ -24,6 +24,7 @@ using dwe::animation::AnimationPlayer;
 using dwe::animation::BodyPart;
 using dwe::animation::BodyShape;
 using dwe::animation::buildChibiRig;
+using dwe::animation::ChibiOverride;
 using dwe::animation::ChibiRig;
 using dwe::animation::classifyChibi;
 using dwe::animation::computeChibiJointMatrices;
@@ -314,9 +315,9 @@ TEST_CASE(
     for (const BodyPart part : rig.classification.parts) {
       parts += std::format(" {}", dwe::animation::nameOf(part));
     }
-    MESSAGE(std::format("{}:{} | head {} arm {} leg {} tail {} wing {}{}", species, parts,
-                        rig.proportions.head, rig.proportions.arm, rig.proportions.leg,
-                        rig.proportions.tail, rig.proportions.wing,
+    MESSAGE(std::format("{}:{} | head {} hand {} arm {} leg {} tail {} wing {}{}", species, parts,
+                        rig.proportions.head, rig.proportions.hand, rig.proportions.arm,
+                        rig.proportions.leg, rig.proportions.tail, rig.proportions.wing,
                         rig.lift ? std::format(" | flies, lift {:.1f}", *rig.lift) : ""));
     CHECK(rig.classification.shape == expected.shape);
     CHECK(rig.classification.head == std::optional{expected.head});
@@ -368,7 +369,17 @@ TEST_CASE(
     }
   }
 
-  // Every species: a summary of what the detection finds, for the log.
+  // Every species, with the game pack's overrides: a summary of what the detection finds, for the
+  // log. Every override names a species there is, and the ones that fix a part do.
+  std::ifstream file{std::filesystem::path{DWE_GAME_PACK_DIR} / "models/chibi.yaml"};
+  std::stringstream text;
+  text << file.rdbuf();
+  const auto overrides = dwe::animation::parseChibiOverrides(text.str());
+  REQUIRE(overrides.has_value());
+  for (const auto& [species, override] : *overrides) {
+    CAPTURE(species);
+    CHECK(std::filesystem::exists(*content / "base/digimon" / species / "model.glb"));
+  }
   std::string summary;
   for (const auto& entry : std::filesystem::directory_iterator{*content / "base/digimon"}) {
     const std::string species = entry.path().filename().string();
@@ -377,7 +388,16 @@ TEST_CASE(
     if (!model) {
       continue;
     }
-    const auto found = classifyChibi(*model);
+    const auto override = overrides->find(species);
+    const ChibiOverride* given = override != overrides->end() ? &override->second : nullptr;
+    const auto found = classifyChibi(*model, given);
+    if (species == "etem") {
+      CHECK(found.head == std::optional<std::uint32_t>{4});
+    }
+    if (species == "jiji") {
+      CHECK(found.arms == 2);
+      CHECK(found.wings == 0);
+    }
     summary += std::format("{} {} legs {} arms {} wings {} tails {} head {}\n", species,
                            dwe::animation::nameOf(found.shape), found.legs, found.arms, found.wings,
                            found.tails, found.head ? int(*found.head) : -1);

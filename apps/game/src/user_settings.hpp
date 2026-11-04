@@ -68,9 +68,9 @@ struct UserSettings {
   std::optional<bool> needBubbleStack = std::nullopt;
   // Whether M opens the island map (world_map: true, false; world_map.hpp); on when not chosen.
   std::optional<bool> worldMap = std::nullopt;
-  // The chibi style (chibi_style: true, false; chibi_style.hpp): the characters drawn with a big
-  // head and short limbs, a prototype; off when not chosen.
-  std::optional<bool> chibiStyle = std::nullopt;
+  // The chibi style (chibi_style: off, external, all; chibi_style.hpp): which characters are
+  // drawn with a big head and short limbs.
+  std::optional<std::string> chibiStyle = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.
