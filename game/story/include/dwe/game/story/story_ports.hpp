@@ -88,10 +88,16 @@ public:
   MusicPort& operator=(MusicPort&&) = delete;
   virtual ~MusicPort() = default;
 
-  // Plays a font's song from its start, even the one playing; 0xFF stops the music.
+  // Plays a font's song from its start, even the one playing; 0xFF stops the music. Right after
+  // enterMap, the owner may let the song that is playing go on when it is the one asked for.
   virtual void playBgm(std::int64_t font) = 0;
   // Stops the music and forgets the font.
   virtual void resetBgm() = 0;
+  // A map's head section is about to run: its set_script resets the music before the head picks
+  // the map's song (map.c: changeMap, script_interp.c: scriptInstructionFBtoFF).
+  virtual void enterMap() {}
+  // The map's head section ran: a head that picked no song leaves the map silent.
+  virtual void mapHeadDone() {}
 };
 
 // The player's control while a script runs. Freezing takes control from the player and the partner,

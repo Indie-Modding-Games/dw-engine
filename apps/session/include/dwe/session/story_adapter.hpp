@@ -214,6 +214,8 @@ private:
   core::Result<void> publishMotion();
   [[nodiscard]] game::story::StoryFlowPorts flowPorts();
   void playUnplayedChange();
+  // Runs a map's head section between the music's enterMap and mapHeadDone.
+  void runMapHead(std::int32_t map);
   void followRules(const StorySectionRules& story, const game::story::DialogueRules& dialogue);
   core::Result<void> startRunner(const StorySectionRules& story);
 

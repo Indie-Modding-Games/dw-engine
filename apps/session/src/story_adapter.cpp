@@ -201,9 +201,31 @@ public:
     }
   }
 
+  void enterMap() override {
+    if (target_ != nullptr) {
+      target_->enterMap();
+    }
+  }
+
+  void mapHeadDone() override {
+    if (target_ != nullptr) {
+      target_->mapHeadDone();
+    }
+  }
+
 private:
   game::story::MusicPort* target_ = nullptr;
 };
+
+void StoryAdapter::runMapHead(std::int32_t map) {
+  if (music_) {
+    music_->enterMap();
+  }
+  runner_->enterMap(map);
+  if (music_) {
+    music_->mapHeadDone();
+  }
+}
 
 class StoryAdapter::Serializer final : public game::save::SectionSerializer {
 public:

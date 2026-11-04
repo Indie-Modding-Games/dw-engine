@@ -45,6 +45,10 @@ public:
 
   void playBgm(std::int64_t font) override;
   void resetBgm() override;
+  // map.c: changeMap and the head's set_script (script_interp.c: scriptInstructionFBtoFF,
+  // resetBGM): the original cuts the music on every map and the head's set_bgm plays the map's song
+  // from its start; a head that picks no song leaves the map silent.
+  void enterMap() override;
 
   // script_interp.c: updateBGM, each tick of the game clock: the song again when the mode or the
   // hour picks another one. Nothing during a battle.

@@ -51,7 +51,7 @@ void StoryAdapter::mapEntered(std::int32_t map) {
     return;
   }
   core::logDebug("[port:story] changeMap (map.c: changeMap): map {} entered", map);
-  runner_->enterMap(map);
+  runMapHead(map);
 }
 
 void StoryAdapter::playUnplayedChange() {
@@ -64,7 +64,7 @@ void StoryAdapter::playUnplayedChange() {
   // The change the field could not play ends on the map the player is on, without the arrival
   // section meant for the other map.
   runner_->dropMapChangeArrival();
-  runner_->enterMap(*enteredMap_);
+  runMapHead(*enteredMap_);
 }
 
 void StoryAdapter::runCellSections(std::span<const std::int32_t> sections) {

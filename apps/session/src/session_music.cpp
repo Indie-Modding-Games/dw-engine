@@ -71,6 +71,10 @@ void SessionMusic::resetBgm() {
   stopBgm();
 }
 
+void SessionMusic::enterMap() {
+  resetBgm();
+}
+
 // script_interp.c: handleMusicOverride. Mode 0 picks the day or the night song of the font, mode 1
 // the first one, and the modes of data/music.yaml's field_overrides a fixed font and song. Any
 // other mode leaves the song unset in the original; here it plays the font's first song.
