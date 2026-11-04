@@ -1824,7 +1824,7 @@ TEST_CASE("the main menu changes the language with the keyboard and starts the g
   CHECK_FALSE(ui->isVisible("main_menu"));
 }
 
-TEST_CASE("the main menu's chibi style row cycles its three modes, external models by default") {
+TEST_CASE("the main menu's chibi style row cycles its two modes, external models by default") {
   Content content;
   VirtualFileSystem& files = content.mount();
   const localization::Catalog texts = catalogIn(files, "es");
@@ -1843,12 +1843,16 @@ TEST_CASE("the main menu's chibi style row cycles its three modes, external mode
   auto commands = ui->takeCommands();
   REQUIRE(commands.size() == 1);
   CHECK(commands[0].name == "chibi_style");
-  CHECK(commands[0].value == UiValue{std::string{"all"}});
+  CHECK(commands[0].value == UiValue{std::string{"off"}});
 
-  // The menu shows what the game reports back.
+  // The menu shows what the game reports back; an old "all" (the original's models reshaped too,
+  // gone) shows as external models.
   ui->setSetting("chibi_style", std::string{"off"});
   frame(*ui, input);
   CHECK(ui->elementText("main_menu", "chibi-style-value") == "No");
+  ui->setSetting("chibi_style", std::string{"all"});
+  frame(*ui, input);
+  CHECK(ui->elementText("main_menu", "chibi-style-value") == "Externos");
 }
 
 TEST_CASE("the main menu's autosave row asks to turn the autosave off and on, on by default") {

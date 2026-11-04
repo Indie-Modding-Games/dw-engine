@@ -8,8 +8,10 @@
 #include <charconv>
 #include <cmath>
 #include <format>
+#include <functional>
 #include <iterator>
 #include <limits>
+#include <map>
 #include <ranges>
 #include <system_error>
 #include <tuple>
@@ -43,15 +45,6 @@ constexpr float ArmDrop = 0.1F;
 constexpr float WingBack = 0.15F;
 // Two joints closer than this (model units) are at the same place.
 constexpr float SamePlace = 1.0F;
-// A biped's head size (the largest side of its box) as a share of the height for which the head
-// factor is right (the player's character's), and how strongly a head of another size moves the
-// factor: a tall figure with a small head grows it more, one already drawn with a big head less.
-constexpr float HeadReference = 0.325F;
-constexpr float HeadEase = 0.2F;
-constexpr float MinHead = 1.3F;
-constexpr float MaxHead = 2.0F;
-// A hand bigger than this share of the height grows less, down to not at all.
-constexpr float HandReference = 0.22F;
 constexpr float MinFactor = 0.25F;
 constexpr float MaxFactor = 4.0F;
 
@@ -639,49 +632,6 @@ std::optional<BodyPart> bodyPartNamed(std::string_view name) {
   return std::nullopt;
 }
 
-ChibiProportions defaultProportions(BodyShape shape) {
-  switch (shape) {
-  case BodyShape::Biped:
-    return {.head = 1.6F,
-            .torso = 0.8F,
-            .neck = 0.7F,
-            .arm = 0.7F,
-            .leg = 0.65F,
-            .hand = 1.2F,
-            .foot = 1.15F,
-            .tail = 0.7F,
-            .wing = 0.8F,
-            .girth = 1.1F};
-  case BodyShape::Quadruped:
-    return {.head = 1.5F,
-            .torso = 0.75F,
-            .neck = 0.6F,
-            .arm = 0.7F,
-            .leg = 0.65F,
-            .hand = 1.15F,
-            .foot = 1.15F,
-            .tail = 0.65F,
-            .wing = 0.8F,
-            .girth = 1.1F};
-  case BodyShape::Winged:
-    return {.head = 1.5F,
-            .torso = 0.85F,
-            .neck = 0.7F,
-            .arm = 0.7F,
-            .leg = 0.7F,
-            .hand = 1.1F,
-            .foot = 1.15F,
-            .tail = 0.7F,
-            .wing = 0.8F,
-            .girth = 1.1F};
-  case BodyShape::Serpent:
-    return {.head = 1.6F, .neck = 0.6F, .tail = 0.75F, .girth = 1.1F};
-  case BodyShape::Unknown:
-    break;
-  }
-  return {};
-}
-
 core::Result<ChibiOverrides> parseChibiOverrides(std::string_view yaml) {
   auto root = core::parseYaml(yaml);
   if (!root) {
@@ -717,50 +667,6 @@ ChibiClassification classifyChibi(const ModelData& model, const ChibiOverride* o
 }
 
 namespace {
-
-// The largest side of the rest-pose box of the mesh of the bones under `top` (itself included),
-// as a share of the model's height.
-float shareUnder(const ModelData& model, const Skeleton& skeleton, std::uint32_t top) {
-  glm::vec3 low{Infinity};
-  glm::vec3 high{-Infinity};
-  for (const assets::ModelPrimitive& primitive : model.primitives) {
-    for (const assets::ModelVertex& vertex : primitive.vertices) {
-      const std::uint16_t joint = vertex.joints[0];
-      if (joint < skeleton.bones.size() && isUnder(skeleton, joint, top)) {
-        low = glm::min(low, vertex.position);
-        high = glm::max(high, vertex.position);
-      }
-    }
-  }
-  if (low.x > high.x) {
-    return 0.0F;
-  }
-  const glm::vec3 side = high - low;
-  return std::max({side.x, side.y, side.z}) / skeleton.height;
-}
-
-// The head and hand factors for the model's own sizes: a biped's head factor follows the size of
-// its head (HeadReference), and a hand that is already big grows less or not at all.
-void fitToSizes(const ModelData& model, const Skeleton& skeleton, const ChibiClassification& shape,
-                ChibiProportions& proportions) {
-  if (shape.shape == BodyShape::Biped && shape.head) {
-    const float share = shareUnder(model, skeleton, *shape.head);
-    if (share > 0.0F) {
-      proportions.head = std::clamp(proportions.head * std::pow(HeadReference / share, HeadEase),
-                                    MinHead, MaxHead);
-    }
-  }
-  float hand = 0.0F;
-  for (std::uint32_t joint = 0; joint < shape.parts.size(); ++joint) {
-    if (shape.parts[joint] == BodyPart::Arm &&
-        !hasChildIn(skeleton, joint, BodyPart::Arm, shape.parts)) {
-      hand = std::max(hand, shareUnder(model, skeleton, joint));
-    }
-  }
-  if (hand > 0.0F && proportions.hand > 1.0F) {
-    proportions.hand = std::clamp(proportions.hand * HandReference / hand, 1.0F, proportions.hand);
-  }
-}
 
 // Fills the rig's nodes and meshes from its classification and proportions.
 void shapeRig(const ModelData& model, const Detected& found, ChibiRig& rig) {
@@ -838,14 +744,250 @@ std::pair<float, std::uint16_t> lowestVertex(const ModelData& model,
   return lowest;
 }
 
+glm::vec3 skinned(std::span<const glm::mat4> joints, std::uint32_t joint, glm::vec3 at) {
+  return glm::vec3{joints[joint] * glm::vec4{at, 1.0F}};
+}
+
+struct Box {
+  glm::vec3 low{Infinity};
+  glm::vec3 high{-Infinity};
+
+  void add(glm::vec3 at) {
+    low = glm::min(low, at);
+    high = glm::max(high, at);
+  }
+  [[nodiscard]] bool empty() const { return low.x > high.x; }
+  [[nodiscard]] glm::vec3 size() const { return empty() ? glm::vec3{0.0F} : high - low; }
+  [[nodiscard]] float largest() const {
+    const glm::vec3 side = size();
+    return std::max({side.x, side.y, side.z});
+  }
+};
+
+bool isLimbPart(BodyPart part) {
+  return part == BodyPart::Arm || part == BodyPart::Leg || part == BodyPart::Neck ||
+         part == BodyPart::Tail || part == BodyPart::Wing;
+}
+
+std::optional<BodyRatio> reachRatio(BodyPart part) {
+  switch (part) {
+  case BodyPart::Arm:
+    return BodyRatio::Arm;
+  case BodyPart::Leg:
+    return BodyRatio::Leg;
+  case BodyPart::Neck:
+    return BodyRatio::Neck;
+  case BodyPart::Tail:
+    return BodyRatio::Tail;
+  case BodyPart::Wing:
+    return BodyRatio::Wing;
+  default:
+    return std::nullopt;
+  }
+}
+
+BodyMeasure measure(const ModelData& model, const Skeleton& skeleton,
+                    const ChibiClassification& shape, std::span<const glm::mat4> joints) {
+  BodyMeasure out;
+  const std::vector<BodyPart>& parts = shape.parts;
+  const std::size_t count = skeleton.bones.size();
+  if (parts.size() != count || joints.size() < count) {
+    return out;
+  }
+  // Each limb's first bone, for every bone of it.
+  std::vector<std::uint32_t> limbRoot(count);
+  for (const std::uint32_t joint : skeleton.order) {
+    const auto& parent = skeleton.bones[joint].parent;
+    limbRoot[joint] = parent && parts[*parent] == parts[joint] ? limbRoot[*parent] : joint;
+  }
+  std::vector<glm::vec3> rootAt(count);
+  for (std::uint32_t joint = 0; joint < count; ++joint) {
+    rootAt[joint] = skinned(joints, joint, skeleton.bones[joint].joint);
+  }
+  Box all;
+  Box trunk;
+  Box body;
+  Box head;
+  // Per limb root: how far its farthest vertex is, and where.
+  std::vector<float> reach(count, 0.0F);
+  std::vector<glm::vec3> farthest(count);
+  for (const assets::ModelPrimitive& primitive : model.primitives) {
+    for (const assets::ModelVertex& vertex : primitive.vertices) {
+      const std::uint16_t joint = vertex.joints[0];
+      if (joint >= count) {
+        continue;
+      }
+      const glm::vec3 at = skinned(joints, joint, vertex.position);
+      all.add(at);
+      const BodyPart part = parts[joint];
+      if (part == BodyPart::Trunk) {
+        trunk.add(at);
+      } else if (part == BodyPart::Head) {
+        head.add(at);
+      } else if (isLimbPart(part)) {
+        if (part == BodyPart::Tail) {
+          // A serpent's body is its tail (its trunk often has no mesh of its own).
+          body.add(at);
+        }
+        const std::uint32_t root = limbRoot[joint];
+        const float far = glm::length(at - rootAt[root]);
+        if (far > reach[root]) {
+          reach[root] = far;
+          farthest[root] = at;
+        }
+      }
+    }
+  }
+  // A hand's or foot's size: how big the end of the arm or leg is (its vertices past EndShare of
+  // its reach) across the limb, whatever bones it is made of.
+  constexpr float EndShare = 0.7F;
+  std::vector<glm::vec2> endLow(count, glm::vec2{Infinity});
+  std::vector<glm::vec2> endHigh(count, glm::vec2{-Infinity});
+  std::vector<glm::mat3> across(count, glm::mat3{1.0F});
+  for (std::uint32_t joint = 0; joint < count; ++joint) {
+    if (reach[joint] > 0.0F) {
+      const glm::vec3 along = glm::normalize(farthest[joint] - rootAt[joint]);
+      const glm::vec3 side = std::abs(along.y) < 0.9F ? glm::vec3{0, 1, 0} : glm::vec3{1, 0, 0};
+      const glm::vec3 u = glm::normalize(glm::cross(along, side));
+      across[joint] = glm::transpose(glm::mat3{u, glm::cross(along, u), along});
+    }
+  }
+  for (const assets::ModelPrimitive& primitive : model.primitives) {
+    for (const assets::ModelVertex& vertex : primitive.vertices) {
+      const std::uint16_t joint = vertex.joints[0];
+      if (joint >= count || (parts[joint] != BodyPart::Arm && parts[joint] != BodyPart::Leg)) {
+        continue;
+      }
+      const std::uint32_t root = limbRoot[joint];
+      const glm::vec3 at = skinned(joints, joint, vertex.position) - rootAt[root];
+      if (glm::length(at) >= EndShare * reach[root]) {
+        const glm::vec2 flat{across[root] * at};
+        endLow[root] = glm::min(endLow[root], flat);
+        endHigh[root] = glm::max(endHigh[root], flat);
+      }
+    }
+  }
+  if (trunk.empty() && shape.shape == BodyShape::Serpent) {
+    trunk = body;
+  }
+  if (all.empty() || trunk.empty()) {
+    return out;
+  }
+  out.height = std::max(all.size().y, 1.0F);
+  const glm::vec3 trunkSize = trunk.size();
+  out.torso = std::max(shape.shape == BodyShape::Quadruped ? trunkSize.z
+                       : shape.shape == BodyShape::Serpent ? trunk.largest()
+                                                           : trunkSize.y,
+                       1.0F);
+  const auto set = [&](BodyRatio ratio, float value) {
+    out.ratios[static_cast<std::size_t>(ratio)] = value;
+  };
+  if (!head.empty()) {
+    set(BodyRatio::Head, head.largest() / out.height);
+    set(BodyRatio::HeadSize, head.largest() / out.torso);
+    set(BodyRatio::HeadWidth, head.size().x / std::max(trunkSize.x, 1.0F));
+  }
+  if (shape.shape != BodyShape::Serpent) {
+    set(BodyRatio::Torso, out.torso / out.height);
+  }
+  // The mean over the limbs (or hands, feet) of each kind.
+  std::array<float, BodyRatioCount> sum{};
+  std::array<int, BodyRatioCount> seen{};
+  const auto add = [&](BodyRatio ratio, float value) {
+    sum[static_cast<std::size_t>(ratio)] += value;
+    ++seen[static_cast<std::size_t>(ratio)];
+  };
+  for (std::uint32_t joint = 0; joint < count; ++joint) {
+    const BodyPart part = parts[joint];
+    if (!isLimbPart(part)) {
+      continue;
+    }
+    if (limbRoot[joint] != joint || reach[joint] <= 0.0F) {
+      continue;
+    }
+    add(*reachRatio(part), reach[joint]);
+    if ((part == BodyPart::Arm || part == BodyPart::Leg) && endLow[joint].x <= endHigh[joint].x) {
+      const glm::vec2 size = endHigh[joint] - endLow[joint];
+      add(part == BodyPart::Arm ? BodyRatio::Hand : BodyRatio::Foot, std::max(size.x, size.y));
+    }
+  }
+  for (const BodyRatio ratio : BodyRatios) {
+    const auto index = static_cast<std::size_t>(ratio);
+    if (seen[index] > 0) {
+      set(ratio, sum[index] / static_cast<float>(seen[index]) / out.torso);
+    }
+  }
+  return out;
+}
+
+std::vector<glm::mat4> restMatrices(const ModelData& model) {
+  std::vector<NodeTransform> rest(model.nodes.size());
+  restPose(model, rest);
+  std::vector<glm::mat4> world(model.nodes.size());
+  std::vector<glm::mat4> joints(jointCount(model));
+  computeJointMatrices(model, rest, world, joints);
+  return joints;
+}
+
+// Whether a factor follows the ratio: the ones against the torso. The ones against the height only
+// tell whether the model is chibi.
+bool drives(BodyRatio ratio) {
+  return ratio != BodyRatio::Head && ratio != BodyRatio::Torso;
+}
+
+float* factorFor(ChibiProportions& p, BodyRatio ratio) {
+  switch (ratio) {
+  case BodyRatio::Head:
+  case BodyRatio::Torso:
+    return nullptr;
+  case BodyRatio::HeadSize:
+  case BodyRatio::HeadWidth:
+    return &p.head;
+  case BodyRatio::Arm:
+    return &p.arm;
+  case BodyRatio::Leg:
+    return &p.leg;
+  case BodyRatio::Neck:
+    return &p.neck;
+  case BodyRatio::Tail:
+    return &p.tail;
+  case BodyRatio::Wing:
+    return &p.wing;
+  case BodyRatio::Hand:
+    return &p.hand;
+  case BodyRatio::Foot:
+    return &p.foot;
+  }
+  return nullptr;
+}
+
+float quantile(const std::vector<float>& sorted, float share) {
+  const float at = share * static_cast<float>(sorted.size() - 1);
+  const auto below = static_cast<std::size_t>(std::floor(at));
+  const std::size_t above = std::min(below + 1, sorted.size() - 1);
+  const float t = at - static_cast<float>(below);
+  return (sorted[below] * (1.0F - t)) + (sorted[above] * t);
+}
+
+core::Result<float> readNumber(const core::YamlNode& node) {
+  float value = 0.0F;
+  if (node.isScalar()) {
+    const std::string& text = node.text();
+    const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+    if (error == std::errc{} && end == text.data() + text.size() && value >= 0.0F) {
+      return value;
+    }
+  }
+  return failAt(node, "a profile value must be a number of zero or more");
+}
+
 // Shrinks a part a little, so that it reaches less far; false if that part cannot shrink.
 bool shrinkPart(ChibiProportions& p, BodyPart part) {
   constexpr float Step = 0.9F;
   switch (part) {
   case BodyPart::Arm:
-    p.arm *= Step;
-    p.hand = std::max(1.0F, p.hand * Step);
-    return true;
+    p.arm = std::max(ChibiMinFactor, p.arm * Step);
+    return p.arm > ChibiMinFactor;
   case BodyPart::Tail:
     p.tail *= Step;
     return true;
@@ -865,7 +1007,157 @@ bool shrinkPart(ChibiProportions& p, BodyPart part) {
 
 } // namespace
 
-ChibiRig buildChibiRig(const ModelData& model, const ChibiOverride* override) {
+std::string_view nameOf(BodyRatio ratio) {
+  switch (ratio) {
+  case BodyRatio::Head:
+    return "head";
+  case BodyRatio::HeadSize:
+    return "head_size";
+  case BodyRatio::HeadWidth:
+    return "head_width";
+  case BodyRatio::Torso:
+    return "torso";
+  case BodyRatio::Arm:
+    return "arm";
+  case BodyRatio::Leg:
+    return "leg";
+  case BodyRatio::Neck:
+    return "neck";
+  case BodyRatio::Tail:
+    return "tail";
+  case BodyRatio::Wing:
+    return "wing";
+  case BodyRatio::Hand:
+    return "hand";
+  case BodyRatio::Foot:
+    return "foot";
+  }
+  return "head";
+}
+
+std::optional<BodyRatio> bodyRatioNamed(std::string_view name) {
+  const auto found = std::ranges::find(BodyRatios, name, [](BodyRatio r) { return nameOf(r); });
+  return found == BodyRatios.end() ? std::nullopt : std::optional{*found};
+}
+
+BodyMeasure measureBody(const ModelData& model, const ChibiClassification& parts,
+                        std::span<const glm::mat4> joints) {
+  if (!model.skin || model.skin->joints.empty()) {
+    return {};
+  }
+  return measure(model, readSkeleton(model), parts, joints);
+}
+
+std::vector<glm::mat4> restJoints(const ModelData& model) {
+  return restMatrices(model);
+}
+
+ChibiProfile profileOf(std::span<const std::pair<BodyShape, BodyMeasure>> models) {
+  std::map<BodyShape, std::array<std::vector<float>, BodyRatioCount>> values;
+  ChibiProfile profile;
+  for (const auto& [shape, measured] : models) {
+    if (shape == BodyShape::Unknown) {
+      continue;
+    }
+    ++profile.shapes[shape].models;
+    for (std::size_t r = 0; r < BodyRatioCount; ++r) {
+      if (measured.ratios[r]) {
+        values[shape][r].push_back(*measured.ratios[r]);
+      }
+    }
+  }
+  for (auto& [shape, ratios] : values) {
+    for (std::size_t r = 0; r < BodyRatioCount; ++r) {
+      std::vector<float>& sorted = ratios[r];
+      if (sorted.size() < FewestProfileSamples) {
+        continue;
+      }
+      std::ranges::sort(sorted);
+      profile.shapes[shape].ranges[r] =
+          ChibiRange{.low = sorted.front(),
+                     .median = quantile(sorted, 0.5F),
+                     .high = sorted.back(),
+                     .samples = static_cast<std::uint32_t>(sorted.size())};
+    }
+  }
+  return profile;
+}
+
+core::Result<ChibiProfile> parseChibiProfile(std::string_view yaml) {
+  auto root = core::parseYaml(yaml);
+  if (!root) {
+    return std::unexpected{root.error()};
+  }
+  const core::YamlNode* shapes = root->isMapping() ? root->find("shapes") : nullptr;
+  if (shapes == nullptr || !shapes->isMapping()) {
+    return failAt(*root, "the chibi profile must be a mapping with 'shapes'");
+  }
+  ChibiProfile profile;
+  for (const core::YamlEntry& entry : shapes->entries()) {
+    const auto shape = bodyShapeNamed(entry.key);
+    if (!shape || *shape == BodyShape::Unknown || !entry.value.isMapping()) {
+      return failAt(entry.value, std::format("'{}' is not a body shape with ratios", entry.key));
+    }
+    ChibiProfile::Shape& read = profile.shapes[*shape];
+    for (const core::YamlEntry& field : entry.value.entries()) {
+      if (field.key == "models") {
+        auto models = readNumber(field.value);
+        if (!models) {
+          return std::unexpected{models.error()};
+        }
+        read.models = static_cast<std::uint32_t>(*models);
+        continue;
+      }
+      const auto ratio = bodyRatioNamed(field.key);
+      if (!ratio || !field.value.isMapping()) {
+        return failAt(field.value, std::format("unknown ratio '{}'", field.key));
+      }
+      ChibiRange range;
+      for (const auto& [name, value] : std::array<std::pair<std::string_view, float*>, 3>{
+               {{"low", &range.low}, {"median", &range.median}, {"high", &range.high}}}) {
+        const core::YamlNode* node = field.value.find(name);
+        if (node == nullptr) {
+          return failAt(field.value, std::format("'{}' needs '{}'", field.key, name));
+        }
+        auto number = readNumber(*node);
+        if (!number) {
+          return std::unexpected{number.error()};
+        }
+        *value = *number;
+      }
+      if (const core::YamlNode* samples = field.value.find("samples")) {
+        auto number = readNumber(*samples);
+        if (!number) {
+          return std::unexpected{number.error()};
+        }
+        range.samples = static_cast<std::uint32_t>(*number);
+      }
+      if (range.low <= 0.0F || range.low > range.median || range.median > range.high) {
+        return failAt(field.value,
+                      std::format("'{}' must have 0 < low <= median <= high", field.key));
+      }
+      read.ranges[static_cast<std::size_t>(*ratio)] = range;
+    }
+  }
+  return profile;
+}
+
+std::string writeChibiProfile(const ChibiProfile& profile) {
+  std::string out = "shapes:\n";
+  for (const auto& [shape, read] : profile.shapes) {
+    out += std::format("  {}:\n    models: {}\n", nameOf(shape), read.models);
+    for (const BodyRatio ratio : BodyRatios) {
+      if (const auto& range = read[ratio]) {
+        out += std::format("    {}: {{low: {:.4f}, median: {:.4f}, high: {:.4f}, samples: {}}}\n",
+                           nameOf(ratio), range->low, range->median, range->high, range->samples);
+      }
+    }
+  }
+  return out;
+}
+
+ChibiRig buildChibiRig(const ModelData& model, const ChibiProfile& profile,
+                       const ChibiOverride* override) {
   ChibiRig rig;
   rig.nodes.resize(model.nodes.size());
   // Fewer than a body root and two bones under it: nothing to reshape.
@@ -886,8 +1178,73 @@ ChibiRig buildChibiRig(const ModelData& model, const ChibiOverride* override) {
   if (shape.shape == BodyShape::Unknown) {
     return rig;
   }
-  rig.proportions = defaultProportions(shape.shape);
-  fitToSizes(model, skeleton, shape, rig.proportions);
+  std::vector<glm::mat4> original = restMatrices(model);
+  rig.measure = measure(model, skeleton, shape, original);
+  rig.drawn = rig.measure;
+  const ChibiProfile::Shape* reference = profile.find(shape.shape);
+  if (reference == nullptr) {
+    return rig;
+  }
+  rig.reference = *reference;
+  // The detector: the ratios the model and the original's profile both have, against its range;
+  // how far out the model is, by its farthest ratio (0 within the range, 1 from twice or half an
+  // end of it on).
+  bool compared = false;
+  float out = 0.0F;
+  for (const BodyRatio ratio : BodyRatios) {
+    const auto r = static_cast<std::size_t>(ratio);
+    const auto& range = rig.reference.ranges[r];
+    const auto own = rig.measure.ratios[r];
+    if (!range || !own || *own <= 0.0F) {
+      continue;
+    }
+    compared = true;
+    if (!range->contains(*own)) {
+      rig.outside[r] = true;
+      const float end = *own < range->low ? range->low : range->high;
+      out = std::max(out, std::min(1.0F, std::abs(std::log(*own / end)) / std::log(2.0F)));
+    }
+  }
+  rig.alreadyChibi = compared && std::ranges::none_of(rig.outside, std::identity{});
+  const bool given = override != nullptr && !override->scale.empty();
+  if (!compared || (rig.alreadyChibi && !given)) {
+    return rig;
+  }
+  rig.active = true;
+  // Where each ratio a factor drives goes: into the range (just inside its nearer end), and from
+  // there toward the original's middle as far as the model was out, so that one just outside
+  // changes only a little and one far outside lands on the original's typical proportions.
+  std::array<std::optional<float>, BodyRatioCount> target{};
+  constexpr float Inside = 0.01F;
+  for (const BodyRatio ratio : BodyRatios) {
+    const auto r = static_cast<std::size_t>(ratio);
+    const auto& range = rig.reference.ranges[r];
+    const auto own = rig.measure.ratios[r];
+    if (!range || !own || *own <= 0.0F || !drives(ratio)) {
+      continue;
+    }
+    const float low = std::min(range->low * (1.0F + Inside), range->median);
+    const float high = std::max(range->high * (1.0F - Inside), range->median);
+    const float start = range->contains(*own) ? *own : std::clamp(*own, low, high);
+    target[r] = start * std::pow(range->median / start, out);
+  }
+
+  // The factors, a few rounds: each scales its part by how far the drawn ratio is from its target
+  // (the torso is the unit: the head, limbs, hands and feet are measured against it, so they do
+  // not pull on each other); a head's size and width move the head together. An override's
+  // factors stay as given.
+  std::vector<NodeTransform> rest(model.nodes.size());
+  restPose(model, rest);
+  std::vector<glm::mat4> world(model.nodes.size());
+  std::vector<glm::mat4> chibi(skin.joints.size());
+  const auto fixed = [&](float* factor) {
+    if (override == nullptr) {
+      return false;
+    }
+    return std::ranges::any_of(override->scale, [&](const auto& entry) {
+      return proportionNamed(rig.proportions, entry.first) == factor;
+    });
+  };
   if (override != nullptr) {
     for (const auto& [name, factor] : override->scale) {
       if (float* proportion = proportionNamed(rig.proportions, name)) {
@@ -895,24 +1252,52 @@ ChibiRig buildChibiRig(const ModelData& model, const ChibiOverride* override) {
       }
     }
   }
+  constexpr int FitRounds = 30;
+  constexpr float Settled = 0.002F;
+  for (int round = 0; round < FitRounds; ++round) {
+    shapeRig(model, found, rig);
+    computeChibiJointMatrices(model, rig, rest, original, world, chibi);
+    rig.drawn = measure(model, skeleton, shape, chibi);
+    std::map<float*, std::pair<float, int>> steps;
+    for (const BodyRatio ratio : BodyRatios) {
+      const auto r = static_cast<std::size_t>(ratio);
+      const auto now = rig.drawn.ratios[r];
+      float* factor = factorFor(rig.proportions, ratio);
+      if (!target[r] || !now || *now <= 0.0F || factor == nullptr || fixed(factor)) {
+        continue;
+      }
+      auto& [product, count] = steps[factor];
+      product = count == 0 ? *target[r] / *now : product * (*target[r] / *now);
+      ++count;
+    }
+    bool settled = true;
+    for (auto& [factor, step] : steps) {
+      const float by = std::pow(step.first, 1.0F / static_cast<float>(step.second));
+      settled = settled && std::abs(by - 1.0F) < Settled;
+      // A chibi has hardly any neck: one never grows; a hand or foot grows at most twice its size
+      // (a box of a hand three times as big reads as a glove, not as the original's big hands).
+      const float most = factor == &rig.proportions.neck ? 1.0F
+                         : factor == &rig.proportions.hand || factor == &rig.proportions.foot
+                             ? ChibiMaxExtremity
+                             : ChibiMaxFactor;
+      *factor = std::clamp(*factor * by, ChibiMinFactor, most);
+    }
+    if (settled) {
+      break;
+    }
+  }
   shapeRig(model, found, rig);
-  rig.active = true;
 
   // The model's origin is the floor. One whose lowest point is well above it flies: it keeps the
   // height of its lowest point in the rest pose. One that stands keeps its feet (the legs' lowest
   // point, or the whole body's without legs) on the floor on every frame.
   const bool flies = skeleton.ground > GroundShare * skeleton.height;
-  std::vector<NodeTransform> rest(model.nodes.size());
-  restPose(model, rest);
-  std::vector<glm::mat4> world(model.nodes.size());
-  std::vector<glm::mat4> original(skin.joints.size());
-  std::vector<glm::mat4> chibi(skin.joints.size());
-  computeJointMatrices(model, rest, world, original);
   const float originalLowest = lowestVertex(model, original).first;
   if (flies) {
     rig.lift = 0.0F;
     computeChibiJointMatrices(model, rig, rest, original, world, chibi);
     rig.lift = originalLowest - lowestVertex(model, chibi).first;
+    rig.drawn = measure(model, skeleton, shape, chibi);
     return rig;
   }
   const std::vector<BodyPart>& parts = shape.parts;
@@ -943,6 +1328,8 @@ ChibiRig buildChibiRig(const ModelData& model, const ChibiOverride* override) {
     }
     shapeRig(model, found, rig);
   }
+  computeChibiJointMatrices(model, rig, rest, original, world, chibi);
+  rig.drawn = measure(model, skeleton, shape, chibi);
   return rig;
 }
 

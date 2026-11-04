@@ -59,12 +59,16 @@ struct Options {
   // Start with free exploration on (--explore) for this run, whatever the saved setting
   // (docs/architecture/warps-de-script.md). Never on by default.
   bool explore = false;
-  // Draw the characters in the chibi style (--chibi) for this run, whatever the saved setting
-  // (chibi_style.hpp); in the model viewer, each character twice: as the original and chibi.
+  // Development: every character, the original game's too, goes through the chibi style's
+  // detector (--chibi) for this run, whatever the saved setting (chibi_style.hpp); in the model
+  // viewer, each character twice: as the original and as the style draws it.
   bool chibi = false;
   // The model viewer's models turned by this many degrees (--viewer-yaw; 0 shows their fronts, 90
   // a side) under a fixed camera, instead of the camera slowly going round.
   std::optional<float> viewerYaw;
+  // The model viewer's view this many world units high whatever the models (--viewer-frame), so
+  // that captures of different models share a scale.
+  std::optional<float> viewerFrame;
   // The field's start, instead of field/warps (--start <map>[,<exit>]).
   std::optional<std::string> startMap;
   int startExit = 0;
@@ -158,7 +162,7 @@ inline constexpr std::string_view Usage =
     "[--control <socket> [--control-paused]] | "
     "--list-saves | --check-content <folder> | --dump-signs <map>[,<map>...] --shots <folder> [--lang <language>] | --test-scene [--texture-churn] | --map <id>[,<id>...] "
     "[--focus <x>,<z>] | --ui-demo [--ui-demo-fishing] [--ui-demo-player] [--ui-demo-chart <layout.yaml>] [--ui-demo-chart-detail <layout.yaml>] [--ui-demo-chart-all-raised] [--ui-demo-bag-size <10|20|30>] "
-    "[--virtual-gamepad <file>] | --model-viewer [character or species model id...] [--viewer-yaw <degrees>]";
+    "[--virtual-gamepad <file>] | --model-viewer [character or species model id...] [--viewer-yaw <degrees>] [--viewer-frame <units>]";
 
 inline constexpr std::string_view RulesetOption = "--ruleset";
 inline constexpr std::string_view StoryStageOption = "--story-stage";

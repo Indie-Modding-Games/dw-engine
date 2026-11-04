@@ -1,0 +1,49 @@
+# Estilo chibi: las proporciones de los modelos originales (cada especie y el personaje del jugador), que son
+# la referencia del estilo. Generado por la prueba «the chibi profile is the original models' proportions» de
+# engine/animation/tests/chibi_tests.cpp sobre el contenido extraído; no se edita a mano. Por forma del cuerpo:
+# cuántos modelos distintos y, por proporción, su rango (del menor al mayor de los originales), la mediana y
+# cuántos modelos la tienen. head y torso: tamaño de la cabeza y largo del torso / altura; head_size: tamaño
+# de la cabeza / largo del torso; head_width: ancho de la cabeza / ancho del tronco; arm, leg, neck, tail,
+# wing: alcance / largo del torso; hand, foot: tamaño / largo del torso (docs/modulos/engine/animation.md).
+shapes:
+  biped:
+    models: 40
+    head: {low: 0.2356, median: 0.5500, high: 1.1203, samples: 38}
+    torso: {low: 0.2841, median: 0.4569, high: 0.9516, samples: 39}
+    head_size: {low: 0.4519, median: 1.2249, high: 2.1836, samples: 38}
+    head_width: {low: 0.4622, median: 1.1077, high: 2.2742, samples: 38}
+    arm: {low: 0.5629, median: 1.0844, high: 2.0980, samples: 36}
+    leg: {low: 0.5648, median: 1.0125, high: 2.2430, samples: 37}
+    neck: {low: 0.3548, median: 0.4423, high: 0.7003, samples: 7}
+    tail: {low: 0.7938, median: 1.1395, high: 1.9949, samples: 9}
+    wing: {low: 0.5303, median: 0.8461, high: 1.0628, samples: 8}
+    hand: {low: 0.2237, median: 0.5531, high: 1.0008, samples: 36}
+    foot: {low: 0.2896, median: 0.5762, high: 1.2243, samples: 37}
+  quadruped:
+    models: 13
+    head: {low: 0.2756, median: 0.7698, high: 1.4629, samples: 12}
+    torso: {low: 0.3839, median: 0.5690, high: 0.8354, samples: 12}
+    head_size: {low: 0.6576, median: 1.2074, high: 1.7512, samples: 12}
+    head_width: {low: 0.1163, median: 1.3505, high: 2.8750, samples: 12}
+    leg: {low: 0.3600, median: 0.9076, high: 1.2273, samples: 12}
+    neck: {low: 0.3089, median: 0.4573, high: 1.2178, samples: 7}
+    tail: {low: 0.6453, median: 0.7015, high: 1.5353, samples: 8}
+    foot: {low: 0.1875, median: 0.4647, high: 0.5858, samples: 12}
+  winged:
+    models: 6
+    head: {low: 0.5369, median: 0.6304, high: 0.8415, samples: 5}
+    torso: {low: 0.3097, median: 0.3933, high: 0.7500, samples: 6}
+    head_size: {low: 1.1080, median: 1.1649, high: 2.6808, samples: 5}
+    head_width: {low: 0.6250, median: 1.1818, high: 1.4528, samples: 5}
+    leg: {low: 0.9391, median: 1.1004, high: 1.4185, samples: 4}
+    neck: {low: 0.2755, median: 0.5224, high: 0.8012, samples: 4}
+    wing: {low: 0.6583, median: 1.0854, high: 2.7428, samples: 6}
+    foot: {low: 0.3289, median: 0.5846, high: 0.8850, samples: 4}
+  serpent:
+    models: 11
+    head: {low: 0.2500, median: 0.7099, high: 1.2133, samples: 11}
+    head_size: {low: 0.2641, median: 0.9510, high: 2.5674, samples: 11}
+    head_width: {low: 0.2606, median: 0.7448, high: 2.4051, samples: 11}
+    neck: {low: 0.1983, median: 0.3125, high: 0.8940, samples: 6}
+    tail: {low: 0.4481, median: 1.0060, high: 3.5485, samples: 11}
+    wing: {low: 0.0060, median: 1.4736, high: 3.1521, samples: 4}

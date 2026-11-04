@@ -209,6 +209,13 @@ FishingAvailability FishingAdapter::availability() const {
   return FishingAvailability::Ready;
 }
 
+void FishingAdapter::leaveWater() {
+  if (fishing_) {
+    fishing_.reset();
+    core::logDebug("[port:fishing] deinitializeFishing (main/fish.c:109): the map's water is gone");
+  }
+}
+
 void FishingAdapter::setFishingDisabled() {
   if (fishing_) {
     fishing_->setDisabled(true);

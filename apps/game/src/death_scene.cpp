@@ -227,8 +227,13 @@ void DeathScene::begin(const Pending& pending) {
     return;
   }
   if (pending.kind == SceneKind::Death && lives_ > 0) {
-    // partner.c: partnerTickDying (natural death): the death's sound bank, then DOOA_tick.
+    // partner.c: partnerTickDying (natural death): the water of a fishing map goes at once
+    // (deinitializeFishing: its fish, sea serpent and ripples are gone until a map loads), then
+    // the death's sound bank and DOOA_tick.
     core::logDebug("[port:death] partnerTickDying (partner.c:640): natural death");
+    if (fishing_ != nullptr) {
+      fishing_->leaveWater();
+    }
     startDissolve(true);
     return;
   }

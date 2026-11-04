@@ -21,7 +21,7 @@ el gate y se sube por separado.
 | 3 | Música: el secuenciador MIDI (tempo, bucles), el sintetizador SF2 y las transiciones de música; las órdenes `set_bgm` y `stop_bgm` | Suena la música del mapa, del combate y de los scripts; se publican `story.set_bgm` y `story.stop_bgm` |
 | 3b | La música de los modos 2–10 de la variable 245, el cambio de día y noche (`updateBGM`) y la del combate (§6.6) | Suena la variante de la hora y la música del combate; `data/music.yaml` lleva los pares fijos y las pistas del combate |
 | 3c | La reverberación del chip (§7.4, Q10) | Envío por voz según el bit de reverberación del tono |
-| 4 | El volumen en la pantalla de opciones (maestro, música, efectos), guardado con los demás ajustes, y una ruta de autotest | La ruta cambia los volúmenes y comprueba el estado del mezclador con la salida nula |
+| 4 | El volumen en la pantalla de opciones (música y efectos; el maestro se queda en 1), guardado con los demás ajustes | Hecho: filas «Volumen de música» y «Volumen de efectos» de las opciones en partida ([game.md, Volumen](../modulos/apps/game.md#volumen)); los tests aplican los pasos a `Audio` con la salida nula |
 
 ## 2. Módulos y dependencias
 
@@ -137,7 +137,8 @@ cuando las necesita, cada pocos milisegundos).
   recorte duro es lo fiel; no se añade compresor.
 - **Buses:** `Music` y `Effects`, más el maestro. La ganancia de una voz es
   `ganancia de la voz × volumen de su bus × volumen maestro`. Los volúmenes que recibe `audio` son lineales, de 0 a 1
-  (se limitan a ese rango). La curva que va del deslizador de opciones a esa ganancia es del tramo 4 (pregunta Q5).
+  (se limitan a ese rango). La curva que va del deslizador de opciones a esa ganancia es la de Q5 (`volumeGain` de
+  `apps/game/src/volume_setting.hpp`: el paso de 0 a 10 al cuadrado).
 - **Panorama:** de −1 (izquierda) a 1 (derecha), por voz. Un clip mono usa potencia constante (Q4: −3 dB por lado
   en el centro, como TinySoundFont); uno estéreo, balance (los dos lados enteros en el centro).
 - **Remuestreo:** cada voz avanza con paso `frecuencia del clip / 48 000 × tono`, con interpolación lineal. Los
@@ -511,6 +512,9 @@ Los scripts del disco solo piden las ranuras 0 (63 veces) y 8 (433); las 3–7 s
    espera el oído y lo que hacen casi todos los juegos de PC.
 2. Lineal en amplitud: más simple, pero casi todo el cambio que se oye está en el primer tercio del deslizador.
 El valor por defecto es 100 % en los tres (suena como el original).
+*Decidido (tramo 4):* pasos de 0 a 10 con la ganancia al cuadrado de su fracción (5 → −12 dB, 1 → −40 dB, 0 →
+silencio), entre las dos opciones: reparte lo que se oye por todo el recorrido sin dejar casi mudos los pasos de en
+medio. Solo música y efectos; el maestro se queda en 1. El valor por defecto es 10 (el original).
 
 **Q6. Qué efectos entran en VAN-01 (tramo 2).**
 1. *(Recomendada)* Las órdenes `play_sound` de los scripts y los sonidos del sistema y los menús (banco `ss`:

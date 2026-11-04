@@ -58,6 +58,10 @@ smooth_motion: "Smooth motion"
 save_notice: "Save notice"
 # Autosave: the game saves by itself to the adventure's own slot (on by default; off, only the player's saves write).
 autosave: "Autosave"
+# Music and effects volume (an engine addition; the original has no sound options): a step from 0 (silent) to 10
+# (the original's level, the default). The music includes the movies' sound.
+music_volume: "Music volume"
+effects_volume: "Effects volume"
 # Digital time: the game time as HH:MM in a small box under the field's clock (on by default).
 digital_time: "Digital time"
 # Bulk trades: the item trader and the card shop's packs ask how many at once (on by default).
@@ -84,12 +88,11 @@ continuous_music: "Continuous music"
 # Several needs: the bubble over the partner shows up to three of its needs at once, the most urgent first (on by
 # default; off, the original's: one at a time, the two most urgent taking turns).
 need_bubble_stack: "Several needs"
-# Chibi style: characters drawn with a big head and short limbs, the drawing only: off, only the models that
-# do not come from the original game (mods, imported ones; the default) or all.
+# Chibi style: the original game's models are chibi already; a model from elsewhere (a mod's, an imported one)
+# that is not is drawn with the original's proportions, the drawing only: off or external models (the default).
 chibi_style: "Chibi style"
 chibi_style.off: "No"
 chibi_style.external: "External"
-chibi_style.all: "All"
 
 year_label: "Year"
 day_label: "Day"

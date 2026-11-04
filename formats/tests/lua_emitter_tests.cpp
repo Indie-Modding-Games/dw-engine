@@ -255,6 +255,25 @@ TEST_CASE("an IF becomes its entries folded left to right with explicit parenthe
   checkRunsLikeTheListing(builder.listing(), module, 16);
 }
 
+TEST_CASE("an IF entry with no AND or OR replaces the result so far, and the Lua says so") {
+  // story/128 (0x0094): "trigger 8, trigger 9, and trigger 10" is "9 and 10" in the original
+  // (script_interp.c: scriptIfInstruction sets the result to an entry with no connector).
+  Listing builder;
+  builder.section(0x51, 0)
+      .branch(0, {{.test = "trigger", .fields = {{"trigger", "8"}}},
+                  {.test = "trigger", .fields = {{"trigger", "9"}}},
+                  {.test = "trigger", .fields = {{"combine", "and"}, {"trigger", "10"}}},
+                  {.test = "goto_if_false", .fields = {{"target", "l_0010"}}}})
+      .op(8, "play_sound", {{"bank", "1"}, {"sound", "2"}})
+      .op(16, "end_section");
+  const auto module = convert(builder.listing());
+  CHECK_MESSAGE(module.code.find("if story.trigger(9) and story.trigger(10) then -- the original "
+                                 "drops story.trigger(8): a test with no and/or replaces the "
+                                 "result") != std::string::npos,
+                module.code);
+  checkRunsLikeTheListing(builder.listing(), module, 16);
+}
+
 TEST_CASE("a happiness test compares signed and a cleared trigger test is a not") {
   Listing builder;
   builder.section(0x51, 0)

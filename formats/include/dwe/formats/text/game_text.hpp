@@ -41,7 +41,8 @@ struct ControlTag {
 };
 
 // The control codes of event script text and their tags, from showTextbox (codes it expands: names,
-// numbers) and script_textbox.c: drawString2 (codes it draws: colour, tabs, the US-only columns).
+// numbers) and script_textbox.c: drawString2 (codes it draws: colour, tabs, the US-only columns,
+// and the byte 0 where it stops drawing the page, {stop}).
 // 0x03, which takes three parameter bytes ({raw03:XXXXXX}), and 0x0D, the new line, are handled
 // apart.
 std::span<const ControlTag> scriptControlTags();

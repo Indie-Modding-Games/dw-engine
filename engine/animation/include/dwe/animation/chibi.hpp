@@ -4,6 +4,8 @@
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -12,10 +14,14 @@
 #include <string_view>
 #include <vector>
 
-// The chibi style (an engine improvement, a prototype; the original has none): a model drawn with a
-// bigger head, a shorter torso and short limbs, its feet still on the ground. It is a change of the
+// The chibi style (an engine improvement; the original has none): the original game's models are
+// already chibi (a big head, a short body, short limbs), and they are the reference. A model from
+// elsewhere is measured against the original's proportions for its body shape (the profile,
+// models/chibi_profile.yaml in the game pack, measured from every original model): one already
+// within the original's range is left as it is; one outside it is drawn with its head, limbs, hands
+// and feet scaled toward the original's, its feet still on the ground. It is a change of the
 // drawing only: the animations run unchanged and the skinning matrices are rebuilt from their pose,
-// so collisions, speeds and every size the game logic reads stay the original's.
+// so collisions, speeds and every size the game logic reads stay the model's own.
 namespace dwe::animation {
 
 // What a model is built like, from its skeleton and its mesh (classifyChibi).
@@ -46,8 +52,92 @@ struct ChibiProportions {
   float girth = 1.0F;
 };
 
-// The proportions a body shape gets unless an override says otherwise.
-[[nodiscard]] ChibiProportions defaultProportions(BodyShape shape);
+// What the style measures of a model, in its rest pose. A head's size is the largest side of its
+// box; a limb's (arm, leg, neck, tail, wing) reach is how far its farthest vertex is from the joint
+// it hangs from; a hand's or foot's size how big the end of the arm or leg (its last 30%) is across
+// it, whatever bones it is made of;
+// the torso's length the trunk's extent along its axis (up for an upright body, forward for one on
+// four legs); a width the extent across (x).
+enum class BodyRatio : std::uint8_t {
+  // Over the model's height (they tell whether a model is chibi; the factors follow the others):
+  // the head's size and the torso's length (not for a serpent, whose body is its tail).
+  Head,
+  Torso,
+  // The head's size over the torso's length, and its width over the trunk's (its shoulders).
+  HeadSize,
+  HeadWidth,
+  // Reaches over the torso's length.
+  Arm,
+  Leg,
+  Neck,
+  Tail,
+  Wing,
+  // Sizes over the torso's length.
+  Hand,
+  Foot,
+};
+inline constexpr std::size_t BodyRatioCount = 11;
+inline constexpr std::array<BodyRatio, BodyRatioCount> BodyRatios{
+    BodyRatio::Head, BodyRatio::Torso, BodyRatio::HeadSize, BodyRatio::HeadWidth,
+    BodyRatio::Arm,  BodyRatio::Leg,   BodyRatio::Neck,     BodyRatio::Tail,
+    BodyRatio::Wing, BodyRatio::Hand,  BodyRatio::Foot};
+
+[[nodiscard]] std::string_view nameOf(BodyRatio ratio);
+[[nodiscard]] std::optional<BodyRatio> bodyRatioNamed(std::string_view name);
+
+// A model's proportions; a ratio it has no part for (no arms, no tail...) is missing.
+struct BodyMeasure {
+  std::array<std::optional<float>, BodyRatioCount> ratios{};
+  float height = 0.0F;
+  float torso = 0.0F;
+
+  [[nodiscard]] std::optional<float> operator[](BodyRatio ratio) const {
+    return ratios[static_cast<std::size_t>(ratio)];
+  }
+};
+
+// The original's range of one ratio over the models of one body shape: from the lowest to the
+// highest (every original model is chibi) and the middle (the median).
+struct ChibiRange {
+  float low = 0.0F;
+  float median = 0.0F;
+  float high = 0.0F;
+  std::uint32_t samples = 0;
+
+  // Within the range, give or take the rounding of the written profile (a thousandth).
+  [[nodiscard]] bool contains(float value) const {
+    constexpr float Rounding = 0.001F;
+    return value >= low * (1.0F - Rounding) && value <= high * (1.0F + Rounding);
+  }
+};
+
+// The original's proportions per body shape (models/chibi_profile.yaml).
+struct ChibiProfile {
+  struct Shape {
+    std::uint32_t models = 0;
+    std::array<std::optional<ChibiRange>, BodyRatioCount> ranges{};
+
+    [[nodiscard]] const std::optional<ChibiRange>& operator[](BodyRatio ratio) const {
+      return ranges[static_cast<std::size_t>(ratio)];
+    }
+  };
+  std::map<BodyShape, Shape> shapes;
+
+  [[nodiscard]] const Shape* find(BodyShape shape) const {
+    const auto found = shapes.find(shape);
+    return found == shapes.end() ? nullptr : &found->second;
+  }
+};
+
+// The profile of a set of measured models (each with its shape); a ratio needs this many models
+// that have it to get a range.
+inline constexpr std::uint32_t FewestProfileSamples = 3;
+[[nodiscard]] ChibiProfile profileOf(std::span<const std::pair<BodyShape, BodyMeasure>> models);
+
+// Reads and writes models/chibi_profile.yaml: `shapes: {<shape>: {models: n, <ratio>: {low, median,
+// high, samples}}}`.
+[[nodiscard]] core::Result<ChibiProfile> parseChibiProfile(std::string_view yaml);
+[[nodiscard]] std::string writeChibiProfile(const ChibiProfile& profile);
 
 // A species' corrections, for when the detection gets it wrong (models/chibi.yaml in the game
 // pack).
@@ -111,6 +201,15 @@ struct ChibiRig {
     glm::vec3 position{0.0F};
   };
   ChibiClassification classification;
+  // The model's own proportions, the profile's range they were compared with (none for a shape the
+  // profile does not have) and which ratios fell outside it.
+  BodyMeasure measure;
+  ChibiProfile::Shape reference;
+  std::array<bool, BodyRatioCount> outside{};
+  // Already chibi: every measured ratio within the original's range (the rig is inactive).
+  bool alreadyChibi = false;
+  // The proportions once drawn chibi.
+  BodyMeasure drawn;
   ChibiProportions proportions;
   std::vector<Node> nodes;
   // Per joint, in the joint's space.
@@ -126,8 +225,26 @@ struct ChibiRig {
   bool active = false;
 };
 
-// Builds the rig of a model, with the species' override if any.
-[[nodiscard]] ChibiRig buildChibiRig(const assets::ModelData& model,
+// Measures a model whose parts are `parts`, posed with these skinning matrices (its rest pose's,
+// or the chibi style's).
+[[nodiscard]] BodyMeasure measureBody(const assets::ModelData& model,
+                                      const ChibiClassification& parts,
+                                      std::span<const glm::mat4> joints);
+
+// The rest pose's skinning matrices of a model.
+[[nodiscard]] std::vector<glm::mat4> restJoints(const assets::ModelData& model);
+
+// Builds the rig of a model. The detector measures it: a model whose every ratio is within the
+// profile's range for its shape (already chibi) gets an inactive rig, drawn exactly as it is; any
+// other gets factors for its head, limbs, hands and feet (the torso is the unit and stays) that
+// bring each ratio into the range, and toward the original's middle as far as the model was out
+// of it (fully from twice or half an end on), each factor between ChibiMinFactor and
+// ChibiMaxFactor (a neck only shrinks, a hand or foot grows up to ChibiMaxExtremity). A species'
+// override can turn it off, fix its parts or give factors of its own.
+inline constexpr float ChibiMinFactor = 0.35F;
+inline constexpr float ChibiMaxFactor = 3.0F;
+inline constexpr float ChibiMaxExtremity = 2.0F;
+[[nodiscard]] ChibiRig buildChibiRig(const assets::ModelData& model, const ChibiProfile& profile,
                                      const ChibiOverride* override = nullptr);
 
 // The skinning matrices of a pose drawn chibi. `original` are the pose's own (computeJointMatrices,

@@ -105,9 +105,9 @@ local entries = {
 -- The round minimap: on (the default, also for the old auto) or off.
 local minimap_modes = { "on", "off" }
 local minimap_sizes = { "small", "medium", "large" }
--- The chibi style (game_options.lua): off, the models from outside the original game (the
--- default) or all.
-local chibi_modes = { "off", "external", "all" }
+-- The chibi style (game_options.lua): off or the models from outside the original game (the
+-- default; an old "all" shows as that).
+local chibi_modes = { "off", "external" }
 -- The field's graphics improvements (docs/architecture/render.md): sun (the default), round or off.
 local shadow_modes = { "sun", "round", "off" }
 local ui_scales = { 0.75, 0.9, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0 }

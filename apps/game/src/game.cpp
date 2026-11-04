@@ -87,6 +87,7 @@
 #include "title_screen.hpp"
 #include "ui_skin_setting.hpp"
 #include "user_settings.hpp"
+#include "volume_setting.hpp"
 #include "walk_control.hpp"
 
 namespace dwe::app {
@@ -713,11 +714,13 @@ int runGame(const Options& requested) {
   }
   GraphicsChanger graphics{userSettings, settingsFile, startGraphics};
   graphics.publish(**ui);
+  // The music's and the effects' volumes: the saved steps, applied to the audio from the start.
+  VolumeChanger volumes{userSettings, settingsFile, sound};
+  volumes.publish(**ui);
   HdSceneryChanger hdScenery{userSettings, settingsFile};
   WalkControlChanger walkControl{userSettings, settingsFile};
   ChibiModeChanger chibiMode{userSettings, settingsFile};
-  (*ui)->setSetting(ChibiStyleSetting,
-                    std::string{chibiModeName(options.chibi ? ChibiMode::All : chibiMode.mode())});
+  (*ui)->setSetting(ChibiStyleSetting, std::string{chibiModeName(chibiMode.mode())});
   // An autotest walks with the device of its route (it reads no settings file).
   if (autotest) {
     walkControl.use(autotest->walksWithMouse() ? WalkControl::Mouse : WalkControl::Keys, nullptr);
@@ -1220,6 +1223,12 @@ int runGame(const Options& requested) {
         gameSeconds = ticks * TickSeconds;
       }
     }
+    if (autotest && !routeOver) {
+      if (const int steered = autotest->ticksThisFrame(ticks); steered < ticks) {
+        ticks = steered;
+        gameSeconds = ticks * TickSeconds;
+      }
+    }
     sound.update(ticks * TickSeconds);
     for (int tick = 0; tick < ticks; ++tick) {
       if (autotest && !routeOver) {
@@ -1418,6 +1427,9 @@ int runGame(const Options& requested) {
         continue;
       }
       if (graphics.handle(command, **ui)) {
+        continue;
+      }
+      if (volumes.handle(command, **ui)) {
         continue;
       }
       if (command.name == HdScenerySetting) {

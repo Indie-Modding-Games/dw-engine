@@ -70,6 +70,7 @@ Texto de script: cada celda de control es `código, parámetro` (`showTextbox` e
 
 | Código | Etiqueta | Parámetro |
 |---|---|---|
+| `00` | `{stop}` | ignorado; el original deja de dibujar la página ahí (ver abajo) |
 | `01` | `{color:N}` | color |
 | `02` | `{raw02:XX}` | sin consumidor conocido; se guarda tal cual |
 | `03 a b c` | `{raw03:XXXXXX}` | la única celda de cuatro bytes; sin consumidor conocido |
@@ -86,13 +87,15 @@ Texto de script: cada celda de control es `código, parámetro` (`showTextbox` e
 | `0D xx` | `{newline:raw=XX}` | un salto con parámetro distinto de 0 |
 
 Un parámetro ignorado que no es 0 se guarda: `{tamer:raw=05}`. Una celda que no es ni carácter ni control conocido
-es `{cell:XXXX}`; una celda `00 xx` que no sigue a un salto de línea es un glifo más (`{cell:00XX}`).
+es `{cell:XXXX}`. Una celda `00 xx` que no sigue a un salto de línea es `{stop}` (`{stop:raw=XX}` si `xx` no es 0;
+antes de `ExtractorVersion` 11 salía como `{cell:00XX}` y parecía un glifo que faltaba): no falta ningún carácter.
 Al dibujarla, el original para: `drawString2` acaba en el byte 0 y `drawTextboxStrings` no dibuja más filas de la
 página, aunque `showTextbox` siga leyendo hasta el final y la página pase igual. El inglés tiene once
-`{cell:0000}` delante de restos de una línea más larga (`story_054.text.0c02` se ve «fades away, he'll» y nada más);
-dwe deja vacías las filas desde ahí (`appendPageRows`), medido en el original con un `00 00` escrito en la página
-de la máquina de guardado: solo sale «Oh that?» y la página siguiente sale entera. El español pone la etiqueta al
-final cuando traduce la intención de la línea.
+`{stop}` en diez textos, delante de restos de una línea más larga (`story_054.text.0c02` se ve «fades away, he'll» y
+nada más; `story_026.text.0262` se ve «to get thru here,» y no «?nt leave all your stuff!»); dwe deja vacías las
+filas desde ahí (`appendPageRows`, que también acepta el `{cell:00XX}` de contenido viejo), medido en el original con
+un `00 00` escrito en la página de la máquina de guardado: solo sale «Oh that?» y la página siguiente sale entera.
+El español pone la etiqueta al final cuando traduce la intención de la línea.
 
 **Fin del texto.** El texto acaba en la primera celda `0D` seguida de un byte `00`; esa celda y la `00 xx` que la
 sigue son el final. Normalmente son `0D 00 00 00` y no se escriben; si llevan otros bytes se guardan con

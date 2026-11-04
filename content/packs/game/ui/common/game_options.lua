@@ -10,6 +10,10 @@
 --   default  the value when the game has not published one yet
 --   values   (choices only) the values the row cycles through; without it the option is on or off
 --   texts    (choices only) the prefix of each value's text key: texts .. "." .. value
+--   range    (numbers only) { lowest, highest }: the row steps through the whole numbers between
+--            them and shows the number; down stops at the lowest, up past the highest starts
+--            again from the lowest (so confirming, or clicking, reaches every step and never
+--            jumps from the lowest to the highest)
 --
 -- The menu never changes a setting itself: it sends ui.send(setting, value) and shows what the game
 -- publishes back.
@@ -134,14 +138,14 @@ game_options = {
   -- player is and where his map leads (on by default; off leaves the key without a use, as the
   -- original has no such map).
   { id = "world-map", setting = "world_map", label = "pause_menu.world_map", default = true },
-  -- Chibi style: characters drawn with a big head and short limbs, the drawing only: off, only
-  -- the models that do not come from the original game (mods, imported ones; the default, so they
-  -- match the original's look) or all of them.
+  -- Chibi style: the original game's models are chibi already; a model from elsewhere (a mod's, an
+  -- imported one) that is not is drawn with the original's proportions, the drawing only: off or
+  -- external models (the default).
   {
     id = "chibi-style",
     setting = "chibi_style",
     label = "pause_menu.chibi_style",
-    values = { "off", "external", "all" },
+    values = { "off", "external" },
     texts = "pause_menu.chibi_style",
     default = "external",
   },
@@ -191,11 +195,35 @@ game_options = {
   -- Autosave: the game saves by itself to the adventure's own slot when the rules say (on by
   -- default; off, only the player's own saves write).
   { id = "autosave", setting = "autosave", label = "pause_menu.autosave", default = true },
+  -- Music volume and effects volume: a step from 0 (silent) to 10 (the original's level, the
+  -- default). The game applies them at once to the music (with the movies' sound) and to the
+  -- effects and the menus' sounds, and saves them (an engine addition: the original has no sound
+  -- option).
+  {
+    id = "music-volume",
+    setting = "music_volume",
+    label = "pause_menu.music_volume",
+    range = { 0, 10 },
+    default = 10,
+  },
+  {
+    id = "effects-volume",
+    setting = "effects_volume",
+    label = "pause_menu.effects_volume",
+    range = { 0, 10 },
+    default = 10,
+  },
 }
 
 -- The option's current value: what the game published, or its default.
 function game_options.value(option)
   local value = ui.setting(option.setting)
+  if option.range ~= nil then
+    if type(value) ~= "number" then
+      return option.default
+    end
+    return math.max(option.range[1], math.min(option.range[2], math.floor(value + 0.5)))
+  end
   if option.values ~= nil then
     for _, known in ipairs(option.values) do
       if known == value then
@@ -213,15 +241,31 @@ end
 -- The text of the option's current value, in the player's language.
 function game_options.text(option)
   local value = game_options.value(option)
+  if option.range ~= nil then
+    return string.format("%d", value)
+  end
   if option.values ~= nil then
     return t(option.texts .. "." .. tostring(value))
   end
   return t(value and "common.yes" or "common.no")
 end
 
--- Asks the game for the option's next value, step entries away (wrapping); a toggle flips.
+-- Asks the game for the option's next value, step entries away (wrapping); a toggle flips; a
+-- number moves by step, stops at its lowest and wraps from its highest to its lowest.
 function game_options.change(option, step)
   local value = game_options.value(option)
+  if option.range ~= nil then
+    local lowest, highest = option.range[1], option.range[2]
+    local next = value + step
+    if next > highest then
+      next = value == highest and lowest or highest
+    end
+    next = math.max(lowest, next)
+    if next ~= value then
+      ui.send(option.setting, next)
+    end
+    return
+  end
   if option.values == nil then
     ui.send(option.setting, not value)
     return

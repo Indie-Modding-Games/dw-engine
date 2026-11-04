@@ -28,9 +28,17 @@ constexpr std::array<std::string_view, 16> ColorTags{
 
 // A cell whose first byte is 0 ends the page's drawing: script_textbox.c drawString2 stops at the
 // byte 0 and drawTextboxStrings draws no more rows, while showTextbox still counts the rows after
-// it (docs/formats/textos.md). The US text has a few, before the leftovers of a longer line.
-constexpr std::string_view EndingCellPrefix = "{cell:00";
+// it (docs/formats/textos.md). The US text has a few, before the leftovers of a longer line. dwx
+// writes it {stop} ({stop:raw=XX}); content extracted before ExtractorVersion 11 has {cell:00XX}.
+constexpr std::array<std::string_view, 3> EndingTagPrefixes{"{stop}", "{stop:", "{cell:00"};
 constexpr char TagClose = '}';
+
+bool endsDrawing(std::string_view text) {
+  return std::ranges::any_of(
+             EndingTagPrefixes,
+             [text](std::string_view prefix) { return text.starts_with(prefix); }) &&
+         text.find(TagClose) != std::string_view::npos;
+}
 
 } // namespace
 
@@ -65,8 +73,7 @@ void appendPageRows(std::vector<TextRow>& rows, std::string_view text) {
       row.clear();
     } else if (ended) {
       continue;
-    } else if (text.substr(at).starts_with(EndingCellPrefix) &&
-               text.find(TagClose, at) != std::string_view::npos) {
+    } else if (endsDrawing(text.substr(at))) {
       endRun();
       ended = true;
     } else if (c == ColorMarker) {

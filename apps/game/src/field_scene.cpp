@@ -248,7 +248,7 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
     static_cast<void>(desc.clock->jumpTo(startHourOf(*desc.time, *rules, desc.clock->rules()), 0));
   }
 
-  scene->chibiOverrides_ = loadChibiOverrides(files);
+  scene->chibiStyle_ = loadChibiStyleData(files);
   auto player = scene->loadActor(PlayerCharacter, scene->field_->playerEntity(), rules->player);
   if (!player) {
     return std::unexpected{player.error()};
@@ -432,8 +432,9 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
       .fighter = std::nullopt,
   });
   actor->player = std::make_unique<animation::AnimationPlayer>(*actor->model);
-  actor->chibi = chibiRigOf(actor->character.model, *actor->model, chibiOverrides_);
   actor->originalModel = isOriginalModel(*files_, actor->character.model);
+  actor->chibi =
+      chibiRigOf(actor->character.model, *actor->model, chibiStyle_, actor->originalModel);
   return actor;
 }
 

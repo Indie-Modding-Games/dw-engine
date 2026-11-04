@@ -3,6 +3,7 @@
 #include <dwe/core/log.hpp>
 
 #include <algorithm>
+#include <format>
 #include <string>
 
 namespace dwe::app {
@@ -11,7 +12,8 @@ namespace {
 
 constexpr std::string_view OffName = "off";
 constexpr std::string_view ExternalName = "external";
-constexpr std::string_view AllName = "all";
+// The mode that reshaped the original's models too, gone since they are the reference.
+constexpr std::string_view OldAllName = "all";
 
 } // namespace
 
@@ -19,11 +21,8 @@ std::optional<ChibiMode> parseChibiMode(std::string_view name) {
   if (name == OffName) {
     return ChibiMode::Off;
   }
-  if (name == ExternalName) {
+  if (name == ExternalName || name == OldAllName) {
     return ChibiMode::External;
-  }
-  if (name == AllName) {
-    return ChibiMode::All;
   }
   return std::nullopt;
 }
@@ -32,9 +31,8 @@ std::string_view chibiModeName(ChibiMode mode) {
   switch (mode) {
   case ChibiMode::Off:
     return OffName;
-  case ChibiMode::All:
-    return AllName;
   case ChibiMode::External:
+  case ChibiMode::EveryModel:
     break;
   }
   return ExternalName;
@@ -83,23 +81,46 @@ ChibiMode ChibiModeChanger::change(const ui::UiValue& value) {
   return mode_;
 }
 
-animation::ChibiOverrides loadChibiOverrides(const assets::VirtualFileSystem& files) {
-  const auto id = assets::AssetId::parse("models/chibi");
+namespace {
+
+// A game pack file's text, or nothing when it is missing or cannot be read (logged).
+std::optional<std::string> readPackText(const assets::VirtualFileSystem& files,
+                                        std::string_view path) {
+  const auto id = assets::AssetId::parse(path);
   if (!id || files.resolve(*id) == nullptr) {
-    return {};
+    return std::nullopt;
   }
   const auto bytes = files.read(*id);
   if (!bytes) {
     core::logWarning("chibi style: {}", bytes.error().message);
-    return {};
+    return std::nullopt;
   }
-  auto overrides =
-      animation::parseChibiOverrides({reinterpret_cast<const char*>(bytes->data()), bytes->size()});
-  if (!overrides) {
-    core::logWarning("chibi style: models/chibi: {}", overrides.error().message);
-    return {};
+  return std::string{reinterpret_cast<const char*>(bytes->data()), bytes->size()};
+}
+
+} // namespace
+
+ChibiStyleData loadChibiStyleData(const assets::VirtualFileSystem& files) {
+  ChibiStyleData data;
+  if (const auto text = readPackText(files, "models/chibi_profile")) {
+    auto profile = animation::parseChibiProfile(*text);
+    if (profile) {
+      data.profile = std::move(*profile);
+    } else {
+      core::logWarning("chibi style: models/chibi_profile: {}", profile.error().message);
+    }
+  } else {
+    core::logWarning("chibi style: no models/chibi_profile, no model is reshaped");
   }
-  return std::move(*overrides);
+  if (const auto text = readPackText(files, "models/chibi")) {
+    auto overrides = animation::parseChibiOverrides(*text);
+    if (overrides) {
+      data.overrides = std::move(*overrides);
+    } else {
+      core::logWarning("chibi style: models/chibi: {}", overrides.error().message);
+    }
+  }
+  return data;
 }
 
 std::string_view chibiSpeciesOf(const assets::AssetId& model) {
@@ -113,15 +134,49 @@ std::string_view chibiSpeciesOf(const assets::AssetId& model) {
   return path.substr(Prefix.size(), path.size() - Prefix.size() - Suffix.size());
 }
 
+std::string chibiDecision(const assets::AssetId& id, const animation::ChibiRig& rig) {
+  const animation::ChibiClassification& found = rig.classification;
+  std::string line =
+      std::format("chibi style: {} is {} (legs {}, arms {}, wings {}, tails {}, head {})", id.str(),
+                  animation::nameOf(found.shape), found.legs, found.arms, found.wings, found.tails,
+                  found.head ? static_cast<int>(*found.head) : -1);
+  if (rig.alreadyChibi) {
+    line += ": chibi already, drawn as it is";
+  } else if (rig.active) {
+    line += std::format(
+        ": not chibi, reshaped (head x{:.2f}, arm x{:.2f}, leg x{:.2f}, hand x{:.2f}, "
+        "foot x{:.2f}, neck x{:.2f}, tail x{:.2f}, wing x{:.2f})",
+        rig.proportions.head, rig.proportions.arm, rig.proportions.leg, rig.proportions.hand,
+        rig.proportions.foot, rig.proportions.neck, rig.proportions.tail, rig.proportions.wing);
+  } else {
+    line += ": not measured, drawn as it is";
+  }
+  for (const animation::BodyRatio ratio : animation::BodyRatios) {
+    const auto own = rig.measure[ratio];
+    if (!own) {
+      continue;
+    }
+    line += std::format(" | {} {:.2f}", animation::nameOf(ratio), *own);
+    if (const auto& range = rig.reference[ratio]) {
+      line += std::format(" [{:.2f}-{:.2f}]", range->low, range->high);
+    }
+    if (rig.active) {
+      line += std::format(" -> {:.2f}", rig.drawn[ratio].value_or(0.0F));
+    }
+  }
+  return line;
+}
+
 animation::ChibiRig chibiRigOf(const assets::AssetId& id, const assets::ModelData& model,
-                               const animation::ChibiOverrides& overrides) {
-  const auto found = overrides.find(chibiSpeciesOf(id));
-  animation::ChibiRig rig =
-      animation::buildChibiRig(model, found != overrides.end() ? &found->second : nullptr);
-  core::logDebug("chibi style: {} is {} (legs {}, arms {}, wings {}, tails {}, head {})", id.str(),
-                 animation::nameOf(rig.classification.shape), rig.classification.legs,
-                 rig.classification.arms, rig.classification.wings, rig.classification.tails,
-                 rig.classification.head ? static_cast<int>(*rig.classification.head) : -1);
+                               const ChibiStyleData& style, bool original) {
+  const auto found = style.overrides.find(chibiSpeciesOf(id));
+  animation::ChibiRig rig = animation::buildChibiRig(
+      model, style.profile, found != style.overrides.end() ? &found->second : nullptr);
+  if (original) {
+    core::logDebug("{}", chibiDecision(id, rig));
+  } else {
+    core::logInfo("{}", chibiDecision(id, rig));
+  }
   return rig;
 }
 

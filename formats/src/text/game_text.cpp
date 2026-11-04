@@ -64,6 +64,9 @@ std::optional<InlineTag> inlineTagAt(std::span<const std::byte> raw, std::size_t
 }
 
 constexpr std::array ControlTags = {
+    // A zero cell ends the drawing of the page (drawString2 returns at the byte 0): the US text has
+    // a few before the leftovers of a longer line, which the game never shows.
+    ControlTag{.code = 0x00, .name = "stop", .parameter = Ignored},
     ControlTag{.code = 0x01, .name = "color", .parameter = Value},
     ControlTag{.code = 0x02, .name = "raw02", .parameter = Raw},
     ControlTag{.code = 0x04, .name = "num", .parameter = Pstat},

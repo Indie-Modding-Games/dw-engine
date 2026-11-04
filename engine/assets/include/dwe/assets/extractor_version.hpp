@@ -7,6 +7,6 @@ namespace dwe::assets {
 // written by another version (content::installIsOutdated). Bump it whenever the base pack written
 // from the same disc changes: dwx's fingerprint test fails until it is bumped
 // (docs/modulos/apps/dwx.md).
-inline constexpr int ExtractorVersion = 10;
+inline constexpr int ExtractorVersion = 12;
 
 } // namespace dwe::assets

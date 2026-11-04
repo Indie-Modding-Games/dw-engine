@@ -1,6 +1,7 @@
 # The fishing (fish.c: FISH_showTextBox). {item} is an item's name; {length}, a fish's length.
 bait.title: "Bait the hook with"
-bait.entry: "{item} ×{count}"
+# {count} comes right-aligned in two places (" 3", "12"), as the original draws it after its x.
+bait.entry: "{item} x{count}"
 bait.none: "Put the rod away"
 bait_taken: "It took your bait!"
 too_late: "Too late..."

@@ -4,10 +4,10 @@
 
 #include <algorithm>
 #include <memory>
-#include <ranges>
 
 #include "battle_motion.hpp"
 #include "field_scene.hpp"
+#include "gone_actors.hpp"
 
 namespace dwe::app {
 
@@ -19,15 +19,13 @@ constexpr std::string_view NpcCharacter = "models/partner";
 
 } // namespace
 
-void FieldScene::followNpcs() {
-  const auto gone = [this](const std::unique_ptr<Actor>& actor) {
-    return !world_.alive(actor->entity);
-  };
-  for (const std::unique_ptr<Actor>& actor : npcActors_ | std::views::filter(gone)) {
-    models_->remove(actor->handle);
-  }
-  std::erase_if(npcActors_, gone);
+void FieldScene::forgetGoneNpcs() {
+  dropGoneActors(npcActors_, world_, [this](const Actor& actor) { models_->remove(actor.handle); });
   std::erase_if(npcsNotShown_, [this](scene::Entity entity) { return !world_.alive(entity); });
+}
+
+void FieldScene::followNpcs() {
+  forgetGoneNpcs();
 
   const game::field::NpcRules& rules = field_->rules().npc;
   const auto view = world_.registry().view<const game::field::NpcTag, const scene::ModelRef>();

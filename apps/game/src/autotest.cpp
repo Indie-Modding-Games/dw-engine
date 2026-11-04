@@ -926,6 +926,17 @@ void Autotest::runActions(std::uint64_t ticks, std::vector<platform::Event>& eve
   }
 }
 
+int Autotest::ticksThisFrame(int ticks) const {
+  if (finished() || stepIndex_ >= route_.steps.size()) {
+    return ticks;
+  }
+  const AutotestStep& step = route_.steps[stepIndex_];
+  if (step.kind != Kind::WalkTo || deviceOf(step) == AutotestDevice::Mouse) {
+    return ticks;
+  }
+  return std::min(ticks, SteeredTicks);
+}
+
 void Autotest::finishStep(double now) {
   const AutotestStep& step = route_.steps[stepIndex_];
   const double seconds = now - progress_->start;

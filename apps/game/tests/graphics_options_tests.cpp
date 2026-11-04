@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "graphics_options.hpp"
+#include "pause_menu_ui.hpp"
 #include "save_indicator.hpp"
 #include "user_settings.hpp"
 
@@ -27,6 +28,7 @@ using dwe::app::GraphicsOptions;
 using dwe::app::ShadowMode;
 using dwe::app::startGraphicsOptions;
 using dwe::app::withGraphicsFlag;
+using dwe::app::test::MenuUi;
 
 namespace {
 

@@ -258,6 +258,7 @@ void FishingScreen::enterMap(FieldScene& scene, std::string_view mapId) {
   scene.setPlayerClip(std::nullopt);
   scene.setExtraMarkers({});
   scene.setMinigamePrims({});
+  waterShown_ = false;
   scene.setCameraPixel(std::nullopt);
   // Leaving the map ends the fishing (FISH_deinitialize, FISH_endFishing): FISH_closeBaitMenuIfOpen
   // and FISH_shutdownTextBox.
@@ -349,12 +350,22 @@ void FishingScreen::tick(FieldScene& scene, const FishingButtons& buttons, doubl
   showCamera(scene);
   showMarkers(scene);
   showPrims(scene);
+  waterShown_ = true;
   showGauge();
 }
 
 void FishingScreen::tickWater(FieldScene& scene, double seconds) {
   game::fishing::Fishing* water = fishing_->fishing();
-  if (water == nullptr || active()) {
+  if (water == nullptr) {
+    // The water went with the map still loaded (partnerTickDying: deinitializeFishing): its fish,
+    // serpent and ripples leave the lake.
+    if (waterShown_) {
+      scene.setMinigamePrims({});
+      waterShown_ = false;
+    }
+    return;
+  }
+  if (active()) {
     return;
   }
   frameSeconds_ += seconds;
@@ -363,11 +374,13 @@ void FishingScreen::tickWater(FieldScene& scene, double seconds) {
     frame(scene);
   }
   showPrims(scene);
+  waterShown_ = true;
 }
 
-void FishingScreen::hideWater(FieldScene& scene) const {
+void FishingScreen::hideWater(FieldScene& scene) {
   if (fishing_->fishing() != nullptr) {
     scene.setMinigamePrims({});
+    waterShown_ = false;
   }
 }
 

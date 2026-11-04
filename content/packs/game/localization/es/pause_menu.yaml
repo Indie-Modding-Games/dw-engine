@@ -59,6 +59,10 @@ save_notice: "Aviso de guardado"
 # Autoguardado: el juego guarda solo en la ranura de la propia aventura (encendido por defecto; apagado, solo
 # escriben los guardados del jugador).
 autosave: "Autoguardado"
+# Volumen de la música y de los efectos (una mejora del motor; el original no tiene opciones de sonido): un paso de 0
+# (silencio) a 10 (el nivel del original, por defecto). La música incluye el sonido de las películas.
+music_volume: "Volumen de música"
+effects_volume: "Volumen de efectos"
 # Hora en dígitos: la hora del juego como HH:MM en una caja pequeña bajo el reloj del campo (encendido por defecto).
 digital_time: "Hora en dígitos"
 # Cambios en lote: el trueque de objetos y los sobres de la tienda preguntan cuántos de una vez (encendido por defecto).
@@ -85,12 +89,11 @@ continuous_music: "Música continua"
 # Varias necesidades: la burbuja sobre el compañero enseña hasta tres de sus necesidades a la vez, la más urgente
 # primero (encendida por defecto; apagada, la del original: una cada vez, turnándose las dos más urgentes).
 need_bubble_stack: "Varias necesidades"
-# Estilo chibi: personajes con la cabeza grande y las extremidades cortas, solo el dibujo: no, solo los modelos
-# que no son del juego original (de mods o importados; por defecto) o todos.
+# Estilo chibi: los modelos del juego original ya son chibi; un modelo de fuera (de un mod o importado) que no lo
+# sea se dibuja con las proporciones del original, solo el dibujo: no o los externos (por defecto).
 chibi_style: "Estilo chibi"
 chibi_style.off: "No"
 chibi_style.external: "Externos"
-chibi_style.all: "Todos"
 
 year_label: "Año"
 day_label: "Día"

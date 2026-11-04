@@ -690,20 +690,24 @@ fotograma como el original. La lógica es la misma en los dos casos.
 Mejora opcional y prototipo (el original no la tiene): dibuja un modelo con la cabeza grande, el torso corto y los
 miembros cortos (`chibi_style.hpp`, `animation::buildChibiRig`, ver `docs/modulos/engine/animation.md`, «Estilo
 chibi»), para que los modelos que no son del juego original (los de un mod o un `.glb` importado) se parezcan a los
-suyos. El ajuste `chibi_style` tiene tres valores:
+suyos. Los modelos del original ya son chibi: sus proporciones son la referencia (`models/chibi_profile.yaml`) y
+un modelo externo que ya cae dentro de ellas se queda como está. El ajuste `chibi_style` tiene dos valores:
 
 | Valor | Qué se dibuja chibi |
 |---|---|
 | `off` («No») | Nada |
-| `external` («Externos», por defecto) | Los modelos que vienen de un paquete que no es del motor |
-| `all` («Todos») | Todos los modelos, también los del original |
+| `external` («Externos», por defecto) | Los modelos de un paquete que no es del motor y que aún no son chibi |
 
-Se cambia en la fila «Estilo chibi» de las opciones del título y de las opciones del menú de pausa (Tab, «Opciones»;
-mando: Select), se aplica en el acto y se guarda en los ajustes del usuario; `--chibi` en la línea de órdenes fuerza
-«Todos» para una ejecución. El origen sale del paquete que gana al resolver el modelo en el sistema de archivos
+Un ajuste guardado antiguo con `all` («Todos») se lee como `external`. Se cambia en la fila «Estilo chibi» de las
+opciones del título y de las opciones del menú de pausa (Tab, «Opciones»; mando: Select), se aplica en el acto y se
+guarda en los ajustes del usuario; `--chibi` en la línea de órdenes pasa también los originales por el detector (para
+depurar; todos salen «chibi ya»). El origen sale del paquete que gana al resolver el modelo en el sistema de archivos
 virtual (`isOriginalModel`): un modelo es del original si ese paquete es del motor y está en la capa base o remaster;
 uno de la capa de mods o de usuario es externo. `FieldScene::setChibiMode` lo aplica al jugador, al compañero, a los
 PNJ del campo y a los luchadores del combate, que son los mismos actores del campo.
+
+Cada modelo externo deja en el registro (nivel info; los originales en debug) la decisión: forma, si ya es chibi o se
+cambia y con qué factores, y cada proporción que se salía con su rango y cómo queda dibujada.
 
 Solo cambia el dibujo: las animaciones son las mismas, los pies siguen en el suelo en cada fotograma y las colisiones,
 velocidades y tamaños que lee la lógica son los del original. Los puntos de los efectos que salen de un hueso
@@ -711,10 +715,11 @@ velocidades y tamaños que lee la lógica son los del original. Los puntos de lo
 modelo calcula su forma al cargarse; un cuerpo que la detección no reconoce se queda como está, y `models/chibi.yaml`
 del paquete del juego corrige una especie (apagarla, su forma, la parte de un hueso o sus factores).
 
-`--model-viewer <especie>/model --chibi [--viewer-yaw <grados>]` enseña una especie quieta y andando, original y
-chibi una al lado de otra, de frente (0) o de lado (90). Quedan sin seguir la silueta chibi las sombras y los
-retratos. Pruebas aisladas en `tests/chibi_style_tests.cpp` (un humanoide alto de cajas en un paquete de mod se dibuja
-chibi y uno del original no).
+`--model-viewer <especie>/model --chibi [--viewer-yaw <grados>] [--viewer-frame <unidades>]` enseña una especie
+quieta y andando, original y chibi una al lado de otra, de frente (0) o de lado (90); `--viewer-frame` fija la altura
+encuadrada para comparar modelos a la misma escala. Quedan sin seguir la silueta chibi las sombras y los
+retratos. Pruebas aisladas en `tests/chibi_style_tests.cpp` (un humanoide alto de cajas en un paquete de mod no es chibi, se
+dibuja dentro del perfil con los pies en el suelo, y uno del original no cambia).
 
 ## Aviso de guardado
 
@@ -1079,8 +1084,8 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
   fondo de la escena (`FieldScene::hdSceneryScene`, nada con el escenario oculto) en `FrameDesc::textureScenes`.
 - **Colisiones**: la opción solo cambia cómo se muestrea el mapa en la GPU; el campo (`game/field`) no la ve.
 - **Opciones**: es la fila 22 de `ui/common/game_options.lua`, junto a las otras opciones gráficas; el documento de
-  opciones pasa de 24 a 28 huecos (`option-slot-<n>`, `max_option_rows`) para que quepa y queden libres para las
-  siguientes.
+  opciones pasó de 24 a 28 huecos (`option-slot-<n>`, `max_option_rows`) para que quepa, y de 28 a 32 con las de
+  [Volumen](#volumen).
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
@@ -1110,9 +1115,38 @@ recuadro de pausa se lee la tecla del dispositivo en uso («Esc Opciones» en te
 
 Las opciones propias del motor salen de una lista, `ui/common/game_options.lua` (`game_options`): id de la fila,
 ajuste de la UI que publica el juego y que la fila envía como orden, texto, valor por defecto y, para las que no son
-sí/no, sus valores (`values`) y el prefijo de sus textos (`texts`). La página llena con ellas, en orden, las filas
-libres `option-slot-<n>` del documento (28) y les da el id de la opción, así que una opción nueva solo necesita su
-entrada en esa lista y que el juego atienda su ajuste; ningún documento necesita una fila propia.
+sí/no, sus valores (`values`) y el prefijo de sus textos (`texts`), o, para las numéricas, su rango (`range`, el
+número entero que se ve tal cual). La página llena con ellas, en orden, las filas libres `option-slot-<n>` del
+documento (32) y les da el id de la opción, así que una opción nueva solo necesita su entrada en esa lista y que el
+juego atienda su ajuste; ningún documento necesita una fila propia.
+
+## Volumen
+
+Mejora opcional (no cambia ninguna regla): el original **no tiene ninguna opción de sonido**. Su menú del título solo
+tiene «NEW GAME», «CONTINUE GAME», «DELETE GAME» y «BATTLE MODE» (`main_menu.c`: `TITLE_MENU_ITEMS`), y el volumen
+general se fija una vez al máximo al cargar el sonido (`sound.c`: `initializeMusic`, `SsSetMVol(127, 127)`); el juego no llama nunca a
+las funciones de estéreo/mono de la biblioteca de sonido. dwe añade dos filas al final de las opciones en partida
+(26 y 27 de `ui/common/game_options.lua`), «Volumen de música» y «Volumen de efectos» («Music volume», «Effects
+volume»), de 0 (silencio) a 10 (el nivel del original, por defecto).
+
+| Dónde se cambia | Teclado | Mando |
+|---|---|---|
+| En partida (aspecto moderno) | Tab, «Opciones», filas «Volumen de música» / «Volumen de efectos»; ←/→ bajan o suben un paso | Botón norte, «Opciones», las mismas filas; izquierda/derecha |
+| En partida (aspecto original) | Tab, «Jugador», Tab, «Opciones», las mismas filas | Botón norte, «Jugador», botón norte, «Opciones», las mismas filas |
+
+← se para en 0 (nunca salta al máximo); → o confirmar (también el clic) suben un paso y desde 10 vuelven a 0, para que
+el ratón llegue a todos los pasos. La fila envía la orden `music_volume` / `effects_volume` (un número);
+`VolumeChanger` (`volume_setting.hpp`) la redondea y la limita a 0–10, la aplica al momento a los controles `Music` y
+`Effects` de `audio::Audio` (`setVolume`; el mezclador hace una rampa corta, sin saltos), publica el paso y lo guarda en
+los ajustes del usuario (`music_volume: 7`). Al arrancar, `Game` aplica los pasos guardados antes de que suene nada.
+La ganancia de un paso es su fracción al cuadrado (`volumeGain`: 10 → 1, 5 → 0,25, unos −12 dB; 1 → 0,01), para que
+los pasos suenen repartidos en vez de apiñarse arriba. El control `Master` se queda en 1.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Volumen de música | No existe: la música suena siempre al máximo (`sound.c`: `initializeMusic`, `SsSetMVol(127, 127)`) | Fila «Volumen de música», 0–10 (10 por defecto = el original); bus `Music`, que también lleva el sonido de las películas (`MovieScreen`) | `volume_setting_tests.cpp` («the options page's volume rows change the audio at once and save the steps», «the saved volumes reach the audio at start…»); `in_game_options_tests.cpp` («the options page steps the music's and the effects' volumes from 0 to 10», pieles original y moderna); `user_settings_tests.cpp` | Mejora (opción) |
+| Volumen de efectos | No existe: igual que la música | Fila «Volumen de efectos», 0–10; bus `Effects`: los efectos del juego y los sonidos de los menús | Los mismos | Mejora (opción) |
+| Estéreo/mono | No hay opción: el juego no cambia nunca el modo de la biblioteca de sonido | Siempre estéreo; no se añade fila de mono | — | Hueco (sin valor claro) |
 
 ## Sombras, luz y colores vivos
 

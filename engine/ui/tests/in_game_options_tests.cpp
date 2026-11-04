@@ -26,7 +26,7 @@ namespace {
 using fixture::Screen;
 
 // The game's options as ui/common/game_options.lua lists them, in order.
-constexpr std::array<std::string_view, 24> GameOptions{
+constexpr std::array<std::string_view, 26> GameOptions{
     "free-exploration",  "smooth-motion", "save-notice",
     "digital-time",      "bulk-trades",   "evolution-requirements",
     "translated-signs",  "status-extras", "canonical-stages",
@@ -34,7 +34,8 @@ constexpr std::array<std::string_view, 24> GameOptions{
     "need-bubble-stack", "show-minimap",  "minimap-enemies",
     "world-map",         "chibi-style",   "shadows",
     "enhanced-lighting", "vivid-colors",  "hd-scenery",
-    "weather",           "seasons",       "autosave"};
+    "weather",           "seasons",       "autosave",
+    "music-volume",      "effects-volume"};
 
 // In the original look the menu's box grows in for 5 frames at 20 a second and ignores the keys
 // until it is in place (ui/common/original_box.lua): wait those 0.25 s before pressing anything.
@@ -90,10 +91,10 @@ TEST_CASE("the options page lists every game option in a row of its own, and onl
   CHECK(screen.ui->elementText("pause_menu", "option-slot-1-label") == "Exploración libre");
   CHECK(screen.ui->elementText("pause_menu", "free-exploration-value") == "No");
   CHECK(screen.ui->elementText("pause_menu", "long-names-value") == "Sí");
-  // The chibi style has three values: by default only the models from outside the original game.
+  // The chibi style has two values: by default the models from outside the original game.
   CHECK(screen.ui->elementText("pause_menu", "chibi-style-value") == "Externos");
   // The rows the list does not fill stay hidden.
-  CHECK(screen.ui->elementHasClass("pause_menu", "option-slot-26", "hidden"));
+  CHECK(screen.ui->elementHasClass("pause_menu", "option-slot-28", "hidden"));
   // The language and the original-looking text, as on the title.
   CHECK(screen.ui->elementText("pause_menu", "language-value") == "Español");
   CHECK_FALSE(screen.ui->elementText("pause_menu", "text-font-value").empty());
@@ -108,7 +109,7 @@ TEST_CASE("the options page lists every game option in a row of its own, and onl
                                 std::vector<std::string>{"", "text-font", "1"}));
   const std::vector<UiCommand> commands = screen.ui->takeCommands();
   CHECK(sent(commands, "free_exploration", UiValue{true}));
-  CHECK(sent(commands, "chibi_style", UiValue{std::string{"all"}}));
+  CHECK(sent(commands, "chibi_style", UiValue{std::string{"off"}}));
   CHECK(sent(commands, "text_font", UiValue{std::string{"original"}}));
 }
 
@@ -143,7 +144,7 @@ game_options[#game_options + 1] = {
   CHECK(screen.ui->elementText("pause_menu", "movement-value") == "pause_menu.movement.keys");
   std::ignore = screen.ui->takeCommands();
   REQUIRE(
-      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "26", "1"}));
+      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "28", "1"}));
   CHECK(sent(screen.ui->takeCommands(), "movement", UiValue{std::string{"mouse"}}));
 }
 
@@ -206,6 +207,44 @@ TEST_CASE("the options page turns the enemies on the minimap on and off, next to
   CHECK(sent(screen.ui->takeCommands(), "minimap_enemies", UiValue{false}));
   screen.ui->setSetting("minimap_enemies", false);
   CHECK(screen.ui->elementText("pause_menu", "minimap-enemies-value") == "No");
+}
+
+TEST_CASE("the options page steps the music's and the effects' volumes from 0 to 10") {
+  for (const std::string_view skin : {"original", "modern"}) {
+    CAPTURE(skin);
+    Screen screen{"pause_menu", "es"};
+    screen.skin(skin);
+    openOnOptions(screen);
+    CHECK(screen.ui->elementText("pause_menu", "option-slot-26-label") == "Volumen de música");
+    CHECK(screen.ui->elementText("pause_menu", "option-slot-27-label") == "Volumen de efectos");
+    // The original's level until the game publishes another.
+    CHECK(screen.ui->elementText("pause_menu", "music-volume-value") == "10");
+    CHECK(screen.ui->elementText("pause_menu", "effects-volume-value") == "10");
+    screen.ui->setSetting("music_volume", 7.0);
+    CHECK(screen.ui->elementText("pause_menu", "music-volume-value") == "7");
+
+    std::ignore = screen.ui->takeCommands();
+    REQUIRE(screen.ui->callScript("pause_menu", "adjust_slot",
+                                  std::vector<std::string>{"", "26", "-1"}));
+    REQUIRE(screen.ui->callScript("pause_menu", "adjust_slot",
+                                  std::vector<std::string>{"", "26", "1"}));
+    // Up from the highest starts again from silence, so a click reaches every step.
+    REQUIRE(screen.ui->callScript("pause_menu", "adjust_slot",
+                                  std::vector<std::string>{"", "27", "1"}));
+    std::vector<UiCommand> commands = screen.ui->takeCommands();
+    CHECK(sent(commands, "music_volume", UiValue{6.0}));
+    CHECK(sent(commands, "music_volume", UiValue{8.0}));
+    CHECK(sent(commands, "effects_volume", UiValue{0.0}));
+
+    // Down stops at silence: it never jumps to the loudest.
+    screen.ui->setSetting("effects_volume", 0.0);
+    CHECK(screen.ui->elementText("pause_menu", "effects-volume-value") == "0");
+    REQUIRE(screen.ui->callScript("pause_menu", "adjust_slot",
+                                  std::vector<std::string>{"", "27", "-1"}));
+    commands = screen.ui->takeCommands();
+    CHECK_FALSE(std::ranges::any_of(
+        commands, [](const UiCommand& command) { return command.name == "effects_volume"; }));
+  }
 }
 
 } // namespace dwe::ui

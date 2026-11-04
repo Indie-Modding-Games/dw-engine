@@ -194,6 +194,9 @@ void FieldScene::releaseFighters() {
     }
   };
   release(*partnerActor_);
+  // The NPCs that ran off left the map at the intro's end (battle_setup.c:316) while the field
+  // did not tick: the battle's hold on them went with them, so there is nothing to give back.
+  forgetGoneNpcs();
   for (const std::unique_ptr<Actor>& actor : npcActors_) {
     release(*actor);
   }

@@ -63,7 +63,7 @@ ModelViewer::create(render::Renderer& renderer, const std::filesystem::path& con
   if (!vfs) {
     return std::unexpected{vfs.error()};
   }
-  const animation::ChibiOverrides overrides = loadChibiOverrides(*vfs);
+  const ChibiStyleData chibiStyle = loadChibiStyleData(*vfs);
   for (std::size_t row = 0; row < characters.size(); ++row) {
     const auto id = assets::AssetId::parse(characters[row]);
     if (!id) {
@@ -101,7 +101,7 @@ ModelViewer::create(render::Renderer& renderer, const std::filesystem::path& con
     viewer->data_.push_back(std::make_unique<assets::ModelData>(std::move(*model)));
     viewer->handles_.push_back(*handle);
     const assets::ModelData& data = *viewer->data_.back();
-    viewer->rigs_.push_back(chibiRigOf(character->model, data, overrides));
+    viewer->rigs_.push_back(chibiRigOf(character->model, data, chibiStyle));
     // The model's size in its rest pose, for the room between actors and the camera.
     glm::vec3 low{0.0F};
     glm::vec3 high{0.0F};
@@ -171,9 +171,11 @@ void ModelViewer::update(double seconds, rhi::Extent extent) {
                            : 1.0F;
   // Far enough for the tallest model and the whole row (seen from the front) to fit the target.
   const float viewHeight = 2.0F * std::tan(FieldOfView / 2.0F);
-  const float distance =
-      std::max(tallest_ / (FillHeight * viewHeight), rowWidth_ / (FillWidth * viewHeight * aspect));
-  const glm::vec3 target{0.0F, tallest_ / 2.0F, 0.0F};
+  const float distance = style_.frame ? *style_.frame / viewHeight
+                                      : std::max(tallest_ / (FillHeight * viewHeight),
+                                                 rowWidth_ / (FillWidth * viewHeight * aspect));
+  const float middle = style_.frame ? *style_.frame * FillHeight / 2.0F : tallest_ / 2.0F;
+  const glm::vec3 target{0.0F, middle, 0.0F};
   const glm::vec3 eye = target + glm::vec3{distance * std::sin(angle), CameraRise * distance,
                                            distance * std::cos(angle)};
   models_->setCamera(

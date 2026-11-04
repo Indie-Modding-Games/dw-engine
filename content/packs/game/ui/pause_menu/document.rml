@@ -541,6 +541,10 @@
 				<button id="option-slot-26" class="option hidden" onclick="adjust_slot(document, 26, 1)"><span class="label" id="option-slot-26-label"></span><span class="value" id="option-slot-26-value"></span></button>
 				<button id="option-slot-27" class="option hidden" onclick="adjust_slot(document, 27, 1)"><span class="label" id="option-slot-27-label"></span><span class="value" id="option-slot-27-value"></span></button>
 				<button id="option-slot-28" class="option hidden" onclick="adjust_slot(document, 28, 1)"><span class="label" id="option-slot-28-label"></span><span class="value" id="option-slot-28-value"></span></button>
+				<button id="option-slot-29" class="option hidden" onclick="adjust_slot(document, 29, 1)"><span class="label" id="option-slot-29-label"></span><span class="value" id="option-slot-29-value"></span></button>
+				<button id="option-slot-30" class="option hidden" onclick="adjust_slot(document, 30, 1)"><span class="label" id="option-slot-30-label"></span><span class="value" id="option-slot-30-value"></span></button>
+				<button id="option-slot-31" class="option hidden" onclick="adjust_slot(document, 31, 1)"><span class="label" id="option-slot-31-label"></span><span class="value" id="option-slot-31-value"></span></button>
+				<button id="option-slot-32" class="option hidden" onclick="adjust_slot(document, 32, 1)"><span class="label" id="option-slot-32-label"></span><span class="value" id="option-slot-32-value"></span></button>
 				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 
