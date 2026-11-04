@@ -24,6 +24,9 @@ struct ModelViewerStyle {
   // The models turned by this many degrees about the vertical (0 shows their fronts) under a fixed
   // camera, instead of the camera slowly going round.
   std::optional<float> yaw;
+  // The view this many world units high (at the models), whatever their size, instead of fitting
+  // the tallest and the row: captures of different models share a scale.
+  std::optional<float> frame;
 };
 
 // A development view (`dwe-game --model-viewer`): each character of the game pack

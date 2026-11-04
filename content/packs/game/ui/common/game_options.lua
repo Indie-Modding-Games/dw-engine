@@ -138,14 +138,14 @@ game_options = {
   -- player is and where his map leads (on by default; off leaves the key without a use, as the
   -- original has no such map).
   { id = "world-map", setting = "world_map", label = "pause_menu.world_map", default = true },
-  -- Chibi style: characters drawn with a big head and short limbs, the drawing only: off, only
-  -- the models that do not come from the original game (mods, imported ones; the default, so they
-  -- match the original's look) or all of them.
+  -- Chibi style: the original game's models are chibi already; a model from elsewhere (a mod's, an
+  -- imported one) that is not is drawn with the original's proportions, the drawing only: off or
+  -- external models (the default).
   {
     id = "chibi-style",
     setting = "chibi_style",
     label = "pause_menu.chibi_style",
-    values = { "off", "external", "all" },
+    values = { "off", "external" },
     texts = "pause_menu.chibi_style",
     default = "external",
   },

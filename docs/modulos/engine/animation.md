@@ -28,10 +28,32 @@ esqueleto y la malla de cada hueso:
 - cuatro piernas hacen un cuadrúpedo, ninguna y una cola una serpiente, alas sin brazos un cuerpo alado y dos piernas o
   dos brazos un bípedo.
 
-`buildChibiRig` da a cada forma sus factores (`defaultProportions`; un bípedo: cabeza ×1,6, torso ×0,8, brazos ×0,7,
-piernas ×0,65, manos ×1,2, pies ×1,15) y, en un bípedo, los ajusta al tamaño de sus partes en reposo: la cabeza crece
-más cuanto más pequeña es respecto a la altura (×1,6 con una cabeza de 0,325 de la altura, entre ×1,3 y ×2) y una mano
-que ya es grande no crece. Un cuerpo de forma desconocida se queda sin cambios. Los factores se aplican sobre la pose
+Los modelos del original ya son chibi y son la referencia. `measureBody` mide un modelo en su pose de reposo (con la
+malla ya pegada a los huesos) y da once proporciones: la cabeza respecto a la altura y el torso respecto a la altura
+(solo para decidir), la cabeza respecto al torso (`head_size`), el ancho de la cabeza respecto al del tronco
+(`head_width`), el alcance de brazos, piernas, cuello, cola y alas y el tamaño de manos y pies (lo ancho del último
+30 % del miembro), todo respecto al torso. En una serpiente, sin tronco, la cola hace de torso. `profileOf` junta las
+medidas de los originales por forma y guarda, por proporción, el mínimo, la mediana y el máximo (una medida repetida
+cuenta una vez); el perfil vive como datos en `models/chibi_profile.yaml` del paquete del juego (40 bípedos, 13
+cuadrúpedos, 6 alados y 6 serpientes) y se lee con `parseChibiProfile`. Lo genera la prueba con contenido:
+
+```
+DWE_CONTENT=<contenido extraído> DWE_CHIBI_PROFILE_OUT=<paquete del juego>/models/chibi_profile.yaml \
+  dwe_animation_tests --test-case='*chibi profile*'
+```
+
+Sin `DWE_CHIBI_PROFILE_OUT` la misma prueba compara el perfil guardado con el que sale del disco del usuario. Las
+especies con `off: true` en `models/chibi.yaml` no entran en el perfil.
+
+`buildChibiRig(modelo, perfil)` es un detector: si todas las proporciones medidas caen dentro del rango de su forma
+(con una tolerancia de 0,1 % por el redondeo del archivo), el modelo ya es chibi (`ChibiRig::alreadyChibi`) y se
+dibuja exactamente igual que sin el estilo (las mismas matrices, bit a bit). Si no, se calcula cuánto se sale (el
+mayor desvío, en escala logarítmica, hasta el doble del extremo del rango) y cada proporción que se ajusta va hacia la
+mediana: desde el extremo del rango más cercano hasta la mediana, más cerca cuanto más se sale. Unas rondas de ajuste
+buscan los factores (cabeza, brazos, piernas, cuello, cola, alas, manos y pies; el torso no cambia y hace de unidad)
+que dan esas proporciones, con límites para que el modelo no se deforme: entre ×0,35 y ×3, manos y pies hasta ×2 y el
+cuello nunca crece. `ChibiRig` guarda la medida, el rango, qué proporciones se salían y cómo quedan dibujadas. Un
+cuerpo de forma desconocida, o sin perfil para su forma, se queda sin cambios. Los factores se aplican sobre la pose
 animada en `computeChibiJointMatrices`: acerca los huesos de cada miembro, aplasta cada segmento a lo largo y lo
 ensancha un poco, escala la cabeza entera desde su hueso y acorta el tronco por su eje (arriba en un cuerpo erguido,
 adelante en uno a cuatro patas). En cada fotograma sube o baja el modelo para que el punto más bajo de las piernas
@@ -41,5 +63,7 @@ un poco hasta que no. Las matrices de la lógica (`AnimationPlayer::jointMatrice
 
 Coste: una pasada más por los nodos y, por fotograma, los puntos de apoyo de las piernas (entre 86 y 296, sin
 repetir) de cada modelo; con la compilación de depuración, el avance de la animación tarda una vez y media más.
-Pruebas aisladas en `tests/chibi_tests.cpp` (un bípedo de cajas, las correcciones y, con el contenido extraído, la
-forma y el suelo de siete especies de prueba y las correcciones de `models/chibi.yaml`).
+Pruebas aisladas en `tests/chibi_tests.cpp`: modelos de cajas hechos en la prueba (un humanoide alto y delgado y un
+cuadrúpedo de patas largas entran en el rango sin despegar los pies del suelo; uno ya chibi queda igual bit a bit
+durante un paso), los bordes del detector, el perfil escrito y leído de nuevo y, con el contenido extraído, el perfil
+del disco y que ningún original cambia.

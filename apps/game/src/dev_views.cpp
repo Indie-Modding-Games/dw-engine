@@ -104,9 +104,9 @@ int runDevView(const Options& options) {
   std::unique_ptr<TestScene> testScene;
   std::unique_ptr<ModelViewer> modelViewer;
   if (options.modelViewer) {
-    auto viewer =
-        ModelViewer::create(**renderer, options.content, dwe::content::teamPacksFolder() / "game",
-                            options.characters, {.chibi = options.chibi, .yaw = options.viewerYaw});
+    auto viewer = ModelViewer::create(
+        **renderer, options.content, dwe::content::teamPacksFolder() / "game", options.characters,
+        {.chibi = options.chibi, .yaw = options.viewerYaw, .frame = options.viewerFrame});
     if (!viewer) {
       core::logError("{}", viewer.error().message);
       return EXIT_FAILURE;

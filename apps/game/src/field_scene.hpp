@@ -297,8 +297,9 @@ public:
   // Whether the signs painted in the maps are written in the player's language (the pause menu's
   // "Translated signs"; docs/modulos/engine/signs.md). The map shown follows at the next tick.
   void setTranslatedSigns(bool translated) { translatedSigns_ = translated; }
-  // The chibi style (chibi_style.hpp): which characters are drawn with a big head and short limbs,
-  // the drawing only (and the points effects take from their bones).
+  // The chibi style (chibi_style.hpp): whether the characters whose model comes from elsewhere
+  // and is not chibi are drawn with the original's proportions, the drawing only (and the points
+  // effects take from their bones).
   void setChibiMode(ChibiMode mode) { chibiMode_ = mode; }
   [[nodiscard]] ChibiMode chibiMode() const { return chibiMode_; }
   // HD scenery (hd_scenery_setting.hpp): the map drawn smooth at the window's resolution, or with
@@ -701,7 +702,7 @@ private:
     // The slot of its own species bank (stats.current.vabId), where its clips' bank 4 sounds play.
     std::int64_t soundSlot = 0;
     // How the chibi style draws it (chibi_style.hpp), and whether its model is the original
-    // game's, which the default mode leaves as it is.
+    // game's, which the style leaves as it is.
     animation::ChibiRig chibi{};
     bool originalModel = true;
   };
@@ -921,7 +922,7 @@ private:
   std::string signsKey_;
   bool translatedSigns_ = true;
   ChibiMode chibiMode_ = ChibiMode::External;
-  animation::ChibiOverrides chibiOverrides_;
+  ChibiStyleData chibiStyle_;
   // Scratch for the matrices drawn with the chibi style.
   mutable ChibiJoints chibiJoints_;
   std::unique_ptr<render::ModelRenderer> models_;

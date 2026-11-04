@@ -576,10 +576,11 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                      core::formatMessage(messages::PartnerModelNotShown,
                                          session.partnerView().species, shown.error().message));
   }
-  // The chibi style (chibi_style.hpp): the saved mode (external models unless chosen), or all
-  // with --chibi for a run. The options change it through the game (game.cpp).
-  const ChibiMode chibi =
-      context.options->chibi ? ChibiMode::All : startChibiMode(context.userSettings->chibiStyle);
+  // The chibi style (chibi_style.hpp): the saved mode (external models unless chosen), or every
+  // model through the detector with --chibi for a run (development). The options change it
+  // through the game (game.cpp).
+  const ChibiMode chibi = context.options->chibi ? ChibiMode::EveryModel
+                                                 : startChibiMode(context.userSettings->chibiStyle);
   scene_->setChibiMode(chibi);
   context_.ui->setSetting(ChibiStyleSetting, std::string{chibiModeName(chibi)});
   // Smooth motion (game::field::Field::setSmoothMotion), the engine's, on unless turned off.

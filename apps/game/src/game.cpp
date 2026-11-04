@@ -720,8 +720,7 @@ int runGame(const Options& requested) {
   HdSceneryChanger hdScenery{userSettings, settingsFile};
   WalkControlChanger walkControl{userSettings, settingsFile};
   ChibiModeChanger chibiMode{userSettings, settingsFile};
-  (*ui)->setSetting(ChibiStyleSetting,
-                    std::string{chibiModeName(options.chibi ? ChibiMode::All : chibiMode.mode())});
+  (*ui)->setSetting(ChibiStyleSetting, std::string{chibiModeName(chibiMode.mode())});
   // An autotest walks with the device of its route (it reads no settings file).
   if (autotest) {
     walkControl.use(autotest->walksWithMouse() ? WalkControl::Mouse : WalkControl::Keys, nullptr);

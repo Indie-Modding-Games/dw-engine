@@ -10,7 +10,10 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <format>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -163,6 +166,11 @@ struct Packs {
   Packs() {
     const std::vector<std::byte> humanoid = humanoidGlb();
     memory.addFile("base/pack.yaml", "id: base\nversion: 0.1.0\nlayer: base\npriority: 0\n");
+    // The game pack's profile of the original's proportions.
+    std::ifstream profile{std::filesystem::path{DWE_GAME_PACK} / "models/chibi_profile.yaml"};
+    std::stringstream text;
+    text << profile.rdbuf();
+    memory.addFile("base/models/chibi_profile.yaml", text.str());
     memory.addFile("base/digimon/boys/model.glb", humanoid);
     memory.addFile("base/digimon/agum/model.glb", humanoid);
     memory.addFile("remaster/pack.yaml",
@@ -192,15 +200,18 @@ assets::AssetId id(std::string_view text) {
 } // namespace
 
 TEST_CASE("the chibi style's modes read and write by name, external models by default") {
-  for (const ChibiMode mode : {ChibiMode::Off, ChibiMode::External, ChibiMode::All}) {
+  for (const ChibiMode mode : {ChibiMode::Off, ChibiMode::External}) {
     CHECK(parseChibiMode(chibiModeName(mode)) == mode);
   }
   CHECK(startChibiMode(std::nullopt) == ChibiMode::External);
-  CHECK(startChibiMode(std::string{"all"}) == ChibiMode::All);
+  // The old "all" (the original's models reshaped too) reads as external models.
+  CHECK(startChibiMode(std::string{"all"}) == ChibiMode::External);
   CHECK(startChibiMode(std::string{"sideways"}) == ChibiMode::External);
+  // The development mode (--chibi) is never saved as such.
+  CHECK(chibiModeName(ChibiMode::EveryModel) == "external");
   CHECK_FALSE(drawsChibi(ChibiMode::External, true));
   CHECK(drawsChibi(ChibiMode::External, false));
-  CHECK(drawsChibi(ChibiMode::All, true));
+  CHECK(drawsChibi(ChibiMode::EveryModel, true));
   CHECK_FALSE(drawsChibi(ChibiMode::Off, false));
 }
 
@@ -215,16 +226,26 @@ TEST_CASE("a mod's model is drawn chibi by default, the original game's models a
 
   auto model = assets::loadModel(files, id("hero_mod/hero/model"));
   REQUIRE_MESSAGE(model.has_value(), model.error().message);
-  const animation::ChibiRig rig = chibiRigOf(id("hero_mod/hero/model"), *model, {});
+  const ChibiStyleData style = loadChibiStyleData(files);
+  REQUIRE(style.profile.find(animation::BodyShape::Biped) != nullptr);
+  const animation::ChibiRig rig = chibiRigOf(id("hero_mod/hero/model"), *model, style);
+  MESSAGE(chibiDecision(id("hero_mod/hero/model"), rig));
+  // The detector: an adult's proportions are not the original's, so it is reshaped.
+  CHECK_FALSE(rig.alreadyChibi);
   REQUIRE(rig.active);
   CHECK(rig.classification.shape == animation::BodyShape::Biped);
   CHECK(rig.classification.legs == 2);
   CHECK(rig.classification.arms == 2);
   CHECK(rig.classification.head == std::optional<std::uint32_t>{5});
-  // A small head (an eighth of the height) grows more than the player's character's.
+  // A small head (an eighth of the height) grows a lot; drawn, its share of the height is within
+  // the original's range.
   CHECK(rig.proportions.head > 1.8F);
+  const auto& head = rig.reference[animation::BodyRatio::Head];
+  REQUIRE(head.has_value());
+  CHECK_FALSE(head->contains(*rig.measure[animation::BodyRatio::Head]));
+  CHECK(head->contains(*rig.drawn[animation::BodyRatio::Head]));
 
-  // Drawn chibi: the head is bigger, the figure shorter, the feet still on the floor.
+  // Drawn chibi: the head is bigger, the hips lower (shorter legs), the feet still on the floor.
   std::vector<assets::NodeTransform> rest(model->nodes.size());
   animation::restPose(*model, rest);
   std::vector<glm::mat4> world(model->nodes.size());
@@ -233,10 +254,10 @@ TEST_CASE("a mod's model is drawn chibi by default, the original game's models a
   std::vector<glm::mat4> chibi(original.size());
   animation::computeChibiJointMatrices(*model, rig, rest, original, world, chibi);
   CHECK(animation::lowestPoint(*model, chibi) == doctest::Approx(0.0F).epsilon(1e-3));
-  const auto headTop = [&](std::span<const glm::mat4> joints) {
-    return (joints[5] * glm::vec4{0.0F, 181.0F, 0.0F, 1.0F}).y;
+  const auto hips = [&](std::span<const glm::mat4> joints) {
+    return (joints[1] * glm::vec4{0.0F, 95.0F, 0.0F, 1.0F}).y;
   };
-  CHECK(headTop(chibi) < headTop(original));
+  CHECK(hips(chibi) < 0.7F * hips(original));
   const float headSize = glm::length(glm::vec3{chibi[5][1]});
   CHECK(headSize == doctest::Approx(rig.proportions.head));
 }

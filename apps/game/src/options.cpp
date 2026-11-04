@@ -127,6 +127,12 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     options.viewerYaw = degrees;
     return error == std::errc{} && end == value.data() + value.size();
   }
+  if (argument == "--viewer-frame") {
+    float height = 0.0F;
+    const auto [end, error] = std::from_chars(value.data(), value.data() + value.size(), height);
+    options.viewerFrame = height;
+    return error == std::errc{} && end == value.data() + value.size() && height > 0.0F;
+  }
   if (argument == "--shots") {
     options.shots = value;
     return true;

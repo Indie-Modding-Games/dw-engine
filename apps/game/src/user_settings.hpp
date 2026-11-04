@@ -71,8 +71,8 @@ struct UserSettings {
   std::optional<bool> needBubbleStack = std::nullopt;
   // Whether M opens the island map (world_map: true, false; world_map.hpp); on when not chosen.
   std::optional<bool> worldMap = std::nullopt;
-  // The chibi style (chibi_style: off, external, all; chibi_style.hpp): which characters are
-  // drawn with a big head and short limbs.
+  // The chibi style (chibi_style: off, external; an old all reads as external; chibi_style.hpp):
+  // whether models from elsewhere that are not chibi are drawn with the original's proportions.
   std::optional<std::string> chibiStyle = std::nullopt;
   // The enemies on the minimap (minimap_enemies: true, false; minimap_enemies.hpp): a dot for each
   // NPC on the map that can start a battle; on when not chosen yet.
