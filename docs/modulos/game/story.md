@@ -63,6 +63,14 @@ registra en la partida guardada y se lo da al campo.
   entonces para. Antes el motor guardaba la velocidad del paseo y el jugador seguía corriendo hasta la pared (trop03,
   Vegiemon: de (-708, -2323) hasta (-4647, 3941) en ejes del original). Diferencia que queda: durante el giro el motor
   mantiene la dirección del paseo en vez de torcerla con él (unos pocos fotogramas).
+- **Cada sección empieza con las cajas en modo confirmar** (`script_interp.c: callScriptSection`, `TEXTBOX_CLOSE_MODE`
+  0, y su `initializeTextbox`, que pone a 0 los fotogramas del modo temporizado): el modo que dejó la sección anterior
+  (automático o temporizado) no pasa a la siguiente. Antes el motor lo arrastraba: una sección que acababa en modo
+  automático (`textbox_mode(1, 0)`) hacía que la primera página de la siguiente se cerrara sola. Igual
+  (`dialogue_mode_tests.cpp`). El cerrojo de confirmar al abrir una caja (`setFreshDialogue`,
+  `isXPressedAfterDialogue`) es `Box::freshGuard`. Igual.
+- **La pila de subrutinas** (`popScriptStack`, `returnFromTop`): igual, sin el tope de 8 marcos del original, que era
+  de su memoria y no del juego (Mejora sin efecto en los scripts del disco).
 - **Puertos** (`story_ports.hpp`): `StoryStatePort` (disparadores y variables; dice cuántos tiene: 800 y 256 son el
   conjunto base del original y un mod puede ampliarlo) y `StoryRandomPort` (el generador de la sesión, de 0 a 0x7FFF).
 

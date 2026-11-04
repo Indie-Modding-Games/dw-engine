@@ -169,7 +169,12 @@ std::optional<ResumeValue> Dialogue::poll() {
 
 void Dialogue::scriptStarted() {
   core::logDebug("{}", msg::PortScriptStarted);
+  // script_interp.c: callScriptSection: the speaker is the player and the boxes close on confirm
+  // (TEXTBOX_CLOSE_MODE 0) whatever the last section left; its initializeTextbox (script_textbox.c:
+  // 412) clears the timed mode's frames (AUTOCLOSE_FRAMES) with the boxes.
   owner_ = PlayerSpeaker;
+  mode_ = TextboxMode::Confirm;
+  timedFrames_ = 0;
 }
 
 void Dialogue::frameBegan() {
