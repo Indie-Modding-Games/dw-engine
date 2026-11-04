@@ -87,6 +87,7 @@
 #include "title_screen.hpp"
 #include "ui_skin_setting.hpp"
 #include "user_settings.hpp"
+#include "volume_setting.hpp"
 #include "walk_control.hpp"
 
 namespace dwe::app {
@@ -713,6 +714,9 @@ int runGame(const Options& requested) {
   }
   GraphicsChanger graphics{userSettings, settingsFile, startGraphics};
   graphics.publish(**ui);
+  // The music's and the effects' volumes: the saved steps, applied to the audio from the start.
+  VolumeChanger volumes{userSettings, settingsFile, sound};
+  volumes.publish(**ui);
   HdSceneryChanger hdScenery{userSettings, settingsFile};
   WalkControlChanger walkControl{userSettings, settingsFile};
   ChibiModeChanger chibiMode{userSettings, settingsFile};
@@ -1418,6 +1422,9 @@ int runGame(const Options& requested) {
         continue;
       }
       if (graphics.handle(command, **ui)) {
+        continue;
+      }
+      if (volumes.handle(command, **ui)) {
         continue;
       }
       if (command.name == HdScenerySetting) {

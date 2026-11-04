@@ -96,6 +96,10 @@ struct UserSettings {
   // layers drawn smooth at the window's resolution instead of the original's pixels; on when not
   // chosen yet.
   std::optional<bool> hdScenery = std::nullopt;
+  // The music's and the effects' volumes (music_volume, effects_volume: a step from 0, silent, to
+  // VolumeSteps, the original's level; volume_setting.hpp), the full level when not chosen yet.
+  std::optional<int> musicVolume = std::nullopt;
+  std::optional<int> effectsVolume = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

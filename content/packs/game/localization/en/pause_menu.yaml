@@ -57,6 +57,10 @@ smooth_motion: "Smooth motion"
 save_notice: "Save notice"
 # Autosave: the game saves by itself to the adventure's own slot (on by default; off, only the player's saves write).
 autosave: "Autosave"
+# Music and effects volume (an engine addition; the original has no sound options): a step from 0 (silent) to 10
+# (the original's level, the default). The music includes the movies' sound.
+music_volume: "Music volume"
+effects_volume: "Effects volume"
 # Digital time: the game time as HH:MM in a small box under the field's clock (on by default).
 digital_time: "Digital time"
 # Bulk trades: the item trader and the card shop's packs ask how many at once (on by default).

@@ -9,6 +9,7 @@
 
 #include <fstream>
 #include <iterator>
+#include <string>
 #include <system_error>
 #include <utility>
 
@@ -48,6 +49,8 @@ constexpr std::string_view VividColorsKey = "vivid_colors";
 constexpr std::string_view WeatherKey = "weather";
 constexpr std::string_view SeasonsKey = "seasons";
 constexpr std::string_view HdSceneryKey = "hd_scenery";
+constexpr std::string_view MusicVolumeKey = "music_volume";
+constexpr std::string_view EffectsVolumeKey = "effects_volume";
 
 } // namespace
 
@@ -144,6 +147,12 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* hd = tree->find(HdSceneryKey)) {
       settings.hdScenery = reader.boolean(*hd);
+    }
+    if (const core::YamlNode* music = tree->find(MusicVolumeKey)) {
+      settings.musicVolume = reader.integer<int>(*music);
+    }
+    if (const core::YamlNode* effects = tree->find(EffectsVolumeKey)) {
+      settings.effectsVolume = reader.integer<int>(*effects);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -253,6 +262,14 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.hdScenery) {
     root.set(std::string{HdSceneryKey},
              core::YamlNode::scalar(*settings.hdScenery ? "true" : "false"));
+  }
+  if (settings.musicVolume) {
+    root.set(std::string{MusicVolumeKey},
+             core::YamlNode::scalar(std::to_string(*settings.musicVolume)));
+  }
+  if (settings.effectsVolume) {
+    root.set(std::string{EffectsVolumeKey},
+             core::YamlNode::scalar(std::to_string(*settings.effectsVolume)));
   }
   return core::emitYaml(root);
 }

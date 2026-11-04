@@ -1079,8 +1079,8 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
   fondo de la escena (`FieldScene::hdSceneryScene`, nada con el escenario oculto) en `FrameDesc::textureScenes`.
 - **Colisiones**: la opción solo cambia cómo se muestrea el mapa en la GPU; el campo (`game/field`) no la ve.
 - **Opciones**: es la fila 22 de `ui/common/game_options.lua`, junto a las otras opciones gráficas; el documento de
-  opciones pasa de 24 a 28 huecos (`option-slot-<n>`, `max_option_rows`) para que quepa y queden libres para las
-  siguientes.
+  opciones pasó de 24 a 28 huecos (`option-slot-<n>`, `max_option_rows`) para que quepa, y de 28 a 32 con las de
+  [Volumen](#volumen).
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
@@ -1107,9 +1107,38 @@ tiene tecla (`pause_box/logic.lua`).
 
 Las opciones propias del motor salen de una lista, `ui/common/game_options.lua` (`game_options`): id de la fila,
 ajuste de la UI que publica el juego y que la fila envía como orden, texto, valor por defecto y, para las que no son
-sí/no, sus valores (`values`) y el prefijo de sus textos (`texts`). La página llena con ellas, en orden, las filas
-libres `option-slot-<n>` del documento (28) y les da el id de la opción, así que una opción nueva solo necesita su
-entrada en esa lista y que el juego atienda su ajuste; ningún documento necesita una fila propia.
+sí/no, sus valores (`values`) y el prefijo de sus textos (`texts`), o, para las numéricas, su rango (`range`, el
+número entero que se ve tal cual). La página llena con ellas, en orden, las filas libres `option-slot-<n>` del
+documento (32) y les da el id de la opción, así que una opción nueva solo necesita su entrada en esa lista y que el
+juego atienda su ajuste; ningún documento necesita una fila propia.
+
+## Volumen
+
+Mejora opcional (no cambia ninguna regla): el original **no tiene ninguna opción de sonido**. Su menú del título solo
+tiene «NEW GAME», «CONTINUE GAME», «DELETE GAME» y «BATTLE MODE» (`main_menu.c`: `TITLE_MENU_ITEMS`), y el volumen
+general se fija una vez al máximo al cargar el sonido (`sound.c`: `initializeMusic`, `SsSetMVol(127, 127)`); el juego no llama nunca a
+las funciones de estéreo/mono de la biblioteca de sonido. dwe añade dos filas al final de las opciones en partida
+(26 y 27 de `ui/common/game_options.lua`), «Volumen de música» y «Volumen de efectos» («Music volume», «Effects
+volume»), de 0 (silencio) a 10 (el nivel del original, por defecto).
+
+| Dónde se cambia | Teclado | Mando |
+|---|---|---|
+| En partida (aspecto moderno) | Tab, «Opciones», filas «Volumen de música» / «Volumen de efectos»; ←/→ bajan o suben un paso | Botón norte, «Opciones», las mismas filas; izquierda/derecha |
+| En partida (aspecto original) | Tab, «Jugador», Tab, «Opciones», las mismas filas | Botón norte, «Jugador», botón norte, «Opciones», las mismas filas |
+
+← se para en 0 (nunca salta al máximo); → o confirmar (también el clic) suben un paso y desde 10 vuelven a 0, para que
+el ratón llegue a todos los pasos. La fila envía la orden `music_volume` / `effects_volume` (un número);
+`VolumeChanger` (`volume_setting.hpp`) la redondea y la limita a 0–10, la aplica al momento a los controles `Music` y
+`Effects` de `audio::Audio` (`setVolume`; el mezclador hace una rampa corta, sin saltos), publica el paso y lo guarda en
+los ajustes del usuario (`music_volume: 7`). Al arrancar, `Game` aplica los pasos guardados antes de que suene nada.
+La ganancia de un paso es su fracción al cuadrado (`volumeGain`: 10 → 1, 5 → 0,25, unos −12 dB; 1 → 0,01), para que
+los pasos suenen repartidos en vez de apiñarse arriba. El control `Master` se queda en 1.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Volumen de música | No existe: la música suena siempre al máximo (`sound.c`: `initializeMusic`, `SsSetMVol(127, 127)`) | Fila «Volumen de música», 0–10 (10 por defecto = el original); bus `Music`, que también lleva el sonido de las películas (`MovieScreen`) | `volume_setting_tests.cpp` («the options page's volume rows change the audio at once and save the steps», «the saved volumes reach the audio at start…»); `in_game_options_tests.cpp` («the options page steps the music's and the effects' volumes from 0 to 10», pieles original y moderna); `user_settings_tests.cpp` | Mejora (opción) |
+| Volumen de efectos | No existe: igual que la música | Fila «Volumen de efectos», 0–10; bus `Effects`: los efectos del juego y los sonidos de los menús | Los mismos | Mejora (opción) |
+| Estéreo/mono | No hay opción: el juego no cambia nunca el modo de la biblioteca de sonido | Siempre estéreo; no se añade fila de mono | — | Hueco (sin valor claro) |
 
 ## Sombras, luz y colores vivos
 

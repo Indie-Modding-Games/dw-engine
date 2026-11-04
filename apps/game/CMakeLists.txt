@@ -55,6 +55,7 @@ dwe_add_app(game
         src/map_preview.cpp
         src/minimap_enemies.cpp
         src/hd_scenery_setting.cpp
+        src/volume_setting.cpp
         src/minimap_setting.cpp
         src/graphics_options.cpp
         src/walk_control.cpp
@@ -194,11 +195,11 @@ if(BUILD_TESTING)
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/money_box_screen.cpp src/hd_scenery_setting.cpp src/minimap_enemies.cpp src/minimap_setting.cpp
                                   src/pause_box.cpp src/place_command.cpp src/player_chart.cpp src/player_city.cpp src/partner_set_command.cpp src/story_set_command.cpp src/shop_job_bar.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
                                   src/save_indicator.cpp src/save_machine_flow.cpp src/award_screen.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_skin_setting.cpp src/user_settings.cpp src/walk_control.cpp src/world_map.cpp
-                                  src/graphics_options.cpp src/weather_particles.cpp)
+                                  src/graphics_options.cpp src/weather_particles.cpp src/volume_setting.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution
                                                  dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render dwe::signs
-                                                 dwe::ruleset dwe::curling dwe::weather dwe_test_main)
+                                                 dwe::ruleset dwe::curling dwe::weather dwe::audio dwe_test_main)
     # The session's test packs and made-up species (session_fixture.hpp), for the save debug command.
     target_include_directories(dwe_game_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
                                                       ${PROJECT_SOURCE_DIR}/apps/session/tests
