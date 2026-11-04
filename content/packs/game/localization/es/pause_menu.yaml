@@ -1,7 +1,7 @@
 title.main: "Pausa"
 title.minimap: "Minimapa"
 title.options: "Opciones"
-# Bajo el recuadro de pausa: la tecla que abre las opciones desde la pausa ({key}, como Select/Back en el mando; en teclado no hay atajo).
+# Bajo el recuadro de pausa: la tecla que abre las opciones desde la pausa ({key}, Esc en el teclado; Select/Back en el mando).
 settings_hint: "{key} Opciones"
 date: "Año {year}   Día {day}"
 continue: "Continuar"
@@ -28,6 +28,7 @@ praise: "Felicitar"
 scold: "Regañar"
 sleep: "Dormir"
 fish: "Pescar"
+quick_save: "Guardar"
 to_title: "Volver a la portada"
 quit: "Salir del juego"
 minimap_mode: "Mostrar minimapa"

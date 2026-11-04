@@ -110,14 +110,14 @@ En el menú, empieza una **Nueva partida** en una ranura vacía. Las partidas ex
 |---|---|---|
 | Moverse | WASD o flechas | Cruceta o stick izquierdo |
 | Confirmar / usar | Espacio, Intro o `F` | Botón sur |
-| Cancelar o volver | Esc o Retroceso | Botón este |
+| Cancelar o volver | Ctrl o Retroceso | Botón este |
 | Caminar (mantener) | Mayús. | Botón superior derecho (R1) |
 | Abrir o cerrar el menú (en batalla: la bolsa) | Tab | Botón norte (triángulo) |
 | Cargar el remate (en batalla, durante el aura) | Confirmar (Espacio, Intro o `F`) | Botón sur |
 | Disparar el remate (en batalla, con el medidor lleno) | Q | Botón oeste (cuadrado) |
 | Acción secundaria (mantener: cámara abajo al pescar, 10 packs en la tienda) | E | Botón norte (mantiene; al pulsarlo abre el menú) |
 | Pausa | P | Start |
-| Opciones durante la partida | Desde el menú (Tab) | Select (Back) |
+| Opciones durante la partida | Esc o `F10` (abren el menú directo en Opciones; otra pulsación lo cierra) | Select (Back) |
 | Mapa de la isla | M | Hombro izquierdo (L1) |
 
 | Guardar un reporte de bug | F12 | |

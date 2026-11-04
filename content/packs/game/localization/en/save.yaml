@@ -49,6 +49,8 @@ machine_in_training: "{name} {species} is in"
 machine_empty_slot: "."
 # Back to the title screen from the pause menu (docs/architecture/guardar-y-cargar.md, 3.8).
 to_title_confirm: "Anything not saved will be lost. Return to the title screen?"
+# Quitting the game from the pause menu (3.8): "Yes" writes the save and closes the game; "No" keeps playing.
+quit_confirm: "Save the game before quitting?"
 # Erasing a save from the title screen (docs/architecture/guardar-y-cargar.md). The dialog shows the save's file
 # name below.
 confirm_erase: "Erase this adventure?"

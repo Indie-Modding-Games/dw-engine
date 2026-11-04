@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace dwe::app {
 
@@ -19,6 +20,13 @@ inline constexpr std::string_view SaveDebugCommand = "save";
 // The manual slot a save command names (`slot_01`, as --list-saves writes it), or why it names
 // none: an old autosave (`autosave_01`) is never written.
 core::Result<game::save::SlotId> manualSlotFromName(std::string_view name);
+
+// The slot the pause menu's quick save writes: the manual slot the playthrough saves to (its home
+// slot) when it has one; else the first empty manual slot of the list, so a new game can save at
+// any moment; nothing when every manual slot already holds a game (a new game with no empty slot),
+// which the caller reports.
+std::optional<game::save::SlotId> quickSaveSlot(const std::optional<game::save::SlotId>& home,
+                                                const std::vector<game::save::SlotInfo>& listed);
 
 // Queues the save command the console and the scripts send, and runs it between frames, like the
 // menus' commands, so a save never sees half a frame.

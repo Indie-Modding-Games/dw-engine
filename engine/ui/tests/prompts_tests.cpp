@@ -58,7 +58,7 @@ TEST_CASE("prompts name the control of the device in use, in the game pack's wor
   CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "confirm", labels) ==
         "Espacio");
   CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "cancel", labels) ==
-        "Esc");
+        "Ctrl izq.");
   CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "menu", labels) == "Tab");
   CHECK(promptLabel(map, DeviceKind::Gamepad, GamepadFamily::Xbox, "confirm", labels) == "A");
   CHECK(promptLabel(map, DeviceKind::Gamepad, GamepadFamily::PlayStation, "confirm", labels) ==
@@ -134,9 +134,11 @@ TEST_CASE("a glyph draws the key or button of the device in use, in its family's
   CHECK(space.kind == GlyphKind::Key);
   CHECK(space.label == "Space");
   CHECK(space.symbol == "@space");
-  CHECK(glyph(DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "cancel").symbol == "ESC");
+  CHECK(glyph(DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "cancel").symbol == "CTRL");
   CHECK(glyph(DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "menu").symbol == "TAB");
-  CHECK(glyph(DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "settings").kind == GlyphKind::None);
+  const PromptGlyph settings = glyph(DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "settings");
+  CHECK(settings.kind == GlyphKind::Key);
+  CHECK(settings.symbol == "ESC");
 
   // Letters: A at the bottom on one family, on the right on another.
   const PromptGlyph a = glyph(DeviceKind::Gamepad, GamepadFamily::Xbox, "confirm");

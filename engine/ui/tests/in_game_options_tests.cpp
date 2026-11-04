@@ -66,7 +66,7 @@ TEST_CASE("the options key's start page opens the pause menu on its options, and
     CHECK_FALSE(screen.ui->elementHasClass("pause_menu", "page-options", "hidden"));
     CHECK(screen.ui->elementHasClass("pause_menu", "page-main", "hidden"));
     CHECK(screen.ui->focusedElementId("pause_menu") == "display-mode");
-    screen.press(input::keys::Escape);
+    screen.press(input::keys::LeftCtrl);
     screen.frames();
     CHECK_FALSE(screen.ui->isVisible("pause_menu"));
 

@@ -1960,7 +1960,7 @@ void Autotest::tapAction(AutotestDevice device, std::string_view action) {
       {.action = "menu", .key = keys::Tab, .button = GamepadButton::North},
       {.action = "pause", .key = keys::P, .button = GamepadButton::Start},
       {.action = "confirm", .key = keys::Return, .button = GamepadButton::South},
-      {.action = "cancel", .key = keys::Escape, .button = GamepadButton::East},
+      {.action = "cancel", .key = keys::LeftCtrl, .button = GamepadButton::East},
       {.action = "up", .key = keys::Up, .button = GamepadButton::DpadUp},
       {.action = "down", .key = keys::Down, .button = GamepadButton::DpadDown},
       {.action = "left", .key = keys::Left, .button = GamepadButton::DpadLeft},

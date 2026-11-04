@@ -18,6 +18,20 @@ core::Result<game::save::SlotId> manualSlotFromName(std::string_view name) {
   return *slot;
 }
 
+std::optional<game::save::SlotId> quickSaveSlot(const std::optional<game::save::SlotId>& home,
+                                                const std::vector<game::save::SlotInfo>& listed) {
+  if (home) {
+    return home;
+  }
+  for (const game::save::SlotInfo& info : listed) {
+    if (info.slot.kind == game::save::SlotKind::Manual &&
+        info.state == game::save::SlotInfo::State::Empty) {
+      return info.slot;
+    }
+  }
+  return std::nullopt;
+}
+
 void SaveCommand::bind(script::ScriptVm& scripts) {
   scripts.bindCommand(SaveDebugCommand,
                       [this](std::string_view slot) { pending_ = std::string{slot}; });

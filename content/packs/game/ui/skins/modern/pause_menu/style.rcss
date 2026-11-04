@@ -114,8 +114,13 @@
 
 /* Groups of the main page: the menu's own entries, the partner's and the player's, and leaving the game, a hairline
    apart. */
-#panel:not(.skin-original).on-main #open-items, #panel:not(.skin-original).on-main #to-title {
+#panel:not(.skin-original).on-main #open-items, #panel:not(.skin-original).on-main #quick-save {
 	margin-top: 9dp;
+}
+
+/* The options page: the game's own actions (Save, back to title, quit) lead it, a hairline apart of the settings. */
+#panel:not(.skin-original) #options-quit {
+	margin-bottom: 11dp;
 }
 
 .option .label {

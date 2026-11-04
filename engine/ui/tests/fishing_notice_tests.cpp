@@ -58,7 +58,7 @@ TEST_CASE("the fishing notice ignores Confirm for its first 10 frames, then clos
 TEST_CASE("the fishing notice closes with Cancel at once, with the confirm sound") {
   Screen screen{Notice};
   open(screen);
-  screen.press(input::keys::Escape);
+  screen.press(input::keys::LeftCtrl);
   CHECK(answered(screen));
   const std::vector<UiCue> cues = screen.ui->takeCues();
   CHECK(std::ranges::find(cues, UiCue::Confirm) != cues.end());

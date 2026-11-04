@@ -5,6 +5,7 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -45,8 +46,9 @@ struct Content {
       return assets::PackLocation{
           .fileSystem = &memory, .root = std::string{root}, .origin = assets::PackOrigin::Engine};
     };
-    auto mounted = assets::VirtualFileSystem::mount(
-        {location("packs/base"), location("packs/game"), location("packs/tests")});
+    const std::array locations{location("packs/base"), location("packs/game"),
+                               location("packs/tests")};
+    auto mounted = assets::VirtualFileSystem::mount(locations);
     REQUIRE_MESSAGE(mounted.has_value(), mounted.error().message);
     files = std::make_unique<assets::VirtualFileSystem>(std::move(*mounted));
     return *files;

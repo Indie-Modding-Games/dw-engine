@@ -1,6 +1,6 @@
 # Fishing is not part of the beta, but the player may try it: from mayo06 on a seeded game (run with --start mayo06 and
 # --story-stage stage_7), with the old rod (trigger 45) and food as bait, the pause menu offers Fish. The route takes
-# the rod out, picks the first bait, casts with confirm, waits and puts the rod away with cancel (Esc), then walks on:
+# the rod out, picks the first bait, casts with confirm, waits and puts the rod away with cancel (Ctrl), then walks on:
 # nothing crashes and the field is the player's again.
 name: etapa7-fishing
 device: keyboard

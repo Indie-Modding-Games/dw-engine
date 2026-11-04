@@ -62,10 +62,10 @@ para escribir los [carteles](carteles.md)).
 | Moverse (relativo a la cámara; con la opción «Caminar con: Teclado/mando», la de por defecto) | WASD o flechas | Stick izquierdo o cruceta |
 | Andar en vez de correr | Mayúsculas (mantener) | Botón oeste (X en Xbox, cuadrado) o RB/R1 (mantener) |
 | Ir a un punto (con «Caminar con: Ratón»; entonces las teclas y el mando no mueven al jugador) | Clic izquierdo en el suelo; mantener y mover lo arrastra | |
-| Olvidar el punto | Esc o clic derecho | Este (B, círculo) |
+| Olvidar el punto | Ctrl o clic derecho | Este (B, círculo) |
 | Menú | Tab o el botón «Menú» del HUD | Norte (Y, triángulo) |
 | Pausa (caja «Pause», todo se congela) | P o Pausa | Start |
-| Aceptar / volver en el menú | Enter, Espacio o clic / Esc, Retroceso o clic derecho | Sur / Este |
+| Aceptar / volver en el menú | Enter, Espacio o clic / Ctrl, Retroceso o clic derecho | Sur / Este |
 | Consola de depuración | F1 o `º` | |
 | Guardar un reporte de bug | F12 (acción `report_bug`) | |
 
@@ -539,7 +539,7 @@ scripts/dev.sh run --content <carpeta> --start twna02 --lang en --seed 1 --story
   su relato quitan la niebla (148, rutina 37; la niebla aún no se dibuja, así que no tapa nada); sigue a Toy Town.
   `route-etapa7-toy-cards.yaml` (`--start omoc01`) da con `story_set` las tres cartas que pide el coleccionista de Toy
   Town, que se las queda (`take_card`) y da un objeto. `route-etapa7-fishing.yaml` (`--start mayo06`) saca la caña en
-  el lago (disparador 45 y carne de cebo), lanza y la guarda con Esc: la pesca no entra en la beta, pero no rompe
+  el lago (disparador 45 y carne de cebo), lanza y la guarda con Ctrl: la pesca no entra en la beta, pero no rompe
   nada. `route-etapa7-stic.yaml` (`--start stic01`): hasta el disparador 319 el centro del pantano (stic02) está
   cerrado y no se llega a Volume Villa; el Otamamon (sale una de cada tres veces, la ruta entra y sale hasta verlo con
   `field.npc.9`) pelea, los Gekomon llevan al jugador a gkyo02, su jefe abre el pantano (319) y el camino recto de la

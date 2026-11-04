@@ -14,7 +14,8 @@ local first_entry = {
 local opener = { minimap = "open-minimap", options = "open-options", player = "open-player" }
 
 local current = "main"
--- Whether F10 opened the menu on its options page, which then goes back straight to the game.
+-- Whether the quick options (Esc / F10 on keys, Select on a pad) opened the menu on its options
+-- page, which then goes back straight to the game.
 local options_direct = false
 local parents = {}
 local icon_time = 0
@@ -1732,12 +1733,12 @@ function on_show(document)
   icon_time = 0
   refresh(document)
   local entry = ui.setting("ui_skin") == "original" and ui.setting("pause_menu.start_entry") or nil
-  -- F10 (Select on a pad) opens the menu straight on its options page (pause_menu.start_page,
+  -- Esc / F10 (Select on a pad) open the menu straight on its options page (pause_menu.start_page,
   -- «Opciones en partida»); going back from there closes the menu.
   options_direct = ui.setting("pause_menu.start_page") == "options"
   if options_direct then
     show_page(document, "options")
-    -- The menu's box was closed the last time it went away (Esc, Tab, another menu): open it
+    -- The menu's box was closed the last time it went away (Ctrl, Tab, another menu): open it
     -- again, or the options page would be there but its box would stay hidden.
     open_menu_box(document)
   elseif ui.setting("pause_menu.preview_player") == true then
@@ -1825,7 +1826,7 @@ function on_setting(document, name)
       refresh_requirements(document)
     end
   elseif name == "pause_menu.start_page" then
-    -- F10 pressed with the menu already open: switch it to the options page in place, without
+    -- Esc pressed with the menu already open: switch it to the options page in place, without
     -- closing its box (which would leave it minimized on the player page).
     if ui.setting(name) == "options" then
       options_direct = true

@@ -292,15 +292,31 @@ el `MAIN_STATE` 2), la guarda con la ciudad de `getFileCityTopMap` como mapa de 
 cargarla suena la película ED2 antes del campo (`apps/session/game_clear.hpp`, `SaveMachine::openClearSave`); la
 máquina y el menú de dormir vuelven a `MAIN_STATE` 1.
 
-### 3.8 Volver a la portada
+### 3.8 Guardar, volver a la portada y salir del juego
 
 Es una **mejora opcional de PC**, a propósito: el original no tiene forma de volver a la portada salvo acabar el
 juego ([1.6](#16-volver-a-la-portada)). No cambia reglas y quien no la use juega como en el original.
 
+`pause_menu` gana **«Guardar»**, el guardado rápido: abre la página **Opciones** (`Esc` / `settings`) en cabeza, con
+**«Guardar»**, **«Volver a la portada»** y **«Salir del juego»** como sus tres primeras filas en los dos aspectos (en
+el moderno están también en la página principal; en el original, donde la rejilla de iconos se mantiene fiel, es el
+sitio visible). Con `quick_save` → `PlaySession::quickSave` escribe la partida
+en la ranura manual de la aventura (`GameSession::homeSlot`: la que la cargó o la que guardó por última vez) o, en una
+partida nueva que aún no ha guardado, en la primera ranura manual libre; sin ranuras libres, un `dialog` lo avisa
+(`save.slots.full`) y un fallo de escritura también (`save.failed`). Sirve en cualquier momento en que el menú pueda
+abrirse (nunca durante un sueño, un combate o una escena de cuidados, igual que `to_title`), enseña el aviso de
+guardado (`ui/save_indicator`) y deja el menú cerrado.
+
 `pause_menu` gana **«Volver a la portada»** (encima de «Salir del juego»), que envía `to_title` → `dialog`: «Se
 perderá lo que no hayas guardado. ¿Volver a la portada?» (no sale durante un sueño o un combate) → `AppFlow` destruye
 la `PlaySession` y `TitleScreen::show()` vuelve al menú principal, como el original tras el final (`main.c: main`).
-No guarda nada.
+No guarda nada: quien quiera conservar la aventura pulsa antes «Guardar», o usa «Salir del juego», que sí pregunta.
+
+`pause_menu` gana también **«Salir del juego»**, que en partida envía `quit` → `dialog`: «¿Guardar la partida antes de
+salir del juego?», con el cursor en «Sí» — el recuerdo de guardar antes de cerrar. «Sí» escribe el guardado rápido y,
+si lo consigue, `AppFlow` cierra la ventana; si el guardado falla, el aviso aparece y la partida sigue en marcha. «No»
+(no, y también Cancel) cierra el diálogo sin salir. Desde la portada, la salida del menú principal sigue cerrando sin
+preguntar. La elección de destino —la portada o el cierre del juego— son las dos entradas del menú.
 
 ### 3.9 Textos (en/es)
 
@@ -336,8 +352,10 @@ Claves nuevas; los textos son nuestros, no los del disco.
 | `save.home_other` | This slot holds another adventure. Save over it? | Esta ranura tiene otra aventura. ¿Guardar encima? |
 | `save.home_newer` | This slot holds a save from a newer version of the game. It cannot be saved over. | Esta ranura tiene una partida de una versión más nueva del juego. No se puede guardar encima. |
 | `pause_menu.sleep` | Sleep | Dormir |
+| `pause_menu.quick_save` | Save | Guardar |
 | `pause_menu.to_title` | Back to title | Volver a la portada |
 | `pause_menu.to_title_confirm` | Anything you haven't saved will be lost. Back to the title? | Se perderá lo que no hayas guardado. ¿Volver a la portada? |
+| `save.quit_confirm` | Save the game before quitting? | ¿Guardar la partida antes de salir del juego? |
 | `common.yes`, `common.no` | Yes, No | Sí, No |
 
 El detalle técnico del error va en inglés al log; la interfaz enseña el texto traducido y, debajo, el nombre del

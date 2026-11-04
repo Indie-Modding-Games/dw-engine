@@ -958,6 +958,35 @@ void PlaySession::showLockNotice(const std::string& textKey) {
   lockNoticeShown_ = true;
 }
 
+bool PlaySession::quickSave() {
+  session::GameSession& session = *game_.session;
+  const std::optional<game::save::SlotId> home = session.homeSlot();
+  std::vector<game::save::SlotInfo> listed;
+  if (const game::save::SaveSlots* slots = session.slots(); slots != nullptr) {
+    listed = slots->list();
+  } else {
+    // A session with no save storage (a run that must not write, --saves-less autotests): the
+    // quick save has nowhere to go.
+    core::logWarning("play session: the quick save found no save storage");
+    showLockNotice("save.failed");
+    return false;
+  }
+  const std::optional<game::save::SlotId> slot = quickSaveSlot(home, listed);
+  if (!slot) {
+    // Every manual slot holds a game and this playthrough has no home: nowhere to write.
+    core::logWarning("play session: the quick save found no manual slot");
+    showLockNotice("save.slots.full");
+    return false;
+  }
+  if (auto saved = session.save(*slot); !saved) {
+    core::logError("play session: the quick save failed: {}", saved.error().message);
+    showLockNotice("save.failed");
+    return false;
+  }
+  // A written save shows the save indicator on its own (savesWritten, in update()).
+  return true;
+}
+
 void PlaySession::setBulkTrades(bool enabled) {
   tradeScreen_.setBulk(enabled);
   if (game_.systems.cardShop != nullptr) {
@@ -1150,6 +1179,36 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     }
     return true;
   }
+  if (command.name == "quick_save") {
+    // The pause menu's save entry: writes the game at once, in any safe moment (the menu itself
+    // only opens there, but the guard keeps scripts and routes honest, as to_title's does).
+    if (!sleepScreen_.active() && !battleScreen_.active() && !saveMachine_.active() &&
+        !praiseScold_.active() && !feedScene_.active() && !fieldToilet_.active() &&
+        !fieldPoop_.active()) {
+      context_.ui->hide(MenuDocument);
+      quickSave();
+    }
+    return true;
+  }
+  if (command.name == "quit") {
+    // The pause menu's quit entry, before the app's bare quit (game.cpp: apply): the player is
+    // asked to save first; yes writes the quick save and closes the game, no stays in it (the
+    // dialog's cancel also answers no, so it can never quit by accident).
+    if (!sleepScreen_.active() && !battleScreen_.active() && !saveMachine_.active() &&
+        !praiseScold_.active() && !feedScene_.active() && !fieldToilet_.active() &&
+        !fieldPoop_.active()) {
+      context_.ui->hide(MenuDocument);
+      screens::publish(
+          *context_.ui,
+          dialogSettings(
+              {.text = "save.quit_confirm", .file = {}, .question = true, .startOnYes = true}),
+          "dialog.revision");
+      context_.ui->show(DialogDocument, true);
+      quitAsked_ = true;
+      lockNoticeShown_ = false;
+    }
+    return true;
+  }
   if (command.name == "to_title") {
     // Not over a sleep or a battle, whose state a later save would not see whole.
     if (!sleepScreen_.active() && !battleScreen_.active() && !saveMachine_.active() &&
@@ -1177,6 +1236,17 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     context_.ui->hide(DialogDocument);
     toTitleAsked_ = false;
     toTitle_ = yes != nullptr && *yes;
+    return true;
+  }
+  if (command.name == "dialog_answer" && quitAsked_) {
+    const bool* yes = std::get_if<bool>(&command.value);
+    context_.ui->hide(DialogDocument);
+    quitAsked_ = false;
+    // Yes: the game writes its save once, and only then the app closes; a failed write shows its
+    // notice and the game goes on, so no progress is lost quietly.
+    if (yes != nullptr && *yes && quickSave()) {
+      quitGame_ = true;
+    }
     return true;
   }
   if (partnerMenu_.handle(command)) {

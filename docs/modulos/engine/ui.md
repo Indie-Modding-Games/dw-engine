@@ -68,7 +68,7 @@ comprueba una parte de un documento contra el resto, como la hora en dígitos de
 
 Los avisos de botones son glifos del último dispositivo usado (`prompts.hpp`: `promptGlyph`, `promptMarkup`,
 `promptText`; dibujos propios en `glyph_art.hpp`): con el teclado, la tecla asignada a la acción (Espacio para
-confirmar, Esc para cancelar) en una tecla dibujada; con un mando, el botón frontal en la posición que usa el juego
+confirmar, Ctrl para cancelar) en una tecla dibujada; con un mando, el botón frontal en la posición que usa el juego
 con las letras de su familia, las cuatro formas del mando del original o, para un mando desconocido, solo su posición.
 Cambian en vivo al tocar otro dispositivo. Los 33 textos del original que nombran un botón con un carácter (○ □ △ ×,
 que la fuente moderna no tiene y salían como cuadros) pasan por el mismo sistema en la caja de la historia, y los

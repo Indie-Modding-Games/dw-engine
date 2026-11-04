@@ -1,0 +1,46 @@
+# The options page opened with `Escape` leads with the game's own actions (docs/architecture/
+# guardar-y-cargar.md, 3.8): quick save, back to title and quit. `up` from the first settings row
+# reaches them in order - Quit, Back to title, Save -; confirming Save writes the game and closes
+# the menu (one new file in --saves), and both exits first ask, answered away with `cancel`, which
+# on the keyboard is the Ctrl pair (docs/architecture/controles.md).
+# Run with: dwe-game --content <folder> --saves <empty folder> --shots <folder> --autotest tests/autotest/route-save-actions.yaml
+name: save-actions
+device: keyboard
+timeout: 180
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - wait: {setting: {screen_fade: 0}, timeout: 10}
+  # Esc from the field: the pause menu opens straight on its options page.
+  - tap: {key: escape}
+  - wait: {menu_open: true, seconds: 0.6, timeout: 5}
+  - expect_setting: {has_class.pause_menu#page-options.hidden: "false"}
+  - screenshot: options-actions
+  # Up Quit, up Back to title, up Save; confirming writes the quick save and closes the menu.
+  - remember: saves.files
+  - tap: {key: up}
+  - tap: {key: up}
+  - tap: {key: up}
+  - tap: {key: return}
+  - wait: {menu_open: false, seconds: 0.6, timeout: 5}
+  - expect_change: {saves.files: up}
+  - screenshot: save-notice
+  # Quit asks to save first; `cancel` (Ctrl) closes the question and the game goes on, unharmed.
+  - tap: {key: escape}
+  - wait: {menu_open: true, seconds: 0.5, timeout: 5}
+  - tap: {key: up}
+  - tap: {key: return}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 5}
+  - screenshot: quit-confirm
+  - tap: {key: left_ctrl}
+  - wait: {hidden: dialog, seconds: 0.5, timeout: 5}
+  # Back to title also asks; cancel it too and the game is still playing.
+  - tap: {key: escape}
+  - wait: {menu_open: true, seconds: 0.5, timeout: 5}
+  - tap: {key: up}
+  - tap: {key: up}
+  - tap: {key: return}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 5}
+  - screenshot: back-to-title-confirm
+  - tap: {key: left_ctrl}
+  - wait: {hidden: dialog, seconds: 0.5, timeout: 5}
+  - wait: {seconds: 1}

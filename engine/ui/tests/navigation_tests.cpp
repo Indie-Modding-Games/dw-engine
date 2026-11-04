@@ -65,7 +65,7 @@ TEST_CASE("confirm, cancel and menu come from every device") {
   input.handle(platform::KeyChanged{.key = input::keys::Return, .down = true, .repeat = false});
   CHECK(tick(navigation, input) == std::vector{NavCommand::Confirm});
   input.handle(platform::KeyChanged{.key = input::keys::Return, .down = false, .repeat = false});
-  input.handle(platform::KeyChanged{.key = input::keys::Escape, .down = true, .repeat = false});
+  input.handle(platform::KeyChanged{.key = input::keys::LeftCtrl, .down = true, .repeat = false});
   CHECK(tick(navigation, input) == std::vector{NavCommand::Cancel});
   input.handle(platform::KeyChanged{.key = input::keys::Tab, .down = true, .repeat = false});
   CHECK(tick(navigation, input) == std::vector{NavCommand::Menu});

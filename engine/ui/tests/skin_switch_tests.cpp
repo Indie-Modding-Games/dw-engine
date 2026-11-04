@@ -1112,12 +1112,12 @@ TEST_CASE(
   // On the help page only cancel works, back to the change view.
   press(*ui, input, input::keys::Down);
   CHECK(ui->elementHasClass("partner_menu", "scrim", "tech-help"));
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
   CHECK_FALSE(ui->elementHasClass("partner_menu", "scrim", "tech-help"));
   CHECK(ui->elementHasClass("partner_menu", "scrim", "tech-editing"));
 
   // Out of the change view the extra action does nothing.
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
   settle();
   REQUIRE_FALSE(ui->elementHasClass("partner_menu", "scrim", "tech-editing"));
   ui->setSetting("partner_menu.extra_presses", 2.0);
@@ -1287,7 +1287,7 @@ TEST_CASE("the original skin's chart draws the Mega box and pages past a full bo
   CHECK(focused() == "chart-cell-4");
   press(*ui, input, input::keys::Up);
   CHECK(focused() == "chart-cell-3");
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
 
   // The Mega step's Megas (player.chart.mega) draw the Mega box without the canonical stages.
   ui->setSetting("canonical_stages", false);
@@ -1363,7 +1363,7 @@ TEST_CASE("the original skin's chart draws the Mega box and pages past a full bo
   CHECK(focused() == "chart-cell-3");
 
   // Out of the cells, Down and Up on the tab turn the page too.
-  press(*ui, input, input::keys::Escape);
+  press(*ui, input, input::keys::LeftCtrl);
   CHECK(focused() == "player-tab-chart");
   press(*ui, input, input::keys::Down);
   settle();

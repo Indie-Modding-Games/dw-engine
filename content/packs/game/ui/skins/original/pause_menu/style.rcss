@@ -89,6 +89,8 @@
 /* The options list scrolls once its rows pass the height a 1280x720 window leaves it below the panel's top; the focused
    row is scrolled into view. */
 #page-options { max-height: 456dp; overflow-y: auto; }
+/* The game's own actions (Save, back to title, quit) lead the options page, a line apart of the settings. */
+#page-options #options-quit { margin-bottom: 12dp; }
 #page-options scrollbarvertical { width: 6dp; margin-left: 6dp; }
 #page-options scrollbarvertical slidertrack { background-color: #2d3840; }
 #page-options scrollbarvertical sliderbar { min-height: 24dp; background-color: #90d9fa; }

@@ -89,7 +89,7 @@ recorte de RmlUi (`EnableClipMask`) no están implementadas: solo hacen falta pa
 - **Sin menú**, solo `menu` hace algo: abre el documento de menú (`setMenuDocument`). Durante el tick en que la UI
   usa una acción, `capturesInput()` es true, así que la misma pulsación no llega también al juego.
 - **Avisos de botones:** `ui.prompt(acción)` da el nombre del control según el último dispositivo y la familia del
-  mando (`Intro`/`Esc`, `A`/`B`, `Cruz`/`Círculo`, `B`/`A` en Nintendo). El motor solo nombra el control
+  mando (`Intro`/`Ctrl`, `A`/`B`, `Cruz`/`Círculo`, `B`/`A` en Nintendo). El motor solo nombra el control
   (`key:enter`, `mouse:left`, `gamepad:south`, `gamepad:left_stick`); el texto sale de la tabla `prompt` del idioma
   del juego (`localization/<idioma>/prompt.yaml`): `prompt.key.enter`, `prompt.gamepad.south`, y
   `prompt.family.<familia>.<botón>` para los botones que cada familia nombra a su manera. Las letras, cifras y
@@ -602,7 +602,7 @@ las del original y se quedan.
 El menú de pausa (`ui/skins/modern/pause_menu/style.rcss`) y el del compañero
 (`ui/skins/modern/partner_menu/style.rcss`) comparten un estilo propio, que solo cambia el aspecto: las teclas, el orden
 de las entradas y lo que hace cada una son los mismos que en el aspecto original (Tab abre el menú, flechas mueven,
-Intro elige, Esc vuelve).
+Intro elige, Ctrl vuelve).
 
 - Panel: tarjeta oscura casi opaca (`#121922`) con borde fino (`#263243`) y esquinas de 12dp, centrada sobre un velo
   oscuro; el de pausa mide 440dp de ancho y el del compañero 760dp. Dentro, tarjetas más claras (`#1a2330`, esquinas
@@ -724,7 +724,7 @@ las posiciones dentro de un elemento van en %.
 | El menú de pausa es más ancho (184 píxeles) y lista opciones con texto | Tiene más entradas que el del original, con valores en el idioma del jugador |
 | El menú del compañero tiene cuatro pestañas; las barras de HP y MP de su ficha miden 82 píxeles en vez de 104 | El menú tiene más páginas; los valores «800 / 800» necesitan sitio |
 | El golpe final se elige en el recuadro de «PUSH», que es su entrada de la lista; en la tira no tiene icono, como el original | El original lo lanza con un botón propio; aquí es una orden más para el teclado, el mando y el ratón |
-| Con el aspecto moderno, la bolsa del combate tiene una entrada «Objetos» tras el último icono de la tira (añadido del PC); con el del original no sale, como en el juego, y la bolsa se abre con cancelar (Esc, East o clic derecho), como el botón propio del original | El original solo dibuja los iconos de las órdenes; la entrada del aspecto moderno sirve al ratón |
+| Con el aspecto moderno, la bolsa del combate tiene una entrada «Objetos» tras el último icono de la tira (añadido del PC); con el del original no sale, como en el juego, y la bolsa se abre con cancelar (Ctrl, East o clic derecho), como el botón propio del original | El original solo dibuja los iconos de las órdenes; la entrada del aspecto moderno sirve al ratón |
 | La marca de enfado no se inclina hacia su enemigo, no cambia de tamaño con la distancia y su cara no es semitransparente | El contrato publica dónde está la marca, no la cámara del combate |
 | No salen las marcas de huida de los demás Digimon de la pantalla ni el domador vuelve andando a su sitio antes del rótulo; el rótulo espera 60 frames en su lugar | El campo está quieto durante el combate; esos movimientos llegarán con la escena del combate |
 | Las dos últimas marcas de «FINISH!!» salen en cuanto el indicador se llena, no 3 y 5 frames después | El contrato publica si el indicador está lleno, no cuánto lleva lleno |
@@ -822,7 +822,7 @@ la introducción de una partida. La demo publica el aspecto elegido a Lua, igual
 no validan el estado ni las acciones del compañero en una partida real. La cabecera usa una fecha ficticia Year 1 / Day 1.
 `--ui-demo-player` abre directamente Player, sin pasar por el principal ni inyectar teclas. El fixture publica CODEX, nivel0, Bits0 y7h42m; el rango se consulta por nivel en la tabla de títulos del contenido local. Estos valores son de la demo, no de una partida. Esta entrada permite revisar por separado la reconstrucción de Player y documentar sus diferencias pendientes.
 
-En el aspecto original, Player usa su marco y retrato3D independientes del campo. Tab abre las utilidades del motor en un panel separado; Esc regresa al perfil. La demo muestra Raised1 y0medallas como fixture; el juego deja esas cifras vacías hasta recibir datos reales. Chart consume [metadatos de posiciones, iconos y detalle](../formats/arbol-de-evolucion.md) de la copia local y las formas criadas de la historia. Su vista, detalle y transiciones están implementados y tienen escenarios de demo; queda pendiente el contraste final y la integración completa. Med./Card siguen pendientes. `--lang` permite comprobar explícitamente el idioma de la demo sin modificar las preferencias del jugador.
+En el aspecto original, Player usa su marco y retrato3D independientes del campo. Tab abre las utilidades del motor en un panel separado; Ctrl regresa al perfil. La demo muestra Raised1 y0medallas como fixture; el juego deja esas cifras vacías hasta recibir datos reales. Chart consume [metadatos de posiciones, iconos y detalle](../formats/arbol-de-evolucion.md) de la copia local y las formas criadas de la historia. Su vista, detalle y transiciones están implementados y tienen escenarios de demo; queda pendiente el contraste final y la integración completa. Med./Card siguen pendientes. `--lang` permite comprobar explícitamente el idioma de la demo sin modificar las preferencias del jugador.
 
 `--ui-demo-fishing` habilita la variante del menú con FISH y SLEEP a la vez para revisar sus siete entradas
 sin iniciar una partida ni desplazarse a una zona de pesca. La demo permite abrir ITEM desde el principal

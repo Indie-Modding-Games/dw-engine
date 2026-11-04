@@ -49,6 +49,8 @@ machine_in_training: "{name} {species} está en"
 machine_empty_slot: "."
 # Volver a la portada desde el menú de pausa (docs/architecture/guardar-y-cargar.md, 3.8).
 to_title_confirm: "Se perderá lo que no hayas guardado. ¿Volver a la portada?"
+# Salir del juego desde el menú de pausa (3.8): «Sí» guarda la partida y cierra el juego; «No» sigue jugando.
+quit_confirm: "¿Guardar la partida antes de salir del juego?"
 # Borrar una partida desde la portada (docs/architecture/guardar-y-cargar.md). El diálogo enseña debajo el nombre
 # del fichero de la partida.
 confirm_erase: "¿Borrar esta aventura?"

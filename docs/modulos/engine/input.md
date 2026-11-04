@@ -12,4 +12,7 @@ En el campo se corre por defecto, como en el original; `walk` (Mayúsculas, o en
 
 `menu` (Tab, o el botón norte en el mando) abre el menú de pausa en el campo. **En batalla abre directamente la bolsa del domador** (lo que hoy se lanzaba con `cancel`): el mismo botón, misma acción, contexto distinto (docs/architecture/controles.md).
 
-`settings` (Select/Back en el mando, que el original no usaba en el campo) abre el menú de pausa directamente en su página de opciones, también desde la pausa de Start ([opciones en partida](../apps/game.md#opciones-en-partida)). En el teclado no tiene atajo: las opciones están a un `Tab`, dentro del menú de pausa.
+`settings` (`Esc` o `F10` en teclado, Select/Back en el mando, que el original no usaba en el campo) abre el menú de
+pausa directamente en su página de opciones, también desde la pausa de Start, y la cierra si ya estaba abierto en ella
+([opciones en partida](../apps/game.md#opciones-en-partida)). `Esc` vino del `cancel`, que pasó al par `Ctrl` (con
+`Retroceso`, el clic derecho y el Este del mando como estaba): ver [Controles](../../architecture/controles.md).

@@ -84,7 +84,7 @@ std::optional<platform::KeyCode> keyNamed(std::string_view name) {
     return Zero;
   }
   namespace keys = input::keys;
-  constexpr std::array<std::pair<std::string_view, platform::KeyCode>, 17> Names{{
+  constexpr std::array<std::pair<std::string_view, platform::KeyCode>, 19> Names{{
       {"return", keys::Return},
       {"escape", keys::Escape},
       {"backspace", keys::Backspace},
@@ -94,6 +94,8 @@ std::optional<platform::KeyCode> keyNamed(std::string_view name) {
       {"right", keys::Right},
       {"up", keys::Up},
       {"down", keys::Down},
+      {"left_ctrl", keys::LeftCtrl},
+      {"right_ctrl", keys::RightCtrl},
       {"left_shift", keys::LeftShift},
       {"right_shift", keys::RightShift},
       {"grave", keys::Grave},
