@@ -1061,3 +1061,50 @@ TEST_CASE("a brain raise past a menu or an MP discount teaches its commands or i
     CHECK(result.partnerSpecies == "hero");
   }
 }
+
+// battle_main.c: BTL_tickFighterStates runs BTL_tickHitState before any command is read, and
+// battle_tick.c: handleCommands only buffers the button: no input of the player cuts a hit short.
+TEST_CASE("no command, finisher press or bag cuts the partner's hit reaction short") {
+  const auto fresh = [] { return startBattle(duel(evenStats(500, 50), evenStats(500, 80)), 7); };
+  Battle first = fresh();
+  std::int64_t hitFrame = -1;
+  while (!first.finished() && first.state().frame < 4000 && hitFrame < 0) {
+    for (const BattleEvent& event : first.step()) {
+      if (event.kind == EventKind::AttackHit && event.fighter == PartnerId) {
+        hitFrame = first.state().frame;
+      }
+    }
+  }
+  REQUIRE(hitFrame > 0);
+  enum class Press : std::uint8_t { Nothing, FinisherCharge, Bag };
+  const auto reactionFrames = [&](std::optional<Command> command, Press press) {
+    Battle battle = fresh();
+    while (battle.state().frame < hitFrame) {
+      battle.step();
+    }
+    std::int64_t frames = 0;
+    while (battle.state().partner().knockedBack && frames < 500) {
+      if (command) {
+        (void)battle.command(*command);
+      }
+      if (press == Press::FinisherCharge) {
+        battle.pressFinisherCharge();
+      } else if (press == Press::Bag) {
+        (void)battle.openBag();
+        battle.closeBag();
+      }
+      battle.step();
+      ++frames;
+    }
+    return frames;
+  };
+  const std::int64_t alone = reactionFrames(std::nullopt, Press::Nothing);
+  CHECK(alone > 0);
+  CHECK(reactionFrames(std::nullopt, Press::FinisherCharge) == alone);
+  CHECK(reactionFrames(std::nullopt, Press::Bag) == alone);
+  for (std::uint8_t command = 1; command <= static_cast<std::uint8_t>(Command::Finisher);
+       ++command) {
+    CAPTURE(command);
+    CHECK(reactionFrames(static_cast<Command>(command), Press::Nothing) == alone);
+  }
+}
