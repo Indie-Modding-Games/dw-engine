@@ -115,6 +115,8 @@ void FeedScene::showItem() {
   scene_->setHeldItem(held);
 }
 
+// item.c: removeTamerItem: the item leaves the player's hand (TAMER_ITEM back to 0xFF) once the
+// partner ate it or turned it down (partner.c, states 6 and 8).
 void FeedScene::finish() {
   scene_->setHeldItem(std::nullopt);
   scene_->setPlayerClip(std::nullopt);

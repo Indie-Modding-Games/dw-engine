@@ -306,6 +306,7 @@
 #panel.on-player #player-time { left: 261dp; width: 228dp; white-space: nowrap; }
 #player-items-line-label { left: 336dp; top: 438dp; }
 #player-medals-line { left: 336dp; top: 498dp; }
+/* game_menu.c: renderInsetBox (renderPlayerInfoView). */
 .player-inset { position: absolute; height: 45dp; box-sizing: border-box; border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0; background-color: #354b5c; }
 #player-name-box { left: 189dp; top: 18dp; width: 228dp; }
 /* A name longer than the original's six letters (the engine's long names, up to twelve) widens the box by a letter's

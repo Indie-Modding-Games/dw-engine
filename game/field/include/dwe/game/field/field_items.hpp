@@ -115,7 +115,8 @@ public:
   // Who spawns or looks for an item names the map first.
   void enterMap(std::string_view mapId);
 
-  // Nothing stays.
+  // Nothing stays (item.c: initializeDroppedItems frees the 11 dropped-item slots when the game
+  // starts; a new FieldItems starts empty as well).
   void clear();
 
 private:

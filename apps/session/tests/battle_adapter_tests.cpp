@@ -666,3 +666,37 @@ TEST_CASE(
   CHECK(fighter->moves.at(0) == "spit_fire");
   CHECK(fighter->moves.at(dwe::game::battle::FinisherSlot) == "pepper_breath");
 }
+
+TEST_CASE("confirming a technique clears its slot when equipped, else takes the first free one") {
+  // game_menu.c: getEquippedSlot and equipMove. Measured in the original (2026-11-04,
+  // 03_partner_status): the equipped technique cleared, then back in slot 0; an unknown one changed
+  // nothing.
+  using dwe::session::MoveSlot;
+  using dwe::session::PartnerMoves;
+  using dwe::session::TechniqueToggle;
+  using dwe::session::toggleTechnique;
+  const auto& catalog = battle_test::testCatalog();
+  const DigimonRow species =
+      madeUpRow("made_up", 3, {"punch", "shot", "poison_bite", "dizzy_ray", "stun_slap"});
+  PartnerMoves moves;
+  moves.learned = {"dizzy_ray", "poison_bite", "punch", "shot"};
+  const auto equipped = [&](std::size_t place) { return moves.equipped.at(place); };
+
+  CHECK(toggleTechnique(moves, species, catalog, 0) == TechniqueToggle::Equipped);
+  CHECK(equipped(0) == MoveSlot{0});
+  CHECK(toggleTechnique(moves, species, catalog, 0) == TechniqueToggle::Removed);
+  CHECK_FALSE(equipped(0).has_value());
+  // Not learned, or no move in the species' slot: nothing changes.
+  CHECK(toggleTechnique(moves, species, catalog, 4) == TechniqueToggle::Unavailable);
+  CHECK(toggleTechnique(moves, species, catalog, 7) == TechniqueToggle::Unavailable);
+  CHECK(moves.equipped == PartnerMoves{}.equipped);
+
+  for (const MoveSlot slot : {1, 2, 3}) {
+    CHECK(toggleTechnique(moves, species, catalog, slot) == TechniqueToggle::Equipped);
+  }
+  CHECK(toggleTechnique(moves, species, catalog, 0) == TechniqueToggle::Full);
+  // A cleared slot in the middle is the first free one.
+  CHECK(toggleTechnique(moves, species, catalog, 2) == TechniqueToggle::Removed);
+  CHECK(toggleTechnique(moves, species, catalog, 0) == TechniqueToggle::Equipped);
+  CHECK(equipped(1) == MoveSlot{0});
+}

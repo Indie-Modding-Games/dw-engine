@@ -44,6 +44,8 @@ void BattleScreen::stepThrow() {
     playerThrowing_ = false;
     standPlayer();
   }
+  // main.c: tickThrownItem: once the item reached the partner, removeTamerItem drops it
+  // (TAMER_ITEM back to 0xFF).
   if (!thrown_ || !battle_ || !battle_->itemInFlight()) {
     thrown_.reset();
     showThrown();
@@ -85,6 +87,7 @@ void BattleScreen::showThrown() const {
                                               .palette = thrown_->palette});
 }
 
+// The battle's end drops a thrown item still on its way (item.c: removeTamerItem).
 void BattleScreen::endThrow() {
   thrown_.reset();
   playerThrowing_ = false;

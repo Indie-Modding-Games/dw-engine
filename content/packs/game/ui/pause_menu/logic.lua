@@ -1627,6 +1627,9 @@ function open_player(document)
   end)
 end
 
+-- game_menu.c: tickGameMenu's cancel calls closeTriangleMenu (the menu box shrinks into the player)
+-- and gives the field and the game time back (tamerSetState(0), startGameTime); the game does the
+-- latter when the document hides.
 local function close_menu(document)
   close_menu_box(document, function()
     ui.hide(document_name)
@@ -2004,6 +2007,8 @@ function on_action(document, action)
     and ui.setting("ui_skin") == "original"
     and (action == "up" or action == "down" or action == "left" or action == "right")
   then
+    -- game_menu.c: tickGameMenu: rows of three; left and right go round the whole list, up and
+    -- down by a row, round from the first row to the last one that has the column.
     local grid = { "open-items", "open-partner", "open-player", "praise", "scold", "sleep" }
     if fishing() ~= 0 then
       table.insert(grid, "fish")

@@ -122,6 +122,12 @@ bool knowsTechnique(const PartnerMoves& moves, const game::battle::MoveCatalog& 
   return false;
 }
 
+// game_menu.c: the change view's confirm (tickDigimonMenu): getEquippedSlot finds the slot that
+// holds the technique under the cursor (44 and 48, 55 and 57 count as one) and clears it; otherwise
+// equipMove puts it in the first free slot, if the partner knows it (hasMove) and its species has
+// it, or refuses with playSound(0, 4) when the three are taken. Measured in the original: Spit Fire
+// equipped in slot 0, confirm cleared it (EQUIPPED_MOVES 255, base move 255), confirm again put it
+// back in slot 0 (base move 46, its species slot plus 0x2E); an unknown technique changed nothing.
 TechniqueToggle toggleTechnique(PartnerMoves& moves, const assets::DigimonRow& species,
                                 const game::battle::MoveCatalog& catalog, MoveSlot slot) {
   if (slot < 0 || std::cmp_greater_equal(slot, species.moves.size()) ||

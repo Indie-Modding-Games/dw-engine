@@ -174,6 +174,25 @@ TEST_CASE("moving swaps two slots; discarding throws away a droppable stack, in 
   CHECK(inventory.countOf(handleOf(Rod)) == 1);
 }
 
+TEST_CASE("discarding a slot takes its count from every other stack of the item too") {
+  // Measured in the original (2026-11-04, 15_item_option_box): Small Recovery 2 in slot 2 and 5 in
+  // slot 5; Drop on slot 2 and Yes left slot 2 empty and slot 5 with 3 (selectDropItem,
+  // removeItem).
+  const auto& items = fixtureItems();
+  Inventory inventory =
+      bagHolding({stackOf(handleOf(Steak), 3), std::nullopt, stackOf(handleOf(Tonic), 2),
+                  std::nullopt, std::nullopt, stackOf(handleOf(Tonic), 5)},
+                 10);
+  REQUIRE(inventory.discard(2, items, UseContext::Field).has_value());
+  CHECK_FALSE(inventory.slots()[2].has_value());
+  REQUIRE(inventory.slots()[5].has_value());
+  CHECK(inventory.slots()[5]->count == 3);
+  CHECK(inventory.slots()[0]->count == 3);
+  // A stack with no more than the discarded count goes too.
+  REQUIRE(inventory.discard(5, items, UseContext::Field).has_value());
+  CHECK(inventory.countOf(handleOf(Tonic)) == 0);
+}
+
 TEST_CASE(
     "sorting groups the categories in the mode's order, each by item number, with the holes at the end") {
   const auto& items = fixtureItems();

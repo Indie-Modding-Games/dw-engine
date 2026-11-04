@@ -325,6 +325,8 @@ local function draw_tech(document)
   end
 end
 
+-- game_menu.c: renderDigimonMovesSelected: the focused technique's panel sits on the right while
+-- the cursor is in the grid's first three columns, on the left otherwise.
 local function draw_tech_info(document)
   for index = 0, 55 do
     if document:get("tech-choice-" .. index):has_focus() then
@@ -486,9 +488,10 @@ local function focus_slot(document, index)
 end
 
 -- The description of the focused item, below the list; none for an empty slot (inventory.c:
--- renderInventoryBottom). The original keeps showing the description of the slot under the cursor
--- while an item moves (state 4 draws only the red outline round the item that moves); the modern
--- look asks where to put the item instead.
+-- renderInventoryBottom, which redraws it with updateItemDescription when the cursor moves). The
+-- original keeps showing the description of the slot under the cursor while an item moves (state 4
+-- draws only the red outline round the item that moves); the modern look asks where to put the item
+-- instead.
 local function draw_description(document)
   local description = ""
   if moving ~= nil and ui.setting("ui_skin") ~= "original" then
@@ -648,6 +651,8 @@ function open_page(document, name)
 end
 
 function pick_slot(document, index)
+  -- inventory.c: selectRegularInventory in a move: moveItem swaps the two slots (the same slot
+  -- swaps with itself) and the cursor stays on the destination.
   if moving ~= nil then
     local from = moving
     moving = nil
@@ -697,19 +702,28 @@ function choose_option(document, name)
     close_box(document, slot)
     draw_bag(document)
   elseif name == "sort" then
+    -- createSortOption: Battle, Raise and Basic, the cursor on the first (SORT_SELECTED 0).
     open_box(document, "sort-box")
   elseif name == "drop" then
+    -- createDropItemConfirmBox: "Are you sure?" with the cursor on No (DROP_ITEM_SELECTED_OPTION
+    -- 1).
     open_box(document, "confirm-box")
     document:get("confirm-no"):focus()
   end
 end
 
+-- inventory.c: selectSorting sorts with the order under the cursor (sortItems) and both boxes close
+-- (tickInventoryUI, cases 11 to 13); the bag's cursor stays on its slot, whatever lands there.
+-- Measured in the original: the cursor on slot 3 stayed on 3 after Battle.
 function choose_sort(document, mode)
+  local slot = picked or 0
   close_box(document)
-  focus_slot(document, 0)
+  focus_slot(document, slot)
   ui.send("bag_sort", mode)
 end
 
+-- inventory.c: selectDropItem: Yes throws the item away (tickInventoryUI, case 7: removeItem with
+-- the slot's count) once the boxes have closed; No closes only the question, back to the options.
 function confirm_drop(document, yes)
   if not yes then
     back_box(document)
@@ -798,7 +812,9 @@ local function back(document)
   end
 end
 
--- Up and down go through the entries of an open box only.
+-- Up and down go through the entries of an open box only. The original look stops at the ends
+-- (inventory.c: tickInventoryOptionSelector, for the options in tickItemOption and the orders in
+-- tickSortOption); the modern look goes round.
 local function step_box(document, step)
   local entries = box_entries[box]
   local at = 1
@@ -813,6 +829,7 @@ local function step_box(document, step)
   document:get(entries[next_index]):focus()
 end
 
+-- inventory.c: initializeInventoryUI: the bag opens with no box and no move under way.
 function on_show(document)
   panel_enter.start(document)
   status_condition_bob = nil
@@ -927,6 +944,7 @@ function on_action(document, action)
     return true
   end
   if box ~= nil then
+    -- tickDropItemConfirmBox: left and right go between Yes and No, without going round.
     if box == "confirm-box" and ui.setting("ui_skin") == "original" then
       if action == "left" then
         document:get("confirm-yes"):focus()
@@ -1004,6 +1022,8 @@ function on_action(document, action)
     and ui.setting("ui_skin") == "original"
     and (action == "up" or action == "down" or action == "left" or action == "right")
   then
+    -- inventory.c: tickInventoryTop: up and down by a row within the bag, left and right within
+    -- the row, without going round; the rows scroll with the cursor.
     for index = 0, number("bag.slot.count") - 1 do
       if document:get("slot-" .. index):has_focus() then
         local next_index = index

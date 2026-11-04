@@ -660,3 +660,23 @@ TEST_CASE("slot names read as slots") {
   CHECK_FALSE(manualSlotFromName("autosave_01").has_value());
   CHECK_FALSE(manualSlotFromName("").has_value());
 }
+
+TEST_CASE(
+    "play time counts the ticks the game gives it, apart from the field's, and stops at 999:59") {
+  // clock.c: tickPlaytime: every frame of the game loop, the menus and battles included, not the
+  // field's game time; PLAYTIME_HOURS stops at 999 with the minutes held at 59.
+  const TestPacks packs;
+  const auto session = newGame(packs, nullptr);
+  CHECK(session->playSeconds() == doctest::Approx(0.0));
+  session->tick(Tick);
+  CHECK(session->playSeconds() == doctest::Approx(0.0));
+  constexpr double Minute = 60.0;
+  session->countPlayTime(Minute);
+  CHECK(session->playSeconds() == doctest::Approx(Minute));
+  constexpr double Hour = 3600.0;
+  constexpr double ThousandHours = 1000.0 * Hour;
+  session->countPlayTime(ThousandHours);
+  const auto shown = static_cast<std::int64_t>(session->playSeconds());
+  CHECK(shown / static_cast<std::int64_t>(Hour) == 999);
+  CHECK(shown % static_cast<std::int64_t>(Hour) / static_cast<std::int64_t>(Minute) == 59);
+}

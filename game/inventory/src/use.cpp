@@ -55,6 +55,8 @@ core::Result<UseResult> giveItem(Inventory& inventory, assets::ItemHandle item, 
   if (!effect) {
     return std::unexpected{effect.error()};
   }
+  // game_menu.c: removeOneSelectedItem (partner.c, state 6, once the partner eats it) and
+  // main.c: startThrowingItem in a battle take one of the item with removeItem.
   inventory.remove(item, OneItem);
   target.apply(*effect, context);
   return used;

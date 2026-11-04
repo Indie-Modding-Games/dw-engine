@@ -236,6 +236,7 @@ end
 local bubble_priority = { "sleep", "tired", "hunger", "toilet", "injured", "sick" }
 local bubble_need_index = { hunger = 0, sleep = 1, toilet = 2, tired = 3, injured = 4, sick = 5 }
 local bubble_swap_seconds = 50 / 20
+-- No bubble when the game starts (bubble.c: initializeConditionBubbles marks every bubble free).
 local bubble_need = nil
 local bubble_seconds = 0
 -- need_bubble_stack: up to this many needs at once, side by side, the most urgent first.

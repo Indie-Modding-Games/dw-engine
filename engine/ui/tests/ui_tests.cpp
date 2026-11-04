@@ -692,6 +692,60 @@ TEST_CASE("the original bag describes the slot under the cursor, also while an i
   CHECK(ui->elementText("partner_menu", "bag-description").empty());
 }
 
+TEST_CASE("the original bag's boxes stop at their ends, ask No first and sort under the cursor") {
+  // Measured in the original (2026-11-04, 15_item_option_box): the options start on Use and stop at
+  // Use and Drop (tickInventoryOptionSelector); the question starts on No and stops at Yes
+  // (createDropItemConfirmBox, tickDropItemConfirmBox); after a sort the cursor stayed on slot 3
+  // (selectSorting leaves INVENTORY_POINTER alone).
+  Content content;
+  auto ui = createUi(content.mount());
+  input::InputState input{input::defaultActionMap()};
+  openOriginalBag(*ui, input);
+  ui->setSetting("bag.slot.1.discardable", true);
+  press(*ui, input, input::keys::Right);
+  REQUIRE(ui->focusedElementId("partner_menu") == "slot-1");
+  press(*ui, input, input::keys::Return);
+  settle(*ui, input);
+  REQUIRE(ui->focusedElementId("partner_menu") == "opt-use");
+  press(*ui, input, input::keys::Up);
+  CHECK(ui->focusedElementId("partner_menu") == "opt-use");
+  for (int step = 0; step < 5; ++step) {
+    press(*ui, input, input::keys::Down);
+  }
+  CHECK(ui->focusedElementId("partner_menu") == "opt-drop");
+
+  press(*ui, input, input::keys::Return);
+  settle(*ui, input);
+  CHECK(ui->focusedElementId("partner_menu") == "confirm-no");
+  press(*ui, input, input::keys::Left);
+  press(*ui, input, input::keys::Left);
+  CHECK(ui->focusedElementId("partner_menu") == "confirm-yes");
+  press(*ui, input, input::keys::Right);
+  press(*ui, input, input::keys::Right);
+  CHECK(ui->focusedElementId("partner_menu") == "confirm-no");
+  // No: back to the options, on Drop.
+  press(*ui, input, input::keys::Return);
+  settle(*ui, input);
+  CHECK(ui->focusedElementId("partner_menu") == "opt-drop");
+  CHECK(ui->takeCommands().empty());
+
+  press(*ui, input, input::keys::Up);
+  press(*ui, input, input::keys::Return);
+  settle(*ui, input);
+  REQUIRE(ui->focusedElementId("partner_menu") == "sort-0");
+  press(*ui, input, input::keys::Down);
+  press(*ui, input, input::keys::Down);
+  press(*ui, input, input::keys::Down);
+  CHECK(ui->focusedElementId("partner_menu") == "sort-2");
+  press(*ui, input, input::keys::Return);
+  settle(*ui, input);
+  CHECK(ui->focusedElementId("partner_menu") == "slot-1");
+  const std::vector<UiCommand> commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].name == "bag_sort");
+  CHECK(commands[0].value == UiValue{2.0});
+}
+
 TEST_CASE("the original egg box grows before its eggs move and shrinks before it closes") {
   // doo2.c: DOO2_openEggBox grows the box out of the screen's middle; DOO2_tickEggInput ignores the
   // eggs until it stands and ends once it has shrunk away (ui.c: 5 frames each way at 20 a second).

@@ -177,6 +177,10 @@ public:
   // which the field does not take the player's walk (a menu, a screen or scene that runs instead,
   // a gym course) drops the click-to-move target, so the player never walks on to it afterwards.
   void tick(const game::field::FieldInput& intent, const FishingButtons& fishing);
+  // Counts a tick of play time (GameSession::countPlayTime, clock.c: tickPlaytime): the app calls
+  // it on every tick of a played game but the paused ones and those of a movie, menus, battles and
+  // scenes included.
+  void countPlayTime(double seconds) { game_.session->countPlayTime(seconds); }
   // Whether a click on the ground is a walk order now: the last tick gave the field the player's
   // walk and nothing held him (no script or textbox, care scene, map change or screen).
   [[nodiscard]] bool walksByPointer() const;

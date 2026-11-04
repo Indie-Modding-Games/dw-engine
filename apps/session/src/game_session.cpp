@@ -35,6 +35,11 @@ constexpr std::string_view LabelSeparator = " ";
 // The roll of a chance in percent (tamer.c: addTamerLevel rolls randomLimit(100)).
 constexpr std::int32_t PercentRoll = 100;
 
+// clock.c: tickPlaytime: a minute is 1200 frames (one real minute at the original's 20 frames a
+// second, measured: 140 frames in 420 vblanks); the hours stop at 999 and the minutes then stay at
+// 59, so the count never shows past 999:59.
+constexpr double MaxPlaySeconds = ((999.0 * 60.0) + 59.0) * 60.0 + 59.0;
+
 // The checks of every section the session's systems read.
 ruleset::SectionChecks allChecks(const std::vector<std::unique_ptr<SessionSystem>>& systems) {
   ruleset::SectionChecks checks = game::partner::partnerSectionChecks();
@@ -457,6 +462,13 @@ bool GameSession::savesWait() const {
   return field != nullptr && field->heldForCare() && careHeldSeconds_ < SaveWaitLimitSeconds;
 }
 
+void GameSession::countPlayTime(double realSeconds) {
+  if (!state_->playing) {
+    return;
+  }
+  playSeconds_ = std::min(playSeconds_ + realSeconds, MaxPlaySeconds);
+}
+
 void GameSession::advanceGameTime(double realSeconds) {
   // The field stops game time during a map change (tamer.c: stopGameTime); without a field it
   // always runs.
@@ -466,7 +478,6 @@ void GameSession::advanceGameTime(double realSeconds) {
   if (!state_->playing) {
     return;
   }
-  playSeconds_ += realSeconds;
   // clock.c: tickGameClock ends with updateBGM while game time runs.
   if (timeRuns && music_) {
     music_->updateBgm();

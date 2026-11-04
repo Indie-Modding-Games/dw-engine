@@ -204,6 +204,10 @@ public:
 
   // One tick of the game loop, of real seconds (the menu, which pauses the game, does not tick).
   void tick(double realSeconds);
+  // Counts play time, once per tick of the whole game while a game is played and not paused: the
+  // field, the menus, the battles and the scenes alike (clock.c: tickPlaytime, the object addClock
+  // adds next to the game clock). It stops at 999:59 (PLAYTIME_HOURS 999, minutes held at 59).
+  void countPlayTime(double realSeconds);
 
   // The field of the scene: its game time drives the clock and its map changes route. It must stay
   // attached only while it lives.
@@ -326,6 +330,7 @@ public:
   // to show its save indicator, whoever saved.
   [[nodiscard]] std::uint64_t savesWritten() const { return savesWritten_; }
 
+  // The play time counted (countPlayTime), as the save's header and the player page show it.
   [[nodiscard]] double playSeconds() const { return playSeconds_; }
   [[nodiscard]] std::uint64_t seed() const { return seed_; }
   // The story's sound slots, or nullptr for a silent session.

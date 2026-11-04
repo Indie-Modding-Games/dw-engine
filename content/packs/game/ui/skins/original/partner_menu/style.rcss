@@ -72,7 +72,8 @@
 		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
 
-/* The profile (insets with lines #020202 at the top and left, #6987A0 at the bottom and right, fill #354B5C): the
+/* The profile (insets, game_menu.c: renderInsetBox: lines #020202 at the top and left, #6987A0 at the bottom and
+   right, fill #354B5C): the
    name at y 52, the species on the row under it (the original's inset at y 68, 244 wide; the American version draws
    the species at x 52, at most 120 pixels: game_menu.c: renderDigimonStatsView) and the conditions after it, where
    the original has its special, type and active marks, the age and the weight on the row at y 84 (insets at x 50 and
@@ -502,7 +503,8 @@ button:focus .original-look, button.original-look:focus {
 #status-vertical {
     left: 366dp; top: 216dp; width: 9dp; height: 351dp;
 }
-/* STATS_VIEW_LINES: three native-pixel lines; the light extends one pixel at each end. */
+/* STATS_VIEW_LINES (game_menu.c: renderSeparatorLines, each line in its UI_LINES_BORDER_COLOR): three native-pixel
+   lines; the light extends one pixel at each end. */
 #status-horizontal span, #status-vertical span { position: absolute; display: block; background-color: #020202; }
 #status-horizontal .separator-light, #status-vertical .separator-light { background-color: #6987a0; }
 #status-horizontal .separator-first { left: 3dp; right: 3dp; top: 0; height: 3dp; }
@@ -835,6 +837,8 @@ button:focus .original-look, button.original-look:focus {
 
 #scrim.digimon-screen .tab.selected { background-color: transparent; }
 
+/* The focused technique's panel (game_menu.c: renderDigimonMovesSelected): on the right for the grid's first three
+   columns (MOVE_SELECT_BOX_X up to 0xA8, panel 1), on the left for the others (panel 0). */
 #tech-info.hidden { display: none; }
 #tech-info { position: absolute; left: 0; top: 0; width: 894dp; height: 570dp; pointer-events: none; }
 #tech-info-name, #tech-info-stats { position: absolute; background-color: #323280; border: 3dp transparent; box-sizing: border-box; decorator: original-box(3dp) border-box; }

@@ -179,6 +179,8 @@ private:
   std::vector<FieldGlow> glows_;
   std::vector<FieldCloud> clouds_;
   std::vector<FieldSpark> sparks_;
+  // One effect at a time (NUM_HEALING_INSTANCES 1), none at the start (particle.c:
+  // initializeHealingParticles sets its frameId to -1).
   std::optional<FieldHealing> healing_;
   std::optional<FieldButterfly> butterfly_;
   double pending_ = 0.0;

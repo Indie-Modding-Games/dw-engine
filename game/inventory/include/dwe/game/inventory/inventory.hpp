@@ -65,11 +65,12 @@ public:
   // (item.c: removeItem).
   void remove(assets::ItemHandle item, std::int32_t count);
 
-  // Swaps two slots (inventory.c: the menu's move).
+  // Swaps two slots (inventory.c: the menu's move, moveItem).
   core::Result<void> move(std::size_t from, std::size_t to);
 
   // Throws away a slot's whole stack: only in the field and only droppable items (inventory.c:
-  // selectOptionMenu).
+  // selectOptionMenu, selectDropItem). As the original's removeItem, every other stack of the item
+  // loses as many as the slot held.
   core::Result<void> discard(std::size_t slot, const assets::ItemTable& items, UseContext context);
 
   // Sorts the bag with one of the rules' orders (inventory.c: sortItems).

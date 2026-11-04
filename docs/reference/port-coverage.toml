@@ -381,7 +381,7 @@ doSomethingWithSomePoints = { status = "portado", dwe = "game/battle/src/effect_
 DOOA_storeDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Guarda la altura de la criatura para la escena de renacer." }
 DOOA_getStoredDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Lee la altura guardada para la escena de renacer." }
 tickHealingParticles = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "el anillo de la partícula 0 divide por cero: el procesador da -1 (Igual)", what = "Mueve las partículas de curación al usar un objeto." }
-initializeHealingParticles = { status = "portado", dwe = "apps/game/src/field_effects.cpp", what = "Prepara las partículas de curación." }
+initializeHealingParticles = { status = "portado", dwe = "apps/game/src/field_effects.hpp", what = "Prepara las partículas de curación." }
 addHealingParticleEffect = { status = "portado", dwe = "apps/game/src/play_session.cpp", note = "qué objetos y si llevan anillo: inventory.yaml effects.healing_particles; en combate, el objeto lanzado (battle_screen.cpp, HealingShown)", what = "Lanza las partículas de curación sobre el compañero." }
 
 # --- Campo
@@ -431,7 +431,7 @@ animateEntityTexture = { status = "portado", dwe = "apps/game/src/flame_texture.
 tickMomentum = { status = "portado", dwe = "apps/game/src/field_scene.cpp:485", what = "Mueve al personaje con el desplazamiento de su animación." }
 tickAnimation = { status = "portado", note = "Sonidos de clip (0x4000) en el campo, el combate y las escenas de cuidado: FieldScene::playClipSounds; bancos de la especie en SessionSound.", what = "Avanza la animación de un personaje." }
 animHandleKeyFrameInstruction = { status = "portado", dwe = "docs/formats/modelos.md:113", what = "Ejecuta una orden de fotograma clave de la animación." }
-initializeConditionBubbles = { status = "portado", dwe = "apps/game/src/play_session.cpp:43", what = "Prepara las burbujas de necesidad del compañero." }
+initializeConditionBubbles = { status = "portado", dwe = "content/packs/game/ui/hud/logic.lua", what = "Prepara las burbujas de necesidad del compañero." }
 initializeButterfly = { status = "portado", dwe = "apps/game/src/field_effects.cpp", what = "Prepara la mariposa que distrae al compañero infeliz." }
 setButterfly = { status = "portado", dwe = "apps/game/src/play_session.cpp", what = "Hace salir la mariposa que persigue el compañero infeliz (condición de distraído)." }
 tickButterfly = { status = "portado", dwe = "apps/game/src/field_effects.cpp", what = "Hace volar la mariposa." }
@@ -553,46 +553,46 @@ clearTextArea = { status = "no-aplica", note = "texto en memoria de vídeo", wha
 clearTextSubArea = { status = "no-aplica", note = "texto en memoria de vídeo", what = "Borra parte de una zona de texto." }
 setTextColor = { status = "no-aplica", note = "texto del original; el motor usa sus estilos", what = "Cambia el color del texto." }
 addGameMenu = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Abre el menú de juego (triángulo)." }
-closeTriangleMenu = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Cierra el menú de juego." }
-tickGameMenu = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Mueve el menú de juego." }
+closeTriangleMenu = { status = "portado", dwe = "content/packs/game/ui/pause_menu/logic.lua", what = "Cierra el menú de juego." }
+tickGameMenu = { status = "portado", dwe = "content/packs/game/ui/pause_menu/logic.lua", what = "Mueve el cursor del menú de juego y lo cierra." }
 tickDigimonMenu = { status = "portado", dwe = "apps/game/src/partner_tab.cpp", what = "Ficha del compañero: estado, técnicas y orden de las técnicas." }
 isUIBoxAvailable = { status = "no-aplica", note = "cuadros de interfaz del original", what = "Dice si queda un cuadro libre." }
 tickPlayerMenu = { status = "portado", dwe = "apps/game/src/player_chart.cpp", what = "Ficha del jugador: datos, medallas, cartas y tabla de evoluciones." }
 handleGameMenuSelection = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Ejecuta la opción elegida del menú de juego." }
-removeOneSelectedItem = { status = "portado", dwe = "apps/game/src/care_commands.cpp", what = "Gasta el objeto elegido al darlo." }
+removeOneSelectedItem = { status = "portado", dwe = "game/inventory/src/use.cpp", what = "Gasta el objeto elegido al darlo." }
 renderFeedingItem = { status = "portado", dwe = "apps/game/src/feed_item.hpp", note = "el icono en el nodo 9 del jugador desde que lo tiende hasta el cuadro 11 de comer o el final del rechazo", what = "Dibuja el objeto en la mano al dar de comer." }
-getEquippedSlot = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Da la ranura de una técnica equipada." }
-equipMove = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Equipa una técnica en una ranura." }
+getEquippedSlot = { status = "portado", dwe = "apps/session/src/partner_moves.cpp", what = "Da la ranura de una técnica equipada." }
+equipMove = { status = "portado", dwe = "apps/session/src/partner_moves.cpp", what = "Equipa una técnica en la primera ranura libre." }
 sortArray = { status = "no-aplica", note = "utilidad", what = "Ordena una lista." }
 createItemOption = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Abre las opciones de un objeto de la bolsa (usar, mover, tirar)." }
-initializeInventoryUI = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Prepara la pantalla de la bolsa." }
+initializeInventoryUI = { status = "portado", dwe = "content/packs/game/ui/partner_menu/logic.lua", what = "Deja la bolsa sin cajas ni movimiento al empezar." }
 closeInventoryBoxes = { status = "no-aplica", note = "cuadros de interfaz del original", what = "Cierra los cuadros de la bolsa." }
 createInventoryView = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Abre la vista de la bolsa." }
-tickInventoryTop = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Mueve el cursor de la bolsa." }
+tickInventoryTop = { status = "portado", dwe = "content/packs/game/ui/partner_menu/logic.lua", what = "Mueve el cursor de la bolsa." }
 closeInventoryBoxes2 = { status = "no-aplica", note = "cuadros de interfaz del original", what = "Cierra los cuadros de la bolsa." }
-tickItemOption = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Elige una opción de un objeto." }
-createSortOption = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Abre la opción de ordenar la bolsa." }
-tickSortOption = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Elige cómo ordenar la bolsa." }
-createDropItemConfirmBox = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Pregunta si tirar un objeto." }
-tickDropItemConfirmBox = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Confirma tirar un objeto." }
-updateItemDescription = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Enseña la descripción del objeto elegido." }
+tickItemOption = { status = "portado", dwe = "content/packs/game/ui/partner_menu/logic.lua", what = "Mueve el cursor de las opciones de un objeto." }
+createSortOption = { status = "portado", dwe = "content/packs/game/ui/partner_menu/logic.lua", what = "Abre la caja de ordenar la bolsa." }
+tickSortOption = { status = "portado", dwe = "content/packs/game/ui/partner_menu/logic.lua", what = "Elige cómo ordenar la bolsa." }
+createDropItemConfirmBox = { status = "portado", dwe = "content/packs/game/ui/partner_menu/logic.lua", what = "Pregunta si tirar un objeto, con el cursor en No." }
+tickDropItemConfirmBox = { status = "portado", dwe = "content/packs/game/ui/partner_menu/logic.lua", what = "Mueve el cursor entre Sí y No." }
+updateItemDescription = { status = "portado", dwe = "content/packs/game/ui/partner_menu/logic.lua", what = "Enseña la descripción del objeto bajo el cursor." }
 moveItem = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Mueve un objeto de hueco en la bolsa." }
-selectSorting = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Ordena la bolsa." }
-selectDropItem = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Tira el objeto elegido." }
+selectSorting = { status = "portado", dwe = "content/packs/game/ui/partner_menu/logic.lua", what = "Ordena la bolsa y deja el cursor donde estaba." }
+selectDropItem = { status = "portado", dwe = "content/packs/game/ui/partner_menu/logic.lua", what = "Tira el objeto elegido o vuelve a las opciones." }
 selectRegularInventory = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Vuelve a la bolsa normal desde un submenú." }
 copyItemArray = { status = "no-aplica", note = "utilidad", what = "Copia la lista de objetos." }
 updateInventoryInputRepeatCounter = { status = "no-aplica", note = "repetición del mando; la hace el motor", what = "Repite el cursor al mantener el botón." }
 isInventoryButtonPressed = { status = "no-aplica", note = "entrada del original", what = "Dice si se pulsó un botón en la bolsa." }
-tickInventoryOptionSelector = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Mueve el cursor de opciones de la bolsa." }
+tickInventoryOptionSelector = { status = "portado", dwe = "content/packs/game/ui/partner_menu/logic.lua", what = "Mueve el cursor de una caja de la bolsa sin dar la vuelta." }
 formatInteger = { status = "no-aplica", note = "texto de interfaz", what = "Pasa un número a texto." }
 appendWideDigit = { status = "no-aplica", note = "texto de interfaz", what = "Añade una cifra ancha a un texto." }
 tickUIBox = { status = "no-aplica", note = "cuadros de interfaz del original; el motor usa su interfaz", what = "Anima la apertura de un cuadro." }
 
 # --- Objetos y tiendas
-initializeDroppedItems = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Prepara los objetos del suelo." }
+initializeDroppedItems = { status = "portado", dwe = "game/field/include/dwe/game/field/field_items.hpp", what = "Vacía los objetos del suelo al empezar." }
 clearDroppedItems = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Quita los objetos del suelo al cambiar de mapa." }
 initializeInventory = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Prepara la bolsa de partida nueva." }
-removeTamerItem = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Quita un objeto de la bolsa." }
+removeTamerItem = { status = "portado", dwe = "apps/game/src/feed_scene.cpp", what = "Quita el objeto de la mano del jugador." }
 addEnergy = { status = "portado", dwe = "game/inventory/src/item_effects.cpp", what = "Suma energía (saciedad) al compañero." }
 reduceTiredness = { status = "portado", dwe = "game/inventory/src/item_effects.cpp", what = "Quita cansancio al compañero." }
 addHappiness = { status = "portado", dwe = "game/inventory/src/item_effects.cpp", what = "Suma felicidad al compañero." }
@@ -699,8 +699,8 @@ loadDigimonSounds = { status = "portado", dwe = "apps/session/src/session_sound.
 VSLoadSounds = { status = "falta", what = "Carga los sonidos del modo versus.", system = "versus" }
 
 # --- Núcleo
-addClock = { status = "portado", dwe = "engine/ruleset/include/dwe/ruleset/game_clock.hpp", what = "Pone el reloj del juego." }
-tickPlaytime = { status = "portado", dwe = "game/save/src/save_file.cpp:133", what = "Cuenta el tiempo de juego." }
+addClock = { status = "portado", dwe = "apps/session/include/dwe/session/game_session.hpp", what = "Pone el reloj del juego y el tiempo de juego." }
+tickPlaytime = { status = "portado", dwe = "apps/session/src/game_session.cpp", what = "Cuenta el tiempo de juego, hasta 999:59." }
 lookupFileTable = { status = "no-aplica", note = "tabla de ficheros del disco", what = "Busca un fichero en la tabla del disco." }
 addAttackObject = { status = "portado", dwe = "game/battle/src/attack_hits.cpp", what = "Registra un golpe de una técnica." }
 popAttackObject = { status = "portado", dwe = "game/battle/src/attack_hits.cpp", what = "Saca el siguiente golpe a aplicar." }

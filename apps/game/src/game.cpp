@@ -1308,6 +1308,12 @@ int runGame(const Options& requested) {
         titleAfterMovie = replayBootMovie;
       }
       PlaySession* play = flow.playing();
+      // clock.c: tickPlaytime runs every frame the game loop runs, under the menus and in battles
+      // (measured: 140 frames in 420 vblanks with the bag's options open, 100 in 307 in a battle)
+      // and not under the pause (none in 476 vblanks) or a movie, which return above.
+      if (play != nullptr) {
+        play->countPlayTime(TickSeconds);
+      }
       game::field::FieldInput intent;
       FishingButtons fishing;
       // A click walks the player only while the mouse is the walk control and nothing holds him (a

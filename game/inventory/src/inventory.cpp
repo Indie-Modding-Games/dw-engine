@@ -120,6 +120,7 @@ core::Result<void> Inventory::move(std::size_t from, std::size_t to) {
       return core::fail(messages::formatMessage(messages::SlotOutOfRange, slot, size));
     }
   }
+  // inventory.c: moveItem swaps the item, its count and its name between the two slots.
   std::swap(state_.slots[from], state_.slots[to]);
   return {};
 }
@@ -132,7 +133,7 @@ core::Result<void> Inventory::discard(std::size_t slot, const assets::ItemTable&
   if (context != UseContext::Field) {
     return core::fail(std::string{messages::DiscardOnlyInField});
   }
-  std::optional<Stack>& stack = state_.slots[slot];
+  const std::optional<Stack> stack = state_.slots[slot];
   if (!stack) {
     return core::fail(messages::formatMessage(messages::EmptySlot, slot));
   }
@@ -140,7 +141,9 @@ core::Result<void> Inventory::discard(std::size_t slot, const assets::ItemTable&
   if (entry.droppable != rules_.use.discardDroppable) {
     return core::fail(messages::formatMessage(messages::NotDiscardable, entry.id));
   }
-  stack.reset();
+  // inventory.c: selectDropItem's yes (tickInventoryUI, case 7) calls removeItem with the slot's
+  // item and count: the slot empties and every other stack of the item loses as many.
+  remove(stack->item, stack->count);
   return {};
 }
 
