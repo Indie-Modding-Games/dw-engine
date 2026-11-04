@@ -270,18 +270,25 @@ body {
 }
 
 /* The needs: always in place, dim while the partner does not have them; one it has stands out with a light box and
-   dark text, so it reads without telling colours apart. */
+   dark text, so it reads without telling colours apart. Two rows of three cells of the same width, so the longer
+   words of some languages (Cansancio, Enfermedad) keep their own cell instead of running into the next one. */
 #field-needs {
 	display: flex;
+	flex-wrap: wrap;
 	justify-content: space-between;
-	margin: 6dp 0 4dp 0;
+	margin: 6dp 0 2dp 0;
 }
 
 .need {
-	padding: 2dp 8dp;
+	box-sizing: border-box;
+	width: 32.5%;
+	margin-bottom: 4dp;
+	padding: 2dp 4dp;
 	border-radius: 6dp;
 	border: 1dp #2e3a4a;
 	color: #6b7785;
+	text-align: center;
+	white-space: nowrap;
 }
 
 .need.active {
