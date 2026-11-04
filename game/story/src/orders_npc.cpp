@@ -27,6 +27,7 @@ core::Result<void> NpcOrders::loadSpeciesModel(std::int64_t species) {
 }
 
 core::Result<void> NpcOrders::unloadSpeciesModel(std::int64_t species) {
+  // script_interp.c: scriptUnloadModel: a species not loaded is ignored.
   core::logDebug("[port:story] unload_species_model (unloadDigimonModel, overworld.c:1151): "
                  "species {}",
                  species);

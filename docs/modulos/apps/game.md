@@ -385,6 +385,8 @@ al fotograma siguiente la historia sigue (`SOME_SCRIPT_SYNC_BIT`), la rutina 53 
 chispas se dibujan como las partículas del campo (`FieldEffects::setGlows`, `renderFXParticle`), con color y tamaño
 al azar en cada fotograma.
 
+- En el decomp: `ENDI_startParticles` y `ENDI_clearParticles` son `EndingEffects::start`; `ENDI_getParticleBase` y
+  `ENDI_setParticleBase`, la subida (`rise_`); `ENDI_tickEndingParticles` está vacía en el original (no aplica).
 - Suposición: el orden del primer fotograma (el arranque y el primer avance van en fotogramas distintos) y las cifras
   están sacadas del decomp; falta medirlas en el original (`_work/tmp/measure-queue.md`).
 - Falta: la sombra del jugador, que el motor aún no dibuja (`PLAYER_SHADOW_ENABLED = 0`).

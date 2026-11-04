@@ -265,6 +265,7 @@ core::Result<ApiValue> learnMove(const StoryGameContext& context, std::int64_t m
 }
 
 core::Result<ApiValue> knowsMove(const StoryGameContext& context, std::int64_t move) {
+  // script_value.c: scriptCompareMove (_hasMove); the converted scripts negate it with `not`.
   auto battle = movesOf(context);
   if (!battle) {
     return std::unexpected{battle.error()};

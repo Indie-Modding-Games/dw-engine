@@ -81,6 +81,9 @@ std::vector<std::string> lineTable(const std::map<std::uint32_t, ListedInstructi
 
 } // namespace
 
+// The shops and services show these lines whole, one page each (script_textbox.c:
+// showTextboxReady marks the page as the text's last before showTextbox writes it), and confirm
+// closes it.
 core::Result<MapHeadLineTables> readMapHeadLineTables(const assets::VirtualFileSystem& files) {
   const auto id = assets::AssetId::parse(MapHeadListing);
   if (!id) {

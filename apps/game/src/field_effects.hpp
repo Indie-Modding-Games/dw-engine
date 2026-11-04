@@ -143,7 +143,8 @@ public:
   // addHealingParticleEffect: one at a time; `feet` is where the partner stands, `height` and
   // `radius` its species' (DIGIMON_DATA). False when one is already running.
   bool addHealing(OriginalPoint feet, std::int32_t height, std::int32_t radius, bool ring);
-  // setButterfly and unsetButterfly: one at a time here (the partner's).
+  // setButterfly and unsetButterfly: one at a time here (the partner's). None at first or after
+  // clear() (butterfly.c: initializeButterfly).
   void setButterfly();
   void unsetButterfly() { butterfly_.reset(); }
   [[nodiscard]] bool hasButterfly() const { return butterfly_.has_value(); }

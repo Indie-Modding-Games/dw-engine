@@ -97,6 +97,7 @@ std::array<float, 4> graceFacings(float yaw) {
 } // namespace
 
 bool squaresOverlap(const GroundSquare& a, const GroundSquare& b, float slack) {
+  // map.c: entityIsInEntity: the two radii's squares meet on x and on z, edges touching included.
   const float reach = a.half + b.half - slack;
   return std::abs(a.centre.x - b.centre.x) <= reach && std::abs(a.centre.y - b.centre.y) <= reach;
 }
@@ -395,6 +396,9 @@ void FieldNpcs::beginTick() {
 
 void FieldNpcs::tick(float seconds, const assets::MapCollision& collision,
                      const NpcSurroundings& surroundings) {
+  // overworld.c: NPCEntityTick: on the field (GAME_STATE 0) each NPC on the map runs
+  // NPCEntityTickOverworld; in a battle or a tournament the field does not tick and those screens
+  // move the fighters themselves.
   entt::registry& registry = world_->registry();
   beginTick();
   for (Npc& npc : npcs_) {

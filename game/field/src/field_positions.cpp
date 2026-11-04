@@ -142,6 +142,8 @@ void Field::releaseHandoff(std::string_view why) {
 }
 
 void Field::placeAt(scene::Entity entity, glm::vec3 position, float yaw) {
+  // model.c: setEntityPosition: the location and the animation's own copy of it (here the
+  // interpolation's previous pose) both jump there.
   scene::place(world_->registry().get<Transform>(entity), position, yaw);
   releaseHandoff("place");
   // The place is exact: a comparison with the original starts from it, and the original moves

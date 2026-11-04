@@ -531,6 +531,7 @@ void PartnerFollow::tick(const Frame& frame) {
     const OriginalPoint centre = centreOf(target);
     rotation_ = core::original::atan4096(centre.z - position_.z, centre.x - position_.x);
     if (cellOf(position_) == target) {
+      // map.c: popPartnerWaypoint: the reached cell leaves the trail.
       --trailCount_;
       trailCurrent_ = (trailCurrent_ + 1) % TrailCapacity;
     }

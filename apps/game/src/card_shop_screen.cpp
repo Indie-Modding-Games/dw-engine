@@ -61,6 +61,9 @@ bool CardShopScreen::take(const session::StoryScreenRequest& request, const Fiel
   choice_ = Yes;
   picked_.reset();
   summary_.clear();
+  // The card_shop document draws the boxes: the amount box (script_common.c:
+  // renderItemMenuAmountBox, the card, name and price over its two renderHorizontalLine rules) and
+  // the "is it OK?" box (renderSingleCardShop: the question, yes and no, the cursor on the choice).
   desc_.ui->show(CardShopDocument, true);
   if (packs) {
     // The bulk purchase: the script has paid one pack; the count starts there.

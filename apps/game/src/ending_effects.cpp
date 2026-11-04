@@ -49,6 +49,8 @@ std::int32_t EndingEffects::rand() {
 }
 
 void EndingEffects::start() {
+  // endi.c: ENDI_startParticles: ENDI_clearParticles empties the sparks, which follow the bones
+  // (flag 1).
   started_ = true;
   frame_ = 0;
   phase_ = 0;
@@ -108,6 +110,7 @@ void EndingEffects::tickFrame(const EndingSparkPlacer& place) {
     }
     break;
   case 2:
+    // ENDI_updateEnding: ENDI_getParticleBase, base.vy plus the speed, ENDI_setParticleBase.
     rise_ += velocity_;
     velocity_ += RiseBrake;
     if (velocity_ >= 0) {

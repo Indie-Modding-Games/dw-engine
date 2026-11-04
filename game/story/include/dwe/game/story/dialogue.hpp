@@ -193,7 +193,7 @@ private:
     std::optional<WorldPoint> originPoint;
     std::int64_t openingFrame = 0;
     // A confirm held when the box opened counts only once it is let go (script_common.c:
-    // isXPressedAfterDialogue).
+    // setFreshDialogue as createTextbox opens it, isXPressedAfterDialogue).
     bool freshGuard = true;
   };
 

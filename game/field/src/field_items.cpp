@@ -229,6 +229,9 @@ void FieldItems::enterMap(std::string_view mapId) {
 }
 
 void FieldItems::clear() {
+  // map_object.c: emptyChests (unloadMapParts, as the map goes) and clearChests (a new game, the
+  // ice sanctuary's crystals): every chest slot free again. The taken flag they leave behind is
+  // never read: spawnChest sets it again from the chest's trigger.
   core::logDebug("[port:field_items] changeMap (map.c:5335): ground and chests cleared");
   ground_.clear();
   chests_.clear();

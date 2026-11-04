@@ -403,6 +403,8 @@ std::uint64_t StoryRunner::heldLinkDepth() const {
 }
 
 std::optional<ResumeValue> StoryRunner::returnFromTop() {
+  // script_interp.c: popScriptStack: the section a jump left waits under the top one and takes
+  // over again. The stack has no 8-frame limit here (MaxLinkDepth).
   const RunningSection top = sections_.back();
   host_->close(top.handle);
   sections_.pop_back();

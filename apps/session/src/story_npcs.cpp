@@ -23,6 +23,8 @@ std::string speciesModel(std::string_view species) {
 } // namespace
 
 void StoryNpcs::loadSpeciesModel(std::int64_t species) {
+  // overworld.c: loadNPCModel reads the species' model off the disc; here the species is only noted
+  // and the field's model cache loads it when an NPC of it spawns.
   loadedModels_.insert(species);
   core::logDebug("[port:npc] scriptLoadModel (script_interp.c:2561): species {}; {} asked for",
                  species, loadedModels_.size());

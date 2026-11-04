@@ -2,7 +2,6 @@
 #include <dwe/core/original_math.hpp>
 #include <dwe/game/field/boss_arrival.hpp>
 
-
 namespace dwe::game::field {
 
 namespace {
@@ -112,6 +111,7 @@ BossArrivalCues BossArrival::startArrival() {
   arrivalFrame_ = 0;
   phase_ = 0;
   arrivalOver_ = false;
+  // eab.c: EAB_initializeParticles: no particle left from an earlier arrival.
   particles_.clear();
   BossArrivalCues cues;
   cues.sound = CallSound;

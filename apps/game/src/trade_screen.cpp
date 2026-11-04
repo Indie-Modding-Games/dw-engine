@@ -59,6 +59,8 @@ bool TradeScreen::take(const session::StoryScreenRequest& request, const FieldSc
   choice_ = Yes;
   count_ = 1;
   phase_ = Phase::Greeting;
+  // The trade_menu document draws the menu, its rules as script_common.c: renderHorizontalLine (a
+  // dark line, a light one, a dark one).
   desc_.ui->show(TradeMenuDocument, true);
   return true;
 }

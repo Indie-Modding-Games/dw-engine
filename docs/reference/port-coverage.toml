@@ -388,7 +388,7 @@ addHealingParticleEffect = { status = "portado", dwe = "apps/game/src/play_sessi
 findAABBHitEntity = { status = "portado", note = "solo en las comprobaciones de golpe de los efectos; el campo choca con su rejilla", dwe = "game/battle/src/effect_runner_subops.cpp:717", what = "Busca la entidad cuya caja toca otra." }
 hasAABBOverlap = { status = "no-aplica", note = "prueba de cajas del original", what = "Dice si dos cajas se tocan." }
 initializePartnerWaypoint = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Borra el rastro del compañero al cambiar de mapa." }
-popPartnerWaypoint = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Quita el primer punto del rastro del compañero." }
+popPartnerWaypoint = { status = "portado", dwe = "game/field/src/partner_follow.cpp", what = "Quita el primer punto del rastro del compañero." }
 addTamerWaypoint = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Añade un punto al rastro que deja el jugador." }
 initializeTamerWaypoints = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Prepara el rastro del jugador." }
 clearTamerWaypoints = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Borra el rastro del jugador." }
@@ -398,7 +398,7 @@ tickTamerWaypoints = { status = "portado", dwe = "game/field/src/field.cpp:858",
 tickPartnerWaypoints = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "El compañero sigue el rastro del jugador cuando no lo ve en línea recta." }
 isTileOffScreen = { status = "portado", dwe = "docs/reference/campo.md:157", what = "Dice si una casilla está fuera de la pantalla." }
 entityMoveForward = { status = "portado", dwe = "docs/reference/campo.md:49", what = "Da un paso adelante a un personaje." }
-entityIsInEntity = { status = "portado", dwe = "game/field/src/grid.cpp", what = "Dice si dos personajes se tocan." }
+entityIsInEntity = { status = "portado", dwe = "game/field/src/npcs.cpp", note = "squaresOverlap", what = "Dice si dos personajes se tocan." }
 isOffScreen = { status = "no-aplica", note = "cálculo de pantalla del original", what = "Dice si un punto está fuera de la pantalla." }
 getMapSoundId = { status = "portado", dwe = "docs/formats/audio.md:24", what = "Da el banco de sonidos del mapa." }
 readMapTFS = { status = "no-aplica", note = "lectura del disco; la hace la extracción", what = "Lee las imágenes del fondo del mapa." }
@@ -432,11 +432,11 @@ tickMomentum = { status = "portado", dwe = "apps/game/src/field_scene.cpp:485", 
 tickAnimation = { status = "portado", note = "Sonidos de clip (0x4000) en el campo, el combate y las escenas de cuidado: FieldScene::playClipSounds; bancos de la especie en SessionSound.", what = "Avanza la animación de un personaje." }
 animHandleKeyFrameInstruction = { status = "portado", dwe = "docs/formats/modelos.md:113", what = "Ejecuta una orden de fotograma clave de la animación." }
 initializeConditionBubbles = { status = "portado", dwe = "content/packs/game/ui/hud/logic.lua", what = "Prepara las burbujas de necesidad del compañero." }
-initializeButterfly = { status = "portado", dwe = "apps/game/src/field_effects.cpp", what = "Prepara la mariposa que distrae al compañero infeliz." }
+initializeButterfly = { status = "portado", dwe = "apps/game/src/field_effects.hpp", note = "sin mariposa al empezar y tras clear()", what = "Prepara la mariposa que distrae al compañero infeliz." }
 setButterfly = { status = "portado", dwe = "apps/game/src/play_session.cpp", what = "Hace salir la mariposa que persigue el compañero infeliz (condición de distraído)." }
 tickButterfly = { status = "portado", dwe = "apps/game/src/field_effects.cpp", what = "Hace volar la mariposa." }
 unsetButterfly = { status = "portado", dwe = "apps/game/src/play_session.cpp", note = "se quita en cuanto el compañero sale de su estado normal o tiene otra condición", what = "Quita la mariposa." }
-clearChests = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Vacía los cofres del mapa al salir." }
+clearChests = { status = "portado", dwe = "game/field/src/field_items.cpp", note = "FieldItems::clear", what = "Vacía los cofres del mapa al salir." }
 loadDirtCartModel = { status = "portado", dwe = "apps/session/src/story_routines/routine_dirt_cart.cpp", what = "Carga la vagoneta de tierra de la mina." }
 initializeChest = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Prepara los cofres de la partida." }
 loadWarpCrystals = { status = "portado", dwe = "apps/session/include/dwe/session/story_props.hpp", what = "Carga los cristales de teletransporte de un mapa.", note = "solo en icsa05, icsa06 e icsa07 (mapas 101 a 103), sea cual sea la historia" }
@@ -447,7 +447,7 @@ spawnToyTownBoxes = { status = "portado", dwe = "apps/session/src/story_routines
 spawnGearbox = { status = "portado", dwe = "apps/session/src/story_routines/routine_toy_town.cpp", what = "Pone la caja de engranajes de la fábrica." }
 spawnAngemonPedestal = { status = "portado", dwe = "apps/session/src/story_routines/routine_angemon_pedestal.cpp", what = "Pone el pedestal que se mueve en el santuario." }
 initializeTrainingPoop = { status = "portado", dwe = "apps/session/include/dwe/session/story_props.hpp", what = "Pone la caca gigante de Trash Mountain." }
-emptyChests = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Marca vacíos los cofres ya abiertos." }
+emptyChests = { status = "portado", dwe = "game/field/src/field_items.cpp", note = "FieldItems::clear; la marca de cogido la repone spawnChest", what = "Marca vacíos los cofres ya abiertos." }
 isBoxOffScreen = { status = "no-aplica", note = "recorte de dibujo", what = "Dice si un objeto está fuera de la pantalla." }
 tickOpenChestTray = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Saca el cajón del cofre al abrirlo (20 por fotograma hasta 160)." }
 tickCloseChestTray = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Mete el cajón del cofre cuando la bolsa está llena (20 por fotograma)." }
@@ -457,7 +457,7 @@ moveAngemonPedestal = { status = "portado", dwe = "apps/session/src/story_routin
 activateMedalTexture = { status = "portado", dwe = "apps/game/src/medal_figure.cpp", what = "Pone la cara de la medalla elegida en el modelo de la tabla de medallas." }
 renderDigiviceMedals = { status = "portado", dwe = "apps/game/src/medal_figure.cpp", what = "Dibuja la medalla que gira en la tabla de medallas." }
 loadDirtPileModel = { status = "portado", dwe = "apps/session/src/story_routines/routine_dirt_cart.cpp", what = "Carga el montón de tierra que se cava." }
-setEntityPosition = { status = "portado", dwe = "game/field/src/field_positions.cpp", what = "Pone a un personaje en una posición." }
+setEntityPosition = { status = "portado", dwe = "game/field/src/field_positions.cpp", note = "Field::placeAt", what = "Pone a un personaje en una posición." }
 resetFlattenGlobal = { status = "no-aplica", note = "estado de dibujo", what = "Reinicia el aplastado de los modelos." }
 handleNullModel = { status = "no-aplica", note = "modelo vacío del original", what = "Sustituye un modelo que falta." }
 initializeModelComponents = { status = "no-aplica", note = "preparación de modelos", what = "Prepara las piezas de un modelo." }
@@ -470,11 +470,15 @@ moveMapObjects = { status = "portado", dwe = "game/field/src/map_objects.cpp", w
 spawnSpriteAtEntity = { status = "portado", dwe = "apps/game/src/field_story_props.cpp", note = "Con tests de la sesión; la trampa de trop06 se ve en route-etapa2-amida-trap y coincide con el original.", what = "Pone un sprite (humo, signo) sobre un personaje." }
 tickRemoveMist = { status = "portado", dwe = "apps/session/src/story_routines/routine_remove_mist.cpp", what = "Disipa la niebla del mapa.", note = "la niebla se dibuja con renderMist (apps/game field_mist.cpp)" }
 renderMist = { status = "portado", dwe = "apps/game/src/field_mist.cpp", what = "Dibuja la niebla de Misty Trees y de la cloaca: dos capas que siguen a la cámara.", note = "medido en mist01 y mist05; paletas por StoryScenes::mistOn" }
-loadNPCModel = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Carga el modelo de un personaje del mapa." }
-NPCEntityTick = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Mueve a un personaje del mapa cada fotograma." }
+loadNPCModel = { status = "portado", dwe = "apps/session/src/story_npcs.cpp", note = "StoryNpcs::loadSpeciesModel; la caché de modelos lo carga al aparecer el NPC", what = "Carga el modelo de un personaje del mapa." }
+NPCEntityTick = { status = "portado", dwe = "game/field/src/npcs.cpp", note = "FieldNpcs::tick en el campo; batalla y torneo mueven a sus luchadores", what = "Mueve a un personaje del mapa cada fotograma." }
+_sin = { status = "portado", dwe = "engine/core/src/original_math.cpp", note = "sin512: la tabla medida, seno redondeado hacia abajo", what = "Seno del original: 512 por vuelta, 4096 para 1." }
+_cos = { status = "portado", dwe = "engine/core/src/original_math.cpp", note = "cos512: _sin un cuarto de vuelta después", what = "Coseno del original: 512 por vuelta, 4096 para 1." }
+_atan = { status = "portado", dwe = "engine/core/src/original_math.cpp", note = "atan4096", what = "Ángulo del original entre dos puntos, 4096 por vuelta." }
+gameLoop = { status = "portado", dwe = "apps/game/src/common.hpp", note = "Mejora: 60 ticks fijos con dibujo interpolado; cada sistema cuenta sus fotogramas a 20 por segundo como el original", what = "El bucle de cada fotograma: entrada, guion, objetos y dibujo." }
 clearMapDigimon = { status = "portado", dwe = "game/field/src/npcs.cpp:102", what = "Quita los personajes del mapa." }
 scriptNPCStartAnimation = { status = "portado", dwe = "game/story/src/orders_npc.cpp", what = "Orden de guion: pone una animación a un personaje." }
-setPartnerIdling = { status = "portado", dwe = "game/field/src/field_script.cpp:40", what = "Deja al compañero quieto para una escena." }
+setPartnerIdling = { status = "portado", dwe = "apps/game/src/field_scene.cpp", note = "FieldScene::restOnIdle con FieldClock::MenuRest: reposo detrás del menú (medido)", what = "Deja al compañero en reposo al abrir el menú del juego." }
 initializeWorldObjects = { status = "no-aplica", note = "tabla de objetos del original", what = "Prepara la tabla de objetos del mundo." }
 tickObjects = { status = "no-aplica", note = "bucle de objetos del original; el motor tiene su bucle", what = "Avanza todos los objetos del mundo." }
 
@@ -488,7 +492,7 @@ tickShopBitsBox = { status = "portado", dwe = "apps/game/src/money_box_screen.cp
 inputInit = { status = "no-aplica", note = "entrada del original", what = "Prepara la lectura del mando." }
 processInput = { status = "no-aplica", note = "entrada del original; el motor tiene la suya", what = "Lee el mando cada fotograma." }
 isKeyDown = { status = "no-aplica", note = "entrada del original", what = "Dice si un botón está pulsado." }
-setFreshDialogue = { status = "portado", dwe = "game/story/src/dialogue.cpp", what = "Empieza un diálogo nuevo." }
+setFreshDialogue = { status = "portado", dwe = "game/story/include/dwe/game/story/dialogue.hpp", note = "Box::freshGuard", what = "Empieza un diálogo nuevo." }
 getRecycleId = { status = "portado", dwe = "apps/session/src/shop_counter.cpp", what = "Da el objeto que vende la tienda de reciclaje." }
 calculateItemListStrings = { status = "no-aplica", note = "texto de interfaz; lo monta la pantalla", what = "Monta los textos de la lista de objetos." }
 allocateItemMenuBox = { status = "no-aplica", note = "cuadros de interfaz del original", what = "Reserva un cuadro de menú." }
@@ -505,7 +509,7 @@ createItemMenuDescriptionBox = { status = "portado", dwe = "apps/game/src/shop_s
 updateItemMenuSubTextboxLine = { status = "no-aplica", note = "texto de interfaz", what = "Rehace una línea del cuadro auxiliar." }
 playShopSoundOnlyInSavannah = { status = "portado", dwe = "apps/session/src/card_shop.cpp", what = "Toca el sonido de la tienda, solo en el mapa de la sabana.", note = "la tienda de cartas y el intercambio por méritos lo tocan (trade_sound: (0, 0x17) solo en gias06b); el trueque de objetos está en gcan08_2 y gcan10, así que en el original tampoco suena" }
 showMapHeadTextbox = { status = "portado", dwe = "apps/session/src/map_head_lines.cpp", what = "Enseña el texto de cabecera del mapa." }
-flipTextboxPage = { status = "portado", dwe = "game/story/src/dialogue.cpp", what = "Pasa la página del cuadro de texto." }
+flipTextboxPage = { status = "no-aplica", note = "vuelca la página de texto ya escrita en VRAM; el motor dibuja el texto directamente", what = "Pasa la página del cuadro de texto." }
 calculateItemMenuStrings = { status = "no-aplica", note = "texto de interfaz", what = "Monta los textos del menú de objetos." }
 calculateCardMenuStrings = { status = "portado", dwe = "apps/game/src/card_shop_screen.cpp", what = "Monta la lista del menú de cartas." }
 calculateMusicMenuStrings = { status = "portado", dwe = "apps/game/src/jukebox_screen.hpp:58", what = "Monta la lista de canciones de la gramola." }
@@ -522,7 +526,7 @@ hasMedal = { status = "portado", dwe = "game/story/src/medals.cpp", what = "Dice
 createMonochromonMoodBubble = { status = "portado", dwe = "apps/game/src/mood_bubble.hpp", what = "Burbuja de humor del cliente en la tienda de Monochromon (rutina 28).", note = "también renderMonochromonMoodBubble; la rutina en apps/session/src/story_routines/routine_mood_bubble.cpp" }
 triggerSeadramonCutscene = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:335", what = "Lanza la escena de la serpiente marina al pescarla.", note = "Pide la sección 0x4e4 del guion de cabecera de mapa (regla sea_serpent.scene_section); se ve la escena del guardián del lago, como en el original." }
 initializeLoadedNPCModels = { status = "no-aplica", note = "tabla de modelos del original", what = "Vacía la tabla de modelos cargados." }
-popScriptStack = { status = "portado", dwe = "game/story/src/story_runner.cpp", what = "Vuelve de una subrutina del guion." }
+popScriptStack = { status = "portado", dwe = "game/story/src/story_runner.cpp", note = "StoryRunner::returnFromTop, sin el tope de 8 marcos", what = "Vuelve de una subrutina del guion." }
 skipOneReadOneUShort = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee un operando del guion." }
 pollNextScriptUByte = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee un byte del guion." }
 pollNextScriptUShort = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee dos bytes del guion." }
@@ -537,13 +541,13 @@ pollNextScriptShort = { status = "no-aplica", note = "lectura de operandos; los 
 pollNextTwoScriptShorts = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee dos números del guion." }
 forceUpdateBGM = { status = "portado", dwe = "apps/session/src/session_music.cpp", what = "Fuerza a revisar la música del mapa (día o noche)." }
 scriptUnloadModel = { status = "portado", dwe = "game/story/src/orders_npc.cpp", what = "Orden de guion: quita un modelo." }
-initializeTextbox = { status = "portado", dwe = "game/story/src/dialogue.cpp", what = "Prepara el cuadro de texto." }
+initializeTextbox = { status = "portado", dwe = "game/story/src/dialogue.cpp", note = "Dialogue::scriptStarted: modo confirmar y sin fotogramas del modo temporizado", what = "Prepara el cuadro de texto." }
 tickBackgroundDialogue = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Diálogo que corre sin parar el juego (comentarios de fondo).", note = "modo 3 del cuadro de texto: la frase del tendero sale con la lista sin esperar botón" }
 tickScriptDialogueBox = { status = "portado", dwe = "apps/game/src/story_textbox.cpp", what = "Avanza el cuadro de diálogo del guion." }
-showTextboxReady = { status = "portado", dwe = "apps/game/src/story_textbox.cpp", what = "Enseña la marca de seguir del cuadro de texto." }
+showTextboxReady = { status = "portado", dwe = "apps/session/src/map_head_lines.cpp", note = "las líneas de MAPHEAD se enseñan enteras en una página", what = "Enseña la marca de seguir del cuadro de texto." }
 intToStringSJIS = { status = "no-aplica", note = "codificación de texto del original", what = "Pasa un número a texto." }
 scriptCompareDate = { status = "portado", dwe = "game/field/include/dwe/game/field/script_warps.hpp:43", what = "Condición de guion: compara la fecha." }
-scriptCompareMove = { status = "portado", dwe = "apps/session/src/partner_moves.cpp", what = "Condición de guion: si el compañero sabe una técnica." }
+scriptCompareMove = { status = "portado", dwe = "apps/session/src/story_orders_partner.cpp", note = "knows_move; los scripts lo niegan con not", what = "Condición de guion: si el compañero sabe una técnica." }
 
 # --- Menús
 initializeFadeData = { status = "no-aplica", note = "preparación del original", what = "Prepara los fundidos." }
@@ -821,21 +825,21 @@ EAB_tickBuildupRing = { status = "portado", dwe = "game/field/src/boss_arrival.c
 EAB_addSpawnRing = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Añade un anillo de la aparición del jefe final." }
 EAB_tickSpawnRing = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Mueve y desvanece un anillo de la aparición.", note = "vive 9 fotogramas" }
 EAB_tickSpawn = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Escena de aparición del jefe final: destello, anillos, partículas, cámara y sonidos.", note = "alambre en apps/game/src/boss_arrival_scene.cpp; vabId 5 en BossArrivalCues::bossSoundSlot; sin medir en el original" }
-EAB_initializeParticles = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Vacía la lista de partículas de la aparición." }
+EAB_initializeParticles = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", note = "BossArrival::startArrival", what = "Vacía la lista de partículas de la aparición." }
 EAB_setEntitiesVisible = { status = "portado", dwe = "apps/game/src/boss_arrival_scene.cpp", what = "Oculta a todos menos al jefe durante su aparición y luego los repone.", note = "FieldStage: escenario y compañero ocultos, solo el jefe (shownNpc)" }
 EAB_addParticle = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Añade una partícula de luz a la aparición del jefe." }
 EAB_tickParticle = { status = "portado", dwe = "game/field/src/boss_arrival.cpp", what = "Mueve y apaga una partícula de la aparición.", note = "86 fotogramas; dibujada como cuatro líneas en boss_arrival_scene.cpp" }
 EAB_startBuildup = { status = "portado", dwe = "apps/session/src/story_routines/routine_boss_buildup.cpp", what = "Empieza la carga de energía previa a la aparición del jefe final.", note = "rutina 40; la app esconde al jefe y dibuja los anillos (boss_arrival_scene.cpp)" }
 ENDI_setModelSemiTrans = { status = "portado", dwe = "apps/game/src/ending_scene.hpp", note = "FieldStage::playerAdditive: el modelo se dibuja con mezcla aditiva", what = "Vuelve translúcido y aditivo el modelo del jugador en el final." }
 ENDI_updateEnding = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", note = "fotogramas a 20 por segundo: fundido 1-60, escala 60-80, subida 81-103, fin en 104 (Suposición: sin medir en el original)", what = "Escena final: el jugador se desvanece, encoge, crece y sube convertido en luz." }
-ENDI_startParticles = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", what = "Arranca las partículas de luz de la escena final." }
+ENDI_startParticles = { status = "portado", dwe = "apps/game/src/ending_effects.cpp", note = "EndingEffects::start", what = "Arranca las partículas de luz de la escena final." }
 ENDI_spawnParticle = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", note = "80 chispas, una por fotograma del 1 al 80", what = "Suelta una partícula de luz desde un hueso del jugador." }
 ENDI_releaseParticles = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", note = "cada chispa guarda su punto del mundo; el desfase de campos del original se anula al dibujar", what = "Libera las partículas para que suban solas." }
-ENDI_getParticleBase = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", note = "EndingEffects::rise", what = "Lee el punto de origen de las partículas del final." }
-ENDI_setParticleBase = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", note = "EndingEffects::rise", what = "Mueve el punto de origen de las partículas del final." }
+ENDI_getParticleBase = { status = "portado", dwe = "apps/game/src/ending_effects.cpp", note = "EndingEffects::tickFrame, la subida (rise_)", what = "Lee el punto de origen de las partículas del final." }
+ENDI_setParticleBase = { status = "portado", dwe = "apps/game/src/ending_effects.cpp", note = "EndingEffects::tickFrame, la subida (rise_)", what = "Mueve el punto de origen de las partículas del final." }
 ENDI_stopParticles = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", what = "Detiene las partículas de la escena final." }
-ENDI_clearParticles = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", what = "Vacía la lista de partículas del final." }
-ENDI_tickEndingParticles = { status = "portado", dwe = "apps/game/src/ending_effects.hpp", note = "vacía en el original", what = "Mueve y apaga las partículas de luz del final." }
+ENDI_clearParticles = { status = "portado", dwe = "apps/game/src/ending_effects.cpp", note = "EndingEffects::start", what = "Vacía la lista de partículas del final." }
+ENDI_tickEndingParticles = { status = "no-aplica", note = "vacía en el original: no hace nada", what = "Mueve y apaga las partículas de luz del final." }
 MOV_onSliceDecoded = { status = "no-aplica", what = "Copia a pantalla cada franja descodificada del vídeo.", note = "descodificación de vídeo; el motor usa su propio reproductor" }
 MOV_startStream = { status = "no-aplica", what = "Abre el flujo de vídeo desde el disco.", note = "lectura en flujo del disco; el motor lee el vídeo de archivo" }
 MOV_startRead = { status = "no-aplica", what = "Empieza a leer los sectores del vídeo.", note = "lectura en flujo del disco; el motor lee el vídeo de archivo" }
