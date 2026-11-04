@@ -291,6 +291,10 @@ private:
   void tickSystems(const game::field::FieldInput& intent, const FishingButtons& fishing);
   void tickWater();
   [[nodiscard]] bool paused() const;
+  // How the field animates: running, resting behind the game menu or frozen (field_clock.hpp).
+  [[nodiscard]] FieldClock fieldClock() const;
+  // A screen, a scene or a battle that stops the field, the menus aside.
+  [[nodiscard]] bool screenStops() const;
   // What keeps the game from being saved as it is now (a battle, a script, a scene), or empty when
   // the field is free.
   [[nodiscard]] std::string_view busyWith() const;

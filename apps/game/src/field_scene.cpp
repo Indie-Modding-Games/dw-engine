@@ -675,6 +675,33 @@ void FieldScene::animate(Actor& actor, double seconds) {
   static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
 }
 
+void FieldScene::restOnIdle(Actor& actor, double seconds) {
+  // tamer.c:520 and overworld.c:1909 (setPartnerIdling): the menu opens with startAnimation(0) on
+  // the player and the partner, whatever they played, the partner's condition clips too; their
+  // ticks play it on while the menu stays open (FieldClock::MenuRest).
+  if (actor.heldClip || actor.scriptedClip || actor.fighter) {
+    animate(actor, 0.0);
+    return;
+  }
+  const bool partner = &actor == partnerActor_.get();
+  const std::string_view idle = partner ? game::partner::nameOf(game::partner::FieldAnimation::Idle)
+                                        : scene::motionName(scene::Motion::Idle);
+  const std::optional<std::uint32_t> clipId = actor.character.clipOf(idle);
+  if (!clipId) {
+    return;
+  }
+  if (actor.motion != scene::Motion::Idle || actor.motionClip != clipId) {
+    core::logDebug("[port:anim] setPartnerIdling (overworld.c:1909): entity {} rests on {} (clip "
+                   "{}) behind the game menu",
+                   static_cast<std::uint32_t>(actor.entity), idle, *clipId);
+    actor.motion = scene::Motion::Idle;
+    actor.motionClip = clipId;
+    actor.player->play(*clipId, ClipFadeSeconds);
+  }
+  actor.player->setSpeed(1.0F);
+  static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
+}
+
 void FieldScene::playClipSounds(const Actor& actor) {
   const std::vector<assets::ClipSound> sounds = actor.player->takeSounds();
   if (sounds.empty() || sound_ == nullptr) {
@@ -938,15 +965,24 @@ void FieldScene::flickerFlames(const Actor& actor, std::uint32_t strip) {
   }
 }
 
-void FieldScene::update(double frameSeconds, float alpha, bool paused) {
+void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   // Every frame, paused too: a language picked in the pause menu repaints the signs behind it.
   followSigns();
+  const bool paused = clock != FieldClock::Running;
+  const bool menuRest = clock == FieldClock::MenuRest;
   const double animationSeconds = paused ? 0.0 : frameSeconds;
   advanceFlames(animationSeconds);
   fighterSeconds_ = std::exchange(fighterSecondsDue_, 0.0);
-  animate(*playerActor_, playerSceneClip_ ? frameSeconds : animationSeconds);
+  if (menuRest && !playerSceneClip_) {
+    restOnIdle(*playerActor_, frameSeconds);
+  } else {
+    animate(*playerActor_, playerSceneClip_ ? frameSeconds : animationSeconds);
+  }
   playClipSounds(*playerActor_);
-  if (partnerClip_) {
+  if (menuRest && !partnerClip_) {
+    restOnIdle(*partnerActor_, frameSeconds);
+    playClipSounds(*partnerActor_);
+  } else if (partnerClip_) {
     // A scene's clip runs while the field waits for the scene (the care scenes: eating, sleeping,
     // praise and scold, the toilet), with its sounds as the field's.
     animatePartnerClip(frameSeconds);

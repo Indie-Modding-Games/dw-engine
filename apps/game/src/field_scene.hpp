@@ -49,6 +49,7 @@
 
 #include "chibi_style.hpp"
 #include "evolution_effects.hpp"
+#include "field_clock.hpp"
 #include "field_effects.hpp"
 #include "field_mist.hpp"
 #include "fighter_figure.hpp"
@@ -385,11 +386,12 @@ public:
   // The map's camera, while a map is shown.
   [[nodiscard]] const render::MapCamera* camera() const;
 
-  // Prepares the next frame: advances the animations by frameSeconds (not while paused; a
-  // time-of-day fade under way goes on), places the characters between the last two ticks (alpha
-  // from core::FixedStep) and points the camera at the player, except while the player walks out of
-  // the map.
-  void update(double frameSeconds, float alpha, bool paused);
+  // Prepares the next frame: advances the animations by frameSeconds (not while paused, but the
+  // player's and the partner's idle clips behind the game menu: FieldClock; a time-of-day fade
+  // under way goes on), places the characters between the last two ticks (alpha from
+  // core::FixedStep) and points the camera at the player, except while the player walks out of the
+  // map.
+  void update(double frameSeconds, float alpha, FieldClock clock);
   // The partner's conditions and happiness, which pick the clips it stands, walks and gestures
   // with (partner.c: setPartnerIdle, setPartnerSlowWalking, updateConditionAnimation).
   void setPartnerMood(const game::partner::Conditions& conditions, std::int32_t happiness);
@@ -704,6 +706,9 @@ private:
     bool originalModel = true;
   };
 
+  // Behind the game menu: the actor's idle clip from its start, played on by `seconds`
+  // (setPartnerIdling; FieldClock::MenuRest).
+  void restOnIdle(Actor& actor, double seconds);
   // anim.c: animateEntityTexture: steps the original's frame count by `seconds` and puts the
   // frame's flame strip on every flame species shown (flame_texture.hpp).
   void advanceFlames(double seconds);

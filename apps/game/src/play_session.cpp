@@ -1441,7 +1441,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   fieldItemsScreen_.show(*scene_);
   const game::partner::PartnerState& partner = session.partner().state();
   scene_->setPartnerMood(partner.conditions, partner.mood.happiness);
-  scene_->update(frameSeconds, alpha, paused());
+  scene_->update(frameSeconds, alpha, fieldClock());
   weatherAmbience_->update(scene_->weather(), frameSeconds);
   // The season's name next to the day in the menu, when it changes.
   const auto season = scene_->season();
@@ -1547,14 +1547,23 @@ const game::story::StoryState* PlaySession::storyState() const {
 bool PlaySession::paused() const {
   const ui::Ui& ui = *context_.ui;
   return ui.isVisible(MenuDocument) || ui.isVisible(MainMenuDocument) ||
-         ui.isVisible(PartnerMenuDocument) || battleScreen_.active() ||
-         (sleepScreen_.active() && !sleepScreen_.fieldRuns()) || saveMachine_.active() ||
-         toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
-         shopScreen_.active() || itemKeeperScreen_.active() || discardScreen_.active() ||
-         jukeboxScreen_.active() || tradeScreen_.active() || birdScreen_.active() ||
-         cardShopScreen_.active() || meritShopScreen_.active() || fieldItemsScreen_.active() ||
-         awardScreen_.active() || scheduleScreen_.active() || bracketScreen_.playing() ||
-         storyScenes_.tournamentIntro() || worldMapScreen_.isOpen();
+         ui.isVisible(PartnerMenuDocument) || screenStops();
+}
+
+FieldClock PlaySession::fieldClock() const {
+  const ui::Ui& ui = *context_.ui;
+  return fieldClockOf({.gameMenu = ui.isVisible(MenuDocument) || ui.isVisible(PartnerMenuDocument),
+                       .otherScreen = ui.isVisible(MainMenuDocument) || screenStops()});
+}
+
+bool PlaySession::screenStops() const {
+  return battleScreen_.active() || (sleepScreen_.active() && !sleepScreen_.fieldRuns()) ||
+         saveMachine_.active() || toTitleAsked_ || evolutionScene_.active() ||
+         deathScene_.active() || shopScreen_.active() || itemKeeperScreen_.active() ||
+         discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
+         birdScreen_.active() || cardShopScreen_.active() || meritShopScreen_.active() ||
+         fieldItemsScreen_.active() || awardScreen_.active() || scheduleScreen_.active() ||
+         bracketScreen_.playing() || storyScenes_.tournamentIntro() || worldMapScreen_.isOpen();
 }
 
 float PlaySession::fadeLevel() const {

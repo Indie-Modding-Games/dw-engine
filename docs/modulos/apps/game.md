@@ -346,6 +346,25 @@ nuevo. Prueba: `field_items_tests` "map.c changeMap: another map clears the last
 stay"; en la captura cuadro a cuadro de room08 → twna01 con una carne soltada en room08, antes se veía sobre la hierba
 de twna01 los 20 cuadros del fundido de entrada y desaparecía en el último; ahora no sale.
 
+## El campo detrás del menú
+
+Al abrir el menú del juego (Tab) andando, el original pone al jugador y al compañero en su animación de reposo, la 0,
+sea cual sea la que llevaban (el estado de andar del jugador y `overworld.c: setPartnerIdling`), y la sigue moviendo
+mientras el menú está abierto (`partner.c: partnerTickOverworld` con `IS_IN_MENU`, el jugador en su estado de reposo,
+el 6); los NPC se quedan quietos
+(`NPCEntityTickOverworld` vuelve en el acto). `FieldClock` (`field_clock.hpp`) lo decide cada fotograma:
+`MenuRest` con el menú (o la ficha del compañero abierta desde él), `Frozen` con cualquier otra pantalla.
+
+| Medida (twna01, menú abierto corriendo) | Original | dwe antes | dwe ahora | Estado |
+|---|---|---|---|---|
+| Clip del jugador | 3 (correr) pasa a 0 al abrir | se quedaba congelado en mitad de la zancada | reposo desde su inicio | Igual |
+| Clip del compañero | 4 pasa a 0 (según el decomp, también desde un clip de estado) | congelado | reposo (`FieldAnimation::Idle`) | Igual |
+| Fotogramas del clip con el menú abierto | jugador 2 a 12 y compañero 2 a 6 en 60 refrescos | 0 | avanzan a 20 por segundo | Igual |
+| NPC | quietos (Yuramon y Tanemon sin cambiar de fotograma) | quietos | quietos | Igual |
+
+Al cerrar el menú cada uno vuelve a lo que le toque (el paso del jugador o el seguimiento del compañero). Prueba:
+`field_clock_tests.cpp`; comparación en `_work/tmp/w21-trfield/contact_sheet.png`.
+
 ## Escena final
 
 `EndingScene` juega la última escena (`call_partner_routine 6`, que pide la rutina 53; en el original, el tick final del
