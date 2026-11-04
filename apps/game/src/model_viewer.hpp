@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/animation/animation_player.hpp>
+#include <dwe/animation/chibi.hpp>
 #include <dwe/assets/character_model.hpp>
 #include <dwe/assets/model_data.hpp>
 #include <dwe/core/error.hpp>
@@ -9,24 +10,36 @@
 
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
 
 namespace dwe::app {
 
+// How the model viewer shows its characters.
+struct ModelViewerStyle {
+  // Each animation twice, side by side: as the original and in the chibi style (chibi_style.hpp).
+  bool chibi = false;
+  // The models turned by this many degrees about the vertical (0 shows their fronts) under a fixed
+  // camera, instead of the camera slowly going round.
+  std::optional<float> yaw;
+};
+
 // A development view (`dwe-game --model-viewer`): each character of the game pack
-// (models/<name>.yaml) in a row, once per animation (idle, walk, run...), playing in place, under a
-// slowly turning camera. It proves model loading, animation and skinning on real content before the
-// field scene uses them.
+// (models/<name>.yaml), or species model (<species folder>/model, with models/partner's idle and
+// walk), in a row, once per animation (idle, walk, run...), playing in place, under a slowly
+// turning camera. It proves model loading, animation and skinning on real content before the field
+// scene uses them, and with `--chibi` compares the chibi style with the original.
 class ModelViewer {
 public:
   // Mounts the packs of `content` plus the game pack at `gamePack`, and loads these characters
-  // (asset ids such as models/tamer).
+  // (asset ids such as models/tamer or a species model).
   static core::Result<std::unique_ptr<ModelViewer>> create(render::Renderer& renderer,
                                                            const std::filesystem::path& content,
                                                            const std::filesystem::path& gamePack,
-                                                           std::span<const std::string> characters);
+                                                           std::span<const std::string> characters,
+                                                           const ModelViewerStyle& style = {});
 
   ModelViewer(const ModelViewer&) = delete;
   ModelViewer& operator=(const ModelViewer&) = delete;
@@ -49,6 +62,7 @@ private:
     glm::vec3 position{0.0F};
     std::string animation;
     std::unique_ptr<animation::AnimationPlayer> player;
+    bool chibi = false;
   };
 
   explicit ModelViewer(std::unique_ptr<render::ModelRenderer> models)
@@ -56,6 +70,13 @@ private:
 
   std::unique_ptr<render::ModelRenderer> models_;
   std::vector<std::unique_ptr<assets::ModelData>> data_;
+  std::vector<animation::ChibiRig> rigs_;
+  ModelViewerStyle style_;
+  // What the camera frames: the row's width and the tallest model.
+  float rowWidth_ = 0.0F;
+  float tallest_ = 0.0F;
+  std::vector<glm::mat4> chibiWorld_;
+  std::vector<glm::mat4> chibiJoints_;
   std::vector<render::ModelHandle> handles_;
   std::vector<Actor> actors_;
   double time_ = 0.0;

@@ -226,6 +226,7 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
     static_cast<void>(desc.clock->jumpTo(startHourOf(*desc.time, *rules, desc.clock->rules()), 0));
   }
 
+  scene->chibiOverrides_ = loadChibiOverrides(files);
   auto player = scene->loadActor(PlayerCharacter, scene->field_->playerEntity(), rules->player);
   if (!player) {
     return std::unexpected{player.error()};
@@ -409,6 +410,7 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
       .fighter = std::nullopt,
   });
   actor->player = std::make_unique<animation::AnimationPlayer>(*actor->model);
+  actor->chibi = chibiRigOf(actor->character.model, *actor->model, chibiOverrides_);
   return actor;
 }
 
@@ -839,7 +841,10 @@ void FieldScene::submit(const Actor& actor, float alpha, const Look& look) {
       glm::scale(glm::rotate(glm::translate(glm::mat4{1.0F}, pose.position + rise), pose.yaw,
                              glm::vec3{0.0F, 1.0F, 0.0F}),
                  scale);
-  std::span<const glm::mat4> joints = actor.player->jointMatrices();
+  // The chibi style reshapes the drawing only (chibi_style.hpp).
+  std::span<const glm::mat4> joints =
+      chibiStyle_ ? chibiJoints_.of(*actor.model, actor.chibi, *actor.player)
+                  : actor.player->jointMatrices();
   std::vector<glm::mat4> kept;
   if (look.hiddenBones != 0) {
     // A left-out bone folds to nothing (its faces collapse onto a point).

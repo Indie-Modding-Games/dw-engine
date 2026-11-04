@@ -39,6 +39,7 @@ constexpr std::string_view ShopJobBarKey = "shop_job_bar";
 constexpr std::string_view ContinuousMusicKey = "continuous_music";
 constexpr std::string_view NeedBubbleStackKey = "need_bubble_stack";
 constexpr std::string_view WorldMapKey = "world_map";
+constexpr std::string_view ChibiStyleKey = "chibi_style";
 
 } // namespace
 
@@ -108,6 +109,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* worldMap = tree->find(WorldMapKey)) {
       settings.worldMap = reader.boolean(*worldMap);
+    }
+    if (const core::YamlNode* chibi = tree->find(ChibiStyleKey)) {
+      settings.chibiStyle = reader.boolean(*chibi);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -185,6 +189,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.worldMap) {
     root.set(std::string{WorldMapKey},
              core::YamlNode::scalar(*settings.worldMap ? "true" : "false"));
+  }
+  if (settings.chibiStyle) {
+    root.set(std::string{ChibiStyleKey},
+             core::YamlNode::scalar(*settings.chibiStyle ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

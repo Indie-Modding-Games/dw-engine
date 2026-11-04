@@ -126,6 +126,14 @@ game_options = {
   -- player is and where his map leads (on by default; off leaves the key without a use, as the
   -- original has no such map).
   { id = "world-map", setting = "world_map", label = "pause_menu.world_map", default = true },
+  -- Chibi style: the player, the partner and the NPCs drawn with a big head and short limbs, the
+  -- drawing only (a prototype, off by default; off keeps the original's proportions).
+  {
+    id = "chibi-style",
+    setting = "chibi_style",
+    label = "pause_menu.chibi_style",
+    default = false,
+  },
 }
 
 -- The option's current value: what the game published, or its default.

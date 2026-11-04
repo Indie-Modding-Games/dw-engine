@@ -574,6 +574,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                      core::formatMessage(messages::PartnerModelNotShown,
                                          session.partnerView().species, shown.error().message));
   }
+  // The chibi style (chibi_style.hpp), a prototype: off unless turned on, or --chibi for a run.
+  const bool chibi = context.options->chibi || context.userSettings->chibiStyle.value_or(false);
+  scene_->setChibiStyle(chibi);
+  context_.ui->setSetting(ChibiStyleSetting, chibi);
   // Smooth motion (game::field::Field::setSmoothMotion), the engine's, on unless turned off.
   const bool smooth = context.userSettings->smoothMotion.value_or(true);
   scene_->field().setSmoothMotion(smooth);
@@ -949,6 +953,17 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       return true;
     }
     return false;
+  }
+  if (command.name == ChibiStyleSetting) {
+    if (const bool* chibi = std::get_if<bool>(&command.value)) {
+      scene_->setChibiStyle(*chibi);
+      context_.userSettings->chibiStyle = *chibi;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    context_.ui->setSetting(ChibiStyleSetting, scene_->chibiStyle());
+    return true;
   }
   if (command.name == SmoothMotionSetting) {
     if (const bool* smooth = std::get_if<bool>(&command.value)) {

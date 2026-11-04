@@ -1,0 +1,10 @@
+# Estilo chibi (mejora del motor, prototipo; el original no lo tiene): correcciones por especie para cuando la
+# detección automática (animation::classifyChibi) se equivoca. La clave es la carpeta de la especie,
+# la de su modelo en el paquete base (<carpeta>/model). Cada especie puede llevar:
+#   off: true            la deja con su aspecto original
+#   shape: biped         forma del cuerpo: biped, quadruped, winged, serpent o unknown
+#   head: 4              el hueso (índice de articulación, el orden de objetos del original) que es la cabeza
+#   parts: {12: tail}    la parte que cuelga de ese hueso: head, neck, arm, leg, tail, wing u other
+#   scale: {head: 1.4}   factores que sustituyen a los de la forma (head, torso, neck, arm, leg, hand, foot, tail,
+#                        wing, girth), de 0.25 a 4
+species: {}

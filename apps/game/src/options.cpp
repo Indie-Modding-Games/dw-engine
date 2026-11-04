@@ -120,6 +120,12 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     options.control = value;
     return !value.empty();
   }
+  if (argument == "--viewer-yaw") {
+    float degrees = 0.0F;
+    const auto [end, error] = std::from_chars(value.data(), value.data() + value.size(), degrees);
+    options.viewerYaw = degrees;
+    return error == std::errc{} && end == value.data() + value.size();
+  }
   if (argument == "--shots") {
     options.shots = value;
     return true;
@@ -266,6 +272,8 @@ bool readFlag(Options& options, std::string_view argument) {
     options.tuning = true;
   } else if (argument == ExploreOption) {
     options.explore = true;
+  } else if (argument == ChibiOption) {
+    options.chibi = true;
   } else if (argument == content::DevAssetsOption) {
     options.devAssets = true;
   } else {

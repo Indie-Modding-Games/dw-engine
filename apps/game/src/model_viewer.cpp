@@ -12,33 +12,41 @@
 #include <cmath>
 #include <format>
 #include <numbers>
+#include <tuple>
 #include <utility>
+
+#include "chibi_style.hpp"
 
 namespace dwe::app {
 
 namespace {
 
-// Room between actors, in world units (100 = one collision cell).
+// Room between actors, in world units (100 = one collision cell): at least this, or the widest
+// model and a margin.
 constexpr float Spacing = 350.0F;
+constexpr float Margin = 60.0F;
 constexpr float CameraTurnSeconds = 40.0F;
 constexpr float FieldOfView = 0.6F;
 constexpr float NearPlane = 10.0F;
 constexpr float FarPlane = 20000.0F;
-constexpr float BaseDistance = 2200.0F;
-constexpr float BaseHeight = 900.0F;
-constexpr float WideAspect = 16.0F / 9.0F;
+// The camera looks a little down from this share of its distance above the models' middle.
+constexpr float CameraRise = 0.15F;
+// The tallest model fills this share of the view's height, and the row this share of its width.
+constexpr float FillHeight = 0.8F;
+constexpr float FillWidth = 0.95F;
 
 } // namespace
 
 core::Result<std::unique_ptr<ModelViewer>>
 ModelViewer::create(render::Renderer& renderer, const std::filesystem::path& content,
-                    const std::filesystem::path& gamePack,
-                    std::span<const std::string> characters) {
+                    const std::filesystem::path& gamePack, std::span<const std::string> characters,
+                    const ModelViewerStyle& style) {
   auto models = render::ModelRenderer::create(renderer);
   if (!models) {
     return std::unexpected{models.error()};
   }
   std::unique_ptr<ModelViewer> viewer{new ModelViewer{std::move(*models)}};
+  viewer->style_ = style;
   // The models are read once, so the file systems and the VFS live only while loading.
   const assets::DiskFileSystem disk;
   auto packs = assets::findPacks(disk, content);
@@ -55,20 +63,32 @@ ModelViewer::create(render::Renderer& renderer, const std::filesystem::path& con
   if (!vfs) {
     return std::unexpected{vfs.error()};
   }
+  const animation::ChibiOverrides overrides = loadChibiOverrides(*vfs);
   for (std::size_t row = 0; row < characters.size(); ++row) {
     const auto id = assets::AssetId::parse(characters[row]);
     if (!id) {
       return std::unexpected{id.error()};
     }
-    auto character = assets::loadCharacterModel(*vfs, *id);
+    // A species model plays the partner's idle and walk, as the field draws a partner or an NPC.
+    const bool species = !chibiSpeciesOf(*id).empty();
+    auto character =
+        assets::loadCharacterModel(*vfs, species ? *assets::AssetId::parse("models/partner") : *id);
     if (!character) {
       return std::unexpected{character.error()};
+    }
+    if (species) {
+      character->model = *id;
+      std::erase_if(character->animations, [](const auto& animation) {
+        return animation.first != "idle" && animation.first != "walk";
+      });
     }
     auto model = assets::loadModel(*vfs, character->model);
     if (!model) {
       return std::unexpected{model.error()};
     }
-    if (auto checked = assets::checkCharacterModel(*character, *model); !checked) {
+    if (species) {
+      std::ignore = assets::dropMissingClips(*character, *model);
+    } else if (auto checked = assets::checkCharacterModel(*character, *model); !checked) {
       return std::unexpected{checked.error()};
     }
     const auto addStart = std::chrono::steady_clock::now();
@@ -81,17 +101,36 @@ ModelViewer::create(render::Renderer& renderer, const std::filesystem::path& con
     viewer->data_.push_back(std::make_unique<assets::ModelData>(std::move(*model)));
     viewer->handles_.push_back(*handle);
     const assets::ModelData& data = *viewer->data_.back();
-    float column = -0.5F * static_cast<float>(character->animations.size() - 1);
-    for (const auto& [animation, clip] : character->animations) {
-      Actor actor{.model = viewer->data_.size() - 1,
-                  .position = {column * Spacing, 0.0F, (static_cast<float>(row) - 0.5F) * Spacing},
-                  .animation = animation,
-                  .player = std::make_unique<animation::AnimationPlayer>(data)};
-      if (!actor.player->play(clip)) {
-        return core::fail(std::format("{} has no clip {}", character->model.str(), clip));
+    viewer->rigs_.push_back(chibiRigOf(character->model, data, overrides));
+    // The model's size in its rest pose, for the room between actors and the camera.
+    glm::vec3 low{0.0F};
+    glm::vec3 high{0.0F};
+    for (const assets::ModelPrimitive& primitive : data.primitives) {
+      for (const assets::ModelVertex& vertex : primitive.vertices) {
+        low = glm::min(low, vertex.position);
+        high = glm::max(high, vertex.position);
       }
-      viewer->actors_.push_back(std::move(actor));
-      column += 1.0F;
+    }
+    const float spacing = std::max(Spacing, high.x - low.x + Margin);
+    const std::size_t looks = style.chibi ? 2 : 1;
+    const std::size_t columns = character->animations.size() * looks;
+    viewer->rowWidth_ = std::max(viewer->rowWidth_, static_cast<float>(columns) * spacing);
+    viewer->tallest_ = std::max(viewer->tallest_, high.y);
+    float column = -0.5F * static_cast<float>(columns - 1);
+    for (const auto& [animation, clip] : character->animations) {
+      for (std::size_t look = 0; look < looks; ++look) {
+        Actor actor{
+            .model = viewer->data_.size() - 1,
+            .position = {column * spacing, 0.0F, (static_cast<float>(row) - 0.5F) * Spacing},
+            .animation = animation,
+            .player = std::make_unique<animation::AnimationPlayer>(data),
+            .chibi = look == 1};
+        if (!actor.player->play(clip)) {
+          return core::fail(std::format("{} has no clip {}", character->model.str(), clip));
+        }
+        viewer->actors_.push_back(std::move(actor));
+        column += 1.0F;
+      }
     }
     core::logInfo("model viewer: {} ({}) with {} animations, uploaded in {:.2f} ms",
                   characters[row], character->model.str(), character->animations.size(),
@@ -107,21 +146,36 @@ void ModelViewer::update(double seconds, rhi::Extent extent) {
   models_->clear();
   for (Actor& actor : actors_) {
     // In place: the root motion is left out, as the field decides how an entity moves.
-    actor.player->advance(step);
-    models_->submit({.model = handles_[actor.model],
-                     .world = glm::translate(glm::mat4{1.0F}, actor.position),
-                     .joints = actor.player->jointMatrices()});
+    std::ignore = actor.player->advance(step);
+    std::span<const glm::mat4> joints = actor.player->jointMatrices();
+    if (actor.chibi) {
+      const assets::ModelData& model = *data_[actor.model];
+      chibiWorld_.resize(model.nodes.size());
+      chibiJoints_.resize(joints.size());
+      animation::computeChibiJointMatrices(model, rigs_[actor.model], actor.player->pose(), joints,
+                                           chibiWorld_, chibiJoints_);
+      joints = chibiJoints_;
+    }
+    models_->submit(
+        {.model = handles_[actor.model],
+         .world = glm::rotate(glm::translate(glm::mat4{1.0F}, actor.position),
+                              glm::radians(style_.yaw.value_or(0.0F)), glm::vec3{0.0F, 1.0F, 0.0F}),
+         .joints = joints});
   }
-  const auto angle =
-      static_cast<float>(seconds) * 2.0F * std::numbers::pi_v<float> / CameraTurnSeconds;
+  // A fixed turn turns the models instead, so the row stays across the view.
+  const float angle = style_.yaw ? 0.0F
+                                 : static_cast<float>(seconds) * 2.0F * std::numbers::pi_v<float> /
+                                       CameraTurnSeconds;
   const float aspect = extent.height > 0
                            ? static_cast<float>(extent.width) / static_cast<float>(extent.height)
                            : 1.0F;
-  // The whole row fits a 16:9 target; a narrower one moves the camera back so it still does.
-  const float distance = BaseDistance * std::max(1.0F, WideAspect / aspect);
-  const glm::vec3 eye{distance * std::sin(angle), BaseHeight * distance / BaseDistance,
-                      distance * std::cos(angle)};
-  const glm::vec3 target{0.0F, 120.0F, 0.0F};
+  // Far enough for the tallest model and the whole row (seen from the front) to fit the target.
+  const float viewHeight = 2.0F * std::tan(FieldOfView / 2.0F);
+  const float distance =
+      std::max(tallest_ / (FillHeight * viewHeight), rowWidth_ / (FillWidth * viewHeight * aspect));
+  const glm::vec3 target{0.0F, tallest_ / 2.0F, 0.0F};
+  const glm::vec3 eye = target + glm::vec3{distance * std::sin(angle), CameraRise * distance,
+                                           distance * std::cos(angle)};
   models_->setCamera(
       {.view = glm::lookAt(eye, target, glm::vec3{0, 1, 0}),
        .projection = render::perspective(FieldOfView, aspect, NearPlane, FarPlane),

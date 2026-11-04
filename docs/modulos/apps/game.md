@@ -633,6 +633,21 @@ personajes y la cámara se dibujan deslizándose entre los fotogramas de 1/20 s 
 `docs/modulos/game/field.md`, «Interpolación»); apagado, cada uno se dibuja donde lo deja su tick, a saltos de
 fotograma como el original. La lógica es la misma en los dos casos.
 
+## Estilo chibi
+
+Mejora opcional y prototipo, apagada por defecto (el original no la tiene): el ajuste `chibi_style` (fila «Estilo
+chibi» de las opciones del menú de pausa, guardado en los ajustes del usuario) o `--chibi` en la línea de órdenes, para
+una ejecución, llegan a `Field::setChibiStyle` desde `PlaySession`. Encendido, el jugador, el compañero y los PNJ del
+campo se dibujan con la cabeza grande, el torso corto y los miembros cortos (`chibi_style.hpp`,
+`animation::buildChibiRig`, ver `docs/modulos/engine/animation.md`, «Estilo chibi»). Solo cambia el dibujo: las
+animaciones son las mismas, los pies siguen en el suelo en cada fotograma y las colisiones, velocidades y tamaños que
+lee la lógica son los del original. Cada modelo calcula su forma al cargarse; `models/chibi.yaml` del paquete del juego
+corrige una especie que la detección no entiende (apagarla, su forma, su cabeza, la parte de un hueso o sus factores).
+
+`--model-viewer <especie>/model --chibi [--viewer-yaw <grados>]` enseña una especie quieta y andando, original y
+chibi una al lado de otra, de frente (0) o de lado (90). Quedan sin seguir la silueta chibi: las sombras, los puntos
+de los efectos que salen de un hueso (`nodePoint`, `bonePoint`), los retratos y el combate.
+
 ## Aviso de guardado
 
 Mejora opcional, encendida por defecto (el original no autoguarda y no dice nada cuando su máquina de guardado escribe):
@@ -943,7 +958,7 @@ tiene tecla (`pause_box/logic.lua`).
 Las opciones propias del motor salen de una lista, `ui/common/game_options.lua` (`game_options`): id de la fila,
 ajuste de la UI que publica el juego y que la fila envía como orden, texto, valor por defecto y, para las que no son
 sí/no, sus valores (`values`) y el prefijo de sus textos (`texts`). La página llena con ellas, en orden, las filas
-libres `option-slot-<n>` del documento (17) y les da el id de la opción, así que una opción nueva solo necesita su
+libres `option-slot-<n>` del documento (18) y les da el id de la opción, así que una opción nueva solo necesita su
 entrada en esa lista y que el juego atienda su ajuste; ningún documento necesita una fila propia.
 
 ## Contenido oculto

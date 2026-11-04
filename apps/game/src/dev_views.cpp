@@ -104,8 +104,9 @@ int runDevView(const Options& options) {
   std::unique_ptr<TestScene> testScene;
   std::unique_ptr<ModelViewer> modelViewer;
   if (options.modelViewer) {
-    auto viewer = ModelViewer::create(**renderer, options.content,
-                                      dwe::content::teamPacksFolder() / "game", options.characters);
+    auto viewer =
+        ModelViewer::create(**renderer, options.content, dwe::content::teamPacksFolder() / "game",
+                            options.characters, {.chibi = options.chibi, .yaw = options.viewerYaw});
     if (!viewer) {
       core::logError("{}", viewer.error().message);
       return EXIT_FAILURE;
@@ -227,8 +228,8 @@ int runDevView(const Options& options) {
     const debug::Marker marker{
         .x = static_cast<float>((*scripts)->number("marker.x").value_or(0.0)),
         .y = static_cast<float>((*scripts)->number("marker.y").value_or(0.0)),
-        // The map preview draws its own marker in the world.
-        .radius = mapPreview
+        // The map preview draws its own marker in the world; the model viewer, none.
+        .radius = mapPreview || modelViewer
                       ? 0.0F
                       : static_cast<float>((*scripts)->number("marker.radius").value_or(0.0)),
     };

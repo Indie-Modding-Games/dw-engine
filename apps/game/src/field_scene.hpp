@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/animation/animation_player.hpp>
+#include <dwe/animation/chibi.hpp>
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/character_model.hpp>
 #include <dwe/assets/image.hpp>
@@ -42,6 +43,7 @@
 #include <utility>
 #include <vector>
 
+#include "chibi_style.hpp"
 #include "evolution_effects.hpp"
 #include "field_effects.hpp"
 #include "field_mist.hpp"
@@ -273,6 +275,10 @@ public:
   // Whether the signs painted in the maps are written in the player's language (the pause menu's
   // "Translated signs"; docs/modulos/engine/signs.md). The map shown follows at the next tick.
   void setTranslatedSigns(bool translated) { translatedSigns_ = translated; }
+  // The chibi style (chibi_style.hpp): the characters drawn with a big head and short limbs, the
+  // drawing only.
+  void setChibiStyle(bool chibi) { chibiStyle_ = chibi; }
+  [[nodiscard]] bool chibiStyle() const { return chibiStyle_; }
   // More markers to draw with the click-to-move target's, until replaced (the fishing's bobber).
   void setExtraMarkers(std::vector<render::MapMarker> markers) {
     extraMarkers_ = std::move(markers);
@@ -626,6 +632,8 @@ private:
     bool shownWhenHeld = false;
     // The slot of its own species bank (stats.current.vabId), where its clips' bank 4 sounds play.
     std::int64_t soundSlot = 0;
+    // How the chibi style draws it (chibi_style.hpp).
+    animation::ChibiRig chibi{};
   };
 
   // anim.c: animateEntityTexture: steps the original's frame count by `seconds` and puts the
@@ -832,6 +840,10 @@ private:
   assets::MapObjects signsObjects_;
   std::string signsKey_;
   bool translatedSigns_ = true;
+  bool chibiStyle_ = false;
+  animation::ChibiOverrides chibiOverrides_;
+  // Scratch for the matrices submit draws with the chibi style.
+  mutable ChibiJoints chibiJoints_;
   std::unique_ptr<render::ModelRenderer> models_;
   std::unique_ptr<ScenePrimDrawer> primDrawer_;
   PartnerBody partnerBody_{*this};

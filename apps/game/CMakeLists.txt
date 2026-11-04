@@ -29,6 +29,7 @@ dwe_add_app(game
         src/flame_texture.cpp
         src/evolution_scene.cpp
         src/field_hud.cpp
+        src/chibi_style.cpp
         src/field_scene.cpp
         src/field_scene_npcs.cpp
         src/field_scene_ground_items.cpp

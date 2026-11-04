@@ -58,6 +58,12 @@ struct Options {
   // Start with free exploration on (--explore) for this run, whatever the saved setting
   // (docs/architecture/warps-de-script.md). Never on by default.
   bool explore = false;
+  // Draw the characters in the chibi style (--chibi) for this run, whatever the saved setting
+  // (chibi_style.hpp); in the model viewer, each character twice: as the original and chibi.
+  bool chibi = false;
+  // The model viewer's models turned by this many degrees (--viewer-yaw; 0 shows their fronts, 90
+  // a side) under a fixed camera, instead of the camera slowly going round.
+  std::optional<float> viewerYaw;
   // The field's start, instead of field/warps (--start <map>[,<exit>]).
   std::optional<std::string> startMap;
   int startExit = 0;
@@ -131,7 +137,7 @@ inline constexpr std::string_view Usage =
     "dwe-game [--content <folder>] [--mods <folder>]... [--dev-assets] [--ruleset <id>] [--story-stage <id>|all] "
     "[--saves <folder>] [--reports <folder>] [--size "
     "<width>x<height>] "
-    "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang "
+    "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--chibi] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang "
     "<language>] "
     "[--text-font modern|original] [--ui-skin <id>] [--new-game | --load <slot>] "
     "[--new-game-chain original|seeded] [--clock-speed <x>] "
@@ -139,7 +145,7 @@ inline constexpr std::string_view Usage =
     "[--control <socket> [--control-paused]] | "
     "--list-saves | --check-content <folder> | --dump-signs <map>[,<map>...] --shots <folder> [--lang <language>] | --test-scene [--texture-churn] | --map <id>[,<id>...] "
     "[--focus <x>,<z>] | --ui-demo [--ui-demo-fishing] [--ui-demo-player] [--ui-demo-chart <layout.yaml>] [--ui-demo-chart-detail <layout.yaml>] [--ui-demo-chart-all-raised] [--ui-demo-bag-size <10|20|30>] "
-    "[--virtual-gamepad <file>] | --model-viewer [character id...]";
+    "[--virtual-gamepad <file>] | --model-viewer [character or species model id...] [--viewer-yaw <degrees>]";
 
 inline constexpr std::string_view RulesetOption = "--ruleset";
 inline constexpr std::string_view StoryStageOption = "--story-stage";
@@ -150,6 +156,7 @@ inline constexpr std::string_view NewGameChainOption = "--new-game-chain";
 std::optional<session::NewGameChain> newGameChainNamed(std::string_view name);
 inline constexpr std::string_view TuningOption = "--tuning";
 inline constexpr std::string_view ExploreOption = "--explore";
+inline constexpr std::string_view ChibiOption = "--chibi";
 inline constexpr std::string_view LanguageOption = "--lang";
 inline constexpr std::string_view SeedOption = "--seed";
 inline constexpr std::string_view OriginalRollsOption = "--original-rolls";
