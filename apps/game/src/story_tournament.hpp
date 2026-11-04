@@ -90,6 +90,8 @@ private:
   void startMatch(session::StoryScenes& scenes, BattleScreen& battle, FieldScene& scene);
   void frame(BattleScreen& battle, FieldScene& scene, bool confirm);
   void watchFight(const game::battle::Battle& fight);
+  // STD_setupMoveExecution's camera: tells the match camera of the moves that started.
+  void noteMoveStarts(const game::battle::Battle& fight);
   void startLetters(game::tournament::MatchEnding ending);
   void showLetters(FieldScene& scene, const game::tournament::ShowView& view);
   // STD_loadChampionModels, STD_initializeChampionScene once the champion's climb is over.
@@ -126,6 +128,11 @@ private:
   std::optional<session::BattleRequest> request_;
   std::optional<game::tournament::MatchIntro> intro_;
   std::optional<game::tournament::MatchCamera> camera_;
+  // STD_CAMERA_STATE 10 between the matches: the arena turns behind the bracket.
+  game::tournament::ArenaTurnCamera turnCamera_;
+  // The frame each fighter's attack was on when last seen: a lower one, or a new attack, is a move
+  // that just started (STD_setupMoveExecution).
+  std::array<std::optional<std::int32_t>, 2> attackFrames_{};
   std::optional<game::tournament::EndCamera> endCamera_;
   std::optional<game::tournament::TimeUpNotice> timeUp_;
   std::optional<game::tournament::MatchLetters> letters_;
@@ -141,6 +148,8 @@ private:
     std::int32_t seconds = -1;
     bool partnerDown = false;
     bool rivalDown = false;
+    // Where each stands, its yaw and the range of the move it performs, for the technique camera.
+    std::array<game::tournament::FightFigure, 2> figures{};
   };
   std::optional<Seen> seen_;
   std::string partnerName_;

@@ -390,6 +390,28 @@ void MatchCamera::tickBanner(bool showing) {
   }
 }
 
+void MatchCamera::moveStarted(std::size_t fighter, std::int32_t range,
+                              std::optional<std::int32_t> focusedRange, ruleset::Random& random) {
+  constexpr std::int32_t Melee = 1;
+  constexpr std::int32_t Area = 3;
+  constexpr std::int32_t Self = 4;
+  // STD_setupMoveExecution: a camera on an all-around move is kept; the corner's is never cut.
+  if (mode_ == Mode::Technique && focusedRange == Area) {
+    return;
+  }
+  if (mode_ == Mode::Corner) {
+    return;
+  }
+  const auto mode = static_cast<std::size_t>(random.below(range == Melee || range == Self ? 2 : 5));
+  // STD_selectRandomCamera(fighter, mode, range): below mode 5, one time in three.
+  if (random.below(3) != 0) {
+    return;
+  }
+  preset_ = range != Area ? mode : 6 + static_cast<std::size_t>(random.below(3));
+  focused_ = fighter;
+  mode_ = Mode::Technique;
+}
+
 void MatchCamera::tickFight(bool busy, ruleset::Random& random) {
   // The burst's pull back in, 400 a frame, if the banner left it out.
   minDistance_ = std::max(minDistance_ - 400, orbit_.minDistance);
@@ -398,21 +420,35 @@ void MatchCamera::tickFight(bool busy, ruleset::Random& random) {
   if (timer_ != 0) {
     --timer_;
     if (timer_ == 0) {
-      corner_ = false;
+      mode_ = Mode::Orbit;
     }
   }
   if (frame_ % 600 == 0 && random.below(2) == 1) {
-    corner_ = true;
+    mode_ = Mode::Corner;
     timer_ = random.below(0x29) + 0x3c;
   }
+  // Nobody attacking or knocked back and no corner left: the orbit again.
   if (!busy && timer_ == 0) {
-    corner_ = false;
+    mode_ = Mode::Orbit;
   }
+}
+
+std::optional<std::size_t> MatchCamera::focused() const {
+  return mode_ == Mode::Technique ? std::optional{focused_} : std::nullopt;
+}
+
+ShowView MatchCamera::view(const std::array<FightFigure, 2>& fighters,
+                           const std::optional<ShowBones>& partnerBones) const {
+  if (mode_ == Mode::Technique) {
+    const FightFigure& figure = fighters.at(focused_);
+    return fixedCameraView(TechniqueCameras.at(preset_), figure.at, figure.yaw, orbit_.projection);
+  }
+  return view(fighters[0].at, fighters[1].at, partnerBones);
 }
 
 ShowView MatchCamera::view(ArenaPoint partner, ArenaPoint rival,
                            const std::optional<ShowBones>& partnerBones) const {
-  if (corner_) {
+  if (mode_ == Mode::Corner) {
     // STD_setRandomViewpoint(ENTITY_TABLE[1], 4): STD_RANDOM_VIEWPOINTS[4], looking at the
     // partner's node 1 (STD_setViewpointRotationFromEntity).
     const ShowBones bones = partnerBones.value_or(defaultBones(partner, {}));
@@ -424,6 +460,45 @@ ShowView MatchCamera::view(ArenaPoint partner, ArenaPoint rival,
   camera.minDistance = minDistance_;
   const ArenaView orbit = arenaView(camera, partner, rival);
   return {.eye = orbit.eye, .target = orbit.target, .projection = orbit_.projection};
+}
+
+ShowView fixedCameraView(const FixedCamera& camera, ArenaPoint origin, std::int32_t yaw,
+                         std::int32_t projection) {
+  // RotMatrix(pitch, camera yaw - yaw, 0) = Rx Ry: view = M (p - origin) + t, so the eye is
+  // origin - M^T t and it looks along M's third row.
+  const std::int64_t sx = rsin(camera.pitch);
+  const std::int64_t cx = rcos(camera.pitch);
+  const std::int32_t turn = (camera.yaw - yaw) & AngleMask;
+  const std::int64_t sy = rsin(turn);
+  const std::int64_t cy = rcos(turn);
+  const std::array<std::array<std::int64_t, 3>, 3> m{{
+      {cy, 0, sy},
+      {(sx * sy) / One, cx, (-sx * cy) / One},
+      {(-cx * sy) / One, sx, (cx * cy) / One},
+  }};
+  const ShowPoint& t = camera.translation;
+  ShowPoint eye{origin.x, 0, origin.z};
+  for (std::size_t axis = 0; axis < 3; ++axis) {
+    std::int64_t back = 0;
+    for (std::size_t row = 0; row < 3; ++row) {
+      back += m.at(row).at(axis) * t.at(row);
+    }
+    eye.at(axis) -= static_cast<std::int32_t>(back / One);
+  }
+  // The point it looks at: as far along its axis as the origin is deep in view space.
+  const std::int64_t depth = t[2] > 0 ? t[2] : One;
+  ShowPoint target = eye;
+  for (std::size_t axis = 0; axis < 3; ++axis) {
+    target.at(axis) += static_cast<std::int32_t>((m[2].at(axis) * depth) / One);
+  }
+  return {.eye = eye, .target = target, .projection = projection};
+}
+
+ShowView ArenaTurnCamera::view() const {
+  // STD_applyRotatingCamera: RotMatrix(rotation), TransMatrix(translation), no parent coordinate:
+  // the camera turns about the world's origin.
+  return fixedCameraView({.pitch = Pitch, .yaw = yaw_, .translation = Translation}, {}, 0,
+                         Projection);
 }
 
 // --- STD_startCameraIntro ---

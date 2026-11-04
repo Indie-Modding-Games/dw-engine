@@ -143,34 +143,109 @@ private:
   ShowView view_;
 };
 
-// The arena camera while a match runs (STD_tickVSPhase with STD_CAMERA_STATE 1 and 6,
-// STD_tickBattle): the orbit across the fighters (STD_setCameraOrbit); every 600 frames, one time
-// in two, a fixed eye high in a corner looking at the partner (STD_setRandomViewpoint(entity, 4))
-// for 60 to 100 frames. The start's banner pulls the orbit's nearest distance out to 4200 and back
-// to 1000 (STD_combatSetup: STD_DEFAULT_CAM_MIN_DISTANCE).
+// A fixed camera of the original's arena (STDVS_CAMERA): its angles (RotMatrix, about x then y; it
+// never turns about z) and the translation of view space; the eye stands `translation` back from
+// the point it hangs on, looking along the turned z axis.
+struct FixedCamera {
+  std::int32_t pitch = 0;
+  std::int32_t yaw = 0;
+  ShowPoint translation{};
+};
+
+// STD_CAMERA_PRESETS: the technique cameras, the first five by STD_selectRandomCamera's mode (0 and
+// 1 behind the attacker to either side, 2 and 3 lower and nearer, 4 in front of it), the last three
+// for a move that hits all around (range 3), one drawn at random.
+inline constexpr std::array<FixedCamera, 9> TechniqueCameras{{
+    {.pitch = 0x0e0, .yaw = 0x140, .translation = {0, 0xc8, 0x5dc}},
+    {.pitch = 0x0e0, .yaw = 0xec0, .translation = {0, 0xc8, 0x5dc}},
+    {.pitch = 0xfa0, .yaw = 0x140, .translation = {0, 0x104, 0x4b0}},
+    {.pitch = 0xfa0, .yaw = 0xec0, .translation = {0, 0x104, 0x4b0}},
+    {.pitch = 0x0e0, .yaw = 0x800, .translation = {0, 0x104, 0x5dc}},
+    {.pitch = 0x000, .yaw = 0x000, .translation = {0, 0xc8, 0x5dc}},
+    {.pitch = 0x0e0, .yaw = 0x140, .translation = {0, 0x190, 0xbb8}},
+    {.pitch = 0x0e0, .yaw = 0xec0, .translation = {0, 0x190, 0xbb8}},
+    {.pitch = 0x0e0, .yaw = 0x800, .translation = {0, 0x208, 0xbb8}},
+}};
+
+// Where a fixed camera looks from when it hangs on a point and turns with an angle about y
+// (STD_setCameraToEntity: the view turned by -yaw and moved so that `origin` ends up at the
+// translation), or on the world's origin with yaw 0 (STD_applyRotatingCamera).
+[[nodiscard]] ShowView fixedCameraView(const FixedCamera& camera, ArenaPoint origin,
+                                       std::int32_t yaw, std::int32_t projection);
+
+// What a fighter of the match is doing on this frame, for the technique camera: where it stands,
+// its yaw in the original's angles (posData rotation.vy) and the range of the move it performs
+// (MOVE_DATA range 1 to 4), if any.
+struct FightFigure {
+  ArenaPoint at;
+  std::int32_t yaw = 0;
+  std::optional<std::int32_t> moveRange;
+};
+
+// The arena camera while a match runs (STD_tickVSPhase with STD_CAMERA_STATE 1, 3 and 6,
+// STD_tickBattle): the orbit across the fighters (STD_setCameraOrbit); one technique in three a
+// camera hung on its attacker until nobody attacks or is knocked back (STD_setupMoveExecution,
+// STD_selectRandomCamera, STD_setCameraToEntity); every 600 frames, one time in two, a fixed eye
+// high in a corner looking at the partner (STD_setRandomViewpoint(entity, 4)) for 60 to 100 frames.
+// The start's banner pulls the orbit's nearest distance out to 4200 and back to 1000
+// (STD_combatSetup: STD_DEFAULT_CAM_MIN_DISTANCE).
 class MatchCamera {
 public:
   explicit MatchCamera(ArenaCamera orbit) : orbit_(orbit) {}
 
   // STD_combatSetup: the banner shows (true) or bursts (false); the nearest distance moves 400.
   void tickBanner(bool showing);
+  // STD_setupMoveExecution's end: fighter `fighter` (0 the partner, 1 the rival) starts a move of
+  // range `range`; `focusedRange` is the range of the move the fighter the camera hangs on performs
+  // now, if any. Comes before the frame's tickFight.
+  void moveStarted(std::size_t fighter, std::int32_t range,
+                   std::optional<std::int32_t> focusedRange, ruleset::Random& random);
   // One frame of the fight (STD_tickBattle's camera part): `busy` when a fighter attacks or is
   // knocked back.
   void tickFight(bool busy, ruleset::Random& random);
   [[nodiscard]] ShowView view(ArenaPoint partner, ArenaPoint rival,
                               const std::optional<ShowBones>& partnerBones) const;
+  // The same with the fighters' yaws, which the technique camera turns with.
+  [[nodiscard]] ShowView view(const std::array<FightFigure, 2>& fighters,
+                              const std::optional<ShowBones>& partnerBones) const;
   [[nodiscard]] std::int32_t minDistance() const { return minDistance_; }
-  [[nodiscard]] bool corner() const { return corner_; }
+  [[nodiscard]] bool corner() const { return mode_ == Mode::Corner; }
+  // The technique camera hangs on this fighter, with this preset (an index of TechniqueCameras).
+  [[nodiscard]] std::optional<std::size_t> focused() const;
+  [[nodiscard]] std::size_t preset() const { return preset_; }
 
   // STD_combatSetup: 200 as the banner opens.
   static constexpr std::int32_t BannerMinDistance = 200;
 
 private:
+  enum class Mode : std::uint8_t { Orbit, Technique, Corner };
+
   ArenaCamera orbit_;
   std::int32_t minDistance_ = BannerMinDistance;
   std::int32_t frame_ = 0;
   std::int32_t timer_ = 0;
-  bool corner_ = false;
+  Mode mode_ = Mode::Orbit;
+  std::size_t focused_ = 0;
+  std::size_t preset_ = 0;
+};
+
+// STD_initializeCamera and STD_applyRotatingCamera (STD_CAMERA_STATE 10): from the cup's start and
+// between its matches the arena turns slowly behind the bracket, the eye 500 up and 3000 back from
+// its middle, tilted down 100, the turn 2 a frame (a whole turn in 2048 frames). The second pad's
+// keys that move it (a debug aid) are left out.
+class ArenaTurnCamera {
+public:
+  void tick() { yaw_ = (yaw_ + TurnStep) & 0xfff; }
+  [[nodiscard]] std::int32_t yaw() const { return yaw_; }
+  [[nodiscard]] ShowView view() const;
+
+  static constexpr std::int32_t Pitch = 100;
+  static constexpr ShowPoint Translation{0, 500, 3000};
+  static constexpr std::int32_t Projection = 500;
+  static constexpr std::int32_t TurnStep = 2;
+
+private:
+  std::int32_t yaw_ = 0;
 };
 
 // STD_startCameraIntro and STD_tickCameraIntro: as a match ends the camera hangs on the rival at

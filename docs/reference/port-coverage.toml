@@ -914,16 +914,16 @@ STD_runIntro = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1
 STD_tickIntroName = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "el original en inglés no dibuja letras; el aspecto moderno escribe el nombre", what = "Muestra el nombre del luchador durante la presentación." }
 STD_applyManualCamera = { status = "no-aplica", note = "cámara libre de depuración con el segundo mando", what = "Mueve la cámara a mano con el segundo mando." }
 STD_setCameraOrbit = { status = "portado", dwe = "game/tournament/src/arena.cpp:1", what = "Cámara que orbita según la distancia entre ambos luchadores." }
-STD_setCameraYXZ = { status = "falta", what = "Cámara que encuadra al compañero y al rival a la vez." }
-STD_setCameraToEntity = { status = "falta", what = "Cámara fija relativa al luchador enfocado según su orientación." }
-STD_tickVSPhase = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "estados 1 (órbita) y 6 (esquina) de MatchCamera", what = "Elige cada cuadro el modo de cámara activo del combate de copa." }
+STD_setCameraYXZ = { status = "no-aplica", note = "estado de cámara 2, que la versión US nunca asigna", what = "Cámara que encuadra al compañero y al rival a la vez." }
+STD_setCameraToEntity = { status = "portado", dwe = "game/tournament/src/match_show.cpp:466", note = "MatchCamera::moveStarted elige el ángulo (TechniqueCameras); fixedCameraView lo aplica sobre el luchador", what = "Cámara fija relativa al luchador enfocado según su orientación." }
+STD_tickVSPhase = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "estados 1 (órbita), 3 (técnica) y 6 (esquina) de MatchCamera; 10 en ArenaTurnCamera", what = "Elige cada cuadro el modo de cámara activo del combate de copa." }
 STD_setViewpointRotationFromEntity = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", what = "Cámara que gira junto con el luchador enfocado." }
-STD_setCameraLookAtEntity = { status = "falta", what = "Cámara que mira hacia el luchador enfocado." }
+STD_setCameraLookAtEntity = { status = "no-aplica", note = "estado de cámara 7, que la versión US nunca asigna", what = "Cámara que mira hacia el luchador enfocado." }
 STD_applyViewpoint = { status = "no-aplica", note = "aplicación de proyección y punto de vista del original", what = "Aplica el punto de vista actual de la cámara." }
-STD_applyRotatingCamera = { status = "falta", what = "Cámara que gira lento alrededor de la arena tras el combate." }
+STD_applyRotatingCamera = { status = "portado", dwe = "game/tournament/src/match_show.cpp:499", note = "ArenaTurnCamera: 2 unidades de giro por cuadro mientras se ve el cuadro de la copa", what = "Cámara que gira lento alrededor de la arena tras el combate." }
 STD_setCameraParams = { status = "no-aplica", note = "asignación directa de valores de cámara", what = "Fija rotación y traslación de la cámara." }
 STD_setVSPhase = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "el cambio de estado de cámara lo lleva StoryTournament", what = "Activa el control de cámara de la copa con el modo indicado." }
-STD_selectRandomCamera = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "en la versión US solo se llama con el modo 5: letras y cámara final", what = "Elige un ángulo de cámara al azar en técnicas y lanza victoria o derrota al final." }
+STD_selectRandomCamera = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "modo 5 para letras y cámara final; modos 0..4 desde STD_setupMoveExecution (MatchCamera::moveStarted)", what = "Elige un ángulo de cámara al azar en técnicas y lanza victoria o derrota al final." }
 STD_setRandomViewpoint = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "solo el punto de vista 4, el único que usa la copa", what = "Elige al azar un punto de vista preestablecido sobre un luchador." }
 STD_setChampionCamera = { status = "portado", dwe = "game/tournament/src/champion_show.cpp:1", what = "Encuadra al compañero según su tamaño para la escena de campeón." }
 STD_getFighterDistance = { status = "no-aplica", note = "cálculo auxiliar de distancias", what = "Calcula el porcentaje de distancia entre dos luchadores y un punto." }
@@ -969,7 +969,7 @@ STD_addCommandMenu = { status = "falta", what = "Muestra el menú de órdenes de
 STD_initializeTournament = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "modelo, suelo y cámara de la arena; sin música propia, luces ni efectos de la copa", what = "Prepara la arena de la copa: música, cámara, luces, escenario y efectos." }
 STD_initializeOpponent = { status = "portado", dwe = "game/tournament/src/bracket.cpp:1", what = "Genera un rival de la copa con valores y técnicas según su nivel." }
 STD_runMatch = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "en la arena, con presentación, cámara de copa y cámara final", what = "Juega un combate de copa: presentación, combate y cámara final." }
-STD_initializeCamera = { status = "falta", what = "Coloca la cámara inicial de la arena de copa." }
+STD_initializeCamera = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:173", note = "ArenaTurnCamera vuelve a su giro inicial al entrar en la copa y tras cada victoria", what = "Coloca la cámara inicial de la arena de copa." }
 STD_initializeLighting = { status = "no-aplica", note = "configuración de luces del original", what = "Configura las luces de la arena de copa." }
 STD_tournamentMain = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "arena, sustitutos, cuadro animado, tres combates, recuperación y escena del campeón en el podio", what = "Flujo completo de la copa: cuadro, combates, resultados y premio." }
 VS_applyCamera = { status = "no-aplica", note = "aplicación de matrices de cámara del original", what = "Aplica rotación y traslación a la cámara." }

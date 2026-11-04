@@ -2,6 +2,7 @@
 
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/core/original_math.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/render/map_camera.hpp>
 #include <dwe/screens/name_keys.hpp>
@@ -168,7 +169,9 @@ void StoryTournament::enterArena(FieldScene& scene) {
   placeCharacter(scene, Placement::Who::Partner,
                  {static_cast<float>(partner.x), static_cast<float>(partner.z)},
                  assets::yawFromOriginal(arena_->partnerYaw));
-  showArena(scene, arena_->start.partner, arena_->start.rival);
+  // STD_initializeTournament: STD_initializeCamera, then STD_setVSPhase(10): the arena turns.
+  turnCamera_ = {};
+  showArena(scene, turnCamera_.view());
 }
 
 void StoryTournament::showArena(FieldScene& scene, game::tournament::ArenaPoint partner,
@@ -206,6 +209,7 @@ void StoryTournament::showArena(FieldScene& scene, const game::tournament::ShowV
     stage.shownProps.emplace_back(ChampionModel);
   }
   stage.ground = arena_->collision;
+  stage.partnerHidden = bracket_ != nullptr && bracket_->playing();
   scene.setStage(stage);
   showLetters(scene, view);
 }
@@ -232,6 +236,10 @@ void StoryTournament::matchOver(game::battle::Outcome outcome) {
   matchDue_ = tournament_->matchOver(*session_, outcome);
   boardShown_ = false;
   const bool won = outcome == game::battle::Outcome::Victory;
+  if (won) {
+    // STD_tournamentMain after a won match: STD_initializeCamera, STD_CAMERA_STATE 10.
+    turnCamera_ = {};
+  }
   if (bracket_ != nullptr && bracket_->opened()) {
     bracket_->matchOver(won);
     // STD_tournamentMain: after the final won, STD_addBracket(2).
@@ -273,7 +281,7 @@ void StoryTournament::update(session::StoryScenes& scenes, BattleScreen& battle,
   scene.clearStageFighters();
   if (bracket_ != nullptr && bracket_->playing()) {
     if (arena_) {
-      showArena(scene, arena_->start.partner, arena_->start.rival);
+      showArena(scene, turnCamera_.view());
     }
     return;
   }
@@ -421,10 +429,26 @@ void StoryTournament::startMatch(session::StoryScenes& scenes, BattleScreen& bat
     camera_.emplace(arena_->camera);
   }
   seen_.reset();
+  attackFrames_ = {};
   timeUpDone_ = false;
 }
 
 void StoryTournament::tick(double seconds, BattleScreen& battle, FieldScene& scene) {
+  if (running_ && arena_ && !intro_ && !camera_ && !champion_ && !battle.active()) {
+    // STD_applyRotatingCamera between the matches, 2 a frame.
+    confirm_ = false;
+    frameSeconds_ += seconds;
+    bool turned = false;
+    while (frameSeconds_ >= ShowFrameSeconds) {
+      frameSeconds_ -= ShowFrameSeconds;
+      turnCamera_.tick();
+      turned = true;
+    }
+    if (turned) {
+      showArena(scene, turnCamera_.view());
+    }
+    return;
+  }
   if (!running_ || (!intro_ && !camera_ && !champion_)) {
     confirm_ = false;
     return;
@@ -495,6 +519,7 @@ void StoryTournament::frame(BattleScreen& battle, FieldScene& scene, bool confir
             busy = busy || fighter.pose == game::battle::Pose::Attacking ||
                    fighter.pose == game::battle::Pose::HitReaction;
           }
+          noteMoveStarts(*fight);
           camera_->tickFight(busy, random_);
         }
       }
@@ -529,7 +554,7 @@ void StoryTournament::frame(BattleScreen& battle, FieldScene& scene, bool confir
       endCamera_->tick();
       view_ = endCamera_->view(seen_->rival, std::nullopt);
     } else if (camera_ && seen_) {
-      view_ = camera_->view(seen_->partner, seen_->rival, std::nullopt);
+      view_ = camera_->view(seen_->figures, std::nullopt);
     }
     if (timeUp_) {
       shown.timeUp = TournamentMatchView::TimeUp{.box = timeUp_->boxShown(),
@@ -567,6 +592,18 @@ void StoryTournament::watchFight(const game::battle::Battle& fight) {
             .seconds = -1,
             .partnerDown = partner.defeated(),
             .rivalDown = rival.defeated()};
+  const game::battle::MoveCatalog& moves = fight.moves();
+  for (std::size_t i = 0; i < seen.figures.size(); ++i) {
+    const game::battle::Fighter& fighter = state.fighters.at(i);
+    game::tournament::FightFigure& figure = seen.figures.at(i);
+    figure.at = arenaPointOf(fighter.position);
+    // The facing is (sin, -cos) of the original's yaw in world axes.
+    figure.yaw = core::original::atan4096(fighter.facing.x, -fighter.facing.z) & 0xfff;
+    figure.moveRange.reset();
+    if (fighter.attack) {
+      figure.moveRange = static_cast<std::int32_t>(moves.at(fighter.attack->move).range);
+    }
+  }
   if (state.matchClock) {
     // STD_DAMAGE: the HP each side lost since the match started.
     seen.partnerLost = state.matchClock->partnerStartHp - partner.hp;
@@ -574,6 +611,32 @@ void StoryTournament::watchFight(const game::battle::Battle& fight) {
     seen.seconds = state.matchClock->seconds;
   }
   seen_ = seen;
+}
+
+void StoryTournament::noteMoveStarts(const game::battle::Battle& fight) {
+  const game::battle::BattleState& state = fight.state();
+  for (std::size_t i = 0; i < attackFrames_.size(); ++i) {
+    const game::battle::Fighter& fighter = state.fighters.at(i);
+    std::optional<std::int32_t>& last = attackFrames_.at(i);
+    if (!fighter.attack) {
+      last.reset();
+      continue;
+    }
+    const bool started = !last || fighter.attack->frame < *last;
+    last = fighter.attack->frame;
+    // The flattened fighter's shot has no technique camera (STD_startQueuedMove skips
+    // STD_setupMoveExecution).
+    if (!started || fighter.attack->move == fight.moves().flattenedShot()) {
+      continue;
+    }
+    const std::optional<std::size_t> focused = camera_->focused();
+    std::optional<std::int32_t> focusedRange;
+    if (focused && seen_) {
+      focusedRange = seen_->figures.at(*focused).moveRange;
+    }
+    camera_->moveStarted(i, static_cast<std::int32_t>(fight.moves().at(fighter.attack->move).range),
+                         focusedRange, random_);
+  }
 }
 
 void StoryTournament::startLetters(game::tournament::MatchEnding ending) {

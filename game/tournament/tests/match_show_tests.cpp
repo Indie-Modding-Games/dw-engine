@@ -280,3 +280,128 @@ TEST_CASE("the drawn match's letters slide in and finish at frame 81") {
   CHECK(scene.letters[0].location == ShowPoint{-273, 120, 640});
   CHECK(scene.letters[3].location == ShowPoint{272, 120, 640});
 }
+
+TEST_CASE("std_main.c STD_setupMoveExecution: one technique in three hangs a camera on its "
+          "attacker until the fight calms down") {
+  dwe::ruleset::Random random{5};
+  int hung = 0;
+  constexpr int Moves = 3000;
+  for (int i = 0; i < Moves; ++i) {
+    MatchCamera camera{ArenaCamera{}};
+    camera.tickFight(true, random);
+    camera.moveStarted(1, 2, std::nullopt, random);
+    if (!camera.focused()) {
+      continue;
+    }
+    ++hung;
+    CHECK(*camera.focused() == 1);
+    CHECK(camera.preset() < 5);
+    // It holds while someone attacks, and the orbit comes back once nobody does.
+    camera.tickFight(true, random);
+    CHECK(camera.focused());
+    camera.tickFight(false, random);
+    CHECK_FALSE(camera.focused());
+  }
+  CHECK(hung > Moves / 4);
+  CHECK(hung < Moves * 5 / 12);
+  // An all-around move draws one of the far cameras; a melee move only the first two.
+  bool far = false;
+  bool near = false;
+  for (int i = 0; i < 200; ++i) {
+    MatchCamera area{ArenaCamera{}};
+    area.moveStarted(0, 3, std::nullopt, random);
+    if (area.focused()) {
+      far = true;
+      CHECK(area.preset() >= 6);
+      CHECK(area.preset() <= 8);
+    }
+    MatchCamera melee{ArenaCamera{}};
+    melee.moveStarted(0, 1, std::nullopt, random);
+    if (melee.focused()) {
+      near = true;
+      CHECK(melee.preset() <= 1);
+    }
+  }
+  CHECK(far);
+  CHECK(near);
+}
+
+TEST_CASE("the technique camera keeps an all-around move's view and never cuts the corner") {
+  dwe::ruleset::Random random{9};
+  MatchCamera camera{ArenaCamera{}};
+  while (!camera.focused()) {
+    camera.moveStarted(0, 3, std::nullopt, random);
+  }
+  const std::size_t preset = camera.preset();
+  for (int i = 0; i < 50; ++i) {
+    camera.moveStarted(1, 2, 3, random);
+  }
+  CHECK(*camera.focused() == 0);
+  CHECK(camera.preset() == preset);
+  MatchCamera corner{ArenaCamera{}};
+  dwe::ruleset::Random always{1};
+  while (!corner.corner()) {
+    corner.tickFight(true, always);
+  }
+  for (int i = 0; i < 50; ++i) {
+    corner.moveStarted(0, 2, std::nullopt, random);
+  }
+  CHECK(corner.corner());
+  CHECK_FALSE(corner.focused());
+}
+
+TEST_CASE("std_main.c STD_setCameraToEntity: the camera turns with the fighter it hangs on") {
+  // STD_CAMERA_PRESETS[4]: in front of the fighter, 1500 deep and 260 down in view space.
+  const FixedCamera front = TechniqueCameras.at(4);
+  const ShowView facingZ = fixedCameraView(front, {.x = 0, .z = 0}, 0, 500);
+  CHECK(facingZ.eye[0] == 0);
+  CHECK(facingZ.eye[1] == -750);
+  CHECK(facingZ.eye[2] == 1324);
+  CHECK(facingZ.target[2] < facingZ.eye[2]);
+  CHECK(facingZ.projection == 500);
+  // The fighter turned a quarter to face +x: the eye goes round with it, and with its place.
+  const ShowView facingX = fixedCameraView(front, {.x = 300, .z = -200}, 1024, 500);
+  CHECK(facingX.eye[0] == 300 + 1324);
+  CHECK(facingX.eye[1] == -750);
+  CHECK(facingX.eye[2] == -200);
+  CHECK(facingX.target[0] < facingX.eye[0]);
+  // Behind it to one side (preset 0): the eye is behind the fighter.
+  const ShowView behind = fixedCameraView(TechniqueCameras.at(0), {.x = 0, .z = 0}, 0, 500);
+  CHECK(behind.eye[2] < -1000);
+  CHECK(behind.target[2] > behind.eye[2]);
+  // The match camera uses it while it hangs on the rival.
+  dwe::ruleset::Random random{3};
+  MatchCamera camera{ArenaCamera{}};
+  while (camera.focused() != std::optional<std::size_t>{1}) {
+    camera = MatchCamera{ArenaCamera{.projection = 500}};
+    camera.moveStarted(1, 2, std::nullopt, random);
+  }
+  const std::array<FightFigure, 2> fighters{
+      FightFigure{.at = {.x = 900, .z = 0}, .yaw = 3072, .moveRange = std::nullopt},
+      FightFigure{.at = {.x = -900, .z = 0}, .yaw = 1024, .moveRange = 2}};
+  CHECK(camera.view(fighters, std::nullopt) ==
+        fixedCameraView(TechniqueCameras.at(camera.preset()), fighters[1].at, 1024, 500));
+}
+
+TEST_CASE("std_setup.c STD_initializeCamera, STD_applyRotatingCamera: the arena turns 2 a frame") {
+  ArenaTurnCamera camera;
+  const ShowView start = camera.view();
+  // 500 down and 3000 deep in view space, tilted down 100: the eye high over -z, looking at +z.
+  CHECK(start.eye[0] == 0);
+  CHECK(start.eye[1] < -900);
+  CHECK(start.eye[2] < -2800);
+  CHECK(start.target[2] > start.eye[2]);
+  CHECK(start.projection == 500);
+  for (int frame = 0; frame < 1024; ++frame) {
+    camera.tick();
+  }
+  CHECK(camera.yaw() == 2048);
+  const ShowView half = camera.view();
+  CHECK(half.eye[0] == 0);
+  CHECK(half.eye[1] == start.eye[1]);
+  CHECK(half.eye[2] == -start.eye[2]);
+  for (int frame = 0; frame < 1024; ++frame) {
+    camera.tick();
+  }
+  CHECK(camera.yaw() == 0);
+}
