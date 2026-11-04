@@ -1,5 +1,7 @@
 #pragma once
 
+#include "confirm_repeat.hpp"
+
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/screens/screen_settings.hpp>
@@ -87,6 +89,8 @@ private:
   bool jumpHeld_ = false;
   // The item whose description is open.
   std::optional<assets::ItemHandle> described_;
+  // The confirm held: moves one at once and then, while held, moves more, slow to quick.
+  ConfirmRepeat confirm_;
 };
 
 } // namespace dwe::app

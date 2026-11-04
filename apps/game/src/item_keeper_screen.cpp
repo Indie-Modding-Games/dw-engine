@@ -1,5 +1,7 @@
 #include "item_keeper_screen.hpp"
 
+#include "common.hpp"
+
 #include <dwe/core/log.hpp>
 #include <dwe/screens/name_keys.hpp>
 
@@ -178,22 +180,38 @@ void ItemKeeperScreen::press(const input::InputState& input) {
         input.wasPressed("extra")) {
       act("cancel");
     }
+    confirm_.stop();
     return;
   }
   if (phase_ != Phase::Windows) {
+    confirm_.stop();
     return;
   }
+  // The confirm's hold: one item on the press, more as the button stays down, quickening. Done
+  // before the empty-list guard so a hold that runs out of rows stops cleanly on the next tick.
+  const int moves =
+      confirm_.tick(input.isDown("confirm"), input.wasPressed("confirm"), TickSeconds);
   // tickItemKeeperWindow: the alternative button moves ten, square the whole stack and Start opens
   // the item's description (here alt, extra and pause).
   if (rowCount(side_) == 0) {
+    confirm_.stop();
     return;
   }
   if (input.wasPressed("alt")) {
     moveRow(KeeperAmount::Ten);
-  } else if (input.wasPressed("extra")) {
+    return;
+  }
+  if (input.wasPressed("extra")) {
     moveRow(KeeperAmount::Stack);
-  } else if (input.wasPressed("pause")) {
+    return;
+  }
+  if (input.wasPressed("pause")) {
     openDescription();
+    confirm_.stop();
+    return;
+  }
+  for (int moved = 0; moved < moves; ++moved) {
+    moveRow(KeeperAmount::One);
   }
 }
 
@@ -258,8 +276,11 @@ void ItemKeeperScreen::actInWindows(std::string_view action) {
   }
   KeeperListView& shown = list(side_);
   if (action == "confirm") {
-    moveRow(KeeperAmount::One);
-  } else if (action == "up") {
+    // The confirm's move is the screen's press(), which also repeats while the button is held; the
+    // "confirm" the document forwards does nothing here, so a tap moves once, not twice.
+    return;
+  }
+  if (action == "up") {
     jumpHeld_ ? shown.toTop() : static_cast<void>(shown.up());
   } else if (action == "down") {
     jumpHeld_ ? shown.toBottom(count) : static_cast<void>(shown.down(count));
