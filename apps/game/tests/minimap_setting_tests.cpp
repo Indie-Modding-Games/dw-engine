@@ -159,8 +159,9 @@ struct HudUi {
                                        .root = std::string{root},
                                        .origin = dwe::assets::PackOrigin::Engine};
     };
-    auto mounted = dwe::assets::VirtualFileSystem::mount(
-        {location("packs/base"), location("packs/game"), location("packs/tests")});
+    const std::array locations{location("packs/base"), location("packs/game"),
+                               location("packs/tests")};
+    auto mounted = dwe::assets::VirtualFileSystem::mount(locations);
     REQUIRE_MESSAGE(mounted.has_value(), mounted.error().message);
     files = std::make_unique<dwe::assets::VirtualFileSystem>(std::move(*mounted));
     auto catalog = dwe::localization::Catalog::load(*files, "en");

@@ -1491,6 +1491,12 @@ int runGame(const Options& requested) {
       screenFade->setWhiteness(0.0F);
       title.showBoot();
     }
+    if (flow.playing() != nullptr && flow.playing()->takeQuitGame()) {
+      // The pause menu's quit, confirmed: the game is saved (quickSave, in its handler) and this
+      // closes the window, as the title screen's quit does.
+      core::logInfo("game: the player saved and quit from the pause menu");
+      running = false;
+    }
     if (interview) {
       interview->update(gameSeconds, (*renderer)->targetExtent());
       screenFade->setDarkness(interview->fadeLevel());

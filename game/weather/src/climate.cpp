@@ -74,7 +74,7 @@ WeatherWeights readWeights(YamlReader& reader, const YamlNode& node) {
   }
   for (const core::YamlEntry& entry : node.entries()) {
     const auto kind = weatherKindNamed(entry.key);
-    const auto* at = std::ranges::find(RolledKinds, kind.value_or(WeatherKind::None));
+    const auto at = std::ranges::find(RolledKinds, kind.value_or(WeatherKind::None));
     if (!kind || at == RolledKinds.end()) {
       reader.fail(entry.value, std::format("{} is not a weather an area can have", entry.key));
       continue;
@@ -147,7 +147,7 @@ SeasonRules readSeason(YamlReader& reader, const YamlNode& node) {
     } else {
       for (const core::YamlEntry& entry : odds->entries()) {
         const auto kind = weatherKindNamed(entry.key);
-        const auto* at = std::ranges::find(RolledKinds, kind.value_or(WeatherKind::None));
+        const auto at = std::ranges::find(RolledKinds, kind.value_or(WeatherKind::None));
         if (!kind || at == RolledKinds.end()) {
           reader.fail(entry.value, std::format("{} is not a weather an area can have", entry.key));
           continue;

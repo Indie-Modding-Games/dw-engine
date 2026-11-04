@@ -254,6 +254,10 @@ public:
   // guardar-y-cargar.md, 3.8).
   [[nodiscard]] bool takeToTitle() { return std::exchange(toTitle_, false); }
 
+  // Whether the player chose to save and quit the game from the pause menu, once: the app closes
+  // the window when it takes it.
+  [[nodiscard]] bool takeQuitGame() { return std::exchange(quitGame_, false); }
+
   // The partner's status as the status page shows it (partner.* settings).
   [[nodiscard]] screens::ScreenSettings partnerStatus() const;
   // The story's triggers and variables, when the game runs the story (autotest's story.* settings).
@@ -313,6 +317,11 @@ private:
   // Opens the island map over the field, with the maps the player has visited.
   void openWorldMap();
   void showLockNotice(const std::string& textKey);
+  // The pause menu's quick save (docs/architecture/guardar-y-cargar.md, 3.8): writes the game to
+  // its home slot, or the first empty manual slot for a playthrough that never saved; a notice
+  // when there is no room or the write fails. The save indicator follows the write itself.
+  // Whether the game was written.
+  bool quickSave();
   // The bulk trades (bulk_amount.hpp), on the trader's screen, the card shop and the pause menu.
   void setBulkTrades(bool enabled);
 
@@ -390,6 +399,9 @@ private:
   // Whether the dialog on screen asks to go back to the title screen.
   bool toTitleAsked_ = false;
   bool toTitle_ = false;
+  // Whether the dialog on screen asks to save and quit the game.
+  bool quitAsked_ = false;
+  bool quitGame_ = false;
   // Whether the dialog on screen is the story lock's message.
   bool lockNoticeShown_ = false;
   std::optional<MovieMoment> movieRequest_;

@@ -9,9 +9,11 @@
 #include <cmath>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "game/field/tests/fixture.hpp"
 #include "save_command.hpp"
@@ -20,9 +22,11 @@
 namespace {
 
 using dwe::app::manualSlotFromName;
+using dwe::app::quickSaveSlot;
 using dwe::app::SaveCommand;
 using dwe::game::save::MemorySaveStorage;
 using dwe::game::save::SlotId;
+using dwe::game::save::SlotInfo;
 using dwe::game::save::SlotKind;
 using dwe::session::testing::errorOf;
 using dwe::session::testing::newGame;
@@ -45,6 +49,15 @@ bool written(const MemorySaveStorage& storage, std::string_view name) {
   const auto file = storage.read(name);
   REQUIRE_MESSAGE(file.has_value(), errorOf(file));
   return file->has_value();
+}
+
+// One slot of a quick save's list: a manual or autosave slot, empty or holding a game.
+SlotInfo slotOf(SlotKind kind, std::int32_t index, SlotInfo::State state = SlotInfo::State::Empty) {
+  return SlotInfo{.slot = SlotId{.kind = kind, .index = index},
+                  .state = state,
+                  .header = std::nullopt,
+                  .problem = {},
+                  .hasBackup = false};
 }
 
 } // namespace
@@ -143,4 +156,51 @@ TEST_CASE("a save command waits while a care scene holds the field and saves onc
   CHECK_FALSE(command.pending());
   CHECK(written(storage, "slot_05.yaml"));
   session->detachField();
+}
+
+TEST_CASE("the quick save writes the playthrough's home slot when it has one") {
+  const std::optional<SlotId> home = SlotId{.kind = SlotKind::Manual, .index = 3};
+  const std::vector<SlotInfo> listed{
+      slotOf(SlotKind::Manual, 1),
+      slotOf(SlotKind::Manual, 2, SlotInfo::State::Saved),
+  };
+  CHECK(quickSaveSlot(home, listed) == home);
+}
+
+TEST_CASE("the quick save takes the first empty manual slot for a game that never saved") {
+  const std::vector<SlotInfo> listed{
+      slotOf(SlotKind::Manual, 1, SlotInfo::State::Saved),
+      slotOf(SlotKind::Manual, 2, SlotInfo::State::Damaged),
+      slotOf(SlotKind::Manual, 3),
+      slotOf(SlotKind::Autosave, 1, SlotInfo::State::Saved),
+  };
+  // A damaged slot holds a game, as the original's memory card: the quick save goes to the next
+  // free one, and never to an autosave's.
+  CHECK(quickSaveSlot(std::nullopt, listed) == SlotId{.kind = SlotKind::Manual, .index = 3});
+}
+
+TEST_CASE("the quick save finds nowhere when every manual slot holds a game") {
+  const std::vector<SlotInfo> listed{
+      slotOf(SlotKind::Manual, 1, SlotInfo::State::Saved),
+      slotOf(SlotKind::Manual, 2, SlotInfo::State::Newer),
+  };
+  CHECK_FALSE(quickSaveSlot(std::nullopt, listed).has_value());
+}
+
+TEST_CASE("a quick save from a new game writes the first slot and keeps it as its home") {
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  const auto session = newGame(packs, &storage);
+
+  // A new game has no home: the quick save takes the first empty manual slot...
+  REQUIRE(session->slots() != nullptr);
+  CHECK(quickSaveSlot(session->homeSlot(), session->slots()->list()) ==
+        SlotId{.kind = SlotKind::Manual, .index = 1});
+
+  // ...and from its first write on, every quick save returns to that same slot.
+  const auto first = session->save({.kind = SlotKind::Manual, .index = 1});
+  REQUIRE_MESSAGE(first.has_value(), errorOf(first));
+  CHECK(quickSaveSlot(session->homeSlot(), session->slots()->list()) ==
+        SlotId{.kind = SlotKind::Manual, .index = 1});
+  CHECK(written(storage, "slot_01.yaml"));
 }

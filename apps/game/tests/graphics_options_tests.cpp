@@ -7,6 +7,7 @@
 
 #include <doctest/doctest.h>
 
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -57,8 +58,8 @@ struct MenuUi {
                                        .root = std::string{root},
                                        .origin = dwe::assets::PackOrigin::Engine};
     };
-    auto mounted =
-        dwe::assets::VirtualFileSystem::mount({location("packs/base"), location("packs/game")});
+    const std::array locations{location("packs/base"), location("packs/game")};
+    auto mounted = dwe::assets::VirtualFileSystem::mount(locations);
     REQUIRE_MESSAGE(mounted.has_value(), mounted.error().message);
     files = std::make_unique<dwe::assets::VirtualFileSystem>(std::move(*mounted));
     auto catalog = dwe::localization::Catalog::load(*files, "es");
