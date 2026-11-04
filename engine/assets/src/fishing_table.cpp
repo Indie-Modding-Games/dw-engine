@@ -141,7 +141,10 @@ FishingMapEntry readMap(YamlReader& reader, const YamlNode& node) {
                       .castRange = integer(reader, node, CastRangeKey),
                       .seaSerpentPath = points(reader, node, WaypointsKey),
                       .scale = integer(reader, node, ScaleKey),
-                      .image = imageOfDiscPath(reference(reader, node, SpriteFileKey))};
+                      .image = imageOfDiscPath(reference(reader, node, SpriteFileKey)),
+                      .fishScaleSmall = integer(reader, node, FishScaleSmallKey),
+                      .fishScaleLarge = integer(reader, node, FishScaleLargeKey)};
+
   for (const YamlNode& spot : reader.sequence(reader.field(node, SpotsKey), SpotsKey)) {
     map.spots.push_back(readSpot(reader, spot));
   }

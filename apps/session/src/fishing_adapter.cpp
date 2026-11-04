@@ -129,7 +129,11 @@ FishingAdapter::resolvePlace(const assets::FishingMapEntry& map) const {
                                                               : game::fishing::Shoreline::Axis::X,
                                                   .points = line.points},
                                     .spots = {},
-                                    .seaSerpentPath = map.seaSerpentPath};
+                                    .seaSerpentPath = map.seaSerpentPath,
+                                    .spriteImage = map.image,
+                                    .spriteScale = map.scale,
+                                    .fishScaleSmall = map.fishScaleSmall,
+                                    .fishScaleLarge = map.fishScaleLarge};
   for (const assets::FishingSpotEntry& spot : map.spots) {
     place.spots.push_back({.weight = spot.weight, .points = spot.points});
   }
@@ -200,6 +204,20 @@ FishingAvailability FishingAdapter::availability() const {
     return FishingAvailability::Unready;
   }
   return FishingAvailability::Ready;
+}
+
+void FishingAdapter::setFishingDisabled() {
+  if (fishing_) {
+    fishing_->setDisabled(true);
+    core::logDebug("[port:fishing] setFishingDisabled (main/fish.c:45)");
+  }
+}
+
+void FishingAdapter::setFishingEnabled() {
+  if (fishing_) {
+    fishing_->setDisabled(false);
+    core::logDebug("[port:fishing] setFishingEnabled (main/fish.c:52)");
+  }
 }
 
 std::optional<FishingCatch> FishingAdapter::give(const FishingEvent& event) {

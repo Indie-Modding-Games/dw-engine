@@ -1042,6 +1042,26 @@ std::optional<glm::vec3> FieldScene::playerNodePoint(std::uint32_t node, glm::ve
   return nodePoint(*playerActor_, node, offset);
 }
 
+std::optional<glm::mat4> FieldScene::playerNodeTransform(std::uint32_t node) const {
+  const Actor& actor = *playerActor_;
+  if (!actor.model->skin) {
+    return std::nullopt;
+  }
+  const auto joints = actor.player->jointMatrices();
+  const auto& skin = *actor.model->skin;
+  const auto found = std::ranges::find(skin.joints, node);
+  const auto joint = static_cast<std::size_t>(found - skin.joints.begin());
+  if (found == skin.joints.end() || joint >= joints.size() ||
+      joint >= skin.inverseBindMatrices.size()) {
+    return std::nullopt;
+  }
+  const glm::mat4 jointSpace = joints[joint] * glm::inverse(skin.inverseBindMatrices[joint]);
+  const auto& transform = world_.registry().get<scene::Transform>(actor.entity);
+  return glm::rotate(glm::translate(glm::mat4{1.0F}, transform.position), transform.yaw,
+                     glm::vec3{0.0F, 1.0F, 0.0F}) *
+         jointSpace;
+}
+
 std::optional<glm::vec3> FieldScene::nodePoint(const Actor& actor, std::uint32_t node,
                                                glm::vec3 offset) const {
   if (!actor.model->skin) {

@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -182,6 +183,13 @@ struct FishingPlace {
   // One per fish kind, in order.
   std::vector<FishingSpot> spots;
   std::vector<glm::ivec2> seaSerpentPath;
+  // How the map draws it (FISHING_MAP_DATA): the sprite image (an asset of the packs, such as
+  // "texture/etcdat/fishing2"), the bobber's scale (4096 for one texel a unit) and the fish's per
+  // size unit, small and large.
+  std::string spriteImage;
+  std::int32_t spriteScale = 0;
+  std::int32_t fishScaleSmall = 0;
+  std::int32_t fishScaleLarge = 0;
 };
 
 // Whether a screen point is water (FISH_isFishableWater1 and 2).

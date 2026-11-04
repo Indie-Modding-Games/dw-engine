@@ -254,6 +254,9 @@ public:
   // original axes and units, in the world; nothing if the node is no joint of the skin.
   [[nodiscard]] std::optional<glm::vec3> playerNodePoint(std::uint32_t node,
                                                          glm::vec3 offset) const;
+  // The transform of one of the player's model nodes in the world (fish.c: FISH_getBoneTransform),
+  // in the world's axes; nothing if the node is no joint of the skin.
+  [[nodiscard]] std::optional<glm::mat4> playerNodeTransform(std::uint32_t node) const;
   // The same point for any character drawn on the field: the player, the partner or an NPC, by
   // its entity (no offset: the node's origin); nothing for an entity not drawn or a node that is no
   // joint of its skin.

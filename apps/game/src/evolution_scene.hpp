@@ -5,6 +5,7 @@
 #include <dwe/game/evolution/rules.hpp>
 #include <dwe/game/partner/events.hpp>
 #include <dwe/session/evolution_adapter.hpp>
+#include <dwe/session/fishing_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 
 #include <cstdint>
@@ -32,6 +33,8 @@ struct EvolutionSceneDesc {
   const session::EvolutionAdapter* evolution = nullptr;
   // The length of one frame of the original (field rules, transition.frame_seconds).
   float frameSeconds = 0.0F;
+  // The map's fishing, which stops while the scene runs (partnerTickEvolving); nullptr for none.
+  session::FishingAdapter* fishing = nullptr;
 };
 
 // The evolution scene on the field (partner.c: partnerTickEvolving; main/evl.c:
@@ -104,6 +107,7 @@ private:
   FieldScene* scene_;
   const assets::DigimonTable* species_;
   const session::EvolutionAdapter* evolution_;
+  session::FishingAdapter* fishing_;
   // The scene's rules as they were when it started: a tuned ruleset changes the next scene. Only
   // read while the scene is active, which start() sets after copying them.
   game::evolution::EvolutionSceneRules rules_;

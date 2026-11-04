@@ -6,6 +6,7 @@
 #include <dwe/game/partner/life_rules.hpp>
 #include <dwe/game/story/partner_routines.hpp>
 #include <dwe/screens/lives_box.hpp>
+#include <dwe/session/fishing_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_scenes.hpp>
@@ -40,6 +41,9 @@ struct DeathSceneDesc {
   // The species' heights, for the partner's middle the lives box grows from; nullptr grows it from
   // the partner's feet.
   const assets::DigimonTable* species = nullptr;
+  // The map's fishing, which stops while a death's scene runs and comes back once it, and the
+  // rebirth, end (partnerTickDying, partnerTickDying2); nullptr for none.
+  session::FishingAdapter* fishing = nullptr;
 };
 
 // The lost life's lives box on its document (ui/lives_box/document).
@@ -148,6 +152,7 @@ private:
   void showLivesBox();
 
   session::GameSession* session_;
+  session::FishingAdapter* fishing_;
   FieldScene* scene_;
   ui::Ui* ui_;
   const assets::DigimonTable* species_;

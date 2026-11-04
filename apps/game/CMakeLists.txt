@@ -124,6 +124,7 @@ dwe_add_app(game
         src/field_numbers.cpp
         src/award_screen.cpp
         src/fishing_screen.cpp
+        src/fishing_look.cpp
         src/field_toilet.cpp
         src/field_poop.cpp
         src/field_story_props.cpp

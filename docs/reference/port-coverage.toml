@@ -771,7 +771,7 @@ FISH_scrollCameraTo = { status = "portado", dwe = "game/fishing/src/view.cpp:28"
 FISH_enableCameraControl = { status = "portado", dwe = "game/fishing/src/rod.cpp:148", what = "Guarda la vista al sacar la caña para restaurarla al acabar.", note = "La vista parte de donde la dejó el campo." }
 FISH_loadTMDModel = { status = "no-aplica", what = "Carga un modelo 3D (la caña o la serpiente marina).", note = "Carga de modelos; la hace el motor de assets." }
 FISH_getModelObject = { status = "no-aplica", what = "Da una pieza de un modelo cargado.", note = "Acceso a modelos cargados; lo hace el motor de render." }
-setFishingEnabled = { status = "parcial", dwe = "game/fishing/include/dwe/game/fishing/fishing.hpp:197", what = "Vuelve a permitir la pesca tras la escena de muerte o renacer del compañero.", note = "Existe setDisabled, pero nada lo llama al acabar esas escenas." }
+setFishingEnabled = { status = "portado", dwe = "apps/session/src/fishing_adapter.cpp:216", what = "Vuelve a permitir la pesca tras la escena de muerte o renacer del compañero.", note = "Lo llaman EvolutionScene al acabar la evolución y DeathScene al acabar la luz de la muerte y el renacer, como partnerTickEvolving, partnerTickDying y partnerTickDying2." }
 
 # --- Curling, movies and the ending, death and rebirth, evolution
 KAR_setupMatch = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Prepara la partida de curling: piedras de cada equipo, obstáculos y rival." }

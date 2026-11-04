@@ -236,6 +236,13 @@ public:
   [[nodiscard]] const Tension& tension() const { return tension_; }
   [[nodiscard]] glm::vec3 bobber() const { return bobber_.position; }
   [[nodiscard]] bool bobberShown() const { return bobberShown_; }
+  // The bobber's frame (FISH_bobberCommand's sprite): 1 to 7, 0 or less hidden (lookup with
+  // bobberSprite, look.hpp).
+  [[nodiscard]] std::int32_t bobberFrame() const { return bobberAnimation_.frame(); }
+  // The rod the player fishes with.
+  [[nodiscard]] Rod rod() const { return rod_; }
+  // The map the fishing is on.
+  [[nodiscard]] const FishingPlace& place() const { return place_; }
   [[nodiscard]] bool lineShown() const { return lineShown_; }
   // Where the line starts: the rod's tip of the last frame (rod->lineStart).
   [[nodiscard]] glm::vec3 lineStart() const { return lineStart_; }
@@ -297,6 +304,8 @@ private:
   void tickBait(glm::vec3 previous);
   bool moveBaitToHand(float maxStep);
   void bobberCommand(std::int32_t command);
+  // FISH_bobberCommand(0), once a frame: the floating bobber drifts and bobs.
+  void tickBobberAnimation();
   // The camera (FISH_panCameraTo, FISH_panCameraWithDPad): true while the view moves.
   bool panTo(glm::vec3 world, std::int32_t radius, glm::ivec2 deadZone);
   bool panToBobber();
@@ -351,8 +360,12 @@ private:
   std::int32_t caughtSize_ = 0;
   Tension tension_;
   Bobber bobber_;
+  BobberAnimation bobberAnimation_;
   bool bobberShown_ = false;
   bool lineShown_ = false;
+  // FISH_tickRod release poses the rod on the throw's first frame before the bobber leaves its
+  // tip; the player's pose reaches the throw one tick later, and the bobber follows the tip there.
+  bool throwFromTip_ = false;
   glm::vec3 lineStart_{0.0F};
   glm::vec3 previousLineStart_{0.0F};
   bool baitShown_ = false;

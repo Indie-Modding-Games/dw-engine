@@ -6,6 +6,7 @@ dwe_add_module(fishing
         src/rod.cpp
         src/view.cpp
         src/effects.cpp
+        src/look.cpp
     DEPS core assets ruleset)
 
 # The tests read the game pack from the source tree.

@@ -3,6 +3,7 @@
 #include <dwe/game/fishing/view.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdlib>
 
@@ -22,6 +23,22 @@ int outcode(float value, float min, float max) {
 
 // The colour's channels by tension, FISH_updateTension's four quarters of [-limit, limit].
 constexpr std::uint8_t Full = 0xFF;
+
+// FISH_bobberCommand: the frames each state shows by its timer (bobbing: a third of it), -1 at
+// the end; floating shows frame 3.
+constexpr std::int32_t FloatingFrame = 3;
+constexpr std::array<std::int32_t, 8> SinkFrames{1, 2, 3, 4, 5, 4, 3, -1};
+constexpr std::array<std::int32_t, 3> BobFrames{4, 3, -1};
+constexpr std::int32_t BobFramesPer = 3;
+constexpr std::array<std::int32_t, 5> NibbleFrames{4, 5, 4, 3, -1};
+constexpr std::array<std::int32_t, 5> BiteFrames{4, 5, 6, 7, -1};
+constexpr std::array<std::int32_t, 6> LostFrames{7, 6, 5, 4, 3, -1};
+
+// The frame of a table at a timer, held at its last entry.
+template <std::size_t N>
+std::int32_t frameAt(const std::array<std::int32_t, N>& frames, std::int32_t step) {
+  return frames.at(static_cast<std::size_t>(std::clamp(step, 0, static_cast<std::int32_t>(N) - 1)));
+}
 
 } // namespace
 
@@ -163,6 +180,91 @@ seaSerpentBody(glm::vec3 head, const std::array<float, SeaSerpentPieces>& turns)
     }
   }
   return body;
+}
+
+void BobberAnimation::command(Command command) {
+  switch (command) {
+  case Command::ToHand:
+    frame_ = 1;
+    state_ = State::Hanging;
+    break;
+  case Command::Sink:
+    state_ = State::Sinking;
+    break;
+  case Command::Nibble:
+    state_ = State::Nibble;
+    break;
+  case Command::Bite:
+    state_ = State::Bite;
+    break;
+  case Command::Lost:
+    state_ = State::Lost;
+    break;
+  }
+  timer_ = 0;
+}
+
+void BobberAnimation::toFloating() {
+  frame_ = FloatingFrame;
+  state_ = State::Floating;
+  timer_ = 0;
+}
+
+void BobberAnimation::tick(bool bobs) {
+  // A table's end floats the bobber again; the timer starts at 0 on the new state.
+  const auto play = [this](std::int32_t frame) {
+    frame_ = frame;
+    if (frame < 0) {
+      toFloating();
+      return false;
+    }
+    return true;
+  };
+  switch (state_) {
+  case State::Rest:
+    frame_ = 0;
+    break;
+  case State::Sinking:
+    if (!play(frameAt(SinkFrames, timer_))) {
+      return;
+    }
+    break;
+  case State::Floating:
+    if (bobs) {
+      state_ = State::Bobbing;
+      timer_ = 0;
+      return;
+    }
+    break;
+  case State::Bobbing:
+    if (!play(frameAt(BobFrames, timer_ / BobFramesPer))) {
+      return;
+    }
+    break;
+  case State::Nibble:
+    if (!play(frameAt(NibbleFrames, timer_))) {
+      return;
+    }
+    break;
+  case State::Bite:
+    // Under at the end, hidden until the fish lets go.
+    frame_ = frameAt(BiteFrames, timer_);
+    if (frame_ < 0) {
+      state_ = State::Under;
+      timer_ = 0;
+      return;
+    }
+    break;
+  case State::Lost:
+    if (!play(frameAt(LostFrames, timer_))) {
+      return;
+    }
+    break;
+  case State::Hanging:
+  case State::Under:
+    break;
+  }
+  ++timer_;
 }
 
 } // namespace dwe::game::fishing

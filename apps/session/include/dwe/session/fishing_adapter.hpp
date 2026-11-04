@@ -69,6 +69,11 @@ public:
   [[nodiscard]] const assets::FishingMapEntry* map() const { return fishing_ ? map_ : nullptr; }
 
   [[nodiscard]] FishingAvailability availability() const;
+  // main/fish.c: setFishingDisabled and setFishingEnabled: the partner's evolution and death scenes
+  // stop the fishing of the map while they run and give it back at their end; nothing off a
+  // fishing map.
+  void setFishingDisabled();
+  void setFishingEnabled();
   // The best rod the player has (getBestFishingRod).
   [[nodiscard]] std::optional<game::fishing::Rod> bestRod() const;
   // The food in the bag, which baits the hook (hasFoodItem: sorting value 2).

@@ -78,4 +78,40 @@ void pushSeaSerpentTurn(std::array<float, SeaSerpentPieces>& turns, float yaw);
 [[nodiscard]] std::array<SeaSerpentPiece, SeaSerpentPieces>
 seaSerpentBody(glm::vec3 head, const std::array<float, SeaSerpentPieces>& turns);
 
+// FISH_bobberCommand's animation of the bobber: hanging from the rod, sinking into the water,
+// floating (and bobbing now and then), dipping at a nibble or a bite, under while the fish holds it
+// and coming back up when the hook is lost.
+class BobberAnimation {
+public:
+  enum class Command : std::uint8_t { ToHand, Sink, Nibble, Bite, Lost };
+
+  // FISH_resetBobberAnim: hidden at rest.
+  void reset() { *this = {}; }
+  void command(Command command);
+  // Command 0, once a frame. Floating, the caller rolls whether the bobber bobs this frame.
+  void tick(bool bobs);
+  [[nodiscard]] bool floating() const { return state_ == State::Floating; }
+  // The sprite's frame, 1 to 7; hidden at 0 or below.
+  [[nodiscard]] std::int32_t frame() const { return frame_; }
+
+private:
+  // The original's states 3, 4, 7 to 11, 13 and 14 (its 5, 6 and 12 are never entered).
+  enum class State : std::uint8_t {
+    Rest,
+    Hanging,
+    Sinking,
+    Floating,
+    Bobbing,
+    Nibble,
+    Bite,
+    Under,
+    Lost
+  };
+  void toFloating();
+
+  State state_ = State::Rest;
+  std::int32_t frame_ = 0;
+  std::int32_t timer_ = 0;
+};
+
 } // namespace dwe::game::fishing

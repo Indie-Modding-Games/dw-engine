@@ -15,6 +15,7 @@
 
 #include "common.hpp"
 #include "field_scene.hpp"
+#include "fishing_look.hpp"
 #include "messages.hpp"
 #include "scene_prims.hpp"
 
@@ -53,25 +54,13 @@ constexpr std::uint32_t HandNode = 6;
 constexpr glm::vec3 GripOffset{28.0F, 0.0F, 2.0F};
 constexpr float BobberDrop = 17.0F;
 constexpr float BaitDrop = 93.0F;
-// FISH_updateRodPose bends the rod model, which is not drawn yet: its tip is taken this far ahead
-// of the hand and this high above it.
+// Without the hand that holds the rod (fishingRodPose), its tip is taken this far ahead of the
+// hand and this high above it.
 constexpr float RodReach = 160.0F;
 constexpr float RodRise = 120.0F;
 // A hand where the model has no such bone.
 constexpr float HandHeight = 100.0F;
 
-constexpr render::MapMarker BobberMarker{.feet = glm::vec3{0.0F},
-                                         .width = 14.0F,
-                                         .height = 14.0F,
-                                         .color = glm::vec4{0.95F, 0.25F, 0.2F, 1.0F}};
-constexpr render::MapMarker FishMarker{.feet = glm::vec3{0.0F},
-                                       .width = 0.0F,
-                                       .height = 6.0F,
-                                       .color = glm::vec4{0.05F, 0.1F, 0.2F, 0.0F}};
-// A fish's shadow is this wide per centimetre of the fish.
-constexpr float FishWidthPerSize = 0.6F;
-constexpr float FishMinWidth = 12.0F;
-constexpr float FishShadowAlpha = 0.6F;
 // The map's fishing image (ETCDAT/FISHING.TIM, FISHING2.TIM): 256 x 116 texels.
 constexpr glm::vec2 FishingImageSize{256.0F, 116.0F};
 // FISH_drawBaitSprite: the item's icon of ETCDAT/ITEM.TIM (16 x 16 cells in rows of 16, 15 texels
@@ -365,6 +354,9 @@ game::fishing::FishingInput FishingScreen::inputOf(const FieldScene& scene) cons
   const glm::vec3 hand = scene.playerNodePoint(HandNode, GripOffset)
                              .value_or(player.position + glm::vec3{0.0F, HandHeight, 0.0F});
   const game::fishing::Fishing& water = *fishing_->fishing();
+  // FISH_updateRodPose: the line starts at the rod's tip.
+  const std::optional<game::fishing::RodPose> rod = fishingRodPose(scene, water);
+  const glm::vec3 tip = rod ? rod->tip : hand + facing * RodReach + glm::vec3{0.0F, RodRise, 0.0F};
   return {.confirmPressed = confirmPressed_,
           .confirmHeld = confirmDown_,
           .confirmReleased = confirmReleased_,
@@ -376,7 +368,7 @@ game::fishing::FishingInput FishingScreen::inputOf(const FieldScene& scene) cons
           .lookUp = buttons_.up,
           .lookDown = buttons_.down,
           .animationPlaying = scene.playerClipPlaying(),
-          .lineStart = hand + facing * RodReach + glm::vec3{0.0F, RodRise, 0.0F},
+          .lineStart = tip,
           .bobberRest = hand - glm::vec3{0.0F, BobberDrop, 0.0F},
           .baitHold = hand - glm::vec3{0.0F, BaitDrop, 0.0F},
           .player = player.position,
@@ -574,8 +566,12 @@ void FishingScreen::showPrims(FieldScene& scene) const {
   if (water.hooked()) {
     drawSerpent(*water.hooked());
   }
+  addFishingFish(scene, water, frame, prims);
   if (const assets::FishingMapEntry* map = fishing_->map()) {
     addWaterSprites(prims, scene, water, *map, frame);
+  }
+  addFishingRod(scene, water, frame, prims);
+  if (const assets::FishingMapEntry* map = fishing_->map()) {
     const std::optional<assets::ItemHandle> item = fishing_->itemOfNumber(water.baitItem());
     if (const std::optional<glm::vec3> bait = water.bait(); bait && item) {
       addBait(prims, scene, inventory_->items().at(*item), *bait, static_cast<float>(map->splash),
@@ -586,26 +582,8 @@ void FishingScreen::showPrims(FieldScene& scene) const {
 }
 
 void FishingScreen::showMarkers(FieldScene& scene) const {
-  const game::fishing::Fishing& water = *fishing_->fishing();
-  std::vector<render::MapMarker> markers;
-  for (const game::fishing::Fish& fish : water.fish()) {
-    // The sea serpent is drawn as its model (showPrims).
-    if (fish.opacity <= 0 || fish.kind == game::fishing::SeaSerpentKind) {
-      continue;
-    }
-    render::MapMarker marker = FishMarker;
-    marker.feet = fish.position;
-    marker.width = std::max(FishMinWidth, static_cast<float>(fish.size) * FishWidthPerSize);
-    marker.color.a = FishShadowAlpha * static_cast<float>(fish.opacity) /
-                     static_cast<float>(game::fishing::OpaqueFish);
-    markers.push_back(marker);
-  }
-  if (water.bobberShown()) {
-    render::MapMarker marker = BobberMarker;
-    marker.feet = water.bobber();
-    markers.push_back(marker);
-  }
-  scene.setExtraMarkers(std::move(markers));
+  // The fish, the rod and the bobber are drawn as the original's (showPrims).
+  scene.setExtraMarkers({});
 }
 
 void FishingScreen::showGauge() {

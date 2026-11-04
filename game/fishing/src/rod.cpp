@@ -33,6 +33,9 @@ constexpr std::int32_t NibbleCommand = 2;
 constexpr std::int32_t BiteCommand = 0xb;
 constexpr std::int32_t BigNibbleCommand = 0xc;
 constexpr std::int32_t LostCommand = 0xe;
+// FISH_bobberCommand: floating, the bobber bobs (ripple -2) one frame in 60.
+constexpr std::int32_t BobEvery = 60;
+constexpr std::int32_t BobRipple = -2;
 // The ripples of those commands (FISH_spawnRipple's kinds) and the one that scares the fish.
 constexpr std::int32_t SinkRipple = -1;
 constexpr std::int32_t NibbleRipple = -3;
@@ -120,6 +123,8 @@ void Fishing::start(Rod rod) {
   lineShown_ = false;
   baitShown_ = false;
   bobber_ = {};
+  // FISH_clearBobberAnim.
+  bobberAnimation_.reset();
   if (hooked_) {
     hookedEscaped_ = true;
     hooked_->state = FishState::Escaping;
@@ -141,6 +146,9 @@ FishingOutput Fishing::tick(const FishingInput& input, const FishingView& view,
   out_ = {};
   previousLineStart_ = lineStart_;
   lineStart_ = input.lineStart;
+  if (std::exchange(throwFromTip_, false) && state_ == RodState::Flying) {
+    bobber_.position += lineStart_ - previousLineStart_;
+  }
   if (!disabled_) {
     if (state_ != RodState::Off) {
       if (!camera_) {
@@ -171,6 +179,8 @@ void Fishing::giveUp() {
   animate(StandAnimation);
   bobberShown_ = false;
   baitShown_ = false;
+  // FISH_initBobberAnim.
+  bobberAnimation_.reset();
   lineShown_ = false;
   bobber_.mode = 0;
   toState(RodState::ToPlayer);
@@ -196,6 +206,7 @@ void Fishing::release() {
   const std::int32_t power = framesOnState_ + rules_.cast.powerBonus;
   bobber_.mode = 3;
   bobber_.position = lineStart_;
+  throwFromTip_ = true;
   bobber_.lineLength = 0.0F;
   bobber_.gravity = FlightGravity;
   const std::int32_t speed = remapClamped(
@@ -430,6 +441,7 @@ void Fishing::endFishing() {
   baitShown_ = false;
   baitMenuOpen_ = false;
   tension_ = {};
+  bobberAnimation_.reset();
   // FISH_endFishing: FISH_applySavedCameraScroll and setCameraFollowPlayer. The field's camera
   // centres the player, who has not moved, which is where the view was when the rod came out.
   camera_.reset();
@@ -698,22 +710,46 @@ void Fishing::bobberCommand(std::int32_t command) {
   switch (command) {
   case ToHandCommand:
     bobber_.position = input_->bobberRest;
+    bobberAnimation_.command(BobberAnimation::Command::ToHand);
     break;
   case SinkCommand:
     spawnRipple(SinkRipple, bobber_.position, SinkScare, 0, FixedOne);
+    bobberAnimation_.command(BobberAnimation::Command::Sink);
     break;
   case NibbleCommand:
     sound(rules_.sounds.nibble);
     spawnRipple(NibbleRipple, bobber_.position, 0.0F, 0, FixedOne);
+    bobberAnimation_.command(BobberAnimation::Command::Nibble);
     break;
   case BiteCommand:
   case BigNibbleCommand:
+    // The original sends both to the bite's dip (its big nibble's own state is never entered).
     sound(rules_.sounds.bite);
     spawnRipple(BiteRipple, bobber_.position, 0.0F, 0, FixedOne);
+    bobberAnimation_.command(BobberAnimation::Command::Bite);
+    break;
+  case LostCommand:
+    bobberAnimation_.command(BobberAnimation::Command::Lost);
     break;
   default:
     break;
   }
+}
+
+void Fishing::tickBobberAnimation() {
+  bool bobs = false;
+  if (bobberAnimation_.floating()) {
+    // The bobber drifts a unit now and then, and rings the water once in a while.
+    if (roll(1, 2) == 1) {
+      bobber_.position.x += static_cast<float>(roll(-1, 1));
+      bobber_.position.z += static_cast<float>(roll(-1, 1));
+    }
+    bobs = roll(1, BobEvery) == 1;
+    if (bobs) {
+      spawnRipple(BobRipple, bobber_.position, 0.0F, 0, FixedOne);
+    }
+  }
+  bobberAnimation_.tick(bobs);
 }
 
 void Fishing::tickBait(glm::vec3 previous) {
@@ -734,6 +770,7 @@ void Fishing::tickBait(glm::vec3 previous) {
 }
 
 void Fishing::tickBobber() {
+  tickBobberAnimation();
   Bobber& b = bobber_;
   if (b.mode == 1) {
     b.position = input_->bobberRest;

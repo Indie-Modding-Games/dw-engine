@@ -69,6 +69,9 @@ struct FishingMapEntry {
   // The map's fishing image (its sprite_file) as an image of the base pack:
   // "\\ETCDAT\\FISHING2.TIM" is "texture/etcdat/fishing2". Empty when the data has none.
   std::string image;
+  // The fish's scale per size unit (4096 for one texel a unit): small and large fish.
+  std::int32_t fishScaleSmall = 0;
+  std::int32_t fishScaleLarge = 0;
 };
 
 struct FishingTable {

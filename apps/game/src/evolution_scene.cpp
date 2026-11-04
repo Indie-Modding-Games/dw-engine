@@ -52,7 +52,7 @@ const char* phaseName(std::uint8_t phase) {
 
 EvolutionScene::EvolutionScene(const EvolutionSceneDesc& desc)
     : session_(desc.session), scene_(desc.scene), species_(desc.species),
-      evolution_(desc.evolution), frameSeconds_(desc.frameSeconds),
+      evolution_(desc.evolution), fishing_(desc.fishing), frameSeconds_(desc.frameSeconds),
       drawn_(desc.session->partnerView().species) {}
 
 std::vector<PartnerEvent> EvolutionScene::take(std::span<const PartnerEvent> events) {
@@ -94,6 +94,10 @@ void EvolutionScene::start(const std::string& target) {
   // getEvoSequenceState: the idle clip, the scene's sound bank in slot 8.
   scene_->playPartnerClip(rules_.clips.idle);
   session_->useSceneSounds(rules_.soundBank);
+  // partnerTickEvolving (partner.c:751): the fishing stops for the scene.
+  if (fishing_ != nullptr) {
+    fishing_->setFishingDisabled();
+  }
   setPhase(Phase::Glowing);
 }
 
@@ -311,6 +315,10 @@ void EvolutionScene::finish() {
   }
   scene_->playPartnerClip(std::nullopt);
   scene_->setStage({});
+  // partnerTickEvolving (partner.c:780): and comes back.
+  if (fishing_ != nullptr) {
+    fishing_->setFishingEnabled();
+  }
   setPhase(Phase::Idle);
 }
 

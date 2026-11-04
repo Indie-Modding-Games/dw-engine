@@ -105,8 +105,9 @@ const char* phaseName(std::uint8_t phase) {
 } // namespace
 
 DeathScene::DeathScene(const DeathSceneDesc& desc)
-    : session_(desc.session), scene_(desc.scene), ui_(desc.ui), species_(desc.species),
-      story_(desc.story), scenes_(desc.scenes), transition_(desc.transition) {}
+    : session_(desc.session), fishing_(desc.fishing), scene_(desc.scene), ui_(desc.ui),
+      species_(desc.species), story_(desc.story), scenes_(desc.scenes),
+      transition_(desc.transition) {}
 
 std::vector<PartnerEvent> DeathScene::take(std::span<const PartnerEvent> events) {
   if (!session_->partnerRules().life.scenes || transition_.frameSeconds <= 0.0F) {
@@ -576,6 +577,10 @@ void DeathScene::startDissolve(bool livesLeft) {
   // none starts at the map frame, already gone.
   const game::partner::DeathScene& rules = rules_.death;
   session_->useSceneSounds(rules.soundBank);
+  // partnerTickDying (partner.c:664): the fishing stops while DOOA_tick runs.
+  if (fishing_ != nullptr) {
+    fishing_->setFishingDisabled();
+  }
   setDeathMap();
   effects_.start(FirstEffectSeed + effectSeed_++);
   lives_ = livesLeft ? 1 : 0;
@@ -687,6 +692,10 @@ void DeathScene::stepDissolve() {
   showEffects();
   if (frame_ >= rules.endFrame) {
     stopSounds();
+    // partnerTickDying (partner.c:673): DOOA_tick is over; the fishing comes back.
+    if (fishing_ != nullptr) {
+      fishing_->setFishingEnabled();
+    }
   }
   if (frame_ >= rules.endFrame && storyScene_) {
     // partnerTickDying ends: the story's death script runs on the wake map (the egg box) and asks
@@ -819,6 +828,10 @@ void DeathScene::finish() {
   fade_ = 0.0F;
   livesBox_.remove();
   showLivesBox();
+  // partnerTickDying2 (partner.c:810): the rebirth is over; the fishing comes back.
+  if (fishing_ != nullptr && (phase_ == Phase::Rebirth || phase_ == Phase::RebirthFinish)) {
+    fishing_->setFishingEnabled();
+  }
   setPhase(Phase::Idle);
   sceneOver_ = sceneOver_ || storyScene_;
   storyScene_ = false;
