@@ -44,6 +44,8 @@ inline constexpr std::string_view LoadFailed = "loading {}: {}";
 inline constexpr std::string_view SaveFailed = "saving {}: {}";
 inline constexpr std::string_view AutosaveFailed = "autosave: {}";
 inline constexpr std::string_view Autosaved = "session: autosaved to {}";
+inline constexpr std::string_view AutosaveNoFreeSlot =
+    "session: autosave skipped: the playthrough has no slot and every slot holds another game";
 inline constexpr std::string_view AutosaveWaitsForCare =
     "session: the autosave waits for the care scene to end";
 inline constexpr std::string_view SaveWaitOver =

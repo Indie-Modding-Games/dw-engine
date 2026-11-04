@@ -1,16 +1,17 @@
 -- The title screen's slot list (docs/architecture/guardar-y-cargar.md, 3.4 and 3.5): the empty
 -- slots for a new game, or the saves to continue. The game publishes the slots as settings
 -- (save.slots.mode, "new" or "continue"; save.slots, the count; save.slot.<n>.kind, number, state,
--- nickname, species, species_key, map, map_key, play_seconds and updated, from 0) and shows this
--- document; it
+-- nickname, species, species_key, map, map_key, play_seconds and updated, from 0; and
+-- save.slots.newest, the entry saved last, where continuing starts) and shows this document; it
 -- sends choose_slot with the entry, from 0, play_without_saving or slots_back. Pages of six
 -- entries, turned with left and right or the page buttons. The page and the row chosen stay while a
 -- dialog about it is open, and start over when the list is opened from the main menu.
 --
 -- The original look (the skin marks #panel with slots-original) lists every slot instead, one row
 -- each, as the original lists its memory card slots (main_menu.c: renderSelectCardSlot): "CONTINUE
--- SLOT 1", "ERASE AUTOSAVE 2"... (the game publishes save.slots.manual and save.slots.autosave, the
--- slots of each kind), greyed when the slot has nothing to choose. Eight rows show at a time and
+-- SLOT 1", "ERASE OLD AUTOSAVE 2"... (the game publishes save.slots.manual, the manual slots; the
+-- autosave entries are old autosave files, from when autosaves had slots of their own, listed only
+-- while they exist), greyed when the slot has nothing to choose. Eight rows show at a time and
 -- the list scrolls, as the original's save list does (renderSelectSlot), with its cursor stopping
 -- at the first and last row (tickMenuInput); left and right move a whole box, an addition. A box
 -- below the rows sums up the focused save (partner, place, play time and date), an addition: the
@@ -80,28 +81,39 @@ local function mode()
   return ui.setting("save.slots.mode") or "continue"
 end
 
--- Every slot the original look lists, with its entry when the list has one.
+-- Every manual slot the original look lists, with its entry when the list has one, then the old
+-- autosaves listed.
 local function build_rows()
   rows = {}
-  local kinds = mode() == "new" and { "slot" } or { "slot", "autosave" }
-  local counts = {
-    slot = math.floor(ui.setting("save.slots.manual") or 0),
-    autosave = math.floor(ui.setting("save.slots.autosave") or 0),
-  }
-  for _, kind in ipairs(kinds) do
-    for number = 1, counts[kind] do
-      local found = nil
-      for entry = 0, count() - 1 do
-        if
-          field(entry, "kind") == kind
-          and math.floor(tonumber(field(entry, "number")) or 0) == number
-        then
-          found = entry
-        end
+  for number = 1, math.floor(ui.setting("save.slots.manual") or 0) do
+    local found = nil
+    for entry = 0, count() - 1 do
+      if
+        field(entry, "kind") == "slot"
+        and math.floor(tonumber(field(entry, "number")) or 0) == number
+      then
+        found = entry
       end
-      table.insert(rows, { kind = kind, number = number, entry = found })
+    end
+    table.insert(rows, { kind = "slot", number = number, entry = found })
+  end
+  if mode() ~= "new" then
+    for entry = 0, count() - 1 do
+      if field(entry, "kind") == "autosave" then
+        local number = math.floor(tonumber(field(entry, "number")) or 0)
+        table.insert(rows, { kind = "autosave", number = number, entry = entry })
+      end
     end
   end
+end
+
+-- The entry saved last, from 0, when continuing; nil otherwise.
+local function newest_entry()
+  local newest = math.floor(ui.setting("save.slots.newest") or -1)
+  if mode() == "continue" and newest >= 0 and newest < count() then
+    return newest
+  end
+  return nil
 end
 
 -- A row with nothing to choose: no entry, or a newer game's save that cannot be continued.
@@ -197,8 +209,15 @@ local function focus_item(document, item)
   document:get("slot-" .. (item - top)):focus()
 end
 
--- The first row with something to choose, else the first item.
+-- The row of the save written last when continuing, else the first row with something to choose,
+-- else the first item.
 local function first_item()
+  local newest = newest_entry()
+  for index, row in ipairs(rows) do
+    if newest ~= nil and row.entry == newest then
+      return index
+    end
+  end
   for index, row in ipairs(rows) do
     if not dimmed(row) then
       return index
@@ -228,6 +247,10 @@ local function refresh_detail(document)
         end
       end
       lines = { partner_of(row.entry), table.concat(parts, "  ") }
+      -- An old autosave's short row label ("CONTINUE OLD 1") is named in full here.
+      if row.kind == "autosave" then
+        lines[1] = t("save.slots.autosave", { number = row.number }) .. "  " .. lines[1]
+      end
     elseif state == "empty" then
       lines[1] = t("save.slots.empty")
     else
@@ -279,7 +302,15 @@ local function refresh_prompts(document)
   document:get("prompt-cancel"):set_prompt("cancel")
 end
 
+-- The save written last when continuing (turning to its page), else the first row.
 local function focus_first(document)
+  local newest = newest_entry()
+  if newest ~= nil then
+    page = (newest // PageSize) + 1
+    refresh(document)
+    document:get("slot-" .. ((newest % PageSize) + 1)):focus()
+    return
+  end
   document:get(count() > 0 and "slot-1" or (new_game() and "no-save" or "back")):focus()
 end
 

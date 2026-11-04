@@ -27,6 +27,7 @@ constexpr std::string_view MinimapKey = "minimap";
 constexpr std::string_view FreeExplorationKey = "free_exploration";
 constexpr std::string_view SmoothMotionKey = "smooth_motion";
 constexpr std::string_view SaveNoticeKey = "save_notice";
+constexpr std::string_view AutosaveKey = "autosave";
 constexpr std::string_view DigitalTimeKey = "digital_time";
 constexpr std::string_view BulkTradesKey = "bulk_trades";
 constexpr std::string_view EvolutionRequirementsKey = "evolution_requirements";
@@ -80,6 +81,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* notice = tree->find(SaveNoticeKey)) {
       settings.saveNotice = reader.boolean(*notice);
+    }
+    if (const core::YamlNode* autosave = tree->find(AutosaveKey)) {
+      settings.autosave = reader.boolean(*autosave);
     }
     if (const core::YamlNode* digits = tree->find(DigitalTimeKey)) {
       settings.digitalTime = reader.boolean(*digits);
@@ -170,6 +174,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.saveNotice) {
     root.set(std::string{SaveNoticeKey},
              core::YamlNode::scalar(*settings.saveNotice ? "true" : "false"));
+  }
+  if (settings.autosave) {
+    root.set(std::string{AutosaveKey},
+             core::YamlNode::scalar(*settings.autosave ? "true" : "false"));
   }
   if (settings.digitalTime) {
     root.set(std::string{DigitalTimeKey},

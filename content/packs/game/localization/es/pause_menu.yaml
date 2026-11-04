@@ -55,6 +55,9 @@ free_exploration: "Exploración libre"
 smooth_motion: "Movimiento suave"
 # Aviso de guardado: una figura pequeña y «Guardando» en una esquina mientras el juego guarda (encendido por defecto).
 save_notice: "Aviso de guardado"
+# Autoguardado: el juego guarda solo en la ranura de la propia aventura (encendido por defecto; apagado, solo
+# escriben los guardados del jugador).
+autosave: "Autoguardado"
 # Hora en dígitos: la hora del juego como HH:MM en una caja pequeña bajo el reloj del campo (encendido por defecto).
 digital_time: "Hora en dígitos"
 # Cambios en lote: el trueque de objetos y los sobres de la tienda preguntan cuántos de una vez (encendido por defecto).

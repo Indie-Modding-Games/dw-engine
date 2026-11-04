@@ -642,6 +642,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   // The save indicator's document goes up before the HUD's, which takes the focus.
   saveIndicator_.emplace(*context_.ui, game_.session->savesWritten(),
                          context.userSettings->saveNotice.value_or(true));
+  // The autosave, on unless turned off.
+  const bool autosave = context.userSettings->autosave.value_or(true);
+  game_.session->setAutosaveEnabled(autosave);
+  context_.ui->setSetting(AutosaveSetting, autosave);
   setBulkTrades(context.userSettings->bulkTrades.value_or(true));
   context_.ui->show("hud");
   fieldNumbers_.emplace(*context_.ui, scene_->field().rules().transition.frameSeconds);
@@ -1127,6 +1131,13 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     }
     return true;
   }
+  if (command.name == AutosaveSetting) {
+    if (const auto autosave = changeAutosave(command.value, *context_.ui, *context_.userSettings,
+                                             context_.settingsFile)) {
+      game_.session->setAutosaveEnabled(*autosave);
+    }
+    return true;
+  }
   if (command.name == SaveNoticeSetting) {
     if (const bool* notice = std::get_if<bool>(&command.value)) {
       saveIndicator_->setEnabled(*notice);
@@ -1442,6 +1453,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   }
   keepFieldSnapshot(frameSeconds);
   // Last, after every save this frame could write (the autosave, a command, the save machine).
+  saveIndicator_->noteSkippedAutosaves(session.autosavesSkipped());
   saveIndicator_->update(session.savesWritten(), frameSeconds);
 }
 

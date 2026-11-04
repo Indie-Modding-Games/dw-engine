@@ -34,15 +34,13 @@ core::Result<SaveSettings> parseSaveSettings(std::string_view yaml) {
     return core::fail(std::format(messages::InSettings, tree.error().message));
   }
   YamlReader reader;
-  if (!reader.expectKeys(*tree, messages::SettingsWhat,
-                         {settings_key::ManualSlots, settings_key::AutosaveSlots})) {
+  if (!reader.expectKeys(*tree, messages::SettingsWhat, {settings_key::ManualSlots},
+                         {settings_key::OldAutosaveSlots})) {
     return std::unexpected{reader.error(messages::SettingsContext)};
   }
   const SaveSettings settings{
       .manualSlots = readSlotCount(reader, reader.field(*tree, settings_key::ManualSlots), 1,
-                                   std::format(messages::ManualSlotsRange, MaxSlots)),
-      .autosaveSlots = readSlotCount(reader, reader.field(*tree, settings_key::AutosaveSlots), 0,
-                                     std::format(messages::AutosaveSlotsRange, MaxSlots))};
+                                   std::format(messages::ManualSlotsRange, MaxSlots))};
   return reader.finish(settings, messages::SettingsContext);
 }
 

@@ -253,7 +253,7 @@ TEST_CASE("an autosave waits while a care scene holds the field and is written o
   constexpr std::int32_t SceneSeconds = 10;
   const LoopRun held = loop.run(static_cast<std::int32_t>(std::lround(SceneSeconds / Tick)));
   CHECK(held.autosaves.empty());
-  CHECK_FALSE(storage.read("autosave_01.yaml").value().has_value());
+  CHECK_FALSE(storage.read("slot_01.yaml").value().has_value());
   // Nothing written yet: the save indicator waits for the write too.
   CHECK(session->savesWritten() == 0);
 

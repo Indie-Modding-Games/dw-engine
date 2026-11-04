@@ -126,9 +126,10 @@ TEST_CASE("the app goes from the title screen to a game and back with nothing le
   flow.playing()->inventory->inventory().add(items::handleOf(items::Tonic), 2);
   careFor(played, 600.0);
   REQUIRE(savedClock != freshClock(packs));
-  // Playing on autosaved; the autosave goes to its own slot and leaves the manual save alone.
+  // Playing on autosaved, to the game's own slot: the save and the autosave are one save.
   const std::optional<dwe::session::Autosave> autosaved = played.takeAutosaved();
   REQUIRE(autosaved.has_value());
+  CHECK(autosaved->slot == FirstSlot);
 
   flow.toTitle();
   CHECK(flow.playing() == nullptr);
@@ -143,16 +144,7 @@ TEST_CASE("the app goes from the title screen to a game and back with nothing le
   const auto loaded = flow.play(
       {.load = FirstSlot, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt});
   REQUIRE_MESSAGE(loaded.has_value(), errorOf(loaded));
-  CHECK(flow.playing()->session->clock().elapsedFrames() == savedClock);
-  CHECK(flow.playing()->session->homeSlot() == FirstSlot);
-  CHECK(flow.playing()->tonics() == 1);
-  CHECK(Game::alive == 1);
-
-  // The autosave is the title screen's other choice (SaveFlow): it has the later state and keeps
-  // saving to the slot it is tied to.
-  const auto fromAutosave = flow.play(
-      {.load = autosaved->slot, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt});
-  REQUIRE_MESSAGE(fromAutosave.has_value(), errorOf(fromAutosave));
+  // The slot has the later state, the autosave's.
   CHECK(flow.playing()->session->clock().elapsedFrames() > savedClock);
   CHECK(flow.playing()->session->homeSlot() == FirstSlot);
   CHECK(flow.playing()->tonics() == 3);

@@ -1,12 +1,13 @@
 -- The title screen's menu, with no game behind it. Like the pause menu it never changes a setting
--- itself: it sends the language, text_font, ui_skin, chibi_style, minimap, minimap_size, shadows,
--- enhanced_lighting, vivid_colors, hd_scenery, fullscreen and ui_scale commands and shows what the
--- game reports back (ui.setting). The skin entry is common/ui_skin_choice.lua, shared with the
--- pause menu.
+-- itself: it sends the language, text_font, ui_skin, chibi_style, autosave, minimap, minimap_size,
+-- shadows, enhanced_lighting, vivid_colors, hd_scenery, fullscreen and ui_scale commands and shows
+-- what the game reports back (ui.setting). The skin entry is common/ui_skin_choice.lua, shared with
+-- the pause menu.
 --
 -- Two layouts of the same entries, as the skin marks #panel (document_classes):
 -- - The modern one: play (a new game), continue (greyed and skipped unless the game publishes
---   save.can_continue), the language, the text font, the skin, the chibi style, quit.
+--   save.can_continue), the language, the text font, the skin, the chibi style, the autosave,
+--   quit.
 -- - The original look's (class title-original), the original's title screen (main.c: main):
 --   - "boot": the "Press Start" screen (runLandingScreen), when the game says so (title.boot).
 --     It fades in from black, its line blinks, and Start fades it out (40 frames each).
@@ -73,6 +74,7 @@ local entries = {
     "text-font",
     "ui-skin",
     "chibi-style",
+    "autosave",
     "minimap",
     "minimap-size",
     "shadows",
@@ -189,6 +191,8 @@ local function refresh(document)
   local chibi = index_of(chibi_modes, ui.setting("chibi_style")) and ui.setting("chibi_style")
     or "external"
   value("chibi-style", t("pause_menu.chibi_style." .. chibi))
+  -- The autosave (game_options.lua), on unless the game says it is off.
+  value("autosave", t(ui.setting("autosave") == false and "common.no" or "common.yes"))
   local mode = index_of(minimap_modes, ui.setting("minimap")) and ui.setting("minimap") or "on"
   value(
     "minimap",
@@ -307,6 +311,7 @@ local function lay_out(document)
     "text-font",
     "ui-skin",
     "chibi-style",
+    "autosave",
     "weather",
     "seasons",
     "quit",
@@ -461,6 +466,9 @@ local options = {
   end,
   ["chibi-style"] = function(step)
     ui.send("chibi_style", cycle(chibi_modes, ui.setting("chibi_style"), step, 2))
+  end,
+  autosave = function(_step)
+    ui.send("autosave", ui.setting("autosave") == false)
   end,
   minimap = function(step)
     ui.send("minimap", cycle(minimap_modes, ui.setting("minimap"), step, 1))

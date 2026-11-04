@@ -188,6 +188,9 @@ game_options = {
   -- outdoor scenery, with petals or falling leaves and their own weather odds (on by default; off
   -- shows every map and rolls the weather exactly as without seasons). It never changes a rule.
   { id = "seasons", setting = "seasons", label = "pause_menu.seasons", default = true },
+  -- Autosave: the game saves by itself to the adventure's own slot when the rules say (on by
+  -- default; off, only the player's own saves write).
+  { id = "autosave", setting = "autosave", label = "pause_menu.autosave", default = true },
 }
 
 -- The option's current value: what the game published, or its default.

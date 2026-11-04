@@ -103,9 +103,11 @@ struct FieldPlace {
   std::optional<assets::SpawnPoint> partner;
 };
 
-// An autosave the session wrote, and why: its reasons in the order they were first asked.
+// An autosave the session wrote, and why: its reasons in the order they were first asked. The slot
+// is nothing when the autosave was skipped: the playthrough has no slot and every slot holds
+// another game.
 struct Autosave {
-  game::save::SlotId slot;
+  std::optional<game::save::SlotId> slot;
   std::vector<game::save::AutosaveReason> reasons;
 
   friend bool operator==(const Autosave&, const Autosave&) = default;
@@ -188,10 +190,10 @@ public:
   // end; after SaveWaitLimitSeconds of one scene they save anyway, so no save waits forever.
   [[nodiscard]] bool savesWait() const;
 
-  // The manual slot the playthrough saves to (docs/architecture/guardar-y-cargar.md): the one it
-  // was loaded from or last saved to; loaded from an autosave, the one the autosave names; nothing
-  // for a new game until it is saved. Each save's summary keeps it, so an autosave knows its
-  // playthrough's slot.
+  // The manual slot the playthrough saves and autosaves to (docs/architecture/guardar-y-cargar.md):
+  // the one it was loaded from or last saved to; loaded from an old autosave, the one the autosave
+  // names; for a new game, nothing until it is saved or autosaved (the first empty slot). Each
+  // save's summary keeps it.
   [[nodiscard]] const std::optional<game::save::SlotId>& homeSlot() const { return homeSlot_; }
   // When the playthrough started, which its every save keeps: it tells this playthrough's saves
   // from another's.
@@ -324,11 +326,18 @@ public:
   // Asks for an autosave; the save module keeps one request and the ruleset decides which reasons
   // count.
   void requestAutosave(game::save::AutosaveReason reason);
-  // The autosave written since the last call, for the HUD and the autotests.
+  // The autosave written (or skipped) since the last call, for the HUD and the autotests.
   [[nodiscard]] std::optional<Autosave> takeAutosaved();
-  // How many saves this session wrote, to a slot (save) or an autosave slot: what tells the game
-  // to show its save indicator, whoever saved.
+  // How many saves this session wrote, by hand or autosaved: what tells the game to show its save
+  // indicator, whoever saved.
   [[nodiscard]] std::uint64_t savesWritten() const { return savesWritten_; }
+  // How many autosaves were skipped because no slot was free (Autosave::slot): the save indicator
+  // says so instead of "Saving".
+  [[nodiscard]] std::uint64_t autosavesSkipped() const { return autosavesSkipped_; }
+  // The player's autosave option (on by default): off, the session never autosaves and drops a
+  // pending one; saves by hand are unchanged.
+  void setAutosaveEnabled(bool enabled);
+  [[nodiscard]] bool autosaveEnabled() const { return autosave_ && autosave_->enabled(); }
 
   // The play time counted (countPlayTime), as the save's header and the player page show it.
   [[nodiscard]] double playSeconds() const { return playSeconds_; }
@@ -373,6 +382,10 @@ private:
   // Counts how long the field has held the player for the current care scene.
   void followCareHold(double realSeconds);
   void writeRequestedAutosave();
+  // The slot an autosave writes: the playthrough's own while it still holds this playthrough (or
+  // its file is gone), else the first empty slot, which becomes the playthrough's; nothing when no
+  // slot is free, as an autosave never writes over another game.
+  [[nodiscard]] std::optional<game::save::SlotId> autosaveSlot() const;
   // What every command of the player does after it: route the partner's events and write a
   // requested autosave.
   void afterCommand();
@@ -412,6 +425,7 @@ private:
   // Whether the pending autosave already logged that it waits for the care scene.
   bool autosaveWaitLogged_ = false;
   std::uint64_t savesWritten_ = 0;
+  std::uint64_t autosavesSkipped_ = 0;
   PlayerNames names_;
 };
 

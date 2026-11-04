@@ -24,7 +24,7 @@ screens:
     styles: [ui/skins/modern/pause_menu/style]
   # La lista de ranuras, el diálogo de guardar y el menú de dormir, también.
   save_slots:
-    styles: [ui/skins/modern/pause_menu/style]
+    styles: [ui/skins/modern/pause_menu/style, ui/skins/modern/save_slots/style]
   dialog:
     styles: [ui/skins/modern/pause_menu/style]
   # Las reglas de la partida nueva (contenido oculto, paso Ultra → Mega), también.

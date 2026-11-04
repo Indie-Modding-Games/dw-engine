@@ -67,9 +67,7 @@ private:
   std::filesystem::path path_;
 };
 
-constexpr std::string_view Settings = R"(manual_slots: 3
-autosave_slots: 2
-)";
+constexpr std::string_view Settings = "manual_slots: 3\n";
 
 } // namespace
 
@@ -130,18 +128,15 @@ TEST_CASE("the save settings are read and checked") {
   const auto settings = parseSaveSettings(Settings);
   REQUIRE_MESSAGE(settings, errorOf(settings));
   CHECK(settings->manualSlots == 3);
-  CHECK(settings->autosaveSlots == 2);
+  // The autosave slots of older packs are read and ignored: the autosave has no slots of its own.
+  CHECK(parseSaveSettings("manual_slots: 2\nautosave_slots: 3\n").value().manualSlots == 2);
 
-  CHECK(errorOf(parseSaveSettings("manual_slots: 0\nautosave_slots: 1\n"))
-            .contains("manual_slots must be 1 to 99"));
-  CHECK(errorOf(parseSaveSettings("manual_slots: 1\nautosave_slots: 100\n"))
-            .contains("autosave_slots must be 0 to 99"));
-  CHECK(errorOf(parseSaveSettings("manual_slots: 1\n")).contains("autosave_slots"));
-  CHECK(errorOf(parseSaveSettings("manual_slots: 1\nautosave_slots: 1\nextra: 1\n"))
-            .contains("extra"));
+  CHECK(errorOf(parseSaveSettings("manual_slots: 0\n")).contains("manual_slots must be 1 to 99"));
+  CHECK(errorOf(parseSaveSettings("autosave_slots: 1\n")).contains("manual_slots"));
+  CHECK(errorOf(parseSaveSettings("manual_slots: 1\nextra: 1\n")).contains("extra"));
 }
 
-TEST_CASE("the game pack's save settings: 15 slots and 3 autosave slots") {
+TEST_CASE("the game pack's save settings: 15 slots") {
   const dwe::assets::DiskFileSystem disk;
   // The game pack depends on base; a stand-in manifest lets it mount alone.
   dwe::assets::MemoryFileSystem memory;
@@ -157,14 +152,12 @@ TEST_CASE("the game pack's save settings: 15 slots and 3 autosave slots") {
   const auto settings = loadSaveSettings(*vfs);
   REQUIRE_MESSAGE(settings, errorOf(settings));
   CHECK(settings->manualSlots == 15);
-  CHECK(settings->autosaveSlots == 3);
 }
 
 TEST_CASE("slots are listed, saved, loaded and backed up") {
   MemorySaveStorage storage;
   SaveSlots slots{storage, parseSaveSettings(Settings).value()};
-  REQUIRE(slots.slots().size() == 5);
-  CHECK(slots.slots()[3] == SlotId{.kind = SlotKind::Autosave, .index = 1});
+  REQUIRE(slots.slots().size() == 3);
   CHECK(slotFileName({.kind = SlotKind::Manual, .index = 2}) == "slot_02.yaml");
   CHECK(slotFileName({.kind = SlotKind::Autosave, .index = 1}) == "autosave_01.yaml");
 
@@ -175,15 +168,15 @@ TEST_CASE("slots are listed, saved, loaded and backed up") {
   storage.put("autosave_01.yaml", "format: dwe-save\nformat_version: 99\n");
 
   const auto infos = slots.list();
-  REQUIRE(infos.size() == 5);
+  REQUIRE(infos.size() == 4);
   CHECK(infos[0].state == SlotInfo::State::Empty);
   CHECK(infos[1].state == SlotInfo::State::Saved);
   CHECK(infos[1].header.value_or(SaveHeader{}).label == "second");
   CHECK(infos[1].hasBackup);
   CHECK(infos[2].state == SlotInfo::State::Damaged);
   CHECK(infos[2].problem.starts_with("slot_03.yaml: save file: "));
+  CHECK(infos[3].slot == SlotId{.kind = SlotKind::Autosave, .index = 1});
   CHECK(infos[3].state == SlotInfo::State::Newer);
-  CHECK(infos[4].state == SlotInfo::State::Empty);
 
   CHECK(slots.load(second).value().header.label == "second");
   CHECK(slots.loadBackup(second).value().header.label == "first");
@@ -193,7 +186,7 @@ TEST_CASE("slots are listed, saved, loaded and backed up") {
   CHECK_FALSE(slots.load({.kind = SlotKind::Autosave, .index = 3}));
 }
 
-TEST_CASE("erasing a manual slot erases its autosaves and leaves other playthroughs' alone") {
+TEST_CASE("erasing a manual slot erases its old autosaves and leaves other playthroughs' alone") {
   MemorySaveStorage storage;
   SaveSlots slots{storage, parseSaveSettings(Settings).value()};
   const SlotId first{.kind = SlotKind::Manual, .index = 1};
@@ -205,10 +198,11 @@ TEST_CASE("erasing a manual slot erases its autosaves and leaves other playthrou
   ofFirst.header.summary.slot = "slot_01";
   SaveFile ofSecond = fileLabelled("second", at(9));
   ofSecond.header.summary.slot = "slot_02";
-  REQUIRE(slots.save(autosaveOne, ofFirst));
-  // Two writes leave autosave_01 a .bak, which the erase has to drop too.
-  REQUIRE(slots.save(autosaveOne, ofFirst));
-  REQUIRE(slots.save(autosaveTwo, ofSecond));
+  // Old autosaves, from when the autosave had slots of its own; autosave_01 has a .bak, which the
+  // erase has to drop too.
+  storage.put(slotFileName(autosaveOne), writeSaveFile(ofFirst).value());
+  storage.put(slotBackupName(autosaveOne), writeSaveFile(ofFirst).value());
+  storage.put(slotFileName(autosaveTwo), writeSaveFile(ofSecond).value());
   REQUIRE(slots.save(first, fileLabelled("first", at(8))));
   REQUIRE(slots.save(second, fileLabelled("second", at(9))));
 
@@ -267,38 +261,37 @@ TEST_CASE("a save over a damaged slot keeps its good backup") {
   CHECK(slots.loadBackup(first).value().header.label == "good");
 }
 
-TEST_CASE("the autosave writes over a newer game's save only when nothing else is left") {
+TEST_CASE("old autosaves are listed and loaded while they exist, erased, never written") {
   MemorySaveStorage storage;
   SaveSlots slots{storage, parseSaveSettings(Settings).value()};
-  const SlotId first{.kind = SlotKind::Autosave, .index = 1};
-  const SlotId second{.kind = SlotKind::Autosave, .index = 2};
-  const std::string newer = "format: dwe-save\nformat_version: 99\n";
-  storage.put("autosave_01.yaml", newer);
-  REQUIRE(slots.save(second, fileLabelled("saved", at(8))));
-  CHECK(slots.autosave(fileLabelled("a", at(9))).value() == second);
-  CHECK(storage.read("autosave_01.yaml").value() == newer);
+  const SlotId old{.kind = SlotKind::Autosave, .index = 7};
+  storage.put(slotFileName(old), writeSaveFile(fileLabelled("old", at(8))).value());
 
-  storage.put("autosave_02.yaml", newer);
-  CHECK(slots.autosave(fileLabelled("b", at(10))).value() == first);
-  CHECK(slots.load(first).value().header.label == "b");
-  CHECK(storage.read("autosave_01.yaml.bak").value() == newer);
+  const std::vector<SlotId> listed = slots.slots();
+  REQUIRE(listed.size() == 4);
+  CHECK(listed[3] == old);
+  CHECK(slots.list()[3].state == SlotInfo::State::Saved);
+  CHECK(slots.load(old).value().header.label == "old");
+  CHECK(errorOf(slots.save(old, fileLabelled("new", at(9)))) ==
+        "autosave_07.yaml is an old autosave: it can be loaded or erased, never written");
+  CHECK(slots.load(old).value().header.label == "old");
+
+  REQUIRE(slots.erase(old));
+  CHECK(slots.slots().size() == 3);
+  CHECK_FALSE(slots.load(old));
 }
 
-TEST_CASE("the autosave rotates over its slots") {
+TEST_CASE("the first empty slot is where a playthrough without one autosaves") {
   MemorySaveStorage storage;
   SaveSlots slots{storage, parseSaveSettings(Settings).value()};
-
-  const SlotId first{.kind = SlotKind::Autosave, .index = 1};
-  const SlotId second{.kind = SlotKind::Autosave, .index = 2};
-  CHECK(slots.autosave(fileLabelled("a", at(8))).value() == first);
-  CHECK(slots.autosave(fileLabelled("b", at(9))).value() == second);
-  CHECK(slots.autosave(fileLabelled("c", at(10))).value() == first);
-  CHECK(slots.autosave(fileLabelled("d", at(11))).value() == second);
-  storage.put("autosave_02.yaml", "damaged");
-  CHECK(slots.autosave(fileLabelled("e", at(12))).value() == second);
-  CHECK(slots.load(second).value().header.label == "e");
-  CHECK(slots.load(first).value().header.label == "c");
-
-  SaveSlots off{storage, SaveSettings{}};
-  CHECK(errorOf(off.autosave(fileLabelled("x", at(8)))).contains("off"));
+  CHECK(slots.firstEmptySlot() == SlotId{.kind = SlotKind::Manual, .index = 1});
+  REQUIRE(slots.save({.kind = SlotKind::Manual, .index = 1}, fileLabelled("a", at(8))));
+  // A damaged save or a newer game's is another game's: neither is empty.
+  storage.put("slot_02.yaml", "damaged");
+  CHECK(slots.firstEmptySlot() == SlotId{.kind = SlotKind::Manual, .index = 3});
+  storage.put("slot_03.yaml", "format: dwe-save\nformat_version: 99\n");
+  CHECK_FALSE(slots.firstEmptySlot());
+  // An old autosave is never a slot to write.
+  storage.put("autosave_01.yaml", writeSaveFile(fileLabelled("b", at(9))).value());
+  CHECK_FALSE(slots.firstEmptySlot());
 }

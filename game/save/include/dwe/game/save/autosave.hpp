@@ -43,8 +43,8 @@ inline constexpr std::array AutosaveReasons{
 };
 static_assert(std::to_underlying(AutosaveReasons.back()) + 1U == AutosaveReasons.size());
 
-// The shortest coalescing window. Autosave slots rotate by their `updated` time, which has whole
-// seconds: autosaves at least a second apart never tie.
+// The shortest coalescing window: a save's `updated` time has whole seconds, so autosaves at least
+// a second apart never share one.
 inline constexpr float MinCoalesceSeconds = 1.0F;
 
 // The name of a reason, as the save header lists it (`map_change`).
@@ -86,11 +86,14 @@ ruleset::SectionCheck saveSectionCheck();
 // requests within the coalescing window make one autosave.
 class AutosaveRequests {
 public:
-  // With no autosave slots no reason counts.
-  AutosaveRequests(const AutosaveRules& rules, std::int32_t autosaveSlots);
+  explicit AutosaveRequests(const AutosaveRules& rules);
 
   // Uses new rules, after the ruleset is reloaded or tuned. A pending autosave stays pending.
   void setRules(const AutosaveRules& rules);
+
+  // The player's option (on by default): off, no reason counts and a pending autosave is dropped.
+  void setEnabled(bool enabled);
+  [[nodiscard]] bool enabled() const { return enabled_; }
 
   // Asks for an autosave; returns whether the request was taken. The first request opens the
   // coalescing window and later ones join it.
@@ -101,14 +104,14 @@ public:
 
   // Once the window of the pending autosave is over, its reasons in the order they were first
   // asked, each once. The game then builds its SaveFile, records them (autosaveReasonNames) and
-  // calls SaveSlots::autosave.
+  // writes it to the playthrough's slot.
   std::optional<std::vector<AutosaveReason>> takeRequest();
   // Whether an autosave was asked for and not taken yet.
   [[nodiscard]] bool pending() const { return !pendingReasons_.empty(); }
 
 private:
   AutosaveRules rules_;
-  bool hasSlots_;
+  bool enabled_ = true;
   std::vector<AutosaveReason> pendingReasons_;
   float windowLeftSeconds_ = 0.0F;
 };

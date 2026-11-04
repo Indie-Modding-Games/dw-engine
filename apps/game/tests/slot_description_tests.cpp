@@ -16,7 +16,7 @@ using dwe::game::save::SaveSlots;
 using dwe::game::save::SlotInfo;
 
 std::vector<SlotInfo> listOf(MemorySaveStorage& storage) {
-  const SaveSlots slots{storage, {.manualSlots = 2, .autosaveSlots = 0}};
+  const SaveSlots slots{storage, {.manualSlots = 2}};
   return slots.list();
 }
 

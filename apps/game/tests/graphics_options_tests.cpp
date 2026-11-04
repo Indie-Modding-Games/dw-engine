@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "graphics_options.hpp"
+#include "save_indicator.hpp"
 #include "user_settings.hpp"
 
 using dwe::app::GraphicsChanger;
@@ -150,6 +151,37 @@ TEST_CASE("the pause menu's graphics rows change the options at once and save th
   CHECK_FALSE(changer.handle({.name = "minimap", .value = std::string{"off"}}, *menu.ui));
   CHECK(changer.handle({.name = "shadows", .value = true}, *menu.ui));
   CHECK(changer.options().shadows == ShadowMode::Round);
+}
+
+TEST_CASE("the pause menu's autosave row turns the autosave off and on and saves the choice") {
+  const dwe::test_support::TempFolder folder;
+  const std::filesystem::path file = folder.path() / "settings.yaml";
+  dwe::app::UserSettings settings;
+  settings.language = "es";
+  MenuUi menu;
+  menu.ui->setSetting(dwe::app::AutosaveSetting, settings.autosave.value_or(true));
+  menu.ui->setSetting("pause_menu.start_page", std::string{"options"});
+  menu.ui->show("pause_menu", true);
+  menu.ui->update();
+  // On by default.
+  CHECK(menu.ui->elementText("pause_menu", "autosave-value") == "Sí");
+  std::ignore = menu.ui->takeCommands();
+  // The 25th of the game's options; each press goes to the game as play_session.cpp routes it.
+  const auto press = [&] {
+    REQUIRE(
+        menu.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "25", "1"}));
+    for (const dwe::ui::UiCommand& command : menu.ui->takeCommands()) {
+      REQUIRE(command.name == dwe::app::AutosaveSetting);
+      CHECK(dwe::app::changeAutosave(command.value, *menu.ui, settings, file).has_value());
+    }
+    menu.ui->update();
+  };
+  press();
+  CHECK(menu.ui->elementText("pause_menu", "autosave-value") == "No");
+  CHECK(dwe::app::loadUserSettings(file).autosave == std::optional<bool>{false});
+  press();
+  CHECK(menu.ui->elementText("pause_menu", "autosave-value") == "Sí");
+  CHECK(dwe::app::loadUserSettings(file).autosave == std::optional<bool>{true});
 }
 
 TEST_CASE("the game pack's light table reads, and lights the maps it was made for") {

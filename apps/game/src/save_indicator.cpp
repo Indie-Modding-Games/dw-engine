@@ -4,7 +4,11 @@
 #include <cmath>
 #include <numbers>
 #include <ranges>
+#include <string>
+#include <variant>
 #include <vector>
+
+#include "user_settings.hpp"
 
 namespace dwe::app {
 namespace {
@@ -127,6 +131,7 @@ std::optional<float> liftClearOf(const ui::Ui::Rect& atCorner, std::span<const u
 SaveIndicator::SaveIndicator(ui::Ui& ui, std::uint64_t savesWritten, bool enabled)
     : ui_(&ui), savesSeen_(savesWritten), enabled_(enabled) {
   ui_->setSetting(SaveNoticeSetting, enabled_);
+  showText(SavingText);
   publish(0.0F, 0.0F);
   ui_->show(SaveIndicatorDocument);
 }
@@ -144,10 +149,28 @@ void SaveIndicator::setEnabled(bool enabled) {
   }
 }
 
+void SaveIndicator::noteSkippedAutosaves(std::uint64_t autosavesSkipped) {
+  const bool skipped = skipsSeen_ && autosavesSkipped != *skipsSeen_;
+  skipsSeen_ = autosavesSkipped;
+  if (skipped && enabled_) {
+    showText(AutosaveNoSlotText);
+    notice_.start();
+    placed_ = false;
+  }
+}
+
+void SaveIndicator::showText(std::string_view key) {
+  if (key != text_) {
+    text_ = key;
+    ui_->setSetting(SaveIndicatorTextSetting, std::string{key});
+  }
+}
+
 void SaveIndicator::update(std::uint64_t savesWritten, double seconds) {
   const bool saved = savesWritten != savesSeen_;
   savesSeen_ = savesWritten;
   if (saved && enabled_) {
+    showText(SavingText);
     notice_.start();
     placed_ = false;
   } else {
@@ -189,6 +212,20 @@ void SaveIndicator::publish(float opacity, float lift) {
     ui_->setSetting(SaveIndicatorOpacitySetting, static_cast<double>(stepped));
   }
   ui_->setSetting(SaveIndicatorShownSetting, stepped > 0.0F);
+}
+
+std::optional<bool> changeAutosave(const ui::UiValue& value, ui::Ui& ui, UserSettings& settings,
+                                   const std::optional<std::filesystem::path>& settingsFile) {
+  const bool* autosave = std::get_if<bool>(&value);
+  if (autosave == nullptr) {
+    return std::nullopt;
+  }
+  ui.setSetting(AutosaveSetting, *autosave);
+  settings.autosave = *autosave;
+  if (settingsFile) {
+    saveUserSettings(*settingsFile, settings);
+  }
+  return *autosave;
 }
 
 } // namespace dwe::app

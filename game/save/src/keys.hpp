@@ -36,7 +36,8 @@ inline constexpr std::string_view Map = "map";
 // The keys of the save settings.
 namespace settings_key {
 inline constexpr std::string_view ManualSlots = "manual_slots";
-inline constexpr std::string_view AutosaveSlots = "autosave_slots";
+// From when autosaves had slots of their own: read and ignored.
+inline constexpr std::string_view OldAutosaveSlots = "autosave_slots";
 } // namespace settings_key
 
 // The keys of the ruleset's save section.

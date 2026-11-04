@@ -58,7 +58,7 @@ RegisteredPartner agumon() {
 // to fail, and counts what it wrote.
 struct Machine {
   MemorySaveStorage storage;
-  SaveSlots slots{storage, {.manualSlots = 1, .autosaveSlots = 0}};
+  SaveSlots slots{storage, {.manualSlots = 1}};
   BattleRegistry registry;
   bool failWrites = false;
   int writes = 0;

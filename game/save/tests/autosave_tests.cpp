@@ -145,9 +145,9 @@ TEST_CASE("the original ruleset autosaves on every reason, as approved") {
   CHECK(rules->coalesceSeconds >= MinCoalesceSeconds);
 }
 
-TEST_CASE("autosave requests count only the ruleset's reasons, and only with slots") {
+TEST_CASE("autosave requests count only the ruleset's reasons, and only while the option is on") {
   const AutosaveRules rules = readAutosaveRules(saveSection(MapChangeOnly)).value();
-  AutosaveRequests requests{rules, 2};
+  AutosaveRequests requests{rules};
   CHECK_FALSE(requests.takeRequest());
   CHECK_FALSE(requests.requestAutosave(AutosaveReason::PartnerSleep));
   requests.advance(5.0F);
@@ -164,13 +164,20 @@ TEST_CASE("autosave requests count only the ruleset's reasons, and only with slo
   CHECK_FALSE(requests.requestAutosave(AutosaveReason::MapChange));
   CHECK(requests.requestAutosave(AutosaveReason::BattleEnd));
 
-  AutosaveRequests noSlots{rules, 0};
-  CHECK_FALSE(noSlots.requestAutosave(AutosaveReason::MapChange));
-  CHECK_FALSE(AutosaveRequests(AutosaveRules{}, 2).requestAutosave(AutosaveReason::MapChange));
+  // The player's option off drops the pending request and takes no other until it is on again.
+  requests.setEnabled(false);
+  CHECK_FALSE(requests.enabled());
+  CHECK_FALSE(requests.pending());
+  CHECK_FALSE(requests.requestAutosave(AutosaveReason::BattleEnd));
+  requests.advance(5.0F);
+  CHECK_FALSE(requests.takeRequest());
+  requests.setEnabled(true);
+  CHECK(requests.requestAutosave(AutosaveReason::BattleEnd));
+  CHECK_FALSE(AutosaveRequests(AutosaveRules{}).requestAutosave(AutosaveReason::MapChange));
 }
 
 TEST_CASE("requests in one tick make one autosave with every reason, once each, in order") {
-  AutosaveRequests requests{everyReason(), 3};
+  AutosaveRequests requests{everyReason()};
   CHECK(requests.requestAutosave(AutosaveReason::PartnerSleep));
   CHECK(requests.requestAutosave(AutosaveReason::NewDay));
   CHECK(requests.requestAutosave(AutosaveReason::PartnerSleep));
@@ -182,7 +189,7 @@ TEST_CASE("requests in one tick make one autosave with every reason, once each, 
 }
 
 TEST_CASE("requests within the window join it; requests further apart make two autosaves") {
-  AutosaveRequests requests{everyReason(), 3};
+  AutosaveRequests requests{everyReason()};
   requests.requestAutosave(AutosaveReason::BattleEnd);
   requests.advance(1.5F);
   requests.requestAutosave(AutosaveReason::Evolution);
@@ -207,7 +214,7 @@ TEST_CASE("requests within the window join it; requests further apart make two a
 TEST_CASE("a disabled reason is ignored, also inside a window") {
   AutosaveRules rules = everyReason();
   rules.setSavesOn(AutosaveReason::KeyItem, false);
-  AutosaveRequests requests{rules, 3};
+  AutosaveRequests requests{rules};
   CHECK_FALSE(requests.requestAutosave(AutosaveReason::KeyItem));
   requests.advance(10.0F);
   CHECK_FALSE(requests.takeRequest());
@@ -217,14 +224,14 @@ TEST_CASE("a disabled reason is ignored, also inside a window") {
   CHECK(reasonNamesOf(requests.takeRequest()) == std::vector<std::string>{"recruit_join"});
 }
 
-TEST_CASE("coalesced autosaves rotate over the three slots and record their reasons") {
+TEST_CASE("coalesced autosaves write one slot over and record their reasons") {
   MemorySaveStorage storage;
-  SaveSlots slots{storage, {.manualSlots = 15, .autosaveSlots = 3}};
-  AutosaveRequests requests{everyReason(), 3};
+  SaveSlots slots{storage, {.manualSlots = 15}};
+  AutosaveRequests requests{everyReason()};
+  const SlotId home{.kind = SlotKind::Manual, .index = 2};
   std::int64_t second = 100;
   const std::array events{AutosaveReason::MapChange, AutosaveReason::TournamentResult,
                           AutosaveReason::StoryProgress, AutosaveReason::PartnerReborn};
-  std::vector<std::int32_t> written;
   for (const AutosaveReason event : events) {
     requests.requestAutosave(event);
     requests.requestAutosave(AutosaveReason::KeyItem);
@@ -233,17 +240,17 @@ TEST_CASE("coalesced autosaves rotate over the three slots and record their reas
     const std::vector<AutosaveReason> reasons =
         requests.takeRequest().value_or(std::vector<AutosaveReason>{});
     REQUIRE_FALSE(reasons.empty());
-    const auto slot = slots.autosave(autosaveAt(second, reasons));
-    REQUIRE_MESSAGE(slot, errorOf(slot));
-    written.push_back(slot->index);
+    const auto saved = slots.save(home, autosaveAt(second, reasons));
+    REQUIRE_MESSAGE(saved, errorOf(saved));
   }
-  CHECK(written == std::vector<std::int32_t>{1, 2, 3, 1});
-  const auto first = slots.load({.kind = SlotKind::Autosave, .index = 1});
-  REQUIRE_MESSAGE(first, errorOf(first));
-  CHECK(first->header.autosaveReasons == std::vector<std::string>{"partner_reborn", "key_item"});
-  const auto third = slots.load({.kind = SlotKind::Autosave, .index = 3});
-  REQUIRE_MESSAGE(third, errorOf(third));
-  CHECK(third->header.autosaveReasons == std::vector<std::string>{"story_progress", "key_item"});
+  const auto last = slots.load(home);
+  REQUIRE_MESSAGE(last, errorOf(last));
+  CHECK(last->header.autosaveReasons == std::vector<std::string>{"partner_reborn", "key_item"});
+  // The one before stays as the slot's backup, so one bad write can be recovered.
+  const auto before = slots.loadBackup(home);
+  REQUIRE_MESSAGE(before, errorOf(before));
+  CHECK(before->header.autosaveReasons == std::vector<std::string>{"story_progress", "key_item"});
+  CHECK(slots.slots().size() == 15);
 }
 
 TEST_CASE("each reason has a localisation key") {

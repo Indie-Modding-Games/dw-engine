@@ -1851,6 +1851,37 @@ TEST_CASE("the main menu's chibi style row cycles its three modes, external mode
   CHECK(ui->elementText("main_menu", "chibi-style-value") == "No");
 }
 
+TEST_CASE("the main menu's autosave row asks to turn the autosave off and on, on by default") {
+  Content content;
+  VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "es");
+  auto ui = createUi(files, texts);
+  REQUIRE(ui->loadDocument("main_menu", idOf("ui/main_menu/document")));
+  ui->setSetting("language", std::string{"es"});
+  input::InputState input{input::defaultActionMap()};
+  ui->show("main_menu", true);
+  frame(*ui, input);
+  CHECK(ui->elementText("main_menu", "autosave-value") == "Sí");
+  for (int step = 0; step < 10 && ui->focusedElementId("main_menu") != "autosave"; ++step) {
+    press(*ui, input, input::keys::Down);
+  }
+  REQUIRE(ui->focusedElementId("main_menu") == "autosave");
+  press(*ui, input, input::keys::Right);
+  auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].name == "autosave");
+  CHECK(commands[0].value == UiValue{false});
+
+  // The menu shows what the game reports back; off, the next press asks for on.
+  ui->setSetting("autosave", false);
+  frame(*ui, input);
+  CHECK(ui->elementText("main_menu", "autosave-value") == "No");
+  press(*ui, input, input::keys::Right);
+  commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].value == UiValue{true});
+}
+
 TEST_CASE(
     "the main menu switches the text font and shows the one the game reports, in the player's language") {
   Content content;

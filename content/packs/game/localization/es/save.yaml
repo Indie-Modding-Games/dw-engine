@@ -16,7 +16,9 @@ autosave_reason.partner_reborn: "Tu compañero renació"
 slots.title_new: "Elige una ranura para tu nueva aventura"
 slots.title_continue: "Elige la aventura que quieres continuar"
 slots.slot: "Ranura {number}"
-slots.autosave: "Autoguardado {number}"
+# Un autoguardado de una versión anterior, que tenía ranuras de autoguardado propias: se puede continuar o
+# borrar, nunca se escribe.
+slots.autosave: "Autoguardado antiguo {number}"
 slots.empty: "Sin usar"
 slots.damaged: "Partida dañada"
 slots.newer: "De una versión más nueva"
@@ -25,8 +27,6 @@ slots.no_save_warning: "No podrás guardar esta partida. ¿Empezar igualmente?"
 slots.full: "No hay ranuras libres."
 confirm_new: "¿Grabar una nueva aventura?"
 confirm_continue: "¿Continuar esta aventura?"
-# Una partida cuyo autoguardado es más reciente: cuál cargar ({when}: fecha y hora locales; {place}: el mapa).
-confirm_autosave: "Autoguardado más reciente: {place}, {when}. ¿Continuar desde el autoguardado? «No» carga la partida guardada."
 # El diálogo enseña debajo el nombre del fichero de la partida.
 failed: "No se ha podido guardar la partida."
 load_failed: "No se ha podido cargar la partida."
@@ -57,10 +57,12 @@ erase_failed: "No se ha podido borrar la partida."
 # desde 1.
 slots.original.new_slot: "RANURA {number}"
 slots.original.continue_slot: "CONTINUAR RANURA {number}"
-slots.original.continue_autosave: "CONTINUAR AUTOGUARDADO {number}"
+slots.original.continue_autosave: "CONTINUAR ANTIGUO {number}"
 slots.original.erase_slot: "BORRAR RANURA {number}"
-slots.original.erase_autosave: "BORRAR AUTOGUARDADO {number}"
+slots.original.erase_autosave: "BORRAR ANTIGUO {number}"
 slots.original.no_save: "JUGAR SIN GUARDAR"
 slots.original.in_use: "Esta ranura ya tiene una aventura."
 # El aviso de guardado (una mejora del motor): junto a una figura pequeña mientras el juego guarda.
 saving: "Guardando"
+# El indicador de guardado cuando se salta un autoguardado: la aventura no tiene ranura y todas tienen otra.
+autosave_no_slot: "Sin autoguardado: todas las ranuras tienen otra aventura. Guarda desde el menú."

@@ -723,6 +723,7 @@ int runGame(const Options& requested) {
     walkControl.use(autotest->walksWithMouse() ? WalkControl::Mouse : WalkControl::Keys, nullptr);
   }
   (*ui)->setSetting(WalkControlSetting, std::string{walkControlName(walkControl.control())});
+  (*ui)->setSetting(AutosaveSetting, userSettings.autosave.value_or(true));
   (*ui)->setSetting(MinimapSetting, std::string{startMinimapMode(userSettings.minimap)});
   (*ui)->setSetting("minimap_size", std::string{"medium"});
   (*ui)->setSetting(WeatherSetting, userSettings.weather.value_or(true));
@@ -1425,6 +1426,11 @@ int runGame(const Options& requested) {
           play->scene().setHdScenery(on);
         }
         (*ui)->setSetting(HdScenerySetting, on);
+        continue;
+      }
+      if (command.name == AutosaveSetting) {
+        // The autosave option from the title's options; the game's own are PlaySession's.
+        changeAutosave(command.value, **ui, userSettings, settingsFile);
         continue;
       }
       if (command.name == WalkControlSetting) {

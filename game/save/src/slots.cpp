@@ -7,36 +7,6 @@
 
 namespace dwe::game::save {
 
-namespace {
-
-// How a slot ranks as the next autosave target: lower goes first.
-int autosavePriority(const SlotInfo& info) {
-  switch (info.state) {
-  case SlotInfo::State::Empty:
-    return 0;
-  case SlotInfo::State::Damaged:
-    return 1;
-  case SlotInfo::State::Saved:
-    break;
-  case SlotInfo::State::Newer:
-    // A newer game's save is the player's; an autosave writes over it only when nothing else is
-    // left.
-    return 3;
-  }
-  return 2;
-}
-
-bool goesBefore(const SlotInfo& candidate, const SlotInfo& best) {
-  const int candidatePriority = autosavePriority(candidate);
-  const int bestPriority = autosavePriority(best);
-  if (candidatePriority != bestPriority) {
-    return candidatePriority < bestPriority;
-  }
-  return candidate.header && best.header && candidate.header->updated < best.header->updated;
-}
-
-} // namespace
-
 std::string slotFileName(SlotId slot) {
   return std::format("{}_{:02}{}",
                      slot.kind == SlotKind::Manual ? ManualSlotPrefix : AutosaveSlotPrefix,
@@ -48,24 +18,25 @@ std::string slotBackupName(SlotId slot) {
 }
 
 SaveSlots::SaveSlots(SaveStorage& storage, const SaveSettings& settings)
-    : storage_{&storage}, manualSlots_{settings.manualSlots},
-      autosaveSlots_{settings.autosaveSlots} {}
-
-std::int32_t SaveSlots::slotCount(SlotKind kind) const {
-  return kind == SlotKind::Manual ? manualSlots_ : autosaveSlots_;
-}
+    : storage_{&storage}, manualSlots_{settings.manualSlots} {}
 
 std::vector<SlotId> SaveSlots::slots() const {
   std::vector<SlotId> all;
-  for (const SlotKind kind : {SlotKind::Manual, SlotKind::Autosave}) {
-    for (std::int32_t index = 1; index <= slotCount(kind); ++index) {
-      all.push_back({.kind = kind, .index = index});
+  for (std::int32_t index = 1; index <= manualSlots_; ++index) {
+    all.push_back({.kind = SlotKind::Manual, .index = index});
+  }
+  // The storage lists no folder: the old autosaves are found by name, each a missing file at most.
+  for (std::int32_t index = 1; index <= MaxSlots; ++index) {
+    const SlotId old{.kind = SlotKind::Autosave, .index = index};
+    const auto text = storage_->read(slotFileName(old));
+    if (!text || text->has_value()) {
+      all.push_back(old);
     }
   }
   return all;
 }
 
-SlotInfo SaveSlots::readInfo(SlotId slot) const {
+SlotInfo SaveSlots::info(SlotId slot) const {
   SlotInfo info;
   info.slot = slot;
   const auto backup = storage_->read(slotBackupName(slot));
@@ -93,7 +64,7 @@ SlotInfo SaveSlots::readInfo(SlotId slot) const {
 std::vector<SlotInfo> SaveSlots::list() const {
   std::vector<SlotInfo> infos;
   for (const SlotId slot : slots()) {
-    infos.push_back(readInfo(slot));
+    infos.push_back(info(slot));
   }
   return infos;
 }
@@ -103,7 +74,8 @@ void SaveSlots::setSummaryReader(SummaryReader reader) {
 }
 
 core::Result<void> SaveSlots::checkSlot(SlotId slot) const {
-  if (slot.index < 1 || slot.index > slotCount(slot.kind)) {
+  const std::int32_t count = slot.kind == SlotKind::Manual ? manualSlots_ : MaxSlots;
+  if (slot.index < 1 || slot.index > count) {
     const std::string_view kind =
         slot.kind == SlotKind::Manual ? messages::ManualSlotKind : messages::AutosaveSlotKind;
     return core::fail(std::format(messages::NoSuchSlot, kind, slot.index));
@@ -115,12 +87,15 @@ core::Result<void> SaveSlots::save(SlotId slot, const SaveFile& file) {
   if (auto valid = checkSlot(slot); !valid) {
     return valid;
   }
+  if (slot.kind == SlotKind::Autosave) {
+    return core::fail(std::format(messages::OldAutosaveReadOnly, slotFileName(slot)));
+  }
   auto text = writeSaveFile(file);
   if (!text) {
     return std::unexpected{text.error()};
   }
   // A damaged save never replaces a good backup: the backup may be all that is left of the slot.
-  const SlotInfo current = readInfo(slot);
+  const SlotInfo current = info(slot);
   const bool keepBackup = current.state == SlotInfo::State::Damaged && current.hasBackup;
   return storage_->write(slotFileName(slot), *text, keepBackup ? "" : slotBackupName(slot));
 }
@@ -140,16 +115,18 @@ core::Result<void> SaveSlots::erase(SlotId slot) {
   if (auto removed = eraseFiles(slot); !removed) {
     return removed;
   }
-  // An autosave names the manual slot of its playthrough in its summary; erasing that playthrough
-  // erases its autosaves too, so no autosave of a deleted save is left behind.
+  // An old autosave names the manual slot of its playthrough in its summary; erasing that
+  // playthrough erases its old autosaves too, so no autosave of a deleted save is left behind.
   if (slot.kind == SlotKind::Manual) {
     std::string erased = slotFileName(slot);
     erased.erase(erased.size() - SlotFileExtension.size());
-    for (std::int32_t index = 1; index <= autosaveSlots_; ++index) {
-      const SlotId autosave{.kind = SlotKind::Autosave, .index = index};
-      const SlotInfo info = readInfo(autosave);
-      if (info.header && info.header->summary.slot == erased) {
-        if (auto removed = eraseFiles(autosave); !removed) {
+    for (const SlotId old : slots()) {
+      if (old.kind != SlotKind::Autosave) {
+        continue;
+      }
+      const SlotInfo oldInfo = info(old);
+      if (oldInfo.header && oldInfo.header->summary.slot == erased) {
+        if (auto removed = eraseFiles(old); !removed) {
           return removed;
         }
       }
@@ -184,26 +161,14 @@ core::Result<SaveFile> SaveSlots::loadBackup(SlotId slot) const {
   return readFile(slot, slotBackupName(slot));
 }
 
-SlotId SaveSlots::nextAutosaveSlot() const {
-  SlotInfo best = readInfo({.kind = SlotKind::Autosave, .index = 1});
-  for (std::int32_t index = 2; index <= autosaveSlots_; ++index) {
-    SlotInfo info = readInfo({.kind = SlotKind::Autosave, .index = index});
-    if (goesBefore(info, best)) {
-      best = std::move(info);
+std::optional<SlotId> SaveSlots::firstEmptySlot() const {
+  for (std::int32_t index = 1; index <= manualSlots_; ++index) {
+    const SlotId slot{.kind = SlotKind::Manual, .index = index};
+    if (info(slot).state == SlotInfo::State::Empty) {
+      return slot;
     }
   }
-  return best.slot;
-}
-
-core::Result<SlotId> SaveSlots::autosave(const SaveFile& file) {
-  if (autosaveSlots_ == 0) {
-    return core::fail(std::string{messages::AutosaveOff});
-  }
-  const SlotId slot = nextAutosaveSlot();
-  if (auto saved = save(slot, file); !saved) {
-    return std::unexpected{saved.error()};
-  }
-  return slot;
+  return std::nullopt;
 }
 
 } // namespace dwe::game::save

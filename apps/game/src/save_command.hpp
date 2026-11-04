@@ -17,7 +17,7 @@ namespace dwe::app {
 inline constexpr std::string_view SaveDebugCommand = "save";
 
 // The manual slot a save command names (`slot_01`, as --list-saves writes it), or why it names
-// none: an autosave slot is the game's own and is never written by hand.
+// none: an old autosave (`autosave_01`) is never written.
 core::Result<game::save::SlotId> manualSlotFromName(std::string_view name);
 
 // Queues the save command the console and the scripts send, and runs it between frames, like the

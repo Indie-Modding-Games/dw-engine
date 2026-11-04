@@ -211,7 +211,7 @@ core::Result<void> GameSession::setUp() {
       return core::fail(formatMessage(messages::SaveSettingsFailed, settings.error().message));
     }
     slots_.emplace(*desc_.storage, *settings);
-    autosave_.emplace(game::save::AutosaveRules{}, settings->autosaveSlots);
+    autosave_.emplace(game::save::AutosaveRules{});
   }
   if (auto read = readRules(); !read) {
     return read;
@@ -707,6 +707,25 @@ std::optional<Autosave> GameSession::takeAutosaved() {
   return std::exchange(autosaved_, std::nullopt);
 }
 
+void GameSession::setAutosaveEnabled(bool enabled) {
+  if (autosave_) {
+    autosave_->setEnabled(enabled);
+  }
+}
+
+std::optional<game::save::SlotId> GameSession::autosaveSlot() const {
+  if (homeSlot_) {
+    const game::save::SlotInfo home = slots_->info(*homeSlot_);
+    const bool ours = home.state == game::save::SlotInfo::State::Empty ||
+                      (home.state == game::save::SlotInfo::State::Saved && home.header &&
+                       home.header->created == file_.header.created);
+    if (ours) {
+      return homeSlot_;
+    }
+  }
+  return slots_->firstEmptySlot();
+}
+
 void GameSession::advanceAutosaveWindow(double realSeconds) {
   if (autosave_) {
     autosave_->advance(static_cast<float>(realSeconds));
@@ -729,25 +748,32 @@ void GameSession::writeRequestedAutosave() {
   if (!reasons || !slots_ || !state_->playing) {
     return;
   }
+  // The playthrough's own slot, so the autosave and the player's saves are one save
+  // (docs/architecture/save.md); the summary written names it.
+  const std::optional<game::save::SlotId> slot = autosaveSlot();
+  if (!slot) {
+    ++autosavesSkipped_;
+    core::logWarning("{}", messages::AutosaveNoFreeSlot);
+    autosaved_ = Autosave{.slot = std::nullopt, .reasons = std::move(*reasons)};
+    return;
+  }
+  const std::optional<game::save::SlotId> previousHome = std::exchange(homeSlot_, slot);
   auto file = saveFile();
   if (!file) {
+    homeSlot_ = previousHome;
     core::logError("{}", formatMessage(messages::AutosaveFailed, file.error().message));
     return;
   }
   file->header.autosaveReasons = game::save::autosaveReasonNames(*reasons);
-  auto written = slots_->autosave(*file);
-  if (!written) {
+  if (auto written = slots_->save(*slot, *file); !written) {
+    homeSlot_ = previousHome;
     core::logError("{}", formatMessage(messages::AutosaveFailed, written.error().message));
     return;
   }
   file_ = std::move(*file);
-  // The autosave stays in the autosave slots, tied to the playthrough's manual slot by its summary
-  // (erasing that slot erases it, SaveSlots::erase). The manual slot keeps the player's own save,
-  // as the original, which has no autosave: continuing that slot loads it, and the title screen
-  // offers a newer autosave of it as a choice of its own (SaveFlow::answer).
   ++savesWritten_;
-  autosaved_ = Autosave{.slot = *written, .reasons = std::move(*reasons)};
-  core::logInfo("{}", formatMessage(messages::Autosaved, game::save::slotFileName(*written)));
+  autosaved_ = Autosave{.slot = slot, .reasons = std::move(*reasons)};
+  core::logInfo("{}", formatMessage(messages::Autosaved, game::save::slotFileName(*slot)));
 }
 
 game::save::SaveHeader GameSession::headerNow() const {

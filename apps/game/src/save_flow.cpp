@@ -3,7 +3,6 @@
 #include <dwe/core/log.hpp>
 
 #include <algorithm>
-#include <chrono>
 #include <format>
 #include <optional>
 #include <string>
@@ -66,31 +65,17 @@ std::string keyOf(const std::function<std::string(std::string_view)>& name, std:
   return name && !id.empty() ? name(id) : std::string{};
 }
 
-// The newest autosave of the playthrough saved in `manual` (its summary names that slot) when it
-// was written after the manual save; nothing when the manual save is the newest.
-std::optional<SlotInfo> newerAutosaveOf(const std::vector<SlotInfo>& listed,
-                                        const SlotInfo& manual) {
-  if (manual.slot.kind != SlotKind::Manual || !manual.header) {
-    return std::nullopt;
-  }
-  std::string name = game::save::slotFileName(manual.slot);
-  name.erase(name.size() - game::save::SlotFileExtension.size());
-  std::optional<SlotInfo> newest;
-  for (const SlotInfo& info : listed) {
-    if (info.slot.kind != SlotKind::Autosave || info.state != SlotInfo::State::Saved ||
-        !info.header || info.header->summary.slot != name ||
-        info.header->updated <= manual.header->updated) {
-      continue;
-    }
-    if (!newest || info.header->updated > newest->header->updated) {
-      newest = info;
+// The listed entry saved last, the one continuing starts on; nothing when none holds a save.
+std::optional<std::size_t> newestEntry(const std::vector<SlotInfo>& listed) {
+  std::optional<std::size_t> newest;
+  for (std::size_t index = 0; index < listed.size(); ++index) {
+    const SlotInfo& info = listed[index];
+    if (info.state == SlotInfo::State::Saved && info.header &&
+        (!newest || info.header->updated > listed[*newest].header->updated)) {
+      newest = index;
     }
   }
   return newest;
-}
-
-std::string timeOf(const SaveNames& names, std::chrono::sys_seconds time) {
-  return names.time ? names.time(time) : std::format("{:%Y-%m-%d %H:%M}", time);
 }
 
 void addEntry(screens::ScreenSettings& settings, std::size_t index, const SlotInfo& info,
@@ -133,9 +118,6 @@ screens::ScreenSettings SaveFlow::open(SlotListMode mode) {
   entries_.clear();
   pending_.reset();
   pendingErase_.reset();
-  newerAutosave_.reset();
-  offeringAutosave_ = false;
-  next_.reset();
   double manual = 0.0;
   double autosave = 0.0;
   if (slots_ != nullptr) {
@@ -147,12 +129,17 @@ screens::ScreenSettings SaveFlow::open(SlotListMode mode) {
     }
   }
   // How many slots of each kind there are, listed or not: a list that shows every slot (the
-  // original look's, ui/main_menu) greys the ones with no entry.
+  // original look's, ui/main_menu) greys the ones with no entry. The autosave ones are the old
+  // autosaves still on disk. Continuing starts on the save written last (save.slots.newest, -1 for
+  // none).
+  const std::optional<std::size_t> newest =
+      mode_ == SlotListMode::Continue ? newestEntry(entries_) : std::nullopt;
   screens::ScreenSettings settings{
       {.name = "save.slots.mode", .value = std::string{modeName(mode_)}},
       {.name = "save.slots", .value = static_cast<double>(entries_.size())},
       {.name = "save.slots.manual", .value = manual},
-      {.name = "save.slots.autosave", .value = autosave}};
+      {.name = "save.slots.autosave", .value = autosave},
+      {.name = "save.slots.newest", .value = newest ? static_cast<double>(*newest) : -1.0}};
   for (std::size_t index = 0; index < entries_.size(); ++index) {
     addEntry(settings, index, entries_[index], names_);
   }
@@ -162,9 +149,6 @@ screens::ScreenSettings SaveFlow::open(SlotListMode mode) {
 std::optional<SaveDialog> SaveFlow::choose(std::size_t entry) {
   pending_.reset();
   pendingErase_.reset();
-  newerAutosave_.reset();
-  offeringAutosave_ = false;
-  next_.reset();
   if (entry >= entries_.size()) {
     return std::nullopt;
   }
@@ -186,7 +170,6 @@ std::optional<SaveDialog> SaveFlow::choose(std::size_t entry) {
   case SlotInfo::State::Saved:
     pending_ = PlayStart{
         .load = info.slot, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt};
-    newerAutosave_ = newerAutosaveOf(entries_, info);
     // On yes, as the new game's question: the player chose this save a moment ago, and starting on
     // no sent a hurried confirm back to the list.
     return SaveDialog{
@@ -217,35 +200,14 @@ SaveDialog SaveFlow::chooseWithoutSaving() {
 
 std::optional<PlayStart> SaveFlow::answer(bool yes) {
   pendingErase_.reset();
-  next_.reset();
-  if (yes && pending_ && newerAutosave_ && !offeringAutosave_) {
-    // The manual save is what continuing loads, as the original; its newer autosave is offered
-    // apart, never loaded in its place unasked. The question starts on no: the manual save.
-    offeringAutosave_ = true;
-    const game::save::SaveHeader& header = *newerAutosave_->header;
-    next_ = SaveDialog{.text = "save.confirm_autosave",
-                       .file = {},
-                       .question = true,
-                       .startOnYes = false,
-                       .when = timeOf(names_, header.updated),
-                       .placeKey = keyOf(names_.map, header.summary.map),
-                       .place = header.summary.map};
-    return std::nullopt;
-  }
-  std::optional<PlayStart> start = yes || offeringAutosave_ ? pending_ : std::nullopt;
-  if (start && offeringAutosave_ && yes) {
-    start->load = newerAutosave_->slot;
-  }
+  std::optional<PlayStart> start = yes ? pending_ : std::nullopt;
   pending_.reset();
-  newerAutosave_.reset();
-  offeringAutosave_ = false;
   return start;
 }
 
 std::optional<SaveDialog> SaveFlow::answerErase(bool yes) {
   const std::optional<SlotId> slot = std::exchange(pendingErase_, std::nullopt);
   pending_.reset();
-  next_.reset();
   if (!yes || !slot || slots_ == nullptr) {
     return std::nullopt;
   }
@@ -282,10 +244,7 @@ screens::ScreenSettings dialogSettings(const SaveDialog& dialog, bool atTitle) {
           {.name = "dialog.file", .value = dialog.file},
           {.name = "dialog.question", .value = dialog.question},
           {.name = "dialog.start_on_yes", .value = dialog.startOnYes},
-          {.name = "dialog.at_title", .value = atTitle},
-          {.name = "dialog.when", .value = dialog.when},
-          {.name = "dialog.place_key", .value = dialog.placeKey},
-          {.name = "dialog.place", .value = dialog.place}};
+          {.name = "dialog.at_title", .value = atTitle}};
 }
 
 } // namespace dwe::app

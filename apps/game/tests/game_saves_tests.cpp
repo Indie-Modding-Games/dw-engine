@@ -45,7 +45,7 @@ SaveFile saveOf(std::chrono::sys_seconds started, std::string species) {
 // save, with the partner it has now.
 struct Game {
   MemorySaveStorage storage;
-  SaveSlots slots{storage, {.manualSlots = 1, .autosaveSlots = 0}};
+  SaveSlots slots{storage, {.manualSlots = 1}};
   Playthrough playthrough{.home = Slot1, .started = startedAt(0)};
   GameSaves saves{&slots, [this](SlotId slot) -> dwe::core::Result<void> {
                     return slots.save(slot, saveOf(playthrough.started, "now"));

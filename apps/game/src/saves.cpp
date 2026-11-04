@@ -53,8 +53,7 @@ int listSaves(const Options& options) {
   game::save::DiskSaveStorage storage{*folder};
   game::save::SaveSlots slots{storage, *settings};
   slots.setSummaryReader(session::summaryFromSections);
-  core::logInfo(messages::SavesFolder, assets::pathText(*folder), settings->manualSlots,
-                settings->autosaveSlots);
+  core::logInfo(messages::SavesFolder, assets::pathText(*folder), settings->manualSlots);
   for (const game::save::SlotInfo& info : slots.list()) {
     core::logInfo(messages::SlotLine, describeSlot(info),
                   info.hasBackup ? messages::HasBackup : std::string_view{});

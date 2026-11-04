@@ -59,11 +59,11 @@ SaveNames names() {
           .map = [](std::string_view) { return std::string{}; }};
 }
 
-// Three manual slots and one autosave slot: an empty slot 1, a save in slot 2, a damaged slot 3
-// with its backup, and an autosave from a newer game.
+// Three manual slots: an empty slot 1, a save in slot 2, a damaged slot 3 with its backup; and an
+// old autosave from a newer game.
 struct Slots {
   MemorySaveStorage storage;
-  SaveSlots slots{storage, {.manualSlots = 3, .autosaveSlots = 1}};
+  SaveSlots slots{storage, {.manualSlots = 3}};
 
   Slots() {
     REQUIRE(slots.save(Slot2, saveOf("agumon")).has_value());
@@ -175,7 +175,7 @@ TEST_CASE("erase lists the saves this game can write and erases the one confirme
 
 TEST_CASE("a damaged save with no backup is only a notice") {
   MemorySaveStorage storage;
-  SaveSlots slots{storage, {.manualSlots = 1, .autosaveSlots = 0}};
+  SaveSlots slots{storage, {.manualSlots = 1}};
   storage.put("slot_01.yaml", "format: dwe-save\n");
   SaveFlow flow{&slots, {}};
   CHECK(valueOf(flow.open(SlotListMode::NewGame), "save.slots") == UiValue{0.0});
@@ -208,70 +208,45 @@ TEST_CASE("a game that did not start says whether the start or the save failed, 
                                  .startOnYes = false});
 }
 
-TEST_CASE("continuing a save whose own autosave is newer offers the autosave apart") {
+TEST_CASE("continue starts on the newest save and loads a slot at once, old autosaves apart") {
   using namespace std::chrono;
   MemorySaveStorage storage;
-  SaveSlots slots{storage, {.manualSlots = 2, .autosaveSlots = 3}};
-  constexpr SlotId Autosave2{.kind = SlotKind::Autosave, .index = 2};
-  constexpr SlotId Autosave3{.kind = SlotKind::Autosave, .index = 3};
-  const auto savedAt = [](SaveFile file, std::string slot, sys_seconds updated, std::string map) {
+  SaveSlots slots{storage, {.manualSlots = 2}};
+  const auto savedAt = [](SaveFile file, std::string slot, sys_seconds updated) {
     file.header.summary.slot = std::move(slot);
-    file.header.summary.map = std::move(map);
     file.header.updated = updated;
     return file;
   };
   const sys_seconds manualTime = sys_days{2026y / November / 3} + 19h + 30min;
-  REQUIRE(slots.save(Slot1, savedAt(saveOf("gabumon"), "slot_01", manualTime, "topn01")));
-  REQUIRE(slots.save(Slot2, savedAt(saveOf("agumon"), "slot_02", manualTime, "twna01")));
-  // Slot 1's playthrough has an older autosave and a newer one; slot 2's only an older one, and
-  // another playthrough's newer autosave does not count for it.
-  REQUIRE(
-      slots.save(Autosave1, savedAt(saveOf("gabumon"), "slot_01", manualTime - 5min, "room08")));
-  REQUIRE(
-      slots.save(Autosave2, savedAt(saveOf("gabumon"), "slot_01", manualTime + 2min, "twna01")));
-  REQUIRE(slots.save(Autosave3, savedAt(saveOf("agumon"), "slot_02", manualTime - 1min, "room08")));
-  SaveNames named = names();
-  named.map = [](std::string_view id) { return "maps." + std::string{id}; };
-  SaveFlow flow{&slots, named};
-  const ScreenSettings list = flow.open(SlotListMode::Continue);
-  REQUIRE(valueOf(list, "save.slot.0.number") == UiValue{1.0});
-  REQUIRE(valueOf(list, "save.slot.1.number") == UiValue{2.0});
+  REQUIRE(slots.save(Slot1, savedAt(saveOf("gabumon"), "slot_01", manualTime)));
+  REQUIRE(slots.save(Slot2, savedAt(saveOf("agumon"), "slot_02", manualTime + 1min)));
+  // An old autosave of slot 1's playthrough, newer than both: listed apart, read-only.
+  constexpr SlotId Autosave2{.kind = SlotKind::Autosave, .index = 2};
+  storage.put("autosave_02.yaml", dwe::game::save::writeSaveFile(
+                                      savedAt(saveOf("gabumon"), "slot_01", manualTime + 2min))
+                                      .value());
+  SaveFlow flow{&slots, names()};
+  ScreenSettings list = flow.open(SlotListMode::Continue);
+  REQUIRE(valueOf(list, "save.slots") == UiValue{3.0});
+  CHECK(valueOf(list, "save.slots.autosave") == UiValue{1.0});
+  CHECK(valueOf(list, "save.slot.2.kind") == UiValue{std::string{"autosave"}});
+  CHECK(valueOf(list, "save.slot.2.number") == UiValue{2.0});
+  CHECK(valueOf(list, "save.slots.newest") == UiValue{2.0});
 
-  // The slot is chosen and confirmed as always; then the newer autosave is a question of its own,
-  // on no, and no loads the manual save.
+  // A slot holds its playthrough's newest save: continuing loads it with no other question.
   CHECK(flow.choose(0)->text == "save.confirm_continue");
-  CHECK_FALSE(flow.answer(true).has_value());
-  const SaveDialog offer{.text = "save.confirm_autosave",
-                         .file = {},
-                         .question = true,
-                         .startOnYes = false,
-                         .when = "2026-11-03 19:32",
-                         .placeKey = "maps.twna01",
-                         .place = "twna01"};
-  REQUIRE(flow.nextQuestion() == offer);
-  const ScreenSettings dialog = dialogSettings(*flow.nextQuestion(), true);
-  CHECK(valueOf(dialog, "dialog.when") == UiValue{std::string{"2026-11-03 19:32"}});
-  CHECK(valueOf(dialog, "dialog.place_key") == UiValue{std::string{"maps.twna01"}});
-  CHECK(flow.answer(false) ==
+  CHECK(flow.answer(true) ==
         PlayStart{.load = Slot1, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt});
-  CHECK_FALSE(flow.nextQuestion().has_value());
-
-  // Yes loads the autosave, which keeps saving to slot 1 (its summary names it).
-  REQUIRE(flow.choose(0).has_value());
-  CHECK_FALSE(flow.answer(true).has_value());
-  REQUIRE(flow.nextQuestion().has_value());
+  CHECK(flow.choose(2)->text == "save.confirm_continue");
   CHECK(flow.answer(true) ==
         PlayStart{
             .load = Autosave2, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt});
 
-  // No to continuing goes back to the list without asking about the autosave.
-  REQUIRE(flow.choose(0).has_value());
-  CHECK_FALSE(flow.answer(false).has_value());
-  CHECK_FALSE(flow.nextQuestion().has_value());
-
-  // A save with no newer autosave of its own loads at once.
-  REQUIRE(flow.choose(1).has_value());
-  CHECK(flow.answer(true) ==
-        PlayStart{.load = Slot2, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt});
-  CHECK_FALSE(flow.nextQuestion().has_value());
+  // Once the old autosave is gone, the newest is slot 2; a new game's list marks none.
+  REQUIRE(slots.erase(Autosave2));
+  list = flow.open(SlotListMode::Continue);
+  CHECK(valueOf(list, "save.slots") == UiValue{2.0});
+  CHECK(valueOf(list, "save.slots.autosave") == UiValue{0.0});
+  CHECK(valueOf(list, "save.slots.newest") == UiValue{1.0});
+  CHECK(valueOf(flow.open(SlotListMode::NewGame), "save.slots.newest") == UiValue{-1.0});
 }

@@ -147,7 +147,6 @@ preferencia del juego y no cambian las reglas; el autoguardado sí es una regla,
 ```yaml
 # content/packs/game/save/settings.yaml
 manual_slots: 15
-autosave_slots: 3
 
 # content/packs/game/rules/original/save.yaml (resumido)
 autosave:
@@ -159,10 +158,29 @@ autosave:
 
 - **Ranuras manuales**: `slot_01.yaml` a `slot_NN.yaml`. El original guardaba un fichero por ranura, hasta 15 por
   tarjeta de memoria (`main_menu.c: SAVEGAME_SLOT_INFO`).
-- **Autoguardado**: `autosave_01.yaml`... Cuántas hay es dato (`autosave_slots`, 3 en el paquete `game`). Se escribe
-  por turnos: la primera ranura vacía, si no una dañada, si no la guardada hace más tiempo (por `updated`), así que
-  tras la tercera vuelve a la primera; una de un juego más nuevo, solo si todas lo son (queda en su `.bak`).
-  `autosave_slots: 0` lo apaga. Guardar sobre una ranura dañada que ya tiene copia no la cambia por la dañada.
+- **Autoguardado**: no tiene ranuras propias (desde 2026-11-04). Escribe **la ranura de la partida**
+  (`GameSession::homeSlot`): la que se cargó o a la que el jugador guardó por última vez, así que guardar y
+  autoguardar son la misma partida y «Continuar» carga siempre lo último. Escribe como cualquier guardado (atómico, con
+  la partida anterior en `.bak`, así que un autoguardado malo se recupera). Reglas, en orden:
+  - La ranura de la partida, si todavía es suya: vacía (el fichero ya no está, se escribe de nuevo) o con una partida
+    de la misma partida (`created` igual).
+  - Si no tiene ranura (una partida nueva de `--new-game`, `--start` o `load` del control; desde el título siempre se
+    elige una), o la suya tiene ahora otra partida, una dañada o una de un juego más nuevo: **la primera ranura vacía**,
+    que pasa a ser la de la partida.
+  - Si no hay ninguna vacía: **no autoguarda** y el aviso de guardado lo dice («Sin autoguardado: todas las ranuras
+    tienen otra aventura. Guarda desde el menú.», `save.autosave_no_slot`), hasta que el jugador guarde. Nunca escribe
+    sobre la partida de otro juego.
+  - Una partida «sin guardar» (sin carpeta de partidas) no autoguarda.
+- **Autoguardados antiguos**: los `autosave_01.yaml`... que dejaron versiones anteriores siguen en la lista mientras
+  estén en el disco (`SaveSlots::slots` los busca por nombre, de 01 a 99), marcados «Autoguardado antiguo N»: se
+  cargan y se borran, **nunca se escriben** (`SaveSlots::save` lo rechaza). Al cargar uno, la partida sigue en la
+  ranura manual que nombra su resumen (si todavía es suya, como arriba). Borrar una ranura manual borra también sus
+  autoguardados antiguos. `autosave_slots` en `save/settings` se lee y se ignora, para que un paquete viejo cargue.
+- **Opción del jugador**: «Autoguardado» (Sí/No, `autosave` en los ajustes del usuario, encendida por defecto), en
+  Opciones del menú de partida (Tab) y del título, en las dos pieles. Apagada, la sesión no autoguarda nunca
+  (`GameSession::setAutosaveEnabled`, que descarta una petición pendiente) y no sale aviso; los guardados del jugador
+  no cambian. Cuándo se autoguarda sigue siendo cosa del ruleset.
+- Guardar sobre una ranura dañada que ya tiene copia no la cambia por la dañada.
 
 ### Cuándo autoguarda
 
@@ -185,7 +203,7 @@ cabecera de la partida:
 | `PartnerReborn` | `on_partner_reborn` | `partner_reborn` | Partner: el partner renace de su huevo tras morir |
 
 Solo cuentan los motivos que el ruleset tiene a `true` (`AutosaveRules`, que se lee con `readAutosaveRules` y se
-comprueba con `saveSectionCheck`), y solo si hay ranuras de autoguardado. Un ruleset sin sección `save` nunca
+comprueba con `saveSectionCheck`), y solo con la opción «Autoguardado» encendida. Un ruleset sin sección `save` nunca
 autoguarda, como el original. Las banderas no tienen valor por defecto: cada ruleset las declara todas.
 
 **Agrupación.** Varias peticiones seguidas dan **un** autoguardado: la primera abre una ventana de
@@ -198,8 +216,7 @@ nuevo, o varios eventos en el mismo fotograma, guardan una vez. La ventana:
   menús y las batallas el reloj se para. El módulo no lee ningún reloj: la app le pasa el tiempo de cada tick.
 - Cuenta desde la **primera** petición, no desde la última: una racha de eventos no retrasa el guardado para siempre.
   Peticiones más separadas que la ventana dan dos autoguardados.
-- Es de 1 segundo o más: las ranuras de autoguardado se turnan por `updated`, que tiene segundos enteros, y dos
-  autoguardados en el mismo segundo empatarían.
+- Es de 1 segundo o más: `updated` tiene segundos enteros, y dos autoguardados en el mismo segundo no se distinguirían.
 
 El bucle del juego, en cada tick y en un punto seguro (fuera de una batalla o de un cambio de mapa a medias):
 
@@ -208,7 +225,7 @@ autosaves.advance(tickSeconds);
 if (auto reasons = autosaves.takeRequest()) {
     current.header.autosaveReasons = save::autosaveReasonNames(*reasons);
     sections.write(current);
-    slots.autosave(current);                  // y el aviso: save::text_key::Autosaved
+    slots.save(homeSlot, current);            // la ranura de la partida; y el aviso de guardado
 }
 ```
 

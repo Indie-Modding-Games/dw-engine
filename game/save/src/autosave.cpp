@@ -142,15 +142,21 @@ ruleset::SectionCheck saveSectionCheck() {
   };
 }
 
-AutosaveRequests::AutosaveRequests(const AutosaveRules& rules, std::int32_t autosaveSlots)
-    : rules_{rules}, hasSlots_{autosaveSlots > 0} {}
+AutosaveRequests::AutosaveRequests(const AutosaveRules& rules) : rules_{rules} {}
 
 void AutosaveRequests::setRules(const AutosaveRules& rules) {
   rules_ = rules;
 }
 
+void AutosaveRequests::setEnabled(bool enabled) {
+  enabled_ = enabled;
+  if (!enabled_) {
+    pendingReasons_.clear();
+  }
+}
+
 bool AutosaveRequests::requestAutosave(AutosaveReason reason) {
-  if (!hasSlots_ || !rules_.savesOn(reason)) {
+  if (!enabled_ || !rules_.savesOn(reason)) {
     return false;
   }
   if (pendingReasons_.empty()) {

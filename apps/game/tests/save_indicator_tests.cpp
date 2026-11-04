@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "save_indicator.hpp"
+#include "user_settings.hpp"
 
 namespace dwe::app {
 namespace {
@@ -256,6 +257,46 @@ TEST_CASE("the indicator shows for each save written while the option is on, and
     CHECK(indicator.shown());
   }
   CHECK_FALSE(game.ui->isVisible(SaveIndicatorDocument));
+}
+
+TEST_CASE("a skipped autosave shows its own notice, without the figure's Saving") {
+  IndicatorUi game{"left: 0; top: 0; width: 10dp; height: 10dp;"};
+  SaveIndicator indicator{*game.ui, 0, true};
+  CHECK(game.ui->setting(SaveIndicatorTextSetting) == ui::UiValue{std::string{SavingText}});
+  // The first count only sets where it starts.
+  indicator.noteSkippedAutosaves(2);
+  game.frame(indicator, 0, 0.1);
+  CHECK_FALSE(indicator.shown());
+
+  indicator.noteSkippedAutosaves(3);
+  game.frame(indicator, 0, 0.1);
+  CHECK(indicator.shown());
+  CHECK(game.ui->setting(SaveIndicatorTextSetting) == ui::UiValue{std::string{AutosaveNoSlotText}});
+  // A save after it says "Saving" again.
+  game.frame(indicator, 1, 0.1);
+  CHECK(game.ui->setting(SaveIndicatorTextSetting) == ui::UiValue{std::string{SavingText}});
+
+  // With the notice off, a skip shows nothing either.
+  indicator.setEnabled(false);
+  game.frame(indicator, 1, 3.0);
+  indicator.noteSkippedAutosaves(4);
+  game.frame(indicator, 1, 0.1);
+  CHECK_FALSE(indicator.shown());
+}
+
+TEST_CASE("the autosave option is published and kept in the user settings") {
+  IndicatorUi game{"left: 0; top: 0; width: 10dp; height: 10dp;"};
+  UserSettings settings;
+  CHECK(changeAutosave(ui::UiValue{false}, *game.ui, settings, std::nullopt) ==
+        std::optional<bool>{false});
+  CHECK(game.ui->setting(AutosaveSetting) == ui::UiValue{false});
+  CHECK(settings.autosave == std::optional<bool>{false});
+  CHECK(changeAutosave(ui::UiValue{true}, *game.ui, settings, std::nullopt) ==
+        std::optional<bool>{true});
+  CHECK(settings.autosave == std::optional<bool>{true});
+  // A value that is not on or off changes nothing.
+  CHECK_FALSE(changeAutosave(ui::UiValue{std::string{"x"}}, *game.ui, settings, std::nullopt));
+  CHECK(settings.autosave == std::optional<bool>{true});
 }
 
 TEST_CASE("the indicator moves up clear of a window in its corner, and hides when none is clear") {

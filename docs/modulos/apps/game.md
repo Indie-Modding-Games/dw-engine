@@ -677,7 +677,10 @@ junto a «Guardando» («Saving» en inglés, clave `save.saving`) en la esquina
   final de `PlaySession::update`, cuando ya se escribió todo lo del frame, y con un guardado nuevo arranca
   `SaveNotice`: entero 1,5 s desde la escritura y después se desvanece en 0,5 s; otro guardado en ese tiempo lo empieza
   de nuevo. Un guardado que espera a que acabe una escena de cuidados (`savesWait`) no lo enseña hasta que se escribe.
-  El aviso nunca retrasa la escritura: solo mira el contador.
+  El aviso nunca retrasa la escritura: solo mira el contador. Un autoguardado que se salta porque la partida no tiene
+  ranura y todas tienen otra partida (`GameSession::autosavesSkipped`, ver [Autoguardado](#autoguardado)) enseña el
+  mismo aviso con otro texto y sin la figura: «Sin autoguardado: todas las ranuras tienen otra aventura. Guarda desde
+  el menú.» (`save.autosave_no_slot`, ajuste `save_indicator.text`).
 - **Dónde.** El documento `ui/save_indicator` está mostrado toda la partida, transparente entre guardados (así está
   siempre maquetado y no le quita el foco a un menú). Mientras se ve, `SaveIndicator` toma los rectángulos de lo que
   dibujan los demás documentos (`Ui::drawnRects`: textos, cajas e imágenes; no las capas que tapan media ventana o más,
@@ -704,7 +707,36 @@ máquina de guardado y el menú de pausa abierto a 1280x720, y a 1920x1080 y 102
 `expect_clear: save_indicator` (no pisa nada de otro documento) y `text_fit`. Al final apaga la opción y comprueba que
 un guardado no lo enseña. Tests: `the save notice holds ...`, `the figure trots its lane back and forth ...`, `the
 lane's laps mostly alternate ...`, `the indicator goes just above the windows ...`, `the indicator shows for each save
-written ...` y `the indicator moves up clear of a window ...` (`apps/game/tests/save_indicator_tests.cpp`).
+written ...`, `a skipped autosave shows its own notice ...` y `the indicator moves up clear of a window ...`
+(`apps/game/tests/save_indicator_tests.cpp`).
+
+## Autoguardado
+
+Mejora opcional, encendida por defecto (el original no autoguarda). Cuándo autoguarda lo dice el ruleset (sección
+`save`); dónde, la partida: **la misma ranura que los guardados del jugador**, la que se cargó o a la que se guardó por
+última vez, así que no hay ranuras de autoguardado aparte y «Continuar» carga siempre lo último. Las reglas (partida
+nueva sin ranura → primera vacía; nunca sobre otra partida; sin vacías se salta y lo dice el aviso) están en
+[save.md](../../architecture/save.md#ranuras-autoguardado-y-copias).
+
+| Dónde se cambia | Teclado | Mando |
+|---|---|---|
+| En partida (aspecto moderno) | Tab, «Opciones», fila «Autoguardado» (Sí/No, la última) | Botón norte, «Opciones», «Autoguardado» |
+| En partida (aspecto original) | Tab, «Jugador», Tab, «Opciones», «Autoguardado» | Botón norte, «Jugador», botón norte, «Opciones», «Autoguardado» |
+| En el título | «Autoguardado» bajo «Estilo chibi» (moderno); «Opciones», «AUTOGUARDADO» (original) | Igual |
+
+La fila envía la orden `autosave` (verdadero o falso); `changeAutosave` (`save_indicator.hpp`) publica el ajuste
+`autosave` y lo guarda en los ajustes del usuario (`autosave: false`), y `PlaySession` lo pasa a
+`GameSession::setAutosaveEnabled`. Apagado, la partida no autoguarda nunca (descarta una petición pendiente) y no sale
+aviso; los guardados del jugador (dormir, máquina de guardado, `save("slot_NN")`) no cambian.
+
+En las listas del título (las dos pieles) solo están las ranuras manuales; «Continuar» empieza con el cursor en la
+partida guardada más reciente (`save.slots.newest`) y la carga sin más preguntas (ya no hay pregunta de «autoguardado
+más reciente»). Los `autosave_NN.yaml` de versiones anteriores siguen en la lista mientras estén en el disco, como
+«Autoguardado antiguo N» («CONTINUAR ANTIGUO N» en el aspecto original, con «Autoguardado antiguo N» en el cuadro de
+abajo): se cargan y se borran, nunca se escriben, y al cargarlos la partida sigue en la ranura manual que nombran.
+Tests: `the autosave option is published ...` (`save_indicator_tests.cpp`), `the pause menu's autosave row ...`
+(`graphics_options_tests.cpp`), `the main menu's autosave row ...` (`engine/ui/tests/ui_tests.cpp`), `continue starts
+on the newest save ...` (`save_flow_tests.cpp`) y los de la sesión ([session](session.md)).
 
 ## Hora en dígitos
 

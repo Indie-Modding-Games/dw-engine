@@ -14,13 +14,15 @@
 
 namespace dwe::game::save {
 
-// The names of slot files: `slot_01.yaml`, `autosave_01.yaml`, and their backups
-// `slot_01.yaml.bak`.
+// The names of slot files: `slot_01.yaml`, and their backups `slot_01.yaml.bak`. The autosave
+// writes the playthrough's own slot (GameSession); `autosave_01.yaml` are old autosaves, from when
+// the autosave had slots of its own: listed and loaded while they are on disk, never written.
 inline constexpr std::string_view ManualSlotPrefix = "slot";
 inline constexpr std::string_view AutosaveSlotPrefix = "autosave";
 inline constexpr std::string_view SlotFileExtension = ".yaml";
 inline constexpr std::string_view BackupSuffix = ".bak";
 
+// Autosave: an old autosave file, read-only.
 enum class SlotKind : std::uint8_t { Manual, Autosave };
 
 // A slot, counted from 1 within its kind.
@@ -56,13 +58,14 @@ struct SlotInfo {
 // game/save does not know the sections, so the game gives it (session::summaryFromSections).
 using SummaryReader = std::function<SaveSummary(const SaveFile&)>;
 
-// The save slots of the game in a storage: the manual ones and the autosave ones, written in turn.
+// The save slots of the game in a storage: the manual ones, and the old autosaves still on disk.
 class SaveSlots {
 public:
   // The storage must outlive this object.
   SaveSlots(SaveStorage& storage, const SaveSettings& settings);
 
-  // Every slot: the manual ones, then the autosave ones.
+  // Every slot: the manual ones, then the old autosaves on disk (autosave_01.yaml to
+  // autosave_99.yaml, whichever exist).
   [[nodiscard]] std::vector<SlotId> slots() const;
 
   // Every slot with its state; a slot that cannot be read is Damaged with the reason, not an error.
@@ -72,8 +75,8 @@ public:
   // summary.
   void setSummaryReader(SummaryReader reader);
 
-  // Writes a save to a slot, keeping the slot's previous save as its backup; a damaged one is not
-  // kept over a backup it already has.
+  // Writes a save to a manual slot, keeping the slot's previous save as its backup; a damaged one
+  // is not kept over a backup it already has. An old autosave is never written.
   core::Result<void> save(SlotId slot, const SaveFile& file);
 
   // Erases a slot's save: the slot reads as empty after it. The save is kept as the slot's backup
@@ -87,20 +90,19 @@ public:
   // Reads a slot's backup, for when its save is damaged.
   [[nodiscard]] core::Result<SaveFile> loadBackup(SlotId slot) const;
 
-  // Writes a save to the next autosave slot: the first empty one, else a damaged one, else the one
-  // saved longest ago. Returns the slot written.
-  core::Result<SlotId> autosave(const SaveFile& file);
+  // The first empty manual slot, where a playthrough with no slot of its own autosaves; nothing
+  // when every slot holds a save (another game's, or one that cannot be read).
+  [[nodiscard]] std::optional<SlotId> firstEmptySlot() const;
+
+  // One slot with its state, as list() reads it.
+  [[nodiscard]] SlotInfo info(SlotId slot) const;
 
 private:
-  [[nodiscard]] std::int32_t slotCount(SlotKind kind) const;
   [[nodiscard]] core::Result<void> checkSlot(SlotId slot) const;
-  [[nodiscard]] SlotInfo readInfo(SlotId slot) const;
   [[nodiscard]] core::Result<SaveFile> readFile(SlotId slot, const std::string& name) const;
-  [[nodiscard]] SlotId nextAutosaveSlot() const;
 
   SaveStorage* storage_;
   std::int32_t manualSlots_;
-  std::int32_t autosaveSlots_;
   SummaryReader summaryReader_;
 };
 

@@ -26,15 +26,15 @@ namespace {
 using fixture::Screen;
 
 // The game's options as ui/common/game_options.lua lists them, in order.
-constexpr std::array<std::string_view, 23> GameOptions{
-    "free-exploration",  "smooth-motion",   "save-notice",
-    "digital-time",      "bulk-trades",     "evolution-requirements",
-    "translated-signs",  "status-extras",   "canonical-stages",
-    "long-names",        "shop-job-bar",    "continuous-music",
-    "need-bubble-stack", "show-minimap",    "minimap-enemies",
-    "world-map",         "chibi-style",     "shadows",
-    "enhanced-lighting", "vivid-colors",    "hd-scenery",
-    "weather",           "seasons"};
+constexpr std::array<std::string_view, 24> GameOptions{
+    "free-exploration",  "smooth-motion", "save-notice",
+    "digital-time",      "bulk-trades",   "evolution-requirements",
+    "translated-signs",  "status-extras", "canonical-stages",
+    "long-names",        "shop-job-bar",  "continuous-music",
+    "need-bubble-stack", "show-minimap",  "minimap-enemies",
+    "world-map",         "chibi-style",   "shadows",
+    "enhanced-lighting", "vivid-colors",  "hd-scenery",
+    "weather",           "seasons",       "autosave"};
 
 // In the original look the menu's box grows in for 5 frames at 20 a second and ignores the keys
 // until it is in place (ui/common/original_box.lua): wait those 0.25 s before pressing anything.
@@ -93,7 +93,7 @@ TEST_CASE("the options page lists every game option in a row of its own, and onl
   // The chibi style has three values: by default only the models from outside the original game.
   CHECK(screen.ui->elementText("pause_menu", "chibi-style-value") == "Externos");
   // The rows the list does not fill stay hidden.
-  CHECK(screen.ui->elementHasClass("pause_menu", "option-slot-25", "hidden"));
+  CHECK(screen.ui->elementHasClass("pause_menu", "option-slot-26", "hidden"));
   // The language and the original-looking text, as on the title.
   CHECK(screen.ui->elementText("pause_menu", "language-value") == "Español");
   CHECK_FALSE(screen.ui->elementText("pause_menu", "text-font-value").empty());
@@ -143,7 +143,7 @@ game_options[#game_options + 1] = {
   CHECK(screen.ui->elementText("pause_menu", "movement-value") == "pause_menu.movement.keys");
   std::ignore = screen.ui->takeCommands();
   REQUIRE(
-      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "25", "1"}));
+      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "26", "1"}));
   CHECK(sent(screen.ui->takeCommands(), "movement", UiValue{std::string{"mouse"}}));
 }
 

@@ -3,6 +3,7 @@
 #include <dwe/ui/ui.hpp>
 
 #include <cstdint>
+#include <filesystem>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -21,8 +22,25 @@ inline constexpr std::string_view SaveNoticeSetting = "save_notice";
 inline constexpr std::string_view SaveIndicatorOpacitySetting = "save_indicator.opacity";
 inline constexpr std::string_view SaveIndicatorLiftSetting = "save_indicator.lift";
 inline constexpr std::string_view SaveIndicatorFigureSetting = "save_indicator.figure";
+// The autosave option, beside the notice's: a UI setting and the command of its row in the
+// options (the game's and the title's), true or false, on by default, kept in the user settings
+// (UserSettings::autosave). Off, the session never autosaves (GameSession::setAutosaveEnabled).
+inline constexpr std::string_view AutosaveSetting = "autosave";
+
+struct UserSettings;
+
+// The autosave option's command: publishes the new value and saves it with the user settings
+// (when `settingsFile` names them). Returns it; nothing when the command's value is not a bool.
+std::optional<bool> changeAutosave(const ui::UiValue& value, ui::Ui& ui, UserSettings& settings,
+                                   const std::optional<std::filesystem::path>& settingsFile);
+
 // Whether the player sees it now, for routes.
 inline constexpr std::string_view SaveIndicatorShownSetting = "save_indicator.shown";
+// The text key it shows: "Saving", or that an autosave was skipped for want of a free slot
+// (GameSession::autosavesSkipped), which it shows alone, without the figure.
+inline constexpr std::string_view SaveIndicatorTextSetting = "save_indicator.text";
+inline constexpr std::string_view SavingText = "save.saving";
+inline constexpr std::string_view AutosaveNoSlotText = "save.autosave_no_slot";
 // The texture the document's figure shows (SaveFigure).
 inline constexpr std::string_view SaveFigureTexture = "runtime/save-figure";
 
@@ -114,14 +132,20 @@ public:
   // notice on a new save, moves it on, and places it clear of the windows on screen (the last
   // frame's layout), or hides it while no place on its side is clear.
   void update(std::uint64_t savesWritten, double seconds);
+  // Before update, with the session's count of autosaves skipped for want of a free slot: a new one
+  // shows the notice that says so.
+  void noteSkippedAutosaves(std::uint64_t autosavesSkipped);
   // Whether the indicator is on screen, so its figure must be drawn this frame.
   [[nodiscard]] bool shown() const { return shown_; }
 
 private:
   void publish(float opacity, float lift);
+  void showText(std::string_view key);
 
   ui::Ui* ui_;
   std::uint64_t savesSeen_;
+  std::optional<std::uint64_t> skipsSeen_;
+  std::string_view text_;
   bool enabled_;
   SaveNotice notice_;
   bool shown_ = false;

@@ -55,16 +55,16 @@ inline constexpr std::string_view SettingsWhat = "the save settings";
 inline constexpr std::string_view AutosaveWhat = "autosave";
 inline constexpr std::string_view SaveSectionWhat = "the save section";
 inline constexpr std::string_view ManualSlotsRange = "manual_slots must be 1 to {}";
-inline constexpr std::string_view AutosaveSlotsRange = "autosave_slots must be 0 to {}";
 inline constexpr std::string_view CoalesceTooShort =
-    "coalesce_seconds must be {} or more: autosave slots rotate by their time in whole seconds";
+    "coalesce_seconds must be {} or more: save times have whole seconds";
 
 // Slots.
 inline constexpr std::string_view InFile = "{}: {}";
 inline constexpr std::string_view NoSuchSlot = "there is no {} slot {}";
 inline constexpr std::string_view ManualSlotKind = "save";
-inline constexpr std::string_view AutosaveSlotKind = "autosave";
+inline constexpr std::string_view AutosaveSlotKind = "old autosave";
 inline constexpr std::string_view SlotEmpty = "{} is empty";
-inline constexpr std::string_view AutosaveOff = "the autosave is off: there are no autosave slots";
+inline constexpr std::string_view OldAutosaveReadOnly =
+    "{} is an old autosave: it can be loaded or erased, never written";
 
 } // namespace dwe::game::save::messages

@@ -97,7 +97,7 @@ inline constexpr std::string_view SleepFailed = "game: sleep: {}";
 // --list-saves.
 inline constexpr std::string_view CannotMountContent = "cannot mount the content: {}";
 inline constexpr std::string_view CannotReadSaveSettings = "cannot read the save settings: {}";
-inline constexpr std::string_view SavesFolder = "saves in {}: {} slots and {} autosave slots";
+inline constexpr std::string_view SavesFolder = "saves in {}: {} slots";
 inline constexpr std::string_view SlotLine = "  {}{}";
 inline constexpr std::string_view EmptySlot = "{}: empty";
 inline constexpr std::string_view SavedSlot =

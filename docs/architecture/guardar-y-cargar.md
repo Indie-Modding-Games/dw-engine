@@ -148,20 +148,24 @@ partner choca con un NPC (`main.c: initializeLoadedMap: 3821-3857`) no se hace e
 
 ### 3.3 Las ranuras
 
-- **Cuántas**: las 15 manuales de `save/settings` (como una tarjeta del original) y las de autoguardado, que siguen
-  como en [save.md](save.md). Una sola carpeta, no dos tarjetas (desviación, [sección 5](#5-diferencias-con-el-original)).
+- **Cuántas**: las 15 manuales de `save/settings` (como una tarjeta del original). El autoguardado no tiene ranuras
+  propias (desde 2026-11-04): escribe la ranura de la partida, como en [save.md](save.md). Una sola carpeta, no dos tarjetas (desviación, [sección 5](#5-diferencias-con-el-original)).
 - **La ranura de la partida** (`SaveFlow`): se elige al empezar (ranura vacía o «sin guardar») o al continuar (la
   ranura que se carga). Todo guardado del jugador va a ella, sin preguntar, como en el original. `--load slot_NN` la
-  fija a esa ranura; `--load autosave_NN`, a la que diga el autoguardado (abajo); una ruta sin carpeta de partidas
+  fija a esa ranura; `--load autosave_NN`, a la que diga ese autoguardado antiguo (abajo); una ruta sin carpeta de partidas
   (`SessionDesc::storage` nulo) juega «sin guardar». «Jugar sin guardar» en la lista de ranuras también empieza sin
   carpeta (`PlayStart::withoutSaving`): esa partida no escribe nada, ni guardados ni autoguardados, como avisa su
   pregunta.
-- **Autoguardado y ranura**: cada autoguardado apunta a la ranura manual de su partida (`summary.slot`), así que
-  continuar desde un autoguardado sigue guardando en la ranura de esa partida. Si no tiene (partida «sin guardar»),
-  queda sin ranura. El autoguardado va solo a sus ranuras (`autosave_NN`) y **nunca escribe en la ranura manual**:
-  esa guarda la última partida que guardó el jugador, como el original, que no autoguarda
-  (`GameSession::writeRequestedAutosave`). Borrar la ranura manual borra también sus autoguardados y sus `.bak`
-  (`SaveSlots::erase`).
+- **Autoguardado y ranura**: el autoguardado **escribe la ranura de la partida**, la misma que los guardados del
+  jugador (`GameSession::writeRequestedAutosave`), con su escritura atómica y la partida anterior en `.bak`. Guardar y
+  autoguardar son una sola partida: no hay dos ficheros que elegir. Sin ranura (una partida nueva fuera del título) va
+  a la primera vacía; nunca escribe sobre otra partida; sin vacías se salta y lo dice el aviso (reglas en
+  [save.md](save.md#ranuras-autoguardado-y-copias)). La opción «Autoguardado» (Sí/No, en las opciones del título y
+  de la partida) lo apaga.
+- **Autoguardados antiguos**: los `autosave_NN.yaml` de versiones anteriores apuntan a la ranura manual de su partida
+  (`summary.slot`). Siguen en la lista mientras estén en el disco («Autoguardado antiguo N»), se cargan (la partida
+  sigue en esa ranura manual si todavía es suya) y se borran, pero nunca se escriben. Borrar la ranura manual borra
+  también sus autoguardados antiguos y sus `.bak` (`SaveSlots::erase`).
 - **La lista** (`save_slots`, publicada como ajustes `save.slot.<n>.*`):
 
 | Columna | De dónde | Original |
@@ -174,7 +178,8 @@ partner choca con un NPC (`main.c: initializeLoadedMap: 3821-3857`) no se hace e
 | «Dañada» / «Hay copia» | `SlotInfo::Damaged`, `hasBackup` | Nuevo (el original no la listaba como válida) |
 | Tiempo de juego y fecha de guardado | `play_seconds`, `updated` | **Mejora** documentada, de la cabecera que ya existe |
 
-Las de autoguardado van debajo de las manuales («Autoguardado N»), solo al continuar (al empezar no se eligen).
+Los autoguardados antiguos que queden van debajo de las manuales («Autoguardado antiguo N»), solo al continuar y al
+borrar (al empezar no se eligen).
 
 **Cabecera nueva** (pregunta 1, CONTRACT): `format_version: 3` añade a la cabecera
 
@@ -208,17 +213,15 @@ tarjeta». Así `route-loop-keyboard` y las demás siguen igual, con el botón `
 «¿Continuar esta aventura?», **con el cursor en «Sí»** (mejora documentada: es la respuesta esperada; el original
 pregunta igual) → carga transaccional ([3.2](#32-los-estados-de-la-app)) → `Playing` con fundido desde negro.
 
-**Continuar una ranura carga la partida guardada a mano**, como el original. Si esa partida tiene un autoguardado
-suyo (`summary.slot` = la ranura) **más reciente** que ella (`updated`), tras el «Sí» sale una segunda pregunta,
-nunca un cambio en silencio: «Autoguardado más reciente: {lugar}, {fecha y hora}. ¿Continuar desde el autoguardado?
-«No» carga la partida guardada» (`save.confirm_autosave`; la hora es la local del jugador). Empieza en «No»; «Sí»
-carga el autoguardado más nuevo de esa partida, que sigue guardando en la misma ranura; «No» o cancelar cargan la
-partida guardada. Sin autoguardado más nuevo, el «Sí» carga sin más (`SaveFlow::answer`, `nextQuestion`). Los
-autoguardados siguen además en la lista como filas propias («CONTINUAR AUTOGUARDADO n»).
+**Continuar una ranura carga lo último de esa partida**: la ranura tiene tanto los guardados del jugador como los
+autoguardados, así que el «Sí» carga sin más preguntas (`SaveFlow::answer`). La lista empieza con el cursor en la
+partida guardada más reciente (`save.slots.newest`, en las dos pieles; mejora documentada). Los autoguardados antiguos
+siguen en la lista como filas propias («CONTINUAR ANTIGUO n»; el cuadro de abajo dice «Autoguardado antiguo n»).
 
 Con el aspecto original la lista es la del original (`main_menu.c: renderSelectCardSlot`): una fila por ranura,
-«CONTINUAR RANURA n» y luego «CONTINUAR AUTOGUARDADO n», las vacías en gris y sin elegir, ocho a la vista con
-flechas si hay más. El juego publica cuántas hay de cada clase (`save.slots.manual`, `save.slots.autosave`). Bajo la
+«CONTINUAR RANURA n» y luego, si quedan, «CONTINUAR ANTIGUO n», las vacías en gris y sin elegir, ocho a
+la vista con flechas si hay más. El juego publica cuántas manuales hay (`save.slots.manual`) y cuántos autoguardados
+antiguos (`save.slots.autosave`). Bajo la
 lista, un cuadro con el resumen de la fila enfocada (compañero; lugar, tiempo de juego y fecha), que el original no
 tiene (mejora documentada). La pregunta sale sobre la lista (`dialog.at_title`).
 
@@ -226,7 +229,7 @@ tiene (mejora documentada). La pregunta sale sobre la lista (`dialog.at_title`).
 
 `Borrar partida` (en gris sin partidas, como `Continuar`) → la misma lista con «BORRAR RANURA n» y las ranuras que este
 juego puede escribir (no las de un juego más nuevo) → «¿Borrar esta aventura?» **con el cursor en «No»** → la
-ranura queda vacía (`SaveSlots::erase`): se borran su fichero, su `.bak` y los autoguardados de esa partida (y sus
+ranura queda vacía (`SaveSlots::erase`): se borran su fichero, su `.bak` y los autoguardados antiguos de esa partida (y sus
 `.bak`), así que no queda copia de una partida que el jugador borró. Si no se puede borrar, aviso «save.erase_failed» y el error al registro. Tras borrar vuelve a la
 lista. El original borra el fichero de la tarjeta sin copia (`main_menu.c: tickMainMenu`).
 
@@ -313,13 +316,12 @@ Claves nuevas; los textos son nuestros, no los del disco.
 | `save.slots.empty` | Not used | Sin usar |
 | `save.slots.damaged` | Damaged save | Partida dañada |
 | `save.slots.newer` | From a newer version | De una versión más nueva |
-| `save.slots.autosave` | Autosave {number} | Autoguardado {number} |
+| `save.slots.autosave` | Old autosave {number} | Autoguardado antiguo {number} |
 | `save.slots.no_save` | Play without saving | Jugar sin guardar |
 | `save.slots.no_save_warning` | You won't be able to save this game. Start anyway? | No podrás guardar esta partida. ¿Empezar igualmente? |
 | `save.slots.full` | There are no free slots. | No hay ranuras libres. |
 | `save.confirm_new` | Record new adventure? | ¿Grabar una nueva aventura? |
 | `save.confirm_continue` | Continue this adventure? | ¿Continuar esta aventura? |
-| `save.confirm_autosave` | Newer autosave: {place}, {when}. Continue from the autosave? No loads the saved game. | Autoguardado más reciente: {place}, {when}. ¿Continuar desde el autoguardado? «No» carga la partida guardada. |
 | `save.sleep` | Go to sleep | Dormir |
 | `save.sleep_and_save` | Save and go to sleep | Guardar y dormir |
 | `save.ask_save` | Do you want to save? | ¿Quieres guardar? |
@@ -366,7 +368,7 @@ fichero (`dialog.file`).
 | Lista: domador, especie, «Sin usar» | Vanilla | |
 | Lista: lugar | Vanilla (`jp`/`eu`) | `us` lo dejaba vacío |
 | Una carpeta de 15 ranuras, no dos tarjetas | Mejora documentada | No hay tarjetas en un PC; el número sale de `save/settings` |
-| Lista: tiempo de juego, fecha, «dañada», «hay copia», grupo de autoguardados | Mejora documentada | Datos que el formato ya tiene; el autoguardado es la desviación aprobada de [save.md](save.md) |
+| Lista: tiempo de juego, fecha, «dañada», «hay copia», autoguardados antiguos aparte, cursor en la más reciente al continuar | Mejora documentada | Datos que el formato ya tiene; el autoguardado es la desviación aprobada de [save.md](save.md) |
 | Copia anterior en `.bak` en vez de dos copias en el fichero | Mejora documentada | Ya en [save.md](save.md); cubre el mismo caso |
 | Volver a la portada desde la pausa | Mejora documentada | El original no tiene; es interfaz, sin efecto en las reglas |
 | Sin formatear tarjetas, sin «quitar la tarjeta» | Sin equivalente | No hay tarjetas |
@@ -375,8 +377,8 @@ fichero (`dialog.file`).
 | Dormir: el partner no camina a la cama ni hay animaciones ni sonido del sueño (`partner.c: 281-321`) | Pendiente: VAN-04 | El fundido, el momento del guardado y el del despertar ya son los del original |
 | La máquina registra para el modo versus; el modo versus no está | Vanilla; el modo, pendiente (fase 5) | Pregunta 3 |
 | La máquina no enseña «Comprobando la tarjeta» ni «Guardando» | Sin equivalente | No hay tarjeta; el guardado de PC es inmediato |
-| Borrar partida en la portada; se borran también su `.bak` y sus autoguardados | Vanilla + mejora documentada | Pregunta 4; el original borra el fichero sin copia |
-| Continuar una ranura carga la partida guardada a mano; su autoguardado más reciente se ofrece aparte («¿Continuar desde el autoguardado?», empieza en «No») | Igual + mejora documentada | El original no autoguarda: cargar la ranura es cargar lo que guardó el jugador. Antes el autoguardado sustituía la ranura manual y la partida de la máquina se perdía (tarjeta #192) |
+| Borrar partida en la portada; se borran también su `.bak` y sus autoguardados antiguos | Vanilla + mejora documentada | Pregunta 4; el original borra el fichero sin copia |
+| Continuar una ranura carga lo último de esa partida: el autoguardado escribe la misma ranura (opción «Autoguardado», Sí/No) | Igual + mejora documentada | El original no autoguarda: cargar la ranura es cargar lo último guardado; aquí también, con los autoguardados dentro |
 | Las preguntas de continuar y borrar empiezan en «Sí» y «No» | Mejora documentada | La respuesta esperada y la segura |
 | Recolocar al partner si choca con un NPC al cargar | Pendiente | Pregunta 7 |
 
@@ -404,16 +406,15 @@ Corre en `en` y `es`. Cambios en el ejecutor: `shownMenu()` (`apps/game/src/auto
 - `game/save`: la cabecera v3 se escribe y se lee igual byte a byte; una partida v2 migra a v3 con el resumen vacío,
   y la lista lo rellena con el lector del juego. `apps/session`: el resumen sacado de las secciones; con secciones
   que faltan, vacío.
-- `SaveFlow`: continuar una ranura con un autoguardado suyo más nuevo pregunta aparte (no carga la manual, sí el
-  autoguardado, que sigue en la ranura); uno más viejo o de otra partida no pregunta (`save_flow_tests.cpp`).
-  `AppFlow`: cargar la ranura tras seguir jugando da la partida guardada, y el autoguardado, el estado de después
-  con la misma ranura (`app_flow_tests.cpp`).
+- `SaveFlow`: continuar empieza en la partida más reciente y carga la ranura sin más preguntas; un autoguardado
+  antiguo sale aparte y se carga (`save_flow_tests.cpp`). `AppFlow`: tras seguir jugando, el autoguardado escribe la
+  ranura de la partida y cargarla da el estado de después (`app_flow_tests.cpp`).
 - `SaveFlow`: ranura de la partida al empezar, al continuar, desde un autoguardado y sin guardar; guardado al dormir
   con y sin ranura; fallo de escritura (`MemorySaveStorage::failNextWrite`) vuelve al menú; máquina y fin del juego
   con su mapa de vuelta.
 - `AppFlow`: Title → Playing → Title → Playing con otra ranura no deja nada de la primera partida (reloj, inventario,
   `story`); una carga que falla deja la app en Title y la ranura sin tocar; partida dañada con y sin copia.
-- La lista de ranuras: vacías, guardadas, dañadas, más nuevas, autoguardados, llena.
+- La lista de ranuras: vacías, guardadas, dañadas, más nuevas, autoguardados antiguos, llena.
 
 ## 7. Plan de tramos
 
@@ -472,7 +473,7 @@ cambio de contrato del formato de la partida. Las 3, 4 y 7 van a la fase 5 (la f
 | # | Pregunta | Tipo | Recomendación |
 |---|---|---|---|
 | 1 | ¿Cabecera v3 con `summary` (`slot`, `tamer`, `species`, `nickname`, `map`) o sacar el resumen de las secciones al listar? | CONTRACT (formato) | v3 en la cabecera: la lista solo lee la cabecera (como el original), `game/save` no conoce los sistemas y la migración rellena lo que pueda |
-| 2 | ¿El autoguardado guarda la ranura manual de su partida (`summary.slot`) y continuar desde él sigue en esa ranura? | CONTRACT (formato) | Sí: si no, continuar un autoguardado dejaría la partida sin sitio donde dormir y guardar |
+| 2 | ¿El autoguardado guarda la ranura manual de su partida (`summary.slot`) y continuar desde él sigue en esa ranura? | CONTRACT (formato) | Sí: si no, continuar un autoguardado dejaría la partida sin sitio donde dormir y guardar. Desde 2026-11-04 el autoguardado escribe la propia ranura; esto queda para los autoguardados antiguos |
 | 3 | ¿El registro para el modo versus de la máquina (y el regalo del fin del juego) entra en este paquete? | FIDELITY | El registro sí (2026-10-30: la máquina registra y lo guarda, sección `battle_registry`); el modo versus y el regalo del fin del juego, en la fase 5 |
 | 4 | ¿«Borrar partida» de la portada del original? | FIDELITY | Hecho (3.5b): borra a la copia `.bak` |
 | 5 | ¿«Volver a la portada» siempre, o detrás de un ajuste por ser una mejora? | FIDELITY | Siempre: es interfaz como «Salir del juego», no cambia reglas; queda en la tabla de desviaciones |

@@ -35,7 +35,7 @@ El juego empieza donde dice `field/warps` del paquete `game` (`start`: `twna01`,
 | `--new-game-chain original\|seeded` | Cómo empieza una partida nueva, en vez de la cadena `story_scenes.new_game.chain` del ruleset: `original` corre la apertura desde `twna01` salida 9, `seeded` empieza en el campo libre con el estado de `data/new_game_story` ([game](../modulos/apps/game.md)). Un autotest usa `seeded` salvo que su ruta diga `new_game` |
 | `--time day\|dusk\|night` | Pone el reloj del juego a las 8:00, 16:00 o 20:00 (por defecto, la hora de la partida: las 8:00 de la sección `clock` en una nueva) |
 | `--new-game` | Empieza una partida nueva (es lo que hace sin `--load`): el partner, las estadísticas y el nivel de domador de la sección `new_game` del ruleset |
-| `--load <hueco>` | Carga una partida guardada, `slot_01` o `autosave_01` de la carpeta de partidas, y empieza donde se guardó (salvo con `--start`) |
+| `--load <hueco>` | Carga una partida guardada, `slot_01` (o un autoguardado antiguo, `autosave_01`) de la carpeta de partidas, y empieza donde se guardó (salvo con `--start`) |
 | `--clock-speed <x>` | Velocidad del reloj del juego: 1 la del original (un minuto de juego por segundo real), 60 una hora de juego por segundo real |
 | `--seed <n>` | La semilla de los números aleatorios de una partida nueva (el partner y los sistemas: combates, objetos, evolución), para que una ruta juegue igual cada vez. Sin ella, el juego toma una del reloj y la escribe en el log (`game: new game, seed <n>`), así una partida se puede repetir. Con `--load` no cambia nada: la partida cargada sigue con los números que guardó |
 | `--original-rolls <estado>` | Solo para el oráculo: los combates tiran con el generador del original (`rand()`) desde ese estado de 32 bits (decimal o `0x…`), el que tenía el original al empezar su pelea, así las primeras decisiones de los luchadores son las mismas en los dos lados. Sin ella, el motor tira con su propio generador |
@@ -830,4 +830,4 @@ fase 4:
 | `learn_move("<técnica> [hueco]")` | El compañero aprende esa técnica (y las que vienen con ella) como en el entrenamiento de inteligencia y, con un hueco de 0 a 3, la equipa ahí (`learn_move("meltdown 0")`), para ver una técnica que aún no sabe |
 | `clock_speed("<multiplicador>")` | Acelera el reloj: 1 es un minuto de juego por segundo real, 600 son diez horas |
 | `hd_scenery("on"\|"off")` | Enciende o apaga los escenarios en alta definición, como su fila de opciones (y lo guarda igual) |
-| `save("slot_NN")` | Guarda la partida en ese hueco manual (`save("slot_01")`), hasta que exista la pantalla de guardar; los huecos de autoguardado no se escriben a mano. Un autotest solo guarda con `--saves` |
+| `save("slot_NN")` | Guarda la partida en ese hueco manual (`save("slot_01")`), hasta que exista la pantalla de guardar; los autoguardados antiguos (`autosave_NN`) no se escriben nunca. Un autotest solo guarda con `--saves` |

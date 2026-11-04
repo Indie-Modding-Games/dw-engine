@@ -18,6 +18,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
                               .freeExploration = true,
                               .smoothMotion = false,
                               .saveNotice = false,
+                              .autosave = false,
                               .digitalTime = false,
                               .evolutionRequirements = false,
                               .translatedSigns = false,
@@ -44,6 +45,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK(read->freeExploration == std::optional<bool>{true});
   CHECK(read->smoothMotion == std::optional<bool>{false});
   CHECK(read->saveNotice == std::optional<bool>{false});
+  CHECK(read->autosave == std::optional<bool>{false});
   CHECK(read->digitalTime == std::optional<bool>{false});
   CHECK(read->evolutionRequirements == std::optional<bool>{false});
   CHECK(read->translatedSigns == std::optional<bool>{false});
@@ -66,6 +68,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK_FALSE(older->freeExploration.has_value());
   CHECK_FALSE(older->smoothMotion.has_value());
   CHECK_FALSE(older->saveNotice.has_value());
+  CHECK_FALSE(older->autosave.has_value());
   CHECK_FALSE(older->digitalTime.has_value());
   CHECK_FALSE(older->evolutionRequirements.has_value());
   CHECK_FALSE(older->translatedSigns.has_value());

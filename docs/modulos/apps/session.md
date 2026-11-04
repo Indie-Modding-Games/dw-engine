@@ -38,12 +38,18 @@ auto session = session::GameSession::create({.files = &files, .rulesetId = "orig
 5. Reparte los eventos del partner: `Slept` → autoguardado `PartnerSleep`, `NewDay` → autoguardado `NewDay`,
    `TamerLevelChanged` → nivel de domador entre los límites de `tamer`, `Died` → renacer (salvo si la historia
    juega la muerte: ver abajo). Lo que provoca un evento (renacer da `Reborn`) se reparte también.
-6. Si hay una petición de autoguardado que el ruleset deja pasar, escribe la ranura de autoguardado siguiente; mientras
-   el campo retiene al jugador en una escena de cuidados (`savesWait`, ver «Paridad») la petición espera.
+6. Si hay una petición de autoguardado que el ruleset deja pasar, la escribe en **la ranura de la partida**
+   (`homeSlot`: la que se cargó o a la que se guardó por última vez), la misma que los guardados del jugador; mientras
+   el campo retiene al jugador en una escena de cuidados (`savesWait`, ver «Paridad») la petición espera. Sin ranura
+   (una partida nueva de `--new-game`), o si la suya tiene ahora otra partida, va a la primera ranura vacía, que pasa a
+   ser la suya; sin ninguna vacía no se escribe y `autosavesSkipped()` lo cuenta para el aviso. Las reglas completas
+   están en [save.md](../../architecture/save.md#ranuras-autoguardado-y-copias).
 
 Las órdenes del jugador (`feed`, `cure`, `scold`, `praise`, `useToilet`, `sleep`, `train`) y el final de una batalla
 (`BattleAdapter::finish`) reparten también sus eventos y su autoguardado. `takePartnerEvents` da los eventos del
-último tick u orden para la UI, y `takeAutosaved` el autoguardado escrito (ranura y motivo).
+último tick u orden para la UI, y `takeAutosaved` el autoguardado escrito (ranura y motivo; sin ranura si se saltó).
+`setAutosaveEnabled(false)` es la opción «Autoguardado» del jugador apagada: no autoguarda nunca y descarta la
+petición pendiente; los guardados del jugador no cambian.
 
 ### Lo que ve la UI
 
@@ -96,8 +102,9 @@ de `clock` (con la velocidad que tenía).
 | `battle_registry` | Los compañeros registrados en la máquina de guardado para el modo versus (`BattleRegistry`, `main_menu.c: registerBattleData`): `partners`, cada uno con `slot` (0 a 39), `name`, `species`, `hp`, `mp`, `offense`, `defense`, `speed`, `brains`, `discipline` y `techniques` (tres ids de `data/moves` o `null`); una partida sin la sección empieza sin registrados |
 | `weather` | `seed`: la semilla del clima del campo (`WeatherSeed`, mejora del motor, [game/weather](../game/weather.md)); una partida sin la sección la saca de la semilla de la sesión (`weatherSeedOf`) y la guarda en el siguiente guardado. No toca los números aleatorios del juego |
 
-`savesWritten()` cuenta los guardados que la sesión escribió, en una ranura (`save`) o en una de autoguardado; el
-juego lo mira para enseñar el aviso de guardado ([game](game.md#aviso-de-guardado)).
+`savesWritten()` cuenta los guardados que la sesión escribió, del jugador (`save`) o autoguardados, y
+`autosavesSkipped()` los autoguardados saltados por no haber ranura libre; el juego los mira para enseñar el aviso de
+guardado ([game](game.md#aviso-de-guardado)).
 
 La cabecera lleva el ruleset, la versión del juego, el tiempo jugado y una etiqueta `<especie> <mapa>`. Cargar una
 partida de otro ruleset lo selecciona antes de leer las secciones. Al cargar, `savedPlace()` dice dónde empezar: el
@@ -442,7 +449,9 @@ momento. La pantalla `merit_shop` del juego (`apps/game: MeritShopScreen`) lo en
 ## Tests
 
 `tests/session_tests.cpp` (partida nueva, misma semilla, criar días a avance rápido → guardar → cargar en otra
-partida → seguir igual, ranuras, autoguardado al dormir y por día nuevo según el ruleset, ajuste en marcha, muerte y
+partida → seguir igual, ranuras, autoguardado al dormir y por día nuevo según el ruleset, el autoguardado en la ranura
+de la partida (cargada de la 2 → escribe la 2; guardada en la 3 → escribe la 3; partida nueva → primera vacía; nunca
+sobre otra partida; sin vacías se salta), la opción apagada, autoguardados antiguos que cargan, ajuste en marcha, muerte y
 renacer, la vista del partner, nombres de ranura), `tests/field_clock_tests.cpp` (con un campo de prueba: el ritmo del
 reloj de antes, el reloj parado en los fundidos a cualquier velocidad, autoguardado al cambiar de mapa y el sitio
 guardado), `tests/save_migration_tests.cpp` (partidas con secciones de versiones anteriores),

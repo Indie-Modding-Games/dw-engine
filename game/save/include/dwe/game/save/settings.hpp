@@ -24,11 +24,10 @@ struct SaveSettings {
   // Slots the player saves to from the save menu. The original had up to 15 files per memory card,
   // one per slot (main_menu.c: SAVEGAME_SLOT_INFO).
   std::int32_t manualSlots = 15;
-  // Slots the autosave writes to in turn, overwriting the oldest; 0 turns the autosave off.
-  std::int32_t autosaveSlots = 0;
 };
 
-// Reads the save settings.
+// Reads the save settings. `autosave_slots`, from when autosaves had slots of their own, is still
+// read and ignored: the autosave writes the playthrough's own slot (GameSession).
 core::Result<SaveSettings> parseSaveSettings(std::string_view yaml);
 
 // Reads the save settings from the mounted packs.

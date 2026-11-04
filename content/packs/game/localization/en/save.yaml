@@ -16,7 +16,9 @@ autosave_reason.partner_reborn: "Partner reborn"
 slots.title_new: "Choose a slot for your new adventure"
 slots.title_continue: "Choose an adventure to continue"
 slots.slot: "Slot {number}"
-slots.autosave: "Autosave {number}"
+# An autosave file from an older version, which had autosave slots of their own: it can be continued or erased,
+# never written.
+slots.autosave: "Old autosave {number}"
 slots.empty: "Not used"
 slots.damaged: "Damaged save"
 slots.newer: "From a newer version"
@@ -25,8 +27,6 @@ slots.no_save_warning: "You won't be able to save this game. Start anyway?"
 slots.full: "There are no free slots."
 confirm_new: "Record new adventure?"
 confirm_continue: "Continue this adventure?"
-# A save whose own autosave is newer: which to load ({when}: local date and time; {place}: the map).
-confirm_autosave: "Newer autosave: {place}, {when}. Continue from the autosave? No loads the saved game."
 # The dialog shows the save file's name below these.
 failed: "The game could not be saved."
 load_failed: "The game could not be loaded."
@@ -56,10 +56,12 @@ erase_failed: "The save could not be erased."
 # The original look's slot list (ui/save_slots), in the original's capitals. {number} counts from 1.
 slots.original.new_slot: "SLOT {number}"
 slots.original.continue_slot: "CONTINUE SLOT {number}"
-slots.original.continue_autosave: "CONTINUE AUTOSAVE {number}"
+slots.original.continue_autosave: "CONTINUE OLD {number}"
 slots.original.erase_slot: "ERASE SLOT {number}"
-slots.original.erase_autosave: "ERASE AUTOSAVE {number}"
+slots.original.erase_autosave: "ERASE OLD {number}"
 slots.original.no_save: "PLAY WITHOUT SAVING"
 slots.original.in_use: "This slot holds an adventure already."
 # The save indicator (an engine improvement): shown next to a small figure while the game saves.
 saving: "Saving"
+# The save indicator when an autosave was skipped: the adventure has no slot and every slot holds another one.
+autosave_no_slot: "Not autosaved: every slot holds another adventure. Save from the menu."

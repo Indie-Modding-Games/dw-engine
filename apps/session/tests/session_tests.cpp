@@ -16,6 +16,8 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
+#include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <optional>
@@ -113,6 +115,30 @@ std::optional<Autosave> waitForAutosave(GameSession& session) {
     }
   }
   return std::nullopt;
+}
+
+// Asks for a map change's autosave and ticks until the session writes (or skips) it.
+std::optional<Autosave> autosaveNow(GameSession& session) {
+  session.requestAutosave(AutosaveReason::MapChange);
+  return waitForAutosave(session);
+}
+
+// The save in a slot of `storage`, as the slot list reads it.
+dwe::game::save::SlotInfo slotIn(const GameSession& session, SlotId slot) {
+  REQUIRE(session.slots() != nullptr);
+  return session.slots()->info(slot);
+}
+
+// Whether `storage` holds any autosave_NN.yaml: the autosave writes the playthrough's own slot.
+bool anyOldAutosave(const MemorySaveStorage& storage) {
+  for (std::int32_t index = 1; index <= dwe::game::save::MaxSlots; ++index) {
+    if (storage.read(dwe::game::save::slotFileName({.kind = SlotKind::Autosave, .index = index}))
+            .value()
+            .has_value()) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // Leaves the partner almost no life left, starving and unrelieved, so that it dies soon.
@@ -297,9 +323,11 @@ TEST_CASE("a game saved to a slot loads from it") {
   const TestPacks packs;
   MemorySaveStorage storage;
   const auto session = newGame(packs, &storage);
+  // A new game saves to the slot chosen first, as from the title, so its autosaves go there too.
+  const SlotId slot{.kind = SlotKind::Manual, .index = 2};
+  REQUIRE(session->save(slot).has_value());
   session->clock().setSpeed(SixtyGameHoursPerSecond);
   careFor(*session, SecondsPerGameDay);
-  const SlotId slot{.kind = SlotKind::Manual, .index = 2};
   const auto saved = session->save(slot);
   REQUIRE_MESSAGE(saved.has_value(), errorOf(saved));
   REQUIRE(storage.read("slot_02.yaml").value().has_value());
@@ -357,38 +385,143 @@ TEST_CASE("the partner going to sleep autosaves") {
     return;
   }
   CHECK(std::ranges::contains(autosave->reasons, AutosaveReason::PartnerSleep));
-  CHECK(autosave->slot.kind == SlotKind::Autosave);
+  // A new game with no slot yet autosaves to the first empty one, which becomes its slot.
+  const SlotId first{.kind = SlotKind::Manual, .index = 1};
+  CHECK(autosave->slot == first);
+  CHECK(session->homeSlot() == first);
+  CHECK_FALSE(anyOldAutosave(storage));
 
   // The autosave is a save like any other.
   const auto loaded = newGame(packs, &storage, 5);
-  const auto read = loaded->load(autosave->slot);
+  const auto read = loaded->load(first);
   REQUIRE_MESSAGE(read.has_value(), errorOf(read));
   CHECK(loaded->partner().state() == session->partner().state());
 }
 
-TEST_CASE("an autosave keeps its playthrough's slot, and loading it goes on saving there") {
+TEST_CASE("an autosave writes the slot the game was loaded from, keeping a backup") {
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  const SlotId second{.kind = SlotKind::Manual, .index = 2};
+  REQUIRE(newGame(packs, &storage)->save(second).has_value());
+
+  const auto loaded = newGame(packs, &storage, 5);
+  REQUIRE(loaded->load(second).has_value());
+  const std::optional<Autosave> autosave = autosaveNow(*loaded);
+  REQUIRE(autosave.has_value());
+  CHECK(autosave->slot == second);
+  CHECK(loaded->homeSlot() == second);
+  const auto written = loaded->slots()->load(second);
+  REQUIRE_MESSAGE(written.has_value(), errorOf(written));
+  CHECK(written->header.autosaveReasons == std::vector<std::string>{"map_change"});
+  // The save it replaced stays as the slot's backup, as for any save.
+  const auto backup = loaded->slots()->loadBackup(second);
+  REQUIRE_MESSAGE(backup.has_value(), errorOf(backup));
+  CHECK(backup->header.autosaveReasons.empty());
+  CHECK(slotIn(*loaded, {.kind = SlotKind::Manual, .index = 1}).state ==
+        dwe::game::save::SlotInfo::State::Empty);
+  CHECK_FALSE(anyOldAutosave(storage));
+}
+
+TEST_CASE("a save by hand to another slot moves the next autosave there") {
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  const SlotId second{.kind = SlotKind::Manual, .index = 2};
+  const SlotId third{.kind = SlotKind::Manual, .index = 3};
+  const auto session = newGame(packs, &storage);
+  REQUIRE(session->save(second).has_value());
+  REQUIRE(session->save(third).has_value());
+  const std::string inSecond = storage.read("slot_02.yaml").value().value_or("");
+  const std::optional<Autosave> autosave = autosaveNow(*session);
+  REQUIRE(autosave.has_value());
+  CHECK(autosave->slot == third);
+  CHECK(session->slots()->load(third).value().header.autosaveReasons ==
+        std::vector<std::string>{"map_change"});
+  CHECK(storage.read("slot_02.yaml").value().value_or("") == inSecond);
+}
+
+TEST_CASE("an autosave never writes over another game's slot") {
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  const auto session = newGame(packs, &storage);
+  // Another playthrough in slot 1, started at another time.
+  SaveFile other = session->saveFile().value();
+  other.header.created += std::chrono::hours{1};
+  other.header.label = "other";
+  storage.put("slot_01.yaml", dwe::game::save::writeSaveFile(other).value());
+
+  // The new game's first autosave goes to the first empty slot.
+  std::optional<Autosave> autosave = autosaveNow(*session);
+  REQUIRE(autosave.has_value());
+  CHECK(autosave->slot == SlotId{.kind = SlotKind::Manual, .index = 2});
+  CHECK(session->slots()->load({.kind = SlotKind::Manual, .index = 1}).value().header.label ==
+        "other");
+
+  // The playthrough's slot taken by another game since: the autosave moves to an empty slot.
+  storage.put("slot_02.yaml", dwe::game::save::writeSaveFile(other).value());
+  autosave = autosaveNow(*session);
+  REQUIRE(autosave.has_value());
+  CHECK(autosave->slot == SlotId{.kind = SlotKind::Manual, .index = 3});
+  CHECK(session->homeSlot() == SlotId{.kind = SlotKind::Manual, .index = 3});
+
+  // Every slot holds another game: the autosave is skipped, and says so, until the player saves.
+  for (std::int32_t index = 1; index <= 15; ++index) {
+    storage.put(dwe::game::save::slotFileName({.kind = SlotKind::Manual, .index = index}),
+                dwe::game::save::writeSaveFile(other).value());
+  }
+  const std::uint64_t saves = session->savesWritten();
+  autosave = autosaveNow(*session);
+  REQUIRE(autosave.has_value());
+  CHECK_FALSE(autosave->slot.has_value());
+  CHECK(autosave->reasons == std::vector<AutosaveReason>{AutosaveReason::MapChange});
+  CHECK(session->autosavesSkipped() == 1);
+  CHECK(session->savesWritten() == saves);
+  CHECK_FALSE(anyOldAutosave(storage));
+}
+
+TEST_CASE("the autosave option off writes nothing; saves by hand are unchanged") {
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  const auto session = newGame(packs, &storage);
+  CHECK(session->autosaveEnabled());
+  session->setAutosaveEnabled(false);
+  CHECK_FALSE(session->autosaveEnabled());
+  CHECK_FALSE(autosaveNow(*session).has_value());
+  CHECK(session->savesWritten() == 0);
+  CHECK(slotIn(*session, {.kind = SlotKind::Manual, .index = 1}).state ==
+        dwe::game::save::SlotInfo::State::Empty);
+  REQUIRE(session->save({.kind = SlotKind::Manual, .index = 4}).has_value());
+  CHECK(session->savesWritten() == 1);
+
+  session->setAutosaveEnabled(true);
+  const std::optional<Autosave> autosave = autosaveNow(*session);
+  REQUIRE(autosave.has_value());
+  CHECK(autosave->slot == SlotId{.kind = SlotKind::Manual, .index = 4});
+}
+
+TEST_CASE("an old autosave still loads and goes on saving to its playthrough's slot") {
   const TestPacks packs;
   MemorySaveStorage storage;
   const auto session = newGame(packs, &storage);
   const SlotId third{.kind = SlotKind::Manual, .index = 3};
   REQUIRE(session->save(third).has_value());
-  session->clock().setSpeed(SixtyGameHoursPerSecond);
-  playUntilSleepy(*session);
-  REQUIRE(session->sleep({}).has_value());
-  const std::optional<Autosave> autosave = waitForAutosave(*session);
-  if (!autosave) {
-    FAIL("no autosave");
-    return;
-  }
-  const auto loaded = newGame(packs, &storage, 5);
-  REQUIRE(loaded->load(autosave->slot).has_value());
-  CHECK(loaded->homeSlot() == third);
+  // An autosave file of an older game, which named its playthrough's slot.
+  storage.put("autosave_02.yaml", storage.read("slot_03.yaml").value().value_or(""));
+  const SlotId old{.kind = SlotKind::Autosave, .index = 2};
 
-  // A new game has no slot until it is saved to one; an autosave of it has none either.
+  const auto loaded = newGame(packs, &storage, 5);
+  REQUIRE(loaded->load(old).has_value());
+  CHECK(loaded->homeSlot() == third);
+  const std::optional<Autosave> autosave = autosaveNow(*loaded);
+  REQUIRE(autosave.has_value());
+  CHECK(autosave->slot == third);
+  // The old autosave is never written again.
+  CHECK_FALSE(loaded->save(old).has_value());
+  CHECK(storage.read("autosave_02.yaml.bak").value() == std::nullopt);
+
+  // A new game has no slot until it is saved or autosaved; a failed save does not move it.
   const auto fresh = newGame(packs, &storage, 7);
   CHECK_FALSE(fresh->homeSlot().has_value());
   CHECK(fresh->saveFile().value().header.summary.slot.empty());
-  // A failed save does not move the playthrough to the slot.
   CHECK_FALSE(fresh->save({.kind = SlotKind::Manual, .index = 99}).has_value());
   CHECK_FALSE(fresh->homeSlot().has_value());
 }
