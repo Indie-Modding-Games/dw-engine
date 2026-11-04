@@ -7,8 +7,8 @@
 
    The panels the original lacks are hidden here: the date in figures, the bars' numbers and labels, the needs
    panel, HP and MP. The menu button, the minimap and the time in digits stay as documented deltas: the button is how
-   the pointer opens the menu, the round minimap is an option, on by default, in the modern skin's look (see below), and
-   the time in digits is an option, on by default, in a small box under the dial. */
+   the pointer opens the menu, the round minimap is an option, on by default, laid out as the modern skin's and drawn in
+   the original's look (see below), and the time in digits is an option, on by default, in a small box under the dial. */
 
 body {
 	pointer-events: none;
@@ -398,13 +398,78 @@ body {
 
 /* ------------------------------------------------------------------------------------------------------------------
    Deltas of this skin. The round minimap (an engine improvement, on unless turned off; the original has none) keeps
-   the modern skin's look, banner, glowing ring and pills, which reads better over the original's grounds than its
-   boxes did; only the font is set back to the modern one, as this skin's theme gives every text the original-look
-   font. The menu button is a small box with the prompt. */
+   the modern skin's layout, everything centred on the disc, in the original's look: the map's name and the time in
+   the original's windows (the original-box border with the corner sprites extracted from the disc, black-filled so
+   they read over any ground, in the original-look font), the ring as the windows' border drawn round (four stripes of
+   one original pixel, 3dp: black, light cyan, dark cyan and black from the inside out), the north mark and the player
+   in the original's text yellow (#fff371) and the partner in the light cyan of its borders. A long name breaks into
+   centred lines inside its box instead of running past the disc. The menu button is a small box with the
+   prompt. */
 
 #minimap {
-	font-family: "Noto Sans";
-	font-size: 14dp;
+	right: 24dp;
+	top: 18dp;
+}
+
+#minimap-name {
+	display: block;
+	margin: 0 0 -3dp 0;
+	text-align: center;
+	padding: 4dp 4dp 2dp 4dp;
+	border: 3dp transparent;
+	border-radius: 0;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	font-family: original-look;
+	font-weight: normal;
+	background-color: #000000c0;
+	font-size: 18dp;
+	line-height: 22dp;
+	color: #d0d0d0;
+	white-space: normal;
+}
+
+#minimap-frame {
+	decorator: minimap-disc(original #000000a8 #90d9fa #00000000 3dp 0dp);
+}
+
+#minimap-north {
+	border-radius: 0;
+	border: 0;
+	background-color: transparent;
+	font-family: original-look;
+	font-size: 22dp;
+	font-weight: normal;
+	line-height: 18dp;
+	color: #fff371;
+}
+
+#minimap-player { image-color: #fff371; }
+#minimap-partner { image-color: #90d9fa; }
+
+#minimap-clock {
+	margin-top: -6dp;
+	padding: 1dp 10dp;
+	border: 3dp transparent;
+	border-radius: 0;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+	font-family: original-look;
+	font-weight: normal;
+	background-color: #000000;
+	font-size: 20dp;
+	line-height: 24dp;
+}
+
+/* Only the time, white, as the box under the dial: the original's field shows no date. */
+#minimap-day {
+	display: none;
+}
+
+#minimap-time {
+	margin-left: 0;
+	font-weight: normal;
+	color: #ffffff;
 }
 
 #menu-button {

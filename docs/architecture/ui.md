@@ -683,7 +683,7 @@ del disco; el resto de imágenes de la UI se siguen filtrando.
 | Menú del compañero | La ficha (cuadro opaco, recuadros hundidos, iconos de parámetros, barras de felicidad, disciplina y virus) y la bolsa (dos columnas de filas de 18 píxeles, el selector claro arriba y oscuro abajo, el cuadro de opciones, los de orden y de tirar) | `game_menu.c: renderDigimonStatsView`, `inventory.c`; capturas de la ficha y de la bolsa |
 | HUD del campo | El reloj de esfera (esfera, campanas, martillo, minutero y punto de la hora), las barras de felicidad y disciplina a cuadritos (`pips`) con sus iconos, la burbuja de la necesidad sobre el compañero y el nombre del mapa | `clock.c`, `partner_impl.c`, `bubble.c`, `map.c`; capturas del campo |
 | Combate | La marca de enfado y el rótulo «BATTLE» de la apertura, las barras de HP y MP del compañero (BI_IN), las letras de «FINISH!!» y el aviso «PUSH» del remate, la tira de iconos de órdenes (BTLCOMND), las barras de los enemigos y los cuadros del final | `btl.c`, `battle_hud.c`, `command_menu.c`; capturas del combate y de sus cuadros finales |
-| Minimapa | Con el ajuste `minimap` en `on` (por defecto): el minimapa redondo con el mismo dibujo que el aspecto moderno (el original no tiene) | Diferencia opcional |
+| Minimapa | Con el ajuste `minimap` en `on` (por defecto): el minimapa redondo con la disposición del moderno y el dibujo del original: nombre y hora en sus ventanas, aro `original`, N y jugador en amarillo, sin el día (el original no tiene minimapa) | Diferencia opcional |
 
 **Captura frente a descompilación.** En las capturas de referencia el campo sale 6 líneas más abajo que las
 coordenadas de la descompilación y el combate 6 más arriba; las hojas usan lo que se ve (la captura) y lo dicen. Medido
