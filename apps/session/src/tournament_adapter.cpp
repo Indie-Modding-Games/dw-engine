@@ -494,6 +494,63 @@ core::Result<void> TournamentAdapter::markOverlevel(bool overlevel) {
   return desc_.story->state().setTrigger(schedule_->overlevelTrigger, overlevel);
 }
 
+void TournamentAdapter::tick(GameSession& session, const ruleset::ClockAdvance& /*advance*/) {
+  if (!rules_ || !schedule_ || !schedule_->notice || running() || desc_.story == nullptr ||
+      desc_.battle == nullptr || desc_.battle->digimonTable() == nullptr || !registered()) {
+    return;
+  }
+  const game::tournament::ScheduleRules& schedule = *schedule_;
+  game::story::StoryState& story = desc_.story->state();
+  const assets::DigimonRow* partner =
+      desc_.battle->digimonTable()->find(session.partner().state().species);
+  const auto day = story.variable(schedule.dayVariable);
+  const auto species = story.variable(schedule.speciesVariable);
+  if (partner == nullptr || !day || !species) {
+    return;
+  }
+  game::tournament::EntryFacts facts{
+      .species = partner->index,
+      .enteredSpecies = static_cast<std::int32_t>(*species),
+      .day = session.clock().time().day,
+      .enteredDay = static_cast<std::int32_t>(*day),
+      .minutes = (session.clock().time().hour * 60) + session.clock().time().minute,
+      .idle = !desc_.story->scriptRunning() && session.playerFree() &&
+              session.careContext().partnerNormal,
+  };
+  for (std::size_t i = 0; i < facts.remindersLeft.size() && i < schedule.registeredTriggers.size();
+       ++i) {
+    const auto set = story.trigger(schedule.registeredTriggers.at(i));
+    facts.remindersLeft.at(i) = set && *set;
+  }
+  using Kind = game::tournament::EntryReminder::Kind;
+  const game::tournament::EntryReminder reminder = game::tournament::entryReminder(schedule, facts);
+  if (reminder.kind == Kind::None) {
+    return;
+  }
+  if (reminder.kind != Kind::Dropped) {
+    const game::story::SectionRef section{.script = game::story::StoryRunner::MapHeadScript,
+                                          .section = static_cast<std::uint16_t>(reminder.section)};
+    if (desc_.story->request(section, game::story::StartTiming::NextFrame) !=
+        game::story::RequestOutcome::Accepted) {
+      return;
+    }
+  }
+  const std::int32_t cleared =
+      reminder.kind == Kind::Reminded ? reminder.trigger : rules_->registeredTrigger;
+  if (auto unset = story.setTrigger(cleared, false); !unset) {
+    core::logWarning("{}", unset.error().message);
+  }
+  core::logInfo("[port:tournament] updateTournamentRegistration (tournament.c:{}): {} section {}, "
+                "trigger {} cleared",
+                reminder.kind == Kind::Reminded ? 116
+                : reminder.kind == Kind::Missed ? 97
+                                                : 56,
+                reminder.kind == Kind::Reminded ? "reminder"
+                : reminder.kind == Kind::Missed ? "missed cup"
+                                                : "another partner, no",
+                reminder.section, cleared);
+}
+
 core::Result<void> TournamentAdapter::enter(GameSession& session, std::size_t column) {
   if (!rules_ || !schedule_ || desc_.story == nullptr || desc_.battle == nullptr ||
       desc_.battle->digimonTable() == nullptr) {

@@ -95,13 +95,13 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 83 | 75 | 8 | 0 | 95 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 40 | 40 | 0 | 0 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 11 | 10 | 0 | 1 | 91 % |
-| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 111 | 104 | 5 | 2 | 96 % |
+| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 111 | 105 | 5 | 1 | 97 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 91 | 0 | 0 | 91 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 44 | 44 | 0 | 0 | 100 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 31 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1425 funciones a portar | 1425 | 1311 | 20 | 94 | 93 % |
+| **Total** | 1425 funciones a portar | 1425 | 1312 | 20 | 93 | 93 % |
 
 ## Batalla
 
@@ -244,11 +244,10 @@ Inscripción, calendario y el overlay de copas, que trae su propio motor de comb
 
 Ficheros del decomp: `dget/dget.c`, `main/tournament.c`, `std/std_effect.c`, `std/std_hud.c`, `std/std_main.c`, `std/std_setup.c`.
 
-Portado 104, parcial 5, falta 2.
+Portado 105, parcial 5, falta 1.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `updateTournamentRegistration` | `main/tournament.c:42` | falta (citada en docs) | Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa. | — |
 | `STD_tickChampionScene` | `std/std_effect.c:1259` | parcial | Anima la escena del campeón: letras, giro de cámara y podio. | `game/tournament/src/champion_show.cpp:1` · falta el brillo que recorre cada letra (copia dentro de la memoria de vídeo) |
 | `STD_tickTamerTournament` | `std/std_hud.c:540` | parcial | Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes. | `game/battle/src/battle.cpp:1` · las órdenes sí; select no oculta las barras de vida |
 | `STD_tickBattleResultScreen` | `std/std_main.c:4641` | parcial | Gestiona la pantalla de resultado tras el combate de copa. | `apps/game/src/story_tournament.cpp:1` · TIME UP, la caja de daño y el empate; el que pierde no se desploma tras la caja |

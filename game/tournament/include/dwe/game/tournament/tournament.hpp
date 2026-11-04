@@ -214,6 +214,18 @@ struct ScheduleRules {
   // cursor's, the pick's and the close's are the menus' own (2, 3 and 4).
   std::int32_t soundSlot = 0;
   std::int32_t refuseSound = 0;
+  // The reminder of an entry (tournament.c: updateTournamentRegistration); without it, none.
+  struct Notice {
+    // From this minute of the day the reminder may run; before `secondMinute` it uses the first of
+    // `registeredTriggers`, from it the second; from `lateMinute` the cup is missed.
+    std::int32_t fromMinute = 0;
+    std::int32_t secondMinute = 0;
+    std::int32_t lateMinute = 0;
+    // The map-head sections of the reminder and of the missed cup.
+    std::int32_t section = 0;
+    std::int32_t missedSection = 0;
+  };
+  std::optional<Notice> notice;
 };
 
 // The section's schedule part.
@@ -273,6 +285,40 @@ Schedule buildSchedule(const ScheduleRules& rules, const TournamentTable& table,
 // initTournamentSchedule state 5: the day the entry is for, as pstat 2 keeps it (the column
 // picked: 0 today, else tomorrow with the flag).
 std::int32_t entryDay(const ScheduleRules& rules, std::int32_t day, std::size_t column);
+
+// What tournament.c: updateTournamentRegistration reads each frame, with the partner registered.
+struct EntryFacts {
+  // The partner's species number and the one entered (pstat 4).
+  std::int32_t species = 0;
+  std::int32_t enteredSpecies = 0;
+  // Today and the day entered (pstat 2, with `tomorrowFlag` for tomorrow).
+  std::int32_t day = 0;
+  std::int32_t enteredDay = 0;
+  std::int32_t minutes = 0;
+  // No script runs, the player is free and the partner in its normal state.
+  bool idle = false;
+  // Whether each of the registration's other triggers (38 and 39) is still set.
+  std::array<bool, 2> remindersLeft{};
+};
+
+struct EntryReminder {
+  enum class Kind : std::uint8_t {
+    // Nothing this frame.
+    None,
+    // The partner is not the one entered: the registration goes, silently.
+    Dropped,
+    // The reminder's section runs and `trigger` (38 or 39) is cleared.
+    Reminded,
+    // The cup was missed: its section runs and the registration goes.
+    Missed,
+  };
+  Kind kind = Kind::None;
+  std::int32_t section = 0;
+  std::int32_t trigger = 0;
+};
+
+// tournament.c: updateTournamentRegistration, for a registered partner.
+[[nodiscard]] EntryReminder entryReminder(const ScheduleRules& rules, const EntryFacts& facts);
 
 // The arena the cups are fought in (std_setup.c: STD_initializeTournament, STD_loadArenaAssets;
 // std_main.c: STD_placePlayer1/2, STD_runIntro, STD_setCameraOrbit). Points are the original's

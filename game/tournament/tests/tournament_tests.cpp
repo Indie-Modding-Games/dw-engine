@@ -401,3 +401,54 @@ TEST_CASE("std_setup.c STD_tournamentMain: the arena, where the fighters stand, 
   CHECK(turned.eye == std::array<std::int32_t, 3>{1150, -1000, -550});
   CHECK(turned.target == std::array<std::int32_t, 3>{150, -300, 200});
 }
+
+TEST_CASE(
+    "tournament.c updateTournamentRegistration: the reminder, the missed cup, a new partner") {
+  const ScheduleRules rules = originalScheduleRules();
+  REQUIRE(rules.notice.has_value());
+  using Kind = EntryReminder::Kind;
+  const EntryFacts today{.species = 3,
+                         .enteredSpecies = 3,
+                         .day = 260,
+                         .enteredDay = 260 & 0xFF,
+                         .minutes = 720,
+                         .idle = true,
+                         .remindersLeft = {true, true}};
+  // From 12:00 the first reminder, with trigger 38; before it, nothing.
+  EntryReminder reminder = entryReminder(rules, today);
+  CHECK(reminder.kind == Kind::Reminded);
+  CHECK(reminder.section == 0x4D9);
+  CHECK(reminder.trigger == 38);
+  EntryFacts facts = today;
+  facts.minutes = 719;
+  CHECK(entryReminder(rules, facts).kind == Kind::None);
+  // Once 38 is gone, nothing until 20:00, then trigger 39.
+  facts = today;
+  facts.remindersLeft = {false, true};
+  CHECK(entryReminder(rules, facts).kind == Kind::None);
+  facts.minutes = 1200;
+  reminder = entryReminder(rules, facts);
+  CHECK(reminder.kind == Kind::Reminded);
+  CHECK(reminder.trigger == 39);
+  // From 23:01, or on another day, the cup was missed.
+  facts.minutes = 1381;
+  CHECK(entryReminder(rules, facts).kind == Kind::Missed);
+  CHECK(entryReminder(rules, facts).section == 0x4DA);
+  facts = today;
+  facts.day = 261;
+  CHECK(entryReminder(rules, facts).kind == Kind::Missed);
+  // Not while something else goes on.
+  facts.idle = false;
+  CHECK(entryReminder(rules, facts).kind == Kind::None);
+  // An entry for tomorrow waits, at any hour.
+  facts = today;
+  facts.enteredDay = (261 & 0xFF) | rules.tomorrowFlag;
+  facts.minutes = 1400;
+  CHECK(entryReminder(rules, facts).kind == Kind::None);
+  // Another partner drops the entry, whatever the hour.
+  facts = today;
+  facts.species = 4;
+  facts.minutes = 0;
+  facts.idle = false;
+  CHECK(entryReminder(rules, facts).kind == Kind::Dropped);
+}

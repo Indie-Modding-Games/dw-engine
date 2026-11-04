@@ -50,6 +50,8 @@ public:
   explicit TournamentAdapter(TournamentAdapterDesc desc) : desc_{desc} {}
 
   core::Result<void> readRules(const ruleset::Ruleset& rules) override;
+  // tournament.c: updateTournamentRegistration, each frame of the game loop: the entry's reminder.
+  void tick(GameSession& session, const ruleset::ClockAdvance& advance) override;
 
   // Whether the ruleset has tournaments.
   [[nodiscard]] bool enabled() const { return rules_.has_value(); }

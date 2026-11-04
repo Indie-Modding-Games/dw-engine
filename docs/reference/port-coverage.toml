@@ -885,7 +885,7 @@ isTournamentEnabled = { status = "portado", dwe = "game/tournament/src/schedule.
 tournamentCheckEligible = { status = "portado", dwe = "apps/session/src/tournament_adapter.cpp:1", what = "Comprueba si el compañero cumple los requisitos de inscripción de la copa." }
 tickTournamentSchedule = { status = "portado", dwe = "apps/game/src/tournament_schedule_screen.cpp:1", what = "Mueve el cursor del calendario y confirma o cancela la elección de copa." }
 tickTournamentInfo = { status = "portado", dwe = "apps/game/src/tournament_schedule_screen.cpp:1", what = "Cierra el recuadro de información de la copa al pulsar un botón." }
-updateTournamentRegistration = { status = "falta", what = "Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa." }
+updateTournamentRegistration = { status = "portado", dwe = "apps/session/src/tournament_adapter.cpp:497", note = "la decisión en game/tournament/src/schedule.cpp:245 (entryReminder); horas y secciones en tournament.yaml (schedule.notice)", what = "Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa." }
 minutesOfDay = { status = "no-aplica", note = "utilidad genérica de reloj", what = "Convierte la hora actual del juego en minutos del día." }
 getCupDataJumpTable = { status = "portado", dwe = "game/tournament/src/cup_data.cpp:1", what = "Busca en el guion del mapa los datos de una copa por sección e id." }
 getCupDataJumpTableEntry = { status = "no-aplica", note = "lectura de punteros del guion del original", what = "Resuelve una entrada de la tabla de saltos de los datos de copa." }

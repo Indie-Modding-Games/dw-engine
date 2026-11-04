@@ -53,6 +53,12 @@ schedule:
   local_list_section: 11
   lines: {section: 1240, title: 1, ask: 2, ask_overlevel: 3, choice: 4}
   sounds: {slot: 0, refuse: 11}
+  # El aviso de la inscripción (tournament.c: updateTournamentRegistration), cada fotograma con el partner inscrito, sin
+  # script en marcha, el domador libre y el partner en su estado normal. Si el partner ya no es de la especie inscrita,
+  # la inscripción se borra sin decir nada; una inscripción para mañana (tomorrow_flag) espera. Desde from_minute
+  # (12:00): con otro día o desde late_minute (23:01) se pasó la copa, corre missed_section y se borra la inscripción;
+  # si no, corre section una vez antes de second_minute (20:00, con el disparador 38) y otra después (con el 39).
+  notice: {from_minute: 720, second_minute: 1200, late_minute: 1381, section: 1241, missed_section: 1242}
 
 # La arena de las copas (std_setup.c: STD_initializeTournament, STD_loadArenaAssets; std_main.c: STD_placePlayer1/2,
 # STD_runIntro, STD_setCameraOrbit). Por número de arena: modelo y rejilla de colisión del pack, dónde empiezan los

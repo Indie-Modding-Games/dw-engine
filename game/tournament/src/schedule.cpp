@@ -34,6 +34,12 @@ constexpr std::string_view ChoiceKey = "choice";
 constexpr std::string_view SoundsKey = "sounds";
 constexpr std::string_view SlotKey = "slot";
 constexpr std::string_view RefuseKey = "refuse";
+constexpr std::string_view NoticeKey = "notice";
+constexpr std::string_view FromMinuteKey = "from_minute";
+constexpr std::string_view SecondMinuteKey = "second_minute";
+constexpr std::string_view LateMinuteKey = "late_minute";
+constexpr std::string_view SectionKey = "section";
+constexpr std::string_view MissedSectionKey = "missed_section";
 constexpr std::string_view TableText = "data/tournaments";
 constexpr std::string_view TournamentsKey = "tournaments";
 constexpr std::string_view IdKey = "id";
@@ -72,7 +78,7 @@ core::Result<ScheduleRules> parseScheduleRules(const ruleset::Section& section) 
                         {DayVariableKey, SpeciesVariableKey, TomorrowFlagKey, RegisteredTriggersKey,
                          OverlevelTriggerKey, LastMinuteTodayKey, CycleDaysKey,
                          RecruitTriggerEndKey, GradeAWonTriggerKey, LocalListSectionKey, LinesKey,
-                         SoundsKey})) {
+                         SoundsKey, NoticeKey})) {
     rules.dayVariable = integer(reader, schedule, DayVariableKey);
     rules.speciesVariable = integer(reader, schedule, SpeciesVariableKey);
     rules.tomorrowFlag = integer(reader, schedule, TomorrowFlagKey);
@@ -99,6 +105,19 @@ core::Result<ScheduleRules> parseScheduleRules(const ruleset::Section& section) 
     if (reader.expectKeys(sounds, SoundsKey, {SlotKey, RefuseKey})) {
       rules.soundSlot = integer(reader, sounds, SlotKey);
       rules.refuseSound = integer(reader, sounds, RefuseKey);
+    }
+    if (const YamlNode* notice = schedule.find(NoticeKey); notice != nullptr) {
+      if (reader.expectKeys(
+              *notice, NoticeKey,
+              {FromMinuteKey, SecondMinuteKey, LateMinuteKey, SectionKey, MissedSectionKey})) {
+        rules.notice = ScheduleRules::Notice{
+            .fromMinute = integer(reader, *notice, FromMinuteKey),
+            .secondMinute = integer(reader, *notice, SecondMinuteKey),
+            .lateMinute = integer(reader, *notice, LateMinuteKey),
+            .section = integer(reader, *notice, SectionKey),
+            .missedSection = integer(reader, *notice, MissedSectionKey),
+        };
+      }
     }
   }
   if (!reader.ok()) {
@@ -221,6 +240,36 @@ Schedule buildSchedule(const ScheduleRules& rules, const TournamentTable& table,
 
 std::int32_t entryDay(const ScheduleRules& rules, std::int32_t day, std::size_t column) {
   return column == 0 ? day : (day + 1) | rules.tomorrowFlag;
+}
+
+EntryReminder entryReminder(const ScheduleRules& rules, const EntryFacts& facts) {
+  using Kind = EntryReminder::Kind;
+  if (!rules.notice) {
+    return {};
+  }
+  const ScheduleRules::Notice& notice = *rules.notice;
+  if (facts.species != facts.enteredSpecies) {
+    return {.kind = Kind::Dropped};
+  }
+  // An entry for tomorrow is left alone while it carries the flag.
+  if ((facts.enteredDay & rules.tomorrowFlag) != 0) {
+    return {};
+  }
+  // The original compares the day as a byte, as the entry writes it.
+  const bool otherDay = (facts.day & 0xFF) != facts.enteredDay;
+  if (facts.minutes < notice.fromMinute || !facts.idle) {
+    return {};
+  }
+  if (otherDay || facts.minutes >= notice.lateMinute) {
+    return {.kind = Kind::Missed, .section = notice.missedSection};
+  }
+  const std::size_t which = facts.minutes < notice.secondMinute ? 0 : 1;
+  if (which >= rules.registeredTriggers.size() || !facts.remindersLeft.at(which)) {
+    return {};
+  }
+  return {.kind = Kind::Reminded,
+          .section = notice.section,
+          .trigger = rules.registeredTriggers.at(which)};
 }
 
 } // namespace dwe::game::tournament
