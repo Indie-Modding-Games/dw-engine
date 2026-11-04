@@ -655,6 +655,39 @@ TEST_CASE("a partner that cannot step for a second is placed behind the player")
   CHECK(field.partner().position.z < field.player().position.z);
 }
 
+TEST_CASE("a partner left too far comes back from the first cell out of view toward it") {
+  // map.c: getClosestTileOffScreen: the original brings its partner from off screen; a sulking one
+  // walks while the player runs and falls behind, and it must not be seen to jump.
+  dwe::scene::World world;
+  dwe::game::field::FieldRules rules = originalRules();
+  rules.partner.teleportDistance = 1500.0F;
+  Field field{world, rules};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  field.setPartnerClips(
+      {{2, {.steps = {{}, {}}, .repeatFrom = 1}}, {4, {.steps = {{}, {}}, .repeatFrom = 1}}});
+  // A view 650 units around the player.
+  field.setOffScreenTest([&field](glm::vec3 point) {
+    return glm::distance(glm::vec2{point.x, point.z},
+                         glm::vec2{field.player().position.x, field.player().position.z}) > 650.0F;
+  });
+  dwe::scene::place(world.registry().get<dwe::scene::Transform>(field.partnerEntity()),
+                    {1850.0F, 0.0F, 0.0F}, 0.0F);
+  run(field, 0.1F);
+  CHECK(field.partnerTeleports() == 1);
+  // The first cell out of view on the partner's side, not behind the player.
+  CHECK(field.partner().position.x >= 650.0F);
+  CHECK(field.partner().position.x <= 750.0F);
+  CHECK(std::abs(field.partner().position.z) <= 50.0F);
+
+  // Far but in view, it is left where it is.
+  field.setOffScreenTest([](glm::vec3) { return false; });
+  dwe::scene::place(world.registry().get<dwe::scene::Transform>(field.partnerEntity()),
+                    {1850.0F, 0.0F, 0.0F}, 0.0F);
+  run(field, 0.1F);
+  CHECK(field.partnerTeleports() == 1);
+  CHECK(field.partner().position.x > 1800.0F);
+}
+
 TEST_CASE("a script's hold stands the partner on its idle clip until it lets go") {
   // overworld.c: setMovementEnabled(1, 1) from scriptPauseGame puts the partner in state 11;
   // partner.c: partnerTickIdle starts its clip 0 once and nothing else runs. Measured on the

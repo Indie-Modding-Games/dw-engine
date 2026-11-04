@@ -9,6 +9,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <format>
 #include <functional>
 #include <limits>
@@ -1400,12 +1401,20 @@ void Field::movePartner(float seconds) {
   const glm::vec3 playerPosition = registry.get<Transform>(player_).position;
   const PartnerRules& rules = rules_.partner;
   partnerFollowing_ = false;
-  // The engine's rescues: the original takes the partner next to the player when it goes off
-  // screen (map.c: partnerTickCollision, isTileOffScreen), which needs its camera.
-  if (groundDistance(registry.get<Transform>(partner_).position, playerPosition) >
-      rules.teleportDistance) {
-    placePartnerNearPlayer();
-    return;
+  // The engine's rescue of a partner left far behind (a sulking partner walks while the player
+  // runs, partner.c: partnerTickWalking): it comes back from just off the screen's edge, so it is
+  // never seen to jump (the original brings it there from off screen, map.c:
+  // tickPartnerWaypoints).
+  const glm::vec3 partnerPosition = registry.get<Transform>(partner_).position;
+  if (groundDistance(partnerPosition, playerPosition) > rules.teleportDistance) {
+    if (!offScreen_) {
+      placePartnerNearPlayer();
+      return;
+    }
+    // One still in view walks on, as in the original.
+    if (offScreen_(partnerPosition) && placePartnerOffScreen()) {
+      return;
+    }
   }
   if (partnerMakesRoom_ && makeRoomForPlayer(seconds)) {
     return;
@@ -1541,6 +1550,72 @@ bool Field::placePartnerAt(const assets::SpawnPoint& spot) {
                  "spot ({:.0f}, {:.0f})",
                  spot.position.x, spot.position.z);
   return true;
+}
+
+bool Field::placePartnerOffScreen() {
+  // map.c: getClosestTileOffScreen: a line of cells from the player's toward the partner's, one
+  // step along the longer axis and the shorter one's share carried in an accumulator; the first
+  // cell off screen. The engine also wants it free, in a clear line from the player and a cell
+  // nearer than the partner already is.
+  entt::registry& registry = world_->registry();
+  const glm::vec3 player = registry.get<Transform>(player_).position;
+  const glm::vec3 partner = registry.get<Transform>(partner_).position;
+  const float nearer = groundDistance(partner, player) - assets::CollisionCellSize;
+  const assets::CollisionCell from = assets::originalCellAt(player);
+  const assets::CollisionCell to = assets::originalCellAt(partner);
+  const std::int32_t dx = to.column - from.column;
+  const std::int32_t dy = to.row - from.row;
+  const bool alongX = std::abs(dx) >= std::abs(dy);
+  const std::int32_t length = alongX ? std::abs(dx) : std::abs(dy);
+  if (length == 0) {
+    return false;
+  }
+  const std::int32_t minor = alongX ? dy : dx;
+  const std::int32_t share = minor / length;
+  const std::int32_t sign = minor % length < 0 ? -1 : 1;
+  const std::int32_t rest = std::abs(minor % length);
+  const std::int32_t majorStep = (alongX ? dx : dy) > 0 ? 1 : -1;
+  std::int32_t major = alongX ? from.column : from.row;
+  std::int32_t across = alongX ? from.row : from.column;
+  std::int32_t accumulator = length;
+  const float radius = rules_.partner.mover.radius;
+  for (std::int32_t step = 0; step < length; ++step) {
+    if (rest != 0) {
+      accumulator -= rest;
+      if (accumulator <= 0) {
+        across += sign;
+        accumulator += length;
+      }
+    } else {
+      across += share;
+    }
+    major += majorStep;
+    const assets::CollisionCell cell = alongX
+                                           ? assets::CollisionCell{.column = major, .row = across}
+                                           : assets::CollisionCell{.column = across, .row = major};
+    const glm::vec3 centre = assets::collisionCellCenter(cell);
+    if (!offScreen_(centre)) {
+      continue;
+    }
+    if (groundDistance(centre, player) > nearer || !fitsOnGrid(collision_, centre, radius) ||
+        !isLineClear(collision_, player, centre, 0.0F)) {
+      return false;
+    }
+    glm::vec3 chosen = centre;
+    chosen.y = player.y;
+    scene::place(registry.get<Transform>(partner_), chosen,
+                 assets::yawOfDirection(player - chosen));
+    registry.get<AnimationIntent>(partner_) = {};
+    follow_.forgetTrail(originalPointOf(player));
+    partnerStuckSeconds_ = 0.0F;
+    partnerFollowing_ = false;
+    ++partnerTeleports_;
+    core::logDebug("[port:field] getClosestTileOffScreen (map.c): the partner, too far, comes back "
+                   "from cell ({}, {}), {:.0f} from the player",
+                   cell.column, cell.row, groundDistance(chosen, player));
+    return true;
+  }
+  return false;
 }
 
 void Field::placePartnerNearPlayer() {

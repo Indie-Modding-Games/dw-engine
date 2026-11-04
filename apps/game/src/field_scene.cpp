@@ -248,6 +248,8 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
   scene->field_->setPartnerRandom(
       [raw = scene.get()](std::int32_t limit) { return raw->gestureRandom_.below(limit); });
   scene->field_->setPartnerMood(scene->partnerMood());
+  scene->field_->setOffScreenTest(
+      [raw = scene.get()](glm::vec3 point) { return raw->offScreen(point); });
 
   const std::optional<assets::SpawnPoint> startAt = desc.startMap ? desc.startAt : std::nullopt;
   if (auto entered = scene->enterMap(startMap, startExit, startAt,
@@ -681,6 +683,19 @@ bool FieldScene::onScreen(const Actor& actor) const {
     }
   }
   return false;
+}
+
+bool FieldScene::offScreen(glm::vec3 point) const {
+  // map.c: isTileOffScreen: off the 320 x 240 screen by more than 40 pixels to a side (x beyond
+  // +-200 and y beyond +-160 from its centre), as fractions of the window.
+  constexpr float MarginX = 40.0F / 320.0F;
+  constexpr float MarginY = 40.0F / 240.0F;
+  if (camera() == nullptr) {
+    return false;
+  }
+  const std::optional<glm::vec2> fraction = worldToWindowFraction(point);
+  return !fraction || fraction->x < -MarginX || fraction->x > 1.0F + MarginX ||
+         fraction->y < -MarginY || fraction->y > 1.0F + MarginY;
 }
 
 bool FieldScene::animateFollowingPartner(Actor& actor, double seconds, bool followed) {

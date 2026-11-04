@@ -339,6 +339,13 @@ public:
   void setPartnerRandom(std::function<std::int32_t(std::int32_t)> randomBelow) {
     partnerRandom_ = std::move(randomBelow);
   }
+  // Whether a ground point is out of the camera's view, with the original's margin around the
+  // screen (map.c: isTileOffScreen). With it a partner left too far and out of view comes back
+  // from the screen's edge, and one still in view walks on; without it (no camera) it is placed
+  // behind the player.
+  void setOffScreenTest(std::function<bool(glm::vec3)> offScreen) {
+    offScreen_ = std::move(offScreen);
+  }
   // The clip the partner plays while it follows the player, or while a script holds it (its idle
   // clip 0 from the hold's start, partner.c: partnerTickIdle), by the original's id; nothing while
   // something else moves it (a care scene, making room).
@@ -551,6 +558,10 @@ private:
   // player from the camera steps off first; whether it took this tick.
   bool makeRoomForPlayer(float seconds);
   void placePartnerNearPlayer();
+  // A partner too far and out of view: on the first cell out of the camera's view along the line
+  // from the player to it (map.c: getClosestTileOffScreen); whether there was one to stand on,
+  // nearer than it is.
+  bool placePartnerOffScreen();
   // Puts the partner at `spot` if it fits there clear of the others; whether it did.
   bool placePartnerAt(const assets::SpawnPoint& spot);
   // A character's body for the release rule and the overlap watch.
@@ -706,6 +717,7 @@ private:
   bool partnerFollowing_ = false;
   PartnerMood partnerMood_;
   std::function<std::int32_t(std::int32_t)> partnerRandom_;
+  std::function<bool(glm::vec3)> offScreen_;
   float partnerStuckSeconds_ = 0.0F;
   std::int32_t partnerTeleports_ = 0;
   // Set when a script lets the player go, until the partner has made room (makeRoomForPlayer).

@@ -370,6 +370,9 @@ public:
   [[nodiscard]] std::optional<glm::vec2> worldToWindow(glm::vec3 world) const;
   // The same point as fractions of the window's width and height from its top-left corner.
   [[nodiscard]] std::optional<glm::vec2> worldToWindowFraction(glm::vec3 world) const;
+  // Whether a world point is out of the camera's view with the original's margin around the
+  // screen (map.c: isTileOffScreen).
+  [[nodiscard]] bool offScreen(glm::vec3 point) const;
 
   // Draws the partner as this species (its model in the base pack, digimon/<species>/model) with
   // models/partner's animations, which are the same ids for every partner; nothing changes if it is
