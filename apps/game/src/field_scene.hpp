@@ -23,6 +23,8 @@
 #include <dwe/render/map_scene.hpp>
 #include <dwe/render/model_renderer.hpp>
 #include <dwe/render/renderer.hpp>
+#include <dwe/render/scene_grade.hpp>
+#include <dwe/render/scene_light.hpp>
 #include <dwe/ruleset/game_clock.hpp>
 #include <dwe/ruleset/random.hpp>
 #include <dwe/scene/world.hpp>
@@ -48,6 +50,7 @@
 #include "field_effects.hpp"
 #include "field_mist.hpp"
 #include "fighter_figure.hpp"
+#include "graphics_options.hpp"
 #include "place_command.hpp"
 #include "scene_effect.hpp"
 #include "scene_prims.hpp"
@@ -210,6 +213,10 @@ effectSheetImage(const assets::VirtualFileSystem& files, const std::string& imag
 // The row of `palettes` a script rewrote for that palette, or nothing.
 const game::battle::EffectPaletteRow* rewrittenRow(const game::battle::EffectPalettes& palettes,
                                                    std::int32_t palette);
+
+// field/lights of the game pack (render::parseMapLights); none, with a warning, when it is missing
+// or cannot be read: the lights are an option, never a reason not to play.
+render::MapLightTable loadMapLights(const assets::VirtualFileSystem& files);
 
 class FieldScene {
 public:
@@ -389,6 +396,14 @@ public:
                ? std::span<render::Drawer* const>{stageDrawers_}
                : std::span<render::Drawer* const>{drawers_};
   }
+
+  // The field's enhanced graphics (field_scene_graphics.cpp; docs/architecture/render.md, «Paso de
+  // luz y color»): the options the next updates draw with.
+  void setGraphics(const GraphicsOptions& options) { graphics_ = options; }
+  [[nodiscard]] const GraphicsOptions& graphics() const { return graphics_; }
+  // The light and colour pass for FrameDesc::post: while the map is shown and an option wants it,
+  // nothing otherwise.
+  [[nodiscard]] render::Drawer* postDrawer();
 
   // The ground point under a window pixel (drawable pixels, as MouseMoved gives), for
   // click-to-move.
@@ -810,6 +825,11 @@ private:
   // The ground items' billboards (field_scene_ground_items.cpp).
   void drawGroundItems();
   std::optional<std::size_t> groundItemTexture(std::optional<std::uint8_t> palette);
+  // The characters' shadows under the models (drop_shadow.c: renderDropShadow), with the sun's
+  // when the option wants it.
+  void drawShadows(float alpha);
+  // The light and colour pass's tint, lights and grade for this frame.
+  void gradeScene(double frameSeconds);
 
   // The partner as a scene's effects see it (field_scene_partner_body.cpp).
   class PartnerBody final : public EvolutionBody {
@@ -870,7 +890,7 @@ private:
   std::map<std::string, std::optional<std::vector<std::vector<BodyFace>>>, std::less<>>
       sceneModels_;
   CameraSync cameraSync_{*this};
-  std::array<render::Drawer*, 6> drawers_{};
+  std::array<render::Drawer*, 7> drawers_{};
   // The drawers while a scene hides the scenery: the models and the scene's primitives only.
   std::array<render::Drawer*, 4> stageDrawers_{};
   FieldStage stage_;
@@ -925,6 +945,15 @@ private:
   MapArrival arrival_;
   std::vector<render::MapMarker> extraMarkers_;
   std::vector<GroundItemSprite> groundItems_;
+  GraphicsOptions graphics_;
+  std::unique_ptr<render::SceneGrade> grade_;
+  // field/lights, and the lights of the map shown as this frame lights them.
+  render::MapLightTable mapLights_;
+  std::vector<render::BackgroundLight> shownLights_;
+  // Real seconds for the lights' flicker; nothing in the game reads them.
+  double lightSeconds_ = 0.0;
+  // Whether the map shown follows the time of day (palettes per time, no fixed time).
+  bool outdoor_ = false;
   std::optional<HeldItemSprite> heldItem_;
   std::optional<FlyingItemSprite> flyingItem_;
   // The billboard textures of the items' image by palette, and of the shadow (nullopt as the key),

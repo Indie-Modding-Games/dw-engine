@@ -18,6 +18,13 @@ El render del juego, encima de `rhi`. Ver [render.md](../../architecture/render.
   del cambio de mapa del original (`fade.c: renderFade`); `setWhiteness` suma el mismo gris (mezcla `Additive`,
   `FADE_MODE` 1) para el fundido a blanco de la historia.
 
+- `SceneGrade` (`<dwe/render/scene_grade.hpp>`): el paso de luz y color del campo (mejora, opción): dibuja la escena
+  en la ventana con el tinte de la hora, luces puntuales, vibrance, contraste y brillo, como `FrameDesc::post`
+  (`Pass::Post`), antes de la UI. `scene_light.hpp`: la tabla de luces por mapa (`parseMapLights`), el tinte por hora
+  (`daylightAt`), el sol de las sombras (`sunAt`) y la intensidad de cada luz (`lightStrength`). `ground_shadows.hpp`:
+  la sombra redonda del original (`roundShadow`) y la del sol (`sunShadow`), billboards que `MapRenderer` dibuja con
+  `groundDrawer()` entre el fondo y los modelos. Ver [render.md](../../architecture/render.md#paso-de-luz-y-color).
+
 Sus shaders están en `shaders/` y se compilan con `dwe_add_shaders` ([ADR 0018](../../adr/0018-shaders-slang-con-vcpkg.md)).
 
 ## Mapas de campo

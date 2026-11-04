@@ -1,0 +1,22 @@
+# The maps' point lights (an engine improvement: docs/architecture/render.md, «Paso de luz y
+# color»; content/schemas/field_lights.schema.json). Each light sits on a light source painted in
+# the map's background, in background pixels, and only brightens what is drawn around it: the
+# painted light stays as it is. kind: fire (always lit, stronger at night, flickers), lamp (from
+# dusk to dawn; always in maps without a time of day) or glow (always lit, pulses slowly).
+maps:
+  # The town at night: the warm doorways.
+  twna01:
+    - {pixel: [225, 340], radius: 70, color: [1.0, 0.72, 0.38], intensity: 0.55, kind: lamp}
+    - {pixel: [395, 345], radius: 70, color: [1.0, 0.72, 0.38], intensity: 0.55, kind: lamp}
+  # A cave: two lamps, a glowing bottle and the green crystals.
+  leom01:
+    - {pixel: [368, 65], radius: 80, color: [1.0, 0.8, 0.5], intensity: 0.3, kind: lamp}
+    - {pixel: [415, 160], radius: 80, color: [1.0, 0.8, 0.5], intensity: 0.3, kind: lamp}
+    - {pixel: [255, 210], radius: 45, color: [0.55, 1.0, 0.55], intensity: 0.4, kind: glow}
+    - {pixel: [25, 75], radius: 70, color: [0.5, 1.0, 0.6], intensity: 0.35, kind: glow}
+  # A tunnel's red lamp.
+  tunn01:
+    - {pixel: [172, 125], radius: 70, color: [1.0, 0.45, 0.35], intensity: 0.3, kind: lamp}
+  # The snow house's stove.
+  frzl01:
+    - {pixel: [450, 285], radius: 90, color: [1.0, 0.6, 0.3], intensity: 0.6, kind: fire}

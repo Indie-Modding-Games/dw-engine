@@ -1002,8 +1002,39 @@ tiene tecla (`pause_box/logic.lua`).
 Las opciones propias del motor salen de una lista, `ui/common/game_options.lua` (`game_options`): id de la fila,
 ajuste de la UI que publica el juego y que la fila envía como orden, texto, valor por defecto y, para las que no son
 sí/no, sus valores (`values`) y el prefijo de sus textos (`texts`). La página llena con ellas, en orden, las filas
-libres `option-slot-<n>` del documento (18) y les da el id de la opción, así que una opción nueva solo necesita su
+libres `option-slot-<n>` del documento (24) y les da el id de la opción, así que una opción nueva solo necesita su
 entrada en esa lista y que el juego atienda su ajuste; ningún documento necesita una fila propia.
+
+## Sombras, luz y colores vivos
+
+Mejoras opcionales que no cambian ninguna regla, ni la colisión, ni la geometría, ni los números aleatorios; las tres
+encendidas por defecto, como las demás mejoras que no tocan reglas. Se cambian en las opciones del menú de pausa
+(filas «Sombras», «Luz mejorada», «Colores vivos») y en las del título con el aspecto original, se aplican al momento
+y se guardan en `settings.yaml` (`shadows`, `enhanced_lighting`, `vivid_colors`; `GraphicsChanger`,
+`apps/game/src/graphics_options.hpp`). `--graphics shadows=off|round|sun,lighting=on|off,colors=on|off` las cambia
+solo para esa ejecución (capturas y rutas, que no leen los ajustes). `FieldScene` las aplica en
+`field_scene_graphics.cpp`; cómo se dibujan: [render.md](../../architecture/render.md#paso-de-luz-y-color).
+
+- Sombras: `round` es la sombra redonda del original bajo cada personaje (jugador, compañero y NPC del mapa;
+  `drop_shadow.c: renderDropShadow`, que `model.c` llama para cada personaje que dibuja), del tamaño de su especie y nunca
+  en las celdas de valor 0x80 o 0xFF (`getTileTrigger` da -1). Los objetos del suelo ya traían la suya. `sun` (por
+  defecto) añade una sombra suave que proyecta el sol: corta a mediodía, larga y girando al amanecer y al atardecer,
+  más débil con la paleta del atardecer y ninguna de noche ni en mapas sin hora (cuevas, casas). `off` no dibuja
+  ninguna.
+- Luz mejorada: un tinte según el reloj del juego (dorado por la mañana, neutro a mediodía, naranja al atardecer,
+  azul de noche) solo en los mapas con hora, y las luces de cada mapa (`field/lights` del paquete del juego,
+  `content/schemas/field_lights.schema.json`): lámparas, fuegos y cristales pintados en el fondo que iluminan lo que
+  tienen cerca. Por ahora: twna01 (puertas de noche), leom01 (lámparas, botella y cristales), tunn01 y frzl01 (la
+  estufa, con parpadeo).
+- Colores vivos: más saturación en los colores apagados que en los vivos, un poco de contraste y un brillo suave
+  alrededor de lo más claro. Solo en la escena del campo: el HUD, los menús y los fundidos no cambian.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Sombra redonda de los personajes | `renderDropShadow`: cuadrado de 2 × radio de la especie en el suelo, SPOT256 (uv 0x40, 0x80, 63 × 63), resta con color 0x30, detrás de todo (OT 0xFFD); no en celdas con `getTileTrigger` -1 | Igual, con la opción en `round` o `sun`; se dibuja justo después del fondo y antes de los modelos (`MapRenderer::groundDrawer`) | `scene_light_tests.cpp` («the round shadow is the original's…»); `graphics_options_tests.cpp` | Portado |
+| Sombra del sol | No existe | Mancha alargada desde los pies en la dirección contraria al sol, con la hora del reloj | `scene_light_tests.cpp` («the sun's shadow turns through the day…», «the sun's shadow stretches from the feet…») | Mejora (opción) |
+| Luz por hora y luces del mapa | El original solo funde las paletas y sus tres luces de modelo con la hora (`map.c: updateTimeOfDay`) | Tinte suave sobre la escena y luces puntuales en píxeles del fondo, sin tocar la paleta ni el muestreo del mapa | `scene_light_tests.cpp` (tabla de luces, tintes, intensidades); `graphics_options_tests.cpp` («the game pack's light table…») | Mejora (opción) |
+| Colores vivos | No existe | Vibrance, contraste suave y brillo en la escena del campo, nunca en la UI | `in_game_options_tests.cpp` («…cycles the shadows and switches the light and the colours») | Mejora (opción) |
 
 ## Contenido oculto
 

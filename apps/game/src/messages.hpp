@@ -60,6 +60,10 @@ inline constexpr std::string_view UnknownSavedMinimap =
 inline constexpr std::string_view UnknownSavedWalkControl =
     "game: the saved walk control '{}' is unknown; walking with the keys";
 
+// The field's shadows (graphics_options.cpp): a saved value that is not off, round or sun.
+inline constexpr std::string_view UnknownSavedShadows =
+    "game: the saved shadow mode '{}' is unknown; drawing the round shadows and the sun's";
+
 // Free exploration (free_exploration.cpp) on from the start, by --explore or the saved setting.
 inline constexpr std::string_view FreeExplorationAtStart =
     "game: free exploration on: the scripts' map changes go anywhere they can, whatever the story";

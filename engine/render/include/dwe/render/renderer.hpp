@@ -52,12 +52,16 @@ struct FrameDesc {
   // sets) it likes.
   std::function<void(const rhi::Frame&)> overlay = nullptr;
   std::span<const TextureScene> textureScenes = {};
+  // A pass over the finished scene, under the UI (Pass::Post): when set, the scene pass draws into
+  // a texture the window's size instead of the window, and this drawer draws that texture
+  // (DrawContext::sceneColor) into the window before the UI. The field's light and colour pass.
+  Drawer* post = nullptr;
 };
 
 // The render foundation (docs/architecture/render.md): owns the bindless table, the upload ring,
 // the depth target that follows the window and the textures, and runs each frame's passes (scene
-// with depth → UI → debug overlay). The map, model and UI code plug in as Drawers and make their
-// pipelines with createPipeline.
+// with depth → post, when the frame has one → UI → debug overlay). The map, model and UI code plug
+// in as Drawers and make their pipelines with createPipeline.
 class Renderer {
 public:
   // The device must outlive the renderer.
@@ -149,6 +153,9 @@ private:
   // The depth target for this frame's size, remade when the window changed size; nothing if it
   // cannot be made.
   const rhi::Image* depthTarget(rhi::Extent extent);
+  // The texture the scene pass draws into in frames with a post drawer, remade when the window
+  // changed size; nothing if it cannot be made.
+  const rhi::Image* sceneColorTarget(rhi::Extent extent);
   rhi::Image* findTexture(TextureId texture);
   [[nodiscard]] const rhi::Image* findTexture(TextureId texture) const;
 
@@ -158,6 +165,8 @@ private:
   rhi::Format colorFormat_ = rhi::Format::Undefined;
   rhi::Format depthFormat_ = rhi::Format::Undefined;
   std::optional<rhi::Image> depth_;
+  // sceneColorTarget's texture, kept in textures_.
+  std::optional<TextureId> sceneColor_;
   rhi::Extent extent_;
   // Indexed by TextureId::index.
   std::vector<std::optional<rhi::Image>> textures_;

@@ -11,6 +11,7 @@
 #include <ranges>
 #include <system_error>
 
+#include "graphics_options.hpp"
 #include "messages.hpp"
 
 namespace dwe::app {
@@ -224,6 +225,10 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
   if (argument == "--text-font") {
     options.textFont = ui::textFontNamed(value);
     return options.textFont.has_value();
+  }
+  if (argument == "--graphics") {
+    options.graphics = std::string{value};
+    return withGraphicsFlag({}, value).has_value();
   }
   if (argument == "--ui-skin") {
     options.uiSkin = std::string{value};

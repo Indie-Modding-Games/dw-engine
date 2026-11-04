@@ -1,7 +1,7 @@
 -- The title screen's menu, with no game behind it. Like the pause menu it never changes a setting
--- itself: it sends the language, text_font, ui_skin, chibi_style, minimap, minimap_size,
--- fullscreen and ui_scale commands and shows what the game reports back (ui.setting). The skin
--- entry is common/ui_skin_choice.lua, shared with the pause menu.
+-- itself: it sends the language, text_font, ui_skin, chibi_style, minimap, minimap_size, shadows,
+-- enhanced_lighting, vivid_colors, fullscreen and ui_scale commands and shows what the game reports
+-- back (ui.setting). The skin entry is common/ui_skin_choice.lua, shared with the pause menu.
 --
 -- Two layouts of the same entries, as the skin marks #panel (document_classes):
 -- - The modern one: play (a new game), continue (greyed and skipped unless the game publishes
@@ -74,6 +74,9 @@ local entries = {
     "chibi-style",
     "minimap",
     "minimap-size",
+    "shadows",
+    "enhanced-lighting",
+    "vivid-colors",
     "display-mode",
     "ui-scale",
     "quit",
@@ -98,6 +101,8 @@ local minimap_sizes = { "small", "medium", "large" }
 -- The chibi style (game_options.lua): off, the models from outside the original game (the
 -- default) or all.
 local chibi_modes = { "off", "external", "all" }
+-- The field's graphics improvements (docs/architecture/render.md): sun (the default), round or off.
+local shadow_modes = { "sun", "round", "off" }
 local ui_scales = { 0.75, 0.9, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0 }
 
 local function original(document)
@@ -188,6 +193,13 @@ local function refresh(document)
   local size = index_of(minimap_sizes, ui.setting("minimap_size")) and ui.setting("minimap_size")
     or "medium"
   value("minimap-size", t("pause_menu.minimap_size." .. size))
+  local shadows = index_of(shadow_modes, ui.setting("shadows")) and ui.setting("shadows") or "sun"
+  value("shadows", t("pause_menu.shadows." .. shadows))
+  local function on_off(setting)
+    return t(ui.setting(setting) == false and "common.no" or "common.yes")
+  end
+  value("enhanced-lighting", on_off("enhanced_lighting"))
+  value("vivid-colors", on_off("vivid_colors"))
   value(
     "display-mode",
     t(
@@ -266,7 +278,15 @@ local function lay_out(document)
   for _, id in ipairs({ "language", "text-font", "ui-skin", "chibi-style", "quit" }) do
     show(id, not orig or shown == "options")
   end
-  for _, id in ipairs({ "minimap", "minimap-size", "display-mode", "ui-scale" }) do
+  for _, id in ipairs({
+    "minimap",
+    "minimap-size",
+    "shadows",
+    "enhanced-lighting",
+    "vivid-colors",
+    "display-mode",
+    "ui-scale",
+  }) do
     show(id, orig and shown == "options")
   end
   show("prompt-back", orig and shown ~= "menu" and shown ~= "boot")
@@ -411,6 +431,15 @@ local options = {
   end,
   ["minimap-size"] = function(step)
     ui.send("minimap_size", cycle(minimap_sizes, ui.setting("minimap_size"), step, 2))
+  end,
+  shadows = function(step)
+    ui.send("shadows", cycle(shadow_modes, ui.setting("shadows"), step, 1))
+  end,
+  ["enhanced-lighting"] = function(_step)
+    ui.send("enhanced_lighting", ui.setting("enhanced_lighting") == false)
+  end,
+  ["vivid-colors"] = function(_step)
+    ui.send("vivid_colors", ui.setting("vivid_colors") == false)
   end,
   ["display-mode"] = function(_step)
     ui.send("fullscreen", not ui.setting("fullscreen"))

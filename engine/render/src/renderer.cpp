@@ -77,6 +77,32 @@ const rhi::Image* Renderer::depthTarget(rhi::Extent extent) {
   return &*depth_;
 }
 
+const rhi::Image* Renderer::sceneColorTarget(rhi::Extent extent) {
+  if (sceneColor_) {
+    const rhi::Image* image = findTexture(*sceneColor_);
+    if (image != nullptr && image->extent() == extent) {
+      return image;
+    }
+    // A frame in flight may still sample the old one: removing it defers its destruction.
+    destroyTexture(*std::exchange(sceneColor_, std::nullopt));
+  }
+  auto color = rhi::Image::create(
+      *device_, {.extent = extent,
+                 .format = colorFormat_,
+                 .usage = rhi::ImageUsage::Sampled | rhi::ImageUsage::ColorTarget});
+  if (!color) {
+    core::logError("{}", color.error().message);
+    return nullptr;
+  }
+  auto texture = addTexture(std::move(*color));
+  if (!texture) {
+    core::logError("{}", texture.error().message);
+    return nullptr;
+  }
+  sceneColor_ = *texture;
+  return findTexture(*texture);
+}
+
 rhi::Image* Renderer::findTexture(TextureId texture) {
   if (!bindless_->contains(texture) || texture.index >= textures_.size()) {
     return nullptr;
@@ -108,6 +134,9 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
     for (Drawer* drawer : drawers) {
       drawer->prepare(prepare);
     }
+  }
+  if (frame.post != nullptr) {
+    frame.post->prepare(prepare);
   }
   for (const TextureScene& scene : frame.textureScenes) {
     const auto target = std::ranges::find(sceneTargets_, scene.target, &SceneTarget::color);
@@ -147,12 +176,19 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
   const rhi::Viewport viewport = fullViewport(extent);
   const rhi::Rect scissor{.x = 0, .y = 0, .width = extent.width, .height = extent.height};
 
+  // With a post drawer the scene goes into a texture, which the post pass draws into the window.
+  const rhi::Image* sceneColor =
+      frame.post != nullptr && depth != nullptr ? sceneColorTarget(extent) : nullptr;
   if (depth != nullptr) {
     commands.prepareDepthTarget(*depth);
   }
+  if (sceneColor != nullptr) {
+    commands.prepareSampledTarget(*sceneColor);
+  }
   commands.beginRendering(
       {.extent = extent,
-       .color = {.view = begun->view, .clear = frame.clearColor},
+       .color = {.view = sceneColor != nullptr ? sceneColor->view() : begun->view,
+                 .clear = frame.clearColor},
        .depth = {.view = depth != nullptr ? depth->view() : VK_NULL_HANDLE, .clear = 1.0F}});
   // Without a depth target the scene's pipelines cannot draw; the frame still clears and shows the
   // UI.
@@ -165,6 +201,17 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
     }
   }
   commands.endRendering();
+
+  if (sceneColor != nullptr) {
+    commands.finishSampledTarget(*sceneColor);
+    commands.beginRendering(
+        {.extent = extent, .color = {.view = begun->view, .clear = frame.clearColor}, .depth = {}});
+    DrawContext context{commands, upload_, Pass::Post, extent, *sceneColor_};
+    commands.setViewport(viewport);
+    commands.setScissor(scissor);
+    frame.post->draw(context);
+    commands.endRendering();
+  }
 
   commands.colorPassBarrier();
   commands.beginRendering(

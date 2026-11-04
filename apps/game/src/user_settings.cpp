@@ -41,6 +41,9 @@ constexpr std::string_view NeedBubbleStackKey = "need_bubble_stack";
 constexpr std::string_view WorldMapKey = "world_map";
 constexpr std::string_view ChibiStyleKey = "chibi_style";
 constexpr std::string_view MinimapEnemiesKey = "minimap_enemies";
+constexpr std::string_view ShadowsKey = "shadows";
+constexpr std::string_view EnhancedLightingKey = "enhanced_lighting";
+constexpr std::string_view VividColorsKey = "vivid_colors";
 
 } // namespace
 
@@ -116,6 +119,15 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* enemies = tree->find(MinimapEnemiesKey)) {
       settings.minimapEnemies = reader.boolean(*enemies);
+    }
+    if (const core::YamlNode* shadows = tree->find(ShadowsKey)) {
+      settings.shadows = reader.text(*shadows);
+    }
+    if (const core::YamlNode* lighting = tree->find(EnhancedLightingKey)) {
+      settings.enhancedLighting = reader.boolean(*lighting);
+    }
+    if (const core::YamlNode* vivid = tree->find(VividColorsKey)) {
+      settings.vividColors = reader.boolean(*vivid);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -200,6 +212,17 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.minimapEnemies) {
     root.set(std::string{MinimapEnemiesKey},
              core::YamlNode::scalar(*settings.minimapEnemies ? "true" : "false"));
+  }
+  if (settings.shadows) {
+    root.set(std::string{ShadowsKey}, core::YamlNode::scalar(*settings.shadows));
+  }
+  if (settings.enhancedLighting) {
+    root.set(std::string{EnhancedLightingKey},
+             core::YamlNode::scalar(*settings.enhancedLighting ? "true" : "false"));
+  }
+  if (settings.vividColors) {
+    root.set(std::string{VividColorsKey},
+             core::YamlNode::scalar(*settings.vividColors ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

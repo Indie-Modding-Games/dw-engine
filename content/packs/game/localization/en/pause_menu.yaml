@@ -149,3 +149,10 @@ card_list: "Card List"
 # The City tab (a dwe addition): who already lives in the city and who is missing, with their prosperity points.
 city_prosperity: "Prosperity"
 city_residents: "Residents"
+# The field's graphics improvements (engine options; docs/architecture/render.md).
+shadows: "Shadows"
+shadows.sun: "Sun"
+shadows.round: "Round"
+shadows.off: "Off"
+enhanced_lighting: "Enhanced lighting"
+vivid_colors: "Vivid colours"

@@ -145,6 +145,33 @@ game_options = {
     texts = "pause_menu.chibi_style",
     default = "external",
   },
+  -- Shadows: off, round (the original's round shadow under every character) or sun (the round one
+  -- and a soft one the sun casts, turning and stretching with the clock, gone at night and in
+  -- caves and houses; the default). The game applies it at once and saves it.
+  {
+    id = "shadows",
+    setting = "shadows",
+    label = "pause_menu.shadows",
+    values = { "sun", "round", "off" },
+    texts = "pause_menu.shadows",
+    default = "sun",
+  },
+  -- Enhanced lighting: the time of day tints the scene (warm morning, orange dusk, blue night) and
+  -- the lamps, fires and crystals painted in some maps light what is around them (on by default).
+  {
+    id = "enhanced-lighting",
+    setting = "enhanced_lighting",
+    label = "pause_menu.enhanced_lighting",
+    default = true,
+  },
+  -- Vivid colours: the scene's muted colours gain saturation, a gentle contrast and a soft glow
+  -- around the brightest spots; the menus never change (on by default).
+  {
+    id = "vivid-colors",
+    setting = "vivid_colors",
+    label = "pause_menu.vivid_colors",
+    default = true,
+  },
 }
 
 -- The option's current value: what the game published, or its default.

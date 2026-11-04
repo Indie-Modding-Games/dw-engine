@@ -14,6 +14,8 @@ schemas:
     - field/rules
   field_warps:
     - field/warps
+  field_lights:
+    - field/lights
   ruleset:
     - rules/*/ruleset
   ruleset_battle:

@@ -35,7 +35,10 @@ La ficha de compañero usa este mecanismo con un modelo independiente del actor 
 5. Rehace el target de profundidad si la ventana cambió de tamaño.
 6. **Pase de escena** (`Pass::Scene`): color del swapchain (limpiado con `clearColor`) + profundidad (limpiada a 1).
    Llama a cada `Drawer` de `FrameDesc::scene`.
-7. Barrera de color entre pases.
+7. Si el frame trae `FrameDesc::post`, la escena del paso 6 se dibujó en una textura del tamaño de la ventana (el
+   renderer la rehace al cambiar el tamaño) y el **pase de post** (`Pass::Post`) la dibuja en el swapchain con ese
+   drawer, que la lee con `DrawContext::sceneColor()`. Sin `post` la escena va directa al swapchain, como siempre.
+   Barrera de color entre pases.
 8. **Pase de UI** (`Pass::Ui`): el mismo color, cargado, sin profundidad. Llama a cada `Drawer` de `FrameDesc::ui`
    (el fundido del cambio de mapa, RmlUi) y después a `FrameDesc::overlay` con el `rhi::Frame` crudo (el overlay de
    ImGui). El overlay es siempre lo último que se graba: puede cambiar cualquier estado (pipeline, set de
@@ -104,6 +107,42 @@ GPU.
 
 `FrontFace` sigue la definición de Vulkan. Como `render::perspective` invierte la Y del clip space, el resultado es
 el de OpenGL: las caras antihorarias vistas de frente (las de glTF) son `FrontFace::CounterClockwise`.
+
+## Paso de luz y color
+
+Mejoras opcionales del campo, ninguna con equivalente en el original ni con efecto en reglas, colisión o números
+aleatorios (opciones y textos: [game.md](../modulos/apps/game.md#sombras-luz-y-colores-vivos)).
+
+- **Sombras.** La redonda es la del original (`drop_shadow.c: renderDropShadow`): un billboard plano de 2 × radio de
+  la especie bajo los pies, SPOT256 (uv 0x40, 0x80, 63 × 63) restado con 0x30/128. `MapRenderer::groundDrawer()` las
+  dibuja justo después del fondo y antes de los modelos, como el original en su entrada 0xFFD de la tabla de orden:
+  si fueran billboards de las capas (después de los modelos), la profundidad oscurecería las piernas. La del sol es
+  otra mancha más larga (`sunShadow`) que sale de los pies en la dirección contraria al sol: `sunAt` mueve el sol de
+  +x al empezar el día a −x al empezar la noche, más alto a mitad (sombra de 1,3 radios) y bajo en los extremos
+  (hasta 3,7), con fuerza 0 de noche y en mapas sin hora y ×0,65 con la paleta del atardecer. Los billboards planos
+  giran ahora alrededor del eje vertical (`MapBillboard::turn`), sin cambiar los que tienen giro 0.
+- **Tinte por hora.** `daylightAt` interpola nueve claves fijadas a las horas del horario (`TimeOfDaySchedule`): dorado
+  al amanecer (1,06; 0,99; 0,89), neutro a mediodía, naranja al atardecer (1,07; 0,94; 0,87), azul de noche (0,91;
+  0,96; 1,10). Es pequeño a propósito: las paletas del fondo ya cambian con la hora (map.slang) y el tinte solo
+  inclina hacia donde ya va la pintura. Los mapas sin hora (hora fija o una sola paleta: cuevas, casas) quedan
+  neutros y con las lámparas encendidas.
+- **Luces del mapa.** `field/lights` del paquete del juego: por mapa, luces en píxeles del fondo (así siguen a la
+  lámpara pintada con cualquier tamaño de ventana y desplazamiento de la cámara) con radio, color, intensidad y tipo:
+  `fire` (siempre, más fuerte de noche, parpadea con tres senos), `lamp` (del atardecer al amanecer; siempre en mapas
+  sin hora) o `glow` (siempre, pulso lento). El parpadeo es una onda del tiempo real, nunca del generador del juego.
+  `windowLights` las pasa a píxeles de la ventana con la cámara del mapa, quita las de fuera y deja las 16 más
+  fuertes. Con una cámara de escena propia no se dibujan (el fondo no se mueve con ella).
+- **Paso de color** (`SceneGrade`, `shaders/scene_grade.slang`): un triángulo que cubre la ventana lee la escena
+  texel a texel, la multiplica por el tinte, suma las luces (aclaran sobre todo multiplicando, para que una pared
+  oscura siga siéndolo, y añaden un brillo propio pequeño), aplica vibrance (los colores apagados ganan más
+  saturación que los vivos), un contraste suave hacia una curva en S que deja el negro y el blanco, y un brillo con
+  cuatro texels cercanos por encima de 0,72. Con «Colores vivos»: vibrance 0,3, contraste 0,12, brillo 0,22. El
+  fundido de pantalla y la UI van en el pase de UI, después: nunca se tocan.
+
+Coste en llvmpipe a 1280 × 720 (medido con otros agentes cargando la máquina, carga ~20 en 12 núcleos, en pares
+lanzados a la vez para igualar la carga): con las tres opciones apagadas el frame cuesta lo mismo que antes del
+cambio; con todo encendido, en torno a un 25 % más de tiempo de frame (p. ej. 67 → 85 ms y 77 → 96 ms en twna01 de
+noche). La primera versión, con muestreo lineal y ocho muestras de brillo, costaba el doble.
 
 ## Dibujar: `Drawer`
 

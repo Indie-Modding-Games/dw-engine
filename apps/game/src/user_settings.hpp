@@ -74,6 +74,15 @@ struct UserSettings {
   // The enemies on the minimap (minimap_enemies: true, false; minimap_enemies.hpp): a dot for each
   // NPC on the map that can start a battle; on when not chosen yet.
   std::optional<bool> minimapEnemies = std::nullopt;
+  // The characters' shadows (shadows: off, round, sun; graphics_options.hpp): none, the original's
+  // round ones, or those with a soft one cast by the sun; sun when not chosen.
+  std::optional<std::string> shadows = std::nullopt;
+  // Enhanced lighting (enhanced_lighting: true, false): the time of day's tint and the maps' point
+  // lights over the field; on when not chosen.
+  std::optional<bool> enhancedLighting = std::nullopt;
+  // Vivid colours (vivid_colors: true, false): vibrance, a gentle contrast and a soft bloom over
+  // the field; on when not chosen.
+  std::optional<bool> vividColors = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

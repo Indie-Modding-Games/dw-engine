@@ -64,6 +64,7 @@
 #include "frame_stats.hpp"
 #include "game_audio.hpp"
 #include "game_documents.hpp"
+#include "graphics_options.hpp"
 #include "language.hpp"
 #include "medal_figure.hpp"
 #include "medal_sheet.hpp"
@@ -704,6 +705,13 @@ int runGame(const Options& requested) {
   // (title.language_first; an addition, as a remaster's); an autotest only when its route asks.
   (*ui)->setSetting("title.language_first", autotest == nullptr || autotest->asksLanguageFirst());
   MinimapChanger minimapChanger{userSettings, settingsFile};
+  // The field's enhanced graphics: the saved choices, with --graphics on top for this run only.
+  GraphicsOptions startGraphics = startGraphicsOptions(userSettings);
+  if (options.graphics) {
+    startGraphics = withGraphicsFlag(startGraphics, *options.graphics).value_or(startGraphics);
+  }
+  GraphicsChanger graphics{userSettings, settingsFile, startGraphics};
+  graphics.publish(**ui);
   WalkControlChanger walkControl{userSettings, settingsFile};
   ChibiModeChanger chibiMode{userSettings, settingsFile};
   (*ui)->setSetting(ChibiStyleSetting,
@@ -1397,6 +1405,9 @@ int runGame(const Options& requested) {
         (*ui)->setSetting(ChibiStyleSetting, std::string{chibiModeName(mode)});
         continue;
       }
+      if (graphics.handle(command, **ui)) {
+        continue;
+      }
       if (command.name == WalkControlSetting) {
         PlaySession* play = flow.playing();
         walkControl.change(command.value, play != nullptr ? &play->scene().field() : nullptr);
@@ -1501,10 +1512,15 @@ int runGame(const Options& requested) {
     // A movie covers the game and the UI.
     const bool showingMovie = movies && movies->playing();
     std::span<render::Drawer* const> sceneDrawers;
+    // The field's light and colour pass, over the field only (never a movie or the UI).
+    render::Drawer* postDrawer = nullptr;
     if (showingMovie) {
       sceneDrawers = movieDrawers;
     } else if (flow.playing() != nullptr) {
-      sceneDrawers = flow.playing()->scene().drawers();
+      FieldScene& field = flow.playing()->scene();
+      field.setGraphics(graphics.options());
+      sceneDrawers = field.drawers();
+      postDrawer = field.postDrawer();
     } else if (interview) {
       sceneDrawers = interview->drawers();
     }
@@ -1569,6 +1585,7 @@ int runGame(const Options& requested) {
         .ui = showingMovie ? std::span<render::Drawer* const>{} : uiDrawers,
         .overlay = std::ref(drawOverlay),
         .textureScenes = portraitScenes,
+        .post = postDrawer,
     });
     phases.mark(FramePhases::Render, platform->nowSeconds());
     if (!drawn || (control && control->idle())) {

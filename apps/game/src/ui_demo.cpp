@@ -953,6 +953,7 @@ int runUiDemo(const UiDemoOptions& options) {
         .ui = uiDrawers,
         .overlay = nullptr,
         .textureScenes = portraitScenes,
+        .post = nullptr,
     });
     if (!drawn) {
       platform->waitForEvents(IdleWait);

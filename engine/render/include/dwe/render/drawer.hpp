@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/rhi/bindless.hpp>
 #include <dwe/rhi/command_list.hpp>
 #include <dwe/rhi/types.hpp>
 #include <dwe/rhi/upload_ring.hpp>
@@ -14,13 +15,18 @@ enum class Pass : std::uint8_t {
   Scene,
   // 2D on top (the game's UI, then the debug overlay): the same color target, no depth.
   Ui,
+  // Between the two, only in frames with a post drawer (FrameDesc::post): the scene was drawn into
+  // a texture (DrawContext::sceneColor) and this pass draws it into the window, no depth.
+  Post,
 };
 
 // What a drawer records into, during one pass of one frame.
 class DrawContext {
 public:
-  DrawContext(rhi::CommandList& commands, rhi::UploadRing& upload, Pass pass, rhi::Extent extent)
-      : commands_(&commands), upload_(&upload), pass_(pass), extent_(extent) {}
+  DrawContext(rhi::CommandList& commands, rhi::UploadRing& upload, Pass pass, rhi::Extent extent,
+              rhi::TextureId sceneColor = {})
+      : commands_(&commands), upload_(&upload), pass_(pass), extent_(extent),
+        sceneColor_(sceneColor) {}
 
   [[nodiscard]] rhi::CommandList& commands() const { return *commands_; }
   // Per-frame memory for data that changes every frame; valid until the end of this frame on the
@@ -29,12 +35,16 @@ public:
   [[nodiscard]] Pass pass() const { return pass_; }
   // The size of the targets in pixels. The viewport and scissor start as the whole target.
   [[nodiscard]] rhi::Extent extent() const { return extent_; }
+  // In Pass::Post, the texture the scene pass drew this frame, the window's size; sampled with
+  // the bindless table. In the other passes, an invalid id.
+  [[nodiscard]] rhi::TextureId sceneColor() const { return sceneColor_; }
 
 private:
   rhi::CommandList* commands_;
   rhi::UploadRing* upload_;
   Pass pass_;
   rhi::Extent extent_;
+  rhi::TextureId sceneColor_;
 };
 
 // What a drawer may use before the passes of a frame start (Drawer::prepare).

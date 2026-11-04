@@ -33,6 +33,7 @@ dwe_add_app(game
         src/field_scene.cpp
         src/field_scene_npcs.cpp
         src/field_scene_ground_items.cpp
+        src/field_scene_graphics.cpp
         src/field_scene_effects.cpp
         src/field_scene_status.cpp
         src/field_scene_battle_visuals.cpp
@@ -54,6 +55,7 @@ dwe_add_app(game
         src/map_preview.cpp
         src/minimap_enemies.cpp
         src/minimap_setting.cpp
+        src/graphics_options.cpp
         src/walk_control.cpp
         src/free_exploration.cpp
         src/game_saves.cpp
@@ -186,7 +188,8 @@ if(BUILD_TESTING)
                                   src/death_effects.cpp src/ending_effects.cpp
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/money_box_screen.cpp src/minimap_enemies.cpp src/minimap_setting.cpp
                                   src/pause_box.cpp src/place_command.cpp src/player_chart.cpp src/player_city.cpp src/partner_set_command.cpp src/story_set_command.cpp src/shop_job_bar.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
-                                  src/save_indicator.cpp src/save_machine_flow.cpp src/award_screen.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_skin_setting.cpp src/user_settings.cpp src/walk_control.cpp src/world_map.cpp)
+                                  src/save_indicator.cpp src/save_machine_flow.cpp src/award_screen.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_skin_setting.cpp src/user_settings.cpp src/walk_control.cpp src/world_map.cpp
+                                  src/graphics_options.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution
                                                  dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render dwe::signs

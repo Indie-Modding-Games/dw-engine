@@ -91,6 +91,9 @@ struct Options {
   std::optional<ui::TextFont> textFont;
   // The skin of the UI (--ui-skin <id>), instead of the saved or the packs' default; for autotests.
   std::optional<std::string> uiSkin;
+  // The field's enhanced graphics on top of the saved ones (--graphics shadows=off|round|sun,
+  // lighting=on|off,colors=on|off; graphics_options.hpp): for captures and autotests, unsaved.
+  std::optional<std::string> graphics;
 
   // The language of the texts (--lang en|es...), instead of the saved one or the system's; for
   // autotests.
@@ -139,7 +142,8 @@ inline constexpr std::string_view Usage =
     "<width>x<height>] "
     "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--chibi] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang "
     "<language>] "
-    "[--text-font modern|original] [--ui-skin <id>] [--new-game | --load <slot>] "
+    "[--text-font modern|original] [--ui-skin <id>] [--graphics <option>=<value>[,...]] "
+    "[--new-game | --load <slot>] "
     "[--new-game-chain original|seeded] [--clock-speed <x>] "
     "[--seed <n>] [--original-rolls <state>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] [--trace <file>] "
     "[--control <socket> [--control-paused]] | "

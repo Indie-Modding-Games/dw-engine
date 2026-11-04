@@ -460,6 +460,105 @@ void MapRenderer::addToRun(SpriteBlend blend, TexelFilter texels, std::uint32_t 
   runs_.back().count += 6;
 }
 
+void MapRenderer::appendBillboard(const MapBillboard& billboard, const MapCamera& shown) {
+  const glm::mat4 viewProjection = shown.viewProjection();
+  const glm::vec3 right{shown.view()[0][0], shown.view()[1][0], shown.view()[2][0]};
+  const glm::vec3 up{shown.view()[0][1], shown.view()[1][1], shown.view()[2][1]};
+  if (billboard.texture >= billboardTextures_.size()) {
+    return;
+  }
+  const SpriteTexture& texture = billboardTextures_[billboard.texture];
+  const glm::vec2 half = billboard.size * 0.5F;
+  // Upright: the camera's right and up, turned on screen. Flat: the world's x and z turned about
+  // the world's up, the far side first.
+  const float cosine = std::cos(billboard.turn);
+  const float sine = std::sin(billboard.turn);
+  const glm::vec3 screenRight = (right * cosine) - (up * sine);
+  const glm::vec3 screenUp = (up * cosine) + (right * sine);
+  const bool card = !billboard.flat && billboard.card.has_value();
+  const glm::vec3 across = billboard.flat ? glm::vec3{cosine, 0.0F, sine} * half.x
+                           : card         ? *billboard.card * half.x
+                                          : screenRight * half.x;
+  const glm::vec3 along = billboard.flat ? glm::vec3{sine, 0.0F, -cosine} * half.y
+                          : card         ? glm::vec3{0.0F, half.y, 0.0F}
+                                         : screenUp * half.y;
+  // The pivot on the centre: the quad's middle moves away from it.
+  const glm::vec2 shift =
+      billboard.flat || card ? glm::vec2{0.0F} : (glm::vec2{0.5F} - billboard.pivot);
+  const glm::vec3 middle = billboard.centre + (screenRight * (shift.x * billboard.size.x)) -
+                           (screenUp * (shift.y * billboard.size.y));
+  const auto clip = [&viewProjection](glm::vec3 world) {
+    return viewProjection * glm::vec4{world, 1.0F};
+  };
+  const std::array<glm::vec4, 4> corners{
+      clip(middle - across + along), clip(middle + across + along), clip(middle - across - along),
+      clip(middle + across - along)};
+  const glm::vec2 uvMin = billboard.texel / texture.size;
+  const glm::vec2 uvMax = (billboard.texel + billboard.texels) / texture.size;
+  const glm::uvec2 textures{texture.id.index, NoPalette};
+  const glm::vec4 color{billboard.color, 1.0F};
+  const auto plainStart = static_cast<std::uint32_t>(vertices_.size());
+  appendQuad(vertices_, corners, uvMin, uvMax, textures, color);
+  if (billboard.blend == SpriteBlend::Opaque) {
+    addToRun(SpriteBlend::Opaque, TexelFilter::All, plainStart);
+    return;
+  }
+  addToRun(SpriteBlend::Opaque, TexelFilter::Plain, plainStart);
+  const auto semiStart = static_cast<std::uint32_t>(vertices_.size());
+  appendQuad(vertices_, corners, uvMin, uvMax, textures,
+             {billboard.color, blendAlpha(billboard.blend)});
+  addToRun(billboard.blend, TexelFilter::SemiTransparent, semiStart);
+}
+
+const rhi::GraphicsPipeline& MapRenderer::pipelineOf(SpriteBlend blend) const {
+  switch (blend) {
+  case SpriteBlend::Opaque:
+    return pipelines_.opaque;
+  case SpriteBlend::Average:
+    return pipelines_.alpha;
+  case SpriteBlend::Add:
+  case SpriteBlend::AddQuarter:
+    return pipelines_.additive;
+  case SpriteBlend::Subtract:
+    return pipelines_.subtractive;
+  }
+  return pipelines_.opaque;
+}
+
+void MapRenderer::drawGround(DrawContext& context) {
+  if (!hasMap_ || stageCamera_ || groundBillboards_.empty()) {
+    return;
+  }
+  vertices_.clear();
+  runs_.clear();
+  for (const MapBillboard& billboard : groundBillboards_) {
+    appendBillboard(billboard, camera_);
+  }
+  if (vertices_.empty()) {
+    return;
+  }
+  const auto upload = context.upload().upload(std::span<const Vertex>{vertices_});
+  if (!upload) {
+    warnUploadFailure(vertices_.size() * sizeof(Vertex));
+    return;
+  }
+  rhi::CommandList& commands = context.commands();
+  commands.bindVertexBuffer(*upload);
+  // Sampled nearest, as the billboards over the models (drawLayers).
+  constexpr float NearestSampling = 1.0e6F;
+  MapPush push{.pixelsPerTexel = NearestSampling,
+               .fade = static_cast<float>(fade_),
+               .texels = 0,
+               .fromRow = fromRow_,
+               .toRow = toRow_};
+  for (const Run& run : runs_) {
+    push.texels = static_cast<std::uint32_t>(run.texels);
+    commands.bindPipeline(pipelineOf(run.blend));
+    commands.pushConstants(push);
+    commands.draw(run.count, run.first);
+  }
+}
+
 void MapRenderer::drawLayers(DrawContext& context) {
   if (!hasMap_) {
     return;
@@ -485,52 +584,8 @@ void MapRenderer::drawLayers(DrawContext& context) {
                {0.0F, 0.0F}, {1.0F, 1.0F}, white, marker.color);
     addToRun(SpriteBlend::Opaque, TexelFilter::All, first);
   }
-  const glm::vec3 up{shown.view()[0][1], shown.view()[1][1], shown.view()[2][1]};
   for (const MapBillboard& billboard : billboards_) {
-    if (billboard.texture >= billboardTextures_.size()) {
-      continue;
-    }
-    const SpriteTexture& texture = billboardTextures_[billboard.texture];
-    const glm::vec2 half = billboard.size * 0.5F;
-    // Upright: the camera's right and up, turned on screen. Flat: the world's x and z, the far side
-    // first.
-    const float cosine = std::cos(billboard.turn);
-    const float sine = std::sin(billboard.turn);
-    const glm::vec3 screenRight = (right * cosine) - (up * sine);
-    const glm::vec3 screenUp = (up * cosine) + (right * sine);
-    const bool card = !billboard.flat && billboard.card.has_value();
-    const glm::vec3 across = billboard.flat ? glm::vec3{half.x, 0.0F, 0.0F}
-                             : card         ? *billboard.card * half.x
-                                            : screenRight * half.x;
-    const glm::vec3 along = billboard.flat ? glm::vec3{0.0F, 0.0F, -half.y}
-                            : card         ? glm::vec3{0.0F, half.y, 0.0F}
-                                           : screenUp * half.y;
-    // The pivot on the centre: the quad's middle moves away from it.
-    const glm::vec2 shift =
-        billboard.flat || card ? glm::vec2{0.0F} : (glm::vec2{0.5F} - billboard.pivot);
-    const glm::vec3 middle = billboard.centre + (screenRight * (shift.x * billboard.size.x)) -
-                             (screenUp * (shift.y * billboard.size.y));
-    const auto clip = [&viewProjection](glm::vec3 world) {
-      return viewProjection * glm::vec4{world, 1.0F};
-    };
-    const std::array<glm::vec4, 4> corners{
-        clip(middle - across + along), clip(middle + across + along), clip(middle - across - along),
-        clip(middle + across - along)};
-    const glm::vec2 uvMin = billboard.texel / texture.size;
-    const glm::vec2 uvMax = (billboard.texel + billboard.texels) / texture.size;
-    const glm::uvec2 textures{texture.id.index, NoPalette};
-    const glm::vec4 color{billboard.color, 1.0F};
-    const auto plainStart = static_cast<std::uint32_t>(vertices_.size());
-    appendQuad(vertices_, corners, uvMin, uvMax, textures, color);
-    if (billboard.blend == SpriteBlend::Opaque) {
-      addToRun(SpriteBlend::Opaque, TexelFilter::All, plainStart);
-      continue;
-    }
-    addToRun(SpriteBlend::Opaque, TexelFilter::Plain, plainStart);
-    const auto semiStart = static_cast<std::uint32_t>(vertices_.size());
-    appendQuad(vertices_, corners, uvMin, uvMax, textures,
-               {billboard.color, blendAlpha(billboard.blend)});
-    addToRun(billboard.blend, TexelFilter::SemiTransparent, semiStart);
+    appendBillboard(billboard, shown);
   }
   // A stage of its own has no depth layers of the map.
   for (const DepthLayerQuad& quad :
@@ -602,21 +657,7 @@ void MapRenderer::drawLayers(DrawContext& context) {
                .toRow = toRow_};
   for (const Run& run : runs_) {
     push.texels = static_cast<std::uint32_t>(run.texels);
-    switch (run.blend) {
-    case SpriteBlend::Opaque:
-      commands.bindPipeline(pipelines_.opaque);
-      break;
-    case SpriteBlend::Average:
-      commands.bindPipeline(pipelines_.alpha);
-      break;
-    case SpriteBlend::Add:
-    case SpriteBlend::AddQuarter:
-      commands.bindPipeline(pipelines_.additive);
-      break;
-    case SpriteBlend::Subtract:
-      commands.bindPipeline(pipelines_.subtractive);
-      break;
-    }
+    commands.bindPipeline(pipelineOf(run.blend));
     commands.pushConstants(push);
     commands.draw(run.count, run.first);
   }

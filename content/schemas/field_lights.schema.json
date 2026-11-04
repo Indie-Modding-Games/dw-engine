@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Field lights",
+  "description": "field/lights.yaml of the game pack: the maps' point lights of the enhanced lighting (an engine improvement, docs/architecture/render.md). Pixels are the map background's.",
+  "type": "object",
+  "required": [
+    "maps"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "maps": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9_]+$"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "pixel",
+            "radius"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "pixel": {
+              "description": "The light's centre in background pixels (x, y).",
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "radius": {
+              "description": "Where its light ends, in background pixels.",
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "color": {
+              "description": "Its colour, red, green and blue from 0 to 1 (white when left out).",
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "intensity": {
+              "description": "How much it brightens what it falls on at its centre (0.5 when left out).",
+              "type": "number",
+              "minimum": 0
+            },
+            "kind": {
+              "description": "fire (always lit, stronger at night, flickers), lamp (dusk to dawn) or glow (always lit, pulses; the default).",
+              "enum": [
+                "fire",
+                "lamp",
+                "glow"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

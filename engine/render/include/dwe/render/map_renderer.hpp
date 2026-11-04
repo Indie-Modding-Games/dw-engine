@@ -47,7 +47,8 @@ struct MapBillboard {
   // Multiplies the texels' colours: the original's 0x80 is 1.
   glm::vec3 color{1.0F};
   // An upright one's point on the centre, as fractions of its size from its top-left corner, and
-  // its turn on screen around it, clockwise in radians (GsSPRITE mx, my and rotate).
+  // its turn on screen around it, clockwise in radians (GsSPRITE mx, my and rotate). A flat one
+  // turns about the world's up instead: its x side runs along (cos turn, 0, sin turn).
   glm::vec2 pivot{0.5F};
   float turn = 0.0F;
   // An upright card that does not face the camera: the unit world direction its texels run along
@@ -66,9 +67,10 @@ inline constexpr double TimeOfDayFadeSeconds = 25.0 / MapDepthLayers::FramesPerS
 double timeOfDayFadeShown(double progress);
 
 // Draws a field map (docs/formats/mapas.md, ADR 0020): the prerendered background of the current
-// time of day, then, after the models drawn with camera(), the depth-layer sprites with depth so
-// they cover the models behind them, and black bars where the background does not reach. Put
-// background() first in the scene pass, the models next and layers() last.
+// time of day, then the ground billboards (the characters' shadows), then, after the models drawn
+// with camera(), the depth-layer sprites with depth so they cover the models behind them, and
+// black bars where the background does not reach. Put backgroundDrawer() first in the scene pass,
+// groundDrawer() next, the models after it and layerDrawer() last.
 class MapRenderer {
 public:
   // The renderer must outlive the map renderer.
@@ -123,6 +125,14 @@ public:
     billboards_.assign(billboards.begin(), billboards.end());
   }
 
+  // Billboards drawn by groundDrawer() right after the background, before the models, in this
+  // order, until replaced: what lies on the ground under everything, as the characters' shadows
+  // the original sorts behind everything (drop_shadow.c: renderDropShadow, ordering table 0xFFD).
+  // The models cover them, the depth layers too; not drawn with a stage camera.
+  void setGroundBillboards(std::span<const MapBillboard> billboards) {
+    groundBillboards_.assign(billboards.begin(), billboards.end());
+  }
+
   [[nodiscard]] bool hasMap() const { return hasMap_; }
 
   // A camera of a stage of its own instead of the map's (a tournament arena: std_setup.c:
@@ -137,6 +147,7 @@ public:
   [[nodiscard]] MapDepthLayers& layers() { return layers_; }
 
   [[nodiscard]] Drawer& backgroundDrawer() { return background_; }
+  [[nodiscard]] Drawer& groundDrawer() { return ground_; }
   [[nodiscard]] Drawer& layerDrawer() { return foreground_; }
 
 private:
@@ -154,6 +165,15 @@ private:
   public:
     explicit LayerDrawer(MapRenderer& owner) : owner_(&owner) {}
     void draw(DrawContext& context) override { owner_->drawLayers(context); }
+
+  private:
+    MapRenderer* owner_;
+  };
+
+  class GroundDrawer final : public Drawer {
+  public:
+    explicit GroundDrawer(MapRenderer& owner) : owner_(&owner) {}
+    void draw(DrawContext& context) override { owner_->drawGround(context); }
 
   private:
     MapRenderer* owner_;
@@ -204,6 +224,10 @@ private:
   void prepare(PrepareContext& context);
   void drawBackground(DrawContext& context);
   void drawLayers(DrawContext& context);
+  void drawGround(DrawContext& context);
+  // Adds a billboard's quads (and runs) to the frame's vertices, as `shown` sees it.
+  void appendBillboard(const MapBillboard& billboard, const MapCamera& shown);
+  [[nodiscard]] const rhi::GraphicsPipeline& pipelineOf(assets::SpriteBlend blend) const;
   void addToRun(assets::SpriteBlend blend, TexelFilter texels, std::uint32_t first);
   void warnUploadFailure(std::size_t bytes);
 
@@ -212,6 +236,7 @@ private:
   TextureId black_;
   BackgroundDrawer background_{*this};
   LayerDrawer foreground_{*this};
+  GroundDrawer ground_{*this};
 
   // The default camera until a map is set; hasMap_ says whether it is one.
   MapCamera camera_{MapCameraDesc{}};
@@ -231,6 +256,7 @@ private:
   std::vector<MapMarker> markers_;
   std::vector<SpriteTexture> billboardTextures_;
   std::vector<MapBillboard> billboards_;
+  std::vector<MapBillboard> groundBillboards_;
   glm::vec2 backgroundSize_{0.0F};
   // The palette rows faded between: fade_ 0 shows fromRow_, 1 toRow_.
   std::uint32_t fromRow_ = 0;

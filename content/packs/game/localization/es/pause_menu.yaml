@@ -150,3 +150,10 @@ card_list: "Lista de cartas"
 # La pestaña Ciudad (una mejora de dwe): quién vive ya en la ciudad y quién falta, con sus puntos de prosperidad.
 city_prosperity: "Prosperidad"
 city_residents: "Residentes"
+# Las mejoras gráficas del campo (opciones del motor; docs/architecture/render.md).
+shadows: "Sombras"
+shadows.sun: "Del sol"
+shadows.round: "Redondas"
+shadows.off: "No"
+enhanced_lighting: "Luz mejorada"
+vivid_colors: "Colores vivos"

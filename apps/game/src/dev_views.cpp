@@ -241,6 +241,7 @@ int runDevView(const Options& options) {
             [&](const rhi::Frame& frame) {
               (*debugUi)->draw(frame, stats, input, **scripts, marker);
             },
+        .post = nullptr,
     });
     // No frame means nothing to draw into, as with a window minimized to zero size. Sleep until
     // something happens instead of spinning. A minimized window is not skipped up front: some
