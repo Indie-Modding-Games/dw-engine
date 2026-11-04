@@ -241,21 +241,45 @@ TEST_CASE("map names are keys of the original's map_names block") {
   CHECK(gameTextKey("btl", "menu", 87) == "btl.menu.0087");
 }
 
-TEST_CASE("the game pack's Spanish texts cover every English key") {
+// The team's game pack from the source tree, over an empty base.
+struct GamePack {
   MemoryFileSystem memory;
-  const std::filesystem::path game = DWE_GAME_PACK;
-  for (const auto& entry : std::filesystem::recursive_directory_iterator{game}) {
-    if (entry.is_regular_file()) {
-      std::ifstream stream{entry.path(), std::ios::binary};
-      const std::string bytes{std::istreambuf_iterator<char>{stream},
-                              std::istreambuf_iterator<char>{}};
-      memory.addFile(std::filesystem::path{"game"} / entry.path().lexically_relative(game), bytes);
+  std::unique_ptr<VirtualFileSystem> files;
+
+  GamePack() {
+    const std::filesystem::path game = DWE_GAME_PACK;
+    for (const auto& entry : std::filesystem::recursive_directory_iterator{game}) {
+      if (entry.is_regular_file()) {
+        std::ifstream stream{entry.path(), std::ios::binary};
+        const std::string bytes{std::istreambuf_iterator<char>{stream},
+                                std::istreambuf_iterator<char>{}};
+        memory.addFile(std::filesystem::path{"game"} / entry.path().lexically_relative(game),
+                       bytes);
+      }
     }
+    memory.addFile("base/pack.yaml", "id: base\nversion: 0.1.0\nlayer: base\n");
+    auto mounted =
+        VirtualFileSystem::mount(memory, std::vector<std::filesystem::path>{"base", "game"});
+    REQUIRE_MESSAGE(mounted.has_value(), mounted.error().message);
+    files = std::make_unique<VirtualFileSystem>(std::move(*mounted));
   }
-  memory.addFile("base/pack.yaml", "id: base\nversion: 0.1.0\nlayer: base\n");
-  auto files = VirtualFileSystem::mount(memory, std::vector<std::filesystem::path>{"base", "game"});
-  REQUIRE_MESSAGE(files.has_value(), files.error().message);
-  const Catalog catalog = loaded(*files, "es");
+};
+
+TEST_CASE("the game pack's Spanish texts cover every English key") {
+  const GamePack pack;
+  const Catalog catalog = loaded(*pack.files, "es");
   CHECK(catalog.warnings().empty());
   CHECK(catalog.text("language.name") == "Español");
+}
+
+// The other way round too: a key only one language has is a text the other shows in English, or one
+// no English text backs (a renamed key left behind). checkTranslations names both, with tables
+// missing in a language and placeholders that differ.
+TEST_CASE("every language of the game pack has the same keys as English, both ways") {
+  const GamePack pack;
+  const std::vector<std::string> languages = availableLanguages(*pack.files);
+  CHECK(languages.size() >= 2);
+  for (const auto& problem : dwe::assets::checkTranslations(*pack.files)) {
+    FAIL_CHECK(problem.message);
+  }
 }
