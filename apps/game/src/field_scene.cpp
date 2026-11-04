@@ -519,7 +519,6 @@ void FieldScene::finishTick() {
     }
   }
   followNpcs();
-  followSigns();
 }
 
 std::string FieldScene::signsKey() const {
@@ -899,6 +898,8 @@ void FieldScene::flickerFlames(const Actor& actor, std::uint32_t strip) {
 }
 
 void FieldScene::update(double frameSeconds, float alpha, bool paused) {
+  // Every frame, paused too: a language picked in the pause menu repaints the signs behind it.
+  followSigns();
   const double animationSeconds = paused ? 0.0 : frameSeconds;
   advanceFlames(animationSeconds);
   fighterSeconds_ = std::exchange(fighterSecondsDue_, 0.0);

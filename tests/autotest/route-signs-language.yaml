@@ -1,0 +1,30 @@
+# The signs follow a language picked in the pause menu at once: gcan09 starts in the run's language (--lang en), the
+# options page moves to the next language and the shop's sign behind the menu is already in it (menu-open), then in
+# the field (after). How to run it: docs/guides/carteles.md.
+name: signs-language
+device: keyboard
+timeout: 120
+steps:
+  - resize: [1280, 720]
+  - script: place("player -7348 868 0")
+  - wait: {seconds: 2}
+  - screenshot: before
+  - menu: open
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        # The page's box takes no input until it is in place (tickUIBox).
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - menu_select: language
+  - wait: {seconds: 0.5}
+  - screenshot: menu-open
+  - menu: close
+  - wait: {menu_open: false, seconds: 1}
+  - screenshot: after

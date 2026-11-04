@@ -75,7 +75,8 @@ Los modos de `clear`:
 
 `FieldScene` guarda una copia de las imágenes del mapa tal como las leyó, pinta los parches antes de
 `MapRenderer::setMap` y, si cambian el idioma (`Catalog::revision`) o la opción, vuelve a subir el fondo y las
-texturas de los sprites con `MapRenderer::updateImages`. `MapSigns` guarda los parches por mapa, idioma y revisión, así
+texturas de los sprites con `MapRenderer::updateImages`. Lo mira en cada fotograma (`FieldScene::update`), también con
+el juego en pausa: el idioma elegido en el menú de pausa cambia los carteles que se ven detrás del menú al momento. `MapSigns` guarda los parches por mapa, idioma y revisión, así
 que volver a un mapa no pinta nada otra vez.
 
 La opción **Carteles traducidos** del menú de pausa (opciones; `translated_signs` en los ajustes del jugador) está
@@ -89,6 +90,8 @@ activada por defecto; desactivada, el mapa muestra las texturas originales.
 - `engine/signs/tests`: lectura de overlays, borrado, texto en una textura sintética (sin datos del juego), giro,
   perspectiva, efectos, parches y el cambio de idioma de `MapSigns`.
 - `tests/autotest/route-signs.yaml`: captura un mapa en el idioma de la partida y otra con la opción apagada.
+- `tests/autotest/route-signs-language.yaml`: cambia el idioma en el menú de pausa de `gcan09` y captura el cartel detrás
+  del menú abierto (ya en el idioma nuevo) y después en el campo.
 
 ## Carteles hechos
 
