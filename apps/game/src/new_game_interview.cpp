@@ -367,6 +367,8 @@ void NewGameInterview::step() {
   }
 }
 
+// script_menu.c: showNewGameDialogue: the scene's line in the box (showMapHeadTextbox), then the
+// state `next` once the player closes it.
 void NewGameInterview::say(std::size_t line, std::uint8_t next) {
   shownLine_ = line;
   next_ = next;
@@ -374,6 +376,8 @@ void NewGameInterview::say(std::size_t line, std::uint8_t next) {
   showText(true);
 }
 
+// script_menu.c: showNewGameSelection: the scene's two choices (showMapheadSelection, cursor on the
+// first), then the state `next` plus the row picked.
 void NewGameInterview::ask(std::size_t line, std::uint8_t next) {
   shownLine_ = line;
   next_ = next;

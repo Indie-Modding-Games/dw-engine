@@ -362,6 +362,7 @@ public:
 
   Award award(const CourseRules& course, std::int32_t slotTenths) override {
     session::GameSession& session = *desc_->session;
+    // TRN_saveBaseStats: the box counts from the stats before the session.
     Award award{.before = statsOf(session.partner().state().stats.base), .gains = {}};
     const game::partner::TrainingRules& training = session.partnerRules().training;
     bool upgraded = false;

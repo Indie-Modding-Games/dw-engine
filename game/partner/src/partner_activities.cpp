@@ -166,6 +166,9 @@ void Partner::passTrainingHour(const TrainingPlace& place, const TrainingCourse&
     mood.happiness += rules.overworkHappiness;
     mood.discipline += rules.overworkDiscipline;
   }
+  // TRN_saveTrainingStartTime keeps the time the course started and TRN_advanceTrainingTime sets
+  // the hour after it. The game time stands still while the course holds the field, so the time now
+  // is the start's.
   const ruleset::GameTime before = clock.time();
   const std::int32_t hour = (before.hour + 1) % constants::HoursPerDay;
   const ruleset::ClockAdvance advance = clock.jumpTo(hour, before.minute);

@@ -464,6 +464,10 @@ respuesta de la entrevista) no cuenta. La misma caja de nombres sirve a la rutin
 los guiones (renombrar al jugador o al compañero, `StoryNaming`). No corre en un autotest, como las películas, salvo
 que la ruta diga `new_game_scene: true`.
 
+Cada línea de la entrevista es `showNewGameDialogue` (la frase en la caja y, al cerrarla, el estado siguiente) y
+cada pregunta `showNewGameSelection` (dos opciones con el cursor en la primera; el estado siguiente más la fila
+elegida): `NewGameInterview::say` y `ask`.
+
 Tras el «sí» al nombre del jugador se pasa directo a «What's your Digimon's name?» (`newGameStateMachine`: estado
 0x18, línea 0x1D); «Good Name.» (línea 0x1F) solo sale tras el nombre del compañero (estado 0x1C).
 
@@ -481,7 +485,7 @@ fuera las preguntas y las películas, empieza en `seeded` (el campo libre de Fil
 La caja de nombres es la americana: dos mitades de 9 filas y 5 columnas (mayúsculas; minúsculas y dígitos), con
 «Name», Atrás y OK a su izquierda y el nombre en una caja aparte debajo, con el subrayado amarillo en la letra
 siguiente (la piel original las coloca como el original: `ui/skins/original/naming_box`; el original solo dice
-«Name», no de quién es el nombre, y esa línea se oculta), y el cursor se mueve como en `namingSelectionUp/Down/Left/Right` (arriba y abajo dan
+«Name», no de quién es el nombre, y esa línea se oculta), y el cursor se mueve como en `namingSelectionUp`, `namingSelectionDown`, `namingSelectionLeft` y `namingSelectionRight` (arriba y abajo dan
 la vuelta en cada mitad; a la derecha de la última columna se pasa a la otra mitad o a Atrás; desde un botón se entra
 por la fila de la Z). Las direcciones repiten al mantenerlas (a los 6 fotogramas y luego cada 2). Confirmar escribe
 la letra (un espacio no puede ser la primera); con el nombre lleno reescribe la última y el cursor va a Aceptar;

@@ -410,12 +410,12 @@ tickMeramonShake = { status = "portado", dwe = "apps/game/src/screen_shake.hpp",
 cleanupGame = { status = "no-aplica", note = "limpieza del original", what = "Libera la partida al volver al título." }
 getFileCityTopMap = { status = "portado", dwe = "apps/session/src/game_session.cpp", what = "Elige qué versión del mapa de la ciudad cargar según cuánto ha crecido.", note = "CityAdapter::clearedMap la elige; el guardado del final (rutina 0x36) la guarda en clearedMap y la partida sigue ahí" }
 loadMapCollisionData = { status = "no-aplica", note = "lectura del disco; la colisión la extrae dwx", what = "Lee la rejilla de colisión del mapa." }
-setupTamerOnWarp = { status = "portado", dwe = "game/field/src/script_warps.cpp", what = "Coloca al jugador al llegar por un warp." }
+setupTamerOnWarp = { status = "portado", dwe = "game/field/src/field.cpp", what = "Coloca al jugador al llegar por un warp." }
 tamerTick = { status = "portado", dwe = "apps/game/src/play_session.cpp", what = "Mueve al jugador cada fotograma según su estado." }
 checkMedalConditions = { status = "portado", dwe = "game/story/src/medals.cpp", what = "Da las medallas del campo (técnicas, estadísticas, dinero, año, criados, peces, cartas) y las anuncia." }
 checkPendingAwards = { status = "portado", dwe = "apps/game/src/award_screen.cpp", what = "Lanza el anuncio pendiente de un premio (medalla o nivel del jugador)." }
-getEntityFromScriptId = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Da el personaje de un id de guion." }
-tamerTickIdle = { status = "portado", dwe = "apps/game/src/play_session.cpp", what = "El jugador quieto." }
+getEntityFromScriptId = { status = "portado", dwe = "apps/game/src/story_stage.cpp", what = "Da el personaje de un id de guion." }
+tamerTickIdle = { status = "portado", dwe = "game/field/src/field.cpp", what = "El jugador quieto." }
 tamerTickTraining = { status = "portado", dwe = "game/gym/src/course_flow.cpp", what = "El jugador pone su clip 10 y mira al compañero cada cuadro mientras entrena (gym.yaml: watch_animation)." }
 tamerTickMachinedramonSpawn = { status = "portado", dwe = "apps/game/src/story_scene_glue.cpp", what = "El jugador asiste a la aparición del jefe final.", note = "rutina de compañero 8: BossArrivalScene; la historia sigue al acabar la llegada" }
 tamerTickAwardSomething = { status = "portado", dwe = "apps/game/src/award_screen.cpp", what = "Escena de premio: para el tiempo, enseña la medalla o el nivel ganado y espera." }
@@ -656,21 +656,21 @@ tickPartnerToilet = { status = "portado", dwe = "apps/game/src/field_toilet.cpp"
 TRN_tickSlotSession = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Ronda de la tragaperras del gimnasio." }
 TRN_getTrainingSpotScreenPos = { status = "portado", dwe = "apps/game/src/gym_screen.cpp", note = "la ruleta crece desde la máquina del curso (gym.yaml: machine)", what = "Da dónde dibujar el cuadro del gimnasio." }
 TRN_func_800888A0 = { status = "no-aplica", what = "Función sin nombre del cálculo de recompensas del gimnasio.", note = "solo con el resultado -2 de la ruleta, que nada produce: inalcanzable" }
-TRN_startSlotSession = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Empieza la tragaperras." }
-TRN_getSlotMachineResult = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Da el resultado de la tragaperras." }
+TRN_startSlotSession = { status = "portado", dwe = "game/gym/src/course_flow.cpp", what = "Empieza la tragaperras." }
+TRN_getSlotMachineResult = { status = "portado", dwe = "game/gym/include/dwe/game/gym/slot_machine.hpp", what = "Da el resultado de la tragaperras." }
 TRN2_tickDefenseTrainingMap108 = { status = "portado", dwe = "game/gym/src/course_guard.cpp", what = "Curso de defensa del segundo gimnasio (mapa 0x6c): guardia con golpes cada pocos cuadros." }
 TRN2_tickSpeedTraining = { status = "portado", dwe = "game/gym/src/course_guard.cpp", what = "Curso de velocidad del mapa 0x6c: la cinta." }
-TRN2_applyBaseStats = { status = "portado", dwe = "game/gym/src/stat_countup.cpp", what = "Aplica las ganancias a los stats base." }
-TRN2_createPostTrainingStatsBox = { status = "portado", dwe = "content/packs/game/ui/gym_stats/logic.lua", what = "Cuadro de stats tras entrenar." }
-TRN2_tickPostTrainingStatsBox = { status = "portado", dwe = "game/gym/src/stat_countup.cpp", what = "Cuenta los stats ganados en el cuadro." }
+TRN2_applyBaseStats = { status = "portado", dwe = "game/gym/src/course_flow.cpp", what = "Aplica las ganancias a los stats base." }
+TRN2_createPostTrainingStatsBox = { status = "portado", dwe = "game/gym/include/dwe/game/gym/stat_countup.hpp", what = "Cuadro de stats tras entrenar." }
+TRN2_tickPostTrainingStatsBox = { status = "portado", dwe = "game/gym/include/dwe/game/gym/stat_countup.hpp", what = "Cuenta los stats ganados en el cuadro." }
 TRN2_func_8008AA84 = { status = "no-aplica", what = "Función sin nombre del cálculo de recompensas del segundo gimnasio.", note = "igual que TRN_func_800888A0: solo con el resultado -2 de la ruleta, que nada produce: inalcanzable" }
-TRN2_statGainsAreZero = { status = "portado", dwe = "game/gym/src/stat_countup.cpp", what = "Dice si el entrenamiento no ganó nada." }
-TRN2_awardMpTrainingGains = { status = "portado", dwe = "game/gym/src/course_mp.cpp", what = "Da las ganancias del curso de MP." }
-TRN2_awardOffenseTrainingGains = { status = "portado", dwe = "game/gym/src/course_offense.cpp", what = "Da las ganancias del curso de ataque." }
-TRN2_chooseReelStop = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Elige dónde para un rodillo." }
-TRN2_getSlotSessionResult = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Da el resultado de la ronda." }
-TRN2_createSlotMachineBox = { status = "portado", dwe = "content/packs/game/ui/gym_slots/logic.lua", what = "Abre la tragaperras." }
-TRN2_startSlotSpin = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Hace girar los rodillos." }
+TRN2_statGainsAreZero = { status = "portado", dwe = "game/gym/include/dwe/game/gym/stat_countup.hpp", what = "Dice si el entrenamiento no ganó nada." }
+TRN2_awardMpTrainingGains = { status = "portado", dwe = "game/partner/src/strategies.cpp", what = "Da las ganancias del curso de MP." }
+TRN2_awardOffenseTrainingGains = { status = "portado", dwe = "game/partner/src/strategies.cpp", what = "Da las ganancias del curso de ataque." }
+TRN2_chooseReelStop = { status = "portado", dwe = "game/gym/include/dwe/game/gym/slot_machine.hpp", what = "Elige dónde para un rodillo." }
+TRN2_getSlotSessionResult = { status = "portado", dwe = "game/gym/include/dwe/game/gym/slot_machine.hpp", what = "Da el resultado de la ronda." }
+TRN2_createSlotMachineBox = { status = "portado", dwe = "game/gym/include/dwe/game/gym/slot_machine.hpp", what = "Abre la tragaperras." }
+TRN2_startSlotSpin = { status = "portado", dwe = "game/gym/include/dwe/game/gym/slot_machine.hpp", what = "Hace girar los rodillos." }
 
 # --- Guardado
 updateMemoryCardState = { status = "no-aplica", note = "tarjeta de memoria; el motor guarda en ficheros", what = "Comprueba si hay tarjeta." }
@@ -682,11 +682,11 @@ loadSaveSlotData = { status = "portado", dwe = "game/save/src/slots.cpp", what =
 tickSelectSlotInput = { status = "portado", dwe = "content/packs/game/ui/save_slots/logic.lua", what = "Elige una ranura de partida." }
 createByteSum = { status = "no-aplica", note = "suma de control de la tarjeta", what = "Suma los bytes de la partida." }
 createSavegameChecksum = { status = "no-aplica", note = "suma de control de la tarjeta; el motor valida su fichero", what = "Calcula la suma de control de la partida." }
-countRegisteredDigimon = { status = "falta", what = "Cuenta las criaturas registradas para el modo versus.", note = "llega con el modo versus" }
+countRegisteredDigimon = { status = "portado", dwe = "apps/session/src/battle_registry.cpp", what = "Cuenta las criaturas registradas para el modo versus.", note = "el menú del versus que lo pregunta llega con ese modo" }
 registerBattleData = { status = "portado", dwe = "apps/session/include/dwe/session/battle_registry.hpp", what = "Registra al compañero para el modo versus.", note = "el registro se guarda; el modo versus que lo usa llega en la fase 5" }
 awardMachinedramonData = { status = "portado", dwe = "apps/session/include/dwe/session/game_clear.hpp", note = "especie y técnicas en rules/original/story_scenes.yaml (ending); sin medir en el original (Suposición)", what = "Al acabar el juego, el último registro del modo versus toma el nombre y los atributos del compañero con la especie del jefe final." }
-TRN_saveBaseStats = { system = "training", status = "portado", dwe = "game/gym/src/stat_countup.cpp", what = "Guarda los stats antes de entrenar para contar lo ganado." }
-TRN_saveTrainingStartTime = { system = "training", status = "portado", dwe = "game/gym/src/course_flow.cpp", what = "Guarda la hora al empezar a entrenar." }
+TRN_saveBaseStats = { system = "training", status = "portado", dwe = "apps/game/src/gym_screen.cpp", what = "Guarda los stats antes de entrenar para contar lo ganado." }
+TRN_saveTrainingStartTime = { system = "training", status = "portado", dwe = "game/partner/src/partner_activities.cpp", what = "Guarda la hora al empezar a entrenar." }
 
 # --- Audio
 readVHBFile = { status = "no-aplica", note = "lectura del disco; la hace la extracción", what = "Lee un banco de sonidos." }

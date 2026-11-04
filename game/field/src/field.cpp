@@ -269,6 +269,7 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn,
       glm::length(ground(view)) > 0.0F ? glm::normalize(ground(view)) : ground(cameraForward_);
 
   entt::registry& registry = world_->registry();
+  // tamer.c: setupTamerOnWarp: the player at the spawn, turned its way, standing (animation 0).
   scene::place(registry.get<Transform>(player_), spawn.position, spawn.yaw);
   registry.get<AnimationIntent>(player_) = {};
   registry.get<AnimationIntent>(partner_) = {};
@@ -1255,6 +1256,8 @@ void Field::tickCare(float seconds) {
   // the sleep's (partner.c: partnerTickSleep, stopGameTime).
   gameTimeRan_ = careClock_ == CareClock::Runs;
   entt::registry& registry = world_->registry();
+  // tamer.c: tamerTickIdle: the partner's care holds the player (its state 6), who stands with
+  // animation 0 until let go.
   registry.get<AnimationIntent>(player_) = {};
   tickCareWalk(seconds);
   tickCameraPan(seconds);

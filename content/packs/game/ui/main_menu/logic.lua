@@ -15,7 +15,8 @@
 --     (runMainMenu): new game, continue, delete (erase) and battle mode, with continue and delete
 --     greyed without a save, as the original greys them without a memory card; the cursor still
 --     stops on them and confirming them does nothing (tickMainMenu, case 0). Then options, this
---     game's addition.
+--     game's addition. The focused row wears the original's cursor, a one-pixel outline round it
+--     (renderMenuSelector), which the skin draws.
 --   - "options": this game's settings that work on the title screen, a name and its value per
 --     row, in the original's boxes. Free exploration is set from the pause menu, during a game, and
 --     vsync cannot change while the game runs, so neither is here.

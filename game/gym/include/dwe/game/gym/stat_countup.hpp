@@ -13,7 +13,8 @@ inline constexpr std::size_t GymStatCount = 6;
 using GymStats = std::array<std::int32_t, GymStatCount>;
 
 // The stats box after a session (trn_hud.c: TRN_createPostTrainingStatsBox and its tick and
-// render): it shows the stats from before the session and counts the gains into them, one point a
+// render; trn2_hud.c: TRN2_createPostTrainingStatsBox and TRN2_tickPostTrainingStatsBox, the
+// same): it shows the stats from before the session and counts the gains into them, one point a
 // frame after a delay, the first stat with a gain left first. Confirm or cancel adds the rest at
 // once. Only the view counts: the session has already given the gains. The box's tick runs only
 // once it stands (ui.c: tickUIBox), after the frames it grows in.
@@ -28,7 +29,7 @@ public:
   // Whether the box stands, so its tick runs.
   [[nodiscard]] bool standing() const { return growing_ == 0; }
 
-  // TRN_statGainsAreZero.
+  // TRN_statGainsAreZero (and TRN2_statGainsAreZero).
   [[nodiscard]] bool done() const;
   [[nodiscard]] const GymStats& shown() const { return shown_; }
   [[nodiscard]] const GymStats& left() const { return left_; }

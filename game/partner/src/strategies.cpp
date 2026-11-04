@@ -108,7 +108,10 @@ public:
   }
 };
 
-// The original (trn_reward.c: TRN_calculateTrainingMultiplier, TRN_award*TrainingGains).
+// The original (trn_reward.c: TRN_calculateTrainingMultiplier, TRN_award*TrainingGains). The second
+// place's (trn2_reward.c: TRN2_awardMpTrainingGains, TRN2_awardOffenseTrainingGains and the other
+// TRN2_award*) is the same formula with one gain each and no gym bonuses (training.yaml: trn2);
+// each gain's cap of 999 is Partner::addStatGains'.
 class OriginalGainFormula final : public TrainingGainFormula {
 public:
   [[nodiscard]] StatBlock gains(const TrainingGainInputs& inputs) const override {

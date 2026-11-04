@@ -13,7 +13,8 @@
 -- autosave entries are old autosave files, from when autosaves had slots of their own, listed only
 -- while they exist), greyed when the slot has nothing to choose. Eight rows show at a time and
 -- the list scrolls, as the original's save list does (renderSelectSlot), with its cursor stopping
--- at the first and last row (tickMenuInput); left and right move a whole box, an addition. A box
+-- at the first and last row (tickSelectSlotInput: up and down move the cursor, then scroll the
+-- rows, and stop at the ends without a sound); left and right move a whole box, an addition. A box
 -- below the rows sums up the focused save (partner, place, play time and date), an addition: the
 -- original shows a save's details only after its card is chosen.
 

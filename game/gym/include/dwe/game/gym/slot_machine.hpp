@@ -17,16 +17,20 @@ class SlotMachine {
 public:
   static constexpr std::size_t Reels = 3;
 
-  // TRN_createSlotMachineBox: `symbol` is the course's own symbol, which pays more. The rules
-  // must outlive the machine.
+  // TRN_createSlotMachineBox (TRN2_createSlotMachineBox: the same, with equal reels and assist
+  // rolls): `symbol` is the course's own symbol, which pays more. The rules must outlive the
+  // machine.
   SlotMachine(const SlotRules& rules, std::int32_t symbol, GymPorts& ports);
 
-  // TRN_startSlotSpin: the reels start without a press once the partner is at the machine.
+  // TRN_startSlotSpin (and TRN2_startSlotSpin): the reels start without a press once the partner
+  // is at the machine.
   void startSpin() { autoStart_ = true; }
   // TRN_tickSlotMachine: one frame; `confirm` is the button newly pressed.
   void tick(GymPorts& ports, bool confirm);
 
-  // TRN_getSlotSessionResult: the rate in tenths once the player saw the line.
+  // TRN_getSlotSessionResult (and TRN2_getSlotSessionResult): the rate in tenths once the player
+  // saw the line and the box shrank away (TRN_tickSlotSession hands TRN_getSlotMachineResult
+  // over then).
   [[nodiscard]] std::optional<std::int32_t> result() const { return result_; }
   // The symbol a reel shows `row` cells below its line (negative: above).
   [[nodiscard]] std::int32_t symbolAt(std::size_t reel, std::int32_t row) const;
@@ -44,7 +48,7 @@ private:
 
   void spinFrame(GymPorts& ports, bool confirm);
   void pay(GymPorts& ports);
-  // TRN_chooseReelStop: where the reel the player just stopped settles.
+  // TRN_chooseReelStop (and TRN2_chooseReelStop): where the reel the player just stopped settles.
   void chooseReelStop(std::size_t reel, GymPorts& ports);
   // Aims the reel at `target` when it is one or two cells away; otherwise gives up on the reel.
   void scanFor(std::size_t reel, std::int32_t target);

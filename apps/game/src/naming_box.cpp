@@ -257,8 +257,9 @@ void NamingBox::repeatMoves(const input::InputState& input) {
 }
 
 void NamingBox::move(std::string_view action) {
-  // namingSelectionUp/Down/Left/Right: up and down wrap round each side's rows (and swap the
-  // buttons); right from a side's last column goes to the other side, or from the right side to
+  // namingSelectionUp, namingSelectionDown, namingSelectionLeft and namingSelectionRight: up and
+  // down wrap round each side's rows (namingSelectionDown: the last row to the first) and swap the
+  // buttons; right from a side's last column goes to the other side, or from the right side to
   // Back; left from the left side's first column goes to Back, from the right side's to the left
   // side; from a button right enters the left side and left the right side.
   typing_ = false;
@@ -365,6 +366,8 @@ void NamingBox::publish() {
       {.name = std::format("{}.cursor_button", Prefix),
        .value = button_ ? static_cast<double>(std::to_underlying(*button_)) : NoCell},
   };
+  // script_menu.c: renderNameDisplayBox: the name's box shows the letters so far, one per place,
+  // and the skin draws the underscore under the next one.
   for (std::size_t letter = 0; letter < openLength_; ++letter) {
     settings.push_back({.name = std::format("{}.name.{}", Prefix, letter),
                         .value = letter < letters_.size() ? letters_[letter] : std::string{}});

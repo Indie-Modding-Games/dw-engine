@@ -213,4 +213,47 @@ TEST_CASE(
         messages::NotAlive);
 }
 
+// trn2_reward.c: TRN2_awardMpTrainingGains and TRN2_awardOffenseTrainingGains: one gain each, the
+// multiplier without the gym's bonuses (TRN2_calculateTrainingMultiplier), the gain capped at 999
+// and the hour's costs of the second place.
+TEST_CASE("care.md training: the second place's MP and offense courses give one gain each") {
+  OriginalRuleset original;
+  Raising raising(original.rules());
+  raising.edit([](PartnerState& state) { state.mood.tiredness = 0; });
+  const std::int32_t happiness = raising.state().mood.happiness;
+  // MP: 150 at the rookie's ×0.9 for MP (aptitude 1).
+  StatBlock gains = trained(raising, {.place = "trn2", .course = "mp"});
+  CHECK(gains[Stat::Mp] == 135);
+  CHECK(gains[Stat::Defense] == 0);
+  CHECK(raising.state().mood.tiredness == 7);
+  CHECK(raising.state().mood.happiness == happiness - 4);
+  // Offense: 12 at ×1.1.
+  gains = trained(raising, {.place = "trn2", .course = "offense"});
+  CHECK(gains[Stat::Offense] == 13);
+  CHECK(gains[Stat::Speed] == 0);
+  CHECK(raising.state().mood.tiredness == 16);
+  CHECK(raising.state().mood.happiness == happiness - 5);
+  // Neither an upgraded gym nor practice counts there; the manual and the roulette do.
+  raising.edit([](PartnerState& state) {
+    state.training.youngSessions[Stat::Mp] = 10;
+    state.mood.tiredness = 0;
+  });
+  CHECK(trained(raising, {.place = "trn2", .course = "mp", .gymUpgraded = true})[Stat::Mp] == 135);
+  CHECK(trained(raising, {.place = "trn2", .course = "mp", .slotTenths = 20})[Stat::Mp] == 270);
+}
+
+TEST_CASE("care.md training: a second-place gain is capped at 999, and 1 when worn out") {
+  OriginalRuleset original;
+  Raising raising(original.rules());
+  FoodEffect boost;
+  boost.item = "boost";
+  boost.meal = false;
+  boost.boost = {.stats = {Stat::Mp}, .value = 100, .hours = 1};
+  raising.partner().eat(boost, raising.clock());
+  // 150 × (9 × 100) / 100 = 1350.
+  CHECK(trained(raising, {.place = "trn2", .course = "mp"})[Stat::Mp] == 999);
+  raising.edit([](PartnerState& state) { state.mood.tiredness = 100; });
+  CHECK(trained(raising, {.place = "trn2", .course = "offense"})[Stat::Offense] == 1);
+}
+
 } // namespace dwe::game::partner

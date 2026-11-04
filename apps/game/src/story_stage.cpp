@@ -63,6 +63,8 @@ std::optional<std::int64_t> StoryStage::slotOf(std::int64_t character) const {
   return static_cast<std::int64_t>(*instance);
 }
 
+// tamer.c: getEntityFromScriptId: 0xFD is the player, 0xFC the partner, any other id the map's NPC
+// that has it.
 std::optional<scene::Entity> StoryStage::entityOf(std::int64_t character) const {
   const game::field::Field& field = scene_->field();
   if (character == PlayerScriptId) {

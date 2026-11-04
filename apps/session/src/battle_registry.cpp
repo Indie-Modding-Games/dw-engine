@@ -7,6 +7,9 @@
 #include <dwe/session/battle_registry.hpp>
 #include <dwe/session/game_session.hpp>
 
+#include <algorithm>
+#include <cstddef>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -181,6 +184,11 @@ void BattleRegistry::clear(std::size_t slot) {
   if (slot < Slots) {
     slots_.at(slot).reset();
   }
+}
+
+std::size_t BattleRegistry::registeredCount() const {
+  return static_cast<std::size_t>(std::ranges::count_if(
+      slots_, [](const std::optional<RegisteredPartner>& slot) { return slot.has_value(); }));
 }
 
 core::Result<RegisteredPartner> registeredPartnerOf(const GameSession& session,

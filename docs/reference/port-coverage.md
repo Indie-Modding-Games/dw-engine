@@ -94,14 +94,14 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 38 | 37 | 1 | 0 | 99 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 93 | 93 | 0 | 0 | 100 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 40 | 40 | 0 | 0 | 100 % |
-| [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 11 | 10 | 0 | 1 | 91 % |
+| [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 11 | 11 | 0 | 0 | 100 % |
 | [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 111 | 106 | 5 | 0 | 98 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 91 | 0 | 0 | 91 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 44 | 44 | 0 | 0 | 100 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 31 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1438 funciones a portar | 1438 | 1338 | 8 | 92 | 93 % |
+| **Total** | 1438 funciones a portar | 1438 | 1339 | 8 | 91 | 93 % |
 
 ## Batalla
 
@@ -214,11 +214,7 @@ La partida en la tarjeta de memoria, la máquina de guardar y el registro para e
 
 Ficheros del decomp: `main/main_menu.c`.
 
-Portado 10, parcial 0, falta 1.
-
-| Función | Decomp | Estado | Qué hace | Motor / nota |
-|---|---|---|---|---|
-| `countRegisteredDigimon` | `main/main_menu.c:5136` | falta | Cuenta las criaturas registradas para el modo versus. | llega con el modo versus |
+Portado 11, parcial 0, falta 0.
 
 ## Torneos
 

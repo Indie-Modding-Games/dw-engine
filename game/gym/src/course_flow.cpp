@@ -95,6 +95,8 @@ void CourseRun::begin(GymPorts& ports) {
 }
 
 void CourseRun::startSlots(GymPorts& ports) {
+  // TRN_startSlotSession (TRN2_ the same): the session's first tick opens the machine; here the
+  // run holds the machine itself.
   if (withSlots_) {
     slots_.emplace(gym_->slots, course_->slotSymbol, ports);
   }
@@ -107,7 +109,8 @@ void CourseRun::startSpin() {
 }
 
 void CourseRun::award(GymPorts& ports) {
-  // Without the roulette the default rate (TRN_getSlotSessionResult is not asked).
+  // Without the roulette the default rate (TRN_getSlotSessionResult and TRN2_getSlotSessionResult
+  // are not asked).
   const std::int32_t tenths =
       slots_.has_value() && slots_->result().has_value() ? *slots_->result() : 0;
   slots_.reset();
@@ -145,7 +148,8 @@ bool CourseRun::rested() {
 }
 
 void CourseRun::finish(GymPorts& ports) {
-  // TRN_applyBaseStats and TRN_closeUIBox: the session already gave the gains.
+  // TRN_applyBaseStats (TRN2_applyBaseStats, the same) and TRN_closeUIBox: the session already gave
+  // the gains, with the caps the box counts up to.
   ports.setTraining(false);
   watching_ = false;
   stopLoop(ports);

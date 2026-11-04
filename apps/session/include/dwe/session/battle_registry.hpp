@@ -65,6 +65,9 @@ public:
   core::Result<void> registerAt(std::size_t slot, RegisteredPartner partner);
   // Empties `slot`; nothing past the last slot.
   void clear(std::size_t slot);
+  // How many slots hold a partner (main_menu.c: countRegisteredDigimon): the versus mode refuses a
+  // registry with none.
+  [[nodiscard]] std::size_t registeredCount() const;
 
 private:
   class Serializer;

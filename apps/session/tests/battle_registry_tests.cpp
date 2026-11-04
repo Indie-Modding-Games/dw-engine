@@ -76,3 +76,17 @@ TEST_CASE("the registry has the original's 40 slots, the machine reaching the fi
   CHECK_FALSE(registry->registerAt(BattleRegistry::Slots, partner()).has_value());
   CHECK_FALSE(registry->at(BattleRegistry::Slots).has_value());
 }
+
+TEST_CASE("the registry counts the slots that hold a partner, as the versus mode asks") {
+  // main_menu.c: countRegisteredDigimon: the records with a species, over all 40.
+  const TestPacks packs;
+  BattleRegistry* registry = nullptr;
+  auto session = sessionWithRegistry(packs, registry);
+  CHECK(registry->registeredCount() == 0);
+  REQUIRE(registry->registerAt(0, partner()).has_value());
+  REQUIRE(registry->registerAt(BattleRegistry::Slots - 1, partner()).has_value());
+  REQUIRE(registry->registerAt(0, partner()).has_value());
+  CHECK(registry->registeredCount() == 2);
+  registry->clear(0);
+  CHECK(registry->registeredCount() == 1);
+}
