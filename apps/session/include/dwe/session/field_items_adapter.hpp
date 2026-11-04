@@ -153,9 +153,10 @@ public:
                  float height);
 
   // An item a beaten enemy left where it stood on the map the player is on (item.c:
-  // spawnDroppedItems), by the item's id; false when there is no such item or no room on the
-  // ground.
-  bool dropItem(std::string_view mapId, std::string_view item, glm::vec3 position);
+  // spawnDroppedItems), by the item's id, on a free cell of the map's `collision`
+  // (game::field::dropCell); false when there is no such item or no room on the ground.
+  bool dropItem(std::string_view mapId, std::string_view item, glm::vec3 position,
+                const assets::MapCollision& collision);
 
 private:
   [[nodiscard]] std::optional<assets::ItemHandle> itemOf(std::int32_t originalItem) const;

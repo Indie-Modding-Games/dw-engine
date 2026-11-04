@@ -46,10 +46,53 @@ bool FieldItems::spawn(assets::ItemHandle item, assets::CollisionCell cell, floa
   return place({.item = item, .cell = cell, .position = position});
 }
 
-bool FieldItems::drop(assets::ItemHandle item, glm::vec3 position) {
+std::optional<assets::CollisionCell> dropCell(const assets::MapCollision& collision,
+                                              glm::vec3 position) {
+  const assets::CollisionCell own = assets::collisionCellAt(position);
+  if (!collision.isBlocked(own)) {
+    return own;
+  }
+  const auto distance = [&](assets::CollisionCell cell) {
+    const glm::vec3 centre = assets::collisionCellCenter(cell);
+    const float x = centre.x - position.x;
+    const float z = centre.z - position.z;
+    return (x * x) + (z * z);
+  };
+  for (std::int32_t ring = 1; ring <= DropSearchCells; ++ring) {
+    std::optional<assets::CollisionCell> nearest;
+    for (std::int32_t row = own.row - ring; row <= own.row + ring; ++row) {
+      for (std::int32_t column = own.column - ring; column <= own.column + ring; ++column) {
+        const assets::CollisionCell cell{.column = column, .row = row};
+        const bool onRing =
+            std::abs(row - own.row) == ring || std::abs(column - own.column) == ring;
+        if (onRing && !collision.isBlocked(cell) &&
+            (!nearest || distance(cell) < distance(*nearest))) {
+          nearest = cell;
+        }
+      }
+    }
+    if (nearest) {
+      return nearest;
+    }
+  }
+  return std::nullopt;
+}
+
+bool FieldItems::drop(assets::ItemHandle item, glm::vec3 position,
+                      const assets::MapCollision& collision) {
   // spawnDroppedItems lays the item on the ground (y 0) where the enemy stood.
   position.y = 0.0F;
-  return place({.item = item, .cell = assets::collisionCellAt(position), .position = position});
+  const assets::CollisionCell own = assets::collisionCellAt(position);
+  const std::optional<assets::CollisionCell> cell = dropCell(collision, position);
+  if (cell && *cell != own) {
+    core::logDebug(
+        "[port:field_items] spawnDroppedItems (item.c:2403): ({}, {}) is a blocked cell; "
+        "the item lies on the free cell ({}, {})",
+        own.column, own.row, cell->column, cell->row);
+    position = assets::collisionCellCenter(*cell);
+    position.y = 0.0F;
+  }
+  return place({.item = item, .cell = cell.value_or(own), .position = position});
 }
 
 bool FieldItems::spawnChest(const Chest& chest) {

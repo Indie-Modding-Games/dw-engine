@@ -55,6 +55,13 @@ struct Chest {
 // the ground (y 0), whatever point the script gave.
 [[nodiscard]] glm::vec3 chestPlace(const Chest& chest);
 
+// The cell a dropped item at `position` lies on: its own when free; else the free cell nearest to
+// it, ring by ring around it (the nearest centre within a ring); nothing when no free cell lies
+// within DropSearchCells.
+inline constexpr std::int32_t DropSearchCells = 8;
+[[nodiscard]] std::optional<assets::CollisionCell> dropCell(const assets::MapCollision& collision,
+                                                            glm::vec3 position);
+
 // The cell a chest is opened from (map_object.c: spawnChest): four cells in front of its own, by
 // its rotation (0: four rows on, 0x800: four rows back, 0x400: four columns back, 0xc00: four
 // columns on; any other rotation, its own cell). Its own cell and the ones around it are closed
@@ -73,8 +80,10 @@ public:
   bool spawn(assets::ItemHandle item, assets::CollisionCell cell, float height);
 
   // An item dropped at a place, as a beaten enemy's (spawnDroppedItems); false when the ground is
-  // full.
-  bool drop(assets::ItemHandle item, glm::vec3 position);
+  // full. The original lays it where the enemy stood, which its battle collision keeps on a free
+  // cell; a place on a blocked cell of `collision` (a wall) moves to the centre of the nearest free
+  // cell (dropCell), so the item never lies out of reach.
+  bool drop(assets::ItemHandle item, glm::vec3 position, const assets::MapCollision& collision);
 
   // A chest a script places (spawnChest); false when there is no room for it.
   bool spawnChest(const Chest& chest);

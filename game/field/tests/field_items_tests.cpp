@@ -85,3 +85,57 @@ TEST_CASE("tamer.c checkChestCollision: a chest opens from four cells in front o
   CHECK_FALSE(items.chestInReach({.column = 37, .row = 34}).has_value());
   CHECK_FALSE(items.chestInReach({.column = 39, .row = 34}).has_value());
 }
+
+TEST_CASE("item.c spawnDroppedItems: a drop on a wall lies on the nearest free cell") {
+  using dwe::assets::CollisionCell;
+  using dwe::assets::collisionCellAt;
+  using dwe::assets::collisionCellCenter;
+  using dwe::game::field::dropCell;
+  // A wall six cells thick, columns 46 to 51, free to the west from column 45 and to the east
+  // from 52.
+  dwe::assets::MapCollision collision;
+  for (std::int32_t row = 40; row <= 60; ++row) {
+    for (std::int32_t column = 46; column <= 51; ++column) {
+      collision.setValue({.column = column, .row = row}, 0x80);
+    }
+  }
+  const auto item = table().handleOf(table().entries().front());
+
+  SUBCASE("on a free cell it stays where the enemy stood, on the ground") {
+    FieldItems items = itemsWithRoom();
+    REQUIRE(items.drop(item, {275.0F, 30.0F, 40.0F}, collision));
+    const auto& lying = items.ground()[0];
+    REQUIRE(lying);
+    CHECK(lying->cell == CollisionCell{.column = 52, .row = 50});
+    CHECK(lying->position.x == doctest::Approx(275.0F));
+    CHECK(lying->position.y == doctest::Approx(0.0F));
+    CHECK(lying->position.z == doctest::Approx(40.0F));
+  }
+  SUBCASE("inside the wall it moves to the centre of the nearest free cell") {
+    FieldItems items = itemsWithRoom();
+    // Column 51 is blocked; column 52, one cell east, is the nearest free one.
+    const glm::vec3 inWall{120.0F, 0.0F, 40.0F};
+    REQUIRE(collision.isBlocked(collisionCellAt(inWall)));
+    REQUIRE(items.drop(item, inWall, collision));
+    const auto& lying = items.ground()[0];
+    REQUIRE(lying);
+    CHECK(lying->cell == CollisionCell{.column = 52, .row = 50});
+    CHECK_FALSE(collision.isBlocked(lying->cell));
+    const glm::vec3 centre = collisionCellCenter(lying->cell);
+    CHECK(lying->position.x == doctest::Approx(centre.x));
+    CHECK(lying->position.z == doctest::Approx(centre.z));
+    CHECK(lying->position.y == doctest::Approx(0.0F));
+  }
+  SUBCASE("deep in the wall it still finds the open side, and nothing when there is none") {
+    // From column 47 the free column 45 (two cells west) is nearer than column 52 (five east).
+    CHECK(dropCell(collision, collisionCellCenter({.column = 47, .row = 50})) ==
+          CollisionCell{.column = 45, .row = 50});
+    dwe::assets::MapCollision walled;
+    for (std::int32_t row = 30; row <= 70; ++row) {
+      for (std::int32_t column = 30; column <= 70; ++column) {
+        walled.setValue({.column = column, .row = row}, 0x80);
+      }
+    }
+    CHECK_FALSE(dropCell(walled, collisionCellCenter({.column = 50, .row = 50})).has_value());
+  }
+}

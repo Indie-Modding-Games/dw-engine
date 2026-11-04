@@ -992,11 +992,16 @@ void BattleScreen::close() {
   publishHpBars();
   releasePoses();
   desc_.ui->setSetting(BattlePhaseSetting, std::string{ClosingPhase});
+  // The drops land on the battle's map, on a free cell of its collision.
+  const assets::MapCollision openGround;
+  const assets::MapCollision& collision =
+      desc_.scene != nullptr ? desc_.scene->field().collision() : openGround;
   for (const game::battle::Drop& drop : std::exchange(drops_, {})) {
     if (desc_.fieldItems != nullptr &&
         !desc_.fieldItems->dropItem(
             map_, drop.item,
-            {static_cast<float>(drop.position.x), 0.0F, static_cast<float>(drop.position.z)})) {
+            {static_cast<float>(drop.position.x), 0.0F, static_cast<float>(drop.position.z)},
+            collision)) {
       core::logInfo("{}", core::formatMessage(messages::BattleDropLost, drop.item));
     }
   }

@@ -251,8 +251,8 @@ bool FieldItemsAdapter::spawnItem(std::string_view mapId, std::int32_t originalI
   return item && items_.spawn(*item, cell, height);
 }
 
-bool FieldItemsAdapter::dropItem(std::string_view mapId, std::string_view item,
-                                 glm::vec3 position) {
+bool FieldItemsAdapter::dropItem(std::string_view mapId, std::string_view item, glm::vec3 position,
+                                 const assets::MapCollision& collision) {
   items_.enterMap(mapId);
   const std::optional<assets::ItemHandle> handle = inventory_->items().handleOf(item);
   if (!handle) {
@@ -261,7 +261,7 @@ bool FieldItemsAdapter::dropItem(std::string_view mapId, std::string_view item,
   }
   core::logDebug("[port:field_items] spawnDroppedItems (item.c:2403): {} at ({}, {})", item,
                  position.x, position.z);
-  return items_.drop(*handle, position);
+  return items_.drop(*handle, position, collision);
 }
 
 bool FieldItemsAdapter::spawnChest(std::string_view mapId, std::int32_t originalItem,

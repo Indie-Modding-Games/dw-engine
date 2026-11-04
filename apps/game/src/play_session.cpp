@@ -1052,7 +1052,8 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   }
   if (const auto item = std::exchange(commands.groundDrop, std::nullopt)) {
     const game::field::Field& field = scene_->field();
-    if (!game_.systems.fieldItems->dropItem(field.mapId(), *item, field.player().position)) {
+    if (!game_.systems.fieldItems->dropItem(field.mapId(), *item, field.player().position,
+                                            field.collision())) {
       core::logWarning("{}", core::formatMessage(messages::DropItemFailed, *item));
     }
   }
