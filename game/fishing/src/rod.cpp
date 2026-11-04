@@ -111,6 +111,7 @@ std::optional<glm::vec3> Fishing::bait() const {
   return baitPosition_;
 }
 
+// FISH_isWithinCastRange: within the map's cast range (plus `extra`) of the player on the ground.
 bool Fishing::withinCastRange(glm::vec3 position, std::int32_t extra) const {
   return groundDistance(input_->player, position) <= static_cast<float>(place_.castRange + extra);
 }
@@ -134,6 +135,7 @@ void Fishing::start(Rod rod) {
 }
 
 void Fishing::chooseBait(std::optional<std::int32_t> bait) {
+  // FISH_closeBaitMenu, from FISH_tickBaitMenu's choice or cancel.
   baitMenuOpen_ = false;
   baitChosen_ = bait;
 }
@@ -178,6 +180,7 @@ void Fishing::giveUp() {
   }
   animate(StandAnimation);
   bobberShown_ = false;
+  // FISH_clearBaitSprite (FISH_hideBaitSprite).
   baitShown_ = false;
   // FISH_initBobberAnim.
   bobberAnimation_.reset();
@@ -439,6 +442,7 @@ void Fishing::endFishing() {
   lineShown_ = false;
   bobberShown_ = false;
   baitShown_ = false;
+  // FISH_closeBaitMenuIfOpen.
   baitMenuOpen_ = false;
   tension_ = {};
   bobberAnimation_.reset();
@@ -471,7 +475,7 @@ bool Fishing::panToBobber() {
   return panTo(bobber_.position, PanRadius, BobberDeadZone);
 }
 
-// The pan back to the player (fish.c:1013): the feet in the middle, no dead zone.
+// The pan back to the player (FISH_panCameraToTamer): the feet in the middle, no dead zone.
 bool Fishing::panToPlayer() {
   return panTo(input_->player, PanRadius, glm::ivec2{0});
 }
@@ -513,11 +517,13 @@ void Fishing::tickRod() {
     break;
   case RodState::ChoosingBait:
     if (framesOnState_ == 0) {
+      // FISH_openBaitMenu: the screen lists the bag's food.
       baitMenuOpen_ = true;
       baitChosen_.reset();
       emit(FishingEventKind::OpenBaitMenu);
       break;
     }
+    // FISH_isBaitMenuVisible: the rod waits on the choice.
     if (baitMenuOpen_) {
       break;
     }

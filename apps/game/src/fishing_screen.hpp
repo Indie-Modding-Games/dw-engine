@@ -102,7 +102,7 @@ private:
   bool cameraPressed_ = false;
   bool cameraDown_ = false;
   FishingButtons buttons_;
-  std::vector<assets::ItemHandle> baits_;
+  std::vector<game::inventory::Stack> baits_;
   std::deque<Notice> notices_;
   bool noticeShown_ = false;
   glm::vec3 noticeTarget_{0.0F};

@@ -200,6 +200,7 @@ void Fishing::tickPopulation() {
                             [this](std::int32_t time) {
                               return time != NoSeaSerpent && time / TimeHour == input_->hour;
                             }) &&
+        // FISH_isSeadramonSpawned: one sea serpent at a time.
         std::ranges::none_of(pool_, [](const Fish& f) { return f.kind == SeaSerpentKind; }) &&
         !hooked_) {
       spawnSeaSerpent();

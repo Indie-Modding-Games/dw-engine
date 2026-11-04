@@ -5,11 +5,13 @@
 #include <dwe/core/error.hpp>
 #include <dwe/game/fishing/fishing.hpp>
 #include <dwe/game/fishing/rules.hpp>
+#include <dwe/game/inventory/stacking.hpp>
 #include <dwe/session/session_system.hpp>
 
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -27,6 +29,14 @@ enum class FishingAvailability : std::uint8_t {
   Unready,
   Ready,
 };
+
+// The bait menu's rows (fish.c: FISH_openBaitMenu): one per bag slot holding food (hasFoodItem's
+// sorting value 2), in the bag's order and with that slot's count, so a second stack of an item is
+// a second row. Measured: a bag of Sirloin 3, a non-food item, Meat 5, Sirloin 2 and Giant Meat 4
+// lists Sirloin 3, Meat 5, Sirloin 2, Giant Meat 4.
+[[nodiscard]] std::vector<game::inventory::Stack>
+baitRows(std::span<const std::optional<game::inventory::Stack>> slots,
+         const assets::ItemTable& items);
 
 // What the player got from one tick's events, for the screen's messages.
 struct FishingCatch {
@@ -76,8 +86,8 @@ public:
   void setFishingEnabled();
   // The best rod the player has (getBestFishingRod).
   [[nodiscard]] std::optional<game::fishing::Rod> bestRod() const;
-  // The food in the bag, which baits the hook (hasFoodItem: sorting value 2).
-  [[nodiscard]] std::vector<assets::ItemHandle> baits() const;
+  // The food in the bag, which baits the hook: the bait menu's rows (baitRows).
+  [[nodiscard]] std::vector<game::inventory::Stack> baits() const;
   // The item number Fishing::chooseBait takes for a bag item.
   [[nodiscard]] std::int32_t itemNumber(assets::ItemHandle item) const;
   // The bag item of an item number (Fishing::baitItem), or nothing.

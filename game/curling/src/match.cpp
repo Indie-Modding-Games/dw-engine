@@ -499,6 +499,7 @@ void Match::beginAiming() {
   face(throwerWho(), 0);
 }
 
+// KAR_selectPreviousStone: the nearest unthrown stone before the selected one, if any.
 void Match::selectPreviousStone() {
   for (std::int32_t index = selected_ - 1; index >= 0; --index) {
     if (row(static_cast<std::size_t>(team_)).stones.at(static_cast<std::size_t>(index)).state ==
@@ -509,6 +510,7 @@ void Match::selectPreviousStone() {
   }
 }
 
+// KAR_selectNextStone: the nearest unthrown stone after the selected one, if any.
 void Match::selectNextStone() {
   for (std::int32_t index = selected_ + 1; std::cmp_less(index, StonesPerTeam); ++index) {
     if (row(static_cast<std::size_t>(team_)).stones.at(static_cast<std::size_t>(index)).state ==
@@ -632,6 +634,7 @@ void Match::classifyStoneRings() {
   registerThrownStone();
 }
 
+// KAR_registerThrownStone: the stone just thrown joins the throw order the tally walks.
 void Match::registerThrownStone() {
   tallyStone_ = teams_.at(PlayerTeam).thrown + teams_.at(OpponentTeam).thrown;
   thrownOrder_.at(static_cast<std::size_t>(tallyStone_)) = {
@@ -1054,6 +1057,9 @@ std::int32_t Match::computeThrowPower(std::int32_t weight, std::int32_t x, std::
   return static_cast<std::int32_t>(speed);
 }
 
+// KAR_setOpponentShot: the plan's first stone type still unthrown, its angle and the power that
+// reaches (x, z). The original reads an unset stone when none is left; here the shot stays as it
+// was.
 void Match::setOpponentShot(std::size_t plan, std::int32_t angle, std::int32_t x, std::int32_t z) {
   Team& rival = teams_.at(OpponentTeam);
   for (const std::int32_t type : ShotPlans.at(plan)) {

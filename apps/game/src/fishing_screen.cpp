@@ -259,6 +259,9 @@ void FishingScreen::enterMap(FieldScene& scene, std::string_view mapId) {
   scene.setExtraMarkers({});
   scene.setMinigamePrims({});
   scene.setCameraPixel(std::nullopt);
+  // Leaving the map ends the fishing (FISH_deinitialize, FISH_endFishing): FISH_closeBaitMenuIfOpen
+  // and FISH_shutdownTextBox.
+  ui_->hide(FishingBaitDocument);
   notices_.clear();
   if (noticeShown_) {
     ui_->hide(FishingNoticeDocument);
@@ -295,12 +298,13 @@ bool FishingScreen::handle(const ui::UiCommand& command) {
     return true;
   }
   if (command.name == ChooseBaitCommand || command.name == NoBaitCommand) {
+    // FISH_closeBaitMenu.
     ui_->hide(FishingBaitDocument);
     std::optional<std::int32_t> bait;
     if (const double* index = std::get_if<double>(&command.value);
         index != nullptr && command.name == ChooseBaitCommand && *index >= 0.0 &&
         static_cast<std::size_t>(*index) < baits_.size()) {
-      bait = fishing_->itemNumber(baits_[static_cast<std::size_t>(*index)]);
+      bait = fishing_->itemNumber(baits_[static_cast<std::size_t>(*index)].item);
     }
     if (water != nullptr) {
       water->chooseBait(bait);
@@ -484,14 +488,15 @@ void FishingScreen::follow(FieldScene& scene, const game::fishing::FishingOutput
   showNextNotice();
 }
 
+// FISH_openBaitMenu: the bag's food, one row per slot in the bag's order (session::baitRows).
 void FishingScreen::openBaitMenu() {
   baits_ = fishing_->baits();
   const screens::NameKeys names{nullptr, &inventory_->items(), nullptr};
   ui_->setSetting(BaitsSetting, static_cast<double>(baits_.size()));
   for (std::size_t index = 0; index < baits_.size(); ++index) {
-    ui_->setSetting(std::format("{}{}", BaitNamePrefix, index), names.item(baits_[index]));
+    ui_->setSetting(std::format("{}{}", BaitNamePrefix, index), names.item(baits_[index].item));
     ui_->setSetting(std::format("{}{}", BaitCountPrefix, index),
-                    static_cast<double>(inventory_->inventory().countOf(baits_[index])));
+                    static_cast<double>(baits_[index].count));
   }
   ui_->show(FishingBaitDocument, true);
 }

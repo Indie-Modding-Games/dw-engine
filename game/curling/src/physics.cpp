@@ -370,6 +370,8 @@ void Match::resolveStoneCollision(Stone& a, Point atA, Stone& b, Point atB) {
   }
 }
 
+// KAR_collidePeggedStone: the mover glances off a fixed stone, which shakes with half its speed
+// scaled by how square the knock was.
 void Match::collidePeggedStone(Stone& pegged, Point a, Stone& mover, Point b) {
   const std::int32_t heading =
       ratan2(mover.target.z - mover.position.z, mover.target.x - mover.position.x) & AngleMask;
@@ -398,6 +400,8 @@ void Match::collidePeggedStone(Stone& pegged, Point a, Stone& mover, Point b) {
   mover.target = b;
 }
 
+// KAR_collideRestingStone: the mover pushes a stopped stone off with its impact share and both are
+// parted until they no longer touch.
 void Match::collideRestingStone(Stone& resting, Point a, Stone& mover, Point b) {
   if (resting.speed == 0 && mover.speed == 0) {
     resting.position = a;

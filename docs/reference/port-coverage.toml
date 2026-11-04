@@ -721,21 +721,21 @@ startTournament = { status = "portado", dwe = "apps/session/src/tournament_adapt
 
 # --- Fishing
 FISH_panCameraTo = { status = "portado", dwe = "game/fishing/src/view.cpp:32", what = "Desplaza la cámara hacia un punto (el corcho) con un límite por fotograma.", note = "Zona muerta 40 x 30 y 16 píxeles por fotograma; medido: al sacar la caña la vista está en (480, 8) en los dos y el vuelo la arrastra fotograma a fotograma." }
-FISH_panCameraToTamer = { status = "portado", dwe = "game/fishing/src/rod.cpp:463", what = "Devuelve la cámara al jugador antes del menú de cebo o al recoger.", note = "16 píxeles por fotograma, sin zona muerta." }
+FISH_panCameraToTamer = { status = "portado", dwe = "game/fishing/src/rod.cpp:478", what = "Devuelve la cámara al jugador antes del menú de cebo o al recoger.", note = "16 píxeles por fotograma, sin zona muerta." }
 FISH_panCameraWithDPad = { status = "portado", dwe = "game/fishing/src/rod.cpp:467", what = "Deja al jugador mover la vista con la cruceta mientras pesca.", note = "Con E (mando: Norte) pulsado, 5 píxeles por fotograma; medido igual en el original (45 en 9 fotogramas)." }
-FISH_isWithinCastRange = { status = "portado", dwe = "game/fishing/src/rod.cpp:103", what = "Comprueba si el corcho o el pez está dentro del alcance desde el jugador." }
-FISH_isBaitMenuVisible = { status = "portado", dwe = "game/fishing/src/rod.cpp:432", what = "Dice si el menú de cebo sigue abierto para esperar la elección." }
-FISH_closeBaitMenu = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:177", what = "Cierra el menú de cebo." }
-FISH_tickBaitMenu = { status = "portado", dwe = "content/packs/game/ui/fishing_bait/logic.lua:54", what = "Mueve el cursor del menú de cebo y elige o cancela el cebo." }
-FISH_openBaitMenu = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:315", what = "Abre el menú con la comida de la bolsa para elegir el cebo." }
+FISH_isWithinCastRange = { status = "portado", dwe = "game/fishing/src/rod.cpp:114", what = "Comprueba si el corcho o el pez está dentro del alcance desde el jugador." }
+FISH_isBaitMenuVisible = { status = "portado", dwe = "game/fishing/src/rod.cpp:526", what = "Dice si el menú de cebo sigue abierto para esperar la elección." }
+FISH_closeBaitMenu = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:301", what = "Cierra el menú de cebo." }
+FISH_tickBaitMenu = { status = "portado", dwe = "content/packs/game/ui/fishing_bait/logic.lua:1", what = "Mueve el cursor del menú de cebo y elige o cancela el cebo.", note = "Mejora: lo hace el documento del menú; el cursor, la repetición al mantener y los sonidos de mover, confirmar y cancelar los pone la interfaz común (el original: el mismo sonido para todo)." }
+FISH_openBaitMenu = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:491", what = "Abre el menú con la comida de la bolsa para elegir el cebo.", note = "Medido: una fila por casilla de la bolsa con comida, en el orden de la bolsa y con la cantidad de esa casilla (Solomillo 3, Carne 5, Solomillo 2, Carne gigante 4). Antes dwe daba una fila por objeto en el orden de la tabla. Presentación: lista de una columna en páginas de ocho, como los demás menús de dwe (el original: dos columnas, nueve filas)." }
 FISH_initBaitMenu = { status = "no-aplica", what = "Pone a cero el estado del menú de cebo.", note = "Estado de caja de UI; lo sustituye el documento del menú de cebo." }
-FISH_closeBaitMenuIfOpen = { status = "portado", dwe = "game/fishing/src/rod.cpp:409", what = "Cierra el menú de cebo si quedó abierto al acabar la pesca." }
+FISH_closeBaitMenuIfOpen = { status = "portado", dwe = "game/fishing/src/rod.cpp:445", what = "Cierra el menú de cebo si quedó abierto al acabar la pesca." }
 FISH_scrollViewToTarget = { status = "portado", dwe = "game/fishing/src/rod.cpp:479", what = "Lleva la cámara al punto del aviso (el pez o el corcho) mientras se lee.", note = "16 píxeles por fotograma hacia el corcho (avisos) o la captura." }
 FISH_isTextBoxVisible = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:206", what = "Dice si hay un aviso abierto; la pesca se pausa mientras tanto." }
 FISH_closeTextBox = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:190", what = "Cierra el aviso de la pesca." }
 FISH_tickTextBox = { status = "portado", dwe = "content/packs/game/ui/fishing_notice/logic.lua:65", what = "Cierra el aviso con Confirmar tras 10 fotogramas o con Cancelar.", note = "Confirmar cuenta tras medio segundo abierto (10 fotogramas a 20 por segundo), Cancelar al momento; los dos suenan como confirmar. La vista va al punto del aviso (Fishing::scrollToNotice)." }
 FISH_initTextBox = { status = "no-aplica", what = "Pone a cero el estado del aviso.", note = "Estado de caja de UI; lo sustituye el documento del aviso." }
-FISH_shutdownTextBox = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:143", what = "Quita el aviso al salir de la pesca o del mapa." }
+FISH_shutdownTextBox = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:263", what = "Quita el aviso al salir de la pesca o del mapa." }
 FISH_tickMarker = { status = "portado", dwe = "game/fishing/src/effects.cpp:107", what = "Mantiene unos fotogramas la marca sobre un pez que tira la picada.", note = "Medido: vida 10 al tirar, 9 al acabar ese fotograma; se ve 9 fotogramas." }
 FISH_initMarkerPool = { status = "no-aplica", what = "Vacía la reserva de marcas.", note = "La reserva nace vacía con el agua de cada mapa (Fishing)." }
 FISH_allocMarker = { status = "portado", dwe = "game/fishing/src/effects.cpp:84", what = "Busca un hueco libre para una marca.", note = "16 huecos, buscando desde el último usado." }
@@ -748,26 +748,26 @@ FISH_allocRipple = { status = "portado", dwe = "game/fishing/src/effects.cpp:84"
 FISH_loadSpritesAndSeadramon = { status = "no-aplica", what = "Carga las texturas de la pesca y el modelo de la serpiente marina.", note = "Carga de texturas y modelos; la hace el motor de render." }
 FISH_onRodModelLoaded = { status = "no-aplica", what = "Aviso vacío tras cargar el modelo de la caña.", note = "Función vacía de carga de modelo." }
 FISH_resetTension = { status = "portado", dwe = "game/fishing/src/rod.cpp:302", what = "Oculta y pone a cero la tensión del sedal." }
-FISH_hideBaitSprite = { status = "portado", dwe = "game/fishing/src/rod.cpp:203", what = "Oculta el cebo o la captura." }
-FISH_clearBaitSprite = { status = "portado", dwe = "game/fishing/src/rod.cpp:113", what = "Quita el cebo de la pantalla al sacar o guardar la caña." }
+FISH_hideBaitSprite = { status = "portado", dwe = "game/fishing/src/rod.cpp:183", what = "Oculta el cebo o la captura." }
+FISH_clearBaitSprite = { status = "portado", dwe = "game/fishing/src/rod.cpp:183", what = "Quita el cebo de la pantalla al sacar o guardar la caña." }
 FISH_showBaitSprite = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:177", what = "Muestra el cebo o la captura con el icono del objeto.", note = "El icono de ETCDAT/ITEM con su paleta, un cuadrado de cara a la pantalla de 2 x 35 unidades en el lago (unknown_8 del mapa), solo sobre el agua (fishing_screen.cpp: addBait)." }
 FISH_resetBobberAnim = { status = "portado", dwe = "game/fishing/src/rod.cpp:114", what = "Deja el corcho en reposo y su animación a cero." }
 FISH_initBobberAnim = { status = "portado", dwe = "game/fishing/src/rod.cpp:114", what = "Reinicia el corcho al empezar o acabar la pesca." }
 FISH_clearBobberAnim = { status = "portado", dwe = "game/fishing/src/rod.cpp:114", what = "Reinicia el corcho al sacar la caña." }
 FISH_pushSeadramonSegment = { status = "portado", dwe = "game/fishing/src/view.cpp:150", what = "Guarda el giro de la cabeza para que el cuerpo de la serpiente marina la siga.", note = "Cinco piezas de ETCDAT/SEA dibujadas restando (fishing_screen.cpp: showPrims). Cada serpiente empieza recta: la historia del original es global y arrastra la de la anterior." }
-FISH_isSeadramonSpawned = { status = "portado", dwe = "game/fishing/src/pond.cpp:205", what = "Dice si la serpiente marina ya está en el agua para no sacar otra." }
-FISH_initFishPool = { status = "portado", dwe = "game/fishing/src/rod.cpp:71", what = "Vacía el agua de peces y sus contadores al entrar en el mapa." }
+FISH_isSeadramonSpawned = { status = "portado", dwe = "game/fishing/src/pond.cpp:203", what = "Dice si la serpiente marina ya está en el agua para no sacar otra." }
+FISH_initFishPool = { status = "no-aplica", what = "Vacía el agua de peces y sus contadores al entrar en el mapa.", note = "Puesta a cero de la reserva al entrar en el mapa; el agua (Fishing) nace vacía en cada mapa." }
 FISH_fishPoolStub = { status = "no-aplica", what = "Función vacía al cerrar la pesca.", note = "Vacía en el original." }
-FISH_clearHookedFish = { status = "portado", dwe = "game/fishing/src/rod.cpp:369", what = "Suelta el pez enganchado." }
+FISH_clearHookedFish = { status = "no-aplica", what = "Suelta el pez enganchado.", note = "Puesta a cero al entrar o salir del mapa; el agua (Fishing) nace sin pez enganchado en cada mapa." }
 FISH_clipLineToRect = { status = "portado", dwe = "game/fishing/src/view.cpp:67", what = "Recorta el sedal al borde de la pantalla para dibujarlo.", note = "El sedal se dibuja de la punta al corcho en trozos de 64 píxeles, del color de la tensión." }
-FISH_resetRodState = { status = "portado", dwe = "game/fishing/include/dwe/game/fishing/fishing.hpp:315", what = "Deja la caña guardada, sin sedal ni corcho." }
+FISH_resetRodState = { status = "no-aplica", what = "Deja la caña guardada, sin sedal ni corcho.", note = "Puesta a cero al entrar en el mapa; la caña de cada Fishing nace guardada, sin sedal ni corcho." }
 FISH_waterTestStub1 = { status = "no-aplica", what = "Prueba de agua vacía del primer mapa.", note = "Vacía en el original." }
 FISH_waterTestStub2 = { status = "no-aplica", what = "Prueba de agua vacía del segundo mapa.", note = "Vacía en el original." }
 FISH_getBoneTransform = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:224", what = "Da la posición del hueso de la mano del jugador para la caña y el cebo." }
 FISH_endFishing = { status = "portado", dwe = "game/fishing/src/rod.cpp:403", what = "Guarda la caña, devuelve la cámara y deja al jugador quieto." }
 FISH_init = { status = "portado", dwe = "apps/session/src/fishing_adapter.cpp:153", what = "Prepara la pesca del mapa al entrar en uno con agua." }
 FISH_tickFishingWorld = { status = "portado", dwe = "apps/game/src/play_session.cpp:758", what = "Mueve el agua de un mapa de pesca (ondas, marcas, peces, serpiente) en cada fotograma.", note = "Desde que se entra al mapa, con la caña guardada y con el menú abierto, tras el campo; quieto con la pesca apagada, un aviso abierto o el partner evolucionando." }
-FISH_deinitialize = { status = "portado", dwe = "apps/session/src/fishing_adapter.cpp:140", what = "Cierra la pesca al dejar el mapa." }
+FISH_deinitialize = { status = "portado", dwe = "apps/session/src/fishing_adapter.cpp:144", what = "Cierra la pesca al dejar el mapa.", note = "Al cambiar de mapa se destruye el agua (Fishing) y la pantalla cierra el menú de cebo, el aviso y el medidor." }
 FISH_scrollCameraTo = { status = "portado", dwe = "game/fishing/src/view.cpp:28", what = "Desplaza el fondo del mapa hasta un punto de la pantalla.", note = "La app centra la cámara del mapa en ese píxel del fondo (MapRenderer::setFocusPixel)." }
 FISH_enableCameraControl = { status = "portado", dwe = "game/fishing/src/rod.cpp:148", what = "Guarda la vista al sacar la caña para restaurarla al acabar.", note = "La vista parte de donde la dejó el campo." }
 FISH_loadTMDModel = { status = "no-aplica", what = "Carga un modelo 3D (la caña o la serpiente marina).", note = "Carga de modelos; la hace el motor de assets." }
@@ -788,8 +788,8 @@ KAR_updateCollisions = { status = "portado", dwe = "game/curling/src/physics.cpp
 KAR_bounceOffWall = { status = "portado", dwe = "game/curling/src/physics.cpp:1", what = "Hace rebotar una piedra contra la pared de la pista." }
 KAR_distance = { status = "portado", dwe = "game/curling/src/kar_math.hpp:1", what = "Calcula la distancia entre dos puntos de la pista." }
 KAR_resolveStoneCollision = { status = "portado", dwe = "game/curling/src/physics.cpp:1", what = "Decide cómo se reparte un choque entre dos piedras." }
-KAR_collidePeggedStone = { status = "portado", dwe = "game/curling/src/physics.cpp:1", what = "Choque de una piedra en marcha contra una piedra fija." }
-KAR_collideRestingStone = { status = "portado", dwe = "game/curling/src/physics.cpp:1", what = "Choque de una piedra en marcha contra una piedra parada, que sale despedida." }
+KAR_collidePeggedStone = { status = "portado", dwe = "game/curling/src/physics.cpp:373", what = "Choque de una piedra en marcha contra una piedra fija." }
+KAR_collideRestingStone = { status = "portado", dwe = "game/curling/src/physics.cpp:403", what = "Choque de una piedra en marcha contra una piedra parada, que sale despedida." }
 KAR_collideMovingStones = { status = "portado", dwe = "game/curling/src/physics.cpp:1", what = "Choque entre dos piedras que se mueven a la vez." }
 KAR_debugCollisionStone = { status = "no-aplica", what = "Ajuste de depuración del choque de una piedra.", note = "sale al empezar en el original: código muerto" }
 KAR_computeImpactShare = { status = "portado", dwe = "game/curling/src/physics.cpp:1", what = "Calcula cuánta fuerza recibe cada piedra en un choque." }
@@ -798,8 +798,8 @@ KAR_debugCollisionPair = { status = "no-aplica", what = "Ajuste de depuración d
 KAR_getWallZone = { status = "portado", dwe = "game/curling/src/physics.cpp:1", what = "Dice en qué zona de pared de la pista está un punto." }
 KAR_placeAtContact = { status = "portado", dwe = "game/curling/src/physics.cpp:1", what = "Coloca la piedra justo en el punto de contacto del choque." }
 KAR_beginAiming = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Empieza la fase de apuntar del turno del jugador." }
-KAR_selectPreviousStone = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Elige la piedra anterior para lanzar." }
-KAR_selectNextStone = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Elige la piedra siguiente para lanzar." }
+KAR_selectPreviousStone = { status = "portado", dwe = "game/curling/src/match.cpp:502", what = "Elige la piedra anterior para lanzar." }
+KAR_selectNextStone = { status = "portado", dwe = "game/curling/src/match.cpp:513", what = "Elige la piedra siguiente para lanzar." }
 KAR_beginThrow = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Lanza la piedra elegida hacia el punto apuntado." }
 KAR_tickYesNoPrompt = { status = "portado", dwe = "game/curling/src/match.cpp:358", note = "las opciones se muestran en el documento curling_hud", what = "Pregunta sí/no del minijuego (confirmar tiro o jugar otra vez)." }
 KAR_tickHintBox = { status = "portado", dwe = "game/curling/src/match.cpp:384", note = "el texto de cada página sale de kar.yaml (apps/game/src/curling_screen.cpp:123); en la caja de diálogo de la historia; las cuatro líneas salen a la vez", what = "Anima el cuadro de ayuda con las instrucciones del curling." }
@@ -807,9 +807,9 @@ KAR_classifyStoneRings = { status = "portado", dwe = "game/curling/src/match.cpp
 KAR_tickScoreTally = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Cuenta y muestra los puntos de cada equipo al final de la ronda." }
 KAR_chooseOpponentShot = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Decide el tiro del rival según las piedras en la pista." }
 KAR_findClearShotAngle = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Busca un ángulo de tiro libre de obstáculos para el rival." }
-KAR_setOpponentShot = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Fija el destino y la fuerza del tiro del rival." }
+KAR_setOpponentShot = { status = "portado", dwe = "game/curling/src/match.cpp:1060", what = "Fija el destino y la fuerza del tiro del rival." }
 KAR_aimAtRandomStone = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "El rival apunta a una piedra al azar." }
-KAR_registerThrownStone = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Apunta la piedra recién lanzada en la lista de lanzadas." }
+KAR_registerThrownStone = { status = "portado", dwe = "game/curling/src/match.cpp:637", what = "Apunta la piedra recién lanzada en la lista de lanzadas." }
 KAR_rotatePoint = { status = "portado", dwe = "apps/game/src/curling_screen.cpp", note = "gira la punta de la flecha de puntería en la pantalla", what = "Gira un punto sobre la pista para posicionar piedras y marcas." }
 KAR_tickMatchState = { status = "portado", dwe = "game/curling/src/match.cpp:1", what = "Máquina de estados de la partida: turnos, tiros, rondas y final." }
 checkCurlingMap = { status = "no-aplica", what = "Al entrar en el mapa de curling carga el minijuego.", note = "solo carga del disco el módulo del minijuego al entrar en el mapa 136; el motor lo lleva siempre dentro" }
@@ -940,12 +940,12 @@ STD_addFighterCounter = { status = "portado", dwe = "game/battle/src/battle.cpp:
 STD_tickFighterCounter = { status = "portado", dwe = "game/battle/src/battle.cpp:1", note = "el reloj cuenta y la pantalla de combate lo dibuja", what = "Descuenta el reloj del combate salvo cuando un luchador está caído." }
 STD_updateBracket = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Avanza el cuadro de eliminatorias al siguiente cruce y destaca al jugador." }
 STD_addBracketProjectile = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Lanza la marca animada que sube por el cuadro hacia el ganador." }
-STD_addBracketHitFlash = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Inicia el destello en una casilla del cuadro de eliminatorias." }
+STD_addBracketHitFlash = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:367", what = "Inicia el destello en una casilla del cuadro de eliminatorias." }
 STD_initializeBracket = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Reinicia el estado del cuadro de eliminatorias." }
 STD_setupParticipants = { status = "portado", dwe = "game/tournament/src/bracket.cpp:1", what = "Reparte los ocho participantes de la copa en el cuadro." }
 STD_addBracket = { status = "portado", dwe = "apps/game/src/tournament_bracket_screen.cpp:1", what = "Muestra el cuadro de eliminatorias de la copa." }
-STD_tickBracket = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Anima el cuadro de eliminatorias entre combates." }
-STD_isBracketFinished = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Indica si terminó la animación del cuadro de eliminatorias." }
+STD_tickBracket = { status = "no-aplica", what = "Anima el cuadro de eliminatorias entre combates.", note = "Función vacía: el objeto del cuadro no hace nada en su tick; la animación va en STD_updateBracket (BracketAnimation)." }
+STD_isBracketFinished = { status = "portado", dwe = "game/tournament/include/dwe/game/tournament/bracket_animation.hpp:77", what = "Indica si terminó la animación del cuadro de eliminatorias." }
 STD_tickBracketHitFlash = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Anima el destello de una casilla del cuadro." }
 STD_addBracketIntro = { status = "portado", dwe = "apps/game/src/tournament_bracket_screen.cpp:1", what = "Inicia la presentación del cuadro al empezar la copa." }
 STD_tickBracketIntro = { status = "portado", dwe = "game/tournament/src/bracket_animation.cpp:1", what = "Anima la presentación del cuadro de eliminatorias." }

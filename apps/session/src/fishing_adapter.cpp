@@ -141,6 +141,7 @@ FishingAdapter::resolvePlace(const assets::FishingMapEntry& map) const {
 }
 
 void FishingAdapter::enterMap(std::string_view mapId) {
+  // FISH_deinitialize: the last map's water goes with its rod, fish, ripples and marks.
   fishing_.reset();
   if (!rules_ || !table_) {
     return;
@@ -178,18 +179,20 @@ std::optional<Rod> FishingAdapter::bestRod() const {
   return std::nullopt;
 }
 
-std::vector<assets::ItemHandle> FishingAdapter::baits() const {
-  std::vector<assets::ItemHandle> food;
-  for (const assets::ItemEntry& entry : inventory_->items().entries()) {
-    if (entry.sortingValue != FoodSorting) {
-      continue;
-    }
-    const assets::ItemHandle item = inventory_->items().handleOf(entry);
-    if (inventory_->inventory().countOf(item) > 0) {
-      food.push_back(item);
+std::vector<game::inventory::Stack>
+baitRows(std::span<const std::optional<game::inventory::Stack>> slots,
+         const assets::ItemTable& items) {
+  std::vector<game::inventory::Stack> rows;
+  for (const std::optional<game::inventory::Stack>& slot : slots) {
+    if (slot && slot->count > 0 && items.at(slot->item).sortingValue == FoodSorting) {
+      rows.push_back(*slot);
     }
   }
-  return food;
+  return rows;
+}
+
+std::vector<game::inventory::Stack> FishingAdapter::baits() const {
+  return baitRows(inventory_->inventory().slots(), inventory_->items());
 }
 
 std::int32_t FishingAdapter::itemNumber(assets::ItemHandle item) const {

@@ -364,6 +364,7 @@ void BracketAnimation::step(std::size_t index, std::array<std::size_t, 2> fighte
       slot.timer = 0;
       ++slot.state;
       if (slot.loser) {
+        // STD_addBracketHitFlash.
         flashes_.at(index) = true;
       } else {
         slot.flipped = !slot.flipped;

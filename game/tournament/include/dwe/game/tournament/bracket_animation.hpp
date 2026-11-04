@@ -74,6 +74,7 @@ public:
   void show(BracketShow show);
   // One frame (the shots' and hit flashes' ticks, then STD_updateBracket).
   void tick();
+  // STD_isBracketFinished.
   [[nodiscard]] bool finished() const { return finished_; }
   // STD_MATCH_RESULT once the partner's match is over.
   void matchOver(bool won) { result_ = won ? 1 : -1; }

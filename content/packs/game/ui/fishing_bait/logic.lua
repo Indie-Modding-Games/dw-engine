@@ -1,7 +1,7 @@
--- The fishing's bait menu (fish.c: FISH_tickRod, the food of the bag). The game publishes the baits
--- as settings (fishing_baits, the count; fishing_bait_name.<n>, the item's name key, and
--- fishing_bait_count.<n>, how many the bag holds, from 0) and shows this document; it sends
--- choose_bait with the bait, from 0, or no_bait. Pages of eight, turned with left and right.
+-- The fishing's bait menu (fish.c: FISH_tickBaitMenu, the food of the bag in its order). The game
+-- publishes the baits as settings (fishing_baits, the count; fishing_bait_name.<n>, the item's name
+-- key, and fishing_bait_count.<n>, how many the bag holds, from 0) and shows this document; it
+-- sends choose_bait with the bait, from 0, or no_bait. Pages of eight, turned with left and right.
 
 local PageSize = 8
 local page = 1
