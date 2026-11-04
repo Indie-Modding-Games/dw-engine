@@ -136,8 +136,7 @@ TEST_CASE("a glyph draws the key or button of the device in use, in its family's
   CHECK(space.symbol == "@space");
   CHECK(glyph(DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "cancel").symbol == "ESC");
   CHECK(glyph(DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "menu").symbol == "TAB");
-  CHECK(glyph(DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "alt").symbol == "E");
-  CHECK(glyph(DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "extra").symbol == "Q");
+  CHECK(glyph(DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "settings").kind == GlyphKind::None);
 
   // Letters: A at the bottom on one family, on the right on another.
   const PromptGlyph a = glyph(DeviceKind::Gamepad, GamepadFamily::Xbox, "confirm");

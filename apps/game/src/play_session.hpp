@@ -218,7 +218,7 @@ public:
   // battle or scene, the player held), or empty when Tab or the HUD's button opens it.
   [[nodiscard]] std::string_view menuShutBy() const;
   // Whether a fade runs (fade.c: FADE_PROTECTION, or any other fade darkening the screen): the
-  // pause and F10's options wait for its end (utils2.c: handlePause).
+  // pause and the pad's Select options wait for its end (utils2.c: handlePause).
   [[nodiscard]] bool fadeProtected() const;
   void type(std::string_view text, bool enter);
 

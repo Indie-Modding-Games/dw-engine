@@ -1,6 +1,7 @@
-// The game's options while playing (docs/modulos/apps/game.md, «Opciones en partida»): F10 opens
-// the pause menu on its options page, which lists the language, the original-looking text and every
-// option of ui/common/game_options.lua without a row of its own in the document.
+// The game's options while playing (docs/modulos/apps/game.md, «Opciones en partida»): The
+// pad's Select opens the pause menu on its options page, which lists the language, the
+// original-looking text and every option of ui/common/game_options.lua without a row of its
+// own in the document.
 
 #include <dwe/input/keys.hpp>
 

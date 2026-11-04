@@ -1,6 +1,9 @@
-# F10 opens the options after the player page was minimized with Tab in the original look.
-name: f10-after-player-tab
-device: keyboard
+# The pad's Select (Back) opens the options after the player page was minimized with North in the
+# original look. `settings` has no keyboard key, so this runs on a gamepad. Run with:
+# dwe-game --content <folder> --autotest tests/autotest/route-settings-after-player-tab.yaml
+name: settings-after-player-tab
+device: gamepad
+gamepad: generic
 timeout: 120
 steps:
   - wait: {map: twna01, seconds: 1}
@@ -10,12 +13,12 @@ steps:
   - menu_select: open-player
   - wait: {seconds: 1}
   - screenshot: player-page
-  # Tab on the player page minimizes it into the tools panel.
-  - tap: {key: tab}
+  # North (the menu action) on the player page minimizes it into the tools panel.
+  - tap: {button: north}
   - wait: {seconds: 0.5}
   - screenshot: player-minimized
-  # F10 must show the options page.
-  - tap: {key: f10}
+  # Select must show the options page.
+  - tap: {button: back}
   - wait: {menu_open: true, seconds: 0.5, timeout: 5}
   - expect_setting: {has_class.pause_menu#page-options.hidden: "false"}
   - expect_setting: {has_class.pause_menu#panel.box-closed: "false"}

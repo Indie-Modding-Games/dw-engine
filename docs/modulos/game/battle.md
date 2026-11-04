@@ -191,9 +191,9 @@ probable y está marcado en el código), **Hueco** (falta).
 - **Aviso del remate:** con la barra llena el original escribe «FINISH!!» y, en una caja gris, el botón cuadrado del
   mando y «PUSH» (un solo sprite de `BI_IN`). En el PC el cuadrado no dice nada, así que el aspecto original recorta
   el sprite a «PUSH» y pone en su sitio el aviso de la interfaz (`ui.prompt("extra")`, la clase `key` del tema) con
-  la tecla de `extra` (Supr por defecto) o el botón del mando en uso (el oeste: Cuadrado, X…), según el último
-  dispositivo y los controles que haya asignado el jugador. Con un nombre de una o dos letras (X, Y…) la caja queda
-  donde la pone el original, a la derecha de «FINISH!!»; con uno más largo (Supr, Cuadrado…) baja una fila, debajo
+  la tecla de `extra` (Q por defecto) o el botón del mando en uso (el oeste: Cuadrado, X…), según el último
+  dispositivo y los controles que haya asignado el jugador. Con un aviso de una o dos letras (Q, X, Y…) la caja queda
+  donde la pone el original, a la derecha de «FINISH!!»; con uno más largo (el Cuadrado del mando) baja una fila, debajo
   de «FINISH!!», con el mismo borde derecho, y el botón del remate para el ratón (`.command.no-icon`) baja con ella.
   Con el ratón el remate sigue respondiendo al clic sobre la caja.
 
