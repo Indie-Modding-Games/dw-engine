@@ -92,6 +92,9 @@ public:
   void holdBurst(bool held) { burstHeld_ = held; }
   [[nodiscard]] IntroStep current() const { return step_; }
   [[nodiscard]] bool done() const { return step_ == IntroStep::Done; }
+  // battle_hud.c: BTL_isBattleStartTextFinished: the banner's pieces are all in place (while it
+  // shows) or all gone (in the burst); BTL_handleBattleIntro waits on it twice.
+  [[nodiscard]] bool finished() const { return finished_; }
 
   // How high over its feet an enemy's anger mark stands, in world units, and how big it is in
   // percent of its full size (btl.c: renderFleeBubble): it rises and grows for 5 frames, then
@@ -106,8 +109,10 @@ public:
 
 private:
   // A piece on the banner's plane (BTL_BATTLE_START_TEXT_PIECES): where it is, where it flies to,
-  // its speed, its trail, its texture, and for the burst its turn and its drift.
+  // its speed, its trail, its texture, and for the burst its turn and its drift; `order` is the
+  // shuffled byte 0x11 nothing reads.
   struct Piece {
+    std::int32_t order = 0;
     std::int32_t x = 0;
     std::int32_t y = 0;
     std::int32_t targetX = 0;
@@ -121,6 +126,8 @@ private:
 
   [[nodiscard]] std::int32_t randomLimit(std::int32_t limit);
   void startBanner();
+  void shufflePieces();
+  void startBurst();
   void stepBanner();
   void stepBurst();
   [[nodiscard]] BannerPiece shownPiece(const Piece& piece) const;
@@ -131,6 +138,8 @@ private:
   std::int32_t flash_ = 0;
   std::int32_t flashFrames_ = 0;
   bool gathered_ = false;
+  // BTL_BATTLE_TEXT_FINISHED.
+  bool finished_ = false;
   bool burstHeld_ = false;
   std::vector<BannerPlace> places_;
   std::vector<Piece> pieces_;

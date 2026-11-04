@@ -9,6 +9,7 @@
 #include <dwe/screens/command_menu.hpp>
 #include <dwe/screens/command_shout.hpp>
 #include <dwe/screens/damage_numbers.hpp>
+#include <dwe/screens/death_countdown.hpp>
 #include <dwe/screens/enemy_hp_bars.hpp>
 #include <dwe/screens/partner_bars.hpp>
 #include <dwe/session/battle_adapter.hpp>
@@ -188,7 +189,7 @@ private:
   void tickNumbers(double seconds);
   void publishNumbers() const;
   // The enemies' HP bars beside them (battle_main.c: BTL_renderEnemyHPBars); none without a battle.
-  void publishHpBars() const;
+  void publishHpBars();
   void showFighters(double seconds);
   void standPartner(std::uint32_t clip, std::string_view origin);
   void openBag();
@@ -302,6 +303,9 @@ private:
   // and as it left them until the end box closes; the NPC each enemy is.
   std::vector<FighterFigure> figures_;
   std::vector<std::int32_t> enemyNpcs_;
+  // Where the fallen partner's countdown stands, taken when it shows (command_menu.c:
+  // BTL_addDeathCountdown reads the partner's node once).
+  std::optional<screens::WindowFraction> deathCountdownAnchor_;
   std::uint32_t partnerStance_ = 0;
   // FLEE_DISABLED, and the NPCs on screen when the battle started (overworld.c:1352 keeps
   // isOnScreen from the last field tick): the battle's end takes those off the map.

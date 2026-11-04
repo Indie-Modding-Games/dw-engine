@@ -911,6 +911,33 @@ local function draw_hp_bars(document)
   end
 end
 
+-- The countdown over the fallen partner (apps/screens: death_countdown.hpp; command_menu.c:
+-- BTL_tickDeathCountdown, BTL_renderDeathCountdown): seven values, the anchor in percent of the
+-- window, the digit, the digit's and the badge's scale, their turn in degrees and the badge's
+-- palette. The digit is drawn over the badge, both centred on the anchor.
+local function draw_death_countdown(document)
+  local values = {}
+  for value in string.gmatch(setting("battle.death_countdown", ""), "%S+") do
+    values[#values + 1] = tonumber(value)
+  end
+  local shown = #values == 7
+  set_class(document, "death-countdown", "hidden", not shown)
+  if not shown then
+    return
+  end
+  set_property(document, "death-countdown", "left", values[1] .. "%")
+  set_property(document, "death-countdown", "top", values[2] .. "%")
+  for digit = 1, 5 do
+    set_class(document, "dc-digit", "digit-" .. digit, values[3] == digit)
+  end
+  for palette = 0, 2 do
+    set_class(document, "dc-badge", "palette-" .. palette, values[7] == palette)
+  end
+  local turn = string.format("rotate(%.1fdeg) ", values[6])
+  set_property(document, "dc-digit", "transform", turn .. string.format("scale(%.3f)", values[4]))
+  set_property(document, "dc-badge", "transform", turn .. string.format("scale(%.3f)", values[5]))
+end
+
 -- The player's shout (command_shout.c: BTL_drawCommandShout, BTL_renderCommandShout): the game
 -- gives the anchor and its line; the shout is as wide as 12 pixels a character (the original's,
 -- strlen * 12) and keeps 140 pixels of the middle on each side, then hops and grows from its
@@ -1226,6 +1253,7 @@ function on_show(document)
   draw_damage(document)
   draw_hp_bars(document)
   draw_player_marks(document)
+  draw_death_countdown(document)
   draw_shout(document)
   draw_prompts(document)
 end
@@ -1246,6 +1274,7 @@ function on_setting(document, name)
   elseif name == "battle.hp_bars.revision" then
     draw_hp_bars(document)
     draw_player_marks(document)
+    draw_death_countdown(document)
   elseif name == "battle.shout.revision" then
     draw_shout(document)
   end

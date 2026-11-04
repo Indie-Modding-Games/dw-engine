@@ -165,6 +165,17 @@ Point3 rotate(Point3 point, const std::array<std::int32_t, 3>& angles) {
   return out;
 }
 
+// The first corner of a bursting piece on the screen (BTL_renderBattleStartTextBurst's ft->x0,
+// y0): (-4, -6) turned by its angles, from half a piece up and left of where the banner had it.
+ScreenPoint burstCorner(std::int32_t x, std::int32_t y, const std::array<std::int32_t, 3>& angles) {
+  constexpr auto Width = static_cast<float>(PieceWidth);
+  constexpr auto Height = static_cast<float>(PieceHeight);
+  const Point3 turned = rotate({.x = -Width / 2, .y = -Height / 2, .z = 0.0F}, angles);
+  return project({.x = turned.x + static_cast<float>(x) - (Width / 2),
+                  .y = turned.y + static_cast<float>(y) - (Height / 2),
+                  .z = turned.z});
+}
+
 double rounded(double value) {
   return std::round(value * Tenths) / Tenths;
 }
@@ -274,16 +285,23 @@ void BattleIntro::step() {
   }
 }
 
-// battle_hud.c: BTL_initializeBattleStartText. Each piece takes a texture, a side and a speed, and
-// starts far off that side on its own row.
+// battle_hud.c: BTL_initializeBattleStartText. Every piece first takes its trail and a texture,
+// the order list is shuffled, then each piece takes a side and a speed and starts far off that side
+// on its own row: the rolls go in that order.
 void BattleIntro::startBanner() {
   step_ = IntroStep::Banner;
   frame_ = 0;
+  finished_ = false;
+  for (std::size_t index = 0; index < pieces_.size(); ++index) {
+    Piece& piece = pieces_.at(index);
+    piece.order = static_cast<std::int32_t>(index);
+    piece.trail = TrailLength;
+    piece.texture = static_cast<std::uint8_t>(randomLimit(Textures));
+  }
+  shufflePieces();
   for (std::size_t index = 0; index < pieces_.size(); ++index) {
     Piece& piece = pieces_.at(index);
     const BannerPlace& place = places_.at(index);
-    piece.trail = TrailLength;
-    piece.texture = static_cast<std::uint8_t>(randomLimit(Textures));
     const std::int32_t side = randomLimit(2) == 1 ? 1 : -1;
     piece.y = place.y;
     piece.targetX = place.x;
@@ -300,18 +318,41 @@ void BattleIntro::startBanner() {
   }
 }
 
+// battle_hud.c: BTL_shuffleBattleStartTextPieces: each piece swaps its order with a random one,
+// one randomLimit over the whole banner each. Nothing reads the order afterwards (the pieces are
+// drawn and flown in table order), so what it leaves is its rolls.
+void BattleIntro::shufflePieces() {
+  const auto count = static_cast<std::int32_t>(pieces_.size());
+  for (Piece& piece : pieces_) {
+    std::swap(piece.order, pieces_.at(static_cast<std::size_t>(randomLimit(count))).order);
+  }
+}
+
+// battle_hud.c: BTL_initializeBattleStartTextBurst: the burst starts and the banner counts as not
+// finished until every piece is off.
+void BattleIntro::startBurst() {
+  step_ = IntroStep::Burst;
+  flash_ = 0;
+  finished_ = false;
+}
+
 void BattleIntro::playerBack() {
   if (step_ == IntroStep::Banner) {
     frame_ = PlayerBackFrame;
   }
 }
 
-// BTL_renderBattleStartText: the pieces fly to their places, then their trails shrink; once all
-// are in, the banner flashes. BTL_handleBattleIntro then lets it burst.
+// BTL_renderBattleStartText: the pieces fly to their places, then their trails shrink; a frame
+// that starts with every trail gone flashes and raises BTL_BATTLE_TEXT_FINISHED.
+// BTL_handleBattleIntro reads that flag before the frame's drawing and checks it after: the banner
+// bursts two frames after its pieces are in, once its 200 frames are up and the NPCs that run off
+// are gone.
 void BattleIntro::stepBanner() {
+  const bool done = finished_;
   ++frame_;
   if (gathered_) {
     flash_ = (flashFrames_++ % FlashFrames) / FlashStep;
+    finished_ = true;
   }
   for (Piece& piece : pieces_) {
     if (piece.x != piece.targetX) {
@@ -322,15 +363,16 @@ void BattleIntro::stepBanner() {
       piece.trail -= TrailShrink;
     }
   }
-  const bool wasGathered = gathered_;
   gathered_ = std::ranges::all_of(pieces_, [](const Piece& piece) { return piece.trail == 0; });
-  if (wasGathered && frame_ >= BannerFrames && !burstHeld_) {
-    step_ = IntroStep::Burst;
-    flash_ = 0;
+  if (done && frame_ >= BannerFrames && !burstHeld_) {
+    startBurst();
   }
 }
 
-// BTL_renderBattleStartTextBurst: every piece turns and drifts away until it leaves the screen.
+// BTL_renderBattleStartTextBurst: every piece turns and drifts away until it leaves the screen. A
+// piece stops once the first corner it is drawn with this frame (turned by its angles before this
+// frame's turn) is off a 360 x 280 box round the screen's centre; the burst is finished
+// (BTL_BATTLE_TEXT_FINISHED) on the first frame with every piece stopped.
 void BattleIntro::stepBurst() {
   bool anyLeft = false;
   for (Piece& piece : pieces_) {
@@ -338,6 +380,7 @@ void BattleIntro::stepBurst() {
       continue;
     }
     anyLeft = true;
+    const ScreenPoint corner = burstCorner(piece.x, piece.y, piece.angles);
     switch (piece.texture) {
     case 0:
       piece.angles[0] += TurnStep;
@@ -352,10 +395,10 @@ void BattleIntro::stepBurst() {
       piece.angles[2] += TurnStep;
       break;
     }
-    const ScreenPoint corner = project(
-        Point3{.x = static_cast<float>(piece.x), .y = static_cast<float>(piece.y), .z = 0.0F});
-    if (std::abs(corner.x - ScreenCentreX) > BurstBoundX ||
-        std::abs(corner.y - ScreenCentreY) > BurstBoundY) {
+    // The GTE's screen coordinates are whole pixels.
+    const float x = std::floor(corner.x - ScreenCentreX);
+    const float y = std::floor(corner.y - ScreenCentreY);
+    if (x < -BurstBoundX || x > BurstBoundX || y < -BurstBoundY || y > BurstBoundY) {
       piece.driftX = 0;
       piece.driftY = 0;
     }
@@ -363,6 +406,7 @@ void BattleIntro::stepBurst() {
     piece.y += piece.driftY;
   }
   if (!anyLeft) {
+    finished_ = true;
     step_ = IntroStep::Done;
   }
 }

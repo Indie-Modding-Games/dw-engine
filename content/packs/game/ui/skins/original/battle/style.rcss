@@ -656,10 +656,51 @@
 .mc-digit.d-8 { decorator: image(std-clock-digit-8); }
 .mc-digit.d-9 { decorator: image(std-clock-digit-9); }
 
+/* The fallen partner's countdown is the sign over it (#death-countdown), no text. */
 #revive {
-	font-size: 33dp;
-	color: #d0d0d0;
+	display: none;
 }
+
+/* The countdown over the fallen partner (command_menu.c: BTL_initializeDeathCountdown, BTL_tickDeathCountdown,
+   BTL_renderDeathCountdown): the star badge of BI_IN (u 0x32, v 0x80; 40 x 40, centred, mx and my 20) with its three
+   palettes in turn (CLUT y 0x1ed to 0x1ef), and over it the digit (16 x 16, centred, palette 13). logic.lua places it
+   on the partner's node and turns and scales both. */
+#death-countdown {
+	display: block;
+	position: absolute;
+	width: 0;
+	height: 0;
+}
+
+#death-countdown.hidden {
+	display: none;
+}
+
+#dc-badge {
+	position: absolute;
+	left: -60dp;
+	top: -60dp;
+	width: 120dp;
+	height: 120dp;
+	decorator: image(death-badge-0);
+}
+
+#dc-badge.palette-1 { decorator: image(death-badge-1); }
+#dc-badge.palette-2 { decorator: image(death-badge-2); }
+
+#dc-digit {
+	position: absolute;
+	left: -24dp;
+	top: -24dp;
+	width: 48dp;
+	height: 48dp;
+}
+
+#dc-digit.digit-5 { decorator: image(death-digit-5); }
+#dc-digit.digit-4 { decorator: image(death-digit-4); }
+#dc-digit.digit-3 { decorator: image(death-digit-3); }
+#dc-digit.digit-2 { decorator: image(death-digit-2); }
+#dc-digit.digit-1 { decorator: image(death-digit-1); }
 
 /* The original shows no button hints in battle. */
 #prompts {

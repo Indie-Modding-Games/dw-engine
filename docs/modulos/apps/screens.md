@@ -70,6 +70,31 @@ hace varios ticks no redibuja varias veces) y el documento solo toca las piezas 
 | `battle.intro.flash` | 0 a 2 | La paleta con la que parpadea el rótulo cuando todas sus piezas han llegado |
 | `battle.intro.pieces` | texto | Las piezas que se ven, siete números cada una en píxeles de la pantalla de 320 × 240 del original: x, y, ancho, alto, textura (0 a 2), estela y 1 si la estela va a la izquierda |
 
+Paridad del rótulo (medido en el original el 2026-11-04, `11_battle_agumon`):
+
+| Regla | Decomp | Aquí | Test | Estado |
+|---|---|---|---|---|
+| Orden de llegada de las piezas: al preparar el rótulo cada pieza recibe su índice y luego, pieza a pieza, se cambia con la de una tirada `randomLimit(155)` (la pieza 0 medida queda con el índice 151; x 519, y −48, velocidad −96, deriva (−258, −72), estela 24, textura 1) | `battle_hud.c: BTL_initializeBattleStartTextBurst`, `BTL_shuffleBattleStartTextPieces` | `BattleIntro::startBanner`, `shufflePieces` | the banner is finished two frames after its pieces are in, and again once they burst | Igual en el orden de las tiradas; Suposición: las tiradas salen del generador propio de la apertura (`std::minstd_rand` con semilla), no del del combate, así que las piezas no coinciden una a una con el original |
+| Fin del rótulo: `BTL_BATTLE_TEXT_FINISHED` se pone en el fotograma en que todas las piezas han llegado (empieza el parpadeo) y se lee al principio del siguiente, así que el estallido empieza dos fotogramas después; se vuelve a poner cuando no queda pieza dentro de la caja ±180 × ±140. El estallido medido dura 60 VSync, 20 fotogramas de combate | `battle_hud.c: BTL_isBattleStartTextFinished`, `BTL_renderBattleStartTextBurst`; `battle_setup.c: BTL_handleBattleIntro` | `BattleIntro::finished`, `stepBanner`, `stepBurst`, `burstCorner` | the banner is finished two frames after its pieces are in, and again once they burst (15 a 25 fotogramas) | Igual |
+
+### Cuenta atrás del compañero caído
+
+`deathCountdownLookOf(timer)` da el aspecto de la cuenta atrás que el original pone sobre el compañero caído
+(`command_menu.c: BTL_initializeDeathCountdown`, `BTL_addDeathCountdown`, `BTL_tickDeathCountdown`,
+`BTL_renderDeathCountdown`): la estrella de BI_IN y encima la cifra, 5 a 1. `deathCountdownTimerOf(combate)` cuenta
+sus fotogramas desde el fotograma 20 del compañero en el suelo (`reviveCountdownShownAt`) y `deathCountdownAnchorOf`
+la pone en el nodo 1 del compañero tal como se veía al aparecer. `BattleScreen` la publica con las barras de HP
+(`battle.hp_bars.revision`):
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `battle.death_countdown` | texto | Vacío si no se ve; si no, siete valores: x e y del ancla en % de la ventana, la cifra (5 a 1), la escala de la cifra y la de la estrella (1 tal cual), el giro en grados y la paleta de la estrella (0 a 2) |
+
+| Regla | Decomp | Aquí | Test | Estado |
+|---|---|---|---|---|
+| Aspecto fotograma a fotograma, medido el 2026-11-04 (`dw-original`): en el primer tick la estrella mide 40 × 40 (u 0x32, v 0x80 de la página 896, 256; centro 20, 20), escala 0x1000, CLUT y 0x1ed; la cifra 16 × 16 (centro 8, 8) a 0x1000. Paso = temporizador hasta 30 y luego `t % 31 + 1`. Pasos 2 a 4: la cifra +0x199 por paso; 5 a 7: −0x199; si no, 0x1000. Cada tercer paso hasta el 20 la estrella pasa a la paleta siguiente (13 → 14 → 15 → 13; seis cambios por ciclo, así que cada ciclo empieza en la 13). Desde el paso 21, ambas a `((100 − (paso − 20) × 5) << 12) / 100` y +0x40000 de giro por paso (64°); en el tick 26, 0x0B33 y 0x180000. La cifra es `(t + 29) / 30`: 5, 4, 3, 2 (u 0x50/0x68/0x58/0x68, v 0xa8/0x90/0x90/0x80) y luego 1 (0x58, 0x80); se dibuja por última vez en el tick 150 | `command_menu.c: BTL_initializeDeathCountdown`, `BTL_tickDeathCountdown`, `BTL_renderDeathCountdown` | `screens::deathCountdownLookOf`; `ui/battle/logic.lua: draw_death_countdown`; aspecto original: `#death-countdown` con los sprites `death-badge-*` y `death-digit-*` | the countdown pops its digit, then shrinks and spins away, a second each; the countdown's setting is empty while it does not show | Igual. El ancho 39 cuando la cifra pasa de 0x2000 no ocurre nunca (llega a 0x14CB). El aspecto moderno sigue con su texto (`#revive`) |
+| Cuándo y dónde aparece: al fotograma 20 del compañero en el suelo (`DEATH_COUNTDOWN` 20) en su nodo 1 (`getEntityScreenPos(entity, 1)`), sujeto a x ±140 e y ±100 desde el centro (medido: 3, −56); avanza solo sin objeto lanzado en vuelo, como la cuenta del combate; revivir la quita (`item.c: handleRestore` → `BTL_removeDeathCountdown`) | `battle_setup.c: BTL_isBattleFinished`; `command_menu.c: BTL_addDeathCountdown`, `BTL_removeDeathCountdown` | `screens::deathCountdownTimerOf`, `deathCountdownAnchorOf`, `BattleScreen::publishHpBars` | the countdown shows from the partner's frame 20 on the ground until it is revived; the countdown stands on the partner's node, kept near the screen's middle | Igual. Suposición: el objeto hace su primer tick en el mismo fotograma en que se añade (temporizador 1 en el fotograma 20) |
+
 ### Números de daño
 
 `DamageNumbers` son los números que saltan de los luchadores (`entity_text.c`): una cola por luchador de hasta 8, cada número fijo donde estaban sus pies al añadirse y movido fotograma a fotograma al ritmo del combate (ver la fila en [battle.md](../game/battle.md#paridad-con-el-original)). `BattleScreen` añade los de cada fotograma y da un paso; tras la victoria siguen solos. `settingsOf(números)` da los ajustes que lee el documento, que redibuja con `battle.damage.revision`:

@@ -249,6 +249,7 @@ std::vector<EndLine> originalLines(const battle::BattleResult& result,
         originalLine({yellow, names.species(drop.species), endMessageKey(EndMessage::Dropped),
                       names.item(drop.item), std::string{WhiteWait}}));
   }
+  // battle_hud.c: BTL_appendInjuredText: the partner's name in yellow, then «was injured».
   if (result.injured) {
     lines.push_back(originalLine(
         {yellow, names.species(result.partnerSpecies), endMessageKey(EndMessage::WasInjured)}));

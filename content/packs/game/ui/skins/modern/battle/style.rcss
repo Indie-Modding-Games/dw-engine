@@ -367,6 +367,11 @@
 	display: none;
 }
 
+/* The countdown sign over the fallen partner is the original look's; this look counts down in text (#revive). */
+#death-countdown {
+	display: none;
+}
+
 /* The numbers over the fighters (utils2.c: drawEntityText): each anchored at its fighter's feet and moved from there
    by its transform, its digits 8 pixels square and 7 apart, left to right from the anchor. */
 /* The player's shout with a command (command_shout.c: BTL_renderCommandShout): logic.lua puts its centre where

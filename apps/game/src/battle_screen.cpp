@@ -518,10 +518,11 @@ void BattleScreen::publishNumbers() const {
                    screens::DamageRevisionSetting);
 }
 
-// battle_main.c: BTL_renderEnemyHPBars draws, every frame, the bar of each enemy whose bar shows
+// battle_main.c: BTL_addEnemyHPBars, as the battle starts, adds the one object that draws the bars:
+// BTL_renderEnemyHPBars draws, every frame, the bar of each enemy whose bar shows
 // (Battle::hpBarShown) beside where its model's node 1 projects (getEntityScreenPos(entity, 1)), so
 // the bar follows the enemy. BTL_deinitializeCombat takes them all away (BTL_removeEnemyHPBars).
-void BattleScreen::publishHpBars() const {
+void BattleScreen::publishHpBars() {
   std::vector<screens::EnemyHpBar> bars;
   const render::MapCamera* camera = desc_.scene != nullptr ? desc_.scene->camera() : nullptr;
   if (battle_ && camera != nullptr && camera->viewportSize().y > 0.0F) {
@@ -564,8 +565,27 @@ void BattleScreen::publishHpBars() const {
       }
     }
   }
+  // command_menu.c: BTL_tickDeathCountdown, BTL_renderDeathCountdown: the countdown over the fallen
+  // partner, where its node 1 showed as the countdown was added (BTL_addDeathCountdown).
+  const std::optional<std::int32_t> timer =
+      battle_ ? screens::deathCountdownTimerOf(*battle_) : std::nullopt;
+  if (!timer) {
+    deathCountdownAnchor_.reset();
+  } else if (!deathCountdownAnchor_ && camera != nullptr && camera->viewportSize().y > 0.0F) {
+    if (const std::optional<glm::vec2> node =
+            desc_.scene->fighterNodeOnWindow(std::nullopt, HpBarNode)) {
+      deathCountdownAnchor_ = screens::deathCountdownAnchorOf(
+          {.x = node->x, .y = node->y}, static_cast<double>(camera->viewportSize().x) /
+                                            static_cast<double>(camera->viewportSize().y));
+    }
+  }
   screens::ScreenSettings settings = screens::settingsOf(bars);
   std::ranges::move(screens::settingsOf(markers), std::back_inserter(settings));
+  std::ranges::move(screens::settingsOf(deathCountdownAnchor_
+                                            ? screens::deathCountdownLookOf(*timer)
+                                            : std::nullopt,
+                                        deathCountdownAnchor_.value_or(screens::WindowFraction{})),
+                    std::back_inserter(settings));
   screens::publish(*desc_.ui, settings, screens::HpBarsRevisionSetting);
 }
 

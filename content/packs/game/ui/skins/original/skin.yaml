@@ -593,6 +593,36 @@ sprite_sheets:
       # The end box's up arrow by a rising stat (battle_ui.c: renderPostBattleStatsBox, u 96 and v 180).
       battle-up-arrow: [96, 52, 12, 12]
       battle-mp: [155, 48, 11, 11]
+  # La cuenta atrás sobre el compañero caído (command_menu.c: BTL_initializeDeathCountdown, BTL_tickDeathCountdown):
+  # la estrella de 40 x 40 en u 0x32, v 0x80 de la página (896, 256), fila 0 de BI_IN, con las CLUT y 0x1ed a 0x1ef
+  # (paletas 13 a 15) por turnos, y las cifras de 16 x 16 con la paleta 13 (BTL_DEATH_COUNTDOWN_DIGIT_U/V; el 1 en
+  # u 0x58, v 0x80).
+  - name: ow-battle-death-badge-0
+    image: texture/etcdat/bi_in
+    palette: 13
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      death-badge-0: [50, 0, 40, 40]
+      death-digit-5: [80, 40, 16, 16]
+      death-digit-4: [104, 16, 16, 16]
+      death-digit-3: [88, 16, 16, 16]
+      death-digit-2: [104, 0, 16, 16]
+      death-digit-1: [88, 0, 16, 16]
+  - name: ow-battle-death-badge-1
+    image: texture/etcdat/bi_in
+    palette: 14
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      death-badge-1: [50, 0, 40, 40]
+  - name: ow-battle-death-badge-2
+    image: texture/etcdat/bi_in
+    palette: 15
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      death-badge-2: [50, 0, 40, 40]
   # La marca de enfado sobre los enemigos al empezar el combate (btl.c: renderFleeBubble, paleta 7): el globo rojo
   # y la cara dentro.
   - name: ow-battle-anger

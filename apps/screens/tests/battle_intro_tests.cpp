@@ -2,6 +2,7 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -111,4 +112,43 @@ TEST_CASE("a drawing with no piece or too many leaves the original's banner") {
   CHECK(bannerPlacesOf("").empty());
   CHECK(bannerPlacesOf(std::string(dwe::screens::BannerPieceSlots + 1, '#')).empty());
   CHECK(gatheredBanner(BattleIntro{3, {}}).size() == dwe::screens::BannerPieceCount);
+}
+
+TEST_CASE("the banner is finished two frames after its pieces are in, and again once they burst") {
+  BattleIntro intro(3);
+  while (intro.current() == IntroStep::Anger) {
+    intro.step();
+  }
+  CHECK_FALSE(intro.finished());
+  intro.playerBack();
+  // The frame its last trail goes: not yet (BTL_renderBattleStartText counts before it moves).
+  std::int32_t frames = 0;
+  const auto gathered = [&intro] {
+    const std::vector<dwe::screens::BannerPiece> pieces = intro.pieces();
+    return std::ranges::all_of(pieces, [](const auto& piece) { return piece.trail == 0.0F; });
+  };
+  while (!gathered() && frames < 400) {
+    intro.step();
+    ++frames;
+  }
+  REQUIRE(intro.current() == IntroStep::Banner);
+  CHECK_FALSE(intro.finished());
+  intro.step();
+  CHECK(intro.finished());
+  CHECK(intro.current() == IntroStep::Banner);
+  intro.step();
+  // BTL_handleBattleIntro read the flag before this frame: the burst starts
+  // (BTL_initializeBattleStartTextBurst) and the banner is not finished until its pieces are off.
+  CHECK(intro.current() == IntroStep::Burst);
+  CHECK_FALSE(intro.finished());
+  std::int32_t burst = 0;
+  while (intro.current() == IntroStep::Burst && burst < 100) {
+    intro.step();
+    ++burst;
+  }
+  CHECK(intro.finished());
+  CHECK(intro.done());
+  // Measured: 60 vblanks from BTL_initializeBattleStartTextBurst to its removal, 20 battle frames.
+  CHECK(burst >= 15);
+  CHECK(burst <= 25);
 }

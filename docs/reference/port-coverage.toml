@@ -184,30 +184,30 @@ target = "TRN_"
 # and versus: from their decomp bodies and the engine's screens, one section each below.
 # --- Batalla
 BTL_appendItemDroppedText = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:116", what = "Añade al cuadro final la línea del objeto que soltó el rival." }
-BTL_appendInjuredText = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:116", what = "Añade al cuadro final la línea de la lesión del compañero." }
+BTL_appendInjuredText = { status = "portado", dwe = "apps/screens/src/battle_view.cpp:252", what = "Añade al cuadro final la línea de la lesión del compañero." }
 BTL_appendCommandLearnedText = { status = "portado", dwe = "game/battle/src/aftermath.cpp:101", what = "Añade al cuadro final la orden de combate que el compañero aprendió.", note = "el texto lo arma apps/screens/src/battle_view.cpp:239 (originalLines)" }
 BTL_appendMPBonusText = { status = "portado", dwe = "game/battle/src/aftermath.cpp:122", what = "Añade al cuadro final el bonus de MP ganado.", note = "en dos filas: arreglo del fallo del original (docs/modulos/game/battle.md)" }
 BTL_scrollBattleEndText = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:116", what = "Desplaza las líneas del cuadro final del combate." }
 BTL_tickBattleEndText = { status = "portado", dwe = "content/packs/game/ui/battle/logic.lua:546", what = "Avanza el texto del cuadro final; un botón lo adelanta." }
 BTL_isEndBoxTextFinished = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:116", what = "Dice si el cuadro final acabó de mostrar su texto." }
-BTL_shuffleBattleStartTextPieces = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:14", what = "Baraja el orden en que llegan las piezas del rótulo de inicio del combate." }
-BTL_initializeBattleStartTextBurst = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:44", what = "Prepara el estallido del rótulo de inicio del combate." }
-BTL_isBattleStartTextFinished = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:44", what = "Dice si el rótulo de inicio terminó, para empezar a luchar." }
+BTL_shuffleBattleStartTextPieces = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:321", what = "Baraja el orden en que llegan las piezas del rótulo de inicio del combate." }
+BTL_initializeBattleStartTextBurst = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:331", what = "Prepara el estallido del rótulo de inicio del combate." }
+BTL_isBattleStartTextFinished = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_intro.hpp:95", what = "Dice si el rótulo de inicio terminó, para empezar a luchar." }
 BTL_initializePartnerStatusBars = { status = "portado", dwe = "apps/screens/src/partner_bars.cpp:24", what = "Monta las barras de vida y MP del compañero en el HUD." }
 BTL_tickPartnerStatusBars = { status = "portado", dwe = "apps/screens/src/partner_bars.cpp:30", what = "Actualiza las barras de vida y MP del compañero." }
 BTL_tickPartnerWaypointTrail = { status = "portado", dwe = "game/field/src/partner_follow.cpp", what = "Durante el combate, guarda el rastro de casillas del compañero para que luego vuelva junto al jugador sin atascarse." }
-BTL_resetFlatten = { status = "portado", dwe = "game/battle/src/status_effects.cpp:54", what = "Devuelve al luchador aplastado a su forma." }
-BTL_getMoveWithHighestDistance = { status = "portado", dwe = "game/battle/src/fighter_actions.cpp:437", what = "El mayor alcance de las técnicas del rival, para que el compañero guarde distancia." }
-BTL_maintainDistanceRange = { status = "portado", dwe = "game/battle/src/movement.cpp:447", what = "Mantiene al luchador entre una distancia mínima y una máxima del objetivo." }
-BTL_hasAffordableMoves = { status = "portado", dwe = "game/battle/src/usability.hpp:23", what = "Dice si el luchador tiene MP para alguna técnica." }
+BTL_resetFlatten = { status = "portado", dwe = "game/battle/src/battle_context.hpp:115", what = "Devuelve al luchador aplastado a su forma." }
+BTL_getMoveWithHighestDistance = { status = "portado", dwe = "game/battle/src/battle_context.hpp:219", what = "El mayor alcance de las técnicas del rival, para que el compañero guarde distancia." }
+BTL_maintainDistanceRange = { status = "portado", dwe = "game/battle/src/battle_context.hpp:197", what = "Mantiene al luchador entre una distancia mínima y una máxima del objetivo." }
+BTL_hasAffordableMoves = { status = "portado", dwe = "game/battle/src/usability.hpp:28", what = "Dice si el luchador tiene MP para alguna técnica." }
 BTL_initializePartnerTile = { status = "no-aplica", note = "estado interno del rastro del compañero", what = "Guarda la casilla del compañero al empezar el combate." }
-BTL_addEnemyHPBars = { status = "portado", dwe = "apps/screens/src/enemy_hp_bars.cpp:55", what = "Añade las barras de vida de los rivales." }
+BTL_addEnemyHPBars = { status = "portado", dwe = "apps/game/src/battle_screen.cpp:521", what = "Añade las barras de vida de los rivales." }
 BTL_initializeEnemyHPBarSprites = { status = "portado", dwe = "apps/screens/src/enemy_hp_bars.cpp:55", what = "Prepara el relleno de las barras de vida de los rivales: 50 píxeles, teñido en verde." }
 BTL_removeEnemyHPBars = { status = "portado", dwe = "apps/game/src/battle_screen.cpp:241", what = "Quita las barras de vida de los rivales al acabar el combate." }
-BTL_clearBlockedAttacks = { status = "portado", dwe = "game/battle/src/attack_hits.cpp", what = "Vacía la lista de ataques ya recibidos de cada luchador." }
-BTL_getAttackTech = { status = "portado", dwe = "game/battle/src/combatant.cpp:65", what = "Da la técnica de un ataque a partir de su animación." }
+BTL_clearBlockedAttacks = { status = "portado", dwe = "game/battle/src/fighter_actions.cpp:670", what = "Vacía la lista de ataques ya recibidos de cada luchador." }
+BTL_getAttackTech = { status = "portado", dwe = "game/battle/include/dwe/game/battle/state.hpp:152", what = "Da la técnica de un ataque a partir de su animación." }
 BTL_getFighterSlot = { status = "no-aplica", note = "índice interno", what = "Da la ranura de combate de una entidad." }
-BTL_addBlockedAttack = { status = "portado", dwe = "game/battle/src/attack_hits.cpp", what = "Apunta que un ataque ya golpeó a un luchador para que no golpee dos veces." }
+BTL_addBlockedAttack = { status = "portado", dwe = "game/battle/src/attack_hits.cpp:255", what = "Apunta que un ataque ya golpeó a un luchador para que no golpee dos veces." }
 BTL_startHitAnimation = { status = "portado", dwe = "game/battle/src/shown_clips.cpp:110", what = "Pone la animación de recibir golpe, de frente o por la espalda." }
 BTL_getDistanceSquared = { status = "no-aplica", note = "cálculo auxiliar", what = "Distancia al cuadrado entre dos luchadores." }
 BTL_applyFlattenScale = { status = "portado", dwe = "game/battle/src/shown_clips.cpp", what = "Aplasta el modelo del luchador aplastado.", note = "escala por etapas y cambio al dibujo plano (FlatLook); el campo la aplica al modelo" }
@@ -219,17 +219,17 @@ BTL_healFlatten = { status = "portado", note = "", what = "Cura el aplastado y p
 BTL_addPoisonStatusVisual = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:28", what = "Pone las burbujas de veneno sobre el luchador." }
 BTL_addConfusionStatusVisual = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:28", what = "Pone el efecto de confusión sobre el luchador." }
 BTL_addStunStatusVisual = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:28", what = "Pone las estrellas de aturdimiento sobre el luchador." }
-BTL_getRandomUsableMove = { status = "portado", dwe = "game/battle/src/usability.hpp:23", what = "Elige al azar una técnica que se puede usar." }
+BTL_getRandomUsableMove = { status = "portado", dwe = "game/battle/src/usability.hpp:32", what = "Elige al azar una técnica que se puede usar." }
 BTL_getNpcEntityIndex = { status = "no-aplica", note = "índice interno", what = "Da la entidad de un rival." }
-BTL_countLivingEnemies = { status = "portado", dwe = "game/battle/include/dwe/game/battle/state.hpp:260", what = "Cuenta los rivales vivos." }
+BTL_countLivingEnemies = { status = "portado", dwe = "game/battle/include/dwe/game/battle/state.hpp:382", what = "Cuenta los rivales vivos." }
 BTL_initializeCommandMenu = { status = "portado", dwe = "apps/screens/src/command_menu.cpp:21", what = "Abre el menú de órdenes del jugador en combate: la tira baja desde arriba." }
 BTL_tickCommandMenu = { status = "portado", dwe = "apps/screens/src/command_menu.cpp:36", what = "Mueve el cursor y elige una orden del menú de combate; desliza la tira y hace parpadear la orden señalada." }
 BTL_isCommandMenuClosed = { status = "portado", dwe = "apps/screens/src/command_menu.cpp:61", what = "Dice si el menú de órdenes se cerró: la tira subió y pasaron 3 fotogramas más." }
 BTL_drawCommandShout = { status = "portado", dwe = "apps/screens/src/command_shout.cpp:61", what = "Grito del jugador al dar una orden: el texto de la orden o el nombre de la técnica sobre el compañero." }
 BTL_renderCommandShout = { status = "portado", dwe = "apps/screens/src/command_shout.cpp:70", what = "Dibuja el grito: crece de 0,2 a 1 en 4 fotogramas, salta o cae 20 fotogramas, con sombra negra." }
-BTL_initializeDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Prepara la cuenta atrás para revivir al compañero caído." }
-BTL_addDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Enseña la cuenta atrás del compañero caído." }
-BTL_tickDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Baja la cuenta atrás del compañero caído." }
+BTL_initializeDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/death_countdown.hpp:16", what = "Prepara la cuenta atrás para revivir al compañero caído." }
+BTL_addDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/death_countdown.hpp:17", what = "Enseña la cuenta atrás del compañero caído." }
+BTL_tickDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/death_countdown.hpp:17", what = "Baja la cuenta atrás del compañero caído." }
 handleFleeing = { status = "portado", dwe = "game/battle/src/ai_ticks.cpp:431", what = "Huida del combate: el compañero corre y el combate acaba si lo logra." }
 NPCEntityTickBattle = { status = "portado", dwe = "apps/game/src/battle_screen_exit.cpp", what = "Mueve a los personajes del mapa que no luchan durante el combate (huyen).", note = "huyen al empezar y tras ganar con la animación a doble ritmo (animFlag 4)" }
 resetStatsAfterCombat = { status = "portado", dwe = "game/battle/src/aftermath.cpp", what = "Quita al compañero los cambios temporales de stats al acabar el combate." }
@@ -333,7 +333,7 @@ BTL_addPoisonBubble = { status = "portado", dwe = "game/battle/src/status_visual
 BTL_tickPoisonBubble = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:91", what = "Hace subir una burbuja de veneno." }
 BTL_tickPoisonEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:91", what = "Mantiene el efecto visual del veneno sobre el luchador." }
 BTL_initializePoisonBubble = { status = "portado", dwe = "apps/game/src/field_scene_status.cpp:256", what = "Prepara una burbuja de veneno." }
-BTL_addPoisonEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:28", what = "Pone el efecto visual del veneno." }
+BTL_addPoisonEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:38", what = "Pone el efecto visual del veneno." }
 BTL_tickConfusionEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:91", what = "Anima el efecto visual de la confusión." }
 BTL_initializeConfusionEffect = { status = "portado", dwe = "apps/game/src/field_scene_status.cpp:365", what = "Prepara el efecto visual de la confusión." }
 BTL_addConfusionEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:28", what = "Pone el efecto visual de la confusión." }
