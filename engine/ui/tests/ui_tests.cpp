@@ -1834,7 +1834,7 @@ TEST_CASE("the main menu's chibi style row cycles its three modes, external mode
   input::InputState input{input::defaultActionMap()};
   ui->show("main_menu", true);
   frame(*ui, input);
-  CHECK(ui->elementText("main_menu", "chibi-style-value") == "Modelos externos");
+  CHECK(ui->elementText("main_menu", "chibi-style-value") == "Externos");
   for (int step = 0; step < 8 && ui->focusedElementId("main_menu") != "chibi-style"; ++step) {
     press(*ui, input, input::keys::Down);
   }

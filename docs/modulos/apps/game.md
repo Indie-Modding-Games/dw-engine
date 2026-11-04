@@ -643,7 +643,7 @@ suyos. El ajuste `chibi_style` tiene tres valores:
 | Valor | Qué se dibuja chibi |
 |---|---|
 | `off` («No») | Nada |
-| `external` («Modelos externos», por defecto) | Los modelos que vienen de un paquete que no es del motor |
+| `external` («Externos», por defecto) | Los modelos que vienen de un paquete que no es del motor |
 | `all` («Todos») | Todos los modelos, también los del original |
 
 Se cambia en la fila «Estilo chibi» de las opciones del título y de las opciones del menú de pausa (Tab, «Opciones»;

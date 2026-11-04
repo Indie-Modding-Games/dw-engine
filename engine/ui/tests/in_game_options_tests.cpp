@@ -91,7 +91,7 @@ TEST_CASE("the options page lists every game option in a row of its own, and onl
   CHECK(screen.ui->elementText("pause_menu", "free-exploration-value") == "No");
   CHECK(screen.ui->elementText("pause_menu", "long-names-value") == "Sí");
   // The chibi style has three values: by default only the models from outside the original game.
-  CHECK(screen.ui->elementText("pause_menu", "chibi-style-value") == "Modelos externos");
+  CHECK(screen.ui->elementText("pause_menu", "chibi-style-value") == "Externos");
   // The rows the list does not fill stay hidden.
   CHECK(screen.ui->elementHasClass("pause_menu", "option-slot-24", "hidden"));
   // The language and the original-looking text, as on the title.

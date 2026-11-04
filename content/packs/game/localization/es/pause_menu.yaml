@@ -84,7 +84,7 @@ need_bubble_stack: "Varias necesidades"
 # que no son del juego original (de mods o importados; por defecto) o todos.
 chibi_style: "Estilo chibi"
 chibi_style.off: "No"
-chibi_style.external: "Modelos externos"
+chibi_style.external: "Externos"
 chibi_style.all: "Todos"
 
 year_label: "Año"
