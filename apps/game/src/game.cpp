@@ -1560,6 +1560,10 @@ int runGame(const Options& requested) {
   // device goes last.
   const bool validationActive = (*device)->validationEnabled();
   sessionCommands.drop(autotest.get());
+  // A route that ends during the opening's questions leaves their scene up: its models go before
+  // the renderer like the session's.
+  interview.reset();
+  startAfterInterview.reset();
   flow.toTitle();
   scripts->reset();
   ui->reset();

@@ -464,6 +464,15 @@ Diferencias con el original: en el mando, `alt` está en el botón norte y no en
 las letras son de media anchura y no las de ancho fijo de la fuente del original; el mensaje de
 enfermedad y los registros de combate y de la arena, que en el original nombran al compañero, aún no existen.
 
+Cierre durante las preguntas: al acabar un autotest el juego se apaga a mano y en orden (la sesión, la UI, los
+retratos, el renderizador y por último el dispositivo) antes de dar el veredicto. La escena de las preguntas
+(`NewGameInterview`, con los modelos de Jijimon) no estaba en esa lista, así que una ruta que fallaba o acababa
+durante la entrevista (o la caja de nombres) destruía el dispositivo con su memoria aún reservada y abortaba con la
+aserción de VMA «Some allocations were not freed» (código 134, sin línea FAIL). Ahora se suelta antes que la sesión.
+Comprobado con rutas que fallan a propósito: en la entrevista (antes 134, ahora 1 con su FAIL), en el título, en el
+combate y con el menú de objetos abierto (1 con su FAIL, sin aserción); al cerrar la ventana o con `quit` del canal
+de control ya salía limpio en esos puntos, porque los locales se destruyen en orden inverso.
+
 ## Apertura del combate
 
 Todo combate (salvaje, de la historia o de la consola) empieza en `BattleScreen::start` con la fase `intro`: la
