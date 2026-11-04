@@ -94,6 +94,8 @@ inline constexpr std::string_view LongNamesSetting = "long_names";
 // on by default. The session's music lets a map's song go on when it is the one playing
 // (session::SessionMusic::setContinuousMusic).
 inline constexpr std::string_view ContinuousMusicSetting = "continuous_music";
+// The need bubble with several needs at once (an engine improvement, on unless turned off).
+inline constexpr std::string_view NeedBubbleStackSetting = "need_bubble_stack";
 
 // What every game uses of the app; all of it outlives the games.
 struct PlayContext {

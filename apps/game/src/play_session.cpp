@@ -585,6 +585,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
     music->setContinuousMusic(continuousMusic);
   }
   context_.ui->setSetting(ContinuousMusicSetting, continuousMusic);
+  // Several needs in the partner's bubble at once, on unless turned off.
+  context_.ui->setSetting(NeedBubbleStackSetting,
+                          context.userSettings->needBubbleStack.value_or(true));
   // The canonical stages on the chart, off unless turned on.
   context_.ui->setSetting(CanonicalStagesSetting,
                           context.userSettings->canonicalStages.value_or(false));
@@ -887,6 +890,16 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       }
     }
     context_.ui->setSetting(SmoothMotionSetting, scene_->field().smoothMotion());
+    return true;
+  }
+  if (command.name == NeedBubbleStackSetting) {
+    if (const bool* stacked = std::get_if<bool>(&command.value)) {
+      context_.ui->setSetting(NeedBubbleStackSetting, *stacked);
+      context_.userSettings->needBubbleStack = *stacked;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
     return true;
   }
   if (command.name == RecruitBarSetting) {

@@ -102,6 +102,15 @@ game_options = {
     label = "pause_menu.continuous_music",
     default = true,
   },
+  -- Several needs: the bubble over the partner shows up to three of its needs side by side, most
+  -- urgent first (on by default; off keeps the original's one at a time, the two most urgent
+  -- taking turns).
+  {
+    id = "need-bubble-stack",
+    setting = "need_bubble_stack",
+    label = "pause_menu.need_bubble_stack",
+    default = true,
+  },
 }
 
 -- The option's current value: what the game published, or its default.

@@ -750,6 +750,15 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       need-bubble: [160, 16, 32, 32]
+      # El mismo globo en piezas para la burbuja con varias necesidades (mejora, need_bubble_stack): su borde
+      # izquierdo (columnas 0 a 12), la columna 12 que se repite para ensancharlo, las dos mitades del centro con
+      # el pico (13 a 15 y 16 a 18), la columna 19 que se repite y el borde derecho (19 a 31). Nada se estira.
+      need-bubble-left: [160, 16, 13, 32]
+      need-bubble-fill-left: [172, 16, 1, 32]
+      need-bubble-middle-left: [173, 16, 3, 32]
+      need-bubble-middle-right: [176, 16, 3, 32]
+      need-bubble-fill-right: [179, 16, 1, 32]
+      need-bubble-right: [179, 16, 13, 32]
   - name: ow-need
     image: texture/etcdat/feel_ef
     palette: 3

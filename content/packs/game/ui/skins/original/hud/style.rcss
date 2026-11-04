@@ -319,6 +319,71 @@ body {
 #field-partner-bubble.injured { decorator: image(need-injured scale-none center 31.25%), image(need-bubble); }
 #field-partner-bubble.sick { decorator: image(need-sick scale-none center 31.25%), image(need-bubble); }
 
+/* Several needs at once (an engine improvement, the option need_bubble_stack): the balloon widens from 32 pixels to
+   50 for two needs and 68 for three, built from its own pieces so nothing is stretched: each half is its round edge,
+   one column of its body repeated, and its half of the centre with the tail (skin.yaml: need-bubble-left ...). The
+   needs sit 16 pixels each with 2 between them, 8 from the edges like the original's one, each at the height the
+   original gives it; the most urgent on the left. */
+#field-partner-bubble .balloon-half,
+#field-partner-bubble .need-icon {
+	display: none;
+	position: absolute;
+	top: 0;
+	height: 96dp;
+}
+
+#field-partner-bubble.stack-2 { width: 150dp; animation: 3s linear infinite need-bubble-blink-2; }
+#field-partner-bubble.stack-3 { width: 204dp; animation: 3s linear infinite need-bubble-blink-3; }
+
+#field-partner-bubble.stack-2 .balloon-half,
+#field-partner-bubble.stack-3 .balloon-half {
+	display: block;
+	width: 50%;
+}
+
+#field-partner-bubble-left {
+	left: 0;
+	decorator: tiled-horizontal(need-bubble-left, need-bubble-fill-left, need-bubble-middle-left);
+}
+
+#field-partner-bubble-right {
+	right: 0;
+	decorator: tiled-horizontal(need-bubble-middle-right, need-bubble-fill-right, need-bubble-right);
+}
+
+#field-partner-bubble .need-icon { width: 48dp; }
+#field-partner-bubble .need-icon.hunger,
+#field-partner-bubble .need-icon.toilet,
+#field-partner-bubble .need-icon.tired,
+#field-partner-bubble .need-icon.sleep,
+#field-partner-bubble .need-icon.injured,
+#field-partner-bubble .need-icon.sick { display: block; }
+#field-partner-bubble-icon-0 { left: 24dp; }
+#field-partner-bubble-icon-1 { left: 78dp; }
+#field-partner-bubble-icon-2 { left: 132dp; }
+#field-partner-bubble .need-icon.hunger { decorator: image(need-hunger scale-none center 31.25%); }
+#field-partner-bubble .need-icon.toilet { decorator: image(need-toilet scale-none center 31.25%); }
+#field-partner-bubble .need-icon.tired { decorator: image(need-tired scale-none center -6.25%); }
+#field-partner-bubble .need-icon.sleep { decorator: image(need-sleep scale-none right 75%); }
+#field-partner-bubble .need-icon.injured { decorator: image(need-injured scale-none center 31.25%); }
+#field-partner-bubble .need-icon.sick { decorator: image(need-sick scale-none center 31.25%); }
+
+@keyframes need-bubble-blink-2 {
+	0% { opacity: 1; transform: translate(-75dp, -96dp) scale(0.000, 0.000); }
+	16.7% { opacity: 1; transform: translate(-75dp, -96dp) scale(1.000, 1.000); }
+	83.3% { opacity: 1; transform: translate(-75dp, -96dp) scale(1.000, 1.000); }
+	83.4% { opacity: 0; transform: translate(-75dp, -96dp) scale(1.000, 1.000); }
+	100% { opacity: 0; transform: translate(-75dp, -96dp) scale(1.000, 1.000); }
+}
+
+@keyframes need-bubble-blink-3 {
+	0% { opacity: 1; transform: translate(-102dp, -96dp) scale(0.000, 0.000); }
+	16.7% { opacity: 1; transform: translate(-102dp, -96dp) scale(1.000, 1.000); }
+	83.3% { opacity: 1; transform: translate(-102dp, -96dp) scale(1.000, 1.000); }
+	83.4% { opacity: 0; transform: translate(-102dp, -96dp) scale(1.000, 1.000); }
+	100% { opacity: 0; transform: translate(-102dp, -96dp) scale(1.000, 1.000); }
+}
+
 /* ------------------------------------------------------------------------------------------------------------------
    The map's name over the fade (map.c: renderMapName): the ink colour, centred on line 114, no box. */
 

@@ -238,7 +238,7 @@ aspecto lo dibuje a su manera:
 | clase `pips` en una barra (`#field-meter-<i>-bar`, `#field-pool-<i>-bar`) | Si el aspecto se la pone (en su `skin.yaml`, ver abajo), el relleno va en 25 pasos del 4 %, redondeando hacia abajo, con la misma regla de dos tonos | Los 25 cuadritos de `partner_impl.c: renderStatusBars` (4 puntos por cuadrito en la felicidad, 2 en la disciplina) |
 | clase `area-liked` o `area-disliked` en `#field-status` | Pone `area-liked` con `hud.partner.area` a 1, `area-disliked` con 2, y ninguna con 0 | La cara de la felicidad que alterna con otra en una zona que le gusta o le disgusta al compañero (ver arriba); el moderno no la usa |
 | clase `low` en `#field-meter-<i>` | La pone si el valor está por debajo de la mitad de su rango (`(min + max) / 2`) y la quita si no | El icono de la barra: la cara de la felicidad se pone triste por debajo de 0 y el de la disciplina cambia por debajo de 50 (`partner_impl.c: renderStatusBars`); el moderno no la usa |
-| `#field-partner-bubble` | `left` y `top` desde `hud.partner.x` y `hud.partner.y` (redibuja con `hud.partner.revision`); la clase `shown` solo con `hud.partner.visible` y alguna necesidad; y una sola clase de necesidad, `hunger`, `sleep`, `toilet` o `tired` | La burbuja del original sobre el compañero (`bubble.c`). Cuelga del centro de su borde de abajo (`ui/hud/structure.rcss`), así que el aspecto solo le da tamaño y dibujo; el moderno no la enseña porque ya tiene el panel de necesidades |
+| `#field-partner-bubble` | `left` y `top` desde `hud.partner.x` y `hud.partner.y` (redibuja con `hud.partner.revision`); la clase `shown` solo con `hud.partner.visible` y alguna necesidad; y una sola clase de necesidad, `hunger`, `sleep`, `toilet`, `tired`, `injured` o `sick`; con varias necesidades y `need_bubble_stack`, en su lugar `stack-2` o `stack-3` y una clase de necesidad en cada `#field-partner-bubble-icon-<i>` (0 a 2, la más urgente primero) | La burbuja del original sobre el compañero (`bubble.c`). Cuelga del centro de su borde de abajo (`ui/hud/structure.rcss`), así que el aspecto solo le da tamaño y dibujo; el moderno no la enseña porque ya tiene el panel de necesidades |
 | `#field-clock-minute-hand` | `transform: rotate(minuto × 6deg)` | La aguja de minutos de `clock.c: renderGameClock`, una vuelta por hora |
 | `#field-clock-hour-dot` | `left` y `top` en porcentaje sobre un círculo, 15° por hora, la hora 0 arriba | El punto de las horas en el anillo de 24 horas |
 | clase `night` en `#field-clock` | La pone con la hora antes de las 6 o desde las 17 | La luna en vez del sol |
@@ -259,6 +259,19 @@ el moderno no enseña la burbuja.
 `CONDITION_SPRITES[7]`, de las que el aspecto original dibuja el primer cuadro). Al ponerse enfermo, el original además
 para la hora y abre el cuadro de los premios con el nombre del compañero y `main.partner_impl_is_sick.0000`
 (`partner_impl.c: tickSicknessMechanics`; ver `award_notice` en el juego).
+
+**Mejora (opción): varias necesidades a la vez.** El ajuste `need_bubble_stack` (fila «Varias necesidades», «Several
+needs» en inglés, de las opciones; encendido por defecto, guardado en los ajustes del usuario; no cambia ninguna regla)
+junta en un solo globo hasta tres necesidades, una al lado de otra y la más urgente a la izquierda, por la misma
+prioridad del original; con una sola necesidad la burbuja es la del original, y apagado vuelve el original entero
+(una cada vez, turnándose las dos más urgentes). El aspecto original ensancha el globo de 32 píxeles a 50 (dos) o 68
+(tres) con sus propias piezas, sin estirar nada: cada mitad es su borde redondo, una columna de su cuerpo repetida
+(`tiled-horizontal`) y su mitad del centro con el pico, que queda en medio (`need-bubble-left` … `need-bubble-right`
+en `skin.yaml`). Cada icono va en su hueco de 16 píxeles con 2 entre ellos y 8 a los bordes, como el único del
+original, a la altura que el original le da. Se eligió el globo ancho y no turnarlas todas porque el usuario pidió
+verlas a la vez, y las piezas del globo lo ensanchan sin romper su dibujo (queda una píldora con los extremos y el pico
+del original). Prueba: `ui_tests` «the need bubble shows several needs side by side, most urgent first, unless turned
+off»; con la opción apagada, «the need bubble shows the need the original's bubble would ...».
 
 Las constantes (25 cuadritos, 6° por minuto, 15° por hora, las 6 y las 17) están con nombre al principio del
 script, con su referencia a `clock.c` o `partner_impl.c`. Al cambiar de aspecto (el ajuste `ui_skin`) el script vuelve a

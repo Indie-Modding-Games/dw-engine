@@ -1315,9 +1315,12 @@ TEST_CASE("the need bubble shows the need the original's bubble would, over the 
   input::InputState input{input::defaultActionMap()};
   REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
   ui->show("hud");
+  // The original's bubble: the stacked one (need_bubble_stack) off.
+  ui->setSetting("need_bubble_stack", false);
   placePartner(*ui, true);
   setFieldNeeds(*ui, false, false, false);
   CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "shown"));
+  CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "stack-2"));
   CHECK(ui->styleProperty("hud", "field-partner-bubble", "left") == "40%");
   CHECK(ui->styleProperty("hud", "field-partner-bubble", "top") == "30%");
 
@@ -1366,6 +1369,67 @@ TEST_CASE("the need bubble shows the need the original's bubble would, over the 
   // Hidden while the partner is not on the screen.
   placePartner(*ui, false);
   CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "shown"));
+}
+
+namespace {
+
+// The needs on the stacked bubble's icons, left to right; empty icons left out.
+std::vector<std::string> stackedNeeds(const Ui& ui) {
+  std::vector<std::string> needs;
+  for (const std::string_view icon : {"field-partner-bubble-icon-0", "field-partner-bubble-icon-1",
+                                      "field-partner-bubble-icon-2"}) {
+    for (const std::string_view need : {"hunger", "sleep", "toilet", "tired"}) {
+      if (ui.elementHasClass("hud", icon, need)) {
+        needs.emplace_back(need);
+      }
+    }
+  }
+  return needs;
+}
+
+} // namespace
+
+TEST_CASE(
+    "the need bubble shows several needs side by side, most urgent first, unless turned off") {
+  // An engine improvement (need_bubble_stack, on unless turned off): the original shows one need at
+  // a time, the two most urgent taking turns (partner_impl.c: handleConditionBubble).
+  Content content;
+  auto ui = createUi(content.mount());
+  input::InputState input{input::defaultActionMap()};
+  REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+  ui->show("hud");
+  placePartner(*ui, true);
+
+  // One need is the original's bubble.
+  setFieldNeeds(*ui, true, false, false);
+  CHECK(bubbleNeed(*ui) == "hunger");
+  CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "stack-2"));
+  CHECK(stackedNeeds(*ui).empty());
+
+  // Two: one balloon with both, in the original's priority (tiredness before hunger).
+  setFieldNeeds(*ui, true, false, false, true);
+  CHECK(ui->elementHasClass("hud", "field-partner-bubble", "shown"));
+  CHECK(ui->elementHasClass("hud", "field-partner-bubble", "stack-2"));
+  CHECK(bubbleNeed(*ui).empty());
+  CHECK(stackedNeeds(*ui) == std::vector<std::string>{"tired", "hunger"});
+  // They stay together: no turns.
+  ui->tick(input, 2.6);
+  CHECK(stackedNeeds(*ui) == std::vector<std::string>{"tired", "hunger"});
+  setFieldNeeds(*ui, true, false, true);
+  CHECK(stackedNeeds(*ui) == std::vector<std::string>{"hunger", "toilet"});
+
+  // Four: the three most urgent.
+  setFieldNeeds(*ui, true, true, true, true);
+  CHECK(ui->elementHasClass("hud", "field-partner-bubble", "stack-3"));
+  CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "stack-2"));
+  CHECK(stackedNeeds(*ui) == std::vector<std::string>{"sleep", "tired", "hunger"});
+
+  // Turned off: only the original's one, whichever of its turns it is on.
+  ui->setSetting("need_bubble_stack", false);
+  ui->update();
+  CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "stack-3"));
+  CHECK(stackedNeeds(*ui).empty());
+  CHECK_FALSE(bubbleNeed(*ui).empty());
 }
 
 TEST_CASE("the HUD leaves the minimap to the skin on auto, and shows or hides it on on and off") {

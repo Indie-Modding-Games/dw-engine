@@ -62,6 +62,10 @@ struct UserSettings {
   // map whose song is the one playing lets it go on instead of playing it again from its start; on
   // when not chosen yet.
   std::optional<bool> continuousMusic = std::nullopt;
+  // The need bubble with several needs at once (need_bubble_stack: true, false; ui/hud): up to
+  // three of the partner's needs side by side in one balloon, most urgent first, instead of the
+  // original's two taking turns; on when not chosen yet.
+  std::optional<bool> needBubbleStack = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

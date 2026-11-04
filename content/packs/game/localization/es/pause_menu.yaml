@@ -68,6 +68,9 @@ shop_job_bar: "Barra de reclutamiento"
 # Música continua: un mapa cuya canción ya suena la deja seguir en vez de empezarla otra vez
 # (encendida por defecto).
 continuous_music: "Música continua"
+# Varias necesidades: la burbuja sobre el compañero enseña hasta tres de sus necesidades a la vez, la más urgente
+# primero (encendida por defecto; apagada, la del original: una cada vez, turnándose las dos más urgentes).
+need_bubble_stack: "Varias necesidades"
 
 year_label: "Año"
 day_label: "Día"

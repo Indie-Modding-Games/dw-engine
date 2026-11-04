@@ -68,6 +68,9 @@ shop_job_bar: "Recruit bar"
 # Continuous music: a map whose song is already playing lets it go on instead of starting it again
 # (on by default).
 continuous_music: "Continuous music"
+# Several needs: the bubble over the partner shows up to three of its needs at once, the most urgent first (on by
+# default; off, the original's: one at a time, the two most urgent taking turns).
+need_bubble_stack: "Several needs"
 
 year_label: "Year"
 day_label: "Day"

@@ -15,7 +15,9 @@
 -- the original's 25 steps, and the dial (#field-clock-dial) and the class "night" on #field-clock
 -- are there for a skin that draws the original's clock; the class "digital" on #field-clock asks
 -- for the time in figures (#field-time) too (digital_time). #field-partner-bubble hangs over the
--- partner's head (hud.partner.*) with the class of the need the original's bubble would show. How
+-- partner's head (hud.partner.*) with the class of the need the original's bubble would show, or,
+-- with several needs and need_bubble_stack (an engine improvement, on unless turned off), the class
+-- "stack-2" or "stack-3" and the needs on its icons #field-partner-bubble-icon-<i>. How
 -- the partner feels about the map (hud.partner.area) puts the class "area-liked" or "area-disliked"
 -- on #field-status, where a skin can swap the happiness face as the original does.
 
@@ -230,6 +232,8 @@ local bubble_need_index = { hunger = 0, sleep = 1, toilet = 2, tired = 3, injure
 local bubble_swap_seconds = 50 / 20
 local bubble_need = nil
 local bubble_seconds = 0
+-- need_bubble_stack: up to this many needs at once, side by side, the most urgent first.
+local bubble_stack_most = 3
 
 local function need_active(need)
   return ui.setting("hud.need." .. bubble_need_index[need] .. ".active") == true
@@ -254,14 +258,41 @@ local function place(name)
   return value
 end
 
+-- The needs the stacked bubble shows (need_bubble_stack, on unless turned off): the partner's,
+-- most urgent first, up to bubble_stack_most; empty when off.
+local function stacked_needs()
+  local needs = {}
+  if ui.setting("need_bubble_stack") == false then
+    return needs
+  end
+  for _, need in ipairs(bubble_priority) do
+    if #needs < bubble_stack_most and need_active(need) then
+      needs[#needs + 1] = need
+    end
+  end
+  return needs
+end
+
 local function draw_bubble(document)
   local bubble = document:get("field-partner-bubble")
   local visible = ui.setting("hud.partner.visible") == true
   bubble:set_property("left", string.format("%.2f%%", place("hud.partner.x")))
   bubble:set_property("top", string.format("%.2f%%", place("hud.partner.y")))
   bubble:set_class("shown", visible and bubble_need ~= nil)
+  -- One need alone is the original's bubble either way.
+  local stack = stacked_needs()
+  local count = #stack > 1 and #stack or 0
+  for size = 2, bubble_stack_most do
+    bubble:set_class("stack-" .. size, count == size)
+  end
   for need in pairs(bubble_need_index) do
-    bubble:set_class(need, need == bubble_need)
+    bubble:set_class(need, count == 0 and need == bubble_need)
+  end
+  for index = 0, bubble_stack_most - 1 do
+    local icon = document:get("field-partner-bubble-icon-" .. index)
+    for need in pairs(bubble_need_index) do
+      icon:set_class(need, count > 0 and stack[index + 1] == need)
+    end
   end
 end
 
@@ -389,7 +420,7 @@ function on_setting(document, name)
     refresh_title(document)
   elseif name == "hud.revision" then
     draw_field(document)
-  elseif name == "hud.partner.revision" then
+  elseif name == "hud.partner.revision" or name == "need_bubble_stack" then
     draw_bubble(document)
   elseif name == "digital_time" then
     draw_digital(document)
