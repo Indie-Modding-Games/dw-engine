@@ -1,0 +1,24 @@
+# The notice board by the stove at the way into the snow: a vertical notice with a red headline, too small in the
+# original to read word by word; it warns of the cold.
+signs:
+  - id: title
+    region: [367, 155, 45, 33]
+    clear:
+      mode: diffuse
+      quad: [[369, 157], [410, 157], [410, 187], [368, 187]]
+      color: "#637373"
+      tolerance: 40
+    corners: [[370, 158], [409, 158], [409, 167], [370, 167]]
+    text: signs.frzl01_notice_title
+    size: 7
+    color: "#523021"
+    colors: region
+  - id: body
+    region: [367, 155, 45, 33]
+    clear: none
+    corners: [[370, 168], [409, 168], [409, 185], [370, 185]]
+    text: signs.frzl01_notice
+    size: 7
+    line_spacing: 0.85
+    color: "#292921"
+    colors: region

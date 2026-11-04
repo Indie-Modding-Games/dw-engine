@@ -37,3 +37,20 @@ signs:
     size: 12
     color: "#101818"
     colors: region
+  # The tunnel's name in green over its mouth (two lines, the second shifted right).
+  - id: drill_top
+    region: [74, 158, 116, 74]
+    clear: {mode: diffuse, rect: [80, 166, 106, 64], color: "#101010", tolerance: 40}
+    corners: [[84, 168], [150, 168], [150, 196], [84, 196]]
+    text: signs.mayo11_drill_top
+    size: 24
+    color: "#9cf700"
+    colors: region
+  - id: drill_bottom
+    region: [74, 158, 116, 74]
+    clear: none
+    corners: [[102, 197], [186, 197], [186, 226], [102, 226]]
+    text: signs.mayo11_drill_bottom
+    size: 24
+    color: "#9cf700"
+    colors: region

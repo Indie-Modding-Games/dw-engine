@@ -17,3 +17,17 @@ signs:
     text: signs.twnb10_open
     size: 12
     color: "#bd0800"
+  # The tool shop's plate by the door, in English in the original: the icon on its left stays.
+  - id: tool_shop
+    region: [212, 158, 38, 26]
+    clear:
+      mode: diffuse
+      quad: [[214, 163], [241, 160.5], [243, 178.5], [216, 181]]
+      color: "#efefef"
+      tolerance: 60
+    corners: [[215, 164], [241, 161], [243, 177.5], [217, 179.5]]
+    text: signs.twnb10_tool_shop
+    size: 8
+    line_spacing: 0.85
+    color: "#101010"
+    colors: region

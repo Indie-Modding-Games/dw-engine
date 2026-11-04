@@ -99,16 +99,22 @@ activada por defecto; desactivada, el mapa muestra las texturas originales.
 |---|---|---|---|
 | `betl02` | Neón de la arena | ARENA | ARENA |
 | `betl02` | Pancarta de la recepción | RECEPTION | RECEPCIÓN |
+| `frzl01` | Aviso junto a la estufa (letra ilegible en el original: se escribe el sentido) | NOTICE / Beware of the cold | AVISO / Cuidado con el frío |
 | `frzl06` | Postes del cruce | ICEBERG BEACH / MISTY TREES | PLAYA ICEBERG / BOSQUE BRUMOSO |
+| `frzl12` | Poste de la cresta, de lado (el mismo cartel que el este de `frzl06`) | ICEBERG BEACH | PLAYA ICEBERG |
 | `gcan09` | Cartel de la tienda | MONOCHROME SHOP | TIENDA MONOCROMO |
 | `gias06b` | Título de la tienda de reciclaje | RECYCLED GOODS & CARDS | RECICLAJE Y CARTAS |
 | `gias06b` | Subtítulo y pancarta SALE | (ya en inglés) | TIENDA DE RECICLAJE Y CARTAS / REBAJAS |
 | `mayo01_2`, `mayo02_2` | Flechas al monte | MT. PANORAMA | MTE. PANORAMA |
 | `mayo10`, `mayo11` | Tablero de los pescadores (los garabatos azules se quedan) | ANGLER'S CODE y sus dos reglas | CÓDIGO DEL PESCADOR |
+| `mayo11` | Nombre del túnel sobre la boca | DRILL TUNNEL | TÚNEL TALADRO |
+| `omoc08` | Pintada roja en la pared de ladrillo | THE GANG / WAS HERE | LA BANDA / ESTUVO AQUÍ |
 | `room02` | Felpudo | (ya en inglés) | Bienvenido |
 | `trai00` | Tablero del curso de combate | BATTLE COURSE | CURSO DE COMBATE |
+| `trai00` | Placa del soporte de abajo | GREEN GYM | GIMNASIO VERDE |
+| `twnb10` | Placa de la tienda de herramientas | (ya en inglés) | TIENDA DE OBJETOS |
 | `twnb10` | Cartel de abierto | (ya en inglés) | ESTAMOS ABIERTOS |
 
-Pendientes: el grafiti de `omoc08` (sobre ladrillos con relieve, que el borrado aún no rehace) y, fuera de la lista,
-la placa de la Green Gym de `trai00` (una página de sprites), el cartel de la tienda de herramientas de `twnb10` y el de
-Drill Tunnel de `mayo11`.
+Pendientes y huecos: el inventario completo de carteles por mapa (qué queda y por qué) está en el seguimiento del
+trabajo de traducción; las palabras del mapa luminoso de `frzl03` están cortadas en muchos trozos de sprite y el overlay
+aún no sabe escribir un texto repartido así.

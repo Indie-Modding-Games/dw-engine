@@ -1,0 +1,27 @@
+# The red spray on the brick wall: a gang's name and "was here", along the wall as it runs away from the camera.
+signs:
+  - id: tag
+    region: [334, 48, 50, 106]
+    clear:
+      mode: diffuse
+      quad: [[334, 48], [384, 82], [384, 118], [334, 84]]
+      color: "#dedede"
+      tolerance: 40
+    corners: [[338, 58], [384, 89], [384, 107], [338, 76]]
+    text: signs.omoc08_tag_top
+    size: 13
+    color: "#d65a5a"
+    colors: region
+  - id: tag_bottom
+    region: [334, 48, 50, 106]
+    # Its own clear, along the yellow stripe at the foot of the wall.
+    clear:
+      mode: diffuse
+      quad: [[331, 84], [384, 116], [384, 156], [362, 155]]
+      color: "#dedede"
+      tolerance: 40
+    corners: [[344, 98], [384, 125], [384, 143], [344, 116]]
+    text: signs.omoc08_tag_bottom
+    size: 13
+    color: "#d65a5a"
+    colors: region

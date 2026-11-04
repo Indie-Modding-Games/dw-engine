@@ -1,0 +1,11 @@
+# The signpost on the ridge, seen from its side: the same cyan words as the crossroads' east sign (frzl06).
+signs:
+  - id: east
+    region: [131, 106, 17, 20]
+    clear: {mode: diffuse, quad: [[132, 111], [145, 107], [146, 120], [133, 125]], color: "#000808"}
+    corners: [[133, 112], [144, 109], [145, 119], [134, 123]]
+    text: signs.frzl06_east
+    size: 6
+    line_spacing: 0.85
+    color: "#5ac6c6"
+    colors: region
