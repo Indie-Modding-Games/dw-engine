@@ -6,7 +6,6 @@
 #include <cmath>
 #include <cstddef>
 #include <functional>
-#include <numbers>
 #include <utility>
 
 #include "evolution_effects.hpp"
@@ -71,13 +70,26 @@ constexpr std::int32_t SpreadShift = 7;
 constexpr std::int32_t DirectionShift = 9;
 constexpr std::int32_t SparkParticleSize = 0x28;
 // initializeParticleFX: 50 directions, each (0, 0, (rand() % 150 + 250) * 16) turned by three
-// angles of (rand() & 0x7F) - 0x40 in 64ths of a turn.
-constexpr std::int32_t LengthRoll = 150;
-constexpr std::int32_t LengthFrom = 0xFA;
-constexpr std::int32_t LengthTimes = 0x10;
-constexpr std::uint32_t AngleMask = 0x7F;
-constexpr std::int32_t AngleHalf = 0x40;
-constexpr std::int32_t AngleDivisor = 64;
+// angles of (rand() & 0x7F) - 0x40 in 64ths of a turn, rolled at boot from the same rand() state
+// every time: measured in FX_PARTICLE_DATA (the same in a field and a battle savestate).
+constexpr std::array<glm::ivec3, 50> ParticleDirections{
+    glm::ivec3{-2949, 2585, 2600}, glm::ivec3{-4554, -130, 427}, glm::ivec3{4563, 231, 1041},
+    glm::ivec3{1288, -1763, -3765}, glm::ivec3{3516, -3787, -2615}, glm::ivec3{1787, 2150, 4401},
+    glm::ivec3{1161, 5837, 0}, glm::ivec3{-1407, 2760, -3730}, glm::ivec3{3753, -767, -1854},
+    glm::ivec3{2175, -4952, -1015}, glm::ivec3{-3383, 1101, -4284}, glm::ivec3{576, -4977, -1396},
+    glm::ivec3{-442, 5079, -840}, glm::ivec3{-1637, 4064, 1265}, glm::ivec3{-1839, 4833, -1287},
+    glm::ivec3{2506, -4714, -201}, glm::ivec3{4195, -137, 456}, glm::ivec3{3333, -4895, 972},
+    glm::ivec3{1030, -5236, -1058}, glm::ivec3{-3081, -3516, 856}, glm::ivec3{284, 4658, -2362},
+    glm::ivec3{-2530, 2532, -2589}, glm::ivec3{3702, -4534, 442}, glm::ivec3{-60, -2580, 4879},
+    glm::ivec3{1810, 2007, 3984}, glm::ivec3{-1134, 3863, 4680}, glm::ivec3{-616, 4301, 4431},
+    glm::ivec3{-376, 3612, 1893}, glm::ivec3{1628, 3466, -1854}, glm::ivec3{1092, 3971, 3454},
+    glm::ivec3{3046, 1325, 5224}, glm::ivec3{4941, -1267, -418}, glm::ivec3{2064, -2937, 2342},
+    glm::ivec3{4342, 2321, 2632}, glm::ivec3{-4432, -1408, 2468}, glm::ivec3{287, -2382, -4542},
+    glm::ivec3{2725, -4043, -140}, glm::ivec3{-2716, -2379, -5071}, glm::ivec3{4730, -944, 472},
+    glm::ivec3{-336, -1205, -5607}, glm::ivec3{950, 4089, 456}, glm::ivec3{2415, -2469, 4866},
+    glm::ivec3{1857, -4066, 1748}, glm::ivec3{-748, -1881, 3706}, glm::ivec3{4096, -3387, -1906},
+    glm::ivec3{2411, 436, -4641}, glm::ivec3{-2200, -3127, -1681}, glm::ivec3{4143, 1459, 2007},
+    glm::ivec3{3690, -1702, 1258}, glm::ivec3{-4363, 1364, 1357}};
 
 // effect_common.c: renderFXParticle: a 16 x 16 picture at u 0, v 0xA0 of the page (row 32 of the
 // image), `size` world units wide, semi-transparent additive and shaded; addFXPrim sorts it 0x37
@@ -247,24 +259,7 @@ void addParticle(std::vector<Sorted>& out, const FieldEffectView& view, Original
 
 } // namespace
 
-FieldEffects::FieldEffects(std::uint64_t seed) : random_(seed) {
-  // initializeParticleFX: RotMatrixZYX of the three angles applied to (0, 0, length).
-  for (glm::ivec3& direction : directions_) {
-    std::array<float, 3> angles{};
-    for (float& angle : angles) {
-      const auto turn64 =
-          static_cast<std::int32_t>(static_cast<std::uint32_t>(rand()) & AngleMask) - AngleHalf;
-      angle = static_cast<float>((turn64 * FixedOne) / AngleDivisor) * 2.0F *
-              std::numbers::pi_v<float> / static_cast<float>(FixedOne);
-    }
-    const float length = static_cast<float>(((rand() % LengthRoll) + LengthFrom) * LengthTimes);
-    // (0, 0, l) turned about z (no change), then y, then x.
-    const glm::vec3 turnedY{length * std::sin(angles[1]), 0.0F, length * std::cos(angles[1])};
-    const glm::vec3 turned{turnedY.x, -turnedY.z * std::sin(angles[0]),
-                           turnedY.z * std::cos(angles[0])};
-    direction = glm::ivec3{glm::round(turned)};
-  }
-}
+FieldEffects::FieldEffects(std::uint64_t seed) : random_(seed) {}
 
 std::int32_t FieldEffects::rand() {
   return static_cast<std::int32_t>(random_.next() & RandMask);
@@ -502,7 +497,7 @@ std::vector<ScenePrim> FieldEffects::draw(const FieldEffectView& view) const {
     const std::int32_t spread =
         sin512(originalLerp(0, SpreadAngle, 0, spark.timer, spark.state)) >> SpreadShift;
     for (std::size_t i = 0; i < static_cast<std::size_t>(ParticleCounts.at(mode)); ++i) {
-      const glm::ivec3& direction = directions_.at(i);
+      const glm::ivec3& direction = ParticleDirections.at(i);
       addParticle(sorted, view,
                   spark.position + OriginalPoint{(spread * direction.x) >> DirectionShift,
                                                  (spread * direction.y) >> DirectionShift,

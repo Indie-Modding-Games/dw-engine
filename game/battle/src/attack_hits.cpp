@@ -212,8 +212,12 @@ void hit(BattleContext& context, const AttackInFlight& attack) {
       context.strategies->damage->damage(context.view(), attack.attacker, id, attack.move);
   // BTL_handleHitReaction: the spark of the hit, unless the fighter is flattened.
   if (context.particles != nullptr && !fighter.status.flattened) {
-    context.particles->spawn(context.particleRolls(), HitParticles::Spark::Hit, move.special,
-                             sparkPointOf(context, attack), id, move.iframes + HitSparkFrames);
+    const HitParticles::Vec3 spark = sparkPointOf(context, attack);
+    core::logDebug("[port:battle] BTL_startHitAnimation (battle_main.c:2075): spark {} at ({}, {}, "
+                   "{})",
+                   move.special, spark[0], spark[1], spark[2]);
+    context.particles->spawn(context.particleRolls(), HitParticles::Spark::Hit, move.special, spark,
+                             id, move.iframes + HitSparkFrames);
   }
   context.state->counters.anyoneHit = true;
   context.state->counters.partnerHit = context.state->counters.partnerHit || id == PartnerId;

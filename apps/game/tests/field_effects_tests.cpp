@@ -1,14 +1,17 @@
 #include <dwe/core/original_math.hpp>
 
 #include <doctest/doctest.h>
+#include <glm/gtc/epsilon.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
 
 #include "field_effects.hpp"
 
+using dwe::app::FieldBattleParticles;
 using dwe::app::FieldEffects;
 using dwe::app::FieldEffectView;
 using dwe::app::ObjectSmoke;
@@ -116,6 +119,34 @@ TEST_CASE("field effects: a gym spark flashes on its second frame and spreads 25
   CHECK(effects.sparks().size() == 1);
   effects.tickFrame();
   CHECK(effects.sparks().empty());
+}
+
+TEST_CASE("field effects: a hit spark's particles spread along the original's directions") {
+  // Measured: a hit spark at (621, -85, 3464) on its 7th of 22 frames drew its first particles at
+  // (546, -20, 3530) and (505, -89, 3474), 48 of them (mode 1).
+  FieldBattleParticles battle;
+  battle.sparks.push_back({.position = {621, -85, 3464},
+                           .mode = 1,
+                           .color = {0xFF, 0x6E, 0x46},
+                           .state = 7,
+                           .timer = 22,
+                           .endFrame = 14,
+                           .spread = {}});
+  FieldEffects effects{Seed};
+  FieldEffectView view = viewOf();
+  view.battle = &battle;
+  const std::vector<ScenePrim> prims = effects.draw(view);
+  CHECK(countTexture(prims, 2) == 48);
+  const auto drawnAt = [&](glm::vec3 world) {
+    const glm::vec4 clip = view.frame.clip(world);
+    return std::ranges::any_of(prims, [&](const ScenePrim& prim) {
+      return prim.texture.index == 2 &&
+             glm::all(glm::epsilonEqual(glm::vec2{prim.corners[0].clip} / prim.corners[0].clip.w,
+                                        glm::vec2{clip} / clip.w, 1e-5F));
+    });
+  };
+  CHECK(drawnAt({546.0F, 20.0F, -3530.0F}));
+  CHECK(drawnAt({505.0F, 89.0F, -3474.0F}));
 }
 
 TEST_CASE("field effects: a gym's cloud and spark are first drawn a frame on, a pile's as made") {

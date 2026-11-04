@@ -121,7 +121,7 @@ struct FieldButterfly {
 // renderParticleFX), the healing particles (particle.c) and the butterfly (butterfly.c).
 class FieldEffects {
 public:
-  // The particles' 50 directions are rolled once, as initializeParticleFX does at boot.
+  // The particles spread along the 50 directions initializeParticleFX rolled at boot (measured).
   explicit FieldEffects(std::uint64_t seed);
 
   // How a cloud or a spark comes: from a routine run by the original's object list (the gym's), so
@@ -177,7 +177,6 @@ private:
 
   ruleset::Random random_;
   std::vector<FieldGlow> glows_;
-  std::array<glm::ivec3, 50> directions_{};
   std::vector<FieldCloud> clouds_;
   std::vector<FieldSpark> sparks_;
   std::optional<FieldHealing> healing_;
