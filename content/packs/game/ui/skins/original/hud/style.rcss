@@ -7,7 +7,7 @@
 
    The panels the original lacks are hidden here: the date in figures, the bars' numbers and labels, the needs
    panel, HP and MP. The menu button, the minimap and the time in digits stay as documented deltas: the button is how
-   the pointer opens the menu, the round minimap is an option, on by default, in the original's look (see below), and
+   the pointer opens the menu, the round minimap is an option, on by default, in the modern skin's look (see below), and
    the time in digits is an option, on by default, in a small box under the dial. */
 
 body {
@@ -397,101 +397,14 @@ body {
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   Deltas of this skin. The round minimap (an engine improvement, on unless turned off; the original has none) in the
-   original's look: at the top right, clear of the dial at the top left, the bars at the bottom right and the menu's
-   hint at the bottom left. The map's name and the time sit in the original's windows (the original-box border with
-   the corner sprites extracted from the disc, black-filled so they read over any ground, in the original-look font
-   at twice its cells; the time only, as the box under the dial), and the disc's ring is the windows' border drawn
-   round: four stripes of one original pixel (3dp), black, light cyan, dark cyan and black from the inside out (ring
-   style original). The markers take the original's text yellow (#fff371) and the light cyan of its borders. The menu
-   button is a small box with the prompt. */
+   Deltas of this skin. The round minimap (an engine improvement, on unless turned off; the original has none) keeps
+   the modern skin's look, banner, glowing ring and pills, which reads better over the original's grounds than its
+   boxes did; only the font is set back to the modern one, as this skin's theme gives every text the original-look
+   font. The menu button is a small box with the prompt. */
 
 #minimap {
-	right: 24dp;
-	top: 18dp;
-}
-
-#minimap.size-small { width: 144dp; }
-#minimap.size-medium { width: 184dp; }
-#minimap.size-large { width: 234dp; }
-
-/* The name keeps to one line in the original's wide font: its box hugs the text at the minimap's right edge and grows
-   to the left for a long name (a float in a strip wider than the minimap); the disc goes below it. */
-#minimap-banner {
-	position: absolute;
-	right: 0;
-	top: 0;
-	width: 600dp;
-}
-
-#minimap-name {
-	float: right;
-	margin: 0;
-	white-space: nowrap;
-	padding: 0 6dp;
-	border: 3dp transparent;
-	border-radius: 0;
-	background-color: #000000c0;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
-	font-family: original-look;
-	font-size: 22dp;
-	font-weight: normal;
-	line-height: 24dp;
-	color: #d0d0d0;
-}
-
-#minimap-map {
-	margin-top: 27dp;
-	padding: 12dp;
-}
-
-#minimap-frame {
-	decorator: minimap-disc(original #000000a8 #90d9fa #00000000 3dp 0dp);
-}
-
-/* The north mark just inside the ring's top. */
-#minimap-north {
-	top: 15dp;
-	width: 18dp;
-	height: 18dp;
-	margin-left: -9dp;
-	border-radius: 0;
-	border: 0;
-	background-color: transparent;
-	font-family: original-look;
-	font-size: 22dp;
-	font-weight: normal;
-	line-height: 18dp;
-	color: #fff371;
-}
-
-#minimap-player { image-color: #fff371; }
-#minimap-partner { image-color: #90d9fa; }
-
-#minimap-clock {
-	margin-top: -3dp;
-	padding: 0 6dp;
-	border: 3dp transparent;
-	border-radius: 0;
-	background-color: #000000;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
-	font-family: original-look;
-	font-size: 22dp;
-	line-height: 20dp;
-	color: #d0d0d0;
-}
-
-/* Only the time, white, as the box under the dial: the original's field shows no date. */
-#minimap-day {
-	display: none;
-}
-
-#minimap-time {
-	margin-left: 0;
-	font-weight: normal;
-	color: #ffffff;
+	font-family: "Noto Sans";
+	font-size: 14dp;
 }
 
 #menu-button {
