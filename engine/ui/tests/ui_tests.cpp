@@ -706,24 +706,29 @@ TEST_CASE("the original egg box grows before its eggs move and shrinks before it
   CHECK_FALSE(ui->elementHasClass("egg_box", "box-outline", "hidden"));
   CHECK(ui->elementHasClass("egg_box", "panel", "box-animating"));
 
-  // Growing: right and confirm do nothing.
+  // Growing: right and confirm do nothing, and sound nothing (the box's sounds are the game's).
   press(*ui, input, input::keys::Right);
   press(*ui, input, input::keys::Return);
   CHECK(ui->takeCommands().empty());
+  CHECK(ui->takeCues().empty());
   settle(*ui, input);
   CHECK(ui->elementHasClass("egg_box", "box-outline", "hidden"));
   CHECK_FALSE(ui->elementHasClass("egg_box", "panel", "box-animating"));
 
   // Standing: the egg moves and is taken; the box shrinks and only then says it is gone.
+  // Up and down move nothing (DOO2_tickEggInput reads left and right only).
+  press(*ui, input, input::keys::Down);
+  CHECK(ui->takeCommands().empty());
   press(*ui, input, input::keys::Right);
   CHECK(commandNames(*ui) == std::vector<std::string>{"egg_box_move"});
-  static_cast<void>(ui->takeCues());
+  CHECK(ui->takeCues().empty());
   press(*ui, input, input::keys::Return);
   auto commands = ui->takeCommands();
   REQUIRE(commands.size() == 1);
   CHECK(commands[0].name == "egg_box_choose");
   CHECK(commands[0].value == UiValue{1.0});
-  CHECK(ui->takeCues() == std::vector<UiCue>{UiCue::Confirm, UiCue::BoxClose});
+  // The game sounds the egg taken; the box sounds its closing (renderUIBoxAnim).
+  CHECK(ui->takeCues() == std::vector<UiCue>{UiCue::BoxClose});
   press(*ui, input, input::keys::Return);
   CHECK(ui->takeCommands().empty());
   settle(*ui, input);

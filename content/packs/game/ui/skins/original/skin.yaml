@@ -106,7 +106,7 @@ screens:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/gym_slots/style]
   # La caja de los huevos tras una muerte, también.
   egg_box:
-    styles: [ui/skins/original/pause_menu/style]
+    styles: [ui/skins/original/egg_box/style]
   # El aviso de guardado (una mejora del motor): una ventana del original con la figura y el texto.
   save_indicator:
     styles: [ui/skins/original/save_indicator/style]

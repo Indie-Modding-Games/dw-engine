@@ -817,13 +817,14 @@ struct Ui::Impl {
       return;
     }
     capturedThisTick = true;
+    const bool sounds = !modal->element->HasAttribute(Rml::String{OwnSoundsAttribute});
     const std::optional<UiCue> pressed = pressCue(command);
-    if (pressed) {
+    if (pressed && sounds) {
       cue(*pressed);
     }
     if (modal->element->callHandler("on_action", std::string{actionName(command)})) {
       // The document moves its own cursor, so a move sounds whenever it takes one.
-      if (!pressed) {
+      if (!pressed && sounds) {
         cue(UiCue::Move);
       }
       return;
@@ -832,7 +833,7 @@ struct Ui::Impl {
       const Rml::Element* before = context->GetFocusElement();
       context->ProcessKeyDown(*key, 0);
       context->ProcessKeyUp(*key, 0);
-      if (!pressed && context->GetFocusElement() != before) {
+      if (!pressed && sounds && context->GetFocusElement() != before) {
         cue(UiCue::Move);
       }
     } else {

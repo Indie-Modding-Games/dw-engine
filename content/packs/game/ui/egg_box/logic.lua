@@ -7,7 +7,8 @@
 -- In the original look (ui/common/original_box.lua) the box grows out of the 16-pixel square in
 -- the middle of the screen (DOO2_openEggBox: MAIN_D_80134B98) and shrinks back into it once an egg
 -- is taken (MAIN_D_80134BA4); the eggs move and are taken only while it stands (DOO2_tickEggInput
--- waits for DOO2_tickEggBox). It opens without the box sound: the game plays the egg box's own.
+-- waits for DOO2_tickEggBox). It opens without the box sound: the game plays the egg box's own, and
+-- the document is own-sounds, so moving and taking an egg sound only the game's egg box sounds.
 
 local Slots = 8
 local egg = 0
@@ -29,7 +30,7 @@ local function refresh(document)
   for slot = 1, Slots do
     local entry = document:get("egg-" .. slot)
     entry:set_class("hidden", slot > count())
-    entry:set_text(t("egg_box.egg", { number = slot }))
+    document:get("egg-" .. slot .. "-name"):set_text(t("egg_box.egg", { number = slot }))
   end
 end
 
@@ -93,13 +94,14 @@ function on_device(document)
   refresh_prompts(document)
 end
 
--- Left and right (and up and down) move the egg; cancel and menu do nothing: an egg must be taken.
+-- Left and right move the egg (DOO2_tickEggInput reads only those two); up, down, cancel and menu
+-- do nothing: an egg must be taken.
 function on_action(document, action)
-  if action == "left" or action == "up" then
+  if action == "left" then
     move(document, -1)
     return true
   end
-  if action == "right" or action == "down" then
+  if action == "right" then
     move(document, 1)
     return true
   end
@@ -107,5 +109,5 @@ function on_action(document, action)
     choose(document, egg + 1)
     return true
   end
-  return action == "cancel" or action == "menu"
+  return action == "cancel" or action == "menu" or action == "up" or action == "down"
 end

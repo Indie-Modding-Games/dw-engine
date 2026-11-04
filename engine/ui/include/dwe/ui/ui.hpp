@@ -64,6 +64,9 @@ inline constexpr std::string_view MinimapPartner = "minimap-partner";
 // text-key="hud.menu"/>. The UI fills the element when the document loads and again when the
 // language changes (Ui::refreshTexts).
 inline constexpr std::string_view TextKeyAttribute = "text-key";
+// A document whose <body> has this attribute plays its own sounds (its game sends them, as the
+// original's egg box does): the keys pressed in it cue no menu sound.
+inline constexpr std::string_view OwnSoundsAttribute = "own-sounds";
 
 // Draws the UI's geometry. The headless UI (tests, tools) draws nothing; the game passes one built
 // on render.

@@ -302,8 +302,7 @@ acabar el fundido a blanco (`MURD_removeLivesBox`). Si era la última, la caja v
 4, renacer) y `StorySceneGlue` se la pasa: el campo sigue y lo retiene el guion. La muerte acaba con el compañero
 ya ido, en negro. Entonces corre la sección del mapa de despertar: los textos, la caja de los huevos (`EggBoxScreen`,
 documento `ui/egg_box`) y la rutina 4, que da al compañero su forma nueva y juega el renacer. Izquierda y derecha cambian
-de huevo y confirmar elige uno; no se puede salir sin elegir. Lo que no está: los sprites de los huevos en VRAM
-(`EGG_ICONS`) y la carga del overlay; el documento enumera los huevos.
+de huevo y confirmar elige uno; no se puede salir sin elegir. Lo que no está: la carga del overlay.
 
 - Igual: con el aspecto original la caja crece en 5 cuadros a 20 por segundo desde el cuadrado de 16 píxeles del centro
   de la pantalla (`DOO2_openEggBox`: `createAnimatedUIBox(3, …)` desde `MAIN_D_80134B98` {-8, -8, 16, 16}) y, al elegir,
@@ -312,9 +311,17 @@ de huevo y confirmar elige uno; no se puede salir sin elegir. Lo que no está: l
   espera a que `DOO2_tickEggBox` ponga `sparkleIndex` a 0); al abrir no suena el sonido de caja sino el suyo
   (`stopSound`, `playSound(8, 4)`). La historia sigue cuando la caja ya encogió (`egg_box_closed`; el original devuelve 1
   con `UI_BOX_DATA[3].state` 0). Con otro aspecto la caja abre y cierra al momento.
-- Hueco: la caja llega al rectángulo del panel del documento, no al de 168 x 80 píxeles (`MAIN_D_80134B90`
-  {-84, -70}) con los 4 iconos en fila (`DOO2_renderEggIcons`); la confirmación y el movimiento durante el crecimiento
-  aún suenan con los avisos genéricos de la UI.
+- Igual, medido en el original (2026-11-03, estado `death_egg_box_open`): con el aspecto original la caja es la de
+  `UI_BOX_DATA[3]`, -84, -70, 168 x 80 desde el centro de la pantalla (`MAIN_D_80134B90`; x 76 a 244, y 50 a 130 de
+  320 x 240), semitransparente (`features` 2, color 0: `.original-box`), sin título ni textos: la pregunta es del
+  diálogo de debajo. Dentro, los 4 huevos de `ETCDAT/TAMA.TIM` en fila (`DOO2_renderEggIcons`): 32 x 32 centrados en
+  x -54, -18, 18 y 54 e y -30, el dibujo `EGG_ICONS` {0, 2, 3, 1} (u = 96 + 32 × dibujo) con la paleta de la fila
+  492 + huevo, y el cursor de 40 x 40 (u 96, v 32, fila 496) sobre el huevo elegido
+  (`ui/skins/original/egg_box/style.rcss`). Solo izquierda y derecha mueven el huevo (botones 0x8000 y 0x2000). El
+  documento es `own-sounds`: sus teclas no suenan a menú; solo suenan los sonidos de la caja que manda el juego
+  (abrir 8/4, mover 0/2, elegir 0/3) y el cierre de la caja (0/1).
+- Diferencia de 4 píxeles: en la captura del original el borde superior de la caja sale en la línea 46, no en la 50
+  del rectángulo; dwe la pone en la 50.
 
 Los efectos de las dos escenas van en `DeathEffects` (`death_effects.cpp`, sin estado del motor, con pruebas) y se
 dibujan como primitivas sobre la escena (`ScenePrimDrawer`), con las piezas de la evolución (`addFlashPrims`,

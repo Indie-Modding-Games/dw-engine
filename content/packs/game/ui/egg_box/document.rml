@@ -6,18 +6,21 @@
 	<script src="../common/original_box.lua"></script>
 	<script src="logic.lua"></script>
 </head>
-<body>
+<!-- own-sounds: the game plays the box's sounds (DOO2_openEggBox, DOO2_tickEggInput), not the menu's. -->
+<body own-sounds="true">
 	<div id="scrim">
 		<div id="panel">
 			<h1 id="title" text-key="egg_box.title"></h1>
-			<button id="egg-1" class="egg" onclick="choose(document, 1)"></button>
-			<button id="egg-2" class="egg" onclick="choose(document, 2)"></button>
-			<button id="egg-3" class="egg" onclick="choose(document, 3)"></button>
-			<button id="egg-4" class="egg" onclick="choose(document, 4)"></button>
-			<button id="egg-5" class="egg" onclick="choose(document, 5)"></button>
-			<button id="egg-6" class="egg" onclick="choose(document, 6)"></button>
-			<button id="egg-7" class="egg" onclick="choose(document, 7)"></button>
-			<button id="egg-8" class="egg" onclick="choose(document, 8)"></button>
+			<!-- Each egg's icon and the cursor round it: ETCDAT/TAMA.TIM (DOO2_renderEggIcons: the icon EGG_ICONS[i]
+			     at u 96 + 32 * icon in CLUT row 492 + i, the 40 x 40 cursor at u 96, v 32 in row 496). -->
+			<button id="egg-1" class="egg" onclick="choose(document, 1)"><img class="egg-cursor" src="/texture/etcdat/tama?palette=8" rect="96 32 40 40"/><img class="egg-icon" src="/texture/etcdat/tama?palette=4" rect="96 0 32 32"/><span id="egg-1-name" class="egg-name"></span></button>
+			<button id="egg-2" class="egg" onclick="choose(document, 2)"><img class="egg-cursor" src="/texture/etcdat/tama?palette=8" rect="96 32 40 40"/><img class="egg-icon" src="/texture/etcdat/tama?palette=5" rect="160 0 32 32"/><span id="egg-2-name" class="egg-name"></span></button>
+			<button id="egg-3" class="egg" onclick="choose(document, 3)"><img class="egg-cursor" src="/texture/etcdat/tama?palette=8" rect="96 32 40 40"/><img class="egg-icon" src="/texture/etcdat/tama?palette=6" rect="192 0 32 32"/><span id="egg-3-name" class="egg-name"></span></button>
+			<button id="egg-4" class="egg" onclick="choose(document, 4)"><img class="egg-cursor" src="/texture/etcdat/tama?palette=8" rect="96 32 40 40"/><img class="egg-icon" src="/texture/etcdat/tama?palette=7" rect="128 0 32 32"/><span id="egg-4-name" class="egg-name"></span></button>
+			<button id="egg-5" class="egg" onclick="choose(document, 5)"><img class="egg-cursor" src="/texture/etcdat/tama?palette=8" rect="96 32 40 40"/><img class="egg-icon" src="/texture/etcdat/tama?palette=4" rect="96 0 32 32"/><span id="egg-5-name" class="egg-name"></span></button>
+			<button id="egg-6" class="egg" onclick="choose(document, 6)"><img class="egg-cursor" src="/texture/etcdat/tama?palette=8" rect="96 32 40 40"/><img class="egg-icon" src="/texture/etcdat/tama?palette=5" rect="160 0 32 32"/><span id="egg-6-name" class="egg-name"></span></button>
+			<button id="egg-7" class="egg" onclick="choose(document, 7)"><img class="egg-cursor" src="/texture/etcdat/tama?palette=8" rect="96 32 40 40"/><img class="egg-icon" src="/texture/etcdat/tama?palette=6" rect="192 0 32 32"/><span id="egg-7-name" class="egg-name"></span></button>
+			<button id="egg-8" class="egg" onclick="choose(document, 8)"><img class="egg-cursor" src="/texture/etcdat/tama?palette=8" rect="96 32 40 40"/><img class="egg-icon" src="/texture/etcdat/tama?palette=7" rect="128 0 32 32"/><span id="egg-8-name" class="egg-name"></span></button>
 
 			<div id="prompts">
 				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="egg_box.take"></span></span>

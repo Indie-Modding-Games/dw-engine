@@ -1,12 +1,25 @@
-/* How the egg box behaves whatever the skin: the eggs wrap around, up from the first to the last and down from the
-   last to the first. The look is the pause menu's (the skins' pause_menu style). */
+/* How the egg box behaves whatever the skin: one button per egg with its icon (ETCDAT/TAMA.TIM) and its name; the
+   eggs wrap around, right from the last to the first and left from the first to the last. The modern look is the
+   pause menu's (the skins' pause_menu style); the original look places the box and the icons as the original does
+   (skins/original/egg_box/style.rcss). */
 
-/* RmlUi refuses a style sheet with no rule. */
 .egg {
 	display: block;
 }
 
 /* Only the eggs of the rebirth: the slots past them stay hidden over .egg's display. */
 .egg.hidden {
+	display: none;
+}
+
+.egg-icon {
+	width: 48dp;
+	height: 48dp;
+	vertical-align: middle;
+	margin-right: 12dp;
+}
+
+/* The original's cursor sprite: only the original look shows it, round the egg in focus. */
+.egg-cursor {
 	display: none;
 }
