@@ -12,7 +12,7 @@
 			<div class="bits-row" id="bits-value"></div>
 		</div>
 		<div id="window" class="original-box">
-			<div class="label label-place"></div><div class="label label-point"></div>
+			<div class="label label-place" text-key="list_labels.place"></div><div class="label label-point" text-key="list_labels.point"></div>
 			<div id="rule"></div>
 			<div id="track"></div><div id="bar"></div>
 			<div class="cursor" id="cursor"></div>

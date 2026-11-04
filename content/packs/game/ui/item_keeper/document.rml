@@ -11,7 +11,7 @@
 			<div class="title-bar"></div>
 			<div class="title" text-key="item_keeper.kept_title"></div>
 			<div class="table table-name"></div><div class="table table-count"></div>
-			<div class="label label-menu"></div><div class="label label-count"></div>
+			<div class="label label-menu" text-key="list_labels.menu"></div><div class="label label-count" text-key="list_labels.count"></div>
 			<div class="cursor" id="kept-cursor"></div>
 			<div class="row" id="kept-row-0"><span class="name" id="kept-name-0"></span><span class="count" id="kept-count-0"></span></div><div class="row" id="kept-row-1"><span class="name" id="kept-name-1"></span><span class="count" id="kept-count-1"></span></div><div class="row" id="kept-row-2"><span class="name" id="kept-name-2"></span><span class="count" id="kept-count-2"></span></div><div class="row" id="kept-row-3"><span class="name" id="kept-name-3"></span><span class="count" id="kept-count-3"></span></div><div class="row" id="kept-row-4"><span class="name" id="kept-name-4"></span><span class="count" id="kept-count-4"></span></div>
 			<div class="scrollbar"><div class="thumb" id="kept-thumb"></div></div>
@@ -20,7 +20,7 @@
 			<div class="title-bar"></div>
 			<div class="title" text-key="item_keeper.bag_title"></div>
 			<div class="table table-name"></div><div class="table table-count"></div>
-			<div class="label label-menu"></div><div class="label label-count"></div>
+			<div class="label label-menu" text-key="list_labels.menu"></div><div class="label label-count" text-key="list_labels.count"></div>
 			<div class="cursor" id="bag-cursor"></div>
 			<div class="row" id="bag-row-0"><span class="name" id="bag-name-0"></span><span class="count" id="bag-count-0"></span></div><div class="row" id="bag-row-1"><span class="name" id="bag-name-1"></span><span class="count" id="bag-count-1"></span></div><div class="row" id="bag-row-2"><span class="name" id="bag-name-2"></span><span class="count" id="bag-count-2"></span></div><div class="row" id="bag-row-3"><span class="name" id="bag-name-3"></span><span class="count" id="bag-count-3"></span></div><div class="row" id="bag-row-4"><span class="name" id="bag-name-4"></span><span class="count" id="bag-count-4"></span></div>
 			<div class="scrollbar"><div class="thumb" id="bag-thumb"></div></div>

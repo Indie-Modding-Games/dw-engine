@@ -1,0 +1,10 @@
+# The column labels over the lists of the original's shop and keeper screens (item keeper, discard, card shop, merit
+# shop, bird transport, jukebox). The original look draws the original's pictures of these words in English and
+# these texts in any other language; the modern look writes them.
+menu: "MENU"
+count: "COUNT"
+price: "PRICE"
+point: "POINT"
+place: "PLACE"
+number: "NO."
+title: "TITLE"

@@ -8,9 +8,12 @@ body #window, body #talk, body #points-box {
 		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
 
-.label-menu { decorator: image(keeper-menu-label scale-none left top); }
-.label-count { decorator: image(keeper-count-label scale-none left top); }
-.label-point { decorator: image(keeper-point-label scale-none left top); }
+/* The column labels: the original's pictures of the English words while the language is English (the engine's
+   use-menu-art class), the list_labels texts in the original's ink in any other. */
+.label { font-family: original-look; color: #d0d0d0; font-size: 15dp; line-height: 21dp; white-space: nowrap; }
+.use-menu-art .label-menu { decorator: image(keeper-menu-label scale-none left top); color: transparent; }
+.use-menu-art .label-count { decorator: image(keeper-count-label scale-none left top); color: transparent; }
+.use-menu-art .label-point { decorator: image(keeper-point-label scale-none left top); color: transparent; }
 
 .rarity-0 { decorator: image(card-rarity-0 scale-none left top); }
 .rarity-1 { decorator: image(card-rarity-1 scale-none left top); }

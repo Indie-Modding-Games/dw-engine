@@ -64,6 +64,11 @@ inline constexpr std::string_view MinimapPartner = "minimap-partner";
 // text-key="hud.menu"/>. The UI fills the element when the document loads and again when the
 // language changes (Ui::refreshTexts).
 inline constexpr std::string_view TextKeyAttribute = "text-key";
+// The class every document's <body> has while the player's language is the one of the original's
+// word pictures (its menu labels: ITEM, MENU, COUNT...), set with the text keys: a skin shows a
+// picture under it and the text key's words without it (docs/architecture/localizacion.md).
+inline constexpr std::string_view MenuArtClass = "use-menu-art";
+inline constexpr std::string_view MenuArtLanguage = "en";
 // A document whose <body> has this attribute plays its own sounds (its game sends them, as the
 // original's egg box does): the keys pressed in it cue no menu sound.
 inline constexpr std::string_view OwnSoundsAttribute = "own-sounds";

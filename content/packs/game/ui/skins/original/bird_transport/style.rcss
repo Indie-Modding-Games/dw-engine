@@ -13,8 +13,11 @@ body .row.unaffordable { color: #e03028; }
 body #speaker { color: #f8f800; }
 body #speaker.player { color: #d0d0d0; }
 
-.label-place { decorator: image(keeper-place-label scale-none left top); }
-.label-point { decorator: image(keeper-point-label scale-none left top); }
+/* The column labels: the original's pictures of the English words while the language is English (the engine's
+   use-menu-art class), the list_labels texts in the original's ink in any other. */
+.label { font-family: original-look; color: #d0d0d0; font-size: 15dp; line-height: 21dp; white-space: nowrap; }
+.use-menu-art .label-place { decorator: image(keeper-place-label scale-none left top); color: transparent; }
+.use-menu-art .label-point { decorator: image(keeper-point-label scale-none left top); color: transparent; }
 
 /* The rows keep the original's size: the modern look this skin extends gives its own lists 22dp
    (../../modern/original_lists/style.rcss). */

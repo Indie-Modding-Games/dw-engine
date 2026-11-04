@@ -1,0 +1,9 @@
+# Los rótulos de columna sobre las listas de las tiendas y guardianes del original (guardaobjetos, tirar objetos,
+# tienda de cartas, tienda de méritos, transporte del pájaro, gramola).
+menu: "OBJETO"
+count: "CANT."
+price: "PRECIO"
+point: "PUNTOS"
+place: "LUGAR"
+number: "N.º"
+title: "TÍTULO"

@@ -8,7 +8,7 @@
 <body>
 	<div id="frame">
 		<div id="window" class="original-box">
-			<div id="label-menu" class="label label-menu"></div><div class="label label-price"></div><div id="label-count" class="label label-count"></div>
+			<div id="label-menu" class="label label-menu"></div><div class="label label-price" text-key="list_labels.price"></div><div id="label-count" class="label label-count"></div>
 			<div class="cursor" id="cursor"></div>
 			<div class="row" id="row-0"><div class="rarity hidden" id="rarity-0"></div><span class="name" id="name-0"></span><span class="price" id="price-0"></span><span class="count" id="count-0"></span></div><div class="row" id="row-1"><div class="rarity hidden" id="rarity-1"></div><span class="name" id="name-1"></span><span class="price" id="price-1"></span><span class="count" id="count-1"></span></div><div class="row" id="row-2"><div class="rarity hidden" id="rarity-2"></div><span class="name" id="name-2"></span><span class="price" id="price-2"></span><span class="count" id="count-2"></span></div><div class="row" id="row-3"><div class="rarity hidden" id="rarity-3"></div><span class="name" id="name-3"></span><span class="price" id="price-3"></span><span class="count" id="count-3"></span></div><div class="row" id="row-4"><div class="rarity hidden" id="rarity-4"></div><span class="name" id="name-4"></span><span class="price" id="price-4"></span><span class="count" id="count-4"></span></div><div class="row" id="row-5"><div class="rarity hidden" id="rarity-5"></div><span class="name" id="name-5"></span><span class="price" id="price-5"></span><span class="count" id="count-5"></span></div>
 			<div class="scrollbar"><div class="thumb" id="thumb"></div></div>

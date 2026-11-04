@@ -173,6 +173,13 @@ void applyTextKeys(Rml::Element& root, const localization::Catalog& texts) {
   }
 }
 
+// The document's words in the player's language: its text keys, and MenuArtClass while the
+// language is the one the original's word pictures are in.
+void applyLanguage(Rml::Element& document, const localization::Catalog& texts) {
+  applyTextKeys(document, texts);
+  document.SetClass(Rml::String{MenuArtClass}, texts.language() == MenuArtLanguage);
+}
+
 } // namespace
 
 struct Ui::Impl {
@@ -500,7 +507,7 @@ struct Ui::Impl {
       document->setOwnCode(std::move(ownCode));
     }
     document->setName(name);
-    applyTextKeys(*document, *texts);
+    applyLanguage(*document, *texts);
     applyMinimap(*document);
     Document loadedDocument{.element = document,
                             .asset = asset,
@@ -904,7 +911,7 @@ struct Ui::Impl {
 
   void refreshTexts() {
     for (auto& [name, document] : documents) {
-      applyTextKeys(*document.element, *texts);
+      applyLanguage(*document.element, *texts);
       applyMinimap(*document.element);
     }
     forEachVisible([](Document& document) { document.element->callHandler(LanguageHandler); });

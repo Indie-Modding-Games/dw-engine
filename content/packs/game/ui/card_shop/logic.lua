@@ -147,10 +147,11 @@ local function refresh(document)
   end
   frame:set_class("mode-sell", ui.setting("card_shop.mode") == "sell")
   frame:set_class("mode-packs", ui.setting("card_shop.mode") == "packs")
-  -- The summary's columns are titled in words; the other lists keep the skin's labels.
+  -- The summary's columns are titled in words; the other lists keep the skin's labels (which the
+  -- original look draws as the original's pictures in English).
   local packs = ui.setting("card_shop.mode") == "packs"
-  document:get("label-menu"):set_text(packs and t("bulk.card") or "")
-  document:get("label-count"):set_text(packs and t("bulk.copies") or "")
+  document:get("label-menu"):set_text(t(packs and "bulk.card" or "list_labels.menu"))
+  document:get("label-count"):set_text(t(packs and "bulk.copies" or "list_labels.count"))
   draw_list(document)
   draw_talk(document, phase)
   draw_confirm(document)

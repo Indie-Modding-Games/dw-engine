@@ -8,7 +8,7 @@
 <body>
 	<div id="frame">
 		<div id="window" class="original-box">
-			<div class="label label-menu"></div><div class="label label-count"></div>
+			<div class="label label-menu" text-key="list_labels.menu"></div><div class="label label-count" text-key="list_labels.count"></div>
 			<div class="cursor" id="cursor"></div>
 			<div class="row" id="row-0"><img class="icon hidden" id="icon-0"/><span class="name" id="name-0"></span><span class="count" id="count-0"></span></div><div class="row" id="row-1"><img class="icon hidden" id="icon-1"/><span class="name" id="name-1"></span><span class="count" id="count-1"></span></div><div class="row" id="row-2"><img class="icon hidden" id="icon-2"/><span class="name" id="name-2"></span><span class="count" id="count-2"></span></div><div class="row" id="row-3"><img class="icon hidden" id="icon-3"/><span class="name" id="name-3"></span><span class="count" id="count-3"></span></div><div class="row" id="row-4"><img class="icon hidden" id="icon-4"/><span class="name" id="name-4"></span><span class="count" id="count-4"></span></div><div class="row" id="row-5"><img class="icon hidden" id="icon-5"/><span class="name" id="name-5"></span><span class="count" id="count-5"></span></div>
 			<div class="scrollbar"><div class="thumb" id="thumb"></div></div>
