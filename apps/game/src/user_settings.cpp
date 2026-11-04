@@ -36,6 +36,7 @@ constexpr std::string_view CanonicalStagesKey = "canonical_stages";
 constexpr std::string_view WalkControlKey = "walk_control";
 constexpr std::string_view LongNamesKey = "long_names";
 constexpr std::string_view ShopJobBarKey = "shop_job_bar";
+constexpr std::string_view ContinuousMusicKey = "continuous_music";
 
 } // namespace
 
@@ -96,6 +97,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* bar = tree->find(ShopJobBarKey)) {
       settings.shopJobBar = reader.boolean(*bar);
+    }
+    if (const core::YamlNode* music = tree->find(ContinuousMusicKey)) {
+      settings.continuousMusic = reader.boolean(*music);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -161,6 +165,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.shopJobBar) {
     root.set(std::string{ShopJobBarKey},
              core::YamlNode::scalar(*settings.shopJobBar ? "true" : "false"));
+  }
+  if (settings.continuousMusic) {
+    root.set(std::string{ContinuousMusicKey},
+             core::YamlNode::scalar(*settings.continuousMusic ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

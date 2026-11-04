@@ -65,6 +65,9 @@ long_names: "Long names"
 # Recruit bar: while a job or a match decides whether someone joins the city (the canyon shop, the stones game), a bar
 # shows how close the player is (on by default).
 shop_job_bar: "Recruit bar"
+# Continuous music: a map whose song is already playing lets it go on instead of starting it again
+# (on by default).
+continuous_music: "Continuous music"
 
 year_label: "Year"
 day_label: "Day"

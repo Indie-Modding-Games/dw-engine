@@ -58,6 +58,10 @@ struct UserSettings {
   // The shop job's progress bar (shop_job_bar: true, false; shop_job_bar.hpp): the canyon shop's
   // tally against the join while its job runs; on when not chosen yet.
   std::optional<bool> shopJobBar = std::nullopt;
+  // Continuous music (continuous_music: true, false; session::SessionMusic::setContinuousMusic): a
+  // map whose song is the one playing lets it go on instead of playing it again from its start; on
+  // when not chosen yet.
+  std::optional<bool> continuousMusic = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

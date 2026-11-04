@@ -61,18 +61,36 @@ void SessionMusic::playBgm(std::int64_t font) {
                  font, chosen, track);
   activeFont_ = chosen;
   activeTrack_ = track;
+  if (std::exchange(carrying_, false) && playing(chosen, track)) {
+    core::logDebug("[port:audio] continuous music: font={} track={} goes on", chosen, track);
+    return;
+  }
   stopBgm();
   playMusic(chosen, track);
 }
 
 void SessionMusic::resetBgm() {
   core::logDebug("[port:audio] resetBGM (script_interp.c:2377)");
+  carrying_ = false;
   activeFont_.reset();
   stopBgm();
 }
 
 void SessionMusic::enterMap() {
-  resetBgm();
+  if (!continuous_) {
+    resetBgm();
+    return;
+  }
+  core::logDebug("[port:audio] resetBGM (script_interp.c:2852) held: continuous music");
+  activeFont_.reset();
+  carrying_ = currentTrack_.has_value();
+}
+
+void SessionMusic::mapHeadDone() {
+  if (std::exchange(carrying_, false)) {
+    core::logDebug("[port:audio] the map head picked no song: stopBGM");
+    stopBgm();
+  }
 }
 
 // script_interp.c: handleMusicOverride. Mode 0 picks the day or the night song of the font, mode 1
@@ -215,6 +233,16 @@ const assets::MusicTable* SessionMusic::table() {
     }
   }
   return table_ ? &*table_ : nullptr;
+}
+
+bool SessionMusic::playing(std::int64_t font, std::int64_t track) const {
+  if (!loaded_ || loaded_->font != font || !currentTrack_) {
+    return false;
+  }
+  if (track < 0 || loaded_->meta.track(static_cast<std::uint32_t>(track)) == nullptr) {
+    track = 0;
+  }
+  return *currentTrack_ == track;
 }
 
 // sound.c: stopBGM.

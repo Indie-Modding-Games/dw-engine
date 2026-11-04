@@ -47,8 +47,17 @@ public:
   void resetBgm() override;
   // map.c: changeMap and the head's set_script (script_interp.c: scriptInstructionFBtoFF,
   // resetBGM): the original cuts the music on every map and the head's set_bgm plays the map's song
-  // from its start; a head that picks no song leaves the map silent.
+  // from its start. With continuous music the song playing goes on until the head picks one.
   void enterMap() override;
+  // A head that picked no song leaves the map silent, as in the original.
+  void mapHeadDone() override;
+
+  // Continuous music (an engine improvement, the option continuous_music): a map whose song is the
+  // one playing lets it go on instead of playing it again from its start; a map with another song
+  // or none still changes it at once. Off, every map plays its song from the start, as the
+  // original does.
+  void setContinuousMusic(bool on) { continuous_ = on; }
+  [[nodiscard]] bool continuousMusic() const { return continuous_; }
 
   // script_interp.c: updateBGM, each tick of the game clock: the song again when the mode or the
   // hour picks another one. Nothing during a battle.
@@ -81,6 +90,8 @@ private:
   const assets::MusicTable* table();
   void stopBgm();
   void playMusic(std::int64_t font, std::int64_t track);
+  // Whether a font's song is the one playing (seqOpen plays the first song for one past the last).
+  [[nodiscard]] bool playing(std::int64_t font, std::int64_t track) const;
   const LoadedFont* load(std::int64_t font);
 
   audio::Audio* audio_;
@@ -98,6 +109,9 @@ private:
   bool tableRead_ = false;
   // tamer.c: GAME_STATE: the clock does not update the music during a battle.
   bool battling_ = false;
+  // The option continuous_music, and whether a map head runs with the song before it still on.
+  bool continuous_ = false;
+  bool carrying_ = false;
 };
 
 } // namespace dwe::session

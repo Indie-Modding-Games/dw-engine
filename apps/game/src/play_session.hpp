@@ -90,6 +90,10 @@ inline constexpr std::string_view CanonicalStagesSetting = "canonical_stages";
 // Long names: a UI setting and the pause menu's command with the same name (true or false), on by
 // default. The naming box takes names of up to LongNameLength letters with it (naming_box.hpp).
 inline constexpr std::string_view LongNamesSetting = "long_names";
+// Continuous music: a UI setting and the pause menu's command with the same name (true or false),
+// on by default. The session's music lets a map's song go on when it is the one playing
+// (session::SessionMusic::setContinuousMusic).
+inline constexpr std::string_view ContinuousMusicSetting = "continuous_music";
 
 // What every game uses of the app; all of it outlives the games.
 struct PlayContext {

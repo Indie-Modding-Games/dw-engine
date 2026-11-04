@@ -94,6 +94,14 @@ game_options = {
     label = "pause_menu.shop_job_bar",
     default = true,
   },
+  -- Continuous music: a map whose song is the one playing lets it go on (on by default; off plays
+  -- every map's song from its start, as the original).
+  {
+    id = "continuous-music",
+    setting = "continuous_music",
+    label = "pause_menu.continuous_music",
+    default = true,
+  },
 }
 
 -- The option's current value: what the game published, or its default.

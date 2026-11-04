@@ -95,14 +95,55 @@ TEST_CASE("every map plays its song from the start, as the original") {
   CHECK(musicLog().starts - before.starts == 3);
 }
 
-TEST_CASE("a map whose head picks no song is silent") {
+TEST_CASE("continuous music lets the song of the maps that share it go on and changes it once") {
   MusicRig rig;
+  rig.music.setContinuousMusic(true);
+  const MusicLog before = musicLog();
+  rig.enterMap(28);
+  rig.enterMap(28);
+  rig.enterMap(28);
+  CHECK(musicLog().starts - before.starts == 1);
+  CHECK(musicLog().stops - before.stops == 1);
+  // Another font: cut and the new song from its start, then it goes on across its maps.
+  rig.enterMap(1);
+  rig.enterMap(1);
+  CHECK(musicLog().starts - before.starts == 2);
+  REQUIRE(rig.music.activeSong().has_value());
+  CHECK(rig.music.activeSong()->font == 1);
+}
+
+TEST_CASE("continuous music changes the song when the hour picks the night one") {
+  MusicRig rig;
+  rig.music.setContinuousMusic(true);
+  const MusicLog before = musicLog();
+  rig.enterMap(28);
+  rig.hour = 22;
+  rig.enterMap(28);
+  CHECK(musicLog().starts - before.starts == 2);
+  REQUIRE(rig.music.activeSong().has_value());
+  CHECK(rig.music.activeSong()->track == 1);
+}
+
+TEST_CASE("a map whose head picks no song is silent") {
+  for (const bool continuous : {false, true}) {
+    MusicRig rig;
+    rig.music.setContinuousMusic(continuous);
+    rig.enterMap(28);
+    const MusicLog before = musicLog();
+    rig.enterMap(std::nullopt);
+    CHECK(musicLog().stops - before.stops == 1);
+    CHECK_FALSE(rig.music.activeSong().has_value());
+    // The next map's song starts again.
+    rig.enterMap(28);
+    CHECK(musicLog().starts - before.starts == 1);
+  }
+}
+
+TEST_CASE("a script's set_bgm outside a map change plays the song from its start") {
+  MusicRig rig;
+  rig.music.setContinuousMusic(true);
   rig.enterMap(28);
   const MusicLog before = musicLog();
-  rig.enterMap(std::nullopt);
-  CHECK(musicLog().stops - before.stops == 1);
-  CHECK_FALSE(rig.music.activeSong().has_value());
-  // The next map's song starts again.
-  rig.enterMap(28);
+  rig.music.playBgm(28);
   CHECK(musicLog().starts - before.starts == 1);
 }

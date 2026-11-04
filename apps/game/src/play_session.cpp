@@ -14,6 +14,7 @@
 #include <dwe/session/field_facts.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/session_music.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_scenes.hpp>
 #include <dwe/ui/minimap.hpp>
@@ -578,6 +579,12 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   context_.ui->setSetting(LongNamesSetting, context.userSettings->longNames.value_or(true));
   // The recruit bars (the shop job's and the stones game's), on unless turned off.
   context_.ui->setSetting(RecruitBarSetting, context.userSettings->shopJobBar.value_or(true));
+  // Continuous music across the maps that share a song, on unless turned off.
+  const bool continuousMusic = context.userSettings->continuousMusic.value_or(true);
+  if (session::SessionMusic* music = game_.session->music(); music != nullptr) {
+    music->setContinuousMusic(continuousMusic);
+  }
+  context_.ui->setSetting(ContinuousMusicSetting, continuousMusic);
   // The canonical stages on the chart, off unless turned on.
   context_.ui->setSetting(CanonicalStagesSetting,
                           context.userSettings->canonicalStages.value_or(false));
@@ -883,6 +890,19 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     if (const bool* shown = std::get_if<bool>(&command.value)) {
       context_.ui->setSetting(RecruitBarSetting, *shown);
       context_.userSettings->shopJobBar = *shown;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    return true;
+  }
+  if (command.name == ContinuousMusicSetting) {
+    if (const bool* continuous = std::get_if<bool>(&command.value)) {
+      if (session::SessionMusic* music = game_.session->music(); music != nullptr) {
+        music->setContinuousMusic(*continuous);
+      }
+      context_.ui->setSetting(ContinuousMusicSetting, *continuous);
+      context_.userSettings->continuousMusic = *continuous;
       if (context_.settingsFile) {
         saveUserSettings(*context_.settingsFile, *context_.userSettings);
       }

@@ -65,6 +65,9 @@ long_names: "Nombres largos"
 # Barra de reclutamiento: mientras un trabajo o una partida decide si alguien se une a la ciudad (la tienda del cañón,
 # el juego de las piedras), una barra enseña cuánto falta (encendida por defecto).
 shop_job_bar: "Barra de reclutamiento"
+# Música continua: un mapa cuya canción ya suena la deja seguir en vez de empezarla otra vez
+# (encendida por defecto).
+continuous_music: "Música continua"
 
 year_label: "Año"
 day_label: "Día"
