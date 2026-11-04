@@ -519,15 +519,21 @@ error en el log (`BadImageOption`).
 
 ### Escala tipográfica
 
-El aspecto moderno usa cinco tamaños de letra para sus propios textos, y ninguno más (`ui/skins/modern/theme.rcss`):
+El aspecto moderno usa cinco tamaños de letra para sus propios textos, y ninguno más (`ui/skins/modern/theme.rcss`).
+Cada tamaño es un papel del texto, no una pantalla: el mismo papel tiene el mismo tamaño en el menú de pausa, en el del
+compañero y en el HUD.
 
-| Tamaño | Uso |
+| Tamaño | Papel |
 |---|---|
-| 14dp | Leyendas: indicaciones de botones y sus teclas, ayudas, etiquetas pequeñas del HUD, cabeceras de columna (con la letra moderna) |
-| 18dp | Cuerpo: entradas de menú, mensajes |
-| 22dp | Etiquetas y valores: filas de listas y de páginas, encabezados de sección, la hora del HUD |
-| 30dp | Títulos: el de un panel, el nombre del mapa |
+| 14dp | Leyendas: indicaciones de botones y sus teclas, ayudas, etiquetas pequeñas del HUD, encabezados de sección y de columna, insignias (vidas, estados del compañero), el subtítulo de la fecha |
+| 18dp | Cuerpo: entradas de menú, pestañas, filas de página (etiqueta y valor), descripciones, mensajes |
+| 22dp | Filas de listas largas (bolsa, tiendas, listas del original), la hora del HUD |
+| 30dp | Títulos: el de un panel, el nombre del compañero en su estado, el nombre del mapa |
 | 48dp | Números grandes |
+
+Peso: negrita para títulos, valores y la entrada o pestaña elegida; regular para el resto. Una sola familia (Noto Sans)
+en los menús modernos, también para los textos que en el aspecto original usan su letra (ver «Aspecto moderno de los
+menús»).
 
 Los textos con la letra del original (familia `original-look`, también los que la opción «Texto con aspecto original»
 dibuja así en el aspecto moderno) se quedan en múltiplos enteros de su celda de 11 píxeles (22dp, 33dp), los únicos
@@ -539,6 +545,32 @@ conserva sus tamaños por ahora. El aspecto original no cambia: sus tamaños son
 Mayúsculas: el aspecto moderno no pone textos en mayúsculas con `text-transform`; un texto sale como está escrito en
 los textos del idioma. Las mayúsculas de las etiquetas copiadas del original en inglés (`POWER`, `RANG`, `SPEC`…) son
 las del original y se quedan.
+
+### Aspecto moderno de los menús
+
+El menú de pausa (`ui/skins/modern/pause_menu/style.rcss`) y el del compañero
+(`ui/skins/modern/partner_menu/style.rcss`) comparten un estilo propio, que solo cambia el aspecto: las teclas, el orden
+de las entradas y lo que hace cada una son los mismos que en el aspecto original (Tab abre el menú, flechas mueven,
+Intro elige, Esc vuelve).
+
+- Panel: tarjeta oscura casi opaca (`#121922`) con borde fino (`#263243`) y esquinas de 12dp, centrada sobre un velo
+  oscuro; el de pausa mide 440dp de ancho y el del compañero 760dp. Dentro, tarjetas más claras (`#1a2330`, esquinas
+  de 10dp) agrupan el retrato, los parámetros, el estado y la descripción de un objeto.
+- Colores por papel: títulos y valores `#e9eef5`, cuerpo `#c9d3de`, etiquetas y leyendas `#9aa8ba`, lo que no se puede
+  elegir `#5d6a7c`; el ámbar `#f2a93b` marca el foco y el dinero. Las barras usan un color por medida (parámetros
+  ámbar, vida verde, energía azul, cansancio violeta) sobre un fondo `#263243` de 6dp.
+- Foco: la entrada con foco lleva una barra ámbar de 3dp a la izquierda y un tinte ámbar de fondo, y su texto pasa a
+  blanco; la pestaña elegida va en negrita con un subrayado ámbar de 2dp. El ratón solo aclara la fila.
+- Movimiento: el panel aparece con un fundido de 0,14 s (`ui/common/panel_enter.lua` pone la clase `panel-enter` dos
+  fotogramas al abrir el documento); el foco cambia de color con una transición de 0,1 s. No hay más animaciones.
+- Letra: Noto Sans en todo el panel, también los nombres de objetos, técnicas y del compañero, que el aspecto original
+  dibuja con su letra; la opción «Texto con aspecto original» sigue aplicándose al nombre del mapa, la caja de
+  historia, el combate y las tiendas.
+
+El aspecto original hereda las hojas del moderno (`extends: modern`), así que pone la clase `skin-original` en el
+`#panel` de cada documento que comparte este panel (`ui/skins/original/skin.yaml`), y las reglas propias del moderno se
+escriben como `#panel:not(.skin-original) …`. Así el aspecto original sigue dibujando sus cajas al píxel sin tener que
+deshacer cada regla moderna; una pantalla nueva que use `#panel` necesita esa clase en el aspecto original.
 
 ## Aspecto original
 
