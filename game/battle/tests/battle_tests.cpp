@@ -456,6 +456,31 @@ TEST_CASE("poison takes 1 to 3 percent of the maximum HP every 100 frames") {
   CHECK(hasEvent(bench.events, EventKind::PoisonDamage));
 }
 
+// battle_main.c: BTL_tickStatusEffects: each poison tick rolls randomLimit(3) + 1 percent of the
+// maximum HP, adds it to the damage on its way, shows it over the fighter in the poison's colour
+// (addEntityText(entity, i, 0xc, dmg, 0)) and, for an enemy, shows its HP bar again. Measured in
+// the original (2026-11-04): 12 over a 400 HP enemy, 24 over the 800 HP partner, no sound.
+TEST_CASE("a poison tick shows the HP it takes over the fighter and brings back the enemy's bar") {
+  Bench bench{duel(evenStats(1000, 100), evenStats(500, 100))};
+  BattleContext context = bench.context();
+  Fighter& enemy = bench.fighter(1);
+  enemy.status.poisoned = true;
+  enemy.status.poisonFrames = 1;
+  enemy.hpBarFrames = context.rules->hud.enemyHpBarFrames;
+  dwe::ruleset::Random expected = bench.random;
+  const std::int32_t damage = 500 * (expected.below(3) + 1) / 100;
+  tickStatusEffects(context);
+  CHECK(bench.random.state() == expected.state());
+  CHECK(enemy.pendingDamage == damage);
+  CHECK(enemy.status.poisonFrames == context.rules->status.poisonEveryFrames);
+  const auto ticks = std::ranges::count_if(bench.events, [&](const BattleEvent& event) {
+    return event.kind == EventKind::PoisonDamage && event.fighter == 1 && event.amount == damage;
+  });
+  CHECK(ticks == 1);
+  tickHpBars(context);
+  CHECK(enemy.hpBarFrames < context.rules->hud.enemyHpBarFrames);
+}
+
 TEST_CASE("stun and confusion last their rolled frames, and a protected fighter gets none") {
   Bench bench{duel(evenStats(1000, 100), evenStats(500, 100))};
   BattleContext context = bench.context();
