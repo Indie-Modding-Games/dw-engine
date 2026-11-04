@@ -104,8 +104,9 @@
 			</div>
 			<div id="finisher">
 				<span class="original-look" id="finisher-label" text-key="battle.finisher"></span>
+				<span class="original-look" id="finisher-word"></span>
 				<div id="finisher-segments"><div class="segment" id="finisher-0"></div><div class="segment" id="finisher-1"></div><div class="segment" id="finisher-2"></div><div class="segment" id="finisher-3"></div><div class="segment" id="finisher-4"></div><div class="segment" id="finisher-5"></div><div class="segment extra" id="finisher-6"></div><div class="segment extra" id="finisher-7"></div></div>
-				<div id="finisher-ready"><span class="key" id="prompt-finisher"></span><div id="finisher-push"></div></div>
+				<div id="finisher-ready"><span class="key" id="prompt-finisher"></span><div id="finisher-push" text-key="battle.finisher_push"></div></div>
 			</div>
 		</div>
 
@@ -295,6 +296,51 @@
 			<div id="bs-152" class="bs hidden"></div>
 			<div id="bs-153" class="bs hidden"></div>
 			<div id="bs-154" class="bs hidden"></div>
+			<div id="bs-155" class="bs hidden"></div>
+			<div id="bs-156" class="bs hidden"></div>
+			<div id="bs-157" class="bs hidden"></div>
+			<div id="bs-158" class="bs hidden"></div>
+			<div id="bs-159" class="bs hidden"></div>
+			<div id="bs-160" class="bs hidden"></div>
+			<div id="bs-161" class="bs hidden"></div>
+			<div id="bs-162" class="bs hidden"></div>
+			<div id="bs-163" class="bs hidden"></div>
+			<div id="bs-164" class="bs hidden"></div>
+			<div id="bs-165" class="bs hidden"></div>
+			<div id="bs-166" class="bs hidden"></div>
+			<div id="bs-167" class="bs hidden"></div>
+			<div id="bs-168" class="bs hidden"></div>
+			<div id="bs-169" class="bs hidden"></div>
+			<div id="bs-170" class="bs hidden"></div>
+			<div id="bs-171" class="bs hidden"></div>
+			<div id="bs-172" class="bs hidden"></div>
+			<div id="bs-173" class="bs hidden"></div>
+			<div id="bs-174" class="bs hidden"></div>
+			<div id="bs-175" class="bs hidden"></div>
+			<div id="bs-176" class="bs hidden"></div>
+			<div id="bs-177" class="bs hidden"></div>
+			<div id="bs-178" class="bs hidden"></div>
+			<div id="bs-179" class="bs hidden"></div>
+			<div id="bs-180" class="bs hidden"></div>
+			<div id="bs-181" class="bs hidden"></div>
+			<div id="bs-182" class="bs hidden"></div>
+			<div id="bs-183" class="bs hidden"></div>
+			<div id="bs-184" class="bs hidden"></div>
+			<div id="bs-185" class="bs hidden"></div>
+			<div id="bs-186" class="bs hidden"></div>
+			<div id="bs-187" class="bs hidden"></div>
+			<div id="bs-188" class="bs hidden"></div>
+			<div id="bs-189" class="bs hidden"></div>
+			<div id="bs-190" class="bs hidden"></div>
+			<div id="bs-191" class="bs hidden"></div>
+			<div id="bs-192" class="bs hidden"></div>
+			<div id="bs-193" class="bs hidden"></div>
+			<div id="bs-194" class="bs hidden"></div>
+			<div id="bs-195" class="bs hidden"></div>
+			<div id="bs-196" class="bs hidden"></div>
+			<div id="bs-197" class="bs hidden"></div>
+			<div id="bs-198" class="bs hidden"></div>
+			<div id="bs-199" class="bs hidden"></div>
 		</div>
 		<div id="banner-pieces">
 			<div id="bp-0" class="bp hidden"><div id="bt-0" class="bt hidden"></div></div>
@@ -452,6 +498,51 @@
 			<div id="bp-152" class="bp hidden"><div id="bt-152" class="bt hidden"></div></div>
 			<div id="bp-153" class="bp hidden"><div id="bt-153" class="bt hidden"></div></div>
 			<div id="bp-154" class="bp hidden"><div id="bt-154" class="bt hidden"></div></div>
+			<div id="bp-155" class="bp hidden"><div id="bt-155" class="bt hidden"></div></div>
+			<div id="bp-156" class="bp hidden"><div id="bt-156" class="bt hidden"></div></div>
+			<div id="bp-157" class="bp hidden"><div id="bt-157" class="bt hidden"></div></div>
+			<div id="bp-158" class="bp hidden"><div id="bt-158" class="bt hidden"></div></div>
+			<div id="bp-159" class="bp hidden"><div id="bt-159" class="bt hidden"></div></div>
+			<div id="bp-160" class="bp hidden"><div id="bt-160" class="bt hidden"></div></div>
+			<div id="bp-161" class="bp hidden"><div id="bt-161" class="bt hidden"></div></div>
+			<div id="bp-162" class="bp hidden"><div id="bt-162" class="bt hidden"></div></div>
+			<div id="bp-163" class="bp hidden"><div id="bt-163" class="bt hidden"></div></div>
+			<div id="bp-164" class="bp hidden"><div id="bt-164" class="bt hidden"></div></div>
+			<div id="bp-165" class="bp hidden"><div id="bt-165" class="bt hidden"></div></div>
+			<div id="bp-166" class="bp hidden"><div id="bt-166" class="bt hidden"></div></div>
+			<div id="bp-167" class="bp hidden"><div id="bt-167" class="bt hidden"></div></div>
+			<div id="bp-168" class="bp hidden"><div id="bt-168" class="bt hidden"></div></div>
+			<div id="bp-169" class="bp hidden"><div id="bt-169" class="bt hidden"></div></div>
+			<div id="bp-170" class="bp hidden"><div id="bt-170" class="bt hidden"></div></div>
+			<div id="bp-171" class="bp hidden"><div id="bt-171" class="bt hidden"></div></div>
+			<div id="bp-172" class="bp hidden"><div id="bt-172" class="bt hidden"></div></div>
+			<div id="bp-173" class="bp hidden"><div id="bt-173" class="bt hidden"></div></div>
+			<div id="bp-174" class="bp hidden"><div id="bt-174" class="bt hidden"></div></div>
+			<div id="bp-175" class="bp hidden"><div id="bt-175" class="bt hidden"></div></div>
+			<div id="bp-176" class="bp hidden"><div id="bt-176" class="bt hidden"></div></div>
+			<div id="bp-177" class="bp hidden"><div id="bt-177" class="bt hidden"></div></div>
+			<div id="bp-178" class="bp hidden"><div id="bt-178" class="bt hidden"></div></div>
+			<div id="bp-179" class="bp hidden"><div id="bt-179" class="bt hidden"></div></div>
+			<div id="bp-180" class="bp hidden"><div id="bt-180" class="bt hidden"></div></div>
+			<div id="bp-181" class="bp hidden"><div id="bt-181" class="bt hidden"></div></div>
+			<div id="bp-182" class="bp hidden"><div id="bt-182" class="bt hidden"></div></div>
+			<div id="bp-183" class="bp hidden"><div id="bt-183" class="bt hidden"></div></div>
+			<div id="bp-184" class="bp hidden"><div id="bt-184" class="bt hidden"></div></div>
+			<div id="bp-185" class="bp hidden"><div id="bt-185" class="bt hidden"></div></div>
+			<div id="bp-186" class="bp hidden"><div id="bt-186" class="bt hidden"></div></div>
+			<div id="bp-187" class="bp hidden"><div id="bt-187" class="bt hidden"></div></div>
+			<div id="bp-188" class="bp hidden"><div id="bt-188" class="bt hidden"></div></div>
+			<div id="bp-189" class="bp hidden"><div id="bt-189" class="bt hidden"></div></div>
+			<div id="bp-190" class="bp hidden"><div id="bt-190" class="bt hidden"></div></div>
+			<div id="bp-191" class="bp hidden"><div id="bt-191" class="bt hidden"></div></div>
+			<div id="bp-192" class="bp hidden"><div id="bt-192" class="bt hidden"></div></div>
+			<div id="bp-193" class="bp hidden"><div id="bt-193" class="bt hidden"></div></div>
+			<div id="bp-194" class="bp hidden"><div id="bt-194" class="bt hidden"></div></div>
+			<div id="bp-195" class="bp hidden"><div id="bt-195" class="bt hidden"></div></div>
+			<div id="bp-196" class="bp hidden"><div id="bt-196" class="bt hidden"></div></div>
+			<div id="bp-197" class="bp hidden"><div id="bt-197" class="bt hidden"></div></div>
+			<div id="bp-198" class="bp hidden"><div id="bt-198" class="bt hidden"></div></div>
+			<div id="bp-199" class="bp hidden"><div id="bt-199" class="bt hidden"></div></div>
 		</div>
 		</div>
 	</div>

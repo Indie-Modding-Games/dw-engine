@@ -13,7 +13,9 @@ local max_flee = 8
 -- Four fighters with up to 8 numbers each, of up to 4 digits (entity_text.c: ENTITY_TEXT_DATA).
 local max_numbers = 32
 local number_digits = 4
-local banner_pieces = 155
+-- The banner's slots (screens::BannerPieceSlots): a word in another language may take more pieces
+-- than the original's 155.
+local banner_pieces = 200
 -- The command strip's edges once it is in place, in the original's screen lines (0 at the middle;
 -- command_menu.c: BTL_COMMAND_MENU_SLIDE_X and _Y), and the icons' height there.
 local strip_top = -100
@@ -279,6 +281,13 @@ local function draw_finisher(document)
   for index = 0, finisher_marks - 1 do
     lookup(document, "finisher-" .. index):set_class("filled", index < filled)
   end
+  -- The same word in the player's language, as many of its letters as the gauge has marks lit
+  -- (the original look shows it where the original's English picture is not used).
+  local word = t("battle.finisher_word")
+  local letters = utf8.len(word) or #word
+  local shown = math.floor(letters * filled / finisher_marks)
+  local stop = utf8.offset(word, shown + 1) or (#word + 1)
+  lookup(document, "finisher-word"):set_text(string.sub(word, 1, stop - 1))
   lookup(document, "finisher"):set_class("ready", ready)
   local charging = setting("battle.finisher.charging", false)
   lookup(document, "charge"):set_class("hidden", not charging)

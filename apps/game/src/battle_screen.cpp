@@ -8,6 +8,7 @@
 #include <dwe/game/battle/text_keys.hpp>
 #include <dwe/game/inventory/use.hpp>
 #include <dwe/game/story/story_ports.hpp>
+#include <dwe/localization/catalog.hpp>
 #include <dwe/render/map_camera.hpp>
 #include <dwe/screens/bag_view.hpp>
 
@@ -238,7 +239,9 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   core::logInfo("{}", core::formatMessage(messages::BattleStarted, enemies, map));
   // btl.c: handleBattleStart marks each enemy with an anger bubble before the battle loads, and
   // battle_setup.c: BTL_handleBattleIntro shows the "BATTLE" banner before the fight starts.
-  intro_.emplace(battlesStarted_++);
+  // The banner spells the word in the player's language; English draws the original's pieces.
+  intro_.emplace(battlesStarted_++,
+                 screens::bannerPlacesOf(localization::tr(game::battle::BannerShapeTextKey)));
   // The command strip opens with the banner (BTL_initializeCombat, just before it).
   menu_ = {};
   // BTL_initializePartnerStatusBars: the partner's bars wait off the right edge.

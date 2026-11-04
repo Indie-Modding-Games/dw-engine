@@ -19,5 +19,7 @@ std::string_view statusTextKey(StatusEffect status);
 // The line of the bits won.
 inline constexpr std::string_view BitsWonTextKey = "battle.result.bits";
 inline constexpr std::string_view ReviveCountdownTextKey = "battle.revive_countdown";
+// The word of the banner that opens a battle, drawn in cells (screens::bannerPlacesOf).
+inline constexpr std::string_view BannerShapeTextKey = "battle.banner_shape";
 
 } // namespace dwe::game::battle

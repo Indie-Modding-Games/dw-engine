@@ -40,6 +40,22 @@ number_icon.speed: "SPD"
 # {seconds} is the time left to get back up.
 revive_countdown: "Get up! {seconds}"
 finisher: "Finisher"
+# The finisher gauge's word and the "press" mark once it is full, which the original look draws over the gauge
+# (one more letter of the word for each step the gauge fills; in English it shows the original's pictures).
+finisher_word: "FINISH!!"
+finisher_push: "PUSH"
+# The word of the banner that opens a battle, in cells of the original's banner pieces: '#' a piece,
+# '.' a gap, 8 rows; a letter ends at a column with no piece, and at most 200 pieces fit. English
+# draws the original's own word.
+banner_shape: |-
+  #####.....##....######..######.##.....######
+  ##..##....##......##......##...##.....##....
+  ##..##...####.....##......##...##.....##....
+  #####...##..##....##......##...##.....######
+  ##..##..##..##....##......##...##.....##....
+  ##..##.########...##......##...##.....##....
+  ##..##.##....##...##......##...##.....##....
+  #####..##....##...##......##...######.######
 charge: "Charge the finisher!"
 charge_hint: "Press repeatedly"
 prompt.command: "Give the order"

@@ -37,6 +37,23 @@ enum class IntroStep : std::uint8_t { Anger, Banner, Burst, Done };
 // The banner's pieces of the original (battle_effect.c: BTL_BATTLE_START_TEXT_POSITIONS): 8 x 12
 // cells of a plane that spell "BATTLE".
 inline constexpr std::size_t BannerPieceCount = 155;
+// The pieces the battle document has room for: a banner in another language may have more.
+inline constexpr std::size_t BannerPieceSlots = 200;
+
+// Where a piece of the banner ends on its plane: the top-left corner of its 8 x 12 cell.
+struct BannerPlace {
+  std::int32_t x = 0;
+  std::int32_t y = 0;
+
+  friend bool operator==(const BannerPlace&, const BannerPlace&) = default;
+};
+
+// The banner's word as the language draws it (battle.banner_shape): rows of cells, '#' a piece and
+// any other character a gap, centred on the plane as the original's word is. The pieces go letter
+// by letter (a letter ends at a column with no piece), each letter row by row, as the original
+// lists them, so the first third of them flies in from farthest. Nothing when the drawing has no
+// piece or more than BannerPieceSlots.
+[[nodiscard]] std::vector<BannerPlace> bannerPlacesOf(std::string_view shape);
 
 // A piece of the banner as it shows: a rectangle on the original's 320 x 240 screen, which of the
 // three textures it wears, and the trail behind it while it flies, on its left or its right.
@@ -60,7 +77,9 @@ using AngerAnchor = std::optional<WindowFraction>;
 // original's (randomLimit), from a seed, so that a route sees the same opening every time.
 class BattleIntro {
 public:
-  explicit BattleIntro(std::uint32_t seed);
+  // `places` is the banner of the player's language (bannerPlacesOf); without them, the original's
+  // "BATTLE".
+  explicit BattleIntro(std::uint32_t seed, std::vector<BannerPlace> places = {});
 
   // One frame of the original's battle.
   void step();
@@ -113,7 +132,8 @@ private:
   std::int32_t flashFrames_ = 0;
   bool gathered_ = false;
   bool burstHeld_ = false;
-  std::array<Piece, BannerPieceCount> pieces_{};
+  std::vector<BannerPlace> places_;
+  std::vector<Piece> pieces_;
 };
 
 // What the battle document shows of the opening: its step, the anger marks over the enemies (in

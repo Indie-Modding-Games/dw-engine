@@ -142,6 +142,11 @@
 	display: inline-block;
 }
 
+/* The original look's word over the gauge; this look writes battle.finisher before the segments. */
+#finisher-word {
+	display: none;
+}
+
 .segment {
 	display: inline-block;
 	width: 30dp;

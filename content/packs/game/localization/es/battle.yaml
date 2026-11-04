@@ -42,6 +42,19 @@ number_icon.speed: "VEL"
 # {seconds} es el tiempo que queda para levantarse.
 revive_countdown: "¡Levántate! {seconds}"
 finisher: "Golpe final"
+finisher_word: "¡REMATE!"
+finisher_push: "PULSA"
+# La palabra del rótulo que abre un combate, en celdas de sus piezas: '#' una pieza, '.' un hueco,
+# 8 filas; una letra acaba en una columna sin piezas y caben 200 piezas como mucho.
+banner_shape: |-
+  #####....##...######...##...##....##......##..
+  ##..##..####....##....####..##....##.....####.
+  ##..##.##..##...##...##..##.##....##....##..##
+  #####..##..##...##...##..##.##....##....##..##
+  ##..##.######...##...######.##....##....######
+  ##..##.##..##...##...##..##.##....##....##..##
+  ##..##.##..##...##...##..##.##....##....##..##
+  #####..##..##...##...##..##.#####.#####.##..##
 charge: "¡Carga el golpe final!"
 charge_hint: "Pulsa una y otra vez"
 prompt.command: "Dar la orden"

@@ -128,6 +128,24 @@
 	display: none;
 }
 
+/* In any language but English the gauge's word is battle.finisher_word in the original's font, where the picture
+   of "FINISH!!" is, one letter more for each mark the gauge lights (logic.lua: draw_finisher). */
+#finisher-word {
+	display: block;
+	position: absolute;
+	left: 27dp;
+	top: 63dp;
+	height: 45dp;
+	line-height: 45dp;
+	font-size: 33dp;
+	white-space: nowrap;
+	color: #f8c800;
+}
+
+.use-menu-art #finisher-word {
+	display: none;
+}
+
 #finisher-segments {
 	display: block;
 	position: absolute;
@@ -152,21 +170,21 @@
 }
 
 #finisher-0 { left: 27dp; width: 18dp; }
-#finisher-0.filled { decorator: image(finish-0); }
+.use-menu-art #finisher-0.filled { decorator: image(finish-0); }
 #finisher-1 { left: 45dp; width: 12dp; }
-#finisher-1.filled { decorator: image(finish-1); }
+.use-menu-art #finisher-1.filled { decorator: image(finish-1); }
 #finisher-2 { left: 57dp; width: 24dp; }
-#finisher-2.filled { decorator: image(finish-2); }
+.use-menu-art #finisher-2.filled { decorator: image(finish-2); }
 #finisher-3 { left: 81dp; width: 12dp; }
-#finisher-3.filled { decorator: image(finish-3); }
+.use-menu-art #finisher-3.filled { decorator: image(finish-3); }
 #finisher-4 { left: 93dp; width: 24dp; }
-#finisher-4.filled { decorator: image(finish-4); }
+.use-menu-art #finisher-4.filled { decorator: image(finish-4); }
 #finisher-5 { left: 117dp; width: 24dp; }
-#finisher-5.filled { decorator: image(finish-5); }
+.use-menu-art #finisher-5.filled { decorator: image(finish-5); }
 #finisher-6 { left: 141dp; width: 15dp; }
-#finisher-6.filled { decorator: image(finish-6); }
+.use-menu-art #finisher-6.filled { decorator: image(finish-6); }
 #finisher-7 { left: 156dp; width: 15dp; }
-#finisher-7.filled { decorator: image(finish-7); }
+.use-menu-art #finisher-7.filled { decorator: image(finish-7); }
 
 #finisher-ready {
 	display: none;
@@ -203,9 +221,18 @@
 #finisher-push {
 	display: inline-block;
 	vertical-align: top;
-	width: 81dp;
+	min-width: 81dp;
 	height: 27dp;
+	line-height: 27dp;
+	font-family: original-look;
+	font-size: 22dp;
+	color: #f8a800;
+}
+
+.use-menu-art #finisher-push {
+	width: 81dp;
 	decorator: image(finish-push);
+	color: transparent;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------

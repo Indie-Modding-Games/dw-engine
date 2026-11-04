@@ -49,6 +49,9 @@ constexpr std::int32_t TrailShrink = 4;
 // 32, 64 or 96 a frame.
 constexpr std::array<std::int32_t, 3> StartDistances{500, 600, 700};
 constexpr std::array<std::size_t, 2> ThirdsFrom{0x33, 0x65};
+// A banner in another language has its thirds at the same share of its pieces.
+constexpr char ShapePiece = '#';
+constexpr char ShapeRowEnd = '\n';
 constexpr std::int32_t StartSpread = 100;
 constexpr std::int32_t SpeedStep = 32;
 constexpr std::int32_t Textures = 3;
@@ -192,7 +195,62 @@ std::string packed(const std::vector<BannerPiece>& pieces) {
 
 } // namespace
 
-BattleIntro::BattleIntro(std::uint32_t seed) : random_(seed) {}
+std::vector<BannerPlace> bannerPlacesOf(std::string_view shape) {
+  std::vector<std::string_view> rows;
+  for (std::size_t start = 0; start <= shape.size();) {
+    const std::size_t end = std::min(shape.find(ShapeRowEnd, start), shape.size());
+    rows.push_back(shape.substr(start, end - start));
+    start = end + 1;
+  }
+  while (!rows.empty() && rows.back().find(ShapePiece) == std::string_view::npos) {
+    rows.pop_back();
+  }
+  std::size_t columns = 0;
+  for (const std::string_view row : rows) {
+    columns = std::max(columns, row.size());
+  }
+  const auto filled = [&rows](std::size_t row, std::size_t column) {
+    return column < rows.at(row).size() && rows.at(row).at(column) == ShapePiece;
+  };
+  // Centred as the original's columns are: every x a multiple of 8 plus 4, so no piece sits on the
+  // plane's centre (which would never drift off in the burst).
+  const auto left = (static_cast<std::int32_t>(columns) / 2) * -PieceWidth + (PieceWidth / 2);
+  const auto top = (static_cast<std::int32_t>(rows.size()) / 2) * -PieceHeight;
+  std::vector<BannerPlace> places;
+  std::size_t letterStart = 0;
+  for (std::size_t column = 0; column <= columns; ++column) {
+    bool empty = true;
+    for (std::size_t row = 0; row < rows.size() && column < columns; ++row) {
+      empty = empty && !filled(row, column);
+    }
+    if (!empty) {
+      continue;
+    }
+    for (std::size_t row = 0; row < rows.size(); ++row) {
+      for (std::size_t inLetter = letterStart; inLetter < column; ++inLetter) {
+        if (filled(row, inLetter)) {
+          places.push_back({.x = left + (static_cast<std::int32_t>(inLetter) * PieceWidth),
+                            .y = top + (static_cast<std::int32_t>(row) * PieceHeight)});
+        }
+      }
+    }
+    letterStart = column + 1;
+  }
+  if (places.size() > BannerPieceSlots) {
+    places.clear();
+  }
+  return places;
+}
+
+BattleIntro::BattleIntro(std::uint32_t seed, std::vector<BannerPlace> places)
+    : random_(seed), places_{std::move(places)} {
+  if (places_.empty()) {
+    for (const auto& [x, y] : PiecePlaces) {
+      places_.push_back({.x = x, .y = y});
+    }
+  }
+  pieces_.resize(places_.size());
+}
 
 std::int32_t BattleIntro::randomLimit(std::int32_t limit) {
   return std::uniform_int_distribution<std::int32_t>{0, limit - 1}(random_);
@@ -223,19 +281,21 @@ void BattleIntro::startBanner() {
   frame_ = 0;
   for (std::size_t index = 0; index < pieces_.size(); ++index) {
     Piece& piece = pieces_.at(index);
-    const auto& place = PiecePlaces.at(index);
+    const BannerPlace& place = places_.at(index);
     piece.trail = TrailLength;
     piece.texture = static_cast<std::uint8_t>(randomLimit(Textures));
     const std::int32_t side = randomLimit(2) == 1 ? 1 : -1;
-    piece.y = place[1];
-    piece.targetX = place[0];
+    piece.y = place.y;
+    piece.targetX = place.x;
     piece.speed = -side * ((randomLimit(Textures) + 1) * SpeedStep);
+    // The original's thirds of its 155 pieces, at the same share of another banner's.
+    const std::size_t scaled = index * BannerPieceCount / pieces_.size();
     const auto third = static_cast<std::size_t>(
-        std::ranges::count_if(ThirdsFrom, [index](std::size_t from) { return index >= from; }));
+        std::ranges::count_if(ThirdsFrom, [scaled](std::size_t from) { return scaled >= from; }));
     piece.x = (side * StartDistances.at(third)) + randomLimit(StartSpread) - (StartSpread / 2);
     const std::int32_t drift = randomLimit(DriftSpread) + DriftEighths;
-    piece.driftX = drift * place[0] / DriftEighths;
-    piece.driftY = drift * place[1] / DriftEighths;
+    piece.driftX = drift * place.x / DriftEighths;
+    piece.driftY = drift * place.y / DriftEighths;
     piece.angles = {};
   }
 }
