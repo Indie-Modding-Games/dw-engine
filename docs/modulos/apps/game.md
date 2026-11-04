@@ -273,6 +273,15 @@ Suposiciones:
 - La mariposa no se ha medido en pantalla (el estado de solo enfurruñado no se pudo forzar por RAM); sus números son
   los de `renderButterfly`.
 
+Objetos del suelo y cofres al cambiar de mapa (#176): `map.c: changeMap` borra los objetos sueltos y los cofres
+(`clearDroppedItems`, `unloadMap`) al cargar el mapa nuevo, antes de su guion de cabecera, que pone los del mapa nuevo.
+`PlaySession` llama a `FieldItems::enterMap` con el mapa nuevo justo tras `FieldScene::finishTick`, en el mismo punto.
+Antes solo lo hacía `FieldItemsScreen::tick`, que no corre hasta que acaba el fundido de entrada: durante ese fundido
+`FieldItemsScreen::show` seguía dibujando los objetos y cofres del mapa anterior en sus coordenadas, encima del mapa
+nuevo. Prueba: `field_items_tests` "map.c changeMap: another map clears the last one's ground and chests, its own
+stay"; en la captura cuadro a cuadro de room08 → twna01 con una carne soltada en room08, antes se veía sobre la hierba
+de twna01 los 20 cuadros del fundido de entrada y desaparecía en el último; ahora no sale.
+
 ## Escena final
 
 `EndingScene` juega la última escena (`call_partner_routine 6`, que pide la rutina 53; en el original, el tick final del

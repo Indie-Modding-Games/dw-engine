@@ -139,3 +139,23 @@ TEST_CASE("item.c spawnDroppedItems: a drop on a wall lies on the nearest free c
     CHECK_FALSE(dropCell(walled, collisionCellCenter({.column = 50, .row = 50})).has_value());
   }
 }
+
+TEST_CASE("map.c changeMap: another map clears the last one's ground and chests, its own stay") {
+  FieldItems items{{.groundSlots = 2, .chestSlots = 2, .reachCells = 1}};
+  items.enterMap("room08");
+  const dwe::assets::ItemHandle item = table().handleOf(table().entries().front());
+  REQUIRE(items.spawn(item, {.column = 48, .row = 62}, 0.0F));
+  REQUIRE(items.spawnChest(ogreChest(false)));
+  REQUIRE_FALSE(items.ground().empty());
+
+  // The map change: nothing of room08 is left to draw over the next map's fade in.
+  items.enterMap("twna01");
+  CHECK(items.ground().empty());
+  CHECK(items.chests().empty());
+
+  // The new map's head script spawns its own; naming the same map again keeps them.
+  REQUIRE(items.spawnChest(ogreChest(true)));
+  items.enterMap("twna01");
+  REQUIRE(items.chests().size() == 1);
+  CHECK(items.chests().front()->taken);
+}

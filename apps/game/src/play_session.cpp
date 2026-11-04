@@ -827,6 +827,9 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent,
     game_.session->tick(TickSeconds);
     applyStoryMapEdits(*scene_, game_.systems.storyOrders);
     scene_->finishTick();
+    // map.c: changeMap clears the last map's dropped items and chests as the new map loads, before
+    // its head script spawns this map's: none of them is drawn over the new map's fade in.
+    game_.systems.fieldItems->items().enterMap(scene_->field().mapId());
     storyLink_->afterMapChange();
     if (auto notice = storyLink_->takeLockNotice()) {
       showLockNotice(*notice);
