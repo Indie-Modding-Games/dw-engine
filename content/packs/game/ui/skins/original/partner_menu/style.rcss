@@ -891,8 +891,10 @@ button:focus .original-look, button.original-look:focus {
     position: absolute; top: 0; height: 42dp; box-sizing: border-box; margin: 0; padding: 0; line-height: 36dp;
 }
 #status-species { left: 117dp; width: 732dp; }
-#status-age { left: 117dp; width: 78dp; }
-#status-weight { left: 333dp; width: 78dp; }
+/* Age and weight are right-aligned two-digit fields (game_menu.c: the partner stats view, renderNumber with n = 2):
+   a one-digit age stands in the field's second cell (screen x 59 in the capture), not at its left edge. */
+#status-age { left: 117dp; width: 78dp; text-align: right; padding-right: 24dp; }
+#status-weight { left: 333dp; width: 78dp; text-align: right; padding-right: 18dp; }
 #status-name-label, #status-species-label, #status-age-label, #status-weight-label {
     position: absolute; display: block; height: 30dp; color: transparent; font-size: 0;
 }
@@ -996,11 +998,13 @@ button:focus .original-look, button.original-look:focus {
 #status-condition .bar-row { height: 42dp; }
 
 /* The numbers are right-aligned in the original's four-digit fields (utils.c: renderNumber, 8 pixels a digit):
-   HP and MP now ending at x 75 and at most at x 135, the other stats at x 71. */
+   HP and MP now ending at x 75 and at most at x 135, the other stats at x 71. Measured against the status capture
+   (2026-11-03): the last digit of HP and MP ends at screen x 224 and 284, the other stats' at 224; the cells sit 9 and
+   5 pixels further left than they did. */
 #status-parameters .value, #status-parameters .pool-max { text-align: right; }
-#status-parameters .value { left: 117dp; width: 150dp; }
-#status-parameters .pool .value { left: 129dp; width: 150dp; }
-#status-parameters .pool-max { left: 309dp; width: 150dp; }
+#status-parameters .value { left: 102dp; width: 150dp; }
+#status-parameters .pool .value { left: 102dp; width: 150dp; }
+#status-parameters .pool-max { left: 282dp; width: 150dp; }
 
 /* The original's labels are English pictures; in other languages the page writes them with the font: headings in
    the yellow of the Tech page's, field labels in the pictures' cyan, the small column headings in capitals with the

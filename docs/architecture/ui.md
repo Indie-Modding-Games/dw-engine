@@ -611,7 +611,16 @@ del disco; el resto de imágenes de la UI se siguen filtrando.
 | Minimapa | Solo con el ajuste `minimap` en `on`: un cuadro del original. Con `auto` no se ve (el original no tiene) | Diferencia opcional |
 
 **Captura frente a descompilación.** En las capturas de referencia el campo sale 6 líneas más abajo que las
-coordenadas de la descompilación y el combate 6 más arriba; las hojas usan lo que se ve (la captura) y lo dicen. La
+coordenadas de la descompilación y el combate 6 más arriba; las hojas usan lo que se ve (la captura) y lo dicen. Medido
+de nuevo con los menús (2026-11-03, capturas de `dw-original` y de `_work/ref-duckstation/ref`): las capturas
+estiran en vertical las 228 líneas que se ven a 240 (×1,053 respecto al centro de la pantalla) y no tocan la
+horizontal. Con esa corrección, los bordes de la caja del menú (40 a 150), de la ficha y del jugador (31 a 221) y de
+la bolsa (16 a 126 y 197 a 225) caen donde dice la descompilación (`createMenuBox`, `createInventoryView`) y donde
+los dibuja el aspecto, a un píxel; sin ella parecen 5 o 6 píxeles más altos. Para comparar, la captura se encoge a 228
+líneas y se centra antes de medir. Las cifras de la ficha (HP, MP y los parámetros, la edad y el peso) van a la derecha de
+sus campos, como las escribe `renderNumber` en la ficha del compañero (`game_menu.c`): una edad de una cifra queda en
+la segunda celda; medidas contra la captura, la última cifra acaba en el mismo píxel (antes, 9 píxeles a la derecha
+en HP y MP, 5 en los demás y la edad 8 a la izquierda). La
 rejilla de la bolsa con varias filas sale de la descompilación (`createInventoryView`) y sus medidas de la captura con
 un objeto.
 
