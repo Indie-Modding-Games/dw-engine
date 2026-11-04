@@ -430,7 +430,6 @@ bool GameSession::playing() const {
 }
 
 void GameSession::tick(double realSeconds) {
-  partnerEvents_.clear();
   followRules();
   followMap();
   advanceGameTime(realSeconds);

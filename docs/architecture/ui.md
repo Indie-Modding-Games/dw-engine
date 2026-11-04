@@ -175,8 +175,8 @@ con valor entero.
 | `hud.clock.day`, `hud.clock.year` | desde 1 | El día del año (1–30 con `days_per_year: 30`) y el año, contados desde 1 como los enseña el menú del original (`game_menu.c: renderDateDigits`: `DAY + 1`, `YEAR + 1`); el reloj los guarda desde 0 |
 | `hud.meter.<i>.{value,min,max}` | números | Felicidad (0) y disciplina (1), con su rango del ruleset: −100 a 100 y 0 a 100 en `original` (`partner_impl.c: tickConditionBoundaries`) |
 | `hud.meter.<i>.{label,two_tone}` | clave, booleano | Una vez: las claves `partner_menu.happiness` y `partner_menu.discipline`, y `true`: las dos son barras de dos tonos, que se llenan del mínimo a la mitad del rango y otra vez, en otro color, de la mitad al máximo (`partner_impl.c: renderStatusBars`) |
-| `hud.need.<i>.active` | booleano | Hambre (0), sueño (1), baño (2) y cansancio (3): si el compañero tiene ahora esa necesidad, es decir, la condición `hungry`, `sleepy`, `needs_toilet` o `tired` (ver abajo cuándo) |
-| `hud.need.<i>.label` | clave | Una vez: `hud.need.hunger`, `hud.need.sleep`, `hud.need.toilet`, `hud.need.tired` |
+| `hud.need.<i>.active` | booleano | Hambre (0), sueño (1), baño (2), cansancio (3), herida (4) y enfermedad (5): si el compañero tiene ahora esa necesidad, es decir, la condición `hungry`, `sleepy`, `needs_toilet`, `tired`, `injured` o `sick` (ver abajo cuándo) |
+| `hud.need.<i>.label` | clave | Una vez: `hud.need.hunger`, `hud.need.sleep`, `hud.need.toilet`, `hud.need.tired`, `hud.need.injured`, `hud.need.sick` |
 | `hud.pool.<i>.{value,max}` | números | HP (0) y MP (1): lo que le queda y su máximo |
 | `hud.pool.<i>.label` | clave | Una vez: las etiquetas del original, `main.stat_labels.0000` (HP) y `.0001` (MP) |
 | `hud.partner.area` | 0, 1, 2 | Lo que le parece al compañero el mapa en el que está, con los números del original (`MAP_TILE_DATA.partnerAreaResponse`): 0 nada en especial, 1 le gusta, 2 no le gusta. Va con `hud.revision`, como el resto del estado. El original lo calcula al cargar el mapa (`map.c: loadMapSetup`): recorre a la vez, casilla a casilla, las dos listas de regiones del mapa (`regions.a` y `regions.b` de `map/<id>/data.yaml`) y la primera casilla de cualquiera de las dos que tenga la región favorita de la especie (`favored_region` de `data/raise`) decide: la lista `a` da 1 y la `b` da 2. La sesión lo calcula igual al entrar en cada mapa (`game/partner`: `areaResponseOf`; `GameSession::areaResponse`), y lo usan también las reglas del cuidado (`CareContext::area`, `SleepContext::area`) |
@@ -195,6 +195,8 @@ burbuja sobre el compañero (`bubble.c`; por prioridad, sueño, cansancio, hambr
 | Sueño | Al entrar en su franja de sueño (`partner_impl.c: tickSleepMechanics`) | A la hora de despertar |
 | Baño | Cuando el contador del baño llega a 0 (`partner_impl.c: tickPoopingMechanic`) | Tras `(disciplina + 20) × 0,6` minutos de juego, haciéndolo donde está |
 | Cansancio | Cuando el cansancio llega a 80 (`tired_threshold` del ruleset; `partner_impl.c: tickTirednessMechanics`) | No acaba sola: el cansancio baja descansando o durmiendo, y la condición se va al bajar de 80 |
+| Herida | Por azar al acabar un combate (`Partner::applyBattle`) | No acaba sola: se cura con una medicina, y a las 12 horas de juego se vuelve enfermedad (`partner_impl.c: tickSicknessMechanics`) |
+| Enfermedad | Por falta de sueño, por un mapa que no le gusta, por una herida sin curar o por comida (`partner_impl.c: tickSicknessMechanics`) | No acaba sola: se cura con una medicina o en el hospital; a las 12 horas de juego pierde una vida |
 
 Estos plazos son reglas del compañero (`game/partner`, ruleset `original`); el contrato solo publica si la necesidad
 está.
@@ -252,11 +254,11 @@ El contrato no lo publica: `shown` sigue puesta mientras dura la necesidad, y el
 original lo hace con una animación RCSS (`need-bubble-blink`, 3 s: 0,5 s creciendo, 2 s quieta, 0,5 s sin verse);
 el moderno no enseña la burbuja.
 
-**Hueco conocido: herida y enfermedad.** El original tiene también burbujas para un compañero herido y uno enfermo,
-por debajo del baño en la prioridad (`partner_impl.c: handleConditionBubble`: bits `0x20` y `0x40` de la condición,
-burbujas 6 y 2). El compañero ya tiene esas condiciones (`injured`, `sick`), pero el contrato no las publica como
-necesidades, así que la burbuja compartida no las enseña: con solo una de ellas no sale burbuja, y con ellas y una
-necesidad sale la necesidad. Queda pendiente decidir cómo publicarlas.
+**Herida y enfermedad.** Van por debajo del baño en la prioridad (`partner_impl.c: handleConditionBubble`: bits
+`0x20` y `0x40` de la condición, burbujas 6 y 2: la venda de `CONDITION_SPRITES[8]` y la jeringuilla de
+`CONDITION_SPRITES[7]`, de las que el aspecto original dibuja el primer cuadro). Al ponerse enfermo, el original además
+para la hora y abre el cuadro de los premios con el nombre del compañero y `main.partner_impl_is_sick.0000`
+(`partner_impl.c: tickSicknessMechanics`; ver `award_notice` en el juego).
 
 Las constantes (25 cuadritos, 6° por minuto, 15° por hora, las 6 y las 17) están con nombre al principio del
 script, con su referencia a `clock.c` o `partner_impl.c`. Al cambiar de aspecto (el ajuste `ui_skin`) el script vuelve a

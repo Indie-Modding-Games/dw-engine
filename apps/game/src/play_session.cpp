@@ -1226,6 +1226,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
         row != nullptr ? row->height : 0, row != nullptr ? row->radius : 0, healing->ring);
   }
   const auto partnerEvents = session.takePartnerEvents();
+  if (fellSick(partnerEvents)) {
+    awardScreen_.noteSickness(partnerNameOf(session, species_ ? &*species_ : nullptr));
+  }
   showPartnerEvents(deathScene_.take(evolutionScene_.take(partnerEvents)), session, *scene_);
   guardFactsChanged = guardFactsChanged || !partnerEvents.empty() ||
                       (battleRanLastFrame_ && !battleScreen_.active());

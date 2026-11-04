@@ -45,11 +45,14 @@ TEST_CASE("the field HUD shows the clock, the two bars, the needs and HP and MP 
   CHECK(view.clock.year == 1);
   CHECK(view.meters.at(0) == dwe::screens::FieldMeterView{.value = -30, .min = -100, .max = 100});
   CHECK(view.meters.at(1) == dwe::screens::FieldMeterView{.value = 70, .min = 0, .max = 100});
-  // Hunger, toilet and tiredness; sickness is not one of the needs.
+  // Hunger, toilet, tiredness and sickness (partner_impl.c: handleConditionBubble shows a bubble
+  // for each); no sleep nor injury.
   CHECK(view.needs.at(0));
   CHECK_FALSE(view.needs.at(1));
   CHECK(view.needs.at(2));
   CHECK(view.needs.at(3));
+  CHECK_FALSE(view.needs.at(4));
+  CHECK(view.needs.at(5));
   CHECK(view.pools.at(0) == dwe::screens::FieldPoolView{.current = 650, .max = 900});
   CHECK(view.pools.at(1) == dwe::screens::FieldPoolView{.current = 120, .max = 400});
 }
@@ -96,6 +99,8 @@ TEST_CASE("the field HUD's settings name each value and each label once") {
   CHECK(*find(labels, "hud.need.1.label") == dwe::ui::UiValue{std::string{"hud.need.sleep"}});
   CHECK(*find(labels, "hud.need.2.label") == dwe::ui::UiValue{std::string{"hud.need.toilet"}});
   CHECK(*find(labels, "hud.need.3.label") == dwe::ui::UiValue{std::string{"hud.need.tired"}});
+  CHECK(*find(labels, "hud.need.4.label") == dwe::ui::UiValue{std::string{"hud.need.injured"}});
+  CHECK(*find(labels, "hud.need.5.label") == dwe::ui::UiValue{std::string{"hud.need.sick"}});
   // The original's labels of HP and MP (main.stat_labels).
   CHECK(*find(labels, "hud.pool.0.label") ==
         dwe::ui::UiValue{std::string{"main.stat_labels.0000"}});

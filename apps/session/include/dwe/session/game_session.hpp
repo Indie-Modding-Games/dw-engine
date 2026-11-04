@@ -272,7 +272,8 @@ public:
   // A story order changes the tamer's record (script_interp.c: scriptInstruction28to3F).
   void setTamerRecord(const TamerRecord& record);
 
-  // The partner's events of the last tick and of the commands since, for the UI.
+  // The partner's events since the last call, of every tick and command, for the UI: a frame that
+  // runs several ticks takes them all.
   [[nodiscard]] std::vector<game::partner::PartnerEvent> takePartnerEvents();
 
   // The player's commands to the partner, which route the events they cause.

@@ -551,6 +551,25 @@ TEST_CASE("a partner that dies is reborn as a baby") {
   CHECK(std::ranges::find(Babies, session->partner().state().species) != Babies.end());
 }
 
+TEST_CASE("the partner's events wait for the game to take them, whatever the ticks between") {
+  // The game takes them once a frame and runs as many ticks as the frame's time needs: an event of
+  // any of them (a sickness, a death) reaches its notice or its scene.
+  const TestPacks packs;
+  const auto session = newGame(packs, nullptr);
+  session->setRebirthByStory(true);
+  makePartnerDie(*session);
+  session->clock().setSpeed(SixtyGameHoursPerSecond);
+  for (std::int32_t step = 0; step < 120 && session->partner().alive(); ++step) {
+    session->tick(Tick);
+  }
+  REQUIRE_FALSE(session->partner().alive());
+  session->tick(Tick);
+  session->tick(Tick);
+  const std::vector<PartnerEvent> events = session->takePartnerEvents();
+  CHECK(has(events, EventKind::Died));
+  CHECK(session->takePartnerEvents().empty());
+}
+
 TEST_CASE("a partner whose death the story plays waits for the story's rebirth and its egg") {
   const TestPacks packs;
   const auto session = newGame(packs, nullptr);

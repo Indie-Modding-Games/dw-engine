@@ -273,11 +273,11 @@ body {
 
 /* ------------------------------------------------------------------------------------------------------------------
    The need bubble over the partner (bubble.c: the 32 x 32 balloon of FEEL_EF and the need's sprite in it: the meal,
-   the toilet, the sleep "Z" or the tiredness). The shared view places #field-partner-bubble where the original's
+   the toilet, the sleep "Z", the tiredness, the injury or the sickness). The shared view places #field-partner-bubble where the original's
    bubble settles, anchored at its bottom centre (ui/hud/structure.rcss; the balloon's pivot is its pixel (16, 31)),
    gives it "shown" while the partner shows a need and one class for the need, sleep before tiredness before hunger
-   before toilet (partner_impl.c: handleConditionBubble). Each sprite sits by its pivot against the balloon's
-   (CONDITION_SPRITES): the meal and the toilet (pivot y 26) 5 pixels under the balloon's top, the tiredness (y 23 + 9
+   before toilet before injury before sickness (partner_impl.c: handleConditionBubble). Each sprite sits by its pivot against the balloon's
+   (CONDITION_SPRITES): the meal, the toilet, the injury and the sickness (pivot y 26) 5 pixels under the balloon's top, the tiredness (y 23 + 9
    in its first frame) 1 pixel over it, the low "Z" (pivot 0, 13) 18 pixels down from the top and from the middle
    to the right. Only the first frame of each need's animation is drawn, and only the low "Z" of the three.
 
@@ -316,6 +316,8 @@ body {
 #field-partner-bubble.toilet { decorator: image(need-toilet scale-none center 31.25%), image(need-bubble); }
 #field-partner-bubble.tired { decorator: image(need-tired scale-none center -6.25%), image(need-bubble); }
 #field-partner-bubble.sleep { decorator: image(need-sleep scale-none 66.67% 75%), image(need-bubble); }
+#field-partner-bubble.injured { decorator: image(need-injured scale-none center 31.25%), image(need-bubble); }
+#field-partner-bubble.sick { decorator: image(need-sick scale-none center 31.25%), image(need-bubble); }
 
 /* ------------------------------------------------------------------------------------------------------------------
    The map's name over the fade (map.c: renderMapName): the ink colour, centred on line 114, no box. */

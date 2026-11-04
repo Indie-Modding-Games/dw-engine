@@ -70,7 +70,7 @@ local function refresh_title(document)
 end
 
 local field_meters = 2
-local field_needs = 4
+local field_needs = 6
 local field_pools = 2
 -- The classes of hud.partner.area's values, the original's numbers: 1 the partner likes the area, 2
 -- it dislikes it, 0 (no class) neither.
@@ -224,10 +224,9 @@ end
 -- order, highest first (partner_impl.c: handleConditionBubble checks them from the lowest and the
 -- last match wins), and while a bubble has shown for 50 of its 20-a-second frames it swaps to the
 -- highest other need the partner has, if any, so two needs take turns; a third waits until one of
--- them goes. The original's bubbles for an injured or sick partner, below the toilet, are not here:
--- the contract does not publish those conditions as needs (docs/architecture/ui.md).
-local bubble_priority = { "sleep", "tired", "hunger", "toilet" }
-local bubble_need_index = { hunger = 0, sleep = 1, toilet = 2, tired = 3 }
+-- them goes. Injury and sickness come last, below the toilet.
+local bubble_priority = { "sleep", "tired", "hunger", "toilet", "injured", "sick" }
+local bubble_need_index = { hunger = 0, sleep = 1, toilet = 2, tired = 3, injured = 4, sick = 5 }
 local bubble_swap_seconds = 50 / 20
 local bubble_need = nil
 local bubble_seconds = 0

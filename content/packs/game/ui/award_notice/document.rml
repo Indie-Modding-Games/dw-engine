@@ -8,9 +8,9 @@
 <body>
 	<div id="box" class="original-look">
 		<div id="rows">
-			<div class="row" id="line-1"></div>
-			<div class="row" id="line-2"></div>
-			<div class="row" id="line-3"></div>
+			<div class="row" id="line-1"><span class="color-10 hidden" id="name"></span><span id="text-1"></span></div>
+			<div class="row" id="line-2"><span id="text-2"></span></div>
+			<div class="row" id="line-3"><span id="text-3"></span></div>
 		</div>
 	</div>
 </body>

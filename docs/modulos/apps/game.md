@@ -470,8 +470,8 @@ usa lo que hay. Rutas: `route-mouse-opening.yaml` (la apertura
 entera con el ratón) y `route-mouse-dialogue.yaml` (Koromon en el gimnasio, con `--start trai00`).
 
 Diferencias con el original: en el mando, `alt` está en el botón norte y no en el del círculo, que aquí es cancelar;
-las letras son de media anchura y no las de ancho fijo de la fuente del original; el mensaje de
-enfermedad y los registros de combate y de la arena, que en el original nombran al compañero, aún no existen.
+las letras son de media anchura y no las de ancho fijo de la fuente del original; los registros de combate y de la
+arena, que en el original nombran al compañero, aún no existen.
 
 Cierre durante las preguntas: al acabar un autotest el juego se apaga a mano y en orden (la sesión, la UI, los
 retratos, el renderizador y por último el dispositivo) antes de dar el veredicto. La escena de las preguntas
@@ -512,6 +512,16 @@ las tres líneas de la medalla en el color 7 («Congratulations!», `main.tamer_
 twna01, el HUD se oculta mientras está y vuelve al cerrarlo (igual en dwe). Hueco: el icono de confirmar de la
 esquina del cuadro, como en el aviso de objetos. Las medallas son los disparadores 0x16c + medalla que la
 página del jugador ya lee (`StoryAdapter::hasMedal`).
+
+Igual: el aviso de enfermedad. Cuando el compañero cae enfermo (`partner_impl.c: tickSicknessMechanics`, que pone al
+domador en el estado 0x14), el mismo cuadro sale con su nombre en el color 10 y «is Sick!» (`main.partner_impl_is_sick`)
+en el color 1, suena `award_sound` y espera a confirmar (Intro / Espacio). `PlaySession` lo anota al ver `GotSick` en
+los sucesos del compañero (`noteSickness`); si en el mismo cuadro hay una medalla o un nivel, sale ese, como en el
+original, donde el texto de la medalla pisa al de la enfermedad. Medido en el original (DuckStation, la bandera 0x40
+puesta a mano con 11 horas de herida): «AAis Sick!» en la primera línea del cuadro; en dwe «CODEX is Sick!». Diferencia
+a propósito: el original pega el nombre a la frase sin espacio; dwe pone uno. Los sucesos del compañero (enfermar,
+morir, evolucionar) esperan en la sesión hasta que el juego los recoge (`GameSession::takePartnerEvents`): antes se
+borraban al empezar cada tick y se perdían en los cuadros que corren más de un tick.
 
 ## Exploración libre
 

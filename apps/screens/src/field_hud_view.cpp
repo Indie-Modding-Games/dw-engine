@@ -24,6 +24,8 @@ constexpr std::array<std::pair<Condition, std::string_view>, NeedCount> NeedLabe
     {Condition::Sleepy, "hud.need.sleep"},
     {Condition::NeedsToilet, "hud.need.toilet"},
     {Condition::Tired, "hud.need.tired"},
+    {Condition::Injured, "hud.need.injured"},
+    {Condition::Sick, "hud.need.sick"},
 }};
 
 constexpr std::array<Stat, PoolCount> PoolStats{Stat::Hp, Stat::Mp};

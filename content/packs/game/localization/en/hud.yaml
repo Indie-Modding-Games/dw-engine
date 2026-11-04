@@ -7,6 +7,8 @@ need.hunger: "Hunger"
 need.sleep: "Sleep"
 need.toilet: "Toilet"
 need.tired: "Tired"
+need.injured: "Injured"
+need.sick: "Sick"
 # The shop job's bar (the option shop_job_bar): its title, the customers served ({served} of {total}), the takings
 # against the total that makes the shopkeeper join ({tally} of {goal} bits) and the next mark: the better pay from
 # {tally}, the join from {tally}, then the join reached.

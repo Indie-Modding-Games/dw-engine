@@ -741,8 +741,8 @@ sprite_sheets:
       frame-even: [25, 32, 14, 31]
       frame-right-odd: [39, 32, 11, 31]
       frame-right-even: [50, 32, 11, 31]
-  # El bocadillo de las necesidades sobre el compañero (bubble.c: el globo con la paleta 4; hambre y baño con la 3;
-  # sueño con la 2).
+  # El bocadillo de las necesidades sobre el compañero (bubble.c: el globo con la paleta 4; hambre, baño y herida con
+  # la 3; sueño con la 2).
   - name: ow-bubble
     image: texture/etcdat/feel_ef
     palette: 4
@@ -758,6 +758,7 @@ sprite_sheets:
     sprites:
       need-hunger: [144, 0, 16, 16]
       need-toilet: [208, 16, 16, 16]
+      need-injured: [208, 32, 16, 16]
   - name: ow-sleep
     image: texture/etcdat/feel_ef
     palette: 2
@@ -765,7 +766,8 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       need-sleep: [128, 48, 8, 8]
-  # El cansancio (bubble.c: CONDITION_SPRITES[6], u 0xC0 y v 0x80 con la CLUT de la fila 0x1E1; su primer cuadro).
+  # El cansancio y la enfermedad (bubble.c: CONDITION_SPRITES[6] y [7], u 0xC0 y v 0x80 y 0x90 con la CLUT de la
+  # fila 0x1E1; su primer cuadro).
   - name: ow-tired
     image: texture/etcdat/feel_ef
     palette: 1
@@ -773,6 +775,7 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       need-tired: [192, 0, 16, 16]
+      need-sick: [192, 16, 16, 16]
   # La portada detrás del menú principal (main_menu.c: renderInitialMenu dibuja sobre TITLE2). Es indexada con su única
   # CLUT (main.c carga ETCNA\TITLE2.TIM con loadTIMFile, que la sube con la imagen; clut_rect (0, 480)): la paleta 0
   # de sus metadatos, así se dibuja nítida como el resto del arte del disco.
