@@ -86,6 +86,9 @@ struct Expression {
   std::string text;
   bool combined = false;
   bool alwaysFalse = false;
+  // The results a later entry without AND or OR replaced: the original evaluates them and drops
+  // them, so they are not in text.
+  std::vector<std::string> replaced;
 };
 
 class ModuleWriter {
@@ -440,10 +443,10 @@ private:
     if (condition.instruction >= listing_->instructions.size()) {
       setError(
           std::format("a branch names instruction {}, past the listing", condition.instruction));
-      return {.text = "false", .alwaysFalse = true};
+      return {.text = "false", .alwaysFalse = true, .replaced = {}};
     }
     const ListingInstruction& instruction = listing_->instructions[condition.instruction];
-    Expression result{.text = "false", .combined = false, .alwaysFalse = true};
+    Expression result{.text = "false", .combined = false, .alwaysFalse = true, .replaced = {}};
     const std::size_t end = std::min(condition.entry, instruction.conditions.size());
     for (std::size_t index = 0; index < end; ++index) {
       const Condition& entry = instruction.conditions[index];
@@ -453,18 +456,23 @@ private:
       const std::string next = test(entry, instruction.offset);
       switch (entry.combine) {
       case Combine::Replace:
-        result = {.text = next, .combined = false, .alwaysFalse = false};
+        if (!result.alwaysFalse) {
+          result.replaced.push_back(result.text);
+        }
+        result.text = next;
+        result.combined = false;
+        result.alwaysFalse = false;
         break;
       case Combine::And:
         if (!result.alwaysFalse) {
-          result = {.text = std::format("{} and {}", wrap(result), next), .combined = true};
+          result.text = std::format("{} and {}", wrap(result), next);
+          result.combined = true;
         }
         break;
       case Combine::Or:
-        result =
-            result.alwaysFalse
-                ? Expression{.text = next, .combined = false, .alwaysFalse = false}
-                : Expression{.text = std::format("{} or {}", wrap(result), next), .combined = true};
+        result.text = result.alwaysFalse ? next : std::format("{} or {}", wrap(result), next);
+        result.combined = !result.alwaysFalse;
+        result.alwaysFalse = false;
         break;
       }
     }
@@ -477,20 +485,36 @@ private:
 
   // ---- structured statements
 
+  // A note after an IF whose entries replaced a result: the listing shows the replaced entries, the
+  // condition does not (scriptIfInstruction keeps only the last result before an entry with no
+  // AND or OR).
+  static std::string replacedNote(const Expression& condition) {
+    if (condition.replaced.empty()) {
+      return {};
+    }
+    std::string terms;
+    for (const std::string& term : condition.replaced) {
+      terms += (terms.empty() ? "" : ", ") + term;
+    }
+    return std::format(" -- the original drops {}: a test with no and/or replaces the result",
+                       terms);
+  }
+
   void write(const IfStatement& statement, bool /*last*/) {
     const Expression condition = fold(statement.condition);
     const std::uint32_t at = statement.condition.instruction < listing_->instructions.size()
                                  ? offsetOf(statement.condition.instruction)
                                  : 0;
+    const std::string note = replacedNote(condition);
     if (statement.whenTrue.empty() && !statement.whenFalse.empty()) {
-      line(std::format("if not ({}) then", condition.text), at);
+      line(std::format("if not ({}) then{}", condition.text, note), at);
       ++depth_;
       writeList(statement.whenFalse);
       --depth_;
       line("end");
       return;
     }
-    line(std::format("if {} then", condition.text), at);
+    line(std::format("if {} then{}", condition.text, note), at);
     ++depth_;
     writeList(statement.whenTrue);
     --depth_;

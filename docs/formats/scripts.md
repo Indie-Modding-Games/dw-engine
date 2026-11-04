@@ -214,7 +214,13 @@ La forma del módulo:
   `return story.<nombre>(...)`.
 - Un `IF` es el pliegue de sus entradas de izquierda a derecha con paréntesis explícitos
   (`(story.trigger(3) and story.var(5) >= 2) or story.money() < 4294967295`). Cada constante va en el dominio en que
-  el original compara: sin signo de 32 bits, salvo la felicidad (stat 9), con signo de 16.
+  el original compara: sin signo de 32 bits, salvo la felicidad (stat 9), con signo de 16. Una entrada sin `and` ni
+  `or` sustituye el resultado anterior (`script_interp.c: scriptIfInstruction`, `result = cond`): el listado de
+  `story/128` en 0x0094 dice `trigger 8`, `trigger 9`, `and trigger 10` y el original solo mira 9 y 10, igual que el
+  Lua. El `if` lleva entonces un comentario con lo descartado
+  (`-- the original drops story.trigger(8): a test with no and/or replaces the result`). Pasa en `story/128` (0x0094,
+  0x0100, 0x0276, 0x05a4) y `story/129` (0x0086, 0x0216); parecen erratas del original (querían los tres
+  disparadores) y se quedan como en él.
 - Un `SWITCH` es una cadena `if`/`elseif` sobre `story.var(n)` en la que un valor de más va al último caso; un
   `SET_SELECTION`, `local choice <const> = story.set_selection(clave, n)` con la cancelación (`choice == n`) en el
   último `else`. Los bucles son `while true do` con `break`; una máquina de estados, un `while true do` que despacha
