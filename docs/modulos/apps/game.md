@@ -327,7 +327,9 @@ dibujan como primitivas sobre la escena (`ScenePrimDrawer`), con las piezas de l
 - La cámara de la muerte (`DOOA_updateCutsceneCamera`, `DOOA_getOrbitPosition`): de 0x23 a 0x55 gira hacia el
   compañero desde la vista del mapa viejo; en 0x56 el compañero pasa al origen del mapa de despertar mirando al jugador y
   la cámara queda a altura × 5 + 1200, 400 + 2 × altura por encima, a 0x638 de su giro, con distancia de proyección
-  1000; de 0x149 a 0x17B vuelve por el mismo camino a la vista del mapa.
+  1000; de 0x149 a 0x17B vuelve por el mismo camino a la vista del mapa. En esa segunda parte el centro de la imagen
+  parte del centro de la pantalla (0xA0, 0x78) y no del desplazamiento del mapa; en el mapa de la historia (0xCD)
+  parte de 0xBC, 28 píxeles a la derecha (`DOOA_tickDissolve` fase 0, `wake_map.story_map_start_x`).
 - De 0x69 a 0x8C el cuerpo pasa a alambre en olas (`DOOA_SHARD_WAVE_SCHEDULE`); cada ola suelta como trozos las caras
   de los huesos desde el 2 que le tocan en `WIREFRAME_RNG_TABLE` y que `rand() & 3` deja (`DOOA_spawnShardWave`,
   `DOOA_spawnBoneShards`); los trozos caen al suelo (`DOOA_updateShards`).
@@ -340,6 +342,10 @@ dibujan como primitivas sobre la escena (`ScenePrimDrawer`), con las piezas de l
   122 y 64 píxeles (41 y 21 del original). Antes salía tres veces más pequeño: con el campo oculto el mapa nuevo
   de `changeToDeathMap` no se preparaba y su cámara se quedaba en 320 × 240, así que las primitivas de la escena se
   dibujaban a escala 1 (`MapRenderer::setMap` conserva ahora el tamaño de la ventana).
+- De 0x185 al final (`DOOA_tickDissolve` fase 0x66: `ENTITY_TABLE[2]->isOnMap = 1`) el primer personaje del mapa de
+  despertar (el anciano en su casa) vuelve a verse sobre negro, y sigue durante los textos, la caja de los huevos y
+  el renacer hasta que todo vuelve en el cuadro 152 (`life.yaml`: `death.host_frame`). Medido en el original
+  (2026-11-03): con la caja abierta solo el anciano (entidad 2) está en el mapa; el jugador y los demás, no.
 - En el renacer los trozos suben en espiral en el cuadro 10 y se cierran sobre el huevo en el 100 (`DOOA_setShardState`
   1 y 3). El huevo de `TAMA.TMD` (el del bebé, 6 piezas) sale en alambre desde el cuadro 1 y se rellena de 101 a 131;
   en 132 se quitan los trozos y hasta 152 hay un destello por cuadro sobre el huevo y rayos (`DOO2_renderSparkStreak`).
@@ -353,7 +359,6 @@ Suposiciones:
 
 - Mientras el compañero se dibuja sobre el iris, el resto de la escena ya no se dibuja (el original solo vuelve a
   dibujar al compañero encima): así nada más cercano que su espalda tapa el anillo.
-- Los desplazamientos de pantalla de la cámara de la muerte en el mapa 0xCD (0xBC en vez de 0xA0) no se aplican.
 - Si la historia juega la muerte, el bebé y su huevo se toman del compañero ya renacido al empezar el renacer.
 - Los números al azar de los efectos usan una semilla propia, no la del juego.
 

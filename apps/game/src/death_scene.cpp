@@ -213,6 +213,9 @@ void DeathScene::begin(const Pending& pending) {
     session_->useSceneSounds(rules_.death.soundBank);
     stage_.sceneryHidden = true;
     stage_.partnerHidden = true;
+    // The wake map's host, shown since the death's hostFrame, stays on black (nothing hides
+    // ENTITY_TABLE[2] again before DOOA_tickRebirth brings everyone back at swapFrame).
+    stage_.shownNpc = wakeHost();
     showStage();
     if (phase_ != Phase::AwaitRebirth) {
       // The death's shards wait for the rebirth when the story played both.
@@ -375,18 +378,25 @@ void DeathScene::moveCamera(glm::vec3 feet, float yaw, std::int32_t start, std::
     drop = static_cast<float>(originalLerp(0, lower, mid, end, frame));
     shown.focalLength = glm::mix(startView_.focalLength, OrbitFocalLength, t);
   }
-  const render::MapCamera& map = scene_->mapCamera();
-  const glm::vec2 visible = map.visibleSize();
-  const glm::vec2 viewport = map.viewportSize();
-  const float fovY = 2.0F * std::atan((visible.y / 2.0F) / shown.focalLength);
-  // DRAWING_OFFSET_Y below the screen's centre moves the picture down (clip space Y is down).
-  const glm::mat4 centred =
-      glm::translate(glm::mat4{1.0F}, glm::vec3{0.0F, 2.0F * drop / visible.y, 0.0F}) *
-      render::perspective(fovY, viewport.x / viewport.y, render::MapNearClip, render::MapFarClip);
+  const glm::mat4 centred = centredProjection(shown.focalLength, 0, drop);
   const glm::mat4 projection = (startView_.projection * (1.0F - recentre)) + (centred * recentre);
   const glm::mat4 view = glm::lookAt(shown.eye, shown.target, glm::vec3{0.0F, 1.0F, 0.0F});
   stage_.camera = render::Camera{.view = view, .projection = projection, .viewport = {}};
   cameraFocal_ = shown.focalLength;
+}
+
+glm::mat4 DeathScene::centredProjection(float focalLength, std::int32_t offsetX,
+                                        float offsetY) const {
+  const render::MapCamera& map = scene_->mapCamera();
+  const glm::vec2 visible = map.visibleSize();
+  const glm::vec2 viewport = map.viewportSize();
+  const float fovY = 2.0F * std::atan((visible.y / 2.0F) / focalLength);
+  // DRAWING_OFFSET_X right of the screen's centre moves the picture right and DRAWING_OFFSET_Y
+  // below it moves the picture down (clip space Y is down).
+  return glm::translate(glm::mat4{1.0F}, glm::vec3{2.0F * static_cast<float>(offsetX) / visible.x,
+                                                   2.0F * offsetY / visible.y, 0.0F}) *
+         render::perspective(fovY, viewport.x / viewport.y, render::MapNearClip,
+                             render::MapFarClip);
 }
 
 void DeathScene::squash() {
@@ -613,10 +623,14 @@ void DeathScene::stepDissolve() {
   if (reached(rules.standFrame)) {
     // Phase 2: the partner stands at the wake map's origin facing the player, and the camera is put
     // round it, seen from the wake map's view.
+    // The camera starts from the wake map's view, but the picture's centre is not the map's: the
+    // original puts it at 0xA0, 0x78, or 0xBC, 0x78 on the story map (dooa.c: DOOA_tickDissolve
+    // phase 0, MAIN_D_80135350 and MAIN_D_80135354).
     const render::MapCamera& map = scene_->mapCamera();
     startView_ = {.eye = map.desc().eye,
                   .target = map.desc().target,
-                  .projection = map.projection(),
+                  .projection = centredProjection(map.desc().focalLength,
+                                                  rules_.wakeMap.startOffsetX(deathMap_), 0.0F),
                   .focalLength = map.desc().focalLength};
     savedFeet_ = glm::vec3{0.0F};
     const glm::vec3 toPlayer = field.player().position - savedFeet_;
@@ -650,6 +664,12 @@ void DeathScene::stepDissolve() {
   }
   if (reached(rules.rise.frame)) {
     playSound(rules.rise.sound);
+  }
+  if (reached(rules.hostFrame)) {
+    // dooa.c: DOOA_tickDissolve phase 0x66: ENTITY_TABLE[2]->isOnMap = 1, the wake map's first
+    // character (the elder in his house) on black with the partner's remains.
+    stage_.shownNpc = wakeHost();
+    showStage();
   }
   // Phase 3: the camera goes back to the wake map's view, which it then is.
   moveCamera(savedFeet_, sceneYaw_, CameraBackFrom, CameraBackTo, CameraBackMirror - frame_);
@@ -762,6 +782,15 @@ void DeathScene::setDeathMap() {
   }
   deathMap_ = storyMap ? wake.storyMap : wake.earlyMap;
   core::logDebug("[port:death] setDeathMap (map.c:5400): map={} exit={}", deathMap_, wake.exit);
+}
+
+std::optional<scene::Entity> DeathScene::wakeHost() const {
+  // ENTITY_TABLE[2]: the map's first character.
+  const auto& npcs = scene_->map().npcs;
+  if (npcs.empty()) {
+    return std::nullopt;
+  }
+  return scene_->field().npcs().entityOf(npcs.front().scriptId);
 }
 
 void DeathScene::enterWakeMap() {

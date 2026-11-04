@@ -46,6 +46,7 @@ constexpr std::string_view ExitKey = "exit";
 constexpr std::string_view StoryTriggersKey = "story_triggers";
 constexpr std::string_view StoryVariableKey = "story_variable";
 constexpr std::string_view StoryVariableAtLeastKey = "story_variable_at_least";
+constexpr std::string_view StoryMapStartXKey = "story_map_start_x";
 constexpr std::string_view DeathKey = "death";
 constexpr std::string_view SoundBankKey = "sound_bank";
 constexpr std::string_view MapFrameKey = "map_frame";
@@ -55,6 +56,7 @@ constexpr std::string_view SinkKey = "sink";
 constexpr std::string_view VanishKey = "vanish";
 constexpr std::string_view RiseKey = "rise";
 constexpr std::string_view EndFrameKey = "end_frame";
+constexpr std::string_view HostFrameKey = "host_frame";
 constexpr std::string_view GlowKey = "glow";
 constexpr std::string_view HatchKey = "hatch";
 constexpr std::string_view SwapFrameKey = "swap_frame";
@@ -139,7 +141,7 @@ WakeMap readWakeMap(YamlReader& reader, const YamlNode& parent) {
   const YamlNode* node = nullptr;
   if (!group(reader, parent, WakeMapKey,
              {StoryMapKey, EarlyMapKey, ExitKey, StoryTriggersKey, StoryVariableKey,
-              StoryVariableAtLeastKey},
+              StoryVariableAtLeastKey, StoryMapStartXKey},
              node)) {
     return {};
   }
@@ -148,7 +150,8 @@ WakeMap readWakeMap(YamlReader& reader, const YamlNode& parent) {
                .exit = nonNegative(reader, *node, ExitKey),
                .storyTriggers = {},
                .storyVariable = nonNegative(reader, *node, StoryVariableKey),
-               .storyVariableAtLeast = integer(reader, *node, StoryVariableAtLeastKey)};
+               .storyVariableAtLeast = integer(reader, *node, StoryVariableAtLeastKey),
+               .storyMapStartX = integer(reader, *node, StoryMapStartXKey)};
   const YamlNode& triggers = reader.field(*node, StoryTriggersKey);
   if (reader.ok()) {
     for (const YamlNode& trigger : reader.sequence(triggers, StoryTriggersKey)) {
@@ -190,8 +193,8 @@ DeathScene readDeath(YamlReader& reader, const YamlNode& parent) {
   const YamlNode* node = nullptr;
   if (!group(reader, parent, DeathKey,
              {SoundBankKey, MapFrameKey, StandFrameKey, BurstKey, SinkKey, VanishKey, RiseKey,
-              EndFrameKey, GlowKey, HatchKey, SwapFrameKey, ShownFrameKey, SparkleSoundKey,
-              FinishFrameKey, ClipsKey},
+              HostFrameKey, EndFrameKey, GlowKey, HatchKey, SwapFrameKey, ShownFrameKey,
+              SparkleSoundKey, FinishFrameKey, ClipsKey},
              node)) {
     return {};
   }
@@ -202,6 +205,7 @@ DeathScene readDeath(YamlReader& reader, const YamlNode& parent) {
                    .sink = readCue(reader, *node, SinkKey),
                    .vanish = readCue(reader, *node, VanishKey),
                    .rise = readCue(reader, *node, RiseKey),
+                   .hostFrame = positive(reader, *node, HostFrameKey),
                    .endFrame = positive(reader, *node, EndFrameKey),
                    .glow = readCue(reader, *node, GlowKey),
                    .hatch = readCue(reader, *node, HatchKey),

@@ -76,6 +76,20 @@ TEST_CASE("the original ruleset gives the partner the original's numbers") {
   CHECK(rules.training.quirks.brainTrainingUsesMpAptitude);
 }
 
+TEST_CASE(
+    "the death on the wake map: the camera off centre only on the story's map, the host back at 0x185") {
+  // dooa.c: DOOA_tickDissolve: 0xBC instead of 0xA0 when the wake map is 0xCD.
+  testing::OriginalRuleset original;
+  const PartnerRules rules = original.rules();
+  REQUIRE(rules.life.scenes.has_value());
+  const WakeMap& wake = rules.life.scenes->wakeMap;
+  CHECK(wake.storyMap == 0xCD);
+  CHECK(wake.startOffsetX(0xCD) == 0xBC - 0xA0);
+  CHECK(wake.startOffsetX(wake.earlyMap) == 0);
+  // DOOA_tickDissolve phase 0x66: the wake map's first character shows again from 0x185.
+  CHECK(rules.life.scenes->death.hostFrame == 0x185);
+}
+
 TEST_CASE("the partner's sections follow their schemas") {
   const assets::DiskFileSystem disk;
   constexpr std::array<std::string_view, 3> Sections{"care", "life", "training"};

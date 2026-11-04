@@ -106,6 +106,7 @@ comportamiento, no guardan datos.
 | `scenes.lost_life.*` | 35, 95, 135, 145, 185 fotogramas; sombras 160 y 255 | a | Temporizador o duración; nivel de fundido. |
 | `scenes.wake_map.story_map`, `early_map`, `exit` | 205, 218, 1 | a | Referencia a mapas por su índice. |
 | `scenes.wake_map.story_triggers`, `story_variable`, `story_variable_at_least` | [220, 214], 1, 50 | a | Condición de la historia (umbral). |
+| `scenes.wake_map.story_map_start_x` | 28 | a | Desplazamiento de pantalla en píxeles (0xBC − 0xA0). |
 | `scenes.death.sound_bank`, `sparkle_sound` | 19, 7 | a | Referencia a un banco de sonidos y a un sonido. |
 | `scenes.death.*_frame`, `burst`, `sink`, `vanish`, `rise`, `glow`, `hatch` | fotogramas 10-439 con su sonido | a | Temporizador o duración. |
 | `scenes.death.clips.*` | 1, 44, 12, 33, 28, 11 | a | Referencia a animaciones por su id. |

@@ -48,6 +48,9 @@ scenes:
     story_triggers: [220, 214]
     story_variable: 1
     story_variable_at_least: 50
+    # dooa/dooa.c: DOOA_tickDissolve: en el mapa de la historia (0xCD) la cámara de la muerte parte de 0xBC y no de
+    # 0xA0: 28 píxeles a la derecha del centro de la pantalla.
+    story_map_start_x: 28
   # dooa/dooa.c: DOOA_tickDissolve (la muerte) y DOOA_tickRebirth (el renacer), con el banco de sonidos 0x13 en la
   # ranura 8 (partnerTickDying: loadMapSounds2(19)). Los sonidos son de ese banco.
   death:
@@ -61,6 +64,9 @@ scenes:
     sink: { frame: 191, sound: 1 }
     vanish: { frame: 209, sound: 2 }
     rise: { frame: 309, sound: 3 }
+    # 0x185: el primer personaje del mapa de despertar (ENTITY_TABLE[2], el anciano en su casa) vuelve a verse sobre
+    # negro y sigue durante el renacer.
+    host_frame: 389
     end_frame: 439
     # DOOA_tickRebirth: el huevo brilla (10) y se abre (132); en 152 el bebé nuevo (reincarnatePartner) y el mapa
     # vuelve desde negro hasta 202, cuando se ve el bebé con la animación reborn; en 262 la animación finish.

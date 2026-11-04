@@ -13,6 +13,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -112,6 +113,12 @@ private:
   void stepRebirth();
   void startDissolve(bool livesLeft);
   void setDeathMap();
+  // The wake map's first character (ENTITY_TABLE[2]), if it has one.
+  [[nodiscard]] std::optional<scene::Entity> wakeHost() const;
+  // A projection centred on the screen, moved right and down by the original's pixels (the
+  // drawing offset away from 160, 120), at the projection distance `focalLength`.
+  [[nodiscard]] glm::mat4 centredProjection(float focalLength, std::int32_t offsetX,
+                                            float offsetY) const;
   void enterWakeMap();
   void finish();
   void setPhase(Phase phase);

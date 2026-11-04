@@ -161,7 +161,8 @@
             "exit",
             "story_triggers",
             "story_variable",
-            "story_variable_at_least"
+            "story_variable_at_least",
+            "story_map_start_x"
           ],
           "additionalProperties": false,
           "properties": {
@@ -190,6 +191,10 @@
             },
             "story_variable_at_least": {
               "type": "integer"
+            },
+            "story_map_start_x": {
+              "description": "Original pixels right of the screen's centre where the death's camera starts on the story map (dooa.c: 0xBC instead of 0xA0).",
+              "type": "integer"
             }
           }
         },
@@ -203,6 +208,7 @@
             "sink",
             "vanish",
             "rise",
+            "host_frame",
             "end_frame",
             "glow",
             "hatch",
@@ -297,6 +303,11 @@
                   "minimum": 0
                 }
               }
+            },
+            "host_frame": {
+              "description": "The frame the wake map's first character shows again on black (dooa.c: 0x185, ENTITY_TABLE[2]->isOnMap = 1).",
+              "type": "integer",
+              "minimum": 1
             },
             "end_frame": {
               "type": "integer",

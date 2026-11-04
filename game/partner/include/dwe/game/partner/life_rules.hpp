@@ -66,6 +66,14 @@ struct WakeMap {
   std::vector<std::int32_t> storyTriggers;
   std::int32_t storyVariable = 0;
   std::int32_t storyVariableAtLeast = 0;
+  // How many original pixels right of the screen's centre the death's camera starts on the story
+  // map (dooa.c: DOOA_tickDissolve phase 0: 0xBC instead of 0xA0 when DEATH_MAP_TARGET is 0xCD).
+  std::int32_t storyMapStartX = 0;
+
+  // The death camera's start, in original pixels right of the screen's centre, on `map`.
+  [[nodiscard]] std::int32_t startOffsetX(std::int32_t map) const {
+    return map == storyMap ? storyMapStartX : 0;
+  }
 };
 
 // The partner's clips in the death scenes, by the original's ids.
@@ -90,6 +98,9 @@ struct DeathScene {
   SceneCue sink;
   SceneCue vanish;
   SceneCue rise;
+  // The wake map's first character (ENTITY_TABLE[2], the elder in his house) shows again on black
+  // from hostFrame, and stays through the rebirth.
+  std::int32_t hostFrame = 0;
   std::int32_t endFrame = 0;
   // The rebirth: the egg glows and hatches, the new baby is drawn at swapFrame while the scenery
   // fades back in until shownFrame, it plays its clip and finishes at finishFrame.
