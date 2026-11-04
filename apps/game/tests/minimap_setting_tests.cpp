@@ -17,6 +17,7 @@
 #include <ostream>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <vector>
 
 #include "minimap_setting.hpp"
@@ -56,31 +57,43 @@ private:
 
 } // namespace
 
-TEST_CASE(
-    "the minimap mode keeps the old boolean setting's meaning and leaves an unset one to the skin") {
+TEST_CASE("the minimap mode keeps the old boolean setting's meaning and shows an unset one") {
   using dwe::app::minimapModeOf;
   using dwe::ui::UiValue;
   CHECK(minimapModeOf(UiValue{true}) == dwe::app::MinimapOn);
   CHECK(minimapModeOf(UiValue{false}) == dwe::app::MinimapOff);
-  CHECK(minimapModeOf(UiValue{}) == dwe::app::MinimapAuto);
+  CHECK(minimapModeOf(UiValue{}) == dwe::app::MinimapOn);
   CHECK(minimapModeOf(UiValue{std::string{"on"}}) == dwe::app::MinimapOn);
   CHECK(minimapModeOf(UiValue{std::string{"off"}}) == dwe::app::MinimapOff);
-  CHECK(minimapModeOf(UiValue{std::string{"auto"}}) == dwe::app::MinimapAuto);
-  CHECK(minimapModeOf(UiValue{std::string{"sometimes"}}) == dwe::app::MinimapAuto);
-  CHECK(minimapModeOf(UiValue{1.0}) == dwe::app::MinimapAuto);
+  // The old "as the skin decides": both skins draw it now.
+  CHECK(minimapModeOf(UiValue{std::string{"auto"}}) == dwe::app::MinimapOn);
+  CHECK(minimapModeOf(UiValue{std::string{"sometimes"}}) == dwe::app::MinimapOn);
+  CHECK(minimapModeOf(UiValue{1.0}) == dwe::app::MinimapOn);
 }
 
-TEST_CASE(
-    "the run starts on the saved minimap mode, on auto when none is saved or the saved one is unknown") {
+TEST_CASE("the run starts on the saved minimap mode, or on when none or an unknown one is saved") {
   using dwe::app::startMinimapMode;
   const Warnings warnings;
-  CHECK(startMinimapMode(std::nullopt) == dwe::app::MinimapAuto);
+  CHECK(startMinimapMode(std::nullopt) == dwe::app::MinimapOn);
   CHECK(startMinimapMode(std::string{"off"}) == dwe::app::MinimapOff);
   CHECK(startMinimapMode(std::string{"on"}) == dwe::app::MinimapOn);
-  CHECK(startMinimapMode(std::string{"auto"}) == dwe::app::MinimapAuto);
+  CHECK(startMinimapMode(std::string{"auto"}) == dwe::app::MinimapOn);
   CHECK(Warnings::none());
-  CHECK(startMinimapMode(std::string{"sometimes"}) == dwe::app::MinimapAuto);
+  CHECK(startMinimapMode(std::string{"sometimes"}) == dwe::app::MinimapOn);
   CHECK(Warnings::any("sometimes"));
+}
+
+TEST_CASE("the minimap shows only while the field runs, never in a battle or a minigame") {
+  using dwe::app::minimapAllowed;
+  using dwe::app::MinimapScene;
+  CHECK(minimapAllowed(MinimapScene{.fieldRunning = true, .battle = false, .minigame = false}));
+  // A menu, a scene, a talk, a fade or a map change stops the field's time.
+  CHECK_FALSE(
+      minimapAllowed(MinimapScene{.fieldRunning = false, .battle = false, .minigame = false}));
+  CHECK_FALSE(
+      minimapAllowed(MinimapScene{.fieldRunning = true, .battle = true, .minigame = false}));
+  CHECK_FALSE(
+      minimapAllowed(MinimapScene{.fieldRunning = true, .battle = false, .minigame = true}));
 }
 
 TEST_CASE("a minimap mode the player picks is saved and the next run starts on it") {
@@ -241,4 +254,49 @@ TEST_CASE("the HUD draws no minimap under a window, whatever the window") {
   aside.frame(untouched);
   CHECK_FALSE(untouched.covered());
   CHECK(aside.minimapDrawn());
+}
+
+TEST_CASE("the options page's minimap row hides the HUD's minimap at once and saves the choice") {
+  const dwe::test_support::TempFolder folder;
+  const std::filesystem::path file = folder.path() / "settings.yaml";
+  dwe::app::UserSettings settings{.language = std::string{"es"},
+                                  .textFont = std::nullopt,
+                                  .uiSkin = std::nullopt,
+                                  .minimap = std::nullopt};
+  dwe::app::MinimapChanger changer{settings, file};
+  const HudUi hud{"left: 0px; top: 0px; width: 1px; height: 1px;"};
+  auto menu = dwe::assets::AssetId::parse("ui/pause_menu/document");
+  REQUIRE_MESSAGE(menu.has_value(), menu.error().message);
+  auto loaded = hud.ui->loadDocument("pause_menu", *menu);
+  REQUIRE_MESSAGE(loaded.has_value(), loaded.error().message);
+  hud.ui->setSetting(dwe::app::MinimapSetting,
+                     std::string{dwe::app::startMinimapMode(settings.minimap)});
+  hud.ui->update();
+  REQUIRE_FALSE(hud.ui->elementHasClass(dwe::app::HudDocument, dwe::app::MinimapPanel, "hidden"));
+
+  // F10's options page; its minimap row is the 15th of the game's options.
+  hud.ui->setSetting("pause_menu.start_page", std::string{"options"});
+  hud.ui->show("pause_menu", true);
+  hud.ui->setSetting("pause_menu.start_page", std::string{});
+  std::ignore = hud.ui->takeCommands();
+  // Each press goes to the game as it does in a run (game.cpp: the minimap command): the changer
+  // saves the mode and the game publishes it back.
+  const auto press = [&] {
+    REQUIRE(
+        hud.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "15", "1"}));
+    for (const dwe::ui::UiCommand& command : hud.ui->takeCommands()) {
+      if (command.name == dwe::app::MinimapSetting) {
+        hud.ui->setSetting(dwe::app::MinimapSetting, std::string{changer.change(command.value)});
+      }
+    }
+  };
+  press();
+  // At once, with no map reload: the HUD's minimap is hidden and the choice is saved.
+  CHECK(hud.ui->elementHasClass(dwe::app::HudDocument, dwe::app::MinimapPanel, "hidden"));
+  CHECK(dwe::app::loadUserSettings(file).minimap == std::optional<std::string>{"off"});
+  CHECK(dwe::app::startMinimapMode(dwe::app::loadUserSettings(file).minimap) ==
+        dwe::app::MinimapOff);
+  press();
+  CHECK_FALSE(hud.ui->elementHasClass(dwe::app::HudDocument, dwe::app::MinimapPanel, "hidden"));
+  CHECK(dwe::app::loadUserSettings(file).minimap == std::optional<std::string>{"on"});
 }

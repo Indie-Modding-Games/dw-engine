@@ -1,4 +1,5 @@
--- The HUD follows the minimap settings the game reports: auto, on or off (minimap), and its size.
+-- The HUD follows the minimap settings the game reports: on or off (minimap), and its size; under
+-- the round minimap it writes the game's day and time (#minimap-day, #minimap-time).
 -- Its menu button asks the game to open the pause menu (the open_menu command) and shows the
 -- control that opens it with the last device used. On a map change the game subtracts its fade from
 -- the scene under the HUD and reports how much it takes away (screen_fade, 0 to 1): the panels fade
@@ -22,18 +23,19 @@
 -- on #field-status, where a skin can swap the happiness face as the original does.
 
 local sizes = { small = true, medium = true, large = true }
-local minimap_modes = { auto = true, on = true, off = true }
-
 local function refresh(document)
   local minimap = document:get("minimap")
-  local mode = ui.setting("minimap")
-  if not minimap_modes[mode] then
-    mode = "auto"
-  end
-  -- Each skin decides what auto means in its style sheets (#minimap.auto); on shows it and off
-  -- hides it. A battle hides it too: its HP bars and end box take that corner.
-  minimap:set_class("auto", mode == "auto")
-  minimap:set_class("hidden", mode == "off" or ui.setting("battle.active") == true)
+  -- The round minimap (an engine improvement) shows unless the player turns it off (minimap: off;
+  -- on, and auto from older settings, show it). It also hides while the game says the field is
+  -- not the player's to walk (hud.minimap_allowed false: battles, scenes and talk, minigames;
+  -- apps/game: minimap_setting.hpp) and in a battle (its HP bars and end box take that corner).
+  minimap:set_class(
+    "hidden",
+    ui.setting("minimap") == "off"
+      or ui.setting("minimap") == false
+      or ui.setting("battle.active") == true
+      or ui.setting("hud.minimap_allowed") == false
+  )
   -- The game hides it while a window lies over it (hud.minimap_covered, apps/game:
   -- minimap_setting.hpp), whatever the skin.
   minimap:set_class("covered", ui.setting("hud.minimap_covered") == true)
@@ -166,8 +168,12 @@ local function draw_field_clock(document)
   })
   if time ~= drawn_time then
     document:get("field-time"):set_text(time)
+    document:get("minimap-time"):set_text(time)
     drawn_time = time
   end
+  document
+    :get("minimap-day")
+    :set_text(t("hud.minimap.day", { day = field_number("hud.clock.day") }))
   document:get("field-date"):set_text(t("hud.clock.date", {
     day = field_number("hud.clock.day"),
     year = field_number("hud.clock.year"),
@@ -431,7 +437,7 @@ function on_setting(document, name)
     -- bubble again.
     refresh(document)
     draw_field(document)
-  elseif name == "hud.minimap_covered" then
+  elseif name == "hud.minimap_covered" or name == "hud.minimap_allowed" then
     refresh(document)
   elseif string.find(name, "^hud%.") or string.find(name, "^shop_job%.") then
     if string.find(name, "%.label$") then

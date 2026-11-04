@@ -54,7 +54,7 @@ inline constexpr std::string_view UnusableUiSkin = "game: cannot use the UI skin
 
 // The player's minimap mode (minimap_setting.cpp): a saved value that is not auto, on or off.
 inline constexpr std::string_view UnknownSavedMinimap =
-    "game: the saved minimap mode '{}' is unknown; using auto";
+    "game: the saved minimap mode '{}' is unknown; showing the minimap";
 
 // What walks the player (walk_control.cpp): a saved value that is not keys or mouse.
 inline constexpr std::string_view UnknownSavedWalkControl =

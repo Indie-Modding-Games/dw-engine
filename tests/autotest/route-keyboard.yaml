@@ -7,7 +7,7 @@ steps:
   - wait: {map: twna01, seconds: 1}
   - resize: [1280, 720]
   - screenshot: twna01-start
-  # The menu with the keyboard: minimap on, off, then back to the skin's choice.
+  # The menu with the keyboard: minimap off, then on again (its default).
   - menu: open
   - screenshot: menu-open
   # The original look keeps the minimap and the options among the PLAYER page's tools (Tab there), as the original's
@@ -24,13 +24,12 @@ steps:
       setting: {ui_skin: modern}
       steps:
         - menu_select: open-minimap
-  - menu_select: minimap-mode
   - expect_setting: {minimap: "on"}
   - menu_select: minimap-mode
   - expect_setting: {minimap: "off"}
   - screenshot: menu-minimap-hidden
   - menu_select: minimap-mode
-  - expect_setting: {minimap: "auto"}
+  - expect_setting: {minimap: "on"}
   - menu: close
   - wait: {menu_open: false}
   # The new game's Jijimon stands by File City's entrance, in the straight line from the start; walk_to plans

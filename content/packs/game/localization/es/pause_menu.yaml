@@ -23,10 +23,9 @@ fish: "Pescar"
 to_title: "Volver a la portada"
 quit: "Salir del juego"
 minimap_mode: "Mostrar minimapa"
-# Como decida el aspecto de la interfaz: el moderno lo enseña; el juego original no tiene.
-minimap_mode.auto: "Según el aspecto"
-minimap_mode.on: "Siempre"
-minimap_mode.off: "Nunca"
+# El minimapa redondo (una mejora del motor): se ve o no, con los dos aspectos.
+minimap_mode.on: "Sí"
+minimap_mode.off: "No"
 minimap_size: "Tamaño"
 minimap_size.small: "Pequeño"
 minimap_size.medium: "Mediano"

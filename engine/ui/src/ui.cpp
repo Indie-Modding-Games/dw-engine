@@ -34,6 +34,7 @@
 #include "code_trust.hpp"
 #include "font_engine.hpp"
 #include "messages.hpp"
+#include "minimap_disc.hpp"
 #include "original_box.hpp"
 #include "render_bridge.hpp"
 #include "rml_interfaces.hpp"
@@ -60,6 +61,9 @@ constexpr std::size_t MaxPendingCommands = 256;
 // degree.
 constexpr float MarkerPositionSteps = 100'000.0F;
 constexpr float MarkerHeadingSteps = 10.0F;
+// How far out a partner out of the minimap's view sits, in parts of the disc's radius: on the rim,
+// with its marker still whole inside it.
+constexpr float PartnerRim = 0.9F;
 
 // How often hot reload looks at the files, in seconds.
 constexpr double ReloadInterval = 0.5;
@@ -191,6 +195,7 @@ struct Ui::Impl {
     long u = 0;
     long v = 0;
     long heading = 0;
+    bool pinned = false;
     bool operator==(const MarkerState&) const = default;
   };
 
@@ -204,7 +209,7 @@ struct Ui::Impl {
     MinimapLayout layout;
     std::string source; // the generated image's name, with the prefix
     std::string mapNameKey;
-    float aspect = 1.0F;
+    float viewRadius = MinimapMinViewRadius; // world units from the disc's centre to its rim
   };
 
   UiDesc desc;
@@ -220,6 +225,9 @@ struct Ui::Impl {
   // The original look's box border (`decorator: original-box`), made and registered once RmlUi
   // starts (its property parsers are RmlUi's); it outlives Rml::Shutdown as the font engine does.
   std::unique_ptr<OriginalBoxInstancer> originalBox;
+  // The round minimap's decorator (`decorator: minimap-disc`) and what it shows, the same way.
+  MinimapDiscState disc;
+  std::unique_ptr<MinimapDiscInstancer> minimapDisc;
   Rml::Context* context = nullptr;
   SkinCatalog skins;
   SkinStyler styler{*desc.files, skins};
@@ -886,28 +894,10 @@ struct Ui::Impl {
   }
 
   void applyMinimap(Rml::ElementDocument& document) {
-    Rml::Element* image = document.GetElementById(Rml::String{hud::MinimapImage});
-    if (image == nullptr) {
-      return;
-    }
-    Rml::Element* frame = document.GetElementById(Rml::String{hud::MinimapFrame});
-    if (!minimap) {
-      image->SetAttribute("src", std::string{});
-      return;
-    }
-    image->SetAttribute("src", minimap->source);
-    if (frame != nullptr) {
-      // The frame keeps the image's proportions inside its square panel, centred.
-      const float width = minimap->aspect >= 1.0F ? 1.0F : minimap->aspect;
-      const float height = minimap->aspect >= 1.0F ? 1.0F / minimap->aspect : 1.0F;
-      frame->SetProperty("width", percent(width));
-      frame->SetProperty("height", percent(height));
-      frame->SetProperty("left", percent((1.0F - width) / 2.0F));
-      frame->SetProperty("top", percent((1.0F - height) / 2.0F));
-    }
     if (Rml::Element* name = document.GetElementById(Rml::String{hud::MinimapName})) {
-      const std::string text =
-          minimap->mapNameKey.empty() ? std::string{} : texts->text(minimap->mapNameKey);
+      const std::string text = !minimap || minimap->mapNameKey.empty()
+                                   ? std::string{}
+                                   : texts->text(minimap->mapNameKey);
       name->SetInnerRML(Rml::StringUtilities::EncodeRml(Rml::String{trimmed(text)}));
     }
   }
@@ -932,13 +922,13 @@ struct Ui::Impl {
           .layout = built->layout,
           .source = std::string{GeneratedPrefix} + name,
           .mapNameKey = std::string{mapNameKey},
-          .aspect =
-              static_cast<float>(built->image.width) / static_cast<float>(built->image.height),
+          .viewRadius = minimapViewRadius(built->layout),
       };
       sources.setGenerated(name, std::move(built->image));
     } else {
       core::logWarning("ui: the map {} has no walkable cell for the minimap", mapNameKey);
     }
+    disc.source = minimap ? minimap->source : std::string{};
     for (auto& [name, document] : documents) {
       applyMinimap(*document.element);
     }
@@ -961,16 +951,19 @@ struct Ui::Impl {
     markersStale = false;
   }
 
-  void placeMarker(MarkerSlot& slot, const std::optional<MinimapMarker>& marker) {
+  // Places a marker at (u, v), in parts of the disc from its top left corner, turned to face
+  // along its facing; nothing hides it.
+  void placeMarker(MarkerSlot& slot, const std::optional<MinimapMarker>& marker, float u, float v,
+                   bool pinned) {
     MarkerState state;
     if (marker && minimap) {
-      const MinimapPoint point = locateOnMinimap(minimap->layout, marker->x, marker->z);
       state = MarkerState{
           .visible = true,
-          .u = std::lround(std::clamp(point.u, 0.0F, 1.0F) * MarkerPositionSteps),
-          .v = std::lround(std::clamp(point.v, 0.0F, 1.0F) * MarkerPositionSteps),
+          .u = std::lround(std::clamp(u, 0.0F, 1.0F) * MarkerPositionSteps),
+          .v = std::lround(std::clamp(v, 0.0F, 1.0F) * MarkerPositionSteps),
           .heading =
               std::lround(minimapHeading(marker->facingX, marker->facingZ) * MarkerHeadingSteps),
+          .pinned = pinned,
       };
     }
     if (slot.shown == state) {
@@ -991,15 +984,26 @@ struct Ui::Impl {
       element->SetProperty(
           "transform",
           std::format("rotate({:.1f}deg)", static_cast<float>(state.heading) / MarkerHeadingSteps));
+      element->SetClass("pinned", state.pinned);
     }
   }
 
+  // The disc follows the player, north-up: the player stays in its middle and the partner goes
+  // where it stands from the player, pinned to the rim when it is out of view.
   void placeMarkers(const MinimapMarker& player, const std::optional<MinimapMarker>& partner) {
     if (markersStale) {
       findMarkers();
     }
-    placeMarker(markers[0], player);
-    placeMarker(markers[1], partner);
+    if (minimap) {
+      disc.view = minimapDiscView(minimap->layout, player.x, player.z, minimap->viewRadius);
+    }
+    placeMarker(markers[0], player, 0.5F, 0.5F, false);
+    MinimapDiscPoint at;
+    if (partner && minimap) {
+      at =
+          locateOnDisc(player.x, player.z, minimap->viewRadius, partner->x, partner->z, PartnerRim);
+    }
+    placeMarker(markers[1], partner, 0.5F + (at.x / 2.0F), 0.5F + (at.y / 2.0F), at.pinned);
   }
 
   void reloadChanged() {
@@ -1098,6 +1102,8 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
   }
   impl->originalBox = std::make_unique<OriginalBoxInstancer>();
   Rml::Factory::RegisterDecoratorInstancer(OriginalBoxDecorator, impl->originalBox.get());
+  impl->minimapDisc = std::make_unique<MinimapDiscInstancer>(impl->disc);
+  Rml::Factory::RegisterDecoratorInstancer(MinimapDiscDecorator, impl->minimapDisc.get());
   if (auto fonts = impl->installFontEngine(); !fonts) {
     return std::unexpected{fonts.error()};
   }

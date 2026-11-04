@@ -2,8 +2,8 @@
 # minimap on at its largest size, the pause menu's pages and the partner's page lie over nothing another document
 # draws (expect_clear) at 1280x720, 1920x1080 and 1024x768: where a window reaches the minimap's corner, the minimap
 # hides while it is open (has_class hud#minimap.covered) and shows again once it closes. Every capture checks that the
-# texts fit (text_fit); the partner's page has no capture here (its modern layout is another route's). Made for the modern look (--ui-skin modern), whose minimap shows on auto; it runs with the
-# original look too, and once per language. How to run it: docs/guides/prueba-vertical.md.
+# texts fit (text_fit); the partner's page has no capture here (its modern layout is another route's). The round
+# minimap shows by default with either look; it runs with both, and once per language. How to run it: docs/guides/prueba-vertical.md.
 name: minimap-clear
 device: keyboard
 timeout: 300
@@ -26,8 +26,7 @@ steps:
       steps:
         - menu_select: open-minimap
   - wait: {seconds: 0.3}
-  # Auto, then on; medium, then large.
-  - menu_select: minimap-mode
+  # On by default; medium, then large.
   - expect_setting: {minimap: "on"}
   - menu_select: minimap-size
   - expect_setting: {minimap_size: large}

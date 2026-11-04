@@ -18,3 +18,6 @@ shop_job.tally: "{tally} / {goal} bits"
 shop_job.better_pay: "Better pay from {tally}"
 shop_job.join_from: "Joins the city from {tally}"
 shop_job.joins: "Joins the city!"
+# The round minimap (an engine improvement): the north mark on its ring and the day under it, next to the time (clock.time).
+minimap.north: "N"
+minimap.day: "Day {day}"

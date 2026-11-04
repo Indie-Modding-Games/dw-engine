@@ -238,6 +238,37 @@ MinimapPoint locateOnMinimap(const MinimapLayout& layout, float worldX, float wo
           .v = row / static_cast<float>(layout.rows)};
 }
 
+float minimapViewRadius(const MinimapLayout& layout) {
+  const float side = static_cast<float>(std::max(layout.columns, layout.rows)) * layout.cellSize;
+  return std::clamp(side / 2.0F, MinimapMinViewRadius, MinimapMaxViewRadius);
+}
+
+MinimapDiscView minimapDiscView(const MinimapLayout& layout, float centreX, float centreZ,
+                                float viewRadius) {
+  if (layout.columns <= 0 || layout.rows <= 0 || layout.cellSize <= 0.0F) {
+    return {};
+  }
+  const float radiusCells = viewRadius / layout.cellSize;
+  return {.centre = locateOnMinimap(layout, centreX, centreZ),
+          .radiusU = radiusCells / static_cast<float>(layout.columns),
+          .radiusV = radiusCells / static_cast<float>(layout.rows)};
+}
+
+MinimapDiscPoint locateOnDisc(float centreX, float centreZ, float viewRadius, float worldX,
+                              float worldZ, float rim) {
+  if (viewRadius <= 0.0F) {
+    return {};
+  }
+  // North-up: world +X is right and +Z is down on the disc.
+  const float x = (worldX - centreX) / viewRadius;
+  const float y = (worldZ - centreZ) / viewRadius;
+  const float distance = std::hypot(x, y);
+  if (distance <= rim) {
+    return {.x = x, .y = y, .pinned = false};
+  }
+  return {.x = x * rim / distance, .y = y * rim / distance, .pinned = true};
+}
+
 float minimapHeading(float directionX, float directionZ) {
   // The image has +X to the right and +Z down, so up on the image is -Z.
   constexpr float DegreesPerRadian = 180.0F / std::numbers::pi_v<float>;

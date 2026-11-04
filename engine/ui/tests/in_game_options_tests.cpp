@@ -25,12 +25,12 @@ namespace {
 using fixture::Screen;
 
 // The game's options as ui/common/game_options.lua lists them, in order.
-constexpr std::array<std::string_view, 13> GameOptions{
-    "free-exploration", "smooth-motion", "save-notice",
-    "digital-time",     "bulk-trades",   "evolution-requirements",
-    "translated-signs", "status-extras", "canonical-stages",
-    "long-names",       "shop-job-bar",  "continuous-music",
-    "need-bubble-stack"};
+constexpr std::array<std::string_view, 14> GameOptions{
+    "free-exploration",  "smooth-motion", "save-notice",
+    "digital-time",      "bulk-trades",   "evolution-requirements",
+    "translated-signs",  "status-extras", "canonical-stages",
+    "long-names",        "shop-job-bar",  "continuous-music",
+    "need-bubble-stack", "show-minimap"};
 
 // In the original look the menu's box grows in for 5 frames at 20 a second and ignores the keys
 // until it is in place (ui/common/original_box.lua): wait those 0.25 s before pressing anything.
@@ -87,7 +87,6 @@ TEST_CASE("the options page lists every game option in a row of its own, and onl
   CHECK(screen.ui->elementText("pause_menu", "free-exploration-value") == "No");
   CHECK(screen.ui->elementText("pause_menu", "long-names-value") == "Sí");
   // The rows the list does not fill stay hidden.
-  CHECK(screen.ui->elementHasClass("pause_menu", "option-slot-15", "hidden"));
   CHECK(screen.ui->elementHasClass("pause_menu", "option-slot-16", "hidden"));
   // The language and the original-looking text, as on the title.
   CHECK(screen.ui->elementText("pause_menu", "language-value") == "Español");
@@ -135,8 +134,32 @@ game_options[#game_options + 1] = {
   CHECK(screen.ui->elementText("pause_menu", "movement-value") == "pause_menu.movement.keys");
   std::ignore = screen.ui->takeCommands();
   REQUIRE(
-      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "15", "1"}));
+      screen.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "16", "1"}));
   CHECK(sent(screen.ui->takeCommands(), "movement", UiValue{std::string{"mouse"}}));
+}
+
+TEST_CASE("the options page shows and hides the minimap with either look") {
+  for (const std::string_view skin : {"original", "modern"}) {
+    CAPTURE(skin);
+    Screen screen{"pause_menu", "es"};
+    screen.skin(skin);
+    // The old "as the skin decides" reads as shown.
+    screen.ui->setSetting("minimap", std::string{"auto"});
+    openOnOptions(screen);
+    CHECK_FALSE(screen.ui->elementHasClass("pause_menu", "show-minimap", "hidden"));
+    CHECK(screen.ui->elementText("pause_menu", "option-slot-15-label") == "Mostrar minimapa");
+    CHECK(screen.ui->elementText("pause_menu", "show-minimap-value") == "Sí");
+    std::ignore = screen.ui->takeCommands();
+    REQUIRE(screen.ui->callScript("pause_menu", "adjust_slot",
+                                  std::vector<std::string>{"", "15", "1"}));
+    CHECK(sent(screen.ui->takeCommands(), "minimap", UiValue{std::string{"off"}}));
+    // The row shows what the game publishes back.
+    screen.ui->setSetting("minimap", std::string{"off"});
+    CHECK(screen.ui->elementText("pause_menu", "show-minimap-value") == "No");
+    REQUIRE(screen.ui->callScript("pause_menu", "adjust_slot",
+                                  std::vector<std::string>{"", "15", "1"}));
+    CHECK(sent(screen.ui->takeCommands(), "minimap", UiValue{std::string{"on"}}));
+  }
 }
 
 } // namespace dwe::ui

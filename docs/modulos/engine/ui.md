@@ -27,6 +27,16 @@ al cargarla, así que dibujarla cuesta lo mismo que la original (lo usa la pesta
 [docs/architecture/ui.md](../../architecture/ui.md); cómo editar menús en
 [docs/guides/editar-menus.md](../../guides/editar-menus.md).
 
+El HUD enseña el minimapa como un disco alrededor del jugador, con el norte arriba: el decorador `minimap-disc`
+(`src/minimap_disc.*`, registrado como `original-box`) pinta el disco con la imagen de `buildMinimap` y su aro, liso
+con brillo (`plain`, aspecto moderno) o con las franjas del borde de las ventanas del original (`original`); el
+cálculo de la ventana y de los marcadores (`minimapDiscView`, `locateOnDisc`) está en `dwe/ui/minimap.hpp`
+([ui.md](../../architecture/ui.md#minimapa)).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Minimapa redondo | No existe | Disco del mapa centrado en el jugador, norte (−Z) arriba, radio de vista de 800 a 1800 unidades según el mapa; compañero en el borde (90 % del radio) si queda fuera; aro `plain` o `original` | `minimap_tests.cpp` («the round minimap's view…», «…window is centred on the player, north-up», «a marker lands on the disc…»), `minimap_disc_tests.cpp`, `ui_tests.cpp` («…round the player, north-up») | Mejora (opción) |
+
 La fuente de mapa de bits se dibuja a un múltiplo entero de su celda (11 píxeles de alto), para que cada píxel siga
 nítido: a 720 de alto, el más cercano al tamaño de letra, como se maquetaron las cajas; a otra altura, ese múltiplo
 por los píxeles por dp (`FontEngine::setDpRatio`), redondeado hacia abajo. Antes se redondeaba el tamaño a cada

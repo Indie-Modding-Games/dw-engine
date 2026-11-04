@@ -59,8 +59,9 @@ struct MinimapStyle {
   int pixelsPerCell = 6;
   // Empty cells kept around the walkable area, so the edge is not cut.
   int margin = 1;
-  std::uint32_t walkable = 0xD8E2EEC8;
-  std::uint32_t edge = 0xFFFFFFFF;
+  // A glassy light blue over the round minimap's dark disc, with light edges.
+  std::uint32_t walkable = 0x86BCE2B0;
+  std::uint32_t edge = 0xE8F6FFFF;
   std::uint32_t exit = 0xFFB547FF;
 };
 
@@ -82,6 +83,42 @@ struct MinimapPoint {
 [[nodiscard]] assets::Image buildMinimapMarker(std::uint32_t size);
 
 [[nodiscard]] MinimapPoint locateOnMinimap(const MinimapLayout& layout, float worldX, float worldZ);
+
+// The round HUD minimap (an engine improvement; the original has none) shows a disc of the map
+// centred on the player, north-up: world -Z at the top, as the image is. The original's cameras are
+// fixed per map and cut between angles within one, so a map turned with the camera would jump at
+// every cut and one turned with the player's facing would disagree with the fixed screen; north-up
+// keeps each map's shape the same wherever the camera looks.
+//
+// The world distance from the disc's centre to its rim: half the map image's longer side, so a
+// player in the middle of the map sees all of it, kept between MinViewRadius (small rooms are not
+// blown up) and MaxViewRadius (wide maps keep their detail).
+inline constexpr float MinimapMinViewRadius = 800.0F;
+inline constexpr float MinimapMaxViewRadius = 1800.0F;
+[[nodiscard]] float minimapViewRadius(const MinimapLayout& layout);
+
+// The disc's window on the map image, in image coordinates (0 to 1 on each axis): its centre and
+// its radius along u and along v (they differ when the image is not square).
+struct MinimapDiscView {
+  MinimapPoint centre{.u = 0.5F, .v = 0.5F};
+  float radiusU = 0.5F;
+  float radiusV = 0.5F;
+};
+
+[[nodiscard]] MinimapDiscView minimapDiscView(const MinimapLayout& layout, float centreX,
+                                              float centreZ, float viewRadius);
+
+// Where a world position falls on the disc: x to the right and y down, 0 at the centre and 1 at
+// the rim. A position farther than `rim` is pinned to it, in its direction, so a partner out of
+// view still shows on the edge.
+struct MinimapDiscPoint {
+  float x = 0.0F;
+  float y = 0.0F;
+  bool pinned = false;
+};
+
+[[nodiscard]] MinimapDiscPoint locateOnDisc(float centreX, float centreZ, float viewRadius,
+                                            float worldX, float worldZ, float rim);
 
 // The angle to rotate an up-pointing marker so it points along a world-space facing direction on
 // the XZ plane, in degrees clockwise.

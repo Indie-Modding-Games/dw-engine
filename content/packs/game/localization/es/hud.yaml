@@ -18,3 +18,6 @@ shop_job.tally: "{tally} / {goal} bits"
 shop_job.better_pay: "Mejor paga desde {tally}"
 shop_job.join_from: "Se une a la ciudad desde {tally}"
 shop_job.joins: "¡Se une a la ciudad!"
+# El minimapa redondo (una mejora del motor): la marca del norte en su aro y el día bajo él, junto a la hora (clock.time).
+minimap.north: "N"
+minimap.day: "Día {day}"

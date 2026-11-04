@@ -91,7 +91,8 @@ local entries = {
   },
 }
 
-local minimap_modes = { "auto", "on", "off" }
+-- The round minimap: on (the default, also for the old auto) or off.
+local minimap_modes = { "on", "off" }
 local minimap_sizes = { "small", "medium", "large" }
 local ui_scales = { 0.75, 0.9, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0 }
 
@@ -172,7 +173,7 @@ local function refresh(document)
   local font = ui.setting("text_font") == "original" and "original" or "modern"
   value("text-font", t("main_menu.text_font." .. font))
   value("ui-skin", skin_choice.name())
-  local mode = index_of(minimap_modes, ui.setting("minimap")) and ui.setting("minimap") or "auto"
+  local mode = index_of(minimap_modes, ui.setting("minimap")) and ui.setting("minimap") or "on"
   value(
     "minimap",
     t((orig and "main_menu.original.option.minimap." or "pause_menu.minimap_mode.") .. mode)

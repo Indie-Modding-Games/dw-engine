@@ -113,12 +113,31 @@ salidas de los warps 0–9 que llevan a algún mapa (`tamer.c`). Una celda de re
 `(columna, fila)` empieza en `x = (columna − 50) · 100`, `z = (fila − 50) · 100` del mundo (`map_collision.c:
 getTileTrigger`, con `world-space.md`).
 
-`buildMinimap` recorta la imagen al rectángulo de las celdas transitables más un margen, rellena las celdas, dibuja
-un borde donde tocan una pared y pinta las salidas de otro color. La imagen se registra como `generated:minimap/<n>`
-y se muestra en los elementos del contrato del HUD. Los marcadores se colocan en porcentaje sobre el marco y giran
-según la dirección en la que mira cada uno (arriba es −Z). `setMinimapMarkers` se llama en cada frame, pero la UI
-guarda los elementos de los marcadores y lo que muestran: solo los vuelve a buscar cuando se cargan documentos, y
-solo les cambia las propiedades cuando el marcador se ha movido.
+`buildMinimap` recorta la imagen al rectángulo de las celdas transitables más un margen, rellena las celdas (azul
+claro translúcido), dibuja un borde claro donde tocan una pared y pinta las salidas en naranja. La imagen se registra
+como `generated:minimap/<n>`.
+
+El HUD la enseña como un **minimapa redondo** (una mejora, encendida por defecto con los dos aspectos): un disco del
+mapa alrededor del jugador, con el norte (−Z) arriba, el nombre del mapa encima y el día y la hora debajo. Lo dibuja el
+decorador `minimap-disc` (`engine/ui/src/minimap_disc.*`), que rellena la caja de `#minimap-frame` con un abanico de
+triángulos cuyas coordenadas de textura son la ventana del disco sobre la imagen (`minimapDiscView`: centro en el
+jugador, radio `minimapViewRadius`, la mitad del lado mayor del mapa entre 800 y 1800 unidades) y dibuja fuera de esa
+caja el aro: `plain` es un aro con un brillo hacia fuera y una sombra hacia dentro (el aspecto moderno), `original`
+son cuatro franjas de un píxel del original con los colores del borde de sus ventanas (negro, cian claro, cian oscuro y
+negro, `ui.c: renderUIBoxBorder`). Fuera de la imagen el muestreador toma el color de su borde, que son celdas bloqueadas
+y por tanto transparentes.
+
+**Por qué con el norte arriba y no girando:** las cámaras del original son fijas por mapa y cambian de ángulo dentro
+de un mismo mapa; un minimapa que girara con la cámara saltaría en cada corte, y uno que girara con el jugador no
+coincidiría con la pantalla fija. Con el norte arriba cada mapa tiene siempre la misma forma.
+
+El marcador del jugador va siempre en el centro del disco y gira según hacia dónde mira; el del compañero va donde
+está respecto al jugador (`locateOnDisc`) y, si queda fuera de la vista, en el borde (al 90 % del radio) en su
+dirección, con la clase `pinned`. `setMinimapMarkers` se llama en cada frame, pero la UI guarda los elementos de los
+marcadores y lo que muestran: solo los vuelve a buscar cuando se cargan documentos, y solo les cambia las propiedades
+cuando el marcador se ha movido; el decorador rehace el abanico solo cuando la ventana cambia. El cálculo
+(`minimapViewRadius`, `minimapDiscView`, `locateOnDisc`, `minimapHeading`) está en `dwe/ui/minimap.hpp`, sin nada del
+HUD, para que otra vista del mapa (un mapa grande) pueda usarlo igual.
 
 ### Contrato del HUD
 
@@ -127,21 +146,23 @@ un mod puede colocarlos y darles estilo como quiera, pero con estos ids y estos 
 
 | Id | Constante | Qué hace la UI |
 |---|---|---|
-| `minimap-image` | `hud::MinimapImage` | Un `<img>`: le pone como `src` la imagen del minimapa del mapa actual |
-| `minimap-frame` | `hud::MinimapFrame` | La caja que contiene la imagen y los marcadores: le da `width`, `height`, `left` y `top` en porcentaje para mantener la proporción del mapa dentro de su panel cuadrado |
+| `minimap-frame` | `hud::MinimapFrame` | El disco: un aspecto le pone `decorator: minimap-disc(...)` y la UI le da la ventana del mapa; los marcadores van dentro, en porcentaje de su caja |
 | `minimap-name` | `hud::MinimapName` | Su texto es el nombre del mapa, el texto de la clave que da `setMinimap`, en el idioma del juego |
-| `minimap-player`, `minimap-partner` | `hud::MinimapPlayer`, `hud::MinimapPartner` | Los marcadores: `left`, `top` (en porcentaje del marco), `transform: rotate(...)`, y `display: none` sin marcador |
+| `minimap-player`, `minimap-partner` | `hud::MinimapPlayer`, `hud::MinimapPartner` | Los marcadores: `left`, `top` (en porcentaje del disco; el jugador siempre al 50 %), `transform: rotate(...)`, la clase `pinned` en el compañero fuera de la vista, y `display: none` sin marcador |
 
-**El minimapa es una diferencia opcional: el original no tiene minimapa.** El ajuste `minimap` vale `auto` (al
-empezar), `on` u `off`, y el menú de pausa lo cambia (entrada «Mostrar minimapa»: «Según el aspecto», «Siempre»,
-«Nunca»). Con `auto` el HUD pone la clase `auto` en `#minimap` y cada aspecto decide en su RCSS: el moderno lo enseña
-y el de aspecto original lo esconde (`#minimap.auto`); con `off` lo esconde (`hidden`) y con `on` lo enseña con
-cualquier aspecto. Sustituye al booleano `minimap_visible`: el comando antiguo todavía se acepta, con `true` como
-`on` y `false` como `off`, y cualquier otro valor (o ninguno) es `auto` (`minimapModeOf`, `apps/game/src/
-minimap_setting.hpp`). La elección se guarda en el `settings.yaml` de los datos del usuario, como `ui_skin` y
-`text_font` (clave `minimap`, `MinimapChanger`; las autopruebas no lo tocan), y la partida siguiente empieza con ella
-(`startMinimapMode`): sin clave es `auto`, y un valor que no es un modo se avisa en el log y también es `auto`.
-`minimap_visible` nunca se guardó, así que no hay ajustes que migrar.
+El script del HUD (`ui/hud/logic.lua`) escribe además el día y la hora en `#minimap-day` y `#minimap-time`, y la
+marca del norte es el texto `hud.minimap.north` de `#minimap-north`.
+
+**El minimapa es una diferencia opcional: el original no tiene minimapa.** El ajuste `minimap` vale `on` (al
+empezar) u `off`; lo cambian la fila «Mostrar minimapa» de las opciones en partida (`ui/common/game_options.lua`), la
+página «Minimapa» del menú de pausa y las opciones del título, y se aplica al momento. Con `off` el HUD pone la clase
+`hidden` en `#minimap`; también la pone en un combate (`battle.active`) y mientras el juego no lo deja ver
+(`hud.minimap_allowed` falso: escenas, charlas, menús, fundidos y minijuegos; [game.md](../modulos/apps/game.md#minimapa-redondo)).
+Sustituye al antiguo `auto` («según el aspecto») y al booleano `minimap_visible`: el `auto` guardado y cualquier valor
+desconocido se leen como `on` (este último se avisa en el log), y el comando antiguo todavía se acepta, con `true`
+como `on` y `false` como `off` (`minimapModeOf`, `apps/game/src/minimap_setting.hpp`). La elección se guarda en el
+`settings.yaml` de los datos del usuario, como `ui_skin` y `text_font` (clave `minimap`, `MinimapChanger`; las
+autopruebas no lo tocan), y la partida siguiente empieza con ella (`startMinimapMode`).
 
 ## Estado del campo
 

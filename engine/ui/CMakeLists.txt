@@ -12,6 +12,7 @@ dwe_add_module(ui
         src/font_engine.cpp
         src/image_reference.cpp
         src/minimap.cpp
+        src/minimap_disc.cpp
         src/navigation.cpp
         src/original_box.cpp
         src/prompts.cpp

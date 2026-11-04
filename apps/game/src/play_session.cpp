@@ -1290,6 +1290,12 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   // partnerTickNormal), so a care scene shows no need bubble; and in its training state
   // (partnerSetState(10)), so a course shows it while game time stands still.
   const bool fieldRunning = !paused() && field.gameTimeRan();
+  publishMinimapAllowed(MinimapScene{
+      .fieldRunning = fieldRunning,
+      .battle = battleScreen_.active(),
+      .minigame = gymScreen_.active() || fishingScreen_.active() || curlingScreen_.active() ||
+                  scheduleScreen_.active() || bracketScreen_.opened() || matchScreen_.shown() ||
+                  evolutionScene_.active() || deathScene_.active() || endingScene_.active()});
   showButterfly(fieldIdle && !field.heldForCare(), session);
   fieldHud_.update(fieldRunning, fieldRunning || (!paused() && gymScreen_.active()),
                    field.heldForCare()
@@ -1327,6 +1333,14 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
 
 // The shop job's bar (shop_job_bar.hpp): the customer count and the tally, published when they
 // change.
+void PlaySession::publishMinimapAllowed(const MinimapScene& scene) {
+  const bool allowed = minimapAllowed(scene);
+  if (minimapAllowed_ != allowed) {
+    minimapAllowed_ = allowed;
+    context_.ui->setSetting(MinimapAllowedSetting, allowed);
+  }
+}
+
 void PlaySession::publishShopJob() {
   ShopJobFrame frame{.enabled = context_.userSettings->shopJobBar.value_or(true),
                      .map = scene_->field().mapId()};

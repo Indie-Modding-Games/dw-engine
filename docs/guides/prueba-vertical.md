@@ -111,7 +111,7 @@ use el ordenador, o el que descansa sobre la ventana, movería el puntero bajo u
 que se puede seguir usando el escritorio; un mando real sí llega. Las rutas de la prueba están en `tests/autotest/`:
 
 - `route-keyboard.yaml`, `route-gamepad.yaml` y `route-mouse.yaml`: File City → casa del anciano → File City con
-  cada dispositivo; abren el menú con ese dispositivo, ponen el minimapa en «Siempre», «Nunca» y otra vez «Según el aspecto», se paran detrás de
+  cada dispositivo; abren el menú con ese dispositivo, apagan el minimapa («No») y lo vuelven a encender («Sí»), se paran detrás de
   una capa de profundidad de File City, cambian la ventana a 800x600, 1280x720, 1920x1080, 2560x1080 y pantalla
   completa, y hacen capturas. Con el aspecto original, el minimapa y las opciones están entre las herramientas de la
   página del jugador (Tab en ella; Norte en el mando), como el menú del original, que solo tiene sus seis entradas;

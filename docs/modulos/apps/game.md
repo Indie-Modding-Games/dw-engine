@@ -851,6 +851,24 @@ UI desde `PlaySession` (`NeedBubbleStackSetting`) y el HUD junta hasta tres nece
 |---|---|---|---|---|
 | Burbuja con dos o más necesidades | `partner_impl.c: handleConditionBubble`: una cada vez, por prioridad (sueño, cansancio, hambre, baño, herida, enfermedad); a los 50 frames cambia a la más alta de las demás, así que se turnan las dos más urgentes y una tercera no sale | Hasta tres en un globo ensanchado con las piezas del original, la más urgente a la izquierda; con una sola, la del original; apagada, la del original entera. Medido en dwe: cansancio + herida, 50 píxeles; cansancio + herida + enfermedad, 68 | `ui_tests`: «the need bubble shows several needs side by side ...»; `user_settings_tests`; `in_game_options_tests` | Mejora (opción) |
 
+## Minimapa redondo
+
+Mejora opcional, encendida por defecto con los dos aspectos (no cambia ninguna regla; el original no tiene
+minimapa): el ajuste `minimap` (`on` u `off`; el `auto` de ajustes antiguos se lee como `on`) se cambia en la fila
+«Mostrar minimapa» («Show minimap» en inglés) de las opciones en partida, en la página «Minimapa» del menú de pausa y
+en las opciones del título; se aplica al momento, sin recargar el mapa, y se guarda en los ajustes del usuario
+(`MinimapChanger`, `apps/game/src/minimap_setting.hpp`). Cómo se dibuja: [ui.md](../../architecture/ui.md#minimapa).
+
+`PlaySession` publica `hud.minimap_allowed` (`minimapAllowed`): el minimapa solo sale mientras corre el tiempo del
+campo (sin menú, escena, charla, fundido ni cambio de mapa, como el reloj y las barras del original:
+`clock.c: renderGameClock`) y nunca en un combate, un entrenamiento, la pesca, las piedras, las pantallas del torneo,
+una evolución, una muerte o el final. Va arriba a la derecha, lejos del reloj, las barras del compañero y la pista
+del menú, y se esconde bajo cualquier ventana (más arriba, «Minimapa bajo las ventanas»).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Minimapa redondo en el HUD | No existe | Disco del mapa alrededor del jugador, con el norte (−Z) arriba, el nombre del mapa encima y el día y la hora debajo (el aspecto original, solo la hora, como su caja bajo la esfera); el jugador en el centro con su orientación, el compañero donde está (en el borde si queda fuera); con los dos aspectos (el original con las cajas, la fuente y los colores de borde del juego). Se ve con `on` y fuera de combates, escenas y minijuegos | `minimap_setting_tests.cpp` («the minimap shows only while the field runs…», «the options page's minimap row hides the HUD's minimap at once and saves the choice», modos y guardado); `in_game_options_tests.cpp` («the options page shows and hides the minimap with either look»); `ui_tests.cpp` («the HUD shows the minimap unless it is off…», «…round the player, north-up»); `minimap_tests.cpp` y `minimap_disc_tests.cpp` (cálculo del disco y del aro); ruta `route-minimap-clear.yaml` | Mejora (opción) |
+
 ## Opciones en partida
 
 Las opciones se cambian sin volver al título: la página «Opciones» del menú de pausa tiene las de pantalla (modo de

@@ -111,6 +111,17 @@ game_options = {
     label = "pause_menu.need_bubble_stack",
     default = true,
   },
+  -- Show minimap: the round minimap at the top right, with the map's name and the day and time
+  -- (on by default, with either look; off leaves the screen as the original's). The game applies
+  -- it at once and saves it with the user's settings; the minimap page of the menu changes it too.
+  {
+    id = "show-minimap",
+    setting = "minimap",
+    label = "pause_menu.minimap_mode",
+    values = { "on", "off" },
+    texts = "pause_menu.minimap_mode",
+    default = "on",
+  },
 }
 
 -- The option's current value: what the game published, or its default.

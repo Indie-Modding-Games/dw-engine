@@ -48,8 +48,8 @@ local city_signature = ""
 local city_cursor_cell = nil
 
 local minimap_sizes = { "small", "medium", "large" }
--- Whether the HUD shows the minimap: as the skin decides (auto), always (on) or never (off).
-local minimap_modes = { "auto", "on", "off" }
+-- Whether the HUD shows the round minimap: on (the default, also for the old auto) or off.
+local minimap_modes = { "on", "off" }
 local ui_scales = { 0.75, 0.9, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0 }
 
 local function on_off(value)
@@ -1478,7 +1478,7 @@ local function refresh(document)
   document:get("sleep"):set_class("hidden", false)
   document:get("fish"):set_class("hidden", fishing() == 0)
   document:get("fish"):set_class("unavailable", fishing() ~= 2)
-  local mode = index_of(minimap_modes, ui.setting("minimap")) and ui.setting("minimap") or "auto"
+  local mode = index_of(minimap_modes, ui.setting("minimap")) and ui.setting("minimap") or "on"
   document:get("minimap-mode-value"):set_text(t("pause_menu.minimap_mode." .. mode))
   local size = index_of(minimap_sizes, ui.setting("minimap_size")) and ui.setting("minimap_size")
     or "medium"

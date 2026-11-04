@@ -49,6 +49,7 @@
 #include "gym_screen.hpp"
 #include "item_keeper_screen.hpp"
 #include "jukebox_screen.hpp"
+#include "minimap_setting.hpp"
 #include "movie_rules.hpp"
 #include "naming_box.hpp"
 #include "options.hpp"
@@ -280,6 +281,8 @@ private:
   void showButterfly(bool partnerNormal, const session::GameSession& session);
   // The shop job's progress bar (shop_job_bar.hpp), published when what it shows changed.
   void publishShopJob();
+  // Publishes hud.minimap_allowed when it changes.
+  void publishMinimapAllowed(const MinimapScene& scene);
   // Shows the story lock's message in the dialog, unless the dialog is on screen already.
   void showLockNotice(const std::string& textKey);
   // The bulk trades (bulk_amount.hpp), on the trader's screen, the card shop and the pause menu.
@@ -340,6 +343,9 @@ private:
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;
   bool evolutionRanLastFrame_ = false;
+  // What hud.minimap_allowed last said (minimap_setting.hpp: minimapAllowed); nothing before the
+  // first frame publishes it.
+  std::optional<bool> minimapAllowed_;
   // Whether a command changed what the script warps' guards read (the partner's menu).
   bool guardFactsChanged_ = false;
   // Whether this tick gave the field the player's walk (tick).

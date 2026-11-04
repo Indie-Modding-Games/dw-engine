@@ -769,16 +769,17 @@ TEST_CASE("the pause menu works with the keyboard alone") {
   press(*ui, input, input::keys::Return);
   CHECK(ui->elementText("pause_menu", "title") == "Minimap");
   CHECK(ui->focusedElementId("pause_menu") == "minimap-mode");
-  CHECK(ui->elementText("pause_menu", "minimap-mode-value") == "As the style");
+  // The old auto reads as on.
+  CHECK(ui->elementText("pause_menu", "minimap-mode-value") == "Yes");
 
   press(*ui, input, input::keys::Return);
   auto commands = ui->takeCommands();
   REQUIRE(commands.size() == 1);
   CHECK(commands[0].name == "minimap");
-  CHECK(commands[0].value == UiValue{std::string{"on"}});
+  CHECK(commands[0].value == UiValue{std::string{"off"}});
   // The label follows what the game reports, not what was asked.
   ui->setSetting("minimap", std::string{"off"});
-  CHECK(ui->elementText("pause_menu", "minimap-mode-value") == "Never");
+  CHECK(ui->elementText("pause_menu", "minimap-mode-value") == "No");
 
   // Right on an option changes it, as confirm does.
   press(*ui, input, input::keys::Down);
@@ -1432,26 +1433,38 @@ TEST_CASE(
   CHECK_FALSE(bubbleNeed(*ui).empty());
 }
 
-TEST_CASE("the HUD leaves the minimap to the skin on auto, and shows or hides it on on and off") {
+TEST_CASE("the HUD shows the minimap unless it is off or the game does not allow it now") {
   Content content;
   auto ui = createUi(content.mount());
   REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
   ui->show("hud");
   ui->update();
-  // Unset is auto.
-  CHECK(ui->elementHasClass("hud", "minimap", "auto"));
+  // Unset, and the old auto, show it with either skin.
   CHECK_FALSE(ui->elementHasClass("hud", "minimap", "hidden"));
   ui->setSetting("minimap", std::string{"off"});
-  CHECK_FALSE(ui->elementHasClass("hud", "minimap", "auto"));
   CHECK(ui->elementHasClass("hud", "minimap", "hidden"));
   ui->setSetting("minimap", std::string{"on"});
-  CHECK_FALSE(ui->elementHasClass("hud", "minimap", "auto"));
   CHECK_FALSE(ui->elementHasClass("hud", "minimap", "hidden"));
   ui->setSetting("minimap", std::string{"auto"});
-  CHECK(ui->elementHasClass("hud", "minimap", "auto"));
+  CHECK_FALSE(ui->elementHasClass("hud", "minimap", "hidden"));
+  // The old boolean setting's false is off too.
+  ui->setSetting("minimap", false);
+  CHECK(ui->elementHasClass("hud", "minimap", "hidden"));
+  ui->setSetting("minimap", std::string{"on"});
+
+  // A scene, a talk, a menu or a minigame (hud.minimap_allowed false) and a battle hide it, and
+  // it comes back with the field.
+  ui->setSetting("hud.minimap_allowed", false);
+  CHECK(ui->elementHasClass("hud", "minimap", "hidden"));
+  ui->setSetting("hud.minimap_allowed", true);
+  CHECK_FALSE(ui->elementHasClass("hud", "minimap", "hidden"));
+  ui->setSetting("battle.active", true);
+  CHECK(ui->elementHasClass("hud", "minimap", "hidden"));
+  ui->setSetting("battle.active", false);
+  CHECK_FALSE(ui->elementHasClass("hud", "minimap", "hidden"));
 }
 
-TEST_CASE("the HUD shows the minimap of the current map and its markers") {
+TEST_CASE("the HUD shows the minimap of the current map round the player, north-up") {
   Content content;
   auto ui = createUi(content.mount());
   REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
@@ -1471,34 +1484,40 @@ TEST_CASE("the HUD shows the minimap of the current map and its markers") {
   const Ui::Point frameAt = frame.value_or(Ui::Point{});
   REQUIRE(player.has_value());
   const Ui::Point playerAt = player.value_or(Ui::Point{});
-  // The player stands in the middle of the map, so the marker's centre is the frame's.
   CHECK(playerAt.x == doctest::Approx(frameAt.x).epsilon(0.02));
   CHECK(playerAt.y == doctest::Approx(frameAt.y).epsilon(0.02));
 
-  // A quarter of the way along the map and three quarters down it, the marker is there in the frame
-  // too.
+  // The disc follows the player: its marker stays in the middle wherever it walks, and the partner
+  // shows where it stands from the player, east to the right and south down. The view's radius is
+  // the smallest (MinimapMinViewRadius: 800), so 200 units are a quarter of the disc's radius.
+  const auto radius = ui->elementRect("hud", "minimap-frame");
+  REQUIRE(radius.has_value());
+  const float discRadius = (radius->right - radius->left) / 2.0F;
   ui->setMinimapMarkers(MinimapMarker{.x = 100.0F, .z = 150.0F, .facingX = 0.0F, .facingZ = 1.0F},
-                        MinimapMarker{.x = 350.0F, .z = 50.0F, .facingX = 0.0F, .facingZ = -1.0F});
+                        MinimapMarker{.x = 300.0F, .z = 50.0F, .facingX = 0.0F, .facingZ = -1.0F});
   ui->update();
-  const auto frameBox = ui->elementCenter("hud", "minimap-frame");
   const auto movedPlayer = ui->elementCenter("hud", "minimap-player");
   const auto partner = ui->elementCenter("hud", "minimap-partner");
-  REQUIRE(frameBox.has_value());
   REQUIRE(movedPlayer.has_value());
   REQUIRE(partner.has_value());
-  const Ui::Point frameCentre = frameBox.value_or(Ui::Point{});
   const Ui::Point playerNow = movedPlayer.value_or(Ui::Point{});
   const Ui::Point partnerNow = partner.value_or(Ui::Point{});
-  // The player is 100 units left of and 50 below the centre, the partner 150 right of and 50 above
-  // it.
-  CHECK(playerNow.x < frameCentre.x - 1.0F);
-  CHECK(playerNow.y > frameCentre.y + 1.0F);
-  CHECK(partnerNow.x > frameCentre.x + 1.0F);
-  CHECK(partnerNow.y < frameCentre.y - 1.0F);
-  CHECK((frameCentre.x - playerNow.x) ==
-        doctest::Approx((partnerNow.x - frameCentre.x) * 2.0F / 3.0F).epsilon(0.05));
-  CHECK((playerNow.y - frameCentre.y) ==
-        doctest::Approx(frameCentre.y - partnerNow.y).epsilon(0.05));
+  CHECK(playerNow.x == doctest::Approx(frameAt.x).epsilon(0.02));
+  CHECK(playerNow.y == doctest::Approx(frameAt.y).epsilon(0.02));
+  CHECK(partnerNow.x - frameAt.x == doctest::Approx(discRadius * 200.0F / 800.0F).epsilon(0.05));
+  CHECK(frameAt.y - partnerNow.y == doctest::Approx(discRadius * 100.0F / 800.0F).epsilon(0.05));
+  CHECK_FALSE(ui->elementHasClass("hud", "minimap-partner", "pinned"));
+
+  // A partner out of view waits on the rim, in its direction.
+  ui->setMinimapMarkers(MinimapMarker{.x = 100.0F, .z = 150.0F, .facingX = 0.0F, .facingZ = 1.0F},
+                        MinimapMarker{.x = 3100.0F, .z = 150.0F, .facingX = 0.0F, .facingZ = 1.0F});
+  ui->update();
+  const auto pinned = ui->elementCenter("hud", "minimap-partner");
+  REQUIRE(pinned.has_value());
+  CHECK(ui->elementHasClass("hud", "minimap-partner", "pinned"));
+  CHECK(pinned.value_or(Ui::Point{}).x - frameAt.x ==
+        doctest::Approx(discRadius * 0.9F).epsilon(0.05));
+  CHECK(pinned.value_or(Ui::Point{}).y == doctest::Approx(frameAt.y).epsilon(0.02));
 
   // A new map replaces the image.
   grid.columns = 2;

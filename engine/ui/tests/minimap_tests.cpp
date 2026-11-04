@@ -7,10 +7,12 @@
 
 #include <doctest/doctest.h>
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -119,6 +121,62 @@ TEST_CASE("markers turn with the facing direction, clockwise from up (-Z)") {
   CHECK(minimapHeading(1.0F, 0.0F) == doctest::Approx(90.0F));
   CHECK(minimapHeading(0.0F, 1.0F) == doctest::Approx(180.0F));
   CHECK(minimapHeading(-1.0F, 0.0F) == doctest::Approx(-90.0F));
+}
+
+TEST_CASE("the round minimap's view is the map's half side, kept between its limits") {
+  MinimapLayout layout{.firstColumn = 0,
+                       .firstRow = 0,
+                       .columns = 30,
+                       .rows = 20,
+                       .pixelsPerCell = 6,
+                       .cellSize = 100.0F,
+                       .originX = 0.0F,
+                       .originZ = 0.0F};
+  CHECK(minimapViewRadius(layout) == doctest::Approx(1500.0F));
+  layout.columns = 6;
+  layout.rows = 4;
+  CHECK(minimapViewRadius(layout) == doctest::Approx(MinimapMinViewRadius));
+  layout.columns = 90;
+  CHECK(minimapViewRadius(layout) == doctest::Approx(MinimapMaxViewRadius));
+}
+
+TEST_CASE("the round minimap's window is centred on the player, north-up") {
+  const MinimapLayout layout{.firstColumn = 2,
+                             .firstRow = 1,
+                             .columns = 20,
+                             .rows = 10,
+                             .pixelsPerCell = 6,
+                             .cellSize = 100.0F,
+                             .originX = -1000.0F,
+                             .originZ = -500.0F};
+  // The player at column 7, row 4 of the image: the window's centre is there, and its radius is
+  // the view's 400 units (4 cells) over the image's 20 columns and 10 rows.
+  const MinimapDiscView view = minimapDiscView(layout, -1000.0F + 900.0F, -500.0F + 500.0F, 400.0F);
+  CHECK(view.centre.u == doctest::Approx(7.0F / 20.0F));
+  CHECK(view.centre.v == doctest::Approx(4.0F / 10.0F));
+  CHECK(view.radiusU == doctest::Approx(4.0F / 20.0F));
+  CHECK(view.radiusV == doctest::Approx(4.0F / 10.0F));
+  // An empty layout gives the whole image.
+  const MinimapDiscView none = minimapDiscView(MinimapLayout{}, 0.0F, 0.0F, 400.0F);
+  CHECK(none.centre.u == doctest::Approx(0.5F));
+  CHECK(none.radiusV == doctest::Approx(0.5F));
+}
+
+TEST_CASE("a marker lands on the disc from the player, and out of view it waits on the rim") {
+  // East is right and south (+Z) is down, in parts of the radius.
+  const MinimapDiscPoint east = locateOnDisc(100.0F, 200.0F, 1000.0F, 600.0F, 200.0F, 0.9F);
+  CHECK(east.x == doctest::Approx(0.5F));
+  CHECK(east.y == doctest::Approx(0.0F));
+  CHECK_FALSE(east.pinned);
+  const MinimapDiscPoint south = locateOnDisc(100.0F, 200.0F, 1000.0F, 100.0F, 500.0F, 0.9F);
+  CHECK(south.x == doctest::Approx(0.0F));
+  CHECK(south.y == doctest::Approx(0.3F));
+  // Far to the north-west: pinned at 0.9 of the radius, in the same direction.
+  const MinimapDiscPoint far = locateOnDisc(0.0F, 0.0F, 1000.0F, -3000.0F, -3000.0F, 0.9F);
+  CHECK(far.pinned);
+  CHECK(far.x == doctest::Approx(-0.9F / std::numbers::sqrt2_v<float>));
+  CHECK(far.y == doctest::Approx(-0.9F / std::numbers::sqrt2_v<float>));
+  CHECK(std::hypot(far.x, far.y) == doctest::Approx(0.9F));
 }
 
 TEST_CASE("the marker is an opaque arrow in a transparent square") {

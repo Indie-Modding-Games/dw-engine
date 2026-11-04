@@ -48,10 +48,10 @@ enum class UiCue : std::uint8_t {
 // The HUD contract: the ids of the elements the UI fills in every document that has them
 // (docs/architecture/ui.md).
 namespace hud {
-// An <img> that shows the current map's minimap.
-inline constexpr std::string_view MinimapImage = "minimap-image";
-// The box around the image, sized and centred by the UI to keep the map's proportions in its square
-// panel; the markers are positioned in percent of it.
+// The round minimap's disc: the element a skin draws with `decorator: minimap-disc`, which fills
+// its box with the map round the player, north-up (minimap.hpp: minimapDiscView). The markers are
+// positioned in percent of it: the player always in the middle, the partner where it stands, or on
+// the rim when it is out of view (the class "pinned").
 inline constexpr std::string_view MinimapFrame = "minimap-frame";
 // The current map's name, as text in the player's language.
 inline constexpr std::string_view MinimapName = "minimap-name";

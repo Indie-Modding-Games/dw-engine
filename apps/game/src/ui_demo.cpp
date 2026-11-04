@@ -707,7 +707,7 @@ int runUiDemo(const UiDemoOptions& options) {
     publishChartDetailLayout(**ui, *detail);
     core::logInfo("ui demo: Chart detail layout loaded");
   }
-  (*ui)->setSetting(MinimapSetting, std::string{MinimapAuto});
+  (*ui)->setSetting(MinimapSetting, std::string{MinimapOn});
   (*ui)->setSetting("minimap_size", std::string{"medium"});
   (*ui)->setSetting("fullscreen", settings.fullscreen);
   (*ui)->setSetting("ui_scale", settings.uiScale);

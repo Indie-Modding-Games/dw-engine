@@ -15,26 +15,25 @@ std::string_view minimapModeOf(const ui::UiValue& value) {
   if (const bool* visible = std::get_if<bool>(&value)) {
     return *visible ? MinimapOn : MinimapOff;
   }
-  if (const std::string* mode = std::get_if<std::string>(&value)) {
-    if (*mode == MinimapOn) {
-      return MinimapOn;
-    }
-    if (*mode == MinimapOff) {
-      return MinimapOff;
-    }
+  if (const std::string* mode = std::get_if<std::string>(&value);
+      mode != nullptr && *mode == MinimapOff) {
+    return MinimapOff;
   }
-  return MinimapAuto;
+  return MinimapOn;
 }
 
 std::string_view startMinimapMode(const std::optional<std::string>& saved) {
   if (!saved) {
-    return MinimapAuto;
+    return MinimapOn;
   }
-  const std::string_view mode = minimapModeOf(ui::UiValue{*saved});
-  if (mode == MinimapAuto && *saved != MinimapAuto) {
+  if (*saved != MinimapOn && *saved != MinimapOff && *saved != MinimapAuto) {
     core::logWarning(messages::UnknownSavedMinimap, *saved);
   }
-  return mode;
+  return minimapModeOf(ui::UiValue{*saved});
+}
+
+bool minimapAllowed(const MinimapScene& scene) {
+  return scene.fieldRunning && !scene.battle && !scene.minigame;
 }
 
 MinimapChanger::MinimapChanger(UserSettings& settings,
