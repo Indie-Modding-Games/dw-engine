@@ -29,9 +29,9 @@ steps:
   - wait: {seconds: 4}
   - expect_setting: {battle.phase: fight}
   - screenshot: battle-fight
-  # Cancel opens the field's bag (the original look draws no entry for it) while the battle goes on;
+  # Menu opens the tamer's bag (Tab on the keyboard; the field's menu opens with it too);
   # a slot's Use throws its item to the partner once the bag has closed.
-  - tap: {key: escape}
+  - tap: {key: tab}
   - expect_setting: {battle.bag.open: true}
   - wait: {shown: partner_menu, seconds: 0.5}
   - screenshot: battle-bag

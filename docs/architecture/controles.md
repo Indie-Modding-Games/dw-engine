@@ -1,9 +1,10 @@
 # Controles
 
 Qué acciones ofrece el motor, qué las dispara en cada dispositivo y cómo se usan según el contexto. Es la
-referencia del mapa de acciones (`defaultActionMap`) y de los comportamientos por documento. Sirve también como
-base para normalizarlos: todo lo que está marcado como *a cambiar* en este documento es una inconsistencia
-detectada, no una decisión cerrada.
+referencia del mapa de acciones (`defaultActionMap`) y de los comportamientos por documento. El re-mapeo
+moderno está **aplicado** (2026-11-04): la bolsa en batalla se abre con `menu` (igual que en campo), el
+teclado se ha movido al racimo `WASD`, y las secciones *Inconsistencias*, *Modelo propuesto* y *Fases*
+quedan como registro histórico de por qué se hicieron esos cambios.
 
 ## Principios
 
@@ -39,22 +40,26 @@ no rompe las pistas del jugador. El dispositivo usado por última vez decide el 
 Fuente única: `engine/input/src/action_map.cpp:defaultActionMap`. La primera vinculación de una acción es la
 que muestran los avisos.
 
-| Acción | Teclado | Ratón | Mando | Uso actual |
+| Acción | Teclado | Ratón | Mando | Uso |
 |---|---|---|---|---|
-| `confirm` | Espacio, Intro | Clic izq. | Sur | Elegir comando (batalla), aceptar, avanzar cajas de texto, clic del elemento enfocado en la UI. |
-| `cancel` | Esc, Retroceso | Clic der. | Este | Volver / cerrar. **En batalla abre la bolsa** (inconsistente). |
-| `menu` | Tab | — | Norte | Menú de pausa en campo. En batalla se consume y no hace nada. |
-| `pause` | P, Pausa | — | Start | Congela el tiempo; la caja de pausa se puede abrir también desde batalla. |
-| `settings` | F10 | — | Back | Abre el menú de opciones en campo; no hace nada en batalla. |
+| `confirm` | Espacio, Intro, **F** | Clic izq. | Sur | Elegir comando (batalla), aceptar, avanzar cajas de texto, clic del elemento enfocado. `F` es el alias de «usar/interactuar» junto a `WASD`; `Espacio` es el que muestran los avisos. |
+| `cancel` | Esc, Retroceso | Clic der. | Este | Volver / cerrar. |
+| `menu` | Tab | — | Norte | Menú de pausa en campo; **en batalla abre la bolsa** (antes era `cancel`). |
+| `pause` | P | — | Start | Congela el tiempo; la caja de pausa se abre también desde batalla. Se quitó la tecla multimedia «Pausa». |
+| `settings` | (sin tecla) | — | Back | Opciones en partida. El teclado entra por el menú (`Tab`); el aviso bajo la caja de pausa solo sale en mando. |
 | `world_map` | M | — | LeftShoulder | Mapa de la isla. Mejora de dwe; sin uso en el original. |
 | `move_left/right/up/down` | A/D/W/S o flechas | — | Cruceta o stick izq. | Movimiento del jugador y navegación de la UI. |
-| `walk` | Mayús. izq./der. | — | **Oeste (□) y RightShoulder (R1)** | Mantener para andar en vez de correr. Comparte oeste con `extra`. |
-| `alt` | Inicio | — | **Norte (△)** | Botón ○ del original. Baja la cámara durante la pesca, comprar 10 en la tienda de cartas, cursor a «Atrás» en la caja de nombres. Comparte norte con `menu`. |
-| `extra` | Supr | — | Oeste (□) | Botón □ del original. Dispara el remate en batalla; borra todo en la caja de nombres; avanza fases en tiendas. |
+| `walk` | Mayús. izq./der. | — | **RightShoulder (R1)** | Mantener para andar en vez de correr. Ya no comparte el oeste con `extra`. |
+| `alt` | **E** | — | **Norte (△)** | Botón ○ del original. Baja la cámara durante la pesca, comprar 10 en la tienda de cartas, cursor a «Atrás» en la caja de nombres (mando). Comparte norte con `menu`. |
+| `extra` | **Q** | — | Oeste (□) | Botón □ del original. Dispara el remate en batalla; borra todo en la caja de nombres (mando); avanza fases en tiendas. |
 | `debug_console` | ` o F1 | — | — | Consola de desarrollo. |
 | `report_bug` | F12 | — | — | Reporte de bug de la partida. |
 | `debug_time_day/dusk/night` | 1 / 2 / 3 | — | — | Vistas de desarrollo (`dwe-game --map`). |
 | `debug_next_map` | N | — | — | Vistas de desarrollo. |
+
+> **Teclado y la caja de nombres.** `E`/`Q` son letras, así que al escribir un nombre se teclean y no disparan
+> `alt`/`extra` (el texto se procesa antes que las acciones, `naming_box.cpp:137`); esos atajos quedan solo en el
+> mando. Ver *Teclado moderno*.
 
 Los botones del mando se identifican por posición (`south`, `east`, `west`, `north`, `left_shoulder`,
 `right_shoulder`, `start`, `back`, `dpad_*`, stick). El glifo que ve el jugador (X/Cross, ○/Circle, □/Square,
@@ -88,10 +93,11 @@ En batalla (`content/packs/game/ui/battle/logic.lua:on_action` y `apps/game/src/
 
 - `confirm` elige el comando enfocado, carga el medidor del remate mientras dura el aura (fase `charging`) y
   avanza las cajas de texto del resultado.
-- `cancel` **abre la bolsa** del domador (`open_bag`), y en la caja final avanza el texto.
-- `menu` está consumido (no abre nada).
-- `extra` (Supr / □) dispara el remate (`BattleScreen::pressFinisher`) cuando el medidor está lleno.
-- `up`/`down` (y `menu`) se consumen para navegación y no llegan a abrir la pausa.
+- `menu` **abre la bolsa** del domador (`open_bag`); en la caja final, `confirm` y `cancel` avanzan el texto.
+- `cancel` **no** abre la bolsa (eso lo hacía antes, era la fuente de la inconsistencia nº1): se consume
+  porque si no, el `cancel` por defecto cerraría el documento de batalla y la terminaría.
+- `extra` (Supr antes, ahora **Q**) dispara el remate (`BattleScreen::pressFinisher`) cuando el medidor está lleno.
+- `up`/`down` se consumen para navegación y no llegan a abrir la pausa.
 - El documento de batalla no responde durante `intro`, `victory` ni `closing` (las poses y el cierre).
 
 ## Inconsistencias detectadas
@@ -175,7 +181,7 @@ el teclado pasa al racimo `WASD` (`extra`=`Q`, `alt`=`E`, `settings` sin atajo).
 
 | Acción | Teclado | Ratón | Sur | Este | Norte | Oeste | Start | Back | L.S. | R.S. | Cruceta | Stick izq. |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `confirm` | Espacio, Intro | Clic izq. | ✓ | | | | | | | | | |
+| `confirm` | Espacio, Intro, F | Clic izq. | ✓ | | | | | | | | | |
 | `cancel` | Esc, Retroceso | Clic der. | | ✓ | | | | | | | | |
 | `menu` | Tab | | | | ✓ | | | | | | | |
 | `pause` | P | | | | | | ✓ | | | | | |

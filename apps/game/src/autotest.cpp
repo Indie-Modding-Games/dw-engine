@@ -2003,7 +2003,7 @@ void Autotest::steer(AutotestDevice device, glm::vec2 stick, bool walk) {
     }
     if (walk != walkButtonDown_) {
       walkButtonDown_ = walk;
-      button(platform::GamepadButton::West, walk);
+      button(platform::GamepadButton::RightShoulder, walk);
     }
     return;
   }
@@ -2040,7 +2040,7 @@ void Autotest::releaseMovement() {
   // Whichever device the route uses: a gamepad step may have held it.
   if (walkButtonDown_) {
     walkButtonDown_ = false;
-    button(platform::GamepadButton::West, false);
+    button(platform::GamepadButton::RightShoulder, false);
   }
   if (gamepad_ && (stick_.x != 0.0F || stick_.y != 0.0F)) {
     stick_ = glm::vec2{0.0F};

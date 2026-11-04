@@ -81,8 +81,10 @@ TEST_CASE("the menus' prompts and hints name the device's control as glyphs") {
   Screen screen{"pause_box"};
   screen.ui->show("pause_box");
   screen.frames();
-  // pause_menu.settings_hint: "{key} Options" with the settings key, F10.
-  CHECK(screen.ui->elementText("pause_box", "hint").contains(">F10<"));
+  // On the keyboard `settings` has no key (docs/architecture/controles.md), so the hint names no
+  // control: pause_menu.settings_hint ("{key} Options") renders with an empty {key}.
+  CHECK_FALSE(screen.ui->elementText("pause_box", "hint").contains("F10"));
+  CHECK_FALSE(screen.ui->elementText("pause_box", "hint").contains("glyph"));
   touchPad(screen, platform::GamepadFamily::Generic);
   // A gamepad the game does not know: its Back button by name.
   CHECK(screen.ui->elementText("pause_box", "hint").contains("glyph-button"));

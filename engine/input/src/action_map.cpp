@@ -32,9 +32,12 @@ const std::vector<Binding>& ActionMap::bindings(std::string_view action) const {
 ActionMap defaultActionMap() {
   ActionMap map;
 
-  // The first key of an action is the one its button prompts show: the space bar confirms.
+  // The first key of an action is the one its button prompts show: the space bar confirms. `F` is a
+  // second confirm, the interact key next to `WASD` (docs/architecture/controles.md): it stays after
+  // Space so the prompts keep naming the space bar.
   map.bind("confirm", KeyBinding{keys::Space});
   map.bind("confirm", KeyBinding{keys::Return});
+  map.bind("confirm", KeyBinding{keys::F});
   map.bind("confirm", MouseBinding{MouseButton::Left});
   map.bind("confirm", GamepadButtonBinding{GamepadButton::South});
 

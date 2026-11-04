@@ -1,36 +1,38 @@
-# F10 opens the game's options even when another menu (Tab) is already open: it switches that menu
-# to its options page instead of closing it, and the next F10 closes it. After closing the Tab menu,
-# F10 opens the options page too, so the shortcut is never left stuck. Run with:
-# dwe-game --content <folder> --autotest tests/autotest/route-f10-options-after-tab.yaml
-name: f10-options-after-tab
-device: keyboard
+# The pad's Select (Back) opens the game's options even when the menu (North) is already open: it
+# switches that menu to its options page instead of closing it, and the next Select closes it. After
+# closing the menu, Select opens the options page too, so the shortcut is never left stuck. `settings`
+# has no keyboard key (docs/architecture/controles.md), so this runs on a gamepad. Run with:
+# dwe-game --content <folder> --autotest tests/autotest/route-settings-after-tab.yaml
+name: settings-after-tab
+device: gamepad
+gamepad: generic
 timeout: 120
 steps:
   - wait: {map: twna01, seconds: 1}
   - wait: {setting: {screen_fade: 0}, timeout: 10}
-  # The Tab menu opens on its main page.
+  # North opens the pause menu on its main page.
   - menu: open
   - wait: {menu_open: true, seconds: 0.5, timeout: 5}
   - expect_setting: {has_class.pause_menu#page-main.hidden: "false"}
-  # F10 switches the menu already open to its options page, instead of closing it.
-  - tap: {key: f10}
+  # Select switches the menu already open to its options page, instead of closing it.
+  - tap: {button: back}
   - wait: {menu_open: true, seconds: 0.5, timeout: 5}
   - expect_setting: {has_class.pause_menu#page-options.hidden: "false"}
   - expect_setting: {has_class.pause_menu#page-main.hidden: "true"}
   - expect_setting: {has_class.pause_menu#panel.box-closed: "false"}
   - screenshot: options-over-tab
-  # F10 opened the options page, so the next F10 closes the menu.
-  - tap: {key: f10}
+  # Select opened the options page, so the next Select closes the menu.
+  - tap: {button: back}
   - wait: {menu_open: false, seconds: 0.5, timeout: 5}
-  # After opening and closing the Tab menu, F10 still opens the options page.
+  # After opening and closing the menu, Select still opens the options page.
   - menu: open
   - wait: {menu_open: true, seconds: 0.5, timeout: 5}
   - menu: close
   - wait: {menu_open: false, seconds: 0.5, timeout: 5}
-  - tap: {key: f10}
+  - tap: {button: back}
   - wait: {menu_open: true, seconds: 0.5, timeout: 5}
   - expect_setting: {has_class.pause_menu#page-options.hidden: "false"}
   - expect_setting: {has_class.pause_menu#panel.box-closed: "false"}
   - screenshot: options-after-tab
-  - tap: {key: f10}
+  - tap: {button: back}
   - wait: {menu_open: false, seconds: 0.5, timeout: 5}

@@ -14,8 +14,8 @@ steps:
   - wait: {shown: battle, seconds: 1}
   - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
   - screenshot: battle-start
-  # Cancel opens the field's bag while the battle goes on; Use throws the item once its box closes.
-  - tap: {key: escape}
+  # Menu opens the tamer's bag while the battle goes on; Use throws the item once its box closes.
+  - tap: {key: tab}
   - expect_setting: {battle.bag.open: true}
   - wait: {shown: partner_menu, seconds: 0.8}
   - expect_setting: {bag.slot.0.name: "main.item_names.0004"}

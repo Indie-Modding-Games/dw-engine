@@ -478,7 +478,10 @@ la vuelta en cada mitad; a la derecha de la última columna se pasa a la otra mi
 por la fila de la Z). Las direcciones repiten al mantenerlas (a los 6 fotogramas y luego cada 2). Confirmar escribe
 la letra (un espacio no puede ser la primera); con el nombre lleno reescribe la última y el cursor va a Aceptar;
 cancelar borra la última, y con el nombre lleno borra dos, como la versión americana; menú lleva a Aceptar, `alt`
-(el círculo del original) a Atrás, y `extra` (su cuadrado) borra todo el nombre. A la vez se
+(el círculo del original, que aquí es el botón norte del mando) a Atrás, y `extra` (su cuadrado, el oeste del mando)
+borra todo el nombre. En el teclado `alt` y `extra` son letras del racimo `WASD` (`E` y `Q`) que al nombrar
+**escriben** en lugar de disparar la acción (`takeTyping` corre antes que `pressButtons`, `naming_box.cpp:137`), así
+que esos dos atajos solo valen en el mando; en teclado se llega a «Atrás» con las flechas del grid. A la vez se
 puede teclear: las letras de la rejilla y el espacio se escriben (otra tecla suena rechazada) e Intro acepta el
 nombre si se ha tecleado algo desde el último movimiento del cursor. El nombre del jugador empieza vacío, como en la
 versión americana. Con la opción [nombres largos](#nombres-largos) (encendida por defecto) admite 12 letras en vez de
@@ -918,14 +921,16 @@ menú del título: `language`, `text_font`) y, debajo, las opciones propias del 
 
 | Cómo se abre | Teclado | Mando |
 |---|---|---|
-| Directamente, también desde la pausa de Start (la cierra) | F10 | Select (Back) |
+| Directamente, también desde la pausa de Start (la cierra) | — (no atajo) | Select (Back) |
 | Desde el menú (aspecto moderno) | Tab, «Opciones» | Botón norte, «Opciones» |
 | Desde el menú (aspecto original) | Tab, «Jugador», Tab, «Opciones» | Botón norte, «Jugador», botón norte, «Opciones» |
 
-F10 es la acción `settings` (`defaultActionMap`): con el menú cerrado lo abre en la página de opciones
-(`pause_menu.start_page`, que lee su `on_show`), y Atrás desde ahí vuelve al juego; con el menú abierto lo cierra.
-Donde no hay menú de pausa (título, películas, entrevista, caja de nombres, gimnasio) o con otro menú abierto no hace
-nada. Bajo el recuadro de pausa se lee la tecla («F10 Opciones», con la del dispositivo en uso).
+`settings` (`defaultActionMap`) abre el menú de pausa en su página de opciones (`pause_menu.start_page`, que lee su
+`on_show`); Atrás desde ahí vuelve al juego, y con el menú abierto lo cierra. Solo tiene vinculación en el mando
+(Select/Back): en el **teclado no hay atajo**, las opciones se abren desde el menú con `Tab`. Donde no hay menú de
+pausa (título, películas, entrevista, caja de nombres, gimnasio) o con otro menú abierto no hace nada. Bajo el
+recuadro de pausa se lee la tecla («Back Opciones») **solo en mando**; en teclado no se muestra porque `settings` no
+tiene tecla (`pause_box/logic.lua`).
 
 Las opciones propias del motor salen de una lista, `ui/common/game_options.lua` (`game_options`): id de la fila,
 ajuste de la UI que publica el juego y que la fila envía como orden, texto, valor por defecto y, para las que no son

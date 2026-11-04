@@ -11,6 +11,7 @@ using platform::KeyCode;
 constexpr KeyCode A = 4;
 constexpr KeyCode D = 7;
 constexpr KeyCode E = 8;
+constexpr KeyCode F = 9;
 constexpr KeyCode M = 16;
 constexpr KeyCode N = 17;
 constexpr KeyCode P = 19;
