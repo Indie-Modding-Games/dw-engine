@@ -56,7 +56,7 @@ de inicio y los mapas cercanos, y reclutar.
 | 13 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, gramola, intercambio por méritos, trueque, cartas, el cuadro del dinero y el humo de un personaje que desaparece | `shop/script_menu.c` `tickItemKeeper`, `openJukebox`, `openMeritShop`, `openMojyamonShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox`; `overworld.c:777` `createNinjamonEffect` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 2, 9, 11, 14, 15 y 38 |
 | 14 | El compañero infeliz se distrae, pero no se ve la mariposa que persigue | `butterfly.c` `setButterfly`, `tickButterfly` | `game/partner/src/partner_tick.cpp:313` |
 | 15 | No hay partículas de curación al usar un objeto ni partículas de objeto en combate | `particle.c` `addHealingParticleEffect`, `tickHealingParticles`; `battle_effect.c` `BTL_addItemParticles` | — |
-| 16 | La pesca: la cámara no va al corcho ni se mueve con la cruceta, el sedal y las ondas no se dibujan, y el cebo es un marcador | `fish/fish.c` `FISH_panCameraTo`, `FISH_panCameraWithDPad`, `FISH_clipLineToRect`, `FISH_tickRipple`, `FISH_showBaitSprite` | `apps/game/src/fishing_screen.cpp:50`, `:231` |
+| 16 | La pesca: la caña, el corcho y los peces se ven como marcadores, no con su modelo ni sus sprites (la cámara, el sedal, las ondas, las marcas de picada y el icono del cebo ya son los del original) | `fish/fish.c` `FISH_drawRodSegments`, `FISH_bobberCommand`, `FISH_drawFishSprite` | `apps/game/src/fishing_screen.cpp:588` |
 | 17 | Las escenas de muerte y renacer no dibujan el iris ni los fragmentos, destellos y chispas del huevo | `murd/murd.c`, `dooa/dooa.c`, `doo2/doo2.c` | `apps/game/src/death_scene.cpp:265`, `:394` |
 | 18 | Objetos de mapa con lógica sin portar: tapa de los cofres, montones de tierra y vagoneta de la mina, roca, cajas de la ciudad de juguete, engranajes, pedestal, cristales de teletransporte, niebla; y las rutinas de guion que los ponen (19, 20, 26, 27, 41–44, 49) siguen sin hacer nada | `map_object.c` (`tickOpenChestTray`, `decreaseDirtPileSize`, `spawnBoulder`, `spawnToyTownBoxes`, `spawnGearbox`, `spawnAngemonPedestal`, `loadWarpCrystals`), `overworld.c:1012` `tickRemoveMist` | `game/story/src/story_routines.cpp:27` (rutina sin manejador: sigue) |
 | 19 | Sin puntos de prosperidad: no se recalculan al cargar ni al empezar, y la ciudad no elige su mapa según lo que ha crecido | `main.c:3902` `recalculatePPandArena`, `map.c:5592` `getFileCityTopMap` | — |
@@ -92,7 +92,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 96 | 96 | 0 | 0 | 100 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 29 | 0 | 0 | 100 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 38 | 37 | 1 | 0 | 99 % |
-| [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 83 | 75 | 8 | 0 | 95 % |
+| [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 90 | 89 | 1 | 0 | 99 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 40 | 40 | 0 | 0 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 11 | 10 | 0 | 1 | 91 % |
 | [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 112 | 107 | 5 | 0 | 98 % |
@@ -101,7 +101,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 31 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1427 funciones a portar | 1427 | 1315 | 20 | 92 | 93 % |
+| **Total** | 1434 funciones a portar | 1434 | 1329 | 13 | 92 | 93 % |
 
 ## Batalla
 
@@ -205,17 +205,10 @@ El minijuego de pesca.
 
 Ficheros del decomp: `fish/fish.c`, `fish/fish_model.c`, `main/fish.c`.
 
-Portado 75, parcial 8, falta 0.
+Portado 89, parcial 1, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `FISH_tickTextBox` | `fish/fish.c:1452` | parcial | Cierra el aviso con Confirmar tras 10 fotogramas o con Cancelar. | `content/packs/game/ui/fishing_notice/logic.lua:47` · Solo cierra con Confirmar (Cancelar se ignora), sin espera de 10 fotogramas ni paneo. |
-| `FISH_tickMarker` | `fish/fish.c:1716` | parcial | Mantiene unos fotogramas la marca sobre un pez que tira la picada. | `game/fishing/src/pond.cpp:401` · El motor emite la marca, pero la app no la dibuja ni la mantiene. |
-| `FISH_spawnMarker` | `fish/fish.c:1780` | parcial | Pone una marca sobre el pez que tira la picada (distinta si puede picar). | `game/fishing/src/pond.cpp:401` · Se emite el evento, pero la app no dibuja la marca. |
-| `FISH_tickMarkers` | `fish/fish.c:1795` | parcial | Avanza la vida de todas las marcas. | `game/fishing/src/pond.cpp:401` · Las marcas no se dibujan en la app. |
-| `FISH_clearMarkers` | `fish/fish.c:1819` | parcial | Borra las marcas al engancharse un pez. | No hay marcas en pantalla que borrar; la app no las dibuja. |
-| `FISH_tickRipple` | `fish/fish.c:1841` | parcial | Anima una onda o salpicadura del agua y la quita al acabar. | `game/fishing/src/pond.cpp:163` · El susto a los peces está; la animación de la onda no se dibuja. |
-| `FISH_showBaitSprite` | `fish/fish.c:2136` | parcial | Muestra el cebo o la captura con el icono del objeto. | `game/fishing/src/rod.cpp:373` · Se ve como un marcador amarillo, no con el icono del objeto. |
 | `setFishingEnabled` | `main/fish.c:52` | parcial | Vuelve a permitir la pesca tras la escena de muerte o renacer del compañero. | `game/fishing/include/dwe/game/fishing/fishing.hpp:197` · Existe setDisabled, pero nada lo llama al acabar esas escenas. |
 
 ## Muerte y renacer
@@ -390,6 +383,6 @@ Portado 51, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-1011 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+1004 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

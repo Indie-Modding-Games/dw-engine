@@ -1,12 +1,16 @@
 #include "fishing_screen.hpp"
 
+#include <dwe/assets/fishing_table.hpp>
+#include <dwe/assets/item_table.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/screens/name_keys.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <format>
+#include <string>
 #include <utility>
 
 #include "common.hpp"
@@ -60,10 +64,6 @@ constexpr render::MapMarker BobberMarker{.feet = glm::vec3{0.0F},
                                          .width = 14.0F,
                                          .height = 14.0F,
                                          .color = glm::vec4{0.95F, 0.25F, 0.2F, 1.0F}};
-constexpr render::MapMarker BaitMarker{.feet = glm::vec3{0.0F},
-                                       .width = 10.0F,
-                                       .height = 10.0F,
-                                       .color = glm::vec4{0.95F, 0.85F, 0.4F, 1.0F}};
 constexpr render::MapMarker FishMarker{.feet = glm::vec3{0.0F},
                                        .width = 0.0F,
                                        .height = 6.0F,
@@ -72,6 +72,15 @@ constexpr render::MapMarker FishMarker{.feet = glm::vec3{0.0F},
 constexpr float FishWidthPerSize = 0.6F;
 constexpr float FishMinWidth = 12.0F;
 constexpr float FishShadowAlpha = 0.6F;
+// The map's fishing image (ETCDAT/FISHING.TIM, FISHING2.TIM): 256 x 116 texels.
+constexpr glm::vec2 FishingImageSize{256.0F, 116.0F};
+// FISH_drawBaitSprite: the item's icon of ETCDAT/ITEM.TIM (16 x 16 cells in rows of 16, 15 texels
+// drawn), a square facing the screen of the map's splash size to each side of the bait.
+constexpr std::string_view ItemImage = "texture/etcdat/item";
+constexpr glm::vec2 ItemImageSize{256.0F, 128.0F};
+constexpr std::int32_t IconSide = 16;
+constexpr std::int32_t IconsPerRow = 16;
+constexpr float IconTexels = 15.0F;
 // FISH_loadSeadramonModel: ETCDAT/SEA.TMD, five objects, one a piece of the body.
 constexpr std::string_view SeaSerpentModel = "model/etcdat/sea";
 
@@ -93,6 +102,104 @@ std::string_view textOf(FishingMessage message) {
     return "fishing.snagged";
   }
   return "fishing.too_late";
+}
+
+// A quad of the fishing image's rectangle, corners in POLY_FT4 order (top left, top right, bottom
+// left, bottom right).
+ScenePrim spriteQuad(const game::fishing::FishSprite& sprite, rhi::TextureId texture) {
+  const glm::vec2 from = glm::vec2{sprite.texel} / FishingImageSize;
+  const glm::vec2 to = glm::vec2{sprite.texel + sprite.size} / FishingImageSize;
+  ScenePrim prim{.shape = ScenePrim::Shape::Quad, .texture = texture};
+  prim.corners[0].uv = from;
+  prim.corners[1].uv = {to.x, from.y};
+  prim.corners[2].uv = {from.x, to.y};
+  prim.corners[3].uv = to;
+  return prim;
+}
+
+// The fishing image's sprites on the water: FISH_drawRipples, then FISH_drawMarkers.
+void addWaterSprites(std::vector<ScenePrim>& prims, FieldScene& scene,
+                     const game::fishing::Fishing& water, const assets::FishingMapEntry& map,
+                     const ScenePrimFrame& frame) {
+  if (map.image.empty()) {
+    return;
+  }
+  // FISH_drawRipple: a card standing on the water along x, semi-transparent adding (flags 5),
+  // sorted a little nearer than its depth.
+  if (const std::optional<rhi::TextureId> rings = scene.stpSceneImage(map.image, 0)) {
+    for (const auto& slot : water.ripples().slots()) {
+      const std::optional<game::fishing::FishSprite> sprite =
+          slot ? game::fishing::rippleSprite(*slot) : std::nullopt;
+      if (!sprite) {
+        continue;
+      }
+      const float unit = game::fishing::rippleUnitsPerTexel(map.scale, slot->scale);
+      ScenePrim prim = spriteQuad(*sprite, *rings);
+      prim.blend = ScenePrimBlend::Additive;
+      prim.stpMask = true;
+      const glm::vec2 left = glm::vec2{-sprite->origin} * unit;
+      const glm::vec2 right = glm::vec2{sprite->size - sprite->origin} * unit;
+      for (std::size_t corner = 0; corner < 4; ++corner) {
+        // The original's y points down.
+        const glm::vec3 offset{(corner % 2) == 0 ? left.x : right.x, 0.0F, 0.0F};
+        const float down = corner < 2 ? left.y : right.y;
+        prim.corners.at(corner).clip = frame.clipNearer(
+            slot->position + offset - glm::vec3{0.0F, down, 0.0F}, game::fishing::RippleNearer);
+      }
+      prims.push_back(prim);
+    }
+  }
+  // FISH_drawMarker: the heart or the cross at the fish's point on the screen, in screen pixels,
+  // in front of everything (ordering table 0x42).
+  const std::string markers = std::format("{}?palette={}", map.image, 4);
+  if (const std::optional<rhi::TextureId> marks = scene.sceneImage(markers)) {
+    for (const auto& slot : water.markers().slots()) {
+      if (!slot || frame.depth(slot->position) <= 0.0F) {
+        continue;
+      }
+      const game::fishing::FishSprite sprite = game::fishing::markerSprite(*slot);
+      ScenePrim prim = spriteQuad(sprite, *marks);
+      const glm::vec4 at = clipInFront(frame.clip(slot->position));
+      const glm::vec2 left = -glm::vec2{sprite.origin};
+      const glm::vec2 right = glm::vec2{sprite.size - sprite.origin};
+      for (std::size_t corner = 0; corner < 4; ++corner) {
+        prim.corners.at(corner).clip = at;
+        prim.corners.at(corner).offset = {(corner % 2) == 0 ? left.x : right.x,
+                                          corner < 2 ? left.y : right.y};
+      }
+      prims.push_back(prim);
+    }
+  }
+}
+
+// FISH_drawBaitSprite: the bait, or the catch on its way to the hand, as its item's icon while it
+// is above the water.
+void addBait(std::vector<ScenePrim>& prims, FieldScene& scene, const assets::ItemEntry& item,
+             glm::vec3 position, float half, const ScenePrimFrame& frame) {
+  if (!item.iconPalette || position.y <= 0.0F || frame.depth(position) <= 0.0F) {
+    return;
+  }
+  const std::optional<rhi::TextureId> icons =
+      scene.sceneImage(std::format("{}?palette={}", ItemImage, *item.iconPalette));
+  if (!icons) {
+    return;
+  }
+  const glm::vec2 texel{static_cast<float>((item.index % IconsPerRow) * IconSide),
+                        static_cast<float>((item.index / IconsPerRow) * IconSide)};
+  const glm::vec2 from = texel / ItemImageSize;
+  const glm::vec2 to = (texel + glm::vec2{IconTexels}) / ItemImageSize;
+  // A square parallel to the screen: the camera's right and up in the world.
+  const glm::vec3 right{frame.view[0][0], frame.view[1][0], frame.view[2][0]};
+  const glm::vec3 up{frame.view[0][1], frame.view[1][1], frame.view[2][1]};
+  ScenePrim prim{.shape = ScenePrim::Shape::Quad, .texture = *icons};
+  const std::array<glm::vec2, 4> uvs{from, glm::vec2{to.x, from.y}, glm::vec2{from.x, to.y}, to};
+  for (std::size_t corner = 0; corner < 4; ++corner) {
+    const float x = (corner % 2) == 0 ? -half : half;
+    const float y = corner < 2 ? half : -half;
+    prim.corners.at(corner).clip = frame.clip(position + (right * x) + (up * y));
+    prim.corners.at(corner).uv = uvs.at(corner);
+  }
+  prims.push_back(prim);
 }
 
 // The map's screen as the fishing sees it (FISH_projectPoint): background pixels from its optical
@@ -467,6 +574,14 @@ void FishingScreen::showPrims(FieldScene& scene) const {
   if (water.hooked()) {
     drawSerpent(*water.hooked());
   }
+  if (const assets::FishingMapEntry* map = fishing_->map()) {
+    addWaterSprites(prims, scene, water, *map, frame);
+    const std::optional<assets::ItemHandle> item = fishing_->itemOfNumber(water.baitItem());
+    if (const std::optional<glm::vec3> bait = water.bait(); bait && item) {
+      addBait(prims, scene, inventory_->items().at(*item), *bait, static_cast<float>(map->splash),
+              frame);
+    }
+  }
   scene.setMinigamePrims(std::move(prims));
 }
 
@@ -488,11 +603,6 @@ void FishingScreen::showMarkers(FieldScene& scene) const {
   if (water.bobberShown()) {
     render::MapMarker marker = BobberMarker;
     marker.feet = water.bobber();
-    markers.push_back(marker);
-  }
-  if (const std::optional<glm::vec3> bait = water.bait()) {
-    render::MapMarker marker = BaitMarker;
-    marker.feet = *bait;
     markers.push_back(marker);
   }
   scene.setExtraMarkers(std::move(markers));

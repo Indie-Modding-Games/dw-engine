@@ -733,24 +733,24 @@ FISH_closeBaitMenuIfOpen = { status = "portado", dwe = "game/fishing/src/rod.cpp
 FISH_scrollViewToTarget = { status = "portado", dwe = "game/fishing/src/rod.cpp:479", what = "Lleva la cámara al punto del aviso (el pez o el corcho) mientras se lee.", note = "16 píxeles por fotograma hacia el corcho (avisos) o la captura." }
 FISH_isTextBoxVisible = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:206", what = "Dice si hay un aviso abierto; la pesca se pausa mientras tanto." }
 FISH_closeTextBox = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:190", what = "Cierra el aviso de la pesca." }
-FISH_tickTextBox = { status = "parcial", dwe = "content/packs/game/ui/fishing_notice/logic.lua:47", what = "Cierra el aviso con Confirmar tras 10 fotogramas o con Cancelar.", note = "Solo cierra con Confirmar (Cancelar se ignora), sin espera de 10 fotogramas ni paneo." }
+FISH_tickTextBox = { status = "portado", dwe = "content/packs/game/ui/fishing_notice/logic.lua:65", what = "Cierra el aviso con Confirmar tras 10 fotogramas o con Cancelar.", note = "Confirmar cuenta tras medio segundo abierto (10 fotogramas a 20 por segundo), Cancelar al momento; los dos suenan como confirmar. La vista va al punto del aviso (Fishing::scrollToNotice)." }
 FISH_initTextBox = { status = "no-aplica", what = "Pone a cero el estado del aviso.", note = "Estado de caja de UI; lo sustituye el documento del aviso." }
 FISH_shutdownTextBox = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:143", what = "Quita el aviso al salir de la pesca o del mapa." }
-FISH_tickMarker = { status = "parcial", dwe = "game/fishing/src/pond.cpp:401", what = "Mantiene unos fotogramas la marca sobre un pez que tira la picada.", note = "El motor emite la marca, pero la app no la dibuja ni la mantiene." }
-FISH_initMarkerPool = { status = "no-aplica", what = "Vacía la reserva de marcas.", note = "Reserva fija de memoria; el motor usa eventos." }
-FISH_allocMarker = { status = "no-aplica", what = "Busca un hueco libre para una marca.", note = "Reserva fija de memoria; el motor usa eventos." }
-FISH_spawnMarker = { status = "parcial", dwe = "game/fishing/src/pond.cpp:401", what = "Pone una marca sobre el pez que tira la picada (distinta si puede picar).", note = "Se emite el evento, pero la app no dibuja la marca." }
-FISH_tickMarkers = { status = "parcial", dwe = "game/fishing/src/pond.cpp:401", what = "Avanza la vida de todas las marcas.", note = "Las marcas no se dibujan en la app." }
-FISH_clearMarkers = { status = "parcial", what = "Borra las marcas al engancharse un pez.", note = "No hay marcas en pantalla que borrar; la app no las dibuja." }
-FISH_tickRipple = { status = "parcial", dwe = "game/fishing/src/pond.cpp:163", what = "Anima una onda o salpicadura del agua y la quita al acabar.", note = "El susto a los peces está; la animación de la onda no se dibuja." }
-FISH_initRipplePool = { status = "no-aplica", what = "Vacía la reserva de ondas.", note = "Reserva fija de memoria; el motor emite eventos de onda." }
-FISH_allocRipple = { status = "no-aplica", what = "Busca un hueco libre para una onda.", note = "Reserva fija de memoria; el motor emite eventos de onda." }
+FISH_tickMarker = { status = "portado", dwe = "game/fishing/src/effects.cpp:107", what = "Mantiene unos fotogramas la marca sobre un pez que tira la picada.", note = "Medido: vida 10 al tirar, 9 al acabar ese fotograma; se ve 9 fotogramas." }
+FISH_initMarkerPool = { status = "no-aplica", what = "Vacía la reserva de marcas.", note = "La reserva nace vacía con el agua de cada mapa (Fishing)." }
+FISH_allocMarker = { status = "portado", dwe = "game/fishing/src/effects.cpp:84", what = "Busca un hueco libre para una marca.", note = "16 huecos, buscando desde el último usado." }
+FISH_spawnMarker = { status = "portado", dwe = "game/fishing/src/effects.cpp:98", what = "Pone una marca sobre el pez que tira la picada (distinta si puede picar).", note = "Corazón si puede picar, cruz si no, de la imagen de pesca del mapa (fishing_screen.cpp: addWaterSprites), 16 x 16 píxeles de pantalla delante de todo, como en el original." }
+FISH_tickMarkers = { status = "portado", dwe = "game/fishing/src/pond.cpp:163", what = "Avanza la vida de todas las marcas.", note = "Tras las ondas y antes de los peces, como FISH_tickFishingWorld; quieto con un aviso abierto." }
+FISH_clearMarkers = { status = "portado", dwe = "game/fishing/src/pond.cpp:416", what = "Borra las marcas al engancharse un pez." }
+FISH_tickRipple = { status = "portado", dwe = "game/fishing/src/effects.cpp:157", what = "Anima una onda o salpicadura del agua y la quita al acabar.", note = "Se dibuja como el original: una tarjeta en pie sobre el agua, sumando, del tamaño de la escala del mapa (fishing_screen.cpp: addWaterSprites). El susto a los peces dura lo que su onda." }
+FISH_initRipplePool = { status = "no-aplica", what = "Vacía la reserva de ondas.", note = "La reserva nace vacía con el agua de cada mapa (Fishing)." }
+FISH_allocRipple = { status = "portado", dwe = "game/fishing/src/effects.cpp:84", what = "Busca un hueco libre para una onda.", note = "16 huecos; sin hueco no hay onda ni susto." }
 FISH_loadSpritesAndSeadramon = { status = "no-aplica", what = "Carga las texturas de la pesca y el modelo de la serpiente marina.", note = "Carga de texturas y modelos; la hace el motor de render." }
 FISH_onRodModelLoaded = { status = "no-aplica", what = "Aviso vacío tras cargar el modelo de la caña.", note = "Función vacía de carga de modelo." }
 FISH_resetTension = { status = "portado", dwe = "game/fishing/src/rod.cpp:302", what = "Oculta y pone a cero la tensión del sedal." }
 FISH_hideBaitSprite = { status = "portado", dwe = "game/fishing/src/rod.cpp:203", what = "Oculta el cebo o la captura." }
 FISH_clearBaitSprite = { status = "portado", dwe = "game/fishing/src/rod.cpp:113", what = "Quita el cebo de la pantalla al sacar o guardar la caña." }
-FISH_showBaitSprite = { status = "parcial", dwe = "game/fishing/src/rod.cpp:373", what = "Muestra el cebo o la captura con el icono del objeto.", note = "Se ve como un marcador amarillo, no con el icono del objeto." }
+FISH_showBaitSprite = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:177", what = "Muestra el cebo o la captura con el icono del objeto.", note = "El icono de ETCDAT/ITEM con su paleta, un cuadrado de cara a la pantalla de 2 x 35 unidades en el lago (unknown_8 del mapa), solo sobre el agua (fishing_screen.cpp: addBait)." }
 FISH_resetBobberAnim = { status = "portado", dwe = "game/fishing/src/rod.cpp:114", what = "Deja el corcho en reposo y su animación a cero." }
 FISH_initBobberAnim = { status = "portado", dwe = "game/fishing/src/rod.cpp:114", what = "Reinicia el corcho al empezar o acabar la pesca." }
 FISH_clearBobberAnim = { status = "portado", dwe = "game/fishing/src/rod.cpp:114", what = "Reinicia el corcho al sacar la caña." }

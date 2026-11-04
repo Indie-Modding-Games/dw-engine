@@ -4,7 +4,10 @@
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
+#include <cctype>
 #include <format>
+#include <string>
+#include <string_view>
 #include <utility>
 
 #include "document_text.hpp"
@@ -106,6 +109,23 @@ FishingSpotEntry readSpot(YamlReader& reader, const YamlNode& node) {
   return {.weight = head.empty() ? 0 : head.front(), .points = points(reader, node, PointsKey)};
 }
 
+// A path of the disc ("\\ETCDAT\\FISHING.TIM") as the image dwx extracts from it
+// ("texture/etcdat/fishing").
+std::string imageOfDiscPath(std::string_view path) {
+  std::string image;
+  for (const char c : path) {
+    image += c == '\\' ? '/' : static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+  while (image.starts_with('/')) {
+    image.erase(0, 1);
+  }
+  constexpr std::string_view Extension = ".tim";
+  if (image.ends_with(Extension)) {
+    image.resize(image.size() - Extension.size());
+  }
+  return image.empty() ? image : "texture/" + image;
+}
+
 FishingMapEntry readMap(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(node, "a fishing map",
                          {MapKey, Unknown2Key, ScaleKey, Unknown8Key, FishScaleSmallKey,
@@ -119,7 +139,9 @@ FishingMapEntry readMap(YamlReader& reader, const YamlNode& node) {
                       .spots = {},
                       .shoreline = reader.optionalInteger<std::size_t>(node, ShorelineKey),
                       .castRange = integer(reader, node, CastRangeKey),
-                      .seaSerpentPath = points(reader, node, WaypointsKey)};
+                      .seaSerpentPath = points(reader, node, WaypointsKey),
+                      .scale = integer(reader, node, ScaleKey),
+                      .image = imageOfDiscPath(reference(reader, node, SpriteFileKey))};
   for (const YamlNode& spot : reader.sequence(reader.field(node, SpotsKey), SpotsKey)) {
     map.spots.push_back(readSpot(reader, spot));
   }

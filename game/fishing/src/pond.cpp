@@ -59,8 +59,6 @@ constexpr std::int32_t RippleScaleUnit = 0x1000;
 constexpr std::int32_t RippleSizeDivisor = 120;
 constexpr float MaxLandingStep = 50.0F;
 constexpr std::int32_t LandingSoundBelow = 6;
-// The ripple that scares the fish lives as long as its animation (MAIN_D_80134958).
-constexpr std::int32_t ScareFrames = 10;
 // The bobber's commands that show a nibble, a bite of a big fish and the hook taken.
 constexpr std::int32_t NibbleCommand = 2;
 constexpr std::int32_t BigNibbleCommand = 0xc;
@@ -149,22 +147,22 @@ std::optional<glm::vec3> Fishing::randomPointInSpot(std::int32_t kind) {
 
 void Fishing::spawnRipple(std::int32_t kind, glm::vec3 position, float scareRadius,
                           std::int32_t spread, std::int32_t scale) {
-  position.x += static_cast<float>(roll(-spread, spread));
-  position.z += static_cast<float>(roll(-spread, spread));
-  position.y = 0.0F;
-  FishingEvent event{.kind = FishingEventKind::Ripple, .value = kind, .size = scale};
-  event.position = position;
-  out_.events.push_back(event);
-  if (scareRadius != 0.0F) {
-    scare_ = Scare{.position = position, .radius = scareRadius, .framesLeft = ScareFrames};
+  const std::optional<std::size_t> slot = ripples_.spawn(kind, position, scareRadius, scale);
+  if (!slot) {
+    return;
   }
+  Ripple& ripple = ripples_.at(*slot);
+  ripple.position.x += static_cast<float>(roll(-spread, spread));
+  ripple.position.z += static_cast<float>(roll(-spread, spread));
+  ripple.position.y = 0.0F;
+  FishingEvent event{.kind = FishingEventKind::Ripple, .value = kind, .size = scale};
+  event.position = ripple.position;
+  out_.events.push_back(event);
 }
 
 void Fishing::tickWater() {
-  // FISH_tickRipples: the scaring ripple fades.
-  if (scare_ && --scare_->framesLeft < 0) {
-    scare_.reset();
-  }
+  ripples_.tick();
+  markers_.tick();
   tickPopulation();
   tickHooked();
 }
@@ -308,9 +306,11 @@ void Fishing::tickFish(Fish& fish) {
   // checkAttractor in FISH_tickFish: the scaring ripple sends the fish away; the bait it likes
   // draws it to the bobber.
   const auto watch = [&] {
-    if (scare_ && groundDistance(scare_->position, fish.position) <= scare_->radius) {
+    if (const Ripple* scare = ripples_.attractor();
+        scare != nullptr &&
+        groundDistance(scare->position, fish.position) <= ripples_.attractRadius()) {
       scaredPause_ = rules_.population.scaredPause;
-      swimAway(scare_->position);
+      swimAway(scare->position);
       return;
     }
     if (!info.attractedBy || *info.attractedBy != bait_) {
@@ -402,6 +402,7 @@ std::optional<std::size_t> Fishing::findFishToBite() {
         }
       }
     }
+    markers_.spawn(chance != 0, fish.position);
     emitAt(FishingEventKind::Marker, chance == 0 ? 0 : 1, fish.position);
     if (chance < roll(1, 100)) {
       continue;
@@ -412,6 +413,7 @@ std::optional<std::size_t> Fishing::findFishToBite() {
 }
 
 void Fishing::hookFish(std::size_t index) {
+  markers_.clear();
   Fish fish = pool_[index];
   pool_.erase(pool_.begin() + static_cast<std::ptrdiff_t>(index));
   fish.yaw = yawTowards(fish.position, bobber_.position);
