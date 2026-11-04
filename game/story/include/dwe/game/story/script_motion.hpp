@@ -164,17 +164,23 @@ private:
     std::optional<std::int64_t> target;
     glm::vec3 point{};
     std::int64_t frames = 1;
-    std::optional<glm::vec3> perFrame;
     bool withCamera = false;
-    // The frames it has moved; one that runs long past its count ends on the point.
-    std::int64_t moved = 0;
+    // Whether the target character's place was taken (on the move's first frame).
+    bool aimed = false;
   };
   struct MoveToAxis {
     std::int64_t axis = 0;
     float position = 0.0F;
     std::int64_t frames = 1;
-    std::optional<float> perFrame;
     bool withCamera = false;
+  };
+  // The step of the slide in progress: the original keeps one for every slot (tamer.c:
+  // MOVE_TO_DELTA_X and MOVE_TO_DELTA_Z, taken while PREVIOUS_CAMERA_POS_INITIALIZED is clear),
+  // so a slide ordered while another runs goes on with that one's step, and the step is only
+  // dropped when a slide gets there. Along an axis the step is `x`.
+  struct SlideStep {
+    float x = 0.0F;
+    float z = 0.0F;
   };
   struct MapObjectTurn {
     std::int64_t direction = 0;
@@ -219,12 +225,15 @@ private:
   bool tick(std::int64_t character, MoveToAxis& move);
   bool tick(CameraPan& move);
   bool tick(std::int64_t object, SpriteMove& move);
+  // One frame's step of a slide from `value` to `target` in `count` frames.
+  [[nodiscard]] static float stepOf(float target, float value, std::int64_t count);
   [[nodiscard]] static float frames(std::int64_t count);
   [[nodiscard]] bool partnerSynced() const;
 
   ScriptActorsPort* actors_;
   MotionRules rules_;
   std::map<std::int64_t, Slot> slots_;
+  std::optional<SlideStep> slideStep_;
   bool partnerSync_ = true;
   bool syncConnected_ = false;
 };

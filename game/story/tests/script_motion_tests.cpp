@@ -111,28 +111,73 @@ TEST_CASE("a turn that takes a walking character's slot stops the walk when it e
   CHECK(floor.actors[PlayerScriptId].position == stopped);
 }
 
-TEST_CASE("a move to a point that never gets there ends on the point a little after its count") {
-  // mgen06's boss (script 194): entity_move_to(10, -4562, 41, 20) then wait_for_entity(10). If the
-  // character's own clip carries it off the line, it would never reach the point and the script
-  // would wait for ever; the move ends on the point once it runs well past its 20 frames.
+TEST_CASE("a move to a point ordered while another runs goes on with that one's step") {
+  // mgen06's boss (script 194, section 0x35): play_animation(10, 28), entity_move_to(10, -4562,
+  // 41, 20), delay(20), and again. Measured in the original: the second order comes while the
+  // first slide is still on its way, and the slide goes on with the first step (-107, -12 there)
+  // and ends on the point (tamer.c: tickEntityMoveTo keeps one step, MOVE_TO_DELTA_X/Z, while
+  // PREVIOUS_CAMERA_POS_INITIALIZED is set). Taking a new step from where it stands would make a
+  // short one that the clip's own steps beat, and wait_for_entity(10) would never end.
   constexpr std::int64_t Boss = 10;
   Floor floor;
-  floor.actors[PlayerScriptId] = {.slot = 0, .position = {0.0F, 0.0F, 0.0F}};
   floor.actors[Boss] = {.slot = 7, .position = {-4000.0F, 0.0F, 600.0F}};
   ScriptMotion motion{floor, MotionRules{.frameSeconds = FrameSeconds}};
   motion.moveTo(Boss, -4562, 41, 20);
+  for (int frame = 0; frame < 11; ++frame) {
+    motion.scriptFrame();
+    floor.step();
+  }
+  // Whole units, divided toward zero: (-562 / 20, -641 / 20).
+  CHECK(floor.actors[Boss].velocity.x * FrameSeconds == doctest::Approx(-28.0F));
+  CHECK(floor.actors[Boss].velocity.z * FrameSeconds == doctest::Approx(-32.0F));
+  motion.moveTo(Boss, -4562, 41, 20);
   const auto done = motion.waitFor(Boss);
   int frame = 0;
-  for (; frame < 200 && !done(); ++frame) {
+  for (; frame < 40 && !done(); ++frame) {
     motion.scriptFrame();
-    // Something else holds the boss where it stands: the move's velocity never carries it.
+    floor.step();
+    // The clip's own steps carry it on past the point once it is nearly there.
+    floor.actors[Boss].position.x -= 60.0F;
   }
   REQUIRE(done());
-  CHECK(frame > 20);
-  CHECK(frame < 80);
-  CHECK(floor.actors[Boss].position.x == -4562.0F);
+  CHECK(frame <= 12);
   CHECK(floor.actors[Boss].position.z == -41.0F); // the script's z runs the other way
-  CHECK(floor.actors[Boss].velocity == glm::vec3{0.0F});
+}
+
+TEST_CASE("a move to a point ordered after one ended takes a new step") {
+  constexpr std::int64_t Boss = 10;
+  Floor floor;
+  floor.actors[Boss] = {.slot = 7, .position = {-4000.0F, 0.0F, 600.0F}};
+  ScriptMotion motion{floor, MotionRules{.frameSeconds = FrameSeconds}};
+  motion.moveTo(Boss, -4562, 41, 20);
+  const auto first = motion.waitFor(Boss);
+  for (int frame = 0; frame < 40 && !first(); ++frame) {
+    motion.scriptFrame();
+    floor.step();
+  }
+  REQUIRE(first());
+  floor.actors[Boss].position = {-5487.0F, 0.0F, 47.0F};
+  motion.moveTo(Boss, -4562, 41, 20);
+  motion.scriptFrame();
+  // Measured in the original (third order of section 0x35): (925 / 20, 88 / 20) = (46, 4).
+  CHECK(floor.actors[Boss].velocity.x * FrameSeconds == doctest::Approx(46.0F));
+  CHECK(floor.actors[Boss].velocity.z * FrameSeconds == doctest::Approx(-4.0F));
+}
+
+TEST_CASE("a move to a point closer than its count ends on the point at once") {
+  // tickEntityMoveTo's step is 0 on an axis shorter than the count, and a 0 step is there once
+  // at or past the point the way up.
+  constexpr std::int64_t Boss = 10;
+  Floor floor;
+  floor.actors[Boss] = {.slot = 7, .position = {-4552.0F, 0.0F, -41.0F}};
+  ScriptMotion motion{floor, MotionRules{.frameSeconds = FrameSeconds}};
+  motion.moveTo(Boss, -4562, 41, 20);
+  const auto done = motion.waitFor(Boss);
+  motion.scriptFrame();
+  CHECK_FALSE(done());
+  motion.scriptFrame();
+  REQUIRE(done());
+  CHECK(floor.actors[Boss].position.x == -4562.0F);
 }
 
 TEST_CASE("a move to a point still ends on its own count when nothing holds it back") {

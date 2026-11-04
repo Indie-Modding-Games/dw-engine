@@ -35,10 +35,6 @@ constexpr std::int64_t WaitTrainingLoaded = 0xD6;
 // The slots below this are the characters', which go back to their first animation when a turn or
 // a walk ends (script_interp.c: tickScriptedMovement).
 constexpr std::int64_t FirstNonCharacterSlot = 10;
-// How many frames past its count a move to a point may run before it ends on the point. The
-// original's tickEntityMoveTo always gets there on time; a clip whose own steps carry the character
-// the other way would otherwise keep the script waiting for it for ever.
-constexpr std::int64_t MoveOverrunFrames = 40;
 constexpr std::int64_t RestingAnimation = 0;
 
 constexpr float Turn = 2.0F * std::numbers::pi_v<float>;
@@ -199,19 +195,16 @@ void ScriptMotion::moveTo(std::int64_t character, std::int64_t x, std::int64_t z
         MoveTo{.target = std::nullopt,
                .point = groundPoint(x, z, actors_->position(character).y),
                .frames = frames,
-               .perFrame = std::nullopt,
-               .withCamera = false});
+               .withCamera = false,
+               .aimed = false});
 }
 
 void ScriptMotion::moveToCharacter(std::int64_t character, std::int64_t target,
                                    std::int64_t frames) {
   core::logDebug("{}", messages::formatMessage(messages::MoveToCharacter, "entity_move_to_entity"));
-  slide("entity_move_to_entity", character,
-        MoveTo{.target = target,
-               .point = {},
-               .frames = frames,
-               .perFrame = std::nullopt,
-               .withCamera = false});
+  slide(
+      "entity_move_to_entity", character,
+      MoveTo{.target = target, .point = {}, .frames = frames, .withCamera = false, .aimed = false});
 }
 
 void ScriptMotion::moveToWithCamera(std::int64_t character, std::int64_t x, std::int64_t z,
@@ -221,20 +214,17 @@ void ScriptMotion::moveToWithCamera(std::int64_t character, std::int64_t x, std:
         MoveTo{.target = std::nullopt,
                .point = groundPoint(x, z, actors_->position(character).y),
                .frames = frames,
-               .perFrame = std::nullopt,
-               .withCamera = true});
+               .withCamera = true,
+               .aimed = false});
 }
 
 void ScriptMotion::moveToCharacterWithCamera(std::int64_t character, std::int64_t target,
                                              std::int64_t frames) {
   core::logDebug("{}", messages::formatMessage(messages::MoveToCharacter,
                                                "entity_move_to_entity_with_camera"));
-  slide("entity_move_to_entity_with_camera", character,
-        MoveTo{.target = target,
-               .point = {},
-               .frames = frames,
-               .perFrame = std::nullopt,
-               .withCamera = true});
+  slide(
+      "entity_move_to_entity_with_camera", character,
+      MoveTo{.target = target, .point = {}, .frames = frames, .withCamera = true, .aimed = false});
 }
 
 void ScriptMotion::slideAlong(std::string_view order, std::int64_t character, std::int64_t position,
@@ -246,7 +236,6 @@ void ScriptMotion::slideAlong(std::string_view order, std::int64_t character, st
          MoveToAxis{.axis = axis,
                     .position = sign * static_cast<float>(position),
                     .frames = frames,
-                    .perFrame = std::nullopt,
                     .withCamera = withCamera});
   }
 }
@@ -486,35 +475,30 @@ bool ScriptMotion::tick(std::int64_t character, const Walk& move) {
 }
 
 bool ScriptMotion::tick(std::int64_t character, MoveTo& move) {
-  // tamer.c: tickEntityMoveTo takes the step on the first frame and moves from the next; each axis
-  // stops at the target once it gets there.
+  // tamer.c: tickEntityMoveTo. With no slide in progress it takes the step on this frame and moves
+  // from the next; a slide ordered while another runs goes on with that one's step (the original
+  // keeps one step for every slot). Each axis stops on the point once past it, and the slide is
+  // done on the frame both are there.
   const glm::vec3 position = actors_->position(character);
-  if (!move.perFrame) {
-    if (move.target) {
-      // tamer.c: tickEntityMoveTo aims at where the target stands on the first frame.
-      if (!actors_->slotOf(*move.target)) {
-        core::logWarning("{}",
-                         messages::formatMessage(messages::TargetGone, character, *move.target));
-        return true;
-      }
-      move.point = actors_->position(*move.target);
-      move.point.y = position.y;
+  if (move.target && !move.aimed) {
+    // tamer.c: tickEntityMoveTo aims at where the target stands on the first frame.
+    if (!actors_->slotOf(*move.target)) {
+      core::logWarning("{}",
+                       messages::formatMessage(messages::TargetGone, character, *move.target));
+      return true;
     }
-    glm::vec3 step = (move.point - position) / frames(move.frames);
-    step.y = 0.0F;
-    move.perFrame = step;
-    actors_->drive(character, step / rules_.frameSeconds, Glide::Move);
+    move.point = actors_->position(*move.target);
+    move.point.y = position.y;
+    move.aimed = true;
+  }
+  if (!slideStep_) {
+    slideStep_ = SlideStep{.x = stepOf(move.point.x, position.x, move.frames),
+                           .z = stepOf(move.point.z, position.z, move.frames)};
+    actors_->drive(character, glm::vec3{slideStep_->x, 0.0F, slideStep_->z} / rules_.frameSeconds,
+                   Glide::Move);
     return false;
   }
-  const glm::vec3 step = *move.perFrame;
-  if (++move.moved > move.frames + MoveOverrunFrames) {
-    core::logWarning("{}",
-                     messages::formatMessage(messages::MoveOverran, character, move.point.x,
-                                             move.point.z, move.moved - move.frames, move.frames));
-    actors_->place(character, glm::vec3{move.point.x, position.y, move.point.z});
-    actors_->drive(character, {}, Glide::Move);
-    return true;
-  }
+  const glm::vec3 step{slideStep_->x, 0.0F, slideStep_->z};
   const bool doneX = reached(position.x, move.point.x, step.x);
   const bool doneZ = reached(position.z, move.point.z, step.z);
   glm::vec3 clamped = position;
@@ -531,24 +515,30 @@ bool ScriptMotion::tick(std::int64_t character, MoveTo& move) {
     actors_->place(character, clamped);
   }
   actors_->drive(character, velocity, Glide::Move);
-  return doneX && doneZ;
+  if (doneX && doneZ) {
+    slideStep_.reset();
+    return true;
+  }
+  return false;
 }
 
 bool ScriptMotion::tick(std::int64_t character, MoveToAxis& move) {
-  // tamer.c: tickEntityMoveToAxis, the same along one axis.
+  // tamer.c: tickEntityMoveToAxis, the same along one axis with the same step (its x).
   const glm::vec3 axis = worldAxis(move.axis);
   const glm::vec3 position = actors_->position(character);
   const float value = glm::dot(position, axis);
-  if (!move.perFrame) {
-    move.perFrame = (move.position - value) / frames(move.frames);
-    actors_->drive(character, axis * (*move.perFrame / rules_.frameSeconds), Glide::Move);
+  if (!slideStep_) {
+    slideStep_ = SlideStep{.x = stepOf(move.position, value, move.frames), .z = 0.0F};
+    actors_->drive(character, axis * (slideStep_->x / rules_.frameSeconds), Glide::Move);
     return false;
   }
-  if (!reached(value, move.position, *move.perFrame)) {
+  if (!reached(value, move.position, slideStep_->x)) {
+    actors_->drive(character, axis * (slideStep_->x / rules_.frameSeconds), Glide::Move);
     return false;
   }
-  actors_->place(character, position + axis * (move.position - value));
+  actors_->place(character, position + (axis * (move.position - value)));
   actors_->drive(character, {}, Glide::Walk);
+  slideStep_.reset();
   return true;
 }
 
@@ -589,6 +579,14 @@ bool ScriptMotion::tick(std::int64_t object, SpriteMove& move) {
                         spriteStep(position->y, move.target.y, move.perFrame->y)};
   actors_->placeMapSprite(object, next);
   return next == move.target;
+}
+
+float ScriptMotion::stepOf(float target, float value, std::int64_t count) {
+  // tamer.c: tickEntityMoveTo and tickEntityMoveToAxis divide on the original's whole units,
+  // toward zero: a slide shorter than its frame count takes no step on that axis.
+  const auto divisor = static_cast<std::int32_t>(frames(count));
+  const auto distance = static_cast<std::int32_t>(std::lround(target - std::round(value)));
+  return static_cast<float>(distance / divisor);
 }
 
 float ScriptMotion::frames(std::int64_t count) {

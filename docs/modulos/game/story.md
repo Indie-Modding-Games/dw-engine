@@ -63,6 +63,18 @@ registra en la partida guardada y se lo da al campo.
   entonces para. Antes el motor guardaba la velocidad del paseo y el jugador seguía corriendo hasta la pared (trop03,
   Vegiemon: de (-708, -2323) hasta (-4647, 3941) en ejes del original). Diferencia que queda: durante el giro el motor
   mantiene la dirección del paseo en vez de torcerla con él (unos pocos fotogramas).
+- **El paso de un deslizamiento es uno para todos** (`tamer.c: tickEntityMoveTo`, `tickEntityMoveToAxis`, con
+  `MOVE_TO_DELTA_X`/`MOVE_TO_DELTA_Z` y `PREVIOUS_CAMERA_POS_INITIALIZED`): el primer fotograma de un `entity_move_to`
+  o `entity_move_to_axis` toma su paso (la distancia en unidades enteras dividida entre los fotogramas, con división
+  entera) y lo guarda; el paso solo se suelta cuando un deslizamiento llega. Una orden nueva mientras otra corre
+  sigue con el paso de la anterior y llega en cuanto lo pasa. Igual. Medido en el original (mgen06, el jefe del
+  script 194, `w21_mgen06_devimon_leaves`): el primer deslizamiento toma (−107, −12) desde (−2405, 298); la orden
+  siguiente, dada antes de que llegue, sigue con ese paso y llega a los ~29 fotogramas; la de después, ya suelto,
+  toma (46, 4) desde (−5487, −47) y llega a los ~21. Antes el motor tomaba un paso nuevo por orden y, como el jefe se
+  aleja con su raíz, no llegaba nunca: lo cortaba a los 40 fotogramas de más (ya quitado). `script_motion_tests`:
+  "a move to a point ordered while another runs goes on with that one's step", "a move to a point ordered after one
+  ended takes a new step", "a move to a point closer than its count ends on the point at once". Queda: en el
+  original el paseo con cámara (`entity_walk_to` con cámara) también usa esa marca; el motor no la comparte.
 - **Cada sección empieza con las cajas en modo confirmar** (`script_interp.c: callScriptSection`, `TEXTBOX_CLOSE_MODE`
   0, y su `initializeTextbox`, que pone a 0 los fotogramas del modo temporizado): el modo que dejó la sección anterior
   (automático o temporizado) no pasa a la siguiente. Antes el motor lo arrastraba: una sección que acababa en modo
