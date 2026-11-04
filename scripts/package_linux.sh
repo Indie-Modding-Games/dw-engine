@@ -99,6 +99,14 @@ chmod +x "$stage/dwe"
 
 cp "$root/scripts/package/README.md" "$stage/README.md"
 printf '%s\n' "$commit" >"$stage/VERSION"
+# The extractor version of this dwx: the launcher reads the player's disc again when it changes
+# (docs/modulos/apps/launcher.md).
+sed -n 's/^inline constexpr int ExtractorVersion = \([0-9]*\);.*/\1/p' \
+  "$root/engine/assets/include/dwe/assets/extractor_version.hpp" >"$stage/EXTRACTOR_VERSION"
+[[ -s "$stage/EXTRACTOR_VERSION" ]] || {
+  echo "package_linux: cannot read ExtractorVersion" >&2
+  exit 1
+}
 
 # The licences of the libraries the programs are built with: vcpkg's copyright file of each port (a
 # few are only build tools; listing them too is harmless), the font's own and the C++ standard

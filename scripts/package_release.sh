@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Builds the game's release files for the launcher: the Linux package (scripts/package_linux.sh,
+# no game data), renamed for the release, its minisign signature and game-manifest.json
+# (docs/modulos/apps/launcher.md). It publishes nothing: uploading the files to a release is a
+# separate, manual step (or .github/workflows/release.yml, started by hand).
+#
+# Usage: scripts/package_release.sh [--tarball <dwe-beta-...tar.xz>] [--version <semver>]
+#                                   [--extractor-version <n>] [--out <folder>]
+#   --tarball            package this tarball instead of building one with package_linux.sh
+#   --version            the release's version (default <CMake version>-beta.<commits on HEAD>)
+#   --extractor-version  for a tarball without an EXTRACTOR_VERSION file (older packages)
+#   --out                where the files go, inside the repository (default build/release)
+# Signing needs TAURI_SIGNING_PRIVATE_KEY (the key itself or its path) and
+# TAURI_SIGNING_PRIVATE_KEY_PASSWORD, the same key the launcher's updater uses; it runs
+# `tauri signer sign` in the launcher image.
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+out="$root/build/release"
+tarball=""
+version=""
+extractor=""
+platform="linux-x86_64"
+
+while (($#)); do
+  case "$1" in
+    --tarball)
+      tarball="$2"
+      shift
+      ;;
+    --version)
+      version="$2"
+      shift
+      ;;
+    --extractor-version)
+      extractor="$2"
+      shift
+      ;;
+    --out)
+      out="$2"
+      shift
+      ;;
+    -h | --help)
+      sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    *)
+      echo "package_release: unknown option $1" >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
+
+[[ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]] || {
+  echo "package_release: TAURI_SIGNING_PRIVATE_KEY is not set (docs/modulos/apps/launcher.md)" >&2
+  exit 1
+}
+
+mkdir -p "$out"
+out="$(cd "$out" && pwd)"
+[[ "$out/" == "$root/"* ]] || {
+  echo "package_release: --out must be inside the repository (the signer sees only it)" >&2
+  exit 1
+}
+if [[ -z "$tarball" ]]; then
+  "$root/scripts/package_linux.sh" --out "$out/linux"
+  tarball="$(find "$out/linux" -maxdepth 1 -name 'dwe-beta-*.tar.xz' -printf '%T@ %p\n' \
+    | sort -rn | sed -n '1s/^[^ ]* //p')"
+fi
+tarball="$(cd "$(dirname "$tarball")" && pwd)/$(basename "$tarball")"
+
+# The package's own record of what it is.
+top="$(tar -tJf "$tarball" | sed -n '1s|/.*||p')"
+member() { tar -xJOf "$tarball" "$top/$1" 2>/dev/null | tr -d '[:space:]' || true; }
+commit="$(member VERSION)"
+[[ -n "$extractor" ]] || extractor="$(member EXTRACTOR_VERSION)"
+[[ "$extractor" =~ ^[0-9]+$ ]] || {
+  echo "package_release: the package has no EXTRACTOR_VERSION; pass --extractor-version" >&2
+  exit 1
+}
+if [[ -z "$version" ]]; then
+  pattern='s/^project(dwe VERSION \([0-9.]*\).*/\1/p'
+  cmake_version="$(sed -n "$pattern" "$root/CMakeLists.txt" | sed -n 1p)"
+  version="${cmake_version:-0.0.0}-beta.$(git -C "$root" rev-list --count HEAD)"
+fi
+
+package="$out/dwe-game-$version-$platform.tar.xz"
+cp "$tarball" "$package"
+rm -f "$package.sig"
+# The key goes to the container through the environment only, never on its command line.
+"$root/scripts/launcher.sh" shell "tauri signer sign '$package' >/dev/null"
+[[ -s "$package.sig" ]] || {
+  echo "package_release: signing failed" >&2
+  exit 1
+}
+python3 "$root/scripts/package/release_manifest.py" game --package "$package" \
+  --signature "$package.sig" --version "$version" --commit "$commit" \
+  --extractor-version "$extractor" --platform "$platform" >"$out/game-manifest.json"
+echo "package_release: $package"
+echo "package_release: $out/game-manifest.json (version $version, extractor $extractor)"
