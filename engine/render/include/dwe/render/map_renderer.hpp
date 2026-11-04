@@ -5,6 +5,7 @@
 #include <dwe/core/math.hpp>
 #include <dwe/render/drawer.hpp>
 #include <dwe/render/map_camera.hpp>
+#include <dwe/render/map_cutouts.hpp>
 #include <dwe/render/map_layers.hpp>
 #include <dwe/render/map_scene.hpp>
 #include <dwe/render/renderer.hpp>
@@ -121,6 +122,14 @@ public:
   void setGrade(const MapGrade& grade) { grade_ = grade; }
   [[nodiscard]] const MapGrade& grade() const { return grade_; }
 
+  // HD scenery (an engine improvement, on by default): the background and the depth layers drawn
+  // through map.slang's smooth filter at the window's resolution, cut-outs of the background
+  // (MapCutouts) taking their colours from it. Only the look changes: the camera, every position,
+  // which pixels are drawn and what covers what stay the original's. Off draws the original's
+  // pixels, sharp.
+  void setHdScenery(bool on) { hdScenery_ = on; }
+  [[nodiscard]] bool hdScenery() const { return hdScenery_; }
+
   // Advances the sprite animations by animationSeconds and the palette fade by fadeSeconds (a game
   // may pause one and not the other), and sets the world point the camera centres on. The camera
   // takes the size of the frame's targets when backgroundDrawer() prepares, before the drawers
@@ -223,6 +232,11 @@ private:
     glm::vec2 uv;
     glm::uvec2 textures;
     glm::vec4 color;
+    // How the texels are sampled and, for a cut-out, the texture the colours come from.
+    glm::uvec2 sampling;
+    glm::vec2 sourceUv;
+    // The texels the smooth filter may read: first x, first y, last x, last y.
+    glm::vec4 rect;
   };
 
   // How a semi-transparent sprite's texels are drawn (map.slang): all drawn ones, those without STP
@@ -251,6 +265,9 @@ private:
   void appendBillboard(const MapBillboard& billboard, const MapCamera& shown);
   [[nodiscard]] const rhi::GraphicsPipeline& pipelineOf(assets::SpriteBlend blend) const;
   void addToRun(assets::SpriteBlend blend, TexelFilter texels, std::uint32_t first);
+  // HD scenery reads the background's colours, not its indices: this keeps backgroundColors_ the
+  // background with the palette shown now (the fade's mix, as map.slang's texelAt makes it).
+  void resolveBackgroundColors();
   void warnUploadFailure(std::size_t bytes);
 
   Renderer* renderer_;
@@ -275,6 +292,14 @@ private:
   std::vector<std::vector<assets::PaletteColor>> paletteRows_;
   std::vector<SpriteTexture> spriteTextures_;
   std::vector<assets::MapSpriteSheet::Placement> placements_;
+  MapCutouts cutouts_;
+  bool hdScenery_ = true;
+  // For HD scenery: the background's indices, and its colours with the palette resolved last
+  // (resolvedPalette_), made when first needed.
+  assets::IndexedImage backgroundIndexCopy_;
+  TextureId backgroundColors_{};
+  std::vector<assets::PaletteColor> resolvedPalette_;
+  std::vector<assets::PaletteColor> resolvedTexels_;
   std::vector<MapMarker> markers_;
   std::vector<SpriteTexture> billboardTextures_;
   std::vector<MapBillboard> billboards_;

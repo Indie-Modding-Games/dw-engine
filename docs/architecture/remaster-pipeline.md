@@ -829,6 +829,88 @@ Qué se promete exactamente:
 - **La fuente de mapa de bits** queda fuera por defecto: ya hay una fuente moderna, y el atlas de glifos tiene celdas
   sin margen.
 
+### Alta definición en el motor
+
+Sin paquete `remaster` ni herramienta externa, el motor dibuja los escenarios del campo en alta definición él mismo:
+la opción «Escenarios en alta definición» («HD scenery»; [game](../modulos/apps/game.md#escenarios-en-alta-definición)),
+encendida por defecto, cambia cómo `map.slang` muestrea el fondo prerenderizado y sus capas de profundidad. Es código
+propio, escrito para dwe; de los trabajos publicados solo toma ideas generales (núcleos orientados por el gradiente,
+tensor de estructura), nada de escaladores con licencia GPL o LGPL.
+
+**Qué se eligió y por qué.** Dos caminos posibles:
+
+| Camino | Cómo | Gana | Pierde |
+|---|---|---|---|
+| **Filtro en la GPU a la resolución de la ventana** (elegido) | `sampleSmooth` en `map.slang` lee los colores ya con la paleta de la hora y los filtra con un núcleo que sigue los bordes, en cada píxel de la ventana | Sin extracción nueva ni memoria (solo una textura RGBA del fondo); cualquier tamaño de ventana, sin factor entero; el fundido de paletas y todas las variantes funcionan igual; nada que validar en `_meta` | Coste por píxel en la GPU (medido abajo) |
+| Escalado de índices al extraer o al cargar (`index_scale` ×2/×4, `scale` en `_meta`, `pixelsPerTexel` por textura) | Los escaladores de pixel art (familia AdvMAME) deciden por **igualdad** de índices | Sigue indexado: paletas y fundido gratis | Los fondos son renders 3D cuantizados a 256 colores con tramado: casi ningún vecino es igual, así que esos escaladores apenas cambian nada; ×4 cuesta 16 veces la memoria del fondo; solo da escalones más finos, no bordes limpios |
+
+Medido en los fondos de `twna01`, `trop01`, `leom01` y `frzl01`: un Scale2x aplicado dos veces (× 4) sobre los índices
+cambia solo el 6,8 %, 8,5 %, 7,4 % y 6,4 % de los píxeles respecto a ampliar sin filtro, y deja el tramado y los dientes
+casi como estaban; el filtro en la GPU da bordes rectos y limpios y sombras suaves en los mismos mapas. No se combinan:
+un pre-escalado de índices no añade nada que el filtro no haga ya y gastaría memoria.
+
+**El filtro (`sampleSmooth`).** Por cada píxel de la ventana:
+
+1. Lee 12 texels alrededor del punto (el 4 × 4 sin las esquinas) en colores: el fondo llega como una textura RGBA con
+   la paleta que se ve ahora (`MapRenderer::resolveBackgroundColors`, que la rehace en la CPU solo cuando la paleta
+   cambia: al cambiar de variante y en cada uno de los cinco escalones del fundido), así que cada texel es una lectura.
+   Los sprites que no son recortes del fondo siguen leyendo índices y paleta.
+2. Con los gradientes de luma de los cuatro texels centrales (diferencias centrales) forma un tensor de estructura,
+   mezclado bilinealmente: da la dirección del borde, su coherencia y su contraste, medido respecto al brillo local
+   para que las paletas oscuras de la noche conserven sus bordes como las del día.
+3. Pesa los 12 texels con una campana radial (`(1 − x/4)² · (1 − lóbulo · x)`, `x` la distancia al cuadrado) estrechada
+   a través del borde y estirada a lo largo de él según la fuerza del borde: las líneas salen rectas y limpias a
+   cualquier escala. El lóbulo negativo es 1 en los bordes y con contraste (cada texel conserva su color en su
+   centro: no se pierde detalle) y 0,75 en las zonas planas, donde funde el tramado del original en sombras suaves.
+4. Sujeta el resultado entre el mínimo y el máximo de los cuatro texels centrales: sin halos ni anillos.
+5. **Transparencia y clases sin tocar**: los texels transparentes (clase 0) no pesan, así que no entra negro por los
+   bordes, y solo se mezclan los de la clase del texel más cercano (opaco o STP): los STP se mezclan con lo de detrás
+   en su propio pase y sus colores, a menudo oscuros, mancharían los opacos (salían puntos negros en los bordes de
+   las hojas de `trop01`). El alfa es el del texel más cercano, así que qué se dibuja y qué es STP sigue siendo el
+   píxel del original.
+
+**Fundido y paletas.** El filtro mezcla colores después de aplicar la paleta, igual que el fundido mezcla paletas
+(`lerp(paleta_a[i], paleta_b[i], t)` en cada texel es lo mismo que mezclar las dos imágenes; ver «Imágenes indexadas con
+paleta elegida al jugar»): todas las variantes y los escalones de 1/6 a 1/2 del fundido se ven como antes, solo más
+finos. La textura RGBA se rehace con la misma cuenta que `snapshotPalette` (redondeada a 8 bits; como mucho medio
+nivel de diferencia con la mezcla en coma flotante del camino de índices). Las capas de profundidad usan ahora el
+mismo escalón del fundido que el fondo (`timeOfDayFadeShown`); antes usaban el progreso lineal y durante un fundido sus
+colores se adelantaban un poco a los del fondo.
+
+**Capas de profundidad alineadas: recortes.** Casi todos los sprites de las capas son recortes del fondo que se
+dibujan delante de los personajes. `MapCutouts` (`<dwe/render/map_cutouts.hpp>`, solo CPU) comprueba, por sprite y
+posición (y lo recuerda), si es un recorte: sigue las paletas del fondo (`clut` −1), está en un píxel entero y cada
+texel que alguna variante dibuja tiene debajo el mismo índice del fondo. Un recorte se dibuja en modo
+`SamplingCutout`: su texel más cercano dice si se dibuja y su clase, y el **color sale del fondo filtrado debajo**,
+así que coincide con el fondo píxel a píxel, sin costura, y los personajes que pasan detrás quedan tapados por los
+mismos píxeles que en el original. Los demás sprites (agua animada, piezas que no son recortes) se filtran solos,
+dentro de su rectángulo de la hoja (`rect`), para que no entre nada del sprite vecino del atlas.
+
+**Sin costuras.** El fondo es una sola imagen (la extracción ya compone los tiles de 128 × 128), así que no hay bordes
+de tile dentro de él; el filtro sujeta sus lecturas al fondo (`rect`), y los recortes toman el color del mismo fondo.
+
+**La geometría no cambia.** La opción solo llega a `render::MapRenderer` (el modo de muestreo de cada cuadro). La
+cámara, la ventana del fondo, las posiciones de las capas, su profundidad, la elección del clic en el suelo, las
+colisiones y los disparadores no la ven: el campo (`game/field`) ni siquiera puede depender de `render` por las reglas
+de capas de los módulos. `hd_scenery_tests.cpp` («HD scenery changes no collision, trigger, map change or camera of a
+walk») anda por una sala contra una pared, sobre un disparador y a un salto con la opción apagada y encendida, y cada
+tick da lo mismo: posiciones, giro, compañero, disparadores, cambio de mapa, dónde la cámara pone al jugador y qué
+elige un clic ahí.
+
+**Coste.** En llvmpipe a 1280 × 720, medido como tiempo de CPU por fotograma (la suma de los hilos de llvmpipe; la
+máquina tenía otros trabajos, así que los fps sueltos no sirven): la diferencia entre una ruta de 10 s y otra de 40 s
+dividida por sus fotogramas. `twna01`: 114 ms sin la opción, 172 con ella (el filtro del fondo, unos 55 ms; las capas
+casi nada). `trop01`, el peor por sus capas de follaje: 131 a 142 sin ella, 166 a 191 con solo el fondo filtrado y 241
+a 290 con las capas (los recortes repiten el filtro en cada píxel que tapan). Repartido en 12 hilos, el fondo suma
+unos 4,5 ms por fotograma y las capas de `trop01` otros 6: cabe en 60 fps en `twna01` y no en `trop01` (unos 45). En
+una GPU de verdad son 12 lecturas por píxel y no se nota. La primera versión, que leía índices y paleta en cada uno de
+los 12 texels, iba a la mitad: por eso el fondo se resuelve a colores en la CPU. Memoria: una textura RGBA del tamaño
+del fondo (5 MiB el mayor, 1280 × 1024). Pendiente: no dibujar un recorte donde no tiene nada detrás (sería el
+mismo color que el fondo), con una prueba de límites de profundidad o con el fondo filtrado en un objetivo propio que
+los recortes lean con una sola lectura; los dos tocan el renderizador fuera del muestreo del mapa.
+
+**Lo que no cubre.** Los modelos 3D, la UI y las pantallas propias (combate, minijuegos) no pasan por `map.slang`.
+
 ### Reglas por tipo de asset
 
 | Tipo | Qué se elige | Estrategia de paleta | Grupo de alineación | Notas |

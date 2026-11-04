@@ -46,6 +46,7 @@
 #include "battle_trigger.hpp"
 #include "bulk_amount.hpp"
 #include "common.hpp"
+#include "hd_scenery_setting.hpp"
 #include "messages.hpp"
 #include "partner_events.hpp"
 #include "partner_set_command.hpp"
@@ -585,6 +586,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   const bool smooth = context.userSettings->smoothMotion.value_or(true);
   scene_->field().setSmoothMotion(smooth);
   context_.ui->setSetting(SmoothMotionSetting, smooth);
+  // HD scenery (hd_scenery_setting.hpp), the engine's, on unless turned off.
+  scene_->setHdScenery(startHdScenery(*context.userSettings));
   // The time in digits under the HUD's clock, the engine's, on unless turned off.
   context_.ui->setSetting(DigitalTimeSetting, context.userSettings->digitalTime.value_or(true));
   // The evolution requirements on the chart (an engine improvement), on unless turned off.

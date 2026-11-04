@@ -1,7 +1,8 @@
 -- The title screen's menu, with no game behind it. Like the pause menu it never changes a setting
 -- itself: it sends the language, text_font, ui_skin, chibi_style, minimap, minimap_size, shadows,
--- enhanced_lighting, vivid_colors, fullscreen and ui_scale commands and shows what the game reports
--- back (ui.setting). The skin entry is common/ui_skin_choice.lua, shared with the pause menu.
+-- enhanced_lighting, vivid_colors, hd_scenery, fullscreen and ui_scale commands and shows what the
+-- game reports back (ui.setting). The skin entry is common/ui_skin_choice.lua, shared with the
+-- pause menu.
 --
 -- Two layouts of the same entries, as the skin marks #panel (document_classes):
 -- - The modern one: play (a new game), continue (greyed and skipped unless the game publishes
@@ -77,6 +78,7 @@ local entries = {
     "shadows",
     "enhanced-lighting",
     "vivid-colors",
+    "hd-scenery",
     "weather",
     "seasons",
     "display-mode",
@@ -202,6 +204,11 @@ local function refresh(document)
   end
   value("enhanced-lighting", on_off("enhanced_lighting"))
   value("vivid-colors", on_off("vivid_colors"))
+  -- HD scenery: on unless the game says off.
+  value(
+    "hd-scenery",
+    t("main_menu.original.option.minimap." .. (ui.setting("hd_scenery") == false and "off" or "on"))
+  )
   -- The weather, on unless turned off (the game publishes it; an engine improvement).
   local weather = ui.setting("weather") ~= false
   value(
@@ -312,6 +319,7 @@ local function lay_out(document)
     "shadows",
     "enhanced-lighting",
     "vivid-colors",
+    "hd-scenery",
     "display-mode",
     "ui-scale",
   }) do
@@ -468,6 +476,9 @@ local options = {
   end,
   ["vivid-colors"] = function(_step)
     ui.send("vivid_colors", ui.setting("vivid_colors") == false)
+  end,
+  ["hd-scenery"] = function(_step)
+    ui.send("hd_scenery", ui.setting("hd_scenery") == false)
   end,
   weather = function(_step)
     ui.send("weather", ui.setting("weather") == false)

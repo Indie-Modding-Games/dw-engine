@@ -44,6 +44,9 @@
 			<button id="vivid-colors" class="option hidden" onclick="change_option('vivid-colors', 1)">
 				<span class="label" text-key="pause_menu.vivid_colors"></span><span class="label-original" text-key="main_menu.original.option.vivid_colors"></span><span class="value" id="vivid-colors-value"></span>
 			</button>
+			<button id="hd-scenery" class="option hidden" onclick="change_option('hd-scenery', 1)">
+				<span class="label" text-key="pause_menu.hd_scenery"></span><span class="label-original" text-key="main_menu.original.option.hd_scenery"></span><span class="value" id="hd-scenery-value"></span>
+			</button>
 			<button id="weather" class="option hidden" onclick="change_option('weather', 1)">
 				<span class="label" text-key="pause_menu.weather"></span><span class="label-original" text-key="main_menu.original.option.weather"></span><span class="value" id="weather-value"></span>
 			</button>

@@ -67,6 +67,13 @@ política para cualquier resolución, en el [ADR 0020](../../adr/0020-camara-de-
   [game/weather](../game/weather.md#estaciones)) colorea el fondo, las capas y los cuadros en el shader: los verdes
   giran hacia otro tono, luego saturación, ganancia por canal y `lift`; las bandas nunca. Neutro por defecto: los
   colores salen tal cual.
+- `MapRenderer::setHdScenery` (por defecto encendido): el fondo y las capas se filtran en `map.slang` siguiendo los
+  bordes a la resolución de la ventana (`SamplingSmooth`); el fondo se lee como una textura RGBA con la paleta que se
+  ve (`resolveBackgroundColors`, rehecha solo cuando cambia la paleta). Apagado, cada cuadro usa `SamplingSharp` y la
+  imagen es la del original exacta. Ver [Alta definición en el motor](../../architecture/remaster-pipeline.md#alta-definición-en-el-motor).
+- `MapCutouts` (`<dwe/render/map_cutouts.hpp>`, solo CPU): dice, por sprite y posición, si un sprite de las capas es
+  un recorte exacto del fondo (`clut` −1, píxel entero, cada texel dibujado igual al índice del fondo debajo). Los
+  recortes se dibujan en `SamplingCutout`: su máscara y su clase son las del sprite, el color el del fondo filtrado.
 - `dwe-game --map <id>[,<id>...]` lo enseña sin la escena de campo: `--time day|dusk|night`, `--focus x,z` y
   `--size AnchoxAlto`; las flechas mueven un marcador relativo a la cámara, el clic lo manda al punto del suelo, las
   acciones `debug_time_day`, `debug_time_dusk` y `debug_time_night` (1, 2 y 3) cambian la hora y `debug_next_map` (N)

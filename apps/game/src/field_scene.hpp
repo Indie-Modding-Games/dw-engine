@@ -289,6 +289,9 @@ public:
   // the drawing only (and the points effects take from their bones).
   void setChibiMode(ChibiMode mode) { chibiMode_ = mode; }
   [[nodiscard]] ChibiMode chibiMode() const { return chibiMode_; }
+  // HD scenery (hd_scenery_setting.hpp): the map drawn smooth at the window's resolution, or with
+  // the original's pixels. Only the look changes.
+  void setHdScenery(bool on) { mapRenderer_->setHdScenery(on); }
   // More markers to draw with the click-to-move target's, until replaced (the fishing's bobber).
   void setExtraMarkers(std::vector<render::MapMarker> markers) {
     extraMarkers_ = std::move(markers);

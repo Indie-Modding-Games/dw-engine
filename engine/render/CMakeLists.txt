@@ -12,6 +12,7 @@ dwe_add_module(render
         src/map_camera.cpp
         src/map_layers.cpp
         src/map_scene.cpp
+        src/map_cutouts.cpp
         src/map_renderer.cpp
         src/scene_light.cpp
         src/scene_grade.cpp

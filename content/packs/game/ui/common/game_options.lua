@@ -172,6 +172,15 @@ game_options = {
     label = "pause_menu.vivid_colors",
     default = true,
   },
+  -- HD scenery: the field's prerendered scenery drawn smooth at the window's resolution, with clean
+  -- edges (on by default; off draws the original's pixels). Only the look changes: collisions,
+  -- triggers and positions stay the original's. The title's options change it too.
+  {
+    id = "hd-scenery",
+    setting = "hd_scenery",
+    label = "pause_menu.hd_scenery",
+    default = true,
+  },
   -- Weather: rain, snow, clouds and sun on the island's outdoor maps (on by default; off shows
   -- every map as the original, which has no weather). It never changes a rule.
   { id = "weather", setting = "weather", label = "pause_menu.weather", default = true },

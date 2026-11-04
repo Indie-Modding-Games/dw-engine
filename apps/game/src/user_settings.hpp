@@ -89,6 +89,10 @@ struct UserSettings {
   // Whether the field shows the seasons (seasons: true, false; game::weather, an engine
   // improvement); on when not chosen.
   std::optional<bool> seasons = std::nullopt;
+  // HD scenery (hd_scenery: true, false; hd_scenery_setting.hpp): the field's background and depth
+  // layers drawn smooth at the window's resolution instead of the original's pixels; on when not
+  // chosen yet.
+  std::optional<bool> hdScenery = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

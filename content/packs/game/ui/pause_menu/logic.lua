@@ -1427,7 +1427,7 @@ local refresh_player
 -- document's free rows option-slot-<n>, given the option's id once so routes and the focus find
 -- them by it. option_rows[n] is the row of game_options[n].
 local option_rows = nil
-local max_option_rows = 24
+local max_option_rows = 28
 
 local function bind_option_rows(document)
   if option_rows ~= nil then

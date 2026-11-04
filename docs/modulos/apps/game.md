@@ -980,6 +980,26 @@ cerrando un mapa abierto.
 |---|---|---|---|---|
 | Mapa de la isla (M) | No existe | `WorldMapScreen` (`world_map_screen.hpp`) publica `world_map.*` y sube `world_map.revision`; el documento `world_map` lo dibuja. La lógica pura (zonas, conocidas, marcador, salidas, tecla) está en `world_map.hpp` | `world_map_tests.cpp` de `apps/game` («a map lies in the area…», «the player knows the areas…», «the marker stands on the centre…», «the exits are the walk warps…», «M opens the island map…», «the game pack's island layout…»); `world_map_tests.cpp` de `engine/ui` (el pintor); `map_visits_tests.cpp` (partida nueva y antigua); `in_game_options_tests`; capturas en las dos pieles y dos lugares con `text_fit` | Mejora (opción) |
 
+## Escenarios en alta definición
+
+Mejora opcional, encendida por defecto (no cambia ninguna regla): el motor dibuja el fondo prerenderizado del campo y
+sus capas de profundidad con un filtro propio que sigue los bordes, a la resolución de la ventana, en vez de ampliar
+cada píxel del original. El ajuste `hd_scenery` (fila «Escenarios en alta definición», «HD scenery» en inglés, de las
+opciones en partida; fila «ESCENARIOS HD» de las opciones del título con la piel original; guardado en los ajustes del
+usuario) se aplica al momento; apagado, se ven los píxeles del original exactos. El porqué y cómo funciona están en
+[Alta definición en el motor](../../architecture/remaster-pipeline.md#alta-definición-en-el-motor).
+
+- **Dónde**: `hd_scenery_setting.hpp` (`startHdScenery`, `HdSceneryChanger`) lee y guarda el ajuste; `PlaySession` lo
+  pasa a la escena al empezar y `Game` al cambiarlo (`FieldScene::setHdScenery` → `render::MapRenderer::setHdScenery`).
+- **Colisiones**: la opción solo cambia cómo se muestrea el mapa en la GPU; el campo (`game/field`) no la ve.
+- **Opciones**: es la fila 22 de `ui/common/game_options.lua`, junto a las otras opciones gráficas; el documento de
+  opciones pasa de 24 a 28 huecos (`option-slot-<n>`, `max_option_rows`) para que quepa y queden libres para las
+  siguientes.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Escenarios en alta definición | No existe: el fondo y las capas se ven a su resolución, ampliados píxel a píxel | `map.slang` (`sampleSmooth`, modos `SamplingSmooth` y `SamplingCutout`) filtra los colores con la paleta de la hora; `MapRenderer::resolveBackgroundColors` pasa el fondo a colores cuando cambia la paleta; `render::MapCutouts` encuentra las capas que son recortes del fondo para que tomen su color del fondo filtrado, sin costuras | `hd_scenery_tests.cpp` («HD scenery is on unless the player turned it off…», «HD scenery changes no collision, trigger, map change or camera of a walk»); `map_cutouts_tests.cpp` de `engine/render`; capturas antes y después a 1280 × 720 y 1920 × 1080 en `twna01`, `trop01`, `leom01` y `frzl01`, de día y de noche | Mejora (opción) |
+
 ## Opciones en partida
 
 Las opciones se cambian sin volver al título: la página «Opciones» del menú de pausa tiene las de pantalla (modo de
@@ -1002,7 +1022,7 @@ tiene tecla (`pause_box/logic.lua`).
 Las opciones propias del motor salen de una lista, `ui/common/game_options.lua` (`game_options`): id de la fila,
 ajuste de la UI que publica el juego y que la fila envía como orden, texto, valor por defecto y, para las que no son
 sí/no, sus valores (`values`) y el prefijo de sus textos (`texts`). La página llena con ellas, en orden, las filas
-libres `option-slot-<n>` del documento (24) y les da el id de la opción, así que una opción nueva solo necesita su
+libres `option-slot-<n>` del documento (28) y les da el id de la opción, así que una opción nueva solo necesita su
 entrada en esa lista y que el juego atienda su ajuste; ningún documento necesita una fila propia.
 
 ## Sombras, luz y colores vivos

@@ -65,6 +65,7 @@
 #include "game_audio.hpp"
 #include "game_documents.hpp"
 #include "graphics_options.hpp"
+#include "hd_scenery_setting.hpp"
 #include "language.hpp"
 #include "medal_figure.hpp"
 #include "medal_sheet.hpp"
@@ -712,6 +713,7 @@ int runGame(const Options& requested) {
   }
   GraphicsChanger graphics{userSettings, settingsFile, startGraphics};
   graphics.publish(**ui);
+  HdSceneryChanger hdScenery{userSettings, settingsFile};
   WalkControlChanger walkControl{userSettings, settingsFile};
   ChibiModeChanger chibiMode{userSettings, settingsFile};
   (*ui)->setSetting(ChibiStyleSetting,
@@ -725,6 +727,7 @@ int runGame(const Options& requested) {
   (*ui)->setSetting("minimap_size", std::string{"medium"});
   (*ui)->setSetting(WeatherSetting, userSettings.weather.value_or(true));
   (*ui)->setSetting(SeasonsSetting, userSettings.seasons.value_or(true));
+  (*ui)->setSetting(HdScenerySetting, hdScenery.on());
   (*ui)->setSetting("fullscreen", settings.fullscreen);
   (*ui)->setSetting("ui_scale", settings.uiScale);
   (*ui)->setSetting("vsync", settings.vsync);
@@ -1408,6 +1411,14 @@ int runGame(const Options& requested) {
         continue;
       }
       if (graphics.handle(command, **ui)) {
+        continue;
+      }
+      if (command.name == HdScenerySetting) {
+        const bool on = hdScenery.change(command.value);
+        if (PlaySession* play = flow.playing()) {
+          play->scene().setHdScenery(on);
+        }
+        (*ui)->setSetting(HdScenerySetting, on);
         continue;
       }
       if (command.name == WalkControlSetting) {
