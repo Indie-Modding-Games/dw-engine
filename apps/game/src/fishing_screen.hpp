@@ -26,15 +26,20 @@ inline constexpr std::string_view FishingHudDocument = "fishing_hud";
 struct FishingButtons {
   bool confirmDown = false;
   bool cancelPressed = false;
+  // The camera button (Home; gamepad North): with it held the arrows move the view.
+  bool cameraDown = false;
   bool left = false;
   bool right = false;
+  bool up = false;
+  bool down = false;
 };
 
 // The pause menu's Fish (game_menu.c: initializeFishing; main/fish.c, the FISH overlay): the player
 // takes out the rod, picks a bait, casts, waits for a bite, strikes and reels the fish in, with the
 // line's tension on a gauge and the original's notices. The field and the game time wait meanwhile
-// (clock.c: tickGameClock stops while isFishing). The rod and the fish are drawn as markers until
-// their models are.
+// (clock.c: tickGameClock stops while isFishing). The view scrolls as the fishing's camera says,
+// the line and the sea serpent are drawn as the original's; the rod, the bobber and the fish are
+// drawn as markers until their models are.
 class FishingScreen {
 public:
   // The adapters, the session, the UI and the sound (nullptr: silent) must outlive this object.
@@ -58,6 +63,8 @@ private:
     std::string text;
     std::string item;
     std::int32_t size = 0;
+    // Where the view scrolls while it shows (FISH_showTextBox's point).
+    glm::vec3 target{0.0F};
   };
 
   void frame(FieldScene& scene);
@@ -66,6 +73,8 @@ private:
   void openBaitMenu();
   void showNextNotice();
   void showMarkers(FieldScene& scene) const;
+  void showPrims(FieldScene& scene) const;
+  void showCamera(FieldScene& scene) const;
   void showGauge();
 
   session::FishingAdapter* fishing_;
@@ -79,10 +88,13 @@ private:
   bool confirmReleased_ = false;
   bool cancelPressed_ = false;
   bool confirmDown_ = false;
+  bool cameraPressed_ = false;
+  bool cameraDown_ = false;
   FishingButtons buttons_;
   std::vector<assets::ItemHandle> baits_;
   std::deque<Notice> notices_;
   bool noticeShown_ = false;
+  glm::vec3 noticeTarget_{0.0F};
   bool gaugeShown_ = false;
   std::optional<std::int32_t> offered_;
 };

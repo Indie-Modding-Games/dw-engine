@@ -102,6 +102,9 @@ public:
   // takes the size of the frame's targets when backgroundDrawer() prepares, before the drawers
   // after it.
   void update(double animationSeconds, double fadeSeconds, glm::vec3 worldFocus);
+  // A background pixel the camera centres on in place of the world focus, until cleared: a
+  // minigame that scrolls the view itself (the fishing's camera: fish.c: FISH_scrollCameraTo).
+  void setFocusPixel(std::optional<glm::vec2> pixel) { focusPixel_ = pixel; }
 
   // Markers drawn by layerDrawer() before the depth layers, so the layers cover them as they cover
   // models.
@@ -215,6 +218,7 @@ private:
   // setStageCamera's.
   std::optional<MapCamera> stageCamera_;
   glm::vec3 focus_{0.0F};
+  std::optional<glm::vec2> focusPixel_;
   bool hasMap_ = false;
   MapDepthLayers layers_;
   // The background's palette indices; the palette texture has a row of 256 colours per variant and

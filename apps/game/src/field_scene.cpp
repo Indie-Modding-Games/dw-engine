@@ -456,6 +456,8 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
   mapLighting_ = mapLighting(scene->document);
   lightingDelay_ = 0.0;
   cameraFocus_.reset();
+  cameraPixel_.reset();
+  minigamePrims_.clear();
   applyLighting();
   const auto done = Clock::now();
 
@@ -969,6 +971,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
     addFlattenedShotPrims(prims);
     addStorySprites(prims);
     addPointQuads(prims);
+    prims.insert(prims.end(), minigamePrims_.begin(), minigamePrims_.end());
     // The mist (ordering-table entry 20) in front of the map's characters and effects, behind the
     // story's screen primitives (the shake's square, entry 9).
     addMist(prims, frameSeconds, paused);
@@ -987,6 +990,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   // The sprite animations wait while paused. A time-of-day fade under way does not: map.c:
   // tickDaytimeTransition only waits for GAME_STATE, which the field's pause menu leaves alone; the
   // lights switch when it ends.
+  mapRenderer_->setFocusPixel(cameraPixel_);
   mapRenderer_->update(animationSeconds, frameSeconds, *cameraFocus_);
   if (lightingDelay_ > 0.0) {
     lightingDelay_ -= frameSeconds;

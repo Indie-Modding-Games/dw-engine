@@ -314,6 +314,11 @@ public:
   [[nodiscard]] std::optional<std::int32_t> screenNumber() const;
   // A minigame's quads at world points, until replaced (the curling's aim line).
   void setPointQuads(std::vector<PointQuad> quads) { pointQuads_ = std::move(quads); }
+  // A minigame's primitives in the scene, until replaced (the fishing's line and sea serpent).
+  void setMinigamePrims(std::vector<ScenePrim> prims) { minigamePrims_ = std::move(prims); }
+  // The background pixel the map's camera centres on instead of following the player, until
+  // cleared (the fishing's camera; nothing gives the camera back to the field).
+  void setCameraPixel(std::optional<glm::vec2> pixel) { cameraPixel_ = pixel; }
   // While held the camera stays where it points: map.c: tickCameraFollowPlayer follows the player
   // only in its state 0, never in a battle, where the player runs back on screen.
   void holdCamera(bool held) { cameraHeld_ = held; }
@@ -956,6 +961,8 @@ private:
   std::uint32_t mistFrames_ = 0;
   double mistSeconds_ = 0.0;
   std::map<std::int32_t, std::optional<rhi::TextureId>> mistTextures_;
+  std::vector<ScenePrim> minigamePrims_;
+  std::optional<glm::vec2> cameraPixel_;
   std::vector<PointQuad> pointQuads_;
   void addStorySprites(std::vector<ScenePrim>& prims);
   void addPointQuads(std::vector<ScenePrim>& prims);

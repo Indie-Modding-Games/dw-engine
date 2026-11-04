@@ -720,9 +720,9 @@ isTamerOnScreen = { status = "no-aplica", note = "consulta de dibujo", what = "D
 startTournament = { status = "portado", dwe = "apps/session/src/tournament_adapter.cpp:1", what = "Carga y juega un torneo; suma los ganados." }
 
 # --- Fishing
-FISH_panCameraTo = { status = "falta", what = "Desplaza la cámara hacia un punto (el corcho) con un límite por fotograma.", note = "La app ignora el foco de cámara de la pesca; la cámara sigue siempre al jugador." }
-FISH_panCameraToTamer = { status = "parcial", dwe = "apps/game/src/fishing_screen.cpp:237", what = "Devuelve la cámara al jugador antes del menú de cebo o al recoger.", note = "La cámara ya está en el jugador; no hay paneo suave de vuelta." }
-FISH_panCameraWithDPad = { status = "falta", what = "Deja al jugador mover la vista con la cruceta mientras pesca.", note = "La vista libre no existe (fishing_screen.cpp:231)." }
+FISH_panCameraTo = { status = "portado", dwe = "game/fishing/src/view.cpp:32", what = "Desplaza la cámara hacia un punto (el corcho) con un límite por fotograma.", note = "Zona muerta 40 x 30 y 16 píxeles por fotograma; medido: al sacar la caña la vista está en (480, 8) en los dos y el vuelo la arrastra fotograma a fotograma." }
+FISH_panCameraToTamer = { status = "portado", dwe = "game/fishing/src/rod.cpp:463", what = "Devuelve la cámara al jugador antes del menú de cebo o al recoger.", note = "16 píxeles por fotograma, sin zona muerta." }
+FISH_panCameraWithDPad = { status = "portado", dwe = "game/fishing/src/rod.cpp:467", what = "Deja al jugador mover la vista con la cruceta mientras pesca.", note = "Con Inicio (mando: Norte) pulsado, 5 píxeles por fotograma; medido igual en el original (45 en 9 fotogramas)." }
 FISH_isWithinCastRange = { status = "portado", dwe = "game/fishing/src/rod.cpp:103", what = "Comprueba si el corcho o el pez está dentro del alcance desde el jugador." }
 FISH_isBaitMenuVisible = { status = "portado", dwe = "game/fishing/src/rod.cpp:432", what = "Dice si el menú de cebo sigue abierto para esperar la elección." }
 FISH_closeBaitMenu = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:177", what = "Cierra el menú de cebo." }
@@ -730,7 +730,7 @@ FISH_tickBaitMenu = { status = "portado", dwe = "content/packs/game/ui/fishing_b
 FISH_openBaitMenu = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:315", what = "Abre el menú con la comida de la bolsa para elegir el cebo." }
 FISH_initBaitMenu = { status = "no-aplica", what = "Pone a cero el estado del menú de cebo.", note = "Estado de caja de UI; lo sustituye el documento del menú de cebo." }
 FISH_closeBaitMenuIfOpen = { status = "portado", dwe = "game/fishing/src/rod.cpp:409", what = "Cierra el menú de cebo si quedó abierto al acabar la pesca." }
-FISH_scrollViewToTarget = { status = "falta", what = "Lleva la cámara al punto del aviso (el pez o el corcho) mientras se lee.", note = "Los avisos no mueven la cámara." }
+FISH_scrollViewToTarget = { status = "portado", dwe = "game/fishing/src/rod.cpp:479", what = "Lleva la cámara al punto del aviso (el pez o el corcho) mientras se lee.", note = "16 píxeles por fotograma hacia el corcho (avisos) o la captura." }
 FISH_isTextBoxVisible = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:206", what = "Dice si hay un aviso abierto; la pesca se pausa mientras tanto." }
 FISH_closeTextBox = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:190", what = "Cierra el aviso de la pesca." }
 FISH_tickTextBox = { status = "parcial", dwe = "content/packs/game/ui/fishing_notice/logic.lua:47", what = "Cierra el aviso con Confirmar tras 10 fotogramas o con Cancelar.", note = "Solo cierra con Confirmar (Cancelar se ignora), sin espera de 10 fotogramas ni paneo." }
@@ -754,12 +754,12 @@ FISH_showBaitSprite = { status = "parcial", dwe = "game/fishing/src/rod.cpp:373"
 FISH_resetBobberAnim = { status = "portado", dwe = "game/fishing/src/rod.cpp:114", what = "Deja el corcho en reposo y su animación a cero." }
 FISH_initBobberAnim = { status = "portado", dwe = "game/fishing/src/rod.cpp:114", what = "Reinicia el corcho al empezar o acabar la pesca." }
 FISH_clearBobberAnim = { status = "portado", dwe = "game/fishing/src/rod.cpp:114", what = "Reinicia el corcho al sacar la caña." }
-FISH_pushSeadramonSegment = { status = "falta", what = "Guarda el giro de la cabeza para que el cuerpo de la serpiente marina la siga.", note = "La serpiente marina se ve como marcador; no hay cuerpo por segmentos." }
+FISH_pushSeadramonSegment = { status = "portado", dwe = "game/fishing/src/view.cpp:150", what = "Guarda el giro de la cabeza para que el cuerpo de la serpiente marina la siga.", note = "Cinco piezas de ETCDAT/SEA dibujadas restando (fishing_screen.cpp: showPrims). Cada serpiente empieza recta: la historia del original es global y arrastra la de la anterior." }
 FISH_isSeadramonSpawned = { status = "portado", dwe = "game/fishing/src/pond.cpp:205", what = "Dice si la serpiente marina ya está en el agua para no sacar otra." }
 FISH_initFishPool = { status = "portado", dwe = "game/fishing/src/rod.cpp:71", what = "Vacía el agua de peces y sus contadores al entrar en el mapa." }
 FISH_fishPoolStub = { status = "no-aplica", what = "Función vacía al cerrar la pesca.", note = "Vacía en el original." }
 FISH_clearHookedFish = { status = "portado", dwe = "game/fishing/src/rod.cpp:369", what = "Suelta el pez enganchado." }
-FISH_clipLineToRect = { status = "falta", what = "Recorta el sedal al borde de la pantalla para dibujarlo.", note = "El sedal no se dibuja (lineShown no lo usa la app)." }
+FISH_clipLineToRect = { status = "portado", dwe = "game/fishing/src/view.cpp:67", what = "Recorta el sedal al borde de la pantalla para dibujarlo.", note = "El sedal se dibuja de la punta al corcho en trozos de 64 píxeles, del color de la tensión." }
 FISH_resetRodState = { status = "portado", dwe = "game/fishing/include/dwe/game/fishing/fishing.hpp:315", what = "Deja la caña guardada, sin sedal ni corcho." }
 FISH_waterTestStub1 = { status = "no-aplica", what = "Prueba de agua vacía del primer mapa.", note = "Vacía en el original." }
 FISH_waterTestStub2 = { status = "no-aplica", what = "Prueba de agua vacía del segundo mapa.", note = "Vacía en el original." }
@@ -767,8 +767,8 @@ FISH_getBoneTransform = { status = "portado", dwe = "apps/game/src/fishing_scree
 FISH_endFishing = { status = "portado", dwe = "game/fishing/src/rod.cpp:403", what = "Guarda la caña, devuelve la cámara y deja al jugador quieto." }
 FISH_init = { status = "portado", dwe = "apps/session/src/fishing_adapter.cpp:153", what = "Prepara la pesca del mapa al entrar en uno con agua." }
 FISH_deinitialize = { status = "portado", dwe = "apps/session/src/fishing_adapter.cpp:140", what = "Cierra la pesca al dejar el mapa." }
-FISH_scrollCameraTo = { status = "falta", what = "Desplaza el fondo del mapa hasta un punto de la pantalla.", note = "La pesca no mueve la cámara; sigue al jugador." }
-FISH_enableCameraControl = { status = "falta", what = "Guarda la vista al sacar la caña para restaurarla al acabar.", note = "No hay control de cámara propio de la pesca." }
+FISH_scrollCameraTo = { status = "portado", dwe = "game/fishing/src/view.cpp:28", what = "Desplaza el fondo del mapa hasta un punto de la pantalla.", note = "La app centra la cámara del mapa en ese píxel del fondo (MapRenderer::setFocusPixel)." }
+FISH_enableCameraControl = { status = "portado", dwe = "game/fishing/src/rod.cpp:148", what = "Guarda la vista al sacar la caña para restaurarla al acabar.", note = "La vista parte de donde la dejó el campo." }
 FISH_loadTMDModel = { status = "no-aplica", what = "Carga un modelo 3D (la caña o la serpiente marina).", note = "Carga de modelos; la hace el motor de assets." }
 FISH_getModelObject = { status = "no-aplica", what = "Da una pieza de un modelo cargado.", note = "Acceso a modelos cargados; lo hace el motor de render." }
 setFishingEnabled = { status = "parcial", dwe = "game/fishing/include/dwe/game/fishing/fishing.hpp:197", what = "Vuelve a permitir la pesca tras la escena de muerte o renacer del compañero.", note = "Existe setDisabled, pero nada lo llama al acabar esas escenas." }
@@ -1082,7 +1082,7 @@ VS_initializeCamera = { status = "falta", what = "Coloca la cámara inicial de l
 BTL_removeItemParticles = { status = "no-aplica", note = "limpieza de objetos y memoria del original: el motor libera lo suyo" }
 BTL_removeAllItemParticles = { status = "no-aplica", note = "limpieza de objetos y memoria del original: el motor libera lo suyo" }
 destroyItemMenuBox = { status = "no-aplica", note = "cuadros de interfaz del original" }
-FISH_applySavedCameraScroll = { system = "fishing", status = "falta", what = "Recupera el desplazamiento de cámara guardado al volver a la pesca.", note = "va con la cámara de la pesca, que falta" }
+FISH_applySavedCameraScroll = { system = "fishing", status = "portado", dwe = "game/fishing/src/rod.cpp:435", what = "Recupera el desplazamiento de cámara guardado al volver a la pesca.", note = "Al acabar, la cámara del campo vuelve a centrar al jugador, que no se ha movido: la vista guardada." }
 checkTournamentMedalConditions = { status = "portado", dwe = "game/tournament/src/cup_extras.cpp:1", what = "Mira si toca dar la medalla de los torneos." }
 
 # --- Gaps the module docs list (Hueco rows) on functions the code names

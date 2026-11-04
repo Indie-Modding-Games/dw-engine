@@ -1338,8 +1338,11 @@ int runGame(const Options& requested) {
         play->pressStory(input);
         fishing = {.confirmDown = input.isDown("confirm"),
                    .cancelPressed = intent.cancelTarget,
+                   .cameraDown = input.isDown("alt"),
                    .left = move.x < 0.0F,
-                   .right = move.x > 0.0F};
+                   .right = move.x > 0.0F,
+                   .up = move.y < 0.0F,
+                   .down = move.y > 0.0F};
       } else {
         mouse.release();
       }

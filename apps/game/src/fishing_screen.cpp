@@ -5,12 +5,14 @@
 #include <dwe/screens/name_keys.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <format>
 #include <utility>
 
 #include "common.hpp"
 #include "field_scene.hpp"
 #include "messages.hpp"
+#include "scene_prims.hpp"
 
 namespace dwe::app {
 
@@ -70,6 +72,8 @@ constexpr render::MapMarker FishMarker{.feet = glm::vec3{0.0F},
 constexpr float FishWidthPerSize = 0.6F;
 constexpr float FishMinWidth = 12.0F;
 constexpr float FishShadowAlpha = 0.6F;
+// FISH_loadSeadramonModel: ETCDAT/SEA.TMD, five objects, one a piece of the body.
+constexpr std::string_view SeaSerpentModel = "model/etcdat/sea";
 
 std::string_view textOf(FishingMessage message) {
   switch (message) {
@@ -92,7 +96,9 @@ std::string_view textOf(FishingMessage message) {
 }
 
 // The map's screen as the fishing sees it (FISH_projectPoint): background pixels from its optical
-// centre, which is the middle of the background.
+// centre, which is the middle of the background. The fishing's points on the screen are anywhere on
+// the background (FISH_screenLeft(0) to FISH_screenRight(0x140)), not only in the visible window:
+// FISH_randomPointInSpot places fish in spots the view does not show.
 class CameraView final : public game::fishing::FishingView {
 public:
   explicit CameraView(const render::MapCamera& camera)
@@ -108,12 +114,28 @@ public:
   [[nodiscard]] std::optional<glm::vec3> toGround(glm::vec2 screen) const override {
     return camera_->pickGround(camera_->backgroundToWindow(screen + centre_));
   }
-  [[nodiscard]] glm::vec2 screenMin() const override {
-    return glm::max(camera_->scroll(), glm::vec2{0.0F}) - centre_;
+  [[nodiscard]] glm::vec2 screenMin() const override { return -centre_; }
+  [[nodiscard]] glm::vec2 screenMax() const override { return centre_; }
+  // The view's centre keeps the visible window on the background; on an axis the background does
+  // not fill, it stays in the middle.
+  [[nodiscard]] game::fishing::ViewRange viewRange() const override {
+    const glm::vec2 half = camera_->visibleSize() * 0.5F;
+    const glm::vec2 background = camera_->desc().backgroundSize;
+    game::fishing::ViewRange range;
+    for (int axis = 0; axis < 2; ++axis) {
+      if (background[axis] <= 2.0F * half[axis]) {
+        continue;
+      }
+      range.min[axis] = static_cast<std::int32_t>(std::ceil(half[axis] - centre_[axis]));
+      range.max[axis] =
+          static_cast<std::int32_t>(std::floor(background[axis] - half[axis] - centre_[axis]));
+    }
+    return range;
   }
-  [[nodiscard]] glm::vec2 screenMax() const override {
-    return glm::min(camera_->scroll() + camera_->visibleSize(), camera_->desc().backgroundSize) -
-           centre_;
+  [[nodiscard]] glm::ivec2 viewCentre() const override {
+    const glm::vec2 centre = camera_->scroll() + (camera_->visibleSize() * 0.5F) - centre_;
+    return {static_cast<std::int32_t>(std::lround(centre.x)),
+            static_cast<std::int32_t>(std::lround(centre.y))};
   }
 
 private:
@@ -138,6 +160,8 @@ void FishingScreen::enterMap(FieldScene& scene, std::string_view mapId) {
   fishing_->enterMap(mapId);
   scene.setPlayerClip(std::nullopt);
   scene.setExtraMarkers({});
+  scene.setMinigamePrims({});
+  scene.setCameraPixel(std::nullopt);
   notices_.clear();
   if (noticeShown_) {
     ui_->hide(FishingNoticeDocument);
@@ -200,21 +224,30 @@ void FishingScreen::tick(FieldScene& scene, const FishingButtons& buttons, doubl
   confirmPressed_ = confirmPressed_ || (buttons.confirmDown && !confirmDown_);
   confirmReleased_ = confirmReleased_ || (!buttons.confirmDown && confirmDown_);
   cancelPressed_ = cancelPressed_ || buttons.cancelPressed;
+  cameraPressed_ = cameraPressed_ || (buttons.cameraDown && !cameraDown_);
   confirmDown_ = buttons.confirmDown;
+  cameraDown_ = buttons.cameraDown;
   buttons_ = buttons;
   game::fishing::Fishing* water = fishing_->fishing();
-  if (water == nullptr || noticeShown_) {
+  if (water == nullptr) {
     return;
   }
   frameSeconds_ += seconds;
-  while (frameSeconds_ >= FishingFrameSeconds && !noticeShown_ && water->fishing()) {
+  while (frameSeconds_ >= FishingFrameSeconds && water->fishing()) {
     frameSeconds_ -= FishingFrameSeconds;
-    frame(scene);
+    if (!noticeShown_) {
+      frame(scene);
+    } else if (const render::MapCamera* camera = scene.camera()) {
+      // FISH_scrollViewToTarget: the fishing waits on the notice while the view turns to it.
+      water->scrollToNotice(noticeTarget_, CameraView{*camera});
+    }
   }
   if (!water->fishing()) {
     frameSeconds_ = 0.0;
   }
+  showCamera(scene);
   showMarkers(scene);
+  showPrims(scene);
   showGauge();
 }
 
@@ -228,13 +261,13 @@ game::fishing::FishingInput FishingScreen::inputOf(const FieldScene& scene) cons
           .confirmHeld = confirmDown_,
           .confirmReleased = confirmReleased_,
           .cancelPressed = cancelPressed_,
-          // The map camera follows the player; the free look is not there yet.
-          .cameraPressed = false,
-          .cameraHeld = false,
+          .cameraPressed = cameraPressed_,
+          .cameraHeld = cameraDown_,
           .turnLeft = buttons_.left,
           .turnRight = buttons_.right,
+          .lookUp = buttons_.up,
+          .lookDown = buttons_.down,
           .animationPlaying = scene.playerClipPlaying(),
-          .cameraSettled = true,
           .lineStart = hand + facing * RodReach + glm::vec3{0.0F, RodRise, 0.0F},
           .bobberRest = hand - glm::vec3{0.0F, BobberDrop, 0.0F},
           .baitHold = hand - glm::vec3{0.0F, BaitDrop, 0.0F},
@@ -254,6 +287,7 @@ void FishingScreen::frame(FieldScene& scene) {
   confirmPressed_ = false;
   confirmReleased_ = false;
   cancelPressed_ = false;
+  cameraPressed_ = false;
   const game::fishing::FishingOutput out =
       fishing_->fishing()->tick(input, view, session_->random());
   follow(scene, out);
@@ -270,6 +304,7 @@ void FishingScreen::follow(FieldScene& scene, const game::fishing::FishingOutput
   if (yaw != scene.field().player().yaw) {
     scene.setPlayerYaw(yaw);
   }
+  glm::vec3 catchTarget = fishing_->fishing()->bobber();
   for (const FishingEvent& event : out.events) {
     switch (event.kind) {
     case FishingEventKind::Sound:
@@ -283,7 +318,12 @@ void FishingScreen::follow(FieldScene& scene, const game::fishing::FishingOutput
     case FishingEventKind::Message:
       notices_.push_back({.text = std::string{textOf(static_cast<FishingMessage>(event.value))},
                           .item = {},
-                          .size = 0});
+                          .size = 0,
+                          .target = event.position});
+      break;
+    case FishingEventKind::FishCaught:
+    case FishingEventKind::JunkCaught:
+      catchTarget = event.position;
       break;
     case FishingEventKind::OpenBaitMenu:
       openBaitMenu();
@@ -307,7 +347,8 @@ void FishingScreen::follow(FieldScene& scene, const game::fishing::FishingOutput
     }
     notices_.push_back({.text = std::string{text},
                         .item = names.item(caught.item),
-                        .size = fish ? caught.size : 0});
+                        .size = fish ? caught.size : 0,
+                        .target = catchTarget});
   }
   showNextNotice();
 }
@@ -335,13 +376,93 @@ void FishingScreen::showNextNotice() {
   ui_->setSetting(NoticeTextSetting, notice.text);
   ui_->show(FishingNoticeDocument, true);
   noticeShown_ = true;
+  noticeTarget_ = notice.target;
+}
+
+void FishingScreen::showCamera(FieldScene& scene) const {
+  const render::MapCamera* camera = scene.camera();
+  const std::optional<glm::ivec2>& centre = fishing_->fishing()->cameraCentre();
+  if (camera == nullptr || !centre) {
+    scene.setCameraPixel(std::nullopt);
+    return;
+  }
+  scene.setCameraPixel(glm::vec2{*centre} + (camera->desc().backgroundSize * 0.5F));
+}
+
+void FishingScreen::showPrims(FieldScene& scene) const {
+  const game::fishing::Fishing& water = *fishing_->fishing();
+  const render::MapCamera* camera = scene.camera();
+  std::vector<ScenePrim> prims;
+  if (camera == nullptr || !water.fishing()) {
+    scene.setMinigamePrims(std::move(prims));
+    return;
+  }
+  // FISH_drawFishingLine: from the rod's tip to the bobber, cut to the visible window, in the
+  // tension's colour.
+  if (water.lineShown()) {
+    const std::optional<render::BackgroundPoint> from =
+        camera->projectToBackground(water.lineStart());
+    const std::optional<render::BackgroundPoint> to = camera->projectToBackground(water.bobber());
+    if (from && to) {
+      const glm::vec2 min = camera->scroll();
+      const glm::vec2 max = min + camera->visibleSize();
+      const glm::vec4 color{glm::vec3{water.tension().color} / 255.0F, 1.0F};
+      for (const auto& piece :
+           game::fishing::fishingLine({.pixel = from->pixel, .depth = from->viewDepth},
+                                      {.pixel = to->pixel, .depth = to->viewDepth}, min, max)) {
+        ScenePrim line{
+            .shape = ScenePrim::Shape::Line, .color = color, .texture = scene.whiteTexture()};
+        for (std::size_t end = 0; end < piece.size(); ++end) {
+          line.corners.at(end).clip =
+              camera->backgroundToClip(piece.at(end).pixel, piece.at(end).depth);
+        }
+        prims.push_back(line);
+      }
+    }
+  }
+  // FISH_drawSeadramon: the sea serpent's five pieces, each turned as the head was a frame later
+  // than the one before, drawn subtractive. Its faces read an 8 x 8 corner of the texture page that
+  // is empty in the model's own image (the original finds it filled in its video memory); the
+  // shape measured on the water is black, the most a subtraction takes: white is subtracted.
+  const std::vector<std::vector<BodyFace>>* pieces = scene.sceneModelFaces(SeaSerpentModel);
+  const ScenePrimFrame frame{
+      .view = camera->view(), .projection = camera->projection(), .pixelScale = camera->scale()};
+  const auto drawSerpent = [&](const game::fishing::Fish& fish) {
+    if (fish.kind != game::fishing::SeaSerpentKind || pieces == nullptr) {
+      return;
+    }
+    const auto body = game::fishing::seaSerpentBody(fish.position, fish.turns);
+    for (std::size_t index = 0; index < body.size() && index < pieces->size(); ++index) {
+      const glm::mat4 place = glm::rotate(glm::translate(glm::mat4{1.0F}, body.at(index).position),
+                                          body.at(index).yaw, glm::vec3{0.0F, 1.0F, 0.0F});
+      for (const BodyFace& face : pieces->at(index)) {
+        ScenePrim prim{.shape =
+                           face.count == 4 ? ScenePrim::Shape::Quad : ScenePrim::Shape::Triangle,
+                       .texture = scene.whiteTexture(),
+                       .blend = ScenePrimBlend::Subtractive};
+        for (std::size_t corner = 0; corner < face.count; ++corner) {
+          prim.corners.at(corner).clip =
+              frame.clip(glm::vec3{place * glm::vec4{face.corners.at(corner), 1.0F}});
+        }
+        prims.push_back(prim);
+      }
+    }
+  };
+  for (const game::fishing::Fish& fish : water.fish()) {
+    drawSerpent(fish);
+  }
+  if (water.hooked()) {
+    drawSerpent(*water.hooked());
+  }
+  scene.setMinigamePrims(std::move(prims));
 }
 
 void FishingScreen::showMarkers(FieldScene& scene) const {
   const game::fishing::Fishing& water = *fishing_->fishing();
   std::vector<render::MapMarker> markers;
   for (const game::fishing::Fish& fish : water.fish()) {
-    if (fish.opacity <= 0) {
+    // The sea serpent is drawn as its model (showPrims).
+    if (fish.opacity <= 0 || fish.kind == game::fishing::SeaSerpentKind) {
       continue;
     }
     render::MapMarker marker = FishMarker;

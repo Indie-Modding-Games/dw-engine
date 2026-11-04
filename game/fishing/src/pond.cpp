@@ -252,6 +252,9 @@ void Fishing::spawnSeaSerpent() {
                .yaw = yawTowards(*start, *next),
                .lifetime = roll(rules_.population.lifetime.min, rules_.population.lifetime.max),
                .pathStep = 1};
+  // The original's turn history is one global that keeps the last serpent's turns (zero at
+  // boot); a new serpent starts with its whole body along its first heading.
+  serpent.turns.fill(serpent.yaw);
   core::logDebug("[port:fishing] FISH_spawnSeadramon (fish.c:2599): the sea serpent appears");
   pool_.push_back(serpent);
 }
@@ -283,6 +286,7 @@ void Fishing::tickSeaSerpent(Fish& fish) {
   }
   ++fish.framesOnState;
   ++fish.animationPhase;
+  pushSeaSerpentTurn(fish.turns, fish.yaw);
 }
 
 void Fishing::tickFish(Fish& fish) {
@@ -585,6 +589,9 @@ void Fishing::tickHooked() {
   }
   ++fish.framesOnState;
   ++fish.animationPhase;
+  if (fish.kind == SeaSerpentKind) {
+    pushSeaSerpentTurn(fish.turns, fish.yaw);
+  }
 }
 
 } // namespace dwe::game::fishing

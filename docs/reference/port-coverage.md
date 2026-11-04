@@ -92,7 +92,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 96 | 96 | 0 | 0 | 100 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 29 | 0 | 0 | 100 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 38 | 37 | 1 | 0 | 99 % |
-| [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 81 | 64 | 9 | 8 | 85 % |
+| [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 83 | 75 | 8 | 0 | 95 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 40 | 40 | 0 | 0 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 11 | 10 | 0 | 1 | 91 % |
 | [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 108 | 89 | 4 | 15 | 84 % |
@@ -101,7 +101,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 31 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1420 funciones a portar | 1420 | 1284 | 20 | 116 | 91 % |
+| **Total** | 1422 funciones a portar | 1422 | 1295 | 19 | 108 | 92 % |
 
 ## Batalla
 
@@ -209,14 +209,10 @@ El minijuego de pesca.
 
 Ficheros del decomp: `fish/fish.c`, `fish/fish_model.c`, `main/fish.c`.
 
-Portado 64, parcial 9, falta 8.
+Portado 75, parcial 8, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `FISH_panCameraTo` | `fish/fish.c:969` | falta | Desplaza la cámara hacia un punto (el corcho) con un límite por fotograma. | La app ignora el foco de cámara de la pesca; la cámara sigue siempre al jugador. |
-| `FISH_panCameraToTamer` | `fish/fish.c:1013` | parcial | Devuelve la cámara al jugador antes del menú de cebo o al recoger. | `apps/game/src/fishing_screen.cpp:237` · La cámara ya está en el jugador; no hay paneo suave de vuelta. |
-| `FISH_panCameraWithDPad` | `fish/fish.c:1018` | falta | Deja al jugador mover la vista con la cruceta mientras pesca. | La vista libre no existe (fishing_screen.cpp:231). |
-| `FISH_scrollViewToTarget` | `fish/fish.c:1406` | falta | Lleva la cámara al punto del aviso (el pez o el corcho) mientras se lee. | Los avisos no mueven la cámara. |
 | `FISH_tickTextBox` | `fish/fish.c:1452` | parcial | Cierra el aviso con Confirmar tras 10 fotogramas o con Cancelar. | `content/packs/game/ui/fishing_notice/logic.lua:47` · Solo cierra con Confirmar (Cancelar se ignora), sin espera de 10 fotogramas ni paneo. |
 | `FISH_tickMarker` | `fish/fish.c:1716` | parcial | Mantiene unos fotogramas la marca sobre un pez que tira la picada. | `game/fishing/src/pond.cpp:401` · El motor emite la marca, pero la app no la dibuja ni la mantiene. |
 | `FISH_spawnMarker` | `fish/fish.c:1780` | parcial | Pone una marca sobre el pez que tira la picada (distinta si puede picar). | `game/fishing/src/pond.cpp:401` · Se emite el evento, pero la app no dibuja la marca. |
@@ -224,11 +220,6 @@ Portado 64, parcial 9, falta 8.
 | `FISH_clearMarkers` | `fish/fish.c:1819` | parcial | Borra las marcas al engancharse un pez. | No hay marcas en pantalla que borrar; la app no las dibuja. |
 | `FISH_tickRipple` | `fish/fish.c:1841` | parcial | Anima una onda o salpicadura del agua y la quita al acabar. | `game/fishing/src/pond.cpp:163` · El susto a los peces está; la animación de la onda no se dibuja. |
 | `FISH_showBaitSprite` | `fish/fish.c:2136` | parcial | Muestra el cebo o la captura con el icono del objeto. | `game/fishing/src/rod.cpp:373` · Se ve como un marcador amarillo, no con el icono del objeto. |
-| `FISH_pushSeadramonSegment` | `fish/fish.c:2557` | falta | Guarda el giro de la cabeza para que el cuerpo de la serpiente marina la siga. | La serpiente marina se ve como marcador; no hay cuerpo por segmentos. |
-| `FISH_clipLineToRect` | `fish/fish.c:3573` | falta | Recorta el sedal al borde de la pantalla para dibujarlo. | El sedal no se dibuja (lineShown no lo usa la app). |
-| `FISH_scrollCameraTo` | `fish/fish.c:4673` | falta | Desplaza el fondo del mapa hasta un punto de la pantalla. | La pesca no mueve la cámara; sigue al jugador. |
-| `FISH_applySavedCameraScroll` | `fish/fish.c:4695` | falta | Recupera el desplazamiento de cámara guardado al volver a la pesca. | va con la cámara de la pesca, que falta |
-| `FISH_enableCameraControl` | `fish/fish.c:4703` | falta | Guarda la vista al sacar la caña para restaurarla al acabar. | No hay control de cámara propio de la pesca. |
 | `setFishingEnabled` | `main/fish.c:52` | parcial | Vuelve a permitir la pesca tras la escena de muerte o renacer del compañero. | `game/fishing/include/dwe/game/fishing/fishing.hpp:197` · Existe setDisabled, pero nada lo llama al acabar esas escenas. |
 
 ## Muerte y renacer
@@ -417,6 +408,6 @@ Portado 51, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-1018 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+1016 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

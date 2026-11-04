@@ -407,7 +407,11 @@ void MapRenderer::prepare(PrepareContext& context) {
   const rhi::Extent extent = context.extent();
   const glm::vec2 viewport{static_cast<float>(extent.width), static_cast<float>(extent.height)};
   camera_.setViewport(viewport);
-  camera_.follow(focus_);
+  if (focusPixel_) {
+    camera_.followBackgroundPixel(*focusPixel_);
+  } else {
+    camera_.follow(focus_);
+  }
   if (stageCamera_) {
     stageCamera_->setViewport(viewport);
     stageCamera_->followBackgroundPixel(stageCamera_->desc().backgroundSize * 0.5F);

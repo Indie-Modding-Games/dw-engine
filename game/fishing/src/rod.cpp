@@ -65,6 +65,13 @@ constexpr std::int32_t LostMessageFrame = 10;
 constexpr float SerpentAshore = 50.0F;
 // The tension level a fish pulls at, by whether it runs and whether the player reels.
 constexpr std::int32_t HeldShift = 2;
+// FISH_tickRod's camera: the view follows the bobber 16 pixels a frame and lets it wander 40
+// across and 30 up or down from the centre; it centres the player at the same speed; it follows
+// a landed catch 32 a frame; the d-pad moves it 5 a frame (FISH_panCameraWithDPad).
+constexpr std::int32_t PanRadius = 0x10;
+constexpr std::int32_t CatchPanRadius = 0x20;
+constexpr glm::ivec2 BobberDeadZone{0x28, 0x1E};
+constexpr std::int32_t DPadStep = 5;
 
 } // namespace
 
@@ -90,7 +97,8 @@ void Fishing::animate(std::int32_t animation) {
 }
 
 void Fishing::message(FishingMessage message) {
-  emit(FishingEventKind::Message, static_cast<std::int32_t>(message));
+  // FISH_showTextBox's messages scroll the view to the bobber while they show.
+  emitAt(FishingEventKind::Message, static_cast<std::int32_t>(message), bobber_.position);
 }
 
 std::optional<glm::vec3> Fishing::bait() const {
@@ -135,6 +143,10 @@ FishingOutput Fishing::tick(const FishingInput& input, const FishingView& view,
   lineStart_ = input.lineStart;
   if (!disabled_) {
     if (state_ != RodState::Off) {
+      if (!camera_) {
+        // FISH_enableCameraControl: the view stays where the field left it until the rod moves it.
+        camera_ = view.viewCentre();
+      }
       tickRod();
     }
     tickWater();
@@ -231,7 +243,12 @@ void Fishing::checkBobber() {
     cast();
     return;
   }
-  camera_ = input_->cameraHeld ? CameraFocus::Free : CameraFocus::Bobber;
+  // With the camera button held the d-pad moves the view and Cancel waits.
+  if (input_->cameraHeld) {
+    panWithDPad();
+    return;
+  }
+  panToBobber();
   if (input_->cancelPressed) {
     cast();
   }
@@ -281,6 +298,7 @@ std::int32_t Fishing::updateTension() {
   const std::array<Range, 4> deltas{rules.slack, rules.fishRunning, rules.held, rules.heldRunning};
   tension_.level += remapClamped(size, rules.sizes, deltas[static_cast<std::size_t>(pull)]);
   tension_.level = std::clamp(tension_.level, -tension_.limit, tension_.limit);
+  tension_.color = tensionColor(tension_.level, tension_.limit);
   if (tension_.level == -tension_.limit) {
     return 2;
   }
@@ -349,7 +367,11 @@ void Fishing::reeling() {
     splash();
     return;
   }
-  camera_ = in.cameraHeld ? CameraFocus::Free : CameraFocus::Bobber;
+  if (in.cameraHeld) {
+    panWithDPad();
+  } else {
+    panToBobber();
+  }
 }
 
 void Fishing::landed() {
@@ -408,8 +430,64 @@ void Fishing::endFishing() {
   baitShown_ = false;
   baitMenuOpen_ = false;
   tension_ = {};
-  camera_ = CameraFocus::Player;
+  // FISH_endFishing: FISH_applySavedCameraScroll and setCameraFollowPlayer. The field's camera
+  // centres the player, who has not moved, which is where the view was when the rod came out.
+  camera_.reset();
   emit(FishingEventKind::Ended);
+}
+
+bool Fishing::panTo(glm::vec3 world, std::int32_t radius, glm::ivec2 deadZone) {
+  if (!camera_) {
+    return false;
+  }
+  const std::optional<glm::vec2> screen = view_->toScreen(world);
+  if (!screen) {
+    return false;
+  }
+  const glm::ivec2 target{static_cast<std::int32_t>(std::lround(screen->x)),
+                          static_cast<std::int32_t>(std::lround(screen->y))};
+  const std::optional<glm::ivec2> next =
+      panCameraTo(*camera_, target, view_->viewRange(), radius, deadZone);
+  if (!next) {
+    return false;
+  }
+  camera_ = *next;
+  return true;
+}
+
+bool Fishing::panToBobber() {
+  return panTo(bobber_.position, PanRadius, BobberDeadZone);
+}
+
+// The pan back to the player (fish.c:1013): the feet in the middle, no dead zone.
+bool Fishing::panToPlayer() {
+  return panTo(input_->player, PanRadius, glm::ivec2{0});
+}
+
+void Fishing::panWithDPad() {
+  if (!camera_) {
+    return;
+  }
+  const glm::ivec2 direction{(input_->turnRight ? 1 : 0) - (input_->turnLeft ? 1 : 0),
+                             (input_->lookDown ? 1 : 0) - (input_->lookUp ? 1 : 0)};
+  if (const std::optional<glm::ivec2> next =
+          panCameraWithDPad(*camera_, direction, view_->viewRange(), DPadStep)) {
+    camera_ = *next;
+  }
+}
+
+void Fishing::scrollToNotice(glm::vec3 target, const FishingView& view) {
+  if (!camera_) {
+    return;
+  }
+  if (const std::optional<glm::vec2> screen = view.toScreen(target)) {
+    const glm::ivec2 point{static_cast<std::int32_t>(std::lround(screen->x)),
+                           static_cast<std::int32_t>(std::lround(screen->y))};
+    if (const std::optional<glm::ivec2> next =
+            panCameraTo(*camera_, point, view.viewRange(), PanRadius, glm::ivec2{0})) {
+      camera_ = *next;
+    }
+  }
 }
 
 void Fishing::tickRod() {
@@ -417,8 +495,7 @@ void Fishing::tickRod() {
   const std::int32_t turn = (in.turnLeft ? -TurnStep : 0) + (in.turnRight ? TurnStep : 0);
   switch (state_) {
   case RodState::ToPlayer:
-    camera_ = CameraFocus::Player;
-    if (in.cameraSettled) {
+    if (!panToPlayer()) {
       toState(RodState::ChoosingBait);
     }
     break;
@@ -450,15 +527,14 @@ void Fishing::tickRod() {
     }
     break;
   case RodState::ToBobber:
-    camera_ = CameraFocus::Bobber;
-    if (in.cameraSettled) {
+    if (!panToBobber()) {
       toState(RodState::Aiming);
     }
     break;
   case RodState::Aiming:
     moveBaitToHand(0.0F);
     if (in.cameraHeld) {
-      camera_ = CameraFocus::Free;
+      panWithDPad();
       break;
     }
     if (in.confirmPressed) {
@@ -476,7 +552,7 @@ void Fishing::tickRod() {
       break;
     }
     out_.playerTurn += turn;
-    camera_ = CameraFocus::Bobber;
+    panToBobber();
     break;
   case RodState::WindingUp:
     if (in.confirmPressed) {
@@ -488,13 +564,19 @@ void Fishing::tickRod() {
       release();
       break;
     }
-    camera_ = CameraFocus::Bobber;
+    panToBobber();
     if (!in.animationPlaying) {
       cast();
     }
     break;
   case RodState::Flying:
-    camera_ = in.cameraHeld ? CameraFocus::Free : CameraFocus::Bobber;
+    // The view jumps to keep the flying bobber in sight, then the d-pad may move it.
+    panTo(bobber_.position, 0, BobberDeadZone);
+    if (in.cameraHeld) {
+      panWithDPad();
+    } else {
+      panToBobber();
+    }
     if (in.confirmPressed) {
       bobber_.velocity.x = 0.0F;
       bobber_.velocity.z = 0.0F;
@@ -511,7 +593,7 @@ void Fishing::tickRod() {
     waiting();
     break;
   case RodState::Hooked:
-    camera_ = CameraFocus::Bobber;
+    panToBobber();
     if (hookedEscaped_ || !hooked_) {
       message(FishingMessage::BaitTaken);
       splash();
@@ -542,15 +624,14 @@ void Fishing::tickRod() {
   case RodState::Landing: {
     const bool moving = moveBaitToHand(CatchToHandSpeed);
     bobber_.position = baitPosition_;
-    camera_ = CameraFocus::Bait;
-    if (!moving && in.cameraSettled) {
+    const bool panning = panTo(bobber_.position, CatchPanRadius, BobberDeadZone);
+    if (!moving && !panning) {
       showCatch();
     }
     break;
   }
   case RodState::Ending:
-    camera_ = CameraFocus::Player;
-    if (in.cameraSettled) {
+    if (!panToPlayer()) {
       endFishing();
     }
     break;
@@ -578,8 +659,7 @@ void Fishing::tickRod() {
     break;
   }
   case RodState::SeaSerpent:
-    camera_ = CameraFocus::Player;
-    if (!in.cameraSettled) {
+    if (panToPlayer()) {
       break;
     }
     if (hooked_ && groundDistance(glm::vec3{0.0F}, hooked_->position) >= SerpentAshore) {

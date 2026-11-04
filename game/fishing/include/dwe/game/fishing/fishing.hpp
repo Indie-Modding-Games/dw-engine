@@ -2,8 +2,10 @@
 
 #include <dwe/core/math.hpp>
 #include <dwe/game/fishing/rules.hpp>
+#include <dwe/game/fishing/view.hpp>
 #include <dwe/ruleset/random.hpp>
 
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <span>
@@ -13,8 +15,9 @@
 // the hooked fish and the line's tension. One tick is one frame of the original (20 a second). The
 // water and the fish spots are in the original's screen space, so a FishingView maps them onto the
 // map's ground (FISH_projectPoint, mapToWorldPosition). Positions are in world space on the water's
-// plane, y = 0; the bobber and the bait fly above it. The player's model, the camera, the messages
-// and the items are the caller's: the fishing asks for them through its events.
+// plane, y = 0; the bobber and the bait fly above it. The fishing holds the camera while the rod is
+// out (FISH_enableCameraControl) and says where the view centres (cameraCentre); the player's
+// model, the messages and the items are the caller's: the fishing asks for them through its events.
 namespace dwe::game::fishing {
 
 // The screen of the map the fishing happens on: the original's screen pixels from the
@@ -35,6 +38,10 @@ public:
   // The screen points the background covers, corner to corner (FISH_isScreenPointVisible).
   [[nodiscard]] virtual glm::vec2 screenMin() const = 0;
   [[nodiscard]] virtual glm::vec2 screenMax() const = 0;
+  // The centres the view may take, so that it stays on the background, and where it centres now
+  // (FISH_viewX(0xa0), FISH_viewY(0x78)), in the same screen pixels.
+  [[nodiscard]] virtual ViewRange viewRange() const = 0;
+  [[nodiscard]] virtual glm::ivec2 viewCentre() const = 0;
 };
 
 // getBestFishingRod: the old rod, or the amazing rod.
@@ -48,12 +55,14 @@ struct FishingInput {
   bool cancelPressed = false;
   bool cameraPressed = false;
   bool cameraHeld = false;
+  // The d-pad: left and right turn the player, and with the camera button held all four move
+  // the view (FISH_panCameraWithDPad).
   bool turnLeft = false;
   bool turnRight = false;
+  bool lookUp = false;
+  bool lookDown = false;
   // Whether the player's current fishing animation still plays (animFlag & 1).
   bool animationPlaying = false;
-  // Whether the camera reached the point camera() names.
-  bool cameraSettled = true;
   // The rod's tip (FISH_updateRodPose), where the line starts.
   glm::vec3 lineStart{0.0F};
   // Where the bobber hangs from the player's hand (FISH_getRodTipPos), and where the bait is held
@@ -105,6 +114,9 @@ enum class FishingEventKind : std::uint8_t {
   Marker,
 };
 
+// A Message's position is the point the view turns to while it is read (FISH_showTextBox's
+// target): the bobber. A catch's is the catch's.
+
 struct FishingEvent {
   FishingEventKind kind = FishingEventKind::Sound;
   std::int32_t value = 0;
@@ -112,9 +124,6 @@ struct FishingEvent {
   std::int32_t size = 0;
   glm::vec3 position{0.0F};
 };
-
-// What the camera follows: the player, the bobber, the bait, or nothing (the player pans it).
-enum class CameraFocus : std::uint8_t { Player, Bobber, Bait, Free };
 
 struct FishingOutput {
   std::vector<FishingEvent> events;
@@ -156,6 +165,9 @@ struct Fish {
   std::int32_t animationPhase = 0;
   // The sea serpent's next point of its path.
   std::size_t pathStep = 0;
+  // The sea serpent's turns over its last frames, newest first: its body's pieces
+  // (FISH_pushSeadramonSegment, seaSerpentBody).
+  std::array<float, SeaSerpentPieces> turns{};
 };
 
 inline constexpr std::int32_t SeaSerpentKind = 6;
@@ -187,6 +199,8 @@ struct Tension {
   std::int32_t level = 0;
   std::int32_t limit = 0;
   std::int32_t framesAtLimit = 0;
+  // The line's colour (tensionColor), white until the fight pulls it.
+  glm::u8vec3 color{0xFF};
 };
 
 class Fishing {
@@ -208,15 +222,22 @@ public:
   // One frame: the rod (FISH_tamerTick), then the water (FISH_tickFishingWorld). Call it only while
   // no message of the fishing is open.
   FishingOutput tick(const FishingInput& input, const FishingView& view, ruleset::Random& random);
+  // A frame while a message of the fishing is open: the view moves to the message's point
+  // (FISH_scrollViewToTarget), 16 pixels a frame.
+  void scrollToNotice(glm::vec3 target, const FishingView& view);
 
   [[nodiscard]] std::span<const Fish> fish() const { return pool_; }
   [[nodiscard]] const std::optional<Fish>& hooked() const { return hooked_; }
   [[nodiscard]] RodState state() const { return state_; }
-  [[nodiscard]] CameraFocus camera() const { return camera_; }
+  // Where the view centres while the fishing holds the camera, in the view's screen pixels;
+  // nothing while the field's camera follows the player.
+  [[nodiscard]] const std::optional<glm::ivec2>& cameraCentre() const { return camera_; }
   [[nodiscard]] const Tension& tension() const { return tension_; }
   [[nodiscard]] glm::vec3 bobber() const { return bobber_.position; }
   [[nodiscard]] bool bobberShown() const { return bobberShown_; }
   [[nodiscard]] bool lineShown() const { return lineShown_; }
+  // Where the line starts: the rod's tip of the last frame (rod->lineStart).
+  [[nodiscard]] glm::vec3 lineStart() const { return lineStart_; }
   // The bait or the catch on its way to the hand; nothing while hidden.
   [[nodiscard]] std::optional<glm::vec3> bait() const;
   [[nodiscard]] std::int32_t baitItem() const { return bait_; }
@@ -277,6 +298,11 @@ private:
   void tickBait(glm::vec3 previous);
   bool moveBaitToHand(float maxStep);
   void bobberCommand(std::int32_t command);
+  // The camera (FISH_panCameraTo, FISH_panCameraWithDPad): true while the view moves.
+  bool panTo(glm::vec3 world, std::int32_t radius, glm::ivec2 deadZone);
+  bool panToBobber();
+  bool panToPlayer();
+  void panWithDPad();
 
   // Screen tests on the water's plane.
   [[nodiscard]] std::optional<glm::vec2> visibleScreen(glm::vec3 world) const;
@@ -315,7 +341,7 @@ private:
   RodState state_ = RodState::Off;
   std::int32_t framesOnState_ = 0;
   Rod rod_ = Rod::Old;
-  CameraFocus camera_ = CameraFocus::Player;
+  std::optional<glm::ivec2> camera_;
   bool baitMenuOpen_ = false;
   std::optional<std::optional<std::int32_t>> baitChosen_;
   std::int32_t bait_ = 0;
