@@ -31,11 +31,13 @@ constexpr std::array<std::string_view, 12> GameOptions{
     "translated-signs", "status-extras", "canonical-stages",
     "long-names",       "shop-job-bar",  "continuous-music"};
 
+// In the original look the menu's box grows in for 5 frames at 20 a second and ignores the keys
+// until it is in place (ui/common/original_box.lua): wait those 0.25 s before pressing anything.
 void openOnOptions(Screen& screen) {
   screen.ui->setSetting("pause_menu.start_page", std::string{"options"});
   screen.ui->show("pause_menu", true);
   screen.ui->setSetting("pause_menu.start_page", std::string{});
-  screen.frames();
+  screen.frames(20);
 }
 
 bool sent(const std::vector<UiCommand>& commands, std::string_view name, const UiValue& value) {
@@ -53,6 +55,8 @@ TEST_CASE("the options key's start page opens the pause menu on its options, and
     screen.skin(skin);
     openOnOptions(screen);
     CHECK(screen.ui->isVisible("pause_menu"));
+    // The box opens with its page (217f77d0): a closed box would hide the options.
+    CHECK_FALSE(screen.ui->elementHasClass("pause_menu", "panel", "box-closed"));
     CHECK_FALSE(screen.ui->elementHasClass("pause_menu", "page-options", "hidden"));
     CHECK(screen.ui->elementHasClass("pause_menu", "page-main", "hidden"));
     CHECK(screen.ui->focusedElementId("pause_menu") == "display-mode");
