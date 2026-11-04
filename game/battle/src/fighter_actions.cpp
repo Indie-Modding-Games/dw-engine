@@ -86,10 +86,34 @@ void beginFinisher(BattleContext& context, FighterId id) {
                 .command = Command::None});
 }
 
+// The shared cooldown a fighter's moves wait on: everyone's, or in a tournament match its side's
+// (std_main.c: FLEE_DISABLED[1] for the partner, P2_AOE_TIMER for the rival).
+std::int32_t& sharedCooldownOf(const BattleContext& context, FighterId id) {
+  BattleState& state = *context.state;
+  return state.matchClock && id != PartnerId ? state.rivalSharedCooldown : state.sharedCooldown;
+}
+
 // battle_main.c: BTL_isMoveOnCooldown: a move of the shared group waits while one of the group just
-// ran.
-bool sharedCooldownBlocks(const BattleContext& context, MoveRef move) {
-  return context.moves->at(move).sharedCooldown && context.state->sharedCooldown > 0;
+// ran. std_main.c: STD_selectMoveTarget, the tournament's copy: each side waits on its own move,
+// and also while the other fighter attacks with a move of the group.
+bool sharedCooldownBlocks(const BattleContext& context, FighterId id, MoveRef move) {
+  if (!context.moves->at(move).sharedCooldown) {
+    return false;
+  }
+  if (sharedCooldownOf(context, id) > 0) {
+    return true;
+  }
+  if (!context.state->matchClock) {
+    return false;
+  }
+  const std::vector<Fighter>& fighters = context.state->fighters;
+  for (FighterId other = 0; other < fighters.size(); ++other) {
+    const std::optional<ActiveAttack>& attack = fighters[other].attack;
+    if (other != id && attack && context.moves->at(attack->move).sharedCooldown) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // The flattened fighter's shot: its own short animation and no cost (battle_main.c:
@@ -143,7 +167,7 @@ void tickMeleeAttack(BattleContext& context, FighterId id) {
     beginFinisher(context, id);
     return;
   }
-  if (sharedCooldownBlocks(context, *queued)) {
+  if (sharedCooldownBlocks(context, id, *queued)) {
     return;
   }
   beginAttack(context, id);
@@ -483,6 +507,9 @@ void tickFighterStates(BattleContext& context) {
   if (state.sharedCooldown > 0) {
     --state.sharedCooldown;
   }
+  if (state.rivalSharedCooldown > 0) {
+    --state.rivalSharedCooldown;
+  }
   for (FighterId id = 0; id < state.fighters.size(); ++id) {
     addFinisherProgress(context, id, context.rules->finisher.perFrame);
     tickFighter(context, id);
@@ -511,7 +538,7 @@ void startQueuedMove(BattleContext& context, FighterId id) {
     beginFinisher(context, id);
     return;
   }
-  if (sharedCooldownBlocks(context, move)) {
+  if (sharedCooldownBlocks(context, id, move)) {
     return;
   }
   if (fighter.target && *fighter.target != id) {
@@ -522,7 +549,7 @@ void startQueuedMove(BattleContext& context, FighterId id) {
     lookAt(fighter, target.position);
   }
   if (context.moves->at(move).sharedCooldown) {
-    context.state->sharedCooldown = context.rules->moves.sharedCooldownFrames;
+    sharedCooldownOf(context, id) = context.rules->moves.sharedCooldownFrames;
   }
   if (fighter.status.flattened) {
     beginFlattenedShot(context, id);
@@ -658,6 +685,10 @@ void faint(BattleContext& context, FighterId id) {
   Fighter& fighter = context.fighter(id);
   fighter.struck = true;
   fighter.fainted = true;
+  // std_main.c: STD_DISABLE_HITTING = 1 as a match's fighter faints.
+  if (context.state->matchClock) {
+    context.state->hitsOff = true;
+  }
   removeStatusVisuals(context, id);
   fighter.status.flattened = false;
   fighter.status.flatFrames = 0;

@@ -23,7 +23,13 @@ public:
     const Fighter& me = view.state->fighters.at(attacker);
     const BattleMove& move = view.moves->at(ref);
     constexpr HitChance Certain{.percent = Hundred, .breaksBlock = false};
-    if (them.combatant.level < rules.hit.alwaysHitBelowLevel) {
+    // std_main.c: STD_applyPartnerStatsToFighter, the tournament's copy: no hit lands once a
+    // fighter has fainted, and a low level is no sure hit.
+    const bool match = view.state->matchClock.has_value();
+    if (match && view.state->hitsOff) {
+      return {.percent = 0, .breaksBlock = false};
+    }
+    if (!match && them.combatant.level < rules.hit.alwaysHitBelowLevel) {
       return Certain;
     }
     if (them.status.stunned || them.status.flattened || them.disobeying) {

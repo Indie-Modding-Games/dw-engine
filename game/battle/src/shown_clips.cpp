@@ -129,7 +129,8 @@ void updateShownClip(const BattleContext& context, FighterId id) {
   const BattleEvents& events = *context.events;
   switch (fighter.pose) {
   case Pose::Standing:
-    // btl.c: handleBattleIdle keeps either stance it shows.
+    // btl.c: handleBattleIdle keeps either stance it shows. A match starts in the same one
+    // (std_main.c: STD_startWalkingAnimation2, weak at a fifth of the HP or less).
     if (!showsAnyOf(fighter, StanceClip, WeakStanceClip)) {
       start(fighter, id, stanceClipOf(fighter), "handleBattleIdle (btl.c:161)");
     }
@@ -181,6 +182,14 @@ void updateShownClip(const BattleContext& context, FighterId id) {
     }
     break;
   case Pose::Disobeying:
+    if (context.state->matchClock) {
+      // std_main.c: STD_tickDigimonSenile: a match's fighter waits in its stance
+      // (handleBattleIdle), not with the disobeying clip.
+      if (!showsAnyOf(fighter, StanceClip, WeakStanceClip)) {
+        start(fighter, id, stanceClipOf(fighter), "STD_tickDigimonSenile (std_main.c:4866)");
+      }
+      break;
+    }
     if (shown.clip != DisobeyClip) {
       start(fighter, id, DisobeyClip, "BTL_tickSenileState (battle_main.c:1078)");
     }

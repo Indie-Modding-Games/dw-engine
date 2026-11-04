@@ -12,6 +12,8 @@ std::vector<FighterId> BattleState::remainingOthers(FighterId self) const {
   return others;
 }
 
+// None left is the end of a match too (std_main.c: STD_areAllEnemyDigimonDead: HP less the damage
+// on its way, 0 or under, for every rival).
 std::int32_t BattleState::livingEnemies() const {
   std::int32_t count = 0;
   for (FighterId id = 1; id < fighters.size(); ++id) {

@@ -95,13 +95,13 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 83 | 75 | 8 | 0 | 95 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 40 | 40 | 0 | 0 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 11 | 10 | 0 | 1 | 91 % |
-| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 108 | 89 | 4 | 15 | 84 % |
+| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 108 | 96 | 4 | 8 | 91 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 91 | 0 | 0 | 91 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 44 | 44 | 0 | 0 | 100 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 31 | 31 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1422 funciones a portar | 1422 | 1296 | 19 | 107 | 92 % |
+| **Total** | 1422 funciones a portar | 1422 | 1303 | 19 | 100 | 92 % |
 
 ## Batalla
 
@@ -244,7 +244,7 @@ Inscripción, calendario y el overlay de copas, que trae su propio motor de comb
 
 Ficheros del decomp: `dget/dget.c`, `main/tournament.c`, `std/std_effect.c`, `std/std_hud.c`, `std/std_main.c`, `std/std_setup.c`.
 
-Portado 89, parcial 4, falta 15.
+Portado 96, parcial 4, falta 8.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -255,15 +255,8 @@ Portado 89, parcial 4, falta 15.
 | `STD_setCameraToEntity` | `std/std_main.c:2286` | falta | Cámara fija relativa al luchador enfocado según su orientación. | — |
 | `STD_setCameraLookAtEntity` | `std/std_main.c:2358` | falta | Cámara que mira hacia el luchador enfocado. | — |
 | `STD_applyRotatingCamera` | `std/std_main.c:2394` | falta | Cámara que gira lento alrededor de la arena tras el combate. | — |
-| `STD_areAllEnemyDigimonDead` | `std/std_main.c:4626` | falta | Indica si todos los rivales del combate han caído. | — |
 | `STD_tickBattleResultScreen` | `std/std_main.c:4641` | parcial | Gestiona la pantalla de resultado tras el combate de copa. | `apps/game/src/story_tournament.cpp:1` · TIME UP, la caja de daño y el empate; el que pierde no se desploma tras la caja |
-| `STD_tickDigimonSenile` | `std/std_main.c:4860` | falta | Mantiene al luchador en estado senil hasta que se agote su contador. | — |
 | `STD_initializePlayerMarker` | `std/std_main.c:5476` | falta | Añade la marca que distingue a cada luchador en pantalla. | — |
-| `STD_startWalkingAnimation2` | `std/std_main.c:5652` | falta | Elige animación de caminar normal o cansada según la vida. | — |
-| `STD_applyPartnerStatsToFighter` | `std/std_main.c:5913` | falta | Copia los valores del compañero a su ficha de luchador. | — |
-| `STD_selectMoveTarget` | `std/std_main.c:6660` | falta | Elige el objetivo de la técnica del luchador. | — |
-| `STD_applyMoveResult` | `std/std_main.c:6839` | falta | Aplica el daño y efectos de una técnica que impacta. | — |
-| `STD_updateFighterStatusVisuals` | `std/std_main.c:6954` | falta | Actualiza los efectos visibles de estados alterados del luchador. | — |
 | `STD_addCommandMenu` | `std/std_main.c:7502` | falta | Muestra el menú de órdenes del jugador en la copa. | — |
 | `STD_initializeTournament` | `std/std_setup.c:243` | parcial | Prepara la arena de la copa: música, cámara, luces, escenario y efectos. | `apps/game/src/story_tournament.cpp:1` · modelo, suelo y cámara de la arena; sin música propia, luces ni efectos de la copa |
 | `STD_initializeCamera` | `std/std_setup.c:415` | falta (citada en docs) | Coloca la cámara inicial de la arena de copa. | — |

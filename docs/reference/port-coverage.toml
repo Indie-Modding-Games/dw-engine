@@ -951,20 +951,20 @@ STD_tickBracketIntro = { status = "portado", dwe = "game/tournament/src/bracket_
 STD_combatSetup = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "el acercamiento de cámara con el letrero; la penalización por enfermedad o herida la aplica game/battle/src/battle.cpp", what = "Prepara los datos de combate del compañero y del rival en la copa." }
 STD_checkEndCondition = { status = "portado", dwe = "game/battle/src/battle.cpp:1", what = "Comprueba fin de combate por KO o tiempo y decide ganador." }
 STD_tickBattle = { status = "portado", dwe = "game/tournament/src/match_show.cpp:1", note = "la parte de cámara (MatchCamera::tickFight); el resto es el combate de game/battle", what = "Avanza un cuadro del combate de copa." }
-STD_areAllEnemyDigimonDead = { status = "falta", what = "Indica si todos los rivales del combate han caído." }
+STD_areAllEnemyDigimonDead = { status = "portado", dwe = "game/battle/src/state.cpp:15", note = "BattleState::livingEnemies() == 0, lo que mira el fin del combate de copa", what = "Indica si todos los rivales del combate han caído." }
 STD_tickBattleResultScreen = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "TIME UP, la caja de daño y el empate; el que pierde no se desploma tras la caja", what = "Gestiona la pantalla de resultado tras el combate de copa." }
 STD_addTimeoutWindow = { status = "portado", dwe = "apps/game/src/tournament_match_screen.cpp:1", what = "Muestra el aviso de tiempo agotado del combate." }
 STD_getDigitCount = { status = "no-aplica", note = "cuenta genérica de dígitos", what = "Cuenta los dígitos de un número." }
-STD_tickDigimonSenile = { status = "falta", what = "Mantiene al luchador en estado senil hasta que se agote su contador." }
+STD_tickDigimonSenile = { status = "portado", dwe = "game/battle/src/shown_clips.cpp:186", note = "el que desobedece en la copa espera en su postura; el contador es el del combate normal", what = "Mantiene al luchador en estado senil hasta que se agote su contador." }
 STD_initializePlayerMarker = { status = "falta", what = "Añade la marca que distingue a cada luchador en pantalla." }
 STD_getEntityIndex2 = { status = "no-aplica", note = "búsqueda genérica en la tabla de entidades", what = "Devuelve el índice de una entidad en la tabla." }
 STD_combatMain = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "batalla con reloj en la arena, con el rival dibujado, su modo de carga sorteado como STD_tickEnemyAI y sin caja de fin; letras de victoria, derrota y empate", what = "Bucle principal de un combate de copa hasta el resultado." }
-STD_startWalkingAnimation2 = { status = "falta", what = "Elige animación de caminar normal o cansada según la vida." }
-STD_applyPartnerStatsToFighter = { status = "falta", what = "Copia los valores del compañero a su ficha de luchador." }
+STD_startWalkingAnimation2 = { status = "portado", dwe = "game/battle/src/shown_clips.cpp:133", note = "la postura normal o débil (0x21/0x22) con que empieza el combate", what = "Pone la postura normal o débil según la vida al empezar el combate." }
+STD_applyPartnerStatsToFighter = { status = "portado", dwe = "game/battle/src/original_damage.cpp:26", note = "es el acierto de la copa: sin acierto seguro por nivel bajo y 0 % tras un desmayo (STD_DISABLE_HITTING)", what = "Calcula el acierto de una técnica en la copa (el nombre del decomp engaña)." }
 STD_tickFrames = { status = "no-aplica", note = "bucle de cuadros del original", what = "Avanza varios cuadros de juego seguidos." }
-STD_selectMoveTarget = { status = "falta", what = "Elige el objetivo de la técnica del luchador." }
-STD_applyMoveResult = { status = "falta", what = "Aplica el daño y efectos de una técnica que impacta." }
-STD_updateFighterStatusVisuals = { status = "falta", what = "Actualiza los efectos visibles de estados alterados del luchador." }
+STD_selectMoveTarget = { status = "portado", dwe = "game/battle/src/fighter_actions.cpp:97", note = "es la espera de las técnicas del grupo en la copa: una por lado y ninguna mientras el otro ataca con otra", what = "Indica si una técnica del grupo que comparte espera debe esperar (el nombre del decomp engaña)." }
+STD_applyMoveResult = { status = "portado", dwe = "game/battle/src/status_effects.cpp:283", note = "copia de BTL_tickStatusEffects: veneno, confusión, aturdimiento y aplastamiento", what = "Avanza cada fotograma el veneno, la confusión, el aturdimiento y el aplastamiento de los luchadores." }
+STD_updateFighterStatusVisuals = { status = "portado", dwe = "game/battle/src/status_effects.cpp:37", note = "copia de BTL_clearConfusion que vuelve a apuntar al otro luchador", what = "Quita la confusión del luchador y lo vuelve hacia el otro." }
 STD_addCommandMenu = { status = "falta", what = "Muestra el menú de órdenes del jugador en la copa." }
 STD_initializeTournament = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "modelo, suelo y cámara de la arena; sin música propia, luces ni efectos de la copa", what = "Prepara la arena de la copa: música, cámara, luces, escenario y efectos." }
 STD_initializeOpponent = { status = "portado", dwe = "game/tournament/src/bracket.cpp:1", what = "Genera un rival de la copa con valores y técnicas según su nivel." }

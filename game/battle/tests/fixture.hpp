@@ -120,6 +120,8 @@ inline dwe::assets::MoveTable testMoveTable() {
       testMove("horizontal_kick_57", 51, Melee, 45, 12, 0, 1),
       testMove("big_finish", 60, Melee, 200, 0, 0, 1),
       testMove("move_121", 119, Ranged, 15, 0, Near, 0),
+      // A move of the group that shares a cooldown (flag 2).
+      testMove("group_blast", 7, Ranged, 35, 5, Near, 4, 0, 0, 3),
   };
   moves.at(12).learnChances = dwe::assets::LearnChances{100, 100, 100};
   // The other numbers of the finisher range the ruleset names, which the catalog checks are moves

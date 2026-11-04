@@ -34,11 +34,16 @@ std::int32_t rollBetween(ruleset::Random& random, std::int32_t min, std::int32_t
   return random.below(max - min + 1) + min;
 }
 
-// battle_main.c: BTL_clearConfusion.
+// battle_main.c: BTL_clearConfusion; std_main.c: STD_updateFighterStatusVisuals, the tournament's
+// copy, turns the fighter back to the other one.
 void clearConfusion(BattleContext& context, FighterId id) {
   Fighter& fighter = context.fighter(id);
   resetAction(fighter);
-  selectTarget(context, id, fighter.target, false);
+  if (context.state->matchClock) {
+    setTarget(context, id, id == PartnerId ? FighterId{1} : PartnerId);
+  } else {
+    selectTarget(context, id, fighter.target, false);
+  }
   fighter.status.confused = false;
   fighter.status.confusionFrames = 0;
   if (!fighter.status.stunned && upright(fighter.status)) {
@@ -274,6 +279,8 @@ void applyMoveStatus(BattleContext& context, FighterId id, MoveRef move) {
   }
 }
 
+// battle_main.c: BTL_tickStatusEffects; a tournament match runs the same (std_main.c:
+// STD_applyMoveResult, its copy).
 void tickStatusEffects(BattleContext& context) {
   BattleState& state = *context.state;
   const bool waitForPartner = context.rules->quirks.on(quirk::ConfusionWaitsForPartnerAttack);

@@ -329,7 +329,14 @@ struct BattleState {
   std::vector<AttackInFlight> inFlight;
   std::array<std::optional<FlattenedShot>, FlattenedShotSlots> flattenedShots{};
   std::int64_t frame = 0;
+  // The wait of the moves that share a cooldown (battle_main.c: FLEE_DISABLED[1]); in a tournament
+  // match it is the partner's own, and `rivalSharedCooldown` the rival's (std_main.c:
+  // P2_AOE_TIMER).
   std::int32_t sharedCooldown = 0;
+  std::int32_t rivalSharedCooldown = 0;
+  // A tournament match lands no more hits once a fighter has fainted (std_main.c:
+  // STD_DISABLE_HITTING).
+  bool hitsOff = false;
   // From the flee command on, the frames the partner has been running.
   std::optional<std::int32_t> fleeFrames;
   // After the partner faints, the frames left to revive it.
