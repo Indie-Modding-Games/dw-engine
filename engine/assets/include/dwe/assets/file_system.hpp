@@ -14,6 +14,11 @@
 
 namespace dwe::assets {
 
+// Why the last open of a file on this thread failed, as the system words it: on Windows its own
+// reason, which tells a file another program holds (a sharing violation) from one the user may not
+// read.
+[[nodiscard]] std::string lastOpenError();
+
 // A file read from its start in pieces, for files too big to hold whole (the frames of a movie).
 class FileReader {
 public:

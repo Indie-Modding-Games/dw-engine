@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <format>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -82,4 +83,16 @@ TEST_CASE("the memory file system behaves like a folder tree") {
   CHECK(textOf(*memory.readFile("packs/base/./map/a.png")) == "new");
   CHECK_FALSE(memory.readFile("packs/base/map/b.png").has_value());
   CHECK_FALSE(memory.listFiles("packs/missing").has_value());
+}
+
+TEST_CASE("a file that does not open says why") {
+  const TempFolder folder;
+  const DiskFileSystem disk;
+  const auto opened = disk.openFile(folder.path() / "missing.txt");
+  REQUIRE_FALSE(opened.has_value());
+  const std::string message = opened.error().message;
+  const std::string prefix =
+      std::format("cannot open '{}': ", dwe::assets::pathText(folder.path() / "missing.txt"));
+  CHECK(message.starts_with(prefix));
+  CHECK(message.size() > prefix.size());
 }

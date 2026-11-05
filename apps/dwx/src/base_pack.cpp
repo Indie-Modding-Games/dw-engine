@@ -64,6 +64,15 @@ bool isExtension(std::string_view extension) {
   });
 }
 
+// Opens a file to write it from its start; a failure says the system's reason.
+core::Result<std::ofstream> openToWrite(const std::filesystem::path& file) {
+  std::ofstream stream{file, std::ios::binary | std::ios::trunc};
+  if (!stream) {
+    return core::fail(std::format("cannot write {}: {}", file.string(), assets::lastOpenError()));
+  }
+  return stream;
+}
+
 // Writes an output: its bytes, or what its stream gives, part by part.
 core::Result<void> writeOutput(const std::filesystem::path& file, const OutputFile& output) {
   if (!output.stream) {
@@ -75,7 +84,11 @@ core::Result<void> writeOutput(const std::filesystem::path& file, const OutputFi
     return core::fail(
         std::format("cannot create {}: {}", file.parent_path().string(), error.message()));
   }
-  std::ofstream stream{file, std::ios::binary | std::ios::trunc};
+  auto opened = openToWrite(file);
+  if (!opened) {
+    return std::unexpected{opened.error()};
+  }
+  std::ofstream& stream = *opened;
   const auto written = output.stream([&](std::span<const std::byte> part) -> core::Result<void> {
     stream.write(reinterpret_cast<const char*>(part.data()),
                  static_cast<std::streamsize>(part.size()));
@@ -232,10 +245,14 @@ core::Result<void> writeFile(const std::filesystem::path& file, std::span<const 
     return core::fail(
         std::format("cannot create {}: {}", file.parent_path().string(), error.message()));
   }
-  std::ofstream stream{file, std::ios::binary | std::ios::trunc};
-  stream.write(reinterpret_cast<const char*>(bytes.data()),
-               static_cast<std::streamsize>(bytes.size()));
+  auto stream = openToWrite(file);
   if (!stream) {
+    return std::unexpected{stream.error()};
+  }
+  stream->write(reinterpret_cast<const char*>(bytes.data()),
+                static_cast<std::streamsize>(bytes.size()));
+  stream->close();
+  if (!*stream) {
     return core::fail(std::format("cannot write {}", file.string()));
   }
   return {};
@@ -465,7 +482,8 @@ core::Result<void> writeBasePack(const std::filesystem::path& folder, const Extr
 }
 
 core::Result<std::size_t> checkBasePack(const std::filesystem::path& folder,
-                                        const ExtractionRun& run) {
+                                        const ExtractionRun& run,
+                                        std::vector<std::string>* warnings) {
   const assets::DiskFileSystem disk;
   const std::array roots = {folder};
   auto vfs = assets::VirtualFileSystem::mount(disk, roots, assets::PackOrigin::Engine);
@@ -482,7 +500,14 @@ core::Result<std::size_t> checkBasePack(const std::filesystem::path& folder,
           std::format("the asset '{}' resolves to {}", output.id.str(), source->file.string()));
     }
   }
-  const std::vector<assets::ContentProblem> problems = assets::checkContent(*vfs);
+  std::vector<assets::ContentProblem> passedAlone;
+  const std::vector<assets::ContentProblem> problems = assets::checkContent(*vfs, &passedAlone);
+  if (warnings != nullptr) {
+    for (const assets::ContentProblem& problem : passedAlone) {
+      warnings->push_back(
+          std::format("{} opened only when read again alone: {}", problem.file, problem.message));
+    }
+  }
   if (!problems.empty()) {
     std::string list;
     for (const assets::ContentProblem& problem : problems) {

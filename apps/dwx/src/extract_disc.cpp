@@ -145,7 +145,11 @@ core::Result<void> extractBasePack(const std::filesystem::path& path,
                summary.duplicates);
 
   tell(progress, CheckStart, ExtractStep::Check);
-  const auto assets = checkBasePack(out, *run);
+  std::vector<std::string> checkWarnings;
+  const auto assets = checkBasePack(out, *run, &checkWarnings);
+  for (const auto& warning : checkWarnings) {
+    std::println(stderr, "dwx: warning: {}", warning);
+  }
   if (!assets) {
     return core::fail(core::formatMessage(messages::EngineCheckFailed, assets.error().message));
   }

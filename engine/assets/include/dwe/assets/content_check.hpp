@@ -38,8 +38,11 @@ struct ContentProblem {
 // name, table_kinds.hpp) and opens it: an image the game reads from its PNG (pngReadingOf) with
 // that reader, any other asset with openAsset by its id, a content table with the reader of its
 // kind; and checks that the Digimon the packs add have their model contracts. Several assets at a
-// time, so the file systems of the packs are read from several threads. Returns the problems, by
-// id.
-std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem);
+// time, so the file systems of the packs are read from several threads. An asset that fails is
+// read and opened once more alone before it counts. Returns the problems, by id; passedAlone, when
+// given, gets the failures that did not come back alone (something beside the asset, such as
+// another program holding its file, made it fail).
+std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem,
+                                         std::vector<ContentProblem>* passedAlone = nullptr);
 
 } // namespace dwe::assets

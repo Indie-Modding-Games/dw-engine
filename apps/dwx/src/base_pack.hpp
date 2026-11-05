@@ -89,8 +89,10 @@ core::Result<void> writeBasePack(const std::filesystem::path& folder, const Extr
 
 // Mounts the written pack with the engine's virtual file system, checks that every output resolves
 // to its file and opens every asset with the engine's readers (assets::checkContent). Returns how
-// many assets the pack has.
+// many assets the pack has; warnings, when given, gets one line per asset that failed beside the
+// others but opened when read again alone.
 core::Result<std::size_t> checkBasePack(const std::filesystem::path& folder,
-                                        const ExtractionRun& run);
+                                        const ExtractionRun& run,
+                                        std::vector<std::string>* warnings = nullptr);
 
 } // namespace dwe::dwx

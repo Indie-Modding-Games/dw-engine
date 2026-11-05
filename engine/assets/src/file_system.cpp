@@ -2,7 +2,9 @@
 #include <dwe/core/message.hpp>
 
 #include <algorithm>
+#include <cerrno>
 #include <cstdint>
+#include <cstdlib>
 #include <format>
 #include <fstream>
 #include <memory>
@@ -25,6 +27,15 @@ std::string keyOf(const std::filesystem::path& path) {
     key.pop_back();
   }
   return key;
+}
+
+// Opens a file to read it; a failure says the system's reason.
+core::Result<std::ifstream> openToRead(const std::filesystem::path& file) {
+  std::ifstream stream{file, std::ios::binary};
+  if (!stream) {
+    return core::fail(std::format("cannot open '{}': {}", pathText(file), lastOpenError()));
+  }
+  return stream;
 }
 
 // A file held whole in memory, read in pieces.
@@ -80,11 +91,22 @@ DiskFileSystem::openFile(const std::filesystem::path& file) const {
   if (std::filesystem::is_symlink(file, error)) {
     return core::fail(std::format("'{}' is a symbolic link", pathText(file)));
   }
-  std::ifstream stream{file, std::ios::binary};
+  auto stream = openToRead(file);
   if (!stream) {
-    return core::fail(std::format("cannot open '{}'", pathText(file)));
+    return std::unexpected{stream.error()};
   }
-  return std::make_unique<DiskFileReader>(file, std::move(stream));
+  return std::make_unique<DiskFileReader>(file, std::move(*stream));
+}
+
+std::string lastOpenError() {
+#ifdef _WIN32
+  // errno says "permission denied" both for a file another program holds and for one the user may
+  // not read; the runtime keeps the system's own code too.
+  if (const unsigned long code = _doserrno; code != 0) {
+    return std::system_category().message(static_cast<int>(code));
+  }
+#endif
+  return std::generic_category().message(errno);
 }
 
 std::string pathText(const std::filesystem::path& path) {
@@ -146,13 +168,13 @@ DiskFileSystem::readFile(const std::filesystem::path& file) const {
   if (error) {
     return core::fail(std::format("cannot read '{}': {}", pathText(file), error.message()));
   }
-  std::ifstream stream{file, std::ios::binary};
+  auto stream = openToRead(file);
   if (!stream) {
-    return core::fail(std::format("cannot open '{}'", pathText(file)));
+    return std::unexpected{stream.error()};
   }
   std::vector<std::byte> bytes(static_cast<std::size_t>(size));
-  stream.read(reinterpret_cast<char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
-  if (stream.gcount() != static_cast<std::streamsize>(bytes.size())) {
+  stream->read(reinterpret_cast<char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+  if (stream->gcount() != static_cast<std::streamsize>(bytes.size())) {
     return core::fail(std::format("cannot read '{}': it changed while reading", pathText(file)));
   }
   return bytes;

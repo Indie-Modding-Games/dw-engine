@@ -278,31 +278,35 @@ core::Result<void> openAsset(const AssetId& id, std::string_view extension,
   return {};
 }
 
-std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem) {
+std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem,
+                                         std::vector<ContentProblem>* passedAlone) {
   const std::vector<AssetId> ids = fileSystem.ids();
   const ComposedTables tables = composedTablesOf(fileSystem);
+  const auto check = [&](const AssetId& id) -> std::optional<ContentProblem> {
+    const AssetSource* source = fileSystem.resolve(id);
+    const TableKind* kind = kindOf(tables, id);
+    auto bytes = readAsGameReads(fileSystem, id, kind);
+    if (!bytes) {
+      return ContentProblem{
+          .id = id, .file = pathText(source->file), .message = bytes.error().message};
+    }
+    const std::string extension = source->file.extension().string();
+    const auto opened =
+        kind != nullptr
+            ? openTable(fileSystem, *kind, *bytes)
+            : openAssetAsGameReads(
+                  id, std::string_view{extension}.substr(extension.empty() ? 0 : 1), *bytes);
+    if (!opened) {
+      return ContentProblem{
+          .id = id, .file = pathText(source->file), .message = opened.error().message};
+    }
+    return std::nullopt;
+  };
   std::vector<std::optional<ContentProblem>> found(ids.size());
   std::atomic<std::size_t> next{0};
   const auto worker = [&] {
     for (std::size_t i = next++; i < ids.size(); i = next++) {
-      const AssetSource* source = fileSystem.resolve(ids[i]);
-      const TableKind* kind = kindOf(tables, ids[i]);
-      auto bytes = readAsGameReads(fileSystem, ids[i], kind);
-      if (!bytes) {
-        found[i] = ContentProblem{
-            .id = ids[i], .file = pathText(source->file), .message = bytes.error().message};
-        continue;
-      }
-      const std::string extension = source->file.extension().string();
-      const auto opened =
-          kind != nullptr
-              ? openTable(fileSystem, *kind, *bytes)
-              : openAssetAsGameReads(
-                    ids[i], std::string_view{extension}.substr(extension.empty() ? 0 : 1), *bytes);
-      if (!opened) {
-        found[i] = ContentProblem{
-            .id = ids[i], .file = pathText(source->file), .message = opened.error().message};
-      }
+      found[i] = check(ids[i]);
     }
   };
   const unsigned count = std::clamp(std::thread::hardware_concurrency(), 1U, MaxThreads);
@@ -315,9 +319,15 @@ std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem) {
     thread.join();
   }
   std::vector<ContentProblem> problems;
-  for (auto& problem : found) {
-    if (problem) {
-      problems.push_back(std::move(*problem));
+  for (std::size_t i = 0; i < ids.size(); ++i) {
+    if (!found[i]) {
+      continue;
+    }
+    // Once more alone: a broken asset fails again, one that failed only beside the others did not.
+    if (std::optional<ContentProblem> again = check(ids[i])) {
+      problems.push_back(std::move(*again));
+    } else if (passedAlone != nullptr) {
+      passedAlone->push_back(std::move(*found[i]));
     }
   }
   return problems;

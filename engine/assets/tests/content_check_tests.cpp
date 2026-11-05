@@ -8,6 +8,7 @@
 #include <lodepng.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -15,6 +16,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "media_fixtures.hpp"
@@ -148,6 +150,55 @@ TEST_CASE("every asset of a stack is opened with the reader of its type") {
   CHECK(problems[1].message.contains("not a PNG"));
   CHECK(problems[2].id.str() == "notes/readme");
   CHECK(problems[2].message == "the engine has no reader for .doc files");
+}
+
+namespace {
+
+// A file system whose first read of one file fails, as one does while another program holds it.
+class FailsOnceFileSystem final : public FileSystem {
+public:
+  FailsOnceFileSystem(const FileSystem& files, std::filesystem::path failing)
+      : files_(files), failing_(std::move(failing)) {}
+
+  dwe::core::Result<std::vector<std::string>>
+  listFiles(const std::filesystem::path& folder) const override {
+    return files_.listFiles(folder);
+  }
+  dwe::core::Result<std::vector<std::byte>>
+  readFile(const std::filesystem::path& file) const override {
+    if (file == failing_ && !failed_.exchange(true)) {
+      return dwe::core::fail("cannot open 'held': it is being used by another process");
+    }
+    return files_.readFile(file);
+  }
+  dwe::core::Result<std::uint64_t> fileSize(const std::filesystem::path& file) const override {
+    return files_.fileSize(file);
+  }
+
+private:
+  const FileSystem& files_;
+  std::filesystem::path failing_;
+  mutable std::atomic<bool> failed_{false};
+};
+
+} // namespace
+
+TEST_CASE("an asset that fails only once is read again alone and does not count as a problem") {
+  MemoryFileSystem memory;
+  memory.addFile("pack/pack.yaml", "id: test\nversion: 1.0.0\nlayer: mods\n");
+  memory.addFile("pack/image/held.png", pngFile());
+  memory.addFile("pack/image/bad.png", bytesOf("not a png"));
+  const FailsOnceFileSystem files{memory, "pack/image/held.png"};
+  const std::vector<std::filesystem::path> roots{"pack"};
+  const auto vfs = VirtualFileSystem::mount(files, roots);
+  REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
+  std::vector<ContentProblem> passedAlone;
+  const auto problems = checkContent(*vfs, &passedAlone);
+  REQUIRE(problems.size() == 1);
+  CHECK(problems[0].id.str() == "image/bad");
+  REQUIRE(passedAlone.size() == 1);
+  CHECK(passedAlone[0].id.str() == "image/held");
+  CHECK(passedAlone[0].message.contains("another process"));
 }
 
 TEST_CASE(
