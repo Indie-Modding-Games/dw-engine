@@ -14,6 +14,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 #include "model_extractors.hpp"
@@ -215,6 +216,37 @@ TEST_CASE("textures come from what was uploaded last, and palettes may come from
   REQUIRE(third->textures.size() == 2);
   CHECK(third->textures[1].palettes.empty());
   CHECK(third->textures[1].width == 256);
+}
+
+TEST_CASE("textures can only be moved, and keep pointing at their own images when they are") {
+  // A copy would point at the original's images: a vector that copies while it grows (the Windows
+  // standard library does, since its deque's move may throw) left them pointing at freed memory.
+  static_assert(!std::is_copy_constructible_v<ModelTextures>);
+  static_assert(!std::is_copy_assignable_v<ModelTextures>);
+  const auto tmd = dwe::formats::model::readTmd(fixtures::buildSampleTmd());
+  REQUIRE(tmd.has_value());
+  VramScene scene;
+  scene.addTim(sampleTexture());
+  std::vector<ModelTextures> drawn;
+  for (int i = 0; i < 9; ++i) {
+    auto textures = textureModel(*tmd, scene);
+    REQUIRE(textures.has_value());
+    drawn.push_back(std::move(*textures));
+  }
+  for (const ModelTextures& textures : drawn) {
+    const auto owned = [&](std::span<const std::byte> png) {
+      return png.empty() || std::ranges::any_of(textures.pngs, [&](const auto& stored) {
+               return png.data() == stored.data() && png.size() == stored.size();
+             });
+    };
+    for (const auto& texture : textures.textures) {
+      for (const auto& palette : texture.palettes) {
+        CHECK(owned(palette.png));
+        CHECK(owned(palette.plainPng));
+        CHECK(owned(palette.stpPng));
+      }
+    }
+  }
 }
 
 TEST_CASE(

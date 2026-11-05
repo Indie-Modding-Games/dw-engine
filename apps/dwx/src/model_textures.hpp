@@ -43,7 +43,18 @@ private:
 };
 
 // The textures to give the glTF writer. The PNGs live here; the textures point at them.
+// It can be moved but not copied: a copy's textures would still point at the original's PNGs, and
+// once the original is gone they read freed memory. A container that grows copies what it cannot
+// move without throwing, and a deque's move may throw (the Windows standard library's does), so a
+// copyable ModelTextures in a vector was copied there and its images came out as garbage.
 struct ModelTextures {
+  ModelTextures() = default;
+  ~ModelTextures() = default;
+  ModelTextures(const ModelTextures&) = delete;
+  ModelTextures& operator=(const ModelTextures&) = delete;
+  ModelTextures(ModelTextures&&) = default;
+  ModelTextures& operator=(ModelTextures&&) = default;
+
   std::vector<formats::model::ModelTexture> textures;
   std::deque<std::vector<std::byte>> pngs;
   // The texel kinds of each image and palette, which the textures point at too.
