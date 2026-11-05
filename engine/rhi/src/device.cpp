@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+#include "renderer_requirements.hpp"
 #include "transition.hpp"
 
 namespace dwe::rhi {
@@ -313,34 +314,9 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
     return core::fail(std::format("could not create the window surface: {}", SDL_GetError()));
   }
 
-  VkPhysicalDeviceVulkan13Features features13{};
-  features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-  features13.dynamicRendering = VK_TRUE;
-  features13.synchronization2 = VK_TRUE;
-
-  // Descriptor indexing for the bindless texture table and buffer device addresses for per-frame
-  // data (docs/architecture/render.md).
-  VkPhysicalDeviceVulkan12Features features12{};
-  features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-  features12.descriptorIndexing = VK_TRUE;
-  features12.runtimeDescriptorArray = VK_TRUE;
-  features12.descriptorBindingPartiallyBound = VK_TRUE;
-  features12.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
-  features12.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
-  features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-  features12.bufferDeviceAddress = VK_TRUE;
-  // Depth-only attachment layouts for the depth target.
-  features12.separateDepthStencilLayouts = VK_TRUE;
-  VkPhysicalDeviceFeatures features{};
-  features.samplerAnisotropy = VK_TRUE;
-
   vkb::PhysicalDeviceSelector selector{impl->instance};
-  auto physicalDevice = selector.set_minimum_version(1, 3)
-                            .set_required_features(features)
-                            .set_required_features_12(features12)
-                            .set_required_features_13(features13)
-                            .set_surface(impl->surface)
-                            .select();
+  requireRendererFeatures(selector);
+  auto physicalDevice = selector.set_surface(impl->surface).select();
   if (!physicalDevice) {
     return core::fail(std::format("no GPU supports Vulkan 1.3 with this window: {}",
                                   physicalDevice.error().message()));

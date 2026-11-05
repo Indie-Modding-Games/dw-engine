@@ -1,7 +1,9 @@
 #include <dwe/content/disc_install.hpp>
 #include <dwe/content/user_data.hpp>
 #include <dwe/platform/platform.hpp>
+#include <dwe/rhi/system_check.hpp>
 
+#include <cstdio>
 #include <cstdlib>
 #include <optional>
 #include <span>
@@ -18,6 +20,11 @@ int main(int argc, char** argv) {
   auto options = parseOptions(std::span{argv, static_cast<std::size_t>(argc)});
   if (!options) {
     return EXIT_FAILURE;
+  }
+  if (options->checkSystem) {
+    const auto check = dwe::rhi::checkSystem();
+    std::fputs(dwe::rhi::formatSystemCheck(check).c_str(), stdout);
+    return check.result == dwe::rhi::SystemCheckResult::Ok ? EXIT_SUCCESS : EXIT_FAILURE;
   }
   if (!options->contentGiven) {
     const auto userData = dwe::platform::userDataFolder(dwe::content::UserDataOrganization,

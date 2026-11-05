@@ -288,6 +288,8 @@ bool readFlag(Options& options, std::string_view argument) {
     options.newGame = true;
   } else if (argument == "--list-saves") {
     options.listSaves = true;
+  } else if (argument == CheckSystemOption) {
+    options.checkSystem = true;
   } else if (argument == TuningOption) {
     options.tuning = true;
   } else if (argument == ExploreOption) {

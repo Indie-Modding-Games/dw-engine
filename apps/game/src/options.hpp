@@ -47,6 +47,9 @@ struct Options {
   bool listSaves = false;
   // Set by --check-content: open every asset of the folder's packs and quit, without a window.
   bool checkContent = false;
+  // Set by --check-system: print whether this computer's GPU can run the renderer and quit,
+  // without a window or content (rhi/system_check.hpp; the launcher reads it before playing).
+  bool checkSystem = false;
   // Set by --dump-signs <map>[,<map>...]: write the maps' images and their signs to --shots and
   // quit, without a window (sign_dump.hpp).
   std::vector<std::string> dumpSigns;
@@ -160,7 +163,7 @@ inline constexpr std::string_view Usage =
     "[--new-game-chain original|seeded] [--clock-speed <x>] "
     "[--seed <n>] [--original-rolls <state>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] [--trace <file>] "
     "[--control <socket> [--control-paused]] | "
-    "--list-saves | --check-content <folder> | --dump-signs <map>[,<map>...] --shots <folder> [--lang <language>] | --test-scene [--texture-churn] | --map <id>[,<id>...] "
+    "--list-saves | --check-content <folder> | --check-system | --dump-signs <map>[,<map>...] --shots <folder> [--lang <language>] | --test-scene [--texture-churn] | --map <id>[,<id>...] "
     "[--focus <x>,<z>] | --ui-demo [--ui-demo-fishing] [--ui-demo-player] [--ui-demo-chart <layout.yaml>] [--ui-demo-chart-detail <layout.yaml>] [--ui-demo-chart-all-raised] [--ui-demo-bag-size <10|20|30>] "
     "[--virtual-gamepad <file>] | --model-viewer [character or species model id...] [--viewer-yaw <degrees>] [--viewer-frame <units>]";
 
@@ -171,6 +174,7 @@ inline constexpr std::string_view NewGameChainOption = "--new-game-chain";
 // A new game's chain by its name in --new-game-chain and in a route's new_game: original or
 // seeded.
 std::optional<session::NewGameChain> newGameChainNamed(std::string_view name);
+inline constexpr std::string_view CheckSystemOption = "--check-system";
 inline constexpr std::string_view TuningOption = "--tuning";
 inline constexpr std::string_view ExploreOption = "--explore";
 inline constexpr std::string_view ChibiOption = "--chibi";
