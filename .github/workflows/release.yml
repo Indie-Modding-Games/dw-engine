@@ -14,6 +14,8 @@ name: Release
 #   vars.DWE_SIGNING_PUBKEY            the public key (the .pub file's text), built into the launcher
 #   vars.DWE_BETA_GATEWAY              the beta gateway's URL (services/beta-gateway), built into the
 #                                      launcher as its release server
+#   vars.DWE_LAUNCHER_LINKS            optional: the main screen's links, a JSON object of https URLs
+#                                      by kind ({"repo", "community", "web"}); unset, none are shown
 on:
   workflow_dispatch:
     inputs:
@@ -37,6 +39,7 @@ env:
   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.DWE_SIGNING_KEY_PASSWORD }}
   DWE_LAUNCHER_PUBKEY: ${{ vars.DWE_SIGNING_PUBKEY }}
   DWE_LAUNCHER_GATEWAY: ${{ vars.DWE_BETA_GATEWAY }}
+  DWE_LAUNCHER_LINKS: ${{ vars.DWE_LAUNCHER_LINKS }}
 
 jobs:
   check:

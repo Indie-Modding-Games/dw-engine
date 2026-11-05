@@ -10,6 +10,7 @@ pub mod content;
 pub mod disc;
 pub mod failure;
 pub mod launch;
+pub mod links;
 pub mod log;
 pub mod manifest;
 pub mod releases;

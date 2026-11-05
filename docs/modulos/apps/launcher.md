@@ -29,7 +29,11 @@ activo y el anillo de foco.
 - **Abajo a la izquierda, «Complementos»:** la lista de complementos instalados con su estado, «Abrir» para los que
   tienen página y «Gestionar complementos».
 - **Abajo a la derecha:** «Novedades», un panel plegable con las notas de la última versión («Ver todo» las enseña
-  enteras) y las tarjetas de los complementos, y tres enlaces con iconos genéricos (repositorio, comunidad y web).
+  enteras) y las tarjetas de los complementos, y hasta tres enlaces con iconos genéricos (repositorio, comunidad y
+  web). Los enlaces se fijan al compilar con `DWE_LAUNCHER_LINKS`, un objeto JSON con una URL `https` por tipo
+  (`{"repo": "https://…", "community": "https://…", "web": "https://…"}`; en el flujo de publicación, la variable del
+  repositorio `DWE_LAUNCHER_LINKS`). El tipo que falta no se enseña y, sin la variable, no hay ninguno: los
+  probadores de la beta cerrada no tienen acceso al repositorio privado, así que no se enlaza por defecto.
 - **Juegos:** cuatro tarjetas: el juego base, activo, y tres más en gris con «Próximamente» (expansión de cartas,
   segunda parte y tercera parte).
 - La página de un complemento ocupa el centro de la pantalla cuando se abre desde su icono o desde «Complementos».

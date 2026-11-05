@@ -398,17 +398,21 @@ function renderNewsPill() {
   $("newsDot").hidden = !(update?.game_update || (update?.launcher_update && update.launcher_plan === "offer"));
 }
 
-// Generic links (no brand logos): the repository, its community board and the project's page.
-const LINKS = [
-  { id: "repo", url: "https://github.com/Indie-Modding-Games/dw-engine", icon: '<path d="m8.5 8-4 4 4 4M15.5 8l4 4-4 4M13.5 5l-3 14"/>' },
-  { id: "community", url: "https://github.com/Indie-Modding-Games/dw-engine/discussions", icon: '<circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8"/><circle cx="16.5" cy="8" r="2.5"/><path d="M15.5 13.3c2.6-.3 4.6 1.3 5 4.2"/>' },
-  { id: "web", url: "https://github.com/Indie-Modding-Games", icon: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.4 3.5 5.3 3.5 8.5s-1.1 6.1-3.5 8.5c-2.4-2.4-3.5-5.3-3.5-8.5s1.1-6.1 3.5-8.5Z"/>' },
-];
+// Generic link icons (no brand logos). Which links there are, and where they go, is built into
+// the launcher (DWE_LAUNCHER_LINKS, src-tauri/src/links.rs); by default none, and the row is hidden.
+const LINK_ICONS = {
+  repo: '<path d="m8.5 8-4 4 4 4M15.5 8l4 4-4 4M13.5 5l-3 14"/>',
+  community: '<circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8"/><circle cx="16.5" cy="8" r="2.5"/><path d="M15.5 13.3c2.6-.3 4.6 1.3 5 4.2"/>',
+  web: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.4 3.5 5.3 3.5 8.5s-1.1 6.1-3.5 8.5c-2.4-2.4-3.5-5.3-3.5-8.5s1.1-6.1 3.5-8.5Z"/>',
+};
 
 function renderLinks() {
+  const links = (state.status?.links ?? []).filter((link) => LINK_ICONS[link.kind] && link.url.startsWith("https://"));
+  $("links").hidden = !links.length;
   $("links").replaceChildren(
-    ...LINKS.map((link) => {
-      const button = el("button", { class: "link-icon", type: "button", "data-tip": t(`links.${link.id}`), onclick: () => openUrl(link.url).catch((failure) => showMessage(t("errorTitle"), String(failure))) }, icon(link.icon, 20), el("span", { class: "sr-only", text: t(`links.${link.id}`) }));
+    ...links.map((link) => {
+      const label = t(`links.${link.kind}`);
+      const button = el("button", { class: "link-icon", type: "button", "data-tip": label, onclick: () => openUrl(link.url).catch((failure) => showMessage(t("errorTitle"), String(failure))) }, icon(LINK_ICONS[link.kind], 20), el("span", { class: "sr-only", text: label }));
       return el("li", {}, button);
     }),
   );

@@ -60,6 +60,8 @@ pub struct Status {
     busy: bool,
     game_running: bool,
     formats: Formats,
+    /// The main screen's links, built in (links.rs); none by default.
+    links: Vec<crate::links::Link>,
 }
 
 #[derive(Serialize, Clone)]
@@ -167,6 +169,7 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
             archives: &disc::ARCHIVE_EXTENSIONS,
             unsupported: &disc::UNSUPPORTED_EXTENSIONS,
         },
+        links: crate::links::built_in(),
     }
 }
 

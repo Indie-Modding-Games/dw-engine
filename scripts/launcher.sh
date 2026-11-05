@@ -15,6 +15,10 @@
 #                         against it); without it the build refuses every update
 #   DWE_LAUNCHER_GATEWAY  the beta gateway's URL to build with (services/beta-gateway); without it
 #                         the build points at https://beta-gateway.invalid, which never answers
+#   DWE_LAUNCHER_LINKS    the main screen's links to build with, a JSON object of https URLs by
+#   kind:
+#                         {"repo": ..., "community": ..., "web": ...}; kinds left out are not shown
+#                         (without it, no links)
 #   DWE_BUILD_SLOTS       a folder of slot locks shared by every heavy build of the machine (at most
 #                         two at a time); without it the build does not wait for a slot
 set -euo pipefail
@@ -61,6 +65,7 @@ run() {
     -e CARGO_TARGET_DIR="$target_dir" \
     -e DWE_LAUNCHER_PUBKEY="${DWE_LAUNCHER_PUBKEY:-}" \
     -e DWE_LAUNCHER_GATEWAY="${DWE_LAUNCHER_GATEWAY:-}" \
+    -e DWE_LAUNCHER_LINKS="${DWE_LAUNCHER_LINKS:-}" \
     -e TAURI_SIGNING_PRIVATE_KEY="${TAURI_SIGNING_PRIVATE_KEY:-}" \
     -e TAURI_SIGNING_PRIVATE_KEY_PASSWORD="${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" \
     -e APPIMAGE_EXTRACT_AND_RUN=1 -e NO_STRIP=1 \
