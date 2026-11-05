@@ -426,6 +426,13 @@ function showAbout() {
   );
 }
 
+// A failure whose detail runs over several lines (dwx names each asset it could not open) shows its
+// first line as the message and the rest as a log that scrolls.
+function showFailure(failure) {
+  const [first, ...rest] = failureText(failure).split("\n");
+  showMessage(t("errorTitle"), first, rest.length > 0 ? rest.join("\n") : null);
+}
+
 // ---- Tasks -----------------------------------------------------------------------------------
 
 function showMessage(title, body, log = null) {
@@ -472,7 +479,7 @@ async function runTask(work, { recheck = true, quiet = false } = {}) {
     } else if (quiet && failure?.code !== "cancelled") {
       toast({ title: t("autoGameFailedTitle"), text: t("autoGameFailedBody", { reason: failureText(failure) }), kind: "warning" });
     } else if (failure?.code !== "cancelled") {
-      showMessage(t("errorTitle"), failureText(failure));
+      showFailure(failure);
     }
   } finally {
     state.task = null;
@@ -497,7 +504,7 @@ async function play() {
     await api.play();
     await refresh();
   } catch (failure) {
-    showMessage(t("errorTitle"), failureText(failure));
+    showFailure(failure);
   }
 }
 
@@ -536,7 +543,7 @@ async function installLauncher(restart) {
     await api.installLauncherUpdate();
     if (restart) await api.restartLauncher();
   } catch (failure) {
-    if (restart) showMessage(t("errorTitle"), failureText(failure));
+    if (restart) showFailure(failure);
   } finally {
     state.launcherInstalling = false;
     // Its progress came through the task events: the bar is done.
@@ -549,7 +556,7 @@ async function restartLauncher() {
   try {
     await api.restartLauncher();
   } catch (failure) {
-    showMessage(t("errorTitle"), failureText(failure));
+    showFailure(failure);
   }
 }
 
@@ -791,7 +798,7 @@ async function settingCall(work, reloadBackground = false) {
     }
     await refresh();
   } catch (failure) {
-    showMessage(t("errorTitle"), failureText(failure));
+    showFailure(failure);
   }
 }
 
@@ -993,7 +1000,7 @@ async function start() {
   try {
     await reloadAddons();
   } catch (failure) {
-    showMessage(t("errorTitle"), failureText(failure));
+    showFailure(failure);
   }
   if (state.status.check_updates) checkUpdates();
 }

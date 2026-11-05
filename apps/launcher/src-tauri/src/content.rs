@@ -131,9 +131,48 @@ pub fn parse_progress(line: &str) -> Option<Progress> {
     (percent <= 100 && !step.is_empty()).then(|| Progress { percent, step: step.to_string() })
 }
 
-/// What dwx said last about a failure: its last line starting with "dwx: ", without that.
+/// The most lines of dwx's output a failure message carries.
+const ERROR_LINES: usize = 20;
+/// The most lines of dwx's output the log keeps of a failure.
+const LOGGED_LINES: usize = 60;
+
+/// dwx's lines that are not progress.
+fn said(lines: &[String]) -> Vec<&str> {
+    lines.iter().map(String::as_str).filter(|l| parse_progress(l).is_none()).collect()
+}
+
+/// What dwx said last about a failure: its last line starting with "dwx: ", without that, and the
+/// indented lines after it ("  <file>: <why>"; its report on the other stream may come between
+/// them); with no such line, its last lines that are not progress (a program that crashed says
+/// nothing of its own). At most ERROR_LINES lines.
 pub fn dwx_error(lines: &[String]) -> String {
-    lines.iter().rev().find_map(|l| l.strip_prefix("dwx: ")).unwrap_or_default().to_string()
+    let said = said(lines);
+    let tail: Vec<&str> = match said.iter().rposition(|l| l.starts_with("dwx: ")) {
+        Some(at) => {
+            let first = said[at].strip_prefix("dwx: ").unwrap_or_default();
+            std::iter::once(first)
+                .chain(said[at + 1..].iter().copied().filter(|l| l.starts_with([' ', '\t'])))
+                .collect()
+        }
+        None => {
+            let shown: Vec<&str> = said.iter().copied().filter(|l| !l.trim().is_empty()).collect();
+            shown[shown.len().saturating_sub(ERROR_LINES)..].to_vec()
+        }
+    };
+    let mut text = tail.iter().take(ERROR_LINES).copied().collect::<Vec<_>>().join("\n");
+    if tail.len() > ERROR_LINES {
+        text.push_str(&format!("\n  … {} more", tail.len() - ERROR_LINES));
+    }
+    text
+}
+
+/// Writes how dwx ended and its last lines that are not progress to the log, for a failure.
+fn log_dwx_output(exit: Option<i32>, lines: &[String]) {
+    let said = said(lines);
+    let tail = &said[said.len().saturating_sub(LOGGED_LINES)..];
+    // A crash on Windows ends with an NTSTATUS code, read in hexadecimal (0xC0000005...).
+    let exit = exit.map_or_else(|| "no exit code".to_string(), |code| format!("exit code {code} ({:#x})", code as u32));
+    log_line!("dwx ended with {exit}; its last {} lines:\n{}", tail.len(), tail.join("\n"));
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -154,7 +193,10 @@ pub fn read_identity(exit_code: Option<i32>, lines: &[String]) -> Result<Identit
         Some(0) => Ok(Identity::Supported(version)),
         Some(1) => Ok(Identity::Unknown),
         Some(3) => Ok(Identity::OtherVersion(version)),
-        _ => Err(Failure::new(code::CANNOT_READ, dwx_error(lines))),
+        _ => {
+            log_dwx_output(exit_code, lines);
+            Err(Failure::new(code::CANNOT_READ, dwx_error(lines)))
+        }
     }
 }
 
@@ -252,6 +294,7 @@ pub fn extract(
     let finish = || -> Result<()> {
         let (exit, lines) = outcome?;
         if exit != Some(0) {
+            log_dwx_output(exit, &lines);
             return Err(Failure::new(code::EXTRACT_FAILED, dwx_error(&lines)));
         }
         fs::create_dir_all(&content)?;
@@ -262,6 +305,7 @@ pub fn extract(
                 .map_err(|e| Failure::new(code::EXTRACT_FAILED, format!("{}: {e}", target.display())))?;
         }
         if !has_base_pack(&content) {
+            log_dwx_output(exit, &lines);
             return Err(Failure::new(code::EXTRACT_FAILED, dwx_error(&lines)));
         }
         // dwx writes the version it was built with; a package always says which one that is.
@@ -319,6 +363,33 @@ mod tests {
         assert_eq!(read_identity(Some(1), &lines(&["unknown -"])).unwrap(), Identity::Unknown);
         let failure = read_identity(Some(2), &lines(&["dwx: cannot open the image"])).unwrap_err();
         assert_eq!(failure, Failure::new(code::CANNOT_READ, "cannot open the image"));
+    }
+
+    #[test]
+    fn dwx_errors_keep_their_problem_lines() {
+        let lines = |l: &[&str]| l.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        let output = lines(&[
+            "progress 90 check",
+            "dwx: warning: a.png opened only when read again alone: cannot open 'a.png'",
+            "dwx: engine check failed: the engine cannot open 2 of its assets:",
+            "  base/b.png: cannot open 'base/b.png': permission denied",
+            "Disc: SLUS, 1 files",
+            "  base/c.yaml: not UTF-8",
+        ]);
+        assert_eq!(
+            dwx_error(&output),
+            "engine check failed: the engine cannot open 2 of its assets:\n  base/b.png: cannot open 'base/b.png': permission denied\n  base/c.yaml: not UTF-8"
+        );
+        // A long list is cut, saying how much was left out.
+        let mut long = vec!["dwx: the engine cannot open 30 of its assets:".to_string()];
+        long.extend((0..30).map(|i| format!("  f{i}: bad")));
+        let text = dwx_error(&long);
+        assert_eq!(text.lines().count(), ERROR_LINES + 1);
+        assert!(text.ends_with("… 11 more"));
+        // A dwx that crashed says no "dwx: " line: its last lines that are not progress stand in.
+        let crashed = lines(&["progress 10 read", "Disc: SLUS, 1 files", "", "progress 12 read", "Assertion failed: x"]);
+        assert_eq!(dwx_error(&crashed), "Disc: SLUS, 1 files\nAssertion failed: x");
+        assert_eq!(dwx_error(&lines(&["progress 1 read"])), "");
     }
 
     #[cfg(unix)]

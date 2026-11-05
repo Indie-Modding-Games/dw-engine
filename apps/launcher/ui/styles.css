@@ -747,7 +747,7 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
 }
 .message { width: min(40rem, 92vw); }
 .message h2 { font-size: 1.2rem; margin-bottom: var(--space-2); }
-.message p { color: var(--text-muted); white-space: pre-line; }
+.message p { color: var(--text-muted); white-space: pre-line; overflow-wrap: anywhere; }
 .message pre {
   margin: var(--space-3) 0 0;
   max-height: 40vh; overflow: auto;

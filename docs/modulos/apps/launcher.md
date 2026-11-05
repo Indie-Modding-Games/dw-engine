@@ -65,7 +65,9 @@ con el `dwx` del juego instalado:
    fingir que lo soporta.
 2. Comprueba los archivos que nombra la hoja CUE y ejecuta `dwx identify`: `supported` sigue; otra región y otro
    juego se le explican al jugador.
-3. Ejecuta `dwx extract --progress --out <datos>/content.partial/base` y muestra el porcentaje y el paso.
+3. Ejecuta `dwx extract --progress --out <datos>/content.partial/base` y muestra el porcentaje y el paso. Si
+   falla, el aviso muestra el error de `dwx` con cada archivo que nombra (en un recuadro que se desplaza; sin línea
+   `dwx: `, sus últimas líneas), y `launcher.log` guarda el código de salida y las últimas 60 líneas de `dwx`.
 4. Mueve los paquetes a `<datos>/content/` y escribe `install.yaml` con la `ExtractorVersion` del juego instalado y
    la ruta del disco elegido, con las mismas claves que el juego, así que el juego monta el resultado sin preguntar.
    El lanzador recuerda además el archivo que eligió el jugador (`disc_source`, puede ser el `.zip`).
