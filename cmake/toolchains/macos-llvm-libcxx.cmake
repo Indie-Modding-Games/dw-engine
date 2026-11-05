@@ -27,8 +27,8 @@ endif()
 
 set(CMAKE_C_COMPILER "${DWE_LLVM_ROOT}/bin/clang")
 set(CMAKE_CXX_COMPILER "${DWE_LLVM_ROOT}/bin/clang++")
-# The oldest macOS the programs run on; MoltenVK and the launcher ask for less.
-set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0" CACHE STRING "")
+# The oldest macOS the programs run on: libc++ formats floating point (std::to_chars) from 13.3 on.
+set(CMAKE_OSX_DEPLOYMENT_TARGET "13.3" CACHE STRING "")
 
 # Homebrew's clang reads its own libc++ headers; the link takes its static libc++ and libc++abi instead of the
 # system's dynamic ones (-nostdlib++).

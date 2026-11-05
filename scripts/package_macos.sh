@@ -24,7 +24,7 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 arch=""
 out_dir="$root/build/package"
 build=1
-minimum_macos="13.0"
+minimum_macos="13.3"
 
 while (($#)); do
   case "$1" in

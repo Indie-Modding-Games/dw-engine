@@ -105,11 +105,11 @@ Clang de Apple y la libc++ del sistema no tienen todo el C++26 que usa el códig
 `std::views::zip`, `std::jthread` sin `-fexperimental-library`, `std::from_chars` de coma flotante) y además atan
 partes de la librería a la versión del sistema. Por eso los presets `macos-arm64-*` y `macos-x64-*` usan el LLVM de
 Homebrew (`cmake/toolchains/macos-llvm-libcxx.cmake`) y enlazan su libc++ y libc++abi de forma estática, como en
-Linux. Mínimo: macOS 13. Homebrew vive en `/opt/homebrew` en Apple silicon y en `/usr/local` en los Mac Intel; la
-toolchain usa `DWE_LLVM_ROOT` si está (el flujo de publicación la fija con `brew --prefix llvm`), si no
-`HOMEBREW_PREFIX`, y si no la primera de esas dos carpetas que tenga el LLVM. Sin LLVM se para con un mensaje claro en
-vez del error engañoso de vcpkg («unable to find a build program corresponding to Ninja») que tumbó la primera
-ejecución en Intel.
+Linux. Mínimo: macOS 13.3 (la libc++ formatea números con coma flotante, `std::to_chars`, desde esa versión). Homebrew
+vive en `/opt/homebrew` en Apple silicon y en `/usr/local` en los Mac Intel; la toolchain usa `DWE_LLVM_ROOT` si está
+(el flujo de publicación la fija con `brew --prefix llvm`), si no `HOMEBREW_PREFIX`, y si no la primera de esas dos
+carpetas que tenga el LLVM. Sin LLVM se para con un mensaje claro en vez del error engañoso de vcpkg («unable to find
+a build program corresponding to Ninja») que tumbó la primera ejecución en Intel.
 
 ### El paquete del juego
 
@@ -138,7 +138,7 @@ Apple silicon con Metal 3, pero los Mac Intel con gráficas antiguas pueden qued
 ### El lanzador
 
 Un solo `.dmg` universal (`tauri build --target universal-apple-darwin`) para Apple silicon e Intel, con su
-`.app.tar.gz` y `.sig` para el actualizador. `tauri.macos.conf.json` pide macOS 11 y la firma ad hoc
+`.app.tar.gz` y `.sig` para el actualizador. `tauri.macos.conf.json` pide macOS 13.3, como el juego, y la firma ad hoc
 (`signingIdentity: "-"`).
 
 ### Lo que ve el jugador: Gatekeeper
