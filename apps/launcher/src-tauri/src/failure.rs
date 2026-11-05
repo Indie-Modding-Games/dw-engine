@@ -80,6 +80,10 @@ pub mod code {
     pub const ADDON_STORAGE_FULL: &str = "addon-storage-full";
     /// An add-on asked for an address whose host it did not declare.
     pub const ADDON_HOST: &str = "addon-host";
+    /// Not enough free space in the data folder; the detail is the folder (system_check.rs).
+    pub const NO_SPACE: &str = "no-space";
+    /// No GPU of this computer can run the game, not even with the software driver.
+    pub const NO_GPU: &str = "no-gpu";
 }
 
 impl From<std::io::Error> for Failure {

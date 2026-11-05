@@ -20,6 +20,7 @@ use crate::log_line;
 use crate::manifest;
 use crate::releases::{Client, Release};
 use crate::store::{Game, GameStore};
+use crate::system_check::{self, Graphics, GraphicsCheck, Space};
 use crate::updates::{self, Stage};
 use crate::verify;
 use crate::AppState;
@@ -389,10 +390,22 @@ async fn install_from(app: &AppHandle, state: &AppState, source: &Path) -> Resul
     result
 }
 
+/// Refuses to start what needs `needed` bytes when the data folder's disk has less.
+fn require_space(state: &AppState, needed: u64) -> Result<()> {
+    let data = data_folder(state);
+    let free = system_check::free_bytes(&data);
+    if system_check::enough(free, needed) {
+        return Ok(());
+    }
+    log_line!("not enough space in {}: {free:?} free, {needed} needed", data.display());
+    Err(Failure::new(code::NO_SPACE, data.display().to_string()))
+}
+
 #[tauri::command]
 pub async fn install_disc(app: AppHandle, state: State<'_, AppState>, path: String) -> Result<Status> {
     let _busy = state.begin()?;
     log_line!("the player picked {path}");
+    require_space(&state, system_check::INSTALL_BYTES)?;
     install_from(&app, &state, Path::new(&path)).await?;
     Ok(status_of(&app, &state))
 }
@@ -401,6 +414,7 @@ pub async fn install_disc(app: AppHandle, state: State<'_, AppState>, path: Stri
 #[tauri::command]
 pub async fn reextract(app: AppHandle, state: State<'_, AppState>, path: Option<String>) -> Result<Status> {
     let _busy = state.begin()?;
+    require_space(&state, system_check::INSTALL_BYTES)?;
     let source = match path {
         Some(path) => PathBuf::from(path),
         None => remembered_disc(&state)?,
@@ -465,10 +479,65 @@ pub fn cancel(state: State<'_, AppState>) {
     state.cancel.store(true, Ordering::SeqCst);
 }
 
-/// Starts the game, hides the launcher while it runs and shows it again when it ends, with the
-/// end of the game's log when it failed.
+/// The GPU check of a game: the one kept for its folder, or a new one (also when `again`). Runs
+/// off the page's thread; a second caller waits for the check in progress.
+async fn graphics_of(state: &AppState, game: &Game, again: bool) -> GraphicsCheck {
+    let mut kept = state.graphics.lock().await;
+    if let Some((dir, check)) = kept.as_ref() {
+        if !again && *dir == game.dir {
+            return check.clone();
+        }
+    }
+    let probed = game.clone();
+    let check = tauri::async_runtime::spawn_blocking(move || system_check::check_graphics(&probed))
+        .await
+        .unwrap_or_else(|_| GraphicsCheck::unknown());
+    *kept = Some((game.dir.clone(), check.clone()));
+    check
+}
+
+#[derive(Serialize)]
+pub struct Requirements {
+    /// linux, windows or macos: what the page can offer (Windows Update only on Windows).
+    os: &'static str,
+    space: Space,
+    /// None until a game is installed (the check runs the game's own probe).
+    graphics: Option<GraphicsCheck>,
+}
+
+/// What this computer has for installing and playing: free space in the data folder and the GPU
+/// check of the installed game (kept; `again` checks once more, after the player fixed it).
 #[tauri::command]
-pub fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
+pub async fn check_system(state: State<'_, AppState>, again: Option<bool>) -> Result<Requirements> {
+    let data = data_folder(&state);
+    let space = system_check::space(&data, system_check::free_bytes(&data));
+    let graphics = match GameStore::new(&data).current() {
+        Some(game) => Some(graphics_of(&state, &game, again.unwrap_or(false)).await),
+        None => None,
+    };
+    Ok(Requirements { os: std::env::consts::OS, space, graphics })
+}
+
+/// Opens the driver page of a GPU maker (nvidia, amd, intel) or, on Windows, Windows Update
+/// (windows-update): only the addresses system_check.rs knows.
+#[tauri::command]
+pub fn open_driver_page(app: AppHandle, page: String) -> Result<()> {
+    let url = match page.as_str() {
+        "nvidia" => system_check::driver_page(system_check::Vendor::Nvidia),
+        "amd" => system_check::driver_page(system_check::Vendor::Amd),
+        "intel" => system_check::driver_page(system_check::Vendor::Intel),
+        "windows-update" if cfg!(windows) => Some(system_check::WINDOWS_UPDATE),
+        _ => None,
+    }
+    .ok_or_else(|| Failure::new(code::IO, page.clone()))?;
+    app.opener().open_url(url, None::<&str>).map_err(|e| Failure::new(code::IO, e.to_string()))
+}
+
+/// Starts the game, hides the launcher while it runs and shows it again when it ends, with the
+/// end of the game's log when it failed. A computer whose GPUs cannot run the game starts it on
+/// the package's software driver; one where nothing can is refused (the page says what to do).
+#[tauri::command]
+pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     if state.game_running.load(Ordering::SeqCst) {
         return Ok(());
     }
@@ -481,9 +550,25 @@ pub fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     if !content::has_base_pack(&content) {
         return Err(Failure::new(code::MISSING_FILE, content.display().to_string()));
     }
-    let mut child = launch::start(&game, &data, own)?;
+    require_space(&state, system_check::PLAY_BYTES)?;
+    let graphics = graphics_of(&state, &game, false).await;
+    if graphics.graphics == Graphics::Blocked {
+        return Err(Failure::new(code::NO_GPU, graphics.detail));
+    }
+    if state.game_running.swap(true, Ordering::SeqCst) {
+        return Ok(());
+    }
+    let mut child = match launch::start(&game, &data, own, &graphics.env) {
+        Ok(child) => child,
+        Err(failure) => {
+            state.game_running.store(false, Ordering::SeqCst);
+            return Err(failure);
+        }
+    };
+    if graphics.graphics == Graphics::Fallback {
+        log_line!("no GPU can run the game: starting it on the software driver");
+    }
     log_line!("the game {} started", game.version);
-    state.game_running.store(true, Ordering::SeqCst);
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.hide();
     }

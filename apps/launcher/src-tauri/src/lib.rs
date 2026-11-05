@@ -16,6 +16,7 @@ pub mod manifest;
 pub mod releases;
 pub mod settings;
 pub mod store;
+pub mod system_check;
 pub mod updates;
 pub mod verify;
 
@@ -53,6 +54,9 @@ pub struct AppState {
     /// Windows only: the downloaded, verified installer, run when the launcher restarts or closes
     /// (running it closes the launcher).
     pub launcher_pending: Mutex<Option<(tauri_plugin_updater::Update, Vec<u8>)>>,
+    /// The last GPU check (system_check.rs) and the game folder it was made for; held while a
+    /// check runs, so Play waits for the one the page started.
+    pub graphics: tokio::sync::Mutex<Option<(std::path::PathBuf, system_check::GraphicsCheck)>>,
 }
 
 /// Runs the launcher installer kept for the restart or the exit (Windows; elsewhere the new
@@ -137,6 +141,7 @@ pub fn run() {
         run_marker,
         launcher_ready: Mutex::new(None),
         launcher_pending: Mutex::new(None),
+        graphics: tokio::sync::Mutex::new(None),
     };
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -163,6 +168,8 @@ pub fn run() {
             commands::install_launcher_update,
             commands::restart_launcher,
             commands::set_auto_update,
+            commands::check_system,
+            commands::open_driver_page,
             addon_commands::addons_list,
             addon_commands::addon_inspect,
             addon_commands::addon_install,

@@ -195,6 +195,54 @@ lo arranca sin ventana de consola. Si el jugador eligió otra carpeta de datos, 
 `--saves <datos>/saves --reports <datos>/reports`; con la de por defecto las partidas quedan en la carpeta del juego. Cuando el juego
 termina, el lanzador vuelve; si terminó con error, muestra las últimas 30 líneas de su registro.
 
+## Requisitos del equipo
+
+El jugador no instala nada: el paquete del juego trae lo que necesita y el lanzador comprueba el equipo antes de que
+haga falta (`src-tauri/src/system_check.rs`). Lo mira al abrirse, después de cada tarea (instalar, actualizar, volver a
+la versión anterior), antes de leer el disco y antes de jugar, y cuando el jugador pulsa «Comprobar de nuevo» en
+Ajustes › General › Requisitos del equipo.
+
+| Qué | Cómo se comprueba | Qué ve el jugador |
+|---|---|---|
+| Espacio libre | El del disco donde está `<datos>` (la carpeta existente más cercana): `statvfs` en Linux y macOS, `GetDiskFreeSpaceExW` en Windows. Leer el disco necesita unos 3 GB (la copia parcial, el archivo descomprimido y la descarga del juego); jugar, unos 200 MB. | Si falta, «Falta espacio en el disco» en el inicio con cuánto hace falta, dónde y cuánto hay, y los botones «Comprobar de nuevo» y «Elegir otra carpeta». Leer el disco y «Jugar» se niegan con `no-space` en vez de fallar a medias. |
+| Tarjeta gráfica | `dwe-game --check-system` del juego instalado (abajo), primero con los controladores del equipo. | Nada si sirve. Si ninguna tarjeta sirve, el juego arranca igual en **modo de compatibilidad** (abajo): un aviso que se cierra con «Entendido», una etiqueta «Modo de compatibilidad» arriba y el botón del controlador del fabricante. |
+| Nada puede mover el juego | Ni las tarjetas del equipo ni el controlador por software del paquete (o el paquete no lo trae: Windows y macOS por ahora). | «Tu tarjeta gráfica no puede mover el juego»: qué hacer, el botón de la página de controladores del fabricante (NVIDIA, AMD o Intel, según el `vendor` de la tarjeta; las tres si no se sabe), en Windows también «Abrir Windows Update», y «Comprobar de nuevo». «Jugar» se niega con `no-gpu`. |
+
+**`dwe-game --check-system`** (`engine/rhi/include/dwe/rhi/system_check.hpp`) crea una instancia de Vulkan y elige
+GPU con la misma versión (1.3) y las mismas funciones que `Device::create` (`renderer_requirements.hpp`), sin ventana,
+sin contenido y sin crear el dispositivo; tarda menos de un segundo con un controlador normal. Escribe en la salida
+estándar líneas `clave=valor` bajo la cabecera `dwe-check-system 1`: `result` (`ok`, `no-vulkan`, `no-device`,
+`unsuitable`), `detail`, `devices` y, si hay GPU, `gpu`, `vendor` (id PCI), `kind` (`discrete`, `integrated`,
+`virtual`, `software`, `other`), `api` y `driver`; sale con 0 solo si es `ok`. Cuando ninguna sirve nombra la mejor de
+las que hay, para saber de qué fabricante es el controlador. La rama que limita las opciones de las compilaciones de
+distribución tiene que dejar pasar `--check-system`. El lanzador le da 20 s; sin respuesta (un juego anterior a la
+opción, que dice «bad argument») juega como antes.
+
+**Modo de compatibilidad (Linux).** El paquete de Linux trae el cargador de Vulkan (`lib/libvulkan.so.1`, que el juego
+busca primero) y el controlador de Vulkan por software de Mesa, lavapipe, en `lib/lavapipe/` ([guía de la beta en
+Linux](../../guides/beta-linux.md)). Si la primera comprobación no encuentra GPU que sirva, el lanzador repite
+`--check-system` con `VK_DRIVER_FILES` (y `VK_ICD_FILENAMES`) apuntando a `lib/lavapipe/lvp_icd.json` y
+`LD_LIBRARY_PATH` a esa carpeta; si así sirve, arranca el juego con ese mismo entorno. Va más lento (lo dibuja el
+procesador), pero el juego arranca en una máquina virtual o con un controlador viejo o ausente. El script `dwe` del
+paquete hace lo mismo para quien juega sin lanzador. Un equipo cuyo único Vulkan es uno por software del sistema
+(llvmpipe) también ve el aviso, sin cambiar de controlador.
+
+**AppImage.** El arranque de la AppImage pone sus carpetas delante de `XDG_DATA_DIRS`, donde el cargador de Vulkan
+busca los controladores del equipo; el lanzador las quita del entorno de `--check-system` y del juego
+(`outside_appimage`).
+
+**.deb.** Recomienda `mesa-vulkan-drivers | vulkan-icd`, que apt instala por defecto: en un equipo con tarjeta AMD o
+Intel sin el controlador de Vulkan de Mesa, así se juega con la tarjeta y no en modo de compatibilidad. La AppImage no
+puede instalar nada y se apoya en el modo de compatibilidad.
+
+**Windows.** El instalador trae WebView2 y el paquete del juego `vulkan-1.dll`; los controladores de las tarjetas no
+se pueden instalar con seguridad desde el lanzador, así que sin una tarjeta que sirva se ve la pantalla de arriba.
+Un lavapipe para Windows (para tener allí también modo de compatibilidad) está pendiente de decidir (abajo).
+
+`DWE_LAUNCHER_FREE_BYTES=<bytes>` finge el espacio libre, para ver las pantallas de espacio sin llenar un disco; con
+`VK_DRIVER_FILES=/no/existe.json` en el entorno del lanzador la primera comprobación no encuentra GPU (modo de
+compatibilidad si el juego trae `lib/lavapipe`, pantalla de bloqueo si no).
+
 ## Carpetas
 
 | Ruta | Qué es |
@@ -328,6 +376,11 @@ guía [Complementos del lanzador](../../guides/launcher-addons.md); aquí, cómo
   `net.fetch` y del aislamiento contra el servidor falso). El cliente del puente está en `apps/launcher/addons/sdk/`.
 
 ## Pendiente
+
+- Modo de compatibilidad en Windows: el puerto `mesa` de vcpkg tiene la opción `lavapipe`, pero necesita bajar y
+  compilar Mesa y LLVM enteros (fuentes de unos 50 MB y 150 MB, varias horas y más de 20 GB de compilación) y no
+  admite el runtime de C estático del triplete de Windows. La alternativa es una compilación ya hecha de Mesa para
+  Windows (unos 30 MB). Las dos son descargas nuevas: decide el responsable.
 
 - Probar el lanzador en un Windows de verdad y todo en un Mac (el llavero, rutas y el instalador de cada sistema).
 - La clave de firma real y la primera versión publicada (decisión del responsable).

@@ -2,7 +2,10 @@
 
 El jugador de Windows o de Mac hace lo mismo que el de Linux: instala el lanzador, elige su disco y juega. No instala
 nada más a mano: ni librerías, ni Vulkan, ni un runtime de C++. Solo hace falta el controlador normal de su tarjeta
-gráfica (en Windows trae Vulkan; en macOS Vulkan va dentro del juego, sobre Metal).
+gráfica (en Windows trae Vulkan; en macOS Vulkan va dentro del juego, sobre Metal). Antes de jugar, el lanzador
+pregunta al juego si alguna tarjeta le sirve (`dwe-game --check-system`); si ninguna sirve, muestra qué hacer con un
+botón a la página de controladores del fabricante y, en Windows, a Windows Update
+([requisitos del equipo](../modulos/apps/launcher.md#requisitos-del-equipo)).
 
 | | Windows | macOS |
 |---|---|---|

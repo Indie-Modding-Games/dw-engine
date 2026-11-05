@@ -27,6 +27,11 @@ const state = {
   // The launcher's own update: downloading now, and whether its banner was put off.
   launcherInstalling: false,
   launcherLater: false,
+  // What this computer has (check_system): free space and the GPU check; checking now; and
+  // whether the compatibility mode's notice was put away.
+  requirements: null,
+  checkingSystem: false,
+  compatSeen: false,
 };
 
 function announce(text) {
@@ -129,6 +134,8 @@ function renderNotice() {
     title = t("discMovedTitle");
     body = state.discMoved ? t("discMovedBody", { path: state.discMoved }) : t("discMovedNone");
     pick = true;
+  } else if (requirementNotice()) {
+    ({ title, body, actions } = requirementNotice());
   } else if (state.status.content_outdated) {
     title = t("outdatedTitle");
     body = t("outdatedBody");
@@ -148,6 +155,91 @@ function renderNotice() {
   notice.append(el("h2", { text: title }), el("p", { text: body }));
   if (pick) notice.append(dropzoneButton());
   if (actions) notice.append(actions);
+}
+
+// ---- What this computer needs (check_system) -------------------------------------------------
+
+const MAKERS = { nvidia: "NVIDIA", amd: "AMD", intel: "Intel" };
+
+async function checkRequirements(again = false) {
+  if (state.checkingSystem) return;
+  state.checkingSystem = true;
+  renderAll();
+  try {
+    state.requirements = await api.checkSystem(again);
+    if (again) state.compatSeen = false;
+  } catch (failure) {
+    showFailure(failure);
+  } finally {
+    state.checkingSystem = false;
+    renderAll();
+  }
+}
+
+// The buttons that lead to a newer GPU driver: the maker's page (all three when the maker is not
+// known) and, on Windows, Windows Update. On Linux the AMD and Intel drivers come with the
+// system, so only NVIDIA's page is offered.
+function driverButtons(req) {
+  const vendor = req.graphics?.vendor;
+  let makers = MAKERS[vendor] ? [vendor] : Object.keys(MAKERS);
+  if (req.os === "linux") makers = makers.filter((maker) => maker === "nvidia");
+  const buttons = makers.map((maker) =>
+    el("button", { class: "button", type: "button", text: t("req.driverPage", { maker: MAKERS[maker] }), onclick: () => api.openDriverPage(maker).catch(showFailure) }),
+  );
+  if (req.os === "windows") {
+    buttons.push(el("button", { class: "button", type: "button", text: t("req.windowsUpdate"), onclick: () => api.openDriverPage("windows-update").catch(showFailure) }));
+  }
+  return buttons;
+}
+
+function againButton(primary = false) {
+  return el("button", {
+    class: `button${primary ? " primary" : ""}`, type: "button",
+    text: state.checkingSystem ? t("req.checking") : t("req.again"),
+    disabled: state.checkingSystem, onclick: () => checkRequirements(true),
+  });
+}
+
+const gpuName = (graphics) => (graphics?.gpu?.name ? t("req.gpuName", { name: graphics.gpu.name }) : "");
+
+// The home notice for a missing requirement, most blocking first: no room to read the disc or to
+// play, no GPU at all, then the compatibility mode (a heads-up the player can put away).
+function requirementNotice() {
+  const req = state.requirements;
+  const s = state.status;
+  if (!req || !s || state.task) return null;
+  const space = req.space;
+  const installing = !s.content_installed || s.content_outdated;
+  if ((installing && !space.install_ok) || !space.play_ok) {
+    const needed = installing ? space.install_needed : space.play_needed;
+    return {
+      title: t("req.spaceTitle"),
+      body: t(installing ? "req.spaceInstallBody" : "req.spacePlayBody", { needed: formatBytes(needed), folder: space.folder, free: formatBytes(space.free ?? 0) }),
+      actions: el("div", { class: "row" }, againButton(true), el("button", { class: "button", type: "button", text: t("req.changeFolder"), onclick: () => openSettings("general") })),
+    };
+  }
+  const graphics = req.graphics;
+  if (graphics?.graphics === "blocked") {
+    return {
+      title: t("req.blockedTitle"),
+      body: t(req.os === "linux" ? "req.blockedBodyLinux" : "req.blockedBody", { gpu: gpuName(graphics) }),
+      actions: el("div", { class: "row" }, againButton(true), ...driverButtons(req)),
+    };
+  }
+  if ((graphics?.graphics === "fallback" || graphics?.graphics === "software") && !state.compatSeen) {
+    return {
+      title: t("req.compatTitle"),
+      body: t(graphics.graphics === "fallback" ? "req.compatBody" : "req.compatSoftwareBody", { gpu: gpuName(graphics) }),
+      actions: el(
+        "div",
+        { class: "row" },
+        el("button", { class: "button primary", type: "button", text: t("req.compatOk"), onclick: () => { state.compatSeen = true; renderAll(); } }),
+        ...driverButtons(req),
+        againButton(),
+      ),
+    };
+  }
+  return null;
 }
 
 // ---- The status pills (top) ----------------------------------------------------------------
@@ -172,6 +264,15 @@ function renderPills() {
       : statusPill("is-version", el("span", { class: "dot is-off" }), el("span", { text: t("pill.notInstalled") }), el("span", { class: "pill-tag", text: t("pill.beta") })),
   );
   if (s.game_running) pills.push(statusPill("is-running", el("span", { class: "dot is-live" }), el("span", { text: t("pill.running") })));
+  const graphics = state.requirements?.graphics?.graphics;
+  if (graphics === "fallback" || graphics === "software") {
+    pills.push(
+      el("li", { class: "status-pill is-compat" },
+        el("button", { type: "button", class: "pill-button", onclick: () => { state.compatSeen = false; renderAll(); } },
+          el("span", { class: "dot is-warn" }),
+          el("span", { text: t("pill.compat") }))),
+    );
+  }
   const task = state.task;
   if (task) {
     const known = typeof task.percent === "number" || (task.task === "download" && task.total > 0);
@@ -476,6 +577,8 @@ async function runTask(work, { recheck = true, quiet = false } = {}) {
   } catch (failure) {
     if (failure?.code === "disc-moved") {
       state.discMoved = failure.detail ?? "";
+    } else if (failure?.code === "no-space") {
+      checkRequirements(true);
     } else if (quiet && failure?.code !== "cancelled") {
       toast({ title: t("autoGameFailedTitle"), text: t("autoGameFailedBody", { reason: failureText(failure) }), kind: "warning" });
     } else if (failure?.code !== "cancelled") {
@@ -484,6 +587,8 @@ async function runTask(work, { recheck = true, quiet = false } = {}) {
   } finally {
     state.task = null;
     await refresh();
+    // A new game (or a fuller disk) may change what this computer can do.
+    checkRequirements();
   }
 }
 
@@ -504,7 +609,9 @@ async function play() {
     await api.play();
     await refresh();
   } catch (failure) {
-    showFailure(failure);
+    // The notice on the home view says what is missing and what to do.
+    if (failure?.code === "no-space" || failure?.code === "no-gpu") checkRequirements(true);
+    else showFailure(failure);
   }
 }
 
@@ -667,6 +774,36 @@ function registerBuiltIns() {
         s.own_data_folder ? null : el("button", { class: "button subtle", type: "button", text: t("s.dataReset"), onclick: () => settingCall(() => api.setDataFolder(null), true) }),
       ),
     );
+  });
+
+  section("requirements", "general", 20, "req.title", (box) => {
+    const req = state.requirements;
+    const lines = [el("p", { text: t("req.body") })];
+    if (!req) {
+      lines.push(el("p", { class: "muted", text: t("req.checking") }));
+    } else {
+      const space = req.space;
+      const spaceOk = space.install_ok && space.play_ok;
+      lines.push(
+        el("p", { class: `status-line ${spaceOk ? "accent" : "warning"}`, role: "status",
+          text: space.free == null ? t("req.spaceUnknown", { folder: space.folder }) : t("req.space", { folder: space.folder, free: formatBytes(space.free) }) }),
+        el("p", { class: "muted small", text: t("req.spaceNeeds", { install: formatBytes(space.install_needed), play: formatBytes(space.play_needed) }) }),
+      );
+      const graphics = req.graphics;
+      const kind = graphics?.graphics ?? "unknown";
+      const gpu = graphics?.gpu;
+      const text = {
+        hardware: t("req.gpuHardware", { name: gpu?.name ?? "", driver: gpu?.driver ?? "" }),
+        software: t("req.gpuSoftware", { gpu: gpuName(graphics) }),
+        fallback: t("req.gpuFallback", { gpu: gpuName(graphics) }),
+        blocked: t("req.gpuBlocked", { gpu: gpuName(graphics) }),
+        unknown: graphics ? t("req.gpuNoAnswer") : t("req.gpuUnknown"),
+      }[kind];
+      lines.push(el("p", { class: `status-line ${kind === "hardware" ? "accent" : kind === "unknown" ? "muted" : "warning"}`, role: "status", text }));
+      if (kind === "fallback" || kind === "software" || kind === "blocked") lines.push(el("div", { class: "row" }, ...driverButtons(req)));
+    }
+    lines.push(el("div", { class: "row" }, againButton()));
+    add(box, ...lines);
   });
 
   section("updates", "updates", 0, "s.updatesTitle", (box) => {
@@ -997,6 +1134,7 @@ async function start() {
   });
 
   await refresh();
+  checkRequirements();
   try {
     await reloadAddons();
   } catch (failure) {

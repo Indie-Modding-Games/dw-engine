@@ -25,6 +25,10 @@ export const api = {
   installLauncherUpdate: () => call("install_launcher_update"),
   restartLauncher: () => call("restart_launcher"),
   setAutoUpdate: (what, enabled) => call("set_auto_update", { what, enabled }),
+  // Free space and the GPU check (src-tauri/src/system_check.rs); again: check once more.
+  checkSystem: (again = false) => call("check_system", { again }),
+  // nvidia, amd, intel or windows-update: the backend knows the addresses.
+  openDriverPage: (page) => call("open_driver_page", { page }),
   // The add-on manager (addon-manager.js) and the add-ons' backend calls (addons.js).
   addonsList: () => call("addons_list"),
   addonInspect: (path) => call("addon_inspect", { path }),

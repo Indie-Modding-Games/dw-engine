@@ -2,6 +2,7 @@
 //! team packs next to bin/), with its output in <data>/logs/game.log so a failed start can show
 //! what the game said.
 
+use std::ffi::OsString;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -28,7 +29,9 @@ pub fn command(game: &Game, data: &Path, own_data_folder: bool) -> Command {
     command
 }
 
-pub fn start(game: &Game, data: &Path, own_data_folder: bool) -> Result<Child> {
+/// `env`: what the game starts with besides the launcher's own environment (the software Vulkan
+/// driver's, system_check.rs).
+pub fn start(game: &Game, data: &Path, own_data_folder: bool, env: &[(OsString, OsString)]) -> Result<Child> {
     let log = game_log(data);
     fs::create_dir_all(logs_folder(data))?;
     if log.exists() {
@@ -37,6 +40,8 @@ pub fn start(game: &Game, data: &Path, own_data_folder: bool) -> Result<Child> {
     let out = File::create(&log)?;
     let err = out.try_clone()?;
     let mut command = command(game, data, own_data_folder);
+    crate::system_check::outside_appimage(&mut command);
+    command.envs(env.iter().map(|(k, v)| (k, v)));
     // No console window next to the game on Windows: its output goes to the log.
     #[cfg(windows)]
     {

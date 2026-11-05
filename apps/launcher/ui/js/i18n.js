@@ -15,6 +15,36 @@ const STRINGS = {
       running: "En juego",
       update: "Versión nueva: {version}",
       launcherReady: "Lanzador {version} listo",
+      compat: "Modo de compatibilidad",
+    },
+    req: {
+      title: "Requisitos del equipo",
+      body: "Antes de leer el disco y antes de jugar, el lanzador mira el espacio libre y la tarjeta gráfica. No tienes que instalar nada: el juego trae lo que necesita.",
+      checking: "Comprobando el equipo…",
+      again: "Comprobar de nuevo",
+      space: "Espacio libre en {folder}: {free}.",
+      spaceUnknown: "No se pudo saber cuánto espacio libre hay en {folder}.",
+      spaceNeeds: "Leer el disco necesita unos {install} libres; jugar, unos {play}.",
+      gpuHardware: "Tarjeta gráfica: {name} ({driver}). Todo listo.",
+      gpuSoftware: "Este equipo no tiene tarjeta gráfica con Vulkan, solo un controlador por software{gpu}: el juego funciona, pero más lento.",
+      gpuFallback: "Ninguna tarjeta gráfica puede mover el juego con su controlador actual{gpu}: se jugará en modo de compatibilidad (más lento).",
+      gpuBlocked: "Ninguna tarjeta gráfica puede mover el juego{gpu}, y este equipo no tiene modo de compatibilidad.",
+      gpuUnknown: "La tarjeta gráfica se comprueba cuando el juego está instalado.",
+      gpuNoAnswer: "El juego instalado no sabe comprobar la tarjeta gráfica; se comprobará con la próxima versión.",
+      gpuName: " ({name})",
+      driverPage: "Controlador de {maker}",
+      windowsUpdate: "Abrir Windows Update",
+      changeFolder: "Elegir otra carpeta",
+      spaceTitle: "Falta espacio en el disco",
+      spaceInstallBody: "Para leer el disco hacen falta unos {needed} libres en {folder} y ahora hay {free}. Libera espacio, o elige otra carpeta de datos en otro disco, y pulsa «Comprobar de nuevo».",
+      spacePlayBody: "Para jugar hacen falta unos {needed} libres en {folder} (para las partidas y los registros) y ahora hay {free}. Libera espacio y pulsa «Comprobar de nuevo».",
+      blockedTitle: "Tu tarjeta gráfica no puede mover el juego",
+      blockedBody: "El juego necesita una tarjeta gráfica con Vulkan 1.3{gpu}. Casi siempre basta con actualizar su controlador: descárgalo de la página del fabricante o de Windows Update, instálalo, reinicia el equipo y pulsa «Comprobar de nuevo».",
+      blockedBodyLinux: "El juego necesita una tarjeta gráfica con Vulkan 1.3{gpu}. Actualiza el sistema (los controladores de AMD e Intel llegan con él) o instala el controlador de tu tarjeta, reinicia y pulsa «Comprobar de nuevo».",
+      compatTitle: "Modo de compatibilidad",
+      compatBody: "Tu tarjeta gráfica{gpu} no puede mover el juego con el controlador que tiene ahora, así que el juego usará el modo de compatibilidad: funciona igual, pero más lento. Actualiza el controlador de tu tarjeta (o el sistema) para más rendimiento.",
+      compatSoftwareBody: "Este equipo solo tiene un controlador de Vulkan por software{gpu}: el juego funciona, pero más lento. Si tiene tarjeta gráfica, actualiza su controlador para más rendimiento.",
+      compatOk: "Entendido",
     },
     configure: "Configurar",
     cfg: {
@@ -286,6 +316,8 @@ const STRINGS = {
       "addon-denied": "El complemento pidió algo que no tiene permitido ({detail}).",
       "addon-storage-full": "El complemento llenó su espacio de datos.",
       "addon-host": "El complemento intentó conectarse a un servidor que no declaró.",
+      "no-space": "No queda espacio suficiente en {detail}.",
+      "no-gpu": "Ninguna tarjeta gráfica de este equipo puede mover el juego. {detail}",
     },
   },
   en: {
@@ -302,6 +334,36 @@ const STRINGS = {
       running: "Playing",
       update: "New version: {version}",
       launcherReady: "Launcher {version} ready",
+      compat: "Compatibility mode",
+    },
+    req: {
+      title: "Computer requirements",
+      body: "Before reading the disc and before playing, the launcher looks at the free space and the graphics card. You do not have to install anything: the game brings what it needs.",
+      checking: "Checking this computer…",
+      again: "Check again",
+      space: "Free space in {folder}: {free}.",
+      spaceUnknown: "Could not tell how much free space {folder} has.",
+      spaceNeeds: "Reading the disc needs about {install} free; playing, about {play}.",
+      gpuHardware: "Graphics card: {name} ({driver}). All set.",
+      gpuSoftware: "This computer has no graphics card with Vulkan, only a software driver{gpu}: the game works, but slower.",
+      gpuFallback: "No graphics card can run the game with its current driver{gpu}: it will play in compatibility mode (slower).",
+      gpuBlocked: "No graphics card can run the game{gpu}, and this computer has no compatibility mode.",
+      gpuUnknown: "The graphics card is checked once the game is installed.",
+      gpuNoAnswer: "The installed game cannot check the graphics card; the next version will.",
+      gpuName: " ({name})",
+      driverPage: "{maker} driver",
+      windowsUpdate: "Open Windows Update",
+      changeFolder: "Pick another folder",
+      spaceTitle: "Not enough disk space",
+      spaceInstallBody: "Reading the disc needs about {needed} free in {folder} and there is {free}. Free some space, or pick a data folder on another disk, then press “Check again”.",
+      spacePlayBody: "Playing needs about {needed} free in {folder} (for saves and logs) and there is {free}. Free some space, then press “Check again”.",
+      blockedTitle: "Your graphics card cannot run the game",
+      blockedBody: "The game needs a graphics card with Vulkan 1.3{gpu}. Updating its driver is almost always enough: download it from the maker's page or from Windows Update, install it, restart the computer and press “Check again”.",
+      blockedBodyLinux: "The game needs a graphics card with Vulkan 1.3{gpu}. Update the system (the AMD and Intel drivers come with it) or install your card's driver, restart and press “Check again”.",
+      compatTitle: "Compatibility mode",
+      compatBody: "Your graphics card{gpu} cannot run the game with its current driver, so the game will use compatibility mode: it plays the same, only slower. Update your card's driver (or the system) for better performance.",
+      compatSoftwareBody: "This computer only has a software Vulkan driver{gpu}: the game works, but slower. If it has a graphics card, update its driver for better performance.",
+      compatOk: "Got it",
     },
     configure: "Configure",
     cfg: {
@@ -573,6 +635,8 @@ const STRINGS = {
       "addon-denied": "The add-on asked for something it is not allowed ({detail}).",
       "addon-storage-full": "The add-on filled its data space.",
       "addon-host": "The add-on tried to reach a server it did not declare.",
+      "no-space": "There is not enough free space in {detail}.",
+      "no-gpu": "No graphics card of this computer can run the game. {detail}",
     },
   },
 };
@@ -616,6 +680,9 @@ export function failureText(failure) {
 
 export function formatBytes(bytes) {
   const mb = bytes / (1024 * 1024);
+  if (mb >= 1024) {
+    return `${(mb / 1024).toLocaleString(language, { maximumFractionDigits: 1, minimumFractionDigits: 1 })} GB`;
+  }
   const digits = mb >= 100 ? 0 : 1;
   return `${mb.toLocaleString(language, { maximumFractionDigits: digits, minimumFractionDigits: digits })} MB`;
 }
