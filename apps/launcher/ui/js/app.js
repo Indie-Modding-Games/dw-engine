@@ -3,9 +3,9 @@
 // register in. The settings view is settings.js; the add-on manager is addon-manager.js.
 import { initAddonManager, installAddonFrom, setAddonDragging, setSafeMode } from "./addon-manager.js";
 import { addonsView, initAddons, publishStatus, reloadAddons, setView } from "./addons.js";
-import { api, listen, onDragDrop, pickDisc, pickFolder } from "./api.js";
+import { api, listen, onDragDrop, openUrl, pickDisc, pickFolder } from "./api.js";
 import { emblem, GAMES } from "./art.js";
-import { $, add, el, reconcile, toast } from "./dom.js";
+import { $, add, ask, el, icon, reconcile, toast } from "./dom.js";
 import { failureText, formatBytes, getLanguage, setLanguage, t } from "./i18n.js";
 import { renderNotes } from "./notes.js";
 import { activeSettingsTab, mountSettings, openSettings, settingsOpen } from "./settings.js";
@@ -19,7 +19,10 @@ const state = {
   task: null,
   dragging: false,
   discMoved: null,
-  activeTab: "home",
+  // The main area: "home", "games" or an add-on's page ("addon:<id>").
+  view: "home",
+  // The news panel shows every block of the notes.
+  newsFull: false,
   backgroundLoaded: false,
   // The launcher's own update: downloading now, and whether its banner was put off.
   launcherInstalling: false,
@@ -33,12 +36,20 @@ function announce(text) {
 // ---- Views -------------------------------------------------------------------------------
 
 const ready = () => state.status?.content_installed && state.status?.game;
+const firstRun = () => !state.status?.content_installed;
+// The beta is closed while versions are 0.x or prereleases.
+const isBeta = (version) => version.startsWith("0.") || version.includes("-");
 
 function renderStaticTexts() {
   for (const node of document.querySelectorAll("[data-text]")) node.textContent = t(node.dataset.text);
-  $("rail").setAttribute("aria-label", t("rail"));
+  $("rail").setAttribute("aria-label", t("nav.label"));
+  $("aboutButton").dataset.tip = t("nav.about");
+  $("statusPills").setAttribute("aria-label", t("pill.label"));
+  $("links").setAttribute("aria-label", t("links.label"));
+  $("newsPanel").setAttribute("aria-label", t("newsTitle"));
+  $("dropOverlayText").textContent = t("dropActive");
+  $("dropTitle").textContent = t("firstRunHint");
   const f = state.status?.formats;
-  $("dropTitle").textContent = state.dragging ? t("dropActive") : t("dropTitle");
   if (f) {
     const list = (exts) => exts.map((e) => `.${e}`).join(", ");
     $("dropHint").textContent = t("dropHint", { images: ".cue + .bin, .iso", archives: list(f.archives) });
@@ -46,41 +57,45 @@ function renderStaticTexts() {
   }
 }
 
+// The four games; only the base game opens (the others are announced, greyed out).
 function renderCards() {
   const list = $("gameCards");
   list.replaceChildren();
   for (const game of GAMES) {
     const active = game === "base";
     const art = el("div", { class: "game-card-art" });
-    art.insertAdjacentHTML("afterbegin", emblem(game, 72));
-    list.append(
-      el(
-        "li",
-        { class: `game-card ${active ? "is-active" : "is-soon"}`, "aria-disabled": active ? false : "true" },
-        art,
-        el("h2", { text: t(`games.${game}.name`) }),
-        el("p", { text: t(`games.${game}.blurb`) }),
-        el("span", { class: "badge", text: active ? t("available") : t("soon") }),
-      ),
-    );
+    art.insertAdjacentHTML("afterbegin", emblem(game, 64));
+    const parts = [
+      art,
+      el("h2", { text: t(`games.${game}.name`) }),
+      el("p", { text: t(`games.${game}.blurb`) }),
+      el("span", { class: "badge", text: active ? t("available") : t("soon") }),
+    ];
+    const card = active
+      ? el("button", { class: "game-card is-active", type: "button", onclick: () => selectView("home") }, ...parts)
+      : el("div", { class: "game-card is-soon", "aria-disabled": "true" }, ...parts);
+    list.append(el("li", {}, card));
   }
 }
 
 function renderViews() {
-  const setup = !state.status?.content_installed;
-  $("setupView").hidden = !setup;
-  $("homeView").hidden = setup;
-  $("dropzone").disabled = Boolean(state.task);
-  $("dropzone").classList.toggle("is-dragging", state.dragging);
-  if (setup) {
-    renderCards();
-    return;
-  }
-  $("homeTitle").textContent = t("games.base.name");
-  $("homeMeta").textContent = state.status.game
-    ? t("installed", { version: state.status.game.version })
-    : "";
+  if (!state.status) return;
+  const view = state.view;
+  $("homeView").hidden = view !== "home";
+  $("gamesView").hidden = view !== "games";
+  $("addonView").hidden = !view.startsWith("addon:");
+  $("dropOverlay").hidden = !state.dragging;
+  if (view === "games") renderCards();
+  const setup = firstRun();
+  document.body.classList.toggle("is-first-run", setup);
+  $("homeTitle").textContent = setup ? t("setupTitle") : t("games.base.name");
+  $("homeLead").textContent = setup ? t("setupLead") : t("games.base.blurb");
+  $("firstRun").hidden = !setup;
+  $("configureWrap").hidden = setup;
   renderNotice();
+  renderPills();
+  renderAddonsPill();
+  renderNewsPill();
 }
 
 function dropzoneButton() {
@@ -135,7 +150,53 @@ function renderNotice() {
   if (actions) notice.append(actions);
 }
 
-// ---- The action bar ------------------------------------------------------------------------
+// ---- The status pills (top) ----------------------------------------------------------------
+
+function statusPill(kind, ...children) {
+  return el("li", { class: `status-pill ${kind}` }, ...children);
+}
+
+function renderPills() {
+  const s = state.status;
+  if (!s) return;
+  const list = $("statusPills");
+  const pills = [];
+  pills.push(
+    s.game
+      ? statusPill(
+          "is-version",
+          el("span", { class: "dot" }),
+          el("span", { text: t("pill.version", { version: s.game.version }) }),
+          isBeta(s.game.version) ? el("span", { class: "pill-tag", text: t("pill.beta") }) : null,
+        )
+      : statusPill("is-version", el("span", { class: "dot is-off" }), el("span", { text: t("pill.notInstalled") }), el("span", { class: "pill-tag", text: t("pill.beta") })),
+  );
+  if (s.game_running) pills.push(statusPill("is-running", el("span", { class: "dot is-live" }), el("span", { text: t("pill.running") })));
+  const task = state.task;
+  if (task) {
+    const known = typeof task.percent === "number" || (task.task === "download" && task.total > 0);
+    const percent = typeof task.percent === "number" ? task.percent : known ? (100 * (task.done ?? 0)) / task.total : null;
+    const bar = el("span", { class: `pill-progress${known ? "" : " is-indeterminate"}`, role: "progressbar", "aria-label": taskText(task), "aria-valuemin": "0", "aria-valuemax": "100" }, el("span", { class: "pill-progress-fill" }));
+    if (known) {
+      bar.setAttribute("aria-valuenow", String(Math.round(percent)));
+      bar.firstChild.style.setProperty("width", `${Math.max(2, Math.min(100, percent))}%`);
+    }
+    pills.push(statusPill("is-task", el("span", { class: "pill-text", text: taskText(task) }), bar));
+  } else if (state.update?.game_update && s.game) {
+    pills.push(
+      el("li", { class: "status-pill is-update" },
+        el("button", { type: "button", class: "pill-button", onclick: () => setPopup("news") },
+          el("span", { class: "dot is-new" }),
+          el("span", { text: t("pill.update", { version: state.update.game_version }) }))),
+    );
+  }
+  if (s.launcher_ready && state.launcherLater) {
+    pills.push(statusPill("is-launcher", el("span", { class: "dot is-new" }), el("span", { text: t("pill.launcherReady", { version: s.launcher_ready }) })));
+  }
+  list.replaceChildren(...pills);
+}
+
+// ---- The hero's buttons ----------------------------------------------------------------------
 
 function taskText(task) {
   if (!task) return "";
@@ -193,18 +254,172 @@ function renderActionBar() {
 
   const task = state.task;
   $("stopButton").hidden = !task || !["download", "extract", "identify", "unpack"].includes(task.task);
-  $("progress").hidden = !task;
-  $("actionText").textContent = taskText(task);
-  if (task) {
-    const fill = $("progressFill");
-    const known = typeof task.percent === "number";
-    $("progress").classList.toggle("is-indeterminate", !known);
-    fill.style.setProperty("width", known ? `${Math.max(2, task.percent)}%` : "");
-    $("progress").setAttribute("role", "progressbar");
-    $("progress").setAttribute("aria-label", taskText(task));
-    if (known) $("progress").setAttribute("aria-valuenow", String(Math.round(task.percent)));
-    else $("progress").removeAttribute("aria-valuenow");
+  renderPills();
+}
+
+// ---- Menus and panels: Configurar, the add-ons pill and the news ------------------------------
+
+const POPUPS = {
+  configure: { button: "configureButton", panel: "configureMenu" },
+  addons: { button: "addonsPill", panel: "addonsPopover" },
+  news: { button: "newsPill", panel: "newsPanel" },
+};
+let openPopup = null;
+
+// Opens one popup (or none) and closes the others.
+function setPopup(name, focus = true) {
+  for (const [key, ids] of Object.entries(POPUPS)) {
+    const open = key === name;
+    $(ids.panel).hidden = !open;
+    $(ids.button).setAttribute("aria-expanded", String(open));
   }
+  openPopup = name;
+  if (name === "configure") renderConfigureMenu(focus);
+  else if (name === "addons") renderAddonsPopover(focus);
+  else if (name === "news") {
+    slots.render("news", context());
+    if (focus) $("newsPanel").querySelector("button")?.focus();
+  }
+}
+
+function togglePopup(name) {
+  setPopup(openPopup === name ? null : name);
+}
+
+function closePopup() {
+  if (!openPopup) return false;
+  const button = $(POPUPS[openPopup].button);
+  setPopup(null);
+  button.focus();
+  return true;
+}
+
+const MENU_ICONS = {
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M4 7h4M12 7h8M4 17h10M18 17h2"/><circle cx="10" cy="7" r="2"/><circle cx="16" cy="17" r="2"/>',
+  reread: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.2"/>',
+  rollback: '<path d="M9 7 4.5 11.5 9 16"/><path d="M5 11.5h9a5 5 0 0 1 0 10h-2"/>',
+  logs: '<path d="M6 3.5h9l3 3V20.5H6Z"/><path d="M9 10h6M9 13.5h6M9 17h3"/>',
+};
+
+function configureItems() {
+  const s = state.status;
+  const busy = Boolean(state.task);
+  return [
+    { id: "settings", label: t("cfg.settings"), run: () => openSettings("general") },
+    {
+      id: "reread", label: t("cfg.reread"), disabled: busy || !s.game || s.game_running,
+      run: () => (s.disc_source_exists ? runTask(() => api.reextract()) : chooseDisc()),
+    },
+    { id: "rollback", label: t("cfg.rollback"), disabled: busy || !s.has_previous || s.game_running, run: rollback },
+    { id: "logs", label: t("cfg.logs"), run: () => settingCall(() => api.openLogs().then(api.status)) },
+  ];
+}
+
+function renderConfigureMenu(focus) {
+  const menu = $("configureMenu");
+  const buttons = configureItems().map((item) => {
+    const button = el("button", { class: "menu-item", type: "button", role: "menuitem", tabindex: "-1", disabled: item.disabled ? true : false }, icon(MENU_ICONS[item.id], 18), el("span", { text: item.label }));
+    button.addEventListener("click", () => {
+      setPopup(null);
+      $("configureButton").focus();
+      item.run();
+    });
+    return button;
+  });
+  menu.replaceChildren(...buttons);
+  // Opens upward when the main area has no room below the button (short windows).
+  menu.classList.remove("is-up");
+  if (menu.getBoundingClientRect().bottom > $("main").getBoundingClientRect().bottom) menu.classList.add("is-up");
+  if (focus) buttons.find((b) => !b.disabled)?.focus();
+}
+
+// Arrow keys, Home and End inside a menu (only its enabled items); Tab closes it.
+function menuKeys(event) {
+  const items = [...event.currentTarget.querySelectorAll('[role="menuitem"]:not(:disabled)')];
+  if (event.key === "Tab") {
+    // Back on the button first, so Tab goes on from there.
+    setPopup(null, false);
+    $("configureButton").focus();
+    return;
+  }
+  const at = items.indexOf(document.activeElement);
+  const to = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: items.length - 1 }[event.key];
+  if (to === undefined || !items.length) return;
+  event.preventDefault();
+  items[(to + items.length) % items.length].focus();
+}
+
+async function rollback() {
+  const ok = await ask({ title: t("cfg.rollbackTitle"), body: el("p", { text: t("cfg.rollbackBody") }), ok: t("cfg.rollbackOk"), cancel: t("cfg.cancel") });
+  if (ok) runTask(() => api.rollbackGame());
+}
+
+function addonState(listed, view) {
+  if (view.safe_mode) return t("addons.stateSafe");
+  if (listed.active) return t("addons.stateOn");
+  if (listed.problem || !listed.manifest) return t("addons.stateBroken");
+  if (listed.ungranted?.length) return t("addons.statePermissions");
+  return t("addons.stateOff");
+}
+
+function renderAddonsPill() {
+  const count = addonsView().addons.length;
+  $("addonsCount").textContent = count ? String(count) : "";
+  $("addonsCount").hidden = !count;
+}
+
+// The add-ons pill: the installed add-ons (opening the ones that have a page) and the manager.
+function renderAddonsPopover(focus) {
+  const view = addonsView();
+  const pages = new Set(slots.itemsOf("tabs").map((item) => item.id));
+  const rows = view.addons.map((listed) => {
+    const name = listed.manifest?.name ?? listed.id;
+    const page = `addon:${listed.id}`;
+    return el(
+      "li",
+      { class: `pop-row${listed.active ? " is-on" : ""}` },
+      el("span", { class: "pop-mark", "aria-hidden": "true", text: name.slice(0, 1).toUpperCase() }),
+      el("span", { class: "pop-name" }, el("span", { text: name }), el("span", { class: "pop-state", text: addonState(listed, view) })),
+      pages.has(page) ? el("button", { class: "button small-button", type: "button", text: t("addonsOpen"), onclick: () => selectView(page) }) : null,
+    );
+  });
+  const box = $("addonsPopover");
+  box.replaceChildren(
+    el("h2", { class: "pop-title", id: "addonsPopoverTitle", text: t("addonsPopover") }),
+    rows.length ? el("ul", { class: "pop-list", role: "list" }, ...rows) : el("p", { class: "muted small", text: t("addonsNone") }),
+    el("button", { class: "button pop-manage", type: "button", text: t("addonsManage"), onclick: () => { setPopup(null); openSettings("addons"); } }),
+  );
+  if (focus) box.querySelector("button")?.focus();
+}
+
+function renderNewsPill() {
+  const update = state.update;
+  $("newsVersion").textContent = update?.game_version ?? "";
+  $("newsDot").hidden = !(update?.game_update || (update?.launcher_update && update.launcher_plan === "offer"));
+}
+
+// Generic links (no brand logos): the repository, its community board and the project's page.
+const LINKS = [
+  { id: "repo", url: "https://github.com/Indie-Modding-Games/dw-engine", icon: '<path d="m8.5 8-4 4 4 4M15.5 8l4 4-4 4M13.5 5l-3 14"/>' },
+  { id: "community", url: "https://github.com/Indie-Modding-Games/dw-engine/discussions", icon: '<circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8"/><circle cx="16.5" cy="8" r="2.5"/><path d="M15.5 13.3c2.6-.3 4.6 1.3 5 4.2"/>' },
+  { id: "web", url: "https://github.com/Indie-Modding-Games", icon: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.4 3.5 5.3 3.5 8.5s-1.1 6.1-3.5 8.5c-2.4-2.4-3.5-5.3-3.5-8.5s1.1-6.1 3.5-8.5Z"/>' },
+];
+
+function renderLinks() {
+  $("links").replaceChildren(
+    ...LINKS.map((link) => {
+      const button = el("button", { class: "link-icon", type: "button", "data-tip": t(`links.${link.id}`), onclick: () => openUrl(link.url).catch((failure) => showMessage(t("errorTitle"), String(failure))) }, icon(link.icon, 20), el("span", { class: "sr-only", text: t(`links.${link.id}`) }));
+      return el("li", {}, button);
+    }),
+  );
+}
+
+function showAbout() {
+  const s = state.status;
+  showMessage(
+    t("about.title"),
+    `${t("about.body", { launcher: s?.launcher_version ?? "?", game: s?.game?.version ?? t("s.none"), platform: s?.platform ?? "?" })}\n\n${t("about.keys")}`,
+  );
 }
 
 // ---- Tasks -----------------------------------------------------------------------------------
@@ -226,7 +441,7 @@ async function refresh() {
   if (state.status.content_installed && !state.backgroundLoaded) {
     const still = await api.background();
     if (still) {
-      const backdrop = $("backdrop");
+      const backdrop = $("backdropArt");
       backdrop.style.setProperty("background-image", `url("${still}")`);
       backdrop.classList.add("has-still");
     }
@@ -336,41 +551,24 @@ async function restartLauncher() {
 
 // ---- Built-in slot items -------------------------------------------------------------------
 
-function registerBuiltIns() {
-  GAMES.forEach((game, index) =>
-    slots.register("sidebar", {
-      id: `game-${game}`,
-      order: index,
-      label: () => (game === "base" ? t(`games.${game}.name`) : `${t(`games.${game}.name`)} · ${t("soon")}`),
-      icon: () => emblem(game, 38),
-      current: game === "base",
-      disabled: game !== "base",
-    }),
-  );
+const NAV_ICONS = {
+  home: '<path d="M4 11.2 12 4.5l8 6.7"/><path d="M6.2 9.6V19.5h4.3v-5h3v5h4.3V9.6"/>',
+  games: '<rect x="4" y="4" width="6.8" height="6.8" rx="1.6"/><rect x="13.2" y="4" width="6.8" height="6.8" rx="1.6"/><rect x="4" y="13.2" width="6.8" height="6.8" rx="1.6"/><rect x="13.2" y="13.2" width="6.8" height="6.8" rx="1.6"/>',
+  addons: '<path d="M9 4h4v2.2a1.8 1.8 0 1 0 3.6 0V4H20v5h-1.8a1.8 1.8 0 1 0 0 3.6H20V20h-5v-1.8a1.8 1.8 0 1 0-3.6 0V20H4v-7h1.8a1.8 1.8 0 1 0 0-3.6H4V4h5Z"/>',
+  settings: '<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.4-2.1.9-1.4-.9-1.4-1.7-.3-.6-1.5.6-1.6-1.2-1.2-1.6.6-1.5-.6-.3-1.7L12 3.5l-1.4.9-.3 1.7-1.5.6-1.6-.6-1.2 1.2.6 1.6-.6 1.5-1.7.3-.9 1.4.9 1.4 1.7.3.6 1.5-.6 1.6 1.2 1.2 1.6-.6 1.5.6.3 1.7 1.4.9 1.4-.9.3-1.7 1.5-.6 1.6.6 1.2-1.2-.6-1.6.6-1.5Z"/>',
+};
 
-  slots.register("tabs", {
-    id: "home",
-    order: 0,
-    label: () => t("tabHome"),
-    render: (panel, ctx) => {
-      const news = el("div", { class: "news", "data-slot": "news" });
-      panel.append(news);
-      renderNews(news, ctx);
-    },
-  });
-  slots.register("tabs", {
-    id: "notes",
-    order: 10,
-    label: () => t("tabNotes"),
-    render: (panel) => {
-      const card = el("article", { class: "card" });
-      const notes = el("div", { class: "notes full" });
-      if (state.update?.notes) renderNotes(notes, state.update.notes);
-      else notes.append(el("p", { text: t("newsEmpty") }));
-      card.append(el("div", { class: "card-title" }, el("h2", { text: state.update?.release_name ?? t("tabNotes") })), notes);
-      panel.append(card);
-    },
-  });
+const navIcon = (paths) =>
+  `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths}</svg>`;
+
+function registerBuiltIns() {
+  // The sidebar: two views of this page and two shortcuts to the settings. Add-ons add their
+  // icons after these (order 200), below a divider.
+  const nav = (id, order, extra) => slots.register("sidebar", { id, order, label: () => t(`nav.${id}`), icon: () => navIcon(NAV_ICONS[id]), ...extra });
+  nav("home", 0, { view: "home" });
+  nav("games", 10, { view: "games" });
+  nav("addons", 20, { onSelect: () => openSettings("addons") });
+  nav("settings", 30, { onSelect: () => openSettings() });
 
   slots.register("news", {
     id: "launcher-update",
@@ -382,7 +580,7 @@ function registerBuiltIns() {
       card.append(
         el("div", { class: "card-title" }, el("h2", { text: t("newsLauncher", { version: state.update.launcher_update }) })),
         el("button", {
-          class: "button primary",
+          class: "button",
           type: "button",
           text: state.launcherInstalling ? t("launcherInstalling") : t("newsLauncherButton"),
           disabled: state.launcherInstalling || Boolean(state.status?.game_running),
@@ -401,9 +599,9 @@ function registerBuiltIns() {
         const date = new Date(state.update.published_at);
         title.append(el("time", { datetime: state.update.published_at, text: date.toLocaleDateString(getLanguage()) }));
       }
-      const notes = el("div", { class: "notes" });
+      const notes = el("div", { class: `notes${state.newsFull ? " full" : ""}` });
       if (state.update?.notes) {
-        renderNotes(notes, state.update.notes, 6);
+        renderNotes(notes, state.update.notes, state.newsFull ? Infinity : 6);
       } else if (state.updateFailure) {
         notes.append(el("p", { text: `${t("newsOffline")} ${failureText(state.updateFailure)}` }));
       } else {
@@ -411,7 +609,16 @@ function registerBuiltIns() {
       }
       card.append(title, notes);
       if (state.update?.notes) {
-        card.append(el("button", { class: "link-button", type: "button", text: t("newsMore"), onclick: () => selectTab("notes") }));
+        card.append(
+          el("button", {
+            class: "link-button news-more", type: "button", text: state.newsFull ? t("newsLess") : t("newsMore"),
+            onclick: () => {
+              state.newsFull = !state.newsFull;
+              slots.render("news", context());
+              $("newsPanel").querySelector(".news-more")?.focus();
+            },
+          }),
+        );
       }
       return true;
     },
@@ -574,8 +781,8 @@ async function settingCall(work, reloadBackground = false) {
     state.status = await work();
     if (reloadBackground) {
       state.backgroundLoaded = false;
-      $("backdrop").classList.remove("has-still");
-      $("backdrop").style.removeProperty("background-image");
+      $("backdropArt").classList.remove("has-still");
+      $("backdropArt").style.removeProperty("background-image");
       state.update = null;
     }
     await refresh();
@@ -588,78 +795,79 @@ async function settingCall(work, reloadBackground = false) {
 
 const cssId = (id) => id.replace(/[^A-Za-z0-9_-]/g, "-");
 
-function selectTab(id) {
+// Shows one view of the main area: "home", "games" or an add-on's page ("addon:<id>").
+function selectView(id) {
   if (settingsOpen()) $("settingsDialog").close();
-  state.activeTab = id;
+  setPopup(null, false);
+  state.view = id;
+  renderViews();
   slots.render("tabs", context());
   slots.render("sidebar", context());
-  document.getElementById(`tab-${cssId(id)}`)?.focus();
-}
-
-function renderNews(container, ctx) {
-  for (const item of slots.itemsOf("news")) {
-    const card = el("article", { class: "card", "data-item": item.id });
-    if (item.render(card, ctx) !== false) container.append(card);
-  }
+  const current = $("sidebar").querySelector('[aria-current="page"]');
+  (current ?? document.getElementById(`panel-${cssId(id)}`))?.focus();
 }
 
 function mountSlots() {
   slots.mount("sidebar", (items) => {
     const list = $("sidebar");
     list.replaceChildren();
+    let divided = false;
     for (const item of items) {
-      const current = item.current || (item.addon && state.activeTab === item.id);
-      const button = el("button", { class: `rail-item${item.addon ? " is-addon" : ""}`, type: "button", title: item.label(), "aria-disabled": item.disabled ? "true" : false, "aria-current": current ? "page" : false });
+      if (item.addon && !divided) {
+        divided = true;
+        list.append(el("li", { class: "side-sep", "aria-hidden": "true" }));
+      }
+      const current = item.view ? state.view === item.view : item.addon && state.view === item.id;
+      const label = item.label();
+      const button = el("button", { class: `side-item${item.addon ? " is-addon" : ""}`, type: "button", "data-tip": label, "aria-disabled": item.disabled ? "true" : false, "aria-current": current ? "page" : false });
       // An add-on's icon is an image of its own folder (never markup in this page).
-      if (item.iconUrl) button.append(el("img", { src: item.iconUrl, alt: "", width: "30", height: "30", draggable: "false" }));
+      if (item.iconUrl) button.append(el("img", { src: item.iconUrl, alt: "", width: "24", height: "24", draggable: "false" }));
       else button.insertAdjacentHTML("afterbegin", item.icon());
-      button.append(el("span", { class: "sr-only", text: item.label() }));
+      button.append(el("span", { class: "sr-only", text: label }));
       if (item.disabled) button.addEventListener("click", (e) => e.preventDefault());
+      else if (item.view) button.addEventListener("click", () => selectView(item.view));
       else if (item.onSelect) button.addEventListener("click", item.onSelect);
       list.append(el("li", {}, button));
     }
   });
 
-  // Tabs and panels are kept by id: switching only hides panels, so an add-on's tab (an iframe)
-  // keeps its state; the launcher's own panels are drawn again when shown.
+  // The add-ons' pages. Panels are kept by id: switching only hides them, so an add-on's page (an
+  // iframe) keeps its state and is never moved in the DOM.
   slots.mount("tabs", (items, ctx) => {
-    if ($("homeView").hidden) return;
-    if (!items.some((i) => i.id === state.activeTab)) state.activeTab = items[0]?.id;
     const ids = items.map((i) => i.id);
-    const tabs = reconcile($("tablist"), ids, (id) =>
-      el("button", {
-        class: "tab", type: "button", role: "tab", id: `tab-${cssId(id)}`, "aria-controls": `panel-${cssId(id)}`,
-        onclick: () => selectTab(id),
-        onkeydown: (e) => {
-          const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
-          if (!step) return;
-          const now = slots.itemsOf("tabs").map((i) => i.id);
-          selectTab(now[(now.indexOf(id) + step + now.length) % now.length]);
-        },
-      }),
-    );
+    if (state.view.startsWith("addon:") && !ids.includes(state.view)) {
+      state.view = "home";
+      renderViews();
+    }
     const panels = reconcile($("tabpanels"), ids, (id) => {
       const item = items.find((i) => i.id === id);
-      const panel = el("div", { class: `tabpanel${item.persistent ? " is-addon" : ""}`, role: "tabpanel", id: `panel-${cssId(id)}`, "aria-labelledby": `tab-${cssId(id)}`, tabindex: "0" });
+      const panel = el("div", { class: `tabpanel${item.persistent ? " is-addon" : ""}`, role: "region", id: `panel-${cssId(id)}`, "aria-label": item.label(), tabindex: "-1" });
       if (item.persistent) item.render(panel, ctx);
       return panel;
     });
     for (const item of items) {
-      const selected = item.id === state.activeTab;
-      const tab = tabs.get(item.id);
-      tab.textContent = item.label();
-      tab.setAttribute("aria-selected", String(selected));
-      tab.tabIndex = selected ? 0 : -1;
+      const selected = item.id === state.view;
       const panel = panels.get(item.id);
       panel.hidden = !selected;
-      if (selected && !item.persistent) {
+      if (!selected) continue;
+      $("addonTitle").textContent = item.label();
+      if (!item.persistent) {
         panel.replaceChildren();
         item.render(panel, ctx);
       }
     }
   });
 
-  // News cards render inside the home tab (renderNews); the slot itself needs no mount.
+  // The news panel (the bottom pill): the launcher's cards and the add-ons'.
+  slots.mount("news", (items, ctx) => {
+    const container = $("news");
+    container.replaceChildren();
+    for (const item of items) {
+      const card = el("article", { class: "card", "data-item": item.id });
+      if (item.render(card, ctx) !== false) container.append(card);
+    }
+  });
+
   mountSettings();
 }
 
@@ -679,23 +887,55 @@ function context() {
 function renderAll() {
   renderStaticTexts();
   renderViews();
+  renderLinks();
   const ctx = context();
   slots.renderAll(ctx);
   renderActionBar();
+  if (openPopup === "addons") renderAddonsPopover(false);
   publishStatus({ running: ctx.gameRunning, busy: ctx.busy, ready: ctx.ready, gameVersion: ctx.gameVersion, language: ctx.language });
 }
 
 // ---- Start -----------------------------------------------------------------------------------
 
+function wireControls() {
+  $("aboutButton").addEventListener("click", showAbout);
+  $("messageDismiss").addEventListener("click", () => $("messageDialog").close());
+  $("stopButton").addEventListener("click", () => api.cancel());
+  $("configureButton").addEventListener("click", () => togglePopup("configure"));
+  $("configureButton").addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      setPopup("configure");
+    }
+  });
+  $("configureMenu").addEventListener("keydown", menuKeys);
+  $("addonsPill").addEventListener("click", () => togglePopup("addons"));
+  $("newsPill").addEventListener("click", () => togglePopup("news"));
+  // A click outside the open popup, or Esc, closes it (dialogs handle their own Esc).
+  document.addEventListener("pointerdown", (e) => {
+    if (openPopup && !e.target.closest(".menu-wrap")) setPopup(null, false);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !document.querySelector("dialog[open]") && closePopup()) e.preventDefault();
+  });
+  // ↑/↓ move through the sidebar's buttons.
+  $("rail").addEventListener("keydown", (e) => {
+    const step = { ArrowDown: 1, ArrowUp: -1 }[e.key];
+    if (!step) return;
+    const buttons = [...$("rail").querySelectorAll("button")];
+    const at = buttons.indexOf(document.activeElement);
+    if (at < 0) return;
+    e.preventDefault();
+    buttons[(at + step + buttons.length) % buttons.length].focus();
+  });
+}
+
 async function start() {
   registerBuiltIns();
   mountSlots();
-  initAddons({ language: getLanguage, selectTab, changed: () => renderAll(), t });
+  initAddons({ language: getLanguage, selectTab: selectView, changed: () => renderAll(), t });
   initAddonManager({ message: showMessage, redraw: () => renderAll() });
-  $("settingsButton").addEventListener("click", () => openSettings());
-  $("messageDismiss").addEventListener("click", () => $("messageDialog").close());
-  $("dropzone").addEventListener("click", chooseDisc);
-  $("stopButton").addEventListener("click", () => api.cancel());
+  wireControls();
 
   await listen("task", async (payload) => {
     const changed = state.task?.task !== payload.task;

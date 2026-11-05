@@ -36,6 +36,11 @@ export const api = {
   addonCall: (addon, method, params) => call("addon_call", { addon, method, params }),
 };
 
+// Opens a web page in the player's browser (the opener plugin: http and https only).
+export function openUrl(url) {
+  return tauri.opener.openUrl(url);
+}
+
 export function listen(event, handler) {
   return tauri.event.listen(event, (e) => handler(e.payload));
 }
