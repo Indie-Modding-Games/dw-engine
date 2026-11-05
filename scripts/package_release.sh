@@ -61,10 +61,11 @@ while (($#)); do
   shift
 done
 
-[[ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]] || {
+# Its length, not its text: set -x would print the text.
+if [[ ! -v TAURI_SIGNING_PRIVATE_KEY ]] || ((${#TAURI_SIGNING_PRIVATE_KEY} == 0)); then
   echo "package_release: TAURI_SIGNING_PRIVATE_KEY is not set (docs/modulos/apps/launcher.md)" >&2
   exit 1
-}
+fi
 
 mkdir -p "$out"
 out="$(cd "$out" && pwd)"

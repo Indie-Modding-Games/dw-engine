@@ -58,6 +58,12 @@ copy_fonts() {
     "$app/ui/fonts/"
 }
 
+# The signing key and its password reach the container by name only (docker copies them from this
+# environment), never on a command line, where ps would show them; set -x never expands them.
+[[ -v TAURI_SIGNING_PRIVATE_KEY ]] || TAURI_SIGNING_PRIVATE_KEY=""
+[[ -v TAURI_SIGNING_PRIVATE_KEY_PASSWORD ]] || TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
+export TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+
 run() {
   local tty=()
   [[ -t 0 && -t 1 ]] && tty=(-it)
@@ -66,8 +72,7 @@ run() {
     -e DWE_LAUNCHER_PUBKEY="${DWE_LAUNCHER_PUBKEY:-}" \
     -e DWE_LAUNCHER_GATEWAY="${DWE_LAUNCHER_GATEWAY:-}" \
     -e DWE_LAUNCHER_LINKS="${DWE_LAUNCHER_LINKS:-}" \
-    -e TAURI_SIGNING_PRIVATE_KEY="${TAURI_SIGNING_PRIVATE_KEY:-}" \
-    -e TAURI_SIGNING_PRIVATE_KEY_PASSWORD="${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" \
+    -e TAURI_SIGNING_PRIVATE_KEY -e TAURI_SIGNING_PRIVATE_KEY_PASSWORD \
     -e APPIMAGE_EXTRACT_AND_RUN=1 -e NO_STRIP=1 \
     -v dwe-launcher-cargo-registry:/opt/cargo/registry -v dwe-launcher-cargo-git:/opt/cargo/git \
     -v dwe-launcher-xwin:/opt/xwin-cache \
