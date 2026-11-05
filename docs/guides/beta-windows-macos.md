@@ -163,6 +163,10 @@ están aprobados); entonces se añaden el juego para Apple silicon (`macos-15`) 
 universal (`macos-15`), y los manifiestos nombran los cuatro ordenadores. Un lanzador de Mac no encuentra paquete
 en una versión sin macOS y usa la última que lo tenga.
 
+Mientras GitHub Actions no pueda ejecutarse en la organización, la misma versión (Linux y Windows) se compila y se
+sube como borrador desde el PC del responsable con `scripts/release_local.sh --tag <tag> --upload`, sin gastar
+minutos: [Publicar desde este PC](../modulos/apps/launcher.md#publicar-desde-este-pc).
+
 `.github/workflows/platform-check.yml` solo compila y pasa las pruebas unitarias del motor y del lanzador en
 `windows-latest`, y también en `macos-latest` si se marca la misma opción `macos`.
 

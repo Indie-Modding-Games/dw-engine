@@ -247,7 +247,53 @@ subcarpetas de `<carpeta>` (sus archivos y `notes.md`); se arranca el lanzador c
 todo eso para Linux y Windows (y macOS si se marca su opción `macos`, que viene desmarcada) y lo sube a una versión
 **borrador**; los dos manifiestos nombran solo los ordenadores compilados. Solo se ejecuta a mano y nadie lo ha
 ejecutado todavía: la beta no se publica hasta que el responsable la haya jugado. Su coste en minutos está en la
-[beta para Windows y macOS](../../guides/beta-windows-macos.md#publicacion-y-su-coste).
+[beta para Windows y macOS](../../guides/beta-windows-macos.md#publicacion-y-su-coste). Mientras GitHub Actions no
+pueda ejecutarse, la versión se publica desde este PC (siguiente sección).
+
+## Publicar desde este PC
+
+`scripts/release_local.sh` hace en el PC lo mismo que `release.yml` para Linux y Windows (macOS necesita un Mac), con
+los mismos scripts e imágenes de Docker: los paquetes del juego (`package_linux.sh`, `package_windows.sh`) firmados
+con `package_release.sh` en un solo `game-manifest.json`; el AppImage, el `.deb` y el instalador de Windows del
+lanzador (`launcher.sh bundle` y `bundle-windows`) con la pasarela y la clave pública dentro, y sus firmas; y
+`latest.json`. Necesita Docker, `gh` con sesión iniciada y, una vez, las bibliotecas de Windows
+(`scripts/dev.sh windows-sdk`, que pide aceptar su licencia).
+
+Desde una copia limpia de `origin/main`:
+
+```bash
+git fetch origin && git switch --detach origin/main
+scripts/release_local.sh --tag v0.1.0-beta.1 --notes-file notas.md --upload
+```
+
+- Pide **una vez** la contraseña de la clave, en la terminal y sin mostrarla. La clave privada
+  (`~/.dwe-signing/dwe-signing.key` por defecto, `--key` para otra) y la contraseña solo llegan a los contenedores
+  que firman, por las variables `TAURI_SIGNING_PRIVATE_KEY` y `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: nunca en una
+  línea de órdenes, un archivo ni el registro, y se borran al terminar.
+- Antes de compilar comprueba que la clave firma y que su `.pub` (`--pubkey`, por defecto `<clave>.pub`) es la
+  variable `DWE_SIGNING_PUBKEY` del repositorio: una contraseña equivocada falla en segundos, no tras la compilación.
+  La pasarela es la variable `DWE_BETA_GATEWAY` (`--gateway` para otra) y los enlaces de la pantalla principal la
+  variable opcional `DWE_LAUNCHER_LINKS` (`--links` para otros; sin ella, ninguno), como en el flujo.
+- Todo va a `build/release-local/<tag>/` (`--out`, siempre dentro de `build/`): lo que se sube en `dist/`, el
+  registro con los tiempos en `logs/`.
+- Antes de subir comprueba que cada archivo tiene su `.sig` y que la clave pública la verifica (también el `.deb`,
+  que el flujo no firmaba), tamaños razonables, que los dos manifiestos se leen y nombran solo `linux-x86_64` y
+  `windows-x86_64`, que ningún paquete lleva datos del disco (la misma comprobación que los empaquetadores) y que los
+  dos lanzadores llevan la pasarela y la clave pública.
+- Con `--upload` crea la versión **borrador** y prerelease `<tag>` en `Indie-Modding-Games/dw-engine` sobre el commit
+  de `origin/main` (se niega si la copia tiene cambios o no está en `origin/main`), sube todo `dist/` (paquetes del
+  juego y sus `.sig`, `game-manifest.json`, AppImage y su `.sig`, `.deb` y su `.sig`, instalador de Windows y su
+  `.sig`) y por último `latest.json`, con las URL de la API de los archivos ya subidos, como el flujo (la pasarela
+  las cambia por las suyas). Nada se publica: el responsable revisa el borrador y lo publica a mano.
+- Si la etiqueta ya existe, o hay una versión publicada con ese nombre, se niega siempre; un borrador con ese nombre
+  solo se borra con `--replace-draft`. Sin `--upload` solo compila y comprueba (`latest.preview.json` lleva URL de
+  ejemplo); `--upload --no-build` sube, tras comprobarlo otra vez, lo que dejó una ejecución anterior.
+
+Medido en este PC con la clave de prueba (2026-11-04, copia nueva con las cachés de vcpkg y ccache ya llenas):
+33 min en total; imágenes 12 min (la de desarrollo se rehízo entera; con caché, segundos), juego Linux 3 min,
+juego Windows 11 min, lanzador Linux 4 min, lanzador Windows 3 min, firmas y comprobaciones 7 s. Ocupa unos 10 GB
+en `build/`. `--dry-run-key <carpeta>` es solo para probar el script: crea allí una clave de usar y tirar y compila
+con ella sin preguntar nada (nunca sube).
 
 ## Puntos de montaje de la interfaz
 
