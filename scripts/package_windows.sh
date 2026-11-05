@@ -104,10 +104,10 @@ for program in "$stage"/bin/*.exe; do
   fi
 done
 
-if find "$stage" -name pack.yaml -exec grep -l '^id: base$' {} + | grep -q .; then
-  echo "package_windows: a base pack is in the package; it must never ship" >&2
-  exit 1
-fi
+# Nothing read from a disc may ship: the team's packs only, no base pack and no file of the
+# original.
+source "$root/scripts/package/no_disc_data.sh"
+package_no_disc_data "$stage" package_windows || exit 1
 
 # The player's way in without the launcher.
 printf '@echo off\r\nstart "" "%%~dp0bin\\dwe-game.exe" %%*\r\n' >"$stage/dwe.cmd"

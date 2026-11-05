@@ -138,6 +138,12 @@ policy_added_lines() {
 
 # Prints "<path>: <pattern>" for every staged path that a forbidden pattern matches.
 policy_forbidden_staged() {
+  git diff --cached --name-only -z --diff-filter=ACMRT | policy_forbidden_paths_in
+}
+
+# Reads NUL-separated paths and prints "<path>: <pattern>" for every one that a forbidden pattern
+# matches, and succeeds only when it prints any. The release checks run it on the packages' files.
+policy_forbidden_paths_in() {
   local path lower pattern found=1
   while IFS= read -r -d '' path; do
     lower="${path,,}"
@@ -149,7 +155,7 @@ policy_forbidden_staged() {
         break
       fi
     done
-  done < <(git diff --cached --name-only -z --diff-filter=ACMRT)
+  done
   return "$found"
 }
 

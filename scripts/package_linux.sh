@@ -81,12 +81,10 @@ for program in dwe-game dwx; do
   fi
 done
 
-# Nothing extracted from a disc may ship: the team's packs only, with no base pack and no extracted
-# asset.
-if find "$stage" -name pack.yaml -exec grep -l '^id: base$' {} + | grep -q .; then
-  echo "package_linux: a base pack is in the package; it must never ship" >&2
-  exit 1
-fi
+# Nothing read from a disc may ship: the team's packs only, no base pack and no file of the
+# original.
+source "$root/scripts/package/no_disc_data.sh"
+package_no_disc_data "$stage" package_linux || exit 1
 
 # The launcher a player runs: the game from wherever the package was unpacked.
 cat >"$stage/dwe" <<'EOF'
