@@ -18,6 +18,10 @@ set(DWE_WINSYSROOT "/opt/xwin/sysroot")
 # Joined to the option: ccache would take a separate absolute path for a file and drop it.
 foreach(lang C CXX)
     string(APPEND CMAKE_${lang}_FLAGS_INIT " /winsysroot${DWE_WINSYSROOT}")
+    # A vcpkg port's flags from the triplet (x64-windows-static-cross), which vcpkg's own toolchains add themselves.
+    if(VCPKG_${lang}_FLAGS)
+        string(APPEND CMAKE_${lang}_FLAGS_INIT " ${VCPKG_${lang}_FLAGS}")
+    endif()
 endforeach()
 # llvm-rc does not read /winsysroot: the resource scripts get the SDK's headers, of its newest version, by path.
 file(GLOB DWE_WINSDK_INCLUDE LIST_DIRECTORIES true "${DWE_WINSYSROOT}/Windows Kits/10/Include/*")
