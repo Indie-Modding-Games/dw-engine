@@ -16,6 +16,8 @@
 #                        DWE_SIGNING_PUBKEY variable, which the launchers handed out trust
 #   --gateway <url>      the beta gateway built into the launcher (default: the repository's
 #                        DWE_BETA_GATEWAY variable, read with gh)
+#   --links <json>       the launcher's main screen links, as scripts/launcher.sh takes them
+#                        (default: the repository's DWE_LAUNCHER_LINKS variable if set, else none)
 #   --out <folder>       where everything goes, inside the repository's build/ (default
 #                        build/release-local/<tag>); the files to upload end in <out>/dist
 #   --upload             also create the draft prerelease on GitHub (on the commit of origin/main,
@@ -41,14 +43,14 @@ repo="Indie-Modding-Games/dw-engine"
 platforms=(linux-x86_64 windows-x86_64)
 # The development and launcher images by their own names, as the workflow builds them, and no disc
 # or extracted content anywhere near a release.
-unset DWE_IMAGE DWE_LAUNCHER_IMAGE DWE_DISC DWE_CONTENT
+unset DWE_IMAGE DWE_LAUNCHER_IMAGE DWE_DISC DWE_CONTENT DWE_LAUNCHER_LINKS
 unset TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD TAURI_SIGNING_PRIVATE_KEY_PATH
 
-tag="" notes_file="" key="" pubkey="" gateway="" out="" upload=0 replace_draft=0 build=1
+tag="" notes_file="" key="" pubkey="" gateway="" links="" out="" upload=0 replace_draft=0 build=1
 dry_run_dir=""
 
 usage() {
-  sed -n '2,32p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,34p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 die() {
@@ -82,6 +84,10 @@ while (($#)); do
       ;;
     --gateway)
       gateway="$(value "$@")"
+      shift
+      ;;
+    --links)
+      links="$(value "$@")"
       shift
       ;;
     --out)
@@ -221,6 +227,15 @@ if [[ -z "$gateway" ]]; then
 fi
 [[ "$gateway" =~ ^https://[^[:space:]]+$ ]] || die "the gateway must be an https URL: $gateway"
 echo "release_local: gateway $gateway"
+# The main screen's links are optional, like the workflow's vars.DWE_LAUNCHER_LINKS.
+if [[ -z "$links" ]]; then
+  links="$(gh variable get DWE_LAUNCHER_LINKS -R "$repo" 2>/dev/null || true)"
+fi
+if [[ -n "$links" ]]; then
+  python3 -c 'import json, sys; assert isinstance(json.loads(sys.argv[1]), dict)' "$links" \
+    2>/dev/null || die "the links must be a JSON object: $links"
+fi
+echo "release_local: links ${links:-none}"
 avail="$(df -Pk "$out" | awk 'NR == 2 { print int($4 / 1048576) }')"
 ((build == 0 || avail >= 25)) \
   || echo "release_local: WARNING: only ${avail} GB free; a build takes ~25 GB"
@@ -280,6 +295,7 @@ fi
 
 if ((build)); then
   export DWE_LAUNCHER_GATEWAY="$gateway" DWE_LAUNCHER_PUBKEY="$public_key"
+  [[ -z "$links" ]] || export DWE_LAUNCHER_LINKS="$links"
 
   step "images"
   "$root/scripts/dev.sh" image
