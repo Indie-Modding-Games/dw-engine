@@ -114,8 +114,17 @@ jobs:
 
       # No validation layers: no test draws anything. The dependencies keep their debug build, because a debug build
       # with clang-cl cannot link release libraries (a different CRT).
+      # vcpkg gives up at once on some download errors (an SSL error from lua.org once); one more try reuses
+      # everything already downloaded and built.
       - name: Configure
-        run: cmake --preset windows-ci -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          cmake --preset windows-ci -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Configure failed; trying once more in a minute"
+            Start-Sleep -Seconds 60
+            cmake --preset windows-ci -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
+          }
 
       - name: Build
         run: cmake --build --preset windows-ci
