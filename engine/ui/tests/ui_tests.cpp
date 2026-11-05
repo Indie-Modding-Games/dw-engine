@@ -886,7 +886,11 @@ TEST_CASE("the pause menu works with a gamepad alone, and the prompts follow it"
   press(*ui, input, GamepadButton::DpadDown);
   CHECK(ui->focusedElementId("pause_menu") == "open-options");
   press(*ui, input, GamepadButton::South);
-  CHECK(ui->focusedElementId("pause_menu") == "display-mode");
+  CHECK(ui->focusedElementId("pause_menu") == "free-exploration");
+  // The shoulders switch the options' tabs: the Interface tab is the last, before the first.
+  press(*ui, input, GamepadButton::LeftShoulder);
+  CHECK(ui->elementHasClass("pause_menu", "tab-interface", "selected"));
+  CHECK(ui->focusedElementId("pause_menu") == "ui-skin");
 
   // The stick navigates too.
   input.handle(
@@ -896,6 +900,8 @@ TEST_CASE("the pause menu works with a gamepad alone, and the prompts follow it"
       platform::GamepadAxisMoved{.id = Pad, .axis = platform::GamepadAxis::LeftY, .value = 0.0F});
   frame(*ui, input);
   CHECK(ui->focusedElementId("pause_menu") == "ui-scale");
+  // The options' keys name the pad's: the shoulders for the tabs.
+  CHECK(ui->elementHasClass("pause_menu", "hint-tab-next", "glyph-button"));
   press(*ui, input, GamepadButton::DpadRight);
   auto commands = ui->takeCommands();
   REQUIRE(commands.size() == 1);
@@ -927,6 +933,9 @@ TEST_CASE("the pause menu works with the mouse alone") {
   ui->update();
   CHECK(click(*ui, input, "pause_menu", "open-options"));
   CHECK(ui->elementText("pause_menu", "title") == "Options");
+  // A click on a tab shows it.
+  CHECK(click(*ui, input, "pause_menu", "tab-graphics"));
+  CHECK(ui->elementHasClass("pause_menu", "tab-graphics", "selected"));
   CHECK(click(*ui, input, "pause_menu", "display-mode"));
   auto commands = ui->takeCommands();
   REQUIRE(commands.size() == 1);
@@ -942,7 +951,7 @@ TEST_CASE("the pause menu works with the mouse alone") {
   ui->handleEvent(platform::MouseMoved{.x = vsyncAt.x, .y = vsyncAt.y});
   CHECK(ui->focusedElementId("pause_menu") == "vsync");
 
-  // The options list is longer than its box: the wheel scrolls it down to Back, smoothly.
+  // The wheel scrolls a list longer than its box; Back stays under the list either way.
   CHECK(ui->handleEvent(platform::MouseWheelMoved{.x = 0.0F, .y = -20.0F}));
   for (int i = 0; i < 60; ++i) {
     clock.now += Tick;

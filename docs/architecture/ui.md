@@ -109,7 +109,8 @@ recorte de RmlUi (`EnableClipMask`) no están implementadas: solo hacen falta pa
   `.glyph-frame` del botón animado del aspecto clásico. Todo el arte es nuestro: `glyph_art.hpp` dibuja por código las
   rutas `/glyph/classic/button|cap/<símbolo>/<dibujo>` (un botón redondo de 16 x 12 o una tecla de 12 de alto al
   estilo del original, con su parte de arriba hundiéndose un píxel por dibujo, y una letra de 3 x 5 propia) y
-  `/glyph/modern/<símbolo>` (64 x 64, suavizado), nunca logotipos de fabricantes.
+  `/glyph/modern/<símbolo>` (64 x 64, suavizado: las cuatro formas, las cuatro posiciones y las flechas `@left`,
+  `@right`, `@up` y `@down`), nunca logotipos de fabricantes.
 - **Marcadores en los textos:** `element:set_prompt_text(texto)` cambia cada `{prompt:<acción>}` del texto por el glifo
   de esa acción (`promptText`); con `set_prompt_text(texto, true)`, para un texto del original, también sus caracteres
   de botón y su «X button»: la cruz (que la extracción escribe «△», celda 77 de la fuente) es `confirm`, el triángulo

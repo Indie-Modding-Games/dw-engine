@@ -346,9 +346,10 @@ private:
 
 // Logs where the entries of the menu's page are, for scripted clicks.
 void logMenuLayout(const ui::Ui& ui) {
-  constexpr std::array Entries{"continue",     "open-minimap", "open-options", "quit",
-                               "minimap-mode", "minimap-size", "minimap-back", "display-mode",
-                               "ui-scale",     "vsync",        "options-back"};
+  constexpr std::array Entries{"continue",     "open-minimap", "open-options",  "quit",
+                               "minimap-mode", "minimap-size", "minimap-back",  "tab-game",
+                               "tab-graphics", "tab-sound",    "tab-interface", "display-mode",
+                               "ui-scale",     "vsync",        "options-reset", "options-back"};
   std::string line;
   for (const std::string_view entry : Entries) {
     const auto center = ui.elementCenter("pause_menu", entry);

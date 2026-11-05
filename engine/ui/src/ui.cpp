@@ -107,6 +107,10 @@ std::string_view actionName(NavCommand command) {
     return "cancel";
   case NavCommand::Menu:
     return "menu";
+  case NavCommand::TabPrevious:
+    return "tab_previous";
+  case NavCommand::TabNext:
+    return "tab_next";
   }
   return "";
 }
@@ -125,6 +129,8 @@ std::optional<Rml::Input::KeyIdentifier> keyOf(NavCommand command) {
     return Rml::Input::KI_RETURN;
   case NavCommand::Cancel:
   case NavCommand::Menu:
+  case NavCommand::TabPrevious:
+  case NavCommand::TabNext:
     break;
   }
   return std::nullopt;
@@ -834,6 +840,8 @@ struct Ui::Impl {
     case NavCommand::Down:
     case NavCommand::Left:
     case NavCommand::Right:
+    case NavCommand::TabPrevious:
+    case NavCommand::TabNext:
       break;
     }
     return std::nullopt;
@@ -868,9 +876,10 @@ struct Ui::Impl {
       if (!pressed && sounds && context->GetFocusElement() != before) {
         cue(UiCue::Move);
       }
-    } else {
+    } else if (command == NavCommand::Cancel || command == NavCommand::Menu) {
       hide(modal->element->name());
     }
+    // A tab step that the document does not take does nothing: a page without tabs ignores it.
   }
 
   void tick(const input::InputState& state, double seconds) {
@@ -1455,6 +1464,13 @@ std::optional<Ui::Point> Ui::elementCenter(std::string_view document,
   const Rml::Vector2f offset = element->GetAbsoluteOffset(Rml::BoxArea::Border);
   const Rml::Vector2f size = element->GetBox().GetSize(Rml::BoxArea::Border);
   return Point{.x = offset.x + (size.x / 2.0F), .y = offset.y + (size.y / 2.0F)};
+}
+
+bool Ui::elementShown(std::string_view document, std::string_view elementId) const {
+  const Impl::Document* found = impl_->find(document);
+  const Rml::Element* element =
+      found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
+  return element != nullptr && element->IsVisible(true);
 }
 
 } // namespace dwe::ui

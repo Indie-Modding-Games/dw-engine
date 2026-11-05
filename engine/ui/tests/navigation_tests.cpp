@@ -83,6 +83,28 @@ TEST_CASE("confirm, cancel and menu come from every device") {
   CHECK(tick(navigation, input).empty());
 }
 
+TEST_CASE("Q and E, and the pad's shoulders, step a page's tabs once per press") {
+  Navigation navigation;
+  input::InputState input = withGamepad();
+
+  input.handle(platform::KeyChanged{.key = input::keys::Q, .down = true, .repeat = false});
+  CHECK(tick(navigation, input) == std::vector{NavCommand::TabPrevious});
+  CHECK(tick(navigation, input).empty());
+  input.handle(platform::KeyChanged{.key = input::keys::Q, .down = false, .repeat = false});
+  input.handle(platform::KeyChanged{.key = input::keys::E, .down = true, .repeat = false});
+  CHECK(tick(navigation, input) == std::vector{NavCommand::TabNext});
+  input.handle(platform::KeyChanged{.key = input::keys::E, .down = false, .repeat = false});
+
+  input.handle(platform::GamepadButtonChanged{
+      .id = Pad, .button = GamepadButton::LeftShoulder, .down = true});
+  CHECK(tick(navigation, input) == std::vector{NavCommand::TabPrevious});
+  input.handle(platform::GamepadButtonChanged{
+      .id = Pad, .button = GamepadButton::RightShoulder, .down = true});
+  CHECK(tick(navigation, input) == std::vector{NavCommand::TabNext});
+  CHECK(actionOf(NavCommand::TabPrevious) == "tab_previous");
+  CHECK(actionOf(NavCommand::TabNext) == "tab_next");
+}
+
 TEST_CASE("a held direction repeats after a delay, then at a steady rate") {
   Navigation navigation{NavigationTiming{.firstRepeatSeconds = 0.24, .repeatSeconds = 0.1}};
   input::InputState input{input::defaultActionMap()};

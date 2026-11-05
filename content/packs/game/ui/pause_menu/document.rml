@@ -488,64 +488,60 @@
 				<button id="minimap-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 
+			<!-- The options (docs/modulos/apps/game.md, «Opciones en partida»): the tabs, the rows of the tab shown, what the
+			     focused row does, and the keys. The rows are one pool the tab shown fills in order (logic.lua: show_tab), each
+			     given the id of its option while the tab is shown; the rest stay hidden. -->
 			<div id="page-options" class="page hidden">
-				<!-- The game's own actions, first so the quick options (Esc) open right on them
-				     (docs/architecture/guardar-y-cargar.md, 3.8); the settings rows follow. -->
-				<button id="options-save" class="option" onclick="ui.send('quick_save')" text-key="pause_menu.quick_save"></button>
-				<button id="options-to-title" class="option" onclick="ui.send('to_title')" text-key="pause_menu.to_title"></button>
-				<button id="options-quit" class="option" onclick="ui.send('quit')" text-key="pause_menu.quit"></button>
-				<button id="display-mode" class="option" onclick="adjust(document, 'display-mode', 1)">
-					<span class="label" text-key="pause_menu.display_mode"></span><span class="value" id="display-mode-value"></span>
-				</button>
-				<button id="ui-scale" class="option" onclick="adjust(document, 'ui-scale', 1)">
-					<span class="label" text-key="pause_menu.ui_scale"></span><span class="value" id="ui-scale-value"></span>
-				</button>
-				<button id="vsync" class="option" onclick="adjust(document, 'vsync', 1)">
-					<span class="label" text-key="pause_menu.vsync"></span><span class="value" id="vsync-value"></span>
-				</button>
-				<button id="ui-skin" class="option" onclick="adjust(document, 'ui-skin', 1)">
-					<span class="label" text-key="pause_menu.ui_skin"></span><span class="value" id="ui-skin-value"></span>
-				</button>
-				<button id="language" class="option" onclick="adjust(document, 'language', 1)">
-					<span class="label" text-key="main_menu.language"></span><span class="value" id="language-value"></span>
-				</button>
-				<button id="text-font" class="option" onclick="adjust(document, 'text-font', 1)">
-					<span class="label" text-key="main_menu.text_font"></span><span class="value" id="text-font-value"></span>
-				</button>
-				<!-- The game's options (ui/common/game_options.lua) fill these rows in order; the rest stay hidden. -->
-				<button id="option-slot-1" class="option hidden" onclick="adjust_slot(document, 1, 1)"><span class="label" id="option-slot-1-label"></span><span class="value" id="option-slot-1-value"></span></button>
-				<button id="option-slot-2" class="option hidden" onclick="adjust_slot(document, 2, 1)"><span class="label" id="option-slot-2-label"></span><span class="value" id="option-slot-2-value"></span></button>
-				<button id="option-slot-3" class="option hidden" onclick="adjust_slot(document, 3, 1)"><span class="label" id="option-slot-3-label"></span><span class="value" id="option-slot-3-value"></span></button>
-				<button id="option-slot-4" class="option hidden" onclick="adjust_slot(document, 4, 1)"><span class="label" id="option-slot-4-label"></span><span class="value" id="option-slot-4-value"></span></button>
-				<button id="option-slot-5" class="option hidden" onclick="adjust_slot(document, 5, 1)"><span class="label" id="option-slot-5-label"></span><span class="value" id="option-slot-5-value"></span></button>
-				<button id="option-slot-6" class="option hidden" onclick="adjust_slot(document, 6, 1)"><span class="label" id="option-slot-6-label"></span><span class="value" id="option-slot-6-value"></span></button>
-				<button id="option-slot-7" class="option hidden" onclick="adjust_slot(document, 7, 1)"><span class="label" id="option-slot-7-label"></span><span class="value" id="option-slot-7-value"></span></button>
-				<button id="option-slot-8" class="option hidden" onclick="adjust_slot(document, 8, 1)"><span class="label" id="option-slot-8-label"></span><span class="value" id="option-slot-8-value"></span></button>
-				<button id="option-slot-9" class="option hidden" onclick="adjust_slot(document, 9, 1)"><span class="label" id="option-slot-9-label"></span><span class="value" id="option-slot-9-value"></span></button>
-				<button id="option-slot-10" class="option hidden" onclick="adjust_slot(document, 10, 1)"><span class="label" id="option-slot-10-label"></span><span class="value" id="option-slot-10-value"></span></button>
-				<button id="option-slot-11" class="option hidden" onclick="adjust_slot(document, 11, 1)"><span class="label" id="option-slot-11-label"></span><span class="value" id="option-slot-11-value"></span></button>
-				<button id="option-slot-12" class="option hidden" onclick="adjust_slot(document, 12, 1)"><span class="label" id="option-slot-12-label"></span><span class="value" id="option-slot-12-value"></span></button>
-				<button id="option-slot-13" class="option hidden" onclick="adjust_slot(document, 13, 1)"><span class="label" id="option-slot-13-label"></span><span class="value" id="option-slot-13-value"></span></button>
-				<button id="option-slot-14" class="option hidden" onclick="adjust_slot(document, 14, 1)"><span class="label" id="option-slot-14-label"></span><span class="value" id="option-slot-14-value"></span></button>
-				<button id="option-slot-15" class="option hidden" onclick="adjust_slot(document, 15, 1)"><span class="label" id="option-slot-15-label"></span><span class="value" id="option-slot-15-value"></span></button>
-				<button id="option-slot-16" class="option hidden" onclick="adjust_slot(document, 16, 1)"><span class="label" id="option-slot-16-label"></span><span class="value" id="option-slot-16-value"></span></button>
-				<button id="option-slot-17" class="option hidden" onclick="adjust_slot(document, 17, 1)"><span class="label" id="option-slot-17-label"></span><span class="value" id="option-slot-17-value"></span></button>
-				<button id="option-slot-18" class="option hidden" onclick="adjust_slot(document, 18, 1)"><span class="label" id="option-slot-18-label"></span><span class="value" id="option-slot-18-value"></span></button>
-				<button id="option-slot-19" class="option hidden" onclick="adjust_slot(document, 19, 1)"><span class="label" id="option-slot-19-label"></span><span class="value" id="option-slot-19-value"></span></button>
-				<button id="option-slot-20" class="option hidden" onclick="adjust_slot(document, 20, 1)"><span class="label" id="option-slot-20-label"></span><span class="value" id="option-slot-20-value"></span></button>
-				<button id="option-slot-21" class="option hidden" onclick="adjust_slot(document, 21, 1)"><span class="label" id="option-slot-21-label"></span><span class="value" id="option-slot-21-value"></span></button>
-				<button id="option-slot-22" class="option hidden" onclick="adjust_slot(document, 22, 1)"><span class="label" id="option-slot-22-label"></span><span class="value" id="option-slot-22-value"></span></button>
-				<button id="option-slot-23" class="option hidden" onclick="adjust_slot(document, 23, 1)"><span class="label" id="option-slot-23-label"></span><span class="value" id="option-slot-23-value"></span></button>
-				<button id="option-slot-24" class="option hidden" onclick="adjust_slot(document, 24, 1)"><span class="label" id="option-slot-24-label"></span><span class="value" id="option-slot-24-value"></span></button>
-				<button id="option-slot-25" class="option hidden" onclick="adjust_slot(document, 25, 1)"><span class="label" id="option-slot-25-label"></span><span class="value" id="option-slot-25-value"></span></button>
-				<button id="option-slot-26" class="option hidden" onclick="adjust_slot(document, 26, 1)"><span class="label" id="option-slot-26-label"></span><span class="value" id="option-slot-26-value"></span></button>
-				<button id="option-slot-27" class="option hidden" onclick="adjust_slot(document, 27, 1)"><span class="label" id="option-slot-27-label"></span><span class="value" id="option-slot-27-value"></span></button>
-				<button id="option-slot-28" class="option hidden" onclick="adjust_slot(document, 28, 1)"><span class="label" id="option-slot-28-label"></span><span class="value" id="option-slot-28-value"></span></button>
-				<button id="option-slot-29" class="option hidden" onclick="adjust_slot(document, 29, 1)"><span class="label" id="option-slot-29-label"></span><span class="value" id="option-slot-29-value"></span></button>
-				<button id="option-slot-30" class="option hidden" onclick="adjust_slot(document, 30, 1)"><span class="label" id="option-slot-30-label"></span><span class="value" id="option-slot-30-value"></span></button>
-				<button id="option-slot-31" class="option hidden" onclick="adjust_slot(document, 31, 1)"><span class="label" id="option-slot-31-label"></span><span class="value" id="option-slot-31-value"></span></button>
-				<button id="option-slot-32" class="option hidden" onclick="adjust_slot(document, 32, 1)"><span class="label" id="option-slot-32-label"></span><span class="value" id="option-slot-32-value"></span></button>
-				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
+				<!-- The game's own actions lead the page (docs/architecture/guardar-y-cargar.md, 3.8): up from the first row
+				     reaches them, left and right step through them; the settings by tabs follow. -->
+				<div id="options-quick">
+					<button id="options-save" class="quick-action" onclick="ui.send('quick_save')" onfocus="action_focus(document, 'save')" text-key="pause_menu.quick_save"></button>
+					<button id="options-to-title" class="quick-action" onclick="ui.send('to_title')" onfocus="action_focus(document, 'to_title')" text-key="pause_menu.to_title"></button>
+					<button id="options-quit" class="quick-action" onclick="ui.send('quit')" onfocus="action_focus(document, 'quit')" text-key="pause_menu.quit"></button>
+				</div>
+				<div id="menu-tabs">
+					<span id="tabs-previous-key" class="key tab-key" onclick="step_tab(document, -1)"></span>
+					<div id="tab-game" class="option-tab" onclick="show_tab(document, 'game')"><span class="option-tab-left"></span><span class="option-tab-middle"></span><span class="option-tab-right"></span><span class="option-tab-label" text-key="pause_menu.tab.game"></span></div>
+					<div id="tab-graphics" class="option-tab" onclick="show_tab(document, 'graphics')"><span class="option-tab-left"></span><span class="option-tab-middle"></span><span class="option-tab-right"></span><span class="option-tab-label" text-key="pause_menu.tab.graphics"></span></div>
+					<div id="tab-sound" class="option-tab" onclick="show_tab(document, 'sound')"><span class="option-tab-left"></span><span class="option-tab-middle"></span><span class="option-tab-right"></span><span class="option-tab-label" text-key="pause_menu.tab.sound"></span></div>
+					<div id="tab-interface" class="option-tab" onclick="show_tab(document, 'interface')"><span class="option-tab-left"></span><span class="option-tab-middle"></span><span class="option-tab-right"></span><span class="option-tab-label" text-key="pause_menu.tab.interface"></span></div>
+					<span id="tabs-next-key" class="key tab-key" onclick="step_tab(document, 1)"></span>
+				</div>
+				<div id="option-list">
+					<button id="row-1" class="option hidden" onclick="row_confirm(document, 1)" onfocus="row_focus(document, 1)"><span class="label" id="row-1-label"></span><span class="control"><span class="arrow less" id="row-1-less" onclick="row_arrow(document, event, 1, -1)"></span><span class="bar" id="row-1-bar"><span class="fill" id="row-1-fill"></span></span><span class="value" id="row-1-value"></span><span class="arrow more" id="row-1-more" onclick="row_arrow(document, event, 1, 1)"></span></span></button>
+					<button id="row-2" class="option hidden" onclick="row_confirm(document, 2)" onfocus="row_focus(document, 2)"><span class="label" id="row-2-label"></span><span class="control"><span class="arrow less" id="row-2-less" onclick="row_arrow(document, event, 2, -1)"></span><span class="bar" id="row-2-bar"><span class="fill" id="row-2-fill"></span></span><span class="value" id="row-2-value"></span><span class="arrow more" id="row-2-more" onclick="row_arrow(document, event, 2, 1)"></span></span></button>
+					<button id="row-3" class="option hidden" onclick="row_confirm(document, 3)" onfocus="row_focus(document, 3)"><span class="label" id="row-3-label"></span><span class="control"><span class="arrow less" id="row-3-less" onclick="row_arrow(document, event, 3, -1)"></span><span class="bar" id="row-3-bar"><span class="fill" id="row-3-fill"></span></span><span class="value" id="row-3-value"></span><span class="arrow more" id="row-3-more" onclick="row_arrow(document, event, 3, 1)"></span></span></button>
+					<button id="row-4" class="option hidden" onclick="row_confirm(document, 4)" onfocus="row_focus(document, 4)"><span class="label" id="row-4-label"></span><span class="control"><span class="arrow less" id="row-4-less" onclick="row_arrow(document, event, 4, -1)"></span><span class="bar" id="row-4-bar"><span class="fill" id="row-4-fill"></span></span><span class="value" id="row-4-value"></span><span class="arrow more" id="row-4-more" onclick="row_arrow(document, event, 4, 1)"></span></span></button>
+					<button id="row-5" class="option hidden" onclick="row_confirm(document, 5)" onfocus="row_focus(document, 5)"><span class="label" id="row-5-label"></span><span class="control"><span class="arrow less" id="row-5-less" onclick="row_arrow(document, event, 5, -1)"></span><span class="bar" id="row-5-bar"><span class="fill" id="row-5-fill"></span></span><span class="value" id="row-5-value"></span><span class="arrow more" id="row-5-more" onclick="row_arrow(document, event, 5, 1)"></span></span></button>
+					<button id="row-6" class="option hidden" onclick="row_confirm(document, 6)" onfocus="row_focus(document, 6)"><span class="label" id="row-6-label"></span><span class="control"><span class="arrow less" id="row-6-less" onclick="row_arrow(document, event, 6, -1)"></span><span class="bar" id="row-6-bar"><span class="fill" id="row-6-fill"></span></span><span class="value" id="row-6-value"></span><span class="arrow more" id="row-6-more" onclick="row_arrow(document, event, 6, 1)"></span></span></button>
+					<button id="row-7" class="option hidden" onclick="row_confirm(document, 7)" onfocus="row_focus(document, 7)"><span class="label" id="row-7-label"></span><span class="control"><span class="arrow less" id="row-7-less" onclick="row_arrow(document, event, 7, -1)"></span><span class="bar" id="row-7-bar"><span class="fill" id="row-7-fill"></span></span><span class="value" id="row-7-value"></span><span class="arrow more" id="row-7-more" onclick="row_arrow(document, event, 7, 1)"></span></span></button>
+					<button id="row-8" class="option hidden" onclick="row_confirm(document, 8)" onfocus="row_focus(document, 8)"><span class="label" id="row-8-label"></span><span class="control"><span class="arrow less" id="row-8-less" onclick="row_arrow(document, event, 8, -1)"></span><span class="bar" id="row-8-bar"><span class="fill" id="row-8-fill"></span></span><span class="value" id="row-8-value"></span><span class="arrow more" id="row-8-more" onclick="row_arrow(document, event, 8, 1)"></span></span></button>
+					<button id="row-9" class="option hidden" onclick="row_confirm(document, 9)" onfocus="row_focus(document, 9)"><span class="label" id="row-9-label"></span><span class="control"><span class="arrow less" id="row-9-less" onclick="row_arrow(document, event, 9, -1)"></span><span class="bar" id="row-9-bar"><span class="fill" id="row-9-fill"></span></span><span class="value" id="row-9-value"></span><span class="arrow more" id="row-9-more" onclick="row_arrow(document, event, 9, 1)"></span></span></button>
+					<button id="row-10" class="option hidden" onclick="row_confirm(document, 10)" onfocus="row_focus(document, 10)"><span class="label" id="row-10-label"></span><span class="control"><span class="arrow less" id="row-10-less" onclick="row_arrow(document, event, 10, -1)"></span><span class="bar" id="row-10-bar"><span class="fill" id="row-10-fill"></span></span><span class="value" id="row-10-value"></span><span class="arrow more" id="row-10-more" onclick="row_arrow(document, event, 10, 1)"></span></span></button>
+					<button id="row-11" class="option hidden" onclick="row_confirm(document, 11)" onfocus="row_focus(document, 11)"><span class="label" id="row-11-label"></span><span class="control"><span class="arrow less" id="row-11-less" onclick="row_arrow(document, event, 11, -1)"></span><span class="bar" id="row-11-bar"><span class="fill" id="row-11-fill"></span></span><span class="value" id="row-11-value"></span><span class="arrow more" id="row-11-more" onclick="row_arrow(document, event, 11, 1)"></span></span></button>
+					<button id="row-12" class="option hidden" onclick="row_confirm(document, 12)" onfocus="row_focus(document, 12)"><span class="label" id="row-12-label"></span><span class="control"><span class="arrow less" id="row-12-less" onclick="row_arrow(document, event, 12, -1)"></span><span class="bar" id="row-12-bar"><span class="fill" id="row-12-fill"></span></span><span class="value" id="row-12-value"></span><span class="arrow more" id="row-12-more" onclick="row_arrow(document, event, 12, 1)"></span></span></button>
+					<button id="row-13" class="option hidden" onclick="row_confirm(document, 13)" onfocus="row_focus(document, 13)"><span class="label" id="row-13-label"></span><span class="control"><span class="arrow less" id="row-13-less" onclick="row_arrow(document, event, 13, -1)"></span><span class="bar" id="row-13-bar"><span class="fill" id="row-13-fill"></span></span><span class="value" id="row-13-value"></span><span class="arrow more" id="row-13-more" onclick="row_arrow(document, event, 13, 1)"></span></span></button>
+					<button id="row-14" class="option hidden" onclick="row_confirm(document, 14)" onfocus="row_focus(document, 14)"><span class="label" id="row-14-label"></span><span class="control"><span class="arrow less" id="row-14-less" onclick="row_arrow(document, event, 14, -1)"></span><span class="bar" id="row-14-bar"><span class="fill" id="row-14-fill"></span></span><span class="value" id="row-14-value"></span><span class="arrow more" id="row-14-more" onclick="row_arrow(document, event, 14, 1)"></span></span></button>
+				</div>
+				<div id="option-info"><span id="option-tag" class="hidden"></span><span id="option-help"></span></div>
+				<div id="option-foot">
+					<div id="option-actions">
+						<button id="options-reset" class="action" onclick="ask_reset(document)" onfocus="action_focus(document, 'reset')" text-key="pause_menu.options_reset"></button>
+						<button id="options-back" class="back" onclick="back(document)" onfocus="action_focus(document, 'back')" text-key="common.back"></button>
+					</div>
+					<div id="options-hints">
+						<span class="hint"><span class="key" id="hint-tab-previous"></span><span class="key" id="hint-tab-next"></span><span text-key="pause_menu.hint.tabs"></span></span>
+						<span class="hint" id="hint-change"><span class="key arrow-key" id="hint-change-less"><span class="glyph-art"></span></span><span class="key arrow-key" id="hint-change-more"><span class="glyph-art"></span></span><span class="key pad-key" id="hint-change-pad-less"></span><span class="key pad-key" id="hint-change-pad-more"></span><span text-key="pause_menu.hint.change"></span></span>
+						<span class="hint"><span class="key" id="hint-confirm"></span><span text-key="common.accept"></span></span>
+						<span class="hint"><span class="key" id="hint-cancel"></span><span text-key="common.back"></span></span>
+					</div>
+				</div>
+				<!-- «Reset to defaults» asks first; the question covers the list until it is answered. -->
+				<div id="reset-confirm" class="hidden">
+					<p id="reset-question"></p>
+					<p id="reset-note" text-key="pause_menu.reset_note"></p>
+					<div id="reset-buttons"><button id="reset-yes" onclick="confirm_reset(document)" text-key="pause_menu.reset_confirm"></button><button id="reset-no" onclick="close_reset(document)" text-key="common.cancel"></button></div>
+				</div>
 			</div>
 
 			<div id="prompts">

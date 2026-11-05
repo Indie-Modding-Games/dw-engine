@@ -274,6 +274,9 @@ public:
   };
   [[nodiscard]] std::optional<Point> elementCenter(std::string_view document,
                                                    std::string_view elementId) const;
+  // Whether an element of a document is shown: it and what holds it are not hidden. A hidden
+  // element keeps the box it had, so its rectangle does not say.
+  [[nodiscard]] bool elementShown(std::string_view document, std::string_view elementId) const;
 
   // A text the player sees that does not fit: it sticks out of the box drawn round it (the nearest
   // element with a background, a border or a decorator), is cut by an element that clips its

@@ -7,7 +7,8 @@ namespace {
 
 constexpr std::array Directions{NavCommand::Up, NavCommand::Down, NavCommand::Left,
                                 NavCommand::Right};
-constexpr std::array Presses{NavCommand::Confirm, NavCommand::Cancel, NavCommand::Menu};
+constexpr std::array Presses{NavCommand::Confirm, NavCommand::Cancel, NavCommand::Menu,
+                             NavCommand::TabPrevious, NavCommand::TabNext};
 
 } // namespace
 
@@ -27,6 +28,10 @@ std::string_view actionOf(NavCommand command) {
     return "cancel";
   case NavCommand::Menu:
     return "menu";
+  case NavCommand::TabPrevious:
+    return "tab_previous";
+  case NavCommand::TabNext:
+    return "tab_next";
   }
   return "";
 }

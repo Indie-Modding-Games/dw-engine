@@ -86,14 +86,67 @@
 	color: #b2b2b2;
 }
 
-/* The options list scrolls once its rows pass the height a 1280x720 window leaves it below the panel's top; the focused
-   row is scrolled into view. */
-#page-options { max-height: 456dp; overflow-y: auto; }
-/* The game's own actions (Save, back to title, quit) lead the options page, a line apart of the settings. */
-#page-options #options-quit { margin-bottom: 12dp; }
-#page-options scrollbarvertical { width: 6dp; margin-left: 6dp; }
-#page-options scrollbarvertical slidertrack { background-color: #2d3840; }
-#page-options scrollbarvertical sliderbar { min-height: 24dp; background-color: #90d9fa; }
+/* The options page (the engine's own; the original has none), drawn with the original's parts: the box higher up and
+   wider, the PLAYER page's folder tabs over its top edge (the same sprites, the shown one lit), rows of 12 pixels with
+   the value in the heading yellow, a switch's Sí/No in a 1-pixel frame (cyan while on), a list's value between the
+   battle's arrows turned sideways, a number as a cyan bar in a frame and its digits, and the description in the grey
+   of the original's descriptions, at 22dp (twice the font's cell, one of its two sharp sizes). The list scrolls only
+   past what a 1280x720 window leaves it (a larger UI scale, a mod's options), with a cyan bar. No motion: the original
+   has none. */
+#panel.on-options { top: 72dp; width: 980dp; margin-left: -490dp; }
+#panel.on-options #title { display: none; }
+#page-options { position: relative; }
+#menu-tabs { position: absolute; left: 3dp; top: -54dp; right: 3dp; height: 48dp; display: flex; flex-direction: row; align-items: flex-start; }
+.option-tab { position: relative; flex: 1 1 0; height: 45dp; margin: 0 3dp 0 0; color: #288ad0; font-size: 33dp; text-align: center; }
+.option-tab.selected { height: 48dp; color: #243640; }
+.option-tab-left, .option-tab-middle, .option-tab-right { position: absolute; display: block; top: 0; height: 100%; image-color: #646464; }
+.option-tab-left { left: 0; width: 21dp; decorator: image(digimon-tab-left-idle); }
+.option-tab-middle { left: 21dp; right: 21dp; decorator: image(digimon-tab-middle-idle); }
+.option-tab-right { right: 0; width: 21dp; decorator: image(digimon-tab-right-idle); }
+.selected .option-tab-left { decorator: image(digimon-tab-left-active); image-color: #ffffff; }
+.selected .option-tab-middle { decorator: image(digimon-tab-middle-active); image-color: #ffffff; }
+.selected .option-tab-right { decorator: image(digimon-tab-right-active); image-color: #ffffff; }
+.option-tab-label { position: relative; top: 6dp; white-space: nowrap; }
+/* The original font does not shrink, so the four folders take the whole width and the tab keys sit just outside it. */
+.tab-key { position: absolute; top: 9dp; }
+#tabs-previous-key { left: -48dp; }
+#tabs-next-key { right: -48dp; margin-right: 0; }
+/* The game's own actions (Save, back to title, quit) lead the page: one line at the box's top, at its right. */
+#options-quick { display: flex; flex-direction: row; justify-content: flex-end; margin-bottom: 3dp; }
+#options-quick button { display: inline-block; margin: 0 0 0 24dp; padding: 0 6dp; font-size: 22dp; }
+#option-list { max-height: 400dp; overflow-y: auto; }
+#option-list scrollbarvertical { width: 6dp; margin-left: 6dp; }
+#option-list scrollbarvertical slidertrack { background-color: #2d3840; }
+#option-list scrollbarvertical sliderbar { min-height: 24dp; background-color: #90d9fa; }
+#page-options button.option { display: flex; align-items: center; height: 30dp; line-height: 30dp; }
+#page-options .option .label { flex: 1 1 auto; overflow: hidden; }
+#page-options .option .control { display: flex; align-items: center; }
+#page-options .option .value { float: none; min-width: 240dp; text-align: center; }
+#page-options .option.kind-toggle .value { min-width: 78dp; height: 24dp; margin-right: 36dp; padding: 0 6dp; border: 3dp #4a5a64; line-height: 24dp; color: #b2b2b2; }
+#page-options .option.kind-toggle .value.on { border-color: #90d9fa; color: #fff371; }
+#page-options .option .arrow { width: 36dp; height: 30dp; image-color: #90d9fa; }
+#page-options .option .arrow.less { decorator: image(battle-up-arrow scale-none center center); transform: rotate(-90deg); }
+#page-options .option .arrow.more { decorator: image(battle-up-arrow scale-none center center); transform: rotate(90deg); }
+#page-options .option .arrow.at-end { image-color: #4a5a64; }
+#page-options .option .bar { width: 150dp; height: 18dp; margin: 0 9dp; border: 3dp #4a9fc5; background-color: #00000080; }
+#page-options .option .bar .fill { display: block; height: 18dp; background-color: #90d9fa; }
+#page-options .option.kind-range .value { width: 66dp; min-width: 66dp; text-align: right; padding-right: 6dp; }
+#option-info { display: flex; align-items: flex-start; height: 60dp; margin-top: 6dp; padding: 6dp 9dp 0 9dp; border-top: 3dp #90d9fa; font-size: 22dp; line-height: 27dp; color: #b2b2b2; }
+#option-tag { flex: 0 0 auto; margin-right: 12dp; padding: 0 6dp; border: 3dp #4a5a64; line-height: 21dp; color: #b2b2b2; white-space: nowrap; }
+#option-help { flex: 1 1 0; }
+#option-tag.improvement { border-color: #90d9fa; color: #fff371; }
+#option-foot { margin-top: 6dp; padding-top: 6dp; border-top: 3dp #90d9fa; }
+#option-actions button { display: inline-block; margin: 0 12dp 0 0; }
+#options-hints { margin-top: 6dp; font-size: 22dp; color: #b2b2b2; text-align: right; }
+#options-hints .hint { margin-left: 12dp; white-space: nowrap; }
+#options-hints .key { margin-right: 3dp; }
+/* The reset's question: one of the original's boxes over the list. */
+#reset-confirm { position: absolute; left: 90dp; right: 90dp; top: 90dp; padding: 18dp; border: 3dp transparent; background-color: #2d3840f0; text-align: center;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box; }
+#reset-question { color: #fff371; }
+#reset-note { margin: 6dp 0 12dp 0; font-size: 22dp; color: #b2b2b2; }
+#reset-buttons button { display: inline-block; margin: 0 12dp; }
 
 #prompts {
 	margin-top: 12dp;

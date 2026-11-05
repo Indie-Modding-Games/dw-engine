@@ -71,14 +71,15 @@ TEST_CASE("the options page's volume rows change the audio at once and save the 
   changer.publish(*menu.ui);
   menu.ui->setSetting("pause_menu.start_page", std::string{"options"});
   menu.ui->show("pause_menu", true);
+  REQUIRE(menu.ui->callScript("pause_menu", "show_tab", std::vector<std::string>{"", "sound"}));
   menu.ui->update();
   CHECK(menu.ui->elementText("pause_menu", "music-volume-value") == "10");
   std::ignore = menu.ui->takeCommands();
-  // Music one step down, effects up from the top: back to silence.
-  REQUIRE(
-      menu.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "26", "-1"}));
-  REQUIRE(
-      menu.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "27", "1"}));
+  // Music one step down, effects confirmed from the top: back to silence.
+  REQUIRE(menu.ui->callScript("pause_menu", "adjust",
+                              std::vector<std::string>{"", "music-volume", "-1"}));
+  REQUIRE(menu.ui->callScript("pause_menu", "adjust",
+                              std::vector<std::string>{"", "effects-volume", "1"}));
   for (const ui::UiCommand& command : menu.ui->takeCommands()) {
     CHECK(changer.handle(command, *menu.ui));
   }

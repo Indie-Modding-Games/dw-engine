@@ -37,51 +37,6 @@ std::string readPackFile(std::string_view path) {
   return {std::istreambuf_iterator<char>{stream}, std::istreambuf_iterator<char>{}};
 }
 
-// The game pack's pause menu at 1280x720, in Spanish.
-struct MenuUi {
-  dwe::assets::MemoryFileSystem memory;
-  std::unique_ptr<dwe::assets::VirtualFileSystem> files;
-  std::unique_ptr<dwe::localization::Catalog> texts;
-  std::unique_ptr<dwe::ui::Ui> ui;
-
-  MenuUi() {
-    const std::filesystem::path pack{DWE_GAME_PACK};
-    for (const auto& entry : std::filesystem::recursive_directory_iterator{pack}) {
-      if (entry.is_regular_file()) {
-        std::ifstream stream{entry.path(), std::ios::binary};
-        memory.addFile(
-            std::filesystem::path{"packs/game"} / entry.path().lexically_relative(pack),
-            std::string{std::istreambuf_iterator<char>{stream}, std::istreambuf_iterator<char>{}});
-      }
-    }
-    memory.addFile("packs/base/pack.yaml", "id: base\nversion: 0.1.0\nlayer: base\npriority: 0\n");
-    const auto location = [this](std::string_view root) {
-      return dwe::assets::PackLocation{.fileSystem = &memory,
-                                       .root = std::string{root},
-                                       .origin = dwe::assets::PackOrigin::Engine};
-    };
-    const std::array locations{location("packs/base"), location("packs/game")};
-    auto mounted = dwe::assets::VirtualFileSystem::mount(locations);
-    REQUIRE_MESSAGE(mounted.has_value(), mounted.error().message);
-    files = std::make_unique<dwe::assets::VirtualFileSystem>(std::move(*mounted));
-    auto catalog = dwe::localization::Catalog::load(*files, "es");
-    REQUIRE_MESSAGE(catalog.has_value(), catalog.error().message);
-    texts = std::make_unique<dwe::localization::Catalog>(std::move(*catalog));
-    auto created = dwe::ui::Ui::create(dwe::ui::UiDesc{.files = files.get(),
-                                                       .texts = texts.get(),
-                                                       .width = 1280,
-                                                       .height = 720,
-                                                       .clock = {},
-                                                       .scripts = {}});
-    REQUIRE_MESSAGE(created.has_value(), created.error().message);
-    ui = std::move(*created);
-    auto menu = dwe::assets::AssetId::parse("ui/pause_menu/document");
-    REQUIRE_MESSAGE(menu.has_value(), menu.error().message);
-    auto loaded = ui->loadDocument("pause_menu", *menu);
-    REQUIRE_MESSAGE(loaded.has_value(), loaded.error().message);
-  }
-};
-
 } // namespace
 
 TEST_CASE("the graphics options start on, with the sun's shadows, and read what was saved") {
@@ -128,13 +83,14 @@ TEST_CASE("the pause menu's graphics rows change the options at once and save th
   changer.publish(*menu.ui);
   menu.ui->setSetting("pause_menu.start_page", std::string{"options"});
   menu.ui->show("pause_menu", true);
+  REQUIRE(menu.ui->callScript("pause_menu", "show_tab", std::vector<std::string>{"", "graphics"}));
   menu.ui->update();
   CHECK(menu.ui->elementText("pause_menu", "shadows-value") == "Del sol");
   std::ignore = menu.ui->takeCommands();
-  // The three rows, as game.cpp routes their commands.
-  for (const std::string_view slot : {"19", "20", "21"}) {
-    REQUIRE(menu.ui->callScript("pause_menu", "adjust_slot",
-                                std::vector<std::string>{"", std::string{slot}, "1"}));
+  // The three rows of the Graphics tab, as game.cpp routes their commands.
+  for (const std::string_view row : {"shadows", "enhanced-lighting", "vivid-colors"}) {
+    REQUIRE(menu.ui->callScript("pause_menu", "adjust",
+                                std::vector<std::string>{"", std::string{row}, "1"}));
   }
   for (const dwe::ui::UiCommand& command : menu.ui->takeCommands()) {
     CHECK(changer.handle(command, *menu.ui));
@@ -169,10 +125,10 @@ TEST_CASE("the pause menu's autosave row turns the autosave off and on and saves
   // On by default.
   CHECK(menu.ui->elementText("pause_menu", "autosave-value") == "Sí");
   std::ignore = menu.ui->takeCommands();
-  // The 25th of the game's options; each press goes to the game as play_session.cpp routes it.
+  // A row of the Game tab; each press goes to the game as play_session.cpp routes it.
   const auto press = [&] {
     REQUIRE(
-        menu.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "25", "1"}));
+        menu.ui->callScript("pause_menu", "adjust", std::vector<std::string>{"", "autosave", "1"}));
     for (const dwe::ui::UiCommand& command : menu.ui->takeCommands()) {
       REQUIRE(command.name == dwe::app::AutosaveSetting);
       CHECK(dwe::app::changeAutosave(command.value, *menu.ui, settings, file).has_value());

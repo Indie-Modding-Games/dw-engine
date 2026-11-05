@@ -15,10 +15,9 @@ steps:
   - wait: {menu_open: true, seconds: 0.6, timeout: 5}
   - expect_setting: {has_class.pause_menu#page-options.hidden: "false"}
   - screenshot: options-actions
-  # Up Quit, up Back to title, up Save; confirming writes the quick save and closes the menu.
+  # Up from the first row reaches Save, the first of the game's actions over the tabs; confirming writes the quick
+  # save and closes the menu.
   - remember: saves.files
-  - tap: {key: up}
-  - tap: {key: up}
   - tap: {key: up}
   - tap: {key: return}
   - wait: {menu_open: false, seconds: 0.6, timeout: 5}
@@ -28,6 +27,8 @@ steps:
   - tap: {key: escape}
   - wait: {menu_open: true, seconds: 0.5, timeout: 5}
   - tap: {key: up}
+  - tap: {key: right}
+  - tap: {key: right}
   - tap: {key: return}
   - wait: {shown: dialog, seconds: 0.5, timeout: 5}
   - screenshot: quit-confirm
@@ -37,7 +38,7 @@ steps:
   - tap: {key: escape}
   - wait: {menu_open: true, seconds: 0.5, timeout: 5}
   - tap: {key: up}
-  - tap: {key: up}
+  - tap: {key: right}
   - tap: {key: return}
   - wait: {shown: dialog, seconds: 0.5, timeout: 5}
   - screenshot: back-to-title-confirm

@@ -685,6 +685,8 @@ struct Autotest::Progress {
   bool battleWon = false;
   // menu
   double lastTry = -1.0;
+  // menu_select on a page with tabs: the tabs stepped to look for the entry.
+  int tabSteps = 0;
   // resize and fullscreen
   rhi::Extent lastExtent{};
   int stableFrames = 0;
@@ -1544,6 +1546,16 @@ bool Autotest::menuSelectStep(const AutotestHost& host, const AutotestStep& step
   const AutotestDevice device = deviceOf(step);
   if (device == AutotestDevice::Mouse) {
     const auto center = host.ui->elementCenter(menu, step.text);
+    // A row of another tab of a page with tabs (the options) is not there until its tab shows:
+    // the key glyph after the tabs shows the next one.
+    constexpr int MouseTabTries = 4;
+    const auto nextTab = host.ui->elementCenter(menu, "tabs-next-key");
+    if (!center && nextTab && host.ui->elementShown(menu, "tabs-next-key") &&
+        progress.attempts < MouseTabTries) {
+      clickAt({nextTab->x, nextTab->y});
+      ++progress.attempts;
+      return false;
+    }
     if (!center) {
       failStep("the menu has no such entry");
       return false;
@@ -1564,12 +1576,27 @@ bool Autotest::menuSelectStep(const AutotestHost& host, const AutotestStep& step
     return false;
   }
   // Down through the page, then up if it does not wrap round, then right and left through a row
-  // (the battle's commands). Enough downs for the longest page, the pause menu's options.
+  // (the battle's commands). Enough downs for the longest page, a tab of the pause menu's options.
+  // A page with tabs (an element menu-tabs on screen: the options) holds only its shown tab's rows:
+  // while the entry is not there it steps to the next tab, then walks the tab up and down; it never
+  // presses right or left, which change a row.
   constexpr int DownTries = 14;
   constexpr int UpTries = 24;
   constexpr int RightTries = 36;
   constexpr int MaxTries = 48;
-  if (progress.attempts >= MaxTries) {
+  constexpr int MaxTabSteps = 4;
+  const bool tabbed = host.ui->elementShown(menu, "menu-tabs");
+  if (tabbed && !host.ui->elementCenter(menu, step.text)) {
+    if (progress.tabSteps >= MaxTabSteps) {
+      failStep("no tab of the page has it");
+      return false;
+    }
+    tapAction(device, "tab_next");
+    ++progress.tabSteps;
+    progress.attempts = 0;
+    return false;
+  }
+  if (progress.attempts >= (tabbed ? UpTries : MaxTries)) {
     failStep(std::format("cannot focus it; the focus is on '{}'", host.ui->focusedElementId(menu)));
     return false;
   }
@@ -1956,7 +1983,7 @@ void Autotest::tapAction(AutotestDevice device, std::string_view action) {
     platform::KeyCode key;
     GamepadButton button;
   };
-  constexpr std::array<Control, 8> Controls{{
+  constexpr std::array<Control, 10> Controls{{
       {.action = "menu", .key = keys::Tab, .button = GamepadButton::North},
       {.action = "pause", .key = keys::P, .button = GamepadButton::Start},
       {.action = "confirm", .key = keys::Return, .button = GamepadButton::South},
@@ -1965,6 +1992,8 @@ void Autotest::tapAction(AutotestDevice device, std::string_view action) {
       {.action = "down", .key = keys::Down, .button = GamepadButton::DpadDown},
       {.action = "left", .key = keys::Left, .button = GamepadButton::DpadLeft},
       {.action = "right", .key = keys::Right, .button = GamepadButton::DpadRight},
+      {.action = "tab_previous", .key = keys::Q, .button = GamepadButton::LeftShoulder},
+      {.action = "tab_next", .key = keys::E, .button = GamepadButton::RightShoulder},
   }};
   const auto control = std::ranges::find(Controls, action, &Control::action);
   if (control == Controls.end()) {

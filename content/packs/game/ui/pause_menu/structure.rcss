@@ -5,10 +5,23 @@
 #quit { nav-down: #continue; }
 #minimap-mode { nav-up: #minimap-back; }
 #minimap-back { nav-down: #minimap-mode; }
-/* The options page's ring: the quick save leads it (docs/architecture/guardar-y-cargar.md, 3.8);
-   up from it wraps to Back and down from Back comes back to it; the rows between step by one. */
-#options-save { nav-up: #options-back; }
-#options-back { nav-down: #options-save; }
+/* The options page (logic.lua: show_tab): its list wraps round as the others, through the nav-up of its first row and
+   the nav-down of Back, which the tab shown sets. The tabs and the key glyphs beside them answer clicks but are not in the
+   keyboard's order, so up and down only walk the rows. Only the parts a row's kind uses show: the arrows of a list or a number,
+   the bar of a number. The reset's question takes the input until it is answered (logic.lua: options_action): the list
+   under it takes no pointer. */
+.option-tab, .tab-key { tab-index: none; }
+#page-options .option .arrow, #page-options .option .bar { display: none; }
+#page-options .option.kind-list .arrow, #page-options .option.kind-range .arrow { display: inline-block; }
+#page-options .option.kind-range .bar { display: inline-block; }
+#page-options .option.hidden, #option-tag.hidden, #reset-confirm.hidden { display: none; }
+#panel.on-options #prompts { display: none; }
+#panel.reset-open #option-list, #panel.reset-open #menu-tabs, #panel.reset-open #option-actions { pointer-events: none; }
+/* The change hint shows the keyboard's arrows, or on a pad the glyphs of its directions. */
+.arrow-key .glyph-art { decorator: image(/glyph/modern/@left); }
+#hint-change-more .glyph-art { decorator: image(/glyph/modern/@right); }
+#hint-change .pad-key, #hint-change.pad .arrow-key { display: none; }
+#hint-change.pad .pad-key { display: inline-block; }
 /* Sleep is greyed while the partner is not sleepy, as in the original. */
 #sleep.unavailable { opacity: 0.45; focus: none; tab-index: none; }
 #fish.unavailable { opacity: 0.45; focus: none; tab-index: none; }

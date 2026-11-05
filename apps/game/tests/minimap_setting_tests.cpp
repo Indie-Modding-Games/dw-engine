@@ -275,7 +275,7 @@ TEST_CASE("the options page's minimap row hides the HUD's minimap at once and sa
   hud.ui->update();
   REQUIRE_FALSE(hud.ui->elementHasClass(dwe::app::HudDocument, dwe::app::MinimapPanel, "hidden"));
 
-  // the pad's Select options page; its minimap row is the 15th of the game's options.
+  // the pad's Select options page; its minimap row is on the Interface tab.
   hud.ui->setSetting("pause_menu.start_page", std::string{"options"});
   hud.ui->show("pause_menu", true);
   hud.ui->setSetting("pause_menu.start_page", std::string{});
@@ -283,8 +283,8 @@ TEST_CASE("the options page's minimap row hides the HUD's minimap at once and sa
   // Each press goes to the game as it does in a run (game.cpp: the minimap command): the changer
   // saves the mode and the game publishes it back.
   const auto press = [&] {
-    REQUIRE(
-        hud.ui->callScript("pause_menu", "adjust_slot", std::vector<std::string>{"", "15", "1"}));
+    REQUIRE(hud.ui->callScript("pause_menu", "adjust",
+                               std::vector<std::string>{"", "show-minimap", "1"}));
     for (const dwe::ui::UiCommand& command : hud.ui->takeCommands()) {
       if (command.name == dwe::app::MinimapSetting) {
         hud.ui->setSetting(dwe::app::MinimapSetting, std::string{changer.change(command.value)});

@@ -112,6 +112,14 @@ ActionMap defaultActionMap() {
   map.bind("extra", KeyBinding{keys::Q});
   map.bind("extra", GamepadButtonBinding{GamepadButton::West});
 
+  // The tabs of a menu page that has them (the options): Q and E, the keys of `extra` and `alt`,
+  // and the pad's shoulders, which a menu leaves free (`world_map` and `walk` only act on the
+  // field). ui::Navigation turns them into the steps tab_previous and tab_next.
+  map.bind("tab_previous", KeyBinding{keys::Q});
+  map.bind("tab_previous", GamepadButtonBinding{GamepadButton::LeftShoulder});
+  map.bind("tab_next", KeyBinding{keys::E});
+  map.bind("tab_next", GamepadButtonBinding{GamepadButton::RightShoulder});
+
   map.bind("debug_console", KeyBinding{keys::Grave});
   map.bind("debug_console", KeyBinding{keys::F1});
 

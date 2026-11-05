@@ -1083,9 +1083,8 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
   La consola y las rutas lo cambian con `hd_scenery("on")` / `hd_scenery("off")`. Cada frame, `Game` pone el pase del
   fondo de la escena (`FieldScene::hdSceneryScene`, nada con el escenario oculto) en `FrameDesc::textureScenes`.
 - **Colisiones**: la opción solo cambia cómo se muestrea el mapa en la GPU; el campo (`game/field`) no la ve.
-- **Opciones**: es la fila 22 de `ui/common/game_options.lua`, junto a las otras opciones gráficas; el documento de
-  opciones pasó de 24 a 28 huecos (`option-slot-<n>`, `max_option_rows`) para que quepa, y de 28 a 32 con las de
-  [Volumen](#volumen).
+- **Opciones**: es una entrada de `ui/common/game_options.lua` en la pestaña «Gráficos» (`tab = "graphics"`) de las
+  [opciones en partida](#opciones-en-partida).
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
@@ -1113,29 +1112,89 @@ pausa (título, películas, entrevista, caja de nombres, gimnasio) o con otro me
 recuadro de pausa se lee la tecla del dispositivo en uso («Esc Opciones» en teclado, «Back Opciones» en mando)
 (`pause_box/logic.lua`).
 
+### Pestañas
+
+La página se divide en cuatro pestañas; cada fila sale en una sola:
+
+| Pestaña | Filas |
+|---|---|
+| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha |
+| Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
+| Sonido | Volumen de música, Volumen de efectos, Música continua |
+| Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
+
+| Qué | Teclado y ratón | Mando |
+|---|---|---|
+| Pestaña anterior / siguiente (dan la vuelta) | Q / E, o clic en la pestaña o en la tecla de al lado | L1 / R1 (LB / RB) |
+| Moverse por las filas | ↑ / ↓; la rueda desplaza la lista si no cabe | Cruceta o stick |
+| Cambiar el valor | ← / → (los números se paran en 0 y en 10), o clic en las flechas ‹ › de la fila | Izquierda / derecha |
+| Sí/No, o siguiente valor (da la vuelta) | Espacio, Enter o clic en la fila | Sur |
+| Guardar, Volver a la portada, Salir del juego | ↑ desde la primera fila; ← / → entre las tres; Espacio o Enter; o clic | ↑, izquierda / derecha, Sur |
+| Volver | Ctrl, Retroceso o clic derecho (Esc cierra el menú si se abrió con Esc) | Este |
+
+Las acciones `tab_previous` y `tab_next` (`defaultActionMap`: Q y L1, E y R1) llegan al documento como
+`NavCommand::TabPrevious`/`TabNext` (`ui/navigation.hpp`); una página sin pestañas no las usa y el menú sigue abierto.
+Con el menú abierto el campo está parado, así que L1 no abre el mapa ni R1 hace andar. Al pie se leen las teclas del
+dispositivo en uso (Q E Pestaña, ← → Cambiar, Espacio Aceptar, Ctrl Volver; en mando, sus botones).
+
+Las tres acciones del juego van en una barra sobre las pestañas (en el moderno, a la derecha del título; en el
+original, en la primera línea del recuadro), con su descripción en el recuadro de abajo. ↓ recorre las filas, luego
+«Restablecer valores» y «Volver» al pie, luego «Guardar» y de nuevo la primera fila; ↑ desde la primera fila llega a
+«Guardar» y desde ahí da la vuelta a «Volver».
+
+Cómo se ve cada valor: un sí/no es una píldora («Sí» encendida, «No» apagada); una lista va entre flechas
+(‹ Teclado/mando ›) y los dos volúmenes son una barra de 0 a 10 con su número. Debajo de la lista, un recuadro describe
+la fila con foco en una o dos líneas (`pause_menu.help.<fila>`, en es y en) con una etiqueta: «Como el original»
+mientras el valor es el del original y «Mejora» si no (los volúmenes y las opciones que el original no tiene son
+siempre «Mejora»); pantalla, sincronía, escala e idioma no llevan etiqueta.
+
+«Restablecer valores», al pie, devuelve las filas de la pestaña que se ve a su valor por defecto, después de preguntar
+(«¿Restablecer los valores de «Juego»?», con Restablecer y Cancelar; cancelar —Ctrl o Retroceso— dice que no). Solo envía las filas que tienen
+valor por defecto y no lo tienen ya; pantalla, aspecto, idioma y letra no cambian.
+
+Los dos aspectos tienen las pestañas: el original las dibuja con las carpetas de su menú del jugador
+(los mismos sprites de pestaña), sus flechas azules, sus marcos y su letra; el moderno, con una barra de pestañas subrayada en ámbar,
+píldoras, barras finas y el recuadro de descripción, y solo anima color y opacidad (0,12 s), sin movimiento. A
+1280 × 720 todas las filas de cada pestaña caben sin desplazar; si no cupieran (otra escala, las filas de un mod), la
+lista desplaza con una barra visible.
+
+### Datos
+
 Las opciones propias del motor salen de una lista, `ui/common/game_options.lua` (`game_options`): id de la fila,
 ajuste de la UI que publica el juego y que la fila envía como orden, texto, valor por defecto y, para las que no son
 sí/no, sus valores (`values`) y el prefijo de sus textos (`texts`), o, para las numéricas, su rango (`range`, el
-número entero que se ve tal cual). La página llena con ellas, en orden, las filas libres `option-slot-<n>` del
-documento (32) y les da el id de la opción, así que una opción nueva solo necesita su entrada en esa lista y que el
-juego atienda su ajuste; ningún documento necesita una fila propia.
+número entero que se ve tal cual). Cada entrada dice además su pestaña (`tab`: `game`, `graphics`, `sound` o
+`interface`; sin ella, Juego), el texto de su descripción (`help`) y el valor que se ve en el original (`original`;
+sin él, la opción es siempre una mejora). `default` es también lo que envía «Restablecer valores». Las filas de
+pantalla, aspecto, escala, idioma y letra están en `pause_menu/logic.lua` (`display_entries`), con los mismos campos.
+
+El documento tiene 14 filas (`row-1`…`row-14`) que la página reparte al mostrar cada pestaña: les da el id de la
+opción (`<id>`, `<id>-label`, `<id>-value`, `<id>-less`, `<id>-more`, `<id>-bar`) y oculta las que sobran. Una opción
+nueva solo necesita su entrada en esa lista y que el juego atienda su ajuste; ningún documento necesita una fila
+propia. Las rutas y las pruebas eligen pestaña con `show_tab(document, "<pestaña>")` y cambian una opción por su id con
+`adjust(document, "<id>", paso)`, también sin mostrarla. `menu_select` de los autotests recorre las pestañas solo
+(abajo, arriba y `tab_next`; con ratón, clic en la tecla E) hasta dar con la fila.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Opciones por pestañas | No existe: el original no tiene opciones | Pestañas Juego, Gráficos, Sonido e Interfaz; Q/E y L1/R1; ←/→ en los dos sentidos; descripción con etiqueta; «Restablecer valores» con pregunta | `in_game_options_tests.cpp` (pestañas, valores en los dos sentidos, clics, descripción, restablecer en los dos aspectos, que todo quepa en es y en); `navigation_tests.cpp` («Q and E, and the pad's shoulders…»); `glyph_art_tests.cpp` (flechas modernas); ruta `route-options-tabs.yaml` en los dos aspectos | Mejora |
 
 ## Volumen
 
 Mejora opcional (no cambia ninguna regla): el original **no tiene ninguna opción de sonido**. Su menú del título solo
 tiene «NEW GAME», «CONTINUE GAME», «DELETE GAME» y «BATTLE MODE» (`main_menu.c`: `TITLE_MENU_ITEMS`), y el volumen
 general se fija una vez al máximo al cargar el sonido (`sound.c`: `initializeMusic`, `SsSetMVol(127, 127)`); el juego no llama nunca a
-las funciones de estéreo/mono de la biblioteca de sonido. dwe añade dos filas al final de las opciones en partida
-(26 y 27 de `ui/common/game_options.lua`), «Volumen de música» y «Volumen de efectos» («Music volume», «Effects
+las funciones de estéreo/mono de la biblioteca de sonido. dwe añade dos filas a la pestaña «Sonido» de las opciones
+en partida (`ui/common/game_options.lua`), «Volumen de música» y «Volumen de efectos» («Music volume», «Effects
 volume»), de 0 (silencio) a 10 (el nivel del original, por defecto).
 
 | Dónde se cambia | Teclado | Mando |
 |---|---|---|
-| En partida (aspecto moderno) | Tab, «Opciones», filas «Volumen de música» / «Volumen de efectos»; ←/→ bajan o suben un paso | Botón norte, «Opciones», las mismas filas; izquierda/derecha |
-| En partida (aspecto original) | Tab, «Jugador», Tab, «Opciones», las mismas filas | Botón norte, «Jugador», botón norte, «Opciones», las mismas filas |
+| En partida (aspecto moderno) | Tab, «Opciones», E hasta «Sonido», filas «Volumen de música» / «Volumen de efectos»; ←/→ bajan o suben un paso | Botón norte, «Opciones», R1 hasta «Sonido», las mismas filas; izquierda/derecha |
+| En partida (aspecto original) | Tab, «Jugador», Tab, «Opciones», E hasta «Sonido», las mismas filas | Botón norte, «Jugador», botón norte, «Opciones», R1 hasta «Sonido», las mismas filas |
 
-← se para en 0 (nunca salta al máximo); → o confirmar (también el clic) suben un paso y desde 10 vuelven a 0, para que
-el ratón llegue a todos los pasos. La fila envía la orden `music_volume` / `effects_volume` (un número);
+← se para en 0 y → en 10 (las flechas ‹ › de la fila hacen lo mismo con el ratón); confirmar (Espacio, Enter o el clic
+en la fila) sube un paso y desde 10 vuelve a 0. La fila envía la orden `music_volume` / `effects_volume` (un número);
 `VolumeChanger` (`volume_setting.hpp`) la redondea y la limita a 0–10, la aplica al momento a los controles `Music` y
 `Effects` de `audio::Audio` (`setVolume`; el mezclador hace una rampa corta, sin saltos), publica el paso y lo guarda en
 los ajustes del usuario (`music_volume: 7`). Al arrancar, `Game` aplica los pasos guardados antes de que suene nada.

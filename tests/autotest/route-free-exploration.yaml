@@ -73,14 +73,14 @@ steps:
   - menu_select: next
   - wait: {seconds: 0.3}
   - screenshot: chooser-phases-next
-  # Cancel (Escape) stays.
-  - tap: {key: escape}
+  # Cancel (Ctrl) stays.
+  - tap: {key: left_ctrl}
   - wait: {hidden: destination_choice, seconds: 0.5}
   - wait: {map: mayo00}
   # Off the cell to the other one and back: it asks again, and confirm takes the story's place, where it starts.
   - walk_to: {trigger: 52, encounters: true}
   - wait: {shown: destination_choice, seconds: 0.5}
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: destination_choice, seconds: 0.5}
   - walk_to: {trigger: 51, encounters: true}
   - wait: {shown: destination_choice, seconds: 0.5}

@@ -213,6 +213,11 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   desde una partida nueva con el teclado: el minimapa siempre visible y grande, y el menú de pausa y la página del
   compañero a 1280x720, 1920x1080 y 1024x768 sin pisar nada (`expect_clear`), con el minimapa de vuelta al cerrarlos.
   Hecha para el aspecto moderno (`--ui-skin modern`); también pasa con el original. Se corre en los dos idiomas.
+- `route-options-tabs.yaml`: las [opciones en partida](../modulos/apps/game.md#opciones-en-partida) por pestañas
+  desde una partida nueva con el teclado, a 1280x720: cada pestaña con E y con un clic, una fila con foco y su
+  descripción, una lista y un volumen cambiados en los dos sentidos y la pregunta de «Restablecer valores», con todos
+  los textos dentro (`expect_text_fits`). Se corre con los dos aspectos (`--ui-skin original`, `modern`) y en los dos
+  idiomas.
 - `route-minimap-enemies.yaml`: los [enemigos en el minimapa](../modulos/apps/game.md#enemigos-en-el-minimapa)
   en el segundo mapa de la niebla (`--start mist03 --story-stage all`): los puntos al llegar, con el jugador entre
   los tres salvajes y moviéndose, y luego la opción apagada en el menú de pausa (`expect_setting`) y el minimapa sin

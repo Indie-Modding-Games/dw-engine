@@ -9,6 +9,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dwe::ui {
@@ -351,6 +352,27 @@ core::Result<assets::Image> modernSymbol(std::string_view symbol) {
       const Point right{Reach, Reach * 0.75};
       return segmentDistance(p, top, left) <= Stroke || segmentDistance(p, left, right) <= Stroke ||
              segmentDistance(p, right, top) <= Stroke;
+    });
+  }
+  // An arrow, as on the arrow keys: a shaft and a head (a value's arrows, the change hint).
+  constexpr std::array Arrows{std::pair<std::string_view, Point>{"@left", {-1.0, 0.0}},
+                              std::pair<std::string_view, Point>{"@right", {1.0, 0.0}},
+                              std::pair<std::string_view, Point>{"@up", {0.0, -1.0}},
+                              std::pair<std::string_view, Point>{"@down", {0.0, 1.0}}};
+  const auto arrow = std::ranges::find(Arrows, symbol, &std::pair<std::string_view, Point>::first);
+  if (arrow != Arrows.end()) {
+    const Point to = arrow->second;
+    return modern([to](Point p) {
+      const double r = Reach - 2.0;
+      const double head = r * 0.7;
+      const Point tip{.x = to.x * r, .y = to.y * r};
+      const Point tail{.x = -to.x * r, .y = -to.y * r};
+      // The head's two strokes go back from the tip, one to each side of the shaft.
+      const Point back{.x = tip.x - (to.x * head), .y = tip.y - (to.y * head)};
+      const Point side{.x = -to.y * head, .y = to.x * head};
+      return segmentDistance(p, tail, tip) <= Stroke ||
+             segmentDistance(p, tip, {.x = back.x + side.x, .y = back.y + side.y}) <= Stroke ||
+             segmentDistance(p, tip, {.x = back.x - side.x, .y = back.y - side.y}) <= Stroke;
     });
   }
   struct Position {

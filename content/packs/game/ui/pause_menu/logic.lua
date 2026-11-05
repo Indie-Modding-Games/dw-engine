@@ -7,13 +7,16 @@ local pages = { "main", "minimap", "options", "player" }
 local first_entry = {
   main = "continue",
   minimap = "minimap-mode",
-  options = "display-mode",
+  options = "row-1",
   player = "player-city",
 }
 -- The entry of the main page that opened each page, focused again when going back.
 local opener = { minimap = "open-minimap", options = "open-options", player = "open-player" }
 
 local current = "main"
+-- The document shown last, for the buttons' event attributes that only name the page and for the
+-- functions tests and tools call by name (ui callScript), which pass texts only.
+local shown_document = nil
 -- Whether the quick options (Esc / F10 on keys, Select on a pad) opened the menu on its options
 -- page, which then goes back straight to the game.
 local options_direct = false
@@ -102,32 +105,131 @@ local options = {
     local index = index_of(minimap_sizes, ui.setting("minimap_size")) or 2
     ui.send("minimap_size", minimap_sizes[cycle(minimap_sizes, index, step)])
   end,
-  ["display-mode"] = function(_step)
-    ui.send("fullscreen", not ui.setting("fullscreen"))
-  end,
-  ["ui-scale"] = function(step)
-    local index = nearest_scale(ui.setting("ui_scale") or 1.0)
-    ui.send("ui_scale", ui_scales[math.max(1, math.min(#ui_scales, index + step))])
-  end,
-  ["vsync"] = function(_step)
-    ui.send("vsync", not ui.setting("vsync"))
-  end,
-  ["ui-skin"] = function(step)
-    skin_choice.change(step)
-  end,
+}
+
+-- The display rows of the options page: the window, the UI and the language, which the title's
+-- options change too. Each has the shape of a game_options entry (ui/common/game_options.lua) and
+-- its own value, text and change, as these are not plain settings; tag false: no tag, as the
+-- original has nothing like them and they change no game.
+local display_entries = {
+  {
+    id = "display-mode",
+    tab = "graphics",
+    label = "pause_menu.display_mode",
+    help = "pause_menu.help.display_mode",
+    kind = "list",
+    tag = false,
+    value = function()
+      return ui.setting("fullscreen") == true
+    end,
+    text = function()
+      return t(
+        ui.setting("fullscreen") and "pause_menu.display_mode.fullscreen"
+          or "pause_menu.display_mode.window"
+      )
+    end,
+    change = function(_step)
+      ui.send("fullscreen", not ui.setting("fullscreen"))
+    end,
+  },
+  {
+    id = "vsync",
+    tab = "graphics",
+    setting = "vsync",
+    label = "pause_menu.vsync",
+    help = "pause_menu.help.vsync",
+    kind = "toggle",
+    tag = false,
+    default = true,
+    value = function()
+      return ui.setting("vsync") == true
+    end,
+    text = function()
+      return on_off(ui.setting("vsync"))
+    end,
+    change = function(_step)
+      ui.send("vsync", not ui.setting("vsync"))
+    end,
+  },
+  {
+    id = "ui-skin",
+    tab = "interface",
+    label = "pause_menu.ui_skin",
+    help = "pause_menu.help.ui_skin",
+    kind = "list",
+    original = "original",
+    value = function()
+      return ui.setting("ui_skin")
+    end,
+    text = function()
+      return skin_choice.name()
+    end,
+    change = function(step)
+      skin_choice.change(step)
+    end,
+  },
+  -- The scale stops at its smallest and largest steps, whichever way it moves.
+  {
+    id = "ui-scale",
+    tab = "interface",
+    setting = "ui_scale",
+    label = "pause_menu.ui_scale",
+    help = "pause_menu.help.ui_scale",
+    kind = "list",
+    tag = false,
+    default = 1.0,
+    value = function()
+      return ui.setting("ui_scale") or 1.0
+    end,
+    text = function()
+      local percent = math.floor((ui.setting("ui_scale") or 1.0) * 100 + 0.5)
+      return t("pause_menu.ui_scale.value", { percent = percent })
+    end,
+    change = function(step)
+      local index = nearest_scale(ui.setting("ui_scale") or 1.0)
+      ui.send("ui_scale", ui_scales[math.max(1, math.min(#ui_scales, index + step))])
+    end,
+  },
   -- The language and the original-looking text, as on the title's options (main_menu).
-  ["language"] = function(step)
-    local languages = ui.languages()
-    if #languages > 0 then
-      local index = index_of(languages, ui.setting("language")) or 1
-      ui.send("language", languages[cycle(languages, index, step)])
-    end
-  end,
-  ["text-font"] = function(_step)
-    ui.send("text_font", ui.setting("text_font") == "original" and "modern" or "original")
-  end,
-  -- The game's own options are not here: game_options (ui/common/game_options.lua) lists them and
-  -- the option rows below the display ones show them (bind_option_rows).
+  {
+    id = "language",
+    tab = "interface",
+    label = "main_menu.language",
+    help = "pause_menu.help.language",
+    kind = "list",
+    tag = false,
+    value = function()
+      return ui.setting("language")
+    end,
+    text = function()
+      return t("language.name")
+    end,
+    change = function(step)
+      local languages = ui.languages()
+      if #languages > 0 then
+        local index = index_of(languages, ui.setting("language")) or 1
+        ui.send("language", languages[cycle(languages, index, step)])
+      end
+    end,
+  },
+  {
+    id = "text-font",
+    tab = "interface",
+    label = "main_menu.text_font",
+    help = "pause_menu.help.text_font",
+    kind = "toggle",
+    original = true,
+    value = function()
+      return ui.setting("text_font") == "original"
+    end,
+    text = function()
+      local font = ui.setting("text_font") == "original" and "original" or "modern"
+      return t("main_menu.text_font." .. font)
+    end,
+    change = function(_step)
+      ui.send("text_font", ui.setting("text_font") == "original" and "modern" or "original")
+    end,
+  },
 }
 
 local function can_sleep()
@@ -1424,45 +1526,347 @@ end
 
 local refresh_player
 
--- The option rows the game's options fill (docs/modulos/apps/game.md, «Opciones en partida»): the
--- document's free rows option-slot-<n>, given the option's id once so routes and the focus find
--- them by it. option_rows[n] is the row of game_options[n].
-local option_rows = nil
-local max_option_rows = 32
+-- The options page (docs/modulos/apps/game.md, «Opciones en partida»): four tabs, each a list of
+-- rows (the display rows above, then game_options' entries of the tab, in order), what the focused
+-- row does under the list and «Reset to defaults» at the foot of each tab.
+--
+-- The rows are a pool of the document's rows row-<n>: the tab shown fills them in order and gives
+-- each the id of its option (and <id>-value, <id>-label... to its parts) while it is shown, so
+-- routes and tests find a row by its option. option_slots is the pool's size: no tab may list more.
+local option_tabs = { "game", "graphics", "sound", "interface" }
+-- The game's own actions over the tabs, left to right.
+local quick_actions = { "options-save", "options-to-title", "options-quit" }
+local option_slots = 14
+local option_tab = "game"
+-- The rows of the tab shown, in order, and the pool's elements (bound once).
+local shown_entries = {}
+local slots = nil
+local reset_open = false
+-- What the description panel shows: a row's slot, or "reset" or "back".
+local info_focus = 1
 
-local function bind_option_rows(document)
-  if option_rows ~= nil then
-    return
+local function entry_kind(entry)
+  return entry.kind or game_options.kind(entry)
+end
+
+local function entry_value(entry)
+  if entry.value ~= nil then
+    return entry.value()
   end
-  option_rows = {}
-  for slot = 1, max_option_rows do
-    local row = document:get("option-slot-" .. slot)
-    local option = game_options[slot]
-    if option ~= nil then
-      row:set_attribute("id", option.id)
-      document:get("option-slot-" .. slot .. "-value"):set_attribute("id", option.id .. "-value")
-      row:set_class("hidden", false)
-      option_rows[slot] = row
+  return game_options.value(entry)
+end
+
+local function entry_text(entry)
+  if entry.text ~= nil then
+    return entry.text()
+  end
+  return game_options.text(entry)
+end
+
+-- Asks the game for the entry's value step away; clamp for left and right (and the arrows), which
+-- stop a number at its ends, while confirming wraps it round (game_options.change).
+local function entry_change(entry, step, clamp)
+  if entry.change ~= nil then
+    entry.change(step)
+  else
+    game_options.change(entry, step, clamp)
+  end
+end
+
+-- The tag of the description panel: "original" while the entry behaves as the original game,
+-- "improvement" while it does more (or always, for an option the original has nothing like),
+-- nil for the display rows, which change no game.
+local function entry_tag(entry)
+  if entry.tag == false then
+    return nil
+  end
+  if entry.original == nil then
+    return "improvement"
+  end
+  return entry_value(entry) == entry.original and "original" or "improvement"
+end
+
+local function tab_of(entry)
+  return index_of(option_tabs, entry.tab) and entry.tab or "game"
+end
+
+local function tab_entries(tab)
+  local list = {}
+  for _, entries in ipairs({ display_entries, game_options }) do
+    for _, entry in ipairs(entries) do
+      if tab_of(entry) == tab and #list < option_slots then
+        list[#list + 1] = entry
+      end
     end
   end
+  return list
+end
+
+-- Every entry of the page by its id: the display rows and the game's options.
+local function entry_by_id(id)
+  for _, entries in ipairs({ display_entries, game_options }) do
+    for _, entry in ipairs(entries) do
+      if entry.id == id then
+        return entry
+      end
+    end
+  end
+  return nil
+end
+
+local slot_parts = { "label", "value", "less", "more", "bar", "fill" }
+
+local function bind_slots(document)
+  if slots ~= nil then
+    return
+  end
+  slots = {}
+  for slot = 1, option_slots do
+    local parts = { row = document:get("row-" .. slot) }
+    for _, part in ipairs(slot_parts) do
+      parts[part] = document:get("row-" .. slot .. "-" .. part)
+    end
+    slots[slot] = parts
+  end
+end
+
+-- What the description panel says: the focused row's help and tag, or the action's.
+local function refresh_option_info(document)
+  local entry = type(info_focus) == "number" and shown_entries[info_focus] or nil
+  local action_help = {
+    reset = "pause_menu.help.options_reset",
+    back = "pause_menu.help.options_back",
+    save = "pause_menu.help.quick_save",
+    to_title = "pause_menu.help.to_title",
+    quit = "pause_menu.help.quit",
+  }
+  local help = entry ~= nil and entry.help or action_help[info_focus]
+  document:get("option-help"):set_text(help and t(help) or "")
+  local tag = entry ~= nil and entry_tag(entry) or nil
+  local element = document:get("option-tag")
+  element:set_class("hidden", tag == nil)
+  element:set_class("improvement", tag == "improvement")
+  element:set_class("original", tag == "original")
+  element:set_text(tag and t("pause_menu.tag." .. tag) or "")
 end
 
 local function refresh_option_rows(document)
-  bind_option_rows(document)
-  for slot, row in ipairs(option_rows) do
-    local option = game_options[slot]
-    document:get("option-slot-" .. slot .. "-label"):set_text(t(option.label))
-    document:get(option.id .. "-value"):set_text(game_options.text(option))
-    row:set_class("hidden", false)
+  if slots == nil then
+    return
+  end
+  for slot, parts in ipairs(slots) do
+    local entry = shown_entries[slot]
+    if entry ~= nil then
+      local kind = entry_kind(entry)
+      local value = entry_value(entry)
+      parts.label:set_text(t(entry.label))
+      parts.value:set_text(entry_text(entry))
+      for _, name in ipairs({ "toggle", "list", "range" }) do
+        parts.row:set_class("kind-" .. name, kind == name)
+      end
+      parts.value:set_class("on", kind == "toggle" and value == true)
+      local low, high = false, false
+      if kind == "range" then
+        local lowest, highest = entry.range[1], entry.range[2]
+        local share = highest > lowest and (value - lowest) / (highest - lowest) or 0
+        parts.fill:set_property("width", string.format("%d%%", math.floor(share * 100 + 0.5)))
+        low, high = value <= lowest, value >= highest
+      end
+      parts.less:set_class("at-end", low)
+      parts.more:set_class("at-end", high)
+    end
+  end
+  refresh_option_info(document)
+end
+
+-- Fills the pool with the tab's rows and marks the tab; the list wraps round from the actions under
+-- it (Reset, Back) to its first row and back.
+local function bind_tab(document)
+  bind_slots(document)
+  shown_entries = tab_entries(option_tab)
+  for slot, parts in ipairs(slots) do
+    local entry = shown_entries[slot]
+    local id = entry ~= nil and entry.id or ("row-" .. slot)
+    parts.row:set_attribute("id", id)
+    for _, part in ipairs(slot_parts) do
+      parts[part]:set_attribute("id", id .. "-" .. part)
+    end
+    parts.row:set_class("hidden", entry == nil)
+    parts.row:set_property("nav-up", "auto")
+    parts.row:set_property("nav-down", "auto")
+  end
+  for _, tab in ipairs(option_tabs) do
+    document:get("tab-" .. tab):set_class("selected", tab == option_tab)
+  end
+  -- Down goes through the rows, then Reset and Back under the list, then round to the game's
+  -- actions over the tabs (Save first) and the first row again; up from the first row reaches
+  -- Save, and up from those actions wraps to Back.
+  local first = shown_entries[1] ~= nil and shown_entries[1].id or "options-reset"
+  local last = shown_entries[#shown_entries] ~= nil and shown_entries[#shown_entries].id
+    or "options-back"
+  document:get(first):set_property("nav-up", "#options-save")
+  document:get(last):set_property("nav-down", "#options-reset")
+  document:get("options-reset"):set_property("nav-up", "#" .. last)
+  document:get("options-reset"):set_property("nav-down", "#options-back")
+  document:get("options-back"):set_property("nav-up", "#options-reset")
+  document:get("options-back"):set_property("nav-down", "#options-save")
+  for _, id in ipairs(quick_actions) do
+    document:get(id):set_property("nav-up", "#options-back")
+    document:get(id):set_property("nav-down", "#" .. first)
+  end
+  document:get("option-list"):set_class("tab-" .. option_tab, true)
+  refresh_option_rows(document)
+end
+
+local function first_option_row()
+  return shown_entries[1] ~= nil and shown_entries[1].id or "options-reset"
+end
+
+-- Shows a tab and focuses its first row (Q and E, the pad's shoulders, a click on the tab).
+function show_tab(document, tab)
+  if type(document) == "string" then
+    document = shown_document
+  end
+  if reset_open or not index_of(option_tabs, tab) then
+    return
+  end
+  option_tab = tab
+  info_focus = 1
+  bind_tab(document)
+  document:get(first_option_row()):focus()
+end
+
+-- The tab step away from the one shown, wrapping round.
+function step_tab(document, step)
+  local index = index_of(option_tabs, option_tab) or 1
+  show_tab(document, option_tabs[cycle(option_tabs, index, step)])
+end
+
+-- A row confirmed or clicked: a toggle flips, a list or number moves forward (a number wraps round
+-- from its highest to its lowest).
+function row_confirm(_document, slot)
+  local entry = shown_entries[tonumber(slot)]
+  if entry ~= nil then
+    entry_change(entry, 1, false)
   end
 end
 
--- The row of an option, confirmed (step 1) or moved left and right.
-function adjust_slot(_document, slot, step)
-  local option = game_options[tonumber(slot)]
-  if option ~= nil then
-    game_options.change(option, tonumber(step) or 1)
+-- The small arrows of a list or number row: one step back or forward, stopping a number at its
+-- ends; the click stays the arrow's, not the row's.
+function row_arrow(document, event, slot, step)
+  event:stop()
+  local entry = shown_entries[tonumber(slot)]
+  if entry ~= nil and not reset_open then
+    document:get(entry.id):focus()
+    entry_change(entry, tonumber(step), true)
   end
+end
+
+function row_focus(document, slot)
+  info_focus = tonumber(slot)
+  refresh_option_info(document)
+end
+
+function action_focus(document, name)
+  info_focus = name
+  refresh_option_info(document)
+end
+
+-- «Reset to defaults»: a question over the list first; yes sends the default of every row of the
+-- tab that has one (the window mode, the skin, the language and the font have none: the player's
+-- own choices of machine and look stay).
+function ask_reset(document)
+  reset_open = true
+  document
+    :get("reset-question")
+    :set_text(t("pause_menu.reset_question", { tab = t("pause_menu.tab." .. option_tab) }))
+  document:get("reset-confirm"):set_class("hidden", false)
+  document:get("panel"):set_class("reset-open", true)
+  document:get("reset-no"):focus()
+end
+
+function close_reset(document)
+  reset_open = false
+  document:get("reset-confirm"):set_class("hidden", true)
+  document:get("panel"):set_class("reset-open", false)
+  document:get("options-reset"):focus()
+end
+
+function confirm_reset(document)
+  for _, entry in ipairs(shown_entries) do
+    if entry.default ~= nil and entry.setting ~= nil and entry_value(entry) ~= entry.default then
+      ui.send(entry.setting, entry.default)
+    end
+  end
+  close_reset(document)
+end
+
+-- The options page's own steps: the tabs, left and right on a row, and the reset's question.
+-- Returns nil for a step the page leaves to the menu (up and down, confirm, cancel).
+local function options_action(document, action)
+  if reset_open then
+    if action == "cancel" then
+      close_reset(document)
+    elseif action == "left" or action == "right" or action == "up" or action == "down" then
+      document:get(document:get("reset-no"):has_focus() and "reset-yes" or "reset-no"):focus()
+    elseif action == "confirm" then
+      return nil
+    end
+    return true
+  end
+  if action == "tab_previous" or action == "tab_next" then
+    step_tab(document, action == "tab_previous" and -1 or 1)
+    return true
+  end
+  if action == "left" or action == "right" then
+    -- The actions side by side over the tabs and under the list step left and right, stopping
+    -- at their ends.
+    for _, row in ipairs({ quick_actions, { "options-reset", "options-back" } }) do
+      for index, id in ipairs(row) do
+        if document:get(id):has_focus() then
+          local next = row[index + (action == "left" and -1 or 1)]
+          if next ~= nil then
+            document:get(next):focus()
+          end
+          return true
+        end
+      end
+    end
+    for slot, entry in ipairs(shown_entries) do
+      if slots[slot].row:has_focus() then
+        entry_change(entry, action == "left" and -1 or 1, true)
+        return true
+      end
+    end
+    return true
+  end
+  return nil
+end
+
+-- The options page as it opens: its first tab, its keys.
+local function open_options(document)
+  option_tab = "game"
+  info_focus = 1
+  if reset_open then
+    reset_open = false
+    document:get("reset-confirm"):set_class("hidden", true)
+    document:get("panel"):set_class("reset-open", false)
+  end
+  bind_tab(document)
+end
+
+-- The keys under the options: the tabs', left and right (the keyboard's arrows, the pad's
+-- directions), confirm and back, for the device in use.
+local function refresh_option_hints(document)
+  document:get("tabs-previous-key"):set_prompt("tab_previous")
+  document:get("tabs-next-key"):set_prompt("tab_next")
+  document:get("hint-tab-previous"):set_prompt("tab_previous")
+  document:get("hint-tab-next"):set_prompt("tab_next")
+  document:get("hint-confirm"):set_prompt("confirm")
+  document:get("hint-cancel"):set_prompt("cancel")
+  document:get("hint-change-pad-less"):set_prompt("move_left")
+  document:get("hint-change-pad-more"):set_prompt("move_right")
+  document:get("hint-change"):set_class("pad", ui.device() == "gamepad")
 end
 
 -- The calendar's season next to the day (the Seasons option, an engine improvement; the game
@@ -1495,19 +1899,6 @@ local function refresh(document)
   local size = index_of(minimap_sizes, ui.setting("minimap_size")) and ui.setting("minimap_size")
     or "medium"
   document:get("minimap-size-value"):set_text(t("pause_menu.minimap_size." .. size))
-  document:get("display-mode-value"):set_text(
-    t(
-      ui.setting("fullscreen") and "pause_menu.display_mode.fullscreen"
-        or "pause_menu.display_mode.window"
-    )
-  )
-  local percent = math.floor((ui.setting("ui_scale") or 1.0) * 100 + 0.5)
-  document:get("ui-scale-value"):set_text(t("pause_menu.ui_scale.value", { percent = percent }))
-  document:get("vsync-value"):set_text(on_off(ui.setting("vsync")))
-  document:get("ui-skin-value"):set_text(skin_choice.name())
-  document:get("language-value"):set_text(t("language.name"))
-  local font = ui.setting("text_font") == "original" and "original" or "modern"
-  document:get("text-font-value"):set_text(t("main_menu.text_font." .. font))
   refresh_option_rows(document)
   refresh_player(document)
 end
@@ -1565,9 +1956,13 @@ local function refresh_prompts(document)
     document:get(page .. "-confirm-key"):set_prompt("confirm")
     document:get(page .. "-cancel-key"):set_prompt("cancel")
   end
+  refresh_option_hints(document)
 end
 
 local function show_page(document, name, focus, tools)
+  if name == "options" and current ~= "options" then
+    open_options(document)
+  end
   for _, page in ipairs(pages) do
     document:get("page-" .. page):set_class("hidden", page ~= name)
   end
@@ -1599,6 +1994,7 @@ local function show_page(document, name, focus, tools)
   document:get("panel"):set_class("on-main", name == "main")
   -- The settings pages: a skin may give their label-and-value rows a wider box.
   document:get("panel"):set_class("on-settings", name == "options" or name == "minimap")
+  document:get("panel"):set_class("on-options", name == "options")
   local first = name == "main"
       and ui.setting("ui_skin") == "original"
       and (fishing() ~= 0 and "fish" or "open-items")
@@ -1606,7 +2002,7 @@ local function show_page(document, name, focus, tools)
       name == "player"
         and ui.setting("ui_skin") == "original"
         and (player_tools_open and "player-minimap" or "player-tab-" .. player_tab)
-      or first_entry[name]
+      or (name == "options" and first_option_row() or first_entry[name])
     )
   document:get(focus or first):focus()
 end
@@ -1689,9 +2085,6 @@ function back(document)
   end
 end
 
--- The document shown last, for the buttons' event attributes that only name the page.
-local shown_document = nil
-
 function open_partner(page)
   close_menu_box(shown_document, function()
     ui.send("open_partner_menu", page)
@@ -1717,8 +2110,17 @@ function resume()
   ui.hide(document_name)
 end
 
+-- An entry of the minimap page, or a row of the options page by its option's id, confirmed (step 1)
+-- or moved left and right.
 function adjust(_document, id, step)
-  options[id](step)
+  if options[id] ~= nil then
+    options[id](tonumber(step) or 1)
+    return
+  end
+  local entry = entry_by_id(id)
+  if entry ~= nil then
+    entry_change(entry, tonumber(step) or 1, false)
+  end
 end
 
 function on_show(document)
@@ -1870,6 +2272,12 @@ function on_action(document, action)
   -- tickUIBox: a box takes no input until it is in place.
   if chart_transition or chart_slide or original_box.busy() then
     return true
+  end
+  if current == "options" then
+    local handled = options_action(document, action)
+    if handled ~= nil then
+      return handled
+    end
   end
   if chart_detail then
     if action == "cancel" then
@@ -2057,12 +2465,6 @@ function on_action(document, action)
       local entry = document:get(id)
       if entry ~= nil and entry:has_focus() then
         change(action == "left" and -1 or 1)
-        return true
-      end
-    end
-    for slot, row in ipairs(option_rows or {}) do
-      if row:has_focus() then
-        adjust_slot(document, slot, action == "left" and -1 or 1)
         return true
       end
     end

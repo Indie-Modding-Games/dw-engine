@@ -811,9 +811,10 @@ TEST_CASE(
   frame(*ui, input);
   CHECK(ui->elementText("main_menu", "ui-skin-value") == "Contraste de prueba");
 
-  // The pause menu's options page has the same entry.
+  // The pause menu's options page has the same entry, on its Interface tab.
   ui->hide("main_menu");
   ui->show("pause_menu", true);
+  REQUIRE(ui->callScript("pause_menu", "show_tab", std::vector<std::string>{"", "interface"}));
   frame(*ui, input);
   CHECK(ui->elementText("pause_menu", "ui-skin-value") == "Contraste de prueba");
   // The mod's texts add to the game pack's: the modern skin keeps its name.

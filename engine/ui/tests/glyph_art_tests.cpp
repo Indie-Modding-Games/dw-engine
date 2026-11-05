@@ -55,7 +55,8 @@ TEST_CASE(
 
 TEST_CASE("the modern glyphs are smooth white symbols") {
   for (const std::string_view symbol :
-       {"@cross", "@circle", "@square", "@triangle", "@south", "@east", "@west", "@north"}) {
+       {"@cross", "@circle", "@square", "@triangle", "@south", "@east", "@west", "@north", "@left",
+        "@right", "@up", "@down"}) {
     CAPTURE(symbol);
     const auto image = drawGlyph(std::string{"modern/"} + std::string{symbol});
     REQUIRE(image.has_value());
@@ -74,6 +75,13 @@ TEST_CASE("the modern glyphs are smooth white symbols") {
     partial = partial || (alpha > 0 && alpha < 255);
   }
   CHECK(partial);
+  // An arrow points its way: the tip's side is covered at the shaft's height, the tail's corners
+  // are clear.
+  const auto left = drawGlyph("modern/@left");
+  REQUIRE(left.has_value());
+  CHECK(alphaAt(*left, 18, 32) == 255);
+  CHECK(alphaAt(*left, 46, 22) == 0);
+  CHECK(alphaAt(*left, 22, 24) > 0);
 }
 
 TEST_CASE("an unknown glyph is an error") {

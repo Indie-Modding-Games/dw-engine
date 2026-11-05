@@ -1,0 +1,86 @@
+# The pause menu's options by tabs (docs/modulos/apps/game.md#opciones-en-partida): each tab shown with Q/E and with a
+# click, a focused row with its description and tag, a list and a volume changed both ways with the arrows, and the
+# reset question, all at 1280x720 with every text fitting. Run it once per skin (--ui-skin original and modern), each
+# with its own capture folder (docs/guides/prueba-vertical.md).
+name: options-tabs
+device: keyboard
+timeout: 300
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  # The original look keeps the options among the player page's tools (Tab there); the modern look lists them on the
+  # menu's first page.
+  - menu: open
+  - wait: {seconds: 0.6}
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.4}
+  - expect_text_fits: all
+  - screenshot: tab-game
+  # Autosave, two rows down: its description and tag below the list.
+  - tap: {key: down}
+  - tap: {key: down}
+  - wait: {seconds: 0.3}
+  - screenshot: tab-game-row
+  - tap: {key: e}
+  - wait: {seconds: 0.3}
+  - expect_text_fits: all
+  - screenshot: tab-graphics
+  # Shadows, the seventh row: right and back left.
+  - tap: {key: down}
+  - tap: {key: down}
+  - tap: {key: down}
+  - tap: {key: down}
+  - tap: {key: down}
+  - tap: {key: down}
+  - expect_setting: {shadows: sun}
+  - tap: {key: right}
+  - wait: {seconds: 0.3}
+  - expect_setting: {shadows: round}
+  - screenshot: tab-graphics-row
+  - tap: {key: left}
+  - expect_setting: {shadows: sun}
+  - tap: {key: e}
+  - wait: {seconds: 0.3}
+  - expect_text_fits: all
+  - screenshot: tab-sound
+  - remember: music_volume
+  - tap: {key: left}
+  - expect_change: {music_volume: down}
+  - wait: {seconds: 0.3}
+  - screenshot: tab-sound-row
+  - tap: {key: right}
+  - tap: {key: e}
+  - wait: {seconds: 0.3}
+  - expect_text_fits: all
+  - screenshot: tab-interface
+  # A click on a tab shows it too.
+  - click: {element: pause_menu#tab-game}
+  - wait: {seconds: 0.3}
+  - screenshot: tab-game-click
+  # Up from the first row reaches the game's actions over the tabs (Save first), then wraps to Back and to the reset
+  # entry under the list; the reset asks first, and cancel (Ctrl) answers no.
+  - tap: {key: up}
+  - wait: {seconds: 0.3}
+  - screenshot: quick-actions
+  - tap: {key: up}
+  - tap: {key: up}
+  - wait: {seconds: 0.3}
+  - screenshot: reset-focus
+  - tap: {key: return}
+  - wait: {seconds: 0.3}
+  - expect_text_fits: all
+  - screenshot: reset-confirm
+  - tap: {key: left_ctrl}
+  - wait: {seconds: 0.3}
+  - menu: close
+  - wait: {menu_open: false}
