@@ -29,7 +29,7 @@ function(dwe_use_utf8 target)
 endfunction()
 
 option(DWE_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
-# A package build (scripts/package_linux.sh) names no folder of the build machine: the programs find their packs next
+# A package build (scripts/package_*.sh) names no folder of the build machine: the programs find their packs next
 # to the executable instead of in the source tree, and source file names (__FILE__) are relative to it.
 option(DWE_PACKAGE "Build the programs of a package, without the build machine's folders" OFF)
 if(DWE_PACKAGE AND NOT MSVC)
@@ -37,6 +37,11 @@ if(DWE_PACKAGE AND NOT MSVC)
 elseif(DWE_PACKAGE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     # clang-cl takes clang's own options through /clang:.
     add_compile_options("/clang:-ffile-prefix-map=${PROJECT_SOURCE_DIR}/=")
+endif()
+if(DWE_PACKAGE AND MSVC)
+    # A Windows program names its debug file (.pdb) in its header; the package's names only the file, which is shipped
+    # apart (scripts/package_windows.sh), and not the build folder.
+    add_link_options("/PDBALTPATH:%_PDB%")
 endif()
 set(DWE_SANITIZERS "" CACHE STRING "Sanitizers to enable, separated by semicolons (address;undefined)")
 
