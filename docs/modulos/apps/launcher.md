@@ -3,8 +3,8 @@
 El lanzador de escritorio de `dwe` (`apps/launcher`): lee el disco del jugador, mantiene el juego al día con las
 versiones publicadas del repositorio y lo arranca. Es un programa aparte del motor, hecho con
 [Tauri 2](https://v2.tauri.app/): el backend en Rust (`src-tauri/`) y la interfaz en HTML, CSS y JavaScript sin
-framework (`ui/`). Por ahora se prueba en Linux; Windows y macOS compilan con el mismo código, pero nadie los ha
-probado todavía.
+framework (`ui/`). Se prueba en Linux; para Windows hay instalador (compilado desde Linux) y paquete del juego
+probado con Wine, y macOS está preparado sin probar ([beta para Windows y macOS](../../guides/beta-windows-macos.md)).
 
 ## Qué ve el jugador
 
@@ -61,18 +61,21 @@ de GitHub para ese único repositorio.
 
 | Archivo | Qué es |
 |---|---|
-| `dwe-game-<versión>-linux-x86_64.tar.xz` | El paquete de `scripts/package_linux.sh` (juego, `dwx`, paquetes del equipo; ningún dato del disco). |
-| `game-manifest.json` | Versión semántica, commit, `extractor_version` y, por ordenador (`linux-x86_64`...), el nombre, tamaño, SHA-256 y firma del paquete. |
-| `latest.json`, `*.AppImage`, `*.AppImage.sig` | El lanzador mismo, para el actualizador de Tauri. |
+| `dwe-game-<versión>-<ordenador>.tar.xz` | El paquete del juego de cada ordenador (`linux-x86_64` de `scripts/package_linux.sh`, `windows-x86_64` de `scripts/package_windows.sh`, `darwin-aarch64` y `darwin-x86_64` de `scripts/package_macos.sh`): juego, `dwx`, paquetes del equipo; ningún dato del disco. |
+| `game-manifest.json` | Versión semántica, commit, `extractor_version` y, por ordenador, el nombre, tamaño, SHA-256 y firma del paquete. |
+| `latest.json`, `*.AppImage`, `*-setup.exe`, `*.app.tar.gz` y sus `.sig` | El lanzador mismo, para el actualizador de Tauri; además `.deb` y `.dmg` para instalarlo a mano. |
 
-El lanzador pide `GET <servidor>/repos/<repo>/releases`, toma la versión más nueva que tenga `game-manifest.json` y lo
-compara con la instalada (semver). Para actualizar:
+El lanzador pide `GET <servidor>/repos/<repo>/releases` y toma la versión más nueva cuyo `game-manifest.json` tenga
+paquete para su ordenador, con la clave `<sistema>-<procesador>` de `latest.json` (`manifest::platform_key`: macOS
+se llama `darwin`); una versión hecha solo para otros ordenadores se salta. La compara con la instalada (semver).
+Para actualizar:
 
 1. Descarga el paquete por su URL en la pasarela (`Accept: application/octet-stream`; la pasarela contesta con un
    302 a un enlace firmado de GitHub), a `<datos>/downloads/*.part`.
 2. Comprueba el tamaño, el SHA-256 y la firma minisign con la clave pública del lanzador. Si algo no cuadra, lo
    borra y el juego se queda como estaba.
-3. Lo descomprime en `<datos>/game/versions/.staging-<versión>`, comprueba que trae `bin/dwe-game` y `bin/dwx`, lo
+3. Lo descomprime en `<datos>/game/versions/.staging-<versión>`, comprueba que trae `bin/dwe-game` y `bin/dwx`
+   (`.exe` en Windows; en macOS dentro de `dwe-game.app/Contents/MacOS/`), lo
    renombra a `versions/<versión>` y reescribe `<datos>/game/state.json` (actual y anterior) con un solo `rename`.
    Se conservan solo la versión actual y la anterior; «Volver a la versión anterior» las intercambia.
 4. Si la `ExtractorVersion` del juego nuevo es otra (el archivo `EXTRACTOR_VERSION` del paquete o el manifiesto),
@@ -80,7 +83,7 @@ compara con la instalada (semver). Para actualizar:
    Volver a la versión anterior hace lo mismo.
 
 El lanzador se actualiza a sí mismo con el actualizador de Tauri (`latest.json`, la misma clave de firma); en Linux
-solo funciona cuando corre como AppImage. El actualizador pide `latest.json` y el AppImage a la pasarela con la clave
+solo funciona cuando corre como AppImage, en Windows con el instalador NSIS y en macOS con la aplicación. El actualizador pide `latest.json` y el AppImage a la pasarela con la clave
 de la beta en la cabecera (nunca en la URL); la pasarela apunta la URL de `latest.json` a sí misma y el lanzador se
 niega a descargar una que esté en otro servidor.
 
@@ -165,16 +168,17 @@ Los tests crean su propia clave de usar y tirar en cada ejecución.
 ## Jugar
 
 «Jugar» ejecuta `bin/dwe-game --content <datos>/content` desde la carpeta de la versión instalada (el juego encuentra
-sus paquetes en `packs/` junto a `bin/`), con la salida en `<datos>/logs/game.log`, y oculta el lanzador. Si la
-carpeta de datos no es la del juego, añade `--saves <datos>/saves --reports <datos>/reports`. Cuando el juego
+sus paquetes en `packs/` junto a `bin/`), con la salida en `<datos>/logs/game.log`, y oculta el lanzador. En Windows
+lo arranca sin ventana de consola. Si el jugador eligió otra carpeta de datos, añade
+`--saves <datos>/saves --reports <datos>/reports`; con la de por defecto las partidas quedan en la carpeta del juego. Cuando el juego
 termina, el lanzador vuelve; si terminó con error, muestra las últimas 30 líneas de su registro.
 
 ## Carpetas
 
 | Ruta | Qué es |
 |---|---|
-| `~/.config/indie-modding-games/dwe-launcher/settings.json` | Ajustes del lanzador (carpeta de datos, idioma, disco recordado). Nunca la clave ni el servidor. |
-| `<datos>` | Por defecto la del juego, `~/.local/share/indie-modding-games/dwe` (`$XDG_DATA_HOME`), así que el juego arrancado sin lanzador ve lo mismo. |
+| `~/.config/indie-modding-games/dwe-launcher/settings.json` | Ajustes del lanzador (carpeta de datos, idioma, disco recordado). Nunca la clave ni el servidor. En Windows `%APPDATA%\indie-modding-games\dwe-launcher\`, en macOS `~/Library/Application Support/indie-modding-games/dwe-launcher/`. |
+| `<datos>` | Por defecto la del juego, `~/.local/share/indie-modding-games/dwe` (`$XDG_DATA_HOME`; en macOS `~/Library/Application Support/indie-modding-games/dwe`), así que el juego arrancado sin lanzador ve lo mismo. En Windows, `%LOCALAPPDATA%\indie-modding-games\dwe`: lo instalado no va al perfil itinerante, y las partidas siguen en la carpeta del juego (`%APPDATA%\indie-modding-games\dwe`). |
 | `<datos>/game/versions/`, `state.json` | Las versiones instaladas del juego. |
 | `<datos>/content/` | Lo leído del disco, como lo deja la pantalla de primer arranque. |
 | `<datos>/logs/launcher.log`, `game.log` | El registro del lanzador y la salida de la última partida. |
@@ -194,7 +198,10 @@ scripts/launcher.sh image    # la imagen
 scripts/launcher.sh test     # cargo test (unidad y servidor falso) y clippy
 scripts/launcher.sh build    # build/launcher/release/dwe-launcher
 scripts/launcher.sh bundle   # AppImage, .deb y sus firmas (necesita la clave privada)
+scripts/launcher.sh bundle-windows   # el instalador de Windows (NSIS) y su firma, compilado desde Linux
 ```
+
+El `.dmg` de macOS solo se compila en un Mac (el flujo de publicación).
 
 Con `DWE_BUILD_SLOTS=<carpeta de cerrojos>` cada compilación espera uno de los dos huecos de compilación de la
 máquina, como `dbuild.sh`. Las fuentes se copian del paquete del juego (`content/packs/game/ui/fonts`) al compilar.
@@ -214,10 +221,12 @@ subcarpetas de `<carpeta>` (sus archivos y `notes.md`); se arranca el lanzador c
 
 ## Publicar una versión
 
-`scripts/package_release.sh --out <carpeta del repositorio>` compila el paquete (o toma uno con `--tarball`), lo firma y escribe
-`game-manifest.json`; `scripts/package/release_manifest.py launcher` escribe `latest.json`. El flujo
-`.github/workflows/release.yml` hace todo eso y lo sube a una versión **borrador**; solo se ejecuta a mano y nadie lo
-ha ejecutado todavía: la beta no se publica hasta que el responsable la haya jugado.
+`scripts/package_release.sh --platform <ordenador> --out <carpeta del repositorio>` compila el paquete (o toma uno con
+`--tarball`), lo firma y lo añade a `game-manifest.json` (uno por versión, con todos los ordenadores);
+`scripts/package/release_manifest.py launcher` escribe `latest.json`. El flujo `.github/workflows/release.yml` hace
+todo eso para Linux, Windows y macOS y lo sube a una versión **borrador**; solo se ejecuta a mano y nadie lo ha
+ejecutado todavía: la beta no se publica hasta que el responsable la haya jugado. Su coste en minutos está en la
+[beta para Windows y macOS](../../guides/beta-windows-macos.md#publicacion-y-su-coste).
 
 ## Puntos de montaje de la interfaz
 
@@ -251,7 +260,7 @@ guía [Complementos del lanzador](../../guides/launcher-addons.md); aquí, cómo
 
 ## Pendiente
 
-- Probar Windows y macOS (el llavero, rutas y el instalador de cada sistema).
+- Probar el lanzador en un Windows de verdad y todo en un Mac (el llavero, rutas y el instalador de cada sistema).
 - La clave de firma real y la primera versión publicada (decisión del responsable).
 - Desplegar la pasarela y fijar `DWE_BETA_GATEWAY` (el responsable, desde los paneles).
 - Probar los complementos en Windows (allí el esquema es `http://dweaddon.localhost/`) y macOS.

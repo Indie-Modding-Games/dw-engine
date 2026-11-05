@@ -1,7 +1,7 @@
 # Beta para Linux
 
 El paquete que recibe un jugador: un tarball que se descomprime y se ejecuta, sin Docker ni compilador. Por ahora
-solo Linux; Windows queda para más adelante.
+Linux; Windows y macOS tienen su propia [guía](beta-windows-macos.md).
 
 ## Construirlo
 
@@ -89,4 +89,4 @@ reportes F12 van a los datos del usuario, como en desarrollo.
 
 ## Pendiente
 
-- AppImage y paquete de Windows.
+- AppImage del juego sin lanzador (el lanzador ya se reparte como AppImage).
