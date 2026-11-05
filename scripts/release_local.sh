@@ -237,8 +237,8 @@ if [[ -n "$links" ]]; then
 fi
 echo "release_local: links ${links:-none}"
 avail="$(df -Pk "$out" | awk 'NR == 2 { print int($4 / 1048576) }')"
-((build == 0 || avail >= 25)) \
-  || echo "release_local: WARNING: only ${avail} GB free; a build takes ~25 GB"
+((build == 0 || avail >= 15)) \
+  || echo "release_local: WARNING: only ${avail} GB free; a build takes ~10 GB"
 
 # The key: a throwaway one for tests, or the real one and its password, asked once.
 if [[ -n "$dry_run_dir" ]]; then
