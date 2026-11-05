@@ -75,6 +75,17 @@
       }
     },
     {
+      "name": "windows-cross-package",
+      "displayName": "Windows from Linux: clang-cl, release for a package (scripts/package_windows.sh)",
+      "inherits": "windows-cross",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "DWE_WARNINGS_AS_ERRORS": "OFF",
+        "DWE_PACKAGE": "ON",
+        "BUILD_TESTING": "OFF"
+      }
+    },
+    {
       "name": "windows-clang",
       "hidden": true,
       "generator": "Ninja",
@@ -118,6 +129,7 @@
     { "name": "linux-clang-package", "configurePreset": "linux-clang-package" },
     { "name": "ci", "configurePreset": "ci" },
     { "name": "windows-cross", "configurePreset": "windows-cross" },
+    { "name": "windows-cross-package", "configurePreset": "windows-cross-package" },
     { "name": "windows-clang-debug", "configurePreset": "windows-clang-debug" },
     { "name": "windows-clang-release", "configurePreset": "windows-clang-release" },
     { "name": "windows-ci", "configurePreset": "windows-ci" }

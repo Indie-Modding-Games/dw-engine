@@ -34,6 +34,9 @@ option(DWE_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 option(DWE_PACKAGE "Build the programs of a package, without the build machine's folders" OFF)
 if(DWE_PACKAGE AND NOT MSVC)
     add_compile_options("-ffile-prefix-map=${PROJECT_SOURCE_DIR}/=")
+elseif(DWE_PACKAGE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # clang-cl takes clang's own options through /clang:.
+    add_compile_options("/clang:-ffile-prefix-map=${PROJECT_SOURCE_DIR}/=")
 endif()
 set(DWE_SANITIZERS "" CACHE STRING "Sanitizers to enable, separated by semicolons (address;undefined)")
 

@@ -163,6 +163,10 @@ target_link_libraries(game PRIVATE imgui::imgui)
 # the one used.
 install(TARGETS game RUNTIME DESTINATION bin)
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/content/packs/ DESTINATION packs)
+# A Windows package's game opens no console window of its own; its output still goes wherever the launcher sends it.
+if(WIN32 AND DWE_PACKAGE)
+    target_link_options(game PRIVATE /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup)
+endif()
 
 # A package's bug reports (F12) name the commit it was built from; a development build asks git when a report is
 # written.
