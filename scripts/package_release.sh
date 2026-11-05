@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
-# Builds the game's release files for the launcher: the Linux package (scripts/package_linux.sh,
-# no game data), renamed for the release, its minisign signature and game-manifest.json
-# (docs/modulos/apps/launcher.md). It publishes nothing: uploading the files to a release is a
-# separate, manual step (or .github/workflows/release.yml, started by hand).
+# Builds the game's release files for the launcher: a computer's package (no game data), renamed
+# for the release, its minisign signature and game-manifest.json (docs/modulos/apps/launcher.md).
+# It publishes nothing: uploading the files to a release is a separate, manual step (or
+# .github/workflows/release.yml, started by hand).
 #
-# Usage: scripts/package_release.sh [--tarball <dwe-beta-...tar.xz>] [--version <semver>]
-#                                   [--extractor-version <n>] [--out <folder>]
-#   --tarball            package this tarball instead of building one with package_linux.sh
+# Usage: scripts/package_release.sh [--platform <key>] [--tarball <dwe-beta-...tar.xz>]
+#                                   [--version <semver>] [--extractor-version <n>] [--out <folder>]
+#   --platform           linux-x86_64 (default, scripts/package_linux.sh), windows-x86_64
+#                        (scripts/package_windows.sh), darwin-aarch64 or darwin-x86_64 (built on a
+#                        Mac by scripts/package_macos.sh, so --tarball is required)
+#   --tarball            package this tarball instead of building one
 #   --version            the release's version (default <CMake version>-beta.<commits on HEAD>)
 #   --extractor-version  for a tarball without an EXTRACTOR_VERSION file (older packages)
-#   --out                where the files go, inside the repository (default build/release)
+#   --out                where the files go, inside the repository (default build/release); a
+#                        game-manifest.json of the same version already there gets this computer's
+#                        package added, so one manifest names every computer's
 # Signing needs TAURI_SIGNING_PRIVATE_KEY (the key itself or its path) and
 # TAURI_SIGNING_PRIVATE_KEY_PASSWORD, the same key the launcher's updater uses; it runs
 # `tauri signer sign` in the launcher image.
@@ -24,6 +29,10 @@ platform="linux-x86_64"
 
 while (($#)); do
   case "$1" in
+    --platform)
+      platform="$2"
+      shift
+      ;;
     --tarball)
       tarball="$2"
       shift
@@ -41,7 +50,7 @@ while (($#)); do
       shift
       ;;
     -h | --help)
-      sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -64,8 +73,17 @@ out="$(cd "$out" && pwd)"
   exit 1
 }
 if [[ -z "$tarball" ]]; then
-  "$root/scripts/package_linux.sh" --out "$out/linux"
-  tarball="$(find "$out/linux" -maxdepth 1 -name 'dwe-beta-*.tar.xz' -printf '%T@ %p\n' \
+  case "$platform" in
+    linux-x86_64) packager="package_linux.sh" ;;
+    windows-x86_64) packager="package_windows.sh" ;;
+    *)
+      echo "package_release: $platform is built on its own computer; pass --tarball" >&2
+      exit 2
+      ;;
+  esac
+  "$root/scripts/$packager" --out "$out/$platform"
+  pattern="dwe-beta-*-$platform.tar.xz"
+  tarball="$(find "$out/$platform" -maxdepth 1 -name "$pattern" -printf '%T@ %p\n' \
     | sort -rn | sed -n '1s/^[^ ]* //p')"
 fi
 tarball="$(cd "$(dirname "$tarball")" && pwd)/$(basename "$tarball")"
@@ -94,8 +112,16 @@ rm -f "$package.sig"
   echo "package_release: signing failed" >&2
   exit 1
 }
+manifest="$out/game-manifest.json"
+merge=()
+same_version='import json, sys; sys.exit(json.load(open(sys.argv[1]))["version"] != sys.argv[2])'
+if [[ -f "$manifest" ]] && python3 -c "$same_version" \
+  "$manifest" "$version"; then
+  merge=(--merge "$manifest")
+fi
 python3 "$root/scripts/package/release_manifest.py" game --package "$package" \
   --signature "$package.sig" --version "$version" --commit "$commit" \
-  --extractor-version "$extractor" --platform "$platform" >"$out/game-manifest.json"
+  --extractor-version "$extractor" --platform "$platform" "${merge[@]}" >"$manifest.new"
+mv "$manifest.new" "$manifest"
 echo "package_release: $package"
-echo "package_release: $out/game-manifest.json (version $version, extractor $extractor)"
+echo "package_release: $manifest (version $version, extractor $extractor, $platform)"

@@ -1,0 +1,98 @@
+name: Platform check
+
+# Builds the engine and runs its unit tests, and the launcher's tests, on Windows and on macOS, by
+# hand only (Actions > Platform check > Run workflow): GitHub-hosted Windows and macOS minutes cost
+# more than Linux ones on a private repository (docs/guides/beta-windows-macos.md). The tests that
+# need the player's disc or extracted content skip, as on Linux without DWE_DISC and DWE_CONTENT.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up the MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Set up vcpkg
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP vcpkg
+          $baseline = (Get-Content vcpkg.json -Raw | ConvertFrom-Json).'builtin-baseline'
+          git clone https://github.com/microsoft/vcpkg.git $root
+          git -C $root checkout $baseline
+          & (Join-Path $root bootstrap-vcpkg.bat) -disableMetrics
+          $cache = Join-Path $env:RUNNER_TEMP vcpkg-cache
+          New-Item -ItemType Directory -Force $cache | Out-Null
+          "VCPKG_ROOT=$root" >> $env:GITHUB_ENV
+          "VCPKG_DEFAULT_BINARY_CACHE=$cache" >> $env:GITHUB_ENV
+
+      - name: Restore the vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-platform-windows-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'cmake/toolchains/**') }}
+          restore-keys: vcpkg-platform-windows-
+
+      - name: Configure
+        run: cmake --preset windows-ci -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
+
+      - name: Build
+        run: cmake --build --preset windows-ci
+
+      - name: Test
+        run: ctest --preset windows-ci -j 4
+
+      - name: Launcher tests
+        working-directory: apps/launcher/src-tauri
+        shell: bash
+        run: |
+          fonts=../../../content/packs/game/ui/fonts
+          mkdir -p ../ui/fonts
+          cp "$fonts/noto_sans_regular.ttf" "$fonts/noto_sans_bold.ttf" "$fonts/noto_sans_license.txt" ../ui/fonts/
+          cargo test --locked
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the tools
+        run: |
+          brew install llvm ninja
+          root="$RUNNER_TEMP/vcpkg"
+          git clone https://github.com/microsoft/vcpkg.git "$root"
+          git -C "$root" checkout "$(python3 -c 'import json; print(json.load(open("vcpkg.json"))["builtin-baseline"])')"
+          "$root/bootstrap-vcpkg.sh" -disableMetrics
+          mkdir -p "$RUNNER_TEMP/vcpkg-cache"
+          echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
+          echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
+
+      - name: Restore the vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-platform-macos-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**') }}
+          restore-keys: vcpkg-platform-macos-
+
+      - name: Configure
+        run: cmake --preset macos-arm64-release
+
+      - name: Build
+        run: cmake --build --preset macos-arm64-release
+
+      - name: Test
+        run: ctest --preset macos-arm64-release -j 3
+
+      - name: Launcher tests
+        working-directory: apps/launcher/src-tauri
+        run: |
+          fonts=../../../content/packs/game/ui/fonts
+          mkdir -p ../ui/fonts
+          cp "$fonts/noto_sans_regular.ttf" "$fonts/noto_sans_bold.ttf" "$fonts/noto_sans_license.txt" ../ui/fonts/
+          cargo test --locked

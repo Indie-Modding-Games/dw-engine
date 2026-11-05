@@ -1,9 +1,12 @@
 name: Release
 
-# Builds a beta release by hand only (Actions > Release > Run workflow): the game package for the
-# launcher (no game data), the launcher's AppImage and .deb, their signatures, game-manifest.json
-# and latest.json, all uploaded to a DRAFT prerelease that someone reviews and publishes by hand.
-# Nothing here runs on a push or a tag. docs/modulos/apps/launcher.md explains the secrets:
+# Builds a beta release by hand only (Actions > Release > Run workflow): the game packages for the
+# launcher (no game data) for Linux, Windows and macOS, the launcher's installers (AppImage and .deb,
+# the Windows NSIS installer, the macOS .dmg), their signatures, game-manifest.json and latest.json,
+# all uploaded to a DRAFT prerelease that someone reviews and publishes by hand. Nothing here runs on
+# a push or a tag. The Windows builds are cross-compiled on Linux (the same Docker images as a
+# developer's machine); only the macOS ones need macOS runners, whose minutes cost the most
+# (docs/guides/beta-windows-macos.md). docs/modulos/apps/launcher.md explains the secrets:
 #   secrets.DWE_SIGNING_KEY            the private key of `tauri signer generate` (its text)
 #   secrets.DWE_SIGNING_KEY_PASSWORD   its password
 #   vars.DWE_SIGNING_PUBKEY            the public key (the .pub file's text), built into the launcher
@@ -23,23 +26,16 @@ on:
 permissions:
   contents: write
 
-jobs:
-  linux:
-    runs-on: ubuntu-24.04
-    env:
-      TAG: ${{ inputs.tag }}
-      NOTES: ${{ inputs.notes }}
-      GH_TOKEN: ${{ github.token }}
-      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.DWE_SIGNING_KEY }}
-      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.DWE_SIGNING_KEY_PASSWORD }}
-      DWE_LAUNCHER_PUBKEY: ${{ vars.DWE_SIGNING_PUBKEY }}
-      DWE_LAUNCHER_GATEWAY: ${{ vars.DWE_BETA_GATEWAY }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # The release's version counts the commits.
-          fetch-depth: 0
+env:
+  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.DWE_SIGNING_KEY }}
+  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.DWE_SIGNING_KEY_PASSWORD }}
+  DWE_LAUNCHER_PUBKEY: ${{ vars.DWE_SIGNING_PUBKEY }}
+  DWE_LAUNCHER_GATEWAY: ${{ vars.DWE_BETA_GATEWAY }}
 
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
       - name: Check the signing key and the gateway
         run: |
           [ -n "$TAURI_SIGNING_PRIVATE_KEY" ] && [ -n "$DWE_LAUNCHER_PUBKEY" ] || {
@@ -51,44 +47,185 @@ jobs:
             *) echo "Set vars.DWE_BETA_GATEWAY to the beta gateway's https URL first" >&2; exit 1 ;;
           esac
 
-      - name: Build the images
+  # One unsigned game package per computer; the publish job signs them all.
+  game:
+    needs: check
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: linux-x86_64
+            runner: ubuntu-24.04
+          - platform: windows-x86_64
+            runner: ubuntu-24.04
+          - platform: darwin-aarch64
+            runner: macos-15
+            arch: arm64
+          - platform: darwin-x86_64
+            runner: macos-15-intel
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The package names the commit it was built from.
+          fetch-depth: 0
+
+      - name: Build the development image
+        if: runner.os == 'Linux'
+        run: scripts/dev.sh image
+
+      - name: Fetch the MSVC libraries and the Windows SDK
+        if: matrix.platform == 'windows-x86_64'
+        run: scripts/dev.sh windows-sdk --accept-license
+
+      - name: Install the macOS tools
+        if: runner.os == 'macOS'
         run: |
-          scripts/dev.sh image
-          scripts/launcher.sh image
+          brew install llvm molten-vk ninja
+          root="$RUNNER_TEMP/vcpkg"
+          git clone https://github.com/microsoft/vcpkg.git "$root"
+          git -C "$root" checkout "$(python3 -c 'import json; print(json.load(open("vcpkg.json"))["builtin-baseline"])')"
+          "$root/bootstrap-vcpkg.sh" -disableMetrics
+          mkdir -p "$RUNNER_TEMP/vcpkg-cache"
+          echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
+          echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
 
       - name: Restore the vcpkg binary cache
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-package-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
-          restore-keys: vcpkg-package-
+          key: vcpkg-release-${{ matrix.platform }}-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          restore-keys: vcpkg-release-${{ matrix.platform }}-
 
-      - name: Game package and manifest
+      - name: Game package
         env:
           DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
           DWE_CCACHE_DIR: ${{ runner.temp }}/ccache
-        run: scripts/package_release.sh --out dist
+        run: |
+          case "${{ matrix.platform }}" in
+            linux-x86_64) scripts/package_linux.sh --out dist ;;
+            windows-x86_64) scripts/package_windows.sh --out dist ;;
+            darwin-*) scripts/package_macos.sh --arch "${{ matrix.arch }}" --out dist ;;
+          esac
 
-      - name: Launcher bundles
-        run: scripts/launcher.sh bundle
+      - uses: actions/upload-artifact@v4
+        with:
+          name: game-${{ matrix.platform }}
+          path: dist/dwe-beta-*-${{ matrix.platform }}.tar.xz
+          if-no-files-found: error
+
+  # The launcher's installers, signed for its own updater by tauri build.
+  launcher:
+    needs: check
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - system: linux
+            runner: ubuntu-24.04
+          - system: windows
+            runner: ubuntu-24.04
+          - system: macos
+            runner: macos-15
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the launcher image
+        if: runner.os == 'Linux'
+        run: scripts/launcher.sh image
+
+      - name: AppImage and .deb
+        if: matrix.system == 'linux'
+        run: |
+          scripts/launcher.sh bundle
+          bundle=build/launcher/release/bundle
+          mkdir -p out
+          cp "$bundle"/appimage/*.AppImage "$bundle"/appimage/*.AppImage.sig "$bundle"/deb/*.deb out/
+
+      - name: Windows installer
+        if: matrix.system == 'windows'
+        run: |
+          scripts/launcher.sh bundle-windows
+          mkdir -p out
+          cp build/launcher/x86_64-pc-windows-msvc/release/bundle/nsis/*-setup.exe* out/
+
+      # One universal bundle for Apple silicon and Intel Macs, signed ad hoc (tauri.macos.conf.json).
+      - name: macOS .dmg and update bundle
+        if: matrix.system == 'macos'
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/build/launcher
+        run: |
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+          npm install -g @tauri-apps/cli@2
+          fonts=content/packs/game/ui/fonts
+          mkdir -p apps/launcher/ui/fonts
+          cp "$fonts/noto_sans_regular.ttf" "$fonts/noto_sans_bold.ttf" "$fonts/noto_sans_license.txt" apps/launcher/ui/fonts/
+          cd apps/launcher/src-tauri
+          tauri build --target universal-apple-darwin \
+            --config "{\"plugins\":{\"updater\":{\"pubkey\":\"$DWE_LAUNCHER_PUBKEY\"}}}"
+          cd "$GITHUB_WORKSPACE"
+          bundle=build/launcher/universal-apple-darwin/release/bundle
+          mkdir -p out
+          cp "$bundle"/dmg/*.dmg "$bundle"/macos/*.app.tar.gz "$bundle"/macos/*.app.tar.gz.sig out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launcher-${{ matrix.system }}
+          path: out/*
+          if-no-files-found: error
+
+  publish:
+    needs: [game, launcher]
+    runs-on: ubuntu-24.04
+    env:
+      TAG: ${{ inputs.tag }}
+      NOTES: ${{ inputs.notes }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The release's version counts the commits.
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Build the launcher image (it signs the game packages)
+        run: scripts/launcher.sh image
+
+      # One game-manifest.json of one version names every computer's package.
+      - name: Sign the game packages and write the manifest
+        run: |
+          for platform in linux-x86_64 windows-x86_64 darwin-aarch64 darwin-x86_64; do
+            tarball="$(ls artifacts/game-$platform/dwe-beta-*-$platform.tar.xz | head -1)"
+            scripts/package_release.sh --platform "$platform" --tarball "$tarball" --out dist
+          done
 
       - name: Draft release with the files
         run: |
-          bundle=build/launcher/release/bundle
-          appimage="$(ls "$bundle"/appimage/*.AppImage | head -1)"
           printf '%s\n' "$NOTES" > notes.md
           gh release create "$TAG" --draft --prerelease --title "$TAG" --notes-file notes.md
-          gh release upload "$TAG" dist/*.tar.xz dist/game-manifest.json "$appimage" "$appimage.sig" \
-            "$bundle"/deb/*.deb
+          gh release upload "$TAG" dist/dwe-game-*.tar.xz dist/game-manifest.json artifacts/launcher-*/*
 
-      # latest.json names the AppImage by its API URL, which exists only after the upload; the
-      # beta gateway points it at itself when a launcher asks, so testers never reach GitHub.
+      # latest.json names each update file by its API URL, which exists only after the upload; the
+      # beta gateway points it at itself when a launcher asks, so testers never reach GitHub. The
+      # universal macOS bundle serves both Mac processors.
       - name: Launcher update manifest
         run: |
-          appimage="$(basename "$(ls build/launcher/release/bundle/appimage/*.AppImage | head -1)")"
-          url="$(gh api "repos/${{ github.repository }}/releases" \
-            --jq ".[] | select(.tag_name == \"$TAG\") | .assets[] | select(.name == \"$appimage\") | .url")"
+          url() {
+            gh api "repos/${{ github.repository }}/releases" \
+              --jq ".[] | select(.tag_name == \"$TAG\") | .assets[] | select(.name == \"$1\") | .url"
+          }
+          appimage="$(ls artifacts/launcher-linux/*.AppImage | head -1)"
+          setup="$(ls artifacts/launcher-windows/*-setup.exe | head -1)"
+          mac="$(ls artifacts/launcher-macos/*.app.tar.gz | head -1)"
           version="$(python3 -c 'import json; print(json.load(open("apps/launcher/src-tauri/tauri.conf.json"))["version"])')"
           python3 scripts/package/release_manifest.py launcher --version "$version" --notes "$TAG" \
-            --platform linux-x86_64 "build/launcher/release/bundle/appimage/$appimage.sig" "$url" > latest.json
+            --platform linux-x86_64 "$appimage.sig" "$(url "$(basename "$appimage")")" \
+            --platform windows-x86_64 "$setup.sig" "$(url "$(basename "$setup")")" \
+            --platform darwin-aarch64 "$mac.sig" "$(url "$(basename "$mac")")" \
+            --platform darwin-x86_64 "$mac.sig" "$(url "$(basename "$mac")")" > latest.json
           gh release upload "$TAG" latest.json
