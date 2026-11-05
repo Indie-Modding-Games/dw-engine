@@ -1,6 +1,7 @@
 #include "save_sections.hpp"
 
 #include <dwe/assets/yaml_reader.hpp>
+#include <dwe/core/number_text.hpp>
 #include <dwe/game/partner/state_yaml.hpp>
 #include <dwe/session/messages.hpp>
 #include <dwe/session/slot_names.hpp>
@@ -66,7 +67,7 @@ glm::vec3 positionIn(YamlReader& reader, const YamlNode& node, std::string_view 
   return {reader.number(axes[0]), reader.number(axes[1]), reader.number(axes[2])};
 }
 
-// A number parsed whole by std::from_chars, or the reader fails at the node.
+// A number parsed whole by core::fromChars, or the reader fails at the node.
 template <typename T>
 T parsed(YamlReader& reader, const YamlNode& node, std::string_view problem) {
   T value{};
@@ -74,7 +75,7 @@ T parsed(YamlReader& reader, const YamlNode& node, std::string_view problem) {
     return value;
   }
   const std::string text = reader.text(node);
-  const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+  const auto [end, error] = core::fromChars(text.data(), text.data() + text.size(), value);
   if (error != std::errc{} || end != text.data() + text.size() || text.empty()) {
     reader.fail(node, formatMessage(problem, text));
   }
