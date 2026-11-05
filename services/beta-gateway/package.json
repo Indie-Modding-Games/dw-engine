@@ -1,0 +1,7 @@
+{
+  "name": "dwe-beta-gateway",
+  "private": true,
+  "type": "module",
+  "description": "Closed-beta gateway between the launcher and the private releases (no dependencies)",
+  "scripts": { "test": "node --test" }
+}
