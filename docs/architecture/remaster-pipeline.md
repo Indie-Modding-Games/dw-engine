@@ -926,7 +926,77 @@ son 12 lecturas por píxel y no se nota. Memoria: una textura RGBA del tamaño d
 las de los sprites que siguen la hora y la del pase, del tamaño de la ventana (3,5 MiB a 1280 × 720, 8 MiB a
 1920 × 1080).
 
-**Lo que no cubre.** Los modelos 3D, la UI y las pantallas propias (combate, minijuegos) no pasan por `map.slang`.
+**Lo que no cubre.** Los modelos 3D, la UI y las pantallas propias (combate, minijuegos) no pasan por `map.slang`;
+los modelos tienen sus propias mejoras de definición ([Nitidez](#nitidez)).
+
+### Nitidez
+
+Los mapas se veían pixelados. Antes de cambiar nada se midió de dónde venía: capturas de `twna01`, `trop01`,
+`leom01`, `frzl01`, `twnb01`, `tunn01` y `mgen06` a 1920 × 1080 y 1280 × 720, de día y de noche, con «Escenarios en
+alta definición» encendida y apagada, y recortes ampliados.
+
+| Fuente | Qué se vio | Qué se hizo |
+|---|---|---|
+| Texturas de los modelos | Muestreadas al texel más cercano: a 1080p un texel de una textura de 256 × 128 ocupa varios píxeles y se ven bloques | `texture_filter` ([render](render.md#nitidez-suavizado-de-bordes-y-texturas-de-modelos)) |
+| Contornos de los modelos | Sin suavizado: dientes en cada silueta, lo que más «pixelado» parecía | `antialiasing`, 4 muestras por píxel |
+| Resolución del 3D | Ya es la de la ventana: no hay una resolución interna menor que ampliar | Nada |
+| Fondo con el filtro HD | Suave, pero con «pinceladas» en las zonas con textura (la hierba de `trop01` y `twna01`), líneas onduladas y flecos rojos y azules en los circuitos de `mgen06`, y el ruido de colores del original | `scenery_quality`: el fondo ampliado (abajo) |
+| Tramado | Proporción de cuadros de 2 × 2 en damero y de píxeles aislados: `twna01` 2,34 % y 1,50 %, `trop01` 7,94 % y 7,33 % (damero ordenado en las zonas oscuras y planas), `leom01` 0,91 % y 0,58 %, `frzl01` 1,04 % y 0,45 %, `twnb01` 1,38 % y 0,48 %, `tunn01` 2,67 % y 1,58 %, `mgen06` 0,48 % y 0,07 %. Casi todo es ruido de la cuantización a 256 colores, no un tramado ordenado | Se funde con un filtro por contraste antes de ampliar |
+| Recortes del fondo | La máscara es el texel más cercano del sprite: el borde de lo que tapa a los personajes va en escalera | Sin cambiar (pendiente) |
+| Interfaz | El HUD de la piel original, el polígono del minimapa y la fuente del nombre del mapa son pixel art ampliado | Fuera de esta mejora (UI) |
+
+**El fondo ampliado** (`scenery_quality: upscaled`, por defecto). Al cargar un mapa, un hilo dobla el fondo en cada
+variante de paleta con un escalador escrito para dwe (`<dwe/render/scenery_upscale.hpp>`; de lo publicado solo toma
+la idea de la interpolación cúbica direccional, nada de código), y el pase del fondo HD remuestrea lo doblado a la
+ventana:
+
+1. **Tramado fundido.** Cada texel pasa a ser la media ponderada (1 2 1) de sus vecinos de su clase cuyo color guía
+   (luma más media crominancia) difiere del suyo como mucho 10 niveles de 255: el damero y el ruido de dos colores
+   cercanos dan su tono; cualquier cambio con más contraste queda igual.
+2. **Doblado dirigido por bordes.** Cada píxel nuevo es una interpolación cúbica (−1, 9, 9, −1)/16 a lo largo de la
+   dirección en que la imagen cambia menos: primero los centros de cada 2 × 2 (las dos diagonales), luego los de cada
+   fila y columna; si ninguna dirección domina (menos de un 15 %), se mezclan las dos con pesos `1/(1 + d⁵)`. El
+   resultado se sujeta a las dos muestras del medio, así que no hay anillos. Los bordes salen como líneas, sin
+   escalones (una diagonal avanza un píxel por fila, no dos cada dos filas).
+3. **Enfoque adaptativo.** Un enfoque suave al estilo del enfoque adaptativo al contraste: cada píxel se aleja de
+   sus cuatro vecinos tanto menos cuanto más contraste hay ya, y nunca más allá del mínimo y el máximo de su luma
+   alrededor (sin halos). Fuerza 0,35 de 1.
+4. **Las decisiones se toman una vez.** Dirección, pesos, fundido y enfoque se deciden sobre la primera variante y
+   se aplican igual a todas: lo doblado es una mezcla lineal de los texels del original, así que mezclar las
+   variantes dobladas con los pesos del fundido da lo mismo que doblar la paleta mezclada (salvo la sujeción y el
+   redondeo, unos pocos niveles en algún píxel y menos de uno de media). La GPU mezcla hasta tres variantes con los
+   pesos que se ven en cada momento (la fila de la instantánea de un fundido interrumpido guarda los suyos).
+5. **Las clases no se mezclan.** Los texels transparentes, STP y opacos nunca se interpolan entre sí, y cada píxel
+   nuevo tiene la clase del texel original de arriba a la izquierda: el pase toma qué se dibuja y qué es STP del
+   texel original más cercano y solo mezcla lo doblado de esa clase. Formas, recortes, capas y colisiones no cambian.
+6. **En la GPU** (`SamplingUpscaledPrefilter` en `map.slang`): Catmull-Rom 4 × 4 sobre lo doblado, sujeto a los
+   cuatro píxeles del medio. Va en el pase del fondo HD, que solo filtra la franja que descubre el desplazamiento: el
+   resto de la escena (el fondo, los recortes sin costuras, las capas) lo lee como antes.
+
+**Caché.** El resultado se guarda comprimido con zstd en `<datos del usuario>/cache/upscale`, con una clave que
+incluye los índices, las paletas, los ajustes y la versión del escalador: cada fondo se dobla una vez. La carpeta
+se mantiene por debajo de 512 MiB borrando lo usado hace más tiempo (un fondo de 768 × 640 ocupa de 3 a 5 MiB por
+variante). Las autotests no la usan. Mientras el hilo trabaja, y si algo falla, el fondo se ve con el filtro de
+siempre; cambiar de mapa, de idioma (los carteles) o la opción cancela el trabajo en curso sin esperar.
+
+**Coste.** Doblar un fondo de 768 × 640 en sus tres variantes, compilado con optimización y en 8 hilos: de 300 a
+430 ms según la carga de la máquina (de 896 × 256 con una variante, de 100 a 170 ms), una sola vez por fondo; en la
+compilación de desarrollo con sanitizers, unos 8 s, sin parar el juego. Memoria de vídeo: una textura RGBA del doble
+de lado por variante (7,5 MiB para 768 × 640; 20 MiB para el mayor, 1280 × 1024). Por fotograma: 16 lecturas por
+variante y píxel, solo en la franja que el desplazamiento descubre.
+
+**Por qué no otro escalador.** Los de pixel art (familias xBR o ScaleFX) deciden por igualdad o distancia de
+colores entre vecinos, y estos fondos son renders cuantizados en los que casi ningún vecino es igual (ver arriba
+la prueba con Scale2x). Los escaladores con redes neuronales dan más detalle, pero son código y modelos de terceros
+con sus licencias y pesos: aquí no se incluye ninguno; quien los quiera puede hacer un paquete `remaster` con la
+tubería de este documento.
+
+**Modelos.** `texture_filter` y `antialiasing` están en [render](render.md#nitidez-suavizado-de-bordes-y-texturas-de-modelos):
+las texturas de los modelos se doblan con el mismo escalador (sin tramado ni enfoque; el alfa interpolado, los
+texels transparentes rellenados con el color de sus vecinos) y se filtran con mipmaps, y la escena se dibuja con 4
+muestras por píxel.
+
+**Lo que queda.** La máscara de los recortes (escalones sobre los personajes), la UI y el minimapa.
 
 ### Reglas por tipo de asset
 

@@ -11,7 +11,8 @@ El render del juego, encima de `rhi`. Ver [render.md](../../architecture/render.
   vértices y matrices después de ellas, y antes un mapa recién cargado llenaba los 16 MiB con sus texturas y el
   primer frame no podía subir los vértices del mapa («upload ring is out of room»). Lo que no cabe espera al frame
   siguiente; una copia mayor que lo que queda sin la reserva va sola, la primera de su frame.
-  `textureWritePending` dice si una textura aún tiene una copia esperando.
+  `textureWritePending` dice si una textura aún tiene una copia esperando. `setMultisampling` dibuja el pase de
+  escena con 4 muestras por píxel (el ajuste `antialiasing`; [nitidez](../../architecture/render.md#nitidez-suavizado-de-bordes-y-texturas-de-modelos)).
 - `FrameDesc::textureScenes`: escenas que se dibujan en una textura propia (`createSceneTexture`) antes de los pases
   de la ventana; con `TextureScene::keep` se dibuja encima de lo que la textura tenía en vez de borrarla.
 - `Drawer`, `PrepareContext` y `DrawContext`: la interfaz por la que el mapa, los modelos y la UI preparan sus datos
@@ -20,6 +21,11 @@ El render del juego, encima de `rhi`. Ver [render.md](../../architecture/render.
 - `ModelRenderer`: modelos con piel (`assets::ModelData`), subidos una vez y dibujados N veces por frame con skinning
   en la GPU, luz del original y semitransparencias ordenadas, con un drawer para lo opaco y otro para lo
   semitransparente. `SlotMap` guarda sus modelos tras handles con generación. Ver [modelos](../../architecture/models.md).
+  `setTextureFilter` elige cómo se muestrean sus texturas (`TextureFilter`: `Nearest`, `Smooth`, `Upscaled`, el
+  ajuste `texture_filter`).
+- `scenery_upscale.hpp`: el escalador ×2 del motor (`upscaleScenery` para el fondo en todas sus variantes,
+  `upscaleRgba` para texturas con alfa) y `upscale_cache.hpp` (`UpscaleCache`, `UpscaleKey`): lo que hace se guarda
+  comprimido con zstd en `<datos del usuario>/cache/upscale`. Ver [Nitidez](../../architecture/remaster-pipeline.md#nitidez).
 - `QuadBatch`: rectángulos texturizados en píxeles en un solo draw (sprites, minimapa, imágenes de depuración).
 - `ScreenFade`: resta un gris de toda la pantalla sobre lo dibujado antes (mezcla `Subtractive`), como el fundido
   del cambio de mapa del original (`fade.c: renderFade`); `setWhiteness` suma el mismo gris (mezcla `Additive`,
@@ -84,6 +90,10 @@ política para cualquier resolución, en el [ADR 0020](../../adr/0020-camara-de-
   la ventana o el mapa. El fondo (`SamplingScreen`) y los recortes (`SamplingCutoutScreen`) la leen con una lectura
   por píxel; sin el pase filtran al vuelo, con el mismo resultado. Apagado, cada cuadro usa `SamplingSharp` y la
   imagen es la del original exacta. Ver [Alta definición en el motor](../../architecture/remaster-pipeline.md#alta-definición-en-el-motor).
+  `setSceneryQuality` (`SceneryQuality::Upscaled` por defecto, el ajuste `scenery_quality`): el pase del fondo
+  remuestrea el fondo doblado por `upscaleScenery` (`SamplingUpscaledPrefilter`), hecho en un hilo al cargar el mapa
+  y guardado en la caché (`setUpscaleCache`); hasta que está subido, y si no se puede hacer, se usa el filtro de
+  siempre. Ver [Nitidez](../../architecture/remaster-pipeline.md#nitidez).
 - `MapCutouts` (`<dwe/render/map_cutouts.hpp>`, solo CPU): dice, por sprite y posición, si un sprite de las capas es
   un recorte exacto del fondo (`clut` −1, píxel entero, cada texel dibujado igual al índice del fondo debajo). Los
   recortes se dibujan en `SamplingCutout` (o `SamplingCutoutScreen`): su máscara y su clase son las del sprite, el

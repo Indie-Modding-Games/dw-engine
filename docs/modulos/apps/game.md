@@ -1085,10 +1085,23 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
 - **Colisiones**: la opción solo cambia cómo se muestrea el mapa en la GPU; el campo (`game/field`) no la ve.
 - **Opciones**: es una entrada de `ui/common/game_options.lua` en la pestaña «Gráficos» (`tab = "graphics"`) de las
   [opciones en partida](#opciones-en-partida).
+- **Nitidez**: tres ajustes más, también en lo mejor por defecto, deciden cuánta definición tiene la imagen
+  (`graphics_options.hpp`; el porqué en [Nitidez](../../architecture/remaster-pipeline.md#nitidez)):
+  `scenery_quality` (`upscaled`, el fondo ampliado una vez por mapa con el escalador del motor y guardado en la caché
+  de `<datos del usuario>/cache/upscale`; `smooth`, el filtro de siempre), `antialiasing` (`true`: la escena con 4
+  muestras por píxel, contornos de los modelos sin dientes) y `texture_filter` (`upscaled`, las texturas de los
+  modelos ampliadas al cargar y filtradas con mipmaps; `smooth`, solo filtradas; `nearest`, los texels del original).
+  Se guardan en los ajustes del usuario, `--graphics scenery=smooth|upscaled,aa=on|off,textures=nearest|smooth|upscaled`
+  los cambia para una partida y la consola y las rutas con `scenery_quality("smooth")`, `antialiasing("off")` y
+  `texture_filter("nearest")`. Aún no tienen fila en la pestaña «Gráficos»: irían «Calidad de escenarios» (Suave /
+  Ampliada), «Suavizado de bordes» (Sí / No) y «Texturas de modelos» (Píxeles / Suaves / Ampliadas).
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
 | Escenarios en alta definición | No existe: el fondo y las capas se ven a su resolución, ampliados píxel a píxel | `map.slang` (`sampleSmooth`, modos `SamplingSmooth` y `SamplingCutout`) filtra los colores con la paleta de la hora; `MapRenderer::resolveBackgroundColors` pasa el fondo a colores cuando cambia la paleta; `render::MapCutouts` encuentra las capas que son recortes del fondo para que tomen su color del fondo filtrado, sin costuras | `hd_scenery_tests.cpp` («HD scenery is on unless the player turned it off…», «HD scenery changes no collision, trigger, map change or camera of a walk»); `map_cutouts_tests.cpp` de `engine/render`; capturas antes y después a 1280 × 720 y 1920 × 1080 en `twna01`, `trop01`, `leom01` y `frzl01`, de día y de noche | Mejora (opción) |
+| Escenarios ampliados (`scenery_quality`) | No existe | `render::upscaleScenery` dobla el fondo en cada variante de paleta (interpolación dirigida por bordes propia, tramado fundido, enfoque adaptativo suave) en un hilo, con caché en disco (`render::UpscaleCache`); `map.slang` (`SamplingUpscaledPrefilter`) lo remuestrea a la ventana con Catmull-Rom sujeto, mezcla las variantes con los pesos del fundido y toma la clase de cada píxel del texel original más cercano | `scenery_upscale_tests.cpp` de `engine/render` (bordes, diagonales sin escalones, degradados, fundidos, clases, tramado, caché); `graphics_options_tests.cpp` («the sharpness options start on their best…»); capturas del mismo frame original / HD de antes / nuevo en siete mapas | Mejora (opción) |
+| Suavizado de bordes (`antialiasing`) | No existe | `Renderer::setMultisampling`: el pase de escena con 4 muestras (`GraphicsPipeline` con variante multimuestreada), resuelto en la ventana o en la textura del paso de luz | `pipeline_test.cpp` de `engine/rhi`; capturas | Mejora (opción) |
+| Texturas de modelos (`texture_filter`) | Texels cuadrados | `ModelRenderer::setTextureFilter`: filtrado con mipmaps y anisotropía (`FlagSmooth` en `skinned_model.slang`), sobre las texturas dobladas por `upscaleRgba` (alfa interpolado, sin borde oscuro) | `scenery_upscale_tests.cpp` («a model texture's cut-out edge takes no dark fringe…»); `pipeline_test.cpp` (niveles de mip); capturas | Mejora (opción) |
 
 ## Opciones en partida
 
@@ -1213,8 +1226,8 @@ Mejoras opcionales que no cambian ninguna regla, ni la colisión, ni la geometr�
 encendidas por defecto, como las demás mejoras que no tocan reglas. Se cambian en las opciones del menú de pausa
 (filas «Sombras», «Luz mejorada», «Colores vivos») y en las del título con el aspecto original, se aplican al momento
 y se guardan en `settings.yaml` (`shadows`, `enhanced_lighting`, `vivid_colors`; `GraphicsChanger`,
-`apps/game/src/graphics_options.hpp`). `--graphics shadows=off|round|sun,lighting=on|off,colors=on|off` las cambia
-solo para esa ejecución (capturas y rutas, que no leen los ajustes). `FieldScene` las aplica en
+`apps/game/src/graphics_options.hpp`). `--graphics shadows=off|round|sun,lighting=on|off,colors=on|off` (y las de
+[nitidez](#escenarios-en-alta-definición): `scenery=`, `aa=`, `textures=`) las cambia solo para esa ejecución (capturas y rutas, que no leen los ajustes). `FieldScene` las aplica en
 `field_scene_graphics.cpp`; cómo se dibujan: [render.md](../../architecture/render.md#paso-de-luz-y-color).
 
 - Sombras: `round` es la sombra redonda del original bajo cada personaje (jugador, compañero y NPC del mapa;

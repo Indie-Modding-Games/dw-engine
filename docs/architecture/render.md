@@ -213,8 +213,29 @@ pulling: un binding basta mientras la animación es por CPU y deja que `rhi::val
 ## Samplers
 
 `rhi::SamplerKind`: `NearestClamp`, `NearestRepeat` (píxeles nítidos, mip más cercano) y `LinearClamp`,
-`LinearRepeat` (filtrado bilineal, mezcla de mips y anisotropía 16× o el máximo de la GPU). Hoy las imágenes tienen
-un solo nivel de mip; los samplers ya están listos para cuando lleguen.
+`LinearRepeat` (filtrado bilineal, mezcla de mips y anisotropía 16× o el máximo de la GPU). Las texturas creadas con
+`mipmapped` (las de los modelos con `texture_filter` en `smooth` o `upscaled`) tienen su cadena entera; las demás, un
+solo nivel.
+
+## Nitidez: suavizado de bordes y texturas de modelos
+
+Dos mejoras opcionales, encendidas por defecto, que solo cambian la definición de la imagen (las razones y las
+medidas están en [Nitidez](remaster-pipeline.md#nitidez)):
+
+- **Suavizado de bordes** (`antialiasing`): `Renderer::setMultisampling` dibuja el pase de escena en un color y una
+  profundidad de 4 muestras por píxel (`MsaaSamples`; Vulkan obliga a aceptar 4 en color y profundidad, así que no
+  hace falta otro camino) y los promedia al final del pase en la ventana o en la textura del paso de luz. Cada
+  pipeline de `Pass::Scene` se crea con su variante multimuestreada. Las texturas de las escenas propias
+  (`textureScenes`, el pase del fondo HD, los retratos) siguen con una muestra. El fragment shader corre una vez por
+  píxel: solo se suavizan los bordes de los triángulos (los contornos de los modelos y de los cuadros), y lo que un
+  shader descarta (los texels transparentes, la máscara de las capas) sigue siendo el píxel del original.
+- **Texturas de modelos** (`texture_filter`): `ModelRenderer::setTextureFilter`. `Nearest` es el texel del original;
+  `Smooth` filtra con mipmaps y anisotropía (`FlagSmooth` en `skinned_model.slang`), y antes rellena el color de los
+  texels transparentes con el de sus vecinos dibujados para que el filtrado no meta un borde oscuro; `Upscaled`, el
+  valor por defecto, filtra las texturas dobladas al subir el modelo por el escalador del motor (`upscaleRgba`,
+  [Nitidez](remaster-pipeline.md#nitidez)), con el alfa interpolado: los recortes por alfa dan contornos suaves. Las
+  texturas que se reescriben en juego (`updateImage`, las caras) se doblan igual. Cambiar el filtro vuelve a subir
+  las texturas de cada modelo.
 
 ## Modelos
 
