@@ -10,6 +10,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_updater::UpdaterExt;
 
+use crate::auto_update::{self, Action, LastCheck};
 use crate::content::{self, Identity};
 use crate::disc::{self, Pick};
 use crate::failure::{code, Failure, Result};
@@ -33,11 +34,18 @@ pub struct Formats {
 #[derive(Serialize)]
 pub struct Status {
     language: String,
-    launcher_version: &'static str,
+    launcher_version: String,
     platform: String,
     data_folder: String,
     own_data_folder: bool,
     check_updates: bool,
+    auto_update_launcher: bool,
+    auto_update_game: bool,
+    last_check: Option<LastCheck>,
+    /// A new launcher installed in this session: it runs after a restart.
+    launcher_ready: Option<String>,
+    /// This copy can replace itself (auto_update::launcher_replaceable).
+    launcher_replaceable: bool,
     game: Option<Game>,
     has_previous: bool,
     content_installed: bool,
@@ -87,6 +95,24 @@ pub struct UpdateInfo {
     /// The update reads the disc again (another extractor version).
     reads_disc_again: bool,
     launcher_update: Option<String>,
+    /// What to do with each (auto_update.rs): the page follows it.
+    launcher_plan: Action,
+    game_plan: Action,
+}
+
+/// The running launcher's version (the configuration's, which a test build may change).
+fn launcher_version(app: &AppHandle) -> String {
+    app.package_info().version.to_string()
+}
+
+/// Keeps the last check's result in settings.json.
+fn record(state: &AppState, next: impl FnOnce(&LastCheck) -> LastCheck) {
+    let mut settings = state.settings.lock().unwrap();
+    let previous = settings.last_check.clone().unwrap_or_default();
+    settings.last_check = Some(next(&previous));
+    if let Err(failure) = settings.save() {
+        log_line!("the last check was not saved: {failure}");
+    }
 }
 
 /// The public key the build trusts (the updater's, in tauri.conf.json); none in a development
@@ -114,11 +140,16 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
     let token = token_state(state);
     Status {
         language: settings.language.clone(),
-        launcher_version: env!("CARGO_PKG_VERSION"),
+        launcher_version: launcher_version(app),
         platform: manifest::platform_key(),
         data_folder: data.display().to_string(),
         own_data_folder: settings.uses_default_data_folder(),
         check_updates: settings.check_updates,
+        auto_update_launcher: settings.auto_update_launcher,
+        auto_update_game: settings.auto_update_game,
+        last_check: settings.last_check.clone(),
+        launcher_ready: state.launcher_ready.lock().unwrap().clone(),
+        launcher_replaceable: auto_update::launcher_replaceable(),
         has_previous: store.has_previous(),
         content_installed: installed,
         content_outdated: game.as_ref().is_some_and(|g| content::is_outdated(&content, g.extractor_version)),
@@ -193,22 +224,63 @@ async fn cached_or_latest(state: &AppState) -> Result<Release> {
     }
 }
 
+/// Looks for a new launcher and a new game, says what to do with each (auto_update.rs) and keeps
+/// the result (record: false for the quiet look after an update, which keeps "updated").
 #[tauri::command]
-pub async fn check_updates(state: State<'_, AppState>) -> Result<UpdateInfo> {
-    let release = latest_release(&state).await?;
-    let data = data_folder(&state);
+pub async fn check_updates(app: AppHandle, state: State<'_, AppState>, record_result: Option<bool>) -> Result<UpdateInfo> {
+    let keep = record_result.unwrap_or(true);
+    let checked = look_for_updates(&app, &state).await;
+    if keep {
+        let at = auto_update::now();
+        match &checked {
+            Ok(info) => {
+                let game = info.game_update.then(|| info.game_version.clone());
+                record(&state, |_| LastCheck::checked(at, info.launcher_update.clone(), game));
+            }
+            Err(failure) => record(&state, |_| LastCheck::failed(at, failure)),
+        }
+    }
+    checked
+}
+
+async fn look_for_updates(app: &AppHandle, state: &AppState) -> Result<UpdateInfo> {
+    let release = latest_release(state).await?;
+    let data = data_folder(state);
     let game = GameStore::new(&data).current();
+    let current = launcher_version(app);
     let mut launcher_update = None;
     if let Some(asset) = release.launcher_manifest() {
-        if let Ok(text) = client(&state)?.fetch_text(asset).await {
+        if let Ok(text) = client(state)?.fetch_text(asset).await {
             launcher_update = serde_json::from_str::<serde_json::Value>(&text)
                 .ok()
                 .and_then(|v| v.get("version")?.as_str().map(str::to_string))
-                .filter(|v| manifest::is_newer(v, Some(env!("CARGO_PKG_VERSION"))));
+                .filter(|v| manifest::is_newer(v, Some(&current)));
         }
     }
     let game_update = updates::is_update(&release, game.as_ref());
-    log_line!("release {}: game {} (update: {game_update})", release.tag, release.manifest.version);
+    log_line!("release {}: game {} (update: {game_update}), launcher {launcher_update:?}", release.tag, release.manifest.version);
+    let settings = state.settings.lock().unwrap().clone();
+    let signing = public_key(app).is_some();
+    let content = content::content_folder(&data);
+    let (running, busy) = (state.game_running.load(Ordering::SeqCst), state.busy.load(Ordering::SeqCst));
+    let ready = state.launcher_ready.lock().unwrap().clone();
+    let launcher_plan = auto_update::plan(auto_update::Facts {
+        found: launcher_update.is_some(),
+        automatic: settings.auto_update_launcher,
+        can_install: signing && auto_update::launcher_replaceable(),
+        game_running: running,
+        busy,
+        installed: ready.is_some() && ready == launcher_update,
+    });
+    let game_plan = auto_update::plan(auto_update::Facts {
+        found: game_update,
+        automatic: settings.auto_update_game,
+        // The first install goes through the disc screen; an outdated content is read first.
+        can_install: signing && game.is_some() && content::has_base_pack(&content) && !game.as_ref().is_some_and(|g| content::is_outdated(&content, g.extractor_version)),
+        game_running: running,
+        busy,
+        installed: false,
+    });
     Ok(UpdateInfo {
         release_name: release.name.clone(),
         tag: release.tag.clone(),
@@ -220,6 +292,8 @@ pub async fn check_updates(state: State<'_, AppState>) -> Result<UpdateInfo> {
         download_bytes: updates::download_size(&release),
         reads_disc_again: game.as_ref().is_some_and(|g| g.extractor_version != Some(release.manifest.extractor_version)),
         launcher_update,
+        launcher_plan,
+        game_plan,
     })
 }
 
@@ -336,9 +410,19 @@ fn remembered_disc(state: &AppState) -> Result<PathBuf> {
 /// (or says the disc moved, and the page asks for it).
 #[tauri::command]
 pub async fn update_game(app: AppHandle, state: State<'_, AppState>) -> Result<Status> {
+    if state.game_running.load(Ordering::SeqCst) {
+        return Err(Failure::new(code::GAME_RUNNING, ""));
+    }
     let _busy = state.begin()?;
     let release = cached_or_latest(&state).await?;
-    let game = download_game(&app, &state, &release).await?;
+    let installed = download_game(&app, &state, &release).await;
+    let at = auto_update::now();
+    match &installed {
+        Ok(game) => record(&state, |last| last.updated(at, None, Some(game.version.clone()))),
+        Err(failure) if failure.code != code::CANCELLED => record(&state, |_| LastCheck::failed(at, failure)),
+        Err(_) => {}
+    }
+    let game = installed?;
     let content = content::content_folder(&data_folder(&state));
     if content::is_outdated(&content, game.extractor_version) {
         log_line!("the new game reads discs differently: reading the disc again");
@@ -431,6 +515,21 @@ pub fn set_check_updates(app: AppHandle, state: State<'_, AppState>, enabled: bo
     Ok(status_of(&app, &state))
 }
 
+/// The automatic updates: what ("launcher" or "game") and on or off.
+#[tauri::command]
+pub fn set_auto_update(app: AppHandle, state: State<'_, AppState>, what: String, enabled: bool) -> Result<Status> {
+    {
+        let mut settings = state.settings.lock().unwrap();
+        match what.as_str() {
+            "launcher" => settings.auto_update_launcher = enabled,
+            "game" => settings.auto_update_game = enabled,
+            _ => return Err(Failure::new(code::IO, what)),
+        }
+        settings.save()?;
+    }
+    Ok(status_of(&app, &state))
+}
+
 /// Moves where the launcher keeps the game, the content, the saves and the logs from now on
 /// (nothing is moved: the new folder starts empty unless it already has them). None: back to the
 /// game's own folder.
@@ -478,40 +577,93 @@ pub fn open_logs(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
         .map_err(|e| Failure::new(code::IO, e.to_string()))
 }
 
-/// Replaces the launcher with the release's one (the Tauri updater: latest.json, signed with
-/// the same key) and restarts it.
+#[derive(Serialize)]
+pub struct LauncherInstalled {
+    version: String,
+}
+
+/// Downloads the release's launcher (the Tauri updater: latest.json, signed with the same key),
+/// checks its signature and installs it; it runs from the next start (restart_launcher, or the
+/// next time the player opens it). Never while the game runs. On Windows the installer runs
+/// when the launcher restarts or closes, since it closes the launcher.
 #[tauri::command]
-pub async fn install_launcher_update(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
+pub async fn install_launcher_update(app: AppHandle, state: State<'_, AppState>) -> Result<LauncherInstalled> {
+    if state.game_running.load(Ordering::SeqCst) {
+        return Err(Failure::new(code::GAME_RUNNING, ""));
+    }
     let _busy = state.begin()?;
-    let key = public_key_text(&app)
+    let installed = download_launcher(&app, &state).await;
+    let at = auto_update::now();
+    match &installed {
+        Ok(version) => {
+            *state.launcher_ready.lock().unwrap() = Some(version.clone());
+            record(&state, |last| last.updated(at, Some(version.clone()), None));
+        }
+        Err(failure) => record(&state, |_| LastCheck::failed(at, failure)),
+    }
+    installed.map(|version| LauncherInstalled { version })
+}
+
+async fn download_launcher(app: &AppHandle, state: &AppState) -> Result<String> {
+    let key = public_key_text(app)
         .filter(|k| verify::public_key(k).is_some())
         .ok_or_else(|| Failure::new(code::NO_SIGNING_KEY, ""))?;
-    let release = cached_or_latest(&state).await?;
+    let release = cached_or_latest(state).await?;
     let asset = release.launcher_manifest().ok_or_else(|| Failure::new(code::NO_RELEASE, "latest.json"))?;
     let url = asset.url.parse().map_err(|_| Failure::new(code::BAD_MANIFEST, asset.url.clone()))?;
     let updater_failure = |e: tauri_plugin_updater::Error| Failure::new(code::NETWORK, crate::log::redact(&e.to_string()));
     let mut builder = app.updater_builder().pubkey(key).endpoints(vec![url]).map_err(updater_failure)?;
     builder = builder.header("Accept", "application/octet-stream").map_err(updater_failure)?;
-    for (name, value) in client(&state)?.auth_headers() {
+    for (name, value) in client(state)?.auth_headers() {
         builder = builder.header(name, value).map_err(updater_failure)?;
     }
     let update = builder.build().map_err(updater_failure)?.check().await.map_err(updater_failure)?;
     let Some(update) = update else {
-        return Ok(());
+        return Err(Failure::new(code::NO_RELEASE, "latest.json"));
     };
-    log_line!("installing the launcher {}", update.version);
+    log_line!("downloading the launcher {}", update.version);
     let handle = app.clone();
-    update
-        .download_and_install(
+    let mut done = 0u64;
+    // The download checks the signature against the build's key before returning the bytes.
+    let bytes = update
+        .download(
             move |chunk, total| {
-                emit(&handle, "launcher", None, None, chunk as u64, total.unwrap_or(0));
+                done += chunk as u64;
+                emit(&handle, "launcher", None, None, done, total.unwrap_or(0));
             },
             || {},
         )
         .await
-        .map_err(updater_failure)?;
+        .map_err(|e| match e {
+            tauri_plugin_updater::Error::Minisign(_)
+            | tauri_plugin_updater::Error::SignatureUtf8(_)
+            | tauri_plugin_updater::Error::Base64(_)
+            | tauri_plugin_updater::Error::SignedVersionMismatch { .. }
+            | tauri_plugin_updater::Error::MissingSignedVersion => Failure::new(code::BAD_SIGNATURE, e.to_string()),
+            other => updater_failure(other),
+        })?;
+    let version = update.version.clone();
+    if cfg!(windows) {
+        *state.launcher_pending.lock().unwrap() = Some((update, bytes));
+    } else {
+        update.install(&bytes).map_err(updater_failure)?;
+    }
+    log_line!("the launcher {version} is installed; it runs from the next start");
+    Ok(version)
+}
+
+/// Starts the new launcher installed by install_launcher_update. Refused while the game runs.
+#[tauri::command]
+pub fn restart_launcher(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
+    if state.game_running.load(Ordering::SeqCst) {
+        return Err(Failure::new(code::GAME_RUNNING, ""));
+    }
+    if state.busy.load(Ordering::SeqCst) {
+        return Err(Failure::new(code::BUSY, ""));
+    }
     if let Some(marker) = &state.run_marker {
         marker.clear();
     }
+    crate::install_pending_launcher(&state);
     app.restart();
 }

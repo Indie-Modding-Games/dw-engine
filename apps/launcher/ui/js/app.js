@@ -5,7 +5,7 @@ import { initAddonManager, installAddonFrom, setAddonDragging, setSafeMode } fro
 import { addonsView, initAddons, publishStatus, reloadAddons, setView } from "./addons.js";
 import { api, listen, onDragDrop, pickDisc, pickFolder } from "./api.js";
 import { emblem, GAMES } from "./art.js";
-import { $, add, el, reconcile } from "./dom.js";
+import { $, add, el, reconcile, toast } from "./dom.js";
 import { failureText, formatBytes, getLanguage, setLanguage, t } from "./i18n.js";
 import { renderNotes } from "./notes.js";
 import { activeSettingsTab, mountSettings, openSettings, settingsOpen } from "./settings.js";
@@ -21,6 +21,9 @@ const state = {
   discMoved: null,
   activeTab: "home",
   backgroundLoaded: false,
+  // The launcher's own update: downloading now, and whether its banner was put off.
+  launcherInstalling: false,
+  launcherLater: false,
 };
 
 function announce(text) {
@@ -114,6 +117,16 @@ function renderNotice() {
   } else if (state.status.content_outdated) {
     title = t("outdatedTitle");
     body = t("outdatedBody");
+  } else if (state.status.launcher_ready && !state.launcherLater) {
+    const playing = state.status.game_running;
+    title = t("launcherReadyTitle", { version: state.status.launcher_ready });
+    body = playing ? t("launcherReadyPlaying") : t("launcherReadyBody");
+    actions = el(
+      "div",
+      { class: "row" },
+      el("button", { class: "button primary", type: "button", text: t("launcherRestart"), disabled: playing || Boolean(state.task), onclick: restartLauncher }),
+      el("button", { class: "button", type: "button", text: t("launcherLater"), onclick: () => { state.launcherLater = true; renderAll(); } }),
+    );
   }
   notice.hidden = !title;
   if (!title) return;
@@ -222,7 +235,8 @@ async function refresh() {
   renderAll();
 }
 
-async function runTask(work) {
+// quiet: an automatic update; a failure is a toast (and Settings → Updates), not a dialog.
+async function runTask(work, { recheck = true, quiet = false } = {}) {
   if (state.task) return;
   state.task = { task: "identify" };
   state.discMoved = null;
@@ -231,10 +245,13 @@ async function runTask(work) {
     state.status = await work();
     state.update = null;
     announce(t("readyTitle"));
-    if (state.status.check_updates) checkUpdates();
+    if (recheck && state.status.check_updates) checkUpdates();
+    else if (!recheck) checkUpdates({ apply: false, record: false });
   } catch (failure) {
     if (failure?.code === "disc-moved") {
       state.discMoved = failure.detail ?? "";
+    } else if (quiet && failure?.code !== "cancelled") {
+      toast({ title: t("autoGameFailedTitle"), text: t("autoGameFailedBody", { reason: failureText(failure) }), kind: "warning" });
     } else if (failure?.code !== "cancelled") {
       showMessage(t("errorTitle"), failureText(failure));
     }
@@ -265,19 +282,55 @@ async function play() {
   }
 }
 
-async function checkUpdates() {
+// Looks for updates and, unless apply is false, does what the backend's plan says
+// (src-tauri/src/auto_update.rs): installs what the player let it install, offers the rest.
+async function checkUpdates({ apply = true, record = true } = {}) {
   if (state.checking) return;
   state.checking = true;
   slots.render("settings", context());
   try {
-    state.update = await api.checkUpdates();
+    state.update = await api.checkUpdates(record);
     state.updateFailure = null;
   } catch (failure) {
     state.update = null;
     state.updateFailure = failure;
   } finally {
     state.checking = false;
-    renderAll();
+    await refresh();
+  }
+  if (apply && state.update) await applyUpdates();
+}
+
+async function applyUpdates() {
+  const update = state.update;
+  if (update.launcher_plan === "install") await installLauncher(false);
+  if (update.game_plan === "install" && !state.task) await runTask(() => api.updateGame(), { recheck: false, quiet: true });
+}
+
+// Installs the new launcher; restart: start it right away (the player's button).
+async function installLauncher(restart) {
+  if (state.launcherInstalling) return;
+  state.launcherInstalling = true;
+  state.launcherLater = false;
+  renderAll();
+  try {
+    await api.installLauncherUpdate();
+    if (restart) await api.restartLauncher();
+  } catch (failure) {
+    if (restart) showMessage(t("errorTitle"), failureText(failure));
+  } finally {
+    state.launcherInstalling = false;
+    // Its progress came through the task events: the bar is done.
+    if (state.task?.task === "launcher") state.task = null;
+    await refresh();
+  }
+}
+
+async function restartLauncher() {
+  try {
+    await api.restartLauncher();
+  } catch (failure) {
+    showMessage(t("errorTitle"), failureText(failure));
   }
 }
 
@@ -323,10 +376,18 @@ function registerBuiltIns() {
     id: "launcher-update",
     order: 0,
     render: (card) => {
-      if (!state.update?.launcher_update) return false;
+      // Only when the player installs it (automatic updates off, or this copy cannot replace
+      // itself); otherwise it installs by itself and the notice offers the restart.
+      if (!state.update?.launcher_update || state.update.launcher_plan !== "offer") return false;
       card.append(
         el("div", { class: "card-title" }, el("h2", { text: t("newsLauncher", { version: state.update.launcher_update }) })),
-        el("button", { class: "button primary", type: "button", text: t("newsLauncherButton"), onclick: () => runTask(() => api.installLauncherUpdate()) }),
+        el("button", {
+          class: "button primary",
+          type: "button",
+          text: state.launcherInstalling ? t("launcherInstalling") : t("newsLauncherButton"),
+          disabled: state.launcherInstalling || Boolean(state.status?.game_running),
+          onclick: () => installLauncher(true),
+        }),
       );
       return true;
     },
@@ -392,31 +453,30 @@ function registerBuiltIns() {
 
   section("updates", "updates", 0, "s.updatesTitle", (box) => {
     const s = state.status;
-    const auto = el("input", { type: "checkbox", role: "switch", class: "switch", id: "autoUpdates", onchange: (e) => settingCall(() => api.setCheckUpdates(e.target.checked)) });
-    auto.checked = s.check_updates;
-    let result = "";
-    let tone = "muted";
-    if (state.checking) result = t("s.updatesChecking");
-    else if (state.update) {
-      result = state.update.game_update ? t("s.updatesAvailable", { version: state.update.game_version }) : t("s.updatesLatest", { version: state.update.game_version });
-      tone = state.update.game_update ? "accent" : "muted";
-    } else if (state.updateFailure) {
-      result = failureText(state.updateFailure);
-      tone = "warning";
-    }
+    const toggle = (id, label, hint, checked, onchange, disabled = false) => {
+      const input = el("input", { type: "checkbox", role: "switch", class: "switch", id, onchange: (e) => settingCall(() => onchange(e.target.checked)) });
+      input.checked = checked;
+      input.disabled = disabled;
+      return el("div", { class: "row between" }, el("label", { for: id, class: "row-label" }, el("span", { text: label }), el("span", { class: "muted small", text: hint })), input);
+    };
+    const last = lastCheckLine(s);
     add(box,
-      el(
-        "div",
-        { class: "row between" },
-        el("label", { for: "autoUpdates", class: "row-label" }, el("span", { text: t("s.updatesAuto") }), el("span", { class: "muted small", text: t("s.updatesAutoHint") })),
-        auto,
-      ),
+      toggle("autoUpdates", t("s.updatesAuto"), t("s.updatesAutoHint"), s.check_updates, (on) => api.setCheckUpdates(on)),
+      toggle("autoLauncher", t("s.autoLauncher"), s.launcher_replaceable ? t("s.autoLauncherHint") : t("s.autoLauncherManual"), s.auto_update_launcher, (on) => api.setAutoUpdate("launcher", on)),
+      toggle("autoGame", t("s.autoGame"), t("s.autoGameHint"), s.auto_update_game, (on) => api.setAutoUpdate("game", on)),
       el(
         "div",
         { class: "row" },
-        el("button", { class: "button", type: "button", text: t("s.updatesNow"), disabled: state.checking, onclick: checkUpdates }),
-        el("p", { class: `status-line ${tone}`, role: "status", text: result }),
+        el("button", {
+          class: "button",
+          type: "button",
+          text: last.failed ? t("s.updatesRetry") : t("s.updatesNow"),
+          disabled: state.checking || Boolean(state.task) || state.launcherInstalling,
+          onclick: () => checkUpdates(),
+        }),
+        el("p", { class: `status-line ${last.tone}`, role: "status", text: last.text }),
       ),
+      last.when ? el("p", { class: "muted small", text: last.when }) : null,
       s.signing_ready ? null : el("p", { class: "warning", text: t("s.updatesNoKey") }),
     );
   });
@@ -484,6 +544,29 @@ function registerBuiltIns() {
       el("div", { class: "row" }, el("button", { class: "button", type: "button", text: t("s.logsOpen"), onclick: () => settingCall(() => api.openLogs().then(api.status)) })),
     );
   });
+}
+
+// The last check (kept in settings.json by the backend): when, and what it did.
+function lastCheckLine(s) {
+  if (state.checking) return { text: t("s.updatesChecking"), tone: "muted" };
+  if (state.launcherInstalling) return { text: t("launcherInstalling"), tone: "accent" };
+  const last = s.last_check;
+  if (!last?.at) return { text: t("s.updatesNever"), tone: "muted" };
+  const when = t("s.updatesWhen", { when: new Date(last.at * 1000).toLocaleString(getLanguage(), { dateStyle: "medium", timeStyle: "short" }) });
+  const what = [
+    last.launcher ? t("s.updatesWhatLauncher", { version: last.launcher }) : null,
+    last.game ? t("s.updatesWhatGame", { version: last.game }) : null,
+  ].filter(Boolean).join(", ");
+  switch (last.outcome) {
+    case "updated":
+      return { text: t("s.updatesUpdated", { what }), tone: "accent", when };
+    case "available":
+      return { text: t("s.updatesAvailable", { what }), tone: "accent", when };
+    case "failed":
+      return { text: t("s.updatesFailed", { reason: failureText({ code: last.code, detail: last.detail ?? "" }) }), tone: "warning", when, failed: true };
+    default:
+      return { text: t("s.updatesLatest"), tone: "muted", when };
+  }
 }
 
 async function settingCall(work, reloadBackground = false) {
@@ -626,6 +709,8 @@ async function start() {
   });
   await listen("game-exited", async (exit) => {
     await refresh();
+    // An update found while the game ran waited for it to end.
+    if (state.update?.launcher_plan === "wait" || state.update?.game_plan === "wait") checkUpdates();
     if (exit.failed) {
       const body = exit.code == null ? t("gameFailedSignal") : t("gameFailedBody", { code: exit.code });
       showMessage(t("gameFailedTitle"), body, exit.log.join("\n"));

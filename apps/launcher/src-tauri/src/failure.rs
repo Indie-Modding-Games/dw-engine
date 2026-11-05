@@ -54,6 +54,8 @@ pub mod code {
     pub const KEYRING: &str = "keyring";
     /// Another task is running.
     pub const BUSY: &str = "busy";
+    /// Refused while the game runs (updates and restarts never interrupt it).
+    pub const GAME_RUNNING: &str = "game-running";
     /// The player stopped the task.
     pub const CANCELLED: &str = "cancelled";
     /// The disc the content was read from is no longer where it was.

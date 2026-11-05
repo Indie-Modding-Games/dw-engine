@@ -8,7 +8,8 @@ const call = (command, args) => tauri.core.invoke(command, args);
 export const api = {
   status: () => call("status"),
   background: () => call("background"),
-  checkUpdates: () => call("check_updates"),
+  // record: false for the quiet look right after an update (keeps its "updated" result).
+  checkUpdates: (record = true) => call("check_updates", { recordResult: record }),
   installDisc: (path) => call("install_disc", { path }),
   reextract: (path = null) => call("reextract", { path }),
   updateGame: () => call("update_game"),
@@ -22,6 +23,8 @@ export const api = {
   clearToken: () => call("clear_token"),
   openLogs: () => call("open_logs"),
   installLauncherUpdate: () => call("install_launcher_update"),
+  restartLauncher: () => call("restart_launcher"),
+  setAutoUpdate: (what, enabled) => call("set_auto_update", { what, enabled }),
   // The add-on manager (addon-manager.js) and the add-ons' backend calls (addons.js).
   addonsList: () => call("addons_list"),
   addonInspect: (path) => call("addon_inspect", { path }),

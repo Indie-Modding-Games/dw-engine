@@ -4,6 +4,7 @@
 //! shows state and asks for these commands.
 
 pub mod addons;
+pub mod auto_update;
 pub mod content;
 pub mod disc;
 pub mod failure;
@@ -45,6 +46,22 @@ pub struct AppState {
     pub addons: addons::Runtime,
     /// Removed when the launcher ends cleanly; found at start, the last run crashed.
     pub run_marker: Option<addons::RunMarker>,
+    /// The launcher version installed in this session (it runs from the next start).
+    pub launcher_ready: Mutex<Option<String>>,
+    /// Windows only: the downloaded, verified installer, run when the launcher restarts or closes
+    /// (running it closes the launcher).
+    pub launcher_pending: Mutex<Option<(tauri_plugin_updater::Update, Vec<u8>)>>,
+}
+
+/// Runs the launcher installer kept for the restart or the exit (Windows; elsewhere the new
+/// launcher was already put in place).
+pub fn install_pending_launcher(state: &AppState) {
+    let pending = state.launcher_pending.lock().unwrap().take();
+    if let Some((update, bytes)) = pending {
+        if let Err(error) = update.install(&bytes) {
+            log_line!("the launcher {} was not installed: {error}", update.version);
+        }
+    }
 }
 
 /// Held while a task runs; the next one is refused until it drops.
@@ -91,7 +108,6 @@ fn serve_addon(app: &tauri::AppHandle, path: &str) -> tauri::http::Response<Vec<
 pub fn run() {
     let settings = Settings::load();
     log::open(&settings.data_folder());
-    log_line!("dwe-launcher {} starting", env!("CARGO_PKG_VERSION"));
     let safe_mode = std::env::args().any(|a| a == SAFE_MODE_FLAG);
     let addon_store = addons::AddonStore::new(&settings.data_folder());
     addon_store.clean_staging();
@@ -117,6 +133,8 @@ pub fn run() {
         game_running: AtomicBool::new(false),
         addons: addons::Runtime::new(safe_mode, crashed),
         run_marker,
+        launcher_ready: Mutex::new(None),
+        launcher_pending: Mutex::new(None),
     };
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -141,6 +159,8 @@ pub fn run() {
             commands::clear_token,
             commands::open_logs,
             commands::install_launcher_update,
+            commands::restart_launcher,
+            commands::set_auto_update,
             addon_commands::addons_list,
             addon_commands::addon_inspect,
             addon_commands::addon_install,
@@ -150,6 +170,10 @@ pub fn run() {
             addon_commands::addons_dismiss_crash,
             addon_commands::addon_call,
         ])
+        .setup(|app| {
+            log_line!("dwe-launcher {} starting", app.package_info().version);
+            Ok(())
+        })
         .build(tauri::generate_context!())
         .expect("the launcher window opens")
         .run(|app, event| {
@@ -159,6 +183,7 @@ pub fn run() {
                 if let Some(marker) = &state.run_marker {
                     marker.clear();
                 }
+                install_pending_launcher(&state);
             }
         });
 }

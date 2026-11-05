@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::auto_update::LastCheck;
 use crate::failure::Result;
 use crate::store::write_atomically;
 
@@ -25,6 +26,12 @@ pub struct Settings {
     pub language: String,
     /// Look for updates every time the launcher opens.
     pub check_updates: bool,
+    /// Install a new launcher found by a check without asking (auto_update.rs).
+    pub auto_update_launcher: bool,
+    /// Install a new game found by a check without asking (auto_update.rs).
+    pub auto_update_game: bool,
+    /// When the last check ran and what it did.
+    pub last_check: Option<LastCheck>,
     pub api_base: String,
     pub repository: String,
     /// What the player picked last: a disc image or an archive holding one. An update whose
@@ -38,6 +45,9 @@ impl Default for Settings {
             data_folder: None,
             language: "es".into(),
             check_updates: true,
+            auto_update_launcher: true,
+            auto_update_game: true,
+            last_check: None,
             api_base: DEFAULT_API_BASE.into(),
             repository: DEFAULT_REPOSITORY.into(),
             disc_source: None,
@@ -126,5 +136,10 @@ mod tests {
         assert_eq!(read.language, "es");
         assert!(!read.check_updates);
         assert_eq!(read.repository, DEFAULT_REPOSITORY);
+        // Settings written before the automatic updates existed turn them on.
+        assert!(read.auto_update_launcher && read.auto_update_game);
+        let saved = Settings { auto_update_game: false, last_check: Some(LastCheck::checked(5, None, None)), ..Settings::default() };
+        saved.save_to(&file).unwrap();
+        assert_eq!(Settings::load_from(&file), saved);
     }
 }

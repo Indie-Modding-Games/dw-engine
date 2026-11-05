@@ -78,6 +78,44 @@ compara con la instalada (semver). Para actualizar:
 El lanzador se actualiza a sí mismo con el actualizador de Tauri (`latest.json`, la misma clave); en Linux solo
 funciona cuando corre como AppImage.
 
+### Actualizaciones automáticas
+
+En Ajustes → Actualizaciones hay tres interruptores, guardados en `settings.json`:
+
+| Opción | Por defecto | Qué hace |
+|---|---|---|
+| Buscar actualizaciones al abrir (`check_updates`) | sí | Busca al abrir el lanzador. «Buscar ahora» busca en cualquier momento. |
+| Actualizar el lanzador automáticamente (`auto_update_launcher`) | sí | Descarga el lanzador nuevo, comprueba su firma y lo instala sin preguntar. Aparece el aviso «El lanzador se actualizó a X.Y.Z» con «Reiniciar ahora» y «Al cerrar»: la versión nueva se abre al reiniciar, ahora o la próxima vez. |
+| Actualizar el juego automáticamente (`auto_update_game`) | sí | Descarga, comprueba e instala el juego nuevo (el cambio atómico de arriba) y vuelve a leer el disco si cambia la `ExtractorVersion`. |
+
+Qué hace cada búsqueda con lo que encuentra lo decide `src-tauri/src/auto_update.rs` (`plan`), por separado para el
+lanzador y para el juego:
+
+- Nada nuevo: nada.
+- Con la opción apagada, o si esta copia no puede instalarlo sola (una compilación sin clave de firma, un lanzador
+  que no se abrió desde su AppImage, un juego que aún no se instaló desde el disco): se ofrece con el botón de
+  siempre («Actualizar el lanzador», «Actualizar (n MB)»).
+- Con la opción encendida, si el juego está en marcha (o hay otra tarea): espera a que termine y entonces lo instala.
+  Nunca interrumpe una partida ni reinicia el lanzador mientras se juega.
+- Si no: lo instala.
+- Un lanzador ya instalado en esta sesión no se vuelve a descargar: queda el aviso de reiniciar.
+
+Si una actualización falla (red, firma, SHA-256, espacio), se queda la versión actual: el juego solo cambia con el
+`rename` final y el lanzador solo se reemplaza tras comprobar la firma. Un fallo automático no abre ningún diálogo:
+sale un aviso breve y el botón «Actualizar» sigue ahí para reintentar. La pestaña enseña la hora de la última
+búsqueda y su resultado («Al día», «Hay una versión nueva», «Actualizado a…» o el error con «Reintentar»); se guarda
+en `settings.json` (`last_check`).
+
+Probado de punta a punta en Linux (AppImage): un lanzador 0.1.0 encuentra el 0.1.1 en el servidor falso, lo
+descarga, comprueba la firma, reemplaza su AppImage y, con «Reiniciar ahora», arranca como 0.1.1. Para repetirlo
+hace falta una clave de firma desechable (`tauri signer generate`), dos AppImages firmadas con ella
+(`scripts/launcher.sh bundle --bundles appimage` con `DWE_LAUNCHER_PUBKEY` y `TAURI_SIGNING_PRIVATE_KEY`) y, solo en
+esa compilación de prueba, `--config '{"plugins":{"updater":{"dangerousInsecureTransportProtocol":true}}}'`, porque el
+actualizador de Tauri pide `https` y el servidor falso es `http`. La configuración del repositorio no lo lleva.
+
+En Windows el instalador del lanzador cierra el programa al ejecutarse, así que el lanzador lo descarga y comprueba en
+el momento y lo ejecuta al reiniciar o al cerrar.
+
 El servidor es configurable: `api_base` en los ajustes del lanzador o `DWE_LAUNCHER_API` para una ejecución. Solo
 se acepta `https`, o `http` a este mismo ordenador (para las pruebas). El token nunca se envía a otra dirección que la
 de la API: un archivo cuya URL apunte a otro sitio se rechaza, y al redirigir una descarga a otro servidor
