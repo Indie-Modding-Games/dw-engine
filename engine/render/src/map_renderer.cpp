@@ -1,19 +1,33 @@
 #include <dwe/core/log.hpp>
 #include <dwe/render/hd_scenery_wrap.hpp>
 #include <dwe/render/map_renderer.hpp>
+#include <dwe/render/scenery_upscale.hpp>
 #include <dwe/shaders/map.hpp>
 
 #include <algorithm>
 #include <array>
+#include <atomic>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <cstring>
 #include <format>
 #include <optional>
 #include <span>
+#include <stop_token>
 #include <utility>
 #include <vector>
 
 namespace dwe::render {
+
+// An upscale of the background on its thread: its result, set before finished.
+struct MapRenderer::UpscaleJob {
+  std::optional<UpscaledScenery> result;
+  // Whether it came from the cache, and how long it took.
+  bool fromCache = false;
+  double milliseconds = 0.0;
+  std::atomic<bool> finished{false};
+};
 
 namespace {
 
@@ -69,6 +83,13 @@ struct MapPush {
   std::uint32_t screen = rhi::TextureId::InvalidIndex;
   std::uint32_t screenShiftX = 0;
   std::uint32_t screenShiftY = 0;
+  // The upscaled background's variant textures and weights, for Sampling::UpscaledPrefilter.
+  std::uint32_t upscaled0 = rhi::TextureId::InvalidIndex;
+  std::uint32_t upscaled1 = rhi::TextureId::InvalidIndex;
+  std::uint32_t upscaled2 = rhi::TextureId::InvalidIndex;
+  float upscaledWeight0 = 0.0F;
+  float upscaledWeight1 = 0.0F;
+  float upscaledWeight2 = 0.0F;
 };
 
 // The push constants of a draw with the scenery's grade.
@@ -103,7 +124,62 @@ enum class Sampling : std::uint32_t {
   Prefilter = 3,
   Screen = 4,
   CutoutScreen = 5,
+  // The background pass at best quality: the upscaled background resampled.
+  UpscaledPrefilter = 6,
 };
+
+// The upscaler's version in the background cache keys: change it when its output changes.
+constexpr std::uint32_t SceneryUpscaleVersion = 1;
+// Rows of an upscaled variant uploaded per queued update, so no update outgrows a frame's upload
+// memory.
+constexpr std::size_t UpscaledBandBytes = std::size_t{4} << 20U;
+
+// The background doubled in every variant, from the cache or made (and kept there); nothing when
+// cancelled.
+std::optional<UpscaledScenery>
+upscaledBackground(std::uint32_t width, std::uint32_t height, std::span<const std::uint8_t> indices,
+                   std::span<const std::vector<assets::PaletteColor>> palettes,
+                   const UpscaleCache* cache, const std::stop_token& stop, bool& fromCache) {
+  const UpscaleOptions options;
+  UpscaleKey key;
+  key.add(SceneryUpscaleVersion).add(width).add(height).add(options.dither).add(options.sharpen);
+  key.add(std::as_bytes(indices));
+  for (const std::vector<assets::PaletteColor>& palette : palettes) {
+    key.add(std::as_bytes(std::span{palette}));
+  }
+  const std::size_t variantTexels = std::size_t{width} * 2 * std::size_t{height} * 2;
+  const std::size_t bytes = variantTexels * sizeof(assets::PaletteColor) * palettes.size();
+  if (cache != nullptr) {
+    if (auto kept = cache->load(key.value(), bytes)) {
+      fromCache = true;
+      UpscaledScenery scenery{.width = width * 2, .height = height * 2, .variants = {}};
+      for (std::size_t variant = 0; variant < palettes.size(); ++variant) {
+        std::vector<assets::PaletteColor>& texels = scenery.variants.emplace_back(variantTexels);
+        std::memcpy(texels.data(),
+                    kept->data() + (variant * variantTexels * sizeof(assets::PaletteColor)),
+                    variantTexels * sizeof(assets::PaletteColor));
+      }
+      return scenery;
+    }
+  }
+  if (stop.stop_requested()) {
+    return std::nullopt;
+  }
+  UpscaledScenery scenery = upscaleScenery(width, height, indices, palettes, options);
+  if (stop.stop_requested() || scenery.variants.size() != palettes.size()) {
+    return std::nullopt;
+  }
+  if (cache != nullptr) {
+    std::vector<std::byte> data;
+    data.reserve(bytes);
+    for (const std::vector<assets::PaletteColor>& texels : scenery.variants) {
+      const auto view = std::as_bytes(std::span{texels});
+      data.insert(data.end(), view.begin(), view.end());
+    }
+    cache->store(key.value(), data);
+  }
+  return scenery;
+}
 
 // A quad's sampling (map.slang): the original's pixels by default; with HD scenery the smooth
 // filter over `rect` (texels, first and last), reading the colours from `source` between
@@ -265,6 +341,9 @@ core::Result<std::size_t> MapRenderer::addBillboardTexture(const assets::Image& 
 }
 
 void MapRenderer::releaseMap() {
+  cancelUpscale();
+  releaseUpscaled();
+  snapshotWeights_.clear();
   for (const TextureId texture : {backgroundIndices_, palettes_, backgroundColors_}) {
     if (texture.valid()) {
       renderer_->destroyTexture(texture);
@@ -367,8 +446,12 @@ core::Result<void> MapRenderer::setMap(const MapSceneData& scene, std::size_t va
   fromRow_ = shown;
   toRow_ = shown;
   fade_ = 1.0;
+  // The snapshot row starts as a copy of the first variant.
+  snapshotWeights_.assign(images.backgroundPalettes.size(), 0.0);
+  snapshotWeights_.front() = 1.0;
   if (hdScenery_) {
     resolveBackgroundColors(true);
+    startUpscale();
   }
   return {};
 }
@@ -394,6 +477,11 @@ bool MapRenderer::updateImages(const assets::MapImages& images) {
   cutouts_ = MapCutouts{images};
   backgroundIndexCopy_.indices = images.background.indices;
   resolvedPalette_.clear();
+  // Smooth draws until the new pixels are upscaled (from the cache, when they were before).
+  releaseUpscaled();
+  if (hdScenery_) {
+    startUpscale();
+  }
   for (std::size_t index = 0; index < spriteTextures_.size(); ++index) {
     const assets::MapSpriteSheet::Texture& source = images.sprites.textures[index];
     if (source.timeOfDayPalette != spriteTextures_[index].timeOfDayPalette ||
@@ -424,6 +512,7 @@ bool MapRenderer::snapshotPalette() {
     return static_cast<std::uint8_t>(
         std::lround(std::lerp(static_cast<double>(lhs), static_cast<double>(rhs), fade)));
   };
+  snapshotWeights_ = shownWeights();
   // from may be the snapshot row itself: each colour is read before it is written.
   for (std::size_t color = 0; color < PaletteColors; ++color) {
     snapshot[color] = {.red = mix(from[color].red, to[color].red),
@@ -526,16 +615,179 @@ void MapRenderer::prepare(PrepareContext& context) {
   }
   if (hdScenery_ && !stageCamera_) {
     resolveBackgroundColors(false);
+    pollUpscale();
     keepHdTarget(extent);
     hdShift_ = glm::ivec2{glm::round(camera_.scroll() * camera_.scale())};
   }
 }
 
 void MapRenderer::setHdScenery(bool on) {
+  const bool was = hdScenery_;
   hdScenery_ = on;
   if (!on) {
     releaseHdTarget();
+    cancelUpscale();
+    releaseUpscaled();
+  } else if (!was) {
+    startUpscale();
   }
+}
+
+void MapRenderer::setSceneryQuality(SceneryQuality quality) {
+  if (quality == quality_) {
+    return;
+  }
+  quality_ = quality;
+  releaseUpscaled();
+  startUpscale();
+}
+
+bool MapRenderer::waitForUpscale(std::chrono::milliseconds timeout) const {
+  if (!upscaleJob_) {
+    return true;
+  }
+  const auto until = std::chrono::steady_clock::now() + timeout;
+  while (!upscaleJob_->finished.load(std::memory_order_acquire)) {
+    if (std::chrono::steady_clock::now() >= until) {
+      return false;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds{5});
+  }
+  return true;
+}
+
+void MapRenderer::cancelUpscale() {
+  if (!upscaleJob_) {
+    return;
+  }
+  // The job under way is for other pixels: it finishes on its own and its result is dropped.
+  for (UpscaleWork& work : upscaleWork_) {
+    if (work.job == upscaleJob_) {
+      work.thread.request_stop();
+    }
+  }
+  upscaleJob_.reset();
+}
+
+void MapRenderer::startUpscale() {
+  cancelUpscale();
+  if (!hasMap_ || !hdScenery_ || quality_ != SceneryQuality::Upscaled || paletteRows_.size() < 2 ||
+      backgroundIndexCopy_.indices.empty()) {
+    return;
+  }
+  auto job = std::make_shared<UpscaleJob>();
+  // The variants' rows, without the snapshot row.
+  std::vector<std::vector<assets::PaletteColor>> palettes(paletteRows_.begin(),
+                                                          paletteRows_.end() - 1);
+  std::jthread thread{[job, cache = upscaleCache_, width = backgroundIndexCopy_.width,
+                       height = backgroundIndexCopy_.height, indices = backgroundIndexCopy_.indices,
+                       palettes = std::move(palettes)](const std::stop_token& stop) {
+    const auto start = std::chrono::steady_clock::now();
+    job->result =
+        upscaledBackground(width, height, indices, palettes, cache.get(), stop, job->fromCache);
+    job->milliseconds =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+    job->finished.store(true, std::memory_order_release);
+  }};
+  upscaleJob_ = job;
+  upscaleWork_.push_back({.job = std::move(job), .thread = std::move(thread)});
+}
+
+void MapRenderer::pollUpscale() {
+  // Finished threads are joined at once (cancelled ones too).
+  std::erase_if(upscaleWork_, [this](const UpscaleWork& work) {
+    return work.job != upscaleJob_ && work.job->finished.load(std::memory_order_acquire);
+  });
+  if (upscaleJob_ && upscaleJob_->finished.load(std::memory_order_acquire)) {
+    std::optional<UpscaledScenery> result = std::move(upscaleJob_->result);
+    if (result) {
+      core::logInfo("map: upscaled background {}x{} in {} variants, {} in {:.0f} ms", result->width,
+                    result->height, result->variants.size(),
+                    upscaleJob_->fromCache ? "from the cache" : "made", upscaleJob_->milliseconds);
+    }
+    upscaleJob_.reset();
+    std::erase_if(upscaleWork_, [](const UpscaleWork& work) {
+      return work.job->finished.load(std::memory_order_acquire);
+    });
+    if (result) {
+      uploadUpscaled(*result);
+    } else {
+      core::logWarning("map: the upscaled background could not be made; HD scenery stays smooth");
+    }
+  }
+  if (!upscaledReady_ && !upscaled_.empty() &&
+      std::ranges::none_of(upscaled_, [this](TextureId texture) {
+        return renderer_->textureWritePending(texture);
+      })) {
+    upscaledReady_ = true;
+    hdTargetFilled_ = false;
+  }
+}
+
+void MapRenderer::uploadUpscaled(const UpscaledScenery& scenery) {
+  releaseUpscaled();
+  const rhi::Extent extent{.width = scenery.width, .height = scenery.height};
+  const std::size_t rowBytes = std::size_t{scenery.width} * sizeof(assets::PaletteColor);
+  const auto bandRows =
+      static_cast<std::uint32_t>(std::max<std::size_t>(1, UpscaledBandBytes / rowBytes));
+  for (const std::vector<assets::PaletteColor>& texels : scenery.variants) {
+    auto texture = renderer_->queueTexture(extent);
+    if (!texture) {
+      core::logWarning("map: cannot make the upscaled background's texture: {}",
+                       texture.error().message);
+      releaseUpscaled();
+      return;
+    }
+    upscaled_.push_back(*texture);
+    const auto bytes = std::as_bytes(std::span{texels});
+    for (std::uint32_t row = 0; row < scenery.height; row += bandRows) {
+      const std::uint32_t rows = std::min(bandRows, scenery.height - row);
+      const auto written = renderer_->queueTextureUpdate(
+          *texture,
+          {.x = 0, .y = static_cast<std::int32_t>(row), .width = scenery.width, .height = rows},
+          bytes.subspan(row * rowBytes, rows * rowBytes));
+      if (!written) {
+        core::logWarning("map: cannot upload the upscaled background: {}", written.error().message);
+        releaseUpscaled();
+        return;
+      }
+    }
+  }
+}
+
+void MapRenderer::releaseUpscaled() {
+  for (const TextureId texture : upscaled_) {
+    renderer_->destroyTexture(texture);
+  }
+  upscaled_.clear();
+  if (upscaledReady_) {
+    hdTargetFilled_ = false;
+  }
+  upscaledReady_ = false;
+}
+
+std::vector<double> MapRenderer::rowWeights(std::uint32_t row) const {
+  if (row + 1 == paletteRows_.size()) {
+    return snapshotWeights_;
+  }
+  std::vector<double> weights(snapshotWeights_.size(), 0.0);
+  if (row < weights.size()) {
+    weights[row] = 1.0;
+  }
+  return weights;
+}
+
+std::vector<double> MapRenderer::shownWeights() const {
+  const double fade = timeOfDayFadeShown(fade_);
+  std::vector<double> weights = rowWeights(toRow_);
+  if (fade >= 1.0) {
+    return weights;
+  }
+  const std::vector<double> from = rowWeights(fromRow_);
+  for (std::size_t variant = 0; variant < weights.size(); ++variant) {
+    weights[variant] = std::lerp(from[variant], weights[variant], fade);
+  }
+  return weights;
 }
 
 std::optional<TextureScene> MapRenderer::hdSceneryScene() const {
@@ -624,7 +876,7 @@ void MapRenderer::drawHdScenery(DrawContext& context) {
              glm::vec4{targetMin.x, targetMax.y, depth, 1.0F}, glm::vec4{targetMax, depth, 1.0F}},
             scaledMin / scale / backgroundSize_, scaledMax / scale / backgroundSize_,
             glm::uvec2{backgroundColors_.index, NoPalette}, glm::vec4{1.0F},
-            QuadSampling{.mode = Sampling::Prefilter,
+            QuadSampling{.mode = upscaledReady_ ? Sampling::UpscaledPrefilter : Sampling::Prefilter,
                          .rect = {0.0F, 0.0F, backgroundSize_ - 1.0F}});
       }
     }
@@ -635,16 +887,44 @@ void MapRenderer::drawHdScenery(DrawContext& context) {
     hdTargetFilled_ = false;
     return;
   }
+  MapPush push{.pixelsPerTexel = scale,
+               .fade = 1.0F,
+               .texels = static_cast<std::uint32_t>(TexelFilter::All),
+               .fromRow = 0,
+               .toRow = 0,
+               .screen = rhi::TextureId::InvalidIndex,
+               .screenShiftX = 0,
+               .screenShiftY = 0};
+  if (upscaledReady_) {
+    // The (at most three) variants the colours shown now mix, heaviest first.
+    const std::vector<double> weights = shownWeights();
+    std::vector<std::size_t> order(std::min(weights.size(), upscaled_.size()));
+    for (std::size_t variant = 0; variant < order.size(); ++variant) {
+      order[variant] = variant;
+    }
+    std::ranges::stable_sort(order, [&weights](std::size_t lhs, std::size_t rhs) {
+      return weights[lhs] > weights[rhs];
+    });
+    order.resize(std::min<std::size_t>(order.size(), 3));
+    double total = 0.0;
+    for (const std::size_t variant : order) {
+      total += weights[variant];
+    }
+    const std::array<std::uint32_t*, 3> textures{&push.upscaled0, &push.upscaled1, &push.upscaled2};
+    const std::array<float*, 3> shares{&push.upscaledWeight0, &push.upscaledWeight1,
+                                       &push.upscaledWeight2};
+    for (std::size_t slot = 0; slot < order.size(); ++slot) {
+      *textures[slot] = upscaled_[order[slot]].index;
+      *shares[slot] = total > 0.0 ? static_cast<float>(weights[order[slot]] / total)
+                                  : (slot == 0 ? 1.0F : 0.0F);
+    }
+    for (std::size_t slot = order.size(); slot < 3; ++slot) {
+      *textures[slot] = *textures[0];
+    }
+  }
   rhi::CommandList& commands = context.commands();
   commands.bindPipeline(pipelines_.background);
-  commands.pushConstants(MapPush{.pixelsPerTexel = scale,
-                                 .fade = 1.0F,
-                                 .texels = static_cast<std::uint32_t>(TexelFilter::All),
-                                 .fromRow = 0,
-                                 .toRow = 0,
-                                 .screen = rhi::TextureId::InvalidIndex,
-                                 .screenShiftX = 0,
-                                 .screenShiftY = 0});
+  commands.pushConstants(push);
   commands.bindVertexBuffer(*upload);
   commands.draw(static_cast<std::uint32_t>(vertices_.size()));
 }

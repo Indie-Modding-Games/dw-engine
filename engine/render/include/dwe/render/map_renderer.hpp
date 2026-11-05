@@ -9,17 +9,22 @@
 #include <dwe/render/map_layers.hpp>
 #include <dwe/render/map_scene.hpp>
 #include <dwe/render/renderer.hpp>
+#include <dwe/render/upscale_cache.hpp>
 #include <dwe/rhi/pipeline.hpp>
 
 #include <array>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <span>
+#include <thread>
 #include <vector>
 
 namespace dwe::render {
+
+struct UpscaledScenery;
 
 // An upright, camera-facing marker standing on a world point, drawn with depth like a model: for
 // debugging the camera and the depth layers before the models exist.
@@ -130,6 +135,26 @@ public:
   // pixels, sharp.
   void setHdScenery(bool on);
   [[nodiscard]] bool hdScenery() const { return hdScenery_; }
+
+  // How HD scenery draws the background (with the option on). Smooth filters the original's texels
+  // at the window's resolution (map.slang's sampleSmooth). Upscaled, the best and the default,
+  // doubles the background once per map with the engine's edge-directed upscaler
+  // (scenery_upscale.hpp: dithering melted, a light adaptive sharpen), on a thread of its own and
+  // kept in the upscale cache, then resamples that to the window; until it is ready, and when it
+  // cannot be made, Smooth draws. The depth layers and the cut-outs read what the background pass
+  // drew, so they match it either way.
+  enum class SceneryQuality : std::uint8_t { Smooth, Upscaled };
+  void setSceneryQuality(SceneryQuality quality);
+  [[nodiscard]] SceneryQuality sceneryQuality() const { return quality_; }
+  // Where the upscaled backgrounds are kept between runs; without one each is made again.
+  void setUpscaleCache(std::shared_ptr<const UpscaleCache> cache) {
+    upscaleCache_ = std::move(cache);
+  }
+  // Whether the background shown is the upscaled one (the upscale is done and uploaded).
+  [[nodiscard]] bool sceneryUpscaled() const { return upscaledReady_; }
+  // Waits, at most `timeout`, for the background's upscale to finish (tests, autotest captures);
+  // the next frame then uploads it. Returns whether it finished.
+  bool waitForUpscale(std::chrono::milliseconds timeout) const;
   // HD scenery's background pass for FrameDesc::textureScenes, while the map's background is shown
   // with the option on: it keeps the background filtered in a target the window's size, which the
   // background and the cut-outs then read with one load per pixel instead of filtering. The target
@@ -307,6 +332,17 @@ private:
   bool resolveColors(TextureId& texture, rhi::Extent extent, std::span<const std::uint8_t> indices,
                      std::span<const assets::PaletteColor> palette, bool atLoad);
   void warnUploadFailure(std::size_t bytes);
+  // The upscaled background: starts making it for the map shown (cancelling one under way), takes a
+  // finished one in and uploads it, drops it.
+  void startUpscale();
+  void cancelUpscale();
+  void pollUpscale();
+  void uploadUpscaled(const UpscaledScenery& scenery);
+  void releaseUpscaled();
+  // How much of each palette variant a palette row is (the snapshot row a mix of them), and the
+  // colours shown now.
+  [[nodiscard]] std::vector<double> rowWeights(std::uint32_t row) const;
+  [[nodiscard]] std::vector<double> shownWeights() const;
 
   Renderer* renderer_;
   Pipelines pipelines_;
@@ -366,6 +402,24 @@ private:
   std::vector<Vertex> vertices_;
   std::vector<Run> runs_;
   bool uploadWarned_ = false;
+
+  // HD scenery's upscaled background (SceneryQuality::Upscaled): one doubled texture per palette
+  // variant, used once all are uploaded. The snapshot row's colours as a mix of the variants, so
+  // an interrupted fade mixes the upscaled textures alike.
+  SceneryQuality quality_ = SceneryQuality::Upscaled;
+  std::shared_ptr<const UpscaleCache> upscaleCache_;
+  std::vector<TextureId> upscaled_;
+  bool upscaledReady_ = false;
+  std::vector<double> snapshotWeights_;
+  // An upscale under way (the last of upscaleWork_) and the cancelled ones still finishing: each
+  // thread is joined once its job says it finished, so none blocks the game.
+  struct UpscaleJob;
+  struct UpscaleWork {
+    std::shared_ptr<UpscaleJob> job;
+    std::jthread thread;
+  };
+  std::shared_ptr<UpscaleJob> upscaleJob_;
+  std::vector<UpscaleWork> upscaleWork_;
 };
 
 } // namespace dwe::render

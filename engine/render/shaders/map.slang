@@ -38,6 +38,15 @@ struct Push {
     uint screen;
     uint screenShiftX;
     uint screenShiftY;
+    // HD scenery's best quality, for SamplingUpscaledPrefilter: the background doubled by the engine's upscaler
+    // (render::upscaleScenery), one texture per palette variant, and how much of each the colours shown now are (the
+    // fade's mix; unused ones weigh 0).
+    uint upscaled0;
+    uint upscaled1;
+    uint upscaled2;
+    float upscaledWeight0;
+    float upscaledWeight1;
+    float upscaledWeight2;
 };
 
 // A texture without a palette texture: its texels are colours (rhi::TextureId::InvalidIndex).
@@ -87,6 +96,9 @@ static const uint SamplingPrefilter = 3;
 static const uint SamplingScreen = 4;
 // A cut-out, its colours as that pass drew them at this pixel.
 static const uint SamplingCutoutScreen = 5;
+// HD scenery's background pass at best quality: the doubled background (push.upscaled*) resampled to the window by
+// sampleUpscaled; which pixels are drawn and their class still come from the nearest texel of the original.
+static const uint SamplingUpscaledPrefilter = 6;
 
 [shader("vertex")]
 VertexOut vertexMain(VertexIn input) {
@@ -375,6 +387,81 @@ float4 sampleSmooth<T : ITexels>(T texels, float2 uv, float4 rect) {
     return float4(clamp(sum / total, low, high), nearest.a);
 }
 
+// A texel class from alpha: 0 never drawn, 1 STP, 2 opaque.
+uint texelClass(float alpha) {
+    return alpha < 0.25 ? 0 : (alpha < 0.75 ? 1 : 2);
+}
+
+// The Catmull-Rom weights at t (0 to 1) between the middle two of four taps.
+float4 catmullRom(float t) {
+    const float t2 = t * t;
+    const float t3 = t2 * t;
+    return float4(-0.5 * t3 + t2 - 0.5 * t, 1.5 * t3 - 2.5 * t2 + 1.0, -1.5 * t3 + 2.0 * t2 + 0.5 * t,
+                  0.5 * t3 - 0.5 * t2);
+}
+
+// The doubled background's colour at one of its texels: the variants mixed by the fade's weights (an upscaled mix of
+// palettes is the mix of the upscaled palettes: render::upscaleScenery decides once for all of them).
+float4 upscaledAt(int2 texel) {
+    float4 colour = push.upscaledWeight0 * gTextures[push.upscaled0].Load(int3(texel, 0));
+    if (push.upscaledWeight1 > 0.0) {
+        colour += push.upscaledWeight1 * gTextures[push.upscaled1].Load(int3(texel, 0));
+    }
+    if (push.upscaledWeight2 > 0.0) {
+        colour += push.upscaledWeight2 * gTextures[push.upscaled2].Load(int3(texel, 0));
+    }
+    return colour;
+}
+
+// HD scenery at best quality: the doubled background (its texel u centred on the original's u / 2) resampled to the
+// window with Catmull-Rom, clamped to the four middle texels (no ringing); only texels of the nearest original
+// texel's class mix, and alpha is that texel's, so the shapes, what is drawn and what is STP stay the original's.
+float4 sampleUpscaled(uint colours, float2 uv, float4 rect) {
+    uint width;
+    uint height;
+    gTextures[colours].GetDimensions(width, height);
+    const float2 position = (uv * float2(width, height)) - 0.5 + SmoothBias;
+    const int2 first = int2(rect.xy);
+    const int2 last = int2(rect.zw);
+    const float4 nearest = gTextures[colours].Load(int3(clamp(int2(floor(position + 0.5)), first, last), 0));
+    const uint kind = texelClass(nearest.a);
+    if (kind == 0) {
+        return nearest;
+    }
+    const float2 doubled = position * 2.0;
+    const float2 base = floor(doubled);
+    const float2 f = doubled - base;
+    const float4 across = catmullRom(f.x);
+    const float4 down = catmullRom(f.y);
+    const int2 doubledFirst = first * 2;
+    const int2 doubledLast = last * 2 + 1;
+    float3 sum = float3(0.0);
+    float total = 0.0;
+    float3 low = float3(1.0e6);
+    float3 high = float3(-1.0e6);
+    [unroll]
+    for (int y = 0; y < 4; ++y) {
+        [unroll]
+        for (int x = 0; x < 4; ++x) {
+            const float4 value = upscaledAt(clamp(int2(base) + int2(x - 1, y - 1), doubledFirst, doubledLast));
+            if (texelClass(value.a) != kind) {
+                continue;
+            }
+            const float weight = across[x] * down[y];
+            sum += weight * value.rgb;
+            total += weight;
+            if ((x == 1 || x == 2) && (y == 1 || y == 2)) {
+                low = min(low, value.rgb);
+                high = max(high, value.rgb);
+            }
+        }
+    }
+    if (abs(total) < 1.0e-3 || low.x > high.x) {
+        return nearest;
+    }
+    return float4(clamp(sum / total, low, high), nearest.a);
+}
+
 // HD scenery's filtered background at a window pixel.
 float4 screenAt(float2 position) {
     uint width;
@@ -395,6 +482,12 @@ float4 fragmentMain(VertexOut input) : SV_Target {
         }
         const UniformColours background = { input.textures.x };
         return sampleSmooth(background, input.uv, input.rect);
+    }
+    if (input.sampling.x == SamplingUpscaledPrefilter) {
+        if (any(input.uv < 0.0) || any(input.uv > 1.0)) {
+            return float4(0.0);
+        }
+        return sampleUpscaled(input.textures.x, input.uv, input.rect);
     }
     float4 texel;
     if (input.sampling.x == SamplingSmooth) {
