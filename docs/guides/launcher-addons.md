@@ -1,10 +1,10 @@
 # Complementos del lanzador
 
 El [lanzador](../modulos/apps/launcher.md) admite **complementos** de la comunidad: páginas HTML pequeñas que añaden
-cosas a su interfaz (un icono en la barra lateral, una pestaña de inicio, tarjetas de novedades y una sección de
+cosas a su interfaz (un icono en la barra lateral, una página en la pantalla principal, tarjetas en el panel de novedades y una sección de
 ajustes). Esta guía explica cómo se hace uno, qué puede hacer (la API v1) y cómo se protege al jugador.
 
-El ejemplo completo está en `apps/launcher/addons/example-notes/` («Notas»: una pestaña donde el jugador apunta lo
+El ejemplo completo está en `apps/launcher/addons/example-notes/` («Notas»: una página donde el jugador apunta lo
 que quiere, con su icono en la barra, una tarjeta de novedades y una sección de ajustes). Para empezar, cópialo.
 
 ## Qué es un complemento
@@ -44,7 +44,7 @@ mi-complemento/
 | `description` | Opcional, hasta 300 caracteres. Se enseña al instalarlo. |
 | `api` | La versión de la API para la que está hecho. Hoy solo existe la `1`; el lanzador rechaza cualquier otra. |
 | `entry` | La página HTML, dentro de la carpeta. |
-| `slots` | Dónde aparece: `sidebar` (barra lateral), `tabs` (pestaña de inicio), `news` (novedades), `settings` (ajustes). Al menos una; `sidebar` necesita `tabs` (el icono abre la pestaña). |
+| `slots` | Dónde aparece: `sidebar` (barra lateral), `tabs` (una página en el centro de la pantalla principal), `news` (novedades), `settings` (ajustes). Al menos una; `sidebar` necesita `tabs` (el icono abre la página). |
 | `permissions` | Opcional. `storage` (guardar sus datos), `notify` (avisos breves) y `hosts` (los servidores a los que puede conectarse, hasta 8: solo el nombre y, si hace falta, el puerto, como `api.ejemplo.org` o `127.0.0.1:8779`; sin `https://`, rutas ni comodines). Un permiso desconocido invalida el manifiesto. |
 
 ## Cómo se ejecuta
@@ -65,7 +65,7 @@ mi-complemento/
 - Los complementos activos se cargan al abrir el lanzador. La misma página se abre en tres **vistas**, que el
   cliente indica en `DweAddons.view`:
   - `background`: siempre cargada e invisible. Aquí se registran las piezas de la interfaz.
-  - `tab`: el contenido de su pestaña de inicio (si registró una).
+  - `tab`: el contenido de su página (si registró una).
   - `settings`: su sección en Ajustes → Complementos (si registró una).
 
 ## La API v1
@@ -87,8 +87,8 @@ if (dwe.view === "background") {
 |---|---|---|
 | `connect()` | Saluda al lanzador (reintenta unos segundos). Devuelve `{ api, view, id }`. | — |
 | `context()` | Datos de solo lectura: `api`, el complemento (`id`, `version`, sus permisos), `launcher_version`, `game_version`, `game_installed`, `content_installed`, `language` (`es`/`en`) y `platform`. **Nunca** rutas, la clave de la beta, el servidor de versiones ni el disco. | — |
-| `ui.sidebar({ label, icon })` | Un icono en la barra lateral que abre su pestaña. `icon` es un `.svg`, `.png` o `.webp` de su carpeta (se muestra como imagen, nunca como HTML). | slot `sidebar` |
-| `ui.tab({ label, page? })` | Una pestaña de inicio con su página (`page`, por defecto `entry`) en la vista `tab`. | slot `tabs` |
+| `ui.sidebar({ label, icon })` | Un icono en la barra lateral que abre su página. `icon` es un `.svg`, `.png` o `.webp` de su carpeta (se muestra como imagen, nunca como HTML). | slot `sidebar` |
+| `ui.tab({ label, page? })` | Su página en el centro de la pantalla principal (`page`, por defecto `entry`) en la vista `tab`. Se abre desde su icono o desde la píldora «Complementos». | slot `tabs` |
 | `ui.settings({ label, page? })` | Una sección en Ajustes → Complementos con su página en la vista `settings`. | slot `settings` |
 | `ui.news(items)` | Hasta 3 tarjetas de novedades: `{ title, body, date? }`, solo texto (el lanzador las pinta y les pone «Complemento «nombre»»). Cada llamada reemplaza las anteriores. | slot `news` |
 | `ui.resize(height)`, `ui.autoResize()` | Cambia la altura de su marco (80 a 1600 px); `autoResize` la ajusta al contenido. Solo en las vistas `tab` y `settings`. | — |
@@ -162,7 +162,7 @@ El lanzador rechaza, con un mensaje en el idioma del jugador:
   siquiera hacia el mismo servidor de versiones que sí lo recibe), que no sigue redirecciones a otros servidores y
   que su contexto no contiene rutas ni secretos.
 - `apps/launcher/addons/test-fetch/` es un complemento solo para pruebas: su tarjeta de novedades lee las versiones
-  del servidor falso con `net.fetch` y su pestaña «Aislamiento» intenta todo lo que un complemento **no** debe
+  del servidor falso con `net.fetch` y su página «Aislamiento» intenta todo lo que un complemento **no** debe
   poder hacer (ver la página del lanzador, usar su IPC, llamar a sus comandos, saltarse `net.fetch`, leer cookies o
   `localStorage`, abrir ventanas, cargar archivos de otro complemento, navegar la ventana principal) y enseña una
   línea «PASA» por cada intento bloqueado. Necesita el servidor falso en el puerto que declara:

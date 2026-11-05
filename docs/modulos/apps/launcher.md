@@ -8,16 +8,31 @@ probado con Wine, y macOS está preparado sin probar ([beta para Windows y macOS
 
 ## Qué ve el jugador
 
-- **Primer arranque.** Cuatro tarjetas de juego: el juego base, activo, y tres más en gris con «Próximamente»
-  (expansión de cartas, segunda parte y tercera parte). Debajo, la zona «Arrastra aquí tu disco o pulsa para
-  elegirlo» y el panel «Todo es local»: el disco se procesa en el ordenador del jugador y no se sube nada. El botón
-  grande de abajo a la derecha dice «Instalar».
-- **Inicio.** El fondo es una imagen del propio contenido extraído del jugador (solo local; antes de extraer, el arte
-  abstracto del lanzador), a la izquierda el riel de juegos (solo el base activo, con el brillo turquesa) y el botón de
-  ajustes. Las pestañas «Inicio» y «Notas de la versión» muestran las notas de la última versión publicada.
-- **El botón grande** cambia según el estado: «Instalar» → «Extrayendo…» (con la barra y el paso de `dwx`) →
-  «Actualizar (n MB)» cuando hay una versión nueva (con «Jugar sin actualizar» debajo) → «Jugar». Mientras se
-  descarga o se extrae aparece «Detener».
+La pantalla principal es oscura y minimalista: el arte del juego a pantalla completa, desenfocado y oscurecido hacia
+la izquierda (una imagen del propio contenido extraído del jugador, solo local; antes de extraer, el arte abstracto
+del lanzador), superficies casi negras y un solo color de acento, verde azulado, reservado para «Jugar», el elemento
+activo y el anillo de foco.
+
+- **Barra lateral** (estrecha, a la izquierda): el logo; «Inicio», «Juegos», «Complementos» (abre Ajustes →
+  Complementos) y «Ajustes»; debajo de una línea, los iconos que añaden los complementos; abajo del todo, «Acerca de»
+  (versiones y teclado). Cada icono enseña su nombre al pasar el ratón o al llegar con el teclado.
+- **Arriba, las píldoras de estado:** la versión instalada con «Beta cerrada» (mientras las versiones sean 0.x o
+  prereleases), «En juego» mientras el juego corre, la descarga o la lectura del disco en curso con su barra, o
+  «Versión nueva: X» (abre las novedades).
+- **En el centro a la izquierda:** el título grande, una descripción corta y dos botones. **El botón con acento**
+  cambia según el estado: «Instalar» → «Descargando…»/«Extrayendo…» (con «Detener» al lado) → «Actualizar (n MB)»
+  cuando hay una versión nueva (con «Jugar sin actualizar» debajo) → «Jugar». **Configurar** (fantasma) abre un menú:
+  Ajustes, volver a leer el disco, volver a la versión anterior (pregunta antes) y abrir los registros.
+- **Primer arranque:** el mismo hueco dice «Bienvenido», «Instalar» elige el disco y debajo se explica qué formatos se
+  leen y que todo es local (el disco se procesa en el ordenador del jugador y no se sube nada). Se puede soltar el
+  disco en cualquier parte de la ventana.
+- **Abajo a la izquierda, «Complementos»:** la lista de complementos instalados con su estado, «Abrir» para los que
+  tienen página y «Gestionar complementos».
+- **Abajo a la derecha:** «Novedades», un panel plegable con las notas de la última versión («Ver todo» las enseña
+  enteras) y las tarjetas de los complementos, y tres enlaces con iconos genéricos (repositorio, comunidad y web).
+- **Juegos:** cuatro tarjetas: el juego base, activo, y tres más en gris con «Próximamente» (expansión de cartas,
+  segunda parte y tercera parte).
+- La página de un complemento ocupa el centro de la pantalla cuando se abre desde su icono o desde «Complementos».
 - **Ajustes**, por pestañas (lista vertical a la izquierda; ↑/↓ en la lista, Ctrl+Tab y Ctrl+Mayús+Tab o
   Ctrl+AvPág/RePág desde cualquier sitio del diálogo):
   - **General:** idioma (español por defecto, inglés) y carpeta de datos.
@@ -28,10 +43,11 @@ probado con Wine, y macOS está preparado sin probar ([beta para Windows y macOS
     complemento (ver [Complementos](#complementos)).
   - **Avanzado:** la carpeta de registros y el modo seguro.
 
-Las cuatro tarjetas y los iconos del riel son arte propio (formas y degradados, `ui/js/art.js`, `ui/art/`); ningún
-texto, nombre ni imagen de la interfaz viene del juego original. La interfaz se maneja entera con teclado (Tab,
-flechas en las pestañas, Esc cierra los diálogos), tiene anillo de foco visible, contraste AA y respeta
-«reducir movimiento».
+Las cuatro tarjetas, los iconos y el fondo son arte propio (formas y degradados, `ui/js/art.js`, `ui/art/`); ningún
+texto, nombre ni imagen de la interfaz viene del juego original. La interfaz se maneja entera con teclado (Tab y
+Mayús+Tab; ↑/↓ en la barra lateral y en el menú de «Configurar», que también se abre con ↓; Esc cierra menús, paneles
+y diálogos), tiene anillo de foco visible, contraste AA y respeta «reducir movimiento». Se adapta de 960×600 a
+2560×1440: el texto crece con el ancho de la ventana.
 
 ## El disco
 
@@ -231,8 +247,8 @@ ejecutado todavía: la beta no se publica hasta que el responsable la haya jugad
 
 ## Puntos de montaje de la interfaz
 
-La interfaz se organiza en cuatro ranuras con nombre (`ui/js/slots.js`): `sidebar` (el riel), `tabs` (las pestañas
-de inicio), `news` (las tarjetas de novedades) y `settings` (las secciones de ajustes). Las piezas del lanzador se
+La interfaz se organiza en cuatro ranuras con nombre (`ui/js/slots.js`): `sidebar` (la barra lateral), `tabs` (las
+páginas que ocupan el centro: hoy, las de los complementos), `news` (las tarjetas del panel de novedades) y `settings` (las secciones de ajustes). Las piezas del lanzador se
 registran ahí igual que lo hará un complemento. Las órdenes con privilegios (disco, llavero, descargas, extracción,
 arrancar programas) están solo en `ui/js/api.js` y en los comandos de Rust (`src-tauri/src/commands.rs`); lo que una
 pieza recibe para pintarse (`context()`) no lleva ni la clave de la beta ni la ruta del disco.
