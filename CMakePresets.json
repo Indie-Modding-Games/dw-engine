@@ -86,6 +86,49 @@
       }
     },
     {
+      "name": "macos-llvm",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" },
+      "cacheVariables": {
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/macos-llvm-libcxx.cmake",
+        "CMAKE_C_COMPILER_LAUNCHER": "$env{DWE_COMPILER_LAUNCHER}",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "$env{DWE_COMPILER_LAUNCHER}",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-ports",
+        "VCPKG_MANIFEST_NO_DEFAULT_FEATURES": "ON",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/build/${presetName}/vcpkg_installed",
+        "VCPKG_INSTALL_OPTIONS": "--x-buildtrees-root=${sourceDir}/build/${presetName}/vcpkg_buildtrees"
+      }
+    },
+    {
+      "name": "macos-arm64-release",
+      "displayName": "macOS on Apple silicon, Homebrew LLVM, release with the tests",
+      "inherits": "macos-llvm",
+      "cacheVariables": { "VCPKG_TARGET_TRIPLET": "arm64-osx-libcxx", "VCPKG_HOST_TRIPLET": "arm64-osx" }
+    },
+    {
+      "name": "macos-arm64-package",
+      "displayName": "macOS on Apple silicon, Homebrew LLVM, release for a package (scripts/package_macos.sh)",
+      "inherits": "macos-arm64-release",
+      "cacheVariables": { "DWE_PACKAGE": "ON", "BUILD_TESTING": "OFF" }
+    },
+    {
+      "name": "macos-x64-release",
+      "displayName": "macOS on Intel, Homebrew LLVM, release with the tests",
+      "inherits": "macos-llvm",
+      "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-osx-libcxx", "VCPKG_HOST_TRIPLET": "x64-osx" }
+    },
+    {
+      "name": "macos-x64-package",
+      "displayName": "macOS on Intel, Homebrew LLVM, release for a package (scripts/package_macos.sh)",
+      "inherits": "macos-x64-release",
+      "cacheVariables": { "DWE_PACKAGE": "ON", "BUILD_TESTING": "OFF" }
+    },
+    {
       "name": "windows-clang",
       "hidden": true,
       "generator": "Ninja",
@@ -132,7 +175,11 @@
     { "name": "windows-cross-package", "configurePreset": "windows-cross-package" },
     { "name": "windows-clang-debug", "configurePreset": "windows-clang-debug" },
     { "name": "windows-clang-release", "configurePreset": "windows-clang-release" },
-    { "name": "windows-ci", "configurePreset": "windows-ci" }
+    { "name": "windows-ci", "configurePreset": "windows-ci" },
+    { "name": "macos-arm64-release", "configurePreset": "macos-arm64-release" },
+    { "name": "macos-arm64-package", "configurePreset": "macos-arm64-package" },
+    { "name": "macos-x64-release", "configurePreset": "macos-x64-release" },
+    { "name": "macos-x64-package", "configurePreset": "macos-x64-package" }
   ],
   "testPresets": [
     {
@@ -168,6 +215,18 @@
     {
       "name": "windows-ci",
       "configurePreset": "windows-ci",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    },
+    {
+      "name": "macos-arm64-release",
+      "configurePreset": "macos-arm64-release",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    },
+    {
+      "name": "macos-x64-release",
+      "configurePreset": "macos-x64-release",
       "output": { "outputOnFailure": true },
       "execution": { "noTestsAction": "error" }
     }

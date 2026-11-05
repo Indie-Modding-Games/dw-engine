@@ -163,6 +163,10 @@ target_link_libraries(game PRIVATE imgui::imgui)
 # the one used.
 install(TARGETS game RUNTIME DESTINATION bin)
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/content/packs/ DESTINATION packs)
+# The macOS package's Vulkan loader is in the application bundle's Contents/Frameworks (scripts/package_macos.sh).
+if(APPLE)
+    set_target_properties(game PROPERTIES INSTALL_RPATH "@executable_path/../Frameworks")
+endif()
 # A Windows package's game opens no console window of its own; its output still goes wherever the launcher sends it.
 if(WIN32 AND DWE_PACKAGE)
     target_link_options(game PRIVATE /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup)
