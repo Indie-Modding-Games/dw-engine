@@ -86,7 +86,7 @@ if (dwe.view === "background") {
 | Llamada | Qué hace | Requiere |
 |---|---|---|
 | `connect()` | Saluda al lanzador (reintenta unos segundos). Devuelve `{ api, view, id }`. | — |
-| `context()` | Datos de solo lectura: `api`, el complemento (`id`, `version`, sus permisos), `launcher_version`, `game_version`, `game_installed`, `content_installed`, `language` (`es`/`en`) y `platform`. **Nunca** rutas, el token, el servidor de versiones ni el disco. | — |
+| `context()` | Datos de solo lectura: `api`, el complemento (`id`, `version`, sus permisos), `launcher_version`, `game_version`, `game_installed`, `content_installed`, `language` (`es`/`en`) y `platform`. **Nunca** rutas, la clave de la beta, el servidor de versiones ni el disco. | — |
 | `ui.sidebar({ label, icon })` | Un icono en la barra lateral que abre su pestaña. `icon` es un `.svg`, `.png` o `.webp` de su carpeta (se muestra como imagen, nunca como HTML). | slot `sidebar` |
 | `ui.tab({ label, page? })` | Una pestaña de inicio con su página (`page`, por defecto `entry`) en la vista `tab`. | slot `tabs` |
 | `ui.settings({ label, page? })` | Una sección en Ajustes → Complementos con su página en la vista `settings`. | slot `settings` |
@@ -105,14 +105,14 @@ Las etiquetas (`label`) pueden ser un texto o `{ es, en }`; el lanzador elige el
   `www.ejemplo.org`).
 - Solo `https`; `http` únicamente a este mismo ordenador (`127.0.0.1`, `localhost`), para pruebas.
 - Cada redirección se comprueba con la misma lista (y como mucho 3).
-- La petición la hace un cliente aparte del lanzador: **nunca** lleva el token de GitHub ni cookies. Las únicas
+- La petición la hace un cliente aparte del lanzador: **nunca** lleva la clave de la beta ni cookies. Las únicas
   cabeceras que se pueden poner son `Accept`, `Content-Type` y `Accept-Language`; cualquier otra (como
   `Authorization`) hace fallar la llamada.
 - Cuerpo de hasta 64 KB, respuesta de hasta 1 MB, 20 s como máximo.
 
 ### Lo que un complemento nunca puede hacer
 
-No hay llamada para: el token de GitHub o el llavero, leer el disco o extraer, buscar o instalar actualizaciones,
+No hay llamada para: la clave de la beta o el llavero, leer el disco o extraer, buscar o instalar actualizaciones,
 volver a una versión anterior, arrancar el juego u otro programa, abrir carpetas, ni leer o escribir archivos fuera
 de su almacén. El puente responde `addon-denied` a cualquier llamada que no esté en la tabla, y el backend vuelve a
 comprobar cada una (que el complemento esté activo, sus permisos y sus servidores).
@@ -158,7 +158,7 @@ El lanzador rechaza, con un mensaje en el idioma del jugador:
 
 - `scripts/launcher.sh test` ejecuta, entre otros, los tests del manifiesto, la seguridad de los `.zip`, los
   permisos, la lista de servidores de `net.fetch`, el límite del almacén y `tests/addons_bridge.rs`, que prueba que
-  un complemento no puede nombrar ningún comando del lanzador, que `net.fetch` nunca lleva el token ni cookies (ni
+  un complemento no puede nombrar ningún comando del lanzador, que `net.fetch` nunca lleva la clave ni cookies (ni
   siquiera hacia el mismo servidor de versiones que sí lo recibe), que no sigue redirecciones a otros servidores y
   que su contexto no contiene rutas ni secretos.
 - `apps/launcher/addons/test-fetch/` es un complemento solo para pruebas: su tarjeta de novedades lee las versiones

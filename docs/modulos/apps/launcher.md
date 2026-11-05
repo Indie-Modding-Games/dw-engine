@@ -22,7 +22,7 @@ probado todavía.
   Ctrl+AvPág/RePág desde cualquier sitio del diálogo):
   - **General:** idioma (español por defecto, inglés) y carpeta de datos.
   - **Actualizaciones:** buscar al abrir, buscar ahora, las versiones instaladas y volver a la anterior.
-  - **Cuenta y acceso:** el token de GitHub.
+  - **Cuenta y acceso:** la clave de la beta.
   - **Disco:** el disco recordado y volver a leerlo.
   - **Complementos:** instalar, la lista de instalados (encender, apagar, quitar) y la sección de ajustes de cada
     complemento (ver [Complementos](#complementos)).
@@ -54,7 +54,10 @@ Si no hay juego instalado todavía, antes del paso 2 descarga la última versió
 
 ## Las actualizaciones
 
-Cada versión del repositorio (GitHub Releases de `Indie-Modding-Games/dw-engine`, prereleases incluidas) lleva:
+Cada versión del repositorio (GitHub Releases de `Indie-Modding-Games/dw-engine`, prereleases incluidas) lleva lo
+de abajo. Mientras la beta sea cerrada, el lanzador no habla con GitHub: habla con la
+[pasarela de la beta](../../../services/beta-gateway/README.md), que pide la clave de la beta y contesta como la API
+de GitHub para ese único repositorio.
 
 | Archivo | Qué es |
 |---|---|
@@ -62,10 +65,11 @@ Cada versión del repositorio (GitHub Releases de `Indie-Modding-Games/dw-engine
 | `game-manifest.json` | Versión semántica, commit, `extractor_version` y, por ordenador (`linux-x86_64`...), el nombre, tamaño, SHA-256 y firma del paquete. |
 | `latest.json`, `*.AppImage`, `*.AppImage.sig` | El lanzador mismo, para el actualizador de Tauri. |
 
-El lanzador pide `GET <api>/repos/<repo>/releases`, toma la versión más nueva que tenga `game-manifest.json` y lo
+El lanzador pide `GET <servidor>/repos/<repo>/releases`, toma la versión más nueva que tenga `game-manifest.json` y lo
 compara con la instalada (semver). Para actualizar:
 
-1. Descarga el paquete por su URL de la API (`Accept: application/octet-stream`), a `<datos>/downloads/*.part`.
+1. Descarga el paquete por su URL en la pasarela (`Accept: application/octet-stream`; la pasarela contesta con un
+   302 a un enlace firmado de GitHub), a `<datos>/downloads/*.part`.
 2. Comprueba el tamaño, el SHA-256 y la firma minisign con la clave pública del lanzador. Si algo no cuadra, lo
    borra y el juego se queda como estaba.
 3. Lo descomprime en `<datos>/game/versions/.staging-<versión>`, comprueba que trae `bin/dwe-game` y `bin/dwx`, lo
@@ -75,8 +79,10 @@ compara con la instalada (semver). Para actualizar:
    vuelve a leer el disco recordado sin preguntar. Si el disco ya no está, lo dice y pide elegirlo de nuevo.
    Volver a la versión anterior hace lo mismo.
 
-El lanzador se actualiza a sí mismo con el actualizador de Tauri (`latest.json`, la misma clave); en Linux solo
-funciona cuando corre como AppImage.
+El lanzador se actualiza a sí mismo con el actualizador de Tauri (`latest.json`, la misma clave de firma); en Linux
+solo funciona cuando corre como AppImage. El actualizador pide `latest.json` y el AppImage a la pasarela con la clave
+de la beta en la cabecera (nunca en la URL); la pasarela apunta la URL de `latest.json` a sí misma y el lanzador se
+niega a descargar una que esté en otro servidor.
 
 ### Actualizaciones automáticas
 
@@ -116,20 +122,24 @@ actualizador de Tauri pide `https` y el servidor falso es `http`. La configuraci
 En Windows el instalador del lanzador cierra el programa al ejecutarse, así que el lanzador lo descarga y comprueba en
 el momento y lo ejecuta al reiniciar o al cerrar.
 
-El servidor es configurable: `api_base` en los ajustes del lanzador o `DWE_LAUNCHER_API` para una ejecución. Solo
-se acepta `https`, o `http` a este mismo ordenador (para las pruebas). El token nunca se envía a otra dirección que la
-de la API: un archivo cuya URL apunte a otro sitio se rechaza, y al redirigir una descarga a otro servidor
-`reqwest` quita la cabecera.
+El servidor es la URL de la pasarela con la que se compiló el lanzador (`DWE_LAUNCHER_GATEWAY` al compilar; en el
+flujo de publicación, la variable del repositorio `DWE_BETA_GATEWAY`). Sin ella apunta a
+`https://beta-gateway.invalid`, que no existe. `DWE_LAUNCHER_API` lo cambia para una ejecución (pruebas); no se guarda
+en `settings.json`. Solo se acepta `https`, o `http` a este mismo ordenador (para las pruebas). La clave nunca se
+envía a otra dirección que la del servidor: un archivo cuya URL apunte a otro sitio se rechaza, y al redirigir una
+descarga a otro servidor `reqwest` quita la cabecera `Authorization` (lo prueba `tests/fake_release.rs`).
 
-### El token de GitHub (beta cerrada)
+### La clave de la beta
 
-Mientras el repositorio sea privado, cada jugador necesita un token de GitHub con lectura del repositorio: un
-*fine-grained personal access token* con acceso solo a `dw-engine` y el permiso **Contents: Read-only** (o un token
-clásico con `repo`). Se pega en Ajustes → Cuenta y acceso. El lanzador lo guarda en el llavero del sistema (Secret
-Service en Linux, como GNOME Keyring o KWallet; el administrador de credenciales en Windows; el llavero en macOS)
-con el servicio `dwe-launcher`, y nunca en un archivo ni en un registro (el registro tapa cualquier cosa con forma de
-token). Sin llavero disponible, el lanzador lo dice y no guarda nada. Cuando el repositorio sea público, el token
-deja de hacer falta.
+Los probadores **nunca** reciben acceso al repositorio. El responsable les da el lanzador y una sola clave
+compartida, que genera él y guarda en la pasarela (cómo crearla y rotarla:
+[pasarela de la beta](../../../services/beta-gateway/README.md)). El probador la pega en Ajustes → Cuenta y acceso
+la primera vez; si falta o no vale, el lanzador dice «Falta la clave de la beta o no es válida». La guarda en el
+llavero del sistema (Secret Service en Linux, como GNOME Keyring o KWallet; el administrador de credenciales en
+Windows; el llavero en macOS) con el servicio `dwe-launcher` y la cuenta `beta-key`, y nunca en un archivo ni en un
+registro. Sin llavero disponible, el lanzador lo dice y no guarda nada. La clave solo abre las versiones: no da
+acceso al código. Los nombres internos de la página (`save_token`, `clear_token`, el campo `token` del estado) se
+quedan como estaban.
 
 ### La clave de firma
 
@@ -163,7 +173,7 @@ termina, el lanzador vuelve; si terminó con error, muestra las últimas 30 lín
 
 | Ruta | Qué es |
 |---|---|
-| `~/.config/indie-modding-games/dwe-launcher/settings.json` | Ajustes del lanzador (carpeta de datos, idioma, servidor, disco recordado). Nunca el token. |
+| `~/.config/indie-modding-games/dwe-launcher/settings.json` | Ajustes del lanzador (carpeta de datos, idioma, disco recordado). Nunca la clave ni el servidor. |
 | `<datos>` | Por defecto la del juego, `~/.local/share/indie-modding-games/dwe` (`$XDG_DATA_HOME`), así que el juego arrancado sin lanzador ve lo mismo. |
 | `<datos>/game/versions/`, `state.json` | Las versiones instaladas del juego. |
 | `<datos>/content/` | Lo leído del disco, como lo deja la pantalla de primer arranque. |
@@ -192,12 +202,15 @@ máquina, como `dbuild.sh`. Las fuentes se copian del paquete del juego (`conten
 Los tests de Rust cubren el manifiesto, la comparación de versiones, el SHA-256 y la firma, la instalación con
 cambio atómico y vuelta atrás, el desempaquetado de `.zip` y `.7z`, la hoja CUE, el registro `install.yaml` (con el
 formato del juego) y una extracción con un `dwx` falso; `tests/fake_release.rs` levanta un servidor que contesta como
-la API de un repositorio privado y prueba la descarga sin token, con token, con un archivo alterado y con otra firma.
-`tests/addons_bridge.rs` prueba que un complemento no alcanza ningún comando con privilegios ni el token.
+la pasarela y prueba la descarga sin clave, con clave, con un archivo alterado, con otra firma y redirigida a otro
+servidor (que no recibe la clave); `through_the_beta_gateway` hace lo mismo a través de la pasarela de verdad
+(`services/beta-gateway` con node) delante de `fake_release_server.py` como GitHub. `tests/addons_bridge.rs` prueba
+que un complemento no alcanza ningún comando con privilegios ni la clave. La pasarela tiene sus propias pruebas
+(`node --test services/beta-gateway/`).
 
 Para probar a mano, `apps/launcher/tools/fake_release_server.py <carpeta> --port 8765` sirve como versiones las
 subcarpetas de `<carpeta>` (sus archivos y `notes.md`); se arranca el lanzador con
-`DWE_LAUNCHER_API=http://127.0.0.1:8765`.
+`DWE_LAUNCHER_API=http://127.0.0.1:8765`, o la pasarela delante (ver su README, «Probar en local»).
 
 ## Publicar una versión
 
@@ -212,7 +225,7 @@ La interfaz se organiza en cuatro ranuras con nombre (`ui/js/slots.js`): `sideba
 de inicio), `news` (las tarjetas de novedades) y `settings` (las secciones de ajustes). Las piezas del lanzador se
 registran ahí igual que lo hará un complemento. Las órdenes con privilegios (disco, llavero, descargas, extracción,
 arrancar programas) están solo en `ui/js/api.js` y en los comandos de Rust (`src-tauri/src/commands.rs`); lo que una
-pieza recibe para pintarse (`context()`) no lleva ni el token ni la ruta del disco.
+pieza recibe para pintarse (`context()`) no lleva ni la clave de la beta ni la ruta del disco.
 
 ## Complementos
 
@@ -222,7 +235,7 @@ guía [Complementos del lanzador](../../guides/launcher-addons.md); aquí, cómo
 - **Backend** (`src-tauri/src/addons/`): el manifiesto (`manifest.rs`), el desempaquetado seguro de carpetas y `.zip`
   (`package.rs`: rutas que salen, enlaces, tamaño y número de archivos), la instalación en dos pasos con el aviso de
   permisos (`mod.rs`: `addon_inspect` prepara y enseña, `addon_install` instala solo si el jugador acepta), el
-  almacén (`storage.rs`), `net.fetch` (`net.rs`, un cliente aparte sin token ni cookies) y el puente (`bridge.rs`),
+  almacén (`storage.rs`), `net.fetch` (`net.rs`, un cliente aparte sin clave ni cookies) y el puente (`bridge.rs`),
   que solo conoce las llamadas de la API v1 y vuelve a comprobar en cada una que el complemento esté activo y tenga
   el permiso.
 - **Esquema propio** `dweaddon` (`protocol.rs`): sirve solo la carpeta de cada complemento activo, con una CSP
@@ -240,4 +253,5 @@ guía [Complementos del lanzador](../../guides/launcher-addons.md); aquí, cómo
 
 - Probar Windows y macOS (el llavero, rutas y el instalador de cada sistema).
 - La clave de firma real y la primera versión publicada (decisión del responsable).
+- Desplegar la pasarela y fijar `DWE_BETA_GATEWAY` (el responsable, desde los paneles).
 - Probar los complementos en Windows (allí el esquema es `http://dweaddon.localhost/`) y macOS.
