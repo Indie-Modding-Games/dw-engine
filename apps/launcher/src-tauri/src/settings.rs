@@ -1,7 +1,7 @@
 //! The launcher's own settings (settings.json in the system's configuration folder, never in the
 //! data folder, which the player may change): where the data goes, the language, the release server
-//! and the disc the content was read from. The GitHub token is not here: it lives in the system
-//! keyring (token.rs).
+//! and the disc the content was read from. The beta key is not here: it lives in the system keyring
+//! (beta_key.rs).
 
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -11,10 +11,17 @@ use crate::auto_update::LastCheck;
 use crate::failure::Result;
 use crate::store::write_atomically;
 
-/// The public release server and the repository whose releases carry the game.
-pub const DEFAULT_API_BASE: &str = "https://api.github.com";
+/// The release server: the closed beta's gateway (services/beta-gateway), whose URL the release
+/// build sets with DWE_LAUNCHER_GATEWAY. Without it the build points at a placeholder that never
+/// answers (.invalid names do not exist), so a development build never talks to a real server.
+pub const DEFAULT_API_BASE: &str = match option_env!("DWE_LAUNCHER_GATEWAY") {
+    Some(url) if !url.is_empty() => url,
+    _ => PLACEHOLDER_GATEWAY,
+};
+pub const PLACEHOLDER_GATEWAY: &str = "https://beta-gateway.invalid";
+/// The repository whose releases carry the game, as the gateway's paths name it.
 pub const DEFAULT_REPOSITORY: &str = "Indie-Modding-Games/dw-engine";
-/// Overrides the release server (tests run against a local fake one).
+/// Overrides the release server for one run (tests and local tries against a fake one).
 pub const API_BASE_ENV: &str = "DWE_LAUNCHER_API";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -32,11 +39,18 @@ pub struct Settings {
     pub auto_update_game: bool,
     /// When the last check ran and what it did.
     pub last_check: Option<LastCheck>,
+    /// The build's gateway, or DWE_LAUNCHER_API for this run: never saved, so a new launcher's
+    /// gateway always wins over an older one's.
+    #[serde(skip, default = "default_api_base")]
     pub api_base: String,
     pub repository: String,
     /// What the player picked last: a disc image or an archive holding one. An update whose
     /// extractor reads discs differently reads it again from here.
     pub disc_source: Option<PathBuf>,
+}
+
+fn default_api_base() -> String {
+    DEFAULT_API_BASE.into()
 }
 
 impl Default for Settings {
@@ -82,12 +96,7 @@ impl Settings {
     }
 
     pub fn save_to(&self, path: &Path) -> Result<()> {
-        let mut saved = self.clone();
-        // A server given in the environment is for this run only.
-        if std::env::var(API_BASE_ENV).map(|v| v == self.api_base).unwrap_or(false) {
-            saved.api_base = Settings::load_from(path).api_base;
-        }
-        let text = serde_json::to_vec_pretty(&saved).expect("settings serialize");
+        let text = serde_json::to_vec_pretty(self).expect("settings serialize");
         write_atomically(path, &text)
     }
 
@@ -141,5 +150,18 @@ mod tests {
         let saved = Settings { auto_update_game: false, last_check: Some(LastCheck::checked(5, None, None)), ..Settings::default() };
         saved.save_to(&file).unwrap();
         assert_eq!(Settings::load_from(&file), saved);
+    }
+
+    #[test]
+    fn the_release_server_is_the_builds_never_a_saved_one() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("settings.json");
+        fs::write(&file, r#"{"api_base":"https://api.github.com","language":"en"}"#).unwrap();
+        let read = Settings::load_from(&file);
+        assert_eq!(read.api_base, DEFAULT_API_BASE);
+        assert_eq!(read.language, "en");
+        Settings { api_base: "http://127.0.0.1:1".into(), ..read }.save_to(&file).unwrap();
+        assert!(!fs::read_to_string(&file).unwrap().contains("api_base"));
+        assert!(DEFAULT_API_BASE.starts_with("https://"));
     }
 }

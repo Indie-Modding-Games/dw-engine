@@ -11,6 +11,7 @@ use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_updater::UpdaterExt;
 
 use crate::auto_update::{self, Action, LastCheck};
+use crate::beta_key;
 use crate::content::{self, Identity};
 use crate::disc::{self, Pick};
 use crate::failure::{code, Failure, Result};
@@ -19,7 +20,6 @@ use crate::log_line;
 use crate::manifest;
 use crate::releases::{Client, Release};
 use crate::store::{Game, GameStore};
-use crate::token;
 use crate::updates::{self, Stage};
 use crate::verify;
 use crate::AppState;
@@ -53,7 +53,8 @@ pub struct Status {
     content_extractor_version: Option<i32>,
     disc_source: Option<String>,
     disc_source_exists: bool,
-    /// "saved", "none" or "unavailable" (no system keyring).
+    /// The beta key: "saved", "none" or "unavailable" (no system keyring). The field and the
+    /// save_token / clear_token commands keep the page's names.
     token: &'static str,
     signing_ready: bool,
     busy: bool,
@@ -137,7 +138,7 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
     let content = content::content_folder(&data);
     let installed = content::has_base_pack(&content);
     let record = content::read_record(&content);
-    let token = token_state(state);
+    let token = key_state(state);
     Status {
         language: settings.language.clone(),
         launcher_version: launcher_version(app),
@@ -169,12 +170,12 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
     }
 }
 
-fn token_state(state: &AppState) -> &'static str {
-    let mut cached = state.token_state.lock().unwrap();
+fn key_state(state: &AppState) -> &'static str {
+    let mut cached = state.key_state.lock().unwrap();
     if let Some(value) = *cached {
         return value;
     }
-    let value = match state.tokens.get() {
+    let value = match state.keys.get() {
         Ok(Some(_)) => "saved",
         Ok(None) => "none",
         Err(failure) => {
@@ -206,8 +207,8 @@ pub fn background(state: State<'_, AppState>) -> Option<String> {
 
 fn client(state: &AppState) -> Result<Client> {
     let settings = state.settings.lock().unwrap().clone();
-    let token = state.tokens.get().ok().flatten();
-    Client::new(&settings.api_base, &settings.repository, token)
+    let key = state.keys.get().ok().flatten();
+    Client::new(&settings.api_base, &settings.repository, key)
 }
 
 async fn latest_release(state: &AppState) -> Result<Release> {
@@ -547,24 +548,25 @@ pub fn set_data_folder(app: AppHandle, state: State<'_, AppState>, path: Option<
     Ok(status_of(&app, &state))
 }
 
+/// Saves the beta key the tester pasted (empty: removes it).
 #[tauri::command]
 pub fn save_token(app: AppHandle, state: State<'_, AppState>, token: String) -> Result<Status> {
-    let saved = match token::clean(&token) {
-        Some(token) => state.tokens.set(&token).map(|()| "saved"),
-        None => state.tokens.clear().map(|()| "none"),
+    let saved = match beta_key::clean(&token) {
+        Some(key) => state.keys.set(&key).map(|()| "saved"),
+        None => state.keys.clear().map(|()| "none"),
     };
-    let saved = saved.inspect_err(|f| log_line!("the token was not saved: {}", f.detail))?;
-    *state.token_state.lock().unwrap() = Some(saved);
-    log_line!("the GitHub token was saved in the system keyring");
+    let saved = saved.inspect_err(|f| log_line!("the beta key was not saved: {}", f.detail))?;
+    *state.key_state.lock().unwrap() = Some(saved);
+    log_line!("the beta key was saved in the system keyring");
     *state.release.lock().unwrap() = None;
     Ok(status_of(&app, &state))
 }
 
 #[tauri::command]
 pub fn clear_token(app: AppHandle, state: State<'_, AppState>) -> Result<Status> {
-    state.tokens.clear()?;
-    *state.token_state.lock().unwrap() = Some("none");
-    log_line!("the GitHub token was removed");
+    state.keys.clear()?;
+    *state.key_state.lock().unwrap() = Some("none");
+    log_line!("the beta key was removed");
     Ok(status_of(&app, &state))
 }
 
@@ -621,6 +623,11 @@ async fn download_launcher(app: &AppHandle, state: &AppState) -> Result<String> 
     let Some(update) = update else {
         return Err(Failure::new(code::NO_RELEASE, "latest.json"));
     };
+    // The updater sends the key with the download too: only to the release server (the gateway
+    // points every file of latest.json at itself).
+    if !client(state)?.serves(update.download_url.as_str()) {
+        return Err(Failure::new(code::BAD_MANIFEST, format!("{} is not on the release server", update.download_url)));
+    }
     log_line!("downloading the launcher {}", update.version);
     let handle = app.clone();
     let mut done = 0u64;

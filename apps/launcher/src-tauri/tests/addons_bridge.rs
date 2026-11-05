@@ -1,5 +1,5 @@
 //! What an add-on can reach through the bridge, end to end on the backend: none of the
-//! launcher's commands, never the GitHub token (not even when one is in use for the release
+//! launcher's commands, never the beta key (not even when one is in use for the release
 //! server), no cookies, no host it did not declare (not even through a redirect), no path or
 //! secret in its context, nothing at all when it is off or in safe mode.
 
@@ -87,7 +87,7 @@ fn no_launcher_command_can_be_named() {
         "install_launcher_update", "restart_launcher", "set_auto_update", "addons_list", "addon_inspect", "addon_install", "addon_set_enabled",
         "addon_uninstall", "addons_safe_mode", "addons_dismiss_crash", "addon_call", "plugin:dialog|open",
         "plugin:opener|open_path", "plugin:opener|open_url", "plugin:updater|check", "plugin:updater|download_and_install",
-        "token", "storage", "storage.get.token", "net", "net.fetch ", "Context", "__proto__", "constructor", "",
+        "token", "beta_key", "storage", "storage.get.token", "net", "net.fetch ", "Context", "__proto__", "constructor", "",
     ];
     for method in privileged {
         let failure = bridge::parse(method, &json!({ "key": "a", "url": "https://example.org", "path": "/" })).unwrap_err();

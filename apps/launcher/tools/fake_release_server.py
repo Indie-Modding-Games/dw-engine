@@ -6,8 +6,14 @@ folder is read again on every request, so a release can be added while the launc
 
     fake_release_server.py <releases> [--port 8765] [--token secret] [--repo team/game]
 
-Start the launcher with DWE_LAUNCHER_API=http://127.0.0.1:<port>. With --token, requests without
-"Authorization: Bearer <token>" get 404, as a private repository answers.
+Start the launcher with DWE_LAUNCHER_API=http://127.0.0.1:<port>, or run the beta gateway
+(services/beta-gateway) with GITHUB_API=http://127.0.0.1:<port> in front of it. With --token,
+requests without "Authorization: Bearer <token>" get 404, as a private repository answers.
+
+Like GitHub, a file asked for as application/octet-stream is a 302 to a signed URL on another
+host (http://localhost:<port>/_objects/<id>), which refuses any request that carries an
+Authorization header (as GitHub's storage does); without octet-stream it is the file's
+description. /releases/tags/<tag> answers one release.
 """
 import argparse
 import json
@@ -39,6 +45,7 @@ def main():
     parser.add_argument("--token")
     parser.add_argument("--repo", default="Indie-Modding-Games/dw-engine")
     args = parser.parse_args()
+    args.root = args.root.resolve()
     base = f"http://127.0.0.1:{args.port}"
 
     class Handler(BaseHTTPRequestHandler):
@@ -49,22 +56,45 @@ def main():
             self.end_headers()
             self.wfile.write(body)
 
+        def find(self, listing, asset_id):
+            for release in listing:
+                for asset in release["assets"]:
+                    if str(asset["id"]) == asset_id:
+                        return asset
+            return None
+
         def do_GET(self):
-            if args.token and self.headers.get("Authorization") != f"Bearer {args.token}":
-                return self.send(404, b'{"message":"Not Found"}')
             listing = releases(args.root, base, args.repo)
             path = self.path.split("?")[0]
+            if path.startswith("/_objects/"):
+                if self.headers.get("Authorization"):
+                    return self.send(400, b'{"message":"Only one auth mechanism allowed"}')
+                asset = self.find(listing, path[len("/_objects/"):])
+                if asset is None:
+                    return self.send(404, b'{"message":"Not Found"}')
+                return self.send(200, Path(asset["_path"]).read_bytes(), "application/octet-stream")
+            if args.token and self.headers.get("Authorization") != f"Bearer {args.token}":
+                return self.send(404, b'{"message":"Not Found"}')
+            public = [{**r, "assets": [{k: v for k, v in a.items() if k != "_path"} for a in r["assets"]]}
+                      for r in listing]
             if path == f"/repos/{args.repo}/releases":
-                public = [{**r, "assets": [{k: v for k, v in a.items() if k != "_path"} for a in r["assets"]]}
-                          for r in listing]
                 return self.send(200, json.dumps(public).encode())
+            tags = f"/repos/{args.repo}/releases/tags/"
+            if path.startswith(tags):
+                for release in public:
+                    if release["tag_name"] == path[len(tags):]:
+                        return self.send(200, json.dumps(release).encode())
             prefix = f"/repos/{args.repo}/releases/assets/"
             if path.startswith(prefix):
-                for release in listing:
-                    for asset in release["assets"]:
-                        if str(asset["id"]) == path[len(prefix):]:
-                            data = Path(asset["_path"]).read_bytes()
-                            return self.send(200, data, "application/octet-stream")
+                asset = self.find(listing, path[len(prefix):])
+                if asset is not None:
+                    if "application/octet-stream" in self.headers.get("Accept", ""):
+                        self.send_response(302)
+                        self.send_header("Location", f"http://localhost:{args.port}/_objects/{asset['id']}?sig=fake")
+                        self.send_header("Content-Length", "0")
+                        self.end_headers()
+                        return
+                    return self.send(200, json.dumps({k: v for k, v in asset.items() if k != "_path"}).encode())
             self.send(404, b'{"message":"Not Found"}')
 
         def log_message(self, fmt, *values):

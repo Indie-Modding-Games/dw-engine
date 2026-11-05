@@ -36,7 +36,7 @@ pub mod code {
     pub const NO_GAME: &str = "no-game";
     /// The release server could not be reached.
     pub const NETWORK: &str = "network";
-    /// The release server refused us: a private repository needs a token.
+    /// The release server refused us: the beta gateway needs the beta key (missing or wrong).
     pub const AUTH: &str = "auth";
     /// No release has a game package for this computer.
     pub const NO_RELEASE: &str = "no-release";

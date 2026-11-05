@@ -1,8 +1,10 @@
-//! The releases of the game's repository through the GitHub REST API (or any server that answers
-//! the same two requests, such as the test's fake one): the newest release that carries a game
-//! manifest, its notes, and its files. Files are fetched through the API's asset URL, which also
-//! works for a private repository when a token is given; the token is only ever sent to the API
-//! server (reqwest drops it when a download redirects to another host).
+//! The game's releases through the closed beta's gateway (services/beta-gateway), which answers
+//! the GitHub REST API's release requests for the private repository to whoever sends the beta
+//! key (or any server that answers the same requests, such as the tests' fake one): the newest
+//! release that carries a game manifest, its notes, and its files. Files are fetched through
+//! their URL on the gateway, which redirects a package to a short-lived download link on another
+//! host; the key is only ever sent to the gateway (reqwest drops the Authorization header when a
+//! request redirects to another host).
 
 use futures_util::StreamExt;
 use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, USER_AGENT};
@@ -20,7 +22,8 @@ pub struct Asset {
     pub id: u64,
     pub name: String,
     pub size: u64,
-    /// The API URL of the asset (answers with the file when asked for application/octet-stream).
+    /// The asset's URL on the release server (answers with the file when asked for
+    /// application/octet-stream).
     pub url: String,
 }
 
@@ -65,7 +68,8 @@ pub struct Client {
     http: reqwest::Client,
     api: String,
     repository: String,
-    token: Option<String>,
+    /// The beta key, sent as a bearer to the release server only.
+    key: Option<String>,
 }
 
 fn status_failure(status: StatusCode, what: &str) -> Failure {
@@ -81,7 +85,7 @@ fn network(error: reqwest::Error) -> Failure {
     Failure::new(code::NETWORK, crate::log::redact(&error.without_url().to_string()))
 }
 
-/// Only https, or plain http to this computer (the tests' fake server): the token and the
+/// Only https, or plain http to this computer (the tests' fake server): the key and the
 /// packages never travel in the clear.
 pub fn is_trusted_transport(api: &str) -> bool {
     let Ok(url) = reqwest::Url::parse(api) else { return false };
@@ -93,7 +97,7 @@ pub fn is_trusted_transport(api: &str) -> bool {
 }
 
 impl Client {
-    pub fn new(api: &str, repository: &str, token: Option<String>) -> Result<Self> {
+    pub fn new(api: &str, repository: &str, key: Option<String>) -> Result<Self> {
         if !is_trusted_transport(api) {
             return Err(Failure::new(code::NETWORK, format!("{api} is not https")));
         }
@@ -105,18 +109,23 @@ impl Client {
             .connect_timeout(std::time::Duration::from_secs(15))
             .build()
             .map_err(network)?;
-        Ok(Self { http, api: api.trim_end_matches('/').to_string(), repository: repository.to_string(), token: token.filter(|t| !t.is_empty()) })
+        Ok(Self { http, api: api.trim_end_matches('/').to_string(), repository: repository.to_string(), key: key.filter(|k| !k.is_empty()) })
     }
 
-    /// The headers a request needs: the token (as a bearer) when there is one.
+    /// The headers a request needs: the key (as a bearer) when there is one.
     pub fn auth_headers(&self) -> Vec<(String, String)> {
-        self.token.iter().map(|t| (AUTHORIZATION.to_string(), format!("Bearer {t}"))).collect()
+        self.key.iter().map(|k| (AUTHORIZATION.to_string(), format!("Bearer {k}"))).collect()
+    }
+
+    /// Whether the URL is on the release server: the only place the key may be sent to.
+    pub fn serves(&self, url: &str) -> bool {
+        url.starts_with(&format!("{}/", self.api))
     }
 
     fn get(&self, url: &str, accept: &'static str) -> reqwest::RequestBuilder {
         let mut request = self.http.get(url).header(ACCEPT, accept);
-        if let Some(token) = &self.token {
-            request = request.bearer_auth(token);
+        if let Some(key) = &self.key {
+            request = request.bearer_auth(key);
         }
         request
     }
@@ -148,9 +157,9 @@ impl Client {
         })
     }
 
-    /// The token goes only to the API server: a file whose URL points elsewhere is refused.
+    /// The key goes only to the release server: a file whose URL points elsewhere is refused.
     fn check_asset_url(&self, asset: &Asset) -> Result<()> {
-        if asset.url.starts_with(&format!("{}/", self.api)) {
+        if self.serves(&asset.url) {
             Ok(())
         } else {
             Err(Failure::new(code::BAD_MANIFEST, format!("{} is not on {}", asset.name, self.api)))

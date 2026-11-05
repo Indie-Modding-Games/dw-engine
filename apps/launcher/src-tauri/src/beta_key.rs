@@ -1,15 +1,16 @@
-//! The player's GitHub token, for a private repository during the closed beta: kept in the
-//! system keyring (Secret Service on Linux, the credential manager on Windows, the keychain on
-//! macOS), never in a file or a log.
+//! The closed beta's key: the one key the team hands every tester, which the beta gateway
+//! (services/beta-gateway) asks for before it shows a release. Kept in the system keyring (Secret
+//! Service on Linux, the credential manager on Windows, the keychain on macOS), never in a file or
+//! a log. It opens the releases only, never the repository.
 
 use crate::failure::{code, Failure, Result};
 
 const SERVICE: &str = "dwe-launcher";
-const ACCOUNT: &str = "github-token";
+const ACCOUNT: &str = "beta-key";
 
-pub trait TokenStore: Send + Sync {
+pub trait KeyStore: Send + Sync {
     fn get(&self) -> Result<Option<String>>;
-    fn set(&self, token: &str) -> Result<()>;
+    fn set(&self, key: &str) -> Result<()>;
     fn clear(&self) -> Result<()>;
 }
 
@@ -19,18 +20,18 @@ fn keyring_failure(error: keyring::Error) -> Failure {
     Failure::new(code::KEYRING, error.to_string())
 }
 
-impl TokenStore for Keyring {
+impl KeyStore for Keyring {
     fn get(&self) -> Result<Option<String>> {
         let entry = keyring::Entry::new(SERVICE, ACCOUNT).map_err(keyring_failure)?;
         match entry.get_password() {
-            Ok(token) => Ok(Some(token)),
+            Ok(key) => Ok(Some(key)),
             Err(keyring::Error::NoEntry) => Ok(None),
             Err(error) => Err(keyring_failure(error)),
         }
     }
 
-    fn set(&self, token: &str) -> Result<()> {
-        keyring::Entry::new(SERVICE, ACCOUNT).and_then(|e| e.set_password(token)).map_err(keyring_failure)
+    fn set(&self, key: &str) -> Result<()> {
+        keyring::Entry::new(SERVICE, ACCOUNT).and_then(|e| e.set_password(key)).map_err(keyring_failure)
     }
 
     fn clear(&self) -> Result<()> {
@@ -46,12 +47,12 @@ impl TokenStore for Keyring {
 #[derive(Default)]
 pub struct Memory(std::sync::Mutex<Option<String>>);
 
-impl TokenStore for Memory {
+impl KeyStore for Memory {
     fn get(&self) -> Result<Option<String>> {
         Ok(self.0.lock().unwrap().clone())
     }
-    fn set(&self, token: &str) -> Result<()> {
-        *self.0.lock().unwrap() = Some(token.to_string());
+    fn set(&self, key: &str) -> Result<()> {
+        *self.0.lock().unwrap() = Some(key.to_string());
         Ok(())
     }
     fn clear(&self) -> Result<()> {
@@ -60,10 +61,10 @@ impl TokenStore for Memory {
     }
 }
 
-/// A token as the player pasted it: trimmed; nothing when empty.
-pub fn clean(token: &str) -> Option<String> {
-    let token = token.trim();
-    (!token.is_empty()).then(|| token.to_string())
+/// A key as the tester pasted it: trimmed; nothing when empty.
+pub fn clean(key: &str) -> Option<String> {
+    let key = key.trim();
+    (!key.is_empty()).then(|| key.to_string())
 }
 
 #[cfg(test)]
@@ -74,11 +75,11 @@ mod tests {
     fn the_memory_store_and_cleaning() {
         let store = Memory::default();
         assert_eq!(store.get().unwrap(), None);
-        store.set("ghp_x").unwrap();
-        assert_eq!(store.get().unwrap().as_deref(), Some("ghp_x"));
+        store.set("beta-x").unwrap();
+        assert_eq!(store.get().unwrap().as_deref(), Some("beta-x"));
         store.clear().unwrap();
         assert_eq!(store.get().unwrap(), None);
-        assert_eq!(clean("  ghp_y \n").as_deref(), Some("ghp_y"));
+        assert_eq!(clean("  beta-y \n").as_deref(), Some("beta-y"));
         assert_eq!(clean("   "), None);
     }
 }

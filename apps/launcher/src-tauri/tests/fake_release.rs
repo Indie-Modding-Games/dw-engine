@@ -1,6 +1,9 @@
-//! The update path against a local fake release server that answers like the GitHub API for a
-//! private repository: listing the releases, reading the manifest, downloading the package and
-//! checking it, with and without the token, with a tampered file and a foreign signature.
+//! The update path against a local fake release server that answers like the beta gateway (the
+//! GitHub API's release requests, behind the beta key): listing the releases, reading the
+//! manifest, downloading the package and checking it, with and without the key, with a tampered
+//! file and a foreign signature; a download that redirects to another host without the key; and
+//! the whole path through the real gateway (services/beta-gateway under node) in front of
+//! tools/fake_release_server.py as GitHub.
 
 use base64::Engine;
 use std::collections::HashMap;
@@ -17,13 +20,15 @@ use dwe_launcher::releases::Client;
 use dwe_launcher::store::GameStore;
 use dwe_launcher::{updates, verify};
 
-const TOKEN: &str = "test-token-123";
+const KEY: &str = "placeholder-beta-key-for-tests-0123456789";
 const REPO: &str = "team/game";
 
 type Routes = Arc<Mutex<HashMap<String, Vec<u8>>>>;
 
-/// Serves the routes to requests that carry the token, and 404 (as GitHub does for a private
-/// repository) to the others. Returns the base URL.
+/// A route whose body starts with this answers a 302 to the rest of the body.
+const REDIRECT: &[u8] = b"redirect:";
+
+/// Serves the routes to requests that carry the key, and 404 to the others. Returns the base URL.
 fn serve(routes: Routes) -> String {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let base = format!("http://{}", listener.local_addr().unwrap());
@@ -41,13 +46,17 @@ fn serve(routes: Routes) -> String {
                     if reader.read_line(&mut line).unwrap() == 0 || line == "\r\n" {
                         break;
                     }
-                    if line.to_ascii_lowercase().starts_with("authorization:") && line.contains(&format!("Bearer {TOKEN}")) {
+                    if line.to_ascii_lowercase().starts_with("authorization:") && line.contains(&format!("Bearer {KEY}")) {
                         authorized = true;
                     }
                 }
                 let body = routes.lock().unwrap().get(&path).cloned().filter(|_| authorized);
                 let mut stream = stream;
                 match body {
+                    Some(body) if body.starts_with(REDIRECT) => {
+                        let location = String::from_utf8_lossy(&body[REDIRECT.len()..]).to_string();
+                        write!(stream, "HTTP/1.1 302 Found\r\nLocation: {location}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").unwrap();
+                    }
                     Some(body) => {
                         write!(stream, "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", body.len()).unwrap();
                         stream.write_all(&body).unwrap();
@@ -130,11 +139,11 @@ async fn updates_from_a_private_release_server() {
     let first = fs::read(package(dir.path(), "dwe-a", "first")).unwrap();
     publish(&routes, &base, "0.1.0-beta.1", &first, &first, &signer);
 
-    // A private repository: without the token the releases are not found.
+    // Without the key the releases are not shown.
     let anonymous = Client::new(&base, REPO, None).unwrap();
     assert_eq!(anonymous.latest().await.unwrap_err().code, code::AUTH);
 
-    let client = Client::new(&base, REPO, Some(TOKEN.into())).unwrap();
+    let client = Client::new(&base, REPO, Some(KEY.into())).unwrap();
     let release = client.latest().await.unwrap();
     assert_eq!(release.tag, "v0.1.0-beta.1");
     assert_eq!(release.notes, "## Changes\n- Faster");
@@ -180,13 +189,210 @@ async fn updates_from_a_private_release_server() {
 }
 
 #[tokio::test]
-async fn the_token_never_leaves_the_api_server() {
+async fn the_key_never_leaves_the_release_server() {
     let routes: Routes = Arc::default();
     let base = serve(routes.clone());
     let api = format!("/repos/{REPO}/releases");
     let releases = serde_json::json!([{ "tag_name": "v1", "assets": [
         { "id": 1, "name": "game-manifest.json", "size": 1, "url": "http://localhost:9/elsewhere" } ] }]);
     routes.lock().unwrap().insert(format!("{api}?per_page=20"), releases.to_string().into_bytes());
-    let client = Client::new(&base, REPO, Some(TOKEN.into())).unwrap();
+    let client = Client::new(&base, REPO, Some(KEY.into())).unwrap();
     assert_eq!(client.latest().await.unwrap_err().code, code::BAD_MANIFEST);
+}
+
+/// A storage host like the one GitHub's downloads redirect to: serves its files to anyone, answers
+/// 400 to a request that carries an Authorization header (as the real one does), and records
+/// every request's headers. Returns its base URL, on "localhost" (another host than 127.0.0.1).
+fn serve_storage(files: Routes, seen: Arc<Mutex<Vec<String>>>) -> String {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let base = format!("http://localhost:{}", listener.local_addr().unwrap().port());
+    std::thread::spawn(move || {
+        for stream in listener.incoming().flatten() {
+            let (files, seen) = (files.clone(), seen.clone());
+            std::thread::spawn(move || {
+                let mut reader = BufReader::new(stream.try_clone().unwrap());
+                let mut request = String::new();
+                reader.read_line(&mut request).unwrap();
+                let path = request.split(' ').nth(1).unwrap_or("/").to_string();
+                let mut head = request.clone();
+                loop {
+                    let mut line = String::new();
+                    if reader.read_line(&mut line).unwrap() == 0 || line == "\r\n" {
+                        break;
+                    }
+                    head.push_str(&line);
+                }
+                seen.lock().unwrap().push(head.clone());
+                let mut stream = stream;
+                let body = files.lock().unwrap().get(&path).cloned();
+                match body {
+                    _ if head.to_ascii_lowercase().contains("\nauthorization:") => {
+                        write!(stream, "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").unwrap()
+                    }
+                    Some(body) => {
+                        write!(stream, "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", body.len()).unwrap();
+                        stream.write_all(&body).unwrap();
+                    }
+                    None => write!(stream, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").unwrap(),
+                }
+            });
+        }
+    });
+    base
+}
+
+#[tokio::test]
+async fn the_key_is_not_sent_where_a_download_redirects() {
+    let dir = tempfile::tempdir().unwrap();
+    let data = dir.path().join("data");
+    let routes: Routes = Arc::default();
+    let base = serve(routes.clone());
+    let stored: Routes = Arc::default();
+    let seen: Arc<Mutex<Vec<String>>> = Arc::default();
+    let storage = serve_storage(stored.clone(), seen.clone());
+    let signer = Signer::new();
+    let key = verify::public_key(&signer.public()).unwrap();
+
+    // The gateway's answer for the package: a 302 to a short-lived link on the storage host.
+    let package_bytes = fs::read(package(dir.path(), "dwe-r", "redirected")).unwrap();
+    publish(&routes, &base, "0.3.0", &package_bytes, &package_bytes, &signer);
+    stored.lock().unwrap().insert("/signed/package?sig=short".into(), package_bytes.clone());
+    let mut redirect = REDIRECT.to_vec();
+    redirect.extend_from_slice(format!("{storage}/signed/package?sig=short").as_bytes());
+    routes.lock().unwrap().insert(format!("/repos/{REPO}/releases/assets/2"), redirect);
+
+    let client = Client::new(&base, REPO, Some(KEY.into())).unwrap();
+    let release = client.latest().await.unwrap();
+    let never = AtomicBool::new(false);
+    let game = updates::install_game(&client, &release, &data, Some(&key), &never, |_, _, _| {}).await.unwrap();
+    assert_eq!(fs::read_to_string(game.game_program()).unwrap(), "redirected");
+    let requests = seen.lock().unwrap().clone();
+    assert_eq!(requests.len(), 1, "the package came from the storage host");
+    assert!(!requests[0].to_ascii_lowercase().contains("authorization"), "{}", requests[0]);
+    assert!(!requests[0].contains(KEY));
+}
+
+/// A program the test starts, stopped when the test ends (even when it fails).
+struct Child(std::process::Child);
+
+impl Drop for Child {
+    fn drop(&mut self) {
+        let _ = self.0.kill();
+        let _ = self.0.wait();
+    }
+}
+
+fn free_port() -> u16 {
+    TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port()
+}
+
+fn wait_for(port: u16) {
+    for _ in 0..100 {
+        if std::net::TcpStream::connect(("127.0.0.1", port)).is_ok() {
+            return;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+    panic!("nothing listens on {port} after 10 s");
+}
+
+fn has(program: &str) -> bool {
+    std::process::Command::new(program).arg("--version").output().is_ok_and(|o| o.status.success())
+}
+
+/// The real path: the launcher's client → the gateway (worker.js under node) → a fake GitHub
+/// (tools/fake_release_server.py, which redirects every file to its storage host and refuses
+/// a storage request that carries a key). Skipped where node or python3 is missing; the
+/// launcher image has both.
+#[tokio::test]
+async fn through_the_beta_gateway() {
+    if !has("node") || !has("python3") {
+        eprintln!("skipped: node and python3 are needed to run the gateway and the fake GitHub");
+        return;
+    }
+    let launcher = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+    let fake_github = launcher.join("tools/fake_release_server.py");
+    let gateway_program = launcher.join("../../services/beta-gateway/dev/serve.js");
+    let dir = tempfile::tempdir().unwrap();
+    let data = dir.path().join("data");
+    let (github_port, gateway_port) = (free_port(), free_port());
+    let github = format!("http://127.0.0.1:{github_port}");
+    let gateway = format!("http://127.0.0.1:{gateway_port}");
+    const GITHUB_TOKEN: &str = "placeholder-github-token";
+
+    // One release: the game package, its manifest, a launcher bundle and its latest.json, which
+    // names the bundle by its GitHub API URL (as the release workflow writes it).
+    let signer = Signer::new();
+    let key = verify::public_key(&signer.public()).unwrap();
+    let folder = dir.path().join("releases/v0.4.0-beta.1");
+    fs::create_dir_all(&folder).unwrap();
+    let game_package = fs::read(package(dir.path(), "dwe-g", "through the gateway")).unwrap();
+    let asset = format!("dwe-game-0.4.0-beta.1-{}.tar.xz", platform_key());
+    fs::write(folder.join(&asset), &game_package).unwrap();
+    let manifest = serde_json::json!({
+        "schema": 1, "version": "0.4.0-beta.1", "commit": "abc", "extractor_version": 13,
+        "packages": { platform_key(): { "asset": asset, "size": game_package.len(), "sha256": sha256(&game_package), "signature": signer.sign(&game_package) } }
+    });
+    fs::write(folder.join("game-manifest.json"), manifest.to_string()).unwrap();
+    fs::write(folder.join("dwe-launcher.AppImage"), b"new launcher").unwrap();
+    fs::write(folder.join("notes.md"), "## Through the gateway").unwrap();
+    // The fake server numbers files 1000 + their place by name: dwe-game, dwe-launcher, game-manifest, latest.
+    let launcher_api_url = format!("{github}/repos/{REPO}/releases/assets/1001");
+    let latest = serde_json::json!({ "version": "9.0.0", "notes": "", "pub_date": "2026-11-04T12:00:00Z",
+        "platforms": { "linux-x86_64": { "signature": "c2ln", "url": launcher_api_url } } });
+    fs::write(folder.join("latest.json"), latest.to_string()).unwrap();
+
+    let _github = Child(
+        std::process::Command::new("python3")
+            .arg(&fake_github)
+            .arg(dir.path().join("releases"))
+            .args(["--port", &github_port.to_string(), "--token", GITHUB_TOKEN, "--repo", REPO])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .unwrap(),
+    );
+    let _gateway = Child(
+        std::process::Command::new("node")
+            .arg(&gateway_program)
+            .args(["--port", &gateway_port.to_string()])
+            .env("BETA_KEY", KEY)
+            .env("GITHUB_TOKEN", GITHUB_TOKEN)
+            .env("GITHUB_REPO", REPO)
+            .env("GITHUB_API", &github)
+            .stdout(std::process::Stdio::null())
+            .spawn()
+            .unwrap(),
+    );
+    wait_for(github_port);
+    wait_for(gateway_port);
+
+    // No key or a wrong one: the "needs the key" failure.
+    for wrong in [None, Some("not-the-beta-key".to_string()), Some(GITHUB_TOKEN.to_string())] {
+        let refused = Client::new(&gateway, REPO, wrong).unwrap().latest().await.unwrap_err();
+        assert_eq!(refused.code, code::AUTH);
+    }
+
+    // The key: the release, every file on the gateway, the game installed through a redirect
+    // to the storage host (which refuses any request that carries a key).
+    let client = Client::new(&gateway, REPO, Some(KEY.into())).unwrap();
+    let release = client.latest().await.unwrap();
+    assert_eq!(release.tag, "v0.4.0-beta.1");
+    assert_eq!(release.notes, "## Through the gateway");
+    assert!(release.assets.iter().all(|a| a.url.starts_with(&format!("{gateway}/"))), "{:?}", release.assets);
+    let never = AtomicBool::new(false);
+    let game = updates::install_game(&client, &release, &data, Some(&key), &never, |_, _, _| {}).await.unwrap();
+    assert_eq!(fs::read_to_string(game.game_program()).unwrap(), "through the gateway");
+
+    // latest.json: its bundle now on the gateway, and the bundle downloads through it.
+    let text = client.fetch_text(release.launcher_manifest().unwrap()).await.unwrap();
+    let served: serde_json::Value = serde_json::from_str(&text).unwrap();
+    let bundle_url = served["platforms"]["linux-x86_64"]["url"].as_str().unwrap().to_string();
+    assert_eq!(bundle_url, format!("{gateway}/repos/{REPO}/releases/assets/1001"));
+    assert!(client.serves(&bundle_url));
+    let bundle = dwe_launcher::releases::Asset { id: 1001, name: "dwe-launcher.AppImage".into(), size: 12, url: bundle_url };
+    let file = dir.path().join("bundle");
+    client.download(&bundle, &file, &never, |_, _| {}).await.unwrap();
+    assert_eq!(fs::read(&file).unwrap(), b"new launcher");
+    assert!(!text.contains(GITHUB_TOKEN) && !text.contains(&github));
 }

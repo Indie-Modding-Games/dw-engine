@@ -5,6 +5,7 @@
 
 pub mod addons;
 pub mod auto_update;
+pub mod beta_key;
 pub mod content;
 pub mod disc;
 pub mod failure;
@@ -14,7 +15,6 @@ pub mod manifest;
 pub mod releases;
 pub mod settings;
 pub mod store;
-pub mod token;
 pub mod updates;
 pub mod verify;
 
@@ -27,7 +27,7 @@ use std::sync::{Arc, Mutex};
 
 use releases::Release;
 use settings::Settings;
-use token::TokenStore;
+use beta_key::KeyStore;
 
 pub struct AppState {
     pub settings: Mutex<Settings>,
@@ -37,10 +37,11 @@ pub struct AppState {
     pub cancel: Arc<AtomicBool>,
     /// The newest release, as the last check saw it.
     pub release: Mutex<Option<Release>>,
-    pub tokens: Box<dyn TokenStore>,
+    /// The beta key's keyring entry.
+    pub keys: Box<dyn KeyStore>,
     /// What the keyring said last ("saved", "none", "unavailable"): asked once, then kept, so
     /// drawing the page never waits on the keyring.
-    pub token_state: Mutex<Option<&'static str>>,
+    pub key_state: Mutex<Option<&'static str>>,
     pub game_running: AtomicBool,
     /// Community add-ons: safe mode, the last run's crash, installs waiting for the player.
     pub addons: addons::Runtime,
@@ -128,8 +129,8 @@ pub fn run() {
         busy: AtomicBool::new(false),
         cancel: Arc::new(AtomicBool::new(false)),
         release: Mutex::new(None),
-        tokens: Box::new(token::Keyring),
-        token_state: Mutex::new(None),
+        keys: Box::new(beta_key::Keyring),
+        key_state: Mutex::new(None),
         game_running: AtomicBool::new(false),
         addons: addons::Runtime::new(safe_mode, crashed),
         run_marker,

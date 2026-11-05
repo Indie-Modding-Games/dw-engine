@@ -8,8 +8,9 @@
 game: game-manifest.json for a game package (its name, size, SHA-256 and signature); --merge adds
 the package to an existing manifest of the same version (one manifest, several computers).
 launcher: latest.json for the launcher's own updater (the Tauri updater format), one
---platform per bundle; the URL is the file's API URL in the release, so a private repository
-works with a token.
+--platform per bundle; the URL is the file's API URL in the release
+(https://api.github.com/repos/<repo>/releases/assets/<id>), which the beta gateway
+(services/beta-gateway) rewrites to its own address before a launcher sees it.
 The manifest goes to the standard output.
 """
 import argparse

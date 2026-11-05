@@ -11,6 +11,8 @@
 # Environment:
 #   DWE_LAUNCHER_PUBKEY   base64 public key to build with (the updates' signatures are checked
 #                         against it); without it the build refuses every update
+#   DWE_LAUNCHER_GATEWAY  the beta gateway's URL to build with (services/beta-gateway); without it
+#                         the build points at https://beta-gateway.invalid, which never answers
 #   DWE_BUILD_SLOTS       a folder of slot locks shared by every heavy build of the machine (at most
 #                         two at a time); without it the build does not wait for a slot
 set -euo pipefail
@@ -21,7 +23,7 @@ app="$root/apps/launcher"
 target_dir="$root/build/launcher"
 
 usage() {
-  sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,19p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 # One of two machine-wide build slots, held until this script ends.
@@ -56,6 +58,7 @@ run() {
   docker run --rm "${tty[@]}" -u "$(id -u):$(id -g)" -e HOME=/tmp/home \
     -e CARGO_TARGET_DIR="$target_dir" \
     -e DWE_LAUNCHER_PUBKEY="${DWE_LAUNCHER_PUBKEY:-}" \
+    -e DWE_LAUNCHER_GATEWAY="${DWE_LAUNCHER_GATEWAY:-}" \
     -e TAURI_SIGNING_PRIVATE_KEY="${TAURI_SIGNING_PRIVATE_KEY:-}" \
     -e TAURI_SIGNING_PRIVATE_KEY_PASSWORD="${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" \
     -e APPIMAGE_EXTRACT_AND_RUN=1 -e NO_STRIP=1 \
