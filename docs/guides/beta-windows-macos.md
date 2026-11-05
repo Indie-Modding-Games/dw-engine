@@ -105,7 +105,11 @@ Clang de Apple y la libc++ del sistema no tienen todo el C++26 que usa el códig
 `std::views::zip`, `std::jthread` sin `-fexperimental-library`, `std::from_chars` de coma flotante) y además atan
 partes de la librería a la versión del sistema. Por eso los presets `macos-arm64-*` y `macos-x64-*` usan el LLVM de
 Homebrew (`cmake/toolchains/macos-llvm-libcxx.cmake`) y enlazan su libc++ y libc++abi de forma estática, como en
-Linux. Mínimo: macOS 13.
+Linux. Mínimo: macOS 13. Homebrew vive en `/opt/homebrew` en Apple silicon y en `/usr/local` en los Mac Intel; la
+toolchain usa `DWE_LLVM_ROOT` si está (el flujo de publicación la fija con `brew --prefix llvm`), si no
+`HOMEBREW_PREFIX`, y si no la primera de esas dos carpetas que tenga el LLVM. Sin LLVM se para con un mensaje claro en
+vez del error engañoso de vcpkg («unable to find a build program corresponding to Ninja») que tumbó la primera
+ejecución en Intel.
 
 ### El paquete del juego
 
@@ -159,31 +163,32 @@ el paquete del juego se firmaría con la misma identidad en `package_macos.sh`.
 ## Publicación y su coste
 
 `.github/workflows/release.yml` compila, en paralelo, el juego para Linux y Windows en Ubuntu (Windows por
-compilación cruzada) y el lanzador para Linux y Windows, también en Ubuntu. Un último trabajo firma los paquetes del
-juego, escribe un único `game-manifest.json` y `latest.json` con los ordenadores compilados, y lo sube todo a una
-versión borrador. macOS solo se compila si se marca la opción `macos` al lanzarlo (viene desmarcada: sus minutos no
-están aprobados); entonces se añaden el juego para Apple silicon (`macos-15`) e Intel (`macos-15-intel`) y el `.dmg`
-universal (`macos-15`), y los manifiestos nombran los cuatro ordenadores. Un lanzador de Mac no encuentra paquete
-en una versión sin macOS y usa la última que lo tenga.
-
-Mientras GitHub Actions no pueda ejecutarse en la organización, la misma versión (Linux y Windows) se compila y se
-sube como borrador desde el PC del responsable con `scripts/release_local.sh --tag <tag> --upload`, sin gastar
-minutos: [Publicar desde este PC](../modulos/apps/launcher.md#publicar-desde-este-pc).
+compilación cruzada) y el lanzador para Linux y Windows, también en Ubuntu. Con la opción `macos` marcada (viene
+desmarcada) se añaden el juego para Apple silicon (`macos-15`) e Intel (`macos-15-intel`) y el `.dmg` universal
+(`macos-15`), y los manifiestos nombran los cuatro ordenadores. Un lanzador de Mac no encuentra paquete en una versión
+sin macOS y usa la última que lo tenga. Cada ordenador se compila por su cuenta: si uno falla, los demás terminan, el
+resumen de la ejecución dice cuál falta y no se crea ningún borrador hasta que *Re-run failed jobs* lo complete. Cómo
+lanzarlo, qué comprueba y cómo se publica el borrador: [Publicar una
+versión](../modulos/apps/launcher.md#publicar-una-version). `scripts/release_local.sh` sigue siendo el respaldo para
+Linux y Windows desde el PC del responsable: [Publicar desde este
+PC](../modulos/apps/launcher.md#publicar-desde-este-pc).
 
 `.github/workflows/platform-check.yml` solo compila y pasa las pruebas unitarias del motor y del lanzador en
 `windows-latest`, y también en `macos-latest` si se marca la misma opción `macos`.
 
-Ninguno de los dos se lanza solo. En un repositorio privado, GitHub cobra los minutos de macOS a diez veces los de
-Linux y los de Windows al doble: estimación en la tabla (primera ejecución sin caché de vcpkg → con caché).
+Ninguno de los dos se lanza solo. El repositorio es público, así que los minutos de los ejecutores estándar de GitHub
+(Linux, Windows y macOS) no se cobran. Duración aproximada (primera ejecución sin caché de vcpkg → con caché):
 
-| Flujo | Linux | Windows | macOS | Minutos facturados aprox. |
-|---|---|---|---|---|
-| `release.yml` (por defecto: Linux y Windows) | ~90 → ~60 | 0 | 0 | ~90 → ~60 |
-| `release.yml` con `macos` | ~90 → ~60 | 0 | ~150 → ~70 | ~1600 → ~760 |
-| `platform-check.yml` (por defecto: Windows) | 0 | ~70 → ~35 | 0 | ~140 → ~70 |
-| `platform-check.yml` con `macos` | 0 | ~70 → ~35 | ~60 → ~30 | ~740 → ~370 |
+| Flujo | Linux | Windows | macOS |
+|---|---|---|---|
+| `release.yml` (por defecto: Linux y Windows) | ~90 → ~60 min | — | — |
+| `release.yml` con `macos` | ~90 → ~60 min | — | ~150 → ~70 min |
+| `platform-check.yml` (por defecto: Windows) | — | ~70 → ~35 min | — |
+| `platform-check.yml` con `macos` | — | ~70 → ~35 min | ~60 → ~30 min |
 
 ## Pendiente
 
 - Probar el lanzador en un Windows de verdad (instalador, llavero, actualización) y todo en un Mac.
+- Una ejecución completa de `release.yml` con `macos`: el arreglo de Intel (la ruta de Homebrew) sale de los registros
+  de la primera ejecución, no de una compilación en un Mac.
 - Firmas de editor (decisión del responsable: tienen coste).

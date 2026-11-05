@@ -293,21 +293,59 @@ subcarpetas de `<carpeta>` (sus archivos y `notes.md`); se arranca el lanzador c
 
 `scripts/package_release.sh --platform <ordenador> --out <carpeta del repositorio>` compila el paquete (o toma uno con
 `--tarball`), lo firma y lo añade a `game-manifest.json` (uno por versión, con todos los ordenadores);
-`scripts/package/release_manifest.py launcher` escribe `latest.json`. El flujo `.github/workflows/release.yml` hace
-todo eso para Linux y Windows (y macOS si se marca su opción `macos`, que viene desmarcada) y lo sube a una versión
-**borrador**; los dos manifiestos nombran solo los ordenadores compilados. Solo se ejecuta a mano y nadie lo ha
-ejecutado todavía: la beta no se publica hasta que el responsable la haya jugado. Su coste en minutos está en la
-[beta para Windows y macOS](../../guides/beta-windows-macos.md#publicacion-y-su-coste). Mientras GitHub Actions no
-pueda ejecutarse, la versión se publica desde este PC (siguiente sección).
+`scripts/package/release_manifest.py launcher` escribe `latest.json`. El flujo `.github/workflows/release.yml` lo hace
+todo en GitHub Actions y deja una versión **borrador**; es la forma normal de publicar. El repositorio es público, así
+que sus minutos (también los de macOS) no cuestan nada. Si Actions no está disponible, `scripts/release_local.sh` es
+el respaldo para Linux y Windows ([Publicar desde este PC](#publicar-desde-este-pc)); una versión con macOS solo sale
+del flujo.
+
+### Desde GitHub Actions
+
+En *Actions → Release → Run workflow*, sobre `main`:
+
+| Campo | Qué poner |
+|---|---|
+| `tag` | La etiqueta nueva, con la forma `v0.1.0-beta.5`. |
+| `notes` | Las notas en Markdown; el lanzador las enseña como novedades. |
+| `macos` | Marcado: también el juego para Apple silicon e Intel y el `.dmg` del lanzador. Sin marcar: solo Linux y Windows, y los manifiestos nombran solo esos (un lanzador de Mac sigue con la última versión que tenga macOS). |
+| `replace_draft` | Solo para repetir una versión: borra antes un **borrador** con esa etiqueta. Una versión publicada o una etiqueta que ya existe no se tocan nunca. |
+
+Lo que hace, por orden:
+
+1. **Comprobaciones previas** (segundos): están el secreto `DWE_SIGNING_KEY`, la variable `DWE_SIGNING_PUBKEY` y
+   `DWE_BETA_GATEWAY` con una URL `https`; la etiqueta tiene la forma pedida y no existe; y la **versión del
+   lanzador** (ver abajo).
+2. **Un trabajo por ordenador**, todos en paralelo e independientes: si uno falla, los demás terminan igual. El
+   trabajo del lanzador de Linux prueba primero que la clave firma y que la clave pública verifica esa firma (una
+   contraseña equivocada falla en minutos, no tras la compilación). Cada lanzador comprueba que su programa lleva
+   dentro la pasarela y la clave pública.
+3. **Publicar**: si falta algún ordenador de los pedidos, el resumen de la ejecución lo marca como `MISSING` y **no se
+   crea ningún borrador**; lo que sí se compiló queda en los artefactos de la ejecución. Arreglada la causa, *Re-run
+   failed jobs* repite solo lo que falló y publica con todo. Si están todos: firma los paquetes del juego, el `.deb`
+   y el `.dmg`; escribe `game-manifest.json`; comprueba cada firma con la clave pública, los tamaños, que el
+   manifiesto nombra exactamente los ordenadores pedidos y el commit de la ejecución, y que ningún paquete lleva datos
+   del disco; crea el borrador prerelease sobre ese commit, sube los archivos, escribe `latest.json` con las URL de la
+   API de los archivos subidos, lo comprueba y lo sube.
+
+Al terminar, el resumen de la ejecución lista los archivos y el enlace al borrador. El responsable lo revisa (se pueden
+bajar los archivos y probar el lanzador) y lo publica a mano con *Publish release*: hasta entonces ningún lanzador lo
+ve. Lleva unos 60–90 min sin macOS; con macOS, los trabajos de Mac van en paralelo y suelen ser los últimos.
+
+**La versión del lanzador.** Un lanzador instalado solo se actualiza a una versión **mayor** que la suya (la de
+`apps/launcher/src-tauri/tauri.conf.json`, que va en `latest.json`). Por eso, si algo cambió en `apps/launcher/ui` o
+`apps/launcher/src-tauri` (sin contar `tests/`) desde la última versión publicada, hay que subir la versión en
+`tauri.conf.json`, `Cargo.toml` y `Cargo.lock` en el mismo cambio. El flujo se niega a seguir si el lanzador cambió y
+su versión es la misma que la del `latest.json` de la última versión publicada, si es menor, o si `tauri.conf.json` y
+`Cargo.toml` no coinciden. `scripts/release_local.sh` no lo comprueba: hay que mirarlo a mano.
 
 ## Publicar desde este PC
 
-`scripts/release_local.sh` hace en el PC lo mismo que `release.yml` para Linux y Windows (macOS necesita un Mac), con
-los mismos scripts e imágenes de Docker: los paquetes del juego (`package_linux.sh`, `package_windows.sh`) firmados
-con `package_release.sh` en un solo `game-manifest.json`; el AppImage, el `.deb` y el instalador de Windows del
-lanzador (`launcher.sh bundle` y `bundle-windows`) con la pasarela y la clave pública dentro, y sus firmas; y
-`latest.json`. Necesita Docker, `gh` con sesión iniciada y, una vez, las bibliotecas de Windows
-(`scripts/dev.sh windows-sdk`, que pide aceptar su licencia).
+El respaldo del flujo. `scripts/release_local.sh` hace en el PC lo mismo que `release.yml` para Linux y Windows (macOS
+necesita un Mac), con los mismos scripts e imágenes de Docker: los paquetes del juego (`package_linux.sh`,
+`package_windows.sh`) firmados con `package_release.sh` en un solo `game-manifest.json`; el AppImage, el `.deb` y el
+instalador de Windows del lanzador (`launcher.sh bundle` y `bundle-windows`) con la pasarela y la clave pública
+dentro, y sus firmas; y `latest.json`. Necesita Docker, `gh` con sesión iniciada y, una vez, las bibliotecas de
+Windows (`scripts/dev.sh windows-sdk`, que pide aceptar su licencia).
 
 Desde una copia limpia de `origin/main`:
 
@@ -326,8 +364,8 @@ scripts/release_local.sh --tag v0.1.0-beta.1 --notes-file notas.md --upload
   variable opcional `DWE_LAUNCHER_LINKS` (`--links` para otros; sin ella, ninguno), como en el flujo.
 - Todo va a `build/release-local/<tag>/` (`--out`, siempre dentro de `build/`): lo que se sube en `dist/`, el
   registro con los tiempos en `logs/`.
-- Antes de subir comprueba que cada archivo tiene su `.sig` y que la clave pública la verifica (también el `.deb`,
-  que el flujo no firmaba), tamaños razonables, que los dos manifiestos se leen y nombran solo `linux-x86_64` y
+- Antes de subir comprueba que cada archivo tiene su `.sig` y que la clave pública la verifica (también el `.deb`),
+  tamaños razonables, que los dos manifiestos se leen y nombran solo `linux-x86_64` y
   `windows-x86_64`, que ningún paquete lleva datos del disco (la misma comprobación que los empaquetadores) y que los
   dos lanzadores llevan la pasarela y la clave pública.
 - Con `--upload` crea la versión **borrador** y prerelease `<tag>` en `Indie-Modding-Games/dw-engine` sobre el commit

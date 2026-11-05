@@ -1,15 +1,14 @@
 name: Platform check
 
 # Builds the engine and runs its unit tests, and the launcher's tests, on Windows and (when the
-# `macos` input is ticked) on macOS, by hand only (Actions > Platform check > Run workflow):
-# GitHub-hosted Windows and macOS minutes cost more than Linux ones on a private repository
-# (docs/guides/beta-windows-macos.md). The tests that need the player's disc or extracted content
+# `macos` input is ticked) on macOS, by hand only (Actions > Platform check > Run workflow;
+# docs/guides/beta-windows-macos.md). The tests that need the player's disc or extracted content
 # skip, as on Linux without DWE_DISC and DWE_CONTENT.
 on:
   workflow_dispatch:
     inputs:
       macos:
-        description: Also check macOS (macOS runner minutes cost ten times Linux ones)
+        description: Also check macOS
         type: boolean
         default: false
 

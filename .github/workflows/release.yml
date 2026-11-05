@@ -5,9 +5,15 @@ name: Release
 # the Windows NSIS installer, the macOS .dmg), their signatures, game-manifest.json and latest.json,
 # all uploaded to a DRAFT prerelease that someone reviews and publishes by hand. Nothing here runs on
 # a push or a tag. The Windows builds are cross-compiled on Linux (the same Docker images as a
-# developer's machine); only the macOS ones need macOS runners, whose minutes cost the most
-# (docs/guides/beta-windows-macos.md), so they run only when the `macos` input is ticked; without
-# it the release carries Linux and Windows only, and the manifests name only those.
+# developer's machine); only the macOS ones need macOS runners, so they run only when the `macos`
+# input is ticked; without it the release carries Linux and Windows only, and the manifests name
+# only those. scripts/release_local.sh builds the same Linux and Windows files on a computer and
+# runs the same checks (docs/modulos/apps/launcher.md).
+#
+# Every computer builds on its own: one that fails does not stop the others. The publish job then
+# says in the run's summary which computers are missing and publishes nothing; the files that did
+# build stay as this run's artifacts, and "Re-run failed jobs" builds only what failed and publishes.
+#
 # docs/modulos/apps/launcher.md explains the secrets:
 #   secrets.DWE_SIGNING_KEY            the private key of `tauri signer generate` (its text)
 #   secrets.DWE_SIGNING_KEY_PASSWORD   its password
@@ -27,7 +33,11 @@ on:
         required: false
         default: ""
       macos:
-        description: Also build for macOS (macOS runner minutes cost ten times Linux ones)
+        description: Also build for macOS (Apple silicon and Intel game packages, the launcher's .dmg)
+        type: boolean
+        default: false
+      replace_draft:
+        description: Delete a DRAFT release of the same tag first (a published one is never touched)
         type: boolean
         default: false
 
@@ -35,6 +45,7 @@ permissions:
   contents: write
 
 env:
+  TAG: ${{ inputs.tag }}
   TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.DWE_SIGNING_KEY }}
   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.DWE_SIGNING_KEY_PASSWORD }}
   DWE_LAUNCHER_PUBKEY: ${{ vars.DWE_SIGNING_PUBKEY }}
@@ -47,17 +58,78 @@ jobs:
     outputs:
       game: ${{ steps.computers.outputs.game }}
       launcher: ${{ steps.computers.outputs.launcher }}
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          # The launcher's sources are compared with the last release's tag.
+          fetch-depth: 0
+
       - name: Check the signing key and the gateway
         run: |
           [ -n "$TAURI_SIGNING_PRIVATE_KEY" ] && [ -n "$DWE_LAUNCHER_PUBKEY" ] || {
             echo "Set secrets.DWE_SIGNING_KEY and vars.DWE_SIGNING_PUBKEY first" >&2
             exit 1
           }
-          case "$DWE_LAUNCHER_GATEWAY" in
-            https://*) ;;
-            *) echo "Set vars.DWE_BETA_GATEWAY to the beta gateway's https URL first" >&2; exit 1 ;;
-          esac
+          [[ "$DWE_LAUNCHER_GATEWAY" =~ ^https://[^[:space:]]+$ ]] || {
+            echo "Set vars.DWE_BETA_GATEWAY to the beta gateway's https URL first" >&2
+            exit 1
+          }
+
+      # An existing tag or published release is never touched; a draft only with replace_draft.
+      - name: Check the tag
+        env:
+          REPLACE_DRAFT: ${{ inputs.replace_draft }}
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || {
+            echo "The tag must look like v0.1.0-beta.1, not $TAG" >&2
+            exit 1
+          }
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "The tag $TAG already exists; pick another one" >&2
+            exit 1
+          fi
+          if is_draft="$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null)"; then
+            [ "$is_draft" = true ] || { echo "A published release $TAG exists; it is never replaced" >&2; exit 1; }
+            [ "$REPLACE_DRAFT" = true ] || { echo "A draft release $TAG exists; tick replace_draft to delete it first" >&2; exit 1; }
+          fi
+
+      # Installed launchers update themselves only to a higher version (latest.json carries
+      # tauri.conf.json's): a release whose launcher changed must raise it.
+      - name: Check the launcher's version
+        run: |
+          conf="apps/launcher/src-tauri/tauri.conf.json"
+          version="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["version"])' "$conf")"
+          cargo="$(sed -n 's/^version = "\(.*\)"$/\1/p' apps/launcher/src-tauri/Cargo.toml | head -1)"
+          [ "$version" = "$cargo" ] || {
+            echo "$conf says $version but Cargo.toml says $cargo; raise both together" >&2
+            exit 1
+          }
+          previous="$(gh release list -R "$GITHUB_REPOSITORY" --exclude-drafts --limit 1 --json tagName --jq '.[0].tagName // ""')"
+          if [ -z "$previous" ]; then
+            echo "No earlier release; the launcher is $version"
+            exit 0
+          fi
+          gh release download "$previous" -R "$GITHUB_REPOSITORY" -p latest.json -O "$RUNNER_TEMP/previous-latest.json" --clobber
+          previous_version="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["version"])' "$RUNNER_TEMP/previous-latest.json")"
+          changed=0
+          git diff --quiet "$previous" HEAD -- apps/launcher/ui apps/launcher/src-tauri \
+            ':(exclude)apps/launcher/src-tauri/tests' || changed=1
+          python3 - "$version" "$previous_version" "$changed" "$previous" <<'EOF'
+          import sys
+          version, previous, changed, tag = sys.argv[1], sys.argv[2], sys.argv[3] == "1", sys.argv[4]
+          def key(text):
+              core, _, pre = text.partition("-")
+              return tuple(int(n) for n in core.split(".")) + ((1,) if not pre else (0, pre))
+          if key(version) < key(previous):
+              sys.exit(f"The launcher is {version}, lower than {previous} in {tag}: no launcher would update")
+          if changed and version == previous:
+              sys.exit(f"The launcher changed since {tag} but is still {version}: installed launchers would not "
+                       "update. Raise the version in tauri.conf.json and Cargo.toml (and Cargo.lock)")
+          print(f"The launcher is {version} ({tag} had {previous}; "
+                f"{'changed' if changed else 'unchanged'} since)")
+          EOF
 
       # The computers this release is built for: Linux and Windows always, macOS when asked.
       - name: Pick the computers
@@ -80,7 +152,7 @@ jobs:
   game:
     needs: check
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include: ${{ fromJSON(needs.check.outputs.game) }}
     runs-on: ${{ matrix.runner }}
@@ -98,10 +170,13 @@ jobs:
         if: matrix.platform == 'windows-x86_64'
         run: scripts/dev.sh windows-sdk --accept-license
 
+      # Homebrew is in /opt/homebrew on Apple silicon and in /usr/local on Intel; the toolchain
+      # (cmake/toolchains/macos-llvm-libcxx.cmake) takes its LLVM from DWE_LLVM_ROOT.
       - name: Install the macOS tools
         if: runner.os == 'macOS'
         run: |
           brew install llvm molten-vk ninja
+          echo "DWE_LLVM_ROOT=$(brew --prefix llvm)" >> "$GITHUB_ENV"
           root="$RUNNER_TEMP/vcpkg"
           git clone https://github.com/microsoft/vcpkg.git "$root"
           git -C "$root" checkout "$(python3 -c 'import json; print(json.load(open("vcpkg.json"))["builtin-baseline"])')"
@@ -121,12 +196,25 @@ jobs:
         env:
           DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
           DWE_CCACHE_DIR: ${{ runner.temp }}/ccache
+          PLATFORM: ${{ matrix.platform }}
+          ARCH: ${{ matrix.arch }}
         run: |
-          case "${{ matrix.platform }}" in
+          case "$PLATFORM" in
             linux-x86_64) scripts/package_linux.sh --out dist ;;
             windows-x86_64) scripts/package_windows.sh --out dist ;;
-            darwin-*) scripts/package_macos.sh --arch "${{ matrix.arch }}" --out dist ;;
+            darwin-*) scripts/package_macos.sh --arch "$ARCH" --out dist ;;
           esac
+
+      # vcpkg prints only the paths of a failed port's logs; their ends say why.
+      - name: Show the logs of a failed vcpkg step
+        if: failure()
+        run: |
+          find build -path '*vcpkg_buildtrees*' -name '*.log' -size +0 \
+            \( -name '*-err.log' -o -name 'config-*-out.log' \) 2>/dev/null | head -20 | while read -r log; do
+            echo "::group::$log"
+            tail -n 60 "$log"
+            echo "::endgroup::"
+          done
 
       - uses: actions/upload-artifact@v4
         with:
@@ -138,7 +226,7 @@ jobs:
   launcher:
     needs: check
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include: ${{ fromJSON(needs.check.outputs.launcher) }}
     runs-on: ${{ matrix.runner }}
@@ -148,6 +236,19 @@ jobs:
       - name: Build the launcher image
         if: runner.os == 'Linux'
         run: scripts/launcher.sh image
+
+      # A wrong password, or a key that is not the public key's, fails here and not after the build.
+      - name: Check that the key signs and the public key verifies it
+        if: matrix.system == 'linux'
+        run: |
+          probe="$PWD/build/key-probe"
+          mkdir -p "$probe"
+          head -c 4096 /dev/urandom > "$probe/probe"
+          printf '%s' "$DWE_LAUNCHER_PUBKEY" > "$probe/key.pub"
+          scripts/launcher.sh shell "tauri signer sign '$probe/probe' >/dev/null"
+          python3 -c 'import cryptography' 2>/dev/null || sudo apt-get install -y python3-cryptography
+          python3 scripts/package/release_manifest.py verify --pubkey "$probe/key.pub" "$probe/probe"
+          rm -rf "$probe"
 
       - name: AppImage and .deb
         if: matrix.system == 'linux'
@@ -183,17 +284,40 @@ jobs:
           mkdir -p out
           cp "$bundle"/dmg/*.dmg "$bundle"/macos/*.app.tar.gz "$bundle"/macos/*.app.tar.gz.sig out/
 
+      # The program a tester runs has the beta gateway and the public key built in.
+      - name: Check the gateway and the public key in the launcher
+        env:
+          SYSTEM: ${{ matrix.system }}
+        run: |
+          case "$SYSTEM" in
+            linux)
+              mkdir -p build/deb-check
+              dpkg-deb --fsys-tarfile out/*.deb | tar -x -C build/deb-check --wildcards '*/bin/*'
+              binaries=(build/deb-check/usr/bin/*)
+              ;;
+            windows) binaries=(build/launcher/x86_64-pc-windows-msvc/release/dwe-launcher.exe) ;;
+            macos) binaries=(build/launcher/universal-apple-darwin/release/bundle/macos/*.app/Contents/MacOS/*) ;;
+          esac
+          public_key="$(printf '%s' "$DWE_LAUNCHER_PUBKEY" | tr -d '[:space:]')"
+          for binary in "${binaries[@]}"; do
+            [ -f "$binary" ] || { echo "No launcher program at $binary" >&2; exit 1; }
+            grep -q -a -F "$DWE_LAUNCHER_GATEWAY" "$binary" || { echo "$binary does not have the gateway" >&2; exit 1; }
+            grep -q -a -F "$public_key" "$binary" || { echo "$binary does not have the public key" >&2; exit 1; }
+          done
+          echo "The launcher has the gateway $DWE_LAUNCHER_GATEWAY and the public key"
+
       - uses: actions/upload-artifact@v4
         with:
           name: launcher-${{ matrix.system }}
           path: out/*
           if-no-files-found: error
 
+  # Runs even when a computer failed, to say which in the summary; then it publishes nothing.
   publish:
-    needs: [game, launcher]
+    needs: [check, game, launcher]
+    if: ${{ !cancelled() && needs.check.result == 'success' }}
     runs-on: ubuntu-24.04
     env:
-      TAG: ${{ inputs.tag }}
       NOTES: ${{ inputs.notes }}
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -206,43 +330,145 @@ jobs:
         with:
           path: artifacts
 
+      # The artifacts of earlier attempts of this run count too ("Re-run failed jobs").
+      - name: Check that every computer asked for was built
+        id: built
+        env:
+          GAME: ${{ needs.check.outputs.game }}
+          LAUNCHER: ${{ needs.check.outputs.launcher }}
+        run: |
+          python3 - <<'EOF'
+          import json, os, sys
+          from pathlib import Path
+          wanted = [("game", g["platform"]) for g in json.loads(os.environ["GAME"])]
+          wanted += [("launcher", l["system"]) for l in json.loads(os.environ["LAUNCHER"])]
+          rows, missing = [], []
+          for kind, name in wanted:
+              folder = Path("artifacts") / f"{kind}-{name}"
+              files = sorted(p.name for p in folder.glob("*") if p.is_file()) if folder.is_dir() else []
+              if not files:
+                  missing.append(f"{kind} {name}")
+              rows.append(f"| {kind} | {name} | {'built: ' + ', '.join(files) if files else '**MISSING**'} |")
+          summary = ["## Release " + os.environ["TAG"], "", "| What | Computer | Files |", "|---|---|---|", *rows, ""]
+          if missing:
+              summary += [f"**Not published**: {', '.join(missing)} did not build. The other files are kept as "
+                          "this run's artifacts; fix the cause and use *Re-run failed jobs*.", ""]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as out:
+              out.write("\n".join(summary) + "\n")
+          if missing:
+              sys.exit(f"Missing: {', '.join(missing)}; nothing is published")
+          platforms = " ".join(name for kind, name in wanted if kind == "game")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"platforms={platforms}\n")
+          EOF
+
       - name: Build the launcher image (it signs the game packages)
         run: scripts/launcher.sh image
 
-      # One game-manifest.json of one version names every package built (game-<platform> artifacts).
-      - name: Sign the game packages and write the manifest
+      # One game-manifest.json of one version names every package built; tauri signs only the
+      # updater's files, so the .deb and the .dmg get their signatures here and every file a tester
+      # downloads can be checked.
+      - name: Sign the files and write the game manifest
+        env:
+          PLATFORMS: ${{ steps.built.outputs.platforms }}
         run: |
-          for folder in artifacts/game-*; do
-            platform="${folder#artifacts/game-}"
-            tarball="$(ls "$folder"/dwe-beta-*-"$platform".tar.xz | head -1)"
-            scripts/package_release.sh --platform "$platform" --tarball "$tarball" --out dist
+          for platform in $PLATFORMS; do
+            tarballs=(artifacts/game-"$platform"/dwe-beta-*-"$platform".tar.xz)
+            [ "${#tarballs[@]}" -eq 1 ] && [ -f "${tarballs[0]}" ] || { echo "Expected one package for $platform: ${tarballs[*]}" >&2; exit 1; }
+            scripts/package_release.sh --platform "$platform" --tarball "${tarballs[0]}" --out dist
+          done
+          cp artifacts/launcher-*/* dist/
+          for file in dist/*.deb dist/*.dmg; do
+            [ -f "$file" ] || continue
+            scripts/launcher.sh shell "tauri signer sign '$PWD/$file' >/dev/null"
           done
 
-      - name: Draft release with the files
+      - name: Check the files
+        env:
+          PLATFORMS: ${{ steps.built.outputs.platforms }}
         run: |
-          printf '%s\n' "$NOTES" > notes.md
-          gh release create "$TAG" --draft --prerelease --title "$TAG" --notes-file notes.md
-          gh release upload "$TAG" dist/dwe-game-*.tar.xz dist/game-manifest.json artifacts/launcher-*/*
+          python3 -c 'import cryptography' 2>/dev/null || sudo apt-get install -y python3-cryptography
+          printf '%s' "$DWE_LAUNCHER_PUBKEY" > "$RUNNER_TEMP/key.pub"
+          platform_args=()
+          for platform in $PLATFORMS; do platform_args+=(--platform "$platform"); done
+          # Every file's signature, sizes and game-manifest.json; latest.json is checked once it has
+          # the files' URLs, after the upload.
+          python3 scripts/package/release_manifest.py check --folder dist --pubkey "$RUNNER_TEMP/key.pub" \
+            "${platform_args[@]}" --repo "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA"
+          # Nothing read from a disc in any package: the packagers' own check, again on what ships.
+          # shellcheck source=scripts/package/no_disc_data.sh
+          source scripts/package/no_disc_data.sh
+          for tarball in dist/dwe-game-*.tar.xz; do
+            rm -rf "$RUNNER_TEMP/game" && mkdir -p "$RUNNER_TEMP/game"
+            tar -C "$RUNNER_TEMP/game" -xJf "$tarball"
+            package_no_disc_data "$RUNNER_TEMP/game" "$(basename "$tarball")"
+          done
+          for deb in dist/*.deb; do
+            if dpkg-deb -c "$deb" | awk '{ printf "%s%c", $6, 0 }' | policy_forbidden_paths_in >&2; then
+              echo "$(basename "$deb") holds disc data" >&2
+              exit 1
+            fi
+          done
+          rm -rf "$RUNNER_TEMP/game"
+
+      - name: Draft release with the files
+        env:
+          REPLACE_DRAFT: ${{ inputs.replace_draft }}
+          ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          # The check job saw no release of this tag (or replace_draft was ticked); a draft found on
+          # a later attempt is this run's own.
+          if is_draft="$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null)"; then
+            [ "$is_draft" = true ] || { echo "A published release $TAG exists; it is never replaced" >&2; exit 1; }
+            if [ "$REPLACE_DRAFT" = true ] || [ "$ATTEMPT" -gt 1 ]; then
+              gh release delete "$TAG" --yes
+            else
+              echo "A draft release $TAG appeared after the check; tick replace_draft" >&2
+              exit 1
+            fi
+          fi
+          printf '%s\n' "$NOTES" > "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" --draft --prerelease --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md" \
+            --target "$GITHUB_SHA"
+          gh release upload "$TAG" dist/*
 
       # latest.json names each update file by its API URL, which exists only after the upload; the
       # beta gateway points it at itself when a launcher asks, so testers never reach GitHub. The
       # universal macOS bundle, when built, serves both Mac processors.
       - name: Launcher update manifest
+        env:
+          PLATFORMS: ${{ steps.built.outputs.platforms }}
         run: |
           url() {
-            gh api "repos/${{ github.repository }}/releases" \
+            gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
               --jq ".[] | select(.tag_name == \"$TAG\") | .assets[] | select(.name == \"$1\") | .url"
           }
-          appimage="$(ls artifacts/launcher-linux/*.AppImage | head -1)"
-          setup="$(ls artifacts/launcher-windows/*-setup.exe | head -1)"
+          one() {
+            [ "$#" -eq 1 ] && [ -f "$1" ] || { echo "Expected one file, found: $*" >&2; exit 1; }
+            printf '%s' "$1"
+          }
+          appimage="$(one dist/*.AppImage)"
+          setup="$(one dist/*-setup.exe)"
           bundles=(--platform linux-x86_64 "$appimage.sig" "$(url "$(basename "$appimage")")"
             --platform windows-x86_64 "$setup.sig" "$(url "$(basename "$setup")")")
-          if [ -d artifacts/launcher-macos ]; then
-            mac="$(ls artifacts/launcher-macos/*.app.tar.gz | head -1)"
+          if [[ " $PLATFORMS " == *" darwin-"* ]]; then
+            mac="$(one dist/*.app.tar.gz)"
             bundles+=(--platform darwin-aarch64 "$mac.sig" "$(url "$(basename "$mac")")"
               --platform darwin-x86_64 "$mac.sig" "$(url "$(basename "$mac")")")
           fi
           version="$(python3 -c 'import json; print(json.load(open("apps/launcher/src-tauri/tauri.conf.json"))["version"])')"
           python3 scripts/package/release_manifest.py launcher --version "$version" --notes "$TAG" \
-            "${bundles[@]}" > latest.json
-          gh release upload "$TAG" latest.json
+            "${bundles[@]}" > dist/latest.json
+          platform_args=()
+          for platform in $PLATFORMS; do platform_args+=(--platform "$platform"); done
+          python3 scripts/package/release_manifest.py check --folder dist --pubkey "$RUNNER_TEMP/key.pub" \
+            "${platform_args[@]}" --latest dist/latest.json --repo "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA"
+          gh release upload "$TAG" dist/latest.json
+          url="$(gh release view "$TAG" --json url --jq .url)"
+          {
+            echo "Draft ready to review: $url"
+            echo
+            echo '```'
+            find dist -maxdepth 1 -type f -printf '%12s  %f\n' | sort -k2
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
