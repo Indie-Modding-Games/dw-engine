@@ -1,5 +1,6 @@
 #include "vulkan_util.hpp"
 
+#include <algorithm>
 #include <format>
 
 namespace dwe::rhi {
@@ -60,7 +61,7 @@ void transitionImage(VkCommandBuffer commands, VkImage image, VkImageAspectFlags
   barrier.image = image;
   barrier.subresourceRange = {.aspectMask = aspect,
                               .baseMipLevel = 0,
-                              .levelCount = 1,
+                              .levelCount = VK_REMAINING_MIP_LEVELS,
                               .baseArrayLayer = 0,
                               .layerCount = 1};
 
@@ -78,7 +79,7 @@ void recordImageClear(VkCommandBuffer commands, VkImage image) {
   const VkClearColorValue transparent{.float32 = {0.0F, 0.0F, 0.0F, 0.0F}};
   const VkImageSubresourceRange whole{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                                       .baseMipLevel = 0,
-                                      .levelCount = 1,
+                                      .levelCount = VK_REMAINING_MIP_LEVELS,
                                       .baseArrayLayer = 0,
                                       .layerCount = 1};
   vkCmdClearColorImage(commands, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &transparent, 1,
@@ -89,8 +90,91 @@ void recordImageClear(VkCommandBuffer commands, VkImage image) {
                   VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
 }
 
+namespace {
+
+// A barrier on some mip levels of a color image.
+void transitionLevels(VkCommandBuffer commands, VkImage image, std::uint32_t firstLevel,
+                      std::uint32_t levels, VkImageLayout from, VkImageLayout to,
+                      VkPipelineStageFlags2 srcStage, VkAccessFlags2 srcAccess,
+                      VkPipelineStageFlags2 dstStage, VkAccessFlags2 dstAccess) {
+  VkImageMemoryBarrier2 barrier{};
+  barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+  barrier.srcStageMask = srcStage;
+  barrier.srcAccessMask = srcAccess;
+  barrier.dstStageMask = dstStage;
+  barrier.dstAccessMask = dstAccess;
+  barrier.oldLayout = from;
+  barrier.newLayout = to;
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.image = image;
+  barrier.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                              .baseMipLevel = firstLevel,
+                              .levelCount = levels,
+                              .baseArrayLayer = 0,
+                              .layerCount = 1};
+  VkDependencyInfo dependency{};
+  dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+  dependency.imageMemoryBarrierCount = 1;
+  dependency.pImageMemoryBarriers = &barrier;
+  vkCmdPipelineBarrier2(commands, &dependency);
+}
+
+// Blits every level after the first from the one before it, the image in the transfer destination
+// layout, and leaves all of them in the shader read layout.
+void recordMipChain(VkCommandBuffer commands, VkImage image, Extent extent,
+                    std::uint32_t mipLevels) {
+  const auto side = [](std::uint32_t size, std::uint32_t level) {
+    return static_cast<std::int32_t>(std::max(1U, size >> level));
+  };
+  for (std::uint32_t level = 1; level < mipLevels; ++level) {
+    transitionLevels(commands, image, level - 1, 1, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT,
+                     VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
+                     VK_ACCESS_2_TRANSFER_READ_BIT);
+    const VkImageBlit2 blit{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+        .pNext = nullptr,
+        .srcSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                           .mipLevel = level - 1,
+                           .baseArrayLayer = 0,
+                           .layerCount = 1},
+        .srcOffsets = {{.x = 0, .y = 0, .z = 0},
+                       {.x = side(extent.width, level - 1),
+                        .y = side(extent.height, level - 1),
+                        .z = 1}},
+        .dstSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                           .mipLevel = level,
+                           .baseArrayLayer = 0,
+                           .layerCount = 1},
+        .dstOffsets = {{.x = 0, .y = 0, .z = 0},
+                       {.x = side(extent.width, level), .y = side(extent.height, level), .z = 1}},
+    };
+    const VkBlitImageInfo2 info{.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+                                .pNext = nullptr,
+                                .srcImage = image,
+                                .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                .dstImage = image,
+                                .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                .regionCount = 1,
+                                .pRegions = &blit,
+                                .filter = VK_FILTER_LINEAR};
+    vkCmdBlitImage2(commands, &info);
+  }
+  transitionLevels(commands, image, 0, mipLevels - 1, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_2_BLIT_BIT,
+                   VK_ACCESS_2_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
+                   VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
+  transitionLevels(commands, image, mipLevels - 1, 1, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT,
+                   VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
+                   VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
+}
+
+} // namespace
+
 void recordImageWrite(VkCommandBuffer commands, VkImage image, VkBuffer source, VkDeviceSize offset,
-                      const Rect& region) {
+                      const Rect& region, Extent extent, std::uint32_t mipLevels) {
   // Earlier draws may still sample the image: the barrier waits for them before the copy overwrites
   // it.
   transitionImage(commands, image, VK_IMAGE_ASPECT_COLOR_BIT,
@@ -109,6 +193,10 @@ void recordImageWrite(VkCommandBuffer commands, VkImage image, VkBuffer source, 
       .imageExtent = {.width = region.width, .height = region.height, .depth = 1},
   };
   vkCmdCopyBufferToImage(commands, source, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+  if (mipLevels > 1) {
+    recordMipChain(commands, image, extent, mipLevels);
+    return;
+  }
   transitionImage(commands, image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_2_COPY_BIT,
                   VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,

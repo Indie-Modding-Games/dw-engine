@@ -19,7 +19,8 @@ Format fromVulkan(VkFormat format);
 // The aspect (color or depth) of the images of a format.
 VkImageAspectFlags aspectOf(Format format);
 
-// Records a barrier that moves a whole image, of the given aspect, from one layout to another.
+// Records a barrier that moves a whole image (every mip level), of the given aspect, from one
+// layout to another.
 void transitionImage(VkCommandBuffer commands, VkImage image, VkImageAspectFlags aspect,
                      VkImageLayout from, VkImageLayout to, VkPipelineStageFlags2 srcStage,
                      VkAccessFlags2 srcAccess, VkPipelineStageFlags2 dstStage,
@@ -31,8 +32,10 @@ void recordImageClear(VkCommandBuffer commands, VkImage image);
 
 // Records a copy of tightly packed texels from source, at offset, into region of a sampled color
 // image in the shader read layout, which it waits for earlier reads of and returns to.
+// With more than one mip level (an image of `extent`), the levels after the first are blitted again
+// from it.
 void recordImageWrite(VkCommandBuffer commands, VkImage image, VkBuffer source, VkDeviceSize offset,
-                      const Rect& region);
+                      const Rect& region, Extent extent = {}, std::uint32_t mipLevels = 1);
 
 // Records commands with record, submits them and waits for the GPU to finish them. For uploads
 // outside the frame: they come after every frame submitted so far in submission order, and before

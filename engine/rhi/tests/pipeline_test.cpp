@@ -121,3 +121,22 @@ TEST_CASE("scissors are clipped to the target") {
   CHECK(clampToExtent({.x = 200, .y = -80, .width = 10, .height = 10}, Target).width == 0);
   CHECK(clampToExtent({.x = -80, .y = 10, .width = 10, .height = 10}, Target).width == 0);
 }
+
+TEST_CASE("a multisampled variant takes 1, 2, 4 or 8 samples") {
+  GraphicsPipelineDesc desc = validDesc();
+  for (const std::uint32_t samples : {1U, 2U, 4U, 8U}) {
+    desc.multisampled = samples;
+    CHECK(validate(desc));
+  }
+  for (const std::uint32_t samples : {0U, 3U, 16U}) {
+    desc.multisampled = samples;
+    CHECK_FALSE(validate(desc));
+  }
+}
+
+TEST_CASE("a mipmapped texture has a level per halving down to one texel") {
+  CHECK(mipLevelCount({.width = 1, .height = 1}) == 1);
+  CHECK(mipLevelCount({.width = 256, .height = 128}) == 9);
+  CHECK(mipLevelCount({.width = 768, .height = 640}) == 10);
+  CHECK(mipLevelCount({.width = 3, .height = 1}) == 2);
+}

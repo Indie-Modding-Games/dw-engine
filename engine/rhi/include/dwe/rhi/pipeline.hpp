@@ -140,6 +140,9 @@ struct GraphicsPipelineDesc {
   BlendMode blend = BlendMode::Opaque;
   Format colorFormat = Format::Undefined;
   Format depthFormat = Format::Undefined;
+  // Also build a variant of the pipeline for targets with this many samples per pixel (2, 4 or 8;
+  // 1 builds none): CommandList::bindPipeline binds it inside a multisampled rendering (MSAA).
+  std::uint32_t multisampled = 1;
   // For error messages and debuggers.
   std::string_view name = "a pipeline";
 };
@@ -161,6 +164,12 @@ public:
   ~GraphicsPipeline();
 
   [[nodiscard]] VkPipeline native() const { return pipeline_; }
+  // The pipeline for targets with `samples` samples per pixel: the multisampled variant when it
+  // has that many, else the single-sampled one.
+  [[nodiscard]] VkPipeline native(std::uint32_t samples) const {
+    return samples > 1 && samples == multisampledSamples_ ? multisampled_ : pipeline_;
+  }
+  [[nodiscard]] std::uint32_t multisampledSamples() const { return multisampledSamples_; }
   [[nodiscard]] VkPipelineLayout layout() const { return layout_; }
   [[nodiscard]] bool hasDepthBias() const { return depthBias_; }
 
@@ -171,6 +180,8 @@ private:
 
   Device* device_ = nullptr;
   VkPipeline pipeline_ = VK_NULL_HANDLE;
+  VkPipeline multisampled_ = VK_NULL_HANDLE;
+  std::uint32_t multisampledSamples_ = 1;
   VkPipelineLayout layout_ = VK_NULL_HANDLE;
   bool depthBias_ = false;
 };

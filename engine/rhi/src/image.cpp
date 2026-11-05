@@ -15,11 +15,15 @@
 namespace dwe::rhi {
 namespace {
 
-VkImageUsageFlags toVulkan(ImageUsage usage) {
+VkImageUsageFlags toVulkan(ImageUsage usage, bool mipmapped) {
   VkImageUsageFlags flags = 0;
   if (hasAll(usage, ImageUsage::Sampled)) {
-    // Sampled images are filled and updated by copies, and start cleared.
+    // Sampled images are filled and updated by copies, and start cleared; a mip chain is blitted
+    // from level to level.
     flags |= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    if (mipmapped) {
+      flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    }
   }
   if (hasAll(usage, ImageUsage::ColorTarget)) {
     flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -31,6 +35,14 @@ VkImageUsageFlags toVulkan(ImageUsage usage) {
 }
 
 } // namespace
+
+std::uint32_t mipLevelCount(Extent extent) {
+  std::uint32_t levels = 1;
+  for (std::uint32_t side = std::max(extent.width, extent.height); side > 1; side /= 2) {
+    ++levels;
+  }
+  return levels;
+}
 
 core::Result<void> checkImageWrite(Extent extent, Format format, const Rect& region,
                                    std::size_t pixelBytes) {
@@ -68,7 +80,15 @@ core::Result<Image> Image::create(Device& device, const ImageDesc& desc) {
     return core::fail("depth images, and only they, are depth targets");
   }
 
-  Image image{device, desc.extent, desc.format};
+  const bool mipmapped =
+      desc.mipmapped && hasAll(desc.usage, ImageUsage::Sampled) && !isDepthFormat(desc.format);
+  const bool target =
+      hasAll(desc.usage, ImageUsage::ColorTarget) || hasAll(desc.usage, ImageUsage::DepthTarget);
+  if (desc.samples != 1 && (!target || hasAll(desc.usage, ImageUsage::Sampled) ||
+                            (desc.samples != 2 && desc.samples != 4 && desc.samples != 8))) {
+    return core::fail("only render targets that are not sampled take 2, 4 or 8 samples per pixel");
+  }
+  Image image{device, desc.extent, desc.format, mipmapped ? mipLevelCount(desc.extent) : 1};
   const VkImageCreateInfo imageInfo{
       .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
       .pNext = nullptr,
@@ -76,11 +96,11 @@ core::Result<Image> Image::create(Device& device, const ImageDesc& desc) {
       .imageType = VK_IMAGE_TYPE_2D,
       .format = toVulkan(desc.format),
       .extent = {.width = desc.extent.width, .height = desc.extent.height, .depth = 1},
-      .mipLevels = 1,
+      .mipLevels = image.mipLevels_,
       .arrayLayers = 1,
-      .samples = VK_SAMPLE_COUNT_1_BIT,
+      .samples = static_cast<VkSampleCountFlagBits>(desc.samples),
       .tiling = VK_IMAGE_TILING_OPTIMAL,
-      .usage = toVulkan(desc.usage),
+      .usage = toVulkan(desc.usage, mipmapped),
       .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
       .queueFamilyIndexCount = 0,
       .pQueueFamilyIndices = nullptr,
@@ -89,7 +109,7 @@ core::Result<Image> Image::create(Device& device, const ImageDesc& desc) {
 
   VmaAllocationCreateInfo allocationInfo{};
   allocationInfo.usage = VMA_MEMORY_USAGE_AUTO;
-  if (hasAll(desc.usage, ImageUsage::ColorTarget) || hasAll(desc.usage, ImageUsage::DepthTarget)) {
+  if (target) {
     // Render targets are recreated with the window: give them their own memory, as drivers prefer.
     allocationInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
   }
@@ -108,7 +128,7 @@ core::Result<Image> Image::create(Device& device, const ImageDesc& desc) {
   viewInfo.format = imageInfo.format;
   viewInfo.subresourceRange = {.aspectMask = aspectOf(desc.format),
                                .baseMipLevel = 0,
-                               .levelCount = 1,
+                               .levelCount = image.mipLevels_,
                                .baseArrayLayer = 0,
                                .layerCount = 1};
   if (vkCreateImageView(gpu.device, &viewInfo, nullptr, &image.view_) != VK_SUCCESS) {
@@ -126,15 +146,17 @@ core::Result<Image> Image::create(Device& device, const ImageDesc& desc) {
 }
 
 core::Result<Image> Image::createTexture(Device& device, Extent extent,
-                                         std::span<const std::byte> pixels) {
+                                         std::span<const std::byte> pixels, bool mipmapped) {
   if (auto valid = checkImageWrite(extent, Format::Rgba8Unorm,
                                    {.x = 0, .y = 0, .width = extent.width, .height = extent.height},
                                    pixels.size());
       !valid) {
     return std::unexpected{valid.error()};
   }
-  auto image = create(
-      device, {.extent = extent, .format = Format::Rgba8Unorm, .usage = ImageUsage::Sampled});
+  auto image = create(device, {.extent = extent,
+                               .format = Format::Rgba8Unorm,
+                               .usage = ImageUsage::Sampled,
+                               .mipmapped = mipmapped});
   if (!image) {
     return image;
   }
@@ -159,7 +181,7 @@ core::Result<void> Image::write(const Rect& region, std::span<const std::byte> p
   }
   std::memcpy(staging->mapped().data(), pixels.data(), pixels.size());
   return submitAndWait(*device_, [&](VkCommandBuffer commands) {
-    recordImageWrite(commands, image_, staging->native(), 0, region);
+    recordImageWrite(commands, image_, staging->native(), 0, region, extent_, mipLevels_);
   });
 }
 
@@ -168,7 +190,8 @@ Image::Image(Image&& other) noexcept
       image_(std::exchange(other.image_, VK_NULL_HANDLE)),
       allocation_(std::exchange(other.allocation_, VK_NULL_HANDLE)),
       view_(std::exchange(other.view_, VK_NULL_HANDLE)), extent_(std::exchange(other.extent_, {})),
-      format_(std::exchange(other.format_, Format::Undefined)) {}
+      format_(std::exchange(other.format_, Format::Undefined)),
+      mipLevels_(std::exchange(other.mipLevels_, 1U)) {}
 
 Image& Image::operator=(Image&& other) noexcept {
   if (this != &other) {
@@ -179,6 +202,7 @@ Image& Image::operator=(Image&& other) noexcept {
     view_ = std::exchange(other.view_, VK_NULL_HANDLE);
     extent_ = std::exchange(other.extent_, {});
     format_ = std::exchange(other.format_, Format::Undefined);
+    mipLevels_ = std::exchange(other.mipLevels_, 1U);
   }
   return *this;
 }
@@ -201,6 +225,19 @@ void Image::release() {
 
 Format swapchainFormat(const Device& device) {
   return fromVulkan(device.nativeHandles().swapchainFormat);
+}
+
+std::uint32_t maxSampleCount(const Device& device, std::uint32_t wanted) {
+  VkPhysicalDeviceProperties properties{};
+  vkGetPhysicalDeviceProperties(device.nativeHandles().physicalDevice, &properties);
+  const VkSampleCountFlags supported = properties.limits.framebufferColorSampleCounts &
+                                       properties.limits.framebufferDepthSampleCounts;
+  for (const std::uint32_t samples : {8U, 4U, 2U}) {
+    if (samples <= wanted && (supported & samples) != 0) {
+      return samples;
+    }
+  }
+  return 1;
 }
 
 Format bestDepthFormat(const Device& device) {

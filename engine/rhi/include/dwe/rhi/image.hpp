@@ -35,9 +35,19 @@ struct ImageDesc {
   // starts undefined and must be recorded through CommandList::initializeImage before anything
   // samples it.
   bool initialize = true;
+  // Sampled color images only: a full chain of mip levels (down to 1 x 1), which every write
+  // regenerates from the first level with linear blits. Linear samplers then filter minified
+  // texels instead of skipping them.
+  bool mipmapped = false;
+  // Render targets only: samples per pixel (1, 2, 4 or 8; maxSampleCount says what the GPU takes).
+  std::uint32_t samples = 1;
 };
 
-// A 2D image in GPU memory with one mip level, and its view. Sampled images start cleared to
+// The mip levels of a full chain for an extent: 1 + log2 of its longer side.
+[[nodiscard]] std::uint32_t mipLevelCount(Extent extent);
+
+// A 2D image in GPU memory with one mip level (or a full chain, ImageDesc::mipmapped), and its
+// view. Sampled images start cleared to
 // transparent black. Render targets start in an undefined layout; whoever draws into them moves
 // them to the attachment layout each frame. It may be dropped while frames that use it are in
 // flight (its Vulkan objects go through Device::destroyLater), but it must not outlive the device.
@@ -46,9 +56,10 @@ public:
   static core::Result<Image> create(Device& device, const ImageDesc& desc);
 
   // Creates a sampled Rgba8Unorm image holding pixels (width * height * 4 bytes, rows from the top)
-  // and waits for the upload.
+  // and waits for the upload; with mipmapped, with its mip chain (ImageDesc::mipmapped).
   static core::Result<Image> createTexture(Device& device, Extent extent,
-                                           std::span<const std::byte> pixels);
+                                           std::span<const std::byte> pixels,
+                                           bool mipmapped = false);
 
   Image(const Image&) = delete;
   Image& operator=(const Image&) = delete;
@@ -65,10 +76,11 @@ public:
   [[nodiscard]] VkImageView view() const { return view_; }
   [[nodiscard]] Extent extent() const { return extent_; }
   [[nodiscard]] Format format() const { return format_; }
+  [[nodiscard]] std::uint32_t mipLevels() const { return mipLevels_; }
 
 private:
-  Image(Device& device, Extent extent, Format format)
-      : device_(&device), extent_(extent), format_(format) {}
+  Image(Device& device, Extent extent, Format format, std::uint32_t mipLevels)
+      : device_(&device), extent_(extent), format_(format), mipLevels_(mipLevels) {}
 
   void release();
 
@@ -78,6 +90,7 @@ private:
   VkImageView view_ = VK_NULL_HANDLE;
   Extent extent_;
   Format format_ = Format::Undefined;
+  std::uint32_t mipLevels_ = 1;
 };
 
 // The best depth format the GPU can draw into: Depth32Float, else Depth24UnormX8, else Depth16Unorm
@@ -86,6 +99,10 @@ Format bestDepthFormat(const Device& device);
 
 // The format of the device's swapchain images, which frames draw into.
 Format swapchainFormat(const Device& device);
+
+// The most samples per pixel, up to `wanted`, that the GPU draws into color and depth targets with:
+// 1, 2, 4 or 8.
+std::uint32_t maxSampleCount(const Device& device, std::uint32_t wanted);
 
 // Checks that region lies inside an image of the given extent and that pixels holds exactly its
 // texels.

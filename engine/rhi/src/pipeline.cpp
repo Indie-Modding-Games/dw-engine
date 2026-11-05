@@ -141,6 +141,11 @@ core::Result<void> validate(const GraphicsPipelineDesc& desc) {
       (desc.depth.test || desc.depth.write || desc.depth.bias)) {
     return core::fail(std::format("{}: depth testing, writing or bias needs a depth target", name));
   }
+  if (desc.multisampled != 1 && desc.multisampled != 2 && desc.multisampled != 4 &&
+      desc.multisampled != 8) {
+    return core::fail(
+        std::format("{}: {} samples per pixel is not 1, 2, 4 or 8", name, desc.multisampled));
+  }
   if (desc.vertex.stride == 0 && !desc.vertex.attributes.empty()) {
     return core::fail(std::format("{}: vertex attributes need a vertex stride", name));
   }
@@ -235,7 +240,7 @@ core::Result<GraphicsPipeline> GraphicsPipeline::create(Device& device, const Bi
   rasterization.depthBiasEnable = desc.depth.bias ? VK_TRUE : VK_FALSE;
   rasterization.lineWidth = 1.0F;
 
-  const VkPipelineMultisampleStateCreateInfo multisample{
+  VkPipelineMultisampleStateCreateInfo multisample{
       .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
       .pNext = nullptr,
       .flags = 0,
@@ -293,8 +298,15 @@ core::Result<GraphicsPipeline> GraphicsPipeline::create(Device& device, const Bi
   GraphicsPipeline pipeline{device};
   pipeline.layout_ = table.pipelineLayout();
   pipeline.depthBias_ = desc.depth.bias;
-  const VkResult result = vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
-                                                    &pipeline.pipeline_);
+  VkResult result = vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+                                              &pipeline.pipeline_);
+  if (result == VK_SUCCESS && desc.multisampled > 1) {
+    // The same pipeline for multisampled targets: only the rasterization's sample count differs.
+    multisample.rasterizationSamples = static_cast<VkSampleCountFlagBits>(desc.multisampled);
+    result = vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+                                       &pipeline.multisampled_);
+    pipeline.multisampledSamples_ = desc.multisampled;
+  }
   vkDestroyShaderModule(gpu, module, nullptr);
   if (result != VK_SUCCESS) {
     return core::fail(std::format("{}: could not create the pipeline (Vulkan error {})", desc.name,
@@ -306,6 +318,8 @@ core::Result<GraphicsPipeline> GraphicsPipeline::create(Device& device, const Bi
 GraphicsPipeline::GraphicsPipeline(GraphicsPipeline&& other) noexcept
     : device_(std::exchange(other.device_, nullptr)),
       pipeline_(std::exchange(other.pipeline_, VK_NULL_HANDLE)),
+      multisampled_(std::exchange(other.multisampled_, VK_NULL_HANDLE)),
+      multisampledSamples_(std::exchange(other.multisampledSamples_, 1U)),
       layout_(std::exchange(other.layout_, VK_NULL_HANDLE)),
       depthBias_(std::exchange(other.depthBias_, false)) {}
 
@@ -314,6 +328,8 @@ GraphicsPipeline& GraphicsPipeline::operator=(GraphicsPipeline&& other) noexcept
     release();
     device_ = std::exchange(other.device_, nullptr);
     pipeline_ = std::exchange(other.pipeline_, VK_NULL_HANDLE);
+    multisampled_ = std::exchange(other.multisampled_, VK_NULL_HANDLE);
+    multisampledSamples_ = std::exchange(other.multisampledSamples_, 1U);
     layout_ = std::exchange(other.layout_, VK_NULL_HANDLE);
     depthBias_ = std::exchange(other.depthBias_, false);
   }
@@ -328,8 +344,12 @@ void GraphicsPipeline::release() {
   if (device_ == nullptr) {
     return;
   }
-  device_->destroyLater([device = device_->nativeHandles().device, pipeline = pipeline_] {
+  device_->destroyLater([device = device_->nativeHandles().device, pipeline = pipeline_,
+                         multisampled = multisampled_] {
     vkDestroyPipeline(device, pipeline, nullptr);
+    if (multisampled != VK_NULL_HANDLE) {
+      vkDestroyPipeline(device, multisampled, nullptr);
+    }
   });
   device_ = nullptr;
 }

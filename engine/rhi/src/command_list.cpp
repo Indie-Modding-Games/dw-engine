@@ -14,12 +14,20 @@ CommandList::CommandList(VkCommandBuffer commands, const BindlessTable& table)
 
 void CommandList::beginRendering(const RenderingDesc& desc) {
   target_ = desc.extent;
+  samples_ = desc.samples;
   VkRenderingAttachmentInfo color{};
   color.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
   color.imageView = desc.color.view;
   color.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
   color.loadOp = desc.color.clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
   color.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  if (desc.color.resolve != VK_NULL_HANDLE) {
+    color.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+    color.resolveImageView = desc.color.resolve;
+    color.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    // Only the averaged pixels are needed after the rendering.
+    color.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  }
   if (desc.color.clear) {
     const auto& [red, green, blue, alpha] = *desc.color.clear;
     color.clearValue.color = {{red, green, blue, alpha}};
@@ -64,6 +72,14 @@ void CommandList::colorPassBarrier() {
   vkCmdPipelineBarrier2(commands_, &dependency);
 }
 
+void CommandList::prepareColorTarget(const Image& color) {
+  transitionImage(
+      commands_, color.native(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+      VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+      VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+}
+
 void CommandList::prepareDepthTarget(const Image& depth) {
   constexpr VkPipelineStageFlags2 DepthStages =
       VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
@@ -101,12 +117,14 @@ void CommandList::writeImage(const Image& image, const Rect& region,
   DWE_ASSERT(source.buffer != nullptr);
   DWE_ASSERT(
       checkImageWrite(image.extent(), image.format(), region, source.data.size()).has_value());
-  recordImageWrite(commands_, image.native(), source.buffer->native(), source.offset, region);
+  recordImageWrite(commands_, image.native(), source.buffer->native(), source.offset, region,
+                   image.extent(), image.mipLevels());
 }
 
 void CommandList::bindPipeline(const GraphicsPipeline& pipeline) {
   DWE_ASSERT(pipeline.layout() == layout_);
-  vkCmdBindPipeline(commands_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.native());
+  DWE_ASSERT(samples_ == 1 || pipeline.multisampledSamples() == samples_);
+  vkCmdBindPipeline(commands_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.native(samples_));
   if (pipeline.hasDepthBias()) {
     // Dynamic state outlives the pipeline: without this the bias of an earlier draw would carry
     // over.

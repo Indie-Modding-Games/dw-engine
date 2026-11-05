@@ -22,6 +22,9 @@ struct ColorAttachment {
   VkImageView view = VK_NULL_HANDLE;
   // Clears the target to this color, or keeps what it holds when empty.
   std::optional<std::array<float, 4>> clear;
+  // For a multisampled target: the single-sampled image (in the attachment layout) its samples are
+  // averaged into at the end of the rendering; the target's own samples are then not kept.
+  VkImageView resolve = VK_NULL_HANDLE;
 };
 
 struct DepthAttachment {
@@ -36,6 +39,8 @@ struct RenderingDesc {
   ColorAttachment color{};
   // No depth target when its view is null.
   DepthAttachment depth{};
+  // Samples per pixel of the targets: bindPipeline picks the pipelines' variant for it.
+  std::uint32_t samples = 1;
 };
 
 // Records draws into a frame's command buffer: the global descriptor set, pipelines, dynamic state,
@@ -56,6 +61,8 @@ public:
   // Moves a depth target to the attachment layout, discarding what it held, once earlier frames
   // finish with it. For depth targets cleared every frame.
   void prepareDepthTarget(const Image& depth);
+  // The same for a color target that is not sampled (a multisampled one, cleared every frame).
+  void prepareColorTarget(const Image& color);
 
   // A sampled color target, cleared or drawn over (its pixels kept) in each use. Call outside
   // rendering; finish before sampling.
@@ -114,6 +121,8 @@ private:
   VkPipelineLayout layout_;
   // The target of the current rendering, which scissors are clipped to.
   Extent target_;
+  // Its samples per pixel.
+  std::uint32_t samples_ = 1;
 };
 
 } // namespace dwe::rhi
