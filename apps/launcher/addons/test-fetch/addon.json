@@ -1,0 +1,13 @@
+{
+  "id": "org.indie-modding-games.test-fetch",
+  "name": "Prueba de red y aislamiento",
+  "version": "1.0.0",
+  "author": "Indie Modding Games",
+  "description": "Solo para pruebas: lee las versiones del servidor de pruebas local (net.fetch) y comprueba que el complemento no alcanza nada del lanzador.",
+  "api": 1,
+  "entry": "index.html",
+  "slots": ["tabs", "news"],
+  "permissions": {
+    "hosts": ["127.0.0.1:8779"]
+  }
+}

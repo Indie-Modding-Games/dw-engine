@@ -1,0 +1,9 @@
+:root { color-scheme: dark; font-family: system-ui, sans-serif; font-size: 14px; color: #e8eef6; }
+body { margin: 0; padding: 18px 22px; background: transparent; }
+h1 { font-size: 1.1rem; margin: 0 0 4px; }
+.muted { color: #a7b4c4; margin: 0 0 10px; }
+ol { margin: 0; padding-left: 1.4em; display: grid; gap: 3px; }
+li.pass::marker { color: #5eead4; }
+li.fail { color: #fca5a5; }
+b.pass { color: #5eead4; }
+b.fail { color: #fca5a5; }

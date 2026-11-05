@@ -18,8 +18,15 @@ probado todavía.
 - **El botón grande** cambia según el estado: «Instalar» → «Extrayendo…» (con la barra y el paso de `dwx`) →
   «Actualizar (n MB)» cuando hay una versión nueva (con «Jugar sin actualizar» debajo) → «Jugar». Mientras se
   descarga o se extrae aparece «Detener».
-- **Ajustes:** carpeta de datos, idioma (español por defecto, inglés), token de GitHub, buscar actualizaciones al
-  abrir y ahora, volver a la versión anterior del juego, volver a leer el disco y abrir la carpeta de registros.
+- **Ajustes**, por pestañas (lista vertical a la izquierda; ↑/↓ en la lista, Ctrl+Tab y Ctrl+Mayús+Tab o
+  Ctrl+AvPág/RePág desde cualquier sitio del diálogo):
+  - **General:** idioma (español por defecto, inglés) y carpeta de datos.
+  - **Actualizaciones:** buscar al abrir, buscar ahora, las versiones instaladas y volver a la anterior.
+  - **Cuenta y acceso:** el token de GitHub.
+  - **Disco:** el disco recordado y volver a leerlo.
+  - **Complementos:** instalar, la lista de instalados (encender, apagar, quitar) y la sección de ajustes de cada
+    complemento (ver [Complementos](#complementos)).
+  - **Avanzado:** la carpeta de registros y el modo seguro.
 
 Las cuatro tarjetas y los iconos del riel son arte propio (formas y degradados, `ui/js/art.js`, `ui/art/`); ningún
 texto, nombre ni imagen de la interfaz viene del juego original. La interfaz se maneja entera con teclado (Tab,
@@ -80,7 +87,7 @@ de la API: un archivo cuya URL apunte a otro sitio se rechaza, y al redirigir un
 
 Mientras el repositorio sea privado, cada jugador necesita un token de GitHub con lectura del repositorio: un
 *fine-grained personal access token* con acceso solo a `dw-engine` y el permiso **Contents: Read-only** (o un token
-clásico con `repo`). Se pega en Ajustes → Acceso a GitHub. El lanzador lo guarda en el llavero del sistema (Secret
+clásico con `repo`). Se pega en Ajustes → Cuenta y acceso. El lanzador lo guarda en el llavero del sistema (Secret
 Service en Linux, como GNOME Keyring o KWallet; el administrador de credenciales en Windows; el llavero en macOS)
 con el servicio `dwe-launcher`, y nunca en un archivo ni en un registro (el registro tapa cualquier cosa con forma de
 token). Sin llavero disponible, el lanzador lo dice y no guarda nada. Cuando el repositorio sea público, el token
@@ -123,6 +130,8 @@ termina, el lanzador vuelve; si terminó con error, muestra las últimas 30 lín
 | `<datos>/game/versions/`, `state.json` | Las versiones instaladas del juego. |
 | `<datos>/content/` | Lo leído del disco, como lo deja la pantalla de primer arranque. |
 | `<datos>/logs/launcher.log`, `game.log` | El registro del lanzador y la salida de la última partida. |
+| `<datos>/addons/<id>/`, `addons.json` | Los complementos instalados y su estado (activo, permisos aceptados). |
+| `<datos>/addon-storage/<id>.json` | El almacén de cada complemento (256 KB como mucho). |
 
 `DWE_LAUNCHER_GAME_DIR=<carpeta>` usa un paquete ya descomprimido (por ejemplo el de `package_linux.sh`) en vez de
 las versiones instaladas: sirve para probar sin publicar nada.
@@ -146,6 +155,7 @@ Los tests de Rust cubren el manifiesto, la comparación de versiones, el SHA-256
 cambio atómico y vuelta atrás, el desempaquetado de `.zip` y `.7z`, la hoja CUE, el registro `install.yaml` (con el
 formato del juego) y una extracción con un `dwx` falso; `tests/fake_release.rs` levanta un servidor que contesta como
 la API de un repositorio privado y prueba la descarga sin token, con token, con un archivo alterado y con otra firma.
+`tests/addons_bridge.rs` prueba que un complemento no alcanza ningún comando con privilegios ni el token.
 
 Para probar a mano, `apps/launcher/tools/fake_release_server.py <carpeta> --port 8765` sirve como versiones las
 subcarpetas de `<carpeta>` (sus archivos y `notes.md`); se arranca el lanzador con
@@ -166,8 +176,30 @@ registran ahí igual que lo hará un complemento. Las órdenes con privilegios (
 arrancar programas) están solo en `ui/js/api.js` y en los comandos de Rust (`src-tauri/src/commands.rs`); lo que una
 pieza recibe para pintarse (`context()`) no lleva ni el token ni la ruta del disco.
 
+## Complementos
+
+Los complementos de la comunidad usan esas mismas ranuras. Cómo se hace uno, la API v1 y sus límites están en la
+guía [Complementos del lanzador](../../guides/launcher-addons.md); aquí, cómo los aloja el lanzador:
+
+- **Backend** (`src-tauri/src/addons/`): el manifiesto (`manifest.rs`), el desempaquetado seguro de carpetas y `.zip`
+  (`package.rs`: rutas que salen, enlaces, tamaño y número de archivos), la instalación en dos pasos con el aviso de
+  permisos (`mod.rs`: `addon_inspect` prepara y enseña, `addon_install` instala solo si el jugador acepta), el
+  almacén (`storage.rs`), `net.fetch` (`net.rs`, un cliente aparte sin token ni cookies) y el puente (`bridge.rs`),
+  que solo conoce las llamadas de la API v1 y vuelve a comprobar en cada una que el complemento esté activo y tenga
+  el permiso.
+- **Esquema propio** `dweaddon` (`protocol.rs`): sirve solo la carpeta de cada complemento activo, con una CSP
+  estricta por complemento. La CSP del lanzador solo deja cargar marcos de ese esquema.
+- **Interfaz** (`ui/js/addons.js`): cada complemento corre en `<iframe sandbox="allow-scripts">` (origen opaco, sin
+  IPC de Tauri, que solo existe en la página principal). Sus mensajes se reconocen por el marco que los manda, se
+  limitan a 40 por segundo y solo pasan al backend las llamadas de la API. Los marcos nunca se mueven en el DOM (eso
+  los recargaría): las pestañas y secciones se ocultan y muestran.
+- **Modo seguro:** `--safe-mode`, Ajustes → Avanzado o el aviso que aparece si el lanzador no se cerró bien la última
+  vez con complementos activos (lo detecta un archivo `running` en la carpeta de ajustes que se borra al salir).
+- Los ejemplos: `apps/launcher/addons/example-notes/` («Notas») y `apps/launcher/addons/test-fetch/` (prueba de
+  `net.fetch` y del aislamiento contra el servidor falso). El cliente del puente está en `apps/launcher/addons/sdk/`.
+
 ## Pendiente
 
 - Probar Windows y macOS (el llavero, rutas y el instalador de cada sistema).
 - La clave de firma real y la primera versión publicada (decisión del responsable).
-- Complementos de la comunidad sobre las ranuras de la interfaz.
+- Probar los complementos en Windows (allí el esquema es `http://dweaddon.localhost/`) y macOS.

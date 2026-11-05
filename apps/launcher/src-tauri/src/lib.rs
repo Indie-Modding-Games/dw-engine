@@ -3,6 +3,7 @@
 //! touches the disc, the keyring, the network or other programs is a command here; the page only
 //! shows state and asks for these commands.
 
+pub mod addons;
 pub mod content;
 pub mod disc;
 pub mod failure;
@@ -16,8 +17,10 @@ pub mod token;
 pub mod updates;
 pub mod verify;
 
+mod addon_commands;
 mod commands;
 
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -38,6 +41,10 @@ pub struct AppState {
     /// drawing the page never waits on the keyring.
     pub token_state: Mutex<Option<&'static str>>,
     pub game_running: AtomicBool,
+    /// Community add-ons: safe mode, the last run's crash, installs waiting for the player.
+    pub addons: addons::Runtime,
+    /// Removed when the launcher ends cleanly; found at start, the last run crashed.
+    pub run_marker: Option<addons::RunMarker>,
 }
 
 /// Held while a task runs; the next one is refused until it drops.
@@ -59,10 +66,47 @@ impl Drop for BusyGuard<'_> {
     }
 }
 
+/// Starts with every add-on off for this run (also a button after a crash).
+pub const SAFE_MODE_FLAG: &str = "--safe-mode";
+
+/// Serves an add-on's files (addons/protocol.rs) to its sandboxed iframe.
+fn serve_addon(app: &tauri::AppHandle, path: &str) -> tauri::http::Response<Vec<u8>> {
+    use tauri::Manager;
+    let state = app.state::<AppState>();
+    let store = addons::AddonStore::new(&state.settings.lock().unwrap().data_folder());
+    let safe_mode = state.addons.safe_mode();
+    let served = addons::protocol::serve(path, |id| store.active(id, safe_mode).map(|_| store.folder(id)));
+    let mut response = tauri::http::Response::builder()
+        .status(served.status)
+        .header("Content-Type", served.content_type)
+        .header("X-Content-Type-Options", "nosniff")
+        .header("Cache-Control", "no-store")
+        .header("Referrer-Policy", "no-referrer");
+    if let Some(csp) = served.csp {
+        response = response.header("Content-Security-Policy", csp);
+    }
+    response.body(served.body).expect("a response with plain headers")
+}
+
 pub fn run() {
     let settings = Settings::load();
     log::open(&settings.data_folder());
     log_line!("dwe-launcher {} starting", env!("CARGO_PKG_VERSION"));
+    let safe_mode = std::env::args().any(|a| a == SAFE_MODE_FLAG);
+    let addon_store = addons::AddonStore::new(&settings.data_folder());
+    addon_store.clean_staging();
+    let (run_marker, crashed) = match Settings::file().and_then(|f| f.parent().map(Path::to_path_buf)) {
+        Some(folder) => {
+            let (marker, crashed) = addons::RunMarker::create(&folder);
+            (Some(marker), crashed && addon_store.any_enabled())
+        }
+        None => (None, false),
+    };
+    if safe_mode {
+        log_line!("safe mode: no add-on is loaded");
+    } else if crashed {
+        log_line!("the last run did not end cleanly while add-ons were on");
+    }
     let state = AppState {
         settings: Mutex::new(settings),
         busy: AtomicBool::new(false),
@@ -71,11 +115,14 @@ pub fn run() {
         tokens: Box::new(token::Keyring),
         token_state: Mutex::new(None),
         game_running: AtomicBool::new(false),
+        addons: addons::Runtime::new(safe_mode, crashed),
+        run_marker,
     };
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .register_uri_scheme_protocol(addons::protocol::SCHEME, |ctx, request| serve_addon(ctx.app_handle(), request.uri().path()))
         .manage(state)
         .invoke_handler(tauri::generate_handler![
             commands::status,
@@ -94,7 +141,24 @@ pub fn run() {
             commands::clear_token,
             commands::open_logs,
             commands::install_launcher_update,
+            addon_commands::addons_list,
+            addon_commands::addon_inspect,
+            addon_commands::addon_install,
+            addon_commands::addon_set_enabled,
+            addon_commands::addon_uninstall,
+            addon_commands::addons_safe_mode,
+            addon_commands::addons_dismiss_crash,
+            addon_commands::addon_call,
         ])
-        .run(tauri::generate_context!())
-        .expect("the launcher window opens");
+        .build(tauri::generate_context!())
+        .expect("the launcher window opens")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                use tauri::Manager;
+                let state = app.state::<AppState>();
+                if let Some(marker) = &state.run_marker {
+                    marker.clear();
+                }
+            }
+        });
 }

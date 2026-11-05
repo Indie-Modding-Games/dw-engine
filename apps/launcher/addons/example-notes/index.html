@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Notas</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="dwe-addons.js"></script>
+    <script src="notes.js" defer></script>
+  </head>
+  <body>
+    <!-- The tab: the notes. -->
+    <main id="tab" hidden>
+      <header class="head">
+        <div>
+          <h1 data-text="title"></h1>
+          <p class="muted" id="gameLine"></p>
+        </div>
+        <span class="count" id="count"></span>
+      </header>
+      <form id="newNote" class="new-note">
+        <label class="sr-only" for="noteText" data-text="newLabel"></label>
+        <textarea id="noteText" rows="3" maxlength="2000"></textarea>
+        <button type="submit" class="button primary" data-text="save"></button>
+      </form>
+      <ul id="notes" class="notes"></ul>
+      <p id="empty" class="muted" data-text="empty" hidden></p>
+    </main>
+
+    <!-- The settings section. -->
+    <section id="settings" hidden>
+      <label class="option">
+        <input type="checkbox" id="notifyOnSave" />
+        <span data-text="notifyOnSave"></span>
+      </label>
+      <label class="option">
+        <input type="checkbox" id="newestFirst" />
+        <span data-text="newestFirst"></span>
+      </label>
+      <p class="muted small" id="storageLine"></p>
+    </section>
+  </body>
+</html>

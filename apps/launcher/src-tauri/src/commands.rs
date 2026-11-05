@@ -510,5 +510,8 @@ pub async fn install_launcher_update(app: AppHandle, state: State<'_, AppState>)
         )
         .await
         .map_err(updater_failure)?;
+    if let Some(marker) = &state.run_marker {
+        marker.clear();
+    }
     app.restart();
 }

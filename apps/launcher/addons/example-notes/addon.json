@@ -1,0 +1,14 @@
+{
+  "id": "org.indie-modding-games.example-notes",
+  "name": "Notas",
+  "version": "1.0.0",
+  "author": "Indie Modding Games",
+  "description": "Un cuaderno para apuntar lo que quieras mientras juegas: una pestaña de notas, un icono en la barra y sus propios ajustes.",
+  "api": 1,
+  "entry": "index.html",
+  "slots": ["sidebar", "tabs", "news", "settings"],
+  "permissions": {
+    "storage": true,
+    "notify": true
+  }
+}

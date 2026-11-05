@@ -1,6 +1,6 @@
 // The launcher's privileged calls (src-tauri/src/commands.rs): disc, keyring, downloads and
-// starting the game. Only the launcher's own code imports this module; an add-on bridge must not
-// forward any of it.
+// starting the game. Only the launcher's own code imports this module; the add-on bridge
+// (addons.js) forwards nothing but addonCall, for the calls the backend checks per add-on.
 const tauri = window.__TAURI__;
 
 const call = (command, args) => tauri.core.invoke(command, args);
@@ -22,6 +22,15 @@ export const api = {
   clearToken: () => call("clear_token"),
   openLogs: () => call("open_logs"),
   installLauncherUpdate: () => call("install_launcher_update"),
+  // The add-on manager (addon-manager.js) and the add-ons' backend calls (addons.js).
+  addonsList: () => call("addons_list"),
+  addonInspect: (path) => call("addon_inspect", { path }),
+  addonInstall: (ticket, accept) => call("addon_install", { ticket, accept }),
+  addonSetEnabled: (id, enabled) => call("addon_set_enabled", { id, enabled }),
+  addonUninstall: (id) => call("addon_uninstall", { id }),
+  addonsSafeMode: (on) => call("addons_safe_mode", { on }),
+  addonsDismissCrash: () => call("addons_dismiss_crash"),
+  addonCall: (addon, method, params) => call("addon_call", { addon, method, params }),
 };
 
 export function listen(event, handler) {
@@ -32,6 +41,12 @@ export function listen(event, handler) {
 // launcher does not read can still be picked and explained.
 export async function pickDisc(title, filterName, extensions, allName) {
   const filters = [{ name: filterName, extensions }, { name: allName, extensions: ["*"] }];
+  const picked = await tauri.dialog.open({ title, multiple: false, directory: false, filters });
+  return typeof picked === "string" ? picked : picked?.path ?? null;
+}
+
+export async function pickAddonFile(title, filterName) {
+  const filters = [{ name: filterName, extensions: ["zip", "json"] }];
   const picked = await tauri.dialog.open({ title, multiple: false, directory: false, filters });
   return typeof picked === "string" ? picked : picked?.path ?? null;
 }

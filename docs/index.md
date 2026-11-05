@@ -55,7 +55,7 @@ Seguimos el marco [Diátaxis](https://diataxis.fr/), que separa los documentos s
 | Tipo | Para qué | Carpeta |
 |---|---|---|
 | Tutorial | Aprender desde cero | [`getting-started/`](getting-started/setup.md) |
-| Guía práctica | Hacer una tarea concreta | `guides/`: el [visor de assets](guides/visor-de-assets.md), la [prueba vertical](guides/prueba-vertical.md), [pasar el gate](guides/gate.md), las [simulaciones](guides/simulaciones.md), la [traza de estado](guides/traza-de-estado.md) para comparar con el original, el [control remoto](guides/control-remoto.md) del juego en marcha, la [beta para Linux](guides/beta-linux.md) y [traducir los textos del original](guides/traducir.md), con su [glosario](guides/glosario-es.md) |
+| Guía práctica | Hacer una tarea concreta | `guides/`: el [visor de assets](guides/visor-de-assets.md), la [prueba vertical](guides/prueba-vertical.md), [pasar el gate](guides/gate.md), las [simulaciones](guides/simulaciones.md), la [traza de estado](guides/traza-de-estado.md) para comparar con el original, el [control remoto](guides/control-remoto.md) del juego en marcha, la [beta para Linux](guides/beta-linux.md), los [complementos del lanzador](guides/launcher-addons.md) y [traducir los textos del original](guides/traducir.md), con su [glosario](guides/glosario-es.md) |
 | Referencia | Consultar un detalle exacto | [`reference/`](reference/index.md) (el original y la [cobertura del port](reference/port-coverage.md)), [`formats/`](formats/index.md) (los formatos del disco), [`modulos/`](modulos/index.md) (la API de cada módulo), `modding/` |
 | Explicación | Entender por qué es así | [`architecture/`](architecture/overview.md), [`adr/`](adr/index.md) |
 

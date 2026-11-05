@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: blob:; style-src 'self'; font-src 'self'; script-src 'self'; connect-src ipc: http://ipc.localhost"
+      "csp": "default-src 'self'; img-src 'self' data: blob: dweaddon: http://dweaddon.localhost; style-src 'self'; font-src 'self'; script-src 'self'; connect-src ipc: http://ipc.localhost; frame-src dweaddon: http://dweaddon.localhost"
     }
   },
   "bundle": {

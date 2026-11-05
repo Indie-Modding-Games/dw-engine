@@ -62,6 +62,22 @@ pub mod code {
     pub const GAME_FAILED: &str = "game-failed";
     /// There is no previous version to go back to.
     pub const NO_PREVIOUS: &str = "no-previous";
+    /// An add-on whose addon.json is wrong; the detail is "<field>:<reason>" (addons/manifest.rs).
+    pub const ADDON_INVALID: &str = "addon-invalid";
+    /// An add-on written for an API version this launcher does not have; the detail is that version.
+    pub const ADDON_API: &str = "addon-api";
+    /// An add-on package with a path that leaves its folder, a link or a file type it may not have.
+    pub const ADDON_UNSAFE: &str = "addon-unsafe";
+    /// An add-on package bigger than the launcher accepts.
+    pub const ADDON_TOO_BIG: &str = "addon-too-big";
+    /// No add-on with that id is installed (or it is off).
+    pub const ADDON_NOT_FOUND: &str = "addon-not-found";
+    /// An add-on asked for something it may not do: an unknown call or one it has no permission for.
+    pub const ADDON_DENIED: &str = "addon-denied";
+    /// An add-on's own storage is full.
+    pub const ADDON_STORAGE_FULL: &str = "addon-storage-full";
+    /// An add-on asked for an address whose host it did not declare.
+    pub const ADDON_HOST: &str = "addon-host";
 }
 
 impl From<std::io::Error> for Failure {

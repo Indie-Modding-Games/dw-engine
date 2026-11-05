@@ -84,16 +84,31 @@
     </div>
 
     <dialog class="dialog settings" id="settingsDialog" aria-labelledby="settingsTitle">
-      <header class="dialog-header">
-        <h2 id="settingsTitle" data-text="settings"></h2>
-        <button class="icon-button" id="settingsClose" type="button">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          </svg>
-          <span class="sr-only" data-text="close"></span>
-        </button>
-      </header>
-      <div class="settings-sections" id="settingsSections" data-slot="settings"></div>
+      <div class="settings-layout">
+        <aside class="settings-side">
+          <h2 class="settings-heading" id="settingsTitle" data-text="settings"></h2>
+          <div class="settings-nav" id="settingsNav" role="tablist" aria-orientation="vertical" aria-labelledby="settingsTitle"></div>
+          <p class="settings-keys" data-text="settingsKeys"></p>
+        </aside>
+        <div class="settings-main">
+          <button class="icon-button settings-close" id="settingsClose" type="button">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+              <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            <span class="sr-only" data-text="close"></span>
+          </button>
+          <div class="settings-panels" id="settingsPanels" data-slot="settings"></div>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="dialog ask" id="askDialog" aria-labelledby="askTitle">
+      <h2 id="askTitle"></h2>
+      <div id="askBody"></div>
+      <div class="dialog-actions">
+        <button class="button" id="askCancel" type="button"></button>
+        <button class="button primary" id="askOk" type="button"></button>
+      </div>
     </dialog>
 
     <dialog class="dialog message" id="messageDialog" aria-labelledby="messageTitle">
@@ -105,6 +120,9 @@
       </div>
     </dialog>
 
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+    <!-- The add-ons' background pages (sandboxed iframes, never shown). -->
+    <div class="addon-frames" id="addonFrames" aria-hidden="true"></div>
     <div class="sr-only" id="live" aria-live="polite"></div>
   </body>
 </html>

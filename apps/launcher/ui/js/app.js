@@ -1,12 +1,15 @@
 // The launcher's page: state from the backend (api.js), the views (first run and home), the
-// action bar and the slots (slots.js) the launcher's own pieces register in.
+// action bar and the slots (slots.js) the launcher's own pieces and the add-ons (addons.js)
+// register in. The settings view is settings.js; the add-on manager is addon-manager.js.
+import { initAddonManager, installAddonFrom, setAddonDragging, setSafeMode } from "./addon-manager.js";
+import { addonsView, initAddons, publishStatus, reloadAddons, setView } from "./addons.js";
 import { api, listen, onDragDrop, pickDisc, pickFolder } from "./api.js";
 import { emblem, GAMES } from "./art.js";
+import { $, add, el, reconcile } from "./dom.js";
 import { failureText, formatBytes, getLanguage, setLanguage, t } from "./i18n.js";
 import { renderNotes } from "./notes.js";
+import { activeSettingsTab, mountSettings, openSettings, settingsOpen } from "./settings.js";
 import * as slots from "./slots.js";
-
-const $ = (id) => document.getElementById(id);
 
 const state = {
   status: null,
@@ -19,25 +22,6 @@ const state = {
   activeTab: "home",
   backgroundLoaded: false,
 };
-
-function el(tag, props = {}, ...children) {
-  const node = document.createElement(tag);
-  for (const [key, value] of Object.entries(props)) {
-    if (key === "class") node.className = value;
-    else if (key === "text") node.textContent = value;
-    else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-    else if (value === true) node.setAttribute(key, "");
-    else if (value !== false && value != null) node.setAttribute(key, value);
-  }
-  node.append(...children.filter((c) => c != null));
-  return node;
-}
-
-// append() without the null children of conditional parts.
-function add(parent, ...children) {
-  parent.append(...children.filter((c) => c != null && c !== false));
-  return parent;
-}
 
 function announce(text) {
   $("live").textContent = text;
@@ -112,7 +96,18 @@ function renderNotice() {
   let title = null;
   let body = null;
   let pick = false;
-  if (state.discMoved !== null) {
+  let actions = null;
+  const addons = addonsView();
+  if (addons.crashed_last_time && !addons.safe_mode) {
+    title = t("crashTitle");
+    body = t("crashBody");
+    actions = el(
+      "div",
+      { class: "row" },
+      el("button", { class: "button primary", type: "button", text: t("crashSafe"), onclick: () => setSafeMode(true) }),
+      el("button", { class: "button", type: "button", text: t("crashKeep"), onclick: async () => { setView(await api.addonsDismissCrash()); renderAll(); } }),
+    );
+  } else if (state.discMoved !== null) {
     title = t("discMovedTitle");
     body = state.discMoved ? t("discMovedBody", { path: state.discMoved }) : t("discMovedNone");
     pick = true;
@@ -124,6 +119,7 @@ function renderNotice() {
   if (!title) return;
   notice.append(el("h2", { text: title }), el("p", { text: body }));
   if (pick) notice.append(dropzoneButton());
+  if (actions) notice.append(actions);
 }
 
 // ---- The action bar ------------------------------------------------------------------------
@@ -360,14 +356,25 @@ function registerBuiltIns() {
     },
   });
 
-  const section = (id, order, title, fill) =>
-    slots.register("settings", { id, order, label: () => t(title), render: fill });
+  const section = (id, tab, order, title, fill) =>
+    slots.register("settings", { id, tab, order, label: () => t(title), render: fill });
 
-  section("data", 0, "s.dataTitle", (box) => {
+  section("language", "general", 0, "s.langTitle", (box) => {
+    const select = el(
+      "select",
+      { id: "languageSelect", onchange: (e) => settingCall(() => api.setLanguage(e.target.value)) },
+      el("option", { value: "es", text: "Español" }),
+      el("option", { value: "en", text: "English" }),
+    );
+    select.value = getLanguage();
+    add(box, el("p", { text: t("s.langBody") }), el("div", { class: "row" }, el("label", { for: "languageSelect", class: "sr-only", text: t("s.langTitle") }), select));
+  });
+
+  section("data", "general", 10, "s.dataTitle", (box) => {
     const s = state.status;
-    add(box, 
+    add(box,
       el("p", { text: t("s.dataBody") }),
-      el("p", { class: "path", text: `${s.data_folder} ${s.own_data_folder ? t("s.dataOwn") : ""}` }),
+      el("p", { class: "path" }, el("span", { text: s.data_folder }), s.own_data_folder ? el("span", { class: "chip is-quiet", text: t("s.dataOwn") }) : null),
       el(
         "div",
         { class: "row" },
@@ -378,75 +385,88 @@ function registerBuiltIns() {
             if (folder) settingCall(() => api.setDataFolder(folder), true);
           },
         }),
-        s.own_data_folder ? null : el("button", { class: "button", type: "button", text: t("s.dataReset"), onclick: () => settingCall(() => api.setDataFolder(null), true) }),
+        s.own_data_folder ? null : el("button", { class: "button subtle", type: "button", text: t("s.dataReset"), onclick: () => settingCall(() => api.setDataFolder(null), true) }),
       ),
     );
   });
 
-  section("language", 10, "s.langTitle", (box) => {
-    const select = el(
-      "select",
-      { id: "languageSelect", onchange: (e) => settingCall(() => api.setLanguage(e.target.value)) },
-      el("option", { value: "es", text: "Español" }),
-      el("option", { value: "en", text: "English" }),
-    );
-    select.value = getLanguage();
-    add(box, el("div", { class: "row" }, el("label", { for: "languageSelect", class: "sr-only", text: t("s.langTitle") }), select));
-  });
-
-  section("updates", 20, "s.updatesTitle", (box) => {
+  section("updates", "updates", 0, "s.updatesTitle", (box) => {
     const s = state.status;
-    const auto = el("input", { type: "checkbox", id: "autoUpdates", onchange: (e) => settingCall(() => api.setCheckUpdates(e.target.checked)) });
+    const auto = el("input", { type: "checkbox", role: "switch", class: "switch", id: "autoUpdates", onchange: (e) => settingCall(() => api.setCheckUpdates(e.target.checked)) });
     auto.checked = s.check_updates;
     let result = "";
+    let tone = "muted";
     if (state.checking) result = t("s.updatesChecking");
-    else if (state.update) result = state.update.game_update ? t("s.updatesAvailable", { version: state.update.game_version }) : t("s.updatesLatest", { version: state.update.game_version });
-    else if (state.updateFailure) result = failureText(state.updateFailure);
-    add(box, 
-      el("div", { class: "row" }, auto, el("label", { for: "autoUpdates", text: t("s.updatesAuto") })),
+    else if (state.update) {
+      result = state.update.game_update ? t("s.updatesAvailable", { version: state.update.game_version }) : t("s.updatesLatest", { version: state.update.game_version });
+      tone = state.update.game_update ? "accent" : "muted";
+    } else if (state.updateFailure) {
+      result = failureText(state.updateFailure);
+      tone = "warning";
+    }
+    add(box,
+      el(
+        "div",
+        { class: "row between" },
+        el("label", { for: "autoUpdates", class: "row-label" }, el("span", { text: t("s.updatesAuto") }), el("span", { class: "muted small", text: t("s.updatesAutoHint") })),
+        auto,
+      ),
       el(
         "div",
         { class: "row" },
         el("button", { class: "button", type: "button", text: t("s.updatesNow"), disabled: state.checking, onclick: checkUpdates }),
-        s.has_previous ? el("button", { class: "button", type: "button", text: t("s.rollback"), disabled: Boolean(state.task), onclick: () => { $("settingsDialog").close(); runTask(() => api.rollbackGame()); } }) : null,
+        el("p", { class: `status-line ${tone}`, role: "status", text: result }),
       ),
-      result ? el("p", { text: result }) : null,
       s.signing_ready ? null : el("p", { class: "warning", text: t("s.updatesNoKey") }),
-      el("p", {
-        text: t("s.versions", {
-          launcher: s.launcher_version,
-          game: s.game?.version ?? t("s.none"),
-          extractor: s.game?.extractor_version ?? t("s.none"),
-        }),
-      }),
     );
   });
 
-  section("token", 30, "s.tokenTitle", (box) => {
+  section("versions", "updates", 10, "s.versionsTitle", (box) => {
+    const s = state.status;
+    const fact = (label, value) => [el("dt", { text: label }), el("dd", { text: value })];
+    add(box,
+      el(
+        "dl",
+        { class: "facts" },
+        ...fact(t("s.factLauncher"), s.launcher_version),
+        ...fact(t("s.factGame"), s.game?.version ?? t("s.none")),
+        ...fact(t("s.factExtractor"), String(s.game?.extractor_version ?? t("s.none"))),
+        ...fact(t("s.factPlatform"), s.platform),
+      ),
+      el("p", { text: s.has_previous ? t("s.rollbackBody") : t("s.rollbackNone") }),
+      s.has_previous
+        ? el("div", { class: "row" }, el("button", { class: "button", type: "button", text: t("s.rollback"), disabled: Boolean(state.task), onclick: () => { $("settingsDialog").close(); runTask(() => api.rollbackGame()); } }))
+        : null,
+    );
+  });
+
+  section("token", "account", 0, "s.tokenTitle", (box) => {
     const s = state.status;
     const input = el("input", { type: "password", id: "tokenInput", autocomplete: "off", spellcheck: "false", disabled: s.token === "unavailable" });
     const statusText = { saved: t("s.tokenSaved"), none: t("s.tokenNone"), unavailable: t("s.tokenUnavailable") }[s.token];
-    add(box, 
+    add(box,
       el("p", { text: t("s.tokenBody") }),
+      el("p", { class: `status-line ${s.token === "saved" ? "accent" : s.token === "unavailable" ? "warning" : "muted"}`, role: "status", text: statusText }),
+      el("label", { for: "tokenInput", class: "field-label", text: t("s.tokenLabel") }),
       el(
         "div",
         { class: "row" },
-        el("label", { for: "tokenInput", text: t("s.tokenLabel") }),
         input,
         el("button", {
           class: "button primary", type: "button", text: t("s.tokenSave"), disabled: s.token === "unavailable",
           onclick: () => { const value = input.value; input.value = ""; settingCall(() => api.saveToken(value)); },
         }),
-        s.token === "saved" ? el("button", { class: "button", type: "button", text: t("s.tokenClear"), onclick: () => settingCall(() => api.clearToken()) }) : null,
+        s.token === "saved" ? el("button", { class: "button subtle", type: "button", text: t("s.tokenClear"), onclick: () => settingCall(() => api.clearToken()) }) : null,
       ),
-      el("p", { class: s.token === "unavailable" ? "warning" : "", text: statusText }),
+      el("p", { class: "muted small", text: t("s.tokenHint") }),
     );
   });
 
-  section("disc", 40, "s.discTitle", (box) => {
+  section("disc", "disc", 0, "s.discTitle", (box) => {
     const s = state.status;
-    add(box, 
-      el("p", { class: s.disc_source ? "path" : "", text: s.disc_source ? t("s.discBody", { path: s.disc_source }) : t("s.discNone") }),
+    add(box,
+      el("p", { text: t("s.discLead") }),
+      s.disc_source ? el("p", { class: "path" }, el("span", { text: s.disc_source }), s.disc_source_exists ? null : el("span", { class: "chip is-warning", text: t("s.discMissing") })) : el("p", { class: "muted", text: t("s.discNone") }),
       el(
         "div",
         { class: "row" },
@@ -458,8 +478,8 @@ function registerBuiltIns() {
     );
   });
 
-  section("logs", 50, "s.logsTitle", (box) => {
-    add(box, 
+  section("logs", "advanced", 0, "s.logsTitle", (box) => {
+    add(box,
       el("p", { text: t("s.logsBody") }),
       el("div", { class: "row" }, el("button", { class: "button", type: "button", text: t("s.logsOpen"), onclick: () => settingCall(() => api.openLogs().then(api.status)) })),
     );
@@ -483,10 +503,14 @@ async function settingCall(work, reloadBackground = false) {
 
 // ---- Slot renderers ------------------------------------------------------------------------
 
+const cssId = (id) => id.replace(/[^A-Za-z0-9_-]/g, "-");
+
 function selectTab(id) {
+  if (settingsOpen()) $("settingsDialog").close();
   state.activeTab = id;
   slots.render("tabs", context());
-  document.getElementById(`tab-${id}`)?.focus();
+  slots.render("sidebar", context());
+  document.getElementById(`tab-${cssId(id)}`)?.focus();
 }
 
 function renderNews(container, ctx) {
@@ -501,8 +525,11 @@ function mountSlots() {
     const list = $("sidebar");
     list.replaceChildren();
     for (const item of items) {
-      const button = el("button", { class: "rail-item", type: "button", title: item.label(), "aria-disabled": item.disabled ? "true" : false, "aria-current": item.current ? "page" : false });
-      button.insertAdjacentHTML("afterbegin", item.icon());
+      const current = item.current || (item.addon && state.activeTab === item.id);
+      const button = el("button", { class: `rail-item${item.addon ? " is-addon" : ""}`, type: "button", title: item.label(), "aria-disabled": item.disabled ? "true" : false, "aria-current": current ? "page" : false });
+      // An add-on's icon is an image of its own folder (never markup in this page).
+      if (item.iconUrl) button.append(el("img", { src: item.iconUrl, alt: "", width: "30", height: "30", draggable: "false" }));
+      else button.insertAdjacentHTML("afterbegin", item.icon());
       button.append(el("span", { class: "sr-only", text: item.label() }));
       if (item.disabled) button.addEventListener("click", (e) => e.preventDefault());
       else if (item.onSelect) button.addEventListener("click", item.onSelect);
@@ -510,46 +537,47 @@ function mountSlots() {
     }
   });
 
+  // Tabs and panels are kept by id: switching only hides panels, so an add-on's tab (an iframe)
+  // keeps its state; the launcher's own panels are drawn again when shown.
   slots.mount("tabs", (items, ctx) => {
     if ($("homeView").hidden) return;
-    const tablist = $("tablist");
-    const panels = $("tabpanels");
-    tablist.replaceChildren();
-    panels.replaceChildren();
     if (!items.some((i) => i.id === state.activeTab)) state.activeTab = items[0]?.id;
-    items.forEach((item, index) => {
-      const selected = item.id === state.activeTab;
-      const tab = el("button", {
-        class: "tab", type: "button", role: "tab", id: `tab-${item.id}`, "aria-selected": String(selected),
-        "aria-controls": `panel-${item.id}`, tabindex: selected ? "0" : "-1", text: item.label(),
-        onclick: () => selectTab(item.id),
+    const ids = items.map((i) => i.id);
+    const tabs = reconcile($("tablist"), ids, (id) =>
+      el("button", {
+        class: "tab", type: "button", role: "tab", id: `tab-${cssId(id)}`, "aria-controls": `panel-${cssId(id)}`,
+        onclick: () => selectTab(id),
         onkeydown: (e) => {
           const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
-          if (step) selectTab(items[(index + step + items.length) % items.length].id);
+          if (!step) return;
+          const now = slots.itemsOf("tabs").map((i) => i.id);
+          selectTab(now[(now.indexOf(id) + step + now.length) % now.length]);
         },
-      });
-      tablist.append(tab);
-      if (selected) {
-        const panel = el("div", { role: "tabpanel", id: `panel-${item.id}`, "aria-labelledby": `tab-${item.id}`, tabindex: "0" });
-        item.render(panel, ctx);
-        panels.append(panel);
-      }
+      }),
+    );
+    const panels = reconcile($("tabpanels"), ids, (id) => {
+      const item = items.find((i) => i.id === id);
+      const panel = el("div", { class: `tabpanel${item.persistent ? " is-addon" : ""}`, role: "tabpanel", id: `panel-${cssId(id)}`, "aria-labelledby": `tab-${cssId(id)}`, tabindex: "0" });
+      if (item.persistent) item.render(panel, ctx);
+      return panel;
     });
+    for (const item of items) {
+      const selected = item.id === state.activeTab;
+      const tab = tabs.get(item.id);
+      tab.textContent = item.label();
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      const panel = panels.get(item.id);
+      panel.hidden = !selected;
+      if (selected && !item.persistent) {
+        panel.replaceChildren();
+        item.render(panel, ctx);
+      }
+    }
   });
 
   // News cards render inside the home tab (renderNews); the slot itself needs no mount.
-
-  slots.mount("settings", (items, ctx) => {
-    const sections = $("settingsSections");
-    if (!state.status) return;
-    sections.replaceChildren();
-    for (const item of items) {
-      const box = el("section", { class: "setting", "aria-labelledby": `setting-${item.id}`, "data-item": item.id });
-      add(box, el("h3", { id: `setting-${item.id}`, text: item.label() }));
-      item.render(box, ctx);
-      sections.append(box);
-    }
-  });
+  mountSettings();
 }
 
 // What a slot item may read: a copy of the public part of the state, never the disc path or
@@ -568,8 +596,10 @@ function context() {
 function renderAll() {
   renderStaticTexts();
   renderViews();
-  slots.renderAll(context());
+  const ctx = context();
+  slots.renderAll(ctx);
   renderActionBar();
+  publishStatus({ running: ctx.gameRunning, busy: ctx.busy, ready: ctx.ready, gameVersion: ctx.gameVersion, language: ctx.language });
 }
 
 // ---- Start -----------------------------------------------------------------------------------
@@ -577,11 +607,9 @@ function renderAll() {
 async function start() {
   registerBuiltIns();
   mountSlots();
-  $("settingsButton").addEventListener("click", () => {
-    slots.render("settings", context());
-    $("settingsDialog").showModal();
-  });
-  $("settingsClose").addEventListener("click", () => $("settingsDialog").close());
+  initAddons({ language: getLanguage, selectTab, changed: () => renderAll(), t });
+  initAddonManager({ message: showMessage, redraw: () => renderAll() });
+  $("settingsButton").addEventListener("click", () => openSettings());
   $("messageDismiss").addEventListener("click", () => $("messageDialog").close());
   $("dropzone").addEventListener("click", chooseDisc);
   $("stopButton").addEventListener("click", () => api.cancel());
@@ -604,6 +632,16 @@ async function start() {
     }
   });
   await onDragDrop((event) => {
+    // Over Settings → Add-ons, a drop is an add-on (.zip, folder or addon.json).
+    if (settingsOpen() && activeSettingsTab() === "addons") {
+      if (event.type === "enter" || event.type === "over") setAddonDragging(true);
+      else if (event.type === "leave") setAddonDragging(false);
+      else if (event.type === "drop") {
+        setAddonDragging(false);
+        installAddonFrom(event.paths?.[0]);
+      }
+      return;
+    }
     const accepting = !state.task && (!state.status?.content_installed || state.discMoved !== null || state.status?.content_outdated);
     if (!accepting) return;
     if (event.type === "enter" || event.type === "over") {
@@ -623,6 +661,11 @@ async function start() {
   });
 
   await refresh();
+  try {
+    await reloadAddons();
+  } catch (failure) {
+    showMessage(t("errorTitle"), failureText(failure));
+  }
   if (state.status.check_updates) checkUpdates();
 }
 
