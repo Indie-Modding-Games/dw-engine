@@ -814,11 +814,20 @@ function registerBuiltIns() {
       input.disabled = disabled;
       return el("div", { class: "row between" }, el("label", { for: id, class: "row-label" }, el("span", { text: label }), el("span", { class: "muted small", text: hint })), input);
     };
+    const channel = el(
+      "select",
+      { id: "updateChannel", class: "compact", onchange: (e) => changeChannel(e.target.value) },
+      el("option", { value: "stable", text: t("s.channelStable") }),
+      el("option", { value: "testing", text: t("s.channelTesting") }),
+    );
+    channel.value = s.update_channel;
+    channel.disabled = state.checking || Boolean(state.task) || state.launcherInstalling;
     const last = lastCheckLine(s);
     add(box,
       toggle("autoUpdates", t("s.updatesAuto"), t("s.updatesAutoHint"), s.check_updates, (on) => api.setCheckUpdates(on)),
       toggle("autoLauncher", t("s.autoLauncher"), s.launcher_replaceable ? t("s.autoLauncherHint") : t("s.autoLauncherManual"), s.auto_update_launcher, (on) => api.setAutoUpdate("launcher", on)),
       toggle("autoGame", t("s.autoGame"), t("s.autoGameHint"), s.auto_update_game, (on) => api.setAutoUpdate("game", on)),
+      el("div", { class: "row between" }, el("label", { for: "updateChannel", class: "row-label" }, el("span", { text: t("s.channel") }), el("span", { class: "muted small", text: t("s.channelHint") })), channel),
       el(
         "div",
         { class: "row" },
@@ -922,6 +931,15 @@ function lastCheckLine(s) {
     default:
       return { text: t("s.updatesLatest"), tone: "muted", when };
   }
+}
+
+// Another update channel: what the last check found belongs to the old one, so it is forgotten
+// and the launcher looks again (an update is only ever a newer version, never an older one).
+async function changeChannel(channel) {
+  await settingCall(() => api.setUpdateChannel(channel));
+  state.update = null;
+  state.updateFailure = null;
+  checkUpdates();
 }
 
 async function settingCall(work, reloadBackground = false) {

@@ -168,6 +168,7 @@ pub fn run() {
             commands::install_launcher_update,
             commands::restart_launcher,
             commands::set_auto_update,
+            commands::set_update_channel,
             commands::check_system,
             commands::open_driver_page,
             addon_commands::addons_list,

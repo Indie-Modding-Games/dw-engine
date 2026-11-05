@@ -25,6 +25,8 @@ export const api = {
   installLauncherUpdate: () => call("install_launcher_update"),
   restartLauncher: () => call("restart_launcher"),
   setAutoUpdate: (what, enabled) => call("set_auto_update", { what, enabled }),
+  // "stable" or "testing"; the release found by the last check is dropped.
+  setUpdateChannel: (channel) => call("set_update_channel", { channel }),
   // Free space and the GPU check (src-tauri/src/system_check.rs); again: check once more.
   checkSystem: (again = false) => call("check_system", { again }),
   // nvidia, amd, intel or windows-update: the backend knows the addresses.

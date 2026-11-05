@@ -62,6 +62,8 @@ pub mod code {
     pub const DISC_MOVED: &str = "disc-moved";
     /// The game did not start, or stopped with an error.
     pub const GAME_FAILED: &str = "game-failed";
+    /// The release of the player's channel is not newer than the installed game (never a downgrade).
+    pub const UP_TO_DATE: &str = "up-to-date";
     /// There is no previous version to go back to.
     pub const NO_PREVIOUS: &str = "no-previous";
     /// An add-on whose addon.json is wrong; the detail is "<field>:<reason>" (addons/manifest.rs).

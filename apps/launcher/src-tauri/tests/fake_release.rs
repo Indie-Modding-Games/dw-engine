@@ -16,12 +16,14 @@ use std::sync::{Arc, Mutex};
 
 use dwe_launcher::failure::code;
 use dwe_launcher::manifest::platform_key;
-use dwe_launcher::releases::Client;
+use dwe_launcher::releases::{Client, UpdateChannel};
 use dwe_launcher::store::GameStore;
 use dwe_launcher::{updates, verify};
 
 const KEY: &str = "placeholder-beta-key-for-tests-0123456789";
 const REPO: &str = "team/game";
+const TESTING: UpdateChannel = UpdateChannel::Testing;
+const STABLE: UpdateChannel = UpdateChannel::Stable;
 
 type Routes = Arc<Mutex<HashMap<String, Vec<u8>>>>;
 
@@ -141,10 +143,10 @@ async fn updates_from_a_private_release_server() {
 
     // Without the key the releases are not shown.
     let anonymous = Client::new(&base, REPO, None).unwrap();
-    assert_eq!(anonymous.latest().await.unwrap_err().code, code::AUTH);
+    assert_eq!(anonymous.latest(TESTING).await.unwrap_err().code, code::AUTH);
 
     let client = Client::new(&base, REPO, Some(KEY.into())).unwrap();
-    let release = client.latest().await.unwrap();
+    let release = client.latest(TESTING).await.unwrap();
     assert_eq!(release.tag, "v0.1.0-beta.1");
     assert_eq!(release.notes, "## Changes\n- Faster");
     assert!(updates::is_update(&release, None));
@@ -166,7 +168,7 @@ async fn updates_from_a_private_release_server() {
     let mut tampered = second.clone();
     *tampered.last_mut().unwrap() ^= 1;
     publish(&routes, &base, "0.1.0-beta.2", &second, &tampered, &signer);
-    let release = client.latest().await.unwrap();
+    let release = client.latest(TESTING).await.unwrap();
     assert!(updates::is_update(&release, Some(&game)));
     let failure = updates::install_game(&client, &release, &data, Some(&key), &never, |_, _, _| {}).await.unwrap_err();
     assert_eq!(failure.code, code::BAD_CHECKSUM);
@@ -174,13 +176,13 @@ async fn updates_from_a_private_release_server() {
 
     // Signed by someone else: refused too.
     publish(&routes, &base, "0.1.0-beta.2", &second, &second, &Signer::new());
-    let release = client.latest().await.unwrap();
+    let release = client.latest(TESTING).await.unwrap();
     let failure = updates::install_game(&client, &release, &data, Some(&key), &never, |_, _, _| {}).await.unwrap_err();
     assert_eq!(failure.code, code::BAD_SIGNATURE);
 
     // The real update: installed, the old version kept for a rollback.
     publish(&routes, &base, "0.1.0-beta.2", &second, &second, &signer);
-    let release = client.latest().await.unwrap();
+    let release = client.latest(TESTING).await.unwrap();
     let game = updates::install_game(&client, &release, &data, Some(&key), &never, |_, _, _| {}).await.unwrap();
     assert_eq!(fs::read_to_string(game.game_program()).unwrap(), "second");
     let store = GameStore::new(&data);
@@ -197,7 +199,7 @@ async fn the_key_never_leaves_the_release_server() {
         { "id": 1, "name": "game-manifest.json", "size": 1, "url": "http://localhost:9/elsewhere" } ] }]);
     routes.lock().unwrap().insert(format!("{api}?per_page=20"), releases.to_string().into_bytes());
     let client = Client::new(&base, REPO, Some(KEY.into())).unwrap();
-    assert_eq!(client.latest().await.unwrap_err().code, code::BAD_MANIFEST);
+    assert_eq!(client.latest(TESTING).await.unwrap_err().code, code::BAD_MANIFEST);
 }
 
 /// A storage host like the one GitHub's downloads redirect to: serves its files to anyone, answers
@@ -262,7 +264,7 @@ async fn the_key_is_not_sent_where_a_download_redirects() {
     routes.lock().unwrap().insert(format!("/repos/{REPO}/releases/assets/2"), redirect);
 
     let client = Client::new(&base, REPO, Some(KEY.into())).unwrap();
-    let release = client.latest().await.unwrap();
+    let release = client.latest(TESTING).await.unwrap();
     let never = AtomicBool::new(false);
     let game = updates::install_game(&client, &release, &data, Some(&key), &never, |_, _, _| {}).await.unwrap();
     assert_eq!(fs::read_to_string(game.game_program()).unwrap(), "redirected");
@@ -369,14 +371,14 @@ async fn through_the_beta_gateway() {
 
     // No key or a wrong one: the "needs the key" failure.
     for wrong in [None, Some("not-the-beta-key".to_string()), Some(GITHUB_TOKEN.to_string())] {
-        let refused = Client::new(&gateway, REPO, wrong).unwrap().latest().await.unwrap_err();
+        let refused = Client::new(&gateway, REPO, wrong).unwrap().latest(TESTING).await.unwrap_err();
         assert_eq!(refused.code, code::AUTH);
     }
 
     // The key: the release, every file on the gateway, the game installed through a redirect
     // to the storage host (which refuses any request that carries a key).
     let client = Client::new(&gateway, REPO, Some(KEY.into())).unwrap();
-    let release = client.latest().await.unwrap();
+    let release = client.latest(TESTING).await.unwrap();
     assert_eq!(release.tag, "v0.4.0-beta.1");
     assert_eq!(release.notes, "## Through the gateway");
     assert!(release.assets.iter().all(|a| a.url.starts_with(&format!("{gateway}/"))), "{:?}", release.assets);
@@ -395,6 +397,29 @@ async fn through_the_beta_gateway() {
     client.download(&bundle, &file, &never, |_, _| {}).await.unwrap();
     assert_eq!(fs::read(&file).unwrap(), b"new launcher");
     assert!(!text.contains(GITHUB_TOKEN) && !text.contains(&github));
+
+    // Only a test version so far: /releases/latest is 404 through the gateway, and Stable
+    // follows the test versions.
+    assert_eq!(client.latest(STABLE).await.unwrap().tag, "v0.4.0-beta.1");
+    // A stable release comes out: Stable takes it (from the listing, or from /releases/latest
+    // while the gateway keeps the listing it read), Testing keeps the newer test version.
+    let stable = dir.path().join("releases/v0.3.0");
+    fs::create_dir_all(&stable).unwrap();
+    let stable_package = fs::read(package(dir.path(), "dwe-s", "stable")).unwrap();
+    let stable_asset = format!("dwe-game-0.3.0-{}.tar.xz", platform_key());
+    fs::write(stable.join(&stable_asset), &stable_package).unwrap();
+    let stable_manifest = serde_json::json!({
+        "schema": 1, "version": "0.3.0", "commit": "abc", "extractor_version": 13,
+        "packages": { platform_key(): { "asset": stable_asset, "size": stable_package.len(), "sha256": sha256(&stable_package), "signature": signer.sign(&stable_package) } }
+    });
+    fs::write(stable.join("game-manifest.json"), stable_manifest.to_string()).unwrap();
+    let release = client.latest(STABLE).await.unwrap();
+    assert_eq!(release.tag, "v0.3.0");
+    assert!(!release.prerelease);
+    assert!(release.assets.iter().all(|a| a.url.starts_with(&format!("{gateway}/"))), "{:?}", release.assets);
+    // The installed test version is newer: Stable offers no update (never a downgrade).
+    assert!(!updates::is_update(&release, Some(&game)));
+    assert_eq!(client.latest(TESTING).await.unwrap().tag, "v0.4.0-beta.1");
 }
 
 #[tokio::test]
@@ -428,10 +453,95 @@ async fn each_computer_gets_the_newest_release_made_for_it() {
         routes.insert(format!("{api}/assets/2"), manifest("0.1.0-beta.1", &every).to_string().into_bytes());
     }
     let client = Client::new(&base, REPO, Some(KEY.into())).unwrap();
-    assert_eq!(client.latest_for("linux-x86_64").await.unwrap().tag, "v2");
-    let windows = client.latest_for("windows-x86_64").await.unwrap();
+    assert_eq!(client.latest_for("linux-x86_64", TESTING).await.unwrap().tag, "v2");
+    let windows = client.latest_for("windows-x86_64", TESTING).await.unwrap();
     assert_eq!(windows.tag, "v1");
     assert_eq!(windows.manifest.package("windows-x86_64").unwrap().asset, "dwe-game-0.1.0-beta.1-windows-x86_64.tar.xz");
-    assert_eq!(client.latest_for("darwin-aarch64").await.unwrap().tag, "v1");
-    assert_eq!(client.latest_for("windows-aarch64").await.unwrap_err().code, code::NO_RELEASE);
+    assert_eq!(client.latest_for("darwin-aarch64", TESTING).await.unwrap().tag, "v1");
+    assert_eq!(client.latest_for("windows-aarch64", TESTING).await.unwrap_err().code, code::NO_RELEASE);
+}
+
+/// A release listing entry for the channel tests: its game manifest is at assets/<id>.
+fn listed(base: &str, tag: &str, prerelease: bool, id: u64) -> serde_json::Value {
+    let api = format!("/repos/{REPO}/releases");
+    serde_json::json!({ "tag_name": tag, "prerelease": prerelease, "assets": [
+        { "id": id, "name": "game-manifest.json", "size": 1, "url": format!("{base}{api}/assets/{id}") } ] })
+}
+
+/// A game manifest with a package for each of the computers.
+fn manifest_for(version: &str, platforms: &[&str]) -> Vec<u8> {
+    let packages: serde_json::Map<String, serde_json::Value> = platforms
+        .iter()
+        .map(|p| {
+            let package = serde_json::json!({ "asset": format!("dwe-game-{version}-{p}.tar.xz"), "size": 1,
+                "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", "signature": "c2ln" });
+            (p.to_string(), package)
+        })
+        .collect();
+    serde_json::json!({ "schema": 1, "version": version, "extractor_version": 13, "packages": packages }).to_string().into_bytes()
+}
+
+#[tokio::test]
+async fn each_channel_gets_its_own_releases() {
+    let routes: Routes = Arc::default();
+    let base = serve(routes.clone());
+    let api = format!("/repos/{REPO}/releases");
+    let here = platform_key();
+    let here = here.as_str();
+    let client = Client::new(&base, REPO, Some(KEY.into())).unwrap();
+    let set = |listing: serde_json::Value, manifests: &[(u64, Vec<u8>)], latest: Option<serde_json::Value>| {
+        let mut routes = routes.lock().unwrap();
+        routes.clear();
+        routes.insert(format!("{api}?per_page=20"), listing.to_string().into_bytes());
+        for (id, manifest) in manifests {
+            routes.insert(format!("{api}/assets/{id}"), manifest.clone());
+        }
+        if let Some(latest) = latest {
+            routes.insert(format!("{api}/latest"), latest.to_string().into_bytes());
+        }
+    };
+
+    // Test versions newer than the stable ones: Testing takes the newest test version, Stable the
+    // newest stable one.
+    set(
+        serde_json::json!([listed(&base, "v0.3.0-beta.2", true, 1), listed(&base, "v0.2.0", false, 2),
+            listed(&base, "v0.2.0-beta.1", true, 3), listed(&base, "v0.1.0", false, 4)]),
+        &[(1, manifest_for("0.3.0-beta.2", &[here])), (2, manifest_for("0.2.0", &[here])),
+            (3, manifest_for("0.2.0-beta.1", &[here])), (4, manifest_for("0.1.0", &[here]))],
+        None,
+    );
+    let testing = client.latest(TESTING).await.unwrap();
+    assert_eq!(testing.tag, "v0.3.0-beta.2");
+    assert!(testing.prerelease);
+    let stable = client.latest(STABLE).await.unwrap();
+    assert_eq!(stable.tag, "v0.2.0");
+    assert!(!stable.prerelease);
+    // A stable release with no package for a computer: Stable has nothing for it (no test version).
+    set(
+        serde_json::json!([listed(&base, "v0.3.0-beta.2", true, 1), listed(&base, "v0.2.0", false, 2)]),
+        &[(1, manifest_for("0.3.0-beta.2", &["other-computer", here])), (2, manifest_for("0.2.0", &[here]))],
+        None,
+    );
+    assert_eq!(client.latest_for("other-computer", STABLE).await.unwrap_err().code, code::NO_RELEASE);
+    assert_eq!(client.latest_for("other-computer", TESTING).await.unwrap().tag, "v0.3.0-beta.2");
+
+    // No stable release yet (none listed, /releases/latest is 404): Stable follows the test versions.
+    let only_tests = serde_json::json!([listed(&base, "v0.1.0-beta.2", true, 1), listed(&base, "v0.1.0-beta.1", true, 2)]);
+    let test_manifests = [(1, manifest_for("0.1.0-beta.2", &[here])), (2, manifest_for("0.1.0-beta.1", &[here]))];
+    set(only_tests.clone(), &test_manifests, None);
+    assert_eq!(client.latest(STABLE).await.unwrap().tag, "v0.1.0-beta.2");
+    assert_eq!(client.latest(TESTING).await.unwrap().tag, "v0.1.0-beta.2");
+
+    // A stable release beyond the listing (/releases/latest answers it): Stable takes it...
+    let mut with_stable = test_manifests.to_vec();
+    with_stable.push((9, manifest_for("0.0.9", &[here])));
+    set(only_tests.clone(), &with_stable, Some(listed(&base, "v0.0.9", false, 9)));
+    assert_eq!(client.latest(STABLE).await.unwrap().tag, "v0.0.9");
+    assert_eq!(client.latest(TESTING).await.unwrap().tag, "v0.1.0-beta.2");
+    // ...and when it has no package for this computer, there is no release: a stable release
+    // exists, so Stable does not fall back to the test versions.
+    with_stable.pop();
+    with_stable.push((9, manifest_for("0.0.9", &["other-computer"])));
+    set(only_tests, &with_stable, Some(listed(&base, "v0.0.9", false, 9)));
+    assert_eq!(client.latest(STABLE).await.unwrap_err().code, code::NO_RELEASE);
 }

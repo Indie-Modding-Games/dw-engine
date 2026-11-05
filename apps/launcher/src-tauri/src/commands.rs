@@ -18,7 +18,7 @@ use crate::failure::{code, Failure, Result};
 use crate::launch;
 use crate::log_line;
 use crate::manifest;
-use crate::releases::{Client, Release};
+use crate::releases::{Client, Release, UpdateChannel};
 use crate::store::{Game, GameStore};
 use crate::system_check::{self, Graphics, GraphicsCheck, Space};
 use crate::updates::{self, Stage};
@@ -42,6 +42,8 @@ pub struct Status {
     check_updates: bool,
     auto_update_launcher: bool,
     auto_update_game: bool,
+    /// "stable" or "testing" (releases::UpdateChannel).
+    update_channel: UpdateChannel,
     last_check: Option<LastCheck>,
     /// A new launcher installed in this session: it runs after a restart.
     launcher_ready: Option<String>,
@@ -151,6 +153,7 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
         check_updates: settings.check_updates,
         auto_update_launcher: settings.auto_update_launcher,
         auto_update_game: settings.auto_update_game,
+        update_channel: settings.update_channel,
         last_check: settings.last_check.clone(),
         launcher_ready: state.launcher_ready.lock().unwrap().clone(),
         launcher_replaceable: auto_update::launcher_replaceable(),
@@ -215,9 +218,18 @@ fn client(state: &AppState) -> Result<Client> {
     Client::new(&settings.api_base, &settings.repository, key)
 }
 
+fn channel(state: &AppState) -> UpdateChannel {
+    state.settings.lock().unwrap().update_channel
+}
+
+/// The newest release of the player's channel, kept for the update that follows (unless the
+/// channel changed meanwhile: set_update_channel drops what was kept).
 async fn latest_release(state: &AppState) -> Result<Release> {
-    let release = client(state)?.latest().await?;
-    *state.release.lock().unwrap() = Some(release.clone());
+    let asked = channel(state);
+    let release = client(state)?.latest(asked).await?;
+    if channel(state) == asked {
+        *state.release.lock().unwrap() = Some(release.clone());
+    }
     Ok(release)
 }
 
@@ -263,7 +275,12 @@ async fn look_for_updates(app: &AppHandle, state: &AppState) -> Result<UpdateInf
         }
     }
     let game_update = updates::is_update(&release, game.as_ref());
-    log_line!("release {}: game {} (update: {game_update}), launcher {launcher_update:?}", release.tag, release.manifest.version);
+    log_line!(
+        "release {} ({} channel): game {} (update: {game_update}), launcher {launcher_update:?}",
+        release.tag,
+        channel(state),
+        release.manifest.version
+    );
     let settings = state.settings.lock().unwrap().clone();
     let signing = public_key(app).is_some();
     let content = content::content_folder(&data);
@@ -441,6 +458,11 @@ pub async fn update_game(app: AppHandle, state: State<'_, AppState>) -> Result<S
     }
     let _busy = state.begin()?;
     let release = cached_or_latest(&state).await?;
+    // Never back to an older game: after a switch to Stable, the newer test version stays.
+    let current = GameStore::new(&data_folder(&state)).current();
+    if !updates::is_update(&release, current.as_ref()) {
+        return Err(Failure::new(code::UP_TO_DATE, release.manifest.version));
+    }
     let installed = download_game(&app, &state, &release).await;
     let at = auto_update::now();
     match &installed {
@@ -624,6 +646,21 @@ pub fn set_auto_update(app: AppHandle, state: State<'_, AppState>, what: String,
         }
         settings.save()?;
     }
+    Ok(status_of(&app, &state))
+}
+
+/// The releases the updates come from: "stable" or "testing". The release kept from the last
+/// check belongs to the other channel, so it is dropped; the page looks for updates again.
+#[tauri::command]
+pub fn set_update_channel(app: AppHandle, state: State<'_, AppState>, channel: String) -> Result<Status> {
+    let chosen = UpdateChannel::parse(&channel).ok_or_else(|| Failure::new(code::IO, channel))?;
+    {
+        let mut settings = state.settings.lock().unwrap();
+        settings.update_channel = chosen;
+        settings.save()?;
+    }
+    *state.release.lock().unwrap() = None;
+    log_line!("update channel: {chosen}");
     Ok(status_of(&app, &state))
 }
 

@@ -17,6 +17,42 @@ use tokio::io::AsyncWriteExt;
 use crate::failure::{code, Failure, Result};
 use crate::manifest::{self, GameManifest, LAUNCHER_MANIFEST_ASSET, MANIFEST_ASSET};
 
+/// Which releases the player follows (settings.rs keeps the choice): Stable, the published
+/// versions only (the main branch's releases), or Testing, every new test version too (the
+/// prereleases from the demo branch). Either way an update is only ever a newer version
+/// (manifest::is_newer), so going back to Stable keeps a newer test version until a newer
+/// stable one comes out.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum UpdateChannel {
+    #[default]
+    Stable,
+    Testing,
+}
+
+impl UpdateChannel {
+    pub fn parse(text: &str) -> Option<Self> {
+        match text {
+            "stable" => Some(Self::Stable),
+            "testing" => Some(Self::Testing),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Stable => "stable",
+            Self::Testing => "testing",
+        }
+    }
+}
+
+impl std::fmt::Display for UpdateChannel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Asset {
     pub id: u64,
@@ -130,41 +166,84 @@ impl Client {
         request
     }
 
-    /// The newest release (prereleases included: the beta is one) whose game manifest has a
-    /// package for this computer, with that manifest read.
-    pub async fn latest(&self) -> Result<Release> {
-        self.latest_for(&manifest::platform_key()).await
+    /// The newest release of the channel whose game manifest has a package for this computer,
+    /// with that manifest read.
+    pub async fn latest(&self, channel: UpdateChannel) -> Result<Release> {
+        self.latest_for(&manifest::platform_key(), channel).await
     }
 
-    /// The newest release whose game manifest has a package for the computer `platform`
-    /// (manifest::platform_key). A release made for other computers only is skipped, so an
-    /// update for one system never hides the last one for another.
-    pub async fn latest_for(&self, platform: &str) -> Result<Release> {
+    /// The newest release of the channel whose game manifest has a package for the computer
+    /// `platform` (manifest::platform_key). A release made for other computers only is skipped,
+    /// so an update for one system never hides the last one for another.
+    ///
+    /// Testing: the newest release of any kind (the test builds are prereleases). Stable: the
+    /// newest release that is not a prerelease, from the listing or else from /releases/latest;
+    /// while no stable release exists at all (the listing has none and /releases/latest is 404),
+    /// the Testing choice, so the testers of the first builds keep getting them.
+    pub async fn latest_for(&self, platform: &str, channel: UpdateChannel) -> Result<Release> {
         let url = format!("{}/repos/{}/releases?per_page=20", self.api, self.repository);
         let response = self.get(&url, "application/vnd.github+json").send().await.map_err(network)?;
         if !response.status().is_success() {
             return Err(status_failure(response.status(), "releases"));
         }
         let releases: Vec<ApiRelease> = response.json().await.map_err(network)?;
-        for release in releases.into_iter().filter(|r| !r.draft) {
-            let Some(manifest_asset) = release.assets.iter().find(|a| a.name == MANIFEST_ASSET) else {
-                continue;
-            };
-            let manifest = manifest::parse(&self.fetch_text(manifest_asset).await?)?;
-            if manifest.package(platform).is_none() {
-                continue;
+        let releases: Vec<ApiRelease> = releases.into_iter().filter(|r| !r.draft).collect();
+        let none = || Failure::new(code::NO_RELEASE, platform.to_string());
+        if channel == UpdateChannel::Stable {
+            for release in releases.iter().filter(|r| !r.prerelease) {
+                if let Some(found) = self.with_package(release, platform).await? {
+                    return Ok(found);
+                }
             }
-            return Ok(Release {
-                name: release.name.filter(|n| !n.is_empty()).unwrap_or_else(|| release.tag_name.clone()),
-                tag: release.tag_name,
-                notes: release.body.unwrap_or_default(),
-                prerelease: release.prerelease,
-                published_at: release.published_at,
-                manifest,
-                assets: release.assets,
-            });
+            match self.newest_stable().await? {
+                Some(release) => return self.with_package(&release, platform).await?.ok_or_else(none),
+                // A stable release in the listing, none for this computer: no fallback either.
+                None if releases.iter().any(|r| !r.prerelease) => return Err(none()),
+                None => {}
+            }
         }
-        Err(Failure::new(code::NO_RELEASE, platform.to_string()))
+        for release in &releases {
+            if let Some(found) = self.with_package(release, platform).await? {
+                return Ok(found);
+            }
+        }
+        Err(none())
+    }
+
+    /// GET /releases/latest: the newest release that is not a prerelease, or None (404) while
+    /// there is none.
+    async fn newest_stable(&self) -> Result<Option<ApiRelease>> {
+        let url = format!("{}/repos/{}/releases/latest", self.api, self.repository);
+        let response = self.get(&url, "application/vnd.github+json").send().await.map_err(network)?;
+        match response.status() {
+            StatusCode::NOT_FOUND => Ok(None),
+            status if status.is_success() => {
+                let release: ApiRelease = response.json().await.map_err(network)?;
+                Ok((!release.draft && !release.prerelease).then_some(release))
+            }
+            status => Err(status_failure(status, "latest release")),
+        }
+    }
+
+    /// The release with its game manifest read, when that manifest has a package for `platform`.
+    async fn with_package(&self, release: &ApiRelease, platform: &str) -> Result<Option<Release>> {
+        let Some(manifest_asset) = release.assets.iter().find(|a| a.name == MANIFEST_ASSET) else {
+            return Ok(None);
+        };
+        let manifest = manifest::parse(&self.fetch_text(manifest_asset).await?)?;
+        if manifest.package(platform).is_none() {
+            return Ok(None);
+        }
+        let release = release.clone();
+        Ok(Some(Release {
+            name: release.name.filter(|n| !n.is_empty()).unwrap_or_else(|| release.tag_name.clone()),
+            tag: release.tag_name,
+            notes: release.body.unwrap_or_default(),
+            prerelease: release.prerelease,
+            published_at: release.published_at,
+            manifest,
+            assets: release.assets,
+        }))
     }
 
     /// The key goes only to the release server: a file whose URL points elsewhere is refused.
@@ -238,5 +317,17 @@ mod tests {
         assert!(!is_trusted_transport("http://example.com"));
         assert!(!is_trusted_transport("ftp://127.0.0.1"));
         assert!(Client::new("http://example.com", "o/r", None).is_err());
+    }
+
+    #[test]
+    fn the_channels_keep_their_names() {
+        for channel in [UpdateChannel::Stable, UpdateChannel::Testing] {
+            let text = serde_json::to_string(&channel).unwrap();
+            assert_eq!(text, format!("\"{channel}\""));
+            assert_eq!(serde_json::from_str::<UpdateChannel>(&text).unwrap(), channel);
+            assert_eq!(UpdateChannel::parse(channel.as_str()), Some(channel));
+        }
+        assert_eq!(UpdateChannel::default(), UpdateChannel::Stable);
+        assert_eq!(UpdateChannel::parse("beta"), None);
     }
 }

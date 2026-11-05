@@ -598,6 +598,8 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
   cursor: pointer;
 }
 .setting select:hover { border-color: rgba(94, 234, 212, 0.5); }
+/* A short choice beside its label (the update channel): as wide as its longest option. */
+.setting select.compact { min-width: 150px; flex: 0 0 auto; }
 .setting select option { background: #0a1422; color: var(--text); }
 .setting .warning, .warning { color: var(--warning); }
 .small { font-size: 0.82rem !important; }

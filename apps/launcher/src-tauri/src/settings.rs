@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 
 use crate::auto_update::LastCheck;
 use crate::failure::Result;
+use crate::releases::UpdateChannel;
 use crate::store::write_atomically;
 
 /// The release server: the closed beta's gateway (services/beta-gateway), whose URL the release
@@ -37,6 +38,11 @@ pub struct Settings {
     pub auto_update_launcher: bool,
     /// Install a new game found by a check without asking (auto_update.rs).
     pub auto_update_game: bool,
+    /// The releases the updates come from (releases::UpdateChannel). A new install starts on
+    /// Stable (Settings::default); a settings file written before the channels existed belongs
+    /// to a tester of the first builds, so a missing field reads as Testing (legacy_channel).
+    #[serde(default = "legacy_channel")]
+    pub update_channel: UpdateChannel,
     /// When the last check ran and what it did.
     pub last_check: Option<LastCheck>,
     /// The build's gateway, or DWE_LAUNCHER_API for this run: never saved, so a new launcher's
@@ -53,6 +59,10 @@ fn default_api_base() -> String {
     DEFAULT_API_BASE.into()
 }
 
+fn legacy_channel() -> UpdateChannel {
+    UpdateChannel::Testing
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -61,6 +71,7 @@ impl Default for Settings {
             check_updates: true,
             auto_update_launcher: true,
             auto_update_game: true,
+            update_channel: UpdateChannel::Stable,
             last_check: None,
             api_base: DEFAULT_API_BASE.into(),
             repository: DEFAULT_REPOSITORY.into(),
@@ -166,6 +177,26 @@ mod tests {
         let saved = Settings { auto_update_game: false, last_check: Some(LastCheck::checked(5, None, None)), ..Settings::default() };
         saved.save_to(&file).unwrap();
         assert_eq!(Settings::load_from(&file), saved);
+    }
+
+    #[test]
+    fn a_new_install_is_stable_and_an_older_one_stays_testing() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("settings.json");
+        // No settings file: a new install.
+        assert_eq!(Settings::load_from(&file).update_channel, UpdateChannel::Stable);
+        // A file written before the channels existed: a tester of the first builds.
+        fs::write(&file, r#"{"language":"en","check_updates":true}"#).unwrap();
+        assert_eq!(Settings::load_from(&file).update_channel, UpdateChannel::Testing);
+        // Either choice survives a save and a load.
+        for channel in [UpdateChannel::Stable, UpdateChannel::Testing] {
+            let saved = Settings { update_channel: channel, ..Settings::default() };
+            saved.save_to(&file).unwrap();
+            assert!(fs::read_to_string(&file).unwrap().contains(&format!("\"update_channel\": \"{channel}\"")));
+            assert_eq!(Settings::load_from(&file), saved);
+        }
+        fs::write(&file, r#"{"update_channel":"testing"}"#).unwrap();
+        assert_eq!(Settings::load_from(&file).update_channel, UpdateChannel::Testing);
     }
 
     #[test]
