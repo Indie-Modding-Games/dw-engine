@@ -159,10 +159,13 @@ find_package(imgui CONFIG REQUIRED)
 target_link_libraries(game PRIVATE imgui::imgui)
 
 # A package's layout (scripts/package_linux.sh): the game in bin/ next to dwx, and the team's packs in packs/, where
-# content::teamPacksFolder finds them. Installing drops the build tree's runtime path, so the system's Vulkan loader is
-# the one used.
+# content::teamPacksFolder finds them. Installing drops the build tree's runtime path; a Linux package ships its own
+# Vulkan loader in lib/, so the player needs none installed.
 install(TARGETS game RUNTIME DESTINATION bin)
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/content/packs/ DESTINATION packs)
+if(DWE_PACKAGE AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set_target_properties(game PROPERTIES INSTALL_RPATH "\$ORIGIN/../lib")
+endif()
 # The macOS package's Vulkan loader is in the application bundle's Contents/Frameworks (scripts/package_macos.sh).
 if(APPLE)
     set_target_properties(game PROPERTIES INSTALL_RPATH "@executable_path/../Frameworks")

@@ -22,15 +22,19 @@ script se niega a empaquetar si `strings` encuentra la raíz del repositorio o `
 
 | Ruta | Qué es |
 |---|---|
-| `dwe` | El lanzador: ejecuta `bin/dwe-game` desde donde se descomprimió. |
+| `dwe` | El lanzador: ejecuta `bin/dwe-game` desde donde se descomprimió. Antes pregunta `bin/dwe-game --check-system`; si ninguna tarjeta gráfica sirve, avisa y arranca con el controlador por software de `lib/lavapipe`. |
 | `bin/dwe-game`, `bin/dwx` | El juego y la herramienta que lee el disco, instalados con `cmake --install` (sin la ruta de librerías del árbol de build) y sin información de depuración. |
 | `packs/` | Los paquetes del equipo (`content/packs`): el paquete del juego y la traducción. `content::teamPacksFolder` los busca junto a la carpeta del ejecutable antes que en el árbol de fuentes. |
-| `licenses/` | Las licencias de las librerías (una por puerto de vcpkg), de la fuente Noto Sans y de libc++. |
+| `lib/libvulkan.so.1` | El cargador de Vulkan (puerto `vulkan-loader` de vcpkg). `bin/dwe-game` lo busca primero en `../lib` (su ruta de librerías es `$ORIGIN/../lib`), así que el jugador no necesita el del sistema; el cargador sí usa los controladores del sistema. |
+| `lib/lavapipe/` | El controlador de Vulkan por software de Mesa (lavapipe) de la imagen de desarrollo, con su manifiesto `lvp_icd.json` y las librerías que pide y que un escritorio puede no tener (LLVM, ICU, libxml2, extensiones de xcb...): unos 183 MB, 37 MB comprimidos. Lo copia `scripts/package/software_vulkan_linux.sh`. Solo se usa cuando ninguna tarjeta sirve (el lanzador y `dwe` apuntan `VK_DRIVER_FILES` y `LD_LIBRARY_PATH` a esta carpeta). |
+| `licenses/` | Las licencias de las librerías (una por puerto de vcpkg), de la fuente Noto Sans, de libc++ y, en `licenses/lavapipe/`, las de cada paquete del controlador por software. |
 | `README.md`, `VERSION`, `EXTRACTOR_VERSION` | Lo que lee el jugador (`scripts/package/README.md`), el commit y la `ExtractorVersion` de su `dwx` (el lanzador vuelve a leer el disco cuando cambia). |
 
-Requisitos del equipo del jugador: glibc 2.38 o más nueva, el cargador de Vulkan del sistema (`libvulkan.so.1`) y un
-controlador con Vulkan 1.3. libc++ va enlazada de forma estática; SDL abre X11 o Wayland y el audio del sistema en
-tiempo de ejecución.
+Requisitos del equipo del jugador: glibc 2.38 o más nueva (también la del controlador por software) y, para ir a velocidad
+normal, un controlador con Vulkan 1.3; sin él el juego arranca igual con el controlador por software. No hace falta
+instalar nada más: el cargador de Vulkan va en `lib/`, libc++ va enlazada de forma estática y SDL abre X11 o Wayland y
+el audio del sistema en tiempo de ejecución. `scripts/package_linux.sh` comprueba que toda librería que piden
+`dwe-game` y `dwx` va en `lib/` o es de la biblioteca de C.
 
 ## Primer arranque
 

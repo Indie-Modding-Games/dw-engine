@@ -11,9 +11,10 @@ Expect bugs, and please report them (see below).
 - **Your own copy of the original game**, as a disc image of the North American release: a `.cue` file with its
   `.bin`, or an `.iso`. Nothing from the original game comes in this package, and nothing is downloaded.
 - 64-bit Linux with glibc 2.38 or newer (for example Ubuntu 24.04, Debian 13, Fedora 39 or later).
-- A graphics card and driver with Vulkan 1.3, and the Vulkan loader (`libvulkan1` on Debian and Ubuntu,
-  `vulkan-loader` on Fedora and Arch).
-- About 1.5 GB of free disk space.
+- A graphics card and driver with Vulkan 1.3. Nothing else to install: the Vulkan loader comes in `lib/`. Without
+  such a card or driver (an old one, a virtual machine), `./dwe` says so and starts the game on the software renderer
+  that comes in `lib/lavapipe`: it works, only slower. Updating the graphics driver usually fixes it.
+- About 2 GB of free disk space.
 
 ## How to run
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Builds the Linux beta package: a tarball a player unpacks and runs. It holds the game and dwx
-# (release build), the team's packs (content/packs), the third-party licences and the package
-# README, and never anything read from a disc: each player reads their own disc on the first start
-# (docs/guides/beta-linux.md).
+# (release build), the team's packs (content/packs), the Vulkan loader and a software Vulkan driver
+# (lib/), the third-party licences and the package README, and never anything read from a disc:
+# each player reads their own disc on the first start (docs/guides/beta-linux.md).
 #
 # Usage: scripts/package_linux.sh [--no-build] [--out <folder>]
 #   --no-build   package the build as it is (build/linux-clang-package), without building it first
@@ -71,6 +71,35 @@ for program in dwe-game dwx; do
   objcopy --add-gnu-debuglink="$out_dir/$name-debug/$program.debug" "$stage/bin/$program"
 done
 
+# The Vulkan loader ships next to the game (bin/dwe-game looks in ../lib first), so the player needs
+# none installed; with it, Mesa's software Vulkan driver, for a computer whose GPU cannot run the
+# game (the launcher and the dwe script turn it on only then).
+mkdir -p "$stage/lib"
+loader="$build_dir/vcpkg_installed/x64-linux-libcxx-package/lib/libvulkan.so.1"
+cp -L "$loader" "$stage/lib/libvulkan.so.1"
+"$root/scripts/dev.sh" shell -c "scripts/package/software_vulkan_linux.sh '$stage'"
+
+# Every library a program needs is shipped in lib/ or part of every Linux (the C library and its
+# runtime); the game finds lib/ through its runtime path.
+dynamic="$("$root/scripts/dev.sh" shell -c "readelf -d '$stage/bin/dwe-game' '$stage/bin/dwx'")"
+while read -r library; do
+  case "$library" in
+    libc.so.6 | libm.so.6 | libgcc_s.so.1 | ld-linux-x86-64.so.2) ;;
+    libdl.so.2 | libpthread.so.0 | librt.so.1) ;;
+    *)
+      [[ -f "$stage/lib/$library" ]] || {
+        echo "package_linux: $library is needed but neither shipped nor part of every Linux" >&2
+        exit 1
+      }
+      ;;
+  esac
+done < <(sed -n 's/.*(NEEDED).*\[\(.*\)\]$/\1/p' <<<"$dynamic" | sort -u)
+# shellcheck disable=SC2016 # $ORIGIN is the loader's, written as is.
+grep -q 'RUNPATH.*\[\$ORIGIN/../lib\]' <<<"$dynamic" || {
+  echo "package_linux: dwe-game does not look for its libraries in ../lib" >&2
+  exit 1
+}
+
 # No folder of the build machine may ship: a package build (DWE_PACKAGE) finds its packs next to the
 # executable, and the sources' and the libraries' file names are relative.
 for program in dwe-game dwx; do
@@ -90,7 +119,18 @@ package_no_disc_data "$stage" package_linux || exit 1
 cat >"$stage/dwe" <<'EOF'
 #!/bin/sh
 # Starts the game from the folder this script is in; options go to the game (README.md).
+# When no GPU of this computer can run the game, it runs on the software Vulkan driver in
+# lib/lavapipe (slow, but it starts).
 here="$(dirname "$(readlink -f "$0")")"
+software="$here/lib/lavapipe"
+if [ -f "$software/lvp_icd.json" ] && ! "$here/bin/dwe-game" --check-system >/dev/null 2>&1; then
+  echo "dwe: no GPU here can run the game; using the software renderer (slow)." >&2
+  echo "dwe: updating the graphics driver may fix it." >&2
+  VK_DRIVER_FILES="$software/lvp_icd.json"
+  VK_ICD_FILENAMES="$software/lvp_icd.json"
+  LD_LIBRARY_PATH="$software${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+  export VK_DRIVER_FILES VK_ICD_FILENAMES LD_LIBRARY_PATH
+fi
 exec "$here/bin/dwe-game" "$@"
 EOF
 chmod +x "$stage/dwe"
