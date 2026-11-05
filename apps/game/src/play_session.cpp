@@ -374,7 +374,9 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
        .time = options.time,
        .facts =
            session::fieldGuardFacts(*game->session, game->systems.inventory, *game->systems.story),
-       .writeTrigger = session::fieldTriggerWriter(*game->systems.story)});
+       .writeTrigger = session::fieldTriggerWriter(*game->systems.story),
+       .explore = false,
+       .upscaleCache = context.upscaleCache});
   if (!scene) {
     return std::unexpected{scene.error()};
   }

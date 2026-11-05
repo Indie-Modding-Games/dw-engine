@@ -64,6 +64,11 @@ inline constexpr std::string_view UnknownSavedWalkControl =
 inline constexpr std::string_view UnknownSavedShadows =
     "game: the saved shadow mode '{}' is unknown; drawing the round shadows and the sun's";
 
+// The field's sharpness options (graphics_options.cpp): a saved scenery_quality or texture_filter
+// that is not one of their values.
+inline constexpr std::string_view UnknownSavedGraphicsValue =
+    "game: the saved {} '{}' is unknown; using the best quality";
+
 // Free exploration (free_exploration.cpp) on from the start, by --explore or the saved setting.
 inline constexpr std::string_view FreeExplorationAtStart =
     "game: free exploration on: the scripts' map changes go anywhere they can, whatever the story";

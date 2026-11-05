@@ -158,6 +158,8 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
     return std::unexpected{models.error()};
   }
   scene->models_ = std::move(*models);
+  scene->mapRenderer_->setUpscaleCache(desc.upscaleCache);
+  scene->models_->setUpscaleCache(desc.upscaleCache);
   auto prims = ScenePrimDrawer::create(renderer);
   if (!prims) {
     return std::unexpected{prims.error()};

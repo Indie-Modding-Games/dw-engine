@@ -86,6 +86,12 @@ struct UserSettings {
   // Vivid colours (vivid_colors: true, false): vibrance, a gentle contrast and a soft bloom over
   // the field; on when not chosen.
   std::optional<bool> vividColors = std::nullopt;
+  // HD scenery's quality (scenery_quality: smooth, upscaled), antialiasing (antialiasing: true,
+  // false) and the models' textures (texture_filter: nearest, smooth, upscaled); the best when not
+  // chosen (graphics_options.hpp).
+  std::optional<std::string> sceneryQuality = std::nullopt;
+  std::optional<bool> antialiasing = std::nullopt;
+  std::optional<std::string> textureFilter = std::nullopt;
   // Whether the field shows the weather (weather: true, false; game::weather, an engine
   // improvement); on when not chosen.
   std::optional<bool> weather = std::nullopt;

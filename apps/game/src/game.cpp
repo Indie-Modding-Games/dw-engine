@@ -20,6 +20,7 @@
 #include <dwe/platform/window.hpp>
 #include <dwe/render/renderer.hpp>
 #include <dwe/render/screen_fade.hpp>
+#include <dwe/render/upscale_cache.hpp>
 #include <dwe/rhi/device.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/script/script_vm.hpp>
@@ -714,6 +715,15 @@ int runGame(const Options& requested) {
   }
   GraphicsChanger graphics{userSettings, settingsFile, startGraphics};
   graphics.publish(**ui);
+  // HD scenery's upscales, kept under the user's data like the settings (not by autotests).
+  std::optional<std::filesystem::path> upscaleFolder;
+  if (settingsFile) {
+    if (const auto data =
+            platform::userDataFolder(content::UserDataOrganization, content::UserDataApplication)) {
+      upscaleFolder = *data / "cache" / "upscale";
+    }
+  }
+  const auto upscaleCache = std::make_shared<const render::UpscaleCache>(upscaleFolder);
   // The music's and the effects' volumes: the saved steps, applied to the audio from the start.
   VolumeChanger volumes{userSettings, settingsFile, sound};
   volumes.publish(**ui);
@@ -771,6 +781,19 @@ int runGame(const Options& requested) {
   (*scripts)->bindCommand(HdScenerySetting, [&consoleHdScenery](std::string_view value) {
     consoleHdScenery = value != "off";
   });
+  // The console's and the routes' scenery_quality("smooth"|"upscaled"), antialiasing("on"|"off")
+  // and texture_filter("nearest"|"smooth"|"upscaled"), the sharpness settings
+  // (graphics_options.hpp), applied between frames in the same way.
+  std::vector<ui::UiCommand> consoleGraphics;
+  for (const std::string_view name : {SceneryQualitySetting, TextureFilterSetting}) {
+    (*scripts)->bindCommand(name, [&consoleGraphics, name](std::string_view value) {
+      consoleGraphics.push_back({.name = std::string{name}, .value = std::string{value}});
+    });
+  }
+  (*scripts)->bindCommand(AntialiasingSetting, [&consoleGraphics](std::string_view value) {
+    consoleGraphics.push_back(
+        {.name = std::string{AntialiasingSetting}, .value = ui::UiValue{value != "off"}});
+  });
   // The console's ui_skin("<id>"), the menus' skin setting, applied between frames in the same way.
   std::optional<std::string> consoleUiSkin;
   (*scripts)->bindCommand(ui::UiSkinSetting, [&consoleUiSkin](std::string_view id) {
@@ -792,7 +815,8 @@ int runGame(const Options& requested) {
                                 .sound = &sound,
                                 .debugUi = debugUi->get(),
                                 .userSettings = &userSettings,
-                                .settingsFile = settingsFile},
+                                .settingsFile = settingsFile,
+                                .upscaleCache = upscaleCache},
                                start);
   }};
   TitleScreen title{files, options, !autotest, **ui};
@@ -1548,6 +1572,9 @@ int runGame(const Options& requested) {
     if (consoleTextFont) {
       textFontChanger.change(*std::exchange(consoleTextFont, std::nullopt));
     }
+    for (const ui::UiCommand& command : std::exchange(consoleGraphics, {})) {
+      graphics.handle(command, **ui);
+    }
     if (consoleHdScenery) {
       const bool on = hdScenery.change(ui::UiValue{*std::exchange(consoleHdScenery, std::nullopt)});
       if (PlaySession* play = flow.playing()) {
@@ -1589,6 +1616,8 @@ int runGame(const Options& requested) {
     const std::array<render::Drawer*, 2> uiDrawers{&*screenFade, uiRenderer->get()};
     // A movie covers the game and the UI.
     const bool showingMovie = movies && movies->playing();
+    // Antialiasing (graphics_options.hpp) for every scene: the field, the interview, the figures.
+    (*renderer)->setMultisampling(graphics.options().antialiasing);
     std::span<render::Drawer* const> sceneDrawers;
     // The field's light and colour pass, over the field only (never a movie or the UI).
     render::Drawer* postDrawer = nullptr;

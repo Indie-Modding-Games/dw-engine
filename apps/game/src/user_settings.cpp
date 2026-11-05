@@ -46,6 +46,9 @@ constexpr std::string_view MinimapEnemiesKey = "minimap_enemies";
 constexpr std::string_view ShadowsKey = "shadows";
 constexpr std::string_view EnhancedLightingKey = "enhanced_lighting";
 constexpr std::string_view VividColorsKey = "vivid_colors";
+constexpr std::string_view SceneryQualityKey = "scenery_quality";
+constexpr std::string_view AntialiasingKey = "antialiasing";
+constexpr std::string_view TextureFilterKey = "texture_filter";
 constexpr std::string_view WeatherKey = "weather";
 constexpr std::string_view SeasonsKey = "seasons";
 constexpr std::string_view HdSceneryKey = "hd_scenery";
@@ -138,6 +141,15 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* vivid = tree->find(VividColorsKey)) {
       settings.vividColors = reader.boolean(*vivid);
+    }
+    if (const core::YamlNode* quality = tree->find(SceneryQualityKey)) {
+      settings.sceneryQuality = reader.text(*quality);
+    }
+    if (const core::YamlNode* antialiasing = tree->find(AntialiasingKey)) {
+      settings.antialiasing = reader.boolean(*antialiasing);
+    }
+    if (const core::YamlNode* filter = tree->find(TextureFilterKey)) {
+      settings.textureFilter = reader.text(*filter);
     }
     if (const core::YamlNode* weather = tree->find(WeatherKey)) {
       settings.weather = reader.boolean(*weather);
@@ -252,6 +264,16 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.vividColors) {
     root.set(std::string{VividColorsKey},
              core::YamlNode::scalar(*settings.vividColors ? "true" : "false"));
+  }
+  if (settings.sceneryQuality) {
+    root.set(std::string{SceneryQualityKey}, core::YamlNode::scalar(*settings.sceneryQuality));
+  }
+  if (settings.antialiasing) {
+    root.set(std::string{AntialiasingKey},
+             core::YamlNode::scalar(*settings.antialiasing ? "true" : "false"));
+  }
+  if (settings.textureFilter) {
+    root.set(std::string{TextureFilterKey}, core::YamlNode::scalar(*settings.textureFilter));
   }
   if (settings.weather) {
     root.set(std::string{WeatherKey}, core::YamlNode::scalar(*settings.weather ? "true" : "false"));

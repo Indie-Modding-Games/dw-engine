@@ -25,16 +25,37 @@ inline constexpr std::string_view ShadowsSetting = "shadows";
 inline constexpr std::string_view EnhancedLightingSetting = "enhanced_lighting";
 // Vivid colours (true or false): vibrance, a gentle contrast and a soft bloom.
 inline constexpr std::string_view VividColorsSetting = "vivid_colors";
+//
+// Sharpness (docs/architecture/remaster-pipeline.md, «Nitidez»): three more, also on their best by
+// default, that only change how sharp the picture is.
+// HD scenery's quality (smooth or upscaled): with «Escenarios en alta definición» on, the
+// background filtered at the window's resolution, or doubled once per map by the engine's
+// upscaler and resampled (render::MapRenderer::SceneryQuality).
+inline constexpr std::string_view SceneryQualitySetting = "scenery_quality";
+// Antialiasing (true or false): the scene drawn with 4x multisampling, smooth model outlines.
+inline constexpr std::string_view AntialiasingSetting = "antialiasing";
+// The models' textures (nearest, smooth or upscaled): the original's texels, filtered with
+// mipmaps, or doubled by the upscaler and filtered (render::ModelRenderer::TextureFilter).
+inline constexpr std::string_view TextureFilterSetting = "texture_filter";
 
 enum class ShadowMode : std::uint8_t { Off, Round, Sun };
+enum class SceneryQuality : std::uint8_t { Smooth, Upscaled };
+enum class TextureFilter : std::uint8_t { Nearest, Smooth, Upscaled };
 
 [[nodiscard]] std::optional<ShadowMode> parseShadowMode(std::string_view name);
 [[nodiscard]] std::string_view shadowModeName(ShadowMode mode);
+[[nodiscard]] std::optional<SceneryQuality> parseSceneryQuality(std::string_view name);
+[[nodiscard]] std::string_view sceneryQualityName(SceneryQuality quality);
+[[nodiscard]] std::optional<TextureFilter> parseTextureFilter(std::string_view name);
+[[nodiscard]] std::string_view textureFilterName(TextureFilter filter);
 
 struct GraphicsOptions {
   ShadowMode shadows = ShadowMode::Sun;
   bool enhancedLighting = true;
   bool vividColors = true;
+  SceneryQuality sceneryQuality = SceneryQuality::Upscaled;
+  bool antialiasing = true;
+  TextureFilter textureFilter = TextureFilter::Upscaled;
 
   friend bool operator==(const GraphicsOptions&, const GraphicsOptions&) = default;
 };
@@ -44,7 +65,8 @@ struct GraphicsOptions {
 [[nodiscard]] GraphicsOptions startGraphicsOptions(const UserSettings& settings);
 
 // The options with a command line's --graphics on top: a comma-separated list of
-// shadows=off|round|sun, lighting=on|off and colors=on|off. Nothing when the text is not one.
+// shadows=off|round|sun, lighting=on|off, colors=on|off, scenery=smooth|upscaled, aa=on|off and
+// textures=nearest|smooth|upscaled. Nothing when the text is not one.
 [[nodiscard]] std::optional<GraphicsOptions> withGraphicsFlag(GraphicsOptions options,
                                                               std::string_view text);
 
@@ -59,10 +81,10 @@ public:
 
   [[nodiscard]] const GraphicsOptions& options() const { return options_; }
 
-  // Takes a command; returns whether it was one of the three (a value of the wrong kind or an
+  // Takes a command; returns whether it was one of the six (a value of the wrong kind or an
   // unknown mode changes nothing but is still taken), and publishes what is in use.
   bool handle(const ui::UiCommand& command, ui::Ui& ui);
-  // Publishes the three settings.
+  // Publishes the six settings.
   void publish(ui::Ui& ui) const;
 
 private:

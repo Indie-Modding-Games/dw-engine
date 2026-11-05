@@ -7,6 +7,7 @@
 #include <dwe/debug/debug_ui.hpp>
 #include <dwe/game/save/save_file.hpp>
 #include <dwe/render/renderer.hpp>
+#include <dwe/render/upscale_cache.hpp>
 #include <dwe/rhi/device.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/script/script_vm.hpp>
@@ -125,6 +126,8 @@ struct PlayContext {
   UserSettings* userSettings = nullptr;
   // Where the player's settings are saved; nothing for runs that must not touch them (autotests).
   std::optional<std::filesystem::path> settingsFile;
+  // Where HD scenery's upscaler keeps what it made; nothing keeps nothing.
+  std::shared_ptr<const render::UpscaleCache> upscaleCache = nullptr;
 };
 
 // The console's and the scripts' commands on the game being played (give_item, use_item, drop_item,

@@ -42,6 +42,23 @@ constexpr float VividBloom = 0.22F;
 
 } // namespace
 
+void FieldScene::setGraphics(const GraphicsOptions& options) {
+  graphics_ = options;
+  mapRenderer_->setSceneryQuality(options.sceneryQuality == SceneryQuality::Smooth
+                                      ? render::MapRenderer::SceneryQuality::Smooth
+                                      : render::MapRenderer::SceneryQuality::Upscaled);
+  render::TextureFilter filter = render::TextureFilter::Upscaled;
+  if (options.textureFilter == TextureFilter::Nearest) {
+    filter = render::TextureFilter::Nearest;
+  } else if (options.textureFilter == TextureFilter::Smooth) {
+    filter = render::TextureFilter::Smooth;
+  }
+  // Each model's textures are uploaded again: only when the filter changes.
+  if (models_->textureFilter() != filter) {
+    models_->setTextureFilter(filter);
+  }
+}
+
 render::MapLightTable loadMapLights(const assets::VirtualFileSystem& files) {
   constexpr std::string_view Id = "field/lights";
   auto id = assets::AssetId::parse(Id);

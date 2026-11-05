@@ -113,6 +113,8 @@ struct FieldSceneDesc {
   game::field::TriggerWriter writeTrigger = nullptr;
   // Start with free exploration on (game::field::ScriptWarpSetup::explore).
   bool explore = false;
+  // Where HD scenery's upscaler keeps what it made (render::UpscaleCache); nothing keeps nothing.
+  std::shared_ptr<const render::UpscaleCache> upscaleCache = nullptr;
 };
 
 // How long the last map change took, in milliseconds: reading the map through the VFS, entering it
@@ -453,7 +455,8 @@ public:
 
   // The field's enhanced graphics (field_scene_graphics.cpp; docs/architecture/render.md, «Paso de
   // luz y color»): the options the next updates draw with.
-  void setGraphics(const GraphicsOptions& options) { graphics_ = options; }
+  // The sharpness options (scenery quality, the models' texture filter) apply at once.
+  void setGraphics(const GraphicsOptions& options);
   [[nodiscard]] const GraphicsOptions& graphics() const { return graphics_; }
   // The light and colour pass for FrameDesc::post: while the map is shown and an option wants it,
   // nothing otherwise.

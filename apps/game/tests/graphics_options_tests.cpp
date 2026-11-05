@@ -25,8 +25,10 @@
 
 using dwe::app::GraphicsChanger;
 using dwe::app::GraphicsOptions;
+using dwe::app::SceneryQuality;
 using dwe::app::ShadowMode;
 using dwe::app::startGraphicsOptions;
+using dwe::app::TextureFilter;
 using dwe::app::withGraphicsFlag;
 using dwe::app::test::MenuUi;
 
@@ -110,6 +112,46 @@ TEST_CASE("the pause menu's graphics rows change the options at once and save th
   CHECK_FALSE(changer.handle({.name = "minimap", .value = std::string{"off"}}, *menu.ui));
   CHECK(changer.handle({.name = "shadows", .value = true}, *menu.ui));
   CHECK(changer.options().shadows == ShadowMode::Round);
+}
+
+TEST_CASE("the sharpness options start on their best, read what was saved and round-trip") {
+  const GraphicsOptions defaults = startGraphicsOptions({});
+  CHECK(defaults.sceneryQuality == SceneryQuality::Upscaled);
+  CHECK(defaults.antialiasing);
+  CHECK(defaults.textureFilter == TextureFilter::Upscaled);
+
+  const dwe::test_support::TempFolder folder;
+  const std::filesystem::path file = folder.path() / "settings.yaml";
+  dwe::app::UserSettings settings;
+  GraphicsChanger changer{settings, file, startGraphicsOptions(settings)};
+  MenuUi menu;
+  // As the console's and the routes' commands arrive (game.cpp).
+  CHECK(changer.handle({.name = "scenery_quality", .value = std::string{"smooth"}}, *menu.ui));
+  CHECK(changer.handle({.name = "antialiasing", .value = false}, *menu.ui));
+  CHECK(changer.handle({.name = "texture_filter", .value = std::string{"nearest"}}, *menu.ui));
+  CHECK(changer.options().sceneryQuality == SceneryQuality::Smooth);
+  CHECK_FALSE(changer.options().antialiasing);
+  CHECK(changer.options().textureFilter == TextureFilter::Nearest);
+  const dwe::app::UserSettings read = dwe::app::loadUserSettings(file);
+  CHECK(read.sceneryQuality == std::optional<std::string>{"smooth"});
+  CHECK(read.antialiasing == std::optional<bool>{false});
+  CHECK(read.textureFilter == std::optional<std::string>{"nearest"});
+  CHECK(startGraphicsOptions(read) == changer.options());
+  // A value that is not one changes nothing; a saved one starts with the best.
+  CHECK(changer.handle({.name = "texture_filter", .value = std::string{"blurry"}}, *menu.ui));
+  CHECK(changer.options().textureFilter == TextureFilter::Nearest);
+  settings.textureFilter = "blurry";
+  settings.sceneryQuality = "huge";
+  CHECK(startGraphicsOptions(settings).textureFilter == TextureFilter::Upscaled);
+  CHECK(startGraphicsOptions(settings).sceneryQuality == SceneryQuality::Upscaled);
+
+  const auto flagged = withGraphicsFlag({}, "scenery=smooth,aa=off,textures=smooth");
+  REQUIRE(flagged);
+  CHECK(flagged->sceneryQuality == SceneryQuality::Smooth);
+  CHECK_FALSE(flagged->antialiasing);
+  CHECK(flagged->textureFilter == TextureFilter::Smooth);
+  CHECK_FALSE(withGraphicsFlag({}, "scenery=sharp"));
+  CHECK_FALSE(withGraphicsFlag({}, "textures=on"));
 }
 
 TEST_CASE("the pause menu's autosave row turns the autosave off and on and saves the choice") {
