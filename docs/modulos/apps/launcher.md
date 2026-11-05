@@ -329,7 +329,21 @@ Lo que hace, por orden:
 
 Al terminar, el resumen de la ejecución lista los archivos y el enlace al borrador. El responsable lo revisa (se pueden
 bajar los archivos y probar el lanzador) y lo publica a mano con *Publish release*: hasta entonces ningún lanzador lo
-ve. Lleva unos 60–90 min sin macOS; con macOS, los trabajos de Mac van en paralelo y suelen ser los últimos.
+ve. En frío (sin cachés) tarda unos 30 min sin macOS (el juego de Windows es el más largo: 8 min de dependencias y
+17 de compilación); con macOS, los trabajos de Mac van en paralelo.
+
+**Cachés.** Cada trabajo guarda en la caché de Actions lo que la siguiente ejecución de la misma rama puede reutilizar:
+
+| Caché | Clave | Qué ahorra |
+|---|---|---|
+| Dependencias de vcpkg, por ordenador | `vcpkg.json`, `vcpkg-ports/`, `triplets/`, toolchains y la imagen | 6–8 min por ordenador; se guarda aunque el empaquetado falle |
+| Objetos del juego (ccache), Linux y Windows | una por ejecución; se borran las anteriores | 12–17 min de compilación, salvo los archivos que cambiaron |
+| Bibliotecas de MSVC y SDK de Windows (xwin) | el Dockerfile de la imagen | ~1 min de descarga |
+| Dependencias compiladas del lanzador y descargas de cargo, por sistema | `Cargo.lock` y el Dockerfile del lanzador | casi toda la compilación del lanzador; su propio crate se compila siempre |
+
+*Publicar* firma con el `tauri` de npm en vez de construir la imagen del lanzador (2–3 min menos). Con las cachés
+llenas y un cambio pequeño, Linux y Windows deberían quedar en unos 10–12 min de reloj: lo que queda es construir las
+imágenes de Docker (~2 min por trabajo), enlazar y empaquetar.
 
 **La versión del lanzador.** Un lanzador instalado solo se actualiza a una versión **mayor** que la suya (la de
 `apps/launcher/src-tauri/tauri.conf.json`, que va en `latest.json`). Por eso, si algo cambió en `apps/launcher/ui` o

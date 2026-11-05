@@ -17,7 +17,7 @@
 #                        package added, so one manifest names every computer's
 # Signing needs TAURI_SIGNING_PRIVATE_KEY (the key itself or its path) and
 # TAURI_SIGNING_PRIVATE_KEY_PASSWORD, the same key the launcher's updater uses; it runs
-# `tauri signer sign` in the launcher image.
+# `tauri signer sign` in the launcher image (scripts/launcher.sh sign).
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -108,7 +108,7 @@ package="$out/dwe-game-$version-$platform.tar.xz"
 cp "$tarball" "$package"
 rm -f "$package.sig"
 # The key goes to the container through the environment only, never on its command line.
-"$root/scripts/launcher.sh" shell "tauri signer sign '$package' >/dev/null"
+"$root/scripts/launcher.sh" sign "$package"
 [[ -s "$package.sig" ]] || {
   echo "package_release: signing failed" >&2
   exit 1

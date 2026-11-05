@@ -43,6 +43,8 @@ on:
 
 permissions:
   contents: write
+  # Deleting this workflow's older compiler caches (one is kept per computer).
+  actions: write
 
 env:
   TAG: ${{ inputs.tag }}
@@ -166,9 +168,27 @@ jobs:
         if: runner.os == 'Linux'
         run: scripts/dev.sh image
 
-      - name: Fetch the MSVC libraries and the Windows SDK
+      # The MSVC libraries and the Windows SDK change only with xwin's version (the image's Dockerfile).
+      - name: Restore the MSVC libraries and the Windows SDK
+        id: xwin-cache
         if: matrix.platform == 'windows-x86_64'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/xwin
+          key: xwin-${{ hashFiles('.devcontainer/Dockerfile') }}
+
+      - name: Fetch the MSVC libraries and the Windows SDK
+        if: matrix.platform == 'windows-x86_64' && steps.xwin-cache.outputs.cache-hit != 'true'
+        env:
+          DWE_XWIN_DIR: ${{ runner.temp }}/xwin
         run: scripts/dev.sh windows-sdk --accept-license
+
+      - name: Save the MSVC libraries and the Windows SDK
+        if: matrix.platform == 'windows-x86_64' && steps.xwin-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/xwin
+          key: xwin-${{ hashFiles('.devcontainer/Dockerfile') }}
 
       # Homebrew is in /opt/homebrew on Apple silicon and in /usr/local on Intel; the toolchain
       # (cmake/toolchains/macos-llvm-libcxx.cmake) takes its LLVM from DWE_LLVM_ROOT.
@@ -185,17 +205,32 @@ jobs:
           echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
           echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
 
+      # Restored and saved apart, so a build that fails after its dependencies keeps them for the
+      # next run. vcpkg rebuilds only the dependencies whose inputs changed.
       - name: Restore the vcpkg binary cache
-        uses: actions/cache@v4
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
           key: vcpkg-release-${{ matrix.platform }}-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
           restore-keys: vcpkg-release-${{ matrix.platform }}-
 
+      # The game's own objects (ccache in the development image): an unchanged file is not
+      # compiled again. One cache per computer, the newest; older ones are deleted below.
+      - name: Restore the compiler cache
+        if: runner.os == 'Linux'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-release-${{ matrix.platform }}-${{ github.run_id }}
+          restore-keys: ccache-release-${{ matrix.platform }}-
+
       - name: Game package
         env:
           DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
           DWE_CCACHE_DIR: ${{ runner.temp }}/ccache
+          DWE_CCACHE_SIZE: 2G
+          DWE_XWIN_DIR: ${{ runner.temp }}/xwin
           PLATFORM: ${{ matrix.platform }}
           ARCH: ${{ matrix.arch }}
         run: |
@@ -222,6 +257,36 @@ jobs:
           path: dist/dwe-beta-*-${{ matrix.platform }}.tar.xz
           if-no-files-found: error
 
+      - name: Save the vcpkg binary cache
+        if: always() && steps.vcpkg-cache.outcome == 'success' && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-release-${{ matrix.platform }}-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+
+      - name: Save the compiler cache
+        id: ccache-save
+        if: always() && runner.os == 'Linux'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-release-${{ matrix.platform }}-${{ github.run_id }}
+
+      - name: Delete the older compiler caches
+        if: always() && steps.ccache-save.outcome == 'success'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREFIX: ccache-release-${{ matrix.platform }}-
+          KEEP: ccache-release-${{ matrix.platform }}-${{ github.run_id }}
+        run: |
+          gh cache list -R "$GITHUB_REPOSITORY" --key "$PREFIX" --ref "$GITHUB_REF" --limit 100 --json id,key \
+            --jq ".[] | select(.key != \"$KEEP\") | .id" | while read -r id; do
+            gh cache delete "$id" -R "$GITHUB_REPOSITORY" || true
+          done
+
   # The launcher's installers, signed for its own updater by tauri build.
   launcher:
     needs: check
@@ -236,6 +301,22 @@ jobs:
       - name: Build the launcher image
         if: runner.os == 'Linux'
         run: scripts/launcher.sh image
+
+      # cargo's downloads and the compiled dependencies, by Cargo.lock and the image: the launcher's
+      # own crate is compiled again, its dependencies only when Cargo.lock changes.
+      - name: Restore the launcher's build cache
+        id: launcher-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ runner.temp }}/launcher-cargo
+            ${{ runner.temp }}/launcher-xwin
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            build/launcher
+          key: launcher-${{ matrix.system }}-${{ hashFiles('apps/launcher/src-tauri/Cargo.lock', '.devcontainer/launcher.Dockerfile') }}
+          restore-keys: launcher-${{ matrix.system }}-
 
       # A wrong password, or a key that is not the public key's, fails here and not after the build.
       - name: Check that the key signs and the public key verifies it
@@ -252,6 +333,8 @@ jobs:
 
       - name: AppImage and .deb
         if: matrix.system == 'linux'
+        env:
+          DWE_LAUNCHER_CARGO_DIR: ${{ runner.temp }}/launcher-cargo
         run: |
           scripts/launcher.sh bundle
           bundle=build/launcher/release/bundle
@@ -260,6 +343,9 @@ jobs:
 
       - name: Windows installer
         if: matrix.system == 'windows'
+        env:
+          DWE_LAUNCHER_CARGO_DIR: ${{ runner.temp }}/launcher-cargo
+          DWE_LAUNCHER_XWIN_DIR: ${{ runner.temp }}/launcher-xwin
         run: |
           scripts/launcher.sh bundle-windows
           mkdir -p out
@@ -312,6 +398,28 @@ jobs:
           path: out/*
           if-no-files-found: error
 
+      # Only the dependencies are kept: the bundles and the launcher's own crate are rebuilt anyway.
+      - name: Trim the launcher's build cache
+        if: steps.launcher-cache.outputs.cache-hit != 'true'
+        run: |
+          find build/launcher -type d \( -name bundle -o -name incremental \) -prune -exec rm -rf {} + 2>/dev/null || true
+          find build/launcher \( -name 'dwe-launcher*' -o -name 'dwe_launcher*' -o -name '*dwe-launcher*' \) \
+            -prune -exec rm -rf {} + 2>/dev/null || true
+
+      - name: Save the launcher's build cache
+        if: steps.launcher-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ runner.temp }}/launcher-cargo
+            ${{ runner.temp }}/launcher-xwin
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            build/launcher
+          key: launcher-${{ matrix.system }}-${{ hashFiles('apps/launcher/src-tauri/Cargo.lock', '.devcontainer/launcher.Dockerfile') }}
+
   # Runs even when a computer failed, to say which in the summary; then it publishes nothing.
   publish:
     needs: [check, game, launcher]
@@ -362,8 +470,11 @@ jobs:
               out.write(f"platforms={platforms}\n")
           EOF
 
-      - name: Build the launcher image (it signs the game packages)
-        run: scripts/launcher.sh image
+      # tauri's signer on the runner, instead of building the launcher image only to sign.
+      - name: Install tauri's signer
+        run: |
+          npm install -g @tauri-apps/cli@2
+          echo "DWE_TAURI_CLI=tauri" >> "$GITHUB_ENV"
 
       # One game-manifest.json of one version names every package built; tauri signs only the
       # updater's files, so the .deb and the .dmg get their signatures here and every file a tester
@@ -380,7 +491,7 @@ jobs:
           cp artifacts/launcher-*/* dist/
           for file in dist/*.deb dist/*.dmg; do
             [ -f "$file" ] || continue
-            scripts/launcher.sh shell "tauri signer sign '$PWD/$file' >/dev/null"
+            scripts/launcher.sh sign "$file"
           done
 
       - name: Check the files

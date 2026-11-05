@@ -10,6 +10,8 @@
 #   bundle-windows the Windows installer (NSIS, per user, WebView2 bootstrapper inside) and its
 #                  signature, cross-built with cargo-xwin, in build/launcher/x86_64-pc-windows-msvc
 #   shell [cmd]    a shell (or a command) in the image, in apps/launcher/src-tauri
+#   sign <file>... tauri signer sign each file (TAURI_SIGNING_PRIVATE_KEY), writing <file>.sig: in
+#                  the image, or with DWE_TAURI_CLI when it names a tauri program on the host
 # Environment:
 #   DWE_LAUNCHER_PUBKEY   base64 public key to build with (the updates' signatures are checked
 #                         against it); without it the build refuses every update
@@ -19,6 +21,11 @@
 #   kind:
 #                         {"repo": ..., "community": ..., "web": ...}; kinds left out are not shown
 #                         (without it, no links)
+#   DWE_LAUNCHER_CARGO_DIR host folder for cargo's downloads (registry/ and git/); default: the
+#                         dwe-launcher-cargo-* volumes. CI caches it
+#   DWE_LAUNCHER_XWIN_DIR host folder for cargo-xwin's MSVC CRT and Windows SDK; default: the
+#                         dwe-launcher-xwin volume
+#   DWE_TAURI_CLI         a tauri program on the host for sign (CI signs without the image)
 #   DWE_BUILD_SLOTS       a folder of slot locks shared by every heavy build of the machine (at most
 #                         two at a time); without it the build does not wait for a slot
 set -euo pipefail
@@ -29,7 +36,7 @@ app="$root/apps/launcher"
 target_dir="$root/build/launcher"
 
 usage() {
-  sed -n '2,19p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 # One of two machine-wide build slots, held until this script ends.
@@ -64,6 +71,20 @@ copy_fonts() {
 [[ -v TAURI_SIGNING_PRIVATE_KEY_PASSWORD ]] || TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
 export TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 
+# Host folders (made here, so they belong to the host user) or the named volumes.
+cargo_registry="dwe-launcher-cargo-registry"
+cargo_git="dwe-launcher-cargo-git"
+xwin_cache="dwe-launcher-xwin"
+if [[ -n "${DWE_LAUNCHER_CARGO_DIR:-}" ]]; then
+  mkdir -p "$DWE_LAUNCHER_CARGO_DIR/registry" "$DWE_LAUNCHER_CARGO_DIR/git"
+  cargo_registry="$(cd "$DWE_LAUNCHER_CARGO_DIR" && pwd)/registry"
+  cargo_git="$(cd "$DWE_LAUNCHER_CARGO_DIR" && pwd)/git"
+fi
+if [[ -n "${DWE_LAUNCHER_XWIN_DIR:-}" ]]; then
+  mkdir -p "$DWE_LAUNCHER_XWIN_DIR"
+  xwin_cache="$(cd "$DWE_LAUNCHER_XWIN_DIR" && pwd)"
+fi
+
 run() {
   local tty=()
   [[ -t 0 && -t 1 ]] && tty=(-it)
@@ -74,8 +95,8 @@ run() {
     -e DWE_LAUNCHER_LINKS="${DWE_LAUNCHER_LINKS:-}" \
     -e TAURI_SIGNING_PRIVATE_KEY -e TAURI_SIGNING_PRIVATE_KEY_PASSWORD \
     -e APPIMAGE_EXTRACT_AND_RUN=1 -e NO_STRIP=1 \
-    -v dwe-launcher-cargo-registry:/opt/cargo/registry -v dwe-launcher-cargo-git:/opt/cargo/git \
-    -v dwe-launcher-xwin:/opt/xwin-cache \
+    -v "$cargo_registry:/opt/cargo/registry" -v "$cargo_git:/opt/cargo/git" \
+    -v "$xwin_cache:/opt/xwin-cache" \
     -v "$root":"$root" -w "$app/src-tauri" "$image" "$@"
 }
 
@@ -116,6 +137,24 @@ case "$command" in
     copy_fonts
     run tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc \
       --config "$(config_override)" "$@"
+    ;;
+  sign)
+    (($#)) || {
+      echo "launcher.sh: sign needs a file" >&2
+      exit 2
+    }
+    for file in "$@"; do
+      if [[ -n "${DWE_TAURI_CLI:-}" ]]; then
+        "$DWE_TAURI_CLI" signer sign "$file" >/dev/null
+      else
+        file="$(cd "$(dirname "$file")" && pwd)/$(basename "$file")"
+        [[ "$file" == "$root/"* ]] || {
+          echo "launcher.sh: $file is outside the repository, which is all the image sees" >&2
+          exit 1
+        }
+        run bash -c 'tauri signer sign "$1" >/dev/null' -- "$file"
+      fi
+    done
     ;;
   shell)
     if (($#)); then run bash -c "$*"; else run bash; fi
