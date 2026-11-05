@@ -7,13 +7,22 @@
 # vcpkg's own macOS toolchain first: it sets the architecture (CMAKE_OSX_ARCHITECTURES) from the triplet.
 include("$ENV{VCPKG_ROOT}/scripts/toolchains/osx.cmake")
 
-# HOMEBREW_PREFIX is /opt/homebrew on Apple silicon and /usr/local on Intel Macs; DWE_LLVM_ROOT overrides it.
+# Homebrew lives in /opt/homebrew on Apple silicon and in /usr/local on Intel Macs. HOMEBREW_PREFIX is set only by
+# `brew shellenv` (a login shell), not in the CI's steps, so without it the first of the two folders that holds
+# Homebrew's LLVM is taken. DWE_LLVM_ROOT overrides all of it.
 if(DEFINED ENV{DWE_LLVM_ROOT})
     set(DWE_LLVM_ROOT "$ENV{DWE_LLVM_ROOT}")
 elseif(DEFINED ENV{HOMEBREW_PREFIX})
     set(DWE_LLVM_ROOT "$ENV{HOMEBREW_PREFIX}/opt/llvm")
-else()
+elseif(EXISTS "/opt/homebrew/opt/llvm/bin/clang++")
     set(DWE_LLVM_ROOT "/opt/homebrew/opt/llvm")
+else()
+    set(DWE_LLVM_ROOT "/usr/local/opt/llvm")
+endif()
+# Said here, before CMake or vcpkg's compiler detection fail with a message about something else.
+if(NOT EXISTS "${DWE_LLVM_ROOT}/bin/clang++")
+    message(FATAL_ERROR "No Homebrew LLVM in ${DWE_LLVM_ROOT}: run `brew install llvm`, or set DWE_LLVM_ROOT to "
+                        "the folder of `brew --prefix llvm`")
 endif()
 
 set(CMAKE_C_COMPILER "${DWE_LLVM_ROOT}/bin/clang")
