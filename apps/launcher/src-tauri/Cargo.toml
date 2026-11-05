@@ -1,6 +1,6 @@
 [package]
 name = "dwe-launcher"
-version = "0.1.0"
+version = "0.1.1"
 description = "Desktop launcher of dwe: reads the player's disc, keeps the game up to date and starts it"
 edition = "2021"
 publish = false

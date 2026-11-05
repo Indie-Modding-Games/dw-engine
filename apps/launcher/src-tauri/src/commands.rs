@@ -318,10 +318,18 @@ async fn download_game(app: &AppHandle, state: &AppState, release: &Release) -> 
     .await
 }
 
-/// The installed game, or the newest release's when there is none yet.
+/// The game that reads the disc: the newest release's, downloaded first when the installed one is
+/// older (its dwx may carry a fix for reading discs), or the installed one when the newest cannot
+/// be reached.
 async fn ensure_game(app: &AppHandle, state: &AppState) -> Result<Game> {
     if let Some(game) = GameStore::new(&data_folder(state)).current() {
-        return Ok(game);
+        return match cached_or_latest(state).await {
+            Ok(release) if updates::is_update(&release, Some(&game)) => {
+                log_line!("the game {} is outdated: installing {} before reading the disc", game.version, release.manifest.version);
+                download_game(app, state, &release).await
+            }
+            _ => Ok(game),
+        };
     }
     let release = cached_or_latest(state)
         .await
