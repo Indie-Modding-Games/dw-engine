@@ -396,3 +396,42 @@ async fn through_the_beta_gateway() {
     assert_eq!(fs::read(&file).unwrap(), b"new launcher");
     assert!(!text.contains(GITHUB_TOKEN) && !text.contains(&github));
 }
+
+#[tokio::test]
+async fn each_computer_gets_the_newest_release_made_for_it() {
+    let routes: Routes = Arc::default();
+    let base = serve(routes.clone());
+    let api = format!("/repos/{REPO}/releases");
+    let manifest = |version: &str, platforms: &[&str]| {
+        let packages: serde_json::Map<String, serde_json::Value> = platforms
+            .iter()
+            .map(|p| {
+                let package = serde_json::json!({ "asset": format!("dwe-game-{version}-{p}.tar.xz"), "size": 1,
+                    "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", "signature": "c2ln" });
+                (p.to_string(), package)
+            })
+            .collect();
+        serde_json::json!({ "schema": 1, "version": version, "extractor_version": 13, "packages": packages })
+    };
+    // The newest release has a Linux package only; the one before it has every computer's.
+    let releases = serde_json::json!([
+        { "tag_name": "v2", "prerelease": true, "assets": [
+            { "id": 1, "name": "game-manifest.json", "size": 1, "url": format!("{base}{api}/assets/1") } ] },
+        { "tag_name": "v1", "prerelease": true, "assets": [
+            { "id": 2, "name": "game-manifest.json", "size": 1, "url": format!("{base}{api}/assets/2") } ] }
+    ]);
+    {
+        let mut routes = routes.lock().unwrap();
+        routes.insert(format!("{api}?per_page=20"), releases.to_string().into_bytes());
+        routes.insert(format!("{api}/assets/1"), manifest("0.1.0-beta.2", &["linux-x86_64"]).to_string().into_bytes());
+        let every = ["linux-x86_64", "windows-x86_64", "darwin-aarch64", "darwin-x86_64"];
+        routes.insert(format!("{api}/assets/2"), manifest("0.1.0-beta.1", &every).to_string().into_bytes());
+    }
+    let client = Client::new(&base, REPO, Some(KEY.into())).unwrap();
+    assert_eq!(client.latest_for("linux-x86_64").await.unwrap().tag, "v2");
+    let windows = client.latest_for("windows-x86_64").await.unwrap();
+    assert_eq!(windows.tag, "v1");
+    assert_eq!(windows.manifest.package("windows-x86_64").unwrap().asset, "dwe-game-0.1.0-beta.1-windows-x86_64.tar.xz");
+    assert_eq!(client.latest_for("darwin-aarch64").await.unwrap().tag, "v1");
+    assert_eq!(client.latest_for("windows-aarch64").await.unwrap_err().code, code::NO_RELEASE);
+}

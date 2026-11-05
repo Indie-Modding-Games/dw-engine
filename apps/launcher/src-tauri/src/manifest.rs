@@ -42,7 +42,14 @@ pub struct Package {
 
 /// This computer's package key: <os>-<architecture>, such as linux-x86_64.
 pub fn platform_key() -> String {
-    format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH)
+    platform_key_for(std::env::consts::OS, std::env::consts::ARCH)
+}
+
+/// The package key of a computer, with the names of the Tauri updater's latest.json: linux-x86_64,
+/// windows-x86_64, darwin-aarch64 (Apple silicon) and darwin-x86_64 (Intel Macs).
+pub fn platform_key_for(os: &str, arch: &str) -> String {
+    let os = if os == "macos" { "darwin" } else { os };
+    format!("{os}-{arch}")
 }
 
 pub fn parse(text: &str) -> Result<GameManifest> {
@@ -130,11 +137,33 @@ mod tests {
     }
 
     #[test]
+    fn each_computer_picks_its_own_package() {
+        let mut manifest = parse(SAMPLE).unwrap();
+        let linux = manifest.packages["linux-x86_64"].clone();
+        for key in ["windows-x86_64", "darwin-aarch64", "darwin-x86_64"] {
+            manifest.packages.insert(key.into(), Package { asset: format!("dwe-game-{key}.tar.xz"), ..linux.clone() });
+        }
+        let picked = |os: &str, arch: &str| manifest.package(&platform_key_for(os, arch)).map(|p| p.asset.clone());
+        assert_eq!(picked("linux", "x86_64").unwrap(), linux.asset);
+        assert_eq!(picked("windows", "x86_64").unwrap(), "dwe-game-windows-x86_64.tar.xz");
+        assert_eq!(picked("macos", "aarch64").unwrap(), "dwe-game-darwin-aarch64.tar.xz");
+        assert_eq!(picked("macos", "x86_64").unwrap(), "dwe-game-darwin-x86_64.tar.xz");
+        assert!(picked("linux", "aarch64").is_none());
+        assert!(picked("windows", "aarch64").is_none());
+    }
+
+    #[test]
     fn the_platform_key_names_os_and_architecture() {
         let key = platform_key();
         assert!(key.contains('-'));
         if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
             assert_eq!(key, "linux-x86_64");
+        }
+        if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
+            assert_eq!(key, "windows-x86_64");
+        }
+        if cfg!(target_os = "macos") {
+            assert!(key.starts_with("darwin-"));
         }
     }
 }

@@ -130,31 +130,41 @@ impl Client {
         request
     }
 
-    /// The newest release (prereleases included: the beta is one) whose files have a game
-    /// manifest, with that manifest read.
+    /// The newest release (prereleases included: the beta is one) whose game manifest has a
+    /// package for this computer, with that manifest read.
     pub async fn latest(&self) -> Result<Release> {
+        self.latest_for(&manifest::platform_key()).await
+    }
+
+    /// The newest release whose game manifest has a package for the computer `platform`
+    /// (manifest::platform_key). A release made for other computers only is skipped, so an
+    /// update for one system never hides the last one for another.
+    pub async fn latest_for(&self, platform: &str) -> Result<Release> {
         let url = format!("{}/repos/{}/releases?per_page=20", self.api, self.repository);
         let response = self.get(&url, "application/vnd.github+json").send().await.map_err(network)?;
         if !response.status().is_success() {
             return Err(status_failure(response.status(), "releases"));
         }
         let releases: Vec<ApiRelease> = response.json().await.map_err(network)?;
-        let release = releases
-            .into_iter()
-            .find(|r| !r.draft && r.assets.iter().any(|a| a.name == MANIFEST_ASSET))
-            .ok_or_else(|| Failure::new(code::NO_RELEASE, ""))?;
-        let manifest_asset = release.assets.iter().find(|a| a.name == MANIFEST_ASSET).expect("found above");
-        let text = self.fetch_text(manifest_asset).await?;
-        let manifest = manifest::parse(&text)?;
-        Ok(Release {
-            name: release.name.filter(|n| !n.is_empty()).unwrap_or_else(|| release.tag_name.clone()),
-            tag: release.tag_name,
-            notes: release.body.unwrap_or_default(),
-            prerelease: release.prerelease,
-            published_at: release.published_at,
-            manifest,
-            assets: release.assets,
-        })
+        for release in releases.into_iter().filter(|r| !r.draft) {
+            let Some(manifest_asset) = release.assets.iter().find(|a| a.name == MANIFEST_ASSET) else {
+                continue;
+            };
+            let manifest = manifest::parse(&self.fetch_text(manifest_asset).await?)?;
+            if manifest.package(platform).is_none() {
+                continue;
+            }
+            return Ok(Release {
+                name: release.name.filter(|n| !n.is_empty()).unwrap_or_else(|| release.tag_name.clone()),
+                tag: release.tag_name,
+                notes: release.body.unwrap_or_default(),
+                prerelease: release.prerelease,
+                published_at: release.published_at,
+                manifest,
+                assets: release.assets,
+            });
+        }
+        Err(Failure::new(code::NO_RELEASE, platform.to_string()))
     }
 
     /// The key goes only to the release server: a file whose URL points elsewhere is refused.

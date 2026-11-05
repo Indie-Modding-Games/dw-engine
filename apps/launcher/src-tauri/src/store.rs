@@ -42,9 +42,22 @@ pub struct Game {
     pub extractor_version: Option<i32>,
 }
 
+/// The macOS package's application bundle (scripts/package_macos.sh).
+pub const MAC_APP: &str = "dwe-game.app";
+
+/// A program of a game package: bin/<name> (bin/<name>.exe on Windows) or, in a macOS package,
+/// inside its application bundle, dwe-game.app/Contents/MacOS/<name>.
+pub fn program_in(dir: &Path, name: &str, mac: bool) -> PathBuf {
+    let bundled = dir.join(MAC_APP).join("Contents").join("MacOS").join(name);
+    if mac && bundled.is_file() {
+        return bundled;
+    }
+    dir.join("bin").join(format!("{name}{}", std::env::consts::EXE_SUFFIX))
+}
+
 impl Game {
     pub fn program(&self, name: &str) -> PathBuf {
-        self.dir.join("bin").join(format!("{name}{}", std::env::consts::EXE_SUFFIX))
+        program_in(&self.dir, name, cfg!(target_os = "macos"))
     }
     pub fn game_program(&self) -> PathBuf {
         self.program("dwe-game")
@@ -334,11 +347,31 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn programs_are_found_in_bin_or_in_the_mac_bundle() {
+        let dir = tempfile::tempdir().unwrap();
+        let exe = std::env::consts::EXE_SUFFIX;
+        let plain = dir.path().join("bin").join(format!("dwe-game{exe}"));
+        assert_eq!(program_in(dir.path(), "dwe-game", false), plain);
+        // A macOS package without the bundle still runs bin/.
+        assert_eq!(program_in(dir.path(), "dwe-game", true), plain);
+        let bundled = dir.path().join("dwe-game.app/Contents/MacOS");
+        fs::create_dir_all(&bundled).unwrap();
+        fs::write(bundled.join("dwx"), b"dwx").unwrap();
+        assert_eq!(program_in(dir.path(), "dwx", true), bundled.join("dwx"));
+        assert_eq!(program_in(dir.path(), "dwx", false), dir.path().join("bin").join(format!("dwx{exe}")));
+    }
+
+    #[test]
     fn unsafe_paths_are_refused() {
         assert!(is_safe_relative(Path::new("a/b")));
         assert!(!is_safe_relative(Path::new("../a")));
         assert!(!is_safe_relative(Path::new("/etc/passwd")));
         assert!(!is_safe_relative(Path::new("a/../../b")));
+        if cfg!(windows) {
+            assert!(!is_safe_relative(Path::new(r"C:\Windows\x")));
+            assert!(!is_safe_relative(Path::new(r"\\server\share\x")));
+            assert!(!is_safe_relative(Path::new(r"a\..\..\b")));
+        }
     }
 
     #[test]

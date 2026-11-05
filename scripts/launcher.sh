@@ -7,6 +7,8 @@
 #   test           cargo test (unit tests and the fake release server test) and clippy
 #   build          the release program, build/launcher/release/dwe-launcher (no bundle)
 #   bundle         the AppImage, the .deb and the updater files (needs TAURI_SIGNING_PRIVATE_KEY)
+#   bundle-windows the Windows installer (NSIS, per user, WebView2 bootstrapper inside) and its
+#                  signature, cross-built with cargo-xwin, in build/launcher/x86_64-pc-windows-msvc
 #   shell [cmd]    a shell (or a command) in the image, in apps/launcher/src-tauri
 # Environment:
 #   DWE_LAUNCHER_PUBKEY   base64 public key to build with (the updates' signatures are checked
@@ -63,6 +65,7 @@ run() {
     -e TAURI_SIGNING_PRIVATE_KEY_PASSWORD="${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" \
     -e APPIMAGE_EXTRACT_AND_RUN=1 -e NO_STRIP=1 \
     -v dwe-launcher-cargo-registry:/opt/cargo/registry -v dwe-launcher-cargo-git:/opt/cargo/git \
+    -v dwe-launcher-xwin:/opt/xwin-cache \
     -v "$root":"$root" -w "$app/src-tauri" "$image" "$@"
 }
 
@@ -97,6 +100,12 @@ case "$command" in
     take_slot
     copy_fonts
     run tauri build --config "$(config_override)" "$@"
+    ;;
+  bundle-windows)
+    take_slot
+    copy_fonts
+    run tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc \
+      --config "$(config_override)" "$@"
     ;;
   shell)
     if (($#)); then run bash -c "$*"; else run bash; fi

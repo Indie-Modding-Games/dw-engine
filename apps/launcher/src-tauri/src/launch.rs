@@ -15,8 +15,9 @@ pub fn game_log(data: &Path) -> PathBuf {
     logs_folder(data).join("game.log")
 }
 
-/// The game's command line. A data folder other than the game's own also gets the saves and the
-/// reports there, so everything the player chose to move stays together.
+/// The game's command line. A data folder the player picked also gets the saves and the reports
+/// there, so everything the player chose to move stays together; the default one leaves them in the
+/// game's own folder (settings::default_data_folder).
 pub fn command(game: &Game, data: &Path, own_data_folder: bool) -> Command {
     let mut command = Command::new(game.game_program());
     command.arg("--content").arg(content_folder(data));
@@ -35,7 +36,15 @@ pub fn start(game: &Game, data: &Path, own_data_folder: bool) -> Result<Child> {
     }
     let out = File::create(&log)?;
     let err = out.try_clone()?;
-    command(game, data, own_data_folder)
+    let mut command = command(game, data, own_data_folder);
+    // No console window next to the game on Windows: its output goes to the log.
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    command
         .stdin(Stdio::null())
         .stdout(out)
         .stderr(err)
@@ -57,12 +66,16 @@ mod tests {
     #[test]
     fn the_command_mounts_the_content() {
         let game = Game { dir: "/g".into(), version: "1.0.0".into(), commit: String::new(), extractor_version: None };
-        let own = command(&game, Path::new("/d"), true);
+        let data = Path::new("/d");
+        let at = |name: &str| data.join(name).to_string_lossy().into_owned();
+        let own = command(&game, data, true);
         let args: Vec<_> = own.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
-        assert_eq!(args, ["--content", "/d/content"]);
-        let moved = command(&game, Path::new("/d"), false);
+        assert_eq!(args, ["--content".into(), at("content")]);
+        let moved = command(&game, data, false);
         let args: Vec<_> = moved.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
-        assert_eq!(args, ["--content", "/d/content", "--saves", "/d/saves", "--reports", "/d/reports"]);
+        assert_eq!(args, ["--content".into(), at("content"), "--saves".into(), at("saves"), "--reports".into(), at("reports")]);
+        let program = own.get_program().to_string_lossy().into_owned();
+        assert!(program.ends_with(&format!("dwe-game{}", std::env::consts::EXE_SUFFIX)));
     }
 
     #[test]

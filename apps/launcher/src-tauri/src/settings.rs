@@ -107,8 +107,7 @@ impl Settings {
         }
     }
 
-    /// The data folder: the player's choice or the game's own (so a game started without the
-    /// launcher finds the same content, saves and settings).
+    /// The data folder: the player's choice or the default one (default_data_folder).
     pub fn data_folder(&self) -> PathBuf {
         self.data_folder.clone().unwrap_or_else(default_data_folder)
     }
@@ -118,9 +117,26 @@ impl Settings {
     }
 }
 
-/// The game's user data folder: $XDG_DATA_HOME/indie-modding-games/dwe on Linux
-/// (~/.local/share/...), the roaming application data folder on Windows.
+/// The launcher's default data folder. On Linux and macOS it is the game's own
+/// (game_data_folder), so a game started without the launcher finds the same content. On Windows
+/// it is the local application data folder (%LOCALAPPDATA%\indie-modding-games\dwe): the
+/// installed versions and the content are hundreds of megabytes, which must not go to the roaming
+/// profile. The game still keeps its saves and settings in its own folder there, since the launcher
+/// only moves them when the player picks a folder (launch::command).
 pub fn default_data_folder() -> PathBuf {
+    default_data_folder_for(cfg!(windows), dirs::data_dir(), dirs::data_local_dir())
+}
+
+pub fn default_data_folder_for(windows: bool, data: Option<PathBuf>, local: Option<PathBuf>) -> PathBuf {
+    let base = if windows { local.or(data) } else { data };
+    base.unwrap_or_else(|| PathBuf::from(".")).join("indie-modding-games").join("dwe")
+}
+
+/// The game's own user data folder, where it keeps its saves and settings when started without
+/// options (SDL's preference folder): $XDG_DATA_HOME/indie-modding-games/dwe on Linux
+/// (~/.local/share/...), %APPDATA%\indie-modding-games\dwe on Windows and
+/// ~/Library/Application Support/indie-modding-games/dwe on macOS.
+pub fn game_data_folder() -> PathBuf {
     dirs::data_dir().unwrap_or_else(|| PathBuf::from(".")).join("indie-modding-games").join("dwe")
 }
 
@@ -163,5 +179,19 @@ mod tests {
         Settings { api_base: "http://127.0.0.1:1".into(), ..read }.save_to(&file).unwrap();
         assert!(!fs::read_to_string(&file).unwrap().contains("api_base"));
         assert!(DEFAULT_API_BASE.starts_with("https://"));
+    }
+
+    #[test]
+    fn windows_keeps_the_data_out_of_the_roaming_profile() {
+        let roaming = Some(PathBuf::from(r"C:\Users\p\AppData\Roaming"));
+        let local = Some(PathBuf::from(r"C:\Users\p\AppData\Local"));
+        let windows = default_data_folder_for(true, roaming.clone(), local.clone());
+        assert_eq!(windows, local.clone().unwrap().join("indie-modding-games").join("dwe"));
+        assert_eq!(default_data_folder_for(true, roaming.clone(), None), roaming.clone().unwrap().join("indie-modding-games").join("dwe"));
+        let unix = Some(PathBuf::from("/home/p/.local/share"));
+        assert_eq!(default_data_folder_for(false, unix.clone(), unix.clone()), PathBuf::from("/home/p/.local/share/indie-modding-games/dwe"));
+        if cfg!(not(windows)) {
+            assert_eq!(default_data_folder(), game_data_folder());
+        }
     }
 }

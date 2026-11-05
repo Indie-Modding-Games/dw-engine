@@ -29,3 +29,16 @@ RUN curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal --default-to
         --component clippy,rustfmt \
     && mkdir -p /opt/cargo/registry /opt/cargo/git \
     && chmod -R a+rwX /opt/rustup /opt/cargo
+
+# The Windows installer, cross-built from Linux (scripts/launcher.sh bundle-windows): Rust's MSVC target, cargo-xwin
+# (which fetches the MSVC CRT and the Windows SDK the first time, into the cache volume), clang-cl and lld-link for
+# the C parts of the dependencies and NSIS for the installer itself.
+RUN apt-get update && apt-get install -y --no-install-recommends clang lld llvm nsis \
+    && rm -rf /var/lib/apt/lists/* \
+    && rustup target add x86_64-pc-windows-msvc \
+    && cargo install --locked cargo-xwin \
+    && rm -rf /opt/cargo/registry/* /opt/cargo/git/* \
+    && chmod -R a+rwX /opt/rustup /opt/cargo
+# cargo-xwin's download of the MSVC CRT and the Windows SDK, kept in a volume between runs (scripts/launcher.sh).
+ENV XWIN_CACHE_DIR=/opt/xwin-cache
+RUN mkdir -p /opt/xwin-cache && chmod a+rwX /opt/xwin-cache
