@@ -155,22 +155,26 @@ el paquete del juego se firmaría con la misma identidad en `package_macos.sh`.
 
 ## Publicación y su coste
 
-`.github/workflows/release.yml` compila, en paralelo: el juego para Linux y Windows en Ubuntu (Windows por
-compilación cruzada), el juego para Apple silicon (`macos-15`) e Intel (`macos-15-intel`), el lanzador para Linux y
-Windows en Ubuntu y el `.dmg` universal en `macos-15`. Un último trabajo firma los paquetes del juego, escribe un único
-`game-manifest.json` con los cuatro ordenadores y `latest.json` con los cuatro instaladores, y lo sube todo a una
-versión borrador.
+`.github/workflows/release.yml` compila, en paralelo, el juego para Linux y Windows en Ubuntu (Windows por
+compilación cruzada) y el lanzador para Linux y Windows, también en Ubuntu. Un último trabajo firma los paquetes del
+juego, escribe un único `game-manifest.json` y `latest.json` con los ordenadores compilados, y lo sube todo a una
+versión borrador. macOS solo se compila si se marca la opción `macos` al lanzarlo (viene desmarcada: sus minutos no
+están aprobados); entonces se añaden el juego para Apple silicon (`macos-15`) e Intel (`macos-15-intel`) y el `.dmg`
+universal (`macos-15`), y los manifiestos nombran los cuatro ordenadores. Un lanzador de Mac no encuentra paquete
+en una versión sin macOS y usa la última que lo tenga.
 
 `.github/workflows/platform-check.yml` solo compila y pasa las pruebas unitarias del motor y del lanzador en
-`windows-latest` y `macos-latest`.
+`windows-latest`, y también en `macos-latest` si se marca la misma opción `macos`.
 
 Ninguno de los dos se lanza solo. En un repositorio privado, GitHub cobra los minutos de macOS a diez veces los de
 Linux y los de Windows al doble: estimación en la tabla (primera ejecución sin caché de vcpkg → con caché).
 
 | Flujo | Linux | Windows | macOS | Minutos facturados aprox. |
 |---|---|---|---|---|
-| `release.yml` | ~90 → ~60 | 0 | ~150 → ~70 | ~1600 → ~760 |
-| `platform-check.yml` | 0 | ~70 → ~35 | ~60 → ~30 | ~740 → ~370 |
+| `release.yml` (por defecto: Linux y Windows) | ~90 → ~60 | 0 | 0 | ~90 → ~60 |
+| `release.yml` con `macos` | ~90 → ~60 | 0 | ~150 → ~70 | ~1600 → ~760 |
+| `platform-check.yml` (por defecto: Windows) | 0 | ~70 → ~35 | 0 | ~140 → ~70 |
+| `platform-check.yml` con `macos` | 0 | ~70 → ~35 | ~60 → ~30 | ~740 → ~370 |
 
 ## Pendiente
 

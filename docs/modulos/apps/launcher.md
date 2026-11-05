@@ -224,7 +224,8 @@ subcarpetas de `<carpeta>` (sus archivos y `notes.md`); se arranca el lanzador c
 `scripts/package_release.sh --platform <ordenador> --out <carpeta del repositorio>` compila el paquete (o toma uno con
 `--tarball`), lo firma y lo añade a `game-manifest.json` (uno por versión, con todos los ordenadores);
 `scripts/package/release_manifest.py launcher` escribe `latest.json`. El flujo `.github/workflows/release.yml` hace
-todo eso para Linux, Windows y macOS y lo sube a una versión **borrador**; solo se ejecuta a mano y nadie lo ha
+todo eso para Linux y Windows (y macOS si se marca su opción `macos`, que viene desmarcada) y lo sube a una versión
+**borrador**; los dos manifiestos nombran solo los ordenadores compilados. Solo se ejecuta a mano y nadie lo ha
 ejecutado todavía: la beta no se publica hasta que el responsable la haya jugado. Su coste en minutos está en la
 [beta para Windows y macOS](../../guides/beta-windows-macos.md#publicacion-y-su-coste).
 
