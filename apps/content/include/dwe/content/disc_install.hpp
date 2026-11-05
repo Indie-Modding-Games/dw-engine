@@ -53,8 +53,10 @@ core::Result<void> writeInstallRecord(const std::filesystem::path& content,
 defaultContentFolder(const std::optional<std::filesystem::path>& userData);
 
 // Where the team's packs (content/packs: the game pack and the translations) are looked for, in
-// order: packs/ next to the executable's folder (a package: bin/dwe-game and packs/), then the
-// source tree's in a development build (a package build names no folder of the build machine).
+// order: packs/ next to the executable's folder (a package: bin/dwe-game and packs/),
+// Resources/packs/ next to it (a macOS application bundle: Contents/MacOS/dwe-game and
+// Contents/Resources/packs/), then the source tree's in a development build (a package build names
+// no folder of the build machine).
 [[nodiscard]] std::vector<std::filesystem::path>
 teamPacksCandidates(const std::optional<std::filesystem::path>& executableFolder);
 

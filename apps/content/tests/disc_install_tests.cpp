@@ -67,12 +67,16 @@ TEST_CASE("the team's packs are looked for next to a package's executable folder
   const auto candidates = teamPacksCandidates(std::filesystem::path{"/opt/dwe/bin"});
   REQUIRE_FALSE(candidates.empty());
   CHECK(candidates.front() == "/opt/dwe/packs");
+  const auto bundle =
+      teamPacksCandidates(std::filesystem::path{"/Applications/dwe-game.app/Contents/MacOS"});
+  REQUIRE(bundle.size() >= 2);
+  CHECK(bundle[1] == "/Applications/dwe-game.app/Contents/Resources/packs");
 #ifdef DWE_PACKAGE
   // A package build names no folder of the build machine.
-  CHECK(candidates.size() == 1);
+  CHECK(candidates.size() == 2);
   CHECK(teamPacksCandidates(std::nullopt).empty());
 #else
-  CHECK(candidates.size() == 2);
+  CHECK(candidates.size() == 3);
   CHECK(teamPacksCandidates(std::nullopt).size() == 1);
   // In the build tree no packs/ is next to the program's folder: the source tree's are used.
   CHECK(std::filesystem::is_directory(teamPacksFolder() / "game"));

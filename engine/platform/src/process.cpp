@@ -14,6 +14,13 @@
 
 #include "messages.hpp"
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+
+#include <cstring>
+#include <system_error>
+#endif
+
 namespace dwe::platform {
 namespace {
 
@@ -218,6 +225,21 @@ std::string executableFileName(std::string_view program) {
 }
 
 core::Result<std::filesystem::path> executableFolder() {
+#ifdef __APPLE__
+  // In an application bundle SDL gives Contents/Resources, not the program's own folder
+  // (Contents/MacOS), where dwx is and next to which the team's packs are looked for.
+  std::uint32_t size = 0;
+  _NSGetExecutablePath(nullptr, &size);
+  std::string program(size, '\0');
+  if (_NSGetExecutablePath(program.data(), &size) == 0) {
+    program.resize(std::strlen(program.c_str()));
+    std::error_code error;
+    const auto resolved = std::filesystem::weakly_canonical(std::filesystem::path{program}, error);
+    if (!error) {
+      return resolved.parent_path();
+    }
+  }
+#endif
   const char* folder = SDL_GetBasePath();
   if (folder == nullptr) {
     return core::fail(core::formatMessage(messages::NoExecutableFolder, SDL_GetError()));

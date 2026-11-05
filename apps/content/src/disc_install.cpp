@@ -35,6 +35,7 @@ constexpr int IdentifyOtherVersion = 3;
 // bundled recipe grows next to it.
 constexpr std::string_view TeamPacksFolderName = "packs";
 constexpr std::string_view GamePackFolderName = "game";
+constexpr std::string_view MacBundleResourcesFolderName = "Resources";
 // The keys of the install record.
 constexpr std::string_view RecordVersionKey = "extractor_version";
 constexpr std::string_view RecordImageKey = "disc_image";
@@ -155,6 +156,9 @@ teamPacksCandidates(const std::optional<std::filesystem::path>& executableFolder
   std::vector<std::filesystem::path> candidates;
   if (executableFolder) {
     candidates.push_back(executableFolder->parent_path() / TeamPacksFolderName);
+    // A macOS application bundle: the programs in Contents/MacOS, the packs in Contents/Resources.
+    candidates.push_back(executableFolder->parent_path() / MacBundleResourcesFolderName /
+                         TeamPacksFolderName);
   }
 #ifdef DWE_TEAM_PACKS
   candidates.emplace_back(DWE_TEAM_PACKS);
