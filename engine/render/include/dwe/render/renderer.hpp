@@ -81,13 +81,27 @@ public:
   // minimized or its swapchain was just rebuilt); the caller may then wait for events.
   bool renderFrame(const FrameDesc& frame);
 
-  // A pipeline for one pass: desc's color and depth formats are filled in with that pass's targets.
+  // A pipeline for one pass: desc's color and depth formats are filled in with that pass's targets,
+  // and a scene pipeline also gets its variant for the multisampled scene (setMultisampling).
   core::Result<rhi::GraphicsPipeline> createPipeline(rhi::GraphicsPipelineDesc desc, Pass pass);
+
+  // Antialiasing of the 3D scene (an engine improvement; docs/architecture/render.md): the scene
+  // pass draws into multisampled targets, averaged into the frame at its end, so the edges of
+  // models are smooth instead of stairs. Pixels inside a triangle, the map's background and the
+  // depth layers look the same (their fragments still run once per pixel). Off draws one sample
+  // per pixel, the original's look. Applies from the next frame.
+  void setMultisampling(bool on) { multisampling_ = on && msaaSamples_ > 1; }
+  [[nodiscard]] bool multisampling() const { return multisampling_; }
+  // Samples per pixel of the multisampled scene: 4, or what the GPU takes below that; 1 when it
+  // takes none.
+  [[nodiscard]] std::uint32_t msaaSamples() const { return msaaSamples_; }
 
   // Creates a texture from 8-bit RGBA pixels (extent.width * extent.height * 4 bytes, rows from the
   // top), or a transparent one when pixels is empty. Sampled with the bindless table's samplers. It
-  // waits for the GPU: for load time. While the game runs, use queueTexture.
-  core::Result<TextureId> createTexture(rhi::Extent extent, std::span<const std::byte> pixels = {});
+  // waits for the GPU: for load time. While the game runs, use queueTexture. A mipmapped texture
+  // has its mip chain (rhi::ImageDesc::mipmapped), remade from the pixels on every write.
+  core::Result<TextureId> createTexture(rhi::Extent extent, std::span<const std::byte> pixels = {},
+                                        bool mipmapped = false);
 
   // A transparent sampled target compatible with scene pipelines, with its own depth buffer.
   // Release with destroyTexture. Do not upload pixels into this target.
@@ -103,7 +117,8 @@ public:
   // are uploaded in the next frame, before its passes. Called between frames or in Drawer::prepare,
   // the texture can be drawn in that next frame; called in Drawer::draw, only from the frame after.
   // pixels may be at most RendererDesc::uploadBytesPerFrame.
-  core::Result<TextureId> queueTexture(rhi::Extent extent, std::span<const std::byte> pixels = {});
+  core::Result<TextureId> queueTexture(rhi::Extent extent, std::span<const std::byte> pixels = {},
+                                       bool mipmapped = false);
 
   // Like updateTexture, without waiting: the region is copied in the next frame, before its passes,
   // with the timing of queueTexture. Queued updates apply in the order they were queued; one that
@@ -163,6 +178,9 @@ private:
   // The texture the scene pass draws into in frames with a post drawer, remade when the window
   // changed size; nothing if it cannot be made.
   const rhi::Image* sceneColorTarget(rhi::Extent extent);
+  // The multisampled color and depth targets of the scene for this frame's size, remade when the
+  // window changed size; false if they cannot be made.
+  bool multisampledTargets(rhi::Extent extent);
   rhi::Image* findTexture(TextureId texture);
   [[nodiscard]] const rhi::Image* findTexture(TextureId texture) const;
 
@@ -172,6 +190,10 @@ private:
   rhi::Format colorFormat_ = rhi::Format::Undefined;
   rhi::Format depthFormat_ = rhi::Format::Undefined;
   std::optional<rhi::Image> depth_;
+  std::uint32_t msaaSamples_ = 1;
+  bool multisampling_ = false;
+  std::optional<rhi::Image> msaaColor_;
+  std::optional<rhi::Image> msaaDepth_;
   // sceneColorTarget's texture, kept in textures_.
   std::optional<TextureId> sceneColor_;
   rhi::Extent extent_;

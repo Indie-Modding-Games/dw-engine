@@ -18,6 +18,9 @@ namespace {
 
 // The alignment of a texture copy's source in the upload memory: one RGBA8 pixel.
 constexpr std::size_t PixelAlignment = 4;
+// Samples per pixel of the multisampled scene (Renderer::setMultisampling): 4 smooths edges well
+// at a cost every GPU takes (Vulkan requires 4 for colour and depth targets).
+constexpr std::uint32_t MsaaSamples = 4;
 
 // A texture's pixels kept until the upload: from plain pointers, a single block copy also in debug
 // builds, where the checked iterators copied a sprite sheet byte by byte.
@@ -57,7 +60,8 @@ core::Result<std::unique_ptr<Renderer>> Renderer::create(rhi::Device& device,
 Renderer::Renderer(rhi::Device& device, std::unique_ptr<rhi::BindlessTable> bindless,
                    rhi::UploadRing upload)
     : device_(&device), bindless_(std::move(bindless)), upload_(std::move(upload)),
-      colorFormat_(rhi::swapchainFormat(device)), depthFormat_(rhi::bestDepthFormat(device)) {}
+      colorFormat_(rhi::swapchainFormat(device)), depthFormat_(rhi::bestDepthFormat(device)),
+      msaaSamples_(rhi::maxSampleCount(device, MsaaSamples)) {}
 
 // The images go to Device::destroyLater, like the table and its set: nothing here waits for the
 // GPU.
@@ -77,6 +81,35 @@ const rhi::Image* Renderer::depthTarget(rhi::Extent extent) {
   }
   depth_ = std::move(*depth);
   return &*depth_;
+}
+
+bool Renderer::multisampledTargets(rhi::Extent extent) {
+  if (msaaColor_ && msaaDepth_ && msaaColor_->extent() == extent) {
+    return true;
+  }
+  // The old targets may still be in use by a frame in flight: dropping them defers their
+  // destruction.
+  msaaColor_.reset();
+  msaaDepth_.reset();
+  auto color = rhi::Image::create(*device_, {.extent = extent,
+                                             .format = colorFormat_,
+                                             .usage = rhi::ImageUsage::ColorTarget,
+                                             .samples = msaaSamples_});
+  auto depth = rhi::Image::create(*device_, {.extent = extent,
+                                             .format = depthFormat_,
+                                             .usage = rhi::ImageUsage::DepthTarget,
+                                             .samples = msaaSamples_});
+  if (!color || !depth) {
+    core::logError("renderer: cannot make the {}x{} multisampled targets ({}); drawing without "
+                   "antialiasing",
+                   extent.width, extent.height,
+                   !color ? color.error().message : depth.error().message);
+    multisampling_ = false;
+    return false;
+  }
+  msaaColor_ = std::move(*color);
+  msaaDepth_ = std::move(*depth);
+  return true;
 }
 
 const rhi::Image* Renderer::sceneColorTarget(rhi::Extent extent) {
@@ -176,7 +209,10 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
     commands.finishSampledTarget(*color);
   }
 
-  const rhi::Image* depth = depthTarget(extent);
+  // Multisampled, the scene draws into targets of its own, averaged into the frame (or the post
+  // pass's texture) at the end of its pass.
+  const bool multisampled = multisampling_ && multisampledTargets(extent);
+  const rhi::Image* depth = multisampled ? &*msaaDepth_ : depthTarget(extent);
   const rhi::Viewport viewport = fullViewport(extent);
   const rhi::Rect scissor{.x = 0, .y = 0, .width = extent.width, .height = extent.height};
 
@@ -189,11 +225,17 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
   if (sceneColor != nullptr) {
     commands.prepareSampledTarget(*sceneColor);
   }
+  const VkImageView frameView = sceneColor != nullptr ? sceneColor->view() : begun->view;
+  if (multisampled) {
+    commands.prepareColorTarget(*msaaColor_);
+  }
   commands.beginRendering(
       {.extent = extent,
-       .color = {.view = sceneColor != nullptr ? sceneColor->view() : begun->view,
-                 .clear = frame.clearColor},
-       .depth = {.view = depth != nullptr ? depth->view() : VK_NULL_HANDLE, .clear = 1.0F}});
+       .color = {.view = multisampled ? msaaColor_->view() : frameView,
+                 .clear = frame.clearColor,
+                 .resolve = multisampled ? frameView : VK_NULL_HANDLE},
+       .depth = {.view = depth != nullptr ? depth->view() : VK_NULL_HANDLE, .clear = 1.0F},
+       .samples = multisampled ? msaaSamples_ : 1U});
   // Without a depth target the scene's pipelines cannot draw; the frame still clears and shows the
   // UI.
   if (depth != nullptr) {
@@ -252,15 +294,17 @@ core::Result<rhi::GraphicsPipeline> Renderer::createPipeline(rhi::GraphicsPipeli
                                                              Pass pass) {
   desc.colorFormat = colorFormat_;
   desc.depthFormat = pass == Pass::Scene ? depthFormat_ : rhi::Format::Undefined;
+  desc.multisampled = pass == Pass::Scene ? msaaSamples_ : 1U;
   return rhi::GraphicsPipeline::create(*device_, *bindless_, desc);
 }
 
 core::Result<TextureId> Renderer::createTexture(rhi::Extent extent,
-                                                std::span<const std::byte> pixels) {
+                                                std::span<const std::byte> pixels, bool mipmapped) {
   auto image = pixels.empty() ? rhi::Image::create(*device_, {.extent = extent,
                                                               .format = rhi::Format::Rgba8Unorm,
-                                                              .usage = rhi::ImageUsage::Sampled})
-                              : rhi::Image::createTexture(*device_, extent, pixels);
+                                                              .usage = rhi::ImageUsage::Sampled,
+                                                              .mipmapped = mipmapped})
+                              : rhi::Image::createTexture(*device_, extent, pixels, mipmapped);
   if (!image) {
     return std::unexpected{image.error()};
   }
@@ -268,7 +312,7 @@ core::Result<TextureId> Renderer::createTexture(rhi::Extent extent,
 }
 
 core::Result<TextureId> Renderer::queueTexture(rhi::Extent extent,
-                                               std::span<const std::byte> pixels) {
+                                               std::span<const std::byte> pixels, bool mipmapped) {
   const rhi::Rect whole{.x = 0, .y = 0, .width = extent.width, .height = extent.height};
   if (!pixels.empty()) {
     if (auto valid = rhi::checkImageWrite(extent, rhi::Format::Rgba8Unorm, whole, pixels.size());
@@ -285,7 +329,8 @@ core::Result<TextureId> Renderer::queueTexture(rhi::Extent extent,
   auto image = rhi::Image::create(*device_, {.extent = extent,
                                              .format = rhi::Format::Rgba8Unorm,
                                              .usage = rhi::ImageUsage::Sampled,
-                                             .initialize = false});
+                                             .initialize = false,
+                                             .mipmapped = mipmapped});
   if (!image) {
     return std::unexpected{image.error()};
   }

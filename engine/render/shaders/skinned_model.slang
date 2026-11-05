@@ -18,6 +18,8 @@ struct Frame {
 // Material flags, as render::ModelRenderer sets them.
 static const uint FlagUnlit = 1;
 static const uint FlagMask = 2;
+// The texture filter (render::TextureFilter) blends texels: linear samplers, with the mip chain and anisotropy.
+static const uint FlagSmooth = 4;
 
 struct Push {
     // One matrix per joint: world * joint * inverse bind.
@@ -71,7 +73,11 @@ VertexOut vertexMain(VertexIn input) {
 
 [shader("fragment")]
 float4 fragmentMain(VertexOut input) : SV_Target {
-    uint sampler = any(push.uvOffset != 0.0) ? SamplerNearestRepeat : SamplerNearestClamp;
+    const bool repeat = any(push.uvOffset != 0.0);
+    uint sampler = repeat ? SamplerNearestRepeat : SamplerNearestClamp;
+    if ((push.flags & FlagSmooth) != 0) {
+        sampler = repeat ? SamplerLinearRepeat : SamplerLinearClamp;
+    }
     float4 texel = sampleTexture(push.texture, sampler, input.uv);
     if ((push.flags & FlagMask) != 0 && texel.a < push.alphaCutoff) {
         discard;

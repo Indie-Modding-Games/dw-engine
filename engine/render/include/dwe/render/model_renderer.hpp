@@ -7,6 +7,7 @@
 #include <dwe/render/drawer.hpp>
 #include <dwe/render/renderer.hpp>
 #include <dwe/render/slot_map.hpp>
+#include <dwe/render/upscale_cache.hpp>
 #include <dwe/rhi/buffer.hpp>
 #include <dwe/rhi/pipeline.hpp>
 
@@ -14,6 +15,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -72,6 +74,21 @@ struct MaterialBlend {
 
 MaterialBlend materialBlend(const assets::ModelMaterial& material);
 
+// How the models' textures are sampled (an engine improvement, the setting texture_filter;
+// docs/architecture/render.md). None changes a model's shape, size or animation.
+enum class TextureFilter : std::uint8_t {
+  // The original's texels, each a sharp square.
+  Nearest,
+  // Blended between texels, with mip maps (trilinear) and anisotropic filtering for textures seen
+  // small or at an angle. Transparent texels take their drawn neighbours' colour, so no dark
+  // fringe comes in at cut-out edges.
+  Smooth,
+  // Smooth, on the textures doubled at load by HD scenery's edge-directed upscaler
+  // (scenery_upscale.hpp; alpha too, so cut-out edges are smooth lines): sharper lines inside a
+  // texture than blending alone.
+  Upscaled,
+};
+
 // Draws models in the scene pass: uploads each model once (vertices and indices in one buffer,
 // textures in the bindless table) and draws the instances submitted for the frame with the camera
 // and the lighting, skinned on the GPU (ADR 0021).
@@ -103,6 +120,13 @@ public:
   // frames after see it. Fails for a handle that is not live or an image the model lacks.
   core::Result<void> updateImage(ModelHandle model, std::size_t image, const rhi::Rect& region,
                                  std::span<const std::byte> pixels);
+  // Changes how textures are sampled (TextureFilter; Upscaled by default) and uploads every
+  // loaded model's textures again for it: they draw so from the next frames.
+  void setTextureFilter(TextureFilter filter);
+  [[nodiscard]] TextureFilter textureFilter() const { return filter_; }
+  // Where upscaled textures are kept between runs (nothing: upscaled at every load).
+  void setUpscaleCache(std::shared_ptr<const UpscaleCache> cache) { cache_ = std::move(cache); }
+
   // How many joint matrices an instance of the model takes (0 for a handle that is not live).
   [[nodiscard]] std::size_t jointCount(ModelHandle model) const;
 
@@ -137,6 +161,8 @@ private:
     bool doubleSided = false;
     // The size of its image in texels (1 x 1 without one).
     glm::vec2 texels{1.0F};
+    // Its image's index in GpuModel::images.
+    std::optional<std::size_t> image;
   };
   struct GpuModel {
     // The vertices, then the indices from indexOffset.
@@ -145,6 +171,10 @@ private:
     std::vector<Primitive> primitives;
     std::vector<Material> materials;
     std::vector<rhi::TextureId> textures;
+    // The textures' pixels as the model has them, to upload again for another filter.
+    std::vector<assets::Image> images;
+    // Texels of the uploaded textures per texel of images (2 when upscaled).
+    std::uint32_t textureScale = 1;
     std::vector<glm::mat4> restJoints;
     bool hasTranslucent = false;
   };
@@ -195,6 +225,10 @@ private:
 
   explicit ModelRenderer(Renderer& renderer)
       : renderer_(&renderer), opaque_(*this), translucent_(*this) {}
+  // Uploads the model's textures for the current filter, replacing those it has.
+  core::Result<void> uploadTextures(GpuModel& model);
+  // An image's pixels as the current filter uploads them.
+  [[nodiscard]] std::vector<std::byte> filtered(const assets::Image& image) const;
   void prepare(PrepareContext& context);
   void drawOpaque(DrawContext& context);
   void drawTranslucent(DrawContext& context);
@@ -207,6 +241,8 @@ private:
   // Opaque pipelines by cull (back, none), then translucent ones by blend mode and cull.
   std::vector<rhi::GraphicsPipeline> pipelines_;
   SlotMap<GpuModel> models_;
+  TextureFilter filter_ = TextureFilter::Upscaled;
+  std::shared_ptr<const UpscaleCache> cache_;
   Camera camera_;
   ModelLighting lighting_ = defaultModelLighting();
   // Submitted since the last prepare, with their joints already in world space.

@@ -1,9 +1,12 @@
 #include <dwe/core/log.hpp>
 #include <dwe/render/model_renderer.hpp>
+#include <dwe/render/scenery_upscale.hpp>
+#include <dwe/rhi/image.hpp>
 #include <dwe/shaders/skinned_model.hpp>
 
 #include <algorithm>
 #include <cstddef>
+#include <cstring>
 #include <format>
 #include <optional>
 #include <span>
@@ -20,6 +23,10 @@ using assets::SemiTransparency;
 
 constexpr std::uint32_t FlagUnlit = 1;
 constexpr std::uint32_t FlagMask = 2;
+// The texture is sampled smooth (TextureFilter::Smooth, Upscaled); without it, nearest.
+constexpr std::uint32_t FlagSmooth = 4;
+// The upscaler's version in the cache keys: change it when its output changes.
+constexpr std::uint32_t TextureUpscaleVersion = 1;
 // Alpha 0 texels are the original's transparent ones: a blended material never draws them either.
 constexpr float TranslucentCutoff = 0.5F;
 constexpr float AverageAlpha = 0.5F;
@@ -229,18 +236,12 @@ core::Result<ModelHandle> ModelRenderer::add(const assets::ModelData& model) {
                .primitives = std::move(primitives),
                .materials = {},
                .textures = {},
+               .images = model.images,
+               .textureScale = 1,
                .restJoints = {},
                .hasTranslucent = false};
-  for (const assets::Image& image : model.images) {
-    auto texture =
-        renderer_->queueTexture({.width = image.width, .height = image.height}, image.pixels);
-    if (!texture) {
-      for (const rhi::TextureId made : gpu.textures) {
-        renderer_->destroyTexture(made);
-      }
-      return std::unexpected{texture.error()};
-    }
-    gpu.textures.push_back(*texture);
+  if (auto uploaded = uploadTextures(gpu); !uploaded) {
+    return std::unexpected{uploaded.error()};
   }
   for (const assets::ModelMaterial& material : model.materials) {
     const MaterialBlend blend = materialBlend(material);
@@ -263,10 +264,76 @@ core::Result<ModelHandle> ModelRenderer::add(const assets::ModelData& model) {
          .texels = material.image && *material.image < model.images.size()
                        ? glm::vec2{static_cast<float>(model.images[*material.image].width),
                                    static_cast<float>(model.images[*material.image].height)}
-                       : glm::vec2{1.0F}});
+                       : glm::vec2{1.0F},
+         .image = material.image && *material.image < model.images.size()
+                      ? std::optional<std::size_t>{*material.image}
+                      : std::nullopt});
   }
   gpu.restJoints = restJointMatrices(model);
   return models_.insert(std::move(gpu));
+}
+
+std::vector<std::byte> ModelRenderer::filtered(const assets::Image& image) const {
+  if (filter_ == TextureFilter::Nearest) {
+    return image.pixels;
+  }
+  const std::uint32_t doublings = filter_ == TextureFilter::Upscaled ? 1 : 0;
+  const std::size_t bytes = image.pixels.size() << (2U * doublings);
+  UpscaleKey key;
+  key.add(TextureUpscaleVersion).add(doublings).add(image.width).add(image.height);
+  key.add(std::span<const std::byte>{image.pixels});
+  if (cache_ && doublings > 0) {
+    if (auto kept = cache_->load(key.value(), bytes)) {
+      return std::move(*kept);
+    }
+  }
+  std::vector<std::byte> pixels = upscaleRgba(image.width, image.height, image.pixels, doublings);
+  if (cache_ && doublings > 0 && pixels.size() == bytes) {
+    cache_->store(key.value(), pixels);
+  }
+  return pixels;
+}
+
+core::Result<void> ModelRenderer::uploadTextures(GpuModel& model) {
+  std::vector<rhi::TextureId> made;
+  const std::uint32_t scale = filter_ == TextureFilter::Upscaled ? 2 : 1;
+  for (const assets::Image& image : model.images) {
+    const std::vector<std::byte> pixels = filtered(image);
+    auto texture =
+        renderer_->queueTexture({.width = image.width * scale, .height = image.height * scale},
+                                pixels, filter_ != TextureFilter::Nearest);
+    if (!texture) {
+      for (const rhi::TextureId other : made) {
+        renderer_->destroyTexture(other);
+      }
+      return std::unexpected{texture.error()};
+    }
+    made.push_back(*texture);
+  }
+  for (const rhi::TextureId old : model.textures) {
+    renderer_->destroyTexture(old);
+  }
+  model.textures = std::move(made);
+  model.textureScale = scale;
+  for (Material& material : model.materials) {
+    if (material.image) {
+      material.texture = model.textures[*material.image];
+    }
+  }
+  return {};
+}
+
+void ModelRenderer::setTextureFilter(TextureFilter filter) {
+  if (filter == filter_) {
+    return;
+  }
+  filter_ = filter;
+  models_.forEach([&](ModelHandle /*handle*/, GpuModel& model) {
+    if (auto uploaded = uploadTextures(model); !uploaded) {
+      core::logWarning("model renderer: cannot upload a model's textures again: {}",
+                       uploaded.error().message);
+    }
+  });
 }
 
 void ModelRenderer::remove(ModelHandle model) {
@@ -282,14 +349,41 @@ void ModelRenderer::remove(ModelHandle model) {
 core::Result<void> ModelRenderer::updateImage(ModelHandle model, std::size_t image,
                                               const rhi::Rect& region,
                                               std::span<const std::byte> pixels) {
-  const GpuModel* gpu = models_.find(model);
+  GpuModel* gpu = models_.find(model);
   if (gpu == nullptr) {
     return core::fail("model renderer: the model to update is not loaded");
   }
   if (image >= gpu->textures.size()) {
     return core::fail(std::format("model renderer: the model has no image {}", image));
   }
-  return renderer_->queueTextureUpdate(gpu->textures[image], region, pixels);
+  assets::Image& source = gpu->images[image];
+  if (auto valid = rhi::checkImageWrite({.width = source.width, .height = source.height},
+                                        rhi::Format::Rgba8Unorm, region, pixels.size());
+      !valid) {
+    return valid;
+  }
+  // Kept for the uploads of another filter.
+  for (std::uint32_t row = 0; row < region.height; ++row) {
+    std::memcpy(source.pixels.data() +
+                    ((((static_cast<std::size_t>(region.y) + row) * source.width) +
+                      static_cast<std::size_t>(region.x)) *
+                     4),
+                pixels.data() + (static_cast<std::size_t>(row) * region.width * 4),
+                static_cast<std::size_t>(region.width) * 4);
+  }
+  if (filter_ == TextureFilter::Nearest) {
+    return renderer_->queueTextureUpdate(gpu->textures[image], region, pixels);
+  }
+  // The region alone through the filter: its edges see no neighbours, a texel at most.
+  const std::uint32_t doublings = gpu->textureScale > 1 ? 1 : 0;
+  const std::vector<std::byte> shown = upscaleRgba(region.width, region.height, pixels, doublings);
+  const auto scale = static_cast<std::int32_t>(gpu->textureScale);
+  return renderer_->queueTextureUpdate(gpu->textures[image],
+                                       {.x = region.x * scale,
+                                        .y = region.y * scale,
+                                        .width = region.width * gpu->textureScale,
+                                        .height = region.height * gpu->textureScale},
+                                       shown);
 }
 
 std::size_t ModelRenderer::jointCount(ModelHandle model) const {
@@ -391,15 +485,16 @@ void ModelRenderer::record(rhi::CommandList& commands, const GpuModel& model,
   }
   commands.bindVertexBuffer(model.geometry);
   commands.bindIndexBuffer(model.geometry, rhi::IndexType::Uint32, model.indexOffset);
-  commands.pushConstants(ModelPush{.joints = instance.joints,
-                                   .frame = frameAddress_,
-                                   .baseColor = material.baseColor * instance.tint,
-                                   .texture = material.texture.index,
-                                   .flags = material.flags,
-                                   .alphaCutoff = material.alphaCutoff,
-                                   .blendAlpha = blend.alpha,
-                                   .lift = glm::vec4{instance.lift, 0.0F},
-                                   .uvOffset = instance.texelOffset / material.texels});
+  commands.pushConstants(
+      ModelPush{.joints = instance.joints,
+                .frame = frameAddress_,
+                .baseColor = material.baseColor * instance.tint,
+                .texture = material.texture.index,
+                .flags = material.flags | (filter_ != TextureFilter::Nearest ? FlagSmooth : 0U),
+                .alphaCutoff = material.alphaCutoff,
+                .blendAlpha = blend.alpha,
+                .lift = glm::vec4{instance.lift, 0.0F},
+                .uvOffset = instance.texelOffset / material.texels});
   commands.drawIndexed(primitive.indexCount, primitive.firstIndex, primitive.vertexOffset);
 }
 
