@@ -4,6 +4,7 @@
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
+#include <dwe/core/number_text.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/game/field/grid.hpp>
 #include <dwe/input/keys.hpp>
@@ -328,8 +329,8 @@ bool movedAsAsked(std::string_view before, std::string_view now, std::string_vie
   double from = 0.0;
   double to = 0.0;
   const auto [fromEnd, fromError] =
-      std::from_chars(before.data(), before.data() + before.size(), from);
-  const auto [toEnd, toError] = std::from_chars(now.data(), now.data() + now.size(), to);
+      core::fromChars(before.data(), before.data() + before.size(), from);
+  const auto [toEnd, toError] = core::fromChars(now.data(), now.data() + now.size(), to);
   if (fromError != std::errc{} || toError != std::errc{}) {
     return false;
   }

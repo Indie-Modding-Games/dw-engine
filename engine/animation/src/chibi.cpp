@@ -1,6 +1,7 @@
 #include <dwe/animation/chibi.hpp>
 #include <dwe/animation/clip_sampling.hpp>
 #include <dwe/core/assert.hpp>
+#include <dwe/core/number_text.hpp>
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
@@ -475,7 +476,7 @@ core::Result<float> readFactor(const core::YamlNode& node) {
   float value = 0.0F;
   if (node.isScalar()) {
     const std::string& text = node.text();
-    const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+    const auto [end, error] = core::fromChars(text.data(), text.data() + text.size(), value);
     if (error == std::errc{} && end == text.data() + text.size() && value >= MinFactor &&
         value <= MaxFactor) {
       return value;
@@ -973,7 +974,7 @@ core::Result<float> readNumber(const core::YamlNode& node) {
   float value = 0.0F;
   if (node.isScalar()) {
     const std::string& text = node.text();
-    const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+    const auto [end, error] = core::fromChars(text.data(), text.data() + text.size(), value);
     if (error == std::errc{} && end == text.data() + text.size() && value >= 0.0F) {
       return value;
     }

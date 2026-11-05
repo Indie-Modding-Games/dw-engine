@@ -1,4 +1,5 @@
 #include <dwe/assets/yaml_reader.hpp>
+#include <dwe/core/number_text.hpp>
 
 #include <algorithm>
 #include <charconv>
@@ -105,7 +106,7 @@ float YamlReader::number(const YamlNode& node) {
   }
   const std::string& text = node.text();
   float value = 0.0F;
-  const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+  const auto [end, error] = core::fromChars(text.data(), text.data() + text.size(), value);
   if (error != std::errc{} || end != text.data() + text.size() || text.empty() ||
       !std::isfinite(value)) {
     fail(node, std::format("'{}' is not a number", text));

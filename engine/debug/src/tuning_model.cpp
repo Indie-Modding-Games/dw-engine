@@ -2,6 +2,7 @@
 
 #include <dwe/assets/file_system.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/core/number_text.hpp>
 #include <dwe/debug/messages.hpp>
 #include <dwe/ruleset/section_file.hpp>
 
@@ -31,7 +32,7 @@ std::string_view trimmed(std::string_view text) {
 
 bool isNumber(std::string_view text) {
   double value = 0.0;
-  const auto [stop, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+  const auto [stop, error] = core::fromChars(text.data(), text.data() + text.size(), value);
   return !text.empty() && error == std::errc{} && stop == text.data() + text.size();
 }
 

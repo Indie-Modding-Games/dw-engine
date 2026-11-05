@@ -2,6 +2,7 @@
 
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
+#include <dwe/core/number_text.hpp>
 
 #include <charconv>
 #include <string>
@@ -93,7 +94,7 @@ core::Result<void> CareCommands::setClockSpeed(session::GameSession& session,
                                                std::string_view argument) {
   double speed = 0.0;
   const auto [rest, error] =
-      std::from_chars(argument.data(), argument.data() + argument.size(), speed);
+      core::fromChars(argument.data(), argument.data() + argument.size(), speed);
   if (error != std::errc{} || rest != argument.data() + argument.size() || speed < 0.0) {
     return core::fail(core::formatMessage(messages::BadClockSpeed, argument));
   }

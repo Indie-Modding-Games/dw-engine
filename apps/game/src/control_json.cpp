@@ -1,5 +1,7 @@
 #include "control_json.hpp"
 
+#include <dwe/core/number_text.hpp>
+
 #include <algorithm>
 #include <charconv>
 #include <cmath>
@@ -90,7 +92,7 @@ private:
   core::Result<JsonValue> number() {
     double parsed = 0.0;
     const char* first = text_.data() + at_;
-    const auto read = std::from_chars(first, text_.data() + text_.size(), parsed);
+    const auto read = core::fromChars(first, text_.data() + text_.size(), parsed);
     if (read.ec != std::errc{} || read.ptr == first || !std::isfinite(parsed)) {
       return failHere("not a value");
     }
@@ -306,7 +308,7 @@ bool memberMatches(const JsonValue& member, std::string_view wanted) {
   }
   if (const double* number = member.number()) {
     double parsed = 0.0;
-    const auto read = std::from_chars(wanted.data(), wanted.data() + wanted.size(), parsed);
+    const auto read = core::fromChars(wanted.data(), wanted.data() + wanted.size(), parsed);
     return read.ec == std::errc{} && read.ptr == wanted.data() + wanted.size() && parsed == *number;
   }
   return false;

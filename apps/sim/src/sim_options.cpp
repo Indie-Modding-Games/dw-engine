@@ -1,4 +1,5 @@
 #include <dwe/content/dev_assets.hpp>
+#include <dwe/core/number_text.hpp>
 #include <dwe/ruleset/ruleset_values.hpp>
 #include <dwe/sim/messages.hpp>
 #include <dwe/sim/sim_options.hpp>
@@ -36,7 +37,7 @@ constexpr char ValueSeparator = '=';
 template <typename Number>
 std::optional<Number> numberOf(std::string_view text) {
   Number value{};
-  const auto [stop, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+  const auto [stop, error] = core::fromChars(text.data(), text.data() + text.size(), value);
   if (text.empty() || error != std::errc{} || stop != text.data() + text.size()) {
     return std::nullopt;
   }

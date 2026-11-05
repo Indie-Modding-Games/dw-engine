@@ -11,6 +11,7 @@ dwe_add_module(core
         src/json_schema.cpp
         src/schema_pattern.cpp
         src/yaml.cpp
+        src/number_text.cpp
     PUBLIC_LIBS glm::glm
     PRIVATE_LIBS yaml)
 

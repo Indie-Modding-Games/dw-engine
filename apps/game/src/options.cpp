@@ -2,6 +2,7 @@
 
 #include <dwe/content/dev_assets.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/core/number_text.hpp>
 #include <dwe/session/slot_names.hpp>
 
 #include <algorithm>
@@ -123,13 +124,13 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
   }
   if (argument == "--viewer-yaw") {
     float degrees = 0.0F;
-    const auto [end, error] = std::from_chars(value.data(), value.data() + value.size(), degrees);
+    const auto [end, error] = core::fromChars(value.data(), value.data() + value.size(), degrees);
     options.viewerYaw = degrees;
     return error == std::errc{} && end == value.data() + value.size();
   }
   if (argument == "--viewer-frame") {
     float height = 0.0F;
-    const auto [end, error] = std::from_chars(value.data(), value.data() + value.size(), height);
+    const auto [end, error] = core::fromChars(value.data(), value.data() + value.size(), height);
     options.viewerFrame = height;
     return error == std::errc{} && end == value.data() + value.size() && height > 0.0F;
   }
@@ -203,7 +204,7 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
   }
   if (argument == "--clock-speed") {
     double speed = 0.0;
-    const auto parsed = std::from_chars(value.data(), value.data() + value.size(), speed);
+    const auto parsed = core::fromChars(value.data(), value.data() + value.size(), speed);
     options.clockSpeed = speed;
     return parsed.ec == std::errc{} && parsed.ptr == value.data() + value.size() && speed >= 0.0;
   }

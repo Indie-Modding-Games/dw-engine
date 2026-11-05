@@ -1,5 +1,6 @@
 #include "world_map.hpp"
 
+#include <dwe/core/number_text.hpp>
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
@@ -35,7 +36,7 @@ std::optional<float> numberOf(const YamlNode& node) {
   }
   const std::string& text = node.text();
   float value = 0.0F;
-  const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+  const auto [end, error] = core::fromChars(text.data(), text.data() + text.size(), value);
   if (error != std::errc{} || end != text.data() + text.size()) {
     return std::nullopt;
   }

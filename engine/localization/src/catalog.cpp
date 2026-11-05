@@ -2,6 +2,7 @@
 #include <dwe/assets/text_table.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/core/number_text.hpp>
 #include <dwe/localization/catalog.hpp>
 
 #include <algorithm>
@@ -295,7 +296,7 @@ bool takesOne(double count) {
 
 std::string_view pluralWord(const assets::PluralPlaceholder& plural, std::string_view count) {
   double value = 0.0;
-  const auto [end, error] = std::from_chars(count.data(), count.data() + count.size(), value);
+  const auto [end, error] = core::fromChars(count.data(), count.data() + count.size(), value);
   const bool number = error == std::errc{} && end == count.data() + count.size();
   return number && takesOne(value) ? plural.one : plural.other;
 }
