@@ -273,32 +273,24 @@ body {
 
 /* ------------------------------------------------------------------------------------------------------------------
    The need bubble over the partner (bubble.c: the 32 x 32 balloon of FEEL_EF and the need's sprite in it: the meal,
-   the toilet, the sleep "Z", the tiredness, the injury or the sickness). The shared view places #field-partner-bubble where the original's
-   bubble settles, anchored at its bottom centre (ui/hud/structure.rcss; the balloon's pivot is its pixel (16, 31)),
-   gives it "shown" while the partner shows a need and one class for the need, sleep before tiredness before hunger
-   before toilet before injury before sickness (partner_impl.c: handleConditionBubble). Each sprite sits by its pivot against the balloon's
-   (CONDITION_SPRITES): the meal, the toilet, the injury and the sickness (pivot y 26) 5 pixels under the balloon's top, the tiredness (y 23 + 9
-   in its first frame) 1 pixel over it, the low "Z" (pivot 0, 13) 18 pixels down from the top and from the middle
-   to the right. Only the first frame of each need's animation is drawn, and only the low "Z" of the three.
+   the toilet, the sleep's three "Z", the tiredness's drops, the injury or the sickness). The shared view places
+   #field-partner-bubble where the original's bubble settles, anchored at its bottom centre (ui/hud/structure.rcss;
+   the balloon's pivot is its pixel (16, 31)), gives it "shown" while the partner shows a need, the need on its first
+   icon (sleep before tiredness before hunger before toilet before injury before sickness: partner_impl.c:
+   handleConditionBubble) and the class "frame-<n>" of the original's frame the bubble is on (1 to 60, 20 a second).
+   Each sprite sits by its pivot against the balloon's (CONDITION_SPRITES): the meal, the toilet, the injury and the
+   sickness (pivot y 26) 5 pixels under the balloon's top, the meal 3 pixels higher on the frame before each of its
+   pictures changes; the drop (pivot y 23 + CONDITION_TIRED_FRAME_MY) 1 pixel over the top, falling to 8 under it;
+   the three "Z" (pivots (0, 13), (8, 19) and (3, 28)) up and to the right of the middle.
 
-   The blink (bubble.c: tickConditionBubble): the balloon grows from nothing over 10 frames, stays, and once its
-   frame count passes 50 it is removed; the game makes it again about 10 frames later. So in every 60 frames (3 s at
-   the original's 20 a second) it grows for 0.5 s, shows for 2 s and is gone for 0.5 s. Its bob of 12 units while it
-   stays is not imitated. RmlUi draws an element's decorators with the first listed on top (seen on this bubble), so
-   the need comes first and the balloon under it.
-
-   Each scale is spelt long on purpose: RmlUi 6.3 compares a transform's last function against its longest names
-   (11 characters) without checking the string's end, so a short "scale(1)" at the end reads past it. The shift that
-   hangs the bubble by its bottom centre (ui/hud/structure.rcss) is repeated in dp, half the width and the height:
-   RmlUi does not carry a translate in percent through an animation. */
-
-@keyframes need-bubble-blink {
-	0% { opacity: 1; transform: translate(-48dp, -96dp) scale(0.000, 0.000); }
-	16.7% { opacity: 1; transform: translate(-48dp, -96dp) scale(1.000, 1.000); }
-	83.3% { opacity: 1; transform: translate(-48dp, -96dp) scale(1.000, 1.000); }
-	83.4% { opacity: 0; transform: translate(-48dp, -96dp) scale(1.000, 1.000); }
-	100% { opacity: 0; transform: translate(-48dp, -96dp) scale(1.000, 1.000); }
-}
+   The frames (bubble.c: tickConditionBubble, renderConditionBubble): the balloon grows from nothing over the first
+   10, the need plays its own animation by the bubble's frame count (the meal's four pictures every 19 frames, the
+   toilet's three every 13, the injury's every 20, the sickness's two every 20, the drop falling every 13 and the
+   "Z" appearing one by one, CONDITION_ICON_SLEEPY), on frame 51 the balloon bursts (CONDITION_SPRITES[10] at 2.5
+   times, its middle 23 pixels over the anchor), and it is gone until the game makes it again on frame 60. Its bob of
+   12 units is not imitated. Each scale is spelt long on purpose: RmlUi 6.3 compares a transform's last function
+   against its longest names (11 characters) without checking the string's end, so a short "scale(1)" at the end
+   reads past it. */
 
 #field-partner-bubble {
 	display: none;
@@ -309,21 +301,14 @@ body {
 
 #field-partner-bubble.shown {
 	display: block;
-	animation: 3s linear infinite need-bubble-blink;
+	decorator: image(need-bubble);
 }
-
-#field-partner-bubble.hunger { decorator: image(need-hunger scale-none center 31.25%), image(need-bubble); }
-#field-partner-bubble.toilet { decorator: image(need-toilet scale-none center 31.25%), image(need-bubble); }
-#field-partner-bubble.tired { decorator: image(need-tired scale-none center -6.25%), image(need-bubble); }
-#field-partner-bubble.sleep { decorator: image(need-sleep scale-none 66.67% 75%), image(need-bubble); }
-#field-partner-bubble.injured { decorator: image(need-injured scale-none center 31.25%), image(need-bubble); }
-#field-partner-bubble.sick { decorator: image(need-sick scale-none center 31.25%), image(need-bubble); }
 
 /* Several needs at once (an engine improvement, the option need_bubble_stack): the balloon widens from 32 pixels to
    50 for two needs and 68 for three, built from its own pieces so nothing is stretched: each half is its round edge,
    one column of its body repeated, and its half of the centre with the tail (skin.yaml: need-bubble-left ...). The
    needs sit 16 pixels each with 2 between them, 8 from the edges like the original's one, each at the height the
-   original gives it; the most urgent on the left. */
+   original gives it and on the same frames; the most urgent on the left. */
 #field-partner-bubble .balloon-half,
 #field-partner-bubble .need-icon {
 	display: none;
@@ -332,8 +317,8 @@ body {
 	height: 96dp;
 }
 
-#field-partner-bubble.stack-2 { width: 150dp; animation: 3s linear infinite need-bubble-blink-2; }
-#field-partner-bubble.stack-3 { width: 204dp; animation: 3s linear infinite need-bubble-blink-3; }
+#field-partner-bubble.stack-2 { width: 150dp; decorator: none; }
+#field-partner-bubble.stack-3 { width: 204dp; decorator: none; }
 
 #field-partner-bubble.stack-2 .balloon-half,
 #field-partner-bubble.stack-3 .balloon-half {
@@ -361,6 +346,8 @@ body {
 #field-partner-bubble-icon-0 { left: 24dp; }
 #field-partner-bubble-icon-1 { left: 78dp; }
 #field-partner-bubble-icon-2 { left: 132dp; }
+
+/* Each need's first picture, for a frame the rules below do not name. */
 #field-partner-bubble .need-icon.hunger { decorator: image(need-hunger scale-none center 31.25%); }
 #field-partner-bubble .need-icon.toilet { decorator: image(need-toilet scale-none center 31.25%); }
 #field-partner-bubble .need-icon.tired { decorator: image(need-tired scale-none center -6.25%); }
@@ -368,20 +355,259 @@ body {
 #field-partner-bubble .need-icon.injured { decorator: image(need-injured scale-none center 31.25%); }
 #field-partner-bubble .need-icon.sick { decorator: image(need-sick scale-none center 31.25%); }
 
-@keyframes need-bubble-blink-2 {
-	0% { opacity: 1; transform: translate(-75dp, -96dp) scale(0.000, 0.000); }
-	16.7% { opacity: 1; transform: translate(-75dp, -96dp) scale(1.000, 1.000); }
-	83.3% { opacity: 1; transform: translate(-75dp, -96dp) scale(1.000, 1.000); }
-	83.4% { opacity: 0; transform: translate(-75dp, -96dp) scale(1.000, 1.000); }
-	100% { opacity: 0; transform: translate(-75dp, -96dp) scale(1.000, 1.000); }
+/* The growth. */
+#field-partner-bubble.frame-1 { transform: translate(-50%, -100%) scale(0.000, 0.000); }
+#field-partner-bubble.frame-2 { transform: translate(-50%, -100%) scale(0.100, 0.100); }
+#field-partner-bubble.frame-3 { transform: translate(-50%, -100%) scale(0.200, 0.200); }
+#field-partner-bubble.frame-4 { transform: translate(-50%, -100%) scale(0.300, 0.300); }
+#field-partner-bubble.frame-5 { transform: translate(-50%, -100%) scale(0.400, 0.400); }
+#field-partner-bubble.frame-6 { transform: translate(-50%, -100%) scale(0.500, 0.500); }
+#field-partner-bubble.frame-7 { transform: translate(-50%, -100%) scale(0.600, 0.600); }
+#field-partner-bubble.frame-8 { transform: translate(-50%, -100%) scale(0.700, 0.700); }
+#field-partner-bubble.frame-9 { transform: translate(-50%, -100%) scale(0.800, 0.800); }
+#field-partner-bubble.frame-10 { transform: translate(-50%, -100%) scale(0.900, 0.900); }
+
+/* Each need's picture on each frame (renderConditionBubble). */
+#field-partner-bubble.frame-1 .need-icon.hunger, #field-partner-bubble.frame-2 .need-icon.hunger,
+#field-partner-bubble.frame-3 .need-icon.hunger, #field-partner-bubble.frame-19 .need-icon.hunger,
+#field-partner-bubble.frame-20 .need-icon.hunger, #field-partner-bubble.frame-21 .need-icon.hunger,
+#field-partner-bubble.frame-22 .need-icon.hunger, #field-partner-bubble.frame-38 .need-icon.hunger,
+#field-partner-bubble.frame-39 .need-icon.hunger, #field-partner-bubble.frame-40 .need-icon.hunger,
+#field-partner-bubble.frame-41 .need-icon.hunger {
+	decorator: image(need-hunger scale-none center 31.25%);
+}
+#field-partner-bubble.frame-4 .need-icon.hunger, #field-partner-bubble.frame-23 .need-icon.hunger,
+#field-partner-bubble.frame-42 .need-icon.hunger {
+	decorator: image(need-hunger-1 scale-none center 12.5%);
+}
+#field-partner-bubble.frame-5 .need-icon.hunger, #field-partner-bubble.frame-6 .need-icon.hunger,
+#field-partner-bubble.frame-7 .need-icon.hunger, #field-partner-bubble.frame-8 .need-icon.hunger,
+#field-partner-bubble.frame-24 .need-icon.hunger, #field-partner-bubble.frame-25 .need-icon.hunger,
+#field-partner-bubble.frame-26 .need-icon.hunger, #field-partner-bubble.frame-27 .need-icon.hunger,
+#field-partner-bubble.frame-43 .need-icon.hunger, #field-partner-bubble.frame-44 .need-icon.hunger,
+#field-partner-bubble.frame-45 .need-icon.hunger, #field-partner-bubble.frame-46 .need-icon.hunger {
+	decorator: image(need-hunger-1 scale-none center 31.25%);
+}
+#field-partner-bubble.frame-9 .need-icon.hunger, #field-partner-bubble.frame-28 .need-icon.hunger,
+#field-partner-bubble.frame-47 .need-icon.hunger {
+	decorator: image(need-hunger-2 scale-none center 12.5%);
+}
+#field-partner-bubble.frame-10 .need-icon.hunger, #field-partner-bubble.frame-11 .need-icon.hunger,
+#field-partner-bubble.frame-12 .need-icon.hunger, #field-partner-bubble.frame-13 .need-icon.hunger,
+#field-partner-bubble.frame-29 .need-icon.hunger, #field-partner-bubble.frame-30 .need-icon.hunger,
+#field-partner-bubble.frame-31 .need-icon.hunger, #field-partner-bubble.frame-32 .need-icon.hunger,
+#field-partner-bubble.frame-48 .need-icon.hunger, #field-partner-bubble.frame-49 .need-icon.hunger,
+#field-partner-bubble.frame-50 .need-icon.hunger {
+	decorator: image(need-hunger-2 scale-none center 31.25%);
+}
+#field-partner-bubble.frame-14 .need-icon.hunger, #field-partner-bubble.frame-33 .need-icon.hunger {
+	decorator: image(need-hunger-3 scale-none center 12.5%);
+}
+#field-partner-bubble.frame-15 .need-icon.hunger, #field-partner-bubble.frame-16 .need-icon.hunger,
+#field-partner-bubble.frame-17 .need-icon.hunger, #field-partner-bubble.frame-18 .need-icon.hunger,
+#field-partner-bubble.frame-34 .need-icon.hunger, #field-partner-bubble.frame-35 .need-icon.hunger,
+#field-partner-bubble.frame-36 .need-icon.hunger, #field-partner-bubble.frame-37 .need-icon.hunger {
+	decorator: image(need-hunger-3 scale-none center 31.25%);
 }
 
-@keyframes need-bubble-blink-3 {
-	0% { opacity: 1; transform: translate(-102dp, -96dp) scale(0.000, 0.000); }
-	16.7% { opacity: 1; transform: translate(-102dp, -96dp) scale(1.000, 1.000); }
-	83.3% { opacity: 1; transform: translate(-102dp, -96dp) scale(1.000, 1.000); }
-	83.4% { opacity: 0; transform: translate(-102dp, -96dp) scale(1.000, 1.000); }
-	100% { opacity: 0; transform: translate(-102dp, -96dp) scale(1.000, 1.000); }
+#field-partner-bubble.frame-1 .need-icon.toilet, #field-partner-bubble.frame-2 .need-icon.toilet,
+#field-partner-bubble.frame-3 .need-icon.toilet, #field-partner-bubble.frame-4 .need-icon.toilet,
+#field-partner-bubble.frame-5 .need-icon.toilet, #field-partner-bubble.frame-6 .need-icon.toilet,
+#field-partner-bubble.frame-13 .need-icon.toilet, #field-partner-bubble.frame-14 .need-icon.toilet,
+#field-partner-bubble.frame-15 .need-icon.toilet, #field-partner-bubble.frame-16 .need-icon.toilet,
+#field-partner-bubble.frame-17 .need-icon.toilet, #field-partner-bubble.frame-18 .need-icon.toilet,
+#field-partner-bubble.frame-19 .need-icon.toilet, #field-partner-bubble.frame-26 .need-icon.toilet,
+#field-partner-bubble.frame-27 .need-icon.toilet, #field-partner-bubble.frame-28 .need-icon.toilet,
+#field-partner-bubble.frame-29 .need-icon.toilet, #field-partner-bubble.frame-30 .need-icon.toilet,
+#field-partner-bubble.frame-31 .need-icon.toilet, #field-partner-bubble.frame-32 .need-icon.toilet,
+#field-partner-bubble.frame-39 .need-icon.toilet, #field-partner-bubble.frame-40 .need-icon.toilet,
+#field-partner-bubble.frame-41 .need-icon.toilet, #field-partner-bubble.frame-42 .need-icon.toilet,
+#field-partner-bubble.frame-43 .need-icon.toilet, #field-partner-bubble.frame-44 .need-icon.toilet,
+#field-partner-bubble.frame-45 .need-icon.toilet {
+	decorator: image(need-toilet scale-none center 31.25%);
+}
+#field-partner-bubble.frame-7 .need-icon.toilet, #field-partner-bubble.frame-12 .need-icon.toilet,
+#field-partner-bubble.frame-20 .need-icon.toilet, #field-partner-bubble.frame-25 .need-icon.toilet,
+#field-partner-bubble.frame-33 .need-icon.toilet, #field-partner-bubble.frame-38 .need-icon.toilet,
+#field-partner-bubble.frame-46 .need-icon.toilet {
+	decorator: image(need-toilet-1 scale-none center 31.25%);
+}
+#field-partner-bubble.frame-8 .need-icon.toilet, #field-partner-bubble.frame-9 .need-icon.toilet,
+#field-partner-bubble.frame-10 .need-icon.toilet, #field-partner-bubble.frame-11 .need-icon.toilet,
+#field-partner-bubble.frame-21 .need-icon.toilet, #field-partner-bubble.frame-22 .need-icon.toilet,
+#field-partner-bubble.frame-23 .need-icon.toilet, #field-partner-bubble.frame-24 .need-icon.toilet,
+#field-partner-bubble.frame-34 .need-icon.toilet, #field-partner-bubble.frame-35 .need-icon.toilet,
+#field-partner-bubble.frame-36 .need-icon.toilet, #field-partner-bubble.frame-37 .need-icon.toilet,
+#field-partner-bubble.frame-47 .need-icon.toilet, #field-partner-bubble.frame-48 .need-icon.toilet,
+#field-partner-bubble.frame-49 .need-icon.toilet, #field-partner-bubble.frame-50 .need-icon.toilet {
+	decorator: image(need-toilet-2 scale-none center 31.25%);
+}
+
+#field-partner-bubble.frame-1 .need-icon.tired, #field-partner-bubble.frame-13 .need-icon.tired,
+#field-partner-bubble.frame-14 .need-icon.tired, #field-partner-bubble.frame-26 .need-icon.tired,
+#field-partner-bubble.frame-27 .need-icon.tired, #field-partner-bubble.frame-39 .need-icon.tired,
+#field-partner-bubble.frame-40 .need-icon.tired {
+	decorator: image(need-tired scale-none center -6.25%);
+}
+#field-partner-bubble.frame-2 .need-icon.tired, #field-partner-bubble.frame-3 .need-icon.tired,
+#field-partner-bubble.frame-15 .need-icon.tired, #field-partner-bubble.frame-16 .need-icon.tired,
+#field-partner-bubble.frame-28 .need-icon.tired, #field-partner-bubble.frame-29 .need-icon.tired,
+#field-partner-bubble.frame-41 .need-icon.tired, #field-partner-bubble.frame-42 .need-icon.tired {
+	decorator: image(need-tired-1 scale-none center -6.25%);
+}
+#field-partner-bubble.frame-4 .need-icon.tired, #field-partner-bubble.frame-5 .need-icon.tired,
+#field-partner-bubble.frame-17 .need-icon.tired, #field-partner-bubble.frame-18 .need-icon.tired,
+#field-partner-bubble.frame-30 .need-icon.tired, #field-partner-bubble.frame-31 .need-icon.tired,
+#field-partner-bubble.frame-43 .need-icon.tired, #field-partner-bubble.frame-44 .need-icon.tired {
+	decorator: image(need-tired-2 scale-none center -6.25%);
+}
+#field-partner-bubble.frame-6 .need-icon.tired, #field-partner-bubble.frame-7 .need-icon.tired,
+#field-partner-bubble.frame-8 .need-icon.tired, #field-partner-bubble.frame-19 .need-icon.tired,
+#field-partner-bubble.frame-20 .need-icon.tired, #field-partner-bubble.frame-21 .need-icon.tired,
+#field-partner-bubble.frame-32 .need-icon.tired, #field-partner-bubble.frame-33 .need-icon.tired,
+#field-partner-bubble.frame-34 .need-icon.tired, #field-partner-bubble.frame-45 .need-icon.tired,
+#field-partner-bubble.frame-46 .need-icon.tired, #field-partner-bubble.frame-47 .need-icon.tired {
+	decorator: image(need-tired-3 scale-none center -6.25%);
+}
+#field-partner-bubble.frame-9 .need-icon.tired, #field-partner-bubble.frame-22 .need-icon.tired,
+#field-partner-bubble.frame-35 .need-icon.tired, #field-partner-bubble.frame-48 .need-icon.tired {
+	decorator: image(need-tired-3 scale-none center 0%);
+}
+#field-partner-bubble.frame-10 .need-icon.tired, #field-partner-bubble.frame-23 .need-icon.tired,
+#field-partner-bubble.frame-36 .need-icon.tired, #field-partner-bubble.frame-49 .need-icon.tired {
+	decorator: image(need-tired-3 scale-none center 12.5%);
+}
+#field-partner-bubble.frame-11 .need-icon.tired, #field-partner-bubble.frame-24 .need-icon.tired,
+#field-partner-bubble.frame-37 .need-icon.tired, #field-partner-bubble.frame-50 .need-icon.tired {
+	decorator: image(need-tired-3 scale-none center 31.25%);
+}
+#field-partner-bubble.frame-12 .need-icon.tired, #field-partner-bubble.frame-25 .need-icon.tired,
+#field-partner-bubble.frame-38 .need-icon.tired {
+	decorator: image(need-tired-3 scale-none center 50%);
+}
+
+#field-partner-bubble.frame-1 .need-icon.sleep, #field-partner-bubble.frame-2 .need-icon.sleep,
+#field-partner-bubble.frame-3 .need-icon.sleep, #field-partner-bubble.frame-4 .need-icon.sleep,
+#field-partner-bubble.frame-5 .need-icon.sleep, #field-partner-bubble.frame-6 .need-icon.sleep,
+#field-partner-bubble.frame-7 .need-icon.sleep, #field-partner-bubble.frame-8 .need-icon.sleep,
+#field-partner-bubble.frame-9 .need-icon.sleep, #field-partner-bubble.frame-10 .need-icon.sleep,
+#field-partner-bubble.frame-29 .need-icon.sleep, #field-partner-bubble.frame-48 .need-icon.sleep {
+	decorator: none;
+}
+#field-partner-bubble.frame-11 .need-icon.sleep, #field-partner-bubble.frame-12 .need-icon.sleep,
+#field-partner-bubble.frame-13 .need-icon.sleep, #field-partner-bubble.frame-14 .need-icon.sleep,
+#field-partner-bubble.frame-30 .need-icon.sleep, #field-partner-bubble.frame-31 .need-icon.sleep,
+#field-partner-bubble.frame-32 .need-icon.sleep, #field-partner-bubble.frame-33 .need-icon.sleep,
+#field-partner-bubble.frame-49 .need-icon.sleep, #field-partner-bubble.frame-50 .need-icon.sleep {
+	decorator: image(need-sleep scale-none 100% 75%);
+}
+#field-partner-bubble.frame-15 .need-icon.sleep, #field-partner-bubble.frame-16 .need-icon.sleep,
+#field-partner-bubble.frame-17 .need-icon.sleep, #field-partner-bubble.frame-18 .need-icon.sleep,
+#field-partner-bubble.frame-34 .need-icon.sleep, #field-partner-bubble.frame-35 .need-icon.sleep,
+#field-partner-bubble.frame-36 .need-icon.sleep, #field-partner-bubble.frame-37 .need-icon.sleep {
+	decorator: image(need-sleep scale-none 100% 75%), image(need-sleep-1 scale-none 0% 50%);
+}
+#field-partner-bubble.frame-19 .need-icon.sleep, #field-partner-bubble.frame-20 .need-icon.sleep,
+#field-partner-bubble.frame-21 .need-icon.sleep, #field-partner-bubble.frame-22 .need-icon.sleep,
+#field-partner-bubble.frame-23 .need-icon.sleep, #field-partner-bubble.frame-24 .need-icon.sleep,
+#field-partner-bubble.frame-25 .need-icon.sleep, #field-partner-bubble.frame-26 .need-icon.sleep,
+#field-partner-bubble.frame-38 .need-icon.sleep, #field-partner-bubble.frame-39 .need-icon.sleep,
+#field-partner-bubble.frame-40 .need-icon.sleep, #field-partner-bubble.frame-41 .need-icon.sleep,
+#field-partner-bubble.frame-42 .need-icon.sleep, #field-partner-bubble.frame-43 .need-icon.sleep,
+#field-partner-bubble.frame-44 .need-icon.sleep, #field-partner-bubble.frame-45 .need-icon.sleep {
+	decorator: image(need-sleep scale-none 100% 75%), image(need-sleep-1 scale-none 0% 50%), image(need-sleep-2 scale-none 62.5% 12.5%);
+}
+#field-partner-bubble.frame-27 .need-icon.sleep, #field-partner-bubble.frame-46 .need-icon.sleep {
+	decorator: image(need-sleep-1 scale-none 0% 50%), image(need-sleep-2 scale-none 62.5% 12.5%);
+}
+#field-partner-bubble.frame-28 .need-icon.sleep, #field-partner-bubble.frame-47 .need-icon.sleep {
+	decorator: image(need-sleep-2 scale-none 62.5% 12.5%);
+}
+
+#field-partner-bubble.frame-1 .need-icon.injured, #field-partner-bubble.frame-2 .need-icon.injured,
+#field-partner-bubble.frame-19 .need-icon.injured, #field-partner-bubble.frame-20 .need-icon.injured,
+#field-partner-bubble.frame-21 .need-icon.injured, #field-partner-bubble.frame-22 .need-icon.injured,
+#field-partner-bubble.frame-39 .need-icon.injured, #field-partner-bubble.frame-40 .need-icon.injured,
+#field-partner-bubble.frame-41 .need-icon.injured, #field-partner-bubble.frame-42 .need-icon.injured {
+	decorator: image(need-injured scale-none center 31.25%);
+}
+#field-partner-bubble.frame-3 .need-icon.injured, #field-partner-bubble.frame-4 .need-icon.injured,
+#field-partner-bubble.frame-5 .need-icon.injured, #field-partner-bubble.frame-6 .need-icon.injured,
+#field-partner-bubble.frame-7 .need-icon.injured, #field-partner-bubble.frame-8 .need-icon.injured,
+#field-partner-bubble.frame-9 .need-icon.injured, #field-partner-bubble.frame-13 .need-icon.injured,
+#field-partner-bubble.frame-14 .need-icon.injured, #field-partner-bubble.frame-15 .need-icon.injured,
+#field-partner-bubble.frame-16 .need-icon.injured, #field-partner-bubble.frame-17 .need-icon.injured,
+#field-partner-bubble.frame-18 .need-icon.injured, #field-partner-bubble.frame-23 .need-icon.injured,
+#field-partner-bubble.frame-24 .need-icon.injured, #field-partner-bubble.frame-25 .need-icon.injured,
+#field-partner-bubble.frame-26 .need-icon.injured, #field-partner-bubble.frame-27 .need-icon.injured,
+#field-partner-bubble.frame-28 .need-icon.injured, #field-partner-bubble.frame-29 .need-icon.injured,
+#field-partner-bubble.frame-33 .need-icon.injured, #field-partner-bubble.frame-34 .need-icon.injured,
+#field-partner-bubble.frame-35 .need-icon.injured, #field-partner-bubble.frame-36 .need-icon.injured,
+#field-partner-bubble.frame-37 .need-icon.injured, #field-partner-bubble.frame-38 .need-icon.injured,
+#field-partner-bubble.frame-43 .need-icon.injured, #field-partner-bubble.frame-44 .need-icon.injured,
+#field-partner-bubble.frame-45 .need-icon.injured, #field-partner-bubble.frame-46 .need-icon.injured,
+#field-partner-bubble.frame-47 .need-icon.injured, #field-partner-bubble.frame-48 .need-icon.injured,
+#field-partner-bubble.frame-49 .need-icon.injured {
+	decorator: image(need-injured-1 scale-none center 31.25%);
+}
+#field-partner-bubble.frame-10 .need-icon.injured, #field-partner-bubble.frame-11 .need-icon.injured,
+#field-partner-bubble.frame-12 .need-icon.injured, #field-partner-bubble.frame-30 .need-icon.injured,
+#field-partner-bubble.frame-31 .need-icon.injured, #field-partner-bubble.frame-32 .need-icon.injured,
+#field-partner-bubble.frame-50 .need-icon.injured {
+	decorator: image(need-injured-2 scale-none center 31.25%);
+}
+
+#field-partner-bubble.frame-1 .need-icon.sick, #field-partner-bubble.frame-2 .need-icon.sick,
+#field-partner-bubble.frame-3 .need-icon.sick, #field-partner-bubble.frame-4 .need-icon.sick,
+#field-partner-bubble.frame-5 .need-icon.sick, #field-partner-bubble.frame-6 .need-icon.sick,
+#field-partner-bubble.frame-7 .need-icon.sick, #field-partner-bubble.frame-8 .need-icon.sick,
+#field-partner-bubble.frame-9 .need-icon.sick, #field-partner-bubble.frame-10 .need-icon.sick,
+#field-partner-bubble.frame-11 .need-icon.sick, #field-partner-bubble.frame-12 .need-icon.sick,
+#field-partner-bubble.frame-13 .need-icon.sick, #field-partner-bubble.frame-14 .need-icon.sick,
+#field-partner-bubble.frame-15 .need-icon.sick, #field-partner-bubble.frame-16 .need-icon.sick,
+#field-partner-bubble.frame-17 .need-icon.sick, #field-partner-bubble.frame-18 .need-icon.sick,
+#field-partner-bubble.frame-19 .need-icon.sick, #field-partner-bubble.frame-40 .need-icon.sick,
+#field-partner-bubble.frame-41 .need-icon.sick, #field-partner-bubble.frame-42 .need-icon.sick,
+#field-partner-bubble.frame-43 .need-icon.sick, #field-partner-bubble.frame-44 .need-icon.sick,
+#field-partner-bubble.frame-45 .need-icon.sick, #field-partner-bubble.frame-46 .need-icon.sick,
+#field-partner-bubble.frame-47 .need-icon.sick, #field-partner-bubble.frame-48 .need-icon.sick,
+#field-partner-bubble.frame-49 .need-icon.sick, #field-partner-bubble.frame-50 .need-icon.sick {
+	decorator: image(need-sick scale-none center 31.25%);
+}
+#field-partner-bubble.frame-20 .need-icon.sick, #field-partner-bubble.frame-21 .need-icon.sick,
+#field-partner-bubble.frame-22 .need-icon.sick, #field-partner-bubble.frame-23 .need-icon.sick,
+#field-partner-bubble.frame-24 .need-icon.sick, #field-partner-bubble.frame-25 .need-icon.sick,
+#field-partner-bubble.frame-26 .need-icon.sick, #field-partner-bubble.frame-27 .need-icon.sick,
+#field-partner-bubble.frame-28 .need-icon.sick, #field-partner-bubble.frame-29 .need-icon.sick,
+#field-partner-bubble.frame-30 .need-icon.sick, #field-partner-bubble.frame-31 .need-icon.sick,
+#field-partner-bubble.frame-32 .need-icon.sick, #field-partner-bubble.frame-33 .need-icon.sick,
+#field-partner-bubble.frame-34 .need-icon.sick, #field-partner-bubble.frame-35 .need-icon.sick,
+#field-partner-bubble.frame-36 .need-icon.sick, #field-partner-bubble.frame-37 .need-icon.sick,
+#field-partner-bubble.frame-38 .need-icon.sick, #field-partner-bubble.frame-39 .need-icon.sick {
+	decorator: image(need-sick-1 scale-none center 31.25%);
+}
+
+/* The burst, alone, and the gap until the next bubble. */
+#field-partner-bubble.frame-51 {
+	decorator: image(need-bubble-burst scale-none center bottom);
+	transform: translate(-50%, -100%) translate(0dp, -9dp) scale(2.500, 2.500);
+}
+
+#field-partner-bubble.frame-51 .need-icon,
+#field-partner-bubble.frame-51 .balloon-half {
+	visibility: hidden;
+}
+
+#field-partner-bubble.frame-52,
+#field-partner-bubble.frame-53,
+#field-partner-bubble.frame-54,
+#field-partner-bubble.frame-55,
+#field-partner-bubble.frame-56,
+#field-partner-bubble.frame-57,
+#field-partner-bubble.frame-58,
+#field-partner-bubble.frame-59,
+#field-partner-bubble.frame-60 {
+	visibility: hidden;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------

@@ -290,7 +290,7 @@ aspecto lo dibuje a su manera:
 | clase `pips` en una barra (`#field-meter-<i>-bar`, `#field-pool-<i>-bar`) | Si el aspecto se la pone (en su `skin.yaml`, ver abajo), el relleno va en 25 pasos del 4 %, redondeando hacia abajo, con la misma regla de dos tonos | Los 25 cuadritos de `partner_impl.c: renderStatusBars` (4 puntos por cuadrito en la felicidad, 2 en la disciplina) |
 | clase `area-liked` o `area-disliked` en `#field-status` | Pone `area-liked` con `hud.partner.area` a 1, `area-disliked` con 2, y ninguna con 0 | La cara de la felicidad que alterna con otra en una zona que le gusta o le disgusta al compañero (ver arriba); el moderno no la usa |
 | clase `low` en `#field-meter-<i>` | La pone si el valor está por debajo de la mitad de su rango (`(min + max) / 2`) y la quita si no | El icono de la barra: la cara de la felicidad se pone triste por debajo de 0 y el de la disciplina cambia por debajo de 50 (`partner_impl.c: renderStatusBars`); el moderno no la usa |
-| `#field-partner-bubble` | `left` y `top` desde `hud.partner.x` y `hud.partner.y` (redibuja con `hud.partner.revision`); la clase `shown` solo con `hud.partner.visible` y alguna necesidad; y una sola clase de necesidad, `hunger`, `sleep`, `toilet`, `tired`, `injured` o `sick`; con varias necesidades y `need_bubble_stack`, en su lugar `stack-2` o `stack-3` y una clase de necesidad en cada `#field-partner-bubble-icon-<i>` (0 a 2, la más urgente primero) | La burbuja del original sobre el compañero (`bubble.c`). Cuelga del centro de su borde de abajo (`ui/hud/structure.rcss`), así que el aspecto solo le da tamaño y dibujo; el moderno no la enseña porque ya tiene el panel de necesidades |
+| `#field-partner-bubble` | `left` y `top` desde `hud.partner.x` y `hud.partner.y` (redibuja con `hud.partner.revision`); la clase `shown` solo con `hud.partner.visible` y alguna necesidad; y una sola clase de necesidad, `hunger`, `sleep`, `toilet`, `tired`, `injured` o `sick`; una clase de necesidad en cada `#field-partner-bubble-icon-<i>` que la enseña (0 a 2, la más urgente primero; con una sola, el 0); con varias necesidades y `need_bubble_stack`, `stack-2` o `stack-3` en vez de la clase de necesidad de la burbuja; y `frame-<n>` (1 a 60), el frame del original en que va la burbuja | La burbuja del original sobre el compañero (`bubble.c`). Cuelga del centro de su borde de abajo (`ui/hud/structure.rcss`), así que el aspecto solo le da tamaño y dibujo; el moderno no la enseña porque ya tiene el panel de necesidades |
 | `#field-clock-minute-hand` | `transform: rotate(minuto × 6deg)` | La aguja de minutos de `clock.c: renderGameClock`, una vuelta por hora |
 | `#field-clock-hour-dot` | `left` y `top` en porcentaje sobre un círculo, 15° por hora, la hora 0 arriba | El punto de las horas en el anillo de 24 horas |
 | clase `night` en `#field-clock` | La pone con la hora antes de las 6 o desde las 17 | La luna en vez del sol |
@@ -299,16 +299,30 @@ aspecto lo dibuje a su manera:
 (`partner_impl.c: handleConditionBubble` las mira de menor a mayor y gana la última), y cuando una burbuja lleva 50
 de sus frames (a 20 por segundo, 2,5 s) cambia a la necesidad más alta de las demás que tenga, si hay alguna: con dos
 necesidades se turnan, y una tercera espera a que se vaya una de ellas. El script hace lo mismo con su `on_tick`
-(`bubble_priority`, `bubble_swap_seconds`), y el tiempo solo cuenta mientras la burbuja se ve. Lo que no imita es el
-parpadeo: el original quita la burbuja cuando pasa de 50 frames (`bubble.c: tickConditionBubble`) y la vuelve a
-crear unos 10 frames después, así que en cada 60 frames no se ve durante unos 10 (y crece durante los 10 primeros).
-El contrato no lo publica: `shown` sigue puesta mientras dura la necesidad, y el hueco lo dibuja el aspecto. El
-original lo hace con una animación RCSS (`need-bubble-blink`, 3 s: 0,5 s creciendo, 2 s quieta, 0,5 s sin verse);
-el moderno no enseña la burbuja.
+(`bubble_priority`, `bubble_swap_frames`), y el tiempo solo cuenta mientras la burbuja se ve (el original no la dibuja
+ni la cuenta en un menú).
+
+**Los frames de la burbuja (Igual).** El original cuenta los frames de cada burbuja (`bubble.c: tickConditionBubble`)
+y la dibuja en los frames 1 a 51: crece de nada a su tamaño en los 10 primeros (escala (k − 1) / 10), en el 51 estalla
+(`CONDITION_SPRITES[10]` a 2,5 veces, con su centro 23 píxeles del globo sobre el ancla) y desaparece; con una sola
+necesidad la vuelve a crear a los 60 frames (`partner_impl.c: handleConditionBubble`, `CONDITION_BUBBLE_TIMER`; medido:
+180 vblanks), y con otra necesidad la cambia a los 50 sin estallido (medido: 150). Dentro, cada necesidad anima por el
+mismo contador (`renderConditionBubble`): la comida pasa por sus cuatro dibujos cada 19 frames
+(`CONDITION_HUNGRY_FRAMES`, 3 píxeles más arriba el frame antes de cada cambio), el baño por tres cada 13, la herida
+por tres cada 20, la enfermedad alterna dos cada 20, la gota del cansancio cae en 13 frames (`CONDITION_TIRED_FRAME_U`
+y `CONDITION_TIRED_FRAME_MY`: de 1 píxel sobre el borde de arriba del globo a 8 por debajo, cambiando de dibujo) y el sueño enseña sus
+tres «Z» una a una (`CONDITION_ICON_SLEEPY`: frames 11 a 14 la baja, 15 a 18 dos, 19 a 26 las tres, 27 las dos altas,
+28 la más alta, 29 ninguna, y vuelve a empezar en el 30). La «Z» baja tiene forma de reloj de arena en el propio
+dibujo del original (medido en DuckStation: frames 12, 17, 23 y 28). El script cuenta los frames y publica
+`frame-<n>`; el aspecto original dibuja cada frame con reglas de clase (el crecimiento con `transform`, el dibujo de
+cada necesidad y su sitio con `decorator` por frame, el estallido y el hueco del 52 al 60 con `visibility`), sin
+animaciones RCSS, así que no hay desfase entre el script y el dibujo. El vaivén de 12 unidades no se imita. El moderno
+no enseña la burbuja. Prueba: `ui_tests` «the need bubble plays the original's frames: growth, the need's animation,
+burst, gap».
 
 **Herida y enfermedad.** Van por debajo del baño en la prioridad (`partner_impl.c: handleConditionBubble`: bits
 `0x20` y `0x40` de la condición, burbujas 6 y 2: la venda de `CONDITION_SPRITES[8]` y la jeringuilla de
-`CONDITION_SPRITES[7]`, de las que el aspecto original dibuja el primer cuadro). Al ponerse enfermo, el original además
+`CONDITION_SPRITES[7]`, con sus cuadros como las demás). Al ponerse enfermo, el original además
 para la hora y abre el cuadro de los premios con el nombre del compañero y `main.partner_impl_is_sick.0000`
 (`partner_impl.c: tickSicknessMechanics`; ver `award_notice` en el juego).
 
@@ -320,7 +334,7 @@ prioridad del original; con una sola necesidad la burbuja es la del original, y 
 (tres) con sus propias piezas, sin estirar nada: cada mitad es su borde redondo, una columna de su cuerpo repetida
 (`tiled-horizontal`) y su mitad del centro con el pico, que queda en medio (`need-bubble-left` … `need-bubble-right`
 en `skin.yaml`). Cada icono va en su hueco de 16 píxeles con 2 entre ellos y 8 a los bordes, como el único del
-original, a la altura que el original le da. Se eligió el globo ancho y no turnarlas todas porque el usuario pidió
+original, a la altura que el original le da y con su animación en los mismos frames. Se eligió el globo ancho y no turnarlas todas porque el usuario pidió
 verlas a la vez, y las piezas del globo lo ensanchan sin romper su dibujo (queda una píldora con los extremos y el pico
 del original). Prueba: `ui_tests` «the need bubble shows several needs side by side, most urgent first, unless turned
 off»; con la opción apagada, «the need bubble shows the need the original's bubble would ...».
@@ -733,7 +747,7 @@ las posiciones dentro de un elemento van en %.
 | Las ganancias del final dicen «+n» en vez de la flecha azul; «Continuar» cierra el tercer cuadro | El original avanza con un botón sin nada en pantalla |
 | El botón del menú del HUD, mientras el campo corre (en combates, escenas y menús se esconde, como los demás paneles del HUD); los avisos de botones de los menús | El juego también se usa con teclado y ratón; el combate no los lleva, como el original |
 | El parpadeo de la cara de la felicidad empieza cuando el compañero entra en una zona que le gusta o le disgusta (o cuando cambia la cara), no al compás del contador de tiempo de juego del original (`PLAYTIME_FRAMES % 10`): el ritmo es el mismo, 5 frames y 5 frames, pero la fase puede ir hasta 0,25 s desplazada | La animación del aspecto (RCSS) empieza al ponerse la clase; el contrato no publica el contador de frames, y publicarlo cada frame obligaría a redibujar el estado del campo 20 veces por segundo |
-| La burbuja parpadea con su propio reloj de 3 s, no con el de la burbuja del original, y sin su vaivén de 12 unidades; solo se dibuja el primer cuadro de la animación de cada necesidad y la «Z» baja del sueño | El contrato no publica los frames de la burbuja; el vaivén y los cuadros son animación opcional |
+| La burbuja no hace su vaivén de 12 unidades arriba y abajo | El contrato publica dónde se asienta la burbuja y su frame, no el vaivén |
 
 #### La portada del aspecto original
 
