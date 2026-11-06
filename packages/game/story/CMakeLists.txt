@@ -15,4 +15,10 @@ dwe_add_module(story
         src/new_day.cpp
         src/prosperity.cpp
         src/medals.cpp
+        src/story_names.cpp
     DEPS core assets)
+
+# The tests read the game pack from the source tree.
+if(TARGET dwe_story_tests)
+    target_compile_definitions(dwe_story_tests PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game")
+endif()

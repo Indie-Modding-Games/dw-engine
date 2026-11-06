@@ -1,0 +1,47 @@
+# Nombres para las herramientas (mapper, control remoto, logs) de los disparadores y variables de la
+# historia a los que el motor da un significado. La historia corre con los números: un nombre es solo
+# una etiqueta, un id en snake_case. Lo que no está aquí se muestra por su número.
+# docs/architecture/interprete-historia.md#q3-nombres-de-disparadores-y-variables
+triggers:
+  # Las cuatro casillas de objetos de la página del jugador (la caña sencilla, la mejor y dos más).
+  45: player_item_0
+  46: player_item_1
+  47: player_item_2
+  48: player_item_3
+  # La niebla de los mapas con niebla se va.
+  148: mist_gone
+  # La niebla de las alcantarillas se va.
+  341: sewer_mist_gone
+  # La canción que cambia el fondo de un mapa ya se oyó.
+  350: song_heard
+  # Las medallas: 0x16c + número.
+  364: medal_00
+  365: medal_01
+  366: medal_02
+  367: medal_03
+  368: medal_04
+  369: medal_05
+  370: medal_06
+  371: medal_07
+  372: medal_08
+  373: medal_09
+  374: medal_10
+  375: medal_11
+  376: medal_12
+  377: medal_13
+  378: medal_14
+  379: medal_15
+  380: medal_16
+  381: medal_17
+variables:
+  # La inscripción a una copa: el día, la copa y el inscrito.
+  2: cup_entry_day
+  3: cup_id
+  4: cup_entrant
+  # La música del campo: 0 son las canciones de día y de noche.
+  245: music_mode
+  # Los dos datos que pasan las órdenes de rutina (el objeto o personaje y su animación o ánimo).
+  247: routine_arg_a
+  248: routine_arg_b
+  # La especie que nombra la línea del sobre de cartas.
+  249: card_pack_species

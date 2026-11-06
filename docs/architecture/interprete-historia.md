@@ -735,6 +735,11 @@ Cada una con opciones; la primera es la recomendada.
    paquete `game`** (recomendado): no inventa nombres de historia antes del GDD.
 2. Nombres simbólicos ya: más legible, pero son decisiones de diseño (visibles para modders).
 
+Estado (2026-11-06): la historia sigue con números. `story/names` del paquete `game` (`StoryNames`,
+`packages/game/story`) da una etiqueta, un id en snake_case, a los disparadores y variables a los que el motor ya da
+un significado (medallas, objetos de la página del jugador, música, datos de rutinas), solo para que las herramientas
+los muestren; nada del juego los lee.
+
 ### Q4. Textos de historia en español
 1. **El español cae al texto inglés del disco** (clave sin traducción → inglés, marcado en el log de desarrollo)
    (recomendado): no hay traducción del original que podamos distribuir.

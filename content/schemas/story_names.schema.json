@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Story names",
+  "description": "story/names.yaml of the game pack: labels the tools show for the story's triggers (0-799) and variables (0-255) (packages/game/story story_names.hpp). The story runs on numbers; a name is only a snake_case id. The engine also checks the numbers' range and that no name repeats within a kind.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "triggers": { "$ref": "#/$defs/names" },
+    "variables": { "$ref": "#/$defs/names" }
+  },
+  "$defs": {
+    "names": {
+      "type": "object",
+      "propertyNames": { "pattern": "^(0|[1-9][0-9]{0,2})$" },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-z0-9_]+$"
+      }
+    }
+  }
+}

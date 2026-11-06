@@ -89,3 +89,18 @@ return {
 - Un parche que no carga (Lua que no compila, sin `script`, una sección fuera de 0–65535) se deja fuera con un error
   en el log y el juego usa la sección del script. `dwx validate` comprueba que el Lua compila.
 - Los números de sección son los del script: en el Lua generado aparecen como `[0x0051] = routines.at_...`.
+
+## Nombres de disparadores y variables
+
+La historia trabaja con números (disparadores 0–799, variables 0–255). `story/names.yaml` del paquete `game` da una
+etiqueta a los que el motor usa para algo (medallas, objetos de la página del jugador, música…), para que las
+herramientas los muestren por nombre ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/story_names.schema.json)):
+
+```yaml
+triggers:
+  364: medal_00
+variables:
+  245: music_mode
+```
+
+Un mod puede traer su propio `story/names.yaml` (gana por ID, entero). Los nombres no cambian nada del juego.

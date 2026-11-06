@@ -22,6 +22,8 @@ schemas:
     - field/weather
   field_triggers:
     - field/triggers
+  story_names:
+    - story/names
   ruleset:
     - rules/*/ruleset
   ruleset_battle:
