@@ -3,6 +3,9 @@
 Cómo cambiaba de forma el partner en el juego original, según el decomp. Es el paso 1 del
 [ciclo de diseño](../conventions/design-cycle.md): describe el original, no lo que hará el mod.
 
+Para jugadores, la misma información en lenguaje llano y con consejos de crianza está en la guía
+[cómo funcionan las evoluciones](../guides/evoluciones.md).
+
 Marcas: **(comprobado)** quiere decir que se leyó en el código del decomp; **(suposición)** quiere decir que es una
 interpretación nuestra que falta confirmar. Los identificadores de Digimon son índices de la tabla de parámetros
 (`DIGIMON_DATA`); el nombre entre paréntesis sale del orden de esa tabla en `src/main/main.c`.
