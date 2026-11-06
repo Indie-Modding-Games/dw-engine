@@ -1,0 +1,21 @@
+[package]
+name = "dwe-pack"
+version = "0.1.0"
+# The crate is built by the map editor's workspace, which holds the lock file.
+workspace = "../../../apps/mapper"
+description = "dwe's content packs read the way the engine mounts them: manifests, the pack stack and composed tables"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_yaml_ng.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,44 @@
+# Synthetic map cameras in the documents' raw form (original axes, before doubling), shaped like
+# the kinds of maps there are, and points to project on each. scripts/mapper.sh camera-vectors
+# runs the engine's camera on this file and writes camera_vectors.expected next to it.
+
+# A town-like map: a high camera looking down at about 35 degrees.
+map town 0 -4300 -6000 0 0 -250 1800 6 5 1280 720 300 0 -900
+project 0 0 0
+project -2500 0 2525
+project 440 0 3715
+project 1200 -150 -800
+project 0 0 -12000
+pick 640 360 0
+pick 0 0 0
+pick 1279 719 150
+
+# A dungeon-like map: steep, close and off-centre.
+map dungeon 900 -5200 -2100 400 0 300 1100 4 4 320 240 -1000 0 1000
+project 400 0 -300
+project -1800 0 1800
+project 2600 0 -2400
+pick 160 120 0
+pick 10 230 -50
+
+# A wide map seen from the side along the original's +X.
+map wide -6000 -2500 0 0 0 0 2200 10 3 1920 1080 2500 0 -300
+project 0 0 0
+project 3000 0 1000
+project -100 -400 -800
+pick 960 540 0
+pick 1900 20 0
+
+# A room smaller than the window: centred, with bars.
+map room 0 -2000 -2400 0 0 0 600 2 1 1280 720 0 0 0
+project 0 0 0
+project -500 0 500
+pick 640 360 0
+pick 200 100 0
+
+# Straight down: the look-at falls back to -Z for its up.
+map top 0 -5000 0 0 0 0 900 3 3 640 480 0 0 0
+project 0 0 0
+project 700 0 -300
+pick 320 240 0
+pick 100 400 0

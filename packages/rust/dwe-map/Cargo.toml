@@ -1,0 +1,24 @@
+[package]
+name = "dwe-map"
+version = "0.1.0"
+# The crate is built by the map editor's workspace, which holds the lock file.
+workspace = "../../../apps/mapper"
+description = "dwe's field map documents: the map model, its collision grid, world space and the camera that projects it on the background"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+dwe-pack.workspace = true
+glam.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml_ng.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true
