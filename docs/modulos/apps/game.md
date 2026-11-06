@@ -928,9 +928,15 @@ muestra las texturas originales.
 
 Mejora opcional, encendida por defecto: el ajuste `status_extras` (fila «Extras de la ficha», «Status extras» en
 inglés, de las opciones del menú de pausa, guardado en los ajustes del usuario) llega como ajuste de la UI desde
-`PlaySession` (`StatusExtrasSetting`). Encendido, la ficha del compañero enseña su barra de cansancio y sus errores de
-cuidado, que el original esconde; apagado, la ficha es la del original. Dónde va cada uno en cada piel y la ruta:
-[screens.md](screens.md#extras-de-la-ficha).
+`PlaySession` (`StatusExtrasSetting`). Encendido, la ficha del compañero enseña lo que el original sabe y esconde:
+cansancio, felicidad, disciplina y virus con número, errores de cuidado, combates, horas despierto, vida restante y
+contador de evolución; apagado, la ficha es la del original. `PartnerMenu` añade a la vista las horas desde las que
+mira la evolución el nivel del compañero (`EvolutionAdapter`, `Evolution::checkHoursFor`). Dónde va cada uno en cada
+piel y de dónde sale cada valor: [screens.md](screens.md#extras-de-la-ficha).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Ficha del compañero con más datos | La vista de estado (`game_menu.c`) dibuja nombre, edad, peso, vidas, HP, MP, stats, especialidades, tipo, patrón de actividad, felicidad, disciplina y virus (sin número); el cansancio, los errores, los combates, el horario de sueño, la vida restante y el contador de evolución existen en `PartnerPara` pero no salen | Con la opción: cansancio y número de las barras de cuidado, errores y combates, horas despierto de hoy, vida restante y contador de evolución con las horas de la comprobación de su nivel, en las dos pieles y los dos idiomas; todo leído del estado del compañero y de las reglas de evolución. Apagada, la ficha del original | `partner_status_view_tests.cpp` («…tiredness and the care mistakes…», «…battles, the lifetime, the evolution counter and the waking hours»); `session_tests.cpp` («the partner view carries the lifetime, the counters and the sleep schedule it lives by»); `report_tests.cpp` («a form's check hours are its level's…»); `user_settings_tests`; ruta `route-status-extras.yaml`; capturas antes/después en las dos pieles | Mejora (opción) |
 
 ## Nombres largos
 

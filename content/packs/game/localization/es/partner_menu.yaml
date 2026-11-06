@@ -16,10 +16,21 @@ lives: "Vidas {lives}"
 happiness: "Felicidad"
 discipline: "Disciplina"
 virus: "Virus"
-# Los extras de la ficha (la opción status_extras), que el original esconde: la barra de cansancio y la cuenta de
-# errores de cuidado.
+# Los extras de la ficha (la opción status_extras), que el original esconde: la barra de cansancio, la cuenta de
+# errores de cuidado y de combates, las horas en que está despierto, las horas de vida que le quedan y el contador de
+# evolución.
 tiredness: "Cansancio"
 care_mistakes: "Errores"
+battles: "Combates"
+awake: "Despierto"
+# {wake} y {sleepy} son las horas a las que se despierta y le entra sueño, como 08:00.
+awake.value: "{wake}-{sleepy}"
+lifetime: "Le quedan"
+evolution: "Evolución"
+# {hours} es una cuenta de horas de juego.
+hours.value: "{hours} h"
+# {hours} es el contador de evolución y {check} las horas desde las que su nivel mira la evolución.
+evolution.value: "{hours}/{check} h"
 condition.none: "En buena forma"
 condition.sleepy: "Con sueño"
 condition.tired: "Cansado"

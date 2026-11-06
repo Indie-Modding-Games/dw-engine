@@ -156,6 +156,10 @@ actualizan son el contrato de datos de cualquier aspecto: están en [ui.md](../.
 | `partner.condition.<i>.key` | clave | Lo que le pasa ahora (sueño, cansancio, hambre, baño, enfado, herida, enfermedad) |
 | `partner.tiredness.{label,value,min,max}` | clave, números | Extra que el original no enseña: el cansancio (0–100, `PartnerState::tiredness`) como barra simple. La página lo dibuja con la opción `status_extras` ([extras de la ficha](#extras-de-la-ficha)) |
 | `partner.care_mistakes` | número | Extra que el original no enseña: los errores de cuidado con este compañero (`careMistakes`), con la misma opción |
+| `partner.battles` | número | Extra: los combates de este compañero (`battles`, `PartnerView::battles`), que cuentan para la evolución |
+| `partner.lifetime_hours` | número | Extra: las horas de vida que le quedan (`remainingLifetime`, `PartnerView::lifetimeHoursLeft`); baja una cada hora de juego y con las horas dormidas |
+| `partner.evolution.{hours,check_hours}` | números | Extra: el contador de evolución (`evoTimer`, horas desde el último cambio de nivel) y desde cuántas horas mira la evolución su nivel (`Evolution::checkHoursFor`: `check_hours` del ruleset, o el paso Mega); -1 si su forma no evoluciona sola |
+| `partner.awake.{wake_hour,wake_minute,sleepy_hour,sleepy_minute}` | números | Extra: a qué hora se despierta y a qué hora le entra sueño hoy (`SleepState`, `wakeUpHour` y `sleepyHour`); el horario se mueve si duerme tarde o pronto |
 | `partner.profile.special.<i>` | número | Especialidades de especie (0–6); -1 representa una posición ausente. |
 | `partner.profile.type` | número | Tipo original de especie; 0 no dibuja icono. |
 | `partner.profile.active` | número | Patrón de actividad de SpeciesCare; -1 cuando falta la fuente. La presentación original toma los rótulos del texto local del disco. |
@@ -198,26 +202,50 @@ hasta que exista esa interacción en el campo; entonces se quita (TODO en `apps/
 
 ### Extras de la ficha
 
-Mejora opcional, encendida por defecto (el original no enseña ni el cansancio ni los errores de cuidado, aunque los
-usa: el cansancio para el estado «cansado», los errores para la evolución). El ajuste `status_extras` (fila «Extras de
-la ficha», «Status extras» en inglés, de las opciones del menú de pausa, guardado en los ajustes del usuario) llega
-como ajuste de la UI desde `PlaySession`; `partner_menu/logic.lua` (`draw_extras`) pone con él la clase
-`status-extras` en `#scrim` y dibuja los dos valores, que `partnerStatusViewOf` publica siempre. No cambia ninguna
-regla. Apagado, la página es la de siempre.
+Mejora opcional, encendida por defecto. El original no enseña nada de esto aunque lo usa todo: el cansancio para el
+estado «cansado», los errores y los combates para la evolución, el horario de sueño para el sueño, la vida restante
+para la muerte natural y el contador de evolución para saber cuándo evoluciona. El ajuste `status_extras` (fila
+«Extras de la ficha», «Status extras» en inglés, de las opciones del menú de pausa, guardado en los ajustes del
+usuario) llega como ajuste de la UI desde `PlaySession`; `partner_menu/logic.lua` (`draw_extras`) pone con él la clase
+`status-extras` en `#scrim` y dibuja los valores, que `partnerStatusViewOf` publica siempre. No cambia ninguna regla.
+Apagado, la página es la de siempre.
 
-- **Piel original.** Los errores van al final de la fila de la edad y el peso, una cifra en un recuadro como los
-  suyos tras el rótulo «Errores» («Mistakes») en el cian de los rótulos de campo. El cansancio es una cuarta barra de
-  la condición, con el icono de la necesidad «cansado», su palabra corta («Cansado», «Tired») y la tira azul de las
-  barras del original, sin número como las demás. Para que quepan las cuatro, la vida y las barras suben y se juntan
-  (filas cada 36dp) y el hueco del modelo es 6dp más bajo.
-- **Piel moderna.** Los errores son una línea más bajo el peso (las líneas del perfil se juntan un poco) y el
-  cansancio una cuarta barra de los cuidados, «Cansancio» («Tiredness») con su número; la página crece una fila.
+Qué enseña y de dónde sale cada valor (todos son el estado que el motor ya simula; ninguno se calcula para la ficha):
+
+| Valor | Sale de |
+|---|---|
+| Cansancio, 0–100 | `MoodState::tiredness` (`tiredness`) |
+| Felicidad, disciplina y virus con número | Las mismas barras del original (`happiness`, `discipline`, `virusBar`) |
+| Errores de cuidado | `EvolutionCounters::careMistakes` (`careMistakes`) |
+| Combates | `EvolutionCounters::battles` (`battles`) |
+| Horas despierto hoy | `SleepState`: hora de despertar y de sueño (`wakeUpHour`, `sleepyHour`) |
+| Vida restante, en horas | `LifeState::remainingLifetime` (`remainingLifetime`) |
+| Contador de evolución / horas de la comprobación | `EvolutionCounters::hours` (`evoTimer`) y `Evolution::checkHoursFor` (la `check_hours` del nivel en `rules/original/evolution.yaml`: 6, 24, 72 y 144; nada para un definitivo) |
+
+- **Piel original.** Los errores y los combates van al final de la fila de la edad y el peso, cada uno una cifra en un
+  recuadro como los suyos tras su rótulo («Combates», «Errores») en el cian de los rótulos de campo. El campo
+  «Active» escribe las horas en que está despierto, de hora a hora («08-20»), en vez de la palabra del patrón. El
+  cansancio es una cuarta barra de la condición, con el icono de la necesidad «cansado», su palabra corta («Cansado»,
+  «Tired») y la tira azul de las barras del original. Las cuatro barras son más cortas (102dp; 90dp con los rótulos
+  escritos) y llevan su número en blanco detrás. Para que quepan las cuatro, la vida y las barras suben y se juntan
+  (filas cada 36dp) y el hueco del modelo es 6dp más bajo. Las horas de vida que le quedan y el contador de evolución
+  van en el hueco a la derecha de las barras de ataque, defensa, velocidad y cerebro: un rótulo cian («Le quedan»,
+  «Evolución») sobre un recuadro con la cifra («353 h»; el contador sin unidad, «5/72», porque «150/144 h» de un
+  campeón no cabe; solo el contador si su nivel no evoluciona solo).
+- **Piel moderna.** Los errores y los combates comparten una línea bajo el peso (las líneas del perfil se juntan un
+  poco); el cansancio es una cuarta barra de los cuidados, «Cansancio» («Tiredness») con su número, y bajo las barras
+  van tres líneas más: «Despierto 08:00-20:00», «Le quedan 353 h» y «Evolución 5/72 h». Las dos tarjetas crecen una
+  línea.
 
 La ruta `route-status-extras.yaml` da al compañero cansancio (dos entrenamientos) y un error de cuidado (el reloj
 rápido hasta que se le pasa una comida), abre la ficha con la opción encendida a 1280x720 y 1920x1080, la apaga en el
 menú de pausa y la abre otra vez como el original, con `text_fit`; se corre en los dos idiomas y con las dos pieles.
-Tests: `the status page's extras carry the tiredness and the care mistakes the original hides`
-(`apps/screens/tests/partner_status_view_tests.cpp`) y los ajustes del usuario (`apps/game/tests/user_settings_tests.cpp`).
+Comprueba también los combates (0) y las horas de la comprobación de evolución del novato (72). Tests: `the status
+page's extras carry the tiredness and the care mistakes the original hides` y `the status page's extras carry the
+battles, the lifetime, the evolution counter and the waking hours` (`apps/screens/tests/partner_status_view_tests.cpp`),
+`the partner view carries the lifetime, the counters and the sleep schedule it lives by`
+(`apps/session/tests/session_tests.cpp`), `a form's check hours are its level's, and an ultimate's are none`
+(`game/evolution/tests/report_tests.cpp`) y los ajustes del usuario (`apps/game/tests/user_settings_tests.cpp`).
 
 ## Menú del juego (aspecto original)
 

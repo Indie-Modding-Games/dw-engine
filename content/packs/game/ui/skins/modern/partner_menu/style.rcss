@@ -669,3 +669,40 @@ button:focus .original-look, button.original-look:focus {
 }
 
 #panel:not(.skin-original) #status-name { font-weight: bold; }
+
+/* More of the status page's extras (docs/modulos/apps/screens.md, «Extras de la ficha»): the battles share the
+   mistakes' line, the mistakes on its left half and the battles on its right; the hours it is awake today, the hours
+   of life left and the evolution counter are three more lines in the condition card, under its bars, and both cards
+   grow a line. */
+#status-battles, #status-awake, #status-timers { display: none; }
+#scrim.status-extras #panel:not(.skin-original) #status-mistakes { width: 266dp; }
+#scrim.status-extras #panel:not(.skin-original) #status-battles {
+	display: block; position: absolute; left: 494dp; top: 130dp; width: 266dp; margin: 0;
+}
+#scrim.status-extras #panel:not(.skin-original) #status-awake,
+#scrim.status-extras #panel:not(.skin-original) #status-timers {
+	display: block; position: absolute; left: 404dp; width: 342dp; margin: 0;
+}
+#scrim.status-extras #panel:not(.skin-original) #status-awake { top: 346dp; }
+#scrim.status-extras #panel:not(.skin-original) #status-timers { top: 374dp; }
+#panel:not(.skin-original) #status-battles,
+#panel:not(.skin-original) #status-awake,
+#panel:not(.skin-original) .timer-line {
+	display: block;
+	height: 28dp;
+	font-size: 18dp;
+	line-height: 28dp;
+}
+#panel:not(.skin-original) #status-battles-label,
+#panel:not(.skin-original) #status-awake-label,
+#panel:not(.skin-original) .timer-label { color: #9aa8ba; }
+#panel:not(.skin-original) #status-battles-value,
+#panel:not(.skin-original) #status-awake-value,
+#panel:not(.skin-original) .timer-value {
+	float: right;
+	font-weight: bold;
+	color: #e9eef5;
+}
+#scrim.status-extras #panel:not(.skin-original) #page-status { height: 448dp; }
+#scrim.status-extras #panel:not(.skin-original) #status-parameters,
+#scrim.status-extras #panel:not(.skin-original) #status-condition { height: 248dp; }

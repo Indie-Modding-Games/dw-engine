@@ -1,5 +1,6 @@
 #include <dwe/screens/partner_status_view.hpp>
 
+#include <array>
 #include <cstddef>
 #include <string>
 #include <utility>
@@ -45,6 +46,8 @@ constexpr std::string_view MaxField = "max";
 constexpr std::string_view TwoToneField = "two_tone";
 constexpr std::string_view KeyField = "key";
 constexpr std::string_view CountSuffix = ".count";
+// The evolution check's hours of a level that never evolves on its own.
+constexpr std::int32_t NoCheckHours = -1;
 
 MeterView meterOf(std::string_view label, const session::CareMeter& meter, bool twoTone) {
   return {.labelKey = std::string{label},
@@ -89,6 +92,14 @@ PartnerStatusView partnerStatusViewOf(const session::PartnerView& partner, const
                                     meterOf(VirusLabel, partner.virusBar, false)},
                          .tiredness = meterOf(TirednessLabel, partner.tiredness, false),
                          .careMistakes = partner.careMistakes,
+                         .battles = partner.battles,
+                         .lifetimeHours = partner.lifetimeHoursLeft,
+                         .evolutionHours = partner.evolutionHours,
+                         .evolutionCheckHours = std::nullopt,
+                         .wakeHour = partner.wakeHour,
+                         .wakeMinute = partner.wakeMinute,
+                         .sleepyHour = partner.sleepyHour,
+                         .sleepyMinute = partner.sleepyMinute,
                          .conditionKeys = {}};
   for (std::size_t index = 0; index < PoolStats.size(); ++index) {
     const Stat stat = PoolStats.at(index);
@@ -231,6 +242,19 @@ ScreenSettings settingsOf(const PartnerStatusView& view) {
       {.name = tiredness + ".max", .value = static_cast<double>(view.tiredness.max)});
   settings.push_back({.name = std::string{PartnerCareMistakesSetting},
                       .value = static_cast<double>(view.careMistakes)});
+  const std::array<std::pair<std::string_view, std::int32_t>, 8> extras{{
+      {PartnerBattlesSetting, view.battles},
+      {PartnerLifetimeSetting, view.lifetimeHours},
+      {PartnerEvolutionHoursSetting, view.evolutionHours},
+      {PartnerEvolutionCheckSetting, view.evolutionCheckHours.value_or(NoCheckHours)},
+      {PartnerWakeHourSetting, view.wakeHour},
+      {PartnerWakeMinuteSetting, view.wakeMinute},
+      {PartnerSleepyHourSetting, view.sleepyHour},
+      {PartnerSleepyMinuteSetting, view.sleepyMinute},
+  }};
+  for (const auto& [name, value] : extras) {
+    settings.push_back({.name = std::string{name}, .value = static_cast<double>(value)});
+  }
   settings.push_back({.name = countName(PartnerConditionList),
                       .value = static_cast<double>(view.conditionKeys.size())});
   for (std::size_t index = 0; index < view.conditionKeys.size(); ++index) {

@@ -129,3 +129,48 @@ TEST_CASE("the status page's extras carry the tiredness and the care mistakes th
   REQUIRE(mistakes != nullptr);
   CHECK(std::get<double>(mistakes->value) == doctest::Approx(4.0));
 }
+
+TEST_CASE("the status page's extras carry the battles, the lifetime, the evolution counter and the "
+          "waking hours") {
+  auto partnerView = partner();
+  partnerView.battles = 7;
+  partnerView.lifetimeHoursLeft = 353;
+  partnerView.evolutionHours = 5;
+  partnerView.wakeHour = 8;
+  partnerView.wakeMinute = 0;
+  partnerView.sleepyHour = 20;
+  partnerView.sleepyMinute = 30;
+  const dwe::screens::NameKeys names{nullptr, nullptr, nullptr};
+  auto view = dwe::screens::partnerStatusViewOf(partnerView, names);
+  CHECK(view.battles == 7);
+  CHECK(view.lifetimeHours == 353);
+  CHECK(view.evolutionHours == 5);
+  // The check's hours come from the evolution rules, which the menu adds; the view alone has none.
+  CHECK_FALSE(view.evolutionCheckHours.has_value());
+  CHECK(view.wakeHour == 8);
+  CHECK(view.sleepyHour == 20);
+  CHECK(view.sleepyMinute == 30);
+
+  const auto numberOf = [](const dwe::screens::ScreenSettings& settings, std::string_view name) {
+    const auto found =
+        std::ranges::find_if(settings, [name](const dwe::screens::ScreenSetting& setting) {
+          return setting.name == name;
+        });
+    REQUIRE(found != settings.end());
+    return std::get<double>(found->value);
+  };
+  const auto settings = dwe::screens::settingsOf(view);
+  CHECK(numberOf(settings, "partner.battles") == doctest::Approx(7.0));
+  CHECK(numberOf(settings, "partner.lifetime_hours") == doctest::Approx(353.0));
+  CHECK(numberOf(settings, "partner.evolution.hours") == doctest::Approx(5.0));
+  // A level that never evolves on its own publishes -1, which the page shows as the counter alone.
+  CHECK(numberOf(settings, "partner.evolution.check_hours") == doctest::Approx(-1.0));
+  CHECK(numberOf(settings, "partner.awake.wake_hour") == doctest::Approx(8.0));
+  CHECK(numberOf(settings, "partner.awake.wake_minute") == doctest::Approx(0.0));
+  CHECK(numberOf(settings, "partner.awake.sleepy_hour") == doctest::Approx(20.0));
+  CHECK(numberOf(settings, "partner.awake.sleepy_minute") == doctest::Approx(30.0));
+
+  view.evolutionCheckHours = 72;
+  CHECK(numberOf(dwe::screens::settingsOf(view), "partner.evolution.check_hours") ==
+        doctest::Approx(72.0));
+}

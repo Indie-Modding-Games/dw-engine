@@ -239,6 +239,12 @@ screens::ScreenSettings PartnerMenu::statusSettings() const {
       screens::setProfileSpecies(view, *species, desc_.session->partner().species().sleepPattern);
     }
   }
+  if (const auto* evolution = desc_.evolution != nullptr ? desc_.evolution->evolution() : nullptr;
+      evolution != nullptr) {
+    if (const auto form = evolution->tables().find(desc_.session->partner().state().species)) {
+      view.evolutionCheckHours = evolution->checkHoursFor(*form);
+    }
+  }
   if (catalog != nullptr) {
     if (auto partner = desc_.battle->partnerCombatant(*desc_.session); partner) {
       view.techniques = screens::equippedTechniqueViewsOf(*partner, *catalog, names);

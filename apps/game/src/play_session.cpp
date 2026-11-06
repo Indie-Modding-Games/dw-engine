@@ -423,6 +423,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                                            .story = game_.systems.story,
                                            .cards = game_.systems.cards,
                                            .city = game_.systems.city,
+                                           .evolution = game_.systems.evolution,
                                            .feed = &feedScene_}),
       chartRequirements_(*context.ui, game_.systems.evolution),
       fieldHud_(*context.ui, *game_.session),
