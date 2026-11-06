@@ -242,14 +242,120 @@ core::Result<const script::ScriptModule*> StoryLuaHost::module(std::uint16_t scr
   return &modules_.emplace(script, std::move(*loaded)).first->second;
 }
 
-core::Result<game::story::SectionHandle> StoryLuaHost::start(SectionRef section) {
-  const auto loaded = module(section.script);
-  if (!loaded) {
-    return std::unexpected{loaded.error()};
+void StoryLuaHost::loadPatches() {
+  if (std::exchange(patchesLoaded_, true)) {
+    return;
   }
+  // Bottom of the stack first, so a later patch of a section wins; within a pack, by id.
+  std::vector<std::pair<std::size_t, assets::AssetId>> found;
+  for (const assets::AssetId& id : files_->ids()) {
+    if (!id.str().starts_with(StoryPatchFolder)) {
+      continue;
+    }
+    const assets::AssetSource* source = files_->resolve(id);
+    const auto pack =
+        std::ranges::find(files_->packs(), source->packId,
+                          [](const assets::MountedPack& mounted) { return mounted.manifest.id; });
+    DWE_ASSERT(pack != files_->packs().end());
+    found.emplace_back(static_cast<std::size_t>(pack - files_->packs().begin()), id);
+  }
+  std::ranges::stable_sort(found, {}, &std::pair<std::size_t, assets::AssetId>::first);
+  for (const auto& [pack, id] : found) {
+    addPatch(id, files_->packs()[pack]);
+  }
+}
+
+void StoryLuaHost::addPatch(const assets::AssetId& id, const assets::MountedPack& pack) {
+  const std::string name = std::format("{}:{}", pack.manifest.id, id.str());
+  auto environment = vm_->modEnvironment(pack.manifest);
+  if (!environment) {
+    core::logError("{}", messages::formatMessage(messages::StoryPatchFailed, name,
+                                                 environment.error().message));
+    return;
+  }
+  auto loaded = environment->loadModule(*files_, id);
+  if (!loaded) {
+    core::logError(
+        "{}", messages::formatMessage(messages::StoryPatchFailed, name, loaded.error().message));
+    return;
+  }
+  constexpr std::int64_t Highest = std::numeric_limits<std::uint16_t>::max();
+  const std::array<ApiValue, 1> scriptPath{ApiValue{std::string{"script"}}};
+  const auto script = loaded->value(scriptPath);
+  const auto* number = script ? std::get_if<std::int64_t>(&*script) : nullptr;
+  if (number == nullptr || *number < 0 || *number > Highest) {
+    core::logError("{}", messages::formatMessage(messages::StoryPatchNoScript, name));
+    return;
+  }
+  const std::array<ApiValue, 1> sectionsPath{ApiValue{std::string{"sections"}}};
+  const auto sections = loaded->functionKeys(sectionsPath);
+  if (!sections) {
+    core::logError(
+        "{}", messages::formatMessage(messages::StoryPatchFailed, name, sections.error().message));
+    return;
+  }
+  if (const auto outside = std::ranges::find_if(
+          *sections, [](std::int64_t section) { return section < 0 || section > Highest; });
+      outside != sections->end()) {
+    core::logError("{}", messages::formatMessage(messages::StoryPatchBadSection, name, *outside));
+    return;
+  }
+  if (sections->empty()) {
+    core::logWarning("{}", messages::formatMessage(messages::StoryPatchEmpty, name));
+    return;
+  }
+  const auto patchScript = static_cast<std::uint16_t>(*number);
+  const std::size_t index = patches_.size();
+  patches_.push_back(Patch{.module = std::move(*loaded), .script = patchScript});
+  std::string listed;
+  for (const std::int64_t section : *sections) {
+    const SectionKey key{patchScript, static_cast<std::uint16_t>(section)};
+    if (const auto earlier = patchedSections_.find(key); earlier != patchedSections_.end()) {
+      core::logWarning("{}",
+                       messages::formatMessage(messages::StoryPatchShadowed, patchScript, section,
+                                               name, patches_[earlier->second].module.name()));
+    }
+    patchedSections_.insert_or_assign(key, index);
+    listed += std::format("{}0x{:04x}", listed.empty() ? "" : ", ", section);
+  }
+  core::logInfo("{}",
+                messages::formatMessage(messages::StoryPatchLoaded, name, patchScript, listed));
+}
+
+std::optional<std::string> StoryLuaHost::patchOf(SectionRef section) {
+  loadPatches();
+  const auto patched = patchedSections_.find({section.script, section.section});
+  if (patched == patchedSections_.end()) {
+    return std::nullopt;
+  }
+  return patches_[patched->second].module.name();
+}
+
+core::Result<game::story::SectionHandle> StoryLuaHost::start(SectionRef section) {
+  loadPatches();
   const std::array<ApiValue, 2> path{ApiValue{std::string{"sections"}},
                                      ApiValue{static_cast<std::int64_t>(section.section)}};
-  auto coroutine = (*loaded)->coroutine(path);
+  const auto patched = patchedSections_.find({section.script, section.section});
+  // The module is optional under a patch: a patch may give a script no pack has.
+  const bool needsModule =
+      patched == patchedSections_.end() || files_->resolve(moduleId(section.script)) != nullptr;
+  const script::ScriptModule* original = nullptr;
+  if (needsModule) {
+    const auto loaded = module(section.script);
+    if (!loaded) {
+      return std::unexpected{loaded.error()};
+    }
+    original = *loaded;
+  }
+  auto coroutine = [&] {
+    if (patched == patchedSections_.end()) {
+      return original->coroutine(path);
+    }
+    const script::ScriptModule& patch = patches_[patched->second].module;
+    core::logDebug("[mod:story] script {} section 0x{:04x} runs the patch {}", section.script,
+                   section.section, patch.name());
+    return patch.coroutine(path, script::ModuleFunction{.module = original, .path = path});
+  }();
   if (!coroutine) {
     return std::unexpected{coroutine.error()};
   }

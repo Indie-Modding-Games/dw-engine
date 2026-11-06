@@ -52,3 +52,40 @@ Un `show_textbox` o un `set_selection` no lleva su texto en el Lua: lleva una cl
   mapa) y `<offset>` el de la orden en el listado, con cuatro cifras hexadecimales. Ejemplo: `story_049.text.04c0`.
 - En el fichero de textos la clave va sin el prefijo del fichero: `text.04c0: "..."`.
 - `dwx extract` escribe el inglés (`text/en/`). Un idioma sin la clave usa el inglés.
+
+## Parches por sección
+
+Para cambiar un evento no hace falta copiar el `story/<n>.lua` entero. Un paquete trae `story/patches/<nombre>.lua`
+(el nombre es libre) que devuelve el script que parchea y sus secciones:
+
+```lua
+-- story/patches/puerta_abierta.lua de un mod
+return {
+  script = 49,
+  sections = {
+    -- Sustituye la sección 0x51 del script 49.
+    [0x51] = function()
+      story.set_trigger(203)
+      return story.ENDED
+    end,
+    -- Envuelve la 0x52: hace algo antes y deja que la original siga.
+    [0x52] = function(original)
+      story.set_var(5, 1)
+      return original()
+    end,
+  },
+}
+```
+
+- Cada función recibe `original`, la sección que sustituye (o `nil` si el script no la tiene: un parche también puede
+  añadir secciones nuevas). Las secciones que el parche no nombra siguen siendo las del script.
+- `return original()` deja que la original corra entera, esperas y saltos incluidos. Para hacer algo **después**,
+  guarda lo que devuelve y devuélvelo al final: `local r = original(); story.set_var(5, 2); return r`. Así un
+  `return story.ENDED` de la original sigue acabando el script.
+- Una sección devuelve `story.ENDED` (acaba el script) o nada (vuelve a quien la llamó), como las del script.
+- El parche corre en el entorno de su paquete (sandbox y cuota de memoria del paquete) con la misma API `story`.
+- Si dos paquetes parchean la misma sección, gana el que está más arriba en la pila (capa y prioridad del
+  `pack.yaml`) y el log lo dice. `original` es siempre la sección del script, no la del parche que perdió.
+- Un parche que no carga (Lua que no compila, sin `script`, una sección fuera de 0–65535) se deja fuera con un error
+  en el log y el juego usa la sección del script. `dwx validate` comprueba que el Lua compila.
+- Los números de sección son los del script: en el Lua generado aparecen como `[0x0051] = routines.at_...`.
