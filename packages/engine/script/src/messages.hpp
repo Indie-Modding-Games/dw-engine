@@ -125,6 +125,8 @@ inline constexpr std::string_view WaitOutsideStep =
 
 // Coroutines the engine steps (script_coroutine.cpp).
 inline constexpr std::string_view NoModuleFunction = "{} has no function at {}";
+inline constexpr std::string_view NotAnApiValue =
+    "{} has a {} at {}; it may hold nil, a boolean, a number or a text there";
 inline constexpr std::string_view YieldWithoutWait =
     "the coroutine yielded without a waiting function; only the engine's waiting functions may yield it";
 inline constexpr std::string_view BadReturnValue =
