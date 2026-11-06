@@ -32,8 +32,8 @@ activo y el anillo de foco.
   enteras) y las tarjetas de los complementos, y hasta tres enlaces con iconos genéricos (repositorio, comunidad y
   web). Los enlaces se fijan al compilar con `DWE_LAUNCHER_LINKS`, un objeto JSON con una URL `https` por tipo
   (`{"repo": "https://…", "community": "https://…", "web": "https://…"}`; en el flujo de publicación, la variable del
-  repositorio `DWE_LAUNCHER_LINKS`). El tipo que falta no se enseña y, sin la variable, no hay ninguno: los
-  probadores de la beta cerrada no tienen acceso al repositorio privado, así que no se enlaza por defecto.
+  repositorio `DWE_LAUNCHER_LINKS`). El tipo que falta no se enseña y, sin la variable, no hay ninguno: no se
+  enlaza nada por defecto.
 - **Imágenes:** exportar las imágenes del disco del jugador, cargar versiones mejoradas en bloque (carpeta o `.zip`)
   o una a una en la lista de mapas e imágenes, y encenderlas o apagarlas (ver
   [Imágenes personalizadas](#imágenes-personalizadas)).
@@ -42,8 +42,9 @@ activo y el anillo de foco.
 - La página de un complemento ocupa el centro de la pantalla cuando se abre desde su icono o desde «Complementos».
 - **Ajustes**, por pestañas (lista vertical a la izquierda; ↑/↓ en la lista, Ctrl+Tab y Ctrl+Mayús+Tab o
   Ctrl+AvPág/RePág desde cualquier sitio del diálogo):
-  - **General:** idioma (español por defecto, inglés) y carpeta de datos.
-  - **Actualizaciones:** buscar al abrir, buscar ahora, las versiones instaladas y volver a la anterior.
+  - **General:** idioma (español por defecto, inglés), carpeta de datos y requisitos del equipo.
+  - **Actualizaciones:** el canal, buscar al abrir, buscar ahora, las actualizaciones automáticas, las versiones
+    instaladas y volver a la anterior.
   - **Cuenta y acceso:** la clave de la beta.
   - **Disco:** el disco recordado y volver a leerlo.
   - **Complementos:** instalar, la lista de instalados (encender, apagar, quitar) y la sección de ajustes de cada
@@ -178,14 +179,14 @@ descarga a otro servidor `reqwest` quita la cabecera `Authorization` (lo prueba 
 
 ### La clave de la beta
 
-Los probadores **nunca** reciben acceso al repositorio. El responsable les da el lanzador y una sola clave
+Los probadores no necesitan cuenta de GitHub. El responsable les da el lanzador y una sola clave
 compartida, que genera él y guarda en la pasarela (cómo crearla y rotarla:
 [pasarela de la beta](https://github.com/Indie-Modding-Games/dw-engine/blob/main/services/beta-gateway/README.md)). El probador la pega en Ajustes → Cuenta y acceso
 la primera vez; si falta o no vale, el lanzador dice «Falta la clave de la beta o no es válida». La guarda en el
 llavero del sistema (Secret Service en Linux, como GNOME Keyring o KWallet; el administrador de credenciales en
 Windows; el llavero en macOS) con el servicio `dwe-launcher` y la cuenta `beta-key`, y nunca en un archivo ni en un
 registro. Sin llavero disponible, el lanzador lo dice y no guarda nada. La clave solo abre las versiones: no da
-acceso al código. Los nombres internos de la página (`save_token`, `clear_token`, el campo `token` del estado) se
+ningún permiso en el repositorio. Los nombres internos de la página (`save_token`, `clear_token`, el campo `token` del estado) se
 quedan como estaban.
 
 ### La clave de firma
@@ -298,7 +299,7 @@ scripts/launcher.sh bundle-windows   # el instalador de Windows (NSIS) y su firm
 El `.dmg` de macOS solo se compila en un Mac (el flujo de publicación).
 
 Con `DWE_BUILD_SLOTS=<carpeta de cerrojos>` cada compilación espera uno de los dos huecos de compilación de la
-máquina, como `dbuild.sh`. Las fuentes se copian del paquete del juego (`content/packs/game/ui/fonts`) al compilar.
+máquina, compartidos con las demás compilaciones pesadas. Las fuentes se copian del paquete del juego (`content/packs/game/ui/fonts`) al compilar.
 
 Cada paquete del lanzador lleva `LICENSE` (la licencia MIT del proyecto) y `THIRD_PARTY_NOTICES.txt`: las licencias
 de los crates de Rust con los que se compila (los de `cargo metadata` para ese sistema, con sus archivos `LICENSE*`,
@@ -347,7 +348,8 @@ respaldo para Linux y Windows ([Publicar desde este PC](#publicar-desde-este-pc)
 
 ### Versión de prueba: cada fusión en `main`
 
-`.github/workflows/release.yml` corre en cada push a `main` que toque algo más que documentación, y también a mano
+`.github/workflows/release.yml` corre en cada push a `main` que toque algo más que documentación, tests o la CI
+(`paths-ignore`), y también a mano
 (*Actions → Release → Run workflow*). Si llega una fusión nueva mientras otra se compila, la nueva cancela la vieja:
 solo el commit más nuevo sale como versión. Lo que hace, por orden:
 
@@ -469,7 +471,8 @@ guía [Complementos del lanzador](../../guides/launcher-addons.md); aquí, cómo
 
 - **Backend** (`src-tauri/src/addons/`): el manifiesto (`manifest.rs`), el desempaquetado seguro de carpetas y `.zip`
   (`package.rs`: rutas que salen, enlaces, tamaño y número de archivos), la instalación en dos pasos con el aviso de
-  permisos (`mod.rs`: `addon_inspect` prepara y enseña, `addon_install` instala solo si el jugador acepta), el
+  permisos (`mod.rs`, con los comandos en `src/addon_commands.rs`: `addon_inspect` prepara y enseña,
+  `addon_install` instala solo si el jugador acepta), el
   almacén (`storage.rs`), `net.fetch` (`net.rs`, un cliente aparte sin clave ni cookies) y el puente (`bridge.rs`),
   que solo conoce las llamadas de la API v1 y vuelve a comprobar en cada una que el complemento esté activo y tenga
   el permiso.
