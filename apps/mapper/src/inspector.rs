@@ -166,6 +166,36 @@ fn exit_fields(app: &mut MapperApp, ui: &mut egui::Ui, exit: i32, actions: &mut 
             actions.push(Action::FollowExit(exit));
         }
     });
+    live_exit_tests(app, ui, exit);
+}
+
+/// With a game on this map: put the player on the exit's first trigger cell and let the game run
+/// (it takes the exit), or where the exit leaves the player.
+fn live_exit_tests(app: &MapperApp, ui: &mut egui::Ui, exit: i32) {
+    let Some(view) = app.live.shows(&app.mapper) else {
+        return;
+    };
+    let rotation = view
+        .player
+        .map_or(0, |player| mapper_core::live::rotation_of_yaw(player.yaw));
+    ui.horizontal_wrapped(|ui| {
+        let cell = app.mapper.exit_cell(exit);
+        if ui
+            .add_enabled(cell.is_some(), egui::Button::new(text::LIVE_TEST_EXIT))
+            .on_hover_text(text::LIVE_TEST_EXIT_HINT)
+            .clicked()
+            && let Some(cell) = cell
+        {
+            let at = dwe_map::world::cell_center(cell);
+            app.live
+                .place(mapper_core::live::place_player(at, rotation), true);
+        }
+        if let Some(at) = app.mapper.place_at_arrival(exit)
+            && ui.button(text::LIVE_TO_ARRIVAL).clicked()
+        {
+            app.live.place(at, false);
+        }
+    });
 }
 
 fn npc_fields(app: &MapperApp, ui: &mut egui::Ui, slot: usize, actions: &mut Vec<Action>) {

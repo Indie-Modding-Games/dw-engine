@@ -16,7 +16,7 @@ Usage: dwe-mapper [options]
   --exit <n>           with --map: centre on where the player arrives through that exit
   --variant <name>     the background: day, dusk, night...
   --layers <list>      the layers shown, by comma: walls,triggers,exits,npcs,waypoints,doors,
-                       toilet,grid (default: all but grid)
+                       toilet,grid,live (default: all but grid)
   --group-by <kind>    the map list's groups: name or prefix
   --filter <text>      filters the map list
   --live <endpoint>    connects to a running dwe-game: unix:<socket> or tcp:<port>

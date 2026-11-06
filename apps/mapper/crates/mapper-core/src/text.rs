@@ -26,6 +26,7 @@ pub const LAYER_WAYPOINTS: &str = "Puntos de ruta";
 pub const LAYER_DOORS: &str = "Puertas";
 pub const LAYER_TOILET: &str = "Baño";
 pub const LAYER_GRID: &str = "Rejilla";
+pub const LAYER_LIVE: &str = "Juego";
 
 pub const TIME_OF_DAY: &str = "Fondo";
 pub const VARIANT_DAY: &str = "Día";
@@ -75,6 +76,49 @@ pub const STORY_TRIGGERS: &str = "Disparadores activos";
 pub const STORY_VARIABLES: &str = "Variables distintas de 0";
 pub const LIVE_OFF: &str = "Sin conexión";
 pub const LIVE_ON: &str = "Conectado";
+pub const LIVE_CONNECTING: &str = "Conectando…";
+pub const LIVE_RECONNECTING: &str = "Reconectando";
+pub const LIVE_GAME: &str = "Juego";
+pub const LIVE_FOLLOW_MODE: &str = "Seguir al juego";
+pub const LIVE_FOLLOW_HINT: &str = "Cuando el juego cambia de mapa, el editor abre ese mapa (pregunta antes si hay cambios sin guardar)";
+pub const LIVE_PREVIEW: &str = "Vista previa en vivo";
+pub const LIVE_PREVIEW_HINT: &str = "Enseña en el juego los cambios sin guardar de este mapa. Solo en \
+     memoria: nada se escribe en disco y se quita al guardar, al desconectar o al cerrar";
+pub const LIVE_PREVIEW_SHOWN: &str = "vista previa";
+pub const LIVE_PREVIEW_COLLISION: &str = "Vista previa: colisión cambiada en el sitio";
+pub const LIVE_PREVIEW_REENTERED: &str = "Vista previa: mapa vuelto a entrar";
+pub const LIVE_PREVIEW_CLEARED: &str = "Vista previa quitada";
+pub const LIVE_PAUSE: &str = "Pausa";
+pub const LIVE_RESUME: &str = "Seguir";
+pub const LIVE_STEP: &str = "Paso";
+pub const LIVE_STEP_HINT: &str = "Avanza un tick (1/60 s) con el juego en pausa";
+pub const LIVE_STEP_SECOND: &str = "+1 s";
+pub const LIVE_BUSY: &str = "historia en curso";
+pub const LIVE_PLACE_HERE: &str = "Llevar al jugador aquí";
+pub const LIVE_TEST_EXIT: &str = "Probar esta salida";
+pub const LIVE_TEST_EXIT_HINT: &str = "Pone al jugador en la primera casilla de la salida y deja correr el juego para que cambie de mapa";
+pub const LIVE_TO_ARRIVAL: &str = "Llevar al jugador a la llegada";
+pub const LIVE_PLACED: &str = "Jugador colocado";
+pub const LIVE_PLAYER: &str = "jugador";
+pub const LIVE_PARTNER: &str = "compañero";
+pub const LIVE_NPC: &str = "NPC";
+pub const LIVE_NOT_SHOWN: &str = "El juego está en otro mapa";
+pub const LIVE_LOG: &str = "Registro del juego";
+pub const LIVE_LOG_EMPTY: &str = "Sin avisos ni errores";
+pub const LIVE_PROBLEMS: &str = "El juego respondió con errores";
+pub const CLEAR: &str = "Limpiar";
+pub const STORY_FOLLOW: &str = "Actualizar sola";
+pub const STORY_FILTER_HINT: &str = "Filtrar por número o nombre";
+pub const STORY_SCRIPT: &str = "Script del mapa";
+pub const STORY_SECTIONS: &str = "Secciones en curso";
+pub const STORY_STAGE: &str = "Etapa";
+pub const STORY_NONE: &str = "ninguna";
+pub const STORY_TRIGGER: &str = "Disparador";
+pub const STORY_VARIABLE: &str = "Variable";
+pub const STORY_SET_ON: &str = "Activar";
+pub const STORY_SET_OFF: &str = "Quitar";
+pub const STORY_SET_VALUE: &str = "Poner";
+pub const STORY_SET_HINT: &str = "Para probar eventos: escribe en el estado de la historia del juego (no mientras corre un script)";
 
 pub const SKIPPED_MOD: &str = "Mod que se queda fuera";
 pub const ARCHIVES_NOT_READ: &str = "Archivos .pak que el editor no lee (solo carpetas)";
@@ -255,5 +299,17 @@ pub fn variant_name(variant: &str) -> String {
         "dusk" => VARIANT_DUSK.to_owned(),
         "night" => VARIANT_NIGHT.to_owned(),
         other => other.to_owned(),
+    }
+}
+
+/// The game's mode as `status` and `live` name it.
+pub fn game_mode(mode: &str) -> &str {
+    match mode {
+        "field" => "campo",
+        "battle" => "batalla",
+        "movie" => "vídeo",
+        "title" => "título",
+        "interview" => "preguntas iniciales",
+        other => other,
     }
 }
