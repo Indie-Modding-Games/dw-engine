@@ -39,6 +39,9 @@ minimap_mode.off: "No"
 # Enemigos en el minimapa (una mejora del motor): un punto rojo por cada personaje del mapa que puede empezar una
 # batalla (encendido por defecto; apagado, el minimapa solo con el jugador y el compañero).
 minimap_enemies: "Enemigos en el minimapa"
+# Objetos en el minimapa (una mejora del motor): un rombo verde por cada objeto tirado en el suelo del mapa (encendido
+# por defecto; apagado, el minimapa sin ellos).
+minimap_items: "Objetos en el minimapa"
 minimap_size: "Tamaño"
 minimap_size.small: "Pequeño"
 minimap_size.medium: "Mediano"
@@ -222,6 +225,7 @@ help.text_font: "Escribe los textos con la letra del original."
 help.translated_signs: "Los carteles pintados en los mapas se leen en tu idioma."
 help.minimap: "El minimapa redondo arriba a la derecha, con el nombre del mapa, el día y la hora."
 help.minimap_enemies: "Un punto rojo en el minimapa por cada enemigo que puede empezar un combate."
+help.minimap_items: "Un rombo verde en el minimapa por cada objeto que hay en el suelo para recoger."
 help.digital_time: "La hora del juego en dígitos (HH:MM) bajo el reloj."
 help.save_notice: "Una figura pequeña y «Guardando» en una esquina mientras el juego guarda."
 help.need_bubble_stack: "La burbuja del compañero enseña hasta tres necesidades a la vez, la más urgente primero."

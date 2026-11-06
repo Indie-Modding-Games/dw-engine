@@ -1044,6 +1044,28 @@ no. Un enemigo fuera de la vista del disco no se pinta (no se clava en el borde 
 |---|---|---|---|---|
 | Enemigos en el minimapa | No existe | Un punto rojo anaranjado con borde oscuro por cada personaje del mapa que puede pelear, donde está, bajo la flecha del jugador; con los dos aspectos. Medido en dwe: en el segundo mapa de la niebla salen los tres salvajes y se mueven con ellos, uno sale de la vista; en el túnel (dos que persiguen pero solo hablan) y en el pueblo, ninguno. Apagado, ninguno | `minimap_enemies_tests.cpp` (secciones que pelean, amigos fuera, posiciones vivas, apagado, lector del listado); `ui_tests.cpp` («the minimap marks the enemies in view round the player, under the player's arrow»); `minimap_tests.cpp` (el punto); `in_game_options_tests.cpp` («the options page turns the enemies on the minimap on and off…»); `user_settings_tests`; ruta `route-minimap-enemies.yaml` | Mejora (opción) |
 
+## Objetos en el minimapa
+
+Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no tiene minimapa): el ajuste
+`minimap_items` (`true` o `false`) se cambia en la fila «Objetos en el minimapa» («Items on minimap» en inglés) de la
+pestaña Juego de las opciones en partida, bajo «Mapa de la isla» (la pestaña Interfaz, al lado de «Enemigos en el
+minimapa», ya llena la página a 1280x720); se aplica al momento y se
+guarda en los ajustes del usuario (clave `minimap_items`). Apagado, el minimapa queda sin ellos.
+
+Qué es un objeto: uno de los que están tirados en el suelo del mapa y se recogen al pasar por encima (`item.c:
+spawnItem`, que ponen los guiones del mapa, y `spawnDroppedItems`, lo que suelta un enemigo vencido o lo que tira el
+jugador), la lista `FieldItems::ground()` del mapa en el que está. `PlaySession::minimapItemMarkers` pone una marca
+por cada uno que el campo dibuja (`minimapItems`, `apps/game/src/minimap_items.hpp`: los que tienen icono del original,
+como `FieldItemsScreen::show`), donde está; en cada frame se vuelve a leer, así que la marca se va al recogerlo y las
+de un mapa nuevo salen cuando su guion los pone. Los cofres no llevan marca: son parte del decorado del mapa y se
+ven en él. La marca es un rombo verde claro con borde oscuro (`generated:minimap_item`, `buildMinimapDiamond`), de otra
+forma y otro color que el punto de los enemigos para que no se confundan, en una capa bajo la de los enemigos; uno
+fuera de la vista del disco no se pinta. Cómo se dibuja: [ui.md](../../architecture/ui.md#minimapa).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Objetos en el minimapa | No existe | Un rombo verde claro con borde oscuro por cada objeto tirado en el suelo, donde está, bajo los puntos de los enemigos y la flecha del jugador; con los dos aspectos. Se va al recogerlo. Apagado, ninguno | `minimap_items_tests.cpp` (los dibujados, huecos vacíos fuera, apagado); `ui_tests.cpp` («the minimap marks the items on the ground in view, under the enemies' dots»); `minimap_tests.cpp` (el rombo); `in_game_options_tests.cpp` («the options page turns the items on the minimap on and off…»); `user_settings_tests` | Mejora (opción) |
+
 ## Mapa de la isla
 
 Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no tiene mapa de la isla): la tecla M
@@ -1180,7 +1202,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 
 | Pestaña | Filas |
 |---|---|
-| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha |
+| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha |
 | Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |

@@ -1,0 +1,44 @@
+# The items on the minimap (an engine improvement, docs/modulos/apps/game.md, «Objetos en el minimapa»): a green diamond
+# for each item lying on the map's ground. On File City's field two meats are dropped where the player stands, one
+# after the other, and the player steps away; the notice of the second is answered (it is picked up), so one meat stays
+# on the ground with its diamond west of the player's arrow. Then the option off in the pause menu: the diamond goes.
+# Run it with both skins (--ui-skin original, modern); how to run it: docs/guides/prueba-vertical.md.
+name: minimap-items
+device: keyboard
+timeout: 180
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {minimap_items: "true"}
+  # A clear ground on File City's field (original axes), as route-field-pickup-mouse's.
+  - script: place("player 300 1950 0")
+  - wait: {seconds: 0.5}
+  - script: drop_item("meat")
+  - script: place("player 300 1450 0")
+  - script: drop_item("meat")
+  - script: place("player 700 1450 0")
+  - wait: {shown: field_item_notice, seconds: 0.5, timeout: 10}
+  - repeat: {times: 3, steps: [{tap: {key: space}}, {wait: {seconds: 0.8}}]}
+  - wait: {hidden: field_item_notice, seconds: 1.5, timeout: 10}
+  - screenshot: one-item
+  - menu: open
+  - wait: {seconds: 0.6}
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - wait: {seconds: 0.3}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.3}
+  - menu_select: minimap-items
+  - expect_setting: {minimap_items: "false"}
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  - screenshot: option-off

@@ -44,6 +44,7 @@ constexpr std::string_view NeedBubbleStackKey = "need_bubble_stack";
 constexpr std::string_view WorldMapKey = "world_map";
 constexpr std::string_view ChibiStyleKey = "chibi_style";
 constexpr std::string_view MinimapEnemiesKey = "minimap_enemies";
+constexpr std::string_view MinimapItemsKey = "minimap_items";
 constexpr std::string_view ShadowsKey = "shadows";
 constexpr std::string_view EnhancedLightingKey = "enhanced_lighting";
 constexpr std::string_view VividColorsKey = "vivid_colors";
@@ -136,6 +137,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* enemies = tree->find(MinimapEnemiesKey)) {
       settings.minimapEnemies = reader.boolean(*enemies);
+    }
+    if (const core::YamlNode* items = tree->find(MinimapItemsKey)) {
+      settings.minimapItems = reader.boolean(*items);
     }
     if (const core::YamlNode* shadows = tree->find(ShadowsKey)) {
       settings.shadows = reader.text(*shadows);
@@ -261,6 +265,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.minimapEnemies) {
     root.set(std::string{MinimapEnemiesKey},
              core::YamlNode::scalar(*settings.minimapEnemies ? "true" : "false"));
+  }
+  if (settings.minimapItems) {
+    root.set(std::string{MinimapItemsKey},
+             core::YamlNode::scalar(*settings.minimapItems ? "true" : "false"));
   }
   if (settings.shadows) {
     root.set(std::string{ShadowsKey}, core::YamlNode::scalar(*settings.shadows));

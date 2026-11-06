@@ -67,6 +67,11 @@ inline constexpr std::string_view MinimapPartner = "minimap-partner";
 // enemies.
 inline constexpr std::string_view MinimapEnemies = "minimap-enemies";
 inline constexpr std::string_view MinimapEnemyPrefix = "minimap-enemy-";
+// The items lying on the ground (an engine improvement): the same as the enemies, one <img
+// class="marker item"> per item in view, with the ids MinimapItemPrefix 1, 2... The element goes
+// before the enemies' so an enemy draws over an item at the same place.
+inline constexpr std::string_view MinimapItems = "minimap-items";
+inline constexpr std::string_view MinimapItemPrefix = "minimap-item-";
 } // namespace hud
 
 // The attribute that gives an element its text by key, in the player's language: <span
@@ -228,11 +233,12 @@ public:
   // TextKeyAttribute, the map's name, and whatever the shown documents' on_language handlers write.
   void refreshTexts();
 
-  // Moves the minimap markers (hud::MinimapPlayer and hud::MinimapPartner) and the enemies' dots
-  // (hud::MinimapEnemies; their facing is not drawn), every frame. Markers that did not move cost
-  // nothing.
+  // Moves the minimap markers (hud::MinimapPlayer and hud::MinimapPartner), the enemies' dots
+  // (hud::MinimapEnemies) and the ground items' marks (hud::MinimapItems; their facing is not
+  // drawn), every frame. Markers that did not move cost nothing.
   void setMinimapMarkers(const MinimapMarker& player, const std::optional<MinimapMarker>& partner,
-                         std::span<const MinimapMarker> enemies = {});
+                         std::span<const MinimapMarker> enemies = {},
+                         std::span<const MinimapMarker> items = {});
 
   // Lays out the documents and records their geometry for the renderer. Once per frame, before
   // drawing. Until the skin's sprite sheet images are all loaded it also loads one ahead of its

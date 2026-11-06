@@ -95,6 +95,16 @@ body {
 	image-color: #ff5a36;
 }
 
+/* The items lying on the ground (the option minimap_items): small light green diamonds with a dark outline, under the
+   enemies. */
+#minimap-items .item {
+	width: 11dp;
+	height: 11dp;
+	margin-left: -5.5dp;
+	margin-top: -5.5dp;
+	image-color: #8dff7a;
+}
+
 /* A partner out of view waits on the rim, dimmed. */
 #minimap-partner.pinned {
 	opacity: 0.6;

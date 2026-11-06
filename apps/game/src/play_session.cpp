@@ -647,6 +647,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   if (context.files != nullptr) {
     minimapEnemies_.emplace(*context.files);
   }
+  // The items on the ground on the minimap, on unless turned off.
+  minimapItemsShown_ = context.userSettings->minimapItems.value_or(true);
+  context_.ui->setSetting(MinimapItemsSetting, minimapItemsShown_);
   // The canonical stages on the chart, off unless turned on.
   context_.ui->setSetting(CanonicalStagesSetting,
                           context.userSettings->canonicalStages.value_or(false));
@@ -1065,6 +1068,17 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     }
     return true;
   }
+  if (command.name == MinimapItemsSetting) {
+    if (const bool* shown = std::get_if<bool>(&command.value)) {
+      minimapItemsShown_ = *shown;
+      context_.ui->setSetting(MinimapItemsSetting, *shown);
+      context_.userSettings->minimapItems = *shown;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    return true;
+  }
   if (command.name == NeedBubbleStackSetting) {
     if (const bool* stacked = std::get_if<bool>(&command.value)) {
       context_.ui->setSetting(NeedBubbleStackSetting, *stacked);
@@ -1423,7 +1437,8 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     stats.skipNext(MapChangeSettleFrames);
   }
   const game::field::Field& field = scene_->field();
-  ui.setMinimapMarkers(markerOf(field.player()), markerOf(field.partner()), minimapEnemyMarkers());
+  ui.setMinimapMarkers(markerOf(field.player()), markerOf(field.partner()), minimapEnemyMarkers(),
+                       minimapItemMarkers());
 
   partnerMenu_.setBagContext(battleScreen_.active() ? game::inventory::UseContext::Battle
                                                     : game::inventory::UseContext::Field);
@@ -1571,6 +1586,20 @@ std::vector<ui::MinimapMarker> PlaySession::minimapEnemyMarkers() {
 
 void PlaySession::refreshMinimap() {
   context_.ui->setMinimap(ui::minimapGridOf(scene_->map()), scene_->mapNameKey());
+}
+
+std::vector<ui::MinimapMarker> PlaySession::minimapItemMarkers() const {
+  if (scene_ == nullptr || game_.systems.fieldItems == nullptr ||
+      game_.systems.inventory == nullptr) {
+    return {};
+  }
+  // The ones the field draws (FieldItemsScreen::show): an item with an icon of the original's.
+  const assets::ItemTable& table = game_.systems.inventory->items();
+  return minimapItems(minimapItemsShown_, game_.systems.fieldItems->items().ground(),
+                      [&](assets::ItemHandle item) {
+                        const assets::ItemEntry& entry = table.at(item);
+                        return entry.iconPalette.has_value() && entry.originalIndex;
+                      });
 }
 
 void PlaySession::publishMinimapAllowed(const MinimapScene& scene) {

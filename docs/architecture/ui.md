@@ -182,6 +182,7 @@ un mod puede colocarlos y darles estilo como quiera, pero con estos ids y estos 
 | `minimap-name` | `hud::MinimapName` | Su texto es el nombre del mapa, el texto de la clave que da `setMinimap`, en el idioma del juego |
 | `minimap-player`, `minimap-partner` | `hud::MinimapPlayer`, `hud::MinimapPartner` | Los marcadores: `left`, `top` (en porcentaje del disco; el jugador siempre al 50 %), `transform: rotate(...)`, la clase `pinned` en el compañero fuera de la vista, y `display: none` sin marcador |
 | `minimap-enemies` | `hud::MinimapEnemies` | La capa de los enemigos, dentro del disco y antes de los marcadores del compañero y del jugador (que quedan encima): la UI le crea un hijo `<img class="marker enemy" id="minimap-enemy-N">` por enemigo (`hud::MinimapEnemyPrefix`, imagen `generated:minimap_enemy`: disco blanco con borde oscuro que el aspecto tiñe con `image-color`), con `left`, `top` como el compañero, y `display: none` en los que sobran o quedan fuera de la vista |
+| `minimap-items` | `hud::MinimapItems` | La capa de los objetos del suelo, dentro del disco y antes de la de los enemigos (que queda encima): como la de los enemigos, un hijo `<img class="marker item" id="minimap-item-N">` por objeto (`hud::MinimapItemPrefix`, imagen `generated:minimap_item`: un rombo blanco con borde oscuro que el aspecto tiñe con `image-color`), con `left`, `top` y `display: none` en los que sobran o quedan fuera de la vista |
 
 El script del HUD (`ui/hud/logic.lua`) escribe además el día y la hora en `#minimap-day` y `#minimap-time`, y la
 marca del norte es el texto `hud.minimap.north` de `#minimap-north`.
@@ -203,6 +204,10 @@ pueden pelear ([game.md](../modulos/apps/game.md#enemigos-en-el-minimapa)). Cada
 jugador (`locateOnDisc`, hasta el 92 % del radio, `MinimapEnemyRim`); uno fuera de la vista se esconde. El disco va
 con el norte arriba y los puntos son redondos, así que no giran. Igual que los demás marcadores, la UI solo les
 cambia las propiedades cuando se mueven.
+
+Los objetos tirados en el suelo son una tercera lista de `setMinimapMarkers`, con su propia opción (`minimap_items`,
+fila «Objetos en el minimapa», [game.md](../modulos/apps/game.md#objetos-en-el-minimapa)): se colocan igual que los
+enemigos, en su capa `minimap-items`, con rombos en vez de puntos.
 
 ## Estado del campo
 

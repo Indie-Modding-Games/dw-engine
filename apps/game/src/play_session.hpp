@@ -51,6 +51,7 @@
 #include "item_keeper_screen.hpp"
 #include "jukebox_screen.hpp"
 #include "minimap_enemies.hpp"
+#include "minimap_items.hpp"
 #include "minimap_setting.hpp"
 #include "movie_rules.hpp"
 #include "naming_box.hpp"
@@ -348,6 +349,8 @@ private:
   void publishMinimapAllowed(const MinimapScene& scene);
   // The enemies the minimap marks now: none while minimap_enemies is off.
   [[nodiscard]] std::vector<ui::MinimapMarker> minimapEnemyMarkers();
+  // The items lying on the ground the minimap marks now: none while minimap_items is off.
+  [[nodiscard]] std::vector<ui::MinimapMarker> minimapItemMarkers() const;
   // Shows the story lock's message in the dialog, unless the dialog is on screen already.
   // Opens the island map over the field, with the maps the player has visited.
   void openWorldMap();
@@ -383,6 +386,8 @@ private:
   // the fighting sections of the map's script.
   bool minimapEnemiesShown_ = true;
   std::optional<MinimapEnemyFinder> minimapEnemies_;
+  // Whether the minimap marks the items on the ground (an engine improvement, minimap_items).
+  bool minimapItemsShown_ = true;
   // The shop job's progress bar (an engine improvement) and what it last published.
   ShopJobBar shopJobBar_;
   std::optional<ShopJobBarView> publishedShopJob_;

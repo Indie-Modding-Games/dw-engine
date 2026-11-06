@@ -1708,6 +1708,59 @@ TEST_CASE("the minimap marks the enemies in view round the player, under the pla
   }
 }
 
+TEST_CASE("the minimap marks the items on the ground in view, under the enemies' dots") {
+  for (const std::string_view skin : {"original", "modern"}) {
+    CAPTURE(skin);
+    Content content;
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->setSetting("ui_skin", std::string{skin});
+    ui->show("hud");
+    MinimapGrid grid{
+        .columns = 4, .rows = 2, .cells = {}, .cellSize = 100.0F, .originX = 0.0F, .originZ = 0.0F};
+    grid.cells.assign(8, MinimapCell::Walkable);
+    ui->setMinimap(grid, "Playa");
+    // The smallest view (800): an item 400 west of the player is half way to the rim, one 2000
+    // away is out of view; an enemy stands on the first item.
+    const MinimapMarker player{.x = 1000.0F, .z = 100.0F, .facingX = 0.0F, .facingZ = -1.0F};
+    const std::array<MinimapMarker, 2> items{
+        MinimapMarker{.x = 600.0F, .z = 100.0F, .facingX = 0.0F, .facingZ = -1.0F},
+        MinimapMarker{.x = 3000.0F, .z = 100.0F, .facingX = 0.0F, .facingZ = -1.0F}};
+    const std::array<MinimapMarker, 1> enemies{items[0]};
+    ui->setMinimapMarkers(player, std::nullopt, enemies, items);
+    ui->update();
+    const auto frame = ui->elementRect("hud", "minimap-frame");
+    REQUIRE(frame.has_value());
+    const float centreX = (frame->left + frame->right) / 2.0F;
+    const float centreY = (frame->top + frame->bottom) / 2.0F;
+    const float discRadius = (frame->right - frame->left) / 2.0F;
+    const auto west = ui->elementCenter("hud", "minimap-item-1");
+    REQUIRE(west.has_value());
+    CHECK(centreX - west->x == doctest::Approx(discRadius * 0.5F).epsilon(0.05));
+    CHECK(west->y == doctest::Approx(centreY).epsilon(0.02));
+    CHECK(ui->elementHasClass("hud", "minimap-item-1", "item"));
+    CHECK_FALSE(ui->elementHasClass("hud", "minimap-item-1", "enemy"));
+    CHECK(ui->styleProperty("hud", "minimap-item-1", "display") == "block");
+    CHECK(ui->styleProperty("hud", "minimap-item-2", "display") == "none");
+    // The enemy's dot is its own element, in its own layer, at the same place.
+    const auto enemy = ui->elementCenter("hud", "minimap-enemy-1");
+    REQUIRE(enemy.has_value());
+    CHECK(enemy->x == doctest::Approx(west->x).epsilon(0.02));
+    const auto mark = ui->elementRect("hud", "minimap-item-1");
+    const auto arrow = ui->elementRect("hud", "minimap-player");
+    REQUIRE(mark.has_value());
+    REQUIRE(arrow.has_value());
+    CHECK(mark->right - mark->left > 0.0F);
+    CHECK(mark->right - mark->left < arrow->right - arrow->left);
+
+    // Picked up (or the option off): the marks hide, and the enemies stay.
+    ui->setMinimapMarkers(player, std::nullopt, enemies);
+    ui->update();
+    CHECK(ui->styleProperty("hud", "minimap-item-1", "display") == "none");
+    CHECK(ui->styleProperty("hud", "minimap-enemy-1", "display") == "block");
+  }
+}
+
 // A UI that shows the texts of a catalog, as the game creates it.
 std::unique_ptr<Ui> createUi(const VirtualFileSystem& files, const localization::Catalog& texts) {
   auto ui = Ui::create(UiDesc{

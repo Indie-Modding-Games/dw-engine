@@ -219,9 +219,29 @@ struct Ui::Impl {
     std::optional<MarkerState> shown;
   };
 
-  // The enemies' dots in one document's hud::MinimapEnemies element: the dots made in it, in
-  // order, and what each one shows.
-  struct EnemyLayer {
+  // The kinds of marks the UI makes as many of as the game asks: the enemies' dots and the ground
+  // items' marks, each in its own layer of the disc.
+  struct DotKind {
+    std::string_view container;
+    std::string_view prefix;
+    std::string_view className;
+    std::string_view source;
+  };
+  static constexpr std::array<DotKind, 2> DotKinds{DotKind{.container = hud::MinimapEnemies,
+                                                           .prefix = hud::MinimapEnemyPrefix,
+                                                           .className = "enemy",
+                                                           .source = "generated:minimap_enemy"},
+                                                   DotKind{.container = hud::MinimapItems,
+                                                           .prefix = hud::MinimapItemPrefix,
+                                                           .className = "item",
+                                                           .source = "generated:minimap_item"}};
+  static constexpr std::size_t EnemyDots = 0;
+  static constexpr std::size_t ItemDots = 1;
+
+  // One kind's marks in one document's layer element (DotKind::container): the marks made in it,
+  // in order, and what each one shows.
+  struct DotLayer {
+    std::size_t kind = EnemyDots;
     Rml::ObserverPtr<Rml::Element> container;
     std::vector<Rml::ObserverPtr<Rml::Element>> dots;
     std::vector<std::optional<MarkerState>> shown;
@@ -288,7 +308,7 @@ struct Ui::Impl {
   std::array<MarkerSlot, 2> markers{
       MarkerSlot{.id = hud::MinimapPlayer, .elements = {}, .shown = {}},
       MarkerSlot{.id = hud::MinimapPartner, .elements = {}, .shown = {}}};
-  std::vector<EnemyLayer> enemyLayers;
+  std::vector<DotLayer> dotLayers;
   bool markersStale = true;
   // The texts: the app's catalog, or ownTexts read from the packs when it gives none.
   const localization::Catalog* texts = nullptr;
@@ -982,7 +1002,7 @@ struct Ui::Impl {
     for (MarkerSlot& slot : markers) {
       slot.shown.reset();
     }
-    for (EnemyLayer& layer : enemyLayers) {
+    for (DotLayer& layer : dotLayers) {
       std::ranges::fill(layer.shown, std::nullopt);
     }
   }
@@ -998,19 +1018,23 @@ struct Ui::Impl {
         }
       }
     }
-    // A document that stayed keeps the dots made in it: they are found again, in their order.
-    enemyLayers.clear();
+    // A document that stayed keeps the marks made in it: they are found again, in their order.
+    dotLayers.clear();
     for (auto& [name, document] : documents) {
-      Rml::Element* container = document.element->GetElementById(Rml::String{hud::MinimapEnemies});
-      if (container == nullptr) {
-        continue;
+      for (std::size_t kind = 0; kind < DotKinds.size(); ++kind) {
+        Rml::Element* container =
+            document.element->GetElementById(Rml::String{DotKinds.at(kind).container});
+        if (container == nullptr) {
+          continue;
+        }
+        DotLayer layer{
+            .kind = kind, .container = container->GetObserverPtr(), .dots = {}, .shown = {}};
+        for (int child = 0; child < container->GetNumChildren(); ++child) {
+          layer.dots.push_back(container->GetChild(child)->GetObserverPtr());
+        }
+        layer.shown.resize(layer.dots.size());
+        dotLayers.push_back(std::move(layer));
       }
-      EnemyLayer layer{.container = container->GetObserverPtr(), .dots = {}, .shown = {}};
-      for (int child = 0; child < container->GetNumChildren(); ++child) {
-        layer.dots.push_back(container->GetChild(child)->GetObserverPtr());
-      }
-      layer.shown.resize(layer.dots.size());
-      enemyLayers.push_back(std::move(layer));
     }
     markersStale = false;
   }
@@ -1059,16 +1083,18 @@ struct Ui::Impl {
     }
   }
 
-  // The enemies' dots, where they stand from the player on the north-up disc; an enemy out of
-  // view (farther than MinimapEnemyRim) is hidden. Each layer gets as many dots as enemies, made
-  // the first time they are needed, and hides the rest.
-  void placeEnemies(const MinimapMarker& player, std::span<const MinimapMarker> enemies) {
+  // One kind's marks (the enemies' dots, the ground items' marks), where they stand from the
+  // player on the north-up disc; one out of view (farther than MinimapEnemyRim) is hidden. Each
+  // layer of the kind gets as many marks as points, made the first time they are needed, and hides
+  // the rest.
+  void placeDots(std::size_t kind, const MinimapMarker& player,
+                 std::span<const MinimapMarker> points) {
     std::vector<MarkerState> states;
     if (minimap) {
-      states.reserve(enemies.size());
-      for (const MinimapMarker& enemy : enemies) {
-        const MinimapDiscPoint at = locateOnDisc(player.x, player.z, minimap->viewRadius, enemy.x,
-                                                 enemy.z, MinimapEnemyRim);
+      states.reserve(points.size());
+      for (const MinimapMarker& point : points) {
+        const MinimapDiscPoint at = locateOnDisc(player.x, player.z, minimap->viewRadius, point.x,
+                                                 point.z, MinimapEnemyRim);
         states.push_back(
             at.pinned ? MarkerState{}
                       : MarkerState{.visible = true,
@@ -1080,8 +1106,9 @@ struct Ui::Impl {
                                     .pinned = false});
       }
     }
-    for (EnemyLayer& layer : enemyLayers) {
-      if (!layer.container) {
+    const DotKind& made = DotKinds.at(kind);
+    for (DotLayer& layer : dotLayers) {
+      if (layer.kind != kind || !layer.container) {
         continue;
       }
       while (layer.dots.size() < states.size()) {
@@ -1090,11 +1117,11 @@ struct Ui::Impl {
           break;
         }
         Rml::ElementPtr dot = owner->CreateElement("img");
-        dot->SetId(std::format("{}{}", hud::MinimapEnemyPrefix, layer.dots.size() + 1));
+        dot->SetId(std::format("{}{}", made.prefix, layer.dots.size() + 1));
         dot->SetClass("marker", true);
-        dot->SetClass("enemy", true);
+        dot->SetClass(Rml::String{made.className}, true);
         dot->SetProperty("display", "none");
-        dot->SetAttribute("src", Rml::String{"generated:minimap_enemy"});
+        dot->SetAttribute("src", Rml::String{made.source});
         layer.dots.push_back(layer.container->AppendChild(std::move(dot))->GetObserverPtr());
         layer.shown.emplace_back();
       }
@@ -1112,7 +1139,7 @@ struct Ui::Impl {
   // The disc follows the player, north-up: the player stays in its middle and the partner goes
   // where it stands from the player, pinned to the rim when it is out of view.
   void placeMarkers(const MinimapMarker& player, const std::optional<MinimapMarker>& partner,
-                    std::span<const MinimapMarker> enemies) {
+                    std::span<const MinimapMarker> enemies, std::span<const MinimapMarker> items) {
     if (markersStale) {
       findMarkers();
     }
@@ -1126,7 +1153,8 @@ struct Ui::Impl {
           locateOnDisc(player.x, player.z, minimap->viewRadius, partner->x, partner->z, PartnerRim);
     }
     placeMarker(markers[1], partner, 0.5F + (at.x / 2.0F), 0.5F + (at.y / 2.0F), at.pinned);
-    placeEnemies(player, enemies);
+    placeDots(EnemyDots, player, enemies);
+    placeDots(ItemDots, player, items);
   }
 
   void reloadChanged() {
@@ -1237,6 +1265,7 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
   constexpr std::uint32_t MarkerSize = 64;
   impl->sources.setGenerated("minimap_marker", buildMinimapMarker(MarkerSize));
   impl->sources.setGenerated("minimap_enemy", buildMinimapDot(MarkerSize));
+  impl->sources.setGenerated("minimap_item", buildMinimapDiamond(MarkerSize));
   if (auto fonts = impl->loadFonts(); !fonts) {
     return std::unexpected{fonts.error()};
   }
@@ -1380,8 +1409,9 @@ void Ui::refreshTexts() {
 }
 
 void Ui::setMinimapMarkers(const MinimapMarker& player, const std::optional<MinimapMarker>& partner,
-                           std::span<const MinimapMarker> enemies) {
-  impl_->placeMarkers(player, partner, enemies);
+                           std::span<const MinimapMarker> enemies,
+                           std::span<const MinimapMarker> items) {
+  impl_->placeMarkers(player, partner, enemies, items);
 }
 
 void Ui::update() {

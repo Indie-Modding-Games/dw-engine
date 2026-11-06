@@ -36,9 +36,10 @@ struct Tab {
   std::string_view id;
   std::span<const std::string_view> rows;
 };
-constexpr std::array<std::string_view, 9> GameRows{
-    "free-exploration", "walk-control",           "autosave",         "world-map",    "bulk-trades",
-    "long-names",       "evolution-requirements", "canonical-stages", "status-extras"};
+constexpr std::array<std::string_view, 10> GameRows{
+    "free-exploration", "walk-control", "autosave",   "world-map",
+    "minimap-items",    "bulk-trades",  "long-names", "evolution-requirements",
+    "canonical-stages", "status-extras"};
 constexpr std::array<std::string_view, 11> GraphicsRows{"display-mode",     "vsync",
                                                         "smooth-motion",    "hd-scenery",
                                                         "model-characters", "enhanced-lighting",
@@ -647,6 +648,24 @@ TEST_CASE("the options page turns the enemies on the minimap on and off, next to
   CHECK(sent(screen.ui->takeCommands(), "minimap_enemies", UiValue{false}));
   screen.ui->setSetting("minimap_enemies", false);
   CHECK(screen.ui->elementText(Menu, "minimap-enemies-value") == "No");
+}
+
+TEST_CASE("the options page turns the items on the minimap on and off, with its description") {
+  Screen screen{"pause_menu", "es"};
+  openOnOptions(screen);
+  showTab(screen, "game");
+  CHECK_FALSE(screen.ui->elementHasClass(Menu, "minimap-items", "hidden"));
+  CHECK(screen.ui->elementText(Menu, "minimap-items-label") == "Objetos en el minimapa");
+  // On until the game says otherwise.
+  CHECK(screen.ui->elementText(Menu, "minimap-items-value") == "Sí");
+  focusRow(screen, "minimap-items");
+  CHECK(screen.ui->elementText(Menu, "option-help").contains("suelo"));
+  CHECK(screen.ui->elementText(Menu, "option-tag") == "Mejora");
+  std::ignore = screen.ui->takeCommands();
+  adjust(screen, "minimap-items", 1);
+  CHECK(sent(screen.ui->takeCommands(), "minimap_items", UiValue{false}));
+  screen.ui->setSetting("minimap_items", false);
+  CHECK(screen.ui->elementText(Menu, "minimap-items-value") == "No");
 }
 
 TEST_CASE("the options page steps the music's and the effects' volumes from 0 to 10") {
