@@ -468,6 +468,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "dwe-story"
+version = "0.1.0"
+dependencies = [
+ "dwe-map",
+ "dwe-pack",
+ "serde_yaml_ng",
+ "tempfile",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "ecolor"
 version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
