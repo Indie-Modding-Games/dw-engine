@@ -23,6 +23,7 @@
 #include "field_scene.hpp"
 #include "messages.hpp"
 #include "session_start.hpp"
+#include "title_options.hpp"
 
 namespace dwe::app {
 namespace {
@@ -100,6 +101,10 @@ void TitleScreen::showMenu(bool boot) {
 
 void TitleScreen::hide() {
   landing_ = false;
+  if (optionsShown_) {
+    optionsShown_ = false;
+    ui_->hide(MenuDocument);
+  }
   ui_->hide(MainMenuDocument);
   ui_->hide(SaveSlotsDocument);
   ui_->hide(DialogDocument);
@@ -114,7 +119,15 @@ bool TitleScreen::handle(const ui::UiCommand& command) {
     // Sent each time the screen is entered or left: not a choice of the player's to log.
     return true;
   }
-  if (name == "play") {
+  if (name == TitleOptionsCommand) {
+    showOptions();
+  } else if (name == TitleOptionsBackCommand) {
+    // Back from the options to the main menu, on its Options entry.
+    optionsShown_ = false;
+    ui_->hide(MenuDocument);
+    ui_->hide(MainMenuDocument);
+    show();
+  } else if (name == "play") {
     if (flow_.keepsSaves()) {
       showList(SlotListMode::NewGame);
     } else {
@@ -179,6 +192,18 @@ std::optional<PlayStart> TitleScreen::takeStart() {
 
 void TitleScreen::startFailed(const PlayStart& start, bool saveFailed) {
   showDialog(SaveFlow::startFailed(start, saveFailed));
+}
+
+void TitleScreen::showOptions() {
+  // The pause menu's options page over the title (docs/modulos/apps/game.md, «Opciones en
+  // partida»): the main menu stays behind it, its own box hidden, so the title's picture shows;
+  // the page reads both settings as it shows.
+  optionsShown_ = true;
+  ui_->setSetting(MenuAtTitleSetting, true);
+  ui_->setSetting(MenuStartPageSetting, std::string{"options"});
+  ui_->show(MenuDocument, true);
+  ui_->setSetting(MenuStartPageSetting, std::string{});
+  ui_->setSetting(MenuAtTitleSetting, false);
 }
 
 void TitleScreen::showList(SlotListMode mode) {

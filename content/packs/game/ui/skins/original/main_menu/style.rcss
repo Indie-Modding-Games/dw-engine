@@ -90,36 +90,6 @@
 	color: #686868;
 }
 
-/* Options, an addition: the original's box, a row per setting with its name in white and its value in yellow, as
-   the boxes of this game's other settings in the original look. */
-#scrim.view-options #panel {
-	left: 172dp;
-	min-width: 900dp;
-}
-
-#panel .option .label {
-	display: none;
-}
-
-#panel .option {
-	position: relative;
-}
-
-#panel .option .label-original {
-	display: inline;
-}
-
-#panel .option .value {
-	position: absolute;
-	left: 555dp;
-	top: 0;
-	color: #fff371;
-}
-
-#quit {
-	text-transform: uppercase;
-}
-
 /* The original names no buttons on screen, and these boxes leave them out, as the pause menu's first page does. */
 #prompts {
 	display: none;
@@ -231,11 +201,6 @@
 #panel {
 	left: 50%;
 	margin-left: -264dp;
-}
-
-#scrim.view-options #panel {
-	left: 50%;
-	margin-left: -468dp;
 }
 
 #language-box {

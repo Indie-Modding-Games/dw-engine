@@ -87,6 +87,7 @@
 #include "screenshot.hpp"
 #include "state_trace.hpp"
 #include "text_font_setting.hpp"
+#include "title_options.hpp"
 #include "title_screen.hpp"
 #include "ui_skin_setting.hpp"
 #include "user_settings.hpp"
@@ -742,6 +743,8 @@ int runGame(const Options& requested) {
   }
   (*ui)->setSetting(WalkControlSetting, std::string{walkControlName(walkControl.control())});
   (*ui)->setSetting(AutosaveSetting, userSettings.autosave.value_or(true));
+  // The options only a game applies, for the title's options page (title_options.hpp).
+  publishGameToggles(**ui, userSettings);
   (*ui)->setSetting(MinimapSetting, std::string{startMinimapMode(userSettings.minimap)});
   (*ui)->setSetting("minimap_size", std::string{"medium"});
   (*ui)->setSetting(WeatherSetting, userSettings.weather.value_or(true));
@@ -1605,6 +1608,11 @@ int runGame(const Options& requested) {
           }
         }
         (*ui)->setSetting(SeasonsSetting, userSettings.seasons.value_or(true));
+        continue;
+      }
+      // With no game the options page's rows that only a game applies are kept for the next one.
+      if (flow.playing() == nullptr &&
+          changeGameToggle(command, **ui, userSettings, settingsFile)) {
         continue;
       }
       if (flow.playing() == nullptr && title.handle(command)) {

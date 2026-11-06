@@ -229,3 +229,5 @@ help.options_back: "Back to the menu."
 help.quick_save: "Saves the game now to its slot."
 help.to_title: "Back to the title screen. Asks first whether to save."
 help.quit: "Closes the game. Asks first whether to save."
+# The same options over the title screen, with no game to save.
+help.quit_title: "Closes the game."

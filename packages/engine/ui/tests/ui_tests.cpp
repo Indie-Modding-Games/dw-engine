@@ -1766,7 +1766,7 @@ function unknown() ui.send(t("nobody.has.this")) end
   CHECK(ui->elementText("pause_menu", "title") == "Pause");
   CHECK(ui->elementText("pause_menu", "prompt-confirm").contains(">Space<"));
   CHECK(ui->elementText("main_menu", "prompt-confirm").contains(">Space<"));
-  CHECK(ui->elementText("main_menu", "language-value") == "English");
+  CHECK(ui->elementText("main_menu", "options") == "Options");
   const auto commands = ui->takeCommands();
   REQUIRE(commands.size() == 1);
   CHECK(commands[0].name == "languages");
@@ -1840,7 +1840,7 @@ TEST_CASE(
   CHECK(ui->elementText("hud", "map-title").empty());
 }
 
-TEST_CASE("the main menu changes the language with the keyboard and starts the game") {
+TEST_CASE("the main menu opens the options over the title with the keyboard and starts the game") {
   Content content;
   VirtualFileSystem& files = content.mount();
   const localization::Catalog texts = catalogIn(files, "es");
@@ -1852,124 +1852,30 @@ TEST_CASE("the main menu changes the language with the keyboard and starts the g
   frame(*ui, input);
   CHECK(ui->focusedElementId("main_menu") == "play");
   CHECK(ui->elementText("main_menu", "play") == "Nueva partida");
-  CHECK(ui->elementText("main_menu", "language-value") == "Español");
+  CHECK(ui->elementText("main_menu", "options") == "Opciones");
+  CHECK(ui->elementText("main_menu", "quit") == "Salir del juego");
 
+  // Continue is greyed without a save, so down goes to Options, which asks the title for the
+  // pause menu's options page (title_options.hpp) and hides the menu's box meanwhile.
   press(*ui, input, input::keys::Down);
-  REQUIRE(ui->focusedElementId("main_menu") == "language");
-  press(*ui, input, input::keys::Right);
-  auto commands = ui->takeCommands();
-  REQUIRE(commands.size() == 1);
-  CHECK(commands[0].name == "language");
-  CHECK(commands[0].value == UiValue{std::string{"en"}});
+  REQUIRE(ui->focusedElementId("main_menu") == "options");
+  press(*ui, input, input::keys::Return);
+  CHECK(commandNames(*ui) == std::vector<std::string>{"title_options"});
+  CHECK(ui->elementHasClass("main_menu", "panel", "hidden"));
+  // Back from the options the title shows the menu again, on Options.
+  ui->hide("main_menu");
+  ui->show("main_menu", true);
+  frame(*ui, input);
+  CHECK_FALSE(ui->elementHasClass("main_menu", "panel", "hidden"));
+  CHECK(ui->focusedElementId("main_menu") == "options");
   // Cancel does not leave the main menu.
   press(*ui, input, input::keys::LeftCtrl);
   CHECK(ui->isVisible("main_menu"));
 
   press(*ui, input, input::keys::Up);
+  REQUIRE(ui->focusedElementId("main_menu") == "play");
   press(*ui, input, input::keys::Return);
   CHECK_FALSE(ui->isVisible("main_menu"));
-}
-
-TEST_CASE("the main menu's chibi style row cycles its two modes, external models by default") {
-  Content content;
-  VirtualFileSystem& files = content.mount();
-  const localization::Catalog texts = catalogIn(files, "es");
-  auto ui = createUi(files, texts);
-  REQUIRE(ui->loadDocument("main_menu", idOf("ui/main_menu/document")));
-  ui->setSetting("language", std::string{"es"});
-  input::InputState input{input::defaultActionMap()};
-  ui->show("main_menu", true);
-  frame(*ui, input);
-  CHECK(ui->elementText("main_menu", "chibi-style-value") == "Externos");
-  for (int step = 0; step < 8 && ui->focusedElementId("main_menu") != "chibi-style"; ++step) {
-    press(*ui, input, input::keys::Down);
-  }
-  REQUIRE(ui->focusedElementId("main_menu") == "chibi-style");
-  press(*ui, input, input::keys::Right);
-  auto commands = ui->takeCommands();
-  REQUIRE(commands.size() == 1);
-  CHECK(commands[0].name == "chibi_style");
-  CHECK(commands[0].value == UiValue{std::string{"off"}});
-
-  // The menu shows what the game reports back; an old "all" (the original's models reshaped too,
-  // gone) shows as external models.
-  ui->setSetting("chibi_style", std::string{"off"});
-  frame(*ui, input);
-  CHECK(ui->elementText("main_menu", "chibi-style-value") == "No");
-  ui->setSetting("chibi_style", std::string{"all"});
-  frame(*ui, input);
-  CHECK(ui->elementText("main_menu", "chibi-style-value") == "Externos");
-}
-
-TEST_CASE("the main menu's autosave row asks to turn the autosave off and on, on by default") {
-  Content content;
-  VirtualFileSystem& files = content.mount();
-  const localization::Catalog texts = catalogIn(files, "es");
-  auto ui = createUi(files, texts);
-  REQUIRE(ui->loadDocument("main_menu", idOf("ui/main_menu/document")));
-  ui->setSetting("language", std::string{"es"});
-  input::InputState input{input::defaultActionMap()};
-  ui->show("main_menu", true);
-  frame(*ui, input);
-  CHECK(ui->elementText("main_menu", "autosave-value") == "Sí");
-  for (int step = 0; step < 10 && ui->focusedElementId("main_menu") != "autosave"; ++step) {
-    press(*ui, input, input::keys::Down);
-  }
-  REQUIRE(ui->focusedElementId("main_menu") == "autosave");
-  press(*ui, input, input::keys::Right);
-  auto commands = ui->takeCommands();
-  REQUIRE(commands.size() == 1);
-  CHECK(commands[0].name == "autosave");
-  CHECK(commands[0].value == UiValue{false});
-
-  // The menu shows what the game reports back; off, the next press asks for on.
-  ui->setSetting("autosave", false);
-  frame(*ui, input);
-  CHECK(ui->elementText("main_menu", "autosave-value") == "No");
-  press(*ui, input, input::keys::Right);
-  commands = ui->takeCommands();
-  REQUIRE(commands.size() == 1);
-  CHECK(commands[0].value == UiValue{true});
-}
-
-TEST_CASE(
-    "the main menu switches the text font and shows the one the game reports, in the player's language") {
-  Content content;
-  VirtualFileSystem& files = content.mount();
-  localization::Catalog texts = catalogIn(files, "es");
-  auto ui = createUi(files, texts);
-  REQUIRE(ui->loadDocument("main_menu", idOf("ui/main_menu/document")));
-  ui->setSetting("language", std::string{"es"});
-  ui->setSetting("text_font", std::string{"modern"});
-  input::InputState input{input::defaultActionMap()};
-  ui->show("main_menu", true);
-  frame(*ui, input);
-  CHECK(ui->elementText("main_menu", "text-font-value") == "No");
-
-  press(*ui, input, input::keys::Down);
-  press(*ui, input, input::keys::Down);
-  REQUIRE(ui->focusedElementId("main_menu") == "text-font");
-  // With two fonts, left and right both switch to the other one.
-  press(*ui, input, input::keys::Left);
-  auto commands = ui->takeCommands();
-  REQUIRE(commands.size() == 1);
-  CHECK(commands[0].name == "text_font");
-  CHECK(commands[0].value == UiValue{std::string{"original"}});
-
-  // The menu shows what the game reports back, not what it asked for.
-  ui->setSetting("text_font", std::string{"original"});
-  frame(*ui, input);
-  CHECK(ui->elementText("main_menu", "text-font-value") == "Sí");
-  press(*ui, input, input::keys::Return);
-  commands = ui->takeCommands();
-  REQUIRE(commands.size() == 1);
-  CHECK(commands[0].value == UiValue{std::string{"modern"}});
-
-  REQUIRE(texts.setLanguage("en"));
-  ui->setSetting("text_font", std::string{"modern"});
-  ui->refreshTexts();
-  frame(*ui, input);
-  CHECK(ui->elementText("main_menu", "text-font-value") == "No");
 }
 
 TEST_CASE("the main menu works with the mouse alone") {
@@ -1982,11 +1888,12 @@ TEST_CASE("the main menu works with the mouse alone") {
   input::InputState input{input::defaultActionMap()};
   ui->show("main_menu", true);
   frame(*ui, input);
-  CHECK(ui->elementText("main_menu", "language-value") == "English");
-  CHECK(click(*ui, input, "main_menu", "language"));
-  auto commands = ui->takeCommands();
-  REQUIRE(commands.size() == 1);
-  CHECK(commands[0].value == UiValue{std::string{"es"}});
+  CHECK(ui->elementText("main_menu", "options") == "Options");
+  CHECK(click(*ui, input, "main_menu", "options"));
+  CHECK(commandNames(*ui) == std::vector<std::string>{"title_options"});
+  ui->hide("main_menu");
+  ui->show("main_menu", true);
+  frame(*ui, input);
   CHECK(click(*ui, input, "main_menu", "play"));
   CHECK_FALSE(ui->isVisible("main_menu"));
 }

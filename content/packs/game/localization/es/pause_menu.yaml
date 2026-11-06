@@ -231,3 +231,5 @@ help.options_back: "Vuelve al menú."
 help.quick_save: "Guarda la partida ahora en su ranura, sin cerrar nada más."
 help.to_title: "Vuelve a la portada. Pregunta antes si quieres guardar."
 help.quit: "Cierra el juego. Pregunta antes si quieres guardar."
+# Las mismas opciones sobre la portada, sin partida que guardar.
+help.quit_title: "Cierra el juego."

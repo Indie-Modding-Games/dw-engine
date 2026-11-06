@@ -65,6 +65,17 @@ void openOnOptions(Screen& screen) {
   screen.frames(20);
 }
 
+// As the title screen's Options entry opens it (apps/game/src/title_options.hpp): over the title,
+// with no game.
+void openAtTitle(Screen& screen) {
+  screen.ui->setSetting("pause_menu.at_title", true);
+  screen.ui->setSetting("pause_menu.start_page", std::string{"options"});
+  screen.ui->show(Menu, true);
+  screen.ui->setSetting("pause_menu.start_page", std::string{});
+  screen.ui->setSetting("pause_menu.at_title", false);
+  screen.frames(20);
+}
+
 void showTab(Screen& screen, std::string_view tab) {
   REQUIRE(screen.ui->callScript(Menu, "show_tab", std::vector<std::string>{"", std::string{tab}}));
   screen.frames(2);
@@ -380,6 +391,77 @@ TEST_CASE("down goes through a tab's rows, Reset, Back and the game's actions, a
       screen.press(input::keys::Up);
       CHECK(screen.ui->focusedElementId(Menu) == tab.rows.back());
     }
+  }
+}
+
+TEST_CASE("over the title the options page keeps its tabs and rows, without the game's actions") {
+  for (const std::string_view skin : {"original", "modern"}) {
+    CAPTURE(skin);
+    Screen screen{"pause_menu", "es"};
+    screen.skin(skin);
+    openAtTitle(screen);
+    REQUIRE(screen.ui->isVisible(Menu));
+    CHECK(screen.ui->elementShown(Menu, "menu-tabs"));
+    CHECK(screen.ui->focusedElementId(Menu) == "free-exploration");
+    // No game to save or leave: only quit stays, and it closes the game.
+    CHECK_FALSE(screen.ui->elementShown(Menu, "options-save"));
+    CHECK_FALSE(screen.ui->elementShown(Menu, "options-to-title"));
+    CHECK(screen.ui->elementShown(Menu, "options-quit"));
+    for (const Tab& tab : Tabs) {
+      CAPTURE(tab.id);
+      showTab(screen, tab.id);
+      for (const std::string_view id : tab.rows) {
+        CHECK(screen.ui->elementShown(Menu, id));
+      }
+      focusRow(screen, tab.rows.back());
+      screen.press(input::keys::Down);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-reset");
+      screen.press(input::keys::Down);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-back");
+      screen.press(input::keys::Down);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-quit");
+      screen.press(input::keys::Left);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-quit");
+      screen.press(input::keys::Right);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-quit");
+      CHECK(screen.ui->elementText(Menu, "option-help").contains("Cierra el juego"));
+      screen.press(input::keys::Down);
+      CHECK(screen.ui->focusedElementId(Menu) == tab.rows.front());
+      screen.press(input::keys::Up);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-quit");
+      screen.press(input::keys::Up);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-back");
+    }
+    std::ignore = screen.ui->takeCommands();
+    click(screen, "options-quit");
+    CHECK(sentAny(screen.ui->takeCommands(), "quit"));
+
+    // Back (cancel, the Back row or the pad's B) closes the page and gives the title its menu.
+    screen.press(input::keys::LeftCtrl);
+    screen.frames();
+    CHECK_FALSE(screen.ui->isVisible(Menu));
+    CHECK(sentAny(screen.ui->takeCommands(), "title_options_back"));
+    openAtTitle(screen);
+    screen.input.handle(platform::GamepadConnected{
+        .id = 1, .family = platform::GamepadFamily::Xbox, .name = "pad"});
+    pad(screen, platform::GamepadButton::East);
+    screen.frames();
+    CHECK_FALSE(screen.ui->isVisible(Menu));
+    CHECK(sentAny(screen.ui->takeCommands(), "title_options_back"));
+    openAtTitle(screen);
+    click(screen, "options-back");
+    screen.frames();
+    CHECK_FALSE(screen.ui->isVisible(Menu));
+    CHECK(sentAny(screen.ui->takeCommands(), "title_options_back"));
+
+    // Opened in a game afterwards, the game's actions are back and back sends nothing to the
+    // title.
+    openOnOptions(screen);
+    CHECK(screen.ui->elementShown(Menu, "options-save"));
+    CHECK(screen.ui->elementShown(Menu, "options-to-title"));
+    screen.press(input::keys::LeftCtrl);
+    screen.frames();
+    CHECK_FALSE(sentAny(screen.ui->takeCommands(), "title_options_back"));
   }
 }
 

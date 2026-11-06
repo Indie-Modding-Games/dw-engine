@@ -20,7 +20,8 @@ inline constexpr std::string_view DialogDocument = "dialog";
 inline constexpr std::string_view NewGameRulesDocument = "new_game_rules";
 
 // The title screen with no game: the main menu, the slot lists and their dialogs, shown and hidden
-// by the game as SaveFlow decides (docs/architecture/guardar-y-cargar.md, 3.4 and 3.5).
+// by the game as SaveFlow decides (docs/architecture/guardar-y-cargar.md, 3.4 and 3.5), and the
+// pause menu's options page over it (title_options.hpp).
 class TitleScreen {
 public:
   // `keepsSaves` as startGame takes it: without a saves folder a new game starts with no list.
@@ -56,6 +57,8 @@ public:
 
 private:
   void showMenu(bool boot);
+  // The options page over the title (TitleOptionsCommand).
+  void showOptions();
   void showList(SlotListMode mode);
   void showDialog(const SaveDialog& dialog);
   // Back from a dialog that started nothing: to the list, or to the main menu without one.
@@ -74,6 +77,7 @@ private:
   // Whether the packs have the ruleset with the Mega step, which the rules offer.
   bool megaOffered_ = false;
   bool listShown_ = false;
+  bool optionsShown_ = false;
   bool landing_ = false;
 };
 
