@@ -46,6 +46,9 @@ allow "$policy_banned_words" scripts/hooks/policy.sh scripts/style/tests/test_po
 # emitter reads from there), and the tests that feed that list.
 allow "$policy_banned_words" packages/formats/include/dwe/formats/script/story_api_names.hpp
 allow 'forbiddenwordin\(.*' 'packages/formats/tests/*'
+# A map patch's NPC change takes the same species key as the map data's NPC record, with the same
+# reference to the species' model (the data's own schema predates this list).
+allow '"digimon"|"digimon/\{\}/model"' content/schemas/map_patch.schema.json
 # The decomp's source file that the port cites as "tamer.c: function": a file name, not ours.
 allow 'tamer\.c' '*'
 # A cited hardware reference and the name of a file on the disc.

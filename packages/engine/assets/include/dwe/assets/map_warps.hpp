@@ -57,8 +57,9 @@ struct WarpIssue {
 
 // Sets each warp's targetMapId to the map it leads to under the rule above, or to nothing when it
 // leads nowhere (an unused exit, or one with a problem that disables it). `basePack` says whether
-// the map's data comes from the base pack (isBaseMapData), which must name each target both ways.
-// Returns the problems, by exit.
+// the map's data comes from the base pack (isBaseMapData), which must name each target both ways;
+// an exit that a patch changed (MapDocument::exitPatch) follows the rights of the patch's pack
+// instead. Returns the problems, by exit.
 std::vector<WarpIssue> resolveWarpTargets(MapDocument& map, const MapTable& maps, bool basePack);
 
 // The message of a problem, naming the map and the exit; for a dead warp, with the hint that an

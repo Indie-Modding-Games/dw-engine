@@ -90,4 +90,21 @@ inline constexpr std::string_view WarpUnknownTarget =
 inline constexpr std::string_view WarpBaseNeedsBoth =
     "map '{}', exit {}: a base pack names a warp's target by both target_map and target_map_id ({})";
 
+// The problems of a map's patch (map_patch.hpp). What a list's entries are named by: the place of
+// an NPC slot, a light or an object, an exit's number.
+inline constexpr std::string_view MapPatchFailed = "patch {}: {}";
+inline constexpr std::string_view MapPatchContext = "map patch";
+inline constexpr std::string_view MapPatchEntry =
+    "every change of '{}' must be a mapping with its '{}'";
+inline constexpr std::string_view MapPatchNegative = "'{}' counts from 0, not {}";
+inline constexpr std::string_view MapPatchTwice = "'{}' {} of '{}' is changed twice";
+inline constexpr std::string_view MapPatchNoEntry = "the map's data has no '{}' with '{}' {}";
+inline constexpr std::string_view MapPatchNoObjects = "the map's data has no objects to change";
+inline constexpr std::string_view MapPatchCellSize =
+    "a rectangle of cells is at least 1 x 1, not {} x {}";
+inline constexpr std::string_view MapPatchCellsOutside =
+    "the cells from column {}, row {} ({} x {}) leave the {} x {} collision grid";
+inline constexpr std::string_view MapPatchWithoutData =
+    "a patch of map '{}', which has no data in any pack";
+
 } // namespace dwe::assets::messages
