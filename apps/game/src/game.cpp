@@ -1150,6 +1150,10 @@ int runGame(const Options& requested) {
               if (auto rescanned = (*content)->rescan(); !rescanned) {
                 return std::unexpected{rescanned.error()};
               }
+              // ... and the texts read again, for the lines a story patch brings or changes.
+              if (auto reread = texts->setLanguage(std::string{texts->language()}); !reread) {
+                return std::unexpected{reread.error()};
+              }
               if (auto reloaded = play->reloadMap(exit); !reloaded) {
                 return std::unexpected{reloaded.error()};
               }
