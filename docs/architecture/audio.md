@@ -1,7 +1,8 @@
 # Audio
 
 Estado: **diseño aprobado** (VAN-01; decidido por el coordinador el 2026-10-22: las 11 preguntas, como se
-recomienda, más un tramo de reverberación tras el 3; y Q12–Q14 del tramo 2). El tramo 1 está implementado.
+recomienda, más un tramo de reverberación tras el 3; y Q12–Q14 del tramo 2). Están implementados los
+tramos 1, 2a, 2b, 3, 3b y 4; falta el 3c (la reverberación, Q10).
 
 Este documento dice cómo suena el juego: el módulo `engine/audio` (salida al dispositivo, mezclador, voces y
 volúmenes), cómo llegan a él los efectos (WAV u Opus) y la música (MIDI + SF2), cómo los piden los scripts y qué ve un
@@ -67,6 +68,10 @@ Estructura del módulo (tramo 1):
 Tramo 2a: `include/dwe/audio/effect_bank.hpp` (`EffectBank`: un banco de efectos con sus muestras; cada efecto, una
 voz por tono) y `src/envelope.{hpp,cpp}` (la envolvente ADSR del chip). En `assets`, `decodeWav` (`sound.hpp`) y
 `readSoundBank` (`sound_bank.hpp`).
+
+Tramo 3: `include/dwe/audio/sound_font.hpp` (`SoundFont`: un SF2 cargado en el sintetizador, que el hilo del juego
+mantiene vivo), `src/music_player.{hpp,cpp}` (el secuenciador y el sintetizador en el hilo de audio) y `src/tsf.cpp`
+(la única unidad que compila TinySoundFont, que entra como port propio en `vcpkg-ports/tinysoundfont`).
 
 `apps/game/src/game_audio.cpp` abre el dispositivo o, si no hay, la salida nula con un aviso, y el bucle llama a
 `Audio::update` con el tiempo de los ticks que avanzó. Desde el tramo 2a la sesión recibe el `audio::Audio` para sus

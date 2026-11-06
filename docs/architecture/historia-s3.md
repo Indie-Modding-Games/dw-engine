@@ -1,7 +1,7 @@
 # Historia S3: nota de port
 
-Estado: **aprobado por el coordinador** (2026-10-22: P1, P2 y P3 con la opción 1). S3a escrito en `p4-hist-s3`;
-entra después de S2 4b. Diseño padre: [intérprete de historia](interprete-historia.md) (§2 «El
+Estado: **aprobado por el coordinador** (2026-10-22: P1, P2 y P3 con la opción 1). S3 está en `main`
+(entró después de S2 4b). Diseño padre: [intérprete de historia](interprete-historia.md) (§2 «El
 runtime», §3 «Estado», §6 «Corte 4 de S2: decisiones»).
 
 Alcance de S3 (BACKLOG HIST-S3): cargar el mapa por `MAPHEAD`, `set_script` y `0xFE`, las casillas de pisar y de

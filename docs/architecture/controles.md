@@ -4,7 +4,9 @@ Qué acciones ofrece el motor, qué las dispara en cada dispositivo y cómo se u
 referencia del mapa de acciones (`defaultActionMap`) y de los comportamientos por documento. El re-mapeo
 moderno está **aplicado** (2026-11-04): la bolsa en batalla se abre con `menu` (igual que en campo), el
 teclado se ha movido al racimo `WASD`, y las secciones *Inconsistencias*, *Modelo propuesto* y *Fases*
-quedan como registro histórico de por qué se hicieron esos cambios.
+quedan como registro histórico de por qué se hicieron esos cambios. La
+[reasignación de 2026-11](#reasignación-2026-11-esc-abre-las-opciones-cancel-pasa-al-ctrl) (`Esc` abre las opciones,
+`cancel` pasa al `Ctrl`) también está aplicada.
 
 ## Principios
 
@@ -305,12 +307,12 @@ Cada fase es un PR independiente y jugable.
 - `pause`: se quita la tecla multimedia, se queda `P`.
 
 Queda pendiente solo un detalle menor de UI: cómo se muestra la pista de «Opciones» de la caja de pausa en teclado
-sin tecla asignada (decidir en la fase 3).
+sin tecla asignada (decidir en la fase 3). Resuelto después por la reasignación de 2026-11 (abajo).
 
 ## Reasignación 2026-11: `Esc` abre las opciones; `cancel` pasa al `Ctrl`
 
 Decisión nueva, posterior al «Teclado moderno». El PC clásico usa `Esc` para el menú de pausa; aquí
-`Esc` pasará a la acción `settings` — el menú de opciones en partida, que desde la caja de pausa de
+`Esc` pasa a la acción `settings` — el menú de opciones en partida, que desde la caja de pausa de
 Start o desde el campo abre el `pause_menu` directo en su página «Opciones», y lo cierra si ya estaba
 abierto en ella. Para que un pulso no dispare dos acciones a la vez, `cancel` deja `Esc` y se
 reúlica al par `Ctrl` (izquierdo y derecho, como los dos `Shift` del `walk`); se conservan además

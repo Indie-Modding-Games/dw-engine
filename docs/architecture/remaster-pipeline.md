@@ -1,9 +1,10 @@
 # Tubería del remaster
 
 Cómo pasa el contenido del disco del usuario a la capa `remaster` con imágenes mejoradas (en HD), con cualquier
-herramienta, sin repetir llamadas ni cobros y sin distribuir nunca nada derivado. Es un **diseño**: todavía no hay
-código. Las decisiones están en el [ADR 0023](../adr/0023-tuberia-del-remaster.md); el plan de trabajo, al
-[final](#plan-de-implementación).
+herramienta, sin repetir llamadas ni cobros y sin distribuir nunca nada derivado. Es un **diseño**, con una parte
+hecha: el escalado de índices de `dwx upscale` ([lo que ya hay](#lo-que-ya-hay-dwx-upscale)) y el fondo ampliado del
+campo (`scenery_quality`); los proveedores, la caché de pasos y `dwe-enhance` todavía no existen. Las decisiones están en el
+[ADR 0023](../adr/0023-tuberia-del-remaster.md); el plan de trabajo, al [final](#plan-de-implementación).
 
 Lee antes la [tubería de assets](assets-pipeline.md), los [paquetes y el VFS](vfs.md), la
 [caché de desarrollo](assets-de-desarrollo.md#leer-el-disco-en-el-juego) y la [política legal](../legal/assets.md).

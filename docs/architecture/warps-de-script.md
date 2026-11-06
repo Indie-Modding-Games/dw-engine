@@ -1,7 +1,8 @@
 # Warps de script
 
-Estado: **parte (a) hecha** (p4-scripted-warps, 2026-10-21); **parte (b) en su rama** (p4-scripted-warps-b,
-2026-10-22), pendiente de revisión.
+Estado: **partes (a) y (b) hechas y en `main`** (p4-scripted-warps, 2026-10-21; p4-scripted-warps-b, 2026-10-22).
+Lo que la sección «Después» deja para más tarde (hablar, entrar en un mapa, el transporte) lo hace ya el
+[intérprete de historia](interprete-historia.md).
 
 El original hace muchos cambios de mapa desde los scripts de eventos (`warp_to`, `teleport`), no desde la tabla de
 warps del mapa. `dwx` los extrae todos, con lo que hace falta para llegar a cada uno, a `field/script_warps` del
