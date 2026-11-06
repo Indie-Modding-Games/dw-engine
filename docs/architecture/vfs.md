@@ -93,6 +93,12 @@ El orden en que se pasan las carpetas no importa: los mismos paquetes dan siempr
 extensiones sean distintas (un `background.ktx2` del remaster sustituye al `background.png` de la base). Un ID que
 solo tiene un paquete simplemente se añade.
 
+**Parches de mapa:** `map/<id>/patch` es la excepción a «gana el de arriba». El `map/<id>/data` de un mapa sigue la
+regla (gana uno entero), pero sobre él se aplican, de abajo arriba, los parches del paquete de ese `data` y de todos
+los de encima (`sources(id)` da cada uno en el orden de la pila); los de debajo se dejan fuera. Cada parche cambia
+campos sueltos de una salida, un NPC, un objeto, una luz o la cámara, y la colisión entera o por rectángulos, sin
+copiar el mapa ([parches](../formats/mapas.md#parches)).
+
 ## Tablas por entradas
 
 Las tablas de contenido no se sustituyen enteras: se **componen entrada a entrada**, para que un mod añada un Digimon
