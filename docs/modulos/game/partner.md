@@ -188,8 +188,8 @@ Igual: hace lo mismo que el decomp. Desviación aprobada: distinto a propósito.
 | Año de 31 días al entrenar | `trn_reward.c: TRN_advanceTrainingTime` (el día vuelve a 0 en 31; el reloj, en 30) | — (usa el reloj, 30) | — | Hueco conocido (2026-10-20): se queda así, sin bandera |
 | Patrones de sueño | `partner_impl.c: SLEEP_PATTERN` | `care.sleep.patterns`, con su cita | `rules_tests`: the original's numbers | Igual (2026-10-20): constantes del ruleset |
 | Stats fijos de los bebés del renacer | `partner_impl.c: initializeReincarnatedPartner`; `dooa.c: REINCARNATE_BABY_TYPE` | `life.rebirth.babies`, con su cita | `rules_tests`: the original's numbers | Igual (2026-10-20): constantes del ruleset |
-| Evoluciones al despertar | `partner_impl.c: handleSleeping` | — (módulo de evolución) | — | Hueco (fuera de este módulo) |
-| Técnicas tras renacer | `evolution.c: initializeReincarnatedPartner` | — (batalla) | — | Hueco (fuera de este módulo) |
+| Evoluciones al despertar | `partner_impl.c: handleSleeping` | — (`game/evolution`: `Evolution::wakeUp`, que la sesión llama al despertar) | — | Fuera de este módulo |
+| Técnicas tras renacer | `evolution.c: reincarnatePartner` | — (`apps/session`: `BattleAdapter` con el evento `Reborn`, `partner_moves.reborn_slot`) | — | Fuera de este módulo |
 
 ## Tests
 

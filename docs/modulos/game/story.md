@@ -10,9 +10,9 @@ implementa `apps/session`, y los tests, con dobles.
 ## Estado
 
 `StoryState` tiene los disparadores y las variables de los scripts de eventos,
-como los guarda el original (`script.h: ScriptState`). Hoy lo usan los warps de script del campo, que leen los
-disparadores y aplican sus `sets_flags` ([warps de script](../../architecture/warps-de-script.md)); el
-intérprete de historia ([diseño](../../architecture/interprete-historia.md)) lo heredará sin cambiar su forma.
+como los guarda el original (`script.h: ScriptState`). Lo usan el intérprete (`StoryRunner`, por `StoryStatePort`) y
+los warps de script del campo, que leen los disparadores y aplican sus `sets_flags`
+([warps de script](../../architecture/warps-de-script.md)).
 
 - `StoryState`: 800 disparadores (0–799) y 256 variables de un byte. Un número fuera de rango es un error y no cambia
   nada.
@@ -86,6 +86,13 @@ registra en la partida guardada y se lo da al campo.
 - **Puertos** (`story_ports.hpp`): `StoryStatePort` (disparadores y variables; dice cuántos tiene: 800 y 256 son el
   conjunto base del original y un mod puede ampliarlo) y `StoryRandomPort` (el generador de la sesión, de 0 a 0x7FFF).
 
+Las demás piezas del runtime, una por cabecera: `dialogue.hpp` (las cajas de texto, sus páginas y elecciones),
+`frame_systems.hpp` (lo que corre en el fotograma de la historia además de las secciones), `story_task.hpp` (las
+esperas que termina otro sistema), `story_battle.hpp` (`start_battle` y su resultado), `story_routines.hpp` y
+`partner_routines.hpp` (`call_routine` y `call_partner_routine`, que registra cada sistema), `npc_orders.hpp` (poner y
+quitar los NPC del mapa), `new_day.hpp` (lo que hace un día nuevo a las variables), `prosperity.hpp` (la prosperidad de
+la ciudad) y `medals.hpp` (las medallas que se ganan andando por el campo).
+
 ## El puntero en los diálogos
 
 Mejora para PC (el original no tiene puntero) que no cambia ninguna regla, así que no tiene opción: en una elección
@@ -121,6 +128,7 @@ tendero de cartas de gias06b, el personaje 5 del guion 126, que solo tiene las s
 
 ## Pruebas
 
-Los tests del módulo usan un `SectionHost` con pasos fijos y puertos falsos, sin Lua. La paridad de efectos sobre el
-disco (incremento S2, tercera parte) debe correr varias vueltas de la sección `0x52` del script 49, que salta a la
-`0x33` de los scripts 199–202 y vuelve sin fin en el original: es la prueba de que un `jump_to_file` no apila nada.
+Los tests del módulo usan un `SectionHost` con pasos fijos y puertos falsos, sin Lua. Sobre el disco extraído,
+`apps/session/tests/story_lua_disc_tests.cpp` («the training loop of script 49 runs as tail jumps») corre varias
+vueltas de la sección `0x52` del script 49, que salta a la `0x33` de los scripts 199–202 y vuelve sin fin en el
+original: es la prueba de que un `jump_to_file` no apila nada.
