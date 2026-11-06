@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Save settings",
-  "description": "save/settings.yaml of the game pack: how many save slots there are (game/save, docs/architecture/save.md). When the game autosaves is the ruleset's save section.",
+  "description": "save/settings.yaml of the game pack: how many save slots there are (packages/game/save, docs/architecture/save.md). When the game autosaves is the ruleset's save section.",
   "type": "object",
   "required": ["manual_slots"],
   "additionalProperties": false,

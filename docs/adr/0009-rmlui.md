@@ -19,7 +19,7 @@ Detalles, fijados en la fase 2:
 | Tema | Decisión |
 |---|---|
 | Versión | RmlUi 6.3, del puerto `rmlui` de vcpkg, sin sus funciones por defecto y con `freetype`. Sin `lua`, `svg` ni `lottie` |
-| Módulo | `engine/ui` (capa de servicios). RmlUi es privado del módulo: su API pública no expone tipos de RmlUi |
+| Módulo | `packages/engine/ui` (capa de servicios). RmlUi es privado del módulo: su API pública no expone tipos de RmlUi |
 | Ficheros | Los documentos, estilos, scripts, fuentes e imágenes se leen **por asset id** a través del VFS: `ui/pause_menu/logic.lua` es el asset `ui/pause_menu/logic`. Por eso cada documento va en su carpeta (`document.rml`, `logic.lua`; su estilo, en la del aspecto): dos ficheros con el mismo nombre y distinta extensión darían el mismo id |
 | Render | Una `RenderInterface` sobre la API pública de `render` (sin Vulkan en `ui`). `Ui::update()` llama a `Render()` de RmlUi fuera del frame: guarda la geometría en la CPU, crea las texturas en la tabla bindless y graba las llamadas; el `UiRenderer` (un `render::Drawer` del pase de UI, con su shader Slang) las reproduce desde buffers de GPU que se crean una vez al compilar la geometría, con recorte (*scissor*) y transformaciones. Todo en alfa premultiplicado, como espera RmlUi: las imágenes de fichero se premultiplican al cargarlas. Sin máscaras de recorte por ahora |
 | Resolución | El contexto mide la ventana en píxeles físicos. Un *dp* es un píxel a 720 líneas: la proporción es `min(alto/720, ancho/960)` por la escala de UI que elige el jugador, así que la UI es igual de legible a 800×600 que a 4K |

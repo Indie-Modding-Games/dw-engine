@@ -22,9 +22,9 @@ namespace dwe::app {
 
 class FieldScene;
 
-// The story's textboxes on screen: it publishes the dialogue's view (game/story: Dialogue) to the
-// story_textbox document, its pages split in rows of coloured runs, and feeds the dialogue the
-// player's keys.
+// The story's textboxes on screen: it publishes the dialogue's view (packages/game/story: Dialogue)
+// to the story_textbox document, its pages split in rows of coloured runs, and feeds the dialogue
+// the player's keys.
 class StoryTextbox {
 public:
   StoryTextbox(ui::Ui& ui, session::StoryAdapter& story, const session::GameSession& session);

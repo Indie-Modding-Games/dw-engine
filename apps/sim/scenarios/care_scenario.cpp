@@ -58,7 +58,8 @@ constexpr std::int32_t LastHour = ruleset::HoursPerDay - 1;
 constexpr std::string_view DefaultTrainPlace = "trn";
 constexpr std::string_view DefaultTrainCourse = "hp";
 constexpr std::int32_t DefaultTamerLevel = 1;
-// The tamer's level stays within these; the session keeps it there (game/partner, "Eventos").
+// The tamer's level stays within these; the session keeps it there (packages/game/partner,
+// "Eventos").
 constexpr std::int32_t TamerLevelMin = 0;
 constexpr std::int32_t TamerLevelMax = 10;
 

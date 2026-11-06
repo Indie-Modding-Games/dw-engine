@@ -2,7 +2,7 @@
 
 Para identificar qué archivo editar, empieza por [Extensiones y archivos del juego](extensiones.md): modelos, mapas, UI, audio y contenido cocinado.
 
-Referencia de los formatos del original tal como los lee `formats/`. Cada página describe lo que está **implementado**:
+Referencia de los formatos del original tal como los lee `packages/formats/`. Cada página describe lo que está **implementado**:
 la estructura, las comprobaciones que hace el lector y dónde lo lee el original en el decomp (`dw_decomp`). El plan
 general está en [Formatos del original y `dwx`](../architecture/formats.md).
 
@@ -29,6 +29,6 @@ Los formatos propios del motor, los que escribe `dwx` para el estado cocinado:
 
 | Página | Qué cubre | Código |
 |---|---|---|
-| [Archivo `.pak`](pak.md) | Un paquete en un solo fichero: cabecera, tabla de contenidos, SHA-1 por entrada, cómo se monta | `engine/assets` |
-| [Texturas KTX2](ktx2.md) | Las texturas UASTC con zstd que escribe `dwx cook`, qué PNG se convierten, los mipmaps y la transcodificación al cargar | `apps/dwx`, `engine/assets` |
-| [Sonido Ogg Opus](opus.md) | El Ogg Opus que escribe `dwx cook` a partir de cada WAV, sus comentarios de bucle y lo que comprueba el lector | `apps/dwx`, `engine/assets` |
+| [Archivo `.pak`](pak.md) | Un paquete en un solo fichero: cabecera, tabla de contenidos, SHA-1 por entrada, cómo se monta | `packages/engine/assets` |
+| [Texturas KTX2](ktx2.md) | Las texturas UASTC con zstd que escribe `dwx cook`, qué PNG se convierten, los mipmaps y la transcodificación al cargar | `apps/dwx`, `packages/engine/assets` |
+| [Sonido Ogg Opus](opus.md) | El Ogg Opus que escribe `dwx cook` a partir de cada WAV, sus comentarios de bucle y lo que comprueba el lector | `apps/dwx`, `packages/engine/assets` |

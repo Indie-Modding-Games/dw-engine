@@ -1,8 +1,8 @@
 -- The lost life's lives box (murd.c: MURD_createLivesBox, MURD_tickLivesBox, MURD_renderLivesBox,
--- MURD_animateLivesBoxOut). The game publishes lives_box.* (apps/screens: lives_box.hpp) and counts
--- up lives_box.revision; the box takes no input. MURD_tickScene's fade (layer 0, over the box)
--- darkens it too: the game reports the fade it subtracts from the scene (screen_fade, 0 to 1) and
--- the box fades out with it.
+-- MURD_animateLivesBoxOut). The game publishes lives_box.* (packages/screens: lives_box.hpp) and
+-- counts up lives_box.revision; the box takes no input. MURD_tickScene's fade (layer 0, over the
+-- box) darkens it too: the game reports the fade it subtracts from the scene (screen_fade, 0 to 1)
+-- and the box fades out with it.
 
 local max_slots = 5
 -- The box in place (structure.rcss): its left in percent of the window and dp from there, its top

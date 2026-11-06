@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Font atlas metadata",
-  "description": "font/main_meta.yaml: the glyphs of the font atlas font/main.png, written by dwx extract (formats/src/text/font.cpp).",
+  "description": "font/main_meta.yaml: the glyphs of the font atlas font/main.png, written by dwx extract (packages/formats/src/text/font.cpp).",
   "type": "object",
   "required": ["cell_width", "cell_height", "columns", "fallback", "colors", "glyphs"],
   "additionalProperties": false,

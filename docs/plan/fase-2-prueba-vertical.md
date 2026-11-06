@@ -50,7 +50,7 @@ menús con ratón y minimapa.
 ## Diseño
 
 - Módulos nuevos o ampliados: `render` (fondos, capas de profundidad, skinning), `scene` (ECS con EnTT),
-  `game/field` (movimiento, colisión, warps, seguimiento), `ui` (RmlUi y minimapa).
+  `packages/game/field` (movimiento, colisión, warps, seguimiento), `ui` (RmlUi y minimapa).
 - El motor solo carga lo que deja la fase 1 por el VFS. Si a un mapa le falta un dato, se añade al extractor y a su
   esquema, no se lee del disco.
 - Los valores de movimiento (velocidades, distancia del partner) van en datos, no fijos en C++. Son el primer paso
@@ -81,12 +81,12 @@ Cómo jugarlo y cómo pasar las pruebas: [guía de la prueba vertical](../guides
 
 | Requisito | Cómo se cumple | Prueba |
 |---|---|---|
-| R2.1 | `loadMapDocument` y `loadMapImages` cargan fondo, capas, cámara, colisión y warps por asset id; el motor no incluye `formats/` | `engine/assets/tests/map_content_tests.cpp`; registro `field: entered ...` de cada cambio de mapa |
+| R2.1 | `loadMapDocument` y `loadMapImages` cargan fondo, capas, cámara, colisión y warps por asset id; el motor no incluye `packages/formats/` | `packages/engine/assets/tests/map_content_tests.cpp`; registro `field: entered ...` de cada cambio de mapa |
 | R2.2 | El fondo se escala a la ventana conservando la proporción | Capturas de las rutas a 800x600, 1280x720, 1920x1080 y 2560x1080 |
 | R2.3 | Capas de profundidad entre los modelos opacos y los translúcidos ([ADR 0020](../adr/0020-camara-de-mapa-y-capas-de-profundidad.md)) | `map_layers_tests.cpp`; captura `twna01-behind-layer` de cada ruta |
 | R2.4 | La cámara del mapa se sincroniza con la de los modelos | `map_camera_tests.cpp`; capturas de los dos mapas |
 | R2.5 | Animación en CPU y skinning en GPU ([ADR 0021](../adr/0021-animacion-en-cpu-y-skinning-en-gpu.md)); quieto, andar y correr | `animation_tests.cpp`, `model_renderer_tests.cpp`; paso `walk: true` de las rutas |
-| R2.6 | Acciones `move_*` y `walk`, relativas a la cámara; colisión por celdas; clic para ir a un punto | `game/field/tests/field_tests.cpp`, `input_state_tests.cpp`; las tres rutas |
+| R2.6 | Acciones `move_*` y `walk`, relativas a la cámara; colisión por celdas; clic para ir a un punto | `packages/game/field/tests/field_tests.cpp`, `input_state_tests.cpp`; las tres rutas |
 | R2.7 | Los warps cargan el destino y colocan al jugador en la salida | Rutas: secuencia `twna01 → room08 → twna01` |
 | R2.8 | El partner sigue y cambia de mapa con el jugador | Pasos `wait` con `partner_within` de las rutas, tras cada cambio de mapa y tras caminar dentro de cada mapa |
 | R2.9 | Jugador y partner son entidades de `scene` | `scene_tests.cpp`; revisión de `apps/game/src/field_scene.cpp` |
@@ -107,7 +107,7 @@ Medidas en el host (NVIDIA, 1920x1080 a 144 Hz, build release, sin los frames le
 
 El campo se ha comprobado contra el decomp (movimiento, cámara, warps y fundido, colisión, partner y hora del día):
 lo que reproduce del original lo cita en el código, y lo que hace distinto está, con el motivo, en la
-[ficha del campo](../reference/campo.md#qué-hace-el-motor-gamefield).
+[ficha del campo](../reference/campo.md#qué-hace-el-motor-packagesgamefield).
 
 Pendiente o conocido:
 

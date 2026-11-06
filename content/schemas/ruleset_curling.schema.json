@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: curling",
-  "description": "rules/<id>/curling.yaml: the frozen lake's stones minigame (game/curling). The rink's geometry stays in the code.",
+  "description": "rules/<id>/curling.yaml: the frozen lake's stones minigame (packages/game/curling). The rink's geometry stays in the code.",
   "type": "object",
   "required": [
     "story",

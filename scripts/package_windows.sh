@@ -114,7 +114,8 @@ printf '@echo off\r\nstart "" "%%~dp0bin\\dwe-game.exe" %%*\r\n' >"$stage/dwe.cm
 cp "$root/scripts/package/README-windows.md" "$stage/README.md"
 printf '%s\n' "$commit" >"$stage/VERSION"
 sed -n 's/^inline constexpr int ExtractorVersion = \([0-9]*\);.*/\1/p' \
-  "$root/engine/assets/include/dwe/assets/extractor_version.hpp" >"$stage/EXTRACTOR_VERSION"
+  "$root/packages/engine/assets/include/dwe/assets/extractor_version.hpp" \
+  >"$stage/EXTRACTOR_VERSION"
 [[ -s "$stage/EXTRACTOR_VERSION" ]] || {
   echo "package_windows: cannot read ExtractorVersion" >&2
   exit 1

@@ -1,4 +1,4 @@
-# Los objetos en el suelo, los cofres y los sonidos del campo (el baño, dormir, felicitar y regañar) (apps/session: FieldItemsAdapter; game/field: field_items.hpp).
+# Los objetos en el suelo, los cofres y los sonidos del campo (el baño, dormir, felicitar y regañar) (packages/session: FieldItemsAdapter; packages/game/field: field_items.hpp).
 # item.c: spawnItem y spawnDroppedItems: 11 objetos en el suelo a la vez (DROPPED_ITEMS).
 ground_slots: 11
 # map_object.c: spawnChest: 8 cofres (NUM_CHESTS).

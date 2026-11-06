@@ -1,4 +1,4 @@
-# La pantalla de combate (ui/battle) y las claves del propio combate (game/battle: text_keys.hpp).
+# La pantalla de combate (ui/battle) y las claves del propio combate (packages/game/battle: text_keys.hpp).
 command.none: "Nada"
 command.flee: "Huir"
 command.attack: "Atacar"

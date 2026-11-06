@@ -15,7 +15,7 @@
 # Environment:
 #   DWE_LAUNCHER_PUBKEY   base64 public key to build with (the updates' signatures are checked
 #                         against it); without it the build refuses every update
-#   DWE_LAUNCHER_GATEWAY  the beta gateway's URL to build with (services/beta-gateway); without it
+#   DWE_LAUNCHER_GATEWAY  the beta gateway's URL to build with (apps/beta-gateway); without it
 #                         the build points at https://beta-gateway.invalid, which never answers
 #   DWE_LAUNCHER_LINKS    the main screen's links to build with, a JSON object of https URLs by
 #   kind:

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Character model",
-  "description": "A models/<name>.yaml document of the game pack: which model a character draws and which of its clips each animation the engine asks for is. engine/assets/src/character_model.cpp applies the same rules.",
+  "description": "A models/<name>.yaml document of the game pack: which model a character draws and which of its clips each animation the engine asks for is. packages/engine/assets/src/character_model.cpp applies the same rules.",
   "type": "object",
   "required": ["model", "animations"],
   "additionalProperties": false,

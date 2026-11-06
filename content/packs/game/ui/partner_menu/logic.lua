@@ -1,7 +1,7 @@
 -- The partner's menu. The game publishes the partner's status and the bag as settings
--- (apps/screens: partner_status_view.hpp, bag_view.hpp) and bumps partner.revision and bag.revision
--- once per change; this script draws them and sends the player's choices with ui.send. What an item
--- does, whether the partner takes it, how the bag sorts: all of it is the game's.
+-- (packages/screens: partner_status_view.hpp, bag_view.hpp) and bumps partner.revision and
+-- bag.revision once per change; this script draws them and sends the player's choices with ui.send.
+-- What an item does, whether the partner takes it, how the bag sorts: all of it is the game's.
 
 local pages = { "status", "tech", "items", "care" }
 local first_entry =

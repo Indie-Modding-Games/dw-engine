@@ -1,12 +1,12 @@
 # beta-gateway
 
-La pasarela de la beta: un Worker de Cloudflare (`services/beta-gateway/worker.js`, un solo fichero de JavaScript sin
+La pasarela de la beta: un Worker de Cloudflare (`apps/beta-gateway/worker.js`, un solo fichero de JavaScript sin
 dependencias) entre el [lanzador](../apps/launcher.md) y las versiones del repositorio en GitHub. El lanzador nunca
 habla con GitHub: pide las versiones, los paquetes del juego y sus propias actualizaciones a la pasarela, con la
 **clave de la beta** en la cabecera. Sin clave, o con otra, la pasarela no enseña nada.
 
 Cómo desplegarla, crear el token, generar y rotar la clave: el
-[README de la pasarela](https://github.com/Indie-Modding-Games/dw-engine/blob/main/services/beta-gateway/README.md).
+[README de la pasarela](https://github.com/Indie-Modding-Games/dw-engine/blob/main/apps/beta-gateway/README.md).
 
 ```text
 lanzador ──(Authorization: Bearer <clave>)──► pasarela ──(token de solo lectura)──► API de GitHub
@@ -61,7 +61,7 @@ repositorio `DWE_BETA_GATEWAY` en `release.yml`, que no compila sin ella. Sin UR
 ## Tests
 
 ```bash
-node --test services/beta-gateway/     # el Worker con fetch simulado (worker.test.js)
+node --test apps/beta-gateway/     # el Worker con fetch simulado (worker.test.js)
 scripts/launcher.sh test               # incluye through_the_beta_gateway, de punta a punta
 ```
 

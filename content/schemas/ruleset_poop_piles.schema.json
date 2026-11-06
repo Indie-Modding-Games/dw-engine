@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: poop_piles",
-  "description": "rules/<id>/poop_piles.yaml: how the field shows the partner's poop piles (apps/session: PoopAdapter).",
+  "description": "rules/<id>/poop_piles.yaml: how the field shows the partner's poop piles (packages/session: PoopAdapter).",
   "type": "object",
   "required": ["look"],
   "additionalProperties": false,

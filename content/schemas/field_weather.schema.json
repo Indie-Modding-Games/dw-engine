@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Field weather",
-  "description": "field/weather.yaml of the game pack: the weather each area of the island can have (game/weather, an engine improvement: the original has no weather). Weather and seasons never change a rule.",
+  "description": "field/weather.yaml of the game pack: the weather each area of the island can have (packages/game/weather, an engine improvement: the original has no weather). Weather and seasons never change a rule.",
   "type": "object",
   "required": [
     "period_hours",

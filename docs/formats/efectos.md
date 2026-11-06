@@ -150,7 +150,7 @@ operadores o una comparación fuera de su tabla y un subopcode de 0x61 en adelan
 
 ## Subopcodes
 
-Los 97 están en `formats/src/effect/efe_subops.cpp`, cada uno con su manejador y sus argumentos en el orden en que se
+Los 97 están en `packages/formats/src/effect/efe_subops.cpp`, cada uno con su manejador y sus argumentos en el orden en que se
 apilan. Los nombres salen de lo que hace el manejador con cada argumento. Ninguno tiene aridad variable y ninguno deja
 nada en la pila. El 4 apila siete valores y llama al 24, y el 6 apila −1 y llama al 91; sus argumentos son los netos.
 `EFERotateVector` (7) y `EFECreateFlash` (18) están en `src/main/efe.c`.
@@ -256,7 +256,7 @@ argumento sin unir es `null`. El área de datos va elemento a elemento con su ti
 relleno (una variable sin valor inicial) es `null`. Los datos sin uso van como `kind: unused` con sus bytes y el
 motivo (`reason`); una fila de CLUT con índice calculado lleva `row_starts` y todos los colores que puede leer.
 
-En tiempo de juego lo lee `assets::readEffectScript` (`engine/assets/include/dwe/assets/effect_script.hpp`), sin
+En tiempo de juego lo lee `assets::readEffectScript` (`packages/engine/assets/include/dwe/assets/effect_script.hpp`), sin
 pasar por `formats`: junto con `effect.yaml` da un `EffectScript` con la técnica (`move`), el número de sub-efectos,
 las instrucciones de los dos scripts y la imagen del área de datos, de la base al script de inicio, con los valores
 de variables, tablas, instancias y argumentos numéricos; lo que solo lee el dibujo (huesos, sprites, UV, CLUT, mapas

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: shop",
-  "description": "rules/<id>/shop.yaml: the shop the story opens (apps/session: ShopCounter; script_common.c: openShop).",
+  "description": "rules/<id>/shop.yaml: the shop the story opens (packages/session: ShopCounter; script_common.c: openShop).",
   "type": "object",
   "required": ["keeper_lines_section", "ownerless_lines_section", "recycle_trigger", "recyclable", "recycle_max", "amount_step", "lines"],
   "additionalProperties": false,

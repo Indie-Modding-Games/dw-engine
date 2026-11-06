@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: item_keeper",
-  "description": "rules/<id>/item_keeper.yaml: the item keeper the story opens (apps/session: ItemKeeper; shop/script_menu.c: tickItemKeeper).",
+  "description": "rules/<id>/item_keeper.yaml: the item keeper the story opens (packages/session: ItemKeeper; shop/script_menu.c: tickItemKeeper).",
   "type": "object",
   "required": ["lines_section", "lines", "max_count", "step"],
   "additionalProperties": false,

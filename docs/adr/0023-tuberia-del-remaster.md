@@ -91,7 +91,7 @@ Las preguntas abiertas del diseño, «Decidido por el manager, 2026-10-21»:
     Lua, RML, RCSS y tablas: la música HD va en esa capa según la tubería de assets, y el audio es dato, no código.
     Solo en los formatos cocinados o extraídos que el motor ya acepta, sin decodificadores nuevos. Al montar solo se
     comprueban extensión, tamaño y cabecera; la decodificación entera queda en `dwx validate` y `--check-content`.
-    Topes por formato como constantes en `engine/assets`: Opus/Ogg 64 MiB, WAV 128 MiB, SF2 128 MiB y MIDI 1 MiB,
+    Topes por formato como constantes en `packages/engine/assets`: Opus/Ogg 64 MiB, WAV 128 MiB, SF2 128 MiB y MIDI 1 MiB,
     cada uno con su test de montaje; sin tope total por paquete por ahora. Los futuros lectores de SF2 y MIDI se
     diseñan para entrada no confiable.
 11. **La música HD va en su propio paquete, `remaster_audio`** (`layer: remaster`), no en el de `dwe-enhance`: ese
@@ -99,7 +99,7 @@ Las preguntas abiertas del diseño, «Decidido por el manager, 2026-10-21»:
 12. **El tope de salida de un comando local guarda los primeros N bytes y tira el resto, sin matar la herramienta:**
     mucho progreso no es un fallo y vaciar la tubería evita bloqueos. Solo se mata por tiempo límite, y con
     `version_command` (cuya salida entra en la clave) también al pasar del tope.
-13. **Los límites de imagen de la UI pasan a `engine/assets` como requisito previo de W10b:** `remaster_rules` nace en
+13. **Los límites de imagen de la UI pasan a `packages/engine/assets` como requisito previo de W10b:** `remaster_rules` nace en
     W10b y los necesita sin depender de `ui`.
 
 ## Consecuencias
@@ -109,7 +109,7 @@ Las preguntas abiertas del diseño, «Decidido por el manager, 2026-10-21»:
 - Una segunda ejecución, o un cambio en un paso posterior al de pago, no cuesta nada.
 - El motor cambia de forma aditiva: fondos RGBA con fundido por imagen, `scale` en `_meta`, páginas de sprites por
   variante, `pixelsPerTexel` por textura, muestreo con mipmaps en el camino RGBA del mapa, rechazo al montar de lo que
-  no son datos en `remaster` y tamaño lógico en la UI. Los límites de imagen de `engine/ui` se mudan a `engine/assets`
+  no son datos en `remaster` y tamaño lógico en la UI. Los límites de imagen de `packages/engine/ui` se mudan a `packages/engine/assets`
   antes de W10b. `runProcess` gana tiempo límite, tope de salida, muerte del árbol y entorno explícito: es un cambio en
   `main` previo a W10b, igual que el paso de los fondos indexados como PNG al cocinar.
 - Un servicio remoto pide confirmación en cada ejecución que suba algo; no se puede dejar aceptado. Un endpoint de
@@ -134,6 +134,6 @@ Las preguntas abiertas del diseño, «Decidido por el manager, 2026-10-21»:
   rompe el fundido entre horas del día.
 - **Factor de escala en una clave propia del KTX2:** no es estándar y el `_meta.yaml` ya decide las opciones del
   cocinado.
-- **Un módulo `engine/enhance`:** el runtime no lo necesita; red y credenciales no deben entrar en el juego.
+- **Un módulo `packages/engine/enhance`:** el runtime no lo necesita; red y credenciales no deben entrar en el juego.
 - **`dwx enhance` dentro de `dwx`:** era la redacción original; metía la red y las claves en la herramienta que los
   modders ejecutan en su CI.

@@ -375,7 +375,7 @@
 /* The numbers over the fighters (utils2.c: drawEntityText): each anchored at its fighter's feet and moved from there
    by its transform, its digits 8 pixels square and 7 apart, left to right from the anchor. */
 /* The player's shout with a command (command_shout.c: BTL_renderCommandShout): logic.lua puts its centre where
-   apps/screens (command_shout) says, from where the player's node 4 showed, and scales it from there; the black copy
+   packages/screens (command_shout) says, from where the player's node 4 showed, and scales it from there; the black copy
    one pixel right and down is its shadow. */
 #shout-layer {
 	position: absolute;

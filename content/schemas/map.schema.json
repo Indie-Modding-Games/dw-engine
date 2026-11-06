@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Field map",
-  "description": "The data of one .MAP file (map.c: loadMap). formats/src/map/map_yaml.cpp writes it. Numbers are as stored in the file; the game doubles the camera values when it applies them.",
+  "description": "The data of one .MAP file (map.c: loadMap). packages/formats/src/map/map_yaml.cpp writes it. Numbers are as stored in the file; the game doubles the camera values when it applies them.",
   "type": "object",
   "required": ["camera", "lights", "ambient", "regions", "tiles", "images", "objects", "warps", "digimon_count", "npcs", "collision"],
   "additionalProperties": false,

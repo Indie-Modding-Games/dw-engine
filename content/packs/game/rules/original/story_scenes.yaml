@@ -1,4 +1,4 @@
-# Las batallas, escenas y rutinas de la historia (apps/session: StoryScenes; script_interp.c:
+# Las batallas, escenas y rutinas de la historia (packages/session: StoryScenes; script_interp.c:
 # scriptInstruction64to7E, partner.c: callDigimonRoutine, map.c: changeMap).
 battle:
   # start_battle deja el resultado en la variable 255: 255 (-1) derrota, 0 huida, 1 victoria.

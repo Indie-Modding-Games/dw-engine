@@ -65,8 +65,8 @@ if(BUILD_TESTING)
     # assets tests and check the documents and the schemas of content/schemas, and the game pack on the extracted base
     # pack.
     target_include_directories(dwe_dwx_tests PRIVATE
-        ${PROJECT_SOURCE_DIR}/formats/tests
-        ${PROJECT_SOURCE_DIR}/engine/assets/tests)
+        ${PROJECT_SOURCE_DIR}/packages/formats/tests
+        ${PROJECT_SOURCE_DIR}/packages/engine/assets/tests)
 endif()
 
 dwe_add_app(dwx_cli

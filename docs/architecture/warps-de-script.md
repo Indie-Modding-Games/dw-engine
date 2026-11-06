@@ -96,7 +96,7 @@ misma que usarán la conversión a Lua y el intérprete de historia.
    - `WalkMonitor` (opcional): cuenta mezclas, llamadas resumidas, recorridos de resumen y recursiones cortadas
      (`recursionCuts`), y para el recorrido en una hora límite (para las pruebas que lo miden).
    - `GuardedInstruction::state` lista solo los disparadores que el camino conoce.
-   - **Prueba en el disco** (opcional, fuera de la puerta: `DWE_WALK_PROOF`, `formats/tests/script_walk_proof_disc_tests.cpp`):
+   - **Prueba en el disco** (opcional, fuera de la puerta: `DWE_WALK_PROOF`, `packages/formats/tests/script_walk_proof_disc_tests.cpp`):
      script a script, comprueba que todo `warp_to` y `teleport` sale en el resultado o no lo alcanza el flujo de
      ninguna sección (salvo `StaticUnreachable`), hace la comprobación de mezclas y compara el recorrido con
      resúmenes con el completo, con 10 minutos por script. Si el completo no acaba, el script se prueba con el
@@ -195,7 +195,7 @@ secciones de NPC no se distinguen.
 
 ## En el motor (parte a)
 
-- `game/field` carga `field/script_warps` (`loadScriptWarps`; vacío si no hay) y el estado de partida nueva
+- `packages/game/field` carga `field/script_warps` (`loadScriptWarps`; vacío si no hay) y el estado de partida nueva
   (`assets::loadNewGameStory`); `apps/game` le pasa un oráculo de disparadores (`TriggerState`) con ese estado.
 - **La apertura que el motor se salta.** El motor aún no juega la apertura: `field/warps.yaml` empieza en `twna01`
   salida 1, no en la 9. `newGameTriggers(historia, mapa, salida)` da entonces por puestos también los `sets` de
@@ -276,7 +276,7 @@ Rama p4-scripted-warps-b. Lo que añade sobre la parte (a):
   disparador. Azar, elecciones y conversaciones siguen sin decidirse (cerradas y registradas).
 - **`sets_flags` y la sección `story` de la partida** (pregunta 8). Al tomar un warp, el campo escribe sus
   `sets_flags` por su escritor de disparadores y vuelve a decidir las casillas del mapa (`refreshScriptWarps`), así
-  que solo el campo decide qué warps están activos. `game/story` guarda 800 disparadores y 256 variables; la
+  que solo el campo decide qué warps están activos. `packages/game/story` guarda 800 disparadores y 256 variables; la
   partida los escribe en una sección nueva y aditiva, `story` versión 1, con test de migración: una partida sin ella
   carga la historia como la deja una partida nueva y lo registra.
 - **El disparador del partner.** El original pone, antes de la sección de partida nueva, 0x200 más la especie del

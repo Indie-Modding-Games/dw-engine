@@ -5,7 +5,7 @@ ficheros del ejecutable. Todo se puede comprobar con `dwx extract --list`.
 
 ## Lectura de bytes
 
-Todos los lectores usan `ByteReader` (`formats/include/dwe/formats/byte_reader.hpp`): lee campos little-endian en un
+Todos los lectores usan `ByteReader` (`packages/formats/include/dwe/formats/byte_reader.hpp`): lee campos little-endian en un
 offset y devuelve `std::nullopt` si el campo no cabe en el buffer. Nunca se hace `reinterpret_cast` de structs y nunca
 se lee fuera de rango: un fichero malformado da un error con el motivo.
 
@@ -172,7 +172,7 @@ No escribe nada: sin `--list`, [`dwx extract`](extract.md) escribe el paquete ba
 
 ## Tests
 
-- Unitarios (`formats/tests/`): fixtures sintéticos hechos por el propio test (`disc_fixtures.hpp`): sectores en bruto
+- Unitarios (`packages/formats/tests/`): fixtures sintéticos hechos por el propio test (`disc_fixtures.hpp`): sectores en bruto
   con su sincronización y subcabecera, un volumen ISO9660 pequeño con carpetas anidadas, hojas CUE y un ejecutable
   falso con su tabla. Cubren los casos malformados: imágenes truncadas, offsets fuera de la imagen, bucles de carpetas,
   nombres peligrosos, tablas sin final y punteros fuera del ejecutable.

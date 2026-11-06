@@ -1,5 +1,5 @@
 # El mapa de la isla (tecla M), una mejora de dwe: el original no tiene mapa de la isla ni ninguna imagen de conjunto.
-# Las zonas se pintan a mano alzada desde estos datos (engine/ui: paintWorldMap): cada zona es un centro y un radio
+# Las zonas se pintan a mano alzada desde estos datos (packages/engine/ui: paintWorldMap): cada zona es un centro y un radio
 # sobre un lienzo de 1000 x 640 con el norte arriba, la tierra une las zonas vecinas en una sola isla y los caminos
 # unen los centros. La disposición es de dwe, dibujada a partir de las salidas de los mapas (data/maps y sus warps,
 # field/script_warps): las zonas que se conectan quedan vecinas.

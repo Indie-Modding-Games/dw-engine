@@ -1,4 +1,4 @@
-# El candado de historia (apps/session: StoryLock, docs/modulos/apps/session.md): qué parte del juego
+# El candado de historia (packages/session: StoryLock, docs/modulos/apps/session.md): qué parte del juego
 # está abierta mientras el port llega etapa a etapa. No es una regla del original: cuando todo el
 # juego esté portado, la última etapa abre todos los mapas ("*").
 #
@@ -79,8 +79,8 @@ stages:
       - tunn*
       - room14
   # Etapas 3 a 9: los mapas de cada tramo, verificados en los scripts extraídos y en las salidas de
-  # los mapas. Todavía no se liberan: `active_stage` no las alcanza y sirven para probarlas con
-  # `--story-stage`. Las salidas entre tramos no siguen la historia en línea (gias08 a stic01,
+  # los mapas. Todas están liberadas (`active_stage` es stage_9); `--story-stage` sirve para jugar
+  # solo hasta una anterior. Las salidas entre tramos no siguen la historia en línea (gias08 a stic01,
   # gcan01 a dgha01 o frzl08 a mist07 dan a la etapa 7, gias02 a fact05 a la 6): un mapa
   # de una etapa posterior queda cerrado hasta que su etapa se juega.
   # Etapa 3: Mt. Panorama (miha), Gear Savanna (gias, con la tienda secreta de cartas gias06b), la

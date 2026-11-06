@@ -25,7 +25,7 @@ máquina.
 
 | Categoría | Ejemplos | ¿Se distribuye? |
 |---|---|---|
-| **Motor** | `engine/`, `game/`, herramientas | ✅ Con la licencia del proyecto |
+| **Motor** | `packages/engine/`, `packages/game/`, herramientas | ✅ Con la licencia del proyecto |
 | **Base** | Modelos, fondos, música, textos y tablas de stats del disco | ❌ Nunca. Se genera en la máquina del usuario |
 | **Original del equipo** | Personajes nuevos, música nueva, mapas pintados desde cero | ✅ Con licencia propia |
 | **Derivado** | Fondos escalados, retexturas, traducciones del texto original, modelos nuevos de Digimon existentes | ⚠️ Solo como **recetas o deltas** que se aplican sobre la base del usuario |

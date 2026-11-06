@@ -39,7 +39,7 @@ DWE_DISC="/ruta/al/disco.bin" scripts/dev.sh test -R dwx   # incluye la prueba c
    ficheros se reparten entre varios hilos (como mucho 16); los resultados se juntan en orden de ruta, así que la
    salida no depende del número de hilos.
 4. Prepara la carpeta de salida y escribe el paquete: `pack.yaml`, las salidas, `dwx/coverage.yaml` y `.dwx-extract`.
-5. Monta el paquete con el `VirtualFileSystem` del motor (`engine/assets`, sobre `DiskFileSystem`), comprueba que
+5. Monta el paquete con el `VirtualFileSystem` del motor (`packages/engine/assets`, sobre `DiskFileSystem`), comprueba que
    cada salida se resuelve a su fichero y abre cada asset del paquete con los lectores del motor
    (`assets::checkContent`, lo mismo que `dwe-game --check-content` y el último paso de
    [`dwx validate`](../architecture/assets-pipeline.md#dwx-validate)). Es la prueba de que el motor carga lo extraído:
@@ -275,7 +275,7 @@ esquema y regla: sin ellos, `dwx validate` falla en el test del disco.
 ### Ids de asset
 
 Todos los ids salen de `apps/dwx/src/asset_names.cpp`, para que el esquema se cambie en un solo sitio. Cada fichero
-cumple las reglas de `engine/assets`: segmentos de `[a-z0-9_]` y un solo punto en el nombre.
+cumple las reglas de `packages/engine/assets`: segmentos de `[a-z0-9_]` y un solo punto en el nombre.
 
 | Origen | Id | Ejemplo |
 |---|---|---|
@@ -417,7 +417,7 @@ mapas.
 Las películas son la mayor parte del tiempo: al extraer, cada uno de los 13 089 frames solo pasa por la etapa VLC
 (`decodeBitstream`, para comprobar su bitstream); la IDCT corre una sola vez, al escribir el Y4M, y se escriben 1,1 GB.
 Los bitstreams de las películas y sus WAV (unos 200 MB) se quedan en memoria hasta que se escribe el paquete.
-`formats/src/video/mdec.cpp` se compila optimizado también en debug, como `sha1.cpp`; sin eso eran casi 9 min.
+`packages/formats/src/video/mdec.cpp` se compila optimizado también en debug, como `sha1.cpp`; sin eso eran casi 9 min.
 
 Con `dwx` compilado en release (`linux-clang-release`), la extracción entera tarda unos 15 s. Medidas del cierre de la
 fase 1 (2026-10-20, host compartido con otras compilaciones): 2 min 40 s a 3 min en `ci`, 15 s en release.

@@ -101,7 +101,7 @@ puede tirar.
   0; menos de 5: 1; de 20: 2; de 50: 3; si no, 4) y luego una carta de esa rareza al azar (`rollCard`)
   **(comprobado)**. La línea del texto (MAPHEAD 0x4d3) dice si es nueva (según su rareza) o repetida, y la variable
   249 lleva su Digimon (`showCardTextbox`) **(comprobado)**.
-- Motor: `game/inventory/cards`, `session::CardsAdapter` (reglas `cards`, sección de guardado `cards`). La tienda de
+- Motor: `packages/game/inventory/cards`, `session::CardsAdapter` (reglas `cards`, sección de guardado `cards`). La tienda de
   cartas y su venta están en `session::CardShop`, y el canje por méritos en `session::MeritShop`.
 - Los scripts: `story.give_card(n)` suma una copia sin pasar de `max_copies` y `story.take_card(n)` quita una sin
   bajar de 0 (`script_interp.c:1143`, `:1151`); `story.cards(n)` dice cuántas hay (`scriptCompareCard`). Una carta

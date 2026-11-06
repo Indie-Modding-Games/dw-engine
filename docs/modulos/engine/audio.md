@@ -1,7 +1,7 @@
 # audio
 
 El sonido del juego: la salida al dispositivo, el mezclador, las voces y los volúmenes. Es un módulo de la capa de
-sistemas que depende de `core`, `platform` (SDL3) y `assets`. No conoce `game/` ni `apps/`: no sabe qué es un mapa
+sistemas que depende de `core`, `platform` (SDL3) y `assets`. No conoce `packages/game/` ni `apps/`: no sabe qué es un mapa
 ni un script, solo reproduce clips en buses. El diseño completo, los tramos y la fidelidad al original están en
 [Audio](../../architecture/audio.md).
 
@@ -29,10 +29,10 @@ audio.
 - `openDeviceOutput` abre el dispositivo en un hilo propio con un plazo (`DeviceOpenTimeout`, 3 s): un servidor de
   sonido que no contesta deja el juego en silencio en vez de colgarlo, y `deviceOpenStuck` dice si ese hilo quedó
   atascado para que el juego termine sin esperarlo ([detalles](../../architecture/audio.md#4-salidas)).
-- `game/*` no ve `audio`: `game/story` declara el puerto `SoundPort` y `apps/session` lo implementa sobre `Audio`
+- `packages/game/*` no ve `audio`: `packages/game/story` declara el puerto `SoundPort` y `packages/session` lo implementa sobre `Audio`
   (`session::SessionSound`). Qué banco o qué pista suena en cada momento lo decide el juego, no este módulo.
 
 ## Mods
 
-Nada de `engine/audio` es contrato con los mods. Lo que vean los scripts llega por la API `story` cuando funcione y
+Nada de `packages/engine/audio` es contrato con los mods. Lo que vean los scripts llega por la API `story` cuando funcione y
 tenga test ([qué ve un mod](../../architecture/audio.md#8-qué-ve-un-mod)).

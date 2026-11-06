@@ -1,7 +1,7 @@
 # Paquetes y sistema de ficheros virtual
 
 Cómo encuentra el motor cada asset entre los paquetes montados. Es la parte de "capas de contenido" de la
-[tubería de assets](assets-pipeline.md), y el código está en `engine/assets`.
+[tubería de assets](assets-pipeline.md), y el código está en `packages/engine/assets`.
 
 ## Un paquete
 
@@ -96,16 +96,16 @@ solo tiene un paquete simplemente se añade.
 ## Tablas por entradas
 
 Las tablas de contenido no se sustituyen enteras: se **componen entrada a entrada**, para que un mod añada un Digimon
-o un mapa sin copiar la tabla (`readComposedTable`, `engine/assets/include/dwe/assets/table_composition.hpp`). Hay seis
+o un mapa sin copiar la tabla (`readComposedTable`, `packages/engine/assets/include/dwe/assets/table_composition.hpp`). Hay seis
 clases de tabla: Digimon, raise, mapas, objetos, técnicas y evolución (`composedTableKinds`,
-`engine/assets/include/dwe/assets/table_kinds.hpp`). De cada clase se componen su tabla de siempre (`data/digimon`,
+`packages/engine/assets/include/dwe/assets/table_kinds.hpp`). De cada clase se componen su tabla de siempre (`data/digimon`,
 `data/raise`, `data/maps`, `data/items`, `data/moves` y `data/evolution`) y cualquier otra que un ruleset nombre con
 el rol de la clase en sus `tables` (`raise: data/hard_raise`). El juego y `dwx validate` componen las mismas
 (`composedTablesOf`). El resto de assets sigue la regla de la pila: gana el de más arriba.
 
 ### IDs de contenido
 
-Cada entrada se nombra por su id de contenido (`ContentId`, `engine/assets/include/dwe/assets/content_id.hpp`):
+Cada entrada se nombra por su id de contenido (`ContentId`, `packages/engine/assets/include/dwe/assets/content_id.hpp`):
 
 - **Originales:** su nombre estable de siempre, sin espacio de nombres (`species_a`, `twna01`). Es el que ya escribe
   `dwx extract` y leen las herramientas, así que no cambia.
@@ -169,7 +169,7 @@ con un aviso en el registro que nombra su id y la cantidad ([inventario](../modu
 
 Lo que se ve de una entrada nueva sale de la tabla de textos del paquete, `text/<idioma>/<id del paquete>.yaml`, con
 la clave `<bloque>.<nombre>`: `digimon_names.pebblemon`, `map_names.meadow` (`addedEntryTextKey`,
-`engine/localization/include/dwe/localization/catalog.hpp`). Los originales siguen con sus claves numeradas.
+`packages/engine/localization/include/dwe/localization/catalog.hpp`). Los originales siguen con sus claves numeradas.
 
 Un ejemplo completo está en [`tests/mods/example_mod`](../modulos/tests/mods.md).
 

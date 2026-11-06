@@ -17,7 +17,7 @@ dwe-sim --scenario ruleset-diff --param against=original --set care.hunger.windo
 | Opción | Qué hace | Por defecto |
 |---|---|---|
 | `--scenario <nombre>` | El escenario que se juega (`--list` los enumera) | Obligatoria |
-| `--content <carpeta>`, `--mods <carpeta>` | Los paquetes, montados igual que en el juego (`apps/content`) | `content` |
+| `--content <carpeta>`, `--mods <carpeta>` | Los paquetes, montados igual que en el juego (`packages/content`) | `content` |
 | `--dev-assets` | Monta también los assets de desarrollo del `dev-assets.yaml` de la carpeta actual o de la de datos del usuario, la misma que la del juego, con la imagen del disco a través de `dwx` ([assets de desarrollo](../architecture/assets-de-desarrollo.md)) | Apagado |
 | `--ruleset <id>` | El ruleset con el que se juega | `original` |
 | `--runs <n>` | Cuántas partidas | 100 |
@@ -45,7 +45,7 @@ hilos: el informe de una semilla es el mismo en cualquier máquina, así que dos
 
 ### `care`
 
-Cría un partner con las reglas de `game/partner` y el reloj del ruleset. Cada minuto de juego, a cualquier `--speed`, el
+Cría un partner con las reglas de `packages/game/partner` y el reloj del ruleset. Cada minuto de juego, a cualquier `--speed`, el
 cuidador mira al partner y hace una sola cosa: le da de comer si tiene hambre (la carne del original: energía 12 y peso
 +1, si no la rechaza), lo lleva al baño si lo necesita, lo acuesta si tiene sueño o, a su hora del día, lo entrena. Si
 muere, renace con el nivel del tamer que llevan los eventos. Aún no hay evolución: el partner sigue en su especie toda
@@ -83,7 +83,7 @@ muertes, peso 15 y HP 2340 (100 + 28 sesiones de 80). La vida no varía porque s
 ## Añadir un escenario
 
 Un escenario es **un fichero** en `apps/sim/scenarios/`: CMake los recoge todos, y `dwe-sim` puede usar todos los
-módulos de `game/`, así que no hay que tocar nada más.
+módulos de `packages/game/`, así que no hay que tocar nada más.
 
 ```cpp
 // apps/sim/scenarios/evolution_scenario.cpp

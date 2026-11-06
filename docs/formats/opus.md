@@ -2,7 +2,7 @@
 
 `dwx cook` convierte cada WAV de un paquete en un fichero [Ogg Opus](https://www.rfc-editor.org/rfc/rfc7845) con el
 mismo id (`sound/sb/sample_001.wav` → `sound/sb/sample_001.opus`). Lo escribe `apps/dwx/src/audio_cooker.cpp` con
-libopusenc y lo lee `engine/assets` (`dwe::assets::decodeOpus`) con libopus. La decisión está en el
+libopusenc y lo lee `packages/engine/assets` (`dwe::assets::decodeOpus`) con libopus. La decisión está en el
 [ADR 0017](../adr/0017-cocinado-y-archivos-pak.md).
 
 ## Qué escribe
@@ -28,7 +28,7 @@ comentarios.
 
 ## Qué comprueba el lector
 
-`decodeOpus` lee las páginas Ogg con un lector propio (`engine/assets/src/ogg.cpp`, sin libogg ni opusfile) y rechaza
+`decodeOpus` lee las páginas Ogg con un lector propio (`packages/engine/assets/src/ogg.cpp`, sin libogg ni opusfile) y rechaza
 el fichero, con un mensaje que dice qué falla, si:
 
 - una página no empieza por `OggS` versión 0, no cuadra con su CRC, no es la siguiente del flujo (número de serie y

@@ -1,8 +1,8 @@
 -- One slot of the bag, as the original's item list draws it (inventory.c: renderInventoryTop): the
 -- item's 16 x 16 icon 3 pixels in from the row's edge and 1 down (utils2.c: renderItemSprite,
 -- setItemTexture), its name in its item colour's ink and its count. The game publishes the bag as
--- the settings bag.slot.count and bag.slot.<index>.* (apps/screens: bag_view.hpp, itemIconOf), for
--- the field's bag and the battle's alike.
+-- the settings bag.slot.count and bag.slot.<index>.* (packages/screens: bag_view.hpp, itemIconOf),
+-- for the field's bag and the battle's alike.
 --
 -- A document that lists the bag links this script and gives each slot an element `<id>` holding an
 -- `<img id="<id>-icon">` and the spans `<id>-name` and `<id>-count` (the icon is optional).

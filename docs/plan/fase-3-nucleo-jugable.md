@@ -74,7 +74,7 @@ Los rulesets del diseño nuevo vuelven al ciclo completo: diseño en el GDD, apr
 
 ## Diseño
 
-- Módulos: `game/partner`, `game/battle`, `game/inventory`, `game/save` y el formato de ruleset en un paquete de
+- Módulos: `packages/game/partner`, `packages/game/battle`, `packages/game/inventory`, `packages/game/save` y el formato de ruleset en un paquete de
   contenido.
 - **Un ruleset** reúne secciones (cuidado, evolución, batalla…), cada una con su esquema. Los números van en YAML.
   Las tablas por Digimon, por técnica o por objeto no se copian: el ruleset nombra las tablas del paquete base que usa

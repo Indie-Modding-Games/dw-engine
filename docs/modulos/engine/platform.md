@@ -11,7 +11,7 @@ en el sistema (`executableFileName`). No necesitan una `Platform`. El juego lo u
 disco de los assets de desarrollo.
 
 En Windows, cada programa del proyecto (y cada ejecutable de tests) lleva incrustado el manifiesto
-`cmake/windows/utf8.manifest` (`dwe_use_utf8` en `cmake/DweModule.cmake`), que pide UTF-8 como página de códigos.
+`tooling/cmake/windows/utf8.manifest` (`dwe_use_utf8` en `tooling/cmake/DweModule.cmake`), que pide UTF-8 como página de códigos.
 Así `argv`, las rutas hechas de `std::string` y las funciones de ficheros del CRT van en UTF-8 como en Linux, y una
 ruta bajo `%APPDATA%` con un nombre de usuario fuera de la página ANSI funciona. **Necesita Windows 10 1903 o
 posterior**; en uno anterior el manifiesto se ignora. El test «on Windows a program's char strings are UTF-8» lo

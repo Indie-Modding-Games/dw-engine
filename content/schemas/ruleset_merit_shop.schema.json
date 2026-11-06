@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: merit_shop",
-  "description": "rules/<id>/merit_shop.yaml: the merit exchange the story opens (apps/session: MeritShop; shop/script_menu.c: openMeritShop).",
+  "description": "rules/<id>/merit_shop.yaml: the merit exchange the story opens (packages/session: MeritShop; shop/script_menu.c: openMeritShop).",
   "type": "object",
   "required": [
     "lines_section",

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: city",
-  "description": "rules/<id>/city.yaml: the city's prosperity rebuilt from the recruit triggers, and the File City screen a finished game continues on (apps/session: CityAdapter; game/story: prosperity.hpp).",
+  "description": "rules/<id>/city.yaml: the city's prosperity rebuilt from the recruit triggers, and the File City screen a finished game continues on (packages/session: CityAdapter; packages/game/story: prosperity.hpp).",
   "type": "object",
   "required": ["prosperity", "cleared_map"],
   "additionalProperties": false,

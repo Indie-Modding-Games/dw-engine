@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: dialogue",
-  "description": "rules/<id>/dialogue.yaml: the rules of the story's textboxes (game/story: DialogueRules, apps/session: readDialogueRules).",
+  "description": "rules/<id>/dialogue.yaml: the rules of the story's textboxes (packages/game/story: DialogueRules, packages/session: readDialogueRules).",
   "type": "object",
   "required": ["open_frames", "no_cancel_trigger", "speech_box", "sounds", "name_colors"],
   "additionalProperties": false,

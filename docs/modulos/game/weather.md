@@ -93,7 +93,7 @@ opción. Solo hay estación visible en los mapas con clima: los interiores, cuev
 clima, la zona y el periodo (`periodOf(rules, gameHour)`, horas desde el principio del reloj). No tira nunca los
 números aleatorios del juego, así que el orden de tiradas que compara el oráculo es el mismo con o sin clima.
 
-La semilla es el sistema de sesión `WeatherSeed` (`apps/session`, sección `weather` del guardado, `{seed}`). En una
+La semilla es el sistema de sesión `WeatherSeed` (`packages/session`, sección `weather` del guardado, `{seed}`). En una
 partida nueva sale de la semilla de la sesión (`weatherSeedOf`); una partida guardada antes de que existiera el clima
 no trae la sección y toma la misma semilla derivada, que se guarda en el siguiente guardado.
 

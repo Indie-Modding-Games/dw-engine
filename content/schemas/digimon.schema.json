@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Digimon parameters",
-  "description": "digimon.yaml: DIGIMON_DATA of the executable, one record per Digimon type (params.h: DigimonPara). formats/src/exe/tables_yaml.cpp writes it.",
+  "description": "digimon.yaml: DIGIMON_DATA of the executable, one record per Digimon type (params.h: DigimonPara). packages/formats/src/exe/tables_yaml.cpp writes it.",
   "type": "object",
   "required": ["digimon"],
   "additionalProperties": false,

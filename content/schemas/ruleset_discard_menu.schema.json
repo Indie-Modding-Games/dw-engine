@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: discard_menu",
-  "description": "rules/<id>/discard_menu.yaml: the menu the story opens to pick an item from the bag (apps/session: DiscardMenu; script_common.c: openDiscardItem).",
+  "description": "rules/<id>/discard_menu.yaml: the menu the story opens to pick an item from the bag (packages/session: DiscardMenu; script_common.c: openDiscardItem).",
   "type": "object",
   "required": ["confirm_section", "confirm_line", "cancel_trigger", "chosen_variable", "no_item"],
   "additionalProperties": false,

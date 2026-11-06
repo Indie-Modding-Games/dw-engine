@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Battle effect script",
-  "description": "effect/<move>/script.yaml: the scripts and the data area of one battle effect slot, written by dwx extract (formats/src/effect/efe_yaml.cpp). Offsets count from the slot's base. Operands are the values the scripts push as they are stored: numbers, variables (base+0x0040, instance+0x0008), addresses (&base+0x0040) or labels; what each one means is in docs/formats/efectos.md and is not checked here.",
+  "description": "effect/<move>/script.yaml: the scripts and the data area of one battle effect slot, written by dwx extract (packages/formats/src/effect/efe_yaml.cpp). Offsets count from the slot's base. Operands are the values the scripts push as they are stored: numbers, variables (base+0x0040, instance+0x0008), addresses (&base+0x0040) or labels; what each one means is in docs/formats/efectos.md and is not checked here.",
   "type": "object",
   "required": ["start_script", "init_script", "data"],
   "additionalProperties": false,

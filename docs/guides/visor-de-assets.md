@@ -2,7 +2,7 @@
 
 El overlay de depuración tiene un visor para ver lo que hay en los paquetes sin escribir código: qué IDs existen, qué
 paquete da cada uno, qué sobrescribe y, si es una textura PNG o KTX2, cómo se ve. El código está en
-`engine/debug/src/asset_viewer.cpp`.
+`packages/engine/debug/src/asset_viewer.cpp`.
 
 ## Abrirlo
 
@@ -48,7 +48,7 @@ errores (un `pack.yaml` mal escrito, una dependencia que falta) sale con el mens
 - **Solo texturas PNG y KTX2.** Los modelos (`.glb`) y los mapas necesitan el camino de render 3D, que este visor no
   usa: los lista y dice qué paquete los da, sin vista previa. Para verlos están `--model-viewer` y `--map <id>`
   ([prueba vertical](prueba-vertical.md#jugar)).
-- El motor decodifica los PNG con su propio código (`assets::decodePng`), no con `formats/`, que solo usa `dwx`
+- El motor decodifica los PNG con su propio código (`assets::decodePng`), no con `packages/formats/`, que solo usa `dwx`
   ([reglas de dependencias](../architecture/dependency-rules.md)). No acepta imágenes de más de 16384 píxeles de lado.
 - El visor lee, decodifica y sube la textura al elegirla, en el mismo frame. Con texturas del tamaño de las del
   original no se nota.

@@ -1,5 +1,5 @@
 # Cuidado del partner (docs/reference/care.md): hambre, sueño, baño, enfermedad, ánimo y cansancio. Los efectos de
-# los combates en el cuidado son de la sección battle (consequences). Lo lee game/partner. Unidades en el nombre de
+# los combates en el cuidado son de la sección battle (consequences). Lo lee packages/game/partner. Unidades en el nombre de
 # cada clave: _frames son fotogramas del original (20 por minuto de juego, ver clock.yaml), _minutes minutos de juego,
 # _hours horas de juego y _percent tantos por ciento. Salvo que se diga otra cosa, todo está en src/main/partner_impl.c.
 limits:

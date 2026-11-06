@@ -3,7 +3,7 @@
 Estado: **diseño aprobado por el coordinador (2026-10-21).** Las decisiones están en
 [Decisiones](#decisiones-2026-10-21); las preguntas, con su opción elegida, al final ([Q1–Q14](#preguntas-abiertas)).
 Los incrementos S0–S7 se integraron en orden, cada uno como un paquete con revisión. **Hoy está en `main`**
-(`formats/script`, `game/story`, `apps/session`): el juego corre la historia del disco con este intérprete. Las ramas
+(`formats/script`, `packages/game/story`, `packages/session`): el juego corre la historia del disco con este intérprete. Las ramas
 y el gate que cita la página son el flujo de entonces; ahora todo entra en `main` por pull request.
 
 El intérprete de historia tiene dos mitades:
@@ -11,7 +11,7 @@ El intérprete de historia tiene dos mitades:
 - **La conversión**: `dwx`, al extraer, convierte los scripts de eventos (`script/maphead.yaml` y
   `script/dg/NNN.yaml`) en Lua legible, a partir de **la misma IR** que ya usan los warps de script
   ([warps de script](warps-de-script.md), rama `p4-scripted-warps`).
-- **El runtime**: `game/story` ejecuta ese Lua (entrar al mapa, hablar, pisar, pulsar, cargar el mapa) con la
+- **El runtime**: `packages/game/story` ejecuta ese Lua (entrar al mapa, hablar, pisar, pulsar, cargar el mapa) con la
   semántica del original, y es el dueño del estado de la historia (`StoryState`).
 
 Regla de partida (dirección del usuario, vinculante): **primero el comportamiento del original**, con pruebas de
@@ -42,7 +42,7 @@ El coordinador aprobó el diseño con estas decisiones:
 | Q9 | Sin bytecode en el `.pak` |
 | Q10 | El autoguardado durante una sección guarda el estado de antes de ella |
 | Q11 | **Cambiada dos veces** (2026-10-22, «el decomp es inspiración»): enteros sin anchos de la máquina; los rangos de juego son reglas del ruleset; un acceso fuera del estado configurado es un error de Lua registrado ([Q11](#q11-semántica-entera-y-accesos-fuera-de-rango)) |
-| Q12 | Paquete aparte `p4-script-timing-hardening` (paradas por instrucciones, el reloj como techo holgado), antes de que S2 toque `engine/script` |
+| Q12 | Paquete aparte `p4-script-timing-hardening` (paradas por instrucciones, el reloj como techo holgado), antes de que S2 toque `packages/engine/script` |
 | Q13 | Solo si S3 lo sigue necesitando; el banco de referencia se consulta más tarde |
 | Q14 | Generador de la sesión con la fórmula de recorte del original |
 
@@ -59,13 +59,13 @@ Cada incremento informa del número de mapas que alcanza **medido con una ruta d
   - `walkSection` (recorrido con guardas) y `findMapChanges`: lo usan los warps estáticos.
   - Cifras del disco (test lento de estructuración): 222 scripts, 1553 secciones, 1550 anidadas sin máquina de
     estados, 3 con máquina de estados; 0 `goto`.
-- **Sandbox de Lua** (`engine/script`, en `main`): Lua 5.5 con sol2, entornos por paquete, API versionada
+- **Sandbox de Lua** (`packages/engine/script`, en `main`): Lua 5.5 con sol2, entornos por paquete, API versionada
   (`ApiRegistry::publish`, valores escalares), hooks con presupuesto por evento y por fotograma, presupuesto por
   llamada de instrucciones (10 M), tiempo (`callDeadline`, 1 s) y memoria (64 MiB total, 16 MiB por paquete).
-- **Campo** (`game/field`): paso de jugador y compañero, colisión, warps de tabla con fundido por fotogramas del
+- **Campo** (`packages/game/field`): paso de jugador y compañero, colisión, warps de tabla con fundido por fotogramas del
   original (`Field::fadeLevel`), `TriggerStep` para casillas que no son warp («para sistemas futuros»). No hay hablar
   con NPC, ni caja de texto de historia, ni cámara con guion, ni movimientos con guion.
-- **Sesión** (`apps/session`): el único sitio que junta los `game/*` (regla 4 de
+- **Sesión** (`packages/session`): el único sitio que junta los `packages/game/*` (regla 4 de
   [dependencias](dependency-rules.md)); tick fijo de 60 Hz en `apps/game` (`TickSeconds`).
 - **Combate desde script**: solo el disparador de depuración `battle(...)` (`apps/game/src/battle_trigger.*`).
 - **Alcance hoy** (test de alcance de `p4-scripted-warps` (a), contenido `content-f4`): una partida nueva llega a
@@ -158,18 +158,18 @@ código del motor (`PackOrigin::Engine`, capa `base`). La API `story` es la mism
 
 | Pieza | Módulo | Qué |
 |---|---|---|
-| `StoryState` | `game/story` | 800 disparadores, 256 variables, guardado, estado inicial de partida nueva |
-| `StoryRunner` | `game/story` | el único intérprete: corrutina en curso, pila de continuaciones, espera pendiente, cola de entradas descartadas (para el log) |
-| `DialogueState` | `game/story` | caja de texto y selección del original como estado puro (página, modo de paso, dueño, cancelación, disparador 49) |
-| Puertos (`StoryWorld`) | `game/story` (interfaces) | lo que el runtime pide al mundo: campo, compañero, inventario, combate, cámara, sonido, fundidos |
-| Puertos implementados | `apps/session` (`story_adapter`) | el pegamento con `game/field`, `game/partner`, `game/inventory`, `game/battle` (regla 4) |
-| API `story` | `apps/session` publica en `engine/script` | funciones del espacio `story` (versionado semver) |
-| `StoryLuaHost` | `apps/session` (`story_lua`) | el `SectionHost` de la VM: el script N es el módulo `story/NNN` del paquete que lo da, la sección S su `sections[S]`, una corrutina por sección; publica la parte de la API `story` que ya funciona |
-| Vista de la caja de texto | `apps/screens` + `engine/ui` | dibuja `DialogueState`; el aspecto original (9b) lo viste |
+| `StoryState` | `packages/game/story` | 800 disparadores, 256 variables, guardado, estado inicial de partida nueva |
+| `StoryRunner` | `packages/game/story` | el único intérprete: corrutina en curso, pila de continuaciones, espera pendiente, cola de entradas descartadas (para el log) |
+| `DialogueState` | `packages/game/story` | caja de texto y selección del original como estado puro (página, modo de paso, dueño, cancelación, disparador 49) |
+| Puertos (`StoryWorld`) | `packages/game/story` (interfaces) | lo que el runtime pide al mundo: campo, compañero, inventario, combate, cámara, sonido, fundidos |
+| Puertos implementados | `packages/session` (`story_adapter`) | el pegamento con `packages/game/field`, `packages/game/partner`, `packages/game/inventory`, `packages/game/battle` (regla 4) |
+| API `story` | `packages/session` publica en `packages/engine/script` | funciones del espacio `story` (versionado semver) |
+| `StoryLuaHost` | `packages/session` (`story_lua`) | el `SectionHost` de la VM: el script N es el módulo `story/NNN` del paquete que lo da, la sección S su `sections[S]`, una corrutina por sección; publica la parte de la API `story` que ya funciona |
+| Vista de la caja de texto | `packages/screens` + `packages/engine/ui` | dibuja `DialogueState`; el aspecto original (9b) lo viste |
 
-`game/story` no incluye `game/field` ni ningún otro `game/*`: declara los puertos y `apps/session` los implementa.
-`game/story` tampoco incluye `engine/script`: el runner trabaja con una interfaz `SectionHost` (arrancar sección,
-reanudar con un valor, cerrar) que implementa `apps/session` con la VM. Así el runner se prueba sin Lua.
+`packages/game/story` no incluye `packages/game/field` ni ningún otro `packages/game/*`: declara los puertos y `packages/session` los implementa.
+`packages/game/story` tampoco incluye `packages/engine/script`: el runner trabaja con una interfaz `SectionHost` (arrancar sección,
+reanudar con un valor, cerrar) que implementa `packages/session` con la VM. Así el runner se prueba sin Lua.
 
 ### Secciones y disparadores
 
@@ -223,7 +223,7 @@ pendientes de todas las secciones en espera pasan de **256**; el disco no pasa d
 - **Las órdenes que esperan ceden desde C++**: una función de la API marcada como «de espera» acaba con
   `lua_yield`, sin continuación (Lua 5.5 lo permite a una función C llamada desde Lua dentro de una corrutina). El
   Lua generado queda plano: `story.show_textbox(...)` se lee como una llamada que bloquea. Hace falta una pieza
-  nueva en `engine/script`: `ApiRegistry::publishWaiting` ([Q6](#q6-cómo-cede-una-orden-de-espera)). Fuera de una
+  nueva en `packages/engine/script`: `ApiRegistry::publishWaiting` ([Q6](#q6-cómo-cede-una-orden-de-espera)). Fuera de una
   sección de historia, una orden de espera es un error de Lua claro.
 - **Qué devuelve una espera:** `set_selection` devuelve la opción desde 0, o el número de opciones al cancelar (el
   contrato del emisor); `start_battle` el
@@ -322,7 +322,7 @@ Comprobado en el decomp (solo lectura) para este diseño:
   `StoryAdapter::talkedTo`). Tras un combate del que se puede huir (disparador 1 sin poner) el rival sale del mapa
   hasta que este se vuelve a cargar (`battle_main.c`: los NPC en pantalla quedan con `isOnMap` 0); tras uno fijo se
   queda, como el `species_a` de mayo00. Aún no se portan los NPC que se unen ni los que huyen al empezar
-  (`rollJoiningEnemies` existe en `game/battle`, pero la app no lo usa).
+  (`rollJoiningEnemies` existe en `packages/game/battle`, pero la app no lo usa).
 
 ### Cobertura de órdenes
 
@@ -415,7 +415,7 @@ return sections
   guarda en un byte, 0–255). **Se guardan todas** las variables de la capacidad configurada. El original solo
   guardaba las 0–34 (`main_menu.c: writeSavegame`); guardar todas es un cambio de contrato aprobado (2026-10-22) que
   no cambia nada que el jugador vea en el disco. Las cartas, el inventario diario y el de reciclaje ya tienen dueño
-  (`game/inventory`) y no se duplican.
+  (`packages/game/inventory`) y no se duplican.
 - Rangos: en el conjunto base, los disparadores válidos son **0–799**. En el original, `getTriggerOffset`
   (`script_interp.c`) indexa `ScriptState.triggers[100]` sin comprobar el rango, y los bytes que siguen en
   `ScriptState` (`script.h`) son las variables, así que un disparador ≥ 800 tocaría sus bits. **El disco no lo hace
@@ -433,7 +433,7 @@ return sections
   del primer mapa **cuando el runner las ejecute de verdad**. Desde S3, `data/new_game_story` deja de ser la fuente
   del estado inicial y queda solo para el análisis estático de alcance.
 
-- **El día nuevo** (`game/story/new_day`, `session::CalendarAdapter`, sección `calendar` del ruleset): cada día que
+- **El día nuevo** (`packages/game/story/new_day`, `session::CalendarAdapter`, sección `calendar` del ruleset): cada día que
   cruza el reloj, y una vez al empezar partida (`initializeScripts`), suma 1 a los contadores de días (variables
   28–31) salvo si valen 255, y borra el bit 0x80 de la variable 2 (`script_common.c: dailyPStatTrigger`). Las órdenes
   de fecha pueden llamar a `CalendarAdapter::startNewDays`. La tienda de cartas que el original repone ese día queda
@@ -543,7 +543,7 @@ cota), y usar la cota solo como techo.
 
 ## 5. Sandbox y frontera de la API
 
-- **Espacio de nombres `story`**, publicado por `apps/session` en `engine/script`, versión semver de toda la API
+- **Espacio de nombres `story`**, publicado por `packages/session` en `packages/engine/script`, versión semver de toda la API
   (una sola). Funciones escalares (la API ya solo pasa escalares) salvo `warp_to`, que recibe una tabla pequeña:
   si la API sigue siendo solo escalar en 4a, `warp_to(screen, exit, section)` con tres números.
 - **Lectura y escritura del estado:** `story.trigger(n)`, `story.set_trigger(n)`, `story.var(n)`,
@@ -574,7 +574,7 @@ cota), y usar la cota solo como techo.
   contra un límite de reloj (`QuickStop`, `DeadlineStop`). Con la máquina cargada fallan en `main` y en las ramas por
   igual (registros en `_work/logs/p4-ids-refs/gate-3a455cdd/script-flake/`, unas 45 de N pasadas). No es del
   intérprete, pero el intérprete **no debe añadir** ningún test con cota de reloj: sus tests miden instrucciones y
-  fotogramas. Propuesta para `engine/script` (fuera de este paquete): medir la parada en instrucciones cobradas y
+  fotogramas. Propuesta para `packages/engine/script` (fuera de este paquete): medir la parada en instrucciones cobradas y
   dejar la cota de reloj solo como un techo holgado ([Q12](#q12-el-fallo-intermitente-de-los-tests-del-sandbox)).
 
 ## 6. Incrementos y pruebas
@@ -586,8 +586,8 @@ cerca del original. Ninguno cambia el YAML de scripts (contrato con `dw1fe`).
 |---|---|---|---|---|
 | **S0** | Añadir `text` (o la clave del texto) a `ListingInstruction` en la IR ([contradicción 1](#contradicciones-con-la-ir-de-las-partes-a-y-b)) | Los dos constructores siguen dando la misma IR | test de disco de la IR | ninguna nueva |
 | **S1** | `lua_emitter` + `dwx` escribe `story/**`, `.lines`, textos `story_*`; `ExtractorVersion` +1; `dwx convert-script`; `dwx validate` compila el Lua | Todo el disco convierte; 0 `goto`; salida estable; Lua compila | unitarios sintéticos por forma (if plegado, bucle, elección, cola, máquina de estados, subrutina con `end_section`); disco: estabilidad, sin `goto`, compila | — |
-| **S2** | `game/story`: `StoryState`, `StoryRunner` con corrutinas, `publishWaiting` en `engine/script`, órdenes de estado y flujo, `delay` | **Paridad de efectos** S2: cada sección del disco, contra el intérprete de referencia sobre el grafo con un mundo falso y resultados de esperas aleatorios con semilla, da la misma secuencia de efectos | runner sin Lua (puertos falsos); paridad aleatoria por sección del disco (test lento) | — |
-| **S3** | Carga de mapa por `MAPHEAD`, `set_script`, `0xFE`, pisar y confirmar, `warp_to`/`teleport` con continuaciones, guardado `story` | Desde partida nueva, los warps los hace el Lua; `field/script_warps.yaml` deja de ser mecanismo (queda grafo estático); alcance medido ≥ el de (b) | integración en `apps/session` sin ventana; test de alcance con el runner | `route-story-enter` (en/es): partida nueva, salir de casa, cruzar la ciudad |
+| **S2** | `packages/game/story`: `StoryState`, `StoryRunner` con corrutinas, `publishWaiting` en `packages/engine/script`, órdenes de estado y flujo, `delay` | **Paridad de efectos** S2: cada sección del disco, contra el intérprete de referencia sobre el grafo con un mundo falso y resultados de esperas aleatorios con semilla, da la misma secuencia de efectos | runner sin Lua (puertos falsos); paridad aleatoria por sección del disco (test lento) | — |
+| **S3** | Carga de mapa por `MAPHEAD`, `set_script`, `0xFE`, pisar y confirmar, `warp_to`/`teleport` con continuaciones, guardado `story` | Desde partida nueva, los warps los hace el Lua; `field/script_warps.yaml` deja de ser mecanismo (queda grafo estático); alcance medido ≥ el de (b) | integración en `packages/session` sin ventana; test de alcance con el runner | `route-story-enter` (en/es): partida nueva, salir de casa, cruzar la ciudad |
 | **S4** | Hablar con NPC, `DialogueState` y su vista, selección, NPC (`set_digimon`…), huecos de movimiento, cámara con guion | Una conversación con elección y un warp al hablar (Q7) se juegan como en el original | modelo de diálogo puro (modos de paso, cancelar, disparador 49); huecos de movimiento por fotograma | `route-story-talk` (en/es) con capturas de la caja |
 | **S5** | Inventario, dinero, estadísticas, cartas, fecha, rutinas sin escena (12/13, 25, 30/31/56, 35/39, 15/16) | Las secciones de la ciudad no registran órdenes ausentes de estos grupos | por orden, contra la ficha (topes y suelos) | ampliar `route-story-talk` con una tienda |
 | **S6** | `start_battle` con guion y sus consecuencias, `call_digimon_routine`, rutina 32 (partida nueva), 47, 48 | Reclutar la especie 3 en `mayo00` pone el disparador 203 jugando | combate con guion, derrota → `0x4DE`, huida → warp | `route-story-recruit` (en/es) |
@@ -595,7 +595,7 @@ cerca del original. Ninguno cambia el YAML de scripts (contrato con `dw1fe`).
 
 ### Paridad de S2 en el disco
 
-`apps/session/tests/story_lua_disc_tests.cpp` juega cada sección del disco con dos mundos por el `StoryRunner` y
+`packages/session/tests/story_lua_disc_tests.cpp` juega cada sección del disco con dos mundos por el `StoryRunner` y
 el `StoryLuaHost`, y compara sus efectos (escrituras de estado, esperas, saltos de fichero y llamadas) con un
 intérprete de referencia de los listados que guarda la pila de retornos a través de `jump_to_file`. Las órdenes que
 la API aún no publica son stubs del test que registran la llamada; `call_routine` y las demás órdenes que corren
@@ -731,9 +731,9 @@ Cada una con opciones; la primera es la recomendada.
 2. Esperas en segundos: más simple, pierde la alineación de las trazas.
 
 ### Q6. Cómo cede una orden de espera
-1. **`ApiRegistry::publishWaiting` en `engine/script`, que acaba con `lua_yield` desde C** (recomendado): el Lua
+1. **`ApiRegistry::publishWaiting` en `packages/engine/script`, que acaba con `lua_yield` desde C** (recomendado): el Lua
    generado queda plano y un mod no puede saltarse la espera.
-2. Envoltorios Lua de la base que hacen `coroutine.yield`: no toca `engine/script`, pero un mod sin ese envoltorio
+2. Envoltorios Lua de la base que hacen `coroutine.yield`: no toca `packages/engine/script`, pero un mod sin ese envoltorio
    no puede esperar y las esperas quedan escritas dos veces.
 3. El Lua generado cede explícitamente tras cada orden de espera: ruido en cada línea.
 
@@ -778,7 +778,7 @@ Lua registrado, y cada caso está en esta lista con su localizador:
 El disco no alcanza ninguno. La lista crece solo con nuevos casos de este tipo, nunca con reglas.
 
 ### Q12. El fallo intermitente de los tests del sandbox
-1. **Paquete aparte en `engine/script`: medir la parada en instrucciones y dejar el reloj como techo holgado**
+1. **Paquete aparte en `packages/engine/script`: medir la parada en instrucciones y dejar el reloj como techo holgado**
    (recomendado).
 2. Subir las cotas de reloj: menos fallos, el mismo problema con más carga.
 3. Marcarlos como lentos y no correrlos en `check-commit`: los esconde.

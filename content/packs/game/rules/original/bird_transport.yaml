@@ -1,5 +1,5 @@
 # El transporte en pájaro que abre la historia (script_interp.c: CALL_ROUTINE 10 -> shop/script_menu.c:
-# tickBirdraTransport; apps/session: BirdTransport): el transportista lleva al jugador a un sitio a cambio de bits.
+# tickBirdraTransport; packages/session: BirdTransport): el transportista lleva al jugador a un sitio a cambio de bits.
 
 # showMapHeadTextbox(..., 0x4d6): las frases del transportista son esta sección de MAPHEAD.
 lines_section: 1238

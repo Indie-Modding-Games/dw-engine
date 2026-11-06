@@ -213,7 +213,7 @@ se pasa entero si ha cambiado alguno de estos:
 
 - una cabecera de una carpeta `include/` pública;
 - un `.clang-tidy`;
-- el build o el toolchain: `.devcontainer/`, `cmake/`, `triplets/`, el `CMakeLists.txt` raíz, `CMakePresets.json`,
+- el build o el toolchain: `.devcontainer/`, `tooling/cmake/`, `tooling/triplets/`, el `CMakeLists.txt` raíz, `CMakePresets.json`,
   `vcpkg.json` o `scripts/dev.sh` (que es quien corre clang-tidy);
 - una plantilla `*.in` de `configure_file` (como `apps/dwx/src/bundled_recipes.hpp.in`). La cabecera que genera vive
   en la carpeta de build, y el grafo de includes no ve quién la incluye.
@@ -253,8 +253,8 @@ Con `--cook incremental` (`DWE_GATE_COOK=incremental`), `check-gate` reutiliza u
 - el árbol de git de cada módulo con el que se compila `dwx`, lo que incluye el extractor y los cocineros. Los
   módulos salen de `ninja -t inputs apps/dwx/dwx` y de las cabeceras que `ninja -t deps` lista para sus objetos; así
   entra también un módulo que solo tiene cabeceras;
-- el `CMakeLists.txt` de cada carpeta por encima de esos módulos (por ejemplo `engine/CMakeLists.txt`);
-- el árbol de git de `.devcontainer/`, `cmake/`, `triplets/`, `content/enhance/` (las recetas que `dwx` lleva
+- el `CMakeLists.txt` de cada carpeta por encima de esos módulos (por ejemplo `packages/engine/CMakeLists.txt`);
+- el árbol de git de `.devcontainer/`, `tooling/cmake/`, `tooling/triplets/`, `content/enhance/` (las recetas que `dwx` lleva
   dentro), el `CMakeLists.txt` raíz, `CMakePresets.json`, `vcpkg.json` y `scripts/dev.sh`;
 - la imagen de Docker y el preset.
 

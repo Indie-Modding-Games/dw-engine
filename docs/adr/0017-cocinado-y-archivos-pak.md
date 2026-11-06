@@ -37,7 +37,7 @@ dependencias que hacen falta para ellos.
     se decida el formato, será un cocinero más y una nueva versión de este ADR.
 - **Imágenes que el juego lee de su PNG, tal cual.** Las que un lector del motor decodifica él mismo, y no como
   textura, se copian como PNG: lo dice, por tipo de asset y no por el YAML lateral, la lista `assets::PngOnlyImages`
-  (`engine/assets/include/dwe/assets/png_only_images.hpp`). Hoy son los fondos de mapa (`map/<id>/background_*`) y las
+  (`packages/engine/assets/include/dwe/assets/png_only_images.hpp`). Hoy son los fondos de mapa (`map/<id>/background_*`) y las
   páginas de textura (`map/<id>/texture8/NNN`, `texture4/NNN`), de los que `loadMapImages` lee los índices y la paleta
   (la hora del día elige la paleta del fondo, y los sprites con `clut` −1 se dibujan con ella), y el atlas de la
   fuente de mapa de bits (`font/<nombre>`), del que `ui::BitmapFont` lee el alfa exacto de cada píxel. `dwx validate`

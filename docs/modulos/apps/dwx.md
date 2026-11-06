@@ -32,7 +32,7 @@ definitivo. En Windows no se puede volcar una carpeta, así que ahí se confía 
 
 ### Cuándo subir `ExtractorVersion`
 
-`ExtractorVersion` (`engine/assets/include/dwe/assets/extractor_version.hpp`, compartida con el juego) es la
+`ExtractorVersion` (`packages/engine/assets/include/dwe/assets/extractor_version.hpp`, compartida con el juego) es la
 versión de lo que `dwx extract` escribe; el juego vuelve a leer el disco del jugador cuando su contenido instalado
 es de otra versión. **Súbela en el mismo commit
 que cambie la salida para el mismo disco**: un extractor nuevo o cambiado, otro nombre o formato de un fichero, otro

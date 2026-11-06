@@ -4,7 +4,7 @@ Estado: **diseño aprobado** (VAN-01; decidido por el coordinador el 2026-10-22:
 recomienda, más un tramo de reverberación tras el 3; y Q12–Q14 del tramo 2). Están implementados los
 tramos 1, 2a, 2b, 3, 3b y 4; falta el 3c (la reverberación, Q10).
 
-Este documento dice cómo suena el juego: el módulo `engine/audio` (salida al dispositivo, mezclador, voces y
+Este documento dice cómo suena el juego: el módulo `packages/engine/audio` (salida al dispositivo, mezclador, voces y
 volúmenes), cómo llegan a él los efectos (WAV u Opus) y la música (MIDI + SF2), cómo los piden los scripts y qué ve un
 mod. Las citas al decomp (`dw_decomp`, `src/`, versión `us`) son como `fichero.c: función`, solo para leer el
 comportamiento, nunca para copiar código ni tablas.
@@ -16,7 +16,7 @@ el gate y se sube por separado.
 
 | Tramo | Qué entra | Dónde acaba |
 |---|---|---|
-| 1 | Este diseño y el núcleo de `engine/audio`: salida por SDL3, salida nula, mezclador, voces, volúmenes maestro, de música y de efectos, y el límite de voces | `dwe-game` abre el dispositivo y no suena nada todavía (nadie pide sonidos); los tests cubren la mezcla, los volúmenes, el límite y la salida nula |
+| 1 | Este diseño y el núcleo de `packages/engine/audio`: salida por SDL3, salida nula, mezclador, voces, volúmenes maestro, de música y de efectos, y el límite de voces | `dwe-game` abre el dispositivo y no suena nada todavía (nadie pide sonidos); los tests cubren la mezcla, los volúmenes, el límite y la salida nula |
 | 2a | Efectos (§6.4): decodificar WAV, leer `bank_meta.yaml`, envolvente ADSR, resolver `banco + sonido` a sus tonos y muestras, y el puerto `SoundPort` con sus ranuras en la sesión | La sesión ya puede tocar efectos por su puerto (nadie los pide todavía) |
 | 2b | Los sonidos de los menús (`ui/ui_sounds.yaml`) y la orden `story.play_sound` de los scripts sobre el puerto de 2a, cuando la API `story` de S2 esté en `main` | Suenan los menús y los efectos de los scripts; se publica `story.play_sound` |
 | 3 | Música: el secuenciador MIDI (tempo, bucles), el sintetizador SF2 y las transiciones de música; las órdenes `set_bgm` y `stop_bgm` | Suena la música del mapa, del combate y de los scripts; se publican `story.set_bgm` y `story.stop_bgm` |
@@ -27,27 +27,27 @@ el gate y se sube por separado.
 ## 2. Módulos y dependencias
 
 ```text
-apps/game ──► engine/audio ──► engine/platform (SDL3), engine/assets (tramo 2), engine/core
-apps/session ──► engine/audio (solo la API pública: pedir sonidos y música)
-game/story ──► (puerto SoundPort, declarado en game/story; lo implementa apps/session)
+apps/game ──► packages/engine/audio ──► packages/engine/platform (SDL3), packages/engine/assets (tramo 2), packages/engine/core
+packages/session ──► packages/engine/audio (solo la API pública: pedir sonidos y música)
+packages/game/story ──► (puerto SoundPort, declarado en packages/game/story; lo implementa packages/session)
 ```
 
-- **`engine/audio`** es un módulo de la capa de sistemas (`dwe_add_module(audio LAYER systems ...)`), como dice ya la
+- **`packages/engine/audio`** es un módulo de la capa de sistemas (`dwe_add_module(audio LAYER systems ...)`), como dice ya la
   [visión general](overview.md) («mezcla y síntesis»). Depende de `core`, de `platform` (que enlaza SDL3) y, desde el
-  tramo 2, de `assets` (el tipo `assets::Sound` y `decodeOpus`). **No conoce `game/` ni `apps/`**: no sabe qué es un
+  tramo 2, de `assets` (el tipo `assets::Sound` y `decodeOpus`). **No conoce `packages/game/` ni `apps/`**: no sabe qué es un
   mapa, un script ni un Digimon; solo reproduce clips y secuencias en buses.
 - **El dispositivo (SDL3).** El [ADR 0003](../adr/0003-vulkan-y-sdl3.md) ya elige SDL3 para el audio. La salida SDL
-  vive en `engine/audio/src` (como `rhi` usa SDL para la superficie de Vulkan) y es privada: ningún header público de
+  vive en `packages/engine/audio/src` (como `rhi` usa SDL para la superficie de Vulkan) y es privada: ningún header público de
   `audio` incluye SDL. `platform::Platform` no cambia: la salida inicia su propio subsistema
   (`SDL_InitSubSystem(SDL_INIT_AUDIO)`, que SDL cuenta por referencias) y lo cierra al destruirse.
-- **`game/*` no ve `audio`** (regla 3 de las [reglas de dependencias](dependency-rules.md): pide las cosas por la API
-  pública, y la regla 4 obliga a hacerlo por interfaces). `game/story` declara un puerto (`SoundPort`: tocar un
-  sonido, poner o parar la música) como ya declara `StoryStatePort`, y `apps/session` lo implementa sobre
+- **`packages/game/*` no ve `audio`** (regla 3 de las [reglas de dependencias](dependency-rules.md): pide las cosas por la API
+  pública, y la regla 4 obliga a hacerlo por interfaces). `packages/game/story` declara un puerto (`SoundPort`: tocar un
+  sonido, poner o parar la música) como ya declara `StoryStatePort`, y `packages/session` lo implementa sobre
   `audio::Audio`. Así el runner sigue probándose con un doble y `dwe-sim` corre con la salida nula.
-- **`apps/session`** puede usar `audio` (es un sistema). No crea el dispositivo: recibe un `audio::Audio` ya hecho.
+- **`packages/session`** puede usar `audio` (es un sistema). No crea el dispositivo: recibe un `audio::Audio` ya hecho.
   `apps/game` lo crea con la salida SDL; `dwe-sim` y los tests, con la salida nula.
 - **La resolución de qué suena** (qué banco ocupa la ranura 8 en este mapa, qué pista corresponde a un combate) es
-  del juego, no de `audio`: vive en `apps/session` (o en el sistema de `game/` que la necesite, por su puerto) y lee
+  del juego, no de `audio`: vive en `packages/session` (o en el sistema de `packages/game/` que la necesite, por su puerto) y lee
   los datos del paquete (`data/maps`, `data/music`, los `bank_meta.yaml` y `font_meta.yaml`).
 
 Estructura del módulo (tramo 1):
@@ -71,7 +71,7 @@ voz por tono) y `src/envelope.{hpp,cpp}` (la envolvente ADSR del chip). En `asse
 
 Tramo 3: `include/dwe/audio/sound_font.hpp` (`SoundFont`: un SF2 cargado en el sintetizador, que el hilo del juego
 mantiene vivo), `src/music_player.{hpp,cpp}` (el secuenciador y el sintetizador en el hilo de audio) y `src/tsf.cpp`
-(la única unidad que compila TinySoundFont, que entra como port propio en `vcpkg-ports/tinysoundfont`).
+(la única unidad que compila TinySoundFont, que entra como port propio en `tooling/vcpkg-ports/tinysoundfont`).
 
 `apps/game/src/game_audio.cpp` abre el dispositivo o, si no hay, la salida nula con un aviso, y el bucle llama a
 `Audio::update` con el tiempo de los ticks que avanzó. Desde el tramo 2a la sesión recibe el `audio::Audio` para sus
@@ -126,7 +126,7 @@ cuando las necesita, cada pocos milisegundos).
   siguiente arranque. Para comprobarlo sin un PipeWire roto basta un socket que acepte y no conteste:
   `PIPEWIRE_REMOTE=<socket> dwe-game ...` llega igual al campo.
 - **Backends de Linux.** El SDL3 estático de vcpkg trae de serie sin ningún backend de audio de Linux, y el juego no
-  encontraba dispositivo en el escritorio. El port superpuesto `vcpkg-ports/sdl3` añade la característica
+  encontraba dispositivo en el escritorio. El port superpuesto `tooling/vcpkg-ports/sdl3` añade la característica
   `system-audio`, que `vcpkg.json` activa en Linux: compila los backends de ALSA, PulseAudio y PipeWire contra las
   cabeceras del sistema (`libasound2-dev`, `libpulse-dev`, `libpipewire-0.3-dev`, ya en `.devcontainer/Dockerfile` y en
   las imágenes de desarrollo) y carga sus bibliotecas al arrancar (`SDL_*_SHARED`). Un equipo con PipeWire o PulseAudio
@@ -228,11 +228,11 @@ la pregunta Q3.
 ### 6.4 El tramo 2 en detalle
 
 El tramo 2 se parte en dos para no pasar de unas 800 líneas y para no pisar al tramo 3 de S2 (`p4-story-s2-3`), que
-publica la API `story` en `apps/session` y todavía no está en `main`:
+publica la API `story` en `packages/session` y todavía no está en `main`:
 
 | Parte | Qué entra | Líneas (aprox., sin tests) |
 |---|---|---|
-| 2a | Lector WAV y lector de `bank_meta.yaml` en `assets`; envolvente ADSR y efectos de banco en `audio`; `SoundPort` en `game/story` y su implementación en `apps/session` | ~840 |
+| 2a | Lector WAV y lector de `bank_meta.yaml` en `assets`; envolvente ADSR y efectos de banco en `audio`; `SoundPort` en `packages/game/story` y su implementación en `packages/session` | ~840 |
 | 2b | Los sonidos de los menús (avisos de `ui::Ui`, `ui/ui_sounds.yaml` y su esquema, `MenuSounds`); `story.play_sound(banco, sonido)` en la API de Lua de la historia, sobre el `SoundPort` de 2a, y la subida menor de `LuaApiVersion` | ~300 |
 
 **`assets` (2a).**
@@ -265,8 +265,8 @@ publica la API `story` en `apps/session` y todavía no está en `main`:
   `stop` propio: cada voz se para con `Audio::stop`.
 
 **Juego (2a).**
-- `game/story` declara `SoundPort` (`playSound(slot, value)`), como `StoryStatePort`; el runner no sabe de bancos.
-- `apps/session` lo implementa: ranura 0 → `sound/ss`, 1 → `sound/sl`, 8 → `sound/esall/<sound_id del mapa>`, o
+- `packages/game/story` declara `SoundPort` (`playSound(slot, value)`), como `StoryStatePort`; el runner no sabe de bancos.
+- `packages/session` lo implementa: ranura 0 → `sound/ss`, 1 → `sound/sl`, 8 → `sound/esall/<sound_id del mapa>`, o
   `sound/sb` desde que empieza un combate (`btl.c: loadBattleData` → `sound_async.c: loadSB`, `startBattleBank`). Al
   acabar, solo una victoria vuelve a cargar el del mapa, también encima del de una escena o rutina
   (`battle_main.c: BTL_handleVictorySequence` → `loadMapSounds2(getMapSoundId)`; medido: `ACTIVE_MAP_SOUND_ID` vale -1
@@ -312,11 +312,11 @@ gramola va con la tienda de música.
 
 | Función del original | Dónde vive ahora |
 |---|---|
-| `scriptInstruction5Ato5F` (`script_interp.c:1569`, 0x5D y 0x5E) | `apps/session/src/story_music_api.cpp`: `story.set_bgm(fuente)`, `story.stop_bgm(operando)` |
-| `playBGM` (`script_interp.c:2587`), `resetBGM` (`:2377`), `handleMusicOverride` (`:1584`, modos 0 y 1) | `SessionMusic` (`apps/session`), detrás del puerto `MusicPort` de `game/story` |
+| `scriptInstruction5Ato5F` (`script_interp.c:1569`, 0x5D y 0x5E) | `packages/session/src/story_music_api.cpp`: `story.set_bgm(fuente)`, `story.stop_bgm(operando)` |
+| `playBGM` (`script_interp.c:2587`), `resetBGM` (`:2377`), `handleMusicOverride` (`:1584`, modos 0 y 1) | `SessionMusic` (`packages/session`), detrás del puerto `MusicPort` de `packages/game/story` |
 | `playMusic` (`sound.c:753`), `stopBGM` (`:779`), `loadMusicFont` (`:738`), `seqOpen` (`:477`) | `SessionMusic::playMusic`, `stopBgm` y `load` |
 | `seqPlay` (`sound.c:488`) y el secuenciador de la librería de sonido | `audio::Audio::playMusic` → `MusicPlayer` (hilo de audio) con TinySoundFont |
-| El SMF y `font_meta.yaml` | `assets::readSong`, `assets::readMusicFont` (`engine/assets/src/music.cpp`) |
+| El SMF y `font_meta.yaml` | `assets::readSong`, `assets::readMusicFont` (`packages/engine/assets/src/music.cpp`) |
 
 - **Como el original:** `set_bgm` reinicia la canción aunque sea la misma (`playBGM` llama a `stopBGM` antes de
   `playMusic`); `0xFF` para la música; una pista que la fuente no tiene suena la 0; la fuente se queda cargada entre
@@ -332,7 +332,7 @@ gramola va con la tienda de música.
 - **Hilos:** el SoundFont se carga en el hilo del juego (`audio::SoundFont`, con las voces y los 16 canales ya
   reservados, para que el hilo de audio no reserve memoria); la orden de música lleva el puntero, y `Audio` guarda la
   fuente y la canción hasta que el mezclador acepta una orden de música posterior (`musicTaken`).
-- `TinySoundFont` entra como port de overlay (`vcpkg-ports/tinysoundfont`, commit `853a0a17`, MIT) con
+- `TinySoundFont` entra como port de overlay (`tooling/vcpkg-ports/tinysoundfont`, commit `853a0a17`, MIT) con
   `VCPKG_OVERLAY_PORTS` en los presets. `SoundFont::load` le da los bytes con su propio `tsf_stream` y `tsf_load`, no
   con `tsf_load_memory`: esta convierte funciones de otro tipo al de las del stream, y la comprobación `function` de
   UBSan lo avisa en cada lectura (preset `ci`).
@@ -351,7 +351,7 @@ gramola va con la tienda de música.
 | `playBGM(ACTIVE_BGM_FONT)` tras ganar (`tamer.c:862`) | `SessionMusic::leaveBattle`, al cerrar el cuadro del final |
 
 - **De dónde salen los números (Q7):** `dwx` los lee del código del ejecutable del usuario
-  (`formats/src/exe/music_code.cpp`). Los pares de los modos salen de ejecutar el `switch` de `handleMusicOverride`
+  (`packages/formats/src/exe/music_code.cpp`). Los pares de los modos salen de ejecutar el `switch` de `handleMusicOverride`
   con `evaluateConstantSwitch`, que ahora sabe leer lo que una función guarda por los punteros que le pasan
   (`ValueLocation::pointedBy`, la instrucción `sb`) y empezar tras una llamada con el valor en otro registro. Los del
   combate son inmediatos de instrucciones concretas de `loadBattleData` (`readCodeConstant`). Las direcciones están
@@ -449,8 +449,8 @@ hará el tramo en que funcione y tenga test («publicar solo lo que funciona»).
 | Volúmenes del jugador | — | Ajustes del usuario (tramo 4), no del paquete | Ninguno (no los ve un mod) |
 | Una API de sonido general para mods (`sound.play("sound/...")` por id) | — | Fuera de VAN-01: va a la fase 5 | — |
 
-Internos (sin contrato): todo `engine/audio` (sus clases, la cola, las salidas, los límites), el puerto `SoundPort` de
-`game/story` y la resolución de ranuras de la sesión.
+Internos (sin contrato): todo `packages/engine/audio` (sus clases, la cola, las salidas, los límites), el puerto `SoundPort` de
+`packages/game/story` y la resolución de ranuras de la sesión.
 
 ## 9. Tests
 
@@ -465,7 +465,7 @@ Internos (sin contrato): todo `engine/audio` (sus clases, la cola, las salidas, 
 
 Decidido por el coordinador el 2026-10-22: en cada pregunta, la opción recomendada (la primera). Q7 es un **CAMBIO DE
 CONTRATO** aditivo (claves nuevas en `data/music.yaml`, `ExtractorVersion` y el esquema `music`): si S2 tramo 4 sube
-`ExtractorVersion` antes, el tramo 3 toma el número siguiente. El `SoundPort` de `game/story` lo añade el tramo 2. La
+`ExtractorVersion` antes, el tramo 3 toma el número siguiente. El `SoundPort` de `packages/game/story` lo añade el tramo 2. La
 licencia de TinySoundFont va a los avisos de terceros. Se conservan las opciones para que se vea qué se descartó.
 
 Tramo 2 (Q12–Q14), decidido por el coordinador el 2026-10-22: la opción recomendada en las tres. Q14: 2a ahora; 2b,
@@ -483,10 +483,10 @@ el zumbido 11 llega con los menús de diálogo y tienda que lo tocan.
 
 **Q1. Cómo entra el sintetizador SF2 (tramo 3).**
 1. *(Recomendada)* TinySoundFont (MIT) como **port de overlay de vcpkg** en el repositorio
-   (`vcpkg-ports/tinysoundfont`, `VCPKG_OVERLAY_PORTS` en los presets), fijado a un commit con su SHA‑512 y su
+   (`tooling/vcpkg-ports/tinysoundfont`, `VCPKG_OVERLAY_PORTS` en los presets), fijado a un commit con su SHA‑512 y su
    licencia instalada. Sigue la regla de que las dependencias vienen de vcpkg; cuesta un port pequeño y que la caché
    binaria lo construya una vez.
-2. TinySoundFont copiado en `third_party/tinysoundfont/` con su `LICENSE`. Lo más simple, pero es la primera
+2. TinySoundFont copiado en `packages/vendor/tinysoundfont/` con su `LICENSE`. Lo más simple, pero es la primera
    dependencia copiada a mano en el repositorio.
 3. Un sampler SF2 propio (~700 líneas) que solo entiende los generadores que escribe `dwx` (rango de teclas, raíz,
    afinación, atenuación, panorama, bucle, envolvente). Sin dependencia, pero un SF2 de un mod o de un remaster con
@@ -573,7 +573,7 @@ como en el original, pero es un límite de la máquina, no una regla.
 2. Entra en 2a, leída de `used_by.types` (unas 60 líneas más, sin contrato), sin consumidor hasta ese paquete.
 
 **Q14. Quién publica `story.play_sound`.**
-1. *(Recomendada)* 2a deja `SoundPort` en `game/story` y su implementación en `apps/session`; 2b, una rama pequeña
+1. *(Recomendada)* 2a deja `SoundPort` en `packages/game/story` y su implementación en `packages/session`; 2b, una rama pequeña
    sobre `main` cuando el tramo 3 de S2 haya entrado, añade el nombre a la API `story` y sube la versión menor de
    `LuaApiVersion`. Así el nombre y la subida de versión salen una sola vez y funcionando de punta a punta.
 2. El tramo de S2 que publica la API registra `play_sound` contra el `SoundPort` de 2a (2a entra antes).

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Field rules",
-  "description": "field/rules.yaml of the game pack: player movement and partner following (game/field, docs/reference/campo.md). Distances in world units (100 = one collision cell), speeds per second, turn speeds in radians per second.",
+  "description": "field/rules.yaml of the game pack: player movement and partner following (packages/game/field, docs/reference/campo.md). Distances in world units (100 = one collision cell), speeds per second, turn speeds in radians per second.",
   "type": "object",
   "required": ["player", "partner", "input", "transition", "time_of_day"],
   "additionalProperties": false,

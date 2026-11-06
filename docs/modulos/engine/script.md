@@ -111,10 +111,10 @@ Cada llamada del motor a tu script tiene un presupuesto, para que un mod roto o 
 ## Versión de la API
 
 `LuaApiVersion` (`api_version.hpp`) es la versión semántica de toda la API de Lua. Es un alias de
-`assets::SupportedLuaApi` (`engine/assets`, `lua_api.hpp`), que es su dueño: la versión es un contrato de datos con el
+`assets::SupportedLuaApi` (`packages/engine/assets`, `lua_api.hpp`), que es su dueño: la versión es un contrato de datos con el
 `pack.yaml`, y así `dwx validate` la comprueba sin depender de Lua. Un paquete declara en su `pack.yaml` la versión que
 piden sus scripts ([VFS](../../architecture/vfs.md)): `api: "1.x"`, cualquier 1.y, o `api: "1.3"`, la 1.3 o una
-posterior. `assets::checkPackApi` rechaza otra versión mayor o una menor más nueva que la del motor. `apps/content` lo comprueba al montar y deja fuera, con el motivo, el mod que no la cumple.
+posterior. `assets::checkPackApi` rechaza otra versión mayor o una menor más nueva que la del motor. `packages/content` lo comprueba al montar y deja fuera, con el motivo, el mod que no la cumple.
 
 Un paquete sin `api` se acepta por ahora. Está previsto exigirla a las capas `mods` y `user` en la fase 5, con la
 documentación para modders ([modding](../../modding/historia.md)).

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Script listing",
-  "description": "script/maphead.yaml and script/dg/<n>.yaml: the disassembly of a script file, written by dwx extract (formats/src/script/script_yaml.cpp: scriptToYaml). The operands of an instruction depend on its op (formats/src/script/disassembly.cpp) and are not checked here; their numbers are game ids, not asset ids.",
+  "description": "script/maphead.yaml and script/dg/<n>.yaml: the disassembly of a script file, written by dwx extract (packages/formats/src/script/script_yaml.cpp: scriptToYaml). The operands of an instruction depend on its op (packages/formats/src/script/disassembly.cpp) and are not checked here; their numbers are game ids, not asset ids.",
   "type": "object",
   "required": ["code_start", "code_end", "sections", "unreachable_instructions", "instructions"],
   "additionalProperties": false,

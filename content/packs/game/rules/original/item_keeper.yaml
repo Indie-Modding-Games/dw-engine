@@ -1,5 +1,5 @@
 # El guardarropía de objetos que abre la historia (script_interp.c: CALL_ROUTINE 11 -> shop/script_menu.c:
-# tickItemKeeper; apps/session: ItemKeeper). Lo que guarda va en la partida guardada.
+# tickItemKeeper; packages/session: ItemKeeper). Lo que guarda va en la partida guardada.
 
 # showMapHeadTextbox(..., 0x4d5): las frases del guardián son esta sección de MAPHEAD.
 lines_section: 1237

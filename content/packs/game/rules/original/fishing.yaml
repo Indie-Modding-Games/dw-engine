@@ -1,4 +1,4 @@
-# La pesca (game/fishing: rules.hpp, fishing.hpp; apps/session: FishingAdapter). fish.c es el overlay FISH; main/fish.c,
+# La pesca (packages/game/fishing: rules.hpp, fishing.hpp; packages/session: FishingAdapter). fish.c es el overlay FISH; main/fish.c,
 # la parte que vive en el ejecutable. Las tablas (las clases de pez, la tabla de picadas, lo que se engancha, las zonas, la
 # orilla y los mapas) son data/fishing, que dwx extrae del disco; aquí van las reglas de su lógica.
 

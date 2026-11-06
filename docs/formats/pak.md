@@ -2,7 +2,7 @@
 
 Un `.pak` guarda un paquete entero (su `pack.yaml` y todos sus ficheros) en un solo fichero, para distribuirlo y
 cargarlo sin miles de ficheros sueltos. Es un formato propio del motor, no del original. Lo escribe `dwx pack` y lo
-lee `engine/assets` (`dwe::assets::PakFileSystem`). La decisión está en el
+lee `packages/engine/assets` (`dwe::assets::PakFileSystem`). La decisión está en el
 [ADR 0017](../adr/0017-cocinado-y-archivos-pak.md).
 
 Todos los enteros son little-endian. Los offsets se cuentan desde el principio del fichero.

@@ -4,11 +4,11 @@
 It reads the decomp's function index (`function<TAB>src/<dir>/<file>.c:<line>`, generated from the decomp) and the
 repository, and classifies each function:
 
-- ported: the engine's code (game/, apps/, engine/, tests/, content/packs/) names it. When every citation says it is
+- ported: the engine's code (packages/, apps/, tests/, content/packs/) names it. When every citation says it is
   not done yet ("not drawn yet", "not ported", "TODO"...), it is partial instead. A citation by line alone
   (`partner.c:906`) is not used: the index lacks some functions (static ones), so a line often lands in the wrong
-  one. What only the disc reader and the tools name (apps/dwx, formats/...) is missing: they name the original's
-  functions to find its tables.
+  one. What only the disc reader and the tools name (apps/dwx, packages/formats/...) is missing: they name the
+  original's functions to find its tables.
 - doc-only: only docs/ names it.
 - missing: nothing names it.
 
@@ -43,9 +43,10 @@ DEFAULT_PAGE = ROOT / "docs" / "reference" / "port-coverage.md"
 BEGIN_MARK = "<!-- port-coverage:begin (scripts/port_coverage.py writes this part) -->"
 END_MARK = "<!-- port-coverage:end -->"
 
-CODE_DIRS = ("game", "apps", "engine", "formats", "tests", "content", "shaders")
+CODE_DIRS = ("packages", "apps", "tests", "content")
 # Code that reads the disc or edits content names the original's functions to find its tables: that is not a port.
-TOOL_PREFIXES = ("apps/dwx/", "apps/studio/", "formats/", "content/schemas/", "content/enhance/", "shaders/")
+TOOL_PREFIXES = ("apps/dwx/", "apps/studio/", "apps/studio-vscode/", "apps/beta-gateway/", "packages/formats/",
+                 "content/schemas/", "content/enhance/", "packages/engine/rhi/shaders/")
 DOC_DIRS = ("docs",)
 TEXT_SUFFIXES = {
     ".cpp", ".hpp", ".h", ".c", ".ixx", ".cppm", ".inl", ".lua", ".yaml", ".yml", ".rml", ".rcss", ".json", ".md",
@@ -59,7 +60,7 @@ STATUSES = (PORTED, PARTIAL, MISSING, NOT_NEEDED)
 STATUS_LABEL = {PORTED: "portado", PARTIAL: "parcial", MISSING: "falta", NOT_NEEDED: "no aplica"}
 
 # A table of the disc reader that names an operation after the original's function that runs it
-# (formats/src/effect/efe_subops.cpp): the engine runs the operation by that name, so a quoted name in the code
+# (packages/formats/src/effect/efe_subops.cpp): the engine runs the operation by that name, so a quoted name in the code
 # counts as a citation of the function.
 OP_HANDLER = re.compile(r'\.name\s*=\s*"([a-z0-9_]+)",\s*\.handler\s*=\s*"([A-Za-z_][A-Za-z0-9_]*)"')
 QUOTED = re.compile(r'"([a-z0-9_]+)"')

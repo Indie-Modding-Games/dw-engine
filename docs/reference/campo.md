@@ -1,7 +1,7 @@
 # Ficha de referencia: campo
 
 Cómo se movían el jugador y el partner por los mapas de campo en el juego original, según el decomp, y qué hace con
-ello `game/field`. Es el paso 1 del [ciclo de diseño](../conventions/design-cycle.md).
+ello `packages/game/field`. Es el paso 1 del [ciclo de diseño](../conventions/design-cycle.md).
 
 Marcas: **(comprobado)**, leído en el código del decomp; **(medido)**, calculado a partir de los datos del disco con
 las reglas del código; **(suposición)**, interpretación nuestra pendiente de confirmar. Unidades del original: 100 son
@@ -168,7 +168,7 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
   descentra solo cerca de los bordes **(comprobado)**. Solo se mueve con el jugador en estado normal y con la cruceta
   pulsada, así que se queda quieta mientras el jugador sale de un mapa (`tamer.c: checkMapInteraction` llama a
   `unsetCameraFollowPlayer` al pisar un warp); los scripts la mueven por su cuenta. Detalle en [mapas](../formats/mapas.md#en-el-motor). Lo hace la línea
-  de render del mapa, no `game/field`.
+  de render del mapa, no `packages/game/field`.
 
 ### Hora del día
 
@@ -186,7 +186,7 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
   con el menú abierto. Las horas y las luces son reglas: `time_of_day` en `field/rules.yaml`.
 - El icono del reloj del menú usa otro corte: día hasta las 16:59 (`clock.c: renderGameClock`).
 
-## Qué hace el motor (`game/field`)
+## Qué hace el motor (`packages/game/field`)
 
 | Original | Motor | Por qué |
 |---|---|---|
@@ -207,9 +207,9 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 | Partner nuevo mirando hacia fuera un fotograma | Mirando al jugador desde el principio, y solo si cabe en la rejilla | Mismo resultado visible; no aparece dentro de una pared |
 | Rastro: poda cada fotograma, de la más nueva a la más antigua | Igual | |
 | El partner anda o se para solo por la distancia | Igual | A menos de 2,5 R se para aunque haya una pared en medio, como el original |
-| Aparece en el rastro si está fuera de pantalla | Si no avanza durante `stuck_seconds` o se aleja más de `teleport_distance`, aparece detrás del jugador | `game/field` no sabe qué hay en pantalla; nunca se queda atascado |
-| Paso según su estado (infeliz, andar despacio), termina el ciclo de andar, emociones parado | Igual (`PartnerFollow` en `game/field`: anda en vez de correr si está infeliz, acaba la pasada del ciclo y elige los gestos parado con `happy_gesture_from` y `unhappy_gesture_below` de `field/rules.yaml`) | |
-| Objetos en el suelo (11) y cofres (8): se recogen a una celda o menos (el cofre, de la casilla que queda 4 por delante de la suya según su giro: 0 cuatro filas más, 0x800 cuatro menos, 0x400 cuatro columnas menos, 0xc00 cuatro más, `spawnChest`; su casilla y las de alrededor quedan cerradas); el objeto se ofrece una vez hasta salir de su alcance (`HAS_PICKED_UP_ITEM`); con la bolsa llena se queda donde está; el cofre pide confirmar y su disparador lo marca vacío. Lo que suelta un enemigo vencido cae donde estaba al cerrarse la caja final del combate (`spawnDroppedItems`). El aviso muestra el nombre del objeto sobre las palabras del domador («Woah!», «I can't hold anymore.») en la caja de diálogo de la historia, en su sitio, y solo se responde confirmando, sin botón (`renderItemPickupTextbox`) | Igual (`game/field/field_items`, `session::FieldItemsAdapter`, sección `field_items` del ruleset; aviso `field_item_notice` en la app). Al cambiar de mapa se borran (`FieldItems::enterMap`). Como mejora del remaster, la caja del aviso responde también al clic del ratón, igual que a confirmar con el teclado o el mando (`field_item_notice` pone `pointer-events` en su caja y su `onclick` manda el mismo `field_item_notice_ok`; el original no tenía ratón) | Los objetos del suelo se dibujan como el original: su icono de `ETCDAT/ITEM.TIM` con su paleta, de 128 unidades, de cara a la cámara y centrado en su punto (`renderOverworldItem`), sobre una sombra de 200 × 200 en el suelo de `ETCDAT/SPOT256.TIM`, restada (`renderDroppedItemShadow`); como en el original, el icono tapa casi toda la sombra y solo se ve su borde, un poco más oscuro. El compañero no esquiva los objetos del suelo (el original solo los mira al recogerlos, `tamer.c: checkItemPickup`): si sigue al jugador hasta uno, se queda encima. Los cofres se dibujan con `ETCNA/TAKA.TMD` en el centro de su casilla, en el suelo y girados (`renderChest`); al confirmar, el cajón (el segundo objeto) sale 20 por fotograma del original hasta 160 y luego aparece el aviso; si la bolsa está llena vuelve a entrar al mismo paso bajo el segundo aviso, que no se responde hasta que entra (`tickOpenChestTray`, `tickCloseChestTray`). Un cofre ya cogido sale con el cajón fuera. Igual (sin medir los fotogramas en el original: leídos del código). `spawnChest` parece incompleto en el decomp; el motor usa el primer hueco libre (suposición). |
+| Aparece en el rastro si está fuera de pantalla | Si no avanza durante `stuck_seconds` o se aleja más de `teleport_distance`, aparece detrás del jugador | `packages/game/field` no sabe qué hay en pantalla; nunca se queda atascado |
+| Paso según su estado (infeliz, andar despacio), termina el ciclo de andar, emociones parado | Igual (`PartnerFollow` en `packages/game/field`: anda en vez de correr si está infeliz, acaba la pasada del ciclo y elige los gestos parado con `happy_gesture_from` y `unhappy_gesture_below` de `field/rules.yaml`) | |
+| Objetos en el suelo (11) y cofres (8): se recogen a una celda o menos (el cofre, de la casilla que queda 4 por delante de la suya según su giro: 0 cuatro filas más, 0x800 cuatro menos, 0x400 cuatro columnas menos, 0xc00 cuatro más, `spawnChest`; su casilla y las de alrededor quedan cerradas); el objeto se ofrece una vez hasta salir de su alcance (`HAS_PICKED_UP_ITEM`); con la bolsa llena se queda donde está; el cofre pide confirmar y su disparador lo marca vacío. Lo que suelta un enemigo vencido cae donde estaba al cerrarse la caja final del combate (`spawnDroppedItems`). El aviso muestra el nombre del objeto sobre las palabras del domador («Woah!», «I can't hold anymore.») en la caja de diálogo de la historia, en su sitio, y solo se responde confirmando, sin botón (`renderItemPickupTextbox`) | Igual (`packages/game/field/field_items`, `session::FieldItemsAdapter`, sección `field_items` del ruleset; aviso `field_item_notice` en la app). Al cambiar de mapa se borran (`FieldItems::enterMap`). Como mejora del remaster, la caja del aviso responde también al clic del ratón, igual que a confirmar con el teclado o el mando (`field_item_notice` pone `pointer-events` en su caja y su `onclick` manda el mismo `field_item_notice_ok`; el original no tenía ratón) | Los objetos del suelo se dibujan como el original: su icono de `ETCDAT/ITEM.TIM` con su paleta, de 128 unidades, de cara a la cámara y centrado en su punto (`renderOverworldItem`), sobre una sombra de 200 × 200 en el suelo de `ETCDAT/SPOT256.TIM`, restada (`renderDroppedItemShadow`); como en el original, el icono tapa casi toda la sombra y solo se ve su borde, un poco más oscuro. El compañero no esquiva los objetos del suelo (el original solo los mira al recogerlos, `tamer.c: checkItemPickup`): si sigue al jugador hasta uno, se queda encima. Los cofres se dibujan con `ETCNA/TAKA.TMD` en el centro de su casilla, en el suelo y girados (`renderChest`); al confirmar, el cajón (el segundo objeto) sale 20 por fotograma del original hasta 160 y luego aparece el aviso; si la bolsa está llena vuelve a entrar al mismo paso bajo el segundo aviso, que no se responde hasta que entra (`tickOpenChestTray`, `tickCloseChestTray`). Un cofre ya cogido sale con el cajón fuera. Igual (sin medir los fotogramas en el original: leídos del código). `spawnChest` parece incompleto en el decomp; el motor usa el primer hueco libre (suposición). |
 | Baño (celda 120): con el partner con ganas y sin script, la sección 0x4e2 del mapa lleva al partner al baño | Igual (`app::FieldToilet`): el jugador espera, la cámara va al baño, el partner corre a los dos puntos del baño del mapa, hace `handleToilet` y vuelve al primero | Sin `toilet_walk` en el ruleset o sin puntos de baño en el mapa, lo hace donde está |
 | Dormir, felicitar y regañar: el partner se acerca hasta estar a menos de 2,5 R, los dos se miran, suena un sonido y siguen las animaciones | Igual, con las animaciones del jugador y del partner (`app::PartnerWalkUp`, `app::PraiseScoldCall`, `app::SleepScreen`); felicitar y regañar están en el menú de pausa | |
 | Cámara: sigue solo con la cruceta; ventana de 320 × 240 | Sigue siempre al jugador (también con clic); la ventana es la de la pantalla, de 320 × 240 hacia arriba | Clic para ir; cualquier resolución y proporción |
@@ -245,7 +245,7 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 ## Alcance de los mapas
 
 Lo mide el test de disco `the user's disc, extracted: a new game reaches its maps and back, and the scripts join all
-but a few` (`game/field/tests/reachability_tests.cpp`), desde el inicio del campo (`twna01`) y solo con lo que el
+but a few` (`packages/game/field/tests/reachability_tests.cpp`), desde el inicio del campo (`twna01`) y solo con lo que el
 campo dispara: la tabla de cada mapa desde sus casillas 110–119 y los warps de script de las casillas que el mapa
 tiene, a mapas con datos (241). Cifras del disco americano **(comprobado, 2026-10-21; las mismas con la versión 5 del
 extractor, que añade los warps al hablar y las elecciones del transporte, 2026-10-22)**:
@@ -273,7 +273,7 @@ extractor, que añade los warps al hablar y las elecciones del transporte, 2026-
   la ciudad) espera al disparador 203, que pone una conversación con un NPC de `mayo00` (script 105, sección 6). Los
   disparadores de partida nueva están todos apagados (`data/new_game_story`: `triggers_set: []`) salvo los 54, 55 y
   75 que pone la apertura (`opening`), que el campo se salta. En el juego, el mundo
-  vainilla lo abre la historia (`game/story`), que corre las conversaciones y guarda su estado; la parte (b) de los
+  vainilla lo abre la historia (`packages/game/story`), que corre las conversaciones y guarda su estado; la parte (b) de los
   warps de script por sí sola no lo abre.
 - **Excepciones de la exploración libre** (241 − 8 = 233). El test falla si aparece otra, con su nombre:
 

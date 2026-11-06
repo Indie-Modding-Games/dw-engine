@@ -1,11 +1,13 @@
 # Módulos
 
 Cada módulo del repositorio tiene aquí su página: qué hace, su API pública y cómo se usa. La página vive en
-`docs/modulos/<capa>/<módulo>.md` y se actualiza en el mismo PR que cambia el módulo. Las capas y lo que puede usar
-cada una están en las [reglas de dependencias](../architecture/dependency-rules.md); la forma de un módulo, en la
-[estructura del repositorio](../architecture/repository-layout.md#forma-de-un-módulo).
+`docs/modulos/<grupo>/<módulo>.md` y se actualiza en el mismo PR que cambia el módulo; el README de la carpeta del
+módulo es corto y enlaza a ella. Las páginas conservan su dirección aunque el código se movió a `packages/` y `apps/`
+(las de session, screens y content siguen en `modulos/apps/` y la de beta-gateway en `modulos/services/`). Las
+capas y lo que puede usar cada una están en las [reglas de dependencias](../architecture/dependency-rules.md); la forma de un paquete, en la
+[estructura del repositorio](../architecture/repository-layout.md#forma-de-un-paquete).
 
-## Motor (`engine/`)
+## Motor (`packages/engine/`)
 
 | Módulo | Qué hace |
 |---|---|
@@ -26,7 +28,7 @@ cada una están en las [reglas de dependencias](../architecture/dependency-rules
 | [ruleset](engine/ruleset.md) | El formato de ruleset, las estrategias por nombre y el reloj de juego |
 | [debug](engine/debug.md) | Consola y paneles de desarrollo con Dear ImGui |
 
-## Juego (`game/`)
+## Juego (`packages/game/`)
 
 | Módulo | Qué hace |
 |---|---|
@@ -43,31 +45,31 @@ cada una están en las [reglas de dependencias](../architecture/dependency-rules
 | [story](game/story.md) | El estado de la historia y el runtime de los scripts de eventos |
 | [save](game/save.md) | Partidas guardadas versionadas, ranuras y autoguardado |
 
-## Aplicaciones (`apps/`)
+## Librerías compartidas (`packages/`)
 
 | Módulo | Qué hace |
 |---|---|
-| [session](apps/session.md) | La partida: el único sitio que junta los sistemas de `game/` |
+| [session](apps/session.md) | La partida: el único sitio que junta los sistemas de `packages/game/` |
 | [screens](apps/screens.md) | Los modelos de vista de las pantallas, sin reglas |
 | [content](apps/content.md) | Cómo montan los paquetes las aplicaciones |
+| [formats](formats.md) | Lectores de los formatos del original; solo los usa `dwx` |
+
+## Aplicaciones (`apps/`)
+
+| Aplicación | Qué hace |
+|---|---|
 | [game](apps/game.md) | `dwe-game`, el ejecutable del juego |
 | [dwx](apps/dwx.md) | La herramienta de assets: extraer, validar, cocinar y empaquetar |
 | [sim](apps/sim.md) | `dwe-sim`: simulaciones de balance sin gráficos |
 | [launcher](apps/launcher.md) | El lanzador de escritorio: lee el disco, actualiza el juego y lo arranca |
 | [studio](apps/studio.md) | DWE Studio, banco de trabajo de desarrollo: editor, compilar, arrancar y comparar con el original |
-
-## Servicios (`services/`)
-
-| Servicio | Qué hace |
-|---|---|
 | [beta-gateway](services/beta-gateway.md) | La pasarela de la beta entre el lanzador y las versiones de GitHub, con la clave de la beta |
 
 ## Otros
 
 | Módulo | Qué hace |
 |---|---|
-| [formats](formats.md) | Lectores de los formatos del original; solo los usa `dwx` |
-| [shaders](shaders.md) | Módulos de Slang compartidos por los shaders del motor |
+| [shaders](shaders.md) | Módulos de Slang compartidos por los shaders del motor (`packages/engine/rhi/shaders/`) |
 | [tests/support](tests/support.md) | Lo que comparten los tests de todos los módulos |
 | [tests/mods](tests/mods.md) | Paquetes sintéticos con los que los tests comprueban los mods |
 | [tests/autotest](tests/autotest.md) | Las rutas que juegan el juego de verdad con teclado, ratón o mando |

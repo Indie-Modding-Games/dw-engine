@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Movie",
-  "description": "What dwx found in one STR movie file; it goes next to video.y4m and audio.wav. formats/src/video/movie.cpp writes it.",
+  "description": "What dwx found in one STR movie file; it goes next to video.y4m and audio.wav. packages/formats/src/video/movie.cpp writes it.",
   "type": "object",
   "required": ["source", "video", "audio", "sectors", "playback"],
   "additionalProperties": false,

@@ -480,7 +480,7 @@
 
 /* ------------------------------------------------------------------------------------------------------------------
    The enemies' HP bars (battle_main.c: BTL_renderEnemyHPBars; captures battle_hud_enemy_hp_bar*), each beside its
-   enemy and following it: logic.lua puts the bar's corner where apps/screens (enemy_hp_bars) says, from the point its
+   enemy and following it: logic.lua puts the bar's corner where packages/screens (enemy_hp_bars) says, from the point its
    enemy's model node 1 shows at. The outline is two green (#0ab40a) line strips round 55 x 7 pixels; the fill starts
    2 pixels in, 3 tall and 50 at most; a line runs from the outline's bottom-left corner to the node; the HP, in the
    battle's 8 x 8 digits 7 apart, right-aligned in four places from the outline's x 33, 9 pixels over its top. The

@@ -28,14 +28,14 @@ Los dos ficheros binarios los escribe [`make_example_mod.py`](https://github.com
 - `model.glb`: un tetraedro de 4 vértices sobre un solo hueso (`bone_00`), en las unidades y ejes de los modelos de
   `dwx` (Y hacia abajo), con una textura PNG de 8x8 incrustada. Tiene las animaciones `anim_00` a `anim_04` que el
   campo pide a un compañero, cada una un balanceo de 2 ticks a 20 ticks por segundo que acaba en un bucle (los
-  `extras` que lee `engine/assets/src/model_data.cpp`). Cumple `contract.yaml` (un hueso raíz y esas animaciones).
+  `extras` que lee `packages/engine/assets/src/model_data.cpp`). Cumple `contract.yaml` (un hueso raíz y esas animaciones).
 
 Para cambiarlos basta con otro PNG o glTF que cumpla lo mismo; `dwx validate --with <base> --with content/packs/game
 tests/mods/example_mod` dice si el paquete sigue valiendo.
 
 ### Dónde se usa
 
-- `apps/session/tests/example_mod_tests.cpp`: las tablas componen, el campo entra en el mapa nuevo por un warp de un
+- `packages/session/tests/example_mod_tests.cpp`: las tablas componen, el campo entra en el mapa nuevo por un warp de un
   mapa original y sale por el suyo, una partida nueva empieza con el Digimon nuevo de compañero y los textos nombran
   lo nuevo en los dos idiomas. Con `DWE_CONTENT`, lo mismo sobre la base extraída con todos los sistemas del juego.
 - `apps/dwx/tests/validate_tests.cpp`: con `DWE_CONTENT`, `dwx validate` del mod sobre la base y el paquete `game`.
@@ -47,5 +47,5 @@ tests/mods/example_mod` dice si el paquete sigue valiendo.
 Un aspecto de la UI sintético en un mod de la capa `mods` que depende del paquete `game`: `skin.yaml` extiende el
 aspecto `modern` y su `theme.rcss` cambia los colores en todas las pantallas, con el nombre del aspecto en los dos
 idiomas (`localization/<idioma>/test_contrast.yaml`). Prueba que un mod añade un aspecto sin tocar el motor. Lo usan
-`engine/ui/tests/skin_switch_tests.cpp`, los tests de los ajustes de aspecto de `apps/game` y la ruta
+`packages/engine/ui/tests/skin_switch_tests.cpp`, los tests de los ajustes de aspecto de `apps/game` y la ruta
 `tests/autotest/route-skins.yaml`.

@@ -1,4 +1,4 @@
--- The battle screen. The game publishes the battle's view as settings (apps/screens:
+-- The battle screen. The game publishes the battle's view as settings (packages/screens:
 -- battle_view.hpp) and bumps battle.revision once per change; this script only draws them and sends
 -- the player's choices back with ui.send. No rule of the battle lives here: which commands exist,
 -- which are available and what they do is the game's.
@@ -218,7 +218,7 @@ local function draw_commands(document)
 end
 
 -- The cursor round the hovered icon, and its blink; nothing while the battle opens. The game says
--- when the hovered icon shows its second frame (apps/screens: command_menu.hpp).
+-- when the hovered icon shows its second frame (packages/screens: command_menu.hpp).
 local function draw_cursor(document)
   local cursor = lookup(document, "command-cursor")
   local count = number("battle.menu.count")
@@ -690,8 +690,8 @@ local function draw_prompts(document)
   lookup(document, "fight"):set_class("long-finisher-key", long)
 end
 
--- The battle's opening (apps/screens: battle_intro.hpp): the anger marks over the enemies, then the
--- "BATTLE" banner flying together, flashing and bursting over the battle's HUD.
+-- The battle's opening (packages/screens: battle_intro.hpp): the anger marks over the enemies, then
+-- the "BATTLE" banner flying together, flashing and bursting over the battle's HUD.
 local function draw_marks(document, list, prefix, count, scale)
   for index = 0, count - 1 do
     local mark = lookup(document, prefix .. index)
@@ -711,9 +711,9 @@ local function draw_anger(document)
   draw_marks(document, "battle.intro.flee", "flee-", max_flee, scale)
 end
 
--- The numbers over the fighters (apps/screens: damage_numbers.hpp) come as seven values each: the
--- anchor in percent of the window, the first digit's offset from it in the original's pixels, the
--- value, the colour and the icon. Each digit is 8 pixels square, 7 apart (utils2.c:
+-- The numbers over the fighters (packages/screens: damage_numbers.hpp) come as seven values each:
+-- the anchor in percent of the window, the first digit's offset from it in the original's pixels,
+-- the value, the colour and the icon. Each digit is 8 pixels square, 7 apart (utils2.c:
 -- drawEntityText); the icon, when there is one, is 8 pixels square right before the first digit
 -- (entity_text.c: renderEntityText, utils2.c: drawEntityTextIcon).
 local number_values = 7
@@ -766,8 +766,8 @@ local function draw_damage(document)
   end
 end
 
--- The enemies' HP bars beside them (apps/screens: enemy_hp_bars.hpp) come as nine values each: the
--- enemy (1 to 3), the anchor in percent of the window, the bar's top-left corner from it in the
+-- The enemies' HP bars beside them (packages/screens: enemy_hp_bars.hpp) come as nine values each:
+-- the enemy (1 to 3), the anchor in percent of the window, the bar's top-left corner from it in the
 -- original's pixels, the fill's width in pixels, its red and green tint (128 as it is, 255 twice as
 -- bright) and the HP (battle_main.c: BTL_renderEnemyHPBars).
 local max_enemies = 3
@@ -911,7 +911,7 @@ local function draw_hp_bars(document)
   end
 end
 
--- The countdown over the fallen partner (apps/screens: death_countdown.hpp; command_menu.c:
+-- The countdown over the fallen partner (packages/screens: death_countdown.hpp; command_menu.c:
 -- BTL_tickDeathCountdown, BTL_renderDeathCountdown): seven values, the anchor in percent of the
 -- window, the digit, the digit's and the badge's scale, their turn in degrees and the badge's
 -- palette. The digit is drawn over the badge, both centred on the anchor.
@@ -1075,8 +1075,8 @@ end
 -- The strip's slide in the original look (command_menu.c: BTL_renderCommandMenu): the frame's
 -- pieces span the strip's top to bottom edge and each icon 3 lines under the top edge to 13 over
 -- the bottom one (13 and 3 for the lower ones), stretched with them, so the strip drops in
--- stretched and settles. The game moves the edges (apps/screens: command_menu.hpp); the cursor and
--- the name stay where they are. Only the original look slides it.
+-- stretched and settles. The game moves the edges (packages/screens: command_menu.hpp); the cursor
+-- and the name stay where they are. Only the original look slides it.
 local function draw_motion(document)
   if ui.setting("ui_skin") ~= "original" then
     return
@@ -1115,7 +1115,7 @@ end
 
 -- The partner's bars' slide in the original look (battle_hud.c: BTL_renderPartnerStatusBars draws
 -- each bar from its own BTL_STATUS_BAR_X): they come in from the right edge with the strip and
--- leave as it goes back up. The game moves them (apps/screens: partner_bars.hpp).
+-- leave as it goes back up. The game moves them (packages/screens: partner_bars.hpp).
 local function draw_bars(document)
   if ui.setting("ui_skin") ~= "original" then
     return
@@ -1217,7 +1217,7 @@ function close_end()
   ui.send("battle_close")
 end
 
--- The marks over the fighters of a cup match between two of the same species (apps/screens:
+-- The marks over the fighters of a cup match between two of the same species (packages/screens:
 -- enemy_hp_bars.hpp, std_main.c: STD_renderPlayerMarker) come as three values each: the fighter (0
 -- the partner, 1 the rival) and the anchor in percent of the window; the mark's corner is 32 pixels
 -- over it. The modern look writes «1P» and «COM» in it; the original look draws the bubbles.

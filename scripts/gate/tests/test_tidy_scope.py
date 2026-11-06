@@ -63,8 +63,9 @@ class FullTriggerTests(unittest.TestCase):
         self.assertIsNotNone(tidy_scope.full_tidy_trigger(["engine/render/.clang-tidy"]))
 
     def test_build_and_toolchain_files_need_a_full_tidy(self):
-        for path in (".devcontainer/Dockerfile", "cmake/DweModule.cmake", "CMakeLists.txt", "CMakePresets.json",
-                     "vcpkg.json", "triplets/x64-linux-libcxx.cmake", "scripts/dev.sh"):
+        for path in (".devcontainer/Dockerfile", "tooling/cmake/DweModule.cmake", "CMakeLists.txt", "CMakePresets.json",
+                     "vcpkg.json", "tooling/triplets/x64-linux-libcxx.cmake", "tooling/vcpkg-ports/sdl3/portfile.cmake",
+                     "scripts/dev.sh"):
             with self.subTest(path=path):
                 self.assertIsNotNone(tidy_scope.full_tidy_trigger([path]))
 

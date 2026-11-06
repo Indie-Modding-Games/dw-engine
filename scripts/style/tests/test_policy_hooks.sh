@@ -84,7 +84,7 @@ printf '// The player, walking.\n// The PS1 frame.\n' >"$repo/engine/old.cpp"
 git_in add engine/old.cpp
 check "a banned word in a line the commit leaves as is does not warn" commit "Change a line"
 check "  at all" fails log_says "WARNING"
-stage engine/platform/pad.cpp 'case GamepadFamily::PlayStation:'
+stage packages/engine/platform/pad.cpp 'case GamepadFamily::PlayStation:'
 check "an allowlisted word in its files does not warn" commit "Name a pad family"
 check "  at all" fails log_says "WARNING"
 stage apps/game/console.cpp '// Runs like a PlayStation.'

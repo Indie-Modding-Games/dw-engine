@@ -15,8 +15,9 @@ import cook_cache  # noqa: E402
 NOW = datetime(2026, 10, 22, 12, 0, tzinfo=timezone.utc)
 ROOT = "/repo"
 BUILD_DIR = "/repo/build/ci"
-BUILD_FILES = {"CMakeLists.txt", "apps/CMakeLists.txt", "apps/dwx/CMakeLists.txt", "formats/CMakeLists.txt",
-               "engine/CMakeLists.txt", "engine/core/CMakeLists.txt", "engine/math/CMakeLists.txt"}
+BUILD_FILES = {"CMakeLists.txt", "apps/CMakeLists.txt", "apps/dwx/CMakeLists.txt", "packages/formats/CMakeLists.txt",
+               "packages/CMakeLists.txt", "packages/engine/CMakeLists.txt", "packages/engine/core/CMakeLists.txt",
+               "packages/engine/math/CMakeLists.txt"}
 
 
 def key(content: str = "content", **trees: str) -> cook_cache.CookKey:
@@ -36,33 +37,35 @@ class ToolInputTests(unittest.TestCase):
     def test_ninja_inputs_map_to_the_modules_of_their_build_files(self):
         inputs = [
             "/repo/apps/dwx/src/main.cpp",
-            "../../formats/src/pak.cpp",
-            "/repo/engine/core/src/log.cpp",
+            "../../packages/formats/src/pak.cpp",
+            "/repo/packages/engine/core/src/log.cpp",
             "apps/dwx/CMakeFiles/dwx.dir/src/main.cpp.o",
             "vcpkg_installed/x64-linux-libcxx/lib/libzstd.a",
             "/usr/lib/libc++.a",
             "",
         ]
         self.assertEqual(cook_cache.tool_input_dirs(inputs, ROOT, BUILD_DIR, BUILD_FILES),
-                         ["apps/dwx", "engine/core", "formats"])
+                         ["apps/dwx", "packages/engine/core", "packages/formats"])
 
     def test_headers_of_the_objects_add_their_modules_header_only_ones_too(self):
         deps = [
             "apps/dwx/CMakeFiles/dwx.dir/src/main.cpp.o: #deps 3, deps mtime 1 (VALID)",
             "    ../../apps/dwx/src/main.cpp",
-            "    ../../engine/math/include/dwe/math/vec.hpp",
+            "    ../../packages/engine/math/include/dwe/math/vec.hpp",
             "    /usr/include/c++/v1/vector",
             "",
         ]
         paths = cook_cache.ninja_deps_paths(deps)
-        self.assertEqual(paths, ["../../apps/dwx/src/main.cpp", "../../engine/math/include/dwe/math/vec.hpp",
+        self.assertEqual(paths, ["../../apps/dwx/src/main.cpp", "../../packages/engine/math/include/dwe/math/vec.hpp",
                                  "/usr/include/c++/v1/vector"])
-        self.assertEqual(cook_cache.tool_input_dirs(paths, ROOT, BUILD_DIR, BUILD_FILES), ["apps/dwx", "engine/math"])
+        self.assertEqual(cook_cache.tool_input_dirs(paths, ROOT, BUILD_DIR, BUILD_FILES),
+                         ["apps/dwx", "packages/engine/math"])
 
     def test_the_build_files_above_the_modules_are_inputs_but_the_root_one_is_fixed(self):
-        self.assertEqual(cook_cache.ancestor_build_files(["apps/dwx", "engine/core", "engine/math", "formats"],
+        self.assertEqual(cook_cache.ancestor_build_files(["apps/dwx", "packages/engine/core", "packages/engine/math",
+                                                          "packages/formats"],
                                                          BUILD_FILES),
-                         ["apps/CMakeLists.txt", "engine/CMakeLists.txt"])
+                         ["apps/CMakeLists.txt", "packages/CMakeLists.txt", "packages/engine/CMakeLists.txt"])
 
     def test_a_file_under_only_the_root_build_file_has_no_module(self):
         self.assertIsNone(cook_cache.module_dir_of("tests/main.cpp", BUILD_FILES))

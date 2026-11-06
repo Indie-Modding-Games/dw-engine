@@ -1,0 +1,237 @@
+#pragma once
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <optional>
+#include <span>
+#include <string_view>
+#include <variant>
+
+// What the story's routines and orders put on the field the app draws besides the map and its
+// characters: the Drill Tunnel's dirt cart, dirt pile and boulder (map_object.c), Meramon's shake
+// (map.c: createMeramonShake), the fade to white (fade.c: fadeToWhite), the shop rival's mood
+// bubble (script_common.c: createMonochromonMoodBubble), a map sprite moved to a character
+// (overworld.c: spawnSpriteAtEntity) and the final boss's charge (eab.c: EAB_startBuildup). The
+// story keeps the state the original keeps for them; each request carries what the app needs to
+// draw, so the app only draws. The cart, the pile and the boulder go away when the field loads a
+// map, as the original's unloadMapParts removes them.
+namespace dwe::session {
+
+// The dirt pile's size counter starts at 15 when the game boots and never goes back
+// (map_object.c: DIRT_PILE_SIZE_COUNTER): neither a map nor a loaded game resets it.
+inline constexpr std::int32_t DirtPileFullSize = 15;
+// The pile is drawn while its size is this or more (map_object.c: renderDirtPile).
+inline constexpr std::int32_t DirtPileSmallestShown = 6;
+// The cart's model when none shows (map_object.c: loadDirtCartModel sets 2).
+inline constexpr std::int32_t DirtCartHidden = 2;
+
+// Routines 26 and 19 (loadDirtCartModel, setDirtCartModel): the cart in front of the partner
+// shows model 0 (ETCNA\DOSYA, the cart full of dirt) or 1 (ETCNA\HAKO, the empty box);
+// DirtCartHidden or any other number shows none (renderDirtCartModel draws only 0 and 1).
+struct DirtCartShown {
+  std::int32_t model = DirtCartHidden;
+};
+
+// Routines 27 and 20 (loadDirtPileModel, decreaseDirtPileSize): the pile on tunn05 at
+// (2037, 0, 849), scaled by size / DirtPileFullSize, drawn while the size is at least
+// DirtPileSmallestShown.
+struct DirtPileShown {
+  std::int32_t size = DirtPileFullSize;
+};
+
+// spawn_boulder, move_boulder and despawn_boulder (map_object.c: spawnBoulder, moveBoulder;
+// removeObject 0xFB6): the boulder ETCNA\IWA where the original's axes put it (y down), turned
+// about its x axis by `pitch` (4096 a turn); `shown` false takes it away.
+struct BoulderShown {
+  bool shown = false;
+  std::int32_t x = 0;
+  std::int32_t y = 0;
+  std::int32_t z = 0;
+  std::int32_t pitch = 0;
+};
+
+// Routine 34 (createMeramonShake): the screen shakes for its frames.
+struct ScreenShakeStarted {};
+
+// Routines 49 and 50 (map_object.c: spawnAngemonPedestal, moveAngemonPedestal): the pedestal
+// ETCNA\ABOX of the Angemon shrine, drawn at (x, 0, z) in the original's axes. Routine 49 puts it
+// at (0, 0, 1500); routine 50 slides it 10 a frame to z 2000, x shaking between 5 and -5.
+struct AngemonPedestalShown {
+  std::int32_t x = 0;
+  std::int32_t z = 1500;
+};
+
+// Routine 41 (map_object.c: spawnGearbox): the gearbox ETCNA\GAND of the Robot House (omoc03),
+// unturned at (-100, 0, 1700) in the original's axes. It also selects no box.
+struct ToyTownGearboxShown {};
+
+// Routine 43 (map_object.c: spawnToyTownBoxes): the Toy Mansion's (omoc08) big box ETCNA\BIGBOX at
+// (500, -600, 600) and small box ETCNA\SMABOX at (-400, -400, 600), lids closed, no box selected.
+struct ToyTownBoxesShown {};
+
+// Routines 42 and 44 (somethingToyTown, openToyTownBox) set the selected box from the operand
+// variable, as a signed byte; 41 and 43 set it to 0. While box 1 (the big one) or 2 (the small one)
+// is selected, its lid opens a step a drawn frame (renderToyTownBoxes).
+struct ToyTownBoxSelected {
+  std::int32_t box = 0;
+};
+// The box the operand variable picks: the routines read it as a signed byte.
+[[nodiscard]] constexpr std::int32_t toyTownBoxOf(std::int64_t operand) {
+  return static_cast<std::int8_t>(static_cast<std::uint8_t>(operand));
+}
+inline constexpr std::int32_t ToyTownBigBox = 1;
+inline constexpr std::int32_t ToyTownSmallBox = 2;
+// renderToyTownBoxes: the selected box's lid turns -100 about its x axis a frame, down to -0x400
+// (a quarter turn, 4096 a turn).
+inline constexpr std::int32_t ToyTownLidStep = 100;
+inline constexpr std::int32_t ToyTownLidOpen = -0x400;
+[[nodiscard]] constexpr std::int32_t toyTownLidAfterFrame(std::int32_t lid) {
+  return lid - ToyTownLidStep < ToyTownLidOpen ? ToyTownLidOpen : lid - ToyTownLidStep;
+}
+
+// The Misty Trees' mist (overworld.c: renderMist, MIST_CLUT_Y): the columns of the palettes its
+// second layer reads, one for mist05 (screen 0x77) and one for the other mist maps. Both start at
+// boot and never go back; 0xc0 and 0x80 are the palettes of no mist. The field draws the mist with
+// the palettes mistThisFrame gives.
+struct MistPalettes {
+  std::int32_t mist05 = 0x50;
+  std::int32_t others = 0x10;
+};
+inline constexpr std::int32_t MistClearedMist05 = 0xc0;
+inline constexpr std::int32_t MistClearedOthers = 0x80;
+// renderMist: with trigger 0x94 set, every frame drawn on a mist map but 0xdc clears the mist.
+inline constexpr std::int64_t MistGoneTrigger = 0x94;
+inline constexpr std::int32_t MistKeptScreen = 0xdc;
+// tickRemoveMist: a frame moves both columns 0x10 on; at 0xc0 the mist is gone.
+[[nodiscard]] constexpr bool removeMistOneFrame(MistPalettes& mist) {
+  mist.mist05 += 0x10;
+  mist.others += 0x10;
+  if (mist.mist05 >= MistClearedMist05) {
+    mist = {.mist05 = MistClearedMist05, .others = MistClearedOthers};
+    return true;
+  }
+  return false;
+}
+
+// The screens renderMapOverlays draws the mist on: the Misty Trees but mist06 (115-119, 121) and
+// the two sewer screens 0xa3 and 0xdc (renderMist).
+inline constexpr std::array<std::int32_t, 8> MistScreens{115, 116, 117, 118, 119, 121, 0xa3, 0xdc};
+// mist05, the screen whose second layer reads MistPalettes::mist05.
+inline constexpr std::int32_t MistTreesCherrymonScreen = 0x77;
+// The sewer screens draw both layers with palette 0 until trigger 0x155 takes the mist away.
+inline constexpr std::array<std::int32_t, 2> SewerMistScreens{0xa3, 0xdc};
+inline constexpr std::int64_t SewerMistGoneTrigger = 0x155;
+// The palettes the mist's two layers read this frame, as the column of the CLUT row 0x1e6 over 16
+// (GetClut(x, 0x1e6)): a palette of the first 4-bit page of the map.
+struct MistLook {
+  std::int32_t backPalette = 0;
+  std::int32_t frontPalette = 0;
+};
+// renderMist on `screen`: nothing off the mist screens or on a sewer screen with trigger 0x155;
+// otherwise trigger 0x94 clears the mist (but on 0xdc) before the palettes are read, as every frame
+// drawn with it does. The back layer always reads palette 0; the front one palette 0 on the sewer
+// screens, else the column of mist05 or of the others.
+[[nodiscard]] constexpr std::optional<MistLook>
+mistThisFrame(std::int32_t screen, MistPalettes& mist, bool goneTrigger, bool sewerGoneTrigger) {
+  if (std::ranges::find(MistScreens, screen) == MistScreens.end()) {
+    return std::nullopt;
+  }
+  const bool sewer = std::ranges::find(SewerMistScreens, screen) != SewerMistScreens.end();
+  if (sewer && sewerGoneTrigger) {
+    return std::nullopt;
+  }
+  if (screen != MistKeptScreen && goneTrigger) {
+    mist = {.mist05 = MistClearedMist05, .others = MistClearedOthers};
+  }
+  constexpr std::int32_t ClutColumns = 16;
+  const std::int32_t column = sewer                                ? 0
+                              : screen == MistTreesCherrymonScreen ? mist.mist05
+                                                                   : mist.others;
+  return MistLook{.backPalette = 0, .frontPalette = column / ClutColumns};
+}
+
+// Routines 45 and 46 (fade.c: fadeToWhite, fadeFromWhite): the screen fades to white, or back from
+// it, over `frames` frames (variable 254).
+struct WhiteFadeStarted {
+  bool toWhite = true;
+  std::int32_t frames = 0;
+};
+
+// Routine 28 (script_common.c: createMonochromonMoodBubble): the mood bubble over the character
+// with script id `character` (variable 247), face `mood` (variable 248, 0 to 4) of the map's
+// bubble image; no mood (248 is 5 or more) takes one bubble away.
+struct MoodBubbleShown {
+  std::int64_t character = 0;
+  std::optional<std::int32_t> mood;
+};
+
+// spawn_sprite_at_entity (overworld.c: spawnSpriteAtEntity): the map's sprite `object` is moved,
+// centred, to where node `node` of the character with script id `character` shows.
+struct SpriteAtCharacter {
+  std::int64_t character = 0;
+  std::int32_t node = 0;
+  std::int32_t object = 0;
+};
+
+// Routine 40 (eab.c: EAB_startBuildup): the final boss, the character with script id `character`,
+// leaves the map and the charge's rings rise where it stands until the partner's routine 8 brings
+// it back (packages/game/field/boss_arrival.hpp).
+struct BossBuildupStarted {
+  std::int64_t character = 0;
+};
+
+using StoryPropRequest =
+    std::variant<DirtCartShown, DirtPileShown, BoulderShown, ScreenShakeStarted, SpriteAtCharacter,
+                 AngemonPedestalShown, ToyTownGearboxShown, ToyTownBoxesShown, ToyTownBoxSelected,
+                 WhiteFadeStarted, MoodBubbleShown, BossBuildupStarted>;
+
+// Trash Mountain's giant poop: map.c: loadMap calls initializeTrainingPoop on map 0xa5 (gomi02) and
+// on no other, whatever the story, which puts ETCNA\TRY at TRAINING_POOP_TRANSLATION, unturned and
+// at its size (map_object.c); renderTrainingPoop draws it while the map layer is. The place is in
+// the original's axes (y down).
+struct TrainingPoop {
+  std::int32_t x = 1922;
+  std::int32_t y = 0;
+  std::int32_t z = 503;
+};
+
+// The poop on the map `mapId`, if that map has it.
+[[nodiscard]] constexpr std::optional<TrainingPoop> trainingPoopOn(std::string_view mapId) {
+  return mapId == "gomi02" ? std::optional{TrainingPoop{}} : std::nullopt;
+}
+
+// The ice sanctuary's teleport crystals: map.c: loadMap calls loadWarpCrystals on maps 101 to 103
+// (icsa05, icsa06, icsa07), whatever the story, which puts ETCNA\WARP there (addWarpCrystal): two
+// linked objects, unturned, the first at (x, WarpCrystalHeight, z) and the second
+// WarpCrystalHeight further from it. renderWarpCrystals draws them while the map layer is. In the
+// original's axes (y down).
+struct WarpCrystal {
+  std::int32_t x = 0;
+  std::int32_t z = 0;
+};
+inline constexpr std::int32_t WarpCrystalHeight = -188;
+
+inline constexpr std::array<WarpCrystal, 4> Icsa05Crystals{{{.x = 2237, .z = -1667},
+                                                            {.x = -2237, .z = -1667},
+                                                            {.x = 2358, .z = 419},
+                                                            {.x = -2358, .z = 419}}};
+inline constexpr std::array<WarpCrystal, 1> Icsa06Crystals{{{.x = 0, .z = 0}}};
+inline constexpr std::array<WarpCrystal, 2> Icsa07Crystals{
+    {{.x = 2376, .z = -127}, {.x = 1566, .z = -3358}}};
+
+// The crystals on the map `mapId`; none on the other maps.
+[[nodiscard]] constexpr std::span<const WarpCrystal> warpCrystalsOn(std::string_view mapId) {
+  if (mapId == "icsa05") {
+    return Icsa05Crystals;
+  }
+  if (mapId == "icsa06") {
+    return Icsa06Crystals;
+  }
+  if (mapId == "icsa07") {
+    return Icsa07Crystals;
+  }
+  return {};
+}
+
+} // namespace dwe::session

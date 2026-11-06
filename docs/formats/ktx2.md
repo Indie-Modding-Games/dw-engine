@@ -13,7 +13,7 @@ Un PNG se convierte salvo que el juego lo lea de su PNG o elija su paleta mientr
 colores RGBA perdería los índices o los píxeles exactos y el lector del motor ya no podría usarla.
 
 Primero, por el tipo de asset: los IDs de la lista `assets::PngOnlyImages`
-(`engine/assets/include/dwe/assets/png_only_images.hpp`) se copian siempre como PNG. La regla es una sola función,
+(`packages/engine/assets/include/dwe/assets/png_only_images.hpp`) se copian siempre como PNG. La regla es una sola función,
 `assets::pngReadingOf(id, meta)`, que comparten `dwx cook`, `dwx validate` y `dwe-game --check-content`: un tipo nuevo
 es una entrada más de la tabla, y lo que declare el `_meta` de la imagen solo puede eximir una imagen que la tabla
 nombra (hoy nada la exime), nunca añadirla. Son los fondos de mapa (`map/<id>/background_*`, sin YAML lateral: la hora

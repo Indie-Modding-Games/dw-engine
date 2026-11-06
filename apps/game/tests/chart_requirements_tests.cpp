@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "chart_requirements.hpp"
-#include "game/evolution/tests/fixture.hpp"
+#include "packages/game/evolution/tests/fixture.hpp"
 
 namespace dwe::app {
 

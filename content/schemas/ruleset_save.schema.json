@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: save",
-  "description": "rules/<id>/save.yaml: when the game saves by itself (game/save: AutosaveRules, docs/architecture/save.md). The original never autosaved: every flag false is its behaviour.",
+  "description": "rules/<id>/save.yaml: when the game saves by itself (packages/game/save: AutosaveRules, docs/architecture/save.md). The original never autosaved: every flag false is its behaviour.",
   "type": "object",
   "required": ["autosave"],
   "additionalProperties": false,

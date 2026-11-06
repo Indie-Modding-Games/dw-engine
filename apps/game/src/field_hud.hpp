@@ -8,8 +8,9 @@
 
 namespace dwe::app {
 
-// The field HUD's status panel: it publishes the game time and the partner's state (apps/screens:
-// field_hud_view.hpp) to the HUD document, only when something it shows has changed.
+// The field HUD's status panel: it publishes the game time and the partner's state
+// (packages/screens: field_hud_view.hpp) to the HUD document, only when something it shows has
+// changed.
 class FieldHud {
 public:
   // Publishes the labels, which never change.

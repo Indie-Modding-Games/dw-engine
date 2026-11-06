@@ -94,7 +94,7 @@ Los detalles de las cachés y de cada nivel están en el [ADR 0015](../adr/0015-
   ([ADR 0001](../adr/0001-reimplementacion-nativa.md), [ADR 0013](../adr/0013-juego-nativo-de-pc.md)).
 - **El decomp es la referencia, no el código.** Se lee para entender formatos y comportamiento; el motor se escribe
   desde cero.
-- **El runtime nunca lee formatos de PS1.** Solo `dwx` usa `formats/`.
+- **El runtime nunca lee formatos de PS1.** Solo `dwx` usa `packages/formats/`.
 - **Nada del juego original en los repositorios.** Cada persona extrae su propio disco
   ([política legal](../legal/assets.md)).
 - **Calidad mínima de cada commit en `main`:** compila sin warnings en el preset `ci`, formato correcto y todos los

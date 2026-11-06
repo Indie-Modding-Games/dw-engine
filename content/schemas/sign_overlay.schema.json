@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Sign overlay",
-  "description": "signs/<map>.yaml (every language) and signs/<language>/<map>.yaml (one language) of a pack: the signs painted in a map's images that the engine writes again in the player's language (engine/signs, docs/modulos/engine/signs.md). Pixels of the map image; colours #rrggbb or #rrggbbaa.",
+  "description": "signs/<map>.yaml (every language) and signs/<language>/<map>.yaml (one language) of a pack: the signs painted in a map's images that the engine writes again in the player's language (packages/engine/signs, docs/modulos/engine/signs.md). Pixels of the map image; colours #rrggbb or #rrggbbaa.",
   "type": "object",
   "additionalProperties": false,
   "properties": {

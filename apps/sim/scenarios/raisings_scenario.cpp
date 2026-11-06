@@ -1,8 +1,8 @@
 // The raisings scenario: raises a partner from a form (--param from=<id>, the first baby by
 // default) for --days days with random care at each level, through the evolution rules of the
-// ruleset, and counts which form each raising ends in (game/evolution). The care is random, not a
-// model of how a player raises: it shows which forms the rules and tables can reach and how often
-// under even odds, and how a tuned value moves that.
+// ruleset, and counts which form each raising ends in (packages/game/evolution). The care is
+// random, not a model of how a player raises: it shows which forms the rules and tables can reach
+// and how often under even odds, and how a tuned value moves that.
 
 #include <dwe/game/evolution/evolution.hpp>
 #include <dwe/game/evolution/state.hpp>

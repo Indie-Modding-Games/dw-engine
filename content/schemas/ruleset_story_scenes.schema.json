@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: story_scenes",
-  "description": "rules/<id>/story_scenes.yaml: the story's battles, partner scenes and routines (apps/session: StoryScenesRules).",
+  "description": "rules/<id>/story_scenes.yaml: the story's battles, partner scenes and routines (packages/session: StoryScenesRules).",
   "type": "object",
   "$defs": {
     "sound": {

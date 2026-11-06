@@ -1,5 +1,5 @@
 # The bounds checks are off: without exceptions (ADR 0007) at() could only abort without a message, and the standard
-# library's hardening (cmake/DweModule.cmake) already checks every index.
+# library's hardening (tooling/cmake/DweModule.cmake) already checks every index.
 # readability-qualified-auto is off: an std::array iterator is a pointer in libc++ but a class in the MSVC STL, so the
 # check asks for auto* where Windows cannot compile it.
 Checks: >
@@ -22,7 +22,7 @@ Checks: >
   -readability-function-cognitive-complexity,
   -readability-qualified-auto
 WarningsAsErrors: ''
-HeaderFilterRegex: '.*/(engine|game|apps|formats)/.*'
+HeaderFilterRegex: '.*/(packages|apps)/.*'
 # The repository itself may live in a folder called engine: never report the dependencies installed under build/.
 ExcludeHeaderFilterRegex: '.*/build/.*'
 CheckOptions:

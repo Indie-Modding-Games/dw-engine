@@ -57,7 +57,7 @@ nada, con un buffer de profundidad normal y modelos que no se ordenan por políg
 - Los empates del original (polígono en el mismo índice que el sprite) dependían del orden de inserción; aquí gana el
   sprite.
 - Con escalas no enteras los píxeles del fondo no miden todos lo mismo: el render filtra el fondo para que no se note
-  (ver `engine/render`).
+  (ver `packages/engine/render`).
 
 ## Alternativas descartadas
 

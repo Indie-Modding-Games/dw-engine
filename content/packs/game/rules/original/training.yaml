@@ -1,4 +1,4 @@
-# Entrenamiento en el gimnasio (docs/reference/care.md, "Entrenamiento"). Lo lee game/partner. La ganancia de cada
+# Entrenamiento en el gimnasio (docs/reference/care.md, "Entrenamiento"). Lo lee packages/game/partner. La ganancia de cada
 # stat es base × multiplicador; el multiplicador se cuenta en décimas como en el original (10 = × 1).
 # src/trn/trn_reward.c: TRN_calculateTrainingMultiplier y src/trn2/trn2_hud.c: TRN2_calculateTrainingMultiplier:
 # aptitud de la especie (training_type de RAISE_DATA) para cada stat, en décimas: tipos 0, 1, 2 y 3, y el resto.

@@ -1,7 +1,7 @@
 # game
 
-`dwe-game`, el juego: abre la ventana, monta los paquetes, empieza la partida (`apps/session`), dibuja el campo
-(`FieldScene`) y las pantallas (`ui/*` del paquete `game`, con los modelos de vista de `apps/screens`) y corre los
+`dwe-game`, el juego: abre la ventana, monta los paquetes, empieza la partida (`packages/session`), dibuja el campo
+(`FieldScene`) y las pantallas (`ui/*` del paquete `game`, con los modelos de vista de `packages/screens`) y corre los
 autotests. Las opciones, los controles y cómo se recorren las rutas están en la
 [guía de la prueba vertical](../../guides/prueba-vertical.md); la UI y sus comandos, en
 [ui.md](../../architecture/ui.md).
@@ -795,7 +795,7 @@ más reciente»). Los `autosave_NN.yaml` de versiones anteriores siguen en la li
 «Autoguardado antiguo N» («CONTINUAR ANTIGUO N» en el aspecto original, con «Autoguardado antiguo N» en el cuadro de
 abajo): se cargan y se borran, nunca se escriben, y al cargarlos la partida sigue en la ranura manual que nombran.
 Tests: `the autosave option is published ...` (`save_indicator_tests.cpp`), `the pause menu's autosave row ...`
-(`graphics_options_tests.cpp`), `the main menu's autosave row ...` (`engine/ui/tests/ui_tests.cpp`), `continue starts
+(`graphics_options_tests.cpp`), `the main menu's autosave row ...` (`packages/engine/ui/tests/ui_tests.cpp`), `continue starts
 on the newest save ...` (`save_flow_tests.cpp`) y los de la sesión ([session](session.md)).
 
 ## Hora en dígitos
@@ -822,8 +822,8 @@ clase `digital` en `#field-clock`.
 La ruta `route-digital-time.yaml` hace capturas por la mañana a 1280x720, 1920x1080 y 1024x768, por la noche, con el
 menú de pausa y con la opción apagada; cada captura con la caja pasa `expect_clear: hud#field-time` (no pisa nada del
 HUD ni de otro documento, ver [UI](../engine/ui.md)) y `text_fit`. Tests: `the field clock tells the game time in
-digits as HH:MM while the option is on` (`engine/ui/tests/ui_tests.cpp`), `one part of a document is checked against
-the rest of it but the panel round it` (`engine/ui/tests/text_fit_tests.cpp`) y los ajustes del usuario
+digits as HH:MM while the option is on` (`packages/engine/ui/tests/ui_tests.cpp`), `one part of a document is checked against
+the rest of it but the panel round it` (`packages/engine/ui/tests/text_fit_tests.cpp`) y los ajustes del usuario
 (`apps/game/tests/user_settings_tests.cpp`).
 
 ## Caminar con teclado o ratón
@@ -906,10 +906,10 @@ La ruta `route-evolution-requirements.yaml` abre el gráfico del compañero con 
 destino es «???»), mueve el cursor, pasa por la vista original, descubre `species_i` y `species_bb` (disparadores 0x200 + su
 número), le da bayas grandes para mover el peso (con una `species_bb` queda con 3 de 4; con tres la revisión elige
 `species_ai`, sin descubrir: «Al revisar: ???») y lo abre de nuevo a 1280x720, 1920x1080 y 1024x768 con `text_fit` y `expect_clear: pause_menu`; al final apaga y enciende la
-opción. Tests: `apps/game/tests/chart_requirements_tests.cpp` (rangos, filas y formas no descubiertas), `game/evolution/tests/report_tests.cpp`
+opción. Tests: `apps/game/tests/chart_requirements_tests.cpp` (rangos, filas y formas no descubiertas), `packages/game/evolution/tests/report_tests.cpp`
 (los puntos del informe son los de la puntuación en cada mezcla de grupos; la forma que da `outlook` es la que elige
 `checkNatural`) y `the chart's outlook names the form the next check evolves the partner into`
-(`apps/session/tests/evolution_adapter_tests.cpp`).
+(`packages/session/tests/evolution_adapter_tests.cpp`).
 
 ## Carteles traducidos
 
@@ -1077,7 +1077,7 @@ cerrando un mapa abierto.
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
-| Mapa de la isla (M) | No existe | `WorldMapScreen` (`world_map_screen.hpp`) publica `world_map.*` y sube `world_map.revision`; el documento `world_map` lo dibuja. La lógica pura (zonas, conocidas, marcador, salidas, tecla) está en `world_map.hpp` | `world_map_tests.cpp` de `apps/game` («a map lies in the area…», «the player knows the areas…», «the marker stands on the centre…», «the exits are the walk warps…», «M opens the island map…», «the game pack's island layout…»); `world_map_tests.cpp` de `engine/ui` (el pintor); `map_visits_tests.cpp` (partida nueva y antigua); `in_game_options_tests`; capturas en las dos pieles y dos lugares con `text_fit` | Mejora (opción) |
+| Mapa de la isla (M) | No existe | `WorldMapScreen` (`world_map_screen.hpp`) publica `world_map.*` y sube `world_map.revision`; el documento `world_map` lo dibuja. La lógica pura (zonas, conocidas, marcador, salidas, tecla) está en `world_map.hpp` | `world_map_tests.cpp` de `apps/game` («a map lies in the area…», «the player knows the areas…», «the marker stands on the centre…», «the exits are the walk warps…», «M opens the island map…», «the game pack's island layout…»); `world_map_tests.cpp` de `packages/engine/ui` (el pintor); `map_visits_tests.cpp` (partida nueva y antigua); `in_game_options_tests`; capturas en las dos pieles y dos lugares con `text_fit` | Mejora (opción) |
 
 ## Escenarios en alta definición
 
@@ -1092,7 +1092,7 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
   pasa a la escena al empezar y `Game` al cambiarlo (`FieldScene::setHdScenery` → `render::MapRenderer::setHdScenery`).
   La consola y las rutas lo cambian con `hd_scenery("on")` / `hd_scenery("off")`. Cada frame, `Game` pone el pase del
   fondo de la escena (`FieldScene::hdSceneryScene`, nada con el escenario oculto) en `FrameDesc::textureScenes`.
-- **Colisiones**: la opción solo cambia cómo se muestrea el mapa en la GPU; el campo (`game/field`) no la ve.
+- **Colisiones**: la opción solo cambia cómo se muestrea el mapa en la GPU; el campo (`packages/game/field`) no la ve.
 - **Opciones**: es una entrada de `ui/common/game_options.lua` en la pestaña «Gráficos» (`tab = "graphics"`) de las
   [opciones en partida](#opciones-en-partida).
 - **Nitidez**: tres ajustes más, también en lo mejor por defecto, deciden cuánta definición tiene la imagen
@@ -1108,9 +1108,9 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
-| Escenarios en alta definición | No existe: el fondo y las capas se ven a su resolución, ampliados píxel a píxel | `map.slang` (`sampleSmooth`, modos `SamplingSmooth` y `SamplingCutout`) filtra los colores con la paleta de la hora; `MapRenderer::resolveBackgroundColors` pasa el fondo a colores cuando cambia la paleta; `render::MapCutouts` encuentra las capas que son recortes del fondo para que tomen su color del fondo filtrado, sin costuras | `hd_scenery_tests.cpp` («HD scenery is on unless the player turned it off…», «HD scenery changes no collision, trigger, map change or camera of a walk»); `map_cutouts_tests.cpp` de `engine/render`; capturas antes y después a 1280 × 720 y 1920 × 1080 en `twna01`, `trop01`, `leom01` y `frzl01`, de día y de noche | Mejora (opción) |
-| Escenarios ampliados (`scenery_quality`) | No existe | `render::upscaleScenery` dobla el fondo en cada variante de paleta (interpolación dirigida por bordes propia, tramado fundido, enfoque adaptativo suave) en un hilo, con caché en disco (`render::UpscaleCache`); `map.slang` (`SamplingUpscaledPrefilter`) lo remuestrea a la ventana con Catmull-Rom sujeto, mezcla las variantes con los pesos del fundido y toma la clase de cada píxel del texel original más cercano | `scenery_upscale_tests.cpp` de `engine/render` (bordes, diagonales sin escalones, degradados, fundidos, clases, tramado, caché); `graphics_options_tests.cpp` («the sharpness options start on their best…»); capturas del mismo frame original / HD de antes / nuevo en siete mapas | Mejora (opción) |
-| Suavizado de bordes (`antialiasing`) | No existe | `Renderer::setMultisampling`: el pase de escena con 4 muestras (`GraphicsPipeline` con variante multimuestreada), resuelto en la ventana o en la textura del paso de luz | `pipeline_test.cpp` de `engine/rhi`; capturas | Mejora (opción) |
+| Escenarios en alta definición | No existe: el fondo y las capas se ven a su resolución, ampliados píxel a píxel | `map.slang` (`sampleSmooth`, modos `SamplingSmooth` y `SamplingCutout`) filtra los colores con la paleta de la hora; `MapRenderer::resolveBackgroundColors` pasa el fondo a colores cuando cambia la paleta; `render::MapCutouts` encuentra las capas que son recortes del fondo para que tomen su color del fondo filtrado, sin costuras | `hd_scenery_tests.cpp` («HD scenery is on unless the player turned it off…», «HD scenery changes no collision, trigger, map change or camera of a walk»); `map_cutouts_tests.cpp` de `packages/engine/render`; capturas antes y después a 1280 × 720 y 1920 × 1080 en `twna01`, `trop01`, `leom01` y `frzl01`, de día y de noche | Mejora (opción) |
+| Escenarios ampliados (`scenery_quality`) | No existe | `render::upscaleScenery` dobla el fondo en cada variante de paleta (interpolación dirigida por bordes propia, tramado fundido, enfoque adaptativo suave) en un hilo, con caché en disco (`render::UpscaleCache`); `map.slang` (`SamplingUpscaledPrefilter`) lo remuestrea a la ventana con Catmull-Rom sujeto, mezcla las variantes con los pesos del fundido y toma la clase de cada píxel del texel original más cercano | `scenery_upscale_tests.cpp` de `packages/engine/render` (bordes, diagonales sin escalones, degradados, fundidos, clases, tramado, caché); `graphics_options_tests.cpp` («the sharpness options start on their best…»); capturas del mismo frame original / HD de antes / nuevo en siete mapas | Mejora (opción) |
+| Suavizado de bordes (`antialiasing`) | No existe | `Renderer::setMultisampling`: el pase de escena con 4 muestras (`GraphicsPipeline` con variante multimuestreada), resuelto en la ventana o en la textura del paso de luz | `pipeline_test.cpp` de `packages/engine/rhi`; capturas | Mejora (opción) |
 | Texturas de modelos (`texture_filter`) | Texels cuadrados | `ModelRenderer::setTextureFilter`: filtrado con mipmaps y anisotropía (`FlagSmooth` en `skinned_model.slang`), sobre las texturas dobladas por `upscaleRgba` (alfa interpolado, sin borde oscuro) | `scenery_upscale_tests.cpp` («a model texture's cut-out edge takes no dark fringe…»); `pipeline_test.cpp` (niveles de mip); capturas | Mejora (opción) |
 
 ## Personajes en 3D
@@ -1303,7 +1303,7 @@ y se guardan en `settings.yaml` (`shadows`, `enhanced_lighting`, `vivid_colors`;
 Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no tiene clima): el ajuste `weather`
 (sí/no) se cambia en la fila «Clima» («Weather» en inglés) de las opciones en partida y en las opciones del título;
 se aplica al momento y se guarda en los ajustes del usuario. Las zonas, sus pesos y los mapas sin clima, la semilla,
-el dibujo y el sonido están en [game/weather](../game/weather.md). `--weather <clima>` fuerza uno para capturas.
+el dibujo y el sonido están en [packages/game/weather](../game/weather.md). `--weather <clima>` fuerza uno para capturas.
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
@@ -1314,7 +1314,7 @@ el dibujo y el sonido están en [game/weather](../game/weather.md). `--weather <
 Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no tiene estaciones): el ajuste
 `seasons` (sí/no) se cambia en la fila «Estaciones» («Seasons» en inglés) de las opciones en partida y en las del
 título, justo debajo de «Clima»; se aplica al momento y se guarda en los ajustes del usuario. Apagada, el campo se ve
-y el clima sale exactamente como sin estaciones. Las reglas están en [game/weather](../game/weather.md#estaciones).
+y el clima sale exactamente como sin estaciones. Las reglas están en [packages/game/weather](../game/weather.md#estaciones).
 `--season <estación>` fuerza una para capturas (su aspecto y su nombre; el clima sigue el calendario).
 
 | Qué | Original | dwe | Prueba | Estado |

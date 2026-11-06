@@ -149,18 +149,18 @@ lecturas vacías, así que la película que se ve puede acabar antes que el fich
 
 Para verlo o recodificarlo: `ffmpeg -i video.y4m -i audio.wav ...` (fuera del proyecto).
 
-`formats/src/video/mdec.cpp` se compila optimizado también en los builds de debug (como `sha1.cpp`): sin eso, la
+`packages/formats/src/video/mdec.cpp` se compila optimizado también en los builds de debug (como `sha1.cpp`): sin eso, la
 extracción en `ci` (debug con sanitizers) llevaba casi 9 minutos; ahora tarda unos 3,5. Al extraer, cada frame solo
 pasa por la etapa VLC (`decodeBitstream`, que comprueba su bitstream y su tamaño); la IDCT corre una sola vez, al
 escribir el Y4M.
 
 ## Pruebas
 
-- `formats/tests/mdec_tests.cpp`, `xa_adpcm_tests.cpp`, `str_tests.cpp` y `movie_tests.cpp`: bitstreams y sectores
+- `packages/formats/tests/mdec_tests.cpp`, `xa_adpcm_tests.cpp`, `str_tests.cpp` y `movie_tests.cpp`: bitstreams y sectores
   sintéticos (DC, predictores, versión 2, AC de 15 y 16 bits, escape, fin de bloque, IDCT, macrobloques, todos los
   filtros XA, estéreo, 8 bits, intercalado de 8 sectores, entradas mal formadas, Y4M, WAV, `MOV_MOVIES` y esquema).
 - `apps/dwx/tests/video_extractors_tests.cpp`: una imagen en bruto sintética con un STR.
-- Con `DWE_DISC`: `formats/tests/video_real_disc_tests.cpp` decodifica los primeros frames y el audio de cada
+- Con `DWE_DISC`: `packages/formats/tests/video_real_disc_tests.cpp` decodifica los primeros frames y el audio de cada
   película, y `apps/dwx/tests/video_real_disc_tests.cpp` extrae las cuatro (sin `unknowns`) y decodifica entera la
   más corta sin escribir nada. Decodificar las cuatro lleva minutos en una compilación con sanitizers; la prueba del
   paquete base entero (`real_disc_tests.cpp`) lo hace al escribirlas.

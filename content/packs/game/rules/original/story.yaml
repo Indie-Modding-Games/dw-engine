@@ -1,4 +1,4 @@
-# La historia (apps/session: StoryAdapter, docs/architecture/interprete-historia.md).
+# La historia (packages/session: StoryAdapter, docs/architecture/interprete-historia.md).
 # El motor hace tick a 60 Hz y la historia del original avanza 20 fotogramas por segundo
 # (main.c: gameLoop, VSync(3)): un fotograma del original son 3 ticks.
 ticks_per_frame: 3

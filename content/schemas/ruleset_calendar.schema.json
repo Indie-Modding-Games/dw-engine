@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: calendar",
-  "description": "rules/<id>/calendar.yaml: what a new day does to the story's variables (apps/session: CalendarAdapter; game/story: new_day.hpp).",
+  "description": "rules/<id>/calendar.yaml: what a new day does to the story's variables (packages/session: CalendarAdapter; packages/game/story: new_day.hpp).",
   "type": "object",
   "required": ["new_day"],
   "additionalProperties": false,

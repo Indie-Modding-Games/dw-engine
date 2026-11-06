@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: cards",
-  "description": "rules/<id>/cards.yaml: the player's cards and the card pack (game/inventory: cards.hpp).",
+  "description": "rules/<id>/cards.yaml: the player's cards and the card pack (packages/game/inventory: cards.hpp).",
   "type": "object",
   "required": ["max_copies", "listed", "pack", "lines"],
   "additionalProperties": false,

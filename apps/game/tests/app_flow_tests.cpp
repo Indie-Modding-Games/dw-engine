@@ -19,8 +19,8 @@
 
 #include "adapter_fixture.hpp"
 #include "app_flow.hpp"
-#include "game/evolution/tests/fixture.hpp"
-#include "game/inventory/tests/fixture.hpp"
+#include "packages/game/evolution/tests/fixture.hpp"
+#include "packages/game/inventory/tests/fixture.hpp"
 #include "session_fixture.hpp"
 
 namespace {

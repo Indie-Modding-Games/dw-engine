@@ -65,7 +65,7 @@ jugador ve se compara con la caja dibujada que lo rodea (fondo opaco, decorador,
 cuadro), con lo que lo recorta y con la ventana, y luego con los bordes de las cajas y los textos de al lado. Lo que
 tapa una caja opaca posterior no cuenta. El margen es un píxel del original (3dp). Lo usan el paso de autotest
 `expect_text_fits` y la clave de ruta `text_fit` ([prueba vertical](../../guides/prueba-vertical.md#formato-de-una-ruta));
-sus casos están en `engine/ui/tests/text_fit_tests.cpp` (a 1280x720, 1920x1080, 1366x768 y 1024x768).
+sus casos están en `packages/engine/ui/tests/text_fit_tests.cpp` (a 1280x720, 1920x1080, 1366x768 y 1024x768).
 
 `Ui::drawnRects(exceptDocument)` da los rectángulos de lo que el jugador ve en los documentos mostrados menos uno
 (textos, cajas con fondo, borde o decorador, e imágenes), recortados a la ventana; deja fuera lo oculto, lo

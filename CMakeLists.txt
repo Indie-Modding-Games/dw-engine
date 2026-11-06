@@ -8,8 +8,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 include(CTest)
-include(cmake/DweModule.cmake)
-include(cmake/DweShaders.cmake)
+include(tooling/cmake/DweModule.cmake)
+include(tooling/cmake/DweShaders.cmake)
 
 if(BUILD_TESTING)
     find_package(doctest CONFIG REQUIRED)
@@ -28,6 +28,9 @@ if(BUILD_TESTING)
     target_link_libraries(dwe_filter_guard_tests PRIVATE dwe_test_main)
     dwe_apply_options(dwe_filter_guard_tests)
     dwe_use_utf8(dwe_filter_guard_tests)
+    # The repository's own tests, outside every package (scripts/dev.sh --filter repo).
+    add_custom_target(pkg_repo)
+    add_dependencies(pkg_repo dwe_filter_guard_tests)
     set(guarded_case "the filter guard's test case runs")
     add_test(NAME "filter guard: a filter that matches a test case runs it"
         COMMAND dwe_filter_guard_tests "--test-case=${guarded_case}")
@@ -35,7 +38,7 @@ if(BUILD_TESTING)
     add_test(NAME "filter guard: a filter that matches no test case fails"
         COMMAND ${CMAKE_COMMAND} -DPROGRAM=$<TARGET_FILE:dwe_filter_guard_tests>
             "-DARGUMENT=--test-case=the filter guard's test" -DEXIT_CODE=2 "-DMESSAGE=matches no test case"
-            -P ${PROJECT_SOURCE_DIR}/cmake/expect_failure.cmake)
+            -P ${PROJECT_SOURCE_DIR}/tooling/cmake/expect_failure.cmake)
     add_test(NAME "filter guard: a catch-all entry may match no test case"
         COMMAND dwe_filter_guard_tests "--test-case=${guarded_case} in another name" --dwe-allow-no-match)
 
@@ -71,11 +74,14 @@ if(BUILD_TESTING)
             COMMAND ${DWE_BASH} ${style_tests_dir}/test_pre_commit.sh)
         add_test(NAME "style scripts: the hooks stop commits that break the publication policy"
             COMMAND ${DWE_BASH} ${style_tests_dir}/test_policy_hooks.sh)
+        add_test(NAME "dev scripts: the packages, their dependencies and what a change affects"
+            COMMAND ${DWE_PYTHON3} -B -m unittest -v test_packages
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/scripts/tests)
     endif()
+    # The repository's own tests, outside every package: scripts/dev.sh runs them as the package repo.
+    get_property(repo_tests DIRECTORY PROPERTY TESTS)
+    set_property(TEST ${repo_tests} APPEND PROPERTY LABELS repo)
 endif()
 
-add_subdirectory(third_party)
-add_subdirectory(engine)
-add_subdirectory(game)
-add_subdirectory(formats)
+add_subdirectory(packages)
 add_subdirectory(apps)

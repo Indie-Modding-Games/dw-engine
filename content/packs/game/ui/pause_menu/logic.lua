@@ -1245,7 +1245,8 @@ local city_original_left = 10
 local city_original_top = 84
 local city_original_pitch = 73
 local city_cursor_outside = 3
--- A missing resident's icon: the same image in its grey tone (engine/ui image_reference.hpp).
+-- A missing resident's icon: the same image in its grey tone (packages/engine/ui
+-- image_reference.hpp).
 local city_grey_tone = "tone=grey"
 
 local function original_skin()

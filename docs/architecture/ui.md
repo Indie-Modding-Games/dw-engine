@@ -1,7 +1,7 @@
 # UI
 
-La UI del juego (menús y HUD) vive en `engine/ui`, en la capa de servicios, sobre RmlUi
-([ADR 0009](../adr/0009-rmlui.md)). Las herramientas de depuración siguen con Dear ImGui (`engine/debug`).
+La UI del juego (menús y HUD) vive en `packages/engine/ui`, en la capa de servicios, sobre RmlUi
+([ADR 0009](../adr/0009-rmlui.md)). Las herramientas de depuración siguen con Dear ImGui (`packages/engine/debug`).
 
 ## Piezas
 
@@ -142,7 +142,7 @@ como `generated:minimap/<n>`.
 
 El HUD la enseña como un **minimapa redondo** (una mejora, encendida por defecto con los dos aspectos): un disco del
 mapa alrededor del jugador, con el norte (−Z) arriba, el nombre del mapa encima y el día y la hora debajo. Lo dibuja el
-decorador `minimap-disc` (`engine/ui/src/minimap_disc.*`), que rellena la caja de `#minimap-frame` con un abanico de
+decorador `minimap-disc` (`packages/engine/ui/src/minimap_disc.*`), que rellena la caja de `#minimap-frame` con un abanico de
 triángulos cuyas coordenadas de textura son la ventana del disco sobre la imagen (`minimapDiscView`: centro en el
 jugador, radio `minimapViewRadius`, la mitad del lado mayor del mapa entre 800 y 1800 unidades) y dibuja fuera de esa
 caja el aro: `plain` es un aro con un brillo hacia fuera y una sombra hacia dentro (el aspecto moderno), `original`
@@ -201,9 +201,9 @@ El HUD enseña en el campo la hora del juego y el estado del compañero. Los dat
 de datos que no sabe nada de aspectos, y cada aspecto es una vista de él (el moderno ahora; el de aspecto original
 dibuja los mismos datos con su propio documento).
 
-- **Modelo:** `FieldHudView` (`apps/screens`: `field_hud_view.hpp`), solo números y booleanos. Lo construye
+- **Modelo:** `FieldHudView` (`packages/screens`: `field_hud_view.hpp`), solo números y booleanos. Lo construye
   `fieldHudViewOf(hora, compañero, shown)` desde `GameSession::clock().time()` (`ruleset::GameTime`) y
-  `GameSession::partnerView()` (`apps/session`: `partner_view.cpp: viewOf`), sin decidir ninguna regla: los rangos
+  `GameSession::partnerView()` (`packages/session`: `partner_view.cpp: viewOf`), sin decidir ninguna regla: los rangos
   salen del ruleset (`care.yaml`: `limits`) y las necesidades son las condiciones que ya tiene el compañero.
 - **Enlace:** `FieldHud` (`apps/game/src/field_hud.*`) publica las etiquetas una vez al crearse
   (`fieldHudLabelSettings`) y, en cada frame, construye la vista y la compara con la última que publicó. Solo si
@@ -231,7 +231,7 @@ con valor entero.
 | `hud.need.<i>.label` | clave | Una vez: `hud.need.hunger`, `hud.need.sleep`, `hud.need.toilet`, `hud.need.tired`, `hud.need.injured`, `hud.need.sick` |
 | `hud.pool.<i>.{value,max}` | números | HP (0) y MP (1): lo que le queda y su máximo |
 | `hud.pool.<i>.label` | clave | Una vez: las etiquetas del original, `main.stat_labels.0000` (HP) y `.0001` (MP) |
-| `hud.partner.area` | 0, 1, 2 | Lo que le parece al compañero el mapa en el que está, con los números del original (`MAP_TILE_DATA.partnerAreaResponse`): 0 nada en especial, 1 le gusta, 2 no le gusta. Va con `hud.revision`, como el resto del estado. El original lo calcula al cargar el mapa (`map.c: loadMapSetup`): recorre a la vez, casilla a casilla, las dos listas de regiones del mapa (`regions.a` y `regions.b` de `map/<id>/data.yaml`) y la primera casilla de cualquiera de las dos que tenga la región favorita de la especie (`favored_region` de `data/raise`) decide: la lista `a` da 1 y la `b` da 2. La sesión lo calcula igual al entrar en cada mapa (`game/partner`: `areaResponseOf`; `GameSession::areaResponse`), y lo usan también las reglas del cuidado (`CareContext::area`, `SleepContext::area`) |
+| `hud.partner.area` | 0, 1, 2 | Lo que le parece al compañero el mapa en el que está, con los números del original (`MAP_TILE_DATA.partnerAreaResponse`): 0 nada en especial, 1 le gusta, 2 no le gusta. Va con `hud.revision`, como el resto del estado. El original lo calcula al cargar el mapa (`map.c: loadMapSetup`): recorre a la vez, casilla a casilla, las dos listas de regiones del mapa (`regions.a` y `regions.b` de `map/<id>/data.yaml`) y la primera casilla de cualquiera de las dos que tenga la región favorita de la especie (`favored_region` de `data/raise`) decide: la lista `a` da 1 y la `b` da 2. La sesión lo calcula igual al entrar en cada mapa (`packages/game/partner`: `areaResponseOf`; `GameSession::areaResponse`), y lo usan también las reglas del cuidado (`CareContext::area`, `SleepContext::area`) |
 | `hud.partner.revision` | número | Sube en uno cada vez que cambia alguno de los tres de abajo. Va aparte de `hud.revision` porque cambia mientras el compañero anda, y así el resto del estado no se redibuja con él |
 | `hud.partner.x`, `hud.partner.y` | 0–100, décimas | Dónde se asienta la burbuja del original sobre el compañero, en porcentaje del ancho y el alto de la ventana desde la esquina de arriba a la izquierda, redondeado a décimas (menos de un píxel en una ventana de 1000). La burbuja nace a la altura de la especie menos 20 unidades sobre la posición del compañero (`bubble.c: addConditionBubble`; la altura es `height` de `data/digimon`) y en sus 10 primeros frames sube 65 más, donde se queda (`bubble.c: tickConditionBubble`); ese es el punto publicado (`BubbleDrop` y `BubbleRise` en `apps/game/src/game.cpp: partnerBubbleOf`). Su vaivén de 12 unidades arriba y abajo alrededor de él es animación del aspecto y no se publica |
 | `hud.partner.visible` | booleano | `false` con el campo parado (como `hud.shown`; el original no dibuja las burbujas en un menú), en una escena de cuidado (`handleConditionBubble` solo corre en el estado normal del compañero) o con el punto fuera de la ventana o detrás de la cámara; entonces `x` e `y` valen 0 |
@@ -250,7 +250,7 @@ burbuja sobre el compañero (`bubble.c`; por prioridad, sueño, cansancio, hambr
 | Herida | Por azar al acabar un combate (`Partner::applyBattle`) | No acaba sola: se cura con una medicina, y a las 12 horas de juego se vuelve enfermedad (`partner_impl.c: tickSicknessMechanics`) |
 | Enfermedad | Por falta de sueño, por un mapa que no le gusta, por una herida sin curar o por comida (`partner_impl.c: tickSicknessMechanics`) | No acaba sola: se cura con una medicina o en el hospital; a las 12 horas de juego pierde una vida |
 
-Estos plazos son reglas del compañero (`game/partner`, ruleset `original`); el contrato solo publica si la necesidad
+Estos plazos son reglas del compañero (`packages/game/partner`, ruleset `original`); el contrato solo publica si la necesidad
 está.
 
 **Lo que dibuja el original en el campo**, como referencia para las vistas (`clock.c: renderGameClock`,
@@ -394,7 +394,7 @@ toca sus sonidos),
 pausa abre el del compañero con `open_partner_menu`, y este (`ui/partner_menu`) envía `bag_use`, `bag_drop` (el
 número de la ranura), `bag_move` (`"<desde> <hasta>"`), `bag_sort` (el orden, 0 a 2), `partner_praise` y
 `partner_scold`. Lo que dibujan lo publica el juego como ajustes con prefijo `battle.` (y `battle.phase`: `intro`,
-`fight`, `victory` o `end`), `partner.` y `bag.`; el contrato está en el [página de apps/screens](../modulos/apps/screens.md).
+`fight`, `victory` o `end`), `partner.` y `bag.`; el contrato está en el [página de packages/screens](../modulos/apps/screens.md).
 
 En la consola de depuración (y en los pasos `script` de los autotests), `battle("")` empieza un combate contra el
 primer NPC del mapa que puede luchar, o contra los NPC que se le den (`battle("0,2")`), y `give_item("meat 3")` mete
@@ -436,7 +436,7 @@ cambia y lo que no:
 
 - Un jugador que ya eligió un aspecto lo conserva: el `ui_skin` guardado en `settings.yaml` manda sobre el de los
   paquetes. Solo quien no ha elegido ninguno (sin `ui_skin` guardado) empieza con el original. Lo prueban
-  `apps/game/tests/ui_skin_setting_tests.cpp` (los dos casos) y `engine/ui/tests/skin_switch_tests.cpp`.
+  `apps/game/tests/ui_skin_setting_tests.cpp` (los dos casos) y `packages/engine/ui/tests/skin_switch_tests.cpp`.
 - El original necesita las imágenes que extrae `dwx extract` desde la versión 2 del extractor (el paquete
   `ui_original` y las imágenes de la base que agranda). Con un contenido extraído antes, o sin él (los tests sin
   disco), el original no se ofrece y el juego empieza con el moderno, el de reserva, con un aviso en el log.
@@ -562,7 +562,7 @@ Antes de decodificar, reservar o descomprimir nada, una imagen de la UI pasa est
 - decodificada a RGBA ocupa como mucho `MaxUiImageBytes`, sumando todos sus niveles (`checkUiImageBudget`): lo que
   ocupa un cuadrado de 4096 con su cadena de mips completa (13 niveles, unos 85,3 MiB), que es lo que escribe
   `dwx cook`, así que una imagen cocinada de 4096x4096 se carga;
-- una KTX2 pasa además `checkPlain2dKtx2` (de `engine/assets`, la misma comprobación que hace cualquier carga de
+- una KTX2 pasa además `checkPlain2dKtx2` (de `packages/engine/assets`, la misma comprobación que hace cualquier carga de
   una KTX2): una sola imagen 2D (sin capas, sin caras de cubo, profundidad 1), no más niveles de los que da su
   tamaño, datos Basis Universal sin supercompresión o con BasisLZ o Zstd, y ningún nivel que al cargarse ocupe más
   de lo que cabe en un nivel de su tamaño (así una «bomba» Zstd se rechaza antes de inflarse).
