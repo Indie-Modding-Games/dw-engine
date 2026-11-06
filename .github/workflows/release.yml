@@ -617,16 +617,16 @@ jobs:
             --target "$GITHUB_SHA"
           gh release upload "$TAG" dist/*
 
-      # latest.json names each update file by its API URL, which exists only after the upload; the
-      # beta gateway points it at itself when a launcher asks, so testers never reach GitHub. The
-      # universal macOS bundle serves both Mac processors.
+      # latest.json names each update file by its download URL (release and file name), which
+      # stays right if a file is uploaded again, unlike an asset id; the beta gateway points it at
+      # itself when a launcher asks, so testers never reach GitHub. The universal macOS bundle
+      # serves both Mac processors.
       - name: Launcher update manifest
         env:
           PLATFORMS: ${{ steps.built.outputs.platforms }}
         run: |
           url() {
-            gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
-              --jq ".[] | select(.tag_name == \"$TAG\") | .assets[] | select(.name == \"$1\") | .url"
+            printf 'https://github.com/%s/releases/download/%s/%s' "$GITHUB_REPOSITORY" "$TAG" "$1"
           }
           one() {
             [ "$#" -eq 1 ] && [ -f "$1" ] || { echo "Expected one file, found: $*" >&2; exit 1; }

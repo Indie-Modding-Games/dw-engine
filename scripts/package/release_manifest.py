@@ -11,14 +11,16 @@
 game: game-manifest.json for a game package (its name, size, SHA-256 and signature); --merge adds
 the package to an existing manifest of the same version (one manifest, several computers).
 launcher: latest.json for the launcher's own updater (the Tauri updater format), one
---platform per bundle; the URL is the file's API URL in the release
-(https://api.github.com/repos/<repo>/releases/assets/<id>), which the beta gateway
-(services/beta-gateway) rewrites to its own address before a launcher sees it.
+--platform per bundle; the URL is the file's download URL by release and name
+(https://github.com/<repo>/releases/download/<tag>/<name>), which the beta gateway
+(services/beta-gateway) rewrites to its own address before a launcher sees it. Unlike the API URL
+(.../releases/assets/<id>, still accepted), it stays right when a file is uploaded again.
 The manifest goes to the standard output.
 check: the checks before a release is uploaded (scripts/release_local.sh): every file of the folder
 but the manifests has its .sig, which the public key verifies (minisign, as the launcher checks
 it), and a sane size; game-manifest.json and latest.json parse, name exactly the --platform keys and
-match the files (size, SHA-256, signature); latest.json's URLs have the API form. latest.json may
+match the files (size, SHA-256, signature); latest.json's URLs name a file of the folder by its
+download URL, or have the API form. latest.json may
 also name a computer's installer kinds (<key>-<installer>, such as linux-x86_64-deb): Tauri's
 updater takes that entry first, so a launcher installed from the .deb updates with a .deb, and
 falls back to the plain key. It prints what it
@@ -89,6 +91,19 @@ def latest_key_problems(keys, platforms) -> list[str]:
     if plain != set(platforms):
         problems.append(f"latest.json: names {sorted(plain)}, not {sorted(platforms)}")
     return problems
+
+
+def bundle_url_problem(key: str, url: str, repo: str, files) -> str | None:
+    """Why a latest.json bundle URL is not one of the release's files: the download URL of one
+    of the folder's files by name, or an API asset URL."""
+    if re.match(rf"^https://api\.github\.com/repos/{re.escape(repo)}/releases/assets/\d+$", url):
+        return None
+    download = re.match(rf"^https://github\.com/{re.escape(repo)}/releases/download/[^/]+/([^/?#]+)$", url)
+    if download is None:
+        return f"latest.json: {key}'s URL {url} is neither a download URL nor an API asset URL"
+    if download.group(1) not in files:
+        return f"latest.json: {key}'s URL names {download.group(1)}, not in the folder"
+    return None
 
 
 def minisign_lines(text: str) -> list[str]:
@@ -180,7 +195,6 @@ def check(args) -> None:
         problems.append(f"game-manifest.json: unreadable ({error!r})")
 
     if args.latest:
-        url = re.compile(rf"^https://api\.github\.com/repos/{re.escape(args.repo)}/releases/assets/\d+$")
         try:
             latest = json.loads(Path(args.latest).read_text(encoding="utf-8"))
             if not SEMVER.match(str(latest.get("version"))):
@@ -190,8 +204,9 @@ def check(args) -> None:
             for key, bundle in bundles.items():
                 if bundle["signature"] not in signatures.values():
                     problems.append(f"latest.json: {key}'s signature is not one of the folder's files")
-                if not url.match(bundle["url"]):
-                    problems.append(f"latest.json: {key}'s URL {bundle['url']} is not an API asset URL")
+                problem = bundle_url_problem(key, bundle["url"], args.repo, {f.name for f in files})
+                if problem:
+                    problems.append(problem)
         except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
             problems.append(f"latest.json: unreadable ({error!r})")
 

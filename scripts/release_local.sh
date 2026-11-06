@@ -414,10 +414,10 @@ if ((upload)); then
     --target "$target"
   gh release upload "$tag" -R "$repo" "$dist"/*
 
-  # latest.json with the API URLs of the uploaded bundles, which the gateway points at itself.
+  # latest.json with the download URLs of the uploaded bundles (release and file name, right
+  # even after a file is uploaded again), which the gateway points at itself.
   asset_url() {
-    gh api "repos/$repo/releases" --paginate \
-      --jq ".[] | select(.tag_name == \"$tag\") | .assets[] | select(.name == \"$1\") | .url"
+    printf 'https://github.com/%s/releases/download/%s/%s' "$repo" "$tag" "$1"
   }
   manifest_launcher "$(asset_url "$(basename "$appimage")")" "$(asset_url "$(basename "$setup")")" \
     "$(asset_url "$(basename "$deb")")" \

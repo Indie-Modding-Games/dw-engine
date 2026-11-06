@@ -34,5 +34,27 @@ class LatestKeys(unittest.TestCase):
         self.assertEqual(len(release_manifest.latest_key_problems(keys, PLATFORMS)), 1)
 
 
+REPO = "owner/game"
+FILES = {"dwe-launcher.AppImage", "dwe-launcher.deb"}
+
+
+class BundleUrls(unittest.TestCase):
+    def check(self, url):
+        return release_manifest.bundle_url_problem("linux-x86_64", url, REPO, FILES)
+
+    def test_download_url_of_a_folder_file(self):
+        self.assertIsNone(self.check(f"https://github.com/{REPO}/releases/download/v0.1.0-beta.9/dwe-launcher.deb"))
+
+    def test_api_asset_url(self):
+        self.assertIsNone(self.check(f"https://api.github.com/repos/{REPO}/releases/assets/715331005"))
+
+    def test_download_url_of_another_file(self):
+        self.assertIsNotNone(self.check(f"https://github.com/{REPO}/releases/download/v0.1.0-beta.9/other.deb"))
+
+    def test_other_repository(self):
+        self.assertIsNotNone(self.check("https://github.com/someone/else/releases/download/v1/dwe-launcher.deb"))
+        self.assertIsNotNone(self.check("https://api.github.com/repos/someone/else/releases/assets/1"))
+
+
 if __name__ == "__main__":
     unittest.main()
