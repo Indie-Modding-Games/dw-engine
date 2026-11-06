@@ -7,7 +7,8 @@ se extrajo de cada fichero del disco y lo que falta. El código está en `apps/d
 ## Uso
 
 ```sh
-build/<preset>/apps/dwx/dwx extract [--out <carpeta>] [--force] <imagen.cue|imagen.bin|imagen.iso>
+build/<preset>/apps/dwx/dwx extract [--out <carpeta>] [--force] [--progress] <imagen.cue|imagen.bin|imagen.iso>
+build/<preset>/apps/dwx/dwx extract --cache <carpeta> <imagen>
 ```
 
 - `--out`: dónde se escribe el paquete. Por defecto `content/base`, que git ignora.
@@ -17,6 +18,8 @@ build/<preset>/apps/dwx/dwx extract [--out <carpeta>] [--force] <imagen.cue|imag
   rompe el paquete, la comprobación del final lo dice.
 - Nada se escribe fuera de `--out`: las rutas de salida salen solo de ids de asset ya validados (minúsculas, cifras y
   `_`), nunca de nombres leídos del disco.
+- `--progress` imprime el porcentaje y el paso, para el lanzador; `--cache` extrae en una caché por disco y solo
+  imprime la carpeta, para los assets de desarrollo ([página de dwx](../modulos/apps/dwx.md#la-caché-de-desarrollo-dwx-extract---cache)).
 - Códigos de salida: 0 si el paquete se escribió, el motor lo monta y abre todos sus assets (aunque queden ficheros
   pendientes), 2 si hubo un error.
 
@@ -79,7 +82,7 @@ llamadas y solo lee el disco a través del `Disc` que recibe.
 | `tim_pack` | Los packs de paso fijo conocidos: `CHDAT/ALLTIM.TIM` y `CARD/CARD.ALL` | Un PNG y un YAML por entrada |
 | `stacked_tim` | Los TIM apilados: `ETCDAT/ETCTIM.BIN` y `STDDAT/STDTIM.BIN` | Un PNG y un YAML por TIM |
 | `tim_file` | Cualquier otro `.TIM`: un TIM, o varios seguidos | Un PNG y un YAML por TIM |
-| `executable` | El ejecutable que arranca `SYSTEM.CNF` (`SLUS_010.32` en el US) | Los 12 documentos de sus tablas, las cadenas suyas y de los overlays y la fuente |
+| `executable` | El ejecutable que arranca `SYSTEM.CNF` (`SLUS_010.32` en el US) | Los 15 documentos de sus tablas, las cadenas suyas y de los overlays y la fuente |
 | `boot_config` | `SYSTEM.CNF` | `disc/boot.yaml` |
 | `map` | `MAP/MAP<n>/<nombre>.MAP` | `data.yaml` del mapa y sus TIM de 8 y 4 bits |
 | `map_background` | `MAP/MAP<n>/<nombre>.TFS` | Un PNG del fondo por paleta |
@@ -87,8 +90,8 @@ llamadas y solo lee el disco a través del `Disc` que recibe.
 | `digimon_model` | `CHDAT/MMD<n>/<nombre>.MMD` | Un GLB con esqueleto, animaciones y textura |
 | `static_model` | Cualquier `.TMD` | Un GLB con un nodo por objeto, con textura si se sabe cuál |
 | `sound_bank` | Los siete `SOUND/VHB/*.VHB` | Un SoundFont y un YAML por banco, un WAV por muestra de efecto y un MIDI por pista de música |
-| `event_script` | `SCN/MAPHEAD.SCN` y `SCN/DG.SCN` | Un listado YAML por script |
-| `overlay` | `<nombre>_REL.BIN` en la raíz | Los documentos de sus tablas de juego (FISH, STD, VS y TRN) |
+| `event_script` | `SCN/MAPHEAD.SCN` y `SCN/DG.SCN` | Un listado YAML por script, su módulo Lua (`story/<n>` y `story/<n>_lines`) y sus textos; de todos juntos, `data/new_game_stats`, `data/new_game_story` y `field/script_warps` ([Scripts](scripts.md)) |
+| `overlay` | `<nombre>_REL.BIN` en la raíz | Los documentos de sus tablas de juego (FISH, STD, VS, TRN y BTL) |
 | `padding` | `MMM.DAT` | Nada: comprueba que es todo ceros |
 | `effect` | `ETCHI/EFEDAT.EFE` | Por técnica: `effect.yaml`, `script.yaml`, la textura y, si tiene TMD, un GLB ([Efectos](efectos.md)) |
 | `movie` | `MOVIE/*.STR` (hace falta una imagen en bruto) | `video.y4m`, `audio.wav` y `movie.yaml` (ver [Vídeo](video.md)) |
@@ -221,9 +224,15 @@ content/base/
 ├─ pack.yaml            id base, capa base, versión 0.1.0 y el esquema de cada tipo de documento
 ├─ .dwx-extract         marca de que lo escribió dwx; oculto, el motor no lo ve
 ├─ dwx/coverage.yaml    informe de cobertura (asset dwx/coverage)
-├─ data/<tabla>.yaml    tablas del ejecutable: digimon, skeletons, moves, items, item_effects, evolution, raise, cards,
-│                       tournaments, medals, music, shops, maps
+├─ data/<tabla>.yaml    tablas del ejecutable: digimon, skeletons, moves, items, item_effects, evolution, raise,
+│                       evolution_chart, evolution_chart_detail, cards, tournaments, medals, music, shops, maps;
+│                       de los overlays: fishing, stadium, versus, training, battle; de los scripts:
+│                       new_game_stats, new_game_story
 ├─ disc/boot.yaml       SYSTEM.CNF
+├─ field/script_warps.yaml  los cambios de mapa de los scripts
+├─ script/maphead.yaml, script/dg/<n>.yaml  listados de los scripts
+├─ story/<n>.lua + <n>_lines.yaml  los scripts como módulos Lua
+├─ text/en/<fuente>.yaml, font/main.png + main_meta.yaml
 ├─ digimon/<id>/texture.png + texture_meta.yaml, model.glb + contract.yaml
 ├─ card/<n>.png + <n>_meta.yaml
 ├─ map/<id>/data.yaml, background_<variante>.png, texture8/<n>.png, texture4/<n>.png (+ _meta.yaml)
@@ -243,18 +252,21 @@ dice cuál sigue cada uno ([reglas `schemas`](../architecture/vfs.md#esquemas-de
 
 | Esquema | Documentos |
 |---|---|
-| `cards`, `digimon`, `evolution`, `fishing`, `item_effects`, `items`, `maps`, `medals`, `moves`, `music`, `raise`, `shops`, `skeletons`, `stadium`, `tournaments`, `training`, `versus` | `data/<el mismo nombre>` |
+| `battle`, `cards`, `digimon`, `evolution`, `evolution_chart`, `evolution_chart_detail`, `fishing`, `item_effects`, `items`, `maps`, `medals`, `moves`, `music`, `new_game_stats`, `new_game_story`, `raise`, `shops`, `skeletons`, `stadium`, `tournaments`, `training`, `versus` | `data/<el mismo nombre>` |
 | `boot` | `disc/boot` |
+| `script_warps` | `field/script_warps` |
 | `map` | `map/*/data` |
 | `collision` | `arena/*/collision` |
 | `image` | los `_meta` de las imágenes: `map/*/texture8/*_meta`, `map/*/texture4/*_meta`, `digimon/*/texture_meta`, `card/*_meta`, `effect/*/texture_meta`, `texture/**_meta` |
 | `model_contract` | `digimon/*/contract` |
 | `sound_bank` | `sound/*/bank_meta`, `sound/*/*/bank_meta`, `music/*/font_meta` |
 | `script` | `script/maphead`, `script/*/*` |
+| `story_lines` | `story/*_lines` |
 | `text` | `text/*/*` |
 | `font` | `font/main_meta` |
 | `effect` | `effect/*/effect` |
 | `effect_script` | `effect/*/script` |
+| `movie` | `movie/*/movie` |
 | `coverage` | `dwx/coverage` |
 
 Las reglas salen de `names::documentSchemas` (`apps/dwx/src/asset_names.cpp`). Un tipo de documento nuevo necesita
@@ -281,6 +293,8 @@ cumple las reglas de `engine/assets`: segmentos de `[a-z0-9_]` y un solo punto e
 | Fuente de música (`names::musicAsset`) | `music/<fuente con 3 cifras>/<hoja>` | `music/001/font`, `music/001/track_00` |
 | Efecto de una técnica (`names::effectAsset`) | `effect/<id de la técnica>/<hoja>`, o la ranura con 3 cifras sin tablas | `effect/<id>/script`, `effect/<id>/model` |
 | Película (`names::movieAsset`) | `movie/<nombre>/<hoja>` | `MOVIE/OP1.STR` → `movie/op1/video` |
+| Listado de un script (`names::scriptListing`) | `script/maphead`, `script/dg/<n con 3 cifras>` | `script/dg/001` |
+| Script como Lua (`names::storyModule`, `names::storyLines`) | `story/<n con 3 cifras>`, `story/<n>_lines` | `story/001`, `story/001_lines` |
 | Metadatos de una imagen | `<id de la imagen>_meta` | `card/065_meta` |
 | Contrato del modelo de un Digimon (`names::modelContract`) | `digimon/<id>/contract` | `digimon/species_a/contract` |
 
@@ -329,12 +343,12 @@ Los estados:
 | `partial` | Un extractor lo aceptó pero dejó algo en `unknowns`: entradas que no se leen, bytes que no son cero y nadie explica, tamaños que no cuadran, partes de uso desconocido, o el error si falló |
 | `pending` | Ningún extractor lo acepta todavía |
 
-La fase 1 se cierra cuando no quede ningún fichero pendiente ni parcial.
+La fase 1 se cerró cuando no quedó ningún fichero pendiente ni parcial (ver abajo).
 
 ## Estado con el disco US
 
 Con el disco US (`SLUS_010.32`): 818 ficheros, 818 extraídos, ninguno parcial y ninguno pendiente; 331,2 de 331,2 MB
-(100 %). Salen 4812 salidas, de las que 403 repiten otra byte a byte, y dos extracciones seguidas dan los mismos
+(100 %). Salen 5475 salidas, de las que 404 repiten otra byte a byte, y dos extracciones seguidas dan los mismos
 bytes en todas:
 
 | Tipo | Salidas |
@@ -342,7 +356,7 @@ bytes en todas:
 | Texturas de Digimon (`digimon/`) | 180 PNG + 180 YAML |
 | Cartas (`card/`) | 66 PNG + 66 YAML |
 | Otras imágenes (`texture/`) | 69 PNG + 69 YAML |
-| Tablas del ejecutable y de los overlays (`data/`) y `SYSTEM.CNF` (`disc/`) | 12 + 4 + 1 YAML |
+| Tablas del ejecutable y de los overlays (`data/`) y `SYSTEM.CNF` (`disc/`) | 15 + 5 + 1 YAML |
 | Mapas: `data.yaml` | 242 |
 | Mapas: fondos | 513 PNG |
 | Mapas: TIM de 8 y 4 bits | 413 + 167 PNG, con sus YAML |
@@ -353,8 +367,8 @@ bytes en todas:
 | Música (`music/`): 33 fuentes | 33 SF2 + 74 MIDI + 33 YAML |
 | Efectos (`effect/`): 121 técnicas | 363 YAML, 121 PNG, 89 GLB |
 | Películas (`movie/`) | 4 Y4M + 4 WAV + 4 YAML |
-| Scripts de eventos (`script/`) | 222 YAML |
-| Textos (`text/`) y fuente (`font/`) | 7 YAML; 1 PNG + 1 YAML |
+| Scripts de eventos (`script/`, `story/`) | 222 YAML; 222 Lua + 222 YAML de líneas; 3 documentos (`data/`, `field/`) |
+| Textos (`text/`) y fuente (`font/`) | 219 YAML (7 del ejecutable y los overlays, 212 de los scripts); 1 PNG + 1 YAML |
 
 - Efectos: `ETCHI/EFEDAT.EFE` queda extraído; sus 40 rangos de datos a los que nada llega (590 bytes en 33 ranuras)
   van como `unused` en cada `script.yaml` y en las notas ([Efectos](efectos.md#datos-sin-uso)).

@@ -144,8 +144,9 @@ instructions:
   `cancel_marker: true` (la marca `12 00`), `data` (los bytes de `DATA` en hex) y `pads` (rellenos que no son 0).
 - `unknowns` solo si los hay.
 
-El id estable de un texto de script es el script y el offset de su instrucción (`dg/007@0x0040`); el catálogo de
-textos de la fase 4 (Lua) lo usará. El listado no es Lua: la traducción es trabajo de la fase 4.
+El id estable de un texto de script es el script y el offset de su instrucción (`dg/007@0x0040`); las claves de los
+textos de la historia lo usan (`story_<n>.text.<offset>`, ver [Lua](#lua)). El listado no es Lua: lo traduce
+`lua_emitter.hpp`.
 
 ## Control de flujo
 
@@ -177,15 +178,15 @@ rama sin dejar condición. Una llamada a una rutina que ya se está recorriendo 
 `RecursionTerm` (la rutina llamada) que dice que lo que decide no se sabe, y el camino sigue después con lo que
 conocía olvidado. Una orden que corre código del juego que puede escribir disparadores (`give_item`, `compare_date` y
 las rutinas de `call_routine` y `call_digimon_routine` que lo hacen, según `routine_writes.hpp`) deja un término
-`ForgetTerm` y el camino sigue sin saber esos disparadores. Lo usan los [warps de script](../architecture/warps-de-script.md); lo usarán la conversión
-a Lua y el intérprete de historia.
+`ForgetTerm` y el camino sigue sin saber esos disparadores. Lo usan los [warps de script](../architecture/warps-de-script.md) (`script_warps.hpp`) y los cambios de mapa de
+una sección (`map_changes.hpp`).
 
 Lua no tiene `continue`: una rama que vuelve a la cabeza del bucle se lleva el resto del cuerpo a la otra rama. Las
 cifras sobre el disco están en la [ficha de scripts](../reference/scripts.md#forma-del-control-de-flujo).
 
 ## Lua
 
-`formats/script/lua_emitter` escribe cada script estructurado como un módulo Lua, y `dwx extract` lo deja junto al
+`lua_emitter.hpp` (`formats/script`) escribe cada script estructurado como un módulo Lua, y `dwx extract` lo deja junto al
 listado (que no cambia: sigue siendo el formato que edita `dw1fe`):
 
 | Fichero | Qué es |

@@ -84,7 +84,7 @@ Notas:
 - En el US, el último puntero de `MOVE_NAMES` es nulo aunque `MOVE_DATA` tiene esa técnica. Un puntero nulo en una
   tabla de textos se lee como texto vacío.
 - `RaiseData` tiene un byte de relleno en `0x0B` que no se guarda.
-- Las tablas de juego de los overlays (pesca, torneo, versus y entrenamiento) están en [Overlays](overlays.md).
+- Las tablas de juego de los overlays (pesca, torneo, versus, entrenamiento y batalla) están en [Overlays](overlays.md).
 
 ## Efectos de objetos
 
@@ -115,7 +115,8 @@ escapado se anota en las notas de la conversión.
 
 ## YAML
 
-`tablesToYaml` convierte las tablas en trece documentos, cada uno con su esquema en
+`tablesToYaml` convierte las tablas en trece documentos (quince si la versión tiene localizadas las dos tablas del
+[árbol de evolución](arbol-de-evolucion.md), hoy solo la US), cada uno con su esquema en
 `content/schemas/<nombre>.schema.json` (JSON Schema 2020-12):
 
 | Documento | Contenido |
@@ -127,6 +128,7 @@ escapado se anota en las notas de la conversión.
 | `item_effects` | qué hace cada objeto: su función, lo que cura, a qué evoluciona y los valores de su caso de comida o chip |
 | `evolution` | requisitos, ganancias y el árbol de evolución |
 | `raise` | `RAISE_DATA` |
+| `evolution_chart`, `evolution_chart_detail` | posiciones e iconos del árbol y geometría de su detalle ([Árbol de evolución](arbol-de-evolucion.md)) |
 | `cards` | precios y `CARD_DATA` |
 | `tournaments` | nombres, grados, calendario e ids de medalla |
 | `medals` | nombres y las tres líneas de cada descripción |
@@ -155,7 +157,7 @@ listas, `enum`, `const` y `$ref` locales) escrito en los propios tests, sin depe
 ## Comprobación con el disco
 
 `formats/tests/real_data_tests.cpp` se ejecuta solo si `DWE_EXE_SAMPLE` apunta al ejecutable US (y `DWE_MAP_DIR` a la
-carpeta `MAP` para los mapas). Con el ejecutable US extraído del disco: se leen todas las tablas, los trece documentos
+carpeta `MAP` para los mapas). Con el ejecutable US extraído del disco: se leen todas las tablas, los quince documentos
 cumplen su esquema y no hay ningún texto con bytes escapados. Queda una referencia fuera de tabla: un `-2` en
 `EVOLUTION_PATHS`, que no es ni un tipo ni el `-1` de «ninguno».
 
