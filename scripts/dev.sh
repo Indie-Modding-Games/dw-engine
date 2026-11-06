@@ -77,12 +77,15 @@ Usage: scripts/dev.sh <command> [args]
   configure           Configure the preset (PRESET=$preset)
   build               Build the preset
   test                Run the tests of the preset, in parallel
-  format [--check|--staged]
+  format [--check|--staged|--since <commit>]
                       Format the C++ (clang-format), Lua (StyLua) and shell (shfmt) sources, and
                       wrap the comments of Lua and shell; --check only reports, --staged formats the
-                      staged ones and stages them again
-  lint [--staged]     Lint the Lua (luacheck) and shell (shellcheck, the column limit) sources and
-                      the NOLINT comments of C++, or only the staged ones
+                      staged ones and stages them again, --since only reports on the ones changed
+                      since the commit (a pull request's check)
+  lint [--staged|--since <commit>]
+                      Lint the Lua (luacheck) and shell (shellcheck, the column limit) sources and
+                      the NOLINT comments of C++, or only the staged ones, or only the ones changed
+                      since the commit
   setup-hooks         Check the publication policy (the commit and its message) and run the
                       formatters and linters on every commit: git's hooks folder becomes $hooks_dir
   tidy [args]         Run clang-tidy on the sources in parallel, passing it args (needs a configure,
@@ -378,6 +381,12 @@ run_style() {
     ensure_caches
     in_container "$@"
   fi
+}
+
+# The style sources added or changed since a commit, as the working tree has them.
+changed_style_sources() {
+  comm -12 <(style_sources | sort -u) \
+    <(git -C "$root" diff --name-only --diff-filter=d "$1" -- | sort -u)
 }
 
 # Formats the staged style sources and stages them again; staged_style_sources leaves out the files
@@ -707,6 +716,12 @@ case "$command" in
   format)
     case "${1:-}" in
       --staged) format_staged ;;
+      --since)
+        mapfile -t files < <(changed_style_sources "${2:?format --since needs a commit}")
+        echo "format: ${#files[@]} changed sources"
+        ((${#files[@]} == 0)) \
+          || run_style "$style_dir/format_files.sh" --check --jobs "$jobs" -- "${files[@]}"
+        ;;
       --check | "")
         mapfile -t files < <(style_sources)
         run_style "$style_dir/format_files.sh" ${1:+"$1"} --jobs "$jobs" -- "${files[@]}"
@@ -722,6 +737,9 @@ case "$command" in
   lint)
     if [[ "${1:-}" == "--staged" ]]; then
       mapfile -t files < <(staged_style_sources)
+    elif [[ "${1:-}" == "--since" ]]; then
+      mapfile -t files < <(changed_style_sources "${2:?lint --since needs a commit}")
+      echo "lint: ${#files[@]} changed sources"
     else
       mapfile -t files < <(style_sources)
     fi
