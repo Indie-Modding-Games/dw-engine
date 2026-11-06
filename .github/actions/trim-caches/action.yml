@@ -1,0 +1,24 @@
+name: Delete the older caches
+description: >-
+  Deletes this branch's caches whose key starts with a prefix, except the one just saved, so each
+  compiler cache keeps one copy in the repository's cache space. The job needs actions: write.
+inputs:
+  prefix:
+    description: The keys' prefix
+    required: true
+  keep:
+    description: The key to keep
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PREFIX: ${{ inputs.prefix }}
+        KEEP: ${{ inputs.keep }}
+      run: |
+        gh cache list -R "$GITHUB_REPOSITORY" --key "$PREFIX" --ref "$GITHUB_REF" --limit 100 --json id,key \
+          --jq ".[] | select(.key != \"$KEEP\") | .id" | while read -r id; do
+          gh cache delete "$id" -R "$GITHUB_REPOSITORY" || true
+        done
