@@ -8,9 +8,12 @@
 
 ## Flujo de trabajo
 
-- **Una sola rama, `main`.** Cada cambio sale de una rama corta desde `main` (un tema por rama) y entra por un pull
-  request a `main`. La fusión es siempre *squash*: un commit por pull request, con el título del pull request como
-  mensaje (escríbelo como un commit). La rama se borra sola al fusionar.
+- **Una sola rama, `main`.** El trabajo sale de una rama desde `main` y entra por un pull request a `main`. La fusión
+  es siempre *squash*: un commit por pull request, con el título del pull request como mensaje (escríbelo como un
+  commit). La rama se borra sola al fusionar.
+- **Un pull request es un lote.** Cada pull request junta varias funciones y arreglos ya probados, no uno por arreglo
+  pequeño: cada fusión publica una versión de prueba, así que un pull request es una versión. Dentro de la rama los
+  commits pueden ser tantos como haga falta; la descripción del pull request lista lo que trae.
 - **Comprobaciones obligatorias** (`.github/workflows/ci.yml`), solo en pull requests y solo del commit más nuevo:
 
   | Comprobación | Qué mira | Tiempo con cachés |

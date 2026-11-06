@@ -124,6 +124,10 @@ en «Pruebas», para que quien ya probaba no pierda versiones. Pasar de «Prueba
 la versión instalada hasta que salga una estable más nueva. La pasarela de la beta ya contesta `releases/latest` (404
 mientras no hay estable), así que el canal no necesita nada más del servidor.
 
+El lanzador guarda la lista de versiones de la última búsqueda para la actualización que sigue. Si una descarga con esa
+lista falla de una forma que puede venir de una lista vieja (red, «no encontrado», `latest.json` sin actualización),
+vuelve a leer la lista una vez y repite antes de mostrar el error: un archivo subido otra vez tiene otra dirección.
+
 ### Actualizaciones automáticas
 
 En Ajustes → Actualizaciones hay tres interruptores, guardados en `settings.json`:
@@ -307,8 +311,10 @@ subcarpetas de `<carpeta>` (sus archivos y `notes.md`); se arranca el lanzador c
 ## Publicar una versión
 
 Nadie elige versiones ni lanza flujos para una versión de prueba: cada cambio que entra en `main` (un pull request
-fusionado) se compila y se publica solo como **prerelease**, el canal «Pruebas». Una versión de prueba ya probada se
-convierte en la **estable** a mano, sin compilar nada otra vez. Las piezas:
+fusionado) se compila y se publica solo como **prerelease**, el canal «Pruebas». Un pull request junta un lote de
+funciones y arreglos, así que cada versión de prueba es un lote
+([Flujo de trabajo](../../contribuir.md#flujo-de-trabajo)). Una versión de prueba ya probada se convierte en la
+**estable** a mano, sin compilar nada otra vez. Las piezas:
 `scripts/package_release.sh --platform <ordenador> --out <carpeta del repositorio>` compila el paquete (o toma uno con
 `--tarball`), lo firma y lo añade a `game-manifest.json` (uno por versión, con todos los ordenadores);
 `scripts/package/release_manifest.py launcher` escribe `latest.json`. El repositorio es público, así que los minutos de
@@ -423,8 +429,9 @@ scripts/release_local.sh --tag v0.1.0-beta.1 --notes-file notas.md --upload
 - Con `--upload` crea la versión **borrador** y prerelease `<tag>` en `Indie-Modding-Games/dw-engine` sobre el commit
   de `origin/main` (se niega si la copia tiene cambios o no está en `origin/main`), sube todo `dist/` (paquetes del
   juego y sus `.sig`, `game-manifest.json`, AppImage y su `.sig`, `.deb` y su `.sig`, instalador de Windows y su
-  `.sig`) y por último `latest.json`, con las URL de la API de los archivos ya subidos, como el flujo (la pasarela
-  las cambia por las suyas). Nada se publica: el responsable revisa el borrador y lo publica a mano.
+  `.sig`) y por último `latest.json`, con las URL de descarga de los archivos por versión y nombre, como el flujo (la
+  pasarela las cambia por las suyas). A diferencia del número de un archivo, esa URL sigue valiendo si el archivo se
+  vuelve a subir. Nada se publica: el responsable revisa el borrador y lo publica a mano.
 - Si la etiqueta ya existe, o hay una versión publicada con ese nombre, se niega siempre; un borrador con ese nombre
   solo se borra con `--replace-draft`. Sin `--upload` solo compila y comprueba (`latest.preview.json` lleva URL de
   ejemplo); `--upload --no-build` sube, tras comprobarlo otra vez, lo que dejó una ejecución anterior.

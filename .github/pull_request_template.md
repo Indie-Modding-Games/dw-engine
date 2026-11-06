@@ -1,7 +1,10 @@
 ## Qué cambia
 
-<!-- Una o dos frases. El título del pull request será el mensaje del commit en main: escríbelo en inglés,
-     en imperativo, como un commit. -->
+<!-- Un pull request es un lote y, al fusionarse, una versión de prueba: lista las funciones y los arreglos que
+     trae, uno por línea. El título será el mensaje del commit en main: escríbelo en inglés, en imperativo,
+     como un commit. -->
+
+-
 
 ## Cómo se ha probado
 
