@@ -60,6 +60,7 @@ const sidebar = [
     group("Motor (engine/)", folderItems("modulos/engine")),
     group("Juego (game/)", folderItems("modulos/game")),
     group("Aplicaciones (apps/)", folderItems("modulos/apps")),
+    group("Servicios (services/)", folderItems("modulos/services")),
     group("Otros", [
       pageItem("modulos/formats.md"),
       pageItem("modulos/shaders.md"),
@@ -133,7 +134,7 @@ export default {
       { text: "Empezar", link: "/getting-started/setup" },
       { text: "Arquitectura", link: "/architecture/overview" },
       { text: "Módulos", link: "/modulos/" },
-      { text: "Guías", link: "/guides/gate" },
+      { text: "Guías", link: "/guides/prueba-vertical" },
       { text: "Referencia", link: "/reference/" },
       { text: "Plan", link: "/roadmap" },
     ],

@@ -46,7 +46,7 @@ apps/game (MovieScreen) ──► engine/video ──► engine/assets (VFS por 
                         ──► engine/render (textura + QuadBatch + ScreenFade), engine/audio (voz en el bus de música)
 ```
 
-- **`engine/video`**, módulo nuevo de la capa de sistemas: `Y4mReader` (lee el Y4M frame a frame de un
+- **`engine/video`** ([su página](../modulos/engine/video.md)), módulo de la capa de sistemas: `Y4mReader` (lee el Y4M frame a frame de un
   `assets::FileReader`: nunca tiene el fichero entero, que son unos 300 MB), `toRgba` (la fórmula del MDEC, la de
   `formats/video` `toRgb`, reescrita en el motor porque el runtime no usa `formats`) y `MoviePlayer`: lee
   `movie.yaml`, da el frame RGBA que toca para un tiempo dado y dice cuándo acaba (frame final =
