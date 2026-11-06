@@ -113,7 +113,8 @@ Pendiente o conocido:
 
 - Una ventana no puede ser mayor que el escritorio usable: en una pantalla de 1920x1080 con paneles, los tamaños
   1920x1080 y 2560x1080 en ventana se saltan, y se cubren en un Xvfb con lavapipe (sin pantalla completa).
-- Del partner faltan el paso según su estado y las animaciones de emoción: esperan al cuidado (fase 3).
+- Del partner faltan el paso según su estado y las animaciones de emoción: esperan al cuidado (fase 3). Nota
+  (2026-11-06): ya están, con el cuidado de la fase 3 ([ficha del campo](../reference/campo.md)).
 - La salida de la casa del anciano queda en el borde de la imagen; con ratón se llega manteniendo el botón (el
   jugador sigue al puntero y, en el borde, sigue andando hacia fuera).
 - `dwx validate --engine --schemas content/schemas --with <contenido>/base content/packs/game` sobre una extracción nueva de

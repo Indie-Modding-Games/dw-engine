@@ -168,7 +168,7 @@ tabla, los que se abren por ruta, los alias y las discrepancias. La salida es de
 - Códigos de salida, como `dwx verify`: 0 versión conocida y tabla coherente, 1 versión desconocida o discrepancias,
   2 error.
 
-No escribe nada: la extracción a `content/base/` llega después.
+No escribe nada: sin `--list`, [`dwx extract`](extract.md) escribe el paquete base.
 
 ## Tests
 

@@ -61,3 +61,6 @@ Se abre una ventana, un mando o el teclado mueven algo en pantalla, se ejecuta u
 Hecha en Linux: cero warnings, cero avisos de clang-tidy, tests en verde y el juego corre en el host sin errores de
 validación. La CI corre en GitHub desde el primer push; falta confirmar el job de Windows y que el equipo decida la
 limpieza de los repositorios antiguos.
+
+Nota (2026-11-06): el job `windows` pasa en GitHub desde el 2026-10-20 y la fase se dio por cerrada ese día
+([plan](../roadmap.md)). La limpieza de los repositorios antiguos sigue esperando una decisión del equipo.

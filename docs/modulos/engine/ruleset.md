@@ -27,6 +27,7 @@ store->reload();                                                           // tr
 | `game_clock.hpp` | `ClockRules` (sección `clock`), `readClockRules`, `GameTime`, `ClockAdvance` y `GameClock` |
 | `ruleset_values.hpp` | `listValues`, `diffValues` (los valores que difieren entre dos rulesets), `listRulesets` y `inlineYaml` |
 | `section_file.hpp` | `patchSectionText` y `saveSection`: escriben una sección ajustada en su fichero, valor a valor, sin perder los comentarios |
+| `species_extra.hpp` | `SpeciesExtra` ([parches por especie](../../architecture/rulesets.md#parches-por-especie)): `readSpeciesExtra`, `applySpeciesExtra` y los `loadPatched…Table`, que dan las tablas de especies, crianza y evolución del disco con los parches del ruleset |
 | `messages.hpp` | Las plantillas de los mensajes de error del módulo |
 | `random.hpp` | `Random`: PCG32 con semilla, `below(n)` como `randomLimit` del original y `chance(p)`; `Random::original(estado)` tira con el generador del original (`rand()`), solo para el oráculo |
 

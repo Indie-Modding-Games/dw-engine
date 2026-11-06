@@ -42,4 +42,4 @@ Un fichero por sistema (`care.md`, `evolution.md`, `battle.md`…) con estas sec
 ## Cobertura del port
 
 [Cobertura del port](port-coverage.md): qué funciones del decomp tiene ya el motor, sistema por sistema, con lo que
-falta y los veinte huecos que antes notará el jugador. La genera `scripts/port_coverage.py`.
+falta y los huecos que antes notará el jugador. La genera `scripts/port_coverage.py`.

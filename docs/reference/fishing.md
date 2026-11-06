@@ -64,5 +64,6 @@ sección `fishing` del ruleset ([auditoría](../legal/auditoria-rulesets.md)).
 ## En el motor
 
 `game/fishing` (reglas, agua y caña), `session::FishingAdapter` (tablas, caña, cebo, capturas, récords y el contador
-del partner) y la pantalla de pesca de `apps/game`. La caña, el corcho y los peces se ven como marcadores hasta que se
-dibujen sus modelos; la escena de la serpiente espera al ejecutor de la historia.
+del partner) y la pantalla de pesca de `apps/game`, con su cámara. La caña, el corcho, el sedal, los peces, las ondas
+y las marcas de picada se dibujan como el original, y al sacar la serpiente la historia corre su escena (sección
+0x4e4 del `MAPHEAD`).

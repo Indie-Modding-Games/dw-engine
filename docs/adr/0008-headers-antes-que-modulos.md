@@ -1,7 +1,8 @@
 # 0008. Headers ahora, módulos de C++ más adelante
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-10-18
+- **Nota (2026-11-06):** aceptada porque el código ya la sigue: el código usa headers; no hay módulos de C++.
 
 ## Contexto
 

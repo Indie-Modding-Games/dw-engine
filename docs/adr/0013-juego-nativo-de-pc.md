@@ -1,7 +1,8 @@
 # 0013. Un juego nativo de PC
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-10-18
+- **Nota (2026-11-06):** aceptada porque el código ya la sigue, en el juego (`apps/game`).
 
 ## Contexto
 

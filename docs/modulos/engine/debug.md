@@ -25,8 +25,8 @@ La lógica sin widgets está en `src/tuning_model.hpp` (`TuningModel`, `buildTun
 
 ### Prueba manual
 
-1. `dwe-game --tuning` (o `º`/F1 y `/tuning` en la consola). La pestaña Ruleset enseña `original`, revisión 1, y las
-   secciones `care` y `clock` abiertas.
+1. `dwe-game --tuning` (o `º`/F1 y `/tuning` en la consola). La pestaña Ruleset enseña `original`, revisión 1, y sus
+   secciones (`care`, `clock`, `battle`…).
 2. En `care › hunger › window_minutes` escribir `45` y Enter: la revisión pasa a 2 y sale `care.hunger.window_minutes =
    45` en verde.
 3. En `clock › frames_per_minute` escribir `0` y Enter: sale en rojo `... frames_per_minute must be more than zero`, el
@@ -37,4 +37,4 @@ La lógica sin widgets está en `src/tuning_model.hpp` (`TuningModel`, `buildTun
 6. Cambiar `window_minutes` otra vez y *save to file*: `git diff content/packs/game/rules/original/care.yaml` enseña
    solo esa línea cambiada, con los comentarios intactos. Deshacerlo con `git checkout`.
 7. Pestaña Clock: pulsar `x3600` y ver correr las horas; desmarcar `running` y ver que se para; saltar a las 20:00.
-8. Pestaña Systems: las dos secciones, del ruleset `original`, con la revisión actual.
+8. Pestaña Systems: las secciones activas, todas del ruleset `original`, con la revisión actual.

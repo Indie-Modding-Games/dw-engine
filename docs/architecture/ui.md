@@ -444,8 +444,8 @@ cambia y lo que no:
   el original salvo que pidan otro; `route-skins.yaml` empieza ahora en el original y pasa al de prueba y al moderno.
 - Un mod que reemplaza `ui/ui_skin.yaml` sigue mandando sobre el del paquete `game`.
 
-El cambio llegó con el aspecto original completo (todas las pantallas que hay hoy; el cuadro de texto llegará con el
-intérprete de historia), como se pidió.
+El cambio llegó con el aspecto original completo (todas las pantallas que había; el cuadro de texto, `story_textbox`,
+llegó después con el intérprete de historia y también tiene su hoja en el aspecto original), como se pidió.
 
 **Lo que es de cada documento y lo que es del aspecto.** Un documento (`ui/<pantalla>/document.rml`) solo enlaza
 hojas de estructura, lo que no depende del aspecto: `ui/common/base.rcss` (los `display` por defecto, el tamaño del
@@ -792,8 +792,8 @@ avisos de botones en estas cajas, como en el original; la pregunta del modo bata
 batalla queda pendiente; la exploración libre no sale en las opciones de la portada (solo funciona en partida) ni la
 sincronía vertical (no cambia en marcha); el reinicio de la película por inactividad sigue como estaba.
 
-**Pendiente:** el cuadro de texto llega con el intérprete de historia, que lo trae; el aspecto lo dibujará entonces
-(`docs/plan/fase-4-contenido-y-modos.md`).
+El cuadro de texto (`ui/story_textbox`) llegó con el intérprete de historia y el aspecto original lo dibuja
+(`ui/skins/original/story_textbox`).
 
 ## Scripts
 
@@ -835,9 +835,10 @@ mando virtual: `attach playstation`, `tap dpad_down`, `press south`, `release so
 También acepta `--ui-skin original --text-font original` para revisar distribución, iconos y tipografía sin repetir
 la introducción de una partida. La demo publica el aspecto elegido a Lua, igual que el juego; sus datos ficticios
 no validan el estado ni las acciones del compañero en una partida real. La cabecera usa una fecha ficticia Year 1 / Day 1.
-`--ui-demo-player` abre directamente Player, sin pasar por el principal ni inyectar teclas. El fixture publica CODEX, nivel0, Bits0 y7h42m; el rango se consulta por nivel en la tabla de títulos del contenido local. Estos valores son de la demo, no de una partida. Esta entrada permite revisar por separado la reconstrucción de Player y documentar sus diferencias pendientes.
+`--ui-demo-player` abre directamente Player, sin pasar por el principal ni inyectar teclas. El fixture publica CODEX, nivel 0, Bits 0 y 7h42m; el rango se consulta por nivel en la tabla de títulos del contenido local. Estos valores son de la demo, no de una partida. Esta entrada permite revisar por separado la reconstrucción de Player y documentar sus diferencias pendientes.
 
-En el aspecto original, Player usa su marco y retrato3D independientes del campo. Tab abre las utilidades del motor en un panel separado; Ctrl regresa al perfil. La demo muestra Raised1 y0medallas como fixture; el juego deja esas cifras vacías hasta recibir datos reales. Chart consume [metadatos de posiciones, iconos y detalle](../formats/arbol-de-evolucion.md) de la copia local y las formas criadas de la historia. Su vista, detalle y transiciones están implementados y tienen escenarios de demo; queda pendiente el contraste final y la integración completa. Med./Card siguen pendientes. `--lang` permite comprobar explícitamente el idioma de la demo sin modificar las preferencias del jugador.
+En el aspecto original, Player usa su marco y retrato 3D independientes del campo. Tab abre las utilidades del motor en un panel separado; Ctrl regresa al perfil. La demo muestra Raised 1 y 0 medallas como fixture; el juego pone las de la partida. Chart consume [metadatos de posiciones, iconos y detalle](../formats/arbol-de-evolucion.md) de la copia local y las formas criadas de la historia. Su vista, detalle y transiciones están implementados, con escenarios de demo, y el menú de pausa lo abre en la partida. Med. y Card también están:
+las medallas y las cartas de la partida. `--lang` permite comprobar explícitamente el idioma de la demo sin modificar las preferencias del jugador.
 
 `--ui-demo-fishing` habilita la variante del menú con FISH y SLEEP a la vez para revisar sus siete entradas
 sin iniciar una partida ni desplazarse a una zona de pesca. La demo permite abrir ITEM desde el principal

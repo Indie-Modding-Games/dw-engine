@@ -129,6 +129,8 @@ Dos pruebas, las dos con el disco del usuario extraído (`DWE_CONTENT`):
 - Riesgo: que el ruleset `original` ate los sistemas al original. Se mitiga con las estrategias: lo que es lógica del
   original queda detrás de una interfaz que el ruleset elige.
 
-## Estado (2026-10-20)
+## Estado (2026-10-21)
 
-En curso. Las fichas de referencia de cuidado, evolución y batalla ya están escritas (fase 1).
+Cerrada. Las dos pruebas del [criterio de cierre](#cómo-se-comprueba) pasan con el disco extraído: la prueba sin
+ventana y la ruta `route-loop-keyboard`. Las fichas de referencia de cuidado, evolución y batalla se escribieron en
+la fase 1.

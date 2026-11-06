@@ -37,7 +37,7 @@ cobertura que lista lo que falte.
 | Textos | Por región, en su codificación | UTF-8, un fichero por idioma | Igual |
 | Eventos e historia | Bytecode de scripts | Lua (y el listado YAML) | Igual: texto Lua, sin bytecode (el sandbox solo carga texto) |
 | Música | VAB + SEQ | SF2 + MIDI | Igual, u Opus si es un remaster |
-| Efectos de sonido | VAB | WAV/FLAC | Opus |
+| Efectos de sonido | VAB | WAV | Opus |
 | Vídeos | STR (MDEC + XA) | Y4M + WAV + YAML (lo que escribe la extracción hoy) | **Pendiente** de decisión del usuario (propuesta: AV1/WebM; opciones en [Formatos](formats.md#vídeo)); no implementado |
 | Fuentes tipográficas | Bitmap | PNG + métricas, o TTF para idiomas nuevos | Atlas de glifos |
 
@@ -49,7 +49,7 @@ El motor monta un sistema de ficheros virtual con capas apiladas. Cada capa es u
 
 | Prioridad | Capa | Quién la hace |
 |---|---|---|
-| 4 (gana) | Usuario | El propio jugador: sus ajustes |
+| 4 (gana) | Usuario | El propio jugador: sus ajustes y sus imágenes propias (un paquete que escribe el lanzador) |
 | 3 | Mods | El equipo o la comunidad: historia, Digimon y modos nuevos |
 | 2 | Remaster | El equipo: texturas, fondos y música en HD |
 | 1 | Base | El extractor, a partir del disco del usuario |
@@ -70,19 +70,24 @@ El motor monta un sistema de ficheros virtual con capas apiladas. Cada capa es u
 - **Música:** un tema remasterizado sobrescribe el original por ID.
 
 Cómo se generan en tu máquina las imágenes mejoradas de la capa `remaster` (recetas, proveedores, caché, coste y
-revisión) está en la [tubería del remaster](remaster-pipeline.md); todavía es un diseño.
+revisión) está en la [tubería del remaster](remaster-pipeline.md); de ella solo existe el escalado de índices de
+`dwx upscale`, el resto todavía es un diseño. Las imágenes propias que pone el jugador desde el lanzador parten de las
+que escribe `dwx export-images` ([imágenes personalizadas](../guides/imagenes-personalizadas.md)).
 
 ## Herramienta `dwx`
 
 | Comando | Qué hace |
 |---|---|
-| `dwx extract <disco>` | Comprueba el SHA-1 del disco y genera la base en formato fuente |
+| `dwx extract <disco>` | Reconoce la versión del disco por su ejecutable y genera la base en formato fuente |
 | `dwx validate <paquete>` | Esquemas, referencias rotas y contratos (por ejemplo, las animaciones de cada Digimon), como mod; `--engine` para los del juego. Ver [abajo](#dwx-validate) |
 | `dwx cook <paquete> -o <carpeta>` | Fuente → cocinado, en otra carpeta |
 | `dwx pack <paquete> -o <fichero.pak>` | Genera un paquete distribuible en un solo fichero, con su manifiesto |
+| `dwx export-images <contenido> -o <carpeta>` | Escribe las imágenes que un jugador puede cambiar, con los nombres que usa un paquete de imágenes propias |
+| `dwx evolution-guide <contenido> <salida.md>` | Escribe los requisitos de evolución de cada especie como tablas Markdown |
+| `dwx upscale <receta> <paquete> -o <carpeta>` | Amplía las imágenes indexadas que elige una receta ([remaster](remaster-pipeline.md#lo-que-ya-hay-dwx-upscale)) |
 
-La primera vez que se abre el juego, el launcher ejecuta `extract` y `cook` sobre el disco del usuario y guarda el
-resultado en caché.
+Al instalar el disco, el launcher ejecuta `dwx extract` sobre la imagen del usuario y guarda la base en su carpeta de
+datos; el juego la monta tal cual, sin cocinar.
 
 ## Cocinar
 
@@ -204,4 +209,4 @@ scripts y películas) escriben el paquete base de lo extraído y lo pasan por `v
 | Base extraída (`content/base/`) y cocinada (`content/cooked/`) | Solo en la máquina de cada usuario; están en `.gitignore` |
 | Datos y Lua creados por el equipo | `content/packs/` en este repositorio |
 | Arte fuente del equipo (`.blend`, `.kra`, glTF, audio) | Repositorio de assets con Git LFS |
-| Fixtures para tests y CI | `content/fixtures/`, hechos por el equipo |
+| Fixtures para tests y CI | Los `tests/` de cada módulo (discos sintéticos en el código, `tests/fixtures/`) y `tests/mods/`, hechos por el equipo |

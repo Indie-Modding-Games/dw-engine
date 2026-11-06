@@ -136,10 +136,10 @@ textos, así que ningún documento extraído tiene un valor así. El test lo dej
 
 El motor no tiene lector de YAML a script, es decir, no hay ensamblador. El editor hace su propia conversión del listado
 a texto y de vuelta, y se compara con el YAML del motor. Los tests del motor comprueban las propiedades del listado en
-las que se apoya esa conversión. La ida y vuelta de un script editado, de listado a bytes, está pendiente del paquete de
-conversión de scripts a Lua (W3b en el plan de la fase 4; aún no existe). Por decisión del responsable de diseño
-(2026-10-21), ese paquete añade `formats::script::assembleScript`, con un test que comprueba que cada script del disco
-se vuelve a ensamblar idéntico, byte a byte.
+las que se apoya esa conversión. La conversión de scripts a Lua ya existe (`dwx convert-script` pasa un listado editado al módulo Lua que carga el
+juego), pero la ida y vuelta de un listado a bytes sigue pendiente: `formats::script::assembleScript`, que la decisión
+del responsable de diseño (2026-10-21) ponía en ese paquete con un test byte a byte de cada script del disco, todavía
+no existe.
 
 El comportamiento de las comillas descrito arriba se deja como está (decisión del 2026-10-21); el test lo deja fijado.
 
@@ -157,4 +157,4 @@ Falta:
 - Repetirlo con un paquete real que haya generado cada herramienta: un paquete de `dw1fe` con mapas, tabla y scripts
   editados, y uno del Studio con animaciones nuevas. Los tests de ida y vuelta prueban nuestro lado del contrato, pero
   no el código de las herramientas.
-- La ida y vuelta de un script editado hasta sus bytes, con `assembleScript` (paquete de conversión a Lua, aún no existe).
+- La ida y vuelta de un script editado hasta sus bytes, con `assembleScript` (todavía no existe).

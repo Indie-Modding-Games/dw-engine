@@ -30,7 +30,7 @@ features:
     details: Tareas concretas, de las rutas de autotest y la comprobación del entrenamiento a la traducción.
     link: /guides/prueba-vertical
   - title: Versiones y beta
-    details: Una versión de prueba por cada pull request fusionado, la estable promovida a mano y el lanzador con sus dos canales.
+    details: Una versión de prueba por cada fusión que cambia código, la estable promovida a mano y el lanzador con sus dos canales.
     link: /modulos/apps/launcher#publicar-una-versión
 ---
 

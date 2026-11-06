@@ -165,7 +165,7 @@ El estilo es el mismo en todo el repositorio: 2 espacios, nunca tabuladores, 100
 
 - **VS Code, en el contenedor (lo recomendado).** Abre la carpeta y elige "Reopen in Container". El contenedor usa
   la imagen de desarrollo, con las versiones fijadas de clang-format, clangd, StyLua, shfmt, luacheck y shellcheck,
-  así que lo que formatea al guardar es exactamente lo que comprueba el gate. Instala solas las extensiones.
+  así que lo que formatea al guardar es exactamente lo que comprueban la CI y el gate. Instala solas las extensiones.
 - **VS Code, fuera del contenedor.** Al abrir la carpeta, acepta las extensiones recomendadas
   (`.vscode/extensions.json`): clangd, StyLua, shell-format, ShellCheck, luacheck y EditorConfig. Las de clangd,
   StyLua, shell-format y ShellCheck descargan su propio programa; StyLua descarga la versión fijada. La de luacheck

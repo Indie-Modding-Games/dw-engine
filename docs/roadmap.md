@@ -7,11 +7,32 @@ están en las [especificaciones por fase](plan/index.md).
 
 | Fase | Nombre | Tamaño | Estado |
 |---|---|---|---|
-| 0 | Base | S | Casi cerrada: Linux y Windows pasan en la CI de GitHub (2026-10-20); falta la limpieza de repositorios |
-| 1 | Tubería de assets | M | Cerrada (2026-10-20): el disco US se extrae entero (0 pendientes, 0 parciales) y el motor carga el resultado, extraído y cocinado; falta decidir el formato cocinado de los vídeos |
-| 2 | Prueba vertical | M | En curso |
-| 3 | Núcleo jugable | L | En curso |
-| 4 | Contenido y modos | XL, continuo | Pendiente |
+| 0 | Base | S | Cerrada (2026-10-20): Linux y Windows pasan en la CI de GitHub; la limpieza de los repositorios antiguos espera una decisión del equipo |
+| 1 | Tubería de assets | M | Cerrada (2026-10-20): el disco US se extrae entero (0 pendientes, 0 parciales) y el motor carga el resultado, extraído y cocinado; el formato cocinado de los vídeos pasa a la fase 5 |
+| 2 | Prueba vertical | M | Cerrada (2026-10-20) |
+| 3 | Núcleo jugable | L | Cerrada (2026-10-21) |
+| 4 | El juego original entero | XL | En curso: la historia entera se juega, del título a los créditos, y la beta cerrada llega por el lanzador |
+| 5 | Mods, modos y mejoras | Continuo | Pendiente |
+
+## Dónde estamos (2026-11-06)
+
+- **La fase 4 es solo el juego original.** Desde el 2026-10-22 la fase 4 es el juego original (vanilla) entero y
+  jugable. Lo que no es del original pasa a la fase 5: modos de juego, el modo versus, la API de mods completa, la
+  historia reescrita y el formato cocinado de los vídeos.
+- **La historia, por etapas.** El port se entrega etapa a etapa detrás del candado de historia
+  (`content/packs/game/rules/original/story_lock.yaml`, opción `--story-stage`). Las nueve etapas están abiertas
+  (`active_stage: stage_9`) y las rutas `tests/autotest/route-full-01` a `route-full-09` juegan la historia entera
+  encadenadas ([prueba vertical](guides/prueba-vertical.md)).
+- **Cobertura del port:** 1339 de las 1438 funciones del original que hay que portar están portadas y 8 a medias.
+  Las 91 que faltan son el modo versus y la demo del título, de la fase 5 ([cobertura](reference/port-coverage.md)).
+- **Beta cerrada por el lanzador.** Cada fusión en `main` que cambia código publica una versión de prueba
+  (`<versión>-beta.<commits en main>`, canal «Pruebas» del lanzador, con la clave de la beta a través de la
+  [pasarela](modulos/services/beta-gateway.md)). Todavía no se ha promovido ninguna estable. Paquetes para Linux,
+  Windows y macOS ([lanzador](modulos/apps/launcher.md), [beta para Linux](guides/beta-linux.md),
+  [beta para Windows y macOS](guides/beta-windows-macos.md)). La primera ronda de testers empezó el 2026-11-06.
+- **Lo siguiente:** arreglar lo que encuentren los testers (reportes F12), cerrar los huecos que quedan
+  ([huecos que el jugador notará](reference/port-coverage.md#huecos-que-el-jugador-notará)), promover la primera
+  versión estable y cerrar la fase 4. Después, la fase 5.
 
 La fase 3 empieza con las reglas del original como primer ruleset; el diseño nuevo llega después como rulesets que
 aprueba el responsable de diseño ([ADR 0010](adr/0010-reglas-propias-con-rulesets.md),
@@ -116,13 +137,35 @@ responsable de diseño.
 **Hecho cuando:** el bucle de criar, entrenar, combatir y evolucionar se juega con el ruleset del original, y un
 autotest lo recorre con el reloj acelerado.
 
-## Fase 4 — Contenido y modos
+**Estado (2026-10-21): cerrada.** El criterio pasa con la prueba sin ventana y con la ruta del juego
+([cómo se comprueba](plan/fase-3-nucleo-jugable.md#cómo-se-comprueba)).
 
-- Historia: los scripts de eventos originales traducidos a Lua como punto de partida, y reescritos.
+## Fase 4 — El juego original entero
+
+- Historia: los scripts de eventos del disco convertidos a Lua al extraer, y el intérprete de historia que los
+  ejecuta (`game/story`).
+- Todos los sistemas del original que pide la historia: tiendas, torneos, pesca, minijuegos, muerte y renacer,
+  películas y final.
+- Entrega por etapas detrás del candado de historia, cada una con sus rutas de autotest.
+- Beta cerrada: lanzador, paquetes por sistema, versiones de prueba y estables.
+
+**Hecho cuando:** el juego original se juega entero, del título a los créditos, y hay una versión estable publicada.
+
+**Estado (2026-11-06): en curso.** Las nueve etapas están abiertas y la beta tiene versiones de prueba; falta lo de
+[Dónde estamos](#dónde-estamos-2026-11-06).
+
+Al principio la fase 4 era «Contenido y modos» ([especificación](plan/fase-4-contenido-y-modos.md)). De su fase 4a
+ya están en `main` la conversión de los scripts a Lua, los paquetes de mods por ID, la API de Lua versionada, los
+aspectos de la interfaz y los tests de ida y vuelta del editor de mapas externo. El resto pasó a la fase 5.
+
+## Fase 5 — Mods, modos y mejoras
+
+- Historia reescrita sobre los scripts convertidos.
 - Profundidad de personajes: árboles de diálogo, afinidad y misiones.
-- Framework de modos de juego, cada uno con su ruleset.
-- API de mods: paquetes que añaden o sobrescriben contenido por ID, y hooks de Lua.
-- Más Digimon y mapas, fondos HD.
+- Framework de modos de juego, cada uno con su ruleset, y el modo versus.
+- API de mods completa: paquetes que añaden o sobrescriben contenido por ID, y hooks de Lua.
+- Más especies y mapas, fondos HD.
+- El formato cocinado de los vídeos.
 - El editor de mapas es la herramienta externa de la organización (`dw1fe`), con tests de ida y vuelta de nuestro
   formato; el motor no tiene editor propio.
 

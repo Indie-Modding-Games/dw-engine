@@ -1,8 +1,9 @@
 # Guardar y cargar
 
 Estado: **diseño aprobado** (save-load-ui, tramo 1; decidido por el coordinador el 2026-10-22: las 11 preguntas,
-como se recomienda). La implementación empieza cuando la parte (b) de los warps de script esté en `main`, porque la
-partida que se guarda ya lleva su sección `story`.
+como se recomienda). Implementado: los tramos de §7 están en `main`. Empezó cuando la parte (b) de los warps de
+script entró en `main`, porque la partida que se guarda ya lleva su sección `story`; el gate que cita la página es el
+flujo de entonces.
 
 Este documento dice cómo guarda y carga el jugador: dónde puede guardar, cómo se elige la ranura, cómo se vuelve a la
 portada y cómo se carga desde ella. El formato del fichero, las migraciones y el autoguardado ya están en

@@ -396,7 +396,7 @@ isLinearPathBlocked = { status = "portado", dwe = "game/field/src/grid.cpp", wha
 setPartnerWaypoint = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Pone un punto en el rastro del compañero." }
 tickTamerWaypoints = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Guarda por dónde pasa el jugador para que el compañero lo siga." }
 tickPartnerWaypoints = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "El compañero sigue el rastro del jugador cuando no lo ve en línea recta." }
-isTileOffScreen = { status = "portado", dwe = "docs/reference/campo.md:157", what = "Dice si una casilla está fuera de la pantalla." }
+isTileOffScreen = { status = "portado", dwe = "docs/reference/campo.md:159", what = "Dice si una casilla está fuera de la pantalla." }
 entityMoveForward = { status = "portado", dwe = "docs/reference/campo.md:49", what = "Da un paso adelante a un personaje." }
 entityIsInEntity = { status = "portado", dwe = "game/field/src/npcs.cpp", note = "squaresOverlap", what = "Dice si dos personajes se tocan." }
 isOffScreen = { status = "no-aplica", note = "cálculo de pantalla del original", what = "Dice si un punto está fuera de la pantalla." }
@@ -1094,7 +1094,7 @@ checkTournamentMedalConditions = { status = "portado", dwe = "game/tournament/sr
 handleBattleEndBox = { status = "portado", dwe = "apps/screens/src/battle_view.cpp:239", note = "falta el sonido de la cuenta (docs/modulos/game/battle.md)", what = "Cuadro final del combate: objetos, lesión, técnicas, stats y dinero." }
 BTL_tickEnemyAI = { status = "portado", what = "IA de los rivales: elige técnica, se acerca y ataca.", note = "el rival con el cuerpo (nodo 1) fuera de la caja central de 200 x 160 es prudente" }
 BTL_handleBattleIntro = { status = "portado", what = "Entrada al combate: quién se une, quién huye y el rótulo de inicio.", note = "se unen por la tabla de huida; los demás en pantalla huyen y el rótulo espera; los de fuera de pantalla dejan el mapa" }
-tamerTickBattleLostLife = { status = "parcial", note = "la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:107)", what = "Escena de perder una vida en combate." }
-tamerTickSicknessLostLife = { status = "parcial", note = "la restauración tras la vida perdida por enfermedad es un hueco (docs/modulos/game/battle.md:107)", what = "Escena de perder una vida por enfermedad." }
+tamerTickBattleLostLife = { status = "parcial", note = "la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:120)", what = "Escena de perder una vida en combate." }
+tamerTickSicknessLostLife = { status = "parcial", note = "la restauración tras la vida perdida por enfermedad es un hueco (docs/modulos/game/battle.md:120)", what = "Escena de perder una vida por enfermedad." }
 handleChips = { status = "portado", dwe = "apps/session/src/inventory_adapter.cpp", note = "el piloto automático pide la sección 0x4dd de MAPHEAD (InventoryAdapter::takeScriptSection)", what = "Usa un chip: sube un stat y lanza su sección de guion." }
-TRN_advanceTrainingTime = { status = "parcial", note = "el original usa un año de 31 días al entrenar; el motor, el del reloj (30). Decidido así (partner.md:187)", what = "Avanza la hora y el día tras una sesión de entrenamiento." }
+TRN_advanceTrainingTime = { status = "parcial", note = "el original usa un año de 31 días al entrenar; el motor, el del reloj (30). Decidido así (partner.md:188)", what = "Avanza la hora y el día tras una sesión de entrenamiento." }

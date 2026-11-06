@@ -60,8 +60,9 @@ apps/game (MovieScreen) ──► engine/video ──► engine/assets (VFS por 
   saltan frames (como el original, que nunca espera al vídeo).
 - **`MovieScreen`** (`apps/game`): crea la textura de 320 × 176 una vez y la actualiza con `queueTextureUpdate`
   cada frame nuevo, la dibuja centrada en 320 × 240 con bandas negras (la película tapa la escena y la UI), toca el
-  WAV en el bus de música y salta con la acción `pause` (Start del mando) o `menu` (Tab) si la película es `skippable`. Parar y
-  reanudar la música llega con la música (VAN-01 tramo 3), y el fundido desde negro tras la película, a la fase 5.
+  WAV en el bus de música y salta con la acción `pause` (Start del mando) o `menu` (Tab) si la película es `skippable`. La música ya
+  existe (VAN-01 tramo 3), pero parar y reanudarla alrededor de la película todavía no está (`game.cpp` solo lo
+  registra en el log); el fundido desde negro tras la película va a la fase 5.
 - **Película que falta** (paquete sin `movie/`): aviso en el log y se sigue el flujo, como `CdSearchFile` fallido
   en US.
 - **Estados de la app** (`game.cpp`): arranque → OP1 → portada; pantalla «Press Start» `landing_idle_frames` ticks
@@ -103,7 +104,8 @@ sobre 2652 frames en el fichero) va a la fase 5.
   `video.ivf` (AV1 con libaom, BSD-2-Clause + AOMedia Patent License 1.0) y `audio.opus` (libopusenc), deja de
   escribir Y4M y WAV (−1,1 GB por extracción), sube `ExtractorVersion`; el motor decodifica con dav1d (BSD-2-Clause
   + ISC), o con libaom si dav1d no compila en `windows-cross`. IVF en vez de WebM: sin dependencia más.
-- La pantalla «pulsa Start» del original (`runLandingScreen`) y la versión EU (otra tabla y otra posición).
+- La versión EU (otra tabla y otra posición). La pantalla «pulsa Start» del original (`runLandingScreen`) ya está
+  (`title_landing`, arriba).
 
 ## Decisiones (coordinador, 2026-10-22)
 

@@ -25,8 +25,8 @@ ve el escenario, que una partida sin ventana es la misma con la misma semilla, q
 detiene la simulación, y el escenario `care` (sus métricas, que la política del cuidador cambia las crianzas y los
 parámetros que rechaza). `tests/loop_tests.cpp` es la prueba del criterio de cierre de la fase 3 (ver abajo). Usan un paquete base de sustitución que CMake escribe en la carpeta del build: tablas vacías,
 salvo `digimon` y `raise`, con unas especies inventadas (`tests/stand-in/`) para `care` y las formas que nombra la
-sección `evolution`, `moves`, con técnicas inventadas con los ids que nombra la sección `battle`, y `evolution`, sin
-filas; y el paquete `game` del árbol de fuentes. `sim.smoke` ejecuta `dwe-sim --scenario clock --runs 10` y pide que ninguna partida se desvíe;
+sección `evolution`, `moves`, con técnicas inventadas con los ids que nombra la sección `battle`, `items`, con objetos inventados para los
+sistemas de la partida, y `evolution`, sin filas; y el paquete `game` del árbol de fuentes. `sim.smoke` ejecuta `dwe-sim --scenario clock --runs 10` y pide que ninguna partida se desvíe;
 `sim.care.smoke`, cuatro crianzas de una semana con `care`.
 
 ### El bucle de la fase 3

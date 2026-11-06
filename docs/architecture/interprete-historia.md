@@ -2,7 +2,9 @@
 
 Estado: **diseño aprobado por el coordinador (2026-10-21).** Las decisiones están en
 [Decisiones](#decisiones-2026-10-21); las preguntas, con su opción elegida, al final ([Q1–Q14](#preguntas-abiertas)).
-Los incrementos S0–S7 se integran en orden, cada uno como un paquete con revisión y gate.
+Los incrementos S0–S7 se integraron en orden, cada uno como un paquete con revisión. **Hoy está en `main`**
+(`formats/script`, `game/story`, `apps/session`): el juego corre la historia del disco con este intérprete. Las ramas
+y el gate que cita la página son el flujo de entonces; ahora todo entra en `main` por pull request.
 
 El intérprete de historia tiene dos mitades:
 
@@ -683,6 +685,9 @@ la traza). La comparación alinea por **fotograma desde el primer control del ju
 sección, cambiar disparador, warp), porque las entradas del jugador no caen en el mismo fotograma: se reproduce la
 secuencia de pulsaciones de la traza de referencia como ruta de autotest. Una diferencia se informa con el primer
 evento distinto y su localizador.
+
+Nota (2026-11-06): `--story-trace` no llegó a existir. La traza que hay es `--trace <fichero>`, con las posiciones,
+los combates y los botones de cada tick ([traza de estado](../guides/traza-de-estado.md)).
 
 ## 7. Riesgos
 

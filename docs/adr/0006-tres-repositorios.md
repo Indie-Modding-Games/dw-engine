@@ -2,6 +2,7 @@
 
 - **Estado:** Propuesta
 - **Fecha:** 2026-10-18
+- **Nota (2026-11-06):** el repositorio de código se llama `dw-engine`.
 
 ## Contexto
 

@@ -2,6 +2,10 @@
 
 > Fecha: 2026-10-21. Paquete `p4-ruleset-audit`, fase A (solo clasificación: no cambia ningún valor ni código).
 > Completa la [política legal de assets](assets.md).
+>
+> Estado (2026-11-06): la [fase B](#plan-de-la-fase-b) sigue pendiente. Las tablas (b) de la lista siguen en los
+> rulesets del paquete del juego (por ejemplo `life.yaml: rebirth.babies`, `evolution.yaml: baby_targets`,
+> `battle.yaml: moves.buffs`); `dwx` aún no las lee del disco.
 
 ## Para qué sirve este documento
 

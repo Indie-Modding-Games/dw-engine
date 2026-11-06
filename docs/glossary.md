@@ -16,12 +16,12 @@ Términos del proyecto y su nombre en el código. Si un término no está aquí,
 | Ficha de referencia | Resumen de cómo funcionaba un sistema del original ([reference/](reference/index.md)) | `docs/reference/` |
 | Fuente (estado) | Asset en formato abierto y editable | — |
 | ID de asset | Nombre estable de un asset, como `map/file_city_01/background` | — |
-| Modo de juego | Combinación de sistemas con sus propias reglas | `dwe::game::modes` |
-| Paquete | Una capa de contenido con su manifiesto | `dwe::assets::Pack` |
+| Modo de juego | Combinación de sistemas con sus propias reglas (fase 5) | — |
+| Paquete | Una capa de contenido con su manifiesto (`pack.yaml`) | `dwe::assets::PackManifest` |
 | Partner | El Digimon que cría el jugador | `dwe::game::partner` |
 | Pilar de diseño | Frase del GDD que dice qué de la esencia del juego no se toca | — |
 | Remaster | La capa de contenido HD del equipo | — |
-| Ruleset | Conjunto de reglas y valores del juego, como datos ([ADR 0010](adr/0010-reglas-propias-con-rulesets.md)) | `content/packs/` |
+| Ruleset | Conjunto de reglas y valores del juego, como datos ([ADR 0010](adr/0010-reglas-propias-con-rulesets.md)) | `content/packs/game/rules/<id>/` |
 | Tamer | El personaje que controla el jugador | — |
 | VFS | Sistema de ficheros virtual que apila los paquetes | `dwe::assets` |
 | Warp | El punto de un mapa que lleva a otro | `dwe::game::field` |

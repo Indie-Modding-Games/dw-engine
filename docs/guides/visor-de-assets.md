@@ -45,8 +45,9 @@ errores (un `pack.yaml` mal escrito, una dependencia que falta) sale con el mens
 
 ## Límites
 
-- **Solo texturas PNG y KTX2.** Los modelos (`.glb`) y los mapas necesitan el camino de render 3D, que llega en la fase 2
-  ([plan](../roadmap.md)). Hasta entonces el visor los lista y dice qué paquete los da, sin vista previa.
+- **Solo texturas PNG y KTX2.** Los modelos (`.glb`) y los mapas necesitan el camino de render 3D, que este visor no
+  usa: los lista y dice qué paquete los da, sin vista previa. Para verlos están `--model-viewer` y `--map <id>`
+  ([prueba vertical](prueba-vertical.md#jugar)).
 - El motor decodifica los PNG con su propio código (`assets::decodePng`), no con `formats/`, que solo usa `dwx`
   ([reglas de dependencias](../architecture/dependency-rules.md)). No acepta imágenes de más de 16384 píxeles de lado.
 - El visor lee, decodifica y sube la textura al elegirla, en el mismo frame. Con texturas del tamaño de las del

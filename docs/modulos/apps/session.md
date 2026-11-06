@@ -73,7 +73,7 @@ Las secciones del ruleset de la partida (en `content/packs/game/rules/original/`
   cabecera (`tamer`, `nickname`) y que el cuadro de texto de la historia usa para `{tamer}` y `{partner}`.
 - `tamer` ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_tamer.schema.json)): los límites del nivel de domador y los
   niveles que da una evolución cuando sale su probabilidad (`evolution_level_gain`, `evl.c: EVL_applyEvolution`).
-- `story` ([esquema](../../content/schemas/ruleset_story.schema.json)): `ticks_per_frame`, los ticks del motor por
+- `story` ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_story.schema.json)): `ticks_per_frame`, los ticks del motor por
   fotograma de la historia del original (3: 60 Hz contra 20 fotogramas por segundo), y `variable_max`, el tope de una
   variable de la historia (255), y los números del flujo de un script que usa el runner: la variable y el valor de
   «jugador quieto» (0 y 3), el disparador de girarse en una charla (44) y la variable del nombre del mapa con sus tres
@@ -145,12 +145,12 @@ historia los `sets_flags` del warp tomado.
   vuelve a lanzar sus secciones hasta que el jugador sale de ella. Solo se cierran los cambios de mapa **nuevos**: una
   partida guardada más allá de la etapa no se rompe, el jugador se queda donde está y sale por cualquier salida hacia
   un mapa abierto. Un ruleset sin la sección no cierra nada. Abrir una etapa más es solo editar datos. La Etapa 1
-  sale de la verificación E1-01 en el decomp. La activa es la 2 (la jungla y el Drill Tunnel), liberada con todas
-  sus rutas en PASS con el candado puesto (`docs/guides/prueba-vertical.md`): sus salidas a etapas posteriores
-  (trop02 a dgha01, trop03 a gcan01, tunn03 y tunn03_2 a leom02, mayo02_2 a miha00) y los cambios de mapa de script
-  hacia ellas (el viaje de `species_ab` de trop06 a koda00, mayo11 y tunn08 a miha04b) no ocurren. Las etapas 3 a 9
-  ya tienen sus mapas (de los scripts extraídos y las salidas de los mapas) para probarlas con `--story-stage`,
-  aunque `active_stage` no las alcance.
+  sale de la verificación E1-01 en el decomp. La activa es la 9 (el post-juego): las nueve etapas están liberadas,
+  cada una con sus rutas en PASS bajo su propio candado ([prueba vertical](../../guides/prueba-vertical.md)), y con
+  ella están abiertos todos los mapas. `--story-stage` sigue sirviendo para probar la frontera de una etapa: con
+  `stage_2` (la jungla y el Drill Tunnel) sus salidas a etapas posteriores (trop02 a dgha01, trop03 a gcan01, tunn03
+  y tunn03_2 a leom02, mayo02_2 a miha00) y los cambios de mapa de script hacia ellas (el viaje de `species_ab` de
+  trop06 a koda00, mayo11 y tunn08 a miha04b) no ocurren (`tests/autotest/route-etapa2-lock.yaml`).
   La casa del anciano crecida (room10, la casilla 52 de twna02-13 con los disparadores 220 o 214 o prosperidad 50) es
   de la Etapa 5, no de la 8.
 
@@ -246,8 +246,9 @@ una vez (los tests le dan las suyas). Registra las comprobaciones de las dos sec
 - **Acabar** (`finish(session, BattleResult)`): HP y MP del final (`setStats`; tras perder, ya con lo que devuelve
   `battle.consequences.defeat_restore`), las subidas por `addStatGains`, y el cuidado, la herida, las vidas y los
   minutos como los da la batalla por `Partner::applyBattle` (con la cuenta horaria del partner si la batalla acaba una
-  hora: `tamer.c: advanceBattleTime`); las técnicas nuevas, los bits y los objetos ganados a la bolsa (los que no caben quedan en `dropsLeft`) y, en una
-  derrota, las pilas perdidas por `InventoryAdapter::loseOnDefeat`. Pide los autoguardados `BattleEnd`, `RecruitJoin`
+  hora: `tamer.c: advanceBattleTime`); las técnicas nuevas y los bits a la bolsa; los objetos que dejan los enemigos no van a la bolsa: salen en
+  `BattleAftermath::drops` y el campo los pone en el suelo para recogerlos (`item.c: spawnDroppedItems`). En una
+  derrota (no en un torneo), las pilas perdidas por `InventoryAdapter::loseOnDefeat`. Pide los autoguardados `BattleEnd`, `RecruitJoin`
   (si se unió el recluta: `recruitJoined`) y `TournamentResult` (torneo o arena).
 - **Lanzar un objeto** (`throwItem(combate, objeto)`): el domador lanza un objeto de la bolsa al compañero. Lo usa
   `InventoryAdapter::useInBattle` con `UseContext::Battle` (solo los de `item_color` 1 o 2: `inventory.c:
@@ -265,7 +266,7 @@ La tienda que abre la historia (`script_interp.c: CALL_ROUTINE 8` → `script_co
 `InventoryAdapter::buy` (el surtido son los triggers `0x180 + i` de la historia) y vende con
 `game::inventory::sell`. Las frases del tendero son las de su sección de MAPHEAD (`getShopkeeperLine`,
 `resolveMapHeadEntry`), leídas del listado `script/maphead`. La sección `shop`
-([esquema](../../content/schemas/ruleset_shop.schema.json)) es opcional: sin ella no hay tiendas. La tienda de
+([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_shop.schema.json)) es opcional: sin ella no hay tiendas. La tienda de
 reciclaje (`script_menu.c: openRecycleShop`, con el trigger `recycle_trigger` o `ShopVisit::recycle`) vende lo que
 quitaron las derrotas (`handleItemLoss`: los objetos de `recyclable`, hasta `recycle_max` de cada uno, que llegan por
 `InventoryAdapter::setLossListener`) y no compra; su surtido se guarda en la sección `shop` de la partida.
@@ -278,7 +279,7 @@ mientras `visit()` siga abierta; la pantalla `item_keeper` del juego (`apps/game
 el jugador se despide. `keptRows` y `bagRows` son las listas de `itemKeeperFillItemList` y `move` pasa uno, diez o la
 pila (`keeperMoveOne`, `keeperMoveTen`, `keeperMoveStack`) entre lo guardado y la bolsa. Lo guardado (`SCRIPT_STATE`
 0x54 + objeto en el original) va en la sección `item_keeper` de la partida, por id de objeto. La sección
-`item_keeper` del ruleset ([esquema](../../content/schemas/ruleset_item_keeper.schema.json)) da la sección de MAPHEAD
+`item_keeper` del ruleset ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_item_keeper.schema.json)) da la sección de MAPHEAD
 con las frases, el máximo de cada objeto y el paso del botón alternativo; sin ella la visita se cierra al instante.
 
 ### Tirar un objeto (`DiscardMenu`)
@@ -290,7 +291,7 @@ se elige lo que tiene `droppable`); si no hay nada, pone el disparador 3 y 255 e
 estado 0 del original. `choose()` escribe el número del objeto en la 254 y quita el disparador 3 (`tickSingleCardShop`
 con «Yes»); `cancel()` solo cierra si el disparador 3 está puesto (`tickItemMenu`) y escribe 255. El menú no saca nada
 de la bolsa: lo hace el guion después (rutinas 12 y 13). La sección `discard_menu` del ruleset
-([esquema](../../content/schemas/ruleset_discard_menu.schema.json)) da la sección de MAPHEAD con «Is it OK?» (1240,
+([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_discard_menu.schema.json)) da la sección de MAPHEAD con «Is it OK?» (1240,
 línea 0), el disparador, la variable y el valor de «ninguno»; sin ella la rutina se cierra al momento. La pantalla
 `discard_menu` del juego (`apps/game: DiscardScreen`) lo enseña.
 
@@ -306,7 +307,7 @@ abajo del todo), `choose` escribe la elegida en la 249 y `playChosen` la toca si
 principio (`playBGM(ACTIVE_BGM_FONT)`, estado 2). La fuente y la pista de cada entrada (`MAIN_D_801303B8`) vienen de
 `font` y `track` en `bgm_tracks` de `data/music.yaml`; un paquete extraído antes las busca en `used_by.jukebox` de
 cada `music/NNN/font_meta.yaml`. La música la da `SessionMusic` por la interfaz `JukeboxMusic`. La sección `jukebox`
-del ruleset ([esquema](../../content/schemas/ruleset_jukebox.schema.json)) da la sección de MAPHEAD con las frases
+del ruleset ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_jukebox.schema.json)) da la sección de MAPHEAD con las frases
 (0x4d6: saludo 3, pregunta 0, respuesta 2, despedida 1), el disparador, las entradas bloqueadas, la variable y el valor
 de «ninguna»; sin ella la rutina se cierra al momento. La pantalla `jukebox` del juego (`apps/game: JukeboxScreen`) lo
 enseña.
@@ -320,7 +321,7 @@ el otro, si la bolsa lo tiene (si no, va en rojo) y si ese cambio ya se hizo (la
 objeto ofrecido en la 249 (lo pide la frase «{item:pstat=249}») o falla si la bolsa no lo tiene; `trade()` es el estado
 5: primero da el objeto nuevo y, si cabe, quita el ofrecido y pone el disparador del cambio (`setMojyaItemTradedTrigger`:
 5 + 3 × tabla + fila, y el 14 cuando están los nueve); si no cabe no cambia nada («Too many Items.»). La sección
-`item_trader` del ruleset ([esquema](../../content/schemas/ruleset_item_trader.schema.json)) da la sección de MAPHEAD
+`item_trader` del ruleset ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_item_trader.schema.json)) da la sección de MAPHEAD
 (1238, líneas 8 a 14), la variable, los disparadores, el sonido de rechazo y las tablas (`MOJYAMON_ITEMS_GIVE` y
 `MOJYAMON_ITEMS_GET`); sin ella la rutina se cierra al momento. La pantalla `trade_menu` del juego
 (`apps/game: TradeScreen`) lo enseña.
@@ -334,7 +335,7 @@ van en rojo). `pick(fila)` falla en una fila que el dinero no paga (suena el rec
 escribe el mapa y la entrada del destino en las variables 247 y 248, cobra el precio y devuelve la sección de MAPHEAD
 (0x4e3, «Hold on tight!» y el `teleport` de esas variables) donde sigue el guion: la rutina 10 acaba con `TaskJump`
 (`StoryScenes::screenClosed(salto)`) en vez de seguir tras su llamada. La sección `bird_transport` del ruleset
-([esquema](../../content/schemas/ruleset_bird_transport.schema.json)) da las frases (MAPHEAD 1238: 4 saludo, 5
+([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_bird_transport.schema.json)) da las frases (MAPHEAD 1238: 4 saludo, 5
 despedida, 6 «Are you sure?», 7 sí o no; la del cuadro de dinero, la 6 de 1220), las variables, la sección del viaje,
 el disparador que impide cancelar el sí o no (49), el sonido de rechazo (0, 11) y los seis destinos de
 `BIRDRA_TRANSPORT_TARGETS` (mapa, entrada, disparador y precio); sin ella la rutina se cierra al momento. La pantalla
@@ -351,7 +352,7 @@ comprar cartas, `CardBuy`; si no, un sobre: tres cartas, una por estado, cada un
 hablante (`rollCard`, `showCardTextbox`; la variable 249 lleva la especie de la carta, que la frase nombra). Las seis
 cartas del día (`hasAnyCardToBuy`, la ranura vendida a 0xFF) se sortean en la partida nueva y en cada día nuevo, de la
 1 a la 64 sin la 4 (pueden repetirse). `buy` cobra el precio por rareza (`CARD_PRICES`) y suma una copia; `sell` paga la
-mitad por copia. La sección `card_shop` del ruleset ([esquema](../../content/schemas/ruleset_card_shop.schema.json)) da
+mitad por copia. La sección `card_shop` del ruleset ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_card_shop.schema.json)) da
 el sorteo, el divisor de venta, las frases de MAPHEAD (1235 y «Is it OK?» de 1240), el sonido de fallo (0, 11) y el del
 trato (0, 23) solo en gias06b (`playShopSoundOnlyInSavannah`); el estado (las seis cartas) va en la sección `card_shop`
 de la partida. La pantalla `card_shop` del juego (`apps/game: CardShopScreen`) enseña las listas.
@@ -362,7 +363,7 @@ El intercambio del Shogun de gkyo02 (`script_interp.c: CALL_ROUTINE 1` → `shop
 jugador da cartas por puntos de mérito (el `merit` del registro del jugador) y toma los objetos que tienen precio en
 méritos (`shopFillMeritItemList`). `giveCard` quita una copia y suma su `meritValue` hasta 9999; `takeItem` cobra el
 precio y mete uno en la bolsa, solo si se puede tomar. La sección `merit_shop` del ruleset
-([esquema](../../content/schemas/ruleset_merit_shop.schema.json)) da las frases (MAPHEAD 1236: saludo 0, opciones 1,
+([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_merit_shop.schema.json)) da las frases (MAPHEAD 1236: saludo 0, opciones 1,
 sí o no de la carta 2 y del objeto 3, sobre la lista de cartas 5 y de objetos 6, lo que vale la carta desde la 7 más
 la rareza), la línea de la caja de puntos (7 de la sección 1220), el tope (9999), el disparador que impide cancelar
 las opciones (49), el sonido de fallo (0, 11) y el del trato (0, 23) solo en gias06b; sin ella la rutina se cierra al
@@ -438,7 +439,7 @@ al revés), al espacio del mundo.
 | Cargas del jefe final y del final (rutinas 51 y 52, mgen99 y guion 192): leen `BOSS_EFE.TMD`, el overlay EAB y su banco de sonidos 0x15 (51) o la imagen del final, el overlay ENDI y el banco 0x14 (52); la 51 carga además el `VBALL` de la especie 0x73 (el jefe) en la ranura 5. En el motor quedan los bancos: el de la ranura 8 vuelve al del mapa cuando el campo carga otro mapa o se gana un combate (`BTL_handleVictorySequence` recarga `getMapSoundId`), y el de la 5 sigue hasta el próximo combate. El banco 0x15 solo tiene los sonidos 0–3 (notas 60–63 de `ESALL` entrada 21): el `play_sound(8, 6)` de mgen99 antes del combate con el jefe (0x0602) no suena tampoco en el original; el de después (0x08d8) y los 7 y 8 suenan con el banco del mapa (17) que la victoria recarga; las dos siguen en el mismo fotograma | `script_interp.c` (`call_routine` 0x33, 0x34), `sound_async.c: loadMapSounds2`, `readVBALLSection`, `map.c: loadMap`, `battle_main.c: BTL_handleVictorySequence` | `story_routines/routine_boss_and_ending_loads.cpp` (`loadRoutineSounds`, `loadRoutineSpeciesBank`, `dropRoutineSoundsOnNewMap`), `GameSession::useSceneSounds`, `useSpeciesSounds`, `endBattleSounds` | `routines 51 and 52 load ...` (`story_props_tests.cpp`); `a won battle gives slot 8 back ...`, `a slot from 5 to 7 takes the vball entry ...` (`session_sound_tests.cpp`); ruta temporal en mgen99: tras ganar suenan 6, 7, 8, 12, 13 y 14 del banco 17 y el jefe toca `playSound(5, 54)` de su `VBALL` | Igual (bancos y notas del decomp y del disco); Suposición: sin medir en vivo (no hay estado guardado en mgen99) |
 | Carga del jefe final (rutina 40, mgen99, justo después de que el guion ponga al jefe, especie 115, en el hueco 0): pide la carga sobre el personaje de id 5 (el primer NPC del mapa, el jefe) y sigue la sección en el mismo fotograma; la app lo quita de lo dibujado, pone los anillos y el zumbido hasta que la rutina de compañero 8 lo trae | `script_interp.c` (`call_routine` 0x28), `eab.c: EAB_startBuildup`, `EAB_tickBuildup`, `EAB_addBuildupRing`, `EAB_tickBuildupRing`, `EAB_setModelColor` | `story_routines/routine_boss_buildup.cpp` (`BossBuildupStarted`); `game/field`: `BossArrival`; `apps/game`: `BossArrivalScene` | `routine 40 starts the final boss's charge ...` (`story_props_tests.cpp`), `boss_arrival_tests.cpp` | Suposición: sin medir en el original (no hay estado guardado cerca del jefe; en la cola de medidas); los números salen del decomp |
 | Llegada del jefe final (rutina de compañero 8, mgen99 tras la rutina 40): la sesión pide la escena `BossAppears` a la app y la sección espera la sincronía (`wait_for_entity(201)`); la app juega 340 fotogramas (negro, el jefe solo con la cámara girando, anillos, partículas, sonidos 1, 2 y 3) y la da por acabada. De 50 a 290 el jefe pasa de alambre a sólido (`ENTITY1_WIREFRAME_TOTAL` = 16 − 16·sen, `renderWireframed`: de las caras de cada objeto, las de la parte sólida con textura y la luz de los modelos, las otras en líneas de un gris al azar de 0x37 a 0xFE); la animación 0x33 vuelve a empezar cada vez que llega a su último cuadro; luego empieza el combate contra el personaje 5 | la rutina de compañero 8 de `partner.c` y el estado 18 del jugador, `eab.c: EAB_tick`, `EAB_tickSpawn` | `PartnerScenePort` (`PartnerScene::BossAppears`); `apps/game`: `StorySceneGlue`, `BossArrivalScene` | `boss_arrival_tests.cpp`; ruta `_work/routes-e2/boss-arrival/route-mgen99.yaml` (llegada y combate) | Suposición: sin medir (no hay estado guardado cerca del jefe); falta los 9 destellos de `EFECreateFlash` del primer fotograma |
-| Empezar el final (rutina 53, guion 192): borra la sincronía de escena, empieza la escena final del jugador (estado 0x10 del jugador, overlay ENDI) y retiene la sección; desde el fotograma siguiente, cuando la escena pone la sincronía, la partida acaba (`MAIN_STATE` 3): la app la cierra, pone la película del final y vuelve a la portada | `script_interp.c` (`call_routine` 0x35, `tickScript` caso 53), `main.c: main` | `story_routines/routine_start_ending.cpp`, `StoryScenes::takeGameEnded`; `apps/game`: `PlaySession` (`MovieMoment::Ending`) | `routine 53 waits for the ending scene's sync ...` (`story_props_tests.cpp`); sonda con el guion 192 en la entrada de tend01 (`_work/routes-e2/routines-pool2/tend01-ending/`) | Parcial: la escena ENDI no existe y acaba al momento (rutina de compañero 6); la rutina 54 (guardado de fin de juego) sigue sin portar |
+| Empezar el final (rutina 53, guion 192): borra la sincronía de escena, empieza la escena final del jugador (estado 0x10 del jugador, overlay ENDI) y retiene la sección; desde el fotograma siguiente, cuando la escena pone la sincronía, la partida acaba (`MAIN_STATE` 3): la app la cierra, pone la película del final y vuelve a la portada | `script_interp.c` (`call_routine` 0x35, `tickScript` caso 53), `main.c: main` | `story_routines/routine_start_ending.cpp`, `StoryScenes::takeGameEnded`; `apps/game`: `PlaySession` (`MovieMoment::Ending`) | `routine 53 waits for the ending scene's sync ...` (`story_props_tests.cpp`); sonda con el guion 192 en la entrada de tend01 (`_work/routes-e2/routines-pool2/tend01-ending/`) | Igual: la escena final (rutina de compañero 6) la juega `EndingScene` en `apps/game` ([juego](game.md)) y la rutina 54, el guardado de fin de juego, está en `story_routines/routine_clear_save.cpp` |
 | El temblor de la escena del fuego (rutina 34): 210 fotogramas a 20 por segundo, pasos de 1, 2, 3, 2 y 1 píxeles, alternando; un cuadrado de la imagen `SPOT256` (el disco blanco, téxeles 64..127 × 0..63, CLUT 0x1e7) crece desde el centro 32 píxeles por lado cada fotograma par hasta 200, tiembla con el dibujo y se dibuja sustractivo con el color (0, 0xff, 0xff): resta el cian y la pantalla se vuelve roja; su último cuadrado se ve hasta el fotograma siguiente. Medido en el original (tunn08, escena con el disparador 230 sin poner): `MERAMON_SHAKE_POS_X` = -128 tras 7 fotogramas, pantalla entera roja tras 16 (un píxel de fondo (74, 33, 16) queda (74, 0, 0)), el cuadro de texto no tiembla ni se enrojece; durante la escena no hay HUD | `map.c: createMeramonShake`, `tickMeramonShake` (`MERAMON_SHAKE_OFFSET` 0x20, `MERAMON_SHAKE_GREEN`/`_BLUE` 0xff, `MERAMON_SHAKE_RED` 0) | `ScreenShakeStarted`; `apps/game`: `ScreenShake` (`screen_shake.hpp`), `FieldStoryProps::showShakeSquare`, `FieldScene::setStoryScreenPrims`, `MapCamera::setShake` | `screen_shake_tests.cpp`, ruta `route-etapa2.yaml` (`_work/routes-e2/etapa2-release/shake-orig-vs-dwe.png`) | Igual; en pantallas más anchas (o altas) que 4:3 el cuadrado crece en la misma proporción para cubrir los bordes como en 320 × 240 |
 | La burbuja de humor (rutina 28): la variable 247 da el personaje y la 248 la cara (0 … 4); con 5 o más se quita una burbuja. La cara es un cuadro de 32 × 32 de la primera imagen de 4 bits del mapa (u = cara × 32), aditiva, en el punto de condición de la especie (`conditionFx`), ordenada por profundidad. Medido en el original (twna01, objetos puestos a mano): el contador baja de 30 a 0 a uno por fotograma de 20 por segundo; escala y subida son 16 − contador / 2 (escala 0x100 → 0x1000, sube 1 → 16 píxeles); dos rutinas seguidas dejan dos objetos que bajan el contador dos veces por fotograma; sin el personaje en el mapa no se dibuja ni avanza | `script_interp.c` (`call_routine` 0x1c), `script_common.c: createMonochromonMoodBubble`, `renderMonochromonMoodBubble`, `MONOCHROMON_BUBBLE_TIMER`, `translateConditionFXToEntity` | `story_routines/routine_mood_bubble.cpp` (`MoodBubbleShown`); `apps/game`: `MoodBubble`, `FieldStoryProps::takeMoodBubble`, `FieldScene::setStorySprites` | `routine 28 puts the mood ...` (`story_props_tests.cpp`), `mood_bubble_tests.cpp`; ruta en gcan11 (`_work/routes-e2/mood-bubble/`, turno en la tienda: cara enfadada sobre `species_bf`) | Igual; al cambiar de mapa la burbuja se va (en el original el objeto sigue, pero todos los guiones la quitan antes) |
 | El recuento del turno en la tienda del cañón (rutinas 30, 31 y 56): la 30 lo pone a 0, la 31 le suma la ganancia de la venta (variables 243 alta y 244 baja, con signo de 16 bits) y la 56 lo deja en 243 y 244; las páginas lo enseñan con `{shopvar}` (código 0x10, sin ceros delante). Es de la partida, no del mapa: una partida nueva lo borra y no se guarda. Con 20 clientes, el guion 49 paga 500 si 243 ≤ 6, 1500 si ≤ 11 y con más (recuento de 3072 o más) gana el turno y el tendero se une | `script_interp.c` (`call_routine` 0x1e, 0x1f y 0x38, `SHOP_VARIABLE`), `script_textbox.c: showTextbox` (código 0x10, `intToStringSJIS(.., 5, 1)`); guiones 49 y 199 a 202 | `StoryAdapter::shopTally`, `story_routines/routine_shop_tally.cpp`; `apps/game: story_textbox.cpp` (`{shopvar}`) | `routines 30, 31 and 56 keep the shop's tally ...` (`story_props_tests.cpp`); en vivo en gcan11 con teclado: la página «Ganancia total» enseña el número (antes salía `{shopvar}` tal cual) | Igual (#177). La victoria (#178) sigue el guion del disco: umbrales de venta y de marcharse por cliente, `store_random` como `randomLimit` y el mismo recuento; difícil, no imposible: una simulación con los umbrales del guion gana ~27 % de los turnos con la mejor política y ~0,3 % sin subir precios; dos turnos medidos en dwe acabaron en 2060 y 2440 (paga 1500). Suposición: sin medir el turno en el original (no hay estado guardado en gcan11; en la cola de medidas) |
@@ -460,7 +461,7 @@ al revés), al espacio del mundo.
 | Sonidos: fallo (0, 0xB) al elegir una fila vacía o que no se puede comprar; trato (0, 0x17) solo en gias06b | `script_common.c: createSingleCardShopMenu`, `playShopSoundOnlyInSavannah` | `CardShopRules::failSound`, `tradeSound` | `the card shop's rules carry the fail sound ...` | Igual |
 | Intercambio por méritos: dar una carta suma su `meritValue` (tope 9999) y quita una copia; tomar un objeto resta su precio y mete uno en la bolsa; medido en dwe con 150 méritos: carta 2 (100) → 250, copias 1 → 0; Sup.recovery (20) → 230 | `shop/script_menu.c: openMeritShop` (estados 8 y 0xc), `createMeritCardTradeDialogue` | `MeritShop::giveCard`, `takeItem` | `the merit exchange takes a card for its merit…`, `…gives an item…`, ruta `merit-shop` | Igual |
 | Cancelar en las opciones contesta la última salvo con el disparador 49 (entonces suena (0, 0xB)) | `shop/script_menu.c: openMeritShop` (estado 3), `tickSelectionDialogue` | `MeritShop::choiceCancellable` | `the merit exchange's rules carry…` | Igual |
-| Rutina 15 (la caja del dinero) y rutina 22 de la tienda | `shop/script_menu.c` | — | — | **Hueco** |
+| Rutina 15: la caja del dinero mientras sigue la sección; rutina 22: la medalla de los torneos | `script_common.c: createShopBitsBox`, `tournament.c: scriptCheckTournamentMedal` | `story_routines/routine_money_box.cpp`, `routine_tournament_medal.cpp` | `script_common.c tickShopBitsBox: ...` (`apps/game/tests/money_box_tests.cpp`) | Portadas; la 22 sin test propio |
 
 ## Tests
 
