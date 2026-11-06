@@ -223,5 +223,6 @@ if(BUILD_TESTING)
         DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"
         DWE_SKIN_TEST_PACK="${PROJECT_SOURCE_DIR}/tests/mods/ui_skin/test_contrast")
     dwe_apply_options(dwe_game_tests)
+    dwe_add_to_package(dwe_game_tests)
     _dwe_add_tests(game dwe_game_tests ${game_test_sources})
 endif()

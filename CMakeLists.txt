@@ -28,6 +28,9 @@ if(BUILD_TESTING)
     target_link_libraries(dwe_filter_guard_tests PRIVATE dwe_test_main)
     dwe_apply_options(dwe_filter_guard_tests)
     dwe_use_utf8(dwe_filter_guard_tests)
+    # The repository's own tests, outside every package (scripts/dev.sh --filter repo).
+    add_custom_target(pkg_repo)
+    add_dependencies(pkg_repo dwe_filter_guard_tests)
     set(guarded_case "the filter guard's test case runs")
     add_test(NAME "filter guard: a filter that matches a test case runs it"
         COMMAND dwe_filter_guard_tests "--test-case=${guarded_case}")
@@ -71,7 +74,13 @@ if(BUILD_TESTING)
             COMMAND ${DWE_BASH} ${style_tests_dir}/test_pre_commit.sh)
         add_test(NAME "style scripts: the hooks stop commits that break the publication policy"
             COMMAND ${DWE_BASH} ${style_tests_dir}/test_policy_hooks.sh)
+        add_test(NAME "dev scripts: the packages, their dependencies and what a change affects"
+            COMMAND ${DWE_PYTHON3} -B -m unittest -v test_packages
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/scripts/tests)
     endif()
+    # The repository's own tests, outside every package: scripts/dev.sh runs them as the package repo.
+    get_property(repo_tests DIRECTORY PROPERTY TESTS)
+    set_property(TEST ${repo_tests} APPEND PROPERTY LABELS repo)
 endif()
 
 add_subdirectory(third_party)

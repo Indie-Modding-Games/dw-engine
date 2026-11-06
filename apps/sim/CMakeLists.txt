@@ -53,4 +53,5 @@ if(BUILD_TESTING)
     # The care scenario's smoke run: a few raisings of a week on the made-up species, every run counted.
     add_test(NAME sim.care.smoke COMMAND sim_cli --content ${stand_in} --scenario care --runs 4 --days 7 --seed 3)
     set_tests_properties(sim.care.smoke PROPERTIES PASS_REGULAR_EXPRESSION "\\| deaths \\| 4 \\|")
+    dwe_label_tests(sim.smoke sim.care.smoke)
 endif()

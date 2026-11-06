@@ -66,6 +66,10 @@ docs_build_timeout="10m"
 style_dir="$root/scripts/style"
 hooks_dir="scripts/hooks"
 style_runner_direct="direct"
+# The packages (packages/ and apps/) and their dependencies, for build and test of only some of
+# them (--filter, --affected), as a monorepo's task runner does.
+packages_tool="$root/scripts/packages.py"
+affected_base="${DWE_AFFECTED_BASE:-origin/main}"
 
 usage() {
   cat <<EOF
@@ -75,8 +79,14 @@ Usage: scripts/dev.sh <command> [args]
   image-name          Print the name of the image the commands run in (DWE_IMAGE or the default)
   shell               Open a shell in the container
   configure           Configure the preset (PRESET=$preset)
-  build               Build the preset
-  test                Run the tests of the preset, in parallel
+  build [--filter <spec>]... [--affected] [args]
+                      Build the preset, or only the packages selected (Packages, below)
+  test [--filter <spec>]... [--affected] [args]
+                      Run the tests of the preset, in parallel, or only those of the packages
+                      selected (built first)
+  packages            List the packages: name, folder, kind and the packages they depend on
+  affected            List the packages changed since the merge base with DWE_AFFECTED_BASE, the
+                      working tree too, and every package that depends on them
   format [--check|--staged|--since <commit>]
                       Format the C++ (clang-format), Lua (StyLua) and shell (shfmt) sources, and
                       wrap the comments of Lua and shell; --check only reports, --staged formats the
@@ -121,6 +131,14 @@ Usage: scripts/dev.sh <command> [args]
                       Play every gym course's session headless on DWE_CONTENT (or --content) and
                       check it against the original's bounds (scripts/training-check.sh)
 
+Packages:
+  A package is a folder of packages/ or apps/ (scripts/packages.py): packages/engine/core is core,
+  apps/game is game, and repo is the repository's own tests. A CMake package builds with the
+  target pkg_<name> and its tests carry the ctest label <name>; the launcher builds and tests with
+  scripts/launcher.sh, the beta gateway tests with node. A spec of --filter is a name (core), a
+  name with its dependencies (game...), a name with its dependents (...core) or a folder pattern
+  (packages/game/*). --affected selects what affected lists.
+
 Environment:
   PRESET              CMake preset (default linux-clang-debug; ci for the checks)
   DWE_IMAGE           Development image (default dwe-dev)
@@ -155,6 +173,8 @@ Environment:
   DWE_GATE_STATE_DIR  check-gate and check-short: folder of the markers and the cook cache (default
                       <git common folder>/$gate_state_folder)
   DWE_DOCS_PORT       docs-dev: the port on localhost (default $docs_container_port)
+  DWE_AFFECTED_BASE   affected and --affected: the branch or commit to compare with (default
+                      origin/main)
   DWE_HOOK_RUNNER     format and lint: $style_runner_direct runs the formatters and linters found in
                       PATH instead of in the image (the hook's test, which runs inside the image
                       already)
@@ -484,6 +504,102 @@ builds_for_linux() {
   [[ "$1" == "$linux_dwx_preset" || "$1" == linux-* ]]
 }
 
+# The packages that --filter <spec> and --affected select (scripts/packages.py), as name<TAB>kind
+# lines in selected_packages; package_selection says whether either was given, and package_args
+# keeps the other arguments.
+package_selection=false
+selected_packages=()
+package_args=()
+select_packages() {
+  local specs=() affected=false listed=""
+  while (($#)); do
+    case "$1" in
+      --filter)
+        [[ $# -ge 2 ]] || {
+          echo "dev.sh: --filter needs a package" >&2
+          exit 1
+        }
+        specs+=("$2")
+        shift 2
+        ;;
+      --filter=*)
+        specs+=("${1#--filter=}")
+        shift
+        ;;
+      --affected)
+        affected=true
+        shift
+        ;;
+      *)
+        package_args+=("$1")
+        shift
+        ;;
+    esac
+  done
+  if ((${#specs[@]})); then
+    package_selection=true
+    listed+="$(python3 "$packages_tool" select --kinds "${specs[@]}")"$'\n'
+  fi
+  if [[ "$affected" == true ]]; then
+    package_selection=true
+    listed+="$(python3 "$packages_tool" affected --kinds --base "$affected_base")"$'\n'
+  fi
+  mapfile -t selected_packages < <(sed '/^$/d' <<<"$listed" | sort -u)
+  if [[ "$package_selection" == true ]]; then
+    echo "dev.sh: packages: $(cut -f1 <<<"$listed" | sed '/^$/d' | sort -u | tr '\n' ' ')" >&2
+  fi
+}
+
+# Builds (build) or tests (test) the selected packages: the CMake ones with their pkg_<name> targets
+# and their ctest labels, the others with their own tools.
+run_packages() {
+  local action="$1" entry name kind targets=() labels=()
+  for entry in "${selected_packages[@]}"; do
+    name="${entry%%$'\t'*}"
+    kind="${entry##*$'\t'}"
+    case "$kind" in
+      cmake | repo)
+        targets+=("pkg_$name")
+        labels+=("$name")
+        ;;
+      *) run_other_package "$action" "$name" ;;
+    esac
+  done
+  ((${#targets[@]})) || return 0
+  ensure_caches
+  if [[ "$action" == build ]]; then
+    in_container cmake --build --preset "$preset" -j "$jobs" --target "${targets[@]}" \
+      "${package_args[@]}"
+    return
+  fi
+  in_container cmake --build --preset "$preset" -j "$jobs" --target "${targets[@]}"
+  if [[ "$action" == test ]]; then
+    local pattern
+    pattern="^($(
+      IFS='|'
+      echo "${labels[*]}"
+    ))\$"
+    in_container ctest --preset "$preset" -L "$pattern" "${package_args[@]}"
+  fi
+}
+
+run_other_package() {
+  local action="$1" name="$2"
+  case "$name" in
+    launcher) "$root/scripts/launcher.sh" "$action" ;;
+    beta-gateway)
+      if [[ "$action" != test ]]; then
+        echo "dev.sh: beta-gateway has nothing to build" >&2
+      elif command -v node >/dev/null; then
+        (cd "$root/apps/beta-gateway" && node --test)
+      else
+        echo "dev.sh: beta-gateway's tests need node on the host; skipped" >&2
+      fi
+      ;;
+    *) echo "dev.sh: $name has no $action here; see apps/$name/README.md" >&2 ;;
+  esac
+}
+
 # clang-tidy, one process per source read from the input, in parallel at DWE_NICE.
 run_tidy() {
   in_container nice -n "${DWE_NICE:-0}" xargs -r -P "$jobs" -n 1 bash -c "$tidy_one" tidy \
@@ -708,13 +824,23 @@ case "$command" in
     ensure_caches
     in_container cmake --preset "$preset" "$@"
     ;;
-  build)
-    ensure_caches
-    in_container cmake --build --preset "$preset" -j "$jobs" "$@"
+  build | test)
+    select_packages "$@"
+    if [[ "$package_selection" == true ]]; then
+      run_packages "$command"
+    elif [[ "$command" == build ]]; then
+      ensure_caches
+      in_container cmake --build --preset "$preset" -j "$jobs" "${package_args[@]}"
+    else
+      ensure_caches
+      in_container ctest --preset "$preset" "${package_args[@]}"
+    fi
     ;;
-  test)
-    ensure_caches
-    in_container ctest --preset "$preset" "$@"
+  packages)
+    python3 "$packages_tool" list | column -t -s $'\t'
+    ;;
+  affected)
+    python3 "$packages_tool" affected --base "$affected_base" "$@"
     ;;
   format)
     case "${1:-}" in
@@ -830,6 +956,9 @@ case "$command" in
       export LD_LIBRARY_PATH="$installed/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     fi
     exec "$build_dir/apps/game/dwe-game" "$@"
+    ;;
+  help | -h | --help)
+    usage
     ;;
   *)
     usage
