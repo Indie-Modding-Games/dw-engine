@@ -62,7 +62,8 @@ void CourseRun::brainFrame(GymPorts& ports, const BrainCourse& brain, const GymI
         ports.playSound(gym_->soundSlot, brain.teachSound);
         ports.animate(Actor::Tamer, brain.tamerTeach);
       }
-      // animFlag 2 only stops the teach clip's root motion: the clip plays on.
+      // The player teaches where it stands (animFlag 2).
+      ports.holdInPlace(Actor::Tamer, true);
     }
     if (counter_ % brain.learnEveryFrames == 0) {
       ports.animate(Actor::Partner, brain.partnerLearn);

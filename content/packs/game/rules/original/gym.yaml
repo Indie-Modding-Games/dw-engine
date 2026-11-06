@@ -482,6 +482,8 @@ sites:
             hit_restarted: { first: 12, count: 12 }
             undo_shown: { first: 39, count: 4 }
             undo_hidden: { first: 12, count: 3 }
+            # trn2_off.c pone animFlag 2 en cada fotograma del golpe: cada golpe se da sin avanzar.
+            hold_each_punch: true
   # src/trn2: el otro campo de batalla (mapa 0x6c), instancia 1.
   - map: betl04
     place: trn2

@@ -212,9 +212,11 @@ void CourseRun::hpFrame(GymPorts& ports, const HpCourse& hp, const GymInput& inp
     }
     break;
   case 2: {
-    // The original sets animFlag 2 here and clears it on the beats: it only stops the clip's root
-    // motion (anim.c: applyRootMomentum), which a scripted clip here never has; the clip plays on.
+    // The push plays in place (animFlag 2), but each beat lets one frame of its root motion
+    // through: the partner leans a step into the machine (anim.c: applyRootMomentum).
+    ports.holdInPlace(Actor::Partner, true);
     if (counter_ % hp.beatFrames == 0 && counter_ <= course_->cycleFrames) {
+      ports.holdInPlace(Actor::Partner, false);
       ports.moveObjects(hp.objects, hp.beatMove);
     }
     const std::int32_t jitter = counter_ % 2 == 0 ? hp.jitter : -hp.jitter;

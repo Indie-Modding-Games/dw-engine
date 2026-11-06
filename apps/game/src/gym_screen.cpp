@@ -144,6 +144,11 @@ public:
     clips_.at(indexOf(actor)) = static_cast<std::uint32_t>(animation);
     desc_->scene->field().animateByScript(entityOf(actor), static_cast<std::uint32_t>(animation));
   }
+  void holdInPlace(Actor actor, bool held) override {
+    if (const std::optional<scene::Entity> entity = anyEntityOf(actor)) {
+      desc_->scene->field().holdClipInPlace(*entity, held);
+    }
+  }
   bool animationEnded(Actor actor) override {
     const std::optional<scene::Entity> entity = anyEntityOf(actor);
     return !entity || desc_->scene->clipPlayedThrough(*entity);

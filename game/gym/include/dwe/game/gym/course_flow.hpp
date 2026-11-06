@@ -36,6 +36,9 @@ public:
   // after.
   virtual void setTraining(bool training) = 0;
   virtual void animate(Actor actor, std::int32_t animation) = 0;
+  // anim.c: animFlag 2: the actor's clip plays on where it stands (applyRootMomentum skips its
+  // root motion) until cleared or the next animate (startAnimation resets animFlag).
+  virtual void holdInPlace(Actor actor, bool held) = 0;
   // Whether the actor's animation reached its last frame (anim.animFrame >= frameCount).
   [[nodiscard]] virtual bool animationEnded(Actor actor) = 0;
   // 4096 per turn.

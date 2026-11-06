@@ -111,6 +111,9 @@ struct OffenseSwap {
   ObjectGroup undoShown;
   ObjectGroup undoHidden;
   std::int32_t frames = 1;
+  // trn2_off.c sets animFlag 2 on every punch frame, so each new punch also plays in place;
+  // trn_off.c (instance 6) only sets it on the first punch.
+  bool holdEachPunch = false;
 };
 
 // trn_off.c: the partner hits the punching bag, which swings back.
