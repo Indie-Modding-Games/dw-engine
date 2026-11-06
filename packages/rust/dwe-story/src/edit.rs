@@ -139,7 +139,9 @@ pub fn set_condition(root: &mut Block, path: &StmtPath, arm: usize, condition: E
             arms[arm].0 = condition;
             true
         }
-        StmtKind::While { condition: known, .. } if arm == 0 => {
+        StmtKind::While {
+            condition: known, ..
+        } if arm == 0 => {
             *known = condition;
             true
         }

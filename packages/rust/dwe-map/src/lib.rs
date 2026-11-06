@@ -11,6 +11,7 @@ pub mod document;
 pub mod emit;
 pub mod load;
 pub mod patch;
+pub mod places;
 mod reader;
 pub mod save;
 pub mod story_names;

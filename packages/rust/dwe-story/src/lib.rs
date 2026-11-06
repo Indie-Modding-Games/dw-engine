@@ -12,6 +12,7 @@ pub mod edit;
 pub mod events;
 pub mod file;
 pub mod lex;
+pub mod needs;
 pub mod parse;
 pub mod save;
 pub mod script;
@@ -21,8 +22,8 @@ pub mod write;
 pub use ast::{BinOp, Block, Expr, Stmt, StmtKind};
 pub use events::{Event, EventKind, MapEvents};
 pub use file::{Routine, Section, SectionBody, StoryFile};
-pub use script::{LoadedScript, SectionOrigin, StoryFileSource};
 pub use save::{ScriptDraft, StoryProblem, StorySavePlan};
+pub use script::{LoadedScript, SectionOrigin, StoryFileSource};
 pub use texts::StoryTexts;
 
 /// What can go wrong reading story Lua.

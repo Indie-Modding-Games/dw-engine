@@ -1252,6 +1252,7 @@ version = "0.1.0"
 dependencies = [
  "dwe-map",
  "dwe-pack",
+ "dwe-story",
  "glam",
  "serde",
  "serde_yaml_ng",

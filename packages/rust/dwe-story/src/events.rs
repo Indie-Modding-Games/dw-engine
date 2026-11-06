@@ -33,7 +33,9 @@ pub enum EventKind {
     Step,
     Confirm,
     /// The NPC in this slot.
-    Talk { slot: usize },
+    Talk {
+        slot: usize,
+    },
 }
 
 /// A `warp_to` (or `jump_to_file`) a section's code reaches, with the conditions on its way.
@@ -108,7 +110,24 @@ impl MapEvents {
         document: &MapDocument,
         entry: Option<&MapEntry>,
     ) -> Self {
-        let map_head = LoadedScript::load(vfs, patches, MAP_HEAD_SCRIPT);
+        Self::build_with(
+            |script| LoadedScript::load(vfs, patches, script),
+            table,
+            bands,
+            document,
+            entry,
+        )
+    }
+
+    /// The same with the scripts from somewhere else (an editor's, with its drafts).
+    pub fn build_with(
+        mut load: impl FnMut(u16) -> LoadedScript,
+        table: &MapTable,
+        bands: &TriggerBands,
+        document: &MapDocument,
+        entry: Option<&MapEntry>,
+    ) -> Self {
+        let map_head = load(MAP_HEAD_SCRIPT);
         let mut events = Self {
             problems: map_head.problems.clone(),
             ..Self::default()
@@ -132,7 +151,7 @@ impl MapEvents {
         let Some(script) = events.map_script else {
             return events;
         };
-        let loaded = LoadedScript::load(vfs, patches, script);
+        let loaded = load(script);
         events.problems.extend(loaded.problems.iter().cloned());
         if loaded.origin(MAP_LOADED_SECTION).is_some() {
             events.events.push(event_of(
@@ -380,7 +399,11 @@ pub fn negate(condition: &Expr) -> Expr {
 
 /// The guards of a jump as one line of Lua (for a tooltip).
 pub fn guards_text(guards: &[Expr]) -> String {
-    guards.iter().map(expr_text).collect::<Vec<_>>().join(" and ")
+    guards
+        .iter()
+        .map(expr_text)
+        .collect::<Vec<_>>()
+        .join(" and ")
 }
 
 #[cfg(test)]

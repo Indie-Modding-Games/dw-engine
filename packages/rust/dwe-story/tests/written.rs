@@ -17,9 +17,10 @@ fn fixture() -> PathBuf {
 
 #[test]
 fn the_written_patch_is_the_one_the_engine_runs() {
-    let module = StoryFile::parse(&std::fs::read_to_string(fixture().join("900.lua")).unwrap())
-        .unwrap();
-    let mut patch = StoryFile::new_patch(900, "story/patches/mapper_900.lua: written by dwe-mapper");
+    let module =
+        StoryFile::parse(&std::fs::read_to_string(fixture().join("900.lua")).unwrap()).unwrap();
+    let mut patch =
+        StoryFile::new_patch(900, "story/patches/mapper_900.lua: written by dwe-mapper");
     patch.take_section(&module, 0x51).unwrap();
     let body = patch.section_body_mut(0x51).unwrap();
     set_condition(

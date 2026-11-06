@@ -1,10 +1,24 @@
-//! The edits of a map document and their history. Every change to the document is an [`Edit`]
-//! that knows the values before and after it, so it can be undone and done again; a [`History`]
-//! groups the edits of one gesture (a brush stroke, a drag) into one step.
+//! The edits of a map document, of the drafts beside it (the story, its lines, the doors and the
+//! toilet) and their history. Every change is an [`Edit`] that knows the values before and after
+//! it, so it can be undone and done again; a [`History`] groups the edits of one gesture (a brush
+//! stroke, a drag) into one step.
 
 use std::collections::BTreeMap;
 
+use dwe_map::places::Places;
 use dwe_map::{Cell, MapDocument, Npc, Warp};
+use dwe_story::ScriptDraft;
+
+/// What the map's edits change besides its document, until a save writes it.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Drafts {
+    /// The target pack's patch of each script edited.
+    pub scripts: BTreeMap<u16, ScriptDraft>,
+    /// Dialogue lines edited, by key (`story_<nnn>.text.<id>`).
+    pub texts: BTreeMap<String, String>,
+    /// The map's doors and toilet, when edited.
+    pub places: Option<Places>,
+}
 
 /// One cell's value before and after an edit.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -26,6 +40,25 @@ pub enum Edit {
         slot: usize,
         before: Box<Npc>,
         after: Box<Npc>,
+    },
+    /// NPC slots added or removed: the whole list.
+    NpcList { before: Vec<Npc>, after: Vec<Npc> },
+    /// A script's draft (None: no draft).
+    Story {
+        script: u16,
+        before: Option<Box<ScriptDraft>>,
+        after: Option<Box<ScriptDraft>>,
+    },
+    /// A dialogue line (None: as the packs have it).
+    Text {
+        key: String,
+        before: Option<String>,
+        after: Option<String>,
+    },
+    /// The doors and the toilet (None: as the table has them).
+    Places {
+        before: Option<Box<Places>>,
+        after: Option<Box<Places>>,
     },
 }
 
@@ -56,11 +89,33 @@ impl Edit {
                 before: after.clone(),
                 after: before.clone(),
             },
+            Self::NpcList { before, after } => Self::NpcList {
+                before: after.clone(),
+                after: before.clone(),
+            },
+            Self::Story {
+                script,
+                before,
+                after,
+            } => Self::Story {
+                script: *script,
+                before: after.clone(),
+                after: before.clone(),
+            },
+            Self::Text { key, before, after } => Self::Text {
+                key: key.clone(),
+                before: after.clone(),
+                after: before.clone(),
+            },
+            Self::Places { before, after } => Self::Places {
+                before: after.clone(),
+                after: before.clone(),
+            },
         }
     }
 
-    /// Puts the edit's "after" values in the document.
-    pub fn apply(&self, document: &mut MapDocument) {
+    /// Puts the edit's "after" values in the document and the drafts.
+    pub fn apply(&self, document: &mut MapDocument, drafts: &mut Drafts) {
         match self {
             Self::Cells(cells) => {
                 for change in cells {
@@ -81,6 +136,24 @@ impl Edit {
                     *npc = (**after).clone();
                 }
             }
+            Self::NpcList { after, .. } => document.npcs = after.clone(),
+            Self::Story { script, after, .. } => match after {
+                Some(draft) => {
+                    drafts.scripts.insert(*script, (**draft).clone());
+                }
+                None => {
+                    drafts.scripts.remove(script);
+                }
+            },
+            Self::Text { key, after, .. } => match after {
+                Some(text) => {
+                    drafts.texts.insert(key.clone(), text.clone());
+                }
+                None => {
+                    drafts.texts.remove(key);
+                }
+            },
+            Self::Places { after, .. } => drafts.places = after.as_deref().cloned(),
         }
     }
 
@@ -90,6 +163,10 @@ impl Edit {
             Self::Cells(cells) => cells.iter().all(|change| change.before == change.after),
             Self::Warp { before, after } => before == after,
             Self::Npc { before, after, .. } => before == after,
+            Self::NpcList { before, after } => before == after,
+            Self::Story { before, after, .. } => before == after,
+            Self::Text { before, after, .. } => before == after,
+            Self::Places { before, after } => before == after,
         }
     }
 
@@ -124,6 +201,32 @@ impl Edit {
                     ..
                 },
             ) if slot == next_slot => {
+                *after = next.clone();
+                true
+            }
+            (
+                Self::Story { script, after, .. },
+                Self::Story {
+                    script: next_script,
+                    after: next,
+                    ..
+                },
+            ) if script == next_script => {
+                *after = next.clone();
+                true
+            }
+            (
+                Self::Text { key, after, .. },
+                Self::Text {
+                    key: next_key,
+                    after: next,
+                    ..
+                },
+            ) if key == next_key => {
+                *after = next.clone();
+                true
+            }
+            (Self::Places { after, .. }, Self::Places { after: next, .. }) => {
                 *after = next.clone();
                 true
             }
@@ -181,11 +284,11 @@ impl History {
 
     /// Applies an edit to the document and records it: in the open step, or as a step of its own.
     /// An edit that changes nothing is left out. Recording drops the steps to redo.
-    pub fn record(&mut self, document: &mut MapDocument, edit: Edit) -> bool {
+    pub fn record(&mut self, document: &mut MapDocument, drafts: &mut Drafts, edit: Edit) -> bool {
         if edit.is_empty() {
             return false;
         }
-        edit.apply(document);
+        edit.apply(document, drafts);
         if !self.open {
             self.push_step();
         }
@@ -198,26 +301,26 @@ impl History {
     }
 
     /// Undoes the last step; false when there is none.
-    pub fn undo(&mut self, document: &mut MapDocument) -> bool {
+    pub fn undo(&mut self, document: &mut MapDocument, drafts: &mut Drafts) -> bool {
         self.end_group();
         let Some(step) = self.undo.pop() else {
             return false;
         };
         for edit in step.edits.iter().rev() {
-            edit.inverse().apply(document);
+            edit.inverse().apply(document, drafts);
         }
         self.redo.push(step);
         true
     }
 
     /// Does again the last step undone; false when there is none.
-    pub fn redo(&mut self, document: &mut MapDocument) -> bool {
+    pub fn redo(&mut self, document: &mut MapDocument, drafts: &mut Drafts) -> bool {
         self.end_group();
         let Some(step) = self.redo.pop() else {
             return false;
         };
         for edit in &step.edits {
-            edit.apply(document);
+            edit.apply(document, drafts);
         }
         self.undo.push(step);
         true
@@ -286,16 +389,17 @@ mod tests {
         let original = document();
         let mut map = original.clone();
         let mut history = History::default();
+        let mut drafts = Drafts::default();
         assert!(!history.is_dirty());
         let edit = paint(&map, &[(3, 4), (5, 6)], 51);
-        assert!(history.record(&mut map, edit));
+        assert!(history.record(&mut map, &mut drafts, edit));
         let mut warp = map.warps[0].clone();
         warp.target_exit = 4;
         let edit = Edit::Warp {
             before: map.warps[0].clone(),
             after: warp,
         };
-        history.record(&mut map, edit);
+        history.record(&mut map, &mut drafts, edit);
         let mut npc = map.npcs[0].clone();
         npc.position.x = 700;
         let edit = Edit::Npc {
@@ -303,20 +407,20 @@ mod tests {
             before: Box::new(map.npcs[0].clone()),
             after: Box::new(npc),
         };
-        history.record(&mut map, edit);
+        history.record(&mut map, &mut drafts, edit);
         let edited = map.clone();
         assert!(history.is_dirty());
         assert_eq!(map.collision.value(Cell::new(5, 6)), 51);
         assert_eq!(map.warps[0].target_exit, 4);
         assert_eq!(map.npcs[0].position.x, 700);
-        while history.undo(&mut map) {}
+        while history.undo(&mut map, &mut drafts) {}
         assert_eq!(map, original);
         assert!(!history.is_dirty());
-        while history.redo(&mut map) {}
+        while history.redo(&mut map, &mut drafts) {}
         assert_eq!(map, edited);
         // An edit after an undo drops what was to redo.
-        history.undo(&mut map);
-        history.record(&mut map, paint(&original, &[(9, 9)], 128));
+        history.undo(&mut map, &mut drafts);
+        history.record(&mut map, &mut drafts, paint(&original, &[(9, 9)], 128));
         assert!(!history.can_redo());
     }
 
@@ -325,35 +429,37 @@ mod tests {
         let original = document();
         let mut map = original.clone();
         let mut history = History::default();
+        let mut drafts = Drafts::default();
         history.begin_group();
         for value in [51, 52, 53] {
             let edit = paint(&map, &[(10, 10), (11, 10)], value);
-            history.record(&mut map, edit);
+            history.record(&mut map, &mut drafts, edit);
         }
         let edit = paint(&map, &[(12, 10)], 53);
-        history.record(&mut map, edit);
+        history.record(&mut map, &mut drafts, edit);
         history.end_group();
         assert_eq!(map.collision.value(Cell::new(10, 10)), 53);
-        assert!(history.undo(&mut map));
+        assert!(history.undo(&mut map, &mut drafts));
         assert_eq!(map, original);
         assert!(!history.can_undo());
         // An empty gesture leaves no step; an edit that changes nothing is left out.
         history.begin_group();
         history.end_group();
         assert!(!history.can_undo());
-        assert!(!history.record(&mut map, paint(&original, &[(0, 0)], 128)));
+        assert!(!history.record(&mut map, &mut drafts, paint(&original, &[(0, 0)], 128)));
     }
 
     #[test]
     fn saving_marks_the_document_clean() {
         let mut map = document();
         let mut history = History::default();
-        history.record(&mut map, paint(&document(), &[(1, 1)], 51));
+        let mut drafts = Drafts::default();
+        history.record(&mut map, &mut drafts, paint(&document(), &[(1, 1)], 51));
         history.mark_clean();
         assert!(!history.is_dirty());
-        history.undo(&mut map);
+        history.undo(&mut map, &mut drafts);
         assert!(history.is_dirty());
-        history.redo(&mut map);
+        history.redo(&mut map, &mut drafts);
         assert!(!history.is_dirty());
     }
 }

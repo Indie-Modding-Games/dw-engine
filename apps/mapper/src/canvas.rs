@@ -363,7 +363,8 @@ fn pointer_gesture(app: &mut MapperApp, ui: &egui::Ui, response: &egui::Response
     }
 }
 
-/// Where the selection is drawn: an exit's arrival, an NPC or a point of its path.
+/// Where the selection is drawn: an exit's arrival, an NPC, a point of its path, a door or a
+/// toilet point.
 fn selected_point(mapper: &Mapper) -> Option<Vec2> {
     let overlay = &mapper.map.as_ref()?.overlay;
     match mapper.selection? {
@@ -384,6 +385,12 @@ fn selected_point(mapper: &Mapper) -> Option<Vec2> {
             let index = npc.parts.iter().position(|&known| known == part)?;
             npc.waypoints.get(index).copied()
         }
+        Selection::Door(slot) => overlay
+            .doors
+            .iter()
+            .find(|door| door.slot == slot)
+            .map(|door| door.position.from),
+        Selection::Toilet(index) => overlay.toilet.map(|points| points[index.min(1)]),
     }
 }
 

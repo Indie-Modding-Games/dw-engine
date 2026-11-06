@@ -5,12 +5,15 @@
 use std::path::PathBuf;
 
 use dwe_map::save::SaveMode;
+use dwe_map::table::{MapDoor, MapToilet};
 use dwe_map::{Npc, Warp};
 use dwe_pack::GameFolders;
+use dwe_story::edit::StmtPath;
 use glam::Vec2;
 
 use crate::browser::GroupBy;
 use crate::layers::Layer;
+use crate::story::StoryEdit;
 use crate::tools::{Modifiers, Selection, Tool};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -98,6 +101,45 @@ pub enum Action {
     Rotate(i32),
     /// Removes the selected path point.
     DeleteSelection,
+    /// Centres the view on what is selected.
+    CenterSelection,
+    /// Adds an NPC slot (a copy of the selected NPC or of the last) on the ground under a canvas
+    /// point, spawned by the map's entry section.
+    AddNpc(Option<Vec2>),
+    /// Removes the last NPC slot and its spawns.
+    RemoveNpc,
+    /// Replaces a door slot of the map's set.
+    SetDoor {
+        slot: usize,
+        door: MapDoor,
+    },
+    /// Sets the toilet's points, or takes the map's toilet away.
+    SetToilet(Option<MapToilet>),
+
+    // The story.
+    /// Opens a section of a script in the section editor.
+    OpenSection {
+        script: u16,
+        section: u16,
+    },
+    CloseSection,
+    /// Shows a routine of the open section's file, or the section's code again.
+    OpenRoutine(Option<String>),
+    /// Selects a statement of the code shown.
+    SelectStmt(Option<StmtPath>),
+    /// Changes the code shown (one undo step).
+    EditStory(StoryEdit),
+    /// Sets a dialogue line.
+    SetText {
+        key: String,
+        text: String,
+    },
+    /// Shows the map before or after the one shown in the browser's order.
+    OpenAdjacentMap {
+        later: bool,
+    },
+    /// Drops the unsaved changes of the map shown (its document and drafts).
+    Revert,
 
     // Saving.
     /// The pack saves go to, by its folder.
@@ -111,6 +153,8 @@ pub enum Action {
     Save(SaveMode),
     /// Whether a save makes a connected game read the map again.
     SetReloadOnSave(bool),
+    /// The dwx program that makes `field/script_warps` again after a save changes map changes.
+    SetDwxPath(Option<PathBuf>),
     /// Closes the editor (asks first when there are unsaved changes).
     Quit,
     /// Answers the unsaved-changes question about the action waiting for it.
@@ -138,6 +182,7 @@ impl Action {
                 | Self::OpenMap(_)
                 | Self::OpenMapAtExit { .. }
                 | Self::Back
+                | Self::OpenAdjacentMap { .. }
                 | Self::Quit
         )
     }

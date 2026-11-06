@@ -93,10 +93,16 @@ pub fn tokenize(code: &str) -> Result<(Vec<Token>, Vec<Comment>)> {
             at = end;
             continue;
         }
-        let Some(symbol) = SYMBOLS.iter().find(|symbol| code[at..].starts_with(**symbol)) else {
+        let Some(symbol) = SYMBOLS
+            .iter()
+            .find(|symbol| code[at..].starts_with(**symbol))
+        else {
             return Err(Error::at(
                 line,
-                format!("'{}' is not Lua the story uses", code[at..].chars().next().unwrap_or(' ')),
+                format!(
+                    "'{}' is not Lua the story uses",
+                    code[at..].chars().next().unwrap_or(' ')
+                ),
             ));
         };
         tokens.push(Token {
@@ -129,9 +135,12 @@ fn read_number(code: &str, start: usize, line: usize) -> Result<(i64, usize)> {
     } else {
         text.parse()
     };
-    parsed
-        .map(|number| (number, at))
-        .map_err(|_| Error::at(line, format!("'{}' is not a whole number", &code[start..at])))
+    parsed.map(|number| (number, at)).map_err(|_| {
+        Error::at(
+            line,
+            format!("'{}' is not a whole number", &code[start..at]),
+        )
+    })
 }
 
 /// Reads a quoted string; returns its value, where it ends and the newlines it crossed.
@@ -144,7 +153,9 @@ fn read_string(code: &str, start: usize, line: usize) -> Result<(String, usize, 
             c if c == quote => return Ok((text, start + 1 + offset + 1, 0)),
             '\n' => return Err(Error::at(line, "a string that does not end on its line")),
             '\\' => {
-                let Some((_, escaped)) = chars.next() else { break };
+                let Some((_, escaped)) = chars.next() else {
+                    break;
+                };
                 text.push(match escaped {
                     'n' => '\n',
                     't' => '\t',
@@ -190,7 +201,11 @@ mod tests {
         assert_eq!(tokens[6].kind, TokenKind::Number(16));
         assert_eq!(comments[0].text, "var, value");
         assert_eq!(comments[0].line, 1);
-        assert!(tokens.iter().any(|t| t.kind == TokenKind::Str("x\"y".into()) && t.line == 2));
+        assert!(
+            tokens
+                .iter()
+                .any(|t| t.kind == TokenKind::Str("x\"y".into()) && t.line == 2)
+        );
         assert_eq!(tokens.last().unwrap().kind, TokenKind::End);
     }
 

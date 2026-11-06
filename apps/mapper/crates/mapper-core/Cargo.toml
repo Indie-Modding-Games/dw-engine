@@ -10,6 +10,7 @@ rust-version.workspace = true
 [dependencies]
 dwe-map.workspace = true
 dwe-pack.workspace = true
+dwe-story.workspace = true
 glam.workspace = true
 serde.workspace = true
 serde_yaml_ng.workspace = true

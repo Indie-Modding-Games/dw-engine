@@ -2,10 +2,11 @@
 //! (positions in background pixels). Collision cells lie on the ground plane y = 0; characters,
 //! spawns and doors at their own height.
 
+use dwe_map::places::Places;
 use dwe_map::world::{self, Cell, GRID_SIZE};
 use dwe_map::{
-    CellKind, MapCamera, MapDocument, MapEntry, MapTable, PathPart, TriggerBand, TriggerBands,
-    WarpTarget, warp_target,
+    CellKind, MapCamera, MapDocument, MapTable, PathPart, TriggerBand, TriggerBands, WarpTarget,
+    warp_target,
 };
 use glam::{IVec3, Vec2, Vec3};
 
@@ -127,9 +128,10 @@ pub struct MapOverlay {
 }
 
 impl MapOverlay {
+    /// The layers of a map, with its doors and toilet as edited.
     pub fn build(
         map: &MapDocument,
-        entry: Option<&MapEntry>,
+        places: &Places,
         table: &MapTable,
         camera: &MapCamera,
         bands: &TriggerBands,
@@ -218,29 +220,23 @@ impl MapOverlay {
             })
             .collect();
 
-        let doors = entry
-            .and_then(|entry| table.doors_of(entry))
-            .map(|set| {
-                set.doors
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(slot, door)| {
-                        Some(DoorMark {
-                            slot,
-                            model_id: door.model_id?,
-                            position: arrow(door.position.into(), door.rotation)?,
-                        })
-                    })
-                    .collect()
+        let doors = places
+            .doors
+            .iter()
+            .enumerate()
+            .filter_map(|(slot, door)| {
+                Some(DoorMark {
+                    slot,
+                    model_id: door.model_id?,
+                    position: arrow(door.position.into(), door.rotation)?,
+                })
             })
-            .unwrap_or_default();
+            .collect();
 
-        let toilet = entry
-            .and_then(|entry| table.toilet_of(entry))
-            .and_then(|toilet| {
-                let [first, second] = toilet.points();
-                Some([project(first)?, project(second)?])
-            });
+        let toilet = places.toilet.as_ref().and_then(|toilet| {
+            let [first, second] = toilet.points();
+            Some([project(first)?, project(second)?])
+        });
 
         Self {
             cells,

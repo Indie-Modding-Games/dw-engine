@@ -18,10 +18,13 @@ pub enum Layer {
     Grid,
     /// What a connected game shows now: the player, the partner, the NPCs and the window's view.
     Live,
+    /// What runs the story's sections: trigger cells by section, the NPCs' talk sections and the
+    /// map changes the story makes.
+    Events,
 }
 
 impl Layer {
-    pub const ALL: [Layer; 9] = [
+    pub const ALL: [Layer; 10] = [
         Layer::Walls,
         Layer::Triggers,
         Layer::Exits,
@@ -31,6 +34,7 @@ impl Layer {
         Layer::Toilet,
         Layer::Grid,
         Layer::Live,
+        Layer::Events,
     ];
 
     pub fn label(self) -> &'static str {
@@ -44,6 +48,7 @@ impl Layer {
             Layer::Toilet => text::LAYER_TOILET,
             Layer::Grid => text::LAYER_GRID,
             Layer::Live => text::LAYER_LIVE,
+            Layer::Events => text::LAYER_EVENTS,
         }
     }
 
@@ -59,6 +64,7 @@ impl Layer {
             "toilet" => Layer::Toilet,
             "grid" => Layer::Grid,
             "live" => Layer::Live,
+            "events" => Layer::Events,
             _ => return None,
         })
     }

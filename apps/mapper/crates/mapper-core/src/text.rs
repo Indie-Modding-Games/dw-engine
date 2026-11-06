@@ -266,6 +266,10 @@ pub fn problem(problem: &dwe_map::save::Problem) -> String {
         Problem::BadPath { slot } => {
             format!("NPC {slot}: la ruta no cabe en el registro (8 partes, como mucho 8 puntos).")
         }
+        Problem::NpcSlotsInPatch => {
+            "Hay NPC añadidos o quitados: un parche no puede decirlo, guarda el mapa entero."
+                .to_owned()
+        }
         Problem::Overridden { packs } => format!(
             "Aviso: un parche de encima ({}) cambia lo mismo; el juego verá el suyo.",
             packs.join(", ")
@@ -313,3 +317,16 @@ pub fn game_mode(mode: &str) -> &str {
         other => other,
     }
 }
+
+// The story.
+pub const LAYER_EVENTS: &str = "Eventos";
+pub const NOT_SAVED: &str = "sin guardar";
+pub const TOO_MANY_NPCS: &str = "El mapa ya tiene 8 NPC, los que el juego admite.";
+pub const NO_NPC_TEMPLATE: &str = "No hay ningún NPC que copiar en el contenido.";
+pub const NO_ENTRY_SECTION: &str = "El mapa no tiene sección de entrada (script 0): el NPC nuevo no aparecerá hasta que una sección lo haga aparecer.";
+pub const NO_CODE: &str = "La sección o la rutina abierta no tiene código.";
+pub const NPCS_SAVE_WHOLE: &str = "Hay NPC añadidos o quitados: el mapa se guarda entero (los parches nombran los NPC por su posición).";
+pub const WARPS_BY_HAND: &str =
+    "El guardado cambia saltos de mapa de la historia; vuelve a sacar field/script_warps con";
+pub const WARPS_MADE: &str = "field/script_warps sacado de nuevo";
+pub const WARPS_FAILED: &str = "dwx script-warps falló";

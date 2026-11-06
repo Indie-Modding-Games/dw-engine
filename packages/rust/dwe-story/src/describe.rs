@@ -21,14 +21,20 @@ const TEXT_PREVIEW: usize = 60;
 
 impl Names<'_> {
     pub fn trigger(&self, number: i64) -> String {
-        match u32::try_from(number).ok().and_then(|n| self.story.trigger(n)) {
+        match u32::try_from(number)
+            .ok()
+            .and_then(|n| self.story.trigger(n))
+        {
             Some(name) => format!("{number} {name}"),
             None => number.to_string(),
         }
     }
 
     pub fn var(&self, number: i64) -> String {
-        match u32::try_from(number).ok().and_then(|n| self.story.variable(n)) {
+        match u32::try_from(number)
+            .ok()
+            .and_then(|n| self.story.variable(n))
+        {
             Some(name) => format!("{number} {name}"),
             None => number.to_string(),
         }
@@ -117,7 +123,8 @@ impl Names<'_> {
             Expr::Not(inner) => match inner.story_call_name() {
                 Some(("trigger", [n])) => format!(
                     "disparador {} apagado",
-                    n.as_number().map_or_else(|| expr_text(n), |n| self.trigger(n))
+                    n.as_number()
+                        .map_or_else(|| expr_text(n), |n| self.trigger(n))
                 ),
                 _ => format!("no {}", self.condition(inner)),
             },
@@ -131,7 +138,12 @@ impl Names<'_> {
                 if let Some(routine) = left.routine_call_name() {
                     return format!("la rutina {routine} acaba el script");
                 }
-                format!("{} {} {}", self.read(left), comparison(*op), expr_text(right))
+                format!(
+                    "{} {} {}",
+                    self.read(left),
+                    comparison(*op),
+                    expr_text(right)
+                )
             }
             other => self.read(other),
         }
@@ -197,7 +209,11 @@ impl Names<'_> {
                         other => expr_text(other),
                     }
                 ),
-                _ => format!("{} = {}", self.read(&Expr::name(name)), self.condition(value)),
+                _ => format!(
+                    "{} = {}",
+                    self.read(&Expr::name(name)),
+                    self.condition(value)
+                ),
             },
             StmtKind::Assign { name, value } => {
                 format!("{} = {}", self.read(&Expr::name(name)), expr_text(value))
@@ -262,9 +278,6 @@ mod tests {
             "Si disparador 12 door_open apagado y variable 3 ≥ 2"
         );
         assert_eq!(lines[3], "Quién habla: jugador");
-        assert_eq!(
-            lines[4],
-            "Ir al mapa: mapa 5, salida 2, sin sección y fin"
-        );
+        assert_eq!(lines[4], "Ir al mapa: mapa 5, salida 2, sin sección y fin");
     }
 }

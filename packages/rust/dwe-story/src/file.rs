@@ -103,9 +103,7 @@ impl StoryFile {
                         )));
                     }
                     if !params.is_empty() {
-                        return Err(Error::Invalid(format!(
-                            "routine {name} takes parameters"
-                        )));
+                        return Err(Error::Invalid(format!("routine {name} takes parameters")));
                     }
                     if file.routine(&name).is_some() {
                         return Err(Error::Invalid(format!("routine {name} is there twice")));
@@ -193,8 +191,7 @@ impl StoryFile {
                 return Err(Error::Invalid(format!("section {id:#06x} is there twice")));
             }
             let body = match value {
-                Expr::Field(object, name)
-                    if matches!(object.as_ref(), Expr::Name(n) if n == ROUTINES) =>
+                Expr::Field(object, name) if matches!(object.as_ref(), Expr::Name(n) if n == ROUTINES) =>
                 {
                     if self.routine(name).is_none() {
                         return Err(Error::Invalid(format!(
@@ -246,7 +243,9 @@ impl StoryFile {
     }
 
     pub fn routine_mut(&mut self, name: &str) -> Option<&mut Routine> {
-        self.routines.iter_mut().find(|routine| routine.name == name)
+        self.routines
+            .iter_mut()
+            .find(|routine| routine.name == name)
     }
 
     pub fn section(&self, id: u16) -> Option<&Section> {
@@ -299,7 +298,10 @@ impl StoryFile {
             .iter()
             .filter(|section| {
                 matches!(&section.body, SectionBody::Routine(name) if name == routine)
-                    || self.reached_routines(section.id).iter().any(|n| n == routine)
+                    || self
+                        .reached_routines(section.id)
+                        .iter()
+                        .any(|n| n == routine)
             })
             .map(|section| section.id)
             .collect()
@@ -491,9 +493,8 @@ pub(crate) mod tests {
     use super::*;
 
     /// The synthetic module of packages/session/tests/data/written_story.
-    pub(crate) const MODULE: &str = include_str!(
-        "../../../../packages/session/tests/data/written_story/story/900.lua"
-    );
+    pub(crate) const MODULE: &str =
+        include_str!("../../../../packages/session/tests/data/written_story/story/900.lua");
 
     #[test]
     fn reads_a_module() {

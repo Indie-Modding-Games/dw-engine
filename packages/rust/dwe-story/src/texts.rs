@@ -168,7 +168,10 @@ mod tests {
 
     #[test]
     fn splits_keys() {
-        assert_eq!(split_key("story_001.text.00aa"), Some(("story_001", "text.00aa")));
+        assert_eq!(
+            split_key("story_001.text.00aa"),
+            Some(("story_001", "text.00aa"))
+        );
         assert_eq!(split_key("nothing"), None);
     }
 }

@@ -1,9 +1,11 @@
 //! The editor's model: the mounted content, the map shown and how it is shown. It changes only
 //! through [`Mapper::apply`].
 
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use dwe_map::document::RawVec3;
+use dwe_map::places::{Places, plan_places_save};
 use dwe_map::save::{Problem, SaveMode, plan_save, write_changes};
 use dwe_map::world::{self, Cell};
 use dwe_map::{
@@ -11,13 +13,16 @@ use dwe_map::{
     TriggerBands, Warp,
 };
 use dwe_pack::{GameContent, GameFolders, Vfs};
+use dwe_story::save::plan_story_save;
+use dwe_story::{LoadedScript, MapEvents, StoryProblem};
 use glam::{Vec2, Vec3};
 
 use crate::action::{Action, PendingChoice};
 use crate::browser::{GroupBy, MapGroup, group_maps};
-use crate::edit::{CellChange, Edit, History};
+use crate::edit::{CellChange, Drafts, Edit, History};
 use crate::layers::{Layer, LayerSet};
 use crate::overlay::MapOverlay;
+use crate::story::{OpenSection, StoryContent, npc_count_changed};
 use crate::targets::{SaveTarget, Settings, create_mod_pack, writable_targets};
 use crate::tools::{self, Drag, Modifiers, Selection, Tool};
 use crate::view::View;
@@ -68,6 +73,14 @@ pub struct OpenMap {
     pub camera: MapCamera,
     pub overlay: MapOverlay,
     pub backgrounds: Vec<Background>,
+    /// The story, lines, doors and toilet edited, until a save.
+    pub drafts: Drafts,
+    /// The doors and the toilet as the table gives them.
+    pub places: Places,
+    /// What runs the map's sections (with the drafts).
+    pub events: MapEvents,
+    /// The scripts the map and the section editor show, as they run with the drafts.
+    pub scripts: BTreeMap<u16, LoadedScript>,
 }
 
 impl OpenMap {
@@ -117,6 +130,10 @@ pub struct Mapper {
     pub bands: TriggerBands,
     /// The labels of the story's triggers and variables (`story/names`).
     pub story_names: StoryNames,
+    /// The story modules, patches and lines of the content.
+    pub story: StoryContent,
+    /// The section open in the section editor.
+    pub section: Option<OpenSection>,
     pub variant: String,
     pub hover: Option<Hover>,
     pub filter: String,
@@ -140,6 +157,8 @@ pub struct Mapper {
     pub target: Option<PathBuf>,
     /// What a save found last (errors stop it).
     pub save_problems: Vec<Problem>,
+    /// What the last save found in the story drafts (errors stop it).
+    pub story_problems: Vec<StoryProblem>,
     /// Grows with every save written, so the interface can ask a connected game to reload.
     pub saves: u64,
     /// An action that waits for an answer about unsaved changes.
@@ -266,6 +285,38 @@ impl Mapper {
                 }
             }
             Action::Rotate(angle) => self.rotate(angle),
+            Action::CenterSelection => self.center_selection(),
+            Action::AddNpc(at) => self.add_npc(at),
+            Action::RemoveNpc => self.remove_npc(),
+            Action::SetDoor { slot, door } => self.set_door(slot, door),
+            Action::SetToilet(toilet) => self.set_toilet(toilet),
+            Action::OpenSection { script, section } => self.open_section(script, section),
+            Action::CloseSection => self.section = None,
+            Action::OpenRoutine(routine) => {
+                if let Some(open) = &mut self.section {
+                    open.routine = routine;
+                    open.selected = None;
+                }
+            }
+            Action::SelectStmt(path) => {
+                if let Some(open) = &mut self.section {
+                    open.selected = path;
+                }
+            }
+            Action::EditStory(change) => self.edit_story(change),
+            Action::SetText { key, text } => self.set_text(&key, &text),
+            Action::OpenAdjacentMap { later } => self.open_adjacent_map(later),
+            Action::Revert => {
+                if let Some(id) = self.map.as_ref().map(|map| map.document.id.clone()) {
+                    let view = self.view;
+                    self.load_map(&id);
+                    self.view = view;
+                }
+            }
+            Action::SetDwxPath(path) => {
+                self.settings.dwx = path;
+                self.store_settings();
+            }
             Action::DeleteSelection => {
                 if let Some(Selection::Waypoint { slot, part }) = self.selection {
                     self.apply(Action::RemoveWaypoint { slot, part });
@@ -386,6 +437,11 @@ impl Mapper {
                     self.messages.push(Message::Error(error.to_string()));
                     StoryNames::default()
                 });
+                self.story = StoryContent::load(content.vfs());
+                for problem in &self.story.patches.problems {
+                    self.messages.push(Message::Error(problem.clone()));
+                }
+                self.section = None;
                 self.content = Some(content);
                 self.map = None;
                 self.history.clear();
@@ -429,13 +485,8 @@ impl Mapper {
         };
         let entry = content.table.find(id).cloned();
         let camera = MapCamera::new(document.camera_desc());
-        let overlay = MapOverlay::build(
-            &document,
-            entry.as_ref(),
-            &content.table,
-            &camera,
-            &self.bands,
-        );
+        let places = Places::of(&content.table, entry.as_ref());
+        let overlay = MapOverlay::build(&document, &places, &content.table, &camera, &self.bands);
         let backgrounds = dwe_map::backgrounds(content.vfs(), id);
         self.map = Some(OpenMap {
             loaded: document.clone(),
@@ -445,11 +496,16 @@ impl Mapper {
             camera,
             overlay,
             backgrounds,
+            drafts: Drafts::default(),
+            places,
+            events: MapEvents::default(),
+            scripts: BTreeMap::new(),
         });
         self.hover = None;
         self.selection = None;
         self.drag = None;
         self.revision += 1;
+        self.refresh_story();
         true
     }
 
@@ -527,7 +583,9 @@ impl Mapper {
         };
         let shown = self.map.take();
         let (view, history, selection) = (self.view, self.history.clone(), self.selection);
+        let section = self.section.clone();
         self.open_content(folders);
+        self.section = section;
         let Some(shown) = shown else { return };
         if !self.load_map(&shown.document.id) {
             return;
@@ -539,19 +597,22 @@ impl Mapper {
         {
             map.document = shown.document;
             map.history = shown.history;
+            map.drafts = shown.drafts;
             self.selection = selection;
         }
         self.refresh_overlay();
+        self.refresh_story();
     }
 
     /// Builds the layers again after the document changed.
     fn refresh_overlay(&mut self) {
+        let places = self.places();
         let (Some(content), Some(map)) = (&self.content, &mut self.map) else {
             return;
         };
         map.overlay = MapOverlay::build(
             &map.document,
-            map.entry.as_ref(),
+            &places,
             &content.table,
             &map.camera,
             &self.bands,
@@ -559,13 +620,18 @@ impl Mapper {
     }
 
     /// Applies an edit to the map shown and records it; false when it changed nothing.
-    fn record(&mut self, edit: Edit) -> bool {
+    pub(crate) fn record(&mut self, edit: Edit) -> bool {
         let Some(map) = &mut self.map else {
             return false;
         };
-        let recorded = map.history.record(&mut map.document, edit);
+        // A brush stroke builds the events again when it ends.
+        let story = !matches!(edit, Edit::Cells(_));
+        let recorded = map.history.record(&mut map.document, &mut map.drafts, edit);
         if recorded {
             self.refresh_overlay();
+            if story {
+                self.refresh_story();
+            }
         }
         recorded
     }
@@ -574,12 +640,13 @@ impl Mapper {
         self.drag = None;
         let Some(map) = &mut self.map else { return };
         let stepped = if undo {
-            map.history.undo(&mut map.document)
+            map.history.undo(&mut map.document, &mut map.drafts)
         } else {
-            map.history.redo(&mut map.document)
+            map.history.redo(&mut map.document, &mut map.drafts)
         };
         if stepped {
             self.refresh_overlay();
+            self.refresh_story();
         }
     }
 
@@ -698,6 +765,9 @@ impl Mapper {
         if let Some(map) = &mut self.map {
             map.history.end_group();
         }
+        if drag.is_some() || self.tool.paints() {
+            self.refresh_story();
+        }
     }
 
     /// The marker under a canvas point: a path point, an NPC or an exit's arrival (those whose
@@ -725,6 +795,22 @@ impl Mapper {
                 }
             }
         }
+        if self.layers.shows(Layer::Doors) {
+            for door in &map.overlay.doors {
+                if near(door.position.from) {
+                    return Some((Selection::Door(door.slot), true));
+                }
+            }
+        }
+        if self.layers.shows(Layer::Toilet)
+            && let Some(points) = map.overlay.toilet
+        {
+            for (index, point) in points.into_iter().enumerate() {
+                if near(point) {
+                    return Some((Selection::Toilet(index), true));
+                }
+            }
+        }
         if self.layers.shows(Layer::Exits) {
             for exit in map.overlay.exits.iter().filter(|exit| exit.is_used()) {
                 if exit.arrival.is_some_and(|arrow| near(arrow.from)) {
@@ -746,12 +832,21 @@ impl Mapper {
                 .npcs
                 .get(slot)
                 .and_then(|npc| npc.waypoints.get(part).copied()),
+            Selection::Door(slot) => self.places().doors.get(slot).map(|door| door.position),
+            Selection::Toilet(index) => self.places().toilet.map(|toilet| {
+                let (x, z) = if index == 0 {
+                    (toilet.x1, toilet.z1)
+                } else {
+                    (toilet.x2, toilet.z2)
+                };
+                RawVec3 { x, y: 0, z }
+            }),
         }
     }
 
     /// The point of the ground under a canvas point at the height of an original position, in
     /// the original's axes.
-    fn ground_under(&self, at: Vec2, height_of: RawVec3) -> Option<RawVec3> {
+    pub(crate) fn ground_under(&self, at: Vec2, height_of: RawVec3) -> Option<RawVec3> {
         let map = self.map.as_ref()?;
         let height = world::to_world(height_of.into()).y;
         let ground = map
@@ -795,6 +890,23 @@ impl Mapper {
                         *waypoint = point;
                         self.set_npc(slot, npc);
                     }
+                }
+            }
+            Selection::Door(slot) => {
+                if let Some(door) = self.places().doors.get(slot) {
+                    let mut door = door.clone();
+                    door.position = point;
+                    self.set_door(slot, door);
+                }
+            }
+            Selection::Toilet(index) => {
+                if let Some(mut toilet) = self.places().toilet {
+                    if index == 0 {
+                        (toilet.x1, toilet.z1) = (point.x, point.z);
+                    } else {
+                        (toilet.x2, toilet.z2) = (point.x, point.z);
+                    }
+                    self.set_toilet(Some(toilet));
                 }
             }
         }
@@ -841,7 +953,53 @@ impl Mapper {
                     self.set_npc(slot, npc);
                 }
             }
-            Selection::Waypoint { .. } => {}
+            Selection::Door(slot) => {
+                if let Some(door) = self.places().doors.get(slot) {
+                    let mut door = door.clone();
+                    door.rotation = turn(door.rotation);
+                    self.set_door(slot, door);
+                }
+            }
+            Selection::Waypoint { .. } | Selection::Toilet(_) => {}
+        }
+    }
+
+    /// Centres the view on the selection, at a readable zoom.
+    fn center_selection(&mut self) {
+        let Some(selection) = self.selection else {
+            return;
+        };
+        let Some(position) = self.position_of(selection) else {
+            return;
+        };
+        let Some(map) = &self.map else { return };
+        let world = world::to_world(position.into());
+        if let Some(point) = map.camera.project_to_background(world) {
+            self.view.center = point.pixel;
+            self.view.zoom = self.view.zoom.max(1.0);
+        }
+    }
+
+    /// Opens the map before or after the one shown in the browser's list.
+    fn open_adjacent_map(&mut self, later: bool) {
+        let ids: Vec<String> = self
+            .groups()
+            .into_iter()
+            .flat_map(|group| group.maps)
+            .map(|map| map.id)
+            .collect();
+        if ids.is_empty() {
+            return;
+        }
+        let shown = self.map.as_ref().map(|map| map.document.id.as_str());
+        let next = match shown.and_then(|shown| ids.iter().position(|id| id == shown)) {
+            Some(at) if later => (at + 1) % ids.len(),
+            Some(at) => (at + ids.len() - 1) % ids.len(),
+            None => 0,
+        };
+        let id = ids[next].clone();
+        if self.open_map(&id) {
+            self.fit();
         }
     }
 
@@ -950,9 +1108,11 @@ impl Mapper {
         }
     }
 
-    /// Saves the map shown into the target pack; true when it was written.
+    /// Saves the map shown into the target pack, with its story drafts, lines, doors and toilet;
+    /// true when it was written.
     pub fn save(&mut self, mode: SaveMode) -> bool {
         self.save_problems.clear();
+        self.story_problems.clear();
         let Some(target) = self.current_target() else {
             self.messages
                 .push(Message::Error(crate::text::NO_TARGET.to_owned()));
@@ -970,6 +1130,14 @@ impl Mapper {
         else {
             return false;
         };
+        // Patches name NPC slots by place: a list that grew or shrank goes as the whole data.
+        let mode = if mode == SaveMode::Patch && npc_count_changed(&map.loaded, &map.document) {
+            self.messages
+                .push(Message::Info(crate::text::NPCS_SAVE_WHOLE.to_owned()));
+            SaveMode::WholeData
+        } else {
+            mode
+        };
         let plan = plan_save(
             content.vfs(),
             &content.table,
@@ -979,13 +1147,40 @@ impl Mapper {
             &map.document,
             mode,
         );
+        let story = plan_story_save(
+            content.vfs(),
+            &self.story.patches,
+            pack,
+            &map.drafts.scripts,
+            &map.drafts.texts,
+            dwe_story::texts::ENGLISH,
+        );
+        let places = match &map.drafts.places {
+            Some(after) => {
+                plan_places_save(content.vfs(), pack, &map.document.id, &map.places, after)
+            }
+            None => Ok(None),
+        };
         self.save_problems = plan.problems.clone();
-        if plan.has_errors() {
+        self.story_problems = story.problems.clone();
+        let places = match places {
+            Ok(places) => places,
+            Err(error) => {
+                self.story_problems
+                    .push(StoryProblem::Error(error.to_string()));
+                None
+            }
+        };
+        if plan.has_errors() || self.story_problems.iter().any(StoryProblem::is_error) {
             self.messages
                 .push(Message::Error(crate::text::SAVE_REFUSED.to_owned()));
             return false;
         }
-        if let Err(error) = write_changes(&plan.changes) {
+        let story_saved = !story.changes.is_empty() || places.is_some();
+        let mut changes = plan.changes;
+        changes.extend(story.changes);
+        changes.extend(places);
+        if let Err(error) = write_changes(&changes) {
             self.messages.push(Message::Error(format!(
                 "{}: {error}",
                 crate::text::SAVE_FAILED
@@ -993,9 +1188,13 @@ impl Mapper {
             return false;
         }
         map.history.mark_clean();
+        if story_saved {
+            // The drafts are the packs' files now; their undo steps would not undo the files.
+            map.drafts = Drafts::default();
+            map.history = History::default();
+        }
         self.saves += 1;
-        let files: Vec<String> = plan
-            .changes
+        let files: Vec<String> = changes
             .iter()
             .map(|change| change.path.display().to_string())
             .collect();
@@ -1010,6 +1209,74 @@ impl Mapper {
             crate::text::SAVED_IN,
             target.id
         )));
+        for problem in &self.story_problems {
+            if let StoryProblem::Warning(warning) = problem {
+                self.messages.push(Message::Info(warning.clone()));
+            }
+        }
+        if !story.warps_changed.is_empty() {
+            self.make_script_warps(&target.root);
+        }
         true
+    }
+
+    /// The dwx command that makes the target's `field/script_warps` again from the packs' Lua.
+    pub fn script_warps_command(&self, target: &std::path::Path) -> Option<Vec<String>> {
+        let content = self.content.as_ref()?;
+        let folders = &content.folders;
+        let dwx = self
+            .settings
+            .dwx
+            .clone()
+            .unwrap_or_else(|| PathBuf::from("dwx"));
+        let mut command = vec![
+            dwx.display().to_string(),
+            "script-warps".to_owned(),
+            folders.content.display().to_string(),
+        ];
+        for folder in folders.team_packs.iter().chain(&folders.mods) {
+            command.push("--with".to_owned());
+            command.push(folder.display().to_string());
+        }
+        command.push("-o".to_owned());
+        command.push(target.join("field/script_warps.yaml").display().to_string());
+        Some(command)
+    }
+
+    /// Runs dwx to make `field/script_warps` again (when it is set), or says the command.
+    fn make_script_warps(&mut self, target: &std::path::Path) {
+        let Some(command) = self.script_warps_command(target) else {
+            return;
+        };
+        let line = command.join(" ");
+        if self.settings.dwx.is_none() {
+            self.messages.push(Message::Error(format!(
+                "{}: {line}",
+                crate::text::WARPS_BY_HAND
+            )));
+            return;
+        }
+        let ran = std::process::Command::new(&command[0])
+            .args(&command[1..])
+            .output();
+        match ran {
+            Ok(output) if output.status.success() => {
+                self.messages.push(Message::Info(format!(
+                    "{}: {}",
+                    crate::text::WARPS_MADE,
+                    command.last().map_or("", String::as_str)
+                )));
+                self.reload_content(true);
+            }
+            Ok(output) => self.messages.push(Message::Error(format!(
+                "{} ({line}): {}",
+                crate::text::WARPS_FAILED,
+                String::from_utf8_lossy(&output.stderr).trim()
+            ))),
+            Err(error) => self.messages.push(Message::Error(format!(
+                "{} ({line}): {error}",
+                crate::text::WARPS_FAILED
+            ))),
+        }
     }
 }

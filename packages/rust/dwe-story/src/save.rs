@@ -50,7 +50,11 @@ impl StorySavePlan {
 }
 
 /// The id of the patch a pack has for a script, if any (its first by id).
-pub fn patch_of_pack(patches: &StoryPatches, pack: &str, script: u16) -> Option<(AssetId, PathBuf)> {
+pub fn patch_of_pack(
+    patches: &StoryPatches,
+    pack: &str,
+    script: u16,
+) -> Option<(AssetId, PathBuf)> {
     patches
         .of_script(script)
         .find(|(source, _)| source.pack == pack)
@@ -61,7 +65,13 @@ pub fn patch_of_pack(patches: &StoryPatches, pack: &str, script: u16) -> Option<
 pub fn new_patch_id(pack: &str, script: u16) -> String {
     let pack: String = pack
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() { c.to_ascii_lowercase() } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() {
+                c.to_ascii_lowercase()
+            } else {
+                '_'
+            }
+        })
         .collect();
     format!("{PATCH_FOLDER}{pack}_{script:03}")
 }
@@ -100,23 +110,30 @@ pub fn plan_story_save(
         let (path, on_disk) = match existing {
             Some((source, file)) => (source.file.clone(), Some(file.clone())),
             None => (
-                target.root.join(format!("{}.lua", new_patch_id(target.id(), script))),
+                target
+                    .root
+                    .join(format!("{}.lua", new_patch_id(target.id(), script))),
                 None,
             ),
         };
+        let new = on_disk.is_none();
         let mut file = match on_disk {
             // Nobody changed the file since the editing started: the draft is the file.
             Some(on_disk) if on_disk != draft.base => merge(on_disk, draft),
             _ => draft.file.clone(),
         };
+        if new {
+            // The draft may have started for another pack: the new file names itself.
+            let id = new_patch_id(target.id(), script);
+            file.preamble = StoryFile::new_patch(script, &patch_header(&id)).preamble;
+        }
         file.drop_unreached_routines();
         if file.routines.is_empty() {
             file.has_routines = false;
         }
         if let Err(error) = file.check_patch() {
-            plan.problems.push(StoryProblem::Error(format!(
-                "script {script}: {error}"
-            )));
+            plan.problems
+                .push(StoryProblem::Error(format!("script {script}: {error}")));
             continue;
         }
         let loaded = LoadedScript::load(vfs, patches, script);
@@ -180,7 +197,11 @@ fn warps_of(loaded: &LoadedScript, file: &StoryFile, base: &StoryFile) -> bool {
             None => loaded
                 .module
                 .as_ref()
-                .and_then(|(_, module)| module.section_block(id).map(|b| jumps_of(module, b, &table)))
+                .and_then(|(_, module)| {
+                    module
+                        .section_block(id)
+                        .map(|b| jumps_of(module, b, &table))
+                })
                 .unwrap_or_default(),
         };
         before != after
@@ -193,7 +214,11 @@ fn text_changes(
     texts: &BTreeMap<String, String>,
     language: &str,
 ) -> Vec<FileChange> {
-    let language = if language.is_empty() { ENGLISH } else { language };
+    let language = if language.is_empty() {
+        ENGLISH
+    } else {
+        language
+    };
     let mut by_table: BTreeMap<&str, Vec<(&str, &str)>> = BTreeMap::new();
     for (key, text) in texts {
         if let Some((table, inner)) = split_key(key) {
@@ -203,7 +228,9 @@ fn text_changes(
     let mut changes = Vec::new();
     for (table, lines) in by_table {
         let id = table_id(language, table);
-        let known = AssetId::parse(&id).ok().and_then(|id| target.file(&id).map(PathBuf::from));
+        let known = AssetId::parse(&id)
+            .ok()
+            .and_then(|id| target.file(&id).map(PathBuf::from));
         let path = known
             .clone()
             .unwrap_or_else(|| target.root.join(format!("{id}.yaml")));
@@ -300,26 +327,62 @@ mod tests {
         assert!(plan.warps_changed.is_empty());
         let root = packs.dir.path().join("mine");
         assert_eq!(plan.changes.len(), 2);
-        assert_eq!(plan.changes[0].path, root.join("story/patches/mine_900.lua"));
+        assert_eq!(
+            plan.changes[0].path,
+            root.join("story/patches/mine_900.lua")
+        );
         let patch = plan.changes[0].text.as_deref().unwrap();
         assert!(patch.starts_with("-- story/patches/mine_900.lua: written by dwe-mapper\n"));
         assert!(patch.contains("story.show_textbox(\"story_900.text.0200\")"));
         assert!(patch.contains("function routines.at_0100()"));
         assert!(!patch.contains("at_0080"));
         assert_eq!(plan.changes[1].path, root.join("text/en/story_900.yaml"));
-        assert_eq!(plan.changes[1].text.as_deref(), Some("text.0200: \"Bye\"\n"));
+        assert_eq!(
+            plan.changes[1].text.as_deref(),
+            Some("text.0200: \"Bye\"\n")
+        );
 
         // Written, the stack runs the patch's section and the line is the pack's.
         dwe_map::save::write_changes(&plan.changes).unwrap();
         let vfs = packs.mount(&["base", "mine"]);
         let patches = StoryPatches::load(&vfs);
         let loaded = LoadedScript::load(&vfs, &patches, 900);
-        assert_eq!(loaded.patched_by(0x51), Some("mine:story/patches/mine_900".to_owned()));
+        assert_eq!(
+            loaded.patched_by(0x51),
+            Some("mine:story/patches/mine_900".to_owned())
+        );
         assert_eq!(loaded.patched_by(0x52), None);
         let mut texts = crate::StoryTexts::new("");
         texts.load_table(&vfs, "story_900");
         assert_eq!(texts.text("story_900.text.0200"), Some("Bye"));
         assert_eq!(texts.text("story_900.text.0042"), Some("Hello"));
+    }
+
+    #[test]
+    fn a_draft_runs_in_the_packs_place() {
+        let packs = Packs::new();
+        packs.pack("top", "mods", 5);
+        packs.file(
+            "top/story/patches/top_900.lua",
+            "return {\n  script = 900,\n  sections = {\n    [0x0052] = function(original)\n      return original()\n    end,\n  },\n}\n",
+        );
+        let vfs = packs.mount(&["base", "mine", "top"]);
+        let patches = StoryPatches::load(&vfs);
+        let draft = edited(&patches, &vfs);
+        let shown = patches.with_draft(&vfs, "mine", &draft.file);
+        let loaded = LoadedScript::load(&vfs, &shown, 900);
+        assert_eq!(
+            loaded.patched_by(0x51),
+            Some("mine:story/patches/mine_900".to_owned())
+        );
+        assert_eq!(
+            loaded.patched_by(0x52),
+            Some("top:story/patches/top_900".to_owned())
+        );
+        assert_eq!(loaded.patches[0].0.pack, "mine");
+        // An empty draft leaves the stack as it was.
+        let empty = StoryFile::new_patch(900, "x");
+        assert_eq!(patches.with_draft(&vfs, "mine", &empty).patches.len(), 1);
     }
 
     #[test]
@@ -376,7 +439,9 @@ mod tests {
             "",
         );
         assert!(!plan.has_errors());
-        assert!(matches!(&plan.problems[..], [StoryProblem::Warning(text)] if text.contains("top:story/patches/top_900")));
+        assert!(
+            matches!(&plan.problems[..], [StoryProblem::Warning(text)] if text.contains("top:story/patches/top_900"))
+        );
         assert_eq!(plan.warps_changed, vec![900]);
     }
 

@@ -198,9 +198,7 @@ impl Expr {
     pub fn routine_call_name(&self) -> Option<&str> {
         match self {
             Self::Call(callee, arguments) if arguments.is_empty() => match callee.as_ref() {
-                Self::Field(object, name)
-                    if matches!(object.as_ref(), Self::Name(n) if n == "routines") =>
-                {
+                Self::Field(object, name) if matches!(object.as_ref(), Self::Name(n) if n == "routines") => {
                     Some(name)
                 }
                 _ => None,
@@ -261,7 +259,9 @@ fn walk_expr<'a>(expr: &'a Expr, visit: &mut impl FnMut(&'a Expr)) {
         Expr::Field(object, _) => walk_expr(object, visit),
         Expr::Call(callee, arguments) => {
             walk_expr(callee, visit);
-            arguments.iter().for_each(|argument| walk_expr(argument, visit));
+            arguments
+                .iter()
+                .for_each(|argument| walk_expr(argument, visit));
         }
         Expr::Paren(inner) | Expr::Not(inner) => walk_expr(inner, visit),
         Expr::Binary(_, left, right) => {

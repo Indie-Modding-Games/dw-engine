@@ -59,6 +59,9 @@ pub enum Problem {
     BadTargetExit { exit: i32, target_exit: i32 },
     /// An NPC's path does not fit the record (8 parts, at most 8 points).
     BadPath { slot: usize },
+    /// NPC slots were added or removed, which a patch cannot say (it names slots by place): the
+    /// map must be saved whole.
+    NpcSlotsInPatch,
     /// A pack above the target changes something the edit changed, so the game will not show
     /// the edit there.
     Overridden { packs: Vec<String> },
@@ -181,11 +184,18 @@ pub fn plan_save(
         if let Some(edit) = edit_patch(loaded, edited) {
             level = patch_map_document(map_id, &level.to_yaml(), &[edit]).map_err(failed)?;
         }
+        // The patch names NPC slots by place: slots added or removed go as the whole list.
+        if edited.npcs.len() != loaded.npcs.len() {
+            level.npcs = edited.npcs.clone();
+        }
         let folder = target.root.join(map_folder(map_id));
         let patch_path = folder.join(PATCH_FILE);
         let data_path = folder.join(DATA_FILE);
         let (data, patch) = match mode {
             SaveMode::Patch => {
+                if level.npcs.len() != floor.npcs.len() {
+                    return Err(Problem::NpcSlotsInPatch);
+                }
                 let patch = diff_patch(&floor, &level).map(|patch| patch_text(&patch));
                 if let Some(text) = &patch {
                     check_map_patch(text).map_err(failed)?;

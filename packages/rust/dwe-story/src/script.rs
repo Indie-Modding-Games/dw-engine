@@ -79,9 +79,54 @@ impl StoryPatches {
         patches
     }
 
+    /// The patches with a pack's patch of a script as edited: in place of the pack's own (its
+    /// first by id, the one the editor writes), or at the pack's place in the stack when it has
+    /// none. An empty draft takes the pack's patch out.
+    pub fn with_draft(&self, vfs: &Vfs, pack: &str, file: &StoryFile) -> Self {
+        let mut patches = self.clone();
+        let own = patches
+            .patches
+            .iter()
+            .position(|(source, known)| source.pack == pack && known.script == file.script);
+        let entry = |source: StoryFileSource| (source, file.clone());
+        match own {
+            Some(index) if file.sections.is_empty() => {
+                patches.patches.remove(index);
+            }
+            Some(index) => {
+                let source = patches.patches[index].0.clone();
+                patches.patches[index] = entry(source);
+            }
+            None if file.sections.is_empty() => {}
+            None => {
+                let position = |id: &str| vfs.packs().iter().position(|p| p.id() == id);
+                let Some(place) = position(pack) else {
+                    return patches;
+                };
+                let mounted = &vfs.packs()[place];
+                let id = crate::save::new_patch_id(pack, file.script);
+                let source = StoryFileSource {
+                    pack: pack.to_owned(),
+                    pack_root: mounted.root.clone(),
+                    id: AssetId::parse(&id).expect("a valid id"),
+                    file: mounted.root.join(format!("{id}.lua")),
+                };
+                let at = patches
+                    .patches
+                    .iter()
+                    .rposition(|(known, _)| position(&known.pack).is_some_and(|p| p <= place))
+                    .map_or(0, |index| index + 1);
+                patches.patches.insert(at, entry(source));
+            }
+        }
+        patches
+    }
+
     /// The patches of one script, bottom first.
     pub fn of_script(&self, script: u16) -> impl Iterator<Item = &(StoryFileSource, StoryFile)> {
-        self.patches.iter().filter(move |(_, file)| file.script == script)
+        self.patches
+            .iter()
+            .filter(move |(_, file)| file.script == script)
     }
 }
 
@@ -89,6 +134,32 @@ fn read_file(source: &StoryFileSource) -> Result<StoryFile> {
     let text = std::fs::read_to_string(&source.file)
         .map_err(|error| Error::Invalid(format!("{}: {error}", source.file.display())))?;
     StoryFile::parse(&text)
+}
+
+/// The module of a script that wins in the stack, and what did not read.
+pub fn read_module(vfs: &Vfs, script: u16) -> (Option<(StoryFileSource, StoryFile)>, Vec<String>) {
+    let id = AssetId::parse(&module_id(script)).expect("a valid id");
+    let Some((pack, file)) = vfs.resolve(&id) else {
+        return (None, Vec::new());
+    };
+    let source = StoryFileSource {
+        pack: pack.id().to_owned(),
+        pack_root: pack.root.clone(),
+        id,
+        file: file.to_path_buf(),
+    };
+    match read_file(&source) {
+        Ok(module) if module.script == script => (Some((source, module)), Vec::new()),
+        Ok(module) => {
+            let problem = format!(
+                "{}: returns script {}, not {script}",
+                source.file.display(),
+                module.script
+            );
+            (None, vec![problem])
+        }
+        Err(error) => (None, vec![format!("{}: {error}", source.file.display())]),
+    }
 }
 
 /// Who gives a section.
@@ -111,32 +182,24 @@ pub struct LoadedScript {
 
 impl LoadedScript {
     pub fn load(vfs: &Vfs, patches: &StoryPatches, script: u16) -> Self {
-        let mut loaded = Self {
-            script,
-            patches: patches.of_script(script).cloned().collect(),
-            ..Self::default()
-        };
-        let id = AssetId::parse(&module_id(script)).expect("a valid id");
-        if let Some((pack, file)) = vfs.resolve(&id) {
-            let source = StoryFileSource {
-                pack: pack.id().to_owned(),
-                pack_root: pack.root.clone(),
-                id,
-                file: file.to_path_buf(),
-            };
-            match read_file(&source) {
-                Ok(module) if module.script == script => loaded.module = Some((source, module)),
-                Ok(module) => loaded.problems.push(format!(
-                    "{}: returns script {}, not {script}",
-                    source.file.display(),
-                    module.script
-                )),
-                Err(error) => loaded
-                    .problems
-                    .push(format!("{}: {error}", source.file.display())),
-            }
-        }
+        let (module, problems) = read_module(vfs, script);
+        let mut loaded = Self::with_module(script, module, patches);
+        loaded.problems = problems;
         loaded
+    }
+
+    /// A script from a module already read and the patches of the stack.
+    pub fn with_module(
+        script: u16,
+        module: Option<(StoryFileSource, StoryFile)>,
+        patches: &StoryPatches,
+    ) -> Self {
+        Self {
+            script,
+            module,
+            patches: patches.of_script(script).cloned().collect(),
+            problems: Vec::new(),
+        }
     }
 
     /// Who runs a section: the top patch that gives it, or the module.

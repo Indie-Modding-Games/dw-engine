@@ -46,7 +46,8 @@ fn every_module_round_trips_and_every_section_patches() {
         if written == text {
             same_bytes += 1;
         }
-        let again = StoryFile::parse(&written).unwrap_or_else(|error| panic!("{id} again: {error}"));
+        let again =
+            StoryFile::parse(&written).unwrap_or_else(|error| panic!("{id} again: {error}"));
         assert_eq!(again, module, "{id} does not read back the same");
         for section in &module.sections {
             let mut patch = StoryFile::new_patch(module.script, "test");
@@ -78,8 +79,20 @@ fn every_map_lists_its_events() {
         let Ok(document) = load_map(&content.vfs, &entry.id) else {
             continue;
         };
-        let found = MapEvents::build(&content.vfs, &patches, &table, &bands, &document, Some(entry));
-        assert!(found.problems.is_empty(), "{}: {:?}", entry.id, found.problems);
+        let found = MapEvents::build(
+            &content.vfs,
+            &patches,
+            &table,
+            &bands,
+            &document,
+            Some(entry),
+        );
+        assert!(
+            found.problems.is_empty(),
+            "{}: {:?}",
+            entry.id,
+            found.problems
+        );
         assert!(found.map_script.is_some(), "{} has no script", entry.id);
         events += found.events.len();
         missing += found.events.iter().filter(|event| !event.exists).count();

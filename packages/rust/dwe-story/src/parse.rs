@@ -321,7 +321,10 @@ impl Parser {
                 self.next();
                 return Ok(Expr::Number(-number));
             }
-            return Err(Error::at(self.peek().line, "a minus that is not before a number"));
+            return Err(Error::at(
+                self.peek().line,
+                "a minus that is not before a number",
+            ));
         }
         self.suffixed()
     }
@@ -495,7 +498,9 @@ mod tests {
         let Expr::Binary(BinOp::Or, left, right) = value else {
             panic!("{value:?}")
         };
-        assert!(matches!(left.as_ref(), Expr::Binary(BinOp::And, l, _) if matches!(l.as_ref(), Expr::Not(_))));
+        assert!(
+            matches!(left.as_ref(), Expr::Binary(BinOp::And, l, _) if matches!(l.as_ref(), Expr::Not(_)))
+        );
         assert!(matches!(right.as_ref(), Expr::Binary(BinOp::Eq, _, _)));
     }
 
