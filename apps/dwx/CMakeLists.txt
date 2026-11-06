@@ -21,6 +21,7 @@ dwe_add_module(dwx
         src/disc_cache.cpp
         src/disc_description.cpp
         src/effect_extractors.cpp
+        src/evolution_guide.cpp
         src/extract.cpp
         src/extract_disc.cpp
         src/extractors.cpp
