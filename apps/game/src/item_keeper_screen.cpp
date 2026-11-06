@@ -1,7 +1,5 @@
 #include "item_keeper_screen.hpp"
 
-#include "common.hpp"
-
 #include <dwe/core/log.hpp>
 #include <dwe/screens/name_keys.hpp>
 
@@ -12,6 +10,8 @@
 #include <utility>
 #include <variant>
 #include <vector>
+
+#include "common.hpp"
 
 namespace dwe::app {
 namespace {

@@ -199,8 +199,7 @@ struct ScreenArea {
 };
 
 ScreenArea screenAreaCheck(const BattleGround& ground, const TimingRules& timing, Point from,
-                           Point to, std::int32_t radius, std::int32_t width,
-                           std::int32_t height) {
+                           Point to, std::int32_t radius, std::int32_t width, std::int32_t height) {
   // map.c: entityCheckCombatArea: the step leaves a rectangle of the screen. Two corners of the
   // mover's box are tested, as its loop over QUADRANTS ignores its inner index: the near left one
   // on the ground and the near right one corner_height up.

@@ -1,11 +1,11 @@
 // Holding confirm keeps moving items, slow at first and quicker as the hold goes on
 // (apps/game/src/confirm_repeat.hpp).
 
-#include "confirm_repeat.hpp"
-
 #include <doctest/doctest.h>
 
 #include <vector>
+
+#include "confirm_repeat.hpp"
 
 namespace dwe::app {
 namespace {

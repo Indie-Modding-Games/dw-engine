@@ -149,7 +149,8 @@ TEST_CASE("walk is held with either shift key or the gamepad's right shoulder") 
   input.handle(KeyChanged{.key = keys::RightShift, .down = true, .repeat = false});
   CHECK(input.isDown("walk"));
   input.handle(KeyChanged{.key = keys::RightShift, .down = false, .repeat = false});
-  input.handle(GamepadButtonChanged{.id = Pad, .button = GamepadButton::RightShoulder, .down = true});
+  input.handle(
+      GamepadButtonChanged{.id = Pad, .button = GamepadButton::RightShoulder, .down = true});
   CHECK(input.isDown("walk"));
   CHECK(input.lastDevice() == DeviceKind::Gamepad);
 }

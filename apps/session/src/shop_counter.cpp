@@ -259,10 +259,10 @@ void ShopCounter::open(ShopVisit visit) {
                      loaded.error().message);
   }
   visit_ = std::move(visit);
-  core::logDebug("[port:shop] {}: keeper '{}'{}, lines section {}",
-                 visit_->recycle ? "openRecycleShop (script_menu.c:584)"
-                                 : "openShop (script_common.c:1618)",
-                 visit_->keeperSpecies, visit_->ownerless ? " (ownerless)" : "", linesSection(*visit_));
+  core::logDebug(
+      "[port:shop] {}: keeper '{}'{}, lines section {}",
+      visit_->recycle ? "openRecycleShop (script_menu.c:584)" : "openShop (script_common.c:1618)",
+      visit_->keeperSpecies, visit_->ownerless ? " (ownerless)" : "", linesSection(*visit_));
 }
 
 void ShopCounter::close() {

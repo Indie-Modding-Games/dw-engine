@@ -1,10 +1,10 @@
 -- The bird transport the story opens (shop/script_menu.c: tickBirdraTransport). The game drives it
--- (apps/game/src/bird_transport_screen.cpp) and publishes it as settings, bumping bird.revision once
--- per change: bird.phase (greeting, list, confirm, choice, farewell), .speaker (the carrier's name, a
--- text key; empty on the yes-or-no), .player (the player's name, on the yes-or-no), .line_key (what
--- the carrier says, or the yes-or-no's lines), .bits_key and .money (the money box), .choice,
--- .cursor, .total and bird.row.<n>.name/cost/affordable. Every button goes to the game as
--- bird_action.
+-- (apps/game/src/bird_transport_screen.cpp) and publishes it as settings, bumping bird.revision
+-- once per change: bird.phase (greeting, list, confirm, choice, farewell), .speaker (the carrier's
+-- name, a text key; empty on the yes-or-no), .player (the player's name, on the yes-or-no),
+-- .line_key (what the carrier says, or the yes-or-no's lines), .bits_key and .money (the money
+-- box), .choice, .cursor, .total and bird.row.<n>.name/cost/affordable. Every button goes to the
+-- game as bird_action.
 
 local Rows = 6
 -- The money box and the menu stay up while the carrier asks about the picked place (states 3
@@ -56,9 +56,7 @@ local function draw_menu(document)
       :get("row-" .. row)
       :set_class("unaffordable", shown and not ui.setting(prefix .. "affordable"))
   end
-  document
-    :get("cursor")
-    :set_property("top", string.format("%ddp", 54 + 54 * number("bird.cursor")))
+  document:get("cursor"):set_property("top", string.format("%ddp", 54 + 54 * number("bird.cursor")))
 end
 
 local function draw_talk(document, phase)

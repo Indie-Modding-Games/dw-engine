@@ -31,7 +31,8 @@ bool MoneyBoxScreen::take(const session::StoryScreenRequest& request, const Fiel
   }
   // createShopBitsBox(1): the keeper variable 254 names says its money line (getShopkeeperLine),
   // the map's NPC with that script id, by its species.
-  session::ShopVisit keeper{.ownerless = request.first == NoOwner, .keeperSpecies = {}, .recycle = false};
+  session::ShopVisit keeper{
+      .ownerless = request.first == NoOwner, .keeperSpecies = {}, .recycle = false};
   for (const auto& npc : scene.map().npcs) {
     if (!keeper.ownerless && npc.scriptId == request.first && npc.digimon) {
       keeper.keeperSpecies = *npc.digimon;
