@@ -35,7 +35,13 @@ std::size_t MapSceneData::backgroundVariant(TimeOfDay time, bool fixedTimeOfDay)
 
 core::Result<MapSceneData> loadMapSceneData(const assets::VirtualFileSystem& vfs,
                                             std::string_view mapId) {
-  auto document = assets::loadMapDocument(vfs, mapId);
+  return loadMapSceneData(vfs, mapId, {});
+}
+
+core::Result<MapSceneData> loadMapSceneData(const assets::VirtualFileSystem& vfs,
+                                            std::string_view mapId,
+                                            std::span<const assets::MapPatchText> extra) {
+  auto document = assets::loadMapDocument(vfs, mapId, extra);
   if (!document) {
     return std::unexpected{document.error()};
   }

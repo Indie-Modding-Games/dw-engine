@@ -301,3 +301,64 @@ TEST_CASE("the content check loads a patched map and finds patches without a map
   CHECK(problems[1].id.str() == "map/twna01/data");
   CHECK(problems[1].message.contains("exit' 11"));
 }
+
+TEST_CASE("the sections of a patch say whether it changes only the collision") {
+  const auto sections = dwe::assets::mapPatchSections("collision:\n  cells: []\n");
+  REQUIRE_MESSAGE(sections.has_value(), errorOf(sections));
+  CHECK(sections->collision);
+  CHECK(sections->onlyCollision());
+  CHECK(dwe::assets::mapPatchSections("{}")->onlyCollision());
+  const auto mixed = dwe::assets::mapPatchSections(
+      "camera: {projection: 2}\nwarps: []\nnpcs: []\nlights: []\nobjects: {}\n");
+  REQUIRE_MESSAGE(mixed.has_value(), errorOf(mixed));
+  CHECK(mixed->camera);
+  CHECK(mixed->warps);
+  CHECK(mixed->npcs);
+  CHECK(mixed->lights);
+  CHECK(mixed->objects);
+  CHECK_FALSE(mixed->collision);
+  CHECK_FALSE(mixed->onlyCollision());
+  // A patch that is wrong is no patch.
+  CHECK_FALSE(dwe::assets::mapPatchSections("camera: {zoom: 2}\n").has_value());
+  const auto broken = dwe::assets::mapPatchSections("warps: [\n");
+  REQUIRE_FALSE(broken.has_value());
+  CHECK(broken.error().message.contains("line "));
+}
+
+TEST_CASE("loadMapDocument applies more patches last, and their errors name them") {
+  MemoryFileSystem memory;
+  memory.addFile("base/pack.yaml", "id: base\nversion: 1.0.0\nlayer: base\n");
+  memory.addFile("base/map/twna01/data.yaml", fixtureMap());
+  memory.addFile("high/pack.yaml", "id: high\nversion: 1.0.0\nlayer: mods\npriority: 2\n");
+  memory.addFile("high/map/twna01/patch.yaml", "warps:\n- {exit: 0, target_exit: 7}\n");
+  const std::vector<std::filesystem::path> roots{"base", "high"};
+  const auto vfs = VirtualFileSystem::mount(memory, roots);
+  REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
+
+  const std::array preview{MapPatchText{.pack = "preview",
+                                        .baseRights = false,
+                                        .file = "preview",
+                                        .text = "warps:\n- {exit: 0, target_exit: 3}\n"}};
+  const auto map = dwe::assets::loadMapDocument(*vfs, "twna01", preview);
+  REQUIRE_MESSAGE(map.has_value(), errorOf(map));
+  CHECK(map->patches == std::vector<std::string>{"high", "preview"});
+  CHECK(map->warp(0)->targetExit == 3);
+
+  const std::array wrong{MapPatchText{.pack = "preview",
+                                      .baseRights = false,
+                                      .file = "preview",
+                                      .text = "npcs:\n- {index: 40, script_id: 1}\n"}};
+  const auto refused = dwe::assets::loadMapDocument(*vfs, "twna01", wrong);
+  REQUIRE_FALSE(refused.has_value());
+  CHECK(refused.error().message.contains("patch preview"));
+
+  const std::array broken{MapPatchText{
+      .pack = "preview", .baseRights = false, .file = "preview", .text = "warps:\n- [\n"}};
+  const auto unread = dwe::assets::loadMapDocument(*vfs, "twna01", broken);
+  REQUIRE_FALSE(unread.has_value());
+  CHECK(unread.error().message.contains("patch preview"));
+  CHECK(unread.error().message.contains("line "));
+
+  // Without them, the packs' alone.
+  CHECK(dwe::assets::loadMapDocument(*vfs, "twna01")->warp(0)->targetExit == 7);
+}
