@@ -101,6 +101,9 @@ private:
   void playUiSound(std::int32_t sound) const;
   void publishCountup(screens::ScreenSettings& settings,
                       const game::gym::StatCountup& countup) const;
+  // The training check's settings (gym.session.*, dev.sh training-check): what the session just
+  // awarded did, once a session.
+  void publishRecord(const game::gym::CourseRun& run);
 
   GymScreenDesc desc_;
   game::gym::GymRules rules_;
@@ -111,6 +114,8 @@ private:
   bool complete_ = false;
   bool cancelPressed_ = false;
   bool cancelHeld_ = false;
+  bool recordPublished_ = false;
+  std::int32_t sessions_ = 0;
   bool boxShown_ = false;
   game::gym::GrowingBox statsBox_;
   game::gym::GrowingBox slotsBox_;

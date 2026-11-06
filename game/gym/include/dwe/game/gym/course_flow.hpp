@@ -89,6 +89,18 @@ public:
   virtual Award award(const CourseRules& course, std::int32_t slotTenths) = 0;
 };
 
+// What a session did, in the original's units, as the training check reads it (the gym's tests and
+// dev.sh training-check): its frames, from the partner's arrival at the machine to the award; how
+// far the partner got from where it arrived; and the ground it covered frame by frame, leaving out
+// the laps that put it back (placePartner).
+struct SessionRecord {
+  std::int32_t frames = 0;
+  std::int32_t maxOffset = 0;
+  std::int32_t path = 0;
+  // The stats before the session and its gains, once awarded.
+  std::optional<Award> award;
+};
+
 // What the player pressed this frame.
 struct GymInput {
   // Confirm newly pressed. With cancel, it ends the stats count at once.
@@ -119,6 +131,8 @@ public:
   [[nodiscard]] const CourseRules& course() const { return *course_; }
   // The roulette while it is on screen.
   [[nodiscard]] const std::optional<SlotMachine>& slots() const { return slots_; }
+  // The session so far; complete once it has its award.
+  [[nodiscard]] const SessionRecord& record() const { return record_; }
 
 private:
   void frame(GymPorts& ports, const GymInput& input);
@@ -139,6 +153,10 @@ private:
 
   // The steps every course shares.
   void begin(GymPorts& ports);
+  // The session's record after each frame: the partner's position from its arrival to the award.
+  void watch(GymPorts& ports);
+  // placePartner, a jump the record's path leaves out.
+  void placePartner(GymPorts& ports, Axis axis, std::int32_t value);
   // TRN_startSlotSessionIfEnabled.
   void startSlots(GymPorts& ports);
   // TRN_startSlotSpin: the partner is at the machine.
@@ -182,6 +200,15 @@ private:
   std::optional<SlotMachine> slots_;
   // An input seen during a tick that steps no frame still counts on the next frame.
   GymInput pending_;
+  SessionRecord record_;
+  // The session's state for the record: arrived (startSpin) but not yet watched, under way, and
+  // where the partner arrived and was last seen.
+  bool arriving_ = false;
+  bool inSession_ = false;
+  bool awarded_ = false;
+  bool jumped_ = false;
+  Point arrival_{};
+  Point lastSeen_{};
 };
 
 } // namespace dwe::game::gym

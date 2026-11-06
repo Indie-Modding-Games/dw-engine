@@ -21,6 +21,7 @@ dwe_add_module(session
         src/game_session.cpp
         src/game_systems.cpp
         src/gym_adapter.cpp
+        src/gym_field_ports.cpp
         src/inventory_adapter.cpp
         src/item_use_rules.cpp
         src/map_head_lines.cpp

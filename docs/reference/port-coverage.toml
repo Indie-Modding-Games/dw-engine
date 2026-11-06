@@ -689,7 +689,7 @@ createSavegameChecksum = { status = "no-aplica", note = "suma de control de la t
 countRegisteredDigimon = { status = "portado", dwe = "apps/session/src/battle_registry.cpp", what = "Cuenta las criaturas registradas para el modo versus.", note = "el menú del versus que lo pregunta llega con ese modo" }
 registerBattleData = { status = "portado", dwe = "apps/session/include/dwe/session/battle_registry.hpp", what = "Registra al compañero para el modo versus.", note = "el registro se guarda; el modo versus que lo usa llega en la fase 5" }
 awardMachinedramonData = { status = "portado", dwe = "apps/session/include/dwe/session/game_clear.hpp", note = "especie y técnicas en rules/original/story_scenes.yaml (ending); sin medir en el original (Suposición)", what = "Al acabar el juego, el último registro del modo versus toma el nombre y los atributos del compañero con la especie del jefe final." }
-TRN_saveBaseStats = { system = "training", status = "portado", dwe = "apps/game/src/gym_screen.cpp", what = "Guarda los stats antes de entrenar para contar lo ganado." }
+TRN_saveBaseStats = { system = "training", status = "portado", dwe = "apps/session/src/gym_field_ports.cpp", what = "Guarda los stats antes de entrenar para contar lo ganado." }
 TRN_saveTrainingStartTime = { system = "training", status = "portado", dwe = "game/partner/src/partner_activities.cpp", what = "Guarda la hora al empezar a entrenar." }
 
 # --- Audio
