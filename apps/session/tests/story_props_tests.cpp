@@ -82,10 +82,10 @@ end
 return { script = 30, sections = { [5] = routines.at_0005 } }
 )lua");
   auto files = dwe::assets::VirtualFileSystem::mount(
-      {dwe::assets::PackLocation{.fileSystem = &memory,
-                                 .root = "base",
-                                 .fillsGaps = false,
-                                 .origin = dwe::assets::PackOrigin::Engine}});
+      std::vector{dwe::assets::PackLocation{.fileSystem = &memory,
+                                            .root = "base",
+                                            .fillsGaps = false,
+                                            .origin = dwe::assets::PackOrigin::Engine}});
   REQUIRE(files.has_value());
   StoryPlay play{*files};
   RecordedProps props{play.recorder()};
