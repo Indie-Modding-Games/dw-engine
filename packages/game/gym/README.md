@@ -6,7 +6,7 @@ El gimnasio del pueblo: la coreografía de cada curso de entrenamiento y lo que 
 - Depende de: `assets`, `core`, `ruleset`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/game/gym.md](../../../docs/modulos/game/gym.md).
+- Documentación: [modulos/game/gym](https://indie-modding-games.github.io/dw-engine/modulos/game/gym).
 
 Compilar y probar solo este paquete:
 

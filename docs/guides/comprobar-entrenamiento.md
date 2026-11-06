@@ -7,14 +7,14 @@ dos niveles.
 
 ## Cuándo es obligatoria
 
-Antes de cada PR que toque el gimnasio (`game/gym`, la pantalla del gimnasio, las reglas `gym.yaml`), la animación
+Antes de cada PR que toque el gimnasio (`packages/game/gym`, la pantalla del gimnasio, las reglas `gym.yaml`), la animación
 del campo, el movimiento de raíz de los clips (`clipRootStep`, `applyClipRootMotion`, la marca de sujetar en el
 sitio) o las reglas del entrenamiento. Las dos partes tienen que pasar; el resultado de la segunda va en la
 descripción del PR.
 
 ## Nivel 1: pruebas unitarias (CI)
 
-`apps/session/tests/gym_course_tests.cpp` juega una sesión entera de cada curso sobre un campo de verdad con datos
+`packages/session/tests/gym_course_tests.cpp` juega una sesión entera de cada curso sobre un campo de verdad con datos
 inventados: cada clip del partner avanza 10 unidades por cuadro, así que un curso que no lo sujete donde el original
 lo sujeta, o que lo mueva además de su clip, se sale de sus límites. Para cada curso comprueba:
 
@@ -27,7 +27,7 @@ ruta. Corren con el resto de pruebas de `dwe_session_tests`, en el CI de cada PR
 
 ```sh
 scripts/dev.sh build && scripts/dev.sh test                                  # todas, como el CI
-build/ci/apps/session/dwe_session_tests --test-case='training check*'        # solo estas
+build/ci/packages/session/dwe_session_tests --test-case='training check*'        # solo estas
 ```
 
 ## Nivel 2: el contenido real (local)

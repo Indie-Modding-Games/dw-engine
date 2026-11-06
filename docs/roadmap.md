@@ -42,7 +42,7 @@ aprueba el responsable de diseño ([ADR 0010](adr/0010-reglas-propias-con-rulese
 
 - Esta documentación: arquitectura, ADR, plan y convenciones.
 - Repositorio con CMake, presets, vcpkg, clang-format, clang-tidy y CI en Linux y Windows.
-- `engine/` mínimo:
+- `packages/engine/` mínimo:
   - ventana y dispositivo Vulkan;
   - entrada por acciones con teclado, ratón y mandos, con conexión en caliente ([ADR 0014](adr/0014-mandos-y-entrada.md));
   - bucle con lógica a paso fijo y render desacoplado;
@@ -72,7 +72,7 @@ CI pasa.
 
 ## Fase 1 — Tubería de assets
 
-- Librería `formats/`: sistema de ficheros del CD, TIM, TMD/MMD, mapas, ALLTIM, textos, bytecode de eventos, VAB/SEQ,
+- Librería `packages/formats/`: sistema de ficheros del CD, TIM, TMD/MMD, mapas, ALLTIM, textos, bytecode de eventos, VAB/SEQ,
   STR y las tablas del ejecutable.
 - `dwx extract`, `validate`, `cook` y `pack`.
 - Sistema de ficheros virtual con capas y manifiestos de paquete.
@@ -143,7 +143,7 @@ autotest lo recorre con el reloj acelerado.
 ## Fase 4 — El juego original entero
 
 - Historia: los scripts de eventos del disco convertidos a Lua al extraer, y el intérprete de historia que los
-  ejecuta (`game/story`).
+  ejecuta (`packages/game/story`).
 - Todos los sistemas del original que pide la historia: tiendas, torneos, pesca, minijuegos, muerte y renacer,
   películas y final.
 - Entrega por etapas detrás del candado de historia, cada una con sus rutas de autotest.

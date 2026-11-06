@@ -69,7 +69,7 @@ partner.addStatGains(evolutionGains);                                           
   guion `PSTAT_SUKAMON_BACKUP_DIGIMON` y los stats en `sukaBackup*` (decidido por el responsable de diseño,
   2026-10-20: la forma va con el partner). Al volver de la forma virus la sesión pone los stats reconstruidos con
   `setStats` y los deja en el tope de cada stat de `care.limits` (9999 HP y MP, 999 el resto), sin el tope por
-  ganancia (`apps/session`: `EvolutionAdapter`).
+  ganancia (`packages/session`: `EvolutionAdapter`).
 - **Cacas.** `PoopPiles` guarda las cacas del mundo como el original: delante del partner, a un paso al azar si la
   casilla está ocupada, 16 por mapa y 100 en total, reutilizando las más antiguas.
 - **Guardado.** `toYaml`/`fromYaml` con `PartnerStateVersion` (`state_yaml.hpp`); la sesión los envuelve en un
@@ -176,20 +176,20 @@ Igual: hace lo mismo que el decomp. Desviación aprobada: distinto a propósito.
 | Muerte natural | `partner_impl.c: tickDeathCondition` | `tickDeath`: espera al tamer libre (`tamerIdle`) y a que no corra ningún guion (`scriptIdle`); la vida que quita una enfermedad sin tratar, también | `life_tests`: natural death, death waits | Igual |
 | Renacer y herencia | `evolution.c: reincarnatePartner`; `partner_impl.c: initializeReincarnatedPartner`; `dooa.c` | `rebirth`, `OriginalRebirthChoice` | `life_tests`: rebirth | Igual |
 | Combate: tiempo, comida y caca | `tamer.c: advanceBattleTime` | `passBattleTime` (los pasos de caca salen de `toilet.poop_step_minutes`) | `a battle's minutes bring the meal closer ...`, `a battle across midnight ...` | Igual |
-| Combate que ya resolvió `game/battle`: sus números y la cuenta horaria si acaba una hora | `tamer.c: startBattle`, `advanceBattleTime` | `applyBattle` (`BattleConsequences`), `passBattleTime` | `a battle the battle system settled ...`, `a settled battle that ends an hour ...` | Igual |
+| Combate que ya resolvió `packages/game/battle`: sus números y la cuenta horaria si acaba una hora | `tamer.c: startBattle`, `advanceBattleTime` | `applyBattle` (`BattleConsequences`), `passBattleTime` | `a battle the battle system settled ...`, `a settled battle that ends an hour ...` | Igual |
 | Saltar horas | `partner_impl.c: skipHours` | `skipHours` | `activity_tests`: rest | Igual |
 | Infelicidad al saltar horas | `partner_impl.c: skipHours` | `unhappyChecksWhileSkipping`, `care.quirks.skipped_hours_unhappiness_only_at_midnight` | `activity_tests`: rest, only at midnight | Igual (2026-10-20): la rareza queda por defecto; `false` resta por cada múltiplo de 4 horas cruzado |
 | Multiplicador de entrenamiento | `trn_reward.c: TRN_calculateTrainingMultiplier` | `OriginalGainFormula` | `training_tests` | Igual |
 | Ganancias y cansado del todo | `trn_reward.c: TRN_award*TrainingGains` | `OriginalGainFormula` | `training_tests` | Igual |
 | Tope de cada ganancia: 999 | `trn_reward.c: TRN_award*TrainingGains` (solo la primera ganancia de la sesión); sin tope por ganancia en `item.c: handleFood`, `evl.c: EVL_applyEvolution` y `partner_impl.c: setReincarnateStats` | `addStatGains`, `care.limits.stat_gain_max` | `stat_gain_tests` | Desviación aprobada (2026-10-20): toda ganancia se queda en 999, también la de un objeto (un objeto de +1000 HP da +999), la media de la evolución (sube 999 como mucho) y la herencia; los dos efectos se aceptan |
 | Tope de cada stat: 9999 y 999 | `item.c: addWithLimit`; `evl.c: EVL_clampBaseStats` | `addStatGains`, `care.limits` | `training_tests`: stop at 9999 | Igual |
-| Vuelta de la forma virus: stats reconstruidos | `partner.c: callDigimonRoutine` (2); `evl.c: EVL_scaleBaseStats`, `EVL_clampBaseStats` | `setStats` y el tope de `care.limits` en `apps/session` (`EvolutionAdapter`) | `apps/session`: `back from the virus form ...` | Igual (2026-10-20): sin el tope de 999 por ganancia |
+| Vuelta de la forma virus: stats reconstruidos | `partner.c: callDigimonRoutine` (2); `evl.c: EVL_scaleBaseStats`, `EVL_clampBaseStats` | `setStats` y el tope de `care.limits` en `packages/session` (`EvolutionAdapter`) | `packages/session`: `back from the virus form ...` | Igual (2026-10-20): sin el tope de 999 por ganancia |
 | Hora de entrenamiento | `trn_reward.c: TRN_advanceTrainingTime` | `passTrainingHour` | `training_tests`: takes an hour | Igual |
 | Año de 31 días al entrenar | `trn_reward.c: TRN_advanceTrainingTime` (el día vuelve a 0 en 31; el reloj, en 30) | — (usa el reloj, 30) | — | Hueco conocido (2026-10-20): se queda así, sin bandera |
 | Patrones de sueño | `partner_impl.c: SLEEP_PATTERN` | `care.sleep.patterns`, con su cita | `rules_tests`: the original's numbers | Igual (2026-10-20): constantes del ruleset |
 | Stats fijos de los bebés del renacer | `partner_impl.c: initializeReincarnatedPartner`; `dooa.c: REINCARNATE_BABY_TYPE` | `life.rebirth.babies`, con su cita | `rules_tests`: the original's numbers | Igual (2026-10-20): constantes del ruleset |
-| Evoluciones al despertar | `partner_impl.c: handleSleeping` | — (`game/evolution`: `Evolution::wakeUp`, que la sesión llama al despertar) | — | Fuera de este módulo |
-| Técnicas tras renacer | `evolution.c: reincarnatePartner` | — (`apps/session`: `BattleAdapter` con el evento `Reborn`, `partner_moves.reborn_slot`) | — | Fuera de este módulo |
+| Evoluciones al despertar | `partner_impl.c: handleSleeping` | — (`packages/game/evolution`: `Evolution::wakeUp`, que la sesión llama al despertar) | — | Fuera de este módulo |
+| Técnicas tras renacer | `evolution.c: reincarnatePartner` | — (`packages/session`: `BattleAdapter` con el evento `Reborn`, `partner_moves.reborn_slot`) | — | Fuera de este módulo |
 
 ## Tests
 

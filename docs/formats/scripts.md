@@ -231,7 +231,7 @@ La forma del módulo:
 `dwx convert-script <listado> -o <carpeta>` convierte un listado suelto (el YAML que edita un mod) con el mismo
 código, y `dwx validate` compila todo el Lua de los paquetes. Los tests corren cada sección en Lua, con una API
 `story` falsa, contra un intérprete de referencia del listado, y comparan las llamadas y cómo acaba
-(`formats/tests/lua_emitter_tests.cpp`, y sobre el disco `lua_emitter_disc_tests.cpp`). Los mismos tests comprueban
+(`packages/formats/tests/lua_emitter_tests.cpp`, y sobre el disco `lua_emitter_disc_tests.cpp`). Los mismos tests comprueban
 que ningún nombre generado tiene una palabra prohibida (`ForbiddenNameWords`).
 
 La prueba con listados aleatorios tiene dos tamaños. La de cada commit (`FastParity`: 120 listados, 4 mundos, unos
@@ -250,7 +250,7 @@ MP máximos, HP y MP actuales); la primera rama acaba con un `jump_to` que salta
 (`formats/script/new_game_stats.hpp`) busca ese bloque en el listado y `dwx` lo escribe en `data/new_game_stats`
 ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/new_game_stats.schema.json)): `script`, `at` (el offset del `if`), `partners` (el
 Digimon por el que pregunta, por su id, y sus stats) y `others` (los de cualquier otro partner). Si el script no tiene el
-bloque, se anota y no se escribe el documento. La sesión lo lee al empezar una partida (`apps/session`).
+bloque, se anota y no se escribe el documento. La sesión lo lee al empezar una partida (`packages/session`).
 
 ## Cobertura
 

@@ -600,7 +600,7 @@ Lo que hay hoy, del que sale cada regla:
   (`assets::loadMapImages`) lee los índices (`decodeIndexedPng`) y las paletas; las paletas de los fondos alimentan
   también a los sprites con `clut` −1 (`backgroundPalettes`). El render elige y funde la paleta según la hora
   (`map.slang: texelAt`, `lerp(from, to, push.fade)` sobre la textura de paletas, que es `Rgba8Unorm`:
-  `engine/render/src/renderer.cpp:157`). La cámara trabaja en píxeles del fondo (`MapCamera`,
+  `packages/engine/render/src/renderer.cpp:157`). La cámara trabaja en píxeles del fondo (`MapCamera`,
   `backgroundSize = tiles × 128`; [ADR 0020](../adr/0020-camara-de-mapa-y-capas-de-profundidad.md)).
 - **Capas de profundidad:** cada sprite es un recorte de una página de textura del mapa (indexada, 256 de lado, varias
   sprites por página: un atlas), colocado en `inst.x, inst.y` en píxeles del fondo. Con `clut` −1 usa la paleta del
@@ -619,7 +619,7 @@ Lo que hay hoy, del que sale cada regla:
   `<id>_meta.yaml`, y pedir una paleta a una KTX2 es un error (`PaletteNeedsPng`; [UI](ui.md#imágenes)).
 - **Límites:** KTX2 de 1 a 16384 texels de lado (`checkPlain2dKtx2`); imágenes de la UI de 4096 de lado como mucho
   (`MaxUiImageSide`), 64 MiB de fichero (`MaxUiImageFileBytes`) y unos 85,3 MiB decodificadas con todos sus niveles
-  (`MaxUiImageBytes`, `checkUiImageBudget`), hoy en `engine/ui/include/dwe/ui/image_reference.hpp:29-78`.
+  (`MaxUiImageBytes`, `checkUiImageBudget`), hoy en `packages/engine/ui/include/dwe/ui/image_reference.hpp:29-78`.
 
 ### Cocinado
 
@@ -684,9 +684,9 @@ mismo le pasaría a cualquier salida indexada de una sola paleta. Reglas:
     encima de `RemasterMapTextureBudgetBytes` = 128 MiB en BC7 por mapa, una constante con nombre declarada una vez
     en `apps/remaster_rules` (pregunta 9, «Decidido por el manager, 2026-10-21»: cabe `k = 4` con tres variantes y
     avisa antes de que un mapa dispare la memoria). `k = 4` es el valor recomendado.
-- **Los límites de la UI se mudan a `engine/assets`.** `MaxUiImageSide`, `MaxUiImageFileBytes`, `MaxUiImageBytes`,
-  `BytesPerRgbaPixel`, `rgbaBytesOverLevels` y `checkUiImageBudget` viven hoy en `engine/ui`, y `apps/remaster_rules`
-  (que enlaza `dwx`) no puede depender de `ui`. Se mueven a `engine/assets` (`dwe/assets/image_budget.hpp`) sin cambiar
+- **Los límites de la UI se mudan a `packages/engine/assets`.** `MaxUiImageSide`, `MaxUiImageFileBytes`, `MaxUiImageBytes`,
+  `BytesPerRgbaPixel`, `rgbaBytesOverLevels` y `checkUiImageBudget` viven hoy en `packages/engine/ui`, y `apps/remaster_rules`
+  (que enlaza `dwx`) no puede depender de `ui`. Se mueven a `packages/engine/assets` (`dwe/assets/image_budget.hpp`) sin cambiar
   su valor, como **requisito previo de W10b** (pregunta 13, «Decidido por el manager, 2026-10-21»: `remaster_rules` nace
   en W10b y ya los necesita, y así nunca existe una dependencia de `ui` que haya que deshacer); `ui` los usa desde allí.
 - **Lo que cambia en el motor** (aditivo, en W10b y W10e): `PngOnlyImages` y la comprobación de contenido aceptan RGBA
@@ -895,7 +895,7 @@ de tile dentro de él; el filtro sujeta sus lecturas al fondo (`rect`), y los re
 
 **La geometría no cambia.** La opción solo llega a `render::MapRenderer` (el modo de muestreo de cada cuadro). La
 cámara, la ventana del fondo, las posiciones de las capas, su profundidad, la elección del clic en el suelo, las
-colisiones y los disparadores no la ven: el campo (`game/field`) ni siquiera puede depender de `render` por las reglas
+colisiones y los disparadores no la ven: el campo (`packages/game/field`) ni siquiera puede depender de `render` por las reglas
 de capas de los módulos. `hd_scenery_tests.cpp` («HD scenery changes no collision, trigger, map change or camera of a
 walk») anda por una sala contra una pared, sobre un disparador y a un salto con la opción apagada y encendida, y cada
 tick da lo mismo: posiciones, giro, compañero, disparadores, cambio de mapa, dónde la cámara pone al jugador y qué
@@ -1155,7 +1155,7 @@ para continuar: dwe-enhance ... --confirm-upload 71 --confirm-cost 7.47
   carpeta de contenido (junto a `base`), nunca en una carpeta de mods. Un paquete `remaster` en una carpeta de mods se
   deja fuera, como hoy.
 - El código de un paquete de origen `Engine` en las capas `base` o `remaster` corre como el motor
-  (`script::isEngineCode`). Por eso **el montaje rechaza** (en `engine/assets`, al montar, no solo `dwx validate`) un
+  (`script::isEngineCode`). Por eso **el montaje rechaza** (en `packages/engine/assets`, al montar, no solo `dwx validate`) un
   paquete con `layer: remaster` que tenga Lua, RML, RCSS o cualquier YAML que no sea `pack.yaml` o un `_meta.yaml`:
   con la confianza del motor, solo puede traer datos. Lo permitido: imágenes (`.png`, `.ktx2`) con sus `_meta.yaml`,
   `.glb`, y audio. Lo que escribe `dwe-enhance` es aún más estrecho (sin audio), y `dwx validate` lo exige.
@@ -1173,7 +1173,7 @@ para continuar: dwe-enhance ... --confirm-upload 71 --confirm-cost 7.47
   - es una comprobación de cabecera; el lector de reproducción llega con el módulo de audio, con las mismas reglas
     para la base, los mods y el remaster. Los futuros lectores de SF2 y MIDI se diseñan para **entrada no confiable**
     (un mod los puede traer): límites de tamaño y de recuento en cada bloque, sin confiar en ningún tamaño declarado;
-  - **un tope por formato**, como constantes con nombre en `engine/assets`: `MaxRemasterOpusFileBytes` = 64 MiB
+  - **un tope por formato**, como constantes con nombre en `packages/engine/assets`: `MaxRemasterOpusFileBytes` = 64 MiB
     (`.opus` y `.ogg`), `MaxRemasterWavFileBytes` = 128 MiB, `MaxRemasterSf2FileBytes` = 128 MiB y
     `MaxRemasterMidiFileBytes` = 1 MiB, cada uno con su test de montaje. Un fichero que pasa de su tope, con otra
     extensión o con una cabecera que no es la de su formato hace que el montaje rechace el paquete. No hay tope total
@@ -1212,12 +1212,12 @@ se comprueban ni los parámetros declarados ni la clase del proveedor (`weights.
 | `apps/enhance` (target `dwe::enhance_curl`) | La única implementación real de `HttpTransport` | `enhance`; libcurl (vcpkg), solo aquí |
 | `apps/dwx` | Las reglas nuevas de `dwx validate` (recetas y paquete remaster); nada de red | + `remaster_rules` |
 | `apps/game` | El panel de revisión del overlay de depuración (ejecuta `dwe-enhance review`) | Sin dependencias nuevas |
-| `engine/assets` | `scale` en `_meta`, fondos y páginas RGBA, `PngOnlyImages` extendido, rechazo al montar de lo que no son datos en `remaster` (con los topes de audio por formato), y los límites de imagen que hoy están en `ui` (antes de W10b) | Sin dependencias nuevas |
-| `engine/render`, `engine/ui` | Fundido por imagen, `pixelsPerTexel` por textura y `SampleLevel` en el camino RGBA; tamaño lógico en la UI | Sin dependencias nuevas |
-| `engine/platform` | `runProcess` con tiempo límite, tope de salida (se guarda el principio), muerte del árbol y entorno explícito (aditivo, en `main` antes de W10b) | — |
+| `packages/engine/assets` | `scale` en `_meta`, fondos y páginas RGBA, `PngOnlyImages` extendido, rechazo al montar de lo que no son datos en `remaster` (con los topes de audio por formato), y los límites de imagen que hoy están en `ui` (antes de W10b) | Sin dependencias nuevas |
+| `packages/engine/render`, `packages/engine/ui` | Fundido por imagen, `pixelsPerTexel` por textura y `SampleLevel` en el camino RGBA; tamaño lógico en la UI | Sin dependencias nuevas |
+| `packages/engine/platform` | `runProcess` con tiempo límite, tope de salida (se guarda el principio), muerte del árbol y entorno explícito (aditivo, en `main` antes de W10b) | — |
 | `content/schemas` | `enhance_recipe.schema.json`, `enhance_providers.schema.json`; `scale`, `palette` y `color_space` en el esquema de `_meta` | — |
 
-- Librerías de app y no módulos de `engine/`: el runtime no las necesita, y así la red y las credenciales nunca
+- Librerías de app y no módulos de `packages/engine/`: el runtime no las necesita, y así la red y las credenciales nunca
   entran en el juego. El juego solo ejecuta `dwx` y `dwe-enhance` como programas.
 - `dwx` sigue sin red y sin `platform`: solo gana `remaster_rules`, que no tiene red. La tabla de
   [dependencias](dependency-rules.md) gana en W10b las filas de `apps/remaster_rules` y `apps/enhance`, y
@@ -1291,7 +1291,7 @@ test enlaza `dwe::enhance_curl` ni `CURL::libcurl`. Los tests solo ven el transp
 **Requisitos previos en `main`:** el paso de los fondos y páginas de mapa como PNG al cocinar (`PngOnlyImages`, rama
 `p4-cook-maps`, con su test de cocinar y leer con `loadMapImages`); el cambio de `runProcess` (tiempo límite, tope de
 salida que guarda el principio, muerte del árbol, entorno explícito); y los límites de imagen de la UI movidos a
-`engine/assets`.
+`packages/engine/assets`.
 
 ### W10b: proveedor local, caché y `dwe-enhance` para fondos
 
@@ -1393,4 +1393,4 @@ Las preguntas abiertas del diseño, «Decidido por el manager, 2026-10-21»:
 | 10 | Audio en la capa `remaster` al montar | Se admite, solo en los formatos que el motor ya acepta; al montar, extensión, tamaño y cabecera; decodificación entera en `dwx validate` y `--check-content`; topes por formato (Opus/Ogg 64 MiB, WAV 128 MiB, SF2 128 MiB, MIDI 1 MiB); código y tablas se siguen rechazando | La música HD va en esa capa y el audio es dato, no código; montar no debe decodificar |
 | 11 | Dónde va la música HD | En su propio paquete `remaster_audio` (`layer: remaster`), no en el de `dwe-enhance` | El paquete de `dwe-enhance` rechaza ficheros que no escribió y borra lo que ya no produce |
 | 12 | Tope de salida de un comando local | Se guardan los primeros N bytes y se tira el resto; la herramienta sigue. Solo se mata con `version_command` y por tiempo límite | Mucho progreso no es un fallo; vaciar la tubería evita bloqueos |
-| 13 | Cuándo se mueven los límites de imagen de la UI | A `engine/assets`, como requisito previo de W10b (no en W10e) | `remaster_rules` nace en W10b y los necesita sin depender de `ui` |
+| 13 | Cuándo se mueven los límites de imagen de la UI | A `packages/engine/assets`, como requisito previo de W10b (no en W10e) | `remaster_rules` nace en W10b y los necesita sin depender de `ui` |

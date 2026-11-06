@@ -69,7 +69,9 @@
 
 ## Tests
 
-- **Unitarios:** en `tests/` de cada módulo, con doctest.
+- **Unitarios:** en `tests/` de cada módulo, con doctest. Llevan la etiqueta de ctest de su paquete:
+  `scripts/dev.sh test --filter <paquete>` pasa los de uno y `scripts/dev.sh test --affected` los de lo que cambia
+  ([compilar y probar un paquete](../getting-started/setup.md#compilar-y-probar-un-paquete)).
 - El nombre de un test va en **un solo literal**: ctest registra cada caso lento por su nombre, leído al hacer
   `configure`. Una entrada cuyo filtro `--test-case` no encaja en ningún caso (un nombre partido en varios literales, un
   test renombrado desde el último `configure`) falla con un mensaje de `tests/main.cpp`; un caso que se salta solo

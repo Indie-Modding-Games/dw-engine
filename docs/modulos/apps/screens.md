@@ -1,7 +1,7 @@
 # screens
 
 Los modelos de vista de las pantallas del juego (`dwe::screens`): qué enseñan la pantalla de combate, el HUD del campo
-y el menú del compañero, sacado de la partida (`apps/session`) y de los sistemas (`game/*`) sin decidir ninguna regla. Corre sin
+y el menú del compañero, sacado de la partida (`packages/session`) y de los sistemas (`packages/game/*`) sin decidir ninguna regla. Corre sin
 ventana, así que sus tests no abren nada. El juego (`apps/game`) los publica a la UI y los documentos (`ui/battle`,
 `ui/partner_menu` del paquete `game`) solo los dibujan.
 
@@ -193,7 +193,7 @@ parche: `species_t` a 0,6). Un clip que su modelo no tiene juega el 0.
 **Combate (decisiones del responsable de diseño, 2026-10-21).** El panel de HP de un enemigo lleva su nombre en el
 aspecto moderno; el original no tiene panel y dibuja la barra junto al enemigo (`battle.hp_bars`); el título de la
 caja final («Has escapado.» al huir) se queda como desviación de accesibilidad. La bolsa que lanzaba al confirmar la
-ranura se retiró el 2026-10-30 (QA-M19): el combate abre la bolsa del campo con su caja de opciones. Están en la tabla de paridad del [página de game/battle](../game/battle.md).
+ranura se retiró el 2026-10-30 (QA-M19): el combate abre la bolsa del campo con su caja de opciones. Están en la tabla de paridad del [página de packages/game/battle](../game/battle.md).
 
 **Alabar y regañar solo en el campo (decisión del responsable de diseño, 2026-10-20/21).** En el original se alaba y
 se regaña al compañero en el campo, junto a él (`partner.c: partnerTickPraiseScold`, `tamer.c: tamerTickPraiseScold`),
@@ -243,10 +243,10 @@ rápido hasta que se le pasa una comida), abre la ficha con la opción encendida
 menú de pausa y la abre otra vez como el original, con `text_fit`; se corre en los dos idiomas y con las dos pieles.
 Comprueba también los combates (0) y las horas de la comprobación de evolución del novato (72). Tests: `the status
 page's extras carry the tiredness and the care mistakes the original hides` y `the status page's extras carry the
-battles, the lifetime, the evolution counter and the waking hours` (`apps/screens/tests/partner_status_view_tests.cpp`),
+battles, the lifetime, the evolution counter and the waking hours` (`packages/screens/tests/partner_status_view_tests.cpp`),
 `the partner view carries the lifetime, the counters and the sleep schedule it lives by`
-(`apps/session/tests/session_tests.cpp`), `a form's check hours are its level's, and an ultimate's are none`
-(`game/evolution/tests/report_tests.cpp`) y los ajustes del usuario (`apps/game/tests/user_settings_tests.cpp`).
+(`packages/session/tests/session_tests.cpp`), `a form's check hours are its level's, and an ultimate's are none`
+(`packages/game/evolution/tests/report_tests.cpp`) y los ajustes del usuario (`apps/game/tests/user_settings_tests.cpp`).
 
 ## Menú del juego (aspecto original)
 
@@ -261,7 +261,7 @@ Paridad con la revisión de menús contra el original (QA-M, 2026-10-30). Estado
 | La acción pausa (P o Pausa) pausa el juego | `utils2.c: handlePause` (402) y `createPauseBox` (443): el botón de pausa del mando alterna `PAUSE_STATE`; caja de -26, -14, 56 × 24 desde el centro (versión US), «Pause» (`main.utils2_pause.0000`), `playSound(0, 3)` al abrir, sin sonido al cerrar; el campo, el combate y los menús se congelan | `PauseBox` (`apps/game/src/pause_box.cpp`) con la acción `pause` (P y Pausa en el teclado, el botón de pausa del mando); el documento `pause_box` encima de todo; el tick del juego y de la UI no corre mientras dura. En la portada, una película o la caja de nombres el botón de pausa del mando hace lo de antes (`menu`) (QA-M02) | `game_tests`: "pause box: …" | Igual |
 | Campo oscurecido bajo la caja de pausa | La captura del original (`orig/pause_box.png`) se ve más oscura, pero `pauseFrame` (utils.c:75) solo vuelve a dibujar los objetos; sin medir | El campo se queda como estaba | — | Suposición |
 | Letra de los menús | `font.c`, `drawInventoryText` (inventory.c:255): letra de píxeles del disco en todos los textos | `ui/fonts/original_look.yaml`: `default: original` (antes la TTF suave); la piel moderna sigue con Noto Sans (QA-M08) | `bitmap_font_tests`: "…defaults to it" | Igual |
-| Borde de las cajas | `renderUIBoxBorder` (ui.c:268): arriba y abajo negro, claro (#90D9FA), negro; a la izquierda negro, oscuro (#4A9FC5), claro y una línea negra interior; a la derecha la línea negra interior, claro, oscuro, negro; esquinas de 4 × 4 | Decorador `original-box` (`engine/ui/src/original_box.cpp`) con esas 14 líneas en todas las cajas de la piel original (menús, bolsa, pausa, textos, combate, ranuras, HUD) y la clase `.original-box` en `theme.rcss` (QA-M09) | `original_box_tests`: "the original box's border has renderUIBoxBorder's lines"; `skin_switch_tests`: "no shipped skin paints a box's fill over its original-box border" (el relleno va al final de la lista: RmlUi pinta encima el primer decorador, y un degradado delante tapaba el borde de la portada, el idioma, las ranuras y el diálogo) | Igual |
+| Borde de las cajas | `renderUIBoxBorder` (ui.c:268): arriba y abajo negro, claro (#90D9FA), negro; a la izquierda negro, oscuro (#4A9FC5), claro y una línea negra interior; a la derecha la línea negra interior, claro, oscuro, negro; esquinas de 4 × 4 | Decorador `original-box` (`packages/engine/ui/src/original_box.cpp`) con esas 14 líneas en todas las cajas de la piel original (menús, bolsa, pausa, textos, combate, ranuras, HUD) y la clase `.original-box` en `theme.rcss` (QA-M09) | `original_box_tests`: "the original box's border has renderUIBoxBorder's lines"; `skin_switch_tests`: "no shipped skin paints a box's fill over its original-box border" (el relleno va al final de la lista: RmlUi pinta encima el primer decorador, y un degradado delante tapaba el borde de la portada, el idioma, las ranuras y el diálogo) | Igual |
 | Las cajas se abren y se cierran con un contorno | `createAnimatedUIBox` / `renderUIBoxAnim` (ui.c:216/324): contorno gris de 1 px (#808080) que crece en 5 fotogramas (borde a frame/4) desde el jugador, la casilla o el cursor; al cerrar 4..0. Medido: 20 fotogramas por segundo (3 vblanks), menú 0..4 en los vblanks 22362..22374; menú → bolsa: el menú se cierra (4..0, 22383..22392) y la bolsa se abre (0 en 22396), unos 10 fotogramas | `ui/common/original_box.lua`: `open`/`close` con el mismo cálculo a 20 por segundo; el menú y la bolsa desde el jugador, la descripción y las opciones desde la casilla; la caja no recibe mandos mientras dura (QA-M05) | Rutas `qa-box` (capturas en `_work/routes-e2/menus-qa/m05-*`) | Igual |
 | Sonidos de abrir y cerrar cajas | `ui.c:222` `playSound(0, 0)` al crear y `ui.c:335` `playSound(0, 1)` en el primer fotograma de cierre | `ui_sounds.yaml`: `box_open` (ss 0) y `box_close` (ss 1), que suenan con `ui.cue` al empezar la animación (QA-M06) | `ui_tests`: "a script sounds the original boxes…" | Igual |
 | Icono de cada objeto en la bolsa | `renderInventoryTop` (inventory.c:590) con `renderItemSprite` y `setItemTexture` (utils2.c:269/288): 16 × 16 de ETCDAT/ITEM.TIM, la celda del número del objeto en filas de 16 (la que empieza en 0xF0, 15 de ancho), con su paleta (`ITEM_CLUT_DATA`); en x+10 (x+154 a la derecha) e y+8+fila×18 de la caja: 3 px dentro del cursor y 1 px por debajo de su borde (medido en `field_item_bag_1item`: icono en 18, 17 con el cursor en 15, 16). Siempre a color 0x80: un objeto que no se usa no atenúa el icono, solo su nombre (TEXT_COLORS 8). Una ranura vacía no pinta nada | `itemIconOf` (`bag_view.cpp`) publica `bag.slot.<i>.icon` e `icon_rect`; `ui/common/bag_slot.lua` los pinta (también para la bolsa del combate); `.slot-icon` de 48dp a 9dp y 3dp del borde exterior de la ranura: medido +3, +1 px y 16 px. La QA no vio iconos porque usó un contenido extraído antes de `icon_palette` (`content-f8-s2-4a`); con una extracción nueva salen (QA-M07) | `screens_tests`: "an item's icon is its cell of the items' image…"; ruta `bag-icons` (`_work/routes-e2/menus-qa/bag/`) | Igual |
@@ -313,7 +313,7 @@ regla. Enseña quién vive ya en la ciudad y quién falta, con los puntos de pro
   `city` del ruleset (`rules/original/city.yaml`): de la 3 a la 58 con nivel de novato o más en la tabla de especies, 50 en
   el original. Cada una está en la ciudad si su disparador 200 + especie está puesto. Suma su nivel menos 2 (novato 1,
   campeón 2, definitivo 3), y `species_ar`, `species_p` y `species_be` suman 1: entre las 50, 100 puntos. Ninguna lista propia:
-  `game/story: cityResidents` recorre las reglas y `CityAdapter::residents` la sirve.
+  `packages/game/story: cityResidents` recorre las reglas y `CityAdapter::residents` la sirve.
 - **Cabecera.** «Prosperidad» con el valor de la variable 1 tal como la leen los scripts (la que se rehace al cargar y
   al guardar) y «Residentes N/M»: las que se han unido y el total.
 - **Cuadrícula.** Una casilla por especie, 12 por fila en los dos aspectos, agrupadas por nivel y por número dentro de

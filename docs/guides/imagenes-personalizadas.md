@@ -54,13 +54,13 @@ Todo va a un único paquete de la capa `user` en `<datos>/custom-images/pack` (`
 Mientras está encendido, el lanzador arranca el juego con `--mods <datos>/custom-images/pack`. Las originales
 exportadas viven en `<datos>/custom-images/originals` y se vuelven a preparar cuando cambia el juego o el disco leído.
 
-- **Fondos de mapa** (`engine/assets`, `map_images.cpp`): el juego lee siempre los datos del mapa (índices y paletas)
+- **Fondos de mapa** (`packages/engine/assets`, `map_images.cpp`): el juego lee siempre los datos del mapa (índices y paletas)
   del paquete del juego más alto que no sea de la capa `user`, así que una imagen del jugador nunca rompe un mapa. La
   imagen del jugador se dibuja por el camino del fondo en alta resolución (`MapRenderer`, el mismo que usa la mejora
   de escenario HD) con su escala: cada píxel original corresponde a un cuadrado de k×k píxeles de la imagen. Qué
   partes tapan a los personajes sigue saliendo de la original. Una variante sin imagen propia usa la original
   agrandada. Las páginas de textura de los mapas (`texture8/`, `texture4/`) no se pueden cambiar todavía.
-- **Título, menús e iconos** (`engine/ui`, `image_reference.cpp`): cuando la interfaz pide `texture/... ?palette=N`,
+- **Título, menús e iconos** (`packages/engine/ui`, `image_reference.cpp`): cuando la interfaz pide `texture/... ?palette=N`,
   busca `<imagen>_palette<N>` (sin paleta, la 0). Le dice a la interfaz el tamaño de la original, así que las hojas de
   sprites, los rectángulos de `<img rect>` y los decoradores siguen en píxeles de la original, y la textura conserva
   toda su resolución.
@@ -78,7 +78,7 @@ Para probar en el juego sin lanzador: crea una carpeta con el `pack.yaml` de
 `apps/launcher/src-tauri/src/custom_images/pack.yaml` y las imágenes con los nombres de arriba, y arranca el juego con
 `--mods <carpeta>`. El registro dice `map <id>: drawing the player's background images, 2x, ...`.
 
-Los tests: `engine/assets/tests/image_replacement_tests.cpp` (escala, fallos y vuelta a la original),
-`engine/render/tests/scenery_upscale_tests.cpp` (dónde cae cada píxel), `engine/ui/tests/image_replacement_tests.cpp`
+Los tests: `packages/engine/assets/tests/image_replacement_tests.cpp` (escala, fallos y vuelta a la original),
+`packages/engine/render/tests/scenery_upscale_tests.cpp` (dónde cae cada píxel), `packages/engine/ui/tests/image_replacement_tests.cpp`
 (paletas y tamaño), `apps/dwx/tests/export_images_tests.cpp` y, en el lanzador, `custom_images/tests.rs` (nombres,
 comprobaciones, carga en bloque y por imagen, exportación) y `launch.rs` (`--mods`).

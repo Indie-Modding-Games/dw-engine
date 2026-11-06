@@ -101,7 +101,7 @@ un `switch` así (sumas, comparaciones, cargas y guardados, saltos con su *delay
 llamada, una instrucción que no conoce, un salto sobre un valor desconocido o una variable sin valor detienen la
 lectura y el caso se anota en vez de adivinarse. En el US se leen los 35 casos de comida y 14 de los 16 chips: el
 piloto automático (llama al guion) y el orinal (llama a `handlePortaPotty`) quedan sin valores y su lógica la da el
-ruleset. `formats/tests/item_effects_disc_tests.cpp` lo comprueba con el disco.
+ruleset. `packages/formats/tests/item_effects_disc_tests.cpp` lo comprueba con el disco.
 
 ## Textos
 
@@ -156,7 +156,7 @@ listas, `enum`, `const` y `$ref` locales) escrito en los propios tests, sin depe
 
 ## Comprobación con el disco
 
-`formats/tests/real_data_tests.cpp` se ejecuta solo si `DWE_EXE_SAMPLE` apunta al ejecutable US (y `DWE_MAP_DIR` a la
+`packages/formats/tests/real_data_tests.cpp` se ejecuta solo si `DWE_EXE_SAMPLE` apunta al ejecutable US (y `DWE_MAP_DIR` a la
 carpeta `MAP` para los mapas). Con el ejecutable US extraído del disco: se leen todas las tablas, los quince documentos
 cumplen su esquema y no hay ningún texto con bytes escapados. Queda una referencia fuera de tabla: un `-2` en
 `EVOLUTION_PATHS`, que no es ni un tipo ni el `-1` de «ninguno».

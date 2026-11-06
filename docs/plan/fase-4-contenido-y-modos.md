@@ -41,7 +41,7 @@ final porque se construye sobre todos los sistemas anteriores.
 
 ## Diseño
 
-- Módulos: `game/story`, `game/modes` y la API de Lua para mods (solo desde el módulo `script`). No hay
+- Módulos: `packages/game/story`, `packages/game/modes` y la API de Lua para mods (solo desde el módulo `script`). No hay
   `apps/editor`: el editor de mapas es la herramienta externa `dw1fe`.
 - Las capas del VFS (base, remaster, mods, usuario) de la fase 1 ya permiten que un mod gane a la base por ID.
 - **Scripts de eventos:** `dwx` convierte los scripts de eventos del disco en Lua legible al extraer, en la máquina de
@@ -66,9 +66,9 @@ al GDD.
 | Assets de desarrollo | Camino de desarrollo opcional a los assets locales | Decisión de los dos caminos |
 | API de Lua para mods | API versionada (semver) y en sandbox, hooks, entorno por mod | R4.3 |
 | Conversión de scripts | Ficha de referencia del intérprete original, desensamblador y conversión a Lua en `dwx` | R4.1 |
-| Intérprete de historia | `game/story` ejecuta el Lua convertido (entrada al mapa, hablar, zonas, combates) | R4.1 |
+| Intérprete de historia | `packages/game/story` ejecuta el Lua convertido (entrada al mapa, hablar, zonas, combates) | R4.1 |
 | Mods por ID | Paquetes que añaden o sustituyen contenido por ID; Digimon y mapas nuevos sin código | R4.2, R4.4 |
-| Modos | `game/modes`: cada modo declara su ruleset y sus sistemas; «Historia original» y un segundo modo sencillo aprobado por diseño | R4.5 |
+| Modos | `packages/game/modes`: cada modo declara su ruleset y sus sistemas; «Historia original» y un segundo modo sencillo aprobado por diseño | R4.5 |
 | Contrato con el editor | Tests de ida y vuelta del formato que escribe `dw1fe` | R4.7 |
 | Documentación de modding | `docs/modding/`: API, formatos de paquete, IDs, modos, aspectos, tutorial | R4.6 |
 | Aspectos de la interfaz (9a) | Mecanismo de aspectos (skins) de la UI, ajuste global en vivo; el moderno era el aspecto por defecto hasta 9b | Petición del responsable de diseño |
@@ -81,15 +81,15 @@ cajones de utilidades):
 
 | Paquete | Dónde |
 |---|---|
-| Assets de desarrollo | `engine/assets`: fuentes de desarrollo (`dev_asset_sources.hpp`) y su montaje; `apps/content`: la opción `--dev-assets` y el fichero de configuración; avisos en `messages.hpp` y claves de localización |
-| API de Lua para mods | `engine/script`: `api_version.hpp` (versión, un solo dueño), `mod_environment.hpp` (entorno por mod), `api_registry.hpp` (funciones publicadas por espacio de nombres), `hook_registry.hpp` (eventos), carga desde la VFS y patrones de texto con presupuesto en `src/` |
+| Assets de desarrollo | `packages/engine/assets`: fuentes de desarrollo (`dev_asset_sources.hpp`) y su montaje; `packages/content`: la opción `--dev-assets` y el fichero de configuración; avisos en `messages.hpp` y claves de localización |
+| API de Lua para mods | `packages/engine/script`: `api_version.hpp` (versión, un solo dueño), `mod_environment.hpp` (entorno por mod), `api_registry.hpp` (funciones publicadas por espacio de nombres), `hook_registry.hpp` (eventos), carga desde la VFS y patrones de texto con presupuesto en `src/` |
 | Conversión de scripts | `formats/.../script/`: `control_flow` (grafo por sección), `structuring` (árbol estructurado sin `goto`), `lua_emitter` (Lua legible); `apps/dwx/src/`: el extractor que escribe el Lua en el paquete `base`; ficha `docs/reference/scripts.md` |
-| Intérprete de historia | `game/story`: estado de la historia (banderas y variables), planificador de corrutinas, puntos de entrada; el pegamento con campo, compañero, inventario y combate en `apps/session` (funciones publicadas en la API de Lua) |
-| Mods por ID | `engine/assets`: IDs con espacio de nombres y composición de tablas por entrada; paquete de ejemplo sintético en `tests/mods/` |
-| Modos | `game/modes`: manifiesto y catálogo de modos; `content/packs/game/modes/<modo>/mode.yaml` con su esquema; selección en `apps/session` y `apps/screens` |
-| Contrato con el editor | Solo tests, en `apps/dwx/tests/editor_*` (el único módulo que enlaza los escritores de `formats`, los lectores de `engine/assets` y `dwx validate`), y [herramientas externas](../architecture/herramientas-externas.md) |
+| Intérprete de historia | `packages/game/story`: estado de la historia (banderas y variables), planificador de corrutinas, puntos de entrada; el pegamento con campo, compañero, inventario y combate en `packages/session` (funciones publicadas en la API de Lua) |
+| Mods por ID | `packages/engine/assets`: IDs con espacio de nombres y composición de tablas por entrada; paquete de ejemplo sintético en `tests/mods/` |
+| Modos | `packages/game/modes`: manifiesto y catálogo de modos; `content/packs/game/modes/<modo>/mode.yaml` con su esquema; selección en `packages/session` y `packages/screens` |
+| Contrato con el editor | Solo tests, en `apps/dwx/tests/editor_*` (el único módulo que enlaza los escritores de `formats`, los lectores de `packages/engine/assets` y `dwx validate`), y [herramientas externas](../architecture/herramientas-externas.md) |
 | Documentación de modding | `docs/modding/`: índice, API de Lua, paquetes, IDs, modos, aspectos y un tutorial del primer mod |
-| Aspectos de la interfaz | `engine/ui`: carga de un aspecto (`skin.hpp`), hojas de sprites y variantes de paleta generadas; `content/packs/game/ui/skins/<aspecto>/` (`skin.yaml` + RCSS por pantalla); el ajuste `ui_skin` en `apps/game` por el mismo camino que `text_font`; la receta de escalado en `apps/dwx` |
+| Aspectos de la interfaz | `packages/engine/ui`: carga de un aspecto (`skin.hpp`), hojas de sprites y variantes de paleta generadas; `content/packs/game/ui/skins/<aspecto>/` (`skin.yaml` + RCSS por pantalla); el ajuste `ui_skin` en `apps/game` por el mismo camino que `text_font`; la receta de escalado en `apps/dwx` |
 
 **Buenas prácticas (regla del usuario, 2026-10-21):** se aplica entera la [guía de código](../conventions/code.md):
 C++26 moderno (RAII, `std::expected`, rangos, sin `new`/`delete` a mano, sin parámetros de salida cuando basta un

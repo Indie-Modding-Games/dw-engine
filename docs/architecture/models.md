@@ -11,7 +11,7 @@ en el [ADR 0021](../adr/0021-animacion-en-cpu-y-skinning-en-gpu.md).
 | `animation::AnimationPlayer` y `clip_sampling.hpp` | `animation` | Muestrea clips, separa el movimiento raíz y calcula las matrices de los huesos |
 | `ModelRenderer` | `render` | Sube los modelos una vez y dibuja N instancias por frame con la cámara del mapa |
 
-`animation` es un módulo de la capa de sistemas que solo depende de `core` y `assets`: el campo (`game/field`) puede
+`animation` es un módulo de la capa de sistemas que solo depende de `core` y `assets`: el campo (`packages/game/field`) puede
 pedirle velocidades de paso o movimiento raíz sin depender de `render`, y `render` solo recibe matrices.
 
 ## `ModelData`
@@ -114,7 +114,7 @@ el test de `animation` con `DWE_CONTENT`), en unidades por segundo (100 = una ca
 
 El jugador corre por defecto y anda con un botón mantenido: es el comportamiento del original.
 
-**Con el campo.** `game/field` mueve las entidades con sus propias velocidades (`content/packs/game/field/rules.yaml`,
+**Con el campo.** `packages/game/field` mueve las entidades con sus propias velocidades (`content/packs/game/field/rules.yaml`,
 los mismos modelos: `digimon/boys/model` y `digimon/agum/model`) y deja en cada una un `scene::AnimationIntent`.
 `scene::motionName(intent.motion)` da `idle`, `walk` o `run`, los nombres de estos YAML, así que el clip es
 `clipOf(motionName(motion))`: `models/tamer` para la entidad con `PlayerTag` y `models/partner` para la de
@@ -188,15 +188,15 @@ registra en el log lo que tarda el `add` de cada personaje.
 
 ## Pruebas
 
-- `engine/assets/tests/model_data_tests.cpp` monta un `.glb` a mano (`glb_builder.hpp`) con piel, textura, material
+- `packages/engine/assets/tests/model_data_tests.cpp` monta un `.glb` a mano (`glb_builder.hpp`) con piel, textura, material
   sin luz, un clip como los de `dwx` y otro con `STEP`, y comprueba cada campo y los errores (índices, huesos, pesos,
   bucles, semitransparencia). Con `DWE_CONTENT` carga **todos** los `.glb` extraídos: 337 modelos, 4843 clips (2070
   en bucle infinito), todos con id, 20 ticks por segundo y un fotograma por tick.
-- `engine/animation/tests/animation_tests.cpp` comprueba que el tick N es el fotograma N, que el bucle vuelve bien
+- `packages/engine/animation/tests/animation_tests.cpp` comprueba que el tick N es el fotograma N, que el bucle vuelve bien
   (incluido el tick de vuelta), que el movimiento raíz sigue a ritmo constante por todas las vueltas, las matrices de
   los huesos, el fundido y que los YAML del paquete `game` se leen. Con `DWE_CONTENT` monta el contenido con el
   paquete `game` y comprueba las velocidades de la tabla y un minuto de cada animación de los dos personajes.
-- `engine/render/tests/model_renderer_tests.cpp` comprueba la traducción de materiales a modos de mezcla y la luz por
+- `packages/engine/render/tests/model_renderer_tests.cpp` comprueba la traducción de materiales a modos de mezcla y la luz por
   defecto, y `slot_map_tests.cpp` la vida de los handles (quitar → añadir rechaza el handle viejo): el
   `ModelRenderer` necesita un `rhi::Device` y en Docker no hay GPU, así que su ciclo añadir/quitar/dibujar se prueba
   a través del `SlotMap` que guarda sus modelos. El dibujo se comprueba a mano con el visor (sin GPU en Docker no hay capturas de referencia todavía).

@@ -40,7 +40,7 @@ flowchart LR
 | `apps/dwx` | CLI: `extract`, `validate`, `cook`, `pack`, `export-images`, `evolution-guide`, `upscale`, `convert-script` | Equipo, modders y el launcher |
 | `apps/sim` | `dwe-sim`: simulaciones sin gráficos que juegan escenarios con semillas e informan del balance ([simulaciones](../guides/simulaciones.md)) | Equipo y diseño |
 | `apps/studio` | DWE Studio, banco de trabajo de desarrollo | Equipo |
-| `services/beta-gateway` | La pasarela entre el lanzador y las versiones publicadas | El lanzador |
+| `apps/beta-gateway` | La pasarela entre el lanzador y las versiones publicadas | El lanzador |
 | Paquetes de contenido | Datos y scripts en formatos abiertos (base, remaster, mods) | Los carga el juego |
 
 ## Capas
@@ -78,7 +78,7 @@ flowchart TB
 | base | `platform`, `rhi` | Ventana, input, ficheros, hilos y tiempo (SDL3); dispositivo de GPU, memoria, pipelines y sincronización (Vulkan) |
 | sistemas | `render`, `audio`, `video`, `input`, `assets`, `localization`, `signs`, `animation`, `scene` | Grafo de render, materiales, skinning y fondos; mezcla y síntesis; películas (lectura y color); acciones, contextos y perfiles de teclado, ratón y mandos; sistema de ficheros virtual, paquetes y recarga en caliente; los textos del jugador en su idioma; los carteles de los mapas traducidos; clips de los modelos; mundo ECS (EnTT) |
 | servicios | `script`, `ui`, `debug`, `ruleset` | VM de Lua, sandbox y bindings; menús, HUD y minimapa; herramientas de desarrollo (consola, paneles); el formato de [ruleset](rulesets.md), sus estrategias y el reloj de juego |
-| juego | `game/*` | Las reglas: cuidado, vida y evolución, batalla, campo, historia, inventario, guardado, pesca, clima, gimnasio, torneos y curling |
+| juego | `packages/game/*` | Las reglas: cuidado, vida y evolución, batalla, campo, historia, inventario, guardado, pesca, clima, gimnasio, torneos y curling |
 | apps | `game`, `session`, `screens`, `content`, `dwx`, `sim` | La partida sin ventana, los modelos de vista de las pantallas, el montaje de paquetes y los puntos de entrada |
 | aparte | `formats` | Lectura de los formatos de PS1. **Solo** lo usa `dwx` |
 
@@ -86,7 +86,7 @@ flowchart TB
 
 | Mejora | Capa | Cómo |
 |---|---|---|
-| Lógica del juego | `game/*` + rulesets | Cada sistema se escribe en C++ y sus reglas y valores viven en un ruleset |
+| Lógica del juego | `packages/game/*` + rulesets | Cada sistema se escribe en C++ y sus reglas y valores viven en un ruleset |
 | Menús | `ui` | RmlUi a resolución nativa; los menús se editan sin recompilar |
 | Minimapas | `ui` + datos | Se generan a partir de la colisión, los warps y los NPCs de cada mapa |
 | Historia | `story` + Lua | Los scripts de eventos originales se traducen a Lua, editable como texto |

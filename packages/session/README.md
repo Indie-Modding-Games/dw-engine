@@ -8,7 +8,7 @@ y se guarda.
   `partner`, `ruleset`, `save`, `scene`, `script`, `story`, `tournament`, `weather`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/apps/session.md](../../docs/modulos/apps/session.md).
+- Documentación: [modulos/apps/session](https://indie-modding-games.github.io/dw-engine/modulos/apps/session).
 
 Compilar y probar solo este paquete:
 

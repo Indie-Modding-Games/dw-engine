@@ -37,7 +37,9 @@
 
 - pasa las comprobaciones obligatorias; en local, `scripts/dev.sh check-commit` compila y pasa las pruebas y
   `scripts/dev.sh check-full` añade formato, lint, clang-tidy y el sitio de la documentación
-  ([Preparar el entorno](getting-started/setup.md#comprobar-antes-de-un-pr));
+  ([Preparar el entorno](getting-started/setup.md#comprobar-antes-de-un-pr)); mientras trabajas,
+  `scripts/dev.sh test --affected` pasa solo los tests de los paquetes que tocaste y de los que dependen de ellos, y
+  `scripts/dev.sh test --filter <paquete>` los de uno ([compilar y probar un paquete](getting-started/setup.md#compilar-y-probar-un-paquete));
 - si cambia el lanzador (`apps/launcher/ui` o `apps/launcher/src-tauri`), sube su versión en `tauri.conf.json`,
   `Cargo.toml` y `Cargo.lock`;
 - trae tests del comportamiento que cambia;

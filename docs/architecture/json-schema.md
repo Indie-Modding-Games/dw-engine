@@ -1,7 +1,7 @@
 # JSON Schema: el subconjunto que comprueba el motor
 
 Los esquemas de `content/schemas/` describen cada tipo de documento YAML (tablas, mapas, metadatos…). Los comprueba
-`core::JsonSchema` (`engine/core`), sin dependencias nuevas: los esquemas son JSON y el JSON es YAML, así que se leen
+`core::JsonSchema` (`packages/engine/core`), sin dependencias nuevas: los esquemas son JSON y el JSON es YAML, así que se leen
 con `core::parseYaml`. No es una implementación completa de JSON Schema 2020-12, sino **el subconjunto que usan
 nuestros esquemas**. Una palabra clave que no está en la lista es un error al compilar el esquema, nunca se ignora:
 así un esquema no comprueba menos de lo que dice.

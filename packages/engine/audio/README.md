@@ -6,7 +6,7 @@ El sonido: la salida al dispositivo, el mezclador, las voces, la música y los v
 - Depende de: `assets`, `core`, `platform`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/audio.md](../../../docs/modulos/engine/audio.md).
+- Documentación: [modulos/engine/audio](https://indie-modding-games.github.io/dw-engine/modulos/engine/audio).
 
 Compilar y probar solo este paquete:
 

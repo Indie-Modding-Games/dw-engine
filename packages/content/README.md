@@ -7,7 +7,7 @@ disco del jugador.
 - Depende de: `assets`, `core`, `platform`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/apps/content.md](../../docs/modulos/apps/content.md).
+- Documentación: [modulos/apps/content](https://indie-modding-games.github.io/dw-engine/modulos/apps/content).
 
 Compilar y probar solo este paquete:
 

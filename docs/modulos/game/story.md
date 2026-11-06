@@ -4,8 +4,8 @@ La historia (`dwe::game::story`, capa `game`): su estado y el runtime que ejecut
 eventos con la semántica del original. El diseño está en el [intérprete de historia](../../architecture/interprete-historia.md)
 y el comportamiento del original en la [ficha de scripts](../../reference/scripts.md).
 
-Depende de `core` y `assets`. No conoce Lua ni ningún otro `game/*`: lo que necesita del mundo lo pide por puertos que
-implementa `apps/session`, y los tests, con dobles.
+Depende de `core` y `assets`. No conoce Lua ni ningún otro `packages/game/*`: lo que necesita del mundo lo pide por puertos que
+implementa `packages/session`, y los tests, con dobles.
 
 ## Estado
 
@@ -29,7 +29,7 @@ los warps de script del campo, que leen los disparadores y aplican sus `sets_fla
   sin ella, o un arranque en un mapa, empieza la historia en el mapa donde aparece. Antes (hasta 2026-11-03, #179)
   nada lo movía tras la partida nueva y una huida llevaba al mapa de la partida nueva o al 0.
 
-No conoce a los demás sistemas: la sesión (`apps/session`, `StoryAdapter`) crea el estado de partida nueva, lo
+No conoce a los demás sistemas: la sesión (`packages/session`, `StoryAdapter`) crea el estado de partida nueva, lo
 registra en la partida guardada y se lo da al campo.
 
 ## Runtime
@@ -102,7 +102,7 @@ es el resaltado al pasar el ratón. Un índice fuera de las opciones no hace nad
 siempre. Quien llama da las filas: en el juego, `optionPointer` (`apps/game/src/story_text_rows.hpp`) mira las cajas
 `row-N` del documento `ui/story_textbox`. Fuera de una elección, un clic en cualquier sitio pasa la página, como
 confirmar; en una elección, un clic fuera de las opciones no hace nada (Intro o el mando eligen la del cursor). Tests:
-`game/story/tests/dialogue_pointer_tests.cpp`.
+`packages/game/story/tests/dialogue_pointer_tests.cpp`.
 
 ## Guardas del motor
 
@@ -129,6 +129,6 @@ tendero de cartas de gias06b, el personaje 5 del guion 126, que solo tiene las s
 ## Pruebas
 
 Los tests del módulo usan un `SectionHost` con pasos fijos y puertos falsos, sin Lua. Sobre el disco extraído,
-`apps/session/tests/story_lua_disc_tests.cpp` («the training loop of script 49 runs as tail jumps») corre varias
+`packages/session/tests/story_lua_disc_tests.cpp` («the training loop of script 49 runs as tail jumps») corre varias
 vueltas de la sección `0x52` del script 49, que salta a la `0x33` de los scripts 199–202 y vuelve sin fin en el
 original: es la prueba de que un `jump_to_file` no apila nada.

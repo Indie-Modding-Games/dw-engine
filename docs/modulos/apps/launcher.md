@@ -82,7 +82,7 @@ Si no hay juego instalado todavía, antes del paso 2 descarga la última versió
 
 Cada versión del repositorio (GitHub Releases de `Indie-Modding-Games/dw-engine`, prereleases incluidas) lleva lo
 de abajo. Mientras la beta sea cerrada, el lanzador no habla con GitHub: habla con la
-[pasarela de la beta](https://github.com/Indie-Modding-Games/dw-engine/blob/main/services/beta-gateway/README.md), que pide la clave de la beta y contesta como la API
+[pasarela de la beta](https://github.com/Indie-Modding-Games/dw-engine/blob/main/apps/beta-gateway/README.md), que pide la clave de la beta y contesta como la API
 de GitHub para ese único repositorio.
 
 | Archivo | Qué es |
@@ -181,7 +181,7 @@ descarga a otro servidor `reqwest` quita la cabecera `Authorization` (lo prueba 
 
 Los probadores no necesitan cuenta de GitHub. El responsable les da el lanzador y una sola clave
 compartida, que genera él y guarda en la pasarela (cómo crearla y rotarla:
-[pasarela de la beta](https://github.com/Indie-Modding-Games/dw-engine/blob/main/services/beta-gateway/README.md)). El probador la pega en Ajustes → Cuenta y acceso
+[pasarela de la beta](https://github.com/Indie-Modding-Games/dw-engine/blob/main/apps/beta-gateway/README.md)). El probador la pega en Ajustes → Cuenta y acceso
 la primera vez; si falta o no vale, el lanzador dice «Falta la clave de la beta o no es válida». La guarda en el
 llavero del sistema (Secret Service en Linux, como GNOME Keyring o KWallet; el administrador de credenciales en
 Windows; el llavero en macOS) con el servicio `dwe-launcher` y la cuenta `beta-key`, y nunca en un archivo ni en un
@@ -231,7 +231,7 @@ Ajustes › General › Requisitos del equipo.
 | Tarjeta gráfica | `dwe-game --check-system` del juego instalado (abajo), primero con los controladores del equipo. | Nada si sirve. Si ninguna tarjeta sirve, el juego arranca igual en **modo de compatibilidad** (abajo): un aviso que se cierra con «Entendido», una etiqueta «Modo de compatibilidad» arriba y el botón del controlador del fabricante. |
 | Nada puede mover el juego | Ni las tarjetas del equipo ni el controlador por software del paquete (o el paquete no lo trae: Windows y macOS por ahora). | «Tu tarjeta gráfica no puede mover el juego»: qué hacer, el botón de la página de controladores del fabricante (NVIDIA, AMD o Intel, según el `vendor` de la tarjeta; las tres si no se sabe), en Windows también «Abrir Windows Update», y «Comprobar de nuevo». «Jugar» se niega con `no-gpu`. |
 
-**`dwe-game --check-system`** (`engine/rhi/include/dwe/rhi/system_check.hpp`) crea una instancia de Vulkan y elige
+**`dwe-game --check-system`** (`packages/engine/rhi/include/dwe/rhi/system_check.hpp`) crea una instancia de Vulkan y elige
 GPU con la misma versión (1.3) y las mismas funciones que `Device::create` (`renderer_requirements.hpp`), sin ventana,
 sin contenido y sin crear el dispositivo; tarda menos de un segundo con un controlador normal. Escribe en la salida
 estándar líneas `clave=valor` bajo la cabecera `dwe-check-system 1`: `result` (`ok`, `no-vulkan`, `no-device`,
@@ -313,9 +313,9 @@ cambio atómico y vuelta atrás, el desempaquetado de `.zip` y `.7z`, la hoja CU
 formato del juego) y una extracción con un `dwx` falso; `tests/fake_release.rs` levanta un servidor que contesta como
 la pasarela y prueba la descarga sin clave, con clave, con un archivo alterado, con otra firma y redirigida a otro
 servidor (que no recibe la clave); `through_the_beta_gateway` hace lo mismo a través de la pasarela de verdad
-(`services/beta-gateway` con node) delante de `fake_release_server.py` como GitHub. `tests/addons_bridge.rs` prueba
+(`apps/beta-gateway` con node) delante de `fake_release_server.py` como GitHub. `tests/addons_bridge.rs` prueba
 que un complemento no alcanza ningún comando con privilegios ni la clave. La pasarela tiene sus propias pruebas
-(`node --test services/beta-gateway/`).
+(`node --test apps/beta-gateway/`).
 
 Para probar a mano, `apps/launcher/tools/fake_release_server.py <carpeta> --port 8765` sirve como versiones las
 subcarpetas de `<carpeta>` (sus archivos y `notes.md`); se arranca el lanzador con
@@ -391,7 +391,7 @@ las leen también los pull requests):
 
 | Caché | Clave | Qué ahorra |
 |---|---|---|
-| Dependencias de vcpkg, por ordenador | `vcpkg.json`, `vcpkg-ports/`, `triplets/`, toolchains y la imagen | 6–8 min por ordenador; se guarda aunque el empaquetado falle. Las de Linux y Windows las leen también las comprobaciones `linux` y `windows` de los pull requests |
+| Dependencias de vcpkg, por ordenador | `vcpkg.json`, `tooling/vcpkg-ports/`, `tooling/triplets/`, toolchains y la imagen | 6–8 min por ordenador; se guarda aunque el empaquetado falle. Las de Linux y Windows las leen también las comprobaciones `linux` y `windows` de los pull requests |
 | Objetos del juego (ccache), por ordenador | una por ejecución; se borran las anteriores | 12–20 min de compilación, salvo los archivos que cambiaron |
 | Bibliotecas de MSVC y SDK de Windows (xwin) | el Dockerfile de la imagen | ~1 min de descarga |
 | Objetos de las comprobaciones de los pull requests (`ccache-ci-linux`, `ccache-ci-windows`) | una por ejecución; las guarda el trabajo `pr-caches` | que `linux` y `windows` compilen solo lo que cambió el pull request |

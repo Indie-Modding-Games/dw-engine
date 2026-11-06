@@ -6,7 +6,7 @@ Las películas del juego: lee frame a frame el vídeo que deja `dwx extract` y d
 - Depende de: `assets`, `core`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/video.md](../../../docs/modulos/engine/video.md).
+- Documentación: [modulos/engine/video](https://indie-modding-games.github.io/dw-engine/modulos/engine/video).
 
 Compilar y probar solo este paquete:
 

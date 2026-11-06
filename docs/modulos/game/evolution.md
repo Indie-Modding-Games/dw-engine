@@ -63,7 +63,7 @@ evolution->rebirth(inputs, random);                                     // al mo
   guion `PSTAT_SUKAMON_BACKUP_DIGIMON`; decidido por el responsable de diseño, 2026-10-20: va con el partner), y las
   devuelve en `EvolutionInputs::virusBackup`, que leen `returnFromVirus` y la reconstrucción de stats.
 - **`EvolutionState`**: formas ya criadas y la marca de objeto usado. `toYaml`/`fromYaml` guardan las formas por id,
-  en la versión de sección `EvolutionStateVersion` (para las migraciones de `game/save`); la marca no se guarda, como
+  en la versión de sección `EvolutionStateVersion` (para las migraciones de `packages/game/save`); la marca no se guarda, como
   en el original.
 - **Requisitos** (`report.hpp`): `report(inputs, state, destino)` da el `RequirementReport` de un destino con
   requisito: lo que pide cada uno de los cuatro grupos (errores de cuidado, peso, stats, extra) y cómo está el partner,
@@ -152,15 +152,15 @@ especie](../../architecture/rulesets.md#parches-por-especie)), con números de d
 - **Horas.** `Evolution::checkHoursFor(especie)` da las horas de revisión de una forma (las de su nivel, o las del
   paso Mega para una ultra cuando el ruleset lo trae).
 
-Tests: `game/evolution/tests/hidden_tests.cpp` (puerta de disparadores y hora, puerta de copa, paso Mega),
-`clip stand-ins fill only the clips a model lacks, with copies of ones it has` (`engine/assets/tests/model_data_tests.cpp`),
+Tests: `packages/game/evolution/tests/hidden_tests.cpp` (puerta de disparadores y hora, puerta de copa, paso Mega),
+`clip stand-ins fill only the clips a model lacks, with copies of ones it has` (`packages/engine/assets/tests/model_data_tests.cpp`),
 `the user's disc, extracted: the hidden content's paths and gates` y `the user's disc, extracted: the Mega step's
 paths` (`extracted_tests.cpp`, con `DWE_CONTENT`: los
 destinos tras los del original y cada camino elegido por la revisión),
-`the game pack's hidden content rulesets follow their schemas and read` (`engine/ruleset/tests/species_extra_tests.cpp`)
+`the game pack's hidden content rulesets follow their schemas and read` (`packages/engine/ruleset/tests/species_extra_tests.cpp`)
 y `extra_prizes: the hidden content's species patches give each new form's item`
-(`game/tournament/tests/cup_extras_tests.cpp`), `a species past the raised triggers is kept apart, and a new game clears it`
-(`apps/session/tests/evolution_adapter_tests.cpp`). Rutas: `route-hidden-content.yaml`,
+(`packages/game/tournament/tests/cup_extras_tests.cpp`), `a species past the raised triggers is kept apart, and a new game clears it`
+(`packages/session/tests/evolution_adapter_tests.cpp`). Rutas: `route-hidden-content.yaml`,
 `route-hidden-content-off.yaml` y `route-mega-step.yaml` ([prueba vertical](../../guides/prueba-vertical.md)).
 
 ### Paso Ultra → Mega
@@ -184,9 +184,9 @@ prosperidad) un Mega sigue contando como nivel 5.
   clips que `species_q` y en el campo se dibuja a 0,6 (`field_scale`: radio 400 frente a 220 de `species_u`).
 - **Sin la opción** nada cambia: un ultra no vuelve a revisar y `species_t` no se alcanza.
 
-Tests: `a partner's move variant replaces the table's move for it alone` (`game/battle/tests/battle_tests.cpp`),
+Tests: `a partner's move variant replaces the table's move for it alone` (`packages/game/battle/tests/battle_tests.cpp`),
 `a ruleset's species patches give the partner its own type and move values`
-(`apps/session/tests/battle_adapter_tests.cpp`) y los de «Contenido oculto».
+(`packages/session/tests/battle_adapter_tests.cpp`) y los de «Contenido oculto».
 
 Las etapas canónicas (Supremo/Mega para `species_v`, `species_bd`, `species_o` y `species_t`) son solo de la
 UI: las reglas siguen viendo nivel 5 ([game.md](../apps/game.md#etapas-canónicas)).
@@ -215,7 +215,7 @@ UI: las reglas siguen viendo nivel 5 ([game.md](../apps/game.md#etapas-canónica
 | Objetos de evolución fijos y de tabla | `item.c`: `handleEvoItems` | `Evolution::useItem`, `items`, `EvolutionTables::itemTarget` (`data/item_effects`, `item_targets`) | `a fixed evolution item…`, `an item of the item table…`, `the evolution items' targets come from the item effects…`, slow `every item of EVOLUTION_ITEM_TARGET evolves a form…` | Igual |
 | Marca de objeto contagiosa | `item.c`: `handleEvoItems`; `evl.c`: `EVL_applyEvolution` | `quirks.evolution_item_sticks` | `quirk evolution_item_sticks…` | Igual |
 | Ganancias de stats y escala | `evl.c`: `EVL_applyEvolution`, `EVL_scaleBaseStats` | `stat_gains` (`EvolutionEffects`), `EvolutionResult::statChange` | `each stat that reaches the reference…`, `the listed forms…` | Igual |
-| Topes de los stats | `evl.c`: `EVL_clampBaseStats` | `Partner::addStatGains` (`care.limits`), no la evolución | `game/partner`: `stat_gain_tests.cpp` | Desviación aprobada: además, cada ganancia queda en 999 como mucho (`stat_gain_max`, 2026-10-20) |
+| Topes de los stats | `evl.c`: `EVL_clampBaseStats` | `Partner::addStatGains` (`care.limits`), no la evolución | `packages/game/partner`: `stat_gain_tests.cpp` | Desviación aprobada: además, cada ganancia queda en 999 como mucho (`stat_gain_max`, 2026-10-20) |
 | Peso, cuidado, batallas, contador, vida, nivel del tamer | `evl.c`: `EVL_applyEvolution` | `stat_gains` | `effects_tests.cpp` | Igual |
 | Técnica aprendida y ranuras | `evl.c`: `EVL_applyEvolution`; `utils2.c`: `learnMove` | `moves`; la sesión las da a `BattleAdapter::evolveMoves` | `the form learns the weakest move…`, slow `every target of every chart…`, `an evolution teaches the new form's move…` | Igual |
 | Renacer | `evolution.c`: `reincarnatePartner`; `dooa.c` | `Evolution::rebirth`, `rebirth` | `rebirth turns the partner…` | Igual (la herencia de stats y las vidas son del partner) |

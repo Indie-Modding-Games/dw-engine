@@ -2,7 +2,7 @@
 
 - **Estado:** Aceptada
 - **Fecha:** 2026-10-18
-- **Nota (2026-11-06):** aceptada porque el código ya la sigue: el código compila con `-fno-exceptions` (`cmake/DweModule.cmake`) y devuelve errores con `std::expected`.
+- **Nota (2026-11-06):** aceptada porque el código ya la sigue: el código compila con `-fno-exceptions` (`tooling/cmake/DweModule.cmake`) y devuelve errores con `std::expected`.
 
 ## Contexto
 

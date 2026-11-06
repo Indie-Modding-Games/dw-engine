@@ -41,7 +41,7 @@ el aviso dice «Ctrl», no «Ctrl izq.», que además cabe en las filas de aviso
 
 ## Mapa actual de acciones
 
-Fuente única: `engine/input/src/action_map.cpp:defaultActionMap`. La primera vinculación de una acción es la
+Fuente única: `packages/engine/input/src/action_map.cpp:defaultActionMap`. La primera vinculación de una acción es la
 que muestran los avisos.
 
 | Acción | Teclado | Ratón | Mando | Uso |
@@ -68,7 +68,7 @@ que muestran los avisos.
 
 Los botones del mando se identifican por posición (`south`, `east`, `west`, `north`, `left_shoulder`,
 `right_shoulder`, `start`, `back`, `dpad_*`, stick). El glifo que ve el jugador (X/Cross, ○/Circle, □/Square,
-△/Triangle, A/B/X/Y, etc.) lo decide la familia detectada en `engine/ui/src/prompts.cpp`.
+△/Triangle, A/B/X/Y, etc.) lo decide la familia detectada en `packages/engine/ui/src/prompts.cpp`.
 
 ## Cómo se entrega cada acción al juego
 
@@ -76,7 +76,7 @@ Hay dos caminos. El mapa completo importa para entender dónde hay que tocar cua
 
 ### 1. La UI (documentos modales)
 
-`engine/ui/src/ui.cpp:Ui::takeCommands` convierte las acciones `move_left/right/up/down`, `confirm`, `cancel`
+`packages/engine/ui/src/ui.cpp:Ui::takeCommands` convierte las acciones `move_left/right/up/down`, `confirm`, `cancel`
 y `menu` en comandos de navegación (`up`, `down`, `left`, `right`, `confirm`, `cancel`, `menu`) y los entrega
 al documento modal que esté arriba mediante su `on_action(document, action)`. Si devuelve `true`, la UI no
 aplica la acción por defecto (mover el foco, confirmar el enfocado, volver, abrir el menú de juego).
@@ -208,7 +208,7 @@ de nombres).
 
 ### Motor
 
-- `engine/input/src/action_map.cpp`
+- `packages/engine/input/src/action_map.cpp`
   - Quitar `map.bind("walk", GamepadButtonBinding{GamepadButton::West});`. `walk` se queda en Mayús. y R1.
   - **Teclado** (valores definitivos):
     - `extra`: quitar `KeyBinding{keys::Delete}`, añadir `KeyBinding{keys::Q}`. En el mando se queda en Oeste.
@@ -221,11 +221,11 @@ de nombres).
   - La **caja de nombres no requiere tocar el motor ni `naming_box.cpp`** (opción A): el texto ya se procesa antes
     que las acciones, así que `Q`/`E` escriben y no disparan; los atajos de teclado desaparecen solos y en el mando
     se conservan.
-- `engine/input/tests/input_state_tests.cpp`
+- `packages/engine/input/tests/input_state_tests.cpp`
   - `walk is held with either shift key or the gamepad's west button` → usar `RightShoulder` en lugar de `West`.
-- `engine/input/tests/action_map_tests.cpp`
+- `packages/engine/input/tests/action_map_tests.cpp`
   - Los casos de `settings` por teclado (`keys::F10`) se quitan o se pasan al `Back` del mando (ya no hay tecla).
-- `engine/ui/tests/prompts_tests.cpp`
+- `packages/engine/ui/tests/prompts_tests.cpp`
   - `glyph(KeyboardMouse, ..., "settings").symbol == "F10"` (línea 139): sin tecla de teclado, el glifo pasa a
     `None`/vacío en teclado y sigue siendo `Back` (o su glifo) en mando. Ajustar el test al nuevo comportamiento.
   - `glyph(..., "extra").shape == "square"` (línea 157) sigue igual: en el mando `extra` no se mueve.

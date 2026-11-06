@@ -6,7 +6,7 @@ empaqueta.
 - Carpeta: `apps/dwx`; objetivos de CMake: `dwe::dwx`, el programa `dwx_cli` (capa `apps`).
 - Depende de: `assets`, `core`, `formats`.
 - Estructura: `CMakeLists.txt` (el programa y sus dependencias), `src/` y `tests/`.
-- Documentación: [docs/modulos/apps/dwx.md](../../docs/modulos/apps/dwx.md).
+- Documentación: [modulos/apps/dwx](https://indie-modding-games.github.io/dw-engine/modulos/apps/dwx).
 
 Compilar y probar solo este paquete:
 

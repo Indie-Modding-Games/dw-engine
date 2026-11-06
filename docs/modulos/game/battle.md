@@ -6,7 +6,7 @@ bloqueo y el contraataque, los estados alterados, el remate, el final del combat
 recompensas, el aprendizaje de técnicas y los enemigos que se unen. Las reglas están en la
 [ficha de referencia](../../reference/battle.md).
 
-No conoce al partner ni a las partidas: no incluye `game/partner` ni `game/save`. Recibe `Combatant` (declarado aquí)
+No conoce al partner ni a las partidas: no incluye `packages/game/partner` ni `packages/game/save`. Recibe `Combatant` (declarado aquí)
 y la condición del partner, y devuelve un `BattleResult` que la sesión aplica. No tiene estado que guardar: un combate
 empieza y acaba dentro de una sesión. Los números salen de la sección `battle` del ruleset y las decisiones (IA,
 daño, obediencia) son estrategias con nombre.

@@ -28,8 +28,8 @@ MDEC, VRAM y el doble búfer, el modo de 24 bits. La versión EU (otra tabla y o
 | Original | Destino en dwe |
 |---|---|
 | `MOV_MOVIES` | `movie.yaml` del paquete (`table`, ya lo escribe `dwx`): el frame final es dato del disco |
-| `MOV_playMovie` (bucle, condición de fin y de salto) | `engine/video`: `MoviePlayer` (reloj, frame actual, fin); `apps/game`: `MovieScreen` (salto, dibujo, voz) |
-| `MOV_readFrame`, `MOV_decodeFrame`, `MOV_startStream`, `MOV_startRead`, `MOV_onSliceDecoded`, `MOV_waitForFlip` | `engine/video`: `Y4mReader` (frame a frame, por trozos) + `toRgba`; el resto es máquina y desaparece |
+| `MOV_playMovie` (bucle, condición de fin y de salto) | `packages/engine/video`: `MoviePlayer` (reloj, frame actual, fin); `apps/game`: `MovieScreen` (salto, dibujo, voz) |
+| `MOV_readFrame`, `MOV_decodeFrame`, `MOV_startStream`, `MOV_startRead`, `MOV_onSliceDecoded`, `MOV_waitForFlip` | `packages/engine/video`: `Y4mReader` (frame a frame, por trozos) + `toRgba`; el resto es máquina y desaparece |
 | `MOV_initEnvironment` (y = 32 en 240) | `MovieScreen`: rectángulo con la proporción 320 × 240 y la película centrada, escalado a la ventana |
 | `DecDCTvlc2`/`DecDCTin` + audio XA | ya en `formats/video` (`mdec`, `xa_adpcm`); `dwx` los usa al extraer |
 | `startMovie`, `playMovie` (parar y reiniciar música, fundido) | `apps/game`: `MovieScreen` con `GameAudio` y `ScreenFade` |
@@ -42,11 +42,11 @@ Ruleset, sección nueva `movies`: por película, `file` (`op1`…), `skippable` 
 ## Reproductor
 
 ```text
-apps/game (MovieScreen) ──► engine/video ──► engine/assets (VFS por trozos, decodeWav), engine/core
-                        ──► engine/render (textura + QuadBatch + ScreenFade), engine/audio (voz en el bus de música)
+apps/game (MovieScreen) ──► packages/engine/video ──► packages/engine/assets (VFS por trozos, decodeWav), packages/engine/core
+                        ──► packages/engine/render (textura + QuadBatch + ScreenFade), packages/engine/audio (voz en el bus de música)
 ```
 
-- **`engine/video`** ([su página](../modulos/engine/video.md)), módulo de la capa de sistemas: `Y4mReader` (lee el Y4M frame a frame de un
+- **`packages/engine/video`** ([su página](../modulos/engine/video.md)), módulo de la capa de sistemas: `Y4mReader` (lee el Y4M frame a frame de un
   `assets::FileReader`: nunca tiene el fichero entero, que son unos 300 MB), `toRgba` (la fórmula del MDEC, la de
   `formats/video` `toRgb`, reescrita en el motor porque el runtime no usa `formats`) y `MoviePlayer`: lee
   `movie.yaml`, da el frame RGBA que toca para un tiempo dado y dice cuándo acaba (frame final =
@@ -79,15 +79,15 @@ apps/game (MovieScreen) ──► engine/video ──► engine/assets (VFS por 
 
 | Tramo | Qué entra | Líneas estim. | Contrato |
 |---|---|---|---|
-| 1 | `engine/video` (`Y4mReader`, `toRgba`, `MoviePlayer`); lectura por trozos en `engine/assets`; `Audio::position` | ~650 | 1, 2 |
+| 1 | `packages/engine/video` (`Y4mReader`, `toRgba`, `MoviePlayer`); lectura por trozos en `packages/engine/assets`; `Audio::position` | ~650 | 1, 2 |
 | 2 | `apps/game`: sección `movies` del ruleset, `MovieScreen`, estados de la app y ganchos de ED2 y EDR | ~650 | 3 |
 
 Cada tramo pasa `gate.sh --tier short --steps check,windows` y se sube solo.
 
 ## Cambios de contrato
 
-1. **API pública de `engine/audio`**: `Audio::position(VoiceId)`, aditiva.
-2. **API pública de `engine/assets`**: `FileReader`, `FileSystem::openFile` (virtual, con implementación por
+1. **API pública de `packages/engine/audio`**: `Audio::position(VoiceId)`, aditiva.
+2. **API pública de `packages/engine/assets`**: `FileReader`, `FileSystem::openFile` (virtual, con implementación por
    defecto) y `VirtualFileSystem::open`, aditivas.
 3. **Ruleset**: sección `movies` y `landing_idle_frames`, aditiva.
 

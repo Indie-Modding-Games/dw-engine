@@ -7,7 +7,7 @@ los tipos básicos.
 - Depende de: ningún otro paquete.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/core.md](../../../docs/modulos/engine/core.md).
+- Documentación: [modulos/engine/core](https://indie-modding-games.github.io/dw-engine/modulos/engine/core).
 
 Compilar y probar solo este paquete:
 

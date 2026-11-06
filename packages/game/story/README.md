@@ -6,7 +6,7 @@ La historia: su estado y el runtime que ejecuta las secciones de los scripts de 
 - Depende de: `assets`, `core`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/game/story.md](../../../docs/modulos/game/story.md).
+- Documentación: [modulos/game/story](https://indie-modding-games.github.io/dw-engine/modulos/game/story).
 
 Compilar y probar solo este paquete:
 

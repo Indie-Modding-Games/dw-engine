@@ -78,7 +78,7 @@ política para cualquier resolución, en el [ADR 0020](../../adr/0020-camara-de-
   haya entre los dos (los modelos) usa `camera().view()` y `camera().projection()` y queda tapado por las capas que
   tiene delante. `setMarkers` dibuja rectángulos de prueba de pie en el suelo. `setBillboards` dibuja cuadros con textura (de `addBillboardTexture`, que duran entre mapas) de pie y de cara a la cámara o tumbados en el suelo, opacos o semitransparentes como los sprites de las capas: los objetos del suelo y sus sombras (`item.c: renderDroppedItem`). Dibujar no reserva memoria: los
   búferes de cada fotograma se reutilizan. `setGrade` (`MapGrade`, mejora para las estaciones de
-  [game/weather](../game/weather.md#estaciones)) colorea el fondo, las capas y los cuadros en el shader: los verdes
+  [packages/game/weather](../game/weather.md#estaciones)) colorea el fondo, las capas y los cuadros en el shader: los verdes
   giran hacia otro tono, luego saturación, ganancia por canal y `lift`; las bandas nunca. Neutro por defecto: los
   colores salen tal cual.
 - `MapRenderer::setHdScenery` (por defecto encendido): el fondo y las capas se filtran en `map.slang` siguiendo los

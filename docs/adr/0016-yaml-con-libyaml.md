@@ -12,7 +12,7 @@ forma determinista, para que extraer dos veces el mismo disco dé los mismos fic
 
 ## Decisión
 
-- Se usa **libyaml** (C, port `libyaml` de vcpkg), solo dentro de `engine/core/src`. El header público
+- Se usa **libyaml** (C, port `libyaml` de vcpkg), solo dentro de `packages/engine/core/src`. El header público
   `<dwe/core/yaml.hpp>` expone un árbol propio (`YamlNode`), `parseYaml` y `emitYaml`, y no incluye `yaml.h`.
 - Solo se acepta un subconjunto: un documento por fichero, sin anclas, alias ni etiquetas, sin claves repetidas y con
   claves escalares. Hay límite de tamaño y de anidamiento.

@@ -7,7 +7,7 @@ virtual que los monta por capas.
 - Depende de: `core`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/assets.md](../../../docs/modulos/engine/assets.md).
+- Documentación: [modulos/engine/assets](https://indie-modding-games.github.io/dw-engine/modulos/engine/assets).
 
 Compilar y probar solo este paquete:
 

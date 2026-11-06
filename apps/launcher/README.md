@@ -6,7 +6,7 @@ lo abre. Es una app de escritorio en Rust (`src-tauri/`) con la interfaz web en 
 - Carpeta: `apps/launcher`; `addons/` son los complementos de ejemplo y `tools/` el servidor de versiones falso de
   sus tests.
 - Depende de: ningún paquete de CMake. Sus tests de punta a punta usan `apps/beta-gateway`.
-- Documentación: [docs/modulos/apps/launcher.md](../../docs/modulos/apps/launcher.md).
+- Documentación: [modulos/apps/launcher](https://indie-modding-games.github.io/dw-engine/modulos/apps/launcher).
 
 Compilar y probar solo el lanzador (en su propia imagen, `scripts/launcher.sh`):
 

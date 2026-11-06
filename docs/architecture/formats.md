@@ -1,6 +1,6 @@
 # Formatos del original: la librería `formats` y `dwx`
 
-Plan de la fase 1 ([roadmap](../roadmap.md)). Describe qué tiene que leer `formats/`, cómo se organiza y qué hace cada
+Plan de la fase 1 ([roadmap](../roadmap.md)). Describe qué tiene que leer `packages/formats/`, cómo se organiza y qué hace cada
 comando de `apps/dwx`. Lo que sabemos de cada formato sale del decomp (`dw_decomp`); se cita el fichero y la función
 que lo lee para poder comprobarlo. Este documento no contiene datos del juego, solo estructuras.
 
@@ -18,14 +18,14 @@ Las reglas que no cambian ([dependencias](dependency-rules.md), [tubería de ass
   decomp tiene una tabla de ficheros por versión.
 - `dwx extract` identifica la versión por el SHA-1 de su ejecutable (los de las imágenes completas faltan, abajo). El decomp solo tiene SHA-1 del
   ejecutable y de los overlays (`config/<ver>/*.yaml`); la lista de SHA-1 de cada fichero de datos la generamos
-  nosotros la primera vez, desde un disco verificado, y se guarda en `formats/` como tabla (solo hashes y nombres).
+  nosotros la primera vez, desde un disco verificado, y se guarda en `packages/formats/` como tabla (solo hashes y nombres).
 - Ya existe la primera pieza: `dwx verify <fichero>` calcula el SHA-1 de un fichero y lo busca en la tabla de
   `formats/disc` (`known_releases.cpp`). Solo se soportan las versiones comerciales: **US, EU y JP** (la original y la revisión 1). Las
   demás versiones del decomp (la demo y `jp_bombom`) quedan fuera. Hoy la tabla tiene esos cuatro ejecutables; **faltan
   los hashes de las imágenes completas** (pistas de Redump), que se añaden desde la ficha de Redump o desde un volcado
   verificado, nunca a ojo.
 
-## Organización de `formats/`
+## Organización de `packages/formats/`
 
 ```
 formats/

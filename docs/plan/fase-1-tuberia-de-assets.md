@@ -15,7 +15,7 @@ juego porque todo lo demás necesita estos datos.
 
 ## Alcance
 
-- Librería `formats/`: lectores de los formatos del disco (CD e ISO9660, TIM, TMD/MMD, mapas, ALLTIM, textos,
+- Librería `packages/formats/`: lectores de los formatos del disco (CD e ISO9660, TIM, TMD/MMD, mapas, ALLTIM, textos,
   bytecode de eventos, VAB/SEQ, STR y las tablas del ejecutable). Documentados en [`docs/formats/`](../formats/index.md).
 - La CLI `dwx` con `extract`, `validate`, `cook` y `pack`.
 - El sistema de ficheros virtual (VFS) con capas y manifiestos de paquete ([VFS](../architecture/vfs.md)).
@@ -66,7 +66,7 @@ flowchart LR
 
 ## Diseño
 
-- `formats/` solo lo usa `apps/dwx`; el motor (`engine/assets`) solo conoce formatos abiertos y cocinados
+- `packages/formats/` solo lo usa `apps/dwx`; el motor (`packages/engine/assets`) solo conoce formatos abiertos y cocinados
   ([reglas de dependencias](../architecture/dependency-rules.md)).
 - Decisiones: [ADR 0005](../adr/0005-tuberia-de-assets.md) (tubería), [ADR 0011](../adr/0011-politica-legal-de-assets.md)
   (política legal), [ADR 0016](../adr/0016-yaml-con-libyaml.md) (YAML), [ADR 0017](../adr/0017-cocinado-y-archivos-pak.md)

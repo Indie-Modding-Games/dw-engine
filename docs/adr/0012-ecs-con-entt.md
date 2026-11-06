@@ -10,12 +10,12 @@ disparadores), y los modos de juego y los mods tienen que poder combinarlas libr
 
 ## Decisión
 
-Las entidades del mundo usan un **ECS** con **EnTT**, dentro del módulo `scene`. Los sistemas de `game/` trabajan
+Las entidades del mundo usan un **ECS** con **EnTT**, dentro del módulo `scene`. Los sistemas de `packages/game/` trabajan
 sobre sus componentes.
 
 ### Detalles (fase 2)
 
-- EnTT entra por vcpkg (`entt`), solo en `engine/scene`, que lo expone en su API pública: `scene::World` es un envoltorio
+- EnTT entra por vcpkg (`entt`), solo en `packages/engine/scene`, que lo expone en su API pública: `scene::World` es un envoltorio
   fino del `entt::registry` y los sistemas usan el registro directamente.
 - `scene` tiene solo los componentes que comparten varios módulos: `Transform` (posición y yaw en el espacio del mundo,
   con los valores del tick anterior para interpolar al dibujar), `ModelRef`, `AnimationIntent` y las etiquetas

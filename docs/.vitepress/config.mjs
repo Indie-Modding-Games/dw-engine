@@ -57,15 +57,17 @@ const sidebar = [
   group("Decisiones (ADR)", folderItems("adr", { exclude: ["template.md"] })),
   group("Módulos", [
     pageItem("modulos/index.md"),
-    group("Motor (engine/)", folderItems("modulos/engine")),
-    group("Juego (game/)", folderItems("modulos/game")),
-    group("Aplicaciones (apps/)", folderItems("modulos/apps")),
-    group("Servicios (services/)", folderItems("modulos/services")),
-    group("Otros", [
+    group("Motor (packages/engine/)", folderItems("modulos/engine")),
+    group("Juego (packages/game/)", folderItems("modulos/game")),
+    group("Librerías compartidas (packages/)", [
+      ...["session", "screens", "content"].map((name) => pageItem(`modulos/apps/${name}.md`)),
       pageItem("modulos/formats.md"),
-      pageItem("modulos/shaders.md"),
-      ...folderItems("modulos/tests"),
     ]),
+    group("Aplicaciones (apps/)", [
+      ...folderItems("modulos/apps", { exclude: ["session.md", "screens.md", "content.md"] }),
+      ...folderItems("modulos/services"),
+    ]),
+    group("Otros", [pageItem("modulos/shaders.md"), ...folderItems("modulos/tests")]),
   ]),
   group("Formatos y archivos", folderItems("formats")),
   group("Guías", folderItems("guides")),

@@ -6,7 +6,7 @@ La evolución del partner: cuándo cambia de forma, a cuál y qué se lleva a la
 - Depende de: `assets`, `core`, `ruleset`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/game/evolution.md](../../../docs/modulos/game/evolution.md).
+- Documentación: [modulos/game/evolution](https://indie-modding-games.github.io/dw-engine/modulos/game/evolution).
 
 Compilar y probar solo este paquete:
 

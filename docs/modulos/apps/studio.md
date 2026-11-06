@@ -50,4 +50,4 @@ logs. Solo para procesos que lanzó él.
   y la [traza de estado](../../guides/traza-de-estado.md).
 - No tiene tests automáticos.
 
-`prototypes/dwe-studio-vscode/index.html` es la maqueta en HTML de la interfaz con la que empezó (prueba de concepto).
+`apps/studio-vscode/index.html` es la maqueta en HTML de la interfaz con la que empezó (prueba de concepto).

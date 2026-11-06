@@ -6,7 +6,7 @@ Los lectores de los formatos del disco original. Solo lo usa `dwx`: el runtime n
 - Depende de: `core`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/formats.md](../../docs/modulos/formats.md).
+- Documentación: [modulos/formats](https://indie-modding-games.github.io/dw-engine/modulos/formats).
 
 Compilar y probar solo este paquete:
 

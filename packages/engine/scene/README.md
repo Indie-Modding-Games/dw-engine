@@ -6,7 +6,7 @@ Las entidades del mundo y sus componentes (ECS).
 - Depende de: `core`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/scene.md](../../../docs/modulos/engine/scene.md).
+- Documentación: [modulos/engine/scene](https://indie-modding-games.github.io/dw-engine/modulos/engine/scene).
 
 Compilar y probar solo este paquete:
 

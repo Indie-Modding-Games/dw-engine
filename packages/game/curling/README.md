@@ -6,7 +6,7 @@ El juego de las piedras de la pista de hielo.
 - Depende de: `assets`, `core`, `ruleset`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/game/curling.md](../../../docs/modulos/game/curling.md).
+- Documentación: [modulos/game/curling](https://indie-modding-games.github.io/dw-engine/modulos/game/curling).
 
 Compilar y probar solo este paquete:
 

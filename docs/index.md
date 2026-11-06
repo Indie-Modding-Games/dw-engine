@@ -60,7 +60,7 @@ Seguimos el marco [Diátaxis](https://diataxis.fr/), que separa los documentos s
 |---|---|---|
 | Tutorial | Aprender desde cero | [`getting-started/`](getting-started/setup.md) |
 | Guía práctica | Hacer una tarea concreta | `guides/`: el [visor de assets](guides/visor-de-assets.md), la [prueba vertical](guides/prueba-vertical.md), [pasar el gate](guides/gate.md), las [simulaciones](guides/simulaciones.md), la [traza de estado](guides/traza-de-estado.md) para comparar con el original, la [comprobación del entrenamiento](guides/comprobar-entrenamiento.md), el [control remoto](guides/control-remoto.md) del juego en marcha, la [beta para Linux](guides/beta-linux.md), la [beta para Windows y macOS](guides/beta-windows-macos.md), los [complementos del lanzador](guides/launcher-addons.md), las [imágenes personalizadas](guides/imagenes-personalizadas.md), [cómo funcionan las evoluciones](guides/evoluciones.md) y [traducir los textos del original](guides/traducir.md), con su [glosario](guides/glosario-es.md) |
-| Referencia | Consultar un detalle exacto | [`reference/`](reference/index.md) (el original y la [cobertura del port](reference/port-coverage.md)), [`formats/`](formats/index.md) (los formatos del disco), [`modulos/`](modulos/index.md) (la API de cada módulo), `modding/` |
+| Referencia | Consultar un detalle exacto | [`reference/`](reference/index.md) (el original y la [cobertura del port](reference/port-coverage.md)), [`packages/formats/`](formats/index.md) (los formatos del disco), [`modulos/`](modulos/index.md) (la API de cada módulo), `modding/` |
 | Explicación | Entender por qué es así | [`architecture/`](architecture/overview.md), [`adr/`](adr/index.md) |
 
 Además: `conventions/` (normas del equipo: [código](conventions/code.md), [commits](conventions/commits.md),
@@ -71,7 +71,7 @@ Además: `conventions/` (normas del equipo: [código](conventions/code.md), [com
 
 - Toda la documentación vive en `docs/` y forma este sitio (VitePress). No hay README por módulo: cada módulo tiene su
   página en [`modulos/`](modulos/index.md). Solo las herramientas que no son parte del motor (`apps/studio`,
-  `services/beta-gateway`) guardan junto al código un README con los pasos para usarlas o desplegarlas.
+  `apps/beta-gateway`) guardan junto al código un README con los pasos para usarlas o desplegarlas.
 - Markdown, una idea por sección y frases cortas, en español.
 - Los diagramas van en [Mermaid](https://mermaid.js.org/), como texto: el sitio y GitHub los dibujan y se revisan en
   los PR.

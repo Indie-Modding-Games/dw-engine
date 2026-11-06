@@ -6,7 +6,7 @@ La pesca: la caña, el corcho, el sedal y los peces del agua de un mapa.
 - Depende de: `assets`, `core`, `ruleset`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/game/fishing.md](../../../docs/modulos/game/fishing.md).
+- Documentación: [modulos/game/fishing](https://indie-modding-games.github.io/dw-engine/modulos/game/fishing).
 
 Compilar y probar solo este paquete:
 

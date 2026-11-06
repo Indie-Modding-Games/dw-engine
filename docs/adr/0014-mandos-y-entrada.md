@@ -2,7 +2,7 @@
 
 - **Estado:** Aceptada
 - **Fecha:** 2026-10-18
-- **Nota (2026-11-06):** aceptada porque el código ya la sigue: `engine/input` (mapa de acciones con teclado, ratón y mandos).
+- **Nota (2026-11-06):** aceptada porque el código ya la sigue: `packages/engine/input` (mapa de acciones con teclado, ratón y mandos).
 
 ## Contexto
 

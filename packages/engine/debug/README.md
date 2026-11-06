@@ -7,7 +7,7 @@ visor de assets.
 - Depende de: `assets`, `core`, `input`, `platform`, `rhi`, `ruleset`, `script`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/debug.md](../../../docs/modulos/engine/debug.md).
+- Documentación: [modulos/engine/debug](https://indie-modding-games.github.io/dw-engine/modulos/engine/debug).
 
 Compilar y probar solo este paquete:
 

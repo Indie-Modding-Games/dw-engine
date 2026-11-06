@@ -9,16 +9,16 @@ dónde está el código que lo lee y cómo lo usa cada sistema.
 
 | Qué | Dónde |
 |---|---|
-| Código | [`engine/ruleset`](../modulos/engine/ruleset.md) (`dwe::ruleset`), capa de servicios |
+| Código | [`packages/engine/ruleset`](../modulos/engine/ruleset.md) (`dwe::ruleset`), capa de servicios |
 | Ruleset `original` | [`content/packs/game/rules/original/`](https://github.com/Indie-Modding-Games/dw-engine/tree/main/content/packs/game/rules/original) |
 | Esquemas | `content/schemas/ruleset.schema.json` (manifiesto) y `ruleset_<sección>.schema.json` (una por sección) |
 | Reglas de esquema | `schemas:` de [`content/packs/game/pack.yaml`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/packs/game/pack.yaml) |
 
-**Por qué un módulo de servicios y no `game/ruleset`.** Todos los sistemas del juego (partner, batalla, inventario,
+**Por qué un módulo de servicios y no `packages/game/ruleset`.** Todos los sistemas del juego (partner, batalla, inventario,
 guardado) leen su sección del ruleset, y la regla 4 de las [reglas de dependencias](dependency-rules.md) prohíbe que
-los módulos de `game/` se usen entre sí. El núcleo del ruleset no sabe nada de cuidado ni de batalla: solo lee YAML,
+los módulos de `packages/game/` se usen entre sí. El núcleo del ruleset no sabe nada de cuidado ni de batalla: solo lee YAML,
 sigue `extends`, cuenta revisiones y crea estrategias por nombre. Eso es un servicio, como `script` o `ui`, y los
-módulos de `game/` ya pueden usar servicios. No hace falta ninguna excepción a las reglas. El reloj de juego vive en
+módulos de `packages/game/` ya pueden usar servicios. No hace falta ninguna excepción a las reglas. El reloj de juego vive en
 el mismo módulo porque lo comparten el partner, la batalla, el campo y el autotest, y su sección es parte del
 ruleset.
 
@@ -78,7 +78,7 @@ sections: [care]             # su care.yaml sustituye al de original; el reloj y
 `extends` sustituye tablas enteras, y una tabla de evolución o de crianza entera es dato del disco que no se puede
 subir al repositorio. Un ruleset que añade compañeros (el [contenido oculto](../modulos/game/evolution.md#contenido-oculto))
 dice solo lo que añade en la sección `species_extra` (esquema `ruleset_species_extra`), por id de especie, y
-`dwe::ruleset::loadPatched{Digimon,Raise,Evolution}Table` (`engine/ruleset/include/dwe/ruleset/species_extra.hpp`)
+`dwe::ruleset::loadPatched{Digimon,Raise,Evolution}Table` (`packages/engine/ruleset/include/dwe/ruleset/species_extra.hpp`)
 lo aplica sobre las tablas que el ruleset nombra:
 
 | Campo | Qué hace |
@@ -190,7 +190,7 @@ no, la sesión no arranca y dice qué regla y qué número o id. `dwx validate` 
 3. **Revisión.** Guarda la `revision()` con la que leyó su sección y la vuelve a leer cuando cambia.
 
 ```cpp
-// game/partner (ejemplo)
+// packages/game/partner (ejemplo)
 core::Result<CareRules> readCareRules(const ruleset::Section& section);
 
 ruleset::SectionChecks checks{{"care", [](const ruleset::Section& s) -> core::Result<void> {
@@ -249,7 +249,7 @@ cada 20 fotogramas, 30 días por año, el año vuelve a 0 en 100, y una partida 
   real), 0 lo para, 60 hace una hora de juego por segundo y 3600, 60 horas de juego por segundo. Lo usan los tests, el autotest, las simulaciones y el panel de depuración.
 - **Pausa y saltos.** `setRunning(false)` es el `stopGameTime` del original. `jumpTo(hora, minuto)` es el salto al
   dormir (`advanceToTime`): solo cuenta el cambio de día, no las horas saltadas.
-- **Uno por partida.** El reloj lo tiene la partida (`apps/session`), que lo avanza solo en los ticks en que el campo
+- **Uno por partida.** El reloj lo tiene la partida (`packages/session`), que lo avanza solo en los ticks en que el campo
   corre tiempo de juego (`Field::gameTimeRan`) y lo guarda con sus fracciones (`restore(fotogramas, pendientes)`),
   así que una partida cargada sigue igual que la guardada.
 
@@ -284,5 +284,5 @@ ficheros.
 - **`dwx validate --engine --with <content>/base content/packs/game`**: el manifiesto y cada sección contra su esquema, y las
   referencias del manifiesto (tablas, secciones, scripts y `extends`) con `assetReference`, así que una tabla que
   falta en el paquete base es un problema.
-- **Test del disco** (`engine/ruleset`, con `DWE_CONTENT`): cada tabla de `original` está en el paquete base
+- **Test del disco** (`packages/engine/ruleset`, con `DWE_CONTENT`): cada tabla de `original` está en el paquete base
   extraído y cumple su esquema (R3.2).

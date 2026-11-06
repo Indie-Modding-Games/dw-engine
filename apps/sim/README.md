@@ -5,7 +5,7 @@
 - Carpeta: `apps/sim`; objetivos de CMake: `dwe::sim`, el programa `sim_cli` (capa `apps`).
 - Depende de: `${game_modules}`, `assets`, `content`, `core`, `ruleset`, `session`.
 - Estructura: `CMakeLists.txt` (el programa y sus dependencias), `src/` y `tests/`.
-- Documentación: [docs/modulos/apps/sim.md](../../docs/modulos/apps/sim.md).
+- Documentación: [modulos/apps/sim](https://indie-modding-games.github.io/dw-engine/modulos/apps/sim).
 
 Compilar y probar solo este paquete:
 

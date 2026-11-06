@@ -6,7 +6,7 @@ El clima del campo: qué tiempo hace en cada mapa y cuándo cambia.
 - Depende de: `assets`, `core`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/game/weather.md](../../../docs/modulos/game/weather.md).
+- Documentación: [modulos/game/weather](https://indie-modding-games.github.io/dw-engine/modulos/game/weather).
 
 Compilar y probar solo este paquete:
 

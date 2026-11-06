@@ -6,7 +6,7 @@ La entrada por acciones: el juego pregunta por acciones (`confirm`, `move_left`.
 - Depende de: `core`, `platform`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/input.md](../../../docs/modulos/engine/input.md).
+- Documentación: [modulos/engine/input](https://indie-modding-games.github.io/dw-engine/modulos/engine/input).
 
 Compilar y probar solo este paquete:
 

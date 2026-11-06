@@ -9,7 +9,7 @@ batalla, economía, un modo de juego…) sigue este ciclo.
 | 1. Ficha de referencia | Cómo funcionaba el original, sacado del decomp | [`docs/reference/`](../reference/index.md) | Programación |
 | 2. Diseño | Cómo funcionará ahora, justificado contra los pilares de diseño | GDD (repositorio de diseño) | Diseño |
 | 3. Aprobación | La persona responsable de diseño lo aprueba | PR en el repositorio de diseño | Responsable de diseño |
-| 4. Implementación | El sistema en C++; sus reglas y valores, en el ruleset (YAML o Lua), nunca fijos en el código | `game/` + `content/packs/` | Programación |
+| 4. Implementación | El sistema en C++; sus reglas y valores, en el ruleset (YAML o Lua), nunca fijos en el código | `packages/game/` + `content/packs/` | Programación |
 | 5. Tests | Que el sistema hace lo que dice el GDD, y simulaciones de balance | `tests/` | Programación |
 | 6. Ajuste y pruebas de juego | Valores cambiados en vivo desde el panel de depuración y sesiones de juego | Editor y equipo | Todos |
 | 7. Iterar | Lo aprendido vuelve al paso 2 | — | Diseño |

@@ -6,7 +6,7 @@ Los modelos de vista de las pantallas del juego: qué enseñan el combate, el HU
 - Depende de: `assets`, `battle`, `core`, `inventory`, `localization`, `partner`, `ruleset`, `session`, `ui`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/apps/screens.md](../../docs/modulos/apps/screens.md).
+- Documentación: [modulos/apps/screens](https://indie-modding-games.github.io/dw-engine/modulos/apps/screens).
 
 Compilar y probar solo este paquete:
 

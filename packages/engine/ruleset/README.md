@@ -7,7 +7,7 @@ sistemas del juego.
 - Depende de: `assets`, `core`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/ruleset.md](../../../docs/modulos/engine/ruleset.md).
+- Documentación: [modulos/engine/ruleset](https://indie-modding-games.github.io/dw-engine/modulos/engine/ruleset).
 
 Compilar y probar solo este paquete:
 

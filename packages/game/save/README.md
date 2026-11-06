@@ -6,7 +6,7 @@ Las partidas guardadas: el fichero YAML versionado, las secciones de cada sistem
 - Depende de: `assets`, `core`, `ruleset`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/game/save.md](../../../docs/modulos/game/save.md).
+- Documentación: [modulos/game/save](https://indie-modding-games.github.io/dw-engine/modulos/game/save).
 
 Compilar y probar solo este paquete:
 

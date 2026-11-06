@@ -245,7 +245,7 @@ compañero y a qué velocidad andan está en [modelos y animación en el motor](
 
 ## Pruebas
 
-- Fixtures sintéticos en `formats/tests/model_fixtures.hpp`: un TMD con dos objetos (triángulo y cuadrilátero, con y
+- Fixtures sintéticos en `packages/formats/tests/model_fixtures.hpp`: un TMD con dos objetos (triángulo y cuadrilátero, con y
   sin textura, con y sin luz, y una línea que se salta), y un MMD con dos animaciones que usan todas las instrucciones,
   un bucle con cuenta, uno para siempre y escala por hueso.
 - Los GLB se vuelven a leer con cgltf (`cgltf_parse`, `cgltf_validate`) y se comprueban nodos, accesores, canales y

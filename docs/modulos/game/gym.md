@@ -2,7 +2,7 @@
 
 El gimnasio del pueblo (`dwe::game::gym`, capa `game`): la coreografía de cada curso de entrenamiento (`src/trn`:
 `TRN_setup*Training` y `TRN_tick*Training`), la caja que cuenta las ganancias y lo que aprende el partner en el curso
-de inteligencia. Las ganancias en sí son de `game/partner` (la sección `training` del ruleset); lo que hacía el
+de inteligencia. Las ganancias en sí son de `packages/game/partner` (la sección `training` del ruleset); lo que hacía el
 original está en la [ficha de cuidado](../../reference/care.md#entrenamiento).
 
 No dibuja ni toca el campo: depende de `core`, `assets` y `ruleset`. Los números salen de la sección `gym` del

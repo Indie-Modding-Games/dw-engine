@@ -743,9 +743,9 @@ son (b) y no están aquí: son `data/fishing`, que `dwx` extrae del overlay FISH
 
 ## Otras constantes del original fuera de los rulesets
 
-Búsqueda en `engine/`, `game/`, `apps/`, `formats/`, `content/` (fuera de `rules/original/`) y `tests/` de comentarios
+Búsqueda en `packages/engine/`, `packages/game/`, `apps/`, `packages/formats/`, `content/` (fuera de `rules/original/`) y `tests/` de comentarios
 que citan el decomp, de tablas de constantes y de asserts de tests que repiten valores del ruleset `original`. Un
-assert que repite un valor (b) es (b); uno que solo mira un tamaño o que algo existe es (a). La mayoría de las citas en `game/` y `apps/session` explican
+assert que repite un valor (b) es (b); uno que solo mira un tamaño o que algo existe es (a). La mayoría de las citas en `packages/game/` y `packages/session` explican
 comportamiento y no guardan valores; esas no se listan. Una línea por constante o grupo de constantes del mismo tipo.
 
 **Cómo se buscaron los asserts de tests.** Para cada tabla (b) se sacaron del ruleset todas sus referencias (ids de
@@ -767,43 +767,43 @@ ejecutable del usuario; no contienen sus datos. Son (a), como `ExecutableLayout`
 
 ### Cómo localiza `dwx` las tablas por versión
 
-La versión sale del SHA-1 del ejecutable (`formats/src/disc/known_releases.cpp`: us, eu, jp, jp_rev1). Con ella,
-`formats::exe::findExecutableLayout` (`formats/src/exe/executable_layout.cpp`) da la dirección y el número de entradas
+La versión sale del SHA-1 del ejecutable (`packages/formats/src/disc/known_releases.cpp`: us, eu, jp, jp_rev1). Con ella,
+`formats::exe::findExecutableLayout` (`packages/formats/src/exe/executable_layout.cpp`) da la dirección y el número de entradas
 de cada tabla (`TableLocation`), y `apps/dwx/src/game_tables.cpp: readGameTables` las lee. Los valores que están en el
 código y no en una tabla de datos se leen ejecutando un switch de constantes (`ConstantSwitch`,
-`formats/include/dwe/formats/exe/constant_switch.hpp`: `handleFood`, `handleChips`). Los overlays tienen su propio
-layout (`formats/src/exe/overlay.cpp`, `overlay_tables.cpp`). Solo la versión americana está localizada; las otras
+`packages/formats/include/dwe/formats/exe/constant_switch.hpp`: `handleFood`, `handleChips`). Los overlays tienen su propio
+layout (`packages/formats/src/exe/overlay.cpp`, `overlay_tables.cpp`). Solo la versión americana está localizada; las otras
 fallan con un error claro hasta que alguien rellene sus direcciones desde `config/<versión>/symbols.txt` del decomp.
 
 | Dónde | Qué | Clase | Motivo |
 |---|---|---|---|
-| `formats/src/exe/executable_layout.cpp` | direcciones y número de entradas de unas 37 tablas, 9 manejadores de objetos y los índices del primer objeto de cada tabla de efectos (US) | a | Formato (D9). |
-| `formats/src/exe/executable_layout.cpp: UsFoodValues, UsChipValues` | dónde están los valores locales de `handleFood` y `handleChips` (18 y 7 registros o huecos de pila) | a | Formato (D9): dice dónde leer, no qué vale. |
-| `formats/src/exe/tables.cpp` | tamaño de cada registro (DigimonPara, Move, Item, EvoRequirements...) | a | Formato. |
-| `formats/src/exe/overlay.cpp`, `overlay_tables.cpp` | cabeceras, direcciones de carga, rangos de `SHOP_REL.BIN`, tablas de los overlays (US) | a | Formato (D9). |
-| `formats/src/disc/file_table.cpp`, `formats/src/video/movie.cpp`, `formats/src/text/font.cpp`, `formats/src/image/tim_packs.cpp`, `formats/src/audio/vhb.cpp` | direcciones, capacidades y pasos de tablas de ficheros, vídeos, fuente, TIM y sonido | a | Formato. |
-| `formats/src/effect/efe_script.cpp`, `efe_subops.cpp`, `efe_file.cpp`, `efe_analysis.cpp` | 18 opcodes y 0x61 subórdenes de efectos con sus argumentos; disposición de VRAM | a | Formato del lenguaje de efectos. |
-| `formats/src/script/disassembly.cpp` | 105 opcodes de guion con sus operandos | a | Formato del lenguaje de guiones. |
-| `formats/src/script/new_game_stats.cpp` | el guion 193 y 4 opcodes | a | Formato: dónde leer los stats iniciales (los valores salen del disco). |
-| `formats/src/text/game_text.cpp` | bytes de control del texto | a | Formato. |
-| `formats/src/map/map_file.cpp` | topes de un mapa (35 tiles, 188 instancias, 8 NPC) y la ruta `MAP<id/15+1>` | a | Formato. |
-| `formats/src/text/string_manifest.cpp` | US: 25 bloques de cadenas y unas 24 listas de direcciones de mensajes concretos | a | D9. «Decidido por el coordinador (2026-10-21)»: localizadores por mensaje (formato). |
-| `formats/src/text/charset.cpp: NonKanjiRows` | tabla cp932 | a | Estándar de codificación, no del juego. |
-| `formats/include/dwe/formats/exe/item_effects.hpp` y sus copias en `engine/assets`, `game/inventory` | nombres de 10 manejadores, 18 valores de comida y 7 de chip | a | Nombres propios de campos (esquema). |
+| `packages/formats/src/exe/executable_layout.cpp` | direcciones y número de entradas de unas 37 tablas, 9 manejadores de objetos y los índices del primer objeto de cada tabla de efectos (US) | a | Formato (D9). |
+| `packages/formats/src/exe/executable_layout.cpp: UsFoodValues, UsChipValues` | dónde están los valores locales de `handleFood` y `handleChips` (18 y 7 registros o huecos de pila) | a | Formato (D9): dice dónde leer, no qué vale. |
+| `packages/formats/src/exe/tables.cpp` | tamaño de cada registro (DigimonPara, Move, Item, EvoRequirements...) | a | Formato. |
+| `packages/formats/src/exe/overlay.cpp`, `overlay_tables.cpp` | cabeceras, direcciones de carga, rangos de `SHOP_REL.BIN`, tablas de los overlays (US) | a | Formato (D9). |
+| `packages/formats/src/disc/file_table.cpp`, `packages/formats/src/video/movie.cpp`, `packages/formats/src/text/font.cpp`, `packages/formats/src/image/tim_packs.cpp`, `packages/formats/src/audio/vhb.cpp` | direcciones, capacidades y pasos de tablas de ficheros, vídeos, fuente, TIM y sonido | a | Formato. |
+| `packages/formats/src/effect/efe_script.cpp`, `efe_subops.cpp`, `efe_file.cpp`, `efe_analysis.cpp` | 18 opcodes y 0x61 subórdenes de efectos con sus argumentos; disposición de VRAM | a | Formato del lenguaje de efectos. |
+| `packages/formats/src/script/disassembly.cpp` | 105 opcodes de guion con sus operandos | a | Formato del lenguaje de guiones. |
+| `packages/formats/src/script/new_game_stats.cpp` | el guion 193 y 4 opcodes | a | Formato: dónde leer los stats iniciales (los valores salen del disco). |
+| `packages/formats/src/text/game_text.cpp` | bytes de control del texto | a | Formato. |
+| `packages/formats/src/map/map_file.cpp` | topes de un mapa (35 tiles, 188 instancias, 8 NPC) y la ruta `MAP<id/15+1>` | a | Formato. |
+| `packages/formats/src/text/string_manifest.cpp` | US: 25 bloques de cadenas y unas 24 listas de direcciones de mensajes concretos | a | D9. «Decidido por el coordinador (2026-10-21)»: localizadores por mensaje (formato). |
+| `packages/formats/src/text/charset.cpp: NonKanjiRows` | tabla cp932 | a | Estándar de codificación, no del juego. |
+| `packages/formats/include/dwe/formats/exe/item_effects.hpp` y sus copias en `packages/engine/assets`, `packages/game/inventory` | nombres de 10 manejadores, 18 valores de comida y 7 de chip | a | Nombres propios de campos (esquema). |
 | `apps/dwx/src/audio_extractors.cpp` | huecos VAB, nota base, tipos con música de enemigo, pistas que suenan una vez | a | Formato del sonido. |
 | `apps/dwx/src/model_extractors.cpp: KnownScenes, RuntimeTextures` | unos 30 modelos → TIM, mapa o rutina donde los muestra el original | a | D9. «Decidido por el coordinador (2026-10-21)»: localizadores por fichero (formato). |
 | `apps/dwx/src/model_extractors.cpp`, `map_extractors.cpp`, `image_extractors.cpp`, `padding_extractor.cpp` | filas de CLUT, sectores por modelo, TIM apilados, rangos de relleno de `MMM.DAT` | a | Formato. |
-| `engine/assets/include/dwe/assets/map_images.hpp`, `map_document.hpp` | páginas y filas de VRAM, orden del mapa, colisión 100 × 100, 3 luces, 10 warps | a | Formato. |
-| `engine/ui/src/minimap.cpp`, `game/field/src/field.cpp` | triggers de warp 110 a 119 | a | Rango de mecánica. |
-| `engine/render/include/dwe/render/map_camera.hpp`, `map_layers.hpp`, `map_renderer.hpp` | 320 × 240, plano cercano 100, paso de OT 16, 20 fps, fundido de 25 | a | Mecánica de presentación. |
-| `engine/ruleset/include/dwe/ruleset/game_clock.hpp: ClockRules` | 20 fps, 20 fotogramas por minuto, 30 días, 100 años, 8:00 | a | Repite `clock.yaml` como valores por defecto. |
-| `game/field/include/dwe/game/field/rules.hpp:27-29` | radio y velocidades de andar y correr por defecto | **b** | D11. «Decidido por el coordinador (2026-10-21)»: valores de una especie; la cabecera entra en el paso de D11 de la migración. |
-| `game/field/include/dwe/game/field/rules.hpp` (el resto) | distancias en radios, fundidos, horas del día, luces por defecto | a | Repite la parte (a) de `field/rules.yaml`. |
-| `game/battle` (`combatant.hpp`, `state.hpp`, `moves.hpp`, `rules.hpp`, `battle.hpp`, `movement.cpp`, `targeting.cpp`, `original_partner_ai.cpp`, `fighter_actions.cpp`, `ai_ticks.cpp`) | 3 + 1 ranuras, 16 técnicas por especie, animación 0x2E, numeración de órdenes, bits de técnica, 7 especialidades, centinelas | a | Estructura y mecánica. |
-| `game/partner/src/poop_piles.cpp`, `game/field/src/field.cpp` | bandas de orientación | a | Mecánica. |
-| `game/evolution/include/dwe/game/evolution/tables.hpp` | centinela de requisito y bits 0x01/0x10 | a | Formato. |
-| `apps/screens/src/partner_status_view.cpp`, `bag_view.cpp`; `apps/game/src/field_scene.cpp` | topes de barra 999 y 9999, color 255, luz ambiente 0,5 | a | Mecánica de presentación. |
-| `apps/session/src/battle_adapter.cpp`, `evolution_adapter.cpp` | 0x2E/0xFF al renacer; topes 9999/999 | a | Estructura; los topes vienen de `care.limits`. |
+| `packages/engine/assets/include/dwe/assets/map_images.hpp`, `map_document.hpp` | páginas y filas de VRAM, orden del mapa, colisión 100 × 100, 3 luces, 10 warps | a | Formato. |
+| `packages/engine/ui/src/minimap.cpp`, `packages/game/field/src/field.cpp` | triggers de warp 110 a 119 | a | Rango de mecánica. |
+| `packages/engine/render/include/dwe/render/map_camera.hpp`, `map_layers.hpp`, `map_renderer.hpp` | 320 × 240, plano cercano 100, paso de OT 16, 20 fps, fundido de 25 | a | Mecánica de presentación. |
+| `packages/engine/ruleset/include/dwe/ruleset/game_clock.hpp: ClockRules` | 20 fps, 20 fotogramas por minuto, 30 días, 100 años, 8:00 | a | Repite `clock.yaml` como valores por defecto. |
+| `packages/game/field/include/dwe/game/field/rules.hpp:27-29` | radio y velocidades de andar y correr por defecto | **b** | D11. «Decidido por el coordinador (2026-10-21)»: valores de una especie; la cabecera entra en el paso de D11 de la migración. |
+| `packages/game/field/include/dwe/game/field/rules.hpp` (el resto) | distancias en radios, fundidos, horas del día, luces por defecto | a | Repite la parte (a) de `field/rules.yaml`. |
+| `packages/game/battle` (`combatant.hpp`, `state.hpp`, `moves.hpp`, `rules.hpp`, `battle.hpp`, `movement.cpp`, `targeting.cpp`, `original_partner_ai.cpp`, `fighter_actions.cpp`, `ai_ticks.cpp`) | 3 + 1 ranuras, 16 técnicas por especie, animación 0x2E, numeración de órdenes, bits de técnica, 7 especialidades, centinelas | a | Estructura y mecánica. |
+| `packages/game/partner/src/poop_piles.cpp`, `packages/game/field/src/field.cpp` | bandas de orientación | a | Mecánica. |
+| `packages/game/evolution/include/dwe/game/evolution/tables.hpp` | centinela de requisito y bits 0x01/0x10 | a | Formato. |
+| `packages/screens/src/partner_status_view.cpp`, `bag_view.cpp`; `apps/game/src/field_scene.cpp` | topes de barra 999 y 9999, color 255, luz ambiente 0,5 | a | Mecánica de presentación. |
+| `packages/session/src/battle_adapter.cpp`, `evolution_adapter.cpp` | 0x2E/0xFF al renacer; topes 9999/999 | a | Estructura; los topes vienen de `care.limits`. |
 | `apps/sim/scenarios/care_scenario.cpp: MealEnergy, MealWeight` | la energía y el peso que da la carne del original | **b** | Efecto de un objeto concreto copiado en C++ (`handleFood`). Destino: leerlo de `data/item_effects` o usar valores inventados. |
 | `apps/sim/tests/stand-in/*.yaml`, `tests/mods/example_mod/data/*.yaml` | especies y técnicas inventadas, con ids e índices del original | a | Inventados. «Decidido por el coordinador (2026-10-21)»: una prueba con disco comprueba que ningún valor de un fixture coincide con la tabla real de su entidad. |
 | `content/packs/game/field/rules.yaml: partner.radius, walk_speed, run_speed`; `player.radius, walk_speed, run_speed` | radio y velocidades del partner inicial y del jugador | **b** | D11. «Decidido por el coordinador (2026-10-21)»: radio de `data/digimon`, velocidades del movimiento raíz del modelo. |
@@ -814,44 +814,44 @@ fallan con un error claro hasta que alguien rellene sus direcciones desde `confi
 | `content/packs/game/save/settings.yaml: manual_slots` | 15 | a | Tamaño. |
 | `content/packs/game/ui/battle/logic.lua`, `ui/partner_menu/logic.lua` | 11 órdenes como máximo, 30 huecos | a | Tamaños; repiten el ruleset. |
 | `content/packs/es-translation/text/es/*.yaml` | traducción propia, por bloque e índice del original, con los SHA-1 del texto fuente | — | Fuera de esta auditoría: texto derivado. «Decidido por el coordinador (2026-10-21)»: pasa a un repositorio de contenido aparte (paquete `p4-translation-split`). No cuenta en el recuento. |
-| Tests que repiten direcciones y recuentos US (`formats/tests/exe_tables_tests.cpp`, `file_table_tests.cpp`, `overlay_tables_tests.cpp`, `game/evolution/tests/extracted_tests.cpp`) | direcciones, recuentos (44 objetos desde 0x47) | a | Formato (D9). |
+| Tests que repiten direcciones y recuentos US (`packages/formats/tests/exe_tables_tests.cpp`, `file_table_tests.cpp`, `overlay_tables_tests.cpp`, `packages/game/evolution/tests/extracted_tests.cpp`) | direcciones, recuentos (44 objetos desde 0x47) | a | Formato (D9). |
 | `content/schemas/*.json` | descripciones que citan funciones del decomp | a | Sin valores. |
-| `game/partner/tests/rules_tests.cpp:51-52, 60-63` | horas de cuatro horarios de `SLEEP_PATTERN` | **b** | Repite valores (b) (D3). |
-| `game/partner/tests/rules_tests.cpp:65` | stats del primer bebé al renacer | **b** | Repite valores (b). |
-| `game/partner/tests/rules_tests.cpp:50, 58` | tamaños (8 horarios, 4 bebés) | a | Solo tamaños. |
-| `game/evolution/tests/rules_tests.cpp:42` | el destino de un bebé | **b** | Repite valores (b). |
-| `game/evolution/tests/rules_tests.cpp:64` | los 7 bloques por especialidad | **b** | Repite valores (b) (D4). |
-| `game/evolution/tests/rules_tests.cpp:41, 54-55, 60, 65` | tamaños de las listas | a | Solo tamaños. |
-| `game/evolution/tests/specials_tests.cpp:53-142` | destinos y orígenes de las evoluciones especiales | **b** | Repite valores (b) (D1). |
-| `game/evolution/tests/effects_tests.cpp:141` | las cuatro especies del renacer | **b** | Repite valores (b). |
-| `game/battle/tests/rules_tests.cpp:17` | una celda de `TYPE_FACTORS` | **b** | Repite valores (b) (D3). |
-| `game/battle/tests/rules_tests.cpp:99-100` | que una técnica tiene subida y otra una pareja | a | Solo existencia y tamaño. |
-| `game/battle/tests/battle_tests.cpp:413` | una pareja de técnicas que se aprenden juntas | **b** | Repite valores (b). |
-| `game/inventory/tests/rules_tests.cpp:55` | tamaño de `sortOrders` | a | Solo tamaño. |
-| `game/inventory/tests/effects_tests.cpp:32-33, 42, 44, 48, 54, 84` | disquete doble, curas, revivir, disco y sección de guion | **b** | Repite valores (b) (D6 y efectos por objeto). |
-| `game/partner/tests/sleep_tests.cpp:20-21, 31` | `SleepyHour` y `WakeHour` (un horario de `SLEEP_PATTERN`) y sus horas despierto; se comprueban en :29-30, :59, :85, :88 y :91, y el resto del fichero juega hasta `SleepyHour` | **b** | Repite valores (b) (D3). |
-| `game/partner/tests/sleep_tests.cpp:41-45` | las horas de sueño de un bebé y de un entrenamiento, que salen de sus horarios | **b** | Repite valores (b) (D3). |
-| `game/partner/tests/hunger_tests.cpp:172-185` | la hora de despertar de un horario, de la que depende la comida siguiente | **b** | Repite valores (b) (D3). |
-| `game/partner/tests/life_tests.cpp:180` | el primer bebé de la lista del renacer | **b** | Repite valores (b). |
-| `apps/session/tests/session_tests.cpp:373-374` | los cuatro bebés del renacer | **b** | Repite valores (b). |
-| `game/partner/tests/partner_fixture.hpp:129`, `apps/session/tests/session_fixture.hpp:103`, `apps/session/tests/example_mod_tests.cpp:110` | fixtures que crean las especies de los cuatro bebés del renacer, en su orden | **b** | Repite valores (b). |
-| `game/partner/tests/toilet_tests.cpp:152-153, 167` | que una especie come caca y otra no | **b** | Repite valores (b) (D2). |
-| `game/evolution/tests/selection_tests.cpp:62-67, 108-116` | el destino de un bebé, y un bebé que se quita de `baby_targets` | **b** | Repite valores (b). |
-| `game/evolution/tests/state_tests.cpp:150-160` | que un bebé tiene destino de entrenamiento | **b** | Repite valores (b). |
-| `game/evolution/tests/effects_tests.cpp:58-66` | los cambios de stats de dos especies de `scaled_targets` | **b** | Repite valores (b) (D2). |
-| `apps/session/tests/evolution_adapter_tests.cpp:91-99` | el destino de un bebé (`baby_targets`) | **b** | Repite valores (b). |
-| `apps/session/tests/evolution_adapter_tests.cpp:201-203, 231-243` | el destino fijo de un objeto de evolución (`items.fixed`) | **b** | Repite valores (b). |
-| `game/inventory/tests/effects_tests.cpp:77-83, 86` | un chip de la lista de nivel de tamer, y uno que queda fuera de las listas de chips | **b** | Repite valores (b) (D7). |
-| `game/inventory/tests/effects_tests.cpp:111-114` | el destino fijo de un objeto de evolución | **b** | Repite valores (b). |
-| `game/inventory/tests/use_tests.cpp:91, 100-101` | un chip que queda fuera de las listas de chips y no hace nada | **b** | Repite valores (b) (D7). |
-| `game/inventory/tests/bag_tests.cpp:114-129` | dos órdenes de `ITEM_SORT_ORDER`, en comentarios y en el orden esperado | **b** | Repite valores (b) (D3). |
-| `apps/session/tests/inventory_adapter_tests.cpp:162-171` | un objeto de `refusal.never_taken` | **b** | Repite valores (b) (D5). |
-| `apps/session/tests/inventory_adapter_tests.cpp:173-190` | el nivel de aceptación de un objeto de evolución fija (`refusal.fixed_level_evolutions`) | **b** | Repite valores (b). |
-| `game/battle/tests/battle_tests.cpp:239-245, 349-354` | una técnica de `moves.buffs` y su porcentaje de subida | **b** | Repite valores (b). |
-| `game/battle/tests/battle_tests.cpp:433-436` | el mapa de `rewards.no_drop_maps` | **b** | Repite valores (b). |
-| `game/battle/tests/battle_tests.cpp:250-260` | el rango de daño esperado, que sale de una celda de la diagonal de `TYPE_FACTORS` | **b** | Repite valores (b) (D3). |
-| `game/battle/tests/battle_tests.cpp:448-457` | cuántos enemigos se unen, que sale de dos celdas de `FLEE_CHANCES` | **b** | Repite valores (b) (D3). |
-| `game/field/tests/rules_tests.cpp:150-152` | el warp de guion: cuántos hay, su trigger y su salida | **b** | Repite valores (b) (D10). |
+| `packages/game/partner/tests/rules_tests.cpp:51-52, 60-63` | horas de cuatro horarios de `SLEEP_PATTERN` | **b** | Repite valores (b) (D3). |
+| `packages/game/partner/tests/rules_tests.cpp:65` | stats del primer bebé al renacer | **b** | Repite valores (b). |
+| `packages/game/partner/tests/rules_tests.cpp:50, 58` | tamaños (8 horarios, 4 bebés) | a | Solo tamaños. |
+| `packages/game/evolution/tests/rules_tests.cpp:42` | el destino de un bebé | **b** | Repite valores (b). |
+| `packages/game/evolution/tests/rules_tests.cpp:64` | los 7 bloques por especialidad | **b** | Repite valores (b) (D4). |
+| `packages/game/evolution/tests/rules_tests.cpp:41, 54-55, 60, 65` | tamaños de las listas | a | Solo tamaños. |
+| `packages/game/evolution/tests/specials_tests.cpp:53-142` | destinos y orígenes de las evoluciones especiales | **b** | Repite valores (b) (D1). |
+| `packages/game/evolution/tests/effects_tests.cpp:141` | las cuatro especies del renacer | **b** | Repite valores (b). |
+| `packages/game/battle/tests/rules_tests.cpp:17` | una celda de `TYPE_FACTORS` | **b** | Repite valores (b) (D3). |
+| `packages/game/battle/tests/rules_tests.cpp:99-100` | que una técnica tiene subida y otra una pareja | a | Solo existencia y tamaño. |
+| `packages/game/battle/tests/battle_tests.cpp:413` | una pareja de técnicas que se aprenden juntas | **b** | Repite valores (b). |
+| `packages/game/inventory/tests/rules_tests.cpp:55` | tamaño de `sortOrders` | a | Solo tamaño. |
+| `packages/game/inventory/tests/effects_tests.cpp:32-33, 42, 44, 48, 54, 84` | disquete doble, curas, revivir, disco y sección de guion | **b** | Repite valores (b) (D6 y efectos por objeto). |
+| `packages/game/partner/tests/sleep_tests.cpp:20-21, 31` | `SleepyHour` y `WakeHour` (un horario de `SLEEP_PATTERN`) y sus horas despierto; se comprueban en :29-30, :59, :85, :88 y :91, y el resto del fichero juega hasta `SleepyHour` | **b** | Repite valores (b) (D3). |
+| `packages/game/partner/tests/sleep_tests.cpp:41-45` | las horas de sueño de un bebé y de un entrenamiento, que salen de sus horarios | **b** | Repite valores (b) (D3). |
+| `packages/game/partner/tests/hunger_tests.cpp:172-185` | la hora de despertar de un horario, de la que depende la comida siguiente | **b** | Repite valores (b) (D3). |
+| `packages/game/partner/tests/life_tests.cpp:180` | el primer bebé de la lista del renacer | **b** | Repite valores (b). |
+| `packages/session/tests/session_tests.cpp:373-374` | los cuatro bebés del renacer | **b** | Repite valores (b). |
+| `packages/game/partner/tests/partner_fixture.hpp:129`, `packages/session/tests/session_fixture.hpp:103`, `packages/session/tests/example_mod_tests.cpp:110` | fixtures que crean las especies de los cuatro bebés del renacer, en su orden | **b** | Repite valores (b). |
+| `packages/game/partner/tests/toilet_tests.cpp:152-153, 167` | que una especie come caca y otra no | **b** | Repite valores (b) (D2). |
+| `packages/game/evolution/tests/selection_tests.cpp:62-67, 108-116` | el destino de un bebé, y un bebé que se quita de `baby_targets` | **b** | Repite valores (b). |
+| `packages/game/evolution/tests/state_tests.cpp:150-160` | que un bebé tiene destino de entrenamiento | **b** | Repite valores (b). |
+| `packages/game/evolution/tests/effects_tests.cpp:58-66` | los cambios de stats de dos especies de `scaled_targets` | **b** | Repite valores (b) (D2). |
+| `packages/session/tests/evolution_adapter_tests.cpp:91-99` | el destino de un bebé (`baby_targets`) | **b** | Repite valores (b). |
+| `packages/session/tests/evolution_adapter_tests.cpp:201-203, 231-243` | el destino fijo de un objeto de evolución (`items.fixed`) | **b** | Repite valores (b). |
+| `packages/game/inventory/tests/effects_tests.cpp:77-83, 86` | un chip de la lista de nivel de tamer, y uno que queda fuera de las listas de chips | **b** | Repite valores (b) (D7). |
+| `packages/game/inventory/tests/effects_tests.cpp:111-114` | el destino fijo de un objeto de evolución | **b** | Repite valores (b). |
+| `packages/game/inventory/tests/use_tests.cpp:91, 100-101` | un chip que queda fuera de las listas de chips y no hace nada | **b** | Repite valores (b) (D7). |
+| `packages/game/inventory/tests/bag_tests.cpp:114-129` | dos órdenes de `ITEM_SORT_ORDER`, en comentarios y en el orden esperado | **b** | Repite valores (b) (D3). |
+| `packages/session/tests/inventory_adapter_tests.cpp:162-171` | un objeto de `refusal.never_taken` | **b** | Repite valores (b) (D5). |
+| `packages/session/tests/inventory_adapter_tests.cpp:173-190` | el nivel de aceptación de un objeto de evolución fija (`refusal.fixed_level_evolutions`) | **b** | Repite valores (b). |
+| `packages/game/battle/tests/battle_tests.cpp:239-245, 349-354` | una técnica de `moves.buffs` y su porcentaje de subida | **b** | Repite valores (b). |
+| `packages/game/battle/tests/battle_tests.cpp:433-436` | el mapa de `rewards.no_drop_maps` | **b** | Repite valores (b). |
+| `packages/game/battle/tests/battle_tests.cpp:250-260` | el rango de daño esperado, que sale de una celda de la diagonal de `TYPE_FACTORS` | **b** | Repite valores (b) (D3). |
+| `packages/game/battle/tests/battle_tests.cpp:448-457` | cuántos enemigos se unen, que sale de dos celdas de `FLEE_CHANCES` | **b** | Repite valores (b) (D3). |
+| `packages/game/field/tests/rules_tests.cpp:150-152` | el warp de guion: cuántos hay, su trigger y su salida | **b** | Repite valores (b) (D10). |
 
 ---
 
@@ -906,7 +906,7 @@ localizadores.
 | `inventory.yaml: effects.double_floppy` (D6) | ejecutable principal | `handleDoubleFloppy` (item.c) | constantes de código | `data/item_effects`, junto a `HEALING_VALUES` |
 | `inventory.yaml: effects.chip.tamer_level.items` (D7) | ejecutable principal | `handleChips` (item.c) | switch de constantes | `data/item_effects`: `chip_effect` |
 | ~~`field/warps.yaml: scripted_warps`~~ (D10) | el guion del mapa | — | `field/script_warps` (dwx) | borrado en p4-scripted-warps |
-| `field/rules.yaml` y `game/field/include/dwe/game/field/rules.hpp:27-29`: radio y velocidades (D11) | ejecutable principal y los modelos | `DIGIMON_DATA.radius`; movimiento raíz de las animaciones | ya extraído | `data/digimon` y los modelos |
+| `field/rules.yaml` y `packages/game/field/include/dwe/game/field/rules.hpp:27-29`: radio y velocidades (D11) | ejecutable principal y los modelos | `DIGIMON_DATA.radius`; movimiento raíz de las animaciones | ya extraído | `data/digimon` y los modelos |
 | Asserts de tests que repiten valores (b) (ver «Otras constantes») | — | — | — | valores inventados en los paquetes de sustitución, o pruebas con disco |
 
 Los símbolos y funciones de estas tablas se nombran solo para localizar los datos en el disco del usuario: ni el
@@ -968,8 +968,8 @@ Objetivo: que ninguna tabla (b) esté en git, sin cambiar el juego.
 
 Tres mecanismos, todos por versión. Las direcciones salen de `config/<versión>/symbols*.txt` del decomp; los valores,
 del disco del usuario. Lo que está en el ejecutable principal se localiza con `ExecutableLayout`
-(`formats/src/exe/executable_layout.cpp`); lo que está en un overlay (EVL_REL, BTL_REL, STD_REL, VS_REL), con el layout
-de overlays de `formats/src/exe/overlay_tables.cpp` (`findOverlayTablesLayout`), que gana las entradas de EVL_REL y
+(`packages/formats/src/exe/executable_layout.cpp`); lo que está en un overlay (EVL_REL, BTL_REL, STD_REL, VS_REL), con el layout
+de overlays de `packages/formats/src/exe/overlay_tables.cpp` (`findOverlayTablesLayout`), que gana las entradas de EVL_REL y
 BTL_REL. Una versión sin localizar falla con un error claro, como hoy.
 
 1. **Tabla de datos** (`TableLocation`, ya existe): `REINCARNATE_BABY_TYPE` y (D3) `TYPE_FACTORS`,
@@ -1020,7 +1020,7 @@ funcionando ([herramientas externas](../architecture/herramientas-externas.md)).
   y, para los switches y las constantes de código, instrucciones MIPS escritas a mano con inmediatos inventados. Casos
   de error: versión sin localizar, instrucción inesperada, switch que hace algo más que asignar.
 - `apps/dwx`: el documento generado valida contra su esquema y los ids son los de las tablas.
-- `game/*` y `apps/sim`: los paquetes de sustitución (`apps/sim/tests/stand-in/`) ganan las tablas nuevas, con
+- `packages/game/*` y `apps/sim`: los paquetes de sustitución (`apps/sim/tests/stand-in/`) ganan las tablas nuevas, con
   valores inventados que no coinciden con los reales.
 - Prueba con disco (nombre `the user's disc, extracted: ...`, etiqueta `slow`) por tabla: la tabla extraída tiene las
   entradas y los ids esperados y el ruleset carga sin error.
@@ -1078,7 +1078,7 @@ Cómo se construye:
    | `battle.rewards.no_drop_maps` | ganar un combate en cada mapa de la lista y en uno que no está |
    | `apps/sim` (carne del escenario de cuidado) | el escenario `care` |
    | `field/rules.yaml` y `rules.hpp` (radio y velocidades) | el partner sigue al jugador por un recorrido fijo |
-   | `field/script_warps` (sustituye a `scripted_warps`) | la puerta de `room08` con el disparador 203 puesto y quitado (`game/field/tests/field_tests.cpp`) |
+   | `field/script_warps` (sustituye a `scripted_warps`) | la puerta de `room08` con el disparador 203 puesto y quitado (`packages/game/field/tests/field_tests.cpp`) |
 
    **Cobertura:** el modo `--trace` anota cada entrada (b) que se lee. La prueba falla si una entrada migrada no se lee
    al menos una vez durante los escenarios, así que una tabla nueva sin escenario no pasa.
@@ -1110,7 +1110,7 @@ commits**, como tarde en el segundo, porque el segundo borra las claves del YAML
 7. `apps/sim`: la carne del escenario de cuidado sale de `data/item_effects`.
 8. `data/maps: no_drops` (criterio 2).
 9. Las decisiones D1 a D11, de la más barata a la más cara: D4 (derivar), D3 (tablas de datos), D6, D7, D5 (primero
-   comprobar si `meals` se deriva), D2, D11 (también `game/field/include/dwe/game/field/rules.hpp:27-29`), D1; D10
+   comprobar si `meals` se deriva), D2, D11 (también `packages/game/field/include/dwe/game/field/rules.hpp:27-29`), D1; D10
    cuando llegue R4.1.
 10. Repaso final de los asserts de tests: ninguno repite ya un valor (b); los que queden pasan a valores inventados o a
     pruebas con disco.

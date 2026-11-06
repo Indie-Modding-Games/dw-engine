@@ -1,7 +1,7 @@
 # scene
 
 Las entidades del mundo y sus componentes, con EnTT ([ADR 0012](../../adr/0012-ecs-con-entt.md)). `World` es
-el dueño del `entt::registry`; los sistemas de `game/` añaden y leen componentes con `registry()`, y `first<Tag>()`
+el dueño del `entt::registry`; los sistemas de `packages/game/` añaden y leen componentes con `registry()`, y `first<Tag>()`
 encuentra, por ejemplo, al jugador.
 
 Los componentes compartidos (`<dwe/scene/components.hpp>`) son los que la app necesita para dibujar, en el

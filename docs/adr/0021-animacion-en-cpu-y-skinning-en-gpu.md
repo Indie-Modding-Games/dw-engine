@@ -8,7 +8,7 @@
 Los modelos extraídos son glTF con piel rígida (cada vértice sigue a un hueso) y clips con un fotograma por tick del
 original, bucles y movimiento raíz en `extras` ([modelos](../formats/modelos.md#gltf)). El juego necesita reproducir
 idle, andar y correr del jugador y del compañero (R2.5), el campo necesita el movimiento raíz o la velocidad de paso
-de esos clips sin depender de `render` (`game/*` no usa `render`), y `render` dibuja N instancias por frame.
+de esos clips sin depender de `render` (`packages/game/*` no usa `render`), y `render` dibuja N instancias por frame.
 
 ## Decisión
 
@@ -24,7 +24,7 @@ de esos clips sin depender de `render` (`game/*` no usa `render`), y `render` di
 ## Consecuencias
 
 - Las pruebas de poses corren sin GPU (en la CI): tick N = fotograma N, bucles, movimiento raíz.
-- `game/field` puede usar `animation` para la velocidad de paso (`repeatGroundSpeed`) sin tocar `render`.
+- `packages/game/field` puede usar `animation` para la velocidad de paso (`repeatGroundSpeed`) sin tocar `render`.
 - El coste en la CPU es una pose por instancia y frame (decenas de huesos por modelo): despreciable para los pocos
   modelos de un mapa. Si un día hacen falta cientos de instancias, el muestreo puede ir a un compute shader sin
   cambiar la API de `render`.
@@ -35,4 +35,4 @@ de esos clips sin depender de `render` (`game/*` no usa `render`), y `render` di
   dibujo distinto para modelos con y sin animación.
 - **Muestreo en la GPU:** las pruebas de poses necesitarían GPU y el campo no podría leer el movimiento raíz.
 - **Poner el reproductor dentro de `render`:** el campo dependería de `render` para saber a qué velocidad anda un
-  modelo, cosa que las reglas de dependencias prohíben a `game/*`.
+  modelo, cosa que las reglas de dependencias prohíben a `packages/game/*`.

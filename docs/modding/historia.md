@@ -38,8 +38,8 @@ comentarios del Lua.
 Las entidades que no son NPC son constantes de `story`: `story.PLAYER` (el personaje del jugador, `tamer` en el
 listado) y `story.PARTNER` (el compañero).
 
-La tabla vive en un solo sitio, `formats/src/script/story_api_names.cpp`, y las palabras que ningún nombre generado
-puede contener, en `ForbiddenNameWords` (`formats/include/dwe/formats/script/story_api_names.hpp`). Un test recorre
+La tabla vive en un solo sitio, `packages/formats/src/script/story_api_names.cpp`, y las palabras que ningún nombre generado
+puede contener, en `ForbiddenNameWords` (`packages/formats/include/dwe/formats/script/story_api_names.hpp`). Un test recorre
 todas las órdenes y sus operandos, y los tests del conversor y del disco miran cada módulo generado.
 
 ## Claves de texto

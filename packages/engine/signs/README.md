@@ -6,7 +6,7 @@ Los carteles pintados en las imágenes de los mapas, escritos otra vez en el idi
 - Depende de: `assets`, `core`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/signs.md](../../../docs/modulos/engine/signs.md).
+- Documentación: [modulos/engine/signs](https://indie-modding-games.github.io/dw-engine/modulos/engine/signs).
 
 Compilar y probar solo este paquete:
 

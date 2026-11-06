@@ -14,8 +14,8 @@ encuentre jugando. Cada función del índice del decomp está en uno de cuatro e
 ## Cómo se hace
 
 `scripts/port_coverage.py` lee el índice de funciones del decomp (`functions.tsv`, fuera del repositorio; por
-defecto `../decomp-index/functions.tsv`, o `--index`) y busca cada nombre en el código del motor (`game/`, `apps/`,
-`engine/`, `tests/`, `content/packs/`). Lo que solo nombran la extracción y las herramientas (`apps/dwx`, `formats/`)
+defecto `../decomp-index/functions.tsv`, o `--index`) y busca cada nombre en el código del motor (`packages/`, `apps/`,
+`tests/`, `content/packs/`). Lo que solo nombran la extracción y las herramientas (`apps/dwx`, `packages/formats/`)
 cuenta como falta: nombran las funciones del original para encontrar sus tablas. Una cita que dice que algo aún no se
 hace («not drawn yet», «not ported», `TODO`) deja la función en parcial. Las citas solo por línea (`partner.c:906`) no
 se usan: el índice no tiene las funciones estáticas y la línea cae a menudo en la vecina.
@@ -42,7 +42,7 @@ una partida normal:
 | # | Hueco | Decomp | Motor |
 |---:|---|---|---|
 | 1 | Al perder una vida por enfermedad no se restaura lo que el original restaura; tras perderla en combate, la vida y el MP salen de una regla del ruleset | Las dos escenas de vida perdida ([Campo](#campo-movimiento-colisión-y-cámara)) | `battle.consequences.defeat_restore` ([battle](../modulos/game/battle.md#paridad-con-el-original)) |
-| 2 | En los torneos faltan detalles: el brillo de las letras del campeón, que select oculte las barras de vida, que el que pierde se desplome tras la caja del resultado, la cámara de técnica del disparo de un luchador aplastado, y la música, luces y efectos propios de la copa | `std/` ([Torneos](#torneos): `STD_tickChampionScene`, `STD_tickBattleResultScreen`, `STD_startQueuedMove`, `STD_initializeTournament` y el HUD) | `apps/session/src/tournament_adapter.cpp`, `apps/game/src/story_tournament.cpp` |
+| 2 | En los torneos faltan detalles: el brillo de las letras del campeón, que select oculte las barras de vida, que el que pierde se desplome tras la caja del resultado, la cámara de técnica del disparo de un luchador aplastado, y la música, luces y efectos propios de la copa | `std/` ([Torneos](#torneos): `STD_tickChampionScene`, `STD_tickBattleResultScreen`, `STD_startQueuedMove`, `STD_initializeTournament` y el HUD) | `packages/session/src/tournament_adapter.cpp`, `apps/game/src/story_tournament.cpp` |
 | 3 | Sin modo versus de dos jugadores ni la demo de combate del título (las 91 funciones de `vs/`); la máquina de guardar ya registra al compañero para él. Va a la fase 5 | `vs/` | — |
 
 ## Otros huecos que no son una función del índice
@@ -208,8 +208,8 @@ Portado 106, parcial 5, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `STD_tickChampionScene` | `std/std_effect.c:1259` | parcial | Anima la escena del campeón: letras, giro de cámara y podio. | `game/tournament/src/champion_show.cpp:1` · falta el brillo que recorre cada letra (copia dentro de la memoria de vídeo) |
-| `STD_tickTamerTournament` | `std/std_hud.c:540` | parcial | Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes. | `game/battle/src/battle.cpp:1` · las órdenes sí; select no oculta las barras de vida |
+| `STD_tickChampionScene` | `std/std_effect.c:1259` | parcial | Anima la escena del campeón: letras, giro de cámara y podio. | `packages/game/tournament/src/champion_show.cpp:1` · falta el brillo que recorre cada letra (copia dentro de la memoria de vídeo) |
+| `STD_tickTamerTournament` | `std/std_hud.c:540` | parcial | Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes. | `packages/game/battle/src/battle.cpp:1` · las órdenes sí; select no oculta las barras de vida |
 | `STD_tickBattleResultScreen` | `std/std_main.c:4641` | parcial | Gestiona la pantalla de resultado tras el combate de copa. | `apps/game/src/story_tournament.cpp:1` · TIME UP, la caja de daño y el empate; el que pierde no se desploma tras la caja |
 | `STD_startQueuedMove` | `std/std_main.c:6599` | parcial | — | `apps/game/src/story_tournament.cpp:627` · The flattened fighter's shot has no technique camera (STD_startQueuedMove skips |
 | `STD_initializeTournament` | `std/std_setup.c:243` | parcial | Prepara la arena de la copa: música, cámara, luces, escenario y efectos. | `apps/game/src/story_tournament.cpp:1` · modelo, suelo y cámara de la arena; sin música propia, luces ni efectos de la copa |

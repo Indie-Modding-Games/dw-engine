@@ -6,7 +6,7 @@ La máquina virtual de Lua y la única puerta de los mods al motor.
 - Depende de: `assets`, `core`, `input`, `localization`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/script.md](../../../docs/modulos/engine/script.md).
+- Documentación: [modulos/engine/script](https://indie-modding-games.github.io/dw-engine/modulos/engine/script).
 
 Compilar y probar solo este paquete:
 

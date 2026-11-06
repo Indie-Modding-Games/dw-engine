@@ -105,7 +105,7 @@ pero **sin probar**: lo compilan y empaquetan los ejecutores macOS de GitHub cua
 Clang de Apple y la libc++ del sistema no tienen todo el C++26 que usa el código (`std::print`, `std::ranges::to`,
 `std::views::zip`, `std::jthread` sin `-fexperimental-library`, `std::from_chars` de coma flotante) y además atan
 partes de la librería a la versión del sistema. Por eso los presets `macos-arm64-*` y `macos-x64-*` usan el LLVM de
-Homebrew (`cmake/toolchains/macos-llvm-libcxx.cmake`) y enlazan su libc++ y libc++abi de forma estática, como en
+Homebrew (`tooling/cmake/toolchains/macos-llvm-libcxx.cmake`) y enlazan su libc++ y libc++abi de forma estática, como en
 Linux. Mínimo: macOS 13.3 (la libc++ formatea números con coma flotante, `std::to_chars`, desde esa versión). Homebrew
 vive en `/opt/homebrew` en Apple silicon y en `/usr/local` en los Mac Intel; la toolchain usa `DWE_LLVM_ROOT` si está
 (el flujo de publicación la fija con `brew --prefix llvm`), si no `HOMEBREW_PREFIX`, y si no la primera de esas dos

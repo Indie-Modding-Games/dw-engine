@@ -1,7 +1,7 @@
 # Partidas guardadas
 
 Cómo guarda el motor una partida, cómo se versiona y cómo un sistema añade lo suyo. El código está en
-[`game/save`](../modulos/game/save.md) y cumple el requisito R3.6 de la
+[`packages/game/save`](../modulos/game/save.md) y cumple el requisito R3.6 de la
 [fase 3](../plan/fase-3-nucleo-jugable.md): una partida guardada se carga igual tras actualizar el juego, o se migra.
 
 Cómo guarda y carga el jugador desde la interfaz (dónde se guarda, la portada, las ranuras, volver a la portada):
@@ -65,9 +65,9 @@ Hay dos niveles de versión, y cada uno tiene su **cadena de migraciones** (`Mig
 `vN → vN+1` que transforman el YAML. La versión actual es la más antigua que se lee más el número de pasos, así que no
 se puede subir una versión sin escribir su paso.
 
-- **El formato** (`format_version`): sus pasos están en `formatMigrations()` en `game/save` y se aplican al leer el
+- **El formato** (`format_version`): sus pasos están en `formatMigrations()` en `packages/game/save` y se aplican al leer el
   fichero, sobre el documento entero. Hoy es la versión 3; el paso 1 → 2 añade `autosave_reasons: []` (una partida de
-  la versión 1 nunca fue un autoguardado con motivos) y el 2 → 3 un `summary` vacío: `game/save` no conoce las
+  la versión 1 nunca fue un autoguardado con motivos) y el 2 → 3 un `summary` vacío: `packages/game/save` no conoce las
   secciones de las que saldría. La lista lo rellena al leerla con lo que el juego le da
   (`SaveSlots::setSummaryReader`; el juego da `session::summaryFromSections`, que lee la especie y el mapa de las
   secciones `partner` y `field`), y el siguiente guardado lo escribe entero.
@@ -95,7 +95,7 @@ El sistema implementa `save::SectionSerializer` en su propio módulo: `save` dec
 headers del sistema ([regla 4](dependency-rules.md)). La app une los dos.
 
 ```cpp
-// game/partner (un ejemplo: los nombres son del partner).
+// packages/game/partner (un ejemplo: los nombres son del partner).
 class PartnerSave final : public dwe::game::save::SectionSerializer {
 public:
     explicit PartnerSave(Partner& partner) : partner_{&partner} {}
@@ -127,9 +127,9 @@ Para cambiar el formato de una sección:
 1. Se cambia `write` y `read` para la versión nueva.
 2. Se añade a la cadena el paso desde la versión anterior.
 3. Se añade un test con un fichero de la versión anterior que se carga con el resultado esperado (como
-   `game/save/tests/fixtures/partner_v1.yaml` y `partner_v2.yaml`).
+   `packages/game/save/tests/fixtures/partner_v1.yaml` y `partner_v2.yaml`).
 
-En el juego esa unión es la partida, `session::GameSession` ([apps/session](../modulos/apps/session.md)): registra
+En el juego esa unión es la partida, `session::GameSession` ([packages/session](../modulos/apps/session.md)): registra
 `clock`, `partner`, `tamer`, `field` y `random`, y cada sistema que se enchufa como adaptador añade las suyas. También
 pide los autoguardados: el partner se duerme, día nuevo, cambio de mapa, fin de batalla; `AutosaveRequests` los junta
 en uno y el ruleset dice cuáles cuentan.
@@ -190,7 +190,7 @@ cabecera de la partida:
 
 | `AutosaveReason` | Bandera | Nombre | Evento del sistema que lo pide |
 |---|---|---|---|
-| `MapChange` | `on_map_change` | `map_change` | Campo (`game/field`): el cambio de mapa, al terminar de entrar en el mapa nuevo |
+| `MapChange` | `on_map_change` | `map_change` | Campo (`packages/game/field`): el cambio de mapa, al terminar de entrar en el mapa nuevo |
 | `BattleEnd` | `on_battle_end` | `battle_end` | Batalla: el resultado de cada batalla, ganada o perdida |
 | `PartnerSleep` | `on_partner_sleep` | `partner_sleep` | Partner: el evento `Slept` (se duerme) |
 | `NewDay` | `on_new_day` | `new_day` | Partner / reloj: el evento `NewDay` (el día del reloj del juego cambia) |
@@ -253,7 +253,7 @@ La app los guarda en la carpeta de datos del usuario que da el sistema (`platfor
 `~/.local/share/...`) y `%APPDATA%\indie-modding-games\dwe\saves\` en Windows. `--saves <carpeta>` usa otra, y
 `dwe-game --list-saves` escribe en el log el estado de cada ranura y sale.
 
-`game/save` no usa `platform`: lee y escribe a través de `SaveStorage`, que la app crea (`DiskSaveStorage` con la
+`packages/game/save` no usa `platform`: lee y escribe a través de `SaveStorage`, que la app crea (`DiskSaveStorage` con la
 carpeta, `MemorySaveStorage` en los tests).
 
 ## Qué guardaba el original

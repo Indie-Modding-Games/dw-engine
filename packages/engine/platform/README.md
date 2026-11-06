@@ -7,7 +7,7 @@ la biblioteca de plataforma.
 - Depende de: `core`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/platform.md](../../../docs/modulos/engine/platform.md).
+- Documentación: [modulos/engine/platform](https://indie-modding-games.github.io/dw-engine/modulos/engine/platform).
 
 Compilar y probar solo este paquete:
 

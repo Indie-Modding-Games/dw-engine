@@ -6,7 +6,7 @@ El cuidado del partner: hambre, sueño, baño, enfermedad y heridas, felicidad y
 - Depende de: `assets`, `core`, `ruleset`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/game/partner.md](../../../docs/modulos/game/partner.md).
+- Documentación: [modulos/game/partner](https://indie-modding-games.github.io/dw-engine/modulos/game/partner).
 
 Compilar y probar solo este paquete:
 

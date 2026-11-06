@@ -6,17 +6,17 @@ cambia sin reiniciar (R3.9).
 
 ## Dónde vive
 
-`engine/localization`, en la capa de **sistemas**, junto a `assets`, del que depende (y de `core`). La lectura y la
+`packages/engine/localization`, en la capa de **sistemas**, junto a `assets`, del que depende (y de `core`). La lectura y la
 comprobación de las tablas (`dwe/assets/text_table.hpp`) están en `assets`.
 
-- Tiene que estar por debajo de `ui` y `script` (servicios), que la usan, y al alcance de `game/*`, que podrá pedir
+- Tiene que estar por debajo de `ui` y `script` (servicios), que la usan, y al alcance de `packages/game/*`, que podrá pedir
   textos sin conocer la UI. Por eso no puede ser un servicio.
 - Solo necesita leer ficheros del VFS: no pinta ni toca la plataforma. Encaja con los otros sistemas que leen datos de
   los paquetes.
 - Las tablas y su comprobación van en `assets` porque `dwx validate` solo puede usar `formats`, `assets` y `core`
   ([reglas de dependencias](dependency-rules.md)). El catálogo (idioma actual, respaldo, marcadores) es del runtime
   y queda fuera de `dwx`.
-- El idioma del sistema lo lee `platform` (`platform::systemLanguage()`, con SDL) y lo usa la app. `game/` no lo ve.
+- El idioma del sistema lo lee `platform` (`platform::systemLanguage()`, con SDL) y lo usa la app. `packages/game/` no lo ve.
 
 ## Dos fuentes de texto
 

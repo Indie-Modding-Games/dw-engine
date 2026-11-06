@@ -88,7 +88,7 @@ activada por defecto; desactivada, el mapa muestra las texturas originales.
 - `dwe-game --dump-signs <mapa>[,<mapa>...] --shots <carpeta> [--lang <idioma>]`: escribe el fondo y las páginas de
   textura con rejilla, la lista de sprites, los carteles pintados y un `place(...)` para ir a ver cada cartel
   (`apps/game/src/sign_dump.cpp`). Las imágenes salen del disco del jugador: van a `_work/tmp`, nunca al repositorio.
-- `engine/signs/tests`: lectura de overlays, borrado, texto en una textura sintética (sin datos del juego), giro,
+- `packages/engine/signs/tests`: lectura de overlays, borrado, texto en una textura sintética (sin datos del juego), giro,
   perspectiva, efectos, parches y el cambio de idioma de `MapSigns`.
 - `tests/autotest/route-signs.yaml`: captura un mapa en el idioma de la partida y otra con la opción apagada.
 - `tests/autotest/route-signs-language.yaml`: cambia el idioma en el menú de pausa de `gcan09` y captura el cartel detrás

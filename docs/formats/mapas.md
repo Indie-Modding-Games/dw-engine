@@ -226,7 +226,7 @@ paquete, y `dwx validate` lo da como error.
 ## Cómo se dibuja
 
 Lo que hace el original para dibujar un mapa de campo, que es la especificación del render de mapas del motor
-([ADR 0020](../adr/0020-camara-de-mapa-y-capas-de-profundidad.md), [`engine/render`](../modulos/engine/render.md)).
+([ADR 0020](../adr/0020-camara-de-mapa-y-capas-de-profundidad.md), [`packages/engine/render`](../modulos/engine/render.md)).
 `W` y `H` son el ancho y el alto del fondo en tiles de 128 píxeles.
 
 ### Cámara
@@ -315,7 +315,7 @@ instancias se ven solo de día o solo de noche (`utils2.c: updateMapLightState`)
 
 ## Comprobación con el disco
 
-Con `DWE_EXE_SAMPLE` y `DWE_MAP_DIR` (la carpeta `MAP` del disco US), `formats/tests/real_data_tests.cpp` lee todas las
+Con `DWE_EXE_SAMPLE` y `DWE_MAP_DIR` (la carpeta `MAP` del disco US), `packages/formats/tests/real_data_tests.cpp` lee todas las
 entradas con fichero, compone sus fondos y comprueba el YAML contra el esquema. En el US: 244 entradas tienen nombre de
 fichero, 3 de ellas no están en el disco y las otras 241 se leen sin errores (216 con NPC); todas las colisiones caben
 en la leyenda, con como mucho 26 valores distintos. En 24 mapas las opciones sacadas del fichero leen lo mismo que

@@ -7,7 +7,7 @@ El único módulo que habla con la API gráfica: dispositivos, buffers, texturas
 - Depende de: `core`, `platform`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/rhi.md](../../../docs/modulos/engine/rhi.md).
+- Documentación: [modulos/engine/rhi](https://indie-modding-games.github.io/dw-engine/modulos/engine/rhi).
 
 Compilar y probar solo este paquete:
 

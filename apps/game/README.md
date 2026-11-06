@@ -7,7 +7,7 @@
   `fishing`, `gym`, `input`, `inventory`, `localization`, `partner`, `platform`, `render`, `rhi`, `ruleset`, `save`,
   `scene`, `screens`, `script`, `session`, `signs`, `story`, `tournament`, `ui`, `video`, `weather`.
 - Estructura: `CMakeLists.txt` (el programa y sus dependencias), `src/` y `tests/`.
-- Documentación: [docs/modulos/apps/game.md](../../docs/modulos/apps/game.md).
+- Documentación: [modulos/apps/game](https://indie-modding-games.github.io/dw-engine/modulos/apps/game).
 
 Compilar y probar solo este paquete:
 

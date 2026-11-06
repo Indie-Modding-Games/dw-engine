@@ -18,14 +18,14 @@ demás módulos (mapa, modelos, UI) tienen que poder añadir sus propios shaders
   de Windows fijan `VCPKG_HOST_TRIPLET=x64-windows` para que el target estático no arrastre el port. CMake busca
   `slangc` solo en las herramientas de ese triplet (`NO_DEFAULT_PATH`), para que un SDK de Vulkan en el `PATH` no
   cuele otra versión, y escribe la versión al configurar.
-- **`dwe_add_shaders(<target> FILES a.slang ...)`** (`cmake/DweShaders.cmake`) compila cada fichero, con todos sus
+- **`dwe_add_shaders(<target> FILES a.slang ...)`** (`tooling/cmake/DweShaders.cmake`) compila cada fichero, con todos sus
   entry points marcados con `[shader("...")]`, a **un único módulo SPIR-V** (`-fvk-use-entrypoint-name`,
   `-matrix-layout-column-major` como GLM, warnings como errores, dependencias de `import` por depfile y, por si un
   generador lo ignora, de todos los módulos compartidos de `shaders/`).
 - **El SPIR-V se embebe** en una cabecera generada `<dwe/shaders/<nombre>.hpp>` con
   `dwe::shaders::<Nombre>`, un `std::array<std::uint32_t, N>`, privada del target. No hay ficheros de shaders en
   runtime.
-- Los **módulos de Slang compartidos** viven en `shaders/` (por ejemplo `shaders/dwe/bindless.slang`, que se importa
+- Los **módulos de Slang compartidos** viven en `shaders/` (por ejemplo `packages/engine/rhi/shaders/dwe/bindless.slang`, que se importa
   con `import dwe.bindless;`). Los shaders de cada módulo viven en `<módulo>/shaders/` y los compila su propio
   `CMakeLists.txt`.
 

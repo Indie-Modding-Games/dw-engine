@@ -6,7 +6,7 @@ La lógica del campo: el jugador se mueve por un mapa, choca, cambia de pantalla
 - Depende de: `assets`, `core`, `scene`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/game/field.md](../../../docs/modulos/game/field.md).
+- Documentación: [modulos/game/field](https://indie-modding-games.github.io/dw-engine/modulos/game/field).
 
 Compilar y probar solo este paquete:
 

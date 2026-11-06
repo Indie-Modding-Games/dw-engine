@@ -88,8 +88,8 @@ vuelve a la portada (`script_interp.c: 516-520`, `main.c: main: 3522-3524`).
 ## 2. Lo que hay hoy en el motor
 
 - El formato, las ranuras (`slot_01`…`slot_15`, `autosave_01`…), la copia `.bak`, el estado «dañada» de la lista y las
-  migraciones: [save.md](save.md), `game/save` (`SaveSlots::list`, `SlotInfo`).
-- `GameSession` ([apps/session](../modulos/apps/session.md)) guarda y carga, pero **solo se carga al arrancar**
+  migraciones: [save.md](save.md), `packages/game/save` (`SaveSlots::list`, `SlotInfo`).
+- `GameSession` ([packages/session](../modulos/apps/session.md)) guarda y carga, pero **solo se carga al arrancar**
   (`--load`): `FieldScene` se crea una vez (`apps/game/src/game.cpp: runGame`) y no hay vuelta a la portada ni
   máquina de estados de la app. `GameSession::loadFile` no es transaccional: si una sección falla, el estado queda a
   medias.
@@ -98,7 +98,7 @@ vuelve a la portada (`script_interp.c: 516-520`, `main.c: main: 3522-3524`).
 - El menú de pausa (`content/packs/game/ui/pause_menu`) no tiene «Dormir»: dormir es un comando de depuración
   (`apps/game/src/care_commands.hpp`, `sleep`). Su «Salir» cierra el programa.
 - No hay intérprete de los scripts de historia: las rutinas 48 y 54 no corren en ningún sitio (solo el extractor las
-  conoce, `formats/src/script/routine_writes.cpp`).
+  conoce, `packages/formats/src/script/routine_writes.cpp`).
 - Guardar desde una ruta: el comando de depuración `save("slot_NN")` (`apps/game/src/save_command.hpp`) y el par
   `route-save-load` + `route-save-load-check`, dos ejecuciones unidas por `scripts/gate/route_jobs.sh`.
 - Parte (b): `StoryState` y su sección `story` (versión 1, disparadores y las 35 variables que guardaba el original;
@@ -111,8 +111,8 @@ vuelve a la portada (`script_interp.c: 516-520`, `main.c: main: 3522-3524`).
 
 | Pieza | Dónde | Qué hace |
 |---|---|---|
-| `SaveSummary` (cabecera) | `game/save` | Lo que enseña la lista: domador, especie y mote del partner, mapa. Ver [3.3](#33-las-ranuras) |
-| `SaveSlots` | `game/save` (existe) | Lista, carga, carga de la copia, guarda. Sin cambios de comportamiento |
+| `SaveSummary` (cabecera) | `packages/game/save` | Lo que enseña la lista: domador, especie y mote del partner, mapa. Ver [3.3](#33-las-ranuras) |
+| `SaveSlots` | `packages/game/save` (existe) | Lista, carga, carga de la copia, guarda. Sin cambios de comportamiento |
 | `AppFlow` | `apps/game` (`app_flow.hpp`, plantilla sobre la partida para poder probarla sin ventana) | La máquina de estados de la app: `Title` → `Playing` → `Title`. Crea y destruye la partida en juego; la anterior se va antes de crear la nueva |
 | `PlaySession` | `apps/game` (`play_session.{hpp,cpp}`) | Todo lo que vive lo que dura una partida: `GameSession`, `FieldScene`, la batalla, el menú del partner, el HUD y el panel de ajuste. Se construye entero desde una ranura o desde partida nueva y se destruye entero. La VM de scripts es de la app: sus comandos de partida se encolan en `SessionCommands` y, sin partida, se descartan con un aviso |
 | `SaveFlow` | `apps/game` (nuevo, `save_flow.{hpp,cpp}`) | La **ranura de la partida** (la que se eligió al empezar o al continuar, o ninguna) y los guardados del jugador: dormir, máquina, fin del juego. Publica el resultado para la interfaz |
@@ -120,7 +120,7 @@ vuelve a la portada (`script_interp.c: 516-520`, `main.c: main: 3522-3524`).
 | Textos | `content/packs/game/localization/{en,es}/` | `save.yaml` (amplía), `main_menu.yaml`, `pause_menu.yaml` |
 | Rutas | `tests/autotest/`, `apps/game/src/autotest.cpp` | La ruta de un solo proceso ([sección 6](#6-rutas-y-tests)) |
 
-`game/save` sigue sin conocer los sistemas ([regla 4](dependency-rules.md)): el resumen lo rellena la app al guardar.
+`packages/game/save` sigue sin conocer los sistemas ([regla 4](dependency-rules.md)): el resumen lo rellena la app al guardar.
 La interfaz habla con la app como ya lo hace, con `ui.send` y ajustes publicados (`ui.md`, «Comandos y ajustes»).
 
 ### 3.2 Los estados de la app
@@ -193,7 +193,7 @@ summary:
   map: "base:<mapa>"         # el ID del mapa
 ```
 
-con su paso de migración `2 → 3`, que pone un `summary` vacío (`game/save` no conoce las secciones). La lista
+con su paso de migración `2 → 3`, que pone un `summary` vacío (`packages/game/save` no conoce las secciones). La lista
 rellena el de una partida así con lo que lee de sus secciones `partner` y `field` (`session::summaryFromSections`,
 que la app da a `SaveSlots::setSummaryReader`), y el siguiente guardado lo escribe entero. `label` se queda como está. Los IDs siguen
 la regla de la fase 4 (IDs, no índices).
@@ -284,13 +284,13 @@ dañada, de un juego más nuevo) y sus diálogos en la caja de la pregunta de so
 comprobaciones de la tarjeta (0x3F a 0x43, «Comprobando la tarjeta», «Guardando») no tienen equivalente: el
 guardado de PC no espera a nada y la máquina se cierra al acabar, como el original tras escribir (menú 9), sin aviso.
 Un registro cuyo guardado no se escribe se deshace: el original lo guarda dentro del propio fichero
-(`SAVE_FILE.saves[0]`). El registro es la sección de guardado `battle_registry` (`apps/session`,
+(`SAVE_FILE.saves[0]`). El registro es la sección de guardado `battle_registry` (`packages/session`,
 `battle_registry.{hpp,cpp}`); una partida sin ella empieza sin registrados. El campo y el reloj esperan mientras la
 máquina está abierta. Las cajas son las del original, donde el original las dibuja (`ui/save_machine`, en los dos
 aspectos). El modo versus que lucha contra los registrados es de la fase 5 (pregunta 3). El guardado del fin del
 juego (rutina 54, `gameClearSave`, 5b-2) está hecho: marca la partida terminada (`cleared: true` en la sección `field`,
 el `MAIN_STATE` 2), la guarda con la ciudad de `getFileCityTopMap` como mapa de vuelta y la posición del jugador, y al
-cargarla suena la película ED2 antes del campo (`apps/session/game_clear.hpp`, `SaveMachine::openClearSave`); la
+cargarla suena la película ED2 antes del campo (`packages/session/game_clear.hpp`, `SaveMachine::openClearSave`); la
 máquina y el menú de dormir vuelven a `MAIN_STATE` 1.
 
 ### 3.8 Guardar, volver a la portada y salir del juego
@@ -424,8 +424,8 @@ Corre en `en` y `es`. Cambios en el ejecutor: `shownMenu()` (`apps/game/src/auto
 
 **Tests unitarios** (ninguno cuenta para el límite de líneas):
 
-- `game/save`: la cabecera v3 se escribe y se lee igual byte a byte; una partida v2 migra a v3 con el resumen vacío,
-  y la lista lo rellena con el lector del juego. `apps/session`: el resumen sacado de las secciones; con secciones
+- `packages/game/save`: la cabecera v3 se escribe y se lee igual byte a byte; una partida v2 migra a v3 con el resumen vacío,
+  y la lista lo rellena con el lector del juego. `packages/session`: el resumen sacado de las secciones; con secciones
   que faltan, vacío.
 - `SaveFlow`: continuar empieza en la partida más reciente y carga la ranura sin más preguntas; un autoguardado
   antiguo sale aparte y se carga (`save_flow_tests.cpp`). `AppFlow`: tras seguir jugando, el autoguardado escribe la
@@ -493,7 +493,7 @@ cambio de contrato del formato de la partida. Las 3, 4 y 7 van a la fase 5 (la f
 
 | # | Pregunta | Tipo | Recomendación |
 |---|---|---|---|
-| 1 | ¿Cabecera v3 con `summary` (`slot`, `tamer`, `species`, `nickname`, `map`) o sacar el resumen de las secciones al listar? | CONTRACT (formato) | v3 en la cabecera: la lista solo lee la cabecera (como el original), `game/save` no conoce los sistemas y la migración rellena lo que pueda |
+| 1 | ¿Cabecera v3 con `summary` (`slot`, `tamer`, `species`, `nickname`, `map`) o sacar el resumen de las secciones al listar? | CONTRACT (formato) | v3 en la cabecera: la lista solo lee la cabecera (como el original), `packages/game/save` no conoce los sistemas y la migración rellena lo que pueda |
 | 2 | ¿El autoguardado guarda la ranura manual de su partida (`summary.slot`) y continuar desde él sigue en esa ranura? | CONTRACT (formato) | Sí: si no, continuar un autoguardado dejaría la partida sin sitio donde dormir y guardar. Desde 2026-11-04 el autoguardado escribe la propia ranura; esto queda para los autoguardados antiguos |
 | 3 | ¿El registro para el modo versus de la máquina (y el regalo del fin del juego) entra en este paquete? | FIDELITY | El registro sí (2026-10-30: la máquina registra y lo guarda, sección `battle_registry`); el modo versus y el regalo del fin del juego, en la fase 5 |
 | 4 | ¿«Borrar partida» de la portada del original? | FIDELITY | Hecho (3.5b): borra a la copia `.bak` |

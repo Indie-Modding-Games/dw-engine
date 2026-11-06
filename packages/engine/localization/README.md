@@ -6,7 +6,7 @@ Los textos que ve el jugador en su idioma: el catálogo de cada paquete y sus pl
 - Depende de: `assets`, `core`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/localization.md](../../../docs/modulos/engine/localization.md).
+- Documentación: [modulos/engine/localization](https://indie-modding-games.github.io/dw-engine/modulos/engine/localization).
 
 Compilar y probar solo este paquete:
 

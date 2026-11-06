@@ -8,15 +8,26 @@ modificable a largo plazo: si se rompen, cambiar una pieza obliga a tocar muchas
 1. **Las dependencias solo bajan.** Una capa usa las de abajo, nunca las de arriba ni ninguna en ciclo.
 2. **El runtime nunca depende de `formats`.** Solo `apps/dwx` lo usa. Así ninguna limitación de PS1 (IDs fijos,
    tamaños de tabla, paletas) llega al juego.
-3. **`game/*` no conoce Vulkan ni SDL.** Pide cosas a `render`, `audio`, `input`, `ui` o `scene` a través de sus APIs públicas.
-4. **Los módulos de `game/` no se usan entre sí directamente.** Se comunican por eventos de `scene` o a través de
+3. **`packages/game/*` no conoce Vulkan ni SDL.** Pide cosas a `render`, `audio`, `input`, `ui` o `scene` a través de sus APIs públicas.
+4. **Los módulos de `packages/game/` no se usan entre sí directamente.** Se comunican por eventos de `scene` o a través de
    interfaces declaradas en el módulo que las necesita. Así `battle` no se rompe cuando cambia `partner`.
    Lo que comparten todos (el ruleset, sus estrategias y el reloj de juego) está en el servicio `ruleset`
-   ([rulesets](rulesets.md)). El único sitio que los junta es la librería de app `apps/session`
+   ([rulesets](rulesets.md)). El único sitio que los junta es la librería de app `packages/session`
    ([página del módulo](../modulos/apps/session.md)): la partida, que el juego y `dwe-sim` usan igual.
 5. **Lua solo ve lo que `script` expone.** La API de Lua es un contrato versionado con semver: los cambios
    incompatibles suben la versión mayor.
 6. **Solo se incluyen headers públicos**: `<dwe/<módulo>/...>`. Nunca `src/` de otro módulo.
+
+## Reglas de carpeta
+
+La carpeta de un módulo también limita lo que puede usar ([estructura del repositorio](repository-layout.md)):
+
+- **`packages/engine/` solo usa el motor.** Sus módulos están en las capas `core`, base, sistemas o servicios y
+  solo dependen de otros módulos de `packages/engine/`. El motor no sabe nada del juego ni de las librerías de las
+  apps.
+- **`packages/game/` es la capa de juego.** Todos sus módulos se declaran con `LAYER game`.
+- **Ningún paquete depende de `apps/`.** Lo que está en `packages/` no puede usar un módulo declarado en `apps/`;
+  las apps sí usan los paquetes. Si dos apps necesitan el mismo código, ese código es un paquete.
 
 ## Qué puede usar cada capa
 
@@ -26,15 +37,15 @@ modificable a largo plazo: si se rompen, cambiar una pieza obliga a tocar muchas
 | `platform`, `rhi` | `core` |
 | `render`, `audio`, `input`, `assets`, `localization`, `animation`, `scene`, `signs`, `video` | Capas base, `core` y otros sistemas, sin ciclos (`animation`, `audio`, `render`, `localization`, `signs` y `video` usan `assets`) |
 | `script`, `ui`, `debug`, `ruleset` | Sistemas, base y `core` |
-| `game/*` | Servicios, sistemas y `core`; **no** `rhi` ni `platform` |
-| `apps/session` | `game/*`, servicios, sistemas y `core`; **no** `rhi`, `platform` ni `render` (corre sin ventana en `dwe-sim` y en los tests) |
-| `apps/screens` | `apps/session`, `game/*`, `ui`, `ruleset`, `localization`, `assets` y `core`; **no** `rhi`, `platform` ni `render` (los modelos de vista de las pantallas, probados sin ventana) |
+| `packages/game/*` | Servicios, sistemas y `core`; **no** `rhi` ni `platform` |
+| `packages/session` | `packages/game/*`, servicios, sistemas y `core`; **no** `rhi`, `platform` ni `render` (corre sin ventana en `dwe-sim` y en los tests) |
+| `packages/screens` | `packages/session`, `packages/game/*`, `ui`, `ruleset`, `localization`, `assets` y `core`; **no** `rhi`, `platform` ni `render` (los modelos de vista de las pantallas, probados sin ventana) |
 | `apps/game` | Todo excepto `formats` |
-| `apps/content` | `assets`, `platform` y `core` (`platform` para la carpeta de datos del usuario y para ejecutar `dwx`) |
+| `packages/content` | `assets`, `platform` y `core` (`platform` para la carpeta de datos del usuario y para ejecutar `dwx`) |
 | `apps/dwx` | `formats`, `assets` y `core` |
 | `formats` | `core` |
 
-Como `apps/content` usa `platform`, `dwe-sim` enlaza `platform` (y con él SDL3) a través de `apps/content`, aunque
+Como `packages/content` usa `platform`, `dwe-sim` enlaza `platform` (y con él SDL3) a través de `packages/content`, aunque
 sigue sin abrir ventanas. Los tests de `apps/dwx` enlazan además `platform`, solo para ejecutar `dwx` como lo hace el
 juego (`platform::runProcess`); el programa `dwx` no lo enlaza.
 
@@ -42,7 +53,10 @@ juego (`platform::runProcess`); el programa `dwx` no lo enlaza.
 
 - `dwe_add_module(<nombre> DEPS ...)` declara las dependencias permitidas. CMake no deja incluir los headers de un
   módulo no declarado.
-- Al configurar, `cmake/DweModule.cmake` comprueba cada dependencia contra las capas y falla si aparece una flecha
-  prohibida: hacia arriba, entre dos módulos de `game/` o hacia `formats` desde otro módulo que no sea `dwx`. La CI
-  configura en cada pull request, así que también falla allí.
+- Al configurar, `tooling/cmake/DweModule.cmake` comprueba cada dependencia contra las capas y falla si aparece una flecha
+  prohibida: hacia arriba, entre dos módulos de `packages/game/` o hacia `formats` desde otro módulo que no sea `dwx`.
+  También comprueba las [reglas de carpeta](#reglas-de-carpeta): sabe en qué grupo está cada módulo (motor, juego,
+  paquete o app) por la carpeta donde se declara. La CI configura en cada pull request, así que también falla allí.
+- `scripts/packages.py` lee las mismas dependencias de los `CMakeLists.txt` para que `scripts/dev.sh` sepa qué
+  compilar y probar con `--filter` y `--affected`.
 - Una excepción a estas reglas necesita un ADR.

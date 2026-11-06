@@ -14,8 +14,8 @@ informe en Markdown y CSV con la distribución de cada métrica. Uso, opciones y
 | `headless_session.hpp` | `HeadlessSessions`: partidas sin ventana (`session::GameSession`) para las partidas de un escenario, con el ruleset y los `--set` del contexto y los sistemas del juego (evolución, inventario y batalla, con sus tablas leídas una vez en `prepare`); `prepare` en `setup`, `start(seed)` en `run`; `startGame(seed)` da además los adaptadores por tipo (`HeadlessGame`) para las órdenes de objetos y combates, y `tables()` las tablas leídas |
 | `scenarios/*.cpp` | Un escenario por fichero, que se registra solo: `battle`, `care`, `clock`, `raisings` y `ruleset-diff` |
 
-El módulo puede usar todos los módulos de `game/` (CMake los recoge con la propiedad `DWE_GAME_MODULES`), así que un
-escenario nuevo es un fichero nuevo. Los paquetes se montan con `apps/content`, igual que en el juego.
+El módulo puede usar todos los módulos de `packages/game/` (CMake los recoge con la propiedad `DWE_GAME_MODULES`), así que un
+escenario nuevo es un fichero nuevo. Los paquetes se montan con `packages/content`, igual que en el juego.
 
 ## Tests
 

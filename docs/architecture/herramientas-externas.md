@@ -24,20 +24,20 @@ con los mismos lectores que usa el juego, así que un paquete que pasa la valida
 - El `api` de cada `pack.yaml`, con el lector de manifiestos del juego (`MAJOR.x` o `MAJOR.MINOR`; si no, el paquete
   no se monta) y con la misma comprobación de compatibilidad que hace el juego (`assets::checkPackApi`): una versión
   mayor distinta o una menor más nueva que la del motor es un problema del `pack.yaml`.
-- Cada modelo `.glb` con `parseModel` (`engine/assets/src/model_data.cpp`): nodos, una sola piel, articulaciones y
+- Cada modelo `.glb` con `parseModel` (`packages/engine/assets/src/model_data.cpp`): nodos, una sola piel, articulaciones y
   pesos de cada vértice (que suman 1 y nombran articulaciones de la piel), imágenes PNG incrustadas y los `extras` de
   cada clip (`readClipExtras`: `ticksPerSecond`, `tickCount`, `loops`, `rootMotionNode`…).
-- Cada `map/<id>/data.yaml` con `parseMapDocument` (`engine/assets/src/map_document.cpp`).
-- `data/maps.yaml` con `parseMapTable` (`engine/assets/src/map_table.cpp`).
+- Cada `map/<id>/data.yaml` con `parseMapDocument` (`packages/engine/assets/src/map_document.cpp`).
+- `data/maps.yaml` con `parseMapTable` (`packages/engine/assets/src/map_table.cpp`).
 - `data/digimon.yaml`, `data/raise.yaml`, `data/moves.yaml` y `data/evolution.yaml` con sus lectores
-  (`parseDigimonTable`, `parseRaiseTable`, `parseMoveTable` y `parseEvolutionTable`, en `engine/assets/src/`).
+  (`parseDigimonTable`, `parseRaiseTable`, `parseMoveTable` y `parseEvolutionTable`, en `packages/engine/assets/src/`).
 - Las tablas de datos se leen como las lee el juego: compuestas por entradas con las de los paquetes de debajo
   ([tablas por entradas](vfs.md#tablas-por-entradas)), así que un paquete que solo trae sus filas nuevas se valida
   junto con la tabla entera.
 - `data/items.yaml`, `data/item_effects.yaml`, `data/shops.yaml` y `data/new_game_stats.yaml` con sus lectores
-  (`parseItemTable`, `parseItemEffectTable`, `parseShopTable` y `parseNewGameStats`, en `engine/assets/src/`).
+  (`parseItemTable`, `parseItemEffectTable`, `parseShopTable` y `parseNewGameStats`, en `packages/engine/assets/src/`).
 - Los textos, `localization/<idioma>/*.yaml` y `text/<idioma>/*.yaml`, con `parseTextTable`
-  (`engine/assets/src/text_table.cpp`).
+  (`packages/engine/assets/src/text_table.cpp`).
 
 Los dos lectores de YAML son estrictos: una clave que sobra o que falta hace fallar el documento aunque cumpla su
 esquema. Cada fallo sale como un problema con el fichero, el ID del asset y el motivo
@@ -50,20 +50,20 @@ esquema. Cada fallo sale como un problema con el fichero, el ID del asset y el m
 | Manifiesto `pack.yaml` | `content/schemas/pack.schema.json`, [VFS](vfs.md) | Las dos | `id`, `version`, `layer: mods` y `dependencies` con `base` y `min_version`. Opcional: `api` (`1.x` o `1.3`), la versión de la API de Lua que piden los scripts del paquete |
 | Reglas de ID de asset | [VFS](vfs.md#ids-de-asset) | Las dos | El ID es la ruta sin extensión; un fichero que no da un ID válido hace fallar el paquete |
 | Capas y prioridad | [VFS](vfs.md) | Las dos | Un paquete `mods` gana a `base` por ID |
-| IDs de contenido y tablas por entradas | [VFS](vfs.md#tablas-por-entradas), `engine/assets/include/dwe/assets/content_id.hpp` | Las dos | Los originales se llaman como hasta ahora (`agum`, `twna01`); lo que añade un paquete se llama `<id del paquete>:<nombre>` y sus assets van en `<tipo>/<id del paquete>/<nombre>/`. Una tabla de un paquete sustituye por `id` las entradas de las de debajo y añade las nuevas; una tabla entera (una copia editada de la de la base) da la misma tabla que antes |
+| IDs de contenido y tablas por entradas | [VFS](vfs.md#tablas-por-entradas), `packages/engine/assets/include/dwe/assets/content_id.hpp` | Las dos | Los originales se llaman como hasta ahora (`agum`, `twna01`); lo que añade un paquete se llama `<id del paquete>:<nombre>` y sus assets van en `<tipo>/<id del paquete>/<nombre>/`. Una tabla de un paquete sustituye por `id` las entradas de las de debajo y añade las nuevas; una tabla entera (una copia editada de la de la base) da la misma tabla que antes |
 | IDs de los Digimon | `apps/dwx/src/asset_names.cpp` (`digimonSlug`) | Studio | `SPCA` → `digimon/spca/...` |
 | IDs de los mapas | `apps/dwx/src/asset_names.cpp`, a partir de `MAP_ENTRIES` | Editor | La carpeta del mapa es el primer registro de `MAP_ENTRIES` que nombra el fichero |
-| Modelo `.glb` | `formats/src/model/gltf.cpp` (`writeModelGlb`), [modelos](../formats/modelos.md) | Studio | Nodos `bone_NN`, una piel rígida, ejes `(x, -y, -z)`, escala 4096 = 1 |
-| Animaciones | `formats/src/model/animation.cpp`, [modelos](../formats/modelos.md#animaciones) | Studio | `anim_NN` con NN el id, un fotograma por tick a 20 por segundo, movimiento raíz en el hueso 0 y `extras` (`id`, `frameCount`, `hasScale`, `ticksPerSecond`, `tickCount`, `endsInLoop`, `rootMotionNode`, `loops`, `textureMoves`, `sounds`). El motor los lee en `engine/assets/src/model_data.cpp` (`parseModel`, que llama a `readClipExtras`) |
+| Modelo `.glb` | `packages/formats/src/model/gltf.cpp` (`writeModelGlb`), [modelos](../formats/modelos.md) | Studio | Nodos `bone_NN`, una piel rígida, ejes `(x, -y, -z)`, escala 4096 = 1 |
+| Animaciones | `packages/formats/src/model/animation.cpp`, [modelos](../formats/modelos.md#animaciones) | Studio | `anim_NN` con NN el id, un fotograma por tick a 20 por segundo, movimiento raíz en el hueso 0 y `extras` (`id`, `frameCount`, `hasScale`, `ticksPerSecond`, `tickCount`, `endsInLoop`, `rootMotionNode`, `loops`, `textureMoves`, `sounds`). El motor los lee en `packages/engine/assets/src/model_data.cpp` (`parseModel`, que llama a `readClipExtras`) |
 | Contrato del modelo | `content/schemas/model_contract.schema.json`, `digimon/<slug>/contract.yaml` | Studio | Lo que `dwx validate` exige a un modelo que sustituye al original |
-| Tabla de mapas `data/maps.yaml` | `content/schemas/maps.schema.json`, `engine/assets/src/map_table.cpp` | Editor | El editor solo la lee, y solo usa `maps[].index` y `maps[].id`; no la escribe. El lector del motor es estricto con las claves: una clave que sobra o que falta hace fallar la tabla |
+| Tabla de mapas `data/maps.yaml` | `content/schemas/maps.schema.json`, `packages/engine/assets/src/map_table.cpp` | Editor | El editor solo la lee, y solo usa `maps[].index` y `maps[].id`; no la escribe. El lector del motor es estricto con las claves: una clave que sobra o que falta hace fallar la tabla |
 | Tablas `data/digimon.yaml`, `data/skeletons.yaml` y `data/items.yaml` | `content/schemas/digimon.schema.json`, `skeletons.schema.json`, `items.schema.json` | Editor | El editor las lee |
-| Mapa `data.yaml` | `content/schemas/map.schema.json`, `formats/src/map/map_yaml.cpp` (`mapToYaml`) | Editor | Campos, y además **el texto exacto**: el editor escribe con las mismas reglas de `emitYaml` (`engine/core/src/yaml.cpp`) |
+| Mapa `data.yaml` | `content/schemas/map.schema.json`, `packages/formats/src/map/map_yaml.cpp` (`mapToYaml`) | Editor | Campos, y además **el texto exacto**: el editor escribe con las mismas reglas de `emitYaml` (`packages/engine/core/src/yaml.cpp`) |
 | Fondos de mapa | [mapas](../formats/mapas.md) | Editor | `background_day.png`, `background_dusk.png`, `background_night.png` o `background_paletteN.png` |
 | Texturas de mapa | `content/schemas/image.schema.json`, [extract](../formats/extract.md) | Editor | `map/<id>/texture8/NNN.png` y `map/<id>/texture4/NNN.png`, cada una con su `NNN_meta.yaml` (`mode`, `image_rect`, `clut_rect`, `palettes`, `offset`) |
-| Modelos de puerta | `formats/src/model/gltf.cpp` (`materialExtras`), [extract](../formats/extract.md) | Editor | `model/door/doorNN.glb`; los `extras` de cada material dicen dónde van sus texels: `image`, `clut` y `depth` |
+| Modelos de puerta | `packages/formats/src/model/gltf.cpp` (`materialExtras`), [extract](../formats/extract.md) | Editor | `model/door/doorNN.glb`; los `extras` de cada material dicen dónde van sus texels: `image`, `clut` y `depth` |
 | Textura de Digimon | `content/schemas/image.schema.json` | Studio y editor | `digimon/<slug>/texture.png` y `digimon/<slug>/texture_meta.yaml` |
-| Scripts de eventos | `content/schemas/script.schema.json`, `formats/src/script/script_yaml.cpp` (`scriptToYaml`), [scripts](../formats/scripts.md) | Editor | `script/dg/NNN.yaml` y `script/maphead.yaml`; los nombres de las operaciones, los offsets, las etiquetas, `code_end` con su relleno y la cuenta de instrucciones inalcanzables. El editor convierte cada script a texto y de vuelta, y comprueba que sale el mismo YAML |
+| Scripts de eventos | `content/schemas/script.schema.json`, `packages/formats/src/script/script_yaml.cpp` (`scriptToYaml`), [scripts](../formats/scripts.md) | Editor | `script/dg/NNN.yaml` y `script/maphead.yaml`; los nombres de las operaciones, los offsets, las etiquetas, `code_end` con su relleno y la cuenta de instrucciones inalcanzables. El editor convierte cada script a texto y de vuelta, y comprueba que sale el mismo YAML |
 | Texturas de objetos | [TIM](../formats/tim.md) | Editor | `texture/etcdat/item.png` y `texture/etcdat/item_meta.yaml` |
 
 ## Cómo se cambia el contrato

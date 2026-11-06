@@ -6,7 +6,7 @@ El render del juego, encima de `rhi`: mapas, modelos, la UI y la gradación de l
 - Depende de: `assets`, `core`, `rhi`.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
-- Documentación: [docs/modulos/engine/render.md](../../../docs/modulos/engine/render.md).
+- Documentación: [modulos/engine/render](https://indie-modding-games.github.io/dw-engine/modulos/engine/render).
 
 Compilar y probar solo este paquete:
 

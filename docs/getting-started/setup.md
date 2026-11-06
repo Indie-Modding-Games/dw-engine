@@ -37,6 +37,27 @@ Los objetos compilados se guardan en una caché de ccache (el volumen `dwe-ccach
 que ya se compiló, aunque sea en otra carpeta o worktree del repositorio, sale de la caché. El build, los tests,
 clang-tidy y clang-format usan todos los núcleos; `DWE_JOBS=6` los limita.
 
+### Compilar y probar un paquete
+
+Cada carpeta de `packages/` y de `apps/` es un paquete, con el nombre de su carpeta (`packages/engine/core` es `core`,
+`apps/game` es `game`; `repo` son los tests del propio repositorio). No hace falta compilar todo para trabajar en uno:
+
+```bash
+scripts/dev.sh packages                          # los paquetes: nombre, carpeta, tipo y de qué dependen
+scripts/dev.sh build --filter core               # solo core (el target pkg_core)
+scripts/dev.sh test --filter core                # sus tests (la etiqueta de ctest core)
+scripts/dev.sh test --filter 'game...'           # game y todo lo que usa
+scripts/dev.sh test --filter '...core'           # core y todo lo que lo usa
+scripts/dev.sh test --filter 'packages/game/*'   # los paquetes de una carpeta
+scripts/dev.sh affected                          # lo que cambió desde origin/main y lo que depende de ello
+scripts/dev.sh test --affected                   # solo los tests de eso
+```
+
+`--filter` se puede repetir y se junta con `--affected`. `affected` compara con la base de la rama y el árbol de
+trabajo; otra base con `DWE_AFFECTED_BASE=<rama o commit>`. Las dependencias salen de los `CMakeLists.txt`
+(`scripts/packages.py`). El lanzador se compila y se prueba con `scripts/launcher.sh` y la pasarela de la beta con
+`node --test`; los demás paquetes, con su target `pkg_<nombre>` de CMake.
+
 ### Comprobar antes de un PR
 
 ```bash
@@ -152,6 +173,7 @@ PRESET=windows-cross scripts/dev.sh build
 | `scripts/dev.sh docs` | Construye el sitio de documentación de `docs/` en `build/docs-site`; un enlace roto lo hace fallar |
 | `scripts/dev.sh docs-dev` | Sirve el sitio en `http://localhost:5173` (o en el puerto `DWE_DOCS_PORT`) y lo recarga al editar |
 | `scripts/dev.sh training-check --content <carpeta>` | Juega una sesión de cada curso del gimnasio sobre el contenido extraído y la compara con los límites del original ([comprobar el entrenamiento](../guides/comprobar-entrenamiento.md)) |
+| `scripts/dev.sh packages` · `affected` | Lista los paquetes y lo que afecta un cambio ([compilar y probar un paquete](#compilar-y-probar-un-paquete)) |
 | `scripts/dev.sh test -LE slow` | Pasa los tests sin los lentos, los que leen el disco o el contenido extraído |
 | `build/<preset>/apps/dwx/dwx verify <fichero>` | Calcula el SHA-1 de una imagen o un ejecutable y dice de qué versión es |
 | `build/<preset>/apps/dwx/dwx extract --list <imagen.cue>` | Lista los ficheros del disco con su SHA-1 y comprueba la tabla de ficheros del ejecutable ([Disco](../formats/disco.md)) |
