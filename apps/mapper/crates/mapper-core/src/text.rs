@@ -49,6 +49,8 @@ pub const CONFLICT: &str = "destino en conflicto (el juego la desactiva)";
 pub const UNKNOWN_ID: &str = "id desconocido; va por el índice del original";
 pub const NO_TRIGGER_CELLS: &str = "sin celdas de disparo";
 pub const NO_BACKGROUND: &str = "Este mapa no tiene fondo en los paquetes.";
+pub const PATCHED_BY: &str = "parcheado por";
+pub const EXIT_PATCHED_BY: &str = "parche de";
 
 pub const KIND_FREE: &str = "libre";
 pub const KIND_BLOCKED: &str = "pared";
@@ -64,11 +66,19 @@ pub const LIVE_CONNECT: &str = "Conectar";
 pub const LIVE_DISCONNECT: &str = "Desconectar";
 pub const LIVE_FOLLOW: &str = "Ir al mapa del juego";
 pub const LIVE_RELOAD: &str = "Recargar el mapa en el juego";
+pub const LIVE_OVERLAY: &str = "Capa de depuración del juego";
+pub const LIVE_STORY: &str = "Leer la historia";
+pub const LIVE_PAUSED: &str = "en pausa";
+pub const LIVE_RELOADED: &str = "Recargado";
+pub const STORY: &str = "Historia";
+pub const STORY_TRIGGERS: &str = "Disparadores activos";
+pub const STORY_VARIABLES: &str = "Variables distintas de 0";
 pub const LIVE_OFF: &str = "Sin conexión";
 pub const LIVE_ON: &str = "Conectado";
 
 pub const SKIPPED_MOD: &str = "Mod que se queda fuera";
 pub const ARCHIVES_NOT_READ: &str = "Archivos .pak que el editor no lee (solo carpetas)";
+pub const DEFAULT_BANDS: &str = "se usan las bandas del original";
 
 /// A short word for a trigger value's band.
 pub fn band_name(band: dwe_map::TriggerBand) -> String {
@@ -78,6 +88,14 @@ pub fn band_name(band: dwe_map::TriggerBand) -> String {
         dwe_map::TriggerBand::Exit(exit) => format!("{BAND_EXIT} {exit}"),
         dwe_map::TriggerBand::Toilet => BAND_TOILET.to_owned(),
         dwe_map::TriggerBand::Other => BAND_OTHER.to_owned(),
+    }
+}
+
+/// A story number with its label from `story/names`, if it has one: `12 door_open`.
+pub fn named(number: u32, name: Option<&str>) -> String {
+    match name {
+        Some(name) => format!("{number} {name}"),
+        None => number.to_string(),
     }
 }
 

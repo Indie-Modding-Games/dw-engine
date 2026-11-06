@@ -174,3 +174,73 @@ fn a_missing_map_or_content_is_a_message_not_a_crash() {
     assert!(empty.content.is_none());
     assert_eq!(empty.messages.len(), 1);
 }
+
+/// The content of `content()` with a mods folder: one mod that patches area_a's exit 0 and
+/// collision, and a `field/triggers` that moves the exits band.
+fn patched_content(root: &Path) -> GameFolders {
+    let mut folders = content(root);
+    let base = root.join("content/base");
+    write(
+        &base.join("field/triggers.yaml"),
+        "step: {first: 51, last: 79}\nconfirm: {first: 80, last: 109}\n\
+         exits: {first: 20, last: 29}\ntoilet: 120\nblocked_bit: 128\n",
+    );
+    write(
+        &base.join("story/names.yaml"),
+        "triggers:\n  5: gate_open\nvariables:\n  2: counter\n",
+    );
+    let mod_a = root.join("mods/mod_a");
+    write(
+        &mod_a.join("pack.yaml"),
+        "id: mod_a\nversion: 1.0.0\nlayer: mods\n",
+    );
+    write(
+        &mod_a.join("map/area_a/patch.yaml"),
+        "warps:\n- {exit: 1, target_map: -1, target_map_id: area_b, target_exit: 0}\n\
+         collision:\n  cells:\n  - {column: 53, row: 50, width: 2, value: 21}\n",
+    );
+    folders.mods = vec![root.join("mods")];
+    folders
+}
+
+#[test]
+fn opens_a_patched_map_with_the_bands_of_the_content() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut mapper = Mapper::new();
+    mapper.apply(Action::OpenContent(patched_content(dir.path())));
+    assert!(mapper.messages.is_empty(), "{:?}", mapper.messages);
+    assert_eq!(mapper.bands.exit_trigger(1), Some(21));
+    assert_eq!(mapper.story_names.trigger(5), Some("gate_open"));
+    mapper.apply(Action::SetCanvasSize(Vec2::new(1000.0, 700.0)));
+    mapper.apply(Action::OpenMap("area_a".into()));
+    let map = mapper.map.as_ref().expect("the map opens");
+    assert_eq!(map.document.patches, ["mod_a"]);
+    assert_eq!(map.document.exit_patch(1).unwrap().pack, "mod_a");
+    // Exit 1 now leads to area_b through the two cells the patch set to 21, exit 1 of the band
+    // that starts at 20; the data's 110 cells are no exit's any more.
+    let exit = &map.overlay.exits[1];
+    assert_eq!(exit.cell_count, 2);
+    assert_eq!(
+        exit.target,
+        ExitTarget::Map {
+            id: "area_b".into(),
+            exit: 0
+        }
+    );
+    assert_eq!(map.overlay.exits[0].cell_count, 0);
+}
+
+#[test]
+fn broken_bands_fall_back_to_the_original_with_a_message() {
+    let dir = tempfile::tempdir().unwrap();
+    let folders = content(dir.path());
+    write(
+        &dir.path().join("content/base/field/triggers.yaml"),
+        "step: {first: 1, last: 2}\n",
+    );
+    let mut mapper = Mapper::new();
+    mapper.apply(Action::OpenContent(folders));
+    assert!(mapper.content.is_some());
+    assert_eq!(mapper.bands, dwe_map::TriggerBands::default());
+    assert!(matches!(mapper.messages.last(), Some(Message::Error(_))));
+}

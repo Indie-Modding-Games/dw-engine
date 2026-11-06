@@ -5,7 +5,8 @@ use std::path::PathBuf;
 
 use dwe_map::world::{self, Cell};
 use dwe_map::{
-    Background, CellKind, MapCamera, MapDocument, MapEntry, MapTable, TriggerBand, TriggerBands,
+    Background, CellKind, MapCamera, MapDocument, MapEntry, MapTable, StoryNames, TriggerBand,
+    TriggerBands,
 };
 use dwe_pack::{GameContent, GameFolders, Vfs};
 use glam::{Vec2, Vec3};
@@ -93,7 +94,10 @@ pub struct Mapper {
     pub map: Option<OpenMap>,
     pub view: View,
     pub layers: LayerSet,
+    /// The trigger bands of the content (`field/triggers`), the original's without one.
     pub bands: TriggerBands,
+    /// The labels of the story's triggers and variables (`story/names`).
+    pub story_names: StoryNames,
     pub variant: String,
     pub hover: Option<Hover>,
     pub filter: String,
@@ -203,6 +207,17 @@ impl Mapper {
                         content.game.archives.len()
                     )));
                 }
+                self.bands = TriggerBands::load(content.vfs()).unwrap_or_else(|error| {
+                    self.messages.push(Message::Error(format!(
+                        "{error} ({})",
+                        crate::text::DEFAULT_BANDS
+                    )));
+                    TriggerBands::default()
+                });
+                self.story_names = StoryNames::load(content.vfs()).unwrap_or_else(|error| {
+                    self.messages.push(Message::Error(error.to_string()));
+                    StoryNames::default()
+                });
                 self.content = Some(content);
                 self.map = None;
                 self.history.clear();

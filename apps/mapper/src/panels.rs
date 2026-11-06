@@ -5,7 +5,7 @@ use dwe_map::CellKind;
 use dwe_pack::GameFolders;
 use eframe::egui;
 use mapper_core::{Action, GroupBy, Layer, Message, text};
-use mapper_live::{Endpoint, LiveClient};
+use mapper_live::{Endpoint, LiveClient, StoryState};
 
 use crate::app::MapperApp;
 
@@ -198,13 +198,23 @@ fn map_details(app: &mut MapperApp, ui: &mut egui::Ui) {
         }
         let size = map.background_size();
         ui.label(format!("{} × {} px", size.x, size.y));
+        if !map.document.patches.is_empty() {
+            ui.label(format!(
+                "{}: {}",
+                text::PATCHED_BY,
+                map.document.patches.join(", ")
+            ));
+        }
 
         ui.add_space(6.0);
         ui.strong(text::EXITS);
         egui::Grid::new("exits").striped(true).show(ui, |ui| {
             for exit in map.overlay.exits.iter().filter(|exit| exit.is_used()) {
                 ui.monospace(exit.exit.to_string());
-                ui.monospace(crate::canvas::exit_label(exit.exit, &exit.target));
+                let label = ui.monospace(crate::canvas::exit_label(exit.exit, &exit.target));
+                if let Some(patch) = map.document.exit_patch(exit.exit) {
+                    label.on_hover_text(format!("{} {}", text::EXIT_PATCHED_BY, patch.pack));
+                }
                 if exit.cell_count == 0 {
                     ui.weak(text::NO_TRIGGER_CELLS);
                 } else if exit.target.destination().is_some() && ui.button(text::GO).clicked() {
@@ -279,6 +289,7 @@ fn live_details(app: &mut MapperApp, ui: &mut egui::Ui) {
         } else {
             if ui.button(text::LIVE_DISCONNECT).clicked() {
                 live.client = None;
+                live.story = None;
                 live.state = text::LIVE_OFF.to_owned();
             }
             if ui.button(text::LIVE_FOLLOW).clicked() {
@@ -286,13 +297,51 @@ fn live_details(app: &mut MapperApp, ui: &mut egui::Ui) {
             }
         }
     });
-    if live.client.is_some() && ui.button(text::LIVE_RELOAD).clicked() {
-        live.reload();
+    if live.client.is_some() {
+        if ui.button(text::LIVE_RELOAD).clicked() {
+            live.reload();
+        }
+        let mut overlay = live.overlay;
+        if ui.checkbox(&mut overlay, text::LIVE_OVERLAY).changed() {
+            live.set_overlay(overlay);
+        }
+        if ui.button(text::LIVE_STORY).clicked() {
+            live.read_story();
+        }
     }
     ui.weak(&live.state);
+    if let Some(story) = &live.story {
+        story_details(&app.mapper.story_names, story, ui);
+    }
     if let Some(map) = open {
         app.apply(Action::OpenMap(map));
     }
+}
+
+/// The story's state read from the game, with the labels of `story/names`.
+fn story_details(names: &dwe_map::StoryNames, story: &StoryState, ui: &mut egui::Ui) {
+    ui.add_space(6.0);
+    let map = story.map.as_deref().unwrap_or("—");
+    ui.strong(format!("{} · {map} · tick {}", text::STORY, story.tick));
+    ui.label(text::STORY_TRIGGERS);
+    egui::Grid::new("story_triggers")
+        .striped(true)
+        .show(ui, |ui| {
+            for &trigger in &story.triggers {
+                ui.monospace(text::named(trigger, names.trigger(trigger)));
+                ui.end_row();
+            }
+        });
+    ui.label(text::STORY_VARIABLES);
+    egui::Grid::new("story_variables")
+        .striped(true)
+        .show(ui, |ui| {
+            for &(variable, value) in &story.variables {
+                ui.monospace(text::named(variable, names.variable(variable)));
+                ui.monospace(value.to_string());
+                ui.end_row();
+            }
+        });
 }
 
 /// The link to a running game.
@@ -300,6 +349,10 @@ pub struct LivePanel {
     pub endpoint: String,
     pub client: Option<LiveClient>,
     pub state: String,
+    /// Whether the game's map debug overlay is on, as the game said last.
+    pub overlay: bool,
+    /// The story's state, once read.
+    pub story: Option<StoryState>,
 }
 
 impl Default for LivePanel {
@@ -308,6 +361,8 @@ impl Default for LivePanel {
             endpoint: String::new(),
             client: None,
             state: text::LIVE_OFF.to_owned(),
+            overlay: false,
+            story: None,
         }
     }
 }
@@ -328,12 +383,22 @@ impl LivePanel {
         }
     }
 
-    /// The map the game shows, if it is in the field.
+    /// The map the game is playing, if a game is being played.
     pub fn game_map(&mut self) -> Option<String> {
         let client = self.client.as_mut()?;
         match client.status() {
             Ok(status) => {
-                self.state = format!("{} · {} · tick {}", text::LIVE_ON, status.mode, status.tick);
+                let paused = if status.paused {
+                    format!(" · {}", text::LIVE_PAUSED)
+                } else {
+                    String::new()
+                };
+                self.state = format!(
+                    "{} · {} · tick {}{paused}",
+                    text::LIVE_ON,
+                    status.mode,
+                    status.tick
+                );
                 status.map
             }
             Err(error) => {
@@ -343,12 +408,33 @@ impl LivePanel {
         }
     }
 
+    /// Asks the game to read its map again where the player stands.
     pub fn reload(&mut self) {
         let Some(client) = self.client.as_mut() else {
             return;
         };
-        match client.reload_map() {
-            Ok(()) => self.state = text::LIVE_ON.to_owned(),
+        match client.reload_map(None) {
+            Ok(reloaded) => self.state = format!("{}: {}", text::LIVE_RELOADED, reloaded.map),
+            Err(error) => self.fail(error),
+        }
+    }
+
+    pub fn set_overlay(&mut self, on: bool) {
+        let Some(client) = self.client.as_mut() else {
+            return;
+        };
+        match client.overlay(Some(on)) {
+            Ok(shown) => self.overlay = shown,
+            Err(error) => self.fail(error),
+        }
+    }
+
+    pub fn read_story(&mut self) {
+        let Some(client) = self.client.as_mut() else {
+            return;
+        };
+        match client.story_state() {
+            Ok(story) => self.story = Some(story),
             Err(error) => self.fail(error),
         }
     }
@@ -359,6 +445,7 @@ impl LivePanel {
             mapper_live::Error::Closed | mapper_live::Error::Io(_)
         ) {
             self.client = None;
+            self.story = None;
         }
         self.state = error.to_string();
     }

@@ -11,7 +11,7 @@ Usage: dwe-mapper [options]
   --content <dir>      the content folder: the base pack and the packs next to it, as the game
   --team-packs <dir>   the team's packs (content/packs of the source tree); found on its own
                        when the program runs inside the repository
-  --mods <dir>         a mods folder (repeatable)
+  --mods <dir>         a mods folder or a single pack (repeatable); their map patches apply
   --map <id>           the map to show first
   --exit <n>           with --map: centre on where the player arrives through that exit
   --variant <name>     the background: day, dusk, night...
