@@ -382,7 +382,7 @@ Los menús envían comandos con `ui.send(nombre, valor)` y la app los aplica. El
 | `ui_skin` | id de un aspecto (`modern`, ...) | `ui_skin` (y la UI cambia el estilo de todos los documentos en el momento) |
 | `sleep` | — | — (en partida: el menú de pausa acuesta al compañero si tiene sueño; ver [guardar-y-cargar.md](guardar-y-cargar.md#36-dormir)) |
 | `sleep_only`, `sleep_and_save` | — | `save.last_result` con `sleep_and_save` (el menú de dormir: seguir durmiendo, o guardar en la ranura de la partida antes) |
-| `to_title` | — | — (en partida: pregunta y vuelve a la portada sin guardar; ver [guardar-y-cargar.md](guardar-y-cargar.md#38-volver-a-la-portada)) |
+| `to_title` | — | — (en partida: pregunta y vuelve a la portada sin guardar; ver [guardar-y-cargar.md](guardar-y-cargar.md#38-guardar-volver-a-la-portada-y-salir-del-juego)) |
 
 La pantalla de combate (`ui/battle`) envía `battle_command` (el número del comando, `game::battle::Command`),
 `battle_charge` (cada pulsación que carga el golpe final), `battle_close` (cierra la caja del final),
