@@ -122,12 +122,12 @@ std::string_view deviceName(AutotestDevice device) {
 }
 
 // The steps' names in routes, in the order of AutotestStep::Kind.
-constexpr std::array<std::string_view, 22> StepNames{
-    "wait",          "walk_to",   "menu",       "menu_select", "expect_setting",
-    "screenshot",    "resize",    "fullscreen", "press",       "release",
-    "tap",           "axis",      "click",      "script",      "remember",
-    "expect_change", "script_if", "hold",       "when",        "expect_text_fits",
-    "expect_clear",  "hover"};
+constexpr std::array<std::string_view, 23> StepNames{
+    "wait",          "walk_to",   "menu",        "menu_select", "expect_setting",
+    "screenshot",    "resize",    "fullscreen",  "press",       "release",
+    "tap",           "axis",      "click",       "script",      "remember",
+    "expect_change", "script_if", "hold",        "when",        "expect_text_fits",
+    "expect_clear",  "hover",     "expect_range"};
 
 // What an expect_text_fits step names to check every shown document.
 constexpr std::string_view AllDocuments = "all";
@@ -337,6 +337,39 @@ bool movedAsAsked(std::string_view before, std::string_view now, std::string_vie
   return asked == ChangedUp ? to > from : to < from;
 }
 
+// expect_range: {name: [low, high]}, with an optional timeout.
+void readRange(assets::YamlReader& reader, const core::YamlNode& node, AutotestStep& step) {
+  bool read = false;
+  if (node.isMapping()) {
+    for (const core::YamlEntry& entry : node.entries()) {
+      if (entry.key == TimeoutKey) {
+        step.timeout = reader.number(entry.value);
+        continue;
+      }
+      const auto bounds = reader.sequence(entry.value, "expect_range", 2);
+      if (read || bounds.size() != 2) {
+        read = false;
+        break;
+      }
+      step.name = entry.key;
+      step.low = reader.number(bounds[0]);
+      step.high = reader.number(bounds[1]);
+      read = true;
+    }
+  }
+  if (!read || step.low > step.high) {
+    reader.fail(node, "expect_range is {name: [low, high]}, with an optional timeout");
+  }
+}
+
+// Whether a setting's text is a number in [low, high].
+bool inRange(std::string_view text, double low, double high) {
+  double number = 0.0;
+  const auto [end, error] = core::fromChars(text.data(), text.data() + text.size(), number);
+  return error == std::errc{} && end == text.data() + text.size() && number >= low &&
+         number <= high;
+}
+
 void readCondition(assets::YamlReader& reader, const core::YamlNode& node, AutotestStep& step) {
   if (const core::YamlNode* map = node.find("map")) {
     step.until.map = reader.text(*map);
@@ -525,6 +558,10 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
         step.text != ChangedAtAll) {
       reader.fail(value, "expect_change is {name: up | down | changed}");
     }
+  } else if (kind == "expect_range") {
+    step.kind = Kind::ExpectRange;
+    step.timeout = 2.0;
+    readRange(reader, value, step);
   } else if (kind == "expect_text_fits") {
     step.kind = Kind::ExpectTextFits;
     step.text = reader.text(value);
@@ -900,7 +937,7 @@ void Autotest::frame(const AutotestHost& host, std::uint64_t ticks, double now,
                step.kind != Kind::Hold) {
       // An expected setting says what it read, so a failed run tells the value it was left at.
       const std::string read =
-          step.kind == Kind::ExpectSetting
+          step.kind == Kind::ExpectSetting || step.kind == Kind::ExpectRange
               ? std::format("; {} is \"{}\"", step.name, settingText(host, step.name))
               : std::string{};
       failStep(
@@ -978,6 +1015,8 @@ bool Autotest::runStep(const AutotestHost& host, const AutotestStep& step, doubl
     return menuSelectStep(host, step);
   case Kind::ExpectSetting:
     return settingText(host, step.name) == step.text;
+  case Kind::ExpectRange:
+    return inRange(settingText(host, step.name), step.low, step.high);
   case Kind::Screenshot:
     return screenshotStep(host, step);
   case Kind::Resize:

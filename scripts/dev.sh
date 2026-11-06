@@ -117,6 +117,9 @@ Usage: scripts/dev.sh <command> [args]
   docs-dev            Serve the documentation site with live reload on http://localhost:$docs_port
                       (DWE_DOCS_PORT)
   run [args]          Run the game on the host
+  training-check [args]
+                      Play every gym course's session headless on DWE_CONTENT (or --content) and
+                      check it against the original's bounds (scripts/training-check.sh)
 
 Environment:
   PRESET              CMake preset (default linux-clang-debug; ci for the checks)
@@ -813,6 +816,9 @@ case "$command" in
     container_options=(-p "127.0.0.1:$docs_port:$docs_container_port")
     in_container vitepress dev "$docs_source" --host 0.0.0.0 --port "$docs_container_port" \
       --strictPort
+    ;;
+  training-check)
+    exec "$root/scripts/training-check.sh" "$@"
     ;;
   run)
     build_dir="$root/build/$preset"

@@ -1,0 +1,19 @@
+name: training-trai00-defense
+# One whole defense session on trai00, checked against the bounds of the original (DuckStation, this gym):
+# frames from the partner's arrival to the gains, its farthest point from its spot, the ground it
+# covered and each stat's gain, in original units (docs/guides/comprobar-entrenamiento.md).
+device: keyboard
+timeout: 290
+steps:
+  - wait: {map: trai00, seconds: 2}
+  - script: gym("defense")
+  - wait: {setting: {gym.session.count: "1"}, timeout: 280}
+  - expect_range: {gym.session.frames: [1340, 1410]}
+  - expect_range: {gym.session.max_offset: [110, 275]}
+  - expect_range: {gym.session.path: [10990, 13434]}
+  - expect_range: {gym.session.gain.hp: [0, 0]}
+  - expect_range: {gym.session.gain.mp: [0, 0]}
+  - expect_range: {gym.session.gain.offense: [0, 0]}
+  - expect_range: {gym.session.gain.defense: [4, 12]}
+  - expect_range: {gym.session.gain.speed: [0, 0]}
+  - expect_range: {gym.session.gain.brain: [1, 3]}
