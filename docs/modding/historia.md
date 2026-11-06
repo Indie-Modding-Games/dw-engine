@@ -99,6 +99,31 @@ return {
   (`return original()`, o `if original() == ENDED then return ENDED end` y seguir), no guardado en una variable
   (`local r = original()`). Un parche así corre bien en el juego, pero `dwx script-warps` falla y nombra el fichero
   del parche y su línea.
+- Un parche no ve las `routines` del módulo: corre en su propio entorno. Si una sección necesita código compartido del
+  script (el `return routines.at_0100()` del Lua generado), el parche trae su copia como rutina privada: arriba,
+  `local routines = {}` y después `function routines.<nombre>() ... end` (sin parámetros y sin `original`). Dentro del
+  parche, `routines.<nombre>` es siempre la suya; una que el parche no define es un error de `dwx script-warps` con
+  su línea (en el juego fallaría al correr). Las secciones que el parche no toca siguen usando las del módulo. Así
+  guarda el editor de mapas una sección editada:
+
+  ```lua
+  local routines = {}
+
+  function routines.at_0100()
+    story.set_var(5, 2)
+    return story.ENDED
+  end
+
+  return {
+    script = 900,
+    sections = {
+      [0x51] = function(original)
+        story.set_trigger(73)
+        return routines.at_0100()
+      end,
+    },
+  }
+  ```
 
 ## Nombres de disparadores y variables
 

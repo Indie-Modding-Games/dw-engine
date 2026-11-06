@@ -237,7 +237,10 @@ dwx script-warps <carpeta de contenido> [--with <carpeta>]... [--rules <id>] [-o
   dentro de un paquete, y el de más arriba gana cada sección. `formats::script::readLuaPatch` lee cada parche y
   `composeLuaPatches` lo une al módulo: cada sección parcheada pasa a ser una función `routines.patch_<sección>` del
   módulo con el cuerpo del parche, y `original()` una llamada a la rutina de la sección original
-  (`story.ENDED`, `story.PLAYER` y `story.PARTNER` se leen como los locales del módulo). Un script que solo dan
+  (`story.ENDED`, `story.PLAYER` y `story.PARTNER` se leen como los locales del módulo). Las rutinas privadas del
+  parche (`local routines = {}` y sus `function routines.<nombre>()`) entran como `routines.patch<n>_<nombre>`
+  (`n`, el puesto del parche en la pila desde 1; con un `_` más si el módulo ya usa ese nombre) y sus llamadas se
+  renombran; un `routines.<nombre>` que el parche no define es un error con su línea. Un script que solo dan
   parches se lee igual, sin módulo. El lector solo sigue `original()` como subrutina (`return original()` o
   `if original() == ENDED then return ENDED end`); otro uso (`local r = original()`, `original` en una condición, un
   local de arriba que no sea un nombre de `story`) es un **error con el fichero del parche y su línea**

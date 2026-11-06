@@ -60,9 +60,13 @@ core::Result<LuaListing> readLuaModule(std::string_view code, const LuaLineMap* 
 // A story patch (story/patches/*.lua, docs/modding/historia.md) read for the walks: the sections
 // it gives, as code the module can take in. Only the shape the reader can follow: at the top,
 // locals that only name story's own (`local story <const> = story`, `local ENDED <const> =
-// story.ENDED`), then `return { script = <id>, sections = { [<id>] = function(original) ... end }
-// }`; in a section, `original()` called as a routine is (`return original()`, `if original() ==
-// ENDED then return ENDED end`) and nothing else of `original`.
+// story.ENDED`) and, once, `local routines = {}`, after which go the patch's private routines
+// (`function routines.<name>() ... end`, no parameters, the body of a module's routine); then
+// `return { script = <id>, sections = { [<id>] = function(original) ... end } }`. In a section,
+// `original()` is called as a routine is (`return original()`, `if original() == ENDED then return
+// ENDED end`) and nothing else of `original`; a private routine has no `original`. In both,
+// `routines.<name>` is the patch's own routine: the module's routines are out of a patch's reach,
+// so one the patch does not define is an error.
 struct LuaPatchSection {
   std::uint16_t id = 0;
   // The function's body, cut where it calls the original: between two pieces goes a call.
@@ -70,10 +74,18 @@ struct LuaPatchSection {
   std::size_t line = 0; // the patch's line where the body starts
 };
 
+// A patch's private routine: `function routines.<name>() <body> end`.
+struct LuaPatchRoutine {
+  std::string name;
+  std::string body;
+  std::size_t line = 0; // the patch's line where the body starts
+};
+
 struct LuaPatch {
   std::string name; // how errors name it, e.g. "my_mod:story/patches/a.lua"
   std::uint16_t script = 0;
   std::vector<LuaPatchSection> sections;
+  std::vector<LuaPatchRoutine> routines;
 };
 
 // Reads a story patch; fails naming `name` and the line on a shape the reader cannot follow.
@@ -98,8 +110,11 @@ struct ComposedLuaModule {
 
 // Applies `patches` to the module `module` of script `script` (none: a script only patches give):
 // the last patch in the span that gives a section wins it, as the game's stack order does, so pass
-// them bottom of the pack stack first. Fails when a patch calls the original of a section the
-// module does not have, or when the module's own Lua does not read.
+// them bottom of the pack stack first. A patched section becomes routines.patch_<id>; the private
+// routines of a patch that wins a section become routines.patch<n>_<name> (n: the patch's place in
+// the span, from 1), its references rewritten, so they clash with no other patch's; a name the
+// module already has takes trailing underscores until it is free. Fails when a patch calls the
+// original of a section the module does not have, or when the module's own Lua does not read.
 core::Result<ComposedLuaModule> composeLuaPatches(std::optional<std::string_view> module,
                                                   std::uint16_t script,
                                                   std::span<const LuaPatch> patches);
