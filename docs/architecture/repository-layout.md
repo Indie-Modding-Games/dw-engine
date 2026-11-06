@@ -2,7 +2,8 @@
 
 ```
 engine/
-├─ .devcontainer/           imagen Docker de desarrollo: Clang, libc++, CMake, vcpkg, Node y VitePress (ADR 0015)
+├─ .devcontainer/           imágenes Docker de desarrollo: Clang, libc++, CMake, vcpkg, Node y VitePress (ADR 0015);
+│                           la del lanzador y la de Wine
 ├─ .github/
 │  ├─ workflows/            ci.yml (comprobaciones de los pull requests), release.yml (versión de prueba en cada
 │  │                        fusión), promote.yml (versión estable), platform-check.yml, docs-pages.yml
@@ -13,54 +14,66 @@ engine/
 │  └─ toolchains/           compilador y biblioteca estándar de cada plataforma
 ├─ docs/                    esta documentación: el sitio de VitePress (dev.sh docs) y la página de cada módulo
 │                           (modulos/)
-├─ engine/                  módulos del motor
-│  ├─ core/
-│  ├─ platform/
-│  ├─ rhi/
+├─ engine/                  módulos del motor (modulos/engine/)
+│  ├─ core/                 Result, log, YAML, JSON Schema, matemáticas
+│  ├─ platform/             ventana, eventos y mandos (SDL3)
+│  ├─ rhi/                  el único que habla con Vulkan
 │  ├─ render/
 │  ├─ audio/
-│  ├─ input/
-│  ├─ assets/
+│  ├─ input/                acciones, nunca teclas
+│  ├─ assets/               paquetes, VFS, ids y tablas
 │  ├─ animation/            clips de los modelos: poses, bucles, movimiento raíz
-│  ├─ scene/
-│  ├─ script/
-│  ├─ ui/
+│  ├─ scene/                entidades y componentes (EnTT)
+│  ├─ script/               Lua y la API de los mods
+│  ├─ ui/                   RmlUi con su lógica en Lua
+│  ├─ localization/         textos en el idioma del jugador
+│  ├─ signs/                carteles de los mapas traducidos
+│  ├─ video/                películas
 │  ├─ debug/                consola y paneles de desarrollo (Dear ImGui)
 │  └─ ruleset/              formato de ruleset, estrategias por nombre y reloj de juego
-├─ game/                    reglas del juego
-│  ├─ partner/              cuidado, vida, evolución
+├─ game/                    reglas del juego (modulos/game/)
+│  ├─ partner/              cuidado, vida, entrenamiento
+│  ├─ evolution/
 │  ├─ battle/
 │  ├─ field/                movimiento, colisión, warps, seguimiento del partner
-│  ├─ world/                mapas, NPCs, progreso de la ciudad
-│  ├─ story/                eventos, diálogos, flags, misiones
 │  ├─ inventory/            bolsa, dinero, uso de objetos y tiendas
-│  ├─ save/                 partidas guardadas: ranuras, autoguardado y migraciones
-│  └─ modes/                framework de modos de juego
-├─ formats/                 lectores de PS1: TIM, TMD/MMD, mapas, VAB/SEQ, STR, scripts
-├─ apps/
+│  ├─ fishing/ · weather/ · gym/ · tournament/ · curling/
+│  ├─ story/                estado de la historia y scripts de eventos
+│  └─ save/                 partidas guardadas: ranuras, autoguardado y migraciones
+├─ formats/                 lectores de los formatos del disco original: imágenes, modelos, mapas, audio, vídeo,
+│                           scripts (solo los usa dwx)
+├─ apps/                    (modulos/apps/)
+│  ├─ session/              la partida: junta los sistemas de game/, sin ventana
+│  ├─ screens/              modelos de vista de las pantallas
 │  ├─ content/              cómo montan los paquetes el juego y dwe-sim
-│  ├─ game/                 el ejecutable del juego + launcher
-│  ├─ editor/               editor (Dear ImGui)
-│  ├─ dwx/                  extract · validate · cook · pack
-│  └─ sim/                  dwe-sim: simulaciones de balance sin gráficos
+│  ├─ game/                 dwe-game, el ejecutable del juego
+│  ├─ dwx/                  extract · validate · cook · pack · export-images
+│  ├─ sim/                  dwe-sim: simulaciones de balance sin gráficos
+│  ├─ launcher/             el lanzador de escritorio (Tauri)
+│  └─ studio/               DWE Studio, banco de trabajo de desarrollo (Electron)
+├─ services/
+│  └─ beta-gateway/         la pasarela de la beta entre el lanzador y GitHub (Cloudflare Worker)
 ├─ shaders/                 módulos de Slang compartidos (cada módulo compila los suyos a SPIR-V)
 ├─ content/
-│  ├─ schemas/              JSON Schema de cada tipo (digimon, map, item, pack…)
-│  ├─ packs/                paquetes en texto creados por el equipo: datos, rulesets, Lua y la traducción
-│  └─ fixtures/             assets pequeños hechos por el equipo para tests y CI
+│  ├─ schemas/              JSON Schema de cada tipo de documento
+│  ├─ packs/                paquetes en texto del equipo: game (datos, rulesets, UI y Lua) y es-translation
+│  └─ enhance/              recetas de escalado de imágenes (dwx extract y dwx upscale)
 ├─ tests/
-│  ├─ integration/          tests que cruzan módulos
-│  ├─ simulation/           simulaciones de balance sobre los rulesets
-│  └─ golden/               capturas de render de referencia
-├─ scripts/                 dev.sh: la entrada de todo el desarrollo (image, build, test, run…); translation.sh: la
-│                           traducción de los textos del original
+│  ├─ autotest/             rutas que juegan el juego de verdad (y training/, la comprobación del entrenamiento)
+│  ├─ mods/                 paquetes sintéticos para los tests de mods
+│  └─ support/              lo que comparten los tests de todos los módulos
+├─ scripts/                 dev.sh: la entrada de todo el desarrollo (image, build, test, run, docs…); gate.sh,
+│                           training-check.sh, launcher.sh, el empaquetado (package_*.sh, package/) y la
+│                           publicación (ci/, release_local.sh)
+├─ prototypes/              maquetas que no se compilan
 ├─ third_party/             solo parches o lo que no esté en vcpkg
 ├─ triplets/                triplets propios de vcpkg (dependencias con Clang y libc++)
+├─ vcpkg-ports/             ports propios de vcpkg
 ├─ CMakeLists.txt
-├─ CMakePresets.json        linux-clang-debug, linux-clang-release, ci (windows-clang llegará después)
+├─ CMakePresets.json        linux-clang-*, windows-clang-*, windows-cross*, macos-*, ci y windows-ci
 ├─ vcpkg.json               dependencias con versiones fijadas
-├─ .clang-format · .clang-tidy · .editorconfig · .gitattributes · .gitignore
-└─ README.md · CHANGELOG.md · LICENSE · THIRD_PARTY.md
+├─ .clang-format · .clang-tidy · .editorconfig · .gitattributes · .gitignore · .luacheckrc · stylua.toml
+└─ README.md · LICENSE
 ```
 
 `content/base/` no aparece porque **nunca está en el repositorio**: se genera a partir del disco de cada usuario y

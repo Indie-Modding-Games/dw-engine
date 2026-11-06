@@ -27,8 +27,11 @@ features:
     details: Cómo lee dwx el disco del usuario y en qué formatos abiertos deja cada cosa.
     link: /formats/
   - title: Guías
-    details: Tareas concretas, del gate de subida a las simulaciones de balance y la traducción.
-    link: /guides/gate
+    details: Tareas concretas, de las rutas de autotest y la comprobación del entrenamiento a la traducción.
+    link: /guides/prueba-vertical
+  - title: Versiones y beta
+    details: Una versión de prueba por cada pull request fusionado, la estable promovida a mano y el lanzador con sus dos canales.
+    link: /modulos/apps/launcher#publicar-una-versión
 ---
 
 Esta documentación es la fuente de verdad técnica del proyecto. Se trata como código: se revisa en los PR y se
@@ -46,6 +49,7 @@ Para empezar: [Ejecutar el juego](getting-started/jugar.md) · [Extensiones y ar
 | Programación | [Preparar el entorno](getting-started/setup.md) · [Estructura del repositorio](architecture/repository-layout.md) · [Reglas de dependencias](architecture/dependency-rules.md) · [Módulos](modulos/index.md) · [Formatos del original y `dwx`](architecture/formats.md) · [Paquetes y sistema de ficheros virtual](architecture/vfs.md) · [Tubería del remaster](architecture/remaster-pipeline.md) · [Espacio del mundo](architecture/world-space.md) · [Compatibilidad con las herramientas del equipo](architecture/herramientas-externas.md) · [JSON Schema](architecture/json-schema.md) · [Convenciones de código](conventions/code.md) · [Render](architecture/render.md) · [Modelos y animación](architecture/models.md) · [Rulesets](architecture/rulesets.md) · [Partidas guardadas](architecture/save.md) · [Controles](architecture/controles.md) |
 | Arte y audio | [Tubería de assets](architecture/assets-pipeline.md) · [Audio en el motor](architecture/audio.md) · [Tubería del remaster](architecture/remaster-pipeline.md) · [Herramientas del equipo](architecture/herramientas-externas.md) · [Paquetes](architecture/vfs.md) · [Política legal de assets](legal/assets.md) |
 | Diseño y guion | [Ciclo de diseño](conventions/design-cycle.md) · [Fichas de referencia](reference/index.md) ([cuidado](reference/care.md), [evolución](reference/evolution.md), [batalla](reference/battle.md)) · [Visión general](architecture/overview.md) · [Tubería de assets](architecture/assets-pipeline.md) |
+| Probar la beta y publicar | [Lanzador](modulos/apps/launcher.md) ([canales](modulos/apps/launcher.md#canal-de-actualizaciones), [publicar una versión](modulos/apps/launcher.md#publicar-una-versión)) · [Pasarela de la beta](modulos/services/beta-gateway.md) · [Beta para Linux](guides/beta-linux.md) · [Beta para Windows y macOS](guides/beta-windows-macos.md) · [Imágenes personalizadas](guides/imagenes-personalizadas.md) |
 | Quien quiera proponer un cambio grande | [Cómo funcionan los ADR](adr/index.md) |
 
 ## Cómo está organizada
@@ -66,10 +70,11 @@ Además: `conventions/` (normas del equipo: [código](conventions/code.md), [com
 ## Normas
 
 - Toda la documentación vive en `docs/` y forma este sitio (VitePress). No hay README por módulo: cada módulo tiene su
-  página en [`modulos/`](modulos/index.md).
+  página en [`modulos/`](modulos/index.md). Solo las herramientas que no son parte del motor (`apps/studio`,
+  `services/beta-gateway`) guardan junto al código un README con los pasos para usarlas o desplegarlas.
 - Markdown, una idea por sección y frases cortas, en español.
 - Los diagramas van en [Mermaid](https://mermaid.js.org/), como texto: el sitio y GitHub los dibujan y se revisan en
   los PR.
 - Un ADR aceptado no se reescribe: se sustituye con otro nuevo.
-- `scripts/dev.sh docs` construye el sitio y falla con un enlace roto; el check de la punta de cada rama lo pasa.
-  `scripts/dev.sh docs-dev` lo sirve en local mientras escribes.
+- `scripts/dev.sh docs` construye el sitio y falla con un enlace roto; `scripts/dev.sh check-full` lo pasa (la CI de
+  los pull requests no). `scripts/dev.sh docs-dev` lo sirve en local mientras escribes.

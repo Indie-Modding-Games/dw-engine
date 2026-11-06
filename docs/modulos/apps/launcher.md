@@ -119,7 +119,7 @@ lanzador (su `latest.json` es el de la misma versión):
 
 | Canal | Qué recibe |
 |---|---|
-| Estable | Solo versiones estables (las promovidas, [Versión estable](#version-estable-promover-una-prerelease)): la más nueva de la lista con paquete para este ordenador o, si no está entre las 20 más nuevas, `releases/latest`. Mientras no exista ninguna estable, recibe lo mismo que «Pruebas». |
+| Estable | Solo versiones estables (las promovidas, [Versión estable](#versión-estable-promover-una-prerelease)): la más nueva de la lista con paquete para este ordenador o, si no está entre las 20 más nuevas, `releases/latest`. Mientras no exista ninguna estable, recibe lo mismo que «Pruebas». |
 | Pruebas | La versión más nueva de cualquier tipo: cada cambio que entra en `main`. |
 
 Una instalación nueva empieza en «Estable»; un lanzador que ya estaba instalado antes de que existiera el canal sigue
@@ -515,6 +515,4 @@ Los tests: `custom_images/tests.rs` y `the_players_images_are_mounted_while_they
   Windows (unos 30 MB). Las dos son descargas nuevas: decide el responsable.
 
 - Probar el lanzador en un Windows de verdad y todo en un Mac (el llavero, rutas y el instalador de cada sistema).
-- La clave de firma real y la primera versión publicada (decisión del responsable).
-- Desplegar la pasarela y fijar `DWE_BETA_GATEWAY` (el responsable, desde los paneles).
 - Probar los complementos en Windows (allí el esquema es `http://dweaddon.localhost/`) y macOS.
