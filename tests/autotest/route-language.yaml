@@ -19,8 +19,13 @@ steps:
   - wait: {seconds: 0.5}
   - screenshot: main-menu-back
   - tap: {key: left_ctrl}
+  # Play opens the slot list; the route plays without saving, which writes nothing.
   - menu_select: play
-  - wait: {map: twna01, hidden: main_menu, seconds: 0.5}
+  - wait: {shown: save_slots, seconds: 0.5}
+  - menu_select: no-save
+  - wait: {shown: dialog, seconds: 0.5}
+  - menu_select: yes
+  - wait: {map: twna01, hidden: dialog, seconds: 0.5}
   - screenshot: field
   - menu: open
   - screenshot: pause-menu

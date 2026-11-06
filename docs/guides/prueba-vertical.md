@@ -191,13 +191,13 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   de prueba (el paquete sintético `tests/mods/ui_skin/test_contrast`), recorre con él el campo, el menú de pausa, el
   del compañero y un combate, y pasa al moderno desde las opciones del menú de pausa, con capturas de cada pantalla.
   Necesita `--mods tests/mods/ui_skin` y se corre en los dos idiomas, como `route-language.yaml`.
-- `route-skin-original.yaml`: el aspecto original en cada pantalla que dibuja, con una captura de cada una: el
-  título y su menú, la lista de ranuras y la pregunta de jugar sin guardar (necesita `--saves` con una carpeta vacía
-  propia, que el gate le da), el reloj y las barras del campo, el menú de pausa, la página del jugador y las opciones de sus
-  herramientas, la ficha del compañero (su entrada del menú) y la bolsa (la de los objetos, con las opciones de un objeto y
-  los órdenes), un combate y sus cuadros finales, y la burbuja del hambre sobre el compañero a 1920x1080. La carpeta de
-  partidas sigue vacía tras el combate y los días nuevos (`saves.files: "0"`): jugar sin guardar no escribe nada. Se
-  corre en los dos idiomas.
+- `route-skin-original.yaml`: el aspecto original en cada pantalla que dibuja, con una captura de cada una: el título y
+  su menú, la lista de ranuras y la pregunta de jugar sin guardar (necesita `--saves` con una carpeta vacía propia, que
+  el gate le da), el reloj y las barras del campo, el menú de pausa, la página del jugador y las opciones de sus
+  herramientas, la ficha del compañero (su entrada del menú) y la bolsa (la de los objetos, con las opciones de un
+  objeto y los órdenes), un combate del que se huye (sin cuadros finales, como el original), y la burbuja del hambre
+  sobre el compañero a 1920x1080. La carpeta de partidas sigue vacía tras el combate y los días nuevos (`saves.files:
+  "0"`): jugar sin guardar no escribe nada. Se corre en los dos idiomas.
 - `route-text-fit.yaml`: que cada texto cabe en su caja (`expect_text_fits` tras cada captura) en las pantallas del
   aspecto original desde el campo: el menú de pausa y sus páginas (jugador, árbol, medallas, cartas, herramientas,
   opciones, minimapa), la ficha, las técnicas y la bolsa del compañero con las opciones de un objeto, la máquina de
@@ -266,7 +266,8 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   en el gráfico del compañero (Agumon, como en una partida nueva) con el teclado: el cursor por sus evoluciones sin
   descubrir («???») y descubiertas, la vista original, el peso movido con bayas grandes y el gráfico a 1280x720, 1920x1080 y 1024x768 (`text_fit`,
   `expect_clear`); al final apaga y enciende la opción. Necesita `--saves` con una carpeta vacía (o una copia de una
-  partida con Agumon y `--load`). Se corre en los dos idiomas.
+  partida con Agumon y `--load`). Se corre en los dos idiomas, con el aspecto original: el gráfico es una página suya y
+  con `--ui-skin modern` la ruta falla en su primer paso.
 - `route-status-extras.yaml`: los [extras de la ficha](../modulos/apps/screens.md#extras-de-la-ficha) del
   compañero desde una partida nueva con el teclado: dos entrenamientos (cansancio) y el reloj rápido hasta un error de
   cuidado, la ficha con la opción encendida a 1280x720 y 1920x1080, la opción apagada desde el menú de pausa y la ficha
