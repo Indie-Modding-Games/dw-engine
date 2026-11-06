@@ -380,6 +380,14 @@ mod tests {
             Some("top:story/patches/top_900".to_owned())
         );
         assert_eq!(loaded.patches[0].0.pack, "mine");
+        // A draft for a pack that is not mounted runs on top.
+        let shown = patches.with_draft(&vfs, "elsewhere", &draft.file);
+        let loaded = LoadedScript::load(&vfs, &shown, 900);
+        assert_eq!(loaded.patches.last().unwrap().0.pack, "elsewhere");
+        assert_eq!(
+            loaded.patched_by(0x51),
+            Some("elsewhere:story/patches/elsewhere_900".to_owned())
+        );
         // An empty draft leaves the stack as it was.
         let empty = StoryFile::new_patch(900, "x");
         assert_eq!(patches.with_draft(&vfs, "mine", &empty).patches.len(), 1);

@@ -2,7 +2,7 @@
 //! (an `if`'s arms and `else`, a loop's or a `do`'s body), and the functions here change the
 //! statement there. The editor records the file before and after as one undo step.
 
-use crate::ast::{Block, Expr, Stmt, StmtKind};
+use crate::ast::{BinOp, Block, Expr, Stmt, StmtKind};
 use crate::commands::Command;
 
 /// A statement inside a block: the blocks to go into (statement, child block) and its position.
@@ -205,12 +205,74 @@ pub fn end_script() -> Stmt {
     Stmt::with_comment(StmtKind::Return(vec![Expr::name("ENDED")]), "end_section")
 }
 
+/// A condition the editor's quick fields change: a trigger on or off, or a variable compared
+/// with a number.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SimpleCondition {
+    Trigger { number: i64, on: bool },
+    Var { number: i64, op: BinOp, value: i64 },
+}
+
+impl SimpleCondition {
+    /// The condition an expression is, when it is that simple.
+    pub fn of(expr: &Expr) -> Option<Self> {
+        let number_of = |expr: &Expr, read: &str| match expr.story_call_name() {
+            Some((name, [number])) if name == read => number.as_number(),
+            _ => None,
+        };
+        match expr.unparen() {
+            Expr::Not(inner) => number_of(inner.unparen(), "trigger")
+                .map(|number| Self::Trigger { number, on: false }),
+            Expr::Binary(op, left, right) if op.is_comparison() => Some(Self::Var {
+                number: number_of(left.unparen(), "var")?,
+                op: *op,
+                value: right.as_number()?,
+            }),
+            other => number_of(other, "trigger").map(|number| Self::Trigger { number, on: true }),
+        }
+    }
+
+    pub fn expr(self) -> Expr {
+        match self {
+            Self::Trigger { number, on } => {
+                let read = Expr::story_call("trigger", vec![Expr::Number(number)]);
+                if on { read } else { Expr::Not(Box::new(read)) }
+            }
+            Self::Var { number, op, value } => Expr::Binary(
+                op,
+                Box::new(Expr::story_call("var", vec![Expr::Number(number)])),
+                Box::new(Expr::Number(value)),
+            ),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::commands::command;
     use crate::parse::parse_chunk;
     use crate::write::block_text;
+
+    #[test]
+    fn simple_conditions_read_and_write_back() {
+        use crate::parse::parse_expr;
+        use crate::write::expr_text;
+        for code in [
+            "story.trigger(12)",
+            "not story.trigger(12)",
+            "story.var(3) >= 2",
+        ] {
+            let condition = SimpleCondition::of(&parse_expr(code).unwrap()).unwrap();
+            assert_eq!(expr_text(&condition.expr()), code);
+        }
+        let other = parse_expr("story.trigger(1) and story.trigger(2)").unwrap();
+        assert_eq!(SimpleCondition::of(&other), None);
+        assert_eq!(
+            SimpleCondition::of(&parse_expr("story.items(3) > 0").unwrap()),
+            None
+        );
+    }
 
     #[test]
     fn edits_by_path() {

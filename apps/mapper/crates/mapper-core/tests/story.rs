@@ -434,3 +434,16 @@ fn moves_between_maps_and_reverts() {
     assert!(!mapper.is_dirty());
     assert_eq!(mapper.map.as_ref().unwrap().document.npcs.len(), 1);
 }
+
+#[test]
+fn edits_show_before_a_target_is_chosen() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut mapper = opened(dir.path());
+    mapper.apply(Action::OpenSection {
+        script: 1,
+        section: 0x33,
+    });
+    mapper.apply(Action::EditStory(StoryEdit::Remove(StmtPath::top(0))));
+    assert!(!code(&mapper).contains("story.trigger(12)"));
+    assert_eq!(mapper.open_origin(), Some("mapper (sin guardar)".into()));
+}

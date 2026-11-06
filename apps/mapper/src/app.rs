@@ -27,6 +27,8 @@ pub struct MapperApp {
     pub revealed_map: Option<String>,
     /// The map of the command line, opened on the first frame, once the canvas has its size.
     pending_map: Option<(String, Option<i32>)>,
+    /// The section of the command line, opened with the map.
+    pending_section: Option<(u16, u16)>,
     /// Whether the primary button went down on the canvas and is still held.
     pub pointer_held: bool,
     /// The saves the live link has seen (to reload the game after each new one).
@@ -38,6 +40,22 @@ pub struct MapperApp {
     pub target_filter: String,
     /// Where the canvas's menu was opened.
     pub context_point: Option<crate::canvas::ContextPoint>,
+    /// Ctrl+F asked for the map browser's filter to take the keyboard.
+    pub focus_filter: bool,
+    /// The text that narrows the events panel.
+    pub events_filter: String,
+    /// The last event the cursor was over on the canvas (script, section, kind), for the hover
+    /// panel's button.
+    pub last_event: Option<(u16, u16, dwe_story::EventKind)>,
+    /// What the section editor keeps between frames.
+    pub section_ui: crate::section::SectionUi,
+    /// "Probar evento": the question, the test running and what it changed.
+    pub probe: crate::probe::Probe,
+    /// Archivo → Revertir asks first when the map has unsaved changes.
+    pub confirm_revert: bool,
+    pub show_settings: bool,
+    /// The dwx path as typed in the settings.
+    pub dwx_text: String,
 }
 
 impl MapperApp {
@@ -77,17 +95,38 @@ impl MapperApp {
             shot: options.shot.clone().map(Shot::new),
             revealed_map: None,
             pending_map: options.map.map(|map| (map, options.exit)),
+            pending_section: options.section,
             pointer_held: false,
             seen_saves: 0,
             new_pack: None,
             show_shortcuts: false,
             target_filter: String::new(),
             context_point: None,
+            focus_filter: false,
+            events_filter: String::new(),
+            last_event: None,
+            section_ui: crate::section::SectionUi::default(),
+            probe: crate::probe::Probe::default(),
+            confirm_revert: false,
+            show_settings: false,
+            dwx_text: String::new(),
         }
     }
 
     pub fn apply(&mut self, action: Action) {
         self.mapper.apply(action);
+    }
+
+    /// Opens the settings with the fields as the settings have them.
+    pub fn open_settings(&mut self) {
+        self.dwx_text = self
+            .mapper
+            .settings
+            .dwx
+            .as_ref()
+            .map(|path| path.display().to_string())
+            .unwrap_or_default();
+        self.show_settings = true;
     }
 
     /// Loads the background again when the map or its variant changed.
@@ -169,11 +208,17 @@ impl eframe::App for MapperApp {
                         Some(exit) => self.apply(Action::OpenMapAtExit { map, exit }),
                         None => self.apply(Action::OpenMap(map)),
                     }
+                    if let Some((script, section)) = self.pending_section.take() {
+                        self.apply(Action::OpenSection { script, section });
+                    }
                 }
                 self.refresh_background(&ctx);
                 crate::canvas::show(self, ui);
             });
         crate::dialogs::show(self, &ctx);
+        crate::section::show(self, &ctx);
+        crate::probe::show(self, &ctx);
+        crate::probe::tick(self);
         self.reload_after_save();
         self.handle_close(&ctx);
         if let Some(shot) = &mut self.shot {

@@ -1,8 +1,9 @@
-//! The windows over the editor: the unsaved-changes question, the new mod pack, the shortcuts
-//! help, and the panel with what a save found.
+//! The windows over the editor: the unsaved-changes question, the revert question, the new mod
+//! pack, the settings, the shortcuts help, and the panel with what a save found.
 
 use std::path::PathBuf;
 
+use dwe_story::StoryProblem;
 use eframe::egui;
 use mapper_core::{Action, PendingChoice, text};
 
@@ -34,8 +35,94 @@ impl NewPack {
 
 pub fn show(app: &mut MapperApp, ctx: &egui::Context) {
     unsaved(app, ctx);
+    revert(app, ctx);
     new_pack(app, ctx);
+    settings(app, ctx);
     shortcuts(app, ctx);
+}
+
+/// Archivo → Revertir with unsaved changes: asks before dropping them.
+fn revert(app: &mut MapperApp, ctx: &egui::Context) {
+    if !app.confirm_revert {
+        return;
+    }
+    let mut choice = None;
+    let modal = egui::Modal::new(egui::Id::unique("revert")).show(ctx, |ui| {
+        ui.heading(text::REVERT);
+        ui.label(text::REVERT_QUESTION);
+        ui.horizontal(|ui| {
+            if ui.button(text::REVERT).clicked() {
+                choice = Some(true);
+            }
+            if ui.button(text::UNSAVED_CANCEL).clicked() {
+                choice = Some(false);
+            }
+        });
+    });
+    if modal.should_close() && choice.is_none() {
+        choice = Some(false);
+    }
+    if let Some(revert) = choice {
+        app.confirm_revert = false;
+        if revert {
+            app.apply(Action::Revert);
+        }
+    }
+}
+
+/// The settings: the dwx program that makes `field/script_warps` again after a save.
+fn settings(app: &mut MapperApp, ctx: &egui::Context) {
+    let mut open = app.show_settings;
+    let mut action = None;
+    egui::Window::new(text::SETTINGS_TITLE)
+        .open(&mut open)
+        .collapsible(false)
+        .resizable(false)
+        .default_width(520.0)
+        .show(ctx, |ui| {
+            ui.label(text::DWX_PATH);
+            ui.horizontal(|ui| {
+                let response = ui.add(
+                    egui::TextEdit::singleline(&mut app.dwx_text)
+                        .hint_text(text::DWX_PATH_HINT)
+                        .desired_width(320.0),
+                );
+                if response.lost_focus() {
+                    action = Some(dwx_action(&app.dwx_text));
+                }
+                if ui.button(text::PICK_FOLDER).clicked()
+                    && let Some(file) = rfd::FileDialog::new().pick_file()
+                {
+                    app.dwx_text = file.display().to_string();
+                    action = Some(dwx_action(&app.dwx_text));
+                }
+                if ui.button(text::DWX_CLEAR).clicked() {
+                    app.dwx_text.clear();
+                    action = Some(Action::SetDwxPath(None));
+                }
+            });
+            ui.add_space(4.0);
+            ui.add(egui::Label::new(egui::RichText::new(text::DWX_HELP).weak()).wrap());
+            let target = app.mapper.current_target().map_or_else(
+                || PathBuf::from(text::PACK_PLACEHOLDER),
+                |target| target.root,
+            );
+            if let Some(command) = app.mapper.script_warps_command(&target) {
+                ui.add(egui::Label::new(egui::RichText::new(command.join(" ")).monospace()).wrap());
+            }
+        });
+    if let Some(action) = action
+        && Some(&action) != Some(&Action::SetDwxPath(app.mapper.settings.dwx.clone()))
+    {
+        app.apply(action);
+    }
+    app.show_settings = open;
+}
+
+/// The dwx path as typed, as the action that sets it (empty: none).
+fn dwx_action(typed: &str) -> Action {
+    let typed = typed.trim();
+    Action::SetDwxPath((!typed.is_empty()).then(|| PathBuf::from(typed)))
 }
 
 /// Asks what to do with the changes before an action that would lose them.
@@ -144,7 +231,10 @@ fn shortcuts(app: &mut MapperApp, ctx: &egui::Context) {
 
 /// What the last save found (errors stop it; warnings do not).
 pub fn problems(app: &mut MapperApp, ui: &mut egui::Ui) {
-    if app.mapper.save_problems.is_empty() && app.live.problems.is_empty() {
+    if app.mapper.save_problems.is_empty()
+        && app.mapper.story_problems.is_empty()
+        && app.live.problems.is_empty()
+    {
         return;
     }
     egui::Panel::bottom("problems").show(ui, |ui| {
@@ -156,6 +246,19 @@ pub fn problems(app: &mut MapperApp, ui: &mut egui::Ui) {
                     ui.colored_label(egui::Color32::LIGHT_RED, line);
                 } else {
                     ui.colored_label(egui::Color32::YELLOW, line);
+                }
+            }
+        }
+        if !app.mapper.story_problems.is_empty() {
+            ui.strong(text::STORY_PROBLEMS);
+            for problem in &app.mapper.story_problems {
+                match problem {
+                    StoryProblem::Error(line) => {
+                        ui.colored_label(egui::Color32::LIGHT_RED, line);
+                    }
+                    StoryProblem::Warning(line) => {
+                        ui.colored_label(egui::Color32::YELLOW, line);
+                    }
                 }
             }
         }

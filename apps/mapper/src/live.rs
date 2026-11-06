@@ -43,6 +43,8 @@ pub struct LivePanel {
     sync: PreviewSync,
     next_preview: Instant,
     pub story: Option<StoryState>,
+    /// How many story reads have come back, so a test can wait for the next one.
+    pub story_reads: u64,
     /// The story is read again every second.
     pub story_follow: bool,
     pub story_filter: String,
@@ -72,6 +74,7 @@ impl Default for LivePanel {
             sync: PreviewSync::default(),
             next_preview: Instant::now(),
             story: None,
+            story_reads: 0,
             story_follow: false,
             story_filter: String::new(),
             story_trigger: 0,
@@ -196,7 +199,10 @@ impl LivePanel {
                 self.view = Some(*view);
                 self.round_trip = round_trip;
             }
-            Event::Story(story) => self.story = Some(*story),
+            Event::Story(story) => {
+                self.story = Some(*story);
+                self.story_reads += 1;
+            }
             Event::Log(entries) => {
                 self.log.extend(entries);
                 while self.log.len() > MOST_LOG_LINES {

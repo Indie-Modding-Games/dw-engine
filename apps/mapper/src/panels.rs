@@ -1,5 +1,5 @@
-//! The panels around the canvas: the menus and layer bar, the map browser, the inspector and
-//! details of the map shown, the live link and the status bar.
+//! The panels around the canvas: the menus and layer bar, the map browser, the inspector, the
+//! events and details of the map shown, the live link and the status bar.
 
 use dwe_map::CellKind;
 use dwe_map::save::SaveMode;
@@ -55,6 +55,22 @@ pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
                     ui.close();
                     app.apply(Action::Save(SaveMode::WholeData));
                 }
+                if ui
+                    .add_enabled(has_map, egui::Button::new(text::REVERT))
+                    .clicked()
+                {
+                    ui.close();
+                    if app.mapper.is_dirty() {
+                        app.confirm_revert = true;
+                    } else {
+                        app.apply(Action::Revert);
+                    }
+                }
+                ui.separator();
+                if ui.button(text::SETTINGS).clicked() {
+                    ui.close();
+                    app.open_settings();
+                }
                 ui.separator();
                 if ui.button(text::QUIT).clicked() {
                     ui.close();
@@ -91,7 +107,7 @@ pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
                 app.apply(Action::FitView);
             }
             ui.separator();
-            ui.label(text::LAYERS);
+            ui.label(text::LAYERS).on_hover_text(text::LAYER_KEYS_HINT);
             for layer in Layer::ALL {
                 let mut shown = app.mapper.layers.shows(layer);
                 if ui.checkbox(&mut shown, layer.label()).changed() {
@@ -228,10 +244,12 @@ pub fn browser(app: &mut MapperApp, ui: &mut egui::Ui) {
         .show(ui, |ui| {
             ui.heading(text::MAPS);
             let mut filter = app.mapper.filter.clone();
-            if ui
-                .add(egui::TextEdit::singleline(&mut filter).hint_text(text::FILTER_HINT))
-                .changed()
-            {
+            let response =
+                ui.add(egui::TextEdit::singleline(&mut filter).hint_text(text::FILTER_HINT));
+            if std::mem::take(&mut app.focus_filter) {
+                response.request_focus();
+            }
+            if response.changed() {
                 app.apply(Action::SetFilter(filter));
             }
             ui.horizontal(|ui| {
@@ -294,6 +312,8 @@ pub fn details(app: &mut MapperApp, ui: &mut egui::Ui) {
         .show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 crate::inspector::show(app, ui);
+                ui.separator();
+                crate::events::panel(app, ui);
                 ui.separator();
                 map_details(app, ui);
                 ui.separator();
@@ -369,8 +389,9 @@ fn map_details(app: &mut MapperApp, ui: &mut egui::Ui) {
     }
 }
 
-fn hover_details(app: &MapperApp, ui: &mut egui::Ui) {
+fn hover_details(app: &mut MapperApp, ui: &mut egui::Ui) {
     ui.strong(text::HOVER);
+    last_event(app, ui);
     let Some(hover) = app.mapper.hover else {
         ui.weak("—");
         return;
@@ -395,6 +416,36 @@ fn hover_details(app: &MapperApp, ui: &mut egui::Ui) {
         ui.monospace(format!("{:.0}, {:.0}", original.x, original.z));
         ui.end_row();
     });
+}
+
+/// The event of the last trigger cell under the cursor (it stays while the cursor goes to the
+/// button), with a button that opens its section.
+fn last_event(app: &mut MapperApp, ui: &mut egui::Ui) {
+    let Some((script, section, kind)) = app.last_event else {
+        return;
+    };
+    let still_there = app
+        .mapper
+        .events()
+        .iter()
+        .any(|event| (event.script, event.section, event.kind) == (script, section, kind));
+    if !still_there {
+        return;
+    }
+    let mut open = false;
+    ui.horizontal_wrapped(|ui| {
+        ui.label(format!(
+            "{}: {} · {}",
+            text::HOVER_EVENT,
+            text::event_kind(kind),
+            text::section_name(script, section)
+        ))
+        .on_hover_text(text::LAST_EVENT_HINT);
+        open = ui.button(text::OPEN_SECTION).clicked();
+    });
+    if open {
+        app.apply(Action::OpenSection { script, section });
+    }
 }
 
 fn live_details(app: &mut MapperApp, ui: &mut egui::Ui) {
@@ -459,6 +510,7 @@ fn live_details(app: &mut MapperApp, ui: &mut egui::Ui) {
     }
     ui.weak(live.summary());
     story_panel(app, ui);
+    crate::probe::diff_lines(app, ui);
     log_panel(app, ui);
     if reload_toggled {
         app.apply(Action::SetReloadOnSave(reload_on_save));

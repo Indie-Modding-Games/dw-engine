@@ -14,9 +14,11 @@ Usage: dwe-mapper [options]
   --mods <dir>         a mods folder or a single pack (repeatable); their map patches apply
   --map <id>           the map to show first
   --exit <n>           with --map: centre on where the player arrives through that exit
+  --section <s>:<n>    with --map: opens section n (0x.. or decimal) of script s in the
+                       section editor
   --variant <name>     the background: day, dusk, night...
   --layers <list>      the layers shown, by comma: walls,triggers,exits,npcs,waypoints,doors,
-                       toilet,grid,live (default: all but grid)
+                       toilet,grid,live,events (default: all but grid)
   --group-by <kind>    the map list's groups: name or prefix
   --filter <text>      filters the map list
   --live <endpoint>    connects to a running dwe-game: unix:<socket> or tcp:<port>
@@ -31,6 +33,8 @@ pub struct Options {
     pub mods: Vec<PathBuf>,
     pub map: Option<String>,
     pub exit: Option<i32>,
+    /// A section to open in the section editor: (script, section).
+    pub section: Option<(u16, u16)>,
     pub variant: Option<String>,
     pub layers: Option<Vec<Layer>>,
     pub group_by: Option<GroupBy>,
@@ -49,6 +53,7 @@ impl Default for Options {
             mods: Vec::new(),
             map: None,
             exit: None,
+            section: None,
             variant: None,
             layers: None,
             group_by: None,
@@ -86,6 +91,13 @@ impl Options {
                         text.parse()
                             .map_err(|_| format!("--exit {text} is not a number"))?,
                     );
+                }
+                "--section" => {
+                    let text = value()?;
+                    options.section =
+                        Some(parse_section(&text).ok_or_else(|| {
+                            format!("--section {text} is not <script>:<section>")
+                        })?);
                 }
                 "--variant" => options.variant = Some(value()?),
                 "--layers" => {
@@ -140,6 +152,16 @@ impl Options {
     }
 }
 
+/// `<script>:<section>`, each in decimal or `0x` hex.
+fn parse_section(text: &str) -> Option<(u16, u16)> {
+    let number = |text: &str| match text.strip_prefix("0x") {
+        Some(hex) => u16::from_str_radix(hex, 16).ok(),
+        None => text.parse().ok(),
+    };
+    let (script, section) = text.split_once(':')?;
+    Some((number(script)?, number(section)?))
+}
+
 /// The source tree's `content/packs`, looked for upwards from the working folder and from the
 /// program's own folder, as the game finds the team's packs when it runs from a build.
 pub fn find_team_packs(content: &Path) -> Option<PathBuf> {
@@ -169,13 +191,15 @@ mod tests {
     #[test]
     fn reads_every_option() {
         let options = parse(
-            "--content c --mods m1 --mods m2 --map area_a --exit 2 --variant night \
+            "--content c --mods m1 --mods m2 --map area_a --exit 2 --section 12:0x33 --variant night \
              --layers walls,exits --group-by prefix --filter ar --live tcp:7000 --size 800x600 --shot s.png",
         )
         .unwrap();
         assert_eq!(options.content, Some(PathBuf::from("c")));
         assert_eq!(options.mods.len(), 2);
         assert_eq!(options.exit, Some(2));
+        assert_eq!(options.section, Some((12, 0x33)));
+        assert!(parse("--section 12").is_err());
         assert_eq!(options.layers, Some(vec![Layer::Walls, Layer::Exits]));
         assert_eq!(options.group_by, Some(GroupBy::Prefix));
         assert_eq!(options.size, [800.0, 600.0]);

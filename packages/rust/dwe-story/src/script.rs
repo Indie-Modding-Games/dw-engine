@@ -81,7 +81,7 @@ impl StoryPatches {
 
     /// The patches with a pack's patch of a script as edited: in place of the pack's own (its
     /// first by id, the one the editor writes), or at the pack's place in the stack when it has
-    /// none. An empty draft takes the pack's patch out.
+    /// none (on top when the pack is not mounted). An empty draft takes the pack's patch out.
     pub fn with_draft(&self, vfs: &Vfs, pack: &str, file: &StoryFile) -> Self {
         let mut patches = self.clone();
         let own = patches
@@ -100,22 +100,26 @@ impl StoryPatches {
             None if file.sections.is_empty() => {}
             None => {
                 let position = |id: &str| vfs.packs().iter().position(|p| p.id() == id);
-                let Some(place) = position(pack) else {
-                    return patches;
-                };
-                let mounted = &vfs.packs()[place];
                 let id = crate::save::new_patch_id(pack, file.script);
+                // A pack that is not mounted (no target chosen yet) goes on top of the stack.
+                let place = position(pack);
+                let root = place
+                    .map(|place| vfs.packs()[place].root.clone())
+                    .unwrap_or_default();
                 let source = StoryFileSource {
                     pack: pack.to_owned(),
-                    pack_root: mounted.root.clone(),
+                    pack_root: root.clone(),
                     id: AssetId::parse(&id).expect("a valid id"),
-                    file: mounted.root.join(format!("{id}.lua")),
+                    file: root.join(format!("{id}.lua")),
                 };
-                let at = patches
-                    .patches
-                    .iter()
-                    .rposition(|(known, _)| position(&known.pack).is_some_and(|p| p <= place))
-                    .map_or(0, |index| index + 1);
+                let at = match place {
+                    Some(place) => patches
+                        .patches
+                        .iter()
+                        .rposition(|(known, _)| position(&known.pack).is_some_and(|p| p <= place))
+                        .map_or(0, |index| index + 1),
+                    None => patches.patches.len(),
+                };
                 patches.patches.insert(at, entry(source));
             }
         }

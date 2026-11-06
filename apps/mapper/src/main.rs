@@ -1,15 +1,20 @@
 //! dwe-mapper: the map editor of dwe (docs/modulos/apps/mapper.md). It shows the field maps of a
 //! content folder (background, collision, exits, characters, doors and toilet), edits their
-//! collision, exits and NPCs, and saves the changes as patches into a mod pack.
+//! collision, exits, NPCs, doors, toilet and story sections, and saves the changes as patches
+//! into a mod pack.
 
 mod app;
 mod canvas;
 mod dialogs;
+mod events;
 mod inspector;
 mod keys;
 mod live;
 mod options;
 mod panels;
+mod places;
+mod probe;
+mod section;
 mod shot;
 mod toolbar;
 

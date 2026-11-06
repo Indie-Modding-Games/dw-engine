@@ -1,5 +1,6 @@
-//! The inspector: the fields of what is selected (an exit or an NPC with its path), and the
-//! sections the editor only shows (camera, lights, objects). A field dragged is one undo step.
+//! The inspector: the fields of what is selected (an exit, an NPC with its path, a door or the
+//! toilet, see [`crate::places`]), the buttons that add to the map, and the sections the editor
+//! only shows (camera, lights, objects). A field dragged is one undo step.
 
 use dwe_map::document::RawVec3;
 use dwe_map::{Npc, Warp};
@@ -18,6 +19,8 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
     ui.heading(text::INSPECTOR);
     match app.mapper.selection {
         Some(Selection::Exit(exit)) => exit_fields(app, ui, exit, &mut actions),
+        Some(Selection::Door(slot)) => crate::places::door_fields(app, ui, slot, &mut actions),
+        Some(Selection::Toilet(_)) => crate::places::toilet_fields(app, ui, &mut actions),
         Some(selection) => {
             if let Some(slot) = selection.npc_slot() {
                 npc_fields(app, ui, slot, &mut actions);
@@ -27,6 +30,7 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
             ui.weak(text::NOTHING_SELECTED);
         }
     }
+    crate::places::add_buttons(app, ui, &mut actions);
     read_only(app, ui);
     for action in actions {
         app.apply(action);
@@ -34,7 +38,7 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
 }
 
 /// Wraps a field's response: a drag starts and ends one undo step.
-fn grouped(response: &egui::Response, actions: &mut Vec<Action>) {
+pub fn grouped(response: &egui::Response, actions: &mut Vec<Action>) {
     if response.drag_started() {
         actions.push(Action::BeginEdit);
     }
@@ -44,13 +48,13 @@ fn grouped(response: &egui::Response, actions: &mut Vec<Action>) {
 }
 
 /// A number field; true when it changed.
-fn number(ui: &mut egui::Ui, value: &mut i32, actions: &mut Vec<Action>) -> bool {
+pub fn number(ui: &mut egui::Ui, value: &mut i32, actions: &mut Vec<Action>) -> bool {
     let response = ui.add(egui::DragValue::new(value));
     grouped(&response, actions);
     response.changed()
 }
 
-fn vector(ui: &mut egui::Ui, value: &mut RawVec3, actions: &mut Vec<Action>) -> bool {
+pub fn vector(ui: &mut egui::Ui, value: &mut RawVec3, actions: &mut Vec<Action>) -> bool {
     let mut changed = false;
     ui.horizontal(|ui| {
         changed |= number(ui, &mut value.x, actions);
@@ -253,6 +257,14 @@ fn npc_fields(app: &MapperApp, ui: &mut egui::Ui, slot: usize, actions: &mut Vec
         });
     }
     path_fields(app, ui, slot, npc, actions);
+    let last = slot + 1 == map.document.npcs.len();
+    if ui
+        .add_enabled(last, egui::Button::new(text::REMOVE_NPC))
+        .on_disabled_hover_text(text::REMOVE_NPC_HINT)
+        .clicked()
+    {
+        actions.push(Action::RemoveNpc);
+    }
 }
 
 /// The NPC's path: each part's kind and point (or frames, for a wait), in order.

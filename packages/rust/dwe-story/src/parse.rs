@@ -29,6 +29,20 @@ pub fn parse_block(code: &str) -> Result<Block> {
     parse_chunk(code)
 }
 
+/// Parses one expression on its own (a condition or an operand typed in the editor).
+pub fn parse_expr(code: &str) -> Result<Expr> {
+    let block = parse_chunk(&format!("return {code}"))?;
+    match block.as_slice() {
+        [
+            Stmt {
+                kind: StmtKind::Return(values),
+                ..
+            },
+        ] if values.len() == 1 => Ok(values[0].clone()),
+        _ => Err(Error::Invalid("not one expression".to_owned())),
+    }
+}
+
 struct Parser {
     tokens: Vec<Token>,
     comments: Vec<Comment>,
@@ -470,6 +484,17 @@ fn is_keyword(name: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reads_one_expression() {
+        let condition = parse_expr("not story.trigger(3) and story.var(2) >= 1").unwrap();
+        assert!(matches!(condition, Expr::Binary(BinOp::And, ..)));
+        assert!(parse_expr("1, 2").is_err());
+        assert!(matches!(
+            parse_expr("story.var(2) >="),
+            Err(Error::Syntax { line: 1, .. })
+        ));
+    }
 
     #[test]
     fn reads_statements_with_their_comments() {
