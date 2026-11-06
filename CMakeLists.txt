@@ -83,6 +83,5 @@ if(BUILD_TESTING)
     set_property(TEST ${repo_tests} APPEND PROPERTY LABELS repo)
 endif()
 
-add_subdirectory(third_party)
 add_subdirectory(packages)
 add_subdirectory(apps)

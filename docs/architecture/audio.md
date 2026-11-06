@@ -486,7 +486,7 @@ el zumbido 11 llega con los menús de diálogo y tienda que lo tocan.
    (`tooling/vcpkg-ports/tinysoundfont`, `VCPKG_OVERLAY_PORTS` en los presets), fijado a un commit con su SHA‑512 y su
    licencia instalada. Sigue la regla de que las dependencias vienen de vcpkg; cuesta un port pequeño y que la caché
    binaria lo construya una vez.
-2. TinySoundFont copiado en `third_party/tinysoundfont/` con su `LICENSE`. Lo más simple, pero es la primera
+2. TinySoundFont copiado en `packages/vendor/tinysoundfont/` con su `LICENSE`. Lo más simple, pero es la primera
    dependencia copiada a mano en el repositorio.
 3. Un sampler SF2 propio (~700 líneas) que solo entiende los generadores que escribe `dwx` (rango de teclas, raíz,
    afinación, atenuación, panorama, bucle, envolvente). Sin dependencia, pero un SF2 de un mod o de un remaster con

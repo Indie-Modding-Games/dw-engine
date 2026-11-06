@@ -34,8 +34,9 @@ KEYWORDS = {"LAYER", "SOURCES", "DEPS", "PUBLIC_LIBS", "PRIVATE_LIBS", "TEST_LIB
 MODULE_REFERENCE = re.compile(r"\bdwe::(\w+)")
 COMMENT = re.compile(r"#[^\n]*")
 FOLDER_REFERENCE = re.compile(r"\b((?:packages|apps)/[\w./-]+)")
-# A change here may affect every package: the build, the toolchain, the shared tests and the content they read.
-GLOBAL_INPUTS = ("CMakeLists.txt", "CMakePresets.json", "vcpkg.json", ".devcontainer/", "tooling/", "third_party/",
+# A change here may affect every package: the build, the toolchain, the vendored libraries, the shared tests and the
+# content they read.
+GLOBAL_INPUTS = ("CMakeLists.txt", "CMakePresets.json", "vcpkg.json", ".devcontainer/", "tooling/", "packages/vendor/",
                  "tests/", "content/", "packages/CMakeLists.txt", "packages/engine/CMakeLists.txt",
                  "packages/game/CMakeLists.txt", "apps/CMakeLists.txt")
 DOCUMENTATION = ("docs/",)

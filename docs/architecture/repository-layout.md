@@ -46,8 +46,9 @@ dw-engine/
 │  ├─ session/              la partida: junta los sistemas de packages/game/, sin ventana
 │  ├─ screens/              modelos de vista de las pantallas
 │  ├─ content/              cómo montan los paquetes el juego y dwe-sim
-│  └─ formats/              lectores de los formatos del disco original: imágenes, modelos, mapas, audio, vídeo,
-│                           scripts (solo los usa dwx)
+│  ├─ formats/              lectores de los formatos del disco original: imágenes, modelos, mapas, audio, vídeo,
+│  │                        scripts (solo los usa dwx)
+│  └─ vendor/               envoltorios de build de librerías externas que vienen de vcpkg (cgltf), no código propio
 ├─ tooling/                 configuración de build común
 │  ├─ cmake/                funciones propias: dwe_add_module, dwe_add_shaders, warnings, sanitizers
 │  │  └─ toolchains/        compilador y biblioteca estándar de cada plataforma
@@ -67,7 +68,6 @@ dw-engine/
 │                           packages.py (los paquetes y lo que afecta un cambio), gate.sh, training-check.sh,
 │                           launcher.sh, el empaquetado (package_*.sh, package/) y la publicación (ci/,
 │                           release_local.sh)
-├─ third_party/             solo parches o lo que no esté en vcpkg
 ├─ .devcontainer/           imágenes Docker de desarrollo: Clang, libc++, CMake, vcpkg, Node y VitePress (ADR 0015);
 │                           la del lanzador y la de Wine
 ├─ .github/
@@ -88,6 +88,8 @@ está en `.gitignore` (ver [política legal](../legal/assets.md)).
 
 Los paquetes de `packages/` no pueden depender de nada de `apps/`, el motor solo usa el motor y `packages/game/` solo
 tiene módulos de la capa de juego. CMake lo comprueba al configurar ([reglas de dependencias](dependency-rules.md#reglas-de-carpeta)).
+`packages/vendor/` queda fuera de esas reglas: no tiene módulos, solo envoltorios de build para librerías externas
+que instala vcpkg sin un paquete de CMake.
 
 ## Forma de un paquete
 

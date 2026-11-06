@@ -28,6 +28,8 @@ La carpeta de un módulo también limita lo que puede usar ([estructura del repo
 - **`packages/game/` es la capa de juego.** Todos sus módulos se declaran con `LAYER game`.
 - **Ningún paquete depende de `apps/`.** Lo que está en `packages/` no puede usar un módulo declarado en `apps/`;
   las apps sí usan los paquetes. Si dos apps necesitan el mismo código, ese código es un paquete.
+- **`packages/vendor/` no es una capa.** Solo tiene envoltorios de build de librerías externas (la librería
+  `dwe_cgltf`); cualquier módulo puede enlazarlas como enlaza una librería de vcpkg, sin estas reglas.
 
 ## Qué puede usar cada capa
 

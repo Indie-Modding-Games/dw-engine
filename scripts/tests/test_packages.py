@@ -23,6 +23,7 @@ TREE = {
     "apps/game/CMakeLists.txt": "dwe_add_app(game LAYER apps SOURCES src/main.cpp DEPS session)\n"
                                 "target_link_libraries(dwe_game_tests PRIVATE dwe::assets dwe_test_main)\n",
     "packages/CMakeLists.txt": "add_subdirectory(engine)\n",
+    "packages/vendor/cgltf/CMakeLists.txt": "add_library(dwe_cgltf STATIC cgltf.cpp)\n",
     "apps/launcher/package.json": "{}\n",
 }
 
@@ -67,6 +68,7 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(packages.affected_by(self.packages, ["docs/index.md", "packages/session/README.md"]), set())
         self.assertEqual(packages.affected_by(self.packages, ["tooling/cmake/DweModule.cmake"]), set(self.packages))
         self.assertEqual(packages.affected_by(self.packages, ["packages/CMakeLists.txt"]), set(self.packages))
+        self.assertEqual(packages.affected_by(self.packages, ["packages/vendor/cgltf/cgltf.cpp"]), set(self.packages))
 
 
 class RepositoryTests(unittest.TestCase):
