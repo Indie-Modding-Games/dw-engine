@@ -1,6 +1,7 @@
 //! Starting the game: dwe-game --content <data>/content from the game's folder (it finds its
-//! team packs next to bin/), with its output in <data>/logs/game.log so a failed start can show
-//! what the game said.
+//! team packs next to bin/), plus --mods with the player's own images while they are on
+//! (custom_images.rs), with its output in <data>/logs/game.log so a failed start can show what the
+//! game said.
 
 use std::ffi::OsString;
 use std::fs::{self, File};
@@ -8,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 
 use crate::content::content_folder;
+use crate::custom_images::CustomImages;
 use crate::failure::{code, Failure, Result};
 use crate::log::logs_folder;
 use crate::store::Game;
@@ -24,6 +26,9 @@ pub fn command(game: &Game, data: &Path, own_data_folder: bool) -> Command {
     command.arg("--content").arg(content_folder(data));
     if !own_data_folder {
         command.arg("--saves").arg(data.join("saves")).arg("--reports").arg(data.join("reports"));
+    }
+    if let Some(pack) = CustomImages::new(data).active_pack() {
+        command.arg("--mods").arg(pack);
     }
     command.current_dir(&game.dir);
     command
@@ -81,6 +86,23 @@ mod tests {
         assert_eq!(args, ["--content".into(), at("content"), "--saves".into(), at("saves"), "--reports".into(), at("reports")]);
         let program = own.get_program().to_string_lossy().into_owned();
         assert!(program.ends_with(&format!("dwe-game{}", std::env::consts::EXE_SUFFIX)));
+    }
+
+    #[test]
+    fn the_players_images_are_mounted_while_they_are_on() {
+        let game = Game { dir: "/g".into(), version: "1.0.0".into(), commit: String::new(), extractor_version: None };
+        let data = tempfile::tempdir().unwrap();
+        let images = CustomImages::new(data.path());
+        let args = || -> Vec<String> {
+            command(&game, data.path(), true).get_args().map(|a| a.to_string_lossy().into_owned()).collect()
+        };
+        assert_eq!(args().len(), 2, "no pack, no --mods");
+        let image = images.pack().join("map/mayo01/background_day.png");
+        fs::create_dir_all(image.parent().unwrap()).unwrap();
+        fs::write(&image, b"png").unwrap();
+        assert_eq!(args()[2..], ["--mods".to_string(), images.pack().to_string_lossy().into_owned()]);
+        images.set_enabled(false).unwrap();
+        assert_eq!(args().len(), 2, "turned off");
     }
 
     #[test]

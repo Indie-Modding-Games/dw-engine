@@ -7,6 +7,7 @@ pub mod addons;
 pub mod auto_update;
 pub mod beta_key;
 pub mod content;
+pub mod custom_images;
 pub mod disc;
 pub mod failure;
 pub mod launch;
@@ -22,6 +23,7 @@ pub mod verify;
 
 mod addon_commands;
 mod commands;
+mod image_commands;
 
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -179,6 +181,16 @@ pub fn run() {
             addon_commands::addons_safe_mode,
             addon_commands::addons_dismiss_crash,
             addon_commands::addon_call,
+            image_commands::images_overview,
+            image_commands::images_prepare,
+            image_commands::images_inspect,
+            image_commands::images_apply,
+            image_commands::images_assign,
+            image_commands::images_reset,
+            image_commands::images_thumbnail,
+            image_commands::images_set_enabled,
+            image_commands::images_remove_all,
+            image_commands::images_export,
         ])
         .setup(|app| {
             log_line!("dwe-launcher {} starting", app.package_info().version);

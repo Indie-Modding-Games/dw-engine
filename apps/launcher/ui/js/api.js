@@ -40,6 +40,17 @@ export const api = {
   addonsSafeMode: (on) => call("addons_safe_mode", { on }),
   addonsDismissCrash: () => call("addons_dismiss_crash"),
   addonCall: (addon, method, params) => call("addon_call", { addon, method, params }),
+  // The player's images (custom-images.js, src-tauri/src/image_commands.rs).
+  imagesOverview: () => call("images_overview"),
+  imagesPrepare: () => call("images_prepare"),
+  imagesInspect: (path) => call("images_inspect", { path }),
+  imagesApply: (path) => call("images_apply", { path }),
+  imagesAssign: (target, path) => call("images_assign", { target, path }),
+  imagesReset: (target) => call("images_reset", { target }),
+  imagesThumbnail: (target, custom) => call("images_thumbnail", { target, custom }),
+  imagesSetEnabled: (enabled) => call("images_set_enabled", { enabled }),
+  imagesRemoveAll: () => call("images_remove_all"),
+  imagesExport: (folder) => call("images_export", { folder }),
 };
 
 // Opens a web page in the player's browser (the opener plugin: http and https only).
@@ -61,6 +72,13 @@ export async function pickDisc(title, filterName, extensions, allName) {
 
 export async function pickAddonFile(title, filterName) {
   const filters = [{ name: filterName, extensions: ["zip", "json"] }];
+  const picked = await tauri.dialog.open({ title, multiple: false, directory: false, filters });
+  return typeof picked === "string" ? picked : picked?.path ?? null;
+}
+
+// A file of one kind: a .zip of images, a PNG.
+export async function pickFile(title, filterName, extensions) {
+  const filters = [{ name: filterName, extensions }];
   const picked = await tauri.dialog.open({ title, multiple: false, directory: false, filters });
   return typeof picked === "string" ? picked : picked?.path ?? null;
 }

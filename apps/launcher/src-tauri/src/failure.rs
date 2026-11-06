@@ -86,6 +86,18 @@ pub mod code {
     pub const NO_SPACE: &str = "no-space";
     /// No GPU of this computer can run the game, not even with the software driver.
     pub const NO_GPU: &str = "no-gpu";
+    /// The player's images need the game and its content installed first.
+    pub const IMAGES_NO_CONTENT: &str = "images-no-content";
+    /// dwx export-images failed; the detail is what it said.
+    pub const IMAGES_EXPORT_FAILED: &str = "images-export-failed";
+    /// The originals are not exported yet (the Images section exports them first).
+    pub const IMAGES_NOT_READY: &str = "images-not-ready";
+    /// What was picked to load images from is no folder and no .zip.
+    pub const IMAGES_NOT_A_SOURCE: &str = "images-not-a-source";
+    /// An image file larger than the launcher reads.
+    pub const IMAGES_TOO_BIG: &str = "images-too-big";
+    /// No image of the game has this name.
+    pub const IMAGES_UNKNOWN: &str = "images-unknown";
 }
 
 impl From<std::io::Error> for Failure {

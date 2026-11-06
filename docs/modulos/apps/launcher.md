@@ -13,7 +13,7 @@ la izquierda (una imagen del propio contenido extraído del jugador, solo local;
 del lanzador), superficies casi negras y un solo color de acento, verde azulado, reservado para «Jugar», el elemento
 activo y el anillo de foco.
 
-- **Barra lateral** (estrecha, a la izquierda): el logo; «Inicio», «Juegos», «Complementos» (abre Ajustes →
+- **Barra lateral** (estrecha, a la izquierda): el logo; «Inicio», «Juegos», «Imágenes», «Complementos» (abre Ajustes →
   Complementos) y «Ajustes»; debajo de una línea, los iconos que añaden los complementos; abajo del todo, «Acerca de»
   (versiones y teclado). Cada icono enseña su nombre al pasar el ratón o al llegar con el teclado.
 - **Arriba, las píldoras de estado:** la versión instalada con «Beta cerrada» (mientras las versiones sean 0.x o
@@ -34,6 +34,9 @@ activo y el anillo de foco.
   (`{"repo": "https://…", "community": "https://…", "web": "https://…"}`; en el flujo de publicación, la variable del
   repositorio `DWE_LAUNCHER_LINKS`). El tipo que falta no se enseña y, sin la variable, no hay ninguno: los
   probadores de la beta cerrada no tienen acceso al repositorio privado, así que no se enlaza por defecto.
+- **Imágenes:** exportar las imágenes del disco del jugador, cargar versiones mejoradas en bloque (carpeta o `.zip`)
+  o una a una en la lista de mapas e imágenes, y encenderlas o apagarlas (ver
+  [Imágenes personalizadas](#imágenes-personalizadas)).
 - **Juegos:** cuatro tarjetas: el juego base, activo, y tres más en gris con «Próximamente» (expansión de cartas,
   segunda parte y tercera parte).
 - La página de un complemento ocupa el centro de la pantalla cuando se abre desde su icono o desde «Complementos».
@@ -273,6 +276,8 @@ compatibilidad si el juego trae `lib/lavapipe`, pantalla de bloqueo si no).
 | `<datos>/logs/launcher.log`, `game.log` | El registro del lanzador y la salida de la última partida. |
 | `<datos>/addons/<id>/`, `addons.json` | Los complementos instalados y su estado (activo, permisos aceptados). |
 | `<datos>/addon-storage/<id>.json` | El almacén de cada complemento (256 KB como mucho). |
+| `<datos>/custom-images/originals/`, `originals.stamp` | Las imágenes del disco que escribe `dwx export-images`, y de qué versión del juego y lectura del disco salen. |
+| `<datos>/custom-images/pack/`, `state.json` | El paquete de imágenes del jugador (capa `user`) y si está encendido. `incoming/` es la carpeta de paso al copiar. |
 
 `DWE_LAUNCHER_GAME_DIR=<carpeta>` usa un paquete ya descomprimido (por ejemplo el de `package_linux.sh`) en vez de
 las versiones instaladas: sirve para probar sin publicar nada.
@@ -478,6 +483,29 @@ guía [Complementos del lanzador](../../guides/launcher-addons.md); aquí, cómo
   vez con complementos activos (lo detecta un archivo `running` en la carpeta de ajustes que se borra al salir).
 - Los ejemplos: `apps/launcher/addons/example-notes/` («Notas») y `apps/launcher/addons/test-fetch/` (prueba de
   `net.fetch` y del aislamiento contra el servidor falso). El cliente del puente está en `apps/launcher/addons/sdk/`.
+
+## Imágenes personalizadas
+
+La sección Imágenes (`src-tauri/src/custom_images/`, `src/image_commands.rs`, `ui/js/custom-images.js`) gestiona un
+único paquete de la capa `user` en `<datos>/custom-images/pack`. Mientras está encendido y tiene imágenes, «Jugar»
+arranca el juego con `--mods` apuntando a él. Las reglas, los nombres y cómo las dibuja el juego están en la guía
+[Imágenes personalizadas](../../guides/imagenes-personalizadas.md).
+
+- **Preparar:** la primera vez que se abre la sección, o cuando cambian la versión del juego o el disco leído,
+  `images_prepare` ejecuta `dwx export-images` sobre el contenido (con los paquetes del equipo, para los nombres en
+  el idioma del lanzador) hacia `originals/`. Pide 400 MB libres.
+- **Comprobar:** cada archivo se reconoce por su ruta desde la primera carpeta `map/` o `texture/` (sin distinguir
+  mayúsculas, `\` vale como `/`) y tiene que ser una de las originales. Se lee solo la cabecera del PNG: la misma
+  proporción, de 1 a 8 veces, y una sola escala por mapa. Lo que no es PNG se ignora en la carga en bloque; lo que es
+  igual a la original se omite. Las rutas que salen de la carpeta se rechazan.
+- **Cargar:** `images_inspect` enseña el resumen sin escribir nada; `images_apply` copia por `incoming/`. Una carpeta
+  se recorre hasta 16 niveles y 20000 archivos; un `.zip` solo con nombres que no salen de él; 256 MB por archivo.
+- **La lista:** `images_overview` agrupa los mapas por las letras de su id (el juego no tiene datos de zonas) con el
+  nombre más repetido del grupo, y las imágenes por carpeta. Las miniaturas son URL `data:` de `images_thumbnail`.
+- **Exportar:** copia `originals/` en una carpeta nueva `dwe-imagenes` (o `-2`, `-3`...) con `LEEME.txt`
+  (`src-tauri/src/custom_images/LEEME.txt`) y `mapas.tsv`.
+
+Los tests: `custom_images/tests.rs` y `the_players_images_are_mounted_while_they_are_on` en `launch.rs`.
 
 ## Pendiente
 

@@ -65,6 +65,16 @@
             <ul class="game-cards" id="gameCards" role="list"></ul>
           </section>
 
+          <section class="view images-view" id="imagesView" hidden aria-labelledby="imagesTitle">
+            <h1 class="view-title" id="imagesTitle" data-text="images.title"></h1>
+            <p class="lead images-lead" data-text="images.lead"></p>
+            <div id="imagesStatus" role="status"></div>
+            <div class="card images-toolbar" id="imagesToolbar" hidden></div>
+            <div id="imagesBulk"></div>
+            <input class="images-search" id="imagesSearch" type="search" hidden />
+            <div class="images-list" id="imagesList"></div>
+          </section>
+
           <section class="view addon-view" id="addonView" hidden aria-labelledby="addonTitle">
             <h1 class="view-title" id="addonTitle"></h1>
             <div class="tabpanels" id="tabpanels" data-slot="tabs"></div>

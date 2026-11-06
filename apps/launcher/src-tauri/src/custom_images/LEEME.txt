@@ -1,0 +1,31 @@
+Imágenes del juego para personalizar
+====================================
+
+Esta carpeta tiene las imágenes que el juego leyó de tu disco, listas para editarlas
+o mejorarlas. Son solo para ti: no las compartas.
+
+Qué hay aquí
+------------
+- map/<mapa>/background_<variante>.png: el fondo de cada mapa. Las variantes son
+  day (día), dusk (atardecer), night (noche) y, en pocos mapas, paletteN.
+  mapas.tsv dice el nombre de cada mapa.
+- texture/.../<imagen>_paletteN.png: las imágenes de la pantalla de título, los
+  menús, los iconos y los números del año y el día. El juego dibuja cada imagen con
+  varias paletas de color; cada archivo es la imagen con una de ellas.
+  Por ejemplo, texture/etcna/title2_palette0.png es la pantalla de título y
+  texture/etcdat/fi_info_palette12.png tiene los iconos del menú y los números.
+
+Cómo mejorarlas
+---------------
+1. Edita las imágenes que quieras. Puedes dejarlas del mismo tamaño o hacerlas
+   2, 3, 4... hasta 8 veces más grandes, con la misma proporción (por ejemplo, de
+   768x640 a 1536x1280). El juego las dibuja en el mismo sitio y al mismo tamaño en
+   pantalla, pero con más detalle.
+2. No cambies los nombres ni las carpetas. Guarda en PNG.
+3. En el lanzador, abre Imágenes y carga esta carpeta (o un .zip con ella). El
+   lanzador te dice qué imágenes reconoce y cuáles tienen un nombre o un tamaño que
+   no sirve, y solo usa las que cambiaste.
+
+En los fondos de los mapas, el juego sigue usando el original para saber qué partes
+tapan a los personajes, así que respeta las formas de los objetos.
+Si una imagen no sirve, el juego usa la original y lo anota en su registro.

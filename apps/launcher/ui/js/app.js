@@ -6,6 +6,7 @@ import { addonsView, initAddons, publishStatus, reloadAddons, setView } from "./
 import { api, listen, onDragDrop, openUrl, pickDisc, pickFolder } from "./api.js";
 import { emblem, GAMES } from "./art.js";
 import { $, add, ask, el, icon, reconcile, toast } from "./dom.js";
+import { dropOnImages, showImages } from "./custom-images.js";
 import { failureText, formatBytes, getLanguage, setLanguage, t } from "./i18n.js";
 import { renderNotes } from "./notes.js";
 import { activeSettingsTab, mountSettings, openSettings, settingsOpen } from "./settings.js";
@@ -88,9 +89,11 @@ function renderViews() {
   const view = state.view;
   $("homeView").hidden = view !== "home";
   $("gamesView").hidden = view !== "games";
+  $("imagesView").hidden = view !== "images";
   $("addonView").hidden = !view.startsWith("addon:");
   $("dropOverlay").hidden = !state.dragging;
   if (view === "games") renderCards();
+  if (view === "images") showImages();
   const setup = firstRun();
   document.body.classList.toggle("is-first-run", setup);
   $("homeTitle").textContent = setup ? t("setupTitle") : t("games.base.name");
@@ -671,6 +674,7 @@ async function restartLauncher() {
 
 const NAV_ICONS = {
   home: '<path d="M4 11.2 12 4.5l8 6.7"/><path d="M6.2 9.6V19.5h4.3v-5h3v5h4.3V9.6"/>',
+  images: '<rect x="3.5" y="5" width="17" height="14" rx="2.2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 17 5-4.5 3.5 3 3-2.5 4.5 4"/>',
   games: '<rect x="4" y="4" width="6.8" height="6.8" rx="1.6"/><rect x="13.2" y="4" width="6.8" height="6.8" rx="1.6"/><rect x="4" y="13.2" width="6.8" height="6.8" rx="1.6"/><rect x="13.2" y="13.2" width="6.8" height="6.8" rx="1.6"/>',
   addons: '<path d="M9 4h4v2.2a1.8 1.8 0 1 0 3.6 0V4H20v5h-1.8a1.8 1.8 0 1 0 0 3.6H20V20h-5v-1.8a1.8 1.8 0 1 0-3.6 0V20H4v-7h1.8a1.8 1.8 0 1 0 0-3.6H4V4h5Z"/>',
   settings: '<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.4-2.1.9-1.4-.9-1.4-1.7-.3-.6-1.5.6-1.6-1.2-1.2-1.6.6-1.5-.6-.3-1.7L12 3.5l-1.4.9-.3 1.7-1.5.6-1.6-.6-1.2 1.2.6 1.6-.6 1.5-1.7.3-.9 1.4.9 1.4 1.7.3.6 1.5-.6 1.6 1.2 1.2 1.6-.6 1.5.6.3 1.7 1.4.9 1.4-.9.3-1.7 1.5-.6 1.6.6 1.2-1.2-.6-1.6.6-1.5Z"/>',
@@ -680,11 +684,12 @@ const navIcon = (paths) =>
   `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths}</svg>`;
 
 function registerBuiltIns() {
-  // The sidebar: two views of this page and two shortcuts to the settings. Add-ons add their
+  // The sidebar: three views of this page and two shortcuts to the settings. Add-ons add their
   // icons after these (order 200), below a divider.
   const nav = (id, order, extra) => slots.register("sidebar", { id, order, label: () => t(`nav.${id}`), icon: () => navIcon(NAV_ICONS[id]), ...extra });
   nav("home", 0, { view: "home" });
   nav("games", 10, { view: "games" });
+  nav("images", 15, { view: "images" });
   nav("addons", 20, { onSelect: () => openSettings("addons") });
   nav("settings", 30, { onSelect: () => openSettings() });
 
@@ -1131,6 +1136,11 @@ async function start() {
         setAddonDragging(false);
         installAddonFrom(event.paths?.[0]);
       }
+      return;
+    }
+    // Over Images, a drop is a folder or .zip of the player's images.
+    if (state.view === "images") {
+      if (event.type === "drop") dropOnImages(event.paths?.[0]);
       return;
     }
     const accepting = !state.task && (!state.status?.content_installed || state.discMoved !== null || state.status?.content_outdated);
