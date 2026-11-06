@@ -106,6 +106,9 @@ struct GuardedInstruction {
 struct WalkableScript {
   const ScriptListing* listing = nullptr;
   const StructuredScript* structured = nullptr;
+  // Whether the listing's offsets are the script's: false for a story module read back without a
+  // line map that matches it (lua_reader.hpp), whose offsets mean nothing outside it.
+  bool offsets = true;
 };
 
 // Finds a script by id, for jump_to_file and jump_to_file_and_link; nothing for one that does not
