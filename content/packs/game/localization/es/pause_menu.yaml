@@ -200,7 +200,7 @@ help.bulk_trades: "El trueque de objetos y los sobres de cartas preguntan cuánt
 help.long_names: "Los nombres admiten hasta doce letras en vez de las seis del original."
 help.evolution_requirements: "El árbol de evolución dice qué pide cada destino y cómo va tu compañero."
 help.canonical_stages: "El árbol nombra las etapas como la serie y añade la caja Mega."
-help.status_extras: "La ficha del compañero enseña cansancio, errores, combates, horas despierto, vida restante y contador de evolución."
+help.status_extras: "La ficha enseña cansancio, errores, combates, horario, vida y contador de evolución."
 help.display_mode: "Juega en una ventana o a pantalla completa."
 help.vsync: "Sincroniza los fotogramas con la pantalla para que la imagen no se corte."
 help.smooth_motion: "Los personajes y la cámara se deslizan entre los fotogramas del original."

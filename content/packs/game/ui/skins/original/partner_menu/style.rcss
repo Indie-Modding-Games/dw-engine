@@ -1097,24 +1097,27 @@ button:focus .original-look, button.original-look:focus {
 #scrim.status-extras #status-battles {
     display: block; position: absolute; left: 0; top: 156dp; width: 894dp; height: 42dp; font-size: 33dp;
 }
-/* Two labels share the row's end: a step smaller than the other field labels so that the longer words fit. */
+/* Two labels share the row's end, a step smaller than the other field labels, each 6dp before its inset, whose number
+   is centred. The bitmap font draws them about 16dp a letter. With the labels written the weight's label and inset
+   move 30dp left so that «Combates» starts 9dp after the weight's inset. */
 #status-mistakes-label, #status-battles-label {
     position: absolute; top: 0; height: 42dp; font-size: 20dp; line-height: 42dp;
     color: #52def7; text-align: right; white-space: nowrap;
 }
-#status-battles-label { left: 414dp; width: 135dp; }
-#status-mistakes-label { left: 633dp; width: 132dp; }
-/* With the labels written the weight's inset sits further right: the battles' label starts after it. */
-#scrim.status-text #status-battles-label { left: 438dp; width: 128dp; }
-#scrim.status-text #status-battles-value { left: 569dp; }
-#scrim.status-text #status-mistakes-label { left: 650dp; width: 115dp; }
+#status-battles-label { left: 414dp; width: 118dp; }
+#status-mistakes-label { left: 619dp; width: 146dp; }
+#scrim.status-text.status-extras #status-weight-label { left: 216dp; }
+#scrim.status-text.status-extras #status-weight { left: 330dp; }
+#scrim.status-text #status-battles-label { left: 417dp; width: 133dp; }
+#scrim.status-text #status-battles-value { left: 556dp; }
+#scrim.status-text #status-mistakes-label { left: 640dp; width: 125dp; }
 #status-mistakes-value, #status-battles-value {
-    position: absolute; float: none; top: 0; width: 78dp; height: 42dp; box-sizing: border-box; margin: 0;
-    padding: 0; line-height: 36dp; border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0;
-    background-color: #354b5c;
+    position: absolute; float: none; top: 0; height: 42dp; box-sizing: border-box; margin: 0;
+    padding: 0; line-height: 36dp; text-align: center; border: 3dp #020202; border-right-color: #6987a0;
+    border-bottom-color: #6987a0; background-color: #354b5c;
 }
-#status-battles-value { left: 552dp; }
-#status-mistakes-value { left: 771dp; }
+#status-battles-value { left: 538dp; width: 75dp; }
+#status-mistakes-value { left: 771dp; width: 78dp; }
 #scrim.status-extras #partner-portrait-clip { height: 153dp; }
 #scrim.status-extras #status-life-label, #scrim.status-extras #status-life-hearts { top: 375dp; }
 #scrim.status-extras #status-condition { top: 414dp; }
