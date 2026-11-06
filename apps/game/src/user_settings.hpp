@@ -46,6 +46,9 @@ struct UserSettings {
   // Translated signs (translated_signs: true, false): the signs painted in the maps are written in
   // the player's language; on when not chosen yet.
   std::optional<bool> translatedSigns = std::nullopt;
+  // 3D characters (model_characters: true, false): the characters some maps draw as sprites are
+  // drawn as their species' models; on when not chosen yet.
+  std::optional<bool> modelCharacters = std::nullopt;
   // The status page's extras (status_extras: true, false): the partner's tiredness bar and its care
   // mistakes, which the original keeps hidden; on when not chosen yet.
   std::optional<bool> statusExtras = std::nullopt;

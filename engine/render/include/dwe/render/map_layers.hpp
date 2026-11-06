@@ -64,6 +64,11 @@ public:
   // Hides or shows instances, as scripts and the day/night objects do
   // (MapObjectInstance::HiddenFlag).
   void setHidden(std::size_t instance, bool hidden);
+  // Whether an instance is hidden; true past the last.
+  [[nodiscard]] bool hidden(std::size_t instance) const;
+  // Leaves an instance out of the drawing while something else is drawn in its place (a sprite
+  // character drawn as its model), keeping the hidden flag the scripts set.
+  void setStoodIn(std::size_t instance, bool stoodIn);
 
   // An instance's place in background pixels, nothing past the last; and moving it, as scripts do
   // (overworld.c: tickMoveObjectTo).
@@ -93,6 +98,7 @@ private:
     glm::vec2 offset{0.0F};
     std::int32_t orderValue = 0;
     bool hidden = false;
+    bool stoodIn = false;
     bool screenSpace = false;
     std::size_t frame = 0;
     std::int32_t timer = 0;

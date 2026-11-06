@@ -1104,6 +1104,37 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
 | Suavizado de bordes (`antialiasing`) | No existe | `Renderer::setMultisampling`: el pase de escena con 4 muestras (`GraphicsPipeline` con variante multimuestreada), resuelto en la ventana o en la textura del paso de luz | `pipeline_test.cpp` de `engine/rhi`; capturas | Mejora (opción) |
 | Texturas de modelos (`texture_filter`) | Texels cuadrados | `ModelRenderer::setTextureFilter`: filtrado con mipmaps y anisotropía (`FlagSmooth` en `skinned_model.slang`), sobre las texturas dobladas por `upscaleRgba` (alfa interpolado, sin borde oscuro) | `scenery_upscale_tests.cpp` («a model texture's cut-out edge takes no dark fringe…»); `pipeline_test.cpp` (niveles de mip); capturas | Mejora (opción) |
 
+## Personajes en 3D
+
+Mejora opcional, encendida por defecto (no cambia ninguna regla): algunos mapas dibujan personajes como dibujos
+prerenderizados de sus capas de profundidad, no como modelos. Con el ajuste `model_characters` (fila «Personajes en
+3D», «3D characters» en inglés, de las opciones en partida, pestaña «Gráficos»; guardado en los ajustes del usuario)
+el campo deja fuera esos dibujos y pone en su sitio el modelo de la especie con su animación de reposo; apagado, se
+ven los dibujos del original. La consola y las rutas lo cambian para la partida con `model_characters("on")` /
+`model_characters("off")`.
+
+- **Qué hace el original**: son objetos del mapa (`overworld.c`: `loadMapObjects`, `calcMapObjectOrder`,
+  `renderMapOverlays`, `buildMapOverlayPrim`), no parte del fondo. Una animación larga va en dos objetos que se turnan
+  con cuadros en blanco y la sombra es otro objeto aparte. Los guiones los muestran y ocultan con
+  `set_obj_visibility` (`setMapObjectsFlag`).
+- **Dónde salen** (todos son objetos, ninguno está pintado en el fondo de los mapas revisados): la apertura delante
+  de la casa del anciano (`topn01`, seis bebés), el final en el mismo sitio (`tend01`, `tend02`, nueve), los dos de
+  las jardineras de la granja (`twna01` a `twna13`, según los disparadores 246 y 225), los dos de la casa del anciano
+  (`room08`) y el del puesto del mercado (`twnb02` a `twnb09`). La tabla es `field/sprite_characters.yaml` del pack
+  del juego (esquema `field_sprite_characters.schema.json`).
+- **Dónde**: `sprite_characters.hpp` lee la tabla y calcula el sitio: los pies son el centro de la sombra, el pie
+  del primer dibujo o un píxel dado (`feet`); `MapCamera::pickGround` los lleva al suelo, a la altura `height` (una
+  jardinera, una cama), y el modelo mira a la cámara salvo que la tabla dé `facing`. `FieldScene` carga el modelo de
+  cada especie al entrar al mapa (`standInSpriteCharacters`) y lo dibuja cada frame (`drawSpriteCharacters`) mientras
+  el primer dibujo no esté oculto. `MapDepthLayers::setStoodIn` saca los dibujos del pintado sin tocar la marca de
+  oculto que ponen los guiones; las sombras se siguen dibujando.
+- **Reglas**: no hay entidad nueva; las colisiones, las charlas, los guiones y el minimapa no cambian. Si falta el
+  modelo de una especie se queda su dibujo.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Personajes en 3D | Dibujos prerenderizados, objetos del mapa (`renderMapOverlays`, `buildMapOverlayPrim`), mostrados y ocultados por los guiones (`setMapObjectsFlag`) | `field/sprite_characters.yaml`; `sprite_characters.hpp` (`placeOf`, `standInFor`); `FieldScene::drawSpriteCharacters` dibuja el modelo de la especie con su reposo donde estaba el dibujo; `MapDepthLayers::setStoodIn` | `sprite_characters_tests.cpp` (tabla, pies, sitio en el suelo, cuándo se ve, ajuste); `map_layers_tests.cpp` («an instance stood in for is not drawn…»); `in_game_options_tests.cpp`; capturas antes y después en `topn01` y `twna02` | Mejora (opción) |
+
 ## Opciones en partida
 
 Las opciones se cambian sin volver al título: la página «Opciones» del menú de pausa abre con las tres acciones del
@@ -1133,7 +1164,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 | Pestaña | Filas |
 |---|---|
 | Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha |
-| Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
+| Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
 

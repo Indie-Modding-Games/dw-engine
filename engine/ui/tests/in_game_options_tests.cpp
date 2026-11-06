@@ -39,9 +39,12 @@ struct Tab {
 constexpr std::array<std::string_view, 9> GameRows{
     "free-exploration", "walk-control",           "autosave",         "world-map",    "bulk-trades",
     "long-names",       "evolution-requirements", "canonical-stages", "status-extras"};
-constexpr std::array<std::string_view, 10> GraphicsRows{
-    "display-mode", "vsync",   "smooth-motion", "hd-scenery", "enhanced-lighting",
-    "vivid-colors", "shadows", "chibi-style",   "weather",    "seasons"};
+constexpr std::array<std::string_view, 11> GraphicsRows{"display-mode",     "vsync",
+                                                        "smooth-motion",    "hd-scenery",
+                                                        "model-characters", "enhanced-lighting",
+                                                        "vivid-colors",     "shadows",
+                                                        "chibi-style",      "weather",
+                                                        "seasons"};
 constexpr std::array<std::string_view, 3> SoundRows{"music-volume", "effects-volume",
                                                     "continuous-music"};
 constexpr std::array<std::string_view, 11> InterfaceRows{

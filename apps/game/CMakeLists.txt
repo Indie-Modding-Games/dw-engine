@@ -44,6 +44,8 @@ dwe_add_app(game
         src/field_scene_script.cpp
         src/field_scene_fighters.cpp
         src/field_scene_objects.cpp
+        src/field_scene_sprite_characters.cpp
+        src/sprite_characters.cpp
         src/field_scene_partner_body.cpp
         src/field_scene_fx.cpp
         src/scene_prims.cpp
@@ -195,7 +197,7 @@ if(NOT DWE_PACKAGE)
 endif()
 
 # The game is an executable, so its tests build the sources they check into a test program of their own: the player's
-# settings (settings.yaml), how the UI skin is chosen at start and changed, the minimap mode and its enemies, the save and place debug
+# settings (settings.yaml), how the UI skin is chosen at start and changed, the minimap mode and its enemies, the sprite characters drawn as models, the save and place debug
 # commands, the state trace's lines, the control channel's requests, the title screen's and the game's save flows,
 # the battle's root steps of a model, the discard menu's list, the trade menu's cursor and the player page's City tab.
 if(BUILD_TESTING)
@@ -206,7 +208,7 @@ if(BUILD_TESTING)
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/money_box_screen.cpp src/hd_scenery_setting.cpp src/minimap_enemies.cpp src/minimap_setting.cpp
                                   src/pause_box.cpp src/place_command.cpp src/player_chart.cpp src/player_city.cpp src/partner_set_command.cpp src/story_set_command.cpp src/shop_job_bar.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
                                   src/save_indicator.cpp src/save_machine_flow.cpp src/award_screen.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_skin_setting.cpp src/user_settings.cpp src/walk_control.cpp src/world_map.cpp
-                                  src/graphics_options.cpp src/weather_particles.cpp src/volume_setting.cpp)
+                                  src/graphics_options.cpp src/weather_particles.cpp src/volume_setting.cpp src/sprite_characters.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution
                                                  dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render dwe::signs

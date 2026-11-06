@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Field sprite characters",
+  "description": "field/sprite_characters.yaml of the game pack: the characters some maps draw as sprites of their depth layers, drawn as their species' models with the 3D characters option (an engine improvement, docs/modulos/apps/game.md). Pixels are the map background's.",
+  "type": "object",
+  "required": [
+    "characters"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "characters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "maps",
+          "species",
+          "sprites"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "maps": {
+            "description": "The maps that draw it with these instances.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]+$"
+            },
+            "minItems": 1
+          },
+          "species": {
+            "description": "The species whose model stands in (its species folder's model).",
+            "type": "string"
+          },
+          "sprites": {
+            "description": "The object instances that draw it; the first one's hidden flag decides whether the model shows.",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "shadow": {
+            "description": "The instance of its shadow, kept under the model; its middle is where the model stands.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "feet": {
+            "description": "The background pixel under its feet (x, y), when no shadow gives it.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "height": {
+            "description": "World units above the map's ground its feet stand on.",
+            "type": "number"
+          },
+          "facing": {
+            "description": "The original Y rotation it faces (4096 a turn); the camera when left out.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4095
+          }
+        }
+      }
+    }
+  }
+}

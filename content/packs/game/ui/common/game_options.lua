@@ -150,6 +150,18 @@ game_options = {
     help = "pause_menu.help.hd_scenery",
     original = false,
   },
+  -- 3D characters: the characters some maps draw as flat prerendered pictures (the opening and the
+  -- ending, the farm, the elder's house, the market stall) are drawn with their species' models
+  -- (on by default; off draws the original's pictures). Only the look changes.
+  {
+    id = "model-characters",
+    setting = "model_characters",
+    label = "pause_menu.model_characters",
+    default = true,
+    tab = "graphics",
+    help = "pause_menu.help.model_characters",
+    original = false,
+  },
   -- Enhanced lighting: the time of day tints the scene (warm morning, orange dusk, blue night) and
   -- the lamps, fires and crystals painted in some maps light what is around them (on by default).
   {
