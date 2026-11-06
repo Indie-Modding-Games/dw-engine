@@ -331,6 +331,19 @@ std::optional<std::string> StoryLuaHost::patchOf(SectionRef section) {
   return patches_[patched->second].module.name();
 }
 
+core::Result<void> StoryLuaHost::reloadScripts() {
+  if (!sections_.empty()) {
+    return core::fail("a story section is running");
+  }
+  core::logInfo("story: dropping {} loaded modules and {} patches; they load again from the packs",
+                modules_.size(), patches_.size());
+  patchedSections_.clear();
+  patches_.clear();
+  modules_.clear();
+  patchesLoaded_ = false;
+  return {};
+}
+
 core::Result<game::story::SectionHandle> StoryLuaHost::start(SectionRef section) {
   loadPatches();
   const std::array<ApiValue, 2> path{ApiValue{std::string{"sections"}},

@@ -504,11 +504,16 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
                          .loadMilliseconds = Milliseconds{loaded - start}.count(),
                          .totalMilliseconds = Milliseconds{done - start}.count()};
   const glm::vec3 spawn = field_->player().position;
+  // The packs whose map patches changed the data, bottom to top.
+  std::string patchedBy;
+  for (const std::string& pack : scene->document.patches) {
+    patchedBy += std::format("{}{}", patchedBy.empty() ? ", patched by " : ", ", pack);
+  }
   core::logInfo(
-      "field: entered {} ({}) at exit {} ({:.0f}, {:.0f}) from {}; data from pack {}; loaded in {:.2f} ms, "
-      "ready in {:.2f} ms",
+      "field: entered {} ({}) at exit {} ({:.0f}, {:.0f}) from {}; data from pack {}{}; loaded in "
+      "{:.2f} ms, ready in {:.2f} ms",
       mapId, nameKey.empty() ? mapId : localization::tr(nameKey), exit, spawn.x, spawn.z,
-      timing.from.empty() ? "-" : timing.from, source != nullptr ? source->packId : "?",
+      timing.from.empty() ? "-" : timing.from, source != nullptr ? source->packId : "?", patchedBy,
       timing.loadMilliseconds, timing.totalMilliseconds);
   if (!timing.from.empty()) {
     lastChange_ = std::move(timing);

@@ -176,6 +176,12 @@ public:
   // The patch that runs a section, as `pack:asset id`, or nothing when the module's own runs.
   [[nodiscard]] std::optional<std::string> patchOf(game::story::SectionRef section);
 
+  // A map editor's reload (the control channel's reload_map, docs/guides/control-remoto.md): drops
+  // the loaded story modules and patches, so the next section reads them again from the packs
+  // (after VirtualFileSystem::rescan, new files too). The story's state is not touched. Fails while
+  // a section runs, as its coroutine runs in the loaded modules.
+  core::Result<void> reloadScripts();
+
   core::Result<game::story::SectionHandle> start(game::story::SectionRef section) override;
   game::story::SectionStep resume(game::story::SectionHandle handle,
                                   game::story::ResumeValue value) override;

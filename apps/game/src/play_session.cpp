@@ -1705,6 +1705,12 @@ core::Result<void> PlaySession::reloadMap(std::optional<std::int32_t> exit) {
   if (battleScreen_.active()) {
     return core::fail("a battle is running");
   }
+  // Edited and new story modules and patches load on the map's next section.
+  if (session::StoryAdapter* story = game_.systems.story) {
+    if (auto reloaded = story->reloadScripts(); !reloaded) {
+      return reloaded;
+    }
+  }
   return scene_->reloadMap(exit);
 }
 

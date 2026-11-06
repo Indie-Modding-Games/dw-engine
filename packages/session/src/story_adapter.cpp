@@ -535,6 +535,15 @@ game::story::RequestOutcome StoryAdapter::request(game::story::SectionRef sectio
   return runner_->request(section, timing);
 }
 
+core::Result<void> StoryAdapter::reloadScripts() {
+  // Only a running section holds the loaded modules: a section that is about to start (a step
+  // cell requests its section every frame) starts from the reloaded ones.
+  if (host_ == nullptr) {
+    return {};
+  }
+  return host_->reloadScripts();
+}
+
 core::Result<void> StoryAdapter::startNewGame(GameSession& session) {
   randomPort_->bind(session.random());
   state_ = newGameState(session.partner().state().species);

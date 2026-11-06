@@ -247,7 +247,9 @@ public:
   [[nodiscard]] TraceFrame traceFrame(std::uint64_t tick, const input::InputState& input) const;
 
   // The control channel's reload_map (FieldScene::reloadMap): the current map read again from the
-  // packs and entered again, by `exit` or where the player stands. Refused during a battle.
+  // packs and entered again, by `exit` or where the player stands, and the story's modules and
+  // patches read again on its next section (the story's state kept). Refused during a battle or
+  // while a story section runs.
   core::Result<void> reloadMap(std::optional<std::int32_t> exit);
   // The story's triggers, variables and running script, and the camera, for story_state.
   [[nodiscard]] StoryStateView storyStateView() const;

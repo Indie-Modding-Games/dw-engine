@@ -74,6 +74,11 @@ public:
   ~PatchPacks() = default;
 
   [[nodiscard]] const dwe::assets::VirtualFileSystem& files() const { return *files_; }
+  // A map editor saving a file while the game runs: written, then the packs listed again.
+  void write(std::string_view path, std::string_view text) {
+    memory_.addFile(path, text);
+    REQUIRE(files_->rescan());
+  }
 
 private:
   void add(const TestPack& pack, dwe::assets::PackOrigin origin) {
@@ -217,4 +222,50 @@ TEST_CASE("a broken story patch is left out and the module's section runs") {
   CHECK(played.events == std::vector<std::string>{"trigger 2 = 1"});
   CHECK(noScript == noScriptBefore + 1);
   CHECK(failed == failedBefore + 1);
+}
+
+TEST_CASE("reloading the scripts reads edited modules and new patches, and keeps the state") {
+  PatchPacks packs{{.id = "my_mod", .layer = "mods", .priority = 0, .files = {}}};
+  StoryPlay player{packs.files()};
+  CHECK(player.play(SectionRef{.script = 1, .section = 2}, 1).events ==
+        std::vector<std::string>{"trigger 2 = 1"});
+
+  // The base module's section 2 edited and a patch of section 1 added: until the reload, the
+  // loaded ones run.
+  packs.write("base/story/001.lua", std::format("{}{}", Header, R"lua(
+return { script = 1, sections = { [2] = function()
+  story.set_trigger(7)
+  return story.ENDED
+end } }
+)lua"));
+  packs.write("my_mod/story/patches/new.lua", R"lua(
+return { script = 1, sections = { [1] = function()
+  story.set_trigger(8)
+  return story.ENDED
+end } }
+)lua");
+  CHECK(player.play(SectionRef{.script = 1, .section = 2}, 1).events ==
+        std::vector<std::string>{"trigger 2 = 1"});
+
+  REQUIRE(player.host().reloadScripts());
+  CHECK(player.play(SectionRef{.script = 1, .section = 2}, 1).events ==
+        std::vector<std::string>{"trigger 7 = 1"});
+  CHECK(player.play(SectionRef{.script = 1, .section = 1}, 1).events ==
+        std::vector<std::string>{"trigger 8 = 1"});
+  CHECK(player.host().patchOf({.script = 1, .section = 1}) ==
+        std::optional<std::string>{"my_mod:story/patches/new"});
+  // The story's state is the host's caller's: the triggers set before the reload stay set.
+  CHECK(player.state().trigger(2).value_or(false));
+}
+
+TEST_CASE("the scripts do not reload while a section runs") {
+  const PatchPacks packs{};
+  StoryPlay player{packs.files()};
+  auto handle = player.host().start(SectionRef{.script = 1, .section = 1});
+  REQUIRE(handle.has_value());
+  const auto refused = player.host().reloadScripts();
+  REQUIRE_FALSE(refused.has_value());
+  CHECK(refused.error().message == "a story section is running");
+  player.host().close(*handle);
+  CHECK(player.host().reloadScripts());
 }
