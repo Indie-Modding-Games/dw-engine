@@ -465,6 +465,56 @@ TEST_CASE("over the title the options page keeps its tabs and rows, without the 
   }
 }
 
+TEST_CASE("the options page fits the window at 4:3, 16:9 and wider, small and large") {
+  struct Size {
+    int width;
+    int height;
+  };
+  constexpr std::array<Size, 8> Sizes{{{640, 480},
+                                       {800, 600},
+                                       {960, 720},
+                                       {1440, 1080},
+                                       {1280, 720},
+                                       {1920, 1080},
+                                       {2560, 1080},
+                                       {1280, 1024}}};
+  for (const std::string_view language : {"es", "en"}) {
+    for (const std::string_view skin : {"original", "modern"}) {
+      for (const Size size : Sizes) {
+        CAPTURE(language);
+        CAPTURE(skin);
+        CAPTURE(size.width);
+        CAPTURE(size.height);
+        Screen screen{"pause_menu", language};
+        screen.skin(skin);
+        screen.ui->resize(size.width, size.height);
+        openAtTitle(screen);
+        for (const Tab& tab : Tabs) {
+          CAPTURE(tab.id);
+          showTab(screen, tab.id);
+          for (const Ui::TextOverflow& overflow : screen.ui->overflowingTexts()) {
+            MESSAGE(overflow.element << " '" << overflow.text << "' " << overflow.box << " by "
+                                     << overflow.overflow << " dp");
+          }
+          CHECK(screen.ui->overflowingTexts().empty());
+          // The box, its tabs and the tab keys stay inside the window.
+          for (const std::string_view id :
+               {"panel", "menu-tabs", "tabs-previous-key", "tabs-next-key", "option-help"}) {
+            CAPTURE(id);
+            const auto rect = screen.ui->elementRect(Menu, id);
+            REQUIRE(rect.has_value());
+            const Ui::Rect box = rect.value_or(Ui::Rect{});
+            CHECK(box.left >= -0.5F);
+            CHECK(box.top >= -0.5F);
+            CHECK(box.right <= static_cast<float>(size.width) + 0.5F);
+            CHECK(box.bottom <= static_cast<float>(size.height) + 0.5F);
+          }
+        }
+      }
+    }
+  }
+}
+
 TEST_CASE("Reset to defaults asks first and puts back only the shown tab's options") {
   for (const std::string_view skin : {"original", "modern"}) {
     CAPTURE(skin);
