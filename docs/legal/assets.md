@@ -99,7 +99,7 @@ Las reglas de la [tubería del remaster](../architecture/remaster-pipeline.md#le
 
 ## Licencias propuestas
 
-- **Código:** MIT (ver [`LICENSE`](../../LICENSE)). Las dependencias conservan sus propias licencias.
+- **Código:** MIT (ver [`LICENSE`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/LICENSE)). Las dependencias conservan sus propias licencias.
 - **Assets originales del equipo:** CC BY-SA 4.0.
 
 Ver [ADR 0011](../adr/0011-politica-legal-de-assets.md).

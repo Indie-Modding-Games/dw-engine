@@ -78,7 +78,7 @@ Si no hay juego instalado todavía, antes del paso 2 descarga la última versió
 
 Cada versión del repositorio (GitHub Releases de `Indie-Modding-Games/dw-engine`, prereleases incluidas) lleva lo
 de abajo. Mientras la beta sea cerrada, el lanzador no habla con GitHub: habla con la
-[pasarela de la beta](../../../services/beta-gateway/README.md), que pide la clave de la beta y contesta como la API
+[pasarela de la beta](https://github.com/Indie-Modding-Games/dw-engine/blob/main/services/beta-gateway/README.md), que pide la clave de la beta y contesta como la API
 de GitHub para ese único repositorio.
 
 | Archivo | Qué es |
@@ -177,7 +177,7 @@ descarga a otro servidor `reqwest` quita la cabecera `Authorization` (lo prueba 
 
 Los probadores **nunca** reciben acceso al repositorio. El responsable les da el lanzador y una sola clave
 compartida, que genera él y guarda en la pasarela (cómo crearla y rotarla:
-[pasarela de la beta](../../../services/beta-gateway/README.md)). El probador la pega en Ajustes → Cuenta y acceso
+[pasarela de la beta](https://github.com/Indie-Modding-Games/dw-engine/blob/main/services/beta-gateway/README.md)). El probador la pega en Ajustes → Cuenta y acceso
 la primera vez; si falta o no vale, el lanzador dice «Falta la clave de la beta o no es válida». La guarda en el
 llavero del sistema (Secret Service en Linux, como GNOME Keyring o KWallet; el administrador de credenciales en
 Windows; el llavero en macOS) con el servicio `dwe-launcher` y la cuenta `beta-key`, y nunca en un archivo ni en un
