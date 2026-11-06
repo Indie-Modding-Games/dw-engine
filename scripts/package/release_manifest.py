@@ -18,7 +18,10 @@ The manifest goes to the standard output.
 check: the checks before a release is uploaded (scripts/release_local.sh): every file of the folder
 but the manifests has its .sig, which the public key verifies (minisign, as the launcher checks
 it), and a sane size; game-manifest.json and latest.json parse, name exactly the --platform keys and
-match the files (size, SHA-256, signature); latest.json's URLs have the API form. It prints what it
+match the files (size, SHA-256, signature); latest.json's URLs have the API form. latest.json may
+also name a computer's installer kinds (<key>-<installer>, such as linux-x86_64-deb): Tauri's
+updater takes that entry first, so a launcher installed from the .deb updates with a .deb, and
+falls back to the plain key. It prints what it
 checked and fails on the first list of problems.
 verify: checks each file's .sig with the public key. Verifying needs the cryptography module.
 """
@@ -67,6 +70,25 @@ def launcher(args) -> dict:
     return {"version": args.version, "notes": args.notes,
             "pub_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "platforms": platforms}
+
+
+# The installer kinds Tauri's updater looks for before the plain <os>-<arch> key.
+INSTALLERS = ("appimage", "deb", "rpm", "nsis", "msi", "app")
+
+
+def latest_key_problems(keys, platforms) -> list[str]:
+    """Why latest.json's keys do not fit the release's computers: every computer has its plain
+    key, and an installer key (<key>-<installer>) only for one of them."""
+    problems = []
+    plain = set()
+    for key in keys:
+        base, _, installer = key.rpartition("-")
+        if installer in INSTALLERS and base in platforms:
+            continue
+        plain.add(key)
+    if plain != set(platforms):
+        problems.append(f"latest.json: names {sorted(plain)}, not {sorted(platforms)}")
+    return problems
 
 
 def minisign_lines(text: str) -> list[str]:
@@ -164,8 +186,7 @@ def check(args) -> None:
             if not SEMVER.match(str(latest.get("version"))):
                 problems.append("latest.json: no semantic version")
             bundles = latest.get("platforms", {})
-            if set(bundles) != platforms:
-                problems.append(f"latest.json: names {sorted(bundles)}, not {sorted(platforms)}")
+            problems += latest_key_problems(bundles, platforms)
             for key, bundle in bundles.items():
                 if bundle["signature"] not in signatures.values():
                     problems.append(f"latest.json: {key}'s signature is not one of the folder's files")
