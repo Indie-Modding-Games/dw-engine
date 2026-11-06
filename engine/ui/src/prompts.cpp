@@ -229,13 +229,47 @@ std::string_view gamepadFamilyName(GamepadFamily family) {
   return "generic";
 }
 
+namespace {
+
+// The modifiers a keyboard has on both sides. An action bound to both keys of a pair (cancel's
+// Ctrls, walk's Shifts) names the pair, as the player knows it: "key:ctrl", not the left one.
+struct ModifierPair {
+  KeyCode left;
+  KeyCode right;
+  std::string_view control;
+};
+constexpr std::array ModifierPairs{
+    ModifierPair{.left = 224, .right = 228, .control = "key:ctrl"},
+    ModifierPair{.left = 225, .right = 229, .control = "key:shift"},
+    ModifierPair{.left = 226, .right = 230, .control = "key:alt"},
+};
+
+bool bindsKey(const input::ActionMap& map, std::string_view action, KeyCode key) {
+  return std::ranges::any_of(map.bindings(action), [key](const input::Binding& binding) {
+    const auto* bound = std::get_if<input::KeyBinding>(&binding);
+    return bound != nullptr && bound->key == key;
+  });
+}
+
+std::string keyPromptControl(const input::ActionMap& map, std::string_view action, KeyCode key) {
+  for (const ModifierPair& pair : ModifierPairs) {
+    if ((key == pair.left && bindsKey(map, action, pair.right)) ||
+        (key == pair.right && bindsKey(map, action, pair.left))) {
+      return std::string{pair.control};
+    }
+  }
+  return keyControl(key);
+}
+
+} // namespace
+
 std::string promptControl(const input::ActionMap& map, input::DeviceKind device,
                           std::string_view action) {
   std::string fallback;
   for (const input::Binding& binding : map.bindings(action)) {
     if (device == input::DeviceKind::KeyboardMouse) {
       if (const auto* key = std::get_if<input::KeyBinding>(&binding)) {
-        return keyControl(key->key);
+        return keyPromptControl(map, action, key->key);
       }
       if (const auto* mouse = std::get_if<input::MouseBinding>(&binding);
           mouse != nullptr && fallback.empty()) {
@@ -326,6 +360,9 @@ constexpr std::array KeySymbols{
     KeySymbol{.key = "caps_lock", .symbol = "CAPS"},
     KeySymbol{.key = "left_shift", .symbol = "SHIFT"},
     KeySymbol{.key = "right_shift", .symbol = "SHIFT"},
+    KeySymbol{.key = "ctrl", .symbol = "CTRL"},
+    KeySymbol{.key = "shift", .symbol = "SHIFT"},
+    KeySymbol{.key = "alt", .symbol = "ALT"},
     KeySymbol{.key = "left_ctrl", .symbol = "CTRL"},
     KeySymbol{.key = "right_ctrl", .symbol = "CTRL"},
     KeySymbol{.key = "left_alt", .symbol = "ALT"},

@@ -818,7 +818,7 @@ TEST_CASE("the pause menu works with the keyboard alone") {
   CHECK(ui->focusedElementId("pause_menu") == "continue");
   CHECK(ui->elementText("pause_menu", "prompt-confirm").contains(">Space<"));
   CHECK(ui->elementHasClass("pause_menu", "prompt-confirm", "glyph-key"));
-  CHECK(ui->elementText("pause_menu", "prompt-cancel").contains(">Left Ctrl<"));
+  CHECK(ui->elementText("pause_menu", "prompt-cancel").contains(">Ctrl<"));
 
   press(*ui, input, input::keys::Down);
   CHECK(ui->focusedElementId("pause_menu") == "open-minimap");

@@ -57,8 +57,9 @@ TEST_CASE("prompts name the control of the device in use, in the game pack's wor
   // The space bar is the first key of confirm.
   CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "confirm", labels) ==
         "Espacio");
+  // Cancel takes both Ctrls: the prompt names the pair, not the left one.
   CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "cancel", labels) ==
-        "Ctrl izq.");
+        "Ctrl");
   CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "menu", labels) == "Tab");
   CHECK(promptLabel(map, DeviceKind::Gamepad, GamepadFamily::Xbox, "confirm", labels) == "A");
   CHECK(promptLabel(map, DeviceKind::Gamepad, GamepadFamily::PlayStation, "confirm", labels) ==
@@ -89,6 +90,25 @@ TEST_CASE("prompts follow rebinding") {
         "Gatillo derecho");
   map.bind("confirm", input::KeyBinding{input::keys::E});
   CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "confirm", labels) == "E");
+}
+
+TEST_CASE("a modifier bound on both sides is named once, and one side alone by its side") {
+  const GameTexts texts{"es"};
+  const localization::Catalog& labels = *texts.catalog;
+  input::ActionMap map;
+  map.bind("walk", input::KeyBinding{input::keys::RightShift});
+  CHECK(promptControl(map, DeviceKind::KeyboardMouse, "walk") == "key:right_shift");
+  CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "walk", labels) ==
+        "Mayús der.");
+  map.bind("walk", input::KeyBinding{input::keys::LeftShift});
+  CHECK(promptControl(map, DeviceKind::KeyboardMouse, "walk") == "key:shift");
+  CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "walk", labels) ==
+        "Mayús");
+  CHECK(promptGlyph(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "walk", labels).symbol ==
+        "SHIFT");
+  map.bind("cancel", input::KeyBinding{input::keys::LeftCtrl});
+  CHECK(promptLabel(map, DeviceKind::KeyboardMouse, GamepadFamily::Xbox, "cancel", labels) ==
+        "Ctrl izq.");
 }
 
 TEST_CASE("controls have stable names, and labels fall back to them") {
