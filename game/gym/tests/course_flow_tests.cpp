@@ -45,6 +45,7 @@ public:
     }
     // startAnimation resets animFlag: a new clip carries its actor again.
     if (actor == Actor::Partner) {
+      partnerClips.push_back(animation);
       partnerHeld = false;
     }
   }
@@ -87,7 +88,6 @@ public:
   std::optional<std::int32_t> partnerHeadRow() override { return headRow; }
   std::optional<Point> partnerPosition() override { return Point{}; }
   void movePartner(Point /*delta*/) override {}
-  void runOn(Actor /*actor*/) override { ++runs; }
   bool partnerOnScreen() override { return onScreen; }
   void placePartner(Axis axis, std::int32_t value) override { placed.emplace_back(axis, value); }
   std::string partnerSpecies() override { return "agumon"; }
@@ -107,11 +107,11 @@ public:
   // The looping voices still sounding.
   std::vector<std::int64_t> playing;
   int stops = 0;
-  int runs = 0;
   int tamerLooks = 0;
   // Whether the partner's clip plays in place (animFlag 2).
   bool partnerHeld = false;
   std::vector<std::int32_t> tamerClips;
+  std::vector<std::int32_t> partnerClips;
   bool onScreen = true;
   std::optional<std::int32_t> headRow;
   std::int32_t row = 0;
@@ -286,6 +286,28 @@ TEST_CASE("gym.md sites: the savanna's laps start again along z (trn_speed.c, in
   CHECK(ports.placed.front() == std::pair{Axis::Z, 2000});
 }
 
+TEST_CASE("gym.md clip: the speed course lets the run clip carry the partner, never held") {
+  // trn_speed.c: state 2 never sets animFlag 2, so the clip's root motion alone moves it; a lap
+  // (every 60 frames off screen) puts it back and starts the run clip again.
+  GymRules gym = gymRules();
+  gym.courses.front().detail = SpeedCourse{
+      .facing = 0, .runAnimation = 4, .lapFrames = 60, .restartAxis = Axis::X, .restart = -3000};
+  FakePorts ports;
+  ports.onScreen = false;
+  CourseRun run{gym, gym.courses.front(), false};
+  int held = 0;
+  for (int frame = 0; frame < 600; ++frame) {
+    frames(run, ports, 1);
+    held += ports.partnerHeld ? 1 : 0;
+  }
+  CHECK(held == 0);
+  REQUIRE(ports.placed.size() >= 9);
+  CHECK(ports.placed.front() == std::pair{Axis::X, -3000});
+  // The first run clip, then one per lap.
+  CHECK(std::ranges::count(ports.partnerClips, 4) ==
+        static_cast<std::ptrdiff_t>(ports.placed.size()) + 1);
+}
+
 TEST_CASE("gym.md sites: the treadmill runs in place, loops its sound and leaves to its spot") {
   using dwe::game::gym::TreadmillCourse;
   GymRules gym = gymRules();
@@ -298,7 +320,6 @@ TEST_CASE("gym.md sites: the treadmill runs in place, loops its sound and leaves
   FakePorts ports;
   CourseRun run{gym, gym.courses.front(), false};
   frames(run, ports, 1300);
-  CHECK(ports.runs == 0);
   CHECK(ports.loops == 1);
   CHECK(ports.stops == 1);
   // The count and the rest, then the walk off to (0xf7, 0x3c5), not to the tamer.

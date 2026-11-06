@@ -72,9 +72,6 @@ public:
   [[nodiscard]] virtual std::optional<std::int32_t> partnerHeadRow() = 0;
   [[nodiscard]] virtual std::optional<Point> partnerPosition() = 0;
   virtual void movePartner(Point delta) = 0;
-  // anim.c: applyRootMomentum: a running clip carries its actor along its facing, one frame's
-  // worth.
-  virtual void runOn(Actor actor) = 0;
   // Whether the partner is drawn on screen (entity.isOnScreen).
   [[nodiscard]] virtual bool partnerOnScreen() = 0;
   // Puts the partner at another x or z, where it runs on from.

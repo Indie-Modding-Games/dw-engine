@@ -317,15 +317,6 @@ public:
     game::field::Field& field = desc_->scene->field();
     field.placeByScript(field.partnerEntity(), field.partner().position + worldOf(delta, 0.0F));
   }
-  void runOn(Actor actor) override {
-    // The original's run clip moves its entity itself; a script's clip here does not, so the actor
-    // is carried at the clip's ground speed, through the scenery as in the original.
-    game::field::Field& field = desc_->scene->field();
-    const float yaw = actor == Actor::Tamer ? field.player().yaw : field.partner().yaw;
-    const double framesPerSecond = desc_->session->clock().rules().framesPerSecond;
-    const float step = walkSpeed(actor) / static_cast<float>(framesPerSecond);
-    field.placeByScript(entityOf(actor), positionOf(actor) + assets::forwardOfYaw(yaw) * step);
-  }
   bool partnerOnScreen() override {
     // entity.isOnScreen, without the camera's projection: the partner is off screen once it is
     // farther from where the camera looks than the gym's view reaches.
