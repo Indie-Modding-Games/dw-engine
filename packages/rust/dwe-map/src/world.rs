@@ -79,6 +79,14 @@ pub fn forward_of_yaw(yaw: f32) -> Vec3 {
     Vec3::new(yaw.sin(), 0.0, yaw.cos())
 }
 
+/// The original Y rotation (0-4095) of a character facing a ground direction in world space, the
+/// inverse of [`yaw_from_original`] and [`forward_of_yaw`] (yawToOriginal).
+pub fn rotation_facing(direction: Vec3) -> i32 {
+    let yaw = direction.x.atan2(direction.z);
+    let turn = ORIGINAL_ANGLE_PER_TURN as f32;
+    ((-yaw * turn / std::f32::consts::TAU).round() as i32).rem_euclid(ORIGINAL_ANGLE_PER_TURN)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,5 +109,9 @@ mod tests {
         assert!((forward_of_yaw(yaw_from_original(0)) - Vec3::Z).length() < 1e-6);
         assert!((forward_of_yaw(yaw_from_original(1024)) - Vec3::NEG_X).length() < 1e-6);
         assert!((forward_of_yaw(yaw_from_original(2048)) - Vec3::NEG_Z).length() < 1e-6);
+        for rotation in [0, 1024, 2048, 3072, 3700] {
+            let facing = forward_of_yaw(yaw_from_original(rotation));
+            assert_eq!(rotation_facing(facing), rotation);
+        }
     }
 }

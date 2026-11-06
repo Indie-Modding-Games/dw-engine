@@ -6,10 +6,13 @@
 
 pub mod camera;
 pub mod collision;
+pub mod diff;
 pub mod document;
+pub mod emit;
 pub mod load;
 pub mod patch;
 mod reader;
+pub mod save;
 pub mod story_names;
 pub mod table;
 pub mod triggers;

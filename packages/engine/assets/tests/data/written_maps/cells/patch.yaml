@@ -1,0 +1,49 @@
+warps:
+- exit: 0
+  spawn:
+    x: -2300
+    y: 0
+    z: -2200
+  rotation: 2048
+  target_exit: 3
+- exit: 1
+  target_map: 118
+  target_map_id: "room08"
+npcs:
+- index: 0
+  hp: 750
+- index: 1
+  position:
+    x: 700
+    y: 0
+    z: -1800
+  ai_sections:
+  - 1
+  - 1
+  - 2
+  - -1
+  - -1
+  - -1
+  - -1
+  - -1
+  waypoints:
+  - x: 600
+    y: 0
+    z: -1800
+  - x: 600
+    y: 0
+    z: -1200
+  - x: 300
+    y: 0
+    z: -1500
+collision:
+  cells:
+  - column: 29
+    row: 39
+    width: 3
+    height: 3
+    value: 128
+  - column: 70
+    row: 70
+    width: 2
+    value: 111

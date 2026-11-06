@@ -1,6 +1,7 @@
 //! Checks against the player's own extracted content, which never is in the repository: with
 //! `DWE_MAPPER_CONTENT` set to a content folder (base pack and packs), every map of the table
-//! loads, its collision writes back exactly as `dwx` wrote it, and every exit's target resolves.
+//! loads, its collision writes back exactly as `dwx` wrote it, the whole document writes back
+//! as it was read, and every exit's target resolves.
 //! Without the variable the tests pass without checking anything.
 
 use std::path::PathBuf;
@@ -41,6 +42,19 @@ fn every_map_loads_and_its_collision_round_trips() {
         let section: CollisionSection =
             serde_yaml_ng::from_value(document["collision"].clone()).unwrap();
         assert_eq!(map.collision.to_section(), section, "{}", entry.id);
+        // Unpatched data writes back byte for byte; a patched map at least as the same tree.
+        let written = map.to_yaml();
+        if map.patches.is_empty() {
+            assert_eq!(written, text, "{} writes back", entry.id);
+        } else {
+            let tree: serde_yaml_ng::Value = serde_yaml_ng::from_str(&written).unwrap();
+            assert_eq!(
+                dwe_map::MapDocument::parse(&entry.id, &written)
+                    .unwrap()
+                    .to_tree(),
+                tree
+            );
+        }
         for warp in &map.warps {
             let _ = warp_target(&table, warp);
         }
