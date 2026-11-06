@@ -6,15 +6,18 @@
 # whose middle is where the model stands. feet: the background pixel under its feet when it has no
 # shadow (else the bottom middle of its first sprite). height: world units above the ground (a
 # planter, a bed). facing: the original Y rotation (0-4095) it faces; the camera when left out.
+# look_at: the ground point (x, z, the original's world units) it faces, where its drawing looks.
 # additive: draws the model added to what is behind, its colours scaled by this (a sprite that glows).
 characters:
-  # The opening, in front of the elder's house: the babies cheering for the player.
-  - {maps: [topn01], species: tane, sprites: [0, 1], shadow: 2}
-  - {maps: [topn01], species: puni, sprites: [3, 4], shadow: 5}
-  - {maps: [topn01], species: tuno, sprites: [6, 7], shadow: 8}
-  - {maps: [topn01], species: bota, sprites: [9, 10], shadow: 11}
-  - {maps: [topn01], species: yura, sprites: [12, 13], shadow: 14}
-  - {maps: [topn01], species: koro, sprites: [15, 16], shadow: 17}
+  # The opening, in front of the elder's house: the babies cheering for the player. Their drawings are
+  # turned to the player waking up in the middle (lying at 266, -2330 when the scene starts), not to the
+  # camera, and so are their models.
+  - {maps: [topn01], species: tane, sprites: [0, 1], shadow: 2, look_at: [266, -2330]}
+  - {maps: [topn01], species: puni, sprites: [3, 4], shadow: 5, look_at: [266, -2330]}
+  - {maps: [topn01], species: tuno, sprites: [6, 7], shadow: 8, look_at: [266, -2330]}
+  - {maps: [topn01], species: bota, sprites: [9, 10], shadow: 11, look_at: [266, -2330]}
+  - {maps: [topn01], species: yura, sprites: [12, 13], shadow: 14, look_at: [266, -2330]}
+  - {maps: [topn01], species: koro, sprites: [15, 16], shadow: 17, look_at: [266, -2330]}
   # The ending, in the same place.
   - {maps: [tend01, tend02], species: dori, sprites: [0, 1], shadow: 2}
   - {maps: [tend01, tend02], species: leom, sprites: [3, 4], shadow: 5}

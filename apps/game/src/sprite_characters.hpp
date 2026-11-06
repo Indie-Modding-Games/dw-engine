@@ -41,6 +41,9 @@ struct SpriteCharacter {
   float height = 0.0F;
   // The original Y rotation it faces; facing the camera when left out.
   std::optional<std::int32_t> facing;
+  // The ground point it faces, in the original's world units (x, z): the scene's centre its
+  // drawing looks at (the opening's babies turn to the player waking up). A facing outweighs it.
+  std::optional<glm::vec2> lookAt;
   // Draws the model added to what is behind, its colours scaled by this: a sprite drawn with the
   // additive semi-transparency (a glow).
   std::optional<float> additive;

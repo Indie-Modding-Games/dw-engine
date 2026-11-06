@@ -65,6 +65,15 @@
             "minimum": 0,
             "maximum": 4095
           },
+          "look_at": {
+            "description": "The ground point (x, z) it faces, in the original's world units: where its drawing looks. A facing outweighs it.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
           "additive": {
             "description": "Draws the model added to what is behind, its colours scaled by this, as a sprite drawn with the additive semi-transparency.",
             "type": "number",
