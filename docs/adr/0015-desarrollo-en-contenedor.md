@@ -2,6 +2,7 @@
 
 - **Estado:** Aceptada
 - **Fecha:** 2026-10-18
+- **Nota (2026-11-06):** la CI ya no pasa `check-full`. Corre solo en los pull requests: formato y lint de lo que cambia, build y tests (`linux`) y el build cruzado (`windows`). clang-tidy y el sitio de la documentación quedan en `check-full` ([Cómo contribuir](../contribuir.md#flujo-de-trabajo)).
 
 ## Contexto
 

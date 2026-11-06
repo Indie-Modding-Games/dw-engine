@@ -1,7 +1,8 @@
 # 0023. Remaster por recetas, con proveedores intercambiables, caché por contenido y local por defecto
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-10-21
+- **Nota (2026-11-06):** aceptada porque el código ya la sigue: `dwx upscale <receta.yaml>` aplica las recetas.
 
 ## Contexto
 

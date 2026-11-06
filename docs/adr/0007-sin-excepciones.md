@@ -1,7 +1,8 @@
 # 0007. Sin excepciones, con `std::expected`
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-10-18
+- **Nota (2026-11-06):** aceptada porque el código ya la sigue: el código compila con `-fno-exceptions` (`cmake/DweModule.cmake`) y devuelve errores con `std::expected`.
 
 ## Contexto
 

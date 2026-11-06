@@ -1,7 +1,8 @@
 # 0011. "Trae tus propios datos" y política legal de assets
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-10-18
+- **Nota (2026-11-06):** aceptada porque el código ya la sigue: los hooks de git y la comprobación de los paquetes aplican la política, y la licencia es MIT. `provenance.yaml` y el chequeo de hashes en la CI aún no existen ([política legal](../legal/assets.md)).
 
 ## Contexto
 
