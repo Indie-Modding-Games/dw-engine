@@ -1,4 +1,4 @@
-# Las medallas que da el campo (apps/session: MedalsAdapter; game/story: medals.hpp).
+# Las medallas que da el campo (packages/session: MedalsAdapter; packages/game/story: medals.hpp).
 # tamer.c: checkMedalConditions, en cada fotograma que el jugador anda libre: cada medalla que no tiene y cuya
 # condición se cumple se da (script_common.c: unlockMedal pone el disparador first_trigger + medalla) y deja el aviso
 # pendiente (tamerTickAwardSomething). Las medallas de los torneos son del guion.

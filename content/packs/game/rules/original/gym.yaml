@@ -1,4 +1,4 @@
-# El gimnasio del pueblo (src/trn: TRN_setup*Training y TRN_tick*Training). Lo leen game/gym y apps/game. Las
+# El gimnasio del pueblo (src/trn: TRN_setup*Training y TRN_tick*Training). Lo leen packages/game/gym y apps/game. Las
 # ganancias de cada sesión son de training.yaml; aquí está la coreografía de cada curso, contada en fotogramas del
 # original (20 por segundo). Los puntos son unidades del mundo; los objetos, píxeles del fondo; los ángulos, 4096 por
 # vuelta. Además del gimnasio (trai00) hay otros puntos de entrenamiento: los de src/trn en gias09 y mist05 y los de

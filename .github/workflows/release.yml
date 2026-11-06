@@ -25,7 +25,7 @@ name: Release
 #   secrets.DWE_SIGNING_KEY            the private key of `tauri signer generate` (its text)
 #   secrets.DWE_SIGNING_KEY_PASSWORD   its password
 #   vars.DWE_SIGNING_PUBKEY            the public key (the .pub file's text), built into the launcher
-#   vars.DWE_BETA_GATEWAY              the beta gateway's URL (services/beta-gateway), built into the
+#   vars.DWE_BETA_GATEWAY              the beta gateway's URL (apps/beta-gateway), built into the
 #                                      launcher as its release server
 #   vars.DWE_LAUNCHER_LINKS            optional: the main screen's links, a JSON object of https URLs
 #                                      by kind ({"repo", "community", "web"}); unset, none are shown
@@ -169,7 +169,7 @@ jobs:
           key: xwin-${{ hashFiles('.devcontainer/Dockerfile') }}
 
       # Homebrew is in /opt/homebrew on Apple silicon and in /usr/local on Intel; the toolchain
-      # (cmake/toolchains/macos-llvm-libcxx.cmake) takes its LLVM from DWE_LLVM_ROOT. ccache in
+      # (tooling/cmake/toolchains/macos-llvm-libcxx.cmake) takes its LLVM from DWE_LLVM_ROOT. ccache in
       # front of it as on Linux (the presets read DWE_COMPILER_LAUNCHER); LLVM is installed afresh
       # on every run, so ccache knows the compiler by its contents and not its date.
       - name: Install the macOS tools
@@ -200,7 +200,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-release-${{ matrix.platform }}-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          key: vcpkg-release-${{ matrix.platform }}-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
           restore-keys: vcpkg-release-${{ matrix.platform }}-
 
       # The game's own objects (ccache, in the development image on Linux): an unchanged file is
@@ -250,7 +250,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-release-${{ matrix.platform }}-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          key: vcpkg-release-${{ matrix.platform }}-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
 
       - name: Show the compiler cache statistics
         if: always() && runner.os == 'macOS'
@@ -475,7 +475,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-release-${{ matrix.vcpkg }}-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          key: vcpkg-release-${{ matrix.vcpkg }}-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
           restore-keys: vcpkg-release-${{ matrix.vcpkg }}-
 
       - name: Restore the compiler cache

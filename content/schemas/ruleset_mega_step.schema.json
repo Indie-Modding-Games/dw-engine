@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: mega_step",
-  "description": "rules/<id>/mega_step.yaml: the Ultimate to Mega step (an option): an Ultimate that is not a Mega checks again from check_hours of its counter, and its targets are the Megas; species entries replace the fields of species_extra's (engine/ruleset: species_extra.hpp).",
+  "description": "rules/<id>/mega_step.yaml: the Ultimate to Mega step (an option): an Ultimate that is not a Mega checks again from check_hours of its counter, and its targets are the Megas; species entries replace the fields of species_extra's (packages/engine/ruleset: species_extra.hpp).",
   "type": "object",
   "required": [
     "check_hours",

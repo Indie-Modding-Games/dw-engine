@@ -1,4 +1,4 @@
-# La tienda que abre la historia (script_interp.c: CALL_ROUTINE 8 -> script_common.c: openShop; apps/session: ShopCounter).
+# La tienda que abre la historia (script_interp.c: CALL_ROUTINE 8 -> script_common.c: openShop; packages/session: ShopCounter).
 # El surtido no está aquí: el objeto i se vende mientras el trigger 0x180 + i está puesto (inventory: shop).
 
 # getShopkeeperLine (script_common.c:1174): las frases de un tendero son la sección de MAPHEAD 0x4c4 más su lugar en

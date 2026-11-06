@@ -6,7 +6,7 @@ max_line_length = 100
 -- An argument a callback's signature needs but its body does not use starts with an underscore.
 ignore = { "212/_.*" }
 
--- An interface document runs in an environment of its own (engine/ui/src/scripting.cpp). The game
+-- An interface document runs in an environment of its own (packages/engine/ui/src/scripting.cpp). The game
 -- gives it the ui table, t() and document_name, and calls the functions it defines at the top:
 -- on_show, on_action, on_tick and the rest, and the handlers its markup names, so a function it
 -- defines at the top is not unused.

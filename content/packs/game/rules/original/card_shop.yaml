@@ -1,5 +1,5 @@
 # La tienda de cartas que abre la historia (script_interp.c: CALL_ROUTINE 14 -> shop/script_menu.c: rollCardPack,
-# openBuyCardMenu, openSellCardMenu; apps/session: CardShop). Los precios son los de data/cards (CARD_PRICES por rareza).
+# openBuyCardMenu, openSellCardMenu; packages/session: CardShop). Los precios son los de data/cards (CARD_PRICES por rareza).
 
 # dailyPStatTrigger (script_common.c:1398): cada día nuevo llena 6 huecos con randomLimit(0x40) + 1, otra vez si sale
 # la carta 4. Su comprobación de repetidas compara el hueco consigo mismo y nunca repite: una carta puede salir dos veces.

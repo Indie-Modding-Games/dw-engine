@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset manifest",
-  "description": "rules/<id>/ruleset.yaml of a pack: a ruleset, the tables it uses and its sections (docs/architecture/rulesets.md). engine/ruleset/src/ruleset.cpp applies the same rules, and also that the id is the name of the folder.",
+  "description": "rules/<id>/ruleset.yaml of a pack: a ruleset, the tables it uses and its sections (docs/architecture/rulesets.md). packages/engine/ruleset/src/ruleset.cpp applies the same rules, and also that the id is the name of the folder.",
   "type": "object",
   "required": ["id", "name", "version", "sections"],
   "additionalProperties": false,

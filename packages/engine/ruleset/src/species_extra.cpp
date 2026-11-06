@@ -18,7 +18,8 @@ using assets::YamlReader;
 using core::YamlNode;
 
 constexpr std::string_view SpeciesKey = "species";
-// Read by the tournaments (game/tournament: parseExtraPrizes), in the format of tournament.yaml.
+// Read by the tournaments (packages/game/tournament: parseExtraPrizes), in the format of
+// tournament.yaml.
 constexpr std::string_view ExtraPrizesKey = "extra_prizes";
 constexpr std::string_view CheckHoursKey = "check_hours";
 constexpr std::string_view LifetimeHoursKey = "lifetime_hours";

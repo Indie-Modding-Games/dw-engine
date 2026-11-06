@@ -17,7 +17,7 @@
 #include <string_view>
 #include <vector>
 
-#include "engine/assets/tests/map_documents.hpp"
+#include "packages/engine/assets/tests/map_documents.hpp"
 
 using namespace dwe;
 

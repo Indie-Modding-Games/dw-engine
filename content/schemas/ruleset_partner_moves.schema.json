@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: partner_moves",
-  "description": "rules/<id>/partner_moves.yaml: the moves the partner equips when it starts and when it is reborn (apps/session: PartnerMoveRules, docs/modulos/apps/session.md). A position is an index in the species' move list (data/digimon: moves).",
+  "description": "rules/<id>/partner_moves.yaml: the moves the partner equips when it starts and when it is reborn (packages/session: PartnerMoveRules, docs/modulos/apps/session.md). A position is an index in the species' move list (data/digimon: moves).",
   "type": "object",
   "required": ["new_game_slot", "reborn_slot"],
   "additionalProperties": false,

@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-#include "game/evolution/tests/fixture.hpp"
+#include "packages/game/evolution/tests/fixture.hpp"
 #include "session_fixture.hpp"
 
 namespace dwe::session::testing {

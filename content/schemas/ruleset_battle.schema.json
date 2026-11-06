@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: battle",
-  "description": "rules/<id>/battle.yaml: the battle rules (game/battle: readBattleRules, docs/reference/battle.md). The original ruleset holds the decomp values with their citations.",
+  "description": "rules/<id>/battle.yaml: the battle rules (packages/game/battle: readBattleRules, docs/reference/battle.md). The original ruleset holds the decomp values with their citations.",
   "type": "object",
   "required": [
     "strategies",
@@ -55,7 +55,7 @@
           "type": "string"
         }
       },
-      "description": "The strategies the battle plays with (game/battle: BattleStrategies)."
+      "description": "The strategies the battle plays with (packages/game/battle: BattleStrategies)."
     },
     "limits": {
       "type": "object",

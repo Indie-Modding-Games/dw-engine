@@ -2,7 +2,7 @@
 
 #include <string_view>
 
-// The YAML keys of game/save's documents.
+// The YAML keys of packages/game/save's documents.
 namespace dwe::game::save {
 
 // The keys of a save file, in the order they are written. `complete` goes last so that a file cut

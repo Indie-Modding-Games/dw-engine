@@ -9,7 +9,7 @@
 namespace dwe::game::partner {
 
 // The version of the saved partner state. fromYaml reads only this one; the session's save brings
-// older ones up to it with the steps below (game/save MigrationChain).
+// older ones up to it with the steps below (packages/game/save MigrationChain).
 inline constexpr std::int32_t PartnerStateVersion = 2;
 // Version 2: the virus backup keeps the species too.
 inline constexpr std::int32_t VirusBackupSpeciesVersion = 2;

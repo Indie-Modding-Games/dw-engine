@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Field warps",
-  "description": "field/warps.yaml of the game pack: where the field starts (game/field, docs/reference/campo.md). The warps of the event scripts are in field/script_warps (script_warps.schema.json).",
+  "description": "field/warps.yaml of the game pack: where the field starts (packages/game/field, docs/reference/campo.md). The warps of the event scripts are in field/script_warps (script_warps.schema.json).",
   "type": "object",
   "required": [
     "start"

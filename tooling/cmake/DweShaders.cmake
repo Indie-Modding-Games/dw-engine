@@ -9,8 +9,9 @@ execute_process(COMMAND "${DWE_SLANGC}" -v OUTPUT_VARIABLE slangc_version ERROR_
                 OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_STRIP_TRAILING_WHITESPACE)
 message(STATUS "slangc ${slangc_version}: ${DWE_SLANGC}")
 
-# Shared Slang modules every shader may import, such as `import dwe.bindless;`.
-set(DWE_SHADER_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/shaders")
+# Shared Slang modules every shader may import, such as `import dwe.bindless;`: they live with the rhi, which owns
+# the descriptor layout they mirror.
+set(DWE_SHADER_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/packages/engine/rhi/shaders")
 # Every shader also depends on all of them, in case a generator ignores the depfiles.
 file(GLOB_RECURSE DWE_SHARED_SHADERS CONFIGURE_DEPENDS "${DWE_SHADER_INCLUDE_DIR}/*.slang")
 
@@ -47,8 +48,8 @@ function(dwe_add_shaders target)
         add_custom_command(
             OUTPUT "${header}"
             COMMAND "${CMAKE_COMMAND}" "-DINPUT=${spirv}" "-DOUTPUT=${header}" "-DNAME=${name}"
-                    -P "${PROJECT_SOURCE_DIR}/cmake/embed_spirv.cmake"
-            DEPENDS "${spirv}" "${PROJECT_SOURCE_DIR}/cmake/embed_spirv.cmake"
+                    -P "${PROJECT_SOURCE_DIR}/tooling/cmake/embed_spirv.cmake"
+            DEPENDS "${spirv}" "${PROJECT_SOURCE_DIR}/tooling/cmake/embed_spirv.cmake"
             COMMENT "Embedding shader ${stem}.spv"
             VERBATIM)
         target_sources(${target} PRIVATE "${header}")

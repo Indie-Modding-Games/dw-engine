@@ -9,7 +9,8 @@
 #                                         at MoltenVK
 #     README.md, VERSION, EXTRACTOR_VERSION, LICENSE, THIRD_PARTY_NOTICES.txt, licenses/
 #
-# The programs link Homebrew LLVM's libc++ statically (cmake/toolchains/macos-llvm-libcxx.cmake),
+# The programs link Homebrew LLVM's libc++ statically
+# (tooling/cmake/toolchains/macos-llvm-libcxx.cmake),
 # so a player's Mac needs nothing installed. The bundle is signed ad hoc (codesign -s -), which
 # Apple silicon requires to run anything; it is not notarized (docs/guides/beta-windows-macos.md).
 #
@@ -176,7 +177,8 @@ codesign --verify --deep --strict "$stage/dwe-game.app"
 cp "$root/scripts/package/README-macos.md" "$stage/README.md"
 printf '%s\n' "$commit" >"$stage/VERSION"
 sed -n 's/^inline constexpr int ExtractorVersion = \([0-9]*\);.*/\1/p' \
-  "$root/engine/assets/include/dwe/assets/extractor_version.hpp" >"$stage/EXTRACTOR_VERSION"
+  "$root/packages/engine/assets/include/dwe/assets/extractor_version.hpp" \
+  >"$stage/EXTRACTOR_VERSION"
 [[ -s "$stage/EXTRACTOR_VERSION" ]] || {
   echo "package_macos: cannot read ExtractorVersion" >&2
   exit 1

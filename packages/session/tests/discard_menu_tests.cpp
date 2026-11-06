@@ -16,7 +16,7 @@
 #include <vector>
 
 #include "adapter_fixture.hpp"
-#include "game/inventory/tests/fixture.hpp"
+#include "packages/game/inventory/tests/fixture.hpp"
 
 namespace items = dwe::game::inventory::testing;
 using dwe::game::evolution::testing::TableFixture;

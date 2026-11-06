@@ -1,4 +1,4 @@
-# The battle screen (ui/battle) and the battle's own keys (game/battle: text_keys.hpp). The command row shows the
+# The battle screen (ui/battle) and the battle's own keys (packages/game/battle: text_keys.hpp). The command row shows the
 # original's command names (btl.command_names) and move names; command.* is the engine's fallback for tools.
 command.none: "None"
 command.flee: "Run"

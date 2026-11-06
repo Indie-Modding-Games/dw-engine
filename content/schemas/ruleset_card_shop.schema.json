@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: card_shop",
-  "description": "rules/<id>/card_shop.yaml: the card shop the story opens (apps/session: CardShop; shop/script_menu.c: openBuyCardMenu, openSellCardMenu, rollCardPack).",
+  "description": "rules/<id>/card_shop.yaml: the card shop the story opens (packages/session: CardShop; shop/script_menu.c: openBuyCardMenu, openSellCardMenu, rollCardPack).",
   "type": "object",
   "required": [
     "stock",

@@ -3,6 +3,9 @@
 
 # The layers, from the bottom up. A module may depend on its own layer or the layers below it.
 set(DWE_LAYERS core base systems services game apps)
+# The folders hold the layers too: packages/engine the engine's (core to services), packages/game the game's, the rest
+# of packages/ the libraries above them, and apps/ the programs. A package never depends on something under apps/.
+set(DWE_ENGINE_LAYERS core base systems services)
 
 # CMake's default flags for MSVC-style compilers turn exceptions on; the project builds without them (ADR 0007).
 if(MSVC)
@@ -53,13 +56,44 @@ function(_dwe_layer_index layer out)
     set(${out} ${index} PARENT_SCOPE)
 endfunction()
 
-# Fails the configuration if <name> in <layer> may not depend on each of <deps>.
+# The folder group of the current directory: engine (packages/engine), game (packages/game), package (the rest of
+# packages/), app (apps/) or other.
+function(_dwe_folder_group out)
+    cmake_path(RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR BASE_DIRECTORY "${PROJECT_SOURCE_DIR}" OUTPUT_VARIABLE folder)
+    if(folder MATCHES "^packages/engine/")
+        set(${out} engine PARENT_SCOPE)
+    elseif(folder MATCHES "^packages/game/")
+        set(${out} game PARENT_SCOPE)
+    elseif(folder MATCHES "^packages/")
+        set(${out} package PARENT_SCOPE)
+    elseif(folder MATCHES "^apps/")
+        set(${out} app PARENT_SCOPE)
+    else()
+        set(${out} other PARENT_SCOPE)
+    endif()
+endfunction()
+
+# Fails the configuration if <name> in <layer>, declared in the current directory, may not depend on each of <deps>.
 function(_dwe_check_deps name layer)
     _dwe_layer_index(${layer} own)
+    _dwe_folder_group(group)
+    if(group STREQUAL "engine" AND NOT layer IN_LIST DWE_ENGINE_LAYERS)
+        message(FATAL_ERROR "${name}: a module of packages/engine must be in one of the layers ${DWE_ENGINE_LAYERS}")
+    endif()
+    if(group STREQUAL "game" AND NOT layer STREQUAL "game")
+        message(FATAL_ERROR "${name}: a module of packages/game must be in the game layer")
+    endif()
     foreach(dep IN LISTS ARGN)
         get_property(dep_layer GLOBAL PROPERTY DWE_LAYER_${dep})
         if(NOT dep_layer)
             message(FATAL_ERROR "${name}: unknown module '${dep}'; declare it before its users")
+        endif()
+        get_property(dep_group GLOBAL PROPERTY DWE_GROUP_${dep})
+        if(group STREQUAL "engine" AND NOT dep_group STREQUAL "engine")
+            message(FATAL_ERROR "${name}: the engine may only use the engine, not ${dep} (${dep_group})")
+        endif()
+        if(NOT group STREQUAL "app" AND dep_group STREQUAL "app")
+            message(FATAL_ERROR "${name}: a package may not depend on ${dep}, which is under apps/")
         endif()
         if(dep STREQUAL "formats" AND NOT name STREQUAL "dwx")
             message(FATAL_ERROR "${name}: only dwx may use formats; the runtime never reads PS1 formats")
@@ -153,6 +187,8 @@ function(dwe_add_module name)
     cmake_parse_arguments(PARSE_ARGV 1 arg "" "LAYER" "SOURCES;DEPS;PUBLIC_LIBS;PRIVATE_LIBS;TEST_LIBS")
     _dwe_check_deps(${name} ${arg_LAYER} ${arg_DEPS})
     set_property(GLOBAL PROPERTY DWE_LAYER_${name} ${arg_LAYER})
+    _dwe_folder_group(group)
+    set_property(GLOBAL PROPERTY DWE_GROUP_${name} ${group})
     # The game modules, for the apps that may use them all (dwe-sim's scenarios).
     if(arg_LAYER STREQUAL "game")
         set_property(GLOBAL APPEND PROPERTY DWE_GAME_MODULES ${name})

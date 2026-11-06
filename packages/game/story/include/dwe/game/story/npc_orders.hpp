@@ -17,7 +17,7 @@ inline constexpr std::int64_t PartnerEntity = 0xFC;
 // The owners of a pause from here up are no script id (script_interp.c: scriptPauseGame).
 inline constexpr std::int64_t FirstSystemOwner = 0xC8;
 
-// The field's NPCs, as the story sees them. The session implements it over game/field.
+// The field's NPCs, as the story sees them. The session implements it over packages/game/field.
 class NpcPort {
 public:
   NpcPort() = default;

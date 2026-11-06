@@ -1,4 +1,4 @@
-# Las cajas de texto de la historia (game/story: Dialogue, apps/session: StoryDialogue).
+# Las cajas de texto de la historia (packages/game/story: Dialogue, packages/session: StoryDialogue).
 # Una caja que sale de quien habla crece durante 5 fotogramas antes de atender al jugador
 # (ui.c: renderUIBoxAnimated pasa al estado abierto cuando su fotograma pasa de 4).
 open_frames: 5

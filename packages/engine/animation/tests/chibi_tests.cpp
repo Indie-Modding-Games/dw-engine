@@ -60,7 +60,7 @@ const dwe::animation::ChibiProfile& gameProfile() {
 constexpr std::string_view ProfileHeader =
     "# Estilo chibi: las proporciones de los modelos originales (cada especie y el personaje del jugador), que son\n"
     "# la referencia del estilo. Generado por la prueba «the chibi profile is the original models' proportions» de\n"
-    "# engine/animation/tests/chibi_tests.cpp sobre el contenido extraído; no se edita a mano. Por forma del cuerpo:\n"
+    "# packages/engine/animation/tests/chibi_tests.cpp sobre el contenido extraído; no se edita a mano. Por forma del cuerpo:\n"
     "# cuántos modelos distintos y, por proporción, su rango (del menor al mayor de los originales), la mediana y\n"
     "# cuántos modelos la tienen. head y torso: tamaño de la cabeza y largo del torso / altura; head_size: tamaño\n"
     "# de la cabeza / largo del torso; head_width: ancho de la cabeza / ancho del tronco; arm, leg, neck, tail,\n"

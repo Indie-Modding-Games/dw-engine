@@ -60,7 +60,7 @@ jobs:
           launcher=false
           docs='^(docs/|docs-site/|\.github/ISSUE_TEMPLATE/|\.github/pull_request_template\.md$|LICENSE)|\.md$'
           grep -qvE "$docs" <<<"$files" && code=true
-          launcher_paths='^(apps/launcher/|services/beta-gateway/|scripts/launcher\.sh$|scripts/ci/|'
+          launcher_paths='^(apps/launcher/|apps/beta-gateway/|scripts/launcher\.sh$|scripts/ci/|'
           launcher_paths+='scripts/package/|scripts/release_local\.sh$|\.devcontainer/launcher\.Dockerfile$)'
           grep -qE "$launcher_paths" <<<"$files" && launcher=true
           echo "code=$code launcher=$launcher base=$base"
@@ -106,7 +106,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-release-linux-x86_64-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          key: vcpkg-release-linux-x86_64-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
           restore-keys: vcpkg-release-linux-x86_64-
 
       # main's newest objects of this preset, saved by release.yml's pr-caches job.
@@ -186,7 +186,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-release-windows-x86_64-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          key: vcpkg-release-windows-x86_64-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**', '.devcontainer/Dockerfile') }}
           restore-keys: vcpkg-release-windows-x86_64-
 
       - name: Restore the compiler cache
@@ -251,7 +251,7 @@ jobs:
         run: scripts/launcher.sh test
 
       - name: Beta gateway tests
-        working-directory: services/beta-gateway
+        working-directory: apps/beta-gateway
         run: node --test
 
       - name: Release scripts tests

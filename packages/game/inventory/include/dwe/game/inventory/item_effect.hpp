@@ -136,8 +136,8 @@ struct ItemEffect {
   [[nodiscard]] bool doesSomething() const;
 };
 
-// What an item is used on: the partner, which the session gives the inventory. game/inventory never
-// includes the partner's module.
+// What an item is used on: the partner, which the session gives the inventory.
+// packages/game/inventory never includes the partner's module.
 class ItemEffectTarget {
 public:
   ItemEffectTarget() = default;

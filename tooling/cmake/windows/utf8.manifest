@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<!-- Embedded in every program on Windows (dwe_use_utf8 in cmake/DweModule.cmake): char strings are UTF-8. -->
+<!-- Embedded in every program on Windows (dwe_use_utf8 in tooling/cmake/DweModule.cmake): char strings are UTF-8. -->
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
   <application>
     <windowsSettings>

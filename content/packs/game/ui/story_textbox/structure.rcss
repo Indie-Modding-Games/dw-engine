@@ -1,4 +1,4 @@
-/* The story's textboxes (game/story: Dialogue). One pixel of the original is 3dp (240 lines over 720 dp).
+/* The story's textboxes (packages/game/story: Dialogue). One pixel of the original is 3dp (240 lines over 720 dp).
 
    The speech box: 21 columns and 4 rows of 12 x 13 pixels, from x 30 to 292 and y 162 to 221 of the original's
    320 x 240 screen (script_textbox.c: setupDialogueBox, x -130 from the screen's centre: one pixel right of centred),

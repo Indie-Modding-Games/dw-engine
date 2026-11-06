@@ -13,7 +13,7 @@ namespace dwe::assets {
 class VirtualFileSystem;
 
 // What using each item does as far as the executable says it, `data/item_effects`
-// (content/schemas/item_effects.schema.json, formats/exe/item_effects.hpp): the function
+// (content/schemas/item_effects.schema.json, packages/formats/exe/item_effects.hpp): the function
 // ITEM_FUNCTIONS names for it and the numbers of the data tables and of the food and chip cases.
 // The logic of the other handlers is the ruleset's.
 

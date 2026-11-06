@@ -1,4 +1,4 @@
-# El guardado (game/save, docs/architecture/save.md). El original solo guardaba cuando el jugador lo pedía: al dormir
+# El guardado (packages/game/save, docs/architecture/save.md). El original solo guardaba cuando el jugador lo pedía: al dormir
 # (partner.c: partnerTickSleep), en la máquina de guardado (main_menu.c: openSaveMachine) y al acabar el juego
 # (main_menu.c: gameClearSave). Todo el autoguardado es nuevo: cada motivo a false es el original.
 autosave:

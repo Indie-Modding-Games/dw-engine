@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: tournament",
-  "description": "rules/<id>/tournament.yaml: the arena's tournaments (game/tournament; apps/session: TournamentAdapter). data/stadium holds the rivals' base stats and the win chances.",
+  "description": "rules/<id>/tournament.yaml: the arena's tournaments (packages/game/tournament; packages/session: TournamentAdapter). data/stadium holds the rivals' base stats and the win chances.",
   "type": "object",
   "required": [
     "story",

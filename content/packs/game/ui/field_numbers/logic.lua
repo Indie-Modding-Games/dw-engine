@@ -1,7 +1,7 @@
 -- The numbers over the partner on the field (apps/game/src/field_numbers.hpp). The game publishes
 -- the ones the last field frame drew in field.numbers, seven values each as the battle's
--- (apps/screens: damage_numbers.hpp): the anchor in percent of the window, the first digit's offset
--- from it in the original's pixels, the value, the colour and the icon; and bumps
+-- (packages/screens: damage_numbers.hpp): the anchor in percent of the window, the first digit's
+-- offset from it in the original's pixels, the value, the colour and the icon; and bumps
 -- field.numbers.revision. Each digit is 8 pixels square, 7 apart (utils2.c: drawEntityText).
 
 local max_numbers = 8

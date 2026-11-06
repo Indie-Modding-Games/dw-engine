@@ -1,4 +1,4 @@
-# Las cacas del compañero en el suelo (game/partner: poop_piles.hpp; apps/session: PoopAdapter). Cuántas caben por mapa y
+# Las cacas del compañero en el suelo (packages/game/partner: poop_piles.hpp; packages/session: PoopAdapter). Cuántas caben por mapa y
 # en total son reglas del cuidado (care.yaml: toilet); aquí va cómo se ven en el campo.
 look:
   # partner_impl.c: initializePoop carga el modelo ETCNA/UNTI.TMD.

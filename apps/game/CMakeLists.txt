@@ -215,8 +215,9 @@ if(BUILD_TESTING)
                                                  dwe::ruleset dwe::curling dwe::weather dwe::audio dwe_test_main)
     # The session's test packs and made-up species (session_fixture.hpp), for the save debug command.
     target_include_directories(dwe_game_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
-                                                      ${PROJECT_SOURCE_DIR}/apps/session/tests
-                                                      # The systems' made-up tables, as "game/<system>/tests/fixture.hpp".
+                                                      ${PROJECT_SOURCE_DIR}/packages/session/tests
+                                                      # The systems' made-up tables, as
+                                                      # "packages/game/<system>/tests/fixture.hpp".
                                                       ${PROJECT_SOURCE_DIR})
     target_compile_definitions(dwe_game_tests PRIVATE
         DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"

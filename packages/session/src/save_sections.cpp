@@ -41,7 +41,7 @@ constexpr std::string_view PartnerYawKey = "partner_yaw";
 constexpr std::string_view PartnerKey = "partner";
 constexpr std::string_view SystemsKey = "session";
 constexpr std::size_t PositionAxes = 3;
-// The partner section's species key, as game/partner writes it (state_yaml.cpp).
+// The partner section's species key, as packages/game/partner writes it (state_yaml.cpp).
 constexpr std::string_view SpeciesKey = "species";
 
 // Numbers are written in their shortest form that reads back exactly.

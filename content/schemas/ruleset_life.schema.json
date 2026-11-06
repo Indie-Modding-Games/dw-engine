@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: life",
-  "description": "rules/<id>/life.yaml: the partner's lifetime, lives, death and rebirth (game/partner, docs/reference/care.md).",
+  "description": "rules/<id>/life.yaml: the partner's lifetime, lives, death and rebirth (packages/game/partner, docs/reference/care.md).",
   "type": "object",
   "required": [
     "lifetime_hours",

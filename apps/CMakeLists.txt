@@ -1,6 +1,3 @@
-add_subdirectory(content)
-add_subdirectory(session)
-add_subdirectory(screens)
 add_subdirectory(game)
 add_subdirectory(dwx)
 add_subdirectory(sim)

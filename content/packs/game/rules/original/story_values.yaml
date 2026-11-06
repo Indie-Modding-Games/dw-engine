@@ -1,4 +1,4 @@
-# Los números de las órdenes de historia que cambian la partida (apps/session: StoryGameOrders,
+# Los números de las órdenes de historia que cambian la partida (packages/session: StoryGameOrders,
 # docs/reference/scripts.md).
 # El tope de cada estadística tras set_stat y add_stat (script_value.c: STATS_LIMIT_ARRAY); el HP
 # y el MP actuales se quedan en su máximo. El original lee las vidas fuera de su tabla: 255 deja

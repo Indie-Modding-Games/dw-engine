@@ -20,8 +20,8 @@
 #include <vector>
 
 #include "adapter_fixture.hpp"
-#include "apps/session/src/story_routines/routines.hpp"
-#include "apps/session/src/story_scenes_context.hpp"
+#include "packages/session/src/story_routines/routines.hpp"
+#include "packages/session/src/story_scenes_context.hpp"
 #include "story_lua_fixture.hpp"
 
 using dwe::session::BoulderShown;

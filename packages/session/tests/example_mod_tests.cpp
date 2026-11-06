@@ -26,8 +26,8 @@
 #include <utility>
 #include <vector>
 
-#include "engine/assets/tests/map_documents.hpp"
 #include "fixture.hpp"
+#include "packages/engine/assets/tests/map_documents.hpp"
 #include "session_fixture.hpp"
 
 namespace {

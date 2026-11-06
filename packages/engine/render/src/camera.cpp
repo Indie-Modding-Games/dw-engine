@@ -3,8 +3,8 @@
 namespace dwe::render {
 
 glm::mat4 perspective(float fovY, float aspect, float near, float far) {
-  // GLM is configured for a 0..1 depth range (engine/core); Vulkan's clip space has Y down, so Y
-  // flips.
+  // GLM is configured for a 0..1 depth range (packages/engine/core); Vulkan's clip space has Y
+  // down, so Y flips.
   glm::mat4 projection = glm::perspectiveRH_ZO(fovY, aspect, near, far);
   projection[1][1] = -projection[1][1];
   return projection;

@@ -8,8 +8,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 include(CTest)
-include(cmake/DweModule.cmake)
-include(cmake/DweShaders.cmake)
+include(tooling/cmake/DweModule.cmake)
+include(tooling/cmake/DweShaders.cmake)
 
 if(BUILD_TESTING)
     find_package(doctest CONFIG REQUIRED)
@@ -35,7 +35,7 @@ if(BUILD_TESTING)
     add_test(NAME "filter guard: a filter that matches no test case fails"
         COMMAND ${CMAKE_COMMAND} -DPROGRAM=$<TARGET_FILE:dwe_filter_guard_tests>
             "-DARGUMENT=--test-case=the filter guard's test" -DEXIT_CODE=2 "-DMESSAGE=matches no test case"
-            -P ${PROJECT_SOURCE_DIR}/cmake/expect_failure.cmake)
+            -P ${PROJECT_SOURCE_DIR}/tooling/cmake/expect_failure.cmake)
     add_test(NAME "filter guard: a catch-all entry may match no test case"
         COMMAND dwe_filter_guard_tests "--test-case=${guarded_case} in another name" --dwe-allow-no-match)
 
@@ -75,7 +75,5 @@ if(BUILD_TESTING)
 endif()
 
 add_subdirectory(third_party)
-add_subdirectory(engine)
-add_subdirectory(game)
-add_subdirectory(formats)
+add_subdirectory(packages)
 add_subdirectory(apps)

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Pack manifest",
-  "description": "The pack.yaml file at the root of a content pack. engine/assets/src/pack_manifest.cpp applies the same rules.",
+  "description": "The pack.yaml file at the root of a content pack. packages/engine/assets/src/pack_manifest.cpp applies the same rules.",
   "type": "object",
   "required": ["id", "version", "layer"],
   "additionalProperties": false,

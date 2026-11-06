@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: evolution",
-  "description": "rules/<id>/evolution.yaml: when and into what the partner evolves (docs/reference/evolution.md, game/evolution). Hours are hours of the evolution counter; forms are ids of the digimon table, items ids of the items table.",
+  "description": "rules/<id>/evolution.yaml: when and into what the partner evolves (docs/reference/evolution.md, packages/game/evolution). Hours are hours of the evolution counter; forms are ids of the digimon table, items ids of the items table.",
   "type": "object",
   "required": ["selection", "scoring", "check_hours", "baby_targets", "requirements", "fallback", "specials", "items", "stat_gains", "moves", "rebirth", "quirks"],
   "additionalProperties": false,
   "properties": {
-    "selection": { "description": "The strategy that picks the target among the candidates (game/evolution: original).", "$ref": "#/$defs/name" },
-    "scoring": { "description": "The strategy that scores a candidate against its requirements (game/evolution: original).", "$ref": "#/$defs/name" },
+    "selection": { "description": "The strategy that picks the target among the candidates (packages/game/evolution: original).", "$ref": "#/$defs/name" },
+    "scoring": { "description": "The strategy that scores a candidate against its requirements (packages/game/evolution: original).", "$ref": "#/$defs/name" },
     "check_hours": {
       "description": "From how many hours of the counter the evolution is checked, by level.",
       "type": "object",

@@ -2,7 +2,7 @@
 
 #include <string_view>
 
-// The error messages of game/save. Templates take their arguments in the order of their
+// The error messages of packages/game/save. Templates take their arguments in the order of their
 // placeholders.
 namespace dwe::game::save::messages {
 

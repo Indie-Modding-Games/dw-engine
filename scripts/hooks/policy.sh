@@ -44,24 +44,26 @@ allow() {
 allow "$policy_banned_words" scripts/hooks/policy.sh scripts/style/tests/test_policy_hooks.sh
 # The story API's list of the words no generated name may contain (the same words, which the Lua
 # emitter reads from there), and the tests that feed that list.
-allow "$policy_banned_words" formats/include/dwe/formats/script/story_api_names.hpp
-allow 'forbiddenwordin\(.*' 'formats/tests/*'
+allow "$policy_banned_words" packages/formats/include/dwe/formats/script/story_api_names.hpp
+allow 'forbiddenwordin\(.*' 'packages/formats/tests/*'
 # The decomp's source file that the port cites as "tamer.c: function": a file name, not ours.
 allow 'tamer\.c' '*'
 # A cited hardware reference and the name of a file on the disc.
 allow 'psx-spx|psx\.exe' '*'
 # Gamepad families: the player plugs in these pads and the prompts show their buttons (SDL names
 # them the same way).
-allow 'playstation|nintendo' 'engine/platform/*' 'engine/input/*' 'engine/ui/*' \
-  engine/script/src/input_bindings.cpp engine/debug/src/debug_ui.cpp \
+allow 'playstation|nintendo' 'packages/engine/platform/*' 'packages/engine/input/*' \
+  'packages/engine/ui/*' \
+  packages/engine/script/src/input_bindings.cpp packages/engine/debug/src/debug_ui.cpp \
   'apps/game/src/device_names.*' apps/game/src/ui_demo.cpp \
   'content/packs/*/localization/*/prompt.yaml' docs/adr/0014-mandos-y-entrada.md \
   docs/architecture/ui.md docs/guides/editar-menus.md docs/guides/prueba-vertical.md
 # The Windows toolchain and third-party sources name their vendor: vcpkg's repository, the Windows
 # SDK's licence, the manifest's XML namespaces and the code page table the charset comes from.
-allow microsoft .devcontainer/Dockerfile '.github/workflows/*' 'cmake/windows/*' scripts/dev.sh \
+allow microsoft .devcontainer/Dockerfile '.github/workflows/*' 'tooling/cmake/windows/*' \
+  scripts/dev.sh \
   docs/adr/0015-desarrollo-en-contenedor.md docs/getting-started/setup.md \
-  formats/src/text/charset.cpp docs/formats/textos.md
+  packages/formats/src/text/charset.cpp docs/formats/textos.md
 
 # What a commit message must not say: co-author trailers, generator lines and the names of AI
 # assistants. Extended, matched ignoring case.

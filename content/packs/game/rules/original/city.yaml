@@ -1,4 +1,4 @@
-# La ciudad (apps/session: CityAdapter; game/story: prosperity.hpp).
+# La ciudad (packages/session: CityAdapter; packages/game/story: prosperity.hpp).
 # main.c: recalculatePPandArena rehace los puntos de prosperidad (variable 1) a partir de los disparadores de
 # reclutamiento al empezar el bucle del juego (partida nueva o carga) y antes de cada guardado; los scripts los suben
 # al reclutar y leen la variable y los disparadores para hacer crecer la ciudad.

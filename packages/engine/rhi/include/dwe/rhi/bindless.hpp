@@ -16,7 +16,7 @@
 namespace dwe::rhi {
 
 // The fixed samplers of the bindless table, in the order of the Sampler constants of
-// shaders/dwe/bindless.slang.
+// packages/engine/rhi/shaders/dwe/bindless.slang.
 enum class SamplerKind : std::uint8_t {
   NearestClamp,
   NearestRepeat,

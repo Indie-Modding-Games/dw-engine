@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <ostream>
 
-#include "game/inventory/tests/fixture.hpp"
+#include "packages/game/inventory/tests/fixture.hpp"
 
 using namespace dwe::game::inventory::testing;
 

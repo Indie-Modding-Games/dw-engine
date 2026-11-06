@@ -1,6 +1,6 @@
-// The global descriptor set every pipeline shares (engine/rhi BindlessTable, docs/architecture/render.md): every
-// texture the renderer knows sits in one array, and a texture is named by its index, passed in push constants or in
-// vertex data. The samplers are fixed and named by the Sampler constants below.
+// The global descriptor set every pipeline shares (packages/engine/rhi BindlessTable, docs/architecture/render.md):
+// every texture the renderer knows sits in one array, and a texture is named by its index, passed in push constants
+// or in vertex data. The samplers are fixed and named by the Sampler constants below.
 module bindless;
 
 [[vk::binding(0, 0)]]

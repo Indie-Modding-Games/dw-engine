@@ -33,8 +33,8 @@ HASH_CHUNK_BYTES = 1 << 20
 FIXED_TOOL_INPUTS = (
     ".devcontainer",
     "content/enhance",
-    "cmake",
-    "triplets",
+    "tooling/cmake",
+    "tooling/triplets",
     BUILD_FILE,
     "CMakePresets.json",
     "vcpkg.json",

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: species_extra",
-  "description": "rules/<id>/species_extra.yaml: patches by species id over the disc's tables (requirement and stat rows, targets in free path slots, raise rows, moves, gates, clip stand-ins, chart cells) for a ruleset that adds partners (engine/ruleset: species_extra.hpp; docs/architecture/rulesets.md).",
+  "description": "rules/<id>/species_extra.yaml: patches by species id over the disc's tables (requirement and stat rows, targets in free path slots, raise rows, moves, gates, clip stand-ins, chart cells) for a ruleset that adds partners (packages/engine/ruleset: species_extra.hpp; docs/architecture/rulesets.md).",
   "type": "object",
   "required": [],
   "additionalProperties": false,

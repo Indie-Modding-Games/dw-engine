@@ -27,8 +27,8 @@ inline constexpr std::string_view FormatName = "dwe-save";
 inline constexpr std::size_t MaxNameLength = 64;
 
 // What the slot list shows of a playthrough (docs/architecture/guardar-y-cargar.md). The game fills
-// it each time it saves; game/save only keeps it. A text the game does not have yet is empty, and
-// so is every text of a save written before format 3.
+// it each time it saves; packages/game/save only keeps it. A text the game does not have yet is
+// empty, and so is every text of a save written before format 3.
 struct SaveSummary {
   // The manual slot the playthrough saves to (`slot_03`), which an autosave keeps too; empty when
   // it has none.

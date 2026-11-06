@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: item_trader",
-  "description": "rules/<id>/item_trader.yaml: the item trader the story opens (apps/session: ItemTrader; shop/script_menu.c: openMojyamonShop).",
+  "description": "rules/<id>/item_trader.yaml: the item trader the story opens (packages/session: ItemTrader; shop/script_menu.c: openMojyamonShop).",
   "type": "object",
   "required": ["lines_section", "lines", "table_variable", "no_item", "first_traded_trigger", "all_traded_trigger", "choice_lock_trigger", "refuse_sound", "tables"],
   "additionalProperties": false,

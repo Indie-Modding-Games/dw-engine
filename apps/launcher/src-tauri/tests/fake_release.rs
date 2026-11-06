@@ -2,7 +2,7 @@
 //! GitHub API's release requests, behind the beta key): listing the releases, reading the
 //! manifest, downloading the package and checking it, with and without the key, with a tampered
 //! file and a foreign signature; a download that redirects to another host without the key; and
-//! the whole path through the real gateway (services/beta-gateway under node) in front of
+//! the whole path through the real gateway (apps/beta-gateway under node) in front of
 //! tools/fake_release_server.py as GitHub.
 
 use base64::Engine;
@@ -314,7 +314,7 @@ async fn through_the_beta_gateway() {
     }
     let launcher = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
     let fake_github = launcher.join("tools/fake_release_server.py");
-    let gateway_program = launcher.join("../../services/beta-gateway/dev/serve.js");
+    let gateway_program = launcher.join("../beta-gateway/dev/serve.js");
     let dir = tempfile::tempdir().unwrap();
     let data = dir.path().join("data");
     let (github_port, gateway_port) = (free_port(), free_port());

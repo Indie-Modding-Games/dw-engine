@@ -17,8 +17,8 @@ class VirtualFileSystem;
 
 // Where a pack keeps its rulesets and the key a ruleset's manifest names its tables by role under:
 // the part of the ruleset format (docs/architecture/rulesets.md) that the asset layer reads, since
-// dwx validate sees no ruleset module. engine/ruleset reads the rest of the format and takes these
-// from here.
+// dwx validate sees no ruleset module. packages/engine/ruleset reads the rest of the format and
+// takes these from here.
 inline constexpr std::string_view RulesetsFolder = "rules";
 inline constexpr std::string_view RulesetManifestLeaf = "ruleset";
 inline constexpr std::string_view RulesetTablesKey = "tables";

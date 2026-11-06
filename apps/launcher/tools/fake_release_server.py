@@ -9,7 +9,7 @@ while the launcher runs.
     fake_release_server.py <releases> [--port 8765] [--token secret] [--repo team/game]
 
 Start the launcher with DWE_LAUNCHER_API=http://127.0.0.1:<port>, or run the beta gateway
-(services/beta-gateway) with GITHUB_API=http://127.0.0.1:<port> in front of it. With --token,
+(apps/beta-gateway) with GITHUB_API=http://127.0.0.1:<port> in front of it. With --token,
 requests without "Authorization: Bearer <token>" get 404, as a private repository answers.
 
 Like GitHub, a file asked for as application/octet-stream is a 302 to a signed URL on another

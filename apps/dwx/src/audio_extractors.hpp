@@ -12,7 +12,7 @@
 // sample, a music font one MIDI file per SEQ. The formats are in docs/formats/audio.md.
 namespace dwe::dwx {
 
-// The seven sound files the original loads (formats/audio: soundFiles).
+// The seven sound files the original loads (packages/formats/audio: soundFiles).
 bool handlesSoundFile(std::string_view path);
 core::Result<Extraction> extractSoundFile(const Disc& disc, const formats::disc::IsoFile& file);
 

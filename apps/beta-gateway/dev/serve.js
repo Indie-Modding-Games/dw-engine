@@ -2,7 +2,7 @@
 // (README.md, "Probar en local"). Not deployed: Cloudflare runs worker.js by itself.
 //
 //   BETA_KEY=... GITHUB_TOKEN=... GITHUB_REPO=owner/repo [GITHUB_API=http://127.0.0.1:8765] \
-//     node services/beta-gateway/dev/serve.js [--port 8787]
+//     node apps/beta-gateway/dev/serve.js [--port 8787]
 //
 // Prints "listening <url>" once it accepts requests.
 import http from "node:http";

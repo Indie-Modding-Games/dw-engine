@@ -116,10 +116,10 @@ if(TARGET dwe_session_tests)
                                                          DWE_EXAMPLE_MOD="${PROJECT_SOURCE_DIR}/tests/mods/example_mod"
                                                          DWE_SESSION_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
     # The field's test maps and rules.
-    target_include_directories(dwe_session_tests PRIVATE "${PROJECT_SOURCE_DIR}/game/field/tests")
-    # The made-up tables of the systems' tests, as "game/<system>/tests/fixture.hpp".
+    target_include_directories(dwe_session_tests PRIVATE "${PROJECT_SOURCE_DIR}/packages/game/field/tests")
+    # The made-up tables of the systems' tests, as "packages/game/<system>/tests/fixture.hpp".
     target_include_directories(dwe_session_tests PRIVATE "${PROJECT_SOURCE_DIR}")
     # The reference interpreter of the story listings (story_lua_harness.hpp).
-    target_include_directories(dwe_session_tests PRIVATE "${PROJECT_SOURCE_DIR}/formats/tests")
+    target_include_directories(dwe_session_tests PRIVATE "${PROJECT_SOURCE_DIR}/packages/formats/tests")
     target_include_directories(dwe_session_tests SYSTEM PRIVATE ${LUA_INCLUDE_DIR})
 endif()

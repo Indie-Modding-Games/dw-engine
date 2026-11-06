@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: tamer",
-  "description": "rules/<id>/tamer.yaml: the tamer's rules (apps/session: TamerRules, docs/modulos/apps/session.md).",
+  "description": "rules/<id>/tamer.yaml: the tamer's rules (packages/session: TamerRules, docs/modulos/apps/session.md).",
   "type": "object",
   "required": ["level_min", "level_max", "evolution_level_gain"],
   "additionalProperties": false,

@@ -1,4 +1,4 @@
-# The music synthesizer is one header from the repository's overlay port (vcpkg-ports/tinysoundfont).
+# The music synthesizer is one header from the repository's overlay port (tooling/vcpkg-ports/tinysoundfont).
 find_path(TSF_INCLUDE_DIR tsf.h REQUIRED)
 
 dwe_add_module(audio
@@ -23,5 +23,5 @@ target_compile_definitions(dwe_audio PRIVATE TSF_NO_STDIO)
 
 if(BUILD_TESTING)
     # The SoundFont tests load the media files of the assets tests.
-    target_include_directories(dwe_audio_tests PRIVATE ${PROJECT_SOURCE_DIR}/engine/assets/tests)
+    target_include_directories(dwe_audio_tests PRIVATE ${PROJECT_SOURCE_DIR}/packages/engine/assets/tests)
 endif()

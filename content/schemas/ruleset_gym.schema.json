@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: gym",
-  "description": "rules/<id>/gym.yaml: the training courses of every gym map (game/gym, docs/reference/vanilla). Frames are frames of the original's game loop; points are in the original's axes (world z = -z); object moves are background pixels.",
+  "description": "rules/<id>/gym.yaml: the training courses of every gym map (packages/game/gym, docs/reference/vanilla). Frames are frames of the original's game loop; points are in the original's axes (world z = -z); object moves are background pixels.",
   "type": "object",
   "required": [
     "course_variable",

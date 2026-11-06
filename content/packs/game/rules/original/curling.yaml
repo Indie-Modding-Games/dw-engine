@@ -1,4 +1,4 @@
-# El minijuego de piedras (curling) del lago helado (game/curling: curling.hpp). kar/kar.c: KAR_start, KAR_setupMatch,
+# El minijuego de piedras (curling) del lago helado (packages/game/curling: curling.hpp). kar/kar.c: KAR_start, KAR_setupMatch,
 # KAR_tickStones, KAR_tickMatchState, KAR_tickScoreTally y KAR_finishMatch. La pista (paredes, diagonales, líneas)
 # está en el código; aquí van las reglas del juego.
 

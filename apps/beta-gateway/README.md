@@ -53,7 +53,7 @@ Contesta, para un único repositorio, las peticiones de la API de GitHub que usa
 
 1. **Workers y Pages → Crear → Crear Worker** (*Workers & Pages → Create → Create Worker*, la plantilla «Hello
    World»). Nombre: `dwe-beta-gateway`. Desplegar (*Deploy*).
-2. **Editar código** (*Edit code*): borrar el contenido de `worker.js` en el editor, pegar el de `services/beta-gateway/worker.js`
+2. **Editar código** (*Edit code*): borrar el contenido de `worker.js` en el editor, pegar el de `apps/beta-gateway/worker.js`
    entero y pulsar **Desplegar**.
 3. **Configuración → Variables y secretos → Añadir** (*Settings → Variables and Secrets → Add*), y después
    **Desplegar**:
@@ -129,7 +129,7 @@ El lanzador usa como servidor de versiones la URL con la que se compiló:
 Sin instalar nada (node viene en el host o en la imagen `dwe-launcher-dev`):
 
 ```bash
-node --test services/beta-gateway/          # el Worker con fetch simulado
+node --test apps/beta-gateway/          # el Worker con fetch simulado
 scripts/launcher.sh test                    # incluye la prueba de punta a punta (abajo)
 ```
 
@@ -144,7 +144,7 @@ A mano:
 ```bash
 python3 apps/launcher/tools/fake_release_server.py <carpeta> --port 8765 --token token-falso --repo Indie-Modding-Games/dw-engine &
 BETA_KEY=clave-de-prueba-de-al-menos-24-caracteres GITHUB_TOKEN=token-falso GITHUB_REPO=Indie-Modding-Games/dw-engine \
-  GITHUB_API=http://127.0.0.1:8765 node services/beta-gateway/dev/serve.js --port 8787 &
+  GITHUB_API=http://127.0.0.1:8765 node apps/beta-gateway/dev/serve.js --port 8787 &
 DWE_LAUNCHER_API=http://127.0.0.1:8787 build/launcher/release/dwe-launcher
 ```
 

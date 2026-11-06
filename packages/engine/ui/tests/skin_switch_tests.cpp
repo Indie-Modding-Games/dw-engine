@@ -1482,8 +1482,8 @@ TEST_CASE("the original skin's enemy HP bar fill is as wide as the HP left") {
   ui->setSetting("ui_skin", std::string{"original"});
   ui->show("battle", true);
   double revision = 0.0;
-  // One bar as apps/screens publishes it: enemy 1, its anchor, the corner, the fill's width in the
-  // original's pixels, its red and green tint (BTL_renderEnemyHPBars) and the HP.
+  // One bar as packages/screens publishes it: enemy 1, its anchor, the corner, the fill's width in
+  // the original's pixels, its red and green tint (BTL_renderEnemyHPBars) and the HP.
   const auto publish = [&](int fill, int red, int green, int hp) {
     ui->setSetting("battle.hp_bars",
                    std::format("1 50.0 40.0 20 -26 {} {} {} {} ", fill, red, green, hp));

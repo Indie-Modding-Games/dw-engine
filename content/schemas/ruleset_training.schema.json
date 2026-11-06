@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: training",
-  "description": "rules/<id>/training.yaml: the stat gains and costs of the training places (game/partner, docs/reference/care.md).",
+  "description": "rules/<id>/training.yaml: the stat gains and costs of the training places (packages/game/partner, docs/reference/care.md).",
   "type": "object",
   "required": [
     "aptitude_tenths",

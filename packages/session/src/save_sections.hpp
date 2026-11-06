@@ -8,7 +8,7 @@
 
 #include "session_state.hpp"
 
-// The session's save sections: each wraps one part of the playthrough in a game/save
+// The session's save sections: each wraps one part of the playthrough in a packages/game/save
 // SectionSerializer.
 namespace dwe::session::sections {
 
@@ -29,7 +29,8 @@ private:
   SessionState* state_;
 };
 
-// The partner's state, written by game/partner (toYaml, fromYaml), which versions it itself.
+// The partner's state, written by packages/game/partner (toYaml, fromYaml), which versions it
+// itself.
 class PartnerSave final : public game::save::SectionSerializer {
 public:
   explicit PartnerSave(SessionState& state) : state_(&state) {}

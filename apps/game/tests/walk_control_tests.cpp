@@ -11,7 +11,7 @@
 #include <optional>
 #include <string>
 
-#include "game/field/tests/fixture.hpp"
+#include "packages/game/field/tests/fixture.hpp"
 #include "walk_control.hpp"
 
 namespace dwe::app {

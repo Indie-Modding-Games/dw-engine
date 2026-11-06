@@ -39,7 +39,8 @@ objectFaces(const assets::ModelData& model, std::uint32_t object, const glm::mat
     const rhi::TextureId texture = imageTexture(image.value_or(NoImage));
     const auto& indices = primitive.indices;
     // The extracted triangle of a TMD face is (f, f + 2, f + 1), a quad's second (f + 1, f + 2,
-    // f + 3): its corners f to f + 3 come back in the TMD's order (formats/src/model/gltf.cpp).
+    // f + 3): its corners f to f + 3 come back in the TMD's order
+    // (packages/formats/src/model/gltf.cpp).
     for (std::size_t t = 0; t + 2 < indices.size(); t += 3) {
       const std::uint32_t first = indices[t];
       if (first >= primitive.vertices.size() || primitive.vertices[first].joints[0] != object) {

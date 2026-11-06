@@ -1,4 +1,4 @@
-# Las cartas del jugador y el sobre de cartas (game/inventory: cards.hpp; session: CardsAdapter).
+# Las cartas del jugador y el sobre de cartas (packages/game/inventory: cards.hpp; session: CardsAdapter).
 # script_menu.c: showCardTextbox: una carta no pasa de 9 copias.
 max_copies: 9
 # shopFillSellCardList: las listas de cartas van de la 1 a la 0x40.

@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-#include "game/field/tests/fixture.hpp"
+#include "packages/game/field/tests/fixture.hpp"
 #include "save_command.hpp"
 #include "session_fixture.hpp"
 

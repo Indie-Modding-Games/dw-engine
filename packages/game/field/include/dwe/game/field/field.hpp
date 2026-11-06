@@ -54,7 +54,7 @@ struct MapChange {
 };
 
 // Whether an exit of map `from` may take the player to map `to` now (the story lock of
-// apps/session). A closed one keeps the player on the map.
+// packages/session). A closed one keeps the player on the map.
 using ExitFilter = std::function<bool(std::string_view from, std::string_view to)>;
 
 // The player stepped onto a trigger cell that is not a warp (scripts, the toilet): for later

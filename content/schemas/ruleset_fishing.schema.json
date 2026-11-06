@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: fishing",
-  "description": "rules/<id>/fishing.yaml: the rules of the fishing (game/fishing: rules.hpp). Its tables are data/fishing.",
+  "description": "rules/<id>/fishing.yaml: the rules of the fishing (packages/game/fishing: rules.hpp). Its tables are data/fishing.",
   "type": "object",
   "required": [
     "sea_serpent",

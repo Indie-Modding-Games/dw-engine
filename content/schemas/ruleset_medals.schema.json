@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: medals",
-  "description": "rules/<id>/medals.yaml: the medals the field gives while the player walks and the award notice's sound (apps/session: MedalsAdapter; game/story: medals.hpp).",
+  "description": "rules/<id>/medals.yaml: the medals the field gives while the player walks and the award notice's sound (packages/session: MedalsAdapter; packages/game/story: medals.hpp).",
   "type": "object",
   "required": ["first_trigger", "medal_limit", "conditions", "award_sound"],
   "additionalProperties": false,

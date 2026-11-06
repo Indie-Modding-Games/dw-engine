@@ -1,4 +1,4 @@
-// dwe closed-beta gateway (services/beta-gateway/README.md): a Cloudflare Worker between the
+// dwe closed-beta gateway (apps/beta-gateway/README.md): a Cloudflare Worker between the
 // launcher and the private repository's releases. It answers the few GitHub REST API requests the
 // launcher and its updater make, for one repository only, to whoever sends the shared beta key:
 //

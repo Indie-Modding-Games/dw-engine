@@ -204,8 +204,8 @@ YamlNode writeSummary(const SaveSummary& summary) {
   return node;
 }
 
-// Format 3 adds the header's summary. game/save does not know the sections it would come from, so a
-// format 2 save gets an empty one; the game can fill it from the sections
+// Format 3 adds the header's summary. packages/game/save does not know the sections it would come
+// from, so a format 2 save gets an empty one; the game can fill it from the sections
 // (session::summaryFromSections) and does on its next save.
 core::Result<YamlNode> addSummary(YamlNode root) {
   root.set(std::string{save_key::Summary}, writeSummary({}));

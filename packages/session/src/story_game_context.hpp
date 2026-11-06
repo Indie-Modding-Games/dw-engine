@@ -22,7 +22,7 @@ namespace dwe::session {
 class GameSession;
 
 // The names of the orders in the story namespace (story_lua.hpp: StoryNamespace), as the Lua
-// emitter writes them (formats/script: storyFunctionName).
+// emitter writes them (packages/formats script: storyFunctionName).
 namespace story_game_api {
 inline constexpr std::string_view GiveItem = "give_item";
 inline constexpr std::string_view RemoveItem = "remove_item";

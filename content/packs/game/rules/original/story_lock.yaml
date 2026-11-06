@@ -1,4 +1,4 @@
-# El candado de historia (apps/session: StoryLock, docs/modulos/apps/session.md): qué parte del juego
+# El candado de historia (packages/session: StoryLock, docs/modulos/apps/session.md): qué parte del juego
 # está abierta mientras el port llega etapa a etapa. No es una regla del original: cuando todo el
 # juego esté portado, la última etapa abre todos los mapas ("*").
 #

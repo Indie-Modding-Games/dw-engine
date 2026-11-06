@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: jukebox",
-  "description": "rules/<id>/jukebox.yaml: the jukebox the story opens (apps/session: Jukebox; shop/script_menu.c: openJukebox, tickJukeboxMenu).",
+  "description": "rules/<id>/jukebox.yaml: the jukebox the story opens (packages/session: Jukebox; shop/script_menu.c: openJukebox, tickJukeboxMenu).",
   "type": "object",
   "required": ["lines_section", "lines", "unlock_trigger", "locked_tracks", "chosen_variable", "no_track"],
   "additionalProperties": false,

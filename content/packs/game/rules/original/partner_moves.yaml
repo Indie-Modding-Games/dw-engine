@@ -1,4 +1,4 @@
-# Las técnicas del partner al empezar y al renacer (apps/session: BattleAdapter, PartnerMoveRules,
+# Las técnicas del partner al empezar y al renacer (packages/session: BattleAdapter, PartnerMoveRules,
 # docs/modulos/apps/session.md). Una posición es el índice en la lista de técnicas de la especie (data/digimon: moves): el
 # original guarda las equipadas así (stats.base.moves = 0x2E + posición), de modo que tras una evolución cada posición
 # nombra la técnica de la nueva especie. El remate equipado es la última técnica de la lista que es un remate.

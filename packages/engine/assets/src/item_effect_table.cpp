@@ -23,7 +23,8 @@ struct HandlerName {
   ItemHandler handler;
 };
 
-// The names data/item_effects gives the handlers (formats/exe/item_effects.hpp: ItemHandlerNames).
+// The names data/item_effects gives the handlers (packages/formats/exe/item_effects.hpp:
+// ItemHandlerNames).
 constexpr std::array<HandlerName, 10> HandlerNames{{
     {.name = "none", .handler = ItemHandler::None},
     {.name = "hp_healing", .handler = ItemHandler::HpHealing},

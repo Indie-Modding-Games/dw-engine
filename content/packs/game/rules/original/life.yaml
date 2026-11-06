@@ -1,5 +1,5 @@
 # Vida, muerte y renacer del partner (docs/reference/care.md, "Vida y edad" y "Muerte y renacer"). Lo lee
-# game/partner. Las horas son horas de juego. Salvo que se diga otra cosa, todo está en src/main/partner_impl.c.
+# packages/game/partner. Las horas son horas de juego. Salvo que se diga otra cosa, todo está en src/main/partner_impl.c.
 # initializePartner, initializeReincarnatedPartner: la vida empieza en 360 horas (15 días).
 lifetime_hours: 360
 # initializePartner, evolution.c: reincarnatePartner: el partner empieza con 3 vidas.

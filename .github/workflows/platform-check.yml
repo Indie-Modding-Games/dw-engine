@@ -46,7 +46,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-platform-windows-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'cmake/toolchains/**') }}
+          key: vcpkg-platform-windows-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/cmake/toolchains/**') }}
           restore-keys: vcpkg-platform-windows-
 
       - name: Configure
@@ -59,7 +59,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-platform-windows-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'cmake/toolchains/**') }}
+          key: vcpkg-platform-windows-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/cmake/toolchains/**') }}
 
       - name: Build
         run: cmake --build --preset windows-ci
@@ -97,7 +97,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-platform-macos-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**') }}
+          key: vcpkg-platform-macos-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**') }}
           restore-keys: vcpkg-platform-macos-
 
       - name: Configure

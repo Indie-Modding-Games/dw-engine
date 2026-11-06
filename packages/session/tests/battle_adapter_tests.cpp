@@ -31,8 +31,8 @@
 #include <vector>
 
 #include "adapter_fixture.hpp"
-#include "game/battle/tests/fixture.hpp"
-#include "game/inventory/tests/fixture.hpp"
+#include "packages/game/battle/tests/fixture.hpp"
+#include "packages/game/inventory/tests/fixture.hpp"
 
 namespace items = dwe::game::inventory::testing;
 using dwe::assets::DigimonRow;

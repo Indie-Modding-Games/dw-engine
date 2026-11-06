@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "adapter_fixture.hpp"
-#include "game/inventory/tests/fixture.hpp"
+#include "packages/game/inventory/tests/fixture.hpp"
 #include "session_fixture.hpp"
 
 namespace items = dwe::game::inventory::testing;

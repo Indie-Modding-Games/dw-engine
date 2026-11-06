@@ -17,8 +17,8 @@ namespace dwe::session {
 
 namespace {
 
-// The partner's conditions as the original's bits (params.h: CONDITION_*), which game/partner's
-// Condition follows.
+// The partner's conditions as the original's bits (params.h: CONDITION_*), which
+// packages/game/partner's Condition follows.
 std::uint32_t conditionBits(const game::partner::Conditions& conditions) {
   std::uint32_t bits = 0;
   for (std::size_t condition = 0; condition < game::partner::ConditionCount; ++condition) {

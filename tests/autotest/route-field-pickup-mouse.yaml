@@ -1,5 +1,5 @@
 # El aviso de un objeto del suelo respondido con un click (tamer.c: tamerTickPickupItem se responde
-# confirmando, y el click izquierdo es `confirm` - engine/input: action_map.c:37): drop_item deja la
+# confirmando, y el click izquierdo es `confirm` - packages/engine/input: action_map.c:37): drop_item deja la
 # carne a los pies del jugador, el aviso se muestra, un click sobre su caja lo cierra y el objeto entra en
 # la bolsa. Se corre con: dwe-game --content <carpeta> --autotest tests/autotest/route-field-pickup-mouse.yaml
 name: field-pickup-mouse

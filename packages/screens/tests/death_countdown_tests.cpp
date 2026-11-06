@@ -7,7 +7,7 @@
 #include <string>
 #include <variant>
 
-#include "game/battle/tests/fixture.hpp"
+#include "packages/game/battle/tests/fixture.hpp"
 
 using dwe::screens::deathCountdownAnchorOf;
 using dwe::screens::DeathCountdownLook;

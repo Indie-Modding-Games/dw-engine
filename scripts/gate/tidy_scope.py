@@ -23,7 +23,7 @@ PUBLIC_INCLUDE_DIR = "include"
 TIDY_CONFIG_FILE = ".clang-tidy"
 BUILD_FILE = "CMakeLists.txt"
 # Changes to these affect the flags or the tools of every translation unit; scripts/dev.sh runs clang-tidy.
-TOOLCHAIN_DIRS = (".devcontainer", "cmake", "triplets")
+TOOLCHAIN_DIRS = (".devcontainer", "tooling")
 TOOLCHAIN_ROOT_FILES = (BUILD_FILE, "CMakePresets.json", "vcpkg.json", "scripts/dev.sh")
 # A template that CMake's configure_file turns into a generated header in the build folder: the include graph of the
 # sources cannot see what includes the generated file, so a change to one checks everything.

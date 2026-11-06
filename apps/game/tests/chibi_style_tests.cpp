@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "chibi_style.hpp"
-#include "engine/assets/tests/glb_builder.hpp"
+#include "packages/engine/assets/tests/glb_builder.hpp"
 
 namespace dwe::app {
 namespace {

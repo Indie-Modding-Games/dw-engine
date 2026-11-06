@@ -55,7 +55,8 @@ struct SlotInfo {
 };
 
 // Reads the summary of a save that has none (one written before format 3) from its sections.
-// game/save does not know the sections, so the game gives it (session::summaryFromSections).
+// packages/game/save does not know the sections, so the game gives it
+// (session::summaryFromSections).
 using SummaryReader = std::function<SaveSummary(const SaveFile&)>;
 
 // The save slots of the game in a storage: the manual ones, and the old autosaves still on disk.

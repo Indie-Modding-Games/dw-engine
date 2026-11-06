@@ -213,7 +213,7 @@ std::map<std::size_t, audio::ToneAttributes> firstToneOfEachSample(const audio::
 }
 
 // The rate at which a tone plays its sample at its own top key: the chip's 44100 Hz moved by the
-// key's distance to the centre, in 128ths of a semitone (formats/audio: toneFineTune).
+// key's distance to the centre, in 128ths of a semitone (packages/formats/audio: toneFineTune).
 std::uint32_t playbackRate(const audio::ToneAttributes& tone) {
   const int steps = (tone.max * SemitoneSteps) - ((tone.center * SemitoneSteps) + tone.shift);
   return static_cast<std::uint32_t>(

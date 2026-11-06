@@ -74,7 +74,7 @@ struct PartnerMenuDesc {
 };
 
 // The partner's menu: its status page, the item bag and the care commands. It publishes the views
-// of the partner and the bag (apps/screens) while the document is open and passes the player's
+// of the partner and the bag (packages/screens) while the document is open and passes the player's
 // commands to the session and the inventory adapter, which decide what they do.
 class PartnerMenu {
 public:

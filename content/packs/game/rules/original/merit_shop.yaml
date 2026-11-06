@@ -1,5 +1,5 @@
 # El intercambio por méritos que abre la historia (script_interp.c: CALL_ROUTINE 1 -> shop/script_menu.c: openMeritShop;
-# apps/session: MeritShop): el jugador da cartas por puntos de mérito y se lleva los objetos con precio en méritos
+# packages/session: MeritShop): el jugador da cartas por puntos de mérito y se lleva los objetos con precio en méritos
 # (merit_value de data/cards y de data/items).
 
 # showMapHeadTextbox(..., 0x4d4): las frases del tendero y las elecciones del jugador son esta sección de MAPHEAD.

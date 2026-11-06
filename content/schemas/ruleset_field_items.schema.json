@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: field_items",
-  "description": "rules/<id>/field_items.yaml: the items on the field's ground, the chests and the field's sounds (apps/session: FieldItemsAdapter).",
+  "description": "rules/<id>/field_items.yaml: the items on the field's ground, the chests and the field's sounds (packages/session: FieldItemsAdapter).",
   "type": "object",
   "required": ["ground_slots", "chest_slots", "reach_cells", "pickup_sound", "toilet_sound", "sleep_sound", "praise_sound",
     "scold_sound"],

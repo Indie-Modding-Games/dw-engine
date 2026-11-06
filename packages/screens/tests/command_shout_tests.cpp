@@ -5,7 +5,7 @@
 
 #include <vector>
 
-#include "game/battle/tests/fixture.hpp"
+#include "packages/game/battle/tests/fixture.hpp"
 
 namespace {
 

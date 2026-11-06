@@ -17,7 +17,7 @@
 #include <string_view>
 #include <vector>
 
-#include "engine/assets/tests/media_fixtures.hpp"
+#include "packages/engine/assets/tests/media_fixtures.hpp"
 
 using namespace dwe;
 

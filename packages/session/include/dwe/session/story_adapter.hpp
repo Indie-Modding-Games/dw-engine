@@ -77,10 +77,10 @@ struct StoryAdapterDesc {
   const assets::VirtualFileSystem* files = nullptr;
 };
 
-// Glues the story (game/story) to the session: starts its state as a new game leaves it, saves it
-// in the `story` save section, and runs the story's sections. Each game has its own script VM, in
-// which StoryLuaHost runs the packs' story modules; one tick of the session is one engine tick of
-// the runner. The field reads the triggers and writes the ones a script warp sets
+// Glues the story (packages/game/story) to the session: starts its state as a new game leaves it,
+// saves it in the `story` save section, and runs the story's sections. Each game has its own script
+// VM, in which StoryLuaHost runs the packs' story modules; one tick of the session is one engine
+// tick of the runner. The field reads the triggers and writes the ones a script warp sets
 // (field_facts.hpp).
 class StoryAdapter final : public SessionSystem {
 public:

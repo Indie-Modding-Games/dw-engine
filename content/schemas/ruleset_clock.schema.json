@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: clock",
-  "description": "rules/<id>/clock.yaml: the game clock (engine/ruleset: GameClock, docs/reference/care.md). Time is counted in frames of the original's game loop.",
+  "description": "rules/<id>/clock.yaml: the game clock (packages/engine/ruleset: GameClock, docs/reference/care.md). Time is counted in frames of the original's game loop.",
   "type": "object",
   "required": ["frames_per_second", "frames_per_minute", "days_per_year", "year_limit", "start"],
   "additionalProperties": false,

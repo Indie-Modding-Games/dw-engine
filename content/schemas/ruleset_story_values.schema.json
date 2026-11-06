@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: story_values",
-  "description": "rules/<id>/story_values.yaml: the numbers of the story orders that change the game (apps/session: StoryValueRules, docs/reference/scripts.md).",
+  "description": "rules/<id>/story_values.yaml: the numbers of the story orders that change the game (packages/session: StoryValueRules, docs/reference/scripts.md).",
   "type": "object",
   "required": [
     "stat_limits",

@@ -14,9 +14,9 @@
 #include <vector>
 
 #include "adapter_fixture.hpp"
-#include "apps/session/src/story_routines/routines.hpp"
-#include "apps/session/src/story_scenes_context.hpp"
-#include "game/inventory/tests/fixture.hpp"
+#include "packages/game/inventory/tests/fixture.hpp"
+#include "packages/session/src/story_routines/routines.hpp"
+#include "packages/session/src/story_scenes_context.hpp"
 
 namespace items = dwe::game::inventory::testing;
 using dwe::game::evolution::testing::TableFixture;

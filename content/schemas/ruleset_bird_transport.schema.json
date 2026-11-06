@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: bird_transport",
-  "description": "rules/<id>/bird_transport.yaml: the bird transport the story opens (apps/session: BirdTransport; shop/script_menu.c: tickBirdraTransport).",
+  "description": "rules/<id>/bird_transport.yaml: the bird transport the story opens (packages/session: BirdTransport; shop/script_menu.c: tickBirdraTransport).",
   "type": "object",
   "required": ["lines_section", "bits_section", "lines", "map_variable", "entry_variable", "travel_section", "choice_lock_trigger", "refuse_sound", "destinations"],
   "additionalProperties": false,

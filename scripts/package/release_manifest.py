@@ -13,7 +13,7 @@ the package to an existing manifest of the same version (one manifest, several c
 launcher: latest.json for the launcher's own updater (the Tauri updater format), one
 --platform per bundle; the URL is the file's download URL by release and name
 (https://github.com/<repo>/releases/download/<tag>/<name>), which the beta gateway
-(services/beta-gateway) rewrites to its own address before a launcher sees it. Unlike the API URL
+(apps/beta-gateway) rewrites to its own address before a launcher sees it. Unlike the API URL
 (.../releases/assets/<id>, still accepted), it stays right when a file is uploaded again.
 The manifest goes to the standard output.
 check: the checks before a release is uploaded (scripts/release_local.sh): every file of the folder

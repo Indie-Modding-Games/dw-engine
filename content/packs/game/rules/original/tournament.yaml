@@ -1,4 +1,4 @@
-# Los torneos de la arena (game/tournament: tournament.hpp; apps/session: TournamentAdapter). main/utils2.c:
+# Los torneos de la arena (packages/game/tournament: tournament.hpp; packages/session: TournamentAdapter). main/utils2.c:
 # startTournament y std/std_setup.c: STD_tournamentMain y STD_initializeOpponent; std/std_main.c: STD_setupParticipants,
 # STD_addFighterCounter y STD_deinitializeCombat. La base de los rivales por copa y las probabilidades de victoria por
 # nivel son data/stadium, que dwx extrae del disco; las listas de cada copa, la sección 10 del guion de la arena.

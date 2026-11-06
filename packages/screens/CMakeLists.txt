@@ -21,7 +21,8 @@ dwe_add_module(screens
     DEPS core assets localization ruleset ui battle inventory partner session)
 
 if(TARGET dwe_screens_tests)
-    # The made-up moves of the battle tests (game/battle/tests/fixture.hpp) and the game pack they read the rules from.
+    # The made-up moves of the battle tests (packages/game/battle/tests/fixture.hpp) and the game pack they read the
+    # rules from.
     target_include_directories(dwe_screens_tests PRIVATE "${PROJECT_SOURCE_DIR}")
     target_compile_definitions(dwe_screens_tests PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game")
 endif()

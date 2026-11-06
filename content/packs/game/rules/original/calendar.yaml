@@ -1,4 +1,4 @@
-# El calendario (apps/session: CalendarAdapter; game/story: new_day.hpp).
+# El calendario (packages/session: CalendarAdapter; packages/game/story: new_day.hpp).
 # script_common.c: dailyPStatTrigger, en cada medianoche, al dormir o entrenar pasándola, cuando un script cambia el
 # día y una vez al empezar una partida (script_interp.c: initializeScripts).
 new_day:

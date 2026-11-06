@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: care",
-  "description": "rules/<id>/care.yaml: the partner's care (game/partner, docs/reference/care.md). The units are in the names: frames of the original's loop, game minutes and hours, percents. The quirks reproduce the original's oddities when true.",
+  "description": "rules/<id>/care.yaml: the partner's care (packages/game/partner, docs/reference/care.md). The units are in the names: frames of the original's loop, game minutes and hours, percents. The quirks reproduce the original's oddities when true.",
   "type": "object",
   "required": [
     "limits",

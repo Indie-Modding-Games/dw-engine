@@ -1,5 +1,5 @@
 # El trueque de objetos que abre la historia (script_interp.c: CALL_ROUTINE 2 -> shop/script_menu.c:
-# openMojyamonShop; apps/session: ItemTrader): el jugador da un objeto de la bolsa por el del comerciante.
+# openMojyamonShop; packages/session: ItemTrader): el jugador da un objeto de la bolsa por el del comerciante.
 
 # showMapHeadTextbox(..., 0x4d6): las frases del comerciante son esta sección de MAPHEAD.
 lines_section: 1238

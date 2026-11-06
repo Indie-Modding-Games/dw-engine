@@ -18,8 +18,8 @@ struct Rgb {
   std::byte b;
 };
 
-// The MDEC's YCbCr to RGB (as formats/video toRgb, checked against Mednafen's model): the green
-// term drops low bits of each product, as the hardware does.
+// The MDEC's YCbCr to RGB (as packages/formats video toRgb, checked against Mednafen's model): the
+// green term drops low bits of each product, as the hardware does.
 Rgb toRgb(std::uint8_t y, std::uint8_t cb, std::uint8_t cr) {
   const int luma = int{y} - 128;
   const int blue = int{cb} - 128;

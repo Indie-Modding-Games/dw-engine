@@ -18,8 +18,8 @@
 #include <string>
 #include <vector>
 
-#include "game/field/tests/fixture.hpp"
 #include "hd_scenery_setting.hpp"
+#include "packages/game/field/tests/fixture.hpp"
 #include "user_settings.hpp"
 
 namespace dwe::app {

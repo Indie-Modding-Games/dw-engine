@@ -9,7 +9,7 @@
 namespace dwe::game::story {
 
 // The version of the saved story state. fromYaml reads only this one; the session's save brings
-// older ones up to it with game/save's MigrationChain.
+// older ones up to it with packages/game/save's MigrationChain.
 inline constexpr std::int32_t StoryStateVersion = 1;
 
 // The variables a save keeps, 0-34 (main_menu.c: writeSavegame); the rest live only while the game

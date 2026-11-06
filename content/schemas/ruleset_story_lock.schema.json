@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: story_lock",
-  "description": "rules/<id>/story_lock.yaml: which maps, exits and cell sections each stage of the story opens (apps/session: StoryLockRules, docs/modulos/apps/session.md). Stage N opens the maps of stages 1 to N; only the active stage's exits and sections narrow them. The --story-stage launch option overrides active_stage, and 'all' opens everything.",
+  "description": "rules/<id>/story_lock.yaml: which maps, exits and cell sections each stage of the story opens (packages/session: StoryLockRules, docs/modulos/apps/session.md). Stage N opens the maps of stages 1 to N; only the active stage's exits and sections narrow them. The --story-stage launch option overrides active_stage, and 'all' opens everything.",
   "type": "object",
   "required": ["active_stage", "closed_message", "stages"],
   "additionalProperties": false,

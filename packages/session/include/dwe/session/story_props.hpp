@@ -176,7 +176,7 @@ struct SpriteAtCharacter {
 
 // Routine 40 (eab.c: EAB_startBuildup): the final boss, the character with script id `character`,
 // leaves the map and the charge's rings rise where it stands until the partner's routine 8 brings
-// it back (game/field/boss_arrival.hpp).
+// it back (packages/game/field/boss_arrival.hpp).
 struct BossBuildupStarted {
   std::int64_t character = 0;
 };

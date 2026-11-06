@@ -9,10 +9,10 @@
 #include <string>
 #include <vector>
 
-// The inventory's state as YAML, for its save section: the session wraps these in a game/save
-// SectionSerializer, which stores the version next to the state. Like the original's save
-// (main_menu.c: writeSavegame): the 30 slots with their item and count, how many slots the bag has,
-// and the money.
+// The inventory's state as YAML, for its save section: the session wraps these in a
+// packages/game/save SectionSerializer, which stores the version next to the state. Like the
+// original's save (main_menu.c: writeSavegame): the 30 slots with their item and count, how many
+// slots the bag has, and the money.
 namespace dwe::game::inventory {
 
 // The version of the state that toYaml writes; a change of layout adds a migration in the session.

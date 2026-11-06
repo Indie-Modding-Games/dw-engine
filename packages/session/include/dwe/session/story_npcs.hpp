@@ -25,8 +25,8 @@ inline constexpr std::array NpcPublished{LoadSpeciesModel, SpawnNpc, UnloadEntit
                                          UnloadSpeciesModel};
 } // namespace story_api
 
-// The story's NPC orders on the field's NPCs (game/field npcs.hpp). Without a field attached the
-// orders do nothing and say so in the log; the app attaches the field it plays.
+// The story's NPC orders on the field's NPCs (packages/game/field npcs.hpp). Without a field
+// attached the orders do nothing and say so in the log; the app attaches the field it plays.
 class StoryNpcs final : public game::story::NpcPort {
 public:
   StoryNpcs() = default;
