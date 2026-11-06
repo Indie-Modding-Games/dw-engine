@@ -36,7 +36,7 @@ ticks o se ha escrito la imagen.
 
 | Orden | Campos | Qué hace |
 |---|---|---|
-| `status` | | Responde `tick`, `paused`, `mode` (`title`, `movie`, `interview`, `field`, `battle`), `map`, `held` (las teclas mantenidas), `pending` (los ticks que quedan por avanzar), `textures` (las ranuras ocupadas de la tabla bindless) y `gpu_bytes` (la memoria de GPU que tiene el asignador): las dos últimas sirven para ver fugas en una sesión larga |
+| `status` | | Responde `tick`, `paused`, `mode` (`title`, `movie`, `interview`, `field`, `battle`), `map`, `held` (las teclas mantenidas), `pending` (los ticks que quedan por avanzar), `textures` (las ranuras ocupadas de la tabla bindless), `gpu_bytes` (la memoria de GPU que tiene el asignador) y `overlay` (si la capa de depuración del mapa está encendida). `textures` y `gpu_bytes` sirven para ver fugas en una sesión larga; `overlay` deja que el mapper muestre el estado real al conectar |
 | `state` | `path` | La línea de la [traza de estado](traza-de-estado.md) de ahora, o la parte que nombra el camino: `player`, `player.x`, `battle.fighters.0.hp`, `npcs.id=6` (el NPC de ese id) |
 | `press` | `keys`, `ticks` (6) | Las teclas abajo exactamente esos ticks y luego arriba. Con la lógica parada, corre esos ticks ella misma. Dos `press` seguidos se encadenan tick a tick |
 | `hold` | `keys` | Las teclas abajo desde el siguiente tick hasta `release` |

@@ -84,6 +84,8 @@ struct ControlStatus {
   // the game has a renderer.
   std::optional<std::uint32_t> textures;
   std::optional<std::uint64_t> gpuBytes;
+  // Whether the map debug overlay is on, when the game has one (for an editor that mirrors it).
+  std::optional<bool> overlay;
 };
 
 // Called once a screenshot was written (its path) or could not be.
