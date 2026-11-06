@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/indexed_image.hpp>
+#include <dwe/assets/map_images.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -78,6 +79,12 @@ struct Doubled {
 struct UpscaledScenery {
   std::uint32_t width = 0;
   std::uint32_t height = 0;
+  // How many of its texels per texel of the background, and where the background's texel u falls in
+  // it: at u * scale + shift. The engine's doubling puts u at 2u (shift 0); an image whose squares
+  // of scale x scale texels cover the background's texels (a player's image,
+  // MapBackgroundReplacement) puts it at the middle of its square, shift (scale - 1) / 2.
+  std::uint32_t scale = 2;
+  float shift = 0.0F;
   // Per variant, width * height colours. Alpha is the class of the nearest source texel as the
   // palette gives it (the GPU takes it from the original pixels anyway).
   std::vector<std::vector<assets::PaletteColor>> variants;
@@ -85,6 +92,11 @@ struct UpscaledScenery {
 
 // Doubles a background in every palette variant. The decisions are taken on the first variant's
 // colours (each variant shades the same picture).
+// A player's images of a background as HD scenery draws them: each variant as it is, its squares of
+// scale x scale texels over the background's texels.
+[[nodiscard]] UpscaledScenery
+sceneryFromReplacement(const assets::MapBackgroundReplacement& replacement);
+
 [[nodiscard]] UpscaledScenery
 upscaleScenery(std::uint32_t width, std::uint32_t height, std::span<const std::uint8_t> indices,
                std::span<const std::vector<assets::PaletteColor>> palettes,

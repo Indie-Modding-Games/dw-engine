@@ -46,6 +46,7 @@ dwe_add_module(assets
         src/indexed_image.cpp
         src/map_images.cpp
         src/png_only_images.cpp
+        src/image_replacement.cpp
         src/image_palettes.cpp
         src/character_model.cpp
         src/game_table_document.cpp

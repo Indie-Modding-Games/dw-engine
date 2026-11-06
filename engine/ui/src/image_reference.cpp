@@ -1,7 +1,9 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/image_palettes.hpp>
+#include <dwe/assets/image_replacement.hpp>
 #include <dwe/assets/indexed_image.hpp>
 #include <dwe/assets/texture.hpp>
+#include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/ui/image_reference.hpp>
 
@@ -232,6 +234,71 @@ core::Result<ImageSize> headerSize(const ImageReference& reference, const ImageF
   return size;
 }
 
+// A player's image of an image, ready to decode: its reference, its file and the size it is drawn
+// at, the original's.
+struct Replacement {
+  ImageReference reference;
+  ImageFile file;
+  ImageSize size;
+};
+
+// The size of the game's own image: the bottom of the stack, the pack that first gave it.
+core::Result<ImageSize> originalSize(const assets::VirtualFileSystem& files,
+                                     const assets::AssetId& image) {
+  const std::span<const assets::AssetSource> sources = files.sources(image);
+  if (sources.empty()) {
+    return core::fail(core::formatMessage(messages::NoImage, image.str()));
+  }
+  auto bytes = files.read(sources.front());
+  if (!bytes) {
+    return std::unexpected{bytes.error()};
+  }
+  if (auto png = assets::inspectPng(*bytes)) {
+    return ImageSize{.width = png->width, .height = png->height};
+  }
+  auto ktx2 = assets::inspectKtx2(*bytes);
+  if (!ktx2) {
+    return std::unexpected{ktx2.error()};
+  }
+  return ImageSize{.width = ktx2->width, .height = ktx2->height};
+}
+
+std::optional<Replacement> findReplacement(const assets::VirtualFileSystem& files,
+                                           const ImageReference& reference) {
+  auto id = assets::paletteImageId(reference.asset, reference.palette.value_or(0));
+  const assets::AssetSource* source = id ? files.resolve(*id) : nullptr;
+  if (source == nullptr) {
+    return std::nullopt;
+  }
+  ImageReference replacement{
+      .asset = std::move(*id), .palette = std::nullopt, .tone = reference.tone};
+  const auto unusable = [&](const std::string& reason) {
+    core::logWarning("{}",
+                     core::formatMessage(messages::ReplacementUnusable, replacement.asset.str(),
+                                         source->packId, reference.asset.str(), reason));
+    return std::nullopt;
+  };
+  auto original = originalSize(files, reference.asset);
+  if (!original) {
+    return unusable(original.error().message);
+  }
+  auto file = readImageFile(files, replacement);
+  auto size = file ? headerSize(replacement, *file)
+                   : core::Result<ImageSize>{std::unexpected{file.error()}};
+  if (!size) {
+    return unusable(size.error().message);
+  }
+  if (!assets::replacementScale(original->width, original->height, size->width, size->height)) {
+    core::logWarning("{}", core::formatMessage(messages::ReplacementWrongSize,
+                                               replacement.asset.str(), source->packId, size->width,
+                                               size->height, original->width, original->height,
+                                               assets::MaxReplacementScale, reference.asset.str()));
+    return std::nullopt;
+  }
+  return Replacement{
+      .reference = std::move(replacement), .file = std::move(*file), .size = *original};
+}
+
 } // namespace
 
 core::Result<void> checkUiImageBudget(const assets::Ktx2Header& header) {
@@ -246,6 +313,9 @@ core::Result<void> checkUiImageBudget(const assets::Ktx2Header& header) {
 
 core::Result<ImageSize> imageSize(const assets::VirtualFileSystem& files,
                                   const ImageReference& reference) {
+  if (std::optional<Replacement> replacement = findReplacement(files, reference)) {
+    return replacement->size;
+  }
   auto file = readImageFile(files, reference);
   if (!file) {
     return std::unexpected{file.error()};
@@ -282,8 +352,19 @@ core::Result<assets::Image> decodeImage(const assets::VirtualFileSystem& files,
 
 } // namespace
 
-core::Result<assets::Image> loadImage(const assets::VirtualFileSystem& files,
-                                      const ImageReference& reference) {
+core::Result<DrawnImage> loadDrawnImage(const assets::VirtualFileSystem& files,
+                                        const ImageReference& reference) {
+  if (std::optional<Replacement> replacement = findReplacement(files, reference)) {
+    auto image = decodeImage(files, replacement->reference, replacement->file);
+    if (image) {
+      applyImageTone(*image, reference.tone);
+      return DrawnImage{.pixels = std::move(*image), .size = replacement->size};
+    }
+    core::logWarning("{}", core::formatMessage(messages::ReplacementUnusable,
+                                               replacement->reference.asset.str(),
+                                               files.resolve(replacement->reference.asset)->packId,
+                                               reference.asset.str(), image.error().message));
+  }
   auto file = readImageFile(files, reference);
   if (!file) {
     return std::unexpected{file.error()};
@@ -293,10 +374,21 @@ core::Result<assets::Image> loadImage(const assets::VirtualFileSystem& files,
     return std::unexpected{size.error()};
   }
   auto image = decodeImage(files, reference, *file);
-  if (image) {
-    applyImageTone(*image, reference.tone);
+  if (!image) {
+    return std::unexpected{image.error()};
   }
-  return image;
+  applyImageTone(*image, reference.tone);
+  const ImageSize size{.width = image->width, .height = image->height};
+  return DrawnImage{.pixels = std::move(*image), .size = size};
+}
+
+core::Result<assets::Image> loadImage(const assets::VirtualFileSystem& files,
+                                      const ImageReference& reference) {
+  auto drawn = loadDrawnImage(files, reference);
+  if (!drawn) {
+    return std::unexpected{drawn.error()};
+  }
+  return std::move(drawn->pixels);
 }
 
 } // namespace dwe::ui

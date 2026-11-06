@@ -153,10 +153,13 @@ Rml::TextureHandle RenderBridge::LoadTexture(Rml::Vector2i& dimensions, const Rm
     core::logWarning("ui: {}", image.error().message);
     return 0;
   }
-  dimensions = {static_cast<int>(image->width), static_cast<int>(image->height)};
-  std::vector<std::byte> pixels = std::move(image->pixels);
+  // RmlUi lays out and cuts sprites in the drawn size; the texture keeps every pixel.
+  dimensions = {static_cast<int>(image->size.width), static_cast<int>(image->size.height)};
+  const Rml::Vector2i texels{static_cast<int>(image->pixels.width),
+                             static_cast<int>(image->pixels.height)};
+  std::vector<std::byte> pixels = std::move(image->pixels.pixels);
   premultiply(pixels);
-  const Rml::TextureHandle texture = createTexture(dimensions, pixels);
+  const Rml::TextureHandle texture = createTexture(texels, pixels);
   if (texture != 0 && TextureSources::isPixelArt(source)) {
     sharpTextures_.insert(texture);
   }

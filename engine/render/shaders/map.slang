@@ -39,7 +39,7 @@ struct Push {
     uint screenShiftX;
     uint screenShiftY;
     // HD scenery's best quality, for SamplingUpscaledPrefilter: the background doubled by the engine's upscaler
-    // (render::upscaleScenery), one texture per palette variant, and how much of each the colours shown now are (the
+    // (render::upscaleScenery) or the player's images of it, one texture per palette variant, and how much of each the colours shown now are (the
     // fade's mix; unused ones weigh 0).
     uint upscaled0;
     uint upscaled1;
@@ -47,6 +47,10 @@ struct Push {
     float upscaledWeight0;
     float upscaledWeight1;
     float upscaledWeight2;
+    // Where the background's texel u falls in the upscaled textures: u * upscaledScale + upscaledShift (2 and 0 for
+    // the engine's doubling; k and (k - 1) / 2 for a player's image k times larger).
+    float upscaledScale;
+    float upscaledShift;
 };
 
 // A texture without a palette texture: its texels are colours (rhi::TextureId::InvalidIndex).
@@ -96,7 +100,7 @@ static const uint SamplingPrefilter = 3;
 static const uint SamplingScreen = 4;
 // A cut-out, its colours as that pass drew them at this pixel.
 static const uint SamplingCutoutScreen = 5;
-// HD scenery's background pass at best quality: the doubled background (push.upscaled*) resampled to the window by
+// HD scenery's background pass at best quality: the upscaled background (push.upscaled*) resampled to the window by
 // sampleUpscaled; which pixels are drawn and their class still come from the nearest texel of the original.
 static const uint SamplingUpscaledPrefilter = 6;
 
@@ -400,7 +404,7 @@ float4 catmullRom(float t) {
                   0.5 * t3 - 0.5 * t2);
 }
 
-// The doubled background's colour at one of its texels: the variants mixed by the fade's weights (an upscaled mix of
+// The upscaled background's colour at one of its texels: the variants mixed by the fade's weights (an upscaled mix of
 // palettes is the mix of the upscaled palettes: render::upscaleScenery decides once for all of them).
 float4 upscaledAt(int2 texel) {
     float4 colour = push.upscaledWeight0 * gTextures[push.upscaled0].Load(int3(texel, 0));
@@ -413,9 +417,10 @@ float4 upscaledAt(int2 texel) {
     return colour;
 }
 
-// HD scenery at best quality: the doubled background (its texel u centred on the original's u / 2) resampled to the
-// window with Catmull-Rom, clamped to the four middle texels (no ringing); only texels of the nearest original
-// texel's class mix, and alpha is that texel's, so the shapes, what is drawn and what is STP stay the original's.
+// HD scenery at best quality: the upscaled background (the original's texel u at u * upscaledScale + upscaledShift)
+// resampled to the window with Catmull-Rom, clamped to the four middle texels (no ringing); only texels of the nearest
+// original texel's class mix, and alpha is that texel's, so the shapes, what is drawn and what is STP stay the
+// original's.
 float4 sampleUpscaled(uint colours, float2 uv, float4 rect) {
     uint width;
     uint height;
@@ -428,13 +433,14 @@ float4 sampleUpscaled(uint colours, float2 uv, float4 rect) {
     if (kind == 0) {
         return nearest;
     }
-    const float2 doubled = position * 2.0;
-    const float2 base = floor(doubled);
-    const float2 f = doubled - base;
+    const float2 upscaled = position * push.upscaledScale + push.upscaledShift;
+    const float2 base = floor(upscaled);
+    const float2 f = upscaled - base;
     const float4 across = catmullRom(f.x);
     const float4 down = catmullRom(f.y);
-    const int2 doubledFirst = first * 2;
-    const int2 doubledLast = last * 2 + 1;
+    const int scale = int(push.upscaledScale);
+    const int2 upscaledFirst = first * scale;
+    const int2 upscaledLast = last * scale + (scale - 1);
     float3 sum = float3(0.0);
     float total = 0.0;
     float3 low = float3(1.0e6);
@@ -443,7 +449,7 @@ float4 sampleUpscaled(uint colours, float2 uv, float4 rect) {
     for (int y = 0; y < 4; ++y) {
         [unroll]
         for (int x = 0; x < 4; ++x) {
-            const float4 value = upscaledAt(clamp(int2(base) + int2(x - 1, y - 1), doubledFirst, doubledLast));
+            const float4 value = upscaledAt(clamp(int2(base) + int2(x - 1, y - 1), upscaledFirst, upscaledLast));
             if (texelClass(value.a) != kind) {
                 continue;
             }

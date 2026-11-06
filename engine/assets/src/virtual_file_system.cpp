@@ -250,6 +250,14 @@ core::Result<std::uint64_t> VirtualFileSystem::size(const AssetId& id) const {
   return packs_[indexOf(packs_, source->packId)].fileSystem->fileSize(source->file);
 }
 
+const MountedPack& VirtualFileSystem::packOf(const AssetSource& source) const {
+  return packs_[indexOf(packs_, source.packId)];
+}
+
+core::Result<std::vector<std::byte>> VirtualFileSystem::read(const AssetSource& source) const {
+  return packOf(source).fileSystem->readFile(source.file);
+}
+
 std::vector<AssetId> VirtualFileSystem::ids() const {
   std::vector<AssetId> all;
   all.reserve(assets_.size());

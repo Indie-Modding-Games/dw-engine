@@ -435,11 +435,28 @@ UpscaleGuide guideFromColors(std::uint32_t width, std::uint32_t height,
   return guide;
 }
 
+UpscaledScenery sceneryFromReplacement(const assets::MapBackgroundReplacement& replacement) {
+  UpscaledScenery scenery{.width = 0,
+                          .height = 0,
+                          .scale = replacement.scale,
+                          .shift = (static_cast<float>(replacement.scale) - 1.0F) / 2.0F,
+                          .variants = {}};
+  for (const assets::Image& image : replacement.variants) {
+    scenery.width = image.width;
+    scenery.height = image.height;
+    std::vector<assets::PaletteColor>& texels =
+        scenery.variants.emplace_back(image.pixels.size() / sizeof(assets::PaletteColor));
+    std::memcpy(texels.data(), image.pixels.data(), texels.size() * sizeof(assets::PaletteColor));
+  }
+  return scenery;
+}
+
 UpscaledScenery upscaleScenery(std::uint32_t width, std::uint32_t height,
                                std::span<const std::uint8_t> indices,
                                std::span<const std::vector<assets::PaletteColor>> palettes,
                                const UpscaleOptions& options) {
-  UpscaledScenery result{.width = width * 2, .height = height * 2, .variants = {}};
+  UpscaledScenery result{
+      .width = width * 2, .height = height * 2, .scale = 2, .shift = 0.0F, .variants = {}};
   const std::size_t pixels = static_cast<std::size_t>(width) * height;
   if (palettes.empty() || indices.size() != pixels || pixels == 0) {
     return {};

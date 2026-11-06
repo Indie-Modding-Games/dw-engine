@@ -2,6 +2,7 @@
 
 #include <dwe/assets/image.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/ui/image_reference.hpp>
 
 #include <RmlUi/Core/FileInterface.h>
 #include <RmlUi/Core/SystemInterface.h>
@@ -99,8 +100,9 @@ public:
   }
   void dropGenerated(const std::string& name) { generated_.erase(name); }
 
-  // The pixels of a source as RmlUi names it, or an error.
-  [[nodiscard]] core::Result<assets::Image> load(std::string_view source) const;
+  // The pixels of a source as RmlUi names it and the size it is drawn at (loadDrawnImage), or an
+  // error.
+  [[nodiscard]] core::Result<DrawnImage> load(std::string_view source) const;
 
   // Whether a source is the disc's pixel art (isPixelArt of its reference); a generated image never
   // is.
