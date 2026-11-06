@@ -22,10 +22,16 @@ pub fn map_data_id(map_id: &str) -> Result<AssetId> {
     Ok(AssetId::parse(&format!("{}data", map_folder(map_id)))?)
 }
 
-/// Reads and parses a map's data.
+/// Reads and parses a map's data with the patches that apply to it (loadMapDocument).
 pub fn load_map(vfs: &Vfs, map_id: &str) -> Result<MapDocument> {
     let text = vfs.read_text(&map_data_id(map_id)?)?;
-    MapDocument::parse(map_id, &text)
+    let patches = crate::patch::read_map_patches(vfs, map_id)
+        .map_err(|error| Error::Invalid(format!("map '{map_id}': {error}")))?;
+    if patches.is_empty() {
+        MapDocument::parse(map_id, &text)
+    } else {
+        crate::patch::patch_map_document(map_id, &text, &patches)
+    }
 }
 
 /// The map table composed over every pack that has it.

@@ -1,7 +1,9 @@
 //! A field map's document, `map/<id>/data` (content/schemas/map.schema.json,
 //! docs/formats/mapas.md): the parts the map tools show. Numbers stay as the extractor wrote them,
 //! in the original's axes; [`crate::world`] converts them. Sections the tools do not use yet
-//! (lights, regions, images, objects) are skipped when reading.
+//! (regions, images, the ambient color) are skipped when reading; the lights and the objects are
+//! read with the engine's keys, so that a patch that breaks them is refused as the game refuses
+//! it ([`crate::patch`]).
 
 use glam::{IVec2, IVec3};
 use serde::Deserialize;
@@ -32,6 +34,62 @@ pub struct CameraSetup {
     pub viewpoint: RawVec3,
     pub reference: RawVec3,
     pub projection: i32,
+}
+
+/// A color of the original's lights.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Rgb {
+    pub r: i32,
+    pub g: i32,
+    pub b: i32,
+}
+
+/// One of the map's directional lights.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Light {
+    pub direction: RawVec3,
+    pub color: Rgb,
+}
+
+/// A sprite of the map's animated objects (the original's map object sprites).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ObjectSprite {
+    pub tex_x: i32,
+    pub tex_y: i32,
+    pub width: i32,
+    pub height: i32,
+    pub position: RawVec3,
+    pub clut: i32,
+    pub transparency: i32,
+}
+
+/// One frame of an object instance: the sprite shown and for how long.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ObjectFrame {
+    pub sprite: i32,
+    pub time: i32,
+}
+
+/// An animated object placed on the background.
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ObjectInstance {
+    pub frames: Vec<ObjectFrame>,
+    pub x: i32,
+    pub y: i32,
+    pub flag: i32,
+}
+
+/// The map's animated objects.
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MapObjects {
+    pub sprites: Vec<ObjectSprite>,
+    pub instances: Vec<ObjectInstance>,
 }
 
 /// The background's grid of 128 x 128 pixel tiles.
@@ -116,11 +174,24 @@ impl Npc {
 #[derive(Deserialize)]
 struct RawDocument {
     camera: CameraSetup,
+    #[serde(default)]
+    lights: Vec<Light>,
     tiles: Tiles,
+    #[serde(default)]
+    objects: Option<MapObjects>,
     warps: Vec<Warp>,
     #[serde(default)]
     npcs: Vec<Npc>,
     collision: CollisionSection,
+}
+
+/// An exit that a patch changed, and the pack whose patch changed it last (MapExitPatch).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ExitPatch {
+    pub exit: i32,
+    pub pack: String,
+    /// Whether that pack has the base's rights.
+    pub base_rights: bool,
 }
 
 /// A map's document.
@@ -129,26 +200,51 @@ pub struct MapDocument {
     /// The map id (`area_a`, or `pack:name` for a pack's map).
     pub id: String,
     pub camera: CameraSetup,
+    pub lights: Vec<Light>,
     pub tiles: Tiles,
+    pub objects: Option<MapObjects>,
     pub warps: Vec<Warp>,
     pub npcs: Vec<Npc>,
     pub collision: Collision,
+    /// The packs whose `map/<id>/patch` changed the data, bottom to top.
+    pub patches: Vec<String>,
+    /// The exits those patches changed, by exit.
+    pub patched_exits: Vec<ExitPatch>,
 }
 
 impl MapDocument {
     /// Parses the text of `map/<id>/data`.
     pub fn parse(id: &str, yaml: &str) -> Result<Self> {
-        let raw: RawDocument = serde_yaml_ng::from_str(yaml)
-            .map_err(|error| Error::Invalid(format!("map '{id}': {error}")))?;
-        let collision = Collision::from_section(&raw.collision)
-            .map_err(|error| Error::Invalid(format!("map '{id}': {error}")))?;
+        let invalid = |error: String| Error::Invalid(format!("map '{id}': {error}"));
+        let raw: RawDocument =
+            serde_yaml_ng::from_str(yaml).map_err(|error| invalid(error.to_string()))?;
+        Self::from_raw(id, raw).map_err(invalid)
+    }
+
+    /// Reads a document's tree, as a patch left it; the problem comes without the map's id.
+    pub(crate) fn from_tree(
+        id: &str,
+        tree: &serde_yaml_ng::Value,
+    ) -> std::result::Result<Self, String> {
+        let raw: RawDocument =
+            serde_yaml_ng::from_value(tree.clone()).map_err(|error| error.to_string())?;
+        Self::from_raw(id, raw)
+    }
+
+    fn from_raw(id: &str, raw: RawDocument) -> std::result::Result<Self, String> {
+        let collision =
+            Collision::from_section(&raw.collision).map_err(|error| error.to_string())?;
         Ok(Self {
             id: id.to_owned(),
             camera: raw.camera,
+            lights: raw.lights,
             tiles: raw.tiles,
+            objects: raw.objects,
             warps: raw.warps,
             npcs: raw.npcs,
             collision,
+            patches: Vec::new(),
+            patched_exits: Vec::new(),
         })
     }
 
@@ -165,6 +261,11 @@ impl MapDocument {
     /// The exit with this number.
     pub fn warp(&self, exit: i32) -> Option<&Warp> {
         self.warps.iter().find(|warp| warp.exit == exit)
+    }
+
+    /// The patch that changed an exit last, or None.
+    pub fn exit_patch(&self, exit: i32) -> Option<&ExitPatch> {
+        self.patched_exits.iter().find(|patch| patch.exit == exit)
     }
 }
 
