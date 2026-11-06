@@ -103,7 +103,7 @@ void closeSocket(NativeSocket socket) {
 
 bool setNonBlocking(NativeSocket socket) {
   u_long on = 1;
-  return ::ioctlsocket(socket, FIONBIO, &on) == 0;
+  return ::ioctlsocket(socket, static_cast<long>(FIONBIO), &on) == 0;
 }
 
 // Winsock starts once, the first time a socket is opened, and stays up until the game ends.
