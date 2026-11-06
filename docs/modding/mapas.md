@@ -72,6 +72,11 @@ Arranca el juego con el mismo `--mods` y con el control remoto (`--control tcp:<
 paquetes y vuelva a entrar en el mapa donde está el jugador. «Capa de depuración del juego» enseña en el juego las
 celdas y las salidas tal como las ve el motor.
 
+Sin guardar: con «Vista previa en vivo» el juego enseña el cambio en cuanto lo haces (solo en memoria; no toca el
+paquete ni la partida). «Seguir al juego» abre el mapa al que entra el juego, la capa «Juego» enseña dónde están el
+jugador y los NPC, y con el botón derecho sobre el mapa puedes llevar al jugador a un punto o probar una salida. Más
+en [mapper → En vivo](../modulos/apps/mapper.md#en-vivo).
+
 Para comprobar el paquete sin abrir el juego:
 
 ```sh
