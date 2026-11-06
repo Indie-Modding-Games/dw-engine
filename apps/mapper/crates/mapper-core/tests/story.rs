@@ -46,6 +46,9 @@ local routines = {}
 -- section 0x0000
 function routines.at_0010()
   story.set_script(1, 0) -- script, map
+  if story.trigger(20) then
+    return ENDED -- end_section
+  end
   story.load_species_model(3)
   story.spawn_npc(3, 0, 1) -- species, slot, autotalk
   return ENDED -- end_section
@@ -316,11 +319,12 @@ fn a_new_npc_slot_is_spawned_and_the_map_saves_whole() {
         Some(5)
     );
     let entry = map.drafts.scripts.get(&0).unwrap().file.write();
+    // Right after set_script, before the guard that ends the section early.
     let load = entry.find(
-        "story.load_species_model(3)\n      story.spawn_npc(3, 1, 1) -- species, slot, autotalk",
+        "story.set_script(1, 0) -- script, map\n      story.load_species_model(3)\n      story.spawn_npc(3, 1, 1) -- species, slot, autotalk",
     );
     assert!(
-        load.is_some_and(|at| at < entry.rfind("return ENDED").unwrap()),
+        load.is_some_and(|at| at < entry.find("if story.trigger(20)").unwrap()),
         "{entry}"
     );
     assert!(
@@ -415,9 +419,45 @@ fn plans_an_event_test() {
     );
     assert!(step.place.as_deref().unwrap().starts_with("player "));
     assert!(!step.press);
+    assert!(!step.to_selected);
     let talk = mapper.test_plan(&events[3]);
     assert!(talk.press);
-    assert!(talk.writes.is_empty());
+    // The NPC is there only when the entry section gets to its spawn_npc.
+    assert_eq!(
+        talk.writes,
+        vec![Need::Trigger {
+            number: 20,
+            on: false
+        }]
+    );
+}
+
+#[test]
+fn an_event_test_reaches_the_chosen_line() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut mapper = opened(dir.path());
+    mapper.apply(Action::OpenSection {
+        script: 1,
+        section: 0x33,
+    });
+    // The warp inside `if story.var(3) >= 2`.
+    mapper.apply(Action::SelectStmt(Some(StmtPath::top(2).child(0, 0))));
+    let events = mapper.events();
+    let step = mapper.test_plan(&events[2]);
+    assert!(step.to_selected);
+    assert_eq!(
+        step.writes,
+        vec![
+            Need::Trigger {
+                number: 12,
+                on: false
+            },
+            Need::Var {
+                number: 3,
+                value: 2
+            },
+        ]
+    );
 }
 
 #[test]

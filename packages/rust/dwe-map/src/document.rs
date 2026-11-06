@@ -310,11 +310,12 @@ impl MapDocument {
                 let Value::Mapping(mut fields) = to_value(npc) else {
                     unreachable!()
                 };
-                // The path's lists are optional: an empty one the record does not have stays out.
+                // An empty path list the record does not have stays out; a new slot writes both,
+                // since the game's loader needs them.
                 let record = records.get(slot).and_then(Value::as_mapping);
                 fields.retain(|key, value| {
                     !matches!(value, Value::Sequence(items) if items.is_empty())
-                        || record.is_some_and(|record| record.contains_key(key))
+                        || record.is_none_or(|record| record.contains_key(key))
                 });
                 for (key, value) in &npc.other {
                     fields.insert(key.clone(), value.clone());
@@ -561,5 +562,17 @@ pub(crate) mod tests {
             ]
         );
         assert_eq!(written["ambient"], tree("{r: 0, g: 0, b: 0}"));
+    }
+
+    #[test]
+    fn a_new_slot_writes_its_empty_path() {
+        let mut map = MapDocument::parse("area_a", &sample_yaml()).unwrap();
+        let mut npc = map.npcs[0].clone();
+        npc.waypoints.clear();
+        map.npcs.push(npc);
+        let written = tree(&map.to_yaml());
+        let added = written["npcs"][map.npcs.len() - 1].as_mapping().unwrap();
+        assert_eq!(added.get("waypoints"), Some(&Value::Sequence(Vec::new())));
+        assert!(added.contains_key("ai_sections"));
     }
 }

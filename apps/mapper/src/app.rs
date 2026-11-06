@@ -59,7 +59,15 @@ pub struct MapperApp {
 }
 
 impl MapperApp {
-    pub fn new(_creation: &eframe::CreationContext<'_>, options: Options) -> Self {
+    pub fn new(creation: &eframe::CreationContext<'_>, options: Options) -> Self {
+        // The proportional font lacks arrows (→) the texts use: the monospace one fills them in.
+        let mut fonts = egui::FontDefinitions::default();
+        if let Some(mono) = fonts.families.get(&egui::FontFamily::Monospace).cloned()
+            && let Some(proportional) = fonts.families.get_mut(&egui::FontFamily::Proportional)
+        {
+            proportional.extend(mono);
+        }
+        creation.egui_ctx.set_fonts(fonts);
         let mut mapper = Settings::default_file().map_or_else(Mapper::new, Mapper::with_settings);
         if let Some(layers) = &options.layers {
             mapper.layers = mapper_core::LayerSet::none();

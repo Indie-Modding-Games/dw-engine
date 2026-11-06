@@ -18,6 +18,13 @@ use crate::app::MapperApp;
 const RUN_FOR: Duration = Duration::from_millis(1500);
 /// How long a story read may take before the test gives up on it.
 const READ_WAIT: Duration = Duration::from_secs(5);
+/// How long the game may take to load the map again (a debug build takes seconds).
+const RELOAD_WAIT: Duration = Duration::from_secs(60);
+/// How long after the reload confirm is pressed, at the soonest: the map's entry section runs
+/// first (it spawns the NPCs), and the press waits for it to end.
+const PRESS_AFTER: Duration = Duration::from_millis(600);
+/// How long the press waits for a story script to end before it goes anyway.
+const BUSY_WAIT: Duration = Duration::from_secs(10);
 /// The confirm press: the key and how many ticks it is held.
 const PRESS_KEY: &str = "space";
 const PRESS_TICKS: u64 = 6;
@@ -35,6 +42,16 @@ enum Stage {
         reads: u64,
         since: Instant,
     },
+    /// The story is written and the map loads again; then the player goes to the event.
+    Reloading {
+        before: Snapshot,
+        plan: TestPlan,
+        reloads: u64,
+        failures: u64,
+        since: Instant,
+    },
+    /// The player is at the event; confirm is pressed from `at`, once no script runs.
+    Pressing { before: Snapshot, at: Instant },
     /// The event runs.
     Running { before: Snapshot, until: Instant },
     /// Waiting for the story after the test.
@@ -158,7 +175,13 @@ pub fn show(app: &mut MapperApp, ctx: &egui::Context) {
         .show(ctx, |ui| {
             ui.strong(&app.probe.event);
             ui.add_space(4.0);
+            if app.mapper.is_dirty() {
+                ui.colored_label(egui::Color32::YELLOW, text::TEST_UNSAVED);
+            }
             ui.label(text::TEST_WRITES);
+            if plan.to_selected {
+                ui.weak(text::TEST_TO_SELECTED);
+            }
             if plan.writes.is_empty() {
                 ui.weak(text::TEST_NO_WRITES);
             }
@@ -242,6 +265,13 @@ fn start(app: &mut MapperApp) {
     let Stage::Asking { plan, .. } = std::mem::take(&mut app.probe.stage) else {
         return;
     };
+    // The game refuses story writes while a script runs.
+    if app.live.view.as_ref().is_some_and(|view| view.busy) {
+        app.mapper
+            .messages
+            .push(Message::Error(text::TEST_BUSY.to_owned()));
+        return;
+    }
     app.live.send(Command::ReadStory);
     app.probe.stage = Stage::ReadingBefore {
         plan,
@@ -278,15 +308,69 @@ pub fn tick(app: &mut MapperApp) {
         Stage::ReadingBefore { plan, reads, since } => {
             if app.live.story_reads > reads {
                 let before = snapshot(app);
-                run(app, &plan);
-                Stage::Running {
+                let (reloads, failures) = (app.live.reloads, app.live.failures);
+                write_place_and_reload(app, &plan);
+                Stage::Reloading {
                     before,
-                    until: now + RUN_FOR,
+                    plan,
+                    reloads,
+                    failures,
+                    since: now,
                 }
             } else if now - since > READ_WAIT {
                 Stage::Idle
             } else {
                 Stage::ReadingBefore { plan, reads, since }
+            }
+        }
+        Stage::Reloading {
+            before,
+            plan,
+            reloads,
+            failures,
+            since,
+        } => {
+            if app.live.failures > failures {
+                // The game refused a write or the reload: its error is in the messages.
+                Stage::Idle
+            } else if app.live.reloads > reloads {
+                if plan.press {
+                    Stage::Pressing {
+                        before,
+                        at: now + PRESS_AFTER,
+                    }
+                } else {
+                    Stage::Running {
+                        before,
+                        until: now + RUN_FOR,
+                    }
+                }
+            } else if now - since > RELOAD_WAIT {
+                app.mapper
+                    .messages
+                    .push(Message::Error(text::TEST_NO_RELOAD.to_owned()));
+                Stage::Idle
+            } else {
+                Stage::Reloading {
+                    before,
+                    plan,
+                    reloads,
+                    failures,
+                    since,
+                }
+            }
+        }
+        Stage::Pressing { before, at }
+            if now >= at
+                && (now >= at + BUSY_WAIT || !app.live.view.as_ref().is_some_and(|v| v.busy)) =>
+        {
+            app.live.send(Command::Press {
+                keys: vec![PRESS_KEY.to_owned()],
+                ticks: PRESS_TICKS,
+            });
+            Stage::Running {
+                before,
+                until: now + RUN_FOR,
             }
         }
         Stage::Running { before, until } if now >= until => {
@@ -321,24 +405,20 @@ pub fn tick(app: &mut MapperApp) {
     };
 }
 
-/// Writes the story, reloads the map, puts the player and presses confirm, in that order.
-fn run(app: &MapperApp, plan: &TestPlan) {
+/// Writes the story, puts the player at the event and reloads the map, which reads the saved
+/// story and texts again and enters where the player stands (a place after the reload would be
+/// undone by the map's entry).
+fn write_place_and_reload(app: &MapperApp, plan: &TestPlan) {
     let live = &app.live;
     for write in plan.writes.iter().filter_map(|&need| story_write(need)) {
         live.send(Command::StorySet(write));
     }
-    live.reload();
     if let Some(place) = &plan.place {
         live.send(Command::Place(place.clone()));
     }
+    live.reload();
     if live.view.as_ref().is_some_and(|view| view.paused) {
         live.send(Command::Resume);
-    }
-    if plan.press {
-        live.send(Command::Press {
-            keys: vec![PRESS_KEY.to_owned()],
-            ticks: PRESS_TICKS,
-        });
     }
 }
 
@@ -364,7 +444,11 @@ pub fn diff_lines(app: &MapperApp, ui: &mut egui::Ui) {
         } else {
             egui::Color32::LIGHT_RED
         };
-        ui.colored_label(color, text::trigger_change(&name, on));
+        ui.label(
+            egui::RichText::new(text::trigger_change(&name, on))
+                .monospace()
+                .color(color),
+        );
     }
     for &(variable, before, after) in &diff.variables {
         let name = text::named(variable, names.variable(variable));

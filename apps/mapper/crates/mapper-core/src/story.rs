@@ -12,7 +12,7 @@ use dwe_pack::Vfs;
 use dwe_story::edit::{self, StmtPath};
 use dwe_story::events::MAP_HEAD_SCRIPT;
 use dwe_story::file::{Section, SectionBody};
-use dwe_story::needs::{Need, conditions, needs};
+use dwe_story::needs::{Need, conditions, conditions_to, needs, path_conditions};
 use dwe_story::save::starting_patch;
 use dwe_story::script::{StoryPatches, read_module};
 use dwe_story::texts::{ENGLISH, split_key};
@@ -120,6 +120,8 @@ pub struct TestPlan {
     pub place: Option<String>,
     /// Whether the event runs on the confirm button (a confirm cell or an NPC).
     pub press: bool,
+    /// Whether the writes also reach the line chosen in the section editor.
+    pub to_selected: bool,
 }
 
 impl Mapper {
@@ -430,7 +432,7 @@ impl Mapper {
         }
         self.record(Edit::NpcList { before, after });
         self.edit_entry_section(|block| {
-            let at = top_level_end(block);
+            let at = spawn_place(block);
             let species = Expr::Number(i64::from(npc.type_id));
             let load = Stmt::new(StmtKind::Call(Expr::story_call(
                 "load_species_model",
@@ -522,6 +524,25 @@ impl Mapper {
         self.refresh_story();
     }
 
+    /// What the map's entry section needs to spawn an NPC slot (`spawn_npc(_, slot, _)`).
+    fn spawn_conditions(&self, slot: usize) -> Option<Vec<dwe_story::Expr>> {
+        let entry = self
+            .events()
+            .iter()
+            .find(|event| event.kind == EventKind::MapEntry)?;
+        let script = self.shown_script(entry.script)?;
+        let (_, file, block) = script.section(entry.section)?;
+        let spawns = |stmt: &dwe_story::ast::Stmt| match &stmt.kind {
+            dwe_story::ast::StmtKind::Call(call) => matches!(
+                call.story_call_name(),
+                Some(("spawn_npc", [_, number, _]))
+                    if number.as_number() == i64::try_from(slot).ok()
+            ),
+            _ => false,
+        };
+        conditions_to(file, block, &spawns)
+    }
+
     /// What "Probar evento" does for an event of the map shown.
     pub fn test_plan(&self, event: &Event) -> TestPlan {
         let mut plan = TestPlan {
@@ -536,7 +557,29 @@ impl Mapper {
             .shown_script(event.script)
             .and_then(|script| script.section(event.section))
         {
-            let found = needs(&conditions(file, block));
+            let mut found = conditions(file, block);
+            // The section open in the editor with a line chosen: also what reaches that line.
+            let open = self
+                .section
+                .as_ref()
+                .filter(|open| open.script == event.script && open.section == event.section);
+            if let Some((open, selected)) =
+                open.and_then(|open| Some((open, open.selected.as_ref()?)))
+            {
+                let shown = match &open.routine {
+                    Some(name) => file.routine(name).map(|routine| &routine.body),
+                    None => Some(block),
+                };
+                if let Some(shown) = shown {
+                    found.extend(path_conditions(shown, selected));
+                    plan.to_selected = true;
+                }
+            }
+            // An NPC talks only when the map's entry section spawns it.
+            if let EventKind::Talk { slot } = event.kind {
+                found.extend(self.spawn_conditions(slot).unwrap_or_default());
+            }
+            let found = needs(&found);
             plan.writes = found.writes;
             if let Some(content) = &self.content {
                 let names = dwe_story::describe::Names {
@@ -603,11 +646,19 @@ fn apply_change(
 }
 
 /// Where a statement goes to run before a block ends: before its last top-level `return`.
-fn top_level_end(block: &Block) -> usize {
+/// Where a new NPC's spawn goes in an entry section: right after its `set_script` (at the top
+/// when it has none), before any `if` or `return`, so that every way through the section spawns
+/// it.
+fn spawn_place(block: &Block) -> usize {
     block
         .iter()
-        .rposition(|stmt| matches!(stmt.kind, StmtKind::Return(_)))
-        .unwrap_or(block.len())
+        .position(|stmt| match &stmt.kind {
+            StmtKind::Call(call) => call
+                .story_call_name()
+                .is_some_and(|(name, _)| name == "set_script"),
+            _ => false,
+        })
+        .map_or(0, |index| index + 1)
 }
 
 fn spawn_slot(stmt: &Stmt) -> Option<i64> {

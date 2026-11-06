@@ -500,6 +500,9 @@ pub fn trigger_section(confirm: bool, section: u16, script: Option<u16>) -> Stri
 pub const TEST_TITLE: &str = "Probar evento";
 pub const TEST_WRITES: &str = "Se escribe en la historia del juego";
 pub const TEST_NO_WRITES: &str = "Nada que escribir";
+pub const TEST_UNSAVED: &str =
+    "Hay cambios sin guardar: el juego corre lo guardado (Ctrl+S antes de probar).";
+pub const TEST_TO_SELECTED: &str = "Para llegar también a la línea elegida en el editor";
 pub const TEST_OTHERS: &str = "Condiciones que no se pueden poner (cúmplelas a mano)";
 pub const TEST_PLACE: &str = "El jugador va a";
 pub const TEST_NO_PLACE: &str = "El evento corre al entrar: solo se recarga el mapa";
@@ -507,6 +510,9 @@ pub const TEST_PRESS: &str = "Después se pulsa confirmar";
 pub const TEST_RUN: &str = "Probar";
 pub const TEST_CANCEL: &str = "Cancelar";
 pub const TEST_RUNNING: &str = "Probando el evento…";
+pub const TEST_BUSY: &str = "El juego está corriendo un script de historia y no deja escribir en ella: \
+     espera a que acabe (o pasa sus diálogos) y vuelve a probar.";
+pub const TEST_NO_RELOAD: &str = "El juego no volvió a cargar el mapa a tiempo: prueba otra vez.";
 pub const TEST_DIFF: &str = "Lo que cambió la prueba";
 pub const TEST_DIFF_NONE: &str = "La historia no cambió";
 pub const TEST_SKIPPED: &str = "No se puede escribir (fuera de 0 a 255)";

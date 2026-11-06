@@ -408,7 +408,8 @@ pub fn panel(app: &mut MapperApp, ui: &mut egui::Ui) {
                             section_tag(event)
                         );
                         if !event.exists {
-                            line.push_str(" ⚠");
+                            line.push_str(" · ");
+                            line.push_str(text::SECTION_MISSING);
                         }
                         let mut label = egui::RichText::new(line);
                         if !event.exists {

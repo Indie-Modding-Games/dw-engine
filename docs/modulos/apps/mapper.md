@@ -122,8 +122,8 @@ confirmar, cada salida y baño) o como número crudo; X alterna pared y libre.
 
 **Añadir y quitar NPC.** «Añadir NPC» (o «Añadir un NPC aquí» con el botón derecho en el lienzo) copia el NPC elegido,
 o el último del mapa, o el primero que haya en el contenido, en un hueco nuevo al final, y lo hace aparecer: añade
-`story.load_species_model(t)` y `story.spawn_npc(t, hueco, 1)` antes del último `return` de la sección de entrada del
-mapa (script 0, sección = índice del mapa) en el borrador de la historia ([Eventos](#eventos)). Todo es un solo paso
+`story.load_species_model(t)` y `story.spawn_npc(t, hueco, 1)` a la sección de entrada del mapa (script 0, sección =
+índice del mapa), justo después de su `story.set_script` y antes de cualquier `if`, para que aparezca siempre en el borrador de la historia ([Eventos](#eventos)). Todo es un solo paso
 de deshacer. Un mapa tiene como mucho 8 NPC. «Quitar el último NPC» quita solo el último hueco y sus `spawn_npc`: la
 historia nombra los NPC por su número, así que quitar uno de en medio cambiaría a quién habla cada sección. Un parche
 de mapa nombra los NPC por posición y no puede añadirlos ni quitarlos, así que con NPC añadidos o quitados el mapa se
@@ -192,10 +192,15 @@ así que enseña la sección que de verdad corre y quién la da.
 - **Probar evento** («Probar» en el panel o en el editor, con un juego conectado en [En vivo](#en-vivo)): el editor
   lee las condiciones que la sección comprueba al empezar (los `if` que solo acaban, siguiendo `return
   routines.x()`) y enseña qué escribirá en la historia del juego para que pase (disparadores y variables) y las que
-  no sabe poner (hay que cumplirlas a mano). Al probar manda `story_set` con esos valores, `reload_map` (que también
-  vuelve a leer los parches guardados), pone al jugador en la celda del disparador o delante del NPC, y en un evento
-  de botón o de hablar pulsa confirmar. Al acabar compara el estado de la historia de antes y de después y lo enseña
-  («Lo que cambió la prueba»). Lo que corre es lo **guardado**: el borrador se guarda antes.
+  no sabe poner (hay que cumplirlas a mano). Con una línea elegida en el editor, añade las condiciones de los `if`
+  por los que se llega a ella, y en un evento de hablar, las que la sección de entrada del mapa necesita para hacer
+  aparecer a ese NPC (su `spawn_npc`). Al probar manda `story_set` con esos valores, pone al jugador en la celda del
+  disparador o delante del NPC y pide `reload_map`, que vuelve a leer los parches y los textos guardados y entra en
+  el mapa donde está el jugador (la sección de entrada vuelve a correr y hace aparecer a los NPC). En un evento de
+  botón o de hablar, cuando esa sección acaba, pulsa confirmar. Al final compara el estado de la historia de antes y
+  de después y lo enseña («Lo que cambió la prueba»). Mientras el juego corre un script de historia no deja escribir
+  en ella: el editor lo dice y no prueba. El juego corre lo **guardado**: con cambios sin guardar, el diálogo lo
+  avisa.
 
 ## Guardar
 

@@ -45,6 +45,9 @@ pub struct LivePanel {
     pub story: Option<StoryState>,
     /// How many story reads have come back, so a test can wait for the next one.
     pub story_reads: u64,
+    /// How many `reload_map` answers came, and how many orders the game refused or did not answer.
+    pub reloads: u64,
+    pub failures: u64,
     /// The story is read again every second.
     pub story_follow: bool,
     pub story_filter: String,
@@ -75,6 +78,8 @@ impl Default for LivePanel {
             next_preview: Instant::now(),
             story: None,
             story_reads: 0,
+            reloads: 0,
+            failures: 0,
             story_follow: false,
             story_filter: String::new(),
             story_trigger: 0,
@@ -211,6 +216,7 @@ impl LivePanel {
             }
             Event::Done(done) => self.done(done, mapper),
             Event::Failed { command, message } => {
+                self.failures += 1;
                 let line = format!("{command}: {message}");
                 mapper.messages.push(Message::Error(line.clone()));
                 self.problems.push(line);
@@ -231,7 +237,10 @@ impl LivePanel {
                 self.overlay = on;
                 return;
             }
-            Done::Reloaded(reloaded) => format!("{}: {}", text::LIVE_RELOADED, reloaded.map),
+            Done::Reloaded(reloaded) => {
+                self.reloads += 1;
+                format!("{}: {}", text::LIVE_RELOADED, reloaded.map)
+            }
             Done::Previewed { map, applied } => {
                 self.sync.confirm();
                 // The last `live` may predate the preview: until the next one says otherwise,

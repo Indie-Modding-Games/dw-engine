@@ -11,8 +11,8 @@ use crate::answers::{
 };
 use crate::{Endpoint, Error, Result};
 
-/// How long a request waits for its answer.
-const ANSWER_TIMEOUT: Duration = Duration::from_secs(10);
+/// How long a request waits for its answer (a debug build of the game takes seconds to load a map).
+const ANSWER_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// The exits a map has: `reload_map` takes 0 to 9.
 pub const MOST_EXITS: i32 = 10;

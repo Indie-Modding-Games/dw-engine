@@ -1,10 +1,11 @@
-//! What the story must hold for a section to get past its early ends: the conditions of the `if`s
-//! at its top whose arms do nothing but end the section (`if story.trigger(12) then return ENDED
-//! end`), and
+//! What the story must hold for a section to get past its early ends (the conditions of the `if`s
+//! at its top whose arms do nothing but end the section: `if story.trigger(12) then return ENDED
+//! end`) and to reach a chosen statement (the conditions of the `if` arms on the way to it), and
 //! the trigger and variable writes that make them hold, for an editor that runs the section in a
 //! game to see it.
 
-use crate::ast::{BinOp, Block, Expr, StmtKind};
+use crate::ast::{BinOp, Block, Expr, Stmt, StmtKind};
+use crate::edit::StmtPath;
 use crate::events::negate;
 use crate::file::StoryFile;
 
@@ -56,6 +57,110 @@ pub fn conditions(file: &StoryFile, block: &Block) -> Vec<Expr> {
         break;
     }
     found
+}
+
+/// The conditions on the way to a statement: for each `if` the path goes into, the condition of
+/// the arm it takes and the negation of the arms before it (all of them for the `else`).
+pub fn path_conditions(block: &Block, path: &StmtPath) -> Vec<Expr> {
+    let mut found = Vec::new();
+    let mut block = block;
+    for &(stmt, child) in &path.blocks {
+        let Some(stmt) = block.get(stmt) else {
+            break;
+        };
+        if let StmtKind::If { arms, .. } = &stmt.kind {
+            found.extend(
+                arms.iter()
+                    .take(child)
+                    .map(|(condition, _)| negate(condition)),
+            );
+            if let Some((condition, _)) = arms.get(child) {
+                found.push(condition.clone());
+            }
+        }
+        match crate::edit::children(stmt).get(child) {
+            Some(inner) => block = inner,
+            None => break,
+        }
+    }
+    found
+}
+
+/// The conditions under which a block reaches the first statement `wanted` picks (an NPC's
+/// `spawn_npc` in a map's entry section): the early ends passed on the way, the `if` arms taken
+/// and the routines called (`routines.x()`), or None when it never gets there.
+pub fn conditions_to(
+    file: &StoryFile,
+    block: &Block,
+    wanted: &dyn Fn(&Stmt) -> bool,
+) -> Option<Vec<Expr>> {
+    let mut seen = Vec::new();
+    reach(file, block, wanted, &mut seen)
+}
+
+fn reach(
+    file: &StoryFile,
+    block: &Block,
+    wanted: &dyn Fn(&Stmt) -> bool,
+    seen: &mut Vec<String>,
+) -> Option<Vec<Expr>> {
+    let mut passed = Vec::new();
+    for stmt in block {
+        if wanted(stmt) {
+            return Some(passed);
+        }
+        let inner = match &stmt.kind {
+            StmtKind::If { arms, otherwise } => {
+                let blocks = arms.iter().map(|(_, body)| body).chain(otherwise.iter());
+                blocks.enumerate().find_map(|(taken, body)| {
+                    let mut found: Vec<Expr> = arms
+                        .iter()
+                        .take(taken)
+                        .map(|(condition, _)| negate(condition))
+                        .collect();
+                    found.extend(arms.get(taken).map(|(condition, _)| condition.clone()));
+                    found.extend(reach(file, body, wanted, seen)?);
+                    Some(found)
+                })
+            }
+            StmtKind::While { body, .. } | StmtKind::Do(body) => reach(file, body, wanted, seen),
+            StmtKind::Return(values) => values
+                .first()
+                .and_then(|value| routine_reach(file, value, wanted, seen)),
+            StmtKind::Call(call) => routine_reach(file, call, wanted, seen),
+            _ => None,
+        };
+        if let Some(inner) = inner {
+            passed.extend(inner);
+            return Some(passed);
+        }
+        if let StmtKind::If {
+            arms,
+            otherwise: None,
+        } = &stmt.kind
+            && arms.iter().all(|(_, body)| only_ends(body))
+        {
+            passed.extend(arms.iter().map(|(condition, _)| negate(condition)));
+        }
+        if matches!(stmt.kind, StmtKind::Return(_)) {
+            return None;
+        }
+    }
+    None
+}
+
+fn routine_reach(
+    file: &StoryFile,
+    call: &Expr,
+    wanted: &dyn Fn(&Stmt) -> bool,
+    seen: &mut Vec<String>,
+) -> Option<Vec<Expr>> {
+    let routine = file.routine(call.routine_call_name()?)?;
+    if seen.contains(&routine.name) {
+        return None;
+    }
+    seen.push(routine.name.clone());
+    reach(file, &routine.body, wanted, seen)
 }
 
 /// Whether a block does nothing but end the section (an early end, not an outcome to see).
@@ -195,5 +300,72 @@ mod tests {
             ]
         );
         assert_eq!(needs.others.len(), 1);
+    }
+
+    #[test]
+    fn finds_what_reaches_a_statement() {
+        let file = StoryFile::parse(
+            "return { script = 1, sections = { [0x0051] = function(original)\n\
+               if story.trigger(3) then\n    story.set_var(1, 1)\n\
+               elseif story.var(2) == 4 then\n    story.set_var(1, 2)\n\
+               else\n    while true do\n      story.set_var(1, 3)\n    end\n  end\n\
+             end } }\n",
+        )
+        .unwrap();
+        let block = file.section_block(0x51).unwrap();
+        let second = needs(&path_conditions(block, &StmtPath::top(0).child(1, 0)));
+        assert_eq!(
+            second.writes,
+            vec![
+                Need::Trigger {
+                    number: 3,
+                    on: false
+                },
+                Need::Var {
+                    number: 2,
+                    value: 4
+                },
+            ]
+        );
+        let path = StmtPath::top(0).child(2, 0).child(0, 0);
+        let otherwise = path_conditions(block, &path);
+        assert_eq!(otherwise.len(), 2);
+        assert!(path_conditions(block, &StmtPath::top(0)).is_empty());
+    }
+
+    #[test]
+    fn finds_what_reaches_a_spawn() {
+        let file = StoryFile::parse(
+            "local routines = {}\n\
+             function routines.at_0010()\n\
+               if story.trigger(1) then\n    return ENDED\n  end\n\
+               if story.trigger(2) then\n    story.spawn_npc(5, 0, 0)\n    return ENDED\n\
+               else\n    if not story.trigger(3) then\n      story.spawn_npc(5, 1, 0)\n\
+               else\n      return routines.at_0020()\n    end\n  end\n\
+             end\n\
+             function routines.at_0020()\n\
+               story.spawn_npc(6, 2, 0)\n\
+             end\n\
+             return { script = 0, sections = { [0x0000] = routines.at_0010 } }\n",
+        )
+        .unwrap();
+        let block = file.section_block(0).unwrap();
+        let spawns = |slot: i64| {
+            move |stmt: &Stmt| match &stmt.kind {
+                StmtKind::Call(call) => matches!(
+                    call.story_call_name(),
+                    Some(("spawn_npc", [_, number, _])) if number.as_number() == Some(slot)
+                ),
+                _ => false,
+            }
+        };
+        let writes = |slot| needs(&conditions_to(&file, block, &spawns(slot)).unwrap()).writes;
+        let trigger = |number, on| Need::Trigger { number, on };
+        assert_eq!(writes(0), vec![trigger(1, false), trigger(2, true)]);
+        assert_eq!(
+            writes(2),
+            vec![trigger(1, false), trigger(2, false), trigger(3, true)]
+        );
+        assert!(conditions_to(&file, block, &spawns(7)).is_none());
     }
 }
