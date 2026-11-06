@@ -9,7 +9,7 @@ frame en `render`, y cómo enchufan sus dibujos el mapa, los modelos y la UI.
 |---|---|---|
 | `rhi` | base | `Device` (swapchain, frames en vuelo, `destroyLater`), VMA, `Buffer`, `Image`, `BindlessTable`, `GraphicsPipeline`, `UploadRing`, `CommandList` |
 | `render` | sistemas | `Renderer` (flujo de frame, texturas, target de profundidad), `Drawer`, `Camera`, `QuadBatch`, `ScreenFade`, `ModelRenderer` |
-| `apps/game` | apps | Junta todo; hoy dibuja una escena de prueba (`TestScene`) hasta que exista la del campo |
+| `apps/game` | apps | Junta todo: el campo, el combate y las pantallas; la escena de prueba (`TestScene`) queda como vista de desarrollo |
 
 Las llamadas a Vulkan solo están en `rhi`. `render`, `ui` y los demás usan sus tipos (`rhi::CommandList`,
 `rhi::Buffer`...), nunca funciones `vk*`. La excepción es `debug`, que inicia Dear ImGui con los handles nativos.
@@ -71,7 +71,7 @@ En Slang, compilados a SPIR-V en el build y embebidos en el ejecutable ([ADR 001
    `[shader("fragment")] fragmentMain` (los nombres por defecto de `GraphicsPipelineDesc`).
 2. En el `CMakeLists.txt` del módulo: `dwe_add_shaders(dwe_<módulo> FILES shaders/<nombre>.slang)`.
 3. En C++: `#include <dwe/shaders/<nombre>.hpp>` y usa `dwe::shaders::<Nombre>` (el nombre en PascalCase:
-   `skinned_mesh.slang` → `SkinnedMesh`) como `GraphicsPipelineDesc::spirv`.
+   `skinned_model.slang` → `SkinnedModel`) como `GraphicsPipelineDesc::spirv`.
 
 Convenciones de los shaders:
 
@@ -89,12 +89,12 @@ Convenciones de los shaders:
 
 ```cpp
 auto pipeline = renderer.createPipeline(
-    {.spirv = dwe::shaders::SkinnedMesh,
+    {.spirv = dwe::shaders::SkinnedModel,
      .vertex = {.stride = sizeof(Vertex), .attributes = Attributes},
      .cull = rhi::CullMode::Back,
      .depth = {.test = true, .write = true},
      .blend = rhi::BlendMode::Opaque,
-     .name = "skinned mesh"},
+     .name = "skinned model"},
     render::Pass::Scene);
 ```
 
@@ -275,5 +275,4 @@ ASan: solo lo llevan los ejecutables que enlazan `Device` (y con él vk-bootstra
 
 ## Pendiente
 
-- Mipmaps, texturas sRGB y formatos comprimidos (KTX2, fase 1) en `rhi::Image`.
 - Pruebas de render con capturas de referencia (`tests/golden/`): la imagen Docker no tiene GPU.

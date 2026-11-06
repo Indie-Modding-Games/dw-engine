@@ -47,7 +47,7 @@ engine/
 │  ├─ screens/              modelos de vista de las pantallas
 │  ├─ content/              cómo montan los paquetes el juego y dwe-sim
 │  ├─ game/                 dwe-game, el ejecutable del juego
-│  ├─ dwx/                  extract · validate · cook · pack · export-images
+│  ├─ dwx/                  extract · validate · cook · pack · export-images · evolution-guide · upscale
 │  ├─ sim/                  dwe-sim: simulaciones de balance sin gráficos
 │  ├─ launcher/             el lanzador de escritorio (Tauri)
 │  └─ studio/               DWE Studio, banco de trabajo de desarrollo (Electron)

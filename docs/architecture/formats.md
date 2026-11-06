@@ -10,13 +10,13 @@ Las reglas que no cambian ([dependencias](dependency-rules.md), [tubería de ass
 - `formats` solo depende de `core`, y solo lo usa `apps/dwx`. El runtime nunca lee un formato de PS1.
 - La extracción va en un sentido: original → fuente. No se reconstruye el disco.
 - Ningún fichero del disco ni nada derivado de él entra en un repositorio. Los tests usan fixtures hechos por el equipo
-  (`content/fixtures/`), nunca recortes del disco.
+  (discos sintéticos y los `tests/fixtures/` de cada módulo), nunca recortes del disco.
 
 ## Versión del disco
 
 - Se empieza por el disco **US** (`SLUS_010.32`), que es la versión por defecto del decomp. EU y JP vienen después: el
   decomp tiene una tabla de ficheros por versión.
-- `dwx extract` identifica la versión por el SHA-1 de la imagen y de su ejecutable. El decomp solo tiene SHA-1 del
+- `dwx extract` identifica la versión por el SHA-1 de su ejecutable (los de las imágenes completas faltan, abajo). El decomp solo tiene SHA-1 del
   ejecutable y de los overlays (`config/<ver>/*.yaml`); la lista de SHA-1 de cada fichero de datos la generamos
   nosotros la primera vez, desde un disco verificado, y se guarda en `formats/` como tabla (solo hashes y nombres).
 - Ya existe la primera pieza: `dwx verify <fichero>` calcula el SHA-1 de un fichero y lo busca en la tabla de
@@ -35,11 +35,11 @@ formats/
 │  ├─ model/       TMD, MMD, animaciones, esqueletos
 │  ├─ map/         MAP, TFS, colisión
 │  ├─ text/        Shift-JIS + ASCII del US, códigos de control, fuente
-│  ├─ script/      contenedor SCN, opcodes; EFE
+│  ├─ script/      contenedor SCN, opcodes, listado, warps de script y conversión a Lua
+│  ├─ effect/      EFE
 │  ├─ audio/       VHB (VH+VB), bancos empaquetados, SEQ
 │  ├─ video/       STR (MDEC + XA)
-│  ├─ exe/         PS-X EXE, tablas del ejecutable, overlays
-│  └─ save/        partida de la tarjeta de memoria
+│  └─ exe/         PS-X EXE, tablas del ejecutable, overlays
 ├─ src/
 └─ tests/
 ```
@@ -246,7 +246,8 @@ Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colis
 
 - Fichero de tarjeta `BASLUS-01032DMR` + dígito de ranura, un bloque de 8 KB: cabecera `SC`, título, icono y dos copias
   de `SavegamePayload` (principal y respaldo) con su checksum (suma de bytes). Lectura opcional en `dwx import-save`
-  para llevar una partida del original al motor; no es parte de la fase 1.
+  para llevar una partida del original al motor; no es parte de la fase 1 y todavía no existe (ni `dwx import-save` ni
+  un lector de partidas en `formats`).
 
 ## Lo que no se sabe
 
@@ -263,6 +264,9 @@ Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **
 | `dwx validate <paquete>` | Fuente | Esquemas de `content/schemas/`, referencias rotas, contrato de cada Digimon (esqueleto y animaciones) y que el motor abre cada asset, como mod; `--engine` para los del juego ([detalle](assets-pipeline.md#dwx-validate)) |
 | `dwx cook <paquete> -o <carpeta>` | Fuente → cocinado | Manifiesto e ids del paquete; cada PNG decodifica, cada GLB tiene una cabecera válida; el paquete cocinado da los mismos ids ([detalle](assets-pipeline.md#cocinar)) |
 | `dwx pack <paquete> -o <fichero.pak>` | Fuente o cocinado → `.pak` con su manifiesto | Manifiesto e ids del paquete; el archivo se vuelve a leer entero y cada entrada coincide con su SHA-1 ([formato](../formats/pak.md)) |
+
+Después de la fase 1 llegaron `identify`, `convert-script`, `export-images`, `evolution-guide`, `upscale`, `ui-chart` y
+`ui-chart-detail`: están en la [página de dwx](../modulos/apps/dwx.md).
 
 - **Informe de cobertura:** por cada fichero del disco, qué extractor lo leyó, qué produjo y qué partes no entendió
   (`dwx/coverage.yaml`, [detalle](../formats/extract.md)). La fase 1 se cierra con cero pendientes.

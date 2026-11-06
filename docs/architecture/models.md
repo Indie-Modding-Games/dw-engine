@@ -123,6 +123,10 @@ los mismos modelos: `digimon/boys/model` y `digimon/agum/model`) y deja en cada 
 las mismas (400 y 1000); las del compañero en `rules.yaml` (452 y 870) son la media del movimiento raíz de todo el
 clip, y las de la tabla, la de una vuelta del bucle (450 y 900), así que el compañero corre a 0,97.
 
+Los personajes que algunos mapas dibujan como sprites prerenderizados se pueden dibujar con el modelo de su especie
+(opción «Personajes en 3D», `model_characters`; la lista está en `field/sprite_characters.yaml` del paquete `game`):
+ver [Personajes en 3D](../modulos/apps/game.md#personajes-en-3d).
+
 ## Dibujar: `ModelRenderer`
 
 `render::ModelRenderer` dibuja en el pase de escena ([render](render.md)) con dos drawers, `opaque()` y
@@ -164,7 +168,8 @@ player.advance(seconds);
   direccionales, limitado a [0, 2] como el original (1 deja el texel igual). `unlit` se salta la luz. Una luz con
   dirección cero no ilumina y una normal de longitud cero (un hueso escalado a cero) solo recibe el ambiente, sin
   NaN.
-  `defaultModelLighting()` es una luz neutra para herramientas; el campo pasará las luces del mapa.
+  `defaultModelLighting()` es una luz neutra para herramientas; el campo pasa las luces del mapa, escaladas por la
+  hora del día.
 - **Transparencias.** `Mask` descarta bajo `alphaCutoff`. `Blend` lo dibuja `translucent()`, después de todo lo
   opaco (modelos y capas del mapa), de atrás a delante **por instancia**: la clave es la profundidad en espacio de
   vista del origen de la instancia (`(view × world[3]).z`, menor = más lejos), y dentro de una instancia las

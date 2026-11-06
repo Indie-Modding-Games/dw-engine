@@ -25,10 +25,10 @@ modificable a largo plazo: si se rompen, cambiar una pieza obliga a tocar muchas
 | `core` | La librería estándar y dependencias de terceros básicas |
 | `platform`, `rhi` | `core` |
 | `render`, `audio`, `input`, `assets`, `localization`, `animation`, `scene`, `signs`, `video` | Capas base, `core` y otros sistemas, sin ciclos (`animation`, `audio`, `render`, `localization`, `signs` y `video` usan `assets`) |
-| `script`, `ui` | Sistemas, base y `core` |
+| `script`, `ui`, `debug`, `ruleset` | Sistemas, base y `core` |
 | `game/*` | Servicios, sistemas y `core`; **no** `rhi` ni `platform` |
 | `apps/session` | `game/*`, servicios, sistemas y `core`; **no** `rhi`, `platform` ni `render` (corre sin ventana en `dwe-sim` y en los tests) |
-| `apps/screens` | `apps/session`, `game/*`, `ui`, `localization`, `assets` y `core`; **no** `rhi`, `platform` ni `render` (los modelos de vista de las pantallas, probados sin ventana) |
+| `apps/screens` | `apps/session`, `game/*`, `ui`, `ruleset`, `localization`, `assets` y `core`; **no** `rhi`, `platform` ni `render` (los modelos de vista de las pantallas, probados sin ventana) |
 | `apps/game` | Todo excepto `formats` |
 | `apps/content` | `assets`, `platform` y `core` (`platform` para la carpeta de datos del usuario y para ejecutar `dwx`) |
 | `apps/dwx` | `formats`, `assets` y `core` |
@@ -42,5 +42,7 @@ juego (`platform::runProcess`); el programa `dwx` no lo enlaza.
 
 - `dwe_add_module(<nombre> DEPS ...)` declara las dependencias permitidas. CMake no deja incluir los headers de un
   módulo no declarado.
-- La CI valida el grafo de dependencias contra esta tabla y falla si aparece una flecha prohibida o un ciclo.
+- Al configurar, `cmake/DweModule.cmake` comprueba cada dependencia contra las capas y falla si aparece una flecha
+  prohibida: hacia arriba, entre dos módulos de `game/` o hacia `formats` desde otro módulo que no sea `dwx`. La CI
+  configura en cada pull request, así que también falla allí.
 - Una excepción a estas reglas necesita un ADR.
