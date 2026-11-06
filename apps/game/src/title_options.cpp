@@ -61,7 +61,7 @@ void publishGameToggles(ui::Ui& ui, const UserSettings& settings) {
 
 bool changeGameToggle(const ui::UiCommand& command, ui::Ui& ui, UserSettings& settings,
                       const std::optional<std::filesystem::path>& settingsFile) {
-  const auto* toggle = std::ranges::find(Toggles, command.name, &GameToggle::setting);
+  const auto toggle = std::ranges::find(Toggles, command.name, &GameToggle::setting);
   if (toggle == Toggles.end()) {
     return false;
   }
