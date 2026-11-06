@@ -527,7 +527,7 @@ document_classes:                   # opcional: clases que pone en elementos de 
   de verdad.
 - **El ajuste `ui_skin`** sigue el camino de `text_font`: al arrancar manda `--ui-skin <id>`, luego el guardado en
   `settings.yaml` y luego el de los paquetes (`ui/ui_skin.yaml`); un id que no existe deja el de los paquetes con
-  un aviso. Los menús principal y de pausa (opciones) tienen la entrada «Aspecto de la interfaz»
+  un aviso. La página de opciones (desde el título o desde el menú de pausa) tiene la fila «Aspecto de la interfaz»
   (`ui/common/ui_skin_choice.lua`, compartido), que recorre `ui.skins()` y manda el comando `ui_skin`; la app lo
   aplica, lo guarda y lo publica. En la consola de depuración, `ui_skin("modern")`.
 - **Un mod que añade un aspecto** trae `ui/skins/<id>/skin.yaml`, sus hojas y el nombre en un archivo de textos
@@ -761,8 +761,8 @@ marcha. Lo mismo hace `save_slots` con `slots-original`. El aspecto moderno sigu
 | Menú | NUEVA PARTIDA, CONTINUAR PARTIDA, BORRAR PARTIDA, MODO BATALLA, OPCIONES en el cuadro de (72, 50) sobre TITLE2. Continuar y borrar en gris sin partidas: el cursor se para en ellas y confirmar no hace nada. El cursor no da la vuelta; el menú recuerda la entrada al volver | `main_menu.c: renderInitialMenu`, `main_menu.c: tickMainMenu`, `main_menu.c: tickMenuInput` |
 | Listas | «CONTINUAR/BORRAR RANURA n» y los autoguardados antiguos que queden, una fila por ranura, en el cuadro de (60, 50) ([guardar-y-cargar.md](guardar-y-cargar.md#35-continuar)) | `main_menu.c: renderSelectCardSlot` |
 | Modo batalla | Cuadro de título, de mensaje y de Sí/No con «No» enfocado; las dos respuestas vuelven al menú | `main_menu.c: renderConfirmVSSlot` |
-| Opciones | Nombre en blanco y valor en amarillo, en mayúsculas: idioma, texto original, aspecto, minimapa, su tamaño, pantalla, escala y salir. Izquierda y derecha o confirmar cambian el valor; confirmar en el idioma abre su caja | Añadido, con el aspecto de un remaster de fans (capturas 8 y 10) |
-| Idioma | Caja alta en el centro, con el encabezado «LANGUAGE - IDIOMA» pequeño arriba a la izquierda, una fila por idioma de los paquetes con su bandera y su nombre en su idioma y en mayúsculas (`language.native.<código>`), y «START» / «COMENZAR» abajo en el centro. Sale antes de cada pantalla de «Press Start», con el cursor en el idioma actual (el de los ajustes o `--lang`): un confirmar elige y pasa, con fundido, a «Press Start». Desde OPCIONES elegir deja el cursor en «START». Elegir cambia todos los textos al momento y se guarda en los ajustes | Captura 12 (un remaster) |
+| Opciones | La misma página de opciones por pestañas que en partida (Juego, Gráficos, Sonido, Interfaz; Q/E, ←/→, descripción de cada fila), sobre la imagen del título y sin el recuadro del menú; su barra solo tiene «Salir del juego». Volver devuelve al menú con el cursor en OPCIONES ([Desde el título](../modulos/apps/game.md#desde-el-título)) | Añadido |
+| Idioma | Caja alta en el centro, con el encabezado «LANGUAGE - IDIOMA» pequeño arriba a la izquierda, una fila por idioma de los paquetes con su bandera y su nombre en su idioma y en mayúsculas (`language.native.<código>`), y «START» / «COMENZAR» abajo en el centro. Sale antes de cada pantalla de «Press Start», con el cursor en el idioma actual (el de los ajustes o `--lang`): un confirmar elige y pasa, con fundido, a «Press Start». En OPCIONES el idioma es una fila más de la pestaña Interfaz. Elegir cambia todos los textos al momento y se guarda en los ajustes | Captura 12 (un remaster) |
 
 **Banderas.** Cada idioma nombra la suya con `language.flag.<código>`, el asset id de una imagen, igual en los
 textos de todos los idiomas (como `language.native.<código>`); sin clave, la fila va sin bandera. Las de `en` y `es`
@@ -789,8 +789,8 @@ botón Start con el mando, «HAZ CLIC» / «CLICK» si el ratón se movió el ú
 dispositivo, así que lo distingue el documento); el original dice «Press Start Button»; sin la
 línea del copyright; las cajas crecen a la derecha con textos más largos que los del original (español); no hay
 avisos de botones en estas cajas, como en el original; la pregunta del modo batalla dice que aún no existe y el modo
-batalla queda pendiente; la exploración libre no sale en las opciones de la portada (solo funciona en partida) ni la
-sincronía vertical (no cambia en marcha); el reinicio de la película por inactividad sigue como estaba.
+batalla queda pendiente; las opciones de la portada son las de partida, y las que solo aplica una partida se guardan
+para la siguiente; el reinicio de la película por inactividad sigue como estaba.
 
 El cuadro de texto (`ui/story_textbox`) llegó con el intérprete de historia y el aspecto original lo dibuja
 (`ui/skins/original/story_textbox`).

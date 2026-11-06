@@ -8,7 +8,7 @@ en un build de desarrollo, el juego los recarga solo al guardarlos. Arquitectura
 ```
 content/packs/game/ui/
   common/base.rcss           la estructura común, igual en todos los aspectos: display, tamaño, navegación
-  common/ui_skin_choice.lua  la entrada «Aspecto de la interfaz» de los menús principal y de pausa
+  common/ui_skin_choice.lua  la fila «Aspecto de la interfaz» de las opciones
   skins/modern/skin.yaml     el aspecto moderno: qué hojas pone sobre cada pantalla
   skins/modern/theme.rcss    su estilo común: fuente, botones, avisos de botones
   skins/modern/<pantalla>/style.rcss

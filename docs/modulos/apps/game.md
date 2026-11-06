@@ -702,7 +702,7 @@ un modelo externo que ya cae dentro de ellas se queda como está. El ajuste `chi
 | `external` («Externos», por defecto) | Los modelos de un paquete que no es del motor y que aún no son chibi |
 
 Un ajuste guardado antiguo con `all` («Todos») se lee como `external`. Se cambia en la fila «Estilo chibi» de las
-opciones del título y de las opciones del menú de pausa (Tab, «Opciones»; mando: Select), se aplica en el acto y se
+opciones (desde el título o desde el menú de pausa: Tab, «Opciones»; mando: Select), se aplica en el acto y se
 guarda en los ajustes del usuario; `--chibi` en la línea de órdenes pasa también los originales por el detector (para
 depurar; todos salen «chibi ya»). El origen sale del paquete que gana al resolver el modelo en el sistema de archivos
 virtual (`isOriginalModel`): un modelo es del original si ese paquete es del motor y está en la capa base o remaster;
@@ -1003,7 +1003,7 @@ UI desde `PlaySession` (`NeedBubbleStackSetting`) y el HUD junta hasta tres nece
 Mejora opcional, encendida por defecto con los dos aspectos (no cambia ninguna regla; el original no tiene
 minimapa): el ajuste `minimap` (`on` u `off`; el `auto` de ajustes antiguos se lee como `on`) se cambia en la fila
 «Mostrar minimapa» («Show minimap» en inglés) de las opciones en partida, en la página «Minimapa» del menú de pausa y
-en las opciones del título; se aplica al momento, sin recargar el mapa, y se guarda en los ajustes del usuario
+en las opciones desde el título; se aplica al momento, sin recargar el mapa, y se guarda en los ajustes del usuario
 (`MinimapChanger`, `apps/game/src/minimap_setting.hpp`). Cómo se dibuja: [ui.md](../../architecture/ui.md#minimapa).
 
 `PlaySession` publica `hud.minimap_allowed` (`minimapAllowed`): el minimapa solo sale mientras corre el tiempo del
@@ -1084,7 +1084,7 @@ cerrando un mapa abierto.
 Mejora opcional, encendida por defecto (no cambia ninguna regla): el motor dibuja el fondo prerenderizado del campo y
 sus capas de profundidad con un filtro propio que sigue los bordes, a la resolución de la ventana, en vez de ampliar
 cada píxel del original. El ajuste `hd_scenery` (fila «Escenarios en alta definición», «HD scenery» en inglés, de las
-opciones en partida; fila «ESCENARIOS HD» de las opciones del título con la piel original; guardado en los ajustes del
+opciones, en partida o desde el título; guardado en los ajustes del
 usuario) se aplica al momento; apagado, se ven los píxeles del original exactos. El porqué y cómo funciona están en
 [Alta definición en el motor](../../architecture/remaster-pipeline.md#alta-definición-en-el-motor).
 
@@ -1156,8 +1156,8 @@ Las opciones se cambian sin volver al título: la página «Opciones» del menú
 juego — **«Guardar»** (guardado rápido, `quick_save`), **«Volver a la portada»** (`to_title`) y **«Salir del juego»**
 (`quit`), en los dos aspectos; en el moderno están también en la página principal, y en el original es el sitio visible
 donde la rejilla de iconos se mantiene fiel — y sigue con las de pantalla (modo de
-ventana, escala, sincronía vertical), la piel, el idioma y el texto con aspecto original (las mismas órdenes que el
-menú del título: `language`, `text_font`) y, debajo, las opciones propias del motor.
+ventana, escala, sincronía vertical), la piel, el idioma y el texto con aspecto original (`language`, `text_font`; la misma página se abre desde el
+título, ver [Desde el título](#desde-el-título)) y, debajo, las opciones propias del motor.
 
 | Cómo se abre | Teclado | Mando |
 |---|---|---|
@@ -1217,6 +1217,31 @@ Los dos aspectos tienen las pestañas: el original las dibuja con las carpetas d
 píldoras, barras finas y el recuadro de descripción, y solo anima color y opacidad (0,12 s), sin movimiento. A
 1280 × 720 todas las filas de cada pestaña caben sin desplazar; si no cupieran (otra escala, las filas de un mod), la
 lista desplaza con una barra visible.
+
+### Desde el título
+
+«Opciones» del menú del título abre esta misma página, con las mismas pestañas, filas, descripciones y teclas, sobre
+la imagen del título: el menú manda `title_options`, `TitleScreen` oculta su recuadro y muestra el menú de pausa con
+`pause_menu.at_title` y `pause_menu.start_page` = `options` (`apps/game/src/title_options.hpp`). Sin partida no hay
+nada que guardar ni portada a la que volver, así que la barra de acciones solo tiene «Salir del juego», que cierra el
+juego al momento («Cierra el juego.», `pause_menu.help.quit_title`). Volver (Ctrl, Retroceso, clic derecho, Este o la
+fila «Volver») cierra la página, manda `title_options_back` y el título vuelve a su menú con el foco en «Opciones».
+
+Todas las filas sirven en el título. Las que solo aplica una partida en curso (las sí/no de `game_options.lua` que
+atiende `PlaySession`: exploración libre, mapa de la isla, nombres largos, movimiento suave, carteles traducidos…) las
+guarda el juego en los ajustes del usuario y las vuelve a publicar (`changeGameToggle`, `publishGameToggles`); la
+siguiente partida empieza con ellas. Las demás (pantalla, escala, piel, idioma, letra, volúmenes, gráficos, minimapa)
+tienen el mismo manejador que en partida. La sincronía vertical se cambia igual que en partida: al reiniciar.
+
+La página cabe en todas las ventanas: el diseño es de 720dp de alto y al menos 960dp de ancho, así que una ventana
+4:3 deja 960dp. El recuadro moderno mide 900dp; el original, 980dp con las teclas de pestaña por fuera, se estrecha a
+880dp con las teclas sobre sus esquinas cuando la página tiene menos de 1060dp de ancho (`@media` en
+`skins/original/pause_menu/style.rcss`). `in_game_options_tests.cpp` lo comprueba de 640 × 480 a 2560 × 1080 en los
+dos aspectos y los dos idiomas.
+
+| Cambio | Original | dwe | Prueba | Tipo |
+|---|---|---|---|---|
+| Opciones desde el título | No existe: el menú del título solo tiene sus cuatro entradas | «Opciones» abre la página de opciones por pestañas; «Salir del juego» en su barra | `in_game_options_tests.cpp` («over the title…», «…fits the window…»); `title_options_tests.cpp`; `ui_tests.cpp` (menú del título con teclado y con ratón); rutas `route-language.yaml` y `route-skins.yaml` | Mejora |
 
 ### Datos
 
@@ -1301,7 +1326,7 @@ y se guardan en `settings.yaml` (`shadows`, `enhanced_lighting`, `vivid_colors`;
 ## Clima
 
 Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no tiene clima): el ajuste `weather`
-(sí/no) se cambia en la fila «Clima» («Weather» en inglés) de las opciones en partida y en las opciones del título;
+(sí/no) se cambia en la fila «Clima» («Weather» en inglés) de las opciones en partida y desde el título;
 se aplica al momento y se guarda en los ajustes del usuario. Las zonas, sus pesos y los mapas sin clima, la semilla,
 el dibujo y el sonido están en [packages/game/weather](../game/weather.md). `--weather <clima>` fuerza uno para capturas.
 
