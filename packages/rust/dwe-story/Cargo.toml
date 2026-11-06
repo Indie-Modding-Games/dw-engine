@@ -12,6 +12,7 @@ rust-version.workspace = true
 [dependencies]
 dwe-map.workspace = true
 dwe-pack.workspace = true
+glam.workspace = true
 serde_yaml_ng.workspace = true
 thiserror.workspace = true
 

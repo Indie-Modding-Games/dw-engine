@@ -171,6 +171,7 @@ pub fn new_command(command: &Command) -> Stmt {
     Stmt {
         kind,
         comment: command.hint(),
+        line: 0,
     }
 }
 
