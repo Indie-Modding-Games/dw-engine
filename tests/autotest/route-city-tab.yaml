@@ -52,7 +52,7 @@ steps:
   - resize: [1024, 768]
   - wait: {seconds: 0.4}
   - screenshot: city-champion
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.4}
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.6}

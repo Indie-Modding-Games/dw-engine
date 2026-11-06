@@ -47,6 +47,12 @@ inline constexpr std::string_view BadPaletteNumber = "'{}' is not a palette numb
 inline constexpr std::string_view BadImageOption =
     "'{}' is not an image option: palette=<number> or tone=grey";
 inline constexpr std::string_view NoImage = "no image {} in the packs";
+// A player's image of one (assets/image_replacement.hpp) that cannot be drawn: the game's is.
+inline constexpr std::string_view ReplacementUnusable =
+    "ui: the player's image {} of pack '{}' is not used, the game's {} is drawn: {}";
+inline constexpr std::string_view ReplacementWrongSize =
+    "ui: the player's image {} of pack '{}' is {}x{}, not {}x{} or a whole number of times larger "
+    "with the same aspect ratio (up to {}x): the game's {} is drawn";
 inline constexpr std::string_view ImageTooLarge =
     "the image {} is {}x{}, larger than {} on a side for the UI";
 inline constexpr std::string_view UiImageOverBudget =

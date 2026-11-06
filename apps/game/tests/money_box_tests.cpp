@@ -6,8 +6,7 @@
 #include "money_box_screen.hpp"
 
 TEST_CASE("script_common.c tickShopBitsBox: the money box says the keeper's line with the money") {
-  const dwe::screens::ScreenSettings settings =
-      dwe::app::moneyBoxSettings("maphead.1220.6", 1500);
+  const dwe::screens::ScreenSettings settings = dwe::app::moneyBoxSettings("maphead.1220.6", 1500);
   REQUIRE(settings.size() == 2);
   CHECK(settings[0].name == "money_box.bits_key");
   CHECK(std::get<std::string>(settings[0].value) == "maphead.1220.6");

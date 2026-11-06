@@ -8,6 +8,7 @@
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/cards_adapter.hpp>
 #include <dwe/session/city_adapter.hpp>
+#include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/story_adapter.hpp>
@@ -64,6 +65,9 @@ struct PartnerMenuDesc {
   const session::CardsAdapter* cards = nullptr;
   // The city, for the player page's City tab; it may be null.
   const session::CityAdapter* city = nullptr;
+  // The evolution rules, for the hours the partner's level checks from on the status page's
+  // extras; it may be null.
+  const session::EvolutionAdapter* evolution = nullptr;
   // The field's feeding scene, which the bag's Use starts when it can; null: the bag uses the
   // item at once.
   FeedScene* feed = nullptr;

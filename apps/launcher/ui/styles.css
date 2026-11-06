@@ -375,6 +375,40 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
 /* An add-on's page. */
 .addon-view { display: flex; flex-direction: column; gap: var(--space-4); padding-top: var(--space-2); }
 
+/* Images: the toolbar, the bulk summary and the list of maps and images with their thumbnails. */
+.images-view { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-2) 0 var(--space-6); }
+.images-lead { max-width: 72ch; margin-top: 0; }
+.images-note { margin: 0; }
+.images-toolbar, .images-bulk { display: flex; flex-direction: column; gap: var(--space-3); }
+.images-toolbar-row, .images-bulk .row, .images-file .row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.images-switch { gap: var(--space-3); }
+.images-bulk h2 { font-size: 1.02rem; }
+.images-bulk ul { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 2px; }
+.images-refused code { font-size: 0.85rem; overflow-wrap: anywhere; }
+.is-ok { color: var(--accent-strong); }
+.is-warning { color: var(--warning); }
+.images-search {
+  width: min(28rem, 100%); min-height: 2.5rem; padding: 0 var(--space-3);
+  border-radius: var(--radius-s); border: 1px solid var(--border-strong); background: var(--surface-strong); color: var(--text); font: inherit;
+}
+.images-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.images-kind { font-size: 1.1rem; margin-top: var(--space-4); }
+.images-group { border: 1px solid var(--border); border-radius: var(--radius-m); background: var(--surface); }
+.images-group > summary { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-3) var(--space-4); cursor: pointer; min-height: 44px; }
+.images-group-name { font-weight: 700; }
+.images-entries { display: flex; flex-direction: column; gap: var(--space-4); padding: 0 var(--space-4) var(--space-4); }
+.images-entry h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); font-size: 0.98rem; margin-bottom: var(--space-2); }
+.images-files { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: var(--space-3); }
+.images-file { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border-radius: var(--radius-s); background: rgba(11, 11, 11, 0.35); border: 1px solid var(--border); }
+.images-variant { font-weight: 600; font-size: 0.9rem; }
+.images-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.images-pair figure { margin: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.images-pair figcaption { font-size: 0.78rem; color: var(--text-muted); }
+.images-thumb { width: 100%; aspect-ratio: 6 / 5; object-fit: contain; border-radius: 6px; background: #000; }
+.images-thumb.is-original { image-rendering: pixelated; }
+.images-thumb.is-missing { opacity: 0.3; }
+.images-placeholder { display: grid; place-items: center; color: var(--text-faint); font-size: 0.8rem; border: 1px dashed var(--border-strong); background: transparent; }
+
 /* The bottom: the add-ons pill (left), the news and the links (right). */
 .bottombar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 .bottom-right { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
@@ -598,6 +632,8 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
   cursor: pointer;
 }
 .setting select:hover { border-color: rgba(94, 234, 212, 0.5); }
+/* A short choice beside its label (the update channel): as wide as its longest option. */
+.setting select.compact { min-width: 150px; flex: 0 0 auto; }
 .setting select option { background: #0a1422; color: var(--text); }
 .setting .warning, .warning { color: var(--warning); }
 .small { font-size: 0.82rem !important; }
@@ -805,10 +841,10 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
 .setting select option { background: #141619; }
 .dialog .status-line.accent { color: var(--text) !important; }
 .dialog .facts dt, .dialog .muted, .addon-byline { color: var(--text-faint); }
-.switch { background: #2a2b2e; }
-.switch::after { background: var(--text-faint); }
-.switch:checked { background: var(--neutral-fill); border-color: var(--neutral-fill); }
-.switch:checked::after { background: var(--neutral-ink); }
+.dialog .switch { background: #2a2b2e; }
+.dialog .switch::after { background: var(--text-faint); }
+.dialog .switch:checked { background: var(--neutral-fill); border-color: var(--neutral-fill); }
+.dialog .switch:checked::after { background: var(--neutral-ink); }
 .dialog .chip { background: rgba(255, 255, 255, 0.06); }
 .dialog .chip.is-on { background: rgba(241, 239, 232, 0.12); color: var(--text); }
 .dialog .dropzone { background: rgba(255, 255, 255, 0.02); border-color: var(--border-strong); }

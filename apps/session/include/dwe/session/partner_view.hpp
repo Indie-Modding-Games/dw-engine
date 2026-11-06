@@ -55,6 +55,14 @@ struct PartnerView {
   game::partner::AreaResponse area = game::partner::AreaResponse::Neutral;
   std::int32_t careMistakes = 0;
   std::int32_t battles = 0;
+  // Hours since the last change of level (evoTimer).
+  std::int32_t evolutionHours = 0;
+  // When it wakes up and gets sleepy today (PartnerPara: wakeUpHour, sleepyHour and their
+  // minutes); the schedule moves when it sleeps late or early.
+  std::int32_t wakeHour = 0;
+  std::int32_t wakeMinute = 0;
+  std::int32_t sleepyHour = 0;
+  std::int32_t sleepyMinute = 0;
 };
 
 // The view of a partner under its rules.

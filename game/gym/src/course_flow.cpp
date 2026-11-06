@@ -2,9 +2,11 @@
 #include <dwe/game/gym/course_flow.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <optional>
 #include <type_traits>
+#include <utility>
 #include <variant>
 
 namespace dwe::game::gym {
@@ -70,6 +72,42 @@ void CourseRun::frame(GymPorts& ports, const GymInput& input) {
   if (watching_) {
     ports.lookAt(Actor::Tamer, Actor::Partner);
   }
+  watch(ports);
+}
+
+void CourseRun::watch(GymPorts& ports) {
+  const std::optional<Point> seen = ports.partnerPosition();
+  if (!seen) {
+    return;
+  }
+  const auto apart = [](Point from, Point to) {
+    return static_cast<std::int32_t>(std::lround(
+        std::hypot(static_cast<double>(to.x - from.x), static_cast<double>(to.z - from.z))));
+  };
+  if (std::exchange(arriving_, false)) {
+    inSession_ = true;
+    arrival_ = *seen;
+    lastSeen_ = *seen;
+    jumped_ = false;
+    return;
+  }
+  if (!inSession_) {
+    return;
+  }
+  ++record_.frames;
+  record_.maxOffset = std::max(record_.maxOffset, apart(arrival_, *seen));
+  if (!std::exchange(jumped_, false)) {
+    record_.path += apart(lastSeen_, *seen);
+  }
+  lastSeen_ = *seen;
+  if (std::exchange(awarded_, false)) {
+    inSession_ = false;
+  }
+}
+
+void CourseRun::placePartner(GymPorts& ports, Axis axis, std::int32_t value) {
+  ports.placePartner(axis, value);
+  jumped_ = true;
 }
 
 void CourseRun::setState(std::int32_t state) {
@@ -103,6 +141,9 @@ void CourseRun::startSlots(GymPorts& ports) {
 }
 
 void CourseRun::startSpin() {
+  arriving_ = true;
+  awarded_ = false;
+  record_ = {};
   if (slots_.has_value()) {
     slots_->startSpin();
   }
@@ -116,6 +157,9 @@ void CourseRun::award(GymPorts& ports) {
   slots_.reset();
   const Award award = ports.award(*course_, tenths);
   countup_.emplace(gym_->count, award.before, award.gains);
+  record_.award = award;
+  // The award's frame is the session's last.
+  awarded_ = true;
   core::logDebug("[port:gym] TRN_award*TrainingGains (trn_reward.c): course {}", course_->id);
 }
 
@@ -212,9 +256,11 @@ void CourseRun::hpFrame(GymPorts& ports, const HpCourse& hp, const GymInput& inp
     }
     break;
   case 2: {
-    // The original sets animFlag 2 here and clears it on the beats: it only stops the clip's root
-    // motion (anim.c: applyRootMomentum), which a scripted clip here never has; the clip plays on.
+    // The push plays in place (animFlag 2), but each beat lets one frame of its root motion
+    // through: the partner leans a step into the machine (anim.c: applyRootMomentum).
+    ports.holdInPlace(Actor::Partner, true);
     if (counter_ % hp.beatFrames == 0 && counter_ <= course_->cycleFrames) {
+      ports.holdInPlace(Actor::Partner, false);
       ports.moveObjects(hp.objects, hp.beatMove);
     }
     const std::int32_t jitter = counter_ % 2 == 0 ? hp.jitter : -hp.jitter;

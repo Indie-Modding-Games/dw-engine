@@ -1,137 +1,262 @@
 name: CI
 
-# A change that only touches documentation builds nothing.
+# The checks of a pull request to main (docs/contribuir.md). main's ruleset requires the jobs
+# linux, windows and launcher-version. Only a pull request's newest commit is checked: a newer push
+# cancels the run of the older one. Nothing runs on main itself: a squash-merged pull request
+# already passed these checks (release.yml builds main and keeps the compiler caches these jobs
+# start from warm).
+#
+# A pull request that only touches documentation builds nothing: the workflow still runs (a
+# required check that never reports would hold the pull request forever), and the jobs with
+# nothing to check are skipped, which counts as passed.
+#
+# Left out of this path, as too slow for every pull request: clang-tidy, the documentation site,
+# the tests on Windows itself (platform-check.yml, weekly and by hand) and the format and lint of
+# the files the pull request does not touch. scripts/dev.sh check-full runs them all on a
+# computer.
 on:
-  push:
-    branches: [main]
-    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
-    paths-ignore: ['docs/**', '**/*.md']
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
+  # The development images in GitHub's container registry (release.yml pushes them).
+  packages: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  # A newer push cancels a pull request's run; every run on main finishes, so its caches get saved.
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  linux:
+  # What the pull request changes: code (anything but the documentation) and the launcher.
+  changes:
+    name: changes
     runs-on: ubuntu-24.04
+    outputs:
+      code: ${{ steps.changes.outputs.code }}
+      launcher: ${{ steps.changes.outputs.launcher }}
+      base: ${{ steps.changes.outputs.base }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The history without the files' contents: enough to list what changed.
+          fetch-depth: 0
+          filter: blob:none
 
-      - name: Build the development image
-        run: scripts/dev.sh image
+      - name: List what changed
+        id: changes
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [[ -n "$BASE" ]] && base="$(git merge-base "$BASE" HEAD)"; then
+            files="$(git diff-tree -r --name-only "$base" HEAD)"
+          else
+            echo "Checking everything (no pull request to compare with)"
+            base=""
+            files="$(git ls-files)"
+          fi
+          code=false
+          launcher=false
+          docs='^(docs/|docs-site/|\.github/ISSUE_TEMPLATE/|\.github/pull_request_template\.md$|LICENSE)|\.md$'
+          grep -qvE "$docs" <<<"$files" && code=true
+          launcher_paths='^(apps/launcher/|services/beta-gateway/|scripts/launcher\.sh$|scripts/ci/|'
+          launcher_paths+='scripts/package/|scripts/release_local\.sh$|\.devcontainer/launcher\.Dockerfile$)'
+          grep -qE "$launcher_paths" <<<"$files" && launcher=true
+          echo "code=$code launcher=$launcher base=$base"
+          {
+            echo "code=$code"
+            echo "launcher=$launcher"
+            echo "base=$base"
+          } >> "$GITHUB_OUTPUT"
 
+  # Required. The format and the lint of the changed files, then the engine, the game and the
+  # tools built for Linux (debug, warnings as errors) and every test; the tests that need the
+  # player's disc or extracted content skip.
+  linux:
+    name: linux
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      PRESET: ci
+      GH_TOKEN: ${{ github.token }}
+      BASE: ${{ needs.changes.outputs.base }}
+      DWE_CCACHE_SIZE: 2G
+    steps:
+      # The runner context only exists inside steps, so the cache folders go to the job here.
+      - name: Cache folders
+        run: |
+          echo "DWE_CACHE_DIR=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
+          echo "DWE_CCACHE_DIR=$RUNNER_TEMP/ccache" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v4
+        with:
+          # The format and the lint compare with the pull request's base.
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Development image
+        run: scripts/ci/image.sh dev
+
+      # The release's Linux dependencies (the same triplet, without the default features), saved
+      # on main by release.yml.
       - name: Restore the vcpkg binary cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
-          restore-keys: vcpkg-
+          key: vcpkg-release-linux-x86_64-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          restore-keys: vcpkg-release-linux-x86_64-
 
+      # main's newest objects of this preset, saved by release.yml's pr-caches job.
       - name: Restore the compiler cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/ccache
-          key: ccache-linux-${{ github.sha }}
-          restore-keys: ccache-linux-
+          key: ccache-ci-linux-${{ github.sha }}
+          restore-keys: ccache-ci-linux-
 
-      # The same check as a branch's tip on a developer machine (scripts/dev.sh check-full), with release-only
-      # dependencies, built once instead of twice, and no validation layers: no test draws anything. clang-tidy runs
-      # next to the tests; each step's log is folded in the output.
-      - name: Check
-        env:
-          DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
-          DWE_CCACHE_DIR: ${{ runner.temp }}/ccache
-          DWE_CCACHE_SIZE: 2G
-          DWE_LOG_DIR: ${{ runner.temp }}/logs
+      - name: Format of the changed files
+        if: env.BASE != ''
+        run: scripts/dev.sh format --since "$BASE"
+
+      - name: Lint of the changed files
+        if: ${{ !cancelled() && env.BASE != '' }}
+        run: scripts/dev.sh lint --since "$BASE"
+
+      # The build runs even when the format or the lint failed, so one run says everything.
+      - name: Configure
+        id: configure
+        if: ${{ !cancelled() }}
         run: >-
-          scripts/dev.sh check-full
+          scripts/dev.sh configure
           -DVCPKG_TARGET_TRIPLET=x64-linux-libcxx-release
           -DVCPKG_HOST_TRIPLET=x64-linux-libcxx-release
           -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
 
-  # Written from the documentation of CMake, vcpkg and clang-cl; not run yet.
+      - name: Build
+        id: build
+        if: ${{ !cancelled() && steps.configure.outcome == 'success' }}
+        run: scripts/dev.sh build
+
+      - name: Test
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: scripts/dev.sh test -j "$(nproc)"
+
+  # Required. The same sources cross-compiled for Windows with clang-cl and the MSVC library, the
+  # release's toolchain: built, tests included, but not run (platform-check.yml runs them on
+  # Windows).
   windows:
-    runs-on: windows-2025
+    name: windows
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      PRESET: windows-cross
+      GH_TOKEN: ${{ github.token }}
+      DWE_CCACHE_SIZE: 2G
+    steps:
+      # The runner context only exists inside steps, so the cache folders go to the job here.
+      - name: Cache folders
+        run: |
+          echo "DWE_CACHE_DIR=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
+          echo "DWE_CCACHE_DIR=$RUNNER_TEMP/ccache" >> "$GITHUB_ENV"
+          echo "DWE_XWIN_DIR=$RUNNER_TEMP/xwin" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v4
+
+      - name: Development image
+        run: scripts/ci/image.sh dev
+
+      - name: Restore the MSVC libraries and the Windows SDK
+        id: xwin-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/xwin
+          key: xwin-${{ hashFiles('.devcontainer/Dockerfile') }}
+
+      - name: Fetch the MSVC libraries and the Windows SDK
+        if: steps.xwin-cache.outputs.cache-hit != 'true'
+        run: scripts/dev.sh windows-sdk --accept-license
+
+      # The release's Windows dependencies (the same triplet), saved on main by release.yml.
+      - name: Restore the vcpkg binary cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-release-windows-x86_64-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          restore-keys: vcpkg-release-windows-x86_64-
+
+      - name: Restore the compiler cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-ci-windows-${{ github.sha }}
+          restore-keys: ccache-ci-windows-
+
+      - name: Configure
+        run: scripts/dev.sh configure
+
+      - name: Build
+        run: scripts/dev.sh build
+
+  # Required. The launcher's version can ship (scripts/ci/launcher_version.sh): installed
+  # launchers update only to a higher version. Seconds, and run on every pull request: the newest
+  # release may be newer than the pull request's base.
+  launcher-version:
+    name: launcher-version
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Check the launcher's version
+        run: scripts/ci/launcher_version.sh
+
+  # The launcher's tests and clippy, the beta gateway's tests and the release scripts' tests, when
+  # one of them changed.
+  launcher:
+    name: launcher
+    needs: changes
+    if: needs.changes.outputs.launcher == 'true'
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up the MSVC environment
-        uses: ilammy/msvc-dev-cmd@v1
+      - name: Launcher image
+        run: scripts/ci/image.sh launcher
 
-      - name: Set up vcpkg
-        shell: pwsh
-        run: |
-          $root = Join-Path $env:RUNNER_TEMP vcpkg
-          $baseline = (Get-Content vcpkg.json -Raw | ConvertFrom-Json).'builtin-baseline'
-          git clone https://github.com/microsoft/vcpkg.git $root
-          git -C $root checkout $baseline
-          & (Join-Path $root bootstrap-vcpkg.bat) -disableMetrics
-          $cache = Join-Path $env:RUNNER_TEMP vcpkg-cache
-          New-Item -ItemType Directory -Force $cache | Out-Null
-          "VCPKG_ROOT=$root" >> $env:GITHUB_ENV
-          "VCPKG_DEFAULT_BINARY_CACHE=$cache" >> $env:GITHUB_ENV
-
-      # sccache in front of clang-cl: the presets ask for the compiler launcher in DWE_COMPILER_LAUNCHER and put the
-      # debug information in the objects (/Z7), which a compiler cache can store, instead of a shared PDB (/Zi).
-      - name: Set up sccache
-        shell: pwsh
-        run: |
-          $version = 'v0.10.0'
-          $name = "sccache-$version-x86_64-pc-windows-msvc"
-          $zip = Join-Path $env:RUNNER_TEMP "$name.zip"
-          Invoke-WebRequest "https://github.com/mozilla/sccache/releases/download/$version/$name.zip" -OutFile $zip
-          Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
-          (Join-Path $env:RUNNER_TEMP $name) >> $env:GITHUB_PATH
-          "SCCACHE_DIR=$(Join-Path $env:RUNNER_TEMP sccache)" >> $env:GITHUB_ENV
-          "SCCACHE_CACHE_SIZE=2G" >> $env:GITHUB_ENV
-          "DWE_COMPILER_LAUNCHER=sccache" >> $env:GITHUB_ENV
-
-      - name: Restore the compiler cache
-        uses: actions/cache@v4
+      - name: Restore the launcher's build cache
+        uses: actions/cache/restore@v4
         with:
-          path: ${{ runner.temp }}/sccache
-          key: sccache-windows-${{ github.sha }}
-          restore-keys: sccache-windows-
+          path: |
+            ${{ runner.temp }}/launcher-cargo
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: launcher-linux-${{ hashFiles('apps/launcher/src-tauri/Cargo.lock', '.devcontainer/launcher.Dockerfile') }}
+          restore-keys: launcher-linux-
 
-      - name: Restore the vcpkg binary cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-windows-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'cmake/toolchains/**') }}
-          restore-keys: vcpkg-windows-
+      - name: Launcher tests and clippy
+        env:
+          DWE_LAUNCHER_CARGO_DIR: ${{ runner.temp }}/launcher-cargo
+        run: scripts/launcher.sh test
 
-      - name: Show the tools
+      - name: Beta gateway tests
+        working-directory: services/beta-gateway
+        run: node --test
+
+      - name: Release scripts tests
+        working-directory: scripts/ci/tests
         run: |
-          clang-cl --version
-          sccache --version
-          cmake --version
-          ninja --version
-
-      # No validation layers: no test draws anything. The dependencies keep their debug build, because a debug build
-      # with clang-cl cannot link release libraries (a different CRT).
-      # vcpkg gives up at once on some download errors (an SSL error from lua.org once); one more try reuses
-      # everything already downloaded and built.
-      - name: Configure
-        run: |
-          $PSNativeCommandUseErrorActionPreference = $false
-          cmake --preset windows-ci -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Configure failed; trying once more in a minute"
-            Start-Sleep -Seconds 60
-            cmake --preset windows-ci -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
-          }
-
-      - name: Build
-        run: cmake --build --preset windows-ci
-
-      - name: Test
-        run: ctest --preset windows-ci -j 4
-
-      - name: Show the compiler cache statistics
-        if: always()
-        run: sccache --show-stats
+          python3 -B -m unittest -v test_release
+          cd ../../package/tests
+          python3 -B -m unittest -v test_release_manifest test_third_party_notices

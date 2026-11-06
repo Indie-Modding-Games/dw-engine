@@ -326,3 +326,35 @@ TEST_CASE("the upscale key changes with any byte of what it hashes") {
   CHECK(render::UpscaleKey{}.add(a).value() != render::UpscaleKey{}.add(b).value());
   CHECK(render::UpscaleKey{}.add(1U).add(a).value() != render::UpscaleKey{}.add(2U).add(a).value());
 }
+
+TEST_CASE("a player's background is drawn as it is, each texel's square over the original texel") {
+  for (const std::uint32_t scale : {1U, 2U, 4U}) {
+    dwe::assets::MapBackgroundReplacement replacement{.scale = scale, .variants = {}};
+    for (const std::uint8_t red : {std::uint8_t{40}, std::uint8_t{90}}) {
+      dwe::assets::Image image{.width = 2 * scale, .height = scale, .pixels = {}};
+      for (std::uint32_t pixel = 0; pixel < image.width * image.height; ++pixel) {
+        for (const std::uint8_t channel :
+             {red, static_cast<std::uint8_t>(pixel), std::uint8_t{0}, std::uint8_t{255}}) {
+          image.pixels.push_back(std::byte{channel});
+        }
+      }
+      replacement.variants.push_back(std::move(image));
+    }
+    const dwe::render::UpscaledScenery scenery = dwe::render::sceneryFromReplacement(replacement);
+    CHECK(scenery.width == 2 * scale);
+    CHECK(scenery.height == scale);
+    CHECK(scenery.scale == scale);
+    REQUIRE(scenery.variants.size() == 2);
+    CHECK(scenery.variants[0].front().red == 40);
+    CHECK(scenery.variants[1].back().red == 90);
+    CHECK(scenery.variants[1].back().green == static_cast<std::uint8_t>((2 * scale * scale) - 1));
+    // map.slang reads the original texel u's centre at u * scale + shift: the middle of the square
+    // of texels u * scale to u * scale + scale - 1 that covers it.
+    for (const std::uint32_t texel : {0U, 1U}) {
+      const float first = static_cast<float>(texel * scale);
+      const float last = first + static_cast<float>(scale - 1);
+      CHECK(static_cast<float>(texel * scale) + scenery.shift ==
+            doctest::Approx((first + last) / 2));
+    }
+  }
+}

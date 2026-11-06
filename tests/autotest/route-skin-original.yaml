@@ -1,12 +1,12 @@
-# The original look on every screen it styles, with a capture of each: the title screen and its menu, the field's
-# clock and bars, the pause menu and its options, the partner's status and bag (an item's options and the sort
-# orders), a battle (the partner's bars, the commands, an enemy's bar) and its end boxes, and the need bubble over the
+# The original look on every screen it styles, with a capture of each: the title screen and its menu, the field's clock
+# and bars, the pause menu and its options, the partner's status and bag (an item's options and the sort orders), a
+# battle (the partner's bars, the commands, an enemy's bar) run from with no end box, and the need bubble over the
 # partner at 1920x1080. The original look is the packs' default, and an autotest reads no saved settings, so the route
 # needs no flag; it needs content extracted with the original look's sprites (dwx 2 or later): without them the game
-# starts with the modern skin and the first step fails. It needs an empty saves folder of its own (--saves): Play
-# opens the slot list there, and the route starts the game without saving, which writes nothing there: no save and no
-# autosave after the battle or the new day (saves.files stays 0). It runs once per language.
-# How to run it: docs/guides/prueba-vertical.md.
+# starts with the modern skin and the first step fails. It needs an empty saves folder of its own (--saves): Play opens
+# the slot list there, and the route starts the game without saving, which writes nothing there: no save and no autosave
+# after the battle or the new day (saves.files stays 0). It runs once per language. How to run it:
+# docs/guides/prueba-vertical.md.
 name: skin-original
 device: keyboard
 main_menu: true
@@ -44,14 +44,14 @@ steps:
   # again from the player.
   - menu_select: options-back
   - menu_select: player-back
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.6}
   - menu_select: open-partner
   - wait: {shown: partner_menu, seconds: 0.5}
   - screenshot: partner-status
   # The original look's partner entry holds the status and tech pages only, as the original's; the bag is the menu's
   # ITEM entry, which the menu shows again when the partner's page closes.
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}
   - menu: open
   # The menu's box takes no input until it is in place (tickUIBox).
@@ -67,7 +67,7 @@ steps:
   - menu_select: sort-0
   - wait: {seconds: 0.3}
   # The original look's bag has no tabs: cancel closes it, back to the menu, and the menu closes after it.
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}
   - menu: close
   - wait: {menu_open: false}
@@ -76,16 +76,13 @@ steps:
   - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
   - screenshot: battle
   # An order first, as route-battle-keyboard gives, then Run (the new game's partner's second command) ends the
-  # battle.
+  # battle: a fled battle fades to black and closes with no end box (BTL_deinitializeCombat).
   - expect_setting: {battle.phase: fight}
   - menu_select: command-2
   - wait: {seconds: 4}
   - menu_select: command-1
-  - wait: {seconds: 3}
-  - expect_setting: {battle.phase: end}
-  - screenshot: battle-end
-  # The end box closes by itself once its wait is over.
-  - wait: {hidden: battle, timeout: 10}
+  - wait: {hidden: battle, timeout: 15}
+  - screenshot: battle-fled
   # A battle's end asks for an autosave, which a game played without saving drops.
   - wait: {seconds: 1}
   - expect_setting: {saves.files: "0"}

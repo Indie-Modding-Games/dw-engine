@@ -25,7 +25,8 @@ namespace dwe::ui {
 
 // The control that triggers an action on a kind of device, for button prompts: the first key (or
 // mouse button) bound to it on keyboard and mouse, or the first gamepad button (or stick) —
-// "key:enter", "mouse:left", "gamepad:south", "gamepad:left_stick". Empty when nothing on that
+// "key:enter", "mouse:left", "gamepad:south", "gamepad:left_stick". A modifier bound on both
+// sides is named as the pair ("key:ctrl", "key:shift", "key:alt"). Empty when nothing on that
 // device triggers the action.
 [[nodiscard]] std::string promptControl(const input::ActionMap& map, input::DeviceKind device,
                                         std::string_view action);

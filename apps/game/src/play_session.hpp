@@ -146,6 +146,8 @@ struct SessionCommands {
   SaveCommand save;
   bool saveMachine = false;
   std::optional<std::string> gym;
+  // model_characters("on"|"off"): the 3D characters option for this game, not saved.
+  std::optional<bool> modelCharacters;
   // place("<who> <x> <z> <rotation>") commands, in order (place_command.hpp).
   std::vector<std::string> placements;
   // story_set("trigger <n> on|off" | "var <n> <value>") commands, in order (story_set_command.hpp).

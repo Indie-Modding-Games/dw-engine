@@ -818,7 +818,7 @@ TEST_CASE("the pause menu works with the keyboard alone") {
   CHECK(ui->focusedElementId("pause_menu") == "continue");
   CHECK(ui->elementText("pause_menu", "prompt-confirm").contains(">Space<"));
   CHECK(ui->elementHasClass("pause_menu", "prompt-confirm", "glyph-key"));
-  CHECK(ui->elementText("pause_menu", "prompt-cancel").contains(">Left Ctrl<"));
+  CHECK(ui->elementText("pause_menu", "prompt-cancel").contains(">Ctrl<"));
 
   press(*ui, input, input::keys::Down);
   CHECK(ui->focusedElementId("pause_menu") == "open-minimap");
@@ -1471,11 +1471,11 @@ TEST_CASE(
   ui->show("hud");
   placePartner(*ui, true);
 
-  // One need is the original's bubble.
+  // One need is the original's bubble, its need on the first icon.
   setFieldNeeds(*ui, true, false, false);
   CHECK(bubbleNeed(*ui) == "hunger");
   CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "stack-2"));
-  CHECK(stackedNeeds(*ui).empty());
+  CHECK(stackedNeeds(*ui) == std::vector<std::string>{"hunger"});
 
   // Two: one balloon with both, in the original's priority (tiredness before hunger).
   setFieldNeeds(*ui, true, false, false, true);
@@ -1499,8 +1499,45 @@ TEST_CASE(
   ui->setSetting("need_bubble_stack", false);
   ui->update();
   CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "stack-3"));
-  CHECK(stackedNeeds(*ui).empty());
   CHECK_FALSE(bubbleNeed(*ui).empty());
+  CHECK(stackedNeeds(*ui) == std::vector<std::string>{bubbleNeed(*ui)});
+}
+
+TEST_CASE("the need bubble plays the original's frames: growth, the need's animation, burst, gap") {
+  // bubble.c: tickConditionBubble counts the bubble's frames at 20 a second, a new bubble every 60
+  // (handleConditionBubble: CONDITION_BUBBLE_TIMER) or at 50 for the other need's; the skin draws
+  // each frame by the class "frame-<n>".
+  Content content;
+  auto ui = createUi(content.mount());
+  input::InputState input{input::defaultActionMap()};
+  REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+  ui->show("hud");
+  ui->setSetting("need_bubble_stack", false);
+  placePartner(*ui, true);
+  const auto onFrame = [&ui](int frame) {
+    return ui->elementHasClass("hud", "field-partner-bubble", "frame-" + std::to_string(frame));
+  };
+  setFieldNeeds(*ui, false, true, false);
+  CHECK(onFrame(1));
+  ui->tick(input, 0.56);
+  CHECK(onFrame(12));
+  CHECK_FALSE(onFrame(1));
+  // One need alone: past the burst (51) to the gap, then a new bubble on frame 1 at 60.
+  ui->tick(input, 2.0);
+  CHECK(onFrame(52));
+  ui->tick(input, 0.5);
+  CHECK(onFrame(2));
+  // With another need, its bubble takes over at 50 frames, from frame 1.
+  setFieldNeeds(*ui, true, true, false);
+  CHECK(bubbleNeed(*ui) == "sleep");
+  ui->tick(input, 2.5);
+  CHECK(bubbleNeed(*ui) == "hunger");
+  CHECK(onFrame(1));
+  // The frames stop while the bubble is not drawn.
+  placePartner(*ui, false);
+  ui->tick(input, 1.0);
+  placePartner(*ui, true);
+  CHECK(onFrame(1));
 }
 
 TEST_CASE("the HUD shows the minimap unless it is off or the game does not allow it now") {

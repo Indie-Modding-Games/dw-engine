@@ -271,7 +271,7 @@ son los de `main_menu.c: openSaveMachine` y `tickMainMenu` 0x3C a 0x46, en `Save
   registrarlo?». Sí lleva a la lista; no o cancelar, a «¿Quieres guardar?».
 - **0x3D, lista**: diez filas que se desplazan por las 39 ranuras del registro (la 40 es el regalo del fin del juego,
   `awardMachinedramonData`); una vacía enseña un punto. Cancelar vuelve a 0x3C.
-- **0x3E, confirmar**: «¿Quieres registrar a <nombre>?» y la nota de que se guarda al registrar. Sí registra
+- **0x3E, confirmar**: «¿Quieres registrar a `<nombre>`?» y la nota de que se guarda al registrar. Sí registra
   (`registerBattleData`: `BattleRegistry::registerAt`) y guarda; no vuelve a la lista; cancelar, a 0x3C.
 - **0x45**: «¿Quieres guardar?»; sí guarda, no cierra; no admite cancelar.
 - **0x44**: sin ranura (la partida empezó sin guardar, el «sin tarjeta» del original), el aviso de que no se puede

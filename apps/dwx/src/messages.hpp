@@ -43,6 +43,12 @@ inline constexpr std::string_view EntryReferenceUnknown =
 inline constexpr std::string_view EntryReferenceTable =
     "{}: the schema's entryReference '{}' is no content table";
 
+// dwx export-images: the images a player can replace (export_images.hpp).
+inline constexpr std::string_view ExportNotIndexed = "{} has palettes but is no indexed PNG: {}";
+inline constexpr std::string_view ExportOutputTaken =
+    "{} is neither empty nor an export of images; pick another folder";
+inline constexpr std::string_view ExportCannotReplace = "cannot write the export to {}: {}";
+
 // dwx upscale: the built-in index_scale step and the recipe it runs (upscale_recipe.hpp).
 inline constexpr std::string_view IndexScaleUnsupported =
     "index_scale cannot grow an image {}x in {} mode";

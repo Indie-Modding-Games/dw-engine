@@ -90,6 +90,9 @@ struct MapPush {
   float upscaledWeight0 = 0.0F;
   float upscaledWeight1 = 0.0F;
   float upscaledWeight2 = 0.0F;
+  // Where the background's texel u falls in them: u * upscaledScale + upscaledShift.
+  float upscaledScale = 2.0F;
+  float upscaledShift = 0.0F;
 };
 
 // The push constants of a draw with the scenery's grade.
@@ -152,7 +155,8 @@ upscaledBackground(std::uint32_t width, std::uint32_t height, std::span<const st
   if (cache != nullptr) {
     if (auto kept = cache->load(key.value(), bytes)) {
       fromCache = true;
-      UpscaledScenery scenery{.width = width * 2, .height = height * 2, .variants = {}};
+      UpscaledScenery scenery{
+          .width = width * 2, .height = height * 2, .scale = 2, .shift = 0.0F, .variants = {}};
       for (std::size_t variant = 0; variant < palettes.size(); ++variant) {
         std::vector<assets::PaletteColor>& texels = scenery.variants.emplace_back(variantTexels);
         std::memcpy(texels.data(),
@@ -343,6 +347,7 @@ core::Result<std::size_t> MapRenderer::addBillboardTexture(const assets::Image& 
 void MapRenderer::releaseMap() {
   cancelUpscale();
   releaseUpscaled();
+  replacement_.reset();
   snapshotWeights_.clear();
   for (const TextureId texture : {backgroundIndices_, palettes_, backgroundColors_}) {
     if (texture.valid()) {
@@ -449,7 +454,10 @@ core::Result<void> MapRenderer::setMap(const MapSceneData& scene, std::size_t va
   // The snapshot row starts as a copy of the first variant.
   snapshotWeights_.assign(images.backgroundPalettes.size(), 0.0);
   snapshotWeights_.front() = 1.0;
-  if (hdScenery_) {
+  if (images.replacement) {
+    replacement_ = sceneryFromReplacement(*images.replacement);
+  }
+  if (hdActive()) {
     resolveBackgroundColors(true);
     startUpscale();
   }
@@ -477,10 +485,13 @@ bool MapRenderer::updateImages(const assets::MapImages& images) {
   cutouts_ = MapCutouts{images};
   backgroundIndexCopy_.indices = images.background.indices;
   resolvedPalette_.clear();
-  // Smooth draws until the new pixels are upscaled (from the cache, when they were before).
-  releaseUpscaled();
-  if (hdScenery_) {
-    startUpscale();
+  // Smooth draws until the new pixels are upscaled (from the cache, when they were before). The
+  // player's images stay: they were drawn with whatever signs the player chose.
+  if (!replacement_) {
+    releaseUpscaled();
+    if (hdScenery_) {
+      startUpscale();
+    }
   }
   for (std::size_t index = 0; index < spriteTextures_.size(); ++index) {
     const assets::MapSpriteSheet::Texture& source = images.sprites.textures[index];
@@ -613,7 +624,7 @@ void MapRenderer::prepare(PrepareContext& context) {
     stageCamera_->setViewport(viewport);
     stageCamera_->followBackgroundPixel(stageCamera_->desc().backgroundSize * 0.5F);
   }
-  if (hdScenery_ && !stageCamera_) {
+  if (hdActive() && !stageCamera_) {
     resolveBackgroundColors(false);
     pollUpscale();
     keepHdTarget(extent);
@@ -624,6 +635,9 @@ void MapRenderer::prepare(PrepareContext& context) {
 void MapRenderer::setHdScenery(bool on) {
   const bool was = hdScenery_;
   hdScenery_ = on;
+  if (replacement_) {
+    return;
+  }
   if (!on) {
     releaseHdTarget();
     cancelUpscale();
@@ -638,6 +652,9 @@ void MapRenderer::setSceneryQuality(SceneryQuality quality) {
     return;
   }
   quality_ = quality;
+  if (replacement_) {
+    return;
+  }
   releaseUpscaled();
   startUpscale();
 }
@@ -671,6 +688,12 @@ void MapRenderer::cancelUpscale() {
 
 void MapRenderer::startUpscale() {
   cancelUpscale();
+  if (hasMap_ && replacement_) {
+    core::logInfo("map: drawing the player's background, {}x{} in {} variants", replacement_->width,
+                  replacement_->height, replacement_->variants.size());
+    uploadUpscaled(*replacement_);
+    return;
+  }
   if (!hasMap_ || !hdScenery_ || quality_ != SceneryQuality::Upscaled || paletteRows_.size() < 2 ||
       backgroundIndexCopy_.indices.empty()) {
     return;
@@ -726,6 +749,8 @@ void MapRenderer::pollUpscale() {
 
 void MapRenderer::uploadUpscaled(const UpscaledScenery& scenery) {
   releaseUpscaled();
+  upscaledScale_ = scenery.scale;
+  upscaledShift_ = scenery.shift;
   const rhi::Extent extent{.width = scenery.width, .height = scenery.height};
   const std::size_t rowBytes = std::size_t{scenery.width} * sizeof(assets::PaletteColor);
   const auto bandRows =
@@ -791,7 +816,7 @@ std::vector<double> MapRenderer::shownWeights() const {
 }
 
 std::optional<TextureScene> MapRenderer::hdSceneryScene() const {
-  if (!hasMap_ || !hdScenery_ || stageCamera_ || !hdTarget_.valid() || !backgroundColors_.valid()) {
+  if (!hasMap_ || !hdActive() || stageCamera_ || !hdTarget_.valid() || !backgroundColors_.valid()) {
     return std::nullopt;
   }
   return TextureScene{.target = hdTarget_, .drawers = hdSceneryDrawers_, .keep = true};
@@ -831,7 +856,7 @@ glm::uvec2 MapRenderer::hdScreenShift() const {
 }
 
 void MapRenderer::drawHdScenery(DrawContext& context) {
-  if (!hasMap_ || !hdScenery_ || stageCamera_ || !backgroundColors_.valid() ||
+  if (!hasMap_ || !hdActive() || stageCamera_ || !backgroundColors_.valid() ||
       context.extent() != hdTargetExtent_) {
     return;
   }
@@ -896,6 +921,8 @@ void MapRenderer::drawHdScenery(DrawContext& context) {
                .screenShiftX = 0,
                .screenShiftY = 0};
   if (upscaledReady_) {
+    push.upscaledScale = static_cast<float>(upscaledScale_);
+    push.upscaledShift = upscaledShift_;
     // The (at most three) variants the colours shown now mix, heaviest first.
     const std::vector<double> weights = shownWeights();
     std::vector<std::size_t> order(std::min(weights.size(), upscaled_.size()));
@@ -1015,7 +1042,7 @@ void MapRenderer::drawBackground(DrawContext& context) {
   }
   vertices_.clear();
   // HD scenery: what the background pass filtered this frame, else the filter on the fly.
-  const bool smooth = hdScenery_ && backgroundColors_.valid();
+  const bool smooth = hdActive() && backgroundColors_.valid();
   const bool screen = smooth && hdTargetReady(context.extent());
   QuadSampling sampling;
   if (screen) {
@@ -1190,10 +1217,10 @@ void MapRenderer::drawLayers(DrawContext& context) {
   }
   // HD scenery: a cut-out of the background takes its colours from the background under it; any
   // other sprite smooths its own texels, inside its rectangle of the sheet.
-  const bool screen = hdScenery_ && backgroundColors_.valid() && hdTargetReady(context.extent());
+  const bool screen = hdActive() && backgroundColors_.valid() && hdTargetReady(context.extent());
   const auto layerSampling = [this, screen](const DepthLayerQuad& quad,
                                             const assets::MapSpriteSheet::Placement& placement) {
-    if (!hdScenery_ || !backgroundColors_.valid()) {
+    if (!hdActive() || !backgroundColors_.valid()) {
       return QuadSampling{};
     }
     if (quad.size == glm::vec2{placement.size} && cutouts_.isCutout(quad.sprite, quad.position)) {

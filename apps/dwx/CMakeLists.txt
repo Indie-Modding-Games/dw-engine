@@ -40,6 +40,7 @@ dwe_add_module(dwx
         src/pack.cpp
         src/text_extractors.cpp
         src/texture_cooker.cpp
+        src/export_images.cpp
         src/upscale.cpp
         src/upscale_recipe.cpp
         src/validate.cpp

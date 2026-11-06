@@ -33,7 +33,9 @@ Además, dos reglas prácticas para el teclado:
   *Teclado moderno*.
 
 Los avisos en pantalla se generan a partir de la acción (`ui::promptControl`), no del botón, así que reasignar
-no rompe las pistas del jugador. El dispositivo usado por última vez decide el glifo que se muestra.
+no rompe las pistas del jugador. El dispositivo usado por última vez decide el glifo que se muestra. Un
+modificador asignado a sus dos lados (cancelar con los dos Ctrl, caminar con los dos Mayús) se nombra como el par:
+el aviso dice «Ctrl», no «Ctrl izq.», que además cabe en las filas de avisos estrechas (la del árbol de evolución).
 
 ## Mapa actual de acciones
 

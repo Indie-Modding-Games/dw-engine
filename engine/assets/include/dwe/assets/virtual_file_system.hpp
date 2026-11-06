@@ -85,6 +85,12 @@ public:
   // Every file that provides an asset, from the bottom of the stack up: the last one wins.
   [[nodiscard]] std::span<const AssetSource> sources(const AssetId& id) const;
 
+  // The pack a source of sources() belongs to.
+  [[nodiscard]] const MountedPack& packOf(const AssetSource& source) const;
+  // Reads one source of an asset, winning or not: the files under a player's image replace only
+  // how an image is drawn (Layer::User), so its loader still reads the game's own image.
+  [[nodiscard]] core::Result<std::vector<std::byte>> read(const AssetSource& source) const;
+
   // The ids that more than one pack provides, sorted. For debugging overrides.
   [[nodiscard]] std::vector<AssetId> overriddenIds() const;
 

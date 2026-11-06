@@ -56,7 +56,7 @@ steps:
   - screenshot: bank-city-moved-one
   # Cancel closes the windows (phase `farewell`); a press says goodbye and ends the visit. Once the visit is over the
   # screen publishes nothing more: the last `item_keeper.phase` stays "farewell".
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.5}
   - expect_setting: {item_keeper.phase: farewell}
   - tap: {key: return}

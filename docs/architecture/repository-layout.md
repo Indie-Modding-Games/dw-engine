@@ -4,8 +4,11 @@
 engine/
 ├─ .devcontainer/           imagen Docker de desarrollo: Clang, libc++, CMake, vcpkg, Node y VitePress (ADR 0015)
 ├─ .github/
-│  ├─ workflows/            ci.yml (build, tests, formato, docs), release.yml
-│  └─ CODEOWNERS
+│  ├─ workflows/            ci.yml (comprobaciones de los pull requests), release.yml (versión de prueba en cada
+│  │                        fusión), promote.yml (versión estable), platform-check.yml, docs-pages.yml
+│  ├─ actions/              pasos compartidos de los flujos
+│  ├─ CONTRIBUTING.md       enlace a docs/contribuir.md
+│  └─ pull_request_template.md
 ├─ cmake/                   funciones propias: dwe_add_module, dwe_add_shaders, warnings, sanitizers
 │  └─ toolchains/           compilador y biblioteca estándar de cada plataforma
 ├─ docs/                    esta documentación: el sitio de VitePress (dev.sh docs) y la página de cada módulo

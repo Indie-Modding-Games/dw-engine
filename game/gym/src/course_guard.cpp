@@ -116,7 +116,8 @@ void CourseRun::defenseDropFrame(GymPorts& ports, const DefenseDropCourse& defen
     break;
   }
   case 3:
-    // animFlag 2 only stops root motion, which a scripted clip here never has.
+    // The partner takes the hit where it stands (animFlag 2), until its guard clip starts again.
+    ports.holdInPlace(Actor::Partner, true);
     if (++step_ >= defense.recoverFrames) {
       ports.lookAt(Actor::Partner, Actor::Tamer);
       ports.animate(Actor::Partner, defense.workAnimation);
@@ -188,6 +189,7 @@ void CourseRun::treadmillFrame(GymPorts& ports, const TreadmillCourse& treadmill
     break;
   case 3:
     // The run clip plays without carrying the partner (animFlag 2): it runs in place.
+    ports.holdInPlace(Actor::Partner, true);
     ++counter_;
     if (!sessionOver(input)) {
       break;

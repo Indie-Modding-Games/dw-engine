@@ -33,6 +33,7 @@ constexpr std::string_view DigitalTimeKey = "digital_time";
 constexpr std::string_view BulkTradesKey = "bulk_trades";
 constexpr std::string_view EvolutionRequirementsKey = "evolution_requirements";
 constexpr std::string_view TranslatedSignsKey = "translated_signs";
+constexpr std::string_view ModelCharactersKey = "model_characters";
 constexpr std::string_view StatusExtrasKey = "status_extras";
 constexpr std::string_view CanonicalStagesKey = "canonical_stages";
 constexpr std::string_view WalkControlKey = "walk_control";
@@ -102,6 +103,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* signs = tree->find(TranslatedSignsKey)) {
       settings.translatedSigns = reader.boolean(*signs);
+    }
+    if (const core::YamlNode* models = tree->find(ModelCharactersKey)) {
+      settings.modelCharacters = reader.boolean(*models);
     }
     if (const core::YamlNode* extras = tree->find(StatusExtrasKey)) {
       settings.statusExtras = reader.boolean(*extras);
@@ -215,6 +219,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.translatedSigns) {
     root.set(std::string{TranslatedSignsKey},
              core::YamlNode::scalar(*settings.translatedSigns ? "true" : "false"));
+  }
+  if (settings.modelCharacters) {
+    root.set(std::string{ModelCharactersKey},
+             core::YamlNode::scalar(*settings.modelCharacters ? "true" : "false"));
   }
   if (settings.statusExtras) {
     root.set(std::string{StatusExtrasKey},

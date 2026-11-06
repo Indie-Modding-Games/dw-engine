@@ -687,6 +687,9 @@
                         },
                         "undo_hidden": {
                           "$ref": "#/$defs/group"
+                        },
+                        "hold_each_punch": {
+                          "type": "boolean"
                         }
                       }
                     }

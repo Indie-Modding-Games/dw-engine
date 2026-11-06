@@ -84,3 +84,23 @@ escribe `ui_original`.
 Cada arranque calcula el SHA-1 de la imagen entera, también cuando la entrada ya existe (unos 12 s para 380 MB en la
 build `ci`, de depuración con ASan). Si llega a molestar, un camino rápido sería recordar el tamaño y la fecha de
 modificación de la imagen junto al SHA-1 y solo volver a calcularlo cuando cambien.
+
+## `dwx export-images`
+
+```sh
+dwx export-images <carpeta de contenido> [--with <carpeta de paquetes>]... [--language <código>] -o <carpeta>
+```
+
+Escribe las imágenes que se pueden cambiar con las [imágenes personalizadas](../../guides/imagenes-personalizadas.md),
+con los nombres que espera el juego. El lanzador la usa para preparar su sección Imágenes.
+
+- Monta los paquetes del contenido y de cada `--with` (por ejemplo los del equipo, para los nombres traducidos).
+- `map/<id>/background_<variante>.png`: los bytes del PNG de la base, tal cual.
+- `texture/.../<imagen>_palette<N>.png`: cada imagen de `texture/` en RGBA, una vez por paleta de su `_meta`; sin
+  paletas, solo `_palette0`. Las páginas `texture8/` y `texture4/` no se escriben.
+- `maps.tsv`: `<id>\t<nombre>` por mapa, con `map_names.NNNN` de `text/<código>/main` (por defecto `en`) o el nombre
+  de la tabla si no hay traducción.
+- Escribe en `<salida>.partial` y lo renombra. Solo sustituye una carpeta vacía o una exportación anterior (la que
+  tiene `maps.tsv`).
+
+Los tests: `tests/export_images_tests.cpp`, con un contenido sintético.

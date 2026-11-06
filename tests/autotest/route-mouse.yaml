@@ -84,7 +84,7 @@ steps:
   - screenshot: partner-tech
   - menu_select: tab-status
   - expect_setting: {has_class.partner_menu#tab-status.selected: "true"}
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}
   - menu: close
   - wait: {menu_open: false}

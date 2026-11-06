@@ -13,7 +13,7 @@ la izquierda (una imagen del propio contenido extraído del jugador, solo local;
 del lanzador), superficies casi negras y un solo color de acento, verde azulado, reservado para «Jugar», el elemento
 activo y el anillo de foco.
 
-- **Barra lateral** (estrecha, a la izquierda): el logo; «Inicio», «Juegos», «Complementos» (abre Ajustes →
+- **Barra lateral** (estrecha, a la izquierda): el logo; «Inicio», «Juegos», «Imágenes», «Complementos» (abre Ajustes →
   Complementos) y «Ajustes»; debajo de una línea, los iconos que añaden los complementos; abajo del todo, «Acerca de»
   (versiones y teclado). Cada icono enseña su nombre al pasar el ratón o al llegar con el teclado.
 - **Arriba, las píldoras de estado:** la versión instalada con «Beta cerrada» (mientras las versiones sean 0.x o
@@ -34,6 +34,9 @@ activo y el anillo de foco.
   (`{"repo": "https://…", "community": "https://…", "web": "https://…"}`; en el flujo de publicación, la variable del
   repositorio `DWE_LAUNCHER_LINKS`). El tipo que falta no se enseña y, sin la variable, no hay ninguno: los
   probadores de la beta cerrada no tienen acceso al repositorio privado, así que no se enlaza por defecto.
+- **Imágenes:** exportar las imágenes del disco del jugador, cargar versiones mejoradas en bloque (carpeta o `.zip`)
+  o una a una en la lista de mapas e imágenes, y encenderlas o apagarlas (ver
+  [Imágenes personalizadas](#imágenes-personalizadas)).
 - **Juegos:** cuatro tarjetas: el juego base, activo, y tres más en gris con «Próximamente» (expansión de cartas,
   segunda parte y tercera parte).
 - La página de un complemento ocupa el centro de la pantalla cuando se abre desde su icono o desde «Complementos».
@@ -78,19 +81,19 @@ Si no hay juego instalado todavía, antes del paso 2 descarga la última versió
 
 Cada versión del repositorio (GitHub Releases de `Indie-Modding-Games/dw-engine`, prereleases incluidas) lleva lo
 de abajo. Mientras la beta sea cerrada, el lanzador no habla con GitHub: habla con la
-[pasarela de la beta](../../../services/beta-gateway/README.md), que pide la clave de la beta y contesta como la API
+[pasarela de la beta](https://github.com/Indie-Modding-Games/dw-engine/blob/main/services/beta-gateway/README.md), que pide la clave de la beta y contesta como la API
 de GitHub para ese único repositorio.
 
 | Archivo | Qué es |
 |---|---|
 | `dwe-game-<versión>-<ordenador>.tar.xz` | El paquete del juego de cada ordenador (`linux-x86_64` de `scripts/package_linux.sh`, `windows-x86_64` de `scripts/package_windows.sh`, `darwin-aarch64` y `darwin-x86_64` de `scripts/package_macos.sh`): juego, `dwx`, paquetes del equipo; ningún dato del disco. |
 | `game-manifest.json` | Versión semántica, commit, `extractor_version` y, por ordenador, el nombre, tamaño, SHA-256 y firma del paquete. |
-| `latest.json`, `*.AppImage`, `*-setup.exe`, `*.app.tar.gz` y sus `.sig` | El lanzador mismo, para el actualizador de Tauri; además `.deb` y `.dmg` para instalarlo a mano. |
+| `latest.json`, `*.AppImage`, `*.deb`, `*-setup.exe`, `*.app.tar.gz` y sus `.sig` | El lanzador mismo, para el actualizador de Tauri; además el `.dmg` para instalarlo a mano. `latest.json` nombra el AppImage con `linux-x86_64` y `linux-x86_64-appimage`, y el `.deb` con `linux-x86_64-deb`: el actualizador busca primero la clave de su forma de instalación, así que un lanzador instalado desde el `.deb` se actualiza con otro `.deb` (con el AppImage fallaría con «invalid updater binary format»). |
 
-El lanzador pide `GET <servidor>/repos/<repo>/releases` y toma la versión más nueva cuyo `game-manifest.json` tenga
-paquete para su ordenador, con la clave `<sistema>-<procesador>` de `latest.json` (`manifest::platform_key`: macOS
-se llama `darwin`); una versión hecha solo para otros ordenadores se salta. La compara con la instalada (semver).
-Para actualizar:
+El lanzador pide `GET <servidor>/repos/<repo>/releases` y toma, según el **canal de actualizaciones** (abajo), la
+versión más nueva cuyo `game-manifest.json` tenga paquete para su ordenador, con la clave `<sistema>-<procesador>` de
+`latest.json` (`manifest::platform_key`: macOS se llama `darwin`); una versión hecha solo para otros ordenadores se
+salta. La compara con la instalada (semver) y nunca instala una más vieja. Para actualizar:
 
 1. Descarga el paquete por su URL en la pasarela (`Accept: application/octet-stream`; la pasarela contesta con un
    302 a un enlace firmado de GitHub), a `<datos>/downloads/*.part`.
@@ -108,6 +111,25 @@ El lanzador se actualiza a sí mismo con el actualizador de Tauri (`latest.json`
 solo funciona cuando corre como AppImage, en Windows con el instalador NSIS y en macOS con la aplicación. El actualizador pide `latest.json` y el AppImage a la pasarela con la clave
 de la beta en la cabecera (nunca en la URL); la pasarela apunta la URL de `latest.json` a sí misma y el lanzador se
 niega a descargar una que esté en otro servidor.
+
+### Canal de actualizaciones
+
+En Ajustes, «Canal de actualizaciones» elige de qué versiones salen las actualizaciones del juego y del propio
+lanzador (su `latest.json` es el de la misma versión):
+
+| Canal | Qué recibe |
+|---|---|
+| Estable | Solo versiones estables (las promovidas, [Versión estable](#version-estable-promover-una-prerelease)): la más nueva de la lista con paquete para este ordenador o, si no está entre las 20 más nuevas, `releases/latest`. Mientras no exista ninguna estable, recibe lo mismo que «Pruebas». |
+| Pruebas | La versión más nueva de cualquier tipo: cada cambio que entra en `main`. |
+
+Una instalación nueva empieza en «Estable»; un lanzador que ya estaba instalado antes de que existiera el canal sigue
+en «Pruebas», para que quien ya probaba no pierda versiones. Pasar de «Pruebas» a «Estable» no baja el juego: se queda
+la versión instalada hasta que salga una estable más nueva. La pasarela de la beta ya contesta `releases/latest` (404
+mientras no hay estable), así que el canal no necesita nada más del servidor.
+
+El lanzador guarda la lista de versiones de la última búsqueda para la actualización que sigue. Si una descarga con esa
+lista falla de una forma que puede venir de una lista vieja (red, «no encontrado», `latest.json` sin actualización),
+vuelve a leer la lista una vez y repite antes de mostrar el error: un archivo subido otra vez tiene otra dirección.
 
 ### Actualizaciones automáticas
 
@@ -158,7 +180,7 @@ descarga a otro servidor `reqwest` quita la cabecera `Authorization` (lo prueba 
 
 Los probadores **nunca** reciben acceso al repositorio. El responsable les da el lanzador y una sola clave
 compartida, que genera él y guarda en la pasarela (cómo crearla y rotarla:
-[pasarela de la beta](../../../services/beta-gateway/README.md)). El probador la pega en Ajustes → Cuenta y acceso
+[pasarela de la beta](https://github.com/Indie-Modding-Games/dw-engine/blob/main/services/beta-gateway/README.md)). El probador la pega en Ajustes → Cuenta y acceso
 la primera vez; si falta o no vale, el lanzador dice «Falta la clave de la beta o no es válida». La guarda en el
 llavero del sistema (Secret Service en Linux, como GNOME Keyring o KWallet; el administrador de credenciales en
 Windows; el llavero en macOS) con el servicio `dwe-launcher` y la cuenta `beta-key`, y nunca en un archivo ni en un
@@ -254,6 +276,8 @@ compatibilidad si el juego trae `lib/lavapipe`, pantalla de bloqueo si no).
 | `<datos>/logs/launcher.log`, `game.log` | El registro del lanzador y la salida de la última partida. |
 | `<datos>/addons/<id>/`, `addons.json` | Los complementos instalados y su estado (activo, permisos aceptados). |
 | `<datos>/addon-storage/<id>.json` | El almacén de cada complemento (256 KB como mucho). |
+| `<datos>/custom-images/originals/`, `originals.stamp` | Las imágenes del disco que escribe `dwx export-images`, y de qué versión del juego y lectura del disco salen. |
+| `<datos>/custom-images/pack/`, `state.json` | El paquete de imágenes del jugador (capa `user`) y si está encendido. `incoming/` es la carpeta de paso al copiar. |
 
 `DWE_LAUNCHER_GAME_DIR=<carpeta>` usa un paquete ya descomprimido (por ejemplo el de `package_linux.sh`) en vez de
 las versiones instaladas: sirve para probar sin publicar nada.
@@ -276,6 +300,13 @@ El `.dmg` de macOS solo se compila en un Mac (el flujo de publicación).
 Con `DWE_BUILD_SLOTS=<carpeta de cerrojos>` cada compilación espera uno de los dos huecos de compilación de la
 máquina, como `dbuild.sh`. Las fuentes se copian del paquete del juego (`content/packs/game/ui/fonts`) al compilar.
 
+Cada paquete del lanzador lleva `LICENSE` (la licencia MIT del proyecto) y `THIRD_PARTY_NOTICES.txt`: las licencias
+de los crates de Rust con los que se compila (los de `cargo metadata` para ese sistema, con sus archivos `LICENSE*`,
+`COPYING*` y `NOTICE*`) y la de la fuente. `scripts/launcher.sh` los escribe en `src-tauri/notices/` (fuera de git)
+antes de compilar, con `scripts/package/third_party_notices.py`, y Tauri los copia al paquete
+(`bundle.resources`: junto al programa en Windows y Linux, en `Contents/Resources` en macOS). La interfaz no usa
+paquetes de npm. El flujo de publicación falla si un paquete no los lleva.
+
 Los tests de Rust cubren el manifiesto, la comparación de versiones, el SHA-256 y la firma, la instalación con
 cambio atómico y vuelta atrás, el desempaquetado de `.zip` y `.7z`, la hoja CUE, el registro `install.yaml` (con el
 formato del juego) y una extracción con un `dwx` falso; `tests/fake_release.rs` levanta un servidor que contesta como
@@ -291,66 +322,91 @@ subcarpetas de `<carpeta>` (sus archivos y `notes.md`); se arranca el lanzador c
 
 ## Publicar una versión
 
+Nadie elige versiones ni lanza flujos para una versión de prueba: cada cambio que entra en `main` (un pull request
+fusionado) se compila y se publica solo como **prerelease**, el canal «Pruebas». Un pull request junta un lote de
+funciones y arreglos, así que cada versión de prueba es un lote
+([Flujo de trabajo](../../contribuir.md#flujo-de-trabajo)). Una versión de prueba ya probada se convierte en la
+**estable** a mano, sin compilar nada otra vez. Las piezas:
 `scripts/package_release.sh --platform <ordenador> --out <carpeta del repositorio>` compila el paquete (o toma uno con
 `--tarball`), lo firma y lo añade a `game-manifest.json` (uno por versión, con todos los ordenadores);
-`scripts/package/release_manifest.py launcher` escribe `latest.json`. El flujo `.github/workflows/release.yml` lo hace
-todo en GitHub Actions y deja una versión **borrador**; es la forma normal de publicar. El repositorio es público, así
-que sus minutos (también los de macOS) no cuestan nada. Si Actions no está disponible, `scripts/release_local.sh` es
-el respaldo para Linux y Windows ([Publicar desde este PC](#publicar-desde-este-pc)); una versión con macOS solo sale
-del flujo.
+`scripts/package/release_manifest.py launcher` escribe `latest.json`. El repositorio es público, así que los minutos de
+Actions (también los de macOS) no cuestan nada. Si Actions no está disponible, `scripts/release_local.sh` es el
+respaldo para Linux y Windows ([Publicar desde este PC](#publicar-desde-este-pc)).
 
-### Desde GitHub Actions
+### Las versiones
 
-En *Actions → Release → Run workflow*, sobre `main`:
+- La versión del juego es `<versión de CMakeLists.txt>-beta.<N>`, con `N` el número de commits de `main`
+  (`scripts/ci/release.py version`). Cada pull request fusionado añade un commit (fusión *squash*), así que cada
+  versión de `main` tiene un `N` mayor que la anterior. La etiqueta es `v<versión>`, por ejemplo `v0.1.0-beta.1031`.
+- La versión de `CMakeLists.txt` (`project(dwe VERSION 0.1.0 ...)`) solo cambia a mano, en un pull request, para
+  empezar otra serie (`0.2.0-beta.<N>` va después de todas las `0.1.0-beta.*`).
+- Los programas no llevan dentro el canal: la versión estable es la misma prerelease ya probada, con los mismos
+  archivos, firmas y manifiestos. Por eso un jugador del canal «Pruebas» no vuelve a descargar nada cuando esa versión
+  pasa a estable, y uno del canal «Estable» recibe exactamente lo que se probó.
+- El lanzador tiene su propia versión (`tauri.conf.json`), que se sube a mano cuando el lanzador cambia (ver abajo).
 
-| Campo | Qué poner |
-|---|---|
-| `tag` | La etiqueta nueva, con la forma `v0.1.0-beta.5`. |
-| `notes` | Las notas en Markdown; el lanzador las enseña como novedades. |
-| `macos` | Marcado: también el juego para Apple silicon e Intel y el `.dmg` del lanzador. Sin marcar: solo Linux y Windows, y los manifiestos nombran solo esos (un lanzador de Mac sigue con la última versión que tenga macOS). |
-| `replace_draft` | Solo para repetir una versión: borra antes un **borrador** con esa etiqueta. Una versión publicada o una etiqueta que ya existe no se tocan nunca. |
+### Versión de prueba: cada fusión en `main`
 
-Lo que hace, por orden:
+`.github/workflows/release.yml` corre en cada push a `main` que toque algo más que documentación, y también a mano
+(*Actions → Release → Run workflow*). Si llega una fusión nueva mientras otra se compila, la nueva cancela la vieja:
+solo el commit más nuevo sale como versión. Lo que hace, por orden:
 
-1. **Comprobaciones previas** (segundos): están el secreto `DWE_SIGNING_KEY`, la variable `DWE_SIGNING_PUBKEY` y
-   `DWE_BETA_GATEWAY` con una URL `https`; la etiqueta tiene la forma pedida y no existe; y la **versión del
-   lanzador** (ver abajo).
-2. **Un trabajo por ordenador**, todos en paralelo e independientes: si uno falla, los demás terminan igual. El
-   trabajo del lanzador de Linux prueba primero que la clave firma y que la clave pública verifica esa firma (una
-   contraseña equivocada falla en minutos, no tras la compilación). Cada lanzador comprueba que su programa lleva
-   dentro la pasarela y la clave pública.
-3. **Publicar**: si falta algún ordenador de los pedidos, el resumen de la ejecución lo marca como `MISSING` y **no se
-   crea ningún borrador**; lo que sí se compiló queda en los artefactos de la ejecución. Arreglada la causa, *Re-run
-   failed jobs* repite solo lo que falló y publica con todo. Si están todos: firma los paquetes del juego, el `.deb`
-   y el `.dmg`; escribe `game-manifest.json`; comprueba cada firma con la clave pública, los tamaños, que el
-   manifiesto nombra exactamente los ordenadores pedidos y el commit de la ejecución, y que ningún paquete lleva datos
-   del disco; crea el borrador prerelease sobre ese commit, sube los archivos, escribe `latest.json` con las URL de la
-   API de los archivos subidos, lo comprueba y lo sube.
+1. **Plan** (segundos): están el secreto `DWE_SIGNING_KEY`, la variable `DWE_SIGNING_PUBKEY` y `DWE_BETA_GATEWAY` con
+   una URL `https`; calcula la versión y la etiqueta; se niega si ese commit ya tiene versión publicada, si la versión
+   del juego no es mayor que la de la versión más nueva, o si la **versión del lanzador** no vale (ver abajo).
+2. **Un trabajo por ordenador**, todos en paralelo e independientes: el juego para Linux, Windows, macOS Apple silicon
+   y macOS Intel, y el lanzador para Linux, Windows y macOS. Si uno falla, los demás terminan igual. El trabajo del
+   lanzador de Linux prueba primero que la clave firma y que la clave pública verifica esa firma. Cada lanzador
+   comprueba que su programa lleva dentro la pasarela y la clave pública.
+3. **Publicar**: si falta algún ordenador, el resumen de la ejecución lo marca como `MISSING` y **no se publica
+   nada**; lo compilado queda en los artefactos de la ejecución y *Re-run failed jobs* repite solo lo que falló. Si
+   están todos: firma los paquetes del juego, el `.deb` y el `.dmg`; escribe `game-manifest.json`; comprueba cada
+   firma, los tamaños, los ordenadores, el commit y que ningún paquete lleva datos del disco; escribe las notas
+   (los títulos de los pull requests desde la versión anterior, con una cabecera en español); crea la versión como
+   borrador, sube los archivos, escribe y comprueba `latest.json`, y solo entonces la publica como prerelease. Un
+   lanzador nunca ve una versión a medio subir (la pasarela no enseña borradores); el borrador de una ejecución
+   cancelada lo borra la siguiente.
 
-Al terminar, el resumen de la ejecución lista los archivos y el enlace al borrador. El responsable lo revisa (se pueden
-bajar los archivos y probar el lanzador) y lo publica a mano con *Publish release*: hasta entonces ningún lanzador lo
-ve. En frío (sin cachés) tarda unos 30 min sin macOS (el juego de Windows es el más largo: 8 min de dependencias y
-17 de compilación); con macOS, los trabajos de Mac van en paralelo.
+Con las cachés llenas tarda unos 10–12 min de reloj: los trabajos de Mac son los más largos. En frío (cachés
+vacías, o tras cambiar `vcpkg.json`, los triplets o las imágenes), unos 25 min: el juego para Mac Intel tarda ~22.
 
-**Cachés.** Cada trabajo guarda en la caché de Actions lo que la siguiente ejecución de la misma rama puede reutilizar:
+### Versión estable: promover una prerelease
+
+Cuando una versión de prueba está probada: *Actions → Promote → Run workflow* con su etiqueta
+(`.github/workflows/promote.yml`). En un par de minutos:
+
+1. Comprueba que es una prerelease publicada y más nueva que la estable actual.
+2. Descarga sus archivos y comprueba, como haría un lanzador, cada firma, `game-manifest.json` y las URL de
+   `latest.json`.
+3. La marca como versión normal y como la última del repositorio (`releases/latest`), le pone el título
+   `<etiqueta> (estable)` y notas con los cambios desde la estable anterior.
+
+No compila ni firma nada: los archivos, las firmas y los manifiestos son los mismos que se probaron. Un arreglo
+urgente sigue el mismo camino: un pull request a `main`, su versión de prueba, y promoverla.
+
+**Cachés.** Cada trabajo guarda en la caché de Actions lo que la siguiente ejecución puede reutilizar (las de `main`
+las leen también los pull requests):
 
 | Caché | Clave | Qué ahorra |
 |---|---|---|
-| Dependencias de vcpkg, por ordenador | `vcpkg.json`, `vcpkg-ports/`, `triplets/`, toolchains y la imagen | 6–8 min por ordenador; se guarda aunque el empaquetado falle |
-| Objetos del juego (ccache), Linux y Windows | una por ejecución; se borran las anteriores | 12–17 min de compilación, salvo los archivos que cambiaron |
+| Dependencias de vcpkg, por ordenador | `vcpkg.json`, `vcpkg-ports/`, `triplets/`, toolchains y la imagen | 6–8 min por ordenador; se guarda aunque el empaquetado falle. Las de Linux y Windows las leen también las comprobaciones `linux` y `windows` de los pull requests |
+| Objetos del juego (ccache), por ordenador | una por ejecución; se borran las anteriores | 12–20 min de compilación, salvo los archivos que cambiaron |
 | Bibliotecas de MSVC y SDK de Windows (xwin) | el Dockerfile de la imagen | ~1 min de descarga |
+| Objetos de las comprobaciones de los pull requests (`ccache-ci-linux`, `ccache-ci-windows`) | una por ejecución; las guarda el trabajo `pr-caches` | que `linux` y `windows` compilen solo lo que cambió el pull request |
 | Dependencias compiladas del lanzador y descargas de cargo, por sistema | `Cargo.lock` y el Dockerfile del lanzador | casi toda la compilación del lanzador; su propio crate se compila siempre |
 
-*Publicar* firma con el `tauri` de npm en vez de construir la imagen del lanzador (2–3 min menos). Con las cachés
-llenas y un cambio pequeño, Linux y Windows deberían quedar en unos 10–12 min de reloj: lo que queda es construir las
-imágenes de Docker (~2 min por trabajo), enlazar y empaquetar.
+*Publicar* firma con el `tauri` de npm en vez de construir la imagen del lanzador (2–3 min menos). Las imágenes de
+Docker (la de desarrollo y la del lanzador) se guardan en el registro de contenedores de GitHub
+(`ghcr.io/indie-modding-games/dwe-dev` y `dwe-launcher-dev`, con la etiqueta del hash de `.devcontainer/`):
+`scripts/ci/image.sh` las baja en vez de construirlas, y las construye y sube cuando cambia `.devcontainer/`.
 
 **La versión del lanzador.** Un lanzador instalado solo se actualiza a una versión **mayor** que la suya (la de
 `apps/launcher/src-tauri/tauri.conf.json`, que va en `latest.json`). Por eso, si algo cambió en `apps/launcher/ui` o
-`apps/launcher/src-tauri` (sin contar `tests/`) desde la última versión publicada, hay que subir la versión en
-`tauri.conf.json`, `Cargo.toml` y `Cargo.lock` en el mismo cambio. El flujo se niega a seguir si el lanzador cambió y
-su versión es la misma que la del `latest.json` de la última versión publicada, si es menor, o si `tauri.conf.json` y
-`Cargo.toml` no coinciden. `scripts/release_local.sh` no lo comprueba: hay que mirarlo a mano.
+`apps/launcher/src-tauri` (sin contar `tests/`) desde la versión publicada más nueva, hay que subir la versión en
+`tauri.conf.json`, `Cargo.toml` y `Cargo.lock` en el mismo pull request. `scripts/ci/launcher_version.sh` lo comprueba
+en cada pull request (la comprobación `launcher-version`) y otra vez antes de publicar: falla si el lanzador cambió y
+su versión es la misma que la del `latest.json` de esa versión, si es menor, o si los tres archivos no coinciden.
+`scripts/release_local.sh` no lo comprueba: hay que mirarlo a mano.
 
 ## Publicar desde este PC
 
@@ -385,8 +441,9 @@ scripts/release_local.sh --tag v0.1.0-beta.1 --notes-file notas.md --upload
 - Con `--upload` crea la versión **borrador** y prerelease `<tag>` en `Indie-Modding-Games/dw-engine` sobre el commit
   de `origin/main` (se niega si la copia tiene cambios o no está en `origin/main`), sube todo `dist/` (paquetes del
   juego y sus `.sig`, `game-manifest.json`, AppImage y su `.sig`, `.deb` y su `.sig`, instalador de Windows y su
-  `.sig`) y por último `latest.json`, con las URL de la API de los archivos ya subidos, como el flujo (la pasarela
-  las cambia por las suyas). Nada se publica: el responsable revisa el borrador y lo publica a mano.
+  `.sig`) y por último `latest.json`, con las URL de descarga de los archivos por versión y nombre, como el flujo (la
+  pasarela las cambia por las suyas). A diferencia del número de un archivo, esa URL sigue valiendo si el archivo se
+  vuelve a subir. Nada se publica: el responsable revisa el borrador y lo publica a mano.
 - Si la etiqueta ya existe, o hay una versión publicada con ese nombre, se niega siempre; un borrador con ese nombre
   solo se borra con `--replace-draft`. Sin `--upload` solo compila y comprueba (`latest.preview.json` lleva URL de
   ejemplo); `--upload --no-build` sube, tras comprobarlo otra vez, lo que dejó una ejecución anterior.
@@ -426,6 +483,29 @@ guía [Complementos del lanzador](../../guides/launcher-addons.md); aquí, cómo
   vez con complementos activos (lo detecta un archivo `running` en la carpeta de ajustes que se borra al salir).
 - Los ejemplos: `apps/launcher/addons/example-notes/` («Notas») y `apps/launcher/addons/test-fetch/` (prueba de
   `net.fetch` y del aislamiento contra el servidor falso). El cliente del puente está en `apps/launcher/addons/sdk/`.
+
+## Imágenes personalizadas
+
+La sección Imágenes (`src-tauri/src/custom_images/`, `src/image_commands.rs`, `ui/js/custom-images.js`) gestiona un
+único paquete de la capa `user` en `<datos>/custom-images/pack`. Mientras está encendido y tiene imágenes, «Jugar»
+arranca el juego con `--mods` apuntando a él. Las reglas, los nombres y cómo las dibuja el juego están en la guía
+[Imágenes personalizadas](../../guides/imagenes-personalizadas.md).
+
+- **Preparar:** la primera vez que se abre la sección, o cuando cambian la versión del juego o el disco leído,
+  `images_prepare` ejecuta `dwx export-images` sobre el contenido (con los paquetes del equipo, para los nombres en
+  el idioma del lanzador) hacia `originals/`. Pide 400 MB libres.
+- **Comprobar:** cada archivo se reconoce por su ruta desde la primera carpeta `map/` o `texture/` (sin distinguir
+  mayúsculas, `\` vale como `/`) y tiene que ser una de las originales. Se lee solo la cabecera del PNG: la misma
+  proporción, de 1 a 8 veces, y una sola escala por mapa. Lo que no es PNG se ignora en la carga en bloque; lo que es
+  igual a la original se omite. Las rutas que salen de la carpeta se rechazan.
+- **Cargar:** `images_inspect` enseña el resumen sin escribir nada; `images_apply` copia por `incoming/`. Una carpeta
+  se recorre hasta 16 niveles y 20000 archivos; un `.zip` solo con nombres que no salen de él; 256 MB por archivo.
+- **La lista:** `images_overview` agrupa los mapas por las letras de su id (el juego no tiene datos de zonas) con el
+  nombre más repetido del grupo, y las imágenes por carpeta. Las miniaturas son URL `data:` de `images_thumbnail`.
+- **Exportar:** copia `originals/` en una carpeta nueva `dwe-imagenes` (o `-2`, `-3`...) con `LEEME.txt`
+  (`src-tauri/src/custom_images/LEEME.txt`) y `mapas.tsv`.
+
+Los tests: `custom_images/tests.rs` y `the_players_images_are_mounted_while_they_are_on` en `launch.rs`.
 
 ## Pendiente
 

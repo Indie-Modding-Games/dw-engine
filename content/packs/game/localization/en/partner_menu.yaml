@@ -16,10 +16,20 @@ lives: "Lives {lives}"
 happiness: "Happiness"
 discipline: "Discipline"
 virus: "Virus"
-# The status page's extras (the status_extras option), which the original hides: the tiredness bar and the count of
-# care mistakes.
+# The status page's extras (the status_extras option), which the original hides: the tiredness bar, the count of
+# care mistakes and of battles, the hours it is awake, the hours of life it has left and the evolution counter.
 tiredness: "Tiredness"
 care_mistakes: "Mistakes"
+battles: "Battles"
+awake: "Awake"
+# {wake} and {sleepy} are the times it wakes up and gets sleepy, as 08:00.
+awake.value: "{wake}-{sleepy}"
+lifetime: "Lifetime"
+evolution: "Evo. timer"
+# {hours} is a count of game hours.
+hours.value: "{hours} h"
+# {hours} is the evolution counter and {check} the hours its level checks its evolution from.
+evolution.value: "{hours}/{check} h"
 condition.none: "In good shape"
 condition.sleepy: "Sleepy"
 condition.tired: "Tired"

@@ -1,0 +1,88 @@
+name: Promote
+
+# Makes a tested prerelease the stable release, by hand only (Actions > Promote > Run workflow,
+# with its tag): the launcher's «Estable» channel. Nothing is built or signed again: the same
+# release, with the same files, signatures and manifests that the «Pruebas» channel tested,
+# stops being a prerelease and becomes the repository's latest release, with notes of the changes
+# since the previous stable one. A fix goes the same way: a pull request to main, its prerelease,
+# then this. docs/modulos/apps/launcher.md explains the channels.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag of the tested prerelease (for example v0.1.0-beta.1031)
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: promote
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    env:
+      TAG: ${{ inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      DWE_LAUNCHER_PUBKEY: ${{ vars.DWE_SIGNING_PUBKEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Only a published prerelease of this workflow's versions, newer than the stable release.
+      - name: Check the release
+        id: release
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]] || {
+            echo "Expected the tag of a prerelease, like v0.1.0-beta.1031, not $TAG" >&2
+            exit 1
+          }
+          info="$(gh release view "$TAG" --json isDraft,isPrerelease --jq '"\(.isDraft) \(.isPrerelease)"')" || {
+            echo "No release $TAG" >&2
+            exit 1
+          }
+          [ "$info" = "false true" ] || { echo "$TAG is not a published prerelease (draft prerelease: $info)" >&2; exit 1; }
+          stable="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>/dev/null || true)"
+          if [ -n "$stable" ]; then
+            python3 scripts/ci/release.py newer "${TAG#v}" "${stable#v}" || {
+              echo "$TAG is not newer than the stable release $stable" >&2
+              exit 1
+            }
+          fi
+          echo "stable=$stable" >> "$GITHUB_OUTPUT"
+
+      # The files as a launcher gets them: every signature, both manifests and latest.json's URLs.
+      - name: Check the files
+        run: |
+          python3 -c 'import cryptography' 2>/dev/null || sudo apt-get install -y python3-cryptography
+          mkdir -p "$RUNNER_TEMP/files"
+          gh release download "$TAG" -D "$RUNNER_TEMP/files"
+          printf '%s' "$DWE_LAUNCHER_PUBKEY" > "$RUNNER_TEMP/key.pub"
+          commit="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["commit"])' \
+            "$RUNNER_TEMP/files/game-manifest.json")"
+          platform_args=()
+          for platform in linux-x86_64 windows-x86_64 darwin-aarch64 darwin-x86_64; do
+            platform_args+=(--platform "$platform")
+          done
+          python3 scripts/package/release_manifest.py check --folder "$RUNNER_TEMP/files" \
+            --pubkey "$RUNNER_TEMP/key.pub" "${platform_args[@]}" --latest "$RUNNER_TEMP/files/latest.json" \
+            --repo "$GITHUB_REPOSITORY" --commit "$commit"
+
+      - name: Publish as the stable release
+        env:
+          STABLE: ${{ steps.release.outputs.stable }}
+        run: |
+          version="${TAG#v}"
+          args=(-f tag_name="$TAG")
+          [ -n "$STABLE" ] && args+=(-f previous_tag_name="$STABLE")
+          gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" "${args[@]}" --jq .body > "$RUNNER_TEMP/generated.md"
+          python3 scripts/ci/release.py notes --kind stable --version "$version" --commit "" --tag "$TAG" \
+            --generated "$RUNNER_TEMP/generated.md" > "$RUNNER_TEMP/notes.md"
+          gh release edit "$TAG" --prerelease=false --latest --title "$TAG (estable)" \
+            --notes-file "$RUNNER_TEMP/notes.md"
+          {
+            echo "Stable release: $(gh release view "$TAG" --json url --jq .url)"
+            echo
+            cat "$RUNNER_TEMP/notes.md"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -289,4 +289,10 @@ TEST_CASE("a baby's outlook is its fixed form at the baby's hours; an ultimate h
   CHECK_FALSE(ultimate.due());
 }
 
+TEST_CASE("a form's check hours are its level's, and an ultimate's are none") {
+  const Evolution evolution = TableFixture{}.makeEvolution();
+  CHECK(evolution.checkHoursFor(TableFixture::index("bota")) == 6);
+  CHECK_FALSE(evolution.checkHoursFor(TableFixture::index("veda")).has_value());
+}
+
 } // namespace dwe::game::evolution

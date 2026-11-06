@@ -106,7 +106,7 @@ steps:
   - wait: {shown: partner_menu, seconds: 0.6}
   - remember: bag.money
   # The original look's bag has no tabs: cancel closes it, then the menu.
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}
   - menu: close
   - walk_to: {trigger: 54, stop_on_scene: true, timeout: 120}
@@ -164,6 +164,6 @@ steps:
   - expect_change: {bag.money: up}
   - screenshot: cup-d-bag
   # The original look's bag has no tabs: cancel closes it, then the menu.
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}
   - menu: close

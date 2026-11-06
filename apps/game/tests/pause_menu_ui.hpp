@@ -14,6 +14,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace dwe::app::test {
 
@@ -40,8 +41,8 @@ struct MenuUi {
                                        .root = std::string{root},
                                        .origin = dwe::assets::PackOrigin::Engine};
     };
-    auto mounted =
-        dwe::assets::VirtualFileSystem::mount({location("packs/base"), location("packs/game")});
+    auto mounted = dwe::assets::VirtualFileSystem::mount(
+        std::vector{location("packs/base"), location("packs/game")});
     REQUIRE_MESSAGE(mounted.has_value(), mounted.error().message);
     files = std::make_unique<dwe::assets::VirtualFileSystem>(std::move(*mounted));
     auto catalog = dwe::localization::Catalog::load(*files, "es");

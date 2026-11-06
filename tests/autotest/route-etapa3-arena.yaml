@@ -30,7 +30,7 @@ steps:
   - wait: {shown: tournament_schedule, seconds: 2, timeout: 30}
   - screenshot: desk-schedule
   # Back out of the schedule without entering a cup.
-  - repeat: {times: 3, steps: [{when: {shown: tournament_schedule, steps: [{tap: {key: escape}}]}}, {wait: {seconds: 1.5}}]}
+  - repeat: {times: 3, steps: [{when: {shown: tournament_schedule, steps: [{tap: {key: left_ctrl}}]}}, {wait: {seconds: 1.5}}]}
   - wait: {map: room13, hidden: tournament_schedule, seconds: 1, timeout: 30}
   - repeat: {times: 3, steps: [{when: {shown: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1.5}}]}
   - wait: {map: room13, hidden: story_textbox, seconds: 2, timeout: 60}

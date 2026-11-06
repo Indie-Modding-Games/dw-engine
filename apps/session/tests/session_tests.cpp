@@ -777,6 +777,26 @@ TEST_CASE("the partner view shows the partner's state within the care limits") {
   CHECK(view.virusBar.max == session->partnerRules().care.toilet.virusBarLimit);
 }
 
+TEST_CASE(
+    "the partner view carries the lifetime, the counters and the sleep schedule it lives by") {
+  const TestPacks packs;
+  const auto session = newGame(packs, nullptr);
+  session->clock().setSpeed(SixtyGameHoursPerSecond);
+  careFor(*session, SecondsPerGameDay / 2.0);
+  const dwe::session::PartnerView view = session->partnerView();
+  const PartnerState& state = session->partner().state();
+  // Half a day of care moves the counters, so the view cannot be passing the defaults.
+  CHECK(state.evolution.hours > 0);
+  CHECK(view.lifetimeHoursLeft == state.life.remainingLifetime);
+  CHECK(view.evolutionHours == state.evolution.hours);
+  CHECK(view.careMistakes == state.evolution.careMistakes);
+  CHECK(view.battles == state.evolution.battles);
+  CHECK(view.wakeHour == state.sleep.wakeHour);
+  CHECK(view.wakeMinute == state.sleep.wakeMinute);
+  CHECK(view.sleepyHour == state.sleep.sleepyHour);
+  CHECK(view.sleepyMinute == state.sleep.sleepyMinute);
+}
+
 TEST_CASE("slot names read as slots") {
   CHECK(slotFromName("slot_01") == SlotId{.kind = SlotKind::Manual, .index = 1});
   CHECK(slotFromName("autosave_02.yaml") == SlotId{.kind = SlotKind::Autosave, .index = 2});

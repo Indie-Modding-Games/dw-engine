@@ -1,10 +1,13 @@
 name: Platform check
 
 # Builds the engine and runs its unit tests, and the launcher's tests, on Windows and (when the
-# `macos` input is ticked) on macOS, by hand only (Actions > Platform check > Run workflow;
-# docs/guides/beta-windows-macos.md). The tests that need the player's disc or extracted content
-# skip, as on Linux without DWE_DISC and DWE_CONTENT.
+# `macos` input is ticked) on macOS: every Monday on Windows, and by hand (Actions > Platform check
+# > Run workflow; docs/guides/beta-windows-macos.md). A pull request's windows check only
+# cross-compiles them (ci.yml). The tests that need the player's disc or extracted content skip,
+# as on Linux without DWE_DISC and DWE_CONTENT.
 on:
+  schedule:
+    - cron: '0 6 * * 1'
   workflow_dispatch:
     inputs:
       macos:
@@ -37,15 +40,26 @@ jobs:
           "VCPKG_ROOT=$root" >> $env:GITHUB_ENV
           "VCPKG_DEFAULT_BINARY_CACHE=$cache" >> $env:GITHUB_ENV
 
+      # Restored and saved apart, so a run whose build or tests fail keeps the dependencies.
       - name: Restore the vcpkg binary cache
-        uses: actions/cache@v4
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
           key: vcpkg-platform-windows-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'cmake/toolchains/**') }}
           restore-keys: vcpkg-platform-windows-
 
       - name: Configure
+        id: configure
         run: cmake --preset windows-ci -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
+
+      - name: Save the vcpkg binary cache
+        if: always() && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-platform-windows-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'cmake/toolchains/**') }}
 
       - name: Build
         run: cmake --build --preset windows-ci

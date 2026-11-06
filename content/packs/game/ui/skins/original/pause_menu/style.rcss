@@ -533,11 +533,13 @@
 .prompt-key { color: #90a8f8; margin-right: 6dp; }
 .prompt-key.cancel-key { color: #3cff3c; }
 /* The chart's prompts stay right of the rookie column, which reaches down past them: a key's name is wider than the
-   original's pad glyph, so this row is drawn a pixel tighter, closer together and nearer the edge. */
-#chart-prompts { right: 15dp; top: 516dp; letter-spacing: -3dp; }
-#chart-prompts .page-prompt { margin-right: 24dp; }
+   original's pad glyph, so this row is drawn a pixel tighter, closer together and nearer the edge, the key's colour
+   alone setting it off from its word: «Espacio Elegir Ctrl Cancelar» clears the column of the chart with the Mega
+   box too. */
+#chart-prompts { right: 9dp; top: 516dp; letter-spacing: -3dp; }
+#chart-prompts .page-prompt { margin-right: 12dp; }
 #chart-prompts .page-prompt:last-child { margin-right: 0; }
-#chart-prompts .prompt-key { margin-right: 3dp; }
+#chart-prompts .prompt-key { margin-right: 0; }
 #medals-prompts { right: 30dp; top: 519dp; }
 #cards-prompts { right: 30dp; top: 513dp; }
 .card-cell { position: absolute; width: 57dp; height: 57dp; box-sizing: border-box; border: 3dp #3c3c3c; border-top-color: #bebebe; border-left-color: #bebebe; background-color: #696969; }

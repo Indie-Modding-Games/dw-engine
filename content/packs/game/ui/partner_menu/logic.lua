@@ -96,6 +96,16 @@ local function draw_bar(document, prefix, list, index)
     :set_property("width", percent(value, number(base .. "min"), number(base .. "max")) .. "%")
 end
 
+-- Whether the page shows its extras (the status_extras option, on unless turned off).
+local function extras_shown()
+  return ui.setting("status_extras") ~= false
+end
+
+-- A time of day as the clock shows it, 08:30.
+local function clock_time(hour, minute)
+  return string.format("%02d:%02d", hour, minute)
+end
+
 -- A care meter. A two-tone one fills the bar from the minimum to the middle of its range, then
 -- fills it again in its second colour from the middle to the maximum (game_menu.c:
 -- renderDigimonStatsView: happiness, discipline).
@@ -113,6 +123,14 @@ local function draw_meter(document, index)
   if ui.setting("ui_skin") == "original" then
     local value, low, top = number(base .. "value"), number(base .. "min"), number(base .. "max")
     local pink = percent(value, low, (low + top) / 2)
+    if extras_shown() then
+      -- With the extras the bars are narrower, to leave room for their numbers: the same fills as
+      -- shares of the bar (the virus's 3 pixels a point too, 150 pixels being the whole bar).
+      local share = index == 2 and math.max(0, math.min(100, value * 6)) or pink
+      document:get(prefix .. "-fill"):set_property("width", share .. "%")
+      document:get(prefix .. "-high"):set_property("width", high .. "%")
+      return
+    end
     if index == 2 then
       document
         :get(prefix .. "-fill")
@@ -127,10 +145,13 @@ local function draw_meter(document, index)
 end
 
 -- The page's extras, which the original keeps hidden (the status_extras option, on by default):
--- the tiredness as a plain bar after the care meters and the count of care mistakes. The original
--- look names the bar with the tired need's word, short like the other bars' names.
+-- the tiredness as a plain bar after the care meters, the numbers of the care bars, the counts of
+-- care mistakes and battles, the hours it is awake today, the hours of life left and the evolution
+-- counter with the hours its level checks from. The original look names the tiredness bar with the
+-- tired need's word, short like the other bars' names, and writes the waking hours in the Active
+-- field, hour to hour, as its two-digit fields.
 local function draw_extras(document)
-  local extras = ui.setting("status_extras") ~= false
+  local extras = extras_shown()
   document:get("scrim"):set_class("status-extras", extras)
   if not extras then
     return
@@ -142,10 +163,32 @@ local function draw_extras(document)
     original and t("partner_menu.condition.tired") or text(setting("partner.tiredness.label", ""))
   )
   document:get("tiredness"):set_text(tostring(value))
-  document
-    :get("tiredness-fill")
-    :set_property("width", original and (math.floor(fill / 2) * 3 .. "dp") or (fill .. "%"))
+  document:get("tiredness-fill"):set_property("width", fill .. "%")
   document:get("status-mistakes-value"):set_text(tostring(number("partner.care_mistakes")))
+  document:get("status-battles-value"):set_text(tostring(number("partner.battles")))
+  local wake_hour, sleepy_hour =
+    number("partner.awake.wake_hour"), number("partner.awake.sleepy_hour")
+  document:get("status-awake-value"):set_text(t("partner_menu.awake.value", {
+    wake = clock_time(wake_hour, number("partner.awake.wake_minute")),
+    sleepy = clock_time(sleepy_hour, number("partner.awake.sleepy_minute")),
+  }))
+  if original then
+    document:get("status-active"):set_text(string.format("%02d-%02d", wake_hour, sleepy_hour))
+  end
+  -- The original look writes the counter bare in its inset, as it does the age and the weight: a
+  -- champion's "150/144 h" would not fit it.
+  local hours, check = number("partner.evolution.hours"), number("partner.evolution.check_hours")
+  local evolution
+  if original then
+    evolution = check >= 0 and (hours .. "/" .. check) or tostring(hours)
+  else
+    evolution = check >= 0 and t("partner_menu.evolution.value", { hours = hours, check = check })
+      or t("partner_menu.hours.value", { hours = hours })
+  end
+  document
+    :get("status-lifetime-value")
+    :set_text(t("partner_menu.hours.value", { hours = number("partner.lifetime_hours") }))
+  document:get("status-evolution-value"):set_text(evolution)
 end
 
 local function draw_status(document)

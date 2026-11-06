@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -173,6 +174,17 @@ MapSpriteSheet buildMapSpriteSheet(std::span<const MapSprite> sprites,
                                    std::span<const MapTexturePage> pages,
                                    std::span<const std::vector<PaletteColor>> backgroundPalettes);
 
+// The player's own drawing of a map's background (image_replacement.hpp): one RGBA image per
+// variant, `scale` times the background's size, drawn instead of its pixels. The background's
+// indices and palettes stay the game's, so the sprites, the cut-outs and what is drawn read them as
+// before; each pixel's alpha is the class of the background texel under it (colorFromOriginal).
+// A variant without a usable image of its own gets the game's, `scale` times larger.
+struct MapBackgroundReplacement {
+  std::uint32_t scale = 1;
+  // One per variant of MapImages::backgroundVariants.
+  std::vector<Image> variants;
+};
+
 // Everything a map draws, read from its extracted files.
 struct MapImages {
   // The background's palette indices, the same for every variant: MapTileSize pixels per tile of
@@ -185,12 +197,17 @@ struct MapImages {
   // after every entry is uploaded.
   std::vector<MapTexturePage> pages;
   MapSpriteSheet sprites;
+  // When a pack of Layer::User has an image of a background variant that fits it.
+  std::optional<MapBackgroundReplacement> replacement;
 };
 
-// Reads a map's backgrounds and texture pages (document.assets) and resolves its sprites. Fails
-// when a background is not the size of the document's tiles, the variants differ in size or pixels,
-// or a texture entry does not fit in the map's part of VRAM (MapVramLayout::FirstPageX to the right
-// edge, rows 0 to MapPageTexels).
+// Reads a map's backgrounds and texture pages (document.assets) and resolves its sprites. The
+// game's own files are read under any pack of Layer::User; such a pack's background images become
+// the replacement, and one that does not fit (not a PNG, another aspect ratio, a factor that is not
+// a whole number up to MaxReplacementScale or not that of the other variants) is left out with a
+// warning in the log, the game's image drawn instead. Fails when a background is not the size of
+// the document's tiles, the variants differ in size or pixels, or a texture entry does not fit in
+// the map's part of VRAM (MapVramLayout::FirstPageX to the right edge, rows 0 to MapPageTexels).
 core::Result<MapImages> loadMapImages(const VirtualFileSystem& vfs, const MapDocument& document);
 
 } // namespace dwe::assets

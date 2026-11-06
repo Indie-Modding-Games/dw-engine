@@ -1987,6 +1987,45 @@ TEST_CASE("the player and the partner playing a script's clip move by the clip's
   CHECK_FALSE(registry.all_of<dwe::game::field::ClipRootMotion>(field.playerEntity()));
 }
 
+TEST_CASE("a clip held in place plays on without carrying its character (animFlag 2)") {
+  // anim.c: applyRootMomentum skips the root step while animFlag 2 is set; the gym's courses set
+  // it so the partner pushes, punches and runs where it stands. startAnimation resets it.
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  constexpr std::int32_t Push = 27;
+  dwe::assets::ClipMotions clips;
+  clips[Push].steps = {{}, {.forward = 10}, {.forward = 10}, {.forward = 10}, {.forward = 10}};
+  clips[Push].repeatFrom = 1;
+  field.setPartnerClips(std::move(clips));
+  const auto& registry = world.registry();
+  const dwe::scene::Entity partner = field.partnerEntity();
+  const auto positionOf = [&registry, partner] {
+    return registry.get<dwe::scene::Transform>(partner).position;
+  };
+  const glm::vec3 forward =
+      dwe::assets::forwardOfYaw(registry.get<dwe::scene::Transform>(partner).yaw);
+  const float frame = originalRules().transition.frameSeconds;
+  field.holdForScript(true);
+  field.animateByScript(partner, Push);
+  field.holdClipInPlace(partner, true);
+  const glm::vec3 home = positionOf();
+  run(field, 1.0F);
+  CHECK(groundDistance(positionOf(), home) < 0.01F);
+  // The clip's frames went on meanwhile.
+  CHECK(registry.get<dwe::game::field::ClipRootMotion>(partner).frame > 1);
+  // Let go for one frame: one step.
+  field.holdClipInPlace(partner, false);
+  field.tick(frame);
+  field.holdClipInPlace(partner, true);
+  run(field, 1.0F);
+  CHECK(groundDistance(positionOf(), home + (forward * 10.0F)) < 0.01F);
+  // A new clip carries it again.
+  field.animateByScript(partner, Push);
+  CHECK_FALSE(registry.get<dwe::game::field::ClipRootMotion>(partner).held);
+  field.holdForScript(false);
+}
+
 TEST_CASE("a care scene's moving clip carries the partner until it stops") {
   // The sleep scene's lie-down (partner.c: partnerTickSleep) moves by the same root steps as a
   // script's clip (Field::moveByClip).

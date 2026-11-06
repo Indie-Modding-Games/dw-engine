@@ -43,6 +43,16 @@ public:
     if (actor == Actor::Tamer) {
       tamerClips.push_back(animation);
     }
+    // startAnimation resets animFlag: a new clip carries its actor again.
+    if (actor == Actor::Partner) {
+      partnerClips.push_back(animation);
+      partnerHeld = false;
+    }
+  }
+  void holdInPlace(Actor actor, bool held) override {
+    if (actor == Actor::Partner) {
+      partnerHeld = held;
+    }
   }
   void face(Actor /*actor*/, std::int32_t /*angle*/) override {}
   bool animationEnded(Actor /*actor*/) override { return false; }
@@ -78,7 +88,6 @@ public:
   std::optional<std::int32_t> partnerHeadRow() override { return headRow; }
   std::optional<Point> partnerPosition() override { return Point{}; }
   void movePartner(Point /*delta*/) override {}
-  void runOn(Actor /*actor*/) override { ++runs; }
   bool partnerOnScreen() override { return onScreen; }
   void placePartner(Axis axis, std::int32_t value) override { placed.emplace_back(axis, value); }
   std::string partnerSpecies() override { return "agumon"; }
@@ -98,9 +107,11 @@ public:
   // The looping voices still sounding.
   std::vector<std::int64_t> playing;
   int stops = 0;
-  int runs = 0;
   int tamerLooks = 0;
+  // Whether the partner's clip plays in place (animFlag 2).
+  bool partnerHeld = false;
   std::vector<std::int32_t> tamerClips;
+  std::vector<std::int32_t> partnerClips;
   bool onScreen = true;
   std::optional<std::int32_t> headRow;
   std::int32_t row = 0;
@@ -275,6 +286,28 @@ TEST_CASE("gym.md sites: the savanna's laps start again along z (trn_speed.c, in
   CHECK(ports.placed.front() == std::pair{Axis::Z, 2000});
 }
 
+TEST_CASE("gym.md clip: the speed course lets the run clip carry the partner, never held") {
+  // trn_speed.c: state 2 never sets animFlag 2, so the clip's root motion alone moves it; a lap
+  // (every 60 frames off screen) puts it back and starts the run clip again.
+  GymRules gym = gymRules();
+  gym.courses.front().detail = SpeedCourse{
+      .facing = 0, .runAnimation = 4, .lapFrames = 60, .restartAxis = Axis::X, .restart = -3000};
+  FakePorts ports;
+  ports.onScreen = false;
+  CourseRun run{gym, gym.courses.front(), false};
+  int held = 0;
+  for (int frame = 0; frame < 600; ++frame) {
+    frames(run, ports, 1);
+    held += ports.partnerHeld ? 1 : 0;
+  }
+  CHECK(held == 0);
+  REQUIRE(ports.placed.size() >= 9);
+  CHECK(ports.placed.front() == std::pair{Axis::X, -3000});
+  // The first run clip, then one per lap.
+  CHECK(std::ranges::count(ports.partnerClips, 4) ==
+        static_cast<std::ptrdiff_t>(ports.placed.size()) + 1);
+}
+
 TEST_CASE("gym.md sites: the treadmill runs in place, loops its sound and leaves to its spot") {
   using dwe::game::gym::TreadmillCourse;
   GymRules gym = gymRules();
@@ -287,7 +320,6 @@ TEST_CASE("gym.md sites: the treadmill runs in place, loops its sound and leaves
   FakePorts ports;
   CourseRun run{gym, gym.courses.front(), false};
   frames(run, ports, 1300);
-  CHECK(ports.runs == 0);
   CHECK(ports.loops == 1);
   CHECK(ports.stops == 1);
   // The count and the rest, then the walk off to (0xf7, 0x3c5), not to the tamer.
@@ -340,6 +372,74 @@ TEST_CASE("gym.md sites: an offense hit swaps the objects and undoes it 46 frame
   CHECK(ports.shows.size() == 4);
   CHECK(ports.shows.at(2) == std::pair<std::int32_t, bool>{39, true});
   CHECK(ports.shows.at(3) == std::pair<std::int32_t, bool>{43, false});
+}
+
+TEST_CASE("gym.md HP: the push plays in place but for one frame on each beat (trn_hp.c)") {
+  using dwe::game::gym::HpCourse;
+  GymRules gym = gymRules();
+  HpCourse hp;
+  hp.facing = 2560;
+  hp.workAnimation = 27;
+  hp.beatFrames = 120;
+  hp.beatSoundEvery = 10;
+  gym.courses.front().detail = hp;
+  FakePorts ports;
+  CourseRun run{gym, gym.courses.front(), false};
+  // One frame to start, one to arrive and start the push.
+  frames(run, ports, 2);
+  CHECK_FALSE(ports.partnerHeld);
+  // The session's frames 0 to 1198 (the 1200th ends it and starts the done clip): animFlag 2 is
+  // cleared on frames 0, 120, ..., 1080 only.
+  int free = 0;
+  for (int counter = 0; counter < 1199; ++counter) {
+    frames(run, ports, 1);
+    CHECK(ports.partnerHeld == (counter % 120 != 0));
+    free += ports.partnerHeld ? 0 : 1;
+  }
+  CHECK(free == 10);
+}
+
+TEST_CASE("gym.md offense: the punches play in place, the first one too (trn_off.c)") {
+  using dwe::game::gym::OffenseCourse;
+  GymRules gym = gymRules();
+  gym.defaultPunch = {.animation = 46, .frames = 10};
+  OffenseCourse offense;
+  offense.swingFrames = 41;
+  gym.courses.front().detail = offense;
+  FakePorts ports;
+  CourseRun run{gym, gym.courses.front(), false};
+  // Arrived: the first punch is held from its first frame.
+  frames(run, ports, 2);
+  CHECK(ports.partnerHeld);
+  // Through the punch and the bag's swing, the punch stays held; a new punch is held from the
+  // frame after it starts.
+  int free = 0;
+  for (int frame = 0; frame < 200; ++frame) {
+    frames(run, ports, 1);
+    free += ports.partnerHeld ? 0 : 1;
+  }
+  CHECK(free <= 4);
+  CHECK(ports.partnerHeld);
+}
+
+TEST_CASE("gym.md sites: the second battlefield holds every punch, the savanna only the first") {
+  using dwe::game::gym::OffenseCourse;
+  using dwe::game::gym::OffenseSwap;
+  for (const bool holdEachPunch : {true, false}) {
+    GymRules gym = gymRules();
+    gym.defaultPunch = {.animation = 46, .frames = 10};
+    OffenseCourse offense;
+    OffenseSwap swap;
+    swap.frames = 46;
+    swap.holdEachPunch = holdEachPunch;
+    offense.swap = swap;
+    gym.courses.front().detail = offense;
+    FakePorts ports;
+    CourseRun run{gym, gym.courses.front(), false};
+    // Arrive, punch (10), swap (46): the second punch starts; one more frame into it.
+    frames(run, ports, 2 + 10 + 46 + 1);
+    CHECK(ports.partnerHeld == holdEachPunch);
+  }
 }
 
 TEST_CASE("gym.md watching: the player plays its watch clip and turns to the partner every frame") {

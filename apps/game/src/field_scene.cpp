@@ -47,11 +47,15 @@ constexpr std::string_view PartnerCharacter = "models/partner";
 constexpr std::string_view SpeciesModelFolder = "digimon/";
 constexpr std::string_view SpeciesModelName = "/model";
 
+} // namespace
+
 std::string speciesModelOf(std::string_view species) {
   std::string id{SpeciesModelFolder};
   id.append(assets::contentAssetPath(species)).append(SpeciesModelName);
   return id;
 }
+
+namespace {
 
 // The species a model draws (speciesModelOf the other way round), nothing for another model.
 std::optional<std::string> speciesOfModel(std::string_view model) {
@@ -177,6 +181,7 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
   }
   scene->grade_ = std::move(*grade);
   scene->mapLights_ = loadMapLights(files);
+  scene->spriteCharacterTable_ = loadSpriteCharacters(files);
   // The weather over the map and its characters, under the screen primitives (the mist, the
   // effects' flashes, the story's fades) and the interface.
   scene->drawers_ = {&scene->mapRenderer_->backgroundDrawer(),
@@ -483,6 +488,7 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
   if (auto set = mapRenderer_->setMap(*scene, scene->backgroundVariant(time_, fixedTime)); !set) {
     return core::fail(std::format("map {}: {}", mapId, set.error().message));
   }
+  standInSpriteCharacters(mapId);
   mapLighting_ = mapLighting(scene->document);
   lightingDelay_ = 0.0;
   cameraFocus_.reset();
@@ -1005,6 +1011,7 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
     drawNpcs(animationSeconds, alpha);
     if (!mapLayerHidden_) {
       submitMapObjects();
+      drawSpriteCharacters(animationSeconds);
     }
     submitProps();
   } else {

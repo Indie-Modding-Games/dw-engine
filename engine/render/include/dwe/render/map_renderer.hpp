@@ -9,6 +9,7 @@
 #include <dwe/render/map_layers.hpp>
 #include <dwe/render/map_scene.hpp>
 #include <dwe/render/renderer.hpp>
+#include <dwe/render/scenery_upscale.hpp>
 #include <dwe/render/upscale_cache.hpp>
 #include <dwe/rhi/pipeline.hpp>
 
@@ -23,8 +24,6 @@
 #include <vector>
 
 namespace dwe::render {
-
-struct UpscaledScenery;
 
 // An upright, camera-facing marker standing on a world point, drawn with depth like a model: for
 // debugging the camera and the depth layers before the models exist.
@@ -135,6 +134,9 @@ public:
   // pixels, sharp.
   void setHdScenery(bool on);
   [[nodiscard]] bool hdScenery() const { return hdScenery_; }
+  // Whether the map shown has the player's images of its background (drawn with HD scenery's
+  // background pass even with the option off).
+  [[nodiscard]] bool hasReplacement() const { return replacement_.has_value(); }
 
   // How HD scenery draws the background (with the option on). Smooth filters the original's texels
   // at the window's resolution (map.slang's sampleSmooth). Upscaled, the best and the default,
@@ -370,6 +372,8 @@ private:
   std::vector<assets::MapSpriteSheet::Placement> placements_;
   MapCutouts cutouts_;
   bool hdScenery_ = true;
+  // HD scenery draws the map: the option is on, or the background has the player's images.
+  [[nodiscard]] bool hdActive() const { return hdScenery_ || replacement_.has_value(); }
   // For HD scenery: the background's indices, and its colours with the palette resolved last
   // (resolvedPalette_), made when first needed.
   assets::IndexedImage backgroundIndexCopy_;
@@ -410,6 +414,12 @@ private:
   std::shared_ptr<const UpscaleCache> upscaleCache_;
   std::vector<TextureId> upscaled_;
   bool upscaledReady_ = false;
+  // Where the background's texels fall in upscaled_ (UpscaledScenery::scale and shift).
+  std::uint32_t upscaledScale_ = 2;
+  float upscaledShift_ = 0.0F;
+  // The player's images of the map's background (assets::MapBackgroundReplacement), drawn as the
+  // upscaled background whatever the HD scenery options: they are the player's choice.
+  std::optional<UpscaledScenery> replacement_;
   std::vector<double> snapshotWeights_;
   // An upscale under way (the last of upscaleWork_) and the cancelled ones still finishing: each
   // thread is joined once its job says it finished, so none blocks the game.

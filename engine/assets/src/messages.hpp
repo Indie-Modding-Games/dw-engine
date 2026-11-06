@@ -116,4 +116,18 @@ inline constexpr std::string_view DevSourceNoDecompLayout =
     "the dev assets' {} {} has no include/dw and src folders: it is not a checkout of the decompilation";
 inline constexpr std::string_view DevSourceUnreadable = "the dev assets' {} {} cannot be read: {}";
 
+// The player's images of a map (map_images.cpp: loadMapImages).
+inline constexpr std::string_view ReplacementUnreadable =
+    "map {}: the image '{}' of pack '{}' is not used, the game's is drawn: {}";
+inline constexpr std::string_view ReplacementWrongSize =
+    "map {}: the image '{}' of pack '{}' is {}x{}, not {}x{} or a whole number of times larger with "
+    "the same aspect ratio (up to {}x): the game's is drawn";
+inline constexpr std::string_view ReplacementOtherScale =
+    "map {}: the image '{}' of pack '{}' is {}x larger, but the map's other images are {}x: the "
+    "game's is drawn";
+inline constexpr std::string_view ReplacementOfPage =
+    "map {}: the image '{}' of pack '{}' is not used: only a map's backgrounds can be replaced";
+inline constexpr std::string_view ReplacementUsed =
+    "map {}: drawing the player's background images, {}x, {} of {} variants";
+
 } // namespace dwe::assets::messages

@@ -93,7 +93,7 @@ const std::vector<DepthLayerQuad>& MapDepthLayers::quads() {
   quads_.clear();
   for (const std::size_t index : drawOrder_) {
     const Instance& instance = instances_[index];
-    if (instance.hidden || instance.screenSpace || instance.frames.empty()) {
+    if (instance.hidden || instance.stoodIn || instance.screenSpace || instance.frames.empty()) {
       continue;
     }
     const std::int32_t sprite = instance.frames[instance.frame].sprite;
@@ -121,6 +121,16 @@ std::int32_t MapDepthLayers::orderValue(std::size_t instance) const {
 void MapDepthLayers::setHidden(std::size_t instance, bool hidden) {
   if (instance < instances_.size()) {
     instances_[instance].hidden = hidden;
+  }
+}
+
+bool MapDepthLayers::hidden(std::size_t instance) const {
+  return instance >= instances_.size() || instances_[instance].hidden;
+}
+
+void MapDepthLayers::setStoodIn(std::size_t instance, bool stoodIn) {
+  if (instance < instances_.size()) {
+    instances_[instance].stoodIn = stoodIn;
   }
 }
 

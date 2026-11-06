@@ -302,6 +302,7 @@ void SessionCommands::drop(Autotest* autotest) {
   if (std::exchange(gym, std::nullopt)) {
     dropped(messages::GymFailed);
   }
+  modelCharacters.reset();
   if (care.pending()) {
     dropped(messages::CareCommandFailed);
     care = {};
@@ -339,6 +340,8 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
   save.bind(scripts);
   scripts.bindCommand(SaveMachineCommand, [this](std::string_view) { saveMachine = true; });
   scripts.bindCommand(GymCommand, [this](std::string_view course) { gym = std::string{course}; });
+  scripts.bindCommand(ModelCharactersSetting,
+                      [this](std::string_view value) { modelCharacters = value != "off"; });
 }
 
 core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext& context,
@@ -420,6 +423,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                                            .story = game_.systems.story,
                                            .cards = game_.systems.cards,
                                            .city = game_.systems.city,
+                                           .evolution = game_.systems.evolution,
                                            .feed = &feedScene_}),
       chartRequirements_(*context.ui, game_.systems.evolution),
       fieldHud_(*context.ui, *game_.session),
@@ -600,6 +604,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   const bool translatedSigns = context.userSettings->translatedSigns.value_or(true);
   scene_->setTranslatedSigns(translatedSigns);
   context_.ui->setSetting(TranslatedSignsSetting, translatedSigns);
+  // The sprite characters drawn as their models (sprite_characters.hpp), on unless turned off.
+  const bool modelCharacters = context.userSettings->modelCharacters.value_or(true);
+  scene_->setModelCharacters(modelCharacters);
+  context_.ui->setSetting(ModelCharactersSetting, modelCharacters);
   // The status page's extras (the tiredness and the care mistakes), on unless turned off.
   context_.ui->setSetting(StatusExtrasSetting, context.userSettings->statusExtras.value_or(true));
   context_.ui->setSetting(EvolutionActiveSetting, false);
@@ -1153,6 +1161,17 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     }
     return true;
   }
+  if (command.name == ModelCharactersSetting) {
+    if (const bool* on = std::get_if<bool>(&command.value)) {
+      scene_->setModelCharacters(*on);
+      context_.ui->setSetting(ModelCharactersSetting, *on);
+      context_.userSettings->modelCharacters = *on;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    return true;
+  }
   if (command.name == TranslatedSignsSetting) {
     if (const bool* translated = std::get_if<bool>(&command.value)) {
       scene_->setTranslatedSigns(*translated);
@@ -1364,6 +1383,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   guardFactsChanged = commands.care.apply(session) || guardFactsChanged;
   if (std::exchange(commands.saveMachine, false)) {
     saveMachine_.open();
+  }
+  if (const auto on = std::exchange(commands.modelCharacters, std::nullopt)) {
+    scene_->setModelCharacters(*on);
+    context_.ui->setSetting(ModelCharactersSetting, *on);
   }
   if (const auto course = std::exchange(commands.gym, std::nullopt)) {
     if (auto started = gymScreen_.start(*course); !started) {

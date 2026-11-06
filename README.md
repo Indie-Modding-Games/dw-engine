@@ -80,4 +80,4 @@ scripts/dev.sh docs       # Build the site into build/docs-site
 
 ## License
 
-The project's license is not yet finalized. See [ADR 0011](docs/adr/0011-politica-legal-de-assets.md). Third-party dependencies retain their respective licenses; original game content is governed separately by the [asset policy](docs/legal/assets.md).
+The code is released under the [MIT License](LICENSE). Third-party dependencies retain their respective licenses; original game content is governed separately by the [asset policy](docs/legal/assets.md).

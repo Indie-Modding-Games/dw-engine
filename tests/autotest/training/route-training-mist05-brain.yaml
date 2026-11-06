@@ -1,0 +1,19 @@
+name: training-mist05-brain
+# One whole brain session on mist05, checked against the bounds of dwe's own run (not measured in the original):
+# frames from the partner's arrival to the gains, its farthest point from its spot, the ground it
+# covered and each stat's gain, in original units (docs/guides/comprobar-entrenamiento.md).
+device: keyboard
+timeout: 290
+steps:
+  - wait: {map: mist05, seconds: 2}
+  - script: gym("brain")
+  - wait: {setting: {gym.session.count: "1"}, timeout: 280}
+  - expect_range: {gym.session.frames: [1198, 1203]}
+  - expect_range: {gym.session.max_offset: [0, 40]}
+  - expect_range: {gym.session.path: [0, 40]}
+  - expect_range: {gym.session.gain.hp: [0, 0]}
+  - expect_range: {gym.session.gain.mp: [5, 15]}
+  - expect_range: {gym.session.gain.offense: [0, 0]}
+  - expect_range: {gym.session.gain.defense: [0, 0]}
+  - expect_range: {gym.session.gain.speed: [0, 0]}
+  - expect_range: {gym.session.gain.brain: [4, 12]}

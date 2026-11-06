@@ -398,7 +398,7 @@ end
 
 function leave_boot(_document)
   if view == "boot" and not leaving then
-    -- Start ends the countdown (runLandingScreen: goto fade).
+    -- Start ends the countdown (runLandingScreen: jumps to the fade).
     set_landing(false)
     leaving = true
     fade_target = 1.0

@@ -1,0 +1,49 @@
+# The characters some maps draw as prerendered sprites of their depth layers, drawn as their species'
+# models with the option «3D characters» on (an engine improvement: docs/modulos/apps/game.md,
+# «Personajes en 3D»; content/schemas/field_sprite_characters.schema.json). sprites: the map's object
+# instances that draw it, left out while the model stands in; the first one's hidden flag, which the
+# scripts set, decides whether the model shows. shadow: its shadow's instance, kept under the model,
+# whose middle is where the model stands. feet: the background pixel under its feet when it has no
+# shadow (else the bottom middle of its first sprite). height: world units above the ground (a
+# planter, a bed). facing: the original Y rotation (0-4095) it faces; the camera when left out.
+# additive: draws the model added to what is behind, its colours scaled by this (a sprite that glows).
+characters:
+  # The opening, in front of the elder's house: the babies cheering for the player.
+  - {maps: [topn01], species: tane, sprites: [0, 1], shadow: 2}
+  - {maps: [topn01], species: puni, sprites: [3, 4], shadow: 5}
+  - {maps: [topn01], species: tuno, sprites: [6, 7], shadow: 8}
+  - {maps: [topn01], species: bota, sprites: [9, 10], shadow: 11}
+  - {maps: [topn01], species: yura, sprites: [12, 13], shadow: 14}
+  - {maps: [topn01], species: koro, sprites: [15, 16], shadow: 17}
+  # The ending, in the same place.
+  - {maps: [tend01, tend02], species: dori, sprites: [0, 1], shadow: 2}
+  - {maps: [tend01, tend02], species: leom, sprites: [3, 4], shadow: 5}
+  - {maps: [tend01, tend02], species: tuno, sprites: [6, 7], shadow: 8}
+  - {maps: [tend01, tend02], species: bota, sprites: [9, 10], shadow: 11}
+  # Poyomon's sprites glow (the additive semi-transparency), and so does its model.
+  - {maps: [tend01, tend02], species: poyo, sprites: [12, 13, 14, 15], shadow: 16, additive: 0.35}
+  - {maps: [tend01, tend02], species: puni, sprites: [17, 18, 19, 20], shadow: 21}
+  - {maps: [tend01, tend02], species: yura, sprites: [22, 23], shadow: 24}
+  - {maps: [tend01, tend02], species: koro, sprites: [25, 26], shadow: 27}
+  - {maps: [tend01, tend02], species: toko, sprites: [28, 29], shadow: 30}
+  # The farm by the lake: Tanemon (its sprite, the blink and the drop) and Palmon in the planters.
+  - maps: [twna01, twna02, twna03, twna04, twna05, twna06, twna07, twna08, twna09, twna10, twna11, twna12, twna13]
+    species: tane
+    sprites: [68, 69, 70]
+    feet: [492, 200]
+    height: 60
+  - maps: [twna01, twna02, twna03, twna04, twna05, twna06, twna07, twna08, twna09, twna10, twna11, twna12, twna13]
+    species: palm
+    sprites: [71]
+    height: 60
+  # The elder's house: Punimon bouncing on the bed and Poyomon by the wall.
+  - {maps: [room08], species: puni, sprites: [7], feet: [528, 158], height: 120}
+  - {maps: [room08], species: poyo, sprites: [8], height: 60}
+  # The market stall: Coelamon lying on the rug, one instance in each town variant that has the stall.
+  - {maps: [twnb02, twnb07], species: sira, sprites: [108], facing: 2560}
+  - {maps: [twnb03], species: sira, sprites: [109], facing: 2560}
+  - {maps: [twnb04], species: sira, sprites: [111], facing: 2560}
+  - {maps: [twnb05], species: sira, sprites: [143], facing: 2560}
+  - {maps: [twnb06], species: sira, sprites: [141], facing: 2560}
+  - {maps: [twnb08], species: sira, sprites: [140], facing: 2560}
+  - {maps: [twnb09], species: sira, sprites: [138], facing: 2560}

@@ -3,10 +3,10 @@
 -- (apps/game/src/tournament_schedule_screen.cpp) and publishes it as settings, bumping
 -- tournament_schedule.revision once per change: .phase (schedule, peek, question, choice), .title,
 -- .column and .row of the cursor, .day.<c> (the day of the cycle over each column),
--- .cell.<c>.<r>.grade and .state (closed, open, overlevel or empty), and two boxes of coloured runs,
--- info (the cup's text) and talk (the question or the choice): .<box>.rows, .<box>.<r>.runs and
--- .<box>.<r>.run.<k>.text/.color, with .talk_cursor the choice's row. Every button goes to the game
--- as tournament_schedule_action.
+-- .cell.<c>.<r>.grade and .state (closed, open, overlevel or empty), and two boxes of coloured
+-- runs, info (the cup's text) and talk (the question or the choice): .<box>.rows, .<box>.<r>.runs
+-- and .<box>.<r>.run.<k>.text/.color, with .talk_cursor the choice's row. Every button goes to the
+-- game as tournament_schedule_action.
 
 local Days = 5
 local Rows = 6
@@ -46,8 +46,14 @@ local function draw_grid(document)
     end
   end
   local cursor = document:get("cursor")
-  cursor:set_property("left", string.format("%ddp", 21 + ColumnDp * number("tournament_schedule.column", 0)))
-  cursor:set_property("top", string.format("%ddp", 75 + RowDp * number("tournament_schedule.row", 0)))
+  cursor:set_property(
+    "left",
+    string.format("%ddp", 21 + ColumnDp * number("tournament_schedule.column", 0))
+  )
+  cursor:set_property(
+    "top",
+    string.format("%ddp", 75 + RowDp * number("tournament_schedule.row", 0))
+  )
 end
 
 local function draw_box(document, name)

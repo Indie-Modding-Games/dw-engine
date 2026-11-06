@@ -227,22 +227,30 @@ bool TextureSources::isPixelArt(std::string_view source) {
   return reference && ui::isPixelArt(*reference);
 }
 
-core::Result<assets::Image> TextureSources::load(std::string_view source) const {
+core::Result<DrawnImage> TextureSources::load(std::string_view source) const {
+  const auto drawnAsItIs = [](assets::Image image) {
+    const ImageSize size{.width = image.width, .height = image.height};
+    return DrawnImage{.pixels = std::move(image), .size = size};
+  };
   if (source.starts_with(GeneratedPrefix)) {
     auto found = generated_.find(source.substr(GeneratedPrefix.size()));
     if (found == generated_.end()) {
       return core::fail(std::format("no generated image '{}'", source));
     }
-    return found->second;
+    return drawnAsItIs(found->second);
   }
   if (source.starts_with(GlyphPrefix)) {
-    return drawGlyph(source.substr(GlyphPrefix.size()));
+    auto glyph = drawGlyph(source.substr(GlyphPrefix.size()));
+    if (!glyph) {
+      return std::unexpected{glyph.error()};
+    }
+    return drawnAsItIs(std::move(*glyph));
   }
   auto reference = parseImageReference(source);
   if (!reference) {
     return std::unexpected{reference.error()};
   }
-  return loadImage(*files_, *reference);
+  return loadDrawnImage(*files_, *reference);
 }
 
 } // namespace dwe::ui

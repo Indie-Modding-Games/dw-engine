@@ -1,18 +1,25 @@
 name: Release
 
-# Builds a beta release by hand only (Actions > Release > Run workflow): the game packages for the
-# launcher (no game data) for Linux, Windows and macOS, the launcher's installers (AppImage and .deb,
-# the Windows NSIS installer, the macOS .dmg), their signatures, game-manifest.json and latest.json,
-# all uploaded to a DRAFT prerelease that someone reviews and publishes by hand. Nothing here runs on
-# a push or a tag. The Windows builds are cross-compiled on Linux (the same Docker images as a
-# developer's machine); only the macOS ones need macOS runners, so they run only when the `macos`
-# input is ticked; without it the release carries Linux and Windows only, and the manifests name
-# only those. scripts/release_local.sh builds the same Linux and Windows files on a computer and
-# runs the same checks (docs/modulos/apps/launcher.md).
+# Every push to main (a merged pull request) builds and publishes a prerelease, the launcher's
+# «Pruebas» channel: the game packages for the launcher (no game data) for Linux, Windows and macOS,
+# the launcher's installers (AppImage and .deb, the Windows NSIS installer, the macOS .dmg), their
+# signatures, game-manifest.json and latest.json. A merge that only touches documentation, tests or
+# the CI's own files builds nothing. Actions > Release > Run workflow builds main's tip by hand the
+# same way. The pr-caches job also keeps the compiler caches ci.yml's pull request checks start
+# from.
 #
-# Every computer builds on its own: one that fails does not stop the others. The publish job then
-# says in the run's summary which computers are missing and publishes nothing; the files that did
-# build stay as this run's artifacts, and "Re-run failed jobs" builds only what failed and publishes.
+# The version needs no one (scripts/ci/release.py version): <CMakeLists.txt's version>-beta.<N>, N
+# the commits on main, and the tag is v<version>. A newer merge cancels the build of an older one:
+# only the newest commit gets a release. promote.yml later makes a tested prerelease the stable
+# release, with the same files. docs/modulos/apps/launcher.md explains the versions and the
+# channels.
+#
+# The Windows builds are cross-compiled on Linux (the same Docker images as a developer's machine);
+# only the macOS ones need macOS runners. Every computer builds on its own: one that fails does not
+# stop the others, and the publish job then says in the run's summary which computers are missing
+# and publishes nothing; "Re-run failed jobs" builds only what failed and publishes. The release is
+# uploaded as a draft and published once every file and both manifests are there and checked, so a
+# launcher never sees a half-uploaded release.
 #
 # docs/modulos/apps/launcher.md explains the secrets:
 #   secrets.DWE_SIGNING_KEY            the private key of `tauri signer generate` (its text)
@@ -23,31 +30,23 @@ name: Release
 #   vars.DWE_LAUNCHER_LINKS            optional: the main screen's links, a JSON object of https URLs
 #                                      by kind ({"repo", "community", "web"}); unset, none are shown
 on:
+  push:
+    branches: [main]
+    paths-ignore: ['docs/**', 'docs-site/**', '**/*.md', '**/tests/**', '.github/**', 'scripts/ci/**']
   workflow_dispatch:
-    inputs:
-      tag:
-        description: Tag of the draft release (for example v0.1.0-beta.1)
-        required: true
-      notes:
-        description: Release notes (Markdown); the launcher shows them as its news
-        required: false
-        default: ""
-      macos:
-        description: Also build for macOS (Apple silicon and Intel game packages, the launcher's .dmg)
-        type: boolean
-        default: false
-      replace_draft:
-        description: Delete a DRAFT release of the same tag first (a published one is never touched)
-        type: boolean
-        default: false
 
 permissions:
   contents: write
   # Deleting this workflow's older compiler caches (one is kept per computer).
   actions: write
+  # The development images in GitHub's container registry, for the next runs and for ci.yml.
+  packages: write
+
+concurrency:
+  group: release
+  cancel-in-progress: true
 
 env:
-  TAG: ${{ inputs.tag }}
   TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.DWE_SIGNING_KEY }}
   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.DWE_SIGNING_KEY_PASSWORD }}
   DWE_LAUNCHER_PUBKEY: ${{ vars.DWE_SIGNING_PUBKEY }}
@@ -55,18 +54,21 @@ env:
   DWE_LAUNCHER_LINKS: ${{ vars.DWE_LAUNCHER_LINKS }}
 
 jobs:
-  check:
+  plan:
     runs-on: ubuntu-24.04
     outputs:
-      game: ${{ steps.computers.outputs.game }}
-      launcher: ${{ steps.computers.outputs.launcher }}
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      previous: ${{ steps.version.outputs.previous }}
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
         with:
-          # The launcher's sources are compared with the last release's tag.
+          # The version counts the commits; the launcher's sources are compared with the newest
+          # release's tag.
           fetch-depth: 0
+          filter: blob:none
 
       - name: Check the signing key and the gateway
         run: |
@@ -79,84 +81,58 @@ jobs:
             exit 1
           }
 
-      # An existing tag or published release is never touched; a draft only with replace_draft.
-      - name: Check the tag
-        env:
-          REPLACE_DRAFT: ${{ inputs.replace_draft }}
+      # A published release is never touched; a draft of the same tag is an unfinished run's and
+      # the publish job replaces it. The new game version must be above the newest release's, or
+      # no launcher would install it.
+      - name: Pick the version
+        id: version
         run: |
-          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || {
-            echo "The tag must look like v0.1.0-beta.1, not $TAG" >&2
-            exit 1
-          }
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
-            echo "The tag $TAG already exists; pick another one" >&2
+          version="$(python3 scripts/ci/release.py version)"
+          tag="v$version"
+          if is_draft="$(gh release view "$tag" -R "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null)" \
+            && [ "$is_draft" != true ]; then
+            echo "$tag is already released: this commit was built before" >&2
             exit 1
           fi
-          if is_draft="$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null)"; then
-            [ "$is_draft" = true ] || { echo "A published release $TAG exists; it is never replaced" >&2; exit 1; }
-            [ "$REPLACE_DRAFT" = true ] || { echo "A draft release $TAG exists; tick replace_draft to delete it first" >&2; exit 1; }
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            echo "The tag $tag exists without a release; delete it or merge a new commit" >&2
+            exit 1
           fi
+          previous="$(gh release list -R "$GITHUB_REPOSITORY" --exclude-drafts --limit 1 --json tagName \
+            --jq '.[0].tagName // ""')"
+          if [ -n "$previous" ]; then
+            gh release download "$previous" -R "$GITHUB_REPOSITORY" -p game-manifest.json \
+              -O "$RUNNER_TEMP/previous-game.json" --clobber
+            previous_version="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["version"])' \
+              "$RUNNER_TEMP/previous-game.json")"
+            python3 scripts/ci/release.py newer "$version" "$previous_version" || {
+              echo "The game would be $version, not above $previous_version of $previous: raise the version in CMakeLists.txt" >&2
+              exit 1
+            }
+          fi
+          echo "Release $tag (game $version), after ${previous:-no release}"
+          {
+            echo "version=$version"
+            echo "tag=$tag"
+            echo "previous=$previous"
+          } >> "$GITHUB_OUTPUT"
 
-      # Installed launchers update themselves only to a higher version (latest.json carries
-      # tauri.conf.json's): a release whose launcher changed must raise it.
+      # Installed launchers update themselves only to a higher version: a release whose launcher
+      # changed must raise it (the same check as CI's launcher-version).
       - name: Check the launcher's version
-        run: |
-          conf="apps/launcher/src-tauri/tauri.conf.json"
-          version="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["version"])' "$conf")"
-          cargo="$(sed -n 's/^version = "\(.*\)"$/\1/p' apps/launcher/src-tauri/Cargo.toml | head -1)"
-          [ "$version" = "$cargo" ] || {
-            echo "$conf says $version but Cargo.toml says $cargo; raise both together" >&2
-            exit 1
-          }
-          previous="$(gh release list -R "$GITHUB_REPOSITORY" --exclude-drafts --limit 1 --json tagName --jq '.[0].tagName // ""')"
-          if [ -z "$previous" ]; then
-            echo "No earlier release; the launcher is $version"
-            exit 0
-          fi
-          gh release download "$previous" -R "$GITHUB_REPOSITORY" -p latest.json -O "$RUNNER_TEMP/previous-latest.json" --clobber
-          previous_version="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["version"])' "$RUNNER_TEMP/previous-latest.json")"
-          changed=0
-          git diff --quiet "$previous" HEAD -- apps/launcher/ui apps/launcher/src-tauri \
-            ':(exclude)apps/launcher/src-tauri/tests' || changed=1
-          python3 - "$version" "$previous_version" "$changed" "$previous" <<'EOF'
-          import sys
-          version, previous, changed, tag = sys.argv[1], sys.argv[2], sys.argv[3] == "1", sys.argv[4]
-          def key(text):
-              core, _, pre = text.partition("-")
-              return tuple(int(n) for n in core.split(".")) + ((1,) if not pre else (0, pre))
-          if key(version) < key(previous):
-              sys.exit(f"The launcher is {version}, lower than {previous} in {tag}: no launcher would update")
-          if changed and version == previous:
-              sys.exit(f"The launcher changed since {tag} but is still {version}: installed launchers would not "
-                       "update. Raise the version in tauri.conf.json and Cargo.toml (and Cargo.lock)")
-          print(f"The launcher is {version} ({tag} had {previous}; "
-                f"{'changed' if changed else 'unchanged'} since)")
-          EOF
-
-      # The computers this release is built for: Linux and Windows always, macOS when asked.
-      - name: Pick the computers
-        id: computers
-        env:
-          MACOS: ${{ inputs.macos }}
-        run: |
-          game='{"platform":"linux-x86_64","runner":"ubuntu-24.04"}'
-          game+=',{"platform":"windows-x86_64","runner":"ubuntu-24.04"}'
-          launcher='{"system":"linux","runner":"ubuntu-24.04"},{"system":"windows","runner":"ubuntu-24.04"}'
-          if [ "$MACOS" = true ]; then
-            game+=',{"platform":"darwin-aarch64","runner":"macos-15","arch":"arm64"}'
-            game+=',{"platform":"darwin-x86_64","runner":"macos-15-intel","arch":"x64"}'
-            launcher+=',{"system":"macos","runner":"macos-15"}'
-          fi
-          echo "game=[$game]" >> "$GITHUB_OUTPUT"
-          echo "launcher=[$launcher]" >> "$GITHUB_OUTPUT"
+        run: scripts/ci/launcher_version.sh
 
   # One unsigned game package per computer; the publish job signs them all.
   game:
-    needs: check
+    needs: plan
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.check.outputs.game) }}
+        include:
+          - { platform: linux-x86_64, runner: ubuntu-24.04 }
+          - { platform: windows-x86_64, runner: ubuntu-24.04 }
+          - { platform: darwin-aarch64, runner: macos-15, arch: arm64 }
+          - { platform: darwin-x86_64, runner: macos-15-intel, arch: x64 }
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
@@ -164,9 +140,11 @@ jobs:
           # The package names the commit it was built from.
           fetch-depth: 0
 
-      - name: Build the development image
+      - name: Development image
         if: runner.os == 'Linux'
-        run: scripts/dev.sh image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/image.sh dev --push
 
       # The MSVC libraries and the Windows SDK change only with xwin's version (the image's Dockerfile).
       - name: Restore the MSVC libraries and the Windows SDK
@@ -191,12 +169,22 @@ jobs:
           key: xwin-${{ hashFiles('.devcontainer/Dockerfile') }}
 
       # Homebrew is in /opt/homebrew on Apple silicon and in /usr/local on Intel; the toolchain
-      # (cmake/toolchains/macos-llvm-libcxx.cmake) takes its LLVM from DWE_LLVM_ROOT.
+      # (cmake/toolchains/macos-llvm-libcxx.cmake) takes its LLVM from DWE_LLVM_ROOT. ccache in
+      # front of it as on Linux (the presets read DWE_COMPILER_LAUNCHER); LLVM is installed afresh
+      # on every run, so ccache knows the compiler by its contents and not its date.
       - name: Install the macOS tools
         if: runner.os == 'macOS'
         run: |
-          brew install llvm molten-vk ninja
+          brew install llvm molten-vk ninja ccache
           echo "DWE_LLVM_ROOT=$(brew --prefix llvm)" >> "$GITHUB_ENV"
+          {
+            echo "DWE_COMPILER_LAUNCHER=ccache"
+            echo "CCACHE_DIR=$RUNNER_TEMP/ccache"
+            echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
+            echo "CCACHE_NOHASHDIR=true"
+            echo "CCACHE_COMPILERCHECK=content"
+            echo "CCACHE_MAXSIZE=1G"
+          } >> "$GITHUB_ENV"
           root="$RUNNER_TEMP/vcpkg"
           git clone https://github.com/microsoft/vcpkg.git "$root"
           git -C "$root" checkout "$(python3 -c 'import json; print(json.load(open("vcpkg.json"))["builtin-baseline"])')"
@@ -215,10 +203,9 @@ jobs:
           key: vcpkg-release-${{ matrix.platform }}-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
           restore-keys: vcpkg-release-${{ matrix.platform }}-
 
-      # The game's own objects (ccache in the development image): an unchanged file is not
-      # compiled again. One cache per computer, the newest; older ones are deleted below.
+      # The game's own objects (ccache, in the development image on Linux): an unchanged file is
+      # not compiled again. One cache per computer, the newest; older ones are deleted below.
       - name: Restore the compiler cache
-        if: runner.os == 'Linux'
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/ccache
@@ -265,9 +252,13 @@ jobs:
           path: ${{ runner.temp }}/vcpkg-cache
           key: vcpkg-release-${{ matrix.platform }}-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
 
+      - name: Show the compiler cache statistics
+        if: always() && runner.os == 'macOS'
+        run: ccache --show-stats || true
+
       - name: Save the compiler cache
         id: ccache-save
-        if: always() && runner.os == 'Linux'
+        if: always()
         continue-on-error: true
         uses: actions/cache/save@v4
         with:
@@ -277,30 +268,30 @@ jobs:
       - name: Delete the older compiler caches
         if: always() && steps.ccache-save.outcome == 'success'
         continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PREFIX: ccache-release-${{ matrix.platform }}-
-          KEEP: ccache-release-${{ matrix.platform }}-${{ github.run_id }}
-        run: |
-          gh cache list -R "$GITHUB_REPOSITORY" --key "$PREFIX" --ref "$GITHUB_REF" --limit 100 --json id,key \
-            --jq ".[] | select(.key != \"$KEEP\") | .id" | while read -r id; do
-            gh cache delete "$id" -R "$GITHUB_REPOSITORY" || true
-          done
+        uses: ./.github/actions/trim-caches
+        with:
+          prefix: ccache-release-${{ matrix.platform }}-
+          keep: ccache-release-${{ matrix.platform }}-${{ github.run_id }}
 
   # The launcher's installers, signed for its own updater by tauri build.
   launcher:
-    needs: check
+    needs: plan
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.check.outputs.launcher) }}
+        include:
+          - { system: linux, runner: ubuntu-24.04 }
+          - { system: windows, runner: ubuntu-24.04 }
+          - { system: macos, runner: macos-15 }
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build the launcher image
+      - name: Launcher image
         if: runner.os == 'Linux'
-        run: scripts/launcher.sh image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/image.sh launcher --push
 
       # cargo's downloads and the compiled dependencies, by Cargo.lock and the image: the launcher's
       # own crate is compiled again, its dependencies only when Cargo.lock changes.
@@ -362,6 +353,14 @@ jobs:
           fonts=content/packs/game/ui/fonts
           mkdir -p apps/launcher/ui/fonts
           cp "$fonts/noto_sans_regular.ttf" "$fonts/noto_sans_bold.ttf" "$fonts/noto_sans_license.txt" apps/launcher/ui/fonts/
+          # The bundle's LICENSE and THIRD_PARTY_NOTICES.txt, as scripts/launcher.sh writes them.
+          mkdir -p apps/launcher/src-tauri/notices
+          cp LICENSE apps/launcher/src-tauri/notices/LICENSE
+          python3 scripts/package/third_party_notices.py launcher \
+            --manifest-path apps/launcher/src-tauri/Cargo.toml \
+            --target aarch64-apple-darwin --target x86_64-apple-darwin \
+            --extra "Noto Sans (the font)=apps/launcher/ui/fonts/noto_sans_license.txt" \
+            --out apps/launcher/src-tauri/notices/THIRD_PARTY_NOTICES.txt
           cd apps/launcher/src-tauri
           tauri build --target universal-apple-darwin \
             --config "{\"plugins\":{\"updater\":{\"pubkey\":\"$DWE_LAUNCHER_PUBKEY\"}}}"
@@ -370,8 +369,9 @@ jobs:
           mkdir -p out
           cp "$bundle"/dmg/*.dmg "$bundle"/macos/*.app.tar.gz "$bundle"/macos/*.app.tar.gz.sig out/
 
-      # The program a tester runs has the beta gateway and the public key built in.
-      - name: Check the gateway and the public key in the launcher
+      # The program a tester runs has the beta gateway and the public key built in, and the bundle
+      # carries LICENSE and THIRD_PARTY_NOTICES.txt (on Windows, the files the installer packs).
+      - name: Check the gateway, the public key and the notices in the launcher
         env:
           SYSTEM: ${{ matrix.system }}
         run: |
@@ -380,10 +380,20 @@ jobs:
               mkdir -p build/deb-check
               dpkg-deb --fsys-tarfile out/*.deb | tar -x -C build/deb-check --wildcards '*/bin/*'
               binaries=(build/deb-check/usr/bin/*)
+              contents="$(dpkg-deb -c out/*.deb)"
               ;;
-            windows) binaries=(build/launcher/x86_64-pc-windows-msvc/release/dwe-launcher.exe) ;;
-            macos) binaries=(build/launcher/universal-apple-darwin/release/bundle/macos/*.app/Contents/MacOS/*) ;;
+            windows)
+              binaries=(build/launcher/x86_64-pc-windows-msvc/release/dwe-launcher.exe)
+              contents="$(find build/launcher/x86_64-pc-windows-msvc/release -maxdepth 1 -type f)"
+              ;;
+            macos)
+              binaries=(build/launcher/universal-apple-darwin/release/bundle/macos/*.app/Contents/MacOS/*)
+              contents="$(find build/launcher/universal-apple-darwin/release/bundle/macos/*.app/Contents/Resources -type f)"
+              ;;
           esac
+          for file in LICENSE THIRD_PARTY_NOTICES.txt; do
+            grep -qE "/$file\$" <<<"$contents" || { echo "The launcher bundle has no $file" >&2; exit 1; }
+          done
           public_key="$(printf '%s' "$DWE_LAUNCHER_PUBKEY" | tr -d '[:space:]')"
           for binary in "${binaries[@]}"; do
             [ -f "$binary" ] || { echo "No launcher program at $binary" >&2; exit 1; }
@@ -420,36 +430,115 @@ jobs:
             build/launcher
           key: launcher-${{ matrix.system }}-${{ hashFiles('apps/launcher/src-tauri/Cargo.lock', '.devcontainer/launcher.Dockerfile') }}
 
-  # Runs even when a computer failed, to say which in the summary; then it publishes nothing.
-  publish:
-    needs: [check, game, launcher]
-    if: ${{ !cancelled() && needs.check.result == 'success' }}
+  # Not part of the release: the objects of ci.yml's presets (ci for Linux, windows-cross for
+  # Windows) built on main and saved, so a pull request's linux and windows checks compile only
+  # what it changed. Nothing is tested here: the pull request was.
+  pr-caches:
+    name: pr-caches (${{ matrix.preset }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { preset: ci, cache: ccache-ci-linux, vcpkg: linux-x86_64 }
+          - { preset: windows-cross, cache: ccache-ci-windows, vcpkg: windows-x86_64 }
     runs-on: ubuntu-24.04
     env:
-      NOTES: ${{ inputs.notes }}
+      PRESET: ${{ matrix.preset }}
+      GH_TOKEN: ${{ github.token }}
+      DWE_CCACHE_SIZE: 2G
+    steps:
+      # The runner context only exists inside steps, so the cache folders go to the job here.
+      - name: Cache folders
+        run: |
+          echo "DWE_CACHE_DIR=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
+          echo "DWE_CCACHE_DIR=$RUNNER_TEMP/ccache" >> "$GITHUB_ENV"
+          echo "DWE_XWIN_DIR=$RUNNER_TEMP/xwin" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v4
+
+      - name: Development image
+        run: scripts/ci/image.sh dev --push
+
+      - name: Restore the MSVC libraries and the Windows SDK
+        id: xwin-cache
+        if: matrix.preset == 'windows-cross'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/xwin
+          key: xwin-${{ hashFiles('.devcontainer/Dockerfile') }}
+
+      - name: Fetch the MSVC libraries and the Windows SDK
+        if: matrix.preset == 'windows-cross' && steps.xwin-cache.outputs.cache-hit != 'true'
+        run: scripts/dev.sh windows-sdk --accept-license
+
+      - name: Restore the vcpkg binary cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-release-${{ matrix.vcpkg }}-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          restore-keys: vcpkg-release-${{ matrix.vcpkg }}-
+
+      - name: Restore the compiler cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ${{ matrix.cache }}-${{ github.run_id }}
+          restore-keys: ${{ matrix.cache }}-
+
+      # The same configure as ci.yml's job of this preset.
+      - name: Build
+        run: |
+          if [ "$PRESET" = ci ]; then
+            scripts/dev.sh configure -DVCPKG_TARGET_TRIPLET=x64-linux-libcxx-release \
+              -DVCPKG_HOST_TRIPLET=x64-linux-libcxx-release -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
+          else
+            scripts/dev.sh configure
+          fi
+          scripts/dev.sh build
+
+      - name: Save the compiler cache
+        id: ccache-save
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ${{ matrix.cache }}-${{ github.run_id }}
+
+      - name: Delete the older compiler caches
+        if: always() && steps.ccache-save.outcome == 'success'
+        continue-on-error: true
+        uses: ./.github/actions/trim-caches
+        with:
+          prefix: ${{ matrix.cache }}-
+          keep: ${{ matrix.cache }}-${{ github.run_id }}
+
+  # Runs even when a computer failed, to say which in the summary; then it publishes nothing.
+  publish:
+    needs: [plan, game, launcher]
+    if: ${{ !cancelled() && needs.plan.result == 'success' }}
+    runs-on: ubuntu-24.04
+    env:
+      TAG: ${{ needs.plan.outputs.tag }}
+      VERSION: ${{ needs.plan.outputs.version }}
+      PREVIOUS: ${{ needs.plan.outputs.previous }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          # The release's version counts the commits.
-          fetch-depth: 0
 
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
 
       # The artifacts of earlier attempts of this run count too ("Re-run failed jobs").
-      - name: Check that every computer asked for was built
+      - name: Check that every computer was built
         id: built
-        env:
-          GAME: ${{ needs.check.outputs.game }}
-          LAUNCHER: ${{ needs.check.outputs.launcher }}
         run: |
           python3 - <<'EOF'
-          import json, os, sys
+          import os, sys
           from pathlib import Path
-          wanted = [("game", g["platform"]) for g in json.loads(os.environ["GAME"])]
-          wanted += [("launcher", l["system"]) for l in json.loads(os.environ["LAUNCHER"])]
+          wanted = [("game", p) for p in ("linux-x86_64", "windows-x86_64", "darwin-aarch64", "darwin-x86_64")]
+          wanted += [("launcher", s) for s in ("linux", "windows", "macos")]
           rows, missing = [], []
           for kind, name in wanted:
               folder = Path("artifacts") / f"{kind}-{name}"
@@ -486,7 +575,8 @@ jobs:
           for platform in $PLATFORMS; do
             tarballs=(artifacts/game-"$platform"/dwe-beta-*-"$platform".tar.xz)
             [ "${#tarballs[@]}" -eq 1 ] && [ -f "${tarballs[0]}" ] || { echo "Expected one package for $platform: ${tarballs[*]}" >&2; exit 1; }
-            scripts/package_release.sh --platform "$platform" --tarball "${tarballs[0]}" --out dist
+            scripts/package_release.sh --platform "$platform" --tarball "${tarballs[0]}" --version "$VERSION" \
+              --out dist
           done
           cp artifacts/launcher-*/* dist/
           for file in dist/*.deb dist/*.dmg; do
@@ -522,51 +612,61 @@ jobs:
           done
           rm -rf "$RUNNER_TEMP/game"
 
-      - name: Draft release with the files
-        env:
-          REPLACE_DRAFT: ${{ inputs.replace_draft }}
-          ATTEMPT: ${{ github.run_attempt }}
+      # GitHub's notes (the squashed pull requests' titles since the previous release), in
+      # Spanish; the launcher shows them as its news.
+      - name: Release notes
         run: |
-          # The check job saw no release of this tag (or replace_draft was ticked); a draft found on
-          # a later attempt is this run's own.
-          if is_draft="$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null)"; then
-            [ "$is_draft" = true ] || { echo "A published release $TAG exists; it is never replaced" >&2; exit 1; }
-            if [ "$REPLACE_DRAFT" = true ] || [ "$ATTEMPT" -gt 1 ]; then
-              gh release delete "$TAG" --yes
-            else
-              echo "A draft release $TAG appeared after the check; tick replace_draft" >&2
-              exit 1
-            fi
+          args=(-f tag_name="$TAG" -f target_commitish="$GITHUB_SHA")
+          [ -n "$PREVIOUS" ] && args+=(-f previous_tag_name="$PREVIOUS")
+          gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" "${args[@]}" --jq .body > "$RUNNER_TEMP/generated.md"
+          python3 scripts/ci/release.py notes --kind testing --version "$VERSION" --commit "$GITHUB_SHA" \
+            --generated "$RUNNER_TEMP/generated.md" > "$RUNNER_TEMP/notes.md"
+          cat "$RUNNER_TEMP/notes.md"
+
+      # Only this workflow makes drafts, one run at a time: a draft left is a cancelled run's,
+      # never seen by a launcher (the gateway hides drafts), and has no tag yet.
+      - name: Draft release with the files
+        run: |
+          gh release list --json tagName,isDraft --jq '.[] | select(.isDraft) | .tagName' | while read -r draft; do
+            [[ "$draft" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]] || continue
+            echo "Deleting the draft $draft of an unfinished run"
+            gh release delete "$draft" --yes
+          done
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "A published release $TAG exists; it is never replaced" >&2
+            exit 1
           fi
-          printf '%s\n' "$NOTES" > "$RUNNER_TEMP/notes.md"
           gh release create "$TAG" --draft --prerelease --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md" \
             --target "$GITHUB_SHA"
           gh release upload "$TAG" dist/*
 
-      # latest.json names each update file by its API URL, which exists only after the upload; the
-      # beta gateway points it at itself when a launcher asks, so testers never reach GitHub. The
-      # universal macOS bundle, when built, serves both Mac processors.
+      # latest.json names each update file by its download URL (release and file name), which
+      # stays right if a file is uploaded again, unlike an asset id; the beta gateway points it at
+      # itself when a launcher asks, so testers never reach GitHub. The universal macOS bundle
+      # serves both Mac processors.
       - name: Launcher update manifest
         env:
           PLATFORMS: ${{ steps.built.outputs.platforms }}
         run: |
           url() {
-            gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
-              --jq ".[] | select(.tag_name == \"$TAG\") | .assets[] | select(.name == \"$1\") | .url"
+            printf 'https://github.com/%s/releases/download/%s/%s' "$GITHUB_REPOSITORY" "$TAG" "$1"
           }
           one() {
             [ "$#" -eq 1 ] && [ -f "$1" ] || { echo "Expected one file, found: $*" >&2; exit 1; }
             printf '%s' "$1"
           }
           appimage="$(one dist/*.AppImage)"
+          deb="$(one dist/*.deb)"
           setup="$(one dist/*-setup.exe)"
+          # A launcher installed from the .deb asks first for linux-x86_64-deb and installs a .deb;
+          # the AppImage's own key and the plain one name the AppImage.
           bundles=(--platform linux-x86_64 "$appimage.sig" "$(url "$(basename "$appimage")")"
+            --platform linux-x86_64-appimage "$appimage.sig" "$(url "$(basename "$appimage")")"
+            --platform linux-x86_64-deb "$deb.sig" "$(url "$(basename "$deb")")"
             --platform windows-x86_64 "$setup.sig" "$(url "$(basename "$setup")")")
-          if [[ " $PLATFORMS " == *" darwin-"* ]]; then
-            mac="$(one dist/*.app.tar.gz)"
-            bundles+=(--platform darwin-aarch64 "$mac.sig" "$(url "$(basename "$mac")")"
-              --platform darwin-x86_64 "$mac.sig" "$(url "$(basename "$mac")")")
-          fi
+          mac="$(one dist/*.app.tar.gz)"
+          bundles+=(--platform darwin-aarch64 "$mac.sig" "$(url "$(basename "$mac")")"
+            --platform darwin-x86_64 "$mac.sig" "$(url "$(basename "$mac")")")
           version="$(python3 -c 'import json; print(json.load(open("apps/launcher/src-tauri/tauri.conf.json"))["version"])')"
           python3 scripts/package/release_manifest.py launcher --version "$version" --notes "$TAG" \
             "${bundles[@]}" > dist/latest.json
@@ -575,9 +675,10 @@ jobs:
           python3 scripts/package/release_manifest.py check --folder dist --pubkey "$RUNNER_TEMP/key.pub" \
             "${platform_args[@]}" --latest dist/latest.json --repo "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA"
           gh release upload "$TAG" dist/latest.json
+          gh release edit "$TAG" --draft=false --prerelease
           url="$(gh release view "$TAG" --json url --jq .url)"
           {
-            echo "Draft ready to review: $url"
+            echo "Published: $url"
             echo
             echo '```'
             find dist -maxdepth 1 -type f -printf '%12s  %f\n' | sort -k2

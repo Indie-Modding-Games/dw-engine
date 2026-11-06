@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """A local stand-in for the GitHub releases API, to try the launcher's updates by hand
 (docs/modulos/apps/launcher.md). Each subfolder of <releases> is a release: its files are the
-release's files and notes.md (if there) its notes; the newest folder (by name) comes first. The
-folder is read again on every request, so a release can be added while the launcher runs.
+release's files and notes.md (if there) its notes; the newest folder (by name) comes first. A
+folder named like a test version (a "-" in the name, v0.4.0-beta.1) is a prerelease, any other
+(v0.4.0) a normal release. The folder is read again on every request, so a release can be added
+while the launcher runs.
 
     fake_release_server.py <releases> [--port 8765] [--token secret] [--repo team/game]
 
@@ -13,7 +15,8 @@ requests without "Authorization: Bearer <token>" get 404, as a private repositor
 Like GitHub, a file asked for as application/octet-stream is a 302 to a signed URL on another
 host (http://localhost:<port>/_objects/<id>), which refuses any request that carries an
 Authorization header (as GitHub's storage does); without octet-stream it is the file's
-description. /releases/tags/<tag> answers one release.
+description. /releases/tags/<tag> answers one release; /releases/latest the newest normal
+release, or 404 while there is none.
 """
 import argparse
 import json
@@ -32,7 +35,7 @@ def releases(root: Path, base: str, repo: str):
             asset_id = (number + 1) * 1000 + index
             assets.append({"id": asset_id, "name": file.name, "size": file.stat().st_size,
                            "url": f"{base}/repos/{repo}/releases/assets/{asset_id}", "_path": str(file)})
-        listed.append({"tag_name": folder.name, "name": folder.name, "draft": False, "prerelease": True,
+        listed.append({"tag_name": folder.name, "name": folder.name, "draft": False, "prerelease": "-" in folder.name,
                        "published_at": "2026-11-04T12:00:00Z",
                        "body": notes.read_text(encoding="utf-8") if notes.exists() else "", "assets": assets})
     return listed
@@ -79,6 +82,11 @@ def main():
                       for r in listing]
             if path == f"/repos/{args.repo}/releases":
                 return self.send(200, json.dumps(public).encode())
+            if path == f"/repos/{args.repo}/releases/latest":
+                for release in public:
+                    if not release["prerelease"]:
+                        return self.send(200, json.dumps(release).encode())
+                return self.send(404, b'{"message":"Not Found"}')
             tags = f"/repos/{args.repo}/releases/tags/"
             if path.startswith(tags):
                 for release in public:

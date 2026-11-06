@@ -1,7 +1,5 @@
 #pragma once
 
-#include "confirm_repeat.hpp"
-
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/screens/screen_settings.hpp>
@@ -11,6 +9,8 @@
 #include <cstdint>
 #include <optional>
 #include <string_view>
+
+#include "confirm_repeat.hpp"
 
 namespace dwe::app {
 

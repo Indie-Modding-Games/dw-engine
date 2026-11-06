@@ -7,7 +7,7 @@
 #     dwe-game.app/Contents/Frameworks/   the Vulkan loader and MoltenVK (Vulkan over Metal)
 #     dwe-game.app/Contents/Resources/    the team's packs and the ICD file that points the loader
 #                                         at MoltenVK
-#     README.md, VERSION, EXTRACTOR_VERSION, licenses/
+#     README.md, VERSION, EXTRACTOR_VERSION, LICENSE, THIRD_PARTY_NOTICES.txt, licenses/
 #
 # The programs link Homebrew LLVM's libc++ statically (cmake/toolchains/macos-llvm-libcxx.cmake),
 # so a player's Mac needs nothing installed. The bundle is signed ad hoc (codesign -s -), which
@@ -192,6 +192,13 @@ cp "$(brew --prefix molten-vk)/LICENSE" "$licences/moltenvk.txt" 2>/dev/null \
   || echo "MoltenVK: Apache License 2.0" >"$licences/moltenvk.txt"
 llvm_licence="$(brew --prefix llvm)/LICENSE.TXT"
 [[ -f "$llvm_licence" ]] && cp "$llvm_licence" "$licences/llvm-libcxx.txt"
+
+# The project's licence and THIRD_PARTY_NOTICES.txt: the credits, the Apache-2.0 NOTICE files and
+# every licence text above in one file (scripts/package/third_party_notices.py).
+cp "$root/LICENSE" "$stage/LICENSE"
+python3 "$root/scripts/package/third_party_notices.py" game --licenses "$licences" \
+  --out "$stage/THIRD_PARTY_NOTICES.txt"
+python3 "$root/scripts/package/third_party_notices.py" check "$stage"
 
 mkdir -p "$out_dir"
 tarball="$out_dir/$name.tar.xz"

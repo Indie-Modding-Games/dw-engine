@@ -31,7 +31,8 @@ El HUD enseña el minimapa como un disco alrededor del jugador, con el norte arr
 (`src/minimap_disc.*`, registrado como `original-box`) pinta el disco con la imagen de `buildMinimap` y su aro, liso
 con brillo (`plain`, aspecto moderno) o con las franjas del borde de las ventanas del original (`original`); el
 cálculo de la ventana y de los marcadores (`minimapDiscView`, `locateOnDisc`) está en `dwe/ui/minimap.hpp`
-([ui.md](../../architecture/ui.md#minimapa)).
+([ui.md](../../architecture/ui.md#minimapa)). La N del norte va sobre el aro en una insignia opaca en los dos aspectos
+(negra con borde cian claro en el original), así que se lee y no cruza el aro (`hud_fit_tests.cpp`).
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|

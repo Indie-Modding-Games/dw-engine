@@ -1,5 +1,6 @@
 # The status page's extras (an engine improvement, docs/modulos/apps/screens.md, «Extras de la ficha»): the partner's
-# tiredness bar and its care mistakes, which the original keeps hidden. From a new game with the keyboard: two training
+# tiredness bar, the care bars' numbers, its care mistakes and battles, its waking hours, its lifetime and its
+# evolution counter, which the original keeps hidden. From a new game with the keyboard: two training
 # sessions (tiredness) and the clock fast until a meal goes missed (a care mistake), then the partner's status page
 # at 1280x720 and 1920x1080 with the option on, and again with it turned off in the pause menu, as the page was
 # before. Every capture checks that each text fits (text_fit). Run it once per language and per skin
@@ -26,13 +27,17 @@ steps:
   - menu_select: open-partner
   - wait: {shown: partner_menu, seconds: 0.8}
   - expect_setting: {has_class.partner_menu#scrim.status-extras: "true"}
+  # The new game's partner is a rookie, which checks its evolution from 72 hours of the counter, and has fought no
+  # battle yet.
+  - expect_setting: {partner.evolution.check_hours: "72"}
+  - expect_setting: {partner.battles: "0"}
   - screenshot: status-extras
   - resize: [1920, 1080]
   - wait: {seconds: 0.6}
   - screenshot: status-extras-1080
   - resize: [1280, 720]
   - wait: {seconds: 0.6}
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}
   # The option, among the options: the PLAYER page's tools in the original look (Tab there), the menu's first page in
   # the modern one.
@@ -64,5 +69,5 @@ steps:
   - wait: {shown: partner_menu, seconds: 0.8}
   - expect_setting: {has_class.partner_menu#scrim.status-extras: "false"}
   - screenshot: status-plain
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}

@@ -99,6 +99,8 @@ struct AutotestStep {
                     // (Ui::drawnRectsAround), as the HUD's time in digits
     Hover,          // hover: as click's element and window forms, the pointer moved there with no
                     // button
+    ExpectRange,    // expect_range: {name: [low, high]}: a setting's number lies in the range,
+                    // ends included (the training check's bounds)
   };
   Kind kind = Kind::Wait;
   std::string text; // what the step is about: a control, an element, a name, a setting's value
@@ -142,6 +144,9 @@ struct AutotestStep {
   int width = 0;
   int height = 0;
   float value = 0.0F;
+  // expect_range: the bounds, ends included.
+  double low = 0.0;
+  double high = 0.0;
   std::optional<AutotestDevice> device;
   // hold: the keys held, by name (keyNamed).
   std::vector<std::string> keys;

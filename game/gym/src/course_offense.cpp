@@ -25,8 +25,9 @@ void CourseRun::offenseFrame(GymPorts& ports, const OffenseCourse& offense, cons
   case 1:
     if (ports.walk(Actor::Partner, course_->spot)) {
       startSpin();
-      // animFlag 2 only stops the punch's root motion: the punch plays on.
+      // The punch plays in place (animFlag 2), until a later punch starts it again.
       ports.animate(Actor::Partner, punch.animation);
+      ports.holdInPlace(Actor::Partner, true);
       step_ = 0;
       ports.face(Actor::Partner, offense.facing);
       setState(offense.swap ? SwapPunchState : 2);
@@ -35,6 +36,7 @@ void CourseRun::offenseFrame(GymPorts& ports, const OffenseCourse& offense, cons
   case 2:
     ++step_;
     ++counter_;
+    ports.holdInPlace(Actor::Partner, true);
     if (step_ == punch.frames) {
       for (const Point3& particle : offense.particles) {
         ports.addParticle(particle);
@@ -113,6 +115,9 @@ void CourseRun::offenseSwapFrame(GymPorts& ports, const OffenseCourse& offense,
   if (state_ == SwapPunchState) {
     ++step_;
     ++counter_;
+    if (swap.holdEachPunch) {
+      ports.holdInPlace(Actor::Partner, true);
+    }
     if (step_ == punch.frames) {
       particles(ports, offense.particles);
       ports.playSound(gym_->soundSlot, offense.hitSound);

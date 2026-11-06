@@ -207,5 +207,11 @@ inline constexpr std::string_view DoorModelMissing =
     "drawn";
 inline constexpr std::string_view PropModelMissing =
     "[port:field-objects] the model {} of the field's props: {}; they are not drawn";
+inline constexpr std::string_view SpriteCharactersMissing =
+    "field: no {}: the sprite characters stay sprites";
+inline constexpr std::string_view SpriteCharactersUnreadable =
+    "field: {}: {}; the sprite characters stay sprites";
+inline constexpr std::string_view SpriteCharacterModelMissing =
+    "field: the {} of map {} stays a sprite: {}";
 
 } // namespace dwe::app::messages

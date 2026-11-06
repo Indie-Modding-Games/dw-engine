@@ -11,14 +11,6 @@
 
 namespace dwe::app {
 
-namespace {
-
-// An NPC is drawn as its species with models/partner's animations, whose clip ids every species
-// shares (as FieldScene::showPartnerSpecies draws the partner); those its model lacks are left out.
-constexpr std::string_view NpcCharacter = "models/partner";
-
-} // namespace
-
 void FieldScene::forgetGoneNpcs() {
   dropGoneActors(npcActors_, world_, [this](const Actor& actor) { models_->remove(actor.handle); });
   std::erase_if(npcsNotShown_, [this](scene::Entity entity) { return !world_.alive(entity); });

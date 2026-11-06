@@ -68,4 +68,5 @@ whoever gave you this beta, with a few words on what you were doing.
 
 ## Licences
 
-The `licenses/` folder has the licences of the libraries and the font this build uses.
+dwe is under the MIT License (`LICENSE`). The `licenses/` folder has the licences of the libraries
+and the font this build uses; `THIRD_PARTY_NOTICES.txt` has them all in one file, with their credits.

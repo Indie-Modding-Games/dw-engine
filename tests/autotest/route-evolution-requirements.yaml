@@ -8,7 +8,8 @@
 # "???". The last chart is also captured at 1920x1080 and 1024x768. Last, the option among the pause menu's options
 # turns the requirements off (the original chart) and on again. The partner must be Agumon, as on a new game; it also
 # runs on a save with Agumon as partner (--saves <copy> --load <slot>). It runs once per language, with --lang en and
-# --lang es.
+# --lang es. The chart is a page of the original look only (the packs' default): with --ui-skin modern the player's
+# page has no chart, so the route checks the look first.
 name: evolution-requirements
 device: keyboard
 timeout: 300
@@ -16,6 +17,7 @@ text_fit: true
 steps:
   - wait: {seconds: 1}
   - resize: [1280, 720]
+  - expect_setting: {ui_skin: original}
   - expect_setting: {evolution_requirements: true}
   - menu: open
   - wait: {seconds: 0.6}
@@ -45,7 +47,7 @@ steps:
   - tap: {key: right}
   - wait: {seconds: 0.3}
   - screenshot: back
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.5}
   - menu: close
   - wait: {menu_open: false}
@@ -73,7 +75,7 @@ steps:
   - wait: {seconds: 0.3}
   - screenshot: fed-up
   - expect_text_fits: all
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.4}
   - menu: close
   - wait: {menu_open: false}
@@ -105,7 +107,7 @@ steps:
   - expect_text_fits: all
   - resize: [1280, 720]
   - wait: {seconds: 0.5}
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.4}
   - menu: close
   - wait: {menu_open: false}
@@ -145,7 +147,7 @@ steps:
   - wait: {seconds: 0.6}
   - screenshot: off
   - expect_text_fits: all
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.4}
   - menu: close
   - wait: {menu_open: false}

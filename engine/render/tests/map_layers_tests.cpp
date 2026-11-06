@@ -202,6 +202,28 @@ TEST_CASE("instances start hidden with their hidden flag until shown") {
   CHECK(layers.quads().size() == 1);
 }
 
+TEST_CASE("an instance stood in for is not drawn and keeps the hidden flag the scripts set") {
+  const MapCamera camera{dwe::render::mapCameraDesc(roomCamera)};
+  dwe::assets::MapObjects objects;
+  objects.sprites = {sprite(0, -1)};
+  objects.instances = {
+      {.frames = {{.sprite = 0, .time = 1}}, .x = 0, .y = 0, .flag = 0},
+      {.frames = {{.sprite = 0, .time = 1}}, .x = 0, .y = 0, .flag = 0},
+  };
+  MapDepthLayers layers{objects, camera};
+  layers.setStoodIn(0, true);
+  REQUIRE(layers.quads().size() == 1);
+  CHECK(layers.quads()[0].instance == 1);
+  CHECK_FALSE(layers.hidden(0));
+  layers.setHidden(0, true);
+  CHECK(layers.hidden(0));
+  layers.setStoodIn(0, false);
+  CHECK(layers.quads().size() == 1);
+  layers.setHidden(0, false);
+  CHECK(layers.quads().size() == 2);
+  CHECK(layers.hidden(2));
+}
+
 TEST_CASE(
     "a depth-layer sprite covers models from its ordering-table entry back, and none one entry in front") {
   const MapCamera camera{dwe::render::mapCameraDesc(roomCamera)};

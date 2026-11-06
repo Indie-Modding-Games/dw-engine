@@ -7,6 +7,7 @@
 #include <dwe/render/map_camera.hpp>
 #include <dwe/screens/name_keys.hpp>
 #include <dwe/screens/screen_settings.hpp>
+#include <dwe/session/gym_field_ports.hpp>
 
 #include <algorithm>
 #include <array>
@@ -16,7 +17,6 @@
 #include <format>
 #include <iterator>
 #include <optional>
-#include <random>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -37,7 +37,6 @@ using game::gym::Point3;
 
 constexpr std::string_view GymCourseUnknown = "game: gym: no course {} on {}";
 constexpr std::string_view GymChoiceUnknown = "game: gym: no course for choice {} on {}";
-constexpr std::string_view GymTrainFailed = "game: gym: training failed: {}";
 // trn_reward.c: the brains course's words (reward_messages, reward_mastered): each order
 // threshold's lines, in the order of the rules' order_thresholds, then "New orders!" and "was
 // mastered!".
@@ -74,174 +73,29 @@ constexpr std::int32_t BoxCloseSound = 1;
 // The original's screen is 240 lines tall; getEntityScreenPos counts from its middle.
 constexpr double ScreenLines = 240.0;
 constexpr double Middle = 0.5;
-// How far from where the camera looks the gym's view reaches, in world units.
-constexpr float OffScreenDistance = 1800.0F;
-
-// The gym's points are in the original's axes (gym.yaml), whose z runs the other way to the
-// world's: a course spot taken as a world point sent the partner and the camera off the map.
-glm::vec3 worldOf(Point spot, float height) {
-  glm::vec3 world = assets::toWorldPosition({spot.x, 0, spot.z});
-  world.y = height;
-  return world;
-}
-
-// A world point in the original's axes, as the courses read the partner's position.
-Point originalOf(glm::vec3 world) {
-  return Point{.x = static_cast<std::int32_t>(world.x), .z = static_cast<std::int32_t>(-world.z)};
-}
 
 std::size_t objectOf(const ObjectGroup& group, std::int32_t index) {
   return static_cast<std::size_t>(group.first) + static_cast<std::size_t>(index);
 }
 
-GymStats statsOf(const game::partner::StatBlock& block) {
-  GymStats stats{};
-  for (std::size_t stat = 0; stat < stats.size(); ++stat) {
-    stats.at(stat) = block.values.at(stat);
-  }
-  return stats;
-}
-
 } // namespace
 
-// The course's ports on the game. The story holds the field while a course runs (it waits for the
-// gym), so the actors move, turn and animate as a script moves them, and the camera pans as a
-// script pans it.
-class GymScreen::Ports final : public game::gym::GymPorts {
+// The course's ports on the game: the field's and the session's (session::GymFieldPorts), and what
+// the screen draws: the map's objects, the effects and the rows of the partner's head.
+class GymScreen::Ports final : public session::GymFieldPorts {
 public:
   Ports(const GymScreenDesc& desc, const game::gym::GymRules& rules,
         std::vector<GymNotice>& notices)
-      : desc_(&desc), rules_(&rules), notices_(&notices),
-        random_(static_cast<std::uint_fast32_t>(desc.session->partner().randomState())) {}
+      : GymFieldPorts({.session = desc.session,
+                       .field = &desc.scene->field(),
+                       .rules = &rules,
+                       .story = desc.story,
+                       .inventory = desc.inventory}),
+        desc_(&desc), notices_(&notices) {}
 
-  void setTraining(bool training) override {
-    // The player's state 8 and partner.c: partnerSetState(10): both stand for the course. A
-    // course the console starts finds the field free and holds it itself.
-    game::field::Field& field = desc_->scene->field();
-    if (training) {
-      ownHold_ = !field.heldByScript();
-      field.holdForScript(true);
-      return;
-    }
-    for (const Actor actor : std::array{Actor::Tamer, Actor::Partner}) {
-      field.driveByScript(entityOf(actor), {});
-      field.releaseClipByScript(entityOf(actor));
-    }
-    walks_ = {};
-    clips_ = {};
-    if (std::exchange(ownHold_, false)) {
-      field.holdForScript(false);
-    }
-  }
-  void animate(Actor actor, std::int32_t animation) override {
-    if (animation < 0) {
-      return;
-    }
-    if (actor == Actor::Teacher) {
-      animateTeacher(animation);
-      return;
-    }
-    clips_.at(indexOf(actor)) = static_cast<std::uint32_t>(animation);
-    desc_->scene->field().animateByScript(entityOf(actor), static_cast<std::uint32_t>(animation));
-  }
   bool animationEnded(Actor actor) override {
     const std::optional<scene::Entity> entity = anyEntityOf(actor);
-    return !entity || desc_->scene->clipPlayedThrough(*entity);
-  }
-  void face(Actor actor, std::int32_t angle) override {
-    if (actor != Actor::Teacher) {
-      desc_->scene->field().turnByScript(entityOf(actor), assets::yawFromOriginal(angle));
-    }
-  }
-  void lookAt(Actor actor, Actor target) override {
-    // map.c: entityLookAtLocation.
-    const std::optional<scene::Entity> entity = anyEntityOf(actor);
-    const std::optional<glm::vec3> from = anyPositionOf(actor);
-    const std::optional<glm::vec3> to = anyPositionOf(target);
-    if (!entity || !from || !to) {
-      return;
-    }
-    glm::vec3 toward = *to - *from;
-    toward.y = 0.0F;
-    if (toward.x != 0.0F || toward.z != 0.0F) {
-      desc_->scene->field().turnByScript(*entity, assets::yawOfDirection(toward));
-    }
-  }
-  void faceEachOther() override {
-    // map.c: entityLookAtLocation, both ways.
-    game::field::Field& field = desc_->scene->field();
-    const glm::vec3 toPartner = field.partner().position - field.player().position;
-    if (toPartner.x != 0.0F || toPartner.z != 0.0F) {
-      field.turnByScript(field.playerEntity(), assets::yawOfDirection(toPartner));
-      field.turnByScript(field.partnerEntity(), assets::yawOfDirection(-toPartner));
-    }
-  }
-  bool walk(Actor actor, std::optional<Point> spot) override {
-    // The original's tickEntityWalkTo faces the target every frame and walks at the walk clip's
-    // speed; it ends on the spot's cell, or, walking back, on touching the player.
-    game::field::Field& field = desc_->scene->field();
-    const scene::Entity entity = entityOf(actor);
-    const glm::vec3 position = positionOf(actor);
-    const bool toPlayer = !spot.has_value();
-    const glm::vec3 target = toPlayer ? field.player().position : worldOf(*spot, position.y);
-    glm::vec3 toward = target - position;
-    toward.y = 0.0F;
-    const float distance = glm::length(toward);
-    const game::field::FieldRules& rules = field.rules();
-    const float touch = rules.player.radius + rules.partner.mover.radius;
-    const bool there = toPlayer
-                           ? distance <= touch
-                           : assets::collisionCellAt(position) == assets::collisionCellAt(target);
-    if (there) {
-      field.driveByScript(entity, {});
-      walks_.at(indexOf(actor)) = false;
-      return true;
-    }
-    if (!std::exchange(walks_.at(indexOf(actor)), true)) {
-      core::logDebug("[port:gym] tickEntityWalkTo({}, {:.0f}, {:.0f})", nameOf(actor), target.x,
-                     target.z);
-    }
-    const float yaw = assets::yawOfDirection(toward);
-    field.turnByScript(entity, yaw);
-    field.driveByScript(entity, assets::forwardOfYaw(yaw) * walkSpeed(actor));
-    return false;
-  }
-  void moveCamera(std::optional<Point> spot, std::int32_t speed) override {
-    // map.c: tickCameraMovement steps the camera to the target in `speed` frames.
-    game::field::Field& field = desc_->scene->field();
-    const glm::vec3 focus =
-        spot ? worldOf(*spot, field.player().position.y) : field.player().position;
-    const double framesPerSecond = desc_->session->clock().rules().framesPerSecond;
-    field.panCameraByScript(focus, static_cast<float>(speed / framesPerSecond));
-  }
-  void playSound(std::int32_t slot, std::int32_t sound) override {
-    if (game::story::SoundPort* port = desc_->session->sound(); port != nullptr) {
-      port->playSound(slot, sound);
-    }
-  }
-  std::optional<std::int64_t> loopSound(std::int32_t slot, std::int32_t sound) override {
-    // sound.c: playSound2: the voices are kept until thunkStopSoundMask stops them.
-    game::story::SoundPort* port = desc_->session->sound();
-    if (port == nullptr) {
-      return std::nullopt;
-    }
-    const std::optional<std::int64_t> held = port->playHeldSound(slot, sound);
-    if (held) {
-      held_.push_back(*held);
-    }
-    return held;
-  }
-  void stopSound(std::int64_t handle) override {
-    if (game::story::SoundPort* port = desc_->session->sound(); port != nullptr) {
-      port->stopHeldSound(handle);
-    }
-    std::erase(held_, handle);
-  }
-  // A course that never reached its end (the screen goes with the map) leaves no voice behind.
-  void stopHeldSounds() {
-    for (const std::int64_t handle : std::vector<std::int64_t>{held_}) {
-      stopSound(handle);
-    }
+    return !entity || scene().clipPlayedThrough(*entity);
   }
   void storeObjects(const ObjectGroup& group) override {
     stored_.clear();
@@ -305,43 +159,6 @@ public:
     core::logDebug("[port:gym] getDrawPosition(partner head): row {:.1f}", point->pixel.y);
     return static_cast<std::int32_t>(point->pixel.y);
   }
-  std::optional<Point> partnerPosition() override {
-    return originalOf(desc_->scene->field().partner().position);
-  }
-  void movePartner(Point delta) override {
-    game::field::Field& field = desc_->scene->field();
-    field.placeByScript(field.partnerEntity(), field.partner().position + worldOf(delta, 0.0F));
-  }
-  void runOn(Actor actor) override {
-    // The original's run clip moves its entity itself; a script's clip here does not, so the actor
-    // is carried at the clip's ground speed, through the scenery as in the original.
-    game::field::Field& field = desc_->scene->field();
-    const float yaw = actor == Actor::Tamer ? field.player().yaw : field.partner().yaw;
-    const double framesPerSecond = desc_->session->clock().rules().framesPerSecond;
-    const float step = walkSpeed(actor) / static_cast<float>(framesPerSecond);
-    field.placeByScript(entityOf(actor), positionOf(actor) + assets::forwardOfYaw(yaw) * step);
-  }
-  bool partnerOnScreen() override {
-    // entity.isOnScreen, without the camera's projection: the partner is off screen once it is
-    // farther from where the camera looks than the gym's view reaches.
-    const game::field::Field& field = desc_->scene->field();
-    glm::vec3 apart =
-        field.partner().position - field.scriptCamera().value_or(field.player().position);
-    apart.y = 0.0F;
-    return glm::length(apart) <= OffScreenDistance;
-  }
-  void placePartner(game::gym::Axis axis, std::int32_t value) override {
-    // In the original's axes: its z is the world's -z.
-    game::field::Field& field = desc_->scene->field();
-    glm::vec3 position = field.partner().position;
-    if (axis == game::gym::Axis::X) {
-      position.x = static_cast<float>(value);
-    } else {
-      position.z = -static_cast<float>(value);
-    }
-    field.placeByScript(field.partnerEntity(), position);
-  }
-  std::string partnerSpecies() override { return desc_->session->partner().state().species; }
   // efe.c: createCloudFX, createParticleFX(0, 0, point, NULL, 0) and removeAllCloudFX, from the
   // training's routine, one of the original's objects.
   void addCloud(Point at) override {
@@ -355,105 +172,19 @@ public:
     desc_->scene->fieldEffects().addSpark(0, 0, {at.x, y, at.z}, 0, FieldEffects::Birth::InObjects);
   }
   void removeClouds() override { desc_->scene->fieldEffects().removeClouds(); }
-  void closeTextbox() override { static_cast<void>(desc_->story->dialogue().closeBox(0)); }
-  std::int32_t randomBelow(std::int32_t limit) override {
-    return std::uniform_int_distribution<std::int32_t>{0, limit - 1}(random_);
-  }
 
-  Award award(const CourseRules& course, std::int32_t slotTenths) override {
-    session::GameSession& session = *desc_->session;
-    // TRN_saveBaseStats: the box counts from the stats before the session.
-    Award award{.before = statsOf(session.partner().state().stats.base), .gains = {}};
-    const game::partner::TrainingRules& training = session.partnerRules().training;
-    bool upgraded = false;
-    if (const auto* place = training.findPlace(course.place); place != nullptr) {
-      if (const auto* trained = place->findCourse(course.gains); trained != nullptr) {
-        const auto flag = training.upgradeFlags[training.multiplierStat(*trained)];
-        const auto set = desc_->story->state().trigger(flag);
-        upgraded = set && *set;
-      }
-    }
-    bool manual = false;
-    if (const auto item = desc_->inventory->items().handleOf(rules_->manualItem)) {
-      manual = desc_->inventory->inventory().countOf(*item) > 0;
-    }
-    auto trained = session.train({.place = course.place,
-                                  .course = course.gains,
-                                  .countsPractice = course.countsPractice,
-                                  .slotTenths = slotTenths,
-                                  .gymUpgraded = upgraded,
-                                  .hasTrainingManual = manual});
-    if (!trained) {
-      core::logWarning(
-          "{}", std::vformat(GymTrainFailed, std::make_format_args(trained.error().message)));
-      return award;
-    }
-    award.gains = statsOf(trained->gains);
-    core::logDebug("[port:gym] TRN_award*TrainingGains (trn_reward.c): course {}, upgraded {}, "
-                   "manual {}, slot {}",
-                   course.id, upgraded, manual, slotTenths);
+protected:
+  [[nodiscard]] float clipGroundSpeed(scene::Entity entity, std::uint32_t clip) const override {
+    return desc_->scene->clipGroundSpeed(entity, clip);
+  }
+  void awarded(const CourseRules& course, const Award& award) override {
     if (const auto* brain = std::get_if<game::gym::BrainCourse>(&course.detail)) {
       teach(brain->learning, award);
     }
-    return award;
   }
 
 private:
-  static std::string_view nameOf(Actor actor) {
-    return actor == Actor::Tamer ? "tamer" : "partner";
-  }
-  static std::size_t indexOf(Actor actor) { return actor == Actor::Tamer ? 0 : 1; }
-  [[nodiscard]] scene::Entity entityOf(Actor actor) const {
-    const game::field::Field& field = desc_->scene->field();
-    return actor == Actor::Tamer ? field.playerEntity() : field.partnerEntity();
-  }
-  [[nodiscard]] glm::vec3 positionOf(Actor actor) const {
-    const game::field::Field& field = desc_->scene->field();
-    return actor == Actor::Tamer ? field.player().position : field.partner().position;
-  }
-  // NPC_ENTITIES[0]: the script id of the map's first character record.
-  [[nodiscard]] std::optional<std::int32_t> teacherId() const {
-    const assets::MapNpc* record = desc_->scene->field().npcs().record(0);
-    return record != nullptr ? std::optional{record->scriptId} : std::nullopt;
-  }
-  [[nodiscard]] std::optional<scene::Entity> anyEntityOf(Actor actor) const {
-    if (actor != Actor::Teacher) {
-      return entityOf(actor);
-    }
-    const auto id = teacherId();
-    return id ? desc_->scene->field().npcs().entityOf(*id) : std::nullopt;
-  }
-  [[nodiscard]] std::optional<glm::vec3> anyPositionOf(Actor actor) const {
-    if (actor != Actor::Teacher) {
-      return positionOf(actor);
-    }
-    const auto id = teacherId();
-    return id ? desc_->scene->field().npcs().positionOf(*id) : std::nullopt;
-  }
-  // overworld.c: setActiveAnim, as the story animates an NPC: 0 hands it back to its own motion.
-  void animateTeacher(std::int32_t animation) {
-    game::field::Field& field = desc_->scene->field();
-    const auto id = teacherId();
-    const auto entity = anyEntityOf(Actor::Teacher);
-    if (!id || !entity || !field.npcs().setScriptedAnimation(*id, animation)) {
-      return;
-    }
-    if (animation == 0) {
-      field.releaseClipByScript(*entity);
-    } else {
-      field.animateByScript(*entity, static_cast<std::uint32_t>(animation));
-    }
-  }
-  // The last clip's ground speed (anim.c: applyRootMomentum); a clip without one walks at the
-  // field's walk speed.
-  [[nodiscard]] float walkSpeed(Actor actor) const {
-    const game::field::FieldRules& rules = desc_->scene->field().rules();
-    const float fallback =
-        actor == Actor::Tamer ? rules.player.walkSpeed : rules.partner.mover.walkSpeed;
-    const std::optional<std::uint32_t> clip = clips_.at(indexOf(actor));
-    const float speed = clip ? desc_->scene->clipGroundSpeed(entityOf(actor), *clip) : 0.0F;
-    return speed > 0.0F ? speed : fallback;
-  }
+  [[nodiscard]] FieldScene& scene() const { return *desc_->scene; }
 
   // trn_reward.c: TRN_awardBrainsTrainingGains: new orders, or else maybe a move. Each order
   // threshold crossed draws its words on the box's first row, over the last one's, and 300 adds a
@@ -525,17 +256,8 @@ private:
   }
 
   const GymScreenDesc* desc_;
-  const game::gym::GymRules* rules_;
   std::vector<GymNotice>* notices_;
   std::vector<glm::vec2> stored_;
-  std::vector<std::int64_t> held_;
-  // Whether the course holds the field itself; each actor's walk and last clip (player, partner).
-  bool ownHold_ = false;
-  std::array<bool, 2> walks_{};
-  std::array<std::optional<std::uint32_t>, 2> clips_{};
-  // Only the clouds' scatter and the moves taught are random; seeded from the partner's numbers, a
-  // replayed game does the same.
-  std::minstd_rand random_;
 };
 
 GymScreen::GymScreen(const GymScreenDesc& desc)
@@ -599,6 +321,7 @@ core::Result<void> GymScreen::start(std::string_view course) {
     return std::unexpected{slots.error()};
   }
   notices_.clear();
+  recordPublished_ = false;
   run_ = std::make_unique<game::gym::CourseRun>(rules_, *found, *slots == 1);
   return {};
 }
@@ -620,12 +343,41 @@ void GymScreen::tick(double seconds, const game::field::FieldInput& intent) {
                {.confirm = intent.confirm,
                 .cancel = pressed,
                 .cancelHeld = pressed || std::exchange(cancelHeld_, false)});
+    if (run_->record().award.has_value() && !std::exchange(recordPublished_, true)) {
+      publishRecord(*run_);
+    }
   }
   tickBoxes(seconds);
   if (run_ != nullptr && run_->finished()) {
     run_.reset();
     complete_ = true;
   }
+}
+
+void GymScreen::publishRecord(const game::gym::CourseRun& run) {
+  // docs/guides/comprobar-entrenamiento.md: a route reads them with expect_range.
+  constexpr std::array<std::string_view, 6> StatNames{"hp",      "mp",    "offense",
+                                                      "defense", "speed", "brain"};
+  const game::gym::SessionRecord& record = run.record();
+  ++sessions_;
+  screens::ScreenSettings settings;
+  settings.push_back({.name = "gym.session.count", .value = static_cast<double>(sessions_)});
+  settings.push_back({.name = "gym.session.course", .value = run.course().id});
+  settings.push_back({.name = "gym.session.frames", .value = static_cast<double>(record.frames)});
+  settings.push_back(
+      {.name = "gym.session.max_offset", .value = static_cast<double>(record.maxOffset)});
+  settings.push_back({.name = "gym.session.path", .value = static_cast<double>(record.path)});
+  for (std::size_t stat = 0; stat < StatNames.size(); ++stat) {
+    const std::int32_t gain = record.award ? record.award->gains.at(stat) : 0;
+    settings.push_back({.name = std::format("gym.session.gain.{}", StatNames.at(stat)),
+                        .value = static_cast<double>(gain)});
+  }
+  screens::publish(*desc_.ui, settings, "gym.session.revision");
+  const GymStats gains = record.award ? record.award->gains : GymStats{};
+  core::logInfo("gym: session {} on {}: {} frames, partner {} from its spot, {} covered, gains "
+                "{} {} {} {} {} {}",
+                run.course().id, desc_.scene->field().mapId(), record.frames, record.maxOffset,
+                record.path, gains[0], gains[1], gains[2], gains[3], gains[4], gains[5]);
 }
 
 void GymScreen::tickBoxes(double seconds) {
@@ -678,7 +430,7 @@ game::gym::BoxRect GymScreen::machineOnScreen() const {
     return square;
   }
   const std::optional<glm::vec2> point =
-      desc_.scene->worldToWindowFraction(worldOf(*run_->course().machine, 0.0F));
+      desc_.scene->worldToWindowFraction(session::gymWorldOf(*run_->course().machine, 0.0F));
   if (const auto at = pixelsFromMiddle(point)) {
     square.x += at->x;
     square.y += at->z;

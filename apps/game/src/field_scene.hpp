@@ -57,6 +57,7 @@
 #include "place_command.hpp"
 #include "scene_effect.hpp"
 #include "scene_prims.hpp"
+#include "sprite_characters.hpp"
 #include "weather_drawer.hpp"
 
 namespace dwe::ui {
@@ -234,6 +235,15 @@ const game::battle::EffectPaletteRow* rewrittenRow(const game::battle::EffectPal
 // field/lights of the game pack (render::parseMapLights); none, with a warning, when it is missing
 // or cannot be read: the lights are an option, never a reason not to play.
 render::MapLightTable loadMapLights(const assets::VirtualFileSystem& files);
+// The character document the map's NPCs are drawn with: their species' model with the partner's
+// animations, whose clip ids every species shares (as FieldScene::showPartnerSpecies draws the
+// partner); those a model lacks are left out.
+inline constexpr std::string_view NpcCharacter = "models/partner";
+// The model id a species is drawn with (the species folder's model).
+[[nodiscard]] std::string speciesModelOf(std::string_view species);
+// field/sprite_characters of the game pack (parseSpriteCharacters); none, with a warning, when it
+// is missing or wrong.
+SpriteCharacterTable loadSpriteCharacters(const assets::VirtualFileSystem& files);
 
 class FieldScene {
 public:
@@ -307,6 +317,10 @@ public:
   // HD scenery (hd_scenery_setting.hpp): the map drawn smooth at the window's resolution, or with
   // the original's pixels. Only the look changes.
   void setHdScenery(bool on) { mapRenderer_->setHdScenery(on); }
+  // 3D characters (sprite_characters.hpp): the characters some maps draw as sprites drawn as their
+  // species' models, or as the original's sprites. Only the look changes.
+  void setModelCharacters(bool on);
+  [[nodiscard]] bool modelCharacters() const { return modelCharacters_; }
   // More markers to draw with the click-to-move target's, until replaced (the fishing's bobber).
   void setExtraMarkers(std::vector<render::MapMarker> markers) {
     extraMarkers_ = std::move(markers);
@@ -882,6 +896,10 @@ private:
   void paintSigns(assets::MapImages& images);
   void followSigns();
   void drawNpcs(double animationSeconds, float alpha);
+  // The models standing in for the map's sprite characters (field_scene_sprite_characters.cpp):
+  // loaded on entering a map with the setting on, drawn while their sprites would show.
+  void standInSpriteCharacters(std::string_view mapId);
+  void drawSpriteCharacters(double animationSeconds);
   // FieldStage::shownNpc, while the scenery is hidden.
   void drawShownNpc(double animationSeconds, float alpha);
   // The ground items' billboards (field_scene_ground_items.cpp).
@@ -1011,6 +1029,15 @@ private:
   std::unique_ptr<render::SceneGrade> grade_;
   // field/lights, and the lights of the map shown as this frame lights them.
   render::MapLightTable mapLights_;
+  // field/sprite_characters, and the models standing in for the map's (one per character, none for
+  // a species whose model could not load).
+  SpriteCharacterTable spriteCharacterTable_;
+  struct StandIn {
+    SpriteCharacter character;
+    std::unique_ptr<Actor> actor;
+  };
+  std::vector<StandIn> standIns_;
+  bool modelCharacters_ = true;
   std::vector<render::BackgroundLight> shownLights_;
   // Real seconds for the lights' flicker; nothing in the game reads them.
   double lightSeconds_ = 0.0;

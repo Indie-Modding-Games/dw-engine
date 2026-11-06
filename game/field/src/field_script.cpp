@@ -142,6 +142,12 @@ void Field::moveByClip(scene::Entity entity, std::optional<std::uint32_t> clip) 
   registry.emplace_or_replace<ClipRootMotion>(entity, ClipRootMotion{.clip = *clip});
 }
 
+void Field::holdClipInPlace(scene::Entity entity, bool held) {
+  if (auto* motion = world_->registry().try_get<ClipRootMotion>(entity); motion != nullptr) {
+    motion->held = held;
+  }
+}
+
 void Field::panCameraByScript(glm::vec3 focus, float seconds) {
   const glm::vec3 from =
       scriptCamera_.value_or(world_->registry().get<Transform>(player_).position);
@@ -182,7 +188,7 @@ void Field::applyClipRootMotion(float seconds) {
         break;
       }
       ++motion.frame;
-      if (!glides) {
+      if (!glides && !motion.held) {
         transform.position += *step;
       }
     }

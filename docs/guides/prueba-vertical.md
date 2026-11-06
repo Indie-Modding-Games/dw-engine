@@ -191,13 +191,13 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   de prueba (el paquete sintético `tests/mods/ui_skin/test_contrast`), recorre con él el campo, el menú de pausa, el
   del compañero y un combate, y pasa al moderno desde las opciones del menú de pausa, con capturas de cada pantalla.
   Necesita `--mods tests/mods/ui_skin` y se corre en los dos idiomas, como `route-language.yaml`.
-- `route-skin-original.yaml`: el aspecto original en cada pantalla que dibuja, con una captura de cada una: el
-  título y su menú, la lista de ranuras y la pregunta de jugar sin guardar (necesita `--saves` con una carpeta vacía
-  propia, que el gate le da), el reloj y las barras del campo, el menú de pausa, la página del jugador y las opciones de sus
-  herramientas, la ficha del compañero (su entrada del menú) y la bolsa (la de los objetos, con las opciones de un objeto y
-  los órdenes), un combate y sus cuadros finales, y la burbuja del hambre sobre el compañero a 1920x1080. La carpeta de
-  partidas sigue vacía tras el combate y los días nuevos (`saves.files: "0"`): jugar sin guardar no escribe nada. Se
-  corre en los dos idiomas.
+- `route-skin-original.yaml`: el aspecto original en cada pantalla que dibuja, con una captura de cada una: el título y
+  su menú, la lista de ranuras y la pregunta de jugar sin guardar (necesita `--saves` con una carpeta vacía propia, que
+  el gate le da), el reloj y las barras del campo, el menú de pausa, la página del jugador y las opciones de sus
+  herramientas, la ficha del compañero (su entrada del menú) y la bolsa (la de los objetos, con las opciones de un
+  objeto y los órdenes), un combate del que se huye (sin cuadros finales, como el original), y la burbuja del hambre
+  sobre el compañero a 1920x1080. La carpeta de partidas sigue vacía tras el combate y los días nuevos (`saves.files:
+  "0"`): jugar sin guardar no escribe nada. Se corre en los dos idiomas.
 - `route-text-fit.yaml`: que cada texto cabe en su caja (`expect_text_fits` tras cada captura) en las pantallas del
   aspecto original desde el campo: el menú de pausa y sus páginas (jugador, árbol, medallas, cartas, herramientas,
   opciones, minimapa), la ficha, las técnicas y la bolsa del compañero con las opciones de un objeto, la máquina de
@@ -266,7 +266,8 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   en el gráfico del compañero (Agumon, como en una partida nueva) con el teclado: el cursor por sus evoluciones sin
   descubrir («???») y descubiertas, la vista original, el peso movido con bayas grandes y el gráfico a 1280x720, 1920x1080 y 1024x768 (`text_fit`,
   `expect_clear`); al final apaga y enciende la opción. Necesita `--saves` con una carpeta vacía (o una copia de una
-  partida con Agumon y `--load`). Se corre en los dos idiomas.
+  partida con Agumon y `--load`). Se corre en los dos idiomas, con el aspecto original: el gráfico es una página suya y
+  con `--ui-skin modern` la ruta falla en su primer paso.
 - `route-status-extras.yaml`: los [extras de la ficha](../modulos/apps/screens.md#extras-de-la-ficha) del
   compañero desde una partida nueva con el teclado: dos entrenamientos (cansancio) y el reloj rápido hasta un error de
   cuidado, la ficha con la opción encendida a 1280x720 y 1920x1080, la opción apagada desde el menú de pausa y la ficha
@@ -791,6 +792,7 @@ steps:
 | `script: <lua>` | Ejecuta una línea de los scripts del juego, como la consola; los comandos de depuración están más abajo |
 | `script_if: {script, <condiciones de wait>}` | Ejecuta el script solo si se cumplen ya todas las condiciones (las de `wait` salvo `map_name` y `seconds`); si no, sigue sin esperar y lo dice en el registro |
 | `expect_setting: {<nombre>: <valor>, timeout}` | Comprueba un ajuste publicado a la UI (`minimap: "off"`) o del estado del compañero; `field.overlaps` es cuántas veces dos personajes (o uno y una pared) se pisaron más de un segundo con el jugador libre (`expect_setting: {field.overlaps: 0}`); `saves.files` es cuántos ficheros hay en la carpeta de `--saves` (0 sin ella); `has_class.<documento>#<elemento>.<clase>` (`"true"` o `"false"`) dice si ese elemento tiene esa clase, como la pestaña que enseña una página (`has_class.partner_menu#tab-tech.selected`); `story.trigger.<n>` (`"true"` o `"false"`) y `story.var.<n>` leen los disparadores y las variables de la historia, como el original los guarda en su estado de scripts (`wait: {setting: {story.trigger.249: "true"}}` espera a que Coelamon se una); `field.npc.<id>` (`"true"` o `"false"`) dice si el NPC con ese id de script está ahora en el mapa (el Otamamon del pantano sale solo a veces). Si no se cumple, el fallo dice el valor que leyó |
+| `expect_range: {<nombre>: [mín, máx], timeout}` | Comprueba que el ajuste es un número entre esos dos, ambos incluidos (2 s por defecto); si no, el fallo dice el valor que leyó. Lo usan las rutas de la [comprobación del entrenamiento](comprobar-entrenamiento.md) con los ajustes `gym.session.*` |
 | `remember: <nombre>` | Guarda el valor de un ajuste para un `expect_change` posterior |
 | `expect_change: {<nombre>: up \| down \| changed, timeout}` | Comprueba que el ajuste ha subido, bajado o cambiado desde el valor guardado (2 s por defecto) |
 | `repeat: {times, steps}` | Repite esos pasos en su sitio tantas veces |
@@ -835,4 +837,5 @@ fase 4:
 | `learn_move("<técnica> [hueco]")` | El compañero aprende esa técnica (y las que vienen con ella) como en el entrenamiento de inteligencia y, con un hueco de 0 a 3, la equipa ahí (`learn_move("meltdown 0")`), para ver una técnica que aún no sabe |
 | `clock_speed("<multiplicador>")` | Acelera el reloj: 1 es un minuto de juego por segundo real, 600 son diez horas |
 | `hd_scenery("on"\|"off")` | Enciende o apaga los escenarios en alta definición, como su fila de opciones (y lo guarda igual) |
+| `model_characters("on"\|"off")` | Enciende o apaga los personajes en 3D para la partida (no lo guarda) |
 | `save("slot_NN")` | Guarda la partida en ese hueco manual (`save("slot_01")`), hasta que exista la pantalla de guardar; los autoguardados antiguos (`autosave_NN`) no se escriben nunca. Un autotest solo guarda con `--saves` |

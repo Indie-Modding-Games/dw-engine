@@ -75,7 +75,7 @@ steps:
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: detail-mega
-        - tap: {key: escape}
+        - tap: {key: left_ctrl}
         - wait: {seconds: 0.4}
         - menu_select: chart-cell-11
         - wait: {seconds: 0.3}
@@ -83,7 +83,7 @@ steps:
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: detail-ultimate
-        - tap: {key: escape}
+        - tap: {key: left_ctrl}
         - wait: {seconds: 0.4}
         - menu: close
         - wait: {menu_open: false}
@@ -125,7 +125,7 @@ steps:
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: detail-original
-        - tap: {key: escape}
+        - tap: {key: left_ctrl}
         - wait: {seconds: 0.4}
         - repeat: {times: 8, steps: [{tap: {key: down}}, {wait: {seconds: 0.1}}]}
         - wait: {seconds: 0.5}
@@ -134,9 +134,9 @@ steps:
         - tap: {key: up}
         - wait: {seconds: 0.5}
         - screenshot: chart-back
-        - tap: {key: escape}
+        - tap: {key: left_ctrl}
         - wait: {seconds: 0.3}
-        - tap: {key: escape}
+        - tap: {key: left_ctrl}
         - wait: {seconds: 0.4}
         - menu: close
         - wait: {menu_open: false}

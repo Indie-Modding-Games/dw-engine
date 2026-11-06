@@ -18,7 +18,8 @@
 -- for the time in figures (#field-time) too (digital_time). #field-partner-bubble hangs over the
 -- partner's head (hud.partner.*) with the class of the need the original's bubble would show, or,
 -- with several needs and need_bubble_stack (an engine improvement, on unless turned off), the class
--- "stack-2" or "stack-3" and the needs on its icons #field-partner-bubble-icon-<i>. How
+-- "stack-2" or "stack-3"; its icons #field-partner-bubble-icon-<i> carry the needs it shows, and
+-- the class "frame-<n>" says which of the original's frames the bubble is on, for the skin. How
 -- the partner feels about the map (hud.partner.area) puts the class "area-liked" or "area-disliked"
 -- on #field-status, where a skin can swap the happiness face as the original does.
 
@@ -235,10 +236,20 @@ end
 -- them goes. Injury and sickness come last, below the toilet.
 local bubble_priority = { "sleep", "tired", "hunger", "toilet", "injured", "sick" }
 local bubble_need_index = { hunger = 0, sleep = 1, toilet = 2, tired = 3, injured = 4, sick = 5 }
-local bubble_swap_seconds = 50 / 20
+-- A bubble's frames (bubble.c: tickConditionBubble, renderConditionBubble): the game makes it and
+-- it is drawn on frames 1 to 51, growing on the first 10 and bursting on the 51st, then it is gone
+-- until the game makes it again 60 frames after the last time (handleConditionBubble:
+-- CONDITION_BUBBLE_TIMER), or at 50 for the other need's bubble. The script counts them and puts
+-- the class "frame-<n>" (1 to 60) on #field-partner-bubble; the skin draws each frame, the growth,
+-- the need's own animation, the burst and the gap. They stop while the bubble is not drawn
+-- (renderConditionBubble and tickConditionBubble do nothing in a menu).
+local bubble_frames_per_second = 20
+local bubble_swap_frames = 50
+local bubble_cycle_frames = 60
 -- No bubble when the game starts (bubble.c: initializeConditionBubbles marks every bubble free).
 local bubble_need = nil
 local bubble_seconds = 0
+local bubble_frame = nil
 -- need_bubble_stack: up to this many needs at once, side by side, the most urgent first.
 local bubble_stack_most = 3
 
@@ -280,13 +291,28 @@ local function stacked_needs()
   return needs
 end
 
+-- Moves the class "frame-<n>" to the bubble's frame now.
+local function draw_bubble_frame(bubble)
+  local frame = math.floor(bubble_seconds * bubble_frames_per_second) + 1
+  if frame == bubble_frame then
+    return
+  end
+  if bubble_frame ~= nil then
+    bubble:set_class("frame-" .. bubble_frame, false)
+  end
+  bubble:set_class("frame-" .. frame, true)
+  bubble_frame = frame
+end
+
 local function draw_bubble(document)
   local bubble = document:get("field-partner-bubble")
   local visible = ui.setting("hud.partner.visible") == true
   bubble:set_property("left", string.format("%.2f%%", place("hud.partner.x")))
   bubble:set_property("top", string.format("%.2f%%", place("hud.partner.y")))
   bubble:set_class("shown", visible and bubble_need ~= nil)
-  -- One need alone is the original's bubble either way.
+  draw_bubble_frame(bubble)
+  -- One need alone is the original's bubble either way: its need on the bubble and on the first
+  -- icon.
   local stack = stacked_needs()
   local count = #stack > 1 and #stack or 0
   for size = 2, bubble_stack_most do
@@ -295,15 +321,16 @@ local function draw_bubble(document)
   for need in pairs(bubble_need_index) do
     bubble:set_class(need, count == 0 and need == bubble_need)
   end
+  local icons = count > 0 and stack or { bubble_need }
   for index = 0, bubble_stack_most - 1 do
     local icon = document:get("field-partner-bubble-icon-" .. index)
     for need in pairs(bubble_need_index) do
-      icon:set_class(need, count > 0 and stack[index + 1] == need)
+      icon:set_class(need, icons[index + 1] == need)
     end
   end
 end
 
--- The needs changed: a bubble whose need went gives way to the highest one left.
+-- The needs changed: a bubble whose need went gives way to the highest one left, in a new bubble.
 local function pick_bubble(document)
   if bubble_need == nil or not need_active(bubble_need) then
     bubble_need = highest_need(nil)
@@ -317,15 +344,20 @@ local function tick_bubble(document, seconds)
     return
   end
   bubble_seconds = bubble_seconds + seconds
-  if bubble_seconds < bubble_swap_seconds then
+  local swap = bubble_swap_frames / bubble_frames_per_second
+  local cycle = bubble_cycle_frames / bubble_frames_per_second
+  -- The stacked bubble already shows the other needs: it only starts again.
+  local other = #stacked_needs() < 2 and highest_need(bubble_need) or nil
+  if other ~= nil and bubble_seconds >= swap then
+    bubble_need = other
+    bubble_seconds = 0
+    draw_bubble(document)
     return
   end
-  bubble_seconds = 0
-  local other = highest_need(bubble_need)
-  if other ~= nil then
-    bubble_need = other
-    draw_bubble(document)
+  while bubble_seconds >= cycle do
+    bubble_seconds = bubble_seconds - cycle
   end
+  draw_bubble_frame(document:get("field-partner-bubble"))
 end
 
 local function draw_partner_area(status)

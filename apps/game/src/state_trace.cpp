@@ -76,8 +76,8 @@ std::string traceLine(const TraceFrame& frame) {
   if (frame.battle) {
     out += R"(,"battle":{"phase":)";
     appendText(out, frame.battle->phase);
-    std::format_to(std::back_inserter(out), R"(,"frame":{},"rand":{},"fighters":[)", frame.battle->frame,
-                   frame.battle->rolls);
+    std::format_to(std::back_inserter(out), R"(,"frame":{},"rand":{},"fighters":[)",
+                   frame.battle->frame, frame.battle->rolls);
     for (std::size_t index = 0; index < frame.battle->fighters.size(); ++index) {
       if (index > 0) {
         out += ',';

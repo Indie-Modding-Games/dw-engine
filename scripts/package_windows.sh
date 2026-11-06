@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Builds the Windows package from Linux: the same layout as scripts/package_linux.sh (bin/ with
-# dwe-game.exe and dwx.exe, packs/, licenses/, VERSION, EXTRACTOR_VERSION), cross-compiled with the
-# windows-cross-package preset in the development container. The programs link the C and C++
-# runtime statically, so the only library next to them is the Vulkan loader (vulkan-1.dll); every
-# other DLL they import is part of Windows, which the script checks. Never anything read from a
-# disc.
+# dwe-game.exe and dwx.exe, packs/, licenses/, LICENSE, THIRD_PARTY_NOTICES.txt, VERSION,
+# EXTRACTOR_VERSION), cross-compiled with the windows-cross-package preset in the development
+# container. The programs link the C and C++ runtime statically, so the only library next to them
+# is the Vulkan loader (vulkan-1.dll); every other DLL they import is part of Windows, which the
+# script checks. Never anything read from a disc.
 #
 # Usage: scripts/package_windows.sh [--no-build] [--out <folder>]
 #   --no-build   package the build as it is (build/windows-cross-package), without building it first
@@ -127,6 +127,13 @@ for copyright in "$build_dir"/vcpkg_installed/"$triplet"/share/*/copyright; do
   [[ "$port" == vcpkg-* ]] || cp "$copyright" "$licences/$port.txt"
 done
 cp "$root/content/packs/game/ui/fonts/noto_sans_license.txt" "$licences/noto-sans.txt"
+
+# The project's licence and THIRD_PARTY_NOTICES.txt: the credits, the Apache-2.0 NOTICE files and
+# every licence text above in one file (scripts/package/third_party_notices.py).
+cp "$root/LICENSE" "$stage/LICENSE"
+python3 "$root/scripts/package/third_party_notices.py" game --licenses "$licences" \
+  --out "$stage/THIRD_PARTY_NOTICES.txt"
+python3 "$root/scripts/package/third_party_notices.py" check "$stage"
 
 mkdir -p "$out_dir"
 tarball="$out_dir/$name.tar.xz"

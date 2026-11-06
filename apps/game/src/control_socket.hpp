@@ -37,8 +37,9 @@ private:
   void flush();
   void dropClient();
 
-  int listener_ = -1;
-  int client_ = -1;
+  // Unused where the build has no Unix sockets.
+  [[maybe_unused]] int listener_ = -1;
+  [[maybe_unused]] int client_ = -1;
   std::filesystem::path path_;
   std::string received_;
   std::string unsent_;

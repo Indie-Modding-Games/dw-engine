@@ -23,7 +23,7 @@ steps:
   - menu_select: open-items
   - wait: {shown: partner_menu, seconds: 0.5}
   - screenshot: bank-bag-items
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}
   - menu: close
   - wait: {menu_open: false}
@@ -63,7 +63,7 @@ steps:
   - screenshot: bank-bag-moved-one
   # Cancel closes the windows (phase `farewell`); a press says goodbye and ends the visit. Once the visit is over the
   # screen publishes nothing more: the last `item_keeper.phase` stays "farewell".
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.5}
   - expect_setting: {item_keeper.phase: farewell}
   - tap: {key: return}

@@ -14,7 +14,7 @@ titulares, y el proyecto debe minimizar el riesgo legal sin dejar de ser útil.
 - Lo derivado del original se distribuye solo como recetas o deltas.
 - Sin dinero, sin marcas y sin tiendas.
 - DCO en cada commit, `provenance.yaml` por asset y chequeo de hashes en la CI.
-- Licencias: el código, por decidir entre MIT y GPL-3.0; los assets originales del equipo, CC BY-SA 4.0.
+- Licencias: el código, MIT (decidido el 2026-11-06, ver `LICENSE`); los assets originales del equipo, CC BY-SA 4.0.
 
 El detalle está en la [política legal de assets](../legal/assets.md).
 

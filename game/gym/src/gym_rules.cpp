@@ -160,7 +160,8 @@ SpeciesAnimation readSpeciesAnimation(YamlReader& reader, const YamlNode& node) 
 OffenseSwap readSwap(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(
           node, "the offense swap",
-          {"frames", "hit_shown", "hit_hidden", "hit_restarted", "undo_shown", "undo_hidden"})) {
+          {"frames", "hit_shown", "hit_hidden", "hit_restarted", "undo_shown", "undo_hidden"},
+          {"hold_each_punch"})) {
     return {};
   }
   return {.hitShown = readGroup(reader, reader.field(node, "hit_shown")),
@@ -168,7 +169,8 @@ OffenseSwap readSwap(YamlReader& reader, const YamlNode& node) {
           .hitRestarted = readGroup(reader, reader.field(node, "hit_restarted")),
           .undoShown = readGroup(reader, reader.field(node, "undo_shown")),
           .undoHidden = readGroup(reader, reader.field(node, "undo_hidden")),
-          .frames = readPositive(reader, reader.field(node, "frames"))};
+          .frames = readPositive(reader, reader.field(node, "frames")),
+          .holdEachPunch = readOptionalFlag(reader, node, "hold_each_punch", false)};
 }
 
 void readSwing(YamlReader& reader, const YamlNode& node, OffenseCourse& course);

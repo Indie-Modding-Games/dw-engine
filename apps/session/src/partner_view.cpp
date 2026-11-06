@@ -39,6 +39,11 @@ PartnerView viewOf(const game::partner::Partner& partner, const game::partner::C
       .conditions = state.conditions,
       .careMistakes = state.evolution.careMistakes,
       .battles = state.evolution.battles,
+      .evolutionHours = state.evolution.hours,
+      .wakeHour = state.sleep.wakeHour,
+      .wakeMinute = state.sleep.wakeMinute,
+      .sleepyHour = state.sleep.sleepyHour,
+      .sleepyMinute = state.sleep.sleepyMinute,
   };
 }
 

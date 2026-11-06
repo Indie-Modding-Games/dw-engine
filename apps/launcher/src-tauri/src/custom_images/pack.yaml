@@ -1,0 +1,5 @@
+id: custom_images
+version: 1.0.0
+layer: user
+name: "Imágenes personalizadas"
+description: "Las imágenes que el jugador cargó en el lanzador, hechas a partir de su propio disco."

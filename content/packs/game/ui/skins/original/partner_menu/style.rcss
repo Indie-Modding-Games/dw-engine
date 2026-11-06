@@ -1094,18 +1094,59 @@ button:focus .original-look, button.original-look:focus {
 #scrim.status-extras #status-age-line, #scrim.status-extras #status-weight-line { top: 156dp; }
 #scrim.status-extras #conditions { top: 294dp; }
 #scrim.status-extras #status-mistakes { left: 0; top: 156dp; width: 894dp; height: 42dp; font-size: 33dp; }
-#status-mistakes-label {
-    position: absolute; left: 456dp; top: 0; width: 309dp; height: 42dp; font-size: 22dp; line-height: 42dp;
+#scrim.status-extras #status-battles {
+    display: block; position: absolute; left: 0; top: 156dp; width: 894dp; height: 42dp; font-size: 33dp;
+}
+/* Two labels share the row's end, a step smaller than the other field labels, each 6dp before its inset, whose number
+   is centred. The bitmap font draws them about 16dp a letter. With the labels written the weight's label and inset
+   move 30dp left so that «Combates» starts 9dp after the weight's inset. */
+#status-mistakes-label, #status-battles-label {
+    position: absolute; top: 0; height: 42dp; font-size: 20dp; line-height: 42dp;
     color: #52def7; text-align: right; white-space: nowrap;
 }
-#status-mistakes-value {
-    position: absolute; float: none; left: 771dp; top: 0; width: 78dp; height: 42dp; box-sizing: border-box; margin: 0;
-    padding: 0; line-height: 36dp; border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0;
-    background-color: #354b5c;
+#status-battles-label { left: 414dp; width: 118dp; }
+#status-mistakes-label { left: 619dp; width: 146dp; }
+#scrim.status-text.status-extras #status-weight-label { left: 216dp; }
+#scrim.status-text.status-extras #status-weight { left: 330dp; }
+#scrim.status-text #status-battles-label { left: 417dp; width: 133dp; }
+#scrim.status-text #status-battles-value { left: 556dp; }
+#scrim.status-text #status-mistakes-label { left: 640dp; width: 125dp; }
+#status-mistakes-value, #status-battles-value {
+    position: absolute; float: none; top: 0; height: 42dp; box-sizing: border-box; margin: 0;
+    padding: 0; line-height: 36dp; text-align: center; border: 3dp #020202; border-right-color: #6987a0;
+    border-bottom-color: #6987a0; background-color: #354b5c;
 }
+#status-battles-value { left: 538dp; width: 75dp; }
+#status-mistakes-value { left: 771dp; width: 78dp; }
 #scrim.status-extras #partner-portrait-clip { height: 153dp; }
 #scrim.status-extras #status-life-label, #scrim.status-extras #status-life-hearts { top: 375dp; }
 #scrim.status-extras #status-condition { top: 414dp; }
 #scrim.status-extras #status-condition .bar-row { height: 36dp; }
 #tiredness-label { decorator: image(status-condition-tired scale-none left top); }
 #status-condition #tiredness-fill { background-color: transparent; decorator: image(status-meter-blue scale-none left top); }
+
+/* More extras (docs/modulos/apps/screens.md, «Extras de la ficha»). The battles sit between the weight and the
+   mistakes, in an inset like theirs. The Active field writes the hours it is awake today, hour to hour, in place of
+   the pattern's word; the modern skin's line for them is not drawn. The care bars are narrower, with their numbers
+   after them in white. The hours of life left and the evolution counter (with the hours its level checks from) go in
+   the room right of the Off, Def, Speed and Brains bars, each a label in the field labels' cyan over an inset. */
+#scrim.status-extras #page-status #status-awake.status-extra { display: none; }
+#scrim.status-extras #status-condition .meter { width: 102dp; }
+#scrim.status-extras #status-condition .value {
+    display: block; position: absolute; left: 264dp; top: 0; width: 66dp; height: 27dp; font-size: 24dp;
+    line-height: 27dp; text-align: right; color: #ffffff; white-space: nowrap;
+}
+#scrim.status-text.status-extras #status-condition .meter { width: 90dp; }
+#scrim.status-extras #status-timers { position: absolute; left: 729dp; top: 366dp; width: 153dp; height: 180dp; }
+#status-timers .timer-line { display: block; position: absolute; left: 0; width: 153dp; height: 84dp; }
+#status-lifetime { top: 0; }
+#status-evolution { top: 90dp; }
+#status-timers .timer-label {
+    display: block; position: absolute; left: 0; top: 0; width: 153dp; height: 36dp; font-size: 22dp;
+    line-height: 36dp; color: #52def7; text-align: center; white-space: nowrap;
+}
+#status-timers .timer-value {
+    display: block; position: absolute; left: 0; top: 36dp; width: 153dp; height: 42dp; box-sizing: border-box;
+    margin: 0; padding: 0; font-size: 27dp; line-height: 36dp; text-align: center; white-space: nowrap;
+    border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0; background-color: #354b5c;
+}

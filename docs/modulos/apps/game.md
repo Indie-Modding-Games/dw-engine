@@ -928,9 +928,15 @@ muestra las texturas originales.
 
 Mejora opcional, encendida por defecto: el ajuste `status_extras` (fila «Extras de la ficha», «Status extras» en
 inglés, de las opciones del menú de pausa, guardado en los ajustes del usuario) llega como ajuste de la UI desde
-`PlaySession` (`StatusExtrasSetting`). Encendido, la ficha del compañero enseña su barra de cansancio y sus errores de
-cuidado, que el original esconde; apagado, la ficha es la del original. Dónde va cada uno en cada piel y la ruta:
-[screens.md](screens.md#extras-de-la-ficha).
+`PlaySession` (`StatusExtrasSetting`). Encendido, la ficha del compañero enseña lo que el original sabe y esconde:
+cansancio, felicidad, disciplina y virus con número, errores de cuidado, combates, horas despierto, vida restante y
+contador de evolución; apagado, la ficha es la del original. `PartnerMenu` añade a la vista las horas desde las que
+mira la evolución el nivel del compañero (`EvolutionAdapter`, `Evolution::checkHoursFor`). Dónde va cada uno en cada
+piel y de dónde sale cada valor: [screens.md](screens.md#extras-de-la-ficha).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Ficha del compañero con más datos | La vista de estado (`game_menu.c`) dibuja nombre, edad, peso, vidas, HP, MP, stats, especialidades, tipo, patrón de actividad, felicidad, disciplina y virus (sin número); el cansancio, los errores, los combates, el horario de sueño, la vida restante y el contador de evolución existen en `PartnerPara` pero no salen | Con la opción: cansancio y número de las barras de cuidado, errores y combates, horas despierto de hoy, vida restante y contador de evolución con las horas de la comprobación de su nivel, en las dos pieles y los dos idiomas; todo leído del estado del compañero y de las reglas de evolución. Apagada, la ficha del original | `partner_status_view_tests.cpp` («…tiredness and the care mistakes…», «…battles, the lifetime, the evolution counter and the waking hours»); `session_tests.cpp` («the partner view carries the lifetime, the counters and the sleep schedule it lives by»); `report_tests.cpp` («a form's check hours are its level's…»); `user_settings_tests`; ruta `route-status-extras.yaml`; capturas antes/después en las dos pieles | Mejora (opción) |
 
 ## Nombres largos
 
@@ -987,6 +993,7 @@ UI desde `PlaySession` (`NeedBubbleStackSetting`) y el HUD junta hasta tres nece
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
 | Burbuja con dos o más necesidades | `partner_impl.c: handleConditionBubble`: una cada vez, por prioridad (sueño, cansancio, hambre, baño, herida, enfermedad); a los 50 frames cambia a la más alta de las demás, así que se turnan las dos más urgentes y una tercera no sale | Hasta tres en un globo ensanchado con las piezas del original, la más urgente a la izquierda; con una sola, la del original; apagada, la del original entera. Medido en dwe: cansancio + herida, 50 píxeles; cansancio + herida + enfermedad, 68 | `ui_tests`: «the need bubble shows several needs side by side ...»; `user_settings_tests`; `in_game_options_tests` | Mejora (opción) |
+| Frames de la burbuja: crece en 10, cada necesidad anima por el contador de la burbuja (las tres «Z» del sueño, la gota que cae del cansancio, los cuadros de la comida, el baño, la herida y la enfermedad), estalla en el 51 y no se ve hasta el 60 | `bubble.c: tickConditionBubble`, `renderConditionBubble` (`CONDITION_ICON_SLEEPY`, `CONDITION_TIRED_FRAME_U`/`_MY`, `CONDITION_HUNGRY_FRAMES`); `partner_impl.c: handleConditionBubble` (`CONDITION_BUBBLE_TIMER`). Medido en DuckStation: 180 vblanks por burbuja, 150 al cambiar de necesidad; «Z» en los frames 12, 17, 23 y 28 | `ui/hud/logic.lua` publica `frame-<n>`; el aspecto original lo dibuja (`style.rcss`, `skin.yaml`). Antes solo salía el primer cuadro de cada necesidad y la «Z» baja | `ui_tests`: «the need bubble plays the original's frames ...» | Igual (sin el vaivén de 12 unidades) |
 
 ## Minimapa redondo
 
@@ -1103,6 +1110,43 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
 | Suavizado de bordes (`antialiasing`) | No existe | `Renderer::setMultisampling`: el pase de escena con 4 muestras (`GraphicsPipeline` con variante multimuestreada), resuelto en la ventana o en la textura del paso de luz | `pipeline_test.cpp` de `engine/rhi`; capturas | Mejora (opción) |
 | Texturas de modelos (`texture_filter`) | Texels cuadrados | `ModelRenderer::setTextureFilter`: filtrado con mipmaps y anisotropía (`FlagSmooth` en `skinned_model.slang`), sobre las texturas dobladas por `upscaleRgba` (alfa interpolado, sin borde oscuro) | `scenery_upscale_tests.cpp` («a model texture's cut-out edge takes no dark fringe…»); `pipeline_test.cpp` (niveles de mip); capturas | Mejora (opción) |
 
+## Personajes en 3D
+
+Mejora opcional, encendida por defecto (no cambia ninguna regla): algunos mapas dibujan personajes como dibujos
+prerenderizados de sus capas de profundidad, no como modelos. Con el ajuste `model_characters` (fila «Personajes en
+3D», «3D characters» en inglés, de las opciones en partida, pestaña «Gráficos»; guardado en los ajustes del usuario)
+el campo deja fuera esos dibujos y pone en su sitio el modelo de la especie con su animación de reposo; apagado, se
+ven los dibujos del original. La consola y las rutas lo cambian para la partida con `model_characters("on")` /
+`model_characters("off")`.
+
+- **Qué hace el original**: son objetos del mapa (`overworld.c`: `loadMapObjects`, `calcMapObjectOrder`,
+  `renderMapOverlays`, `buildMapOverlayPrim`), no parte del fondo. Una animación larga va en dos objetos que se turnan
+  con cuadros en blanco y la sombra es otro objeto aparte. Los guiones los muestran y ocultan con
+  `set_obj_visibility` (`setMapObjectsFlag`).
+- **Dónde salen** (todos son objetos, ninguno está pintado en el fondo de los mapas revisados): la apertura delante
+  de la casa del anciano (`topn01`, seis bebés), el final en el mismo sitio (`tend01`, `tend02`, nueve), los dos de
+  las jardineras de la granja (`twna01` a `twna13`, según los disparadores 246 y 225), los dos de la casa del anciano
+  (`room08`) y el del puesto del mercado (`twnb02` a `twnb09`). La tabla es `field/sprite_characters.yaml` del pack
+  del juego (esquema `field_sprite_characters.schema.json`).
+- **Dónde**: `sprite_characters.hpp` lee la tabla y calcula el sitio: los pies son el centro de la sombra, el pie
+  del primer dibujo o un píxel dado (`feet`); `MapCamera::pickGround` los lleva al suelo, a la altura `height` (una
+  jardinera, una cama), y el modelo mira a la cámara salvo que la tabla dé `facing` (Coelamon tumbado en la alfombra
+  del puesto, 2560). `FieldScene` carga el modelo de cada especie al entrar al mapa (`standInSpriteCharacters`) y lo
+  dibuja cada frame con su reposo (`drawSpriteCharacters`) mientras el primer dibujo no esté oculto.
+  `MapDepthLayers::setStoodIn` saca los dibujos del pintado sin tocar la marca de oculto que ponen los guiones; las
+  sombras se siguen dibujando.
+- **Semitransparencia**: `additive` dibuja el modelo sumado a lo de detrás con sus colores por ese factor
+  (`ModelInstance::additive` y el tinte), como los sprites con la semitransparencia aditiva: Poyomon en el final
+  (modos 1 y 3), con 0.35. Los demás sprites de esos mapas son opacos (modo 4) o tienen el modo 0 sin texeles
+  semitransparentes a la vista (Koromon), y su modelo se dibuja opaco; el Poyomon de la casa del anciano usa el modelo
+  tal cual, que ya es transparente por debajo.
+- **Reglas**: no hay entidad nueva; las colisiones, las charlas, los guiones y el minimapa no cambian. Si falta el
+  modelo de una especie se queda su dibujo.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Personajes en 3D | Dibujos prerenderizados, objetos del mapa (`renderMapOverlays`, `buildMapOverlayPrim`), mostrados y ocultados por los guiones (`setMapObjectsFlag`) | `field/sprite_characters.yaml`; `sprite_characters.hpp` (`placeOf`, `standInFor`); `FieldScene::drawSpriteCharacters` dibuja el modelo de la especie con su reposo donde estaba el dibujo; `MapDepthLayers::setStoodIn` | `sprite_characters_tests.cpp` (tabla con `additive`, pies, sitio en el suelo, cuándo se ve, ajuste); `map_layers_tests.cpp` («an instance stood in for is not drawn…»); `in_game_options_tests.cpp`; capturas antes y después en `topn01`, `tend01`, `tend02`, `twna02`, `room08` y `twnb02` a `twnb09` | Mejora (opción) |
+
 ## Opciones en partida
 
 Las opciones se cambian sin volver al título: la página «Opciones» del menú de pausa abre con las tres acciones del
@@ -1132,7 +1176,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 | Pestaña | Filas |
 |---|---|
 | Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha |
-| Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
+| Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
 

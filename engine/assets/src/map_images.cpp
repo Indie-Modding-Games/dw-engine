@@ -1,6 +1,10 @@
+#include <dwe/assets/image.hpp>
 #include <dwe/assets/image_palettes.hpp>
+#include <dwe/assets/image_replacement.hpp>
 #include <dwe/assets/map_images.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/core/log.hpp>
+#include <dwe/core/message.hpp>
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
@@ -49,8 +53,32 @@ core::Result<std::vector<PaletteColor>> readClut(const core::YamlNode& node) {
   return colors;
 }
 
+bool isPlayerSource(const VirtualFileSystem& vfs, const AssetSource& source) {
+  return vfs.packOf(source).manifest.layer == Layer::User;
+}
+
+// The source the game reads an image from: the winning one under the player's images.
+const AssetSource* gameSource(const VirtualFileSystem& vfs, const AssetId& id) {
+  const std::span<const AssetSource> sources = vfs.sources(id);
+  const auto found =
+      std::ranges::find_if(sources.rbegin(), sources.rend(), [&vfs](const AssetSource& source) {
+        return !isPlayerSource(vfs, source);
+      });
+  return found == sources.rend() ? nullptr : &*found;
+}
+
+// The player's image of an asset: the winning source, when it is of Layer::User.
+const AssetSource* playerSource(const VirtualFileSystem& vfs, const AssetId& id) {
+  const std::span<const AssetSource> sources = vfs.sources(id);
+  return !sources.empty() && isPlayerSource(vfs, sources.back()) ? &sources.back() : nullptr;
+}
+
 core::Result<IndexedImage> readIndexed(const VirtualFileSystem& vfs, const AssetId& id) {
-  auto bytes = vfs.read(id);
+  const AssetSource* source = gameSource(vfs, id);
+  if (source == nullptr) {
+    return core::fail(std::format("{}: no pack but the player's images has it", id.str()));
+  }
+  auto bytes = vfs.read(*source);
   if (!bytes) {
     return std::unexpected{bytes.error()};
   }
@@ -336,6 +364,109 @@ void addPagesOf(const MapTexturePage& entry, const MapVram& vram,
   }
 }
 
+// The player's image of one background, when it fits: an RGBA PNG `scale` times the background's
+// size, the same `scale` as the variants before it (none yet: 0).
+std::optional<Image> readReplacement(const VirtualFileSystem& vfs, const MapDocument& document,
+                                     const AssetSource& source, const IndexedImage& background,
+                                     std::uint32_t& scale) {
+  const std::string& pack = source.packId;
+  const std::string file = source.file.filename().generic_string();
+  auto bytes = vfs.read(source);
+  auto image = bytes ? decodePng(*bytes) : core::Result<Image>{std::unexpected{bytes.error()}};
+  if (!image) {
+    core::logWarning("{}", core::formatMessage(messages::ReplacementUnreadable, document.id, file,
+                                               pack, image.error().message));
+    return std::nullopt;
+  }
+  const std::optional<std::uint32_t> factor =
+      replacementScale(background.width, background.height, image->width, image->height);
+  if (!factor) {
+    core::logWarning("{}", core::formatMessage(messages::ReplacementWrongSize, document.id, file,
+                                               pack, image->width, image->height, background.width,
+                                               background.height, MaxReplacementScale));
+    return std::nullopt;
+  }
+  if (scale != 0 && *factor != scale) {
+    core::logWarning("{}", core::formatMessage(messages::ReplacementOtherScale, document.id, file,
+                                               pack, *factor, scale));
+    return std::nullopt;
+  }
+  scale = *factor;
+  return std::move(*image);
+}
+
+// RGBA bytes of an Image.
+constexpr std::size_t BytesPerPixel = 4;
+constexpr std::size_t AlphaChannel = 3;
+
+// The background's index under pixel (x, y) of an image `scale` times its size.
+std::uint8_t backgroundIndexUnder(const IndexedImage& background, std::uint32_t x, std::uint32_t y,
+                                  std::uint32_t scale) {
+  return background.indices[(std::size_t{y / scale} * background.width) + (x / scale)];
+}
+
+// A background variant `scale` times larger, each texel a square of its colour: the image of a
+// variant the player did not replace.
+Image enlargedBackground(const IndexedImage& background, std::span<const PaletteColor> palette,
+                         std::uint32_t scale) {
+  Image image{.width = background.width * scale, .height = background.height * scale, .pixels = {}};
+  image.pixels.reserve(std::size_t{image.width} * image.height * BytesPerPixel);
+  for (std::uint32_t y = 0; y < image.height; ++y) {
+    for (std::uint32_t x = 0; x < image.width; ++x) {
+      const PaletteColor color = palette[backgroundIndexUnder(background, x, y, scale)];
+      for (const std::uint8_t channel : {color.red, color.green, color.blue, color.alpha}) {
+        image.pixels.push_back(std::byte{channel});
+      }
+    }
+  }
+  return image;
+}
+
+// Gives every pixel of a replacement the class (alpha) of the background texel under it, so what is
+// drawn and what is semi-transparent stay the game's whatever the image's own alpha.
+void takeClasses(Image& image, const IndexedImage& background,
+                 std::span<const PaletteColor> palette, std::uint32_t scale) {
+  for (std::uint32_t y = 0; y < image.height; ++y) {
+    for (std::uint32_t x = 0; x < image.width; ++x) {
+      const std::size_t pixel = (std::size_t{y} * image.width) + x;
+      image.pixels[(pixel * BytesPerPixel) + AlphaChannel] =
+          std::byte{palette[backgroundIndexUnder(background, x, y, scale)].alpha};
+    }
+  }
+}
+
+// The player's images of the backgrounds (one optional source per variant), or none when no
+// variant has a usable one.
+std::optional<MapBackgroundReplacement>
+readReplacements(const VirtualFileSystem& vfs, const MapDocument& document, const MapImages& images,
+                 std::span<const AssetSource* const> sources) {
+  std::uint32_t scale = 0;
+  std::vector<std::optional<Image>> found;
+  for (const AssetSource* source : sources) {
+    found.push_back(source == nullptr
+                        ? std::nullopt
+                        : readReplacement(vfs, document, *source, images.background, scale));
+  }
+  if (scale == 0) {
+    return std::nullopt;
+  }
+  MapBackgroundReplacement replacement{.scale = scale, .variants = {}};
+  std::size_t replaced = 0;
+  for (std::size_t variant = 0; variant < found.size(); ++variant) {
+    const std::vector<PaletteColor>& palette = images.backgroundPalettes[variant];
+    if (found[variant]) {
+      takeClasses(*found[variant], images.background, palette, scale);
+      replacement.variants.push_back(std::move(*found[variant]));
+      ++replaced;
+    } else {
+      replacement.variants.push_back(enlargedBackground(images.background, palette, scale));
+    }
+  }
+  core::logInfo("{}", core::formatMessage(messages::ReplacementUsed, document.id, scale, replaced,
+                                          found.size()));
+  return replacement;
+}
+
 } // namespace
 
 core::Result<MapImages> loadMapImages(const VirtualFileSystem& vfs, const MapDocument& document) {
@@ -348,7 +479,9 @@ core::Result<MapImages> loadMapImages(const VirtualFileSystem& vfs, const MapDoc
   const auto expectedHeight =
       static_cast<std::uint32_t>(std::max(document.tiles.height, 0) * MapTileSize);
   MapImages images;
+  std::vector<const AssetSource*> replacements;
   for (const MapBackground& background : ids.backgrounds) {
+    replacements.push_back(playerSource(vfs, background.id));
     auto image = readIndexed(vfs, background.id);
     if (!image) {
       return std::unexpected{image.error()};
@@ -375,6 +508,11 @@ core::Result<MapImages> loadMapImages(const VirtualFileSystem& vfs, const MapDoc
   MapVram vram;
   std::vector<MapTexturePage> entries;
   for (const MapTexture& texture : ids.textures) {
+    if (const AssetSource* player = playerSource(vfs, texture.image); player != nullptr) {
+      core::logWarning("{}", core::formatMessage(messages::ReplacementOfPage, document.id,
+                                                 player->file.filename().generic_string(),
+                                                 player->packId));
+    }
     if (!texture.meta) {
       return core::fail(std::format("{}: no metadata", texture.image.str()));
     }
@@ -402,6 +540,10 @@ core::Result<MapImages> loadMapImages(const VirtualFileSystem& vfs, const MapDoc
   const std::span<const MapSprite> sprites =
       document.objects ? std::span{document.objects->sprites} : std::span<const MapSprite>{};
   images.sprites = buildMapSpriteSheet(sprites, images.pages, images.backgroundPalettes);
+  if (std::ranges::any_of(replacements,
+                          [](const AssetSource* source) { return source != nullptr; })) {
+    images.replacement = readReplacements(vfs, document, images, replacements);
+  }
   return images;
 }
 

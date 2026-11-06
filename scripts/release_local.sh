@@ -346,12 +346,18 @@ fi
 step "checks of the files"
 [[ -d "$dist" ]] || die "nothing built in $dist"
 appimage="$(only_one "$dist"/*.AppImage)"
+deb="$(only_one "$dist"/*.deb)"
 setup="$(only_one "$dist"/*-setup.exe)"
 version="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["version"])' \
   "$root/apps/launcher/src-tauri/tauri.conf.json")"
+# A launcher installed from the .deb asks first for linux-x86_64-deb and installs a .deb; the
+# AppImage's own key and the plain one name the AppImage. Arguments: the AppImage's, the setup's
+# and the .deb's URLs.
 manifest_launcher() {
   python3 "$root/scripts/package/release_manifest.py" launcher --version "$version" --notes "$tag" \
-    --platform linux-x86_64 "$appimage.sig" "$1" --platform windows-x86_64 "$setup.sig" "$2"
+    --platform linux-x86_64 "$appimage.sig" "$1" \
+    --platform linux-x86_64-appimage "$appimage.sig" "$1" \
+    --platform linux-x86_64-deb "$deb.sig" "$3" --platform windows-x86_64 "$setup.sig" "$2"
 }
 # latest.json names the bundles by their API URLs, which exist only after the upload: the preview
 # has the same form with asset 0.
@@ -361,7 +367,7 @@ commit_check=(--commit "$target")
 [[ -z "$dirty" || "$upload" == 1 ]] || commit_check=()
 preview="$out/latest.preview.json"
 pending="https://api.github.com/repos/$repo/releases/assets/0"
-manifest_launcher "$pending" "$pending" >"$preview"
+manifest_launcher "$pending" "$pending" "$pending" >"$preview"
 python3 "$root/scripts/package/release_manifest.py" check --folder "$dist" --pubkey "$pubkey" \
   --platform linux-x86_64 --platform windows-x86_64 --latest "$preview" --repo "$repo" \
   "${commit_check[@]}"
@@ -408,12 +414,13 @@ if ((upload)); then
     --target "$target"
   gh release upload "$tag" -R "$repo" "$dist"/*
 
-  # latest.json with the API URLs of the uploaded bundles, which the gateway points at itself.
+  # latest.json with the download URLs of the uploaded bundles (release and file name, right
+  # even after a file is uploaded again), which the gateway points at itself.
   asset_url() {
-    gh api "repos/$repo/releases" --paginate \
-      --jq ".[] | select(.tag_name == \"$tag\") | .assets[] | select(.name == \"$1\") | .url"
+    printf 'https://github.com/%s/releases/download/%s/%s' "$repo" "$tag" "$1"
   }
   manifest_launcher "$(asset_url "$(basename "$appimage")")" "$(asset_url "$(basename "$setup")")" \
+    "$(asset_url "$(basename "$deb")")" \
     >"$dist/latest.json"
   python3 "$root/scripts/package/release_manifest.py" check --folder "$dist" --pubkey "$pubkey" \
     --platform linux-x86_64 --platform windows-x86_64 --latest "$dist/latest.json" --repo "$repo" \

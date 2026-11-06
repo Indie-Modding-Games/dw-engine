@@ -36,6 +36,17 @@ inline constexpr std::string_view PartnerConditionList = "partner.condition";
 // bar (partner.tiredness.label, .value, .min, .max) and the count of care mistakes.
 inline constexpr std::string_view PartnerTirednessSetting = "partner.tiredness";
 inline constexpr std::string_view PartnerCareMistakesSetting = "partner.care_mistakes";
+// More of the extras: the battles fought, the hours of life left, the evolution counter and the
+// hours its level checks from (-1 for a level that never evolves on its own), and the hours it is
+// awake today, from waking up to getting sleepy.
+inline constexpr std::string_view PartnerBattlesSetting = "partner.battles";
+inline constexpr std::string_view PartnerLifetimeSetting = "partner.lifetime_hours";
+inline constexpr std::string_view PartnerEvolutionHoursSetting = "partner.evolution.hours";
+inline constexpr std::string_view PartnerEvolutionCheckSetting = "partner.evolution.check_hours";
+inline constexpr std::string_view PartnerWakeHourSetting = "partner.awake.wake_hour";
+inline constexpr std::string_view PartnerWakeMinuteSetting = "partner.awake.wake_minute";
+inline constexpr std::string_view PartnerSleepyHourSetting = "partner.awake.sleepy_hour";
+inline constexpr std::string_view PartnerSleepyMinuteSetting = "partner.awake.sleepy_minute";
 
 // A bar of the status page: its label, value and range. A two-tone bar fills its whole width once
 // from the minimum to the middle of the range, then fills it again in a second colour from the
@@ -94,6 +105,17 @@ struct PartnerStatusView {
   // tiredness, 0 to 100, as a plain bar, and the care mistakes made with this partner.
   MeterView tiredness;
   std::int32_t careMistakes = 0;
+  // The rest of the extras: the battles fought (they count for evolution), the hours of life left
+  // (remainingLifetime), the evolution counter (evoTimer) with the hours its level checks from,
+  // and today's waking hours (wakeUpHour to sleepyHour).
+  std::int32_t battles = 0;
+  std::int32_t lifetimeHours = 0;
+  std::int32_t evolutionHours = 0;
+  std::optional<std::int32_t> evolutionCheckHours;
+  std::int32_t wakeHour = 0;
+  std::int32_t wakeMinute = 0;
+  std::int32_t sleepyHour = 0;
+  std::int32_t sleepyMinute = 0;
   // The keys of the conditions it has (partner_menu.condition.<name>).
   std::vector<std::string> conditionKeys;
   std::array<TechniqueChoiceView, 56> techniqueChoices{};

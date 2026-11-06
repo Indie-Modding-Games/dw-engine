@@ -127,6 +127,8 @@ struct ClipRootMotion {
   std::uint32_t clip = 0;
   std::size_t frame = 0;
   float seconds = 0.0F;
+  // anim.c: animFlag 2: the clip plays on, but its root motion does not carry the character.
+  bool held = false;
 };
 
 // One original frame of a clip's root motion (anim.c: tickAnimation, applyRootMomentum): the step
@@ -409,8 +411,13 @@ public:
   // `clip` carries the character by its root motion from its first frame, one step each frame of
   // the original, along where it faces and with no collision test (anim.c: startAnimation sets
   // animFlag 1, tickAnimation, applyRootMomentum), until it ends or a script glides the character
-  // (driveByScript); nothing stops it. The character needs CharacterClipMotions.
+  // (driveByScript); only holdClipInPlace stops its steps. The character needs
+  // CharacterClipMotions.
   void moveByClip(scene::Entity entity, std::optional<std::uint32_t> clip);
+  // The clip the character plays keeps its frames but stops (or starts again) carrying it (anim.c:
+  // applyRootMomentum skips the step while animFlag 2 is set). A new clip carries it again, as
+  // startAnimation resets animFlag.
+  void holdClipInPlace(scene::Entity entity, bool held);
   // Where the camera looks while a script holds it; nothing: at the player.
   [[nodiscard]] std::optional<glm::vec3> scriptCamera() const { return scriptCamera_; }
   // Pans the held camera to `focus` in `seconds` (map.c: tickCameraMovement).

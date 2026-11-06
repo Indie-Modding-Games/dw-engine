@@ -114,7 +114,8 @@ struct ImageSize {
 // MaxUiImageBytes. Fails with the reason, without the image's name.
 core::Result<void> checkUiImageBudget(const assets::Ktx2Header& header);
 
-// Reads an image's size from its file's header, without decoding its pixels. Fails for a file
+// Reads an image's size from its file's header, without decoding its pixels (the size it is drawn
+// at: loadDrawnImage). Fails for a file
 // larger than MaxUiImageFileBytes, an image larger than MaxUiImageSide on a side or than
 // MaxUiImageBytes decoded, a KTX2 that is not a plain 2D Basis Universal texture
 // (assets::checkPlain2dKtx2), and a palette asked of a file that is not a PNG. loadImage runs the
@@ -122,11 +123,27 @@ core::Result<void> checkUiImageBudget(const assets::Ktx2Header& header);
 core::Result<ImageSize> imageSize(const assets::VirtualFileSystem& files,
                                   const ImageReference& reference);
 
-// Loads the pixels of an image: a PNG of any kind or a KTX2 texture. A palette needs an indexed PNG
-// and its metadata with at least that many palettes. The tone applies last, to any of them.
 // Recolours every pixel of an RGBA image in a tone, keeping its alpha.
 void applyImageTone(assets::Image& image, ImageTone tone);
 
+// An image as the UI draws it: its pixels, and the size it takes in documents and sprite sheets.
+struct DrawnImage {
+  assets::Image pixels;
+  ImageSize size;
+};
+
+// Loads the pixels of an image: a PNG of any kind or a KTX2 texture. A palette needs an indexed PNG
+// and its metadata with at least that many palettes. The tone applies last, to any of them.
+//
+// A player's image of it (assets/image_replacement.hpp: `<id>_palette<N>`, N the palette asked or
+// 0) is drawn instead, with the size of the image it replaces: its rectangles, sprites and layout
+// stay the original's, at the detail of the larger pixels. One that is not the original's size
+// times a whole number, the same on both axes, is left out with a warning in the log. imageSize
+// gives the drawn size too.
+core::Result<DrawnImage> loadDrawnImage(const assets::VirtualFileSystem& files,
+                                        const ImageReference& reference);
+
+// The pixels of loadDrawnImage.
 core::Result<assets::Image> loadImage(const assets::VirtualFileSystem& files,
                                       const ImageReference& reference);
 
