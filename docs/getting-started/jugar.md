@@ -2,7 +2,9 @@
 
 El flujo habitual es **compilar → extraer tu disco una vez → arrancar con esa carpeta de contenido**. El juego nativo se ejecuta en tu máquina; Docker proporciona el entorno de compilación. No necesitas el repositorio privado de instrucciones ni el decomp para ejecutar el motor.
 
-El proyecto sigue en desarrollo: poder arrancar o abrir una demo no significa que la campaña completa y todos sus menús estén terminados.
+Esta página es para quien compila el juego. Para jugar la beta sin compilar nada, con el lanzador, mira la [beta para Linux](../guides/beta-linux.md) o la [beta para Windows y macOS](../guides/beta-windows-macos.md).
+
+El proyecto sigue en desarrollo: la historia entera se juega, pero quedan huecos y fallos por arreglar ([cobertura del port](../reference/port-coverage.md)).
 
 ## 1. Preparar y compilar
 
@@ -119,7 +121,6 @@ En el menú, empieza una **Nueva partida** en una ranura vacía. Las partidas ex
 | Pausa | P | Start |
 | Opciones durante la partida | Esc o `F10` (abren el menú directo en Opciones; otra pulsación lo cierra) | Select (Back) |
 | Mapa de la isla | M | Hombro izquierdo (L1) |
-
 | Guardar un reporte de bug | F12 | |
 
 Los nombres de los botones dependen del mando y los controles pueden tener contexto. La ayuda en pantalla muestra los del dispositivo utilizado. Estas son las asignaciones del motor, no las teclas configuradas en DuckStation.

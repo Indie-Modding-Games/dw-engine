@@ -60,7 +60,8 @@
 ## Formato y análisis
 
 - `clang-format` obligatorio: la configuración está en `.clang-format` y la CI la comprueba.
-- `clang-tidy` con el perfil del repositorio y warnings como errores en la CI.
+- `clang-tidy` con el perfil del repositorio y warnings como errores en `check-full` y en el gate (la CI de los pull
+  requests no lo pasa).
 - `check-commit` y `check-full` fallan si un fuente C++ o Lua del repositorio contiene `goto` (paso `no-goto`), y
   `clang-tidy` aplica `cppcoreguidelines-avoid-goto`. Los tests del conversor de scripts comprueban lo mismo en el Lua
   generado.
@@ -75,7 +76,9 @@
   (sin `DWE_DISC` o `DWE_CONTENT`) sí encaja y pasa. Un caso se salta **volviendo** (`return`), no con
   `doctest::skip()`: con ese decorador no encaja en ningún filtro y su entrada fallaría. Un `ctest` que no encuentra ningún test también falla
   (`noTestsAction` en `CMakePresets.json`).
-- **De integración:** en `tests/integration/`.
-- **De simulación:** en `tests/simulation/`, para el balance de los rulesets (por ejemplo, mil crianzas).
-- **De render:** en `tests/golden/`, contra capturas de referencia.
+- **De integración:** las rutas de autotest de `tests/autotest/`, que juegan el juego con entrada simulada
+  ([prueba vertical](../guides/prueba-vertical.md)), y los paquetes de ejemplo de `tests/mods/`.
+- **De simulación:** en `apps/sim` (`dwe-sim`), para el balance de los rulesets (por ejemplo, mil crianzas)
+  ([simulaciones](../guides/simulaciones.md)).
+- **De render:** todavía no hay tests contra capturas de referencia; las rutas guardan capturas para revisarlas.
 - Todo cambio de comportamiento trae su test, y comprueba lo que dice el GDD (ver [ciclo de diseño](design-cycle.md)).

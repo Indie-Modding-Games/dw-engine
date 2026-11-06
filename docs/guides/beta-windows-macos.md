@@ -163,7 +163,8 @@ el paquete del juego se firmaría con la misma identidad en `package_macos.sh`.
 
 ## Publicación y su coste
 
-`.github/workflows/release.yml` corre solo en cada fusión en `main` y compila, en paralelo, el juego para Linux y
+`.github/workflows/release.yml` corre en cada fusión en `main` que cambia código (no con cambios solo de
+documentación) y compila, en paralelo, el juego para Linux y
 Windows en Ubuntu (Windows por compilación cruzada), el juego para Apple silicon (`macos-15`) e Intel
 (`macos-15-intel`), y el lanzador para Linux, Windows (en Ubuntu) y macOS (el `.dmg` universal, `macos-15`). Los
 manifiestos nombran siempre los cuatro ordenadores. Cada ordenador se compila por su cuenta: si uno falla, los demás

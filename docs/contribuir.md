@@ -43,7 +43,7 @@
 - trae tests del comportamiento que cambia;
 - **actualiza `docs/`** si cambia la arquitectura, una API, un formato o una regla;
 - trae un ADR si toma una decisión de arquitectura (ver [cómo funcionan los ADR](adr/index.md));
-- no añade ningún asset original. Cada asset del equipo lleva su entrada en `provenance.yaml`.
+- no añade ningún asset original ([política legal](legal/assets.md)).
 
 ## Idioma
 

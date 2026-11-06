@@ -165,8 +165,8 @@ done
   anciano y cruza la sala, adelanta el reloj hasta la una de la tarde y lo para, y guarda en `slot_01` con el comando
   de depuración `save("slot_01")` (solo guarda si `--saves` nombra una carpeta). La segunda arranca con
   `--load slot_01` desde esa misma carpeta y comprueba que la partida está como se guardó: el mapa y el sitio del
-  jugador, el nombre y la edad del compañero, el día y la hora, el dinero y los objetos de la bolsa. Todavía no
-  comprueba la historia, que no se guarda. Es una ruta de humo: el gate corto la corre en `en`, y el diario en los
+  jugador, el nombre y la edad del compañero, el día y la hora, el dinero y los objetos de la bolsa. No comprueba
+  la historia, que también se guarda. Es una ruta de humo: el gate corto la corre en `en`, y el diario en los
   dos idiomas. La segunda nunca corre sola; a mano:
 
 ```sh
@@ -177,7 +177,7 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
     --autotest tests/autotest/route-save-load-check.yaml --shots <capturas>/save-load-check
 ```
 
-  Cuando exista la pantalla de guardar del juego, la ruta la usará en vez del comando y cargará desde el título.
+  Guardar desde el menú del juego lo comprueba `route-save-actions.yaml`, y dormir y guardar, `route-sleep-save.yaml`.
 - `route-sleep-save.yaml`: dormir y guardar ([guardar-y-cargar.md](../architecture/guardar-y-cargar.md#36-dormir)).
   Empieza una partida nueva en `slot_01` desde el menú principal, acelera el reloj hasta que el compañero tiene sueño
   (`pause_menu.sleep_enabled`), elige «Dormir» en la pausa y «Guardar y dormir» en el menú de dormir, y espera
@@ -542,7 +542,7 @@ scripts/dev.sh run --content <carpeta> --start twna02 --lang en --seed 1 --story
   el jugador sigue en dgha02; sin ella, la escena de la «fuerza negra» lo hace volver.
   `route-etapa7-mist.yaml` (`--start mist02`) cruza el bosque de la niebla: sus casillas mandan al azar al claro
   siguiente, atrás o en círculo, y la décima vez llevan siempre al claro de `species_av` (mist05), cuyo encuentro (147) y
-  su relato quitan la niebla (148, rutina 37; la niebla aún no se dibuja, así que no tapa nada); sigue a Toy Town.
+  su relato quitan la niebla (148, rutina 37); sigue a Toy Town.
   `route-etapa7-toy-cards.yaml` (`--start omoc01`) da con `story_set` las tres cartas que pide el coleccionista de Toy
   Town, que se las queda (`take_card`) y da un objeto. `route-etapa7-fishing.yaml` (`--start mayo06`) saca la caña en
   el lago (disparador 45 y carne de cebo), lanza y la guarda con Ctrl: la pesca no entra en la beta, pero no rompe
@@ -740,22 +740,21 @@ En Windows no hay contenedor: los mismos pasos con `dwx` del build de Windows
 
 Un gate corre, sobre el tip exacto, en Xvfb con lavapipe y con `--skip-steps fullscreen`:
 
-- [ ] Todas las rutas de `tests/autotest/route-*.yaml` (21) sobre el contenido extraído, en `en` y en `es`: 42
-  ejecuciones. `route-dev-assets` con `--dev-assets`, `route-mod-map` con `--mods tests/mods/example_mod`,
+- [ ] Todas las rutas de `tests/autotest/route-*.yaml` (hoy 126) sobre el contenido extraído, en `en` y en `es`. `route-dev-assets` con `--dev-assets`, `route-mod-map` con `--mods tests/mods/example_mod`,
   `route-skins` con `--mods tests/mods/ui_skin` y la pareja `route-save-load` → `route-save-load-check` con una
   carpeta de partidas propia.
 - [ ] `check-full` con `DWE_CONTENT` (paso `cook-content`, desde cero en `build/gate-cooked`) con `0 problems` en
   las dos comprobaciones.
 - [ ] `route-mod-map` y `route-fade` sobre el paquete cocinado, en `en` y en `es`: 4 ejecuciones.
 
-En total, **46 ejecuciones**. Cada una acaba en `autotest: PASS`, con la capa de validación en 0 mensajes y
-`autotest: 0 [error] lines in the log`; las del paquete cocinado, además, con la fuente de mapa de bits cargada. Si
-añades una ruta, súmala aquí.
+Cada ejecución acaba en `autotest: PASS`, con la capa de validación en 0 mensajes y
+`autotest: 0 [error] lines in the log`; las del paquete cocinado, además, con la fuente de mapa de bits cargada.
 
-`scripts/gate.sh --tier daily` corre todo esto por ti: el check, el build de Windows y las 46 ejecuciones, una detrás
-de otra o en varias pantallas de Xvfb a la vez. El gate de subida de cada paquete es el corto
-(`scripts/gate.sh`): las rutas de humo y las del paquete. Los dos están en [pasar el gate](gate.md). Si añades una
-ruta que necesita opciones propias (`--mods`, `--dev-assets`), añádelas también en `route_job` de `scripts/gate.sh`.
+`scripts/gate.sh --tier daily` corre todo esto por ti: el check, el build de Windows y todas las ejecuciones, una
+detrás de otra o en varias pantallas de Xvfb a la vez. El corto (`scripts/gate.sh`) corre las rutas de humo y las que
+le pidas. Los dos son opcionales (lo que hace falta para fusionar es la CI del pull request) y están en
+[pasar el gate](gate.md). Si añades una ruta que necesita opciones propias (`--mods`, `--dev-assets`), añádelas
+también en `route_job` de `scripts/gate/route_jobs.sh`.
 
 ### Formato de una ruta
 

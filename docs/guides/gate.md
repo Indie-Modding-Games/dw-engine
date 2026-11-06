@@ -12,7 +12,7 @@ corre en uno de dos niveles, bajo el lock del gate de toda la máquina:
 | Nivel | Cuándo | Qué corre |
 |---|---|---|
 | `short` (por defecto) | Antes de abrir un pull request que toque el juego | `dev.sh check-short`, el build cruzado de Windows y las rutas de humo, más las rutas propias del paquete |
-| `daily` | Una vez al día sobre `main`, o por tren | `dev.sh check-gate` en modo completo (los pasos de `check-full`), el build cruzado de Windows y todas las rutas: hoy 21 en `en` y `es` (42 ejecuciones; la pareja de guardar y cargar cuenta como dos) sobre el contenido extraído y 4 sobre el `.pak` cocinado, 46 en total |
+| `daily` | Una vez al día sobre `main`, o por tren | `dev.sh check-gate` en modo completo (los pasos de `check-full`), el build cruzado de Windows y todas las rutas: hoy 126 ficheros `route-*.yaml` en `en` y `es` (la pareja de guardar y cargar cuenta como dos) sobre el contenido extraído y 4 ejecuciones sobre el `.pak` cocinado |
 
 Solo funciona en un Linux con Docker, Xvfb y lavapipe. En Windows no hay gate: los pasos a mano siguen en la
 [guía de la prueba vertical](prueba-vertical.md).
@@ -93,7 +93,8 @@ equipo (`DWE_IMAGE=...`).
   corre esos tests, ya con el disco y el contenido. No cocina: el log lo dice con `gate: cook=none reason=...`.
 - `check-gate` hace los mismos pasos que `check-full`, pero decide el alcance de clang-tidy y si reutiliza el
   cocinado. Con los dos en `full` es igual que `check-full`, y además deja constancia de las pasadas completas para
-  los gates siguientes. La CI sigue usando `check-full`, que no cambia.
+  los gates siguientes. La CI no usa ninguno de los dos: en un pull request pasa el formato y el lint de lo cambiado,
+  compila y corre los tests (`.github/workflows/ci.yml`).
 
 Los logs de cada paso quedan en `check-logs/`. Con `--disc-tests`, `summary.txt` añade una línea por cada test del
 disco que corrió: su nombre, el filtro exacto (`--test-case=...`), las aserciones que contó doctest y el resultado
@@ -135,7 +136,7 @@ marca.
   - `route-skins` con `tests/mods/ui_skin`;
   - `route-save-load` con `--saves <carpeta de la ejecución>/saves`, y en el mismo trabajo, solo si pasa,
     `route-save-load-check` con la misma carpeta y `--load slot_01` (ver abajo);
-  - las de `saves_routes` (`route-sleep-save`), con `--saves <carpeta de la ejecución>/saves` vacía, porque
+  - las de `saves_routes` (`route-sleep-save` y `route-skin-original`), con `--saves <carpeta de la ejecución>/saves` vacía, porque
     empiezan una partida nueva en una ranura y guardan en ella;
   - las 4 del `.pak` cocinado, en las que además comprueba que se cargó la fuente de mapa de bits.
 
