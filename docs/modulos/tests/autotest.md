@@ -20,10 +20,11 @@ rutas necesitan el contenido extraído de un disco, así que no corren en la CI.
 | `route-save-*`, `route-sleep-save` | Guardar y cargar, también al dormir ([guardar y cargar](../../architecture/guardar-y-cargar.md#6-rutas-y-tests)) |
 | `route-bank*`, `route-bulk-*`, `route-feed-*`, `route-partner-*`, `route-status-extras` | Pantallas y sistemas sueltos: tiendas y guardián, cambios en lote, cuidado del compañero, ficha |
 | `route-settings-*`, `route-options*`, `route-skin*`, `route-language`, `route-text-*`, `route-signs*`, `route-minimap*` | Opciones, aspectos de la UI, idioma, textos que caben y carteles |
+| `route-evolve`, `route-evolution-requirements`, `route-field-hud`, `route-free-exploration*`, `route-fade` | Evolución y sus requisitos, el HUD del campo, la exploración libre y los fundidos |
 | `route-mod-*`, `route-hidden-*`, `route-dev-assets` | Paquetes de mods, contenido oculto y assets de desarrollo |
 | `training/route-training-<mapa>-<curso>.yaml` | Una sesión entera de cada curso de cada gimnasio, con `expect_range` sobre los ajustes `gym.session.*` ([comprobar el entrenamiento](../../guides/comprobar-entrenamiento.md)) |
 
-Una ruta nueva entra sola en la ejecución diaria del gate (todas las `route-*.yaml` de la carpeta, sin las de
+Una ruta nueva entra sola en el nivel `daily` del gate (todas las `route-*.yaml` de la carpeta, sin las de
 `training/`).
 
 ## Convenciones

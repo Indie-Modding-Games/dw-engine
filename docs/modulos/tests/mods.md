@@ -41,3 +41,11 @@ tests/mods/example_mod` dice si el paquete sigue valiendo.
 - `apps/dwx/tests/validate_tests.cpp`: con `DWE_CONTENT`, `dwx validate` del mod sobre la base y el paquete `game`.
 - `tests/autotest/route-mod-map.yaml`: el juego con `--mods tests/mods/example_mod` empieza en el mapa nuevo y sale a
   File City ([prueba vertical](../../guides/prueba-vertical.md)).
+
+## `ui_skin/test_contrast`
+
+Un aspecto de la UI sintético en un mod de la capa `mods` que depende del paquete `game`: `skin.yaml` extiende el
+aspecto `modern` y su `theme.rcss` cambia los colores en todas las pantallas, con el nombre del aspecto en los dos
+idiomas (`localization/<idioma>/test_contrast.yaml`). Prueba que un mod añade un aspecto sin tocar el motor. Lo usan
+`engine/ui/tests/skin_switch_tests.cpp`, los tests de los ajustes de aspecto de `apps/game` y la ruta
+`tests/autotest/route-skins.yaml`.
