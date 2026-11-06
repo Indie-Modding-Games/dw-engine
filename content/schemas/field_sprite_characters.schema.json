@@ -64,6 +64,12 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 4095
+          },
+          "additive": {
+            "description": "Draws the model added to what is behind, its colours scaled by this, as a sprite drawn with the additive semi-transparency.",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1
           }
         }
       }

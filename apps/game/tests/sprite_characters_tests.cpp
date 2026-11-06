@@ -83,7 +83,7 @@ std::string readPackFile(std::string_view path) {
 
 TEST_CASE("the sprite character table gives each listed map the character") {
   const auto table = parseSpriteCharacters(R"(characters:
-  - {maps: [tend01, tend02], species: leom, sprites: [3, 4], shadow: 5}
+  - {maps: [tend01, tend02], species: leom, sprites: [3, 4], shadow: 5, additive: 0.5}
   - {maps: [room08], species: puni, sprites: [7], feet: [528, 179], height: 90, facing: 1024}
 )");
   REQUIRE(table);
@@ -92,21 +92,29 @@ TEST_CASE("the sprite character table gives each listed map the character") {
   CHECK(table->of("tend02")[0].species == "leom");
   CHECK(table->of("tend02")[0].sprites == std::vector<std::size_t>{3, 4});
   CHECK(table->of("tend02")[0].shadow == std::optional<std::size_t>{5});
+  CHECK(table->of("tend02")[0].additive == std::optional<float>{0.5F});
   CHECK(table->of("twna01").empty());
   const SpriteCharacter& punimon = table->of("room08")[0];
   CHECK(punimon.feet == std::optional<glm::vec2>{glm::vec2{528.0F, 179.0F}});
   CHECK(punimon.height == doctest::Approx(90.0F));
   CHECK(punimon.facing == std::optional<std::int32_t>{1024});
   CHECK_FALSE(punimon.shadow);
+  CHECK_FALSE(punimon.additive);
 }
 
-TEST_CASE("a sprite character needs its maps, species and sprites, and takes no other key") {
+TEST_CASE("a sprite character needs its maps, species and sprites, takes no other key and glows "
+          "within its colours") {
   CHECK_FALSE(parseSpriteCharacters("characters:\n  - {maps: [topn01], species: tane}\n"));
   CHECK_FALSE(
       parseSpriteCharacters("characters:\n  - {maps: [topn01], species: tane, sprites: []}\n"));
   CHECK_FALSE(parseSpriteCharacters(
       "characters:\n  - {maps: [topn01], species: tane, sprites: [0], scale: 2}\n"));
   CHECK_FALSE(parseSpriteCharacters("maps: {}\n"));
+  // A glow is above nothing and at most the colours themselves.
+  CHECK_FALSE(parseSpriteCharacters(
+      "characters:\n  - {maps: [tend01], species: poyo, sprites: [12], additive: 0}\n"));
+  CHECK_FALSE(parseSpriteCharacters(
+      "characters:\n  - {maps: [tend01], species: poyo, sprites: [12], additive: 1.5}\n"));
 }
 
 TEST_CASE("the game pack's sprite characters read, each with a species and its sprites") {

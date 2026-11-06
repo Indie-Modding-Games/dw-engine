@@ -1124,16 +1124,22 @@ ven los dibujos del original. La consola y las rutas lo cambian para la partida 
   del juego (esquema `field_sprite_characters.schema.json`).
 - **Dónde**: `sprite_characters.hpp` lee la tabla y calcula el sitio: los pies son el centro de la sombra, el pie
   del primer dibujo o un píxel dado (`feet`); `MapCamera::pickGround` los lleva al suelo, a la altura `height` (una
-  jardinera, una cama), y el modelo mira a la cámara salvo que la tabla dé `facing`. `FieldScene` carga el modelo de
-  cada especie al entrar al mapa (`standInSpriteCharacters`) y lo dibuja cada frame (`drawSpriteCharacters`) mientras
-  el primer dibujo no esté oculto. `MapDepthLayers::setStoodIn` saca los dibujos del pintado sin tocar la marca de
-  oculto que ponen los guiones; las sombras se siguen dibujando.
+  jardinera, una cama), y el modelo mira a la cámara salvo que la tabla dé `facing` (Coelamon tumbado en la alfombra
+  del puesto, 2560). `FieldScene` carga el modelo de cada especie al entrar al mapa (`standInSpriteCharacters`) y lo
+  dibuja cada frame con su reposo (`drawSpriteCharacters`) mientras el primer dibujo no esté oculto.
+  `MapDepthLayers::setStoodIn` saca los dibujos del pintado sin tocar la marca de oculto que ponen los guiones; las
+  sombras se siguen dibujando.
+- **Semitransparencia**: `additive` dibuja el modelo sumado a lo de detrás con sus colores por ese factor
+  (`ModelInstance::additive` y el tinte), como los sprites con la semitransparencia aditiva: Poyomon en el final
+  (modos 1 y 3), con 0.35. Los demás sprites de esos mapas son opacos (modo 4) o tienen el modo 0 sin texeles
+  semitransparentes a la vista (Koromon), y su modelo se dibuja opaco; el Poyomon de la casa del anciano usa el modelo
+  tal cual, que ya es transparente por debajo.
 - **Reglas**: no hay entidad nueva; las colisiones, las charlas, los guiones y el minimapa no cambian. Si falta el
   modelo de una especie se queda su dibujo.
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
-| Personajes en 3D | Dibujos prerenderizados, objetos del mapa (`renderMapOverlays`, `buildMapOverlayPrim`), mostrados y ocultados por los guiones (`setMapObjectsFlag`) | `field/sprite_characters.yaml`; `sprite_characters.hpp` (`placeOf`, `standInFor`); `FieldScene::drawSpriteCharacters` dibuja el modelo de la especie con su reposo donde estaba el dibujo; `MapDepthLayers::setStoodIn` | `sprite_characters_tests.cpp` (tabla, pies, sitio en el suelo, cuándo se ve, ajuste); `map_layers_tests.cpp` («an instance stood in for is not drawn…»); `in_game_options_tests.cpp`; capturas antes y después en `topn01` y `twna02` | Mejora (opción) |
+| Personajes en 3D | Dibujos prerenderizados, objetos del mapa (`renderMapOverlays`, `buildMapOverlayPrim`), mostrados y ocultados por los guiones (`setMapObjectsFlag`) | `field/sprite_characters.yaml`; `sprite_characters.hpp` (`placeOf`, `standInFor`); `FieldScene::drawSpriteCharacters` dibuja el modelo de la especie con su reposo donde estaba el dibujo; `MapDepthLayers::setStoodIn` | `sprite_characters_tests.cpp` (tabla con `additive`, pies, sitio en el suelo, cuándo se ve, ajuste); `map_layers_tests.cpp` («an instance stood in for is not drawn…»); `in_game_options_tests.cpp`; capturas antes y después en `topn01`, `tend01`, `tend02`, `twna02`, `room08` y `twnb02` a `twnb09` | Mejora (opción) |
 
 ## Opciones en partida
 

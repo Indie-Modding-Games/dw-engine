@@ -43,6 +43,13 @@ SpriteCharacter readCharacter(assets::YamlReader& reader, const core::YamlNode& 
   if (const core::YamlNode* facing = node.find("facing")) {
     character.facing = reader.integer<std::int32_t>(*facing);
   }
+  if (const core::YamlNode* additive = node.find("additive")) {
+    const float strength = reader.number(*additive);
+    if (strength <= 0.0F || strength > 1.0F) {
+      reader.fail(*additive, "additive is above 0 and at most 1");
+    }
+    character.additive = strength;
+  }
   return character;
 }
 
@@ -65,7 +72,7 @@ core::Result<SpriteCharacterTable> parseSpriteCharacters(std::string_view yaml) 
     for (const core::YamlNode& node :
          reader.sequence(reader.field(*tree, "characters"), "characters")) {
       if (!reader.expectKeys(node, "a sprite character", {"maps", "species", "sprites"},
-                             {"shadow", "feet", "height", "facing"})) {
+                             {"shadow", "feet", "height", "facing", "additive"})) {
         break;
       }
       const SpriteCharacter character = readCharacter(reader, node);

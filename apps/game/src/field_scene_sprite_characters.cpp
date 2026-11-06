@@ -79,6 +79,13 @@ void FieldScene::standInSpriteCharacters(std::string_view mapId) {
                                                  character.species, mapId, actor.error().message));
       continue;
     }
+    Actor& standIn = **actor;
+    if (const std::optional<std::uint32_t> idle =
+            standIn.character.clipOf(scene::motionName(scene::Motion::Idle))) {
+      standIn.motion = scene::Motion::Idle;
+      standIn.motionClip = idle;
+      standIn.player->play(*idle, 0.0F);
+    }
     standInFor(std::span{&character, 1}, layers, true);
     standIns_.push_back({.character = character, .actor = std::move(*actor)});
   }
@@ -100,20 +107,16 @@ void FieldScene::drawSpriteCharacters(double animationSeconds) {
       continue;
     }
     Actor& actor = *standIn.actor;
-    if (const std::optional<std::uint32_t> idle =
-            actor.character.clipOf(scene::motionName(scene::Motion::Idle));
-        idle && actor.motionClip != idle) {
-      actor.motion = scene::Motion::Idle;
-      actor.motionClip = idle;
-      actor.player->play(*idle, 0.0F);
-    }
     static_cast<void>(actor.player->advance(static_cast<float>(animationSeconds)));
     const glm::mat4 world = glm::rotate(glm::translate(glm::mat4{1.0F}, place->feet), place->yaw,
                                         glm::vec3{0.0F, 1.0F, 0.0F});
+    const std::optional<float> additive = standIn.character.additive;
+    const glm::vec4 strength{glm::vec3{additive.value_or(1.0F)}, 1.0F};
     models_->submit({.model = actor.handle,
                      .world = world,
                      .joints = drawnJoints(actor),
-                     .tint = sceneryTint()});
+                     .tint = sceneryTint() * strength,
+                     .additive = additive.has_value()});
   }
 }
 
