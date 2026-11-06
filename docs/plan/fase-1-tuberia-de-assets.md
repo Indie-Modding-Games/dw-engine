@@ -106,3 +106,6 @@ cocinado, en carpeta y en `.pak`.
 
 Pendiente de decisión del usuario: el formato cocinado de los vídeos (propuesta: AV1 + Opus en WebM). Hasta entonces,
 `dwx cook` copia los Y4M y los WAV tal cual (1,17 GB; unos 370 MB dentro del `.pak`).
+
+Nota (2026-11-06): el formato cocinado de los vídeos (AV1 + Opus) pasó a la fase 5; hasta entonces el motor
+reproduce Y4M + WAV ([películas](../architecture/peliculas.md)).

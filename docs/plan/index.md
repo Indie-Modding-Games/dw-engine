@@ -15,13 +15,16 @@ El [plan por fases](../roadmap.md) es el resumen con el estado del día. Aquí e
 | 1 | [Tubería de assets](fase-1-tuberia-de-assets.md) | Sacar todo el contenido del disco original a formatos abiertos y prepararlo para el motor |
 | 2 | [Prueba vertical](fase-2-prueba-vertical.md) | Un trozo pequeño del juego, jugable de punta a punta: caminar de File City a la casa del anciano y volver |
 | 3 | [Núcleo jugable](fase-3-nucleo-jugable.md) | El bucle principal del juego: criar, entrenar, combatir y evolucionar, primero con las reglas del original y sobre rulesets |
-| 4 | [Contenido y modos](fase-4-contenido-y-modos.md) | La historia, los personajes, los modos de juego y la API de mods; termina con la primera versión del mod |
+| 4 | [Contenido y modos](fase-4-contenido-y-modos.md) | Desde el 2026-10-22, el juego original entero y jugable, entregado por etapas, con la beta por el lanzador. La especificación es la del plan anterior: de ella siguen en la fase 4 la historia convertida a Lua y la base de los mods |
+| 5 | Sin especificación todavía | Lo que no es del original: historia reescrita, personajes, modos de juego, el modo versus y la API de mods completa; termina con la primera versión del mod |
+
+Dónde está el proyecto hoy y qué viene después: [plan por fases](../roadmap.md#dónde-estamos-2026-11-06).
 
 ```mermaid
 flowchart LR
-    f0[0. Base] --> f1[1. Tubería de assets] --> f2[2. Prueba vertical] --> f3[3. Núcleo jugable] --> f4[4. Contenido y modos]
+    f0[0. Base] --> f1[1. Tubería de assets] --> f2[2. Prueba vertical] --> f3[3. Núcleo jugable] --> f4[4. El juego original entero] --> f5[5. Mods, modos y mejoras]
     gdd[[Pilares de diseño y GDD]] -.->|rulesets nuevos| f3
-    gdd --> f4
+    gdd --> f5
 ```
 
 Cada fase usa lo que deja la anterior. Dos fases pueden solaparse cuando la siguiente solo necesita lo que ya está
@@ -66,21 +69,22 @@ El objetivo es que nadie espere a una comprobación: se ejecutan en paralelo y s
 | Nivel | Cuándo | Qué | Tiempo aproximado |
 |---|---|---|---|
 | Rápido | Mientras se trabaja | Build incremental y tests del módulo tocado | segundos |
-| `check-commit` | Cada commit | Build del preset `ci` sin warnings y tests sin el disco (`ctest -LE slow`) | ~30 s con caché |
-| `check-full` | Antes de integrar | Formato, build, todos los tests (también los del disco) y clang-tidy en paralelo | ~6 min con caché |
-| Windows | Antes de subir | Build cruzado `windows-cross` desde el contenedor | en paralelo |
-| Gate corto | Antes de subir | `scripts/gate.sh`: `check-short` (formato, build, todos los tests, con los del disco y del contenido saltados salvo los de `--disc-tests`, clang-tidy de lo cambiado), Windows y las rutas de humo, en paralelo ([gate](../guides/gate.md)) | ~10 min |
-| Diario | Una vez al día sobre `main` | `scripts/gate.sh --tier daily`: los pasos de `check-full`, Windows y todas las rutas (46 ejecuciones, en paralelo en 4 pantallas: ~6 min en vez de ~18) | ~30 min |
+| `check-commit` | Antes de abrir o actualizar un pull request | Build del preset `ci` sin warnings y tests sin el disco (`ctest -LE slow`) | ~30 s con caché |
+| CI del pull request | En cada pull request a `main` (obligatoria) | `linux` (formato y lint de lo cambiado, build y todos los tests), `windows` (build cruzado) y `launcher-version` ([Cómo contribuir](../contribuir.md#flujo-de-trabajo)) | ~10 min |
+| `check-full` | Opcional, en local | Formato, build, todos los tests (también los del disco), clang-tidy y el sitio de la documentación, en paralelo | ~6 min con caché |
+| Gate | Opcional, en local | `scripts/gate.sh`: `short` (rutas de humo) o `daily` (todas las rutas sobre el contenido extraído) ([gate](../guides/gate.md)) | ~10–30 min |
 
-- **Un commit por funcionalidad completa.** El progreso se guarda con commits provisionales en la rama del worktree,
-  que se juntan en uno antes de entregar ([commits](../conventions/commits.md)).
-- **Integración continua.** Cada funcionalidad entra en `main` en cuanto pasa `check-full`, y las demás ramas se
-  actualizan sobre ella. Al cerrar una fase no queda una integración grande pendiente.
-- **La verificación acompaña al trabajo.** Cada funcionalidad se verifica cuando llega a `main`; al cerrar la fase
-  solo se repite la prueba del criterio de cierre.
+- **Un pull request es un lote.** Junta varias funciones y arreglos ya probados y entra en `main` con un solo commit
+  (*squash*) ([commits](../conventions/commits.md)).
+- **Integración continua.** Cada pull request entra en `main` en cuanto pasa la CI, y cada fusión que cambia código
+  publica una versión de prueba. Al cerrar una fase no queda una integración grande pendiente.
+- **La verificación acompaña al trabajo.** Cada sistema se verifica solo, con sus tests y sus rutas, cuando llega a
+  `main`; al cerrar la fase solo se repite la prueba del criterio de cierre.
 - **Reparto de la máquina.** Con varios builds a la vez, cada uno usa `DWE_JOBS=6`, y como mucho corren dos
   `check-full` al mismo tiempo.
-- **La CI confirma, no descubre.** Lo que se sube ya pasó `check-full` y el build cruzado de Windows.
+- **La CI confirma, no descubre.** Lo que llega al pull request ya pasó `check-commit` en local; lo que la CI no
+  puede pasar (las rutas con el disco, clang-tidy) se pasa en local con `check-full` o el gate cuando el cambio lo
+  pide.
 
 Los detalles de las cachés y de cada nivel están en el [ADR 0015](../adr/0015-desarrollo-en-contenedor.md).
 
@@ -93,5 +97,5 @@ Los detalles de las cachés y de cada nivel están en el [ADR 0015](../adr/0015-
 - **El runtime nunca lee formatos de PS1.** Solo `dwx` usa `formats/`.
 - **Nada del juego original en los repositorios.** Cada persona extrae su propio disco
   ([política legal](../legal/assets.md)).
-- **Calidad mínima de cada commit en `main`:** compila sin warnings en el preset `ci`, clang-tidy sin avisos,
-  formato correcto y todos los tests en verde.
+- **Calidad mínima de cada commit en `main`:** compila sin warnings en el preset `ci`, formato correcto y todos los
+  tests en verde (lo comprueba la CI), y clang-tidy sin avisos (lo comprueba `check-full`).

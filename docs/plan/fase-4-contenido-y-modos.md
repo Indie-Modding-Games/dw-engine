@@ -205,3 +205,9 @@ Se publica la primera versión del mod. La fase sigue abierta después para nuev
 ## Estado (2026-10-21)
 
 Fase 4a empezada.
+
+Nota (2026-11-06): desde el 2026-10-22 la fase 4 es solo el juego original entero, entregado por etapas detrás del
+candado de historia; lo demás de esta especificación pasó a la fase 5. De la fase 4a ya están la conversión de los
+scripts a Lua (R4.1), el mod de ejemplo (`tests/mods/example_mod`, R4.2), la API de Lua versionada (R4.3), los aspectos
+de la interfaz y los tests de ida y vuelta del editor de mapas (R4.7). El framework de modos y la Arena están en la
+fase 5. Estado de hoy: [plan por fases](../roadmap.md#dónde-estamos-2026-11-06).
