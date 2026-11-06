@@ -106,6 +106,16 @@ local function clock_time(hour, minute)
   return string.format("%02d:%02d", hour, minute)
 end
 
+-- The care meters whose number is a percentage, written with a "%" (partner_menu.percent.value):
+-- happiness (-100 to 100, the share of the happiest) and discipline (0 to 100). The virus bar is a
+-- count of the partner's toilet mistakes, 0 to 16 in the original's rules, so it stays bare. The
+-- tiredness, 0 to 100, is one too.
+local percent_meters = { [0] = true, [1] = true }
+
+local function percent_text(value)
+  return t("partner_menu.percent.value", { value = value })
+end
+
 -- A care meter. A two-tone one fills the bar from the minimum to the middle of its range, then
 -- fills it again in its second colour from the middle to the maximum (game_menu.c:
 -- renderDigimonStatsView: happiness, discipline).
@@ -113,6 +123,9 @@ local function draw_meter(document, index)
   local prefix = "meter-" .. index
   local base = "partner.meter." .. index .. "."
   draw_bar(document, prefix, "partner.meter", index)
+  if percent_meters[index] then
+    document:get(prefix):set_text(percent_text(number(base .. "value")))
+  end
   local high = 0
   if setting(base .. "two_tone", false) then
     local value, low, top = number(base .. "value"), number(base .. "min"), number(base .. "max")
@@ -149,20 +162,21 @@ end
 -- care mistakes and battles, the hours it is awake today, the hours of life left and the evolution
 -- counter with the hours its level checks from. The original look names the tiredness bar with the
 -- tired need's word, short like the other bars' names, and writes the waking hours in the Active
--- field, hour to hour, as its two-digit fields.
+-- field, hour to hour, as its two-digit fields, in an inset of its own (the class active-hours).
 local function draw_extras(document)
   local extras = extras_shown()
+  local original = ui.setting("ui_skin") == "original"
   document:get("scrim"):set_class("status-extras", extras)
+  document:get("status-active"):set_class("active-hours", extras and original)
   if not extras then
     return
   end
-  local original = ui.setting("ui_skin") == "original"
   local value = number("partner.tiredness.value")
   local fill = percent(value, number("partner.tiredness.min"), number("partner.tiredness.max"))
   document:get("tiredness-label"):set_text(
     original and t("partner_menu.condition.tired") or text(setting("partner.tiredness.label", ""))
   )
-  document:get("tiredness"):set_text(tostring(value))
+  document:get("tiredness"):set_text(percent_text(value))
   document:get("tiredness-fill"):set_property("width", fill .. "%")
   document:get("status-mistakes-value"):set_text(tostring(number("partner.care_mistakes")))
   document:get("status-battles-value"):set_text(tostring(number("partner.battles")))
@@ -175,16 +189,13 @@ local function draw_extras(document)
   if original then
     document:get("status-active"):set_text(string.format("%02d-%02d", wake_hour, sleepy_hour))
   end
-  -- The original look writes the counter bare in its inset, as it does the age and the weight: a
-  -- champion's "150/144 h" would not fit it.
+  -- The hours since its last change of level over the hours from which its level checks for an
+  -- evolution, both in hours like the lifetime ("29/72 h"); just the hours when its level does not
+  -- evolve by itself.
   local hours, check = number("partner.evolution.hours"), number("partner.evolution.check_hours")
-  local evolution
-  if original then
-    evolution = check >= 0 and (hours .. "/" .. check) or tostring(hours)
-  else
-    evolution = check >= 0 and t("partner_menu.evolution.value", { hours = hours, check = check })
-      or t("partner_menu.hours.value", { hours = hours })
-  end
+  local evolution = check >= 0
+      and t("partner_menu.evolution.value", { hours = hours, check = check })
+    or t("partner_menu.hours.value", { hours = hours })
   document
     :get("status-lifetime-value")
     :set_text(t("partner_menu.hours.value", { hours = number("partner.lifetime_hours") }))

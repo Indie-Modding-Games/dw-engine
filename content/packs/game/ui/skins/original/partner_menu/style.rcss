@@ -1009,6 +1009,13 @@ button:focus .original-look, button.original-look:focus {
 #status-parameters .value { left: 102dp; width: 150dp; }
 #status-parameters .pool .value { left: 102dp; width: 150dp; }
 #status-parameters .pool-max { left: 282dp; width: 150dp; }
+/* A slash between HP's (and MP's) value now and its maximum, so the two numbers read as one: the Japanese and European
+   versions draw one there (game_menu.c, the stats view: a 12-pixel glyph at x 83, ahead of the maximum's field), the
+   American one leaves a gap. It sits in the middle of the gap between a four-digit value and a four-digit maximum, so
+   9999 / 9999 keep apart. */
+#status-parameters .pool-slash {
+    display: block; position: absolute; left: 276dp; top: -9dp; width: 36dp; text-align: center; white-space: nowrap;
+}
 
 /* The original's labels are English pictures; in other languages the page writes them with the font: headings in
    the yellow of the Tech page's, field labels in the pictures' cyan, the small column headings in capitals with the
@@ -1131,12 +1138,13 @@ button:focus .original-look, button.original-look:focus {
    after them in white. The hours of life left and the evolution counter (with the hours its level checks from) go in
    the room right of the Off, Def, Speed and Brains bars, each a label in the field labels' cyan over an inset. */
 #scrim.status-extras #page-status #status-awake.status-extra { display: none; }
-#scrim.status-extras #status-condition .meter { width: 102dp; }
+#scrim.status-extras #status-condition .meter { width: 84dp; }
+/* Room for the widest number with its percent sign, happiness at "-100%". */
 #scrim.status-extras #status-condition .value {
-    display: block; position: absolute; left: 264dp; top: 0; width: 66dp; height: 27dp; font-size: 24dp;
+    display: block; position: absolute; left: 246dp; top: 0; width: 84dp; height: 27dp; font-size: 22dp;
     line-height: 27dp; text-align: right; color: #ffffff; white-space: nowrap;
 }
-#scrim.status-text.status-extras #status-condition .meter { width: 90dp; }
+#scrim.status-text.status-extras #status-condition .meter { width: 69dp; }
 #scrim.status-extras #status-timers { position: absolute; left: 729dp; top: 366dp; width: 153dp; height: 180dp; }
 #status-timers .timer-line { display: block; position: absolute; left: 0; width: 153dp; height: 84dp; }
 #status-lifetime { top: 0; }
@@ -1148,5 +1156,14 @@ button:focus .original-look, button.original-look:focus {
 #status-timers .timer-value {
     display: block; position: absolute; left: 0; top: 36dp; width: 153dp; height: 42dp; box-sizing: border-box;
     margin: 0; padding: 0; font-size: 27dp; line-height: 36dp; text-align: center; white-space: nowrap;
+    border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0; background-color: #354b5c;
+}
+/* With the extras the Active field writes the waking hours ("08-20"), not the pattern's word: they get an inset of
+   their own under the Active heading, centred, and the species' inset ends before it. */
+#scrim.status-extras #status-species-line #status-species { width: 570dp; }
+#scrim.status-text.status-extras #status-species-line #status-species { width: 546dp; }
+#status-active.active-hours {
+    left: 696dp; top: 108dp; width: 153dp; height: 42dp; box-sizing: border-box; margin: 0; padding: 0;
+    line-height: 36dp; text-align: center; white-space: nowrap;
     border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0; background-color: #354b5c;
 }

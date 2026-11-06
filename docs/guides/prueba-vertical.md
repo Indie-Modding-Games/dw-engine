@@ -271,8 +271,9 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   con `--ui-skin modern` la ruta falla en su primer paso.
 - `route-status-extras.yaml`: los [extras de la ficha](../modulos/apps/screens.md#extras-de-la-ficha) del
   compañero desde una partida nueva con el teclado: dos entrenamientos (cansancio) y el reloj rápido hasta un error de
-  cuidado, la ficha con la opción encendida a 1280x720 y 1920x1080, la opción apagada desde el menú de pausa y la ficha
-  otra vez como el original, con `text_fit`. Se corre en los dos idiomas y con los dos aspectos (`--ui-skin original`
+  cuidado, la ficha con la opción encendida a 1280x720 y 1920x1080, otra vez con los valores más anchos (HP y MP
+  9999 / 9999, disciplina al 100 %, contador de evolución de tres cifras) a 1280x720 y 1024x768, la opción apagada desde
+  el menú de pausa y la ficha otra vez como el original, con `text_fit`. Se corre en los dos idiomas y con los dos aspectos (`--ui-skin original`
   y `modern`).
 - `route-scripted-loop.yaml`: una vuelta por cinco zonas desde una partida nueva con el teclado: File City (`twna01`)
   → la casa del anciano, `room08` (tabla de salidas del mapa) → File City (script) → `trai00` (tabla) → `mayo00`

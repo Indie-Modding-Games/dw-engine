@@ -24,6 +24,9 @@ battles: "Battles"
 awake: "Awake"
 # {wake} and {sleepy} are the times it wakes up and gets sleepy, as 08:00.
 awake.value: "{wake}-{sleepy}"
+# {value} is a number from 0 to 100 (-100 to 100 for happiness) the status page writes as a percentage: happiness,
+# discipline and tiredness.
+percent.value: "{value}%"
 lifetime: "Lifetime"
 evolution: "Evo. timer"
 # {hours} is a count of game hours.
