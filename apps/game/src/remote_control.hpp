@@ -21,7 +21,9 @@ namespace dwe::app {
 // a tool outside the game (an MCP server, a test) sends a JSON request per line and gets a JSON
 // reply per line. It reads the state as the state trace writes it, presses keys tick by tick,
 // pauses the logic and advances it a number of ticks, places characters, starts battles, loads a
-// save or a map and takes screenshots. Off unless asked for; the game then does nothing for it.
+// save or a map and takes screenshots. For a map editor it also lists the packs' files again,
+// reloads the current map from them, dumps the story's state and shows the map's debug overlay.
+// Off unless asked for; the game then does nothing for it.
 //
 // A request is {"id": <any>, "cmd": "<command>", ...}; the reply echoes the id with "ok": true and
 // what was asked, or "ok": false and an "error". Replies to press, advance and screenshot come
@@ -44,6 +46,10 @@ struct ControlRequest {
     Load,       // load {save | scene}: a save file, or a new game on a map
     Trace,      // trace {path?}: writes the state trace to the file; without one it stops
     Quit,       // quit: the game closes
+    Rescan,     // rescan: the packs' files are listed again (new files are seen)
+    ReloadMap,  // reload_map {exit?}: rescan, then the current map read again and re-entered
+    StoryState, // story_state {path?}: the story's triggers, variables, script and the camera
+    Overlay,    // overlay {on?}: the map's debug overlay on, off, or toggled without `on`
   };
   Kind kind = Kind::Status;
   // The keys of press, hold and release, by name (keyNamed), in the order given.
@@ -55,6 +61,10 @@ struct ControlRequest {
   std::string text;
   // screenshot: the picture; load: the save; trace: the file, none to stop it.
   std::optional<std::filesystem::path> path;
+  // reload_map: the exit to enter by; none keeps the player where they stand.
+  std::optional<std::int32_t> exit;
+  // overlay: on or off; none toggles it.
+  std::optional<bool> on;
 };
 
 // A request line read: its id, echoed by the reply even when the rest is wrong, and the request.
@@ -79,6 +89,13 @@ struct ControlStatus {
 // Called once a screenshot was written (its path) or could not be.
 using ControlShotDone = std::function<void(core::Result<std::string>)>;
 
+// What reload_map did: the map entered again and the exit it was entered by, none when the player
+// kept their place.
+struct ControlReload {
+  std::string map;
+  std::optional<std::int32_t> exit;
+};
+
 // What the dispatcher asks of the game. The game builds it from its own parts; the tests fake it.
 struct ControlHost {
   std::function<ControlStatus()> status;
@@ -90,6 +107,13 @@ struct ControlHost {
   std::function<void(const std::filesystem::path&, ControlShotDone)> screenshot;
   std::function<core::Result<void>(const std::optional<std::filesystem::path>&)> trace;
   std::function<void()> quit;
+  // The map editor's commands. A host without one answers that the game cannot do it.
+  std::function<core::Result<void>()> rescan;
+  std::function<core::Result<ControlReload>(std::optional<std::int32_t> exit)> reloadMap;
+  // The story's state as a JSON object (story_state_json.hpp).
+  std::function<core::Result<std::string>()> storyState;
+  // Turns the overlay on or off (none toggles it) and says whether it is on now.
+  std::function<bool(std::optional<bool> on)> overlay;
 };
 
 class RemoteControl {

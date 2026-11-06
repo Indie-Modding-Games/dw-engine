@@ -38,6 +38,9 @@ struct FakeGame {
   std::optional<std::string> trace;
   ControlShotDone shot;
   bool quit = false;
+  int rescans = 0;
+  std::vector<std::optional<std::int32_t>> reloads;
+  bool overlayOn = false;
 
   ControlHost host() {
     return {
@@ -65,6 +68,26 @@ struct FakeGame {
           return {};
         },
         .quit = [this] { quit = true; },
+        .rescan = [this]() -> dwe::core::Result<void> {
+          ++rescans;
+          return {};
+        },
+        .reloadMap =
+            [this](std::optional<std::int32_t> exit) -> dwe::core::Result<dwe::app::ControlReload> {
+          reloads.push_back(exit);
+          if (exit == 9) {
+            return dwe::core::fail("map 'twna01' has no exit 9");
+          }
+          return dwe::app::ControlReload{.map = "twna01", .exit = exit};
+        },
+        .storyState = []() -> dwe::core::Result<std::string> {
+          return std::string{R"({"triggers":[1,7],"variables":{"3":2},"script":{"busy":false}})"};
+        },
+        .overlay =
+            [this](std::optional<bool> on) {
+              overlayOn = on.value_or(!overlayOn);
+              return overlayOn;
+            },
     };
   }
 };
@@ -192,6 +215,48 @@ TEST_CASE("the dispatcher answers at once what needs no ticks") {
   game.state.reset();
   control.receive(R"({"id":10,"cmd":"state"})");
   CHECK(control.takeReplies().front().contains("no game is being played"));
+}
+
+TEST_CASE("the map editor's commands reload the map, dump the story and toggle the overlay") {
+  FakeGame game;
+  RemoteControl control{game.host()};
+  control.receive(R"({"id":1,"cmd":"rescan"})");
+  control.receive(R"({"id":2,"cmd":"reload_map"})");
+  control.receive(R"({"id":3,"cmd":"reload_map","exit":2})");
+  control.receive(R"({"id":4,"cmd":"reload_map","exit":9})");
+  control.receive(R"({"id":5,"cmd":"reload_map","exit":10})");
+  control.receive(R"({"id":6,"cmd":"story_state"})");
+  control.receive(R"({"id":7,"cmd":"story_state","path":"triggers.1"})");
+  control.receive(R"({"id":8,"cmd":"overlay"})");
+  control.receive(R"({"id":9,"cmd":"overlay","on":false})");
+  control.receive(R"({"id":10,"cmd":"overlay","on":"yes"})");
+  const auto replies = control.takeReplies();
+  REQUIRE(replies.size() == 10);
+  CHECK(replies[0] == R"({"id":1,"ok":true})");
+  CHECK(replies[1] == R"({"id":2,"ok":true,"map":"twna01","exit":null,"tick":0})");
+  CHECK(replies[2] == R"({"id":3,"ok":true,"map":"twna01","exit":2,"tick":0})");
+  CHECK(replies[3] == R"({"id":4,"ok":false,"error":"reload_map: map 'twna01' has no exit 9"})");
+  CHECK(replies[4].contains("'exit' must be a whole number from 0 to 9"));
+  CHECK(replies[5] == R"({"id":6,"ok":true,"tick":0,"story":{"triggers":[1,7],)"
+                      R"("variables":{"3":2},"script":{"busy":false}}})");
+  CHECK(replies[6] == R"({"id":7,"ok":true,"tick":0,"story":7})");
+  CHECK(replies[7] == R"({"id":8,"ok":true,"overlay":true})");
+  CHECK(replies[8] == R"({"id":9,"ok":true,"overlay":false})");
+  CHECK(replies[9].contains("'on' must be true or false"));
+  CHECK(game.rescans == 1);
+  CHECK(game.reloads == std::vector<std::optional<std::int32_t>>{std::nullopt, 2, 9});
+
+  // A host without the editor's commands says so.
+  ControlHost bare = game.host();
+  bare.reloadMap = nullptr;
+  bare.storyState = nullptr;
+  RemoteControl plain{std::move(bare)};
+  plain.receive(R"({"id":1,"cmd":"reload_map"})");
+  plain.receive(R"({"id":2,"cmd":"story_state"})");
+  const auto refused = plain.takeReplies();
+  REQUIRE(refused.size() == 2);
+  CHECK(refused[0].contains("cannot reload its map"));
+  CHECK(refused[1].contains("no story to show"));
 }
 
 TEST_CASE("a press holds its keys for exactly its ticks, and answers when they ran") {

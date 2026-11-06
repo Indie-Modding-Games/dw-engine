@@ -68,6 +68,7 @@
 #include "state_trace.hpp"
 #include "story_field_link.hpp"
 #include "story_scene_glue.hpp"
+#include "story_state_json.hpp"
 #include "story_textbox.hpp"
 #include "tournament_bracket_screen.hpp"
 #include "tournament_schedule_screen.hpp"
@@ -244,6 +245,12 @@ public:
   // Where the characters and the battle's fighters stand after this tick, and the buttons held in
   // it, for --trace (state_trace.hpp).
   [[nodiscard]] TraceFrame traceFrame(std::uint64_t tick, const input::InputState& input) const;
+
+  // The control channel's reload_map (FieldScene::reloadMap): the current map read again from the
+  // packs and entered again, by `exit` or where the player stands. Refused during a battle.
+  core::Result<void> reloadMap(std::optional<std::int32_t> exit);
+  // The story's triggers, variables and running script, and the camera, for story_state.
+  [[nodiscard]] StoryStateView storyStateView() const;
 
   // Whether the save indicator is on screen, so the app draws its figure this frame.
   [[nodiscard]] bool saveIndicatorShown() const {

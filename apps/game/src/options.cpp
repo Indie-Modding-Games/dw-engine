@@ -119,7 +119,7 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     return true;
   }
   if (argument == "--control") {
-    options.control = value;
+    options.control = std::string{value};
     return !value.empty();
   }
   if (argument == "--viewer-yaw") {

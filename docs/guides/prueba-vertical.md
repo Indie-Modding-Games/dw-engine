@@ -40,7 +40,7 @@ El juego empieza donde dice `field/warps` del paquete `game` (`start`: `twna01`,
 | `--seed <n>` | La semilla de los números aleatorios de una partida nueva (el partner y los sistemas: combates, objetos, evolución), para que una ruta juegue igual cada vez. Sin ella, el juego toma una del reloj y la escribe en el log (`game: new game, seed <n>`), así una partida se puede repetir. Con `--load` no cambia nada: la partida cargada sigue con los números que guardó |
 | `--original-rolls <estado>` | Solo para el oráculo: los combates tiran con el generador del original (`rand()`) desde ese estado de 32 bits (decimal o `0x…`), el que tenía el original al empezar su pelea, así las primeras decisiones de los luchadores son las mismas en los dos lados. Sin ella, el motor tira con su propio generador |
 | `--trace <fichero>` | Escribe una línea JSON por tick de lógica con lo que simula el juego (jugador, compañero, NPC, combatientes), para compararla con una traza del original ([traza de estado](traza-de-estado.md)). Sin ella no se escribe nada |
-| `--control <socket>` | Abre el canal de depuración en ese socket Unix: una herramienta lee el estado y mueve el juego en marcha ([control remoto](control-remoto.md)). Con `--control-paused`, la lógica espera parada antes de su primer tick |
+| `--control <socket>` o `--control tcp:<puerto>` | Abre el canal de depuración en ese socket Unix o en ese puerto TCP de 127.0.0.1: una herramienta lee el estado y mueve el juego en marcha ([control remoto](control-remoto.md)). Con `--control-paused`, la lógica espera parada antes de su primer tick |
 | `--saves <carpeta>` | Dónde lee y guarda las partidas (por defecto la carpeta de datos del usuario). Un autotest solo guarda con ella |
 | `--reports <carpeta>` | Dónde guarda los [reportes de bug](#reportar-un-bug-f12) (por defecto `reports` en la carpeta de datos del usuario) |
 | `--text-font modern\|original` | La fuente del texto con aspecto original (el nombre del mapa), en vez de la elegida en el menú principal o la de los paquetes; para autotests y capturas, no se guarda (ver [UI](../architecture/ui.md#aspecto-original)) |
@@ -67,6 +67,7 @@ para escribir los [carteles](carteles.md)).
 | Pausa (caja «Pause», todo se congela) | P o Pausa | Start |
 | Aceptar / volver en el menú | Enter, Espacio o clic / Ctrl, Retroceso o clic derecho | Sur / Este |
 | Consola de depuración | F1 o `º` | |
+| Capa de depuración del mapa (colisión, salidas, NPCs; [control remoto](control-remoto.md#capa-de-depuración-del-mapa)) | F3 (acción `debug_map_overlay`) | |
 | Guardar un reporte de bug | F12 (acción `report_bug`) | |
 
 Correr es lo normal, como en el original (allí R1 hacía andar). Los avisos de botones del HUD y del menú cambian al

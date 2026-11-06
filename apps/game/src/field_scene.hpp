@@ -526,6 +526,13 @@ public:
   // Enters the original's map with this index at this exit, keeping the partner (a scene's map
   // change: map.c: changeToDeathMap).
   core::Result<void> enterOriginalMap(std::int32_t index, std::int32_t exit);
+  // A map editor's reload (the control channel's reload_map, docs/guides/control-remoto.md): the
+  // field's rules, the scripts' map changes and the map table read again from the packs, then the
+  // current map read again and entered: by `exit` when given, else where the player and the partner
+  // stand, without a fade. The story and the session stay as they are; the session sees a map
+  // entered (mapSerial) and runs what a map's entry runs. Refused while a map change is under
+  // way; on an error the map stays as it was, though the rules may already be the new ones.
+  core::Result<void> reloadMap(std::optional<std::int32_t> exit);
   // What a scene does to the picture; a default FieldStage gives the field its own back.
   void setStage(const FieldStage& stage);
   [[nodiscard]] const FieldStage& stage() const { return stage_; }
