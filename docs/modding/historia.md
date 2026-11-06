@@ -125,6 +125,25 @@ return {
   }
   ```
 
+## Editar eventos con el mapper
+
+El [editor de mapas](../modulos/apps/mapper.md#eventos) escribe estos parches por ti:
+
+1. Abre el contenido y el mapa, elige el paquete de mod en «Archivo → Destino» y enciende la capa **Eventos** (tecla
+   0). El panel «Eventos» lista lo que hace el mapa al entrar, al pisar o pulsar en cada celda de disparo y al hablar
+   con cada NPC, con la sección que corre y el parche que la da, si lo hay.
+2. Un clic en un evento (en el panel o en el lienzo) abre su sección. En «Estructura», elige una línea y cambia sus
+   campos: el texto de un diálogo, el número de un disparador, la condición de un `if`. La paleta añade comandos y
+   la pestaña «Lua» deja escribir la sección a mano. Ctrl+Z deshace.
+3. Ctrl+S guarda `story/patches/<paquete>_<script>.lua` con las secciones cambiadas (y las rutinas que usan, como
+   rutinas privadas) y las líneas de texto en el `text/<idioma>` del paquete. Si ya había un parche del paquete para
+   ese script, se edita ese.
+4. Con el juego abierto y conectado ([En vivo](../modulos/apps/mapper.md#en-vivo)), «Probar» pone la historia del
+   juego en el estado que la sección necesita, recarga el mapa, lleva al jugador al evento y enseña lo que cambió.
+
+Si el cambio añade o mueve un `story.warp_to`, vuelve a sacar `field/script_warps` con `dwx script-warps` (el editor
+lo hace solo si sabe dónde está `dwx`, en «Archivo → Ajustes…»). Antes de publicar, `dwx validate` sobre el mod.
+
 ## Nombres de disparadores y variables
 
 La historia trabaja con números (disparadores 0–799, variables 0–255). `story/names.yaml` del paquete `game` da una
