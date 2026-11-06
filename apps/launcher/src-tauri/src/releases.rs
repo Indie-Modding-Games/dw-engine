@@ -18,8 +18,8 @@ use crate::failure::{code, Failure, Result};
 use crate::manifest::{self, GameManifest, LAUNCHER_MANIFEST_ASSET, MANIFEST_ASSET};
 
 /// Which releases the player follows (settings.rs keeps the choice): Stable, the published
-/// versions only (the main branch's releases), or Testing, every new test version too (the
-/// prereleases from the demo branch). Either way an update is only ever a newer version
+/// versions only (the prereleases promoted after testing), or Testing, every new test version
+/// too (the prerelease of every merge into main). Either way an update is only ever a newer version
 /// (manifest::is_newer), so going back to Stable keeps a newer test version until a newer
 /// stable one comes out.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -305,9 +305,27 @@ impl Client {
     }
 }
 
+/// Whether a download that failed with the release listing kept from an earlier look is worth
+/// one more try with a fresh listing: a file uploaded again gets a new address, so the kept one
+/// answers "not found" (AUTH, from the gateway's 404) or the updater finds nothing there. A bad
+/// signature, a cancel or a full disc are not about the listing.
+pub fn worth_reading_again(failure: &Failure) -> bool {
+    [code::NETWORK, code::AUTH, code::NO_RELEASE, code::BAD_MANIFEST].contains(&failure.code)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_stale_listing_is_read_again_once() {
+        for stale in [code::NETWORK, code::AUTH, code::NO_RELEASE, code::BAD_MANIFEST] {
+            assert!(worth_reading_again(&Failure::new(stale, "")), "{stale}");
+        }
+        for other in [code::BAD_SIGNATURE, code::CANCELLED, code::NO_SPACE, code::IO, code::NO_SIGNING_KEY] {
+            assert!(!worth_reading_again(&Failure::new(other, "")), "{other}");
+        }
+    }
 
     #[test]
     fn only_https_or_this_computer() {
