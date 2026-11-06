@@ -2,13 +2,13 @@
 
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/map_table.hpp>
-#include <dwe/core/collision_triggers.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/partner/partner.hpp>
 #include <dwe/scene/components.hpp>
 
 #include <algorithm>
 #include <string_view>
+#include <utility>
 
 namespace dwe::app {
 
@@ -52,7 +52,9 @@ float FieldToilet::frames(std::int32_t count) const {
 bool FieldToilet::checkCell() {
   game::field::Field& field = scene_->field();
   const assets::CollisionCell cell = assets::collisionCellAt(field.player().position);
-  if (active() || field.collision().trigger(cell).value_or(0) != core::collision::ToiletTrigger ||
+  if (active() ||
+      std::cmp_not_equal(field.collision().trigger(cell).value_or(0),
+                         field.rules().triggers.toilet) ||
       !session_->partner().goesToToilet()) {
     return false;
   }

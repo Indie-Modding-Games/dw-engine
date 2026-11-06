@@ -1,7 +1,6 @@
 #include <dwe/assets/new_game_story.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/assets/yaml_reader.hpp>
-#include <dwe/core/collision_triggers.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/game/field/script_warps.hpp>
@@ -431,15 +430,11 @@ ScriptWarp readWarp(YamlReader& reader, const YamlNode& item) {
 
 } // namespace
 
-WarpVia warpViaOf(std::int32_t value) {
-  using core::collision::FirstConfirmTrigger;
-  using core::collision::FirstStepTrigger;
-  using core::collision::FirstWarpTrigger;
-  if (value >= FirstStepTrigger && value < FirstConfirmTrigger) {
+WarpVia warpViaOf(std::int32_t value, const TriggerBands& bands) {
+  if (bands.step.contains(value)) {
     return WarpVia::Step;
   }
-  return value >= FirstConfirmTrigger && value < FirstWarpTrigger ? WarpVia::Confirm
-                                                                  : WarpVia::Other;
+  return bands.confirm.contains(value) ? WarpVia::Confirm : WarpVia::Other;
 }
 
 Truth evaluate(const WarpGuard& guard, const GuardFacts& facts) {

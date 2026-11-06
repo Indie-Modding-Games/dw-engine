@@ -1,7 +1,6 @@
 #include "story_field_link.hpp"
 
 #include <dwe/assets/map_table.hpp>
-#include <dwe/core/collision_triggers.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/game/story/screen_history.hpp>
@@ -126,16 +125,10 @@ void StoryFieldLink::followScreen(std::int32_t map) {
   if (screens_ == nullptr) {
     return;
   }
-  using core::collision::FirstWarpTrigger;
-  using core::collision::WarpTriggerCount;
   const FieldScene::MapArrival& arrival = scene_->mapArrival();
-  const bool walked =
-      arrival.trigger >= FirstWarpTrigger && arrival.trigger < FirstWarpTrigger + WarpTriggerCount;
-  screens_->arrive(
-      {.screen = map,
-       .exit = arrival.exit,
-       .walkedWarp = walked ? std::optional<std::int32_t>{arrival.trigger - FirstWarpTrigger}
-                            : std::nullopt});
+  screens_->arrive({.screen = map,
+                    .exit = arrival.exit,
+                    .walkedWarp = scene_->field().rules().triggers.exitOf(arrival.trigger)});
 }
 
 bool StoryFieldLink::playMapChange(std::int32_t map, std::int32_t exit, bool showName) {

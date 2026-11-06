@@ -73,6 +73,10 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
   - 80–109: lo mismo, pero al pulsar confirmar;
   - 110–119: warp por la salida `valor - 110` del mapa: va al mapa `targetMap` y aparece en la salida `targetExit`;
   - 120: un script (sección 0x4E2) si el partner tiene el bit 8 de su condición (el baño, **suposición**).
+  - En el motor estos tramos (y el bit 0x80 de las casillas que cortan el paso) son datos:
+    `content/packs/game/field/triggers.yaml` (`TriggerBands`, `packages/game/field`). El fichero del paquete `game`
+    trae los del original y un test comprueba que cada valor 0–127 significa lo mismo; `dwx`, el minimapa y el mapa del
+    mundo siguen leyendo los del original (`core/collision_triggers.hpp`).
   - Con `TAMER_STATE` distinto de 0 la función vuelve antes de mirar ninguna celda (`tamer.c:685`; solo la llama
     `tamerTickWalkingState`, el estado 0 de `tamerTickOverworld`, `tamer.c:455`), y las secciones 51–109 piden además
     que no haya script en marcha (`IS_SCRIPT_PAUSED` 1). En el motor equivale a que el paso del campo llegue a mirar
@@ -224,8 +228,8 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 - `data/maps`: nombres de carga. File City es el nombre 43 y la casa del anciano el 48 **(comprobado)**.
 - `field/script_warps` y `data/new_game_story` del paquete base, que extrae `dwx` (esquemas `script_warps` y
   `new_game_story`).
-- `content/packs/game/field/rules.yaml` y `warps.yaml` (solo `start`; esquemas `field_rules` y `field_warps` en
-  `content/schemas/`).
+- `content/packs/game/field/rules.yaml`, `warps.yaml` (solo `start`) y `triggers.yaml` (los tramos de valores de
+  colisión; esquemas `field_rules`, `field_warps` y `field_triggers` en `content/schemas/`).
 
 ## El recorrido de la fase 2
 

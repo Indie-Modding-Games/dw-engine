@@ -1,0 +1,19 @@
+# Qué hace la casilla del jugador según su valor de colisión (docs/reference/campo.md,
+# docs/architecture/interprete-historia.md#secciones-y-disparadores). Son los del original; dwx extrae
+# los warps de los scripts con estos mismos tramos. Los tramos no se solapan y quedan entre 1 y 127.
+# Pisar la casilla corre la sección de ese número del script del mapa, cada fotograma encima.
+step:
+  first: 51
+  last: 79
+# Pulsar confirmar sobre la casilla corre la sección de ese número.
+confirm:
+  first: 80
+  last: 109
+# La casilla lleva por la salida (valor - first) de la tabla de warps del mapa; diez como mucho.
+exits:
+  first: 110
+  last: 119
+# El compañero que necesita el baño va (sección 0x4e2 de MAPHEAD).
+toilet: 120
+# El bit de las casillas que cortan el paso. Lo fija el formato del mapa: solo vale 128.
+blocked_bit: 128

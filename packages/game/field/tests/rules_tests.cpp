@@ -188,6 +188,8 @@ TEST_CASE("the game pack's field data is valid") {
   REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
   const auto rules = dwe::game::field::loadFieldRules(*vfs);
   CHECK_MESSAGE(rules.has_value(), errorOf(rules));
+  // field/triggers keeps the original's bands (trigger_bands_tests.cpp checks them one by one).
+  CHECK((rules && rules->triggers == dwe::game::field::TriggerBands{}));
   const auto warps = dwe::game::field::loadFieldWarps(*vfs);
   CHECK_MESSAGE(warps.has_value(), errorOf(warps));
 }

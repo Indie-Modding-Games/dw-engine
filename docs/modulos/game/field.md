@@ -286,7 +286,14 @@ un cambio de mapa, `tamer.c: stopGameTime`/`startGameTime`), y quien lleva el bu
 - `field/warps` (`content/packs/game/field/warps.yaml`, [esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/field_warps.schema.json)): el
   mapa y la salida de inicio, y los warps que en el original hacía un script, cada uno con su prueba.
 
-Los dos se pueden cambiar desde un paquete de mod con el mismo id.
+- `field/triggers` (`content/packs/game/field/triggers.yaml`, [esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/field_triggers.schema.json)):
+  qué hace la casilla del jugador según su valor de colisión: pisar (51–79), confirmar (80–109), salidas (110–119),
+  baño (120) y el bit de bloqueo (0x80, fijo por el formato del mapa). `loadFieldRules` lo lee en
+  `FieldRules::triggers` (`trigger_bands.hpp`); sin el fichero, los del original. `warpViaOf(valor, tramos)` y
+  `TriggerBands::exitOf` son las dos preguntas que hace el campo; la app las usa para el baño y la llegada por warp.
+  `parseTriggerBands` rechaza tramos que se solapan, fuera de 1–127 o con más de 10 salidas.
+
+Los tres se pueden cambiar desde un paquete de mod con el mismo id.
 
 ## Tests
 
@@ -294,7 +301,8 @@ Los dos se pueden cambiar desde un paquete de mod con el mismo id.
 (movimiento, warps con su fundido y su nombre fotograma a fotograma, seguimiento, desatasco y sitio tras un guion del
 partner; la regla de suelta, la vigilancia de solapes, la interpolación, el tamaño del compañero y los NPC tras un
 guion) y
-`rules_tests.cpp` (lectura de los YAML, también los del paquete `game`, y la curva del fundido) usan mapas de prueba. `route_tests.cpp` recorre la ruta de la fase 2 en el contenido extraído si
+`rules_tests.cpp` (lectura de los YAML, también los del paquete `game`, y la curva del fundido),
+`trigger_bands_tests.cpp` (los tramos del paquete `game` son los del original, valor a valor, y los errores) usan mapas de prueba. `route_tests.cpp` recorre la ruta de la fase 2 en el contenido extraído si
 `DWE_CONTENT` apunta a él: File City (`twna01`) → casa del anciano (`room08`) → File City, con el stick y con clics.
 Cada pieza tiene además los suyos: `partner_follow_tests.cpp`, `player_trail_tests.cpp`, `field_items_tests.cpp`,
 `script_warps_tests.cpp`, `boss_arrival_tests.cpp`, `white_fade_tests.cpp` y `reachability_tests.cpp` (lento: que una

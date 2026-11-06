@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/core/error.hpp>
+#include <dwe/game/field/trigger_bands.hpp>
 
 #include <cstdint>
 #include <functional>
@@ -29,8 +30,8 @@ namespace dwe::game::field {
 enum class WarpVia : std::uint8_t { Step, Confirm, Enter, Other, Talk };
 
 // What runs the section a cell of this collision value runs: Step, Confirm, or Other for a value
-// that runs none.
-WarpVia warpViaOf(std::int32_t value);
+// that runs none; by the original's bands, or by `bands` (field/triggers).
+WarpVia warpViaOf(std::int32_t value, const TriggerBands& bands = {});
 
 // How an IF entry joins the result of the ones before it (script_interp.c: scriptIfInstruction).
 enum class TestCombine : std::uint8_t { Replace, And, Or };

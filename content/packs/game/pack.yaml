@@ -20,6 +20,8 @@ schemas:
     - field/sprite_characters
   field_weather:
     - field/weather
+  field_triggers:
+    - field/triggers
   ruleset:
     - rules/*/ruleset
   ruleset_battle:

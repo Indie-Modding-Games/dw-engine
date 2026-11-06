@@ -10,6 +10,18 @@ inline constexpr std::string_view TransitionCountTooLow = "transition: {} must b
 inline constexpr std::string_view TransitionShadeTooHigh =
     "transition: shade_max and shade_full must be at most {}";
 
+// field/triggers: a band whose first value is past its last (the band's name).
+inline constexpr std::string_view TriggerBandBackwards = "{}: first is past last";
+// field/triggers: the blocked bit is not the map format's (the format's bit).
+inline constexpr std::string_view TriggerBlockedBitFixed =
+    "blocked_bit is fixed by the map format: it must be {}";
+// field/triggers: a band with values that are no trigger cells (the band, the highest trigger).
+inline constexpr std::string_view TriggerBandOutside = "{}: the values must be 1 to {}";
+// field/triggers: two bands share values (their names).
+inline constexpr std::string_view TriggerBandsOverlap = "{} and {} share values";
+// field/triggers: more exit values than a map has exits (the most).
+inline constexpr std::string_view TriggerTooManyExits = "exits: a map has at most {} exits";
+
 // field/script_warps: a cell of a map whose scripts change the map only on paths the field cannot
 // decide yet (a test of something else than a trigger, a choice, a loop) or to a map in a variable
 // (the map, the cell's value).
