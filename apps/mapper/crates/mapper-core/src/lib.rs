@@ -11,6 +11,7 @@ pub mod session;
 pub mod story;
 pub mod targets;
 pub mod text;
+pub mod timeline;
 pub mod tools;
 pub mod view;
 
@@ -23,5 +24,6 @@ pub use overlay::{ExitMark, ExitTarget, MapOverlay};
 pub use session::{Content, Hover, Mapper, Message, OpenMap};
 pub use story::{OpenSection, StoryContent, StoryEdit, TestPlan};
 pub use targets::{SaveTarget, Settings, TargetKind};
+pub use timeline::{Handle, NewCue, SentSection, Timeline};
 pub use tools::{Modifiers, Selection, Tool};
 pub use view::View;

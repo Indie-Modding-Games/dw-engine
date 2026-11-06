@@ -396,6 +396,19 @@ pub fn jump_label(jump: &dwe_story::events::Jump) -> String {
 }
 
 /// How many jumps an event has, for its row.
+/// The label of map changes whose arrows end at one point: the label with how many there are
+/// when they are alike, else the first and how many more.
+pub fn jump_pile(labels: &[&str]) -> String {
+    match labels {
+        [] => String::new(),
+        [only] => (*only).to_owned(),
+        [first, rest @ ..] if rest.iter().all(|label| label == first) => {
+            format!("{first} ×{}", labels.len())
+        }
+        [first, rest @ ..] => format!("{first} (+{} más)", rest.len()),
+    }
+}
+
 pub fn jump_count(count: usize) -> String {
     match count {
         1 => "1 salto".to_owned(),
@@ -571,3 +584,103 @@ pub const DWX_HELP: &str = "Con él, un guardado que cambia saltos de mapa de la
 pub const DWX_CLEAR: &str = "Quitar";
 pub const PACK_PLACEHOLDER: &str = "<paquete>";
 pub const STORY_PROBLEMS: &str = "Problemas de la historia al guardar";
+
+// The timeline of a section (Secuencia).
+pub const CUE_WALK: &str = "Andar aquí";
+pub const CUE_TURN: &str = "Girar hacia aquí";
+pub const CUE_DELAY: &str = "Esperar";
+pub const CUE_CAMERA: &str = "Cámara aquí";
+pub const CUE_CAMERA_ENTITY: &str = "Cámara al personaje";
+pub const CUE_ANIMATION: &str = "Animación";
+pub const CUE_TEXT: &str = "Texto";
+pub const CUE_NEW_LINE: &str = "…";
+pub const CUE_KEEPS_END: &str =
+    "El final de la sección (return) se queda el último: no se mueve ni se pasa por encima";
+pub const NO_SECTION_OPEN: &str = "No hay ninguna sección abierta";
+pub const PLAY_FROM_ROUTINE: &str = "«Reproducir desde aquí» empieza en una línea de la sección, no de una rutina: vuelve a la sección";
+pub const PLAY_HEADER: &str = "dwe mapper: play from here (sent to the game, never saved)";
+pub const TIMELINE: &str = "Línea de tiempo";
+pub const TIMELINE_HINT: &str = "Muestra la sección como una línea de tiempo bajo el mapa: \
+     quién se mueve, cuánto dura cada orden y qué espera a qué";
+pub const TIMELINE_EMPTY: &str =
+    "Abre una sección (Eventos o clic en un evento) para ver su línea de tiempo";
+pub const TIMELINE_ZOOM: &str = "Zoom";
+pub const TIMELINE_ADD: &str = "Añadir en el cursor:";
+pub const TIMELINE_ADD_HINT: &str = "Añade la orden detrás de la que corre en el cursor, para el \
+     personaje de la orden elegida (el jugador si no tiene); «aquí» es donde está ese personaje o \
+     la cámara en el cursor (en el mapa, clic derecho → «aquí» usa el punto del clic)";
+pub const CUE_EARLIER: &str = "Antes";
+pub const CUE_LATER: &str = "Después";
+pub const CUE_MOVE_HINT: &str = "Cambia la orden elegida de sitio con su vecina del mismo bloque";
+pub const CUE_EDGE_HINT: &str = "Arrastra el borde derecho para cambiar los cuadros de la espera o \
+     del movimiento";
+pub const PLAY: &str = "Reproducir";
+pub const PLAY_HINT: &str = "Prepara el juego como «Probar evento» (historia, sitio, recarga) y \
+     arranca la sección";
+pub const PLAY_FROM_HERE: &str = "Reproducir desde aquí";
+pub const PLAY_FROM_HERE_HINT: &str = "Arranca la sección en la orden elegida: antes coloca a todos \
+     y la cámara donde el modelo los tiene y aplica las órdenes de estado anteriores, sin esperas";
+pub const PLAY_TITLE: &str = "Reproducir en el juego";
+pub const PLAY_STARTS: &str = "Después arranca la sección en el juego.";
+pub const PLAY_OFFLINE: &str = "Conecta un juego (panel En vivo) para reproducir";
+pub const PLAY_NEEDS_CUE: &str =
+    "Elige una orden de la sección (en la línea de tiempo o en el editor)";
+pub const TIMELINE_FOLLOW: &str = "Seguir al juego";
+pub const TIMELINE_FOLLOW_HINT: &str = "El cursor va a la orden por la que va el juego (lee el estado \
+     de la historia cuatro veces por segundo)";
+pub const TIMELINE_FRAME: &str = "+1 cuadro";
+pub const TIMELINE_FRAME_HINT: &str =
+    "Con el juego en pausa: avanza un cuadro del original (3 ticks)";
+pub const TIMELINE_GAME_AT: &str = "El juego va por";
+pub const TIMELINE_GAME_IDLE: &str = "El juego no corre esta sección";
+pub const DRIFT: &str = "Desvío juego-modelo";
+pub const DRIFT_HINT: &str = "Distancia entre donde está cada personaje en el juego y donde lo \
+     pone el modelo en el cursor (unidades del mundo; 100 = una celda)";
+pub const HOLD_RUNS: &str = "no bloquea: la siguiente orden empieza a la vez";
+pub const HOLD_FRAMES: &str = "bloquea: la sección espera estos cuadros";
+pub const HOLD_PLAYER: &str = "espera al jugador";
+pub const HOLD_MOVEMENT: &str = "espera a que acabe el movimiento";
+pub const HOLD_ENDS: &str = "termina la sección";
+pub const CUE_ESTIMATED: &str = "estimado";
+pub const CUE_CUT: &str = "cortado por la orden siguiente del mismo personaje";
+pub const CUE_FROM_ROUTINE: &str = "de la rutina";
+pub const TRACK_PLAYER: &str = "Jugador";
+pub const TRACK_PARTNER: &str = "Compañero";
+pub const TRACK_CAMERA: &str = "Cámara";
+pub const TRACK_TEXT: &str = "Texto";
+pub const TRACK_AUDIO: &str = "Audio";
+pub const TRACK_WAIT: &str = "Esperas";
+pub const TRACK_STORY: &str = "Estado";
+
+/// A timeline track's name.
+pub fn track_name(track: dwe_story::Track) -> String {
+    use dwe_story::Track;
+    use dwe_story::sequence::{PARTNER, PLAYER};
+    match track {
+        Track::Actor(PLAYER) => TRACK_PLAYER.to_owned(),
+        Track::Actor(PARTNER) => TRACK_PARTNER.to_owned(),
+        Track::Actor(id) => format!("NPC {id}"),
+        Track::Camera => TRACK_CAMERA.to_owned(),
+        Track::Text => TRACK_TEXT.to_owned(),
+        Track::Audio => TRACK_AUDIO.to_owned(),
+        Track::Wait => TRACK_WAIT.to_owned(),
+        Track::Story => TRACK_STORY.to_owned(),
+    }
+}
+
+/// A length in frames of the original, and in seconds.
+pub fn frames(frames: u32) -> String {
+    let seconds = frames as f32 / dwe_story::sequence::FRAMES_PER_SECOND as f32;
+    format!("{frames} cuadros ({seconds:.1} s)")
+}
+
+/// What the link says once the game started a section.
+pub fn story_ran(script: u16, section: u16, sent: bool) -> String {
+    let how = if sent { " desde aquí" } else { "" };
+    format!("{} en marcha{how}", section_name(script, section))
+}
+
+/// A character's drift: its name and the distance.
+pub fn drift(name: &str, units: f32) -> String {
+    format!("{name} {units:.0}")
+}

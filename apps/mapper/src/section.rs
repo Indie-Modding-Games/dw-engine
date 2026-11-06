@@ -91,39 +91,49 @@ pub fn show(app: &mut MapperApp, ctx: &egui::Context) {
         text::section_name(open.script, open.section)
     );
     let connected = app.live.is_connected();
-    egui::Window::new(title)
+    let mut window = egui::Window::new(title)
         .id(egui::Id::unique("section_editor"))
         .open(&mut window_open)
         .default_pos([250.0, 110.0])
-        .default_size([620.0, 700.0])
-        .show(ctx, |ui| {
-            let mapper = &app.mapper;
-            let Some(names) = crate::events::names(mapper) else {
-                return;
-            };
-            let context = Context {
-                mapper,
-                names,
-                open: &open,
-            };
-            let state = &mut app.section_ui;
-            header(&context, ui, connected, &mut actions, &mut test);
-            ui.horizontal(|ui| {
-                for (tab, label) in [
-                    (Tab::Structure, text::TAB_STRUCTURE),
-                    (Tab::Lua, text::TAB_LUA),
-                ] {
-                    if ui.selectable_label(state.tab == tab, label).clicked() {
-                        state.tab = tab;
-                    }
+        .default_size([620.0, 700.0]);
+    // Above the timeline while it shows.
+    if app.mapper.timeline.shown
+        && let Some(canvas) = app.canvas_rect
+    {
+        let screen = ctx.content_rect();
+        window = window.constrain_to(egui::Rect::from_min_max(
+            screen.min,
+            egui::pos2(screen.max.x, canvas.bottom()),
+        ));
+    }
+    window.show(ctx, |ui| {
+        let mapper = &app.mapper;
+        let Some(names) = crate::events::names(mapper) else {
+            return;
+        };
+        let context = Context {
+            mapper,
+            names,
+            open: &open,
+        };
+        let state = &mut app.section_ui;
+        header(&context, ui, connected, &mut actions, &mut test);
+        ui.horizontal(|ui| {
+            for (tab, label) in [
+                (Tab::Structure, text::TAB_STRUCTURE),
+                (Tab::Lua, text::TAB_LUA),
+            ] {
+                if ui.selectable_label(state.tab == tab, label).clicked() {
+                    state.tab = tab;
                 }
-            });
-            ui.separator();
-            match state.tab {
-                Tab::Structure => structure(&context, state, ui, &mut actions),
-                Tab::Lua => lua(&context, state, ui, &mut actions),
             }
         });
+        ui.separator();
+        match state.tab {
+            Tab::Structure => structure(&context, state, ui, &mut actions),
+            Tab::Lua => lua(&context, state, ui, &mut actions),
+        }
+    });
     if !window_open {
         actions.push(Action::CloseSection);
     }
@@ -185,6 +195,14 @@ fn header(
                 .clicked()
         {
             actions.push(Action::EditStory(StoryEdit::Revert));
+        }
+        let shown = mapper.timeline.shown;
+        if ui
+            .selectable_label(shown, text::TIMELINE)
+            .on_hover_text(text::TIMELINE_HINT)
+            .clicked()
+        {
+            actions.push(Action::ShowTimeline(!shown));
         }
         if let Some(event) = events.first()
             && ui

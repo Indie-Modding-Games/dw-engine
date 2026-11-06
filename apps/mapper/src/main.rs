@@ -16,6 +16,7 @@ mod places;
 mod probe;
 mod section;
 mod shot;
+mod timeline;
 mod toolbar;
 
 use eframe::egui;

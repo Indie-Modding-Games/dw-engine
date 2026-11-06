@@ -12,7 +12,7 @@ use eframe::egui::{self, Color32, PointerButton, Pos2, Shape, Stroke};
 use glam::Vec2;
 use mapper_core::overlay::Arrow;
 use mapper_core::tools::Drag;
-use mapper_core::{Action, ExitTarget, Layer, Mapper, Modifiers, Selection, Tool, text};
+use mapper_core::{Action, ExitTarget, Layer, Mapper, Modifiers, NewCue, Selection, Tool, text};
 
 use crate::app::MapperApp;
 
@@ -51,6 +51,7 @@ const LIVE_ARROW: f32 = 90.0;
 pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
     let (response, painter) =
         ui.allocate_painter(ui.available_size(), egui::Sense::click_and_drag());
+    app.canvas_rect = Some(response.rect);
     let origin = response.rect.min;
     let to_local = |pos: Pos2| Vec2::new(pos.x - origin.x, pos.y - origin.y);
 
@@ -229,6 +230,7 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
     if layers.shows(Layer::Live) {
         draw_live(&painter, &app.live, mapper, &to_screen);
     }
+    crate::timeline::draw(&painter, app, &to_screen);
     crate::events::click(app, &response, &hits);
     if let Some(action) = context_menu(app, &response) {
         app.apply(action);
@@ -291,6 +293,18 @@ fn context_menu(app: &MapperApp, response: &egui::Response) -> Option<Action> {
         {
             action = Some(Action::OpenSection { script, section });
             ui.close();
+        }
+        if app.mapper.timeline.shown && app.mapper.section.is_some() {
+            ui.separator();
+            for kind in [NewCue::Walk, NewCue::Turn, NewCue::CameraTo] {
+                if ui.button(kind.label()).clicked() {
+                    action = Some(Action::AddCue {
+                        kind,
+                        at: Some(point.canvas),
+                    });
+                    ui.close();
+                }
+            }
         }
         live_items(app, ui, point);
     });
@@ -390,7 +404,9 @@ fn pointer_gesture(app: &mut MapperApp, ui: &egui::Ui, response: &egui::Response
         (
             input.pointer.primary_pressed(),
             input.pointer.primary_released(),
-            input.pointer.is_moving(),
+            // Moved this frame (`is_moving` reads the velocity, which a jump of the pointer
+            // between two frames does not give).
+            input.pointer.delta() != egui::Vec2::ZERO,
             input.pointer.latest_pos(),
             input.modifiers,
         )
@@ -584,7 +600,7 @@ fn draw_arrow(
     from
 }
 
-fn diamond(center: Pos2, radius: f32, color: Color32) -> Shape {
+pub fn diamond(center: Pos2, radius: f32, color: Color32) -> Shape {
     Shape::convex_polygon(
         vec![
             center + egui::vec2(0.0, -radius),
@@ -603,7 +619,7 @@ fn label(painter: &egui::Painter, at: Pos2, text: &str, color: Color32) {
 }
 
 /// The box of a label above a point.
-fn label_rect(painter: &egui::Painter, at: Pos2, text: &str, color: Color32) -> egui::Rect {
+pub fn label_rect(painter: &egui::Painter, at: Pos2, text: &str, color: Color32) -> egui::Rect {
     let galley = painter.layout_no_wrap(text.to_owned(), egui::FontId::monospace(11.0), color);
     egui::Rect::from_center_size(
         at - egui::vec2(0.0, 14.0),
@@ -612,7 +628,7 @@ fn label_rect(painter: &egui::Painter, at: Pos2, text: &str, color: Color32) -> 
 }
 
 /// Text on a dark box in a rectangle.
-fn label_in(painter: &egui::Painter, rect: egui::Rect, text: &str, color: Color32) {
+pub fn label_in(painter: &egui::Painter, rect: egui::Rect, text: &str, color: Color32) {
     let galley = painter.layout_no_wrap(text.to_owned(), egui::FontId::monospace(11.0), color);
     painter.rect_filled(rect, 2.0, colors::LABEL_BACK);
     painter.galley(rect.min + egui::vec2(3.0, 1.0), galley, color);

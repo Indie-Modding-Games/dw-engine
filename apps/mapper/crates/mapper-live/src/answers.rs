@@ -46,10 +46,12 @@ pub struct ReloadedMap {
 }
 
 /// A section of a story script that runs.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Section {
     pub script: u32,
     pub section: u32,
+    /// The lines of its code it is at, innermost call first (empty when the game does not say).
+    pub lines: Vec<i64>,
 }
 
 /// The parts of `story_state` the editor shows.
@@ -106,6 +108,11 @@ impl StoryState {
                         Some(Section {
                             script: u32::try_from(section.get("script")?.as_u64()?).ok()?,
                             section: u32::try_from(section.get("section")?.as_u64()?).ok()?,
+                            lines: section
+                                .get("lines")
+                                .and_then(Value::as_array)
+                                .map(|lines| lines.iter().filter_map(Value::as_i64).collect())
+                                .unwrap_or_default(),
                         })
                     })
                     .collect()
@@ -228,4 +235,12 @@ pub(crate) fn non_empty(value: Option<&Value>) -> Option<String> {
         .and_then(Value::as_str)
         .filter(|text| !text.is_empty())
         .map(str::to_owned)
+}
+
+/// A section to start (`story_run`), and the code to run in its place once, if any.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StoryRun {
+    pub script: u16,
+    pub section: u16,
+    pub code: Option<String>,
 }

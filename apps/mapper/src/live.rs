@@ -48,6 +48,8 @@ pub struct LivePanel {
     /// How many `reload_map` answers came, and how many orders the game refused or did not answer.
     pub reloads: u64,
     pub failures: u64,
+    /// How many sections the game started for `story_run`.
+    pub story_runs: u64,
     /// The story is read again every second.
     pub story_follow: bool,
     pub story_filter: String,
@@ -80,6 +82,7 @@ impl Default for LivePanel {
             story_reads: 0,
             reloads: 0,
             failures: 0,
+            story_runs: 0,
             story_follow: false,
             story_filter: String::new(),
             story_trigger: 0,
@@ -264,6 +267,14 @@ impl LivePanel {
                 text::LIVE_PREVIEW_CLEARED.to_owned()
             }
             Done::Placed => text::LIVE_PLACED.to_owned(),
+            Done::StoryRan {
+                script,
+                section,
+                sent,
+            } => {
+                self.story_runs += 1;
+                text::story_ran(script, section, sent)
+            }
             Done::Paused(_) | Done::Advanced(_) | Done::Pressed | Done::StoryWritten(_) => return,
         };
         mapper.messages.push(Message::Info(info));

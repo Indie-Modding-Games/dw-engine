@@ -7,7 +7,8 @@ use std::time::Duration;
 use serde_json::{Map, Value, json};
 
 use crate::answers::{
-    GameStatus, LiveView, LogEntry, PreviewApplied, ReloadedMap, StoryState, StoryWrite, non_empty,
+    GameStatus, LiveView, LogEntry, PreviewApplied, ReloadedMap, StoryRun, StoryState, StoryWrite,
+    non_empty,
 };
 use crate::{Endpoint, Error, Result};
 
@@ -222,6 +223,19 @@ impl LiveClient {
         self.request("story_set", fields).map(|_| ())
     }
 
+    /// Starts a story section (the channel's `story_run`): with `code`, that code runs in place
+    /// of the section's own, once. Answers whether the game took the code.
+    pub fn story_run(&mut self, run: &StoryRun) -> Result<bool> {
+        let mut fields = Map::new();
+        fields.insert("script".into(), json!(run.script));
+        fields.insert("section".into(), json!(run.section));
+        if let Some(code) = &run.code {
+            fields.insert("code".into(), json!(code));
+        }
+        let answer = self.request("story_run", fields)?;
+        Ok(answer.get("sent").and_then(Value::as_bool).unwrap_or(false))
+    }
+
     /// Puts a character somewhere: `place("<who> <x> <z> <rotation>")` in the original's units
     /// and axes (apps/game/src/place_command.hpp).
     pub fn place(&mut self, text: &str) -> Result<()> {
@@ -370,10 +384,12 @@ pub(crate) mod tests {
                 .unwrap_or(Value::Null), "tick": 9}),
             Some("overlay") => json!({"overlay": request.get("on").cloned()
                 .unwrap_or(json!(true))}),
+            Some("story_run") => json!({"script": request["script"], "section": request["section"],
+                "sent": request.get("code").is_some()}),
             Some("story_state") => json!({"tick": 5, "story": {"map": "area_b",
                 "triggers": [3, 40], "variables": {"12": 3, "2": -1},
                 "script": {"busy": true, "map_script": 7,
-                           "sections": [{"script": 7, "section": 2}]},
+                           "sections": [{"script": 7, "section": 2, "lines": [14, 9]}]},
                 "stage": "e1", "camera": null}}),
             _ => json!({}),
         });
@@ -414,12 +430,29 @@ pub(crate) mod tests {
                 map_script: Some(7),
                 sections: vec![Section {
                     script: 7,
-                    section: 2
+                    section: 2,
+                    lines: vec![14, 9],
                 }],
                 stage: Some("e1".into()),
             }
         );
         assert_eq!(next()["cmd"], "story_state");
+
+        let mut run = StoryRun {
+            script: 7,
+            section: 0x33,
+            code: None,
+        };
+        assert!(!client.story_run(&run).unwrap());
+        let request = next();
+        assert_eq!(
+            (&request["cmd"], &request["script"], &request["section"]),
+            (&json!("story_run"), &json!(7), &json!(0x33))
+        );
+        assert!(request.get("code").is_none());
+        run.code = Some("return {}".into());
+        assert!(client.story_run(&run).unwrap());
+        assert_eq!(next()["code"], "return {}");
     }
 
     #[test]
