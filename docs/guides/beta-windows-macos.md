@@ -162,33 +162,30 @@ el paquete del juego se firmaría con la misma identidad en `package_macos.sh`.
 
 ## Publicación y su coste
 
-`.github/workflows/release.yml` compila, en paralelo, el juego para Linux y Windows en Ubuntu (Windows por
-compilación cruzada) y el lanzador para Linux y Windows, también en Ubuntu. Con la opción `macos` marcada (viene
-desmarcada) se añaden el juego para Apple silicon (`macos-15`) e Intel (`macos-15-intel`) y el `.dmg` universal
-(`macos-15`), y los manifiestos nombran los cuatro ordenadores. Un lanzador de Mac no encuentra paquete en una versión
-sin macOS y usa la última que lo tenga. Cada ordenador se compila por su cuenta: si uno falla, los demás terminan, el
-resumen de la ejecución dice cuál falta y no se crea ningún borrador hasta que *Re-run failed jobs* lo complete. Cómo
-lanzarlo, qué comprueba y cómo se publica el borrador: [Publicar una
+`.github/workflows/release.yml` corre solo en cada fusión en `main` y compila, en paralelo, el juego para Linux y
+Windows en Ubuntu (Windows por compilación cruzada), el juego para Apple silicon (`macos-15`) e Intel
+(`macos-15-intel`), y el lanzador para Linux, Windows (en Ubuntu) y macOS (el `.dmg` universal, `macos-15`). Los
+manifiestos nombran siempre los cuatro ordenadores. Cada ordenador se compila por su cuenta: si uno falla, los demás
+terminan, el resumen de la ejecución dice cuál falta y no se publica nada hasta que *Re-run failed jobs* lo complete.
+Qué comprueba y cómo una versión de prueba pasa a estable: [Publicar una
 versión](../modulos/apps/launcher.md#publicar-una-version). `scripts/release_local.sh` sigue siendo el respaldo para
 Linux y Windows desde el PC del responsable: [Publicar desde este
 PC](../modulos/apps/launcher.md#publicar-desde-este-pc).
 
-`.github/workflows/platform-check.yml` solo compila y pasa las pruebas unitarias del motor y del lanzador en
-`windows-latest`, y también en `macos-latest` si se marca la misma opción `macos`.
+Los pull requests no prueban en Windows de verdad: su comprobación `windows` solo compila por compilación cruzada.
+`.github/workflows/platform-check.yml` compila y pasa las pruebas unitarias del motor y del lanzador en
+`windows-latest` cada lunes y a mano, y también en `macos-latest` si se marca la opción `macos`.
 
-Ninguno de los dos se lanza solo. El repositorio es público, así que los minutos de los ejecutores estándar de GitHub
-(Linux, Windows y macOS) no se cobran. Duración aproximada (primera ejecución sin caché de vcpkg → con caché):
+El repositorio es público, así que los minutos de los ejecutores estándar de GitHub (Linux, Windows y macOS) no se
+cobran. Duración aproximada (sin cachés → con cachés llenas y un cambio pequeño):
 
-| Flujo | Linux | Windows | macOS |
-|---|---|---|---|
-| `release.yml` (por defecto: Linux y Windows) | ~90 → ~60 min | — | — |
-| `release.yml` con `macos` | ~90 → ~60 min | — | ~150 → ~70 min |
-| `platform-check.yml` (por defecto: Windows) | — | ~70 → ~35 min | — |
-| `platform-check.yml` con `macos` | — | ~70 → ~35 min | ~60 → ~30 min |
+| Flujo | Linux y Windows | macOS |
+|---|---|---|
+| `release.yml` | ~30 → ~5 min | ~22 → ~8 min (Intel es el más lento) |
+| `platform-check.yml` (por defecto: Windows) | ~70 → ~35 min | — |
+| `platform-check.yml` con `macos` | ~70 → ~35 min | ~60 → ~30 min |
 
 ## Pendiente
 
 - Probar el lanzador en un Windows de verdad (instalador, llavero, actualización) y todo en un Mac.
-- Una ejecución completa de `release.yml` con `macos`: el arreglo de Intel (la ruta de Homebrew) sale de los registros
-  de la primera ejecución, no de una compilación en un Mac.
 - Firmas de editor (decisión del responsable: tienen coste).
