@@ -46,6 +46,10 @@ public:
   ~GameContent() = default;
 
   [[nodiscard]] const assets::VirtualFileSystem& files() const { return *files_; }
+  // Lists the mounted packs' files again (assets::VirtualFileSystem::rescan): the files a tool
+  // added to or removed from them while the game runs are seen; the packs stay the same. The
+  // reference files() gave stays valid.
+  core::Result<void> rescan() { return files_->rescan(); }
   // The roots of the mounted packs that come from the dev assets' extracted content folders; none
   // without them.
   [[nodiscard]] std::vector<std::filesystem::path> devPacks() const;
