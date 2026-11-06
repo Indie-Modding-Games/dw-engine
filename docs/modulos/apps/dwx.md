@@ -105,6 +105,26 @@ con los nombres que espera el juego. El lanzador la usa para preparar su secció
 
 Los tests: `tests/export_images_tests.cpp`, con un contenido sintético.
 
+## `dwx script-warps`
+
+```sh
+dwx script-warps <carpeta de contenido> [--with <carpeta de paquetes>]... [--rules <id>] [-o <archivo>]
+```
+
+Vuelve a sacar `field/script_warps` del Lua de la historia de los paquetes (`story/<n>.lua` y su mapa de líneas), para
+que los cambios de mapa que un mod mueve en el Lua lleguen al campo. Detalles en
+[warps de script](../../architecture/warps-de-script.md#desde-el-lua).
+
+- Monta los paquetes del contenido y de cada `--with`. Los destinos del transporte vienen de
+  `rules/<id>/bird_transport` (por defecto `original`, del paquete del equipo: `--with content/packs/game`).
+- Sin `-o` compara con el `field/script_warps` de los paquetes: código 0 si coinciden, 1 si no (dice la primera línea
+  distinta). Con `-o` escribe el documento ahí.
+- Falla (código 2, sin escribir) si un módulo no se lee, con el módulo y la línea. Las notas dicen qué módulos no usan
+  su mapa de líneas (sus registros salen sin `offset`), qué mapas no se leen y si falta el ruleset del transporte.
+
+Los tests: `tests/script_warps_command_tests.cpp`, con un contenido sintético, y uno con `DWE_CONTENT` que comprueba
+que el paquete base sale byte a byte.
+
 ## `dwx evolution-guide`
 
 ```sh
