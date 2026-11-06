@@ -63,6 +63,7 @@ capas y lo que puede usar cada una están en las [reglas de dependencias](../arc
 | [sim](apps/sim.md) | `dwe-sim`: simulaciones de balance sin gráficos |
 | [launcher](apps/launcher.md) | El lanzador de escritorio: lee el disco, actualiza el juego y lo arranca |
 | [studio](apps/studio.md) | DWE Studio, banco de trabajo de desarrollo: editor, compilar, arrancar y comparar con el original |
+| [mapper](apps/mapper.md) | `dwe-mapper`, el editor de mapas (por ahora visor de solo lectura): colisiones, salidas y personajes sobre el fondo |
 | [beta-gateway](services/beta-gateway.md) | La pasarela de la beta entre el lanzador y las versiones de GitHub, con la clave de la beta |
 
 ## Otros

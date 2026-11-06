@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Field map patch",
+  "description": "map/<id>/patch.yaml: a partial override of map/<id>/data (map.schema.json) that a higher pack ships instead of a copy of the whole map (packages/engine/assets/include/dwe/assets/map_patch.hpp). Each change names an entry of the data and gives only the fields it replaces, each one whole. The patches of the pack whose data wins and of every pack above it apply in stack order.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "camera": {
+      "description": "The fields of the camera it replaces.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "viewpoint": { "$ref": "#/$defs/vector3" },
+        "reference": { "$ref": "#/$defs/vector3" },
+        "projection": { "type": "integer" }
+      }
+    },
+    "lights": {
+      "description": "Lights by place (0-2).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index"],
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "description": "The place of the entry in the data's list, from 0.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "direction": { "$ref": "#/$defs/vector3" },
+          "color": { "$ref": "#/$defs/rgb" }
+        }
+      }
+    },
+    "warps": {
+      "description": "Exits by number.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["exit"],
+        "additionalProperties": false,
+        "properties": {
+          "exit": { "description": "The exit's number, as at its exit in the data.", "type": "integer", "minimum": 0 },
+          "spawn": { "$ref": "#/$defs/vector3" },
+          "rotation": { "description": "4096 = a full turn.", "type": "integer" },
+          "target_map": { "description": "Raw map id; -1 = unused exit.", "type": "integer" },
+          "target_map_id": {
+            "description": "Id of the target map (maps.yaml), or null. The target map must have its data.",
+            "type": ["string", "null"],
+            "assetReference": "map/{}/data"
+          },
+          "target_exit": { "type": "integer" }
+        }
+      }
+    },
+    "npcs": {
+      "description": "NPC slots by place.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index"],
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "description": "The place of the entry in the data's list, from 0.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "type_id": { "type": "integer" },
+          "digimon": {
+            "description": "Id of the species, or null; it must have its model.",
+            "type": ["string", "null"],
+            "assetReference": "digimon/{}/model"
+          },
+          "follow_mode": { "type": "integer" },
+          "position": { "$ref": "#/$defs/vector3" },
+          "rotation": { "$ref": "#/$defs/vector3" },
+          "tracking_range": { "type": "integer" },
+          "unknown_12": { "type": "integer" },
+          "script_id": { "type": "integer" },
+          "hp": { "type": "integer" },
+          "mp": { "type": "integer" },
+          "current_hp": { "type": "integer" },
+          "current_mp": { "type": "integer" },
+          "off": { "type": "integer" },
+          "def": { "type": "integer" },
+          "speed": { "type": "integer" },
+          "brain": { "type": "integer" },
+          "bits": { "type": "integer" },
+          "charge_mode": { "type": "integer" },
+          "unknown_2a": { "type": "integer" },
+          "moves": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "integer" } },
+          "moves_prio": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "integer" } },
+          "flee": { "$ref": "#/$defs/vector3" },
+          "ai_sections": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "type": "integer" } },
+          "waypoints": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/vector3" } }
+        }
+      }
+    },
+    "objects": {
+      "description": "Sprites and instances by place; the data must have objects.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sprites": {
+          "description": "Sprites by place.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["index"],
+            "additionalProperties": false,
+            "properties": {
+              "index": {
+                "description": "The place of the entry in the data's list, from 0.",
+                "type": "integer",
+                "minimum": 0
+              },
+              "tex_x": { "type": "integer" },
+              "tex_y": { "type": "integer" },
+              "width": { "type": "integer" },
+              "height": { "type": "integer" },
+              "position": { "$ref": "#/$defs/vector3" },
+              "clut": {
+                "description": "-1 = the map palette; 0-15 = a 4-bit CLUT; 16 or more = 8-bit CLUT row clut + 468.",
+                "type": "integer"
+              },
+              "transparency": { "type": "integer" }
+            }
+          }
+        },
+        "instances": {
+          "description": "Instances by place.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["index"],
+            "additionalProperties": false,
+            "properties": {
+              "index": {
+                "description": "The place of the entry in the data's list, from 0.",
+                "type": "integer",
+                "minimum": 0
+              },
+              "frames": {
+                "description": "Up to the first -1: sprite index (-2 = blank) and ticks.",
+                "type": "array",
+                "maxItems": 8,
+                "items": {
+                  "type": "object",
+                  "required": ["sprite", "time"],
+                  "additionalProperties": false,
+                  "properties": { "sprite": { "type": "integer" }, "time": { "type": "integer" } }
+                }
+              },
+              "x": { "type": "integer" },
+              "y": { "type": "integer" },
+              "flag": { "description": "1 = hidden, 0x80 = drawn in screen space.", "type": "integer" }
+            }
+          }
+        }
+      }
+    },
+    "collision": {
+      "description": "The whole grid, rectangles of cells set to a value (applied after the grid, in order), or both.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "grid": {
+          "description": "A whole grid in the form of the data's collision; it replaces the grid and every rectangle of the patches below.",
+          "type": "object",
+          "required": ["width", "height", "encoding", "legend", "rows"],
+          "additionalProperties": false,
+          "properties": {
+            "width": { "const": 100 },
+            "height": { "const": 100 },
+            "encoding": { "enum": ["legend", "hex"] },
+            "legend": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["cell", "value"],
+                "additionalProperties": false,
+                "properties": {
+                  "cell": { "type": "string", "minLength": 1, "maxLength": 1 },
+                  "value": { "type": "integer", "minimum": 0, "maximum": 255 }
+                }
+              }
+            },
+            "rows": { "type": "array", "minItems": 100, "maxItems": 100, "items": { "type": "string" } }
+          }
+        },
+        "cells": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["column", "row", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "description": "The first column, along world +X.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 99
+              },
+              "row": {
+                "description": "The first row, along world +Z.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 99
+              },
+              "width": {
+                "description": "Columns, 1 by default; the rectangle must stay inside the grid.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "height": { "description": "Rows, 1 by default.", "type": "integer", "minimum": 1, "maximum": 100 },
+              "value": {
+                "description": "The raw cell value: 0 free, bit 0x80 blocked, any other a trigger id.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "vector3": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "additionalProperties": false,
+      "properties": { "x": { "type": "integer" }, "y": { "type": "integer" }, "z": { "type": "integer" } }
+    },
+    "rgb": {
+      "type": "object",
+      "required": ["r", "g", "b"],
+      "additionalProperties": false,
+      "properties": { "r": { "type": "integer" }, "g": { "type": "integer" }, "b": { "type": "integer" } }
+    }
+  }
+}

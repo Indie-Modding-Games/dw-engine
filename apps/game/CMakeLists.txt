@@ -54,6 +54,7 @@ dwe_add_app(game
         src/game_audio.cpp
         src/language.cpp
         src/main.cpp
+        src/map_debug_overlay.cpp
         src/map_preview.cpp
         src/minimap_enemies.cpp
         src/hd_scenery_setting.cpp
@@ -80,6 +81,7 @@ dwe_add_app(game
         src/place_command.cpp
         src/partner_set_command.cpp
         src/story_set_command.cpp
+        src/story_state_json.cpp
         src/shop_job_bar.cpp
         src/play_session.cpp
         src/play_session_report.cpp
@@ -159,6 +161,10 @@ dwe_add_shaders(game FILES shaders/test_scene.slang shaders/scene_prims.slang sh
 # Dear ImGui on the game's window and device (first_run_screen.hpp).
 find_package(imgui CONFIG REQUIRED)
 target_link_libraries(game PRIVATE imgui::imgui)
+# The control channel's TCP socket (control_socket.hpp) needs Winsock on Windows.
+if(WIN32)
+    target_link_libraries(game PRIVATE ws2_32)
+endif()
 
 # A package's layout (scripts/package_linux.sh): the game in bin/ next to dwx, and the team's packs in packs/, where
 # content::teamPacksFolder finds them. Installing drops the build tree's runtime path; a Linux package ships its own
@@ -202,17 +208,17 @@ endif()
 # the battle's root steps of a model, the discard menu's list, the trade menu's cursor and the player page's City tab.
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
-    add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/chibi_style.cpp src/chart_requirements.cpp src/control_json.cpp src/curling_recruit_bar.cpp
+    add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/chibi_style.cpp src/chart_requirements.cpp src/control_json.cpp src/control_socket.cpp src/curling_recruit_bar.cpp
                                   src/evolution_effects.cpp src/field_effects.cpp src/field_mist.cpp src/field_numbers.cpp src/flame_texture.cpp
                                   src/death_effects.cpp src/ending_effects.cpp
-                                  src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/money_box_screen.cpp src/hd_scenery_setting.cpp src/minimap_enemies.cpp src/minimap_setting.cpp
-                                  src/pause_box.cpp src/place_command.cpp src/player_chart.cpp src/player_city.cpp src/partner_set_command.cpp src/story_set_command.cpp src/shop_job_bar.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
+                                  src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/money_box_screen.cpp src/hd_scenery_setting.cpp src/map_debug_overlay.cpp src/minimap_enemies.cpp src/minimap_setting.cpp
+                                  src/pause_box.cpp src/place_command.cpp src/player_chart.cpp src/player_city.cpp src/partner_set_command.cpp src/story_set_command.cpp src/story_state_json.cpp src/shop_job_bar.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
                                   src/save_indicator.cpp src/save_machine_flow.cpp src/award_screen.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_skin_setting.cpp src/user_settings.cpp src/walk_control.cpp src/world_map.cpp
                                   src/graphics_options.cpp src/weather_particles.cpp src/volume_setting.cpp src/sprite_characters.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution
                                                  dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render dwe::signs
-                                                 dwe::ruleset dwe::curling dwe::weather dwe::audio dwe_test_main)
+                                                 dwe::ruleset dwe::curling dwe::weather dwe::audio dwe::debug dwe_test_main)
     # The session's test packs and made-up species (session_fixture.hpp), for the save debug command.
     target_include_directories(dwe_game_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
                                                       ${PROJECT_SOURCE_DIR}/packages/session/tests
@@ -222,6 +228,9 @@ if(BUILD_TESTING)
     target_compile_definitions(dwe_game_tests PRIVATE
         DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"
         DWE_SKIN_TEST_PACK="${PROJECT_SOURCE_DIR}/tests/mods/ui_skin/test_contrast")
+    if(WIN32)
+        target_link_libraries(dwe_game_tests PRIVATE ws2_32)
+    endif()
     dwe_apply_options(dwe_game_tests)
     dwe_add_to_package(dwe_game_tests)
     _dwe_add_tests(game dwe_game_tests ${game_test_sources})

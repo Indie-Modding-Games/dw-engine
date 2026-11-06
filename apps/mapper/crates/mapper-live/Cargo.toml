@@ -1,0 +1,15 @@
+[package]
+name = "mapper-live"
+version = "0.1.0"
+description = "The map editor's link to a running dwe-game through its remote control channel"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde_json.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

@@ -1,5 +1,6 @@
 #include <dwe/assets/content_id.hpp>
 #include <dwe/assets/map_document.hpp>
+#include <dwe/assets/map_patch.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/yaml.hpp>
@@ -11,6 +12,8 @@
 #include <numbers>
 #include <system_error>
 #include <utility>
+
+#include "map_document_reader.hpp"
 
 namespace dwe::assets {
 
@@ -412,13 +415,17 @@ const MapWarp* MapDocument::warp(std::int32_t exit) const {
   return found == warps.end() ? nullptr : &*found;
 }
 
-core::Result<MapDocument> parseMapDocument(std::string_view yaml) {
-  auto tree = core::parseYaml(yaml);
-  if (!tree) {
-    return std::unexpected{core::Error{std::format("map data: {}", tree.error().message)}};
-  }
+const MapExitPatch* MapDocument::exitPatch(std::int32_t exit) const {
+  const auto found = std::ranges::find(patchedExits, exit, &MapExitPatch::exit);
+  return found == patchedExits.end() ? nullptr : &*found;
+}
+
+MapCollision readMapCollision(YamlReader& reader, const YamlNode& node) {
+  return readCollision(reader, node);
+}
+
+core::Result<MapDocument> readMapDocument(const YamlNode& root) {
   YamlReader reader;
-  const YamlNode& root = *tree;
   if (!reader.expectKeys(root, "the map data",
                          {"camera", "lights", "ambient", "regions", "tiles", "images", "objects",
                           "warps", "digimon_count", "npcs", "collision"})) {
@@ -439,6 +446,14 @@ core::Result<MapDocument> parseMapDocument(std::string_view yaml) {
   }
   document.collision = readCollision(reader, reader.field(root, "collision"));
   return reader.finish(std::move(document), "map data");
+}
+
+core::Result<MapDocument> parseMapDocument(std::string_view yaml) {
+  auto tree = core::parseYaml(yaml);
+  if (!tree) {
+    return std::unexpected{core::Error{std::format("map data: {}", tree.error().message)}};
+  }
+  return readMapDocument(*tree);
 }
 
 core::Result<MapCollision> parseMapCollision(std::string_view yaml) {
@@ -515,7 +530,12 @@ core::Result<MapDocument> loadMapDocument(const VirtualFileSystem& vfs, std::str
     return std::unexpected{core::Error{std::format("map '{}': {}", mapId, bytes.error().message)}};
   }
   const std::string_view text{reinterpret_cast<const char*>(bytes->data()), bytes->size()};
-  auto document = parseMapDocument(text);
+  auto patches = readMapPatches(vfs, mapId);
+  if (!patches) {
+    return std::unexpected{
+        core::Error{std::format("map '{}': {}", mapId, patches.error().message)}};
+  }
+  auto document = patches->empty() ? parseMapDocument(text) : patchMapDocument(text, *patches);
   if (!document) {
     return std::unexpected{
         core::Error{std::format("map '{}': {}", mapId, document.error().message)}};

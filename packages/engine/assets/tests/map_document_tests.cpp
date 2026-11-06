@@ -1,8 +1,10 @@
 #include <dwe/assets/map_document.hpp>
+#include <dwe/assets/map_patch.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 
 #include <doctest/doctest.h>
 
+#include <array>
 #include <cmath>
 #include <filesystem>
 #include <format>
@@ -329,4 +331,22 @@ TEST_CASE("a collision grid of its own reads as a map's (a tournament arena's)")
   CHECK(collision->isBlocked({.column = 50, .row = 29}));
   CHECK_FALSE(collision->isBlocked({.column = 50, .row = 30}));
   CHECK_FALSE(dwe::assets::parseMapCollision("width: 100\n").has_value());
+}
+
+TEST_CASE("a map patch changes the fields of one NPC slot and keeps the rest of its record") {
+  const std::array patches{dwe::assets::MapPatchText{
+      .pack = "mod_a",
+      .baseRights = false,
+      .file = "patch.yaml",
+      .text = "npcs:\n- index: 0\n  position: {x: 5, y: 0, z: 6}\n  script_id: 9\n"
+              "  waypoints: []\n"}};
+  const auto map = dwe::assets::patchMapDocument(fixtureMap("null", FixtureNpc), patches);
+  REQUIRE_MESSAGE(map.has_value(), errorOf(map));
+  REQUIRE(map->npcs.size() == 1);
+  CHECK(map->npcs[0].position == glm::ivec3{5, 0, 6});
+  CHECK(map->npcs[0].scriptId == 9);
+  CHECK(map->npcs[0].waypoints.empty());
+  CHECK(map->npcs[0].typeId == 117);
+  CHECK(map->npcs[0].hp == 500);
+  CHECK(map->npcs[0].moves[2] == 53);
 }

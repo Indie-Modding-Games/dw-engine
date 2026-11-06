@@ -1,4 +1,3 @@
-#include <dwe/core/collision_triggers.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/game/field/field.hpp>
@@ -31,8 +30,6 @@ using scene::Motion;
 using scene::Transform;
 
 constexpr float Turn = 2.0F * std::numbers::pi_v<float>;
-using core::collision::FirstWarpTrigger;
-using core::collision::WarpTriggerCount;
 // A move that makes less than this fraction of its distance counts as stuck.
 constexpr float StuckFraction = 0.1F;
 // A care walk to a point is there this close to it (partner.c: tickEntityWalkTo ends on it).
@@ -647,8 +644,8 @@ CharacterState Field::partner() const {
 }
 
 bool Field::warpsOn(std::int32_t trigger) const {
-  if (trigger >= FirstWarpTrigger && trigger < FirstWarpTrigger + WarpTriggerCount) {
-    const auto warp = std::ranges::find(warps_, trigger - FirstWarpTrigger, &assets::MapWarp::exit);
+  if (const auto exit = rules_.triggers.exitOf(trigger)) {
+    const auto warp = std::ranges::find(warps_, *exit, &assets::MapWarp::exit);
     if (warp != warps_.end() && warp->targetMapId) {
       return true;
     }
@@ -674,6 +671,19 @@ void Field::refreshScriptWarps() {
       warpingStepCells_.push_back(warp.section);
     }
   }
+}
+
+void Field::reloadData(FieldRules rules, std::vector<ScriptWarp> scriptWarps) {
+  rules_ = std::move(rules);
+  scriptWarps_ = std::move(scriptWarps);
+  choice_.reset();
+  choiceWarps_.clear();
+  choiceVanilla_ = nullptr;
+  undecidedReported_.clear();
+  allowedReported_.clear();
+  ambiguousReported_.clear();
+  follow_.setGestureWait(rules_.partner.gestureIdlePlays);
+  refreshScriptWarps();
 }
 
 void Field::writeTriggersOf(const ScriptWarp& warp) {
@@ -1118,11 +1128,11 @@ glm::vec2 Field::followPath(glm::vec3& position, float distance) {
   return facing;
 }
 
-// tamer.c: checkMapInteraction and map_collision.c: getTileTrigger: 110-119 warp through exit value
-// - 110; the other values go to later systems. The original tests the cell every frame; this fires
-// on stepping onto it. The cell is the one getTileTrigger reads (originalCellAt): on a cell's edge
-// it is the neighbour away from 0, as where frzl17's exit 1 puts the player (-400, 1400), on the
-// curling's start cell.
+// tamer.c: checkMapInteraction and map_collision.c: getTileTrigger: the exits band (110-119 in the
+// original, field/triggers) warps through exit value - 110; the other values go to later systems.
+// The original tests the cell every frame; this fires on stepping onto it. The cell is the one
+// getTileTrigger reads (originalCellAt): on a cell's edge it is the neighbour away from 0, as where
+// frzl17's exit 1 puts the player (-400, 1400), on the curling's start cell.
 void Field::checkTriggers() {
   exitClosedNow_ = false;
   const glm::vec3 position = world_->registry().get<Transform>(player_).position;
@@ -1133,7 +1143,7 @@ void Field::checkTriggers() {
     core::logDebug("[port:field] checkMapInteraction (tamer.c:660): map {} cell {}", mapId_, value);
   }
   // tamer.c: checkMapInteraction asks for a step cell's section every frame on it.
-  if (warpViaOf(value) == WarpVia::Step &&
+  if (warpViaOf(value, rules_.triggers) == WarpVia::Step &&
       !(staticWarps() && std::ranges::contains(warpingStepCells_, value))) {
     cellSections_.push_back(value);
   }
@@ -1144,8 +1154,8 @@ void Field::checkTriggers() {
   if (value == 0) {
     return;
   }
-  if (value >= FirstWarpTrigger && value < FirstWarpTrigger + WarpTriggerCount) {
-    const auto warp = std::ranges::find(warps_, value - FirstWarpTrigger, &assets::MapWarp::exit);
+  if (const auto exit = rules_.triggers.exitOf(value)) {
+    const auto warp = std::ranges::find(warps_, *exit, &assets::MapWarp::exit);
     const std::optional<std::string> target =
         warp != warps_.end() ? warp->targetMapId : std::nullopt;
     if (target) {
@@ -1156,7 +1166,7 @@ void Field::checkTriggers() {
       return;
     }
   }
-  if (staticWarps() && warpViaOf(value) == WarpVia::Step) {
+  if (staticWarps() && warpViaOf(value, rules_.triggers) == WarpVia::Step) {
     if (auto scripted = takeScriptWarp(WarpVia::Step, value)) {
       leave(std::move(*scripted));
       return;
@@ -1168,7 +1178,8 @@ void Field::checkTriggers() {
   triggerSteps_.push_back({.trigger = value, .cell = cell});
 }
 
-// tamer.c: checkMapInteraction runs the section of a cell of 80-109 the player stands on when
+// tamer.c: checkMapInteraction runs the section of a cell of the confirm band (80-109 in the
+// original, field/triggers) the player stands on when
 // confirm is pressed, only while TAMER_STATE is 0 (tamer.c:685; tamerTickOverworld runs
 // tamerTickWalkingState, tamer.c:455) and no script runs (IS_SCRIPT_PAUSED 1: the story drops the
 // section). Here: while the tick gets this far (no fade in, not leaving). That is the same only
@@ -1182,7 +1193,7 @@ void Field::checkConfirm() {
   }
   const glm::vec3 position = world_->registry().get<Transform>(player_).position;
   const std::int32_t value = collision_.trigger(assets::originalCellAt(position)).value_or(0);
-  if (warpViaOf(value) != WarpVia::Confirm) {
+  if (warpViaOf(value, rules_.triggers) != WarpVia::Confirm) {
     return;
   }
   if (staticWarps()) {

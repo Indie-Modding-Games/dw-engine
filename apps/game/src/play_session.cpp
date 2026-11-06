@@ -1701,6 +1701,44 @@ std::string_view poseName(game::battle::Pose pose) {
 
 } // namespace
 
+core::Result<void> PlaySession::reloadMap(std::optional<std::int32_t> exit) {
+  if (battleScreen_.active()) {
+    return core::fail("a battle is running");
+  }
+  // Edited and new story modules and patches load on the map's next section.
+  if (session::StoryAdapter* story = game_.systems.story) {
+    if (auto reloaded = story->reloadScripts(); !reloaded) {
+      return reloaded;
+    }
+  }
+  return scene_->reloadMap(exit);
+}
+
+StoryStateView PlaySession::storyStateView() const {
+  StoryStateView view;
+  view.map = scene_->field().mapId();
+  if (session::StoryAdapter* story = game_.systems.story) {
+    view.state = story->state();
+    view.busy = story->scriptRunning();
+    view.stage = std::string{story->lock().stage()};
+    if (const game::story::StoryRunner* runner = story->runner()) {
+      view.mapScript = runner->mapScript();
+      view.sections = runner->runningSections();
+    }
+  }
+  if (const render::MapCamera* camera = scene_->camera()) {
+    const render::MapCameraDesc& desc = camera->desc();
+    view.camera = StoryCameraView{.eye = desc.eye,
+                                  .target = desc.target,
+                                  .focalLength = desc.focalLength,
+                                  .backgroundSize = desc.backgroundSize,
+                                  .viewport = camera->viewportSize(),
+                                  .scale = camera->scale(),
+                                  .scroll = camera->scroll()};
+  }
+  return view;
+}
+
 TraceFrame PlaySession::traceFrame(std::uint64_t tick, const input::InputState& input) const {
   TraceFrame frame;
   frame.tick = tick;

@@ -296,6 +296,13 @@ public:
   // calls it.
   void refreshScriptWarps();
 
+  // A map editor's reload (dwe-game's reload_map): the field's rules and the scripts' map changes
+  // read again from the packs replace the ones the field was built with. Map changes, fades and
+  // the step cells use them from the next map entered; what the field built from the rules once
+  // (the NPCs' movers, the partner's follow distance) keeps the old ones until a new game. A
+  // choice of free exploration waiting is dropped, since it points at the old map changes.
+  void reloadData(FieldRules rules, std::vector<ScriptWarp> scriptWarps);
+
   // Free exploration (ScriptWarpSetup::explore), which the player can turn on and off while
   // playing; the map's cells are decided again at once.
   void setExplore(bool explore);

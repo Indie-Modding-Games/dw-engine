@@ -87,4 +87,32 @@ inline constexpr std::string_view UpscaleOutputOverlaps =
 inline constexpr std::string_view UpscalePartialTaken =
     "{} exists and is not a run of this recipe left half written; remove it or pick another folder";
 
+// dwx script-warps: field/script_warps from the story Lua (script_warps_command.hpp).
+inline constexpr std::string_view ScriptWarpsUnreadable =
+    "these story modules do not read, so their map changes would be missing:{}";
+inline constexpr std::string_view ScriptWarpsScriptTwice =
+    "{} returns script {}, which another module returns too";
+inline constexpr std::string_view ScriptWarpsNoLineMap = "there is no {}";
+inline constexpr std::string_view ScriptWarpsNoOffsets =
+    "{}: its line map is not used ({}), so its records have no offsets";
+inline constexpr std::string_view ScriptWarpsPatched =
+    "{}: patched by {}, so its records have no offsets (a patch's lines have none)";
+inline constexpr std::string_view ScriptWarpsBadPatches =
+    "these story patches cannot be followed, so their map changes would be missing:{}";
+inline constexpr std::string_view ScriptWarpsNoTransport =
+    "there is no {}, so the transport menu's map changes are left out";
+inline constexpr std::string_view ScriptWarpsBadTransport =
+    "{}: {} must be a list of map, entry, trigger and cost";
+inline constexpr std::string_view ScriptWarpsUnreadMaps =
+    "these maps cannot be read, so their NPCs' sections are not told apart from other sections:{}";
+inline constexpr std::string_view ScriptWarpsCannotWrite = "cannot write {}";
+inline constexpr std::string_view ScriptWarpsWritten =
+    "Wrote {}: {} map changes from {} story modules";
+inline constexpr std::string_view ScriptWarpsMatch =
+    "{} matches the story Lua: {} map changes from {} story modules";
+inline constexpr std::string_view ScriptWarpsDiffer =
+    "{} does not match the story Lua; write it again with -o. {}";
+inline constexpr std::string_view ScriptWarpsDifferAt =
+    "First difference, line {}:\n  packs: {}\n  Lua:   {}";
+
 } // namespace dwe::dwx::messages

@@ -1,5 +1,6 @@
 #include "world_map.hpp"
 
+#include <dwe/core/collision_triggers.hpp>
 #include <dwe/core/number_text.hpp>
 #include <dwe/core/yaml.hpp>
 
@@ -17,9 +18,10 @@ namespace {
 
 using core::YamlNode;
 
-// Collision triggers 110 to 119 take the player through warps 0 to 9 (checkMapInteraction).
-constexpr std::int32_t FirstWarpTrigger = 110;
-constexpr std::int32_t WarpCount = 10;
+// Collision triggers 110 to 119 take the player through warps 0 to 9 (checkMapInteraction). The
+// world map shows the original's exits, whatever field/triggers says.
+using core::collision::FirstWarpTrigger;
+constexpr std::int32_t WarpCount = core::collision::WarpTriggerCount;
 
 core::Error layoutError(const YamlNode& at, std::string_view problem) {
   return core::Error{std::format("{}: line {}: {}", WorldMapLayoutAsset, at.line(), problem)};

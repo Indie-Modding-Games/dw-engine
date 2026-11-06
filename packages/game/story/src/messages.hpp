@@ -97,4 +97,10 @@ inline constexpr std::string_view PortSectionFailed =
 inline constexpr std::string_view PortVariableAtStart =
     "[port:story] routine 25 (script_interp.c:1775): var 0 goes back to {} at the script's end";
 
+// story/names (story_names.cpp).
+inline constexpr std::string_view NameNumberOutside = "{}: '{}' is not a number from 0 to {}";
+inline constexpr std::string_view NameNotAnId =
+    "'{}' is not a name id: use lower-case letters, digits and '_'";
+inline constexpr std::string_view NameTwice = "{}: the name '{}' is given twice";
+
 } // namespace dwe::game::story::messages

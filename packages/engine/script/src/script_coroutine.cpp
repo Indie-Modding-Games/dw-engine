@@ -2,6 +2,7 @@
 #include <dwe/core/message.hpp>
 #include <dwe/script/script_coroutine.hpp>
 
+#include <algorithm>
 #include <format>
 #include <string_view>
 #include <type_traits>
@@ -49,24 +50,34 @@ std::string pathText(std::span<const ApiValue> path) {
   return text;
 }
 
+// Leaves on the stack the value at path from the module the registry holds at `module`, or nil.
+void pushAtPath(lua_State* state, int module, std::span<const ApiValue> path) {
+  lua_rawgeti(state, LUA_REGISTRYINDEX, module);
+  for (const ApiValue& key : path) {
+    if (lua_type(state, -1) != LUA_TTABLE) {
+      lua_pop(state, 1);
+      lua_pushnil(state);
+      return;
+    }
+    detail::pushApiValue(state, key);
+    lua_rawget(state, -2);
+    lua_remove(state, -2);
+  }
+}
+
 struct CoroutineStart {
   int module;
   std::span<const ApiValue> path;
+  // A module's function for the first argument, or LUA_NOREF for none.
+  int argumentModule;
+  std::span<const ApiValue> argumentPath;
   int reference;
   lua_State* thread;
 };
 
 int startCoroutine(lua_State* state) {
   auto* start = static_cast<CoroutineStart*>(lua_touserdata(state, 1));
-  lua_rawgeti(state, LUA_REGISTRYINDEX, start->module);
-  for (const ApiValue& key : start->path) {
-    if (lua_type(state, -1) != LUA_TTABLE) {
-      return 0;
-    }
-    detail::pushApiValue(state, key);
-    lua_rawget(state, -2);
-    lua_remove(state, -2);
-  }
+  pushAtPath(state, start->module, start->path);
   if (lua_type(state, -1) != LUA_TFUNCTION) {
     return 0;
   }
@@ -74,8 +85,55 @@ int startCoroutine(lua_State* state) {
   detail::markEngineThread(state, -1);
   lua_insert(state, -2);
   lua_xmove(state, thread, 1);
+  if (start->argumentModule != LUA_NOREF) {
+    pushAtPath(state, start->argumentModule, start->argumentPath);
+    if (lua_type(state, -1) != LUA_TFUNCTION) {
+      lua_pop(state, 1);
+      lua_pushnil(state);
+    }
+    lua_xmove(state, thread, 1);
+  }
   start->reference = luaL_ref(state, LUA_REGISTRYINDEX);
   start->thread = thread;
+  return 0;
+}
+
+struct ValueRead {
+  int module;
+  std::span<const ApiValue> path;
+  ApiValue value;
+  int type;
+};
+
+int readValue(lua_State* state) {
+  auto* read = static_cast<ValueRead*>(lua_touserdata(state, 1));
+  pushAtPath(state, read->module, read->path);
+  read->type = lua_type(state, -1);
+  if (detail::isApiType(read->type)) {
+    read->value = detail::readApiValue(state, -1);
+  }
+  return 0;
+}
+
+struct KeysRead {
+  int module;
+  std::span<const ApiValue> path;
+  std::vector<std::int64_t> keys;
+};
+
+int readFunctionKeys(lua_State* state) {
+  auto* read = static_cast<KeysRead*>(lua_touserdata(state, 1));
+  pushAtPath(state, read->module, read->path);
+  if (lua_type(state, -1) != LUA_TTABLE) {
+    return 0;
+  }
+  lua_pushnil(state);
+  while (lua_next(state, -2) != 0) {
+    if (lua_isinteger(state, -2) != 0 && lua_type(state, -1) == LUA_TFUNCTION) {
+      read->keys.push_back(lua_tointeger(state, -2));
+    }
+    lua_pop(state, 1);
+  }
   return 0;
 }
 
@@ -158,9 +216,21 @@ void ScriptModule::release() {
 }
 
 core::Result<ScriptCoroutine> ScriptModule::coroutine(std::span<const ApiValue> path) const {
+  return coroutine(path, ModuleFunction{});
+}
+
+core::Result<ScriptCoroutine> ScriptModule::coroutine(std::span<const ApiValue> path,
+                                                      ModuleFunction argument) const {
   DWE_ASSERT(reference_ != LUA_NOREF);
-  CoroutineStart start{
-      .module = reference_, .path = path, .reference = LUA_NOREF, .thread = nullptr};
+  DWE_ASSERT(argument.module == nullptr ||
+             (argument.module->vm_ == vm_ && argument.module->reference_ != LUA_NOREF));
+  CoroutineStart start{.module = reference_,
+                       .path = path,
+                       .argumentModule =
+                           argument.module != nullptr ? argument.module->reference_ : LUA_NOREF,
+                       .argumentPath = argument.path,
+                       .reference = LUA_NOREF,
+                       .thread = nullptr};
   const detail::CallScope scope{*vm_, vm_->mods[mod_].memoryOwner};
   if (auto started = detail::runProtected(vm_->state(), startCoroutine, &start); !started) {
     return std::unexpected{started.error()};
@@ -168,16 +238,44 @@ core::Result<ScriptCoroutine> ScriptModule::coroutine(std::span<const ApiValue> 
   if (start.thread == nullptr) {
     return core::fail(core::formatMessage(messages::NoModuleFunction, name_, pathText(path)));
   }
-  return ScriptCoroutine{*vm_, mod_, start.reference, start.thread};
+  return ScriptCoroutine{*vm_, mod_, start.reference, start.thread,
+                         argument.module != nullptr ? 1 : 0};
+}
+
+core::Result<ApiValue> ScriptModule::value(std::span<const ApiValue> path) const {
+  DWE_ASSERT(reference_ != LUA_NOREF);
+  ValueRead read{.module = reference_, .path = path, .value = {}, .type = LUA_TNIL};
+  const detail::CallScope scope{*vm_, vm_->mods[mod_].memoryOwner};
+  if (auto done = detail::runProtected(vm_->state(), readValue, &read); !done) {
+    return std::unexpected{done.error()};
+  }
+  if (!detail::isApiType(read.type)) {
+    return core::fail(core::formatMessage(messages::NotAnApiValue, name_,
+                                          lua_typename(vm_->state(), read.type), pathText(path)));
+  }
+  return std::move(read.value);
+}
+
+core::Result<std::vector<std::int64_t>>
+ScriptModule::functionKeys(std::span<const ApiValue> path) const {
+  DWE_ASSERT(reference_ != LUA_NOREF);
+  KeysRead read{.module = reference_, .path = path, .keys = {}};
+  const detail::CallScope scope{*vm_, vm_->mods[mod_].memoryOwner};
+  if (auto done = detail::runProtected(vm_->state(), readFunctionKeys, &read); !done) {
+    return std::unexpected{done.error()};
+  }
+  std::ranges::sort(read.keys);
+  return std::move(read.keys);
 }
 
 ScriptCoroutine::ScriptCoroutine(detail::VmState& vm, std::size_t mod, int reference,
-                                 lua_State* thread)
-    : vm_{&vm}, mod_{mod}, reference_{reference}, thread_{thread} {}
+                                 lua_State* thread, int arguments)
+    : vm_{&vm}, mod_{mod}, reference_{reference}, thread_{thread}, arguments_{arguments} {}
 
 ScriptCoroutine::ScriptCoroutine(ScriptCoroutine&& other) noexcept
     : vm_{other.vm_}, mod_{other.mod_}, reference_{std::exchange(other.reference_, LUA_NOREF)},
-      thread_{std::exchange(other.thread_, nullptr)}, started_{other.started_} {}
+      thread_{std::exchange(other.thread_, nullptr)}, arguments_{other.arguments_},
+      started_{other.started_} {}
 
 ScriptCoroutine& ScriptCoroutine::operator=(ScriptCoroutine&& other) noexcept {
   if (this != &other) {
@@ -190,6 +288,7 @@ ScriptCoroutine& ScriptCoroutine::operator=(ScriptCoroutine&& other) noexcept {
     mod_ = other.mod_;
     reference_ = std::exchange(other.reference_, LUA_NOREF);
     thread_ = std::exchange(other.thread_, nullptr);
+    arguments_ = other.arguments_;
     started_ = other.started_;
   }
   return *this;
@@ -226,7 +325,7 @@ CoroutineStep ScriptCoroutine::resume(const ApiValue& value) {
   lua_State* const from = runningThread(vm);
   const detail::CallScope scope{vm, vm.mods[mod_].memoryOwner, vm.resumeBudget};
   detail::Budget& budget = vm.budget;
-  int arguments = 0;
+  int arguments = arguments_;
   if (started_) {
     if (!pushResumeValue(vm.state(), thread_, value)) {
       close(from);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/core/error.hpp>
+#include <dwe/debug/overlay_shapes.hpp>
 #include <dwe/debug/tuning.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/platform/window.hpp>
@@ -71,6 +72,10 @@ public:
 
   // Shows the overlay with the tuning panel open, now or once attachTuning gives it one.
   void openTuning();
+
+  // The shapes drawn over the game from the next frame on, until replaced; empty ones draw
+  // nothing.
+  void setShapes(const OverlayShapes& shapes);
 
   // Builds the overlay for this frame and records it into the frame, which must be inside
   // rendering.

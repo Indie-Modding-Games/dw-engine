@@ -6,8 +6,10 @@
 #include <dwe/assets/item_effect_table.hpp>
 #include <dwe/assets/item_table.hpp>
 #include <dwe/assets/map_document.hpp>
+#include <dwe/assets/map_patch.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/media_headers.hpp>
+#include <dwe/assets/messages.hpp>
 #include <dwe/assets/model.hpp>
 #include <dwe/assets/model_data.hpp>
 #include <dwe/assets/move_table.hpp>
@@ -164,9 +166,11 @@ constexpr std::array<std::pair<std::string_view, Opener>, 18> Openers = {{
 
 // The YAML documents the game reads with a reader of their own, which is strict about their keys
 // and values.
-constexpr std::array<std::pair<std::string_view, Opener>, 14> DocumentReaders = {{
+constexpr std::array<std::pair<std::string_view, Opener>, 16> DocumentReaders = {{
     {"map/*/data", discardParsed<parseMapDocument>},
     {"map/*/*/data", discardParsed<parseMapDocument>},
+    {"map/*/patch", discardParsed<checkMapPatch>},
+    {"map/*/*/patch", discardParsed<checkMapPatch>},
     {"data/digimon", discardParsed<parseDigimonTable>},
     {"data/raise", discardParsed<parseRaiseTable>},
     {"data/maps", discardParsed<parseMaps>},
@@ -201,6 +205,29 @@ core::Result<void> openAssetAsGameReads(const AssetId& id, std::string_view exte
     return openPngOnlyImage(*reading, extension, bytes);
   }
   return openAsset(id, extension, bytes);
+}
+
+// A map as the game loads it, its data with the packs' patches (map_patch.hpp): whether the patches
+// apply, checked at the map's data, and whether a patch has a map to apply to, at the patch.
+core::Result<void> checkPatchedMap(const VirtualFileSystem& fileSystem, const AssetId& id) {
+  const std::optional<std::string> mapId = mapIdOfAsset(id);
+  if (!mapId) {
+    return {};
+  }
+  if (isMapPatchId(id)) {
+    const auto dataId = mapDataId(*mapId);
+    if (!dataId || fileSystem.resolve(*dataId) == nullptr) {
+      return core::fail(messages::formatMessage(messages::MapPatchWithoutData, *mapId));
+    }
+    return {};
+  }
+  if (mapPatchSources(fileSystem, *mapId).empty()) {
+    return {};
+  }
+  if (auto map = loadMapDocument(fileSystem, *mapId); !map) {
+    return std::unexpected{map.error()};
+  }
+  return {};
 }
 
 using ComposedTables = std::vector<std::pair<AssetId, const TableKind*>>;
@@ -300,6 +327,10 @@ std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem,
       return ContentProblem{
           .id = id, .file = pathText(source->file), .message = opened.error().message};
     }
+    if (auto patched = checkPatchedMap(fileSystem, id); !patched) {
+      return ContentProblem{
+          .id = id, .file = pathText(source->file), .message = patched.error().message};
+    }
     return std::nullopt;
   };
   std::vector<std::optional<ContentProblem>> found(ids.size());
@@ -320,14 +351,15 @@ std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem,
   }
   std::vector<ContentProblem> problems;
   for (std::size_t i = 0; i < ids.size(); ++i) {
-    if (!found[i]) {
+    std::optional<ContentProblem>& first = found[i];
+    if (!first) {
       continue;
     }
     // Once more alone: a broken asset fails again, one that failed only beside the others did not.
     if (std::optional<ContentProblem> again = check(ids[i])) {
       problems.push_back(std::move(*again));
     } else if (passedAlone != nullptr) {
-      passedAlone->push_back(std::move(*found[i]));
+      passedAlone->push_back(std::move(*first));
     }
   }
   return problems;

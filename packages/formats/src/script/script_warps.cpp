@@ -7,9 +7,11 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <format>
 #include <iterator>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -49,6 +51,17 @@ const ListingInstruction* instructionAt(const ScriptLookup& lookup, const Script
     return nullptr;
   }
   return &code->listing->instructions[place.instruction];
+}
+
+// The offset of an instruction, for the documents: nothing when the script's listing has none of
+// its own (WalkableScript::offsets).
+std::optional<std::uint32_t> offsetAt(const ScriptLookup& lookup, const ScriptPlace& place) {
+  const auto code = lookup(place.script);
+  const ListingInstruction* instruction = instructionAt(lookup, place);
+  if (!code || !code->offsets || instruction == nullptr) {
+    return std::nullopt;
+  }
+  return instruction->offset;
 }
 
 // The script and map a SET_SCRIPT loads.
@@ -199,8 +212,8 @@ YamlNode guardToYaml(const PathGuard& guard, const ScriptLookup& lookup) {
     } else if (const auto* forget = std::get_if<ForgetTerm>(&term.decision)) {
       YamlNode site = YamlNode::mapping();
       site.set(std::string{ScriptOperand}, yaml::number(forget->place.script));
-      if (const ListingInstruction* instruction = instructionAt(lookup, forget->place)) {
-        site.set(std::string{OffsetKey}, yaml::number(instruction->offset));
+      if (const auto offset = offsetAt(lookup, forget->place)) {
+        site.set(std::string{OffsetKey}, yaml::number(*offset));
       }
       if (!forget->triggers.empty()) {
         YamlNode triggers = YamlNode::sequence();
@@ -214,8 +227,8 @@ YamlNode guardToYaml(const PathGuard& guard, const ScriptLookup& lookup) {
       const auto& recursion = std::get<RecursionTerm>(term.decision);
       YamlNode routine = YamlNode::mapping();
       routine.set(std::string{ScriptOperand}, yaml::number(recursion.routine.script));
-      if (const ListingInstruction* instruction = instructionAt(lookup, recursion.routine)) {
-        routine.set(std::string{OffsetKey}, yaml::number(instruction->offset));
+      if (const auto offset = offsetAt(lookup, recursion.routine)) {
+        routine.set(std::string{OffsetKey}, yaml::number(*offset));
       }
       entry.set(std::string{RecursionKey}, std::move(routine));
     }
@@ -290,8 +303,8 @@ YamlNode warpToYaml(const ScriptWarp& warp, const ScriptLookup& lookup, const Ma
   YamlNode source = YamlNode::mapping();
   source.set("script", yaml::number(change.path.place.script));
   source.set("section", yaml::number(warp.section));
-  if (const ListingInstruction* instruction = instructionAt(lookup, change.path.place)) {
-    source.set(std::string{OffsetKey}, yaml::number(instruction->offset));
+  if (const auto offset = offsetAt(lookup, change.path.place)) {
+    source.set(std::string{OffsetKey}, yaml::number(*offset));
   }
   node.set("source", std::move(source));
   return node;

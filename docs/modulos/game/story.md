@@ -29,6 +29,10 @@ los warps de script del campo, que leen los disparadores y aplican sus `sets_fla
   sin ella, o un arranque en un mapa, empieza la historia en el mapa donde aparece. Antes (hasta 2026-11-03, #179)
   nada lo movía tras la partida nueva y una huida llevaba al mapa de la partida nueva o al 0.
 
+- `StoryNames` (`story_names.hpp`): las etiquetas de `story/names` del paquete `game` para disparadores y variables,
+  solo para herramientas (mapper, control remoto, logs); `loadStoryNames` sin el fichero da ninguna. El esquema es
+  `story_names` ([API de historia](../../modding/historia.md#nombres-de-disparadores-y-variables)).
+
 No conoce a los demás sistemas: la sesión (`packages/session`, `StoryAdapter`) crea el estado de partida nueva, lo
 registra en la partida guardada y se lo da al campo.
 
@@ -128,7 +132,10 @@ tendero de cartas de gias06b, el personaje 5 del guion 126, que solo tiene las s
 
 ## Pruebas
 
-Los tests del módulo usan un `SectionHost` con pasos fijos y puertos falsos, sin Lua. Sobre el disco extraído,
+Los tests del módulo usan un `SectionHost` con pasos fijos y puertos falsos, sin Lua. `story_names_tests.cpp` lee las etiquetas,
+también las del paquete `game`. Los parches por sección (`story/patches/*.lua`) los carga `StoryLuaHost` en
+`packages/session` y los prueba `packages/session/tests/story_patch_tests.cpp`
+([moddabilidad](../../architecture/interprete-historia.md#moddabilidad-cómo-un-mod-cambia-una-sección)). Sobre el disco extraído,
 `packages/session/tests/story_lua_disc_tests.cpp` («the training loop of script 49 runs as tail jumps») corre varias
 vueltas de la sección `0x52` del script 49, que salta a la `0x33` de los scripts 199–202 y vuelve sin fin en el
 original: es la prueba de que un `jump_to_file` no apila nada.

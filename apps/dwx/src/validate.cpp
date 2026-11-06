@@ -5,6 +5,7 @@
 #include <dwe/assets/content_id.hpp>
 #include <dwe/assets/lua_api.hpp>
 #include <dwe/assets/map_document.hpp>
+#include <dwe/assets/map_patch.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/map_warps.hpp>
 #include <dwe/assets/model.hpp>
@@ -55,14 +56,12 @@ constexpr std::string_view ManifestFile = "pack.yaml";
 constexpr std::string_view MetaSuffix = "_meta";
 constexpr std::string_view Placeholder = "{}";
 constexpr std::string_view SiblingPrefix = "./";
-constexpr std::string_view MapPrefix = "map/";
-constexpr std::string_view MapDataSuffix = "/data";
 // The keys of a map's warps and of an exit's number there.
 constexpr std::string_view WarpsKey = "warps";
 constexpr std::string_view WarpExitKey = "exit";
 
-// The line (from 1) of an exit's item in the warps of a map's data, as the parser read it, or 0
-// when there is none.
+// The line (from 1) of an exit's item in the warps of a map's data or patch, as the parser read it,
+// or 0 when there is none.
 std::size_t warpLine(const YamlNode& document, std::int32_t exit) {
   const YamlNode* warps = document.isMapping() ? document.find(WarpsKey) : nullptr;
   if (warps == nullptr || !warps->isSequence()) {
@@ -194,7 +193,12 @@ public:
     for (const AssetId& id : ids) {
       const assets::AssetSource& source = *stack_->resolve(id);
       const std::string extension = extensionOf(source);
-      if (extension == "yaml") {
+      if (extension == "yaml" && assets::isMapPatchId(id)) {
+        // Every pack's patch of a map applies, not only the one on top (map_patch.hpp).
+        for (const assets::AssetSource& patch : stack_->sources(id)) {
+          checkDocument(id, patch);
+        }
+      } else if (extension == "yaml") {
         checkDocument(id, source);
       } else if (extension == "glb" || extension == "gltf") {
         checkModelFiles(id, source);
@@ -352,7 +356,7 @@ private:
     }
     const auto& [name, rule] = *matches.begin();
     const core::JsonSchema* compiled = schema(name, rule->manifest);
-    const auto bytes = stack_->read(id);
+    const auto bytes = stack_->read(source);
     if (compiled == nullptr || !bytes) {
       return;
     }
@@ -386,29 +390,52 @@ private:
       checkContract(id, file, *document);
     }
     if (name == names::MapSchema) {
-      checkWarps(id, file, textOf(*bytes), *document);
+      checkWarps(id, file, *document);
     }
   }
 
   // Where the warps of a map lead (assets/map_warps.hpp): a dead warp, two targets that disagree or
-  // one that names no map. A map that does not parse is checkContent's to report.
-  void checkWarps(const AssetId& id, const std::string& file, std::string_view text,
-                  const YamlNode& document) {
+  // one that names no map, in the map as the game loads it, with the packs' patches. A problem of
+  // an exit that a patch changed is the patch's. A map that does not load is checkContent's to
+  // report.
+  void checkWarps(const AssetId& id, const std::string& file, const YamlNode& document) {
     const MapTable* maps = mapTable();
-    auto map = assets::parseMapDocument(text);
-    if (maps == nullptr || !map) {
+    const std::optional<std::string> mapId = assets::mapIdOfAsset(id);
+    if (maps == nullptr || !mapId) {
       return;
     }
-    // map/<id>/data, or map/<pack>/<name>/data for a pack's map.
-    std::string mapId{id.str()};
-    mapId = mapId.substr(MapPrefix.size(), mapId.size() - MapPrefix.size() - MapDataSuffix.size());
-    if (const auto slash = mapId.find('/'); slash != std::string::npos) {
-      mapId[slash] = ':';
+    auto map = assets::loadMapDocument(*stack_, *mapId);
+    if (!map) {
+      return;
     }
-    const bool basePack = assets::isBaseMapData(*stack_, mapId);
+    const bool basePack = assets::isBaseMapData(*stack_, *mapId);
     for (const assets::WarpIssue& issue : assets::resolveWarpTargets(*map, *maps, basePack)) {
-      add(file, warpLine(document, issue.exit), 0, assets::warpIssueMessage(mapId, issue));
+      std::string message = assets::warpIssueMessage(*mapId, issue);
+      if (const assets::MapExitPatch* patch = map->exitPatch(issue.exit)) {
+        addPatchProblem(*mapId, patch->pack, issue.exit, std::move(message));
+      } else {
+        add(file, warpLine(document, issue.exit), 0, std::move(message));
+      }
     }
+  }
+
+  // A problem of an exit, at the change of a pack's patch that names it.
+  void addPatchProblem(std::string_view mapId, std::string_view pack, std::int32_t exit,
+                       std::string message) {
+    const auto patchId = assets::mapPatchId(mapId);
+    const std::span<const assets::AssetSource> sources =
+        patchId ? stack_->sources(*patchId) : std::span<const assets::AssetSource>{};
+    const auto source = std::ranges::find(sources, pack, &assets::AssetSource::packId);
+    if (source == sources.end()) {
+      return;
+    }
+    std::size_t line = 0;
+    if (const auto bytes = stack_->read(*source)) {
+      if (const auto patch = core::parseYaml(textOf(*bytes))) {
+        line = warpLine(*patch, exit);
+      }
+    }
+    add(assets::pathText(source->file), line, 0, std::move(message));
   }
 
   // The composed map table, read the first time; nullptr when the packs have none or it does not

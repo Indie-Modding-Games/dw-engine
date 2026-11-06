@@ -354,3 +354,60 @@ TEST_CASE("a pack cannot load another pack's script as a module") {
   CHECK(errorOf(mod.loadModule(files, assetId("scripts/story"))) ==
         "the script scripts/story comes from the pack 'other_mod', not from 'my_mod'");
 }
+
+TEST_CASE("a coroutine can get another module's function as its first argument") {
+  auto vm = makeVm();
+  std::vector<std::string>& reported = publishReport(*vm);
+  publishWait(*vm);
+  MemoryPacks packs;
+  packs.addEnginePack("base");
+  packs.addPack("my_mod");
+  packs.addFile("base", "scripts/story.lua",
+                "return { sections = { [1] = function()\n"
+                "  test.report('original')\n"
+                "  test.wait()\n"
+                "  return true\n"
+                "end } }");
+  packs.addFile("my_mod", "scripts/patch.lua",
+                "return { script = 7, sections = { [1] = function(original)\n"
+                "  test.report('before')\n"
+                "  local result = original()\n"
+                "  test.report('after')\n"
+                "  return result\n"
+                "end, [3] = function(original)\n"
+                "  test.report(original == nil and 'no original' or 'original')\n"
+                "end, name = function() end }, [2] = 'not a section' }");
+  const auto& files = packs.mount();
+  auto baseModule = environmentOf(*vm, "base").loadModule(files, assetId("scripts/story"));
+  REQUIRE_MESSAGE(baseModule.has_value(), baseModule.error().message);
+  auto patch = environmentOf(*vm, "my_mod").loadModule(files, assetId("scripts/patch"));
+  REQUIRE_MESSAGE(patch.has_value(), patch.error().message);
+
+  const std::vector<ApiValue> scriptPath{std::string{"script"}};
+  CHECK(patch->value(scriptPath).value_or(ApiValue{}) == ApiValue{std::int64_t{7}});
+  const std::vector<ApiValue> missing{std::string{"nothing"}, std::string{"here"}};
+  CHECK(patch->value(missing).value_or(ApiValue{false}) == ApiValue{});
+  const std::vector<ApiValue> sectionsPath{std::string{"sections"}};
+  CHECK(errorOf(patch->value(sectionsPath)) ==
+        "my_mod:scripts/patch has a table at sections; it may hold nil, a boolean, a number or a "
+        "text there");
+  CHECK(patch->functionKeys(sectionsPath).value_or(std::vector<std::int64_t>{}) ==
+        std::vector<std::int64_t>{1, 3});
+  CHECK(patch->functionKeys(scriptPath).value_or(std::vector<std::int64_t>{0}).empty());
+
+  const std::vector<ApiValue> first{std::string{"sections"}, std::int64_t{1}};
+  auto wrapped = patch->coroutine(first, {.module = &*baseModule, .path = first});
+  REQUIRE_MESSAGE(wrapped.has_value(), wrapped.error().message);
+  // The original waits inside the patch's coroutine; a plain call is one level deeper.
+  CHECK(waiting(wrapped->resume()).callDepth == 1);
+  CHECK(reported == std::vector<std::string>{"before", "original"});
+  CHECK(finished(wrapped->resume()) == ApiValue{true});
+  CHECK(reported == std::vector<std::string>{"before", "original", "after"});
+
+  reported.clear();
+  const std::vector<ApiValue> third{std::string{"sections"}, std::int64_t{3}};
+  auto alone = patch->coroutine(third, {.module = &*baseModule, .path = third});
+  REQUIRE_MESSAGE(alone.has_value(), alone.error().message);
+  CHECK(std::holds_alternative<CoroutineFinished>(alone->resume()));
+  CHECK(reported == std::vector<std::string>{"no original"});
+}

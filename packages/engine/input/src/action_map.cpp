@@ -126,6 +126,10 @@ ActionMap defaultActionMap() {
   // Writes a bug report of the game being played (docs/guides/prueba-vertical.md).
   map.bind("report_bug", KeyBinding{keys::F12});
 
+  // The field map's debug overlay: collision, exits and NPC slots over the field
+  // (docs/guides/control-remoto.md).
+  map.bind("debug_map_overlay", KeyBinding{keys::F3});
+
   // Development views (dwe-game --map): fade to a time of day, show the next map.
   map.bind("debug_time_day", KeyBinding{keys::Digit1});
   map.bind("debug_time_dusk", KeyBinding{keys::Digit2});

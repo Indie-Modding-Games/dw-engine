@@ -94,6 +94,12 @@ public:
   // The ids that more than one pack provides, sorted. For debugging overrides.
   [[nodiscard]] std::vector<AssetId> overriddenIds() const;
 
+  // Lists the files of the mounted packs again, so files added to or removed from a pack's folder
+  // since the mount are seen (a map editor writing a new document while the game runs). The packs
+  // and their stack stay the same. On an error (a file that no longer gives a valid id) nothing
+  // changes. The pointers resolve() gave and the spans sources() gave are invalid afterwards.
+  core::Result<void> rescan();
+
 private:
   explicit VirtualFileSystem(std::vector<MountedPack> packs) : packs_(std::move(packs)) {}
 

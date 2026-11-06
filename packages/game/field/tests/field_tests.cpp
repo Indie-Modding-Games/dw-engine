@@ -409,6 +409,44 @@ TEST_CASE("a trigger fires when stepped onto, not while standing on it") {
   CHECK(field.mapChangePending());
 }
 
+TEST_CASE("the field reads its cells by the trigger bands of its rules") {
+  MapDocument town = roomMap("town");
+  fill(town, {.column = 50, .row = 50}, {.column = 50, .row = 50}, 32); // exit 2 in the new band
+  town.warps[2].targetMapId = "house";
+  town.warps[2].targetExit = 0;
+  fill(town, {.column = 55, .row = 50}, {.column = 55, .row = 50}, 112); // no exit any more
+  auto rules = originalRules();
+  rules.triggers.exits = {.first = 30, .last = 39};
+
+  dwe::scene::World world;
+  Field field{world, rules};
+  field.enterMapAt(town, at(53.0F, 50.0F));
+  field.setInput({.stick = {1.0F, 0.0F}}); // east over 112: a cell that only runs its section
+  bool stepped = false;
+  for (int i = 0; i < 120; ++i) {
+    field.tick(Tick);
+    for (const auto& step : field.triggerSteps()) {
+      CHECK(step.trigger == 112);
+      stepped = true;
+    }
+  }
+  CHECK(stepped);
+  CHECK_FALSE(field.mapChangePending());
+
+  field.setInput({.stick = {-1.0F, 0.0F}, .run = true}); // back west onto 32
+  std::optional<MapChange> change;
+  for (int i = 0; i < 300 && !change; ++i) {
+    field.tick(Tick);
+    change = field.takeMapChange();
+  }
+  if (!change) {
+    FAIL("no map change");
+    return;
+  }
+  CHECK(change->map == "house");
+  CHECK(change->trigger == 32);
+}
+
 namespace {
 
 // The door of a house: stepping on cells of value 51 takes the player to exit 2 of town while
@@ -1060,6 +1098,25 @@ TEST_CASE("a click on a warp walks onto it") {
     return;
   }
   CHECK(change->map == "house");
+}
+
+TEST_CASE("a reload of the field's data brings new script map changes and rules") {
+  MapDocument house = roomMap("house");
+  constexpr std::uint8_t ScriptStep = 51;
+  fill(house, {.column = 40, .row = 50}, {.column = 59, .row = 51}, ScriptStep);
+  dwe::scene::World world;
+  Field field{world, originalRules(), {.warps = {}, .facts = triggersSet({})}};
+  field.enterMapAt(house, at(0.0F, 1000.0F));
+  CHECK_FALSE(field.warpsOn(ScriptStep));
+
+  dwe::game::field::FieldRules rules = originalRules();
+  rules.transition.fadeInFrames += 3;
+  field.reloadData(rules, {houseDoor()});
+  CHECK(field.warpsOn(ScriptStep));
+  CHECK(field.rules().transition.fadeInFrames == originalRules().transition.fadeInFrames + 3);
+
+  field.reloadData(originalRules(), {});
+  CHECK_FALSE(field.warpsOn(ScriptStep));
 }
 
 TEST_CASE("a walk to a door keeps off the cells whose script changes the map") {

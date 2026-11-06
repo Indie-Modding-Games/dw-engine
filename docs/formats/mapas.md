@@ -183,6 +183,8 @@ La colisión: 0 es libre, cualquier valor con el bit `0x80` bloquea (`checkMapCo
 disparadores (`tamer.c: checkMapInteraction`): 51–79 llaman a un script al pisarlos, 80–109 al pulsar confirmar,
 110–119 son los warps (el 110 + i lleva por la salida i de este mapa a `target_map` / `target_exit`) y 120 llama a un
 script si el compañero tiene el bit 8 de `condition` (probablemente, que necesita el baño).
+Esas bandas son las del original; el motor las lee de `field/triggers` del paquete `game`, así que un paquete puede
+moverlas, y el campo, la capa de depuración del mapa y el editor de mapas usan las de la pila.
 En el US solo aparecen 0, 51–86, 110–116, 120 y 128.
 
 ### Destino de una salida
@@ -222,6 +224,73 @@ mapa, la salida y su línea, y avisa de que el editor pudo perder `target_map_id
 problema se desactiva con un aviso en el registro que la nombra, salvo la de un id desconocido junto a un índice del
 original, que sigue llevando a ese mapa; nunca se cae. Dos destinos que no coinciden desactivan el warp en cualquier
 paquete, y `dwx validate` lo da como error.
+
+## Parches
+
+Un paquete no tiene que copiar el `map/<id>/data` entero para cambiar una salida o mover un NPC: puede traer
+`map/<id>/patch.yaml` (`map/<paquete>/<nombre>/patch.yaml` para el mapa de otro paquete) con solo lo que cambia
+([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/map_patch.schema.json),
+`packages/engine/assets/include/dwe/assets/map_patch.hpp`):
+
+```yaml
+camera: {projection: 1900}       # los campos de la cámara que cambia
+lights:
+  - {index: 1, color: {r: 200, g: 180, b: 160}}
+warps:                           # por número de salida (su `exit`)
+  - exit: 2
+    target_map: -1
+    target_map_id: example_mod:meadow
+    target_exit: 0
+npcs:                            # por posición en la lista, desde 0
+  - index: 0
+    position: {x: 1200, y: 0, z: -800}
+    waypoints: []
+objects:
+  sprites:   [{index: 0, clut: 3}]
+  instances: [{index: 2, flag: 1}]
+collision:
+  cells:                         # rectángulos de celdas con un valor crudo
+    - {column: 40, row: 50, width: 3, height: 2, value: 128}
+    - {column: 41, row: 51, value: 0}
+```
+
+- **Cada cambio nombra una entrada** que el dato ya tiene (una salida por su `exit`; una luz, un NPC, un sprite o una
+  instancia por su posición) y da solo los campos que sustituye, con las mismas claves que el dato. Cada campo se
+  sustituye **entero**: un vector, la lista de `waypoints` o los `frames` de una instancia. No se añaden ni se quitan
+  entradas: una salida, un NPC o un índice que el dato no tiene es un error.
+- **La colisión** se da entera en `collision.grid` (con la forma de la `collision` del dato) o por rectángulos en
+  `collision.cells` (columna y fila de la primera celda, `width` y `height` de 1 por defecto, y el valor crudo: 0 libre,
+  el bit `0x80` bloqueado, otro un disparador). Los rectángulos se aplican después de la rejilla, en orden. La rejilla
+  de un parche deja sin efecto los rectángulos de los parches de debajo.
+- **El orden es el de la pila.** Se aplican los parches del paquete cuyo `data` gana y de todos los que están encima,
+  de abajo arriba; si un paquete trae `data` y `patch`, primero su dato. Un parche de un paquete que está debajo del
+  `data` que gana se deja fuera: se escribió para otro dato, cuyas posiciones pueden no ser las mismas
+  (`mapPatchSources`). Un parche sin el `data` de su mapa en ningún paquete es un problema de `dwx validate`.
+- **Los valores se comprueban al aplicar**: tras cada parche el documento se vuelve a leer con el lector estricto del
+  dato, así que un valor que no vale es un error que nombra el fichero del parche y su línea. En el juego, un mapa con
+  un parche que no se puede aplicar no carga, igual que un `data` roto.
+- **Una salida cambiada es del paquete que la parchea** a efectos de [su destino](#destino-de-una-salida): un mod que
+  parchea una salida de un mapa de la base puede llevarla a su mapa solo por id (`target_map: -1`), y `dwx validate` da
+  sus problemas en la línea del parche. Un parche de un paquete del motor de la capa base sigue la regla de la base.
+
+Lo ven todos los que leen mapas, porque todos pasan por `loadMapDocument`: el campo del juego y la vista previa de
+mapas (`render::loadMapSceneData`), las pruebas de rutas y de la simulación y `dwx validate`, que comprueba cada parche contra su esquema (los de todos los paquetes, no solo el
+de arriba), lo aplica como el juego y busca los warps muertos del mapa ya parcheado. El editor de mapas
+([mapper](../modulos/apps/mapper.md), en Rust) aplica los parches con las mismas reglas (`packages/rust/dwe-map`,
+con pruebas que repiten las del motor) y dice en su panel qué paquetes parchearon el mapa. En el juego que corre,
+`reload_map` del [canal de control](../guides/control-remoto.md#edición-de-mapas-en-vivo) vuelve a leer el mapa con
+sus parches, y la línea `field: entered ...` del log nombra los paquetes que lo parchearon. La regla de esquema
+`map_patch: [map/*/patch, map/*/*/patch]` la declara el paquete `game`; un mod que se valide sin él la declara en su
+`pack.yaml`, como hace con `map: [map/*/*/data]` para sus mapas.
+
+**Puertas y baño.** No están en el `data` del mapa sino en `data/maps` ([tablas por
+entradas](../architecture/vfs.md#tablas-por-entradas)), que se compone entrada a entrada solo en `maps`: la entrada de
+un mapa dice qué juego de puertas (`doors`) y qué baño (`toilet`) usa, por su índice en las secciones `doors` y
+`toilets`, y esas dos secciones se sustituyen enteras por las del paquete de más arriba que las trae. Así, un mod
+que quiere que un mapa use otro juego de puertas o de baño que ya existe trae solo la entrada de ese mapa con el índice
+cambiado; uno que quiere mover una puerta o un punto del baño, o añadir un juego nuevo (al final, con el siguiente
+`index`), trae la sección `doors` o `toilets` entera, copiada de la base y editada. Dos mods que traen la misma sección
+no se suman: gana el de más arriba.
 
 ## Cómo se dibuja
 

@@ -178,6 +178,9 @@ public:
   [[nodiscard]] game::story::Dialogue& dialogue();
   // Whether a script runs or is about to start (the original's IS_SCRIPT_PAUSED is 0).
   [[nodiscard]] bool scriptRunning() const { return runner_.has_value() && runner_->busy(); }
+  // The control channel's reload_map: the story modules and patches read again from the packs on
+  // the next section (StoryLuaHost::reloadScripts), the state kept. Fails while a section runs.
+  core::Result<void> reloadScripts();
   // The game's script VM once the rules were read, where other systems publish their story orders.
   [[nodiscard]] script::ScriptVm* vm() { return vm_.get(); }
   // What the story's scenes (story_scenes.hpp) build on: the state's port, the runner, the host

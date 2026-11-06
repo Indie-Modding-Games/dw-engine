@@ -68,6 +68,7 @@
 #include "graphics_options.hpp"
 #include "hd_scenery_setting.hpp"
 #include "language.hpp"
+#include "map_debug_overlay.hpp"
 #include "medal_figure.hpp"
 #include "medal_sheet.hpp"
 #include "messages.hpp"
@@ -800,6 +801,21 @@ int runGame(const Options& requested) {
     consoleUiSkin = std::string{id};
   });
 
+  // The field map's debug overlay (map_debug_overlay.hpp): F3 (debug_map_overlay), the console's
+  // map_overlay("on"|"off"|"toggle") and the control channel's overlay turn it on and off.
+  bool mapOverlay = false;
+  debug::OverlayShapes mapOverlayShapes;
+  const auto showMapOverlay = [&mapOverlay](std::optional<bool> on) {
+    mapOverlay = on.value_or(!mapOverlay);
+    core::logInfo("game: map overlay {}", mapOverlay ? "on" : "off");
+    return mapOverlay;
+  };
+  (*scripts)->bindCommand(MapOverlayCommand, [showMapOverlay](std::string_view value) {
+    showMapOverlay(value == "on"    ? std::optional<bool>{true}
+                   : value == "off" ? std::optional<bool>{false}
+                                    : std::nullopt);
+  });
+
   SessionCommands sessionCommands;
   sessionCommands.bind(**scripts);
   // The partner's status for the autotest's checks, refreshed every frame of a run.
@@ -1105,6 +1121,29 @@ int runGame(const Options& requested) {
               return {};
             },
             .quit = [&] { running = false; },
+            .rescan = [&]() -> core::Result<void> { return (*content)->rescan(); },
+            .reloadMap = [&](std::optional<std::int32_t> exit) -> core::Result<ControlReload> {
+              PlaySession* play = flow.playing();
+              if (play == nullptr) {
+                return core::fail("no game is being played");
+              }
+              // A map editor saved new files: the packs are listed again first.
+              if (auto rescanned = (*content)->rescan(); !rescanned) {
+                return std::unexpected{rescanned.error()};
+              }
+              if (auto reloaded = play->reloadMap(exit); !reloaded) {
+                return std::unexpected{reloaded.error()};
+              }
+              return ControlReload{.map = play->scene().field().mapId(), .exit = exit};
+            },
+            .storyState = [&]() -> core::Result<std::string> {
+              const PlaySession* play = flow.playing();
+              if (play == nullptr) {
+                return core::fail("no game is being played");
+              }
+              return storyStateJson(play->storyStateView());
+            },
+            .overlay = showMapOverlay,
         },
         options.controlPaused);
   }
@@ -1268,6 +1307,9 @@ int runGame(const Options& requested) {
       }
       if (input.wasPressed("debug_console")) {
         (*debugUi)->toggle();
+      }
+      if (input.wasPressed("debug_map_overlay")) {
+        showMapOverlay(std::nullopt);
       }
       reportAsked = input.wasPressed("report_bug") || reportAsked;
       // The original has no pause menu on the title, over a movie, the opening's questions, a
@@ -1693,6 +1735,17 @@ int runGame(const Options& requested) {
     if (!showingMovie && saveFigure && (*saveFigure)->loaded() && flow.playing() != nullptr &&
         flow.playing()->saveIndicatorShown())
       portraitScenes.push_back((*saveFigure)->scene(frameSeconds));
+    mapOverlayShapes.clear();
+    if (mapOverlay && !showingMovie) {
+      if (const PlaySession* play = flow.playing(); play != nullptr && play->scene().camera()) {
+        const FieldScene& scene = play->scene();
+        buildMapOverlay(
+            scene.map(), scene.field().collision(), scene.field().rules().triggers,
+            [&scene](glm::vec3 world) { return scene.worldToWindowFraction(world); },
+            mapOverlayShapes);
+      }
+    }
+    (*debugUi)->setShapes(mapOverlayShapes);
     const bool drawn = (*renderer)->renderFrame({
         .clearColor = {0.0F, 0.0F, 0.0F, 1.0F},
         .scene = sceneDrawers,

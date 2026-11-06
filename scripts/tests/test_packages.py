@@ -25,6 +25,10 @@ TREE = {
     "packages/CMakeLists.txt": "add_subdirectory(engine)\n",
     "packages/vendor/cgltf/CMakeLists.txt": "add_library(dwe_cgltf STATIC cgltf.cpp)\n",
     "apps/launcher/package.json": "{}\n",
+    "apps/mapper/Cargo.toml": "[workspace]\nmembers = [\".\", \"crates/core\", \"../../packages/rust/maps\"]\n"
+                              "[workspace.dependencies]\n# a = { path = \"../../packages/old\" }\n"
+                              "maps = { path = \"../../packages/rust/maps\" }\n"
+                              "core = { path = \"crates/core\" }\n",
 }
 
 
@@ -41,7 +45,8 @@ class PackageTests(unittest.TestCase):
         self.folder.cleanup()
 
     def test_a_package_is_a_folder_that_declares_a_module_or_a_program(self):
-        self.assertEqual(sorted(self.packages), ["assets", "core", "field", "game", "launcher", "repo", "session"])
+        self.assertEqual(sorted(self.packages), ["assets", "core", "field", "game", "launcher", "mapper", "repo",
+                                                "session"])
         self.assertEqual(self.packages["field"].folder, "packages/game/field")
         self.assertFalse(self.packages["launcher"].cmake)
 
@@ -63,6 +68,11 @@ class PackageTests(unittest.TestCase):
                          {"assets", "field", "session", "game"})
         self.assertEqual(packages.affected_by(self.packages, ["apps/launcher/ui/app.js"]), {"launcher"})
         self.assertEqual(packages.affected_by(self.packages, ["scripts/dev.sh"]), {"repo"})
+
+    def test_the_crates_an_app_names_by_path_belong_to_it(self):
+        self.assertEqual(self.packages["mapper"].extra_folders, ["packages/rust/maps"])
+        self.assertEqual(packages.affected_by(self.packages, ["packages/rust/maps/src/lib.rs"]), {"mapper"})
+        self.assertEqual(packages.affected_by(self.packages, ["apps/mapper/crates/core/src/lib.rs"]), {"mapper"})
 
     def test_documentation_affects_nothing_and_the_build_affects_everything(self):
         self.assertEqual(packages.affected_by(self.packages, ["docs/index.md", "packages/session/README.md"]), set())

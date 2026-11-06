@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Field triggers",
+  "description": "field/triggers.yaml of the game pack: what the player's cell does by its collision value (packages/game/field trigger_bands.hpp, docs/reference/campo.md). The engine also checks that the bands do not overlap, stay from 1 to 127 and give at most 10 exits.",
+  "type": "object",
+  "required": ["step", "confirm", "exits", "toilet", "blocked_bit"],
+  "additionalProperties": false,
+  "properties": {
+    "step": {
+      "description": "Stepping on the cell runs the map script's section of that number, every frame on it.",
+      "$ref": "#/$defs/band"
+    },
+    "confirm": {
+      "description": "Pressing confirm on the cell runs the section of that number.",
+      "$ref": "#/$defs/band"
+    },
+    "exits": {
+      "description": "The cell takes the map's table warp of exit (value - first).",
+      "$ref": "#/$defs/band"
+    },
+    "toilet": {
+      "description": "The partner that needs the toilet goes.",
+      "$ref": "#/$defs/value"
+    },
+    "blocked_bit": {
+      "description": "A cell value with this bit blocks the way; the map format fixes it.",
+      "const": 128
+    }
+  },
+  "$defs": {
+    "value": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 127
+    },
+    "band": {
+      "type": "object",
+      "required": ["first", "last"],
+      "additionalProperties": false,
+      "properties": {
+        "first": { "$ref": "#/$defs/value" },
+        "last": { "$ref": "#/$defs/value" }
+      }
+    }
+  }
+}

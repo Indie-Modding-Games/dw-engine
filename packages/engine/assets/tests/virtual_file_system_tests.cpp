@@ -111,6 +111,34 @@ TEST_CASE("unknown assets are reported") {
   CHECK(vfs.read(idOf("map/x")).error().message == "no pack has the asset 'map/x'");
 }
 
+TEST_CASE("a rescan sees the files added to and removed from the mounted packs") {
+  MemoryFileSystem memory;
+  addPack(memory, "base", "base");
+  memory.addFile("packs/base/map/start/data.yaml", "base map");
+  addPack(memory, "edits", "mods");
+  VirtualFileSystem vfs = mounted(memory, {"packs/base", "packs/edits"});
+
+  memory.addFile("packs/edits/map/start/data.yaml", "edited map");
+  memory.addFile("packs/edits/map/added/data.yaml", "new map");
+  CHECK(textOf(*vfs.read(idOf("map/start/data"))) == "base map");
+  CHECK(vfs.resolve(idOf("map/added/data")) == nullptr);
+
+  REQUIRE(vfs.rescan().has_value());
+  CHECK(packOrder(vfs) == std::vector<std::string>{"base", "edits"});
+  CHECK(textOf(*vfs.read(idOf("map/start/data"))) == "edited map");
+  CHECK(textOf(*vfs.read(idOf("map/added/data"))) == "new map");
+  CHECK(vfs.sources(idOf("map/start/data")).size() == 2);
+
+  memory.removeFile("packs/edits/map/start/data.yaml");
+  REQUIRE(vfs.rescan().has_value());
+  CHECK(textOf(*vfs.read(idOf("map/start/data"))) == "base map");
+
+  // A file that gives no valid id fails the rescan and leaves the last listing.
+  memory.addFile("packs/edits/map/Bad Name/data.yaml", "broken");
+  CHECK_FALSE(vfs.rescan().has_value());
+  CHECK(textOf(*vfs.read(idOf("map/added/data"))) == "new map");
+}
+
 TEST_CASE("packs of one layer stack by priority, then dependencies, then id") {
   MemoryFileSystem memory;
   addPack(memory, "zeta", "mods");

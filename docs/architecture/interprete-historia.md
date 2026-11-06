@@ -141,16 +141,34 @@ script/maphead.yaml ┴→ readScriptListing → buildScriptFlow → structureSc
 
 ### Moddabilidad: cómo un mod cambia una sección
 
-Un mod sustituye un asset por su ID (VFS). La unidad que propongo es **un módulo por script** con una tabla de
-secciones, y una forma de sustituir **una sola sección** sin copiar el script entero ([Q2](#q2-unidad-de-sustitución-de-un-mod)):
+Un mod sustituye un asset por su ID (VFS). La unidad es **un módulo por script** con una tabla de secciones, y una
+forma de sustituir **una sola sección** sin copiar el script entero ([Q2](#q2-unidad-de-sustitución-de-un-mod)):
 
-- **Script entero:** el mod trae `story/dg/049.lua` y gana a `base` por ID. Funciona ya con la VFS.
-- **Una sección (recomendado añadir):** el mod trae `story/patches/<nombre>.lua`, que devuelve
-  `{ script = 49, sections = { [0x51] = function() ... end } }`. El runtime compone: la sección del parche gana a
-  la del módulo. Dos mods que parchean la misma sección: gana el de mayor prioridad y el log lo dice.
+- **Script entero:** el mod trae `story/049.lua` y gana a `base` por ID. Funciona ya con la VFS.
+- **Una sección (hecho, `StoryLuaHost`):** el mod trae `story/patches/<nombre>.lua`, que devuelve
+  `{ script = 49, sections = { [0x51] = function(original) ... end } }`. La sección del parche gana a la del módulo;
+  las demás secciones del script siguen siendo las del módulo. La guía para modders está en
+  [API de historia](../modding/historia.md#parches-por-sección).
+  - **Envolver:** la función recibe `original`, la sección del módulo (o `nil` si el módulo no la tiene, o no hay
+    módulo: un parche puede añadir secciones). `return original()` es una llamada de cola y la sección se comporta
+    igual que sin parche; llamarla y seguir después (`local r = original() ... return r`) la mete un nivel más hondo,
+    así que un `jump_to_file` dentro de ella vuelve al parche cuando la sección destino acaba, como una subrutina
+    (`FileJump::linkDepth`).
+  - **Orden:** los parches se cargan una vez, al empezar la primera sección (y otra vez tras un `reload_map` del
+    canal de control, `StoryLuaHost::reloadScripts`, que descarta módulos y parches cuando no corre ninguna
+    sección), de abajo arriba en la pila de paquetes
+    (y por ID dentro de un paquete). Si dos parches traen la misma sección gana el que está más arriba y el log lo
+    dice (`story patches: script 49 section 0x0051 runs B; A loses`). El `original` es siempre la sección del módulo,
+    no la del parche que perdió: los parches no se encadenan.
+  - **Errores:** un parche que no carga, sin `script` válido o con una sección fuera de 0–65535 se deja fuera con un
+    error en el log; el juego sigue con la sección del módulo. `StoryLuaHost::patchOf` dice qué parche corre una
+    sección (para el control remoto y el log de depuración `[mod:story]`).
+  - Un parche no lleva la cabecera de `dwx` (`-- dwx lua N`): lo escribe una persona, no el emisor.
 
 El código de un mod corre en **su entorno** (sandbox, cuota de memoria del paquete); el Lua de `base` corre como
-código del motor (`PackOrigin::Engine`, capa `base`). La API `story` es la misma para los dos.
+código del motor (`PackOrigin::Engine`, capa `base`). La API `story` es la misma para los dos. Un parche corre en el
+entorno de su paquete y paga toda la corrutina, también lo que gasta `original`, que conserva el entorno del módulo
+(`ScriptModule::coroutine` con un `ModuleFunction`).
 
 ## 2. El runtime
 
@@ -718,6 +736,11 @@ Cada una con opciones; la primera es la recomendada.
 1. **Número en 4a, con comentario donde el motor les da significado; nombres simbólicos más tarde, en una tabla del
    paquete `game`** (recomendado): no inventa nombres de historia antes del GDD.
 2. Nombres simbólicos ya: más legible, pero son decisiones de diseño (visibles para modders).
+
+Estado (2026-11-06): la historia sigue con números. `story/names` del paquete `game` (`StoryNames`,
+`packages/game/story`) da una etiqueta, un id en snake_case, a los disparadores y variables a los que el motor ya da
+un significado (medallas, objetos de la página del jugador, música, datos de rutinas), solo para que las herramientas
+los muestren; nada del juego los lee.
 
 ### Q4. Textos de historia en español
 1. **El español cae al texto inglés del disco** (clave sin traducción → inglés, marcado en el log de desarrollo)

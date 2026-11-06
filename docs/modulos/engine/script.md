@@ -138,6 +138,14 @@ trozo `@<paquete>:<id>` en los errores. Solo se aceptan ficheros `.lua`. `runAss
 motor, solo acepta assets de los paquetes del motor de las capas `base` y `remaster` (`isEngineCode`): un mod que
 sustituyera ese asset tendría los privilegios del motor, como los comandos de la consola.
 
+`ModEnvironment::loadModule(files, id)` carga un asset del paquete como módulo (`ScriptModule`), lo que devuelve el
+Lua, sin recordarlo para la recarga. Del módulo, `coroutine(ruta)` hace una corrutina que el motor reanuda con la
+función que hay en esa ruta (lecturas crudas, sin metatablas), `value(ruta)` lee un valor simple y
+`functionKeys(ruta)` lista las claves enteras de una tabla cuyos valores son funciones. `coroutine(ruta, función)` le
+pasa a la función, como primer argumento, una función de **otro** módulo de la misma VM (o `nil` si no la hay): así
+un parche de historia recibe la sección que envuelve. Esa función conserva el entorno de su módulo, y la corrutina
+entera la paga el paquete del módulo que la crea.
+
 ## Recarga en caliente
 
 `reloadChanged()` vuelve a ejecutar los ficheros de disco (`runFile`) y los assets (`runAsset`) que cambiaron. Para un

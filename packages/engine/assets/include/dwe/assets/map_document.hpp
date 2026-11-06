@@ -119,6 +119,15 @@ struct MapWarp {
   std::int32_t targetExit = 0;
 };
 
+// An exit that a pack's patch changed (map_patch.hpp), and the pack that changed it last.
+struct MapExitPatch {
+  std::int32_t exit = 0;
+  std::string pack;
+  // Whether that pack has the base's rights (hasBaseRights): only then is the exit checked as the
+  // base's (resolveWarpTargets), whatever pack the data comes from.
+  bool baseRights = false;
+};
+
 // An NPC record (overworld.c: loadMapDigimon), raw.
 struct MapNpc {
   std::int32_t typeId = 0;
@@ -248,9 +257,16 @@ struct MapDocument {
   std::vector<MapNpc> npcs;
   MapCollision collision;
   MapAssetIds assets;
+  // The packs whose patches loadMapDocument applied to the data, bottom to top.
+  std::vector<std::string> patches;
+  // The exits those patches changed, by exit.
+  std::vector<MapExitPatch> patchedExits;
 
   // The exit with this number, or nullptr.
   [[nodiscard]] const MapWarp* warp(std::int32_t exit) const;
+
+  // The patch that changed an exit last, or nullptr when the exit is as the data has it.
+  [[nodiscard]] const MapExitPatch* exitPatch(std::int32_t exit) const;
 };
 
 // Parses the text of `map/<id>/data`. Unknown and missing keys are errors.
@@ -267,7 +283,8 @@ core::Result<AssetId> mapDataId(std::string_view mapId);
 // Finds the backgrounds and textures of a map, sorted by variant order and by index.
 MapAssetIds findMapAssets(const VirtualFileSystem& vfs, std::string_view mapId);
 
-// Reads and parses a map's data from the virtual file system and fills in its id and assets.
+// Reads and parses a map's data from the virtual file system, applies the packs' patches to it
+// (map_patch.hpp) and fills in its id and assets.
 core::Result<MapDocument> loadMapDocument(const VirtualFileSystem& vfs, std::string_view mapId);
 
 // --- World space

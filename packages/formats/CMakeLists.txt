@@ -54,6 +54,7 @@ dwe_add_module(formats
         src/script/guarded_walk.cpp
         src/script/routine_writes.cpp
         src/script/lua_emitter.cpp
+        src/script/lua_reader.cpp
         src/script/story_api_names.cpp
         src/script/map_changes.cpp
         src/script/new_game_stats.cpp

@@ -1,4 +1,5 @@
 #include <dwe/assets/map_document.hpp>
+#include <dwe/core/collision_triggers.hpp>
 #include <dwe/ui/minimap.hpp>
 
 #include <algorithm>
@@ -23,9 +24,9 @@ void putPixel(assets::Image& image, std::uint32_t x, std::uint32_t y, std::uint3
 }
 
 // Collision triggers 110 to 119 take the player through warps 0 to 9 (tamer.c:
-// checkMapInteraction).
-constexpr std::uint8_t FirstWarpTrigger = 110;
-constexpr std::int32_t WarpCount = 10;
+// checkMapInteraction). The minimap shows the original's exits, whatever field/triggers says.
+using core::collision::FirstWarpTrigger;
+constexpr std::int32_t WarpCount = core::collision::WarpTriggerCount;
 
 MinimapCell minimapCellOf(const assets::MapDocument& map, assets::CollisionCell cell) {
   switch (map.collision.kind(cell)) {

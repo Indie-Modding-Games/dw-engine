@@ -82,7 +82,10 @@ std::optional<WarpIssue> resolve(MapWarp& warp, const MapCollision& collision, c
 std::vector<WarpIssue> resolveWarpTargets(MapDocument& map, const MapTable& maps, bool basePack) {
   std::vector<WarpIssue> issues;
   for (MapWarp& warp : map.warps) {
-    if (auto issue = resolve(warp, map.collision, maps, basePack)) {
+    // An exit a pack's patch changed is that pack's, whatever pack the rest of the data is from.
+    const MapExitPatch* patch = map.exitPatch(warp.exit);
+    const bool baseRules = patch != nullptr ? patch->baseRights : basePack;
+    if (auto issue = resolve(warp, map.collision, maps, baseRules)) {
       issues.push_back(std::move(*issue));
     }
   }

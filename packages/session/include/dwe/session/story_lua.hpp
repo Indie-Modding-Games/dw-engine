@@ -15,16 +15,20 @@
 #include <dwe/script/script_coroutine.hpp>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dwe::assets {
 class AssetId;
+struct MountedPack;
 class VirtualFileSystem;
 } // namespace dwe::assets
 
@@ -43,6 +47,11 @@ class Dialogue;
 namespace dwe::session {
 
 inline constexpr std::string_view StoryNamespace = "story";
+
+// The folder of the story patches (docs/architecture/interprete-historia.md#moddabilidad): each
+// story/patches/<name>.lua returns `{ script = N, sections = { [S] = function(original) ... end }
+// }` and its sections replace those of story/NNN without copying the module.
+inline constexpr std::string_view StoryPatchFolder = "story/patches/";
 
 // Spelled here because the runtime never depends on formats; a session test checks them against
 // the emitter's names (story_api_names.hpp).
@@ -114,7 +123,11 @@ struct StorySceneOrders {
 };
 
 // Runs the story's sections as coroutines of the script VM: script N is the module story/NNN of
-// the pack that provides it, and section S is its function sections[S].
+// the pack that provides it, and section S is its function sections[S], unless a story patch
+// (StoryPatchFolder) has that section: then the patch's function runs, in its pack's environment,
+// with the module's function as its argument `original` (nil when the module has none). Of two
+// patches of one section the one higher in the pack stack wins (the later id within a pack), and
+// the log says which lost.
 class StoryLuaHost final : public game::story::SectionHost {
 public:
   // The VM and the file system must outlive the host.
@@ -160,12 +173,28 @@ public:
   core::Result<void> publishMotionApi(game::story::StoryRunner& runner,
                                       game::story::ScriptMotion& motion);
 
+  // The patch that runs a section, as `pack:asset id`, or nothing when the module's own runs.
+  [[nodiscard]] std::optional<std::string> patchOf(game::story::SectionRef section);
+
+  // A map editor's reload (the control channel's reload_map, docs/guides/control-remoto.md): drops
+  // the loaded story modules and patches, so the next section reads them again from the packs
+  // (after VirtualFileSystem::rescan, new files too). The story's state is not touched. Fails while
+  // a section runs, as its coroutine runs in the loaded modules.
+  core::Result<void> reloadScripts();
+
   core::Result<game::story::SectionHandle> start(game::story::SectionRef section) override;
   game::story::SectionStep resume(game::story::SectionHandle handle,
                                   game::story::ResumeValue value) override;
   void close(game::story::SectionHandle handle) override;
 
 private:
+  // A loaded story patch.
+  struct Patch {
+    script::ScriptModule module;
+    std::uint16_t script = 0;
+  };
+  using SectionKey = std::pair<std::uint16_t, std::uint16_t>;
+
   // A section that waits on a task, and the subroutine calls it waits in.
   struct WaitingTask {
     std::shared_ptr<game::story::StoryTask> task;
@@ -177,6 +206,9 @@ private:
   std::optional<game::story::SectionStep> driveTask(game::story::SectionHandle handle,
                                                     game::story::ResumeValue& value);
   [[nodiscard]] core::Result<void> checkHeader(const assets::AssetId& id) const;
+  // Loads the packs' story patches once; a patch that does not load is left out and logged.
+  void loadPatches();
+  void addPatch(const assets::AssetId& id, const assets::MountedPack& pack);
 
   script::ScriptVm* vm_;
   const assets::VirtualFileSystem* files_;
@@ -186,6 +218,10 @@ private:
   std::optional<game::story::Wait> pendingWait_;
   std::shared_ptr<game::story::StoryTask> pendingTask_;
   std::map<game::story::SectionHandle, WaitingTask> tasks_;
+  bool patchesLoaded_ = false;
+  std::vector<Patch> patches_;
+  // The winning patch of each patched section, an index in patches_.
+  std::map<SectionKey, std::size_t> patchedSections_;
 };
 
 } // namespace dwe::session

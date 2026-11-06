@@ -471,6 +471,43 @@ schemas:
       withExit("  target_map: 104\n  target_map_id: \"room08\"\n").contains("name different maps"));
 }
 
+TEST_CASE("dwx validate checks a mod's map patch as the game applies it, at the patch's lines") {
+  MemoryFileSystem files;
+  addSchemas(files);
+  addBasePack(files);
+  files.addFile("content/schemas/map_patch.schema.json",
+                R"({"type": "object", "properties": {"warps": {"type": "array"}}})");
+  files.addFile("packs/my_mod/pack.yaml", R"(id: my_mod
+version: 1.0.0
+layer: mods
+name: My mod
+dependencies:
+  - id: base
+    min_version: 1.0.0
+schemas:
+  map_patch: ["map/*/patch"]
+)");
+  const auto withPatch = [&](std::string_view patch) {
+    files.addFile("packs/my_mod/map/town/patch.yaml", patch);
+    const std::array<std::filesystem::path, 1> with{"content/base"};
+    const auto report = validatePacks(files, "packs/my_mod", "content/schemas", with);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    return textOf(*report);
+  };
+  CHECK(withPatch("warps:\n- {exit: 0, target_exit: 1}\n").empty());
+  // The editor's dead warp, made by the patch: reported at the patch's change, not the data.
+  const std::string dead =
+      withPatch("# exit 0\nwarps:\n- exit: 0\n  target_map: -1\n  target_map_id: null\n");
+  CHECK_MESSAGE(dead.contains("packs/my_mod/map/town/patch.yaml:3:0: map 'town', exit 0"), dead);
+  CHECK_FALSE(dead.contains("data.yaml"));
+  // An exit the map does not have: the map does not load.
+  const std::string missing = withPatch("warps:\n- {exit: 12, target_exit: 1}\n");
+  CHECK_MESSAGE(missing.contains("cannot load map/town/data"), missing);
+  CHECK_MESSAGE(missing.contains("no 'warps' with 'exit' 12"), missing);
+  // Against its schema.
+  CHECK(withPatch("warps: 3\n").contains("patch.yaml:1:"));
+}
+
 TEST_CASE(
     "an id a schema says names a table's entry must be one, in the table as the packs compose it") {
   MemoryFileSystem files;

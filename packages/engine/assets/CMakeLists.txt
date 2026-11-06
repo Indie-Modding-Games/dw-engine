@@ -31,6 +31,7 @@ dwe_add_module(assets
         src/texture.cpp
         src/yaml_reader.cpp
         src/map_document.cpp
+        src/map_patch.cpp
         src/map_table.cpp
         src/map_warps.cpp
         src/digimon_table.cpp

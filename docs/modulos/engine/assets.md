@@ -40,9 +40,11 @@ Las imágenes de la UI pasan por `ui::loadDrawnImage` ([ui](ui.md)) con las mism
 ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/map.schema.json), [formato](../../formats/mapas.md#en-el-motor)), con todos los
 campos tipados y los números tal como los escribió el extractor: cámara, luces, regiones, rejilla de tiles, imágenes,
 sprites e instancias, warps, NPC y la rejilla de colisión de 100 × 100 (`MapCollision`: libre, bloqueada o disparador).
-`parseMapDocument` lee el texto y `loadMapDocument(vfs, id)` lo lee del VFS y añade el id y sus assets: los fondos
-(`map/<id>/background_<variante>`, en orden día, atardecer, noche, `palette3`...) y las texturas (`texture8/<nnn>`,
-`texture4/<nnn>` y su `_meta`).
+`parseMapDocument` lee el texto y `loadMapDocument(vfs, id)` lo lee del VFS, le aplica los
+[parches](../../formats/mapas.md#parches) de los paquetes (`<dwe/assets/map_patch.hpp>`: `patchMapDocument`,
+`mapPatchSources`) y añade el id y sus assets: los fondos (`map/<id>/background_<variante>`, en orden día, atardecer,
+noche, `palette3`...) y las texturas (`texture8/<nnn>`, `texture4/<nnn>` y su `_meta`). `patches` dice qué paquetes
+parchearon el mapa y `exitPatch(salida)`, qué paquete cambió una salida.
 
 `MapTable` (`<dwe/assets/map_table.hpp>`) es `data/maps` ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/maps.schema.json)): por mapa,
 su id, su índice en el original (el que usan los warps), el fichero, los flags (hora fija, NPC), las puertas, el baño y

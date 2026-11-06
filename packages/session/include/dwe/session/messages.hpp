@@ -164,6 +164,16 @@ inline constexpr std::string_view TooManyStoryTasks =
     "the section started more than 256 routines that ended in the same frame";
 inline constexpr std::string_view NoSceneOrders =
     "story: the scenes' orders need the routines, the battles and the partner's scenes";
+inline constexpr std::string_view StoryPatchFailed = "story patch {}: {}; it is left out";
+inline constexpr std::string_view StoryPatchNoScript =
+    "story patch {}: `script` must be a script id, 0 to 65535; it is left out";
+inline constexpr std::string_view StoryPatchBadSection =
+    "story patch {}: section {} is outside 0 to 65535; it is left out";
+inline constexpr std::string_view StoryPatchEmpty =
+    "story patch {}: `sections` has no function under an integer key; it patches nothing";
+inline constexpr std::string_view StoryPatchLoaded = "story patch {}: script {}, sections {}";
+inline constexpr std::string_view StoryPatchShadowed =
+    "story patches: script {} section 0x{:04x} runs {}; {} loses";
 inline constexpr std::string_view StoryScenesOff =
     "[port:story] no story_scenes section: battles, scenes and routines are off";
 

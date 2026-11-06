@@ -135,9 +135,10 @@ Packages:
   A package is a folder of packages/ or apps/ (scripts/packages.py): packages/engine/core is core,
   apps/game is game, and repo is the repository's own tests. A CMake package builds with the
   target pkg_<name> and its tests carry the ctest label <name>; the launcher builds and tests with
-  scripts/launcher.sh, the beta gateway tests with node. A spec of --filter is a name (core), a
-  name with its dependencies (game...), a name with its dependents (...core) or a folder pattern
-  (packages/game/*). --affected selects what affected lists.
+  scripts/launcher.sh, the map editor with scripts/mapper.sh, the beta gateway tests with node. A
+  spec of --filter is a name (core), a name with its dependencies (game...), a name with its
+  dependents (...core) or a folder pattern (packages/game/*). --affected selects what affected
+  lists.
 
 Environment:
   PRESET              CMake preset (default linux-clang-debug; ci for the checks)
@@ -587,6 +588,7 @@ run_other_package() {
   local action="$1" name="$2"
   case "$name" in
     launcher) "$root/scripts/launcher.sh" "$action" ;;
+    mapper) "$root/scripts/mapper.sh" "$action" ;;
     beta-gateway)
       if [[ "$action" != test ]]; then
         echo "dev.sh: beta-gateway has nothing to build" >&2

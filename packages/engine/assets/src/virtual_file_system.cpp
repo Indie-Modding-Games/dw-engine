@@ -209,6 +209,18 @@ core::Result<VirtualFileSystem> VirtualFileSystem::mount(std::span<const PackLoc
   return vfs;
 }
 
+core::Result<void> VirtualFileSystem::rescan() {
+  std::map<AssetId, std::vector<AssetSource>> before = std::move(assets_);
+  assets_.clear();
+  for (const MountedPack& pack : packs_) {
+    if (auto indexed = indexPack(pack); !indexed) {
+      assets_ = std::move(before);
+      return std::unexpected{indexed.error()};
+    }
+  }
+  return {};
+}
+
 core::Result<void> VirtualFileSystem::indexPack(const MountedPack& pack) {
   auto files = listPackFiles(*pack.fileSystem, pack.root);
   if (!files) {

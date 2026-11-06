@@ -3,6 +3,7 @@ dwe_add_module(field
     SOURCES
         src/rules.cpp
         src/script_warps.cpp
+        src/trigger_bands.cpp
         src/grid.cpp
         src/field.cpp
         src/npcs.cpp

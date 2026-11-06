@@ -20,7 +20,8 @@ namespace dwe::assets {
 core::Result<void> openAsset(std::string_view extension, std::span<const std::byte> bytes);
 
 // Opens an asset as openAsset does and, when the game reads a document of that id with a reader of
-// its own, with that reader too: map/<id>/data with parseMapDocument and the game tables
+// its own, with that reader too: map/<id>/data with parseMapDocument, a map's patch on its own with
+// checkMapPatch, and the game tables
 // (data/maps, data/digimon...) with theirs, which refuse unknown and missing keys, and the text
 // tables (localization/*/* and text/*/*) with parseTextTable.
 core::Result<void> openAsset(const AssetId& id, std::string_view extension,
@@ -36,7 +37,8 @@ struct ContentProblem {
 // Reads every asset of the stack as the game reads it (the file that wins, or a content table
 // composed entry by entry from every pack that has it: each kind's table and the ones the rulesets
 // name, table_kinds.hpp) and opens it: an image the game reads from its PNG (pngReadingOf) with
-// that reader, any other asset with openAsset by its id, a content table with the reader of its
+// that reader, any other asset with openAsset by its id (and a map with patches as loadMapDocument
+// applies them; a patch, whether its map has data), a content table with the reader of its
 // kind; and checks that the Digimon the packs add have their model contracts. Several assets at a
 // time, so the file systems of the packs are read from several threads. An asset that fails is
 // read and opened once more alone before it counts. Returns the problems, by id; passedAlone, when

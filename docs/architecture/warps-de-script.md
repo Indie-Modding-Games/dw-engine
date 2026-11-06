@@ -193,6 +193,64 @@ transporte desde la tabla del ejecutable. La versión 4 tenía 1834: las 36 elec
 al confirmar, 24 al hablar) y los 76 de «NPC u otras secciones» son ahora `talk`. 3 mapas no se pueden leer, y sus
 secciones de NPC no se distinguen.
 
+## Desde el Lua
+
+`dwx extract` saca `field/script_warps` de los listados (`script/...`), pero un mod cambia la historia en el Lua
+(`story/<n>.lua`): mover un `story.warp_to` allí no cambiaba el documento que lee el campo. `dwx script-warps` lo
+vuelve a sacar del Lua de los paquetes ([dwx](../modulos/apps/dwx.md#dwx-script-warps)):
+
+```sh
+dwx script-warps <carpeta de contenido> [--with <carpeta>]... [--rules <id>] [-o <archivo>]
+```
+
+- **Cómo.** `formats::script::readLuaModule` (`lua_reader.hpp`) lee cada módulo de vuelta al listado y a la
+  estructura que lee el recorrido (`guarded_walk.hpp`), y `findScriptWarps` y `scriptWarpsToYaml` hacen lo mismo que
+  en la extracción. No es un escaneo de llamadas aparte: las condiciones, los `sets_flags`, las elecciones, las
+  llamadas a otro script (`jump_to_file`) y el menú del transporte salen del mismo recorrido, así que el resultado no
+  puede separarse del de la extracción.
+- **El Lua que lee.** El que escribe el emisor (`lua_emitter.hpp`) y lo mismo escrito a mano: cada
+  `story.<nombre>(...)` es la orden de ese nombre; un `if` es un `IF` con su condición leída de izquierda a derecha
+  (`and`, `or`, `not` y las lecturas que escribe el emisor; una cadena como `(a or b) and c`, no
+  `(a and b) or (c and d)`, que el `IF` del original no puede decir); `while true do` un bucle; las elecciones
+  (`set_selection`), los `switch` de variable y las máquinas de estados como las escribe el emisor;
+  `if routines.<f>() == ENDED then return ENDED end` una subrutina; `return routines.<f>()` un salto a código
+  compartido; y `return`, `return ENDED` y `return story.<nombre>(...)` los finales. Lo demás (un `for`, una
+  función propia, una variable local que no sea la de una elección o un `switch`...) es un error con su línea:
+  el recorrido no puede seguir código que no conoce, y adivinar daría cambios de mapa que no existen.
+- **Estricto.** Si un módulo no se lee, no escribe nada y nombra cada módulo con su línea: dejarlo fuera quitaría sus
+  cambios de mapa sin avisar.
+- **Offsets.** Con el mapa de líneas (`story/<n>_lines`) que corresponde al Lua, cada orden recupera su offset y el
+  código que el emisor copió en varios sitios vuelve a ser una sola orden. Sin él, o si el Lua ya no coincide con él
+  (una línea que corre una orden sin offset, un offset en una línea que no corre ninguna, una función `at_<hex>` que
+  no empieza en su offset, dos líneas con un offset y órdenes distintas), las órdenes se numeran en el orden del
+  módulo, esos números no significan nada fuera, y los registros de ese script salen **sin `offset`** (en `source`,
+  `recursion` y `forget`; el esquema ya lo tenía opcional y el campo solo lo usa en el log). Una nota lo dice.
+- **Lo demás que hace falta.** Las secciones de NPC salen de los documentos de mapa (`npcs[].script_id`), los ids de
+  mapa de `data/maps` y los destinos del transporte de `rules/<id>/bird_transport` (`destinations`; `--rules`, por
+  defecto `original`). Ese ruleset está en el paquete del equipo, así que con el contenido del jugador hace falta
+  `--with content/packs/game`; sin el documento, el transporte queda fuera y una nota lo dice.
+- **Comprobar y escribir.** Sin `-o` compara con el `field/script_warps` de los paquetes y dice la primera línea que
+  difiere (código 1); con `-o` escribe el documento (por ejemplo en `field/script_warps.yaml` del mod, que gana al del
+  paquete base). `data/new_game_story` no se vuelve a sacar.
+- **Parches de historia.** Antes del recorrido aplica los `story/patches/*.lua` de los paquetes
+  ([historia](../modding/historia.md)) como el juego (`session::StoryLuaHost`): de abajo arriba en la pila y por id
+  dentro de un paquete, y el de más arriba gana cada sección. `formats::script::readLuaPatch` lee cada parche y
+  `composeLuaPatches` lo une al módulo: cada sección parcheada pasa a ser una función `routines.patch_<sección>` del
+  módulo con el cuerpo del parche, y `original()` una llamada a la rutina de la sección original
+  (`story.ENDED`, `story.PLAYER` y `story.PARTNER` se leen como los locales del módulo). Un script que solo dan
+  parches se lee igual, sin módulo. El lector solo sigue `original()` como subrutina (`return original()` o
+  `if original() == ENDED then return ENDED end`); otro uso (`local r = original()`, `original` en una condición, un
+  local de arriba que no sea un nombre de `story`) es un **error con el fichero del parche y su línea**
+  (`mi_mod:story/patches/x.lua:4: ...`) y no se escribe nada: dejar el parche fuera daría los cambios de mapa de la
+  sección que el juego ya no corre. Las líneas del parche no tienen offset, así que los registros de un módulo
+  parcheado salen sin `offset` y una nota nombra los parches. Sin parches, el resultado no cambia.
+
+Con el paquete base del disco americano y el paquete del equipo, el Lua da `field/script_warps` **byte a byte**: los
+1870 registros de los 222 módulos (`MAPHEAD` y los 221 scripts). Sin los mapas de líneas sale lo mismo sin las
+líneas `offset`. Un test con `DWE_CONTENT` (`apps/dwx/tests/script_warps_command_tests.cpp`) lo comprueba; los demás
+usan Lua sintético (`packages/formats/tests/lua_reader_tests.cpp`: ida y vuelta con y sin mapa de líneas, un mapa de
+líneas viejo, módulos escritos a mano, los parches de historia y los errores).
+
 ## En el motor (parte a)
 
 - `packages/game/field` carga `field/script_warps` (`loadScriptWarps`; vacío si no hay) y el estado de partida nueva

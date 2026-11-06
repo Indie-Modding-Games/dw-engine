@@ -6,6 +6,7 @@
 #include <format>
 #include <iterator>
 #include <ranges>
+#include <string>
 #include <utility>
 
 #include "device_names.hpp"
@@ -38,6 +39,10 @@ constexpr std::array Commands{
     CommandName{"load", Kind::Load},
     CommandName{"trace", Kind::Trace},
     CommandName{"quit", Kind::Quit},
+    CommandName{"rescan", Kind::Rescan},
+    CommandName{"reload_map", Kind::ReloadMap},
+    CommandName{"story_state", Kind::StoryState},
+    CommandName{"overlay", Kind::Overlay},
 };
 
 // A press with no length holds its keys for a tenth of a second.
@@ -73,6 +78,20 @@ core::Result<std::uint64_t> ticksField(const JsonValue& request, std::uint64_t f
     return core::fail(std::format("'ticks' must be a whole number from 0 to {}", MaxTicks));
   }
   return static_cast<std::uint64_t>(*number);
+}
+
+// "exit": a map's exit, 0 to 9 (the warp triggers 110-119 lead to exits 0-9).
+core::Result<std::optional<std::int32_t>> exitField(const JsonValue& request) {
+  constexpr double LastExit = 9.0;
+  const JsonValue* value = request.find("exit");
+  if (value == nullptr || value->isNull()) {
+    return std::nullopt;
+  }
+  const double* number = value->number();
+  if (number == nullptr || *number < 0.0 || *number > LastExit || *number != std::trunc(*number)) {
+    return core::fail("'exit' must be a whole number from 0 to 9");
+  }
+  return static_cast<std::int32_t>(*number);
 }
 
 // "keys": ["right", "return"] or "right+return".
@@ -223,6 +242,27 @@ core::Result<ControlRequest> requestFrom(const JsonValue& request) {
       read = takePath("path");
     }
     break;
+  case Kind::ReloadMap: {
+    auto exit = exitField(request);
+    read = exit ? core::Result<void>{} : std::unexpected{exit.error()};
+    out.exit = exit.value_or(std::nullopt);
+    break;
+  }
+  case Kind::StoryState:
+    if (const JsonValue* path = request.find("path"); path != nullptr && !path->isNull()) {
+      read = take(textField(request, "path"));
+    }
+    break;
+  case Kind::Overlay:
+    if (const JsonValue* on = request.find("on"); on != nullptr && !on->isNull()) {
+      if (on->boolean() == nullptr) {
+        read = core::fail("'on' must be true or false");
+      } else {
+        out.on = *on->boolean();
+      }
+    }
+    break;
+  case Kind::Rescan:
   case Kind::Status:
   case Kind::Pause:
   case Kind::Resume:
@@ -425,6 +465,61 @@ void RemoteControl::handle(const std::string& id, const ControlRequest& request)
   case Kind::Quit:
     reply(id, "");
     host_.quit();
+    return;
+  case Kind::Rescan:
+    if (!host_.rescan) {
+      fail(id, "rescan: this game cannot list its packs again");
+      return;
+    }
+    if (auto rescanned = host_.rescan(); !rescanned) {
+      fail(id, std::format("rescan: {}", rescanned.error().message));
+      return;
+    }
+    reply(id, "");
+    return;
+  case Kind::ReloadMap: {
+    if (!host_.reloadMap) {
+      fail(id, "reload_map: this game cannot reload its map");
+      return;
+    }
+    auto reloaded = host_.reloadMap(request.exit);
+    if (!reloaded) {
+      fail(id, std::format("reload_map: {}", reloaded.error().message));
+      return;
+    }
+    reply(id, std::format(R"(,"map":{},"exit":{},"tick":{})", jsonString(reloaded->map),
+                          reloaded->exit ? std::to_string(*reloaded->exit) : "null", ticks_));
+    return;
+  }
+  case Kind::StoryState: {
+    if (!host_.storyState) {
+      fail(id, "story_state: this game has no story to show");
+      return;
+    }
+    auto text = host_.storyState();
+    if (!text) {
+      fail(id, std::format("story_state: {}", text.error().message));
+      return;
+    }
+    auto story = parseJson(*text);
+    if (!story) {
+      fail(id, story.error().message);
+      return;
+    }
+    auto picked = selectJson(*story, request.text);
+    if (!picked) {
+      fail(id, picked.error().message);
+      return;
+    }
+    reply(id, std::format(R"(,"tick":{},"story":{})", ticks_, writeJson(*picked)));
+    return;
+  }
+  case Kind::Overlay:
+    if (!host_.overlay) {
+      fail(id, "overlay: this game has no map overlay");
+      return;
+    }
+    reply(id, std::format(R"(,"overlay":{})", host_.overlay(request.on) ? "true" : "false"));
     return;
   }
 }

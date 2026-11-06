@@ -324,7 +324,8 @@ core::Result<FieldRules> parseFieldRules(std::string_view yaml) {
                    .transition = readTransition(reader, reader.field(*tree, "transition")),
                    .timeOfDay = readTimeOfDay(reader, reader.field(*tree, "time_of_day")),
                    .npc = {},
-                   .scriptMotion = readScriptMotion(reader, tree->find("script_motion"))};
+                   .scriptMotion = readScriptMotion(reader, tree->find("script_motion")),
+                   .triggers = {}};
   if (const YamlNode* npc = tree->find("npc"); npc != nullptr) {
     rules.npc = readNpc(reader, *npc);
   }
@@ -350,7 +351,16 @@ core::Result<FieldWarps> parseFieldWarps(std::string_view yaml) {
 }
 
 core::Result<FieldRules> loadFieldRules(const assets::VirtualFileSystem& vfs) {
-  return loadDocument<FieldRules>(vfs, "field/rules", &parseFieldRules);
+  auto rules = loadDocument<FieldRules>(vfs, "field/rules", &parseFieldRules);
+  if (!rules) {
+    return rules;
+  }
+  auto triggers = loadTriggerBands(vfs);
+  if (!triggers) {
+    return std::unexpected{triggers.error()};
+  }
+  rules->triggers = *triggers;
+  return rules;
 }
 
 core::Result<FieldWarps> loadFieldWarps(const assets::VirtualFileSystem& vfs) {

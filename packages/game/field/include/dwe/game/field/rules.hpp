@@ -2,6 +2,7 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
+#include <dwe/game/field/trigger_bands.hpp>
 
 #include <cstdint>
 #include <optional>
@@ -205,6 +206,8 @@ struct FieldRules {
   NpcRules npc;
   // Optional in the document: without it, the defaults.
   ScriptMotionRules scriptMotion;
+  // Not in field/rules: loadFieldRules reads them from field/triggers (trigger_bands.hpp).
+  TriggerBands triggers;
 };
 
 // Where a new field session starts (`field/warps` in the game pack,
@@ -221,7 +224,7 @@ core::Result<FieldRules> parseFieldRules(std::string_view yaml);
 // Parses the text of `field/warps`.
 core::Result<FieldWarps> parseFieldWarps(std::string_view yaml);
 
-// Reads `field/rules` from the virtual file system.
+// Reads `field/rules` from the virtual file system, with the trigger bands of `field/triggers`.
 core::Result<FieldRules> loadFieldRules(const assets::VirtualFileSystem& vfs);
 
 // Reads `field/warps` from the virtual file system.
