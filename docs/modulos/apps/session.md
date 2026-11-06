@@ -368,6 +368,21 @@ la rareza), la línea de la caja de puntos (7 de la sección 1220), el tope (999
 las opciones (49), el sonido de fallo (0, 11) y el del trato (0, 23) solo en gias06b; sin ella la rutina se cierra al
 momento. La pantalla `merit_shop` del juego (`apps/game: MeritShopScreen`) lo enseña.
 
+### Gimnasio en el campo (`GymFieldPorts`)
+
+Los puertos de un curso del [gimnasio](../game/gym.md) (`game::gym::GymPorts`) sobre el campo y la partida
+(`gym_field_ports.hpp`). Mientras corre un curso la historia retiene el campo, así que los actores se mueven como en
+un guion: caminan a su puesto a la velocidad de su clip de andar (`anim.c: applyRootMomentum`), giran, se miran,
+animan y sujetan su clip en el sitio (`holdInPlace`), la cámara va al puesto, suenan los sonidos (los que duran hasta
+que el curso los para) y la partida entrena al partner y da la recompensa (`award`). `GymFieldPortsDesc` recibe la
+partida, el campo, las reglas `gym.yaml` y, si están, la historia (las mejoras del gimnasio y la caja de texto) y el
+inventario (el manual de entrenamiento). Lo que solo dibuja el juego (los objetos del mapa, los efectos, las filas
+de la pantalla) lo pone una subclase: `GymScreen` en `apps/game`, y otra de pruebas sin ventana en
+`gym_course_tests.cpp`, que es la base de la [comprobación del entrenamiento](../../guides/comprobar-entrenamiento.md).
+Las nubes y los movimientos que enseña el curso de inteligencia son lo único aleatorio, con una semilla sacada del
+partner: una partida repetida da lo mismo. `gymWorldOf` pasa un punto de `gym.yaml`, en los ejes del original (la z
+al revés), al espacio del mundo.
+
 ## Paridad con el original
 
 | Regla | Decomp | Nuestro | Test | Estado |

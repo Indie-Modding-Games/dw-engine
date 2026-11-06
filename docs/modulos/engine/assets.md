@@ -12,6 +12,28 @@ su manifiesto, los paquetes de las carpetas extraídas que se montan: un paquete
 y una carpeta anterior a una posterior. Los elegidos rellenan huecos (`PackLocation::fillsGaps`): la VFS los apila
 debajo de todos los demás paquetes ([assets de desarrollo](../../architecture/assets-de-desarrollo.md)).
 
+## Imágenes del jugador
+
+Las [imágenes personalizadas](../../guides/imagenes-personalizadas.md) llegan como un paquete de la capa `user`
+(`Layer::User`) que monta el lanzador. Sus PNG no sustituyen el asset, solo **cómo se dibuja**: el tamaño, los
+rectángulos y las posiciones siguen siendo los de la imagen original, y la nueva solo añade detalle.
+
+- `image_replacement.hpp`: `replacementScale(anchoOriginal, altoOriginal, ancho, alto)` da cuántas veces más grande es
+  una imagen (un entero de 1 a `MaxReplacementScale`, 8, igual en los dos ejes) o nada si no sirve.
+  `paletteImageId(imagen, paleta)` da el id de la versión de una imagen indexada con una paleta:
+  `texture/etcdat/fi_info` con la paleta 12 es `texture/etcdat/fi_info_palette12` (`PaletteImageSuffix`).
+- `VirtualFileSystem::read(fuente)` lee una fuente concreta de un asset, gane o no, y `packOf(fuente)` dice de qué
+  paquete es: el cargador de una imagen sigue leyendo la del juego aunque un paquete `user` tenga la suya encima.
+- `loadMapImages` (`map_images.hpp`) lee los fondos del juego por debajo de los paquetes `user` y deja en
+  `MapImages::replacement` (`MapBackgroundReplacement`: escala y una imagen RGBA por variante) los del jugador que
+  encajan. Los índices y las paletas siguen siendo los del juego, así que los sprites, los recortes y el orden de
+  dibujo no cambian; el alfa de cada píxel es la clase del texel del fondo que tiene debajo. Una variante sin imagen
+  propia usa la del juego a la misma escala. Una imagen que no encaja (no es PNG, otra proporción, una escala que no
+  es entera o distinta de la de las otras variantes) se descarta con un aviso en el log y se dibuja la del juego.
+
+Las imágenes de la UI pasan por `ui::loadDrawnImage` ([ui](ui.md)) con las mismas reglas. Los tests:
+`tests/image_replacement_tests.cpp`.
+
 ## Mapas
 
 `MapDocument` (`<dwe/assets/map_document.hpp>`) es el `map/<id>/data` de un mapa de campo

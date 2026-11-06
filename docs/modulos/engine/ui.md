@@ -23,7 +23,13 @@ de todos los documentos abiertos sin recargarlos, con los mismos ids y scripts. 
 KTX2 del remaster responde a `.png`) y una imagen indexada se dibuja con otra paleta de sus metadatos con
 `?palette=N`. Cualquier imagen se dibuja como silueta gris claro con `tone=grey` (`?tone=grey`, o
 `?palette=N&tone=grey`): cada píxel toma un gris de su luminancia, entre 64 y 176, con su alfa; se recolorea una vez
-al cargarla, así que dibujarla cuesta lo mismo que la original (lo usa la pestaña Ciudad para quien aún falta). Detalles en
+al cargarla, así que dibujarla cuesta lo mismo que la original (lo usa la pestaña Ciudad para quien aún falta). Toda
+imagen se carga con `loadDrawnImage` (`image_reference.hpp`), que da sus píxeles y el tamaño que ocupa
+(`DrawnImage`): si el jugador tiene su propia versión (`<id>_palette<N>`, la paleta pedida o la 0, en un paquete de la
+capa `user`; [imágenes personalizadas](../../guides/imagenes-personalizadas.md)), dibuja esa con el tamaño de la
+original, así que rectángulos, sprites y maquetación no cambian y solo gana detalle. Una que no mide la original por
+un entero, igual en los dos ejes, se descarta con un aviso en el log; `imageSize` da también el tamaño dibujado. Los
+tests: `tests/image_replacement_tests.cpp`. Detalles en
 [docs/architecture/ui.md](../../architecture/ui.md); cómo editar menús en
 [docs/guides/editar-menus.md](../../guides/editar-menus.md).
 
