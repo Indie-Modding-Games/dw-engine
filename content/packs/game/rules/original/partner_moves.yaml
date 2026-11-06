@@ -5,8 +5,12 @@
 
 # partner_impl.c: initializePartner: la especie 3 (agum) equipa la posición 0 (moves[0] = 0x2E) y aprende su técnica
 # (learnMove(2)); la 0x11 (gabu) equipa la posición 2 (moves[0] = 0x30, learnMove(0x2B)). Vale para el partner de
-# new_game.yaml.
+# new_game.yaml. Medido en el original con la segunda especie inicial: moves = [0x30, 0xFF, 0xFF, 0x35], aprendida solo la
+# 0x2B (learnedMoves[1] = 0x800).
 new_game_slot: 0
+# Las especies que empiezan con otra posición que new_game_slot: la segunda especie inicial (la 0x11) equipa y aprende la
+# posición 2.
+new_game_species_slots: { gabu: 2 }
 # evolution.c: reincarnatePartner: el renacido equipa solo la posición 0 (moves[0] = 0x2E, el resto 0xFF) y conserva
 # las técnicas aprendidas.
 reborn_slot: 0

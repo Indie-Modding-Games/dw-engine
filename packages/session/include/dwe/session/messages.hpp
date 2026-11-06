@@ -28,6 +28,7 @@ inline constexpr std::string_view FixedLevelText = "a fixed-level evolution item
 inline constexpr std::string_view PartnerMovesSectionText = "the partner_moves section";
 inline constexpr std::string_view MoveSlotOutside =
     "move position {} is outside the species' list of {}";
+inline constexpr std::string_view NotSpeciesSlots = "{} must map species ids to move positions";
 
 // Setting up a session.
 inline constexpr std::string_view NoFiles = "a session needs the packs";

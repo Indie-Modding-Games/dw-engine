@@ -16,6 +16,7 @@ using core::YamlNode;
 using messages::formatMessage;
 
 constexpr std::string_view NewGameSlotKey = "new_game_slot";
+constexpr std::string_view NewGameSpeciesSlotsKey = "new_game_species_slots";
 constexpr std::string_view RebornSlotKey = "reborn_slot";
 constexpr std::string_view LearnedKey = "learned";
 constexpr std::string_view EquippedKey = "equipped";
@@ -34,13 +35,29 @@ MoveSlot slotOf(YamlReader& reader, const YamlNode& node) {
 core::Result<PartnerMoveRules> readPartnerMoveRules(const ruleset::Section& section) {
   YamlReader reader;
   const YamlNode& root = section.node;
-  if (!reader.expectKeys(root, messages::PartnerMovesSectionText,
-                         {NewGameSlotKey, RebornSlotKey})) {
+  if (!reader.expectKeys(root, messages::PartnerMovesSectionText, {NewGameSlotKey, RebornSlotKey},
+                         {NewGameSpeciesSlotsKey})) {
     return std::unexpected{reader.error(section.file)};
   }
-  const PartnerMoveRules rules{.newGameSlot = slotOf(reader, reader.field(root, NewGameSlotKey)),
-                               .rebornSlot = slotOf(reader, reader.field(root, RebornSlotKey))};
-  return reader.finish(rules, section.file);
+  PartnerMoveRules rules{.newGameSlot = slotOf(reader, reader.field(root, NewGameSlotKey)),
+                         .newGameSpeciesSlots = {},
+                         .rebornSlot = slotOf(reader, reader.field(root, RebornSlotKey))};
+  if (const YamlNode* species = root.find(NewGameSpeciesSlotsKey);
+      species != nullptr && !YamlReader::isNull(*species)) {
+    if (!species->isMapping()) {
+      reader.fail(*species, formatMessage(messages::NotSpeciesSlots, NewGameSpeciesSlotsKey));
+    } else {
+      for (const core::YamlEntry& entry : species->entries()) {
+        rules.newGameSpeciesSlots.emplace(entry.key, slotOf(reader, entry.value));
+      }
+    }
+  }
+  return reader.finish(std::move(rules), section.file);
+}
+
+MoveSlot PartnerMoveRules::newGameSlotOf(std::string_view species) const {
+  const auto found = newGameSpeciesSlots.find(species);
+  return found != newGameSpeciesSlots.end() ? found->second : newGameSlot;
 }
 
 core::Result<void> checkPartnerMovesSection(const ruleset::Section& section) {

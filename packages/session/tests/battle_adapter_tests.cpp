@@ -211,6 +211,29 @@ TEST_CASE(
   CHECK(moves.equipped.at(dwe::game::battle::FinisherSlot) == FinisherPosition);
 }
 
+TEST_CASE("a new game's partner of a species with its own position learns and equips that one") {
+  // partner_impl.c: initializePartner: the second starting species equips and learns position 2.
+  const TestPacks packs;
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters);
+  REQUIRE(session->rules().setValue("partner_moves", "new_game_species_slots", "{agum: 2}"));
+  // The session reads changed rules on its next tick.
+  session->tick(0.0);
+  REQUIRE(session->startNewGame());
+  const PartnerMoves& moves = adapters.battle->moves();
+  CHECK(moves.learned == std::vector<std::string>{"dynamite_kick"});
+  CHECK(moves.equipped.at(0) == 2);
+  CHECK_FALSE(moves.equipped.at(1).has_value());
+  CHECK_FALSE(moves.equipped.at(2).has_value());
+  CHECK(moves.equipped.at(dwe::game::battle::FinisherSlot) == FinisherPosition);
+  // Another species keeps new_game_slot.
+  REQUIRE(session->rules().setValue("partner_moves", "new_game_species_slots", "{foe: 2}"));
+  session->tick(0.0);
+  REQUIRE(session->startNewGame());
+  CHECK(adapters.battle->moves().learned == std::vector<std::string>{"punch"});
+  CHECK(adapters.battle->moves().equipped.at(0) == 0);
+}
+
 TEST_CASE(
     "the evolution requirements count the learned moves below the evolution section's limit") {
   // evolution.c: getNumMasteredMoves; the rookie's check hour is check_hours.rookie (72).
@@ -616,37 +639,52 @@ TEST_CASE("the battle adapter registers the battle and partner_moves sections' c
   Adapters adapters;
   auto session = sessionWithBattle(packs, adapters);
   CHECK_FALSE(session->rules().setValue("partner_moves", "new_game_slot", "16").has_value());
+  CHECK_FALSE(session->rules()
+                  .setValue("partner_moves", "new_game_species_slots", "{agum: 16}")
+                  .has_value());
+  CHECK_FALSE(
+      session->rules().setValue("partner_moves", "new_game_species_slots", "[2]").has_value());
   CHECK_FALSE(
       session->rules().setValue("battle", "consequences.elapsed_minutes", "soon").has_value());
 }
 
-// Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it).
-TEST_CASE(
-    "the user's disc, extracted: the first partner starts with its first technique and its finisher") {
+namespace {
+
+// A session on the user's extracted content and the game pack, with only the battle adapter.
+struct ExtractedSession {
+  dwe::assets::DiskFileSystem disk;
+  std::optional<dwe::assets::VirtualFileSystem> files;
+  BattleAdapter* battle = nullptr;
+  std::unique_ptr<GameSession> session;
+};
+
+// Nothing when DWE_CONTENT is not set (scripts/dev.sh mounts it).
+std::unique_ptr<ExtractedSession> extractedSession() {
   const std::optional<std::filesystem::path> mountedFolder = dwe::test_support::userContent();
   if (!mountedFolder) {
-    MESSAGE("DWE_CONTENT is not set: skipping the partner's moves on extracted content");
-    return;
+    return nullptr;
   }
-  const std::filesystem::path& folder = *mountedFolder;
-  const dwe::assets::DiskFileSystem disk;
+  auto made = std::make_unique<ExtractedSession>();
   const std::array<dwe::assets::PackLocation, 2> locations{
-      dwe::assets::PackLocation{.fileSystem = &disk,
-                                .root = folder / "base",
+      dwe::assets::PackLocation{.fileSystem = &made->disk,
+                                .root = *mountedFolder / "base",
                                 .fillsGaps = false,
                                 .origin = dwe::assets::PackOrigin::Engine},
-      dwe::assets::PackLocation{.fileSystem = &disk,
+      dwe::assets::PackLocation{.fileSystem = &made->disk,
                                 .root = DWE_GAME_PACK,
                                 .fillsGaps = false,
                                 .origin = dwe::assets::PackOrigin::Engine}};
   auto files = dwe::assets::VirtualFileSystem::mount(locations);
   REQUIRE_MESSAGE(files.has_value(), errorOf(files));
-  auto battle = std::make_unique<BattleAdapter>(BattleAdapterDesc{
-      .files = &*files, .digimon = std::nullopt, .moves = std::nullopt, .inventory = nullptr});
-  BattleAdapter* adapter = battle.get();
+  made->files = std::move(*files);
+  // The species and moves tables come from the packs.
+  BattleAdapterDesc desc{};
+  desc.files = &*made->files;
+  auto battle = std::make_unique<BattleAdapter>(std::move(desc));
+  made->battle = battle.get();
   std::vector<std::unique_ptr<SessionSystem>> systems;
   systems.push_back(std::move(battle));
-  auto session = GameSession::create({.files = &*files,
+  auto session = GameSession::create({.files = &*made->files,
                                       .rulesetId = "original",
                                       .rules = std::nullopt,
                                       .species = nullptr,
@@ -656,15 +694,96 @@ TEST_CASE(
                                       .wallClock = [] { return dwe::session::testing::SaveDate; },
                                       .systems = std::move(systems)});
   REQUIRE_MESSAGE(session.has_value(), errorOf(session));
-  const auto started = (*session)->startNewGame();
+  made->session = std::move(*session);
+  return made;
+}
+
+// The stats the new-game script (dg 193, set_stat 0..7) leaves the partner with.
+struct StartingStats {
+  std::int32_t offense = 0;
+  std::int32_t defense = 0;
+  std::int32_t speed = 0;
+  std::int32_t brain = 0;
+  std::int32_t hp = 0;
+  std::int32_t mp = 0;
+};
+
+void checkStartingPartner(const PartnerState& partner, const StartingStats& expected) {
+  CHECK(partner.stats.base[Stat::Offense] == expected.offense);
+  CHECK(partner.stats.base[Stat::Defense] == expected.defense);
+  CHECK(partner.stats.base[Stat::Speed] == expected.speed);
+  CHECK(partner.stats.base[Stat::Brain] == expected.brain);
+  CHECK(partner.stats.base[Stat::Hp] == expected.hp);
+  CHECK(partner.stats.base[Stat::Mp] == expected.mp);
+  CHECK(partner.stats.currentHp == expected.hp);
+  CHECK(partner.stats.currentMp == expected.mp);
+  // partner_impl.c: initializePartner, measured in the original with the second starting species:
+  // discipline and happiness 50, 360 hours of life, 3 lives.
+  CHECK(partner.mood.discipline == 50);
+  CHECK(partner.mood.happiness == 50);
+  CHECK(partner.life.remainingLifetime == 360);
+  CHECK(partner.life.lives == 3);
+  CHECK(partner.life.age == 0);
+}
+
+} // namespace
+
+TEST_CASE(
+    "the user's disc, extracted: the first partner starts with its first technique and its finisher") {
+  const auto extracted = extractedSession();
+  if (!extracted) {
+    MESSAGE("DWE_CONTENT is not set: skipping the partner's moves on extracted content");
+    return;
+  }
+  const auto started = extracted->session->startNewGame();
   REQUIRE_MESSAGE(started.has_value(), errorOf(started));
-  const auto fighter = adapter->partnerCombatant(**session);
+  const auto fighter = extracted->battle->partnerCombatant(*extracted->session);
   REQUIRE_MESSAGE(fighter.has_value(), errorOf(fighter));
   // partner_impl.c: initializePartner(3): moves[0] = 0x2E with learnMove(2); the finisher is the
   // list's last.
-  CHECK(adapter->moves().learned == std::vector<std::string>{"spit_fire"});
+  CHECK(extracted->battle->moves().learned == std::vector<std::string>{"spit_fire"});
   CHECK(fighter->moves.at(0) == "spit_fire");
+  CHECK_FALSE(fighter->moves.at(1).has_value());
+  CHECK_FALSE(fighter->moves.at(2).has_value());
   CHECK(fighter->moves.at(dwe::game::battle::FinisherSlot) == "pepper_breath");
+  checkStartingPartner(
+      extracted->session->partner().state(),
+      {.offense = 80, .defense = 60, .speed = 70, .brain = 70, .hp = 800, .mp = 600});
+}
+
+TEST_CASE(
+    "the user's disc, extracted: the second starting partner starts with its position-2 technique") {
+  const auto extracted = extractedSession();
+  if (!extracted) {
+    MESSAGE("DWE_CONTENT is not set: skipping the second starting partner on extracted content");
+    return;
+  }
+  // The opening's second answer (main.c: main, readPStat(0xFE) != 0).
+  dwe::session::NewGameChoice choice{};
+  choice.partner = "gabu";
+  const auto started = extracted->session->startNewGame(choice);
+  REQUIRE_MESSAGE(started.has_value(), errorOf(started));
+  const auto fighter = extracted->battle->partnerCombatant(*extracted->session);
+  REQUIRE_MESSAGE(fighter.has_value(), errorOf(fighter));
+  // partner_impl.c: initializePartner(0x11): moves[0] = 0x30 with learnMove(0x2B). Measured in the
+  // original: moves = [0x30, 0xFF, 0xFF, 0x35], learnedMoves = [0, 0x800] (move 43 only). Position
+  // 0 would be a 155-power move against this one's 52.
+  CHECK(extracted->battle->moves().learned == std::vector<std::string>{"sonic_jab"});
+  CHECK(fighter->moves.at(0) == "sonic_jab");
+  CHECK_FALSE(fighter->moves.at(1).has_value());
+  CHECK_FALSE(fighter->moves.at(2).has_value());
+  CHECK(fighter->moves.at(dwe::game::battle::FinisherSlot) == "blue_blaster");
+  // dg 193: the other run of the IF (var[103] != 3).
+  checkStartingPartner(
+      extracted->session->partner().state(),
+      {.offense = 70, .defense = 80, .speed = 60, .brain = 70, .hp = 700, .mp = 700});
+  // RAISE_DATA[0x11], measured: energy 25, weight 15, poop level 24.
+  const PartnerState& partner = extracted->session->partner().state();
+  CHECK(partner.hunger.energy == 25);
+  CHECK(partner.weight == 15);
+  CHECK(partner.toilet.poopLevel == 24);
+  CHECK(partner.sleep.sleepyHour == 22);
+  CHECK(partner.sleep.wakeHour == 7);
 }
 
 TEST_CASE("confirming a technique clears its slot when equipped, else takes the first free one") {

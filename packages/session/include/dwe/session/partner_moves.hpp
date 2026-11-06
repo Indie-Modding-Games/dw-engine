@@ -9,6 +9,8 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
+#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -51,9 +53,17 @@ TechniqueToggle toggleTechnique(PartnerMoves& moves, const assets::DigimonRow& s
 struct PartnerMoveRules {
   // partner_impl.c: initializePartner: the first technique, which it also learns.
   MoveSlot newGameSlot = 0;
+  // The species that start with another first technique than newGameSlot (initializePartner: the
+  // second starting species equips and learns another position than the first).
+  std::map<std::string, MoveSlot, std::less<>> newGameSpeciesSlots;
   // evolution.c: reincarnatePartner: the reborn partner's only equipped move; it keeps the learned
   // ones.
   MoveSlot rebornSlot = 0;
+
+  // The position a new game's partner of this species equips and learns.
+  [[nodiscard]] MoveSlot newGameSlotOf(std::string_view species) const;
+
+  friend bool operator==(const PartnerMoveRules&, const PartnerMoveRules&) = default;
 };
 
 core::Result<PartnerMoveRules> readPartnerMoveRules(const ruleset::Section& section);

@@ -312,11 +312,12 @@ core::Result<void> BattleAdapter::startNewGame(GameSession& session) {
   if (row == nullptr) {
     return core::fail(formatMessage(messages::UnknownPartnerSpecies, species));
   }
-  // partner_impl.c: initializePartner: it equips and learns one technique and equips its finisher.
-  const auto slot = static_cast<std::size_t>(moveRules_.newGameSlot);
-  if (const std::optional<std::string>& move = row->moves.at(slot)) {
+  // partner_impl.c: initializePartner: it equips and learns one technique, its position by species,
+  // and equips its finisher.
+  const MoveSlot first = moveRules_.newGameSlotOf(species);
+  if (const std::optional<std::string>& move = row->moves.at(static_cast<std::size_t>(first))) {
     learn(moves_, *move);
-    moves_.equipped.at(0) = moveRules_.newGameSlot;
+    moves_.equipped.at(0) = first;
   }
   moves_.equipped.at(game::battle::FinisherSlot) = finisherSlot(*row);
   return {};
