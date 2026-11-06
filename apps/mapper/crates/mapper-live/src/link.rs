@@ -42,6 +42,11 @@ pub enum Command {
     Pause,
     Resume,
     Advance(u64),
+    /// `press`: keys held for some ticks.
+    Press {
+        keys: Vec<String>,
+        ticks: u64,
+    },
     StorySet(StoryWrite),
     /// Reads the story once now.
     ReadStory,
@@ -62,6 +67,7 @@ impl Command {
             Self::Pause => "pause",
             Self::Resume => "resume",
             Self::Advance(_) => "advance",
+            Self::Press { .. } => "press",
             Self::StorySet(_) => "story_set",
             Self::ReadStory | Self::FollowStory(_) => "story_state",
         }
@@ -84,6 +90,7 @@ pub enum Done {
     /// Whether the game is paused now.
     Paused(bool),
     Advanced(u64),
+    Pressed,
     StoryWritten(StoryWrite),
 }
 
@@ -330,6 +337,10 @@ impl Worker {
             Command::Pause => client.pause().map(|status| Done::Paused(status.paused)),
             Command::Resume => client.resume().map(|status| Done::Paused(status.paused)),
             Command::Advance(ticks) => client.advance(ticks).map(|()| Done::Advanced(ticks)),
+            Command::Press { keys, ticks } => {
+                let keys: Vec<&str> = keys.iter().map(String::as_str).collect();
+                client.press(&keys, ticks).map(|()| Done::Pressed)
+            }
             Command::StorySet(write) => client.story_set(write).map(|()| Done::StoryWritten(write)),
             Command::ReadStory => match client.story_state() {
                 Ok(story) => {

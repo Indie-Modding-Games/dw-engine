@@ -249,7 +249,7 @@ impl LivePanel {
                 text::LIVE_PREVIEW_CLEARED.to_owned()
             }
             Done::Placed => text::LIVE_PLACED.to_owned(),
-            Done::Paused(_) | Done::Advanced(_) | Done::StoryWritten(_) => return,
+            Done::Paused(_) | Done::Advanced(_) | Done::Pressed | Done::StoryWritten(_) => return,
         };
         mapper.messages.push(Message::Info(info));
     }

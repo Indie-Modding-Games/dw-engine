@@ -244,6 +244,14 @@ impl LiveClient {
         fields.insert("ticks".into(), json!(ticks));
         self.request("advance", fields).map(|_| ())
     }
+
+    /// Holds keys for some ticks, after the presses already queued (`space` confirms).
+    pub fn press(&mut self, keys: &[&str], ticks: u64) -> Result<()> {
+        let mut fields = Map::new();
+        fields.insert("keys".into(), json!(keys));
+        fields.insert("ticks".into(), json!(ticks));
+        self.request("press", fields).map(|_| ())
+    }
 }
 
 fn refusal(command: &str, answer: &Map<String, Value>) -> Error {
@@ -532,6 +540,12 @@ pub(crate) mod tests {
         next();
         client.advance(6).unwrap();
         assert_eq!(next()["ticks"], 6);
+        client.press(&["space"], 4).unwrap();
+        let request = next();
+        assert_eq!(
+            (&request["cmd"], &request["keys"], &request["ticks"]),
+            (&json!("press"), &json!(["space"]), &json!(4))
+        );
     }
 
     #[test]
