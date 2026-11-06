@@ -65,6 +65,18 @@ copy_fonts() {
     "$app/ui/fonts/"
 }
 
+# The project's LICENSE and THIRD_PARTY_NOTICES.txt (the crates' licences and the font's), which
+# every bundle carries (tauri.conf.json, bundle.resources). The build looks for them, so each
+# command that builds writes them first, for the target it builds.
+write_notices() {
+  local notices="$app/src-tauri/notices"
+  mkdir -p "$notices"
+  cp "$root/LICENSE" "$notices/LICENSE"
+  run python3 "$root/scripts/package/third_party_notices.py" launcher --manifest-path Cargo.toml \
+    --target "$1" --extra "Noto Sans (the font)=$app/ui/fonts/noto_sans_license.txt" \
+    --out "$notices/THIRD_PARTY_NOTICES.txt"
+}
+
 # The signing key and its password reach the container by name only (docker copies them from this
 # environment), never on a command line, where ps would show them; set -x never expands them.
 [[ -v TAURI_SIGNING_PRIVATE_KEY ]] || TAURI_SIGNING_PRIVATE_KEY=""
@@ -118,23 +130,27 @@ case "$command" in
   test)
     take_slot
     copy_fonts
+    write_notices x86_64-unknown-linux-gnu
     run bash -c 'cargo test --locked "$@" && cargo clippy --locked --all-targets -- -D warnings' \
       -- "$@"
     ;;
   build)
     take_slot
     copy_fonts
+    write_notices x86_64-unknown-linux-gnu
     run tauri build --no-bundle --config "$(config_override)" "$@"
     echo "launcher.sh: $target_dir/release/dwe-launcher"
     ;;
   bundle)
     take_slot
     copy_fonts
+    write_notices x86_64-unknown-linux-gnu
     run tauri build --config "$(config_override)" "$@"
     ;;
   bundle-windows)
     take_slot
     copy_fonts
+    write_notices x86_64-pc-windows-msvc
     run tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc \
       --config "$(config_override)" "$@"
     ;;

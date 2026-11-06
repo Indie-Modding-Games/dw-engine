@@ -60,6 +60,9 @@ if(BUILD_TESTING)
         add_test(NAME "release scripts: latest.json names every computer, and installers only of them"
             COMMAND ${DWE_PYTHON3} -B -m unittest -v test_release_manifest
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/scripts/package/tests)
+        add_test(NAME "release scripts: the packages' third-party notices cover every licence"
+            COMMAND ${DWE_PYTHON3} -B -m unittest -v test_third_party_notices
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/scripts/package/tests)
         # The formatters and linters of scripts/style, and the hooks that run them and check the policy.
         set(style_tests_dir ${PROJECT_SOURCE_DIR}/scripts/style/tests)
         add_test(NAME "style scripts: comments past the column limit are wrapped"

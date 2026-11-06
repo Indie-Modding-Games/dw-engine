@@ -353,6 +353,14 @@ jobs:
           fonts=content/packs/game/ui/fonts
           mkdir -p apps/launcher/ui/fonts
           cp "$fonts/noto_sans_regular.ttf" "$fonts/noto_sans_bold.ttf" "$fonts/noto_sans_license.txt" apps/launcher/ui/fonts/
+          # The bundle's LICENSE and THIRD_PARTY_NOTICES.txt, as scripts/launcher.sh writes them.
+          mkdir -p apps/launcher/src-tauri/notices
+          cp LICENSE apps/launcher/src-tauri/notices/LICENSE
+          python3 scripts/package/third_party_notices.py launcher \
+            --manifest-path apps/launcher/src-tauri/Cargo.toml \
+            --target aarch64-apple-darwin --target x86_64-apple-darwin \
+            --extra "Noto Sans (the font)=apps/launcher/ui/fonts/noto_sans_license.txt" \
+            --out apps/launcher/src-tauri/notices/THIRD_PARTY_NOTICES.txt
           cd apps/launcher/src-tauri
           tauri build --target universal-apple-darwin \
             --config "{\"plugins\":{\"updater\":{\"pubkey\":\"$DWE_LAUNCHER_PUBKEY\"}}}"
@@ -361,8 +369,9 @@ jobs:
           mkdir -p out
           cp "$bundle"/dmg/*.dmg "$bundle"/macos/*.app.tar.gz "$bundle"/macos/*.app.tar.gz.sig out/
 
-      # The program a tester runs has the beta gateway and the public key built in.
-      - name: Check the gateway and the public key in the launcher
+      # The program a tester runs has the beta gateway and the public key built in, and the bundle
+      # carries LICENSE and THIRD_PARTY_NOTICES.txt (on Windows, the files the installer packs).
+      - name: Check the gateway, the public key and the notices in the launcher
         env:
           SYSTEM: ${{ matrix.system }}
         run: |
@@ -371,10 +380,20 @@ jobs:
               mkdir -p build/deb-check
               dpkg-deb --fsys-tarfile out/*.deb | tar -x -C build/deb-check --wildcards '*/bin/*'
               binaries=(build/deb-check/usr/bin/*)
+              contents="$(dpkg-deb -c out/*.deb)"
               ;;
-            windows) binaries=(build/launcher/x86_64-pc-windows-msvc/release/dwe-launcher.exe) ;;
-            macos) binaries=(build/launcher/universal-apple-darwin/release/bundle/macos/*.app/Contents/MacOS/*) ;;
+            windows)
+              binaries=(build/launcher/x86_64-pc-windows-msvc/release/dwe-launcher.exe)
+              contents="$(find build/launcher/x86_64-pc-windows-msvc/release -maxdepth 1 -type f)"
+              ;;
+            macos)
+              binaries=(build/launcher/universal-apple-darwin/release/bundle/macos/*.app/Contents/MacOS/*)
+              contents="$(find build/launcher/universal-apple-darwin/release/bundle/macos/*.app/Contents/Resources -type f)"
+              ;;
           esac
+          for file in LICENSE THIRD_PARTY_NOTICES.txt; do
+            grep -qE "/$file\$" <<<"$contents" || { echo "The launcher bundle has no $file" >&2; exit 1; }
+          done
           public_key="$(printf '%s' "$DWE_LAUNCHER_PUBKEY" | tr -d '[:space:]')"
           for binary in "${binaries[@]}"; do
             [ -f "$binary" ] || { echo "No launcher program at $binary" >&2; exit 1; }

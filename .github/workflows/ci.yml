@@ -251,4 +251,4 @@ jobs:
         run: |
           python3 -B -m unittest -v test_release
           cd ../../package/tests
-          python3 -B -m unittest -v test_release_manifest
+          python3 -B -m unittest -v test_release_manifest test_third_party_notices

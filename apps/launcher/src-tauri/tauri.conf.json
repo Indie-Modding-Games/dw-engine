@@ -30,6 +30,10 @@
     "targets": ["appimage", "deb"],
     "createUpdaterArtifacts": true,
     "category": "Game",
+    "resources": {
+      "notices/LICENSE": "LICENSE",
+      "notices/THIRD_PARTY_NOTICES.txt": "THIRD_PARTY_NOTICES.txt"
+    },
     "shortDescription": "Launcher of dwe",
     "linux": {
       "deb": {

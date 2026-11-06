@@ -33,7 +33,8 @@ __pycache__/
 /*-err.txt
 /*-out.txt
 
-# The launcher's fonts are copied from the game pack at build time (scripts/launcher.sh)
+# The launcher's fonts and notices are written at build time (scripts/launcher.sh)
 /apps/launcher/ui/fonts/
+/apps/launcher/src-tauri/notices/
 # Tauri's generated schemas
 /apps/launcher/src-tauri/gen/

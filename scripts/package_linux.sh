@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Builds the Linux beta package: a tarball a player unpacks and runs. It holds the game and dwx
 # (release build), the team's packs (content/packs), the Vulkan loader and a software Vulkan driver
-# (lib/), the third-party licences and the package README, and never anything read from a disc:
-# each player reads their own disc on the first start (docs/guides/beta-linux.md).
+# (lib/), the project's LICENSE, the third-party licences (licenses/ and THIRD_PARTY_NOTICES.txt)
+# and the package README, and never anything read from a disc: each player reads their own disc on
+# the first start (docs/guides/beta-linux.md).
 #
 # Usage: scripts/package_linux.sh [--no-build] [--out <folder>]
 #   --no-build   package the build as it is (build/linux-clang-package), without building it first
@@ -158,6 +159,13 @@ done
 cp "$root/content/packs/game/ui/fonts/noto_sans_license.txt" "$licences/noto-sans.txt"
 libcxx_copyright="/usr/share/doc/libc++-*-dev/copyright"
 "$root/scripts/dev.sh" shell -c "cat $libcxx_copyright" >"$licences/llvm-libcxx.txt"
+
+# The project's licence and THIRD_PARTY_NOTICES.txt: the credits, the Apache-2.0 NOTICE files and
+# every licence text above in one file (scripts/package/third_party_notices.py).
+cp "$root/LICENSE" "$stage/LICENSE"
+python3 "$root/scripts/package/third_party_notices.py" game --licenses "$licences" \
+  --out "$stage/THIRD_PARTY_NOTICES.txt"
+python3 "$root/scripts/package/third_party_notices.py" check "$stage"
 
 mkdir -p "$out_dir"
 tarball="$out_dir/$name.tar.xz"

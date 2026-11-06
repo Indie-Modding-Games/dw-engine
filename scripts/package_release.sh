@@ -98,6 +98,14 @@ commit="$(member VERSION)"
   echo "package_release: the package has no EXTRACTOR_VERSION; pass --extractor-version" >&2
   exit 1
 }
+# The project's licence and the third-party notices travel with every package.
+members="$(tar -tJf "$tarball")"
+for file in LICENSE THIRD_PARTY_NOTICES.txt; do
+  grep -qxF "$top/$file" <<<"$members" || {
+    echo "package_release: the package has no $file (scripts/package/third_party_notices.py)" >&2
+    exit 1
+  }
+done
 if [[ -z "$version" ]]; then
   pattern='s/^project(dwe VERSION \([0-9.]*\).*/\1/p'
   cmake_version="$(sed -n "$pattern" "$root/CMakeLists.txt" | sed -n 1p)"

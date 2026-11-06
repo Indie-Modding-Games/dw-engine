@@ -295,6 +295,13 @@ El `.dmg` de macOS solo se compila en un Mac (el flujo de publicación).
 Con `DWE_BUILD_SLOTS=<carpeta de cerrojos>` cada compilación espera uno de los dos huecos de compilación de la
 máquina, como `dbuild.sh`. Las fuentes se copian del paquete del juego (`content/packs/game/ui/fonts`) al compilar.
 
+Cada paquete del lanzador lleva `LICENSE` (la licencia MIT del proyecto) y `THIRD_PARTY_NOTICES.txt`: las licencias
+de los crates de Rust con los que se compila (los de `cargo metadata` para ese sistema, con sus archivos `LICENSE*`,
+`COPYING*` y `NOTICE*`) y la de la fuente. `scripts/launcher.sh` los escribe en `src-tauri/notices/` (fuera de git)
+antes de compilar, con `scripts/package/third_party_notices.py`, y Tauri los copia al paquete
+(`bundle.resources`: junto al programa en Windows y Linux, en `Contents/Resources` en macOS). La interfaz no usa
+paquetes de npm. El flujo de publicación falla si un paquete no los lleva.
+
 Los tests de Rust cubren el manifiesto, la comparación de versiones, el SHA-256 y la firma, la instalación con
 cambio atómico y vuelta atrás, el desempaquetado de `.zip` y `.7z`, la hoja CUE, el registro `install.yaml` (con el
 formato del juego) y una extracción con un `dwx` falso; `tests/fake_release.rs` levanta un servidor que contesta como

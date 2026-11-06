@@ -69,4 +69,5 @@ If the game does not start, run `./dwe` from a terminal and send what it prints.
 
 ## Licences
 
-The `licenses/` folder has the licences of the libraries and the font this build uses.
+dwe is under the MIT License (`LICENSE`). The `licenses/` folder has the licences of the libraries
+and the font this build uses; `THIRD_PARTY_NOTICES.txt` has them all in one file, with their credits.
