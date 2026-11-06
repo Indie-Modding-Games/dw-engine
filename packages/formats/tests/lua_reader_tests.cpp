@@ -621,3 +621,107 @@ return { script = 1, sections = { [1] = routines.a } }
   CHECK(found->conditions[2].combine == script::Combine::And);
   CHECK(triggerOf(found->conditions[2]) == 1);
 }
+
+TEST_CASE("story patches compose into the module, the last one winning a section") {
+  constexpr std::string_view Module = R"lua(local story <const> = story
+local ENDED <const> = story.ENDED
+local routines = {}
+
+function routines.step()
+  return story.warp_to(7, 2, 255)
+end
+
+function routines.door()
+  return story.warp_to(8, 1, 255)
+end
+
+return { script = 1, sections = { [51] = routines.step, [52] = routines.door } }
+)lua";
+  // The low patch gives section 51 and 53; the high one takes 51 back, wrapping the original.
+  const auto low = script::readLuaPatch(R"lua(local story <const> = story
+return { script = 1, sections = {
+  [51] = function() return story.warp_to(9, 0, 255) end,
+  [53] = function()
+    story.set_trigger(4)
+    return story.ENDED
+  end,
+} }
+)lua",
+                                        "low:story/patches/a.lua");
+  REQUIRE_MESSAGE(low.has_value(), errorOf(low));
+  const auto high = script::readLuaPatch(R"lua(return { script = 1, sections = {
+  [51] = function(original)
+    if story.trigger(10) then
+      return story.warp_to(9, 3, 255)
+    end
+    return original()
+  end,
+} }
+)lua",
+                                         "high:story/patches/b.lua");
+  REQUIRE_MESSAGE(high.has_value(), errorOf(high));
+  CHECK(high->script == 1);
+  REQUIRE(high->sections.size() == 1);
+  CHECK(high->sections[0].pieces.size() == 2);
+  CHECK(high->sections[0].line == 2);
+
+  const std::vector<script::LuaPatch> patches{*low, *high};
+  const auto composed = script::composeLuaPatches(Module, 1, patches);
+  REQUIRE_MESSAGE(composed.has_value(), errorOf(composed));
+  CHECK(composed->code.contains("function routines.patch_0033()"));
+  CHECK(composed->code.contains("return routines.step()"));
+  CHECK(composed->code.contains("    [0x0033] = routines.patch_0033,\n"
+                                "    [0x0034] = routines.door,\n"
+                                "    [0x0035] = routines.patch_0035,\n"));
+  const auto module = script::readLuaModule(composed->code);
+  REQUIRE_MESSAGE(module.has_value(), composed->located(errorOf(module)));
+  CHECK(module->script == 1);
+  CHECK(module->listing.sections.size() == 3);
+
+  // A script no module has: the patches give it whole.
+  const std::vector<script::LuaPatch> lowOnly{*low};
+  const auto alone = script::composeLuaPatches(std::nullopt, 1, lowOnly);
+  REQUIRE_MESSAGE(alone.has_value(), errorOf(alone));
+  CHECK(script::readLuaModule(alone->code).has_value());
+  // ...but the original of a section it does not have cannot be called.
+  const std::vector<script::LuaPatch> highOnly{*high};
+  CHECK(errorOf(script::composeLuaPatches(std::nullopt, 1, highOnly))
+            .starts_with("high:story/patches/b.lua:2: section 0x0033 calls the original"));
+}
+
+TEST_CASE("a story patch the walk cannot follow is an error that names the patch and its line") {
+  const auto patchError = [](std::string_view code) {
+    return errorOf(script::readLuaPatch(code, "my_mod:story/patches/p.lua"));
+  };
+  CHECK(patchError("local helper = 1\nreturn { script = 1, sections = {} }")
+            .starts_with("my_mod:story/patches/p.lua:1: a local at the top of a patch"));
+  CHECK(patchError("return { script = 1, sections = {\n  [1] = function(original)\n"
+                   "    local run = original\n  end,\n} }")
+            .starts_with("my_mod:story/patches/p.lua:3: original used other than as original()"));
+  CHECK(patchError("return { script = 1, sections = { [1] = routines.a } }")
+            .contains("a section that is not [<id>] = function(original) ... end"));
+  CHECK(patchError("return { script = 1 }").contains("does not return"));
+  CHECK(patchError("return { script = 1, sections = { [1] = function() if x then end } }")
+            .contains("does not end"));
+
+  // Code the module reader cannot follow inside a section: its error names the patch's line.
+  const auto wrap = script::readLuaPatch(R"lua(return { script = 1, sections = {
+  [1] = function(original)
+    story.set_var(5, 1)
+    local result = original()
+    return result
+  end,
+} }
+)lua",
+                                         "my_mod:story/patches/wrap.lua");
+  REQUIRE_MESSAGE(wrap.has_value(), errorOf(wrap));
+  const std::vector<script::LuaPatch> patches{*wrap};
+  const auto composed =
+      script::composeLuaPatches("local routines = {}\nfunction routines.a()\n  return\nend\n"
+                                "return { script = 1, sections = { [1] = routines.a } }\n",
+                                1, patches);
+  REQUIRE_MESSAGE(composed.has_value(), errorOf(composed));
+  const auto module = script::readLuaModule(composed->code);
+  REQUIRE_FALSE(module.has_value());
+  CHECK(composed->located(module.error().message).starts_with("my_mod:story/patches/wrap.lua:4: "));
+}

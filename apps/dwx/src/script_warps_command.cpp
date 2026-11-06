@@ -18,8 +18,11 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <optional>
 #include <print>
 #include <set>
+#include <span>
+#include <string>
 #include <string_view>
 #include <system_error>
 #include <utility>
@@ -34,6 +37,8 @@ namespace {
 namespace script = formats::script;
 
 constexpr std::string_view StoryPrefix = "story/";
+// The story patches (session::StoryPatchFolder, docs/modding/historia.md).
+constexpr std::string_view PatchFolder = "story/patches/";
 constexpr std::string_view LinesSuffix = "_lines";
 constexpr std::string_view ScriptWarpsId = "field/script_warps";
 constexpr std::string_view TransportSection = "bird_transport";
@@ -134,18 +139,122 @@ readTransport(const assets::VirtualFileSystem& files, std::string_view rules,
   return transport;
 }
 
-// Every story module of the packs, read back, by the script id it returns.
+// Lists failures under a heading message, one a line.
+core::Error failuresError(std::string_view heading, const std::vector<std::string>& failures) {
+  std::string text;
+  for (const std::string& failure : failures) {
+    text += "\n  " + failure;
+  }
+  return core::Error{core::formatMessage(heading, text)};
+}
+
+// The story patches of the packs, read, bottom of the pack stack first and by id within a pack: the
+// order the game loads them in (session::StoryLuaHost), so a later one wins a section. Fails,
+// naming each, on a patch the walk cannot follow: leaving it out would keep map changes the game
+// no longer makes.
+core::Result<std::vector<script::LuaPatch>> readPatches(const assets::VirtualFileSystem& files) {
+  std::vector<std::pair<std::size_t, assets::AssetId>> found;
+  for (const assets::AssetId& id : files.ids()) {
+    if (!id.str().starts_with(PatchFolder)) {
+      continue;
+    }
+    const assets::AssetSource* source = files.resolve(id);
+    const auto pack =
+        std::ranges::find(files.packs(), source->packId,
+                          [](const assets::MountedPack& mounted) { return mounted.manifest.id; });
+    found.emplace_back(static_cast<std::size_t>(pack - files.packs().begin()), id);
+  }
+  std::ranges::stable_sort(found, {}, &std::pair<std::size_t, assets::AssetId>::first);
+  std::vector<script::LuaPatch> patches;
+  std::vector<std::string> failures;
+  for (const auto& [pack, id] : found) {
+    const std::string name = std::format("{}:{}.lua", files.packs()[pack].manifest.id, id.str());
+    auto code = readText(files, id.str());
+    if (!code) {
+      failures.push_back(std::format("{}: {}", name, code.error().message));
+      continue;
+    }
+    auto patch = script::readLuaPatch(*code, name);
+    if (!patch) {
+      failures.push_back(patch.error().message);
+      continue;
+    }
+    patches.push_back(std::move(*patch));
+  }
+  if (!failures.empty()) {
+    return std::unexpected{failuresError(messages::ScriptWarpsBadPatches, failures)};
+  }
+  return patches;
+}
+
+// The names of the patches of a script, for a note.
+std::string patchNames(std::span<const script::LuaPatch> patches, std::uint16_t script) {
+  std::string names;
+  for (const script::LuaPatch& patch : patches) {
+    if (patch.script == script) {
+      names += std::format("{}{}", names.empty() ? "" : ", ", patch.name);
+    }
+  }
+  return names;
+}
+
+// A story module with the patches of its script applied (none: a script only patches give), read
+// back. The patches' lines have no offsets, so a patched module is read without its line map.
+core::Result<script::LuaListing>
+readPatchedModule(std::string_view id, std::optional<std::string_view> code, std::uint16_t script,
+                  std::span<const script::LuaPatch> patches, std::vector<std::string>& notes) {
+  auto composed = script::composeLuaPatches(code, script, patches);
+  if (!composed) {
+    return core::fail(std::format("{}: {}", id, composed.error().message));
+  }
+  auto module = script::readLuaModule(composed->code);
+  if (!module) {
+    return core::fail(std::format("{}: {}", id, composed->located(module.error().message)));
+  }
+  notes.push_back(
+      core::formatMessage(messages::ScriptWarpsPatched, id, patchNames(patches, script)));
+  return module;
+}
+
+// Every story module of the packs with the packs' story patches applied, read back, by the script
+// id it returns.
 core::Result<std::map<std::uint16_t, script::LuaListing>>
 readModules(const assets::VirtualFileSystem& files, std::vector<std::string>& notes) {
+  auto patches = readPatches(files);
+  if (!patches) {
+    return std::unexpected{patches.error()};
+  }
+  std::set<std::uint16_t> patched;
+  for (const script::LuaPatch& patch : *patches) {
+    patched.insert(patch.script);
+  }
   std::map<std::uint16_t, script::LuaListing> modules;
   std::vector<std::string> failures;
+  const auto add = [&](std::string_view id, script::LuaListing module) {
+    const std::uint16_t number = module.script;
+    if (!modules.emplace(number, std::move(module)).second) {
+      failures.push_back(core::formatMessage(messages::ScriptWarpsScriptTwice, id, number));
+    }
+  };
   for (const assets::AssetId& id : files.ids()) {
-    if (!moduleNumber(id)) {
+    const auto number = moduleNumber(id);
+    if (!number) {
       continue;
     }
     auto code = readText(files, id.str());
     if (!code) {
       failures.push_back(std::format("{}: {}", id.str(), code.error().message));
+      continue;
+    }
+    if (std::in_range<std::uint16_t>(*number) &&
+        patched.erase(static_cast<std::uint16_t>(*number)) != 0) {
+      auto module =
+          readPatchedModule(id.str(), *code, static_cast<std::uint16_t>(*number), *patches, notes);
+      if (!module) {
+        failures.push_back(module.error().message);
+      } else {
+        add(id.str(), std::move(*module));
+      }
       continue;
     }
     std::optional<script::LuaLineMap> lines;
@@ -177,17 +286,20 @@ readModules(const assets::VirtualFileSystem& files, std::vector<std::string>& no
     if (!module->offsets) {
       notes.push_back(core::formatMessage(messages::ScriptWarpsNoOffsets, id.str(), linesProblem));
     }
-    const std::uint16_t number = module->script;
-    if (!modules.emplace(number, std::move(*module)).second) {
-      failures.push_back(core::formatMessage(messages::ScriptWarpsScriptTwice, id.str(), number));
+    add(id.str(), std::move(*module));
+  }
+  // The scripts that only patches give (the game runs them without a module).
+  for (const std::uint16_t script : patched) {
+    const std::string id = std::format("{}{:03}", StoryPrefix, script);
+    auto module = readPatchedModule(id, std::nullopt, script, *patches, notes);
+    if (!module) {
+      failures.push_back(module.error().message);
+    } else {
+      add(id, std::move(*module));
     }
   }
   if (!failures.empty()) {
-    std::string text;
-    for (const std::string& failure : failures) {
-      text += "\n  " + failure;
-    }
-    return core::fail(core::formatMessage(messages::ScriptWarpsUnreadable, text));
+    return std::unexpected{failuresError(messages::ScriptWarpsUnreadable, failures)};
   }
   return modules;
 }

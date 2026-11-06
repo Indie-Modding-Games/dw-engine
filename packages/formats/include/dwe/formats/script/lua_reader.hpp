@@ -9,8 +9,10 @@
 #include <cstdint>
 #include <map>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 // A story module (story/<n>.lua) read back into the listing and the structure the walks read
 // (guarded_walk.hpp), so the map changes of a script a mod edited in Lua come from its Lua and not
@@ -54,5 +56,52 @@ struct LuaListing {
 // places are one instruction again, as in the listing. Fails on Lua the reader does not know, with
 // the line.
 core::Result<LuaListing> readLuaModule(std::string_view code, const LuaLineMap* lines = nullptr);
+
+// A story patch (story/patches/*.lua, docs/modding/historia.md) read for the walks: the sections
+// it gives, as code the module can take in. Only the shape the reader can follow: at the top,
+// locals that only name story's own (`local story <const> = story`, `local ENDED <const> =
+// story.ENDED`), then `return { script = <id>, sections = { [<id>] = function(original) ... end }
+// }`; in a section, `original()` called as a routine is (`return original()`, `if original() ==
+// ENDED then return ENDED end`) and nothing else of `original`.
+struct LuaPatchSection {
+  std::uint16_t id = 0;
+  // The function's body, cut where it calls the original: between two pieces goes a call.
+  std::vector<std::string> pieces;
+  std::size_t line = 0; // the patch's line where the body starts
+};
+
+struct LuaPatch {
+  std::string name; // how errors name it, e.g. "my_mod:story/patches/a.lua"
+  std::uint16_t script = 0;
+  std::vector<LuaPatchSection> sections;
+};
+
+// Reads a story patch; fails naming `name` and the line on a shape the reader cannot follow.
+core::Result<LuaPatch> readLuaPatch(std::string_view code, std::string name);
+
+// A story module with patches applied: Lua that readLuaModule reads, where each patched section's
+// table entry runs the patch's body as a function of the module's routines table.
+struct ComposedLuaModule {
+  std::string code;
+  // The composed lines that come from a patch's lines.
+  struct PatchLines {
+    std::size_t first = 0;
+    std::size_t last = 0;
+    std::string patch;
+    std::size_t patchLine = 0; // the patch's line of `first`
+  };
+  std::vector<PatchLines> patchLines;
+
+  // A readLuaModule error on `code`: its "line N" in a patch named by the patch and its line.
+  [[nodiscard]] std::string located(std::string_view message) const;
+};
+
+// Applies `patches` to the module `module` of script `script` (none: a script only patches give):
+// the last patch in the span that gives a section wins it, as the game's stack order does, so pass
+// them bottom of the pack stack first. Fails when a patch calls the original of a section the
+// module does not have, or when the module's own Lua does not read.
+core::Result<ComposedLuaModule> composeLuaPatches(std::optional<std::string_view> module,
+                                                  std::uint16_t script,
+                                                  std::span<const LuaPatch> patches);
 
 } // namespace dwe::formats::script

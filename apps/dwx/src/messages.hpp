@@ -95,6 +95,10 @@ inline constexpr std::string_view ScriptWarpsScriptTwice =
 inline constexpr std::string_view ScriptWarpsNoLineMap = "there is no {}";
 inline constexpr std::string_view ScriptWarpsNoOffsets =
     "{}: its line map is not used ({}), so its records have no offsets";
+inline constexpr std::string_view ScriptWarpsPatched =
+    "{}: patched by {}, so its records have no offsets (a patch's lines have none)";
+inline constexpr std::string_view ScriptWarpsBadPatches =
+    "these story patches cannot be followed, so their map changes would be missing:{}";
 inline constexpr std::string_view ScriptWarpsNoTransport =
     "there is no {}, so the transport menu's map changes are left out";
 inline constexpr std::string_view ScriptWarpsBadTransport =

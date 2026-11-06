@@ -205,3 +205,55 @@ TEST_CASE("the user's disc, extracted: the story Lua gives field/script_warps as
   CHECK(scriptWarpsCommand(folders, std::nullopt, dwe::dwx::DefaultTransportRules) ==
         dwe::dwx::ExitOk);
 }
+
+TEST_CASE("dwx script-warps applies the packs' story patches, the highest winning a section") {
+  const TempFolder folder;
+  writeContent(folder);
+  // A mod wraps the town's step: a new warp behind trigger 11, then the original's.
+  folder.write("content/low_mod/pack.yaml", "id: low_mod\nversion: 1.0.0\nlayer: mods\n");
+  folder.write("content/low_mod/story/patches/town.lua", R"lua(local story <const> = story
+return { script = 1, sections = {
+  [51] = function(original)
+    if story.trigger(11) then
+      return story.warp_to(118, 4, 255)
+    end
+    return original()
+  end,
+} }
+)lua");
+  const DerivedScriptWarps wrapped = derive(folder);
+  CHECK(wrapped.warps == 3);
+  CHECK(wrapped.yaml.contains("    map: room08\n    exit: 4\n"));
+  CHECK(wrapped.yaml.contains("    map: room08\n    exit: 2\n"));
+  CHECK(hasNote(wrapped, "story/001: patched by low_mod:story/patches/town.lua"));
+
+  // A higher pack replaces the section outright: the original's warp is gone.
+  folder.write("content/high_mod/pack.yaml",
+               "id: high_mod\nversion: 1.0.0\nlayer: mods\npriority: 5\n");
+  folder.write("content/high_mod/story/patches/town.lua", R"lua(return { script = 1, sections = {
+  [51] = function() return story.warp_to(118, 5, 255) end,
+} }
+)lua");
+  const DerivedScriptWarps replaced = derive(folder);
+  CHECK(replaced.warps == 2);
+  CHECK(replaced.yaml.contains("    map: room08\n    exit: 5\n"));
+  CHECK_FALSE(replaced.yaml.contains("    map: room08\n    exit: 2\n"));
+}
+
+TEST_CASE("dwx script-warps fails, naming the patch and its line, on a patch it cannot follow") {
+  const TempFolder folder;
+  writeContent(folder);
+  folder.write("content/my_mod/pack.yaml", "id: my_mod\nversion: 1.0.0\nlayer: mods\n");
+  folder.write("content/my_mod/story/patches/wrap.lua", R"lua(return { script = 1, sections = {
+  [51] = function(original)
+    story.set_var(5, 1)
+    local result = original()
+    return result
+  end,
+} }
+)lua");
+  const auto folders = foldersOf(folder);
+  const auto derived = deriveScriptWarps(folders, dwe::dwx::DefaultTransportRules);
+  REQUIRE_FALSE(derived.has_value());
+  CHECK(derived.error().message.contains("story/001: my_mod:story/patches/wrap.lua:4: "));
+}

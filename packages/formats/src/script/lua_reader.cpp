@@ -11,6 +11,7 @@
 #include <limits>
 #include <map>
 #include <optional>
+#include <ranges>
 #include <set>
 #include <string>
 #include <string_view>
@@ -51,6 +52,9 @@ struct Token {
   std::string text; // a name, a string's value or a symbol
   std::int64_t number = 0;
   std::size_t line = 0;
+  // Where it is in the code: its first character and the one after its last.
+  std::size_t begin = 0;
+  std::size_t end = 0;
 };
 
 bool isNameStart(char c) {
@@ -90,7 +94,19 @@ core::Result<std::vector<Token>> tokenize(std::string_view code) {
     }
     return level;
   };
+  // Each round reads one token, a space or a comment, so a round starts where the last token ended.
+  std::size_t tokenStart = 0;
+  std::size_t placed = 0;
+  const auto place = [&] {
+    if (tokens.size() > placed) {
+      tokens.back().begin = tokenStart;
+      tokens.back().end = at;
+      placed = tokens.size();
+    }
+  };
   while (at < code.size()) {
+    place();
+    tokenStart = at;
     const char c = code[at];
     if (c == '\n') {
       ++line;
@@ -205,7 +221,9 @@ core::Result<std::vector<Token>> tokenize(std::string_view code) {
     return failHere(std::format("the character {:#04x} is not Lua the reader takes",
                                 static_cast<unsigned char>(c)));
   }
+  place();
   tokens.push_back({.kind = TokenKind::End, .text = {}, .number = 0, .line = line});
+  tokens.back().begin = tokens.back().end = code.size();
   return tokens;
 }
 
@@ -1543,6 +1561,376 @@ core::Result<LuaListing> readLuaModule(std::string_view code, const LuaLineMap* 
     return fallback;
   }
   return Lifter{*chunk, nullptr}.lift();
+}
+
+namespace {
+
+// The functions a composed module gives patched sections: routines.patch_<section>.
+constexpr std::string_view PatchRoutinePrefix = "patch_";
+// The names of story's that the modules give locals of (lua_emitter.hpp), so a patch's
+// `story.ENDED` reads as the module's `ENDED`.
+constexpr std::array<std::string_view, 3> StoryConstants = {"ENDED", "PLAYER", "PARTNER"};
+// What a module a script only patches give starts with, as the emitter's modules do.
+constexpr std::string_view ModulePrelude = "local story <const> = story\n"
+                                           "local ENDED <const> = story.ENDED\n"
+                                           "local PLAYER <const> = story.PLAYER\n"
+                                           "local PARTNER <const> = story.PARTNER\n"
+                                           "\n"
+                                           "local routines = {}\n"
+                                           "\n";
+
+// The line of an error of the reader ("line N: ..."), and the rest.
+std::optional<std::pair<std::size_t, std::string_view>> errorLine(std::string_view message) {
+  constexpr std::string_view Prefix = "line ";
+  if (!message.starts_with(Prefix)) {
+    return std::nullopt;
+  }
+  const std::string_view rest = message.substr(Prefix.size());
+  std::size_t line = 0;
+  const auto [end, error] = std::from_chars(rest.data(), rest.data() + rest.size(), line);
+  const std::string_view after = rest.substr(static_cast<std::size_t>(end - rest.data()));
+  if (error != std::errc{} || !after.starts_with(": ")) {
+    return std::nullopt;
+  }
+  return std::pair{line, after.substr(2)};
+}
+
+// An error of the reader on a patch, "line N: ..." as "<patch>:N: ...".
+std::string inPatch(std::string_view patch, std::string_view message) {
+  if (const auto located = errorLine(message)) {
+    return std::format("{}:{}: {}", patch, located->first, located->second);
+  }
+  return std::format("{}: {}", patch, message);
+}
+
+std::size_t newlines(std::string_view text) {
+  return static_cast<std::size_t>(std::ranges::count(text, '\n'));
+}
+
+// Reads a patch's tokens: the shape readLuaPatch describes, each section's body cut out of the
+// code.
+class PatchReader {
+public:
+  PatchReader(std::string_view code, std::vector<Token> tokens, LuaPatch& patch)
+      : code_(code), tokens_(std::move(tokens)), patch_(&patch) {}
+
+  core::Result<void> read() {
+    while (!error_ && accept("local")) {
+      topLocal();
+    }
+    const Token& returned = peek();
+    expect("return");
+    expect("{");
+    bool script = false;
+    bool sections = false;
+    while (!error_ && !is("}")) {
+      const Token& key = peek();
+      if (accept("script")) {
+        expect("=");
+        script = true;
+        const Token& value = next();
+        if (value.kind != TokenKind::Number || !std::in_range<std::uint16_t>(value.number)) {
+          fail(value, "a script that is not a number from 0 to 65535");
+        }
+        patch_->script = static_cast<std::uint16_t>(value.number);
+      } else if (accept("sections")) {
+        expect("=");
+        sections = true;
+        readSections();
+      } else {
+        fail(key, std::format("'{}' in the patch's table, which has only script and sections",
+                              key.text));
+      }
+      if (!accept(",") && !accept(";")) {
+        break;
+      }
+    }
+    expect("}");
+    accept(";");
+    if (!error_ && peek().kind != TokenKind::End) {
+      fail(peek(), "code after the patch's table");
+    }
+    if (!error_ && (!script || !sections)) {
+      fail(returned, "the patch does not return { script = <id>, sections = { ... } }");
+    }
+    if (error_) {
+      return core::fail(*error_);
+    }
+    return {};
+  }
+
+private:
+  [[nodiscard]] const Token& peek(std::size_t ahead = 0) const {
+    return tokens_[std::min(at_ + ahead, tokens_.size() - 1)];
+  }
+
+  const Token& next() {
+    const Token& token = peek();
+    at_ = std::min(at_ + 1, tokens_.size() - 1);
+    return token;
+  }
+
+  [[nodiscard]] bool is(std::string_view text, std::size_t ahead = 0) const {
+    const Token& token = peek(ahead);
+    return (token.kind == TokenKind::Symbol || token.kind == TokenKind::Name) && token.text == text;
+  }
+
+  bool accept(std::string_view text) {
+    if (is(text)) {
+      next();
+      return true;
+    }
+    return false;
+  }
+
+  void expect(std::string_view text) {
+    if (!accept(text)) {
+      fail(peek(), std::format("'{}' where '{}' goes", peek().text, text));
+    }
+  }
+
+  void fail(const Token& token, std::string_view message) {
+    if (!error_) {
+      error_ = std::format("{}:{}: {}", patch_->name, token.line, message);
+    }
+  }
+
+  // local story <const> = story, local ENDED <const> = story.ENDED: the module has the same.
+  void topLocal() {
+    const Token& local = next();
+    if (accept("<")) {
+      next();
+      expect(">");
+    }
+    expect("=");
+    const bool story = accept(StoryTable);
+    std::string field;
+    if (story && accept(".")) {
+      field = next().text;
+    }
+    const bool same = field.empty() ? local.text == StoryTable : field == local.text;
+    if (!error_ && (!story || !same)) {
+      fail(local, "a local at the top of a patch that is not one of story's own names "
+                  "(local story <const> = story, local ENDED <const> = story.ENDED)");
+    }
+  }
+
+  void readSections() {
+    expect("{");
+    while (!error_ && !is("}")) {
+      readSection();
+      if (!accept(",") && !accept(";")) {
+        break;
+      }
+    }
+    expect("}");
+  }
+
+  void readSection() {
+    const Token& open = peek();
+    expect("[");
+    const Token& id = next();
+    if (id.kind != TokenKind::Number || !std::in_range<std::uint16_t>(id.number)) {
+      fail(id, "a section that is not a number from 0 to 65535");
+    }
+    expect("]");
+    expect("=");
+    if (!accept("function")) {
+      fail(peek(), "a section that is not [<id>] = function(original) ... end");
+      return;
+    }
+    expect("(");
+    std::string original;
+    if (peek().kind == TokenKind::Name && !is(")")) {
+      original = next().text;
+    }
+    const Token& close = peek();
+    expect(")");
+    if (error_) {
+      return;
+    }
+    LuaPatchSection section{
+        .id = static_cast<std::uint16_t>(id.number), .pieces = {}, .line = close.line};
+    if (std::ranges::contains(patch_->sections, section.id, &LuaPatchSection::id)) {
+      fail(open, std::format("section {:#06x} is in the patch twice", section.id));
+      return;
+    }
+    std::string piece;
+    std::size_t copied = close.end;
+    // The blocks open in the body: the function's own `end` closes the last.
+    std::size_t depth = 1;
+    while (!error_) {
+      const Token& token = peek();
+      if (token.kind == TokenKind::End) {
+        fail(open, "a section's function that does not end");
+        return;
+      }
+      if (token.kind == TokenKind::Name) {
+        if (token.text == "function" || token.text == "do" || token.text == "if" ||
+            token.text == "repeat") {
+          ++depth;
+        } else if ((token.text == "end" || token.text == "until") && --depth == 0) {
+          piece += code_.substr(copied, token.begin - copied);
+          section.pieces.push_back(std::move(piece));
+          next();
+          break;
+        } else if (!original.empty() && token.text == original) {
+          if (!is("(", 1) || !is(")", 2)) {
+            fail(token, std::format("{} used other than as {}(): the walk cannot follow it",
+                                    original, original));
+            return;
+          }
+          piece += code_.substr(copied, token.begin - copied);
+          section.pieces.push_back(std::exchange(piece, {}));
+          copied = peek(2).end;
+          at_ += 3;
+          continue;
+        } else if (token.text == StoryTable && is(".", 1) &&
+                   std::ranges::contains(StoryConstants, peek(2).text)) {
+          piece += code_.substr(copied, token.begin - copied);
+          piece += peek(2).text;
+          copied = peek(2).end;
+          at_ += 3;
+          continue;
+        }
+      }
+      next();
+    }
+    patch_->sections.push_back(std::move(section));
+  }
+
+  std::string_view code_;
+  std::vector<Token> tokens_;
+  LuaPatch* patch_;
+  std::size_t at_ = 0;
+  std::optional<std::string> error_;
+};
+
+} // namespace
+
+core::Result<LuaPatch> readLuaPatch(std::string_view code, std::string name) {
+  LuaPatch patch{.name = std::move(name), .script = 0, .sections = {}};
+  auto tokens = tokenize(code);
+  if (!tokens) {
+    return core::fail(inPatch(patch.name, tokens.error().message));
+  }
+  if (auto read = PatchReader{code, std::move(*tokens), patch}.read(); !read) {
+    return std::unexpected{read.error()};
+  }
+  return patch;
+}
+
+std::string ComposedLuaModule::located(std::string_view message) const {
+  const auto at = errorLine(message);
+  if (!at) {
+    return std::string{message};
+  }
+  for (const PatchLines& lines : patchLines) {
+    if (at->first >= lines.first && at->first <= lines.last) {
+      return std::format("{}:{}: {}", lines.patch, lines.patchLine + (at->first - lines.first),
+                         at->second);
+    }
+  }
+  return std::string{message};
+}
+
+core::Result<ComposedLuaModule> composeLuaPatches(std::optional<std::string_view> module,
+                                                  std::uint16_t script,
+                                                  std::span<const LuaPatch> patches) {
+  // Each section's patch: the last one that gives it.
+  std::map<std::uint16_t, std::pair<const LuaPatch*, const LuaPatchSection*>> winners;
+  for (const LuaPatch& patch : patches) {
+    if (patch.script != script) {
+      continue;
+    }
+    for (const LuaPatchSection& section : patch.sections) {
+      winners.insert_or_assign(section.id, std::pair{&patch, &section});
+    }
+  }
+  ComposedLuaModule result;
+  // The returned table's sections, in the module's order, by their routine.
+  std::vector<std::pair<std::uint16_t, std::string>> table;
+  if (module) {
+    auto tokens = tokenize(*module);
+    if (!tokens) {
+      return std::unexpected{tokens.error()};
+    }
+    // The module's returned table names no function, so the last `return` is the module's own.
+    const auto returned =
+        std::ranges::find_if(std::views::reverse(*tokens), [](const Token& token) {
+          return token.kind == TokenKind::Name && token.text == "return";
+        });
+    if (returned == std::ranges::rend(*tokens)) {
+      return core::fail("line 1: the module does not return { script = <id>, sections = { ... } }");
+    }
+    const std::size_t returnBegin = returned->begin;
+    auto chunk = Parser{std::move(*tokens)}.chunk();
+    if (!chunk) {
+      return std::unexpected{chunk.error()};
+    }
+    const LuaExpression* sections = nullptr;
+    if (!chunk->empty() && chunk->back().kind == LuaStatement::Kind::Return) {
+      const LuaExpression& value = valueOf(chunk->back());
+      for (std::size_t index = 0; index < value.keys.size(); ++index) {
+        if (value.keys[index].name == "sections" &&
+            value.operands[index].kind == LuaExpression::Kind::Table) {
+          sections = &value.operands[index];
+        }
+      }
+    }
+    if (sections == nullptr) {
+      return core::fail(std::format(
+          "line {}: the module does not return {{ script = <id>, sections = {{ ... }} }}",
+          chunk->empty() ? 1 : chunk->back().line));
+    }
+    for (std::size_t index = 0; index < sections->keys.size(); ++index) {
+      const auto id = sections->keys[index].index;
+      const LuaExpression& value = sections->operands[index];
+      if (!id || !std::in_range<std::uint16_t>(*id) || value.kind != LuaExpression::Kind::Field ||
+          value.object != RoutinesTable) {
+        return core::fail(
+            std::format("line {}: a section that is not [<id>] = routines.<name>", value.line));
+      }
+      table.emplace_back(static_cast<std::uint16_t>(*id), value.text);
+    }
+    result.code = std::string{module->substr(0, returnBegin)};
+  } else {
+    result.code = std::string{ModulePrelude};
+  }
+  if (!result.code.empty() && result.code.back() != '\n') {
+    result.code += '\n';
+  }
+  for (const auto& [id, winner] : winners) {
+    const auto& [patch, section] = winner;
+    const auto entry = std::ranges::find(table, id, &std::pair<std::uint16_t, std::string>::first);
+    if (section->pieces.size() > 1 && entry == table.end()) {
+      return core::fail(std::format("{}:{}: section {:#06x} calls the original, which script {} "
+                                    "does not have",
+                                    patch->name, section->line, id, script));
+    }
+    std::string body = section->pieces.front();
+    for (std::size_t piece = 1; piece < section->pieces.size(); ++piece) {
+      body += std::format("{}.{}(){}", RoutinesTable, entry->second, section->pieces[piece]);
+    }
+    const std::string routine = std::format("{}{:04x}", PatchRoutinePrefix, id);
+    const std::size_t first = newlines(result.code) + 1;
+    result.patchLines.push_back({.first = first,
+                                 .last = first + newlines(body),
+                                 .patch = patch->name,
+                                 .patchLine = section->line});
+    result.code += std::format("function {}.{}(){} end\n", RoutinesTable, routine, body);
+    if (entry != table.end()) {
+      entry->second = routine;
+    } else {
+      table.emplace_back(id, routine);
+    }
+  }
+  result.code += std::format("\nreturn {{\n  script = {},\n  sections = {{\n", script);
+  for (const auto& [id, routine] : table) {
+    result.code += std::format("    [{:#06x}] = {}.{},\n", id, RoutinesTable, routine);
+  }
+  result.code += "  },\n}\n";
+  return result;
 }
 
 } // namespace dwe::formats::script
