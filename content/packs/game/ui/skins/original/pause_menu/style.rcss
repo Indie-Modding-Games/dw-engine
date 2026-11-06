@@ -128,6 +128,19 @@
 #option-list scrollbarvertical { width: 6dp; margin-left: 6dp; }
 #option-list scrollbarvertical slidertrack { background-color: #2d3840; }
 #option-list scrollbarvertical sliderbar { min-height: 24dp; background-color: #90d9fa; }
+/* A larger UI scale also leaves the page less than the 720dp it is laid out for (115 % on a 16:10 window leaves 626dp,
+   130 % on a 16:9 one 554dp): the box moves up to just under its folders and the list scrolls in fewer rows, so the
+   description and the actions under it stay in the window. */
+@media (max-height: 700dp) {
+	#panel.on-options { top: 60dp; }
+	#option-list { max-height: 300dp; }
+}
+@media (max-height: 600dp) {
+	#option-list { max-height: 240dp; }
+}
+@media (max-height: 520dp) {
+	#option-list { max-height: 150dp; }
+}
 #page-options button.option { display: flex; align-items: center; height: 30dp; line-height: 30dp; }
 #page-options .option .label { flex: 1 1 auto; overflow: hidden; }
 #page-options .option .control { display: flex; align-items: center; }

@@ -1730,6 +1730,9 @@ local function bind_tab(document)
     document:get(id):set_property("nav-down", "#" .. first)
   end
   document:get("option-list"):set_class("tab-" .. option_tab, true)
+  -- A list that scrolls (a large UI scale) starts each tab, and each opening, at its first row,
+  -- which takes the focus: the rows it was scrolled to belonged to another tab.
+  document:get("option-list"):scroll_to_top()
   refresh_option_rows(document)
 end
 

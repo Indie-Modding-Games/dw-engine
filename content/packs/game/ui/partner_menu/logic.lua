@@ -883,6 +883,31 @@ local function step_box(document, step)
   document:get(entries[next_index]):focus()
 end
 
+-- Keeps the menu whole inside the window when the UI scale makes it taller than the window holds
+-- (common/screen_fit.lua): the original look's stage of 960 x 720dp, with the bag's boxes beside
+-- its panel and the prompts under it, is drawn smaller as one, round the panel and its prompts;
+-- the modern look's panel on its own, its boxes being centred dialogs. At the default scale
+-- nothing moves.
+local function fit_to_window(document)
+  local scrim = document:get("scrim")
+  local panel = document:get("panel")
+  if panel:has_class("skin-original") then
+    screen_fit.clear(panel)
+    local left, top, width, height = panel:rect()
+    local right, bottom = left + width, top + height
+    local prompts_left, prompts_top, prompts_width, prompts_height = document:get("prompts"):rect()
+    if prompts_width > 0 and prompts_height > 0 then
+      left, top = math.min(left, prompts_left), math.min(top, prompts_top)
+      right = math.max(right, prompts_left + prompts_width)
+      bottom = math.max(bottom, prompts_top + prompts_height)
+    end
+    screen_fit.apply_around(document, scrim, left, top, right - left, bottom - top)
+  else
+    screen_fit.clear(scrim)
+    screen_fit.apply(document, panel)
+  end
+end
+
 -- inventory.c: initializeInventoryUI: the bag opens with no box and no move under way.
 function on_show(document)
   panel_enter.start(document)
@@ -906,6 +931,7 @@ function on_show(document)
   draw_prompts(document)
   show_page(document, ui.setting("partner_menu.start_page") == "items" and "items" or "status")
   open_boxes(document)
+  fit_to_window(document)
 end
 
 function on_hide(document)
@@ -939,6 +965,7 @@ end
 function on_tick(document, seconds)
   original_box.tick(document, seconds)
   panel_enter.tick(document)
+  fit_to_window(document)
   tech_icon_time = tech_icon_time + seconds
   if current == "status" and ui.setting("ui_skin") == "original" then
     document:get("scrim"):set_class("status-alternate", math.floor(tech_icon_time * 20) % 10 >= 5)

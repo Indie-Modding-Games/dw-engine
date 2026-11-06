@@ -115,6 +115,7 @@ API disponible:
 | `element:attribute(nombre)`, `element:set_attribute(nombre, valor)` | Atributos (`set_attribute` no acepta los de evento, `on...`) |
 | `element:set_property(nombre, valor)` | Una propiedad de estilo, como `display` |
 | `element:focus()`, `element:has_focus()`, `element:click()` | Foco y clic |
+| `element:scroll_to_top()` | Lleva una lista que se desplaza a su principio (una lista que se llena de nuevo) |
 | `element:rect()` | Izquierda, arriba, ancho y alto del elemento en dp desde la esquina de la ventana |
 | `element.id`, `element:valid()` | Su id; si sigue existiendo |
 | `event.type`, `event:stop()` | En un atributo de evento: su tipo; parar la propagación |

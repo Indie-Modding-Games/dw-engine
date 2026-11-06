@@ -9,6 +9,12 @@
 -- each time it writes the box's transform and from its on_tick, as the window and the scale can
 -- change while the box is up. `scale` is the box's own scale (an opening box's growth), 1 when
 -- nil.
+--
+-- A page whose boxes sit beside its main box on the same stage (the partner's menu in the
+-- original look: the bag's option boxes beside its panel) calls
+-- screen_fit.apply_around(document, element, left, top, width, height) instead: that rectangle in
+-- dp (the boxes that must show) decides the fit, and the transform goes on the element that holds
+-- them all, round the rectangle's centre, so they stay together.
 
 screen_fit = {}
 
@@ -34,18 +40,53 @@ function screen_fit.fit(window_width, window_height, left, top, width, height)
   return scale, shift(left, width, room_width), shift(top, height, room_height)
 end
 
+-- Writes a transform (and its origin) on an element, only when it changes: the calls come every
+-- tick.
+local function write(element, transform, origin)
+  local key = transform .. "|" .. (origin or "")
+  if element:attribute("data-transform") ~= key then
+    element:set_attribute("data-transform", key)
+    element:set_property("transform", transform)
+    if origin ~= nil then
+      element:set_property("transform-origin", origin)
+    end
+  end
+end
+
+local function fits(fit, dx, dy)
+  return fit >= 1 and math.abs(dx) < 0.05 and math.abs(dy) < 0.05
+end
+
 function screen_fit.apply(document, box, scale)
   local _, _, window_width, window_height = document:rect()
   local fit, dx, dy = screen_fit.fit(window_width, window_height, box:rect())
-  local transform
-  if fit >= 1 and math.abs(dx) < 0.05 and math.abs(dy) < 0.05 then
-    transform = scale ~= nil and string.format("scale(%.3f)", scale) or "none"
+  if fits(fit, dx, dy) then
+    write(box, scale ~= nil and string.format("scale(%.3f)", scale) or "none")
   else
-    transform = string.format("translate(%.1fdp, %.1fdp) scale(%.4f)", dx, dy, fit * (scale or 1))
+    write(box, string.format("translate(%.1fdp, %.1fdp) scale(%.4f)", dx, dy, fit * (scale or 1)))
   end
-  -- Written only when it changes: the call comes every tick.
-  if box:attribute("data-transform") ~= transform then
-    box:set_attribute("data-transform", transform)
-    box:set_property("transform", transform)
+end
+
+function screen_fit.apply_around(document, element, left, top, width, height)
+  local _, _, window_width, window_height = document:rect()
+  local fit, dx, dy = screen_fit.fit(window_width, window_height, left, top, width, height)
+  if fits(fit, dx, dy) then
+    write(element, "none")
+    return
   end
+  local element_left, element_top = element:rect()
+  write(
+    element,
+    string.format("translate(%.1fdp, %.1fdp) scale(%.4f)", dx, dy, fit),
+    string.format(
+      "%.1fdp %.1fdp 0",
+      left + width / 2 - element_left,
+      top + height / 2 - element_top
+    )
+  )
+end
+
+-- Takes a fit off an element (a page that switched to fitting another one).
+function screen_fit.clear(element)
+  write(element, "none")
 end

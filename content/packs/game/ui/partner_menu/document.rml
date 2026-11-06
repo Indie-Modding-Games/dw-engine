@@ -5,6 +5,7 @@
 	<script src="../common/original_box.lua"></script>
 	<script src="../common/panel_enter.lua"></script>
 	<script src="../common/bag_slot.lua"></script>
+	<script src="../common/screen_fit.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>

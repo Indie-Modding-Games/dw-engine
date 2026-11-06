@@ -1019,12 +1019,23 @@ struct Ui::Impl {
       }
     }
     // A document that stayed keeps the marks made in it: they are found again, in their order.
+    // Only a layer inside a minimap's disc is one: the options page names its rows after their
+    // options, and the rows of "minimap-items" and "minimap-enemies" are no layers.
+    const auto inDisc = [](const Rml::Element& element) {
+      for (const Rml::Element* parent = element.GetParentNode(); parent != nullptr;
+           parent = parent->GetParentNode()) {
+        if (parent->GetId() == hud::MinimapFrame) {
+          return true;
+        }
+      }
+      return false;
+    };
     dotLayers.clear();
     for (auto& [name, document] : documents) {
       for (std::size_t kind = 0; kind < DotKinds.size(); ++kind) {
         Rml::Element* container =
             document.element->GetElementById(Rml::String{DotKinds.at(kind).container});
-        if (container == nullptr) {
+        if (container == nullptr || !inDisc(*container)) {
           continue;
         }
         DotLayer layer{

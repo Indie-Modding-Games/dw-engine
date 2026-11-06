@@ -648,6 +648,13 @@ void Scripting::registerApi() {
         if (self.element) {
           self.element->Click();
         }
+      },
+      // Scrolls a list back to its top (a list filled anew, whose first row takes the focus).
+      "scroll_to_top",
+      [](const LuaElement& self) {
+        if (self.element) {
+          self.element->SetScrollTop(0.0F);
+        }
       });
 
   state.new_usertype<LuaEvent>(

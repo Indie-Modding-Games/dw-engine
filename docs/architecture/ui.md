@@ -135,7 +135,18 @@ más pequeña lo justo y la mete desde el borde que cruza (`transform`, sin toca
 dibuja tal cual, así que a la escala por defecto nada cambia. Antes, al 115 % en una ventana 16:10 (o al 130 % en una
 16:9) el cuadro de diálogo pasaba del borde de abajo y cortaba su última fila. El puntero usa `Ui::elementDrawnRect`
 (el rectángulo dibujado, con las transformaciones) para elegir una opción del cuadro. Prueba: `screen_fit_tests.cpp`
-(16:10 al 115 %, 16:9, 4:3 y una ventana de 800 × 600 al 200 %, en las dos pieles).
+(16:10 al 115 %, 16:9 al 130 % y al 150 %, 4:3 y una ventana de 800 × 600 al 200 %, en las dos pieles).
+
+El menú del compañero (la página de estado, la técnica y la bolsa) usa lo mismo: en el aspecto original el escenario
+de 960 × 720 dp entero (el panel, sus avisos y las cajas de la bolsa a su lado) se dibuja más pequeño alrededor del
+panel con `screen_fit.apply_around`, que pone la transformación en `#scrim`; en el moderno solo el panel, porque sus
+cajas son diálogos centrados. El puntero sigue a lo dibujado (RmlUi proyecta el clic con la transformación). La página
+de opciones no se encoge: con menos de 700 dp de alto (aspecto original) o de 660 dp (moderno) la lista de opciones
+pasa a desplazarse en menos filas (reglas `@media (max-height: …)` de cada piel), así que la descripción y las acciones
+de debajo siguen en la ventana. Pruebas: `screen_fit_tests.cpp` (página de estado) e `in_game_options_tests.cpp`
+(opciones sobre el título y en partida a 1680 × 1050 al 115 % y a 1920 × 1080 y 1280 × 720 al 130 %). La
+comprobación de textos (`overflowingTexts`) no cuenta las cajas de las filas que la lista ha desplazado fuera de su
+caja: no se dibujan.
 
 ## Minimapa
 
@@ -208,6 +219,10 @@ cambia las propiedades cuando se mueven.
 Los objetos tirados en el suelo son una tercera lista de `setMinimapMarkers`, con su propia opción (`minimap_items`,
 fila «Objetos en el minimapa», [game.md](../modulos/apps/game.md#objetos-en-el-minimapa)): se colocan igual que los
 enemigos, en su capa `minimap-items`, con rombos en vez de puntos.
+
+Una capa solo cuenta dentro del disco (`#minimap-frame`): la página de opciones da a sus filas el id de su opción, y
+las filas «Objetos en el minimapa» (`minimap-items`) y «Enemigos en el minimapa» (`minimap-enemies`) se llaman igual que
+las capas. Antes la UI las tomaba por capas y escondía su texto en partida. Prueba: `in_game_options_tests.cpp`.
 
 ## Estado del campo
 

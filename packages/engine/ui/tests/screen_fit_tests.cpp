@@ -27,6 +27,7 @@ struct Window {
 constexpr std::array Windows{
     Window{.width = 1680, .height = 1050, .scale = 1.15F},
     Window{.width = 1280, .height = 720, .scale = 1.3F},
+    Window{.width = 1920, .height = 1080, .scale = 1.3F},
     Window{.width = 1920, .height = 1080, .scale = 1.5F},
     Window{.width = 1024, .height = 768, .scale = 1.5F},
     Window{.width = 1280, .height = 720, .scale = 2.0F},
@@ -128,6 +129,49 @@ TEST_CASE("the notices in the speech box's place stay inside the window at every
       const auto box = screen.ui->elementDrawnRect(document, "box");
       REQUIRE(box.has_value());
       checkInside(*box, windowRect(window));
+    }
+  }
+}
+
+TEST_CASE("the partner's status page stays inside the window at every UI scale") {
+  for (const std::string_view skin : {"original", "modern"}) {
+    for (const Window& window : Windows) {
+      CAPTURE(skin);
+      CAPTURE(window.width);
+      CAPTURE(window.height);
+      CAPTURE(window.scale);
+      Screen screen{"partner_menu", "es"};
+      screen.skin(skin);
+      screen.ui->resize(window.width, window.height);
+      screen.ui->setScale(window.scale);
+      screen.ui->setSetting("status_extras", true);
+      screen.ui->show("partner_menu", true);
+      screen.frames(30);
+      for (const std::string_view id : {"panel", "tabs", "page-status", "prompts"}) {
+        CAPTURE(id);
+        // The original look's status page has no prompts row.
+        if (!screen.ui->elementShown("partner_menu", id)) {
+          continue;
+        }
+        const auto drawn = screen.ui->elementDrawnRect("partner_menu", id);
+        REQUIRE(drawn.has_value());
+        checkInside(*drawn, windowRect(window));
+      }
+      // The pointer finds the tabs where they are drawn: the original look draws its whole stage
+      // smaller.
+      if (skin != "original") {
+        continue;
+      }
+      const auto tab = screen.ui->elementDrawnRect("partner_menu", "tab-tech");
+      REQUIRE(tab.has_value());
+      screen.ui->handleEvent(platform::MouseMoved{.x = (tab->left + tab->right) / 2.0F,
+                                                  .y = (tab->top + tab->bottom) / 2.0F});
+      screen.ui->handleEvent(
+          platform::MouseButtonChanged{.button = platform::MouseButton::Left, .down = true});
+      screen.ui->handleEvent(
+          platform::MouseButtonChanged{.button = platform::MouseButton::Left, .down = false});
+      screen.frames(2);
+      CHECK(screen.ui->elementShown("partner_menu", "page-tech"));
     }
   }
 }
