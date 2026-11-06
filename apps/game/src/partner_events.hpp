@@ -13,8 +13,9 @@
 namespace dwe::app {
 
 // The console's and the scripts' evolve("<species>"): the partner becomes that species as a map
-// script makes it (EvolutionAdapter::evolveByScript). A debug aid until the map scripts run,
-// applied between frames.
+// script makes it (EvolutionAdapter::evolveByScript). A debug aid for the console and Lua: the
+// map scripts evolve the partner through the story (session's story scenes). Applied between
+// frames.
 inline constexpr std::string_view EvolveCommand = "evolve";
 // And learn_move("<move> [place]"): the partner learns that move (and those learned with it) as the
 // gym's brains training teaches it and, with a place (0 to 3), equips it there, so a route can show

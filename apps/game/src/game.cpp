@@ -842,7 +842,8 @@ int runGame(const Options& requested) {
       return false;
     }
     // The music stops before a movie and starts again after it (main.c:3441 finalizeMusic,
-    // playMovie, initializeMusic); the game plays no music yet (VAN-01, slice 3).
+    // playMovie, initializeMusic). The game plays music (session::SessionMusic), but this path
+    // neither stops nor restarts it yet.
     core::logDebug("[port:movie] playMovie (main.c:{}): movie {} '{}'; finalizeMusic: no music to "
                    "stop yet",
                    movieCallSite(moment), static_cast<int>(moment), movieRules->of(moment).file);

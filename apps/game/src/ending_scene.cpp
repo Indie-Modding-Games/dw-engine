@@ -32,7 +32,8 @@ bool EndingScene::play(game::story::PartnerScene scene) {
     return false;
   }
   // tamer.c: tamerTickEnding, sub state 0: ENDI_tickEnding's first call. The player's shadow goes
-  // too (PLAYER_SHADOW_ENABLED = 0), which the engine does not draw yet.
+  // too (PLAYER_SHADOW_ENABLED = 0); the field draws it while the player is visible, so here it
+  // goes when the fade below reaches zero.
   core::logDebug("[port:ending] tamerTickEnding (tamer.c:1687): ENDI_tickEnding starts");
   effects_.start();
   running_ = true;
