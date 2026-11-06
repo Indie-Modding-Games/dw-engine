@@ -9,12 +9,13 @@ ni un script, solo reproduce clips en buses. El diseño completo, los tramos y l
 
 | Header | Qué da |
 |---|---|
-| `dwe/audio/audio.hpp` | `Audio`, la fachada del hilo del juego: `play` y `playAll` (todo o nada), `stop`, los volúmenes y `update` |
+| `dwe/audio/audio.hpp` | `Audio`, la fachada del hilo del juego: `play` y `playAll` (todo o nada), `stop`, la música (`playMusic`, `stopMusic`), los volúmenes y `update` |
 | `dwe/audio/clip.hpp` | `Clip` (PCM de 16 bits, frecuencia, canales y bucle) y `checkClip` |
 | `dwe/audio/voice.hpp` | `VoiceId` (hueco y generación), `PlayRequest` (clip, bus, ganancia, panorama y tono) y `ChipEnvelope` |
 | `dwe/audio/mixing.hpp` | `Bus`, `VolumeControl`, el formato de la mezcla y los límites (`MaxVoices`, `CommandQueueCapacity`) |
 | `dwe/audio/output.hpp` | `MixSource`, la interfaz `Output`, `NullOutput` y `openDeviceOutput` (SDL) |
 | `dwe/audio/effect_bank.hpp` | `EffectBank`: un banco de efectos con sus muestras, cada efecto una voz por tono |
+| `dwe/audio/sound_font.hpp` | `SoundFont`: un SF2 cargado en el sintetizador de la música (`SoundFont::load`), que `playMusic` toca en el bus `Music` |
 
 Ningún header público incluye SDL: la salida SDL es privada (`src/sdl_output.cpp`) y abre su propio subsistema de
 audio.

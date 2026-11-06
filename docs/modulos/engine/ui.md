@@ -44,6 +44,10 @@ cálculo de la ventana y de los marcadores (`minimapDiscView`, `locateOnDisc`) e
 |---|---|---|---|---|
 | Minimapa redondo | No existe | Disco del mapa centrado en el jugador, norte (−Z) arriba, radio de vista de 800 a 1800 unidades según el mapa; compañero en el borde (90 % del radio) si queda fuera; aro `plain` o `original` | `minimap_tests.cpp` («the round minimap's view…», «…window is centred on the player, north-up», «a marker lands on the disc…»), `minimap_disc_tests.cpp`, `ui_tests.cpp` («…round the player, north-up») | Mejora (opción) |
 
+`world_map.hpp` pinta el [mapa de la isla](../apps/game.md#mapa-de-la-isla) con valores sueltos (zonas, caminos y su
+aspecto), sin saber nada de mapas ni del juego: `paintWorldMap` dibuja el mar, la tierra de cada zona (apagada si no
+se conoce), las fronteras, la costa y los caminos (`world_map_tests.cpp`).
+
 La fuente de mapa de bits se dibuja a un múltiplo entero de su celda (11 píxeles de alto), para que cada píxel siga
 nítido: a 720 de alto, el más cercano al tamaño de letra, como se maquetaron las cajas; a otra altura, ese múltiplo
 por los píxeles por dp (`FontEngine::setDpRatio`), redondeado hacia abajo. Antes se redondeaba el tamaño a cada

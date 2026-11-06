@@ -43,7 +43,8 @@ al motor: una API de Lua versionada y aislada. Ningún otro módulo da Lua a los
   antes de llegar a ella correría gratis: por eso su hook mira el presupuesto cada 64 instrucciones y cada
   reanudación paga esas 64 por adelantado. El hook es de cada hilo y su cuenta sigue entre cesiones y reanudaciones;
   cada comprobación cobra la cuenta con la que se preparó (`lua_gethookcount`). Así, una corrutina que el motor crea y
-  reanuda desde C++ (`lua_newthread` y `lua_resume` dentro de un `ScriptCall`, como hará el runner de la historia)
+  reanuda desde C++ (`lua_newthread` y `lua_resume` dentro de un `ScriptCall`, como hace el runner de la historia con
+  `script_coroutine.hpp`)
   paga lo que corre aunque herede la cuenta de 1000 de su creador, y gasta el presupuesto de la llamada que la reanuda.
 - Comparar dos textos (`<`, `<=`, `==`) es trabajo de la VM y no pasa por ninguna función que se pueda cobrar por
   bytes. Es una decisión aceptada: cada comparación recorre como mucho un bloque (`largestBlockBytes`, 4 MiB), y un
@@ -62,7 +63,7 @@ al motor: una API de Lua versionada y aislada. Ningún otro módulo da Lua a los
   `checkEngineDocument`) es el único dueño de esa regla. `runAsset` la usa, y la UI también: un documento de un mod se
   carga, pero sus scripts en línea y sus atributos de evento (`onclick`…) no corren, y un `<script src>` solo corre si
   el fichero lo da un paquete del motor, sea cual sea el documento. Que un mod
-  programe su propia UI en su entorno no entra en la fase 4a.
+  programe su propia UI en su entorno es de la fase 5.
 - La metatabla de las cadenas está bloqueada (`getmetatable("")` da «locked by the engine») y su `__index` es una
   copia de solo lectura de la librería `string`: lo que un script haga a su tabla `string` no cambia los métodos
   (`("a"):upper()`) de nadie.
@@ -81,8 +82,8 @@ al motor: una API de Lua versionada y aislada. Ningún otro módulo da Lua a los
 > 250 000 por evento lanzado (antes 1 millón) y 500 000 por fotograma (antes 2 millones). Los techos de tiempo suben
 > a 20 ms por evento (antes 5 ms) y 40 ms por fotograma (antes 8 ms). El error de una parada añade el motivo. Las
 > llamadas (`instructionsPerCall`, 10 millones; `callDeadline`, 1 s) no cambian. Por bajar los presupuestos por
-> defecto, la versión de la API de Lua (`LuaApiVersion`) sube de 1.0.0 a **1.1.0**. Cuando exista `docs/modding/`,
-> esta sección pasa allí.
+> defecto, la versión de la API de Lua (`LuaApiVersion`) sube de 1.0.0 a **1.1.0**. Cuando `docs/modding/` tenga una
+> página de presupuestos, esta sección pasa allí.
 
 Cada llamada del motor a tu script tiene un presupuesto, para que un mod roto o en bucle no cuelgue el juego:
 
@@ -115,8 +116,8 @@ Cada llamada del motor a tu script tiene un presupuesto, para que un mod roto o 
 piden sus scripts ([VFS](../../architecture/vfs.md)): `api: "1.x"`, cualquier 1.y, o `api: "1.3"`, la 1.3 o una
 posterior. `assets::checkPackApi` rechaza otra versión mayor o una menor más nueva que la del motor. `apps/content` lo comprueba al montar y deja fuera, con el motivo, el mod que no la cumple.
 
-Un paquete sin `api` se acepta durante la fase 4a. Está previsto exigirla a las capas `mods` y `user` cuando llegue la
-documentación para modders (docs/modding).
+Un paquete sin `api` se acepta por ahora. Está previsto exigirla a las capas `mods` y `user` en la fase 5, con la
+documentación para modders ([modding](../../modding/historia.md)).
 
 Subir la versión: la menor cuando se añade algo (una función, un evento, un argumento opcional); la mayor cuando se
 quita o cambia algo que un mod ya usa.

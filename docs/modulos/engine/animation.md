@@ -35,7 +35,7 @@ malla ya pegada a los huesos) y da once proporciones: la cabeza respecto a la al
 30 % del miembro), todo respecto al torso. En una serpiente, sin tronco, la cola hace de torso. `profileOf` junta las
 medidas de los originales por forma y guarda, por proporción, el mínimo, la mediana y el máximo (una medida repetida
 cuenta una vez); el perfil vive como datos en `models/chibi_profile.yaml` del paquete del juego (40 bípedos, 13
-cuadrúpedos, 6 alados y 6 serpientes) y se lee con `parseChibiProfile`. Lo genera la prueba con contenido:
+cuadrúpedos, 6 alados y 11 serpientes) y se lee con `parseChibiProfile`. Lo genera la prueba con contenido:
 
 ```
 DWE_CONTENT=<contenido extraído> DWE_CHIBI_PROFILE_OUT=<paquete del juego>/models/chibi_profile.yaml \

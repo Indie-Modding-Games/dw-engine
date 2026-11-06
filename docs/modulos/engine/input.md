@@ -10,9 +10,13 @@ En el campo se corre por defecto, como en el original; `walk` (Mayúsculas, o en
 
 `defaultActionMap` trae también acciones de las vistas de desarrollo (`dwe-game --map`): `debug_time_day`, `debug_time_dusk` y `debug_time_night` (teclas 1, 2 y 3) cambian la hora del día del mapa y `debug_next_map` (N) pasa al siguiente mapa de la lista. `report_bug` (F12) guarda un [reporte de bug](../../guides/prueba-vertical.md#reportar-un-bug-f12) de la partida.
 
-`menu` (Tab, o el botón norte en el mando) abre el menú de pausa en el campo. **En batalla abre directamente la bolsa del domador** (lo que hoy se lanzaba con `cancel`): el mismo botón, misma acción, contexto distinto (docs/architecture/controles.md).
+`menu` (Tab, o el botón norte en el mando) abre el menú de pausa en el campo. **En batalla abre directamente la bolsa del domador** (antes se lanzaba con `cancel`): el mismo botón, misma acción, contexto distinto (docs/architecture/controles.md).
 
 `settings` (`Esc` o `F10` en teclado, Select/Back en el mando, que el original no usaba en el campo) abre el menú de
 pausa directamente en su página de opciones, también desde la pausa de Start, y la cierra si ya estaba abierto en ella
 ([opciones en partida](../apps/game.md#opciones-en-partida)). `Esc` vino del `cancel`, que pasó al par `Ctrl` (con
 `Retroceso`, el clic derecho y el Este del mando como estaba): ver [Controles](../../architecture/controles.md).
+
+Otras acciones del mapa por defecto: `pause` (P, Start en el mando), `world_map` (M o el botón superior izquierdo
+L1: abre el [mapa de la isla](../apps/game.md#mapa-de-la-isla)), `tab_previous` y `tab_next` (Q y E, L1 y R1) para pasar de
+pestaña en los menús y `debug_console` (`º` o F1) para la [consola de desarrollo](debug.md).
