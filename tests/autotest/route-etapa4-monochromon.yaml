@@ -57,7 +57,7 @@ steps:
       setting: {ui_skin: original}
       steps:
         - wait: {seconds: 1}
-        - tap: {key: escape}
+        - tap: {key: left_ctrl}
   - when:
       setting: {ui_skin: modern}
       steps:
@@ -99,7 +99,7 @@ steps:
       setting: {ui_skin: original}
       steps:
         - wait: {seconds: 1}
-        - tap: {key: escape}
+        - tap: {key: left_ctrl}
   - when:
       setting: {ui_skin: modern}
       steps:

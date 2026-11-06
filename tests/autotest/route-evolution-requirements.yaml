@@ -45,7 +45,7 @@ steps:
   - tap: {key: right}
   - wait: {seconds: 0.3}
   - screenshot: back
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.5}
   - menu: close
   - wait: {menu_open: false}
@@ -73,7 +73,7 @@ steps:
   - wait: {seconds: 0.3}
   - screenshot: fed-up
   - expect_text_fits: all
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.4}
   - menu: close
   - wait: {menu_open: false}
@@ -105,7 +105,7 @@ steps:
   - expect_text_fits: all
   - resize: [1280, 720]
   - wait: {seconds: 0.5}
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.4}
   - menu: close
   - wait: {menu_open: false}
@@ -145,7 +145,7 @@ steps:
   - wait: {seconds: 0.6}
   - screenshot: off
   - expect_text_fits: all
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.4}
   - menu: close
   - wait: {menu_open: false}

@@ -99,11 +99,11 @@ steps:
   - wait: {seconds: 0.3}
   - expect_setting: {trade.amount.value: "10"}
   - screenshot: trade-amount-most
-  # Cancel goes back to the list; Escape there says goodbye.
-  - tap: {key: escape}
+  # Cancel goes back to the list; cancel there says goodbye.
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.3}
   - expect_setting: {trade.phase: list}
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.5}
   - expect_setting: {trade.phase: farewell}
   - tap: {key: return}
@@ -142,5 +142,5 @@ steps:
   - wait: {seconds: 0.5}
   - expect_setting: {trade.phase: confirm}
   - screenshot: trade-single
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.3}

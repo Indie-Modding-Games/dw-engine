@@ -10,7 +10,7 @@ steps:
   - resize: [1280, 720]
   - screenshot: main-menu
   # The language is in the original look's options; right on it moves to the next language the packs have, and with
-  # two, a second press comes back. Escape goes back to the menu.
+  # two, a second press comes back. Cancel (Ctrl) goes back to the menu.
   - menu_select: options
   - tap: {key: right}
   - wait: {seconds: 0.5}
@@ -18,7 +18,7 @@ steps:
   - tap: {key: right}
   - wait: {seconds: 0.5}
   - screenshot: main-menu-back
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - menu_select: play
   - wait: {map: twna01, hidden: main_menu, seconds: 0.5}
   - screenshot: field

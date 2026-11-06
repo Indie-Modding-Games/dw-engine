@@ -91,7 +91,7 @@ steps:
   # The ruleset's partner type (virus) shows, not the table's empty one.
   - expect_setting: {partner.profile.type: 3}
   - screenshot: status-machinedramon
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}
   - menu: close
   - wait: {menu_open: false}
@@ -129,12 +129,12 @@ steps:
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: detail-myotismon
-        - tap: {key: escape}
+        - tap: {key: left_ctrl}
         - wait: {seconds: 0.4}
         - tap: {key: up}
         - wait: {seconds: 0.5}
         - screenshot: chart-back
-        - tap: {key: escape}
+        - tap: {key: left_ctrl}
         - wait: {seconds: 0.3}
         # With the canonical stages the four Megas fill the Mega box, and Phoenixmon and HerculesKabuterimon's places
         # in the Ultimate box take Myotismon: one page. Machinedramon shows its detail.
@@ -164,7 +164,7 @@ steps:
         - wait: {seconds: 0.6}
         - expect_text_fits: all
         - screenshot: detail-machinedramon
-        - tap: {key: escape}
+        - tap: {key: left_ctrl}
         - wait: {seconds: 0.4}
         - menu: close
         - wait: {menu_open: false}

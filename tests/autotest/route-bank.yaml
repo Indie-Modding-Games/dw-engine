@@ -3,8 +3,8 @@
 # player walks to the keeper Agumon's counter and confirms. The first confirm (no trigger 51) only greets (two pages,
 # and sets the trigger); a second confirm on the same cell writes the keeper's id 5 to variable 254 and calls routine
 # 11: the `item_keeper` screen asks (phase `ask`), takes the yes (phase `choice`, then `windows`), and moving one meat
-# with Enter grows `item_keeper.kept` while the bag's row shrinks. Escape says goodbye and closes. Needs --content
-# <extracted folder> --start room02 --new-game --seed 1.
+# with Enter grows `item_keeper.kept` while the bag's row shrinks. Cancel (Ctrl) says goodbye and closes. Needs
+# --content <extracted folder> --start room02 --new-game --seed 1.
 name: bank
 device: keyboard
 timeout: 180
@@ -54,7 +54,7 @@ steps:
   - screenshot: bank-moved-one
   # Cancel closes the windows (phase `farewell`); a press says goodbye and ends the visit. Once the visit is over the
   # screen publishes nothing more: the last `item_keeper.phase` stays "farewell".
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.5}
   - expect_setting: {item_keeper.phase: farewell}
   - screenshot: bank-farewell

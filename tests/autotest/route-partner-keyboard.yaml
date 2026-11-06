@@ -27,7 +27,7 @@ steps:
   - screenshot: partner-tech
   - tap: {key: left}
   - expect_setting: {has_class.partner_menu#tab-status.selected: "true"}
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}
   - menu: open
   - wait: {seconds: 0.6}
@@ -62,9 +62,9 @@ steps:
   # menu, which closes after it.
   - menu_select: confirm-no
   - wait: {seconds: 0.3}
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.3}
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}
   - menu: close
   - wait: {menu_open: false}

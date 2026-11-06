@@ -20,7 +20,7 @@ steps:
   - tap: {key: return}
   - wait: {seconds: 10}
   - screenshot: fishing
-  - repeat: {times: 6, steps: [{tap: {key: escape}}, {wait: {seconds: 1.5}}, {when: {shown: fishing_notice, steps: [{tap: {key: return}}]}}]}
+  - repeat: {times: 6, steps: [{tap: {key: left_ctrl}}, {wait: {seconds: 1.5}}, {when: {shown: fishing_notice, steps: [{tap: {key: return}}]}}]}
   - wait: {seconds: 3}
   - screenshot: after
   - walk_to: {trigger: 110, timeout: 180}

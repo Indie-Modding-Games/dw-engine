@@ -44,14 +44,14 @@ steps:
   # again from the player.
   - menu_select: options-back
   - menu_select: player-back
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {seconds: 0.6}
   - menu_select: open-partner
   - wait: {shown: partner_menu, seconds: 0.5}
   - screenshot: partner-status
   # The original look's partner entry holds the status and tech pages only, as the original's; the bag is the menu's
   # ITEM entry, which the menu shows again when the partner's page closes.
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}
   - menu: open
   # The menu's box takes no input until it is in place (tickUIBox).
@@ -67,7 +67,7 @@ steps:
   - menu_select: sort-0
   - wait: {seconds: 0.3}
   # The original look's bag has no tabs: cancel closes it, back to the menu, and the menu closes after it.
-  - tap: {key: escape}
+  - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}
   - menu: close
   - wait: {menu_open: false}
