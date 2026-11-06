@@ -183,6 +183,8 @@ La colisión: 0 es libre, cualquier valor con el bit `0x80` bloquea (`checkMapCo
 disparadores (`tamer.c: checkMapInteraction`): 51–79 llaman a un script al pisarlos, 80–109 al pulsar confirmar,
 110–119 son los warps (el 110 + i lleva por la salida i de este mapa a `target_map` / `target_exit`) y 120 llama a un
 script si el compañero tiene el bit 8 de `condition` (probablemente, que necesita el baño).
+Esas bandas son las del original; el motor las lee de `field/triggers` del paquete `game`, así que un paquete puede
+moverlas, y el campo, la capa de depuración del mapa y el editor de mapas usan las de la pila.
 En el US solo aparecen 0, 51–86, 110–116, 120 y 128.
 
 ### Destino de una salida
@@ -273,7 +275,11 @@ collision:
 
 Lo ven todos los que leen mapas, porque todos pasan por `loadMapDocument`: el campo del juego y la vista previa de
 mapas (`render::loadMapSceneData`), las pruebas de rutas y de la simulación y `dwx validate`, que comprueba cada parche contra su esquema (los de todos los paquetes, no solo el
-de arriba), lo aplica como el juego y busca los warps muertos del mapa ya parcheado. La regla de esquema
+de arriba), lo aplica como el juego y busca los warps muertos del mapa ya parcheado. El editor de mapas
+([mapper](../modulos/apps/mapper.md), en Rust) aplica los parches con las mismas reglas (`packages/rust/dwe-map`,
+con pruebas que repiten las del motor) y dice en su panel qué paquetes parchearon el mapa. En el juego que corre,
+`reload_map` del [canal de control](../guides/control-remoto.md#edición-de-mapas-en-vivo) vuelve a leer el mapa con
+sus parches, y la línea `field: entered ...` del log nombra los paquetes que lo parchearon. La regla de esquema
 `map_patch: [map/*/patch, map/*/*/patch]` la declara el paquete `game`; un mod que se valide sin él la declara en su
 `pack.yaml`, como hace con `map: [map/*/*/data]` para sus mapas.
 

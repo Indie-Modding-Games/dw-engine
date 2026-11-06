@@ -89,6 +89,16 @@ return {
 - Un parche que no carga (Lua que no compila, sin `script`, una sección fuera de 0–65535) se deja fuera con un error
   en el log y el juego usa la sección del script. `dwx validate` comprueba que el Lua compila.
 - Los números de sección son los del script: en el Lua generado aparecen como `[0x0051] = routines.at_...`.
+- Con el juego abierto y el [canal de control](../guides/control-remoto.md#edición-de-mapas-en-vivo), `reload_map`
+  hace que los módulos y los parches se vuelvan a leer de los paquetes en la siguiente sección que corra: un parche
+  nuevo o un `story/<n>.lua` editado valen sin reiniciar, y los disparadores, las variables y la sesión siguen igual.
+  No se recarga mientras corre una sección.
+- `dwx script-warps` ([warps de script](../architecture/warps-de-script.md#desde-el-lua)) aplica los parches igual
+  que el juego antes de sacar los cambios de mapa, así que un `story.warp_to` de un parche llega a
+  `field/script_warps`. El recorrido solo sigue lo que sabe leer: `original()` como en una subrutina
+  (`return original()`, o `if original() == ENDED then return ENDED end` y seguir), no guardado en una variable
+  (`local r = original()`). Un parche así corre bien en el juego, pero `dwx script-warps` falla y nombra el fichero
+  del parche y su línea.
 
 ## Nombres de disparadores y variables
 

@@ -232,12 +232,24 @@ dwx script-warps <carpeta de contenido> [--with <carpeta>]... [--rules <id>] [-o
 - **Comprobar y escribir.** Sin `-o` compara con el `field/script_warps` de los paquetes y dice la primera línea que
   difiere (código 1); con `-o` escribe el documento (por ejemplo en `field/script_warps.yaml` del mod, que gana al del
   paquete base). `data/new_game_story` no se vuelve a sacar.
+- **Parches de historia.** Antes del recorrido aplica los `story/patches/*.lua` de los paquetes
+  ([historia](../modding/historia.md)) como el juego (`session::StoryLuaHost`): de abajo arriba en la pila y por id
+  dentro de un paquete, y el de más arriba gana cada sección. `formats::script::readLuaPatch` lee cada parche y
+  `composeLuaPatches` lo une al módulo: cada sección parcheada pasa a ser una función `routines.patch_<sección>` del
+  módulo con el cuerpo del parche, y `original()` una llamada a la rutina de la sección original
+  (`story.ENDED`, `story.PLAYER` y `story.PARTNER` se leen como los locales del módulo). Un script que solo dan
+  parches se lee igual, sin módulo. El lector solo sigue `original()` como subrutina (`return original()` o
+  `if original() == ENDED then return ENDED end`); otro uso (`local r = original()`, `original` en una condición, un
+  local de arriba que no sea un nombre de `story`) es un **error con el fichero del parche y su línea**
+  (`mi_mod:story/patches/x.lua:4: ...`) y no se escribe nada: dejar el parche fuera daría los cambios de mapa de la
+  sección que el juego ya no corre. Las líneas del parche no tienen offset, así que los registros de un módulo
+  parcheado salen sin `offset` y una nota nombra los parches. Sin parches, el resultado no cambia.
 
 Con el paquete base del disco americano y el paquete del equipo, el Lua da `field/script_warps` **byte a byte**: los
 1870 registros de los 222 módulos (`MAPHEAD` y los 221 scripts). Sin los mapas de líneas sale lo mismo sin las
 líneas `offset`. Un test con `DWE_CONTENT` (`apps/dwx/tests/script_warps_command_tests.cpp`) lo comprueba; los demás
 usan Lua sintético (`packages/formats/tests/lua_reader_tests.cpp`: ida y vuelta con y sin mapa de líneas, un mapa de
-líneas viejo, módulos escritos a mano y los errores).
+líneas viejo, módulos escritos a mano, los parches de historia y los errores).
 
 ## En el motor (parte a)
 

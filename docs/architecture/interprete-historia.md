@@ -154,7 +154,9 @@ forma de sustituir **una sola sección** sin copiar el script entero ([Q2](#q2-u
     igual que sin parche; llamarla y seguir después (`local r = original() ... return r`) la mete un nivel más hondo,
     así que un `jump_to_file` dentro de ella vuelve al parche cuando la sección destino acaba, como una subrutina
     (`FileJump::linkDepth`).
-  - **Orden:** los parches se cargan una vez, al empezar la primera sección, de abajo arriba en la pila de paquetes
+  - **Orden:** los parches se cargan una vez, al empezar la primera sección (y otra vez tras un `reload_map` del
+    canal de control, `StoryLuaHost::reloadScripts`, que descarta módulos y parches cuando no corre ninguna
+    sección), de abajo arriba en la pila de paquetes
     (y por ID dentro de un paquete). Si dos parches traen la misma sección gana el que está más arriba y el log lo
     dice (`story patches: script 49 section 0x0051 runs B; A loses`). El `original` es siempre la sección del módulo,
     no la del parche que perdió: los parches no se encadenan.

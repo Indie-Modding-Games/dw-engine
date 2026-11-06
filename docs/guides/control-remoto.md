@@ -75,13 +75,20 @@ pide `reload_map` para ver el cambio en el juego que corre:
 1. `rescan`: la lista de ficheros de los packs montados se rehace, así que un fichero nuevo (un `map/<id>/data`
    que antes solo tenía el pack base) gana ya. Los packs y su orden no cambian: un pack nuevo pide reiniciar. Si
    un fichero no da un id válido (un temporal a medio escribir), falla y queda la lista anterior.
-2. Se vuelven a leer de los packs el documento del mapa actual, `field/script_warps`, `field/rules` y la tabla de
-   mapas (`data/maps`). Si el mapa ya no carga, o no tiene la salida pedida, falla antes de tocar nada.
+2. Se vuelven a leer de los packs el documento del mapa actual con sus parches (`map/<id>/patch`, ver
+   [Mapas](../formats/mapas.md)), `field/script_warps`, `field/rules` con las bandas de `field/triggers` y la tabla
+   de mapas (`data/maps`). Los módulos de historia (`story/<n>`) y sus parches (`story/patches/*`) se descartan y se
+   vuelven a leer de los packs en la siguiente sección que corra, así que un `story/<n>.lua` editado o un parche
+   nuevo valen desde la recarga ([Historia](../modding/historia.md)). Si el mapa ya no carga, o no tiene la salida
+   pedida, falla antes de tocar nada.
 3. Se vuelve a entrar en el mapa: sin `exit`, donde están el jugador y el compañero, sin fundido; con `exit`, por
    esa salida, como al cruzar una puerta. La historia, el inventario, el reloj y la sesión siguen igual: el juego
    hace lo mismo que al entrar en un mapa (corre la cabecera del script del mapa, que coloca sus NPCs).
 
-No se recarga durante una batalla ni en mitad de un cambio de mapa. De `field/rules`, los cambios de mapa, los
+No se recarga durante una batalla, en mitad de un cambio de mapa ni mientras corre una sección de historia (su
+corrutina corre en los módulos ya cargados; una sección que solo espera a empezar, como la de una casilla de pisar,
+empieza ya con los nuevos): la respuesta es un error y se puede pedir otra vez cuando acabe. La
+línea `field: entered ...` del log dice qué packs parchearon el mapa (`patched by <pack>, ...`). De `field/rules`, los cambios de mapa, los
 fundidos y las casillas de script usan los nuevos valores desde la recarga; lo que el campo construyó una vez con
 ellos (los NPCs, la distancia del compañero) espera a una partida nueva. Las otras partes que leen la tabla de
 mapas o los saltos de script por su cuenta (la música, el mapa de la isla) los leen al abrirse.
@@ -90,8 +97,9 @@ mapas o los saltos de script por su cuenta (la música, el mapa de la isla) los 
 
 Dibuja sobre el campo real, con la cámara del mapa:
 
-- La rejilla de colisión: paredes en rojo y casillas de disparo por banda: pisar (51-79) en amarillo, confirmar
-  (80-109) en cian, salidas (110-119) en verde, el retrete (120) en morado y otros valores en gris. Cada valor lleva
+- La rejilla de colisión: paredes en rojo y casillas de disparo por banda, con las bandas de `field/triggers` que usa
+  el campo (las del original si ningún pack lo cambia): pisar (51-79) en amarillo, confirmar (80-109) en cian,
+  salidas (110-119) en verde, el retrete (120) en morado y otros valores en gris. Cada valor lleva
   una etiqueta en el centro de sus casillas: `step 60`, `confirm 85`, `exit 2 -> <mapa>:<salida>`, `toilet`.
 - Las salidas del mapa: dónde deja cada una al jugador (`in <n>`) y hacia dónde mira.
 - Los NPCs del documento del mapa: su sitio y orientación con `npc <ranura> id <id de script>`, y sus puntos de ruta
@@ -120,5 +128,6 @@ devuelve solo las diferencias.
 - `apps/game/src/story_state_json.*`: el JSON de `story_state`.
 - `apps/game/src/map_debug_overlay.*`: las formas de la capa de depuración del mapa, que dibuja
   `debug::DebugUi::setShapes` (`packages/engine/debug/include/dwe/debug/overlay_shapes.hpp`).
-- `FieldScene::reloadMap`, `game::field::Field::reloadData` y `assets::VirtualFileSystem::rescan`: la recarga.
+- `PlaySession::reloadMap`, `FieldScene::reloadMap`, `game::field::Field::reloadData`,
+  `session::StoryLuaHost::reloadScripts` y `assets::VirtualFileSystem::rescan`: la recarga.
 - `apps/game/src/game.cpp`: une el canal al bucle del juego.

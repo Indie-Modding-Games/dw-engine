@@ -111,7 +111,8 @@ Los tests: `tests/export_images_tests.cpp`, con un contenido sintético.
 dwx script-warps <carpeta de contenido> [--with <carpeta de paquetes>]... [--rules <id>] [-o <archivo>]
 ```
 
-Vuelve a sacar `field/script_warps` del Lua de la historia de los paquetes (`story/<n>.lua` y su mapa de líneas), para
+Vuelve a sacar `field/script_warps` del Lua de la historia de los paquetes (`story/<n>.lua` y su mapa de líneas, con
+los parches `story/patches/*.lua` aplicados como en el juego), para
 que los cambios de mapa que un mod mueve en el Lua lleguen al campo. Detalles en
 [warps de script](../../architecture/warps-de-script.md#desde-el-lua).
 
@@ -119,7 +120,8 @@ que los cambios de mapa que un mod mueve en el Lua lleguen al campo. Detalles en
   `rules/<id>/bird_transport` (por defecto `original`, del paquete del equipo: `--with content/packs/game`).
 - Sin `-o` compara con el `field/script_warps` de los paquetes: código 0 si coinciden, 1 si no (dice la primera línea
   distinta). Con `-o` escribe el documento ahí.
-- Falla (código 2, sin escribir) si un módulo no se lee, con el módulo y la línea. Las notas dicen qué módulos no usan
+- Falla (código 2, sin escribir) si un módulo no se lee, con el módulo y la línea, o si un parche usa `original` de una
+  forma que el recorrido no sigue, con el fichero del parche y su línea. Las notas dicen qué módulos no usan
   su mapa de líneas (sus registros salen sin `offset`), qué mapas no se leen y si falta el ruleset del transporte.
 
 Los tests: `tests/script_warps_command_tests.cpp`, con un contenido sintético, y uno con `DWE_CONTENT` que comprueba
