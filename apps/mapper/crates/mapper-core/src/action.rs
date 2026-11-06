@@ -1,17 +1,24 @@
-//! Every change to what the editor shows goes through an [`Action`], so the interface, the command
-//! line, the live link and later the editing tools all change the model the same way (and an undo
-//! history can plug in here).
+//! Every change to the editor goes through an [`Action`], so the interface, the command line, the
+//! live link and the tests change the model the same way. The edits of the map document among
+//! them are recorded in the map's undo history ([`crate::edit`]).
 
+use std::path::PathBuf;
+
+use dwe_map::save::SaveMode;
+use dwe_map::{Npc, Warp};
 use dwe_pack::GameFolders;
 use glam::Vec2;
 
 use crate::browser::GroupBy;
 use crate::layers::Layer;
+use crate::tools::{Modifiers, Selection, Tool};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
     /// Mounts a content folder (with the team's packs and mods), as the game does.
     OpenContent(GameFolders),
+    /// Mounts the same content again, to see files written since (the map shown stays open).
+    ReloadContent,
     /// Shows a map, fitted to the canvas.
     OpenMap(String),
     /// Shows a map centred on where the player arrives through one of its exits.
@@ -42,4 +49,96 @@ pub enum Action {
     Click(Vec2),
     SetFilter(String),
     SetGroupBy(GroupBy),
+
+    // Editing.
+    SetTool(Tool),
+    /// The brush's side, in cells (1, 3 or 5).
+    SetBrushSize(i32),
+    /// The raw collision value the tools paint.
+    SetPaintValue(u8),
+    Select(Option<Selection>),
+    /// The primary button pressed on the canvas, with the tool chosen.
+    PointerDown {
+        at: Vec2,
+        modifiers: Modifiers,
+    },
+    /// The pointer moved with the button held.
+    PointerMove(Vec2),
+    /// The button released: the gesture ends (one undo step).
+    PointerUp,
+    /// The edits until [`Action::EndEdit`] are one undo step (a field dragged in the inspector).
+    BeginEdit,
+    EndEdit,
+    Undo,
+    Redo,
+    /// Replaces an exit's record (by its `exit`).
+    SetWarp(Warp),
+    /// Replaces an NPC slot.
+    SetNpc {
+        slot: usize,
+        npc: Npc,
+    },
+    /// Adds a walk at the end of an NPC's path: to the ground under a canvas point, or next to the
+    /// NPC.
+    AddWaypoint {
+        slot: usize,
+        at: Option<Vec2>,
+    },
+    RemoveWaypoint {
+        slot: usize,
+        part: usize,
+    },
+    /// Swaps a part of a path with the next one or the previous one.
+    MoveWaypoint {
+        slot: usize,
+        part: usize,
+        later: bool,
+    },
+    /// Turns the selected exit's arrival or NPC by an angle (4096 a turn).
+    Rotate(i32),
+    /// Removes the selected path point.
+    DeleteSelection,
+
+    // Saving.
+    /// The pack saves go to, by its folder.
+    SetTarget(Option<PathBuf>),
+    /// Creates a mod pack in a mods folder, mounts it and makes it the target.
+    CreateModPack {
+        folder: PathBuf,
+        id: String,
+    },
+    /// Saves the map into the target: as a patch, or as its whole data.
+    Save(SaveMode),
+    /// Whether a save makes a connected game read the map again.
+    SetReloadOnSave(bool),
+    /// Closes the editor (asks first when there are unsaved changes).
+    Quit,
+    /// Answers the unsaved-changes question about the action waiting for it.
+    Resolve(PendingChoice),
+}
+
+/// The answer to "there are unsaved changes".
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PendingChoice {
+    /// Saves as a patch, then goes on.
+    Save,
+    /// Drops the changes and goes on.
+    Discard,
+    /// Stays.
+    Cancel,
+}
+
+impl Action {
+    /// Whether the action leaves the map shown, so unsaved changes would be lost.
+    pub fn leaves_map(&self) -> bool {
+        matches!(
+            self,
+            Self::OpenContent(_)
+                | Self::ReloadContent
+                | Self::OpenMap(_)
+                | Self::OpenMapAtExit { .. }
+                | Self::Back
+                | Self::Quit
+        )
+    }
 }

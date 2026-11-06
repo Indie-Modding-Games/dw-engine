@@ -244,3 +244,350 @@ fn broken_bands_fall_back_to_the_original_with_a_message() {
     assert_eq!(mapper.bands, dwe_map::TriggerBands::default());
     assert!(matches!(mapper.messages.last(), Some(Message::Error(_))));
 }
+
+// Editing and saving.
+
+use dwe_map::save::{Problem, SaveMode};
+use dwe_map::world;
+use mapper_core::{Modifiers, PendingChoice, Selection, Tool};
+
+/// The canvas point over a cell's centre.
+fn canvas_of_cell(mapper: &Mapper, column: i32, row: i32) -> Vec2 {
+    let map = mapper.map.as_ref().unwrap();
+    let world = world::cell_center(dwe_map::Cell::new(column, row));
+    let pixel = map.camera.project_to_background(world).unwrap().pixel;
+    mapper.view.to_canvas(pixel)
+}
+
+/// The canvas point over an original position.
+fn canvas_of(mapper: &Mapper, x: i32, y: i32, z: i32) -> Vec2 {
+    let map = mapper.map.as_ref().unwrap();
+    let world = world::to_world(glam::IVec3::new(x, y, z));
+    let pixel = map.camera.project_to_background(world).unwrap().pixel;
+    mapper.view.to_canvas(pixel)
+}
+
+fn press(mapper: &mut Mapper, at: Vec2) {
+    mapper.apply(Action::PointerDown {
+        at,
+        modifiers: Modifiers::default(),
+    });
+}
+
+fn value(mapper: &Mapper, column: i32, row: i32) -> u8 {
+    mapper
+        .map
+        .as_ref()
+        .unwrap()
+        .document
+        .collision
+        .value(dwe_map::Cell::new(column, row))
+}
+
+fn editing(root: &Path) -> Mapper {
+    let mut mapper = opened(root);
+    mapper.apply(Action::OpenMap("area_a".into()));
+    mapper.apply(Action::SetLayer(Layer::Grid, false));
+    mapper
+}
+
+#[test]
+fn a_brush_stroke_is_one_undo_step() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut mapper = editing(dir.path());
+    mapper.apply(Action::SetTool(Tool::Brush));
+    mapper.apply(Action::SetPaintValue(128));
+    mapper.apply(Action::SetBrushSize(3));
+    let at = canvas_of_cell(&mapper, 20, 50);
+    press(&mut mapper, at);
+    let to = canvas_of_cell(&mapper, 26, 50);
+    mapper.apply(Action::PointerMove(to));
+    mapper.apply(Action::PointerUp);
+    for column in 19..=27 {
+        assert_eq!(value(&mapper, column, 49), 128, "column {column}");
+        assert_eq!(value(&mapper, column, 51), 128, "column {column}");
+    }
+    assert!(mapper.is_dirty());
+    let walls = mapper.map.as_ref().unwrap().overlay.cells.len();
+    assert_eq!(walls, 103 + 27);
+    mapper.apply(Action::Undo);
+    assert_eq!(value(&mapper, 22, 50), 0);
+    assert!(!mapper.is_dirty());
+    assert_eq!(mapper.map.as_ref().unwrap().overlay.cells.len(), 103);
+    mapper.apply(Action::Redo);
+    assert_eq!(value(&mapper, 22, 50), 128);
+}
+
+#[test]
+fn rectangle_fill_and_eyedropper() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut mapper = editing(dir.path());
+    // The eyedropper takes the exit's trigger.
+    mapper.apply(Action::SetTool(Tool::Eyedropper));
+    let at = canvas_of_cell(&mapper, 50, 50);
+    press(&mut mapper, at);
+    assert_eq!(mapper.paint_value, 110);
+    mapper.apply(Action::SetTool(Tool::Rectangle));
+    mapper.apply(Action::SetPaintValue(51));
+    let at = canvas_of_cell(&mapper, 10, 60);
+    press(&mut mapper, at);
+    mapper.apply(Action::PointerMove(canvas_of_cell(&mapper, 12, 61)));
+    assert_eq!(
+        value(&mapper, 10, 60),
+        0,
+        "nothing is painted until the release"
+    );
+    mapper.apply(Action::PointerUp);
+    assert_eq!(value(&mapper, 12, 61), 51);
+    assert_eq!(value(&mapper, 13, 61), 0);
+    // A fill of the free floor stops at the walls of row 0 and the triggers.
+    mapper.apply(Action::SetTool(Tool::Fill));
+    mapper.apply(Action::SetPaintValue(0x81));
+    let at = canvas_of_cell(&mapper, 30, 30);
+    press(&mut mapper, at);
+    mapper.apply(Action::PointerUp);
+    assert_eq!(value(&mapper, 90, 90), 0x81);
+    assert_eq!(value(&mapper, 50, 50), 110);
+    assert_eq!(value(&mapper, 10, 60), 51);
+    // Alt with a painting tool also takes the value.
+    let at = canvas_of_cell(&mapper, 51, 50);
+    mapper.apply(Action::PointerDown {
+        at,
+        modifiers: Modifiers {
+            alt: true,
+            ..Modifiers::default()
+        },
+    });
+    assert_eq!(mapper.paint_value, 110);
+    mapper.apply(Action::Undo);
+    mapper.apply(Action::Undo);
+    assert!(!mapper.is_dirty());
+}
+
+#[test]
+fn dragging_an_npc_moves_it_and_shift_turns_it() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut mapper = editing(dir.path());
+    mapper.apply(Action::SetTool(Tool::Select));
+    let at = canvas_of(&mapper, 100, 0, 100);
+    press(&mut mapper, at);
+    assert_eq!(mapper.selection, Some(Selection::Npc(0)));
+    mapper.apply(Action::PointerMove(canvas_of(&mapper, 500, 0, -700)));
+    mapper.apply(Action::PointerMove(canvas_of(&mapper, 600, 0, -800)));
+    mapper.apply(Action::PointerUp);
+    let npc = &mapper.map.as_ref().unwrap().document.npcs[0];
+    assert!((npc.position.x - 600).abs() <= 2, "{:?}", npc.position);
+    assert!((npc.position.z + 800).abs() <= 2, "{:?}", npc.position);
+    mapper.apply(Action::Undo);
+    assert_eq!(
+        mapper.map.as_ref().unwrap().document.npcs[0].position.x,
+        100
+    );
+    assert!(!mapper.is_dirty());
+    // Shift-drag towards the original's -X: rotation 1024.
+    let at = canvas_of(&mapper, 100, 0, 100);
+    press(&mut mapper, at);
+    let at = canvas_of(&mapper, 100, 0, 100);
+    mapper.apply(Action::PointerDown {
+        at,
+        modifiers: Modifiers {
+            shift: true,
+            ..Modifiers::default()
+        },
+    });
+    mapper.apply(Action::PointerMove(canvas_of(&mapper, -900, 0, 100)));
+    mapper.apply(Action::PointerUp);
+    let rotation = mapper.map.as_ref().unwrap().document.npcs[0].rotation.y;
+    assert!((rotation - 1024).abs() <= 8, "{rotation}");
+    // Q/E turn by a fixed angle.
+    mapper.apply(Action::Rotate(512));
+    let rotation_after = mapper.map.as_ref().unwrap().document.npcs[0].rotation.y;
+    assert_eq!(rotation_after, (rotation + 512) % 4096);
+}
+
+#[test]
+fn exits_change_their_target_and_their_arrival() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut mapper = editing(dir.path());
+    // A click on an exit cell selects the exit; Ctrl+click follows it.
+    let at = canvas_of_cell(&mapper, 51, 50);
+    press(&mut mapper, at);
+    mapper.apply(Action::PointerUp);
+    assert_eq!(mapper.selection, Some(Selection::Exit(0)));
+    let mut warp = mapper.map.as_ref().unwrap().document.warps[1].clone();
+    warp.target_map_id = Some("area_b".into());
+    warp.target_map = 1;
+    warp.target_exit = 0;
+    mapper.apply(Action::SetWarp(warp));
+    let map = mapper.map.as_ref().unwrap();
+    assert_eq!(
+        map.overlay.exits[1].target,
+        ExitTarget::Map {
+            id: "area_b".into(),
+            exit: 0
+        }
+    );
+    // Its arrival marker drags.
+    let at = canvas_of(&mapper, 400, 0, 200);
+    press(&mut mapper, at);
+    assert_eq!(mapper.selection, Some(Selection::Exit(1)));
+    mapper.apply(Action::PointerMove(canvas_of(&mapper, -300, 0, 200)));
+    mapper.apply(Action::PointerUp);
+    let spawn = mapper.map.as_ref().unwrap().document.warps[1].spawn;
+    assert!((spawn.x + 300).abs() <= 2, "{spawn:?}");
+    let ctrl = Modifiers {
+        ctrl: true,
+        ..Modifiers::default()
+    };
+    // Leaving the map with changes asks first.
+    let at = canvas_of_cell(&mapper, 50, 50);
+    mapper.apply(Action::PointerDown {
+        at,
+        modifiers: ctrl,
+    });
+    assert!(mapper.pending.is_some());
+    assert_eq!(mapper.map.as_ref().unwrap().document.id, "area_a");
+    mapper.apply(Action::Resolve(PendingChoice::Cancel));
+    assert!(mapper.pending.is_none());
+    assert_eq!(mapper.map.as_ref().unwrap().document.id, "area_a");
+    mapper.apply(Action::OpenMap("area_b".into()));
+    mapper.apply(Action::Resolve(PendingChoice::Discard));
+    assert_eq!(mapper.map.as_ref().unwrap().document.id, "area_b");
+    assert!(!mapper.is_dirty());
+}
+
+#[test]
+fn path_points_add_move_and_go() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut mapper = editing(dir.path());
+    let at = canvas_of(&mapper, -500, 0, 300);
+    mapper.apply(Action::AddWaypoint {
+        slot: 0,
+        at: Some(at),
+    });
+    mapper.apply(Action::AddWaypoint { slot: 0, at: None });
+    let npc = mapper.map.as_ref().unwrap().document.npcs[0].clone();
+    assert_eq!(npc.ai_sections, [1, 1, -1, -1, -1, -1, -1, -1]);
+    assert_eq!(npc.waypoints.len(), 2);
+    assert!((npc.waypoints[0].x + 500).abs() <= 2);
+    assert_eq!(npc.waypoints[1].x, 300);
+    assert_eq!(
+        mapper.selection,
+        Some(Selection::Waypoint { slot: 0, part: 1 })
+    );
+    assert_eq!(mapper.map.as_ref().unwrap().overlay.npcs[0].parts, [0, 1]);
+    // A point drags.
+    let at = canvas_of(&mapper, 300, 0, 100);
+    press(&mut mapper, at);
+    assert_eq!(
+        mapper.selection,
+        Some(Selection::Waypoint { slot: 0, part: 1 })
+    );
+    mapper.apply(Action::PointerMove(canvas_of(&mapper, 300, 0, 900)));
+    mapper.apply(Action::PointerUp);
+    let z = mapper.map.as_ref().unwrap().document.npcs[0].waypoints[1].z;
+    assert!((z - 900).abs() <= 2, "{z}");
+    mapper.apply(Action::MoveWaypoint {
+        slot: 0,
+        part: 1,
+        later: false,
+    });
+    let npc = &mapper.map.as_ref().unwrap().document.npcs[0];
+    assert!((npc.waypoints[0].z - 900).abs() <= 2);
+    assert_eq!(
+        mapper.selection,
+        Some(Selection::Waypoint { slot: 0, part: 0 })
+    );
+    mapper.apply(Action::DeleteSelection);
+    let npc = &mapper.map.as_ref().unwrap().document.npcs[0];
+    assert_eq!(npc.ai_sections, [1, -1, -1, -1, -1, -1, -1, -1]);
+    assert_eq!(npc.waypoints.len(), 1);
+    for _ in 0..5 {
+        mapper.apply(Action::Undo);
+    }
+    assert!(!mapper.is_dirty());
+}
+
+#[test]
+fn saves_a_patch_into_a_new_mod_pack_and_reads_it_back() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut mapper = editing(dir.path());
+    // Only mods (and the team pack of a checkout) are targets: never the base.
+    assert!(mapper.targets().is_empty());
+    mapper.apply(Action::SetPaintValue(128));
+    mapper.apply(Action::SetTool(Tool::Brush));
+    let at = canvas_of_cell(&mapper, 30, 40);
+    press(&mut mapper, at);
+    mapper.apply(Action::PointerUp);
+    assert!(!mapper.save(SaveMode::Patch));
+    assert!(matches!(mapper.messages.last(), Some(Message::Error(_))));
+
+    let mods = dir.path().join("mods");
+    std::fs::create_dir_all(&mods).unwrap();
+    mapper.apply(Action::CreateModPack {
+        folder: mods.clone(),
+        id: "my_maps".into(),
+    });
+    assert!(mapper.is_dirty(), "creating the pack keeps the edits");
+    let target = mapper.current_target().expect("the new pack is the target");
+    assert_eq!(target.root, mods.join("my_maps"));
+    let mut warp = mapper.map.as_ref().unwrap().document.warps[0].clone();
+    warp.target_exit = 0;
+    mapper.apply(Action::SetWarp(warp));
+    mapper.apply(Action::Save(SaveMode::Patch));
+    assert!(
+        mapper.save_problems.is_empty(),
+        "{:?}",
+        mapper.save_problems
+    );
+    assert!(!mapper.is_dirty());
+    assert_eq!(mapper.saves, 1);
+    let patch = std::fs::read_to_string(mods.join("my_maps/map/area_a/patch.yaml")).unwrap();
+    assert_eq!(
+        patch,
+        "warps:\n- exit: 0\n  target_exit: 0\ncollision:\n  cells:\n  - column: 30\n    row: 40\n    value: 128\n"
+    );
+    // The content was mounted again: the map comes from the packs with the patch.
+    let map = mapper.map.as_ref().unwrap();
+    assert_eq!(map.loaded.patches, ["my_maps"]);
+    assert_eq!(map.loaded.collision.value(dwe_map::Cell::new(30, 40)), 128);
+    assert_eq!(map.loaded.to_tree(), map.document.to_tree());
+    // The base is untouched.
+    let base =
+        std::fs::read_to_string(dir.path().join("content/base/map/area_a/data.yaml")).unwrap();
+    assert_eq!(base, map_yaml("area_b", 1));
+
+    // A dead warp is refused and nothing is written.
+    mapper.apply(Action::SetPaintValue(111));
+    let at = canvas_of_cell(&mapper, 60, 60);
+    press(&mut mapper, at);
+    mapper.apply(Action::PointerUp);
+    mapper.apply(Action::Save(SaveMode::Patch));
+    assert_eq!(mapper.save_problems, [Problem::DeadExit { exit: 1 }]);
+    assert!(mapper.is_dirty());
+    // Undoing back to the saved map and saving keeps the patch as it was.
+    mapper.apply(Action::Undo);
+    assert!(!mapper.is_dirty());
+}
+
+#[test]
+fn the_target_is_remembered() {
+    let dir = tempfile::tempdir().unwrap();
+    let settings = dir.path().join("settings/settings.yaml");
+    let mods = dir.path().join("mods");
+    std::fs::create_dir_all(&mods).unwrap();
+    let mut mapper = Mapper::with_settings(settings.clone());
+    mapper.apply(Action::OpenContent(content(dir.path())));
+    mapper.apply(Action::CreateModPack {
+        folder: mods.clone(),
+        id: "mine".into(),
+    });
+    assert_eq!(mapper.current_target().unwrap().id, "mine");
+    mapper.apply(Action::SetReloadOnSave(false));
+    let mut again = Mapper::with_settings(settings);
+    assert!(!again.reload_on_save());
+    let mut folders = content(dir.path());
+    folders.mods.push(mods.clone());
+    again.apply(Action::OpenContent(folders));
+    assert_eq!(again.current_target().unwrap().root, mods.join("mine"));
+}

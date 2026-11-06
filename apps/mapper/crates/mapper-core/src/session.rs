@@ -3,19 +3,29 @@
 
 use std::path::PathBuf;
 
+use dwe_map::document::RawVec3;
+use dwe_map::save::{Problem, SaveMode, plan_save, write_changes};
 use dwe_map::world::{self, Cell};
 use dwe_map::{
-    Background, CellKind, MapCamera, MapDocument, MapEntry, MapTable, StoryNames, TriggerBand,
-    TriggerBands,
+    Background, CellKind, MapCamera, MapDocument, MapEntry, MapTable, Npc, StoryNames, TriggerBand,
+    TriggerBands, Warp,
 };
 use dwe_pack::{GameContent, GameFolders, Vfs};
 use glam::{Vec2, Vec3};
 
-use crate::action::Action;
+use crate::action::{Action, PendingChoice};
 use crate::browser::{GroupBy, MapGroup, group_maps};
-use crate::layers::LayerSet;
+use crate::edit::{CellChange, Edit, History};
+use crate::layers::{Layer, LayerSet};
 use crate::overlay::MapOverlay;
+use crate::targets::{SaveTarget, Settings, create_mod_pack, writable_targets};
+use crate::tools::{self, Drag, Modifiers, Selection, Tool};
 use crate::view::View;
+
+/// How near a marker the pointer picks it, in canvas pixels.
+const PICK_RADIUS: f32 = 10.0;
+/// How far from its NPC a new path point goes when no point is given, in world units.
+const NEW_POINT_OFFSET: i32 = 200;
 
 /// The mounted content and its map table.
 #[derive(Debug)]
@@ -46,10 +56,14 @@ impl Content {
     }
 }
 
-/// The map shown.
+/// The map shown and edited.
 #[derive(Debug)]
 pub struct OpenMap {
+    /// The map as edited.
     pub document: MapDocument,
+    /// The map as the stack gave it when it was opened or saved last: what a save compares with.
+    pub loaded: MapDocument,
+    pub history: History,
     pub entry: Option<MapEntry>,
     pub camera: MapCamera,
     pub overlay: MapOverlay,
@@ -59,6 +73,11 @@ pub struct OpenMap {
 impl OpenMap {
     pub fn background_size(&self) -> Vec2 {
         self.camera.desc().background_size
+    }
+
+    /// Whether the map has changes not saved.
+    pub fn is_dirty(&self) -> bool {
+        self.history.is_dirty()
     }
 }
 
@@ -108,19 +127,68 @@ pub struct Mapper {
     /// Grows whenever the map or its background changes, so the interface knows when to load
     /// the background image again.
     pub revision: u64,
+
+    pub tool: Tool,
+    /// The brush's side in cells.
+    pub brush_size: i32,
+    /// The raw collision value the tools paint.
+    pub paint_value: u8,
+    pub selection: Option<Selection>,
+    /// The gesture in progress on the canvas.
+    pub drag: Option<Drag>,
+    /// The folder of the pack saves go to.
+    pub target: Option<PathBuf>,
+    /// What a save found last (errors stop it).
+    pub save_problems: Vec<Problem>,
+    /// Grows with every save written, so the interface can ask a connected game to reload.
+    pub saves: u64,
+    /// An action that waits for an answer about unsaved changes.
+    pub pending: Option<Box<Action>>,
+    /// Set when the editor may close.
+    pub quit: bool,
+    pub settings: Settings,
+    /// Where the settings are kept; None keeps them in memory (the tests).
+    pub settings_file: Option<PathBuf>,
 }
 
 impl Mapper {
     pub fn new() -> Self {
         Self {
             variant: "day".to_owned(),
+            brush_size: 1,
+            paint_value: tools::WALL,
             ..Self::default()
         }
     }
 
+    /// An editor that keeps its settings in a file.
+    pub fn with_settings(file: PathBuf) -> Self {
+        let settings = Settings::load(&file);
+        Self {
+            settings,
+            settings_file: Some(file),
+            ..Self::new()
+        }
+    }
+
+    /// Whether the map shown has changes not saved.
+    pub fn is_dirty(&self) -> bool {
+        self.map.as_ref().is_some_and(OpenMap::is_dirty)
+    }
+
+    /// Whether a save makes a connected game read the map again (on unless turned off).
+    pub fn reload_on_save(&self) -> bool {
+        self.settings.reload_on_save.unwrap_or(true)
+    }
+
     pub fn apply(&mut self, action: Action) {
+        if action.leaves_map() && self.is_dirty() && !self.reopens_shown_map(&action) {
+            self.pending = Some(Box::new(action));
+            return;
+        }
         match action {
             Action::OpenContent(folders) => self.open_content(folders),
+            Action::ReloadContent => self.reload_content(false),
             Action::OpenMap(id) => {
                 if self.open_map(&id) {
                     self.fit();
@@ -158,7 +226,107 @@ impl Mapper {
             }
             Action::SetFilter(filter) => self.filter = filter,
             Action::SetGroupBy(group_by) => self.group_by = group_by,
+            Action::SetTool(tool) => {
+                self.tool = tool;
+                self.drag = None;
+            }
+            Action::SetBrushSize(size) => self.brush_size = size.clamp(1, 5),
+            Action::SetPaintValue(value) => self.paint_value = value,
+            Action::Select(selection) => self.selection = selection,
+            Action::PointerDown { at, modifiers } => self.pointer_down(at, modifiers),
+            Action::PointerMove(at) => self.pointer_move(at),
+            Action::PointerUp => self.pointer_up(),
+            Action::BeginEdit => {
+                if let Some(map) = &mut self.map {
+                    map.history.begin_group();
+                }
+            }
+            Action::EndEdit => {
+                if let Some(map) = &mut self.map {
+                    map.history.end_group();
+                }
+            }
+            Action::Undo => self.step_history(true),
+            Action::Redo => self.step_history(false),
+            Action::SetWarp(warp) => self.set_warp(warp),
+            Action::SetNpc { slot, npc } => self.set_npc(slot, npc),
+            Action::AddWaypoint { slot, at } => self.add_waypoint(slot, at),
+            Action::RemoveWaypoint { slot, part } => {
+                self.edit_path(slot, |npc| tools::remove_part(npc, part));
+                self.selection = Some(Selection::Npc(slot));
+            }
+            Action::MoveWaypoint { slot, part, later } => {
+                if self.edit_path(slot, |npc| tools::move_part(npc, part, later)) {
+                    let part = if later {
+                        part + 1
+                    } else {
+                        part.saturating_sub(1)
+                    };
+                    self.selection = Some(Selection::Waypoint { slot, part });
+                }
+            }
+            Action::Rotate(angle) => self.rotate(angle),
+            Action::DeleteSelection => {
+                if let Some(Selection::Waypoint { slot, part }) = self.selection {
+                    self.apply(Action::RemoveWaypoint { slot, part });
+                }
+            }
+            Action::SetTarget(root) => self.set_target(root),
+            Action::CreateModPack { folder, id } => self.create_mod_pack(&folder, &id),
+            Action::Save(mode) => {
+                self.save(mode);
+            }
+            Action::SetReloadOnSave(on) => {
+                self.settings.reload_on_save = Some(on);
+                self.store_settings();
+            }
+            Action::Quit => self.quit = true,
+            Action::Resolve(choice) => self.resolve(choice),
         }
+    }
+
+    /// Whether an action only opens the map already shown again (nothing is lost).
+    fn reopens_shown_map(&self, action: &Action) -> bool {
+        let shown = self.map.as_ref().map(|map| map.document.id.as_str());
+        matches!(action, Action::OpenMap(id) if Some(id.as_str()) == shown)
+    }
+
+    /// Answers the question about unsaved changes and runs the action that waited, unless the
+    /// save failed or the answer was to stay.
+    fn resolve(&mut self, choice: PendingChoice) {
+        let Some(action) = self.pending.take() else {
+            return;
+        };
+        match choice {
+            PendingChoice::Cancel => return,
+            PendingChoice::Save => {
+                if !self.save(SaveMode::Patch) {
+                    return;
+                }
+            }
+            PendingChoice::Discard => {
+                if let Some(map) = &mut self.map {
+                    map.history.mark_clean();
+                }
+            }
+        }
+        self.apply(*action);
+    }
+
+    /// The packs saves may go to.
+    pub fn targets(&self) -> Vec<SaveTarget> {
+        self.content
+            .as_ref()
+            .map(writable_targets)
+            .unwrap_or_default()
+    }
+
+    /// The target pack, when it is one of the packs saves may go to.
+    pub fn current_target(&self) -> Option<SaveTarget> {
+        let root = self.target.as_ref()?;
+        self.targets()
+            .into_iter()
+            .find(|target| &target.root == root)
     }
 
     /// The browser's groups for the current filter.
@@ -222,7 +390,15 @@ impl Mapper {
                 self.map = None;
                 self.history.clear();
                 self.hover = None;
+                self.selection = None;
+                self.drag = None;
                 self.revision += 1;
+                if self.current_target().is_none() {
+                    self.target = self.settings.last_target.clone();
+                    if self.current_target().is_none() {
+                        self.target = None;
+                    }
+                }
             }
             Err(error) => self.messages.push(Message::Error(error)),
         }
@@ -262,13 +438,17 @@ impl Mapper {
         );
         let backgrounds = dwe_map::backgrounds(content.vfs(), id);
         self.map = Some(OpenMap {
+            loaded: document.clone(),
             document,
+            history: History::default(),
             entry,
             camera,
             overlay,
             backgrounds,
         });
         self.hover = None;
+        self.selection = None;
+        self.drag = None;
         self.revision += 1;
         true
     }
@@ -336,5 +516,500 @@ impl Mapper {
         map.overlay
             .exit_at(hover.value, &self.bands)
             .map(|mark| mark.exit)
+    }
+
+    /// Mounts the content again and opens the map shown again at the same view. With
+    /// `keep_edits` the document and its history stay (after a save, whose files the new mount
+    /// reads); without, the map is read again from the packs.
+    fn reload_content(&mut self, keep_edits: bool) {
+        let Some(folders) = self.content.as_ref().map(|content| content.folders.clone()) else {
+            return;
+        };
+        let shown = self.map.take();
+        let (view, history, selection) = (self.view, self.history.clone(), self.selection);
+        self.open_content(folders);
+        let Some(shown) = shown else { return };
+        if !self.load_map(&shown.document.id) {
+            return;
+        }
+        self.view = view;
+        self.history = history;
+        if let Some(map) = &mut self.map
+            && keep_edits
+        {
+            map.document = shown.document;
+            map.history = shown.history;
+            self.selection = selection;
+        }
+        self.refresh_overlay();
+    }
+
+    /// Builds the layers again after the document changed.
+    fn refresh_overlay(&mut self) {
+        let (Some(content), Some(map)) = (&self.content, &mut self.map) else {
+            return;
+        };
+        map.overlay = MapOverlay::build(
+            &map.document,
+            map.entry.as_ref(),
+            &content.table,
+            &map.camera,
+            &self.bands,
+        );
+    }
+
+    /// Applies an edit to the map shown and records it; false when it changed nothing.
+    fn record(&mut self, edit: Edit) -> bool {
+        let Some(map) = &mut self.map else {
+            return false;
+        };
+        let recorded = map.history.record(&mut map.document, edit);
+        if recorded {
+            self.refresh_overlay();
+        }
+        recorded
+    }
+
+    fn step_history(&mut self, undo: bool) {
+        self.drag = None;
+        let Some(map) = &mut self.map else { return };
+        let stepped = if undo {
+            map.history.undo(&mut map.document)
+        } else {
+            map.history.redo(&mut map.document)
+        };
+        if stepped {
+            self.refresh_overlay();
+        }
+    }
+
+    /// Paints the paint value on cells.
+    fn paint(&mut self, cells: &[Cell]) {
+        let Some(map) = &self.map else { return };
+        let value = self.paint_value;
+        let changes = cells
+            .iter()
+            .filter(|cell| cell.is_inside())
+            .map(|&cell| CellChange {
+                cell,
+                before: map.document.collision.value(cell),
+                after: value,
+            })
+            .collect();
+        self.record(Edit::Cells(changes));
+    }
+
+    fn pointer_down(&mut self, at: Vec2, modifiers: Modifiers) {
+        self.drag = None;
+        let Some(hover) = self.hover_at(at) else {
+            return;
+        };
+        let cell = hover.cell;
+        let take_value = self.tool == Tool::Eyedropper || (self.tool.paints() && modifiers.alt);
+        if take_value {
+            if cell.is_inside() {
+                self.paint_value = hover.value;
+            }
+            return;
+        }
+        match self.tool {
+            Tool::Brush => {
+                if let Some(map) = &mut self.map {
+                    map.history.begin_group();
+                }
+                self.paint(&tools::brush_cells(cell, self.brush_size));
+                self.drag = Some(Drag::Stroke { last: cell });
+            }
+            Tool::Rectangle => {
+                self.drag = Some(Drag::Rectangle {
+                    from: cell,
+                    to: cell,
+                });
+            }
+            Tool::Fill => {
+                let Some(map) = &self.map else { return };
+                let collision = &map.document.collision;
+                let cells = tools::fill_cells(|cell| collision.value(cell), cell);
+                self.paint(&cells);
+            }
+            Tool::Eyedropper => {}
+            Tool::Select => {
+                if modifiers.ctrl {
+                    if let Some(exit) = self.exit_under(at) {
+                        self.follow_exit(exit);
+                    }
+                    return;
+                }
+                let picked = self.pick(at);
+                self.selection = picked.map(|(selection, _)| selection);
+                self.drag = Some(match picked {
+                    Some((selection, true)) => {
+                        if let Some(map) = &mut self.map {
+                            map.history.begin_group();
+                        }
+                        if modifiers.shift {
+                            Drag::Turn(selection)
+                        } else {
+                            Drag::Move(selection)
+                        }
+                    }
+                    _ => Drag::Pan { last: at },
+                });
+            }
+        }
+    }
+
+    fn pointer_move(&mut self, at: Vec2) {
+        let Some(drag) = self.drag else { return };
+        match drag {
+            Drag::Pan { last } => {
+                self.view.pan(at - last);
+                self.drag = Some(Drag::Pan { last: at });
+            }
+            Drag::Stroke { last } => {
+                let Some(hover) = self.hover_at(at) else {
+                    return;
+                };
+                let cells: Vec<Cell> = tools::line_cells(last, hover.cell)
+                    .into_iter()
+                    .flat_map(|cell| tools::brush_cells(cell, self.brush_size))
+                    .collect();
+                self.paint(&cells);
+                self.drag = Some(Drag::Stroke { last: hover.cell });
+            }
+            Drag::Rectangle { from, .. } => {
+                if let Some(hover) = self.hover_at(at) {
+                    self.drag = Some(Drag::Rectangle {
+                        from,
+                        to: hover.cell,
+                    });
+                }
+            }
+            Drag::Move(selection) => self.move_selection(selection, at),
+            Drag::Turn(selection) => self.turn_selection(selection, at),
+        }
+    }
+
+    fn pointer_up(&mut self) {
+        let drag = self.drag.take();
+        if let Some(Drag::Rectangle { from, to }) = drag {
+            self.paint(&tools::rectangle_cells(from, to));
+        }
+        if let Some(map) = &mut self.map {
+            map.history.end_group();
+        }
+    }
+
+    /// The marker under a canvas point: a path point, an NPC or an exit's arrival (those whose
+    /// layer is shown), which a drag moves; else the exit whose trigger cell is there.
+    fn pick(&self, at: Vec2) -> Option<(Selection, bool)> {
+        let map = self.map.as_ref()?;
+        let near = |background: Vec2| self.view.to_canvas(background).distance(at) <= PICK_RADIUS;
+        if self.layers.shows(Layer::Waypoints) {
+            for npc in &map.overlay.npcs {
+                for (&point, &part) in npc.waypoints.iter().zip(&npc.parts) {
+                    if near(point) {
+                        let selection = Selection::Waypoint {
+                            slot: npc.slot,
+                            part,
+                        };
+                        return Some((selection, true));
+                    }
+                }
+            }
+        }
+        if self.layers.shows(Layer::Npcs) {
+            for npc in &map.overlay.npcs {
+                if npc.position.is_some_and(|arrow| near(arrow.from)) {
+                    return Some((Selection::Npc(npc.slot), true));
+                }
+            }
+        }
+        if self.layers.shows(Layer::Exits) {
+            for exit in map.overlay.exits.iter().filter(|exit| exit.is_used()) {
+                if exit.arrival.is_some_and(|arrow| near(arrow.from)) {
+                    return Some((Selection::Exit(exit.exit), true));
+                }
+            }
+        }
+        self.exit_under(at)
+            .map(|exit| (Selection::Exit(exit), false))
+    }
+
+    /// The original position of what a selection names.
+    fn position_of(&self, selection: Selection) -> Option<RawVec3> {
+        let document = &self.map.as_ref()?.document;
+        match selection {
+            Selection::Exit(exit) => document.warp(exit).map(|warp| warp.spawn),
+            Selection::Npc(slot) => document.npcs.get(slot).map(|npc| npc.position),
+            Selection::Waypoint { slot, part } => document
+                .npcs
+                .get(slot)
+                .and_then(|npc| npc.waypoints.get(part).copied()),
+        }
+    }
+
+    /// The point of the ground under a canvas point at the height of an original position, in
+    /// the original's axes.
+    fn ground_under(&self, at: Vec2, height_of: RawVec3) -> Option<RawVec3> {
+        let map = self.map.as_ref()?;
+        let height = world::to_world(height_of.into()).y;
+        let ground = map
+            .camera
+            .ground_at_background(self.view.to_background(at), height)?;
+        let original = world::from_original_axes(ground);
+        Some(RawVec3 {
+            x: original.x.round() as i32,
+            y: height_of.y,
+            z: original.z.round() as i32,
+        })
+    }
+
+    fn move_selection(&mut self, selection: Selection, at: Vec2) {
+        let Some(position) = self.position_of(selection) else {
+            return;
+        };
+        let Some(point) = self.ground_under(at, position) else {
+            return;
+        };
+        let Some(map) = &self.map else { return };
+        match selection {
+            Selection::Exit(exit) => {
+                if let Some(warp) = map.document.warp(exit) {
+                    let mut warp = warp.clone();
+                    warp.spawn = point;
+                    self.set_warp(warp);
+                }
+            }
+            Selection::Npc(slot) => {
+                if let Some(npc) = map.document.npcs.get(slot) {
+                    let mut npc = npc.clone();
+                    npc.position = point;
+                    self.set_npc(slot, npc);
+                }
+            }
+            Selection::Waypoint { slot, part } => {
+                if let Some(npc) = map.document.npcs.get(slot) {
+                    let mut npc = npc.clone();
+                    if let Some(waypoint) = npc.waypoints.get_mut(part) {
+                        *waypoint = point;
+                        self.set_npc(slot, npc);
+                    }
+                }
+            }
+        }
+    }
+
+    /// Turns an exit's arrival or an NPC to face the ground under a canvas point.
+    fn turn_selection(&mut self, selection: Selection, at: Vec2) {
+        let Some(position) = self.position_of(selection) else {
+            return;
+        };
+        let Some(point) = self.ground_under(at, position) else {
+            return;
+        };
+        let direction = world::to_world(point.into()) - world::to_world(position.into());
+        if direction.length_squared() < 1.0 {
+            return;
+        }
+        let rotation = world::rotation_facing(direction);
+        self.set_rotation(selection, |_| rotation);
+    }
+
+    fn rotate(&mut self, angle: i32) {
+        if let Some(selection) = self.selection {
+            self.set_rotation(selection, |rotation| {
+                (rotation + angle).rem_euclid(world::ORIGINAL_ANGLE_PER_TURN)
+            });
+        }
+    }
+
+    fn set_rotation(&mut self, selection: Selection, turn: impl Fn(i32) -> i32) {
+        let Some(map) = &self.map else { return };
+        match selection {
+            Selection::Exit(exit) => {
+                if let Some(warp) = map.document.warp(exit) {
+                    let mut warp = warp.clone();
+                    warp.rotation = turn(warp.rotation);
+                    self.set_warp(warp);
+                }
+            }
+            Selection::Npc(slot) => {
+                if let Some(npc) = map.document.npcs.get(slot) {
+                    let mut npc = npc.clone();
+                    npc.rotation.y = turn(npc.rotation.y);
+                    self.set_npc(slot, npc);
+                }
+            }
+            Selection::Waypoint { .. } => {}
+        }
+    }
+
+    fn set_warp(&mut self, warp: Warp) {
+        let Some(before) = self
+            .map
+            .as_ref()
+            .and_then(|map| map.document.warp(warp.exit).cloned())
+        else {
+            return;
+        };
+        self.record(Edit::Warp {
+            before,
+            after: warp,
+        });
+    }
+
+    fn set_npc(&mut self, slot: usize, npc: Npc) {
+        let Some(before) = self
+            .map
+            .as_ref()
+            .and_then(|map| map.document.npcs.get(slot).cloned())
+        else {
+            return;
+        };
+        self.record(Edit::Npc {
+            slot,
+            before: Box::new(before),
+            after: Box::new(npc),
+        });
+    }
+
+    /// Changes an NPC's path; false when the change does not apply.
+    fn edit_path(&mut self, slot: usize, change: impl Fn(&Npc) -> Option<Npc>) -> bool {
+        let Some(npc) = self
+            .map
+            .as_ref()
+            .and_then(|map| map.document.npcs.get(slot))
+            .and_then(change)
+        else {
+            return false;
+        };
+        self.set_npc(slot, npc);
+        true
+    }
+
+    fn add_waypoint(&mut self, slot: usize, at: Option<Vec2>) {
+        let Some(npc) = self
+            .map
+            .as_ref()
+            .and_then(|map| map.document.npcs.get(slot))
+        else {
+            return;
+        };
+        let point = at
+            .and_then(|at| self.ground_under(at, npc.position))
+            .unwrap_or(RawVec3 {
+                x: npc.position.x + NEW_POINT_OFFSET,
+                ..npc.position
+            });
+        let part = tools::path_length(npc);
+        if self.edit_path(slot, |npc| tools::add_part(npc, point)) {
+            self.selection = Some(Selection::Waypoint { slot, part });
+        }
+    }
+
+    fn set_target(&mut self, root: Option<PathBuf>) {
+        self.target = root;
+        if self.target.is_some() {
+            self.settings.last_target = self.target.clone();
+            self.store_settings();
+        }
+    }
+
+    fn store_settings(&mut self) {
+        if let Some(file) = &self.settings_file
+            && let Err(error) = self.settings.store(file)
+        {
+            self.messages
+                .push(Message::Error(format!("{}: {error}", file.display())));
+        }
+    }
+
+    fn create_mod_pack(&mut self, folder: &std::path::Path, id: &str) {
+        let root = match create_mod_pack(folder, id) {
+            Ok(root) => root,
+            Err(error) => {
+                self.messages.push(Message::Error(error));
+                return;
+            }
+        };
+        if let Some(content) = &mut self.content {
+            let mods = &mut content.folders.mods;
+            if !mods.iter().any(|known| known == folder) {
+                mods.push(folder.to_path_buf());
+            }
+        }
+        self.reload_content(true);
+        self.set_target(Some(root.clone()));
+        if self.current_target().is_none() {
+            self.messages.push(Message::Error(format!(
+                "{}: {}",
+                crate::text::PACK_NOT_MOUNTED,
+                root.display()
+            )));
+        }
+    }
+
+    /// Saves the map shown into the target pack; true when it was written.
+    pub fn save(&mut self, mode: SaveMode) -> bool {
+        self.save_problems.clear();
+        let Some(target) = self.current_target() else {
+            self.messages
+                .push(Message::Error(crate::text::NO_TARGET.to_owned()));
+            return false;
+        };
+        let (Some(content), Some(map)) = (&self.content, &mut self.map) else {
+            return false;
+        };
+        map.history.end_group();
+        let Some(pack) = content
+            .vfs()
+            .packs()
+            .iter()
+            .find(|pack| pack.root == target.root)
+        else {
+            return false;
+        };
+        let plan = plan_save(
+            content.vfs(),
+            &content.table,
+            &self.bands,
+            pack,
+            &map.loaded,
+            &map.document,
+            mode,
+        );
+        self.save_problems = plan.problems.clone();
+        if plan.has_errors() {
+            self.messages
+                .push(Message::Error(crate::text::SAVE_REFUSED.to_owned()));
+            return false;
+        }
+        if let Err(error) = write_changes(&plan.changes) {
+            self.messages.push(Message::Error(format!(
+                "{}: {error}",
+                crate::text::SAVE_FAILED
+            )));
+            return false;
+        }
+        map.history.mark_clean();
+        self.saves += 1;
+        let files: Vec<String> = plan
+            .changes
+            .iter()
+            .map(|change| change.path.display().to_string())
+            .collect();
+        let written = if files.is_empty() {
+            crate::text::NOTHING_TO_SAVE.to_owned()
+        } else {
+            files.join(", ")
+        };
+        self.reload_content(true);
+        self.messages.push(Message::Info(format!(
+            "{} {}: {written}",
+            crate::text::SAVED_IN,
+            target.id
+        )));
+        true
     }
 }

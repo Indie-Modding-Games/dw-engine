@@ -101,6 +101,8 @@ pub struct NpcMark {
     /// The points its path walks or runs to, in order; the path then starts again from the first.
     /// Waits are left out.
     pub waypoints: Vec<Vec2>,
+    /// The part of the path (its place in `ai_sections`) of each point.
+    pub parts: Vec<usize>,
 }
 
 /// A door model placed on the map.
@@ -193,20 +195,26 @@ impl MapOverlay {
             .npcs
             .iter()
             .enumerate()
-            .map(|(slot, npc)| NpcMark {
-                slot,
-                type_id: npc.type_id,
-                script_id: npc.script_id,
-                position: arrow(npc.position.into(), npc.rotation.y),
-                waypoints: npc
+            .map(|(slot, npc)| {
+                let (parts, waypoints) = npc
                     .path()
                     .into_iter()
-                    .filter_map(|part| match part {
-                        PathPart::Walk(point) | PathPart::Run(point) => Some(point),
+                    .enumerate()
+                    .filter_map(|(part, step)| match step {
+                        PathPart::Walk(point) | PathPart::Run(point) => {
+                            Some((part, project(world::to_world(point.into()))?))
+                        }
                         PathPart::Wait(_) => None,
                     })
-                    .filter_map(|point| project(world::to_world(point.into())))
-                    .collect(),
+                    .unzip();
+                NpcMark {
+                    slot,
+                    type_id: npc.type_id,
+                    script_id: npc.script_id,
+                    position: arrow(npc.position.into(), npc.rotation.y),
+                    waypoints,
+                    parts,
+                }
             })
             .collect();
 
