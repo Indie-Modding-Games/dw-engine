@@ -58,6 +58,7 @@
 #include "chibi_style.hpp"
 #include "common.hpp"
 #include "content_mount.hpp"
+#include "control_log.hpp"
 #include "control_socket.hpp"
 #include "dev_assets_banner.hpp"
 #include "field_scene.hpp"
@@ -476,7 +477,10 @@ int runGame(const Options& requested) {
   }
   // The debug control channel (remote_control.hpp); nothing of it exists without --control.
   std::unique_ptr<ControlSocket> controlSocket;
+  // The warnings and errors its log_tail gives, kept from here on.
+  std::shared_ptr<ControlLog> controlLog;
   if (options.control) {
+    controlLog = keepControlLog();
     auto opened = ControlSocket::open(*options.control);
     if (!opened) {
       core::logError("{}", opened.error().message);
@@ -1001,23 +1005,31 @@ int runGame(const Options& requested) {
   std::unique_ptr<RemoteControl> control;
   std::vector<platform::KeyChanged> controlKeys;
   if (controlSocket) {
-    const auto status = [&] {
+    // A movie, the opening's questions or the title over the game; empty when the game shows.
+    const auto modeOver = [&]() -> std::string {
+      if (movies && movies->playing()) {
+        return "movie";
+      }
+      if (interview) {
+        return "interview";
+      }
+      return flow.playing() == nullptr ? "title" : "";
+    };
+    const auto status = [&, modeOver] {
       ControlStatus now;
       now.textures = (*renderer)->bindless().used();
       now.gpuBytes = (*device)->allocatedBytes();
       now.overlay = mapOverlay;
-      if (movies && movies->playing()) {
-        now.mode = "movie";
-      } else if (interview) {
-        now.mode = "interview";
-      } else if (flow.playing() == nullptr) {
-        now.mode = "title";
-      }
+      now.clients = controlSocket->clients();
+      now.mode = modeOver();
       if (const PlaySession* play = flow.playing()) {
         const TraceFrame frame = play->traceFrame(ticksRun, input);
         now.map = frame.map;
         if (now.mode.empty()) {
           now.mode = frame.battle ? "battle" : "field";
+        }
+        if (const auto& preview = play->scene().preview()) {
+          now.preview = preview->map;
         }
       }
       return now;
@@ -1128,6 +1140,9 @@ int runGame(const Options& requested) {
               if (play == nullptr) {
                 return core::fail("no game is being played");
               }
+              if (auto editable = play->mapEditable(); !editable) {
+                return std::unexpected{editable.error()};
+              }
               // A map editor saved new files: the packs are listed again first.
               if (auto rescanned = (*content)->rescan(); !rescanned) {
                 return std::unexpected{rescanned.error()};
@@ -1145,6 +1160,47 @@ int runGame(const Options& requested) {
               return storyStateJson(play->storyStateView());
             },
             .overlay = showMapOverlay,
+            .live =
+                [&, modeOver] {
+                  const PlaySession* play = flow.playing();
+                  ControlLive live = play != nullptr ? play->live() : ControlLive{};
+                  if (std::string over = modeOver(); !over.empty()) {
+                    live.mode = std::move(over);
+                  }
+                  live.log = controlLog->newest();
+                  return live;
+                },
+            .previewMap = [&](const ControlRequest& request) -> core::Result<ControlPreview> {
+              PlaySession* play = flow.playing();
+              if (play == nullptr) {
+                return core::fail("no game is being played");
+              }
+              auto previewed = play->previewMap(request.text, request.patch, request.pack);
+              if (!previewed) {
+                return std::unexpected{previewed.error()};
+              }
+              return ControlPreview{.map = request.text, .reentered = *previewed};
+            },
+            .previewClear = [&]() -> core::Result<ControlPreviewCleared> {
+              PlaySession* play = flow.playing();
+              if (play == nullptr) {
+                return ControlPreviewCleared{.map = {}, .cleared = false};
+              }
+              auto cleared = play->clearPreview();
+              if (!cleared) {
+                return std::unexpected{cleared.error()};
+              }
+              return ControlPreviewCleared{.map = play->scene().field().mapId(),
+                                           .cleared = *cleared};
+            },
+            .logTail = [&](std::optional<std::uint64_t> since) { return controlLog->after(since); },
+            .storySet = [&](const StoryWrite& write) -> core::Result<void> {
+              PlaySession* play = flow.playing();
+              if (play == nullptr) {
+                return core::fail("no game is being played");
+              }
+              return play->storySet(write);
+            },
         },
         options.controlPaused);
   }
@@ -1171,11 +1227,14 @@ int runGame(const Options& requested) {
       }
     }
     if (control) {
-      for (const std::string& line : controlSocket->receive()) {
-        control->receive(line);
+      for (const ControlLine& line : controlSocket->receive()) {
+        control->receive(line.client, line.text);
       }
-      for (const std::string& reply : control->takeReplies()) {
-        controlSocket->send(reply);
+      for (const std::uint64_t gone : controlSocket->takeGone()) {
+        control->forget(gone);
+      }
+      for (const ControlReply& reply : control->takeReplies()) {
+        controlSocket->send(reply.client, reply.line);
       }
     }
     // During an autotest the route is the only player: the desktop's own mouse and keyboard
@@ -1476,8 +1535,8 @@ int runGame(const Options& requested) {
     phases.mark(FramePhases::Ticks, platform->nowSeconds());
     if (control) {
       control->afterFrame(ticksRun);
-      for (const std::string& reply : control->takeReplies()) {
-        controlSocket->send(reply);
+      for (const ControlReply& reply : control->takeReplies()) {
+        controlSocket->send(reply.client, reply.line);
       }
     }
 

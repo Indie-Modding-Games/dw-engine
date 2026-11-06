@@ -83,6 +83,13 @@ namespace {
 
 // A client that sends a longer line without a line break is dropped: no request is near it.
 constexpr std::size_t MaxLineBytes = 1 << 20;
+// Connections the system holds before the game takes them: every client may connect at once.
+constexpr int ListenBacklog = static_cast<int>(ControlSocket::MaxClients) + 4;
+// What a client past the last one is told before it is closed.
+constexpr std::string_view TooManyClients =
+    R"j({"id":null,"ok":false,"error":"control: too many clients (4 at most)"})j"
+    "\n";
+static_assert(ControlSocket::MaxClients == 4, "TooManyClients names the number");
 
 #if defined(_WIN32)
 
@@ -198,7 +205,7 @@ core::Result<NativeSocket> listenUnix(const std::filesystem::path& path) {
   }
   if (!setNonBlocking(listener) ||
       ::bind(listener, reinterpret_cast<const sockaddr*>(&address), sizeof(address)) != 0 ||
-      ::listen(listener, 1) != 0) {
+      ::listen(listener, ListenBacklog) != 0) {
     const std::string problem = lastError();
     ::close(listener);
     return core::fail(std::format("control: cannot listen at {}: {}", name, problem));
@@ -229,7 +236,7 @@ core::Result<std::pair<NativeSocket, std::uint16_t>> listenTcp(std::uint16_t por
   socklen_t length = sizeof(address);
   if (!setNonBlocking(listener) ||
       ::bind(listener, reinterpret_cast<const sockaddr*>(&address), sizeof(address)) != 0 ||
-      ::listen(listener, 1) != 0 ||
+      ::listen(listener, ListenBacklog) != 0 ||
       ::getsockname(listener, reinterpret_cast<sockaddr*>(&address), &length) != 0) {
     const std::string problem = lastError();
     closeSocket(listener);
@@ -264,7 +271,9 @@ core::Result<std::unique_ptr<ControlSocket>> ControlSocket::open(const ControlEn
 }
 
 ControlSocket::~ControlSocket() {
-  dropClient();
+  for (Client& client : clients_) {
+    closeSocket(nativeOf(client.socket));
+  }
   closeSocket(nativeOf(listener_));
   if (unixPath_) {
     std::error_code ignored;
@@ -272,114 +281,134 @@ ControlSocket::~ControlSocket() {
   }
 }
 
-void ControlSocket::dropClient() {
-  if (client_ != NoSocket) {
-    closeSocket(nativeOf(client_));
-    client_ = NoSocket;
+void ControlSocket::drop(Client& client) {
+  if (client.socket != NoSocket) {
+    closeSocket(nativeOf(client.socket));
+    client.socket = NoSocket;
+    gone_.push_back(client.id);
   }
-  received_.clear();
-  unsent_.clear();
+  client.received.clear();
+  client.unsent.clear();
 }
 
-bool ControlSocket::accept() {
-  if (client_ != NoSocket) {
-    return true;
-  }
-  sockaddr_storage peer{};
-  socklen_t length = sizeof(peer);
-  const NativeSocket accepted =
-      ::accept(nativeOf(listener_), reinterpret_cast<sockaddr*>(&peer), &length);
-  if (handleOf(accepted) == NoSocket) {
-    return false;
-  }
-  // The listener is bound to the loopback, so no other host can reach it; checked anyway, since
-  // a client drives the whole game.
-  if (!unixPath_) {
-    const auto* inet = reinterpret_cast<const sockaddr_in*>(&peer);
-    if (peer.ss_family != AF_INET || (ntohl(inet->sin_addr.s_addr) >> 24U) != 127U) {
-      core::logWarning("control: a client from outside the loopback was refused");
-      closeSocket(accepted);
-      return false;
-    }
-  }
-  if (!setNonBlocking(accepted)) {
-    closeSocket(accepted);
-    return false;
-  }
-  keepFromSignals(accepted);
-  if (!unixPath_) {
-    // Replies are short lines a tool waits for: no batching of them.
-    int on = 1;
-    ::setsockopt(accepted, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&on),
-                 sizeof(on));
-  }
-  client_ = handleOf(accepted);
-  core::logInfo("control: a client connected");
-  return true;
-}
-
-std::vector<std::string> ControlSocket::receive() {
-  std::vector<std::string> lines;
-  if (!accept()) {
-    return lines;
-  }
-  std::array<char, 4096> buffer{};
+void ControlSocket::accept() {
   while (true) {
-    const auto read = ::recv(nativeOf(client_), buffer.data(), ioLength(buffer.size()), 0);
-    if (read > 0) {
-      received_.append(buffer.data(), static_cast<std::size_t>(read));
+    sockaddr_storage peer{};
+    socklen_t length = sizeof(peer);
+    const NativeSocket accepted =
+        ::accept(nativeOf(listener_), reinterpret_cast<sockaddr*>(&peer), &length);
+    if (handleOf(accepted) == NoSocket) {
+      return;
+    }
+    // The listener is bound to the loopback, so no other host can reach it; checked anyway, since
+    // a client drives the whole game.
+    if (!unixPath_) {
+      const auto* inet = reinterpret_cast<const sockaddr_in*>(&peer);
+      if (peer.ss_family != AF_INET || (ntohl(inet->sin_addr.s_addr) >> 24U) != 127U) {
+        core::logWarning("control: a client from outside the loopback was refused");
+        closeSocket(accepted);
+        continue;
+      }
+    }
+    if (!setNonBlocking(accepted)) {
+      closeSocket(accepted);
       continue;
     }
-    if (read < 0 && wouldBlock()) {
+    keepFromSignals(accepted);
+    if (clients_.size() >= MaxClients) {
+      // Best effort: a fresh socket takes a short line at once.
+      ::send(accepted, TooManyClients.data(), ioLength(TooManyClients.size()), SendFlags);
+      closeSocket(accepted);
+      core::logWarning("control: a client was refused, {} are connected", MaxClients);
+      continue;
+    }
+    if (!unixPath_) {
+      // Replies are short lines a tool waits for: no batching of them.
+      int on = 1;
+      ::setsockopt(accepted, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&on),
+                   sizeof(on));
+    }
+    clients_.push_back(
+        {.id = nextClient_++, .socket = handleOf(accepted), .received = {}, .unsent = {}});
+    core::logInfo("control: client {} connected", clients_.back().id);
+  }
+}
+
+bool ControlSocket::read(Client& client, std::vector<ControlLine>& lines) {
+  std::array<char, 4096> buffer{};
+  while (true) {
+    const auto got = ::recv(nativeOf(client.socket), buffer.data(), ioLength(buffer.size()), 0);
+    if (got > 0) {
+      client.received.append(buffer.data(), static_cast<std::size_t>(got));
+      if (client.received.size() > MaxLineBytes && !client.received.contains('\n')) {
+        break;
+      }
+      continue;
+    }
+    if (got < 0 && wouldBlock()) {
       break;
     }
-    // Closed by the client, or broken: the next client may connect.
-    core::logInfo("control: the client left");
-    dropClient();
-    return lines;
+    // Closed by the client, or broken; a line it left unfinished goes with it.
+    core::logInfo("control: client {} left", client.id);
+    return false;
   }
   std::size_t start = 0;
-  for (std::size_t end = received_.find('\n'); end != std::string::npos;
-       end = received_.find('\n', start)) {
-    std::string line = received_.substr(start, end - start);
+  for (std::size_t end = client.received.find('\n'); end != std::string::npos;
+       end = client.received.find('\n', start)) {
+    std::string line = client.received.substr(start, end - start);
     if (!line.empty() && line.back() == '\r') {
       line.pop_back();
     }
     if (!line.empty()) {
-      lines.push_back(std::move(line));
+      lines.push_back({.client = client.id, .text = std::move(line)});
     }
     start = end + 1;
   }
-  received_.erase(0, start);
-  if (received_.size() > MaxLineBytes) {
-    core::logWarning("control: a line longer than {} bytes; the client is dropped", MaxLineBytes);
-    dropClient();
+  client.received.erase(0, start);
+  if (client.received.size() > MaxLineBytes) {
+    core::logWarning("control: a line longer than {} bytes; client {} is dropped", MaxLineBytes,
+                     client.id);
+    return false;
   }
+  return true;
+}
+
+std::vector<ControlLine> ControlSocket::receive() {
+  accept();
+  std::vector<ControlLine> lines;
+  for (Client& client : clients_) {
+    if (!read(client, lines) || !flush(client)) {
+      drop(client);
+    }
+  }
+  std::erase_if(clients_, [](const Client& client) { return client.socket == NoSocket; });
   return lines;
 }
 
-void ControlSocket::send(std::string_view line) {
-  if (client_ == NoSocket) {
+void ControlSocket::send(std::uint64_t client, std::string_view line) {
+  const auto found = std::ranges::find(clients_, client, &Client::id);
+  if (found == clients_.end()) {
     return;
   }
-  unsent_ += line;
-  unsent_ += '\n';
-  flush();
+  found->unsent += line;
+  found->unsent += '\n';
+  if (!flush(*found)) {
+    drop(*found);
+    clients_.erase(found);
+  }
 }
 
-void ControlSocket::flush() {
-  while (client_ != NoSocket && !unsent_.empty()) {
-    const auto sent =
-        ::send(nativeOf(client_), unsent_.data(), ioLength(unsent_.size()), SendFlags);
+bool ControlSocket::flush(Client& client) {
+  while (!client.unsent.empty()) {
+    const auto sent = ::send(nativeOf(client.socket), client.unsent.data(),
+                             ioLength(client.unsent.size()), SendFlags);
     if (sent > 0) {
-      unsent_.erase(0, static_cast<std::size_t>(sent));
+      client.unsent.erase(0, static_cast<std::size_t>(sent));
       continue;
     }
-    if (sent < 0 && wouldBlock()) {
-      return;
-    }
-    dropClient();
+    return sent < 0 && wouldBlock();
   }
+  return true;
 }
 
 #else
@@ -389,15 +418,18 @@ core::Result<std::unique_ptr<ControlSocket>> ControlSocket::open(const ControlEn
 }
 
 ControlSocket::~ControlSocket() = default;
-bool ControlSocket::accept() {
-  return false;
-}
-std::vector<std::string> ControlSocket::receive() {
+void ControlSocket::accept() {}
+std::vector<ControlLine> ControlSocket::receive() {
   return {};
 }
-void ControlSocket::send(std::string_view) {}
-void ControlSocket::flush() {}
-void ControlSocket::dropClient() {}
+void ControlSocket::send(std::uint64_t, std::string_view) {}
+bool ControlSocket::read(Client&, std::vector<ControlLine>&) {
+  return false;
+}
+bool ControlSocket::flush(Client&) {
+  return false;
+}
+void ControlSocket::drop(Client&) {}
 
 #endif
 

@@ -2,11 +2,13 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <cmath>
 #include <format>
 #include <iterator>
 #include <ranges>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #include "device_names.hpp"
@@ -43,6 +45,11 @@ constexpr std::array Commands{
     CommandName{"reload_map", Kind::ReloadMap},
     CommandName{"story_state", Kind::StoryState},
     CommandName{"overlay", Kind::Overlay},
+    CommandName{"live", Kind::Live},
+    CommandName{"preview_map", Kind::PreviewMap},
+    CommandName{"preview_clear", Kind::PreviewClear},
+    CommandName{"log_tail", Kind::LogTail},
+    CommandName{"story_set", Kind::StorySet},
 };
 
 // A press with no length holds its keys for a tenth of a second.
@@ -92,6 +99,60 @@ core::Result<std::optional<std::int32_t>> exitField(const JsonValue& request) {
     return core::fail("'exit' must be a whole number from 0 to 9");
   }
   return static_cast<std::int32_t>(*number);
+}
+
+// A whole number from 0 to `last` at `key`.
+core::Result<std::uint64_t> wholeField(const JsonValue& value, std::string_view key, double last) {
+  const double* number = value.number();
+  if (number == nullptr || *number < 0.0 || *number > last || *number != std::trunc(*number)) {
+    return core::fail(std::format("'{}' must be a whole number from 0 to {}", key, last));
+  }
+  return static_cast<std::uint64_t>(*number);
+}
+
+// story_set: {"kind": "trigger", "number": 12, "value": true} or {"kind": "var", "number": 3,
+// "value": 7}. The story's state says whether the number is one it has.
+core::Result<StoryWrite> storyWriteField(const JsonValue& request) {
+  constexpr double LastNumber = 65535.0;
+  constexpr double LastValue = 255.0;
+  const JsonValue* kind = request.find("kind");
+  const std::string* kindName = kind != nullptr ? kind->text() : nullptr;
+  if (kindName == nullptr || (*kindName != "trigger" && *kindName != "var")) {
+    return core::fail(R"('kind' must be "trigger" or "var")");
+  }
+  const JsonValue* number = request.find("number");
+  if (number == nullptr) {
+    return core::fail("'number' is missing");
+  }
+  auto which = wholeField(*number, "number", LastNumber);
+  if (!which) {
+    return std::unexpected{which.error()};
+  }
+  const JsonValue* value = request.find("value");
+  if (value == nullptr) {
+    return core::fail("'value' is missing");
+  }
+  StoryWrite write{
+      .kind = StoryWrite::Kind::Variable, .number = static_cast<std::int32_t>(*which), .value = 0};
+  if (*kindName == "trigger") {
+    write.kind = StoryWrite::Kind::Trigger;
+    if (const bool* on = value->boolean()) {
+      write.value = *on ? 1 : 0;
+      return write;
+    }
+    auto bit = wholeField(*value, "value", 1.0);
+    if (!bit) {
+      return core::fail("a trigger's 'value' must be true, false, 1 or 0");
+    }
+    write.value = static_cast<std::int32_t>(*bit);
+    return write;
+  }
+  auto byte = wholeField(*value, "value", LastValue);
+  if (!byte) {
+    return std::unexpected{byte.error()};
+  }
+  write.value = static_cast<std::int32_t>(*byte);
+  return write;
 }
 
 // "keys": ["right", "return"] or "right+return".
@@ -262,6 +323,37 @@ core::Result<ControlRequest> requestFrom(const JsonValue& request) {
       }
     }
     break;
+  case Kind::PreviewMap: {
+    read = take(textField(request, "map"));
+    const JsonValue* patch = request.find("patch");
+    if (read && (patch == nullptr || patch->text() == nullptr)) {
+      read = core::fail("'patch' must be the patch's YAML text");
+    } else if (read) {
+      // An empty patch changes nothing: the map as the packs give it, still a preview.
+      out.patch = patch->text()->empty() ? std::string{"{}"} : *patch->text();
+    }
+    if (const JsonValue* pack = request.find("pack"); read && pack != nullptr && !pack->isNull()) {
+      auto named = textField(request, "pack");
+      read = named ? core::Result<void>{} : std::unexpected{named.error()};
+      out.pack = named.value_or(std::string{});
+    }
+    break;
+  }
+  case Kind::LogTail:
+    if (const JsonValue* since = request.find("since"); since != nullptr && !since->isNull()) {
+      auto seq = wholeField(*since, "since", 9007199254740992.0);
+      read = seq ? core::Result<void>{} : std::unexpected{seq.error()};
+      out.since = seq.value_or(0);
+    }
+    break;
+  case Kind::StorySet: {
+    auto write = storyWriteField(request);
+    read = write ? core::Result<void>{} : std::unexpected{write.error()};
+    out.story = write.value_or(StoryWrite{});
+    break;
+  }
+  case Kind::Live:
+  case Kind::PreviewClear:
   case Kind::Rescan:
   case Kind::Status:
   case Kind::Pause:
@@ -273,6 +365,47 @@ core::Result<ControlRequest> requestFrom(const JsonValue& request) {
     return core::fail(std::format("{}: {}", known->name, read.error().message));
   }
   return out;
+}
+
+// A number as JSON: the shortest text that reads back the same, 0 for what JSON cannot hold.
+// Written with to_chars, as live writes a few hundred of them a call.
+template <typename Number>
+void appendNumber(std::string& out, Number value) {
+  if constexpr (std::is_floating_point_v<Number>) {
+    if (!std::isfinite(value)) {
+      out += '0';
+      return;
+    }
+  }
+  std::array<char, 32> text{};
+  const auto written = std::to_chars(text.data(), text.data() + text.size(), value);
+  out.append(text.data(), written.ptr);
+}
+
+// {"x":..,"y":..,"z":..,"yaw":..}, the keys after the opening brace's (an NPC's id) given.
+void appendPose(std::string& out, const ControlPose& pose) {
+  out += R"("x":)";
+  appendNumber(out, pose.x);
+  out += R"(,"y":)";
+  appendNumber(out, pose.y);
+  out += R"(,"z":)";
+  appendNumber(out, pose.z);
+  out += R"(,"yaw":)";
+  appendNumber(out, pose.yaw);
+  out += '}';
+}
+
+void appendPose(std::string& out, const std::optional<ControlPose>& pose) {
+  if (!pose) {
+    out += "null";
+    return;
+  }
+  out += '{';
+  appendPose(out, *pose);
+}
+
+std::string optionalText(const std::optional<std::string>& text) {
+  return text ? jsonString(*text) : std::string{"null"};
 }
 
 std::string namesJson(const std::vector<std::string>& names) {
@@ -299,22 +432,31 @@ ParsedControlRequest parseControlRequest(std::string_view line) {
 RemoteControl::RemoteControl(ControlHost host, bool paused)
     : host_{std::move(host)}, paused_{paused} {}
 
-void RemoteControl::reply(std::string_view id, std::string_view fields) {
-  replies_.push_back(std::format(R"({{"id":{},"ok":true{}}})", id, fields));
+void RemoteControl::reply(std::uint64_t client, std::string_view id, std::string_view fields) {
+  replies_.push_back(
+      {.client = client, .line = std::format(R"({{"id":{},"ok":true{}}})", id, fields)});
 }
 
-void RemoteControl::fail(std::string_view id, std::string_view problem) {
-  replies_.push_back(std::format(R"({{"id":{},"ok":false,"error":{}}})", id, jsonString(problem)));
+void RemoteControl::fail(std::uint64_t client, std::string_view id, std::string_view problem) {
+  replies_.push_back(
+      {.client = client,
+       .line = std::format(R"({{"id":{},"ok":false,"error":{}}})", id, jsonString(problem))});
 }
 
-void RemoteControl::receive(std::string_view line) {
+void RemoteControl::receive(std::uint64_t client, std::string_view line) {
   ParsedControlRequest parsed = parseControlRequest(line);
   const std::string id = writeJson(parsed.id);
   if (!parsed.request) {
-    fail(id, parsed.request.error().message);
+    fail(client, id, parsed.request.error().message);
     return;
   }
-  handle(id, *parsed.request);
+  handle(client, id, *parsed.request);
+}
+
+void RemoteControl::forget(std::uint64_t client) {
+  std::erase_if(waits_, [client](const TickWait& wait) { return wait.client == client; });
+  std::erase_if(shots_,
+                [client](const std::shared_ptr<Shot>& shot) { return shot->client == client; });
 }
 
 std::string RemoteControl::heldNames() const {
@@ -335,6 +477,49 @@ std::string RemoteControl::statusFields() const {
   if (status.overlay) {
     fields += std::format(R"(,"overlay":{})", *status.overlay);
   }
+  if (status.clients) {
+    fields += std::format(R"(,"clients":{})", *status.clients);
+  }
+  fields += std::format(R"(,"preview":{})", optionalText(status.preview));
+  return fields;
+}
+
+std::string RemoteControl::liveFields() const {
+  // About 80 bytes an NPC.
+  constexpr std::size_t FixedBytes = 320;
+  constexpr std::size_t NpcBytes = 80;
+  const ControlLive live = host_.live();
+  std::string fields;
+  fields.reserve(FixedBytes + (NpcBytes * live.npcs.size()));
+  std::format_to(std::back_inserter(fields),
+                 R"(,"tick":{},"paused":{},"mode":{},"map":{},"busy":{},"preview":{},"log":{},)",
+                 ticks_, paused_, jsonString(live.mode), jsonString(live.map), live.busy,
+                 optionalText(live.preview), live.log);
+  fields += R"("player":)";
+  appendPose(fields, live.player);
+  fields += R"(,"partner":)";
+  appendPose(fields, live.partner);
+  fields += R"(,"npcs":[)";
+  for (std::size_t index = 0; index < live.npcs.size(); ++index) {
+    fields += index == 0 ? R"({"id":)" : R"(,{"id":)";
+    appendNumber(fields, live.npcs[index].id);
+    fields += ',';
+    appendPose(fields, live.npcs[index].pose);
+  }
+  fields += R"(],"view":)";
+  if (live.view) {
+    fields += R"({"x":)";
+    appendNumber(fields, live.view->x);
+    fields += R"(,"y":)";
+    appendNumber(fields, live.view->y);
+    fields += R"(,"w":)";
+    appendNumber(fields, live.view->width);
+    fields += R"(,"h":)";
+    appendNumber(fields, live.view->height);
+    fields += '}';
+  } else {
+    fields += "null";
+  }
   return fields;
 }
 
@@ -342,28 +527,29 @@ void RemoteControl::advanceBy(std::uint64_t ticks) {
   pending_ = std::max(pending_, ticks);
 }
 
-void RemoteControl::handle(const std::string& id, const ControlRequest& request) {
+void RemoteControl::handle(std::uint64_t client, const std::string& id,
+                           const ControlRequest& request) {
   switch (request.kind) {
   case Kind::Status:
-    reply(id, statusFields());
+    reply(client, id, statusFields());
     return;
   case Kind::State: {
     const auto line = host_.state();
     if (!line) {
-      fail(id, std::format("no game is being played (mode {})", host_.status().mode));
+      fail(client, id, std::format("no game is being played (mode {})", host_.status().mode));
       return;
     }
     auto state = parseJson(*line);
     if (!state) {
-      fail(id, state.error().message);
+      fail(client, id, state.error().message);
       return;
     }
     auto picked = selectJson(*state, request.text);
     if (!picked) {
-      fail(id, picked.error().message);
+      fail(client, id, picked.error().message);
       return;
     }
-    reply(id, std::format(R"(,"tick":{},"state":{})", ticks_, writeJson(*picked)));
+    reply(client, id, std::format(R"(,"tick":{},"state":{})", ticks_, writeJson(*picked)));
     return;
   }
   case Kind::Press: {
@@ -373,7 +559,8 @@ void RemoteControl::handle(const std::string& id, const ControlRequest& request)
     if (paused_) {
       advanceBy(to - ticks_);
     }
-    waits_.push_back({.id = id,
+    waits_.push_back({.client = client,
+                      .id = id,
                       .until = to,
                       .fields = std::format(R"(,"keys":{},"from":{},"ticks":{})",
                                             namesJson(request.keyNames), from, request.ticks)});
@@ -386,7 +573,7 @@ void RemoteControl::handle(const std::string& id, const ControlRequest& request)
         heldNames_.push_back(request.keyNames[index]);
       }
     }
-    reply(id, std::format(R"(,"held":{})", heldNames()));
+    reply(client, id, std::format(R"(,"held":{})", heldNames()));
     return;
   case Kind::Release:
     if (request.keys.empty()) {
@@ -399,29 +586,30 @@ void RemoteControl::handle(const std::string& id, const ControlRequest& request)
         held_.erase(found);
       }
     }
-    reply(id, std::format(R"(,"held":{})", heldNames()));
+    reply(client, id, std::format(R"(,"held":{})", heldNames()));
     return;
   case Kind::Pause:
     paused_ = true;
     pending_ = 0;
-    reply(id, statusFields());
+    reply(client, id, statusFields());
     return;
   case Kind::Resume:
     paused_ = false;
     pending_ = 0;
-    reply(id, statusFields());
+    reply(client, id, statusFields());
     return;
   case Kind::Advance:
     if (paused_) {
       pending_ += request.ticks;
     }
-    waits_.push_back({.id = id,
+    waits_.push_back({.client = client,
+                      .id = id,
                       .until = ticks_ + (paused_ ? pending_ : request.ticks),
                       .fields = std::format(R"(,"advanced":{})", request.ticks)});
     // Zero ticks: the reply goes out with this frame's.
     return;
   case Kind::Screenshot: {
-    auto shot = std::make_shared<Shot>(Shot{.id = id, .result = std::nullopt});
+    auto shot = std::make_shared<Shot>(Shot{.client = client, .id = id, .result = std::nullopt});
     shots_.push_back(shot);
     host_.screenshot(*request.path, [shot](core::Result<std::string> written) {
       shot->result = std::move(written);
@@ -435,7 +623,7 @@ void RemoteControl::handle(const std::string& id, const ControlRequest& request)
     if (request.kind != Kind::Script) {
       auto argument = scriptArgument(request.text);
       if (!argument) {
-        fail(id, argument.error().message);
+        fail(client, id, argument.error().message);
         return;
       }
       // "battle" is battle_trigger.hpp's BattleCommand, which brings the battle's headers along.
@@ -444,86 +632,159 @@ void RemoteControl::handle(const std::string& id, const ControlRequest& request)
       code = std::format("{}({})", call, *argument);
     }
     if (auto ran = host_.runScript(code); !ran) {
-      fail(id, ran.error().message);
+      fail(client, id, ran.error().message);
       return;
     }
-    reply(id, std::format(R"(,"ran":{})", jsonString(code)));
+    reply(client, id, std::format(R"(,"ran":{})", jsonString(code)));
     return;
   }
   case Kind::Load:
     if (auto loaded = host_.load(request); !loaded) {
-      fail(id, loaded.error().message);
+      fail(client, id, loaded.error().message);
       return;
     }
-    reply(id, statusFields());
+    reply(client, id, statusFields());
     return;
   case Kind::Trace:
     if (auto traced = host_.trace(request.path); !traced) {
-      fail(id, traced.error().message);
+      fail(client, id, traced.error().message);
       return;
     }
-    reply(id, request.path ? std::format(R"(,"trace":{})", jsonString(request.path->string()))
-                           : std::string{R"(,"trace":null)"});
+    reply(client, id,
+          request.path ? std::format(R"(,"trace":{})", jsonString(request.path->string()))
+                       : std::string{R"(,"trace":null)"});
     return;
   case Kind::Quit:
-    reply(id, "");
+    reply(client, id, "");
     host_.quit();
     return;
   case Kind::Rescan:
     if (!host_.rescan) {
-      fail(id, "rescan: this game cannot list its packs again");
+      fail(client, id, "rescan: this game cannot list its packs again");
       return;
     }
     if (auto rescanned = host_.rescan(); !rescanned) {
-      fail(id, std::format("rescan: {}", rescanned.error().message));
+      fail(client, id, std::format("rescan: {}", rescanned.error().message));
       return;
     }
-    reply(id, "");
+    reply(client, id, "");
     return;
   case Kind::ReloadMap: {
     if (!host_.reloadMap) {
-      fail(id, "reload_map: this game cannot reload its map");
+      fail(client, id, "reload_map: this game cannot reload its map");
       return;
     }
     auto reloaded = host_.reloadMap(request.exit);
     if (!reloaded) {
-      fail(id, std::format("reload_map: {}", reloaded.error().message));
+      fail(client, id, std::format("reload_map: {}", reloaded.error().message));
       return;
     }
-    reply(id, std::format(R"(,"map":{},"exit":{},"tick":{})", jsonString(reloaded->map),
-                          reloaded->exit ? std::to_string(*reloaded->exit) : "null", ticks_));
+    reply(client, id,
+          std::format(R"(,"map":{},"exit":{},"tick":{})", jsonString(reloaded->map),
+                      reloaded->exit ? std::to_string(*reloaded->exit) : "null", ticks_));
     return;
   }
   case Kind::StoryState: {
     if (!host_.storyState) {
-      fail(id, "story_state: this game has no story to show");
+      fail(client, id, "story_state: this game has no story to show");
       return;
     }
     auto text = host_.storyState();
     if (!text) {
-      fail(id, std::format("story_state: {}", text.error().message));
+      fail(client, id, std::format("story_state: {}", text.error().message));
       return;
     }
     auto story = parseJson(*text);
     if (!story) {
-      fail(id, story.error().message);
+      fail(client, id, story.error().message);
       return;
     }
     auto picked = selectJson(*story, request.text);
     if (!picked) {
-      fail(id, picked.error().message);
+      fail(client, id, picked.error().message);
       return;
     }
-    reply(id, std::format(R"(,"tick":{},"story":{})", ticks_, writeJson(*picked)));
+    reply(client, id, std::format(R"(,"tick":{},"story":{})", ticks_, writeJson(*picked)));
     return;
   }
   case Kind::Overlay:
     if (!host_.overlay) {
-      fail(id, "overlay: this game has no map overlay");
+      fail(client, id, "overlay: this game has no map overlay");
       return;
     }
-    reply(id, std::format(R"(,"overlay":{})", host_.overlay(request.on) ? "true" : "false"));
+    reply(client, id,
+          std::format(R"(,"overlay":{})", host_.overlay(request.on) ? "true" : "false"));
     return;
+  case Kind::Live:
+    if (!host_.live) {
+      fail(client, id, "live: this game cannot say where everyone stands");
+      return;
+    }
+    reply(client, id, liveFields());
+    return;
+  case Kind::PreviewMap: {
+    if (!host_.previewMap) {
+      fail(client, id, "preview_map: this game cannot preview a map");
+      return;
+    }
+    auto previewed = host_.previewMap(request);
+    if (!previewed) {
+      fail(client, id, std::format("preview_map: {}", previewed.error().message));
+      return;
+    }
+    reply(client, id,
+          std::format(R"(,"map":{},"applied":{},"tick":{})", jsonString(previewed->map),
+                      previewed->reentered ? R"("reentered")" : R"("collision")", ticks_));
+    return;
+  }
+  case Kind::PreviewClear: {
+    if (!host_.previewClear) {
+      fail(client, id, "preview_clear: this game cannot preview a map");
+      return;
+    }
+    auto cleared = host_.previewClear();
+    if (!cleared) {
+      fail(client, id, std::format("preview_clear: {}", cleared.error().message));
+      return;
+    }
+    reply(client, id,
+          std::format(R"(,"map":{},"cleared":{})", jsonString(cleared->map), cleared->cleared));
+    return;
+  }
+  case Kind::LogTail: {
+    if (!host_.logTail) {
+      fail(client, id, "log_tail: this game keeps no log for the channel");
+      return;
+    }
+    const ControlLogTail tail = host_.logTail(request.since);
+    std::string fields = std::format(R"(,"next":{},"entries":[)", tail.next);
+    for (std::size_t index = 0; index < tail.entries.size(); ++index) {
+      const ControlLogEntry& entry = tail.entries[index];
+      std::format_to(std::back_inserter(fields), R"({}{{"seq":{},"level":{},"text":{}}})",
+                     index == 0 ? "" : ",", entry.seq, entry.error ? R"("error")" : R"("warning")",
+                     jsonString(entry.text));
+    }
+    fields += ']';
+    reply(client, id, fields);
+    return;
+  }
+  case Kind::StorySet: {
+    if (!host_.storySet) {
+      fail(client, id, "story_set: this game has no story to write");
+      return;
+    }
+    if (auto written = host_.storySet(request.story); !written) {
+      fail(client, id, std::format("story_set: {}", written.error().message));
+      return;
+    }
+    const bool trigger = request.story.kind == StoryWrite::Kind::Trigger;
+    reply(client, id,
+          std::format(R"(,"kind":{},"number":{},"value":{})", trigger ? R"("trigger")" : R"("var")",
+                      request.story.number,
+                      trigger ? std::string{request.story.value != 0 ? "true" : "false"}
+                              : std::to_string(request.story.value)));
+    return;
+  }
   }
 }
 
@@ -569,7 +830,7 @@ void RemoteControl::afterFrame(std::uint64_t ticksRun) {
   const auto done = std::ranges::stable_partition(
       waits_, [this](const TickWait& wait) { return wait.until > ticks_; });
   for (const TickWait& wait : std::ranges::subrange{done.begin(), done.end()}) {
-    reply(wait.id, std::format(R"({},"tick":{})", wait.fields, ticks_));
+    reply(wait.client, wait.id, std::format(R"({},"tick":{})", wait.fields, ticks_));
   }
   waits_.erase(done.begin(), done.end());
   std::erase_if(shots_, [this](const std::shared_ptr<Shot>& shot) {
@@ -577,9 +838,10 @@ void RemoteControl::afterFrame(std::uint64_t ticksRun) {
       return false;
     }
     if (*shot->result) {
-      reply(shot->id, std::format(R"(,"path":{},"tick":{})", jsonString(**shot->result), ticks_));
+      reply(shot->client, shot->id,
+            std::format(R"(,"path":{},"tick":{})", jsonString(**shot->result), ticks_));
     } else {
-      fail(shot->id, shot->result->error().message);
+      fail(shot->client, shot->id, shot->result->error().message);
     }
     return true;
   });
@@ -589,7 +851,7 @@ bool RemoteControl::idle() const {
   return paused_ && pending_ == 0;
 }
 
-std::vector<std::string> RemoteControl::takeReplies() {
+std::vector<ControlReply> RemoteControl::takeReplies() {
   return std::exchange(replies_, {});
 }
 

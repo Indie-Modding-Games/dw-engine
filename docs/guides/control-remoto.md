@@ -9,8 +9,8 @@ dwe-game --content <contenido> --start twna01 --new-game-chain seeded --seed 1 \
   --control /tmp/dwe.sock --control-paused
 ```
 
-- `--control <socket>` escucha en ese socket Unix (Linux y macOS). Atiende a un cliente a la vez; si se va, el
-  siguiente puede conectarse. En Windows no hay sockets Unix: el juego lo dice y no arranca.
+- `--control <socket>` escucha en ese socket Unix (Linux y macOS). Atiende a varios clientes a la vez (ver
+  [Varios clientes](#varios-clientes)). En Windows no hay sockets Unix: el juego lo dice y no arranca.
 - `--control tcp:<puerto>` (también `tcp:127.0.0.1:<puerto>` o `tcp:localhost:<puerto>`) escucha en ese puerto TCP
   de 127.0.0.1, con el mismo protocolo, en cualquier sistema. Solo en el loopback: otro host (`tcp:0.0.0.0:...`)
   se rechaza al arrancar, y un cliente que no venga de 127.x se cierra, porque el canal maneja el juego entero sin
@@ -36,7 +36,7 @@ ticks o se ha escrito la imagen.
 
 | Orden | Campos | Qué hace |
 |---|---|---|
-| `status` | | Responde `tick`, `paused`, `mode` (`title`, `movie`, `interview`, `field`, `battle`), `map`, `held` (las teclas mantenidas), `pending` (los ticks que quedan por avanzar), `textures` (las ranuras ocupadas de la tabla bindless), `gpu_bytes` (la memoria de GPU que tiene el asignador) y `overlay` (si la capa de depuración del mapa está encendida). `textures` y `gpu_bytes` sirven para ver fugas en una sesión larga; `overlay` deja que el mapper muestre el estado real al conectar |
+| `status` | | Responde `tick`, `paused`, `mode` (`title`, `movie`, `interview`, `field`, `battle`), `map`, `held` (las teclas mantenidas), `pending` (los ticks que quedan por avanzar), `textures` (las ranuras ocupadas de la tabla bindless), `gpu_bytes` (la memoria de GPU que tiene el asignador), `overlay` (si la capa de depuración del mapa está encendida), `clients` (los clientes conectados) y `preview` (el mapa con una [vista previa](#vista-previa-de-un-parche), o `null`). `textures` y `gpu_bytes` sirven para ver fugas en una sesión larga; `overlay` deja que el mapper muestre el estado real al conectar |
 | `state` | `path` | La línea de la [traza de estado](traza-de-estado.md) de ahora, o la parte que nombra el camino: `player`, `player.x`, `battle.fighters.0.hp`, `npcs.id=6` (el NPC de ese id) |
 | `press` | `keys`, `ticks` (6) | Las teclas abajo exactamente esos ticks y luego arriba. Con la lógica parada, corre esos ticks ella misma. Dos `press` seguidos se encadenan tick a tick |
 | `hold` | `keys` | Las teclas abajo desde el siguiente tick hasta `release` |
@@ -55,11 +55,41 @@ ticks o se ha escrito la imagen.
 | `reload_map` | `exit` (0-9) | `rescan` y vuelve a leer y entrar en el mapa actual (ver [Edición de mapas en vivo](#edición-de-mapas-en-vivo)). Responde `map` y `exit` (`null` sin `exit`) |
 | `story_state` | `path` | El estado de la historia: `map`, `triggers` (los activos, de menor a mayor), `variables` (las distintas de 0, por número: `{"12": 3}`), `script` (`busy`, `map_script`, `sections` que corren: `script` y `section`), `stage` (la etapa del candado de historia) y `camera` (`eye`, `target`, `focal_length`, `background`, `viewport`, `scale`, `scroll`, en espacio de mundo; `null` sin mapa). Con `path`, solo esa parte: `variables.12`, `script.sections.0` |
 | `overlay` | `on` (`true`/`false`) | Enciende o apaga la [capa de depuración del mapa](#capa-de-depuración-del-mapa); sin `on` la cambia. Responde `overlay` |
+| `live` | | Dónde está cada uno, en una línea corta para consultarla varias veces por segundo (ver [Estado en vivo](#estado-en-vivo)) |
+| `preview_map` | `map`, `patch`, `pack` | Enseña el mapa con un parche encima sin guardarlo (ver [Vista previa de un parche](#vista-previa-de-un-parche)). Responde `map`, `applied` (`collision` o `reentered`) y `tick` |
+| `preview_clear` | | Quita la vista previa. Responde `map` (vacío sin partida) y `cleared` (`false` si no había ninguna); nunca es un error |
+| `log_tail` | `since` | Los avisos y errores del log desde el número `since` (sin él, todos los que guarda): `next` (el número del último) y `entries` (`seq`, `level` (`warning` o `error`), `text`). Guarda los 256 últimos, solo con `--control` |
+| `story_set` | `kind` (`trigger` o `var`), `number`, `value` | Escribe un disparador (`value` `true`/`false` o 1/0) o una variable (0-255) de la historia, como `story_set` en la consola. No mientras corre un script de historia. Responde `kind`, `number` y `value` |
 
 Las teclas van por su nombre (`keyNamed`): `a` a `z`, `0` a `9`, `return`, `escape`, `backspace`, `tab`, `space`,
 `left`, `right`, `up`, `down`, `left_shift`, `right_shift`; en una lista o como `"right+return"`. Entran en el
 estado de la entrada al principio de cada tick, como los `hold` de una ruta, así que duran los ticks pedidos
 aunque los frames vayan lentos.
+
+Por ejemplo:
+
+```json
+{"id": 7, "cmd": "story_set", "kind": "trigger", "number": 12, "value": true}
+{"id": 7, "ok": true, "kind": "trigger", "number": 12, "value": true}
+{"id": 8, "cmd": "log_tail", "since": 40}
+{"id": 8, "ok": true, "next": 42, "entries": [{"seq": 41, "level": "warning", "text": "..."}, {"seq": 42, "level": "error", "text": "..."}]}
+```
+
+El número de `story_set` va en `number` y no en `id`, que es el de la petición.
+
+## Varios clientes
+
+El canal atiende hasta 4 clientes a la vez (el editor de mapas y un test, por ejemplo), en el socket Unix y en TCP.
+Al quinto le escribe `{"id":null,"ok":false,"error":"control: too many clients (4 at most)"}` y lo cierra.
+
+- Cada cliente recibe solo las respuestas a sus peticiones, también las que llegan más tarde (`press`, `advance`,
+  `screenshot`). Si se va antes, esas respuestas se pierden, pero sus ticks corren igual.
+- Cada cliente lleva un número que no se vuelve a dar, así que una respuesta tardía nunca llega a otro cliente que
+  se conectó después.
+- Las peticiones corren en el hilo del juego en el orden en que llegan. Las teclas mantenidas, los `press` y la
+  pausa son del juego, compartidos por todos: un `release` sin teclas suelta también las de otro cliente, y un
+  `pause` para la lógica para todos.
+- Un cliente que se va a mitad de una línea, o que manda una línea de más de 1 MiB, se cierra solo él.
 
 ## Pausa y avance
 
@@ -93,6 +123,68 @@ fundidos y las casillas de script usan los nuevos valores desde la recarga; lo q
 ellos (los NPCs, la distancia del compañero) espera a una partida nueva. Las otras partes que leen la tabla de
 mapas o los saltos de script por su cuenta (la música, el mapa de la isla) los leen al abrirse.
 
+Si un paso falla (el YAML de un fichero, un parche que no aplica, la salida pedida), el error de la respuesta lleva
+el texto del cargador con el fichero y la línea.
+
+## Estado en vivo
+
+`live` responde, en una línea:
+
+```json
+{"id": 3, "ok": true, "tick": 5120, "paused": false, "mode": "field", "map": "twna01", "busy": false,
+ "preview": null, "log": 12, "player": {"x": 256, "y": 0, "z": 1285.5, "yaw": 1.5708},
+ "partner": {"x": 180, "y": 0, "z": 1300, "yaw": 3.1416}, "npcs": [{"id": 11, "x": -839, "y": 0, "z": -2210, "yaw": 0}],
+ "view": {"x": 0, "y": 16, "w": 320, "h": 240}}
+```
+
+- `mode` y `map` como en `status`; `busy`, si corre (o va a empezar) un script o una sección de historia; `preview`,
+  el mapa con vista previa o `null`; `log`, el número del último aviso o error que guarda `log_tail` (0 si no hay
+  ninguno), para pedir `log_tail` solo cuando cambia.
+- `player`, `partner` y los `npcs` (por su id de script) están en [espacio de mundo](../architecture/world-space.md),
+  como los guarda el campo (no en los ejes del original de la traza de estado): el suelo es el plano XZ, y una
+  casilla de colisión es `columna = floor(x / 100) + 50`, `fila = floor(z / 100) + 50`. Sin partida son `null` y
+  `[]`; durante una batalla siguen siendo los del campo, donde se pelea.
+- `yaw` en radianes, como lo guarda el motor: el personaje mira hacia `(sin yaw, cos yaw)` en `(x, z)`, es decir,
+  `yaw = 0` mira hacia +Z del mundo (filas crecientes de la rejilla) y un `yaw` positivo gira de +Z hacia +X
+  (`assets::forwardOfYaw`). Para una flecha en la rejilla: `dir = (sin yaw, cos yaw)` en `(columna, fila)`.
+- `view`: los píxeles del fondo que enseña la ventana: `x`, `y` es el de arriba a la izquierda
+  (`MapCamera::scroll`) y `w`, `h` el tamaño (`viewportSize / scale`); `null` sin cámara de mapa.
+
+Se construye directamente del campo, sin la traza ni JSON intermedio. Con 64 NPCs la respuesta ocupa unos 3,9 KB y
+leer la petición y escribirla cuesta unos 0,3 ms en la compilación de depuración con sanitizadores de las pruebas
+(`live stays cheap with a crowded map`); la de release es varias veces más rápida. A 5-10 consultas por segundo no
+se nota en el frame.
+
+## Vista previa de un parche
+
+`preview_map` enseña un cambio del editor sin guardarlo:
+
+```json
+{"id": 4, "cmd": "preview_map", "map": "twna01", "patch": "collision:\n  cells:\n  - {column: 30, row: 28, value: 128}\n", "pack": "mi_mod"}
+{"id": 4, "ok": true, "map": "twna01", "applied": "collision", "tick": 5200}
+```
+
+- `patch` es el texto de un parche de mapa (el mismo formato que `map/<id>/patch`, ver
+  [Mapas](../formats/mapas.md#parches)); vacío no cambia nada. Se aplica en memoria encima de los datos y los
+  parches de los packs del mapa, como un parche más, el último; en sus errores se llama `preview`. Con `pack`, si es
+  un pack montado, el parche tiene sus derechos (los de la base para un pack base); si no, los de un mod.
+- Se vuelve a entrar en el mapa donde están el jugador y el compañero, como `reload_map` sin `exit`, pero sin
+  volver a listar los packs ni leer `field/rules` ni los saltos de script.
+- Si el parche solo toca la colisión (o no toca nada) y la vista previa que sustituye (si hay) tampoco tocaba otra
+  cosa, no se vuelve a entrar: la rejilla de colisión del campo se cambia en el sitio, con el minimapa. Esto
+  deshace las casillas que un script cerró (`setImpassableRect`) hasta la siguiente entrada en el mapa, y una
+  casilla de disparo bajo el jugador no salta hasta que la vuelva a pisar. `applied` dice `collision` o
+  `reentered`.
+- Se rechaza sin partida, si `map` no es el mapa que se ve (`the game shows <mapa>`), durante una batalla, en
+  mitad de un cambio de mapa y mientras corre un script de historia. El parche se comprueba antes de aplicarlo; un
+  error del YAML o de lo que nombra vuelve con su línea (`patch preview: line 3, column 5: ...`). Si falla, la
+  vista previa anterior sigue.
+- La vista previa es de su mapa: entrar en cualquier otro mapa la quita (la siguiente entrada usa los packs), y
+  `reload_map` también, porque vuelve a leer los packs. `preview_clear` la quita y, si el juego está en ese mapa,
+  vuelve a entrar desde los packs (o devuelve la colisión en el sitio si solo era de colisión).
+- Nada de ella se escribe nunca en disco: las partidas no guardan documentos de mapa, solo el mapa en que se está.
+- `reload_map` también se rechaza mientras corre un script de historia, con el mismo texto.
+
 ## Capa de depuración del mapa
 
 Dibuja sobre el campo real, con la cámara del mapa:
@@ -123,11 +215,15 @@ devuelve solo las diferencias.
 - `apps/game/src/remote_control.*`: las peticiones y el despachador, sin socket ni juego; sus pruebas están en
   `apps/game/tests/remote_control_tests.cpp`.
 - `apps/game/src/control_json.*`: el JSON que lee las peticiones y elige partes del estado.
-- `apps/game/src/control_socket.*`: el socket Unix o TCP, sin bloquear nunca el juego; sus pruebas están en
-  `apps/game/tests/control_socket_tests.cpp`.
+- `apps/game/src/control_socket.*`: el socket Unix o TCP con sus clientes, sin bloquear nunca el juego; sus
+  pruebas están en `apps/game/tests/control_socket_tests.cpp`.
+- `apps/game/src/control_log.*`: los avisos y errores que da `log_tail`.
 - `apps/game/src/story_state_json.*`: el JSON de `story_state`.
 - `apps/game/src/map_debug_overlay.*`: las formas de la capa de depuración del mapa, que dibuja
   `debug::DebugUi::setShapes` (`packages/engine/debug/include/dwe/debug/overlay_shapes.hpp`).
 - `PlaySession::reloadMap`, `FieldScene::reloadMap`, `game::field::Field::reloadData`,
   `session::StoryLuaHost::reloadScripts` y `assets::VirtualFileSystem::rescan`: la recarga.
+- `PlaySession::previewMap`, `FieldScene::previewMap`, `game::field::Field::setCollision`,
+  `assets::mapPatchSections` y `assets::loadMapDocument` con parches de más: la vista previa.
+- `PlaySession::live`: el estado en vivo.
 - `apps/game/src/game.cpp`: une el canal al bucle del juego.

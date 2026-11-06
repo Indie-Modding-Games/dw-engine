@@ -1569,6 +1569,10 @@ std::vector<ui::MinimapMarker> PlaySession::minimapEnemyMarkers() {
                         [&](std::int32_t scriptId) { return npcs.positionOf(scriptId); });
 }
 
+void PlaySession::refreshMinimap() {
+  context_.ui->setMinimap(ui::minimapGridOf(scene_->map()), scene_->mapNameKey());
+}
+
 void PlaySession::publishMinimapAllowed(const MinimapScene& scene) {
   const bool allowed = minimapAllowed(scene);
   if (minimapAllowed_ != allowed) {
@@ -1701,9 +1705,101 @@ std::string_view poseName(game::battle::Pose pose) {
 
 } // namespace
 
-core::Result<void> PlaySession::reloadMap(std::optional<std::int32_t> exit) {
+core::Result<void> PlaySession::mapEditable() const {
   if (battleScreen_.active()) {
     return core::fail("a battle is running");
+  }
+  if (storyBusy()) {
+    return core::fail("a story script is running");
+  }
+  return {};
+}
+
+bool PlaySession::storyBusy() const {
+  const session::StoryAdapter* story = game_.systems.story;
+  return story != nullptr && story->scriptRunning();
+}
+
+core::Result<bool> PlaySession::previewMap(const std::string& mapId, std::string text,
+                                           const std::optional<std::string>& pack) {
+  if (auto editable = mapEditable(); !editable) {
+    return std::unexpected{editable.error()};
+  }
+  assets::MapPatchText patch{.pack = pack.value_or("preview"),
+                             .baseRights = false,
+                             .file = "preview",
+                             .text = std::move(text)};
+  if (pack && context_.files != nullptr) {
+    for (const assets::MountedPack& mounted : context_.files->packs()) {
+      if (mounted.manifest.id == *pack) {
+        patch.baseRights = assets::hasBaseRights(mounted.origin, mounted.manifest.layer);
+      }
+    }
+  }
+  auto previewed = scene_->previewMap(mapId, std::move(patch));
+  if (previewed && !*previewed) {
+    refreshMinimap();
+  }
+  return previewed;
+}
+
+core::Result<bool> PlaySession::clearPreview() {
+  const bool inPlace = scene_->preview() && scene_->preview()->onlyCollision;
+  if (scene_->preview()) {
+    if (auto editable = mapEditable(); !editable) {
+      return std::unexpected{editable.error()};
+    }
+  }
+  auto cleared = scene_->clearPreview();
+  if (cleared && *cleared && inPlace) {
+    refreshMinimap();
+  }
+  return cleared;
+}
+
+core::Result<void> PlaySession::storySet(const StoryWrite& write) {
+  session::StoryAdapter* story = game_.systems.story;
+  if (story == nullptr) {
+    return core::fail(std::string{messages::NoStory});
+  }
+  if (story->scriptRunning()) {
+    return core::fail("a story script is running");
+  }
+  return applyStoryWrite(story->state(), write);
+}
+
+ControlLive PlaySession::live() const {
+  ControlLive live;
+  const game::field::Field& field = scene_->field();
+  live.mode = battleScreen_.battle() != nullptr ? "battle" : "field";
+  live.map = field.mapId();
+  live.busy = storyBusy();
+  if (const auto& preview = scene_->preview()) {
+    live.preview = preview->map;
+  }
+  const auto poseOf = [](glm::vec3 position, float yaw) {
+    return ControlPose{.x = position.x, .y = position.y, .z = position.z, .yaw = yaw};
+  };
+  live.player = poseOf(field.player().position, field.player().yaw);
+  live.partner = poseOf(field.partner().position, field.partner().yaw);
+  const entt::registry& registry = scene_->world().registry();
+  live.npcs.reserve(field.npcs().bodies().size());
+  for (const game::field::NpcBody& body : field.npcs().bodies()) {
+    const auto& transform = registry.get<scene::Transform>(body.entity);
+    live.npcs.push_back({.id = body.scriptId, .pose = poseOf(transform.position, transform.yaw)});
+  }
+  if (const render::MapCamera* camera = scene_->camera();
+      camera != nullptr && camera->scale() > 0.0F) {
+    const glm::vec2 size = camera->viewportSize() / camera->scale();
+    live.view = ControlView{
+        .x = camera->scroll().x, .y = camera->scroll().y, .width = size.x, .height = size.y};
+  }
+  return live;
+}
+
+core::Result<void> PlaySession::reloadMap(std::optional<std::int32_t> exit) {
+  if (auto editable = mapEditable(); !editable) {
+    return editable;
   }
   // Edited and new story modules and patches load on the map's next section.
   if (session::StoryAdapter* story = game_.systems.story) {
