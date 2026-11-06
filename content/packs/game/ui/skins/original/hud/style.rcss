@@ -659,14 +659,20 @@ body {
 	decorator: minimap-disc(original #000000a8 #90d9fa #00000000 3dp 0dp);
 }
 
+/* The north mark on a black badge with the ring's light cyan round it, drawn over the ring as the modern skin's is:
+   bare, the letter's foot lay across the ring's stripes. */
 #minimap-north {
-	border-radius: 0;
-	border: 0;
-	background-color: transparent;
+	top: 2dp;
+	width: 26dp;
+	height: 26dp;
+	margin-left: -13dp;
+	border-radius: 13dp;
+	border: 1dp #90d9fa;
+	background-color: #000000;
 	font-family: original-look;
-	font-size: 22dp;
+	font-size: 18dp;
 	font-weight: normal;
-	line-height: 18dp;
+	line-height: 26dp;
 	color: #fff371;
 }
 
