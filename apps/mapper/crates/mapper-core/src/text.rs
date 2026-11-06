@@ -80,6 +80,155 @@ pub const SKIPPED_MOD: &str = "Mod que se queda fuera";
 pub const ARCHIVES_NOT_READ: &str = "Archivos .pak que el editor no lee (solo carpetas)";
 pub const DEFAULT_BANDS: &str = "se usan las bandas del original";
 
+pub const MENU_EDIT: &str = "Editar";
+pub const RELOAD_CONTENT: &str = "Recargar contenido";
+pub const UNDO: &str = "Deshacer";
+pub const REDO: &str = "Rehacer";
+pub const SAVE_PATCH: &str = "Guardar (parche)";
+pub const SAVE_WHOLE: &str = "Guardar mapa completo";
+pub const SHORTCUTS: &str = "Atajos de teclado";
+
+pub const TOOLS: &str = "Herramientas";
+pub const TOOL_SELECT: &str = "Seleccionar";
+pub const TOOL_BRUSH: &str = "Pincel";
+pub const TOOL_RECTANGLE: &str = "Rectángulo";
+pub const TOOL_FILL: &str = "Relleno";
+pub const TOOL_EYEDROPPER: &str = "Cuentagotas";
+pub const BRUSH_SIZE: &str = "Tamaño";
+pub const PAINT_VALUE: &str = "Valor";
+pub const VALUE_WALL: &str = "Pared";
+pub const VALUE_FREE: &str = "Libre";
+pub const VALUE_STEP: &str = "Al pisar";
+pub const VALUE_CONFIRM: &str = "Al confirmar";
+pub const VALUE_EXIT: &str = "Salida";
+pub const VALUE_TOILET: &str = "Baño";
+pub const VALUE_RAW: &str = "Crudo";
+
+pub const INSPECTOR: &str = "Selección";
+pub const NOTHING_SELECTED: &str =
+    "Nada seleccionado: elige una salida, un NPC o un punto de ruta con Seleccionar.";
+pub const EXIT: &str = "Salida";
+pub const TARGET_MAP: &str = "Mapa de destino";
+pub const TARGET_MAP_NONE: &str = "(ninguno)";
+pub const TARGET_INDEX: &str = "Índice del original";
+pub const TARGET_EXIT: &str = "Salida de destino";
+pub const ARRIVAL: &str = "Llegada (x, y, z)";
+pub const FACING: &str = "Orientación";
+pub const PAINT_EXIT_CELLS: &str = "Pintar sus celdas";
+pub const ERASE_CELLS: &str = "Borrar celdas (libre)";
+pub const OPEN_TARGET: &str = "Abrir el destino";
+pub const NPC: &str = "NPC";
+pub const POSITION: &str = "Posición (x, y, z)";
+pub const NPC_FIELDS: &str = "Campos";
+pub const PATH: &str = "Ruta";
+pub const PART_WAIT: &str = "esperar";
+pub const PART_WALK: &str = "andar";
+pub const PART_RUN: &str = "correr";
+pub const ADD_POINT: &str = "Añadir punto";
+pub const REMOVE_POINT: &str = "Quitar";
+pub const UP: &str = "Subir";
+pub const DOWN: &str = "Bajar";
+pub const FRAMES: &str = "fotogramas";
+pub const READ_ONLY: &str = "Solo lectura";
+pub const CAMERA: &str = "Cámara";
+pub const LIGHTS: &str = "Luces";
+pub const OBJECTS: &str = "Objetos";
+
+pub const SAVE: &str = "Guardar";
+pub const TARGET: &str = "Destino";
+pub const NO_TARGET: &str = "Elige el paquete destino antes de guardar (Archivo → Destino).";
+pub const TARGET_MOD: &str = "mod";
+pub const TARGET_TEAM: &str = "equipo";
+pub const NEW_PACK: &str = "Nuevo paquete de mod…";
+pub const NO_TARGETS: &str = "Ningún paquete del contenido se puede escribir: crea uno nuevo.";
+pub const PICK_FOLDER: &str = "Elegir…";
+pub const NEW_PACK_ID: &str = "Id del paquete nuevo";
+pub const NEW_PACK_FOLDER: &str = "Carpeta de mods";
+pub const NEW_PACK_CREATE: &str = "Crear";
+pub const NEW_PACK_DESCRIPTION: &str = "Cambios de mapas hechos con dwe-mapper";
+pub const BAD_PACK_ID: &str = "Id de paquete no válido (1 a 64 de a-z, 0-9 y _)";
+pub const PACK_EXISTS: &str = "Ya existe";
+pub const PACK_NOT_MOUNTED: &str =
+    "El paquete nuevo no se montó (mira los mods que se quedan fuera)";
+pub const SAVE_REFUSED: &str = "No se guardó: mira los problemas.";
+pub const SAVE_FAILED: &str = "No se pudo escribir";
+pub const NOTHING_TO_SAVE: &str = "nada que escribir";
+pub const SAVED_IN: &str = "Guardado en";
+pub const SAVE_PROBLEMS: &str = "Problemas al guardar";
+pub const RELOAD_ON_SAVE: &str = "Recargar al guardar";
+pub const DIRTY: &str = "sin guardar";
+pub const UNSAVED_TITLE: &str = "Cambios sin guardar";
+pub const UNSAVED_QUESTION: &str = "El mapa tiene cambios sin guardar.";
+pub const UNSAVED_SAVE: &str = "Guardar";
+pub const UNSAVED_DISCARD: &str = "Descartar";
+pub const UNSAVED_CANCEL: &str = "Cancelar";
+
+/// The keyboard shortcuts, as the help shows them.
+pub const SHORTCUT_LIST: [(&str, &str); 16] = [
+    ("Ctrl+S", "Guardar (parche)"),
+    ("Ctrl+Z", "Deshacer"),
+    ("Ctrl+Y / Ctrl+Mayús+Z", "Rehacer"),
+    ("V", "Seleccionar"),
+    ("B", "Pincel"),
+    ("R", "Rectángulo"),
+    ("F", "Relleno"),
+    (
+        "I",
+        "Cuentagotas (o Alt+clic con una herramienta de pintar)",
+    ),
+    ("[ / ]", "Pincel más pequeño / más grande"),
+    ("X", "Valor: pared / libre"),
+    ("Q / E", "Girar la selección 45° a un lado / al otro"),
+    ("Supr", "Quitar el punto de ruta seleccionado"),
+    (
+        "W",
+        "Añadir un punto de ruta al NPC seleccionado bajo el cursor",
+    ),
+    ("Esc", "Deseleccionar"),
+    ("Ctrl+clic", "Ir adonde lleva la salida"),
+    ("Mayús+arrastrar", "Orientar la selección hacia el cursor"),
+];
+
+/// The name of a tool.
+pub fn tool_name(tool: crate::tools::Tool) -> &'static str {
+    match tool {
+        crate::tools::Tool::Select => TOOL_SELECT,
+        crate::tools::Tool::Brush => TOOL_BRUSH,
+        crate::tools::Tool::Rectangle => TOOL_RECTANGLE,
+        crate::tools::Tool::Fill => TOOL_FILL,
+        crate::tools::Tool::Eyedropper => TOOL_EYEDROPPER,
+    }
+}
+
+/// What a save found, said for the problems panel.
+pub fn problem(problem: &dwe_map::save::Problem) -> String {
+    use dwe_map::save::Problem;
+    match problem {
+        Problem::TargetBelowData { data_pack } => format!(
+            "El paquete destino está debajo de «{data_pack}», que trae el mapa entero: su parche no se aplicaría."
+        ),
+        Problem::NoData => "Ningún paquete trae este mapa.".to_owned(),
+        Problem::DoesNotLoad(message) => format!("Lo escrito no carga: {message}"),
+        Problem::ExitConflict { exit } => format!(
+            "Salida {exit}: el id y el índice del original nombran mapas distintos (el juego la desactiva)."
+        ),
+        Problem::UnknownMap { exit, id } => format!("Salida {exit}: «{id}» no es ningún mapa."),
+        Problem::DeadExit { exit } => format!(
+            "Salida {exit}: tiene celdas de disparo pero no lleva a ningún sitio (warp muerto)."
+        ),
+        Problem::BadTargetExit { exit, target_exit } => {
+            format!("Salida {exit}: la salida de destino {target_exit} no existe (0 a 9).")
+        }
+        Problem::BadPath { slot } => {
+            format!("NPC {slot}: la ruta no cabe en el registro (8 partes, como mucho 8 puntos).")
+        }
+        Problem::Overridden { packs } => format!(
+            "Aviso: un parche de encima ({}) cambia lo mismo; el juego verá el suyo.",
+            packs.join(", ")
+        ),
+    }
+}
+
 /// A short word for a trigger value's band.
 pub fn band_name(band: dwe_map::TriggerBand) -> String {
     match band {

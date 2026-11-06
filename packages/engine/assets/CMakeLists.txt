@@ -60,6 +60,12 @@ dwe_add_module(assets
     PRIVATE_LIBS lodepng dwe_cgltf zstd::libzstd Opus::opus KTX::ktx
     TEST_LIBS lodepng Opus::opus KTX::ktx)
 
+# The tests read the maps the editor writes (dwe-map's tests/written.rs makes them) from the source tree.
+if(TARGET dwe_assets_tests)
+    target_compile_definitions(dwe_assets_tests
+        PRIVATE DWE_MAPPER_WRITTEN="${CMAKE_CURRENT_SOURCE_DIR}/tests/data/written_maps")
+endif()
+
 # The content check decodes every image of a pack; as in formats, debug builds link lodepng's release build, three
 # times faster. Not on Windows, where debug and release code use different C runtimes.
 if(NOT WIN32)

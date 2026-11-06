@@ -11,9 +11,10 @@ rust-version.workspace = true
 dwe-map.workspace = true
 dwe-pack.workspace = true
 glam.workspace = true
+serde.workspace = true
+serde_yaml_ng.workspace = true
 
 [dev-dependencies]
-serde_yaml_ng.workspace = true
 tempfile.workspace = true
 
 [lints]

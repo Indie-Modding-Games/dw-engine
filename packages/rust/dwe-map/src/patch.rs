@@ -402,7 +402,7 @@ pub fn read_map_patches(vfs: &Vfs, map_id: &str) -> Result<Vec<MapPatchText>> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     /// The engine's test map (packages/engine/assets/tests/map_documents.hpp) with neutral
@@ -450,6 +450,17 @@ mod tests {
              collision:\n  width: 100\n  height: 100\n  encoding: \"legend\"\n  legend:\n  \
              - cell: \".\"\n    value: 0\n  - cell: \"A\"\n    value: 110\n  - cell: \"B\"\n    \
              value: 51\n  - cell: \"#\"\n    value: 128\n  rows:\n{rows}"
+        )
+    }
+
+    /// The test map with one NPC slot (the fields the tools read and one stat).
+    pub(crate) fn fixture_map_with_npc() -> String {
+        fixture_map("null").replace(
+            "npcs: []\n",
+            "npcs:\n- type_id: 30\n  follow_mode: 1\n  position:\n    x: -400\n    y: 0\n    \
+             z: -2800\n  rotation:\n    x: 0\n    y: 3072\n    z: 0\n  tracking_range: 1000\n  \
+             script_id: 6\n  hp: 500\n  ai_sections:\n  - 0\n  - -1\n  - -1\n  - -1\n  - -1\n  \
+             - -1\n  - -1\n  - -1\n  waypoints:\n  - x: 10\n    y: 0\n    z: 0\n",
         )
     }
 
@@ -666,31 +677,31 @@ mod tests {
     }
 
     /// Packs in a temporary folder, each a pack.yaml and its files.
-    struct Packs {
-        dir: tempfile::TempDir,
+    pub(crate) struct Packs {
+        pub(crate) dir: tempfile::TempDir,
     }
 
     impl Packs {
-        fn new() -> Self {
+        pub(crate) fn new() -> Self {
             Self {
                 dir: tempfile::tempdir().unwrap(),
             }
         }
 
-        fn file(&self, path: &str, text: &str) {
+        pub(crate) fn file(&self, path: &str, text: &str) {
             let path = self.dir.path().join(path);
             std::fs::create_dir_all(path.parent().unwrap()).unwrap();
             std::fs::write(path, text).unwrap();
         }
 
-        fn pack(&self, id: &str, layer: &str, priority: i32) {
+        pub(crate) fn pack(&self, id: &str, layer: &str, priority: i32) {
             self.file(
                 &format!("{id}/pack.yaml"),
                 &format!("id: {id}\nversion: 1.0.0\nlayer: {layer}\npriority: {priority}\n"),
             );
         }
 
-        fn mount(&self, ids: &[&str]) -> Vfs {
+        pub(crate) fn mount(&self, ids: &[&str]) -> Vfs {
             let locations: Vec<_> = ids
                 .iter()
                 .map(|id| dwe_pack::PackLocation {
@@ -702,7 +713,7 @@ mod tests {
         }
     }
 
-    fn stacked() -> Packs {
+    pub(crate) fn stacked() -> Packs {
         let packs = Packs::new();
         packs.pack("base", "base", 0);
         packs.file("base/map/testa01/data.yaml", &fixture_map("null"));

@@ -332,6 +332,9 @@ std::string RemoteControl::statusFields() const {
   if (status.gpuBytes) {
     fields += std::format(R"(,"gpu_bytes":{})", *status.gpuBytes);
   }
+  if (status.overlay) {
+    fields += std::format(R"(,"overlay":{})", *status.overlay);
+  }
   return fields;
 }
 

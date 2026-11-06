@@ -1,11 +1,17 @@
-//! dwe-mapper: the map editor of dwe (docs/modulos/apps/mapper.md). Today a read-only viewer of
-//! the field maps of a content folder: background, collision, exits, characters, doors and toilet.
+//! dwe-mapper: the map editor of dwe (docs/modulos/apps/mapper.md). It shows the field maps of a
+//! content folder (background, collision, exits, characters, doors and toilet), edits their
+//! collision, exits and NPCs, and saves the changes as patches into a mod pack.
 
 mod app;
 mod canvas;
+mod dialogs;
+mod inspector;
+mod keys;
+mod live;
 mod options;
 mod panels;
 mod shot;
+mod toolbar;
 
 use eframe::egui;
 

@@ -1,12 +1,14 @@
-//! The window: panels around the map canvas. Every change goes to the model as an Action.
+//! The window: menus, tools and panels around the map canvas. Every change goes to the model as
+//! an Action; the window only adds what needs the platform (dialogs, closing, the live link).
 
 use std::path::PathBuf;
 
 use eframe::egui;
-use mapper_core::{Action, Mapper, text};
+use mapper_core::{Action, Mapper, Settings, text};
 
+use crate::dialogs::NewPack;
+use crate::live::LivePanel;
 use crate::options::Options;
-use crate::panels::LivePanel;
 use crate::shot::Shot;
 
 /// The background image on the GPU, and the model revision it was loaded for.
@@ -25,11 +27,20 @@ pub struct MapperApp {
     pub revealed_map: Option<String>,
     /// The map of the command line, opened on the first frame, once the canvas has its size.
     pending_map: Option<(String, Option<i32>)>,
+    /// Whether the primary button went down on the canvas and is still held.
+    pub pointer_held: bool,
+    /// The saves the live link has seen (to reload the game after each new one).
+    seen_saves: u64,
+    /// The "new mod pack" form, when open.
+    pub new_pack: Option<NewPack>,
+    pub show_shortcuts: bool,
+    /// The text that narrows the list of target maps in the exit inspector.
+    pub target_filter: String,
 }
 
 impl MapperApp {
     pub fn new(_creation: &eframe::CreationContext<'_>, options: Options) -> Self {
-        let mut mapper = Mapper::new();
+        let mut mapper = Settings::default_file().map_or_else(Mapper::new, Mapper::with_settings);
         if let Some(layers) = &options.layers {
             mapper.layers = mapper_core::LayerSet::none();
             for &layer in layers {
@@ -64,6 +75,11 @@ impl MapperApp {
             shot: options.shot.clone().map(Shot::new),
             revealed_map: None,
             pending_map: options.map.map(|map| (map, options.exit)),
+            pointer_held: false,
+            seen_saves: 0,
+            new_pack: None,
+            show_shortcuts: false,
+            target_filter: String::new(),
         }
     }
 
@@ -99,13 +115,39 @@ impl MapperApp {
     pub fn background_texture(&self) -> Option<&egui::TextureHandle> {
         self.background.texture.as_ref()
     }
+
+    /// After a new save, has a connected game read the map again (when asked to).
+    fn reload_after_save(&mut self) {
+        if self.mapper.saves == self.seen_saves {
+            return;
+        }
+        self.seen_saves = self.mapper.saves;
+        if self.mapper.reload_on_save() && self.live.is_connected() {
+            self.live.reload();
+        }
+    }
+
+    /// Closing the window with unsaved changes asks first; the model says when to close.
+    fn handle_close(&mut self, ctx: &egui::Context) {
+        let requested = ctx.input(|input| input.viewport().close_requested());
+        if requested && !self.mapper.quit && self.mapper.is_dirty() {
+            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            self.apply(Action::Quit);
+        }
+        if self.mapper.quit {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+    }
 }
 
 impl eframe::App for MapperApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
+        crate::keys::handle(self, &ctx);
         crate::panels::top_bar(self, ui);
+        crate::toolbar::show(self, ui);
         crate::panels::status_bar(self, ui);
+        crate::dialogs::problems(self, ui);
         crate::panels::browser(self, ui);
         crate::panels::details(self, ui);
         egui::CentralPanel::default()
@@ -122,6 +164,9 @@ impl eframe::App for MapperApp {
                 self.refresh_background(&ctx);
                 crate::canvas::show(self, ui);
             });
+        crate::dialogs::show(self, &ctx);
+        self.reload_after_save();
+        self.handle_close(&ctx);
         if let Some(shot) = &mut self.shot {
             shot.tick(&ctx);
         }

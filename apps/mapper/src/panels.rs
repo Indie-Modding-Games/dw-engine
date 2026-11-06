@@ -1,13 +1,15 @@
-//! The panels around the canvas: the menu and layer bar, the map browser, the details of the map
-//! shown, the live link and the status bar.
+//! The panels around the canvas: the menus and layer bar, the map browser, the inspector and
+//! details of the map shown, the live link and the status bar.
 
 use dwe_map::CellKind;
+use dwe_map::save::SaveMode;
 use dwe_pack::GameFolders;
 use eframe::egui;
-use mapper_core::{Action, GroupBy, Layer, Message, text};
-use mapper_live::{Endpoint, LiveClient, StoryState};
+use mapper_core::{Action, GroupBy, Layer, Message, TargetKind, text};
+use mapper_live::StoryState;
 
 use crate::app::MapperApp;
+use crate::dialogs::NewPack;
 
 pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
     egui::Panel::top("top").show(ui, |ui| {
@@ -30,8 +32,51 @@ pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
                         }));
                     }
                 }
+                let has_content = app.mapper.content.is_some();
+                if ui
+                    .add_enabled(has_content, egui::Button::new(text::RELOAD_CONTENT))
+                    .clicked()
+                {
+                    ui.close();
+                    app.apply(Action::ReloadContent);
+                }
+                ui.separator();
+                target_menu(app, ui);
+                let has_map = app.mapper.map.is_some();
+                let save = egui::Button::new(text::SAVE_PATCH).shortcut_text("Ctrl+S");
+                if ui.add_enabled(has_map, save).clicked() {
+                    ui.close();
+                    app.apply(Action::Save(SaveMode::Patch));
+                }
+                if ui
+                    .add_enabled(has_map, egui::Button::new(text::SAVE_WHOLE))
+                    .clicked()
+                {
+                    ui.close();
+                    app.apply(Action::Save(SaveMode::WholeData));
+                }
+                ui.separator();
                 if ui.button(text::QUIT).clicked() {
-                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                    ui.close();
+                    app.apply(Action::Quit);
+                }
+            });
+            ui.menu_button(text::MENU_EDIT, |ui| {
+                let (undo, redo) = app.mapper.map.as_ref().map_or((false, false), |map| {
+                    (map.history.can_undo(), map.history.can_redo())
+                });
+                let button = egui::Button::new(text::UNDO).shortcut_text("Ctrl+Z");
+                if ui.add_enabled(undo, button).clicked() {
+                    app.apply(Action::Undo);
+                }
+                let button = egui::Button::new(text::REDO).shortcut_text("Ctrl+Y");
+                if ui.add_enabled(redo, button).clicked() {
+                    app.apply(Action::Redo);
+                }
+                ui.separator();
+                if ui.button(text::SHORTCUTS).clicked() {
+                    ui.close();
+                    app.show_shortcuts = true;
                 }
             });
             ui.separator();
@@ -74,32 +119,97 @@ pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
     });
 }
 
+/// The pack saves go to: the writable packs of the stack, and a new mod pack.
+fn target_menu(app: &mut MapperApp, ui: &mut egui::Ui) {
+    ui.menu_button(text::TARGET, |ui| {
+        let current = app.mapper.current_target().map(|target| target.root);
+        let targets = app.mapper.targets();
+        if targets.is_empty() {
+            ui.weak(text::NO_TARGETS);
+        }
+        for target in targets {
+            let chosen = current.as_ref() == Some(&target.root);
+            let label = format!("{} ({})", target.id, target_kind(target.kind));
+            if ui
+                .selectable_label(chosen, label)
+                .on_hover_text(target.root.display().to_string())
+                .clicked()
+            {
+                ui.close();
+                app.apply(Action::SetTarget(Some(target.root)));
+            }
+        }
+        ui.separator();
+        if ui
+            .add_enabled(
+                app.mapper.content.is_some(),
+                egui::Button::new(text::NEW_PACK),
+            )
+            .clicked()
+        {
+            ui.close();
+            app.new_pack = Some(NewPack::for_app(app));
+        }
+    });
+}
+
+fn target_kind(kind: TargetKind) -> &'static str {
+    match kind {
+        TargetKind::Mod => text::TARGET_MOD,
+        TargetKind::Team => text::TARGET_TEAM,
+    }
+}
+
 pub fn status_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
     egui::Panel::bottom("status").show(ui, |ui| {
-        ui.horizontal(|ui| match app.mapper.messages.last() {
-            Some(Message::Error(message)) => {
-                ui.colored_label(egui::Color32::LIGHT_RED, message);
-            }
-            Some(Message::Info(message)) => {
-                ui.label(message);
-            }
-            None => {
-                if let Some(content) = &app.mapper.content {
-                    let packs: Vec<_> = content
-                        .vfs()
-                        .packs()
-                        .iter()
-                        .map(|pack| pack.id().to_owned())
-                        .collect();
-                    ui.label(format!(
-                        "{} · {}",
-                        content.folders.content.display(),
-                        packs.join(" < ")
-                    ));
+        ui.horizontal(|ui| {
+            if let Some(map) = &app.mapper.map {
+                if map.is_dirty() {
+                    ui.colored_label(
+                        egui::Color32::YELLOW,
+                        format!("* {} ({})", map.document.id, text::DIRTY),
+                    );
+                } else {
+                    ui.label(&map.document.id);
                 }
+                ui.separator();
             }
+            let target = app.mapper.current_target().map_or_else(
+                || "—".to_owned(),
+                |target| format!("{} ({})", target.id, target_kind(target.kind)),
+            );
+            ui.label(format!("{}: {target}", text::TARGET));
+            ui.separator();
+            message_line(app, ui);
         });
     });
+}
+
+/// The last message, or the content and its packs.
+fn message_line(app: &MapperApp, ui: &mut egui::Ui) {
+    match app.mapper.messages.last() {
+        Some(Message::Error(message)) => {
+            ui.colored_label(egui::Color32::LIGHT_RED, message);
+        }
+        Some(Message::Info(message)) => {
+            ui.label(message);
+        }
+        None => {
+            if let Some(content) = &app.mapper.content {
+                let packs: Vec<_> = content
+                    .vfs()
+                    .packs()
+                    .iter()
+                    .map(|pack| pack.id().to_owned())
+                    .collect();
+                ui.label(format!(
+                    "{} · {}",
+                    content.folders.content.display(),
+                    packs.join(" < ")
+                ));
+            }
+        }
+    }
 }
 
 pub fn browser(app: &mut MapperApp, ui: &mut egui::Ui) {
@@ -174,6 +284,8 @@ pub fn details(app: &mut MapperApp, ui: &mut egui::Ui) {
         .default_size(290.0)
         .show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
+                crate::inspector::show(app, ui);
+                ui.separator();
                 map_details(app, ui);
                 ui.separator();
                 hover_details(app, ui);
@@ -297,6 +409,10 @@ fn live_details(app: &mut MapperApp, ui: &mut egui::Ui) {
             }
         }
     });
+    let mut reload_on_save = app.mapper.reload_on_save();
+    let reload_toggled = ui
+        .checkbox(&mut reload_on_save, text::RELOAD_ON_SAVE)
+        .changed();
     if live.client.is_some() {
         if ui.button(text::LIVE_RELOAD).clicked() {
             live.reload();
@@ -312,6 +428,9 @@ fn live_details(app: &mut MapperApp, ui: &mut egui::Ui) {
     ui.weak(&live.state);
     if let Some(story) = &live.story {
         story_details(&app.mapper.story_names, story, ui);
+    }
+    if reload_toggled {
+        app.apply(Action::SetReloadOnSave(reload_on_save));
     }
     if let Some(map) = open {
         app.apply(Action::OpenMap(map));
@@ -342,111 +461,4 @@ fn story_details(names: &dwe_map::StoryNames, story: &StoryState, ui: &mut egui:
                 ui.end_row();
             }
         });
-}
-
-/// The link to a running game.
-pub struct LivePanel {
-    pub endpoint: String,
-    pub client: Option<LiveClient>,
-    pub state: String,
-    /// Whether the game's map debug overlay is on, as the game said last.
-    pub overlay: bool,
-    /// The story's state, once read.
-    pub story: Option<StoryState>,
-}
-
-impl Default for LivePanel {
-    fn default() -> Self {
-        Self {
-            endpoint: String::new(),
-            client: None,
-            state: text::LIVE_OFF.to_owned(),
-            overlay: false,
-            story: None,
-        }
-    }
-}
-
-impl LivePanel {
-    pub fn connect(&mut self) {
-        let connected =
-            Endpoint::parse(&self.endpoint).and_then(|endpoint| LiveClient::connect(&endpoint));
-        match connected {
-            Ok(client) => {
-                self.client = Some(client);
-                self.state = text::LIVE_ON.to_owned();
-            }
-            Err(error) => {
-                self.client = None;
-                self.state = error.to_string();
-            }
-        }
-    }
-
-    /// The map the game is playing, if a game is being played.
-    pub fn game_map(&mut self) -> Option<String> {
-        let client = self.client.as_mut()?;
-        match client.status() {
-            Ok(status) => {
-                let paused = if status.paused {
-                    format!(" · {}", text::LIVE_PAUSED)
-                } else {
-                    String::new()
-                };
-                self.state = format!(
-                    "{} · {} · tick {}{paused}",
-                    text::LIVE_ON,
-                    status.mode,
-                    status.tick
-                );
-                status.map
-            }
-            Err(error) => {
-                self.fail(error);
-                None
-            }
-        }
-    }
-
-    /// Asks the game to read its map again where the player stands.
-    pub fn reload(&mut self) {
-        let Some(client) = self.client.as_mut() else {
-            return;
-        };
-        match client.reload_map(None) {
-            Ok(reloaded) => self.state = format!("{}: {}", text::LIVE_RELOADED, reloaded.map),
-            Err(error) => self.fail(error),
-        }
-    }
-
-    pub fn set_overlay(&mut self, on: bool) {
-        let Some(client) = self.client.as_mut() else {
-            return;
-        };
-        match client.overlay(Some(on)) {
-            Ok(shown) => self.overlay = shown,
-            Err(error) => self.fail(error),
-        }
-    }
-
-    pub fn read_story(&mut self) {
-        let Some(client) = self.client.as_mut() else {
-            return;
-        };
-        match client.story_state() {
-            Ok(story) => self.story = Some(story),
-            Err(error) => self.fail(error),
-        }
-    }
-
-    fn fail(&mut self, error: mapper_live::Error) {
-        if matches!(
-            error,
-            mapper_live::Error::Closed | mapper_live::Error::Io(_)
-        ) {
-            self.client = None;
-            self.story = None;
-        }
-        self.state = error.to_string();
-    }
 }

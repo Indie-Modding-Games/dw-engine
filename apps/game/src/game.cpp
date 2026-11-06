@@ -1005,6 +1005,7 @@ int runGame(const Options& requested) {
       ControlStatus now;
       now.textures = (*renderer)->bindless().used();
       now.gpuBytes = (*device)->allocatedBytes();
+      now.overlay = mapOverlay;
       if (movies && movies->playing()) {
         now.mode = "movie";
       } else if (interview) {

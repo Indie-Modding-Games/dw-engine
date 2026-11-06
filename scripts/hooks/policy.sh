@@ -49,6 +49,9 @@ allow 'forbiddenwordin\(.*' 'packages/formats/tests/*'
 # A map patch's NPC change takes the same species key as the map data's NPC record, with the same
 # reference to the species' model (the data's own schema predates this list).
 allow '"digimon"|"digimon/\{\}/model"' content/schemas/map_patch.schema.json
+# The maps the editor writes for the engine to read back: their NPC records keep the data's species
+# key (with no species), as every map does.
+allow '^ *digimon: null$' 'packages/engine/assets/tests/data/written_maps/*'
 # The decomp's source file that the port cites as "tamer.c: function": a file name, not ours.
 allow 'tamer\.c' '*'
 # A cited hardware reference and the name of a file on the disc.

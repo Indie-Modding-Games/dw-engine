@@ -1,12 +1,15 @@
-//! The map canvas: the background with the layers over it, pan with a drag, zoom with the wheel
-//! (or a pinch), a double click fits the map, and a click on an exit's cell goes where it leads.
+//! The map canvas: the background with the layers over it. The primary button works with the
+//! tool chosen (select and drag, paint, rectangle, fill, eyedropper; Ctrl+click follows an exit);
+//! the right or middle button pans, the wheel (or a pinch) zooms, and a double click with
+//! Seleccionar fits the map.
 
 use dwe_map::world::{self, Cell};
 use dwe_map::{CellKind, TriggerBand};
-use eframe::egui::{self, Color32, Pos2, Shape, Stroke};
+use eframe::egui::{self, Color32, PointerButton, Pos2, Shape, Stroke};
 use glam::Vec2;
 use mapper_core::overlay::Arrow;
-use mapper_core::{Action, ExitTarget, Layer, Mapper, text};
+use mapper_core::tools::Drag;
+use mapper_core::{Action, ExitTarget, Layer, Mapper, Modifiers, Selection, Tool, text};
 
 use crate::app::MapperApp;
 
@@ -31,6 +34,8 @@ pub mod colors {
     pub const TOILET_LINE: Color32 = Color32::from_rgb(210, 140, 255);
     pub const HOVER: Color32 = Color32::WHITE;
     pub const LABEL_BACK: Color32 = Color32::from_rgba_premultiplied(0, 0, 0, 170);
+    pub const SELECTED: Color32 = Color32::from_rgb(80, 200, 255);
+    pub const PREVIEW: Color32 = Color32::from_rgba_premultiplied(40, 120, 160, 70);
 }
 
 pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
@@ -39,10 +44,11 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
     let origin = response.rect.min;
     let to_local = |pos: Pos2| Vec2::new(pos.x - origin.x, pos.y - origin.y);
 
-    if response.dragged() {
+    if response.dragged_by(PointerButton::Secondary) || response.dragged_by(PointerButton::Middle) {
         let delta = response.drag_delta();
         app.apply(Action::Pan(Vec2::new(delta.x, delta.y)));
     }
+    pointer_gesture(app, ui, &response);
     if let Some(pointer) = response.hover_pos() {
         let (scroll, pinch) = ui.input(|input| (input.smooth_scroll_delta.y, input.zoom_delta()));
         let factor = pinch * (scroll * WHEEL_ZOOM).exp();
@@ -54,12 +60,8 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
         }
     }
     app.apply(Action::Hover(response.hover_pos().map(to_local)));
-    if response.double_clicked() {
+    if response.double_clicked() && app.mapper.tool == Tool::Select {
         app.apply(Action::FitView);
-    } else if response.clicked()
-        && let Some(pointer) = response.interact_pointer_pos()
-    {
-        app.apply(Action::Click(to_local(pointer)));
     }
 
     let painter = painter.with_clip_rect(response.rect);
@@ -114,6 +116,7 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
     }
     draw_cells(&painter, mapper, &to_screen);
     draw_hover(&painter, mapper, &to_screen);
+    draw_tool_preview(&painter, mapper, &to_screen);
     if layers.shows(Layer::Toilet)
         && let Some([first, second]) = overlay.toilet
     {
@@ -200,6 +203,107 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
                 );
             }
         }
+    }
+    if let Some(at) = selected_point(mapper) {
+        painter.circle_stroke(to_screen(at), 10.0, Stroke::new(2.5, colors::SELECTED));
+    }
+}
+
+/// The primary button's gesture, sent to the model: pressed, moved while held, released.
+fn pointer_gesture(app: &mut MapperApp, ui: &egui::Ui, response: &egui::Response) {
+    let origin = response.rect.min;
+    let (pressed, released, moving, latest, keys) = ui.input(|input| {
+        (
+            input.pointer.primary_pressed(),
+            input.pointer.primary_released(),
+            input.pointer.is_moving(),
+            input.pointer.latest_pos(),
+            input.modifiers,
+        )
+    });
+    let Some(latest) = latest else { return };
+    let at = Vec2::new(latest.x - origin.x, latest.y - origin.y);
+    if pressed && response.hovered() {
+        app.pointer_held = true;
+        let modifiers = Modifiers {
+            shift: keys.shift,
+            alt: keys.alt,
+            ctrl: keys.command,
+        };
+        app.apply(Action::PointerDown { at, modifiers });
+    } else if app.pointer_held && moving {
+        app.apply(Action::PointerMove(at));
+    }
+    if released && app.pointer_held {
+        app.pointer_held = false;
+        app.apply(Action::PointerUp);
+    }
+}
+
+/// Where the selection is drawn: an exit's arrival, an NPC or a point of its path.
+fn selected_point(mapper: &Mapper) -> Option<Vec2> {
+    let overlay = &mapper.map.as_ref()?.overlay;
+    match mapper.selection? {
+        Selection::Exit(exit) => overlay
+            .exits
+            .iter()
+            .find(|mark| mark.exit == exit)?
+            .arrival
+            .map(|arrow| arrow.from),
+        Selection::Npc(slot) => overlay
+            .npcs
+            .iter()
+            .find(|npc| npc.slot == slot)?
+            .position
+            .map(|arrow| arrow.from),
+        Selection::Waypoint { slot, part } => {
+            let npc = overlay.npcs.iter().find(|npc| npc.slot == slot)?;
+            let index = npc.parts.iter().position(|&known| known == part)?;
+            npc.waypoints.get(index).copied()
+        }
+    }
+}
+
+/// What the tool will paint: the brush under the cursor, or the rectangle being dragged.
+fn draw_tool_preview(painter: &egui::Painter, mapper: &Mapper, to_screen: &impl Fn(Vec2) -> Pos2) {
+    let Some(map) = &mapper.map else { return };
+    let region = match (mapper.drag, mapper.tool, mapper.hover) {
+        (Some(Drag::Rectangle { from, to }), _, _) => Some((from, to)),
+        (None, Tool::Brush, Some(hover)) => {
+            let half = mapper.brush_size / 2;
+            let cell = hover.cell;
+            Some((
+                Cell::new(cell.column - half, cell.row - half),
+                Cell::new(cell.column + half, cell.row + half),
+            ))
+        }
+        _ => None,
+    };
+    let Some((from, to)) = region else { return };
+    let min = Cell::new(from.column.min(to.column), from.row.min(to.row));
+    let max = Cell::new(from.column.max(to.column), from.row.max(to.row));
+    let low = world::cell_min(min);
+    let high = world::cell_min(max) + glam::Vec3::new(world::CELL_SIZE, 0.0, world::CELL_SIZE);
+    let corners = [
+        low,
+        glam::Vec3::new(high.x, 0.0, low.z),
+        high,
+        glam::Vec3::new(low.x, 0.0, high.z),
+    ];
+    let points: Option<Vec<Pos2>> = corners
+        .iter()
+        .map(|&corner| {
+            map.camera
+                .project_to_background(corner)
+                .map(|point| to_screen(point.pixel))
+        })
+        .collect();
+    if let Some(points) = points {
+        painter.add(Shape::convex_polygon(
+            points,
+            colors::PREVIEW,
+            Stroke::new(1.5, colors::SELECTED),
+        ));
     }
 }
 

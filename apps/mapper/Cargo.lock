@@ -454,6 +454,7 @@ dependencies = [
  "mapper-core",
  "mapper-live",
  "rfd",
+ "serde_yaml_ng",
 ]
 
 [[package]]
@@ -1241,6 +1242,7 @@ dependencies = [
  "dwe-map",
  "dwe-pack",
  "glam",
+ "serde",
  "serde_yaml_ng",
  "tempfile",
 ]

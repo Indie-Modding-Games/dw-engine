@@ -3,15 +3,21 @@
 
 pub mod action;
 pub mod browser;
+pub mod edit;
 pub mod layers;
 pub mod overlay;
 pub mod session;
+pub mod targets;
 pub mod text;
+pub mod tools;
 pub mod view;
 
-pub use action::Action;
+pub use action::{Action, PendingChoice};
 pub use browser::{GroupBy, MapGroup, MapItem};
+pub use edit::{Edit, History};
 pub use layers::{Layer, LayerSet};
 pub use overlay::{ExitMark, ExitTarget, MapOverlay};
 pub use session::{Content, Hover, Mapper, Message, OpenMap};
+pub use targets::{SaveTarget, Settings, TargetKind};
+pub use tools::{Modifiers, Selection, Tool};
 pub use view::View;

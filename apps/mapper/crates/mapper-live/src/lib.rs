@@ -67,6 +67,8 @@ pub struct GameStatus {
     pub mode: String,
     /// The map of the game being played; the game sends an empty one before a game starts.
     pub map: Option<String>,
+    /// Whether the game's map debug overlay is on; None from a game that does not say.
+    pub overlay: Option<bool>,
 }
 
 /// What `reload_map` did: the map entered again and the exit it was entered by, None when the
@@ -191,6 +193,7 @@ impl LiveClient {
                 .unwrap_or_default()
                 .to_owned(),
             map: non_empty(answer.get("map")),
+            overlay: answer.get("overlay").and_then(Value::as_bool),
         })
     }
 
@@ -335,7 +338,7 @@ mod tests {
         // The fields as remote_control.cpp writes them.
         let port = fake_game(vec![
             json!({"ok": true, "tick": 42, "paused": true, "mode": "field", "map": "area_a",
-                   "held": [], "pending": 0}),
+                   "held": [], "pending": 0, "overlay": true}),
             json!({"ok": true, "tick": 1, "paused": false, "mode": "title", "map": "",
                    "held": [], "pending": 0}),
             json!({"ok": false, "error": "reload_map: this game cannot reload its map"}),
@@ -347,10 +350,12 @@ mod tests {
                 tick: 42,
                 paused: true,
                 mode: "field".into(),
-                map: Some("area_a".into())
+                map: Some("area_a".into()),
+                overlay: Some(true),
             }
         );
-        assert_eq!(client.status().unwrap().map, None);
+        let before_a_game = client.status().unwrap();
+        assert_eq!((before_a_game.map, before_a_game.overlay), (None, None));
         let error = client.reload_map(None).unwrap_err().to_string();
         assert!(error.contains("cannot reload"), "{error}");
         assert!(matches!(
