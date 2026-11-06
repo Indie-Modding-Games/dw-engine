@@ -310,6 +310,11 @@ public:
   // The border box of an element of a document; nullopt if there is no such element.
   [[nodiscard]] std::optional<Rect> elementRect(std::string_view document,
                                                 std::string_view elementId) const;
+  // Where an element's border box is drawn: elementRect moved and sized by the transforms of the
+  // element and what holds it (a box drawn smaller to fit the window, a squeezed row). For the
+  // pointer, which meets what is drawn.
+  [[nodiscard]] std::optional<Rect> elementDrawnRect(std::string_view document,
+                                                     std::string_view elementId) const;
   // What the player sees of the shown documents but one, within the window: each text's lines and
   // each box (an element with a background, a border or a decorator) and image, left out when it
   // or what holds it is hidden, transparent or under a transform (a box opening or closing). A

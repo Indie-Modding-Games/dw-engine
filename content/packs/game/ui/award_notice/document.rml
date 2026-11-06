@@ -3,6 +3,7 @@
 	<title>Award notice</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="../story_textbox/structure.rcss"/>
+	<script src="../common/screen_fit.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>

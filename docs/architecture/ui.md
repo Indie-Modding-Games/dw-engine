@@ -128,6 +128,15 @@ proporción es `min(alto/720, ancho/960)` (entre 0,5 y 8) por la escala que elig
 limita a `[Ui::MinScale, Ui::MaxScale]` = [0,5, 3]; un valor que no es un número se ignora. En una pantalla de alta
 densidad la ventana tiene más píxeles y la proporción crece con ellos: el HUD y los menús ocupan lo mismo.
 
+Las cajas que van en el sitio del original (el cuadro de diálogo `story_textbox`, en dp de 486 a 663 de los 720, y las
+notas que usan su caja: `field_item_notice` y `award_notice`) no se salen de la ventana con una escala grande:
+`ui/common/screen_fit.lua` mide la caja y la ventana en cada tick y, si la caja no cabe con 6 dp de margen, la dibuja
+más pequeña lo justo y la mete desde el borde que cruza (`transform`, sin tocar su maquetación). Una caja que cabe se
+dibuja tal cual, así que a la escala por defecto nada cambia. Antes, al 115 % en una ventana 16:10 (o al 130 % en una
+16:9) el cuadro de diálogo pasaba del borde de abajo y cortaba su última fila. El puntero usa `Ui::elementDrawnRect`
+(el rectángulo dibujado, con las transformaciones) para elegir una opción del cuadro. Prueba: `screen_fit_tests.cpp`
+(16:10 al 115 %, 16:9, 4:3 y una ventana de 800 × 600 al 200 %, en las dos pieles).
+
 ## Minimapa
 
 `MinimapGrid` es la rejilla del mapa con tres clases de celda: bloqueada (transparente), transitable y salida.

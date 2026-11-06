@@ -12,6 +12,7 @@
 #include <RmlUi/Core/Core.h>
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
+#include <RmlUi/Core/ElementUtilities.h>
 #include <RmlUi/Core/Factory.h>
 #include <RmlUi/Core/Input.h>
 #include <RmlUi/Core/RenderManager.h>
@@ -1501,6 +1502,22 @@ std::optional<Ui::Rect> Ui::elementRect(std::string_view document,
   const Rml::Vector2f size = element->GetBox().GetSize(Rml::BoxArea::Border);
   return Rect{
       .left = offset.x, .top = offset.y, .right = offset.x + size.x, .bottom = offset.y + size.y};
+}
+
+std::optional<Ui::Rect> Ui::elementDrawnRect(std::string_view document,
+                                             std::string_view elementId) const {
+  const Impl::Document* found = impl_->find(document);
+  Rml::Element* element =
+      found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
+  if (element == nullptr) {
+    return std::nullopt;
+  }
+  Rml::Rectanglef drawn;
+  if (!Rml::ElementUtilities::GetBoundingBox(drawn, element, Rml::BoxArea::Border)) {
+    return elementRect(document, elementId);
+  }
+  return Rect{
+      .left = drawn.Left(), .top = drawn.Top(), .right = drawn.Right(), .bottom = drawn.Bottom()};
 }
 
 std::vector<Ui::Rect> Ui::drawnRects(std::string_view exceptDocument) const {
