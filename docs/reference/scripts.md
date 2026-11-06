@@ -438,6 +438,8 @@ Una orden con el número de rutina; el argumento suele ir en la variable 254. To
 4, 5 y 17 no hacen nada y las de 57 en adelante tampoco (comprobado, `scriptInstruction64to7E` y `tickScript`). Las
 que "esperan" corren una máquina de estados propia cada fotograma hasta acabar. La columna **4a** propone cuáles hacen
 falta para correr los eventos de la historia y las tiendas en la fase 4a (propuesta, la decide el manager).
+Desde entonces la historia se juega entera y las rutinas que usa están en `apps/session/src/story_routines/`; qué
+queda de cada una lo dice la [cobertura del port](port-coverage.md) (nota de 2026-11-06).
 
 | Id | Usos | Qué hace | Espera | Decomp | 4a |
 |---|---|---|---|---|---|

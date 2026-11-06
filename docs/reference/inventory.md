@@ -80,8 +80,8 @@ puede tirar.
   **(comprobado)**.
 - **Vender:** solo lo que se puede tirar (`droppable` distinto de 0), a `value / 2`; el dinero no pasa de 999 999
   **(comprobado)**.
-- **Otras tiendas** (fase 4): el intercambio por méritos (`merit_value`) y la tienda de reciclaje, que vende lo que se
-  perdió al caer en combate, son menús que abre el guion.
+- **Otras tiendas:** el intercambio por méritos (`merit_value`) y la tienda de reciclaje, que vende lo que se
+  perdió al caer en combate, son menús que abre el guion. En el motor: `session::MeritShop` y `session::ShopCounter`.
 
 ### Derrota
 
@@ -102,7 +102,7 @@ puede tirar.
   **(comprobado)**. La línea del texto (MAPHEAD 0x4d3) dice si es nueva (según su rareza) o repetida, y la variable
   249 lleva su Digimon (`showCardTextbox`) **(comprobado)**.
 - Motor: `game/inventory/cards`, `session::CardsAdapter` (reglas `cards`, sección de guardado `cards`). La tienda de
-  cartas, la venta, el canje por méritos y el álbum quedan para después del Hito 1.
+  cartas y su venta están en `session::CardShop`, y el canje por méritos en `session::MeritShop`.
 - Los scripts: `story.give_card(n)` suma una copia sin pasar de `max_copies` y `story.take_card(n)` quita una sin
   bajar de 0 (`script_interp.c:1143`, `:1151`); `story.cards(n)` dice cuántas hay (`scriptCompareCard`). Una carta
   que la tabla no tiene es un error del script; sin cartas (sin tabla o sin reglas) no cambian nada

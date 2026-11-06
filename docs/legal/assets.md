@@ -72,8 +72,10 @@ Lo que hay que tener claro:
 | Mecanismo | Qué hace |
 |---|---|
 | **DCO** (`git commit -s`) | El autor certifica que tiene derecho a aportar ese código o ese asset |
-| **`provenance.yaml`** | Cada asset del equipo declara su autor, su licencia y su origen (original o derivado) |
-| **Chequeo de hashes en la CI** | Rechaza cualquier fichero cuyo hash coincida con uno extraído del disco |
+| **`provenance.yaml`** | Previsto: cada asset del equipo declarará su autor, su licencia y su origen (original o derivado). Aún no hay ninguno: el paquete del juego solo lleva YAML, Lua, la interfaz, dos banderas y las fuentes Noto Sans, con su licencia (`noto_sans_license.txt`) |
+| **Hooks de git** (`scripts/dev.sh setup-hooks`) | `pre-commit` y `commit-msg` rechazan las rutas del original (imágenes de disco, ficheros del juego, savestates, trazas), otra identidad de autor y las palabras prohibidas en el mensaje (en los ficheros solo avisan) (`scripts/hooks/policy.sh`) |
+| **Paquetes sin datos del disco** | Antes de publicar, `scripts/package/no_disc_data.sh` (y su versión de macOS) comprueba que ningún paquete lleva el paquete base ni ficheros del original. Cada paquete lleva `LICENSE`, `THIRD_PARTY_NOTICES.txt` y las licencias de terceros |
+| **Chequeo de hashes en la CI** | Previsto: rechazar cualquier fichero cuyo hash coincida con uno extraído del disco. Hoy la CI no lo hace |
 | **`.gitignore`** | `content/base/` y las cachés de cocinado nunca se versionan |
 | **Recetas y deltas** | Lo derivado se distribuye como instrucciones o diferencias que se aplican sobre la base local |
 
@@ -97,7 +99,7 @@ Las reglas de la [tubería del remaster](../architecture/remaster-pipeline.md#le
 - **Las claves** viven en el entorno o en el almacén de credenciales del sistema, nunca en git ni en una receta.
 - **Música:** «La música HD rehecha a partir de la original es obra derivada: solo se distribuyen recetas o deltas. La música del juego original nunca se distribuye. La música nueva compuesta por el equipo, o con licencia, declara autor, licencia y origen en provenance.yaml. Decidido por el coordinador (2026-10-21).»
 
-## Licencias propuestas
+## Licencias
 
 - **Código:** MIT (ver [`LICENSE`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/LICENSE)). Las dependencias conservan sus propias licencias.
 - **Assets originales del equipo:** CC BY-SA 4.0.

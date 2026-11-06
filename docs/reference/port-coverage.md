@@ -34,45 +34,27 @@ Límites: que el motor nombre una función no prueba que la haga entera, y una f
 falta hasta que una entrada manual la corrige. Las entradas manuales de pesca, muerte y renacer, evolución, piedras,
 vídeos, torneos y versus salen de leer el cuerpo de cada función; conviene repasarlas al portar esos sistemas.
 
-## Top 20 huecos que el jugador notará
+## Huecos que el jugador notará
 
-Ordenados por lo pronto que aparecen en una partida normal: combates, cuidado del compañero, entrenamiento, la ciudad
-de inicio y los mapas cercanos, y reclutar.
+Con la historia entera jugable (2026-11-06), lo que queda por portar es poco. Ordenado por lo pronto que aparece en
+una partida normal:
 
 | # | Hueco | Decomp | Motor |
 |---:|---|---|---|
-| 1 | La máquina de guardar del mapa no se abre: la rutina 48 se cierra al momento; solo se guarda al dormir y con los autoguardados | `script_interp.c` rutina 48, `main_menu.c:5288` `tickSaveMachine` | `apps/game/src/story_scene_glue.cpp:48`; la máquina existe en `save_machine.cpp` |
-| 2 | Sin cifras de curación ni de mejoras (con icono) sobre los luchadores; las de daño ya salen | `entity_text.c:71` `initializeEntityText`, `utils2.c` `drawEntityTextIcon`, `item.c` `handleHPHealingItem` | `apps/screens/src/damage_numbers.cpp` |
-| 3 | Los efectos de las técnicas no dibujan cintas, sprites de pantalla, fundidos ni cambios de paleta, y la cámara no se mueve para lucirlas (los emisores de partículas, las nubes y los destellos ya salen) | `battle_effect.c` (`BTL_tickRibbonPoints`, `BTL_setupFixedCamera`, `BTL_renderScreenSprite`, `BTL_addClutLoadPrim`) | `game/battle/src/effect_runner_subops.cpp` salta esas subórdenes |
-| 4 | Cerrado: cada técnica llega cuando su script toca al defensor (`ScriptedFlights`, fila «Viaje del proyectil» de battle.md); `battle.timing.projectile_speed` solo vale sin scripts (simulación, pruebas) o si el script nunca toca | scripts de efecto de cada técnica | `game/battle/src/attack_hits.cpp` (`effectLanding`) |
-| 5 | Los estados no se ven sobre el luchador: ni burbujas de veneno, ni confusión, ni estrellas de aturdimiento (solo el texto del HUD) | `battle_main.c:2698` `BTL_addStatusEffectVisual`, `battle_effect.c` `BTL_addPoisonBubble`, `BTL_tickConfusionEffect`, `BTL_tickStunEffect` | `apps/screens/src/battle_view.cpp:45` |
-| 6 | La escena de evolución no dibuja partículas, huesos que se rompen ni destellos | `evl/evl.c` `EVL_tickParticle`, `EVL_tickShardSet`, `EVL_tickSpark`, `EVL_initEvoSequence` | `apps/game/src/evolution_scene.cpp:231` |
-| 7 | Al dar de comer no se ve el objeto en la mano del jugador | `game_menu.c:2245` `renderFeedingItem` | `apps/game/src/feed_scene.cpp:81` |
-| 8 | Tras un combate de historia el compañero no vuelve andando: la vuelta acaba al momento, y no se guarda su rastro durante el combate | `script_interp.c:1950`; `battle_main.c:702` `BTL_tickPartnerWaypointTrail` | `apps/session/src/story_scenes.cpp:75-79` (esbozo) |
-| 9 | Los personajes del mapa que no luchan no huyen al empezar el combate (se van andando tras ganar) | `battle_setup.c` `BTL_handleBattleIntro`, `battle_tick.c:308` `NPCEntityTickBattle`, `btl.c:128` `isScreenConcave` | docs/modulos/game/battle.md:126 |
-| 10 | El cuadro final del combate no dice la orden aprendida ni el bonus de MP | `battle_ui.c:297` `handleBattleEndBox`, `battle_hud.c` `BTL_appendCommandLearnedText`, `BTL_appendMPBonusText` | `apps/screens/include/dwe/screens/battle_view.hpp:116` |
-| 11 | Con la bolsa llena, recibir un objeto no pregunta cuál tirar: la rutina 0 se cierra al momento | `script_common.c:1815` `openDiscardItem` | `apps/session/src/story_routines/routine_discard_item.cpp` |
-| 12 | Sin medallas ni la escena de premio (medalla o nivel del jugador) | `script_common.c:3026` `unlockMedal`, `tamer.c:721` `checkMedalConditions`, `:793` `checkPendingAwards`, `:1751` `tamerTickAwardSomething` | — |
-| 13 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, gramola, intercambio por méritos, trueque, cartas, el cuadro del dinero y el humo de un personaje que desaparece | `shop/script_menu.c` `tickItemKeeper`, `openJukebox`, `openMeritShop`, `openMojyamonShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox`; `overworld.c:777` `createNinjamonEffect` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 2, 9, 11, 14, 15 y 38 |
-| 14 | El compañero infeliz se distrae, pero no se ve la mariposa que persigue | `butterfly.c` `setButterfly`, `tickButterfly` | `game/partner/src/partner_tick.cpp:313` |
-| 15 | Cerrado: las partículas de curación salen al usar un objeto en el campo y al lanzarlo en combate, y las de objeto en combate también | `particle.c` `addHealingParticleEffect`, `tickHealingParticles`; `battle_effect.c` `BTL_addItemParticles` | `apps/game/src/field_effects.cpp`, `apps/game/src/battle_screen.cpp` (`stepFieldEffects`), `game/battle/src/status_visuals_effects.cpp` |
-| 16 | La pesca: la cámara no va al corcho ni se mueve con la cruceta, el sedal y las ondas no se dibujan, y el cebo es un marcador | `fish/fish.c` `FISH_panCameraTo`, `FISH_panCameraWithDPad`, `FISH_clipLineToRect`, `FISH_tickRipple`, `FISH_showBaitSprite` | `apps/game/src/fishing_screen.cpp:50`, `:231` |
-| 17 | Las escenas de muerte y renacer no dibujan el iris ni los fragmentos, destellos y chispas del huevo | `murd/murd.c`, `dooa/dooa.c`, `doo2/doo2.c` | `apps/game/src/death_scene.cpp:265`, `:394` |
-| 18 | Objetos de mapa con lógica sin portar: tapa de los cofres, montones de tierra y vagoneta de la mina, roca, cajas de la ciudad de juguete, engranajes, pedestal, cristales de teletransporte, niebla; y las rutinas de guion que los ponen (19, 20, 26, 27, 41–44, 49) siguen sin hacer nada | `map_object.c` (`tickOpenChestTray`, `decreaseDirtPileSize`, `spawnBoulder`, `spawnToyTownBoxes`, `spawnGearbox`, `spawnAngemonPedestal`, `loadWarpCrystals`), `overworld.c:1012` `tickRemoveMist` | `game/story/src/story_routines.cpp:27` (rutina sin manejador: sigue) |
-| 19 | Sin puntos de prosperidad: no se recalculan al cargar ni al empezar, y la ciudad no elige su mapa según lo que ha crecido | `main.c:3902` `recalculatePPandArena`, `map.c:5592` `getFileCityTopMap` | — |
-| 20 | Sin torneos (el guion pide la copa y sigue sin jugarla) ni el minijuego de piedras; más tarde, la aparición del jefe final, los créditos y el modo versus | `tournament.c:128` `scriptStartTournament`, `utils2.c:577` `startTournament`, `std/`; `kar/kar.c:778` `KAR_start`; `eab/`, `endi/`, `vs/` | `apps/session/src/story_routines/routine_tournament.cpp`; `apps/game/src/story_scene_glue.cpp:58` |
+| 1 | Al perder una vida por enfermedad no se restaura lo que el original restaura; tras perderla en combate, la vida y el MP salen de una regla del ruleset | Las dos escenas de vida perdida ([Campo](#campo-movimiento-colisión-y-cámara)) | `battle.consequences.defeat_restore` ([battle](../modulos/game/battle.md#paridad-con-el-original)) |
+| 2 | En los torneos faltan detalles: el brillo de las letras del campeón, que select oculte las barras de vida, que el que pierde se desplome tras la caja del resultado, la cámara de técnica del disparo de un luchador aplastado, y la música, luces y efectos propios de la copa | `std/` ([Torneos](#torneos): `STD_tickChampionScene`, `STD_tickBattleResultScreen`, `STD_startQueuedMove`, `STD_initializeTournament` y el HUD) | `apps/session/src/tournament_adapter.cpp`, `apps/game/src/story_tournament.cpp` |
+| 3 | Sin modo versus de dos jugadores ni la demo de combate del título (las 91 funciones de `vs/`); la máquina de guardar ya registra al compañero para él. Va a la fase 5 | `vs/` | — |
 
 ## Otros huecos que no son una función del índice
 
-- **Deslizamientos de guion contra personajes:** `wouldTouchCharacter` (del motor) ignora a los NPC, así que un
-  deslizamiento del guion puede atravesarlos (docs/modulos/game/field.md:150).
-- **Rutinas de guion sin manejador:** el guion sigue sin hacer nada en las rutinas 19, 20, 26, 27, 28 (burbuja de
-  humor), 34 (temblor de la escena del fuego), 40 (jefe final), 41–46 (engranajes, ciudad de juguete, fundidos a
-  blanco), 49 (pedestal), 51 y 52 (final) y 54 (guardado de partida terminada) (`script_interp.c:1655-1960`).
-- **Escenas del compañero que acaban al momento:** retrete del guion, piedras, apertura, final y aparición del jefe
-  (`apps/game/src/story_scene_glue.cpp:58-66`).
+- **Deslizamientos de guion contra personajes:** `wouldTouchCharacter` (del motor, `apps/game/src/story_stage.cpp`)
+  solo mira al jugador y al compañero, así que un deslizamiento del guion puede atravesar a los NPC
+  ([field](../modulos/game/field.md#posiciones)).
+- **Escenas del compañero sin escena propia:** la rutina 5 del compañero (la de la apertura, que solo llama el guion
+  de la sala de depuración) acaba al momento; una pantalla de rutina que la app no tiene se cierra al momento y lo dice el log
+  (`apps/game/src/story_scene_glue.cpp`).
 - **Año de 31 días al entrenar:** el original avanza el día con un año de 31 días tras entrenar; el motor usa el
-  reloj, de 30. Decidido así (docs/modulos/game/partner.md:187).
+  reloj, de 30. Decidido así ([partner](../modulos/game/partner.md#paridad-con-el-original)).
 
 <!-- port-coverage:begin (scripts/port_coverage.py writes this part) -->
 
@@ -129,8 +111,8 @@ Portado 80, parcial 2, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `tamerTickSicknessLostLife` | `main/tamer.c:1699` | parcial | Escena de perder una vida por enfermedad. | `apps/game/src/death_scene.cpp:126` · la restauración tras la vida perdida por enfermedad es un hueco (docs/modulos/game/battle.md:107) |
-| `tamerTickBattleLostLife` | `main/tamer.c:1734` | parcial | Escena de perder una vida en combate. | `apps/game/src/death_scene.cpp:126` · la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:107) |
+| `tamerTickSicknessLostLife` | `main/tamer.c:1699` | parcial | Escena de perder una vida por enfermedad. | `apps/game/src/death_scene.cpp:126` · la restauración tras la vida perdida por enfermedad es un hueco (docs/modulos/game/battle.md:120) |
+| `tamerTickBattleLostLife` | `main/tamer.c:1734` | parcial | Escena de perder una vida en combate. | `apps/game/src/death_scene.cpp:126` · la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:120) |
 
 ## NPC y objetos del mapa
 
@@ -190,7 +172,7 @@ Portado 37, parcial 1, falta 0.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `TRN_advanceTrainingTime` | `trn/trn_reward.c:721` | parcial | Avanza la hora y el día tras una sesión de entrenamiento. | `content/packs/game/rules/original/care.yaml:229` · el original usa un año de 31 días al entrenar; el motor, el del reloj (30). Decidido así (partner.md:187) |
+| `TRN_advanceTrainingTime` | `trn/trn_reward.c:721` | parcial | Avanza la hora y el día tras una sesión de entrenamiento. | `content/packs/game/rules/original/care.yaml:229` · el original usa un año de 31 días al entrenar; el motor, el del reloj (30). Decidido así (partner.md:188) |
 
 ## Pesca
 
