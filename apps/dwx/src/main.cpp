@@ -3,11 +3,13 @@
 #include <optional>
 #include <print>
 #include <span>
+#include <string>
 #include <string_view>
 #include <vector>
 
 #include "disc_cache.hpp"
 #include "dwx.hpp"
+#include "export_images.hpp"
 #include "story_conversion.hpp"
 #include "upscale.hpp"
 #include "validate.hpp"
@@ -17,6 +19,7 @@ namespace dwe::dwx {
 namespace {
 
 constexpr std::string_view DefaultOutFolder = "content/base";
+constexpr std::string_view DefaultLanguage = "en";
 
 void printUsage() {
   std::println(stderr, "Usage:");
@@ -78,6 +81,18 @@ void printUsage() {
   std::println(
       stderr,
       "      writes for it: <name>.lua, its line map <name>_lines.yaml and its texts <name>_texts.yaml.");
+  std::println(
+      stderr,
+      "  dwx export-images <content folder> [--with <folder>]... [--language <code>] -o <folder>");
+  std::println(
+      stderr,
+      "      Writes the images a player can replace, as a custom image pack names them: the map");
+  std::println(
+      stderr,
+      "      backgrounds and every image of texture/ once per palette, plus maps.tsv with the map");
+  std::println(
+      stderr,
+      "      names in the language given (default en). --with reads the packs of another folder too.");
   std::println(stderr, "  dwx pack <pack folder> -o <file.pak>");
   std::println(stderr,
                "      Writes a pack as a single .pak archive and checks that it reads back.");
@@ -123,6 +138,36 @@ void printUsage() {
       stderr,
       "Exit codes: 0 known and consistent (or written), 1 unknown or inconsistent, 2 error, 3 another "
       "region's release (identify).");
+}
+
+// dwx export-images <content folder> [--with <folder>]... [--language <code>] -o <folder>.
+int runExportImages(std::span<char*> options) {
+  std::vector<std::filesystem::path> folders(1);
+  bool hasContent = false;
+  std::optional<std::filesystem::path> out;
+  std::string language{DefaultLanguage};
+  for (std::size_t i = 0; i < options.size(); ++i) {
+    const std::string_view option{options[i]};
+    const bool hasValue = i + 1 < options.size();
+    if ((option == "-o" || option == "--out") && hasValue) {
+      out = options[++i];
+    } else if (option == "--with" && hasValue) {
+      folders.emplace_back(options[++i]);
+    } else if (option == "--language" && hasValue) {
+      language = options[++i];
+    } else if (!hasContent && !option.starts_with('-')) {
+      folders.front() = option;
+      hasContent = true;
+    } else {
+      printUsage();
+      return ExitFailed;
+    }
+  }
+  if (!hasContent || !out) {
+    printUsage();
+    return ExitFailed;
+  }
+  return exportImagesCommand(folders, *out, language);
 }
 
 } // namespace
@@ -191,6 +236,9 @@ int main(int argc, char** argv) {
       const std::filesystem::path out{arguments[4]};
       return command == "cook" ? cook(folder, out) : pack(folder, out);
     }
+  }
+  if (command == "export-images") {
+    return runExportImages(arguments.subspan(2));
   }
   if (command == "upscale" && arguments.size() == 6) {
     const std::string_view option{arguments[4]};
