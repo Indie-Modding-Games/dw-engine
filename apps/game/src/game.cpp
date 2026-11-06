@@ -1740,7 +1740,7 @@ int runGame(const Options& requested) {
       if (const PlaySession* play = flow.playing(); play != nullptr && play->scene().camera()) {
         const FieldScene& scene = play->scene();
         buildMapOverlay(
-            scene.map(), scene.field().collision(),
+            scene.map(), scene.field().collision(), scene.field().rules().triggers,
             [&scene](glm::vec3 world) { return scene.worldToWindowFraction(world); },
             mapOverlayShapes);
       }

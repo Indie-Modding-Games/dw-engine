@@ -17,6 +17,7 @@ using dwe::assets::CollisionCell;
 using dwe::assets::MapCollision;
 using dwe::assets::MapDocument;
 using dwe::debug::OverlayShapes;
+using dwe::game::field::TriggerBands;
 
 // A camera straight above the grid that shows all of it: world x -5000..5000 left to right, z
 // 5000..-5000 top to bottom.
@@ -45,6 +46,30 @@ TEST_CASE("collision values fall in the original's trigger bands") {
   CHECK(bandColor(CellBand::Step) != bandColor(CellBand::Confirm));
 }
 
+TEST_CASE("collision values fall in the field rules' trigger bands") {
+  // Bands moved by a pack's field/triggers: the overlay follows them, not the original's.
+  TriggerBands bands;
+  bands.step = {.first = 20, .last = 29};
+  bands.confirm = {.first = 30, .last = 39};
+  bands.exits = {.first = 40, .last = 44};
+  bands.toilet = 45;
+  CHECK(cellBandOf(25, bands) == CellBand::Step);
+  CHECK(cellBandOf(35, bands) == CellBand::Confirm);
+  CHECK(cellBandOf(44, bands) == CellBand::Exit);
+  CHECK(cellBandOf(45, bands) == CellBand::Toilet);
+  CHECK(cellBandOf(60, bands) == CellBand::Other);
+  CHECK(cellBandOf(112, bands) == CellBand::Other);
+  CHECK(cellBandOf(0x80 | 25, bands) == CellBand::Wall);
+
+  MapDocument map;
+  map.id = "testa01";
+  map.collision.setValue(CollisionCell{.column = 20, .row = 20}, 42);
+  map.warps.push_back({.exit = 2, .targetMapId = "testb02", .targetExit = 1});
+  OverlayShapes shapes;
+  buildMapOverlay(map, map.collision, bands, above, shapes);
+  CHECK(hasLabel(shapes, "exit 2 -> testb02:1"));
+}
+
 TEST_CASE("the overlay draws the walls, the trigger cells, the exits and the NPCs") {
   MapDocument map;
   map.id = "testa01";
@@ -67,7 +92,7 @@ TEST_CASE("the overlay draws the walls, the trigger cells, the exits and the NPC
   map.npcs = {dwe::assets::MapNpc{}, npc};
 
   OverlayShapes shapes;
-  buildMapOverlay(map, map.collision, above, shapes);
+  buildMapOverlay(map, map.collision, TriggerBands{}, above, shapes);
   // Six cells: two walls, two exit cells, a step cell and the toilet.
   CHECK(shapes.quads.size() == 6);
   CHECK(std::ranges::count(shapes.quads, bandColor(CellBand::Wall),
@@ -87,8 +112,8 @@ TEST_CASE("the overlay draws the walls, the trigger cells, the exits and the NPC
   // A camera that shows nothing of the grid draws no cells.
   OverlayShapes none;
   buildMapOverlay(
-      map, map.collision, [](glm::vec3) { return std::optional<glm::vec2>{glm::vec2{5.0F}}; },
-      none);
+      map, map.collision, TriggerBands{},
+      [](glm::vec3) { return std::optional<glm::vec2>{glm::vec2{5.0F}}; }, none);
   CHECK(none.quads.empty());
 }
 

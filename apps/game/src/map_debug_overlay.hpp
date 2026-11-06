@@ -2,6 +2,7 @@
 
 #include <dwe/assets/map_document.hpp>
 #include <dwe/debug/overlay_shapes.hpp>
+#include <dwe/game/field/trigger_bands.hpp>
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -22,10 +23,11 @@ namespace dwe::app {
 // The console's map_overlay("on"|"off"|"toggle").
 inline constexpr std::string_view MapOverlayCommand = "map_overlay";
 
-// What a collision value does (core/collision_triggers.hpp, map_collision.c).
+// What a collision value does, by the field rules' trigger bands (field/triggers; the numbers are
+// the original's defaults, map_collision.c).
 enum class CellBand : std::uint8_t {
   Free,    // 0
-  Wall,    // bit 0x80
+  Wall,    // the blocked bit, 0x80
   Step,    // 51-79: a section of the map's script runs on stepping on it
   Confirm, // 80-109: a section runs on pressing confirm on it
   Exit,    // 110-119: the map's warp of exit value - 110
@@ -33,7 +35,7 @@ enum class CellBand : std::uint8_t {
   Other,   // any other trigger
 };
 
-CellBand cellBandOf(std::uint8_t value);
+CellBand cellBandOf(std::uint8_t value, const game::field::TriggerBands& bands = {});
 
 // The colour a band's cells are filled with.
 debug::OverlayColor bandColor(CellBand band);
@@ -43,9 +45,10 @@ debug::OverlayColor bandColor(CellBand band);
 using OverlayProjector = std::function<std::optional<glm::vec2>(glm::vec3)>;
 
 // Adds the overlay of `map` (its exits and NPCs) and of `grid` (the collision the field uses now,
-// with the scripts' changes) to `out`. Cells all of whose corners fall outside the window are left
-// out.
+// with the scripts' changes) to `out`, the cells classified by `bands` (the field rules'). Cells
+// all of whose corners fall outside the window are left out.
 void buildMapOverlay(const assets::MapDocument& map, const assets::MapCollision& grid,
-                     const OverlayProjector& project, debug::OverlayShapes& out);
+                     const game::field::TriggerBands& bands, const OverlayProjector& project,
+                     debug::OverlayShapes& out);
 
 } // namespace dwe::app

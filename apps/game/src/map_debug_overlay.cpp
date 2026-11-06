@@ -1,7 +1,5 @@
 #include "map_debug_overlay.hpp"
 
-#include <dwe/core/collision_triggers.hpp>
-
 #include <algorithm>
 #include <array>
 #include <format>
@@ -15,7 +13,7 @@ namespace dwe::app {
 namespace {
 
 using debug::overlayColor;
-namespace collision = core::collision;
+using game::field::TriggerBands;
 
 constexpr float CellSize = 100.0F;
 // How far a facing arrow reaches, in world units.
@@ -35,10 +33,10 @@ struct ValueCells {
   std::int32_t count = 0;
 };
 
-std::string labelOf(std::uint8_t value, CellBand band, const assets::MapDocument& map) {
-  switch (band) {
+std::string labelOf(std::uint8_t value, const TriggerBands& bands, const assets::MapDocument& map) {
+  switch (cellBandOf(value, bands)) {
   case CellBand::Exit: {
-    const std::int32_t exit = value - collision::FirstWarpTrigger;
+    const std::int32_t exit = bands.exitOf(value).value_or(0);
     const auto warp = std::ranges::find(map.warps, exit, &assets::MapWarp::exit);
     if (warp == map.warps.end()) {
       return std::format("exit {} -> (no warp)", exit);
@@ -75,13 +73,14 @@ void addArrow(glm::vec3 from, float yaw, debug::OverlayColor color, const Overla
 }
 
 void addCells(const assets::MapDocument& map, const assets::MapCollision& grid,
-              const OverlayProjector& project, debug::OverlayShapes& out) {
+              const TriggerBands& bands, const OverlayProjector& project,
+              debug::OverlayShapes& out) {
   std::map<std::uint8_t, ValueCells> triggers;
   for (std::int32_t row = 0; row < assets::MapCollision::Size; ++row) {
     for (std::int32_t column = 0; column < assets::MapCollision::Size; ++column) {
       const assets::CollisionCell cell{.column = column, .row = row};
       const std::uint8_t value = grid.value(cell);
-      const CellBand band = cellBandOf(value);
+      const CellBand band = cellBandOf(value, bands);
       if (band == CellBand::Free) {
         continue;
       }
@@ -117,8 +116,7 @@ void addCells(const assets::MapDocument& map, const assets::MapCollision& grid,
   for (const auto& [value, cells] : triggers) {
     const glm::vec3 centre = cells.sum / static_cast<float>(cells.count);
     if (const auto at = project(centre)) {
-      out.labels.push_back(
-          {.at = *at, .text = labelOf(value, cellBandOf(value), map), .color = LabelColor});
+      out.labels.push_back({.at = *at, .text = labelOf(value, bands, map), .color = LabelColor});
     }
   }
 }
@@ -164,25 +162,24 @@ void addNpcs(const assets::MapDocument& map, const OverlayProjector& project,
 
 } // namespace
 
-CellBand cellBandOf(std::uint8_t value) {
+CellBand cellBandOf(std::uint8_t value, const TriggerBands& bands) {
   if (value == 0) {
     return CellBand::Free;
   }
-  if ((value & assets::MapCollision::BlockedBit) != 0) {
+  const std::int32_t trigger = value;
+  if ((trigger & bands.blockedBit) != 0) {
     return CellBand::Wall;
   }
-  const std::int32_t trigger = value;
-  if (trigger >= collision::FirstStepTrigger && trigger < collision::FirstConfirmTrigger) {
+  if (bands.step.contains(trigger)) {
     return CellBand::Step;
   }
-  if (trigger >= collision::FirstConfirmTrigger && trigger < collision::FirstWarpTrigger) {
+  if (bands.confirm.contains(trigger)) {
     return CellBand::Confirm;
   }
-  if (trigger >= collision::FirstWarpTrigger &&
-      trigger < collision::FirstWarpTrigger + collision::WarpTriggerCount) {
+  if (bands.exitOf(trigger)) {
     return CellBand::Exit;
   }
-  if (trigger == collision::ToiletTrigger) {
+  if (trigger == bands.toilet) {
     return CellBand::Toilet;
   }
   return CellBand::Other;
@@ -209,8 +206,9 @@ debug::OverlayColor bandColor(CellBand band) {
 }
 
 void buildMapOverlay(const assets::MapDocument& map, const assets::MapCollision& grid,
-                     const OverlayProjector& project, debug::OverlayShapes& out) {
-  addCells(map, grid, project, out);
+                     const TriggerBands& bands, const OverlayProjector& project,
+                     debug::OverlayShapes& out) {
+  addCells(map, grid, bands, project, out);
   addExits(map, project, out);
   addNpcs(map, project, out);
 }
