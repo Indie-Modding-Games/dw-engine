@@ -673,6 +673,19 @@ void Field::refreshScriptWarps() {
   }
 }
 
+void Field::reloadData(FieldRules rules, std::vector<ScriptWarp> scriptWarps) {
+  rules_ = std::move(rules);
+  scriptWarps_ = std::move(scriptWarps);
+  choice_.reset();
+  choiceWarps_.clear();
+  choiceVanilla_ = nullptr;
+  undecidedReported_.clear();
+  allowedReported_.clear();
+  ambiguousReported_.clear();
+  follow_.setGestureWait(rules_.partner.gestureIdlePlays);
+  refreshScriptWarps();
+}
+
 void Field::writeTriggersOf(const ScriptWarp& warp) {
   if (!writeTrigger_ || warp.setsFlags.empty()) {
     return;

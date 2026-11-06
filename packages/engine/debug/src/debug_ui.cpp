@@ -88,8 +88,10 @@ struct DebugUi::Impl {
   bool assetsOpen = false;
   std::unique_ptr<TuningPanel> tuning;
   bool tuningOpen = false;
+  OverlayShapes shapes;
 
   void drawStats(const FrameStats& stats);
+  void drawShapes() const;
   static void drawInput(const input::InputState& input);
   void drawConsole(script::ScriptVm& scripts);
   void runConsoleLine(const std::string& line, script::ScriptVm& scripts);
@@ -212,6 +214,7 @@ void DebugUi::draw(const rhi::Frame& frame, const FrameStats& stats, const input
     ImGui::GetBackgroundDrawList()->AddCircleFilled({marker.x, marker.y}, marker.radius,
                                                     IM_COL32(255, 160, 40, 255));
   }
+  impl_->drawShapes();
   if (impl_->visible) {
     impl_->drawStats(stats);
     Impl::drawInput(input);
@@ -225,6 +228,53 @@ void DebugUi::draw(const rhi::Frame& frame, const FrameStats& stats, const input
   }
   ImGui::Render();
   ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), frame.commands);
+}
+
+void DebugUi::setShapes(const OverlayShapes& shapes) {
+  // Copied into the vectors the last shapes left, so a shape set each frame reuses their memory.
+  impl_->shapes.quads.assign(shapes.quads.begin(), shapes.quads.end());
+  impl_->shapes.lines.assign(shapes.lines.begin(), shapes.lines.end());
+  impl_->shapes.dots.assign(shapes.dots.begin(), shapes.dots.end());
+  impl_->shapes.labels.assign(shapes.labels.begin(), shapes.labels.end());
+}
+
+void DebugUi::Impl::drawShapes() const {
+  if (shapes.empty()) {
+    return;
+  }
+  ImDrawList& list = *ImGui::GetBackgroundDrawList();
+  const ImVec2 size = ImGui::GetIO().DisplaySize;
+  const auto at = [size](glm::vec2 fraction) {
+    return ImVec2{fraction.x * size.x, fraction.y * size.y};
+  };
+  // The alpha byte; 0 draws nothing.
+  const auto shows = [](OverlayColor color) { return (color >> 24U) != 0; };
+  for (const OverlayQuad& quad : shapes.quads) {
+    const ImVec2 a = at(quad.corners[0]);
+    const ImVec2 b = at(quad.corners[1]);
+    const ImVec2 c = at(quad.corners[2]);
+    const ImVec2 d = at(quad.corners[3]);
+    if (shows(quad.fill)) {
+      list.AddQuadFilled(a, b, c, d, quad.fill);
+    }
+    if (shows(quad.outline)) {
+      list.AddQuad(a, b, c, d, quad.outline);
+    }
+  }
+  for (const OverlayLine& line : shapes.lines) {
+    list.AddLine(at(line.from), at(line.to), line.color, line.thickness);
+  }
+  for (const OverlayDot& dot : shapes.dots) {
+    list.AddCircleFilled(at(dot.at), dot.radius, dot.color);
+  }
+  constexpr float Pad = 2.0F;
+  for (const OverlayLabel& label : shapes.labels) {
+    const ImVec2 corner = at(label.at);
+    const ImVec2 text = ImGui::CalcTextSize(label.text.c_str());
+    list.AddRectFilled({corner.x - Pad, corner.y - Pad},
+                       {corner.x + text.x + Pad, corner.y + text.y + Pad}, IM_COL32(0, 0, 0, 170));
+    list.AddText(corner, label.color, label.text.c_str());
+  }
 }
 
 void DebugUi::Impl::drawStats(const FrameStats& stats) {

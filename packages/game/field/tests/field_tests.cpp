@@ -1100,6 +1100,25 @@ TEST_CASE("a click on a warp walks onto it") {
   CHECK(change->map == "house");
 }
 
+TEST_CASE("a reload of the field's data brings new script map changes and rules") {
+  MapDocument house = roomMap("house");
+  constexpr std::uint8_t ScriptStep = 51;
+  fill(house, {.column = 40, .row = 50}, {.column = 59, .row = 51}, ScriptStep);
+  dwe::scene::World world;
+  Field field{world, originalRules(), {.warps = {}, .facts = triggersSet({})}};
+  field.enterMapAt(house, at(0.0F, 1000.0F));
+  CHECK_FALSE(field.warpsOn(ScriptStep));
+
+  dwe::game::field::FieldRules rules = originalRules();
+  rules.transition.fadeInFrames += 3;
+  field.reloadData(rules, {houseDoor()});
+  CHECK(field.warpsOn(ScriptStep));
+  CHECK(field.rules().transition.fadeInFrames == originalRules().transition.fadeInFrames + 3);
+
+  field.reloadData(originalRules(), {});
+  CHECK_FALSE(field.warpsOn(ScriptStep));
+}
+
 TEST_CASE("a walk to a door keeps off the cells whose script changes the map") {
   MapDocument house = roomMap("house");
   constexpr std::uint8_t Door = 112;
