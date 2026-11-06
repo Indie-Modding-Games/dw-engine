@@ -29,13 +29,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # What the pull request changes: code (anything but the documentation) and the launcher.
+  # What the pull request changes: code (anything but the documentation and the map editor), the
+  # launcher and the map editor.
   changes:
     name: changes
     runs-on: ubuntu-24.04
     outputs:
       code: ${{ steps.changes.outputs.code }}
       launcher: ${{ steps.changes.outputs.launcher }}
+      mapper: ${{ steps.changes.outputs.mapper }}
       base: ${{ steps.changes.outputs.base }}
     steps:
       - uses: actions/checkout@v4
@@ -58,15 +60,20 @@ jobs:
           fi
           code=false
           launcher=false
+          mapper=false
           docs='^(docs/|docs-site/|\.github/ISSUE_TEMPLATE/|\.github/pull_request_template\.md$|LICENSE)|\.md$'
-          grep -qvE "$docs" <<<"$files" && code=true
+          # The map editor builds with cargo alone: a change only there builds no C++.
+          mapper_paths='^(apps/mapper/|packages/rust/|scripts/mapper\.sh$)'
+          grep -vE "$docs" <<<"$files" | grep -qvE "$mapper_paths" && code=true
+          grep -qE "$mapper_paths" <<<"$files" && mapper=true
           launcher_paths='^(apps/launcher/|apps/beta-gateway/|scripts/launcher\.sh$|scripts/ci/|'
           launcher_paths+='scripts/package/|scripts/release_local\.sh$|\.devcontainer/launcher\.Dockerfile$)'
           grep -qE "$launcher_paths" <<<"$files" && launcher=true
-          echo "code=$code launcher=$launcher base=$base"
+          echo "code=$code launcher=$launcher mapper=$mapper base=$base"
           {
             echo "code=$code"
             echo "launcher=$launcher"
+            echo "mapper=$mapper"
             echo "base=$base"
           } >> "$GITHUB_OUTPUT"
 
@@ -260,3 +267,34 @@ jobs:
           python3 -B -m unittest -v test_release
           cd ../../package/tests
           python3 -B -m unittest -v test_release_manifest test_third_party_notices
+
+  # Not required. The map editor's format check, tests and clippy (apps/mapper and its crates in
+  # packages/rust), in the launcher's image, when one of them changed. No GPU: the tests are
+  # headless. Nothing on main saves this cache, so the job keeps its own.
+  mapper:
+    name: mapper
+    needs: changes
+    if: needs.changes.outputs.mapper == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Launcher image
+        run: scripts/ci/image.sh launcher
+
+      - name: Map editor's build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ runner.temp }}/mapper-cargo
+            build/mapper
+          key: mapper-linux-${{ hashFiles('apps/mapper/Cargo.lock', '.devcontainer/launcher.Dockerfile') }}
+          restore-keys: mapper-linux-
+
+      - name: Map editor tests and clippy
+        env:
+          DWE_MAPPER_CARGO_DIR: ${{ runner.temp }}/mapper-cargo
+        run: scripts/mapper.sh test

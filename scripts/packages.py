@@ -4,8 +4,9 @@
 
 A package is a folder of packages/ or apps/ whose CMakeLists.txt declares a module or a program (dwe_add_module,
 dwe_add_app); its name is the folder's. Its dependencies are the modules its CMakeLists.txt names (DEPS, dwe::<name>)
-and the packages whose folders it names. The apps without CMake (the launcher, the studio, the beta gateway) are
-packages without dependencies, and repo stands for the repository's own tests (the scripts').
+and the packages whose folders it names. The apps without CMake (the launcher, the studio, the beta gateway, the map
+editor) are packages without dependencies; the folders outside the app that its Cargo.toml names by path (the map
+editor's crates in packages/rust) belong to it. repo stands for the repository's own tests (the scripts').
 
     packages.py list                       name, folder and dependencies of every package
     packages.py select <spec>...           the packages the specs name, one per line
@@ -34,6 +35,7 @@ KEYWORDS = {"LAYER", "SOURCES", "DEPS", "PUBLIC_LIBS", "PRIVATE_LIBS", "TEST_LIB
 MODULE_REFERENCE = re.compile(r"\bdwe::(\w+)")
 COMMENT = re.compile(r"#[^\n]*")
 FOLDER_REFERENCE = re.compile(r"\b((?:packages|apps)/[\w./-]+)")
+CARGO_PATH = re.compile(r"\bpath\s*=\s*\"([^\"]+)\"")
 # A change here may affect every package: the build, the toolchain, the vendored libraries, the shared tests and the
 # content they read.
 GLOBAL_INPUTS = ("CMakeLists.txt", "CMakePresets.json", "vcpkg.json", ".devcontainer/", "tooling/", "packages/vendor/",
@@ -48,6 +50,31 @@ class Package:
     folder: str
     cmake: bool
     deps: set[str] = field(default_factory=set)
+    # Folders outside its own that belong to it (an app's crates named by path in its Cargo.toml).
+    extra_folders: list[str] = field(default_factory=list)
+
+
+def cargo_path_folders(root: Path, app: Path) -> list[str]:
+    """The folders outside app that its Cargo.toml names by path, relative to root."""
+    manifest = app / "Cargo.toml"
+    if not manifest.exists():
+        return []
+    folders = []
+    for reference in CARGO_PATH.findall(COMMENT.sub("", manifest.read_text(encoding="utf-8"))):
+        folder = (app / reference).resolve()
+        if folder.is_relative_to(root.resolve()) and not folder.is_relative_to(app.resolve()):
+            folders.append(folder.relative_to(root.resolve()).as_posix())
+    return sorted(set(folders))
+
+
+def folders_of(packages: dict[str, Package]) -> dict[str, str]:
+    """Each folder that belongs to a package (repo aside), and its package."""
+    by_folder: dict[str, str] = {}
+    for name, package in packages.items():
+        if name != REPO:
+            for folder in (package.folder, *package.extra_folders):
+                by_folder[folder] = name
+    return by_folder
 
 
 def declared_deps(text: str) -> set[str]:
@@ -75,8 +102,9 @@ def find_packages(root: Path) -> dict[str, Package]:
                 texts[build_file.parent.name] = text
         for app in sorted((root / top).iterdir()) if top == "apps" else ():
             if app.is_dir() and not (app / "CMakeLists.txt").exists():
-                packages[app.name] = Package(app.name, app.relative_to(root).as_posix(), False)
-    by_folder = {package.folder: name for name, package in packages.items()}
+                packages[app.name] = Package(app.name, app.relative_to(root).as_posix(), False,
+                                             extra_folders=cargo_path_folders(root, app))
+    by_folder = folders_of(packages)
     for name, text in texts.items():
         deps = {dep for dep in declared_deps(text) if dep in packages}
         for reference in FOLDER_REFERENCE.findall(text):
@@ -138,7 +166,7 @@ def select(packages: dict[str, Package], specs: list[str]) -> set[str]:
 
 
 def affected_by(packages: dict[str, Package], changed: list[str]) -> set[str]:
-    by_folder = {package.folder: name for name, package in packages.items() if name != REPO}
+    by_folder = folders_of(packages)
     touched: set[str] = set()
     for path in changed:
         if path.startswith(DOCUMENTATION) or path.endswith(".md"):
