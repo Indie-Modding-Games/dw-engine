@@ -86,6 +86,10 @@ struct MinimapPoint {
 // image-color) colours only its inside. size is its side in pixels.
 [[nodiscard]] assets::Image buildMinimapDot(std::uint32_t size);
 
+// A marker for the items lying on the ground: a square on its corner (a diamond), white with a
+// dark outline like the dot, so it reads apart from the enemies' dots in any tint.
+[[nodiscard]] assets::Image buildMinimapDiamond(std::uint32_t size);
+
 [[nodiscard]] MinimapPoint locateOnMinimap(const MinimapLayout& layout, float worldX, float worldZ);
 
 // The round HUD minimap (an engine improvement; the original has none) shows a disc of the map

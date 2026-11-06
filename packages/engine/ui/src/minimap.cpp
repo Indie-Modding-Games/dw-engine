@@ -227,10 +227,13 @@ assets::Image buildMinimapMarker(std::uint32_t size) {
   return image;
 }
 
-assets::Image buildMinimapDot(std::uint32_t size) {
-  // A disc filling the square, with a dark ring round its white inside.
-  constexpr float Radius = 0.46F;
-  constexpr float Outline = 0.16F;
+namespace {
+
+// A shape filling the square, with a dark ring round its white inside: the pixels whose `reach`
+// (0 at the centre, measured from it in parts of the side) is at most `radius` are covered, and the
+// outer `outline` of them is the ring.
+template <typename Reach>
+assets::Image buildMinimapShape(std::uint32_t size, float radius, float outline, Reach reach) {
   constexpr int Samples = 4;
   constexpr std::uint32_t Edge = 0x101418;
   assets::Image image{.width = size, .height = size, .pixels = {}};
@@ -247,10 +250,10 @@ assets::Image buildMinimapDot(std::uint32_t size) {
           const float py = ((static_cast<float>(y) + ((static_cast<float>(sy) + 0.5F) / Samples)) /
                             static_cast<float>(size)) -
                            0.5F;
-          const float distance = std::hypot(px, py);
-          if (distance <= Radius) {
+          const float distance = reach(px, py);
+          if (distance <= radius) {
             ++covered;
-            if (distance <= Radius - Outline) {
+            if (distance <= radius - outline) {
               ++filled;
             }
           }
@@ -270,6 +273,24 @@ assets::Image buildMinimapDot(std::uint32_t size) {
     }
   }
   return image;
+}
+
+} // namespace
+
+assets::Image buildMinimapDot(std::uint32_t size) {
+  // A disc filling the square.
+  constexpr float Radius = 0.46F;
+  constexpr float Outline = 0.16F;
+  return buildMinimapShape(size, Radius, Outline,
+                           [](float px, float py) { return std::hypot(px, py); });
+}
+
+assets::Image buildMinimapDiamond(std::uint32_t size) {
+  // A square on its corner filling the square: its corners touch the middle of each side.
+  constexpr float Radius = 0.48F;
+  constexpr float Outline = 0.2F;
+  return buildMinimapShape(size, Radius, Outline,
+                           [](float px, float py) { return std::abs(px) + std::abs(py); });
 }
 
 MinimapPoint locateOnMinimap(const MinimapLayout& layout, float worldX, float worldZ) {

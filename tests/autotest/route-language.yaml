@@ -9,16 +9,18 @@ steps:
   - wait: {shown: main_menu, seconds: 1}
   - resize: [1280, 720]
   - screenshot: main-menu
-  # The language is in the original look's options; right on it moves to the next language the packs have, and with
-  # two, a second press comes back. Cancel (Ctrl) goes back to the menu.
+  # Options opens the tabbed options page over the title; the language is on its Interface tab. Right on it moves to
+  # the next language the packs have, and with two, a second press comes back. Back returns to the menu.
   - menu_select: options
+  - menu_select: language
   - tap: {key: right}
   - wait: {seconds: 0.5}
   - screenshot: main-menu-switched
   - tap: {key: right}
   - wait: {seconds: 0.5}
   - screenshot: main-menu-back
-  - tap: {key: left_ctrl}
+  - menu_select: options-back
+  - wait: {hidden: pause_menu, seconds: 0.5}
   # Play opens the slot list; the route plays without saving, which writes nothing.
   - menu_select: play
   - wait: {shown: save_slots, seconds: 0.5}

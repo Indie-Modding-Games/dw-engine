@@ -11,6 +11,7 @@
 		<div id="minimap-banner"><div id="minimap-name"></div></div>
 		<div id="minimap-map">
 			<div id="minimap-frame">
+				<div id="minimap-items"></div>
 				<div id="minimap-enemies"></div>
 				<img id="minimap-partner" class="marker" src="generated:minimap_marker"/>
 				<img id="minimap-player" class="marker" src="generated:minimap_marker"/>

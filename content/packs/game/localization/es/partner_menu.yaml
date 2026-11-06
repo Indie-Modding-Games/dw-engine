@@ -25,6 +25,9 @@ battles: "Combates"
 awake: "Despierto"
 # {wake} y {sleepy} son las horas a las que se despierta y le entra sueño, como 08:00.
 awake.value: "{wake}-{sleepy}"
+# {value} es un número de 0 a 100 (de -100 a 100 la felicidad) que la ficha escribe como porcentaje: felicidad,
+# disciplina y cansancio.
+percent.value: "{value}%"
 lifetime: "Le quedan"
 evolution: "Evolución"
 # {hours} es una cuenta de horas de juego.

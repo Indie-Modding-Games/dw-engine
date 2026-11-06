@@ -1,13 +1,13 @@
--- The title screen's menu, with no game behind it. Like the pause menu it never changes a setting
--- itself: it sends the language, text_font, ui_skin, chibi_style, autosave, minimap, minimap_size,
--- shadows, enhanced_lighting, vivid_colors, hd_scenery, fullscreen and ui_scale commands and shows
--- what the game reports back (ui.setting). The skin entry is common/ui_skin_choice.lua, shared with
--- the pause menu.
+-- The title screen's menu, with no game behind it. Its Options entry opens the pause menu's options
+-- page over the title (docs/modulos/apps/game.md, «Opciones en partida»): the same tabs, rows and
+-- help as during a game, which TitleScreen shows on title_options and closes with
+-- title_options_back; this menu keeps the title's picture behind it and hides its own box
+-- meanwhile ("options" view). The language box sends the language command and shows what the game
+-- reports back (ui.setting).
 --
 -- Two layouts of the same entries, as the skin marks #panel (document_classes):
 -- - The modern one: play (a new game), continue (greyed and skipped unless the game publishes
---   save.can_continue), the language, the text font, the skin, the chibi style, the autosave,
---   quit.
+--   save.can_continue), options, quit.
 -- - The original look's (class title-original), the original's title screen (main.c: main):
 --   - "boot": the "Press Start" screen (runLandingScreen), when the game says so (title.boot).
 --     It fades in from black, its line blinks, and Start fades it out (40 frames each).
@@ -17,13 +17,11 @@
 --     stops on them and confirming them does nothing (tickMainMenu, case 0). Then options, this
 --     game's addition. The focused row wears the original's cursor, a one-pixel outline round it
 --     (renderMenuSelector), which the skin draws.
---   - "options": this game's settings that work on the title screen, a name and its value per
---     row, in the original's boxes. Free exploration is set from the pause menu, during a game, and
---     vsync cannot change while the game runs, so neither is here.
---   - "language": a box with one row per language the packs offer, each named in its own language.
---     It opens from options, and before the "Press Start" screen each time the title starts there
---     (title.language_first), as a remaster's: an addition. There one confirm picks the language
---     and goes on, with a fade, to the "Press Start" screen.
+--     Quit is the options page's (its game actions keep only quit over the title).
+--   - "language": a box with one row per language the packs offer, each named in its own language,
+--     before the "Press Start" screen each time the title starts there (title.language_first), as a
+--     remaster's: an addition. One confirm picks the language and goes on, with a fade, to the
+--     "Press Start" screen. The options page changes the language too.
 --   - "battle": the original's battle mode question (renderConfirmVSSlot), on no. Battle mode is
 --     not made yet: both answers come back to the menu.
 --   The cursor does not wrap: it stops at the first and the last entry (tickMenuInput), and each
@@ -33,9 +31,7 @@
 
 local view = "menu"
 -- The entry each view had focused last.
-local remembered = { menu = nil, options = "language" }
--- Where the language box goes back to: options, or on to the "Press Start" screen (boot).
-local language_return = "options"
+local remembered = { menu = nil }
 -- The layout seen last, to lay the document out again when a skin switch changes it.
 local was_original = nil
 -- A focus on CONTINUE GAME instead of NEW GAME when there is a save: an addition (the original
@@ -69,25 +65,7 @@ local leaving = false
 local pending_view = nil
 
 local entries = {
-  menu = { "play", "continue", "erase", "battle", "options" },
-  options = {
-    "language",
-    "text-font",
-    "ui-skin",
-    "chibi-style",
-    "autosave",
-    "minimap",
-    "minimap-size",
-    "shadows",
-    "enhanced-lighting",
-    "vivid-colors",
-    "hd-scenery",
-    "weather",
-    "seasons",
-    "display-mode",
-    "ui-scale",
-    "quit",
-  },
+  menu = { "play", "continue", "erase", "battle", "options", "quit" },
   battle = { "battle-yes", "battle-no" },
   language = {
     "language-1",
@@ -102,16 +80,6 @@ local entries = {
   },
 }
 
--- The round minimap: on (the default, also for the old auto) or off.
-local minimap_modes = { "on", "off" }
-local minimap_sizes = { "small", "medium", "large" }
--- The chibi style (game_options.lua): off or the models from outside the original game (the
--- default; an old "all" shows as that).
-local chibi_modes = { "off", "external" }
--- The field's graphics improvements (docs/architecture/render.md): sun (the default), round or off.
-local shadow_modes = { "sun", "round", "off" }
-local ui_scales = { 0.75, 0.9, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0 }
-
 local function original(document)
   return document:get("panel"):has_class("title-original")
 end
@@ -123,28 +91,6 @@ local function index_of(list, value)
     end
   end
   return nil
-end
-
-local function cycle(list, value, step, default)
-  local index = index_of(list, value) or default
-  return list[((index - 1 + step) % #list) + 1]
-end
-
--- The language after the current one in the list the packs offer, step entries away, wrapping
--- around.
-local function next_language(step)
-  return cycle(ui.languages(), ui.setting("language"), step, 1)
-end
-
--- The nearest UI scale step to a value, so a scale set elsewhere still cycles from the right place.
-local function nearest_scale(value)
-  local best = 3
-  for index, scale in ipairs(ui_scales) do
-    if math.abs(scale - value) < math.abs(ui_scales[best] - value) then
-      best = index
-    end
-  end
-  return best
 end
 
 -- A language's name in that language (language.native.<code>, the same in every language's
@@ -181,66 +127,7 @@ local function refresh(document)
   document:get("continue"):set_class("unavailable", not saved and not orig)
   document:get("continue"):set_class("dimmed", not saved and orig)
   document:get("erase"):set_class("dimmed", not saved)
-  -- The original's values are in capitals, as its texts.
-  local function value(id, text)
-    document:get(id .. "-value"):set_text(orig and upper(text) or text)
-  end
-  value("language", t("language.name"))
-  local font = ui.setting("text_font") == "original" and "original" or "modern"
-  value("text-font", t("main_menu.text_font." .. font))
-  value("ui-skin", skin_choice.name())
-  local chibi = index_of(chibi_modes, ui.setting("chibi_style")) and ui.setting("chibi_style")
-    or "external"
-  value("chibi-style", t("pause_menu.chibi_style." .. chibi))
-  -- The autosave (game_options.lua), on unless the game says it is off.
-  value("autosave", t(ui.setting("autosave") == false and "common.no" or "common.yes"))
-  local mode = index_of(minimap_modes, ui.setting("minimap")) and ui.setting("minimap") or "on"
-  value(
-    "minimap",
-    t((orig and "main_menu.original.option.minimap." or "pause_menu.minimap_mode.") .. mode)
-  )
-  local size = index_of(minimap_sizes, ui.setting("minimap_size")) and ui.setting("minimap_size")
-    or "medium"
-  value("minimap-size", t("pause_menu.minimap_size." .. size))
-  local shadows = index_of(shadow_modes, ui.setting("shadows")) and ui.setting("shadows") or "sun"
-  value("shadows", t("pause_menu.shadows." .. shadows))
-  local function on_off(setting)
-    return t(ui.setting(setting) == false and "common.no" or "common.yes")
-  end
-  value("enhanced-lighting", on_off("enhanced_lighting"))
-  value("vivid-colors", on_off("vivid_colors"))
-  -- HD scenery: on unless the game says off.
-  value(
-    "hd-scenery",
-    t("main_menu.original.option.minimap." .. (ui.setting("hd_scenery") == false and "off" or "on"))
-  )
-  -- The weather, on unless turned off (the game publishes it; an engine improvement).
-  local weather = ui.setting("weather") ~= false
-  value(
-    "weather",
-    t(
-      (orig and "main_menu.original.option.minimap." or "pause_menu.minimap_mode.")
-        .. (weather and "on" or "off")
-    )
-  )
-  -- The seasons, on unless turned off (the game publishes it; an engine improvement).
-  local seasons = ui.setting("seasons") ~= false
-  value(
-    "seasons",
-    t(
-      (orig and "main_menu.original.option.minimap." or "pause_menu.minimap_mode.")
-        .. (seasons and "on" or "off")
-    )
-  )
-  value(
-    "display-mode",
-    t(
-      ui.setting("fullscreen") and "pause_menu.display_mode.fullscreen"
-        or "pause_menu.display_mode.window"
-    )
-  )
-  local percent = math.floor((ui.setting("ui_scale") or 1.0) * 100 + 0.5)
-  value("ui-scale", t("pause_menu.ui_scale.value", { percent = percent }))
+  document:get("options"):set_text(t(own .. "options"))
   local languages = ui.languages()
   for row = 1, #entries.language - 1 do
     local button = document:get("language-" .. row)
@@ -280,7 +167,6 @@ end
 
 local function refresh_prompts(document)
   document:get("prompt-confirm"):set_prompt("confirm")
-  document:get("prompt-cancel"):set_prompt("cancel")
   refresh_press(document)
 end
 
@@ -292,46 +178,23 @@ function pointer_moved(document)
   end
 end
 
--- Shows what the layout and the view show, and hides the rest.
+-- Shows what the layout and the view show, and hides the rest. The modern layout has only the
+-- menu, and the options page over it.
 local function lay_out(document)
   local orig = original(document)
   was_original = orig
-  local shown = orig and view or "menu"
+  local shown = (orig or view == "options") and view or "menu"
   local function show(id, visible)
     document:get(id):set_class("hidden", not visible)
   end
   show("press-start", shown == "boot")
-  show("panel", shown == "menu" or shown == "options")
-  show("play", shown == "menu")
-  show("continue", shown == "menu")
-  for _, id in ipairs({ "erase", "battle", "options" }) do
-    show(id, orig and shown == "menu")
+  show("panel", shown == "menu")
+  for _, id in ipairs({ "erase", "battle" }) do
+    show(id, orig)
   end
-  for _, id in ipairs({
-    "language",
-    "text-font",
-    "ui-skin",
-    "chibi-style",
-    "autosave",
-    "weather",
-    "seasons",
-    "quit",
-  }) do
-    show(id, not orig or shown == "options")
-  end
-  for _, id in ipairs({
-    "minimap",
-    "minimap-size",
-    "shadows",
-    "enhanced-lighting",
-    "vivid-colors",
-    "hd-scenery",
-    "display-mode",
-    "ui-scale",
-  }) do
-    show(id, orig and shown == "options")
-  end
-  show("prompt-back", orig and shown ~= "menu" and shown ~= "boot")
+  -- Quit is the options page's in the original layout, whose menu has the original's entries and
+  -- options.
+  show("quit", not orig)
   show("language-box", shown == "language")
   if shown == "language" then
     -- The box in the middle of the screen: its heading and START (180dp with its padding) and a
@@ -343,7 +206,6 @@ local function lay_out(document)
   end
   show("battle-box", shown == "battle")
   document:get("scrim"):set_class("boot", shown == "boot")
-  document:get("scrim"):set_class("view-options", shown == "options")
   document:get("press-start-text"):set_class("blink-off", false)
   refresh(document)
 end
@@ -355,12 +217,27 @@ local function set_fade(document, value)
   fade:set_property("opacity", string.format("%.3f", darkness))
 end
 
--- The menu's first entry: continue when there is a save to continue (an addition), else new game.
-local function first_entry()
-  if FocusContinueWhenSaved and ui.setting("save.can_continue") == true then
+-- The menu's first entry: continue when there is a save to continue (an addition, the original
+-- layout's), else new game.
+local function first_entry(document)
+  if original(document) and FocusContinueWhenSaved and ui.setting("save.can_continue") == true then
     return "continue"
   end
   return "play"
+end
+
+-- The entry the menu comes back on: the one that left it (a slot list, the options), while the
+-- layout shows it and the cursor may stop on it; else the first.
+local function menu_focus(document)
+  local id = remembered.menu
+  if id == nil then
+    return first_entry(document)
+  end
+  local element = document:get(id)
+  if element:has_class("hidden") or element:has_class("unavailable") then
+    return first_entry(document)
+  end
+  return id
 end
 
 local function set_view(document, name, focus)
@@ -369,13 +246,16 @@ local function set_view(document, name, focus)
   set_landing(name == "boot")
   blink = 0.0
   lay_out(document)
-  document:get(focus):focus()
+  if focus ~= nil then
+    document:get(focus):focus()
+  end
 end
 
--- Opens a view of the original layout on the entry it had last.
+-- Opens a view on the entry it had last.
 local function enter(document, name)
   if name == "menu" then
-    set_view(document, "menu", remembered.menu or first_entry())
+    set_view(document, "menu", nil)
+    document:get(menu_focus(document)):focus()
   elseif name == "boot" then
     set_view(document, "boot", "press-start")
   elseif name == "battle" then
@@ -384,8 +264,6 @@ local function enter(document, name)
   elseif name == "language" then
     local current = index_of(ui.languages(), ui.setting("language")) or 1
     set_view(document, "language", "language-" .. current)
-  else
-    set_view(document, name, remembered[name])
   end
 end
 
@@ -412,16 +290,15 @@ function open_view(document, name)
 end
 
 function close_view(document)
-  for id_view, ids in pairs(entries) do
-    if id_view == view then
-      for _, id in ipairs(ids) do
-        if document:get(id):has_focus() then
-          remembered[view] = id
-        end
-      end
-    end
-  end
   enter(document, "menu")
+end
+
+-- The options page over the title: this menu hides its box and TitleScreen shows the page; when it
+-- closes the menu shows again, on Options.
+function open_options(document)
+  remembered.menu = "options"
+  set_view(document, "options", nil)
+  ui.send("title_options")
 end
 
 function play()
@@ -446,104 +323,22 @@ function erase_game()
   end
 end
 
-function change_language(step)
-  ui.send("language", next_language(step))
-end
-
-function change_text_font()
-  ui.send("text_font", ui.setting("text_font") == "original" and "modern" or "original")
-end
-
--- What each option does when confirmed or moved left and right.
-local options = {
-  language = function(step)
-    change_language(step)
-  end,
-  ["text-font"] = function(_step)
-    change_text_font()
-  end,
-  ["ui-skin"] = function(step)
-    skin_choice.change(step)
-  end,
-  ["chibi-style"] = function(step)
-    ui.send("chibi_style", cycle(chibi_modes, ui.setting("chibi_style"), step, 2))
-  end,
-  autosave = function(_step)
-    ui.send("autosave", ui.setting("autosave") == false)
-  end,
-  minimap = function(step)
-    ui.send("minimap", cycle(minimap_modes, ui.setting("minimap"), step, 1))
-  end,
-  ["minimap-size"] = function(step)
-    ui.send("minimap_size", cycle(minimap_sizes, ui.setting("minimap_size"), step, 2))
-  end,
-  shadows = function(step)
-    ui.send("shadows", cycle(shadow_modes, ui.setting("shadows"), step, 1))
-  end,
-  ["enhanced-lighting"] = function(_step)
-    ui.send("enhanced_lighting", ui.setting("enhanced_lighting") == false)
-  end,
-  ["vivid-colors"] = function(_step)
-    ui.send("vivid_colors", ui.setting("vivid_colors") == false)
-  end,
-  ["hd-scenery"] = function(_step)
-    ui.send("hd_scenery", ui.setting("hd_scenery") == false)
-  end,
-  weather = function(_step)
-    ui.send("weather", ui.setting("weather") == false)
-  end,
-  seasons = function(_step)
-    ui.send("seasons", ui.setting("seasons") == false)
-  end,
-  ["display-mode"] = function(_step)
-    ui.send("fullscreen", not ui.setting("fullscreen"))
-  end,
-  ["ui-scale"] = function(step)
-    local index = nearest_scale(ui.setting("ui_scale") or 1.0)
-    ui.send("ui_scale", ui_scales[math.max(1, math.min(#ui_scales, index + step))])
-  end,
-}
-
-function change_option(id, step)
-  options[id](step)
-end
-
--- The language entry: the language box in the original layout, the next language in the modern.
-function language_entry(document)
-  if original(document) then
-    remembered.options = "language"
-    language_return = "options"
-    enter(document, "language")
-  else
-    change_language(1)
-  end
-end
-
--- A row of the language box: the language at once, then the cursor on the box's last row; before
--- the "Press Start" screen, on to it.
+-- A row of the language box: the language at once, then out to black and into the "Press Start"
+-- screen; a second confirm in the fade does nothing.
 function pick_language(document, row)
   local code = ui.languages()[row]
   if code ~= nil and not leaving then
     ui.send("language", code)
-    if language_return == "boot" then
-      close_language(document)
-    else
-      document:get("language-done"):focus()
-    end
+    close_language(document)
   end
 end
 
-function close_language(document)
-  if language_return == "boot" then
-    -- Out to black and into the "Press Start" screen; a second confirm in the fade does nothing.
-    if not leaving then
-      leaving = true
-      fade_target = 1.0
-      pending_view = "boot"
-    end
-    return
+function close_language(_document)
+  if not leaving then
+    leaving = true
+    fade_target = 1.0
+    pending_view = "boot"
   end
-  enter(document, language_return)
 end
 
 function on_show(document)
@@ -551,24 +346,24 @@ function on_show(document)
   landing = false
   refresh_prompts(document)
   was_original = original(document)
-  if original(document) and ui.setting("title.boot") == true then
+  local boot = ui.setting("title.boot") == true
+  if boot then
+    -- A new start of the title: the menu starts on its first entry.
     remembered.menu = nil
+  end
+  if original(document) and boot then
     set_fade(document, 1.0)
     fade_target = 0.0
     if ui.setting("title.language_first") == true then
-      language_return = "boot"
       enter(document, "language")
     else
       set_view(document, "boot", "press-start")
     end
-  elseif original(document) then
-    -- Back from a slot list, on the entry that opened it; from a game, on the first entry.
+  else
+    -- Back from a slot list or the options, on the entry that opened them.
     set_fade(document, 0.0)
     fade_target = 0.0
     enter(document, "menu")
-  else
-    set_fade(document, 0.0)
-    set_view(document, "menu", "play")
   end
 end
 
@@ -586,24 +381,15 @@ function on_device(document)
   refresh_prompts(document)
 end
 
--- A skin switch can change the layout: the entry focused stays focused, in the options of the
--- original layout or the panel of the modern one.
+-- A skin switch can change the layout (the options page's skin row): the menu lays itself out
+-- again, still hidden behind the options while they are open, else on the menu.
 local function follow_layout(document)
-  local focused = nil
-  for _, id in ipairs(entries.options) do
-    if document:get(id):has_focus() then
-      focused = id
-    end
-  end
   set_fade(document, 0.0)
-  if original(document) and focused ~= nil then
-    remembered.menu = "options"
-    set_view(document, "options", focused)
-  elseif original(document) then
-    enter(document, "menu")
+  fade_target = 0.0
+  if view == "options" then
+    set_view(document, "options", nil)
   else
-    local modern = focused ~= nil and document:get(focused):has_class("hidden") == false
-    set_view(document, "menu", modern and focused or "play")
+    enter(document, "menu")
   end
 end
 
@@ -669,6 +455,11 @@ function on_action(document, action)
     pointer = false
     refresh_press(document)
   end
+  if view == "options" then
+    -- The options page takes the input while it is open; should this menu get it, it shows again.
+    enter(document, "menu")
+    return true
+  end
   if original(document) then
     if view == "boot" then
       -- Start, confirm or a click goes on (runLandingScreen takes Start; confirm and the pointer
@@ -703,14 +494,6 @@ function on_action(document, action)
     end
   elseif action == "cancel" or action == "menu" then
     return true
-  end
-  if action == "left" or action == "right" then
-    for id, change in pairs(options) do
-      if document:get(id):has_focus() then
-        change(action == "left" and -1 or 1)
-        return true
-      end
-    end
   end
   return false
 end

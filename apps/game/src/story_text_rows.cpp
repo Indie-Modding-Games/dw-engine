@@ -156,7 +156,8 @@ OptionPointer optionPointer(const ui::Ui& ui, const input::InputState& input, st
   }
   const glm::vec2 point{pointer->x, pointer->y};
   for (std::size_t row = first; row < MaxRows; ++row) {
-    const auto rect = ui.elementRect(StoryTextboxDocument, std::format("row-{}", row));
+    // The rows as drawn: a box drawn smaller to fit the window moves them.
+    const auto rect = ui.elementDrawnRect(StoryTextboxDocument, std::format("row-{}", row));
     if (rect && rectHolds(*rect, point)) {
       const std::size_t option = row - first;
       return {.pointed = moved ? std::optional{option} : std::nullopt,

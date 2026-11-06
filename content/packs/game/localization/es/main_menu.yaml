@@ -7,8 +7,9 @@ language: "Idioma"
 text_font: "Texto con aspecto original"
 text_font.modern: "No"
 text_font.original: "Sí"
+# Abre la página de opciones de la partida sobre la portada.
+options: "Opciones"
 quit: "Salir del juego"
-ui_skin: "Aspecto de la interfaz"
 # La portada con el aspecto original (ui/main_menu): la línea de la pantalla de antes del menú, las entradas del menú,
 # la pregunta del modo batalla y la caja de idiomas, en mayúsculas como el original.
 # La línea de la pantalla de «Press Start» del aspecto original: lo que sigue con el dispositivo en uso, la tecla
@@ -23,22 +24,3 @@ original.options: "OPCIONES"
 original.battle_mode_message: "¿Usar los datos de combate del jugador 1 de una partida? El modo batalla aún no está disponible."
 original.language_heading: "LANGUAGE - IDIOMA"
 original.language_done: "COMENZAR"
-# La caja de opciones del aspecto original: nombres cortos, en mayúsculas, para que un nombre y su valor quepan en una
-# fila de la imagen 4:3.
-original.option.language: "IDIOMA"
-original.option.text_font: "TEXTO ORIGINAL"
-original.option.ui_skin: "ASPECTO"
-original.option.chibi_style: "ESTILO CHIBI"
-original.option.autosave: "AUTOGUARDADO"
-original.option.minimap: "MINIMAPA"
-original.option.minimap_size: "TAMAÑO MINIMAPA"
-original.option.shadows: "SOMBRAS"
-original.option.enhanced_lighting: "LUZ MEJORADA"
-original.option.vivid_colors: "COLORES VIVOS"
-original.option.hd_scenery: "ESCENARIOS HD"
-original.option.display_mode: "PANTALLA"
-original.option.ui_scale: "ESCALA"
-original.option.minimap.on: "SÍ"
-original.option.minimap.off: "NO"
-original.option.weather: "CLIMA"
-original.option.seasons: "ESTACIONES"

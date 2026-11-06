@@ -137,9 +137,9 @@ que se puede seguir usando el escritorio; un mando real sí llega. Las rutas de 
   carne a los pies del jugador, el aviso se muestra, un `click: {element: "field_item_notice#box"}` sobre su caja lo
   cierra y el objeto entra en la bolsa (la caja del aviso también responde al clic, como el `confirm` del teclado y
   el mando).
-- `route-language.yaml`: empieza en el menú principal (`main_menu: true`), cambia el idioma desde él y lo devuelve,
-  entra al campo y abre el menú de pausa, con capturas de cada pantalla. Se corre una vez por idioma, cada una con
-  su carpeta de capturas:
+- `route-language.yaml`: empieza en el menú principal (`main_menu: true`), cambia el idioma en sus opciones y lo
+  devuelve, entra al campo y abre el menú de pausa, con capturas de cada pantalla. Se corre una vez por idioma, cada
+  una con su carpeta de capturas:
 
 ```sh
 for lang in en es; do
@@ -188,8 +188,8 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
 - `route-dev-assets.yaml`: comprueba que el aviso de los [assets de desarrollo](../architecture/assets-de-desarrollo.md)
   se ve en el menú principal y en el campo. Es la única ruta que necesita `--dev-assets` y un `dev-assets.yaml` en la
   carpeta actual; se corre en los dos idiomas.
-- `route-skins.yaml`: empieza con el aspecto original (el de por defecto), desde el menú principal cambia en vivo al
-  de prueba (el paquete sintético `tests/mods/ui_skin/test_contrast`), recorre con él el campo, el menú de pausa, el
+- `route-skins.yaml`: empieza con el aspecto original (el de por defecto), desde las opciones del menú principal cambia en
+  vivo al de prueba (el paquete sintético `tests/mods/ui_skin/test_contrast`), recorre con él el campo, el menú de pausa, el
   del compañero y un combate, y pasa al moderno desde las opciones del menú de pausa, con capturas de cada pantalla.
   Necesita `--mods tests/mods/ui_skin` y se corre en los dos idiomas, como `route-language.yaml`.
 - `route-skin-original.yaml`: el aspecto original en cada pantalla que dibuja, con una captura de cada una: el título y
@@ -271,8 +271,9 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   con `--ui-skin modern` la ruta falla en su primer paso.
 - `route-status-extras.yaml`: los [extras de la ficha](../modulos/apps/screens.md#extras-de-la-ficha) del
   compañero desde una partida nueva con el teclado: dos entrenamientos (cansancio) y el reloj rápido hasta un error de
-  cuidado, la ficha con la opción encendida a 1280x720 y 1920x1080, la opción apagada desde el menú de pausa y la ficha
-  otra vez como el original, con `text_fit`. Se corre en los dos idiomas y con los dos aspectos (`--ui-skin original`
+  cuidado, la ficha con la opción encendida a 1280x720 y 1920x1080, otra vez con los valores más anchos (HP y MP
+  9999 / 9999, disciplina al 100 %, contador de evolución de tres cifras) a 1280x720 y 1024x768, la opción apagada desde
+  el menú de pausa y la ficha otra vez como el original, con `text_fit`. Se corre en los dos idiomas y con los dos aspectos (`--ui-skin original`
   y `modern`).
 - `route-scripted-loop.yaml`: una vuelta por cinco zonas desde una partida nueva con el teclado: File City (`twna01`)
   → la casa del anciano, `room08` (tabla de salidas del mapa) → File City (script) → `trai00` (tabla) → `mayo00`

@@ -10,6 +10,8 @@ local max_color = 10
 local column_dp = 36
 local row_dp = 39
 local padding_dp = 30
+-- The box's growth as it opens, kept for the ticks that fit it in the window again.
+local opening_scale = 1
 
 local function number(name, fallback)
   local value = ui.setting(name)
@@ -89,7 +91,10 @@ local function refresh(document)
   -- The box grows over its opening frames (ui.c: tickAnimatedUIBox); its text shows once it is
   -- open.
   local opening = number("story_textbox.opening", 1)
-  box:set_property("transform", string.format("scale(%.3f)", math.max(opening, 0.05)))
+  opening_scale = math.max(opening, 0.05)
+  -- A UI scale larger than the window allows draws the box smaller, inside the window
+  -- (common/screen_fit.lua).
+  screen_fit.apply(document, box, opening_scale)
   fill_rows(document)
   document:get("rows"):set_class("hidden", opening < 1)
   document:get("prompt"):set_class("hidden", ui.setting("story_textbox.prompt") ~= true)
@@ -122,6 +127,7 @@ function on_language(document)
   refresh(document)
 end
 
-function on_tick(_document, _seconds)
+function on_tick(document, _seconds)
   fit_text.tick()
+  screen_fit.apply(document, document:get("box"), opening_scale)
 end

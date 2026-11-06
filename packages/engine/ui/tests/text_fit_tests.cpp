@@ -84,6 +84,9 @@ body { width: 100%; height: 100%; font-family: Noto Sans; font-size: 20dp; color
 #second { position: absolute; left: 720dp; top: 600dp; }
 #list { position: absolute; left: 100dp; top: 560dp; width: 200dp; height: 60dp; overflow-y: auto; background-color: #000080; }
 .row { display: block; height: 30dp; white-space: nowrap; }
+#rows { position: absolute; left: 350dp; top: 560dp; width: 200dp; height: 60dp; overflow-y: auto; }
+.frame { display: block; width: 100dp; height: 30dp; background-color: #000080; }
+#below { position: absolute; left: 400dp; top: 625dp; }
 </style>
 </head>
 <body>
@@ -103,6 +106,7 @@ body { width: 100%; height: 100%; font-family: Noto Sans; font-size: 20dp; color
 <div id="over" class="box"><span class="line">On top</span></div>
 <span id="first" class="line">First text</span><span id="second" class="line">Second</span>
 <div id="list"><span class="row">Listed one</span><span class="row">Listed two</span><span class="row">Listed three</span><span class="row">Listed four</span></div>
+<div id="rows"><span class="row">Row one</span><span class="row">Row two</span><div class="frame"></div></div><span id="below" class="line">Below the rows</span>
 </body>
 </rml>
 )";
@@ -187,8 +191,10 @@ TEST_CASE(
     // A window over another hides what it covers: neither is out of place.
     CHECK(overflowOf(found, "Under it") == nullptr);
     CHECK(overflowOf(found, "On top") == nullptr);
-    // A list's rows scrolled out of its box are not on screen.
+    // A list's rows scrolled out of its box are not on screen, nor are the boxes in them: a text
+    // under the list does not cross them.
     CHECK(overflowOf(found, "Listed") == nullptr);
+    CHECK(overflowOf(found, "Below the rows") == nullptr);
     CHECK(found.size() == 7);
   }
 }

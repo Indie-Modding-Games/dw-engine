@@ -449,7 +449,15 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
                                         std::optional<assets::SpawnPoint> at,
                                         std::optional<assets::SpawnPoint> partnerAt) {
   const auto start = Clock::now();
-  auto scene = render::loadMapSceneData(*files_, mapId);
+  if (preview_ && preview_->map != mapId) {
+    core::logInfo("field: the preview of {} dropped on leaving it", preview_->map);
+    preview_.reset();
+  }
+  std::span<const assets::MapPatchText> extra;
+  if (preview_) {
+    extra = std::span{&preview_->patch, 1};
+  }
+  auto scene = render::loadMapSceneData(*files_, mapId, extra);
   if (!scene) {
     return core::fail(std::format("map {}: {}", mapId, scene.error().message));
   }
@@ -562,14 +570,90 @@ core::Result<void> FieldScene::reloadMap(std::optional<std::int32_t> exit) {
   }
   field_->reloadData(std::move(*rules), std::move(*scriptWarps));
   schedule_ = scheduleOf(field_->rules().timeOfDay);
+  // The packs are what is shown from now on.
+  if (preview_) {
+    core::logInfo("field: the preview of {} dropped by the reload", preview_->map);
+    preview_.reset();
+  }
   core::logInfo("field: reloading {} from the packs", mapId);
   if (exit) {
     return enterMap(mapId, *exit);
   }
+  return enterWhereTheyStand(mapId);
+}
+
+core::Result<void> FieldScene::enterWhereTheyStand(const std::string& mapId) {
   const game::field::CharacterState player = field_->player();
   const game::field::CharacterState partner = field_->partner();
   return enterMap(mapId, 0, assets::SpawnPoint{.position = player.position, .yaw = player.yaw},
                   assets::SpawnPoint{.position = partner.position, .yaw = partner.yaw});
+}
+
+core::Result<void> FieldScene::swapCollision(const std::string& mapId) {
+  std::span<const assets::MapPatchText> extra;
+  if (preview_) {
+    extra = std::span{&preview_->patch, 1};
+  }
+  auto document = assets::loadMapDocument(*files_, mapId, extra);
+  if (!document) {
+    return core::fail(std::format("map {}: {}", mapId, document.error().message));
+  }
+  field_->setCollision(document->collision);
+  map_.document.collision = std::move(document->collision);
+  return {};
+}
+
+core::Result<bool> FieldScene::previewMap(const std::string& mapId, assets::MapPatchText patch) {
+  const std::string shown = field_->mapId();
+  if (shown.empty()) {
+    return core::fail("no map is shown");
+  }
+  if (mapId != shown) {
+    return core::fail(std::format("the game shows {}, not {}", shown, mapId));
+  }
+  if (field_->mapChangePending()) {
+    return core::fail("a map change is under way");
+  }
+  auto sections = assets::mapPatchSections(patch.text);
+  if (!sections) {
+    return core::fail(std::format("patch {}: {}", patch.file, sections.error().message));
+  }
+  const bool onlyCollision = sections->onlyCollision();
+  const bool inPlace = onlyCollision && (!preview_ || preview_->onlyCollision);
+  std::optional<MapPreview> previous = std::exchange(
+      preview_,
+      MapPreview{.map = mapId, .patch = std::move(patch), .onlyCollision = onlyCollision});
+  auto applied = inPlace ? swapCollision(mapId) : enterWhereTheyStand(mapId);
+  if (!applied) {
+    preview_ = std::move(previous);
+    return std::unexpected{applied.error()};
+  }
+  core::logInfo("field: previewing a patch of {}{}", mapId,
+                inPlace ? ", its collision swapped in place" : ", entered again");
+  return !inPlace;
+}
+
+core::Result<bool> FieldScene::clearPreview() {
+  if (!preview_) {
+    return false;
+  }
+  const std::string mapId = field_->mapId();
+  if (mapId != preview_->map) {
+    preview_.reset();
+    return true;
+  }
+  if (field_->mapChangePending()) {
+    return core::fail("a map change is under way");
+  }
+  const bool onlyCollision = preview_->onlyCollision;
+  std::optional<MapPreview> previous = std::exchange(preview_, std::nullopt);
+  auto applied = onlyCollision ? swapCollision(mapId) : enterWhereTheyStand(mapId);
+  if (!applied) {
+    preview_ = std::move(previous);
+    return std::unexpected{applied.error()};
+  }
+  core::logInfo("field: the preview of {} cleared", mapId);
+  return true;
 }
 
 std::string mapNameKeyOf(const assets::MapTable& table, std::string_view mapId) {

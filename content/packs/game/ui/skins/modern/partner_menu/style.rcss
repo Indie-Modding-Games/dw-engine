@@ -234,7 +234,8 @@ button:focus .original-look, button.original-look:focus {
 /* La presentación moderna conserva su estructura compacta. */
 .status-decoration { display: none; }
 
-.pool-max { display: none; }
+/* HP and MP write "now / most" in their value: the original look's separate slash and maximum are not drawn. */
+.pool-max, .pool-slash { display: none; }
 
 #page-tech { min-height: 330dp; }
 .tech-heading { font-size: 22dp; color: #f0a73a; margin: 12dp 0; }
@@ -524,7 +525,10 @@ button:focus .original-look, button.original-look:focus {
 	color: #e9eef5;
 }
 
-#panel:not(.skin-original) #status-condition .bar-row .value { width: 36dp; }
+/* HP and MP write "now / most": room for "9999 / 9999" on one line. The care numbers take a percent sign ("100%",
+   "-100%" for the saddest). */
+#panel:not(.skin-original) .pool .value { width: 124dp; white-space: nowrap; }
+#panel:not(.skin-original) #status-condition .bar-row .value { width: 58dp; white-space: nowrap; }
 
 /* The bag: two columns of slots, the item's icon at their left, its count at their right. */
 #panel:not(.skin-original) #bag-grid { margin: 0 -4dp; }
@@ -703,6 +707,9 @@ button:focus .original-look, button.original-look:focus {
 	font-weight: bold;
 	color: #e9eef5;
 }
+/* Without the extras none of their lines shows (the line rule above would show the battles and the waking hours). */
+#scrim:not(.status-extras) #panel:not(.skin-original) #status-battles,
+#scrim:not(.status-extras) #panel:not(.skin-original) #status-awake { display: none; }
 #scrim.status-extras #panel:not(.skin-original) #page-status { height: 448dp; }
 #scrim.status-extras #panel:not(.skin-original) #status-parameters,
 #scrim.status-extras #panel:not(.skin-original) #status-condition { height: 248dp; }

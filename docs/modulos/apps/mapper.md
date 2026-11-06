@@ -38,12 +38,48 @@ con [egui](https://github.com/emilk/egui) (wgpu), aparte de CMake, y no forma pa
   todos los de encima, de abajo arriba, con las mismas reglas y los mismos errores que el motor (`dwe_map::patch`
   copia `map_patch.cpp`). Un parche que no se puede aplicar deja el mapa sin abrir y el error nombra el fichero.
 - **En vivo:** se conecta al control remoto de un `dwe-game` en marcha ([control remoto](../../guides/control-remoto.md))
-  para abrir el mapa que juega el juego (`status`), pedirle que relea los packs y recargue su mapa (`reload_map`, que
-  vuelve a listar los ficheros antes), encender o apagar su
-  [capa de depuración del mapa](../../guides/control-remoto.md#capa-de-depuración-del-mapa) (`overlay`; al conectar,
-  la casilla toma el estado que da `status`) y leer el estado de la historia (`story_state`): los disparadores activos
-  y las variables distintas de 0, con las etiquetas de `story/names` cuando las tienen (`12 door_open`). Con
-  «Recargar al guardar» (encendido por defecto) cada guardado pide `reload_map` al juego conectado.
+  y lo sigue mientras se edita ([En vivo](#en-vivo)).
+
+## En vivo
+
+El panel «En vivo» (derecha) se conecta con `--live` o escribiendo `tcp:<puerto>` o `unix:<socket>` y pulsando
+«Conectar». La conexión vive en su propio hilo (`mapper_live::LiveLink`): si el juego se cierra o se reinicia, el
+editor lo dice en la barra de estado y vuelve a conectar solo cada segundo. El juego admite varios clientes a la vez
+([varios clientes](../../guides/control-remoto.md#varios-clientes)), así que el editor puede convivir con el servidor
+MCP u otra herramienta.
+
+- **Estado:** la barra de estado dice el modo del juego (título, campo, batalla…), su mapa, el tick, si está en pausa
+  o ocupado con un script de historia, si enseña una vista previa y el tiempo de ida y vuelta de la última pregunta.
+  En amarillo mientras no hay conexión.
+- **Seguir al juego** (encendido por defecto): cuando el juego entra en otro mapa, el editor lo abre. Si el mapa
+  abierto tiene cambios sin guardar, pregunta antes como al abrir un mapa a mano; si se elige quedarse, no vuelve a
+  preguntar hasta que el juego cambie otra vez de mapa. «Ir al mapa del juego» lo abre a mano.
+- **Capa «Juego»:** sobre el mapa que juega el juego, el jugador, su compañero y los NPC con una flecha hacia donde
+  miran, y el rectángulo del fondo que enseña la ventana del juego. El editor pregunta `live` cada 150 ms; el registro
+  del juego (`log_tail`) solo se pide cuando `live` dice que tiene algo nuevo.
+- **Vista previa en vivo** (apagada por defecto): el juego enseña el cambio sin guardar del mapa abierto. El editor
+  manda la diferencia entre el mapa que dan los paquetes y el editado (el mismo parche que guardaría) con
+  `preview_map`, como mucho cada 300 ms y nunca a mitad de un trazo. Si solo cambia la colisión, el juego la cambia
+  en el sitio; si no, vuelve a entrar en el mapa con el jugador donde estaba. La vista previa vive solo en la memoria
+  del juego: no se escribe en disco ni en las partidas. Se quita al apagar la casilla, al deshacer todos los cambios,
+  al guardar (entonces «Recargar al guardar» trae lo guardado), al desconectar y al cerrar el editor. El juego la
+  rechaza en batalla, con un cambio de mapa pendiente o mientras corre un script de historia; el editor espera a que
+  el juego vuelva al campo libre.
+- **Llevar al jugador:** con el botón derecho sobre el lienzo, «Llevar al jugador aquí» lo pone en ese punto (`place`).
+  Sobre una salida, el mismo menú y el inspector de la salida ofrecen «Probar esta salida» (pone al jugador en una
+  celda de la salida, la pulsada o la primera, y deja correr el juego, que la toma como al pisarla) y «Llevar al
+  jugador a la llegada» (lo pone donde deja la salida, mirando hacia donde mira).
+- **Pausa, Paso y +1 s:** paran el juego, avanzan un tick o un segundo.
+- **Recargar al guardar** (encendido por defecto): cada guardado pide `reload_map`. «Recargar el mapa en el juego» lo
+  pide a mano y «Capa de depuración del juego» enciende su
+  [capa de depuración del mapa](../../guides/control-remoto.md#capa-de-depuración-del-mapa).
+- **Historia:** el estado de la historia del juego (`story_state`): la etapa, el script del mapa, las secciones en
+  curso, los disparadores activos y las variables distintas de 0, con las etiquetas de `story/names` cuando las tienen
+  (`12 door_open`). «Actualizar sola» la vuelve a leer cada segundo y el filtro busca por número o nombre. Para probar
+  eventos se puede activar o quitar un disparador y poner una variable (`story_set`); el juego lo rechaza mientras
+  corre un script.
+- **Registro del juego:** los avisos y errores del juego (los últimos 300). Lo que el juego rechaza (un parche que no
+  se puede aplicar, con el fichero y la línea que da el cargador) sale además en «Problemas».
 
 ## Editar
 
@@ -145,7 +181,7 @@ La interfaz está en español y todos sus textos viven en `crates/mapper-core/sr
 | `dwe-pack` | `packages/rust/dwe-pack` | Los packs como el motor ([sistema de archivos virtual](../../architecture/vfs.md)): `pack.yaml`, la pila por capa, prioridad y dependencias, los ids de asset, las tablas compuestas (`data/maps`) y el montaje del contenido del juego con los packs del equipo y los mods |
 | `dwe-map` | `packages/rust/dwe-map` | El documento de un mapa leído del YAML con sus parches y escrito de vuelta (`emit`, `diff`, `save`), la colisión con su leyenda o en hexadecimal, las bandas de disparo de `field/triggers`, los nombres de `story/names`, las coordenadas ([espacio del mundo](../../architecture/world-space.md)) y la cámara con su proyección al fondo |
 | `mapper-core` | `apps/mapper/crates/mapper-core` | El modelo del editor sin ventana: el contenido abierto, el mapa, la vista, las capas, la lista de mapas, lo que se dibuja (`MapOverlay`), las herramientas (`tools`), el historial de deshacer (`edit`) y los destinos de guardado (`targets`). Todo cambio entra por el enum `Action` |
-| `mapper-live` | `apps/mapper/crates/mapper-live` | El cliente del control remoto (líneas JSON por socket Unix o TCP local) |
+| `mapper-live` | `apps/mapper/crates/mapper-live` | El cliente del control remoto (líneas JSON por socket Unix o TCP local) y `LiveLink`, el hilo que pregunta al juego, vuelve a conectar y le manda las órdenes del editor sin parar la ventana |
 | `dwe-mapper` | `apps/mapper` | La ventana: paneles, lienzo y línea de órdenes |
 
 `dwe-pack` y `dwe-map` copian las reglas del motor en C++ y no dependen de nada gráfico; las podrá usar cualquier
@@ -170,7 +206,12 @@ herramienta en Rust. Sus tests comprueban esas reglas con packs sintéticos de i
   `patchMapDocument` y compara campo a campo con `expected.yaml` leído por el motor: los dos lados leen, parchean y
   escriben igual. `DWE_MAPPER_BLESS=1 cargo test --test written` los vuelve a generar tras un cambio a propósito.
 - **Editor sin ventana:** `mapper-core/tests/session.rs` pinta, rellena, arrastra y gira NPC y salidas, edita rutas,
-  deshace y rehace, pregunta por los cambios sin guardar y guarda en un paquete de mod nuevo.
+  deshace y rehace, pregunta por los cambios sin guardar y guarda en un paquete de mod nuevo; también el parche de la
+  vista previa y dónde ponen al jugador las pruebas de salida. `mapper-core/src/live.rs` prueba el seguimiento del
+  mapa y cuándo se manda o se quita la vista previa.
+- **En vivo:** `mapper-live` habla con un juego falso (un servidor en un hilo que responde como
+  `remote_control.cpp`): las respuestas, los rechazos, el quinto cliente rechazado, que el enlace vuelve a conectar
+  cuando el juego vuelve, que solo pide el registro cuando cambia y que al cerrarse quita la vista previa.
 - **Contenido real** (opcional): con `DWE_MAPPER_CONTENT=<carpeta de contenido>`, `tests/real_content.rs` lee todos los
   mapas, comprueba la colisión de ida y vuelta y que cada mapa sin parches se escribe igual byte a byte. Con `DWE_CAMERA_VECTORS=<ruta sin extensión>` compara además otros
   vectores de cámara (`.txt` y `.expected`) generados en local.
@@ -199,7 +240,7 @@ solo `content/packs` (los packs del equipo). Opciones (`dwe-mapper --help`):
 | `--mods <dir>` | Una carpeta de mods o un pack suelto (se repite); sus parches de mapa se aplican |
 | `--map <id>` y `--exit <n>` | El mapa que se abre primero, centrado en la llegada por esa salida |
 | `--variant <nombre>` | El fondo: `day`, `dusk`, `night`… |
-| `--layers <lista>` | Las capas encendidas: `walls,triggers,exits,npcs,waypoints,doors,toilet,grid` |
+| `--layers <lista>` | Las capas encendidas: `walls,triggers,exits,npcs,waypoints,doors,toilet,grid,live` |
 | `--group-by name\|prefix` y `--filter <texto>` | La lista de mapas |
 | `--live unix:<socket>\|tcp:<puerto>` | Conecta con un `dwe-game` en marcha |
 | `--size <ancho>x<alto>` | El tamaño de la ventana |

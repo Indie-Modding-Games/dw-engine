@@ -85,6 +85,7 @@ TEST_CASE("the sprite character table gives each listed map the character") {
   const auto table = parseSpriteCharacters(R"(characters:
   - {maps: [tend01, tend02], species: leom, sprites: [3, 4], shadow: 5, additive: 0.5}
   - {maps: [room08], species: puni, sprites: [7], feet: [528, 179], height: 90, facing: 1024}
+  - {maps: [topn01], species: tane, sprites: [0, 1], shadow: 2, look_at: [266, -2330]}
 )");
   REQUIRE(table);
   REQUIRE(table->of("tend01").size() == 1);
@@ -100,6 +101,8 @@ TEST_CASE("the sprite character table gives each listed map the character") {
   CHECK(punimon.facing == std::optional<std::int32_t>{1024});
   CHECK_FALSE(punimon.shadow);
   CHECK_FALSE(punimon.additive);
+  CHECK_FALSE(punimon.lookAt);
+  CHECK(table->of("topn01")[0].lookAt == std::optional<glm::vec2>{glm::vec2{266.0F, -2330.0F}});
 }
 
 TEST_CASE("a sprite character needs its maps, species and sprites, takes no other key and glows "
@@ -122,6 +125,10 @@ TEST_CASE("the game pack's sprite characters read, each with a species and its s
   REQUIRE(table);
   // The opening's six babies, the ending's nine, the farm's two, the elder's house's two.
   CHECK(table->of("topn01").size() == 6);
+  // They look at the player waking up, as their drawings do.
+  for (const SpriteCharacter& character : table->of("topn01")) {
+    CHECK(character.lookAt);
+  }
   CHECK(table->of("tend01").size() == 9);
   CHECK(table->of("tend02").size() == 9);
   CHECK(table->of("twna02").size() == 2);
@@ -181,6 +188,27 @@ TEST_CASE("a character's model stands on the ground the camera sees at its feet,
   CHECK(raisedSeen->pixel.x == doctest::Approx(486.0F).epsilon(0.001));
   CHECK(raisedSeen->pixel.y == doctest::Approx(532.0F).epsilon(0.001));
   CHECK(raised->yaw == doctest::Approx(assets::yawFromOriginal(1024)));
+}
+
+TEST_CASE("a character with a point to look at faces it, not the camera") {
+  const render::MapCamera camera{render::mapCameraDesc(OpeningCamera)};
+  const render::MapDepthLayers layers{openingObjects(), camera};
+  SpriteCharacter character = characterOf("tane", {0, 1}, 2);
+  character.lookAt = glm::vec2{266.0F, -2330.0F};
+  const auto place = placeOf(character, layers, camera);
+  REQUIRE(place);
+  glm::vec3 toPoint = assets::toWorldPosition(glm::ivec3{266, 0, -2330}) - place->feet;
+  toPoint.y = 0.0F;
+  const glm::vec3 forward = assets::forwardOfYaw(place->yaw);
+  const glm::vec3 wanted = glm::normalize(toPoint);
+  CHECK(forward.x == doctest::Approx(wanted.x).epsilon(0.001));
+  CHECK(forward.z == doctest::Approx(wanted.z).epsilon(0.001));
+
+  // A facing outweighs it.
+  character.facing = 1024;
+  const auto turned = placeOf(character, layers, camera);
+  REQUIRE(turned);
+  CHECK(turned->yaw == doctest::Approx(assets::yawFromOriginal(1024)));
 }
 
 TEST_CASE("the models stand in for the sprites but not the shadows, and only while the scripts "

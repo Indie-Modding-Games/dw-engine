@@ -3,7 +3,6 @@
 	<title>Main menu</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
-	<script src="../common/ui_skin_choice.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -16,60 +15,16 @@
 			<button id="continue" onclick="continue_game()"></button>
 			<button id="erase" class="hidden" onclick="erase_game()" text-key="main_menu.original.erase"></button>
 			<button id="battle" class="hidden" onclick="open_view(document, 'battle')" text-key="main_menu.original.battle_mode"></button>
-			<button id="options" class="hidden" onclick="open_view(document, 'options')" text-key="main_menu.original.options"></button>
-			<button id="language" class="option" onclick="language_entry(document)">
-				<span class="label" text-key="main_menu.language"></span><span class="label-original" text-key="main_menu.original.option.language"></span><span class="value" id="language-value"></span>
-			</button>
-			<button id="text-font" class="option" onclick="change_text_font()">
-				<span class="label" text-key="main_menu.text_font"></span><span class="label-original" text-key="main_menu.original.option.text_font"></span><span class="value" id="text-font-value"></span>
-			</button>
-			<button id="ui-skin" class="option" onclick="skin_choice.change(1)">
-				<span class="label" text-key="main_menu.ui_skin"></span><span class="label-original" text-key="main_menu.original.option.ui_skin"></span><span class="value" id="ui-skin-value"></span>
-			</button>
-			<button id="chibi-style" class="option" onclick="change_option('chibi-style', 1)">
-				<span class="label" text-key="pause_menu.chibi_style"></span><span class="label-original" text-key="main_menu.original.option.chibi_style"></span><span class="value" id="chibi-style-value"></span>
-			</button>
-			<button id="autosave" class="option" onclick="change_option('autosave', 1)">
-				<span class="label" text-key="pause_menu.autosave"></span><span class="label-original" text-key="main_menu.original.option.autosave"></span><span class="value" id="autosave-value"></span>
-			</button>
-			<button id="minimap" class="option hidden" onclick="change_option('minimap', 1)">
-				<span class="label" text-key="pause_menu.minimap_mode"></span><span class="label-original" text-key="main_menu.original.option.minimap"></span><span class="value" id="minimap-value"></span>
-			</button>
-			<button id="minimap-size" class="option hidden" onclick="change_option('minimap-size', 1)">
-				<span class="label" text-key="pause_menu.minimap_size"></span><span class="label-original" text-key="main_menu.original.option.minimap_size"></span><span class="value" id="minimap-size-value"></span>
-			</button>
-			<button id="shadows" class="option hidden" onclick="change_option('shadows', 1)">
-				<span class="label" text-key="pause_menu.shadows"></span><span class="label-original" text-key="main_menu.original.option.shadows"></span><span class="value" id="shadows-value"></span>
-			</button>
-			<button id="enhanced-lighting" class="option hidden" onclick="change_option('enhanced-lighting', 1)">
-				<span class="label" text-key="pause_menu.enhanced_lighting"></span><span class="label-original" text-key="main_menu.original.option.enhanced_lighting"></span><span class="value" id="enhanced-lighting-value"></span>
-			</button>
-			<button id="vivid-colors" class="option hidden" onclick="change_option('vivid-colors', 1)">
-				<span class="label" text-key="pause_menu.vivid_colors"></span><span class="label-original" text-key="main_menu.original.option.vivid_colors"></span><span class="value" id="vivid-colors-value"></span>
-			</button>
-			<button id="hd-scenery" class="option hidden" onclick="change_option('hd-scenery', 1)">
-				<span class="label" text-key="pause_menu.hd_scenery"></span><span class="label-original" text-key="main_menu.original.option.hd_scenery"></span><span class="value" id="hd-scenery-value"></span>
-			</button>
-			<button id="weather" class="option hidden" onclick="change_option('weather', 1)">
-				<span class="label" text-key="pause_menu.weather"></span><span class="label-original" text-key="main_menu.original.option.weather"></span><span class="value" id="weather-value"></span>
-			</button>
-			<button id="seasons" class="option hidden" onclick="change_option('seasons', 1)">
-				<span class="label" text-key="pause_menu.seasons"></span><span class="label-original" text-key="main_menu.original.option.seasons"></span><span class="value" id="seasons-value"></span>
-			</button>
-			<button id="display-mode" class="option hidden" onclick="change_option('display-mode', 1)">
-				<span class="label" text-key="pause_menu.display_mode"></span><span class="label-original" text-key="main_menu.original.option.display_mode"></span><span class="value" id="display-mode-value"></span>
-			</button>
-			<button id="ui-scale" class="option hidden" onclick="change_option('ui-scale', 1)">
-				<span class="label" text-key="pause_menu.ui_scale"></span><span class="label-original" text-key="main_menu.original.option.ui_scale"></span><span class="value" id="ui-scale-value"></span>
-			</button>
+			<!-- The pause menu's options page over the title (logic.lua: open_options). -->
+			<button id="options" onclick="open_options(document)"></button>
 			<button id="quit" onclick="ui.send('quit')" text-key="main_menu.quit"></button>
 
 			<div id="prompts">
 				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
-				<span class="prompt hidden" id="prompt-back"><span class="key" id="prompt-cancel"></span><span text-key="common.back"></span></span>
 			</div>
 		</div>
-		<!-- The original look's language box: one row per language the packs offer, its flag and its name in its own language. -->
+		<!-- The original look's language box before the "Press Start" screen: one row per language the packs offer, its flag
+		     and its name in its own language. -->
 		<div id="language-box" class="hidden">
 			<h2 id="language-heading" text-key="main_menu.original.language_heading"></h2>
 			<button id="language-1" class="language-row" onclick="pick_language(document, 1)"><img id="language-flag-1" class="flag hidden"/><span id="language-name-1" class="language-name"></span></button>

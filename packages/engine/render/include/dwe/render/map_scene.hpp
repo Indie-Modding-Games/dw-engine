@@ -2,11 +2,13 @@
 
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/map_images.hpp>
+#include <dwe/assets/map_patch.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/render/map_camera.hpp>
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string_view>
 
 namespace dwe::assets {
@@ -62,5 +64,9 @@ struct MapSceneData {
 // assets::loadMapImages).
 core::Result<MapSceneData> loadMapSceneData(const assets::VirtualFileSystem& vfs,
                                             std::string_view mapId);
+// The same with more patches applied last (assets::loadMapDocument's `extra`).
+core::Result<MapSceneData> loadMapSceneData(const assets::VirtualFileSystem& vfs,
+                                            std::string_view mapId,
+                                            std::span<const assets::MapPatchText> extra);
 
 } // namespace dwe::render

@@ -235,8 +235,9 @@ una vez (los tests le dan las suyas). Registra las comprobaciones de las dos sec
 - **Técnicas**: como el original, las aprendidas por id (`utils2.c: learnMove`) y las equipadas por su posición en la
   lista de la especie (`stats.base.moves`, `0x2E` + posición), así que tras una evolución cada posición nombra la
   técnica de la nueva especie y una posición sin técnica queda vacía en combate (`btl.c`). En la partida nueva el
-  partner aprende y equipa la técnica de `partner_moves.new_game_slot` y equipa como remate la última de su lista que
-  es un remate (`partner_impl.c: initializePartner`); al renacer (`Reborn`) equipa solo `partner_moves.reborn_slot` y
+  partner aprende y equipa la técnica de `partner_moves.new_game_slot` (o la de su especie en
+  `partner_moves.new_game_species_slots`: la segunda especie inicial empieza con la posición 2) y equipa como remate la
+  última de su lista que es un remate (`partner_impl.c: initializePartner`); al renacer (`Reborn`) equipa solo `partner_moves.reborn_slot` y
   conserva las aprendidas (`evolution.c: reincarnatePartner`). `equip(session, lugar, posición)` solo equipa técnicas
   aprendidas (`utils2.c: hasMove`); el remate va con la especie.
 - **Empezar** (`start(session, BattleRequest)`): el luchador del partner (`partnerCombatant`: la fila de
@@ -420,6 +421,7 @@ al revés), al espacio del mundo.
 | Sección de guion de un chip | `item.c: handleChips` (0x16): con el guion en pausa, `callScriptSection(0, 0x4dd, 0)` | `InventoryAdapter::takeScriptSection`; el juego pide la sección de MAPHEAD y la historia la descarta si corre otro guion; el chip se gasta igual | `inventory_adapter_tests`: "item.c handleChips…"; `w11-missing/shots/pilot-after.png` (yaka14 → twna01) | Igual |
 | Técnicas aprendidas en los requisitos | `evolution.c: getNumMasteredMoves` | `EvolutionAdapter::setMoveSource`, `BattleAdapter::moves`, `evolution.requirements.mastered_moves_below` | `the evolution requirements count the learned moves below ...` | Igual |
 | Técnicas del primer partner: aprende y equipa una, y su remate | `partner_impl.c: initializePartner` | `partner_moves.new_game_slot`, `BattleAdapter::startNewGame` | `a new game's partner learns ...`, `the user's disc, extracted: the first partner ...` | Igual |
+| Técnica de la segunda especie inicial: la posición 2 (una técnica de potencia 52), no la 0 (potencia 155) | `partner_impl.c: initializePartner` (tipo 0x11: `moves[0] = 0x30`, `learnMove(0x2B)`); medido en el original tras elegir la segunda respuesta: `moves = [0x30, 0xFF, 0xFF, 0x35]`, `learnedMoves = [0, 0x800]`, disciplina y felicidad 50, 360 h, energía 25, peso 15 | `partner_moves.new_game_species_slots`, `PartnerMoveRules::newGameSlotOf`; stats del guion 193 (70/80/60/70, PV y PM 700) | `a new game's partner of a species with its own position ...`, `the user's disc, extracted: the second starting partner ...` | Igual (antes equipaba y aprendía la posición 0, la técnica más fuerte de su lista) |
 | Las técnicas equipadas son posiciones de la lista de la especie | `stats.base.moves`, `btl.c`, `utils2.c: entityGetTechFromAnim` | `PartnerMoves::equipped`, `partnerCombatant` | `the partner fights with its stats, ...` | Igual |
 | El renacido equipa una técnica y conserva las aprendidas | `evolution.c: reincarnatePartner` | `partner_moves.reborn_slot`, `Reborn` | `a reborn partner equips one move again ...` | Igual |
 | Lo que deja una batalla al partner (stats, cuidado, herida, vidas, 20 minutos y la hora) | `battle_ui.c: battleStatsGainsAndDrops`, `tamer.c: startBattle/advanceBattleTime` | `BattleAdapter::finish` → `Partner::applyBattle` | `a won battle gives ...`, `a lost battle costs ...` | Igual |

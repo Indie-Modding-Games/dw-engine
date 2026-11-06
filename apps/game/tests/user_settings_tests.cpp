@@ -30,6 +30,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
                               .worldMap = std::nullopt,
                               .chibiStyle = "all",
                               .minimapEnemies = false,
+                              .minimapItems = false,
                               .shadows = "round",
                               .enhancedLighting = false,
                               .vividColors = false,
@@ -58,6 +59,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK(read->needBubbleStack == std::optional<bool>{false});
   CHECK(read->chibiStyle == std::optional<std::string>{"all"});
   CHECK(read->minimapEnemies == std::optional<bool>{false});
+  CHECK(read->minimapItems == std::optional<bool>{false});
   CHECK(read->shadows == std::optional<std::string>{"round"});
   CHECK(read->enhancedLighting == std::optional<bool>{false});
   CHECK(read->vividColors == std::optional<bool>{false});
@@ -83,6 +85,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK_FALSE(older->needBubbleStack.has_value());
   CHECK_FALSE(older->chibiStyle.has_value());
   CHECK_FALSE(older->minimapEnemies.has_value());
+  CHECK_FALSE(older->minimapItems.has_value());
   CHECK_FALSE(older->shadows.has_value());
   CHECK_FALSE(older->enhancedLighting.has_value());
   CHECK_FALSE(older->vividColors.has_value());

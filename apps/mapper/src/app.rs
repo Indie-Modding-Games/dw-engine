@@ -36,6 +36,8 @@ pub struct MapperApp {
     pub show_shortcuts: bool,
     /// The text that narrows the list of target maps in the exit inspector.
     pub target_filter: String,
+    /// Where the canvas's menu was opened.
+    pub context_point: Option<crate::canvas::ContextPoint>,
 }
 
 impl MapperApp {
@@ -80,6 +82,7 @@ impl MapperApp {
             new_pack: None,
             show_shortcuts: false,
             target_filter: String::new(),
+            context_point: None,
         }
     }
 
@@ -135,6 +138,8 @@ impl MapperApp {
             self.apply(Action::Quit);
         }
         if self.mapper.quit {
+            // The link drops the game's preview as it goes.
+            self.live.disconnect();
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
         }
     }
@@ -143,6 +148,10 @@ impl MapperApp {
 impl eframe::App for MapperApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
+        self.live.update(&mut self.mapper, self.pointer_held);
+        if self.live.is_linked() {
+            ctx.request_repaint_after(crate::live::REDRAW_EVERY);
+        }
         crate::keys::handle(self, &ctx);
         crate::panels::top_bar(self, ui);
         crate::toolbar::show(self, ui);

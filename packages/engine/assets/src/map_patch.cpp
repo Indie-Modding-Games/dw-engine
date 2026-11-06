@@ -316,6 +316,25 @@ core::Result<void> checkMapPatch(std::string_view yaml) {
   return {};
 }
 
+core::Result<MapPatchSections> mapPatchSections(std::string_view yaml) {
+  if (auto checked = checkMapPatch(yaml); !checked) {
+    return std::unexpected{checked.error()};
+  }
+  auto tree = core::parseYaml(yaml);
+  if (!tree) {
+    return core::fail(std::format("{}: {}", messages::MapPatchContext, tree.error().message));
+  }
+  const auto has = [&](std::string_view key) {
+    return tree->isMapping() && tree->find(key) != nullptr;
+  };
+  return MapPatchSections{.camera = has(CameraKey),
+                          .lights = has(LightsKey),
+                          .warps = has(WarpsKey),
+                          .npcs = has(NpcsKey),
+                          .objects = has(ObjectsKey),
+                          .collision = has(CollisionKey)};
+}
+
 core::Result<MapDocument> patchMapDocument(std::string_view data,
                                            std::span<const MapPatchText> patches) {
   auto tree = core::parseYaml(data);

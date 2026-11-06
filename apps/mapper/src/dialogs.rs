@@ -144,18 +144,37 @@ fn shortcuts(app: &mut MapperApp, ctx: &egui::Context) {
 
 /// What the last save found (errors stop it; warnings do not).
 pub fn problems(app: &mut MapperApp, ui: &mut egui::Ui) {
-    if app.mapper.save_problems.is_empty() {
+    if app.mapper.save_problems.is_empty() && app.live.problems.is_empty() {
         return;
     }
     egui::Panel::bottom("problems").show(ui, |ui| {
-        ui.strong(text::SAVE_PROBLEMS);
-        for problem in &app.mapper.save_problems {
-            let line = text::problem(problem);
-            if problem.is_error() {
-                ui.colored_label(egui::Color32::LIGHT_RED, line);
-            } else {
-                ui.colored_label(egui::Color32::YELLOW, line);
+        if !app.mapper.save_problems.is_empty() {
+            ui.strong(text::SAVE_PROBLEMS);
+            for problem in &app.mapper.save_problems {
+                let line = text::problem(problem);
+                if problem.is_error() {
+                    ui.colored_label(egui::Color32::LIGHT_RED, line);
+                } else {
+                    ui.colored_label(egui::Color32::YELLOW, line);
+                }
             }
+        }
+        if !app.live.problems.is_empty() {
+            ui.horizontal(|ui| {
+                ui.strong(text::LIVE_PROBLEMS);
+                if ui.small_button(text::CLEAR).clicked() {
+                    app.live.problems.clear();
+                }
+            });
+            egui::ScrollArea::vertical()
+                .id_salt("live_problems")
+                .max_height(120.0)
+                .stick_to_bottom(true)
+                .show(ui, |ui| {
+                    for problem in &app.live.problems {
+                        ui.colored_label(egui::Color32::LIGHT_RED, problem);
+                    }
+                });
         }
     });
 }

@@ -128,6 +128,26 @@ proporción es `min(alto/720, ancho/960)` (entre 0,5 y 8) por la escala que elig
 limita a `[Ui::MinScale, Ui::MaxScale]` = [0,5, 3]; un valor que no es un número se ignora. En una pantalla de alta
 densidad la ventana tiene más píxeles y la proporción crece con ellos: el HUD y los menús ocupan lo mismo.
 
+Las cajas que van en el sitio del original (el cuadro de diálogo `story_textbox`, en dp de 486 a 663 de los 720, y las
+notas que usan su caja: `field_item_notice` y `award_notice`) no se salen de la ventana con una escala grande:
+`ui/common/screen_fit.lua` mide la caja y la ventana en cada tick y, si la caja no cabe con 6 dp de margen, la dibuja
+más pequeña lo justo y la mete desde el borde que cruza (`transform`, sin tocar su maquetación). Una caja que cabe se
+dibuja tal cual, así que a la escala por defecto nada cambia. Antes, al 115 % en una ventana 16:10 (o al 130 % en una
+16:9) el cuadro de diálogo pasaba del borde de abajo y cortaba su última fila. El puntero usa `Ui::elementDrawnRect`
+(el rectángulo dibujado, con las transformaciones) para elegir una opción del cuadro. Prueba: `screen_fit_tests.cpp`
+(16:10 al 115 %, 16:9 al 130 % y al 150 %, 4:3 y una ventana de 800 × 600 al 200 %, en las dos pieles).
+
+El menú del compañero (la página de estado, la técnica y la bolsa) usa lo mismo: en el aspecto original el escenario
+de 960 × 720 dp entero (el panel, sus avisos y las cajas de la bolsa a su lado) se dibuja más pequeño alrededor del
+panel con `screen_fit.apply_around`, que pone la transformación en `#scrim`; en el moderno solo el panel, porque sus
+cajas son diálogos centrados. El puntero sigue a lo dibujado (RmlUi proyecta el clic con la transformación). La página
+de opciones no se encoge: con menos de 700 dp de alto (aspecto original) o de 660 dp (moderno) la lista de opciones
+pasa a desplazarse en menos filas (reglas `@media (max-height: …)` de cada piel), así que la descripción y las acciones
+de debajo siguen en la ventana. Pruebas: `screen_fit_tests.cpp` (página de estado) e `in_game_options_tests.cpp`
+(opciones sobre el título y en partida a 1680 × 1050 al 115 % y a 1920 × 1080 y 1280 × 720 al 130 %). La
+comprobación de textos (`overflowingTexts`) no cuenta las cajas de las filas que la lista ha desplazado fuera de su
+caja: no se dibujan.
+
 ## Minimapa
 
 `MinimapGrid` es la rejilla del mapa con tres clases de celda: bloqueada (transparente), transitable y salida.
@@ -173,6 +193,7 @@ un mod puede colocarlos y darles estilo como quiera, pero con estos ids y estos 
 | `minimap-name` | `hud::MinimapName` | Su texto es el nombre del mapa, el texto de la clave que da `setMinimap`, en el idioma del juego |
 | `minimap-player`, `minimap-partner` | `hud::MinimapPlayer`, `hud::MinimapPartner` | Los marcadores: `left`, `top` (en porcentaje del disco; el jugador siempre al 50 %), `transform: rotate(...)`, la clase `pinned` en el compañero fuera de la vista, y `display: none` sin marcador |
 | `minimap-enemies` | `hud::MinimapEnemies` | La capa de los enemigos, dentro del disco y antes de los marcadores del compañero y del jugador (que quedan encima): la UI le crea un hijo `<img class="marker enemy" id="minimap-enemy-N">` por enemigo (`hud::MinimapEnemyPrefix`, imagen `generated:minimap_enemy`: disco blanco con borde oscuro que el aspecto tiñe con `image-color`), con `left`, `top` como el compañero, y `display: none` en los que sobran o quedan fuera de la vista |
+| `minimap-items` | `hud::MinimapItems` | La capa de los objetos del suelo, dentro del disco y antes de la de los enemigos (que queda encima): como la de los enemigos, un hijo `<img class="marker item" id="minimap-item-N">` por objeto (`hud::MinimapItemPrefix`, imagen `generated:minimap_item`: un rombo blanco con borde oscuro que el aspecto tiñe con `image-color`), con `left`, `top` y `display: none` en los que sobran o quedan fuera de la vista |
 
 El script del HUD (`ui/hud/logic.lua`) escribe además el día y la hora en `#minimap-day` y `#minimap-time`, y la
 marca del norte es el texto `hud.minimap.north` de `#minimap-north`.
@@ -194,6 +215,14 @@ pueden pelear ([game.md](../modulos/apps/game.md#enemigos-en-el-minimapa)). Cada
 jugador (`locateOnDisc`, hasta el 92 % del radio, `MinimapEnemyRim`); uno fuera de la vista se esconde. El disco va
 con el norte arriba y los puntos son redondos, así que no giran. Igual que los demás marcadores, la UI solo les
 cambia las propiedades cuando se mueven.
+
+Los objetos tirados en el suelo son una tercera lista de `setMinimapMarkers`, con su propia opción (`minimap_items`,
+fila «Objetos en el minimapa», [game.md](../modulos/apps/game.md#objetos-en-el-minimapa)): se colocan igual que los
+enemigos, en su capa `minimap-items`, con rombos en vez de puntos.
+
+Una capa solo cuenta dentro del disco (`#minimap-frame`): la página de opciones da a sus filas el id de su opción, y
+las filas «Objetos en el minimapa» (`minimap-items`) y «Enemigos en el minimapa» (`minimap-enemies`) se llaman igual que
+las capas. Antes la UI las tomaba por capas y escondía su texto en partida. Prueba: `in_game_options_tests.cpp`.
 
 ## Estado del campo
 
@@ -527,7 +556,7 @@ document_classes:                   # opcional: clases que pone en elementos de 
   de verdad.
 - **El ajuste `ui_skin`** sigue el camino de `text_font`: al arrancar manda `--ui-skin <id>`, luego el guardado en
   `settings.yaml` y luego el de los paquetes (`ui/ui_skin.yaml`); un id que no existe deja el de los paquetes con
-  un aviso. Los menús principal y de pausa (opciones) tienen la entrada «Aspecto de la interfaz»
+  un aviso. La página de opciones (desde el título o desde el menú de pausa) tiene la fila «Aspecto de la interfaz»
   (`ui/common/ui_skin_choice.lua`, compartido), que recorre `ui.skins()` y manda el comando `ui_skin`; la app lo
   aplica, lo guarda y lo publica. En la consola de depuración, `ui_skin("modern")`.
 - **Un mod que añade un aspecto** trae `ui/skins/<id>/skin.yaml`, sus hojas y el nombre en un archivo de textos
@@ -761,8 +790,8 @@ marcha. Lo mismo hace `save_slots` con `slots-original`. El aspecto moderno sigu
 | Menú | NUEVA PARTIDA, CONTINUAR PARTIDA, BORRAR PARTIDA, MODO BATALLA, OPCIONES en el cuadro de (72, 50) sobre TITLE2. Continuar y borrar en gris sin partidas: el cursor se para en ellas y confirmar no hace nada. El cursor no da la vuelta; el menú recuerda la entrada al volver | `main_menu.c: renderInitialMenu`, `main_menu.c: tickMainMenu`, `main_menu.c: tickMenuInput` |
 | Listas | «CONTINUAR/BORRAR RANURA n» y los autoguardados antiguos que queden, una fila por ranura, en el cuadro de (60, 50) ([guardar-y-cargar.md](guardar-y-cargar.md#35-continuar)) | `main_menu.c: renderSelectCardSlot` |
 | Modo batalla | Cuadro de título, de mensaje y de Sí/No con «No» enfocado; las dos respuestas vuelven al menú | `main_menu.c: renderConfirmVSSlot` |
-| Opciones | Nombre en blanco y valor en amarillo, en mayúsculas: idioma, texto original, aspecto, minimapa, su tamaño, pantalla, escala y salir. Izquierda y derecha o confirmar cambian el valor; confirmar en el idioma abre su caja | Añadido, con el aspecto de un remaster de fans (capturas 8 y 10) |
-| Idioma | Caja alta en el centro, con el encabezado «LANGUAGE - IDIOMA» pequeño arriba a la izquierda, una fila por idioma de los paquetes con su bandera y su nombre en su idioma y en mayúsculas (`language.native.<código>`), y «START» / «COMENZAR» abajo en el centro. Sale antes de cada pantalla de «Press Start», con el cursor en el idioma actual (el de los ajustes o `--lang`): un confirmar elige y pasa, con fundido, a «Press Start». Desde OPCIONES elegir deja el cursor en «START». Elegir cambia todos los textos al momento y se guarda en los ajustes | Captura 12 (un remaster) |
+| Opciones | La misma página de opciones por pestañas que en partida (Juego, Gráficos, Sonido, Interfaz; Q/E, ←/→, descripción de cada fila), sobre la imagen del título y sin el recuadro del menú; su barra solo tiene «Salir del juego». Volver devuelve al menú con el cursor en OPCIONES ([Desde el título](../modulos/apps/game.md#desde-el-título)) | Añadido |
+| Idioma | Caja alta en el centro, con el encabezado «LANGUAGE - IDIOMA» pequeño arriba a la izquierda, una fila por idioma de los paquetes con su bandera y su nombre en su idioma y en mayúsculas (`language.native.<código>`), y «START» / «COMENZAR» abajo en el centro. Sale antes de cada pantalla de «Press Start», con el cursor en el idioma actual (el de los ajustes o `--lang`): un confirmar elige y pasa, con fundido, a «Press Start». En OPCIONES el idioma es una fila más de la pestaña Interfaz. Elegir cambia todos los textos al momento y se guarda en los ajustes | Captura 12 (un remaster) |
 
 **Banderas.** Cada idioma nombra la suya con `language.flag.<código>`, el asset id de una imagen, igual en los
 textos de todos los idiomas (como `language.native.<código>`); sin clave, la fila va sin bandera. Las de `en` y `es`
@@ -789,8 +818,8 @@ botón Start con el mando, «HAZ CLIC» / «CLICK» si el ratón se movió el ú
 dispositivo, así que lo distingue el documento); el original dice «Press Start Button»; sin la
 línea del copyright; las cajas crecen a la derecha con textos más largos que los del original (español); no hay
 avisos de botones en estas cajas, como en el original; la pregunta del modo batalla dice que aún no existe y el modo
-batalla queda pendiente; la exploración libre no sale en las opciones de la portada (solo funciona en partida) ni la
-sincronía vertical (no cambia en marcha); el reinicio de la película por inactividad sigue como estaba.
+batalla queda pendiente; las opciones de la portada son las de partida, y las que solo aplica una partida se guardan
+para la siguiente; el reinicio de la película por inactividad sigue como estaba.
 
 El cuadro de texto (`ui/story_textbox`) llegó con el intérprete de historia y el aspecto original lo dibuja
 (`ui/skins/original/story_textbox`).

@@ -2,8 +2,8 @@
 # tiredness bar, the care bars' numbers, its care mistakes and battles, its waking hours, its lifetime and its
 # evolution counter, which the original keeps hidden. From a new game with the keyboard: two training
 # sessions (tiredness) and the clock fast until a meal goes missed (a care mistake), then the partner's status page
-# at 1280x720 and 1920x1080 with the option on, and again with it turned off in the pause menu, as the page was
-# before. Every capture checks that each text fits (text_fit). Run it once per language and per skin
+# at 1280x720 and 1920x1080 with the option on, again with the widest values (HP and MP 9999 / 9999), and again with
+# it turned off in the pause menu, as the page was before. Every capture checks that each text fits (text_fit). Run it once per language and per skin
 # (--ui-skin original, modern); how to run it: docs/guides/prueba-vertical.md.
 name: status-extras
 device: keyboard
@@ -36,6 +36,36 @@ steps:
   - wait: {seconds: 0.6}
   - screenshot: status-extras-1080
   - resize: [1280, 720]
+  - wait: {seconds: 0.6}
+  - tap: {key: left_ctrl}
+  - wait: {hidden: partner_menu, timeout: 5}
+  # The widest values the rules allow: HP at 9999 / 9999 (healed full), MP at most 9999, discipline at 100 %, a
+  # champion-sized evolution counter (350/72 h) and three-digit battles, at 1280x720 and 1024x768; text_fit checks
+  # they fit.
+  - script: partner_set("hp 9999")
+  - script: partner_set("mp 9999")
+  # Full discipline, so the partner takes the medicine.
+  - script: partner_set("discipline 100")
+  - script: give_item("sup_recovery 1")
+  - script: use_item("sup_recovery")
+  - wait: {seconds: 4}
+  - script: partner_set("battles 999")
+  - wait: {seconds: 0.5}
+  - menu: open
+  - wait: {seconds: 0.6}
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.8}
+  - expect_setting: {partner.hp: "9999"}
+  # The counter is set with the page open, and back before it closes: past the check hours the field would start the
+  # evolution.
+  - script: partner_set("hours 350")
+  - wait: {seconds: 0.5}
+  - screenshot: status-extras-max
+  - resize: [1024, 768]
+  - wait: {seconds: 0.6}
+  - screenshot: status-extras-max-1024
+  - resize: [1280, 720]
+  - script: partner_set("hours 0")
   - wait: {seconds: 0.6}
   - tap: {key: left_ctrl}
   - wait: {hidden: partner_menu, timeout: 5}

@@ -686,6 +686,14 @@ body {
 	margin-top: -5dp;
 	image-color: #ff6a3a;
 }
+/* The items on the ground (the option minimap_items): small light green diamonds, under the enemies. */
+#minimap-items .item {
+	width: 11dp;
+	height: 11dp;
+	margin-left: -5.5dp;
+	margin-top: -5.5dp;
+	image-color: #8dff7a;
+}
 
 #minimap-clock {
 	margin-top: -6dp;

@@ -43,6 +43,12 @@ SpriteCharacter readCharacter(assets::YamlReader& reader, const core::YamlNode& 
   if (const core::YamlNode* facing = node.find("facing")) {
     character.facing = reader.integer<std::int32_t>(*facing);
   }
+  if (const core::YamlNode* lookAt = node.find("look_at")) {
+    const auto point = reader.sequence(*lookAt, "look_at", 2);
+    if (point.size() == 2) {
+      character.lookAt = glm::vec2{reader.number(point[0]), reader.number(point[1])};
+    }
+  }
   if (const core::YamlNode* additive = node.find("additive")) {
     const float strength = reader.number(*additive);
     if (strength <= 0.0F || strength > 1.0F) {
@@ -72,7 +78,7 @@ core::Result<SpriteCharacterTable> parseSpriteCharacters(std::string_view yaml) 
     for (const core::YamlNode& node :
          reader.sequence(reader.field(*tree, "characters"), "characters")) {
       if (!reader.expectKeys(node, "a sprite character", {"maps", "species", "sprites"},
-                             {"shadow", "feet", "height", "facing", "additive"})) {
+                             {"shadow", "feet", "height", "facing", "look_at", "additive"})) {
         break;
       }
       const SpriteCharacter character = readCharacter(reader, node);
@@ -120,6 +126,15 @@ std::optional<SpriteCharacterPlace> placeOf(const SpriteCharacter& character,
   }
   if (character.facing) {
     return SpriteCharacterPlace{.feet = *feet, .yaw = assets::yawFromOriginal(*character.facing)};
+  }
+  if (character.lookAt) {
+    glm::vec3 toPoint = assets::toWorldPosition(glm::ivec3{static_cast<int>(character.lookAt->x), 0,
+                                                           static_cast<int>(character.lookAt->y)}) -
+                        *feet;
+    toPoint.y = 0.0F;
+    if (glm::length(toPoint) > 1.0F) {
+      return SpriteCharacterPlace{.feet = *feet, .yaw = assets::yawOfDirection(toPoint)};
+    }
   }
   // The yaw whose forward (sin yaw, 0, cos yaw) points at the camera, as the sprites face it.
   const glm::vec3 toCamera = camera.desc().eye - *feet;

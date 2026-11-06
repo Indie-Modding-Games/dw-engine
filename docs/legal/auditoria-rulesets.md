@@ -139,6 +139,7 @@ comportamiento, no guardan datos.
 | Clave | Valor | Clase | Motivo |
 |---|---|---|---|
 | `new_game_slot` | 0 | a | Posición en la lista de técnicas de la especie, no una técnica concreta. |
+| `new_game_species_slots` | 1 especie (referencia) y su posición 2 | a | Referencia a una especie (criterio 2) y una posición en su lista de técnicas, no una técnica concreta. |
 | `reborn_slot` | 0 | a | Posición en la lista de técnicas de la especie, no una técnica concreta. |
 
 ### `calendar.yaml`

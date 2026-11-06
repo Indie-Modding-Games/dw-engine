@@ -16,10 +16,12 @@ pub enum Layer {
     Toilet,
     /// The collision grid's lines.
     Grid,
+    /// What a connected game shows now: the player, the partner, the NPCs and the window's view.
+    Live,
 }
 
 impl Layer {
-    pub const ALL: [Layer; 8] = [
+    pub const ALL: [Layer; 9] = [
         Layer::Walls,
         Layer::Triggers,
         Layer::Exits,
@@ -28,6 +30,7 @@ impl Layer {
         Layer::Doors,
         Layer::Toilet,
         Layer::Grid,
+        Layer::Live,
     ];
 
     pub fn label(self) -> &'static str {
@@ -40,6 +43,7 @@ impl Layer {
             Layer::Doors => text::LAYER_DOORS,
             Layer::Toilet => text::LAYER_TOILET,
             Layer::Grid => text::LAYER_GRID,
+            Layer::Live => text::LAYER_LIVE,
         }
     }
 
@@ -54,6 +58,7 @@ impl Layer {
             "doors" => Layer::Doors,
             "toilet" => Layer::Toilet,
             "grid" => Layer::Grid,
+            "live" => Layer::Live,
             _ => return None,
         })
     }

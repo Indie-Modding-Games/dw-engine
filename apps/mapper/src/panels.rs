@@ -6,7 +6,7 @@ use dwe_map::save::SaveMode;
 use dwe_pack::GameFolders;
 use eframe::egui;
 use mapper_core::{Action, GroupBy, Layer, Message, TargetKind, text};
-use mapper_live::StoryState;
+use mapper_live::{Command, LogLevel, StoryState, StoryWrite};
 
 use crate::app::MapperApp;
 use crate::dialogs::NewPack;
@@ -180,6 +180,15 @@ pub fn status_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
             );
             ui.label(format!("{}: {target}", text::TARGET));
             ui.separator();
+            if app.live.is_linked() {
+                let summary = app.live.summary();
+                if app.live.is_connected() {
+                    ui.label(summary);
+                } else {
+                    ui.colored_label(egui::Color32::YELLOW, summary);
+                }
+                ui.separator();
+            }
             message_line(app, ui);
         });
     });
@@ -394,26 +403,52 @@ fn live_details(app: &mut MapperApp, ui: &mut egui::Ui) {
     ui.add(egui::TextEdit::singleline(&mut live.endpoint).hint_text(text::LIVE_ENDPOINT_HINT));
     let mut open = None;
     ui.horizontal(|ui| {
-        if live.client.is_none() {
-            if ui.button(text::LIVE_CONNECT).clicked() {
-                live.connect();
-            }
-        } else {
+        if live.is_linked() {
             if ui.button(text::LIVE_DISCONNECT).clicked() {
-                live.client = None;
-                live.story = None;
-                live.state = text::LIVE_OFF.to_owned();
+                live.disconnect();
             }
             if ui.button(text::LIVE_FOLLOW).clicked() {
-                open = live.game_map();
+                open = live
+                    .view
+                    .as_ref()
+                    .and_then(|view| view.map().map(str::to_owned));
             }
+        } else if ui.button(text::LIVE_CONNECT).clicked() {
+            live.connect();
         }
     });
+    ui.checkbox(&mut live.follow, text::LIVE_FOLLOW_MODE)
+        .on_hover_text(text::LIVE_FOLLOW_HINT);
+    ui.checkbox(&mut live.preview, text::LIVE_PREVIEW)
+        .on_hover_text(text::LIVE_PREVIEW_HINT);
     let mut reload_on_save = app.mapper.reload_on_save();
     let reload_toggled = ui
         .checkbox(&mut reload_on_save, text::RELOAD_ON_SAVE)
         .changed();
-    if live.client.is_some() {
+    if live.is_connected() {
+        let paused = live.view.as_ref().is_some_and(|view| view.paused);
+        ui.horizontal(|ui| {
+            if paused {
+                if ui.button(text::LIVE_RESUME).clicked() {
+                    live.send(Command::Resume);
+                }
+            } else if ui.button(text::LIVE_PAUSE).clicked() {
+                live.send(Command::Pause);
+            }
+            if ui
+                .add_enabled(paused, egui::Button::new(text::LIVE_STEP))
+                .on_hover_text(text::LIVE_STEP_HINT)
+                .clicked()
+            {
+                live.send(Command::Advance(1));
+            }
+            if ui
+                .add_enabled(paused, egui::Button::new(text::LIVE_STEP_SECOND))
+                .clicked()
+            {
+                live.send(Command::Advance(60));
+            }
+        });
         if ui.button(text::LIVE_RELOAD).clicked() {
             live.reload();
         }
@@ -421,14 +456,10 @@ fn live_details(app: &mut MapperApp, ui: &mut egui::Ui) {
         if ui.checkbox(&mut overlay, text::LIVE_OVERLAY).changed() {
             live.set_overlay(overlay);
         }
-        if ui.button(text::LIVE_STORY).clicked() {
-            live.read_story();
-        }
     }
-    ui.weak(&live.state);
-    if let Some(story) = &live.story {
-        story_details(&app.mapper.story_names, story, ui);
-    }
+    ui.weak(live.summary());
+    story_panel(app, ui);
+    log_panel(app, ui);
     if reload_toggled {
         app.apply(Action::SetReloadOnSave(reload_on_save));
     }
@@ -437,18 +468,117 @@ fn live_details(app: &mut MapperApp, ui: &mut egui::Ui) {
     }
 }
 
-/// The story's state read from the game, with the labels of `story/names`.
-fn story_details(names: &dwe_map::StoryNames, story: &StoryState, ui: &mut egui::Ui) {
+/// The story's state read from the game, with the labels of `story/names`, a filter, and writes
+/// of a trigger or a variable for testing events.
+fn story_panel(app: &mut MapperApp, ui: &mut egui::Ui) {
+    let names = &app.mapper.story_names;
+    let live = &mut app.live;
+    egui::CollapsingHeader::new(text::STORY)
+        .id_salt("story")
+        .show(ui, |ui| {
+            ui.horizontal(|ui| {
+                let mut follow = live.story_follow;
+                if ui.checkbox(&mut follow, text::STORY_FOLLOW).changed() {
+                    live.set_story_follow(follow);
+                }
+                if ui
+                    .add_enabled(live.is_connected(), egui::Button::new(text::LIVE_STORY))
+                    .clicked()
+                {
+                    live.send(Command::ReadStory);
+                }
+            });
+            ui.add(
+                egui::TextEdit::singleline(&mut live.story_filter)
+                    .hint_text(text::STORY_FILTER_HINT),
+            );
+            if let Some(story) = &live.story {
+                story_details(names, story, &live.story_filter, ui);
+            }
+            if live.is_connected() {
+                story_writes(live, ui);
+            }
+        });
+}
+
+fn story_writes(live: &mut crate::live::LivePanel, ui: &mut egui::Ui) {
+    ui.add_space(4.0);
+    ui.weak(text::STORY_SET_HINT);
+    ui.horizontal(|ui| {
+        ui.label(text::STORY_TRIGGER);
+        ui.add(egui::DragValue::new(&mut live.story_trigger).range(0..=u16::MAX));
+        if ui.button(text::STORY_SET_ON).clicked() {
+            live.write_story(StoryWrite::Trigger {
+                number: live.story_trigger,
+                on: true,
+            });
+        }
+        if ui.button(text::STORY_SET_OFF).clicked() {
+            live.write_story(StoryWrite::Trigger {
+                number: live.story_trigger,
+                on: false,
+            });
+        }
+    });
+    ui.horizontal(|ui| {
+        ui.label(text::STORY_VARIABLE);
+        ui.add(egui::DragValue::new(&mut live.story_variable).range(0..=u16::MAX));
+        ui.label("=");
+        ui.add(egui::DragValue::new(&mut live.story_value));
+        if ui.button(text::STORY_SET_VALUE).clicked() {
+            live.write_story(StoryWrite::Variable {
+                number: live.story_variable,
+                value: live.story_value,
+            });
+        }
+    });
+}
+
+/// Whether a numbered story entry matches the filter: by its number or its label.
+fn story_match(filter: &str, number: u32, name: Option<&str>) -> bool {
+    let filter = filter.trim().to_lowercase();
+    filter.is_empty()
+        || number.to_string().contains(&filter)
+        || name.is_some_and(|name| name.to_lowercase().contains(&filter))
+}
+
+fn story_details(names: &dwe_map::StoryNames, story: &StoryState, filter: &str, ui: &mut egui::Ui) {
     ui.add_space(6.0);
     let map = story.map.as_deref().unwrap_or("—");
     ui.strong(format!("{} · {map} · tick {}", text::STORY, story.tick));
+    if let Some(stage) = &story.stage {
+        ui.label(format!("{}: {stage}", text::STORY_STAGE));
+    }
+    let script = story
+        .map_script
+        .map_or_else(|| "—".to_owned(), |script| script.to_string());
+    ui.label(format!("{}: {script}", text::STORY_SCRIPT));
+    let sections = if story.sections.is_empty() {
+        text::STORY_NONE.to_owned()
+    } else {
+        story
+            .sections
+            .iter()
+            .map(|section| format!("{}:{}", section.script, section.section))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    let sections = format!("{}: {sections}", text::STORY_SECTIONS);
+    if story.busy {
+        ui.colored_label(egui::Color32::YELLOW, sections);
+    } else {
+        ui.label(sections);
+    }
     ui.label(text::STORY_TRIGGERS);
     egui::Grid::new("story_triggers")
         .striped(true)
         .show(ui, |ui| {
             for &trigger in &story.triggers {
-                ui.monospace(text::named(trigger, names.trigger(trigger)));
-                ui.end_row();
+                let name = names.trigger(trigger);
+                if story_match(filter, trigger, name) {
+                    ui.monospace(text::named(trigger, name));
+                    ui.end_row();
+                }
             }
         });
     ui.label(text::STORY_VARIABLES);
@@ -456,9 +586,47 @@ fn story_details(names: &dwe_map::StoryNames, story: &StoryState, ui: &mut egui:
         .striped(true)
         .show(ui, |ui| {
             for &(variable, value) in &story.variables {
-                ui.monospace(text::named(variable, names.variable(variable)));
-                ui.monospace(value.to_string());
-                ui.end_row();
+                let name = names.variable(variable);
+                if story_match(filter, variable, name) {
+                    ui.monospace(text::named(variable, name));
+                    ui.monospace(value.to_string());
+                    ui.end_row();
+                }
             }
+        });
+}
+
+/// The game's warnings and errors, newest last.
+fn log_panel(app: &mut MapperApp, ui: &mut egui::Ui) {
+    let live = &mut app.live;
+    egui::CollapsingHeader::new(format!("{} ({})", text::LIVE_LOG, live.log.len()))
+        .id_salt("game_log")
+        .show(ui, |ui| {
+            if live.log.is_empty() {
+                ui.weak(text::LIVE_LOG_EMPTY);
+                return;
+            }
+            if ui.small_button(text::CLEAR).clicked() {
+                live.log.clear();
+                return;
+            }
+            egui::ScrollArea::vertical()
+                .id_salt("game_log_lines")
+                .max_height(220.0)
+                .stick_to_bottom(true)
+                .show(ui, |ui| {
+                    for entry in &live.log {
+                        let color = match entry.level {
+                            LogLevel::Error => egui::Color32::LIGHT_RED,
+                            LogLevel::Warning => egui::Color32::YELLOW,
+                        };
+                        ui.add(
+                            egui::Label::new(
+                                egui::RichText::new(&entry.text).monospace().color(color),
+                            )
+                            .wrap(),
+                        );
+                    }
+                });
         });
 }

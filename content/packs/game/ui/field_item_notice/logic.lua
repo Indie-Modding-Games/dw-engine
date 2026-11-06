@@ -36,6 +36,12 @@ function on_language(document)
   refresh(document)
 end
 
+-- A UI scale larger than the window allows draws the box smaller, inside the window
+-- (common/screen_fit.lua).
+function on_tick(document, _seconds)
+  screen_fit.apply(document, document:get("box"))
+end
+
 function on_action(_document, action)
   if action == "confirm" then
     ui.send("field_item_notice_ok")

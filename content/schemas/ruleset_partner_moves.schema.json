@@ -7,6 +7,7 @@
   "additionalProperties": false,
   "properties": {
     "new_game_slot": { "description": "The position of the first technique of the new game's partner, which it also learns.", "type": "integer", "minimum": 0, "maximum": 15 },
+    "new_game_species_slots": { "description": "The species whose new-game partner equips and learns another position than new_game_slot, by species id.", "type": "object", "additionalProperties": { "type": "integer", "minimum": 0, "maximum": 15 } },
     "reborn_slot": { "description": "The position of the only move a reborn partner equips; it keeps the learned ones.", "type": "integer", "minimum": 0, "maximum": 15 }
   }
 }

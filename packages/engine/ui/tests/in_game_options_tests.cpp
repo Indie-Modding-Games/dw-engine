@@ -6,6 +6,7 @@
 // does and «Reset to defaults» puts a tab's options back after a question.
 
 #include <dwe/input/keys.hpp>
+#include <dwe/ui/minimap.hpp>
 
 #include <doctest/doctest.h>
 
@@ -36,9 +37,10 @@ struct Tab {
   std::string_view id;
   std::span<const std::string_view> rows;
 };
-constexpr std::array<std::string_view, 9> GameRows{
-    "free-exploration", "walk-control",           "autosave",         "world-map",    "bulk-trades",
-    "long-names",       "evolution-requirements", "canonical-stages", "status-extras"};
+constexpr std::array<std::string_view, 10> GameRows{
+    "free-exploration", "walk-control", "autosave",   "world-map",
+    "minimap-items",    "bulk-trades",  "long-names", "evolution-requirements",
+    "canonical-stages", "status-extras"};
 constexpr std::array<std::string_view, 11> GraphicsRows{"display-mode",     "vsync",
                                                         "smooth-motion",    "hd-scenery",
                                                         "model-characters", "enhanced-lighting",
@@ -62,6 +64,17 @@ void openOnOptions(Screen& screen) {
   screen.ui->setSetting("pause_menu.start_page", std::string{"options"});
   screen.ui->show(Menu, true);
   screen.ui->setSetting("pause_menu.start_page", std::string{});
+  screen.frames(20);
+}
+
+// As the title screen's Options entry opens it (apps/game/src/title_options.hpp): over the title,
+// with no game.
+void openAtTitle(Screen& screen) {
+  screen.ui->setSetting("pause_menu.at_title", true);
+  screen.ui->setSetting("pause_menu.start_page", std::string{"options"});
+  screen.ui->show(Menu, true);
+  screen.ui->setSetting("pause_menu.start_page", std::string{});
+  screen.ui->setSetting("pause_menu.at_title", false);
   screen.frames(20);
 }
 
@@ -383,6 +396,127 @@ TEST_CASE("down goes through a tab's rows, Reset, Back and the game's actions, a
   }
 }
 
+TEST_CASE("over the title the options page keeps its tabs and rows, without the game's actions") {
+  for (const std::string_view skin : {"original", "modern"}) {
+    CAPTURE(skin);
+    Screen screen{"pause_menu", "es"};
+    screen.skin(skin);
+    openAtTitle(screen);
+    REQUIRE(screen.ui->isVisible(Menu));
+    CHECK(screen.ui->elementShown(Menu, "menu-tabs"));
+    CHECK(screen.ui->focusedElementId(Menu) == "free-exploration");
+    // No game to save or leave: only quit stays, and it closes the game.
+    CHECK_FALSE(screen.ui->elementShown(Menu, "options-save"));
+    CHECK_FALSE(screen.ui->elementShown(Menu, "options-to-title"));
+    CHECK(screen.ui->elementShown(Menu, "options-quit"));
+    for (const Tab& tab : Tabs) {
+      CAPTURE(tab.id);
+      showTab(screen, tab.id);
+      for (const std::string_view id : tab.rows) {
+        CHECK(screen.ui->elementShown(Menu, id));
+      }
+      focusRow(screen, tab.rows.back());
+      screen.press(input::keys::Down);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-reset");
+      screen.press(input::keys::Down);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-back");
+      screen.press(input::keys::Down);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-quit");
+      screen.press(input::keys::Left);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-quit");
+      screen.press(input::keys::Right);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-quit");
+      CHECK(screen.ui->elementText(Menu, "option-help").contains("Cierra el juego"));
+      screen.press(input::keys::Down);
+      CHECK(screen.ui->focusedElementId(Menu) == tab.rows.front());
+      screen.press(input::keys::Up);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-quit");
+      screen.press(input::keys::Up);
+      CHECK(screen.ui->focusedElementId(Menu) == "options-back");
+    }
+    std::ignore = screen.ui->takeCommands();
+    click(screen, "options-quit");
+    CHECK(sentAny(screen.ui->takeCommands(), "quit"));
+
+    // Back (cancel, the Back row or the pad's B) closes the page and gives the title its menu.
+    screen.press(input::keys::LeftCtrl);
+    screen.frames();
+    CHECK_FALSE(screen.ui->isVisible(Menu));
+    CHECK(sentAny(screen.ui->takeCommands(), "title_options_back"));
+    openAtTitle(screen);
+    screen.input.handle(platform::GamepadConnected{
+        .id = 1, .family = platform::GamepadFamily::Xbox, .name = "pad"});
+    pad(screen, platform::GamepadButton::East);
+    screen.frames();
+    CHECK_FALSE(screen.ui->isVisible(Menu));
+    CHECK(sentAny(screen.ui->takeCommands(), "title_options_back"));
+    openAtTitle(screen);
+    click(screen, "options-back");
+    screen.frames();
+    CHECK_FALSE(screen.ui->isVisible(Menu));
+    CHECK(sentAny(screen.ui->takeCommands(), "title_options_back"));
+
+    // Opened in a game afterwards, the game's actions are back and back sends nothing to the
+    // title.
+    openOnOptions(screen);
+    CHECK(screen.ui->elementShown(Menu, "options-save"));
+    CHECK(screen.ui->elementShown(Menu, "options-to-title"));
+    screen.press(input::keys::LeftCtrl);
+    screen.frames();
+    CHECK_FALSE(sentAny(screen.ui->takeCommands(), "title_options_back"));
+  }
+}
+
+TEST_CASE("the options page fits the window at 4:3, 16:9 and wider, small and large") {
+  struct Size {
+    int width;
+    int height;
+  };
+  constexpr std::array<Size, 8> Sizes{{{640, 480},
+                                       {800, 600},
+                                       {960, 720},
+                                       {1440, 1080},
+                                       {1280, 720},
+                                       {1920, 1080},
+                                       {2560, 1080},
+                                       {1280, 1024}}};
+  for (const std::string_view language : {"es", "en"}) {
+    for (const std::string_view skin : {"original", "modern"}) {
+      for (const Size size : Sizes) {
+        CAPTURE(language);
+        CAPTURE(skin);
+        CAPTURE(size.width);
+        CAPTURE(size.height);
+        Screen screen{"pause_menu", language};
+        screen.skin(skin);
+        screen.ui->resize(size.width, size.height);
+        openAtTitle(screen);
+        for (const Tab& tab : Tabs) {
+          CAPTURE(tab.id);
+          showTab(screen, tab.id);
+          for (const Ui::TextOverflow& overflow : screen.ui->overflowingTexts()) {
+            MESSAGE(overflow.element << " '" << overflow.text << "' " << overflow.box << " by "
+                                     << overflow.overflow << " dp");
+          }
+          CHECK(screen.ui->overflowingTexts().empty());
+          // The box, its tabs and the tab keys stay inside the window.
+          for (const std::string_view id :
+               {"panel", "menu-tabs", "tabs-previous-key", "tabs-next-key", "option-help"}) {
+            CAPTURE(id);
+            const auto rect = screen.ui->elementRect(Menu, id);
+            REQUIRE(rect.has_value());
+            const Ui::Rect box = rect.value_or(Ui::Rect{});
+            CHECK(box.left >= -0.5F);
+            CHECK(box.top >= -0.5F);
+            CHECK(box.right <= static_cast<float>(size.width) + 0.5F);
+            CHECK(box.bottom <= static_cast<float>(size.height) + 0.5F);
+          }
+        }
+      }
+    }
+  }
+}
+
 TEST_CASE("Reset to defaults asks first and puts back only the shown tab's options") {
   for (const std::string_view skin : {"original", "modern"}) {
     CAPTURE(skin);
@@ -517,6 +651,85 @@ TEST_CASE("the options page turns the enemies on the minimap on and off, next to
   CHECK(screen.ui->elementText(Menu, "minimap-enemies-value") == "No");
 }
 
+TEST_CASE("the options page turns the items on the minimap on and off, with its description") {
+  Screen screen{"pause_menu", "es"};
+  openOnOptions(screen);
+  showTab(screen, "game");
+  CHECK_FALSE(screen.ui->elementHasClass(Menu, "minimap-items", "hidden"));
+  CHECK(screen.ui->elementText(Menu, "minimap-items-label") == "Objetos en el minimapa");
+  // On until the game says otherwise.
+  CHECK(screen.ui->elementText(Menu, "minimap-items-value") == "Sí");
+  focusRow(screen, "minimap-items");
+  CHECK(screen.ui->elementText(Menu, "option-help").contains("suelo"));
+  CHECK(screen.ui->elementText(Menu, "option-tag") == "Mejora");
+  std::ignore = screen.ui->takeCommands();
+  adjust(screen, "minimap-items", 1);
+  CHECK(sent(screen.ui->takeCommands(), "minimap_items", UiValue{false}));
+  screen.ui->setSetting("minimap_items", false);
+  CHECK(screen.ui->elementText(Menu, "minimap-items-value") == "No");
+}
+
+TEST_CASE("a list scrolled down starts the next tab and the next opening at its first row") {
+  // At 115 % on a 16:10 window the list scrolls; going down to Back scrolls it to its end.
+  Screen screen{"pause_menu", "es"};
+  screen.skin("original");
+  screen.ui->resize(1680, 1050);
+  screen.ui->setScale(1.15F);
+  openAtTitle(screen);
+  focusRow(screen, "status-extras");
+  const auto firstRowShown = [&](std::string_view first) {
+    CHECK(screen.ui->focusedElementId(Menu) == first);
+    const auto row = screen.ui->elementRect(Menu, first);
+    const auto list = screen.ui->elementRect(Menu, "option-list");
+    REQUIRE(row.has_value());
+    REQUIRE(list.has_value());
+    CHECK(row->top >= list->top - 0.5F);
+    CHECK(row->bottom <= list->bottom + 0.5F);
+  };
+  showTab(screen, "graphics");
+  firstRowShown("display-mode");
+  focusRow(screen, "seasons");
+  screen.ui->hide(Menu);
+  screen.frames(2);
+  openOnOptions(screen);
+  firstRowShown("free-exploration");
+}
+
+TEST_CASE("the rows named after the minimap's options are not the HUD's minimap layers") {
+  // The page names its rows after their options: "minimap-items" and "minimap-enemies" are also
+  // the ids of the HUD's layers of marks, which the UI fills in every document that has them
+  // inside a minimap's disc. A row is no layer: the marks' updates leave its texts alone.
+  Screen screen{"pause_menu", "es"};
+  openOnOptions(screen);
+  const auto hud = assets::AssetId::parse("ui/hud/document");
+  REQUIRE(hud.has_value());
+  REQUIRE(screen.ui->loadDocument("hud", *hud));
+  screen.ui->show("hud");
+  MinimapGrid grid{
+      .columns = 4, .rows = 2, .cells = {}, .cellSize = 100.0F, .originX = 0.0F, .originZ = 0.0F};
+  grid.cells.assign(8, MinimapCell::Walkable);
+  screen.ui->setMinimap(grid, "Playa");
+  const MinimapMarker player{.x = 1000.0F, .z = 100.0F, .facingX = 0.0F, .facingZ = -1.0F};
+  const std::array<MinimapMarker, 1> marks{
+      MinimapMarker{.x = 600.0F, .z = 100.0F, .facingX = 0.0F, .facingZ = -1.0F}};
+  for (const auto& [tab, row] :
+       {std::pair{"game", "minimap-items"}, std::pair{"interface", "minimap-enemies"}}) {
+    CAPTURE(row);
+    showTab(screen, tab);
+    // With marks and then none: the HUD's own layers fill and empty.
+    screen.ui->setMinimapMarkers(player, std::nullopt, marks, marks);
+    screen.frames();
+    CHECK(screen.ui->styleProperty("hud", "minimap-item-1", "display") == "block");
+    screen.ui->setMinimapMarkers(player, std::nullopt);
+    screen.frames();
+    CHECK(screen.ui->styleProperty("hud", "minimap-item-1", "display") == "none");
+    const std::string label = std::string{row} + "-label";
+    CHECK(screen.ui->elementShown(Menu, label));
+    CHECK(screen.ui->styleProperty(Menu, label, "display") != "none");
+    CHECK_FALSE(screen.ui->elementText(Menu, label).empty());
+  }
+}
+
 TEST_CASE("the options page steps the music's and the effects' volumes from 0 to 10") {
   for (const std::string_view skin : {"original", "modern"}) {
     CAPTURE(skin);
@@ -557,6 +770,59 @@ TEST_CASE("the options page steps the music's and the effects' volumes from 0 to
     adjust(screen, "effects-volume", -1);
     commands = screen.ui->takeCommands();
     CHECK_FALSE(sentAny(commands, "effects_volume"));
+  }
+}
+
+TEST_CASE("the options page fits the window at large UI scales, over the title and in a game") {
+  // The tester's 16:10 window at 115 %, a 16:9 one at 130 %: both leave the page less than the
+  // 720dp it is designed at.
+  struct Window {
+    int width;
+    int height;
+    float scale;
+  };
+  constexpr std::array<Window, 3> Windows{{{.width = 1680, .height = 1050, .scale = 1.15F},
+                                           {.width = 1920, .height = 1080, .scale = 1.3F},
+                                           {.width = 1280, .height = 720, .scale = 1.3F}}};
+  for (const std::string_view skin : {"original", "modern"}) {
+    for (const bool atTitle : {true, false}) {
+      for (const Window window : Windows) {
+        CAPTURE(skin);
+        CAPTURE(atTitle);
+        CAPTURE(window.width);
+        CAPTURE(window.height);
+        CAPTURE(window.scale);
+        Screen screen{"pause_menu", "es"};
+        screen.skin(skin);
+        screen.ui->resize(window.width, window.height);
+        screen.ui->setScale(window.scale);
+        if (atTitle) {
+          openAtTitle(screen);
+        } else {
+          openOnOptions(screen);
+        }
+        for (const Tab& tab : Tabs) {
+          CAPTURE(tab.id);
+          showTab(screen, tab.id);
+          for (const Ui::TextOverflow& overflow : screen.ui->overflowingTexts()) {
+            MESSAGE(overflow.element << " '" << overflow.text << "' " << overflow.box << " by "
+                                     << overflow.overflow << " dp");
+          }
+          CHECK(screen.ui->overflowingTexts().empty());
+          for (const std::string_view id : {"panel", "menu-tabs", "options-quick", "option-list",
+                                            "option-help", "option-foot", "options-hints"}) {
+            CAPTURE(id);
+            const auto rect = screen.ui->elementDrawnRect(Menu, id);
+            REQUIRE(rect.has_value());
+            const Ui::Rect box = rect.value_or(Ui::Rect{});
+            CHECK(box.left >= -0.5F);
+            CHECK(box.top >= -0.5F);
+            CHECK(box.right <= static_cast<float>(window.width) + 0.5F);
+            CHECK(box.bottom <= static_cast<float>(window.height) + 0.5F);
+          }
+        }
+      }
+    }
   }
 }
 

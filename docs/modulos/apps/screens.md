@@ -225,22 +225,36 @@ Qué enseña y de dónde sale cada valor (todos son el estado que el motor ya si
 
 - **Piel original.** Los errores y los combates van al final de la fila de la edad y el peso, cada uno una cifra en un
   recuadro como los suyos tras su rótulo («Combates», «Errores») en el cian de los rótulos de campo. El campo
-  «Active» escribe las horas en que está despierto, de hora a hora («08-20»), en vez de la palabra del patrón. El
-  cansancio es una cuarta barra de la condición, con el icono de la necesidad «cansado», su palabra corta («Cansado»,
-  «Tired») y la tira azul de las barras del original. Las cuatro barras son más cortas (102dp; 90dp con los rótulos
-  escritos) y llevan su número en blanco detrás. Para que quepan las cuatro, la vida y las barras suben y se juntan
-  (filas cada 36dp) y el hueco del modelo es 6dp más bajo. Las horas de vida que le quedan y el contador de evolución
-  van en el hueco a la derecha de las barras de ataque, defensa, velocidad y cerebro: un rótulo cian («Le quedan»,
-  «Evolución») sobre un recuadro con la cifra («353 h»; el contador sin unidad, «5/72», porque «150/144 h» de un
-  campeón no cabe; solo el contador si su nivel no evoluciona solo).
+  «Active» escribe las horas en que está despierto, de hora a hora («08-20»), en vez de la palabra del patrón, en un
+  recuadro propio hundido como los demás campos y centrado (clase `active-hours`); con la opción apagada la palabra
+  queda donde la pone el original. El cansancio es una cuarta barra de la condición, con el icono de la necesidad
+  «cansado», su palabra corta («Cansado», «Tired») y la tira azul de las barras del original. Las cuatro barras son
+  más cortas (84dp; 69dp con los rótulos escritos) y llevan su número en blanco detrás, con «%» en felicidad,
+  disciplina y cansancio (`partner_menu.percent.value`). Para que quepan las cuatro, la vida y las barras suben y se
+  juntan (filas cada 36dp) y el hueco del modelo es 6dp más bajo. Las horas de vida que le quedan y el contador de
+  evolución van en el hueco a la derecha de las barras de ataque, defensa, velocidad y cerebro: un rótulo cian («Le
+  quedan», «Evolución») sobre un recuadro con la cifra («353 h»; el contador con las horas de la comprobación y la
+  unidad, «5/72 h», `partner_menu.evolution.value`; solo el contador, «5 h», si su nivel no evoluciona solo).
 - **Piel moderna.** Los errores y los combates comparten una línea bajo el peso (las líneas del perfil se juntan un
   poco); el cansancio es una cuarta barra de los cuidados, «Cansancio» («Tiredness») con su número, y bajo las barras
-  van tres líneas más: «Despierto 08:00-20:00», «Le quedan 353 h» y «Evolución 5/72 h». Las dos tarjetas crecen una
-  línea.
+  van tres líneas más: «Despierto 08:00-20:00», «Le quedan 353 h» y «Evolución 5/72 h». Felicidad, disciplina y
+  cansancio llevan «%»; el virus no. Las dos tarjetas crecen una línea. Con la opción apagada las líneas de combates y
+  de horas despierto se esconden (antes se veían sueltas sobre la cabecera).
+
+Unidades y formato (las dos pieles):
+
+| Valor | Original | dwe | Por qué |
+|---|---|---|---|
+| HP y MP | `game_menu.c`, la vista de estadísticas (versión US): el actual y el máximo como dos cifras sueltas; las versiones japonesa y europea dibujan una barra «/» de 12 px entre ellas | Piel original: «958 / 1053», la barra en su sitio fijo (`.pool-slash`) entre las dos cifras, que caben a 9999 / 9999. Piel moderna: «958 / 1053» en una sola cifra que no parte | La barra existe en el propio original (JP/EU) y deja claro qué es cada cifra |
+| Felicidad, disciplina, cansancio | Barras sin número | Número con «%» (`partner_menu.percent.value`) | Disciplina y cansancio van de 0 a 100; la felicidad de -100 a 100, así que puede leerse «-40%» |
+| Virus | Barra sin número | Número sin «%» | Es una cuenta de 0 a 16 (`virus_bar_limit`), no un porcentaje |
+| Evolución | No se enseña | «horas / horas de la comprobación h» | Las dos cifras son horas: las que lleva en su nivel desde el último cambio y las que su nivel espera para comprobar la evolución; «Le quedan 353 h» usa la misma unidad |
 
 La ruta `route-status-extras.yaml` da al compañero cansancio (dos entrenamientos) y un error de cuidado (el reloj
 rápido hasta que se le pasa una comida), abre la ficha con la opción encendida a 1280x720 y 1920x1080, la apaga en el
 menú de pausa y la abre otra vez como el original, con `text_fit`; se corre en los dos idiomas y con las dos pieles.
+Antes de apagarla abre la ficha con los valores más anchos (HP y MP 9999 / 9999 curados, disciplina 100, contador de
+evolución 350) a 1280x720 y 1024x768.
 Comprueba también los combates (0) y las horas de la comprobación de evolución del novato (72). Tests: `the status
 page's extras carry the tiredness and the care mistakes the original hides` y `the status page's extras carry the
 battles, the lifetime, the evolution counter and the waking hours` (`packages/screens/tests/partner_status_view_tests.cpp`),

@@ -201,6 +201,23 @@ TEST_CASE(
   CHECK(pixelAt(dot, 2, 16) == pixelAt(dot, 29, 16)); // round: the same on both sides
 }
 
+TEST_CASE(
+    "the ground items' marker is a diamond, white inside a dark outline, apart from the dot") {
+  const assets::Image diamond = buildMinimapDiamond(32);
+  CHECK(diamond.width == 32);
+  CHECK(diamond.height == 32);
+  CHECK(pixelAt(diamond, 0, 0) == 0);            // a corner is outside the diamond
+  CHECK(pixelAt(diamond, 16, 16) == 0xFFFFFFFF); // its middle is filled white, so a tint colours it
+  CHECK((pixelAt(diamond, 16, 2) & 0xFFU) > 0);  // its top corner is drawn
+  CHECK((pixelAt(diamond, 16, 2) >> 8U) != 0xFFFFFFU); // in the outline colour
+  CHECK(pixelAt(diamond, 2, 16) == pixelAt(diamond, 29, 16));
+  // Where the dot is round the diamond is cut: half way to a corner of the square, on the
+  // diagonal, the dot is drawn and the diamond is not.
+  const assets::Image dot = buildMinimapDot(32);
+  CHECK((pixelAt(dot, 7, 7) & 0xFFU) > 0);
+  CHECK(pixelAt(diamond, 7, 7) == 0);
+}
+
 TEST_CASE("a map's collision becomes a minimap grid") {
   assets::MapDocument map;
   const auto cellAt = [](int column, int row) {

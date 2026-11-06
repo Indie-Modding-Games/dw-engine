@@ -316,6 +316,23 @@ std::vector<Ui::TextOverflow> findTextOverflows(Rml::ElementDocument& document,
     return false;
   };
   std::erase_if(texts, scrolledOut);
+  // The part of a box a list shows: what it has scrolled out of its box is not drawn, so a text
+  // under the list (a description) does not cross it.
+  const auto shownPart = [&](Rml::Element& box) -> std::optional<Rect> {
+    Rect rect = borderRect(box);
+    for (Rml::Element* element = box.GetParentNode(); element != nullptr && element != &document;
+         element = element->GetParentNode()) {
+      if (scrollsVertically(*element)) {
+        const Rect inside = paddingRect(*element);
+        rect.top = std::max(rect.top, inside.top);
+        rect.bottom = std::min(rect.bottom, inside.bottom);
+      }
+    }
+    if (rect.bottom <= rect.top) {
+      return std::nullopt;
+    }
+    return rect;
+  };
 
   const auto report = [&](const SeenText& text, std::string against, float by) {
     found.push_back({.document = std::string{name},
@@ -341,7 +358,11 @@ std::vector<Ui::TextOverflow> findTextOverflows(Rml::ElementDocument& document,
           underTextBox(text, *box)) {
         continue;
       }
-      const Rect rect = borderRect(*box);
+      const std::optional<Rect> shown = shownPart(*box);
+      if (!shown) {
+        continue;
+      }
+      const Rect rect = *shown;
       const float overlap = overlapOf(text.extent, rect);
       if (overlap > tolerance && overflowOf(text.extent, rect) > tolerance) {
         report(text, "across the edge of " + pathOf(*box), overlap);

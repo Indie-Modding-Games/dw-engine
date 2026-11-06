@@ -20,6 +20,11 @@ local shown_document = nil
 -- Whether the quick options (Esc / F10 on keys, Select on a pad) opened the menu on its options
 -- page, which then goes back straight to the game.
 local options_direct = false
+-- Whether the menu shows over the title screen, with no game (pause_menu.at_title, which the title
+-- sets with pause_menu.start_page when its Options entry opens the options page,
+-- title_options.hpp): only the options page, without the game's save and back-to-title actions;
+-- quit closes the game at once and Back goes back to the title's menu.
+local at_title = false
 local parents = {}
 local icon_time = 0
 local icon_flash = false
@@ -1535,8 +1540,13 @@ local refresh_player
 -- each the id of its option (and <id>-value, <id>-label... to its parts) while it is shown, so
 -- routes and tests find a row by its option. option_slots is the pool's size: no tab may list more.
 local option_tabs = { "game", "graphics", "sound", "interface" }
--- The game's own actions over the tabs, left to right.
+-- The game's own actions over the tabs, left to right; over the title only quit.
 local quick_actions = { "options-save", "options-to-title", "options-quit" }
+local title_quick_actions = { "options-quit" }
+
+local function shown_quick_actions()
+  return at_title and title_quick_actions or quick_actions
+end
 local option_slots = 14
 local option_tab = "game"
 -- The rows of the tab shown, in order, and the pool's elements (bound once).
@@ -1639,7 +1649,7 @@ local function refresh_option_info(document)
     back = "pause_menu.help.options_back",
     save = "pause_menu.help.quick_save",
     to_title = "pause_menu.help.to_title",
-    quit = "pause_menu.help.quit",
+    quit = at_title and "pause_menu.help.quit_title" or "pause_menu.help.quit",
   }
   local help = entry ~= nil and entry.help or action_help[info_focus]
   document:get("option-help"):set_text(help and t(help) or "")
@@ -1700,22 +1710,29 @@ local function bind_tab(document)
     document:get("tab-" .. tab):set_class("selected", tab == option_tab)
   end
   -- Down goes through the rows, then Reset and Back under the list, then round to the game's
-  -- actions over the tabs (Save first) and the first row again; up from the first row reaches
-  -- Save, and up from those actions wraps to Back.
+  -- actions over the tabs (Save first, quit alone over the title) and the first row again; up
+  -- from the first row reaches the first action, and up from those actions wraps to Back.
   local first = shown_entries[1] ~= nil and shown_entries[1].id or "options-reset"
   local last = shown_entries[#shown_entries] ~= nil and shown_entries[#shown_entries].id
     or "options-back"
-  document:get(first):set_property("nav-up", "#options-save")
+  local actions = shown_quick_actions()
+  for _, id in ipairs(quick_actions) do
+    document:get(id):set_class("hidden", index_of(actions, id) == nil)
+  end
+  document:get(first):set_property("nav-up", "#" .. actions[1])
   document:get(last):set_property("nav-down", "#options-reset")
   document:get("options-reset"):set_property("nav-up", "#" .. last)
   document:get("options-reset"):set_property("nav-down", "#options-back")
   document:get("options-back"):set_property("nav-up", "#options-reset")
-  document:get("options-back"):set_property("nav-down", "#options-save")
-  for _, id in ipairs(quick_actions) do
+  document:get("options-back"):set_property("nav-down", "#" .. actions[1])
+  for _, id in ipairs(actions) do
     document:get(id):set_property("nav-up", "#options-back")
     document:get(id):set_property("nav-down", "#" .. first)
   end
   document:get("option-list"):set_class("tab-" .. option_tab, true)
+  -- A list that scrolls (a large UI scale) starts each tab, and each opening, at its first row,
+  -- which takes the focus: the rows it was scrolled to belonged to another tab.
+  document:get("option-list"):scroll_to_top()
   refresh_option_rows(document)
 end
 
@@ -1822,7 +1839,7 @@ local function options_action(document, action)
   if action == "left" or action == "right" then
     -- The actions side by side over the tabs and under the list step left and right, stopping
     -- at their ends.
-    for _, row in ipairs({ quick_actions, { "options-reset", "options-back" } }) do
+    for _, row in ipairs({ shown_quick_actions(), { "options-reset", "options-back" } }) do
       for index, id in ipairs(row) do
         if document:get(id):has_focus() then
           local next = row[index + (action == "left" and -1 or 1)]
@@ -2022,7 +2039,21 @@ local function close_menu_box(document, done)
 end
 
 local function open_menu_box(document)
-  original_box.open(document, "panel", original_box.player_rect(document))
+  local from = original_box.player_rect(document)
+  if at_title then
+    -- No player over the title: the box grows from the middle of the screen.
+    local _, _, width, height = document:rect()
+    from = { width / 2 - 15, height / 2 - 15, 30, 30 }
+  end
+  original_box.open(document, "panel", from)
+end
+
+-- Closes the menu at once; over the title, the title's menu comes back (TitleScreen).
+local function leave()
+  ui.hide(document_name)
+  if at_title then
+    ui.send("title_options_back")
+  end
 end
 
 function open_player(document)
@@ -2071,7 +2102,7 @@ function back(document)
     return
   end
   if current == "options" and options_direct then
-    ui.hide(document_name)
+    leave()
   elseif current == "main" then
     close_menu(document)
   elseif current == "player" and original_box.enabled() then
@@ -2138,8 +2169,15 @@ function on_show(document)
   local entry = ui.setting("ui_skin") == "original" and ui.setting("pause_menu.start_entry") or nil
   -- Esc / F10 (Select on a pad) open the menu straight on its options page (pause_menu.start_page,
   -- «Opciones en partida»); going back from there closes the menu.
-  options_direct = ui.setting("pause_menu.start_page") == "options"
+  local was_at_title = at_title
+  at_title = ui.setting("pause_menu.at_title") == true
+  options_direct = at_title or ui.setting("pause_menu.start_page") == "options"
+  document:get("panel"):set_class("at-title", at_title)
   if options_direct then
+    -- From the title to a game or back the page's actions change: lay it out again, as it opens.
+    if at_title ~= was_at_title then
+      open_options(document)
+    end
     show_page(document, "options")
     -- The menu's box was closed the last time it went away (Ctrl, Tab, another menu): open it
     -- again, or the options page would be there but its box would stay hidden.
@@ -2419,7 +2457,7 @@ function on_action(document, action)
     if current == "main" then
       close_menu(document)
     else
-      ui.hide(document_name)
+      leave()
     end
     return true
   end

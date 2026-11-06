@@ -702,7 +702,7 @@ un modelo externo que ya cae dentro de ellas se queda como está. El ajuste `chi
 | `external` («Externos», por defecto) | Los modelos de un paquete que no es del motor y que aún no son chibi |
 
 Un ajuste guardado antiguo con `all` («Todos») se lee como `external`. Se cambia en la fila «Estilo chibi» de las
-opciones del título y de las opciones del menú de pausa (Tab, «Opciones»; mando: Select), se aplica en el acto y se
+opciones (desde el título o desde el menú de pausa: Tab, «Opciones»; mando: Select), se aplica en el acto y se
 guarda en los ajustes del usuario; `--chibi` en la línea de órdenes pasa también los originales por el detector (para
 depurar; todos salen «chibi ya»). El origen sale del paquete que gana al resolver el modelo en el sistema de archivos
 virtual (`isOriginalModel`): un modelo es del original si ese paquete es del motor y está en la capa base o remaster;
@@ -1003,7 +1003,7 @@ UI desde `PlaySession` (`NeedBubbleStackSetting`) y el HUD junta hasta tres nece
 Mejora opcional, encendida por defecto con los dos aspectos (no cambia ninguna regla; el original no tiene
 minimapa): el ajuste `minimap` (`on` u `off`; el `auto` de ajustes antiguos se lee como `on`) se cambia en la fila
 «Mostrar minimapa» («Show minimap» en inglés) de las opciones en partida, en la página «Minimapa» del menú de pausa y
-en las opciones del título; se aplica al momento, sin recargar el mapa, y se guarda en los ajustes del usuario
+en las opciones desde el título; se aplica al momento, sin recargar el mapa, y se guarda en los ajustes del usuario
 (`MinimapChanger`, `apps/game/src/minimap_setting.hpp`). Cómo se dibuja: [ui.md](../../architecture/ui.md#minimapa).
 
 `PlaySession` publica `hud.minimap_allowed` (`minimapAllowed`): el minimapa solo sale mientras corre el tiempo del
@@ -1043,6 +1043,28 @@ no. Un enemigo fuera de la vista del disco no se pinta (no se clava en el borde 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
 | Enemigos en el minimapa | No existe | Un punto rojo anaranjado con borde oscuro por cada personaje del mapa que puede pelear, donde está, bajo la flecha del jugador; con los dos aspectos. Medido en dwe: en el segundo mapa de la niebla salen los tres salvajes y se mueven con ellos, uno sale de la vista; en el túnel (dos que persiguen pero solo hablan) y en el pueblo, ninguno. Apagado, ninguno | `minimap_enemies_tests.cpp` (secciones que pelean, amigos fuera, posiciones vivas, apagado, lector del listado); `ui_tests.cpp` («the minimap marks the enemies in view round the player, under the player's arrow»); `minimap_tests.cpp` (el punto); `in_game_options_tests.cpp` («the options page turns the enemies on the minimap on and off…»); `user_settings_tests`; ruta `route-minimap-enemies.yaml` | Mejora (opción) |
+
+## Objetos en el minimapa
+
+Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no tiene minimapa): el ajuste
+`minimap_items` (`true` o `false`) se cambia en la fila «Objetos en el minimapa» («Items on minimap» en inglés) de la
+pestaña Juego de las opciones en partida, bajo «Mapa de la isla» (la pestaña Interfaz, al lado de «Enemigos en el
+minimapa», ya llena la página a 1280x720); se aplica al momento y se
+guarda en los ajustes del usuario (clave `minimap_items`). Apagado, el minimapa queda sin ellos.
+
+Qué es un objeto: uno de los que están tirados en el suelo del mapa y se recogen al pasar por encima (`item.c:
+spawnItem`, que ponen los guiones del mapa, y `spawnDroppedItems`, lo que suelta un enemigo vencido o lo que tira el
+jugador), la lista `FieldItems::ground()` del mapa en el que está. `PlaySession::minimapItemMarkers` pone una marca
+por cada uno que el campo dibuja (`minimapItems`, `apps/game/src/minimap_items.hpp`: los que tienen icono del original,
+como `FieldItemsScreen::show`), donde está; en cada frame se vuelve a leer, así que la marca se va al recogerlo y las
+de un mapa nuevo salen cuando su guion los pone. Los cofres no llevan marca: son parte del decorado del mapa y se
+ven en él. La marca es un rombo verde claro con borde oscuro (`generated:minimap_item`, `buildMinimapDiamond`), de otra
+forma y otro color que el punto de los enemigos para que no se confundan, en una capa bajo la de los enemigos; uno
+fuera de la vista del disco no se pinta. Cómo se dibuja: [ui.md](../../architecture/ui.md#minimapa).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Objetos en el minimapa | No existe | Un rombo verde claro con borde oscuro por cada objeto tirado en el suelo, donde está, bajo los puntos de los enemigos y la flecha del jugador; con los dos aspectos. Se va al recogerlo. Apagado, ninguno | `minimap_items_tests.cpp` (los dibujados, huecos vacíos fuera, apagado); `ui_tests.cpp` («the minimap marks the items on the ground in view, under the enemies' dots»); `minimap_tests.cpp` (el rombo); `in_game_options_tests.cpp` («the options page turns the items on the minimap on and off…»); `user_settings_tests` | Mejora (opción) |
 
 ## Mapa de la isla
 
@@ -1084,7 +1106,7 @@ cerrando un mapa abierto.
 Mejora opcional, encendida por defecto (no cambia ninguna regla): el motor dibuja el fondo prerenderizado del campo y
 sus capas de profundidad con un filtro propio que sigue los bordes, a la resolución de la ventana, en vez de ampliar
 cada píxel del original. El ajuste `hd_scenery` (fila «Escenarios en alta definición», «HD scenery» en inglés, de las
-opciones en partida; fila «ESCENARIOS HD» de las opciones del título con la piel original; guardado en los ajustes del
+opciones, en partida o desde el título; guardado en los ajustes del
 usuario) se aplica al momento; apagado, se ven los píxeles del original exactos. El porqué y cómo funciona están en
 [Alta definición en el motor](../../architecture/remaster-pipeline.md#alta-definición-en-el-motor).
 
@@ -1134,7 +1156,7 @@ ven los dibujos del original. La consola y las rutas lo cambian para la partida 
 - **Dónde**: `sprite_characters.hpp` lee la tabla y calcula el sitio: los pies son el centro de la sombra, el pie
   del primer dibujo o un píxel dado (`feet`); `MapCamera::pickGround` los lleva al suelo, a la altura `height` (una
   jardinera, una cama), y el modelo mira a la cámara salvo que la tabla dé `facing` (`species_y` tumbado en la alfombra
-  del puesto, 2560). `FieldScene` carga el modelo de cada especie al entrar al mapa (`standInSpriteCharacters`) y lo
+  del puesto, 2560) o `look_at`, un punto del suelo en unidades del original hacia el que gira (`yawOfDirection`). `FieldScene` carga el modelo de cada especie al entrar al mapa (`standInSpriteCharacters`) y lo
   dibuja cada frame con su reposo (`drawSpriteCharacters`) mientras el primer dibujo no esté oculto.
   `MapDepthLayers::setStoodIn` saca los dibujos del pintado sin tocar la marca de oculto que ponen los guiones; las
   sombras se siguen dibujando.
@@ -1149,6 +1171,8 @@ ven los dibujos del original. La consola y las rutas lo cambian para la partida 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
 | Personajes en 3D | Dibujos prerenderizados, objetos del mapa (`renderMapOverlays`, `buildMapOverlayPrim`), mostrados y ocultados por los guiones (`setMapObjectsFlag`) | `field/sprite_characters.yaml`; `sprite_characters.hpp` (`placeOf`, `standInFor`); `FieldScene::drawSpriteCharacters` dibuja el modelo de la especie con su reposo donde estaba el dibujo; `MapDepthLayers::setStoodIn` | `sprite_characters_tests.cpp` (tabla con `additive`, pies, sitio en el suelo, cuándo se ve, ajuste); `map_layers_tests.cpp` («an instance stood in for is not drawn…»); `in_game_options_tests.cpp`; capturas antes y después en `topn01`, `tend01`, `tend02`, `twna02`, `room08` y `twnb02` a `twnb09` | Mejora (opción) |
+| Hacia dónde miran los bebés de la apertura | Sus dibujos (`topn01`, objetos 0 a 17) están girados hacia el jugador que despierta en medio, tumbado en (266, −2330) al empezar la escena (medido con el original: savestate `00_intro_arrival`; el de la izquierda se ve de lado mirando a la derecha, el de la derecha mirando a la izquierda, los de abajo de espaldas). El guion (193, sección 0x36) no gira a ninguno de ellos: no son entidades; solo gira a la entidad 10 con `entity_look_at_entity` | Los seis llevan `look_at: [266, -2330]` en `field/sprite_characters.yaml` y sus modelos giran hacia ese punto, como sus dibujos. Antes miraban todos a la cámara | `sprite_characters_tests.cpp` («a character with a point to look at faces it, not the camera», la tabla del pack); capturas antes/después y del original | Igual (con la opción) |
+| El sonido de la celebración de la apertura | Tras la primera frase del anciano las dos entidades que saltan (10 y 12, clip 11) suenan `playSound(3, 49)` desde su animación (`tickAnimation`, instrucción 0x4000), una vez por salto; los seis bebés dibujados no suenan (son objetos del mapa) y el guion no pide ningún sonido (medido con el original: savestate `00_intro_arrival`, parada en `playSound`) | Las mismas dos llamadas, desde los sonidos del clip (`FieldScene::playClipSounds`, log `[port:anim] … playSound(3, 49)`); los modelos de los bebés no suenan, como sus dibujos | Ruta de la apertura con el log de depuración | Igual |
 
 ## Opciones en partida
 
@@ -1156,8 +1180,8 @@ Las opciones se cambian sin volver al título: la página «Opciones» del menú
 juego — **«Guardar»** (guardado rápido, `quick_save`), **«Volver a la portada»** (`to_title`) y **«Salir del juego»**
 (`quit`), en los dos aspectos; en el moderno están también en la página principal, y en el original es el sitio visible
 donde la rejilla de iconos se mantiene fiel — y sigue con las de pantalla (modo de
-ventana, escala, sincronía vertical), la piel, el idioma y el texto con aspecto original (las mismas órdenes que el
-menú del título: `language`, `text_font`) y, debajo, las opciones propias del motor.
+ventana, escala, sincronía vertical), la piel, el idioma y el texto con aspecto original (`language`, `text_font`; la misma página se abre desde el
+título, ver [Desde el título](#desde-el-título)) y, debajo, las opciones propias del motor.
 
 | Cómo se abre | Teclado | Mando |
 |---|---|---|
@@ -1178,7 +1202,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 
 | Pestaña | Filas |
 |---|---|
-| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha |
+| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha |
 | Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
@@ -1217,6 +1241,31 @@ Los dos aspectos tienen las pestañas: el original las dibuja con las carpetas d
 píldoras, barras finas y el recuadro de descripción, y solo anima color y opacidad (0,12 s), sin movimiento. A
 1280 × 720 todas las filas de cada pestaña caben sin desplazar; si no cupieran (otra escala, las filas de un mod), la
 lista desplaza con una barra visible.
+
+### Desde el título
+
+«Opciones» del menú del título abre esta misma página, con las mismas pestañas, filas, descripciones y teclas, sobre
+la imagen del título: el menú manda `title_options`, `TitleScreen` oculta su recuadro y muestra el menú de pausa con
+`pause_menu.at_title` y `pause_menu.start_page` = `options` (`apps/game/src/title_options.hpp`). Sin partida no hay
+nada que guardar ni portada a la que volver, así que la barra de acciones solo tiene «Salir del juego», que cierra el
+juego al momento («Cierra el juego.», `pause_menu.help.quit_title`). Volver (Ctrl, Retroceso, clic derecho, Este o la
+fila «Volver») cierra la página, manda `title_options_back` y el título vuelve a su menú con el foco en «Opciones».
+
+Todas las filas sirven en el título. Las que solo aplica una partida en curso (las sí/no de `game_options.lua` que
+atiende `PlaySession`: exploración libre, mapa de la isla, nombres largos, movimiento suave, carteles traducidos…) las
+guarda el juego en los ajustes del usuario y las vuelve a publicar (`changeGameToggle`, `publishGameToggles`); la
+siguiente partida empieza con ellas. Las demás (pantalla, escala, piel, idioma, letra, volúmenes, gráficos, minimapa)
+tienen el mismo manejador que en partida. La sincronía vertical se cambia igual que en partida: al reiniciar.
+
+La página cabe en todas las ventanas: el diseño es de 720dp de alto y al menos 960dp de ancho, así que una ventana
+4:3 deja 960dp. El recuadro moderno mide 900dp; el original, 980dp con las teclas de pestaña por fuera, se estrecha a
+880dp con las teclas sobre sus esquinas cuando la página tiene menos de 1060dp de ancho (`@media` en
+`skins/original/pause_menu/style.rcss`). `in_game_options_tests.cpp` lo comprueba de 640 × 480 a 2560 × 1080 en los
+dos aspectos y los dos idiomas.
+
+| Cambio | Original | dwe | Prueba | Tipo |
+|---|---|---|---|---|
+| Opciones desde el título | No existe: el menú del título solo tiene sus cuatro entradas | «Opciones» abre la página de opciones por pestañas; «Salir del juego» en su barra | `in_game_options_tests.cpp` («over the title…», «…fits the window…»); `title_options_tests.cpp`; `ui_tests.cpp` (menú del título con teclado y con ratón); rutas `route-language.yaml` y `route-skins.yaml` | Mejora |
 
 ### Datos
 
@@ -1301,7 +1350,7 @@ y se guardan en `settings.yaml` (`shadows`, `enhanced_lighting`, `vivid_colors`;
 ## Clima
 
 Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no tiene clima): el ajuste `weather`
-(sí/no) se cambia en la fila «Clima» («Weather» en inglés) de las opciones en partida y en las opciones del título;
+(sí/no) se cambia en la fila «Clima» («Weather» en inglés) de las opciones en partida y desde el título;
 se aplica al momento y se guarda en los ajustes del usuario. Las zonas, sus pesos y los mapas sin clima, la semilla,
 el dibujo y el sonido están en [packages/game/weather](../game/weather.md). `--weather <clima>` fuerza uno para capturas.
 

@@ -50,6 +50,25 @@ bool isMapPatchId(const AssetId& id);
 // once applied, by the reader of the data.
 core::Result<void> checkMapPatch(std::string_view yaml);
 
+// The sections a patch has: what parts of the map's data it changes.
+struct MapPatchSections {
+  bool camera = false;
+  bool lights = false;
+  bool warps = false;
+  bool npcs = false;
+  bool objects = false;
+  bool collision = false;
+
+  // Whether the patch changes nothing but the collision (an empty patch too): such a change takes
+  // effect without entering the map again.
+  [[nodiscard]] bool onlyCollision() const {
+    return !camera && !lights && !warps && !npcs && !objects;
+  }
+};
+
+// The sections of a patch's text, or why it is no patch (checkMapPatch's errors).
+core::Result<MapPatchSections> mapPatchSections(std::string_view yaml);
+
 // Parses a map's data and applies the patches to it, bottom to top. An index or an exit that the
 // data does not have, or a value that the data's reader refuses once applied, is an error that
 // names the patch's file. The result's `patches` lists the packs, and its `patchedExits` the exits
@@ -65,5 +84,10 @@ std::vector<AssetSource> mapPatchSources(const VirtualFileSystem& vfs, std::stri
 // Reads the patches of mapPatchSources.
 core::Result<std::vector<MapPatchText>> readMapPatches(const VirtualFileSystem& vfs,
                                                        std::string_view mapId);
+
+// loadMapDocument with more patches applied last, after the packs' (a map editor's preview, never
+// saved): their errors name their `file` as the packs' name theirs.
+core::Result<MapDocument> loadMapDocument(const VirtualFileSystem& vfs, std::string_view mapId,
+                                          std::span<const MapPatchText> extra);
 
 } // namespace dwe::assets

@@ -224,6 +224,18 @@
 	overflow-y: auto;
 }
 
+/* A larger UI scale leaves the page less than the 720dp it is laid out for (115 % on a 16:10 window leaves 626dp, 130 %
+   on a 16:9 one 554dp): the list scrolls in fewer rows, so the centred panel stays in the window. */
+@media (max-height: 660dp) {
+	#panel:not(.skin-original) #option-list { max-height: 306dp; }
+}
+@media (max-height: 600dp) {
+	#panel:not(.skin-original) #option-list { max-height: 238dp; }
+}
+@media (max-height: 520dp) {
+	#panel:not(.skin-original) #option-list { max-height: 170dp; }
+}
+
 #panel:not(.skin-original) #option-list scrollbarvertical {
 	width: 4dp;
 	margin-left: 8dp;

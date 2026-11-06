@@ -79,14 +79,15 @@ constexpr std::array<std::string_view, 9> ScreenDocuments{
     "partner_menu", "battle",    "destination_choice", "dialog",        "save_slots",
     "sleep_menu",   "shop_menu", "item_keeper",        "new_game_rules"};
 
-// The menu menu_select picks from: the main menu while it is open, then the pause menu, then the
-// battle screen or the partner's menu; the pause menu when none is open, so the step says so.
+// The menu menu_select picks from: the pause menu while it is open (over the title too, as its
+// options), then the main menu, then the battle screen or the partner's menu; the pause menu when
+// none is open, so the step says so.
 std::string_view shownMenu(const ui::Ui& ui) {
-  if (ui.isVisible(MainMenuDocument)) {
-    return MainMenuDocument;
-  }
   if (ui.isVisible(MenuDocument)) {
     return MenuDocument;
+  }
+  if (ui.isVisible(MainMenuDocument)) {
+    return MainMenuDocument;
   }
   for (const std::string_view document : ScreenDocuments) {
     if (ui.isVisible(document)) {

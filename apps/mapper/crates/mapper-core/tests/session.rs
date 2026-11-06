@@ -591,3 +591,29 @@ fn the_target_is_remembered() {
     again.apply(Action::OpenContent(folders));
     assert_eq!(again.current_target().unwrap().root, mods.join("mine"));
 }
+
+#[test]
+fn the_live_link_previews_the_edit_and_tests_exits() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut mapper = editing(dir.path());
+    assert_eq!(mapper.preview_patch(), None, "no edit, nothing to show");
+    // The exit's first trigger cell in reading order, and its arrival as the game's place takes it.
+    assert_eq!(mapper.exit_cell(0), Some(dwe_map::Cell::new(50, 50)));
+    assert_eq!(mapper.exit_cell(5), None);
+    assert_eq!(
+        mapper.place_at_arrival(1).as_deref(),
+        Some("player 400 200 1024")
+    );
+
+    mapper.apply(Action::SetTool(Tool::Brush));
+    mapper.apply(Action::SetPaintValue(128));
+    let at = canvas_of_cell(&mapper, 20, 40);
+    press(&mut mapper, at);
+    mapper.apply(Action::PointerUp);
+    let (map, patch) = mapper.preview_patch().unwrap();
+    assert_eq!(map, "area_a");
+    assert!(patch.starts_with("collision:"), "{patch}");
+    assert!(patch.contains("column: 20"), "{patch}");
+    mapper.apply(Action::Undo);
+    assert_eq!(mapper.preview_patch(), None);
+}

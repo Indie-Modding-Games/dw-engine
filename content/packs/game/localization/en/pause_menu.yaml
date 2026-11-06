@@ -39,6 +39,9 @@ minimap_mode.off: "No"
 # Enemies on the minimap (an engine improvement): a red dot for each character on the map that can start a battle (on
 # by default; off, the minimap shows only the player and the partner).
 minimap_enemies: "Enemies on minimap"
+# Items on the minimap (an engine improvement): a green diamond for each item lying on the map's ground (on by default;
+# off, the minimap shows none).
+minimap_items: "Items on minimap"
 minimap_size: "Size"
 minimap_size.small: "Small"
 minimap_size.medium: "Medium"
@@ -220,6 +223,7 @@ help.text_font: "Writes the texts in the original's font."
 help.translated_signs: "The signs painted on the maps read in your language."
 help.minimap: "The round minimap at the top right, with the map's name, the day and the time."
 help.minimap_enemies: "A red dot on the minimap for each enemy that can start a battle."
+help.minimap_items: "A green diamond on the minimap for each item lying on the ground to pick up."
 help.digital_time: "The game time in digits (HH:MM) under the clock."
 help.save_notice: "A small figure and \"Saving\" in a corner while the game saves."
 help.need_bubble_stack: "Your partner's bubble shows up to three needs at once, most urgent first."
@@ -229,3 +233,5 @@ help.options_back: "Back to the menu."
 help.quick_save: "Saves the game now to its slot."
 help.to_title: "Back to the title screen. Asks first whether to save."
 help.quit: "Closes the game. Asks first whether to save."
+# The same options over the title screen, with no game to save.
+help.quit_title: "Closes the game."

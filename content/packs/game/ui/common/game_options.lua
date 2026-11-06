@@ -72,6 +72,18 @@ game_options = {
     help = "pause_menu.help.world_map",
     original = false,
   },
+  -- Items on the minimap: a green diamond for each item lying on the map's ground, where it lies
+  -- (on by default; off leaves the minimap without them). It lives in this tab, by the island map,
+  -- because the interface tab already fills the page at 1280x720.
+  {
+    id = "minimap-items",
+    setting = "minimap_items",
+    label = "pause_menu.minimap_items",
+    default = true,
+    tab = "game",
+    help = "pause_menu.help.minimap_items",
+    original = false,
+  },
   -- Bulk trades: the item trader and the card shop's packs ask how many at once (on by default).
   {
     id = "bulk-trades",

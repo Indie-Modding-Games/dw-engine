@@ -15,4 +15,10 @@ void Field::blockCells(assets::CollisionCell from, std::int32_t width, std::int3
                  width, height, from.column, from.row, mapId_);
 }
 
+void Field::setCollision(const assets::MapCollision& collision) {
+  collision_ = collision;
+  lastTrigger_ = collision_.trigger(assets::originalCellAt(player().position)).value_or(0);
+  core::logDebug("field: the collision of {} replaced in place", mapId_);
+}
+
 } // namespace dwe::game::field

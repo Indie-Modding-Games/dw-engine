@@ -51,6 +51,7 @@
 #include "item_keeper_screen.hpp"
 #include "jukebox_screen.hpp"
 #include "minimap_enemies.hpp"
+#include "minimap_items.hpp"
 #include "minimap_setting.hpp"
 #include "movie_rules.hpp"
 #include "naming_box.hpp"
@@ -58,6 +59,7 @@
 #include "partner_menu.hpp"
 #include "praise_scold_call.hpp"
 #include "recruit_bar.hpp"
+#include "remote_control.hpp"
 #include "save_command.hpp"
 #include "save_indicator.hpp"
 #include "save_machine.hpp"
@@ -249,8 +251,26 @@ public:
   // The control channel's reload_map (FieldScene::reloadMap): the current map read again from the
   // packs and entered again, by `exit` or where the player stands, and the story's modules and
   // patches read again on its next section (the story's state kept). Refused during a battle or
-  // while a story section runs.
+  // while a story section runs (mapEditable).
   core::Result<void> reloadMap(std::optional<std::int32_t> exit);
+  // Why the map editor's commands may not change the map now: a battle runs, or a story script or
+  // section runs; nothing when they may.
+  [[nodiscard]] core::Result<void> mapEditable() const;
+  // Whether a story script or section runs or is about to start.
+  [[nodiscard]] bool storyBusy() const;
+  // The control channel's preview_map (FieldScene::previewMap): `text` over the map's data and
+  // patches, with the rights of `pack` when it names a mounted pack (no base rights otherwise).
+  // Refused as mapEditable says. True when the map was entered again.
+  core::Result<bool> previewMap(const std::string& mapId, std::string text,
+                                const std::optional<std::string>& pack);
+  // The control channel's preview_clear (FieldScene::clearPreview); false without a preview.
+  core::Result<bool> clearPreview();
+  // The control channel's story_set: a trigger or a variable written; refused while a story script
+  // runs.
+  core::Result<void> storySet(const StoryWrite& write);
+  // Where the characters stand and the view, for the control channel's live, in the mode "field"
+  // or "battle"; a movie or the opening's questions over it, and the log, are the caller's.
+  [[nodiscard]] ControlLive live() const;
   // The story's triggers, variables and running script, and the camera, for story_state.
   [[nodiscard]] StoryStateView storyStateView() const;
 
@@ -324,9 +344,13 @@ private:
   // The shop job's progress bar (shop_job_bar.hpp), published when what it shows changed.
   void publishShopJob();
   // Publishes hud.minimap_allowed when it changes.
+  // Draws the minimap of the map's collision again (after a preview swapped it in place).
+  void refreshMinimap();
   void publishMinimapAllowed(const MinimapScene& scene);
   // The enemies the minimap marks now: none while minimap_enemies is off.
   [[nodiscard]] std::vector<ui::MinimapMarker> minimapEnemyMarkers();
+  // The items lying on the ground the minimap marks now: none while minimap_items is off.
+  [[nodiscard]] std::vector<ui::MinimapMarker> minimapItemMarkers() const;
   // Shows the story lock's message in the dialog, unless the dialog is on screen already.
   // Opens the island map over the field, with the maps the player has visited.
   void openWorldMap();
@@ -362,6 +386,8 @@ private:
   // the fighting sections of the map's script.
   bool minimapEnemiesShown_ = true;
   std::optional<MinimapEnemyFinder> minimapEnemies_;
+  // Whether the minimap marks the items on the ground (an engine improvement, minimap_items).
+  bool minimapItemsShown_ = true;
   // The shop job's progress bar (an engine improvement) and what it last published.
   ShopJobBar shopJobBar_;
   std::optional<ShopJobBarView> publishedShopJob_;

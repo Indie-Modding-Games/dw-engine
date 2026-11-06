@@ -578,7 +578,7 @@ TEST_CASE("a live switch restyles every document in place and keeps its state") 
   ui->show("main_menu", true);
   frame(*ui, input);
   press(*ui, input, input::keys::Down);
-  REQUIRE(ui->focusedElementId("main_menu") == "language");
+  REQUIRE(ui->focusedElementId("main_menu") == "options");
   const std::vector<std::string> modern = textColours(*ui);
   CHECK_FALSE(modern.front().empty());
 
@@ -591,11 +591,10 @@ TEST_CASE("a live switch restyles every document in place and keeps its state") 
     CHECK(contrast.at(screen) != modern.at(screen));
     CHECK(contrast.at(screen) == contrast.front());
   }
-  // The documents stayed: the menu is still open on the same entry, and the language entry still
-  // works.
+  // The documents stayed: the menu is still open on the same entry, with its texts.
   CHECK(ui->isVisible("main_menu"));
-  CHECK(ui->focusedElementId("main_menu") == "language");
-  CHECK(ui->elementText("main_menu", "language-value") == "English");
+  CHECK(ui->focusedElementId("main_menu") == "options");
+  CHECK(ui->elementText("main_menu", "options") == "Options");
 
   REQUIRE(ui->setSkin("modern"));
   frame(*ui, input);
@@ -778,8 +777,8 @@ TEST_CASE("a skin's classes for a document the game does not load are a warning"
   CHECK(warnings.has("document huds"));
 }
 
-TEST_CASE(
-    "the menus' skin entry sends the next skin the packs offer and shows the one the game reports") {
+TEST_CASE("the options' skin entry sends the next skin the packs offer and shows the one the game "
+          "reports") {
   Content content;
   const assets::VirtualFileSystem& files = content.mount();
   const localization::Catalog texts = catalogIn(files, "es");
@@ -788,13 +787,17 @@ TEST_CASE(
   ui->setSetting("language", std::string{"es"});
   ui->setSetting(std::string{UiSkinSetting}, std::string{"modern"});
   input::InputState input{input::defaultActionMap()};
-  ui->show("main_menu", true);
+  // The pause menu's options page, as the title's Options entry opens it (title_options.hpp): the
+  // skin entry is on its Interface tab.
+  ui->setSetting("pause_menu.at_title", true);
+  ui->setSetting("pause_menu.start_page", std::string{"options"});
+  ui->show("pause_menu", true);
+  ui->setSetting("pause_menu.start_page", std::string{});
+  ui->setSetting("pause_menu.at_title", false);
+  REQUIRE(ui->callScript("pause_menu", "show_tab", std::vector<std::string>{"", "interface"}));
   frame(*ui, input);
-  CHECK(ui->elementText("main_menu", "ui-skin-value") == "Moderno");
-  while (ui->focusedElementId("main_menu") != "ui-skin") {
-    REQUIRE(ui->focusedElementId("main_menu") != "quit");
-    press(*ui, input, input::keys::Down);
-  }
+  CHECK(ui->elementText("pause_menu", "ui-skin-value") == "Moderno");
+  REQUIRE(ui->focusedElementId("pause_menu") == "ui-skin");
   press(*ui, input, input::keys::Right);
   auto commands = ui->takeCommands();
   REQUIRE(commands.size() == 1);
@@ -806,15 +809,8 @@ TEST_CASE(
   REQUIRE(commands.size() == 1);
   CHECK(commands[0].value == UiValue{std::string{"test_contrast"}});
 
-  // The menu shows what the game reports back.
+  // The page shows what the game reports back.
   ui->setSetting(std::string{UiSkinSetting}, std::string{"test_contrast"});
-  frame(*ui, input);
-  CHECK(ui->elementText("main_menu", "ui-skin-value") == "Contraste de prueba");
-
-  // The pause menu's options page has the same entry, on its Interface tab.
-  ui->hide("main_menu");
-  ui->show("pause_menu", true);
-  REQUIRE(ui->callScript("pause_menu", "show_tab", std::vector<std::string>{"", "interface"}));
   frame(*ui, input);
   CHECK(ui->elementText("pause_menu", "ui-skin-value") == "Contraste de prueba");
   // The mod's texts add to the game pack's: the modern skin keeps its name.

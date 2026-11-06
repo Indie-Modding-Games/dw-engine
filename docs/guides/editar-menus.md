@@ -8,7 +8,7 @@ en un build de desarrollo, el juego los recarga solo al guardarlos. Arquitectura
 ```
 content/packs/game/ui/
   common/base.rcss           la estructura común, igual en todos los aspectos: display, tamaño, navegación
-  common/ui_skin_choice.lua  la entrada «Aspecto de la interfaz» de los menús principal y de pausa
+  common/ui_skin_choice.lua  la fila «Aspecto de la interfaz» de las opciones
   skins/modern/skin.yaml     el aspecto moderno: qué hojas pone sobre cada pantalla
   skins/modern/theme.rcss    su estilo común: fuente, botones, avisos de botones
   skins/modern/<pantalla>/style.rcss
@@ -115,6 +115,7 @@ API disponible:
 | `element:attribute(nombre)`, `element:set_attribute(nombre, valor)` | Atributos (`set_attribute` no acepta los de evento, `on...`) |
 | `element:set_property(nombre, valor)` | Una propiedad de estilo, como `display` |
 | `element:focus()`, `element:has_focus()`, `element:click()` | Foco y clic |
+| `element:scroll_to_top()` | Lleva una lista que se desplaza a su principio (una lista que se llena de nuevo) |
 | `element:rect()` | Izquierda, arriba, ancho y alto del elemento en dp desde la esquina de la ventana |
 | `element.id`, `element:valid()` | Su id; si sigue existiendo |
 | `event.type`, `event:stop()` | En un atributo de evento: su tipo; parar la propagación |

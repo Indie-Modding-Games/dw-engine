@@ -5,6 +5,7 @@
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/character_model.hpp>
 #include <dwe/assets/image.hpp>
+#include <dwe/assets/map_patch.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/model_data.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
@@ -533,6 +534,26 @@ public:
   // entered (mapSerial) and runs what a map's entry runs. Refused while a map change is under
   // way; on an error the map stays as it was, though the rules may already be the new ones.
   core::Result<void> reloadMap(std::optional<std::int32_t> exit);
+  // A map editor's preview (the control channel's preview_map): a patch put over the packs' data
+  // and patches of the map shown, last, in memory only. The preview belongs to its map: entering
+  // any other map, or reloadMap, drops it. A patch that changes nothing but the collision, over no
+  // preview or a preview of the collision alone, swaps the field's collision grid in place (the
+  // cells a script closed open again); any other enters the map again where the player and the
+  // partner stand, without reading the packs' list, the rules or the scripts' map changes again.
+  struct MapPreview {
+    std::string map;
+    assets::MapPatchText patch;
+    bool onlyCollision = false;
+  };
+  // Refused when `mapId` is not the map shown, while a map change is under way, or for a patch
+  // that is wrong or does not apply (the error names the patch's file and line). True when the
+  // map was entered again, false when the collision was swapped in place. On an error the last
+  // preview stays.
+  core::Result<bool> previewMap(const std::string& mapId, assets::MapPatchText patch);
+  // Drops the preview, giving the map shown back as the packs give it (in place, or entered again
+  // where everyone stands). False when there was no preview.
+  core::Result<bool> clearPreview();
+  [[nodiscard]] const std::optional<MapPreview>& preview() const { return preview_; }
   // What a scene does to the picture; a default FieldStage gives the field its own back.
   void setStage(const FieldStage& stage);
   [[nodiscard]] const FieldStage& stage() const { return stage_; }
@@ -774,6 +795,10 @@ private:
   core::Result<void> enterMap(const std::string& mapId, std::int32_t exit,
                               std::optional<assets::SpawnPoint> at = std::nullopt,
                               std::optional<assets::SpawnPoint> partnerAt = std::nullopt);
+  // Enters the map again where the player and the partner stand, without a fade.
+  core::Result<void> enterWhereTheyStand(const std::string& mapId);
+  // The map shown read again with the preview's patch, if any, and its collision put in place.
+  core::Result<void> swapCollision(const std::string& mapId);
   void animate(Actor& actor, double seconds);
   // Plays the sounds the actor's clip just ran through (attachSound).
   void playClipSounds(const Actor& actor);
@@ -1027,6 +1052,7 @@ private:
   std::optional<glm::vec3> cameraFocus_;
   bool cameraHeld_ = false;
   render::MapSceneData map_;
+  std::optional<MapPreview> preview_;
   std::string mapNameKey_;
   std::uint32_t mapSerial_ = 0;
   MapArrival arrival_;

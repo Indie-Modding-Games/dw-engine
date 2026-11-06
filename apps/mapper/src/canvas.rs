@@ -1,7 +1,9 @@
 //! The map canvas: the background with the layers over it. The primary button works with the
 //! tool chosen (select and drag, paint, rectangle, fill, eyedropper; Ctrl+click follows an exit);
 //! the right or middle button pans, the wheel (or a pinch) zooms, and a double click with
-//! Seleccionar fits the map.
+//! Seleccionar fits the map. With a game connected on the same map, the game's characters are
+//! drawn where they are now, and a right click (without dragging) opens a menu that puts the player
+//! there or tests an exit.
 
 use dwe_map::world::{self, Cell};
 use dwe_map::{CellKind, TriggerBand};
@@ -36,7 +38,14 @@ pub mod colors {
     pub const LABEL_BACK: Color32 = Color32::from_rgba_premultiplied(0, 0, 0, 170);
     pub const SELECTED: Color32 = Color32::from_rgb(80, 200, 255);
     pub const PREVIEW: Color32 = Color32::from_rgba_premultiplied(40, 120, 160, 70);
+    pub const LIVE_PLAYER: Color32 = Color32::from_rgb(90, 230, 255);
+    pub const LIVE_PARTNER: Color32 = Color32::from_rgb(255, 120, 220);
+    pub const LIVE_NPC: Color32 = Color32::from_rgb(255, 255, 120);
+    pub const LIVE_VIEW: Color32 = Color32::from_rgb(90, 230, 255);
 }
+
+/// The length of a live character's facing arrow, in world units.
+const LIVE_ARROW: f32 = 90.0;
 
 pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
     let (response, painter) =
@@ -60,6 +69,9 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
         }
     }
     app.apply(Action::Hover(response.hover_pos().map(to_local)));
+    if response.secondary_clicked() {
+        app.context_point = context_point(&app.mapper);
+    }
     if response.double_clicked() && app.mapper.tool == Tool::Select {
         app.apply(Action::FitView);
     }
@@ -206,6 +218,117 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
     }
     if let Some(at) = selected_point(mapper) {
         painter.circle_stroke(to_screen(at), 10.0, Stroke::new(2.5, colors::SELECTED));
+    }
+    if layers.shows(Layer::Live) {
+        draw_live(&painter, &app.live, mapper, &to_screen);
+    }
+    live_menu(app, &response);
+}
+
+/// Where the canvas's menu was opened: the ground point, and the exit whose trigger cell it is.
+#[derive(Clone, Copy, Debug)]
+pub struct ContextPoint {
+    pub world: glam::Vec3,
+    pub exit: Option<i32>,
+}
+
+fn context_point(mapper: &Mapper) -> Option<ContextPoint> {
+    let hover = mapper.hover?;
+    let exit = mapper
+        .map
+        .as_ref()
+        .and_then(|map| map.overlay.exit_at(hover.value, &mapper.bands))
+        .map(|mark| mark.exit);
+    Some(ContextPoint {
+        world: hover.world,
+        exit,
+    })
+}
+
+/// The canvas's menu while a game shows the map: put the player on the point, or test the exit
+/// under it.
+fn live_menu(app: &MapperApp, response: &egui::Response) {
+    let (Some(point), Some(view)) = (app.context_point, app.live.shows(&app.mapper)) else {
+        return;
+    };
+    let rotation = view
+        .player
+        .map_or(0, |player| mapper_core::live::rotation_of_yaw(player.yaw));
+    response.context_menu(|ui| {
+        if ui.button(text::LIVE_PLACE_HERE).clicked() {
+            let at = mapper_core::live::place_player(point.world, rotation);
+            app.live.place(at, false);
+            ui.close();
+        }
+        if let Some(exit) = point.exit {
+            // The centre of the cell clicked, which has the exit's trigger.
+            let cell = world::cell_center(world::cell_at(point.world));
+            if ui
+                .button(format!("{} {exit}", text::LIVE_TEST_EXIT))
+                .on_hover_text(text::LIVE_TEST_EXIT_HINT)
+                .clicked()
+            {
+                app.live
+                    .place(mapper_core::live::place_player(cell, rotation), true);
+                ui.close();
+            }
+            if let Some(at) = app.mapper.place_at_arrival(exit)
+                && ui
+                    .button(format!("{} {exit}", text::LIVE_TO_ARRIVAL))
+                    .clicked()
+            {
+                app.live.place(at, false);
+                ui.close();
+            }
+        }
+    });
+}
+
+/// The game's characters where they are now, and the part of the background its window shows.
+fn draw_live(
+    painter: &egui::Painter,
+    live: &crate::live::LivePanel,
+    mapper: &Mapper,
+    to_screen: &impl Fn(Vec2) -> Pos2,
+) {
+    let (Some(view), Some(map)) = (live.shows(mapper), &mapper.map) else {
+        return;
+    };
+    if let Some(rect) = view.view {
+        let corners = egui::Rect::from_min_max(
+            to_screen(Vec2::new(rect.x, rect.y)),
+            to_screen(Vec2::new(rect.x + rect.w, rect.y + rect.h)),
+        );
+        painter.rect_stroke(
+            corners,
+            0.0,
+            Stroke::new(1.5, colors::LIVE_VIEW),
+            egui::StrokeKind::Middle,
+        );
+    }
+    let actor = |actor: &mapper_live::Actor, color: Color32, name: &str| {
+        let from = glam::Vec3::new(actor.x, actor.y, actor.z);
+        let [dx, dz] = actor.facing();
+        let to = from + glam::Vec3::new(dx, 0.0, dz) * LIVE_ARROW;
+        let project = |world| map.camera.project_to_background(world).map(|at| at.pixel);
+        let (Some(from), Some(to)) = (project(from), project(to)) else {
+            return;
+        };
+        let (from, to) = (to_screen(from), to_screen(to));
+        painter.arrow(from, to - from, Stroke::new(2.5, color));
+        painter.circle_filled(from, 6.0, color);
+        painter.circle_stroke(from, 6.0, Stroke::new(1.5, Color32::BLACK));
+        label(painter, from, name, color);
+    };
+    for npc in &view.npcs {
+        let name = format!("{} {}", text::LIVE_NPC, npc.id.unwrap_or(-1));
+        actor(npc, colors::LIVE_NPC, &name);
+    }
+    if let Some(partner) = &view.partner {
+        actor(partner, colors::LIVE_PARTNER, text::LIVE_PARTNER);
+    }
+    if let Some(player) = &view.player {
+        actor(player, colors::LIVE_PLAYER, text::LIVE_PLAYER);
     }
 }
 

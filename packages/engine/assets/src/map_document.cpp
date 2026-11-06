@@ -521,6 +521,11 @@ MapAssetIds findMapAssets(const VirtualFileSystem& vfs, std::string_view mapId) 
 }
 
 core::Result<MapDocument> loadMapDocument(const VirtualFileSystem& vfs, std::string_view mapId) {
+  return loadMapDocument(vfs, mapId, {});
+}
+
+core::Result<MapDocument> loadMapDocument(const VirtualFileSystem& vfs, std::string_view mapId,
+                                          std::span<const MapPatchText> extra) {
   auto id = mapDataId(mapId);
   if (!id) {
     return std::unexpected{core::Error{std::format("map '{}': {}", mapId, id.error().message)}};
@@ -535,6 +540,7 @@ core::Result<MapDocument> loadMapDocument(const VirtualFileSystem& vfs, std::str
     return std::unexpected{
         core::Error{std::format("map '{}': {}", mapId, patches.error().message)}};
   }
+  patches->insert(patches->end(), extra.begin(), extra.end());
   auto document = patches->empty() ? parseMapDocument(text) : patchMapDocument(text, *patches);
   if (!document) {
     return std::unexpected{

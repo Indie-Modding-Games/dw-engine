@@ -10,6 +10,9 @@
 /* The enemies' dots (the option minimap_enemies): the UI puts one <img class="marker enemy"> per enemy in view in
    #minimap-enemies, placed in percent of the disc as the partner; the layer covers the disc and lies under the partner
    and the player, which come after it. */
+/* The items on the ground (the option minimap_items) the same way, one <img class="marker item"> each in
+   #minimap-items, which lies under the enemies' layer. */
+#minimap-items,
 #minimap-enemies {
 	position: absolute;
 	left: 0;

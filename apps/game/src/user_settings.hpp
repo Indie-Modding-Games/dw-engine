@@ -80,6 +80,9 @@ struct UserSettings {
   // The enemies on the minimap (minimap_enemies: true, false; minimap_enemies.hpp): a dot for each
   // NPC on the map that can start a battle; on when not chosen yet.
   std::optional<bool> minimapEnemies = std::nullopt;
+  // The items on the minimap (minimap_items: true, false; minimap_items.hpp): a mark for each item
+  // lying on the map's ground; on when not chosen yet.
+  std::optional<bool> minimapItems = std::nullopt;
   // The characters' shadows (shadows: off, round, sun; graphics_options.hpp): none, the original's
   // round ones, or those with a soft one cast by the sun; sun when not chosen.
   std::optional<std::string> shadows = std::nullopt;
