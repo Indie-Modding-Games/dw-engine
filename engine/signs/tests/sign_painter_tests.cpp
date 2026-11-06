@@ -434,7 +434,8 @@ TEST_CASE("map signs read the packs' overlays per language and keep the painting
                  "signs:\n  - {id: neon, region: [0, 0, 32, 16], text: signs.neon, clear: none}\n");
   memory.addFile("game/signs/es/test01.yaml",
                  "signs:\n  - {id: mat, region: [0, 16, 32, 16], text: signs.mat, clear: none}\n");
-  auto files = dwe::assets::VirtualFileSystem::mount(memory, {"game"});
+  auto files =
+      dwe::assets::VirtualFileSystem::mount(memory, std::vector<std::filesystem::path>{"game"});
   REQUIRE_MESSAGE(files.has_value(), files.error().message);
 
   MapSigns signs{*files};
