@@ -329,6 +329,10 @@ public:
   // script closes an area (map_collision.c: setImpassableRect); cells outside the grid are left
   // alone.
   void blockCells(assets::CollisionCell from, std::int32_t width, std::int32_t height);
+  // Puts another collision grid in place of the current map's without entering it again (a map
+  // editor's preview of its collision). The cells blockCells closed open again until the next map
+  // entry; a trigger under the player fires only once stepped onto again.
+  void setCollision(const assets::MapCollision& collision);
 
   // The current map's region lists, which say how the partner feels about the map.
   [[nodiscard]] const assets::MapRegions& regions() const { return regions_; }
