@@ -58,9 +58,13 @@ std::string storyStateJson(const StoryStateView& view) {
   out += view.mapScript ? std::to_string(*view.mapScript) : "null";
   out += R"(,"sections":[)";
   first = true;
-  for (const game::story::SectionRef& section : view.sections) {
-    std::format_to(std::back_inserter(out), R"({}{{"script":{},"section":{}}})", first ? "" : ",",
-                   section.script, section.section);
+  for (const auto& [section, lines] : view.sections) {
+    std::format_to(std::back_inserter(out), R"({}{{"script":{},"section":{},"lines":[)",
+                   first ? "" : ",", section.script, section.section);
+    for (std::size_t index = 0; index < lines.size(); ++index) {
+      std::format_to(std::back_inserter(out), "{}{}", index == 0 ? "" : ",", lines[index]);
+    }
+    out += "]}";
     first = false;
   }
   out += R"(]},"stage":)";

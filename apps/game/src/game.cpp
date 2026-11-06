@@ -1208,6 +1208,13 @@ int runGame(const Options& requested) {
               }
               return play->storySet(write);
             },
+            .storyRun = [&](const StoryRun& run) -> core::Result<void> {
+              PlaySession* play = flow.playing();
+              if (play == nullptr) {
+                return core::fail("no game is being played");
+              }
+              return play->storyRun(run);
+            },
         },
         options.controlPaused);
   }

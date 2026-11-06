@@ -182,7 +182,26 @@ public:
   // a section runs, as its coroutine runs in the loaded modules.
   core::Result<void> reloadScripts();
 
+  // A tool's one-shot section (the control channel's story_run with code,
+  // docs/guides/control-remoto.md): `source` is a story patch for the section's script (the shape
+  // of StoryPatchFolder's files) that has the section. The next start of that section runs the
+  // source's function instead of the packs' (with theirs as `original`), once; it stays loaded
+  // until that section closes. It loads in the environment of `pack`, or of the pack that gives
+  // the script's module (the first pack when none does). Fails when the source does not load, is
+  // for another script or lacks the section, and while a staged section runs.
+  core::Result<void> stageSection(game::story::SectionRef section, std::string_view source,
+                                  std::optional<std::string_view> pack = std::nullopt);
+  // Drops a staged section that has not started.
+  void unstageSection() {
+    if (staged_ && !staged_->handle) {
+      staged_.reset();
+    }
+  }
+  // Whether a staged section waits for its start.
+  [[nodiscard]] bool hasStagedSection() const { return staged_.has_value() && !staged_->handle; }
+
   core::Result<game::story::SectionHandle> start(game::story::SectionRef section) override;
+  [[nodiscard]] std::vector<std::int32_t> lines(game::story::SectionHandle handle) const override;
   game::story::SectionStep resume(game::story::SectionHandle handle,
                                   game::story::ResumeValue value) override;
   void close(game::story::SectionHandle handle) override;
@@ -194,6 +213,13 @@ private:
     std::uint16_t script = 0;
   };
   using SectionKey = std::pair<std::uint16_t, std::uint16_t>;
+
+  // A section a tool sent (stageSection), and the handle it runs as once started.
+  struct StagedSection {
+    game::story::SectionRef ref;
+    script::ScriptModule module;
+    std::optional<game::story::SectionHandle> handle;
+  };
 
   // A section that waits on a task, and the subroutine calls it waits in.
   struct WaitingTask {
@@ -219,6 +245,7 @@ private:
   std::shared_ptr<game::story::StoryTask> pendingTask_;
   std::map<game::story::SectionHandle, WaitingTask> tasks_;
   bool patchesLoaded_ = false;
+  std::optional<StagedSection> staged_;
   std::vector<Patch> patches_;
   // The winning patch of each patched section, an index in patches_.
   std::map<SectionKey, std::size_t> patchedSections_;

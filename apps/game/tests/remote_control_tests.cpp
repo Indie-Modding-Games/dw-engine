@@ -26,6 +26,7 @@ using dwe::app::parseControlRequest;
 using dwe::app::parseJson;
 using dwe::app::RemoteControl;
 using dwe::app::selectJson;
+using dwe::app::StoryRun;
 using dwe::app::StoryWrite;
 using dwe::app::writeJson;
 using dwe::platform::KeyChanged;
@@ -49,6 +50,7 @@ struct FakeGame {
   bool overlayOn = false;
   std::vector<std::string> previews;
   std::vector<StoryWrite> writes;
+  std::vector<StoryRun> runs;
   bool storyBusy = false;
 
   ControlHost host() {
@@ -144,6 +146,13 @@ struct FakeGame {
             return dwe::core::fail("a story script is running");
           }
           writes.push_back(write);
+          return {};
+        },
+        .storyRun = [this](const StoryRun& run) -> dwe::core::Result<void> {
+          if (storyBusy) {
+            return dwe::core::fail("a story script is running");
+          }
+          runs.push_back(run);
           return {};
         },
     };
@@ -606,6 +615,47 @@ TEST_CASE("story_set writes a trigger or a variable, and says why it cannot") {
   CHECK(replies[2] == R"({"id":3,"ok":false,"error":"story_set: a story script is running"})");
   REQUIRE(game.writes.size() == 2);
   CHECK(game.writes[1].value == 7);
+}
+
+TEST_CASE("story_run starts a section, with code sent for it, and says why it cannot") {
+  const auto request = [](std::string_view line) { return parseControlRequest(line).request; };
+  const auto plain = request(R"({"cmd":"story_run","script":12,"section":81})");
+  REQUIRE(plain);
+  CHECK(plain->kind == ControlRequest::Kind::StoryRun);
+  CHECK(plain->run.script == 12);
+  CHECK(plain->run.section == 81);
+  CHECK_FALSE(plain->run.code);
+  CHECK_FALSE(plain->run.pack);
+  const auto sent =
+      request(R"({"cmd":"story_run","script":1,"section":2,"code":"return {}","pack":"my_mod"})");
+  REQUIRE(sent);
+  CHECK(sent->run.code == "return {}");
+  CHECK(sent->run.pack == "my_mod");
+  CHECK_FALSE(request(R"({"cmd":"story_run","script":1,"section":2,"code":null})")->run.code);
+
+  const auto problem = [&](std::string_view line) {
+    const auto parsed = request(line);
+    REQUIRE_FALSE(parsed);
+    return parsed.error().message;
+  };
+  CHECK(problem(R"({"cmd":"story_run","section":1})").contains("'script' is missing"));
+  CHECK(problem(R"({"cmd":"story_run","script":1})").contains("'section' is missing"));
+  CHECK(problem(R"({"cmd":"story_run","script":1,"section":65536})").contains("0 to 65535"));
+  CHECK(problem(R"({"cmd":"story_run","script":1,"section":1,"code":""})").contains("'code'"));
+
+  FakeGame game;
+  RemoteControl control{game.host()};
+  control.receive(1, R"({"id":1,"cmd":"story_run","script":12,"section":81})");
+  control.receive(1, R"({"id":2,"cmd":"story_run","script":1,"section":2,"code":"return {}"})");
+  game.storyBusy = true;
+  control.receive(1, R"({"id":3,"cmd":"story_run","script":1,"section":2})");
+  const auto replies = lines(control);
+  REQUIRE(replies.size() == 3);
+  CHECK(replies[0] == R"({"id":1,"ok":true,"script":12,"section":81,"sent":false})");
+  CHECK(replies[1] == R"({"id":2,"ok":true,"script":1,"section":2,"sent":true})");
+  CHECK(replies[2] == R"({"id":3,"ok":false,"error":"story_run: a story script is running"})");
+  REQUIRE(game.runs.size() == 2);
+  CHECK(game.runs[1].code == "return {}");
 }
 
 } // namespace

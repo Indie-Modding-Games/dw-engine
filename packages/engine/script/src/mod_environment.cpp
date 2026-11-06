@@ -54,4 +54,14 @@ core::Result<ScriptModule> ModEnvironment::loadModule(const assets::VirtualFileS
   return ScriptModule{*vm_, index_, *reference, std::format("{}:{}", mod.pack, id.str())};
 }
 
+core::Result<ScriptModule> ModEnvironment::loadModuleSource(std::string_view source,
+                                                            std::string_view name) {
+  const detail::ModState& mod = vm_->mods[index_];
+  auto reference = detail::loadInEnvironment(*vm_, mod.tables, mod.memoryOwner, source, name);
+  if (!reference) {
+    return std::unexpected{reference.error()};
+  }
+  return ScriptModule{*vm_, index_, *reference, std::format("{}:{}", mod.pack, name)};
+}
+
 } // namespace dwe::script

@@ -1797,6 +1797,29 @@ core::Result<void> PlaySession::storySet(const StoryWrite& write) {
   return applyStoryWrite(story->state(), write);
 }
 
+core::Result<void> PlaySession::storyRun(const StoryRun& run) {
+  session::StoryAdapter* story = game_.systems.story;
+  game::story::StoryRunner* runner = story != nullptr ? story->runner() : nullptr;
+  if (runner == nullptr || story->host() == nullptr) {
+    return core::fail(std::string{messages::NoStory});
+  }
+  if (story->scriptRunning()) {
+    return core::fail("a story script is running");
+  }
+  const game::story::SectionRef section{.script = run.script, .section = run.section};
+  if (run.code) {
+    if (auto staged = story->host()->stageSection(section, *run.code, run.pack); !staged) {
+      return staged;
+    }
+  }
+  if (runner->request(section, game::story::StartTiming::NextFrame) !=
+      game::story::RequestOutcome::Accepted) {
+    story->host()->unstageSection();
+    return core::fail("the story did not take the section");
+  }
+  return {};
+}
+
 ControlLive PlaySession::live() const {
   ControlLive live;
   const game::field::Field& field = scene_->field();
@@ -1848,7 +1871,7 @@ StoryStateView PlaySession::storyStateView() const {
     view.stage = std::string{story->lock().stage()};
     if (const game::story::StoryRunner* runner = story->runner()) {
       view.mapScript = runner->mapScript();
-      view.sections = runner->runningSections();
+      view.sections = runner->runningSectionLines();
     }
   }
   if (const render::MapCamera* camera = scene_->camera()) {

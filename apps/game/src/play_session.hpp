@@ -268,6 +268,10 @@ public:
   // The control channel's story_set: a trigger or a variable written; refused while a story script
   // runs.
   core::Result<void> storySet(const StoryWrite& write);
+  // The control channel's story_run: the section asked for at the next frame of the story, with
+  // the code sent in place of the packs' (StoryLuaHost::stageSection); refused while a story
+  // script runs.
+  core::Result<void> storyRun(const StoryRun& run);
   // Where the characters stand and the view, for the control channel's live, in the mode "field"
   // or "battle"; a movie or the opening's questions over it, and the log, are the caller's.
   [[nodiscard]] ControlLive live() const;

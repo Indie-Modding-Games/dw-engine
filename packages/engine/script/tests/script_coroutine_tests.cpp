@@ -411,3 +411,35 @@ TEST_CASE("a coroutine can get another module's function as its first argument")
   CHECK(std::holds_alternative<CoroutineFinished>(alone->resume()));
   CHECK(reported == std::vector<std::string>{"no original"});
 }
+
+TEST_CASE("a waiting coroutine says the lines it waits at, the innermost first") {
+  Story story{"local function inner()\n"
+              "  test.wait(1)\n"
+              "end\n"
+              "return { sections = { [3] = function()\n"
+              "  test.wait(0)\n"
+              "  inner()\n"
+              "end } }"};
+  const ScriptModule module = story.load();
+  ScriptCoroutine section = sectionOf(module, 3);
+  CHECK(section.lines().empty());
+  waiting(section.resume());
+  CHECK(section.lines() == std::vector<std::int32_t>{5});
+  waiting(section.resume());
+  CHECK(section.lines() == std::vector<std::int32_t>{2, 6});
+  finished(section.resume());
+  CHECK(section.lines().empty());
+}
+
+TEST_CASE("a module loads from source no file holds, in its pack's environment") {
+  Story story{"return {}"};
+  auto environment = environmentOf(*story.vm, "my_mod");
+  auto module = environment.loadModuleSource(
+      "return { sections = { [1] = function() test.report('sent') end } }", "sent_section");
+  REQUIRE_MESSAGE(module.has_value(), module.error().message);
+  CHECK(module->name() == "my_mod:sent_section");
+  ScriptCoroutine section = sectionOf(*module, 1);
+  finished(section.resume());
+  CHECK(*story.reported == std::vector<std::string>{"sent"});
+  CHECK_FALSE(environment.loadModuleSource("return {", "broken"));
+}

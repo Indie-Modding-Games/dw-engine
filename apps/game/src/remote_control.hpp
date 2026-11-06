@@ -34,6 +34,16 @@ namespace dwe::app {
 // (ControlSocket): each gets the replies to its own requests only, while the held keys, the
 // presses and the pause are the game's, shared by all of them.
 
+// story_run: a section of a story script run as a cell or a talk would (the map editor's play),
+// or, with `code`, a story patch's text for that script whose function for the section runs once
+// in its place (StoryLuaHost::stageSection), in the environment of `pack` when given.
+struct StoryRun {
+  std::uint16_t script = 0;
+  std::uint16_t section = 0;
+  std::optional<std::string> code;
+  std::optional<std::string> pack;
+};
+
 struct ControlRequest {
   enum class Kind : std::uint8_t {
     Status,       // status: tick, paused, mode, map, held keys
@@ -60,6 +70,7 @@ struct ControlRequest {
     PreviewClear, // preview_clear: the preview dropped, the map as the packs give it
     LogTail,      // log_tail {since?}: the warnings and errors logged after `since`
     StorySet,     // story_set {kind, number, value}: a story trigger or variable written
+    StoryRun,     // story_run {script, section, code?, pack?}: a story section run, or code for it
   };
   Kind kind = Kind::Status;
   // The keys of press, hold and release, by name (keyNamed), in the order given.
@@ -82,6 +93,8 @@ struct ControlRequest {
   std::optional<std::uint64_t> since;
   // story_set: the trigger or variable written.
   StoryWrite story;
+  // story_run: the section run.
+  StoryRun run;
 };
 
 // A request line read: its id, echoed by the reply even when the rest is wrong, and the request.
@@ -210,6 +223,8 @@ struct ControlHost {
   // The warnings and errors kept, those after `since` (all without it).
   std::function<ControlLogTail(std::optional<std::uint64_t> since)> logTail;
   std::function<core::Result<void>(const StoryWrite&)> storySet;
+  // Starts a story section (with the code sent, if any); refused while a story script runs.
+  std::function<core::Result<void>(const StoryRun&)> storyRun;
 };
 
 // A reply line and the client it goes to.

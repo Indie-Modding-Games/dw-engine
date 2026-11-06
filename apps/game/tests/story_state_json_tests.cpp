@@ -21,7 +21,8 @@ TEST_CASE("story_state lists the set triggers, the non-zero variables, the scrip
   REQUIRE(view.state.setVariable(255, 1));
   view.busy = true;
   view.mapScript = 5;
-  view.sections = {{.script = 5, .section = 2}, {.script = 0, .section = 40}};
+  view.sections = {{.ref = {.script = 5, .section = 2}, .lines = {12, 4}},
+                   {.ref = {.script = 0, .section = 40}, .lines = {}}};
   view.stage = "e1";
   view.camera = StoryCameraView{.eye = {0.0F, 2000.0F, -3000.5F},
                                 .target = {0.0F, 0.0F, 0.0F},
@@ -32,16 +33,19 @@ TEST_CASE("story_state lists the set triggers, the non-zero variables, the scrip
                                 .scroll = {0.0F, 32.0F}};
 
   const std::string text = storyStateJson(view);
-  CHECK(text == R"({"map":"twna01","triggers":[3,799],"variables":{"12":4,"255":1},)"
-                R"("script":{"busy":true,"map_script":5,"sections":[{"script":5,"section":2},)"
-                R"({"script":0,"section":40}]},"stage":"e1","camera":{"eye":[0,2000,-3000.5],)"
-                R"("target":[0,0,0],"focal_length":300,"background":[512,480],)"
-                R"("viewport":[1280,720],"scale":2.5,"scroll":[0,32]}})");
+  CHECK(
+      text ==
+      R"({"map":"twna01","triggers":[3,799],"variables":{"12":4,"255":1},)"
+      R"("script":{"busy":true,"map_script":5,"sections":[{"script":5,"section":2,)"
+      R"("lines":[12,4]},{"script":0,"section":40,"lines":[]}]},"stage":"e1","camera":{"eye":[0,2000,-3000.5],)"
+      R"("target":[0,0,0],"focal_length":300,"background":[512,480],)"
+      R"("viewport":[1280,720],"scale":2.5,"scroll":[0,32]}})");
   // It is JSON the channel can pick parts of.
   const auto parsed = parseJson(text);
   REQUIRE(parsed);
   CHECK(writeJson(*selectJson(*parsed, "variables.12")) == "4");
   CHECK(writeJson(*selectJson(*parsed, "script.sections.0.section")) == "2");
+  CHECK(writeJson(*selectJson(*parsed, "script.sections.0.lines.1")) == "4");
 }
 
 TEST_CASE("story_state of a fresh story is empty, with nulls for what is missing") {

@@ -302,6 +302,20 @@ ScriptCoroutine::~ScriptCoroutine() {
   }
 }
 
+std::vector<std::int32_t> ScriptCoroutine::lines() const {
+  std::vector<std::int32_t> lines;
+  if (thread_ == nullptr || !started_) {
+    return lines;
+  }
+  lua_Debug frame{};
+  for (int level = 0; lua_getstack(thread_, level, &frame) != 0; ++level) {
+    if (lua_getinfo(thread_, "l", &frame) != 0 && frame.currentline >= 0) {
+      lines.push_back(frame.currentline);
+    }
+  }
+  return lines;
+}
+
 void ScriptCoroutine::close(lua_State* from) {
   detail::Budget& budget = vm_->budget;
   // A coroutine can only be closed while it is suspended, never from inside its own run.
