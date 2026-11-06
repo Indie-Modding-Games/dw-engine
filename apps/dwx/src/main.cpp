@@ -11,6 +11,7 @@
 #include "dwx.hpp"
 #include "evolution_guide.hpp"
 #include "export_images.hpp"
+#include "script_warps_command.hpp"
 #include "story_conversion.hpp"
 #include "upscale.hpp"
 #include "validate.hpp"
@@ -100,6 +101,20 @@ void printUsage() {
       "      Writes every species' evolution requirements as Markdown tables, from the evolution and");
   std::println(stderr,
                "      species tables of the content. An existing output file is never replaced.");
+  std::println(
+      stderr,
+      "  dwx script-warps <content folder> [--with <folder>]... [--rules <id>] [-o <file>]");
+  std::println(
+      stderr,
+      "      Derives field/script_warps from the story Lua of the packs (story/<n>.lua and its line");
+  std::println(
+      stderr,
+      "      map), so map changes a mod edits in Lua reach the field. With -o writes it there; without,");
+  std::println(
+      stderr,
+      "      compares it with the packs' field/script_warps (exit 1 when they differ). The transport");
+  std::println(stderr,
+               "      menu's destinations come from rules/<id>/bird_transport (default original).");
   std::println(stderr, "  dwx pack <pack folder> -o <file.pak>");
   std::println(stderr,
                "      Writes a pack as a single .pak archive and checks that it reads back.");
@@ -177,6 +192,35 @@ int runExportImages(std::span<char*> options) {
   return exportImagesCommand(folders, *out, language);
 }
 
+int runScriptWarps(std::span<char*> options) {
+  std::vector<std::filesystem::path> folders(1);
+  bool hasContent = false;
+  std::optional<std::filesystem::path> out;
+  std::string rules{DefaultTransportRules};
+  for (std::size_t i = 0; i < options.size(); ++i) {
+    const std::string_view option{options[i]};
+    const bool hasValue = i + 1 < options.size();
+    if ((option == "-o" || option == "--out") && hasValue) {
+      out = options[++i];
+    } else if (option == "--with" && hasValue) {
+      folders.emplace_back(options[++i]);
+    } else if (option == "--rules" && hasValue) {
+      rules = options[++i];
+    } else if (!hasContent && !option.starts_with('-')) {
+      folders.front() = option;
+      hasContent = true;
+    } else {
+      printUsage();
+      return ExitFailed;
+    }
+  }
+  if (!hasContent) {
+    printUsage();
+    return ExitFailed;
+  }
+  return scriptWarpsCommand(folders, out, rules);
+}
+
 } // namespace
 
 } // namespace dwe::dwx
@@ -249,6 +293,9 @@ int main(int argc, char** argv) {
   }
   if (command == "export-images") {
     return runExportImages(arguments.subspan(2));
+  }
+  if (command == "script-warps") {
+    return runScriptWarps(arguments.subspan(2));
   }
   if (command == "upscale" && arguments.size() == 6) {
     const std::string_view option{arguments[4]};

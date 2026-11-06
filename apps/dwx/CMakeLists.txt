@@ -33,6 +33,7 @@ dwe_add_module(dwx
         src/padding_extractor.cpp
         src/script_extractors.cpp
         src/script_maps.cpp
+        src/script_warps_command.cpp
         src/story_conversion.cpp
         src/table_extractors.cpp
         src/chart_extract.cpp
