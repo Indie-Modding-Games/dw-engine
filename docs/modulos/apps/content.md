@@ -5,6 +5,14 @@ Cómo montan los paquetes las aplicaciones (`dwe::content::GameContent`): la car
 sola VFS ([vfs](../../architecture/vfs.md)). Lo usan el juego y `dwe-sim`, así que una simulación ve los mismos
 paquetes que una partida.
 
+`disc_install.hpp` es el contenido del propio jugador: en el primer arranque `DiscInstall` lee su imagen del disco con
+`dwx identify` y `dwx extract --progress` en `content.partial/` de la carpeta de datos del usuario y mueve los
+paquetes a `content/` al terminar, con un `install.yaml` (`InstallRecord`: versión del extractor e imagen) para leerla
+otra vez sin preguntar cuando cambia el extractor (`installIsOutdated`). Sin `--content`, `defaultContentFolder` usa
+un `./content` con paquete base o, si no hay, el instalado; `teamPacksFolder` busca los paquetes del equipo junto al
+ejecutable (`packs/`, o `Resources/packs/` en macOS) o, en un build de desarrollo, en el árbol de fuentes
+([beta en Linux](../../guides/beta-linux.md)).
+
 Los paquetes del juego (la carpeta de contenido, `packs/` y los del equipo) tienen que montar todos y pedir una API de
 Lua que el motor tiene (`assets::checkPackApi`); si no, montar falla. Un mod que no puede montar (un `pack.yaml` roto,
 una dependencia que falta, otra versión de la API) se deja fuera y va al log, y los demás se montan igual:

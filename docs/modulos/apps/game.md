@@ -18,19 +18,21 @@ fallo. Con `--load` la opción no cambia nada: la partida cargada sigue con el e
 El campo dibuja al compañero con el modelo de su especie: `digimon/<especie>/model` del paquete base, con las
 animaciones de `models/partner` del paquete `game`, que tienen los mismos ids en todos los compañeros
 ([modelos](../../architecture/models.md)). Al empezar, una partida cargada lo dibuja con la especie guardada; después,
-el juego mira cada fotograma los eventos del compañero (`GameSession::takePartnerEvents`, en `partner_events.cpp`):
-`Evolved` (una evolución, la forma virus o su vuelta) y `Reborn` cargan el modelo de la especie nueva
-(`FieldScene::showPartnerSpecies`). El resto de eventos aún no se ven en pantalla (las reacciones del HUD llegan con
-los guiones de los mapas) y solo se escriben en el log de depuración. Si el modelo de una especie no se puede cargar,
-el compañero sigue con el que tenía y el log lo avisa.
+el juego toma cada fotograma los eventos del compañero (`GameSession::takePartnerEvents`). La
+[escena de evolución](#la-escena-de-evolución) y la de [muerte y renacer](#muerte-y-renacer) se quedan los suyos y
+`showPartnerEvents` (`partner_events.cpp`) mira el resto: `Evolved` (una evolución, la forma virus o su vuelta) y
+`Reborn` cargan el modelo de la especie nueva (`FieldScene::showPartnerSpecies`) y `GotSick` sale en el
+[aviso de premio](#aviso-de-premio) (`AwardScreen::noteSickness`). Los demás no se ven en pantalla y solo se escriben
+en el log de depuración. Si el modelo de una especie no se puede cargar, el compañero sigue con el que tenía y el log
+lo avisa.
 
 `evolve("<especie>")`, en la consola y en los pasos `script` de las rutas, hace evolucionar al compañero como un guion
-de mapa (`EvolutionAdapter::evolveByScript`); es una ayuda de depuración hasta que corran los guiones. La ruta
+de mapa (`EvolutionAdapter::evolveByScript`, el mismo camino que usan los guiones); es una ayuda de depuración. La ruta
 `tests/autotest/route-evolve.yaml` lo usa para comprobar que el modelo cambia (`wait: {partner_model: ...}`).
 
-Hueco: el radio de colisión y las velocidades de andar y correr del compañero siguen siendo los de `field/rules`
-(medidos en el compañero inicial), no los de la especie nueva (`DIGIMON_DATA[tipo].radius` y la raíz de sus
-animaciones).
+El radio de colisión sí es el de la especie (el de la tabla de especies): `showPartnerSpecies` lo pasa al campo
+(`Field::setPartnerRadius`). Hueco: las velocidades de andar y correr del compañero siguen siendo las de `field/rules`
+(medidas en el compañero inicial), no las de la raíz de las animaciones de la especie nueva.
 
 ## Dar un objeto en el campo
 
@@ -389,7 +391,8 @@ al azar en cada fotograma.
   `ENDI_setParticleBase`, la subida (`rise_`); `ENDI_tickEndingParticles` está vacía en el original (no aplica).
 - Suposición: el orden del primer fotograma (el arranque y el primer avance van en fotogramas distintos) y las cifras
   están sacadas del decomp; falta medirlas en el original (`_work/tmp/measure-queue.md`).
-- Falta: la sombra del jugador, que el motor aún no dibuja (`PLAYER_SHADOW_ENABLED = 0`).
+- Diferencia: el original quita la sombra del jugador al empezar (`PLAYER_SHADOW_ENABLED = 0`); dwe la sigue
+  dibujando mientras el jugador no se ha apagado del todo (`FieldStage::playerFade` mayor que 0).
 
 ## Muerte y renacer
 
@@ -1051,7 +1054,7 @@ isla», «Island map» en inglés, de las opciones; guardado en los ajustes del 
 cerrando un mapa abierto.
 
 - **El dibujo**: el original no trae ninguna imagen de la isla, así que el motor la pinta al abrirla
-  (`ui::paintWorldMap`, `engine/ui/world_map.hpp`) desde `ui/world_map/layout.yaml` del paquete del juego (esquema
+  (`ui::paintWorldMap`, `dwe/ui/world_map.hpp`) desde `ui/world_map/layout.yaml` del paquete del juego (esquema
   `world_map_layout`): cada zona con su centro, su radio y su color en un lienzo de 1000 × 640, y los caminos entre
   zonas. La tierra es la unión suave de las zonas con una costa ondulada y entintada; cada punto de tierra es de la zona
   más cercana (bordes punteados), con bajíos, ondas en el mar y caminos a trazos. Las zonas sin visitar se pintan
