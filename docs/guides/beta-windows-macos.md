@@ -169,7 +169,7 @@ Windows en Ubuntu (Windows por compilación cruzada), el juego para Apple silico
 manifiestos nombran siempre los cuatro ordenadores. Cada ordenador se compila por su cuenta: si uno falla, los demás
 terminan, el resumen de la ejecución dice cuál falta y no se publica nada hasta que *Re-run failed jobs* lo complete.
 Qué comprueba y cómo una versión de prueba pasa a estable: [Publicar una
-versión](../modulos/apps/launcher.md#publicar-una-version). `scripts/release_local.sh` sigue siendo el respaldo para
+versión](../modulos/apps/launcher.md#publicar-una-versión). `scripts/release_local.sh` sigue siendo el respaldo para
 Linux y Windows desde el PC del responsable: [Publicar desde este
 PC](../modulos/apps/launcher.md#publicar-desde-este-pc).
 

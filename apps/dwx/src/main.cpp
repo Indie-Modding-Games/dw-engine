@@ -9,6 +9,7 @@
 
 #include "disc_cache.hpp"
 #include "dwx.hpp"
+#include "evolution_guide.hpp"
 #include "export_images.hpp"
 #include "story_conversion.hpp"
 #include "upscale.hpp"
@@ -93,6 +94,12 @@ void printUsage() {
   std::println(
       stderr,
       "      names in the language given (default en). --with reads the packs of another folder too.");
+  std::println(stderr, "  dwx evolution-guide <content folder> <new-output.md>");
+  std::println(
+      stderr,
+      "      Writes every species' evolution requirements as Markdown tables, from the evolution and");
+  std::println(stderr,
+               "      species tables of the content. An existing output file is never replaced.");
   std::println(stderr, "  dwx pack <pack folder> -o <file.pak>");
   std::println(stderr,
                "      Writes a pack as a single .pak archive and checks that it reads back.");
@@ -236,6 +243,9 @@ int main(int argc, char** argv) {
       const std::filesystem::path out{arguments[4]};
       return command == "cook" ? cook(folder, out) : pack(folder, out);
     }
+  }
+  if (command == "evolution-guide" && arguments.size() == 4) {
+    return evolutionGuideCommand(arguments[2], arguments[3]);
   }
   if (command == "export-images") {
     return runExportImages(arguments.subspan(2));

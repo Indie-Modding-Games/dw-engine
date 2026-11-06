@@ -36,7 +36,9 @@ if (run.finished()) { ... }                                // TRAINING_COMPLETE:
   (o empuja el último rodillo más allá de un casi acierto). La sección `slots` tiene los rodillos, las ayudas, los
   pagos y los sonidos.
 - **Puertos** (`GymPorts`): todo lo que el curso pide al juego (caminar, animar, mover objetos del mapa, nubes,
-  partículas, sonidos, cámara y la recompensa). Los implementa `apps/game` (`GymScreen`).
+  partículas, sonidos, cámara y la recompensa). Lo común sobre el campo y la partida es
+  `session::GymFieldPorts` ([session](../apps/session.md#gimnasio-en-el-campo-gymfieldports)); `apps/game`
+  (`GymScreen`) añade lo que se dibuja.
   Como la historia retiene el campo mientras espera al gimnasio, `GymScreen` mueve a los actores
   igual que un guion: caminan a la casilla del puesto a la velocidad de su clip, giran, animan y la
   cámara se desplaza al puesto en los cuadros del curso. Las nubes y las

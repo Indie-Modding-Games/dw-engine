@@ -175,7 +175,7 @@ instrucciones en un tick. Los bytes que siguen a la última instrucción ejecuta
 | Posición | Unidades del modelo (100 = una casilla de colisión) |
 | Matriz local | `[R·S \| posición]`; la del mundo es la del padre por la local |
 
-La textura animada por código de algunos tipos (`anim.c: animateEntityTexture`) no está en el flujo: las llamas de Meramon, BlueMeramon, DemiMeramon, Birdramon, Saberdramon, Flarerizamon, Darkrizamon y las especies enemigas gemelas (mera, emer, blmr, bird, sabd, ebir, dkrz, flar, puti) son cuatro franjas de 32 filas a la izquierda de su textura, y el juego copia una de las tres de abajo sobre la de arriba en los fotogramas pares (6: la 2; si no, 4: la 1; si no, la 0). La textura extraída ya trae las cuatro; el motor hace la copia en `apps/game/src/flame_texture.cpp` (ancho 120, 160, 64 o 176 texeles según la especie).
+La textura animada por código de algunos tipos (`anim.c: animateEntityTexture`) no está en el flujo: las llamas de `species_b`, `species_c`, `species_d`, `species_e`, `species_f`, `species_g`, `species_h` y las especies enemigas gemelas (mera, emer, blmr, bird, sabd, ebir, dkrz, flar, puti) son cuatro franjas de 32 filas a la izquierda de su textura, y el juego copia una de las tres de abajo sobre la de arriba en los fotogramas pares (6: la 2; si no, 4: la 1; si no, la 0). La textura extraída ya trae las cuatro; el motor hace la copia en `apps/game/src/flame_texture.cpp` (ancho 120, 160, 64 o 176 texeles según la especie).
 
 ## glTF
 

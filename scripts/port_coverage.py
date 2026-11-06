@@ -314,11 +314,14 @@ def render(functions: list[Function], config: dict) -> str:
 
 
 def anchor(title: str) -> str:
-    """The heading's id as the docs site (VitePress) makes it: accents off, punctuation and spaces to one dash."""
-    text = unicodedata.normalize("NFKD", title)
-    text = re.sub(r"[\u0300-\u036f]", "", text)
-    text = re.sub(r"[\s~`!@#$%^&*()\-_+=\[\]{}|\\;:\"'“”‘’<>,.?/]+", "-", text)
-    return re.sub(r"-{2,}", "-", text).strip("-").lower()
+    """The heading's id as the docs site makes it (githubSlug in docs/.vitepress/config.mjs, the same as
+    GitHub): accents kept, punctuation dropped, each space a dash."""
+    kept = "".join(
+        ch
+        for ch in title.strip().lower()
+        if unicodedata.category(ch)[0] in "LNM" or ch.isspace() or ch in "_-"
+    )
+    return re.sub(r"\s", "-", kept)
 
 
 def write_page(page: Path, generated: str, check: bool) -> int:

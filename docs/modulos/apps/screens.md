@@ -180,15 +180,15 @@ por punto de la barra (`game_menu.c: renderDigimonStatsView`: `renderBox(..., vi
 en proporción a su máximo del ruleset. Es una diferencia solo de aspecto y se queda.
 
 **Nombre largo en la ficha.** La caja del nombre del aspecto original cabe 12 letras. Con el
-[contenido oculto](game.md#contenido-oculto) Machinedramon tiene 13: `partner_menu/logic.lua` pone la clase `long` a
+[contenido oculto](game.md#contenido-oculto) `species_t` tiene 13: `partner_menu/logic.lua` pone la clase `long` a
 `#status-name` y la caja se ensancha (324dp en vez de 294dp) sin llegar a los títulos del perfil. Con un nombre de
 12 letras o menos nada cambia.
 
 **Retrato de una forma nueva.** El retrato de la ficha se coloca con la fila de crianza de la especie (`view`), que
-`game.cpp` lee de la tabla del disco. Las formas que añaden los parches del ruleset (Myotismon, Machinedramon) solo
+`game.cpp` lee de la tabla del disco. Las formas que añaden los parches del ruleset (`species_q`, `species_t`) solo
 están en la tabla parcheada, así que para ellas pide `PlaySession::raiseTable` (la del ruleset de la partida, con
 `ruleset::loadPatchedRaiseTable`), y lo escala como en el campo (`PlaySession::speciesScale`, el `field_scale` del
-parche: Machinedramon a 0,6). Un clip que su modelo no tiene juega el 0.
+parche: `species_t` a 0,6). Un clip que su modelo no tiene juega el 0.
 
 **Combate (decisiones del responsable de diseño, 2026-10-21).** El panel de HP de un enemigo lleva su nombre hasta que
 exista la escena 3D del combate; el título de la caja final («Has escapado.» al huir) se queda como desviación de
@@ -295,7 +295,7 @@ Paridad con la revisión de menús contra el original (QA-M, 2026-10-30). Estado
 | Entrada Dormir sin sueño (QA-M15) | `addGameMenu` (game_menu.c:1319): sin `PARTNER_PARA.condition & 1` la entrada 6 queda `disabled` = 1, y `renderGameMenu` la dibuja con `renderRectPolyFT4` bandera 1 (color 0x32 sobre 0x80). Medido en `02_menu_main`: `condition` 0, `MENU_OPTIONS[6].disabled` 1, el icono y el rótulo de Sleep sin ningún píxel claro (suma RGB < 250) frente a Scold (206, 214, 214). La captura de la revisión era de un compañero con sueño | La entrada sale oscurecida cuando el compañero no tiene sueño; sin cambios | Captura `menu-shot` | Igual |
 | Cifras de la fecha en la cabecera (QA-M16) | `renderDateDigits` (game_menu.c:1481): cifras de 8 × 12 de FI_INFO con la CLUT 0x7f10 (fila 508, paleta 12: blanco 0x739C con borde 0x25B4); alineadas a la izquierda y 9 píxeles entre cifras. Medido: con «Year 1 Day 12» el 1 del año empieza en x 138 y las del día en 200 y 209 | Paleta 12 (antes la 4, que pintaba el borde de negro y dejaba la cifra como una plantilla); recorte sin la primera columna de la celda, que trae píxeles de la cifra vecina; el día empieza a 312dp (x 200) | Capturas `menu-shot` contra `02_menu_main` con `DAY` = 11 | Igual |
 | Barra de la selección del cuadro de diálogo (QA-M21) | `scriptShowSelection` (script_textbox.c:1017): `cursorWidth` = la línea más larga que escribe `showTextbox` (sin el nombre del que habla) × 12 + 2, como mucho 240; `renderDialogueSelectionCursor` la dibuja en x − 1 y 2 píxeles sobre la fila (US), 13 de alto bajo la línea clara. Medido en el letrero del gimnasio (`guide_gym_sign_menu`): `cursorWidth` 86 («Explain», 7), la barra de x 34 a 119 y de y 181 a 194 | `story_textbox.cursor_columns` (`longestRow`) y la barra `.bar` de cada fila: el mismo ancho para todas las opciones, misma posición y alto; sin línea bajo el nombre. Las preguntas de la partida nueva no la publican y siguen con la barra bajo las palabras | `story_text_rows_tests.cpp`; captura `qa-gym` | Igual |
-| Nombre del que habla cuando varios NPC del mapa tienen su número de guion | `getSpeakerName` (script_value.c:60): `ENTITY_TABLE[scriptIdToEntityId(id)]->type`, la especie del NPC que está en el mapa con ese número. La tienda de objetos de la ciudad (room06) tiene un registro por tendero, todos con el número 5, y la cabecera pone el de la variable 25 | `StoryTextbox::speakerName` toma el registro del NPC puesto en el mapa (`FieldNpcs::recordOf`) y, si no hay ninguno, el primer registro del mapa con ese número; antes tomaba siempre el primero y Monochromon salía con el nombre de otro tendero | «a script id names the spawned NPC's record…» (`field_tests.cpp`); `route-etapa4-monochromon-ciudad.yaml` (la fila del nombre dice Monochromon) | Igual |
+| Nombre del que habla cuando varios NPC del mapa tienen su número de guion | `getSpeakerName` (script_value.c:60): `ENTITY_TABLE[scriptIdToEntityId(id)]->type`, la especie del NPC que está en el mapa con ese número. La tienda de objetos de la ciudad (room06) tiene un registro por tendero, todos con el número 5, y la cabecera pone el de la variable 25 | `StoryTextbox::speakerName` toma el registro del NPC puesto en el mapa (`FieldNpcs::recordOf`) y, si no hay ninguno, el primer registro del mapa con ese número; antes tomaba siempre el primero y `species_ai` salía con el nombre de otro tendero | «a script id names the spawned NPC's record…» (`field_tests.cpp`); `route-etapa4-monochromon-ciudad.yaml` (la fila del nombre dice `species_ai`) | Igual |
 | Sitio de la caja del menú y del cuadro de diálogo | `tickTriangleMenu` (game_menu.c:1336): `createMenuBox(0, -66, -80, 132, 110)` desde el centro, x 94 a 226 e y 40 a 150; `setupDialogueBox` (script_textbox.c:923): (-130, 42), 262 × 59, x 30 a 292 e y 162 a 221. Medido el 2026-10-31 (`02_menu_main`, `e1-cp09`): la línea clara de arriba del menú en la y 35 de la captura y la de abajo en la 150; la del diálogo en 166 y 226, x 32 y 289. La captura estira 224 líneas a 240 (y del juego = (y de captura) × 14 / 15 + 8): 41, 148, 163 y 219, justo las del decomp; por eso en la captura el menú parece 6 píxeles más arriba y el diálogo 4 más abajo | La caja del menú en 120dp (y 40) y el diálogo en 486dp (y 162), como el decomp; el diálogo estaba 1 píxel a la izquierda (centrado: x 29) y ahora empieza en x 30 (`margin-left: -390dp`) | Capturas a 1280x720 de `route-gamepad` (menú: líneas claras en y 123 y 444, x 448 y 829) y del diálogo de la llegada (y 489 y 657, x 256 y 1027 tras el cambio) | Igual |
 | Modelo del compañero en la página de estado | la vista de estadísticas (game_menu.c:2403) y `renderDigiviceEntity` (3953): `startAnimation(entity, 0)` en cada fotograma, el modelo quieto en su primer fotograma de reposo, junto a la caja de condición | Mejora: el modelo tiene su propio hueco (`#partner-portrait-clip`, sin tapar corazones ni barras) y hace el gesto de su primera necesidad con el orden del campo (`conditionAnimation`): enfermo o herido (dolor), baño, hambre, cansancio, sueño, enfado; sin necesidades, su reposo. El humor no lo cambia (`partner::statusAnimation`, `PartnerPortrait::play`) | `field_animation_tests.cpp` («the status page's model shows its first need, else stands»); capturas con y sin baño | Mejora |
 | Cifras de la página de estado | `renderNumber` (utils.c:217): alineadas a la derecha en columnas fijas de n cifras (8 píxeles por cifra en la versión US); barras de HP y MP sobre 9999 y las demás sobre 999 (game_menu.c, la barra de cada estadística) | Valores alineados a la derecha en columnas fijas en las dos pieles; la escala de las barras no cambia (por eso salen casi vacías con valores bajos, como en el original) | autotest `text_fit` a 1280 × 720, 1920 × 1080 y 1024 × 768 | Igual |
@@ -311,7 +311,7 @@ regla. Enseña quién vive ya en la ciudad y quién falta, con los puntos de pro
 - **Quién puede vivir en la ciudad.** Las especies que cuenta `recalculatePPandArena` con las reglas de la sección
   `city` del ruleset (`rules/original/city.yaml`): de la 3 a la 58 con nivel de novato o más en la tabla de especies, 50 en
   el original. Cada una está en la ciudad si su disparador 200 + especie está puesto. Suma su nivel menos 2 (novato 1,
-  campeón 2, definitivo 3), y Numemon, Sukamon y Nanimon suman 1: entre las 50, 100 puntos. Ninguna lista propia:
+  campeón 2, definitivo 3), y `species_ar`, `species_p` y `species_be` suman 1: entre las 50, 100 puntos. Ninguna lista propia:
   `game/story: cityResidents` recorre las reglas y `CityAdapter::residents` la sirve.
 - **Cabecera.** «Prosperidad» con el valor de la variable 1 tal como la leen los scripts (la que se rehace al cargar y
   al guardar) y «Residentes N/M»: las que se han unido y el total.
@@ -389,7 +389,7 @@ del juego (y de pantalla = (y de captura) × 14 / 15 + 8).
 ## Gramola
 
 La gramola que abre la rutina 9 (`shop/script_menu.c: openJukebox`, `createJukeboxMenu`, `tickJukeboxMenu`,
-`calculateMusicMenuStrings`); en la partida, Giromon en el restaurante (room05b). La sesión (`session::Jukebox`) decide
+`calculateMusicMenuStrings`); en la partida, `species_at` en el restaurante (room05b). La sesión (`session::Jukebox`) decide
 la lista, la marca y la música; la pantalla `jukebox` del juego (`apps/game: JukeboxScreen`) lo enseña. Medido con el
 original (la rutina forzada por RAM con la variable 254, sonando el tema de la ciudad; captura `original_list.png` de
 `_work/routes-e2/menus-qa/jukebox/`, y la ruta `jukebox.yaml` con sus capturas en `dwe/`).

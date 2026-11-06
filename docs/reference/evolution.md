@@ -3,6 +3,9 @@
 Cómo cambiaba de forma el partner en el juego original, según el decomp. Es el paso 1 del
 [ciclo de diseño](../conventions/design-cycle.md): describe el original, no lo que hará el mod.
 
+Para jugadores, la misma información en lenguaje llano y con consejos de crianza está en la guía
+[cómo funcionan las evoluciones](../guides/evoluciones.md).
+
 Marcas: **(comprobado)** quiere decir que se leyó en el código del decomp; **(suposición)** quiere decir que es una
 interpretación nuestra que falta confirmar. Los identificadores de Digimon son índices de la tabla de parámetros
 (`DIGIMON_DATA`); el nombre entre paréntesis sale del orden de esa tabla en `src/main/main.c`.
@@ -84,8 +87,8 @@ vez y el provisional no, el destino queda a 0 puntos; en el caso contrario recib
 - **Novato → campeón y campeón → definitivo:** entre los que aprueban, gana el que tiene la media más alta de los
   stats que su requisito pide (HP y MP divididos entre 10) (`getRookieEvolutionTarget`,
   `getChampionEvolutionTarget`) **(comprobado)**. Ver la rareza del acumulador más abajo.
-- **Forma de descarte:** si un novato no tiene ningún candidato y su contador llega a **96 horas**, evoluciona al
-  Digimon 11 (Numemon) **(comprobado)**. Los campeones sin candidato se quedan como están **(comprobado)**.
+- **Forma de descarte:** si un novato no tiene ningún candidato y su contador llega a **96 horas**, evoluciona a
+  la especie 11 (`species_ar`) **(comprobado)**. Los campeones sin candidato se quedan como están **(comprobado)**.
 
 ### Evoluciones especiales
 
@@ -96,17 +99,17 @@ Todas en `handleSpecialEvolutions`, salvo la de la suciedad. Solo se aplican si 
   - Con un 30 % de probabilidad se prueban tres casos fijos de campeón a otra forma, que piden disciplina 100 y
     además, según el caso, felicidad 100 y cansancio 0, 50 batallas o más, o defensa de 500 o más **(comprobado)**.
   - Con un 50 % de probabilidad, una forma de entrenamiento que despierta en la pantalla 1 evoluciona al Digimon 32
-    (Kunemon) **(comprobado)**. Que la pantalla 1 sea la de la cama de ese personaje es **(suposición)**.
+    (`species_bg`) **(comprobado)**. Que la pantalla 1 sea la de la cama de ese personaje es **(suposición)**.
 - **Tras elogiar o regañar** (modo 3, desde `partnerTickPraiseScold`), y también cuando un campeón llega justo a las
-  360 horas (`tickConditions`, sin aviso de regaño, así que el caso de Nanimon no aplica); en ese caso el resultado
+  360 horas (`tickConditions`, sin aviso de regaño, así que el caso de `species_be` no aplica); en ese caso el resultado
   sustituye al de la elección normal de esa misma comprobación, ver rarezas **(comprobado)**:
   - Dos campeones concretos con el contador exactamente en 200 horas: 30 % de evolucionar a otra forma concreta
     **(comprobado)**.
-  - Cualquier campeón con 240 horas o más: 50 % de evolucionar al Digimon 28 (Vademon) **(comprobado)**.
+  - Cualquier campeón con 240 horas o más: 50 % de evolucionar a la especie 28 (`species_bm`) **(comprobado)**.
   - Si se regaña a un novato que tenía disciplina 0 y felicidad −100, se activa un aviso y evoluciona al Digimon 53
-    (Nanimon) (`handlePraiseScold`) **(comprobado)**.
-- **Suciedad:** cada caca hecha en el suelo (`createPoopPile`) suma 1 a la barra de virus, salvo si ya es el
-  Digimon 39 (Sukamon). Con la barra en **16**, el partner evoluciona a Sukamon; antes se guardan sus stats y su forma
+    (`species_be`) (`handlePraiseScold`) **(comprobado)**.
+- **Suciedad:** cada caca hecha en el suelo (`createPoopPile`) suma 1 a la barra de virus, salvo si ya es
+  la especie 39 (`species_p`). Con la barra en **16**, el partner evoluciona a `species_p`; antes se guardan sus stats y su forma
   anterior, y la barra vuelve a 0 (`tickConditions`) **(comprobado)**. Un evento de script puede devolverlo a la
   forma guardada (`callDigimonRoutine`, rutina 2) **(comprobado)**; qué evento del juego lo hace es
   **(suposición)**. La rutina 10 hace evolucionar al partner a la forma que el script deja en `PSTAT_254`
@@ -133,8 +136,8 @@ Todas en `handleSpecialEvolutions`, salvo la de la suciedad. Solo se aplican si 
 - **Caso normal:** para cada stat, si el partner ya tiene al menos el valor de referencia, suma una décima parte de
   ese valor; si no, el stat pasa a ser la media entre el actual y el de referencia.
 - **Casos de escala:** si el destino es bebé o de entrenamiento, si es uno de cuatro Digimon concretos (6, 11, 39 y
-  53) o si el partner actual es Sukamon, los stats se multiplican por un factor en décimas que se lee del campo de
-  inteligencia de la fila (`EVL_scaleBaseStats`). Si el partner era Sukamon, en cambio, cada stat se reconstruye a
+  53) o si el partner actual es `species_p`, los stats se multiplican por un factor en décimas que se lee del campo de
+  inteligencia de la fila (`EVL_scaleBaseStats`). Si el partner era `species_p`, en cambio, cada stat se reconstruye a
   partir de los stats guardados al convertirse: guardado + (actual − guardado / 2) / 2 **(comprobado)**. Por qué
   el Digimon 6 está en esa lista no está claro **(suposición: un caso de diseño o un error)**.
 - **Topes:** HP y MP a 9999; ataque, defensa, velocidad e inteligencia a 999 (`EVL_clampBaseStats`)
@@ -143,11 +146,11 @@ Todas en `handleSpecialEvolutions`, salvo la de la suciedad. Solo se aplican si 
     sin topar y el partner lo suma con `addStatGains`, que además deja **cada ganancia en 999 como mucho**
     (desviación aprobada, 2026-10-20: en el original solo la primera ganancia de cada sesión de entrenamiento tiene
     ese tope, y la evolución solo para en los topes de arriba).
-  - Al salir de Sukamon, los stats reconstruidos desde la copia se restauran sin pasar por `addStatGains`, así que
+  - Al salir de `species_p`, los stats reconstruidos desde la copia se restauran sin pasar por `addStatGains`, así que
     no tienen el tope de 999 por ganancia, pero sí el tope de cada stat (9999 HP y MP, 999 el resto), como hace el
     original con `EVL_clampBaseStats` (decidido por el responsable de diseño, 2026-10-20). Con una copia y unos stats
     altos la reconstrucción da más del tope (9999 y 9999 dan 12499) y se queda en 9999.
-  - La copia de Sukamon es del partner: sus stats en `virusBackup` del estado del partner (`sukaBackup*`) y la forma
+  - La copia de `species_p` es del partner: sus stats en `virusBackup` del estado del partner (`sukaBackup*`) y la forma
     en la variable de script `PSTAT_SUKAMON_BACKUP_DIGIMON` (`PSTAT_5`), como en el original.
 - **Además, siempre:** el peso pasa al peso por defecto de la forma nueva (`RAISE_DATA`), y los errores de cuidado y
   las batallas vuelven a 0 **(comprobado)**.
@@ -223,9 +226,9 @@ Tamaños de entrada calculados a partir de los `struct` de `include/dw/evl.h` y 
 | Comprobación periódica, umbrales, barra de virus | `src/main/partner_impl.c`: `tickConditions` |
 | Elección de destino y puntuación | `src/main/evolution.c`: `getFreshEvolutionTarget`, `getInTrainingEvolutionTarget`, `getRookieEvolutionTarget`, `getChampionEvolutionTarget`, `calculateRequirementScore`, `getNumMasteredMoves` |
 | Evoluciones especiales | `src/main/evolution.c`: `handleSpecialEvolutions`; llamadas desde `src/main/partner.c`: `partnerTickSleep`, `partnerTickPraiseScold` |
-| Aviso de Nanimon | `src/main/partner_impl.c`: `handlePraiseScold` |
+| Aviso de `species_be` | `src/main/partner_impl.c`: `handlePraiseScold` |
 | Caca y barra de virus | `src/main/partner_impl.c`: `createPoopPile` |
-| Vuelta de Sukamon, evolución por script | `src/main/partner.c`: `callDigimonRoutine` (rutinas 2 y 10) |
+| Vuelta de `species_p`, evolución por script | `src/main/partner.c`, la llamada a las rutinas de la especie (rutinas 2 y 10) |
 | Objetos de evolución | `src/main/item.c`: `handleEvoItems`; rechazo en `src/main/partner_impl.c`: `partnerWillRefuseItem` |
 | Aplicar la evolución (stats, técnicas, vida) | `src/evl/evl.c`: `EVL_applyEvolution`, `EVL_scaleBaseStats`, `EVL_clampBaseStats` |
 | Contador por horas | `src/main/clock.c`; `src/main/partner_impl.c`: `skipHours`, `handleSleeping` |

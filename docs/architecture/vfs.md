@@ -65,7 +65,7 @@ documento que genera (`names::documentSchemas` en `apps/dwx/src/asset_names.cpp`
 
 ## IDs de asset
 
-- Son segmentos de `a-z`, `0-9` y `_` separados por `/`, de 200 caracteres como mucho: `digimon/agumon/model`.
+- Son segmentos de `a-z`, `0-9` y `_` separados por `/`, de 200 caracteres como mucho: `map/file_city_01/background`.
 - Sin segmentos vacíos, sin mayúsculas y sin puntos, así que un ID nunca sale de la carpeta del paquete ni depende de
   si el disco distingue mayúsculas.
 - **El ID de un fichero es su ruta dentro del paquete sin la extensión.** `map/file_city_01/background.png` es

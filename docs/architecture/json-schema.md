@@ -64,12 +64,12 @@ YAML no distingue en el texto un número de una cadena como JSON, así que cada 
 
 | Escalar | Tipo |
 |---|---|
-| Entre comillas (`"12"`, `'agumon'`) | `string`, siempre |
+| Entre comillas (`"12"`, `'species_a'`) | `string`, siempre |
 | Vacío, `~`, `null` | `null` |
 | `true`, `false` | `boolean` |
 | `12`, `-3`, `0x00fe`, `0o17` | `integer` (y también `number`) |
 | `1.5`, `-2e3`, `.inf`, `.nan` | `number` |
-| Cualquier otro (`agumon`, `1.0.0`) | `string` |
+| Cualquier otro (`species_a`, `1.0.0`) | `string` |
 
 Por eso un id que parece un número (`"001"`) tiene que ir entre comillas cuando el esquema pide `string`. Los límites
 `minimum` y `maximum` se comparan como números de coma flotante de 64 bits, que son exactos hasta 2^53.

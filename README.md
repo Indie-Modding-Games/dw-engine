@@ -71,7 +71,7 @@ Building the repository does not download the original game or populate its asse
 
 ## Documentation
 
-The full documentation is maintained in Spanish as a VitePress site. Start with the [documentation index](docs/index.md), then explore [rendering](docs/architecture/render.md), [UI](docs/architecture/ui.md), [models and animation](docs/architecture/models.md), and [audio](docs/architecture/audio.md).
+The full documentation is maintained in Spanish as a VitePress site, published at <https://indie-modding-games.github.io/dw-engine/>. Start with the [documentation index](docs/index.md), then explore [rendering](docs/architecture/render.md), [UI](docs/architecture/ui.md), [models and animation](docs/architecture/models.md), and [audio](docs/architecture/audio.md).
 
 ```bash
 scripts/dev.sh docs-dev   # Local site at http://localhost:5173

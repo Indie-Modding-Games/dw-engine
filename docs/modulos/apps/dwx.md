@@ -104,3 +104,23 @@ con los nombres que espera el juego. El lanzador la usa para preparar su secció
   tiene `maps.tsv`).
 
 Los tests: `tests/export_images_tests.cpp`, con un contenido sintético.
+
+## `dwx evolution-guide`
+
+```sh
+dwx evolution-guide <carpeta de contenido> <archivo nuevo.md>
+```
+
+Escribe en Markdown los requisitos de evolución de cada especie, desde las tablas de evolución y de especies del
+contenido extraído del jugador, para la guía [cómo funcionan las evoluciones](../../guides/evoluciones.md#tabla-por-especie-en-tu-equipo).
+Esas tablas no se publican ([política legal](../../legal/assets.md)): el archivo es solo para el jugador.
+
+- Una sección por nivel (bebé a campeón; los definitivos no evolucionan) y una tabla por especie, con una fila por
+  destino de su carta y los cuatro grupos de la puntuación: errores de cuidado («0-N» como máximo con la marca 0x10,
+  «N+» si no), peso (± 5), stats (HP y MP multiplicados por 10, porque la tabla los guarda en décimas; en un destino de
+  novato, los stats favoritos) y extra. Un destino sin errores ni peso sale como «Evolución especial»; el de un bebé,
+  «Siempre», como en el panel del juego.
+- Lee las tablas tal como las compone el contenido, sin ruleset: son los requisitos del original.
+- No sustituye un archivo que ya existe.
+
+Los tests: `tests/evolution_guide_tests.cpp`, con una tabla sintética.

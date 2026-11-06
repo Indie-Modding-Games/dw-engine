@@ -22,6 +22,7 @@ cada una están en las [reglas de dependencias](../architecture/dependency-rules
 | [ui](engine/ui.md) | La UI con RmlUi, con su lógica en Lua |
 | [localization](engine/localization.md) | Los textos que ve el jugador en su idioma |
 | [signs](engine/signs.md) | Los carteles pintados en los mapas, escritos otra vez en el idioma del jugador |
+| [video](engine/video.md) | Las películas: leer el vídeo frame a frame y dar la imagen de cada momento |
 | [ruleset](engine/ruleset.md) | El formato de ruleset, las estrategias por nombre y el reloj de juego |
 | [debug](engine/debug.md) | Consola y paneles de desarrollo con Dear ImGui |
 
@@ -53,6 +54,13 @@ cada una están en las [reglas de dependencias](../architecture/dependency-rules
 | [dwx](apps/dwx.md) | La herramienta de assets: extraer, validar, cocinar y empaquetar |
 | [sim](apps/sim.md) | `dwe-sim`: simulaciones de balance sin gráficos |
 | [launcher](apps/launcher.md) | El lanzador de escritorio: lee el disco, actualiza el juego y lo arranca |
+| [studio](apps/studio.md) | DWE Studio, banco de trabajo de desarrollo: editor, compilar, arrancar y comparar con el original |
+
+## Servicios (`services/`)
+
+| Servicio | Qué hace |
+|---|---|
+| [beta-gateway](services/beta-gateway.md) | La pasarela de la beta entre el lanzador y las versiones de GitHub, con la clave de la beta |
 
 ## Otros
 
@@ -62,3 +70,4 @@ cada una están en las [reglas de dependencias](../architecture/dependency-rules
 | [shaders](shaders.md) | Módulos de Slang compartidos por los shaders del motor |
 | [tests/support](tests/support.md) | Lo que comparten los tests de todos los módulos |
 | [tests/mods](tests/mods.md) | Paquetes sintéticos con los que los tests comprueban los mods |
+| [tests/autotest](tests/autotest.md) | Las rutas que juegan el juego de verdad con teclado, ratón o mando |

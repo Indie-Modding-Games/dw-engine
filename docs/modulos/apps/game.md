@@ -69,7 +69,7 @@ del final de la 9 (57 vblanks después de empezarla). La 9 lleva al compañero h
 lo mueve por `Field::moveByClip` como las animaciones de los guiones). El campo
 sigue (los NPC se mueven) mientras ellos juegan sus animaciones y durante los dos fundidos; solo espera con el menú de
 dormir. El fundido de entrada enseña al compañero de pie (animación 0) y al jugador en la última pose de la 8, hasta
-que recupera el control. Los números de las animaciones están en `care.yaml` (`sleep.scene`). Medido con un Agumon en
+que recupera el control. Los números de las animaciones están en `care.yaml` (`sleep.scene`). Medido con un `species_a` en
 la ciudad (estado 3 del compañero escrito en RAM).
 
 Igual: sin HUD durante la escena. El original para el tiempo de juego en el primer fotograma de la escena
@@ -106,10 +106,10 @@ mapa (`Field::walkPartnerTo`: en el estado 6 el clip lo lleva sin `partnerTickCo
 Antes la z no se giraba: en twna02 el compañero corría hacia (−2122, −1930) en vez de (−2122, 1930), se atascaba a unas
 3800 unidades y la cámara se iba a un sitio vacío del mapa, así que la animación del baño no se veía. Medido en el
 original (2026-10-31, `01_field_outside_jijimon_house`, twna01, el mismo baño 8, condición 8 y el jugador en la
-casilla (32, 75)): Agumon corre desde (−1650, −2400) y pasa al segundo punto al pisar la casilla del primero, en
+casilla (32, 75)): `species_a` corre desde (−1650, −2400) y pasa al segundo punto al pisar la casilla del primero, en
 (−2115, −1939), unos 45 vblanks después; llega a (−2251, −1266), ya dentro de la caseta, y hace la animación 10 (51
 fotogramas) con la cámara encima; luego vuelve andando (animación 2) al primer punto. dwe con la partida del usuario
-(twna02, Agumon): la cámara va a la caseta, el compañero entra, hace la animación 10 sobre el retrete y vuelve, sin
+(twna02, `species_a`): la cámara va a la caseta, el compañero entra, hace la animación 10 sobre el retrete y vuelve, sin
 atascos (`dwe_assets_tests`: "a toilet's points turn the original's z the other way into world space"; `field_tests`:
 "a care walk to a point goes through walls and ends on the point's cell").
 
@@ -122,8 +122,8 @@ jugador (`Field::holdForCare`) y, si el compañero no está ya a su lado, lo lle
 2,5 radios (`walkPartnerToRange`; `partner.c: partnerTickPraiseScold` estados 0 y 1, `getPartnerTamerCloseness` igual
 a 2). Antes el compañero solo seguía al jugador, y el seguimiento se para entre 2,5 y 3,5 radios: un compañero quieto
 a esa distancia no llegaba nunca y la escena no acababa. Al felicitar suena `playSound(0,
-14)`, el jugador hace la animación 38 (la 39 si el compañero es campeón o más, salvo Mamemon, MetalMamemon y
-Digitamamon, que son bajos) y el compañero la 11. Al regañar suena `playSound(0, 13)`, el jugador hace la animación 7 y
+14)`, el jugador hace la animación 38 (la 39 si el compañero es campeón o más, salvo `species_ba`, `species_au` y
+`species_az`, que son bajos) y el compañero la 11. Al regañar suena `playSound(0, 13)`, el jugador hace la animación 7 y
 el compañero la 12, o la 25 si el regaño llega justo después de un rechazo o de una caca en el suelo
 (`ITEM_SCOLD_FLAG`). Al acabar la animación del jugador cuenta el elogio o el regaño (`handlePraiseScold`: disciplina y
 felicidad), el jugador vuelve a estar de pie y la escena termina cuando la animación del compañero acaba su primera
@@ -131,7 +131,7 @@ vuelta. Los sonidos de esas animaciones suenan como los de cualquier clip del ca
 animaciones están en `field_items.praise_scold`; sin ese bloque, el elogio o el regaño cuenta en cuanto el compañero
 llega, sin animaciones, como antes.
 
-Medido en el original (2026-10-30, Agumon junto al jugador en twna01, el campo a 20 fotogramas por segundo):
+Medido en el original (2026-10-30, `species_a` junto al jugador en twna01, el campo a 20 fotogramas por segundo):
 
 | Caso | Gesto del jugador | Respuesta del compañero | Cuenta en | Escena | Cambio |
 |---|---|---|---|---|---|
@@ -294,7 +294,7 @@ cambiar de mapa.
 - Reinicio de la animación de objetos del mapa (rutina 21, `overworld.c: resetMapObjectAnimation`):
   `restartObjectAnimations` (`story_scene_glue.cpp`) pone a cero el reloj y el cuadro de los objetos 2D del mapa desde
   la variable 247, tantos como dice la 248 (`MapDepthLayers::restartAnimation`). Las chispas de la descarga de
-  Elecmon (`gias02`, objeto 41) salen así desde su primer cuadro.
+  `species_ak` (`gias02`, objeto 41) salen así desde su primer cuadro.
 - Cifras sobre el compañero en el campo (`entity_text.c: addEntityText`, `setCombatTextPosition`,
   `renderEntityText`): `FieldNumbers` (`field_numbers.cpp`) toma el daño que hizo `deal_damage`
   (`StoryGameOrders::takePartnerDamage`) y lo pone donde estaban los pies del compañero al añadirlo (en el campo no lo
@@ -304,7 +304,7 @@ cambiar de mapa.
 - `deal_damage` (`script_interp.c`, `scriptPauseGame(0xff)` antes del daño) congela el mundo en cuanto hace daño, no al
   girar los personajes: así la caída del jugador (animación 17) y la del compañero (40) llegan al final.
 
-Medido en el original (2026-11-03, descarga de Elecmon en `gias02`, script 68, sección 5, tres veces): cada descarga
+Medido en el original (2026-11-03, descarga de `species_ak` en `gias02`, script 68, sección 5, tres veces): cada descarga
 quita el 20 % de la vida máxima (800 → 640 → 480 → 320) y enseña "160" sobre el compañero desde unos 10 vblanks
 después hasta los 94; a los 104 ya no está (31 cuadros del campo ≈ 93 vblanks). Las chispas salen pequeñas a los 10,
 grandes a los 18 y se van antes de los 30. El jugador retrocede unas 400 unidades y el compañero unas 380, y los dos
@@ -318,7 +318,7 @@ cuadro en el mismo fotograma. Medido en dwe tras el arreglo (2026-11-04, vblank 
 chispa pequeña a +6, la grande de +13 a +15, ya no están a +19; en el original la cifra y la chispa pequeña a +8..10, la
 grande a +16..18 y ya no están a +28. De la cifra a la chispa grande, 7 frente a 8: Igual dentro de un fotograma del campo.
 Suposición: toda la escena empieza unos 2 a 4 vblanks antes que en el original (la tecla llega antes al script, no las
-chispas), y el cuadro de texto se abre antes (+30 frente a +44..64; depende del giro de Elecmon, no medido). Las cifras de curación con objetos
+chispas), y el cuadro de texto se abre antes (+30 frente a +44..64; depende del giro de `species_ak`, no medido). Las cifras de curación con objetos
 en el campo (`item.c`, `addEntityText`) aún no salen.
 
 Medido en el original (2026-10-31): las nubes y chispas del gimnasio (`TRN_tickDefenseTraining`, estado
@@ -360,7 +360,7 @@ el 6); los NPC se quedan quietos
 | Clip del jugador | 3 (correr) pasa a 0 al abrir | se quedaba congelado en mitad de la zancada | reposo desde su inicio | Igual |
 | Clip del compañero | 4 pasa a 0 (según el decomp, también desde un clip de estado) | congelado | reposo (`FieldAnimation::Idle`) | Igual |
 | Fotogramas del clip con el menú abierto | jugador 2 a 12 y compañero 2 a 6 en 60 refrescos | 0 | avanzan a 20 por segundo | Igual |
-| NPC | quietos (Yuramon y Tanemon sin cambiar de fotograma) | quietos | quietos | Igual |
+| NPC | quietos (`species_af` y `species_ac` sin cambiar de fotograma) | quietos | quietos | Igual |
 
 Al cerrar el menú cada uno vuelve a lo que le toque (el paso del jugador o el seguimiento del compañero). Prueba:
 `field_clock_tests.cpp`; comparación en `_work/tmp/w21-trfield/contact_sheet.png`.
@@ -493,11 +493,11 @@ las dibuja; el cursor se para en los extremos y solo suena al moverse. Detalle e
 
 ## Apertura de la partida nueva
 
-Una partida nueva empieza como el original (`main.c: main`, estado 0): las preguntas de Jijimon, la película y el
+Una partida nueva empieza como el original (`main.c: main`, estado 0): las preguntas del anciano, la película y el
 primer mapa. `NewGameInterview` porta `newGameScene` (`main.c`), `loadNewGameScene` y `tickNewGameJijimon`
-(`new_game.c`) y `newGameStateMachine` (`shop/script_menu.c`), con la sección `new_game_scene` del ruleset: Jijimon
+(`new_game.c`) y `newGameStateMachine` (`shop/script_menu.c`), con la sección `new_game_scene` del ruleset: el anciano
 entra andando sobre negro y, al girarse, pregunta si el jugador tiene Digivice, después día o noche (si dice que sí)
-o si tiene amigos (si dice que no); la primera respuesta da Agumon y la segunda Gabumon. Luego pide los dos nombres
+o si tiene amigos (si dice que no); la primera respuesta da `species_a` y la segunda `species_an`. Luego pide los dos nombres
 en la caja de nombres (`NamingBox`, documento `ui/naming_box`), con su confirmación, y se funde a negro. El
 resultado va en `PlayStart::choice` hasta `GameSession::startNewGame`. Las frases son las de la tabla 1238 de
 MAPHEAD y se ven en el documento `ui/story_textbox`, arriba de la pantalla como en el original
@@ -523,8 +523,8 @@ Antes de la entrevista, la ranura vacía pregunta «Record new adventure?» con 
 (`SaveDialog::startOnYes`, ajuste `dialog.start_on_yes`); las demás preguntas de las ranuras empiezan en «No».
 
 Con la historia y `story_scenes.new_game.chain: original`, el campo empieza en `twna01` salida 9: la cabecera del
-mapa carga el guion 164 y la casilla de esa salida corre la apertura, que lleva a `topn01`, el despertar en casa de
-Jijimon, y de ahí a File City (todo dentro de la etapa 1 del candado de historia). `seeded` sigue disponible: el
+mapa carga el guion 164 y la casilla de esa salida corre la apertura, que lleva a `topn01`, el despertar en casa del
+anciano, y de ahí a File City (todo dentro de la etapa 1 del candado de historia). `seeded` sigue disponible: el
 estado de `data/new_game_story` y el inicio de `field/warps`, sin la apertura. `--new-game-chain original|seeded`
 elige la cadena de esta ejecución en vez de la del ruleset (`StoryScenes::setNewGameChain`). Un autotest, como deja
 fuera las preguntas y las películas, empieza en `seeded` (el campo libre de File City) salvo que la ruta diga
@@ -560,7 +560,7 @@ y en las ranuras de partida (`nickname`, junto a la especie, `main_menu.c: drawM
 y las escenas de evolución y de muerte muestran la especie o ningún nombre, como el original.
 
 Con el ratón (mejora para PC que no cambia reglas, sin opción; el original no tiene puntero): un clic fuera de una
-elección pasa la página, como confirmar. En las elecciones de Jijimon, un clic en una opción la elige y el puntero que
+elección pasa la página, como confirmar. En las elecciones del anciano, un clic en una opción la elige y el puntero que
 pasa por encima lleva el cursor a ella sin sonido; un clic fuera de las opciones no elige nada. En la caja de nombres,
 un clic en una letra la escribe, en Atrás o en OK los pulsa, y en «Name» o en una fila vacía solo lleva el cursor; el
 puntero que se mueve por la rejilla lleva el cursor con él. Lo mismo vale para los diálogos de la historia
@@ -568,13 +568,13 @@ puntero que se mueve por la rejilla lleva el cursor con él. Lo mismo vale para 
 elección, la caja de nombres) nunca es una orden de andar: `PlaySession::walksByPointer` solo deja que el clic lleve al
 jugador cuando el campo lo mueve, está libre, no cambia de mapa y no corre ningún script ni cuadro de texto, y al
 quitarle el control (un diálogo, un menú, el gimnasio, el combate, una escena, un cambio de mapa) se suelta el destino
-que llevaba (`Field::dropMoveTarget`): antes, un clic para pasar una página de Koromon dejaba un destino que el jugador
+que llevaba (`Field::dropMoveTarget`): antes, un clic para pasar una página de `species_j` dejaba un destino que el jugador
 seguía al cerrar el diálogo, y lo mismo al acabar un entrenamiento. Al revés, un clic en el suelo lejos del jugador
 (a más de dos casillas, `MouseSteering::pressesInPlace`) solo lo lleva allí y no cuenta como confirmar en el campo:
-si no, al salir de una casilla de confirmar (la máquina de guardado junto a la puerta de Jijimon) cada clic volvía a
+si no, al salir de una casilla de confirmar (la máquina de guardado junto a la puerta del anciano) cada clic volvía a
 hacer su pregunta. Cerca de él (sobre él, la máquina o quien tiene delante) el clic sigue siendo confirmar y habla o
 usa lo que hay. Rutas: `route-mouse-opening.yaml` (la apertura
-entera con el ratón) y `route-mouse-dialogue.yaml` (Koromon en el gimnasio, con `--start trai00`).
+entera con el ratón) y `route-mouse-dialogue.yaml` (`species_j` en el gimnasio, con `--start trai00`).
 
 Diferencias con el original: en el mando, `alt` está en el botón norte y no en el del círculo, que aquí es cancelar;
 las letras son de media anchura y no las de ancho fijo de la fuente del original; los registros de combate y de la
@@ -582,7 +582,7 @@ arena, que en el original nombran al compañero, aún no existen.
 
 Cierre durante las preguntas: al acabar un autotest el juego se apaga a mano y en orden (la sesión, la UI, los
 retratos, el renderizador y por último el dispositivo) antes de dar el veredicto. La escena de las preguntas
-(`NewGameInterview`, con los modelos de Jijimon) no estaba en esa lista, así que una ruta que fallaba o acababa
+(`NewGameInterview`, con los modelos del anciano) no estaba en esa lista, así que una ruta que fallaba o acababa
 durante la entrevista (o la caja de nombres) destruía el dispositivo con su memoria aún reservada y abortaba con la
 aserción de VMA «Some allocations were not freed» (código 134, sin línea FAIL). Ahora se suelta antes que la sesión.
 Comprobado con rutas que fallan a propósito: en la entrevista (antes 134, ahora 1 con su FAIL), en el título, en el
@@ -724,7 +724,7 @@ dibuja dentro del perfil con los pies en el suelo, y uno del original no cambia)
 ## Aviso de guardado
 
 Mejora opcional, encendida por defecto (el original no autoguarda y no dice nada cuando su máquina de guardado escribe):
-mientras el juego guarda, un Gabumon pequeño, de cuerpo entero y de perfil, va de un lado a otro, andando o corriendo,
+mientras el juego guarda, un `species_an` pequeño, de cuerpo entero y de perfil, va de un lado a otro, andando o corriendo,
 junto a «Guardando» («Saving» en inglés, clave `save.saving`) en la esquina inferior derecha. El ajuste `save_notice`
 (fila «Aviso de guardado» de las opciones del menú de pausa, guardado en los ajustes del usuario) llega a
 `SaveIndicator::setEnabled` desde `PlaySession`; apagado, no se ve nada.
@@ -745,7 +745,7 @@ junto a «Guardando» («Saving» en inglés, clave `save.saving`) en la esquina
   (`liftClearOf`, ajuste `save_indicator.lift`, en píxeles), por ejemplo encima de las barras de felicidad y
   disciplina del aspecto original. Si ningún sitio de su lado está libre, no se ve. Solo se vuelve a colocar cuando
   algo le cae encima, para no seguir a una ventana que se desliza.
-- **La figura.** `SaveFigure` carga el modelo de Gabumon (la especie `gabu`) del contenido extraído del
+- **La figura.** `SaveFigure` carga el modelo de `species_an` (la especie `gabu`) del contenido extraído del
   jugador y sus clips de andar (el 2) y correr (el 4), los del compañero; si falta uno usa el otro y, sin ninguno, el 0.
   Los usa sin el movimiento de raíz. Lo dibuja de perfil, entero y algo más alto que las mayúsculas del texto, en una
   textura propia de 288x96 (`runtime/save-figure`) que el documento pinta como una tira de 72x24dp, solo los frames en
@@ -881,7 +881,7 @@ nivel; el fallback del novato con las suyas). La regla es la del original (`evol
 un punto por grupo (errores de cuidado como mínimo, o como máximo con la marca 0x10; peso dentro de ±5; stats; un extra
 cualquiera) y pasa con 3 de 4; entre las que pasan, la elección de la revisión (la puntuación más alta en bebé grande,
 la media más alta de los stats pedidos en novato y campeón, con la preferencia por formas no criadas), y un novato sin
-candidata pasa a Numemon desde las 96 horas. La línea de la forma que elegiría la revisión brilla en verde y dice «La
+candidata pasa a `species_ar` desde las 96 horas. La línea de la forma que elegiría la revisión brilla en verde y dice «La
 elige al revisar»; las demás se atenúan. Si la revisión elegiría otra forma, lo dice («Al revisar: …»).
 
 Una forma que el jugador aún no ha descubierto (la casilla gris, sin imagen: no está entre las criadas,
@@ -900,9 +900,9 @@ usuario) apagado deja el gráfico original. El gráfico solo existe en el aspect
 los dos.
 
 La ruta `route-evolution-requirements.yaml` abre el gráfico del compañero con el teclado (en una partida nueva todo
-destino es «???»), mueve el cursor, pasa por la vista original, descubre Greymon y Tyrannomon (disparadores 0x200 + su
-número), le da bayas grandes para mover el peso (con una Tyrannomon queda con 3 de 4; con tres la revisión elige
-Monochromon, sin descubrir: «Al revisar: ???») y lo abre de nuevo a 1280x720, 1920x1080 y 1024x768 con `text_fit` y `expect_clear: pause_menu`; al final apaga y enciende la
+destino es «???»), mueve el cursor, pasa por la vista original, descubre `species_i` y `species_bb` (disparadores 0x200 + su
+número), le da bayas grandes para mover el peso (con una `species_bb` queda con 3 de 4; con tres la revisión elige
+`species_ai`, sin descubrir: «Al revisar: ???») y lo abre de nuevo a 1280x720, 1920x1080 y 1024x768 con `text_fit` y `expect_clear: pause_menu`; al final apaga y enciende la
 opción. Tests: `apps/game/tests/chart_requirements_tests.cpp` (rangos, filas y formas no descubiertas), `game/evolution/tests/report_tests.cpp`
 (los puntos del informe son los de la puntuación en cada mezcla de grupos; la forma que da `outlook` es la que elige
 `checkNatural`) y `the chart's outlook names the form the next check evolves the partner into`
@@ -971,17 +971,17 @@ las enciende o apaga todas: el ajuste `shop_job_bar` (conserva la clave con la q
 de la UI desde `PlaySession` (`RecruitBarSetting`, `recruit_bar.hpp`).
 
 - **La tienda del cañón**: mientras dura el trabajo (gcan11, guion 49 y los clientes de los guiones 199 a 202), una barra
-  arriba en el centro enseña lo ganado frente a la cuenta con la que Monochromon se une a la ciudad, con una marca donde
+  arriba en el centro enseña lo ganado frente a la cuenta con la que `species_ai` se une a la ciudad, con una marca donde
   empieza la paga mejor, y los clientes atendidos («Clientes 7/20»).
 - **El juego de las piedras**: durante la partida contra el primer rival (frzl17), dos líneas abajo, bajo la caja de
-  diálogo y sin tapar el HUD del original: los puntos de cada uno («Tú 3 - 1 Penguinmon»), las tiradas que les quedan,
-  cómo va («Vas ganando: Penguinmon se une a la ciudad», «Vas perdiendo por N», «Empate») y «Puntuación perfecta:
+  diálogo y sin tapar el HUD del original: los puntos de cada uno («Tú 3 - 1 `species_l`»), las tiradas que les quedan,
+  cómo va («Vas ganando: `species_l` se une a la ciudad», «Vas perdiendo por N», «Empate») y «Puntuación perfecta:
   medalla» mientras se pueda alcanzar.
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
 | Barra del trabajo en la tienda | No existe: el final (sección 0x52) paga por la variable 243, el byte alto de la cuenta que deja la rutina 56: hasta 6, 500 bits; de 7 a 11, 1500; desde 12, se une (2000 bits y el disparador 247) | `ShopJobBar` (`shop_job_bar.hpp`) lee la regla `story_scenes.shop_job` (mapa, variable 123 de clientes, 20 clientes, `better_pay_from: 7`, `joins_from: 12`) y la cuenta (`StoryAdapter::shopTally`); la barra va de 0 a 3072 (12 × 256, `ShopJobRules::tallyFrom`) con la marca en 1792 (7 × 256). Sale desde el primer cliente (la variable 123 sube en el mapa de la tienda) hasta que el jugador sale del mapa (el salto del final); una cuenta de un trabajo anterior no la enseña hasta el primer cliente del siguiente. Publica `shop_job.*` y sube `shop_job.revision`; el HUD (`ui/hud/logic.lua`, `#shop-job`) dibuja el relleno, la marca y los textos (los clientes, que no pasan de 20 aunque algún cliente cuente dos al irse, y la próxima marca a la derecha), con las clases `better` y `joins` al pasar cada marca, en las dos pieles | `shop_job_bar_tests.cpp` («the shop job's bar shows from the first customer…», «a count left over…», «…hidden with the option off…»); `the game pack's shop job joins from a tally of 3072…` (`story_props_tests.cpp`); captura a media partida en las dos pieles | Mejora (opción) |
-| Barra de la partida de las piedras | No existe: el guion 206 (sección 0x0a, al volver a frzl15) lee el resultado que deja `KAR_finishMatch` en la variable 121: 0 pierde o empata (sin unión), 1 gana, 2 gana con 10 puntos o más (además la medalla, disparador 372); con 1 o 2 Penguinmon se une a la ciudad (disparador 257, prosperidad +1). Solo el primer rival se une | `curlingRecruitOf` (`curling_recruit_bar.hpp`) lee la partida (`Match::teams`: puntos y tiradas hechas); la puntuación perfecta sigue al alcance mientras las piedras del jugador que siguen en juego (en el soporte, en la mano o en el hielo) puedan sumar los 10 en el anillo que más vale (2), es decir, mientras ninguna haya salido. `CurlingScreen::showRecruitBar` publica `curling_recruit.*` y sube `curling_recruit.revision`; el documento `curling_hud` (`#recruit`) la dibuja en y 222 a 240 del original, en las dos pieles (la original con su caja). Sale solo en la partida del primer rival y se quita al acabar | `curling_recruit_bar_tests.cpp` («…shows only during a match, and not with the option off», «…follows the score and the throws left», «the perfect score shows while…»); capturas a media partida en las dos pieles | Mejora (opción) |
+| Barra de la partida de las piedras | No existe: el guion 206 (sección 0x0a, al volver a frzl15) lee el resultado que deja `KAR_finishMatch` en la variable 121: 0 pierde o empata (sin unión), 1 gana, 2 gana con 10 puntos o más (además la medalla, disparador 372); con 1 o 2 `species_l` se une a la ciudad (disparador 257, prosperidad +1). Solo el primer rival se une | `curlingRecruitOf` (`curling_recruit_bar.hpp`) lee la partida (`Match::teams`: puntos y tiradas hechas); la puntuación perfecta sigue al alcance mientras las piedras del jugador que siguen en juego (en el soporte, en la mano o en el hielo) puedan sumar los 10 en el anillo que más vale (2), es decir, mientras ninguna haya salido. `CurlingScreen::showRecruitBar` publica `curling_recruit.*` y sube `curling_recruit.revision`; el documento `curling_hud` (`#recruit`) la dibuja en y 222 a 240 del original, en las dos pieles (la original con su caja). Sale solo en la partida del primer rival y se quita al acabar | `curling_recruit_bar_tests.cpp` («…shows only during a match, and not with the option off», «…follows the score and the throws left», «the perfect score shows while…»); capturas a media partida en las dos pieles | Mejora (opción) |
 
 ## Burbuja con varias necesidades
 
@@ -1130,15 +1130,15 @@ ven los dibujos del original. La consola y las rutas lo cambian para la partida 
   del juego (esquema `field_sprite_characters.schema.json`).
 - **Dónde**: `sprite_characters.hpp` lee la tabla y calcula el sitio: los pies son el centro de la sombra, el pie
   del primer dibujo o un píxel dado (`feet`); `MapCamera::pickGround` los lleva al suelo, a la altura `height` (una
-  jardinera, una cama), y el modelo mira a la cámara salvo que la tabla dé `facing` (Coelamon tumbado en la alfombra
+  jardinera, una cama), y el modelo mira a la cámara salvo que la tabla dé `facing` (`species_y` tumbado en la alfombra
   del puesto, 2560). `FieldScene` carga el modelo de cada especie al entrar al mapa (`standInSpriteCharacters`) y lo
   dibuja cada frame con su reposo (`drawSpriteCharacters`) mientras el primer dibujo no esté oculto.
   `MapDepthLayers::setStoodIn` saca los dibujos del pintado sin tocar la marca de oculto que ponen los guiones; las
   sombras se siguen dibujando.
 - **Semitransparencia**: `additive` dibuja el modelo sumado a lo de detrás con sus colores por ese factor
-  (`ModelInstance::additive` y el tinte), como los sprites con la semitransparencia aditiva: Poyomon en el final
+  (`ModelInstance::additive` y el tinte), como los sprites con la semitransparencia aditiva: `species_bc` en el final
   (modos 1 y 3), con 0.35. Los demás sprites de esos mapas son opacos (modo 4) o tienen el modo 0 sin texeles
-  semitransparentes a la vista (Koromon), y su modelo se dibuja opaco; el Poyomon de la casa del anciano usa el modelo
+  semitransparentes a la vista (`species_j`), y su modelo se dibuja opaco; el `species_bc` de la casa del anciano usa el modelo
   tal cual, que ya es transparente por debajo.
 - **Reglas**: no hay entidad nueva; las colisiones, las charlas, los guiones y el minimapa no cambian. Si falta el
   modelo de una especie se queda su dibujo.
@@ -1327,7 +1327,7 @@ y el clima sale exactamente como sin estaciones. Las reglas están en [game/weat
 Mejora opcional, apagada por defecto: al empezar una partida nueva desde el menú principal (Jugar → ranura → «Sí»),
 la pantalla «Reglas de la partida» (`ui/new_game_rules`, «Game rules» en inglés) deja elegir las reglas antes de que
 la partida empiece. El cursor empieza en «Empezar»; «Contenido oculto: No/Sí» cambia entre el ruleset `original` y
-`oculto` (Panjyamon, Gigadramon y MetalEtemon también por evolución: [evolution.md](../game/evolution.md#contenido-oculto)),
+`oculto` (`species_k`, `species_m` y `species_o` también por evolución: [evolution.md](../game/evolution.md#contenido-oculto)),
 y cancelar vuelve a la lista de ranuras. La fila «Paso Ultra → Mega» solo sale con el contenido oculto encendido y
 cuando los paquetes traen el ruleset `oculto_mega` (`TitleScreen` publica `new_game_rules.mega`).
 
@@ -1371,8 +1371,8 @@ Huevo y Ultra quedan definidos (`pause_menu.chart_stage.*`) pero sin especies. E
 dice su etapa canónica («Supremo» para una Mega).
 
 La caja Mega roja (`.stage-5`) sale cuando el árbol tiene alguna especie Mega: con la opción encendida, las que la
-serie llama Mega (`MEGA_ORDER` en `ui/pause_menu/logic.lua`: Phoenixmon, HerculesKabuterimon, y MetalEtemon y
-Machinedramon cuando el ruleset los trae), y con el paso Mega, aunque la opción esté apagada, las Megas del ruleset
+serie llama Mega (`MEGA_ORDER` en `ui/pause_menu/logic.lua`: `species_v`, `species_bd`, y `species_o` y
+`species_t` cuando el ruleset los trae), y con el paso Mega, aunque la opción esté apagada, las Megas del ruleset
 (`player.chart.mega`). Va en la misma página, a la derecha de la de Ultra y de su misma altura: las seis cajas (Bebé I,
 Bebé II, Infantil, Maduro, Perfecto/Ultra y Supremo) en un panel de 960dp. Para que quepan dentro del marco, con 30dp
 de margen a cada lado como a la izquierda del original, las columnas de Maduro y Ultra quedan a 66dp en vez de 72 y
@@ -1395,10 +1395,10 @@ que empieza en su x o antes; las Megas, la caja Mega). Una casilla en un hueco l
 en él en la página 1, así que las del original quedan donde las pone el original. Las demás (una Mega, una del ruleset
 fuera de la rejilla o en un hueco ya ocupado) toman en orden los huecos libres de su caja, columna a columna de arriba
 abajo, primero en la página 1 y luego en la 2, la 3...; las Megas en el orden de `MEGA_ORDER` y luego por casilla. Así,
-con la opción encendida Phoenixmon y HerculesKabuterimon dejan sus huecos de Ultra y Myotismon del contenido oculto
-ocupa uno. Con el contenido oculto y todo apagado la caja de Ultra (15 del original y Gigadramon) está llena y
-MetalEtemon y Myotismon pasan a la página 2; con el paso Mega y la opción apagada MetalEtemon y Machinedramon van a la
-caja Mega y Myotismon a la página 2.
+con la opción encendida `species_v` y `species_bd` dejan sus huecos de Ultra y `species_q` del contenido oculto
+ocupa uno. Con el contenido oculto y todo apagado la caja de Ultra (15 del original y `species_m`) está llena y
+`species_o` y `species_q` pasan a la página 2; con el paso Mega y la opción apagada `species_o` y `species_t` van a la
+caja Mega y `species_q` a la página 2.
 
 Todas las páginas tienen las mismas cajas en el mismo sitio; en las siguientes solo hay casillas donde hay especies.
 Con más de una página, bajo las cajas de Bebé I y Bebé II y en el mismo sitio en todas, van la flecha hacia arriba
@@ -1430,9 +1430,9 @@ la navegación lleva la fila enfocada a la vista y la rueda del ratón la mueve.
 filas que la lista deja fuera de su caja (`text_fit.cpp`); se comprueban al llegar a ellas.
 
 `route-canonical-stages.yaml` (en/es, piel original y moderna) enciende la opción con el contenido oculto, captura el
-árbol de una página con la caja Mega, abre el detalle de Phoenixmon («Supremo») y el de MetalGreymon, la apaga y
-captura el árbol original con flechas, el detalle de MetalGreymon, la página 2 (Abajo desde Etemon, la última de su
-columna: el cursor cae en MetalEtemon, en la misma columna) y la vuelta a la página 1; `route-mega-step.yaml` captura
-el árbol con la caja Mega y la página 2 (Myotismon, al que evoluciona antes con `evolve` para que su casilla se abra,
-y su detalle) con la opción apagada, y con ella encendida los cuatro Megas en una página y el detalle de Machinedramon
+árbol de una página con la caja Mega, abre el detalle de `species_v` («Supremo») y el de `species_w`, la apaga y
+captura el árbol original con flechas, el detalle de `species_w`, la página 2 (Abajo desde `species_s`, la última de su
+columna: el cursor cae en `species_o`, en la misma columna) y la vuelta a la página 1; `route-mega-step.yaml` captura
+el árbol con la caja Mega y la página 2 (`species_q`, al que evoluciona antes con `evolve` para que su casilla se abra,
+y su detalle) con la opción apagada, y con ella encendida los cuatro Megas en una página y el detalle de `species_t`
 ([prueba vertical](../../guides/prueba-vertical.md)).

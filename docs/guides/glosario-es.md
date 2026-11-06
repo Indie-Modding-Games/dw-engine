@@ -27,8 +27,8 @@ Decisión del responsable de diseño, 2026-10-20:
   toda la región («carnada», «banana», «refrigerador»).
 - **Se tutea al jugador**, como hace el inglés («¿Quieres guardar?»).
 - **Los nombres de los Digimon se quedan en inglés**, tal como los escribe el original, erratas incluidas
-  (`Centarumon`, `Kokatorimon`). No se escriben en el paquete: se ven en inglés porque la clave falta.
-  Cuando aparecen dentro de otro texto se copian letra por letra («¡Digievoluciona a Greymon!»).
+  (algunos con erratas del original). No se escriben en el paquete: se ven en inglés porque la clave falta.
+  Cuando aparecen dentro de otro texto se copian letra por letra («¡Digievoluciona a `species_i`!»).
 - **Se dejan como el original:** las siglas `HP` y `MP`, la moneda `Bits`, las letras de los grados del torneo, el
   nombre propio `Overdell` y las marcas `GOOD` y `BAD` del curling, que están dibujadas en la pista.
 - **Signos de apertura** `¿` y `¡` siempre, salvo cuando el original pega el texto detrás de otro y la apertura
@@ -45,7 +45,7 @@ Decisión del responsable de diseño, 2026-10-20:
 | Digimon | Digimon | invariable en plural |
 | Partner | compañero | |
 | Tamer | domador | «nivel de domador» |
-| Digivolve | digievolucionar | «¡Digievoluciona a Greymon!» |
+| Digivolve | digievolucionar | «¡Digievoluciona a `species_i`!» |
 | Fresh / In-Training / Rookie / Champion / Ultimate | Bebé / Entrenamiento / Novato / Campeón / Ultra | etapas |
 | Digi-Egg / Fresh / In-Training / Rookie / Champion / Ultimate / Mega / Ultra | Digihuevo / Bebé I / Bebé II / Infantil / Maduro / Perfecto / Supremo / Súper Supremo | etapas canónicas: solo con la opción `canonical_stages` (apagada por defecto; `docs/modulos/apps/game.md`, «Etapas canónicas»); sin ella valen las de la decisión 4, también en el árbol (antes decía «Definitivo») |
 | Raise | criar, crianza | |
@@ -173,7 +173,7 @@ Los nombres de mapa se centran en 24 caracteres con espacios, como el original.
 ## Historia
 
 Los diálogos de los scripts de eventos (`text/es/story_<n>.yaml`). La línea de quien habla
-(`{color:7}Jijimon {color:1}\n`) se copia igual y los nombres de los personajes siguen en inglés.
+(`{color:7}<nombre> {color:1}\n`) se copia igual y los nombres de los personajes siguen en inglés.
 
 | Inglés | Español | Nota |
 |---|---|---|

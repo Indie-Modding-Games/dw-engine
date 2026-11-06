@@ -3,7 +3,7 @@
 ## Objetivo
 
 Un trozo pequeño del juego que se juega de punta a punta con el motor nuevo: el jugador camina de File City a la casa
-de Jijimon y vuelve, con el partner siguiéndole y un minimapa en pantalla, a cualquier resolución y con teclado, ratón o
+del anciano y vuelve, con el partner siguiéndole y un minimapa en pantalla, a cualquier resolución y con teclado, ratón o
 mando.
 
 ## Por qué
@@ -59,7 +59,7 @@ menús con ratón y minimapa.
 
 ## Criterio de cierre
 
-Se puede caminar de File City a la casa de Jijimon y volver, con minimapa, a cualquier resolución y con cualquier
+Se puede caminar de File City a la casa del anciano y volver, con minimapa, a cualquier resolución y con cualquier
 dispositivo de entrada. Se demuestra con dos pruebas:
 
 - un test automático que recorre el camino y comprueba la secuencia de mapas y la llegada;

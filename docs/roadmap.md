@@ -84,7 +84,7 @@ cero pendientes.
 - RmlUi integrado, con un primer menú nuevo que se maneja con ratón y con mando.
 - **Minimapa.**
 
-**Hecho cuando:** se puede caminar de File City a la casa de Jijimon y volver, con minimapa, en cualquier resolución y
+**Hecho cuando:** se puede caminar de File City a la casa del anciano y volver, con minimapa, en cualquier resolución y
 con cualquier dispositivo de entrada.
 
 **Estado (2026-10-20): cerrada.** Las cuatro líneas están en el juego y el recorrido pasa con teclado, mando y ratón,

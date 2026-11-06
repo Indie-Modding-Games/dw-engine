@@ -84,13 +84,13 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 154 | 154 | 0 | 0 | 100 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 240 | 240 | 0 | 0 | 100 % |
-| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 82 | 80 | 2 | 0 | 99 % |
+| [Campo: movimiento, colisión y cámara](#campo-movimiento-colisión-y-cámara) | `main/` (5 ficheros) | 82 | 80 | 2 | 0 | 99 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 80 | 80 | 0 | 0 | 100 % |
-| [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 49 | 0 | 0 | 100 % |
-| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 97 | 97 | 0 | 0 | 100 % |
-| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 79 | 79 | 0 | 0 | 100 % |
+| [Compañero: IA y cuidado](#compañero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 49 | 0 | 0 | 100 % |
+| [Guion e intérprete](#guion-e-intérprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 97 | 97 | 0 | 0 | 100 % |
+| [Menús e interfaz](#menús-e-interfaz) | `main/` (8 ficheros) | 79 | 79 | 0 | 0 | 100 % |
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 96 | 96 | 0 | 0 | 100 % |
-| [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 29 | 0 | 0 | 100 % |
+| [Evolución](#evolución) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 29 | 0 | 0 | 100 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 38 | 37 | 1 | 0 | 99 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 95 | 95 | 0 | 0 | 100 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 40 | 40 | 0 | 0 | 100 % |
@@ -99,8 +99,8 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 91 | 0 | 0 | 91 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 44 | 44 | 0 | 0 | 100 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
-| [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 30 | 30 | 0 | 0 | 100 % |
-| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
+| [Vídeos y final](#vídeos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 30 | 30 | 0 | 0 | 100 % |
+| [Núcleo y plataforma](#núcleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
 | **Total** | 1438 funciones a portar | 1438 | 1339 | 8 | 91 | 93 % |
 
 ## Batalla

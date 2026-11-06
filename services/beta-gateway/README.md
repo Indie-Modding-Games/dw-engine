@@ -1,9 +1,11 @@
 # Pasarela de la beta cerrada
 
 Un Worker de Cloudflare (`worker.js`, un solo archivo de JavaScript sin dependencias) entre el lanzador y las
-versiones del repositorio privado. Quien prueba la beta **nunca** recibe acceso al repositorio: solo tiene el
-lanzador y la **clave de la beta**, una sola clave compartida que genera el responsable. Con ella el lanzador ve las
-versiones, descarga el juego y recibe actualizaciones del juego y del propio lanzador; sin ella, nada.
+versiones del repositorio. El repositorio es público desde el 2026-11-05, pero el lanzador sigue hablando solo con la
+pasarela: es el servidor de versiones que lleva compilado. Quien prueba la beta solo necesita el lanzador y la
+**clave de la beta**, una sola clave compartida que genera el responsable. Con ella el lanzador ve las versiones,
+descarga el juego y recibe actualizaciones del juego y del propio lanzador; sin ella, nada. La clave decide quién
+recibe la beta a través del lanzador; las versiones también se ven en la página de GitHub del repositorio.
 
 ```
 lanzador ──(Authorization: Bearer <clave de la beta>)──► pasarela ──(token de solo lectura)──► API de GitHub
@@ -98,7 +100,9 @@ No hace falta recompilar ni publicar un lanzador nuevo.
 
 ## El token de GitHub
 
-Un *fine-grained personal access token* que solo puede leer el contenido de `dw-engine`:
+Un *fine-grained personal access token* que solo puede leer el contenido de `dw-engine`. Con el repositorio público
+la pasarela podría leer las versiones sin él, pero el token sube el límite de peticiones a la API (5000 por hora en
+lugar de 60 por IP, que comparten todos los Workers de la misma salida de Cloudflare):
 
 1. GitHub → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**.
 2. **Resource owner:** `Indie-Modding-Games` (si la organización pide aprobación de tokens, un propietario la da).

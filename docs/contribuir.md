@@ -20,7 +20,7 @@
   |---|---|---|
   | `linux` | formato y lint de los archivos que cambia el pull request, compilación (debug, avisos como errores) y todas las pruebas | ~8–10 min |
   | `windows` | la misma compilación para Windows (compilación cruzada con clang-cl), pruebas incluidas pero sin pasarlas | ~5–7 min |
-  | `launcher-version` | si el lanzador cambió desde la versión publicada más nueva, su versión sube ([La versión del lanzador](modulos/apps/launcher.md#publicar-una-version)) | segundos |
+  | `launcher-version` | si el lanzador cambió desde la versión publicada más nueva, su versión sube ([La versión del lanzador](modulos/apps/launcher.md#publicar-una-versión)) | segundos |
 
   Un pull request que solo toca documentación no compila nada: `linux` y `windows` salen como omitidas, que cuenta como
   pasadas. Cuando cambia el lanzador, la pasarela o los scripts de publicación corre además `launcher`, sus pruebas.
@@ -28,7 +28,7 @@
   (`platform-check.yml`, cada lunes): `scripts/dev.sh check-full` los pasa en local.
 - **Versiones:** cada fusión en `main` publica sola una versión de prueba (canal «Pruebas» del lanzador); una ya
   probada se promueve a estable a mano, con los mismos archivos. Un arreglo urgente sigue el mismo camino. Detalles en
-  [Publicar una versión](modulos/apps/launcher.md#publicar-una-version).
+  [Publicar una versión](modulos/apps/launcher.md#publicar-una-versión).
 - **Commits:** una frase en imperativo que diga qué cambia (ver [convenciones de commits](conventions/commits.md)).
 - **DCO:** cada commit lleva `Signed-off-by` (`git commit -s`). Con él certificas que el código o el asset es tuyo o
   que tienes derecho a aportarlo, según el [Developer Certificate of Origin](https://developercertificate.org/).

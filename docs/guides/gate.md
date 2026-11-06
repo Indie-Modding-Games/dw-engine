@@ -1,11 +1,17 @@
 # Pasar el gate de una rama
 
+> **Opcional desde el flujo de pull requests.** Lo que hace falta para fusionar en `main` son las comprobaciones de la
+> CI de cada pull request ([Cómo contribuir](../contribuir.md#flujo-de-trabajo)). El gate sigue siendo la forma de
+> pasar en local, con el contenido de tu disco, lo que la CI no puede: las rutas de autotest
+> ([rutas](../modulos/tests/autotest.md)), el cocinado y clang-tidy. Las reglas del final son las del flujo anterior,
+> cuando se subía directamente a `main`.
+
 `scripts/gate.sh` corre el gate sobre el commit en el que está tu worktree (el árbol tiene que estar limpio). Lo
 corre en uno de dos niveles, bajo el lock del gate de toda la máquina:
 
 | Nivel | Cuándo | Qué corre |
 |---|---|---|
-| `short` (por defecto) | Antes de subir un paquete o un tren de paquetes | `dev.sh check-short`, el build cruzado de Windows y las rutas de humo, más las rutas propias del paquete |
+| `short` (por defecto) | Antes de abrir un pull request que toque el juego | `dev.sh check-short`, el build cruzado de Windows y las rutas de humo, más las rutas propias del paquete |
 | `daily` | Una vez al día sobre `main`, o por tren | `dev.sh check-gate` en modo completo (los pasos de `check-full`), el build cruzado de Windows y todas las rutas: hoy 21 en `en` y `es` (42 ejecuciones; la pareja de guardar y cargar cuenta como dos) sobre el contenido extraído y 4 sobre el `.pak` cocinado, 46 en total |
 
 Solo funciona en un Linux con Docker, Xvfb y lavapipe. En Windows no hay gate: los pasos a mano siguen en la
@@ -277,7 +283,7 @@ Los marcadores de clang-tidy, la caché de cocinados y los tiempos de cada ruta 
 carpeta de git común del repositorio (`git rev-parse --git-common-dir`). Todos los worktrees la comparten y nunca se
 sube. `DWE_GATE_STATE_DIR` la cambia.
 
-## Reglas del gate (coordinador, 2026-10-22)
+## Reglas del gate (flujo anterior, 2026-10-22)
 
 1. `check-gate` incremental (clang-tidy incremental y cocinado reutilizado) es el gate de subida solo desde que este
    gate está en `main`. Hasta entonces, clang-tidy y cocinado completos.

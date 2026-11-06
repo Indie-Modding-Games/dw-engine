@@ -103,7 +103,7 @@ public:
     [[nodiscard]] core::Result<Metrics> run(std::uint64_t seed) const override {
         ruleset::Random random{seed};
         // ... mil días de crianza con el reloj a context.speed ...
-        return Metrics{{.name = "agumon", .value = 1.0}, {.name = "greymon", .value = 0.0}};
+        return Metrics{{.name = "species_a", .value = 1.0}, {.name = "species_b", .value = 0.0}};
     }
 
     // Opcional: tablas para el informe.

@@ -13,7 +13,7 @@ El [plan por fases](../roadmap.md) es el resumen con el estado del día. Aquí e
 |---|---|---|
 | 0 | [Base](fase-0-base.md) | El esqueleto del motor: compila en cualquier PC, abre una ventana, lee el mando y ejecuta Lua |
 | 1 | [Tubería de assets](fase-1-tuberia-de-assets.md) | Sacar todo el contenido del disco original a formatos abiertos y prepararlo para el motor |
-| 2 | [Prueba vertical](fase-2-prueba-vertical.md) | Un trozo pequeño del juego, jugable de punta a punta: caminar de File City a la casa de Jijimon y volver |
+| 2 | [Prueba vertical](fase-2-prueba-vertical.md) | Un trozo pequeño del juego, jugable de punta a punta: caminar de File City a la casa del anciano y volver |
 | 3 | [Núcleo jugable](fase-3-nucleo-jugable.md) | El bucle principal del juego: criar, entrenar, combatir y evolucionar, primero con las reglas del original y sobre rulesets |
 | 4 | [Contenido y modos](fase-4-contenido-y-modos.md) | La historia, los personajes, los modos de juego y la API de mods; termina con la primera versión del mod |
 

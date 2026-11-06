@@ -41,8 +41,8 @@ clang-tidy y clang-format usan todos los núcleos; `DWE_JOBS=6` los limita.
 
 ```bash
 scripts/dev.sh check-commit   # lo de cada commit: build con warnings como errores y los tests rápidos
-scripts/dev.sh check-full     # lo de la punta de la rama, como la CI: además formato, el sitio de documentación,
-                              # tests lentos y clang-tidy
+scripts/dev.sh check-full     # más que la CI de un pull request: además formato y lint de todo, el sitio de
+                              # documentación, tests lentos y clang-tidy
 ```
 
 Las dos usan el preset `ci`, guardan el log de cada paso en `build/logs/` (o en `DWE_LOG_DIR`) y terminan con error
@@ -92,8 +92,9 @@ instaladas (un build sin la feature `validation`), avisa en el registro (`valida
 
 ## Windows
 
-> **Escrito, sin verificar hasta el primer push.** Los presets y el job de la CI de Windows siguen la documentación de
-> CMake, vcpkg y clang-cl, pero todavía no se han ejecutado nunca.
+> `.github/workflows/platform-check.yml` sigue estos pasos, con el preset `windows-ci`, en un Windows de GitHub (cada
+> lunes y a mano). La comprobación `windows` de cada pull request solo compila de forma cruzada desde Linux
+> ([el build de Windows desde Linux](#el-build-de-windows-desde-linux)).
 
 En Windows no se usa el contenedor: se compila con **clang-cl** y la biblioteca estándar de MSVC.
 
@@ -150,6 +151,7 @@ PRESET=windows-cross scripts/dev.sh build
 | `scripts/dev.sh tidy` | Pasa clang-tidy en paralelo (necesita un `configure` previo) |
 | `scripts/dev.sh docs` | Construye el sitio de documentación de `docs/` en `build/docs-site`; un enlace roto lo hace fallar |
 | `scripts/dev.sh docs-dev` | Sirve el sitio en `http://localhost:5173` (o en el puerto `DWE_DOCS_PORT`) y lo recarga al editar |
+| `scripts/dev.sh training-check --content <carpeta>` | Juega una sesión de cada curso del gimnasio sobre el contenido extraído y la compara con los límites del original ([comprobar el entrenamiento](../guides/comprobar-entrenamiento.md)) |
 | `scripts/dev.sh test -LE slow` | Pasa los tests sin los lentos, los que leen el disco o el contenido extraído |
 | `build/<preset>/apps/dwx/dwx verify <fichero>` | Calcula el SHA-1 de una imagen o un ejecutable y dice de qué versión es |
 | `build/<preset>/apps/dwx/dwx extract --list <imagen.cue>` | Lista los ficheros del disco con su SHA-1 y comprueba la tabla de ficheros del ejecutable ([Disco](../formats/disco.md)) |
