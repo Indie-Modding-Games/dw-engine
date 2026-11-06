@@ -15,7 +15,7 @@ Términos del proyecto y su nombre en el código. Si un término no está aquí,
 | ECS | Entidades, componentes y sistemas: el modelo del mundo ([ADR 0012](adr/0012-ecs-con-entt.md)) | `dwe::scene` |
 | Ficha de referencia | Resumen de cómo funcionaba un sistema del original ([reference/](reference/index.md)) | `docs/reference/` |
 | Fuente (estado) | Asset en formato abierto y editable | — |
-| ID de asset | Nombre estable de un asset, como `digimon/agumon/model` | — |
+| ID de asset | Nombre estable de un asset, como `map/file_city_01/background` | — |
 | Modo de juego | Combinación de sistemas con sus propias reglas | `dwe::game::modes` |
 | Paquete | Una capa de contenido con su manifiesto | `dwe::assets::Pack` |
 | Partner | El Digimon que cría el jugador | `dwe::game::partner` |

@@ -74,7 +74,7 @@ líneas que su inglés y que el cuadro (4 filas); las etiquetas no cuentan.
   original, unos 29 caracteres.
 - El diálogo de la historia se parte en líneas con `\n` como el original: hasta 30 caracteres por línea sin contar
   las etiquetas, y a ser posible las mismas líneas que el inglés (el cuadro tiene 4 filas). La primera línea que nombra
-  a quien habla (`{color:7}Coelamon {color:1}\n`) se copia igual, con el espacio antes de la etiqueta.
+  a quien habla (`{color:7}<nombre> {color:1}\n`) se copia igual, con el espacio antes de la etiqueta.
 
 ### Comprobar que cabe
 
@@ -87,7 +87,7 @@ capturas que caben:
 - el texto de fin de batalla (dos líneas de unos 156 px: «soltó», «se lastimó», «¡aprendida!» y las órdenes);
 - los gritos y nombres de las órdenes de batalla;
 - los nombres de técnica en el menú de órdenes de batalla y en el cuadro de fin de batalla;
-- los nombres de mapa del transporte de Birdramon y los temas de la máquina de música (25 caracteres en el original);
+- los nombres de mapa del transporte de `species_e` y los temas de la máquina de música (25 caracteres en el original);
 - las páginas de ayuda del curling y los cuadros de la pesca (líneas de unos 244 px);
 - los nombres y descripciones de las medallas, los títulos del domador y los menús de la tarjeta de memoria.
 

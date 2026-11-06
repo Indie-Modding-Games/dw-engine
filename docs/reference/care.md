@@ -88,7 +88,7 @@ se acaba, muere y renace como bebé con parte de sus stats.
   decir, entre 12 y 72 minutos **(comprobado)**.
 - **En el suelo** (`tickWildPoop`, `handleWildPoop`, `createPoopPile`) **(comprobado)**:
   - **Un error de cuidado**, felicidad −10, disciplina −5, baja de peso y posible bajada del nivel del tamer.
-  - La barra de virus sube 1. Con 16, el partner se convierte en Sukamon (ver la
+  - La barra de virus sube 1. Con 16, el partner se convierte en `species_p` (ver la
     [ficha de evolución](evolution.md)).
   - Se guarda la caca en el mapa: hasta 16 por mapa y 100 en total.
   - Al acabarse el margen el partner solo pasa al estado 7; el montón, el error de cuidado, el ánimo y el peso llegan
@@ -251,7 +251,7 @@ El estado del partner está en `PartnerPara` (`include/dw/params.h`, 0x84 bytes)
 | `remainingLifetime`, `age` | Vida y edad |
 | `careMistakes`, `battles`, `evoTimer` | Contadores de evolución |
 | Bonus de entrenamiento (bandera, valor, tiempo), contadores de mejora | Entrenamiento |
-| Copia de stats | Para volver de Sukamon |
+| Copia de stats | Para volver de `species_p` |
 
 Las vidas no están aquí, sino en la entidad del partner. Las estructuras de `RAISE_DATA` están en
 `include/dw/partner.h`.

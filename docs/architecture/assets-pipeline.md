@@ -54,7 +54,7 @@ El motor monta un sistema de ficheros virtual con capas apiladas. Cada capa es u
 | 2 | Remaster | El equipo: texturas, fondos y música en HD |
 | 1 | Base | El extractor, a partir del disco del usuario |
 
-- **IDs estables por nombre:** `digimon/agumon/model`, `map/file_city_01/background`. Nunca índices numéricos. Un
+- **IDs estables por nombre:** `map/file_city_01/data`, `map/file_city_01/background`. Nunca índices numéricos. Un
   paquete **sobrescribe** un ID que ya existe o **añade** uno nuevo, y por eso no hay límite de Digimon ni de mapas.
 - **Clásico/HD por categoría:** en los ajustes se elige, por ejemplo, fondos HD con música original. Si falta el
   asset HD, se usa el de la base.

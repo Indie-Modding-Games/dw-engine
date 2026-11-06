@@ -61,7 +61,7 @@ registra en la partida guardada y se lo da al campo.
   reposo (la animación 0 del jugador, del compañero o del NPC) y se queda quieto. En el original es la animación la
   que lo lleva, así que un paseo al que un `entity_look_at_entity` quitó el hueco sigue hasta que el giro acaba y
   entonces para. Antes el motor guardaba la velocidad del paseo y el jugador seguía corriendo hasta la pared (trop03,
-  Vegiemon: de (-708, -2323) hasta (-4647, 3941) en ejes del original). Diferencia que queda: durante el giro el motor
+  `species_ae`: de (-708, -2323) hasta (-4647, 3941) en ejes del original). Diferencia que queda: durante el giro el motor
   mantiene la dirección del paseo en vez de torcerla con él (unos pocos fotogramas).
 - **El paso de un deslizamiento es uno para todos** (`tamer.c: tickEntityMoveTo`, `tickEntityMoveToAxis`, con
   `MOVE_TO_DELTA_X`/`MOVE_TO_DELTA_Z` y `PREVIOUS_CAMERA_POS_INITIALIZED`): el primer fotograma de un `entity_move_to`

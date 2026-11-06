@@ -107,8 +107,8 @@ hay que extraerlo de nuevo.
 ## Contenido oculto
 
 Mejora opcional, apagada por defecto: el ruleset `oculto` («Original + contenido oculto», `extends: original`) da un
-camino natural a tres formas que el disco trae completas pero que el original solo da con objetos: Panjyamon
-(campeón), Gigadramon y MetalEtemon (ultras), y a Myotismon (ultra), que el disco solo trae como jefe. Se elige al empezar una partida nueva
+camino natural a tres formas que el disco trae completas pero que el original solo da con objetos: `species_k`
+(campeón), `species_m` y `species_o` (ultras), y a `species_q` (ultra), que el disco solo trae como jefe. Se elige al empezar una partida nueva
 ([pantalla de reglas](../apps/game.md#contenido-oculto)) y queda en la partida guardada; el ruleset `original` sigue
 igual. Los objetos que las dan (`noble_mane`, `giga_hand`, `metalbanana`) siguen funcionando con los dos.
 
@@ -117,10 +117,10 @@ especie](../../architecture/rulesets.md#parches-por-especie)), con números de d
 
 | Forma | Desde | Requisito (3 de 4 grupos, como el original) | Puerta |
 |---|---|---|---|
-| Panjyamon | Elecmon, Penguinmon | ataque 150, defensa 100, velocidad 120; 0–2 errores; peso 25 ± 5; 30 técnicas o venir de Penguinmon | Leomon vive en la ciudad (disparador 248) |
-| Gigadramon | Tyrannomon, Devimon, Airdramon, Seadramon | HP 4000, MP 4000, ataque 500, defensa 400, velocidad 300, cerebro 300; 0–5 errores; peso 60 ± 5; 60 batallas | Copa Metálica (16) ganada alguna vez |
-| MetalEtemon | Sukamon, Numemon | ataque 500, velocidad 500, cerebro 400; 0 errores; peso 20 ± 5; 100 batallas o venir de Sukamon | Etemon vencido y en la ciudad (disparador 242) |
-| Myotismon | Devimon, Bakemon | MP 5000, velocidad 400, cerebro 500; 0–5 errores; peso 30 ± 5; disciplina 80 | Myotismon rescatado en el laboratorio de la Mansión de Grey Lord (disparador 129, fin del guion 64) y de noche (20 a 6) |
+| `species_k` | `species_ak`, `species_l` | ataque 150, defensa 100, velocidad 120; 0–2 errores; peso 25 ± 5; 30 técnicas o venir de `species_l` | `species_aj` vive en la ciudad (disparador 248) |
+| `species_m` | `species_bb`, `species_r`, `species_ay`, `species_n` | HP 4000, MP 4000, ataque 500, defensa 400, velocidad 300, cerebro 300; 0–5 errores; peso 60 ± 5; 60 batallas | Copa Metálica (16) ganada alguna vez |
+| `species_o` | `species_p`, `species_ar` | ataque 500, velocidad 500, cerebro 400; 0 errores; peso 20 ± 5; 100 batallas o venir de `species_p` | `species_s` vencido y en la ciudad (disparador 242) |
+| `species_q` | `species_r`, `species_bk` | MP 5000, velocidad 400, cerebro 500; 0–5 errores; peso 30 ± 5; disciplina 80 | `species_q` rescatado en el laboratorio de la Mansión de Grey Lord (disparador 129, fin del guion 64) y de noche (20 a 6) |
 
 - **Puertas.** `SpeciesGate` (disparadores de la historia, hora del día, copa ganada) se mira antes de puntuar: si
   no se cumple, el destino no puntúa (`OriginalScoring` da 0 puntos y `RequirementReport::gateMet` es `false`), así
@@ -128,7 +128,7 @@ especie](../../architecture/rulesets.md#parches-por-especie)), con números de d
   `EvolutionInputs` trae `trigger` (lector de disparadores), `hourOfDay` y `cupWon`; sin lector, una puerta de
   disparadores u hora está cerrada.
 - **Ranuras.** Cada destino nuevo toma la primera ranura libre de `to` **después** del último destino del origen, así
-  que en un empate gana el destino del original (el plan decía la ranura 0 para Elecmon; se cambió para no tocar la
+  que en un empate gana el destino del original (el plan decía la ranura 0 para `species_ak`; se cambió para no tocar la
   prioridad de los destinos de siempre).
 - **Copas.** La puerta `cup` es el número de la copa en `data/tournaments`. `EvolutionAdapter::cupReader` la lee de
   `TournamentAdapter::cupWon` (el disparador 15 + copa que pone la copa ganada y que se guarda con la partida); sin
@@ -136,10 +136,10 @@ especie](../../architecture/rulesets.md#parches-por-especie)), con números de d
   abierta. Los premios van en `extra_prizes` del mismo fichero, que los torneos suman a los de `tournament.yaml`:
   Noble Mane (126) en la Copa Animal (20, grado Z), Giga Hand (125) en la Copa Metálica (16, grado M) y Metalbanana
   (127) en la Copa Basura (17, grado T).
-- **Myotismon de compañero.** No tiene filas en el disco, así que el parche las diseña: ganancias
-  6000/7000/600/500/700/700, crianza copiada de Devimon con la carne de comida favorita y el remate de Devimon
+- **`species_q` de compañero.** No tiene filas en el disco, así que el parche las diseña: ganancias
+  6000/7000/600/500/700/700, crianza copiada de `species_r` con la carne de comida favorita y el remate de `species_r`
   (`death_claw`) en su primera ranura vacía (la 5). `effect_type: devi` da a sus técnicas los puntos de lanzamiento
-  de Devimon (`BattleAdapter` lo pone en `effects.original_types`). Su modelo es de enemigo y no tiene los clips de
+  de `species_r` (`BattleAdapter` lo pone en `effects.original_types`). Su modelo es de enemigo y no tiene los clips de
   cuidado ni de gimnasio: `clips` dice cuál juega en lugar de cada uno (anda mal → anda, contento → victoria,
   comer → técnica 0, dormir y estados → quieto de mal humor, cansado → cansancio del combate, gimnasios → guardia y
   bloqueo; el remate, clip 51, juega la técnica 0). `FieldScene::loadActor` los añade al cargar al compañero con
@@ -173,22 +173,22 @@ prosperidad) un Mega sigue contando como nivel 5.
 
 | Forma | Desde | Requisito | Puerta |
 |---|---|---|---|
-| MetalEtemon (Mega) | Etemon (en vez de Sukamon y Numemon) | el de antes: ataque 500, velocidad 500, cerebro 400; 0 errores; peso 20 ± 5; 100 batallas o venir de Etemon | la de antes (disparador 242) |
-| Machinedramon (Mega) | Megadramon, Gigadramon | HP 8000, MP 6000, ataque 700, defensa 600, velocidad 400, cerebro 400; 150 batallas | Mt. Infinity terminado (disparador 50, que el guion 184 pone tras el combate final; suposición) |
+| `species_o` (Mega) | `species_s` (en vez de `species_p` y `species_ar`) | el de antes: ataque 500, velocidad 500, cerebro 400; 0 errores; peso 20 ± 5; 100 batallas o venir de `species_s` | la de antes (disparador 242) |
+| `species_t` (Mega) | `species_u`, `species_m` | HP 8000, MP 6000, ataque 700, defensa 600, velocidad 400, cerebro 400; 150 batallas | Mt. Infinity terminado (disparador 50, que el guion 184 pone tras el combate final; suposición) |
 
-- **Machinedramon de compañero.** Filas diseñadas: ganancias 9999/9999/999/900/700/800 y crianza de Megadramon con
+- **`species_t` de compañero.** Filas diseñadas: ganancias 9999/9999/999/900/700/800 y crianza de `species_u` con
   siete comidas en vez de seis y peso 70. Lucha como tipo 3 (virus; el jefe es 0, sin tipo: `partner_type`) y su
   Infinity Cannon pega 240 con 1 iframe en vez de 777 con 38 (`partner_moves`). `BattleAdapter` añade esa copia al
   catálogo de técnicas (`MoveCatalog::addVariant`: mismo id, después de la tabla) y `Combatant::moveVariants` la usa
   solo para el compañero; el jefe y cualquier otro luchador siguen con la de la tabla. Tiene los mismos sustitutos de
-  clips que Myotismon y en el campo se dibuja a 0,6 (`field_scale`: radio 400 frente a 220 de Megadramon).
-- **Sin la opción** nada cambia: un ultra no vuelve a revisar y Machinedramon no se alcanza.
+  clips que `species_q` y en el campo se dibuja a 0,6 (`field_scale`: radio 400 frente a 220 de `species_u`).
+- **Sin la opción** nada cambia: un ultra no vuelve a revisar y `species_t` no se alcanza.
 
 Tests: `a partner's move variant replaces the table's move for it alone` (`game/battle/tests/battle_tests.cpp`),
 `a ruleset's species patches give the partner its own type and move values`
 (`apps/session/tests/battle_adapter_tests.cpp`) y los de «Contenido oculto».
 
-Las etapas canónicas (Supremo/Mega para Phoenixmon, HerculesKabuterimon, MetalEtemon y Machinedramon) son solo de la
+Las etapas canónicas (Supremo/Mega para `species_v`, `species_bd`, `species_o` y `species_t`) son solo de la
 UI: las reglas siguen viendo nivel 5 ([game.md](../apps/game.md#etapas-canónicas)).
 
 ## Paridad con el decomp

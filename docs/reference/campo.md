@@ -123,17 +123,17 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 - Una entrada de la tabla de warps solo se dispara desde una casilla 110–119 de su salida; las que no tienen casilla
   son solo puntos de llegada de otros warps (`tamer.c: checkMapInteraction`, `TARGET_MAP = targetMap[trigger -
   110]`) **(comprobado)**.
-- Muchas salidas no están en la tabla sino en el script de eventos del mapa (`warp_to`): la puerta de la casa de
-  Jijimon (`room08`, disparador 51) corre la sección 51 del script 178, que lleva al jugador a la puerta y hace
+- Muchas salidas no están en la tabla sino en el script de eventos del mapa (`warp_to`): la puerta de la casa del
+  anciano (`room08`, disparador 51) corre la sección 51 del script 178, que lleva al jugador a la puerta y hace
   `warp_to` a `twna01` salida 2 mientras el disparador 203 esté apagado **(comprobado en el script extraído)**. `dwx`
   los extrae todos con sus condiciones ([warps de script](../architecture/warps-de-script.md)).
 
 ### El partner
 
-- Se mueve también con la raíz de sus animaciones **(comprobado)**. Con el partner inicial (Agumon): andar (2) 22,6
+- Se mueve también con la raíz de sus animaciones **(comprobado)**. Con el partner inicial (`species_a`): andar (2) 22,6
   por fotograma, andar despacio (3) 14,9 y correr (4) 43,5 **(medido)**: 452, 298 y 870 por segundo. Corre más
   despacio que el jugador.
-- **Distancia** (`partner.c: getPartnerTamerCloseness`) **(comprobado)**, con R su radio (120 en Agumon):
+- **Distancia** (`partner.c`, la cercanía del compañero al jugador) **(comprobado)**, con R su radio (120 en `species_a`):
   más lejos que 3,5 R corre, entre 2,5 R y 3,5 R anda, más cerca termina el ciclo de andar y se para (o se para en
   seco si choca con el jugador).
 - **Su estado cambia el paso** (`partner.c: partnerTickWalking`, `setPartnerSlowWalking`, `setPartnerIdle`)
@@ -219,7 +219,7 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 ## Datos
 
 - `map/<id>/data`: colisión, warps y cámara de cada mapa ([mapas](../formats/mapas.md)).
-- `data/maps`: nombres de carga. File City es el nombre 43 y la casa de Jijimon el 48 **(comprobado)**.
+- `data/maps`: nombres de carga. File City es el nombre 43 y la casa del anciano el 48 **(comprobado)**.
 - `field/script_warps` y `data/new_game_story` del paquete base, que extrae `dwx` (esquemas `script_warps` y
   `new_game_story`).
 - `content/packs/game/field/rules.yaml` y `warps.yaml` (solo `start`; esquemas `field_rules` y `field_warps` en
@@ -228,9 +228,9 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 ## El recorrido de la fase 2
 
 - **File City** es `twna01` (índice 204, nombre de carga 43): los mapas `twna01`–`twna13` y `twnb01`–`twnb24` son la
-  ciudad en sus distintas fases; `twna01` es la del principio, la única cuyo NPC es solo Jijimon y su gente, y la que
+  ciudad en sus distintas fases; `twna01` es la del principio, la única cuyo NPC es solo el anciano y su gente, y la que
   el script de la casa elige con el flag 203 apagado **(comprobado; que sea la primera fase, suposición razonable)**.
-- **La casa de Jijimon** es `room08` (índice 218, nombre de carga 48): la salida 2 de `twna01` (disparador 112) lleva
+- **La casa del anciano** es `room08` (índice 218, nombre de carga 48): la salida 2 de `twna01` (disparador 112) lleva
   a su salida 0. `room10` y `room11` también se llaman así al cargar; son otra versión de la casa con escaleras
   **(suposición)**.
 - **La vuelta**: `room08` no tiene warps en su tabla; su puerta (disparador 51) es el warp de script a `twna01`
@@ -238,7 +238,7 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 - El campo empieza en `twna01`, salida 1 (la que viene de `trai00`, la entrada a la ciudad), salvo con la historia
   y `story_scenes.new_game.chain: original`: entonces empieza como el original (`map.c: initializeMap`), en
   `twna01` salida 9, cuya casilla corre la apertura (sección 0x36 del guion 164: disparadores 54, 55 y 75 y salto a
-  `topn01`, donde el guion 193 despierta al jugador en casa de Jijimon).
+  `topn01`, donde el guion 193 despierta al jugador en casa del anciano).
 
 ## Alcance de los mapas
 

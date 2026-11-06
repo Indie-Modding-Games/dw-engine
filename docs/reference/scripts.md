@@ -112,7 +112,7 @@ Lo que guarda `ScriptState` y lo que el motor reserva (comprobado, `script.h`, `
   | 2 | combate sin domador |
   | 3 | modo tienda: la rutina 8 abre el reciclaje, la 14 vende cartas; también lo usa la rutina 0 |
   | 4 | con el 3 quitado, la rutina 14 compra cartas sueltas en vez de un sobre |
-  | 5–13, 14 | intercambios de Mojyamon (rutina 2); el 14 cuando están los nueve |
+  | 5–13, 14 | intercambios de `species_bn` (rutina 2); el 14 cuando están los nueve |
   | 15–36 | copa de torneo ganada (15 + id de copa) |
   | 37, 38, 39, 40 | inscrito en torneo; aviso pendiente antes y después de las 20:00; nivel demasiado alto |
   | 41 | no cargar la librería de tiendas en la próxima carga de mapa (lo pone la sección de muerte) |
@@ -135,7 +135,7 @@ Lo que guarda `ScriptState` y lo que el motor reserva (comprobado, `script.h`, `
   | 0 | velocidad del reloj; 3 = parado. Se fuerza a 3 al congelar y se restaura al acabar; la rutina 25 cambia el valor que se restaurará; al guardar se pone 0 |
   | 1 | prosperidad, recalculada de los disparadores 200 + Digimon |
   | 2, 3, 4 | torneo: día (bit 7 = sin aviso), copa (`0xFF` ninguna), tipo del partner inscrito |
-  | 5 | el Digimon que era el partner antes de volverse Sukamon |
+  | 5 | la especie que era el partner antes de volverse `species_p` |
   | 6 | nombre del mapa en el próximo warp con guion: 0 según el tipo de sección, 1 siempre, 2 nunca; se vuelve a 0 |
   | 28–31 | contadores de días: +1 cada día salvo si valen `0xFF` |
   | 121, 122 | curling: resultado y dificultad |
@@ -143,10 +143,10 @@ Lo que guarda `ScriptState` y lo que el motor reserva (comprobado, `script.h`, `
   | 243, 244 | byte alto y bajo del acumulador de tienda (rutinas 30, 31, 56); al olvidar técnicas, la técnica olvidada y las que faltan |
   | 245 | modo de música: 0 día/noche, 1 siempre de día, 2–10 una variante fija |
   | 246 | parámetro de entrenamiento (suposición: sin confirmar su uso) |
-  | 247, 248 | burbuja de humor de Monochromon y argumentos de la rutina 21; destino del transporte de Birdramon |
+  | 247, 248 | burbuja de humor de `species_ai` y argumentos de la rutina 21; destino del transporte de `species_e` |
   | 249 | borrador de menús: carta sacada, pista de la gramola, tipo de menú |
   | 250–253 | combate con guion (abajo) |
-  | 254 | argumento general de las rutinas: tienda (el NPC que la atiende), tipo de entrenamiento, cofre, objeto a quitar, opciones de nombre, Digimon de la evolución, elección de huevo de la partida nueva (0 Agumon, otro Gabumon) |
+  | 254 | argumento general de las rutinas: tienda (el NPC que la atiende), tipo de entrenamiento, cofre, objeto a quitar, opciones de nombre, especie de la evolución, elección de huevo de la partida nueva (0 `species_a`, otro `species_an`) |
   | 255 | resultado: del combate (−1, 0, 1), del torneo (rondas ganadas), 0 al morir por enfermedad o vejez |
 
 - **Cartas:** 66 cuentas de 4 bits; `give_card` no pasa de 9 y `take_card` no baja de 0 (comprobado).
@@ -174,8 +174,8 @@ Lo que guarda `ScriptState` y lo que el motor reserva (comprobado, `script.h`, `
 | Muerte o vida perdida | `MAPHEAD` `0x4DE` | casilla |
 | Usar el objeto 22 | `MAPHEAD` `0x4DD` | casilla |
 | Aviso de torneo / torneo perdido | `MAPHEAD` `0x4D9` / `0x4DA` | evento |
-| Fin de la pesca de Seadramon | `MAPHEAD` `0x4E4` (salta al script 7, sección `0x52`) | casilla |
-| Transporte de Birdramon | `MAPHEAD` `0x4E3`, cambiando el puntero del script en curso | — |
+| Fin de la pesca de `species_n` | `MAPHEAD` `0x4E4` (salta al script 7, sección `0x52`) | casilla |
+| Transporte de `species_e` | `MAPHEAD` `0x4E3`, cambiando el puntero del script en curso | — |
 
 - **La cadena de carga de mapa** (comprobado, `map.c: changeMap`, `MAPHEAD.SCN`): `runMapHeadScript(mapa)` corre la
   sección del mapa en `MAPHEAD`. Esta hace `set_script` (script y mapa), que carga el mapa en el acto y apila un marco
@@ -405,8 +405,8 @@ Las entidades son `tamer`, `partner` o el id de script de un NPC; un NPC que no 
   `tamer.c: tickEntityMoveTo`).
 
 `call_digimon_routine` (comprobado, `partner.c: callDigimonRoutine`, `tamer.c`): 0 el partner va al baño del mapa;
-1 curling; 2 deshace el Sukamon (vuelve al Digimon de la variable 5); 3 muerte; 4 secuencia de renacer (la vida vuelve
-a 360); 5 la apertura; 6 el final; 7 vida perdida por enfermedad; 8 aparece Machinedramon; 9 vida perdida en combate;
+1 curling; 2 deshace el `species_p` (vuelve a la especie de la variable 5); 3 muerte; 4 secuencia de renacer (la vida vuelve
+a 360); 5 la apertura; 6 el final; 7 vida perdida por enfermedad; 8 aparece `species_t`; 9 vida perdida en combate;
 10 evoluciona al Digimon de la variable 254. Otro id no hace nada (y no quita la marca de sincronía).
 
 #### Mapa, objetos y efectos
@@ -443,12 +443,12 @@ falta para correr los eventos de la historia y las tiendas en la fase 4a (propue
 |---|---|---|---|---|---|
 | 0 | 76 | elegir un objeto que se pueda tirar; el elegido en la 254 (`0xFF` al cancelar, y solo se puede cancelar con el disparador 3) | sí | `script_common.c: openDiscardItem` | sí |
 | 1 | 2 | tienda de méritos (cartas por méritos, objetos con méritos) | sí | `shop/script_menu.c: openMeritShop` | más tarde |
-| 2 | 4 | intercambio de Mojyamon (tres ofertas, conjunto en la 249) | sí | `script_menu.c: openMojyamonShop` | más tarde |
+| 2 | 4 | el trueque de objetos (tres ofertas, conjunto en la 249) | sí | `script_menu.c`, la tienda del trueque | más tarde |
 | 6 | 3 | correr el torneo inscrito (copa en la 3; rondas ganadas en la 255) | sí | `tournament.c: scriptStartTournament`, `utils2.c: startTournament` | más tarde |
 | 7 | 32 | entrenamiento del gimnasio (tipo en la 254); necesita la 39 antes | sí | `script_interp.c` + overlays de entrenamiento | sí |
 | 8 | 13 | tienda de objetos; con el disparador 3, reciclaje | sí | `script_common.c: openShop`, `script_menu.c: openRecycleShop` | sí |
 | 9 | 2 | gramola | sí | `script_menu.c: openJukebox` | más tarde |
-| 10 | 2 | transporte de Birdramon: destino en 247/248, cobra y salta a `MAPHEAD 0x4E3` | sí | `script_menu.c: tickBirdraTransport` | más tarde |
+| 10 | 2 | transporte de `species_e`: destino en 247/248, cobra y salta a `MAPHEAD 0x4E3` | sí | `script_menu.c: tickBirdraTransport` | más tarde |
 | 11 | 2 | guardarropa de objetos | sí | `script_menu.c: tickItemKeeper` | más tarde |
 | 12, 13 | 12, 69 | quitar uno / la pila entera del objeto de la 254 | no | `item.c: removeItem` | sí |
 | 14 | 6 | cartas: vender (disparador 3), comprar sueltas (disparador 4) o abrir un sobre | sí | `script_menu.c: openSellCardMenu`, `openBuyCardMenu`, `rollCardPack` | más tarde |
@@ -459,12 +459,12 @@ falta para correr los eventos de la historia y las tiendas en la fase 4a (propue
 | 22 | 5 | comprobar y dar medallas de torneo | si da una | `tournament.c: scriptCheckTournamentMedal` | más tarde |
 | 23, 24 | — | abrir / cerrar la bandeja del cofre de la 254 | sí, unos 8 fotogramas | `map_object.c` | no: el disco no la usa |
 | 25 | 7 | el valor al que vuelve la variable 0 al acabar = la 254 | no | `script_interp.c` | sí |
-| 28 | 140 | burbuja de humor de Monochromon (247, 248) | no | `script_common.c: createMonochromonMoodBubble` | más tarde |
+| 28 | 140 | burbuja de humor de `species_ai` (247, 248) | no | `script_common.c: createMonochromonMoodBubble` | más tarde |
 | 29 | 1 | elegir huevo al renacer | sí | `doo2.c: DOO2_openEggBox` | sí |
 | 30, 31, 56 | 2, 97, 4 | acumulador de tienda: a 0, sumar 243/244, guardarlo en 243/244 | no | `script_interp.c` | sí |
 | 32 | 4 | introducción y nombres de la partida nueva (elección de huevo en la 254) | sí | `script_menu.c: newGameStateMachine` | sí |
 | 33 | 1 | inscribir a la fuerza en la copa especial | no | `script_interp.c` | más tarde |
-| 34, 37, 38 | 1, 1, 1 | efectos de un mapa: temblor de Meramon, quitar niebla (espera), Ninjamon | 37: sí | `map.c`, `overworld.c` | más tarde |
+| 34, 37, 38 | 1, 1, 1 | efectos de un mapa: temblor de `species_b`, quitar niebla (espera), `species_bo` | 37: sí | `map.c`, `overworld.c` | más tarde |
 | 35, 39 | 3, 16 | carga asíncrona de la librería de tiendas / de entrenamiento (se espera con `wait_for_entity 0xD6`) | no | `script_common.c: loadShopLibrary`, `map.c: loadTrainingLibrary` | sí |
 | 36 | — | recargar el fondo del mapa | no | `map.c: readMapTFS` | no: el disco no la usa |
 | 40, 51 | 1, 1 | jefe final: precargar y efecto de aparición | no | `eab.c`, `script_interp.c` | más tarde |
@@ -472,7 +472,7 @@ falta para correr los eventos de la historia y las tiendas en la fase 4a (propue
 | 45, 46 | 3, 2 | fundido a blanco y desde blanco en N fotogramas (254) | no | `fade.c` | sí |
 | 47 | 2 | olvidar técnicas por perder todas las vidas (un texto por técnica) | sí | `script_common.c: lostAllLives` | sí |
 | 48 | 2 | máquina de guardar | sí | `main_menu.c: openSaveMachine` | sí |
-| 49, 50 | 1, 2 | pedestal de Angemon (aparecer; temblar, espera) | 50: sí | `map_object.c` | más tarde |
+| 49, 50 | 1, 2 | pedestal de `species_ap` (aparecer; temblar, espera) | 50: sí | `map_object.c` | más tarde |
 | 52, 53 | 1, 1 | precargar y correr el final; luego créditos y título | 53: sí | `tamer.c: tamerTickEnding` | más tarde |
 | 54 | 1 | guardar la partida terminada | sí | `main_menu.c: gameClearSave` | más tarde |
 | 55 | 5 | una sola vuelta de animación para la entidad de la 254 | un fotograma | `overworld.c: setLoopCountToOne` | sí |
@@ -551,7 +551,7 @@ Cuentas sobre el disco americano (test lento `the user's disc, extracted: every 
   `tickConfirmDialogue`, `tickTextboxHandling`.
 - `src/main/script_value.c`: comparaciones de `IF`, `getStatsPointer`, `scriptIdToEntityId`.
 - `src/main/script_common.c`: `resolveMapHeadEntry`, `handleItemLoss`, `lostAllLives`, `setDialogueOwner`, tiendas.
-- `src/shop/script_menu.c`: tiendas, méritos, gramola, guardarropa, Birdramon, `newGameStateMachine`.
+- `src/shop/script_menu.c`: tiendas, méritos, gramola, guardarropa, `species_e`, `newGameStateMachine`.
 - `src/main/tamer.c`: `checkMapInteraction` (hablar y casillas), `startBattle`, movimientos.
 - `src/main/map.c`: `changeMap`, `scriptTickChangeMap`; `src/main/main.c`: partida nueva y carga.
 - `src/main/partner_impl.c`: muerte por enfermedad y por vejez; `src/main/btl.c`: `handleBattleStart`.
