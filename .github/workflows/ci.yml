@@ -83,10 +83,14 @@ jobs:
       PRESET: ci
       GH_TOKEN: ${{ github.token }}
       BASE: ${{ needs.changes.outputs.base }}
-      DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
-      DWE_CCACHE_DIR: ${{ runner.temp }}/ccache
       DWE_CCACHE_SIZE: 2G
     steps:
+      # The runner context only exists inside steps, so the cache folders go to the job here.
+      - name: Cache folders
+        run: |
+          echo "DWE_CACHE_DIR=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
+          echo "DWE_CCACHE_DIR=$RUNNER_TEMP/ccache" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v4
         with:
           # The format and the lint compare with the pull request's base.
@@ -152,11 +156,15 @@ jobs:
     env:
       PRESET: windows-cross
       GH_TOKEN: ${{ github.token }}
-      DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
-      DWE_CCACHE_DIR: ${{ runner.temp }}/ccache
       DWE_CCACHE_SIZE: 2G
-      DWE_XWIN_DIR: ${{ runner.temp }}/xwin
     steps:
+      # The runner context only exists inside steps, so the cache folders go to the job here.
+      - name: Cache folders
+        run: |
+          echo "DWE_CACHE_DIR=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
+          echo "DWE_CCACHE_DIR=$RUNNER_TEMP/ccache" >> "$GITHUB_ENV"
+          echo "DWE_XWIN_DIR=$RUNNER_TEMP/xwin" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v4
 
       - name: Development image
