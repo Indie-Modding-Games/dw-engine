@@ -99,7 +99,7 @@ Las reglas de la [tubería del remaster](../architecture/remaster-pipeline.md#le
 
 ## Licencias propuestas
 
-- **Código:** por decidir entre MIT (máxima libertad) y GPL-3.0 (obliga a que los forks sigan abiertos).
+- **Código:** MIT (ver [`LICENSE`](../../LICENSE)). Las dependencias conservan sus propias licencias.
 - **Assets originales del equipo:** CC BY-SA 4.0.
 
 Ver [ADR 0011](../adr/0011-politica-legal-de-assets.md).
