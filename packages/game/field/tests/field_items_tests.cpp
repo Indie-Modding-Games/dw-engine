@@ -159,3 +159,24 @@ TEST_CASE("map.c changeMap: another map clears the last one's ground and chests,
   REQUIRE(items.chests().size() == 1);
   CHECK(items.chests().front()->taken);
 }
+
+TEST_CASE("map.c changeMap: a load of the same map clears the last load's ground and chests") {
+  FieldItems items{{.groundSlots = 11, .chestSlots = 2, .reachCells = 1}};
+  const dwe::assets::ItemHandle item = table().handleOf(table().entries().front());
+  items.loadMap("trop06", 1);
+  REQUIRE(items.spawn(item, {.column = 67, .row = 42}, 0.0F));
+  REQUIRE(items.spawnChest(ogreChest(false)));
+  // Naming the map, or the same load again, keeps them.
+  items.enterMap("trop06");
+  items.loadMap("trop06", 1);
+  REQUIRE(items.ground().size() == 1);
+  REQUIRE(items.chests().size() == 1);
+
+  // A script's warp back onto trop06 (the forest's trap, script 18): a new load, nothing stays,
+  // and the head script's roll lays its items on free ground instead of over the last ones.
+  items.loadMap("trop06", 2);
+  CHECK(items.ground().empty());
+  CHECK(items.chests().empty());
+  REQUIRE(items.spawn(item, {.column = 67, .row = 42}, 0.0F));
+  CHECK(items.ground().size() == 1);
+}

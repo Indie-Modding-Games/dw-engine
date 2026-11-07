@@ -962,9 +962,10 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent,
     }
     fieldNumbers_->tick(TickSeconds);
     scene_->finishTick();
-    // map.c: changeMap clears the last map's dropped items and chests as the new map loads, before
-    // its head script spawns this map's: none of them is drawn over the new map's fade in.
-    game_.systems.fieldItems->items().enterMap(scene_->field().mapId());
+    // map.c: changeMap clears the last load's dropped items and chests as a map loads, the same
+    // map's too (a script's warp back onto it), before its head script spawns this load's: none of
+    // them is drawn over the new map's fade in, and a warp back does not pile them up.
+    game_.systems.fieldItems->items().loadMap(scene_->field().mapId(), scene_->mapSerial());
     storyLink_->afterMapChange();
     if (auto notice = storyLink_->takeLockNotice()) {
       showLockNotice(*notice);

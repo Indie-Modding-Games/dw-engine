@@ -228,6 +228,14 @@ void FieldItems::enterMap(std::string_view mapId) {
   }
 }
 
+void FieldItems::loadMap(std::string_view mapId, std::uint32_t load) {
+  if (mapId != mapId_ || load != load_) {
+    mapId_ = mapId;
+    load_ = load;
+    clear();
+  }
+}
+
 void FieldItems::clear() {
   // map_object.c: emptyChests (unloadMapParts, as the map goes) and clearChests (a new game, the
   // ice sanctuary's crystals): every chest slot free again. The taken flag they leave behind is

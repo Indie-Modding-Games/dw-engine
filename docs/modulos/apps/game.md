@@ -408,6 +408,22 @@ nuevo. Prueba: `field_items_tests` "map.c changeMap: another map clears the last
 stay"; en la captura cuadro a cuadro de room08 → twna01 con una carne soltada en room08, antes se veía sobre la hierba
 de twna01 los 20 cuadros del fundido de entrada y desaparecía en el último; ahora no sale.
 
+Volver a cargar el mismo mapa también los borra (`changeMap` llama a `clearDroppedItems` en cada carga). En el bosque
+de la prueba del centauro (trop06, guion 18) la cabecera tira `store_random` siete veces y pone en siete casillas uno
+de dos o tres objetos (50 % en las tres primeras, 30 % en las otras cuatro: 2,7 de media) mientras el disparador 236
+(el centauro ya en la ciudad) no esté puesto; la rutina 25 que llama antes solo fija qué vuelve a la variable 0 al
+acabar. Cada flecha que da al compañero, cada «Missed!» y cada fallo de carril devuelven al jugador con
+`warp_to screen=17`, que recarga trop06 y vuelve a tirar. Medido en el original (2026-11-07, entrando en trop06 desde
+`01_field_outside_jijimon_house` por RAM): primera entrada con 2 objetos (0 en (49, 53) y 16 en (67, 42)); tras la
+flecha y «Let's go back» `DROPPED_ITEMS` queda vacío y la cabecera pone 3 (0, 16 y 1 en (50, 34)); con el disparador
+236 puesto, ninguno. dwe ya los ponía al entrar andando y al cargar una partida, pero
+`FieldItems::enterMap` solo borraba al cambiar a otro mapa: tras cada vuelta los objetos de la tirada anterior se
+quedaban y la nueva se sumaba (dos en la misma casilla, hasta llenar los 11 huecos y perder las tiradas siguientes).
+Ahora `PlaySession` llama a `FieldItems::loadMap` con el número de carga de `FieldScene` (`mapSerial`), que borra en
+cada carga, la del mismo mapa incluida; `enterMap` sigue sin borrar para quien solo nombra el mapa. Prueba:
+`field_items_tests` "map.c changeMap: a load of the same map clears the last load's ground and chests". Otros mapas con
+`spawn_item` en su cabecera comprobados en dwe: mayo01, trop01, miha03 y dgha01 tiran y ponen sus objetos y cofres.
+
 ## El campo detrás del menú
 
 Al abrir el menú del juego (Tab) andando, el original pone al jugador y al compañero en su animación de reposo, la 0,
