@@ -2273,6 +2273,47 @@ TEST_CASE("original look text draws with the font the player picks, at once") {
   CHECK(widthOf(*ui, "bitmap") == doctest::Approx(modern));
 }
 
+TEST_CASE("in the script's textboxes a space advances as far as the glyph before it") {
+  // The fixture font with a space 2 pixels wide.
+  const std::string meta = std::string{fixture::Meta} + R"yaml(- index: 3
+  sjis: "8140"
+  character: "　"
+  ascii: " "
+  x: 12
+  y: 0
+  width: 2
+)yaml";
+  Content content;
+  auto png = assets::encodePng(fixture::atlas());
+  REQUIRE(png.has_value());
+  content.add("font/main.png",
+              std::string_view{reinterpret_cast<const char*>(png->data()), png->size()});
+  content.add("font/main_meta.yaml", meta);
+  content.add("ui/look/document.rml", R"rml(<rml>
+<head>
+	<link type="text/rcss" href="/ui/common/base.rcss"/>
+	<style>
+		div { position: absolute; left: 0; font-size: 33px; }
+	</style>
+</head>
+<body>
+	<div id="menu-b" class="original-look" style="top: 0;">B A</div>
+	<div id="dialogue-b" class="original-look original-dialogue" style="top: 50px;">B A</div>
+	<div id="dialogue-a" class="original-look original-dialogue" style="top: 100px;">A B</div>
+</body>
+</rml>)rml");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("look", idOf("ui/look/document")));
+  ui->show("look");
+  ui->update();
+  REQUIRE(ui->textFont() == TextFont::Original);
+  // Elsewhere a space takes its own 2 pixels; in a textbox, the 4 of the B or the 3 of the A
+  // before it (three times larger).
+  CHECK(widthOf(*ui, "menu-b") == doctest::Approx(27.0F));
+  CHECK(widthOf(*ui, "dialogue-b") == doctest::Approx(33.0F));
+  CHECK(widthOf(*ui, "dialogue-a") == doctest::Approx(30.0F));
+}
+
 TEST_CASE("without the extracted bitmap font, original look text keeps the modern font") {
   Content content;
   content.add("ui/look/document.rml", OriginalLookDocument);

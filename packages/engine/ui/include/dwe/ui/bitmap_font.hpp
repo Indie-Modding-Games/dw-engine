@@ -25,6 +25,25 @@ struct TextRun {
   bool bitmap = false;
 };
 
+// The original draws each glyph at a multiple of this many pixels from where its text starts
+// (font.c: drawGlyph uploads the glyph to the 4-bit text area at x / 4), while the pen moves by
+// the glyphs' own advances: after a 5-pixel glyph the next one lands up to 3 pixels back.
+inline constexpr int GlyphGrid = 4;
+
+// Where a glyph whose pen is `offset` screen pixels from its text's start is drawn, for a font
+// drawn `scale` times larger: on the grid, rounding down.
+[[nodiscard]] float onGlyphGrid(float offset, int scale);
+
+// Whether a character is a space: the ASCII one or the full-width one the original's text uses.
+[[nodiscard]] bool isSpace(char32_t character);
+
+// How far a glyph moves the pen, in atlas pixels. With `dialogue` (the script's textboxes) a space
+// moves it as far as the glyph before it did (script_textbox.c: drawString2 clears a space's cell
+// but keeps the previous glyph's advance), or by its own advance with none before it.
+// `previousAdvance` is the last glyph's that was not a space (0 for none), and is updated.
+[[nodiscard]] int glyphAdvance(const BitmapGlyph& glyph, char32_t character, bool dialogue,
+                               int& previousAdvance);
+
 // A bitmap font as dwx extracts the original's (docs/formats/textos.md): an atlas of equal cells,
 // where ink is any pixel that is not transparent, and its glyphs by Unicode character.
 class BitmapFont {

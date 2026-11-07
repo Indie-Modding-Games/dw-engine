@@ -22,6 +22,7 @@ body #window, body #talk, body #points-box {
 .rarity-4 { decorator: image(card-rarity-4 scale-none left top); }
 
 .row, #talk, #points-box { font-family: original-look; color: #d0d0d0; }
+.row, #talk { font-family: original-look-dialogue; }
 body .row.stuck { color: #e03028; }
 body #speaker { color: #f8f800; }
 body #speaker.player { color: #d0d0d0; }

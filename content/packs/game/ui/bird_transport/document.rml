@@ -23,7 +23,7 @@
 			<div class="row" id="row-4"><span class="name" id="name-4"></span><span class="cost" id="cost-4"></span></div>
 			<div class="row" id="row-5"><span class="name" id="name-5"></span><span class="cost" id="cost-5"></span></div>
 		</div>
-		<div id="talk" class="original-box original-look">
+		<div id="talk" class="original-box original-look original-dialogue">
 			<div class="talk-row speaker" id="speaker"></div>
 			<div class="talk-row" id="talk-0"><span class="run" id="talk-run-0"></span></div>
 			<div class="talk-row" id="talk-1"><span class="run" id="talk-run-1"></span></div>

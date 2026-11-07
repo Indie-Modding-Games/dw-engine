@@ -25,7 +25,7 @@
 			<div class="rule" id="amount-rule-bottom"></div>
 			<div id="amount-get"></div>
 		</div>
-		<div id="talk" class="original-box original-look">
+		<div id="talk" class="original-box original-look original-dialogue">
 			<div class="talk-row speaker" id="speaker"></div>
 			<div class="talk-row" id="talk-0"><span class="run" id="talk-run-0"></span></div>
 			<div class="talk-row" id="talk-1"><span class="run" id="talk-run-1"></span></div>

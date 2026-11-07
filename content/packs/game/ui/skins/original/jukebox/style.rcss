@@ -14,7 +14,7 @@ body #window, body #talk {
 .use-menu-art .label-number { decorator: image(jukebox-number-label scale-none left top); color: transparent; }
 .use-menu-art .label-title { decorator: image(jukebox-title-label scale-none left top); color: transparent; }
 
-.row, #talk { font-family: original-look; color: #d0d0d0; }
+.row, #talk { font-family: original-look-dialogue; color: #d0d0d0; }
 body .row.playing { color: #94adff; }
 body #speaker { color: #f8f800; }
 

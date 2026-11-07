@@ -13,7 +13,7 @@
 			<div class="row" id="row-0"><span class="number" id="number-0"></span><span class="name" id="name-0"></span></div><div class="row" id="row-1"><span class="number" id="number-1"></span><span class="name" id="name-1"></span></div><div class="row" id="row-2"><span class="number" id="number-2"></span><span class="name" id="name-2"></span></div><div class="row" id="row-3"><span class="number" id="number-3"></span><span class="name" id="name-3"></span></div><div class="row" id="row-4"><span class="number" id="number-4"></span><span class="name" id="name-4"></span></div><div class="row" id="row-5"><span class="number" id="number-5"></span><span class="name" id="name-5"></span></div>
 			<div class="scrollbar"><div class="thumb" id="thumb"></div></div>
 		</div>
-		<div id="talk" class="original-box original-look">
+		<div id="talk" class="original-box original-look original-dialogue">
 			<div class="talk-row speaker" id="speaker"></div>
 			<div class="talk-row" id="talk-0"></div>
 			<div class="talk-row" id="talk-1"></div>

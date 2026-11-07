@@ -46,8 +46,12 @@ core::Result<OriginalLook> parseOriginalLook(std::string_view yaml) {
   }
   assets::YamlReader reader;
   OriginalLook look;
-  reader.expectKeys(*tree, "original_look", {"family", "default", "modern", "original"});
+  reader.expectKeys(*tree, "original_look", {"family", "default", "modern", "original"},
+                    {"dialogue_family"});
   look.family = reader.text(reader.field(*tree, "family"));
+  if (const core::YamlNode* dialogue = tree->find("dialogue_family"); dialogue != nullptr) {
+    look.dialogueFamily = reader.text(*dialogue);
+  }
   const core::YamlNode& choice = reader.field(*tree, "default");
   if (const auto font = textFontNamed(reader.text(choice))) {
     look.defaultFont = *font;

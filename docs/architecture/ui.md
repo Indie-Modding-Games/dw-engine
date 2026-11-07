@@ -686,7 +686,10 @@ el color 1 de su CLUT, `0x6B5A`). Cualquier documento puede usarla para otro tex
   (`Ａ`) y a su equivalente ASCII (`A`), la tinta es blanca y la tiñe el `color` de RCSS, y crece en múltiplos enteros
   (a 720 de alto, `round(tamaño / 11)`, al menos 1; a otra altura ese múltiplo por los píxeles por dp,
   redondeado hacia abajo, para que el texto no crezca más que sus cajas) con los píxeles en coordenadas enteras, así que se ve nítida a cualquier
-  resolución.
+  resolución. Cada glifo cae en la rejilla de 4 píxeles del original desde el inicio de su texto (`font.c: drawGlyph`
+  sube el glifo al área de texto de 4 bits en `x / 4`), redondeando hacia abajo, mientras la pluma avanza lo que dice
+  cada glifo: tras uno de 5 píxeles (`,` `.` `!`) el siguiente cae hasta 3 píxeles antes. Eso solo mueve el dibujo; los
+  anchos que mide la maquetación no cambian.
 - **Las letras con tilde y los signos que el original no tiene** se componen al cargar la fuente
   (`src/composed_glyphs.cpp`) con sus propios glifos, en celdas nuevas bajo las del atlas: la letra base con una marca
   (aguda, grave, circunfleja, diéresis, virgulilla, cedilla) de un píxel de grosor centrada sobre su tinta con una fila
@@ -699,6 +702,16 @@ el color 1 de su CLUT, `0x6B5A`). Cualquier documento puede usarla para otro tex
   faltando (paréntesis, otros alfabetos...) lo dibuja la moderna en la misma línea base, al tamaño de la línea de mapa
   de bits por `fallback_size`; nunca se dibuja el glifo de sustitución del original. Sin la fuente extraída,
   `original` dibuja con la moderna (con un aviso en el log).
+- **La familia de los diálogos** (`dialogue_family: original-look-dialogue`, la clase `.original-dialogue` junto a
+  `.original-look`) es la misma fuente con el espacio de las ventanas de texto del guion y sus listas de objetos
+  (`script_textbox.c: drawString2`): allí un espacio no usa su propio ancho (4 píxeles) sino que avanza lo que avanzó
+  el glifo anterior (borra la celda y deja el avance del último glifo), así que tras una minúscula mide 8, tras una
+  mayúscula 12 y tras `,` o `.` 5. Medido en el original (DuckStation, los primeros diálogos de la llegada a la
+  ciudad: sus líneas caen al píxel con ese avance y la rejilla; con espacios de 4, no). Fuera de ahí (`drawString`: menús, combate) el
+  espacio mide 4. La usan la caja de diálogo (`story_textbox`) y la conversación y las filas de las tiendas y menús
+  de objetos del guion (`trade_menu`, `bird_transport`, `item_keeper`, `merit_shop`, `jukebox`, `card_shop`,
+  `discard_menu`). La maquetación mide cada palabra con el carácter anterior, así que el ajuste de línea cuenta
+  esos anchos.
 - **El ajuste `text_font`** (`modern` u `original`) es del jugador: `Ui::setTextFont` lo cambia y vuelve a componer y
   dibujar en el momento todos los documentos abiertos (`Rml::ReleaseFontResources`). El valor por defecto es dato
   (`default` en `original_look.yaml`). El jugador lo elige en el menú principal: la entrada «Texto con aspecto

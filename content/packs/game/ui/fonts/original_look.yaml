@@ -2,6 +2,9 @@
 # original-look, que usa la clase .original-look de ui/common/base.rcss. Dibuja con la fuente que elige el ajuste
 # text_font del jugador (docs/architecture/ui.md).
 family: original-look
+# La misma fuente en las ventanas de texto del guion y sus listas (script_textbox.c: drawString2, la clase
+# .original-dialogue de ui/common/base.rcss): ahí un espacio avanza lo que avanzó el glifo anterior, como en el original.
+dialogue_family: original-look-dialogue
 # La de mapa de bits hasta que el jugador elija: el aspecto original escribe todas sus ventanas con la fuente del
 # juego (revisión de menús QA-M08, 2026-10-30; antes, la moderna por decisión del 2026-10-20). El aspecto moderno no
 # usa esta familia.

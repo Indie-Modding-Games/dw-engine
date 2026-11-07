@@ -173,4 +173,28 @@ TEST_CASE("signs without a base are drawn whole, and a letter the font has is ke
   CHECK(font.glyph(U'Ó') == nullptr);
 }
 
+TEST_CASE("a space advances as far as the glyph before it only in the dialogue family") {
+  const BitmapGlyph space{.x = 0, .y = 0, .advance = 4};
+  const BitmapGlyph letter{.x = 0, .y = 0, .advance = 8};
+  int previous = 0;
+  // With nothing before it, a space takes its own advance.
+  CHECK(glyphAdvance(space, U' ', true, previous) == 4);
+  CHECK(glyphAdvance(letter, U'a', true, previous) == 8);
+  CHECK(glyphAdvance(space, U' ', true, previous) == 8);
+  // A second space keeps the letter's advance; so does the full-width one.
+  CHECK(glyphAdvance(space, U'　', true, previous) == 8);
+  CHECK(glyphAdvance(space, U' ', false, previous) == 4);
+  CHECK(previous == 8);
+}
+
+TEST_CASE("glyphs land on the original's grid of 4 pixels, rounding down") {
+  CHECK(onGlyphGrid(0.0F, 1) == 0.0F);
+  CHECK(onGlyphGrid(5.0F, 1) == 4.0F);
+  CHECK(onGlyphGrid(8.0F, 1) == 8.0F);
+  CHECK(onGlyphGrid(11.0F, 1) == 8.0F);
+  // Three times larger, the grid is 12 pixels.
+  CHECK(onGlyphGrid(15.0F, 3) == 12.0F);
+  CHECK(onGlyphGrid(24.0F, 3) == 24.0F);
+}
+
 } // namespace dwe::ui

@@ -29,6 +29,7 @@ body #confirm, body #amount {
 .rarity-4 { decorator: image(card-rarity-4 scale-none left top); }
 
 .row, #talk, #confirm, #amount { font-family: original-look; color: #d0d0d0; }
+.row, #talk { font-family: original-look-dialogue; }
 body .row.stuck { color: #e03028; }
 body .row.new { color: #f8f800; }
 body #speaker { color: #f8f800; }

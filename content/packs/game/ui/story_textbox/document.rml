@@ -8,7 +8,7 @@
 	<script src="logic.lua"></script>
 </head>
 <body>
-	<div id="box" class="original-look">
+	<div id="box" class="original-look original-dialogue">
 		<div id="rows">
 			<div class="row" id="row-0"><span class="bar" id="row-0-bar"></span><span class="cursor" id="row-0-cursor"></span><span class="run" id="row-0-run-0"></span><span class="run" id="row-0-run-1"></span><span class="run" id="row-0-run-2"></span><span class="run" id="row-0-run-3"></span><span class="run" id="row-0-run-4"></span><span class="run" id="row-0-run-5"></span><span class="run" id="row-0-run-6"></span><span class="run" id="row-0-run-7"></span></div>
 			<div class="row" id="row-1"><span class="bar" id="row-1-bar"></span><span class="cursor" id="row-1-cursor"></span><span class="run" id="row-1-run-0"></span><span class="run" id="row-1-run-1"></span><span class="run" id="row-1-run-2"></span><span class="run" id="row-1-run-3"></span><span class="run" id="row-1-run-4"></span><span class="run" id="row-1-run-5"></span><span class="run" id="row-1-run-6"></span><span class="run" id="row-1-run-7"></span></div>

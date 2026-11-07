@@ -19,6 +19,7 @@ body #description {
 .use-menu-art .label-count { decorator: image(keeper-count-label scale-none left top); color: transparent; }
 
 .title, .row, #talk, #description { font-family: original-look; color: #d0d0d0; }
+.row, #talk { font-family: original-look-dialogue; }
 body .row.stuck { color: #e03028; }
 body #speaker { color: #f8f800; }
 
