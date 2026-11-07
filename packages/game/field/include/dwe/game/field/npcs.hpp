@@ -64,6 +64,13 @@ struct GroundSquare {
 // half sides less `slack` (0: touching counts, as map.c: entityCheckEntityCollision).
 [[nodiscard]] bool squaresOverlap(const GroundSquare& a, const GroundSquare& b, float slack = 0.0F);
 
+// Whether `moved`, a square that has just stepped by `step`, runs into `other`, as map.c:
+// entityCheckEntityCollision tests any walker but the free player: only the edges on the sides it
+// moves toward count, so one walking away from a character it stands against goes on. A step
+// component under one unit moves no edge (entityMoveForward's whole units).
+[[nodiscard]] bool leadingEdgesTouch(const GroundSquare& moved, glm::vec2 step,
+                                     const GroundSquare& other);
+
 // A solid NPC's square on the field, for the checks that look at every character.
 struct NpcBody {
   std::int32_t scriptId = 0;

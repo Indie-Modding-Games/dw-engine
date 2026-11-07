@@ -1,3 +1,5 @@
+#include <dwe/assets/clip_motion.hpp>
+#include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/game/field/grid.hpp>
@@ -7,6 +9,7 @@
 #include <cmath>
 #include <format>
 #include <numbers>
+#include <optional>
 #include <utility>
 
 // Where the characters stand against each other (docs/modulos/game/field.md, "Posiciones"): the
@@ -52,6 +55,47 @@ std::vector<Field::Body> Field::bodies() const {
     bodies.push_back({.entity = npc.entity, .half = npc.half, .who = npc.scriptId + 2});
   }
   return bodies;
+}
+
+bool Field::scriptWalkBumps(scene::Entity walker) const {
+  const std::vector<Body> all = bodies();
+  const auto self = std::ranges::find(all, walker, &Body::entity);
+  if (self == all.end()) {
+    return false;
+  }
+  const glm::vec2 step = clipMomentum(walker);
+  GroundSquare moved = squareOf(*self);
+  moved.centre += step;
+  // map.c: entityCheckEntityCollision: the player's whole square on the field (GAME_STATE 0).
+  const bool player = self->who == PlayerWho;
+  return std::ranges::any_of(all, [&](const Body& other) {
+    if (other.entity == walker) {
+      return false;
+    }
+    const GroundSquare square = squareOf(other);
+    return player ? squaresOverlap(moved, square) : leadingEdgesTouch(moved, step, square);
+  });
+}
+
+glm::vec2 Field::clipMomentum(scene::Entity entity) const {
+  // anim.c: the momentum is the step of the clip's frame that played last; startAnimation clears
+  // it, so a clip on its first frame has none. Only its forward part: entityMoveForward.
+  const entt::registry& registry = world_->registry();
+  const auto* motion = registry.try_get<const ClipRootMotion>(entity);
+  const auto* motions = registry.try_get<const CharacterClipMotions>(entity);
+  if (motion == nullptr || motion->frame == 0 || motions == nullptr || motions->clips == nullptr) {
+    return {};
+  }
+  const auto clip = motions->clips->find(static_cast<std::int32_t>(motion->clip));
+  if (clip == motions->clips->end()) {
+    return {};
+  }
+  const std::optional<assets::RootStep> step = clip->second.stepAt(motion->frame);
+  if (!step) {
+    return {};
+  }
+  const float yaw = registry.get<const Transform>(entity).yaw;
+  return ground(assets::forwardOfYaw(yaw) * static_cast<float>(step->forward));
 }
 
 std::string Field::nameOf(const Body& body) const {

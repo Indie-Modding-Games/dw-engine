@@ -67,6 +67,23 @@ registra en la partida guardada y se lo da al campo.
   entonces para. Antes el motor guardaba la velocidad del paseo y el jugador seguía corriendo hasta la pared (trop03,
   `species_ae`: de (-708, -2323) hasta (-4647, 3941) en ejes del original). Diferencia que queda: durante el giro el motor
   mantiene la dirección del paseo en vez de torcerla con él (unos pocos fotogramas).
+- **Un paseo hacia un personaje mira al destino y choca por los bordes de delante** (`tamer.c: tickEntityWalkTo`,
+  `map.c: entityCheckCollision`, `entityCheckEntityCollision`, `entityMoveForward`): cada fotograma el que camina mira
+  al destino (`entityLookAtLocation`), y el paseo acaba al pisar la casilla del destino o al chocar con un personaje
+  (los 0 a 9). La prueba avanza al que camina por el impulso de su clip, que `startAnimation` deja a cero, así que el
+  primer fotograma no prueba paso; el jugador en el campo prueba su cuadrado entero y los demás solo los bordes que
+  van delante (los ejes con paso distinto de 0, con bordes que se tocan contando). El primer paso del clip de andar ya
+  va hacia el destino. Igual. Medido en el original (gias04, script 70, sección 0x33, la emboscada): el compañero se
+  acerca al jugador y para en (−454, 3314) con el jugador en (−697, 3149); tras la animación 22 durante el `delay` de
+  20 fotogramas, el jugador sale al oeste a 50 por fotograma y el compañero da su primer paso, de 30, hacia el ave
+  ((−474, 3291)) y llega a (−805, 2963). Antes el motor probaba un círculo contra el jugador y el compañero en todos
+  los fotogramas, el primero incluido, y el primer paso del clip iba hacia donde el personaje miraba antes (50 hacia el
+  compañero en el jugador): el compañero chocaba al momento y se quedaba quieto. Ahora para en (−460, 3315), da su
+  primer paso a (−480, 3292), el jugador a (−747, 3151), y llega a (−796, 2972). `script_motion_tests`: "a walk to a
+  character takes its first frame whatever stands ahead", "a walk faces its point as it starts, before the clip's
+  first step"; `field_tests`: "a scripted walk bumps on its clip's step, into what lies ahead or, the player, anyone",
+  "a step under one unit moves no edge into the collision test". Queda: el motor desliza el paseo a la velocidad de
+  suelo del clip (45 por fotograma en el compañero) en vez de por el impulso de cada fotograma (~30 medido).
 - **El paso de un deslizamiento es uno para todos** (`tamer.c: tickEntityMoveTo`, `tickEntityMoveToAxis`, con
   `MOVE_TO_DELTA_X`/`MOVE_TO_DELTA_Z` y `PREVIOUS_CAMERA_POS_INITIALIZED`): el primer fotograma de un `entity_move_to`
   o `entity_move_to_axis` toma su paso (la distancia en unidades enteras dividida entre los fotogramas, con división

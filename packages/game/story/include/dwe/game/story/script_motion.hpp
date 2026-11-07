@@ -55,9 +55,9 @@ public:
   // How fast the clip's root carries the character over the ground, world units a second: the
   // original walks a scripted character by its animation (anim.c: applyRootMomentum).
   [[nodiscard]] virtual float groundSpeed(std::int64_t character, std::int64_t animation) const = 0;
-  // Whether the character, `step` further ahead, would touch another character (map.c:
-  // entityCheckCollision).
-  [[nodiscard]] virtual bool wouldTouchCharacter(std::int64_t character, float step) const = 0;
+  // Whether the character, one step of its clip further ahead, would touch another character
+  // (map.c: entityCheckCollision).
+  [[nodiscard]] virtual bool wouldTouchCharacter(std::int64_t character) const = 0;
   // Pans the camera's focus to `focus` over `seconds` (map.c: tickCameraMovement).
   virtual void panCamera(glm::vec3 focus, float seconds) = 0;
   [[nodiscard]] virtual bool cameraPanning() const = 0;
@@ -159,6 +159,9 @@ private:
     glm::vec3 point{};
     std::int64_t clip = 0;
     bool withCamera = false;
+    // Whether a frame of the walk went by. On the first the walk's clip has just started, with no
+    // momentum (anim.c: startAnimation), so entityCheckCollision steps nowhere and meets nobody.
+    bool stepped = false;
   };
   struct MoveTo {
     std::optional<std::int64_t> target;
@@ -220,7 +223,10 @@ private:
   // Ticks one slot; true when its move is done.
   bool tick(Slot& slot);
   bool tick(std::int64_t character, LookAt& move);
-  bool tick(std::int64_t character, const Walk& move);
+  bool tick(std::int64_t character, Walk& move);
+  // Turns a walker to its walk's point (tamer.c: tickEntityWalkTo, entityLookAtLocation); returns
+  // that point, or nothing when the target left the map.
+  std::optional<glm::vec3> faceWalkTarget(std::int64_t character, const Walk& move);
   bool tick(std::int64_t character, MoveTo& move);
   bool tick(std::int64_t character, MoveToAxis& move);
   bool tick(CameraPan& move);

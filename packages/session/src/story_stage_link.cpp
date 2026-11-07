@@ -52,8 +52,8 @@ float StoryActorsLink::groundSpeed(std::int64_t character, std::int64_t animatio
   return target_ != nullptr ? target_->groundSpeed(character, animation) : 0.0F;
 }
 
-bool StoryActorsLink::wouldTouchCharacter(std::int64_t character, float step) const {
-  return target_ != nullptr && target_->wouldTouchCharacter(character, step);
+bool StoryActorsLink::wouldTouchCharacter(std::int64_t character) const {
+  return target_ != nullptr && target_->wouldTouchCharacter(character);
 }
 
 void StoryActorsLink::panCamera(glm::vec3 focus, float seconds) {

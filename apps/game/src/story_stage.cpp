@@ -7,8 +7,6 @@
 #include <dwe/game/field/npcs.hpp>
 #include <dwe/scene/components.hpp>
 
-#include <algorithm>
-#include <array>
 #include <cstdint>
 #include <string_view>
 #include <utility>
@@ -30,10 +28,6 @@ constexpr std::int64_t PartnerSlot = 1;
 constexpr std::string_view NoNpcOrigin =
     "[port:story-stage] reset_entity_origin (overworld.c:1829 resetEntityOrigin): no NPC {} on "
     "the field yet, nothing to reset";
-
-float groundDistance(glm::vec3 from, glm::vec3 to) {
-  return glm::length(glm::vec2{to.x - from.x, to.z - from.z});
-}
 
 } // namespace
 
@@ -152,21 +146,10 @@ float StoryStage::groundSpeed(std::int64_t character, std::int64_t animation) co
   return scene_->clipGroundSpeed(*entity, static_cast<std::uint32_t>(animation));
 }
 
-bool StoryStage::wouldTouchCharacter(std::int64_t character, float step) const {
-  // map.c: entityCheckCollision steps the character forward and tests the others' circles.
-  const game::field::Field& field = scene_->field();
-  const game::field::FieldRules& rules = field.rules();
-  const glm::vec3 ahead = position(character) + assets::forwardOfYaw(yaw(character)) * step;
-  const float radius =
-      character == PartnerScriptId ? rules.partner.mover.radius : rules.player.radius;
-  const std::array others{
-      std::pair{PlayerScriptId, rules.player.radius},
-      std::pair{PartnerScriptId, rules.partner.mover.radius},
-  };
-  return std::ranges::any_of(others, [&](const auto& entry) {
-    const auto& [other, otherRadius] = entry;
-    return other != character && groundDistance(ahead, position(other)) < radius + otherRadius;
-  });
+bool StoryStage::wouldTouchCharacter(std::int64_t character) const {
+  // map.c: entityCheckCollision steps the character forward and tests every other character.
+  const auto entity = entityOf(character);
+  return entity && scene_->field().scriptWalkBumps(*entity);
 }
 
 void StoryStage::panCamera(glm::vec3 focus, float seconds) {

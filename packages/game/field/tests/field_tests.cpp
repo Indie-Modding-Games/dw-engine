@@ -1859,6 +1859,66 @@ TEST_CASE("the release rule puts a partner left on the player on the nearest fre
   CHECK(transform.previousPosition == transform.position);
 }
 
+TEST_CASE("a scripted walk bumps on its clip's step, into what lies ahead or, the player, anyone") {
+  // map.c: entityCheckCollision steps the walker by its clip's momentum (entityMoveForward);
+  // entityCheckEntityCollision then tests the edges it moves toward, or the player's whole square.
+  // The partner stands against the player, east of it.
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  constexpr std::int32_t Walk = 4;
+  dwe::assets::ClipMotions clips;
+  clips[Walk].steps = {{}, {.forward = 12}};
+  clips[Walk].repeatFrom = 1;
+  field.setPartnerClips(dwe::assets::ClipMotions{clips});
+  auto& registry = world.registry();
+  registry.emplace<dwe::game::field::CharacterClipMotions>(
+      field.playerEntity(), std::make_shared<const dwe::assets::ClipMotions>(clips));
+  const auto walk = [&](dwe::scene::Entity entity, glm::vec3 toward, std::size_t frame) {
+    registry.get<dwe::scene::Transform>(entity).yaw = dwe::assets::yawOfDirection(toward);
+    registry.emplace_or_replace<dwe::game::field::ClipRootMotion>(
+        entity, dwe::game::field::ClipRootMotion{.clip = Walk, .frame = frame});
+    return field.scriptWalkBumps(entity);
+  };
+  const glm::vec3 east{1.0F, 0.0F, 0.0F};
+  const glm::vec3 west{-1.0F, 0.0F, 0.0F};
+  const glm::vec3 north{0.0F, 0.0F, 1.0F};
+  const float reach = field.rules().player.radius + field.rules().partner.mover.radius;
+  placeAt(world, field.partnerEntity(), reach - 20.0F, 0.0F);
+  // Walking away, east, it goes on; walking back, west, it bumps.
+  CHECK_FALSE(walk(field.partnerEntity(), east, 1));
+  CHECK(walk(field.partnerEntity(), west, 1));
+  // On its clip's first frame it has no momentum yet (startAnimation): no edge moves.
+  CHECK_FALSE(walk(field.partnerEntity(), west, 0));
+  // Sideways, its edge clears the smaller player's square: it goes on.
+  CHECK_FALSE(walk(field.partnerEntity(), north, 1));
+  // The player walking away from the partner it stands against bumps all the same.
+  CHECK(walk(field.playerEntity(), west, 1));
+  // Far apart, nobody bumps.
+  placeAt(world, field.partnerEntity(), reach + 100.0F, 0.0F);
+  CHECK_FALSE(walk(field.partnerEntity(), west, 1));
+  CHECK_FALSE(walk(field.playerEntity(), east, 1));
+}
+
+TEST_CASE("a step under one unit moves no edge into the collision test") {
+  using dwe::game::field::GroundSquare;
+  using dwe::game::field::leadingEdgesTouch;
+  const GroundSquare walker{.centre = {0.0F, 0.0F}, .half = 100.0F};
+  // Above it and overlapping: only a step north (+z) reaches it.
+  const GroundSquare above{.centre = {0.0F, 150.0F}, .half = 100.0F};
+  CHECK(leadingEdgesTouch(walker, {0.0F, 8.0F}, above));
+  CHECK_FALSE(leadingEdgesTouch(walker, {0.0F, -8.0F}, above));
+  // A narrower one above: the east edge misses it, and a sliver of north under one unit moves no
+  // north edge, a whole unit does.
+  const GroundSquare narrow{.centre = {0.0F, 150.0F}, .half = 60.0F};
+  CHECK_FALSE(leadingEdgesTouch(walker, {8.0F, 0.9F}, narrow));
+  CHECK(leadingEdgesTouch(walker, {8.0F, 1.0F}, narrow));
+  // East of it: only a step east reaches it.
+  const GroundSquare beside{.centre = {150.0F, 0.0F}, .half = 100.0F};
+  CHECK(leadingEdgesTouch(walker, {8.0F, 0.5F}, beside));
+  CHECK_FALSE(leadingEdgesTouch(walker, {-8.0F, 0.5F}, beside));
+}
+
 TEST_CASE("the release rule takes a character out of a wall, and the player only out of one") {
   dwe::scene::World world;
   Field field{world, originalRules()};

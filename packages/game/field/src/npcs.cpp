@@ -102,6 +102,22 @@ bool squaresOverlap(const GroundSquare& a, const GroundSquare& b, float slack) {
   return std::abs(a.centre.x - b.centre.x) <= reach && std::abs(a.centre.y - b.centre.y) <= reach;
 }
 
+bool leadingEdgesTouch(const GroundSquare& moved, glm::vec2 step, const GroundSquare& other) {
+  // map.c: isRectInRect: an edge touches when it meets the other's square, edges included.
+  const glm::vec2 low = moved.centre - glm::vec2{moved.half};
+  const glm::vec2 high = moved.centre + glm::vec2{moved.half};
+  const glm::vec2 otherLow = other.centre - glm::vec2{other.half};
+  const glm::vec2 otherHigh = other.centre + glm::vec2{other.half};
+  const auto meets = [&](glm::vec2 from, glm::vec2 to) {
+    return from.x <= otherHigh.x && to.x >= otherLow.x && from.y <= otherHigh.y &&
+           to.y >= otherLow.y;
+  };
+  const float x = std::trunc(step.x);
+  const float z = std::trunc(step.y);
+  return (x < 0.0F && meets(low, {low.x, high.y})) || (x > 0.0F && meets({high.x, low.y}, high)) ||
+         (z < 0.0F && meets(low, {high.x, low.y})) || (z > 0.0F && meets({low.x, high.y}, high));
+}
+
 FieldNpcs::FieldNpcs(scene::World& world, NpcRules rules, float frameSeconds)
     : world_{&world}, rules_{std::move(rules)}, frameSeconds_{frameSeconds} {}
 

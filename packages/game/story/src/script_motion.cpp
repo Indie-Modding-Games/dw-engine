@@ -157,8 +157,27 @@ void ScriptMotion::walk(std::string_view order, std::int64_t character,
   actors_->animate(character, clip);
   core::logDebug("{}", messages::formatMessage(messages::WalkClip, character, animation, clip,
                                                actors_->groundSpeed(character, clip)));
-  fill(*slot, character,
-       Walk{.target = target, .point = point, .clip = clip, .withCamera = withCamera});
+  const Walk walk{.target = target, .point = point, .clip = clip, .withCamera = withCamera};
+  // tickEntityWalkTo faces the target before the walk clip's first step moves the walker, so that
+  // step already goes toward it, never along the facing the walker had.
+  static_cast<void>(faceWalkTarget(character, walk));
+  fill(*slot, character, walk);
+}
+
+std::optional<glm::vec3> ScriptMotion::faceWalkTarget(std::int64_t character, const Walk& move) {
+  glm::vec3 point = move.point;
+  if (move.target) {
+    if (!actors_->slotOf(*move.target)) {
+      return std::nullopt;
+    }
+    point = actors_->position(*move.target);
+  }
+  glm::vec3 toward = point - actors_->position(character);
+  toward.y = 0.0F;
+  if (glm::length(toward) > 0.0F) {
+    actors_->turn(character, assets::yawOfDirection(toward));
+  }
+  return point;
 }
 
 void ScriptMotion::walkTo(std::int64_t character, std::int64_t x, std::int64_t z,
@@ -441,36 +460,28 @@ bool ScriptMotion::tick(std::int64_t character, LookAt& move) {
   return !next.has_value();
 }
 
-bool ScriptMotion::tick(std::int64_t character, const Walk& move) {
+bool ScriptMotion::tick(std::int64_t character, Walk& move) {
   // tamer.c: tickEntityWalkTo faces the target every frame and ends on its cell; walking to a
   // character also ends on touching one. The walk animation moves the character meanwhile.
-  glm::vec3 point = move.point;
-  if (move.target) {
-    if (!actors_->slotOf(*move.target)) {
-      core::logWarning("{}",
-                       messages::formatMessage(messages::TargetGone, character, *move.target));
-      actors_->drive(character, {}, Glide::Walk);
-      return true;
-    }
-    point = actors_->position(*move.target);
+  const std::optional<glm::vec3> point = faceWalkTarget(character, move);
+  if (!point) {
+    core::logWarning("{}", messages::formatMessage(messages::TargetGone, character, *move.target));
+    actors_->drive(character, {}, Glide::Walk);
+    return true;
   }
   const glm::vec3 position = actors_->position(character);
   const float speed = actors_->groundSpeed(character, move.clip);
-  glm::vec3 toward = point - position;
-  toward.y = 0.0F;
-  const float yaw =
-      glm::length(toward) > 0.0F ? assets::yawOfDirection(toward) : actors_->yaw(character);
-  actors_->turn(character, yaw);
+  const float yaw = actors_->yaw(character);
   // getModelTile's cells, as tickEntityWalkTo compares them: a point on a cell edge is in the cell
   // away from 0, where the walk overshoots to.
-  const bool onCell = assets::originalCellAt(position) == assets::originalCellAt(point);
-  const bool touching =
-      move.target && actors_->wouldTouchCharacter(character, speed * rules_.frameSeconds);
+  const bool onCell = assets::originalCellAt(position) == assets::originalCellAt(*point);
+  const bool touching = move.target && move.stepped && actors_->wouldTouchCharacter(character);
   if (onCell || touching) {
     actors_->drive(character, {}, Glide::Walk);
     return true;
   }
   actors_->drive(character, assets::forwardOfYaw(yaw) * speed, Glide::Walk);
+  move.stepped = true;
   return false;
 }
 

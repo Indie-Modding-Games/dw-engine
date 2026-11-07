@@ -525,6 +525,12 @@ public:
   [[nodiscard]] std::int32_t overlapEpisodes() const { return overlapEpisodes_; }
 
   // The map's NPCs, which the story puts on the map and takes off (npcs.hpp).
+  // Whether a character a script walks to another runs into anyone on its next step (tamer.c:
+  // tickEntityWalkTo, map.c: entityCheckCollision against every character). The step is its
+  // clip's momentum, forward along its facing (entityMoveForward): none on the clip's first frame,
+  // as startAnimation clears it. The player tests its whole square, as on the field, and anyone
+  // else only the edges it moves toward.
+  [[nodiscard]] bool scriptWalkBumps(scene::Entity walker) const;
   [[nodiscard]] FieldNpcs& npcs() { return npcs_; }
   [[nodiscard]] const FieldNpcs& npcs() const { return npcs_; }
   // The NPC touches and talks of the last tick, whose sections the story runs if no script runs.
@@ -603,6 +609,9 @@ private:
     std::int64_t who = 0;
   };
   [[nodiscard]] std::vector<Body> bodies() const;
+  // A character's clip momentum on the ground, forward along its facing (anim.c; map.c:
+  // entityMoveForward); none without a clip that carries it or on the clip's first frame.
+  [[nodiscard]] glm::vec2 clipMomentum(scene::Entity entity) const;
   [[nodiscard]] std::string nameOf(const Body& body) const;
   [[nodiscard]] GroundSquare squareOf(const Body& body) const;
   [[nodiscard]] bool inWall(glm::vec3 position) const;
