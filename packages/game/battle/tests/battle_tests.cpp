@@ -1065,7 +1065,8 @@ TEST_CASE("with the original's rolls a hit draws its spark after the damage roll
                                          .clip = std::nullopt,
                                          .hitPoint = std::nullopt,
                                          .touch = std::nullopt,
-                                         .facingTarget = {}});
+                                         .facingTarget = {},
+                                         .aim = std::nullopt});
     BattleContext context = sparks ? bench.originalContext() : bench.context();
     tickAttackHits(context);
     return std::pair{bench.random, bench.fighter(1).pendingDamage};
