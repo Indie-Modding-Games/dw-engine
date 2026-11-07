@@ -691,7 +691,6 @@ son (b) y no están aquí: son `data/fishing`, que `dwx` extrae del overlay FISH
 | `consequences.mp_tiredness_below_percent` | 80 | a | Porcentaje o probabilidad. |
 | `consequences.mp_tiredness_scale` | 10 | a | Factor de una fórmula. |
 | `consequences.defeat_lives` | 1 | a | Incremento. |
-| `consequences.defeat_restore` | HP 9999, MP 9999 | a | Respaldo del efecto del guion de derrota. |
 | `consequences.elapsed_minutes` | 20 | a | Temporizador o duración. |
 | `rewards.enemy_factors` | [10, 12, 16] | a | Por número de enemigos (`STAT_GAIN_ENEMY_FACTORS`): categoría, menos de 9 valores. |
 | `rewards.partner_scale` | 10 | a | Factor de una fórmula. |

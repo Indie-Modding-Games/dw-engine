@@ -41,9 +41,8 @@ una partida normal:
 
 | # | Hueco | Decomp | Motor |
 |---:|---|---|---|
-| 1 | Al perder una vida por enfermedad no se restaura lo que el original restaura; tras perderla en combate, la vida y el MP salen de una regla del ruleset | Las dos escenas de vida perdida ([Campo](#campo-movimiento-colisión-y-cámara)) | `battle.consequences.defeat_restore` ([battle](../modulos/game/battle.md#paridad-con-el-original)) |
-| 2 | En los torneos faltan detalles: el brillo de las letras del campeón, que select oculte las barras de vida, que el que pierde se desplome tras la caja del resultado, la cámara de técnica del disparo de un luchador aplastado, y la música, luces y efectos propios de la copa | `std/` ([Torneos](#torneos): `STD_tickChampionScene`, `STD_tickBattleResultScreen`, `STD_startQueuedMove`, `STD_initializeTournament` y el HUD) | `packages/session/src/tournament_adapter.cpp`, `apps/game/src/story_tournament.cpp` |
-| 3 | Sin modo versus de dos jugadores ni la demo de combate del título (las 91 funciones de `vs/`); la máquina de guardar ya registra al compañero para él. Va a la fase 5 | `vs/` | — |
+| 1 | En los torneos faltan detalles: el brillo de las letras del campeón, que select oculte las barras de vida, que el que pierde se desplome tras la caja del resultado, la cámara de técnica del disparo de un luchador aplastado, y la música, luces y efectos propios de la copa | `std/` ([Torneos](#torneos): `STD_tickChampionScene`, `STD_tickBattleResultScreen`, `STD_startQueuedMove`, `STD_initializeTournament` y el HUD) | `packages/session/src/tournament_adapter.cpp`, `apps/game/src/story_tournament.cpp` |
+| 2 | Sin modo versus de dos jugadores ni la demo de combate del título (las 91 funciones de `vs/`); la máquina de guardar ya registra al compañero para él. Va a la fase 5 | `vs/` | — |
 
 ## Otros huecos que no son una función del índice
 
@@ -66,7 +65,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 154 | 154 | 0 | 0 | 100 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 240 | 240 | 0 | 0 | 100 % |
-| [Campo: movimiento, colisión y cámara](#campo-movimiento-colisión-y-cámara) | `main/` (5 ficheros) | 82 | 80 | 2 | 0 | 99 % |
+| [Campo: movimiento, colisión y cámara](#campo-movimiento-colisión-y-cámara) | `main/` (5 ficheros) | 82 | 82 | 0 | 0 | 100 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 80 | 80 | 0 | 0 | 100 % |
 | [Compañero: IA y cuidado](#compañero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 49 | 0 | 0 | 100 % |
 | [Guion e intérprete](#guion-e-intérprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 97 | 97 | 0 | 0 | 100 % |
@@ -83,7 +82,7 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#vídeos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 30 | 30 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#núcleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1438 funciones a portar | 1438 | 1339 | 8 | 91 | 93 % |
+| **Total** | 1438 funciones a portar | 1438 | 1341 | 6 | 91 | 93 % |
 
 ## Batalla
 
@@ -107,12 +106,7 @@ El jugador en el mapa, la rejilla de colisión, los warps, el seguimiento del co
 
 Ficheros del decomp: `main/aabb.c`, `main/map.c`, `main/map_collision.c`, `main/tamer.c`, `main/vecmath.c`.
 
-Portado 80, parcial 2, falta 0.
-
-| Función | Decomp | Estado | Qué hace | Motor / nota |
-|---|---|---|---|---|
-| `tamerTickSicknessLostLife` | `main/tamer.c:1699` | parcial | Escena de perder una vida por enfermedad. | `apps/game/src/death_scene.cpp:126` · la restauración tras la vida perdida por enfermedad es un hueco (docs/modulos/game/battle.md:120) |
-| `tamerTickBattleLostLife` | `main/tamer.c:1734` | parcial | Escena de perder una vida en combate. | `apps/game/src/death_scene.cpp:126` · la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:120) |
+Portado 82, parcial 0, falta 0.
 
 ## NPC y objetos del mapa
 
