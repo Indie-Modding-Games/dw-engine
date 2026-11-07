@@ -225,6 +225,26 @@ problema se desactiva con un aviso en el registro que la nombra, salvo la de un 
 original, que sigue llevando a ese mapa; nunca se cae. Dos destinos que no coinciden desactivan el warp en cualquier
 paquete, y `dwx validate` lo da como error.
 
+### Mapas que añade un paquete
+
+Un paquete puede traer mapas que el original no tiene. Su id es `<paquete>:<nombre>` y el juego necesita:
+
+- **Datos:** `map/<paquete>/<nombre>/data.yaml`, con el mismo esquema que los demás.
+- **Entrada:** una línea en `data/maps.yaml` del paquete con el id y **sin** `index`: el motor numera los mapas de
+  los paquetes después de los del original, y ese número depende de los paquetes montados. `loading_name` es el
+  índice del nombre de zona.
+- **Fondo:** `background_<variante>.png` (PNG indexado, fichas enteras de 128 px, hasta 35) en su carpeta, o en la
+  carpeta del mapa que nombra la clave opcional `assets_from` de sus datos. `assets_from: twna01`, por ejemplo, toma
+  los fondos y texturas de `map/twna01/` sin copiarlos; `dwx` nunca la escribe.
+- **Nombre:** el texto `map_names.<nombre>` de `text/<idioma>/<paquete>.yaml`; sin él, el juego enseña la clave.
+
+Las salidas que llevan a un mapa así usan solo `target_map_id` con `target_map: -1`
+([Destino de una salida](#destino-de-una-salida)). El candado de historia no cierra nunca un mapa de un paquete ni las
+salidas hacia él. `dwx validate` (y `dwe-game --check-content`) da como error unos datos sin entrada en
+`data/maps` («el juego nunca entra»), una entrada sin datos en ningún paquete y un mapa sin fondo. El editor de mapas
+escribe todo esto de una vez ([Nuevo mapa](../modulos/apps/mapper.md#nuevo-mapa)); el paso a paso está en
+[Añadir un mapa nuevo](../modding/mapas-nuevos.md).
+
 ## Parches
 
 Un paquete no tiene que copiar el `map/<id>/data` entero para cambiar una salida o mover un NPC: puede traer

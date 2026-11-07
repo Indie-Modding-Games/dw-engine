@@ -42,16 +42,25 @@ std::string bankFolderOf(std::int32_t soundId) {
 SessionSound::SessionSound(audio::Audio& audio, const assets::VirtualFileSystem& files)
     : audio_(&audio), files_(&files) {}
 
+void SessionSound::readMaps() {
+  mapsRead_ = true;
+  if (auto maps = assets::loadMapTable(*files_); maps) {
+    maps_ = std::move(*maps);
+  } else {
+    core::logWarning("{}", core::formatMessage(messages::SoundNoMaps, maps.error().message));
+  }
+}
+
 void SessionSound::enterMap(std::string_view mapId) {
   if (!mapsRead_) {
-    mapsRead_ = true;
-    if (auto maps = assets::loadMapTable(*files_); maps) {
-      maps_ = std::move(*maps);
-    } else {
-      core::logWarning("{}", core::formatMessage(messages::SoundNoMaps, maps.error().message));
-    }
+    readMaps();
   }
   const assets::MapEntry* map = maps_ ? maps_->find(mapId) : nullptr;
+  if (map == nullptr) {
+    // A map a pack added since the table was read (a map editor's new map, after reload_map).
+    readMaps();
+    map = maps_ ? maps_->find(mapId) : nullptr;
+  }
   mapBank_.reset();
   // map.c: loadMap loads the new map's bank over whatever slot 8 held.
   battleBankKept_ = false;

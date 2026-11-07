@@ -170,6 +170,8 @@ pub struct Mapper {
     pub settings_file: Option<PathBuf>,
     /// The open section's timeline.
     pub timeline: crate::timeline::Timeline,
+    /// The Mundo view's graph.
+    pub world: crate::world::WorldState,
 }
 
 impl Mapper {
@@ -270,6 +272,35 @@ impl Mapper {
             Action::Undo => self.step_history(true),
             Action::Redo => self.step_history(false),
             Action::SetWarp(warp) => self.set_warp(warp),
+            Action::PaintRect { from, to, value } => {
+                let cells: Vec<Cell> = (from.row.min(to.row)..=from.row.max(to.row))
+                    .flat_map(|row| {
+                        (from.column.min(to.column)..=from.column.max(to.column))
+                            .map(move |column| Cell::new(column, row))
+                    })
+                    .collect();
+                let paint = std::mem::replace(&mut self.paint_value, value);
+                self.paint(&cells);
+                self.paint_value = paint;
+                if let Some(map) = &mut self.map {
+                    map.history.end_group();
+                }
+                self.refresh_story();
+            }
+            Action::MoveWorldNode { id, to } => self.move_world_node(&id, to),
+            Action::ResetWorldLayout => self.reset_world_layout(),
+            Action::Connect(connect) => {
+                self.connect(&connect);
+            }
+            Action::NewMap(new) => {
+                self.create_map(&new);
+            }
+            Action::DeleteMap(id) => {
+                self.delete_map(&id);
+            }
+            Action::RenameMap { id, name } => {
+                self.rename_map(&id, &name);
+            }
             Action::SetNpc { slot, npc } => self.set_npc(slot, npc),
             Action::AddWaypoint { slot, at } => self.add_waypoint(slot, at),
             Action::RemoveWaypoint { slot, part } => {
@@ -452,6 +483,7 @@ impl Mapper {
                 }
                 self.section = None;
                 self.content = Some(content);
+                self.world.invalidate();
                 self.map = None;
                 self.history.clear();
                 self.hover = None;
@@ -496,7 +528,7 @@ impl Mapper {
         let camera = MapCamera::new(document.camera_desc());
         let places = Places::of(&content.table, entry.as_ref());
         let overlay = MapOverlay::build(&document, &places, &content.table, &camera, &self.bands);
-        let backgrounds = dwe_map::backgrounds(content.vfs(), id);
+        let backgrounds = dwe_map::backgrounds(content.vfs(), document.assets_map());
         self.map = Some(OpenMap {
             loaded: document.clone(),
             document,
@@ -586,7 +618,7 @@ impl Mapper {
     /// Mounts the content again and opens the map shown again at the same view. With
     /// `keep_edits` the document and its history stay (after a save, whose files the new mount
     /// reads); without, the map is read again from the packs.
-    fn reload_content(&mut self, keep_edits: bool) {
+    pub(crate) fn reload_content(&mut self, keep_edits: bool) {
         let Some(folders) = self.content.as_ref().map(|content| content.folders.clone()) else {
             return;
         };
@@ -1098,7 +1130,7 @@ impl Mapper {
         }
     }
 
-    fn store_settings(&mut self) {
+    pub(crate) fn store_settings(&mut self) {
         if let Some(file) = &self.settings_file
             && let Err(error) = self.settings.store(file)
         {
@@ -1158,6 +1190,11 @@ impl Mapper {
         let mode = if mode == SaveMode::Patch && npc_count_changed(&map.loaded, &map.document) {
             self.messages
                 .push(Message::Info(crate::text::NPCS_SAVE_WHOLE.to_owned()));
+            SaveMode::WholeData
+        } else if mode == SaveMode::Patch
+            && dwe_map::new_map::own_maps(pack).contains(&map.document.id)
+        {
+            // A map the target added itself is its own data: edit that, not a patch beside it.
             SaveMode::WholeData
         } else {
             mode

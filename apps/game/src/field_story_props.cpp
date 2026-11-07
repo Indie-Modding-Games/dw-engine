@@ -1,6 +1,7 @@
 #include "field_story_props.hpp"
 
 #include <dwe/assets/asset_id.hpp>
+#include <dwe/assets/content_id.hpp>
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
@@ -62,7 +63,8 @@ constexpr float CartReach = 100.0F;
 constexpr double OriginalFrameSeconds = 1.0 / 20.0;
 // renderMonochromonMoodBubble's GsSPRITE: the faces of the image at VRAM (640, 0) with the CLUT at
 // (0, 486), the first 4-bit image of the map and its first palette row (overworld.c:
-// loadMapImage2); five faces of 32 x 32 in a row.
+// loadMapImage2); five faces of 32 x 32 in a row. The map's asset folder (a pack's map is
+// `map/<pack>/<name>/`, and a map with `assets_from` uses that map's images).
 constexpr std::string_view MoodBubbleImage = "map/{}/texture4/000";
 constexpr std::size_t MoodBubblePalette = 0;
 constexpr glm::vec2 MoodBubbleImageSize{5 * MoodBubble::Side, MoodBubble::Side};
@@ -236,14 +238,16 @@ void FieldStoryProps::showMoodBubble() {
           glm::vec3{static_cast<float>(offset[0]), static_cast<float>(offset[1]),
                     static_cast<float>(offset[2])});
       if (point) {
-        sprites.push_back({.point = *point,
-                           .image = std::format(MoodBubbleImage, scene_->field().mapId()),
-                           .palette = MoodBubblePalette,
-                           .imageSize = MoodBubbleImageSize,
-                           .texel = {static_cast<float>(moodBubble_.firstU()), 0.0F},
-                           .side = glm::vec2{static_cast<float>(MoodBubble::Side)},
-                           .scale = moodBubble_.scale(),
-                           .lift = static_cast<float>(moodBubble_.offset())});
+        sprites.push_back(
+            {.point = *point,
+             .image = std::format(MoodBubbleImage,
+                                  assets::contentAssetPath(assets::mapAssetsOf(scene_->map()))),
+             .palette = MoodBubblePalette,
+             .imageSize = MoodBubbleImageSize,
+             .texel = {static_cast<float>(moodBubble_.firstU()), 0.0F},
+             .side = glm::vec2{static_cast<float>(MoodBubble::Side)},
+             .scale = moodBubble_.scale(),
+             .lift = static_cast<float>(moodBubble_.offset())});
       }
     }
   }

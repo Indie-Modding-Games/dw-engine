@@ -256,6 +256,9 @@ struct MapDocument {
   std::int32_t digimonCount = 0;
   std::vector<MapNpc> npcs;
   MapCollision collision;
+  // The map whose backgrounds and textures this one uses (`assets_from`), for a map a pack adds as
+  // a copy of another without copying its images; empty for its own.
+  std::string assetsFrom;
   MapAssetIds assets;
   // The packs whose patches loadMapDocument applied to the data, bottom to top.
   std::vector<std::string> patches;
@@ -283,8 +286,11 @@ core::Result<AssetId> mapDataId(std::string_view mapId);
 // Finds the backgrounds and textures of a map, sorted by variant order and by index.
 MapAssetIds findMapAssets(const VirtualFileSystem& vfs, std::string_view mapId);
 
+// The map whose folder has a map's backgrounds and textures: its `assets_from`, else itself.
+[[nodiscard]] std::string_view mapAssetsOf(const MapDocument& document);
+
 // Reads and parses a map's data from the virtual file system, applies the packs' patches to it
-// (map_patch.hpp) and fills in its id and assets.
+// (map_patch.hpp) and fills in its id and assets (those of its `assets_from` map when it has one).
 core::Result<MapDocument> loadMapDocument(const VirtualFileSystem& vfs, std::string_view mapId);
 
 // --- World space

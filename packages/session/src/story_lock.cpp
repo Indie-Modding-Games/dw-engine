@@ -27,6 +27,8 @@ constexpr std::string_view ExitsKey = "exits";
 constexpr std::string_view SectionsKey = "sections";
 constexpr std::string_view MapKey = "map";
 constexpr std::string_view OpenKey = "open";
+// What separates the pack from the name in the id of a map a pack adds (assets::ContentId).
+constexpr char PackMapSeparator = ':';
 
 std::string readText(YamlReader& reader, const YamlNode& node) {
   std::string text = reader.ok() ? reader.text(node) : std::string{};
@@ -133,6 +135,10 @@ core::Result<StoryLockRules> readStoryLockRules(const ruleset::Section& section)
   return reader.finish(std::move(rules), section.file);
 }
 
+bool isPackMap(std::string_view map) {
+  return map.contains(PackMapSeparator);
+}
+
 bool mapPatternMatches(std::string_view pattern, std::string_view map) {
   if (pattern.ends_with(MapPatternWildcard)) {
     return map.starts_with(pattern.substr(0, pattern.size() - 1));
@@ -157,7 +163,7 @@ StoryLock::StoryLock(const StoryLockRules& rules, std::string_view stage)
 }
 
 bool StoryLock::mapOpen(std::string_view map) const {
-  return !locks() || anyMatches(maps_, map);
+  return !locks() || isPackMap(map) || anyMatches(maps_, map);
 }
 
 bool StoryLock::exitOpen(std::string_view from, std::string_view to) const {
@@ -166,6 +172,9 @@ bool StoryLock::exitOpen(std::string_view from, std::string_view to) const {
   }
   if (!mapOpen(to)) {
     return false;
+  }
+  if (isPackMap(to)) {
+    return true;
   }
   const auto narrowed = std::ranges::find(exits_, from, &StoryLockExits::map);
   return narrowed == exits_.end() || anyMatches(narrowed->open, to);

@@ -10,6 +10,7 @@ pub mod diff;
 pub mod document;
 pub mod emit;
 pub mod load;
+pub mod new_map;
 pub mod patch;
 pub mod places;
 mod reader;

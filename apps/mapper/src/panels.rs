@@ -72,7 +72,8 @@ pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
                     app.open_settings();
                 }
                 ui.separator();
-                if ui.button(text::QUIT).clicked() {
+                let quit = egui::Button::new(text::QUIT).shortcut_text("Ctrl+Q");
+                if ui.add(quit).clicked() {
                     ui.close();
                     app.apply(Action::Quit);
                 }
@@ -95,6 +96,23 @@ pub fn top_bar(app: &mut MapperApp, ui: &mut egui::Ui) {
                     app.show_shortcuts = true;
                 }
             });
+            crate::new_map::menu(app, ui);
+            ui.separator();
+            let world = app.world_ui.shown;
+            if ui
+                .selectable_label(!world, text::VIEW_MAP)
+                .on_hover_text(text::VIEW_HINT)
+                .clicked()
+            {
+                app.world_ui.shown = false;
+            }
+            if ui
+                .selectable_label(world, text::VIEW_WORLD)
+                .on_hover_text(text::VIEW_HINT)
+                .clicked()
+            {
+                app.world_ui.shown = true;
+            }
             ui.separator();
             let back = !app.mapper.history.is_empty();
             if ui

@@ -1,8 +1,11 @@
 #include "world_map_screen.hpp"
 
+#include <dwe/assets/content_id.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/localization/catalog.hpp>
 
+#include <optional>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -20,6 +23,16 @@ constexpr std::string_view ImageName = "world_map";
 double percent(float unit) {
   constexpr double Hundred = 100.0;
   return static_cast<double>(unit) * Hundred;
+}
+
+// The name of the map the player is on: a pack's map has a name of its own (mapNameKeyOf), an
+// original one the place name of its entry.
+std::string hereKey(const FieldScene& scene, std::optional<std::int32_t> herePlace) {
+  const auto id = assets::ContentId::parse(scene.field().mapId());
+  if (id && id->isNamespaced()) {
+    return scene.nameKeyOf(scene.field().mapId());
+  }
+  return herePlace ? localization::mapNameKey(*herePlace) : std::string{};
 }
 
 } // namespace
@@ -100,8 +113,7 @@ screens::ScreenSettings WorldMapScreen::settings(const FieldScene& scene,
       {.name = "world_map.opened", .value = static_cast<double>(opened_)},
       {.name = "world_map.image", .value = image_},
       {.name = "world_map.aspect", .value = static_cast<double>(layout.width / layout.height)},
-      {.name = "world_map.here_key",
-       .value = herePlace ? localization::mapNameKey(*herePlace) : std::string{}},
+      {.name = "world_map.here_key", .value = hereKey(scene, herePlace)},
       {.name = "world_map.area_key",
        .value = here ? localization::mapNameKey(layout.regions[*here].name) : std::string{}},
       {.name = "world_map.marker", .value = marker.has_value()},

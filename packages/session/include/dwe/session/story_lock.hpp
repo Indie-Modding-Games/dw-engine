@@ -56,6 +56,10 @@ struct StoryLockRules {
 // stages, and the stage ids are unique and never StoryStageAll.
 core::Result<StoryLockRules> readStoryLockRules(const ruleset::Section& section);
 
+// Whether a map is one a pack adds (`pack:name`): the lock follows the original's story, so it
+// never closes those, nor an exit into one.
+[[nodiscard]] bool isPackMap(std::string_view map);
+
 // Whether a map pattern matches a map id.
 [[nodiscard]] bool mapPatternMatches(std::string_view pattern, std::string_view map);
 

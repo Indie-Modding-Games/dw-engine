@@ -168,6 +168,11 @@ impl LivePanel {
         (view.map() == Some(shown)).then_some(view)
     }
 
+    /// The map the linked game is on.
+    pub fn game_map(&self) -> Option<&str> {
+        self.view.as_ref().filter(|_| self.connected)?.map()
+    }
+
     /// Each frame: what the link said, then follow mode and the preview.
     pub fn update(&mut self, mapper: &mut Mapper, pointer_held: bool) {
         let Some(link) = &self.link else {
@@ -178,6 +183,9 @@ impl LivePanel {
         }
         if !self.connected {
             return;
+        }
+        if let Some(map) = self.game_map() {
+            mapper.world.trail.visit(map);
         }
         if self.follow {
             let game = self.view.as_ref().and_then(LiveView::map);

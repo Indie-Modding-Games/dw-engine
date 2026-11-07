@@ -302,3 +302,19 @@ TEST_CASE("a slot from 5 to 7 takes the vball entry of a species number") {
   sound.playSound(4, 51);
   CHECK(audio.activeVoiceCount() == 1);
 }
+
+TEST_CASE("a map the table did not have when it was read is looked up again") {
+  SoundRig rig;
+  session::SessionSound sound{rig.audio, rig.files};
+  sound.enterMap("base:twna01");
+  // A map editor adds a map (here: renames twna01, whose sound_id is 9) and the game reloads.
+  const std::vector<std::byte> bytes =
+      rig.files.read(assets::AssetId::parse("data/maps").value()).value();
+  std::string maps(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+  const std::string_view old = "\"base:twna01\"";
+  maps.replace(maps.find(old), old.size(), "\"base:twna02\"");
+  rig.memory.addFile("pack/data/maps.yaml", maps);
+  sound.enterMap("base:twna02");
+  sound.playSound(8, 5);
+  CHECK(rig.audio.activeVoiceCount() == 1);
+}

@@ -106,5 +106,11 @@ inline constexpr std::string_view MapPatchCellsOutside =
     "the cells from column {}, row {} ({} x {}) leave the {} x {} collision grid";
 inline constexpr std::string_view MapPatchWithoutData =
     "a patch of map '{}', which has no data in any pack";
+inline constexpr std::string_view AddedMapWithoutEntry =
+    "map '{}' has data but no entry in data/maps, so the game never enters it";
+inline constexpr std::string_view AddedMapWithoutData =
+    "data/maps adds map '{}', which has no data in any pack";
+inline constexpr std::string_view MapWithoutBackground =
+    "map '{}' has no background (map/{}/background_<variant>)";
 
 } // namespace dwe::assets::messages

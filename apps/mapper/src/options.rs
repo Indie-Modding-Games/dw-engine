@@ -7,6 +7,7 @@ use mapper_core::{GroupBy, Layer};
 
 pub const USAGE: &str = "\
 Usage: dwe-mapper [options]
+       dwe-mapper mcp --content <dir> [--target <pack>] (an MCP server over stdio; mcp --help)
 
   --content <dir>      the content folder: the base pack and the packs next to it, as the game
   --team-packs <dir>   the team's packs (content/packs of the source tree); found on its own
@@ -24,6 +25,8 @@ Usage: dwe-mapper [options]
   --filter <text>      filters the map list
   --live <endpoint>    connects to a running dwe-game: unix:<socket> or tcp:<port>
   --size <w>x<h>       the window's size (default 1600x900)
+  --world              shows the world graph (the Mundo view) instead of the map; with --map,
+                       centred on that map
   --shot <file.png>    saves a picture of the window once it is drawn, then quits
   -h, --help           this help";
 
@@ -45,6 +48,8 @@ pub struct Options {
     pub live: Option<String>,
     pub size: [f32; 2],
     pub shot: Option<PathBuf>,
+    /// Shows the Mundo view first.
+    pub world: bool,
     pub help: bool,
 }
 
@@ -65,6 +70,7 @@ impl Default for Options {
             live: None,
             size: [1600.0, 900.0],
             shot: None,
+            world: false,
             help: false,
         }
     }
@@ -86,6 +92,7 @@ impl Options {
             };
             match argument.as_str() {
                 "--content" => options.content = Some(value()?.into()),
+                "--world" => options.world = true,
                 "--team-packs" => options.team_packs = Some(value()?.into()),
                 "--mods" => options.mods.push(value()?.into()),
                 "--map" => options.map = Some(value()?),

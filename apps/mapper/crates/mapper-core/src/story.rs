@@ -61,6 +61,19 @@ impl StoryContent {
         self.texts.load_table(vfs, &text_table(script));
         problems
     }
+
+    /// A script as it runs with `patches`, read once (its problems are left out: the map that
+    /// shows it reports them).
+    pub(crate) fn loaded(
+        &mut self,
+        vfs: &Vfs,
+        script: u16,
+        patches: &StoryPatches,
+    ) -> LoadedScript {
+        self.read(vfs, script);
+        let module = self.modules.get(&script).cloned().flatten();
+        LoadedScript::with_module(script, module, patches)
+    }
 }
 
 /// The text table of a script's lines: `story_<nnn>`.
@@ -132,7 +145,7 @@ impl Mapper {
     }
 
     /// The patches of the stack with the drafts of the map shown in their place.
-    fn shown_patches(&self) -> StoryPatches {
+    pub(crate) fn shown_patches(&self) -> StoryPatches {
         let (Some(content), Some(map)) = (&self.content, &self.map) else {
             return self.story.patches.clone();
         };

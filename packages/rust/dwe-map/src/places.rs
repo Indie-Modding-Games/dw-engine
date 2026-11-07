@@ -64,7 +64,9 @@ pub fn plan_places_save(
         return Ok(None);
     }
     let id = AssetId::parse(MAP_TABLE_ID)?;
-    let composed = vfs.read_composed_table(&id, &MAP_COMPOSITION)?.value;
+    let composed_table = vfs.read_composed_table(&id, &MAP_COMPOSITION)?;
+    let numbered_by_engine = composed_table.engine_numbered.contains(map);
+    let composed = composed_table.value;
     let maps = composed
         .get("maps")
         .and_then(Value::as_sequence)
@@ -75,6 +77,12 @@ pub fn plan_places_save(
         .find(|entry| entry.get("id").and_then(Value::as_str) == Some(map))
         .cloned()
         .ok_or_else(|| Error::Invalid(format!("data/maps has no map '{map}'")))?;
+    if numbered_by_engine {
+        // A pack's map: the engine numbers it, and a pack that writes its number is refused.
+        if let Some(entry) = entry.as_mapping_mut() {
+            entry.remove("index");
+        }
+    }
     let file = target.file(&id).map(std::path::Path::to_path_buf);
     let mut own: Value = match &file {
         Some(file) => {

@@ -64,6 +64,10 @@ pub struct MapperApp {
     pub timeline_ui: crate::timeline::TimelineUi,
     /// Where the canvas was drawn last frame (the section editor stays above the timeline).
     pub canvas_rect: Option<egui::Rect>,
+    /// The Mundo view.
+    pub world_ui: crate::world::WorldUi,
+    /// The new map, rename and delete windows.
+    pub map_forms: crate::new_map::MapForms,
 }
 
 impl MapperApp {
@@ -100,6 +104,12 @@ impl MapperApp {
             live.endpoint = endpoint.clone();
             live.connect();
         }
+        let mut world_ui = crate::world::WorldUi::showing(options.world);
+        if options.world
+            && let Some(map) = &options.map
+        {
+            world_ui.focus_on(map.clone());
+        }
         Self {
             mapper,
             background: BackgroundTexture {
@@ -130,6 +140,8 @@ impl MapperApp {
             field_focus: crate::keys::FieldFocus::default(),
             timeline_ui: crate::timeline::TimelineUi::default(),
             canvas_rect: None,
+            world_ui,
+            map_forms: crate::new_map::MapForms::default(),
         }
     }
 
@@ -236,10 +248,16 @@ impl eframe::App for MapperApp {
                         }
                     }
                 }
-                self.refresh_background(&ctx);
-                crate::canvas::show(self, ui);
+                if self.world_ui.shown {
+                    crate::world::show(self, ui);
+                } else {
+                    self.refresh_background(&ctx);
+                    crate::canvas::show(self, ui);
+                }
             });
         crate::dialogs::show(self, &ctx);
+        crate::world::connect_window(self, &ctx);
+        crate::new_map::show(self, &ctx);
         crate::section::show(self, &ctx);
         crate::probe::show(self, &ctx);
         crate::probe::tick(self);
