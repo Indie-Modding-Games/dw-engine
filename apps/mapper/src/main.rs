@@ -24,7 +24,12 @@ mod world;
 use eframe::egui;
 
 fn main() -> std::process::ExitCode {
-    let options = match options::Options::parse(std::env::args().skip(1)) {
+    let mut arguments = std::env::args().skip(1).peekable();
+    if arguments.peek().is_some_and(|first| first == "mcp") {
+        arguments.next();
+        return mapper_mcp::run(arguments, options::find_team_packs);
+    }
+    let options = match options::Options::parse(arguments) {
         Ok(options) => options,
         Err(message) => {
             eprintln!("dwe-mapper: {message}\n\n{}", options::USAGE);

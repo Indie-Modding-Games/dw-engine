@@ -7,6 +7,7 @@ use mapper_core::{GroupBy, Layer};
 
 pub const USAGE: &str = "\
 Usage: dwe-mapper [options]
+       dwe-mapper mcp --content <dir> [--target <pack>] (an MCP server over stdio; mcp --help)
 
   --content <dir>      the content folder: the base pack and the packs next to it, as the game
   --team-packs <dir>   the team's packs (content/packs of the source tree); found on its own

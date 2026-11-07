@@ -455,6 +455,7 @@ dependencies = [
  "image",
  "mapper-core",
  "mapper-live",
+ "mapper-mcp",
  "rfd",
  "serde_yaml_ng",
 ]
@@ -1269,6 +1270,21 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "mapper-mcp"
+version = "0.1.0"
+dependencies = [
+ "dwe-map",
+ "dwe-pack",
+ "dwe-story",
+ "glam",
+ "mapper-core",
+ "mapper-live",
+ "serde_json",
+ "serde_yaml_ng",
+ "tempfile",
 ]
 
 [[package]]
