@@ -129,19 +129,14 @@ core::Result<std::vector<PlayRequest>> EffectBank::requests(std::uint32_t value)
     if (sample == bank_.samples.end() || index >= samples_.size()) {
       return core::fail(core::formatMessage(messages::BankBrokenSound, value));
     }
-    // As the original's note-to-pitch routine does
-    // (docs/architecture/audio.md#64-el-tramo-2-en-detalle).
+    // As the original's note-to-pitch routine does (libsnd.s: note2pitch2;
+    // docs/architecture/audio.md#64-el-tramo-2-en-detalle).
     const int steps =
         ((sound->note - tone->root) * StepsPerSemitone) + (tone->fineTune >> FineTuneToSteps);
     const double unclamped = ChipRate * std::exp2(steps / StepsPerOctave);
     const double rate = std::min(unclamped, MaxChipRate);
     const EffectSample& loaded = samples_[index];
     const std::uint32_t sourceRate = loaded.sourceRate != 0 ? loaded.sourceRate : sample->rate;
-    core::logDebug("[port:audio] note2pitch2 (libsnd.s:8717): sound={} tone={} note={} root={} "
-                   "steps16={} rate={:.1f}{} pitch={:.4f}",
-                   value, number, sound->note, tone->root, steps, rate,
-                   unclamped > MaxChipRate ? " (clamped)" : "",
-                   rate / static_cast<double>(sourceRate));
     const int pan =
         std::clamp((tone->pan - PanCentre) + (program->pan - PanCentre), -PanCentre, PanCentre);
     voices.push_back({.clip = loaded.clip,
@@ -162,9 +157,12 @@ core::Result<std::vector<VoiceId>> EffectBank::play(Audio& audio, std::uint32_t 
                    voices.error().message);
     return std::unexpected{voices.error()};
   }
+  // sound.c: startSound. A sound plays often: only a failure is logged.
   auto started = audio.playAll(*voices);
-  core::logDebug("[port:audio] startSound (sound.c:602): sound={} voices={}{}", value,
-                 voices->size(), started ? "" : " failed: " + started.error().message);
+  if (!started) {
+    core::logDebug("[port:audio] startSound (sound.c:602): sound={} failed: {}", value,
+                   started.error().message);
+  }
   return started;
 }
 

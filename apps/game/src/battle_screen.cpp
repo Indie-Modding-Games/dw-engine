@@ -955,8 +955,8 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
     return true;
   }
   if (command.name == BattleEndCountCommand) {
-    core::logDebug("[port:audio] tickBitBox (battle_ui.c:438), renderPostBattleStatsBox "
-                   "(battle_ui.c:609): a point or a bit counted; playSound(0, 0x16)");
+    // battle_ui.c: tickBitBox, renderPostBattleStatsBox: a point or a bit counted (one a frame,
+    // so not logged).
     playSound(EndCountSound);
     return true;
   }

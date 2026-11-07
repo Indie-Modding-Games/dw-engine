@@ -27,6 +27,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace dwe::assets {
 class VirtualFileSystem;
@@ -271,6 +272,8 @@ private:
   std::uint32_t ticksPerFrame_ = 0;
   game::story::StoryFlowRules flow_;
   bool seedNewGame_ = true;
+  // The cell sections asked on the last frame: a step cell asks every frame, logged once.
+  std::vector<std::int32_t> askedCells_;
 };
 
 } // namespace dwe::session

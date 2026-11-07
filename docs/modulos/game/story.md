@@ -158,6 +158,12 @@ Hablar con un personaje cuya sección no está en el guion del mapa no es un err
 `getScriptSection` da un puntero nulo, el intérprete lee los bytes de la dirección 0 y el guion acaba al momento
 (medido en el original con el personaje 0 de room08 apuntado a la sección 0x60: no pasa nada). Así le pasa al
 tendero de cartas de gias06b, el personaje 5 del guion 126, que solo tiene las secciones 0x51 y 0x52 del mostrador.
+Lo mismo vale para una casilla del mapa (`tamer.c: checkMapInteraction`, `SectionSource::Cell`): en topn01 fuera de
+la apertura la casilla de la sección 0x42 no tiene sección en el guion 193 y el runner la acaba sin anotar un error
+(antes dejaba una línea `[error]` por segundo de pie en ella). La casilla pide su sección cada fotograma: tras la primera
+vez el runner recuerda que falta y la acaba sin más líneas hasta el siguiente `set_script`; de una casilla con
+sección solo se anota la primera petición mientras el jugador sigue en ella. Las demás fuentes sin sección siguen
+siendo un error del contenido.
 
 ## Pruebas
 

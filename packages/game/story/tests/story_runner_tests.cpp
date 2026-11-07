@@ -1,14 +1,17 @@
+#include <dwe/core/log.hpp>
 #include <dwe/game/story/story_runner.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <format>
 #include <map>
 #include <ostream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -315,6 +318,32 @@ TEST_CASE("script_interp.c callScriptSection: a talk on a section the script lac
   REQUIRE(runner.request(Talk, StartTiming::Now, SectionSource::Event) == RequestOutcome::Accepted);
   CHECK(host.log() ==
         std::vector<std::string>{"start 105:0x6", "resume 105:0x6 nil", "close 105:0x6"});
+}
+
+TEST_CASE("tamer.c checkMapInteraction: a step cell on a section the script lacks ends at once") {
+  static std::vector<dwe::core::LogLevel> levels;
+  static const bool added = [] {
+    dwe::core::addLogSink(
+        [](dwe::core::LogLevel level, std::string_view /*message*/) { levels.push_back(level); });
+    return true;
+  }();
+  static_cast<void>(added);
+  levels.clear();
+  ScriptedHost host;
+  StoryRunner runner = makeRunner(host);
+  REQUIRE(runner.request(Step, StartTiming::Now, SectionSource::Cell) == RequestOutcome::Accepted);
+  CHECK_FALSE(runner.busy());
+  CHECK(host.open() == 0);
+  // The original reads the bytes at address 0 and ends the script: nothing went wrong.
+  CHECK_FALSE(std::ranges::contains(levels, dwe::core::LogLevel::Error));
+  // The cell asks again every frame: that ends at once too, without another line.
+  const std::size_t logged = levels.size();
+  REQUIRE(runner.request(Step, StartTiming::Now, SectionSource::Cell) == RequestOutcome::Accepted);
+  CHECK_FALSE(runner.busy());
+  CHECK(levels.size() == logged);
+  // Another source on a missing section is a content error.
+  REQUIRE(runner.request(Step, StartTiming::Now, SectionSource::Plain) == RequestOutcome::Accepted);
+  CHECK(std::ranges::contains(levels, dwe::core::LogLevel::Error));
 }
 
 TEST_CASE("a step cell asked on the tick before each frame leaves the runner idle between frames") {

@@ -33,6 +33,9 @@ core::Result<StoryRunner> StoryRunner::create(SectionHost& host, std::uint32_t t
 }
 
 RequestOutcome StoryRunner::request(SectionRef section, StartTiming timing, SectionSource source) {
+  if (source == SectionSource::Cell && !busy() && std::ranges::contains(missingCells_, section)) {
+    return RequestOutcome::Accepted;
+  }
   if (busy()) {
     std::uint16_t running = mapScript_.value_or(section.script);
     if (pending_) {
@@ -126,6 +129,7 @@ core::Result<void> StoryRunner::setScript(std::int64_t script, std::int64_t map)
   }
   mapScript_ = static_cast<std::uint16_t>(script);
   scriptMap_ = static_cast<std::int32_t>(map);
+  missingCells_.clear();
   core::logDebug("{}", messages::formatMessage(messages::PortSetScript, script, map));
   if (enteredMap_ != map) {
     // The original loads the map here (script_interp.c: scriptInstructionFBtoFF); the engine
@@ -268,11 +272,14 @@ void StoryRunner::startSection(SectionRef section) {
   // script_interp.c: getScriptSection gives a null pointer for a section the script lacks, and the
   // interpreter reads the bytes at address 0, which end the script at once (measured: an NPC talk
   // whose section is missing does nothing). A talk or a step on such a section is no error.
-  if (source_ == SectionSource::Event) {
+  if (source_ == SectionSource::Event || source_ == SectionSource::Cell) {
     auto handle = host_->start(section);
     if (!handle) {
       core::logDebug("{}", messages::formatMessage(messages::PortTalkWithoutSection, section.script,
                                                    section.section));
+      if (source_ == SectionSource::Cell && !std::ranges::contains(missingCells_, section)) {
+        missingCells_.push_back(section);
+      }
       return;
     }
     sections_.push_back({.ref = section, .handle = *handle});

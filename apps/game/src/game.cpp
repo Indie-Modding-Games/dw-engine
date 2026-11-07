@@ -88,6 +88,7 @@
 #include "save_figure.hpp"
 #include "save_indicator.hpp"
 #include "screenshot.hpp"
+#include "slow_frame_log.hpp"
 #include "state_trace.hpp"
 #include "text_font_setting.hpp"
 #include "title_options.hpp"
@@ -949,6 +950,7 @@ int runGame(const Options& requested) {
   bool reportAsked = false;
 
   FrameStats frameStats;
+  SlowFrameLog slowFrames;
   MinimapCover minimapCover;
   AutotestHost host{
       .platform = &*platform,
@@ -1389,8 +1391,11 @@ int runGame(const Options& requested) {
     // ticks count as slow.
     if (constexpr double SlowFrameSeconds = 1.5 * TickSeconds;
         frameSeconds > SlowFrameSeconds && ticksRun > 0) {
-      core::logInfo("game: slow frame, {:.1f} ms, at tick {}{} ({})", frameSeconds * 1000.0,
-                    ticksRun, steady ? "" : " (expected: load, resize or capture)", phases.text());
+      if (auto left = slowFrames.slow(frameSeconds * 1000.0, ticksRun)) {
+        core::logInfo("game: slow frame, {:.1f} ms, at tick {}{} ({}){}", frameSeconds * 1000.0,
+                      ticksRun, steady ? "" : " (expected: load, resize or capture)", phases.text(),
+                      *left);
+      }
     }
     phases.start(now);
 

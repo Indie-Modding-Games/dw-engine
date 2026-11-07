@@ -867,10 +867,7 @@ void FieldScene::playClipSounds(const Actor& actor) {
     if (cue.bank == SpeciesSoundBank) {
       slot = partner ? SpeciesSoundBank : actor.soundSlot;
     }
-    core::logDebug("[port:anim] tickAnimation (anim.c:339): entity {} clip {} tick {}: "
-                   "playSound({}, {})",
-                   static_cast<std::uint32_t>(actor.entity), actor.player->clip()->id.value_or(0),
-                   cue.tick, slot, cue.sound);
+    // anim.c: tickAnimation plays the clip's sound on its tick (playSound logs it).
     sound_->playSound(slot, cue.sound);
   }
 }

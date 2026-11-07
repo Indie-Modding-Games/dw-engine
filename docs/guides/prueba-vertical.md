@@ -91,7 +91,7 @@ HUD normal no enseña nada de esto. En la carpeta:
 | `save.yaml` | La partida en ese momento, con el sistema de guardado de siempre. En mitad de un combate, un script, un cambio de mapa o una escena (cuidados, evolución, sueño, gimnasio, tienda...) no se puede guardar: entonces es la última foto del campo libre, que el juego toma cada 5 s mientras se puede, y `state.yaml` lo dice (`save.kind: field_snapshot`, `seconds_ago` y `reason`) |
 | `screenshot.png` | La captura del frame siguiente, sin el aviso |
 | `state.yaml` | El commit del que se compiló (`git describe --dirty`), el mapa, la hora y el día del juego, qué hay en pantalla (campo, combate y su fase, script en marcha y sus secciones, cuadro de diálogo, menú, cambio de mapa), la posición y el giro del jugador, del compañero y de cada NPC (id de script, especie, modelo, si un script lo sujeta o lo mueve), los luchadores del combate con HP, MP y posición, la especie y el estado del compañero, y el contador `field.overlaps` |
-| `log.txt` | Las últimas 2000 líneas del log |
+| `log.txt` | Las últimas 2000 líneas del log. Un fotograma lento escribe su línea, pero en una racha de ellos solo una por segundo, con cuántos se callaron y el peor (`slow_frame_log.hpp`), para que el resto del log quepa |
 | `route.yaml` | Una ruta de autotest que carga `save.yaml` (`load_save`) y espera en ese mapa |
 
 Para reproducirlo, desde la raíz del repositorio:
