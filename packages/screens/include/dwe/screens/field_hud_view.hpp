@@ -35,8 +35,8 @@ inline constexpr std::size_t MeterCount = 2;
 // The pools of the field HUD, in the order of the hud.pool list: HP and MP.
 inline constexpr std::size_t PoolCount = 2;
 
-// The needs the field HUD shows, in the order of the hud.need list: hunger, sleep, toilet and
-// tiredness.
+// The needs the field HUD shows, in the order of the hud.need list: hunger, sleep, toilet,
+// tiredness, injury and sickness.
 inline constexpr std::size_t NeedCount = 6;
 
 // The game time as the player reads it: the hour (0-23) and minute, and the day of the year and the
@@ -83,6 +83,13 @@ struct FieldHudView {
   // (its condition, which the original shows as a bubble over the partner: partner_impl.c:
   // handleConditionBubble).
   std::array<bool, NeedCount> needs{};
+  // How urgent each need the partner has is, among the ones it has: 1 for the one that does its
+  // lasting harm first if left alone (game::partner::NeedDeadlines), then 2 and on; 0 for a need it
+  // does not have. Needs with no deadline (tiredness, an injury on a sick partner) come after the
+  // ones with one, and needs that tie keep the order of the original's bubble (sleep, tiredness,
+  // hunger, toilet, injury, sickness: partner_impl.c: handleConditionBubble). For the stacked need
+  // bubble, an engine improvement; the original's bubble keeps its own order.
+  std::array<std::int32_t, NeedCount> urgency{};
   // HP (0) and MP (1).
   std::array<FieldPoolView, PoolCount> pools;
   // How the partner feels about the map: the original's happiness icon alternates with another face

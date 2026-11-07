@@ -37,6 +37,7 @@ PartnerView viewOf(const game::partner::Partner& partner, const game::partner::C
       .minutesToMeal = state.hunger.foodLevel,
       .stepsToToilet = state.toilet.poopLevel,
       .conditions = state.conditions,
+      .needDeadlines = {},
       .careMistakes = state.evolution.careMistakes,
       .battles = state.evolution.battles,
       .evolutionHours = state.evolution.hours,

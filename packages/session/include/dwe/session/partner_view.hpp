@@ -2,6 +2,7 @@
 
 #include <dwe/game/partner/care_rules.hpp>
 #include <dwe/game/partner/effects.hpp>
+#include <dwe/game/partner/need_deadlines.hpp>
 #include <dwe/game/partner/partner.hpp>
 #include <dwe/game/partner/species.hpp>
 #include <dwe/game/partner/state.hpp>
@@ -51,6 +52,9 @@ struct PartnerView {
   std::int32_t stepsToToilet = 0;
 
   game::partner::Conditions conditions;
+  // How soon each need does lasting harm if left alone, from the clock's time now
+  // (game::partner::needDeadlinesOf; GameSession::partnerView fills it, viewOf leaves it empty).
+  game::partner::NeedDeadlines needDeadlines;
   // How the partner feels about the map it is on.
   game::partner::AreaResponse area = game::partner::AreaResponse::Neutral;
   std::int32_t careMistakes = 0;
