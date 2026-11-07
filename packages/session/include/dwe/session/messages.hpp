@@ -104,6 +104,13 @@ inline constexpr std::string_view MovePlaceOutside =
 inline constexpr std::string_view MoveNotLearned = "battle: the partner has not learned '{}'";
 inline constexpr std::string_view NoMoveAtSlot = "battle: '{}' has no move at position {}";
 
+// The game events mods handle (GameHooks, ModScripts).
+inline constexpr std::string_view GameEventFailed = "mods: the event {} could not be fired: {}";
+inline constexpr std::string_view ModScriptsNoVm =
+    "mods: the game has no script VM, so no mod script runs and no game event is fired";
+inline constexpr std::string_view ModScriptFailed = "mods: {}'s {} failed: {}";
+inline constexpr std::string_view ModScriptRan = "mods: ran {}'s {}";
+
 // The story state (StoryAdapter).
 inline constexpr std::string_view StoryNewGame = "story: a new game starts with {} triggers set";
 // A trigger data/new_game_story does not know at the new game's start, besides the first partner's

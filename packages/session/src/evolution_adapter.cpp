@@ -506,6 +506,7 @@ void EvolutionAdapter::apply(GameSession& session, const EvolutionResult& result
   game::partner::Partner& partner = session.partner();
   const EvolutionTables& tables = evolution_->tables();
   const std::string target{tables.idOf(result.target)};
+  const std::string from = partner.state().species;
   if (auto changed = partner.changeSpecies(target, session.clock()); !changed) {
     core::logError("{}",
                    formatMessage(messages::EvolutionNotApplied, target, changed.error().message));
@@ -535,6 +536,7 @@ void EvolutionAdapter::apply(GameSession& session, const EvolutionResult& result
   game::evolution::recordEvolution(state_, result);
   raise(result.target);
   session.requestAutosave(game::save::AutosaveReason::Evolution);
+  session.hooks().evolved(from, target);
   evolutions_.push_back(result);
 }
 

@@ -10,6 +10,7 @@
 #include <dwe/game/save/sections.hpp>
 #include <dwe/ruleset/species_extra.hpp>
 #include <dwe/session/battle_adapter.hpp>
+#include <dwe/session/game_hooks.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/messages.hpp>
@@ -20,11 +21,37 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace dwe::session {
 
 namespace {
+
+// The names mods see for a battle's kind and outcome (game_hooks.hpp).
+std::string_view kindName(game::battle::BattleKind kind) {
+  switch (kind) {
+  case game::battle::BattleKind::Normal:
+    return "normal";
+  case game::battle::BattleKind::Tournament:
+    return "tournament";
+  case game::battle::BattleKind::Arena:
+    return "arena";
+  }
+  return "normal";
+}
+
+std::string_view outcomeName(game::battle::Outcome outcome) {
+  switch (outcome) {
+  case game::battle::Outcome::Victory:
+    return "victory";
+  case game::battle::Outcome::Fled:
+    return "fled";
+  case game::battle::Outcome::Defeat:
+    return "defeat";
+  }
+  return "defeat";
+}
 
 using game::battle::BattleResult;
 using game::battle::Outcome;
@@ -404,6 +431,15 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
   if (!strategies) {
     return std::unexpected{strategies.error()};
   }
+  // What mods hear once the battle started (battle.started), taken before the request moves.
+  const std::string firstEnemy =
+      request.enemies.empty() ? std::string{} : request.enemies[0].species;
+  const std::string map = request.map;
+  const BattleStartedEvent started{.kind = kindName(request.kind),
+                                   .map = map,
+                                   .enemies = static_cast<std::int64_t>(request.enemies.size()),
+                                   .firstEnemy = firstEnemy,
+                                   .scripted = request.scripted};
   const game::partner::PartnerState& state = session.partner().state();
   game::battle::BattleSetup setup{
       .partner = std::move(*partner),
@@ -428,6 +464,9 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
                                             std::move(*strategies), seed);
   if (battle && originalRolls_) {
     battle->useOriginalRolls(*originalRolls_);
+  }
+  if (battle) {
+    session.hooks().battleStarted(started);
   }
   return battle;
 }
@@ -475,6 +514,9 @@ core::Result<BattleAftermath> BattleAdapter::finish(GameSession& session,
   if (result.kind != game::battle::BattleKind::Normal) {
     session.requestAutosave(AutosaveReason::TournamentResult);
   }
+  session.hooks().battleEnded({.kind = kindName(result.kind),
+                               .outcome = outcomeName(result.outcome),
+                               .recruit = aftermath.recruitJoined.value_or(std::string{})});
   session.afterSystemCommand();
   return aftermath;
 }

@@ -111,6 +111,17 @@ La cabecera lleva el ruleset, la versión del juego, el tiempo jugado y una etiq
 partida de otro ruleset lo selecciona antes de leer las secciones. Al cargar, `savedPlace()` dice dónde empezar: el
 juego entra en ese mapa en esa posición (`FieldSceneDesc::startAt`).
 
+## Eventos y scripts de los mods
+
+`GameHooks` (`game_hooks.hpp`) lanza los eventos del juego en la VM de la historia, cada uno con una tabla versionada
+(`GameEvents` los lista con sus campos; [API de Lua](../../modding/api-lua.md#eventos-del-juego)): la sesión lanza
+`field.map_entered`, `field.map_left`, `clock.new_day`, `game.new_game` y `game.loaded`; `BattleAdapter`,
+`battle.started` y `battle.ended`; `EvolutionAdapter`, `evolution.evolved`; `InventoryAdapter`,
+`inventory.item_used` (en el campo). `ModScripts` (`mod_scripts.hpp`), el sistema que va justo después de la
+historia, ata `GameHooks` a la VM y ejecuta el `scripts/main.lua` de cada paquete que lo tiene, de abajo arriba, en
+su entorno de mod, una vez por partida (al empezar o cargar, antes de `game.new_game` o `game.loaded`). Un evento sin
+VM, o que ningún paquete escucha, no hace nada; el fallo de un manejador va al log y la partida sigue.
+
 ## Adaptadores
 
 Cada sistema que llega después (evolución, batalla, inventario) se enchufa con un fichero: una clase que implementa

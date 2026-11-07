@@ -75,6 +75,29 @@ TEST_CASE(
   CHECK(logged == std::vector<std::string>{"first a twna01", "first b twna01", "second twna013"});
 }
 
+TEST_CASE("a hook with a table gives each handler a fresh table with the fields and the version") {
+  auto vm = makeVm();
+  auto& logged = publishLog(*vm);
+  REQUIRE(vm->hooks().declare("battle.ended"));
+  auto first = environmentOf(*vm, "first");
+  auto second = environmentOf(*vm, "second");
+  REQUIRE(first.run("hooks.on('battle.ended', function(t)"
+                    " test.log(t.outcome .. ' ' .. tostring(t.won) .. ' ' .. t.count .. ' v' .."
+                    " t.version) t.outcome = 'changed' end)",
+                    "=first"));
+  REQUIRE(second.run("hooks.on('battle.ended', function(t) test.log(t.outcome) end)", "=second"));
+  const script::HookTable table{
+      .version = 2,
+      .fields = {{.name = "outcome", .value = ApiValue{std::string{"victory"}}},
+                 {.name = "won", .value = ApiValue{true}},
+                 {.name = "count", .value = ApiValue{std::int64_t{3}}}}};
+  const auto report = vm->hooks().fire("battle.ended", table);
+  REQUIRE(report.has_value());
+  CHECK(report->handlersRun == 2);
+  CHECK(report->handlersFailed == 0);
+  CHECK(logged == std::vector<std::string>{"victory true 3 v2", "victory"});
+}
+
 TEST_CASE("a pack's hook handlers share a budget per fired event and one per frame") {
   // A fire may spend 100000 instructions and a frame 250000: the third fire gets the 50000 left,
   // the fourth none.

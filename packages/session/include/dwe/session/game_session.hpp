@@ -18,6 +18,7 @@
 #include <dwe/ruleset/random.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/ruleset/ruleset_store.hpp>
+#include <dwe/session/game_hooks.hpp>
 #include <dwe/session/partner_view.hpp>
 #include <dwe/session/session_rules.hpp>
 #include <dwe/session/session_system.hpp>
@@ -346,6 +347,8 @@ public:
   // The play time counted (countPlayTime), as the save's header and the player page show it.
   [[nodiscard]] double playSeconds() const { return playSeconds_; }
   [[nodiscard]] std::uint64_t seed() const { return seed_; }
+  // The game events mods handle (game_hooks.hpp); they fire once ModScripts bound them.
+  [[nodiscard]] GameHooks& hooks() { return hooks_; }
   // The story's sound slots, or nullptr for a silent session.
   [[nodiscard]] game::story::SoundPort* sound();
   // The music: the story's, the clock's and the battles', or nullptr for a silent session.
@@ -424,6 +427,7 @@ private:
   std::string lastMap_;
   std::unique_ptr<SessionSound> sound_;
   std::unique_ptr<SessionMusic> music_;
+  GameHooks hooks_;
   game::partner::AreaResponse area_ = game::partner::AreaResponse::Neutral;
   double playSeconds_ = 0.0;
   // Real seconds saves have waited for the current care scene or wake; 0 when they do not wait.

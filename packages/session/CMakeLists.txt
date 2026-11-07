@@ -13,6 +13,7 @@ dwe_add_module(session
         src/field_facts.cpp
         src/field_items_adapter.cpp
         src/fishing_adapter.cpp
+        src/game_hooks.cpp
         src/tournament_adapter.cpp
         src/curling_adapter.cpp
         src/poop_adapter.cpp
@@ -41,6 +42,7 @@ dwe_add_module(session
         src/jukebox.cpp
         src/card_shop.cpp
         src/merit_shop.cpp
+        src/mod_scripts.cpp
         src/shop_counter.cpp
         src/slot_names.cpp
         src/story_adapter.cpp

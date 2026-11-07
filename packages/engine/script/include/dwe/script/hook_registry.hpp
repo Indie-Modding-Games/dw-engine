@@ -4,8 +4,11 @@
 #include <dwe/script/api_registry.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <span>
+#include <string>
 #include <string_view>
+#include <vector>
 
 namespace dwe::script {
 
@@ -16,6 +19,21 @@ struct HookReport {
   std::size_t handlersFailed = 0;
   // The handlers not run because their pack spent its hook budget of this event or of this frame.
   std::size_t handlersSkipped = 0;
+};
+
+// One named field of a hook's table argument.
+struct HookField {
+  std::string name;
+  ApiValue value;
+};
+
+// The table a hook's handlers get as their one argument (Lua API 1.4): its fields, and `version`,
+// the version of the event's table. A field is added with a newer minor version of the API and the
+// same table version; the table version goes up only when a field changes or goes, so a handler can
+// check it. Each handler gets a table of its own, so one handler cannot change what the next sees.
+struct HookTable {
+  std::int64_t version = 1;
+  std::vector<HookField> fields;
 };
 
 // Named events that packs' scripts handle. The module that owns an event declares it
@@ -39,11 +57,16 @@ public:
 
   // Calls every handler of a declared event with the arguments.
   core::Result<HookReport> fire(std::string_view event, std::span<const ApiValue> arguments = {});
+  // Calls every handler of a declared event with a table of its own (HookTable).
+  core::Result<HookReport> fire(std::string_view event, const HookTable& table);
 
   // Starts a new frame: every pack gets its whole hook budget per frame again.
   void beginFrame();
 
 private:
+  core::Result<HookReport> fireWith(std::string_view event, std::span<const ApiValue> arguments,
+                                    const HookTable* table);
+
   detail::VmState* vm_;
 };
 
