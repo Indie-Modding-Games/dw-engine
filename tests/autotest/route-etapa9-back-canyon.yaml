@@ -1,0 +1,35 @@
+# Stage 9 of the story with the keyboard, the Back Dimension from the canyon: the elder's draw can send the player in
+# by gcan05 (variable 16 = 3; script 40 section 0x33, tile 51) instead of frzl05. Run on the seeded game with
+# --story-stage stage_9 --start gcan06 (or on the cleared game of route-etapa8-final with --load slot_01). gcan05's
+# head spawns the canyon's gatekeeper, who stands in the passage to tile 51, only until he has let the player by
+# once (trigger 200, script 40); the seeded game has not met him, so the route writes 200 with the draw and comes in
+# from gcan06. It goes mgen11, mgen12 and mgen13 and out by mgen13's tile 52 to ogre02: mgen13's warp runs the
+# arrival section 0x3c of script 47, the post-game boss's talk and fight, which ends the trip (trigger 202, variable
+# 16 back to 0) and sends the player to File City.
+name: etapa9-back-canyon
+device: keyboard
+timeout: 1800
+steps:
+  - wait: {map: gcan06, seconds: 2, timeout: 600}
+  - script: story_set("trigger 50 on")
+  - script: story_set("trigger 200 on")
+  - script: story_set("var 16 3")
+  - expect_setting: {story.trigger.202: "false"}
+  - walk_to: {trigger: 110, walk: true, encounters: win, timeout: 240}
+  - wait: {map: gcan05, seconds: 1, timeout: 120}
+  - walk_to: {trigger: 51, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen11, seconds: 1, timeout: 120}
+  - screenshot: mgen11
+  - walk_to: {trigger: 52, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen12, seconds: 1, timeout: 120}
+  - walk_to: {trigger: 52, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen13, seconds: 1, timeout: 120}
+  - walk_to: {trigger: 52, walk: true, encounters: win, timeout: 240}
+  - wait: {map: ogre02, seconds: 1, timeout: 120}
+  - screenshot: ogre02
+  - wait: {confirm: true, shown: battle, timeout: 300}
+  - screenshot: ogre02-battle
+  - wait: {confirm: true, win_after: 15, setting: {story.trigger.202: "true"}, timeout: 600}
+  - wait: {confirm: true, setting: {story.var.16: "0"}, timeout: 120}
+  - wait: {confirm: true, map: twna02, seconds: 2, timeout: 300}
+  - screenshot: city

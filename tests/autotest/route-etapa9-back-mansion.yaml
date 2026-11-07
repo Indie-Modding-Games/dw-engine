@@ -1,0 +1,30 @@
+# Stage 9 of the story with the keyboard, the Back Dimension from the Mansion: the elder's draw can send the player in
+# by dgha02 (variable 16 = 2; script 35 section 0x33, tile 51) instead of frzl05. Run on the seeded game with
+# --story-stage stage_9 --start dgha02 (or on the cleared game of route-etapa8-final with --load slot_01): the route
+# writes the cleared game's trigger 50 and the draw, goes mgen11, mgen12 and mgen13 and out by mgen13's tile 52 to
+# chka01: mgen13's warp runs the arrival section 0x3c of script 63, the post-game boss's talk and fight, which ends
+# the trip (trigger 202, variable 16 back to 0) and sends the player to File City.
+name: etapa9-back-mansion
+device: keyboard
+timeout: 1800
+steps:
+  - wait: {map: dgha02, seconds: 2, timeout: 600}
+  - script: story_set("trigger 50 on")
+  - script: story_set("var 16 2")
+  - expect_setting: {story.trigger.202: "false"}
+  - walk_to: {trigger: 51, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen11, seconds: 1, timeout: 120}
+  - screenshot: mgen11
+  - walk_to: {trigger: 52, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen12, seconds: 1, timeout: 120}
+  - walk_to: {trigger: 52, walk: true, encounters: win, timeout: 240}
+  - wait: {map: mgen13, seconds: 1, timeout: 120}
+  - walk_to: {trigger: 52, walk: true, encounters: win, timeout: 240}
+  - wait: {map: chka01, seconds: 1, timeout: 120}
+  - screenshot: chka01
+  - wait: {confirm: true, shown: battle, timeout: 300}
+  - screenshot: chka01-battle
+  - wait: {confirm: true, win_after: 15, setting: {story.trigger.202: "true"}, timeout: 600}
+  - wait: {confirm: true, setting: {story.var.16: "0"}, timeout: 120}
+  - wait: {confirm: true, map: twna02, seconds: 2, timeout: 300}
+  - screenshot: city

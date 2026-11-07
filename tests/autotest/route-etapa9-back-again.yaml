@@ -1,0 +1,33 @@
+# Stage 9 of the story with the keyboard, the Back Dimension again: after the post-game boss's fight (trigger 202, as
+# route-etapa9-back-mansion.yaml and route-etapa9-back-canyon.yaml leave it) the elder thanks the player and gives
+# the prize (script 178, trigger 215). Twenty days later (variable 28) the city's map script draws the next entrance
+# (script 162 section 0xfe: 202 and 215 cleared, variable 16 back to 1, 2 or 3), so the boss can be fought again by
+# whichever entrance the draw picked. That draw is in the grown city's script (twna02 to twna13); the elder's door
+# leads there once the city has begun to grow (trigger 203, map head section 0x4dd), which the seeded game has not, so
+# the route writes 203. Run on the seeded game with --story-stage stage_9 --start room08.
+name: etapa9-back-again
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: room08, seconds: 2, timeout: 60}
+  - script: story_set("trigger 50 on")
+  - script: story_set("trigger 203 on")
+  - script: story_set("trigger 202 on")
+  - script: story_set("var 16 0")
+  - expect_setting: {story.trigger.215: "false"}
+  # The elder sits at the back of the room: the player stands facing him and talks (Enter).
+  - walk_to: {point: [2, -250], radius: 80, timeout: 60}
+  - script: place("player 2 320 2048")
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: elder
+  - wait: {confirm: true, setting: {story.trigger.215: "true"}, timeout: 200}
+  - wait: {confirm: true, hidden: story_textbox, seconds: 2, timeout: 120}
+  - expect_setting: {story.var.28: "0"}
+  # Twenty days on, out into the city: the draw.
+  - script: story_set("var 28 20")
+  - walk_to: {trigger: 51, timeout: 90}
+  - wait: {confirm: true, setting: {story.trigger.202: "false"}, timeout: 120}
+  - expect_setting: {story.trigger.215: "false"}
+  - screenshot: city

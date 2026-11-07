@@ -154,6 +154,44 @@ TEST_CASE("a walk faces its point as it starts, before the clip's first step") {
         doctest::Approx(dwe::assets::yawOfDirection({1.0F, 0.0F, 0.0F})));
 }
 
+TEST_CASE("a walk at a point on its cell's corner from outside the cell stops on the point") {
+  // mgen13's way into the back dimension (script 63, section 0x3c): after the fixed fight the
+  // boss walks back to (-100, 800) from wherever the fight left it. That point is its cell's
+  // corner, and from below and to the right the walk crosses the corner without ever being in the
+  // cell (tickEntityWalkTo ends on the cell only): back and forth for ever, and wait_for_entity(6)
+  // never ended. The original's whole-unit steps land in the cell after a few passes.
+  constexpr std::int64_t Walker = 6;
+  Floor floor;
+  floor.actors[Walker] = {.slot = 3, .position = {-500.0F, 0.0F, -24.0F}};
+  ScriptMotion motion{floor, MotionRules{.frameSeconds = FrameSeconds}};
+  motion.walkTo(Walker, -100, 800, 0);
+  const auto done = motion.waitFor(Walker);
+  for (int frame = 0; frame < 120 && !done(); ++frame) {
+    motion.scriptFrame();
+    floor.step();
+  }
+  REQUIRE(done());
+  CHECK(floor.actors[Walker].position.x == doctest::Approx(-100.0F));
+  CHECK(floor.actors[Walker].position.z == doctest::Approx(-800.0F));
+  CHECK(floor.actors[Walker].velocity == glm::vec3{0.0F});
+}
+
+TEST_CASE("a walk still ends as it steps into its point's cell, short of the point") {
+  // The common case stays the original's: the walk ends on the first step in the cell.
+  constexpr std::int64_t Walker = 6;
+  Floor floor;
+  floor.actors[Walker] = {.slot = 3, .position = {0.0F, 0.0F, -150.0F}};
+  ScriptMotion motion{floor, MotionRules{.frameSeconds = FrameSeconds}};
+  motion.walkTo(Walker, 340, 150, 0);
+  const auto done = motion.waitFor(Walker);
+  for (int frame = 0; frame < 120 && !done(); ++frame) {
+    motion.scriptFrame();
+    floor.step();
+  }
+  REQUIRE(done());
+  CHECK(floor.actors[Walker].position.x == doctest::Approx(300.0F));
+}
+
 TEST_CASE("a move to a point ordered while another runs goes on with that one's step") {
   // mgen06's boss (script 194, section 0x35): play_animation(10, 28), entity_move_to(10, -4562,
   // 41, 20), delay(20), and again. Measured in the original: the second order comes while the

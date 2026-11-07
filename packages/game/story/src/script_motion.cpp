@@ -112,6 +112,16 @@ std::optional<float> turnToward(float yaw, float wanted, float turn) {
   return yaw + (difference < 0.0F ? -turn : turn);
 }
 
+// Whether a walk's step from `position` passes `point` without ending in the point's cell
+// (tickEntityWalkTo ends a walk on the cell, and the point is always in its own cell).
+bool landsOnPoint(glm::vec3 position, glm::vec3 point, glm::vec3 step) {
+  glm::vec3 toPoint = point - position;
+  toPoint.y = 0.0F;
+  const glm::vec3 next = position + step;
+  return glm::length(toPoint) <= glm::length(step) &&
+         assets::originalCellAt(next) != assets::originalCellAt(point);
+}
+
 } // namespace
 
 ScriptMotion::ScriptMotion(ScriptActorsPort& actors, MotionRules rules)
@@ -480,7 +490,20 @@ bool ScriptMotion::tick(std::int64_t character, Walk& move) {
     actors_->drive(character, {}, Glide::Walk);
     return true;
   }
-  actors_->drive(character, assets::forwardOfYaw(yaw) * speed, Glide::Walk);
+  const glm::vec3 velocity = assets::forwardOfYaw(yaw) * speed;
+  if (!move.target && landsOnPoint(position, *point, velocity * rules_.frameSeconds)) {
+    // The point is on its cell's corner and this step would cross it without entering the cell:
+    // walking at the point from any side but the cell's own, the walker would go back and forth
+    // across the corner for ever. The original's whole-unit steps (the clip's step, rotated and
+    // shifted down) wander off the line a little on every pass until one lands in the cell, a few
+    // passes later (mgen13's way into the back dimension: the boss walks back to its spot after
+    // the fight, script 63 section 0x3c). The walker takes that pass at once: it stops on the
+    // point, which is in the cell.
+    actors_->place(character, glm::vec3{point->x, position.y, point->z});
+    actors_->drive(character, {}, Glide::Walk);
+    return true;
+  }
+  actors_->drive(character, velocity, Glide::Walk);
   move.stepped = true;
   return false;
 }
