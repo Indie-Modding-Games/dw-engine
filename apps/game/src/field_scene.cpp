@@ -287,10 +287,9 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
       !entered) {
     return std::unexpected{entered.error()};
   }
-  if (!startAt) {
-    // main.c: main: fadeFromBlack(0x28) once the first map is in, with the player free.
-    scene->field_->startPlay();
-  }
+  // main.c: main: fadeFromBlack(0x28) once the first map is in, with the player free: after
+  // initializeMap for a new game, after initializeLoadedMap for a loaded one.
+  scene->field_->startPlay();
   return scene;
 }
 

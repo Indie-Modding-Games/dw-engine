@@ -1644,6 +1644,29 @@ TEST_CASE("play starts with a long fade in that holds no one, and a map change t
   CHECK(field.fadeLevel() == doctest::Approx(0.0F));
 }
 
+TEST_CASE("a loaded game starts with the same long fade in, at its saved place") {
+  // main.c: main: fadeFromBlack(0x28) follows initializeLoadedMap as it follows a new game's
+  // initializeMap: the saved map comes in from black over 40 frames, with the player free.
+  dwe::scene::World world;
+  const auto rules = originalRules();
+  const dwe::game::field::TransitionRules& transition = rules.transition;
+  Field field{world, rules};
+  field.enterMapAt(roomMap("room"), at(200.0F, 0.0F), at(600.0F, 400.0F, 1.0F));
+  // Entering at a place has no fade of its own: the screen shows at once without startPlay.
+  CHECK(field.fadeLevel() == doctest::Approx(0.0F));
+  CHECK_FALSE(field.fadeProtected());
+  field.startPlay();
+  CHECK(field.fadeLevel() == doctest::Approx(dwe::game::field::shadeDarkness(transition, 157)));
+  CHECK(field.fadeProtected());
+  field.tick(Tick);
+  CHECK(field.playerFree());
+  run(field, 1.0F);
+  CHECK(field.fadeLevel() > 0.0F);
+  run(field, 1.2F);
+  CHECK(field.fadeLevel() == doctest::Approx(0.0F));
+  CHECK_FALSE(field.fadeProtected());
+}
+
 TEST_CASE("the fade in runs on while a battle holds the field") {
   // fade.c: renderFadeIn is a drawn object: it steps on every drawn frame, a battle's too, so a
   // battle started under the start of play's fade in does not stay dark.

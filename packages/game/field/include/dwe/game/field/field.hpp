@@ -174,9 +174,10 @@ public:
   // before the player can move. Fails if the map has no such exit.
   core::Result<void> enterMap(const assets::MapDocument& map, std::int32_t exit);
 
-  // Enters a map at a given place, without a fade in, for a loaded game, tests and debug tools. The
-  // partner stands at `partner` when it is given and free (main.c: initializeLoadedMap puts it back
-  // where the save left it), else next to the player.
+  // Enters a map at a given place, without a fade in, for a loaded game (startPlay then gives it
+  // the start's fade in), tests and debug tools. The partner stands at `partner` when it is given
+  // and free (main.c: initializeLoadedMap puts it back where the save left it), else next to the
+  // player.
   void enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn,
                   std::optional<assets::SpawnPoint> partner = std::nullopt);
 
