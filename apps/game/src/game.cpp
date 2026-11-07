@@ -1454,6 +1454,7 @@ int runGame(const Options& requested) {
       }
       if (flow.playing() != nullptr && input.wasPressed("menu")) {
         publishPlayerPoint(**ui, flow.playing()->scene());
+        flow.playing()->preparePauseMenu();
       }
       if (settingsAsked) {
         const bool open = (*ui)->isVisible(MenuDocument) && optionsDirect;
@@ -1464,6 +1465,7 @@ int runGame(const Options& requested) {
           // A menu another key opened (Tab) is already visible: the setting switches it to its
           // options page in place, without closing and reopening its box.
           publishPlayerPoint(**ui, flow.playing()->scene());
+          flow.playing()->preparePauseMenu();
           (*ui)->setSetting(MenuStartPageSetting, std::string{"options"});
           if (!(*ui)->isVisible(MenuDocument)) {
             (*ui)->show(MenuDocument, true);
@@ -1795,9 +1797,10 @@ int runGame(const Options& requested) {
         portraitScenes.push_back(*hdPass);
       }
     }
-    if (!showingMovie && portrait && flow.playing() != nullptr &&
-        (*ui)->isVisible("partner_menu") &&
-        !(*ui)->elementHasClass("partner_menu", "page-status", "hidden")) {
+    if (!showingMovie && portrait && flow.playing() != nullptr) {
+      // The portrait follows the partner's form ahead of the status page: loaded on that page's
+      // first frame, its model and textures stalled the menu (#221). A new form comes in as the
+      // game starts (under its fade in) or evolves.
       const std::string species{flow.playing()->partnerSpecies()};
       if (species != portraitSpecies) {
         portraitSpecies = species;
@@ -1820,6 +1823,10 @@ int runGame(const Options& requested) {
           core::logWarning("Status portrait {}: no raise-table placement", species);
         }
       }
+    }
+    if (!showingMovie && portrait && flow.playing() != nullptr &&
+        (*ui)->isVisible("partner_menu") &&
+        !(*ui)->elementHasClass("partner_menu", "page-status", "hidden")) {
       // An addition: the model plays its idle, or the gesture of its first need, as on the field.
       const auto animation = game::partner::statusAnimation(flow.playing()->partnerConditions());
       const auto clip =

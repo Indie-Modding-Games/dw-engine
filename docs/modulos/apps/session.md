@@ -269,7 +269,9 @@ La tienda que abre la historia (`script_interp.c: CALL_ROUTINE 8` → `script_co
 `shop_menu` del juego (`apps/game: ShopScreen`) la cierra cuando el jugador se va. Compra con
 `InventoryAdapter::buy` (el surtido son los triggers `0x180 + i` de la historia) y vende con
 `game::inventory::sell`. Las frases del tendero son las de su sección de MAPHEAD (`getShopkeeperLine`,
-`resolveMapHeadEntry`), leídas del listado `script/maphead`. La sección `shop`
+`resolveMapHeadEntry`), leídas del listado `script/maphead`. Ese listado se lee una vez por contenido
+(`readMapHeadLineTables` guarda las tablas del último que leyó) y el juego lo lee al cargar la partida: antes cada
+tienda y servicio lo leía en su primera visita y ese fotograma se paraba (#221). La sección `shop`
 ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_shop.schema.json)) es opcional: sin ella no hay tiendas. La tienda de
 reciclaje (`script_menu.c: openRecycleShop`, con el trigger `recycle_trigger` o `ShopVisit::recycle`) vende lo que
 quitaron las derrotas (`handleItemLoss`: los objetos de `recyclable`, hasta `recycle_max` de cada uno, que llegan por

@@ -8,8 +8,10 @@
 #include <charconv>
 #include <format>
 #include <limits>
+#include <mutex>
 #include <optional>
 #include <set>
+#include <string>
 #include <string_view>
 
 #include "shop_messages.hpp"
@@ -79,22 +81,8 @@ std::vector<std::string> lineTable(const std::map<std::uint32_t, ListedInstructi
   return keys;
 }
 
-} // namespace
-
-// The shops and services show these lines whole, one page each (script_textbox.c:
-// showTextboxReady marks the page as the text's last before showTextbox writes it), and confirm
-// closes it.
-core::Result<MapHeadLineTables> readMapHeadLineTables(const assets::VirtualFileSystem& files) {
-  const auto id = assets::AssetId::parse(MapHeadListing);
-  if (!id) {
-    return std::unexpected{id.error()};
-  }
-  const auto bytes = files.read(*id);
-  if (!bytes) {
-    return std::unexpected{bytes.error()};
-  }
-  const auto tree = core::parseYaml(
-      std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+core::Result<MapHeadLineTables> parseMapHeadLineTables(std::string_view text) {
+  const auto tree = core::parseYaml(text);
   if (!tree) {
     return std::unexpected{tree.error()};
   }
@@ -133,6 +121,39 @@ core::Result<MapHeadLineTables> readMapHeadLineTables(const assets::VirtualFileS
   }
   core::logDebug("[port:shop] resolveMapHeadEntry (script_common.c:1204): {} MAPHEAD line tables",
                  tables.size());
+  return tables;
+}
+
+} // namespace
+
+// The shops and services show these lines whole, one page each (script_textbox.c:
+// showTextboxReady marks the page as the text's last before showTextbox writes it), and confirm
+// closes it.
+core::Result<MapHeadLineTables> readMapHeadLineTables(const assets::VirtualFileSystem& files) {
+  const auto id = assets::AssetId::parse(MapHeadListing);
+  if (!id) {
+    return std::unexpected{id.error()};
+  }
+  const auto bytes = files.read(*id);
+  if (!bytes) {
+    return std::unexpected{bytes.error()};
+  }
+  const std::string_view text{reinterpret_cast<const char*>(bytes->data()), bytes->size()};
+  // Every shop and service reads the same listing on its first visit, and parsing it (a quarter of
+  // a megabyte) stalled the frame it opened on (#221): the last listing read keeps its tables, so
+  // each content's is parsed once.
+  static std::mutex mutex;
+  static std::string lastText;
+  static std::optional<MapHeadLineTables> lastTables;
+  const std::scoped_lock lock{mutex};
+  if (lastTables && lastText == text) {
+    return *lastTables;
+  }
+  auto tables = parseMapHeadLineTables(text);
+  if (tables) {
+    lastText = text;
+    lastTables = *tables;
+  }
   return tables;
 }
 

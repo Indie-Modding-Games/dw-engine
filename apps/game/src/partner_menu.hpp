@@ -82,6 +82,10 @@ public:
 
   // Publishes the views while the menu is open; once per frame.
   void update();
+  // Publishes the player's page (player.*: name, money, cards, medals, chart and, with `withCity`,
+  // the City tab). Before the pause menu shows, so it draws them once as it opens instead of once
+  // per changed setting (#221); then each frame while it is open.
+  void publishPlayer(bool withCity) const;
   // Where the bag is open: the field's menu, or the battle, which opens the same bag
   // (battle_tick.c: tamerTickBattle calls addInventoryUI) and decides what a battle can use.
   void setBagContext(game::inventory::UseContext context) { bagContext_ = context; }

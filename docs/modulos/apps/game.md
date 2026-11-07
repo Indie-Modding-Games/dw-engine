@@ -451,6 +451,24 @@ cantidad de la tienda de cartas, y 57-59 del menú de trueque. Antes el trueque 
 una gris clara (`#b0b0b0`), y la tienda de cartas solo la azulada; ahora las tres (`card_shop`, `trade_menu`,
 `bird_transport`) llevan las tres filas. Igual.
 
+## Apertura de los menús
+
+Abrir un menú paraba un fotograma (#221). Medido con la ruta de medida (tienda, máquina de guardado, menú del juego,
+ficha del compañero, objetos, jugador, opciones) en la RTX 2060, 1280x720, tres pasadas de cada binario alternadas:
+el coste de CPU del fotograma más pesado de cada apertura (ticks, actualización, interfaz y grabado del dibujo, sin
+contar la presentación). El resto de fotogramas de los menús ya cabían de sobra (interfaz 1,3 a 1,9 ms de media).
+
+| Apertura (mediana de 3) | Antes | Ahora | Causa |
+|---|---|---|---|
+| Ficha del compañero, primera vez | 70 ms | 14 ms | el retrato (modelo y texturas) se cargaba en el primer fotograma de la ficha; ahora sigue a la forma del compañero y se carga al empezar la partida o al evolucionar |
+| Menú del juego, primera vez | 22 ms | 12 ms | la página del jugador llegaba ya con el menú visible y cada ajuste cambiado redibujaba su pestaña (la Ciudad cuatro veces); ahora se publica justo antes de mostrarlo (`PlaySession::preparePauseMenu`) y el menú la dibuja una vez al abrirse |
+| Ficha del compañero, siguientes | 13 ms | 9 ms | los dos ajustes que fija al abrirse redibujaban entero el menú del juego que deja (`pause_menu`: ya no) |
+| Tienda, primera visita | 17 ms | 5 ms | cada tienda y servicio leía el listado de MAPHEAD (un cuarto de MB) en su primera visita; ahora se lee al cargar la partida y una vez por contenido |
+
+Además el HUD redibujaba el minimapa con cada ajuste que no conocía: los cientos que publica la ficha del compañero al
+abrirse costaban 5 a 7 ms; ahora solo lo hace con los que lee (`minimap`, `minimap_size`, `battle.active`). La ruta
+de medida y las trazas quedan fuera del repositorio (`_work/tmp/w38-ui/`).
+
 ## Escena final
 
 `EndingScene` juega la última escena (`call_partner_routine 6`, que pide la rutina 53; en el original, el tick final del

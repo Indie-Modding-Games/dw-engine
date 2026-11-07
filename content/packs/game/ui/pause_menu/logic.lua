@@ -2266,6 +2266,10 @@ function on_setting(document, name)
     if name == "evoreq.version" or name == "evoreq.ready" then
       refresh_requirements(document)
     end
+  elseif name:sub(1, 13) == "partner_menu." or name == "pause_menu.start_entry" then
+    -- The partner menu's, set as it opens over this one, and the entry read as this one shows:
+    -- nothing to draw again (a whole refresh here cost two of them per opening, #221).
+    return
   elseif name == "pause_menu.start_page" then
     -- Esc pressed with the menu already open: switch it to the options page in place, without
     -- closing its box (which would leave it minimized on the player page).

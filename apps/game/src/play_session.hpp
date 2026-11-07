@@ -208,6 +208,9 @@ public:
   // Takes the UI's commands for the game (the battle, free exploration, the partner's menu); false
   // for any other.
   bool handle(const ui::UiCommand& command);
+  // The player's page of the pause menu, published just before the menu shows (Tab, Esc, the
+  // HUD's button), so it draws it once as it opens (#221).
+  void preparePauseMenu() { partnerMenu_.publishPlayer(true); }
 
   // Once per frame after the commands: runs the queued session commands, follows the map changes
   // and publishes the HUD. An autotest hears of map changes and failed saves.

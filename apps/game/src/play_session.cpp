@@ -14,6 +14,7 @@
 #include <dwe/session/field_facts.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/map_head_lines.hpp>
 #include <dwe/session/map_visits.hpp>
 #include <dwe/session/session_music.hpp>
 #include <dwe/session/story_adapter.hpp>
@@ -662,6 +663,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   context_.ui->setSetting(MinimapEnemiesSetting, minimapEnemiesShown_);
   if (context.files != nullptr) {
     minimapEnemies_.emplace(*context.files);
+    // The shops' and services' lines, read as the game loads rather than on the first visit's
+    // frame (#221); they keep what this read (map_head_lines.cpp).
+    static_cast<void>(session::readMapHeadLineTables(*context.files));
   }
   // The items on the ground on the minimap, on unless turned off.
   minimapItemsShown_ = context.userSettings->minimapItems.value_or(true);
@@ -1057,6 +1061,8 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       core::logDebug("[port:menu] walking state (tamer.c:520): the menu stays shut ({})", shutBy);
       return true;
     }
+    // game.cpp's apply shows the menu.
+    preparePauseMenu();
     return false;
   }
   if (command.name == SmoothMotionSetting) {
