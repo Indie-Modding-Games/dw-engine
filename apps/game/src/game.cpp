@@ -69,6 +69,7 @@
 #include "game_audio.hpp"
 #include "game_documents.hpp"
 #include "graphics_options.hpp"
+#include "gym_batch.hpp"
 #include "hd_scenery_setting.hpp"
 #include "language.hpp"
 #include "map_debug_overlay.hpp"
@@ -767,6 +768,13 @@ int runGame(const Options& requested) {
   BattleSpeedChanger battleSpeed{userSettings, settingsFile};
   (*ui)->setSetting(BattleSpeedSetting, std::string{battleSpeedName(battleSpeed.speed())});
   std::optional<bool> battleFastShown;
+  // Batch training (gym_batch.hpp): the saved number of sessions; an autotest reads none, so it
+  // trains one session a course, as the original.
+  const auto gymSessions = [&userSettings] {
+    return std::clamp(userSettings.gymSessions.value_or(GymSessionsMin), GymSessionsMin,
+                      GymSessionsMax);
+  };
+  (*ui)->setSetting(GymSessionsSetting, static_cast<double>(gymSessions()));
   (*ui)->setSetting(AutosaveSetting, userSettings.autosave.value_or(true));
   // The options only a game applies, for the title's options page (title_options.hpp).
   publishGameToggles(**ui, userSettings);
@@ -1644,6 +1652,22 @@ int runGame(const Options& requested) {
       if (command.name == BattleSpeedSetting) {
         battleSpeed.change(command.value);
         (*ui)->setSetting(BattleSpeedSetting, std::string{battleSpeedName(battleSpeed.speed())});
+        continue;
+      }
+      if (command.name == GymSessionsSetting) {
+        // Batch training, from the title's options or the game's.
+        if (const double* number = std::get_if<double>(&command.value)) {
+          userSettings.gymSessions =
+              static_cast<int>(std::clamp(std::round(*number), static_cast<double>(GymSessionsMin),
+                                          static_cast<double>(GymSessionsMax)));
+          if (settingsFile) {
+            saveUserSettings(*settingsFile, userSettings);
+          }
+          if (PlaySession* play = flow.playing()) {
+            play->setGymSessions(gymSessions());
+          }
+        }
+        (*ui)->setSetting(GymSessionsSetting, static_cast<double>(gymSessions()));
         continue;
       }
       if (command.name == WalkControlSetting) {

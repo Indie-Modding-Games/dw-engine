@@ -39,7 +39,8 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
                               .effectsVolume = 0,
                               .reverb = false,
                               .battleSpeed = "key",
-                              .enemyHpBars = true};
+                              .enemyHpBars = true,
+                              .gymSessions = 4};
   const auto text = formatUserSettings(settings);
   REQUIRE(text.has_value());
   CHECK(text->contains("ui_skin: test_contrast"));
@@ -73,6 +74,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK(read->reverb == std::optional<bool>{false});
   CHECK(read->battleSpeed == std::optional<std::string>{"key"});
   CHECK(read->enemyHpBars == std::optional<bool>{true});
+  CHECK(read->gymSessions == std::optional<int>{4});
 
   // A file from before the setting existed, or without the choice made, leaves it to the packs.
   const auto older = parseUserSettings("language: en\n");
@@ -102,6 +104,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK_FALSE(older->effectsVolume.has_value());
   CHECK_FALSE(older->battleSpeed.has_value());
   CHECK_FALSE(older->enemyHpBars.has_value());
+  CHECK_FALSE(older->gymSessions.has_value());
   CHECK_FALSE(formatUserSettings(UserSettings{})->contains("ui_skin"));
 }
 

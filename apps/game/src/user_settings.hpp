@@ -138,6 +138,9 @@ struct UserSettings {
   // enemy still standing in every fight, cups too, instead of the original's (a while after a wild
   // enemy is hit, never in a cup); off when not chosen yet.
   std::optional<bool> enemyHpBars = std::nullopt;
+  // Batch training (gym_sessions: 1 to 5; gym_batch.hpp): the sessions a course the story starts
+  // at a gym runs in a row; 1, the original's, when not chosen yet.
+  std::optional<int> gymSessions = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

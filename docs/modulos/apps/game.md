@@ -1329,7 +1329,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 
 | Pestaña | Filas |
 |---|---|
-| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Espacio tras los nombres |
+| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Sesiones de gimnasio, Espacio tras los nombres |
 | Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua, Reverberación |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
@@ -1663,3 +1663,16 @@ llega desde `PlaySession` (`EnemyHpBarsSetting`) a `BattleScreen::setEnemyHpBars
 | Barras de los rivales en un combate salvaje | `battle_main.c: BTL_addEnemyHPBars` (solo la llama `BTL_initializeCombat`) añade el objeto que dibuja, cada fotograma, la barra de cada rival un rato después de recibir daño (`BTL_renderEnemyHPBars`, 21 fotogramas de `enemy_hp_bar_frames`) | Igual sin la opción (`Battle::hpBarShown`) | «the original's bars: a wild enemy's a while after a hit, never a cup's» (`enemy_hp_bars_tests.cpp`) | Igual |
 | Barras en un combate de copa | `std_main.c: STD_initializeCombat` no añade esas barras: la copa solo tiene sus paneles fijos de los dos luchadores | Sin la opción, ninguna barra sobre el rival en la copa (antes dwe la dibujaba tras cada golpe, como en un combate salvaje) | la misma prueba | Igual |
 | Con la opción | — | Una barra sobre cada rival que sigue en pie (con vida y sin caer) todo el combate, también en las copas; con el aspecto original es la barra del original con su línea, con el moderno una barra compacta con la vida en cifras (`#hp-bars.always`, ajuste `battle.hp_bars.always`) | «enemy life bars: every enemy still standing, cups too, and none once it falls» | Mejora (opción) |
+
+## Sesiones de gimnasio
+
+Mejora opcional, a 1 por defecto (el original): el ajuste `gym_sessions` (fila «Sesiones de gimnasio», «Gym sessions» en
+inglés, de 1 a 5, en la pestaña Juego de las opciones del menú de pausa y de las del título, guardado en los ajustes del
+usuario) llega a `GymScreen::setSessions`; la regla es `GymBatch` (`gym_batch.hpp`).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Una sesión por diálogo | La máquina del curso pregunta (Normal / Ruleta / Salir) y el guion fija el curso y la ruleta (variables 254 y 246) y llama a la rutina 7 (`script_interp.c`), que corre una sola sesión; para otra hay que volver a hablar | Igual con 1 (`GymScreen::startChosen`) | «at the original's one session a course never starts again» (`gym_batch_tests.cpp`) | Igual |
+| Varias sesiones seguidas | — | Con 2 a 5, cuando acaba una sesión que empezó la historia, se cierra su caja de estadísticas y el campo queda libre (sin guion, texto, menú, combate ni escena del compañero: la caca, el baño, comer, felicitar, dormir, evolución, muerte), el mismo curso vuelve a empezar con la misma ruleta, hasta completar el número (`GymScreen::continueBatch`). Cada sesión es una del original: mismas ganancias, misma hora, mismo cansancio y lo que el compañero haga después | «a batch runs its course again each time the field is idle…», «a batch waits while something holds the field» | Mejora (opción) |
+| Cortar la tanda | — | La tanda se acaba si el jugador cancela una sesión antes del premio (cancelar durante la cuenta de estadísticas no la corta), si el compañero muestra una necesidad o estado (hambre, sueño, cansancio, baño, enfado, herida, enfermedad) o si el jugador cambia de mapa | «a cancel, a need of the partner's or another map stops a batch for good» | Mejora (opción) |
+| Consola | — | `gym("<curso>")` sigue corriendo una sola sesión: solo los cursos que empieza la historia van en tanda | en vivo | Mejora (opción) |

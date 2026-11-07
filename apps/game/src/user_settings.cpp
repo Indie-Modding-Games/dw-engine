@@ -66,6 +66,7 @@ constexpr std::string_view EffectsVolumeKey = "effects_volume";
 constexpr std::string_view ReverbKey = "reverb";
 constexpr std::string_view BattleSpeedKey = "battle_speed";
 constexpr std::string_view EnemyHpBarsKey = "enemy_hp_bars";
+constexpr std::string_view GymSessionsKey = "gym_sessions";
 
 } // namespace
 
@@ -210,6 +211,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* bars = tree->find(EnemyHpBarsKey)) {
       settings.enemyHpBars = reader.boolean(*bars);
+    }
+    if (const core::YamlNode* sessions = tree->find(GymSessionsKey)) {
+      settings.gymSessions = reader.integer<int>(*sessions);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -376,6 +380,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.enemyHpBars) {
     root.set(std::string{EnemyHpBarsKey},
              core::YamlNode::scalar(*settings.enemyHpBars ? "true" : "false"));
+  }
+  if (settings.gymSessions) {
+    root.set(std::string{GymSessionsKey},
+             core::YamlNode::scalar(std::to_string(*settings.gymSessions)));
   }
   return core::emitYaml(root);
 }

@@ -645,6 +645,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   const bool enemyHpBars = context.userSettings->enemyHpBars.value_or(false);
   battleScreen_.setEnemyHpBars(enemyHpBars);
   context_.ui->setSetting(EnemyHpBarsSetting, enemyHpBars);
+  // Batch training: one session a course, the original's, unless more were chosen.
+  gymScreen_.setSessions(context.userSettings->gymSessions.value_or(GymSessionsMin));
   // The weather, on unless turned off: the playthrough's seed from the save, a kind --weather
   // forces, and its sound.
   if (game_.systems.weather != nullptr) {
@@ -1542,6 +1544,14 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (playerIdle && !fieldToilet_.active()) {
     fieldPoop_.update();
   }
+  // Batch training (gym_batch.hpp): the next session of a batch waits until nothing holds the
+  // field, and a need of the partner's ends the batch.
+  gymScreen_.continueBatch(
+      {.fieldIdle = playerIdle && !fieldToilet_.active() && !fieldPoop_.active() &&
+                    !praiseScold_.active() && !sleepScreen_.active() && !awardScreen_.active() &&
+                    !field.heldByScript() && !game_.systems.story->scriptRunning(),
+       .partnerNeedsCare = !session.partnerView().conditions.none(),
+       .map = {}});
   // item.c: handleChips: the auto pilot chip calls its map-head section if no script runs; the
   // story drops the request otherwise, and the chip is gone either way.
   if (const auto section = game_.systems.inventory->takeScriptSection(); section) {

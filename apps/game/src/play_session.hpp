@@ -230,6 +230,8 @@ public:
   // Feeds the battle the buttons it reads outside its document: `extra`, the original's square,
   // calls the finisher.
   void pressBattle(const input::InputState& input);
+  // Batch training (gym_batch.hpp): the sessions a course the story starts runs in a row.
+  void setGymSessions(int sessions) { gymScreen_.setSessions(sessions); }
   // What the fight on screen asks of a quick battle's speed (battle_speed.hpp).
   [[nodiscard]] BattleSpeedMoment battleSpeedMoment() const {
     return {.fighting = battleScreen_.fighting(), .reacting = battleScreen_.reacting()};

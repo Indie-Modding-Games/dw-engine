@@ -174,6 +174,18 @@ game_options = {
     help = "pause_menu.help.enemy_hp_bars",
     original = false,
   },
+  -- Gym sessions: a course the story starts at a gym runs up to five sessions in a row, each the
+  -- original's (1 by default: one session each time, as the original).
+  {
+    id = "gym-sessions",
+    setting = "gym_sessions",
+    label = "pause_menu.gym_sessions",
+    range = { 1, 5 },
+    default = 1,
+    tab = "game",
+    help = "pause_menu.help.gym_sessions",
+    original = 1,
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).

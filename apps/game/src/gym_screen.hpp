@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "field_scene.hpp"
+#include "gym_batch.hpp"
 
 namespace dwe::app {
 
@@ -72,6 +73,12 @@ public:
   // tamer.c: isTrainingComplete: whether the last course finished, once.
   [[nodiscard]] bool takeComplete();
 
+  // Batch training (gym_batch.hpp): how many sessions a course the story starts runs in a row.
+  void setSessions(int sessions) { batch_.setSessions(sessions); }
+  // Once per frame: starts the next session of a batch once the last one's boxes closed and the
+  // field is idle (`moment`, whose map this screen fills in).
+  void continueBatch(GymBatchMoment moment);
+
   // Whether a course runs: the player has no control meanwhile.
   [[nodiscard]] bool active() const { return run_ != nullptr; }
 
@@ -110,6 +117,7 @@ private:
   std::vector<GymNotice> notices_;
   std::unique_ptr<Ports> ports_;
   std::unique_ptr<game::gym::CourseRun> run_;
+  GymBatch batch_;
   // TRAINING_COMPLETE.
   bool complete_ = false;
   bool cancelPressed_ = false;
