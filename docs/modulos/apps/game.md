@@ -246,8 +246,13 @@ Mueve el temblor de la rutina 34 (`screen_shake.hpp`: `ScreenShake`) a 20 fotogr
 sprite del mapa al nodo de un personaje (`spawnSpriteAtEntity`, con `FieldScene::entityNodePoint` y
 `MapLayers::spriteSize`). La burbuja de humor de la rutina 28 (`mood_bubble.hpp`: `MoodBubble`) crece y sube a 20
 fotogramas por segundo y se dibuja con `FieldScene::setStorySprites`: un cuadro aditivo de la imagen
-`map/<mapa>/texture4/000` en el punto de condición de la especie (`conditionFx` de su fila y `entityNodePoint`); con
-un contenido extraído sin `condition_fx` no sale.
+`map/<mapa>/texture4/000` en el punto de condición de la especie (`conditionFx` y `entityNodePoint`); con
+un contenido extraído sin `condition_fx` no sale. Como en el original (`translateConditionFXToEntity` lee
+`CONDITION_FX_OFFSETS[getOriginalType(tipo)]`), una variante toma el punto de su tipo original
+(`condition_point.hpp`: `conditionPointRow`, con `effects.original_types` de las reglas de combate): dos de los cuatro
+clientes de la tienda del cañón (tipos 93 y 99, que el original lleva a 57 y 25) tienen su propia fila a cero (nodo 0
+sin desplazamiento, la raíz del modelo) y la burbuja quedaba dentro del cuerpo. Lo mismo vale para el veneno y la
+confusión de los enemigos en combate y la mariposa del compañero.
 
 Una caca en el campo tiene su escena (`partner.c: tickWildPoop`, estado 7), con `poop_piles.wild`: el jugador se para y
 mira al compañero, que corre hacia él hasta su distancia de correr (`Field::runPartnerUp`), se agacha (`squat_clip`),

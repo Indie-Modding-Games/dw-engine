@@ -46,6 +46,7 @@
 #include "battle_trigger.hpp"
 #include "bulk_amount.hpp"
 #include "common.hpp"
+#include "condition_point.hpp"
 #include "hd_scenery_setting.hpp"
 #include "messages.hpp"
 #include "partner_events.hpp"
@@ -537,6 +538,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachBirdTransport(&birdScreen_);
   birdScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyProps_.setSpecies(species_ ? &*species_ : nullptr);
+  storyProps_.setEffectRules(game_.systems.battle != nullptr ? game_.systems.battle->effectRules()
+                                                             : nullptr);
   storyProps_.setBossArrival(&bossArrival_);
   bossArrival_.setSound(session.sound());
   storyScenes_.attachCardShop(&cardShopScreen_);
@@ -1653,8 +1656,11 @@ void PlaySession::showButterfly(bool partnerNormal, const session::GameSession& 
     effects.unsetButterfly();
     return;
   }
+  // translateConditionFXToEntity: the point of the species' original type (getOriginalType).
+  const game::battle::EffectRules* originals =
+      game_.systems.battle != nullptr ? game_.systems.battle->effectRules() : nullptr;
   const assets::DigimonRow* row =
-      species_ ? species_->find(session.partnerView().species) : nullptr;
+      species_ ? conditionPointRow(*species_, originals, session.partnerView().species) : nullptr;
   if (row == nullptr || !row->conditionFx) {
     effects.unsetButterfly();
     scene_->setPartnerConditionPoint(std::nullopt);

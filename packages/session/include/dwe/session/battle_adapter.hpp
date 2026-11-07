@@ -155,6 +155,11 @@ public:
   // ids it forgot.
   std::vector<std::string> unlearnMoveNumber(const GameSession& session, std::int32_t number);
   [[nodiscard]] const game::battle::BattleRules& rules() const;
+  // The species each variant borrows its effect points from (effect_common.c: getOriginalType),
+  // once the rules are read; null before.
+  [[nodiscard]] const game::battle::EffectRules* effectRules() const {
+    return rules_ ? &rules_->effects : nullptr;
+  }
   // The tables the battles read, once the rules are read; null before.
   [[nodiscard]] const assets::DigimonTable* digimonTable() const {
     return desc_.digimon ? &*desc_.digimon : nullptr;

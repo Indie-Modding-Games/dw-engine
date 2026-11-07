@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/game/battle/rules.hpp>
 #include <dwe/game/field/white_fade.hpp>
 #include <dwe/scene/world.hpp>
 #include <dwe/session/story_props.hpp>
@@ -44,6 +45,9 @@ public:
   // The species table, for where a character's mood bubble hangs (its condition point); without it
   // no bubble shows.
   void setSpecies(const assets::DigimonTable* species) { species_ = species; }
+  // The species each variant borrows its condition point from (condition_point.hpp); without them
+  // each species uses its own row.
+  void setEffectRules(const game::battle::EffectRules* effects) { effects_ = effects; }
   // Where the final boss's charge goes (routine 40); without it the charge is not shown.
   void setBossArrival(BossArrivalScene* boss) { boss_ = boss; }
 
@@ -94,6 +98,7 @@ private:
   MoodBubble moodBubble_;
   double bubbleSeconds_ = 0.0;
   const assets::DigimonTable* species_ = nullptr;
+  const game::battle::EffectRules* effects_ = nullptr;
   BossArrivalScene* boss_ = nullptr;
 };
 
