@@ -21,6 +21,8 @@ constexpr std::string_view RebornSlotKey = "reborn_slot";
 constexpr std::string_view LearnedKey = "learned";
 constexpr std::string_view EquippedKey = "equipped";
 constexpr std::string_view NullText = "null";
+// partner_moves.quirks: unlearnMove's 16-bit mask.
+constexpr std::string_view ForgetMaskQuirk = "forget_mask_16_bits";
 
 MoveSlot slotOf(YamlReader& reader, const YamlNode& node) {
   const auto slot = reader.integer<MoveSlot>(node);
@@ -35,13 +37,17 @@ MoveSlot slotOf(YamlReader& reader, const YamlNode& node) {
 core::Result<PartnerMoveRules> readPartnerMoveRules(const ruleset::Section& section) {
   YamlReader reader;
   const YamlNode& root = section.node;
-  if (!reader.expectKeys(root, messages::PartnerMovesSectionText, {NewGameSlotKey, RebornSlotKey},
+  if (!reader.expectKeys(root, messages::PartnerMovesSectionText,
+                         {NewGameSlotKey, RebornSlotKey, ruleset::QuirksKey},
                          {NewGameSpeciesSlotsKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   PartnerMoveRules rules{.newGameSlot = slotOf(reader, reader.field(root, NewGameSlotKey)),
                          .newGameSpeciesSlots = {},
                          .rebornSlot = slotOf(reader, reader.field(root, RebornSlotKey))};
+  rules.forgetMask16Bits =
+      ruleset::readQuirks(reader, reader.field(root, ruleset::QuirksKey), {ForgetMaskQuirk})
+          .on(ForgetMaskQuirk);
   if (const YamlNode* species = root.find(NewGameSpeciesSlotsKey);
       species != nullptr && !YamlReader::isNull(*species)) {
     if (!species->isMapping()) {
@@ -217,7 +223,10 @@ std::int32_t movesToForget(std::int32_t known, std::int32_t trainerLevel) {
   return hundredths / Hundred;
 }
 
-std::vector<std::int32_t> movesClearedBy(std::int32_t number) {
+std::vector<std::int32_t> movesClearedBy(std::int32_t number, bool mask16Bits) {
+  if (!mask16Bits) {
+    return {number};
+  }
   std::uint32_t mask = 0;
   if (number == 0x2C || number == 0x30) {
     mask = SharedBit;

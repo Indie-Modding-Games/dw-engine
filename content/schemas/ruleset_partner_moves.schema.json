@@ -3,11 +3,20 @@
   "title": "Ruleset: partner_moves",
   "description": "rules/<id>/partner_moves.yaml: the moves the partner equips when it starts and when it is reborn (packages/session: PartnerMoveRules, docs/modulos/apps/session.md). A position is an index in the species' move list (data/digimon: moves).",
   "type": "object",
-  "required": ["new_game_slot", "reborn_slot"],
+  "required": ["new_game_slot", "reborn_slot", "quirks"],
   "additionalProperties": false,
   "properties": {
     "new_game_slot": { "description": "The position of the first technique of the new game's partner, which it also learns.", "type": "integer", "minimum": 0, "maximum": 15 },
     "new_game_species_slots": { "description": "The species whose new-game partner equips and learns another position than new_game_slot, by species id.", "type": "object", "additionalProperties": { "type": "integer", "minimum": 0, "maximum": 15 } },
-    "reborn_slot": { "description": "The position of the only move a reborn partner equips; it keeps the learned ones.", "type": "integer", "minimum": 0, "maximum": 15 }
+    "reborn_slot": { "description": "The position of the only move a reborn partner equips; it keeps the learned ones.", "type": "integer", "minimum": 0, "maximum": 15 },
+    "quirks": {
+      "description": "The original's oddities (true reproduces them; ADR 0022).",
+      "type": "object",
+      "required": ["forget_mask_16_bits"],
+      "additionalProperties": false,
+      "properties": {
+        "forget_mask_16_bits": { "description": "utils2.c: unlearnMove clears a move's learned bit through a 16-bit mask, so the upper sixteen moves of its word of 32 go with it; false forgets only that move.", "type": "boolean" }
+      }
+    }
   }
 }

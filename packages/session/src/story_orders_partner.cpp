@@ -383,7 +383,7 @@ std::vector<std::string> BattleAdapter::unlearnMoveNumber(const GameSession& ses
       }
     }
   }
-  const std::vector<std::int32_t> cleared = movesClearedBy(number);
+  const std::vector<std::int32_t> cleared = movesClearedBy(number, moveRules_.forgetMask16Bits);
   for (game::battle::MoveRef move = 0; move < catalog_->size(); ++move) {
     const game::battle::BattleMove& entry = catalog_->at(move);
     if (std::ranges::contains(cleared, entry.index) && forget(moves_, entry.id)) {
