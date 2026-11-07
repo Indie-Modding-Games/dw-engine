@@ -441,26 +441,33 @@ void GameSession::tick(double realSeconds) {
   advanceGameTime(realSeconds);
   routePartnerEvents();
   advanceAutosaveWindow(realSeconds);
-  followCareHold(realSeconds);
+  followSaveHold(realSeconds);
   writeRequestedAutosave();
 }
 
-void GameSession::followCareHold(double realSeconds) {
+bool GameSession::savesHeld() const {
   const game::field::Field* field = state_->field;
-  if (field == nullptr || !field->heldForCare()) {
-    careHeldSeconds_ = 0.0;
+  if (field == nullptr) {
+    return false;
+  }
+  const game::partner::Partner& partner = state_->partner;
+  return field->heldForCare() || (partner.alive() && partner.state().stats.currentHp == 0);
+}
+
+void GameSession::followSaveHold(double realSeconds) {
+  if (!savesHeld()) {
+    saveHeldSeconds_ = 0.0;
     return;
   }
-  const bool waited = careHeldSeconds_ < SaveWaitLimitSeconds;
-  careHeldSeconds_ += realSeconds;
-  if (waited && careHeldSeconds_ >= SaveWaitLimitSeconds) {
+  const bool waited = saveHeldSeconds_ < SaveWaitLimitSeconds;
+  saveHeldSeconds_ += realSeconds;
+  if (waited && saveHeldSeconds_ >= SaveWaitLimitSeconds) {
     core::logWarning("{}", formatMessage(messages::SaveWaitOver, SaveWaitLimitSeconds));
   }
 }
 
 bool GameSession::savesWait() const {
-  const game::field::Field* field = state_->field;
-  return field != nullptr && field->heldForCare() && careHeldSeconds_ < SaveWaitLimitSeconds;
+  return savesHeld() && saveHeldSeconds_ < SaveWaitLimitSeconds;
 }
 
 void GameSession::countPlayTime(double realSeconds) {
@@ -741,7 +748,7 @@ void GameSession::writeRequestedAutosave() {
   if (!autosave_) {
     return;
   }
-  // A dwe safety rule (savesWait): the request stays pending until the care scene ends.
+  // A dwe safety rule (savesWait): the request stays pending until the care scene or wake ends.
   if (savesWait()) {
     if (autosave_->pending() && !std::exchange(autosaveWaitLogged_, true)) {
       core::logDebug("{}", messages::AutosaveWaitsForCare);

@@ -1,5 +1,7 @@
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/item_effect_table.hpp>
+#include <dwe/assets/item_table.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/raise_table.hpp>
 #include <dwe/assets/table_composition.hpp>
@@ -274,6 +276,76 @@ TEST_CASE("the packs' digimon and raise tables compose for the game's readers") 
   CHECK(table->find("species_a")->conditionFx->node == 3);
   CHECK(table->find("species_a")->conditionFx->offset == std::array<std::int32_t, 3>{90, 20, 0});
   CHECK_FALSE(table->find("my_mod:pebble")->conditionFx);
+}
+
+TEST_CASE(
+    "a pack's item takes an original's icon and names a species; its effect row has no index") {
+  MemoryFileSystem memory;
+  addPack(memory, "base", "base");
+  addPack(memory, "my_mod", "mods");
+  const std::string row = R"(  name: "{}"
+  description: null
+  value: 9999
+  merit_value: 0
+  sorting_value: 4
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+)";
+  memory.addFile("packs/base/data/items.yaml",
+                 "items:\n- id: gem_a\n  index: 5\n" +
+                     std::vformat(row, std::make_format_args("Gem A")) +
+                     "  icon_palette: 10\n- id: plain\n  index: 6\n" +
+                     std::vformat(row, std::make_format_args("Plain")));
+  memory.addFile("packs/my_mod/data/items.yaml",
+                 "items:\n- id: my_mod:gem_b\n" +
+                     std::vformat(row, std::make_format_args("Gem B")) +
+                     "  icon: gem_a\n  description_species: species_c\n- id: my_mod:dull\n" +
+                     std::vformat(row, std::make_format_args("Dull")) + "  icon: plain\n");
+  memory.addFile("packs/base/data/item_effects.yaml", R"(item_effects:
+- item: "gem_a"
+  index: 5
+  handler: "evolution"
+  healing: null
+  evolves_to: "species_a"
+  values: null
+)");
+  memory.addFile("packs/my_mod/data/item_effects.yaml", R"(item_effects:
+- item: "my_mod:gem_b"
+  handler: "evolution"
+  healing: null
+  evolves_to: "species_c"
+  values: null
+)");
+  const VirtualFileSystem vfs = mounted(memory, {"packs/base", "packs/my_mod"});
+
+  const auto items = dwe::assets::loadItemTable(vfs);
+  REQUIRE_MESSAGE(items.has_value(), items.error().message);
+  // An original item with a palette shows the cell of its number; one without has no icon.
+  const auto* original = items->find("gem_a");
+  REQUIRE(original != nullptr);
+  REQUIRE(original->icon());
+  CHECK(original->icon()->cell == 5);
+  CHECK(original->icon()->palette == 10);
+  CHECK_FALSE(items->find("plain")->icon());
+  // The pack's item comes after the original range with the original's icon, cell and palette.
+  const auto* added = items->find("my_mod:gem_b");
+  REQUIRE(added != nullptr);
+  CHECK_FALSE(added->originalIndex);
+  CHECK(added->index == 7);
+  REQUIRE(added->icon());
+  CHECK(added->icon()->cell == 5);
+  CHECK(added->icon()->palette == 10);
+  CHECK(added->descriptionSpecies == std::optional<std::string>{"species_c"});
+  // One that names an item without an icon of its own has none.
+  CHECK_FALSE(items->find("my_mod:dull")->icon());
+
+  const auto effects = dwe::assets::loadItemEffectTable(vfs);
+  REQUIRE_MESSAGE(effects.has_value(), effects.error().message);
+  REQUIRE(effects->find("my_mod:gem_b") != nullptr);
+  CHECK(effects->find("my_mod:gem_b")->index == -1);
+  CHECK(effects->find("my_mod:gem_b")->evolvesTo == std::optional<std::string>{"species_c"});
+  CHECK(effects->find("gem_a")->index == 5);
 }
 
 TEST_CASE(

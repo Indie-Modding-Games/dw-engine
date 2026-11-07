@@ -225,21 +225,15 @@ TEST_CASE(
   CHECK(survives.partnerHp == 1);
 }
 
-TEST_CASE("a lost battle gives the partner back the section's HP and MP, up to the maximums") {
-  // dg 212, section 0x48 (the death map's script): add_stat 6 and 7; script_value.c:
-  // enforceStatsLimits.
-  const auto lose = [](const BattleRules& rules) {
-    Battle battle = startBattle(duel(evenStats(30, 20), evenStats(500, 400)), 9, rules);
-    runToEnd(battle);
-    REQUIRE(resultOf(battle).outcome == Outcome::Defeat);
-    return resultOf(battle);
-  };
-  const BattleResult full = lose(originalRules());
-  CHECK(full.partnerHp == 30);
-  CHECK(full.partnerMp == 500);
-  const BattleResult partly = lose(rulesOf(
-      originalWith("defeat_restore: { hp: 9999, mp: 9999 }", "defeat_restore: { hp: 7, mp: 0 }")));
-  CHECK(partly.partnerHp == 7);
+TEST_CASE("a lost battle leaves the partner's HP at 0 and its MP as the fight left them") {
+  // A lost battle goes on at MAPHEAD section 0x4DE and the death map's section 0x48 (dg 212),
+  // which tells a defeat from a sickness by the current HP being 0 and gives HP and MP back itself.
+  Battle battle = startBattle(duel(evenStats(30, 20), evenStats(500, 400)), 9);
+  runToEnd(battle);
+  REQUIRE(resultOf(battle).outcome == Outcome::Defeat);
+  const BattleResult& result = resultOf(battle);
+  CHECK(result.partnerHp == 0);
+  CHECK(result.partnerMp == battle.state().partner().mp);
 }
 
 TEST_CASE("fleeing ends the battle after the flee frames") {
@@ -1071,7 +1065,8 @@ TEST_CASE("with the original's rolls a hit draws its spark after the damage roll
                                          .clip = std::nullopt,
                                          .hitPoint = std::nullopt,
                                          .touch = std::nullopt,
-                                         .facingTarget = {}});
+                                         .facingTarget = {},
+                                         .aim = std::nullopt});
     BattleContext context = sparks ? bench.originalContext() : bench.context();
     tickAttackHits(context);
     return std::pair{bench.random, bench.fighter(1).pendingDamage};

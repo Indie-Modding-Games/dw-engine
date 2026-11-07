@@ -1,5 +1,6 @@
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/assets/evolution_table.hpp>
+#include <dwe/assets/item_effect_table.hpp>
 #include <dwe/assets/item_table.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/move_table.hpp>
@@ -18,11 +19,14 @@ namespace dwe::assets {
 
 namespace {
 
-constexpr std::array<TableKind, 6> Kinds{{
+constexpr std::array<TableKind, 7> Kinds{{
     {.role = "digimon", .defaultId = "data/digimon", .composition = &DigimonComposition},
     {.role = "raise", .defaultId = "data/raise", .composition = &RaiseComposition},
     {.role = "maps", .defaultId = "data/maps", .composition = &MapComposition},
     {.role = "items", .defaultId = "data/items", .composition = &ItemComposition},
+    {.role = "item_effects",
+     .defaultId = "data/item_effects",
+     .composition = &ItemEffectComposition},
     {.role = "moves", .defaultId = "data/moves", .composition = &MoveComposition},
     {.role = "evolution", .defaultId = "data/evolution", .composition = &EvolutionComposition},
 }};

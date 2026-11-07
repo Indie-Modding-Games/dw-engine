@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "boss_arrival_scene.hpp"
+#include "condition_point.hpp"
 #include "field_scene.hpp"
 #include "scene_prims.hpp"
 
@@ -220,7 +221,9 @@ void FieldStoryProps::showMoodBubble() {
   const std::optional<scene::Entity> entity =
       moodBubble_.shown() ? characterEntity(moodBubble_.character()) : std::nullopt;
   if (entity && species_ != nullptr) {
-    // translateConditionFXToEntity: the condition point of the character's species.
+    // translateConditionFXToEntity: the condition point of the character's species, read from
+    // its original type (getOriginalType): two of the canyon shop's customers are variants whose
+    // own rows have no point.
     const game::field::Field& field = scene_->field();
     std::optional<std::string> speciesId;
     if (const auto instance = field.npcs().instanceOf(static_cast<std::int32_t>(
@@ -230,7 +233,8 @@ void FieldStoryProps::showMoodBubble() {
         speciesId = record->digimon;
       }
     }
-    const assets::DigimonRow* row = speciesId ? species_->find(*speciesId) : nullptr;
+    const assets::DigimonRow* row =
+        speciesId ? conditionPointRow(*species_, effects_, *speciesId) : nullptr;
     if (row != nullptr && row->conditionFx) {
       const auto& offset = row->conditionFx->offset;
       const std::optional<glm::vec3> point = scene_->entityNodePoint(

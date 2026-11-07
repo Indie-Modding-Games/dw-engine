@@ -167,6 +167,9 @@ struct AttackInFlight {
   std::optional<std::array<std::int32_t, 3>> touch;
   // The attack frames on which its effect turns the attacker to the defender (EffectLanding).
   std::vector<std::int32_t> facingTarget;
+  // The fighter the effect aims at when the defender is a bystander it touches on its way
+  // (AttackFlights::landingOn); nothing when it aims at the defender.
+  std::optional<FighterId> aim;
 };
 
 // battle_effect.c: BTL_addAuraProjectile, BTL_tickAuraProjectile: the shot a flattened fighter

@@ -51,6 +51,16 @@ public:
   [[nodiscard]] virtual std::optional<EffectLanding>
   landing(std::string_view move, FighterId attacker, FighterId defender,
           std::optional<std::int32_t> clip) const = 0;
+
+  // Where the effect of `move` that `attacker` aims at `aim` first touches `bystander`, another
+  // fighter on its way (battle_effect.c: BTL_applyRadiusAttackHit, BTL_applyLineAttackHit and
+  // aabb.c: findAABBHitEntity check every fighter but the source, allies of the attacker too);
+  // nothing when it never does or the flights cannot tell.
+  [[nodiscard]] virtual std::optional<EffectLanding>
+  landingOn(std::string_view /*move*/, FighterId /*attacker*/, FighterId /*aim*/,
+            FighterId /*bystander*/, std::optional<std::int32_t> /*clip*/) const {
+    return std::nullopt;
+  }
 };
 
 // Where a fighter's model puts its nodes on a frame of one of its clips, for the flight probe:
@@ -90,8 +100,15 @@ public:
   [[nodiscard]] std::optional<EffectLanding>
   landing(std::string_view move, FighterId attacker, FighterId defender,
           std::optional<std::int32_t> clip) const override;
+  [[nodiscard]] std::optional<EffectLanding>
+  landingOn(std::string_view move, FighterId attacker, FighterId aim, FighterId bystander,
+            std::optional<std::int32_t> clip) const override;
 
 private:
+  [[nodiscard]] std::optional<EffectLanding> probe(std::string_view move, FighterId attacker,
+                                                   FighterId aim, FighterId touched,
+                                                   std::optional<std::int32_t> clip) const;
+
   ScriptSource scripts_;
   const EffectBodies* bodies_;
   const FlightPoses* poses_;

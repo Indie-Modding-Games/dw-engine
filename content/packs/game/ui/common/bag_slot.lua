@@ -36,13 +36,28 @@ local function text(key)
   return t(key)
 end
 
+-- A description's text: its {species} placeholder shows the name of the species whose name key
+-- comes with it (an item a pack adds names its evolution's species so, not in its text).
+function bag_slot.described(key, species_key)
+  if key == nil or key == "" then
+    return ""
+  end
+  if species_key == nil or species_key == "" then
+    return t(key)
+  end
+  return t(key, { species = t(species_key) })
+end
+
 -- The focused slot's description, "" for an empty slot: the original draws nothing in the
 -- description box then (inventory.c: renderInventoryBottom).
 function bag_slot.description(index)
   if index == nil or not bag_slot.filled(index) then
     return ""
   end
-  return text(bag_slot.setting(index, "description", ""))
+  return bag_slot.described(
+    bag_slot.setting(index, "description", ""),
+    bag_slot.setting(index, "description_species", "")
+  )
 end
 
 -- Fills the slot `id` with the bag's slot `index`; an empty slot shows `empty_text` (the original

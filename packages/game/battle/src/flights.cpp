@@ -22,18 +22,26 @@ public:
   void stop(std::int64_t /*voice*/) override {}
 };
 
-// The two fighters of one flight as the battle has them; the attacker's bones are its attack
-// clip's on the probe's frame.
+// The fighters of one flight as the battle has them: the attacker, the one its effect aims at and
+// the one asked about (the same one, or a bystander on the way); the attacker's bones are its
+// attack clip's on the probe's frame.
 class ProbeBodies final : public EffectBodies {
 public:
   ProbeBodies(const EffectBodies& bodies, const FlightPoses* poses, FighterId attacker,
-              FighterId defender, std::optional<std::int32_t> clip)
-      : bodies_(&bodies), poses_(poses), attacker_(attacker), defender_(defender), clip_(clip) {}
+              FighterId aim, FighterId touched, std::optional<std::int32_t> clip)
+      : bodies_(&bodies), poses_(poses), attacker_(attacker), clip_(clip) {
+    for (const FighterId fighter : {attacker, aim, touched}) {
+      if (!std::ranges::contains(fighters_, fighter)) {
+        fighters_.push_back(fighter);
+      }
+    }
+    std::ranges::sort(fighters_);
+  }
 
   void setFrame(std::int32_t frame) { frame_ = frame; }
 
   [[nodiscard]] std::optional<EffectBody> body(FighterId fighter) const override {
-    if (fighter != attacker_ && fighter != defender_) {
+    if (!std::ranges::contains(fighters_, fighter)) {
       return std::nullopt;
     }
     return bodies_->body(fighter);
@@ -49,17 +57,14 @@ public:
     }
     return poses_->node(fighter, *clip_, frame_, *place, index);
   }
-  [[nodiscard]] std::vector<FighterId> fighters() const override {
-    return attacker_ < defender_ ? std::vector{attacker_, defender_}
-                                 : std::vector{defender_, attacker_};
-  }
+  [[nodiscard]] std::vector<FighterId> fighters() const override { return fighters_; }
   [[nodiscard]] Point ground(const EffectVector& at) const override { return bodies_->ground(at); }
 
 private:
   const EffectBodies* bodies_;
   const FlightPoses* poses_;
   FighterId attacker_;
-  FighterId defender_;
+  std::vector<FighterId> fighters_;
   std::optional<std::int32_t> clip_;
   std::int32_t frame_ = 0;
 };
@@ -73,20 +78,35 @@ ScriptedFlights::ScriptedFlights(ScriptSource scripts, const EffectBodies& bodie
 std::optional<EffectLanding> ScriptedFlights::landing(std::string_view move, FighterId attacker,
                                                       FighterId defender,
                                                       std::optional<std::int32_t> clip) const {
+  return probe(move, attacker, defender, defender, clip);
+}
+
+std::optional<EffectLanding> ScriptedFlights::landingOn(std::string_view move, FighterId attacker,
+                                                        FighterId aim, FighterId bystander,
+                                                        std::optional<std::int32_t> clip) const {
+  if (bystander == aim) {
+    return std::nullopt;
+  }
+  return probe(move, attacker, aim, bystander, clip);
+}
+
+std::optional<EffectLanding> ScriptedFlights::probe(std::string_view move, FighterId attacker,
+                                                    FighterId aim, FighterId touched,
+                                                    std::optional<std::int32_t> clip) const {
   auto found = loaded_.find(move);
   if (found == loaded_.end()) {
     found = loaded_.emplace(std::string{move}, scripts_(move)).first;
   }
-  if (!found->second || attacker == defender) {
+  if (!found->second || attacker == aim || attacker == touched) {
     return std::nullopt;
   }
   Silence silence;
-  ProbeBodies bodies(*bodies_, poses_, attacker, defender, clip);
+  ProbeBodies bodies(*bodies_, poses_, attacker, aim, touched, clip);
   EffectRunner runner(silence);
   runner.setBodies(bodies);
   runner.touchBodies(true);
   const std::size_t slot = runner.load(*found->second);
-  static_cast<void>(runner.start(slot, attacker, defender));
+  static_cast<void>(runner.start(slot, attacker, aim));
   std::vector<std::int32_t> facingTarget;
   for (std::int32_t frame = 0; frame < MaxFrames; ++frame) {
     bodies.setFrame(frame);
@@ -99,7 +119,7 @@ std::optional<EffectLanding> ScriptedFlights::landing(std::string_view move, Fig
     if (runner.targetFacings() != facings) {
       facingTarget.push_back(frame);
     }
-    const auto touch = std::ranges::find(runner.touched(), defender, &EffectTouch::fighter);
+    const auto touch = std::ranges::find(runner.touched(), touched, &EffectTouch::fighter);
     if (touch != runner.touched().end()) {
       return EffectLanding{.frame = frame,
                            .at = touch->onBody ? std::nullopt

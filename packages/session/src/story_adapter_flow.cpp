@@ -71,6 +71,14 @@ void StoryAdapter::runCellSections(std::span<const std::int32_t> sections) {
   if (!runner_) {
     return;
   }
+  // tamer.c: tamerTickWalkingState calls checkMapInteraction once a frame, and tickScript runs the
+  // section it asked for in that same frame: a section that ends at once has ended before the next
+  // frame's menu check (IS_SCRIPT_PAUSED is 1 again), so Triangle opens the menu on the cell. The
+  // field ticks several times a frame here; asking only on the tick the frame runs keeps the
+  // request from waiting between frames, where it shut the menu (and the talk) on the cell.
+  if (!runner_->frameRunsNextTick()) {
+    return;
+  }
   for (const std::int32_t section : sections) {
     if (!std::in_range<std::uint16_t>(section)) {
       core::logError("[port:story] checkMapInteraction (tamer.c:660): cell {} is no section",

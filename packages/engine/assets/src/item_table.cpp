@@ -21,9 +21,13 @@ ItemEntry readItem(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(node, "an item",
                          {"id", EntryIndexKey, "name", "description", "value", "merit_value",
                           "sorting_value", "item_color", "droppable", "unknown_1e"},
-                         {"icon_palette"})) {
+                         {"icon_palette", "icon", "description_species"})) {
     return {};
   }
+  const auto text = [&](std::string_view key) -> std::optional<std::string> {
+    const YamlNode* value = node.find(key);
+    return value != nullptr ? reader.optionalText(*value) : std::nullopt;
+  };
   const auto integer = [&](std::string_view key) {
     return reader.integer<std::int32_t>(reader.field(node, key));
   };
@@ -34,7 +38,9 @@ ItemEntry readItem(YamlReader& reader, const YamlNode& node) {
           .sortingValue = integer("sorting_value"),
           .itemColor = integer("item_color"),
           .droppable = integer("droppable"),
-          .iconPalette = reader.optionalInteger<std::uint8_t>(node, "icon_palette")};
+          .iconPalette = reader.optionalInteger<std::uint8_t>(node, "icon_palette"),
+          .iconOf = text("icon"),
+          .descriptionSpecies = text("description_species")};
 }
 
 } // namespace
@@ -103,6 +109,18 @@ core::Result<ItemTable> parseItemTable(std::string_view yaml,
         break;
       }
     }
+  }
+  // An item that names another's icon takes that one's cell and palette. One that names an item
+  // without an icon of its own (a base without it) has none, as a pack's item without `icon`.
+  for (ItemEntry& entry : entries) {
+    if (!entry.iconOf) {
+      continue;
+    }
+    const auto shown = std::ranges::find(entries, *entry.iconOf, &ItemEntry::id);
+    const std::optional<ItemEntry::Icon> icon =
+        shown != entries.end() && !shown->iconOf ? shown->icon() : std::nullopt;
+    entry.iconCell = icon ? std::optional{icon->cell} : std::nullopt;
+    entry.iconPalette = icon ? std::optional{icon->palette} : std::nullopt;
   }
   auto read = reader.finish(std::move(entries), Context);
   if (!read) {

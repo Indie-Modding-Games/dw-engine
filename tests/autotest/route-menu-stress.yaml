@@ -1,0 +1,112 @@
+# The game menu opened and closed hundreds of times (card #220): with the player still on a step cell, with the box's
+# frames cut short by more presses, with the partner moving and calling, on the player page and at the smallest and
+# largest UI scales. The menu must open on every press where the original opens it (tamer.c: tamerTickWalkingState
+# checks Triangle before checkMapInteraction, and a step cell's section that ends at once has ended by then) and the
+# game must not fail on the way. Run it with --new-game --start twna01 --seed 1 (the player starts on exit 0, a step
+# cell of the map's script); the debug build adds the sanitizers.
+name: menu-stress
+device: keyboard
+timeout: 1500
+steps:
+  - wait: {map: twna01, seconds: 3}
+  - resize: [1280, 720]
+  # Once the map's fade is over (the menu step retries until the menu opens).
+  - menu: open
+  - menu: close
+  # On the step cell: bare presses, each one must open or close the menu.
+  - repeat:
+      times: 40
+      steps:
+        - tap: {key: tab}
+        - wait: {menu_open: true, timeout: 3}
+        - wait: {seconds: 0.35}
+        - tap: {key: tab}
+        - wait: {menu_open: false, timeout: 3}
+  - screenshot: step-cell
+  - script: place("player 200 3200 0")
+  - wait: {seconds: 1}
+  - repeat:
+      times: 40
+      steps:
+        - menu: open
+        - menu: close
+  # Presses over the box's opening and closing frames, which take no input (tickUIBox); the menu still answers after.
+  - repeat:
+      times: 20
+      steps:
+        - tap: {key: tab}
+        - wait: {ticks: 3}
+        - tap: {key: tab}
+        - wait: {ticks: 7}
+        - tap: {key: tab}
+        - wait: {ticks: 13}
+        - tap: {key: tab}
+        - wait: {seconds: 0.5}
+        - menu: close
+        - menu: open
+        - menu: close
+  - screenshot: presses-over-frames
+  # The partner moving and calling: the player runs between presses and the partner needs the toilet.
+  - script: partner_set("poop 1")
+  - repeat:
+      times: 20
+      steps:
+        - press: {key: right}
+        - wait: {seconds: 0.3}
+        - release: {key: right}
+        - tap: {key: tab}
+        - wait: {seconds: 0.4}
+        - press: {key: left}
+        - tap: {key: tab}
+        - wait: {seconds: 0.3}
+        - release: {key: left}
+        - menu: close
+  - wait: {seconds: 2, confirm: true}
+  - screenshot: partner-moving
+  # The player page and back (menu_select walks the cursor there, slow on a software renderer).
+  - repeat:
+      times: 10
+      steps:
+        - menu: open
+        - menu_select: open-player
+        - wait: {seconds: 0.4}
+        - menu: close
+  # The smallest UI scale, then the largest.
+  - menu: open
+  - menu_select: open-player
+  - wait: {seconds: 0.5}
+  - tap: {key: tab}
+  - menu_select: player-options
+  - menu_select: ui-scale
+  - repeat:
+      times: 4
+      steps:
+        - tap: {key: left}
+        - wait: {seconds: 0.2}
+  - expect_setting: {ui_scale: 0.75}
+  - menu: close
+  - repeat:
+      times: 15
+      steps:
+        - menu: open
+        - menu: close
+  - screenshot: smallest-scale
+  - menu: open
+  - menu_select: open-player
+  - wait: {seconds: 0.5}
+  - tap: {key: tab}
+  - menu_select: player-options
+  - menu_select: ui-scale
+  - repeat:
+      times: 7
+      steps:
+        - tap: {key: right}
+        - wait: {seconds: 0.2}
+  - expect_setting: {ui_scale: 2}
+  - menu: close
+  - repeat:
+      times: 15
+      steps:
+        - menu: open
+        - menu: close
+  - screenshot: largest-scale

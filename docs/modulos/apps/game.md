@@ -246,8 +246,13 @@ Mueve el temblor de la rutina 34 (`screen_shake.hpp`: `ScreenShake`) a 20 fotogr
 sprite del mapa al nodo de un personaje (`spawnSpriteAtEntity`, con `FieldScene::entityNodePoint` y
 `MapLayers::spriteSize`). La burbuja de humor de la rutina 28 (`mood_bubble.hpp`: `MoodBubble`) crece y sube a 20
 fotogramas por segundo y se dibuja con `FieldScene::setStorySprites`: un cuadro aditivo de la imagen
-`map/<mapa>/texture4/000` en el punto de condición de la especie (`conditionFx` de su fila y `entityNodePoint`); con
-un contenido extraído sin `condition_fx` no sale.
+`map/<mapa>/texture4/000` en el punto de condición de la especie (`conditionFx` y `entityNodePoint`); con
+un contenido extraído sin `condition_fx` no sale. Como en el original (`translateConditionFXToEntity` lee
+`CONDITION_FX_OFFSETS[getOriginalType(tipo)]`), una variante toma el punto de su tipo original
+(`condition_point.hpp`: `conditionPointRow`, con `effects.original_types` de las reglas de combate): dos de los cuatro
+clientes de la tienda del cañón (tipos 93 y 99, que el original lleva a 57 y 25) tienen su propia fila a cero (nodo 0
+sin desplazamiento, la raíz del modelo) y la burbuja quedaba dentro del cuerpo. Lo mismo vale para el veneno y la
+confusión de los enemigos en combate y la mariposa del compañero.
 
 Una caca en el campo tiene su escena (`partner.c: tickWildPoop`, estado 7), con `poop_piles.wild`: el jugador se para y
 mira al compañero, que corre hacia él hasta su distancia de correr (`Field::runPartnerUp`), se agacha (`squat_clip`),
@@ -402,6 +407,22 @@ Antes solo lo hacía `FieldItemsScreen::tick`, que no corre hasta que acaba el f
 nuevo. Prueba: `field_items_tests` "map.c changeMap: another map clears the last one's ground and chests, its own
 stay"; en la captura cuadro a cuadro de room08 → twna01 con una carne soltada en room08, antes se veía sobre la hierba
 de twna01 los 20 cuadros del fundido de entrada y desaparecía en el último; ahora no sale.
+
+Volver a cargar el mismo mapa también los borra (`changeMap` llama a `clearDroppedItems` en cada carga). En el bosque
+de la prueba del centauro (trop06, guion 18) la cabecera tira `store_random` siete veces y pone en siete casillas uno
+de dos o tres objetos (50 % en las tres primeras, 30 % en las otras cuatro: 2,7 de media) mientras el disparador 236
+(el centauro ya en la ciudad) no esté puesto; la rutina 25 que llama antes solo fija qué vuelve a la variable 0 al
+acabar. Cada flecha que da al compañero, cada «Missed!» y cada fallo de carril devuelven al jugador con
+`warp_to screen=17`, que recarga trop06 y vuelve a tirar. Medido en el original (2026-11-07, entrando en trop06 desde
+`01_field_outside_jijimon_house` por RAM): primera entrada con 2 objetos (0 en (49, 53) y 16 en (67, 42)); tras la
+flecha y «Let's go back» `DROPPED_ITEMS` queda vacío y la cabecera pone 3 (0, 16 y 1 en (50, 34)); con el disparador
+236 puesto, ninguno. dwe ya los ponía al entrar andando y al cargar una partida, pero
+`FieldItems::enterMap` solo borraba al cambiar a otro mapa: tras cada vuelta los objetos de la tirada anterior se
+quedaban y la nueva se sumaba (dos en la misma casilla, hasta llenar los 11 huecos y perder las tiradas siguientes).
+Ahora `PlaySession` llama a `FieldItems::loadMap` con el número de carga de `FieldScene` (`mapSerial`), que borra en
+cada carga, la del mismo mapa incluida; `enterMap` sigue sin borrar para quien solo nombra el mapa. Prueba:
+`field_items_tests` "map.c changeMap: a load of the same map clears the last load's ground and chests". Otros mapas con
+`spawn_item` en su cabecera comprobados en dwe: mayo01, trop01, miha03 y dgha01 tiran y ponen sus objetos y cofres.
 
 ## El campo detrás del menú
 
@@ -1020,6 +1041,16 @@ Medido: ruta de prueba con el jugador «WWWWWWWWWWWW» y el compañero «Barthol
 caja de nombres en la entrevista (la clave `new_game_scene: true`); capturas antes/después
 en las dos pieles.
 
+## Espacio tras los nombres
+
+Mejora opcional, encendida por defecto (no cambia ninguna regla): el ajuste `name_spacing` (fila «Espacio tras los
+nombres», «Space after names» en inglés, de la pestaña Juego de las opciones, guardado en los ajustes del usuario),
+que llega como ajuste de la UI desde `PlaySession` (`NameSpacingSetting`, `story_text_rows.hpp`).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Nombre insertado pegado a la palabra siguiente | `script_textbox.c: showTextbox` copia el nombre tal cual (códigos 5, 6, 7, 8, 9, 0x11 y 0x12; `getSpeakerName`, `DIGIMON_NAME`, `MOVE_NAMES`, `ITEM_NAME`, `BGM_TRACK_NAMES`, `TOURNAMENT_NAMES`) y `drawString2` no añade nada; diez textos del original no llevan espacio tras el nombre (MAPHEAD 0x5cbe, el nombre de una técnica y la palabra siguiente; 0x5b94, 0x4ac4 tras `{partner}`; cinco de las cartas y dos del guion 132 tras el nombre de una especie). Medido: los bytes del guion en la RAM (`MAPHEAD_SCRIPT_PTR` + 0x5cbe) son `08 F3` y luego la primera letra de la palabra, sin espacio; con `SCRIPT_POINTER` llevado a ese texto en un cuadro abierto (estado `save_machine_intro`) el juego dibuja el nombre y la palabra juntos | Cada nombre que rellena una etiqueta (`StoryTextbox::pageText`, `TournamentScheduleScreen`) acaba en la marca `NameEnd`; `appendPageRows` la quita y, con la opción, pone un espacio si lo siguiente (tras las etiquetas de color) es una letra o una cifra; ante un signo, un espacio, un salto de línea o el final de la página no pone nada. Sin la opción, el texto pegado como en el original | «a name the text runs into the next word gets a space with name spacing» (`story_text_rows_tests.cpp`) | Mejora (opción) |
+
 ## Barras de reclutamiento
 
 Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no enseña cuánto le falta al jugador):
@@ -1258,7 +1289,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 
 | Pestaña | Filas |
 |---|---|
-| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha |
+| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros |
 | Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
@@ -1553,3 +1584,13 @@ columna: el cursor cae en `species_o`, en la misma columna) y la vuelta a la pá
 el árbol con la caja Mega y la página 2 (`species_q`, al que evoluciona antes con `evolve` para que su casilla se abra,
 y su detalle) con la opción apagada, y con ella encendida los cuatro Megas en una página y el detalle de `species_t`
 ([prueba vertical](../../guides/prueba-vertical.md)).
+
+## Objetos raros
+
+Mejora opcional, apagada por defecto: el ajuste `rare_items` (fila «Objetos raros», «Rare items» en inglés, la última
+de la pestaña Juego de las opciones del menú de pausa y de las del título, guardado en los ajustes del usuario) llega
+desde `PlaySession` (`RareItemsSetting`) a `FieldItemsAdapter::setRareItems`. Encendido, y solo en una partida con el
+contenido oculto (rulesets `oculto` u `oculto_mega`, que traen la sección `rare_items`), algunos puntos de objetos al
+azar pueden dejar un objeto raro de evolución en vez del suyo
+([evolution.md](../game/evolution.md#objetos-raros-de-evolución)). Apagado, o con el ruleset `original`, los objetos
+del campo son los del original. Su ayuda (`pause_menu.help.rare_items`) avisa de que necesita el contenido oculto.

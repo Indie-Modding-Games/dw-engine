@@ -64,7 +64,9 @@ core::Result<ScriptedBattle> StoryBattles::enemies() {
     // makes (it knows who is on screen).
     battle.joinable = true;
     if (const auto talked = battle_->talkedTo()) {
-      if (const auto entity = battle_->entityOf(*talked)) {
+      const auto entity =
+          battle_->talkedEntity().or_else([&] { return battle_->entityOf(*talked); });
+      if (entity) {
         core::logDebug("{}",
                        messages::formatMessage(messages::PortBattleTalkedTo, *talked, *entity));
         battle.enemies.push_back(*entity);

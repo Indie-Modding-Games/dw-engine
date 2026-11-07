@@ -316,3 +316,23 @@ TEST_CASE("script_interp.c callScriptSection: a talk on a section the script lac
   CHECK(host.log() ==
         std::vector<std::string>{"start 105:0x6", "resume 105:0x6 nil", "close 105:0x6"});
 }
+
+TEST_CASE("a step cell asked on the tick before each frame leaves the runner idle between frames") {
+  // tamer.c: checkMapInteraction asks for a step cell's section once a frame and tickScript runs it
+  // in that frame, so a section that ends at once never keeps the menu shut (IS_SCRIPT_PAUSED).
+  ScriptedHost host;
+  host.define(Step, {SectionEnded{}});
+  StoryRunner runner = makeRunner(host);
+
+  int asked = 0;
+  for (std::uint32_t tick = 0; tick < 4 * TicksPerFrame; ++tick) {
+    if (runner.frameRunsNextTick()) {
+      REQUIRE(runner.request(Step, StartTiming::NextFrame) == RequestOutcome::Accepted);
+      ++asked;
+    }
+    runner.tick();
+    CHECK_FALSE(runner.busy());
+  }
+  CHECK(asked == 4);
+  CHECK(std::ranges::count(host.log(), std::string{"close 105:0x33"}) == 4);
+}

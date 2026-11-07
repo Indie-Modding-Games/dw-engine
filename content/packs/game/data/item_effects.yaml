@@ -1,0 +1,13 @@
+# Qué hace usar los objetos de data/items de este paquete: como los objetos de evolución del original de nivel 5
+# (item.c: handleEvoItems), llevan a su forma si está justo un nivel por encima del partner.
+item_effects:
+- item: "game:steel_heart"
+  handler: "evolution"
+  healing: null
+  evolves_to: "muge"
+  values: null
+- item: "game:blood_moon"
+  handler: "evolution"
+  healing: null
+  evolves_to: "vand"
+  values: null

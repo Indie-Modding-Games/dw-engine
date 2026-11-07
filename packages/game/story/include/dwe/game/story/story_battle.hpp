@@ -69,6 +69,9 @@ public:
   // with none predefined (script_interp.c: callScriptSection keeps TALKED_TO_ENTITY, which
   // tamer.c: startBattle hands to btl.c: handleBattleStart); nothing when there is none.
   [[nodiscard]] virtual std::optional<std::int64_t> talkedTo() const { return std::nullopt; }
+  // That NPC's entity itself, which can differ from entityOf(talkedTo()) when several NPCs share
+  // its script id (a map's wild NPCs of one species); nothing when it is not known.
+  [[nodiscard]] virtual std::optional<std::int64_t> talkedEntity() const { return std::nullopt; }
   virtual void startBattle(const ScriptedBattle& battle) = 0;
   // The outcome once the battle and its aftermath are over; nothing while it runs.
   virtual std::optional<BattleOutcome> battleOutcome() = 0;

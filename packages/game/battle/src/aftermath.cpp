@@ -232,12 +232,10 @@ BattleResult settleBattle(Outcome outcome, const BattleSetup& setup, const Battl
   case Outcome::Defeat:
     result.care = consequences.defeat;
     result.livesLost = consequences.defeatLives;
-    // The defeat takes the partner to the death map, whose script (dg 212, section 0x48) adds to
-    // the current HP and MP and script_value.c: enforceStatsLimits caps them at the maximums.
-    result.partnerHp =
-        std::min(result.partnerHp + consequences.defeatRestore.hp, partner.stats.maxHp);
-    result.partnerMp =
-        std::min(result.partnerMp + consequences.defeatRestore.mp, partner.stats.maxMp);
+    // The partner leaves with the HP and MP the fight left it. A lost battle goes on at MAPHEAD
+    // section 0x4DE, which calls tamer.c: tamerTickBattleLostLife and then the death map's
+    // section 0x48 (dg 212): that script tells a defeat from a sickness by the current HP being 0
+    // and gives the HP and MP back itself (add_stat 6 and 7).
     break;
   }
   result.elapsedMinutes = consequences.elapsedMinutes;

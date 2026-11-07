@@ -1,0 +1,27 @@
+# Objetos que añade el motor, detrás de los del original (docs/modulos/game/evolution.md, «Objetos raros de
+# evolución»): solo los da la mejora opcional `rare_items`. Toman el icono de un objeto del original por su ID
+# (`icon`) y su descripción nombra la especie de `description_species` en tiempo de ejecución, así que ni la
+# imagen ni el nombre de la especie están aquí. El motor les da su número (`index`).
+items:
+- id: "game:steel_heart"
+  name: "Steel Heart"
+  description: null
+  value: 9999
+  merit_value: 0
+  sorting_value: 4
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+  icon: "red_ruby"
+  description_species: "muge"
+- id: "game:blood_moon"
+  name: "Blood Moon"
+  description: null
+  value: 9999
+  merit_value: 0
+  sorting_value: 4
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+  icon: "beetlepearl"
+  description_species: "vand"

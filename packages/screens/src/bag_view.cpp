@@ -17,6 +17,7 @@ constexpr std::int32_t NeverUsedColor = 255;
 constexpr std::string_view EmptyField = "empty";
 constexpr std::string_view NameField = "name";
 constexpr std::string_view DescriptionField = "description";
+constexpr std::string_view DescriptionSpeciesField = "description_species";
 constexpr std::string_view CountField = "count";
 constexpr std::string_view DimmedField = "dimmed";
 constexpr std::string_view UsableField = "usable";
@@ -54,6 +55,7 @@ BagSlotView slotViewOf(const std::optional<game::inventory::Stack>& slot,
           .item = entry->id,
           .nameKey = names.item(slot->item),
           .descriptionKey = names.itemDescription(slot->item),
+          .descriptionSpeciesKey = names.itemDescriptionSpecies(slot->item),
           .count = slot->count,
           .dimmed = entry != nullptr && entry->itemColor == NeverUsedColor,
           .usable = usableIn(entry, rules, context),
@@ -67,15 +69,16 @@ BagSlotView slotViewOf(const std::optional<game::inventory::Stack>& slot,
 } // namespace
 
 std::optional<ItemIconView> itemIconOf(const assets::ItemEntry& entry) {
-  if (!entry.iconPalette || !entry.originalIndex) {
+  const std::optional<assets::ItemEntry::Icon> icon = entry.icon();
+  if (!icon) {
     return std::nullopt;
   }
-  const std::int32_t u = (entry.index % ItemIconsPerRow) * ItemIconSide;
-  const std::int32_t v = (entry.index / ItemIconsPerRow) * ItemIconSide;
+  const std::int32_t u = (icon->cell % ItemIconsPerRow) * ItemIconSide;
+  const std::int32_t v = (icon->cell / ItemIconsPerRow) * ItemIconSide;
   const auto side = [](std::int32_t start) {
     return start == LastIconTexel ? ItemIconSide - 1 : ItemIconSide;
   };
-  return ItemIconView{.image = std::format("{}?palette={}", ItemIconImage, *entry.iconPalette),
+  return ItemIconView{.image = std::format("{}?palette={}", ItemIconImage, icon->palette),
                       .rect = std::format("{} {} {} {}", u, v, side(u), side(v))};
 }
 
@@ -102,6 +105,8 @@ ScreenSettings settingsOf(const BagView& view) {
         {.name = listEntryName(BagSlotList, index, NameField), .value = slot.nameKey});
     settings.push_back({.name = listEntryName(BagSlotList, index, DescriptionField),
                         .value = slot.descriptionKey});
+    settings.push_back({.name = listEntryName(BagSlotList, index, DescriptionSpeciesField),
+                        .value = slot.descriptionSpeciesKey});
     settings.push_back({.name = listEntryName(BagSlotList, index, CountField),
                         .value = static_cast<double>(slot.count)});
     settings.push_back(

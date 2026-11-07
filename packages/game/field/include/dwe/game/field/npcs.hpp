@@ -64,6 +64,13 @@ struct GroundSquare {
 // half sides less `slack` (0: touching counts, as map.c: entityCheckEntityCollision).
 [[nodiscard]] bool squaresOverlap(const GroundSquare& a, const GroundSquare& b, float slack = 0.0F);
 
+// Whether `moved`, a square that has just stepped by `step`, runs into `other`, as map.c:
+// entityCheckEntityCollision tests any walker but the free player: only the edges on the sides it
+// moves toward count, so one walking away from a character it stands against goes on. A step
+// component under one unit moves no edge (entityMoveForward's whole units).
+[[nodiscard]] bool leadingEdgesTouch(const GroundSquare& moved, glm::vec2 step,
+                                     const GroundSquare& other);
+
 // A solid NPC's square on the field, for the checks that look at every character.
 struct NpcBody {
   std::int32_t scriptId = 0;
@@ -112,6 +119,19 @@ public:
   [[nodiscard]] const assets::MapNpc* recordOf(std::int32_t scriptId) const;
   // Its entity instance, FirstNpcInstance + its record's slot (the scripts' move slot).
   [[nodiscard]] std::optional<std::size_t> instanceOf(std::int32_t scriptId) const;
+
+  // The same by the NPC's slot (its map record), for what tells apart NPCs that share a script id
+  // (a map's wild NPCs of one species): the battle's fighters, which are entities (btl.c:
+  // handleBattleStart fills COMBAT_DATA.player.entityIds). Nothing when that slot's NPC is not on
+  // the map.
+  [[nodiscard]] std::optional<scene::Entity> entityAt(std::size_t slot) const;
+  [[nodiscard]] std::optional<glm::vec3> positionAt(std::size_t slot) const;
+  // Takes the slot's NPC off the map; false when it is not on it.
+  bool unloadAt(std::size_t slot);
+  // restartPath by slot.
+  bool restartPathAt(std::size_t slot);
+  // The slot of the NPC on an entity, or nothing.
+  [[nodiscard]] std::optional<std::size_t> slotOf(scene::Entity entity) const;
 
   // Holds an NPC still for a script, or lets it go (overworld.c: setMovementEnabled, stopAnim):
   // held, it stands idle; holding it starts its path over (clearMapAITable). False when no NPC has
@@ -198,6 +218,7 @@ private:
 
   [[nodiscard]] Npc* find(std::int32_t scriptId);
   [[nodiscard]] const Npc* find(std::int32_t scriptId) const;
+  [[nodiscard]] const Npc* findSlot(std::size_t slot) const;
   void remove(std::size_t index);
   void setHeld(Npc& npc, bool held);
   static void restart(Npc& npc);

@@ -323,6 +323,25 @@ TEST_CASE("an item of the item table works only one level below its form") {
   CHECK_FALSE(evolution.useItem(inputsOf("agum"), {}, "meat"));
 }
 
+TEST_CASE("a pack's evolution item, a row with no original number, works as an Ultimate's does: "
+          "from one level below only, with no stats") {
+  TableFixture fixture;
+  fixture.itemEffects.effects = {{.item = "my_pack:gem",
+                                  .index = -1,
+                                  .handler = assets::ItemHandler::Evolution,
+                                  .evolvesTo = "species_e"}};
+  const Evolution evolution = fixture.makeEvolution();
+  CHECK(evolution.tables().itemTarget("my_pack:gem") == TableFixture::index("species_e"));
+  const auto result = evolution.useItem(inputsOf("devi"), {}, "my_pack:gem");
+  REQUIRE(result);
+  CHECK(valueOf(result).target == TableFixture::index("species_e"));
+  CHECK(valueOf(result).reason == EvolutionReason::Item);
+  CHECK(valueOf(result).statChange == BaseStats{});
+  CHECK(valueOf(result).evolutionItemUsed);
+  CHECK_FALSE(evolution.useItem(inputsOf("agum"), {}, "my_pack:gem"));
+  CHECK_FALSE(evolution.useItem(inputsOf("species_e"), {}, "my_pack:gem"));
+}
+
 TEST_CASE(
     "the evolution items' targets come from the item effects, by id, and only the evolution handler's") {
   TableFixture fixture;

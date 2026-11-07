@@ -209,10 +209,10 @@ endif()
 # The game is an executable, so its tests build the sources they check into a test program of their own: the player's
 # settings (settings.yaml), how the UI skin is chosen at start and changed, the minimap mode, its enemies and its items, the sprite characters drawn as models, the save and place debug
 # commands, the state trace's lines, the control channel's requests, the title screen's and the game's save flows,
-# the battle's root steps of a model, the discard menu's list, the trade menu's cursor and the player page's City tab.
+# the battle's root steps of a model, a map battle's enemies, the discard menu's list, the trade menu's cursor and the player page's City tab.
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
-    add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/chibi_style.cpp src/chart_requirements.cpp src/control_json.cpp src/control_log.cpp src/control_socket.cpp src/curling_recruit_bar.cpp
+    add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/battle_trigger.cpp src/bug_report.cpp src/chibi_style.cpp src/chart_requirements.cpp src/control_json.cpp src/control_log.cpp src/control_socket.cpp src/curling_recruit_bar.cpp
                                   src/evolution_effects.cpp src/field_effects.cpp src/field_mist.cpp src/field_numbers.cpp src/flame_texture.cpp
                                   src/death_effects.cpp src/ending_effects.cpp
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/money_box_screen.cpp src/hd_scenery_setting.cpp src/map_debug_overlay.cpp src/minimap_enemies.cpp src/minimap_items.cpp src/minimap_setting.cpp src/display_settings.cpp
@@ -221,7 +221,7 @@ if(BUILD_TESTING)
                                   src/graphics_options.cpp src/weather_particles.cpp src/volume_setting.cpp src/sprite_characters.cpp
                                   src/title_options.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
-                                                 dwe::script dwe::save dwe::partner dwe::session dwe::evolution
+                                                 dwe::script dwe::save dwe::partner dwe::session dwe::field dwe::evolution
                                                  dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render dwe::signs
                                                  dwe::ruleset dwe::curling dwe::weather dwe::audio dwe::debug dwe_test_main)
     # The session's test packs and made-up species (session_fixture.hpp), for the save debug command.

@@ -101,14 +101,15 @@ class BattleScreen {
 public:
   explicit BattleScreen(BattleScreenDesc desc) : desc_(desc) {}
 
-  // `enemyNpcs` are the script ids of the map's NPCs the enemies are, in their order: each enemy is
+  // `enemyNpcs` are the slots of the map's NPCs the enemies are, in their order: each enemy is
   // shown on its NPC (none: the enemies are not shown). A fixed fight cannot be fled
   // (FLEE_DISABLED): its enemies stay on the map after it.
   core::Result<void> start(session::BattleRequest request, std::vector<std::int32_t> enemyNpcs,
                            bool fixedFight = false);
 
-  // The script ids of the NPCs on screen that join a battle with no predefined enemies, started by
-  // touching `touched` (btl.c: handleBattleStart); rolls the session's random numbers.
+  // The slots of the NPCs on screen that join a battle with no predefined enemies, started by
+  // touching the NPC in slot `touched` (btl.c: handleBattleStart); rolls the session's random
+  // numbers. The NPCs with the touched one's script id roll as any other.
   [[nodiscard]] std::vector<std::int32_t> joiningNpcs(std::int32_t touched, bool fixedFight);
 
   // Whether the battle, its end box, the beaten enemies' exit or the command strip going back up
@@ -127,7 +128,7 @@ public:
   bool runOutClock(std::string_view side);
   // The battle on screen until its end box closes, for a bug report and --trace; nothing otherwise.
   [[nodiscard]] const game::battle::Battle* battle() const { return battle_ ? &*battle_ : nullptr; }
-  // The map NPCs the enemies are, in the battle's order.
+  // The slots of the map NPCs the enemies are, in the battle's order.
   [[nodiscard]] std::span<const std::int32_t> enemyNpcs() const { return enemyNpcs_; }
   // The opening's banner is on screen (a cup's camera pulls out meanwhile: std_main.c:
   // STD_combatSetup).

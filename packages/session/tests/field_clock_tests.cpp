@@ -297,3 +297,29 @@ TEST_CASE("a care scene that never ends keeps a save waiting only up to the wait
   loop.field().holdForCare(true);
   CHECK(session->savesWait());
 }
+
+TEST_CASE("an autosave waits while the living partner has 0 HP and is written once it has HP") {
+  // A lost battle leaves the partner at 0 HP until the death map's script gives the HP back
+  // (dg 212, section 0x48): a save in between would load a fainted partner with no script left.
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  const auto session = newGame(packs, &storage);
+  const Maps maps;
+  GameLoop loop(*session, maps);
+  static_cast<void>(loop.run(1));
+  dwe::game::partner::PartnerStats stats = session->partner().state().stats;
+  const std::int32_t hp = stats.currentHp;
+  REQUIRE(hp > 0);
+  stats.currentHp = 0;
+  session->partner().setStats(stats);
+  CHECK(session->savesWait());
+  session->requestAutosave(AutosaveReason::BattleEnd);
+  CHECK(loop.run(static_cast<std::int32_t>(std::lround(5 / Tick))).autosaves.empty());
+
+  stats.currentHp = hp;
+  session->partner().setStats(stats);
+  CHECK_FALSE(session->savesWait());
+  const LoopRun revived = loop.run(1);
+  REQUIRE(revived.autosaves.size() == 1);
+  CHECK(revived.autosaves.front().reasons == std::vector{AutosaveReason::BattleEnd});
+}

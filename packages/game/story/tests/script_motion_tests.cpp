@@ -1,3 +1,4 @@
+#include <dwe/assets/map_document.hpp>
 #include <dwe/game/story/script_motion.hpp>
 
 #include <doctest/doctest.h>
@@ -27,6 +28,8 @@ public:
     std::int64_t animation = -1;
   };
   std::map<std::int64_t, Actor> actors;
+  // What wouldTouchCharacter answers for everyone.
+  bool touching = false;
 
   void step() {
     for (auto& [id, actor] : actors) {
@@ -58,9 +61,8 @@ public:
                                   std::int64_t /*animation*/) const override {
     return 900.0F;
   }
-  [[nodiscard]] bool wouldTouchCharacter(std::int64_t /*character*/,
-                                         float /*step*/) const override {
-    return false;
+  [[nodiscard]] bool wouldTouchCharacter(std::int64_t /*character*/) const override {
+    return touching;
   }
   void panCamera(glm::vec3 /*focus*/, float /*seconds*/) override {}
   [[nodiscard]] bool cameraPanning() const override { return false; }
@@ -109,6 +111,47 @@ TEST_CASE("a turn that takes a walking character's slot stops the walk when it e
     floor.step();
   }
   CHECK(floor.actors[PlayerScriptId].position == stopped);
+}
+
+TEST_CASE("a walk to a character takes its first frame whatever stands ahead") {
+  // gias04's ambush (script 70, section 0x33): the partner, standing against the player, walks to
+  // the bird it hunts while the player walks off. tickEntityWalkTo's first frame tests no step, as
+  // the walk's clip has no momentum yet; from the next a character ahead ends the walk.
+  constexpr std::int64_t Prey = 5;
+  Floor floor;
+  floor.actors[PlayerScriptId] = {.slot = 0, .position = {0.0F, 0.0F, 0.0F}};
+  floor.actors[Prey] = {.slot = 3, .position = {2000.0F, 0.0F, 0.0F}};
+  floor.touching = true;
+  ScriptMotion motion{floor, MotionRules{.frameSeconds = FrameSeconds,
+                                         .lookTurnPerFrame = std::numbers::pi_v<float> / 8.0F}};
+  motion.walkToCharacter(PlayerScriptId, 1, Prey);
+  const auto done = motion.waitFor(PlayerScriptId);
+  motion.scriptFrame();
+  floor.step();
+  CHECK_FALSE(done());
+  CHECK(glm::length(floor.actors[PlayerScriptId].velocity) > 0.0F);
+  motion.scriptFrame();
+  floor.step();
+  CHECK(done());
+  CHECK(floor.actors[PlayerScriptId].velocity == glm::vec3{0.0F});
+}
+
+TEST_CASE("a walk faces its point as it starts, before the clip's first step") {
+  // The same ambush: the player and the partner face each other when the walks start, and the walk
+  // clip's first step must already go toward each walk's point (tickEntityWalkTo faces the target
+  // on the walk's first frame), not toward the other one.
+  constexpr std::int64_t Prey = 5;
+  Floor floor;
+  floor.actors[PlayerScriptId] = {.slot = 0, .position = {0.0F, 0.0F, 0.0F}, .yaw = 1.0F};
+  floor.actors[Prey] = {.slot = 3, .position = {0.0F, 0.0F, -2000.0F}};
+  ScriptMotion motion{floor, MotionRules{.frameSeconds = FrameSeconds,
+                                         .lookTurnPerFrame = std::numbers::pi_v<float> / 8.0F}};
+  motion.walkToCharacter(PlayerScriptId, 1, Prey);
+  CHECK(floor.actors[PlayerScriptId].yaw ==
+        doctest::Approx(dwe::assets::yawOfDirection({0.0F, 0.0F, -1.0F})));
+  motion.walkTo(PlayerScriptId, 2000, 0, 1);
+  CHECK(floor.actors[PlayerScriptId].yaw ==
+        doctest::Approx(dwe::assets::yawOfDirection({1.0F, 0.0F, 0.0F})));
 }
 
 TEST_CASE("a move to a point ordered while another runs goes on with that one's step") {

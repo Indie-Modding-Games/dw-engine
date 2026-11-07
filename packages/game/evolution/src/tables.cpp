@@ -1,4 +1,5 @@
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/core/log.hpp>
 #include <dwe/game/evolution/messages.hpp>
 #include <dwe/game/evolution/tables.hpp>
 #include <dwe/ruleset/ruleset.hpp>
@@ -68,12 +69,7 @@ core::Result<assets::ItemEffectTable> loadItemEffects(const assets::VirtualFileS
   if (id == nullptr) {
     return assets::ItemEffectTable{};
   }
-  auto bytes = vfs.read(*id);
-  if (!bytes) {
-    return std::unexpected{bytes.error()};
-  }
-  return assets::parseItemEffectTable(
-      std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+  return assets::loadItemEffectTable(vfs, *id);
 }
 
 // Resolves the references of the asset tables to indices, keeping the first problem.
@@ -213,6 +209,15 @@ core::Result<EvolutionTables> EvolutionTables::build(const assets::DigimonTable&
   // item.c: handleEvoItems: EVOLUTION_ITEM_TARGET, as dwx extracts it into the item effects.
   for (const assets::ItemEffectEntry& row : itemEffects.effects) {
     if (row.handler != assets::ItemHandler::Evolution) {
+      continue;
+    }
+    // A pack's own item (a row with no original number) whose form the mounted species table lacks
+    // leads nowhere: the game pack's rare items name forms of the base, and a base without them
+    // still loads.
+    if (row.index < 0 && row.evolvesTo && digimon.find(*row.evolvesTo) == nullptr) {
+      core::logWarning("{}",
+                       messages::formatMessage(messages::UnknownReference, ItemEffectsTableRole,
+                                               messages::DigimonWhat, *row.evolvesTo));
       continue;
     }
     if (const auto target = resolver.species(row.evolvesTo, ItemEffectsTableRole); target) {

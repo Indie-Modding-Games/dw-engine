@@ -27,10 +27,11 @@ void BattleScreen::startThrow(assets::ItemHandle item) {
   desc_.scene->playPlayerSceneClip(PlayerThrowClip);
   playerThrowing_ = true;
   const assets::ItemEntry& entry = desc_.inventory->items().at(item);
-  if (!entry.iconPalette) {
+  const std::optional<assets::ItemEntry::Icon> icon = entry.icon();
+  if (!icon) {
     return;
   }
-  thrown_ = ThrownSprite{.icon = entry.index, .palette = *entry.iconPalette, .flight = {}};
+  thrown_ = ThrownSprite{.icon = icon->cell, .palette = icon->palette, .flight = {}};
   holdThrown();
   showThrown();
 }

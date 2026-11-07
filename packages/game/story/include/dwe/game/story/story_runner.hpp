@@ -122,6 +122,8 @@ public:
                                    SectionSource source = SectionSource::Plain);
   // One engine tick: runs a frame of the original every ticksPerFrame ticks.
   void tick();
+  // Whether the next tick() runs a frame of the original.
+  [[nodiscard]] bool frameRunsNextTick() const { return ticksIntoFrame_ + 1 >= ticksPerFrame_; }
 
   // The player is on a new map: walked there, loaded a save or ended a script's map change. Runs
   // the map's map-head section at once, over whatever ran (map.c: changeMap); after a script's map

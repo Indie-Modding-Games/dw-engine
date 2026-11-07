@@ -78,6 +78,7 @@ translated_signs: "Translated signs"
 status_extras: "Status extras"
 # Canonical stages: the chart names the stages as the series does and draws a Mega box (off by default).
 canonical_stages: "Canonical stages"
+rare_items: "Rare items"
 walk_control: "Walk with"
 walk_control.keys: "Keyboard/pad"
 walk_control.mouse: "Mouse"
@@ -86,6 +87,8 @@ long_names: "Long names"
 # Recruit bar: while a job or a match decides whether someone joins the city (the canyon shop, the stones game), a bar
 # shows how close the player is (on by default).
 shop_job_bar: "Recruit bar"
+# Space after names: a name a text inserts gets a space when the text runs it into the next word (on by default).
+name_spacing: "Space after names"
 # Continuous music: a map whose song is already playing lets it go on instead of starting it again
 # (on by default).
 continuous_music: "Continuous music"
@@ -201,6 +204,7 @@ help.bulk_trades: "The item trader and the card packs ask how many at once."
 help.long_names: "Names take up to twelve letters instead of the original's six."
 help.evolution_requirements: "The evolution chart tells what each target needs and how your partner is doing."
 help.canonical_stages: "The chart names the stages as the series does and adds a Mega box."
+help.rare_items: "Some item spots may hide a rare evolution item. Needs the hidden content."
 help.status_extras: "The status page shows tiredness, mistakes, battles, waking hours, lifetime and evolution."
 help.display_mode: "Play in a window or full screen."
 help.vsync: "Syncs the frames with the display so the picture does not tear."
@@ -228,6 +232,7 @@ help.digital_time: "The game time in digits (HH:MM) under the clock."
 help.save_notice: "A small figure and \"Saving\" in a corner while the game saves."
 help.need_bubble_stack: "Your partner's bubble shows up to five needs at once, the one that harms it soonest first."
 help.shop_job_bar: "A bar shows how close you are while a job or a match decides whether someone joins."
+help.name_spacing: "A name inside a text never runs into the next word."
 help.options_reset: "Puts this tab's options back to their defaults. Asks first."
 help.options_back: "Back to the menu."
 help.quick_save: "Saves the game now to its slot."

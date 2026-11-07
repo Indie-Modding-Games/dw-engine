@@ -3,9 +3,10 @@
 -- item_keeper.revision once per change: item_keeper.phase (ask, choice, windows, description,
 -- farewell), .speaker (the keeper's name, a text key), .line_key (what the keeper says),
 -- .choices_key (the yes-or-no line) and .choice, .side (0 the keeper's window, 1 the bag's),
--- .description_key, and for each list (item_keeper.kept,
--- item_keeper.bag) .total, .top, .cursor and <list>.<row>.name/count/movable for the five rows
--- shown. Every button goes to the game as item_keeper_action.
+-- .description_key (with .description_species_key, the name its {species} shows), and for each
+-- list (item_keeper.kept, item_keeper.bag) .total, .top, .cursor and
+-- <list>.<row>.name/count/movable for the five rows shown. Every button goes to the game as
+-- item_keeper_action.
 
 local Rows = 5
 local ThumbTrack = 240
@@ -21,6 +22,16 @@ local function text(name)
     return ""
   end
   return t(key)
+end
+
+-- A description's text; its {species} placeholder shows the species whose name key comes with it.
+local function described(name, species_name)
+  local species_key = ui.setting(species_name) or ""
+  if species_key == "" then
+    return text(name)
+  end
+  local key = ui.setting(name) or ""
+  return key == "" and "" or t(key, { species = t(species_key) })
 end
 
 local function lines_of(value)
@@ -94,7 +105,9 @@ local function refresh(document)
   draw_list(document, "kept")
   draw_list(document, "bag")
   draw_talk(document, phase)
-  document:get("description-text"):set_text(text("item_keeper.description_key"))
+  document
+    :get("description-text")
+    :set_text(described("item_keeper.description_key", "item_keeper.description_species_key"))
 end
 
 -- The help names the keys of the device in use: confirm moves one, alt ten and extra the stack.

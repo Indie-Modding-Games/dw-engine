@@ -138,6 +138,17 @@ game_options = {
     help = "pause_menu.help.status_extras",
     original = false,
   },
+  -- Rare items: the field's random item spots may lay a rare evolution item (off by default; the
+  -- ruleset's rare_items section says which, docs/modulos/game/evolution.md).
+  {
+    id = "rare-items",
+    setting = "rare_items",
+    label = "pause_menu.rare_items",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.rare_items",
+    original = false,
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).
@@ -359,6 +370,17 @@ game_options = {
     default = true,
     tab = "interface",
     help = "pause_menu.help.shop_job_bar",
+    original = false,
+  },
+  -- Space after names: a name the texts insert gets a space when the original's text runs it into
+  -- the next word (on by default; off draws them stuck, as the original).
+  {
+    id = "name-spacing",
+    setting = "name_spacing",
+    label = "pause_menu.name_spacing",
+    default = true,
+    tab = "game",
+    help = "pause_menu.help.name_spacing",
     original = false,
   },
 }

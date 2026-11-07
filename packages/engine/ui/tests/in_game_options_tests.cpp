@@ -37,10 +37,10 @@ struct Tab {
   std::string_view id;
   std::span<const std::string_view> rows;
 };
-constexpr std::array<std::string_view, 10> GameRows{
-    "free-exploration", "walk-control", "autosave",   "world-map",
-    "minimap-items",    "bulk-trades",  "long-names", "evolution-requirements",
-    "canonical-stages", "status-extras"};
+constexpr std::array<std::string_view, 12> GameRows{
+    "free-exploration", "walk-control",  "autosave",   "world-map",
+    "minimap-items",    "bulk-trades",   "long-names", "evolution-requirements",
+    "canonical-stages", "status-extras", "rare-items", "name-spacing"};
 constexpr std::array<std::string_view, 11> GraphicsRows{"display-mode",     "vsync",
                                                         "smooth-motion",    "hd-scenery",
                                                         "model-characters", "enhanced-lighting",
@@ -201,17 +201,19 @@ TEST_CASE("each tab of the options page lists its rows, and only those, fitting 
             CHECK_FALSE(screen.ui->elementCenter(Menu, other.rows.front()).has_value());
           }
         }
-        // Every row, the description and the keys fit the box at 1280x720, without scrolling:
-        // the actions under the list sit below its last row.
+        // Every row, the description and the keys fit the box at 1280x720; a tab longer than the
+        // list (the game tab's twelve rows) scrolls to its last row when the focus gets there.
         for (const Ui::TextOverflow& overflow : screen.ui->overflowingTexts()) {
           MESSAGE(overflow.element << " '" << overflow.text << "' " << overflow.box << " by "
                                    << overflow.overflow << " dp");
         }
         CHECK(screen.ui->overflowingTexts().empty());
+        focusRow(screen, tab.rows.back());
         const auto last = screen.ui->elementRect(Menu, tab.rows.back());
         const auto list = screen.ui->elementRect(Menu, "option-list");
         REQUIRE(last.has_value());
         REQUIRE(list.has_value());
+        CHECK(last.value_or(Ui::Rect{}).top >= list.value_or(Ui::Rect{}).top - 0.5F);
         CHECK(last.value_or(Ui::Rect{}).bottom <= list.value_or(Ui::Rect{}).bottom + 0.5F);
       }
     }

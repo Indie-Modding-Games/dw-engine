@@ -28,6 +28,7 @@ constexpr std::array Toggles{
     GameToggle{
         .setting = "canonical_stages", .saved = &UserSettings::canonicalStages, .fallback = false},
     GameToggle{.setting = "status_extras", .saved = &UserSettings::statusExtras, .fallback = true},
+    GameToggle{.setting = "rare_items", .saved = &UserSettings::rareItems, .fallback = false},
     // Graphics tab.
     GameToggle{.setting = "smooth_motion", .saved = &UserSettings::smoothMotion, .fallback = true},
     GameToggle{
@@ -45,6 +46,7 @@ constexpr std::array Toggles{
     GameToggle{
         .setting = "need_bubble_stack", .saved = &UserSettings::needBubbleStack, .fallback = true},
     GameToggle{.setting = "shop_job_bar", .saved = &UserSettings::shopJobBar, .fallback = true},
+    GameToggle{.setting = "name_spacing", .saved = &UserSettings::nameSpacing, .fallback = true},
 };
 
 } // namespace

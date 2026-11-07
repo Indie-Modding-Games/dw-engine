@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -332,6 +333,29 @@ void handleAttack(BattleContext& context, const AttackInFlight& attack) {
   }
 }
 
+// Where the effect of an attack in flight touches its defender, asked again where the fighters
+// stand now: its timing, spark and facing follow the answer. False when the effect would not touch
+// it.
+bool refreshLanding(const BattleContext& context, AttackInFlight& attack, std::int32_t age) {
+  if (context.flights == nullptr) {
+    return false;
+  }
+  const std::string_view move = context.moves->at(attack.move).id;
+  const std::optional<EffectLanding> landing =
+      attack.aim ? context.flights->landingOn(move, attack.attacker, *attack.aim, attack.defender,
+                                              attack.clip)
+                 : context.flights->landing(move, attack.attacker, attack.defender, attack.clip);
+  if (!landing) {
+    return false;
+  }
+  attack.framesLeft = std::max(landing->frame - age, 0);
+  attack.age = age;
+  attack.hitPoint = landing->at;
+  attack.touch = touchOf(*landing);
+  attack.facingTarget = landing->facingTarget;
+  return true;
+}
+
 // An attack leaving `id` for `defender`: it lands when the move's effect touches the defender,
 // where the battle knows its flight, else after the ruleset's projectile speed.
 AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId defender,
@@ -347,7 +371,8 @@ AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId de
                         .clip = std::nullopt,
                         .hitPoint = std::nullopt,
                         .touch = std::nullopt,
-                        .facingTarget = {}};
+                        .facingTarget = {},
+                        .aim = std::nullopt};
   if (!travels) {
     return flight;
   }
@@ -374,6 +399,33 @@ AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId de
   flight.framesLeft =
       static_cast<std::int32_t>(distance / std::max(context.rules->timing.projectileSpeed, 1));
   return flight;
+}
+
+// battle_effect.c: BTL_applyRadiusAttackHit, BTL_applyLineAttackHit; aabb.c: findAABBHitEntity:
+// an effect's hit checks go through every fighter but its source, so a blast or a beam also hits
+// the attacker's allies and the opponents it was not aimed at when it touches them on its way. Only
+// a flight the move's effect decides can tell: without one the attack reaches its targets alone.
+void addBystanderFlights(BattleContext& context, FighterId id,
+                         const std::vector<FighterId>& reached) {
+  const ActiveAttack& attack = *context.fighter(id).attack;
+  const FighterId aim = attack.target.value_or(reached.front());
+  const std::optional<std::int32_t> clip = moveClipOf(context, context.fighter(id), attack.move);
+  for (FighterId other = 0; other < context.state->fighters.size(); ++other) {
+    if (other == id || context.fighter(other).fainted || std::ranges::contains(reached, other)) {
+      continue;
+    }
+    AttackInFlight flight = flightOf(context, id, other, false);
+    flight.clip = clip;
+    flight.aim = aim;
+    if (!refreshLanding(context, flight, attack.frame)) {
+      continue;
+    }
+    core::logDebug(
+        "[port:battle] BTL_applyRadiusAttackHit (battle_effect.c): {} of fighter {} aimed "
+        "at {} touches fighter {} on attack frame {}",
+        context.moves->at(attack.move).id, id, aim, other, *flight.age + flight.framesLeft);
+    context.state->inFlight.push_back(std::move(flight));
+  }
 }
 
 } // namespace
@@ -439,6 +491,9 @@ void releaseAttack(BattleContext& context, FighterId id) {
   for (const FighterId defender : reached) {
     context.state->inFlight.push_back(flightOf(context, id, defender, travels));
   }
+  if (travels) {
+    addBystanderFlights(context, id, reached);
+  }
 }
 
 void faceEffectTargets(BattleContext& context) {
@@ -461,13 +516,7 @@ void tickAttacksInFlight(BattleContext& context) {
       // battle_effect.c: BTL_tickEFEEngine checks the effect's hit boxes against where the fighters
       // stand on each frame: a defender walking into the effect is touched sooner, one walking
       // away later. Where the effect would never touch it now, the last answer holds.
-      if (const std::optional<EffectLanding> landing =
-              effectLanding(context, attack.attacker, attack.defender, attack.move, attack.clip)) {
-        attack.framesLeft = std::max(landing->frame - *attack.age, 0);
-        attack.hitPoint = landing->at;
-        attack.touch = touchOf(*landing);
-        attack.facingTarget = landing->facingTarget;
-      }
+      static_cast<void>(refreshLanding(context, attack, *attack.age));
       ++*attack.age;
     }
     if (attack.framesLeft > 0) {
@@ -478,6 +527,11 @@ void tickAttacksInFlight(BattleContext& context) {
     Fighter& defender = context.fighter(attack.defender);
     // A fighter in its hit reaction cannot be hit again (isHit): what reaches it then is lost
     // (suposición).
+    if (attack.aim && (defender.fainted || defender.struck)) {
+      // BTL_applyRadiusAttackHit skips a fighter already in its hit reaction: a bystander's touch
+      // is no attack on it.
+      continue;
+    }
     if (defender.fainted || (defender.struck && attack.defender != attack.attacker)) {
       context.emit({.kind = EventKind::AttackMissed,
                     .fighter = attack.defender,

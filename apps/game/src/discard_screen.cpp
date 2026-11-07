@@ -199,7 +199,7 @@ std::optional<session::DiscardRow> DiscardScreen::current() const {
 
 screens::ScreenSettings DiscardScreen::settings() const {
   const session::DiscardMenu& menu = *desc_.menu;
-  const screens::NameKeys names{nullptr, &menu.items(), nullptr};
+  const screens::NameKeys names{species_, &menu.items(), nullptr};
   const auto rows = menu.rows();
   // The names and icons as the bag shows them, slot for slot.
   const screens::BagView bag =
@@ -215,6 +215,9 @@ screens::ScreenSettings DiscardScreen::settings() const {
       {.name = "discard.cancellable", .value = menu.cancellable()},
       {.name = "discard.description_key",
        .value = phase_ == Phase::Description && shown ? names.itemDescription(shown->item)
+                                                      : std::string{}},
+      {.name = "discard.description_species_key",
+       .value = phase_ == Phase::Description && shown ? names.itemDescriptionSpecies(shown->item)
                                                       : std::string{}},
   };
   for (std::int32_t i = 0; i < DiscardVisibleRows; ++i) {

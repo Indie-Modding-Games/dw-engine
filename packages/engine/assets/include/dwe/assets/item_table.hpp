@@ -43,6 +43,33 @@ struct ItemEntry {
   // utils2.c: setItemTexture), or nothing for an item without an icon: one a pack adds, or a table
   // extracted before the field existed.
   std::optional<std::uint8_t> iconPalette = std::nullopt;
+  // The item whose icon this one shows (`icon`, an id): a pack's item takes an original item's icon
+  // by its cell and palette, so the pack ships no image.
+  std::optional<std::string> iconOf = std::nullopt;
+  // The cell of that icon in `texture/etcdat/item`, as the table resolved it.
+  std::optional<std::int32_t> iconCell = std::nullopt;
+  // The species its description names (`description_species`, a species id): the description's
+  // {species} placeholder shows that species' name, read from the species names at run time.
+  std::optional<std::string> descriptionSpecies = std::nullopt;
+
+  // The icon the game draws for it, or nothing for an item without one.
+  struct Icon {
+    std::int32_t cell = 0;
+    std::uint8_t palette = 0;
+  };
+  [[nodiscard]] std::optional<Icon> icon() const {
+    if (!iconPalette) {
+      return std::nullopt;
+    }
+    if (iconCell) {
+      return Icon{.cell = *iconCell, .palette = *iconPalette};
+    }
+    // An original item's own icon is the cell of its number.
+    if (iconOf || !originalIndex) {
+      return std::nullopt;
+    }
+    return Icon{.cell = index, .palette = *iconPalette};
+  }
 };
 
 class ItemTable;

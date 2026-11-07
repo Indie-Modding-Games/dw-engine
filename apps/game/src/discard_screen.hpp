@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/digimon_table.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/discard_menu.hpp>
@@ -48,6 +49,9 @@ class DiscardScreen {
 public:
   explicit DiscardScreen(DiscardScreenDesc desc);
 
+  // The species whose names the descriptions' {species} placeholders show.
+  void setSpecies(const assets::DigimonTable* species) { species_ = species; }
+
   // Whether the menu is open: the field, the game time and the game's menu wait meanwhile.
   [[nodiscard]] bool active() const;
   // Takes the story's DiscardItem screen; false for any other screen.
@@ -71,6 +75,7 @@ private:
   [[nodiscard]] screens::ScreenSettings settings() const;
 
   DiscardScreenDesc desc_;
+  const assets::DigimonTable* species_ = nullptr;
   Phase phase_ = Phase::Closed;
   DiscardListView list_;
   // SHOP_AMOUNT in the confirm box: 0 yes, 1 no.

@@ -33,8 +33,8 @@ struct ItemIconView {
   friend bool operator==(const ItemIconView&, const ItemIconView&) = default;
 };
 
-// The icon of an item, or nothing for one without an icon (ItemEntry::iconPalette) or one a pack
-// adds (no original number, so no cell).
+// The icon of an item (ItemEntry::icon), or nothing for one without an icon: one a pack adds with
+// no `icon` naming an original item's.
 [[nodiscard]] std::optional<ItemIconView> itemIconOf(const assets::ItemEntry& entry);
 
 // A slot of the bag as the item list shows it (inventory.c: renderInventoryTop,
@@ -45,6 +45,7 @@ struct BagSlotView {
   std::string item;
   std::string nameKey;
   std::string descriptionKey;
+  std::string descriptionSpeciesKey; // NameKeys::itemDescriptionSpecies: the {species} it names
   std::int32_t count = 0;
   // Drawn in the other colour: an item that is never used from the bag (item_color 255).
   bool dimmed = false;

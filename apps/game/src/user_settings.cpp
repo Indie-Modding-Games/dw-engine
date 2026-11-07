@@ -41,9 +41,11 @@ constexpr std::string_view TranslatedSignsKey = "translated_signs";
 constexpr std::string_view ModelCharactersKey = "model_characters";
 constexpr std::string_view StatusExtrasKey = "status_extras";
 constexpr std::string_view CanonicalStagesKey = "canonical_stages";
+constexpr std::string_view RareItemsKey = "rare_items";
 constexpr std::string_view WalkControlKey = "walk_control";
 constexpr std::string_view LongNamesKey = "long_names";
 constexpr std::string_view ShopJobBarKey = "shop_job_bar";
+constexpr std::string_view NameSpacingKey = "name_spacing";
 constexpr std::string_view ContinuousMusicKey = "continuous_music";
 constexpr std::string_view NeedBubbleStackKey = "need_bubble_stack";
 constexpr std::string_view WorldMapKey = "world_map";
@@ -131,6 +133,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     if (const core::YamlNode* stages = tree->find(CanonicalStagesKey)) {
       settings.canonicalStages = reader.boolean(*stages);
     }
+    if (const core::YamlNode* rare = tree->find(RareItemsKey)) {
+      settings.rareItems = reader.boolean(*rare);
+    }
     if (const core::YamlNode* walk = tree->find(WalkControlKey)) {
       settings.walkControl = reader.text(*walk);
     }
@@ -139,6 +144,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* bar = tree->find(ShopJobBarKey)) {
       settings.shopJobBar = reader.boolean(*bar);
+    }
+    if (const core::YamlNode* spacing = tree->find(NameSpacingKey)) {
+      settings.nameSpacing = reader.boolean(*spacing);
     }
     if (const core::YamlNode* music = tree->find(ContinuousMusicKey)) {
       settings.continuousMusic = reader.boolean(*music);
@@ -266,6 +274,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
     root.set(std::string{CanonicalStagesKey},
              core::YamlNode::scalar(*settings.canonicalStages ? "true" : "false"));
   }
+  if (settings.rareItems) {
+    root.set(std::string{RareItemsKey},
+             core::YamlNode::scalar(*settings.rareItems ? "true" : "false"));
+  }
   if (settings.walkControl) {
     root.set(std::string{WalkControlKey}, core::YamlNode::scalar(*settings.walkControl));
   }
@@ -276,6 +288,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.shopJobBar) {
     root.set(std::string{ShopJobBarKey},
              core::YamlNode::scalar(*settings.shopJobBar ? "true" : "false"));
+  }
+  if (settings.nameSpacing) {
+    root.set(std::string{NameSpacingKey},
+             core::YamlNode::scalar(*settings.nameSpacing ? "true" : "false"));
   }
   if (settings.continuousMusic) {
     root.set(std::string{ContinuousMusicKey},

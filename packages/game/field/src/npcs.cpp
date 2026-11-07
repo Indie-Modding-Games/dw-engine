@@ -102,6 +102,22 @@ bool squaresOverlap(const GroundSquare& a, const GroundSquare& b, float slack) {
   return std::abs(a.centre.x - b.centre.x) <= reach && std::abs(a.centre.y - b.centre.y) <= reach;
 }
 
+bool leadingEdgesTouch(const GroundSquare& moved, glm::vec2 step, const GroundSquare& other) {
+  // map.c: isRectInRect: an edge touches when it meets the other's square, edges included.
+  const glm::vec2 low = moved.centre - glm::vec2{moved.half};
+  const glm::vec2 high = moved.centre + glm::vec2{moved.half};
+  const glm::vec2 otherLow = other.centre - glm::vec2{other.half};
+  const glm::vec2 otherHigh = other.centre + glm::vec2{other.half};
+  const auto meets = [&](glm::vec2 from, glm::vec2 to) {
+    return from.x <= otherHigh.x && to.x >= otherLow.x && from.y <= otherHigh.y &&
+           to.y >= otherLow.y;
+  };
+  const float x = std::trunc(step.x);
+  const float z = std::trunc(step.y);
+  return (x < 0.0F && meets(low, {low.x, high.y})) || (x > 0.0F && meets({high.x, low.y}, high)) ||
+         (z < 0.0F && meets(low, {high.x, low.y})) || (z > 0.0F && meets({low.x, high.y}, high));
+}
+
 FieldNpcs::FieldNpcs(scene::World& world, NpcRules rules, float frameSeconds)
     : world_{&world}, rules_{std::move(rules)}, frameSeconds_{frameSeconds} {}
 
@@ -214,6 +230,42 @@ std::optional<std::size_t> FieldNpcs::instanceOf(std::int32_t scriptId) const {
   return npc != nullptr ? std::optional{FirstNpcInstance + npc->slot} : std::nullopt;
 }
 
+std::optional<scene::Entity> FieldNpcs::entityAt(std::size_t slot) const {
+  const Npc* npc = findSlot(slot);
+  return npc != nullptr ? std::optional{npc->entity} : std::nullopt;
+}
+
+std::optional<glm::vec3> FieldNpcs::positionAt(std::size_t slot) const {
+  const Npc* npc = findSlot(slot);
+  return npc != nullptr ? std::optional{world_->registry().get<Transform>(npc->entity).position}
+                        : std::nullopt;
+}
+
+bool FieldNpcs::unloadAt(std::size_t slot) {
+  const auto found = std::ranges::find(npcs_, slot, &Npc::slot);
+  if (found == npcs_.end()) {
+    return false;
+  }
+  core::logDebug("[port:npc] scriptUnloadEntity (overworld.c:1142): slot {} (script id {}) off",
+                 slot, found->scriptId);
+  remove(static_cast<std::size_t>(found - npcs_.begin()));
+  return true;
+}
+
+bool FieldNpcs::restartPathAt(std::size_t slot) {
+  const auto found = std::ranges::find(npcs_, slot, &Npc::slot);
+  if (found == npcs_.end()) {
+    return false;
+  }
+  restart(*found);
+  return true;
+}
+
+std::optional<std::size_t> FieldNpcs::slotOf(scene::Entity entity) const {
+  const auto found = std::ranges::find(npcs_, entity, &Npc::entity);
+  return found != npcs_.end() ? std::optional{found->slot} : std::nullopt;
+}
+
 bool FieldNpcs::hold(std::int32_t scriptId, bool held) {
   Npc* npc = find(scriptId);
   if (npc == nullptr) {
@@ -309,6 +361,11 @@ FieldNpcs::Npc* FieldNpcs::find(std::int32_t scriptId) {
 
 const FieldNpcs::Npc* FieldNpcs::find(std::int32_t scriptId) const {
   const auto found = std::ranges::find(npcs_, scriptId, &Npc::scriptId);
+  return found != npcs_.end() ? &*found : nullptr;
+}
+
+const FieldNpcs::Npc* FieldNpcs::findSlot(std::size_t slot) const {
+  const auto found = std::ranges::find(npcs_, slot, &Npc::slot);
   return found != npcs_.end() ? &*found : nullptr;
 }
 

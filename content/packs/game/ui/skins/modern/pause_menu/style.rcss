@@ -217,8 +217,8 @@
 	margin: 0 4dp;
 }
 
-/* The rows: 34dp, the name at the left and the control at the right. Eleven rows (the longest tab) fit 1280x720
-   without scrolling; past that (a larger UI scale, a mod's options) the list scrolls with a visible bar. */
+/* The rows: 34dp, the name at the left and the control at the right. Eleven rows fit 1280x720 without scrolling;
+   past that (the game tab's twelve, a larger UI scale, a mod's options) the list scrolls with a visible bar. */
 #panel:not(.skin-original) #option-list {
 	max-height: 392dp;
 	overflow-y: auto;

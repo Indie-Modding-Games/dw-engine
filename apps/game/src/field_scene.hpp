@@ -571,7 +571,8 @@ public:
   // clip the model lacks.
   [[nodiscard]] double partnerClipFramesLeft() const;
 
-  // The battle holds the partner (no script id) or the map's NPC with this script id: it stands,
+  // The battle holds the partner (no slot) or the map's NPC in this slot (MapDocument::npcs
+  // index; NPCs can share a script id, never a slot): it stands,
   // faces and plays as the figure says, the field's motion (following, wandering, looking at the
   // player) set aside until releaseFighters. False when no such NPC is drawn.
   bool holdFighter(std::optional<std::int32_t> npc, const FighterFigure& figure);
@@ -605,7 +606,7 @@ public:
   // A fighter of a stage of the scene's own that is no NPC of the map (a tournament's rival:
   // std_setup.c: STD_initializeOpponent's entity, placed by std_main.c: STD_placePlayer2): drawn
   // as this species with the NPCs' animations, scenery hidden or not, and held by the battle under
-  // `id` as an NPC is under its script id, until clearStageFighters. False, logged, when its model
+  // `id` as an NPC is under its slot, until clearStageFighters. False, logged, when its model
   // does not load.
   bool addStageFighter(std::int32_t id, std::string_view species, glm::vec2 ground, float yaw);
   void clearStageFighters();

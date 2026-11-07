@@ -105,6 +105,12 @@ entero del que extiende.
 `{cup, money}`, por número): `TournamentAdapter` los suma a los de la sección de torneos, así que un ruleset que
 extiende otro da premios de copa sin copiar su `tournament.yaml` entero.
 
+La sección opcional `rare_items` (esquema `ruleset_rare_items`, en `oculto` y `oculto_mega`) dice dónde pueden salir
+los [objetos raros de evolución](../modulos/game/evolution.md#objetos-raros-de-evolución): `chance_percent` por
+punto, `pool` (ids de objeto, los del paquete con su `game:`) y `maps.<id>` con sus `spots` (`[x, y]` de casilla) y
+un `unless_trigger` opcional. `FieldItemsAdapter` la lee con `readRareItemRules`; un ruleset sin ella no tiene objetos
+raros, y solo se usa con el ajuste «Objetos raros» encendido. Añadir un mapa es añadir una entrada a `maps`.
+
 ### Rarezas: `quirks`
 
 El ruleset `original` reproduce todas las rarezas y bugs del original (decisión del responsable de diseño,

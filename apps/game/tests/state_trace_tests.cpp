@@ -57,13 +57,16 @@ TEST_CASE("a trace line in a fight lists the fighters, the partner first") {
                              .defense = 110,
                              .speed = 100,
                              .brain = 90,
-                             .pose = "attacking"});
+                             .pose = "attacking",
+                             .pending = 35,
+                             .move = 2});
   frame.battle = battle;
   CHECK(traceLine(frame) ==
         R"({"src":"dwe","f":3,"time":0.0500,"in":0,"map":"mayo00","mode":"battle","npcs":[],)"
         R"("battle":{"phase":"fight","frame":7,"rand":0,"fighters":[)"
         R"({"x":272,"z":3129,"yaw":0,"hp":727,"mp":570,"max_hp":800,"max_mp":600,)"
-        R"("off":120,"def":110,"spd":100,"brain":90,"pose":"attacking"}]}})");
+        R"("off":120,"def":110,"spd":100,"brain":90,"pose":"attacking",)"
+        R"("pending":35,"move":2}]}})");
 }
 
 TEST_CASE("place reads who, the original's ground point and its rotation") {

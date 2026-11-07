@@ -180,7 +180,7 @@ std::vector<TextRow> StoryTextbox::rowsOf(const DialogueView& view, const FieldS
     rows.push_back({TextRun{.text = speakerName(view.speaker, scene, species),
                             .color = nameColor(view.speaker)}});
   }
-  appendPageRows(rows, pageText(view.text, species));
+  appendPageRows(rows, pageText(view.text, species), spacesAfterNames(*ui_));
   return rows;
 }
 
@@ -252,10 +252,10 @@ std::string StoryTextbox::pageText(const std::string& key,
   // script_textbox.c: showTextbox writes the names and numbers the page's codes ask for.
   auto fill = [&](std::string_view tag) -> std::optional<std::string> {
     if (tag == TamerTag) {
-      return tamerName();
+      return endedName(tamerName());
     }
     if (tag == PartnerTag) {
-      return partnerName(names);
+      return endedName(partnerName(names));
     }
     if (tag == ShopVariableTag) {
       return std::to_string(story_->shopTally());
@@ -274,7 +274,7 @@ std::string StoryTextbox::pageText(const std::string& key,
         if (!value) {
           return std::nullopt;
         }
-        return localization::tr(screens::mainLabelKey(named.block, *value));
+        return endedName(localization::tr(screens::mainLabelKey(named.block, *value)));
       }
     }
     // Money, merit and the tournaments' numbers come with their systems.

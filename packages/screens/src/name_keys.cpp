@@ -54,6 +54,14 @@ std::string NameKeys::itemDescription(assets::ItemHandle item) const {
   return keyOfEntry(ItemDescriptionsBlock, entry.id, entry.index);
 }
 
+std::string NameKeys::itemDescriptionSpecies(assets::ItemHandle item) const {
+  if (items_ == nullptr) {
+    return {};
+  }
+  const std::optional<std::string>& named = items_->at(item).descriptionSpecies;
+  return named ? species(*named) : std::string{};
+}
+
 std::string NameKeys::move(std::string_view id) const {
   const auto found = moves_ == nullptr ? std::nullopt : moves_->find(id);
   return found ? move(*found) : std::string{};

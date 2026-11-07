@@ -358,6 +358,8 @@ screens::ScreenSettings ItemKeeperScreen::settings() const {
       {.name = "item_keeper.side", .value = side_ == KeeperSide::Kept ? 0.0 : 1.0},
       {.name = "item_keeper.description_key",
        .value = described_ ? names.itemDescription(*described_) : std::string{}},
+      {.name = "item_keeper.description_species_key",
+       .value = described_ ? names.itemDescriptionSpecies(*described_) : std::string{}},
   };
   const auto addList = [&](std::string_view list, const KeeperListView& view,
                            const std::vector<std::optional<KeeperRow>>& rows) {

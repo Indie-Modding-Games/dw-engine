@@ -327,12 +327,6 @@ struct CareChange {
   std::int32_t battles = 0;
 };
 
-// What a lost battle gives back to the partner's current HP and MP, each up to its maximum.
-struct StatRestore {
-  std::int32_t hp = 0;
-  std::int32_t mp = 0;
-};
-
 struct ConsequenceRules {
   CareChange victory;
   CareChange flee;
@@ -342,7 +336,6 @@ struct ConsequenceRules {
   std::int32_t mpTirednessBelowPercent = 0;
   std::int32_t mpTirednessScale = 0;
   std::int32_t defeatLives = 0;
-  StatRestore defeatRestore;
   std::int32_t elapsedMinutes = 0;
 };
 

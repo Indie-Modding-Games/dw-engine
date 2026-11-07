@@ -1,7 +1,10 @@
 #pragma once
 
+#include <dwe/assets/asset_id.hpp>
+#include <dwe/assets/table_composition.hpp>
 #include <dwe/core/error.hpp>
 
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -71,6 +74,7 @@ struct ChipValues {
 struct ItemEffectEntry {
   // The item's id in data/items.
   std::string item;
+  // The item's number in the original; a row a pack adds for a new item has none (-1).
   std::int32_t index = 0;
   ItemHandler handler = ItemHandler::None;
   // HP or MP healed (HEALING_VALUES), for the healing handlers.
@@ -91,11 +95,21 @@ struct ItemEffectTable {
   [[nodiscard]] const ItemEffectEntry* find(std::string_view item) const;
 };
 
+// How the packs' files of the table compose: rows by the item's id, so a pack gives an effect to an
+// item it adds without copying the table (table_composition.hpp). A row is keyed by another table's
+// id: it takes no number of its own.
+inline constexpr std::array<EntrySection, 1> ItemEffectEntrySections{
+    {{.section = "item_effects", .entryKey = "item", .numbered = false, .ownsIds = false}}};
+inline constexpr TableComposition ItemEffectComposition{.sections = ItemEffectEntrySections};
+
 // Parses the text of `data/item_effects`. Unknown and missing keys are errors, and values must fit
 // the handler.
 core::Result<ItemEffectTable> parseItemEffectTable(std::string_view yaml);
 
-// Reads and parses `data/item_effects` from the virtual file system.
+// Reads and parses `data/item_effects` from the virtual file system, composed from every pack that
+// has it.
 core::Result<ItemEffectTable> loadItemEffectTable(const VirtualFileSystem& vfs);
+// The same for the table a ruleset names by its item_effects role.
+core::Result<ItemEffectTable> loadItemEffectTable(const VirtualFileSystem& vfs, const AssetId& id);
 
 } // namespace dwe::assets

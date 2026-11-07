@@ -34,8 +34,10 @@ La primera línea es la cabecera: `{"src":"dwe","meta":true,"hz":60}`. Cada lín
 | `npcs` | Los NPC del mapa: `{x, y, z, yaw, id}`, con `id` el id de script del NPC |
 | `battle` | Solo durante un combate: `phase` (`intro`, `fight`, `end`...), `frame`, `rand` (dónde van las tiradas: con `--original-rolls`, el estado del `rand()` del original) y `fighters` |
 
-Cada combatiente de `fighters` es `{x, z, yaw, hp, mp, max_hp, max_mp, off, def, spd, brain, pose}`. El compañero
-va primero y luego los enemigos, en su orden.
+Cada combatiente de `fighters` es `{x, z, yaw, hp, mp, max_hp, max_mp, off, def, spd, brain, pose, pending, move}`.
+`pending` es el daño recibido que aún no se ha restado de `hp` (el `hpDamageBuffer` del original: un golpe baja
+`hp - pending` de una vez) y `move`, el número del original de la técnica que está usando, o −1. El compañero va
+primero y luego los enemigos, en su orden.
 
 Las posiciones y los giros están en los ejes y unidades del original, las mismas que guarda su memoria:
 

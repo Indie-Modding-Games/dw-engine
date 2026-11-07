@@ -654,3 +654,61 @@ TEST_CASE("a fighter turning away from the combat area's edge does not walk out 
   // At most a walk step and a hit's push of the made-up clips (30 and 40) past it.
   CHECK(worst <= 70);
 }
+
+namespace {
+
+// A made-up flight: every move touches its defender on frame 10 and, when `bystanders`, every other
+// fighter on its way on frame 12.
+class BystanderFlights final : public AttackFlights {
+public:
+  explicit BystanderFlights(bool bystanders) : bystanders_(bystanders) {}
+
+  [[nodiscard]] std::optional<EffectLanding>
+  landing(std::string_view /*move*/, FighterId /*attacker*/, FighterId /*defender*/,
+          std::optional<std::int32_t> /*clip*/) const override {
+    return EffectLanding{
+        .frame = 10, .at = std::nullopt, .touch = std::nullopt, .facingTarget = {}};
+  }
+  [[nodiscard]] std::optional<EffectLanding>
+  landingOn(std::string_view /*move*/, FighterId /*attacker*/, FighterId /*aim*/,
+            FighterId /*bystander*/, std::optional<std::int32_t> /*clip*/) const override {
+    if (!bystanders_) {
+      return std::nullopt;
+    }
+    return EffectLanding{
+        .frame = 12, .at = std::nullopt, .touch = std::nullopt, .facingTarget = {}};
+  }
+
+private:
+  bool bystanders_;
+};
+
+// Whether an enemy's attack lands on another enemy before the battle ends.
+bool enemyHitsEnemy(bool bystanders) {
+  BystanderFlights flights{bystanders};
+  BattleSetup setup = farShots();
+  setup.enemies.push_back(setup.enemies.front());
+  setup.enemies.back().position = {.x = 0, .z = 350};
+  Battle battle = clippedBattle(std::move(setup), 3);
+  battle.setFlights(&flights);
+  while (!battle.finished() && battle.state().frame < 3000) {
+    for (const BattleEvent& event : battle.step()) {
+      if (event.kind == EventKind::AttackLanded && event.fighter != PartnerId &&
+          event.other.has_value() && *event.other != PartnerId) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+} // namespace
+
+TEST_CASE("an effect hits every fighter it touches but its source, the attacker's allies too") {
+  // battle_effect.c: BTL_applyRadiusAttackHit and BTL_applyLineAttackHit (aabb.c:
+  // findAABBHitEntity) check every entity but the effect's source: an enemy's blast aimed at the
+  // partner also hits the other enemies it reaches.
+  CHECK(enemyHitsEnemy(true));
+  // Without an effect that tells, an attack reaches its targets alone.
+  CHECK_FALSE(enemyHitsEnemy(false));
+}

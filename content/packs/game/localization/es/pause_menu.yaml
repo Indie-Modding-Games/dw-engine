@@ -79,6 +79,7 @@ translated_signs: "Carteles traducidos"
 status_extras: "Extras de la ficha"
 # Etapas canónicas: el árbol nombra las etapas como la serie y dibuja una caja Mega (apagada por defecto).
 canonical_stages: "Etapas canónicas"
+rare_items: "Objetos raros"
 walk_control: "Caminar con"
 walk_control.keys: "Teclado/mando"
 walk_control.mouse: "Ratón"
@@ -87,6 +88,9 @@ long_names: "Nombres largos"
 # Barra de reclutamiento: mientras un trabajo o una partida decide si alguien se une a la ciudad (la tienda del cañón,
 # el juego de las piedras), una barra enseña cuánto falta (encendida por defecto).
 shop_job_bar: "Barra de reclutamiento"
+# Espacio tras los nombres: un nombre que inserta un texto lleva un espacio cuando el texto lo pega a la palabra
+# siguiente (encendido por defecto).
+name_spacing: "Espacio tras los nombres"
 # Música continua: un mapa cuya canción ya suena la deja seguir en vez de empezarla otra vez
 # (encendida por defecto).
 continuous_music: "Música continua"
@@ -203,6 +207,7 @@ help.bulk_trades: "El trueque de objetos y los sobres de cartas preguntan cuánt
 help.long_names: "Los nombres admiten hasta doce letras en vez de las seis del original."
 help.evolution_requirements: "El árbol de evolución dice qué pide cada destino y cómo va tu compañero."
 help.canonical_stages: "El árbol nombra las etapas como la serie y añade la caja Mega."
+help.rare_items: "Algunos puntos de objetos pueden esconder un objeto raro de evolución. Requiere el contenido oculto."
 help.status_extras: "La ficha enseña cansancio, errores, combates, horario, vida y contador de evolución."
 help.display_mode: "Juega en una ventana o a pantalla completa."
 help.vsync: "Sincroniza los fotogramas con la pantalla para que la imagen no se corte."
@@ -230,6 +235,7 @@ help.digital_time: "La hora del juego en dígitos (HH:MM) bajo el reloj."
 help.save_notice: "Una figura pequeña y «Guardando» en una esquina mientras el juego guarda."
 help.need_bubble_stack: "La burbuja del compañero enseña hasta cinco necesidades a la vez, primero la que antes le hará daño."
 help.shop_job_bar: "Una barra enseña cuánto falta mientras un trabajo o una partida decide si alguien se une."
+help.name_spacing: "Un nombre dentro de un texto nunca queda pegado a la palabra siguiente."
 help.options_reset: "Devuelve las opciones de esta pestaña a sus valores por defecto. Pregunta antes."
 help.options_back: "Vuelve al menú."
 help.quick_save: "Guarda la partida ahora en su ranura, sin cerrar nada más."

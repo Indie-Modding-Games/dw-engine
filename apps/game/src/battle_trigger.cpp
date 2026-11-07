@@ -28,10 +28,12 @@ game::battle::Point battlePointOf(glm::vec3 world) {
           .z = static_cast<std::int32_t>(std::lround(world.z))};
 }
 
-// Where the NPC stands when the battle starts: its live place on the field, or, when it is not on
-// the map, its record's spawn, which is in the original's axes.
-glm::vec3 fieldPositionOf(const game::field::Field& field, const assets::MapNpc& npc) {
-  if (const std::optional<glm::vec3> live = field.npcs().positionOf(npc.scriptId)) {
+// Where the NPC in a slot stands when the battle starts: its live place on the field, or, when it
+// is not on the map, its record's spawn, which is in the original's axes. By slot: NPCs that share
+// a script id each fight from where they stand (btl.c: the fighters are their entities).
+glm::vec3 fieldPositionOf(const game::field::Field& field, std::size_t slot,
+                          const assets::MapNpc& npc) {
+  if (const std::optional<glm::vec3> live = field.npcs().positionAt(slot)) {
     return *live;
   }
   return assets::toWorldPosition(npc.position);
@@ -104,16 +106,17 @@ core::Result<MapBattle> mapBattleRequest(const game::field::Field& field,
     if (row == nullptr || !canFight(npc, species)) {
       return core::fail(core::formatMessage(messages::NpcNotAFighter, index, field.mapId()));
     }
-    auto enemy = game::battle::enemyFromMap(*row, npc, battlePointOf(fieldPositionOf(field, npc)));
+    auto enemy =
+        game::battle::enemyFromMap(*row, npc, battlePointOf(fieldPositionOf(field, index, npc)));
     if (!enemy) {
       return std::unexpected{enemy.error()};
     }
     core::logDebug(
-        "[port:battle] btl.c: the fighters stand where their entities are: NPC {} ({}) at "
-        "({}, {})",
-        npc.scriptId, enemy->species, enemy->position.x, enemy->position.z);
+        "[port:battle] btl.c: the fighters stand where their entities are: NPC slot {} (script "
+        "id {}, {}) at ({}, {})",
+        index, npc.scriptId, enemy->species, enemy->position.x, enemy->position.z);
     request.enemies.push_back(std::move(*enemy));
-    battle.enemyNpcs.push_back(npc.scriptId);
+    battle.enemyNpcs.push_back(static_cast<std::int32_t>(index));
   }
   return battle;
 }

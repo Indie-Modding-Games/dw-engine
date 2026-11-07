@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "bag_slots.hpp"
+#include "condition_point.hpp"
 #include "field_scene.hpp"
 #include "messages.hpp"
 #include "partner_menu.hpp"
@@ -397,10 +398,13 @@ void BattleScreen::showStatusVisuals() const {
     if (row != nullptr) {
       body.height = row->height;
       body.radius = row->radius;
-      if (row->conditionFx) {
-        const auto& offset = row->conditionFx->offset;
+      // translateConditionFXToEntity: the point of its original type (getOriginalType).
+      const assets::DigimonRow* point = conditionPointRow(*desc_.species, &battle_->rules().effects,
+                                                          state.fighters[id].combatant.species);
+      if (point != nullptr && point->conditionFx) {
+        const auto& offset = point->conditionFx->offset;
         body.conditionFx =
-            std::pair{row->conditionFx->node,
+            std::pair{point->conditionFx->node,
                       glm::vec3{static_cast<float>(offset[0]), static_cast<float>(offset[1]),
                                 static_cast<float>(offset[2])}};
       }

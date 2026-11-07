@@ -4,6 +4,7 @@
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/game/field/field_items.hpp>
+#include <dwe/ruleset/random.hpp>
 #include <dwe/session/session_system.hpp>
 
 #include <glm/vec3.hpp>
@@ -13,6 +14,7 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -24,6 +26,9 @@ class StoryAdapter;
 
 // The ruleset section of the items on the ground and the chests.
 inline constexpr std::string_view FieldItemsSection = "field_items";
+// The ruleset section of the rare items (an engine improvement, off by default: the option
+// rare_items; docs/modulos/game/evolution.md, «Objetos raros de evolución»).
+inline constexpr std::string_view RareItemsSection = "rare_items";
 
 // A sound of the original's: the sound `sound` of slot `slot` (sound.c: playSound).
 struct SoundCue {
@@ -110,6 +115,39 @@ struct FieldItemsRules {
 // Reads the field_items section; errors name the file and line.
 core::Result<FieldItemsRules> readFieldItemRules(const ruleset::Section& section);
 
+// Where the rare items may lie on a map: the cells its head script lays its random items on.
+struct RareItemMap {
+  std::vector<assets::CollisionCell> spots;
+  // The story trigger after which the head lays no items any more; none: it always does.
+  std::optional<std::int32_t> unlessTrigger;
+};
+
+// The rare items: on each spot of a map, as the map loads, `chancePercent` in 100 that one item of
+// the pool lies there instead of what the head script rolls for it.
+struct RareItemRules {
+  std::int32_t chancePercent = 0;
+  // Item ids of data/items.
+  std::vector<std::string> pool;
+  std::map<std::string, RareItemMap, std::less<>> maps;
+};
+
+// Reads the rare_items section; errors name the file and line.
+core::Result<RareItemRules> readRareItemRules(const ruleset::Section& section);
+
+// A rare item the roll laid on a spot.
+struct RareItemDrop {
+  assets::ItemHandle item;
+  assets::CollisionCell cell;
+};
+
+// Rolls the spots of a map: each one, in order, has `chancePercent` in 100 (Random::chance) of one
+// of the `eligible` items, picked evenly; a picked item leaves the pool, so a load lays each item
+// once at most. Nothing eligible draws nothing.
+[[nodiscard]] std::vector<RareItemDrop> rollRareItems(std::span<const assets::CollisionCell> spots,
+                                                      std::int32_t chancePercent,
+                                                      std::vector<assets::ItemHandle> eligible,
+                                                      ruleset::Random& random);
+
 // What taking an item off the ground or out of a chest came to (tamer.c: tamerTickPickupItem,
 // tamerTickTakeChest).
 enum class TakeOutcome : std::uint8_t {
@@ -139,6 +177,18 @@ public:
   [[nodiscard]] game::field::FieldItems& items() { return items_; }
   [[nodiscard]] const game::field::FieldItems& items() const { return items_; }
 
+  // The rare items (the option rare_items, off by default). They need a ruleset with a rare_items
+  // section: without one, turning them on lays nothing.
+  void setRareItems(bool enabled) { rareItemsOn_ = enabled; }
+  [[nodiscard]] bool rareItems() const { return rareItemsOn_; }
+  [[nodiscard]] const std::optional<RareItemRules>& rareItemRules() const { return rareRules_; }
+
+  // A map load (FieldItems::loadMap), before its head script runs. On a new load with the rare
+  // items on, the map's spots roll (rollRareItems) and the hits lie at `height`, the height the
+  // player stands at, as the script's items do. An item lies only while the bag holds none of it
+  // and none lies on the ground: once used it can come again. With them off, nothing is drawn.
+  void loadMap(std::string_view mapId, std::uint32_t load, float height, ruleset::Random& random);
+
   // A chest a script places (map_object.c: spawnChest): taken already if its trigger is set.
   // `mapId` is the map the player is on; false when there is no such item or no room.
   bool spawnChest(std::string_view mapId, std::int32_t originalItem, glm::vec3 position,
@@ -151,7 +201,8 @@ public:
   TakeOutcome takeChest(std::size_t chest);
 
   // An item a script lays on a cell of the map the player is on (item.c: spawnItem), by the
-  // original's item number; false when there is no such item or no room on the ground.
+  // original's item number; false when there is no such item or no room on the ground. A spot
+  // where a rare item lies keeps it: the script's item does not come (true).
   bool spawnItem(std::string_view mapId, std::int32_t originalItem, assets::CollisionCell cell,
                  float height);
 
@@ -166,8 +217,15 @@ private:
 
   InventoryAdapter* inventory_;
   StoryAdapter* story_;
+  // Whether an item may lie as a rare item: the bag holds none and none lies on the ground.
+  [[nodiscard]] bool rareItemEligible(assets::ItemHandle item) const;
+
   game::field::FieldItems items_{{}};
   std::optional<FieldItemsRules> rules_;
+  std::optional<RareItemRules> rareRules_;
+  bool rareItemsOn_ = false;
+  // The spots of this load where a rare item lies.
+  std::vector<assets::CollisionCell> rareCells_;
 };
 
 } // namespace dwe::session

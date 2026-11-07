@@ -31,7 +31,7 @@ public:
   void drive(std::int64_t character, glm::vec3 velocity, game::story::Glide glide) override;
   void animate(std::int64_t character, std::int64_t animation) override;
   [[nodiscard]] float groundSpeed(std::int64_t character, std::int64_t animation) const override;
-  [[nodiscard]] bool wouldTouchCharacter(std::int64_t character, float step) const override;
+  [[nodiscard]] bool wouldTouchCharacter(std::int64_t character) const override;
   void panCamera(glm::vec3 focus, float seconds) override;
   [[nodiscard]] bool cameraPanning() const override;
   void shiftCamera(glm::vec3 by) override;

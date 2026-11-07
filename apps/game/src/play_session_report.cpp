@@ -16,6 +16,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 
 #include "bug_report.hpp"
@@ -190,8 +191,13 @@ BugReportState PlaySession::reportState() const {
       reported.maxMp = fighter.stats.maxMp;
       reported.x = fighter.position.x;
       reported.z = fighter.position.z;
+      // The battle names its NPCs by slot; the report by script id, as the story does.
       if (index > 0 && index - 1 < enemyNpcs.size()) {
-        reported.npc = enemyNpcs[index - 1];
+        const auto& records = scene_->map().npcs;
+        const std::int32_t slot = enemyNpcs[index - 1];
+        if (slot >= 0 && std::cmp_less(slot, records.size())) {
+          reported.npc = records[static_cast<std::size_t>(slot)].scriptId;
+        }
       }
       state.fighters.push_back(std::move(reported));
     }

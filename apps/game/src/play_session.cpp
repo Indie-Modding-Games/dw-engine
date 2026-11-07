@@ -46,6 +46,7 @@
 #include "battle_trigger.hpp"
 #include "bulk_amount.hpp"
 #include "common.hpp"
+#include "condition_point.hpp"
 #include "hd_scenery_setting.hpp"
 #include "messages.hpp"
 #include "partner_events.hpp"
@@ -55,6 +56,7 @@
 #include "player_chart.hpp"
 #include "story_map_edits.hpp"
 #include "story_set_command.hpp"
+#include "story_text_rows.hpp"
 #include "title_screen.hpp"
 
 namespace dwe::app {
@@ -158,13 +160,10 @@ void startBattle(BattleScreen& screen, const assets::DigimonTable* species, cons
     // Without NPC numbers this is the battle touching the first NPC that can fight starts: the
     // others on screen may join it, as in the story's battles with no predefined enemies.
     if (chosen->empty() && !story && !request->enemyNpcs.empty()) {
-      std::vector<std::int32_t> enemies{request->enemyNpcs.front()};
-      std::ranges::copy(screen.joiningNpcs(enemies.front(), false), std::back_inserter(enemies));
-      std::vector<std::size_t> indices;
-      const auto& records = scene.map().npcs;
-      for (const std::int32_t npc : enemies) {
-        const auto found = std::ranges::find(records, npc, &assets::MapNpc::scriptId);
-        indices.push_back(static_cast<std::size_t>(found - records.begin()));
+      const std::int32_t touched = request->enemyNpcs.front();
+      std::vector<std::size_t> indices{static_cast<std::size_t>(touched)};
+      for (const std::int32_t joiner : screen.joiningNpcs(touched, false)) {
+        indices.push_back(static_cast<std::size_t>(joiner));
       }
       request = mapBattleRequest(scene.field(), scene.map(), *species, indices);
       if (!request) {
@@ -519,6 +518,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachShop(game_.systems.shop);
   storyScenes_.attachItemKeeper(game_.systems.itemKeeper);
   itemKeeperScreen_.setSpecies(species_ ? &*species_ : nullptr);
+  discardScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyScenes_.attachGym(&gymScreen_);
   storyScenes_.attachTournament(game_.systems.tournament, &session);
   storyScenes_.attachCurling(&curlingScreen_);
@@ -537,6 +537,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachBirdTransport(&birdScreen_);
   birdScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyProps_.setSpecies(species_ ? &*species_ : nullptr);
+  storyProps_.setEffectRules(game_.systems.battle != nullptr ? game_.systems.battle->effectRules()
+                                                             : nullptr);
   storyProps_.setBossArrival(&bossArrival_);
   bossArrival_.setSound(session.sound());
   storyScenes_.attachCardShop(&cardShopScreen_);
@@ -615,6 +617,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   context_.ui->setSetting(LongNamesSetting, context.userSettings->longNames.value_or(true));
   // The recruit bars (the shop job's and the stones game's), on unless turned off.
   context_.ui->setSetting(RecruitBarSetting, context.userSettings->shopJobBar.value_or(true));
+  // A space after the names the texts insert (story_text_rows.hpp), on unless turned off.
+  context_.ui->setSetting(NameSpacingSetting, context.userSettings->nameSpacing.value_or(true));
   // Continuous music across the maps that share a song, on unless turned off.
   const bool continuousMusic = context.userSettings->continuousMusic.value_or(true);
   if (session::SessionMusic* music = game_.session->music(); music != nullptr) {
@@ -653,6 +657,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   // The canonical stages on the chart, off unless turned on.
   context_.ui->setSetting(CanonicalStagesSetting,
                           context.userSettings->canonicalStages.value_or(false));
+  // The rare items, off unless turned on.
+  const bool rareItems = context.userSettings->rareItems.value_or(false);
+  game_.systems.fieldItems->setRareItems(rareItems);
+  context_.ui->setSetting(RareItemsSetting, rareItems);
   // The save indicator's document goes up before the HUD's, which takes the focus.
   saveIndicator_.emplace(*context_.ui, game_.session->savesWritten(),
                          context.userSettings->saveNotice.value_or(true));
@@ -956,9 +964,12 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent,
     }
     fieldNumbers_->tick(TickSeconds);
     scene_->finishTick();
-    // map.c: changeMap clears the last map's dropped items and chests as the new map loads, before
-    // its head script spawns this map's: none of them is drawn over the new map's fade in.
-    game_.systems.fieldItems->items().enterMap(scene_->field().mapId());
+    // map.c: changeMap clears the last load's dropped items and chests as a map loads, the same
+    // map's too (a script's warp back onto it), before its head script spawns this load's: none of
+    // them is drawn over the new map's fade in, and a warp back does not pile them up.
+    // The rare items (the option rare_items) roll there too, at the height the player stands.
+    game_.systems.fieldItems->loadMap(scene_->field().mapId(), scene_->mapSerial(),
+                                      scene_->field().player().position.y, game_.session->random());
     storyLink_->afterMapChange();
     if (auto notice = storyLink_->takeLockNotice()) {
       showLockNotice(*notice);
@@ -1106,6 +1117,16 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     }
     return true;
   }
+  if (command.name == NameSpacingSetting) {
+    if (const bool* spaced = std::get_if<bool>(&command.value)) {
+      context_.ui->setSetting(NameSpacingSetting, *spaced);
+      context_.userSettings->nameSpacing = *spaced;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    return true;
+  }
   if (command.name == ContinuousMusicSetting) {
     if (const bool* continuous = std::get_if<bool>(&command.value)) {
       if (session::SessionMusic* music = game_.session->music(); music != nullptr) {
@@ -1153,6 +1174,17 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     if (const bool* canonical = std::get_if<bool>(&command.value)) {
       context_.ui->setSetting(CanonicalStagesSetting, *canonical);
       context_.userSettings->canonicalStages = *canonical;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    return true;
+  }
+  if (command.name == RareItemsSetting) {
+    if (const bool* rare = std::get_if<bool>(&command.value)) {
+      game_.systems.fieldItems->setRareItems(*rare);
+      context_.ui->setSetting(RareItemsSetting, *rare);
+      context_.userSettings->rareItems = *rare;
       if (context_.settingsFile) {
         saveUserSettings(*context_.settingsFile, *context_.userSettings);
       }
@@ -1606,12 +1638,12 @@ std::vector<ui::MinimapMarker> PlaySession::minimapItemMarkers() const {
       game_.systems.inventory == nullptr) {
     return {};
   }
-  // The ones the field draws (FieldItemsScreen::show): an item with an icon of the original's.
+  // The ones the field draws (FieldItemsScreen::show): an item with an icon (ItemEntry::icon).
   const assets::ItemTable& table = game_.systems.inventory->items();
   return minimapItems(minimapItemsShown_, game_.systems.fieldItems->items().ground(),
                       [&](assets::ItemHandle item) {
                         const assets::ItemEntry& entry = table.at(item);
-                        return entry.iconPalette.has_value() && entry.originalIndex;
+                        return entry.icon().has_value();
                       });
 }
 
@@ -1653,8 +1685,11 @@ void PlaySession::showButterfly(bool partnerNormal, const session::GameSession& 
     effects.unsetButterfly();
     return;
   }
+  // translateConditionFXToEntity: the point of the species' original type (getOriginalType).
+  const game::battle::EffectRules* originals =
+      game_.systems.battle != nullptr ? game_.systems.battle->effectRules() : nullptr;
   const assets::DigimonRow* row =
-      species_ ? species_->find(session.partnerView().species) : nullptr;
+      species_ ? conditionPointRow(*species_, originals, session.partnerView().species) : nullptr;
   if (row == nullptr || !row->conditionFx) {
     effects.unsetButterfly();
     scene_->setPartnerConditionPoint(std::nullopt);
@@ -1956,6 +1991,8 @@ TraceFrame PlaySession::traceFrame(std::uint64_t tick, const input::InputState& 
           .speed = fighter.stats.speed,
           .brain = fighter.stats.brain,
           .pose = std::string{poseName(fighter.pose)},
+          .pending = fighter.pendingDamage,
+          .move = fighter.attack ? battle->moves().at(fighter.attack->move).index : -1,
       });
     }
     frame.battle = std::move(traced);

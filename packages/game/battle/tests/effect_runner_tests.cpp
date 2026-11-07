@@ -805,26 +805,31 @@ namespace {
 // instance stays at the origin.
 class StandingPair final : public dwe::game::battle::EffectBodies {
 public:
-  StandingPair(std::int32_t defenderX, std::int32_t size) : defenderX_(defenderX), size_(size) {}
+  StandingPair(std::int32_t defenderX, std::int32_t size,
+               std::optional<std::int32_t> bystanderX = std::nullopt)
+      : defenderX_(defenderX), size_(size), bystanderX_(bystanderX) {}
 
   [[nodiscard]] std::optional<dwe::game::battle::EffectBody>
   body(dwe::game::battle::FighterId fighter) const override {
-    if (fighter > 1) {
+    if (fighter > (bystanderX_ ? 2U : 1U)) {
       return std::nullopt;
     }
-    return dwe::game::battle::EffectBody{
-        .species = "hero",
-        .location = {.x = fighter == 0 ? 1000 : defenderX_, .y = 0, .z = 0},
-        .rotationY = 0,
-        .radius = fighter == 0 ? 100 : size_,
-        .height = fighter == 0 ? 100 : size_,
-        .standing = true};
+    const std::int32_t x = fighter == 0 ? 1000 : fighter == 1 ? defenderX_ : *bystanderX_;
+    return dwe::game::battle::EffectBody{.species = "hero",
+                                         .location = {.x = x, .y = 0, .z = 0},
+                                         .rotationY = 0,
+                                         .radius = fighter == 0 ? 100 : size_,
+                                         .height = fighter == 0 ? 100 : size_,
+                                         .standing = true};
   }
   [[nodiscard]] std::optional<dwe::game::battle::EffectMatrix>
   node(dwe::game::battle::FighterId /*fighter*/, std::int32_t /*index*/) const override {
     return std::nullopt;
   }
   [[nodiscard]] std::vector<dwe::game::battle::FighterId> fighters() const override {
+    if (bystanderX_) {
+      return {0, 1, 2};
+    }
     return {0, 1};
   }
   // The battle's ground mirrors the console's z, as the game's does.
@@ -836,6 +841,7 @@ public:
 private:
   std::int32_t defenderX_;
   std::int32_t size_;
+  std::optional<std::int32_t> bystanderX_;
 };
 
 constexpr std::int32_t Wide = 4000;
@@ -967,6 +973,29 @@ TEST_CASE("a scripted flight lands on the frame the move's effect touches the de
   CHECK_FALSE(farFlights.landing("made_up_breath", 0, 1, std::nullopt).has_value());
   CHECK_FALSE(nearFlights.landing("no_effect", 0, 1, std::nullopt).has_value());
   CHECK_FALSE(nearFlights.landing("made_up_breath", 1, 1, std::nullopt).has_value());
+}
+
+TEST_CASE("a scripted flight aimed at one fighter touches a bystander in its reach") {
+  // battle_effect.c: the hit checks go through every fighter but the source (findAABBHitEntity):
+  // the breath aimed at a fighter far off still hits one standing where it bursts.
+  const auto source = [](std::string_view move) -> std::optional<EffectScript> {
+    if (move != "made_up_breath") {
+      return std::nullopt;
+    }
+    return placedBreath();
+  };
+  const StandingPair inReach{FarOff, Wide, 0};
+  const StandingPair offToo{FarOff, Wide, FarOff};
+  const dwe::game::battle::ScriptedFlights flights{source, inReach};
+  const dwe::game::battle::ScriptedFlights missing{source, offToo};
+  const std::optional<dwe::game::battle::EffectLanding> landing =
+      flights.landingOn("made_up_breath", 0, 1, 2, std::nullopt);
+  REQUIRE(landing.has_value());
+  CHECK(landing->frame == 0);
+  CHECK_FALSE(missing.landingOn("made_up_breath", 0, 1, 2, std::nullopt).has_value());
+  // The aimed fighter is no bystander: landing() answers for it.
+  CHECK_FALSE(flights.landingOn("made_up_breath", 0, 1, 1, std::nullopt).has_value());
+  CHECK_FALSE(flights.landing("made_up_breath", 0, 1, std::nullopt).has_value());
 }
 
 TEST_CASE("with the battle's rolls an effect's random load takes one of the battle's draws") {

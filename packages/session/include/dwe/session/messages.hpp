@@ -48,9 +48,9 @@ inline constexpr std::string_view Autosaved = "session: autosaved to {}";
 inline constexpr std::string_view AutosaveNoFreeSlot =
     "session: autosave skipped: the playthrough has no slot and every slot holds another game";
 inline constexpr std::string_view AutosaveWaitsForCare =
-    "session: the autosave waits for the care scene to end";
+    "session: the autosave waits for the care scene or the fainted partner's wake to end";
 inline constexpr std::string_view SaveWaitOver =
-    "session: the care scene held the player {:.0f} s; saves no longer wait for it";
+    "session: saves waited {:.0f} s for a care scene or a wake; they no longer wait for it";
 inline constexpr std::string_view RulesChanged = "session: ruleset revision {} read";
 inline constexpr std::string_view RulesRefused =
     "session: the ruleset's new values cannot be used, the old ones stay: {}";
