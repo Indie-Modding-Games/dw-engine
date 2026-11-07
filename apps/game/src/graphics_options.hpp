@@ -1,9 +1,12 @@
 #pragma once
 
+#include <dwe/render/model_renderer.hpp>
+#include <dwe/render/upscale_cache.hpp>
 #include <dwe/ui/ui.hpp>
 
 #include <cstdint>
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -48,6 +51,20 @@ enum class TextureFilter : std::uint8_t { Nearest, Smooth, Upscaled };
 [[nodiscard]] std::string_view sceneryQualityName(SceneryQuality quality);
 [[nodiscard]] std::optional<TextureFilter> parseTextureFilter(std::string_view name);
 [[nodiscard]] std::string_view textureFilterName(TextureFilter filter);
+
+// The renderer's filter for the option (render::ModelRenderer::TextureFilter).
+[[nodiscard]] render::TextureFilter renderTextureFilter(TextureFilter filter);
+
+struct GraphicsOptions;
+
+// Gives a model renderer the options' texture filter: the field's and every 3D figure of the menus
+// (the status page's partner and player, the save indicator's figure, the medal, the new game's
+// host). It uploads the models' textures again only when the filter changes.
+void applyTextureFilter(render::ModelRenderer& models, const GraphicsOptions& options);
+// The same, and the upscaler's cache for the textures it loads from now on: for a renderer before
+// its first model.
+void prepareModels(render::ModelRenderer& models, const GraphicsOptions& options,
+                   std::shared_ptr<const render::UpscaleCache> cache);
 
 struct GraphicsOptions {
   ShadowMode shadows = ShadowMode::Sun;

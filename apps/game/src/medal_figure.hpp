@@ -33,6 +33,8 @@ public:
   core::Result<void> load(const assets::VirtualFileSystem& files);
   [[nodiscard]] bool loaded() const { return model_.has_value(); }
   [[nodiscard]] render::TextureId texture() const { return texture_; }
+  // Its models, for the graphics options (graphics_options.hpp: applyTextureFilter).
+  [[nodiscard]] render::ModelRenderer& models() { return *models_; }
   // Puts medal `medal`'s face on the model, when it is not the one on it (activateMedalTexture).
   void show(std::int32_t medal);
   // Turns the medal by the frame's time and gives the frame's scene; only while it is shown.

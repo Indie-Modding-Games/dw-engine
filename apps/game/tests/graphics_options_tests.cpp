@@ -154,6 +154,15 @@ TEST_CASE("the sharpness options start on their best, read what was saved and ro
   CHECK_FALSE(withGraphicsFlag({}, "textures=on"));
 }
 
+TEST_CASE("every model renderer takes the texture filter the options name") {
+  // The field's renderer and the menus' figures read the option through the same mapping.
+  CHECK(dwe::app::renderTextureFilter(TextureFilter::Nearest) ==
+        dwe::render::TextureFilter::Nearest);
+  CHECK(dwe::app::renderTextureFilter(TextureFilter::Smooth) == dwe::render::TextureFilter::Smooth);
+  CHECK(dwe::app::renderTextureFilter(TextureFilter::Upscaled) ==
+        dwe::render::TextureFilter::Upscaled);
+}
+
 TEST_CASE("the pause menu's autosave row turns the autosave off and on and saves the choice") {
   const dwe::test_support::TempFolder folder;
   const std::filesystem::path file = folder.path() / "settings.yaml";

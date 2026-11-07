@@ -173,6 +173,44 @@ game_options = {
     help = "pause_menu.help.hd_scenery",
     original = false,
   },
+  -- Scenery quality: with HD scenery on, the background filtered smooth at the window's resolution
+  -- or doubled once per map by the engine's upscaler first (upscaled, the default; cached between
+  -- runs). It has no counterpart in the original, so it is always an improvement.
+  {
+    id = "scenery-quality",
+    setting = "scenery_quality",
+    label = "pause_menu.scenery_quality",
+    values = { "upscaled", "smooth" },
+    texts = "pause_menu.scenery_quality",
+    default = "upscaled",
+    tab = "graphics",
+    help = "pause_menu.help.scenery_quality",
+  },
+  -- Antialiasing: the scene drawn with 4x multisampling, smooth model outlines (on by default; off
+  -- shows the hard edges the original draws).
+  {
+    id = "antialiasing",
+    setting = "antialiasing",
+    label = "pause_menu.antialiasing",
+    default = true,
+    tab = "graphics",
+    help = "pause_menu.help.antialiasing",
+    original = false,
+  },
+  -- Model textures: the models' textures in the field, in battle and in the menus' figures, doubled
+  -- by the upscaler and filtered (upscaled, the default), filtered (smooth), or with the original's
+  -- square texels (nearest).
+  {
+    id = "texture-filter",
+    setting = "texture_filter",
+    label = "pause_menu.texture_filter",
+    values = { "upscaled", "smooth", "nearest" },
+    texts = "pause_menu.texture_filter",
+    default = "upscaled",
+    tab = "graphics",
+    help = "pause_menu.help.texture_filter",
+    original = "nearest",
+  },
   -- 3D characters: the characters some maps draw as flat prerendered pictures (the opening and the
   -- ending, the farm, the elder's house, the market stall) are drawn with their species' models
   -- (on by default; off draws the original's pictures). Only the look changes.

@@ -593,8 +593,28 @@ int runGame(const Options& requested) {
     core::logError("{}", uiRenderer.error().message);
     return EXIT_FAILURE;
   }
+  // The enhanced graphics: the saved choices, with --graphics on top for this run only.
+  GraphicsOptions startGraphics = startGraphicsOptions(userSettings);
+  if (options.graphics) {
+    startGraphics = withGraphicsFlag(startGraphics, *options.graphics).value_or(startGraphics);
+  }
+  // HD scenery's and the models' upscales, kept under the user's data like the settings (not by
+  // autotests).
+  std::optional<std::filesystem::path> upscaleFolder;
+  if (settingsFile) {
+    if (const auto data =
+            platform::userDataFolder(content::UserDataOrganization, content::UserDataApplication)) {
+      upscaleFolder = *data / "cache" / "upscale";
+    }
+  }
+  const auto upscaleCache = std::make_shared<const render::UpscaleCache>(upscaleFolder);
+  // The menus' 3D figures take the models' texture filter and the cache before their first model.
+  const auto prepareFigure = [&](render::ModelRenderer& models) {
+    prepareModels(models, startGraphics, upscaleCache);
+  };
   auto portrait = PartnerPortrait::create(**renderer);
   if (portrait) {
+    prepareFigure((*portrait)->models());
     if (auto bound = (*uiRenderer)->bindTexture("runtime/partner-portrait", (*portrait)->texture());
         !bound) {
       core::logError("Status portrait: {}", bound.error().message);
@@ -614,6 +634,7 @@ int runGame(const Options& requested) {
     core::logWarning("Status portrait: {}", portraitClips.error().message);
   auto playerPortrait = PartnerPortrait::create(**renderer);
   if (playerPortrait) {
+    prepareFigure((*playerPortrait)->models());
     if (auto bound =
             (*uiRenderer)->bindTexture("runtime/player-portrait", (*playerPortrait)->texture());
         !bound) {
@@ -633,6 +654,7 @@ int runGame(const Options& requested) {
   // indicator shows its text alone.
   auto saveFigure = SaveFigure::create(**renderer);
   if (saveFigure) {
+    prepareFigure((*saveFigure)->models());
     if (auto bound =
             (*uiRenderer)->bindTexture(std::string{SaveFigureTexture}, (*saveFigure)->texture());
         !bound) {
@@ -648,6 +670,7 @@ int runGame(const Options& requested) {
   // The medal that turns on the medals page (medal_figure.hpp); without it the page shows none.
   auto medalFigure = MedalFigure::create(**renderer);
   if (medalFigure) {
+    prepareFigure((*medalFigure)->models());
     if (auto bound =
             (*uiRenderer)->bindTexture(std::string{MedalFigureTexture}, (*medalFigure)->texture());
         !bound) {
@@ -724,22 +747,8 @@ int runGame(const Options& requested) {
   // (title.language_first; an addition, as a remaster's); an autotest only when its route asks.
   (*ui)->setSetting("title.language_first", autotest == nullptr || autotest->asksLanguageFirst());
   MinimapChanger minimapChanger{userSettings, settingsFile};
-  // The field's enhanced graphics: the saved choices, with --graphics on top for this run only.
-  GraphicsOptions startGraphics = startGraphicsOptions(userSettings);
-  if (options.graphics) {
-    startGraphics = withGraphicsFlag(startGraphics, *options.graphics).value_or(startGraphics);
-  }
   GraphicsChanger graphics{userSettings, settingsFile, startGraphics};
   graphics.publish(**ui);
-  // HD scenery's upscales, kept under the user's data like the settings (not by autotests).
-  std::optional<std::filesystem::path> upscaleFolder;
-  if (settingsFile) {
-    if (const auto data =
-            platform::userDataFolder(content::UserDataOrganization, content::UserDataApplication)) {
-      upscaleFolder = *data / "cache" / "upscale";
-    }
-  }
-  const auto upscaleCache = std::make_shared<const render::UpscaleCache>(upscaleFolder);
   // The music's and the effects' volumes: the saved steps, applied to the audio from the start.
   VolumeChanger volumes{userSettings, settingsFile, sound};
   volumes.publish(**ui);
@@ -999,8 +1008,10 @@ int runGame(const Options& requested) {
     }
     NewGameSceneRules sceneRules = *newGameScene;
     sceneRules.naming.length = nameLength(sceneRules.naming, userSettings.longNames.value_or(true));
-    auto made =
-        NewGameInterview::create(**renderer, **ui, files, std::move(sceneRules), &openingSound);
+    auto made = NewGameInterview::create(**renderer, **ui, files, std::move(sceneRules),
+                                         &openingSound, [&](render::ModelRenderer& models) {
+                                           prepareModels(models, graphics.options(), upscaleCache);
+                                         });
     if (!made) {
       core::logWarning("new game scene: {}; the game starts without the questions",
                        made.error().message);
@@ -1753,6 +1764,17 @@ int runGame(const Options& requested) {
     const bool showingMovie = movies && movies->playing();
     // Antialiasing (graphics_options.hpp) for every scene: the field, the interview, the figures.
     (*renderer)->setMultisampling(graphics.options().antialiasing);
+    // The models' texture filter for the menus' figures and the new game's host (the field's own
+    // takes it in setGraphics); each uploads its textures again only when the filter changes.
+    for (auto* figure : {portrait ? &(*portrait)->models() : nullptr,
+                         playerPortrait ? &(*playerPortrait)->models() : nullptr,
+                         saveFigure ? &(*saveFigure)->models() : nullptr,
+                         medalFigure ? &(*medalFigure)->models() : nullptr,
+                         interview ? &interview->models() : nullptr}) {
+      if (figure != nullptr) {
+        applyTextureFilter(*figure, graphics.options());
+      }
+    }
     std::span<render::Drawer* const> sceneDrawers;
     // The field's light and colour pass, over the field only (never a movie or the UI).
     render::Drawer* postDrawer = nullptr;

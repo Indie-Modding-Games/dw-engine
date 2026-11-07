@@ -47,16 +47,8 @@ void FieldScene::setGraphics(const GraphicsOptions& options) {
   mapRenderer_->setSceneryQuality(options.sceneryQuality == SceneryQuality::Smooth
                                       ? render::MapRenderer::SceneryQuality::Smooth
                                       : render::MapRenderer::SceneryQuality::Upscaled);
-  render::TextureFilter filter = render::TextureFilter::Upscaled;
-  if (options.textureFilter == TextureFilter::Nearest) {
-    filter = render::TextureFilter::Nearest;
-  } else if (options.textureFilter == TextureFilter::Smooth) {
-    filter = render::TextureFilter::Smooth;
-  }
-  // Each model's textures are uploaded again: only when the filter changes.
-  if (models_->textureFilter() != filter) {
-    models_->setTextureFilter(filter);
-  }
+  // The fighters and the techniques' models of a battle are the field's too.
+  applyTextureFilter(*models_, options);
 }
 
 render::MapLightTable loadMapLights(const assets::VirtualFileSystem& files) {

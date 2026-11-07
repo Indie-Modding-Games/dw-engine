@@ -41,12 +41,11 @@ constexpr std::array<std::string_view, 12> GameRows{
     "free-exploration", "walk-control",  "autosave",   "world-map",
     "minimap-items",    "bulk-trades",   "long-names", "evolution-requirements",
     "canonical-stages", "status-extras", "rare-items", "name-spacing"};
-constexpr std::array<std::string_view, 11> GraphicsRows{"display-mode",     "vsync",
-                                                        "smooth-motion",    "hd-scenery",
-                                                        "model-characters", "enhanced-lighting",
-                                                        "vivid-colors",     "shadows",
-                                                        "chibi-style",      "weather",
-                                                        "seasons"};
+constexpr std::array<std::string_view, 14> GraphicsRows{
+    "display-mode",      "vsync",        "smooth-motion",  "hd-scenery",
+    "scenery-quality",   "antialiasing", "texture-filter", "model-characters",
+    "enhanced-lighting", "vivid-colors", "shadows",        "chibi-style",
+    "weather",           "seasons"};
 constexpr std::array<std::string_view, 4> SoundRows{"music-volume", "effects-volume",
                                                     "continuous-music", "reverb"};
 constexpr std::array<std::string_view, 11> InterfaceRows{
@@ -238,6 +237,12 @@ TEST_CASE("the options page shows each row's value and sends its setting") {
   showTab(screen, "graphics");
   // The chibi style has two values: by default the models from outside the original game.
   CHECK(screen.ui->elementText(Menu, "chibi-style-value") == "Externos");
+  // The sharpness options start on their best: the upscaled scenery and textures, antialiasing on.
+  CHECK(screen.ui->elementText(Menu, "scenery-quality-label") == "Calidad de escenarios");
+  CHECK(screen.ui->elementText(Menu, "scenery-quality-value") == "Ampliada");
+  CHECK(screen.ui->elementText(Menu, "antialiasing-value") == "Sí");
+  CHECK(screen.ui->elementText(Menu, "texture-filter-value") == "Ampliadas");
+  CHECK(screen.ui->elementHasClass(Menu, "texture-filter", "kind-list"));
   showTab(screen, "interface");
   // The language and the original-looking text, as on the title.
   CHECK(screen.ui->elementText(Menu, "language-value") == "Español");

@@ -1212,8 +1212,12 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
   modelos ampliadas al cargar y filtradas con mipmaps; `smooth`, solo filtradas; `nearest`, los texels del original).
   Se guardan en los ajustes del usuario, `--graphics scenery=smooth|upscaled,aa=on|off,textures=nearest|smooth|upscaled`
   los cambia para una partida y la consola y las rutas con `scenery_quality("smooth")`, `antialiasing("off")` y
-  `texture_filter("nearest")`. Aún no tienen fila en la pestaña «Gráficos»: irían «Calidad de escenarios» (Suave /
-  Ampliada), «Suavizado de bordes» (Sí / No) y «Texturas de modelos» (Píxeles / Suaves / Ampliadas).
+  `texture_filter("nearest")`. La pestaña «Gráficos» tiene sus filas, tras «Escenarios en alta definición»:
+  «Calidad de escenarios» (Ampliada / Suave, siempre «Mejora»), «Suavizado de bordes» (Sí / No) y «Texturas de
+  modelos» (Ampliadas / Suaves / Píxeles, «Como el original» en Píxeles). `texture_filter` vale para todos los modelos:
+  el campo y el combate (los luchadores y los modelos de las técnicas son del `ModelRenderer` del campo) y las figuras
+  en 3D de los menús (el compañero y el jugador de la ficha, la figura del guardado, la medalla y la entrevista de la
+  partida nueva), que comparten además la caché del escalador.
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
@@ -1290,7 +1294,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 | Pestaña | Filas |
 |---|---|
 | Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros |
-| Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
+| Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua, Reverberación |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
 
@@ -1373,7 +1377,7 @@ número entero que se ve tal cual). Cada entrada dice además su pestaña (`tab`
 sin él, la opción es siempre una mejora). `default` es también lo que envía «Restablecer valores». Las filas de
 pantalla, aspecto, escala, idioma y letra están en `pause_menu/logic.lua` (`display_entries`), con los mismos campos.
 
-El documento tiene 14 filas (`row-1`…`row-14`) que la página reparte al mostrar cada pestaña: les da el id de la
+El documento tiene 16 filas (`row-1`…`row-16`) que la página reparte al mostrar cada pestaña: les da el id de la
 opción (`<id>`, `<id>-label`, `<id>-value`, `<id>-less`, `<id>-more`, `<id>-bar`) y oculta las que sobran. Una opción
 nueva solo necesita su entrada en esa lista y que el juego atienda su ajuste; ningún documento necesita una fila
 propia. Las rutas y las pruebas eligen pestaña con `show_tab(document, "<pestaña>")` y cambian una opción por su id con

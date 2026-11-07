@@ -25,6 +25,8 @@ public:
   core::Result<void> load(const assets::VirtualFileSystem& files, std::string_view species,
                           const assets::RaiseRow& raise, float scale = 1.0F);
   render::TextureId texture() const { return texture_; }
+  // Its models, for the graphics options (graphics_options.hpp: applyTextureFilter).
+  [[nodiscard]] render::ModelRenderer& models() { return *models_; }
   // Plays this clip (an original animation id) from now on, from its start when it changes; a clip
   // the model lacks plays its idle. A clip that does not repeat starts again once it ends.
   void play(std::uint32_t clip);
