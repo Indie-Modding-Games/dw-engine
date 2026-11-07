@@ -28,6 +28,9 @@ inline constexpr std::string_view SetTextboxMode = "set_textbox_mode";
 inline constexpr std::string_view SetTextboxSize = "set_textbox_size";
 inline constexpr std::string_view SetTextboxOrigin = "set_textbox_origin";
 inline constexpr std::string_view FadeoutHud = "fadeout_hud";
+// Whether a cancel in a choice without an end marker only closes it (Dialogue::cancelClosesChoice);
+// the extracted scripts ask before the code that follows such a choice.
+inline constexpr std::string_view CancelClosesChoice = "cancel_closes_choice";
 } // namespace story_dialogue_api
 
 // The story's textboxes in a game session: the dialogue model, held still with the runner while

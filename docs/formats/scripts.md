@@ -224,7 +224,12 @@ La forma del módulo:
   disparadores) y se quedan como en él.
 - Un `SWITCH` es una cadena `if`/`elseif` sobre `story.var(n)` en la que un valor de más va al último caso; un
   `SET_SELECTION`, `local choice <const> = story.set_selection(clave, n)` con la cancelación (`choice == n`) en el
-  último `else`. Los bucles son `while true do` con `break`; una máquina de estados, un `while true do` que despacha
+  último `else`. Si la elección no tiene su marca de fin (`cancel_marker` en el listado; 23 de las 330 del juego), el
+  cancel del original sigue en el código que va detrás, el de la primera opción, y ese `else` empieza con
+  `if story.cancel_closes_choice() then return ENDED end` (`CancelGuard`): la opción «Cancelar cierra elecciones»
+  ([game](../modulos/apps/game.md#cancelar-cierra-elecciones)) acaba ahí el guion, y sin ella todo sigue como en el
+  original. El lector de Lua quita esa línea y deja la elección sin marca; una elección sin ella se lee con marca (los
+  módulos de antes de la versión 4 se juegan igual). Los bucles son `while true do` con `break`; una máquina de estados, un `while true do` que despacha
   sobre una variable `stateN`.
 - Nunca hay saltos. La salida es la misma byte a byte para el mismo listado, venga del YAML o del desensamblado.
 

@@ -1,6 +1,7 @@
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/script/disassembly.hpp>
 #include <dwe/formats/script/lua_emitter.hpp>
+#include <dwe/formats/script/lua_reader.hpp>
 #include <dwe/formats/script/script_listing.hpp>
 #include <dwe/formats/script/script_yaml.hpp>
 #include <dwe/formats/script/story_api_names.hpp>
@@ -8,6 +9,7 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -328,6 +330,39 @@ TEST_CASE(
   REQUIRE(module.texts.size() == 1);
   CHECK(module.texts[0].text == "Yes\nNo");
   checkRunsLikeTheListing(builder.listing(), module, 16);
+}
+
+TEST_CASE("a selection without its end marker asks before its cancel arm, and reads back so") {
+  Listing builder;
+  builder.section(0x51, 0)
+      .choice(0, "set_selection", 0, {16, 24})
+      .op(8, "play_sound", {{"bank", "1"}, {"sound", "2"}})
+      .op(16, "set_trigger", {{"trigger", "203"}})
+      .op(24, "end_section");
+  ScriptListing listing = builder.listing();
+  REQUIRE_FALSE(listing.instructions[0].cancelMarker);
+  const auto guarded = convert(listing);
+  const std::string guard = std::format("    else\n      {}\n", dwe::formats::script::CancelGuard);
+  CHECK_MESSAGE(guarded.code.contains(guard), guarded.code);
+  // With the improvement off the cancel runs on as in the original.
+  checkRunsLikeTheListing(listing, guarded, 16);
+  const auto read = dwe::formats::script::readLuaModule(guarded.code);
+  REQUIRE_MESSAGE(read.has_value(), errorOf(read));
+  const auto selection = std::ranges::find(read->listing.instructions, "set_selection",
+                                           &dwe::formats::script::ListingInstruction::op);
+  REQUIRE(selection != read->listing.instructions.end());
+  CHECK_FALSE(selection->cancelMarker);
+
+  // With its end marker (cancel_marker in the listing) the cancel arm is the original's own.
+  listing.instructions[0].cancelMarker = true;
+  const auto marked = convert(listing);
+  CHECK_FALSE(marked.code.contains(dwe::formats::script::CancelGuard));
+  const auto readMarked = dwe::formats::script::readLuaModule(marked.code);
+  REQUIRE_MESSAGE(readMarked.has_value(), errorOf(readMarked));
+  const auto markedSelection = std::ranges::find(readMarked->listing.instructions, "set_selection",
+                                                 &dwe::formats::script::ListingInstruction::op);
+  REQUIRE(markedSelection != readMarked->listing.instructions.end());
+  CHECK(markedSelection->cancelMarker);
 }
 
 TEST_CASE("a switch past its last case runs the last arm") {

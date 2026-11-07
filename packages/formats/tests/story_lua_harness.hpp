@@ -392,6 +392,8 @@ function story.items(n) return world.items[n] end
 function story.knows_move(n) return world.moves[n] end
 function story.has_condition(mask) return (world.condition & mask) ~= 0 end
 function story.money() return world.money end
+-- The «cancel closes the choice» improvement is off: the original's cancel.
+function story.cancel_closes_choice() return false end
 function story.set_selection(key, count)
   record("set_selection", key, count)
   picked = picked + 1

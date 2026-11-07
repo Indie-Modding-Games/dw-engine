@@ -677,7 +677,9 @@ toca a los mods es de la fase 5.
   del original.
 - **Versión del emisor:** `StoryLuaHost` compara la cabecera `-- dwx lua N` de un módulo con la versión de los
   módulos (`core/story_modules.hpp`, la misma que usa el emisor, porque el runtime no depende de `formats`). Al crear la
-  partida mira el módulo 0, que el paquete base siempre trae; si no coincide o no la tiene, la partida no arranca, con
+  partida mira el módulo 0, que el paquete base siempre trae; acepta de `OldestReadable` (3) a `Version` (4), porque lo
+  que cambió desde la 3 solo añade llamadas (`story.cancel_closes_choice`) que un módulo viejo no hace y sin ellas se
+  juega como el original; si no está en ese tramo o no la tiene, la partida no arranca, con
   un error que pide volver a extraer («content extracted by an older dwx; run dwx extract again»). Cada módulo que
   carga después pasa la misma comprobación. Sin módulos de historia (los tests sin paquete base) la partida arranca y
   el registro dice que ninguna sección puede correr.
