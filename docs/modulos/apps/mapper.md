@@ -4,7 +4,9 @@ El editor de mapas de `dwe` (`apps/mapper`, programa `dwe-mapper`). Abre la carp
 los mapas y dibuja sobre el fondo del mapa sus colisiones, salidas, personajes, puertas y baño, con los
 [parches](../../formats/mapas.md#parches) de los paquetes ya aplicados. **Edita** la colisión, las salidas, los NPC, las puertas, el baño y los
 eventos de la historia del mapa, y **guarda** lo cambiado como parches en un paquete de mod ([Editar](#editar),
-[Eventos](#eventos), [Guardar](#guardar)). Está hecho en Rust
+[Eventos](#eventos), [Guardar](#guardar)). Enseña el mundo entero como un grafo de mapas con sus comprobaciones
+([Mundo](#mundo)), **añade mapas nuevos** a un paquete ([Nuevo mapa](#nuevo-mapa)) y sirve todo eso sin ventana a
+herramientas externas ([Servidor MCP](#servidor-mcp)). Está hecho en Rust
 con [egui](https://github.com/emilk/egui) (wgpu), aparte de CMake, y no forma parte de los paquetes que se publican.
 
 ## Qué enseña
@@ -138,6 +140,14 @@ guardar se escribe el `data/maps` del destino ([Guardar](#guardar)).
 | Teclas | Qué hace |
 |---|---|
 | Ctrl+S | Guardar (parche) |
+| Ctrl+Q | Salir |
+| M | Cambiar entre el mapa y el mundo |
+| + / − | Acercar / alejar |
+| Inicio | Encuadrar el mapa |
+| N | Siguiente hora del día (fondo) |
+| Ctrl+G | Ir adonde lleva la salida seleccionada |
+| Ctrl+D | Añadir un NPC bajo el cursor |
+| Mayús+arrastrar en el mundo | De un mapa a otro: conectar sus salidas |
 | Ctrl+Z / Ctrl+Y / Ctrl+Mayús+Z | Deshacer / rehacer |
 | Ctrl+F | Buscar un mapa en la lista |
 | RePág / AvPág | Mapa anterior / siguiente de la lista |
@@ -334,6 +344,142 @@ Cómo se guarda un mapa paso a paso: [Editar un mapa con el mapper](../../moddin
 
 La interfaz está en español y todos sus textos viven en `crates/mapper-core/src/text.rs`.
 
+## Mundo
+
+«Mundo» (barra de arriba, tecla M o `--world`) cambia el lienzo por el **grafo del mundo**: cada mapa con datos es un
+nodo con su id y su nombre, del color de su zona (el nombre de zona de `data/maps`), y cada camino entre dos mapas es
+una flecha:
+
+- **Salidas:** una línea con la salida y la de llegada (`mapa:salida → mapa:salida`). Si los dos mapas se llevan el
+  uno al otro, las dos salidas se dibujan como una sola línea con punta en los dos extremos.
+- **Warps de script:** una línea discontinua por cada `warp_to` de una sección de historia que corre en el mapa
+  (`script:sección`), con sus condiciones (`si …`) en la etiqueta y en la ayuda flotante. Salen de los mismos eventos
+  que la capa Eventos ([Eventos](#eventos)).
+- Una salida con destino pero sin celdas de disparo no se dibuja: el original deja así las salidas sin usar.
+
+El grafo se lee con los parches de la pila aplicados y con los cambios sin guardar del mapa abierto, así que una
+salida editada se ve en el mundo antes de guardar. El rótulo de arriba cuenta mapas, salidas y warps de script.
+
+**Colocación.** Las zonas se reparten en una cuadrícula en el orden en que se llega a ellas desde el mapa inicial
+(`field/warps`, `start`), los mapas de cada zona en círculo y después unos pasos de fuerzas fijas (los mapas se
+apartan, los caminos tiran y cada mapa vuelve hacia su zona). No hay nada al azar: el mismo contenido da siempre el
+mismo dibujo. Arrastrar un mapa lo deja donde se suelta y el sitio se guarda en los ajustes, por carpeta de contenido
+(`world_layouts`); «Reordenar» olvida los sitios guardados.
+
+**Vista.** Rueda para acercar y alejar, arrastrar el fondo para desplazar, «Encajar» para verlo todo. El buscador
+encuentra un mapa por id o nombre e Intro lo centra; «Salidas» y «Warps de script» enseñan u ocultan cada tipo de
+camino y «Zonas» oculta zonas enteras. `--world --map <id>` abre el mundo centrado en ese mapa.
+
+**Comprobaciones.** El panel de la derecha lista lo que está mal, y cada mapa lleva un punto del color de lo peor que
+tiene, con su cuenta:
+
+| Gravedad | Qué |
+|---|---|
+| Error | Un camino lleva a un mapa que no existe o a una salida que el mapa de destino no tiene |
+| Aviso | Se llega dentro de una pared (la llegada cae en una celda bloqueada); el mapa no se alcanza desde el mapa inicial por ningún camino; un id que no es ningún mapa junto a un índice del original que sí lleva a uno |
+| Nota | Una salida solo de ida: el mapa de destino no tiene ningún camino de vuelta (apagadas por defecto: el original tiene muchas a propósito) |
+
+Clic en una comprobación centra su mapa. Un mapa cuyo `data` no se puede leer no entra en el grafo; `validate` del
+[servidor MCP](#servidor-mcp) los lista con su error.
+
+**Gestos.** Doble clic en un mapa lo abre en la vista de mapa. Clic en un camino abre su origen: una salida queda
+seleccionada en su mapa y un warp de script abre su sección en el editor de eventos. **Mayús+arrastrar** (o arrastrar
+con el botón derecho) de un mapa a otro abre «Conectar mapas»: se eligen la salida de origen, la de llegada y si se
+conecta también la vuelta. La salida del mapa abierto queda como un cambio sin guardar más (se deshace con Ctrl+Z); la
+de cualquier otro mapa se escribe en ese momento como parche en el paquete destino, igual que al guardar. Una salida
+que no tenía celdas recibe una puerta: dos celdas de suelo libre que la cámara enseña, abajo y hacia el centro del
+fondo, y la llegada tres celdas hacia dentro.
+
+**En vivo.** Con el editor conectado al juego, el mapa en el que está el jugador lleva un anillo y los mapas que ha
+recorrido en la sesión se resaltan con el camino entre ellos.
+
+## Nuevo mapa
+
+«Mapas → Nuevo mapa…» añade un mapa al **paquete destino** (nunca a la base; sin destino no se puede):
+
+| Campo | Qué es |
+|---|---|
+| Id | El nombre del mapa dentro del paquete (`a-z`, `0-9` y `_`); su id completo es `<paquete>:<id>` |
+| Nombre | El texto que el juego enseña al entrar; se escribe en `text/es/<paquete>.yaml` y, hasta que alguien lo traduzca, igual en `text/en` |
+| Zona | El nombre de zona de `data/maps` con el que se agrupa (y el que usa el juego mientras no hay otro) |
+| Plantilla | **Copia de un mapa**: su cámara, su colisión, sus NPC y su entrada de `data/maps`. Las imágenes no se copian: el nuevo mapa las toma de la carpeta del original con `assets_from`, salvo que se marque copiarlas. Sus salidas se vacían salvo que se marque conservarlas. **En blanco**: un suelo libre del tamaño pedido (fichas de 128 px, hasta 35) bajo una cámara cenital, con un fondo PNG del usuario (se copia en el paquete; tiene que medir fichas enteras y tener pocos colores, que el juego lee PNG indexados) o con cuadros grises generados |
+| Conectar con | Una salida de otro mapa y la salida del nuevo mapa por la que se vuelve. Se conectan las dos: la del nuevo mapa en sus datos, la del otro como parche en el paquete destino. Si alguna no tenía celdas recibe una puerta ([Mundo](#mundo)) |
+
+El editor escribe `map/<paquete>/<id>/data.yaml` (y el fondo si lo hay), la entrada sin índice en `data/maps.yaml`
+del paquete y el nombre, vuelve a leer el contenido y abre el mapa nuevo. El formato está en
+[Mapas que añade un paquete](../../formats/mapas.md#mapas-que-añade-un-paquete) y el paso a paso en
+[Añadir un mapa nuevo](../../modding/mapas-nuevos.md).
+
+Un mapa que el paquete destino añadió se guarda siempre entero en su propio `data.yaml`, nunca como parche al lado.
+«Renombrar mapa…» y «Borrar mapa…» solo valen para esos mapas. Renombrar mueve la carpeta, la entrada y el nombre y
+cambia las salidas que llevaban a él en los mapas que el paquete añadió o parchea; se niega si lleva a él un camino
+que el paquete no puede cambiar (la salida de otro mapa o un warp de script). Borrar se niega mientras cualquier camino
+lleve al mapa: primero hay que cambiarlos. Borrar no se deshace.
+
+## Servidor MCP
+
+`dwe-mapper mcp` arranca el editor sin ventana como **servidor MCP para herramientas externas**: habla JSON-RPC 2.0 por
+la entrada y la salida estándar, un mensaje por línea, y ofrece el mismo modelo que la ventana (`mapper-core`, sin
+egui). Cómo conectarlo y ejemplos: [guía del servidor MCP del editor de mapas](../../guides/mapper-mcp.md).
+
+```sh
+dwe-mapper mcp --content <carpeta> [--team-packs <dir>] [--mods <dir>] [--target <paquete>] [--live tcp:<puerto>]
+```
+
+`--target` es el id o la carpeta de un paquete en el que se puede escribir, o una carpeta nueva dentro de una carpeta
+de mods, que se crea como paquete de mod. El binario `dwe-mapper-mcp` hace lo mismo sin el `mcp` delante.
+
+| Herramienta | Qué hace |
+|---|---|
+| `list_maps` | Los mapas con datos: id, zona, si los añadió un paquete y su nombre |
+| `map_info` | Un mapa: zona, fichas, de dónde toma las imágenes, salidas con destino, celdas y llegada, NPC, eventos y un resumen de la colisión |
+| `world_graph` | El mundo: cuentas, zonas y comprobaciones; con `map`, sus caminos de entrada y salida; con `edges`, la lista de caminos |
+| `path` | El camino más corto entre dos mapas por salidas y warps de script |
+| `section` | Una sección de historia: una frase por orden (como el editor de eventos), su Lua y un resumen de su línea de tiempo |
+| `find` | Busca en el código y las frases de la historia y en los ids de mapa |
+| `validate` | Las comprobaciones del mundo, los mapas que no se leen y si el mapa abierto tiene cambios |
+| `set_exit` | Lleva una salida a otra (o a ninguna parte); con `back`, también la vuelta |
+| `set_collision_rect` | Pone un rectángulo de celdas a un valor |
+| `add_npc`, `move_npc` | Añade un NPC (copia del último) o mueve uno |
+| `edit_section` | Cambia el código de una sección |
+| `set_text` | Cambia una frase por su clave |
+| `new_map` | Crea un mapa en el paquete destino, como «Nuevo mapa» |
+| `save`, `discard` | Guarda los cambios del mapa abierto en el paquete destino (parche, o entero con `whole`) o los descarta |
+| `live_connect`, `live_status`, `live_reload` | Conecta con el juego, pregunta su estado o le hace volver a leer el mapa |
+| `probar_evento` | Prueba un evento en el juego, como «Probar» |
+| `play_from` | Corre una sección desde una orden de primer nivel, como «Reproducir desde aquí» |
+
+Cada herramienta declara sus argumentos con un esquema JSON. Las ediciones abren su mapa, pasan por las mismas
+acciones que la ventana (con su deshacer) y quedan sin guardar hasta `save`; con `dry_run: true` responden el parche
+que darían y se deshacen. Se trabaja sobre un mapa cada vez: abrir otro con cambios sin guardar es un error que pide
+guardar o descartar. Un error de una herramienta vuelve como resultado con `isError` y el texto del editor; un
+mensaje mal formado o una herramienta que no existe, como error de JSON-RPC.
+
+## Paridad con el editor anterior
+
+El editor de Qt (`_work/ref-dw-map-editor`, solo de referencia; no se copia su código) trabajaba sobre los ficheros
+del disco. Lo que tenía y dónde está aquí:
+
+| Función del editor de Qt | Aquí |
+|---|---|
+| Árbol de mapas por zona, buscador | Lista de mapas con grupos y filtro |
+| Pintar colisión (pincel, rectángulo, relleno, cuentagotas) | Igual ([Editar](#editar)) |
+| Propiedades de salidas, NPC, puertas y baño | Panel de detalles y selección |
+| «Ubicaciones»: qué salidas llevan a este mapa | En el grafo del mundo (caminos de entrada del mapa) y en `world_graph` del servidor MCP |
+| Editor de diálogos y de scripts | Editor de eventos con frases, condiciones y línea de tiempo |
+| Atajos: salir (Ctrl+Q), acercar y alejar (+/−), encajar (Inicio), hora del día (N), ir a la salida (Ctrl+G), añadir NPC (Ctrl+D) | Añadidos en esta fase con las mismas teclas |
+| Captura sin ventana (`--shot`) | Igual |
+| Servidor MCP (stdio y HTTP) | Solo stdio: es lo que usan los clientes locales; HTTP abriría un puerto sin necesidad |
+| Exportar e importar formatos abiertos (glTF, PNG por capa) | No: el contenido ya es YAML y PNG en los paquetes, legible por cualquier herramienta |
+| Exportar un paquete | No: el editor escribe directamente en el paquete destino |
+| Piezas y contenidos del `.MAP` (sprites, imágenes TIM) | No: son datos del disco que `dwx` ya convierte; el editor trabaja sobre el YAML |
+| Editor de atajos de teclado | No: la lista es fija y se enseña en «Editar → Atajos de teclado» |
+| Autocomprobación integrada | No: la cubren los tests de `cargo test` |
+| Panel de asistente integrado | No: el servidor MCP deja usar cualquier herramienta externa |
+
+Lo que el editor de Qt no tenía: el grafo del mundo, crear mapas nuevos, la conexión en vivo con el juego, la
+prueba de eventos y la línea de tiempo.
+
 ## Cómo está hecho
 
 | Crate | Carpeta | Qué hace |
@@ -343,7 +489,8 @@ La interfaz está en español y todos sus textos viven en `crates/mapper-core/sr
 | `dwe-story` | `packages/rust/dwe-story` | Los scripts de historia en Lua: un lector y escritor del subconjunto que usan los módulos y los parches (`parse`, `write`), los scripts con sus parches aplicados como el juego (`script`), los eventos de un mapa (`events`), las frases en español (`describe`), la edición por líneas y condiciones (`edit`), las condiciones de una sección para probarla (`needs`), la sección como línea de tiempo y el parche de «Reproducir desde aquí» (`sequence`) y el guardado como parche (`save`) |
 | `mapper-core` | `apps/mapper/crates/mapper-core` | El modelo del editor sin ventana: el contenido abierto, el mapa, la vista, las capas, la lista de mapas, lo que se dibuja (`MapOverlay`), las herramientas (`tools`), el historial de deshacer (`edit`) y los destinos de guardado (`targets`). Todo cambio entra por el enum `Action` |
 | `mapper-live` | `apps/mapper/crates/mapper-live` | El cliente del control remoto (líneas JSON por socket Unix o TCP local) y `LiveLink`, el hilo que pregunta al juego, vuelve a conectar y le manda las órdenes del editor sin parar la ventana |
-| `dwe-mapper` | `apps/mapper` | La ventana: paneles, lienzo y línea de órdenes |
+| `mapper-mcp` | `apps/mapper/crates/mapper-mcp` | El servidor MCP sin ventana: las herramientas, sus esquemas y el bucle de JSON-RPC por stdio sobre `mapper-core` |
+| `dwe-mapper` | `apps/mapper` | La ventana: paneles, lienzo, grafo del mundo y línea de órdenes |
 
 `dwe-pack` y `dwe-map` copian las reglas del motor en C++ y no dependen de nada gráfico; las podrá usar cualquier
 herramienta en Rust. Sus tests comprueban esas reglas con packs sintéticos de ids neutros (`area_a`, `pack_a`):
@@ -383,6 +530,16 @@ herramienta en Rust. Sus tests comprueban esas reglas con packs sintéticos de i
   el siguiente, las rutinas, las posiciones en el cursor, las líneas del juego y el parche de «Reproducir desde
   aquí». `mapper-core/tests/timeline.rs` cambia cuadros, arrastra un destino, mueve y añade órdenes con deshacer y
   rehacer, guarda el parche y prepara una reproducción desde una orden.
+- **Mundo y mapas nuevos:** `mapper-core/tests/world.rs` monta un contenido sintético con salidas de ida y vuelta,
+  un warp de script con condición, salidas rotas, una llegada en una pared y una zona a la que no se llega, y
+  comprueba los caminos, cada comprobación, que la colocación es la misma cada vez y respeta los mapas movidos, que
+  los cambios sin guardar se ven en el grafo, y crear un mapa conectado en un mod, renombrarlo y borrarlo (solo los
+  del propio paquete y sin caminos que lleven a él). `dwe-map/src/new_map.rs` prueba los ficheros que se escriben
+  para cada plantilla, la puerta y la llegada de una salida conectada y los fondos PNG. Con `DWE_MAPPER_CONTENT`, el
+  grafo del juego entero clasifica cada salida.
+- **Servidor MCP:** `mapper-mcp/tests/stdio.rs` arranca el binario y le habla por stdio como un cliente: el saludo, la
+  lista de herramientas, lecturas, una edición con `dry_run` que no cambia nada, la misma edición guardada en un mod
+  nuevo y leída de vuelta por otro servidor, los errores, y un mapa nuevo planeado, creado y conectado.
 - **En vivo:** `mapper-live` habla con un juego falso (un servidor en un hilo que responde como
   `remote_control.cpp`): las respuestas, los rechazos, el quinto cliente rechazado, que el enlace vuelve a conectar
   cuando el juego vuelve, que solo pide el registro cuando cambia y que al cerrarse quita la vista previa.
@@ -420,7 +577,10 @@ solo `content/packs` (los packs del equipo). Opciones (`dwe-mapper --help`):
 | `--group-by name\|prefix` y `--filter <texto>` | La lista de mapas |
 | `--live unix:<socket>\|tcp:<puerto>` | Conecta con un `dwe-game` en marcha |
 | `--size <ancho>x<alto>` | El tamaño de la ventana |
+| `--world` | Abre el grafo del mundo; con `--map`, centrado en ese mapa |
 | `--shot <archivo.png>` | Guarda una imagen de la ventana y sale (para la documentación o un X virtual) |
+
+`dwe-mapper mcp …` no abre ventana: es el [servidor MCP](#servidor-mcp) (`dwe-mapper mcp --help`).
 
 ## Compilar y probar
 

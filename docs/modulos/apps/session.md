@@ -135,7 +135,9 @@ historia los `sets_flags` del warp tomado.
   se entrega por etapas y el candado dice qué parte está abierta. Cada etapa nombra los mapas que abre (ids o
   prefijos con `*`) y, solo mientras es la activa, su frontera: `exits` (a qué mapas abiertos llevan las salidas de un
   mapa) y `sections` (qué secciones de casilla lanza un mapa). Las etapas son **acumulativas**: la etapa N abre los
-  mapas de las etapas 1 a N, y `active_stage` es la última entregada. La opción `--story-stage <id>` de `dwe-game`
+  mapas de las etapas 1 a N, y `active_stage` es la última entregada. Un mapa que añade un paquete (id
+  `<paquete>:<nombre>`) queda siempre abierto, y también una salida que lleva a él o sale de él hacia un mapa abierto:
+  el candado solo cierra mapas del original. La opción `--story-stage <id>` de `dwe-game`
   juega otra sin tocar los datos y `--story-stage all` lo abre todo (desarrollo y pruebas); el log dice al leer las
   reglas qué etapa se juega (`[port:story-lock]`). `StoryAdapter::lock()` la responde y la app
   (`StoryFieldLink`) la aplica: una salida pisada, el cambio de mapa de un script o una sección de casilla hacia lo
