@@ -293,6 +293,27 @@ TEST_CASE("a WAV in a pack cooks to Ogg Opus with the same id") {
   CHECK_MESSAGE(opened.has_value(), (opened ? std::string{} : opened.error().message));
 }
 
+TEST_CASE("a cook tells how many of the files it cooks or copies are done") {
+  const TempFolder folder;
+  writeSourcePack(folder);
+  std::vector<std::size_t> done;
+  std::size_t total = 0;
+  const auto summary = cookPack(cookers(), folder.path() / "src", folder.path() / "out",
+                                [&](std::size_t finished, std::size_t of) {
+                                  done.push_back(finished);
+                                  total = of;
+                                });
+  REQUIRE(summary.has_value());
+  CHECK(total == 3);
+  CHECK(done == std::vector<std::size_t>{1, 2, 3});
+  // Nothing is left to do the second time: no file is cooked, so nothing is told.
+  done.clear();
+  REQUIRE(cookPack(cookers(), folder.path() / "src", folder.path() / "out",
+                   [&](std::size_t finished, std::size_t /*of*/) { done.push_back(finished); })
+              .has_value());
+  CHECK(done.empty());
+}
+
 // A small Y4M as dwx extract writes the movies: full-range 4:2:0, a gradient that moves a little
 // each frame.
 std::string movieY4m(std::uint32_t width, std::uint32_t height, std::uint32_t frames) {

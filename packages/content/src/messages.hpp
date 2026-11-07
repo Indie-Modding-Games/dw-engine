@@ -16,6 +16,8 @@ inline constexpr std::string_view ShadowedDevPack =
     "content: dev assets pack {} at {} left out: {} has its id";
 inline constexpr std::string_view UnknownPack = "?";
 inline constexpr std::string_view ModSkipped = "content: left out the mod at {}: {}";
+inline constexpr std::string_view LooseTeamPack =
+    "content: left out {}: a package loads the team's packs only from their .pak archives";
 
 // The dev assets (dev_assets.cpp).
 inline constexpr std::string_view InFile = "{}: {}";

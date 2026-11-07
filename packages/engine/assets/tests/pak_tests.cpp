@@ -4,12 +4,15 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <string>
+#include <utility>
 #include <vector>
 
 using dwe::assets::AssetId;
@@ -434,4 +437,17 @@ TEST_CASE("a version 1 .pak still reads") {
   const auto vfs = VirtualFileSystem::mount(location);
   REQUIRE(vfs.has_value());
   CHECK(vfs->ids().size() == 2);
+}
+
+TEST_CASE("writing a .pak tells how many of its files are written") {
+  const TempFolder folder;
+  writeFixturePack(folder);
+  std::vector<std::pair<std::size_t, std::size_t>> heard;
+  const auto entries =
+      writePak(DiskFileSystem{}, folder.path() / "base", folder.path() / "base.pak",
+               [&](std::size_t written, std::size_t total) { heard.emplace_back(written, total); });
+  REQUIRE(entries.has_value());
+  REQUIRE_FALSE(heard.empty());
+  CHECK(std::ranges::is_sorted(heard));
+  CHECK(heard.back() == std::pair{entries->size(), entries->size()});
 }

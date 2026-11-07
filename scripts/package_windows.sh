@@ -55,10 +55,20 @@ version="$(sed -n 's/^project(dwe VERSION \([0-9.]*\).*/\1/p' "$root/CMakeLists.
 name="dwe-beta-${version:-0}-${commit}-windows-x86_64"
 stage="$stage_root/$name"
 
+# The team's packs are cooked with a dwx that runs here: the Linux package build's (the packs hold
+# nothing read from a disc, so any dwx of this commit cooks them the same).
+host_preset="linux-clang-package"
+host_dwx="$root/build/$host_preset/apps/dwx/dwx"
 if ((build)); then
   PRESET="$preset" "$root/scripts/dev.sh" configure -DDWE_BUILD_COMMIT="$commit"
   PRESET="$preset" "$root/scripts/dev.sh" build --target game dwx_cli
+  PRESET="$host_preset" "$root/scripts/dev.sh" configure -DDWE_BUILD_COMMIT="$commit"
+  PRESET="$host_preset" "$root/scripts/dev.sh" build --target dwx_cli
 fi
+[[ -x "$host_dwx" ]] || {
+  echo "package_windows: $host_dwx is missing; run without --no-build" >&2
+  exit 1
+}
 for program in apps/game/dwe-game.exe apps/dwx/dwx.exe; do
   [[ -f "$build_dir/$program" ]] || {
     echo "package_windows: $build_dir/$program is missing; run without --no-build" >&2
@@ -103,6 +113,9 @@ for program in "$stage"/bin/*.exe; do
     exit 1
   fi
 done
+
+# The team's packs ship cooked into .pak archives, which a package build loads (and only those).
+"$root/scripts/dev.sh" shell -c "scripts/package/cook_team_packs.sh '$stage/packs' '$host_dwx'"
 
 # Nothing read from a disc may ship: the team's packs only, no base pack and no file of the
 # original.

@@ -111,6 +111,9 @@ for program in dwe-game dwx; do
   fi
 done
 
+# The team's packs ship cooked into .pak archives, which a package build loads (and only those).
+"$root/scripts/dev.sh" shell -c "scripts/package/cook_team_packs.sh '$stage/packs' '$stage/bin/dwx'"
+
 # Nothing read from a disc may ship: the team's packs only, no base pack and no file of the
 # original.
 source "$root/scripts/package/no_disc_data.sh"

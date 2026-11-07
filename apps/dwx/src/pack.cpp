@@ -41,7 +41,7 @@ core::Result<void> checkArchive(const std::filesystem::path& folder,
 
 } // namespace
 
-int pack(const std::filesystem::path& folder, const std::filesystem::path& archive) {
+int pack(const std::filesystem::path& folder, const std::filesystem::path& archive, bool progress) {
   // An archive inside the pack would be packed into the next archive as one more file.
   std::error_code error;
   const std::filesystem::path relative =
@@ -52,7 +52,12 @@ int pack(const std::filesystem::path& folder, const std::filesystem::path& archi
                  folder.string());
     return ExitFailed;
   }
-  const auto entries = assets::writePak(assets::DiskFileSystem{}, folder, archive);
+  int lastPercent = -1;
+  const assets::PakProgress print = [&](std::size_t written, std::size_t total) {
+    printProgress(lastPercent, written, total, "pack");
+  };
+  const auto entries = assets::writePak(assets::DiskFileSystem{}, folder, archive,
+                                        progress ? print : assets::PakProgress{});
   if (!entries) {
     std::println(stderr, "dwx: {}", entries.error().message);
     return ExitFailed;

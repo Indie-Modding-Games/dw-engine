@@ -15,6 +15,15 @@ del informe escribe en la salida de error una línea `progress <porcentaje> <pas
 `extract` del 2 al 80 por archivos leídos, `write`, `check`, `upscale`, `done`). Los dos los prueba
 `tests/identify_tests.cpp`.
 
+## Cocinar y empaquetar con avance (`dwx cook --progress`, `dwx pack --progress`)
+
+Con `--progress` al final, `dwx cook` y `dwx pack` escriben en la salida de error una línea
+`progress <porcentaje> <paso>` (`cook` o `pack`) cada vez que cambia el porcentaje de ficheros cocinados o copiados, o escritos en el
+`.pak`. Lo que la caché ya tiene no cuenta, así que un segundo `dwx cook` sin cambios no escribe ninguna. Los scripts
+de empaquetado los usan para los paquetes del equipo (`scripts/package/cook_team_packs.sh`); el lanzador puede
+usarlos cuando cocine el paquete `base`. Lo prueban `tests/cook_tests.cpp` y el test de avance de
+`packages/engine/assets/tests/pak_tests.cpp`.
+
 ## La caché de desarrollo (`dwx extract --cache`)
 
 Con `--dev-assets` y `disc_image`, el juego y `dwe-sim` ejecutan `dwx extract --cache <carpeta> <imagen>` y montan la

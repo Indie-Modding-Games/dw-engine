@@ -10,10 +10,17 @@
 
 # shellcheck source=scripts/hooks/policy.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../hooks/policy.sh"
+# shellcheck source=scripts/package/pak_manifest.sh
+source "$(dirname "${BASH_SOURCE[0]}")/pak_manifest.sh"
 
 package_no_disc_data() {
-  local folder="$1" who="$2" bases hits failed=0
+  local folder="$1" who="$2" bases hits archive failed=0 newline=$'\n'
   bases="$(find "$folder" -name pack.yaml -exec grep -l '^id: base$' {} + || true)"
+  while IFS= read -r -d '' archive; do
+    if package_pak_is_base "$archive"; then
+      bases+="${bases:+$newline}$archive"
+    fi
+  done < <(find "$folder" -name '*.pak' -print0)
   if [[ -n "$bases" ]]; then
     echo "$who: a base pack is in the package; it must never ship:" >&2
     head -5 <<<"$bases" >&2

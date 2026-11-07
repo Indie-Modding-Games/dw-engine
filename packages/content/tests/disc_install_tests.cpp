@@ -1,4 +1,6 @@
 #include <dwe/assets/extractor_version.hpp>
+#include <dwe/assets/file_system.hpp>
+#include <dwe/assets/pak.hpp>
 #include <dwe/content/disc_install.hpp>
 #include <dwe/test_support/temp_folder.hpp>
 
@@ -80,6 +82,37 @@ TEST_CASE("the team's packs are looked for next to a package's executable folder
   CHECK(teamPacksCandidates(std::nullopt).size() == 1);
   // In the build tree no packs/ is next to the program's folder: the source tree's are used.
   CHECK(std::filesystem::is_directory(teamPacksFolder() / "game"));
+#endif
+}
+
+TEST_CASE("the team's packs are read from their .pak archives, and from folders in development") {
+  const TempFolder temp;
+  temp.write("source/game/pack.yaml", "id: game\nversion: 1.0.0\nlayer: base\n");
+  temp.write("source/game/ui/fonts/font.ttf", "font bytes");
+  const std::filesystem::path packs = temp.path() / "packs";
+  std::filesystem::create_directories(packs);
+  CHECK_FALSE(hasTeamGamePack(packs));
+  REQUIRE(dwe::assets::writePak(dwe::assets::DiskFileSystem{}, temp.path() / "source/game",
+                                packs / "game.pak")
+              .has_value());
+  CHECK(hasTeamGamePack(packs));
+  const auto bytes = readTeamPackFile(packs, "game", "ui/fonts/font.ttf");
+  REQUIRE_MESSAGE(bytes.has_value(), (bytes ? std::string{} : bytes.error().message));
+  CHECK(std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()} ==
+        "font bytes");
+  CHECK_FALSE(readTeamPackFile(packs, "game", "ui/fonts/missing.ttf").has_value());
+  // A loose folder beside the archive: a development build reads it, a package only the archive.
+  temp.write("packs/game/pack.yaml", "id: game\nversion: 1.0.0\nlayer: base\n");
+  temp.write("packs/game/ui/fonts/font.ttf", "loose");
+  const auto read = readTeamPackFile(packs, "game", "ui/fonts/font.ttf");
+  REQUIRE(read.has_value());
+  const std::string_view text{reinterpret_cast<const char*>(read->data()), read->size()};
+#ifdef DWE_PACKAGE
+  CHECK(text == "font bytes");
+#else
+  CHECK(text == "loose");
+  std::filesystem::remove(packs / "game.pak");
+  CHECK(hasTeamGamePack(packs));
 #endif
 }
 

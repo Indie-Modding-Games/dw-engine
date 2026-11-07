@@ -18,9 +18,8 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cstring>
 #include <format>
-#include <fstream>
-#include <iterator>
 #include <memory>
 #include <mutex>
 #include <span>
@@ -39,7 +38,9 @@ namespace {
 constexpr std::array<std::string_view, 2> Languages{"en", "es"};
 constexpr std::string_view TextTable = "first_run";
 // The font of the screen, from the game pack, and its sizes at a 720-pixel-high window.
-constexpr std::string_view FontFile = "game/ui/fonts/noto_sans_regular.ttf";
+// The team's game pack and the files of it the screen reads (content::readTeamPackFile).
+constexpr std::string_view GamePack = "game";
+constexpr std::string_view FontFile = "ui/fonts/noto_sans_regular.ttf";
 constexpr float TextSize = 20.0F;
 constexpr float TitleSize = 32.0F;
 constexpr float ReferenceHeight = 720.0F;
@@ -59,8 +60,6 @@ void checkVulkan(VkResult result) {
 // The texts of one language, read from the team's game pack; a missing one shows as its key.
 class Texts {
 public:
-  explicit Texts(std::filesystem::path packs) : packs_{std::move(packs)} {}
-
   void load(std::string_view language) {
     language_ = language;
     texts_ = read(language);
@@ -86,23 +85,26 @@ public:
   }
 
 private:
-  [[nodiscard]] assets::TextTable read(std::string_view language) const {
-    const std::filesystem::path file =
-        packs_ / "game" / assets::EngineTextFolder / language / std::format("{}.yaml", TextTable);
-    std::ifstream stream{file, std::ios::binary};
-    const std::string yaml{std::istreambuf_iterator<char>{stream}, {}};
-    auto table = assets::parseTextTable({.kind = assets::TextTableKind::Engine,
-                                         .language = std::string{language},
-                                         .name = std::string{TextTable}},
-                                        yaml);
+  [[nodiscard]] static assets::TextTable read(std::string_view language) {
+    const std::string file =
+        std::format("{}/{}/{}.yaml", assets::EngineTextFolder, language, TextTable);
+    const auto bytes = content::readTeamPackFile(content::teamPacksFolder(), GamePack, file);
+    if (!bytes) {
+      core::logWarning("first run: {}: {}", file, bytes.error().message);
+      return {};
+    }
+    auto table = assets::parseTextTable(
+        {.kind = assets::TextTableKind::Engine,
+         .language = std::string{language},
+         .name = std::string{TextTable}},
+        std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
     if (!table) {
-      core::logWarning("first run: {}: {}", assets::pathText(file), table.error().message);
+      core::logWarning("first run: {}: {}", file, table.error().message);
       return {};
     }
     return std::move(*table);
   }
 
-  std::filesystem::path packs_;
   std::string language_;
   assets::TextTable texts_;
   assets::TextTable fallback_;
@@ -162,19 +164,22 @@ std::optional<std::string> takePickedFile() {
 // Sets ImGui up on the game's window and device, and takes it down again.
 class ImGuiSession {
 public:
-  static core::Result<std::unique_ptr<ImGuiSession>>
-  create(platform::Window& window, rhi::Device& device, const std::filesystem::path& font) {
+  static core::Result<std::unique_ptr<ImGuiSession>> create(platform::Window& window,
+                                                            rhi::Device& device) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
     io.IniFilename = nullptr;
     ImGui::StyleColorsDark();
-    std::error_code error;
-    if (std::filesystem::is_regular_file(font, error)) {
-      io.Fonts->AddFontFromFileTTF(assets::pathText(font).c_str(), TextSize);
+    // ImGui keeps the font's bytes and frees them with the atlas.
+    if (const auto font = content::readTeamPackFile(content::teamPacksFolder(), GamePack, FontFile);
+        font) {
+      void* bytes = IM_ALLOC(font->size());
+      std::memcpy(bytes, font->data(), font->size());
+      io.Fonts->AddFontFromMemoryTTF(bytes, static_cast<int>(font->size()), TextSize);
     } else {
-      core::logWarning("first run: no font at {}, using ImGui's own", assets::pathText(font));
+      core::logWarning("first run: no font ({}), using ImGui's own", font.error().message);
     }
     if (!ImGui_ImplSDL3_InitForVulkan(window.sdlWindow())) {
       ImGui::DestroyContext();
@@ -314,8 +319,7 @@ runFirstRun(platform::Platform& platform, platform::Window& window, rhi::Device&
             const std::optional<std::string>& language) {
   auto userData =
       platform::userDataFolder(content::UserDataOrganization, content::UserDataApplication);
-  const std::filesystem::path packs = content::teamPacksFolder();
-  auto session = ImGuiSession::create(window, device, packs / FontFile);
+  auto session = ImGuiSession::create(window, device);
   if (!session) {
     return std::unexpected{session.error()};
   }
@@ -324,7 +328,7 @@ runFirstRun(platform::Platform& platform, platform::Window& window, rhi::Device&
   const std::optional<std::filesystem::path> settingsFile = userSettingsFile();
   UserSettings settings = settingsFile ? loadUserSettings(*settingsFile) : UserSettings{};
   const std::vector<std::string> available{Languages.begin(), Languages.end()};
-  Texts tr{packs};
+  Texts tr;
   tr.load(startLanguage(available, language, settings.language, platform::systemLanguage())
               .value_or(std::string{assets::ReferenceLanguage}));
 

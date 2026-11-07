@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <span>
 #include <string>
@@ -101,9 +102,13 @@ private:
 // compressed with zstd at PakZstdLevel, on several threads, and stored as is when that does not
 // make it smaller. The pack's dependencies need not be there. The same files give the same archive,
 // byte for byte. Returns the entries written.
+// How far writePak is: the files written so far and how many there are, called on the writing
+// thread after each batch.
+using PakProgress = std::function<void(std::size_t written, std::size_t total)>;
 core::Result<std::vector<PakEntry>> writePak(const FileSystem& fileSystem,
                                              const std::filesystem::path& packRoot,
-                                             const std::filesystem::path& archive);
+                                             const std::filesystem::path& archive,
+                                             const PakProgress& progress = {});
 
 // The packs that findPacks found, ready to mount.
 struct OpenedPacks {

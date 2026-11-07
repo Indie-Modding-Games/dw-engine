@@ -97,15 +97,23 @@ core::Result<void> extractBasePack(const std::filesystem::path& path,
 int extractDisc(const std::filesystem::path& path, const std::filesystem::path& out, bool force,
                 bool progress = false);
 
-// dwx cook: cooks the pack in one folder into another, in the forms the game loads.
-int cook(const std::filesystem::path& pack, const std::filesystem::path& out);
+// Prints "progress <percent> <step>" on the standard error, flushed, when the percent of done over
+// total changes from last (cook and pack --progress, as extract --progress does for the launcher).
+void printProgress(int& last, std::size_t done, std::size_t total, std::string_view step);
+
+// dwx cook: cooks the pack in one folder into another, in the forms the game loads; with
+// progress, prints "progress <percent> cook" lines as the files are done.
+int cook(const std::filesystem::path& pack, const std::filesystem::path& out,
+         bool progress = false);
 
 // Whether `path` is `folder` or lies under it, comparing them as written: resolve both
 // (weakly_canonical) first. cook and upscale use it to refuse an output folder that holds, or sits
 // in, a pack they read.
 bool isWithin(const std::filesystem::path& path, const std::filesystem::path& folder);
 
-// dwx pack: writes the pack in a folder as a .pak archive and checks that it reads back.
-int pack(const std::filesystem::path& folder, const std::filesystem::path& archive);
+// dwx pack: writes the pack in a folder as a .pak archive and checks that it reads back; with
+// progress, prints "progress <percent> pack" lines as the files are written.
+int pack(const std::filesystem::path& folder, const std::filesystem::path& archive,
+         bool progress = false);
 
 } // namespace dwe::dwx

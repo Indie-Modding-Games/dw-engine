@@ -72,6 +72,12 @@ dependencias que hacen falta para ellos.
   ficheros dan los mismos bytes.
 - **El motor monta `.pak`:** `PakFileSystem` es un `FileSystem` más, y cada paquete se monta con el suyo
   (`PackLocation`), así que una capa puede ser una carpeta o un `.pak`.
+- **Los paquetes del equipo viajan en `.pak`:** los scripts de empaquetado (`scripts/package/cook_team_packs.sh`)
+  cocinan y empaquetan cada carpeta de `packs/` con el `dwx` del propio paquete (`game.pak`, `es-translation.pak`) y
+  borran la carpeta. Una compilación de paquete (`DWE_PACKAGE`) solo monta los paquetes del equipo como `.pak` y avisa
+  si encuentra una carpeta; la pantalla de primer arranque lee su fuente y sus textos del `.pak`
+  (`content::readTeamPackFile`). En desarrollo se siguen montando las carpetas de `content/packs`. `dwx cook` y
+  `dwx pack` aceptan `--progress` para que quien los ejecuta pueda mostrar el avance.
 - **Dependencias** (fijadas por el baseline de vcpkg): `ktx` 4.4.2 (KTX-Software, Apache-2.0, con Basis Universal
   dentro) para escribir y leer KTX2; `zstd` 1.5.7; `opus` 1.6.1 y `libopusenc` 0.3, que trae su propio empaquetador
   Ogg (no hacen falta `libogg` ni `opusfile`). El port de `ktx` exporta solo `KTX::ktx` (no la variante de solo
@@ -110,6 +116,11 @@ compilado en release (`linux-clang-release`). Cada tamaño, con la carpeta `movi
 - **Películas:** `movie/` ocupa 1171,8 MB (4 Y4M, 4 WAV y 4 YAML), tres cuartas partes del paquete. Estas medidas
   son de cuando se copiaba tal cual (en el `.pak`, zstd la dejaba en unos 370 MB); cocinada a AV1 y Opus ocupa
   27,4 MB ([películas](../architecture/peliculas.md#fase-5)).
+- **Paquetes del equipo** (2026-11-07, `dwx` de depuración): `game` pasa de 3,5 MB en carpeta a 0,9 MB en
+  `game.pak` (cocinar 0,66 s, empaquetar 0,41 s; solo las dos banderas PNG pasan a KTX2) y `es-translation` de
+  1,6 MB a 0,16 MB (0,13 s y 0,15 s). `dwe-game --check-content` con el base, `ui_original` y los dos paquetes abre
+  6037 assets sin fallos en 11,7 a 13,2 s con los `.pak` y en 13,5 a 14,4 s con las carpetas: el coste lo pone el
+  base, y leer los paquetes del equipo de un `.pak` no se nota en la primera carga.
 - **Qué pasa tal cual:** 885 PNG indexados se quedan como PNG (14,2 MB): 580 TIM de mapa, 179 texturas de Digimon,
   93 de efectos y 33 texturas sueltas de varias paletas. Se convierten 645: los 513 fondos de mapa, 66 cartas,
   36 texturas sueltas, 28 de efectos, una de Digimon y la fuente. `dwx cook` cuenta 611 copias de PNG porque los
@@ -146,6 +157,11 @@ compilado en release (`linux-clang-release`). Cada tamaño, con la carpeta `movi
   descomprimir, la memoria crece con lo que el frame produce de verdad, no con el tamaño que dice la tabla, así que
   un archivo falsificado no hace reservar 2 GiB.
 - Subir la versión de un cocinero invalida su caché; hay que hacerlo cada vez que cambie su salida.
+- El paquete `base` sigue instalándose como carpeta suelta: que el lanzador lo cocine a `base.pak` (con avance) y
+  borre los ficheros sueltos queda pendiente. Antes hay que leer del `.pak` lo que hoy lee de `content/base` (el fondo
+  del lanzador y los PNG que usa `dwx export-images`, que al cocinar pasan a KTX2), convertir las instalaciones que ya
+  existen, dar a la instalación desde el propio juego el mismo camino y probar un paquete entero instalado desde cero.
+  Hasta entonces el juego empaquetado monta el base de la carpeta.
 
 ## Alternativas descartadas
 
