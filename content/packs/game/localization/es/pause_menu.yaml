@@ -204,6 +204,9 @@ tag.original: "Como el original"
 hint.tabs: "Pestaña"
 hint.change: "Cambiar"
 options_reset: "Restablecer valores"
+# Enemy life bars: a bar over every enemy still standing for the whole fight, cups too (off by default: the original's,
+# a wild enemy's a while after it is hit and none in a cup).
+enemy_hp_bars: "Vida de los rivales"
 # Quick battles: fights at twice the speed, switched with R (the right trigger on a pad) or always (off by default).
 battle_speed: "Combates rápidos"
 battle_speed.normal: "No"
@@ -224,6 +227,7 @@ help.evolution_requirements: "El árbol de evolución dice qué pide cada destin
 help.canonical_stages: "El árbol nombra las etapas como la serie y añade la caja Mega."
 help.rare_items: "Algunos puntos de objetos pueden esconder un objeto raro de evolución. Requiere el contenido oculto."
 help.battle_speed: "Los combates van al doble de velocidad, siempre o con R (gatillo derecho). Mismo resultado."
+help.enemy_hp_bars: "Una barra de vida sobre cada rival todo el combate, también en copas. No: solo un rato tras un golpe."
 help.status_extras: "La ficha enseña cansancio, errores, combates, horario, vida y contador de evolución."
 help.display_mode: "Juega en una ventana o a pantalla completa."
 help.vsync: "Sincroniza los fotogramas con la pantalla para que la imagen no se corte."

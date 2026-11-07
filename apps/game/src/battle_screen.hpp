@@ -117,6 +117,10 @@ public:
   [[nodiscard]] bool active() const {
     return battle_.has_value() || ending_ || exit_.has_value() || closing_;
   }
+  // Enemy life bars (an engine improvement, play_session.hpp: EnemyHpBarsSetting): a bar over every
+  // enemy still standing for the whole fight, cups too. Off, the original's: a wild enemy's bar a
+  // while after it is hit (Battle::hpBarShown) and none in a cup.
+  void setEnemyHpBars(bool always);
   // Whether a fight runs (from its start to its end box), the time a quick battle plays at x2.
   [[nodiscard]] bool fighting() const { return battle_.has_value(); }
   // Whether the player has to react in time: the finisher's charge (command_menu.c:
@@ -261,6 +265,8 @@ private:
   std::optional<game::battle::ScriptedFlights> flights_;
   bool ending_ = false;
   // The field's bag document is open over the battle.
+  // Enemy life bars over every enemy still standing (setEnemyHpBars).
+  bool enemyHpBarsAlways_ = false;
   bool bagShown_ = false;
   // The numbers over the fighters (entity_text.c), and the time they have not run yet once the
   // battle is over: they go on through the victory until the last one goes.

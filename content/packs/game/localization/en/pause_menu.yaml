@@ -201,6 +201,9 @@ tag.original: "As the original"
 hint.tabs: "Tab"
 hint.change: "Change"
 options_reset: "Reset to defaults"
+# Enemy life bars: a bar over every enemy still standing for the whole fight, cups too (off by default: the original's,
+# a wild enemy's a while after it is hit and none in a cup).
+enemy_hp_bars: "Enemy life bars"
 # Quick battles: fights at twice the speed, switched with R (the right trigger on a pad) or always (off by default).
 battle_speed: "Quick battles"
 battle_speed.normal: "Off"
@@ -221,6 +224,7 @@ help.evolution_requirements: "The evolution chart tells what each target needs a
 help.canonical_stages: "The chart names the stages as the series does and adds a Mega box."
 help.rare_items: "Some item spots may hide a rare evolution item. Needs the hidden content."
 help.battle_speed: "Fights run at twice the speed, always or switched with R (right trigger). Same results."
+help.enemy_hp_bars: "A life bar over every enemy for the whole fight, cups too. Off: only a while after a hit."
 help.status_extras: "The status page shows tiredness, mistakes, battles, waking hours, lifetime and evolution."
 help.display_mode: "Play in a window or full screen."
 help.vsync: "Syncs the frames with the display so the picture does not tear."

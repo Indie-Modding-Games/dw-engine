@@ -865,6 +865,8 @@ local function draw_hp_value(document, enemy, hp)
 end
 
 local function draw_hp_bars(document)
+  -- Enemy life bars (a dwe improvement): the modern look draws them too while the option is on.
+  set_class(document, "hp-bars", "always", ui.setting("battle.hp_bars.always") == true)
   local values = {}
   for value in string.gmatch(setting("battle.hp_bars", ""), "%S+") do
     values[#values + 1] = tonumber(value)
@@ -1278,7 +1280,7 @@ function on_setting(document, name)
     draw_intro(document)
   elseif name == "battle.damage.revision" then
     draw_damage(document)
-  elseif name == "battle.hp_bars.revision" then
+  elseif name == "battle.hp_bars.revision" or name == "battle.hp_bars.always" then
     draw_hp_bars(document)
     draw_player_marks(document)
     draw_death_countdown(document)

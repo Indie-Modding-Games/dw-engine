@@ -641,6 +641,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   // Several needs in the partner's bubble at once, on unless turned off.
   context_.ui->setSetting(NeedBubbleStackSetting,
                           context.userSettings->needBubbleStack.value_or(true));
+  // Enemy life bars over every enemy still standing, off unless turned on.
+  const bool enemyHpBars = context.userSettings->enemyHpBars.value_or(false);
+  battleScreen_.setEnemyHpBars(enemyHpBars);
+  context_.ui->setSetting(EnemyHpBarsSetting, enemyHpBars);
   // The weather, on unless turned off: the playthrough's seed from the save, a kind --weather
   // forces, and its sound.
   if (game_.systems.weather != nullptr) {
@@ -1109,6 +1113,17 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       minimapItemsShown_ = *shown;
       context_.ui->setSetting(MinimapItemsSetting, *shown);
       context_.userSettings->minimapItems = *shown;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    return true;
+  }
+  if (command.name == EnemyHpBarsSetting) {
+    if (const bool* shown = std::get_if<bool>(&command.value)) {
+      battleScreen_.setEnemyHpBars(*shown);
+      context_.ui->setSetting(EnemyHpBarsSetting, *shown);
+      context_.userSettings->enemyHpBars = *shown;
       if (context_.settingsFile) {
         saveUserSettings(*context_.settingsFile, *context_.userSettings);
       }

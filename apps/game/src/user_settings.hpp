@@ -134,6 +134,10 @@ struct UserSettings {
   // Quick battles (battle_speed: normal, key, fast; battle_speed.hpp): fights at twice the speed,
   // always or switched with a key; normal, the original's, when not chosen yet.
   std::optional<std::string> battleSpeed = std::nullopt;
+  // Enemy life bars (enemy_hp_bars: true, false; BattleScreen::setEnemyHpBars): a bar over every
+  // enemy still standing in every fight, cups too, instead of the original's (a while after a wild
+  // enemy is hit, never in a cup); off when not chosen yet.
+  std::optional<bool> enemyHpBars = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

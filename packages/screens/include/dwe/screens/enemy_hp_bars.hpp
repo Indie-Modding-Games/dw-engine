@@ -26,6 +26,8 @@ inline constexpr std::string_view MarkersSetting = "battle.markers";
 // shown.
 inline constexpr std::string_view HpBarsRevisionSetting = "battle.hp_bars.revision";
 inline constexpr std::string_view HpBarsSetting = "battle.hp_bars";
+// Whether the bars are the option's (enemyHpBarShown: always), which the modern look draws too.
+inline constexpr std::string_view EnemyHpBarsAlwaysSetting = "battle.hp_bars.always";
 
 // One enemy's HP bar as a battle frame draws it (battle_main.c: BTL_renderEnemyHPBars). The anchor
 // is where the enemy's model node 1 shows on the window; the leader line runs from the bar's
@@ -55,7 +57,24 @@ struct EnemyOnScreen {
   std::int32_t maxHp = 0;
 };
 
-// The bar of an enemy whose bar shows (Battle::hpBarShown). The original's screen is 240 lines
+// What decides whether an enemy's bar shows this frame.
+struct EnemyHpBarCase {
+  // Enemy life bars, an engine improvement (apps/game: EnemyHpBarsSetting).
+  bool always = false;
+  // A cup match (Battle's match clock): std_main.c: STD_initializeCombat adds no bars
+  // (BTL_addEnemyHPBars is only BTL_initializeCombat's).
+  bool match = false;
+  // The original's rule in a wild fight: a while after the enemy is hit (Battle::hpBarShown).
+  bool recentlyHit = false;
+  // The enemy still stands: HP left and not fallen.
+  bool standing = false;
+};
+
+// Whether the enemy's bar shows: with the option, every enemy still standing, cups too; without it
+// the original's, a wild enemy's bar a while after it is hit and none in a cup.
+[[nodiscard]] bool enemyHpBarShown(const EnemyHpBarCase& enemy);
+
+// The bar of an enemy whose bar shows (enemyHpBarShown). The original's screen is 240 lines
 // tall, its middle (0, 0): the bar's top-left corner is 20 pixels right and 26 up from the node,
 // held at x 85 once the node is 66 or more right of the middle and at y -100 once it is more than
 // 74 over it. The fill is HP * 50 / max HP pixels wide and tinted by its width: green when full,

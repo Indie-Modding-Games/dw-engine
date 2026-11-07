@@ -8,6 +8,7 @@
 #include <vector>
 
 using dwe::screens::EnemyHpBar;
+using dwe::screens::enemyHpBarShown;
 using dwe::screens::EnemyOnScreen;
 using dwe::screens::WindowFraction;
 
@@ -93,6 +94,21 @@ TEST_CASE("the HP bar's fill is HP * 50 / max HP pixels, tinted by its width") {
   bar = dwe::screens::enemyHpBarOf(enemyAt(0, 0, 0, 400));
   CHECK(bar.fill == 0);
   CHECK(bar.hp == 0);
+}
+
+TEST_CASE("the original's bars: a wild enemy's a while after a hit, never a cup's") {
+  CHECK(enemyHpBarShown({.always = false, .match = false, .recentlyHit = true, .standing = true}));
+  CHECK_FALSE(
+      enemyHpBarShown({.always = false, .match = false, .recentlyHit = false, .standing = true}));
+  CHECK_FALSE(
+      enemyHpBarShown({.always = false, .match = true, .recentlyHit = true, .standing = true}));
+}
+
+TEST_CASE("enemy life bars: every enemy still standing, cups too, and none once it falls") {
+  CHECK(enemyHpBarShown({.always = true, .match = false, .recentlyHit = false, .standing = true}));
+  CHECK(enemyHpBarShown({.always = true, .match = true, .recentlyHit = false, .standing = true}));
+  CHECK_FALSE(
+      enemyHpBarShown({.always = true, .match = false, .recentlyHit = true, .standing = false}));
 }
 
 TEST_CASE("the HP bars pack nine values each for the battle document") {

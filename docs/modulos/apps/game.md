@@ -1329,7 +1329,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 
 | Pestaña | Filas |
 |---|---|
-| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Espacio tras los nombres |
+| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Espacio tras los nombres |
 | Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua, Reverberación |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
@@ -1650,3 +1650,16 @@ gatillo derecho del mando, pone y quita el doble) y `fast` (empieza al doble y l
 | Momentos de reacción | El jugador carga el golpe final pulsando (`command_menu.c: BTL_tickFinisherChargeup`), revive al compañero caído antes de que acabe la cuenta (`BTL_tickDeathCountdown`) y lanza objetos con la bolsa abierta | Mientras se carga el golpe final, corre la cuenta del compañero caído, la bolsa está abierta o hay un objeto en la mano o en el aire, el combate va a la velocidad del original (`BattleScreen::reacting`), así el doble nunca quita tiempo para reaccionar | «a fight waits at the original's speed while the player has to react» | Mejora (opción) |
 | Indicador | — | Con el doble puesto, el documento de combate muestra «x2» abajo a la derecha (`battle.fast`) | en vivo | Mejora (opción) |
 | Campo, menús y escenas | — | Solo el combate (de su inicio a su caja final, `BattleScreen::fighting`) va al doble; el campo, los menús, las escenas y los torneos fuera del combate van a su velocidad | «fast runs a fight at two ticks a frame, never the field…» | Mejora (opción) |
+
+## Vida de los rivales
+
+Mejora opcional, apagada por defecto: el ajuste `enemy_hp_bars` (fila «Vida de los rivales», «Enemy life bars» en
+inglés, de la pestaña Juego de las opciones del menú de pausa y de las del título, guardado en los ajustes del usuario)
+llega desde `PlaySession` (`EnemyHpBarsSetting`) a `BattleScreen::setEnemyHpBars`; la regla es
+`screens::enemyHpBarShown` (`enemy_hp_bars.hpp`).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Barras de los rivales en un combate salvaje | `battle_main.c: BTL_addEnemyHPBars` (solo la llama `BTL_initializeCombat`) añade el objeto que dibuja, cada fotograma, la barra de cada rival un rato después de recibir daño (`BTL_renderEnemyHPBars`, 21 fotogramas de `enemy_hp_bar_frames`) | Igual sin la opción (`Battle::hpBarShown`) | «the original's bars: a wild enemy's a while after a hit, never a cup's» (`enemy_hp_bars_tests.cpp`) | Igual |
+| Barras en un combate de copa | `std_main.c: STD_initializeCombat` no añade esas barras: la copa solo tiene sus paneles fijos de los dos luchadores | Sin la opción, ninguna barra sobre el rival en la copa (antes dwe la dibujaba tras cada golpe, como en un combate salvaje) | la misma prueba | Igual |
+| Con la opción | — | Una barra sobre cada rival que sigue en pie (con vida y sin caer) todo el combate, también en las copas; con el aspecto original es la barra del original con su línea, con el moderno una barra compacta con la vida en cifras (`#hp-bars.always`, ajuste `battle.hp_bars.always`) | «enemy life bars: every enemy still standing, cups too, and none once it falls» | Mejora (opción) |

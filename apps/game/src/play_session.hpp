@@ -109,6 +109,9 @@ inline constexpr std::string_view LongNamesSetting = "long_names";
 inline constexpr std::string_view ContinuousMusicSetting = "continuous_music";
 // The need bubble with several needs at once (an engine improvement, on unless turned off).
 inline constexpr std::string_view NeedBubbleStackSetting = "need_bubble_stack";
+// Enemy life bars over every enemy still standing, cups too (an engine improvement, off unless
+// turned on; BattleScreen::setEnemyHpBars).
+inline constexpr std::string_view EnemyHpBarsSetting = "enemy_hp_bars";
 // The weather (an engine improvement, on unless turned off): a UI setting and the options'
 // command with the same name (true or false), on the title screen and in the game.
 inline constexpr std::string_view WeatherSetting = "weather";

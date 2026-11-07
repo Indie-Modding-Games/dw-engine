@@ -529,6 +529,14 @@ void BattleScreen::publishNumbers() const {
 // BTL_renderEnemyHPBars draws, every frame, the bar of each enemy whose bar shows
 // (Battle::hpBarShown) beside where its model's node 1 projects (getEntityScreenPos(entity, 1)), so
 // the bar follows the enemy. BTL_deinitializeCombat takes them all away (BTL_removeEnemyHPBars).
+void BattleScreen::setEnemyHpBars(bool always) {
+  enemyHpBarsAlways_ = always;
+  desc_.ui->setSetting(screens::EnemyHpBarsAlwaysSetting, always);
+  if (battle_) {
+    publishHpBars();
+  }
+}
+
 bool BattleScreen::reacting() const {
   if (!battle_) {
     return false;
@@ -544,8 +552,13 @@ void BattleScreen::publishHpBars() {
     const double aspect = static_cast<double>(camera->viewportSize().x) /
                           static_cast<double>(camera->viewportSize().y);
     const auto& fighters = battle_->state().fighters;
+    const bool match = battle_->state().matchClock.has_value();
     for (game::battle::FighterId id = 1; id < fighters.size() && id <= enemyNpcs_.size(); ++id) {
-      if (!battle_->hpBarShown(id)) {
+      const game::battle::Fighter& enemy = fighters[id];
+      if (!screens::enemyHpBarShown({.always = enemyHpBarsAlways_,
+                                     .match = match,
+                                     .recentlyHit = battle_->hpBarShown(id),
+                                     .standing = enemy.hp > 0 && !enemy.fainted})) {
         continue;
       }
       const std::optional<glm::vec2> node =
@@ -553,12 +566,11 @@ void BattleScreen::publishHpBars() {
       if (!node) {
         continue;
       }
-      const game::battle::Fighter& fighter = fighters[id];
       bars.push_back(screens::enemyHpBarOf({.enemy = id,
                                             .node = {.x = node->x, .y = node->y},
                                             .aspect = aspect,
-                                            .hp = fighter.hp,
-                                            .maxHp = fighter.stats.maxHp}));
+                                            .hp = enemy.hp,
+                                            .maxHp = enemy.stats.maxHp}));
     }
   }
   // std_main.c: STD_renderPlayerMarker: each mark over node 1 of its fighter, moved right by

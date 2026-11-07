@@ -163,6 +163,17 @@ game_options = {
     help = "pause_menu.help.battle_speed",
     original = "normal",
   },
+  -- Enemy life bars: a bar over every enemy still standing for the whole fight, cups too (off by
+  -- default: the original's, a wild enemy's a while after it is hit and none in a cup).
+  {
+    id = "enemy-hp-bars",
+    setting = "enemy_hp_bars",
+    label = "pause_menu.enemy_hp_bars",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.enemy_hp_bars",
+    original = false,
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).
