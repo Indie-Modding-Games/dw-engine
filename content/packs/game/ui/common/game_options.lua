@@ -186,6 +186,74 @@ game_options = {
     help = "pause_menu.help.gym_sessions",
     original = 1,
   },
+  -- Battles without the wait: a fight in the field starts the moment it triggers, without the
+  -- original's lead-in (off by default: the original's lead-in plays).
+  {
+    id = "quick-battle-start",
+    setting = "quick_battle_start",
+    label = "pause_menu.quick_battle_start",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.quick_battle_start",
+    original = false,
+  },
+  -- Difficulty: normal is the original's; easy takes the ruleset's difficulty changes
+  -- (rules/<id>/difficulty.yaml), so a mod tunes it.
+  {
+    id = "difficulty",
+    setting = "difficulty",
+    label = "pause_menu.difficulty",
+    values = { "normal", "easy" },
+    texts = "pause_menu.difficulty",
+    default = "normal",
+    tab = "game",
+    help = "pause_menu.help.difficulty",
+    original = "normal",
+  },
+  -- Skip evolutions: confirm or cancel ends an evolution's scene at once, with the same result
+  -- (off by default: the original's scene plays to the end).
+  {
+    id = "skip-evolution",
+    setting = "skip_evolution",
+    label = "pause_menu.skip_evolution",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.skip_evolution",
+    original = false,
+  },
+  -- Cancel closes choices: a cancel in a choice the original lets run on into its first option's
+  -- code only closes it (off by default: the original's cancel).
+  {
+    id = "choice-cancel-closes",
+    setting = "choice_cancel_closes",
+    label = "pause_menu.choice_cancel_closes",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.choice_cancel_closes",
+    original = false,
+  },
+  -- Fair sickness chance: a sickness chance below zero is none, not a sure one (off by
+  -- default: the original's quirk).
+  {
+    id = "fair-sickness-chance",
+    setting = "fair_sickness_chance",
+    label = "pause_menu.fair_sickness_chance",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.fair_sickness_chance",
+    original = false,
+  },
+  -- Fair evolution averages: each evolution candidate is weighed by its own average, not one
+  -- carried over from the candidate before it (off by default: the original's quirk).
+  {
+    id = "fair-evolution-average",
+    setting = "fair_evolution_average",
+    label = "pause_menu.fair_evolution_average",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.fair_evolution_average",
+    original = false,
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).

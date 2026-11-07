@@ -67,6 +67,12 @@ constexpr std::string_view ReverbKey = "reverb";
 constexpr std::string_view BattleSpeedKey = "battle_speed";
 constexpr std::string_view EnemyHpBarsKey = "enemy_hp_bars";
 constexpr std::string_view GymSessionsKey = "gym_sessions";
+constexpr std::string_view QuickBattleStartKey = "quick_battle_start";
+constexpr std::string_view DifficultyKey = "difficulty";
+constexpr std::string_view SkipEvolutionKey = "skip_evolution";
+constexpr std::string_view ChoiceCancelClosesKey = "choice_cancel_closes";
+constexpr std::string_view FairSicknessChanceKey = "fair_sickness_chance";
+constexpr std::string_view FairEvolutionAverageKey = "fair_evolution_average";
 
 } // namespace
 
@@ -214,6 +220,19 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* sessions = tree->find(GymSessionsKey)) {
       settings.gymSessions = reader.integer<int>(*sessions);
+    }
+    for (const auto& [key, flag] :
+         {std::pair{QuickBattleStartKey, &UserSettings::quickBattleStart},
+          std::pair{SkipEvolutionKey, &UserSettings::skipEvolution},
+          std::pair{ChoiceCancelClosesKey, &UserSettings::choiceCancelCloses},
+          std::pair{FairSicknessChanceKey, &UserSettings::fairSicknessChance},
+          std::pair{FairEvolutionAverageKey, &UserSettings::fairEvolutionAverage}}) {
+      if (const core::YamlNode* value = tree->find(key)) {
+        settings.*flag = reader.boolean(*value);
+      }
+    }
+    if (const core::YamlNode* difficulty = tree->find(DifficultyKey)) {
+      settings.difficulty = reader.text(*difficulty);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -384,6 +403,19 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.gymSessions) {
     root.set(std::string{GymSessionsKey},
              core::YamlNode::scalar(std::to_string(*settings.gymSessions)));
+  }
+  for (const auto& [key, flag] :
+       {std::pair{QuickBattleStartKey, &UserSettings::quickBattleStart},
+        std::pair{SkipEvolutionKey, &UserSettings::skipEvolution},
+        std::pair{ChoiceCancelClosesKey, &UserSettings::choiceCancelCloses},
+        std::pair{FairSicknessChanceKey, &UserSettings::fairSicknessChance},
+        std::pair{FairEvolutionAverageKey, &UserSettings::fairEvolutionAverage}}) {
+    if (const std::optional<bool>& value = settings.*flag; value) {
+      root.set(std::string{key}, core::YamlNode::scalar(*value ? "true" : "false"));
+    }
+  }
+  if (settings.difficulty) {
+    root.set(std::string{DifficultyKey}, core::YamlNode::scalar(*settings.difficulty));
   }
   return core::emitYaml(root);
 }

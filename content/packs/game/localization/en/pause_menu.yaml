@@ -211,6 +211,19 @@ battle_speed: "Quick battles"
 battle_speed.normal: "Off"
 battle_speed.key: "With R"
 battle_speed.fast: "Always"
+# Battles without the wait: a field fight starts the moment it triggers (off by default: the original's lead-in).
+quick_battle_start: "Battles without wait"
+# Difficulty: normal is the original's; easy eases fights, training and care as the ruleset says.
+difficulty: "Difficulty"
+difficulty.normal: "Normal"
+difficulty.easy: "Easy"
+# Skip evolutions: confirm or cancel ends an evolution's scene at once (off by default).
+skip_evolution: "Skip evolutions"
+# Cancel closes choices: a cancel in a choice only closes it (off by default: the original's cancel).
+choice_cancel_closes: "Cancel closes choices"
+# Fair sickness chance and fair evolution averages: the original's quirks turned off (off by default).
+fair_sickness_chance: "Fair sickness chance"
+fair_evolution_average: "Fair evolution average"
 # {tab} is the tab's name.
 reset_question: "Reset the {tab} options?"
 reset_note: "Window mode, look, language and font stay."
@@ -228,6 +241,12 @@ help.rare_items: "Some item spots may hide a rare evolution item. Needs the hidd
 help.battle_speed: "Fights run at twice the speed, always or switched with R (right trigger). Same results."
 help.enemy_hp_bars: "A life bar over every enemy for the whole fight, cups too. Off: only a while after a hit."
 help.gym_sessions: "A gym course trains this many sessions in a row. Stops if you cancel or your partner needs something."
+help.quick_battle_start: "A fight in the field starts as soon as it triggers, without the lead-in. Cups keep theirs."
+help.difficulty: "Normal is the original. Easy: your partner hits harder, takes less, trains more, has longer to eat and gets sick less."
+help.skip_evolution: "Confirm or cancel ends an evolution's scene at once. The new form is the same."
+help.choice_cancel_closes: "Cancelling a choice only closes it. In the original some choices run their first answer."
+help.fair_sickness_chance: "A sickness chance below zero means no sickness. In the original it always makes your partner sick."
+help.fair_evolution_average: "Each evolution candidate is weighed by its own stats, not by sums left over from the one before."
 help.status_extras: "The status page shows tiredness, mistakes, battles, waking hours, lifetime and evolution."
 help.display_mode: "Play in a window or full screen."
 help.vsync: "Syncs the frames with the display so the picture does not tear."

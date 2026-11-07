@@ -12,9 +12,10 @@ namespace {
 
 // The settings' names are those of their owners' constants (play_session.hpp, free_exploration.hpp,
 // world_map.hpp, bulk_amount.hpp, chart_requirements.hpp, sprite_characters.hpp, recruit_bar.hpp,
-// minimap_enemies.hpp, save_indicator.hpp) and of ui/common/game_options.lua; the other rows of the
-// page (walk control, autosave, the graphics, the volumes, weather, seasons, the minimap, the
-// display, skin, language and font) are the game's own handlers at the title too (game.cpp).
+// minimap_enemies.hpp, save_indicator.hpp, play_options.hpp) and of ui/common/game_options.lua; the
+// other rows of the page (walk control, autosave, the graphics, the volumes, weather, seasons, the
+// minimap, the display, skin, language and font) are the game's own handlers at the title too
+// (game.cpp).
 constexpr std::array Toggles{
     // Game tab.
     GameToggle{
@@ -30,6 +31,20 @@ constexpr std::array Toggles{
     GameToggle{.setting = "status_extras", .saved = &UserSettings::statusExtras, .fallback = true},
     GameToggle{.setting = "rare_items", .saved = &UserSettings::rareItems, .fallback = false},
     GameToggle{.setting = "enemy_hp_bars", .saved = &UserSettings::enemyHpBars, .fallback = false},
+    GameToggle{.setting = "quick_battle_start",
+               .saved = &UserSettings::quickBattleStart,
+               .fallback = false},
+    GameToggle{
+        .setting = "skip_evolution", .saved = &UserSettings::skipEvolution, .fallback = false},
+    GameToggle{.setting = "choice_cancel_closes",
+               .saved = &UserSettings::choiceCancelCloses,
+               .fallback = false},
+    GameToggle{.setting = "fair_sickness_chance",
+               .saved = &UserSettings::fairSicknessChance,
+               .fallback = false},
+    GameToggle{.setting = "fair_evolution_average",
+               .saved = &UserSettings::fairEvolutionAverage,
+               .fallback = false},
     // Graphics tab.
     GameToggle{.setting = "smooth_motion", .saved = &UserSettings::smoothMotion, .fallback = true},
     GameToggle{

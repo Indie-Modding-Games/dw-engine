@@ -647,6 +647,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   context_.ui->setSetting(EnemyHpBarsSetting, enemyHpBars);
   // Batch training: one session a course, the original's, unless more were chosen.
   gymScreen_.setSessions(context.userSettings->gymSessions.value_or(GymSessionsMin));
+  // The play options, all off and the difficulty normal unless chosen.
+  applyPlayOptions();
   // The weather, on unless turned off: the playthrough's seed from the save, a kind --weather
   // forces, and its sound.
   if (game_.systems.weather != nullptr) {
@@ -757,6 +759,12 @@ bool PlaySession::holdsMenu() const {
 }
 
 void PlaySession::pressStory(const input::InputState& input) {
+  // Skip the evolution (an engine improvement): confirm or cancel ends its scene.
+  if (skipEvolution_ && evolutionScene_.active() &&
+      (input.wasPressed("confirm") || input.wasPressed("cancel"))) {
+    evolutionScene_.skip();
+    return;
+  }
   if (gymScreen_.active()) {
     gymScreen_.pressCancel(input.wasPressed("menu"),
                            input.isDown("menu") || input.isDown("cancel"));
@@ -1048,6 +1056,62 @@ void PlaySession::setBulkTrades(bool enabled) {
   context_.ui->setSetting(BulkTradesSetting, enabled);
 }
 
+namespace {
+
+// The play options' on/off settings (applyPlayOptions), all off unless chosen.
+struct PlayOption {
+  std::string_view setting;
+  std::optional<bool> UserSettings::* saved;
+};
+constexpr std::array PlayOptions{
+    PlayOption{.setting = QuickBattleStartSetting, .saved = &UserSettings::quickBattleStart},
+    PlayOption{.setting = SkipEvolutionSetting, .saved = &UserSettings::skipEvolution},
+    PlayOption{.setting = ChoiceCancelClosesSetting, .saved = &UserSettings::choiceCancelCloses},
+    PlayOption{.setting = FairSicknessChanceSetting, .saved = &UserSettings::fairSicknessChance},
+    PlayOption{.setting = FairEvolutionAverageSetting,
+               .saved = &UserSettings::fairEvolutionAverage}};
+
+RuleChoices ruleChoicesOf(const UserSettings& settings) {
+  const std::string difficulty = settings.difficulty.value_or(std::string{DifficultyNormal});
+  return {.difficulty = difficulty == DifficultyEasy ? difficulty : std::string{DifficultyNormal},
+          .fairSicknessChance = settings.fairSicknessChance.value_or(false),
+          .fairEvolutionAverage = settings.fairEvolutionAverage.value_or(false)};
+}
+
+} // namespace
+
+void PlaySession::applyPlayOptions() {
+  const UserSettings& settings = *context_.userSettings;
+  for (const PlayOption& option : PlayOptions) {
+    context_.ui->setSetting(option.setting, (settings.*option.saved).value_or(false));
+  }
+  const RuleChoices rules = ruleChoicesOf(settings);
+  context_.ui->setSetting(DifficultySetting, rules.difficulty);
+  battleScreen_.setQuickStart(settings.quickBattleStart.value_or(false));
+  skipEvolution_ = settings.skipEvolution.value_or(false);
+  if (game_.systems.story != nullptr) {
+    game_.systems.story->dialogue().setCancelClosesChoice(
+        settings.choiceCancelCloses.value_or(false));
+  }
+  ruleOptions_.choose(rules);
+  ruleOptions_.keep(game_.session->rules());
+}
+
+bool PlaySession::handlePlayOption(const ui::UiCommand& command) {
+  const auto option = std::ranges::find(PlayOptions, command.name, &PlayOption::setting);
+  if (option == PlayOptions.end()) {
+    return false;
+  }
+  if (const bool* on = std::get_if<bool>(&command.value)) {
+    context_.userSettings->*option->saved = *on;
+    if (context_.settingsFile) {
+      saveUserSettings(*context_.settingsFile, *context_.userSettings);
+    }
+  }
+  applyPlayOptions();
+  return true;
+}
+
 bool PlaySession::handle(const ui::UiCommand& command) {
   if (eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
       itemKeeperScreen_.handle(command) || discardScreen_.handle(command) ||
@@ -1119,6 +1183,9 @@ bool PlaySession::handle(const ui::UiCommand& command) {
         saveUserSettings(*context_.settingsFile, *context_.userSettings);
       }
     }
+    return true;
+  }
+  if (handlePlayOption(command)) {
     return true;
   }
   if (command.name == EnemyHpBarsSetting) {
@@ -1368,6 +1435,8 @@ bool PlaySession::handle(const ui::UiCommand& command) {
 void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameStats& stats,
                          double frameSeconds, float alpha) {
   session::GameSession& session = *game_.session;
+  // The options that change the rules follow the ruleset through a reload or a tuned value.
+  ruleOptions_.keep(session.rules());
   const assets::DigimonTable* species = species_ ? &*species_ : nullptr;
   // What the script warps' guards read (bag, money, stats, conditions) may change only on these
   // events; the field decides its cells again once after them (docs/reference/campo.md), not

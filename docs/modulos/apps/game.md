@@ -1329,7 +1329,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 
 | Pestaña | Filas |
 |---|---|
-| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Sesiones de gimnasio, Espacio tras los nombres |
+| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Sesiones de gimnasio, Combates sin espera, Dificultad, Saltar evoluciones, Cancelar cierra elecciones, Enfermar justo, Media de evolución justa, Espacio tras los nombres |
 | Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua, Reverberación |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
@@ -1676,3 +1676,78 @@ usuario) llega a `GymScreen::setSessions`; la regla es `GymBatch` (`gym_batch.hp
 | Varias sesiones seguidas | — | Con 2 a 5, cuando acaba una sesión que empezó la historia, se cierra su caja de estadísticas y el campo queda libre (sin guion, texto, menú, combate ni escena del compañero: la caca, el baño, comer, felicitar, dormir, evolución, muerte), el mismo curso vuelve a empezar con la misma ruleta, hasta completar el número (`GymScreen::continueBatch`). Cada sesión es una del original: mismas ganancias, misma hora, mismo cansancio y lo que el compañero haga después | «a batch runs its course again each time the field is idle…», «a batch waits while something holds the field» | Mejora (opción) |
 | Cortar la tanda | — | La tanda se acaba si el jugador cancela una sesión antes del premio (cancelar durante la cuenta de estadísticas no la corta), si el compañero muestra una necesidad o estado (hambre, sueño, cansancio, baño, enfado, herida, enfermedad) o si el jugador cambia de mapa | «a cancel, a need of the partner's or another map stops a batch for good» | Mejora (opción) |
 | Consola | — | `gym("<curso>")` sigue corriendo una sola sesión: solo los cursos que empieza la historia van en tanda | en vivo | Mejora (opción) |
+
+## Combates sin espera
+
+Mejora opcional, apagada por defecto: el ajuste `quick_battle_start` (fila «Combates sin espera», «Battles without wait»
+en inglés, pestaña Juego de las opciones del menú de pausa y del título, guardado en los ajustes del usuario) llega desde
+`PlaySession` (`QuickBattleStartSetting`) a `BattleScreen::setQuickStart`.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Espera antes del combate | `battle_setup.c: BTL_handleBattleIntro`: 20 fotogramas de marcas de enfado y luego el rótulo, que dura 200 fotogramas o dos más desde que el domador llega a su sitio, a 20 por segundo (medido, ver [battle](../game/battle.md)): de 1,1 a 11 segundos sin poder dar órdenes | Igual sin la opción | — | Igual |
+| Con la opción | — | En un combate del campo (no en las copas, que guardan su apertura) la apertura se salta el mismo fotograma en que empezaría (`BattleScreen::skipIntro`): la tira de órdenes se abre, el domador se queda donde estaba en su postura de combate con su camino guardado intacto (una huida corre por él como siempre), suena el estallido y el combate empieza. El combate en sí es el del original | en vivo | Mejora (opción) |
+
+## Dificultad
+
+Mejora opcional, `normal` por defecto (el original): el ajuste `difficulty` (fila «Dificultad», «Difficulty» en inglés,
+valores Normal y Fácil, pestaña Juego de las opciones del menú de pausa y del título, guardado en los ajustes del
+usuario). `RuleOptions` (`rule_options.hpp`) cambia valores del ruleset de la partida con los mismos cambios que el panel
+de ajuste (`RulesetStore::setValue`), así cada sistema los lee como cualquier regla; al volver a Normal cada valor vuelve
+al suyo, y tras recargar o cambiar de ruleset los cambios se hacen otra vez (un valor que el panel cambió entre medias se
+queda como lo dejó el panel).
+
+Qué cambia Fácil lo dice la sección `difficulty` del ruleset (`rules/original/difficulty.yaml`, esquema
+`ruleset_difficulty`): cada nivel es una lista de cambios `{ section, path, value | percent }`, un valor YAML nuevo o un
+tanto por ciento del valor del ruleset, redondeado hacia abajo. Un mod ajusta la dificultad con su propia sección. El
+ruleset original:
+
+| Qué | Normal (original) | Fácil |
+|---|---|---|
+| Daño que hace el compañero (golpes, remates, bloqueos; también en copas) | 100 % (`battle.damage.partner_dealt_percent`) | 150 % |
+| Daño que recibe el compañero | 100 % (`battle.damage.partner_taken_percent`) | 50 % |
+| Ganancias de cada sesión de entrenamiento | 100 % (`training.gain_percent`) | 150 % |
+| Tiempo para darle de comer antes del error de cuidado | 90 minutos (`care.hunger.window_minutes`) | 180 minutos |
+| Parte de la probabilidad de enfermar que crece con las ocasiones | 5 (`care.sickness.tries_percent`) | 2 |
+
+Los dos porcentajes de combate y el de entrenamiento son valores nuevos del ruleset, a 100 en el original: el daño de
+`attack_hits.cpp` (`damageOf`) y las ganancias de `strategies.cpp` se multiplican por ellos (redondeo hacia abajo, con
+los límites de daño de siempre). Pruebas: `rule_options_tests.cpp` (los cambios de Fácil existen en el ruleset, se
+aplican, se mantienen tras recargar y se deshacen).
+
+## Saltar evoluciones
+
+Mejora opcional, apagada por defecto: el ajuste `skip_evolution` (fila «Saltar evoluciones», «Skip evolutions» en
+inglés, pestaña Juego, guardado en los ajustes del usuario). Con ella, confirmar o cancelar durante la escena de
+evolución ([La escena de evolución](#la-escena-de-evolución)) la acaba al momento (`EvolutionScene::skip`): se repone el
+campo y se dibuja la forma nueva. El resultado es el mismo: la evolución ya está hecha en el estado del compañero antes
+de la escena, que solo la enseña. Sin la opción la escena del original dura sus 0x162 cuadros y no atiende botones.
+
+## Cancelar cierra elecciones
+
+Mejora opcional, apagada por defecto: el ajuste `choice_cancel_closes` (fila «Cancelar cierra elecciones», «Cancel
+closes choices» en inglés, pestaña Juego, guardado en los ajustes del usuario) llega a
+`game::story::Dialogue::setCancelClosesChoice`.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Cancelar una elección con marca de fin | `script_interp.c: tickSelectionDialogue`: el cancel sigue tras la marca `0x12 0x00` que cierra la elección | Igual: el brazo `else` de `story.set_selection` es el código tras la marca | `lua_emitter_tests.cpp` | Igual |
+| Cancelar una elección sin marca | 23 de las 330 elecciones no la tienen: el cancel sigue en el código que va detrás, el de la primera opción (en la venta del manual de entrenamiento, cancelar compra) | Igual sin la opción | «a selection without its end marker asks before its cancel arm, and reads back so» | Igual |
+| Con la opción | — | dwx escribe al principio del brazo de cancelar de esas elecciones `if story.cancel_closes_choice() then return ENDED end` (`CancelGuard`, ver [guiones](../../formats/scripts.md)): con la opción el guion acaba ahí y la elección solo se cierra | la misma prueba | Mejora (opción) |
+
+La opción necesita contenido extraído con `ExtractorVersion` 13 o posterior (módulos `-- dwx lua 4`): la partida vuelve
+a leer el disco del jugador sola cuando su contenido es de otra versión. Un contenido más viejo (`-- dwx lua 3`) sigue
+cargando y se juega como el original, con la opción sin efecto.
+
+## Rarezas como opciones
+
+Mejoras opcionales, apagadas por defecto (las rarezas del original se mantienen): dos filas de la pestaña Juego,
+guardadas en los ajustes del usuario, que apagan una rareza del ruleset de la partida con `RuleOptions`, igual que la
+dificultad.
+
+| Fila | Ajuste | Rareza que apaga | Original |
+|---|---|---|---|
+| Enfermar justo («Fair sickness chance») | `fair_sickness_chance` | `care.quirks.sickness_chance_wraps` | `tickSicknessMechanics` guarda la probabilidad en un `uint8_t`: una negativa da la vuelta y la tirada siempre acierta. Con la opción una negativa no enferma |
+| Media de evolución justa («Fair evolution average») | `fair_evolution_average` | `evolution.quirks.selection_average_carries_over` | `getRookieEvolutionTarget` y `getChampionEvolutionTarget` solo reinician la suma y la cuenta de stats cuando un candidato pasa a ser el mejor; si no, se arrastran a la media del siguiente. Con la opción cada candidato se mide por la suya |
+
+Prueba: `rule_options_tests.cpp`.

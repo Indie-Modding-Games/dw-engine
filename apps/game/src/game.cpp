@@ -775,6 +775,8 @@ int runGame(const Options& requested) {
                       GymSessionsMax);
   };
   (*ui)->setSetting(GymSessionsSetting, static_cast<double>(gymSessions()));
+  (*ui)->setSetting(DifficultySetting,
+                    userSettings.difficulty.value_or(std::string{DifficultyNormal}));
   (*ui)->setSetting(AutosaveSetting, userSettings.autosave.value_or(true));
   // The options only a game applies, for the title's options page (title_options.hpp).
   publishGameToggles(**ui, userSettings);
@@ -1668,6 +1670,23 @@ int runGame(const Options& requested) {
           }
         }
         (*ui)->setSetting(GymSessionsSetting, static_cast<double>(gymSessions()));
+        continue;
+      }
+      if (command.name == DifficultySetting) {
+        // The difficulty (rule_options.hpp), from the title's options or the game's: normal or
+        // easy; anything else changes nothing.
+        if (const std::string* level = std::get_if<std::string>(&command.value);
+            level != nullptr && (*level == DifficultyNormal || *level == DifficultyEasy)) {
+          userSettings.difficulty = *level;
+          if (settingsFile) {
+            saveUserSettings(*settingsFile, userSettings);
+          }
+          if (PlaySession* play = flow.playing()) {
+            play->applyPlayOptions();
+          }
+        }
+        (*ui)->setSetting(DifficultySetting,
+                          userSettings.difficulty.value_or(std::string{DifficultyNormal}));
         continue;
       }
       if (command.name == WalkControlSetting) {
