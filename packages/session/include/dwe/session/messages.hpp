@@ -100,6 +100,13 @@ inline constexpr std::string_view UnknownPartnerSpecies =
     "battle: the partner's species '{}' is not in data/digimon";
 inline constexpr std::string_view UnknownPartnerMove =
     "species_extra: {}'s partner_moves names '{}', which is not in the moves table";
+inline constexpr std::string_view VersusUnknownSpecies =
+    "versus: the partner '{}' is of a species '{}' this content does not have";
+inline constexpr std::string_view VersusUnknownMove =
+    "versus: the partner '{}' brings a move '{}' this content does not have";
+inline constexpr std::string_view VersusStatOutside =
+    "versus: the partner '{}' has a {} of {}, outside {} to {}";
+inline constexpr std::string_view VersusNotRead = "versus: the ruleset has no versus rules";
 inline constexpr std::string_view MovePlaceOutside =
     "battle: place {} is not one of the {} equipped places";
 inline constexpr std::string_view MoveNotLearned = "battle: the partner has not learned '{}'";

@@ -15,6 +15,7 @@ dwe_add_module(session
         src/fishing_adapter.cpp
         src/game_hooks.cpp
         src/tournament_adapter.cpp
+        src/versus_match.cpp
         src/curling_adapter.cpp
         src/poop_adapter.cpp
         src/cards_adapter.cpp
@@ -108,6 +109,7 @@ dwe_add_module(session
         src/story_routines/routine_variable_at_start.cpp
         src/story_routines/screen_routines.cpp
     DEPS core assets audio scene ruleset field partner save evolution inventory battle story gym script fishing tournament curling weather modes
+    DEPS core assets audio scene ruleset field partner save evolution inventory battle story gym script fishing tournament curling weather versus net
     # The story tests check the API against the Lua emitter and run its listings' reference.
     TEST_LIBS dwe::formats ${LUA_LIBRARIES})
 
