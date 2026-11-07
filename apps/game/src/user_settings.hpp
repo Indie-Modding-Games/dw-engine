@@ -79,8 +79,8 @@ struct UserSettings {
   // when not chosen yet.
   std::optional<bool> continuousMusic = std::nullopt;
   // The need bubble with several needs at once (need_bubble_stack: true, false; ui/hud): up to
-  // three of the partner's needs side by side in one balloon, most urgent first, instead of the
-  // original's two taking turns; on when not chosen yet.
+  // five of the partner's needs side by side in one balloon, the one that does harm soonest first,
+  // instead of the original's two taking turns; on when not chosen yet.
   std::optional<bool> needBubbleStack = std::nullopt;
   // Whether M opens the island map (world_map: true, false; world_map.hpp); on when not chosen.
   std::optional<bool> worldMap = std::nullopt;

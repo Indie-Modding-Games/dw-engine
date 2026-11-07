@@ -226,7 +226,7 @@ help.minimap_enemies: "A red dot on the minimap for each enemy that can start a 
 help.minimap_items: "A green diamond on the minimap for each item lying on the ground to pick up."
 help.digital_time: "The game time in digits (HH:MM) under the clock."
 help.save_notice: "A small figure and \"Saving\" in a corner while the game saves."
-help.need_bubble_stack: "Your partner's bubble shows up to three needs at once, most urgent first."
+help.need_bubble_stack: "Your partner's bubble shows up to five needs at once, the one that harms it soonest first."
 help.shop_job_bar: "A bar shows how close you are while a job or a match decides whether someone joins."
 help.options_reset: "Puts this tab's options back to their defaults. Asks first."
 help.options_back: "Back to the menu."

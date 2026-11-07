@@ -305,10 +305,13 @@ body {
 }
 
 /* Several needs at once (an engine improvement, the option need_bubble_stack): the balloon widens from 32 pixels to
-   50 for two needs and 68 for three, built from its own pieces so nothing is stretched: each half is its round edge,
-   one column of its body repeated, and its half of the centre with the tail (skin.yaml: need-bubble-left ...). The
-   needs sit 16 pixels each with 2 between them, 8 from the edges like the original's one, each at the height the
-   original gives it and on the same frames; the most urgent on the left. */
+   50 for two needs, 68 for three, 86 for four and 104 for five, in one row, built from its own pieces so nothing is
+   stretched: each half is its round edge, one column of its body repeated, and its half of the centre with the tail
+   (skin.yaml: need-bubble-left ...). The needs sit 16 pixels each with 2 between them, 8 from the edges like the
+   original's one, each at the height the original gives it and on the same frames; the most urgent on the left. One
+   row keeps the balloon's height and its tail as the original's, and reads in the order of urgency; at five it is a
+   third of the original's screen across, and the HUD moves it in from a side of the window it would cross
+   (ui/hud/logic.lua). */
 #field-partner-bubble .balloon-half,
 #field-partner-bubble .need-icon {
 	display: none;
@@ -319,9 +322,13 @@ body {
 
 #field-partner-bubble.stack-2 { width: 150dp; decorator: none; }
 #field-partner-bubble.stack-3 { width: 204dp; decorator: none; }
+#field-partner-bubble.stack-4 { width: 258dp; decorator: none; }
+#field-partner-bubble.stack-5 { width: 312dp; decorator: none; }
 
 #field-partner-bubble.stack-2 .balloon-half,
-#field-partner-bubble.stack-3 .balloon-half {
+#field-partner-bubble.stack-3 .balloon-half,
+#field-partner-bubble.stack-4 .balloon-half,
+#field-partner-bubble.stack-5 .balloon-half {
 	display: block;
 	width: 50%;
 }
@@ -346,6 +353,8 @@ body {
 #field-partner-bubble-icon-0 { left: 24dp; }
 #field-partner-bubble-icon-1 { left: 78dp; }
 #field-partner-bubble-icon-2 { left: 132dp; }
+#field-partner-bubble-icon-3 { left: 186dp; }
+#field-partner-bubble-icon-4 { left: 240dp; }
 
 /* Each need's first picture, for a frame the rules below do not name. */
 #field-partner-bubble .need-icon.hunger { decorator: image(need-hunger scale-none center 31.25%); }

@@ -18,10 +18,11 @@
 -- #field-clock asks for the time in figures (#field-time) too (digital_time). #field-partner-bubble
 -- hangs over the partner's head (hud.partner.*) with the class of the need the original's bubble
 -- would show, or, with several needs and need_bubble_stack (an engine improvement, on unless turned
--- off), the class "stack-2" or "stack-3"; its icons #field-partner-bubble-icon-<i> carry the needs
--- it shows, and the class "frame-<n>" says which of the original's frames the bubble is on, for the
--- skin. How the partner feels about the map (hud.partner.area) puts the class "area-liked" or
--- "area-disliked" on #field-status, where a skin can swap the happiness face as the original does.
+-- off), the class "stack-2" to "stack-5"; its icons #field-partner-bubble-icon-<i> carry the needs
+-- it shows, the most urgent first (hud.need.<i>.urgency), and the class "frame-<n>" says which of
+-- the original's frames the bubble is on, for the skin. How the partner feels about the map
+-- (hud.partner.area) puts the class "area-liked" or "area-disliked" on #field-status, where a skin
+-- can swap the happiness face as the original does.
 
 local sizes = { small = true, medium = true, large = true }
 local function refresh(document)
@@ -250,8 +251,11 @@ local bubble_cycle_frames = 60
 local bubble_need = nil
 local bubble_seconds = 0
 local bubble_frame = nil
--- need_bubble_stack: up to this many needs at once, side by side, the most urgent first.
-local bubble_stack_most = 3
+-- need_bubble_stack: up to this many needs at once, side by side in one balloon, the most urgent
+-- first.
+local bubble_stack_most = 5
+-- The room a stacked balloon keeps from the window's sides, in dp.
+local bubble_margin_dp = 6
 
 local function need_active(need)
   return ui.setting("hud.need." .. bubble_need_index[need] .. ".active") == true
@@ -276,19 +280,66 @@ local function place(name)
   return value
 end
 
+-- How urgent a need is: the game ranks the needs the partner has by how soon each does its lasting
+-- harm if left alone (hud.need.<i>.urgency, 1 the soonest; packages/screens: field_hud_view.hpp);
+-- a need without a rank goes after the ranked ones.
+local function urgency_of(need)
+  local rank = ui.setting("hud.need." .. bubble_need_index[need] .. ".urgency")
+  if type(rank) ~= "number" or rank <= 0 then
+    return math.huge
+  end
+  return rank
+end
+
 -- The needs the stacked bubble shows (need_bubble_stack, on unless turned off): the partner's,
--- most urgent first, up to bubble_stack_most; empty when off.
+-- most urgent first, up to bubble_stack_most; empty when off. Needs of the same urgency keep the
+-- original bubble's order.
 local function stacked_needs()
   local needs = {}
   if ui.setting("need_bubble_stack") == false then
     return needs
   end
-  for _, need in ipairs(bubble_priority) do
-    if #needs < bubble_stack_most and need_active(need) then
+  local order = {}
+  for place_in_order, need in ipairs(bubble_priority) do
+    order[need] = place_in_order
+    if need_active(need) then
       needs[#needs + 1] = need
     end
   end
+  table.sort(needs, function(first, second)
+    local first_rank, second_rank = urgency_of(first), urgency_of(second)
+    if first_rank ~= second_rank then
+      return first_rank < second_rank
+    end
+    return order[first] < order[second]
+  end)
+  for index = #needs, bubble_stack_most + 1, -1 do
+    needs[index] = nil
+  end
   return needs
+end
+
+-- A stacked balloon is wider than the original's: over a partner near a side of the window it moves
+-- in, as little as it needs, so it stays whole. The shift goes on its margin, which its transforms
+-- (the anchor at its bottom centre, the growth) leave alone; the original's bubble never moves. The
+-- balloon's width is the skin's, read from its layout, so a change of size lands on the next tick.
+local function keep_bubble_inside(document, bubble, stacked)
+  local shift = 0
+  local _, _, window_width = document:rect()
+  local _, _, width = bubble:rect()
+  local room = window_width - 2 * bubble_margin_dp
+  if stacked and width > 0 and width <= room then
+    local centre = place("hud.partner.x") / 100 * window_width
+    local half = width / 2
+    local wanted =
+      math.max(bubble_margin_dp + half, math.min(centre, bubble_margin_dp + room - half))
+    shift = wanted - centre
+  end
+  local value = string.format("%.1fdp", shift)
+  if bubble:attribute("data-shift") ~= value then
+    bubble:set_attribute("data-shift", value)
+    bubble:set_property("margin-left", value)
+  end
 end
 
 -- Moves the class "frame-<n>" to the bubble's frame now.
@@ -328,6 +379,7 @@ local function draw_bubble(document)
       icon:set_class(need, icons[index + 1] == need)
     end
   end
+  keep_bubble_inside(document, bubble, count > 0)
 end
 
 -- The needs changed: a bubble whose need went gives way to the highest one left, in a new bubble.
@@ -347,7 +399,9 @@ local function tick_bubble(document, seconds)
   local swap = bubble_swap_frames / bubble_frames_per_second
   local cycle = bubble_cycle_frames / bubble_frames_per_second
   -- The stacked bubble already shows the other needs: it only starts again.
-  local other = #stacked_needs() < 2 and highest_need(bubble_need) or nil
+  local stacked = #stacked_needs() > 1
+  keep_bubble_inside(document, document:get("field-partner-bubble"), stacked)
+  local other = not stacked and highest_need(bubble_need) or nil
   if other ~= nil and bubble_seconds >= swap then
     bubble_need = other
     bubble_seconds = 0
