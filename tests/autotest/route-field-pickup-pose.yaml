@@ -1,22 +1,24 @@
 # Recoger un objeto del suelo con el teclado (tamer.c: tamerTickPickupItem): drop_item deja la carne a los pies del
 # jugador, el aviso sale y el jugador se agacha (field_items.pickup_player_clip, la animación 12 del original) y se queda
-# en su último cuadro hasta confirmar; al confirmar el objeto entra en la bolsa y el jugador vuelve a estar de pie. Las
-# capturas muestran el gesto. Se corre con: dwe-game --content <carpeta> --autotest
-# tests/autotest/route-field-pickup-pose.yaml --shots <carpeta>
+# en su último cuadro hasta confirmar; mientras tanto el compañero, puesto lejos, sigue viniendo hacia el jugador y el
+# reloj sigue andando. En el aspecto original la caja crece desde el jugador y vuelve a él al confirmar. Al confirmar el
+# objeto entra en la bolsa y el jugador vuelve a estar de pie. Las capturas muestran el gesto y al compañero. Se corre
+# con: dwe-game --content <carpeta> --autotest tests/autotest/route-field-pickup-pose.yaml --shots <carpeta>
 name: field-pickup-pose
 device: keyboard
 timeout: 60
 steps:
   - wait: {map: twna01, seconds: 4}
-  # A clear ground on File City's field, on the free exploration route's way.
+  # A clear ground on File City's field, on the free exploration route's way, the partner farther north.
   - script: place("player 300 1950 0")
-  - wait: {seconds: 0.5}
+  - script: place("partner 300 1450 0")
+  - wait: {seconds: 1.5}
   - screenshot: pickup-standing
   - script: drop_item("meat")
   - wait: {shown: field_item_notice, timeout: 10}
   - wait: {seconds: 0.15}
   - screenshot: pickup-crouch
-  - wait: {seconds: 1}
+  - wait: {seconds: 1.5}
   - screenshot: pickup-hold
   - tap: {key: return}
   - wait: {hidden: field_item_notice, seconds: 0.5, timeout: 10}

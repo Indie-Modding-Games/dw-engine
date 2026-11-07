@@ -770,6 +770,7 @@ void PlaySession::pressItemKeeper(const input::InputState& input) {
   birdScreen_.press(input);
   cardShopScreen_.press(input);
   meritShopScreen_.press(input);
+  fieldItemsScreen_.press(input);
 }
 
 void PlaySession::pressPartnerMenu(const input::InputState& input) {
@@ -914,19 +915,18 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent,
                      "script runs");
       fieldIntent.confirm = false;
     }
-    // An item on the ground or a chest in reach takes the confirm, and its notice stops the field.
+    // An item on the ground or a chest in reach takes the confirm; its notice holds the player
+    // while the field runs on (Field::holdForItem).
     const game::field::Field& field = scene_->field();
     if (!field.mapChangePending() && field.fadeLevel() == 0.0F &&
         fieldItemsScreen_.tick(*scene_, fieldIntent.confirm, TickSeconds)) {
       fieldIntent.confirm = false;
     }
-    if (fieldItemsScreen_.active()) {
-      return;
-    }
     // tamer.c: tamerTickWalkingState checks the medals and opens a due award notice while the
     // player walks freely; the notice stops the field and the game time until it is confirmed.
     if (!field.mapChangePending() && field.fadeLevel() == 0.0F && !gymScreen_.active() &&
-        !field.heldByScript() && !game_.systems.story->scriptRunning()) {
+        !field.heldByScript() && !game_.systems.story->scriptRunning() &&
+        !fieldItemsScreen_.active()) {
       awardScreen_.tick();
     }
     if (awardScreen_.active()) {
@@ -1465,13 +1465,16 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   praiseScold_.update(fieldIdle);
   feedScene_.update(fieldIdle);
   fishingScreen_.update(fieldIdle);
-  if (fieldIdle && !paused()) {
+  // tamer.c: checkMapInteraction and the partner's normal state wait while an item's notice holds
+  // the player.
+  const bool playerIdle = fieldIdle && !paused() && !fieldItemsScreen_.active();
+  if (playerIdle) {
     guardFactsChanged = fieldToilet_.checkCell() || guardFactsChanged;
   }
   // partner_impl.c: createPoopPile, tickPoopDetection: the piles the partner left, and the one a
   // partner that eats piles finds; not once the toilet cell sent the partner off this frame (state
   // 6: tickPoopDetection runs only in the normal state).
-  if (fieldIdle && !paused() && !fieldToilet_.active()) {
+  if (playerIdle && !fieldToilet_.active()) {
     fieldPoop_.update();
   }
   // item.c: handleChips: the auto pilot chip calls its map-head section if no script runs; the
@@ -1531,11 +1534,14 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
       .minigame = gymScreen_.active() || fishingScreen_.active() || curlingScreen_.active() ||
                   scheduleScreen_.active() || bracketScreen_.opened() || matchScreen_.shown() ||
                   evolutionScene_.active() || deathScene_.active() || endingScene_.active()});
-  showButterfly(fieldIdle && !field.heldForCare(), session);
+  // A chest's notice stands the partner idle (tamer.c: tamerTickTakeChest, partnerSetState(0xb)):
+  // out of its normal state, it has no butterfly and no bubble.
+  const bool partnerHeld =
+      field.heldForCare() || field.heldForItem() == game::field::ItemHold::Chest;
+  showButterfly(fieldIdle && !partnerHeld, session);
   fieldHud_.update(fieldRunning, fieldRunning || (!paused() && gymScreen_.active()),
-                   field.heldForCare()
-                       ? std::nullopt
-                       : partnerBubbleOf(*scene_, species, session.partnerView().species));
+                   partnerHeld ? std::nullopt
+                               : partnerBubbleOf(*scene_, species, session.partnerView().species));
   publishShopJob();
   battleScreen_.showIntro([&](const game::battle::Combatant& enemy, float lift) {
     return angerAnchorOf(*scene_, species, enemy, lift);
@@ -1699,8 +1705,8 @@ bool PlaySession::screenStops() const {
          deathScene_.active() || shopScreen_.active() || itemKeeperScreen_.active() ||
          discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
          birdScreen_.active() || cardShopScreen_.active() || meritShopScreen_.active() ||
-         fieldItemsScreen_.active() || awardScreen_.active() || scheduleScreen_.active() ||
-         bracketScreen_.playing() || storyScenes_.tournamentIntro() || worldMapScreen_.isOpen();
+         awardScreen_.active() || scheduleScreen_.active() || bracketScreen_.playing() ||
+         storyScenes_.tournamentIntro() || worldMapScreen_.isOpen();
 }
 
 float PlaySession::fadeLevel() const {

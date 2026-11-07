@@ -343,7 +343,8 @@ void Field::setInput(const FieldInput& input) {
     dropMoveTarget();
   }
   // A click while something holds the player is not a walk order: it would walk him once let go.
-  if (input.moveTarget && !mapChangePending() && !scriptHeld_ && !careHeld_) {
+  if (input.moveTarget && !mapChangePending() && !scriptHeld_ && !careHeld_ &&
+      itemHold_ == ItemHold::None) {
     planPath(*input.moveTarget);
   }
 }
@@ -372,7 +373,7 @@ void Field::tick(float seconds) {
   registry.get<AnimationIntent>(partner_) = {};
   // The overlap watch looks at the ticks the player moves freely only; a hold starts it over.
   if (leaving_ || pendingChange_ || waitingForMap_ || choice_ || mapId_.empty() || scriptHeld_ ||
-      careHeld_) {
+      careHeld_ || itemHold_ != ItemHold::None) {
     overlapWatch_.clear();
     // Held, the player has no click-to-move target to walk on to once let go.
     dropMoveTarget();
@@ -397,6 +398,10 @@ void Field::tick(float seconds) {
   if (careHeld_) {
     input_.confirm = false;
     tickCare(seconds);
+    return;
+  }
+  if (itemHold_ != ItemHold::None) {
+    tickItemHold(seconds, wasFollowing);
     return;
   }
   // The release rule (releaseHandoff): after a script the partner first makes room on foot.
@@ -1272,6 +1277,61 @@ void Field::tickCare(float seconds) {
   registry.get<AnimationIntent>(player_) = {};
   tickCareWalk(seconds);
   tickCameraPan(seconds);
+  tickNpcs(seconds, false);
+}
+
+void Field::holdForItem(ItemHold hold) {
+  if (hold == itemHold_) {
+    return;
+  }
+  std::int32_t state = 0;
+  if (hold == ItemHold::Ground) {
+    state = 7;
+  } else if (hold == ItemHold::Chest) {
+    state = 14;
+  }
+  core::logDebug("[port:field_items] tamerSetState({})", state);
+  itemHold_ = hold;
+  moveTarget_.reset();
+  path_.clear();
+  partnerStuckSeconds_ = 0.0F;
+  entt::registry& registry = world_->registry();
+  registry.get<AnimationIntent>(player_) = {};
+  if (hold == ItemHold::Chest) {
+    registry.get<AnimationIntent>(partner_) = {};
+    follow_.standHeld();
+  }
+}
+
+void Field::turnPlayerTo(glm::vec3 point) {
+  auto& player = world_->registry().get<Transform>(player_);
+  const glm::vec3 toPoint = point - player.position;
+  if (toPoint.x != 0.0F || toPoint.z != 0.0F) {
+    // At once (entityLookAtLocation): nothing to draw between the old facing and the new.
+    player.yaw = assets::yawOfDirection(toPoint);
+    player.previousYaw = player.yaw;
+  }
+}
+
+void Field::tickItemHold(float seconds, bool wasFollowing) {
+  // clock.c: tickGameClock runs on: the notice holds the player's state only.
+  gameTimeRan_ = true;
+  // The notice takes the presses: none walks the player or reaches a cell or an NPC.
+  input_ = {};
+  entt::registry& registry = world_->registry();
+  playerMotion_ = Motion::Idle;
+  registry.get<AnimationIntent>(player_) = {};
+  if (itemHold_ == ItemHold::Ground) {
+    // partner.c: partnerTickNormal goes on while tamerTickPickupItem holds the player: the partner
+    // follows and turns to the player as it does while the player stands.
+    const std::int32_t frames = takeFrames(seconds);
+    if (frames == 0) {
+      partnerFollowing_ = wasFollowing;
+    }
+    movePartnerFrames(frames);
+  }
+  // overworld.c: NPCEntityTickOverworld walks the NPCs on; their talks and touches wait for the
+  // player's state 0.
   tickNpcs(seconds, false);
 }
 

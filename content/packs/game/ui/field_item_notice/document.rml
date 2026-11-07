@@ -5,15 +5,19 @@
 	<link type="text/rcss" href="../story_textbox/structure.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
 	<script src="../common/screen_fit.lua"></script>
+	<script src="../common/original_box.lua"></script>
 	<script src="logic.lua"></script>
 </head>
-<body>
-	<div id="box" class="original-look" onclick="ui.send('field_item_notice_ok')">
+<!-- own-sounds: the box sounds a confirm only when the notice takes it (tamerTickPickupItem: playSound(0, 3)); a
+     chest's takes it silently and an early press is lost. -->
+<body own-sounds="true">
+	<div id="box" class="original-look" onclick="answer(document)">
 		<div id="rows">
 			<div class="row" id="item"></div>
 			<div class="row" id="text"></div>
 		</div>
 		<div id="confirm-icon" class="prompt-icon"></div>
 	</div>
+	<div id="box-outline" class="box-outline hidden"></div>
 </body>
 </rml>

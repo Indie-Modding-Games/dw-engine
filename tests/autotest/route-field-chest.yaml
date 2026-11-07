@@ -1,0 +1,30 @@
+# Abrir un cofre con el teclado (tamer.c: tamerTickTakeChest): junto al cofre del lago, confirmar gira al jugador hacia
+# el cofre de pie (animación 0), el compañero se queda quieto (partnerSetState(0xb)) y el cajón sale; luego sale el
+# aviso. La primera confirmación mete el objeto en la bolsa y el aviso sigue; la segunda lo cierra y devuelve al
+# compañero a seguir al jugador. Una tercera confirmación abre el cofre ya vacío. Se corre con: dwe-game --content
+# <carpeta> --start mayo10 --new-game --autotest tests/autotest/route-field-chest.yaml --shots <carpeta>
+name: field-chest
+device: keyboard
+timeout: 60
+steps:
+  - wait: {map: mayo10, seconds: 4}
+  # In front of the lake's chest, where its drawer reaches (spawnChest: four cells ahead of it).
+  - script: place("player -1511 693 0")
+  - wait: {seconds: 0.5}
+  - screenshot: chest-before
+  - tap: {key: return}
+  - wait: {seconds: 0.1}
+  - screenshot: chest-opening
+  - wait: {shown: field_item_notice, timeout: 10}
+  - wait: {seconds: 0.5}
+  - screenshot: chest-notice
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {story.trigger.706: "true"}
+  - screenshot: chest-taken
+  - tap: {key: return}
+  - wait: {hidden: field_item_notice, seconds: 0.5, timeout: 10}
+  - screenshot: chest-after
+  - tap: {key: return}
+  - wait: {shown: field_item_notice, seconds: 0.5, timeout: 10}
+  - screenshot: chest-empty
