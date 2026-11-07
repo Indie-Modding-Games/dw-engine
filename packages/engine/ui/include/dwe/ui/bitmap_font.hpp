@@ -30,9 +30,10 @@ struct TextRun {
 class BitmapFont {
 public:
   // Reads the font from its meta (font/main_meta.yaml) and atlas (font/main.png, decoded). A glyph
-  // answers to its character and to the ASCII character it stands for ("Ａ" and "A"). Fails on a
-  // meta without the cell size or the glyph list, on a glyph outside the atlas, and on a baseline
-  // outside a cell.
+  // answers to its character and to the ASCII character it stands for ("Ａ" and "A"). The letters
+  // and signs the original lacks (á, Ñ, ¿, «...) are composed from its own glyphs and drawn into
+  // the atlas (composed_glyphs.cpp). Fails on a meta without the cell size or the glyph list, on a
+  // glyph outside the atlas, and on a baseline outside a cell.
   static core::Result<BitmapFont> parse(std::string_view meta, assets::Image atlas, int baseline);
 
   // The glyph of a character, or nullptr when the font lacks it.
@@ -57,6 +58,9 @@ public:
   [[nodiscard]] int baseline() const { return baseline_; }
 
 private:
+  // Adds the composed glyphs whose base glyphs the font has, in new cells under the atlas's.
+  void addComposedGlyphs();
+
   assets::Image atlas_;
   int cellWidth_ = 0;
   int cellHeight_ = 0;

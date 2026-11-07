@@ -686,9 +686,19 @@ el color 1 de su CLUT, `0x6B5A`). Cualquier documento puede usarla para otro tex
   (`Ａ`) y a su equivalente ASCII (`A`), la tinta es blanca y la tiñe el `color` de RCSS, y crece en múltiplos enteros
   (a 720 de alto, `round(tamaño / 11)`, al menos 1; a otra altura ese múltiplo por los píxeles por dp,
   redondeado hacia abajo, para que el texto no crezca más que sus cajas) con los píxeles en coordenadas enteras, así que se ve nítida a cualquier
-  resolución. Los caracteres que no tiene (ñ, á, ¿, ¡, paréntesis...) los dibuja la moderna en la misma línea base,
-  al tamaño de la línea de mapa de bits por `fallback_size`; nunca se dibuja el glifo de sustitución del original.
-  Sin la fuente extraída, `original` dibuja con la moderna (con un aviso en el log).
+  resolución.
+- **Las letras con tilde y los signos que el original no tiene** se componen al cargar la fuente
+  (`src/composed_glyphs.cpp`) con sus propios glifos, en celdas nuevas bajo las del atlas: la letra base con una marca
+  (aguda, grave, circunfleja, diéresis, virgulilla, cedilla) de un píxel de grosor centrada sobre su tinta con una fila
+  libre en medio (la i pierde el punto); una mayúscula, que llega arriba de la celda, se aprieta fundiendo las filas
+  vecinas que menos cambian (los trazos largos primero) para que la marca quepa en la línea; `¡` y `¿` son `!` y `?`
+  dados la vuelta; `«` `»` `º` `ª` `…` `·` son dibujos pequeños del motor; `“ ‘ − – —` usan `” ’ -`. Cubre las vocales
+  con tilde, `ñ`, `ç` e `ý ÿ` en minúscula y mayúscula, así que una palabra como «ánimo» no mezcla dos fuentes.
+  Nada de eso sale de los datos del juego: las marcas y los dibujos están en el código, y las bases se leen del atlas
+  del jugador. Una letra que la fuente ya trae se queda como está, y sin la letra base no se compone. Lo que sigue
+  faltando (paréntesis, otros alfabetos...) lo dibuja la moderna en la misma línea base, al tamaño de la línea de mapa
+  de bits por `fallback_size`; nunca se dibuja el glifo de sustitución del original. Sin la fuente extraída,
+  `original` dibuja con la moderna (con un aviso en el log).
 - **El ajuste `text_font`** (`modern` u `original`) es del jugador: `Ui::setTextFont` lo cambia y vuelve a componer y
   dibujar en el momento todos los documentos abiertos (`Rml::ReleaseFontResources`). El valor por defecto es dato
   (`default` en `original_look.yaml`). El jugador lo elige en el menú principal: la entrada «Texto con aspecto

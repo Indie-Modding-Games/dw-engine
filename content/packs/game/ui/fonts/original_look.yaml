@@ -13,6 +13,7 @@ original:
   meta: font/main_meta
   # La fila bajo los pies de las mayúsculas, desde arriba de la celda: la línea base.
   baseline: 10
-  # Los caracteres que le faltan (ñ, á, ¿, ¡...) se dibujan con la moderna, en la misma línea base y a este tamaño,
-  # en fracción del alto de línea de la de mapa de bits.
+  # Las letras con tilde y los signos que el original no tiene (á, Ñ, ü, ¿, ¡, «, »...) se componen con sus propios
+  # glifos al cargarla (docs/architecture/ui.md). Lo que sigue faltando (paréntesis, otros alfabetos...) se dibuja con
+  # la moderna, en la misma línea base y a este tamaño, en fracción del alto de línea de la de mapa de bits.
   fallback_size: 1.0

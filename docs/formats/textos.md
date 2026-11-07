@@ -124,7 +124,8 @@ no los guardaría). `dwx extract` escribe:
 
 `fontFromAtlas` reconstruye la fuente a partir de los dos ficheros. El juego no usa `formats`: la UI lee esos dos
 ficheros con su propio lector (`ui::BitmapFont`) para el texto con aspecto original
-([UI](../architecture/ui.md#aspecto-original)).
+([UI](../architecture/ui.md#aspecto-original)), y al cargarla compone con esos glifos las letras con tilde y los signos
+que la fuente no tiene (á, Ñ, ¿, «...); el atlas del paquete base no cambia.
 
 ## Cadenas del ejecutable y los overlays
 

@@ -61,8 +61,9 @@ TEST_CASE("the glyphs answer to their character and to their ASCII equivalent") 
   CHECK(font.cellWidth() == fixture::CellWidth);
   CHECK(font.cellHeight() == fixture::CellHeight);
   CHECK(font.baseline() == fixture::Baseline);
-  // Ａ, A, Ｂ, B and ○, which has no ASCII equivalent.
-  CHECK(font.characterCount() == 5);
+  // Ａ, A, Ｂ, B and ○, which has no ASCII equivalent; then what is composed from them: Á, À, Â, Ä
+  // and Ã from A, and the six signs drawn whole (« » º ª … ·).
+  CHECK(font.characterCount() == 16);
 
   const BitmapGlyph* fullWidth = font.glyph(U'Ａ');
   const BitmapGlyph* ascii = font.glyph(U'A');
@@ -100,9 +101,9 @@ TEST_CASE("text splits into runs the bitmap font draws and runs that fall back")
   CHECK(runsOf(font, "A¿ñB○") == std::vector<Run>{{.text = "A", .bitmap = true},
                                                   {.text = "¿ñ", .bitmap = false},
                                                   {.text = "B○", .bitmap = true}});
-  CHECK(runsOf(font, "¡AÁ") == std::vector<Run>{{.text = "¡", .bitmap = false},
-                                                {.text = "A", .bitmap = true},
-                                                {.text = "Á", .bitmap = false}});
+  // Á is composed from the font's A; ¡ needs a ! the fixture lacks.
+  CHECK(runsOf(font, "¡AÁ") ==
+        std::vector<Run>{{.text = "¡", .bitmap = false}, {.text = "AÁ", .bitmap = true}});
   // A byte that is not UTF-8 is not a glyph: it goes to the fallback, which shows what it shows for
   // such bytes.
   CHECK(runsOf(font, "A\xFF"
@@ -115,7 +116,8 @@ TEST_CASE("the ink atlas is white ink over transparency, each pixel repeated by 
   const BitmapFont font = fixtureFont();
   const assets::Image ink = font.inkAtlas(3);
   CHECK(ink.width == fixture::CellWidth * fixture::Cells * 3);
-  CHECK(ink.height == fixture::CellHeight * 3);
+  // The eleven composed cells in rows of three under the font's own.
+  CHECK(ink.height == fixture::CellHeight * 5 * 3);
   REQUIRE(ink.pixels.size() == std::size_t{ink.width} * ink.height * 4);
   const auto pixel = [&](std::size_t x, std::size_t y) {
     return ink.pixels[(((y * ink.width) + x) * 4) + 3];
@@ -127,6 +129,7 @@ TEST_CASE("the ink atlas is white ink over transparency, each pixel repeated by 
   CHECK(pixel(3, 8) == std::byte{0});
   CHECK(pixel(0, std::size_t{fixture::Baseline} * 3) == std::byte{0});
   CHECK(font.inkAtlas(0).width == fixture::CellWidth * fixture::Cells);
+  CHECK(font.inkAtlas(0).height == fixture::CellHeight * 5);
 }
 
 TEST_CASE("a bitmap font that does not fit its atlas or its baseline is refused") {

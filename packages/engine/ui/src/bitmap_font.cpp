@@ -91,6 +91,9 @@ core::Result<BitmapFont> BitmapFont::parse(std::string_view meta, assets::Image 
     addCharacters(reader, entry, glyph, font.glyphs_);
   }
   font.atlas_ = std::move(atlas);
+  if (reader.ok()) {
+    font.addComposedGlyphs();
+  }
   return reader.finish(std::move(font), messages::BitmapFontContext);
 }
 
