@@ -1,0 +1,25 @@
+# Stage 3 of the story with the keyboard, the keychain in the cave of leom01. Run on the seeded game with
+# --story-stage stage_3 --start leom02 (docs/guides/prueba-vertical.md). The map's head (script 0) spawns the keychain
+# NPC (script id 5) only once the cave's lion has joined the city (trigger 248, set by script 75 in gias09) and until
+# its talk has been had (trigger 333): the seeded game has not recruited him, so the route writes 248 before it goes
+# down into the cave. Its talk (script 109 section 5) is one of the five that grow the bag: on the first one
+# (variable 21 = 0) the bag grows to 20 (trigger 47), and every one adds 1 to variable 21 and sets 333.
+name: etapa3-keychain
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: leom02, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.333: "false"}
+  - script: story_set("trigger 248 on")
+  - walk_to: {trigger: 111, encounters: win, timeout: 240}
+  - wait: {map: leom01, partner_within: 600, seconds: 1, timeout: 60}
+  - script: place("player -1754 3120 0")
+  - wait: {seconds: 1}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: leom01-keychain
+  - wait: {confirm: true, setting: {story.trigger.333: "true"}, timeout: 120}
+  - expect_setting: {story.trigger.47: "true"}
+  - expect_setting: {story.var.21: "1"}
+  - wait: {seconds: 2}
+  - screenshot: leom01-after

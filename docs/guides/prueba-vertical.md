@@ -439,6 +439,9 @@ scripts/dev.sh run --content <carpeta> --load slot_01 --start room06 --story-sta
   leom02`) baja a la cueva (leom01), pasa por la casilla 51 (el jugador mira la cueva, 134) y coge la tablilla de la
   casilla 52 (Leomonstone, 135). `route-etapa3-leomon.yaml` (`--start gias07`) ve el rescate de `species_al` en gias07
   (196), pone la Leomonstone en la bolsa y entra en gias09, donde `species_aj` lee la tablilla y se une (248).
+  `route-etapa3-keychain.yaml` (`--start leom02`) escribe ese 248 (la partida sembrada no ha reclutado a `species_aj`),
+  baja a leom01, donde la cabecera saca entonces al del llavero (hasta su charla, 333), y habla con él (script 109,
+  sección 5): la primera de las cinco charlas de la bolsa (20 huecos, 47; variable 21 a 1).
   `route-etapa3-arena.yaml` (`--start room13`) confirma en el mostrador del vestíbulo de la Arena (casillas 81): la
   bienvenida (91) y, a la segunda, la inscripción, que abre el calendario (rutina 18); el jugador vuelve a quedar
   libre y sale a la ciudad por la puerta (casillas 52). `route-etapa3-tournaments.yaml` (`--start room13`, en y es)
@@ -458,6 +461,8 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start leom02 --la
     --autotest tests/autotest/route-etapa3-leomon-tablet.yaml --shots <capturas>/etapa3
 scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start gias07 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa3-leomon.yaml --shots <capturas>/etapa3
+scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start leom02 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa3-keychain.yaml --shots <capturas>/etapa3
 scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start room13 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa3-arena.yaml --shots <capturas>/etapa3
 scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start room13 --lang es --seed 1 \
