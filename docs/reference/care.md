@@ -223,6 +223,21 @@ Es parte del cuidado porque gasta tiempo, cansa y baja la felicidad (`src/trn/`)
   permanente, curar HP o MP, activar un bonus de entrenamiento o tener probabilidad de enfermar. Todo en un `switch`
   dentro de `handleFood` (`item.c`) **(comprobado)**. Cada comida baja además 1 el temporizador del baño.
 
+### Primer daño de cada necesidad
+
+Lo que antes pasa si nadie atiende cada necesidad, según los contadores de arriba. El original no compara estos
+plazos; la burbuja con varias necesidades de dwe (una mejora opcional, ver
+[la arquitectura de la interfaz](../architecture/ui.md)) los usa para ordenarlas.
+
+| Necesidad | Primer daño | Plazo |
+|---|---|---|
+| Hambre | Se cierra la ventana: error de cuidado | Lo que quede de la ventana (como mucho 90 minutos) |
+| Baño | Lo hace en el suelo: error de cuidado | El margen del aviso, (disciplina + 20) × 1200 / 100 fotogramas |
+| Sueño | Llega la hora de despertar sin dormir: error de cuidado | Hasta la hora de despertar |
+| Herida | Se convierte en enfermedad | 12 horas herido (ninguno si ya está enfermo) |
+| Enfermedad | Pierde una vida | 12 horas enfermo |
+| Cansancio | Ninguno con plazo: solo felicidad de vez en cuando y hambre antes | — |
+
 ## Datos
 
 Tablas del ejecutable principal. `dwx` las extraerá a YAML desde el disco del usuario; aquí solo se describe su forma.

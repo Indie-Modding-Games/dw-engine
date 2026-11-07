@@ -990,12 +990,13 @@ de la UI desde `PlaySession` (`RecruitBarSetting`, `recruit_bar.hpp`).
 
 Mejora opcional, encendida por defecto (no cambia ninguna regla): el ajuste `need_bubble_stack` (fila «Varias
 necesidades», «Several needs» en inglés, de las opciones; guardado en los ajustes del usuario) llega como ajuste de la
-UI desde `PlaySession` (`NeedBubbleStackSetting`) y el HUD junta hasta tres necesidades en un globo
-([ui.md](../../architecture/ui.md#estado-del-campo)).
+UI desde `PlaySession` (`NeedBubbleStackSetting`) y el HUD junta hasta cinco necesidades en un globo, la que antes
+hace daño primero (`hud.need.<i>.urgency`, de `game::partner::needDeadlinesOf`;
+[ui.md](../../architecture/ui.md#estado-del-campo)).
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
-| Burbuja con dos o más necesidades | `partner_impl.c: handleConditionBubble`: una cada vez, por prioridad (sueño, cansancio, hambre, baño, herida, enfermedad); a los 50 frames cambia a la más alta de las demás, así que se turnan las dos más urgentes y una tercera no sale | Hasta tres en un globo ensanchado con las piezas del original, la más urgente a la izquierda; con una sola, la del original; apagada, la del original entera. Medido en dwe: cansancio + herida, 50 píxeles; cansancio + herida + enfermedad, 68 | `ui_tests`: «the need bubble shows several needs side by side ...»; `user_settings_tests`; `in_game_options_tests` | Mejora (opción) |
+| Burbuja con dos o más necesidades | `partner_impl.c: handleConditionBubble`: una cada vez, por prioridad (sueño, cansancio, hambre, baño, herida, enfermedad); a los 50 frames cambia a la más alta de las demás, así que se turnan las dos más urgentes y una tercera no sale | Hasta cinco en una fila de un globo ensanchado con las piezas del original (50, 68, 86 o 104 píxeles), ordenadas por el tiempo que falta para que cada una haga un daño duradero (baño, hambre, sueño, herida, enfermedad; el cansancio, sin plazo, detrás; empates por la prioridad del original), la más urgente a la izquierda, y metido en la ventana cerca de un borde; con una sola, la del original; apagada, la del original entera | `need_deadlines_tests.cpp`; `field_hud_view_tests.cpp`; `ui_tests`: «the need bubble shows several needs side by side ...»; `hud_fit_tests`; `user_settings_tests`; `in_game_options_tests`; capturas con 1, 3 y 5 necesidades al 100 % y al 130 % | Mejora (opción) |
 | Frames de la burbuja: crece en 10, cada necesidad anima por el contador de la burbuja (las tres «Z» del sueño, la gota que cae del cansancio, los cuadros de la comida, el baño, la herida y la enfermedad), estalla en el 51 y no se ve hasta el 60 | `bubble.c: tickConditionBubble`, `renderConditionBubble` (`CONDITION_ICON_SLEEPY`, `CONDITION_TIRED_FRAME_U`/`_MY`, `CONDITION_HUNGRY_FRAMES`); `partner_impl.c: handleConditionBubble` (`CONDITION_BUBBLE_TIMER`). Medido en DuckStation: 180 vblanks por burbuja, 150 al cambiar de necesidad; «Z» en los frames 12, 17, 23 y 28 | `ui/hud/logic.lua` publica `frame-<n>`; el aspecto original lo dibuja (`style.rcss`, `skin.yaml`). Antes solo salía el primer cuadro de cada necesidad y la «Z» baja | `ui_tests`: «the need bubble plays the original's frames ...» | Igual (sin el vaivén de 12 unidades) |
 
 ## Minimapa redondo
