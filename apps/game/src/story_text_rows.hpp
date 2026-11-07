@@ -33,10 +33,28 @@ inline constexpr std::int64_t PageColor = 1;
 // (localization::tr formats them before it drops an unknown tag).
 [[nodiscard]] std::vector<localization::TextArgument> colorArguments();
 
+// A name a page's tag inserted (the player's or the partner's name, a species, a move, an item, a
+// song or a tournament) ends with this marker, so appendPageRows can tell where it stops.
+inline constexpr char NameEnd = '\x1E';
+
+// The name with its NameEnd marker.
+[[nodiscard]] std::string endedName(std::string_view name);
+
+// Space after names, an engine improvement (a UI setting and the pause menu's command with the
+// same name, true or false; on by default): script_textbox.c: showTextbox copies an inserted name
+// as it is, and ten texts of the original have no space after one (MAPHEAD 0x5cbe: a move's name
+// and then a word), so the original draws the name stuck to the next word. With it, a name
+// followed by a letter or a digit (past any colour tags) gets a space.
+inline constexpr std::string_view NameSpacingSetting = "name_spacing";
+// Whether the UI's NameSpacingSetting is on (on when nobody published it).
+[[nodiscard]] bool spacesAfterNames(const ui::Ui& ui);
+
 // Appends a page's rows, split at its line breaks and colour markers, starting in PageColor; at
 // most as many rows as the document has room for. From a {stop} tag on ({cell:00XX} in older
-// extractions), the rows stay empty: the original stops drawing the page there.
-void appendPageRows(std::vector<TextRow>& rows, std::string_view text);
+// extractions), the rows stay empty: the original stops drawing the page there. A NameEnd marker
+// is dropped, or becomes a space before a letter or a digit with spaceAfterNames.
+void appendPageRows(std::vector<TextRow>& rows, std::string_view text,
+                    bool spaceAfterNames = false);
 
 // How the story_textbox document draws the box (script_textbox.c: showTextbox).
 struct TextboxLook {

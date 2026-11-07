@@ -1025,6 +1025,16 @@ Medido: ruta de prueba con el jugador «WWWWWWWWWWWW» y el compañero «Barthol
 caja de nombres en la entrevista (la clave `new_game_scene: true`); capturas antes/después
 en las dos pieles.
 
+## Espacio tras los nombres
+
+Mejora opcional, encendida por defecto (no cambia ninguna regla): el ajuste `name_spacing` (fila «Espacio tras los
+nombres», «Space after names» en inglés, de la pestaña Juego de las opciones, guardado en los ajustes del usuario),
+que llega como ajuste de la UI desde `PlaySession` (`NameSpacingSetting`, `story_text_rows.hpp`).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Nombre insertado pegado a la palabra siguiente | `script_textbox.c: showTextbox` copia el nombre tal cual (códigos 5, 6, 7, 8, 9, 0x11 y 0x12; `getSpeakerName`, `DIGIMON_NAME`, `MOVE_NAMES`, `ITEM_NAME`, `BGM_TRACK_NAMES`, `TOURNAMENT_NAMES`) y `drawString2` no añade nada; diez textos del original no llevan espacio tras el nombre (MAPHEAD 0x5cbe, el nombre de una técnica y la palabra siguiente; 0x5b94, 0x4ac4 tras `{partner}`; cinco de las cartas y dos del guion 132 tras el nombre de una especie). Medido: los bytes del guion en la RAM (`MAPHEAD_SCRIPT_PTR` + 0x5cbe) son `08 F3` y luego la primera letra de la palabra, sin espacio; con `SCRIPT_POINTER` llevado a ese texto en un cuadro abierto (estado `save_machine_intro`) el juego dibuja el nombre y la palabra juntos | Cada nombre que rellena una etiqueta (`StoryTextbox::pageText`, `TournamentScheduleScreen`) acaba en la marca `NameEnd`; `appendPageRows` la quita y, con la opción, pone un espacio si lo siguiente (tras las etiquetas de color) es una letra o una cifra; ante un signo, un espacio, un salto de línea o el final de la página no pone nada. Sin la opción, el texto pegado como en el original | «a name the text runs into the next word gets a space with name spacing» (`story_text_rows_tests.cpp`) | Mejora (opción) |
+
 ## Barras de reclutamiento
 
 Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no enseña cuánto le falta al jugador):

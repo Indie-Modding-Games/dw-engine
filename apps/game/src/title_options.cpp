@@ -45,6 +45,7 @@ constexpr std::array Toggles{
     GameToggle{
         .setting = "need_bubble_stack", .saved = &UserSettings::needBubbleStack, .fallback = true},
     GameToggle{.setting = "shop_job_bar", .saved = &UserSettings::shopJobBar, .fallback = true},
+    GameToggle{.setting = "name_spacing", .saved = &UserSettings::nameSpacing, .fallback = true},
 };
 
 } // namespace

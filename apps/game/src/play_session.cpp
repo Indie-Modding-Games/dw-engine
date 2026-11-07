@@ -56,6 +56,7 @@
 #include "player_chart.hpp"
 #include "story_map_edits.hpp"
 #include "story_set_command.hpp"
+#include "story_text_rows.hpp"
 #include "title_screen.hpp"
 
 namespace dwe::app {
@@ -618,6 +619,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   context_.ui->setSetting(LongNamesSetting, context.userSettings->longNames.value_or(true));
   // The recruit bars (the shop job's and the stones game's), on unless turned off.
   context_.ui->setSetting(RecruitBarSetting, context.userSettings->shopJobBar.value_or(true));
+  // A space after the names the texts insert (story_text_rows.hpp), on unless turned off.
+  context_.ui->setSetting(NameSpacingSetting, context.userSettings->nameSpacing.value_or(true));
   // Continuous music across the maps that share a song, on unless turned off.
   const bool continuousMusic = context.userSettings->continuousMusic.value_or(true);
   if (session::SessionMusic* music = game_.session->music(); music != nullptr) {
@@ -1103,6 +1106,16 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     if (const bool* shown = std::get_if<bool>(&command.value)) {
       context_.ui->setSetting(RecruitBarSetting, *shown);
       context_.userSettings->shopJobBar = *shown;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    return true;
+  }
+  if (command.name == NameSpacingSetting) {
+    if (const bool* spaced = std::get_if<bool>(&command.value)) {
+      context_.ui->setSetting(NameSpacingSetting, *spaced);
+      context_.userSettings->nameSpacing = *spaced;
       if (context_.settingsFile) {
         saveUserSettings(*context_.settingsFile, *context_.userSettings);
       }

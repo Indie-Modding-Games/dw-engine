@@ -2,10 +2,12 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <charconv>
 #include <format>
 #include <system_error>
 #include <utility>
+#include <variant>
 
 namespace dwe::app {
 
@@ -40,7 +42,38 @@ bool endsDrawing(std::string_view text) {
          text.find(TagClose) != std::string_view::npos;
 }
 
+// Whether a name ending at `at` runs into a word: the next character past the colour markers is a
+// letter or a digit (an ASCII one, or a UTF-8 lead byte of a Latin letter: U+00C0 on; U+00A1 and
+// U+00BF, the Spanish opening marks, are not).
+bool wordFollows(std::string_view text, std::size_t at) {
+  constexpr unsigned char FirstLatinLetterLead = 0xC3;
+  while (at < text.size() && text[at] == ColorMarker) {
+    const std::size_t end = text.find(ColorMarker, at + 1);
+    if (end == std::string_view::npos) {
+      return false;
+    }
+    at = end + 1;
+  }
+  if (at >= text.size()) {
+    return false;
+  }
+  const auto c = static_cast<unsigned char>(text[at]);
+  return std::isalnum(c) != 0 || c >= FirstLatinLetterLead;
+}
+
 } // namespace
+
+std::string endedName(std::string_view name) {
+  std::string ended{name};
+  ended += NameEnd;
+  return ended;
+}
+
+bool spacesAfterNames(const ui::Ui& ui) {
+  const ui::UiValue value = ui.setting(NameSpacingSetting);
+  const bool* on = std::get_if<bool>(&value);
+  return on == nullptr || *on;
+}
 
 std::vector<localization::TextArgument> colorArguments() {
   std::vector<localization::TextArgument> colors;
@@ -52,7 +85,7 @@ std::vector<localization::TextArgument> colorArguments() {
   return colors;
 }
 
-void appendPageRows(std::vector<TextRow>& rows, std::string_view text) {
+void appendPageRows(std::vector<TextRow>& rows, std::string_view text, bool spaceAfterNames) {
   std::int64_t color = PageColor;
   TextRow row;
   std::string run;
@@ -76,6 +109,10 @@ void appendPageRows(std::vector<TextRow>& rows, std::string_view text) {
     } else if (endsDrawing(text.substr(at))) {
       endRun();
       ended = true;
+    } else if (c == NameEnd) {
+      if (spaceAfterNames && wordFollows(text, at + 1)) {
+        run += ' ';
+      }
     } else if (c == ColorMarker) {
       endRun();
       const std::size_t end = text.find(ColorMarker, at + 1);

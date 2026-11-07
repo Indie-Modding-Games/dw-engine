@@ -74,6 +74,9 @@ struct UserSettings {
   // The shop job's progress bar (shop_job_bar: true, false; shop_job_bar.hpp): the canyon shop's
   // tally against the join while its job runs; on when not chosen yet.
   std::optional<bool> shopJobBar = std::nullopt;
+  // Space after names (name_spacing: true, false; story_text_rows.hpp): a name a text inserts gets
+  // a space when the original's text runs it into the next word; on when not chosen yet.
+  std::optional<bool> nameSpacing = std::nullopt;
   // Continuous music (continuous_music: true, false; session::SessionMusic::setContinuousMusic): a
   // map whose song is the one playing lets it go on instead of playing it again from its start; on
   // when not chosen yet.

@@ -302,7 +302,11 @@ std::vector<TextRow> TournamentScheduleScreen::talkRows() const {
   arguments.push_back({.name = tournamentTag,
                        .value = localization::tr(screens::mainLabelKey(
                            TournamentNamesBlock, static_cast<std::size_t>(cup_)))});
-  appendPageRows(rows, localization::tr(key, arguments));
+  // The three names end in NameEnd, for the space after an inserted name (story_text_rows.hpp).
+  for (auto argument = arguments.end() - 3; argument != arguments.end(); ++argument) {
+    argument->value = endedName(argument->value);
+  }
+  appendPageRows(rows, localization::tr(key, arguments), spacesAfterNames(*desc_.ui));
   return rows;
 }
 

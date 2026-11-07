@@ -361,6 +361,17 @@ game_options = {
     help = "pause_menu.help.shop_job_bar",
     original = false,
   },
+  -- Space after names: a name the texts insert gets a space when the original's text runs it into
+  -- the next word (on by default; off draws them stuck, as the original).
+  {
+    id = "name-spacing",
+    setting = "name_spacing",
+    label = "pause_menu.name_spacing",
+    default = true,
+    tab = "game",
+    help = "pause_menu.help.name_spacing",
+    original = false,
+  },
 }
 
 -- The option's current value: what the game published, or its default.
