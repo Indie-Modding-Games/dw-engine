@@ -1255,7 +1255,16 @@ Todas las filas sirven en el título. Las que solo aplica una partida en curso (
 atiende `PlaySession`: exploración libre, mapa de la isla, nombres largos, movimiento suave, carteles traducidos…) las
 guarda el juego en los ajustes del usuario y las vuelve a publicar (`changeGameToggle`, `publishGameToggles`); la
 siguiente partida empieza con ellas. Las demás (pantalla, escala, piel, idioma, letra, volúmenes, gráficos, minimapa)
-tienen el mismo manejador que en partida. La sincronía vertical se cambia igual que en partida: al reiniciar.
+tienen el mismo manejador que en partida.
+
+Las filas de la pantalla se guardan en `settings.yaml` como las demás (`DisplayChanger`,
+`apps/game/src/display_settings.hpp`): «Pantalla» (`fullscreen`), «Sincronización vertical» (`vsync`), «Escala de la
+interfaz» (`ui_scale`, el factor; al leerlo se ajusta al rango de la interfaz, de 0,5 a 3) y el tamaño del minimapa de
+la página «Minimapa» (`minimap_size`: `small`, `medium` o `large`; otro valor cuenta como `medium`). El juego las lee
+antes de abrir la ventana, así que la primera imagen ya sale con el modo, la sincronía y la escala guardados;
+`--fullscreen` y `--no-vsync` mandan solo en esa partida. La sincronía cambia al momento: el dispositivo rehace la
+swapchain con el nuevo modo de presentación antes de la siguiente imagen (`rhi::Device::setVsync`). Una ruta
+automática o el canal de control no leen ni escriben esos ajustes. Tests: `display_settings_tests.cpp`.
 
 La página cabe en todas las ventanas: el diseño es de 720dp de alto y al menos 960dp de ancho, así que una ventana
 4:3 deja 960dp. El recuadro moderno mide 900dp; el original, 980dp con las teclas de pestaña por fuera, se estrecha a

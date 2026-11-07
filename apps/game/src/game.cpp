@@ -61,6 +61,7 @@
 #include "control_log.hpp"
 #include "control_socket.hpp"
 #include "dev_assets_banner.hpp"
+#include "display_settings.hpp"
 #include "field_scene.hpp"
 #include "first_run_screen.hpp"
 #include "frame_stats.hpp"
@@ -158,9 +159,9 @@ struct Settings {
 
 // Applies a command of the UI's documents and publishes the resulting state. Returns false for
 // quit.
-bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, Settings& settings,
-           LanguageChanger& language, TextFontChanger& textFont, UiSkinChanger& skin,
-           MinimapChanger& minimap) {
+bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, rhi::Device& device,
+           Settings& settings, DisplayChanger& display, LanguageChanger& language,
+           TextFontChanger& textFont, UiSkinChanger& skin, MinimapChanger& minimap) {
   core::logInfo("game: command {} = {}", command.name, describe(command.value));
   if (command.name == "quit") {
     return false;
@@ -172,30 +173,34 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, S
     language.change(std::get<std::string>(command.value));
   } else if (command.name == MinimapSetting || command.name == LegacyMinimapVisibleSetting) {
     ui.setSetting(MinimapSetting, std::string{minimap.change(command.value)});
-  } else if (command.name == "minimap_size" && std::holds_alternative<std::string>(command.value)) {
-    ui.setSetting("minimap_size", command.value);
-  } else if (command.name == "fullscreen" && std::holds_alternative<bool>(command.value)) {
+  } else if (command.name == MinimapSizeSetting) {
+    ui.setSetting(MinimapSizeSetting, std::string{display.changeMinimapSize(command.value)});
+  } else if (command.name == FullscreenSetting && std::holds_alternative<bool>(command.value)) {
     if (auto changed = window.setFullscreen(std::get<bool>(command.value)); changed) {
       settings.fullscreen = std::get<bool>(command.value);
+      display.keepFullscreen(settings.fullscreen);
     } else {
       core::logWarning("game: {}", changed.error().message);
     }
-    ui.setSetting("fullscreen", settings.fullscreen);
-  } else if (command.name == "ui_scale" && std::holds_alternative<double>(command.value)) {
+    ui.setSetting(FullscreenSetting, settings.fullscreen);
+  } else if (command.name == UiScaleSetting && std::holds_alternative<double>(command.value)) {
     ui.setScale(static_cast<float>(std::get<double>(command.value)));
     settings.uiScale = ui.scale();
-    ui.setSetting("ui_scale", settings.uiScale);
+    display.keepUiScale(ui.scale());
+    ui.setSetting(UiScaleSetting, settings.uiScale);
   } else if (command.name == ui::TextFontSetting &&
              std::holds_alternative<std::string>(command.value)) {
     textFont.change(std::get<std::string>(command.value));
   } else if (command.name == ui::UiSkinSetting &&
              std::holds_alternative<std::string>(command.value)) {
     skin.change(std::get<std::string>(command.value));
-  } else if (command.name == "vsync") {
-    // The device picks its present mode when it is created (--no-vsync); the menu keeps showing the
-    // real one.
-    core::logInfo("game: vsync cannot change while running yet");
-    ui.setSetting("vsync", settings.vsync);
+  } else if (command.name == VsyncSetting && std::holds_alternative<bool>(command.value)) {
+    // The swapchain is rebuilt with the new present mode before the next frame.
+    settings.vsync = std::get<bool>(command.value);
+    device.setVsync(settings.vsync);
+    display.keepVsync(settings.vsync);
+    core::logInfo("game: vsync {}", settings.vsync ? "on" : "off");
+    ui.setSetting(VsyncSetting, settings.vsync);
   }
   return true;
 }
@@ -504,27 +509,37 @@ int runGame(const Options& requested) {
       }
     }
   } controlSaves;
+  // An autotest neither reads nor writes the player's settings: its language is --lang or the
+  // system's. Nor does a game driven by the control channel, which a tool starts next to the
+  // player's own.
+  const std::optional<std::filesystem::path> settingsFile =
+      autotest || options.control ? std::nullopt : userSettingsFile();
+  UserSettings userSettings = settingsFile ? loadUserSettings(*settingsFile) : UserSettings{};
+  // Read before the window opens: its mode, vsync and the UI's scale are the player's from the
+  // first frame (display_settings.hpp).
+  const DisplayStart display = startDisplay(options.fullscreen, options.vsync, userSettings);
+  DisplayChanger displayChanger{userSettings, settingsFile};
   auto window =
       platform::Window::create({.title = "dwe", .width = options.width, .height = options.height});
   if (!window) {
     core::logError("{}", window.error().message);
     return EXIT_FAILURE;
   }
-  Settings settings{.fullscreen = false, .uiScale = 1.0, .vsync = options.vsync};
-  if (options.fullscreen) {
+  Settings settings{.fullscreen = false, .uiScale = 1.0, .vsync = display.vsync};
+  if (display.fullscreen) {
     if (auto changed = window->setFullscreen(true); changed) {
       settings.fullscreen = true;
     } else {
       core::logWarning("game: {}", changed.error().message);
     }
   }
-  auto device = rhi::Device::create(*window, {.validation = Validation, .vsync = options.vsync});
+  auto device = rhi::Device::create(*window, {.validation = Validation, .vsync = display.vsync});
   if (!device) {
     core::logError("{}", device.error().message);
     return EXIT_FAILURE;
   }
   core::logInfo("game: validation layer {}, vsync {}",
-                validationState((*device)->validationEnabled()), options.vsync ? "on" : "off");
+                validationState((*device)->validationEnabled()), display.vsync ? "on" : "off");
   // The first start asks for the player's disc and reads it before anything mounts the content
   // (first_run_screen.hpp).
   if (needsFirstRun(options)) {
@@ -560,12 +575,6 @@ int runGame(const Options& requested) {
   if (options.tuning) {
     (*debugUi)->openTuning();
   }
-  // An autotest neither reads nor writes the player's settings: its language is --lang or the
-  // system's. Nor does a game driven by the control channel, which a tool starts next to the
-  // player's own.
-  const std::optional<std::filesystem::path> settingsFile =
-      autotest || options.control ? std::nullopt : userSettingsFile();
-  UserSettings userSettings = settingsFile ? loadUserSettings(*settingsFile) : UserSettings{};
   const std::vector<std::string> languages = localization::availableLanguages(files);
   auto language =
       startLanguage(languages, options.language, userSettings.language, platform::systemLanguage());
@@ -685,7 +694,7 @@ int runGame(const Options& requested) {
       .texts = &*texts,
       .width = size.width,
       .height = size.height,
-      .scale = 1.0F,
+      .scale = display.uiScale,
       .hotReload = options.tuning,
       .clock = [&platform] { return platform->nowSeconds(); },
       .scripts = {},
@@ -694,6 +703,7 @@ int runGame(const Options& requested) {
     core::logError("{}", ui.error().message);
     return EXIT_FAILURE;
   }
+  settings.uiScale = (*ui)->scale();
   // La caja de nombres del prólogo oculta sus documentos en su destructor: debe destruirse
   // antes que la UI (los locales van en orden inverso).
   std::unique_ptr<NewGameInterview> interview;
@@ -746,13 +756,13 @@ int runGame(const Options& requested) {
   // The options only a game applies, for the title's options page (title_options.hpp).
   publishGameToggles(**ui, userSettings);
   (*ui)->setSetting(MinimapSetting, std::string{startMinimapMode(userSettings.minimap)});
-  (*ui)->setSetting("minimap_size", std::string{"medium"});
+  (*ui)->setSetting(MinimapSizeSetting, std::string{display.minimapSize});
   (*ui)->setSetting(WeatherSetting, userSettings.weather.value_or(true));
   (*ui)->setSetting(SeasonsSetting, userSettings.seasons.value_or(true));
   (*ui)->setSetting(HdScenerySetting, hdScenery.on());
-  (*ui)->setSetting("fullscreen", settings.fullscreen);
-  (*ui)->setSetting("ui_scale", settings.uiScale);
-  (*ui)->setSetting("vsync", settings.vsync);
+  (*ui)->setSetting(FullscreenSetting, settings.fullscreen);
+  (*ui)->setSetting(UiScaleSetting, settings.uiScale);
+  (*ui)->setSetting(VsyncSetting, settings.vsync);
   (*ui)->setSetting(SaveIndicatorFigureSetting, saveFigure && (*saveFigure)->loaded());
   TextFontChanger textFontChanger{**ui, userSettings, settingsFile};
   if (const auto font = startTextFont(options.textFont, userSettings.textFont)) {
@@ -1636,8 +1646,8 @@ int runGame(const Options& requested) {
         }
         continue;
       }
-      running = apply(command, **ui, *window, settings, languageChanger, textFontChanger,
-                      uiSkinChanger, minimapChanger) &&
+      running = apply(command, **ui, *window, **device, settings, displayChanger, languageChanger,
+                      textFontChanger, uiSkinChanger, minimapChanger) &&
                 running;
     }
     if (flow.playing() != nullptr && flow.playing()->takeToTitle()) {

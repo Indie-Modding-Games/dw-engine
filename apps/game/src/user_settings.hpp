@@ -22,6 +22,16 @@ struct UserSettings {
   std::optional<std::string> uiSkin;
   // Whether the HUD shows the minimap (minimap: auto, on, off); auto when not chosen yet.
   std::optional<std::string> minimap;
+  // The minimap's size (minimap_size: small, medium, large; display_settings.hpp); medium when not
+  // chosen yet.
+  std::optional<std::string> minimapSize = std::nullopt;
+  // The display rows of the options page (display_settings.hpp): the window mode (fullscreen:
+  // true, false; a window when not chosen yet), vsync (vsync: true, false; on when not chosen yet)
+  // and the UI's scale (ui_scale: a factor, 1 the default size, kept within ui::Ui's range; 1 when
+  // not chosen yet). The command line's --fullscreen and --no-vsync win for their run.
+  std::optional<bool> fullscreen = std::nullopt;
+  std::optional<bool> vsync = std::nullopt;
+  std::optional<float> uiScale = std::nullopt;
   // Free exploration (free_exploration: true, false): the scripts' map changes go anywhere they
   // can, whatever the story; off when not chosen yet.
   std::optional<bool> freeExploration = std::nullopt;

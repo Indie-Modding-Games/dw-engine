@@ -104,6 +104,11 @@ public:
   // Whether the validation layer is on: requested in DeviceDesc and installed.
   [[nodiscard]] bool validationEnabled() const;
 
+  // Turns vsync on or off while running (DeviceDesc::vsync): the swapchain is rebuilt with the new
+  // present mode before the next frame.
+  void setVsync(bool vsync);
+  [[nodiscard]] bool vsync() const;
+
   // How many warnings and errors the validation layer has reported since the program started, by
   // every device.
   [[nodiscard]] static std::uint64_t validationMessageCount();

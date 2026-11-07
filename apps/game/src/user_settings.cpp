@@ -7,6 +7,7 @@
 #include <dwe/platform/platform.hpp>
 #include <dwe/ui/skin.hpp>
 
+#include <format>
 #include <fstream>
 #include <iterator>
 #include <string>
@@ -25,6 +26,10 @@ constexpr std::string_view SettingsFileName = "settings.yaml";
 constexpr std::string_view LanguageKey = "language";
 constexpr std::string_view TextFontKey = "text_font";
 constexpr std::string_view MinimapKey = "minimap";
+constexpr std::string_view MinimapSizeKey = "minimap_size";
+constexpr std::string_view FullscreenKey = "fullscreen";
+constexpr std::string_view VsyncKey = "vsync";
+constexpr std::string_view UiScaleKey = "ui_scale";
 constexpr std::string_view FreeExplorationKey = "free_exploration";
 constexpr std::string_view SmoothMotionKey = "smooth_motion";
 constexpr std::string_view SaveNoticeKey = "save_notice";
@@ -80,6 +85,18 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* minimap = tree->find(MinimapKey)) {
       settings.minimap = reader.text(*minimap);
+    }
+    if (const core::YamlNode* size = tree->find(MinimapSizeKey)) {
+      settings.minimapSize = reader.text(*size);
+    }
+    if (const core::YamlNode* fullscreen = tree->find(FullscreenKey)) {
+      settings.fullscreen = reader.boolean(*fullscreen);
+    }
+    if (const core::YamlNode* vsync = tree->find(VsyncKey)) {
+      settings.vsync = reader.boolean(*vsync);
+    }
+    if (const core::YamlNode* scale = tree->find(UiScaleKey)) {
+      settings.uiScale = reader.number(*scale);
     }
     if (const core::YamlNode* explore = tree->find(FreeExplorationKey)) {
       settings.freeExploration = reader.boolean(*explore);
@@ -191,6 +208,19 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   }
   if (settings.minimap) {
     root.set(std::string{MinimapKey}, core::YamlNode::scalar(*settings.minimap));
+  }
+  if (settings.minimapSize) {
+    root.set(std::string{MinimapSizeKey}, core::YamlNode::scalar(*settings.minimapSize));
+  }
+  if (settings.fullscreen) {
+    root.set(std::string{FullscreenKey},
+             core::YamlNode::scalar(*settings.fullscreen ? "true" : "false"));
+  }
+  if (settings.vsync) {
+    root.set(std::string{VsyncKey}, core::YamlNode::scalar(*settings.vsync ? "true" : "false"));
+  }
+  if (settings.uiScale) {
+    root.set(std::string{UiScaleKey}, core::YamlNode::scalar(std::format("{}", *settings.uiScale)));
   }
   if (settings.freeExploration) {
     root.set(std::string{FreeExplorationKey},
