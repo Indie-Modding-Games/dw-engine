@@ -48,6 +48,7 @@
 #include <utility>
 #include <vector>
 
+#include "battle_glide.hpp"
 #include "chibi_style.hpp"
 #include "evolution_effects.hpp"
 #include "field_camera_follow.hpp"
@@ -277,8 +278,9 @@ public:
   // The player turns to the partner (Field::playerFacePartner).
   void playerFacePartner();
   // Starts a logic tick of every character on the field without moving it (Field::settle): each
-  // tick begins with it, so a tick the field does not run draws them where they stand.
-  void settleActors() { field_->settle(); }
+  // tick begins with it, so a tick the field does not run draws them where they stand. The
+  // battle's glides (battle_glide.hpp) move on by the tick's `seconds`.
+  void settleActors(double seconds);
 
   // The fishing's hold on the player (FishingScreen): one of the original's clips in place of the
   // walk's, nothing to give the player back to the field.
@@ -621,7 +623,9 @@ public:
   // What the techniques' effects drew on the battle's last frame, drawn until replaced: sprites
   // with the move's effect texture, objects of its effect model. Each texture and model loads on
   // first use; one that fails is logged and not drawn.
-  void setEffects(std::vector<SceneEffect> effects) { effects_ = std::move(effects); }
+  // `frame` counts the battle's frames: a new one starts the effects' glide from the last frame's
+  // (battle_glide.hpp: blendEffects) while smooth motion is on.
+  void setEffects(std::vector<SceneEffect> effects, std::uint64_t frame);
   // A technique hid the map's layer this frame (battle_effect.c: BTL_disableMapLayer,
   // setMapLayerEnabled(0)): the map's picture and its objects are not drawn, the fighters are.
   void setMapLayerHidden(bool hidden) { mapLayerHidden_ = hidden; }
@@ -746,6 +750,8 @@ private:
     std::optional<std::uint32_t> heldClip;
     // The battle's hold on it (holdFighter).
     std::optional<FighterFigure> fighter;
+    // Where smooth motion draws it while held: gliding between the battle's frames.
+    PoseGlide fighterGlide{};
     // Whether it showed on screen when the battle took it: a battle does not run the field's
     // ticks that work out isOnScreen, so its fighters keep that value (playClipSounds).
     bool shownWhenHeld = false;
@@ -772,6 +778,12 @@ private:
   // original axes and units, in the world; nothing if the node is no joint of the skin.
   // The joint matrices an actor is drawn with: its pose's, or the chibi style's.
   [[nodiscard]] std::span<const glm::mat4> drawnJoints(const Actor& actor) const;
+  // Where an actor stands and faces: its transform's, or, while update draws a held fighter with
+  // smooth motion, its glide's.
+  [[nodiscard]] scene::Pose heldPlace(const Actor& actor) const;
+  // Where to draw an entity between two ticks: a held fighter's glide while update draws with
+  // smooth motion, else Field::drawnPose.
+  [[nodiscard]] scene::Pose drawnPose(scene::Entity entity, float alpha) const;
   [[nodiscard]] std::optional<glm::vec3> nodePoint(const Actor& actor, std::uint32_t node,
                                                    glm::vec3 offset) const;
 
@@ -1090,7 +1102,17 @@ private:
   // The billboard textures of the items' image by palette, and of the shadow (nullopt as the key),
   // or nothing for one that failed to load.
   std::map<std::optional<std::uint8_t>, std::optional<std::size_t>> groundItemTextures_;
+  // What the effects drew on the battle's last two frames, the frame's number and the time since
+  // it began, and what update draws (the last frame's, or a glide to it with smooth motion).
+  std::vector<SceneEffect> effectsFrom_;
+  std::vector<SceneEffect> effectsTo_;
+  std::uint64_t effectsFrame_ = 0;
+  double effectsSeconds_ = BattleFrameSeconds;
   std::vector<SceneEffect> effects_;
+  // While update draws: how far past the last tick it draws (alpha times the tick), for the held
+  // fighters' glides; nothing outside it, where the battle's logic reads their frame's places.
+  std::optional<double> drawAhead_;
+  double tickSeconds_ = 0.0;
   bool mapLayerHidden_ = false;
   std::map<std::tuple<std::string, std::int32_t, std::optional<game::battle::EffectPaletteRow>>,
            std::optional<std::size_t>>

@@ -101,7 +101,7 @@ void FieldScene::drawShadows(float alpha) {
     if (!world_.alive(entity) || radius <= 0.0F) {
       return;
     }
-    const glm::vec3 feet = field_->drawnPose(entity, alpha).position;
+    const glm::vec3 feet = drawnPose(entity, alpha).position;
     if (castsShadowOn(field_->collision(), feet)) {
       casters.push_back({.feet = feet, .radius = radius});
     }

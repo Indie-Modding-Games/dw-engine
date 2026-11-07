@@ -246,6 +246,9 @@ private:
   std::optional<BattleEffectBodies> bodies_;
   std::optional<FighterGround> ground_;
   std::optional<session::BattleEffects> effects_;
+  // The effects' frames so far, for the scene to tell a new frame from the same one shown again
+  // (FieldScene::setEffects).
+  std::uint64_t effectFrames_ = 0;
   // When the techniques' effects reach their targets (game::battle::ScriptedFlights), from the
   // effect scripts and the bodies.
   std::optional<game::battle::ScriptedFlights> flights_;

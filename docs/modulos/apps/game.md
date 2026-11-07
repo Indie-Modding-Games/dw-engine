@@ -764,6 +764,24 @@ personajes y la cámara se dibujan deslizándose entre los fotogramas de 1/20 s 
 `docs/modulos/game/field.md`, «Interpolación»); apagado, cada uno se dibuja donde lo deja su tick, a saltos de
 fotograma como el original. La lógica es la misma en los dos casos.
 
+En combate el original mueve a los luchadores y redibuja los efectos de las técnicas una vez por fotograma (20 por
+segundo, uno de cada tres ticks del juego): dibujados donde los deja cada fotograma, avanzan a saltos aunque el campo
+se deslice. Con el movimiento suave encendido, `battle_glide.hpp` los desliza igual que al campo, un fotograma por
+detrás: `PoseGlide` lleva a cada luchador (posición y giro por el camino corto) desde donde se dibujaba hasta el sitio
+del fotograma nuevo en 1/20 s (`FieldScene::holdFighter`, que avanza con `settleActors` en cada tick), y un salto de más
+de 500 unidades en un fotograma se dibuja de golpe; `blendEffects` desliza los efectos entre los dos últimos
+fotogramas (el punto de cada sprite, la traslación de cada objeto de modelo, los extremos de cada partícula),
+emparejando cada dibujo con el del mismo orden entre los de su técnica y su clase; si una técnica cambió cuántos
+dibuja de una clase, ese fotograma se dibuja tal cual. Las sombras, las auras, los anillos y los demás efectos de
+estado que cuelgan de un luchador (`statusAnchor`, `nodePoint`) siguen su sitio deslizado; la lógica del combate
+(`BattleEffectBodies`, las probetas de vuelo) lee el del fotograma. Las animaciones de los luchadores siguen avanzando
+por ticks enteros (60 por segundo). Apagado, todo se dibuja como antes.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Luchadores entre fotogramas | Se dibujan en el sitio de cada fotograma (20 por segundo) | `PoseGlide` desliza la posición y el giro durante el fotograma, un fotograma por detrás; saltos de más de 500 unidades de golpe | `battle_glide_tests.cpp` («a fighter glides over the battle's frame…», «a fighter's turn glides the short way…»); capturas | Mejora opcional (`smooth_motion`, encendida por defecto) |
+| Efectos de las técnicas entre fotogramas | Se redibujan en cada fotograma | `blendEffects`: sprites, objetos de modelo y partículas emparejados por técnica, clase y orden | `battle_glide_tests.cpp` («the effects glide between two frames…», «an effect model glides its translation…») | Mejora opcional (`smooth_motion`) |
+
 ## Estilo chibi
 
 Mejora opcional y prototipo (el original no la tiene): dibuja un modelo con la cabeza grande, el torso corto y los

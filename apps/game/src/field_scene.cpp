@@ -1029,7 +1029,7 @@ void FieldScene::submit(const Actor& actor, float alpha, const Look& look) {
   if (actor.fighter && actor.fighter->flatSprite) {
     return;
   }
-  const scene::Pose pose = field_->drawnPose(actor.entity, alpha);
+  const scene::Pose pose = drawnPose(actor.entity, alpha);
   const glm::vec3 scale = actor.fighter ? look.scale * actor.fighter->scale : look.scale;
   const glm::vec3 rise{0.0F, actor.fighter ? actor.fighter->rise : 0.0F, 0.0F};
   const glm::mat4 world =
@@ -1109,6 +1109,16 @@ void FieldScene::flickerFlames(const Actor& actor, std::uint32_t strip) {
 }
 
 void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
+  // The held fighters and the effects are drawn gliding between the battle's frames with smooth
+  // motion (battle_glide.hpp); the anchors that hang on them (nodePoint, statusAnchor) follow.
+  drawAhead_ = static_cast<double>(alpha) * tickSeconds_;
+  if (field_->smoothMotion() && !effectsTo_.empty()) {
+    effects_ = blendEffects(effectsFrom_, effectsTo_,
+                            static_cast<float>(std::clamp(
+                                (effectsSeconds_ + *drawAhead_) / BattleFrameSeconds, 0.0, 1.0)));
+  } else {
+    effects_ = effectsTo_;
+  }
   // Every frame, paused too: a language picked in the pause menu repaints the signs behind it.
   followSigns();
   const bool paused = clock != FieldClock::Running;
@@ -1221,6 +1231,7 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   drawGroundItems();
   drawShadows(alpha);
   gradeScene(frameSeconds);
+  drawAhead_.reset();
 }
 
 std::optional<glm::vec2> FieldScene::followPixel(glm::vec3 player, bool following) {
@@ -1324,9 +1335,9 @@ std::optional<glm::vec3> FieldScene::nodePoint(const Actor& actor, std::uint32_t
   const auto& inverseBind = skin.inverseBindMatrices;
   // A skin matrix is the joint's model-space transform times its inverse bind matrix.
   const glm::mat4 jointSpace = joints[joint] * glm::inverse(inverseBind[joint]);
-  const auto& transform = world_.registry().get<scene::Transform>(actor.entity);
-  const glm::mat4 world = glm::rotate(glm::translate(glm::mat4{1.0F}, transform.position),
-                                      transform.yaw, glm::vec3{0.0F, 1.0F, 0.0F});
+  const scene::Pose place = heldPlace(actor);
+  const glm::mat4 world = glm::rotate(glm::translate(glm::mat4{1.0F}, place.position), place.yaw,
+                                      glm::vec3{0.0F, 1.0F, 0.0F});
   // The original's axes: y and z point the other way.
   return glm::vec3{world * jointSpace * glm::vec4{offset.x, -offset.y, -offset.z, 1.0F}};
 }

@@ -262,7 +262,7 @@ std::optional<FieldScene::StatusAnchor> FieldScene::statusAnchor(std::size_t fig
   if (actor == nullptr) {
     return std::nullopt;
   }
-  const glm::vec3 feet = world_.registry().get<scene::Transform>(actor->entity).position;
+  const glm::vec3 feet = heldPlace(*actor).position;
   // translateConditionFXToEntity: the node of CONDITION_FX_OFFSETS with its offset turned by the
   // node's matrix; a species without one (a pack's new species) hangs them over its height.
   const glm::vec3 top = feet + glm::vec3{0.0F, static_cast<float>(body.height), 0.0F};

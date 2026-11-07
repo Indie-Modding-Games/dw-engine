@@ -316,6 +316,7 @@ void BattleScreen::tickBattle(double seconds) {
         effects_->setView(effectViewOf(*camera));
       }
       effects_->frame(frame, battle_->moves());
+      ++effectFrames_;
     }
     stepNumbers(frame);
     stepFieldEffects(frame);
@@ -347,7 +348,7 @@ void BattleScreen::showEffects() const {
                        .palettes = effects_->palettesOf(draw.slot)});
     }
   }
-  desc_.scene->setEffects(std::move(shown));
+  desc_.scene->setEffects(std::move(shown), effectFrames_);
   desc_.scene->setMapLayerHidden(battle_ && effects_ && effects_->mapHidden());
 }
 
