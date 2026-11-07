@@ -136,7 +136,8 @@ public:
   // a script's map change): the map-head section runs at once (StoryRunner::enterMap).
   void mapEntered(std::int32_t map);
   // Asks for the sections of the map's script that the player's cell asked for in the last field
-  // tick (game::field::Field::cellSections), at the next frame; a running script drops them.
+  // tick (game::field::Field::cellSections), at the next frame; a running script drops them. Only
+  // the tick before a frame of the original asks, as the original checks the cell once a frame.
   void runCellSections(std::span<const std::int32_t> sections);
   // Whether the story set up the script of the map with this number (StoryRunner::scriptsMap).
   [[nodiscard]] bool scriptsMap(std::int32_t map) const;
