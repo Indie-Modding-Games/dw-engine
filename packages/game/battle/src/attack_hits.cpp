@@ -204,13 +204,28 @@ HitParticles::Vec3 sparkPointOf(const BattleContext& context, const AttackInFlig
   return {at.x, -(context.fighter(attack.defender).combatant.height >> 1), -at.z};
 }
 
+// The damage strategy's damage of a hit, with the difficulty's share for the partner (an engine
+// improvement, damage.partner_dealt_percent and partner_taken_percent; both 100 in the original's
+// ruleset), kept within the formula's min and max.
+std::int32_t damageOf(BattleContext& context, const AttackInFlight& attack) {
+  const DamageRules& rules = context.rules->damage;
+  std::int32_t damage = context.strategies->damage->damage(context.view(), attack.attacker,
+                                                           attack.defender, attack.move);
+  const std::int32_t percent = attack.attacker == PartnerId   ? rules.partnerDealtPercent
+                               : attack.defender == PartnerId ? rules.partnerTakenPercent
+                                                              : Hundred;
+  if (percent != Hundred) {
+    damage = std::clamp(damage * percent / Hundred, rules.min, rules.max);
+  }
+  return damage;
+}
+
 void hit(BattleContext& context, const AttackInFlight& attack) {
   const FighterId id = attack.defender;
   Fighter& fighter = context.fighter(id);
   const BattleMove& move = context.moves->at(attack.move);
   retargetAfterHit(context, id, attack.attacker);
-  const std::int32_t damage =
-      context.strategies->damage->damage(context.view(), attack.attacker, id, attack.move);
+  const std::int32_t damage = damageOf(context, attack);
   // BTL_handleHitReaction: the spark of the hit, unless the fighter is flattened.
   if (context.particles != nullptr && !fighter.status.flattened) {
     const HitParticles::Vec3 spark = sparkPointOf(context, attack);
@@ -266,7 +281,7 @@ void block(BattleContext& context, const AttackInFlight& attack) {
   }
   std::int32_t damage = 0;
   if (context.moves->at(attack.move).range == MoveRange::Melee) {
-    damage = context.strategies->damage->damage(context.view(), attack.attacker, id, attack.move);
+    damage = damageOf(context, attack);
     const std::int32_t span = rules.blockedMeleeMaxPercent - rules.blockedMeleeMinPercent + 1;
     damage = std::max(
         damage * (context.random->below(span) + rules.blockedMeleeMinPercent) / Hundred, 1);

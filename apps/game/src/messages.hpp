@@ -220,4 +220,20 @@ inline constexpr std::string_view SpriteCharactersUnreadable =
 inline constexpr std::string_view SpriteCharacterModelMissing =
     "field: the {} of map {} stays a sprite: {}";
 
+// The options that change the rules (rule_options.hpp).
+inline constexpr std::string_view DifficultyNoLevels =
+    "the difficulty section needs `levels`, a mapping of each level's changes";
+inline constexpr std::string_view DifficultyChangeShape =
+    "a difficulty level is a list of changes, each with `section`, `path` and either `value` or "
+    "`percent`";
+inline constexpr std::string_view DifficultyPercent =
+    "a difficulty change's `percent` is a whole number from 0";
+inline constexpr std::string_view RuleOptionsUnread = "options: the rules' options: {}";
+inline constexpr std::string_view RuleOptionNoValue =
+    "options: the ruleset has no value {}.{}; the option leaves it";
+inline constexpr std::string_view RuleOptionNotNumber =
+    "options: {}.{} is not a whole number, so no percent of it is set";
+inline constexpr std::string_view RuleOptionRefused = "options: {}.{} cannot take {}";
+inline constexpr std::string_view RuleOptionSet = "options: {}.{} = {}";
+
 } // namespace dwe::app::messages

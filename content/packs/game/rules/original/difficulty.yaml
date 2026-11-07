@@ -1,0 +1,17 @@
+# La dificultad que el jugador elige en las opciones (Mejora, normal por defecto; docs/modulos/apps/game.md,
+# «Dificultad»). Normal es el original: no cambia nada. Cada otro nivel cambia valores de las demás secciones de este
+# ruleset mientras se juega en él; lo aplica apps/game (RuleOptions) con los mismos cambios que el panel de ajuste.
+# Cada cambio nombra la sección y la ruta del valor (como el panel: "hunger.window_minutes") y da o el valor nuevo
+# (`value`, un texto YAML) o un tanto por ciento del valor que tiene el ruleset (`percent`, solo para un número entero,
+# redondeado hacia abajo). Un mod ajusta la dificultad con su propia sección difficulty.
+levels:
+  easy:
+    # Combate (también en las copas): el partner hace un 50 % más de daño y recibe la mitad, golpes, remates y bloqueos.
+    - { section: battle, path: damage.partner_dealt_percent, percent: 150 }
+    - { section: battle, path: damage.partner_taken_percent, percent: 50 }
+    # Entrenamiento: las ganancias de cada sesión, un 50 % más.
+    - { section: training, path: gain_percent, percent: 150 }
+    # Cuidados: el doble de tiempo para darle de comer antes del error de cuidado, y la mitad de la parte de la
+    # probabilidad de enfermar que crece con las veces que pudo enfermar.
+    - { section: care, path: hunger.window_minutes, percent: 200 }
+    - { section: care, path: sickness.tries_percent, percent: 50 }

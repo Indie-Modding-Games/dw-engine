@@ -77,6 +77,9 @@ struct TrainingRules {
   std::int32_t tiredOutTiredness = 0;
   std::int32_t tiredOutGain = 0;
   std::int32_t slotDefaultTenths = 0;
+  // An engine improvement: each session's gains in percent of the formula's, before a tired-out
+  // partner's (100, the original's, when the section has none; the difficulty changes it).
+  std::int32_t gainPercent = 100;
   std::int32_t overworkTiredness = 0;
   std::int32_t overworkHappiness = 0;
   std::int32_t overworkDiscipline = 0;

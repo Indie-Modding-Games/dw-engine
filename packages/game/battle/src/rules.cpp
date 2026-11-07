@@ -453,7 +453,8 @@ DamageRules readDamage(ValueReader& in, const YamlNode& node) {
   if (!in.group(node, "damage",
                 {"affinity_divisor", "difference_cap", "power_scale", "variance_min",
                  "variance_max", "counter_defense_percent", "finisher_charge_divisor",
-                 "enemy_finisher_min", "enemy_finisher_max", "min", "max"})) {
+                 "enemy_finisher_min", "enemy_finisher_max", "min", "max"},
+                {"partner_dealt_percent", "partner_taken_percent"})) {
     return {};
   }
   DamageRules damage{.affinityDivisor = in.positive(node, "affinity_divisor"),
@@ -471,6 +472,12 @@ DamageRules readDamage(ValueReader& in, const YamlNode& node) {
   in.ordered(node, "enemy_finisher_min", damage.enemyFinisherMin, "enemy_finisher_max",
              damage.enemyFinisherMax);
   in.ordered(node, "min", damage.min, "max", damage.max);
+  if (node.find("partner_dealt_percent") != nullptr) {
+    damage.partnerDealtPercent = in.count(node, "partner_dealt_percent");
+  }
+  if (node.find("partner_taken_percent") != nullptr) {
+    damage.partnerTakenPercent = in.count(node, "partner_taken_percent");
+  }
   return damage;
 }
 

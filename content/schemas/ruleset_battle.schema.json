@@ -739,6 +739,16 @@
         },
         "max": {
           "type": "integer"
+        },
+        "partner_dealt_percent": {
+          "description": "The partner's hits on the enemies, in percent of the formula's damage (100, the original's, when missing; the difficulty changes it).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "partner_taken_percent": {
+          "description": "The hits on the partner, in percent of the formula's damage (100, the original's, when missing; the difficulty changes it).",
+          "type": "integer",
+          "minimum": 0
         }
       },
       "description": "Damage formula (battle_main.c: BTL_calculateDamage)."

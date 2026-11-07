@@ -107,5 +107,7 @@ schemas:
     - rules/*/city
   ruleset_medals:
     - rules/*/medals
+  ruleset_difficulty:
+    - rules/*/difficulty
   sign_overlay:
     - signs/*

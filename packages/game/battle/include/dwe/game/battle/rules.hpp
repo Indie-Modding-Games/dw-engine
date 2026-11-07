@@ -247,6 +247,11 @@ struct DamageRules {
   std::int32_t enemyFinisherMax = 0;
   std::int32_t min = 0;
   std::int32_t max = 0;
+  // An engine improvement: the partner's hits and the hits on it, in percent of the formula's
+  // damage, before min and max (100, the original's, when the section has none; the difficulty
+  // changes them).
+  std::int32_t partnerDealtPercent = 100;
+  std::int32_t partnerTakenPercent = 100;
 };
 
 struct StatusRules {

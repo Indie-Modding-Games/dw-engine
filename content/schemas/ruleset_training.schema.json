@@ -196,6 +196,11 @@
     "slot_default_tenths": {
       "type": "integer"
     },
+    "gain_percent": {
+      "description": "Each session's gains, in percent of the formula's (100, the original's, when missing; the difficulty changes it).",
+      "type": "integer",
+      "minimum": 0
+    },
     "overwork_tiredness": {
       "type": "integer"
     },

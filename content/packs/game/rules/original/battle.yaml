@@ -257,6 +257,11 @@ damage:
   enemy_finisher_max: 200
   min: 1
   max: 9999
+  # Mejora de dwe (no está en el original): el daño de los golpes del partner y el de los que recibe, en tanto por
+  # ciento del de la fórmula, antes del mínimo y el máximo. 100 es el original; la dificultad fácil los cambia
+  # (difficulty.yaml).
+  partner_dealt_percent: 100
+  partner_taken_percent: 100
 
 # Estados alterados (battle_main.c: BTL_applyMoveStatus, BTL_tickStatusEffects).
 status:
