@@ -307,7 +307,12 @@ void GymScreen::continueBatch(GymBatchMoment moment) {
   }
   moment.map = desc_.scene->field().mapId();
   moment.fieldIdle = moment.fieldIdle && statsBox_.closed() && slotsBox_.closed();
+  const int left = batch_.left();
   const auto course = batch_.next(moment);
+  if (left > 0 && batch_.left() == 0 && !course) {
+    core::logInfo("gym: the batch stops with {} sessions left: {}", left,
+                  moment.partnerNeedsCare ? "the partner needs care" : "the map changed");
+  }
   if (!course) {
     return;
   }
