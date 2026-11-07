@@ -292,6 +292,17 @@ game_options = {
     help = "pause_menu.help.continuous_music",
     original = false,
   },
+  -- Reverb: the sound chip's reverb on the tones that ask for it, as the original sets it at boot
+  -- (on by default; off plays every sound dry).
+  {
+    id = "reverb",
+    setting = "reverb",
+    label = "pause_menu.reverb",
+    default = true,
+    tab = "sound",
+    help = "pause_menu.help.reverb",
+    original = true,
+  },
   -- Interface tab.
   -- Translated signs: the signs painted in the maps read in the player's language (on by default).
   {

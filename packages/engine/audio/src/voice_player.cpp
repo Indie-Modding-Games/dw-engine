@@ -31,6 +31,7 @@ void VoicePlayer::start(const PlayOrder& order) {
   bus_ = order.bus;
   const StereoGains pan = panGains(order.pan, clip_->channels);
   gains_ = {.left = pan.left * order.gain, .right = pan.right * order.gain};
+  reverbSend_ = order.reverbSend;
   position_ = 0.0;
   step_ = static_cast<double>(clip_->sampleRate) / static_cast<double>(MixSampleRate) *
           static_cast<double>(order.pitch);
@@ -49,7 +50,8 @@ void VoicePlayer::release() {
   clip_ = nullptr;
 }
 
-void VoicePlayer::mixInto(std::span<float> frames, std::span<const float> busGains) noexcept {
+void VoicePlayer::mixInto(std::span<float> frames, std::span<float> send,
+                          std::span<const float> busGains) noexcept {
   const std::size_t frameCount = frames.size() / OutputChannels;
   const auto lastChannel = static_cast<std::uint16_t>(clip_->channels - 1);
   for (std::size_t i = 0; i < frameCount && state_ == State::Playing; ++i) {
@@ -62,8 +64,14 @@ void VoicePlayer::mixInto(std::span<float> frames, std::span<const float> busGai
     };
     const float envelope = enveloped_ ? envelope_.advance() : 1.0F;
     const float gain = busGains[i] * fade_ * envelope;
-    frames[i * OutputChannels] += interpolate(0) * gains_.left * gain;
-    frames[(i * OutputChannels) + 1] += interpolate(lastChannel) * gains_.right * gain;
+    const float left = interpolate(0) * gains_.left * gain;
+    const float right = interpolate(lastChannel) * gains_.right * gain;
+    frames[i * OutputChannels] += left;
+    frames[(i * OutputChannels) + 1] += right;
+    if (reverbSend_ > 0.0F) {
+      send[i * OutputChannels] += left * reverbSend_;
+      send[(i * OutputChannels) + 1] += right * reverbSend_;
+    }
     advance();
   }
 }

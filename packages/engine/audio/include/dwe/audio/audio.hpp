@@ -59,6 +59,11 @@ public:
   void setVolume(VolumeControl control, float volume);
   [[nodiscard]] float volume(VolumeControl control) const;
 
+  // Turns the sound chip's reverb on or off (on from the start, as the original sets it at boot:
+  // sound.c: initializeMusic). Off, the voices still carry their send but nothing is heard of it.
+  void setReverb(bool enabled);
+  [[nodiscard]] bool reverb() const { return reverb_; }
+
   // Whether a voice has not reported its end yet.
   [[nodiscard]] bool isActive(VoiceId voice) const;
   [[nodiscard]] std::size_t activeVoiceCount() const;
@@ -103,6 +108,7 @@ private:
   std::vector<HeldMusic> heldMusic_;
   std::uint64_t nextMusicSerial_ = 0;
   std::array<float, VolumeControlCount> volumes_{1.0F, 1.0F, 1.0F};
+  bool reverb_ = true;
   std::size_t droppedOrders_ = 0;
   std::size_t stolenVoices_ = 0;
 };

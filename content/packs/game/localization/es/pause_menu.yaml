@@ -94,6 +94,8 @@ name_spacing: "Espacio tras los nombres"
 # Música continua: un mapa cuya canción ya suena la deja seguir en vez de empezarla otra vez
 # (encendida por defecto).
 continuous_music: "Música continua"
+# Reverberación: la del chip de sonido en los tonos que la piden, como el original (encendida por defecto).
+reverb: "Reverberación"
 # Varias necesidades: la burbuja sobre el compañero enseña hasta tres de sus necesidades a la vez, la más urgente
 # primero (encendida por defecto; apagada, la del original: una cada vez, turnándose las dos más urgentes).
 need_bubble_stack: "Varias necesidades"
@@ -223,6 +225,7 @@ help.seasons: "Primavera, verano, otoño e invierno colorean los exteriores cada
 help.music_volume: "Volumen de la música y del sonido de las películas. 10 es el nivel del original."
 help.effects_volume: "Volumen de los efectos y de los sonidos de los menús. 10 es el nivel del original."
 help.continuous_music: "Si el mapa nuevo tiene la canción que ya suena, sigue sin empezar de nuevo."
+help.reverb: "El eco de sala del chip de sonido en la música y los efectos, como el original. Apagada, todo suena seco."
 help.ui_skin: "El aspecto de los menús y del HUD: el del original o el moderno."
 help.ui_scale: "El tamaño de los menús y del HUD."
 help.language: "El idioma de los textos."

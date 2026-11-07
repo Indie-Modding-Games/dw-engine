@@ -63,6 +63,7 @@ constexpr std::string_view SeasonsKey = "seasons";
 constexpr std::string_view HdSceneryKey = "hd_scenery";
 constexpr std::string_view MusicVolumeKey = "music_volume";
 constexpr std::string_view EffectsVolumeKey = "effects_volume";
+constexpr std::string_view ReverbKey = "reverb";
 
 } // namespace
 
@@ -198,6 +199,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* effects = tree->find(EffectsVolumeKey)) {
       settings.effectsVolume = reader.integer<int>(*effects);
+    }
+    if (const core::YamlNode* reverb = tree->find(ReverbKey)) {
+      settings.reverb = reader.boolean(*reverb);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -354,6 +358,9 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.effectsVolume) {
     root.set(std::string{EffectsVolumeKey},
              core::YamlNode::scalar(std::to_string(*settings.effectsVolume)));
+  }
+  if (settings.reverb) {
+    root.set(std::string{ReverbKey}, core::YamlNode::scalar(*settings.reverb ? "true" : "false"));
   }
   return core::emitYaml(root);
 }

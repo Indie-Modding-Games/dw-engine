@@ -82,15 +82,24 @@ void Mixer::apply(const MusicStopOrder& order) noexcept {
   musicTaken_.store(order.serial, std::memory_order_release);
 }
 
+void Mixer::apply(const ReverbOrder& order) noexcept {
+  if (reverbOn_ && !order.enabled) {
+    reverb_.clear();
+  }
+  reverbOn_ = order.enabled;
+}
+
 void Mixer::renderPass(std::span<float> frames) {
   std::ranges::fill(frames, 0.0F);
   const std::size_t frameCount = frames.size() / OutputChannels;
+  const std::span send = std::span{reverbSend_}.first(frames.size());
+  std::ranges::fill(send, 0.0F);
   rampBusGains(frameCount);
   for (std::size_t slot = 0; slot < voices_.size(); ++slot) {
     VoicePlayer& voice = voices_[slot];
     if (voice.state() == VoicePlayer::State::Playing) {
       const auto& gains = busGains_[std::to_underlying(voice.bus())];
-      voice.mixInto(frames, std::span{gains}.first(frameCount));
+      voice.mixInto(frames, send, std::span{gains}.first(frameCount));
       positions_[slot].store(packVoicePosition(voice.voice().generation, voice.playedFrames()),
                              std::memory_order_relaxed);
     }
@@ -98,7 +107,11 @@ void Mixer::renderPass(std::span<float> frames) {
       reportEnd(voice);
     }
   }
-  music_.mixInto(frames, std::span{busGains_[std::to_underlying(Bus::Music)]}.first(frameCount));
+  music_.mixInto(frames, send,
+                 std::span{busGains_[std::to_underlying(Bus::Music)]}.first(frameCount));
+  if (reverbOn_) {
+    reverb_.process(send, frames);
+  }
   // The original's sound chip saturates at 16 bits, so a hard clip is the faithful limit. A NaN
   // that got this far becomes silence instead of reaching the device.
   for (float& sample : frames) {

@@ -149,7 +149,8 @@ core::Result<std::vector<PlayRequest>> EffectBank::requests(std::uint32_t value)
                       .gain = level(tone->volume) * level(program->volume) * level(bank_.volume),
                       .pan = static_cast<float>(pan) / static_cast<float>(PanCentre),
                       .pitch = static_cast<float>(rate / static_cast<double>(sourceRate)),
-                      .envelope = ChipEnvelope{.adsr1 = tone->adsr1, .adsr2 = tone->adsr2}});
+                      .envelope = ChipEnvelope{.adsr1 = tone->adsr1, .adsr2 = tone->adsr2},
+                      .reverbSend = tone->reverb() ? 1.0F : 0.0F});
   }
   return voices;
 }

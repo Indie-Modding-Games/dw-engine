@@ -92,6 +92,8 @@ name_spacing: "Space after names"
 # Continuous music: a map whose song is already playing lets it go on instead of starting it again
 # (on by default).
 continuous_music: "Continuous music"
+# Reverb: the sound chip's reverb on the tones that ask for it, as the original (on by default).
+reverb: "Reverb"
 # Several needs: the bubble over the partner shows up to three of its needs at once, the most urgent first (on by
 # default; off, the original's: one at a time, the two most urgent taking turns).
 need_bubble_stack: "Several needs"
@@ -220,6 +222,7 @@ help.seasons: "Spring, summer, autumn and winter colour the outdoors every few d
 help.music_volume: "Volume of the music and the movies' sound. 10 is the original's level."
 help.effects_volume: "Volume of the effects and the menus' sounds. 10 is the original's level."
 help.continuous_music: "When the next map has the song already playing, it goes on instead of starting over."
+help.reverb: "The sound chip's room echo on the music and the effects, as the original. Off, everything sounds dry."
 help.ui_skin: "The look of the menus and the HUD: the original's or the modern one."
 help.ui_scale: "The size of the menus and the HUD."
 help.language: "The language of the texts."

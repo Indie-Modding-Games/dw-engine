@@ -44,7 +44,8 @@ SoundBank twoToneBank() {
                                       .pan = 0,
                                       .sample = 2,
                                       .adsr1 = 0,
-                                      .adsr2 = 0},
+                                      .adsr2 = 0,
+                                      .mode = 4},
                                      {.tone = 2,
                                       .root = 127,
                                       .fineTune = 0,
@@ -133,6 +134,9 @@ TEST_CASE("an effect's voices take the tone's gain, pan, pitch and envelope") {
   CHECK((*two)[1].gain == doctest::Approx(64.0F / 127.0F));
   // -64 for the tone and +32 for the program.
   CHECK((*two)[1].pan == doctest::Approx(-0.5F));
+  // Only the tone with the chip's reverb bit goes to the reverb.
+  CHECK((*two)[0].reverbSend == doctest::Approx(0.0F));
+  CHECK((*two)[1].reverbSend == doctest::Approx(1.0F));
 
   // Five octaves up is past the chip's pitch register, which stops just under two octaves.
   const auto high = bank.requests(6);

@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <span>
 
+#include "chip_reverb.hpp"
 #include "music_player.hpp"
 #include "orders.hpp"
 #include "voice_player.hpp"
@@ -40,6 +41,7 @@ private:
   void apply(const VolumeOrder& order) noexcept;
   void apply(const MusicOrder& order) noexcept;
   void apply(const MusicStopOrder& order) noexcept;
+  void apply(const ReverbOrder& order) noexcept;
   void renderPass(std::span<float> frames);
   // The gain of each bus for each frame of the pass, master included.
   void rampBusGains(std::size_t frameCount);
@@ -53,6 +55,10 @@ private:
   std::array<VoicePlayer, MaxVoices> voices_{};
   std::array<Ramp, VolumeControlCount> volumes_{};
   std::array<std::array<float, MaxRenderFrames>, BusCount> busGains_{};
+  // What the voices send to the chip's reverb in this pass, after their bus's gain.
+  std::array<float, MaxRenderFrames * OutputChannels> reverbSend_{};
+  ChipReverb reverb_;
+  bool reverbOn_ = true;
 };
 
 } // namespace dwe::audio

@@ -47,8 +47,8 @@ constexpr std::array<std::string_view, 11> GraphicsRows{"display-mode",     "vsy
                                                         "vivid-colors",     "shadows",
                                                         "chibi-style",      "weather",
                                                         "seasons"};
-constexpr std::array<std::string_view, 3> SoundRows{"music-volume", "effects-volume",
-                                                    "continuous-music"};
+constexpr std::array<std::string_view, 4> SoundRows{"music-volume", "effects-volume",
+                                                    "continuous-music", "reverb"};
 constexpr std::array<std::string_view, 11> InterfaceRows{
     "ui-skin",          "ui-scale",          "language",        "text-font",
     "translated-signs", "show-minimap",      "minimap-enemies", "digital-time",

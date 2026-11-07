@@ -36,8 +36,10 @@ public:
   void stop();
   void release();
 
-  // Adds the voice to frames (interleaved stereo), scaled by its bus's gain at each frame.
-  void mixInto(std::span<float> frames, std::span<const float> busGains) noexcept;
+  // Adds the voice to frames (interleaved stereo), scaled by its bus's gain at each frame, and its
+  // reverb send to send, which is as long.
+  void mixInto(std::span<float> frames, std::span<float> send,
+               std::span<const float> busGains) noexcept;
 
   [[nodiscard]] State state() const { return state_; }
   [[nodiscard]] VoiceId voice() const { return voice_; }
@@ -55,6 +57,7 @@ private:
   const Clip* clip_ = nullptr;
   Bus bus_ = Bus::Effects;
   StereoGains gains_;
+  float reverbSend_ = 0.0F;
   double position_ = 0.0;
   double step_ = 1.0;
   bool stopping_ = false;

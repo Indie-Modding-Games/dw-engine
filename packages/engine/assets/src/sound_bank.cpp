@@ -61,6 +61,8 @@ SoundBankTone readTone(YamlReader& reader, const YamlNode& node) {
                      .pan = midiValue(reader, reader.field(node, "pan")),
                      .sample = reader.integer<std::uint32_t>(reader.field(node, "sample"))};
   readAdsr(reader, reader.field(node, "adsr"), tone);
+  // A bank written by hand may leave it out: no reverb.
+  tone.mode = reader.optionalInteger<std::uint8_t>(node, "mode").value_or(0);
   return tone;
 }
 

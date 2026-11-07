@@ -1291,7 +1291,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 |---|---|
 | Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros |
 | Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
-| Sonido | Volumen de música, Volumen de efectos, Música continua |
+| Sonido | Volumen de música, Volumen de efectos, Música continua, Reverberación |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
 
 | Qué | Teclado y ratón | Mando |
@@ -1411,6 +1411,7 @@ los pasos suenen repartidos en vez de apiñarse arriba. El control `Master` se q
 | Volumen de música | No existe: la música suena siempre al máximo (`sound.c`: `initializeMusic`, `SsSetMVol(127, 127)`) | Fila «Volumen de música», 0–10 (10 por defecto = el original); bus `Music`, que también lleva el sonido de las películas (`MovieScreen`) | `volume_setting_tests.cpp` («the options page's volume rows change the audio at once and save the steps», «the saved volumes reach the audio at start…»); `in_game_options_tests.cpp` («the options page steps the music's and the effects' volumes from 0 to 10», pieles original y moderna); `user_settings_tests.cpp` | Mejora (opción) |
 | Volumen de efectos | No existe: igual que la música | Fila «Volumen de efectos», 0–10; bus `Effects`: los efectos del juego y los sonidos de los menús | Los mismos | Mejora (opción) |
 | Estéreo/mono | No hay opción: el juego no cambia nunca el modo de la biblioteca de sonido | Siempre estéreo; no se añade fila de mono | — | Hueco (sin valor claro) |
+| Reverberación | La del chip, encendida al arrancar y para siempre (`sound.c`: `initializeMusic`, `STUDIO_B` a 0x7000) en los tonos con el bit de reverberación | Igual por defecto ([audio, §7.4](../../architecture/audio.md#74-reverberacion)); fila «Reverberación» («Reverb») para apagarla: la orden `reverb` (booleano) va a `VolumeChanger`, que llama a `Audio::setReverb` y la guarda (`reverb: false`) | `volume_setting_tests.cpp` («the reverb starts on, as the original, and its row turns it off and saves it»); `reverb_tests.cpp`; `user_settings_tests.cpp` | Igual (opción para quitarla) |
 
 ## Sombras, luz y colores vivos
 

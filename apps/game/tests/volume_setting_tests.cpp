@@ -104,4 +104,29 @@ TEST_CASE("the options page's volume rows change the audio at once and save the 
   CHECK_FALSE(changer.handle(ui::UiCommand{.name = "shadows", .value = 3.0}, *menu.ui));
 }
 
+TEST_CASE("the reverb starts on, as the original, and its row turns it off and saves it") {
+  const test_support::TempFolder folder;
+  const std::filesystem::path file = folder.path() / "settings.yaml";
+  audio::Audio sound = nullAudio();
+  UserSettings settings;
+  VolumeChanger changer{settings, file, sound};
+  CHECK(changer.reverb());
+  CHECK(sound.reverb());
+  test::MenuUi menu;
+  changer.publish(*menu.ui);
+  CHECK(
+      changer.handle(ui::UiCommand{.name = std::string{ReverbSetting}, .value = false}, *menu.ui));
+  CHECK_FALSE(changer.reverb());
+  CHECK_FALSE(sound.reverb());
+  CHECK(loadUserSettings(file).reverb == std::optional<bool>{false});
+  // A value of another kind changes nothing.
+  CHECK(changer.handle(ui::UiCommand{.name = std::string{ReverbSetting}, .value = 1.0}, *menu.ui));
+  CHECK_FALSE(sound.reverb());
+
+  // A saved choice reaches the audio at start.
+  audio::Audio other = nullAudio();
+  const VolumeChanger restored{settings, std::nullopt, other};
+  CHECK_FALSE(other.reverb());
+}
+
 } // namespace dwe::app

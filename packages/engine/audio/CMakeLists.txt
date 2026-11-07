@@ -5,6 +5,7 @@ dwe_add_module(audio
     LAYER systems
     SOURCES
         src/audio.cpp
+        src/chip_reverb.cpp
         src/clip.cpp
         src/effect_bank.cpp
         src/envelope.cpp

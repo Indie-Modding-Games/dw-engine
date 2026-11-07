@@ -91,7 +91,8 @@ core::Result<VoiceId> Audio::play(const PlayRequest& request) {
                                   .gain = clampedVolume(request.gain),
                                   .pan = std::clamp(request.pan, -1.0F, 1.0F),
                                   .pitch = request.pitch,
-                                  .envelope = request.envelope});
+                                  .envelope = request.envelope,
+                                  .reverbSend = clampedVolume(request.reverbSend)});
   return voice;
 }
 
@@ -154,6 +155,13 @@ void Audio::setVolume(VolumeControl control, float volume) {
   const float clamped = clampedVolume(volume);
   volumes_[std::to_underlying(control)] = clamped;
   if (!shared_->orders.stage(VolumeOrder{.control = control, .volume = clamped})) {
+    ++droppedOrders_;
+  }
+}
+
+void Audio::setReverb(bool enabled) {
+  reverb_ = enabled;
+  if (!shared_->orders.stage(ReverbOrder{.enabled = enabled})) {
     ++droppedOrders_;
   }
 }

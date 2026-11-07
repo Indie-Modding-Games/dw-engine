@@ -128,6 +128,9 @@ struct UserSettings {
   // VolumeSteps, the original's level; volume_setting.hpp), the full level when not chosen yet.
   std::optional<int> musicVolume = std::nullopt;
   std::optional<int> effectsVolume = std::nullopt;
+  // The sound chip's reverb (reverb: true, false; volume_setting.hpp): on, as the original plays
+  // every tone with its reverb bit through it; on when not chosen yet.
+  std::optional<bool> reverb = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

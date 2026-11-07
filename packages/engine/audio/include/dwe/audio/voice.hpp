@@ -38,6 +38,9 @@ struct PlayRequest {
   // Without one the voice plays at a steady volume. With one it attacks from silence, and a voice
   // whose sustain fades out ends there, even if its clip loops.
   std::optional<ChipEnvelope> envelope = std::nullopt;
+  // How much of the voice also goes to the sound chip's reverb, from 0 to 1 (values outside are
+  // clamped): 1 for a tone with its reverb bit set (docs/architecture/audio.md, "Reverberación").
+  float reverbSend = 0.0F;
 };
 
 } // namespace dwe::audio

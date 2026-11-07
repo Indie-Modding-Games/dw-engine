@@ -1,6 +1,7 @@
 {
   "name": "tinysoundfont",
   "version-date": "2026-07-19",
+  "port-version": 1,
   "description": "SoundFont2 synthesizer library in a single C/C++ header",
   "homepage": "https://github.com/schellingb/TinySoundFont",
   "license": "MIT"

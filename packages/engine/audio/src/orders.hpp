@@ -29,6 +29,7 @@ struct PlayOrder {
   float pan = 0.0F;
   float pitch = 1.0F;
   std::optional<ChipEnvelope> envelope = std::nullopt;
+  float reverbSend = 0.0F;
 };
 
 struct StopOrder {
@@ -55,7 +56,13 @@ struct MusicStopOrder {
   std::uint64_t serial = 0;
 };
 
-using Order = std::variant<PlayOrder, StopOrder, VolumeOrder, MusicOrder, MusicStopOrder>;
+// Turns the sound chip's reverb on or off; off, its tail is dropped at once.
+struct ReverbOrder {
+  bool enabled = true;
+};
+
+using Order =
+    std::variant<PlayOrder, StopOrder, VolumeOrder, MusicOrder, MusicStopOrder, ReverbOrder>;
 
 // A voice ended: it played out, was stopped or was replaced.
 struct VoiceEnded {

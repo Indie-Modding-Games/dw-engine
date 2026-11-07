@@ -36,7 +36,8 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
                               .enhancedLighting = false,
                               .vividColors = false,
                               .musicVolume = 3,
-                              .effectsVolume = 0};
+                              .effectsVolume = 0,
+                              .reverb = false};
   const auto text = formatUserSettings(settings);
   REQUIRE(text.has_value());
   CHECK(text->contains("ui_skin: test_contrast"));
@@ -67,6 +68,7 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
   CHECK(read->vividColors == std::optional<bool>{false});
   CHECK(read->musicVolume == std::optional<int>{3});
   CHECK(read->effectsVolume == std::optional<int>{0});
+  CHECK(read->reverb == std::optional<bool>{false});
 
   // A file from before the setting existed, or without the choice made, leaves it to the packs.
   const auto older = parseUserSettings("language: en\n");
