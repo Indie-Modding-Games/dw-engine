@@ -338,6 +338,16 @@ impl MapDocument {
         tree
     }
 
+    /// The map whose folder has this map's backgrounds and textures: its `assets_from` (a map a
+    /// pack adds as a copy of another, without copying its images), else itself
+    /// (map_document.cpp: mapAssetsOf).
+    pub fn assets_map(&self) -> &str {
+        self.source
+            .get(ASSETS_FROM)
+            .and_then(Value::as_str)
+            .unwrap_or(&self.id)
+    }
+
     /// The document's text, written as `dwx` writes it ([`crate::emit`]).
     pub fn to_yaml(&self) -> String {
         crate::emit::to_yaml(&self.to_tree())
@@ -358,6 +368,13 @@ impl MapDocument {
         self.warps.iter().find(|warp| warp.exit == exit)
     }
 
+    /// Replaces the exit with the same number; a number the map lacks changes nothing.
+    pub fn set_warp(&mut self, warp: Warp) {
+        if let Some(slot) = self.warps.iter_mut().find(|slot| slot.exit == warp.exit) {
+            *slot = warp;
+        }
+    }
+
     /// The patch that changed an exit last, or None.
     pub fn exit_patch(&self, exit: i32) -> Option<&ExitPatch> {
         self.patched_exits.iter().find(|patch| patch.exit == exit)
@@ -366,6 +383,8 @@ impl MapDocument {
 
 const NPCS: &str = "npcs";
 const COLLISION: &str = "collision";
+/// The optional key naming the map whose images a map uses.
+pub const ASSETS_FROM: &str = "assets_from";
 
 fn to_value<T: Serialize>(value: &T) -> Value {
     serde_yaml_ng::to_value(value).unwrap_or(Value::Null)

@@ -10,6 +10,7 @@ mod events;
 mod inspector;
 mod keys;
 mod live;
+mod new_map;
 mod options;
 mod panels;
 mod places;
@@ -18,6 +19,7 @@ mod section;
 mod shot;
 mod timeline;
 mod toolbar;
+mod world;
 
 use eframe::egui;
 

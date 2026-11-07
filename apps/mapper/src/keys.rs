@@ -11,6 +11,8 @@ use crate::app::MapperApp;
 
 /// A turn of Q or E: 45 degrees (4096 a turn).
 const TURN_STEP: i32 = 512;
+/// The zoom of + and -.
+const ZOOM_STEP: f32 = 1.25;
 
 /// The number keys in order: 1 to 9, then 0. Each toggles a layer of `Layer::ALL`; with Alt it
 /// selects the exit of its number.
@@ -100,6 +102,56 @@ pub fn handle(app: &mut MapperApp, ctx: &egui::Context) {
         }
         if input.consume_shortcut(&command(Key::F)) {
             app.focus_filter = true;
+        }
+        if input.consume_shortcut(&command(Key::Q)) {
+            actions.push(Action::Quit);
+        }
+        if input.consume_shortcut(&command(Key::G))
+            && let Some(Selection::Exit(exit)) = app.mapper.selection
+        {
+            actions.push(Action::FollowExit(exit));
+        }
+        if input.consume_shortcut(&command(Key::D)) {
+            let at = app
+                .mapper
+                .hover
+                .map(|hover| app.mapper.view.to_canvas(hover.background));
+            actions.push(Action::AddNpc(at));
+        }
+        if input.consume_key(Modifiers::NONE, Key::M) {
+            app.world_ui.shown = !app.world_ui.shown;
+        }
+        if app.world_ui.shown {
+            return;
+        }
+        let middle = app.mapper.view.canvas / 2.0;
+        if input.consume_key(Modifiers::NONE, Key::Plus)
+            || input.consume_key(Modifiers::NONE, Key::Equals)
+        {
+            actions.push(Action::Zoom {
+                factor: ZOOM_STEP,
+                anchor: middle,
+            });
+        }
+        if input.consume_key(Modifiers::NONE, Key::Minus) {
+            actions.push(Action::Zoom {
+                factor: 1.0 / ZOOM_STEP,
+                anchor: middle,
+            });
+        }
+        if input.consume_key(Modifiers::NONE, Key::Home) {
+            actions.push(Action::FitView);
+        }
+        if input.consume_key(Modifiers::NONE, Key::N)
+            && let Some(map) = &app.mapper.map
+            && !map.backgrounds.is_empty()
+        {
+            let variants: Vec<&str> = map.backgrounds.iter().map(|b| b.variant.as_str()).collect();
+            let place = variants
+                .iter()
+                .position(|&variant| variant == app.mapper.variant)
+                .map_or(0, |place| (place + 1) % variants.len());
+            actions.push(Action::SetVariant(variants[place].to_owned()));
         }
         // Alt before the plain digits: a plain key also takes it with Alt held.
         for (place, &digit) in DIGITS.iter().enumerate() {

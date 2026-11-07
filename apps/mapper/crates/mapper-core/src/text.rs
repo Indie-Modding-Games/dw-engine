@@ -208,8 +208,19 @@ pub const UNSAVED_DISCARD: &str = "Descartar";
 pub const UNSAVED_CANCEL: &str = "Cancelar";
 
 /// The keyboard shortcuts, as the help shows them.
-pub const SHORTCUT_LIST: [(&str, &str); 22] = [
+pub const SHORTCUT_LIST: [(&str, &str); 30] = [
     ("Ctrl+S", "Guardar (parche)"),
+    ("Ctrl+Q", "Salir"),
+    ("M", "Cambiar entre el mapa y el mundo"),
+    ("+ / -", "Acercar / alejar"),
+    ("Inicio", "Encuadrar el mapa"),
+    ("N", "Siguiente hora del día (fondo)"),
+    ("Ctrl+G", "Ir adonde lleva la salida seleccionada"),
+    ("Ctrl+D", "Añadir un NPC bajo el cursor"),
+    (
+        "Mundo: Mayús+arrastrar",
+        "De un mapa a otro: conectar sus salidas",
+    ),
     ("Ctrl+Z", "Deshacer"),
     ("Ctrl+Y / Ctrl+Mayús+Z", "Rehacer"),
     ("Ctrl+F", "Buscar un mapa en la lista"),
@@ -651,6 +662,91 @@ pub const TRACK_TEXT: &str = "Texto";
 pub const TRACK_AUDIO: &str = "Audio";
 pub const TRACK_WAIT: &str = "Esperas";
 pub const TRACK_STORY: &str = "Estado";
+
+pub const SCRIPT_WARP: &str = "warp de script";
+pub const CHECK_MISSING_MAP: &str = "lleva a un mapa que no existe";
+pub const CHECK_MISSING_EXIT: &str = "lleva a una salida que no existe";
+pub const CHECK_FALLBACK: &str = "su id no es de ningún mapa; el índice del original lleva a";
+pub const CHECK_ONE_WAY: &str = "solo de ida: no hay vuelta desde";
+pub const CHECK_UNREACHABLE: &str = "no se llega desde el mapa inicial";
+pub const CHECK_ARRIVAL_IN_WALL: &str = "se llega dentro de una pared";
+pub const NO_SUCH_EXIT: &str = "el mapa no tiene esa salida";
+pub const CONNECTED: &str = "Conectado";
+pub const NEW_MAP_FAILED: &str = "No se pudo crear el mapa";
+pub const NEW_MAP_CREATED: &str = "Mapa creado";
+pub const NOT_OWN_MAP: &str =
+    "Solo se pueden borrar o renombrar los mapas que añadió el paquete destino";
+pub const MAP_IS_REFERENCED: &str = "Hay caminos que llevan a este mapa; cámbialos antes";
+pub const MAP_DELETED: &str = "Mapa borrado";
+pub const MAP_RENAMED: &str = "Mapa renombrado";
+
+pub const VIEW_MAP: &str = "Mapa";
+pub const VIEW_WORLD: &str = "Mundo";
+pub const VIEW_HINT: &str = "M: cambiar entre el mapa y el mundo";
+pub const WORLD_SEARCH_HINT: &str = "Buscar un mapa (Intro lo centra)";
+pub const WORLD_EXITS: &str = "Salidas";
+pub const WORLD_SCRIPT_WARPS: &str = "Warps de script";
+pub const WORLD_AREAS: &str = "Zonas";
+pub const WORLD_ALL: &str = "Todas";
+pub const WORLD_NONE: &str = "Ninguna";
+pub const WORLD_RELAYOUT: &str = "Reordenar";
+pub const WORLD_RELAYOUT_HINT: &str =
+    "Olvida dónde pusiste los mapas y los coloca otra vez (siempre igual para el mismo contenido)";
+pub const WORLD_CHECKS: &str = "Comprobaciones";
+pub const WORLD_ERRORS: &str = "Errores";
+pub const WORLD_WARNINGS: &str = "Avisos";
+pub const WORLD_NOTES: &str = "Notas";
+pub const WORLD_NO_CHECKS: &str = "Nada que señalar.";
+pub const WORLD_CHECK_HINT: &str = "Clic: centrar el mapa en el grafo";
+pub const WORLD_IF: &str = "si";
+pub const WORLD_AREA: &str = "Zona";
+pub const WORLD_NODE_HINT: &str = "Doble clic: abrir · arrastrar: mover · Mayús+arrastrar o botón derecho hasta otro mapa: conectar";
+pub const WORLD_EDGE_HINT: &str = "Clic: abrir la salida o la sección en su editor";
+pub const WORLD_CONNECT_TITLE: &str = "Conectar mapas";
+pub const WORLD_CONNECT_FROM: &str = "Salida de";
+pub const WORLD_CONNECT_TO: &str = "Llega a";
+pub const WORLD_CONNECT_BACK: &str = "Y la vuelta (esa salida lleva a la primera)";
+pub const WORLD_CONNECT_HELP: &str = "La salida del mapa abierto queda como cambio sin guardar; la de \
+     cualquier otro mapa se escribe ya como parche en el paquete destino.";
+pub const WORLD_CONNECT: &str = "Conectar";
+pub const MENU_MAPS: &str = "Mapas";
+pub const NEW_MAP: &str = "Nuevo mapa…";
+pub const RENAME_MAP: &str = "Renombrar mapa…";
+pub const DELETE_MAP: &str = "Borrar mapa…";
+pub const NEW_MAP_TITLE: &str = "Nuevo mapa";
+pub const NEW_MAP_NAME: &str = "Id";
+pub const NEW_MAP_NAME_HINT: &str = "a-z, 0-9 y _";
+pub const NEW_MAP_TITLE_FIELD: &str = "Nombre";
+pub const NEW_MAP_TITLE_HINT: &str = "El nombre que se muestra";
+pub const NEW_MAP_AREA: &str = "Zona";
+pub const NEW_MAP_TEMPLATE: &str = "Plantilla";
+pub const NEW_MAP_COPY: &str = "Copia de un mapa";
+pub const NEW_MAP_BLANK: &str = "En blanco";
+pub const NEW_MAP_COPY_IMAGES: &str =
+    "Copiar sus imágenes al paquete (si no, las usa del original)";
+pub const NEW_MAP_KEEP_EXITS: &str = "Conservar sus salidas";
+pub const NEW_MAP_SIZE: &str = "Tamaño (fichas de 128 px)";
+pub const NEW_MAP_IMAGE: &str = "Fondo";
+pub const NEW_MAP_IMAGE_NONE: &str = "(cuadros grises generados)";
+pub const NEW_MAP_PICK_IMAGE: &str = "Elegir PNG…";
+pub const NEW_MAP_CONNECT: &str = "Conectar con";
+pub const NEW_MAP_CONNECT_EXIT: &str = "salida";
+pub const NEW_MAP_OWN_EXIT: &str = "por la salida del nuevo mapa";
+pub const NEW_MAP_CREATE: &str = "Crear";
+pub const NEW_MAP_NEEDS_TARGET: &str =
+    "Elige antes un paquete destino (un mod o el paquete del equipo): el mapa se escribe allí.";
+pub const NEW_MAP_ID_TAKEN: &str = "Ese id ya existe";
+pub const NEW_MAP_BAD_NAME: &str = "Solo a-z, 0-9 y _ (1 a 64)";
+pub const RENAME_MAP_TITLE: &str = "Renombrar mapa";
+pub const DELETE_MAP_TITLE: &str = "Borrar mapa";
+pub const DELETE_MAP_QUESTION: &str =
+    "Se borran sus ficheros, su entrada y su nombre del paquete destino. No se puede deshacer.";
+pub const NO_OWN_MAPS: &str = "El paquete destino no ha añadido mapas.";
+
+/// The counts under the world's tools.
+pub fn world_stats(maps: usize, exits: usize, warps: usize) -> String {
+    format!("{maps} mapas · {exits} salidas · {warps} warps de script")
+}
 
 /// A timeline track's name.
 pub fn track_name(track: dwe_story::Track) -> String {

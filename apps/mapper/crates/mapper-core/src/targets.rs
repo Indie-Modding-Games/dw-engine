@@ -1,6 +1,7 @@
 //! Where the editor may save: the packs of the stack it can write (docs/modulos/apps/mapper.md,
 //! "Guardar"), a new mod pack it creates, and the settings it remembers between runs.
 
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use dwe_pack::{Layer, MountedPack, PackOrigin};
@@ -108,6 +109,9 @@ pub struct Settings {
     /// The dwx program that makes `field/script_warps` again when a save changes map changes.
     #[serde(default)]
     pub dwx: Option<PathBuf>,
+    /// Where the user put maps of the world graph, by content folder and map id.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub world_layouts: BTreeMap<String, BTreeMap<String, [i32; 2]>>,
 }
 
 impl Settings {
@@ -164,6 +168,10 @@ mod tests {
             last_target: Some(PathBuf::from("/x/mods/mine")),
             reload_on_save: Some(false),
             dwx: Some(PathBuf::from("/x/bin/dwx")),
+            world_layouts: BTreeMap::from([(
+                "/x/content".to_owned(),
+                BTreeMap::from([("area_a".to_owned(), [10, -20])]),
+            )]),
         };
         settings.store(&file).unwrap();
         assert_eq!(Settings::load(&file), settings);

@@ -4,15 +4,17 @@
 
 use std::path::PathBuf;
 
+use dwe_map::new_map::NewMap;
 use dwe_map::save::SaveMode;
 use dwe_map::table::{MapDoor, MapToilet};
-use dwe_map::{Npc, Warp};
+use dwe_map::{Cell, Npc, Warp};
 use dwe_pack::GameFolders;
 use dwe_story::edit::StmtPath;
 use glam::Vec2;
 
 use crate::browser::GroupBy;
 use crate::layers::Layer;
+use crate::maps::Connect;
 use crate::story::StoryEdit;
 use crate::timeline::NewCue;
 use crate::tools::{Modifiers, Selection, Tool};
@@ -77,6 +79,13 @@ pub enum Action {
     Redo,
     /// Replaces an exit's record (by its `exit`).
     SetWarp(Warp),
+    /// Sets every cell of a rectangle (corners included, in any order) to a value: one undo
+    /// step, as the rectangle tool.
+    PaintRect {
+        from: Cell,
+        to: Cell,
+        value: u8,
+    },
     /// Replaces an NPC slot.
     SetNpc {
         slot: usize,
@@ -182,6 +191,25 @@ pub enum Action {
     SetReloadOnSave(bool),
     /// The dwx program that makes `field/script_warps` again after a save changes map changes.
     SetDwxPath(Option<PathBuf>),
+    /// Puts a map of the world graph somewhere (remembered for this content).
+    MoveWorldNode {
+        id: String,
+        to: Vec2,
+    },
+    /// Forgets where the user put the graph's maps.
+    ResetWorldLayout,
+    /// Makes an exit lead to another map's exit, and maybe back: the open map's as an edit, the
+    /// others' as patches written into the target.
+    Connect(Connect),
+    /// Creates a map in the target pack (and connects it), then opens it.
+    NewMap(NewMap),
+    /// Removes a map the target pack added, when nothing leads to it.
+    DeleteMap(String),
+    /// Renames a map the target pack added, with the exits of the pack that lead to it.
+    RenameMap {
+        id: String,
+        name: String,
+    },
     /// Closes the editor (asks first when there are unsaved changes).
     Quit,
     /// Answers the unsaved-changes question about the action waiting for it.
@@ -210,6 +238,9 @@ impl Action {
                 | Self::OpenMapAtExit { .. }
                 | Self::Back
                 | Self::OpenAdjacentMap { .. }
+                | Self::NewMap(_)
+                | Self::DeleteMap(_)
+                | Self::RenameMap { .. }
                 | Self::Quit
         )
     }
