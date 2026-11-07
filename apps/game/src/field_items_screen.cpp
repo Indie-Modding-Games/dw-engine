@@ -207,9 +207,9 @@ void FieldItemsScreen::show(FieldScene& scene) const {
       continue;
     }
     const assets::ItemEntry& entry = table.at(ground->item);
-    if (entry.iconPalette && entry.originalIndex) {
+    if (const auto icon = entry.icon()) {
       sprites.push_back(
-          {.position = ground->position, .icon = entry.index, .palette = *entry.iconPalette});
+          {.position = ground->position, .icon = icon->cell, .palette = icon->palette});
     }
   }
   scene.setGroundItems(std::move(sprites));

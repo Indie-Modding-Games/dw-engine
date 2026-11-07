@@ -1,0 +1,13 @@
+# Los objetos raros (mejora opcional del motor, la opción «Objetos raros», apagada por defecto;
+# docs/modulos/game/evolution.md, «Objetos raros de evolución»). Al cargar un mapa, cada punto donde su cabecera
+# tira un objeto al azar tiene chance_percent en 100 de dejar uno de la reserva en lugar del suyo. Un objeto no sale
+# mientras esté en la bolsa o ya en el suelo; usado, puede volver a salir. Con el contenido oculto solo se alcanza
+# como partner la forma del objeto de esta reserva; la otra necesita el paso Mega (oculto_mega/rare_items.yaml).
+chance_percent: 1
+pool: ["game:blood_moon"]
+maps:
+  trop06:
+    # El bosque del reto del arquero (guion 18, sección 0x00fe): sus siete puntos. La cabecera deja de poner
+    # objetos con el trigger 236.
+    unless_trigger: 236
+    spots: [[33, 49], [49, 53], [67, 42], [34, 29], [50, 34], [49, 18], [65, 22]]

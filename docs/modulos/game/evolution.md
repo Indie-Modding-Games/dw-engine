@@ -191,6 +191,40 @@ Tests: `a partner's move variant replaces the table's move for it alone` (`packa
 Las etapas canónicas (Supremo/Mega para `species_v`, `species_bd`, `species_o` y `species_t`) son solo de la
 UI: las reglas siguen viendo nivel 5 ([game.md](../apps/game.md#etapas-canónicas)).
 
+### Objetos raros de evolución
+
+Mejora opcional, apagada por defecto (ajuste «Objetos raros», [game.md](../apps/game.md#objetos-raros)). Las dos
+formas de nivel 5 que no tienen objeto de evolución en el original, `species_q` (id base `vand`) y `species_t` (id
+base `muge`), ganan uno cada una: `game:blood_moon` y `game:steel_heart`, en `data/items.yaml` y
+`data/item_effects.yaml` del paquete `game` (nunca en los datos base), detrás de los objetos del original. Se usan
+como los de nivel 5 del original (`handleEvoItems`, igual que `red_ruby` o `beetlepearl`): solo con el
+compañero un nivel por debajo de la forma de destino, la misma animación y sin stats extra. Reutilizan en ejecución el
+icono de esos dos objetos (`icon: <id>` en la fila del paquete), y su descripción se arma en ejecución con el nombre
+de la especie (`description_species`, clave `{species}` del texto «Digievoluciona a {species}»), así que ningún
+nombre de especie va al repositorio. El precio de venta, el orden y la partida guardada usan su id `game:`.
+
+Dónde salen: la sección `rare_items` de los rulesets `oculto` y `oculto_mega` (`rules/*/rare_items.yaml`, esquema
+`ruleset_rare_items`) da `chance_percent` (1), la lista `pool` y, por mapa, los puntos (`spots`) de objetos al azar de
+su sección de entrada y el disparador que los apaga (`unless_trigger`). Por ahora solo `trop06` (los siete puntos del
+guion 18, sin el disparador 236). Con la opción encendida, `FieldItemsAdapter::loadMap` tira cada punto al entrar en
+el mapa (con el azar de la sesión, antes de la cabecera del guion): si sale, deja un objeto raro del grupo en ese punto
+y el `spawn_item` del guion para esa casilla no se hace. Apagada, no se tira nada y el azar no cambia.
+
+| Ruleset | Grupo |
+|---|---|
+| `oculto` | `game:blood_moon` (`species_q` solo llega de compañero con el contenido oculto) |
+| `oculto_mega` | `game:blood_moon` y `game:steel_heart` (`species_t` solo llega con el paso Mega) |
+
+Un objeto raro no sale mientras está en la bolsa o ya en el suelo; después de usarlo puede volver a salir, como
+cualquier objeto de evolución que se vuelve a comprar o ganar. Si una pila de tablas no trae la especie de destino
+(contenido base de prueba), su fila de efecto se salta con un aviso y el resto del paquete carga.
+
+Tests: `packages/session/tests/rare_items_tests.cpp` (esquema y rulesets, probabilidad con semilla fija: 1 % de
+140 000 tiradas y las mismas con la misma semilla, el adaptador con la opción apagada y encendida, guardado y carga con
+ids `game:`), `a pack's evolution item, a row with no original number, works as an Ultimate's does`
+(`packages/game/evolution/tests/specials_tests.cpp`), la composición del icono y la especie de la descripción en
+`table_composition_tests.cpp` y `bag_view_tests.cpp`.
+
 ## Paridad con el decomp
 
 | Regla | Decomp | Nuestro código / sección | Test | Estado |

@@ -116,8 +116,9 @@ public:
   void enterMap(std::string_view mapId);
   // A map load, numbered by its loader: map.c: changeMap runs clearDroppedItems on every load, the
   // map the player is on included (a script's warp back onto it, script_interp.c: warp_to), before
-  // the map's head script spawns its items again. Nothing of an earlier load stays.
-  void loadMap(std::string_view mapId, std::uint32_t load);
+  // the map's head script spawns its items again. Nothing of an earlier load stays. Whether this
+  // is a new load (the first call for it).
+  bool loadMap(std::string_view mapId, std::uint32_t load);
 
   // Nothing stays (item.c: initializeDroppedItems frees the 11 dropped-item slots when the game
   // starts; a new FieldItems starts empty as well).

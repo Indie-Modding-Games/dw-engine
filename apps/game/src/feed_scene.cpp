@@ -107,9 +107,8 @@ void FeedScene::showItem() {
   std::optional<HeldItemSprite> held;
   if (item_ && feedItemHeld(phase, static_cast<std::int32_t>(frame))) {
     const assets::ItemEntry& entry = inventory_->items().at(*item_);
-    if (entry.iconPalette) {
-      held =
-          HeldItemSprite{.node = FeedItemNode, .icon = entry.index, .palette = *entry.iconPalette};
+    if (const auto icon = entry.icon()) {
+      held = HeldItemSprite{.node = FeedItemNode, .icon = icon->cell, .palette = icon->palette};
     }
   }
   scene_->setHeldItem(held);

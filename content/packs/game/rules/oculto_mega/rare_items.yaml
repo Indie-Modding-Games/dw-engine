@@ -1,0 +1,10 @@
+# Los objetos raros con el paso Mega (oculto/rare_items.yaml): los dos objetos, porque estas reglas traen también
+# los datos de partner de la forma del segundo.
+chance_percent: 1
+pool: ["game:blood_moon", "game:steel_heart"]
+maps:
+  trop06:
+    # El bosque del reto del arquero (guion 18, sección 0x00fe): sus siete puntos. La cabecera deja de poner
+    # objetos con el trigger 236.
+    unless_trigger: 236
+    spots: [[33, 49], [49, 53], [67, 42], [34, 29], [50, 34], [49, 18], [65, 22]]

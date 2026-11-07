@@ -76,7 +76,7 @@ public:
   bool handle(const ui::UiCommand& command);
 
   // Hands the scene the items on the ground of the map shown, once a frame: those with an icon
-  // (ItemEntry::iconPalette) are drawn (item.c: renderDroppedItem), and the chests.
+  // (ItemEntry::icon) are drawn (item.c: renderDroppedItem), and the chests.
   void show(FieldScene& scene) const;
 
 private:

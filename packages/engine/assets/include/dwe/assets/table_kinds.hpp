@@ -31,7 +31,7 @@ struct TableKind {
   const TableComposition* composition = nullptr;
 };
 
-// Every kind of content table: digimon, raise, maps, items, moves and evolution.
+// Every kind of content table: digimon, raise, maps, items, item_effects, moves and evolution.
 std::span<const TableKind> composedTableKinds();
 
 // The content tables of the packs with their kind: the default id of each kind that a pack has, and

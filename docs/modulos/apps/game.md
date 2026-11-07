@@ -1289,7 +1289,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 
 | Pestaña | Filas |
 |---|---|
-| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha |
+| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros |
 | Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
@@ -1584,3 +1584,13 @@ columna: el cursor cae en `species_o`, en la misma columna) y la vuelta a la pá
 el árbol con la caja Mega y la página 2 (`species_q`, al que evoluciona antes con `evolve` para que su casilla se abra,
 y su detalle) con la opción apagada, y con ella encendida los cuatro Megas en una página y el detalle de `species_t`
 ([prueba vertical](../../guides/prueba-vertical.md)).
+
+## Objetos raros
+
+Mejora opcional, apagada por defecto: el ajuste `rare_items` (fila «Objetos raros», «Rare items» en inglés, la última
+de la pestaña Juego de las opciones del menú de pausa y de las del título, guardado en los ajustes del usuario) llega
+desde `PlaySession` (`RareItemsSetting`) a `FieldItemsAdapter::setRareItems`. Encendido, y solo en una partida con el
+contenido oculto (rulesets `oculto` u `oculto_mega`, que traen la sección `rare_items`), algunos puntos de objetos al
+azar pueden dejar un objeto raro de evolución en vez del suyo
+([evolution.md](../game/evolution.md#objetos-raros-de-evolución)). Apagado, o con el ruleset `original`, los objetos
+del campo son los del original. Su ayuda (`pause_menu.help.rare_items`) avisa de que necesita el contenido oculto.

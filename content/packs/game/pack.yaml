@@ -45,6 +45,8 @@ schemas:
     - rules/*/species_extra
   ruleset_mega_step:
     - rules/*/mega_step
+  ruleset_rare_items:
+    - rules/*/rare_items
   ruleset_training:
     - rules/*/training
   ruleset_inventory:

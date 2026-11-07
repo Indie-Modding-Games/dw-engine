@@ -228,12 +228,14 @@ void FieldItems::enterMap(std::string_view mapId) {
   }
 }
 
-void FieldItems::loadMap(std::string_view mapId, std::uint32_t load) {
-  if (mapId != mapId_ || load != load_) {
-    mapId_ = mapId;
-    load_ = load;
-    clear();
+bool FieldItems::loadMap(std::string_view mapId, std::uint32_t load) {
+  if (mapId == mapId_ && load == load_) {
+    return false;
   }
+  mapId_ = mapId;
+  load_ = load;
+  clear();
+  return true;
 }
 
 void FieldItems::clear() {

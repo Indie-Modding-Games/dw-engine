@@ -41,6 +41,7 @@ constexpr std::string_view TranslatedSignsKey = "translated_signs";
 constexpr std::string_view ModelCharactersKey = "model_characters";
 constexpr std::string_view StatusExtrasKey = "status_extras";
 constexpr std::string_view CanonicalStagesKey = "canonical_stages";
+constexpr std::string_view RareItemsKey = "rare_items";
 constexpr std::string_view WalkControlKey = "walk_control";
 constexpr std::string_view LongNamesKey = "long_names";
 constexpr std::string_view ShopJobBarKey = "shop_job_bar";
@@ -131,6 +132,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* stages = tree->find(CanonicalStagesKey)) {
       settings.canonicalStages = reader.boolean(*stages);
+    }
+    if (const core::YamlNode* rare = tree->find(RareItemsKey)) {
+      settings.rareItems = reader.boolean(*rare);
     }
     if (const core::YamlNode* walk = tree->find(WalkControlKey)) {
       settings.walkControl = reader.text(*walk);
@@ -269,6 +273,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.canonicalStages) {
     root.set(std::string{CanonicalStagesKey},
              core::YamlNode::scalar(*settings.canonicalStages ? "true" : "false"));
+  }
+  if (settings.rareItems) {
+    root.set(std::string{RareItemsKey},
+             core::YamlNode::scalar(*settings.rareItems ? "true" : "false"));
   }
   if (settings.walkControl) {
     root.set(std::string{WalkControlKey}, core::YamlNode::scalar(*settings.walkControl));

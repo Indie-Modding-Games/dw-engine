@@ -65,6 +65,9 @@ struct UserSettings {
   // The canonical stages (canonical_stages: true, false): the chart names the stages as the series
   // does (Digi-Egg to Ultra) and draws a Mega box; off when not chosen yet.
   std::optional<bool> canonicalStages = std::nullopt;
+  // The rare items (rare_items: true, false): the field's random item spots may lay a rare
+  // evolution item of the ruleset's rare_items section; off when not chosen yet.
+  std::optional<bool> rareItems = std::nullopt;
   // What walks the player in the field (walk_control: keys, mouse; walk_control.hpp): the keyboard
   // and the pad, or the mouse, never both; the keys when not chosen yet.
   std::optional<std::string> walkControl = std::nullopt;

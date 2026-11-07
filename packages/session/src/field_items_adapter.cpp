@@ -7,7 +7,10 @@
 #include <dwe/session/story_adapter.hpp>
 
 #include <algorithm>
+#include <cstddef>
+#include <span>
 #include <string>
+#include <utility>
 
 #include "field_items_messages.hpp"
 
@@ -55,6 +58,14 @@ constexpr std::string_view TallFromLevelKey = "tall_from_level";
 constexpr std::string_view ShortSpeciesKey = "short_species";
 constexpr std::string_view SlotKey = "slot";
 constexpr std::string_view SoundKey = "sound";
+constexpr std::string_view ChancePercentKey = "chance_percent";
+constexpr std::string_view PoolKey = "pool";
+constexpr std::string_view MapsKey = "maps";
+constexpr std::string_view SpotsKey = "spots";
+constexpr std::string_view UnlessTriggerKey = "unless_trigger";
+constexpr std::int32_t PercentScale = 100;
+// A spot: [column, row], the cell spawn_item takes.
+constexpr std::size_t SpotValues = 2;
 
 std::int32_t positive(YamlReader& reader, const YamlNode& root, std::string_view key) {
   const YamlNode& node = reader.field(root, key);
@@ -214,13 +225,81 @@ core::Result<FieldItemsRules> readFieldItemRules(const ruleset::Section& section
   return reader.finish(rules, section.file);
 }
 
+core::Result<RareItemRules> readRareItemRules(const ruleset::Section& section) {
+  YamlReader reader;
+  const YamlNode& root = section.node;
+  if (!reader.expectKeys(root, field_items_messages::RareSectionText,
+                         {ChancePercentKey, PoolKey, MapsKey})) {
+    return std::unexpected{reader.error(section.file)};
+  }
+  RareItemRules rules;
+  const YamlNode& chance = reader.field(root, ChancePercentKey);
+  rules.chancePercent = reader.integer<std::int32_t>(chance);
+  if (rules.chancePercent < 0 || rules.chancePercent > PercentScale) {
+    reader.fail(chance, core::formatMessage(field_items_messages::NotPercent, ChancePercentKey));
+  }
+  for (const YamlNode& item : reader.sequence(reader.field(root, PoolKey), PoolKey)) {
+    rules.pool.push_back(reader.text(item));
+  }
+  const YamlNode& maps = reader.field(root, MapsKey);
+  if (!maps.isMapping()) {
+    reader.fail(maps, core::formatMessage(field_items_messages::NotMapping, MapsKey));
+  }
+  for (const core::YamlEntry& entry :
+       maps.isMapping() ? maps.entries() : std::span<const core::YamlEntry>{}) {
+    if (!reader.expectKeys(entry.value, entry.key, {SpotsKey}, {UnlessTriggerKey})) {
+      break;
+    }
+    RareItemMap map{.spots = {},
+                    .unlessTrigger =
+                        reader.optionalInteger<std::int32_t>(entry.value, UnlessTriggerKey)};
+    for (const YamlNode& spot : reader.sequence(reader.field(entry.value, SpotsKey), SpotsKey)) {
+      const auto cell = reader.sequence(spot, SpotsKey, SpotValues);
+      if (cell.size() == SpotValues) {
+        map.spots.push_back({.column = reader.integer<std::int32_t>(cell[0]),
+                             .row = reader.integer<std::int32_t>(cell[1])});
+      }
+    }
+    rules.maps.insert_or_assign(entry.key, std::move(map));
+  }
+  return reader.finish(std::move(rules), section.file);
+}
+
+std::vector<RareItemDrop> rollRareItems(std::span<const assets::CollisionCell> spots,
+                                        std::int32_t chancePercent,
+                                        std::vector<assets::ItemHandle> eligible,
+                                        ruleset::Random& random) {
+  std::vector<RareItemDrop> drops;
+  for (const assets::CollisionCell& cell : spots) {
+    if (eligible.empty()) {
+      break;
+    }
+    if (!random.chance(chancePercent)) {
+      continue;
+    }
+    const auto picked =
+        static_cast<std::size_t>(random.below(static_cast<std::int32_t>(eligible.size())));
+    drops.push_back({.item = eligible[picked], .cell = cell});
+    eligible.erase(eligible.begin() + static_cast<std::ptrdiff_t>(picked));
+  }
+  return drops;
+}
+
 FieldItemsAdapter::FieldItemsAdapter(InventoryAdapter& inventory, StoryAdapter& story)
     : inventory_{&inventory}, story_{&story} {}
 
 ruleset::SectionChecks FieldItemsAdapter::sectionChecks() const {
   return {
-      {std::string{FieldItemsSection}, [](const ruleset::Section& section) -> core::Result<void> {
+      {std::string{FieldItemsSection},
+       [](const ruleset::Section& section) -> core::Result<void> {
          auto rules = readFieldItemRules(section);
+         if (!rules) {
+           return std::unexpected{rules.error()};
+         }
+         return {};
+       }},
+      {std::string{RareItemsSection}, [](const ruleset::Section& section) -> core::Result<void> {
+         auto rules = readRareItemRules(section);
          if (!rules) {
            return std::unexpected{rules.error()};
          }
@@ -242,7 +321,59 @@ core::Result<void> FieldItemsAdapter::readRules(const ruleset::Ruleset& rules) {
   }
   items_.setRules(read->items);
   rules_ = *read;
+  rareRules_.reset();
+  if (const ruleset::Section* rare = rules.section(RareItemsSection)) {
+    auto rareRead = readRareItemRules(*rare);
+    if (!rareRead) {
+      return std::unexpected{rareRead.error()};
+    }
+    rareRules_ = std::move(*rareRead);
+  }
   return {};
+}
+
+bool FieldItemsAdapter::rareItemEligible(assets::ItemHandle item) const {
+  if (inventory_->inventory().countOf(item) > 0) {
+    return false;
+  }
+  return std::ranges::none_of(items_.ground(),
+                              [&](const auto& lying) { return lying && lying->item == item; });
+}
+
+void FieldItemsAdapter::loadMap(std::string_view mapId, std::uint32_t load, float height,
+                                ruleset::Random& random) {
+  if (!items_.loadMap(mapId, load)) {
+    return;
+  }
+  rareCells_.clear();
+  if (!rareItemsOn_ || !rareRules_) {
+    return;
+  }
+  const auto map = rareRules_->maps.find(mapId);
+  if (map == rareRules_->maps.end()) {
+    return;
+  }
+  if (map->second.unlessTrigger &&
+      story_->state().trigger(*map->second.unlessTrigger).value_or(false)) {
+    return;
+  }
+  std::vector<assets::ItemHandle> eligible;
+  for (const std::string& id : rareRules_->pool) {
+    const std::optional<assets::ItemHandle> item = inventory_->items().handleOf(id);
+    if (!item) {
+      core::logWarning("{}", core::formatMessage(field_items_messages::UnknownRareItem, id));
+    } else if (rareItemEligible(*item)) {
+      eligible.push_back(*item);
+    }
+  }
+  for (const RareItemDrop& drop :
+       rollRareItems(map->second.spots, rareRules_->chancePercent, std::move(eligible), random)) {
+    if (items_.spawn(drop.item, drop.cell, height)) {
+      rareCells_.push_back(drop.cell);
+      core::logDebug("[port:field_items] rare item {} at ({}, {})",
+                     inventory_->items().at(drop.item).id, drop.cell.column, drop.cell.row);
+    }
+  }
 }
 
 std::optional<assets::ItemHandle> FieldItemsAdapter::itemOf(std::int32_t originalItem) const {
@@ -257,6 +388,12 @@ std::optional<assets::ItemHandle> FieldItemsAdapter::itemOf(std::int32_t origina
 bool FieldItemsAdapter::spawnItem(std::string_view mapId, std::int32_t originalItem,
                                   assets::CollisionCell cell, float height) {
   items_.enterMap(mapId);
+  if (std::ranges::contains(rareCells_, cell)) {
+    core::logDebug(
+        "[port:field_items] a rare item lies on ({}, {}): the script's item {} stays out",
+        cell.column, cell.row, originalItem);
+    return true;
+  }
   const std::optional<assets::ItemHandle> item = itemOf(originalItem);
   return item && items_.spawn(*item, cell, height);
 }

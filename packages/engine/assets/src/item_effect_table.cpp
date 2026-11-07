@@ -7,8 +7,6 @@
 #include <format>
 #include <utility>
 
-#include "document_text.hpp"
-
 namespace dwe::assets {
 
 namespace {
@@ -17,6 +15,8 @@ using core::YamlNode;
 
 constexpr std::string_view ItemEffectsId = "data/item_effects";
 constexpr std::string_view Context = "item effect table";
+// The index of a row a pack added for an item of its own.
+constexpr std::int32_t NoOriginalIndex = -1;
 
 struct HandlerName {
   std::string_view name;
@@ -101,17 +101,17 @@ ChipValues readChip(YamlReader& reader, const YamlNode& node) {
 
 ItemEffectEntry readEffect(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(node, "an item effect",
-                         {"item", "index", "handler", "healing", "evolves_to", "values"})) {
+                         {"item", "handler", "healing", "evolves_to", "values"}, {"index"})) {
     return {};
   }
-  ItemEffectEntry entry{.item = reader.text(reader.field(node, "item")),
-                        .index = reader.integer<std::int32_t>(reader.field(node, "index")),
-                        .handler = readHandler(reader, reader.field(node, "handler")),
-                        .healing =
-                            reader.optionalInteger<std::int32_t>(reader.field(node, "healing")),
-                        .evolvesTo = reader.optionalText(reader.field(node, "evolves_to")),
-                        .food = std::nullopt,
-                        .chip = std::nullopt};
+  ItemEffectEntry entry{
+      .item = reader.text(reader.field(node, "item")),
+      .index = reader.optionalInteger<std::int32_t>(node, "index").value_or(NoOriginalIndex),
+      .handler = readHandler(reader, reader.field(node, "handler")),
+      .healing = reader.optionalInteger<std::int32_t>(reader.field(node, "healing")),
+      .evolvesTo = reader.optionalText(reader.field(node, "evolves_to")),
+      .food = std::nullopt,
+      .chip = std::nullopt};
   const YamlNode& values = reader.field(node, "values");
   if (YamlReader::isNull(values)) {
     return entry;
@@ -150,7 +150,7 @@ core::Result<ItemEffectTable> parseItemEffectTable(std::string_view yaml) {
     table.effects.push_back(readEffect(reader, effect));
   }
   for (std::size_t i = 0; reader.ok() && i < table.effects.size(); ++i) {
-    for (std::size_t j = 0; j < i; ++j) {
+    for (std::size_t j = 0; j < i && table.effects[i].index != NoOriginalIndex; ++j) {
       if (table.effects[i].index == table.effects[j].index) {
         reader.fail(effects[i], std::format("item {} is listed twice", table.effects[i].index));
         break;
@@ -161,7 +161,15 @@ core::Result<ItemEffectTable> parseItemEffectTable(std::string_view yaml) {
 }
 
 core::Result<ItemEffectTable> loadItemEffectTable(const VirtualFileSystem& vfs) {
-  auto text = readDocumentText(vfs, ItemEffectsId);
+  auto id = AssetId::parse(ItemEffectsId);
+  if (!id) {
+    return std::unexpected{id.error()};
+  }
+  return loadItemEffectTable(vfs, *id);
+}
+
+core::Result<ItemEffectTable> loadItemEffectTable(const VirtualFileSystem& vfs, const AssetId& id) {
+  auto text = readComposedTable(vfs, id, ItemEffectComposition);
   if (!text) {
     return std::unexpected{text.error()};
   }

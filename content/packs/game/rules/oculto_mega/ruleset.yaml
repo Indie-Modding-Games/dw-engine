@@ -8,3 +8,4 @@ description: "El contenido oculto, con el paso de Ultra a Mega: MetalEtemon desd
 extends: oculto
 sections:
   - mega_step
+  - rare_items

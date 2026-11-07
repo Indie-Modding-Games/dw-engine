@@ -96,6 +96,9 @@ inline constexpr std::string_view StatusExtrasSetting = "status_extras";
 // false), off by default. The chart (ui/pause_menu) names the stages and draws the Mega box with
 // it.
 inline constexpr std::string_view CanonicalStagesSetting = "canonical_stages";
+// The rare items: a UI setting and the pause menu's command with the same name (true or false), off
+// by default. The field items lay the ruleset's rare items with it (FieldItemsAdapter).
+inline constexpr std::string_view RareItemsSetting = "rare_items";
 // Long names: a UI setting and the pause menu's command with the same name (true or false), on by
 // default. The naming box takes names of up to LongNameLength letters with it (naming_box.hpp).
 inline constexpr std::string_view LongNamesSetting = "long_names";

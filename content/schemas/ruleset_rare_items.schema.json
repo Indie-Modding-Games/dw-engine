@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: rare_items",
+  "description": "rules/<id>/rare_items.yaml: the rare items (an engine improvement, the option rare_items, off by default): as a map loads, each of its spots has chance_percent in 100 of one item of the pool instead of the item its head script rolls there (packages/session: field_items_adapter.hpp).",
+  "type": "object",
+  "required": ["chance_percent", "pool", "maps"],
+  "additionalProperties": false,
+  "properties": {
+    "chance_percent": { "description": "The chance of a spot, in 100.", "type": "integer", "minimum": 0, "maximum": 100 },
+    "pool": {
+      "description": "The items that may lie, ids of data/items; one lies only while the bag holds none of it and none lies on the ground.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" }
+    },
+    "maps": {
+      "description": "The spots of each map, by map id.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["spots"],
+        "additionalProperties": false,
+        "properties": {
+          "spots": {
+            "description": "The cells [column, row] the map's head script lays its random items on (spawn_item).",
+            "type": "array",
+            "items": { "type": "array", "items": { "type": "integer" }, "minItems": 2, "maxItems": 2 }
+          },
+          "unless_trigger": { "description": "The story trigger after which the head lays no items any more.", "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

@@ -191,10 +191,11 @@ constexpr std::array<std::pair<std::string_view, Opener>, 16> DocumentReaders = 
 
 // The strict reader of each kind of content table (table_kinds.hpp) but the Digimon table's, by its
 // role.
-constexpr std::array<std::pair<std::string_view, Opener>, 5> TableReaders = {{
+constexpr std::array<std::pair<std::string_view, Opener>, 6> TableReaders = {{
     {"raise", discardParsed<parseRaiseTable>},
     {"maps", discardParsed<parseMaps>},
     {"items", discardParsed<parseItems>},
+    {"item_effects", discardParsed<parseItemEffectTable>},
     {"moves", discardParsed<parseMoves>},
     {"evolution", discardParsed<parseEvolutionTable>},
 }};

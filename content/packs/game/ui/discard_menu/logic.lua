@@ -3,8 +3,9 @@
 -- discard.revision once per change: discard.phase (list, confirm, description), .total, .top and
 -- .cursor of the list, .choice (0 yes, 1 no), .confirm_key (the "is it OK?" box: the question,
 -- then the two answers on one line), .cancellable (whether cancel closes the menu),
--- .description_key, and discard.row.<n>.name/count/choosable/icon/icon_rect for the six rows
--- shown. Every button goes to the game as discard_action.
+-- .description_key (with .description_species_key, the name its {species} shows), and
+-- discard.row.<n>.name/count/choosable/icon/icon_rect for the six rows shown. Every button goes to
+-- the game as discard_action.
 
 local Rows = 6
 -- renderItemMenuScrollBar: the track is 90 original pixels (3dp each).
@@ -20,6 +21,16 @@ local function text(name)
     return ""
   end
   return t(key)
+end
+
+-- A description's text; its {species} placeholder shows the species whose name key comes with it.
+local function described(name, species_name)
+  local species_key = ui.setting(species_name) or ""
+  if species_key == "" then
+    return text(name)
+  end
+  local key = ui.setting(name) or ""
+  return key == "" and "" or t(key, { species = t(species_key) })
 end
 
 local function lines_of(value)
@@ -86,7 +97,9 @@ local function refresh(document)
   document:get("prompt-back"):set_class("hidden", not ui.setting("discard.cancellable"))
   draw_list(document)
   draw_confirm(document)
-  document:get("description-text"):set_text(text("discard.description_key"))
+  document
+    :get("description-text")
+    :set_text(described("discard.description_key", "discard.description_species_key"))
 end
 
 -- The prompts name the keys of the device in use.

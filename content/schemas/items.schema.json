@@ -23,7 +23,9 @@
           "item_color": { "type": "integer" },
           "droppable": { "type": "integer" },
           "unknown_1e": { "type": "integer" },
-          "icon_palette": { "description": "The palette of the item's icon, the cell of its index in texture/etcdat/item (ITEM_CLUT_DATA; utils2.c: setItemTexture). Without it the item has no icon.", "type": "integer", "minimum": 0, "maximum": 255 }
+          "icon_palette": { "description": "The palette of the item's icon, the cell of its index in texture/etcdat/item (ITEM_CLUT_DATA; utils2.c: setItemTexture). Without it the item has no icon.", "type": "integer", "minimum": 0, "maximum": 255 },
+          "icon": { "description": "The id of an item with an icon of its own whose icon (cell and palette) this item shows, so a pack's item needs no image.", "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" },
+          "description_species": { "description": "The id of the species whose name fills the {species} placeholder of the item's description text.", "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" }
         }
       }
     }

@@ -28,6 +28,7 @@ constexpr std::array Toggles{
     GameToggle{
         .setting = "canonical_stages", .saved = &UserSettings::canonicalStages, .fallback = false},
     GameToggle{.setting = "status_extras", .saved = &UserSettings::statusExtras, .fallback = true},
+    GameToggle{.setting = "rare_items", .saved = &UserSettings::rareItems, .fallback = false},
     // Graphics tab.
     GameToggle{.setting = "smooth_motion", .saved = &UserSettings::smoothMotion, .fallback = true},
     GameToggle{

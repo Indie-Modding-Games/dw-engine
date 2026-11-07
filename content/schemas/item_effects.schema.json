@@ -10,11 +10,11 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["item", "index", "handler", "healing", "evolves_to", "values"],
+        "required": ["item", "handler", "healing", "evolves_to", "values"],
         "additionalProperties": false,
         "properties": {
-          "item": { "description": "The item's id in items.yaml.", "type": "string", "pattern": "^[a-z0-9_]+$" },
-          "index": { "description": "The item's index in ITEM_PARA.", "type": "integer", "minimum": 0 },
+          "item": { "description": "The item's id in items.yaml; <pack id>:<name> for one a pack adds.", "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" },
+          "index": { "description": "The item's index in ITEM_PARA; a row a pack adds for an item of its own has none.", "type": "integer", "minimum": 0 },
           "handler": {
             "description": "The function the item runs: none (NULL), hp_healing, mp_healing, double_floppy, status, revive (handleRestore), battle_disk (handleBuffDisks), chip, food or evolution.",
             "enum": ["none", "hp_healing", "mp_healing", "double_floppy", "status", "revive", "battle_disk", "chip", "food", "evolution"]

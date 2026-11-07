@@ -41,6 +41,9 @@ public:
   [[nodiscard]] std::string item(assets::ItemHandle item) const;
   [[nodiscard]] std::string item(std::string_view id) const;
   [[nodiscard]] std::string itemDescription(assets::ItemHandle item) const;
+  // The key of the name of the species an item's description names (ItemEntry::descriptionSpecies),
+  // the value of its {species} placeholder: empty for a description that names none.
+  [[nodiscard]] std::string itemDescriptionSpecies(assets::ItemHandle item) const;
   [[nodiscard]] std::string move(std::string_view id) const;
   [[nodiscard]] std::string move(game::battle::MoveRef move) const;
 

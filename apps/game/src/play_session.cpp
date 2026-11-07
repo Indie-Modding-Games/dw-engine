@@ -521,6 +521,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachShop(game_.systems.shop);
   storyScenes_.attachItemKeeper(game_.systems.itemKeeper);
   itemKeeperScreen_.setSpecies(species_ ? &*species_ : nullptr);
+  discardScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyScenes_.attachGym(&gymScreen_);
   storyScenes_.attachTournament(game_.systems.tournament, &session);
   storyScenes_.attachCurling(&curlingScreen_);
@@ -659,6 +660,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   // The canonical stages on the chart, off unless turned on.
   context_.ui->setSetting(CanonicalStagesSetting,
                           context.userSettings->canonicalStages.value_or(false));
+  // The rare items, off unless turned on.
+  const bool rareItems = context.userSettings->rareItems.value_or(false);
+  game_.systems.fieldItems->setRareItems(rareItems);
+  context_.ui->setSetting(RareItemsSetting, rareItems);
   // The save indicator's document goes up before the HUD's, which takes the focus.
   saveIndicator_.emplace(*context_.ui, game_.session->savesWritten(),
                          context.userSettings->saveNotice.value_or(true));
@@ -965,7 +970,9 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent,
     // map.c: changeMap clears the last load's dropped items and chests as a map loads, the same
     // map's too (a script's warp back onto it), before its head script spawns this load's: none of
     // them is drawn over the new map's fade in, and a warp back does not pile them up.
-    game_.systems.fieldItems->items().loadMap(scene_->field().mapId(), scene_->mapSerial());
+    // The rare items (the option rare_items) roll there too, at the height the player stands.
+    game_.systems.fieldItems->loadMap(scene_->field().mapId(), scene_->mapSerial(),
+                                      scene_->field().player().position.y, game_.session->random());
     storyLink_->afterMapChange();
     if (auto notice = storyLink_->takeLockNotice()) {
       showLockNotice(*notice);
@@ -1170,6 +1177,17 @@ bool PlaySession::handle(const ui::UiCommand& command) {
     if (const bool* canonical = std::get_if<bool>(&command.value)) {
       context_.ui->setSetting(CanonicalStagesSetting, *canonical);
       context_.userSettings->canonicalStages = *canonical;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    return true;
+  }
+  if (command.name == RareItemsSetting) {
+    if (const bool* rare = std::get_if<bool>(&command.value)) {
+      game_.systems.fieldItems->setRareItems(*rare);
+      context_.ui->setSetting(RareItemsSetting, *rare);
+      context_.userSettings->rareItems = *rare;
       if (context_.settingsFile) {
         saveUserSettings(*context_.settingsFile, *context_.userSettings);
       }
@@ -1623,12 +1641,12 @@ std::vector<ui::MinimapMarker> PlaySession::minimapItemMarkers() const {
       game_.systems.inventory == nullptr) {
     return {};
   }
-  // The ones the field draws (FieldItemsScreen::show): an item with an icon of the original's.
+  // The ones the field draws (FieldItemsScreen::show): an item with an icon (ItemEntry::icon).
   const assets::ItemTable& table = game_.systems.inventory->items();
   return minimapItems(minimapItemsShown_, game_.systems.fieldItems->items().ground(),
                       [&](assets::ItemHandle item) {
                         const assets::ItemEntry& entry = table.at(item);
-                        return entry.iconPalette.has_value() && entry.originalIndex;
+                        return entry.icon().has_value();
                       });
 }
 

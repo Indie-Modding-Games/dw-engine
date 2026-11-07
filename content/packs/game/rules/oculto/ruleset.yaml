@@ -9,3 +9,4 @@ description: "Las reglas del original, con Panjyamon, Gigadramon, MetalEtemon y 
 extends: original
 sections:
   - species_extra
+  - rare_items
