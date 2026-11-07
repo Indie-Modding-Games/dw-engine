@@ -147,3 +147,22 @@ TEST_CASE("a script's set_bgm outside a map change plays the song from its start
   rig.music.playBgm(28);
   CHECK(musicLog().starts - before.starts == 1);
 }
+
+TEST_CASE("the game's song stops when the game ends, so the title screen is silent") {
+  assets::MemoryFileSystem memory;
+  const assets::VirtualFileSystem files{mountedFonts(memory)};
+  audio::Audio audio{std::make_unique<audio::NullOutput>()};
+  MusicLog playing;
+  {
+    session::SessionMusic music{audio, files,
+                                session::MusicFacts{.mode = [] { return std::int64_t{0}; },
+                                                    .hour = [] { return std::int32_t{12}; }}};
+    music.enterMap();
+    music.playBgm(28);
+    music.mapHeadDone();
+    REQUIRE(music.activeSong().has_value());
+    playing = musicLog();
+  }
+  // main.c: cleanupGame then finalizeMusic.
+  CHECK(musicLog().stops - playing.stops == 1);
+}

@@ -42,6 +42,13 @@ class SessionMusic final : public game::story::MusicPort, public JukeboxMusic {
 public:
   // The audio and the file system must outlive the session.
   SessionMusic(audio::Audio& audio, const assets::VirtualFileSystem& files, MusicFacts facts);
+  // main.c: main, cleanupGame then finalizeMusic: the game's song ends with the game, so the title
+  // screen it goes back to (or the ending's movie) is silent, as the original's.
+  ~SessionMusic() override;
+  SessionMusic(const SessionMusic&) = delete;
+  SessionMusic& operator=(const SessionMusic&) = delete;
+  SessionMusic(SessionMusic&&) = delete;
+  SessionMusic& operator=(SessionMusic&&) = delete;
 
   void playBgm(std::int64_t font) override;
   void resetBgm() override;

@@ -49,6 +49,11 @@ SessionMusic::SessionMusic(audio::Audio& audio, const assets::VirtualFileSystem&
                            MusicFacts facts)
     : audio_(&audio), files_(&files), facts_(std::move(facts)) {}
 
+SessionMusic::~SessionMusic() {
+  core::logDebug("[port:audio] main (main.c:3525-3526): cleanupGame, finalizeMusic");
+  stopBgm();
+}
+
 void SessionMusic::playBgm(std::int64_t font) {
   core::logDebug("[port:audio] playBGM (script_interp.c:2587): font={}", font);
   if (font == StopFont) {

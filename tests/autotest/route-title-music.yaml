@@ -1,0 +1,31 @@
+name: title-music
+# Back to the title from the options page while a map's song plays: the title is silent, as the
+# original's (main.c: main, runLandingScreen and runMainMenu play no music; the game ends with
+# cleanupGame and finalizeMusic), and loading the game from there plays its map's song again. Start
+# with --new-game --start trai00 and an empty --saves folder; SDL_AUDIO_DRIVER=disk with
+# SDL_AUDIO_DISK_OUTPUT_FILE records what is heard.
+device: keyboard
+timeout: 150
+steps:
+  - wait: {map: trai00, seconds: 4}
+  - script: save("slot_01")
+  - wait: {seconds: 1}
+  - screenshot: field
+  - tap: {key: escape}
+  - wait: {menu_open: true, seconds: 0.6, timeout: 5}
+  - tap: {key: up}
+  - tap: {key: right}
+  - tap: {key: return}
+  - wait: {shown: dialog, seconds: 0.5, timeout: 5}
+  - menu_select: yes
+  - wait: {shown: main_menu, seconds: 4, timeout: 15}
+  - screenshot: title
+  - tap: {key: return}
+  - wait: {seconds: 2}
+  - menu_select: continue
+  - wait: {shown: save_slots, seconds: 0.5, timeout: 10}
+  - menu_select: slot-1
+  - wait: {shown: dialog, seconds: 0.5, timeout: 10}
+  - menu_select: yes
+  - wait: {map: trai00, hidden: dialog, seconds: 4, timeout: 30}
+  - screenshot: loaded
