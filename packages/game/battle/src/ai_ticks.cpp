@@ -83,95 +83,96 @@ void clearStatusFlags(Fighter& fighter) {
 }
 
 // battle_main.c: BTL_tickPartnerAI, the change command: the next enemy in turn.
-void changeTarget(BattleContext& context, const std::vector<FighterId>& enemies) {
-  Fighter& partner = context.state->partner();
-  CommandState& commands = context.state->commands;
+void changeTarget(BattleContext& context, FighterId id, const std::vector<FighterId>& enemies) {
+  Fighter& self = context.fighter(id);
+  CommandState& commands = context.state->commandsOf(id);
   if (enemies.size() == 2) {
-    setTarget(context, PartnerId, partner.target == enemies[0] ? enemies[1] : enemies[0]);
+    setTarget(context, id, self.target == enemies[0] ? enemies[1] : enemies[0]);
   } else if (enemies.size() == 3) {
     auto& history = commands.changeHistory;
     if (!history[0] && !history[1]) {
-      setTarget(context, PartnerId, nearestOther(*context.state, PartnerId));
-      history.at(commands.changeTurn) = partner.target;
+      setTarget(context, id, nearestOther(*context.state, id));
+      history.at(commands.changeTurn) = self.target;
       commands.changeTurn ^= 1U;
     } else {
       const std::optional<FighterId> skipped = history.at(commands.changeTurn ^ 1U);
       std::optional<FighterId> next;
-      for (FighterId id = 1; id < context.state->fighters.size(); ++id) {
-        if (partner.target != id && skipped != id) {
-          next = id;
+      for (FighterId other = 1; other < context.state->fighters.size(); ++other) {
+        if (self.target != other && skipped != other) {
+          next = other;
           break;
         }
       }
-      history.at(commands.changeTurn) = partner.target;
+      history.at(commands.changeTurn) = self.target;
       commands.changeTurn ^= 1U;
       if (next) {
-        setTarget(context, PartnerId, next);
+        setTarget(context, id, next);
       }
     }
   }
   commands.changeTarget = false;
 }
 
-// The commands that act on their own and end the partner's decisions for the frame; false when the
-// partner goes on to decide by itself.
-bool followCommand(BattleContext& context, const std::vector<FighterId>& enemies) {
-  Fighter& partner = context.state->partner();
-  CommandState& commands = context.state->commands;
+// The commands that act on their own and end a commanded fighter's decisions for the frame; false
+// when it goes on to decide by itself.
+bool followCommand(BattleContext& context, FighterId id, const std::vector<FighterId>& enemies) {
+  Fighter& self = context.fighter(id);
+  CommandState& commands = context.state->commandsOf(id);
   switch (commands.current) {
   case Command::Change:
-    if (!partner.target || !commands.changeTarget) {
+    if (!self.target || !commands.changeTarget) {
       break;
     }
-    changeTarget(context, enemies);
+    changeTarget(context, id, enemies);
     return true;
   case Command::Technique1:
   case Command::Technique2:
   case Command::Technique3: {
     const auto slot =
         static_cast<std::size_t>(commands.current) - static_cast<std::size_t>(Command::Technique1);
-    if (!moveUsable(context.view(), PartnerId, slot)) {
+    if (!moveUsable(context.view(id), id, slot)) {
       break;
     }
-    if (partner.target && context.fighter(*partner.target).defeated()) {
-      selectTarget(context, PartnerId, partner.target, false);
+    if (self.target && context.fighter(*self.target).defeated()) {
+      selectTarget(context, id, self.target, false);
     }
-    if (partner.queuedMove != partner.moves.at(slot) || partner.moveRange <= 0) {
-      queueMove(context, PartnerId, slot);
+    if (self.queuedMove != self.moves.at(slot) || self.moveRange <= 0) {
+      queueMove(context, id, slot);
     }
-    if (const std::optional<MoveRef> move = partner.moves.at(slot)) {
-      applyChargeRequirement(context, PartnerId, *move);
+    if (const std::optional<MoveRef> move = self.moves.at(slot)) {
+      applyChargeRequirement(context, id, *move);
     }
     return true;
   }
   case Command::Finisher:
-    if (partner.target && context.fighter(*partner.target).defeated()) {
-      selectTarget(context, PartnerId, partner.target, false);
+    if (self.target && context.fighter(*self.target).defeated()) {
+      selectTarget(context, id, self.target, false);
     }
-    if (partner.hasFinisher() &&
-        (partner.queuedMove != partner.moves.at(FinisherSlot) || partner.moveRange <= 0)) {
-      queueMove(context, PartnerId, FinisherSlot);
+    if (self.hasFinisher() &&
+        (self.queuedMove != self.moves.at(FinisherSlot) || self.moveRange <= 0)) {
+      queueMove(context, id, FinisherSlot);
     }
     return true;
   default:
     break;
   }
   if (commands.current != Command::Attack && commands.current != Command::Moderate) {
-    partner.chargeMode = commands.savedChargeMode;
+    self.chargeMode = commands.savedChargeMode;
   }
   return false;
 }
 
-// The partner picks its move by the command: the strongest for attack, the cheapest for moderate,
-// else its own call.
-void decidePartnerMove(BattleContext& context) {
-  Fighter& partner = context.state->partner();
-  const Command current = context.state->commands.current;
+// A commanded fighter picks its move by the command: the strongest for attack, the cheapest for
+// moderate, else its own call.
+void decideCommandedMove(BattleContext& context, FighterId id) {
+  Fighter& self = context.fighter(id);
+  const Command current = context.state->commandsOf(id).current;
   const bool attack = current == Command::Attack;
   const bool moderate = current == Command::Moderate;
-  const std::array<bool, EquippedSlots> usable = usableSlots(context.view(), PartnerId);
+  const BattleView view = context.view(id);
+  const std::array<bool, EquippedSlots> usable = usableSlots(view, id);
   if ((attack || moderate) && !anyUsable(usable)) {
-    waitWithoutMove(context, PartnerId);
+    waitWithoutMove(context, id);
     return;
   }
   MoveStyle style = MoveStyle::YourCall;
@@ -180,21 +181,102 @@ void decidePartnerMove(BattleContext& context) {
   } else if (moderate) {
     style = MoveStyle::Cheapest;
   } else if (!anyUsable(usable)) {
-    waitWithoutMove(context, PartnerId);
+    waitWithoutMove(context, id);
     return;
   }
-  const MoveDecision decision =
-      context.strategies->partnerAi->chooseMove(context.view(), style, usable);
+  const MoveDecision decision = context.strategies->partnerAi->chooseMove(view, style, usable);
   if (attack) {
-    partner.chargeMode = ChargeMode::Aggressive;
+    self.chargeMode = ChargeMode::Aggressive;
   } else if (moderate) {
-    partner.chargeMode = ChargeMode::Cautious;
+    self.chargeMode = ChargeMode::Cautious;
   }
   if (decision.slot) {
-    queueMove(context, PartnerId, *decision.slot);
+    queueMove(context, id, *decision.slot);
   } else {
-    waitWithoutMove(context, PartnerId);
+    waitWithoutMove(context, id);
   }
+}
+
+// battle_main.c: BTL_tickPartnerAI for the partner; vs_combat.c: VS__tickDigimonAI for either side
+// of a versus match.
+void tickCommanded(BattleContext& context, FighterId id) {
+  BattleState& state = *context.state;
+  Fighter& self = context.fighter(id);
+  CommandState& commands = state.commandsOf(id);
+  if (commands.delay == 0) {
+    if (commands.current != commands.buffered) {
+      context.emit({.kind = EventKind::CommandGiven,
+                    .fighter = id,
+                    .other = std::nullopt,
+                    .move = std::nullopt,
+                    .amount = 0,
+                    .status = StatusEffect::None,
+                    .command = commands.buffered});
+    }
+    commands.current = commands.buffered;
+  } else if (!isHeld(self) && self.status.flatFrames == 0) {
+    --commands.delay;
+  }
+  if (!state.frozenByFinisher()) {
+    tickTimers(context, id, context.disciplineOf(id));
+  }
+  if (self.knockedBack || self.attack || self.blocking || self.fainted) {
+    return;
+  }
+  if (self.hp == 0) {
+    faint(context, id);
+    return;
+  }
+  const std::vector<FighterId> enemies = state.remainingOthers(id);
+  // vs_combat.c: VS__tickDigimonAI: in a versus match a side about to fall stands idle too.
+  if (enemies.empty() || (state.versus() && self.defeated())) {
+    standIdle(self);
+    self.moveRange = -1;
+    resetFlatten(self);
+    removeStatusVisuals(context, id);
+    clearStatusFlags(self);
+    resetAction(self);
+    self.chasingAttacker = false;
+    self.planned = true;
+    return;
+  }
+  if (state.frozenByFinisher()) {
+    return;
+  }
+  if (!isHeld(self) && self.status.flatFrames == 0 && followCommand(context, id, enemies)) {
+    return;
+  }
+  if (self.status.flattened && state.frame % Hundred == 0) {
+    setTarget(context, id, enemies.at(randomIndex(*context.random, enemies.size())));
+  }
+  if (self.planned) {
+    return;
+  }
+  if (commands.current == Command::Flee) {
+    self.moveRange = static_cast<std::int32_t>(MoveRange::Melee);
+    self.planned = true;
+  }
+  if (self.status.flattened) {
+    self.queuedMove = context.moves->flattenedShot();
+    selectTarget(context, id, self.target, false);
+    self.moveRange = static_cast<std::int32_t>(MoveRange::Ranged);
+    self.planned = true;
+    return;
+  }
+  if (self.status.stunned) {
+    return;
+  }
+  if (self.status.confused) {
+    chooseConfusedMove(context, id);
+    return;
+  }
+  if (self.chargingUp || self.coolingDown || self.disobeying) {
+    return;
+  }
+  if (!self.chasingAttacker) {
+    selectTarget(context, id, self.target, false);
+  }
+  decideCommandedMove(context, id);
 }
 
 void tickEnemy(BattleContext& context, FighterId id, bool& stop) {
@@ -379,6 +461,11 @@ void chooseConfusedMove(BattleContext& context, FighterId id) {
 
 void selectTarget(BattleContext& context, FighterId id, std::optional<FighterId> toward,
                   bool forced) {
+  // vs_combat.c: VS__tickDigimonAI: a versus side always targets the other one.
+  if (context.state->versus()) {
+    setTarget(context, id, id == PartnerId ? RivalId : PartnerId);
+    return;
+  }
   Fighter& fighter = context.fighter(id);
   if (id != PartnerId || forced) {
     if (!toward) {
@@ -401,82 +488,7 @@ void selectTarget(BattleContext& context, FighterId id, std::optional<FighterId>
 }
 
 void tickPartnerAi(BattleContext& context) {
-  BattleState& state = *context.state;
-  Fighter& partner = state.partner();
-  CommandState& commands = state.commands;
-  if (commands.delay == 0) {
-    if (commands.current != commands.buffered) {
-      context.emit({.kind = EventKind::CommandGiven,
-                    .fighter = PartnerId,
-                    .other = std::nullopt,
-                    .move = std::nullopt,
-                    .amount = 0,
-                    .status = StatusEffect::None,
-                    .command = commands.buffered});
-    }
-    commands.current = commands.buffered;
-  } else if (!isHeld(partner) && partner.status.flatFrames == 0) {
-    --commands.delay;
-  }
-  if (!state.frozenByFinisher()) {
-    tickTimers(context, PartnerId, context.condition->discipline);
-  }
-  if (partner.knockedBack || partner.attack || partner.blocking || partner.fainted) {
-    return;
-  }
-  if (partner.hp == 0) {
-    faint(context, PartnerId);
-    return;
-  }
-  const std::vector<FighterId> enemies = state.remainingOthers(PartnerId);
-  if (enemies.empty()) {
-    standIdle(partner);
-    partner.moveRange = -1;
-    resetFlatten(partner);
-    removeStatusVisuals(context, PartnerId);
-    clearStatusFlags(partner);
-    resetAction(partner);
-    partner.chasingAttacker = false;
-    partner.planned = true;
-    return;
-  }
-  if (state.frozenByFinisher()) {
-    return;
-  }
-  if (!isHeld(partner) && partner.status.flatFrames == 0 && followCommand(context, enemies)) {
-    return;
-  }
-  if (partner.status.flattened && state.frame % Hundred == 0) {
-    setTarget(context, PartnerId, enemies.at(randomIndex(*context.random, enemies.size())));
-  }
-  if (partner.planned) {
-    return;
-  }
-  if (commands.current == Command::Flee) {
-    partner.moveRange = static_cast<std::int32_t>(MoveRange::Melee);
-    partner.planned = true;
-  }
-  if (partner.status.flattened) {
-    partner.queuedMove = context.moves->flattenedShot();
-    selectTarget(context, PartnerId, partner.target, false);
-    partner.moveRange = static_cast<std::int32_t>(MoveRange::Ranged);
-    partner.planned = true;
-    return;
-  }
-  if (partner.status.stunned) {
-    return;
-  }
-  if (partner.status.confused) {
-    chooseConfusedMove(context, PartnerId);
-    return;
-  }
-  if (partner.chargingUp || partner.coolingDown || partner.disobeying) {
-    return;
-  }
-  if (!partner.chasingAttacker) {
-    selectTarget(context, PartnerId, partner.target, false);
-  }
-  decidePartnerMove(context);
+  tickCommanded(context, PartnerId);
 }
 
 void tickEnemyAi(BattleContext& context) {
@@ -490,7 +502,11 @@ void tickEnemyAi(BattleContext& context) {
   }
   bool stop = false;
   for (FighterId id = 1; id < state.fighters.size() && !stop; ++id) {
-    tickEnemy(context, id, stop);
+    if (state.commanded(id)) {
+      tickCommanded(context, id);
+    } else {
+      tickEnemy(context, id, stop);
+    }
   }
 }
 

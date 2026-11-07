@@ -49,6 +49,9 @@ inline constexpr std::string_view CommandNotInMenu = "the command is not in the 
 inline constexpr std::string_view BattleOver = "the battle is over";
 inline constexpr std::string_view NoCommands = "the partner takes no commands in this battle";
 inline constexpr std::string_view FinisherNotReady = "the finisher gauge is not full";
+inline constexpr std::string_view VersusShape =
+    "a versus match needs exactly one enemy, a time limit and the versus kind";
+inline constexpr std::string_view NotCommanded = "that fighter takes no commands in this battle";
 inline constexpr std::string_view BagOpen = "the tamer's bag is open";
 inline constexpr std::string_view Fleeing =
     "the partner is running away and takes no more commands";

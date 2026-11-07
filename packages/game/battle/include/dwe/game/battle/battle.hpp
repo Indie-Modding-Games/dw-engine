@@ -43,8 +43,17 @@ struct PartnerCondition {
 };
 
 // What a battle is for the session: the tournaments and the arena have their own results and
-// autosave.
-enum class BattleKind : std::uint8_t { Normal, Tournament, Arena };
+// autosave; a versus match (two players' partners) has no consequence at all.
+enum class BattleKind : std::uint8_t { Normal, Tournament, Arena, Versus };
+
+// A versus match (vs_combat.c): the one enemy is the other player's partner, which that player
+// commands as the partner is commanded (Battle::command with RivalId). It needs a time limit, as a
+// tournament match, and the clock, the end and the shared cooldowns follow the tournament's
+// (VS__checkEndCondition, VS_DISABLE_HITTING, P2_AOE_TIMER). A victory is the first player's win.
+struct VersusSetup {
+  // VS_DISCIPLINE[1], from the rival's registered record.
+  std::int32_t rivalDiscipline = 0;
+};
 
 struct BattleSetup {
   Combatant partner;
@@ -73,6 +82,8 @@ struct BattleSetup {
   // decides it after the battle (a recruitment fight), so the session names it here and reads it
   // back in the result.
   std::optional<std::string> recruitOnVictory;
+  // Only for BattleKind::Versus: the rival is commanded and both menus are the versus menus.
+  std::optional<VersusSetup> versus;
 };
 
 enum class Outcome : std::uint8_t { Victory, Fled, Defeat };
@@ -153,6 +164,9 @@ public:
 
   // The player picks a command of the menu (battle_tick.c: handleCommands).
   core::Result<void> command(Command command);
+  // The same for a commanded side: PartnerId, or RivalId in a versus match (vs_combat.c:
+  // VS___tickVSInput: the command takes no delay; the finisher only once its gauge is full).
+  core::Result<void> command(Command command, FighterId side);
   // A press of the finisher charge buttons during the partner's finisher aura (command_menu.c:
   // BTL_tickFinisherChargeup); at most one counts per frame.
   void pressFinisherCharge();
@@ -242,6 +256,14 @@ public:
   [[nodiscard]] const BattleState& state() const { return state_; }
   // The commands the player can choose now.
   [[nodiscard]] const std::vector<Command>& menu() const { return state_.commands.menu; }
+  // A commanded side's (PartnerId, or RivalId in a versus match).
+  [[nodiscard]] const std::vector<Command>& menuOf(FighterId side) const {
+    return state_.commandsOf(side).menu;
+  }
+  // A hash of everything the next frames depend on (the fighters, the commands, the attacks in
+  // flight, the finisher, the clock and the rolls): two battles that agree on it play on alike. A
+  // versus match compares it each frame between the two machines.
+  [[nodiscard]] std::uint64_t checksum() const;
   [[nodiscard]] const BattleRules& rules() const { return *rules_; }
   [[nodiscard]] const MoveCatalog& moves() const { return *moves_; }
   // What the fighters' statuses show over them now.

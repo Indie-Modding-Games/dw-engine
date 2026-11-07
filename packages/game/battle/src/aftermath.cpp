@@ -201,8 +201,9 @@ BattleResult settleBattle(Outcome outcome, const BattleSetup& setup, const Battl
   result.counters = state.counters;
   result.kind = setup.kind;
   result.partnerSpecies = setup.partner.species;
-  // std_main.c: STD_deinitializeCombat: a tournament match leaves the partner as it ends, no more.
-  if (setup.kind == BattleKind::Tournament) {
+  // std_main.c: STD_deinitializeCombat: a tournament match leaves the partner as it ends, no more;
+  // nor does a versus match (vs_combat.c: VS__deinitializeCombat).
+  if (setup.kind == BattleKind::Tournament || setup.kind == BattleKind::Versus) {
     return result;
   }
   switch (outcome) {

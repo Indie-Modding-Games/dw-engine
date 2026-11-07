@@ -26,13 +26,20 @@ struct BattleContext {
   // What the fighters' statuses show over them (status_visuals.hpp).
   StatusVisuals* visuals = nullptr;
 
-  [[nodiscard]] BattleView view() const {
+  [[nodiscard]] BattleView view() const { return view(PartnerId); }
+  // The view the partner strategies decide for `actor` with.
+  [[nodiscard]] BattleView view(FighterId actor) const {
     return {.rules = rules,
             .moves = moves,
             .state = state,
             .random = random,
             .partnerSick = condition->sick,
-            .partnerInjured = condition->injured};
+            .partnerInjured = condition->injured,
+            .actor = actor};
+  }
+  // The discipline a commanded fighter obeys with (vs_combat.c: VS_DISCIPLINE).
+  [[nodiscard]] std::int32_t disciplineOf(FighterId id) const {
+    return id == PartnerId ? condition->discipline : state->rival->discipline;
   }
   // The rolls of the status visuals and of the hit sparks: the battle's when they are the
   // original's, else their own.
@@ -47,7 +54,8 @@ struct BattleContext {
 };
 
 // ai_ticks.cpp: the partner's and the enemies' decisions of a frame (battle_main.c:
-// BTL_tickPartnerAI, BTL_tickEnemyAI).
+// BTL_tickPartnerAI, BTL_tickEnemyAI). In a versus match the rival decides as the partner does
+// (vs_combat.c: VS__tickDigimonAI for each side) within tickEnemyAi.
 void tickPartnerAi(BattleContext& context);
 void tickEnemyAi(BattleContext& context);
 
@@ -221,9 +229,9 @@ std::int64_t integerSqrt(std::int64_t value);
 // The longest reach of a fighter's equipped moves, the finisher's too, as the squared distance the
 // move table gives (battle_main.c: BTL_getMoveWithHighestDistance); 0 with none.
 std::int64_t longestReach(const BattleContext& context, FighterId id);
-// battle_main.c: BTL_handlePartnerMoveCommand: the partner's flee, defend and distance commands
-// move it themselves; true when one did, which keeps it from attacking this frame.
-bool followMoveCommand(BattleContext& context);
+// battle_main.c: BTL_handlePartnerMoveCommand: a commanded fighter's flee, defend and distance
+// commands move it themselves; true when one did, which keeps it from attacking this frame.
+bool followMoveCommand(BattleContext& context, FighterId id);
 // The end of a fighter's attack, hit or block animation (battle_main.c: BTL_tickFighterAction).
 void endAnimation(BattleContext& context, FighterId id);
 // Starts the attack of the queued move (battle_main.c: BTL_setupMoveExecution and the attack

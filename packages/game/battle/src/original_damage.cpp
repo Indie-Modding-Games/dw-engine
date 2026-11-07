@@ -77,7 +77,9 @@ public:
     std::int32_t damage = 0;
     if (move.finisher) {
       damage = (offense + move.power) * affinity / rules.affinityDivisor;
-      if (attacker == PartnerId) {
+      // vs_main.c: VS_rollAttackOutcome: in a versus match neither side's finisher takes the
+      // enemies' extra roll.
+      if (view.state->commanded(attacker)) {
         if (view.state->finisher.charge > rules.finisherChargeDivisor) {
           damage = damage * view.state->finisher.charge / rules.finisherChargeDivisor;
         }

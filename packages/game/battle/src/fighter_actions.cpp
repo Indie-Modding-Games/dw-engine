@@ -66,12 +66,15 @@ void beginFinisher(BattleContext& context, FighterId id) {
   if (context.visuals != nullptr) {
     finisher.auraSlot = context.visuals->addFinisherAura(id, finisher.auraFrames);
   }
-  if (id == PartnerId) {
+  if (context.state->commanded(id)) {
     finisher.charge = 0;
-    finisher.charging = true;
+    // A versus finisher takes no charge presses (vs_main.c: VS_rollAttackOutcome reads a charge
+    // that stays 0).
+    finisher.charging = !context.state->versus();
     fighter.finisherProgress = 0;
-    context.state->commands.buffered = Command::YourCall;
-    context.state->commands.current = Command::YourCall;
+    CommandState& commands = context.state->commandsOf(id);
+    commands.buffered = Command::YourCall;
+    commands.current = Command::YourCall;
   }
   if (fighter.target) {
     lookAt(fighter, context.fighter(*fighter.target).position);
@@ -269,7 +272,7 @@ void paceWhileWaiting(BattleContext& context, FighterId id, bool standInNormalMo
 // battle_main.c: BTL_tickChargeState: waits until the speed reserve allows the queued move.
 void tickChargeState(BattleContext& context, FighterId id) {
   Fighter& fighter = context.fighter(id);
-  const bool moved = id == PartnerId && followMoveCommand(context);
+  const bool moved = context.state->commanded(id) && followMoveCommand(context, id);
   if (fighter.cooldown != 0) {
     if (!moved) {
       paceWhileWaiting(context, id, true);
@@ -440,7 +443,7 @@ void tickFighter(BattleContext& context, FighterId id) {
     return;
   }
   if (fighter.status.flattened) {
-    if (id != PartnerId || !followMoveCommand(context)) {
+    if (!context.state->commanded(id) || !followMoveCommand(context, id)) {
       tickRangedAttack(context, id);
     }
   } else if (fighter.status.confused) {
@@ -451,7 +454,7 @@ void tickFighter(BattleContext& context, FighterId id) {
     tickChargeState(context, id);
   } else if (fighter.coolingDown) {
     tickCooldownState(context, id);
-  } else if (id != PartnerId || !followMoveCommand(context)) {
+  } else if (!context.state->commanded(id) || !followMoveCommand(context, id)) {
     tickByRange(context, id);
   }
 }
@@ -468,14 +471,14 @@ std::int64_t longestReach(const BattleContext& context, FighterId id) {
   return reach;
 }
 
-bool followMoveCommand(BattleContext& context) {
+bool followMoveCommand(BattleContext& context, FighterId id) {
   if (context.state->frozenByFinisher()) {
     return false;
   }
-  Fighter& partner = context.state->partner();
-  switch (context.state->commands.current) {
+  Fighter& partner = context.fighter(id);
+  switch (context.state->commandsOf(id).current) {
   case Command::Flee:
-    walkToward(context, PartnerId, context.state->tamer);
+    walkToward(context, id, context.state->tamer);
     return true;
   case Command::Defend:
     standIdle(partner);
@@ -495,7 +498,7 @@ bool followMoveCommand(BattleContext& context) {
       reach += context.rules->spacing.keepAwayWalkingSquared;
     }
     if (distanceSquared(partner.position, target.position) < reach) {
-      backAwayFrom(context, PartnerId, *partner.target);
+      backAwayFrom(context, id, *partner.target);
     } else {
       standIdle(partner);
       lookAt(partner, target.position);
@@ -574,7 +577,9 @@ void beginAttack(BattleContext& context, FighterId id) {
   if (move.range == MoveRange::Self) {
     fighter.target = id;
   } else if (!fighter.target && move.needsTarget) {
-    if (id != PartnerId) {
+    if (context.state->versus()) {
+      setTarget(context, id, id == PartnerId ? RivalId : PartnerId);
+    } else if (id != PartnerId) {
       setTarget(context, id, PartnerId);
     } else {
       for (FighterId enemy = 1; enemy < context.state->fighters.size(); ++enemy) {
@@ -584,11 +589,11 @@ void beginAttack(BattleContext& context, FighterId id) {
       }
     }
   }
-  if (id == PartnerId) {
+  if (context.state->commanded(id)) {
+    const bool unwell = id == PartnerId && (context.condition->sick || context.condition->injured);
     if (!move.finisher) {
-      fighter.pendingMp +=
-          partnerMpCost(*context.rules, move.mpCost, fighter.stats.brain,
-                        context.condition->sick || context.condition->injured, MpCostUse::Payment);
+      fighter.pendingMp += partnerMpCost(*context.rules, move.mpCost, fighter.stats.brain, unwell,
+                                         MpCostUse::Payment);
     }
   } else {
     const bool free =

@@ -355,12 +355,9 @@ constexpr std::array<std::pair<std::string_view, MenuEntry>, 9> MenuEntryNames{{
     {"techniques", MenuEntry::Techniques},
 }};
 
-std::vector<MenuTier> readMenus(ValueReader& in, const YamlNode& node) {
+std::vector<MenuTier> readTiers(ValueReader& in, const YamlNode& list) {
   std::vector<MenuTier> menus;
-  if (!in.group(node, "commands", {"menus"})) {
-    return menus;
-  }
-  for (const YamlNode& item : in.yaml().sequence(in.field(node, "menus"), "menus")) {
+  for (const YamlNode& item : in.yaml().sequence(list, "menus")) {
     if (!in.group(item, "a menu", {"brain", "commands"})) {
       break;
     }
@@ -382,6 +379,37 @@ std::vector<MenuTier> readMenus(ValueReader& in, const YamlNode& node) {
     menus.push_back(std::move(tier));
   }
   return menus;
+}
+
+struct Menus {
+  std::vector<MenuTier> battle;
+  std::vector<MenuTier> versus;
+};
+
+Menus readMenus(ValueReader& in, const YamlNode& node) {
+  if (!in.group(node, "commands", {"menus"}, {"versus_menus"})) {
+    return {};
+  }
+  Menus menus{.battle = readTiers(in, in.field(node, "menus")), .versus = {}};
+  if (node.find("versus_menus") != nullptr) {
+    menus.versus = readTiers(in, in.field(node, "versus_menus"));
+  }
+  return menus;
+}
+
+VersusRules readVersus(ValueReader& in, const YamlNode& node) {
+  if (!in.group(node, "versus", {"series", "time_limit_seconds"})) {
+    return {};
+  }
+  VersusRules versus{.series = {}, .timeLimitSeconds = in.positive(node, "time_limit_seconds")};
+  for (const YamlNode& item : in.yaml().sequence(in.field(node, "series"), "series")) {
+    const auto battles = in.yaml().integer<std::int32_t>(item);
+    if (in.yaml().ok() && battles <= 0) {
+      in.yaml().fail(item, messages::formatMessage(messages::NotPositive, "series"));
+    }
+    versus.series.push_back(battles);
+  }
+  return versus;
 }
 
 PartnerAiRules readPartnerAi(ValueReader& in, const YamlNode& node) {
@@ -752,7 +780,7 @@ core::Result<BattleRules> readBattleRules(const ruleset::Section& section) {
                  "partner_ai",    "enemy_ai",  "hit",         "damage",     "status",
                  "finisher",      "condition", "ending",      "item_throw", "hud",
                  "consequences",  "rewards",   "joining",     "timing",     "quirks"},
-                {"effects"})) {
+                {"effects", "versus"})) {
     return std::unexpected{reader.error(section.file)};
   }
   BattleRules rules{.strategies = readStrategies(in, in.field(root, "strategies")),
@@ -764,7 +792,8 @@ core::Result<BattleRules> readBattleRules(const ruleset::Section& section) {
                     .pacing = readPacing(in, in.field(root, "pacing")),
                     .spacing = readSpacing(in, in.field(root, "spacing")),
                     .obedience = readObedience(in, in.field(root, "obedience")),
-                    .menus = readMenus(in, in.field(root, "commands")),
+                    .menus = {},
+                    .versusMenus = {},
                     .partnerAi = readPartnerAi(in, in.field(root, "partner_ai")),
                     .enemyAi = readEnemyAi(in, in.field(root, "enemy_ai")),
                     .hit = readHit(in, in.field(root, "hit")),
@@ -779,8 +808,15 @@ core::Result<BattleRules> readBattleRules(const ruleset::Section& section) {
                     .rewards = readRewards(in, in.field(root, "rewards")),
                     .joining = readJoining(in, in.field(root, "joining")),
                     .timing = readTiming(in, in.field(root, "timing")),
+                    .versus = {},
                     .quirks = {},
                     .effects = readEffects(in, root)};
+  if (root.find("versus") != nullptr) {
+    rules.versus = readVersus(in, in.field(root, "versus"));
+  }
+  Menus menus = readMenus(in, in.field(root, "commands"));
+  rules.menus = std::move(menus.battle);
+  rules.versusMenus = std::move(menus.versus);
   checkEnemyFactors(reader, in.field(root, "rewards"), rules);
   rules.quirks = ruleset::readQuirks(
       reader, in.field(root, ruleset::QuirksKey),

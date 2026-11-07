@@ -24,6 +24,7 @@ dwe_add_module(battle
         src/shown_clips.cpp
         src/aftermath.cpp
         src/battle.cpp
+        src/checksum.cpp
         src/thrown_item.cpp
         src/player_retreat.cpp
         src/bone_matrix.cpp

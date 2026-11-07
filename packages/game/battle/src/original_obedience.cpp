@@ -12,7 +12,8 @@ class OriginalObedience final : public Obedience {
 public:
   // battle_main.c: BTL_tickPartnerAI and BTL_tickEnemyAI: below a brain of 301, every (brain / 2 +
   // 1) * 20 frames, a fighter that is not about to fall may start to ignore everything: the partner
-  // with (70 - discipline) %, an enemy with (300 - brain) / 4 %.
+  // with (70 - discipline) %, an enemy with (300 - brain) / 4 %. In a versus match both sides roll
+  // as the partner, each with its own discipline (vs_combat.c: VS__tickDigimonAI).
   bool disobeys(const BattleView& view, FighterId fighter, std::int32_t discipline) override {
     const ObedienceRules& rules = view.rules->obedience;
     const Fighter& self = view.state->fighters.at(fighter);
@@ -25,9 +26,10 @@ public:
     if (view.state->frame % period != 0) {
       return false;
     }
-    const std::int32_t chance = fighter == PartnerId ? rules.partnerChanceBase - discipline
-                                                     : (rules.enemyChanceBrain - self.stats.brain) /
-                                                           rules.enemyChanceDivisor;
+    const std::int32_t chance =
+        view.state->commanded(fighter)
+            ? rules.partnerChanceBase - discipline
+            : (rules.enemyChanceBrain - self.stats.brain) / rules.enemyChanceDivisor;
     return chance > view.random->below(Hundred);
   }
 
@@ -47,7 +49,7 @@ public:
   // battle_main.c: BTL_retargetAfterHit: TARGET_ATTACKER_CHANCE by charge mode, less the
   // discipline.
   bool partnerTurnsToAttacker(const BattleView& view, std::int32_t discipline) override {
-    const auto mode = static_cast<std::size_t>(view.state->partner().chargeMode);
+    const auto mode = static_cast<std::size_t>(view.state->fighters.at(view.actor).chargeMode);
     return view.rules->obedience.retargetChances.at(mode) - discipline >
            view.random->below(Hundred);
   }

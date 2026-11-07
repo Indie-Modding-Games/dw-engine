@@ -116,6 +116,10 @@ void applyBuff(BattleContext& context, FighterId id, MoveRef move) {
 
 // battle_main.c: BTL_retargetAfterHit.
 void retargetAfterHit(BattleContext& context, FighterId id, FighterId attacker) {
+  if (context.state->versus()) {
+    selectTarget(context, id, attacker, true);
+    return;
+  }
   if (id == PartnerId) {
     const Fighter& partner = context.fighter(id);
     const bool turns = context.strategies->obedience->partnerTurnsToAttacker(
