@@ -41,11 +41,15 @@ FieldItemsScreen::FieldItemsScreen(session::FieldItemsAdapter& items,
                                    game::story::SoundPort* sound)
     : items_{&items}, inventory_{&inventory}, ui_{&ui}, sound_{sound} {}
 
-bool FieldItemsScreen::tick(const game::field::Field& field, bool confirm, double seconds) {
+bool FieldItemsScreen::tick(FieldScene& scene, bool confirm, double seconds) {
   if (active()) {
     slideTray(seconds);
     return confirm;
   }
+  if (std::exchange(pickupClipHeld_, false)) {
+    scene.playPlayerSceneClip(std::nullopt);
+  }
+  const game::field::Field& field = scene.field();
   game::field::FieldItems& items = items_->items();
   items.enterMap(field.mapId());
   const assets::CollisionCell cell = assets::collisionCellAt(field.player().position);
@@ -53,6 +57,13 @@ bool FieldItemsScreen::tick(const game::field::Field& field, bool confirm, doubl
     if (const auto& ground = items.ground()[*slot]) {
       slot_ = *slot;
       show(Step::GroundItem, FoundText, ground->item);
+      // tamerTickPickupItem state 0: the player crouches for the item as its notice opens.
+      if (const auto& rules = items_->rules(); rules && rules->pickupPlayerClip) {
+        core::logDebug("[port:field_items] tamerTickPickupItem (tamer.c:1417): startAnimation({})",
+                       *rules->pickupPlayerClip);
+        scene.playPlayerSceneClip(rules->pickupPlayerClip);
+        pickupClipHeld_ = true;
+      }
     }
     return confirm;
   }

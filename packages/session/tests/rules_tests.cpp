@@ -139,3 +139,32 @@ TEST_CASE("the original's praise reaches up to a tall partner, and a scold right
   CHECK(clips.scoldPartnerClip == 12);
   CHECK(clips.boostedScoldPartnerClip == 25);
 }
+
+TEST_CASE("the original's player crouches with clip 12 for an item on the ground, and a ruleset "
+          "without the clip leaves the player standing") {
+  const dwe::assets::DiskFileSystem disk;
+  const auto bytes =
+      disk.readFile(std::filesystem::path{DWE_GAME_PACK} / "rules/original/field_items.yaml");
+  REQUIRE_MESSAGE(bytes.has_value(), errorOf(bytes));
+  auto document = dwe::core::parseYaml(textOf(*bytes));
+  REQUIRE_MESSAGE(document.has_value(), errorOf(document));
+  const dwe::ruleset::Section section{.name = "field_items",
+                                      .owner = "original",
+                                      .file = "field_items.yaml",
+                                      .node = std::move(*document)};
+  const auto rules = dwe::session::readFieldItemRules(section);
+  REQUIRE_MESSAGE(rules.has_value(), errorOf(rules));
+  // tamer.c: tamerTickPickupItem state 0: startAnimation(ENTITY_TABLE[0], 0xc).
+  CHECK(rules->pickupPlayerClip == 12U);
+
+  auto bare = dwe::core::parseYaml(
+      "ground_slots: 11\nchest_slots: 8\nreach_cells: 1\npickup_sound: {slot: 0, sound: 7}\n"
+      "toilet_sound: {slot: 0, sound: 10}\nsleep_sound: {slot: 0, sound: 15}\n"
+      "praise_sound: {slot: 0, sound: 14}\nscold_sound: {slot: 0, sound: 13}\n");
+  REQUIRE_MESSAGE(bare.has_value(), errorOf(bare));
+  const dwe::ruleset::Section bareSection{
+      .name = "field_items", .owner = "mod", .file = "field_items.yaml", .node = std::move(*bare)};
+  const auto bareRules = dwe::session::readFieldItemRules(bareSection);
+  REQUIRE_MESSAGE(bareRules.has_value(), errorOf(bareRules));
+  CHECK_FALSE(bareRules->pickupPlayerClip.has_value());
+}

@@ -917,7 +917,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent,
     // An item on the ground or a chest in reach takes the confirm, and its notice stops the field.
     const game::field::Field& field = scene_->field();
     if (!field.mapChangePending() && field.fadeLevel() == 0.0F &&
-        fieldItemsScreen_.tick(field, fieldIntent.confirm, TickSeconds)) {
+        fieldItemsScreen_.tick(*scene_, fieldIntent.confirm, TickSeconds)) {
       fieldIntent.confirm = false;
     }
     if (fieldItemsScreen_.active()) {

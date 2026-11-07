@@ -15,6 +15,11 @@
       "minimum": 1
     },
     "pickup_sound": { "description": "The sound of picking up an item.", "$ref": "#/$defs/sound" },
+    "pickup_player_clip": {
+      "description": "The player's clip while an item on the ground is offered, by the original's animation id; without it the player stands.",
+      "type": "integer",
+      "minimum": 0
+    },
     "toilet_sound": { "description": "The sound of the partner at the toilet.", "$ref": "#/$defs/sound" },
     "sleep_sound": { "description": "The sound of the partner come to the player to sleep.", "$ref": "#/$defs/sound" },
     "praise_sound": { "description": "The sound of praising the partner.", "$ref": "#/$defs/sound" },

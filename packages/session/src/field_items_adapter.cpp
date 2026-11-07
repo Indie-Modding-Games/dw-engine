@@ -22,6 +22,7 @@ constexpr std::string_view GroundSlotsKey = "ground_slots";
 constexpr std::string_view ChestSlotsKey = "chest_slots";
 constexpr std::string_view ReachCellsKey = "reach_cells";
 constexpr std::string_view PickupSoundKey = "pickup_sound";
+constexpr std::string_view PickupPlayerClipKey = "pickup_player_clip";
 constexpr std::string_view ToiletSoundKey = "toilet_sound";
 constexpr std::string_view SleepSoundKey = "sleep_sound";
 constexpr std::string_view PraiseSoundKey = "praise_sound";
@@ -123,6 +124,14 @@ std::optional<FeedRules> feedRules(YamlReader& reader, const YamlNode& root) {
   return rules;
 }
 
+std::optional<std::uint32_t> pickupPlayerClip(YamlReader& reader, const YamlNode& root) {
+  const YamlNode* node = root.find(PickupPlayerClipKey);
+  if (node == nullptr) {
+    return std::nullopt;
+  }
+  return reader.integer<std::uint32_t>(*node);
+}
+
 std::optional<ToiletWalkRules> toiletWalkRules(YamlReader& reader, const YamlNode& root) {
   const YamlNode* node = root.find(ToiletWalkKey);
   if (node == nullptr ||
@@ -187,13 +196,14 @@ core::Result<FieldItemsRules> readFieldItemRules(const ruleset::Section& section
   if (!reader.expectKeys(root, field_items_messages::SectionText,
                          {GroundSlotsKey, ChestSlotsKey, ReachCellsKey, PickupSoundKey,
                           ToiletSoundKey, SleepSoundKey, PraiseSoundKey, ScoldSoundKey},
-                         {FeedKey, ToiletWalkKey, PraiseScoldKey})) {
+                         {PickupPlayerClipKey, FeedKey, ToiletWalkKey, PraiseScoldKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   const FieldItemsRules rules{.items = {.groundSlots = positive(reader, root, GroundSlotsKey),
                                         .chestSlots = positive(reader, root, ChestSlotsKey),
                                         .reachCells = positive(reader, root, ReachCellsKey)},
                               .pickupSound = soundCue(reader, root, PickupSoundKey),
+                              .pickupPlayerClip = pickupPlayerClip(reader, root),
                               .toiletSound = soundCue(reader, root, ToiletSoundKey),
                               .sleepSound = soundCue(reader, root, SleepSoundKey),
                               .praiseSound = soundCue(reader, root, PraiseSoundKey),

@@ -7,6 +7,9 @@ chest_slots: 8
 reach_cells: 1
 # tamer.c: tamerTickPickupItem: playSound(0, 7) al recoger un objeto.
 pickup_sound: {slot: 0, sound: 7}
+# tamer.c: tamerTickPickupItem: startAnimation(ENTITY_TABLE[0], 0xc) al ofrecer un objeto del suelo; el jugador se agacha
+# y se queda en el último cuadro hasta responder el aviso.
+pickup_player_clip: 12
 # La sección 0x4e2 del mapa (la casilla del baño, tamer.c: checkMapInteraction): play_sound(0, 10).
 toilet_sound: {slot: 0, sound: 10}
 # partner.c: partnerTickSleep: playSound(0, 15) cuando el compañero llega junto al jugador para dormir.

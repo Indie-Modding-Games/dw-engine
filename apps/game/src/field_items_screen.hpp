@@ -38,8 +38,11 @@ public:
 
   // Before the field ticks, while it is idle: offers the item under the player, or, on `confirm`,
   // the chest in reach, and slides an open chest's drawer by `seconds`. Returns whether it took the
-  // confirm, which the field then does not see.
-  bool tick(const game::field::Field& field, bool confirm, double seconds);
+  // confirm, which the field then does not see. While an item on the ground is offered the player
+  // holds the ruleset's pickup clip (tamer.c: tamerTickPickupItem state 0: startAnimation 0xc,
+  // played on to its last frame through the notice), and the tick after the notice closes gives
+  // it back to its walk (state 4: tamerSetState(0), whose clip starts on the next frame).
+  bool tick(FieldScene& scene, bool confirm, double seconds);
 
   // Takes the notice's answer; false for any other command.
   bool handle(const ui::UiCommand& command);
@@ -67,6 +70,8 @@ private:
   bool closing_ = false;
   // The time toward the drawer's next original frame.
   double traySeconds_ = 0.0;
+  // The player holds the pickup clip, until the tick after the notice closes.
+  bool pickupClipHeld_ = false;
 };
 
 } // namespace dwe::app

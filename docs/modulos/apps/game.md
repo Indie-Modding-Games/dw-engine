@@ -56,6 +56,28 @@ Diferencias con el original:
 - El compañero decide si lo toma al elegir el objeto, no al tendérselo: es la misma tirada, un momento antes.
 - Si el compañero se atasca contra una pared, se para donde está; el original sigue andando.
 
+## Recoger un objeto del suelo
+
+Al pisar un objeto del suelo, el jugador se agacha a por él mientras sale el aviso (`tamer.c: tamerTickPickupItem`,
+estado 0: `startAnimation(ENTITY_TABLE[0], 0xc)`). La animación es `field_items.pickup_player_clip` (12 en el ruleset
+`original`) y la pone `FieldItemsScreen::tick` con `FieldScene::playPlayerSceneClip`, que corre aunque el campo espere al
+aviso. Se juega una vez y se queda en su último cuadro hasta responder. Al responder, el objeto entra en la bolsa (o se
+queda, con la bolsa llena, tras el segundo aviso, sin cambiar de animación) y el jugador vuelve a andar en el tick
+siguiente (estado 4: `tamerSetState(0)`, cuya animación empieza en el fotograma siguiente). Sin la clave, el jugador se
+queda de pie, como antes. Antes el jugador no se agachaba: el aviso salía con el jugador quieto.
+
+Medido en el original (2026-11-06, un objeto que suelta un enemigo vencido en mayo00, el campo a 20 fotogramas por
+segundo): el estado 7 del jugador empieza la animación 12 en el mismo fotograma en que se pisa el objeto; va del cuadro 2
+al 15 en 13 fotogramas (unos 0,65 s) y se queda en el 15. La caja del aviso termina de abrirse a los 10 fotogramas. Al
+confirmar, el objeto desaparece y la caja se cierra; en el fotograma siguiente el jugador está en la animación 0.
+Igual. Prueba: `packages/session/tests/rules_tests.cpp`, "the original's player crouches with clip 12 for an item on
+the ground".
+
+Diferencias con el original:
+
+- Mientras el aviso está abierto, el original sigue moviendo al compañero (su estado 1, seguir al jugador); el motor
+  detiene todo el campo hasta responder. Hueco.
+
 ## Dormir
 
 «Dormir» del menú del campo juega la escena del original (`partner.c: partnerTickSleep`, en `sleep_screen.cpp` y
