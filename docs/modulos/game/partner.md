@@ -70,6 +70,11 @@ partner.addStatGains(evolutionGains);                                           
   2026-10-20: la forma va con el partner). Al volver de la forma virus la sesión pone los stats reconstruidos con
   `setStats` y los deja en el tope de cada stat de `care.limits` (9999 HP y MP, 999 el resto), sin el tope por
   ganancia (`packages/session`: `EvolutionAdapter`).
+- **Plazos de las necesidades.** `needDeadlinesOf(estado, reglas.care, reloj)` (`need_deadlines.hpp`) dice, para
+  cada necesidad que tiene, cuántos frames faltan para que haga un daño duradero si nadie la atiende: el baño hasta que
+  se hace encima, el hambre hasta que se cierra la ventana, el sueño hasta la hora de despertar, la herida hasta que
+  enferma y la enfermedad hasta que pierde una vida; el cansancio no tiene plazo. Ninguna regla lo lee: lo usa la
+  burbuja apilada del HUD (mejora, [ui.md](../../architecture/ui.md#estado-del-campo)) para ordenarlas.
 - **Cacas.** `PoopPiles` guarda las cacas del mundo como el original: delante del partner, a un paso al azar si la
   casilla está ocupada, 16 por mapa y 100 en total, reutilizando las más antiguas.
 - **Guardado.** `toYaml`/`fromYaml` con `PartnerStateVersion` (`state_yaml.hpp`); la sesión los envuelve en un
@@ -202,6 +207,8 @@ ruleset `original` del paquete `game`. Además:
   ruleset cambiado (la ventana de hambre) y una estrategia cambiada (sin errores de cuidado).
 - `simulation_tests.cpp`: tres días de golpe, por horas y fotograma a fotograma dan el mismo estado y los mismos
   eventos; ocho días cuidados con la misma semilla dan el mismo partner, que vuelve igual de `toYaml`/`fromYaml`.
+- `need_deadlines_tests.cpp`: el plazo de cada necesidad es el frame en que su regla hace el daño (un frame antes no
+  pasa nada).
 - `state_yaml_tests.cpp`, `species_tests.cpp` (tablas `digimon` y `raise`).
 - `the user's disc, extracted: ...` (lento): con `DWE_CONTENT`, todas las especies del disco cargan, sus patrones de
   sueño existen, cada novato pasa un día y los bebés del renacer son bebés.

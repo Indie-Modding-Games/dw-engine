@@ -13,8 +13,10 @@ namespace dwe::app {
 
 // The console's and the scripts' partner_set("<value> <amount>"): sets one of the partner's values
 // the evolution reads (hp, mp, offense, defense, speed, brains, weight, care, battles, hours), so a
-// route can reach an evolution's requirement without raising the partner for days. A debug aid: it
-// runs no rule; the next check of the evolution reads the values as they are.
+// route can reach an evolution's requirement without raising the partner for days, and `poop`, the
+// frames left before a partner that needs the toilet goes on the ground (it then needs it), so a
+// route can make it go at a given moment. A debug aid: it runs no rule; the next check of the
+// evolution (or of the toilet) reads the values as they are.
 inline constexpr std::string_view PartnerSetCommand = "partner_set";
 
 struct PartnerWrite {
@@ -29,7 +31,8 @@ struct PartnerWrite {
     CareMistakes,
     Battles,
     Hours,
-    Discipline
+    Discipline,
+    Poop
   };
   Kind kind = Kind::Hp;
   std::int32_t value = 0;

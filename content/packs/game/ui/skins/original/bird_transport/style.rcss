@@ -9,6 +9,7 @@ body #window, body #talk, body #bits-box {
 }
 
 .row, #talk, #bits-box { font-family: original-look; color: #d0d0d0; }
+.row, #talk { font-family: original-look-dialogue; }
 body .row.unaffordable { color: #e03028; }
 body #speaker { color: #f8f800; }
 body #speaker.player { color: #d0d0d0; }

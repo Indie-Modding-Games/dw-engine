@@ -528,6 +528,17 @@ bool Device::validationEnabled() const {
   return impl_->validation && impl_->instance.debug_messenger != VK_NULL_HANDLE;
 }
 
+void Device::setVsync(bool vsync) {
+  if (impl_->vsync != vsync) {
+    impl_->vsync = vsync;
+    impl_->swapchainStale = true;
+  }
+}
+
+bool Device::vsync() const {
+  return impl_->vsync;
+}
+
 std::uint64_t Device::validationMessageCount() {
   return validationMessages.load(std::memory_order_relaxed);
 }

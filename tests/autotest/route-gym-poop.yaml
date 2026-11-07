@@ -1,0 +1,21 @@
+name: gym-poop
+# A pile right after a training session: the stats box closes while the partner goes, as the
+# original's boxes grow and shrink on their own (ui.c: renderUIBoxAnimated), instead of its outline
+# staying on screen, like an empty box, until the pile is down. Start with --new-game --start trai00,
+# as the training check (scripts/training-check.sh).
+device: keyboard
+timeout: 200
+steps:
+  - wait: {map: trai00, seconds: 2}
+  - script: gym("hp")
+  - wait: {setting: {gym.session.count: "1"}, timeout: 120}
+  # The urge runs out at the first tick the partner may go: as the session ends.
+  - script: partner_set("poop 1")
+  - wait: {setting: {gym.box.state: "2"}, timeout: 10}
+  - wait: {setting: {gym.box.state: "1"}, timeout: 30}
+  - screenshot: box-closing
+  # The outline shrinks in four frames of the original's 20 a second.
+  - wait: {hidden: gym_stats, timeout: 1}
+  - screenshot: box-closed
+  - wait: {seconds: 1}
+  - screenshot: pile

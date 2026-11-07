@@ -1350,12 +1350,23 @@ TEST_CASE("the shop job's bar shows the tally against the join and the customers
 
 namespace {
 
-void setFieldNeeds(Ui& ui, bool hunger, bool sleep, bool toilet, bool tired = false) {
+void setFieldNeeds(Ui& ui, bool hunger, bool sleep, bool toilet, bool tired = false,
+                   bool injured = false, bool sick = false) {
   ui.setSetting("hud.need.0.active", hunger);
   ui.setSetting("hud.need.1.active", sleep);
   ui.setSetting("hud.need.2.active", toilet);
   ui.setSetting("hud.need.3.active", tired);
+  ui.setSetting("hud.need.4.active", injured);
+  ui.setSetting("hud.need.5.active", sick);
   bumpFieldRevision(ui);
+}
+
+// The urgency the game ranks the needs with (hud.need.<i>.urgency), in the hud.need list's order:
+// hunger, sleep, toilet, tiredness, injury, sickness. Published with the next revision.
+void setFieldUrgency(Ui& ui, const std::array<int, 6>& ranks) {
+  for (std::size_t index = 0; index < ranks.size(); ++index) {
+    ui.setSetting(std::format("hud.need.{}.urgency", index), static_cast<double>(ranks.at(index)));
+  }
 }
 
 void placePartner(Ui& ui, bool visible) {
@@ -1370,7 +1381,7 @@ void placePartner(Ui& ui, bool visible) {
 
 // The need class the bubble has, or an empty string.
 std::string bubbleNeed(const Ui& ui) {
-  for (const std::string_view need : {"hunger", "sleep", "toilet", "tired"}) {
+  for (const std::string_view need : {"hunger", "sleep", "toilet", "tired", "injured", "sick"}) {
     if (ui.elementHasClass("hud", "field-partner-bubble", need)) {
       return std::string{need};
     }
@@ -1447,9 +1458,10 @@ namespace {
 // The needs on the stacked bubble's icons, left to right; empty icons left out.
 std::vector<std::string> stackedNeeds(const Ui& ui) {
   std::vector<std::string> needs;
-  for (const std::string_view icon : {"field-partner-bubble-icon-0", "field-partner-bubble-icon-1",
-                                      "field-partner-bubble-icon-2"}) {
-    for (const std::string_view need : {"hunger", "sleep", "toilet", "tired"}) {
+  for (const std::string_view icon :
+       {"field-partner-bubble-icon-0", "field-partner-bubble-icon-1", "field-partner-bubble-icon-2",
+        "field-partner-bubble-icon-3", "field-partner-bubble-icon-4"}) {
+    for (const std::string_view need : {"hunger", "sleep", "toilet", "tired", "injured", "sick"}) {
       if (ui.elementHasClass("hud", icon, need)) {
         needs.emplace_back(need);
       }
@@ -1489,18 +1501,49 @@ TEST_CASE(
   setFieldNeeds(*ui, true, false, true);
   CHECK(stackedNeeds(*ui) == std::vector<std::string>{"hunger", "toilet"});
 
-  // Four: the three most urgent.
+  // Four, all of them; with no urgency published, in the original's priority.
   setFieldNeeds(*ui, true, true, true, true);
-  CHECK(ui->elementHasClass("hud", "field-partner-bubble", "stack-3"));
-  CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "stack-2"));
-  CHECK(stackedNeeds(*ui) == std::vector<std::string>{"sleep", "tired", "hunger"});
+  CHECK(ui->elementHasClass("hud", "field-partner-bubble", "stack-4"));
+  CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "stack-3"));
+  CHECK(stackedNeeds(*ui) == std::vector<std::string>{"sleep", "tired", "hunger", "toilet"});
 
-  // Turned off: only the original's one, whichever of its turns it is on.
+  // Six: the five most urgent in one balloon, by the urgency the game ranks them with
+  // (hud.need.<i>.urgency, 1 the soonest to do harm); the sixth waits.
+  setFieldUrgency(*ui, {3, 5, 1, 6, 4, 2});
+  setFieldNeeds(*ui, true, true, true, true, true, true);
+  CHECK(ui->elementHasClass("hud", "field-partner-bubble", "stack-5"));
+  CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "stack-4"));
+  CHECK(bubbleNeed(*ui).empty());
+  CHECK(stackedNeeds(*ui) ==
+        std::vector<std::string>{"toilet", "sick", "hunger", "injured", "sleep"});
+  // A new order redraws it, with no turns in between.
+  setFieldUrgency(*ui, {1, 2, 3, 4, 5, 6});
+  bumpFieldRevision(*ui);
+  CHECK(stackedNeeds(*ui) ==
+        std::vector<std::string>{"hunger", "sleep", "toilet", "tired", "injured"});
+  ui->tick(input, 2.6);
+  CHECK(stackedNeeds(*ui) ==
+        std::vector<std::string>{"hunger", "sleep", "toilet", "tired", "injured"});
+  // Needs without a rank go after the ranked ones, in the original's priority among them.
+  setFieldUrgency(*ui, {0, 0, 1, 0, 0, 0});
+  setFieldNeeds(*ui, true, true, true, true);
+  CHECK(stackedNeeds(*ui) == std::vector<std::string>{"toilet", "sleep", "tired", "hunger"});
+
+  // Turned off: only the original's one, whichever of its turns it is on, by its own priority.
+  setFieldUrgency(*ui, {1, 2, 3, 4, 5, 6});
+  setFieldNeeds(*ui, true, true, true, true, true, true);
   ui->setSetting("need_bubble_stack", false);
   ui->update();
-  CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "stack-3"));
+  for (const std::string_view stack : {"stack-2", "stack-3", "stack-4", "stack-5"}) {
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", stack));
+  }
   CHECK_FALSE(bubbleNeed(*ui).empty());
   CHECK(stackedNeeds(*ui) == std::vector<std::string>{bubbleNeed(*ui)});
+  setFieldNeeds(*ui, false, false, false);
+  setFieldNeeds(*ui, true, true, true, true, true, true);
+  CHECK(bubbleNeed(*ui) == "sleep");
+  ui->tick(input, 2.6);
+  CHECK(bubbleNeed(*ui) == "tired");
 }
 
 TEST_CASE("the need bubble plays the original's frames: growth, the need's animation, burst, gap") {
@@ -2271,6 +2314,47 @@ TEST_CASE("original look text draws with the font the player picks, at once") {
   ui->setTextFont(TextFont::Modern);
   ui->update();
   CHECK(widthOf(*ui, "bitmap") == doctest::Approx(modern));
+}
+
+TEST_CASE("in the script's textboxes a space advances as far as the glyph before it") {
+  // The fixture font with a space 2 pixels wide.
+  const std::string meta = std::string{fixture::Meta} + R"yaml(- index: 3
+  sjis: "8140"
+  character: "　"
+  ascii: " "
+  x: 12
+  y: 0
+  width: 2
+)yaml";
+  Content content;
+  auto png = assets::encodePng(fixture::atlas());
+  REQUIRE(png.has_value());
+  content.add("font/main.png",
+              std::string_view{reinterpret_cast<const char*>(png->data()), png->size()});
+  content.add("font/main_meta.yaml", meta);
+  content.add("ui/look/document.rml", R"rml(<rml>
+<head>
+	<link type="text/rcss" href="/ui/common/base.rcss"/>
+	<style>
+		div { position: absolute; left: 0; font-size: 33px; }
+	</style>
+</head>
+<body>
+	<div id="menu-b" class="original-look" style="top: 0;">B A</div>
+	<div id="dialogue-b" class="original-look original-dialogue" style="top: 50px;">B A</div>
+	<div id="dialogue-a" class="original-look original-dialogue" style="top: 100px;">A B</div>
+</body>
+</rml>)rml");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("look", idOf("ui/look/document")));
+  ui->show("look");
+  ui->update();
+  REQUIRE(ui->textFont() == TextFont::Original);
+  // Elsewhere a space takes its own 2 pixels; in a textbox, the 4 of the B or the 3 of the A
+  // before it (three times larger).
+  CHECK(widthOf(*ui, "menu-b") == doctest::Approx(27.0F));
+  CHECK(widthOf(*ui, "dialogue-b") == doctest::Approx(33.0F));
+  CHECK(widthOf(*ui, "dialogue-a") == doctest::Approx(30.0F));
 }
 
 TEST_CASE("without the extracted bitmap font, original look text keeps the modern font") {

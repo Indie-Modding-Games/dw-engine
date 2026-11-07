@@ -990,12 +990,13 @@ de la UI desde `PlaySession` (`RecruitBarSetting`, `recruit_bar.hpp`).
 
 Mejora opcional, encendida por defecto (no cambia ninguna regla): el ajuste `need_bubble_stack` (fila «Varias
 necesidades», «Several needs» en inglés, de las opciones; guardado en los ajustes del usuario) llega como ajuste de la
-UI desde `PlaySession` (`NeedBubbleStackSetting`) y el HUD junta hasta tres necesidades en un globo
-([ui.md](../../architecture/ui.md#estado-del-campo)).
+UI desde `PlaySession` (`NeedBubbleStackSetting`) y el HUD junta hasta cinco necesidades en un globo, la que antes
+hace daño primero (`hud.need.<i>.urgency`, de `game::partner::needDeadlinesOf`;
+[ui.md](../../architecture/ui.md#estado-del-campo)).
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
-| Burbuja con dos o más necesidades | `partner_impl.c: handleConditionBubble`: una cada vez, por prioridad (sueño, cansancio, hambre, baño, herida, enfermedad); a los 50 frames cambia a la más alta de las demás, así que se turnan las dos más urgentes y una tercera no sale | Hasta tres en un globo ensanchado con las piezas del original, la más urgente a la izquierda; con una sola, la del original; apagada, la del original entera. Medido en dwe: cansancio + herida, 50 píxeles; cansancio + herida + enfermedad, 68 | `ui_tests`: «the need bubble shows several needs side by side ...»; `user_settings_tests`; `in_game_options_tests` | Mejora (opción) |
+| Burbuja con dos o más necesidades | `partner_impl.c: handleConditionBubble`: una cada vez, por prioridad (sueño, cansancio, hambre, baño, herida, enfermedad); a los 50 frames cambia a la más alta de las demás, así que se turnan las dos más urgentes y una tercera no sale | Hasta cinco en una fila de un globo ensanchado con las piezas del original (50, 68, 86 o 104 píxeles), ordenadas por el tiempo que falta para que cada una haga un daño duradero (baño, hambre, sueño, herida, enfermedad; el cansancio, sin plazo, detrás; empates por la prioridad del original), la más urgente a la izquierda, y metido en la ventana cerca de un borde; con una sola, la del original; apagada, la del original entera | `need_deadlines_tests.cpp`; `field_hud_view_tests.cpp`; `ui_tests`: «the need bubble shows several needs side by side ...»; `hud_fit_tests`; `user_settings_tests`; `in_game_options_tests`; capturas con 1, 3 y 5 necesidades al 100 % y al 130 % | Mejora (opción) |
 | Frames de la burbuja: crece en 10, cada necesidad anima por el contador de la burbuja (las tres «Z» del sueño, la gota que cae del cansancio, los cuadros de la comida, el baño, la herida y la enfermedad), estalla en el 51 y no se ve hasta el 60 | `bubble.c: tickConditionBubble`, `renderConditionBubble` (`CONDITION_ICON_SLEEPY`, `CONDITION_TIRED_FRAME_U`/`_MY`, `CONDITION_HUNGRY_FRAMES`); `partner_impl.c: handleConditionBubble` (`CONDITION_BUBBLE_TIMER`). Medido en DuckStation: 180 vblanks por burbuja, 150 al cambiar de necesidad; «Z» en los frames 12, 17, 23 y 28 | `ui/hud/logic.lua` publica `frame-<n>`; el aspecto original lo dibuja (`style.rcss`, `skin.yaml`). Antes solo salía el primer cuadro de cada necesidad y la «Z» baja | `ui_tests`: «the need bubble plays the original's frames ...» | Igual (sin el vaivén de 12 unidades) |
 
 ## Minimapa redondo
@@ -1255,7 +1256,16 @@ Todas las filas sirven en el título. Las que solo aplica una partida en curso (
 atiende `PlaySession`: exploración libre, mapa de la isla, nombres largos, movimiento suave, carteles traducidos…) las
 guarda el juego en los ajustes del usuario y las vuelve a publicar (`changeGameToggle`, `publishGameToggles`); la
 siguiente partida empieza con ellas. Las demás (pantalla, escala, piel, idioma, letra, volúmenes, gráficos, minimapa)
-tienen el mismo manejador que en partida. La sincronía vertical se cambia igual que en partida: al reiniciar.
+tienen el mismo manejador que en partida.
+
+Las filas de la pantalla se guardan en `settings.yaml` como las demás (`DisplayChanger`,
+`apps/game/src/display_settings.hpp`): «Pantalla» (`fullscreen`), «Sincronización vertical» (`vsync`), «Escala de la
+interfaz» (`ui_scale`, el factor; al leerlo se ajusta al rango de la interfaz, de 0,5 a 3) y el tamaño del minimapa de
+la página «Minimapa» (`minimap_size`: `small`, `medium` o `large`; otro valor cuenta como `medium`). El juego las lee
+antes de abrir la ventana, así que la primera imagen ya sale con el modo, la sincronía y la escala guardados;
+`--fullscreen` y `--no-vsync` mandan solo en esa partida. La sincronía cambia al momento: el dispositivo rehace la
+swapchain con el nuevo modo de presentación antes de la siguiente imagen (`rhi::Device::setVsync`). Una ruta
+automática o el canal de control no leen ni escriben esos ajustes. Tests: `display_settings_tests.cpp`.
 
 La página cabe en todas las ventanas: el diseño es de 720dp de alto y al menos 960dp de ancho, así que una ventana
 4:3 deja 960dp. El recuadro moderno mide 900dp; el original, 980dp con las teclas de pestaña por fuera, se estrecha a

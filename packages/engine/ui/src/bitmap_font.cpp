@@ -5,6 +5,7 @@
 #include <RmlUi/Core/StringUtilities.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -58,6 +59,24 @@ void addCharacters(assets::YamlReader& reader, const core::YamlNode& entry,
 
 } // namespace
 
+float onGlyphGrid(float offset, int scale) {
+  const auto grid = static_cast<float>(GlyphGrid * std::max(scale, 1));
+  return std::floor(offset / grid) * grid;
+}
+
+bool isSpace(char32_t character) {
+  return character == U' ' || character == U'\u3000';
+}
+
+int glyphAdvance(const BitmapGlyph& glyph, char32_t character, bool dialogue,
+                 int& previousAdvance) {
+  if (isSpace(character)) {
+    return dialogue && previousAdvance > 0 ? previousAdvance : glyph.advance;
+  }
+  previousAdvance = glyph.advance;
+  return glyph.advance;
+}
+
 core::Result<BitmapFont> BitmapFont::parse(std::string_view meta, assets::Image atlas,
                                            int baseline) {
   auto tree = core::parseYaml(meta);
@@ -91,6 +110,9 @@ core::Result<BitmapFont> BitmapFont::parse(std::string_view meta, assets::Image 
     addCharacters(reader, entry, glyph, font.glyphs_);
   }
   font.atlas_ = std::move(atlas);
+  if (reader.ok()) {
+    font.addComposedGlyphs();
+  }
   return reader.finish(std::move(font), messages::BitmapFontContext);
 }
 

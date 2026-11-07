@@ -138,7 +138,9 @@ opacidad 1 − fundido en vez de la resta del original). El documento `ui/lives_
 ## HUD del campo
 
 `fieldHudViewOf(hora, compañero, shown)` es el estado del campo: la hora y el día, felicidad y disciplina, hambre,
-sueño, baño y cansancio, y HP y MP, solo con números y booleanos para que el juego la compare en cada frame sin construir textos.
+sueño, baño, cansancio, herida y enfermedad, con lo que urge cada una (`urgency`: su puesto por el plazo de
+`PartnerView::needDeadlines`, para la burbuja apilada), y HP y MP, solo con números y booleanos para que el juego la
+compare en cada frame sin construir textos.
 `fieldHudLabelSettings()` da las etiquetas, que se publican una vez. Los ajustes `hud.*`, sus unidades y cuándo se
 actualizan son el contrato de datos de cualquier aspecto: están en [ui.md](../../architecture/ui.md#estado-del-campo).
 

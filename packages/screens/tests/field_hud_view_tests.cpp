@@ -3,6 +3,8 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <array>
+#include <cstdint>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -109,6 +111,43 @@ TEST_CASE("the field HUD's settings name each value and each label once") {
   for (const auto& label : labels) {
     CHECK(find(settings, label.name) == nullptr);
   }
+}
+
+TEST_CASE(
+    "the field HUD ranks the partner's needs by how soon they do harm, ties in the bubble's order") {
+  const dwe::ruleset::GameTime time{.year = 0, .day = 0, .hour = 8, .minute = 0};
+  // Hunger (0), toilet (2), tiredness (3) and sickness (5); no deadlines known: the original
+  // bubble's order (tiredness, hunger, toilet, sickness).
+  auto view = dwe::screens::fieldHudViewOf(time, partner(), true);
+  CHECK(view.urgency == std::array<std::int32_t, 6>{2, 0, 3, 1, 0, 4});
+  // The toilet's urge runs out first, then the sickness costs a life, then the hunger window
+  // closes; tiredness has no deadline, so it goes last.
+  auto timed = partner();
+  timed.needDeadlines.set(Condition::Hungry, 1800);
+  timed.needDeadlines.set(Condition::NeedsToilet, 240);
+  timed.needDeadlines.set(Condition::Sick, 1200);
+  view = dwe::screens::fieldHudViewOf(time, timed, true);
+  CHECK(view.urgency == std::array<std::int32_t, 6>{3, 0, 1, 4, 0, 2});
+  // A tie keeps the bubble's order: hunger before the toilet.
+  timed.needDeadlines.set(Condition::NeedsToilet, 1800);
+  view = dwe::screens::fieldHudViewOf(time, timed, true);
+  CHECK(view.urgency == std::array<std::int32_t, 6>{2, 0, 3, 4, 0, 1});
+  // Every need at once, the five a stacked bubble shows and a sixth.
+  auto all = timed;
+  all.conditions.set(Condition::Sleepy);
+  all.conditions.set(Condition::Injured);
+  all.needDeadlines.set(Condition::Sleepy, 600);
+  all.needDeadlines.set(Condition::Injured, 6000);
+  view = dwe::screens::fieldHudViewOf(time, all, true);
+  CHECK(view.urgency == std::array<std::int32_t, 6>{3, 1, 4, 6, 5, 2});
+  const auto settings = dwe::screens::settingsOf(view);
+  CHECK(*find(settings, "hud.need.1.urgency") == dwe::ui::UiValue{1.0});
+  CHECK(*find(settings, "hud.need.3.urgency") == dwe::ui::UiValue{6.0});
+  // A need the partner does not have has none, and a new order is a new view to publish.
+  CHECK(*find(dwe::screens::settingsOf(dwe::screens::fieldHudViewOf(time, partner(), true)),
+              "hud.need.1.urgency") == dwe::ui::UiValue{0.0});
+  CHECK_FALSE(dwe::screens::fieldHudViewOf(time, timed, true) ==
+              dwe::screens::fieldHudViewOf(time, partner(), true));
 }
 
 TEST_CASE(

@@ -38,6 +38,12 @@ button {
 	color: #d6d6d6;
 }
 
+/* The same text in the script's textboxes and their item lists (script_textbox.c: drawString2): the original-look-dialogue
+   family, where a space advances as far as the glyph before it (ui/fonts/original_look.yaml). */
+.original-look.original-dialogue {
+	font-family: original-look-dialogue;
+}
+
 /* The original look's animated windows (ui/common/original_box.lua): the grey outline that grows from where a box
    opens (ui.c: renderUIBoxAnim, a 1-pixel 0x808080 line), the box hidden while it runs, and a box closed by it. */
 .box-outline {

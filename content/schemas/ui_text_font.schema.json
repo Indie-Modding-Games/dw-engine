@@ -7,6 +7,7 @@
   "additionalProperties": false,
   "properties": {
     "family": { "description": "The font-family the documents name.", "type": "string", "minLength": 1 },
+    "dialogue_family": { "description": "The font-family of the script's textboxes and their item lists: the same font, where a space advances as far as the glyph before it, as the original's textboxes draw it.", "type": "string", "minLength": 1 },
     "default": { "description": "The choice before the player makes one.", "enum": ["modern", "original"] },
     "modern": { "description": "The family of a font under ui/fonts/ that the modern choice draws with; it also draws the characters the bitmap font lacks.", "type": "string", "minLength": 1 },
     "original": {

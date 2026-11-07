@@ -834,7 +834,7 @@ fase 4:
 | `sleep("")` | Lo acuesta, si tiene sueño |
 | `scold("")` | Lo regaña, como «Regañar» en la pestaña de cuidados |
 | `train("<lugar> <curso>")` | Una sesión de entrenamiento (`train("trn brain")`) |
-| `partner_set("<valor> <número>")` | Escribe un valor del compañero, de 0 a 99999: `hp`, `mp`, `offense`, `defense`, `speed`, `brains` (los stats base, HP y MP en sus unidades), `weight`, `care` (errores de cuidado), `battles`, `hours` (el contador de evolución) y `discipline` (disciplina, dentro de los límites del ánimo) (`partner_set("hours 71")`). Para dejar al compañero justo antes de una revisión de evolución |
+| `partner_set("<valor> <número>")` | Escribe un valor del compañero, de 0 a 99999: `hp`, `mp`, `offense`, `defense`, `speed`, `brains` (los stats base, HP y MP en sus unidades), `weight`, `care` (errores de cuidado), `battles`, `hours` (el contador de evolución) y `discipline` (disciplina, dentro de los límites del ánimo) (`partner_set("hours 71")`); `poop` le da ganas de ir al baño con los fotogramas que aguanta antes de hacerlo en el suelo (`partner_set("poop 1")`). Para dejar al compañero justo antes de una revisión de evolución |
 | `learn_move("<técnica> [hueco]")` | El compañero aprende esa técnica (y las que vienen con ella) como en el entrenamiento de inteligencia y, con un hueco de 0 a 3, la equipa ahí (`learn_move("meltdown 0")`), para ver una técnica que aún no sabe |
 | `clock_speed("<multiplicador>")` | Acelera el reloj: 1 es un minuto de juego por segundo real, 600 son diez horas |
 | `hd_scenery("on"\|"off")` | Enciende o apaga los escenarios en alta definición, como su fila de opciones (y lo guarda igual) |

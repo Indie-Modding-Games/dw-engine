@@ -1,5 +1,6 @@
 #include <dwe/core/log.hpp>
 #include <dwe/game/partner/area_response.hpp>
+#include <dwe/game/partner/need_deadlines.hpp>
 #include <dwe/game/partner/rules.hpp>
 #include <dwe/game/save/settings.hpp>
 #include <dwe/ruleset/random.hpp>
@@ -830,6 +831,8 @@ PartnerView GameSession::partnerView() const {
   PartnerView view = viewOf(state_->partner, state_->partnerRules.care);
   view.nickname = names_.partner;
   view.area = area_;
+  view.needDeadlines =
+      game::partner::needDeadlinesOf(state_->partner.state(), state_->partnerRules.care, clock());
   return view;
 }
 

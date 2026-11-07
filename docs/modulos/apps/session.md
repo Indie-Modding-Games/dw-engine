@@ -54,7 +54,8 @@ petición pendiente; los guardados del jugador no cambian.
 ### Lo que ve la UI
 
 `partnerView()` da una copia de solo lectura (`PartnerView`): especie, nivel, edad, vidas, vida que le queda,
-estadísticas, medidores con su rango (`CareMeter::fill()` de 0 a 1), condiciones, errores de cuidado y batallas. La
+estadísticas, medidores con su rango (`CareMeter::fill()` de 0 a 1), condiciones, el plazo de cada necesidad
+(`needDeadlines`, de `game::partner::needDeadlinesOf` con el reloj de la sesión), errores de cuidado y batallas. La
 pestaña "Partner" del panel de ajuste (`apps/game/src/partner_tab.cpp`) la enseña.
 
 ## Partida nueva

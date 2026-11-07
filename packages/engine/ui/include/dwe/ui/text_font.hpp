@@ -35,6 +35,9 @@ inline constexpr std::string_view OriginalLookAsset = "ui/fonts/original_look";
 struct OriginalLook {
   // The family the documents name, as in `font-family: original-look`.
   std::string family;
+  // The same font for the script's textboxes and their item lists (script_textbox.c: drawString2),
+  // where a space advances as far as the glyph before it; empty when the packs name none.
+  std::string dialogueFamily;
   // The choice before the player makes one.
   TextFont defaultFont = TextFont::Modern;
   // The family the modern choice draws with; it also draws what the bitmap font lacks.

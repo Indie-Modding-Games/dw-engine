@@ -228,7 +228,7 @@ help.minimap_enemies: "Un punto rojo en el minimapa por cada enemigo que puede e
 help.minimap_items: "Un rombo verde en el minimapa por cada objeto que hay en el suelo para recoger."
 help.digital_time: "La hora del juego en dígitos (HH:MM) bajo el reloj."
 help.save_notice: "Una figura pequeña y «Guardando» en una esquina mientras el juego guarda."
-help.need_bubble_stack: "La burbuja del compañero enseña hasta tres necesidades a la vez, la más urgente primero."
+help.need_bubble_stack: "La burbuja del compañero enseña hasta cinco necesidades a la vez, primero la que antes le hará daño."
 help.shop_job_bar: "Una barra enseña cuánto falta mientras un trabajo o una partida decide si alguien se une."
 help.options_reset: "Devuelve las opciones de esta pestaña a sus valores por defecto. Pregunta antes."
 help.options_back: "Vuelve al menú."

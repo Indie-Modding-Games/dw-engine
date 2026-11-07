@@ -11,6 +11,7 @@ body #window, body #talk, body #amount {
 body #amount { background-color: #293942; }
 
 .label, .row, #talk, #amount { font-family: original-look; color: #d0d0d0; }
+.row, #talk { font-family: original-look-dialogue; }
 body .row.missing .give { color: #e03028; }
 body .row .mark { color: #f8f800; }
 body #speaker { color: #f8f800; }
