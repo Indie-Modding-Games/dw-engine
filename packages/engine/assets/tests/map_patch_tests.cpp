@@ -7,8 +7,10 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <array>
 #include <filesystem>
+#include <format>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -361,4 +363,56 @@ TEST_CASE("loadMapDocument applies more patches last, and their errors name them
 
   // Without them, the packs' alone.
   CHECK(dwe::assets::loadMapDocument(*vfs, "twna01")->warp(0)->targetExit == 7);
+}
+
+TEST_CASE("a pack's map may take another map's images, and needs its entry, its data and a "
+          "background") {
+  MemoryFileSystem memory;
+  memory.addFile("base/pack.yaml", "id: base\nversion: 1.0.0\nlayer: base\n");
+  memory.addFile("base/data/maps.yaml", dwe::assets::testing::FixtureTable);
+  memory.addFile("base/map/twna01/data.yaml", fixtureMap());
+  memory.addFile("base/map/twna01/background_day.png", "not read here");
+  memory.addFile("mod/pack.yaml", "id: my_mod\nversion: 1.0.0\nlayer: mods\n");
+  constexpr std::string_view Entry = R"(- id: "my_mod:{}"
+  filename: "X"
+  images_8bpp: 0
+  images_4bpp: 0
+  flags: 64
+  sound_id: 0
+  fixed_time_of_day: true
+  has_npcs: false
+  doors: null
+  toilet: null
+  loading_name: 0
+)";
+  memory.addFile("mod/data/maps.yaml", std::format("maps:\n{}{}", std::format(Entry, "copy"),
+                                                   std::format(Entry, "ghost")));
+  memory.addFile("mod/map/my_mod/copy/data.yaml", fixtureMap() + "assets_from: twna01\n");
+  memory.addFile("mod/map/my_mod/lonely/data.yaml", fixtureMap());
+  const std::array locations{
+      PackLocation{.fileSystem = &memory, .root = "base", .origin = PackOrigin::Engine},
+      PackLocation{.fileSystem = &memory, .root = "mod", .origin = PackOrigin::Mod}};
+  const auto vfs = VirtualFileSystem::mount(locations);
+  REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
+
+  const auto copy = dwe::assets::loadMapDocument(*vfs, "my_mod:copy");
+  REQUIRE_MESSAGE(copy.has_value(), errorOf(copy));
+  CHECK(copy->assetsFrom == "twna01");
+  CHECK(dwe::assets::mapAssetsOf(*copy) == "twna01");
+  REQUIRE(copy->assets.backgrounds.size() == 1);
+  CHECK(copy->assets.backgrounds[0].id.str() == "map/twna01/background_day");
+  CHECK(errorOf(dwe::assets::parseMapDocument(fixtureMap() + "assets_from: \"Not A Map\"\n"))
+            .contains("not a map id"));
+
+  std::vector<std::string> found;
+  for (const dwe::assets::ContentProblem& problem : dwe::assets::checkContent(*vfs)) {
+    if (problem.id.str().starts_with("map/my_mod") || problem.id.str() == "data/maps") {
+      found.push_back(problem.id.str() + ": " + problem.message);
+    }
+  }
+  std::ranges::sort(found);
+  REQUIRE(found.size() == 2);
+  CHECK(found[0].contains("adds map 'my_mod:ghost'"));
+  CHECK(found[1].starts_with("map/my_mod/lonely/data: "));
+  CHECK(found[1].contains("no entry in data/maps"));
 }

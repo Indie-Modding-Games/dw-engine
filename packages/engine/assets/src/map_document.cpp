@@ -25,6 +25,8 @@ constexpr std::size_t CellCount = static_cast<std::size_t>(MapCollision::Size) *
 constexpr std::int32_t GridOrigin = MapCollision::Size / 2;
 constexpr std::size_t LightCount = 3;
 constexpr std::size_t WarpCount = 10;
+// The optional key naming the map whose backgrounds and textures a map uses.
+constexpr std::string_view AssetsFromKey = "assets_from";
 
 glm::ivec3 readVector(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(node, "a vector", {"x", "y", "z"})) {
@@ -428,7 +430,8 @@ core::Result<MapDocument> readMapDocument(const YamlNode& root) {
   YamlReader reader;
   if (!reader.expectKeys(root, "the map data",
                          {"camera", "lights", "ambient", "regions", "tiles", "images", "objects",
-                          "warps", "digimon_count", "npcs", "collision"})) {
+                          "warps", "digimon_count", "npcs", "collision"},
+                         {AssetsFromKey})) {
     return std::unexpected{reader.error("map data")};
   }
   MapDocument document;
@@ -445,6 +448,12 @@ core::Result<MapDocument> readMapDocument(const YamlNode& root) {
     document.npcs.push_back(readNpc(reader, item));
   }
   document.collision = readCollision(reader, reader.field(root, "collision"));
+  if (const YamlNode* assetsFrom = root.find(AssetsFromKey); assetsFrom != nullptr) {
+    document.assetsFrom = reader.text(*assetsFrom);
+    if (reader.ok() && !mapDataId(document.assetsFrom)) {
+      reader.fail(*assetsFrom, std::format("'{}' is not a map id", document.assetsFrom));
+    }
+  }
   return reader.finish(std::move(document), "map data");
 }
 
@@ -468,6 +477,11 @@ core::Result<MapCollision> parseMapCollision(std::string_view yaml) {
 
 core::Result<AssetId> mapDataId(std::string_view mapId) {
   return AssetId::parse(std::format("map/{}/data", contentAssetPath(mapId)));
+}
+
+std::string_view mapAssetsOf(const MapDocument& document) {
+  return document.assetsFrom.empty() ? std::string_view{document.id}
+                                     : std::string_view{document.assetsFrom};
 }
 
 MapAssetIds findMapAssets(const VirtualFileSystem& vfs, std::string_view mapId) {
@@ -547,7 +561,7 @@ core::Result<MapDocument> loadMapDocument(const VirtualFileSystem& vfs, std::str
         core::Error{std::format("map '{}': {}", mapId, document.error().message)}};
   }
   document->id = std::string{mapId};
-  document->assets = findMapAssets(vfs, mapId);
+  document->assets = findMapAssets(vfs, mapAssetsOf(*document));
   return document;
 }
 

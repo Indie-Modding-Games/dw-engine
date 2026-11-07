@@ -1,5 +1,6 @@
 #include "ui_demo.hpp"
 
+#include <dwe/assets/content_id.hpp>
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/item_table.hpp>
 #include <dwe/assets/map_document.hpp>
@@ -136,7 +137,9 @@ LoadedMap loadMap(const assets::VirtualFileSystem* files, const std::string& id)
           const std::string_view shown = table->displayName(*entry);
           if (!shown.empty()) {
             name = shown;
-            nameKey = localization::mapNameKey(entry->loadingName);
+            const auto added = assets::ContentId::parse(id);
+            nameKey = added && added->isNamespaced() ? localization::addedMapNameKey(*added)
+                                                     : localization::mapNameKey(entry->loadingName);
           }
         }
       }

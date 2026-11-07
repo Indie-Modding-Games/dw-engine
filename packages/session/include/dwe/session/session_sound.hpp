@@ -61,6 +61,8 @@ public:
   void stopHeldSound(std::int64_t held) override;
 
 private:
+  // Reads the map table (again), for the banks of the maps.
+  void readMaps();
   // Plays a sound and returns its voices, warning once when it cannot.
   std::optional<std::vector<audio::VoiceId>> playVoices(std::int64_t slot, std::int64_t sound);
   [[nodiscard]] std::optional<std::string> folderOf(std::int64_t slot);

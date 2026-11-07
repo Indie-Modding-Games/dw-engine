@@ -4,6 +4,7 @@
 #include <dwe/assets/text_table.hpp>
 #include <dwe/core/json_schema.hpp>
 #include <dwe/core/yaml.hpp>
+#include <dwe/formats/image/png.hpp>
 #include <dwe/test_support/temp_folder.hpp>
 #include <dwe/test_support/user_assets.hpp>
 
@@ -74,6 +75,16 @@ std::vector<std::byte> clipModel(int tickCount) {
 
 // The schemas of the tests: a sound bank's metadata names its SoundFont and a map, a map has a
 // camera.
+// The background a pack's map needs (an indexed PNG; its size is not checked here).
+void addMeadowBackground(MemoryFileSystem& files) {
+  constexpr std::uint32_t Side = 8;
+  const std::vector<std::uint8_t> indices(std::size_t{Side} * Side, 1);
+  const std::array<dwe::formats::image::Rgba8, 2> palette{{{}, {.r = 200, .a = 255}}};
+  const auto png = dwe::formats::image::encodePngIndexed(Side, Side, indices, palette);
+  REQUIRE(png.has_value());
+  files.addFile("packs/my_mod/map/my_mod/meadow/background_day.png", *png);
+}
+
 void addSchemas(MemoryFileSystem& files) {
   files.addFile("content/schemas/pack.schema.json",
                 R"({"type": "object", "required": ["id", "name"]})");
@@ -342,6 +353,7 @@ schemas:
   loading_name: 0
 )");
   files.addFile("packs/my_mod/map/my_mod/meadow/data.yaml", dwe::assets::testing::fixtureMap());
+  addMeadowBackground(files);
   files.addFile("packs/my_mod/sound/meadow/bank_meta.yaml",
                 "bank: bank.sf2\nmap: my_mod:meadow\ncount: 1\n");
   files.addFile("packs/my_mod/sound/meadow/bank.sf2", dwe::assets::testing::soundFontFile());
@@ -417,6 +429,7 @@ schemas:
   toilet: null
   loading_name: 0
 )");
+  addMeadowBackground(files);
   const std::string_view fixtureExit = "  target_map: 118\n  target_map_id: \"room08\"\n";
   const auto withExit = [&](std::string_view exit) {
     std::string map = dwe::assets::testing::fixtureMap();
@@ -531,6 +544,7 @@ schemas:
                 "  images_4bpp: 0\n  flags: 64\n  sound_id: 0\n  fixed_time_of_day: true\n"
                 "  has_npcs: false\n  doors: null\n  toilet: null\n  loading_name: 0\n");
   files.addFile("packs/my_mod/map/my_mod/meadow/data.yaml", dwe::assets::testing::fixtureMap());
+  addMeadowBackground(files);
   files.addFile("packs/my_mod/rules/trips.yaml", "stops: [twna01, \"my_mod:meadow\"]\n");
   const std::array<std::filesystem::path, 1> with{"content/base"};
   const auto report = validatePacks(files, "packs/my_mod", "content/schemas", with);

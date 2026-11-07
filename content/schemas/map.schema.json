@@ -6,6 +6,11 @@
   "required": ["camera", "lights", "ambient", "regions", "tiles", "images", "objects", "warps", "digimon_count", "npcs", "collision"],
   "additionalProperties": false,
   "properties": {
+    "assets_from": {
+      "description": "Optional: the id of the map whose backgrounds and textures this one uses (a map a pack adds as a copy of another, without copying its images). dwx never writes it.",
+      "type": "string",
+      "assetReference": "map/{}/data"
+    },
     "camera": {
       "type": "object",
       "required": ["viewpoint", "reference", "projection"],

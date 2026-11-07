@@ -1,4 +1,5 @@
 #include <dwe/assets/content_check.hpp>
+#include <dwe/assets/content_id.hpp>
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/assets/evolution_chart.hpp>
 #include <dwe/assets/evolution_table.hpp>
@@ -40,6 +41,9 @@ namespace dwe::assets {
 namespace {
 
 using Opener = core::Result<void> (*)(std::span<const std::byte>);
+
+// The map table the game reads (map_table.cpp: loadMapTable).
+constexpr std::string_view MapTableId = "data/maps";
 
 // The most threads the check uses. Assets are independent, so they are opened in parallel.
 constexpr unsigned MaxThreads = 16;
@@ -230,6 +234,44 @@ core::Result<void> checkPatchedMap(const VirtualFileSystem& fileSystem, const As
   return {};
 }
 
+// A map a pack adds (`pack:name`) needs both halves the game reads, its entry in the composed
+// data/maps and its data, and a background in its own folder or its `assets_from` map's; checked at
+// the map's data and at data/maps.
+core::Result<void> checkAddedMaps(const VirtualFileSystem& fileSystem, const AssetId& id) {
+  if (id.str() == MapTableId) {
+    auto table = loadMapTable(fileSystem);
+    if (!table) {
+      return {};
+    }
+    for (const MapEntry& entry : table->maps) {
+      const auto dataId = mapDataId(entry.id);
+      if (!entry.originalIndex && (!dataId || fileSystem.resolve(*dataId) == nullptr)) {
+        return core::fail(messages::formatMessage(messages::AddedMapWithoutData, entry.id));
+      }
+    }
+    return {};
+  }
+  const std::optional<std::string> mapId = mapIdOfAsset(id);
+  if (!mapId || isMapPatchId(id)) {
+    return {};
+  }
+  if (const auto added = ContentId::parse(*mapId); !added || !added->isNamespaced()) {
+    return {};
+  }
+  if (auto table = loadMapTable(fileSystem); table && table->find(*mapId) == nullptr) {
+    return core::fail(messages::formatMessage(messages::AddedMapWithoutEntry, *mapId));
+  }
+  auto map = loadMapDocument(fileSystem, *mapId);
+  if (!map) {
+    return std::unexpected{map.error()};
+  }
+  if (map->assets.backgrounds.empty()) {
+    return core::fail(messages::formatMessage(messages::MapWithoutBackground, *mapId,
+                                              contentAssetPath(mapAssetsOf(*map))));
+  }
+  return {};
+}
+
 using ComposedTables = std::vector<std::pair<AssetId, const TableKind*>>;
 
 const TableKind* kindOf(const ComposedTables& tables, const AssetId& id) {
@@ -330,6 +372,10 @@ std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem,
     if (auto patched = checkPatchedMap(fileSystem, id); !patched) {
       return ContentProblem{
           .id = id, .file = pathText(source->file), .message = patched.error().message};
+    }
+    if (auto added = checkAddedMaps(fileSystem, id); !added) {
+      return ContentProblem{
+          .id = id, .file = pathText(source->file), .message = added.error().message};
     }
     return std::nullopt;
   };
