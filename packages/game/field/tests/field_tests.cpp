@@ -886,6 +886,66 @@ TEST_CASE("a sleep's care hold stops the game time, the other care scenes keep i
   CHECK(field.gameTimeRan());
 }
 
+TEST_CASE("an item on the ground's notice holds the player while the partner follows and the time "
+          "runs") {
+  // tamer.c: tamerTickPickupItem (the player's state 7) holds the player only: tamerTickOverworld
+  // goes on, the partner's normal state follows (partner.c: partnerTickNormal) and tickGameClock
+  // runs.
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  const MapDocument map = roomMap("room");
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  auto& partner = world.registry().get<dwe::scene::Transform>(field.partnerEntity());
+  dwe::scene::place(partner, {-500.0F, 0.0F, 0.0F}, 0.0F);
+  const float before = partnerDistance(field);
+
+  field.holdForItem(dwe::game::field::ItemHold::Ground);
+  CHECK(field.heldForItem() == dwe::game::field::ItemHold::Ground);
+  for (int i = 0; i < 60; ++i) {
+    // The notice takes the presses: none walks the player or reaches a cell.
+    field.setInput({.stick = {1.0F, 0.0F}, .run = true, .confirm = true});
+    field.tick(Tick);
+    CHECK(field.gameTimeRan());
+    CHECK_FALSE(field.playerFree());
+  }
+  CHECK(field.player().position.x == doctest::Approx(0.0F));
+  CHECK(partnerDistance(field) < before);
+
+  // Let go, the player's run starts on the next frame and moves on the one after.
+  field.holdForItem(dwe::game::field::ItemHold::None);
+  field.setInput({.stick = {1.0F, 0.0F}, .run = true});
+  run(field, 0.1F);
+  CHECK(field.player().position.x > 0.0F);
+}
+
+TEST_CASE("a chest's notice stands the partner and turns the player to the chest") {
+  // tamer.c: tamerTickTakeChest state 0: partnerSetState(0xb) (partnerTickIdle: the partner stands)
+  // and entityLookAtLocation on the chest, at once; the game time runs on.
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  const MapDocument map = roomMap("room");
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  auto& partner = world.registry().get<dwe::scene::Transform>(field.partnerEntity());
+  dwe::scene::place(partner, {-1000.0F, 0.0F, 0.0F}, 0.0F);
+
+  field.holdForItem(dwe::game::field::ItemHold::Chest);
+  const glm::vec3 chest{0.0F, 0.0F, 300.0F};
+  field.turnPlayerTo(chest);
+  CHECK(field.player().yaw ==
+        doctest::Approx(dwe::assets::yawOfDirection(chest - field.player().position)));
+  for (int i = 0; i < 60; ++i) {
+    field.tick(Tick);
+    CHECK(field.gameTimeRan());
+  }
+  CHECK(field.partner().position.x == doctest::Approx(-1000.0F));
+  CHECK(field.player().position.x == doctest::Approx(0.0F));
+
+  // partnerSetState(1): the partner follows again.
+  field.holdForItem(dwe::game::field::ItemHold::None);
+  run(field, 1.0F);
+  CHECK(field.partner().position.x > -1000.0F);
+}
+
 TEST_CASE("a care scene runs the partner to a point and pans the camera, given back on release") {
   dwe::scene::World world;
   Field field{world, originalRules()};

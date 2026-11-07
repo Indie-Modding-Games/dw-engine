@@ -15,7 +15,7 @@ files["content/packs/*/ui/**/*.lua"] = {
   ignore = { "131" },
   read_globals = {
     "ui", "t", "document_name", "skin_choice", "original_box", "bag_slot", "game_options",
-    "panel_enter", "fit_text",
+    "panel_enter", "fit_text", "screen_fit",
   },
 }
 
@@ -42,6 +42,11 @@ files["content/packs/*/ui/common/game_options.lua"] = {
 -- The text that shrinks to fit its room, loaded into the documents that need it.
 files["content/packs/*/ui/common/fit_text.lua"] = {
   globals = { "fit_text" },
+}
+
+-- A box kept whole inside the window, loaded into the documents with a box at the original's place.
+files["content/packs/*/ui/common/screen_fit.lua"] = {
+  globals = { "screen_fit" },
 }
 
 -- One bag slot (icon, name, count), loaded into the documents that list the bag.

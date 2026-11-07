@@ -158,6 +158,7 @@ comportamiento, no guardan datos.
 | `chest_slots` | 8 | a | Capacidad (los cofres de un mapa). |
 | `reach_cells` | 1 | a | Distancia de la regla (tamer.c: checkItemPickup, checkChestCollision). |
 | `pickup_sound`, `toilet_sound`, `sleep_sound`, `praise_sound`, `scold_sound` | ranura y sonido | a | Referencias a sonidos (ranura, número), no datos. |
+| `pickup_player_clip` | 12 | a | Id de animación (referencia; tamer.c: tamerTickPickupItem). |
 | `feed.sound` | ranura y sonido | a | Referencia a un sonido (partner.c: partnerTickFeedItem, playSound(0, 12)). |
 | `feed.range_base`, `feed.range_per_distance` | 160, 20 | a | Fórmula de la regla (partner.c: checkEatDistance, distancia × 200 / 10 + 160). |
 | `feed.take_distance` | 10 por defecto; 15 o 25 en 13 especies (`ITEM_TAKE_DISTANCE`, 66 bytes) | **b** | Tabla por especie. Como las de D3, se extrae como tabla de datos (`TableLocation`); hasta entonces el ruleset escribe solo los valores distintos del 10. |

@@ -491,20 +491,24 @@ void GameSession::advanceGameTime(double realSeconds) {
 
 bool GameSession::playerFree() const {
   const game::field::Field* field = state_->field;
-  return field == nullptr || (field->gameTimeRan() && !field->mapChangePending() &&
-                              !field->heldByScript() && !field->heldForCare());
+  return field == nullptr ||
+         (field->gameTimeRan() && !field->mapChangePending() && !field->heldByScript() &&
+          !field->heldForCare() && field->heldForItem() == game::field::ItemHold::None);
 }
 
 game::partner::CareContext GameSession::careContext() const {
   // partner_impl.c: tickDeathCondition and tickConditions wait for tamerGetState() == 0 and
   // IS_SCRIPT_PAUSED == 1, and run only in the partner's normal state, not in a care scene
-  // (partner.c: partnerTickNormal). A field plays the partner's pile scene (partner.c:
+  // (partner.c: partnerTickNormal); a chest's notice stands the partner idle (tamer.c:
+  // tamerTickTakeChest, partnerSetState(0xb)). A field plays the partner's pile scene (partner.c:
   // tickWildPoop).
   const game::field::Field* field = state_->field;
   return {.tamerIdle = playerFree(),
           .scriptIdle = !scriptRunning_,
           .area = area_,
-          .partnerNormal = field == nullptr || !field->heldForCare(),
+          .partnerNormal =
+              field == nullptr ||
+              (!field->heldForCare() && field->heldForItem() != game::field::ItemHold::Chest),
           .fieldScenes = field != nullptr};
 }
 

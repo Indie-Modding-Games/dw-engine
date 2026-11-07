@@ -92,6 +92,9 @@ struct PraiseScoldRules {
 struct FieldItemsRules {
   game::field::FieldItemRules items;
   SoundCue pickupSound;
+  // The player's clip while an item on the ground is offered, by the original's animation id
+  // (tamer.c: tamerTickPickupItem); without one the player stands as it was.
+  std::optional<std::uint32_t> pickupPlayerClip;
   SoundCue toiletSound;
   SoundCue sleepSound;
   SoundCue praiseSound;

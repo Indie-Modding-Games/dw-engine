@@ -221,7 +221,8 @@ public:
   // calls the finisher.
   void pressBattle(const input::InputState& input);
   // The item keeper's, the discard menu's and the trade menu's buttons the menus do not navigate
-  // with (move by tens, move all, the jump to the ends, the description).
+  // with (move by tens, move all, the jump to the ends, the description), and the confirm button
+  // held for a chest's notice.
   void pressItemKeeper(const input::InputState& input);
   // The partner menu's buttons the menus do not navigate with: `extra` opens the tech help.
   void pressPartnerMenu(const input::InputState& input);

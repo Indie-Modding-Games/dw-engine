@@ -56,6 +56,61 @@ Diferencias con el original:
 - El compañero decide si lo toma al elegir el objeto, no al tendérselo: es la misma tirada, un momento antes.
 - Si el compañero se atasca contra una pared, se para donde está; el original sigue andando.
 
+## Recoger un objeto del suelo y abrir un cofre
+
+Al pisar un objeto del suelo, el jugador se agacha a por él mientras sale el aviso (`tamer.c: tamerTickPickupItem`,
+estado 0: `startAnimation(ENTITY_TABLE[0], 0xc)`). La animación es `field_items.pickup_player_clip` (12 en el ruleset
+`original`) y la pone `FieldItemsScreen::tick` con `FieldScene::playPlayerSceneClip`. Se juega una vez y se queda en su
+último cuadro hasta responder. Al responder, el objeto entra en la bolsa (o se queda, con la bolsa llena, tras el
+segundo aviso, sin cambiar de animación) y el jugador vuelve a andar en el tick siguiente (estado 4: `tamerSetState(0)`,
+cuya animación empieza en el fotograma siguiente). Sin la clave, el jugador se queda de pie.
+
+El aviso solo retiene al jugador (estados 7 y 14 del jugador; `Field::holdForItem`): el resto del campo sigue. El reloj
+del juego corre y el reloj y las barras siguen en pantalla (`tickGameClock`); los NPC siguen andando, pero no hablan ni
+se tocan con el jugador (sus scripts esperan al estado 0); los cuidados del compañero (necesidades, cacas, sueño) y las
+celdas del mapa (el retrete) esperan, como en el original (`tickConditions` y `checkMapInteraction` miran
+`tamerGetState() == 0`). Con un objeto del suelo, el compañero sigue en su estado normal: sigue al jugador y muestra su
+burbuja (`partnerTickNormal`). Con un cofre, se queda quieto con su animación 0 (`partnerSetState(0xb)`,
+`partnerTickIdle`) y sin burbuja hasta cerrar el aviso (`partnerSetState(1)`).
+
+Al confirmar junto a un cofre, el jugador se gira de golpe hacia él y se queda de pie con la animación 0
+(`tamerTickTakeChest`, estado 0: `startAnimation(ENTITY_TABLE[0], 0)` y `entityLookAtLocation`). Desde el fotograma
+siguiente sale el cajón, y la caja se abre cuando está fuera. La primera confirmación mete el objeto en la bolsa y
+marca el cofre (`setTrigger`), pero el aviso sigue; la segunda lo cierra (estado 4). El original da el objeto al
+cerrar (`giveItem(..., 1)`); el motor lo da en la primera, sin diferencia visible porque nada puede pasar entre las
+dos. Con la bolsa llena, el cajón vuelve a entrar bajo el segundo aviso, que se cierra con otra confirmación.
+
+La caja tarda en aceptar la confirmación lo mismo que en el original. Se abre el fotograma siguiente al de pisar el
+objeto (estado 1, `createAnimatedUIBox`), o cuando sale el cajón, y cuenta los fotogramas de `TAKE_ITEM_FRAME_COUNTER`
+(`ItemNoticeCounter`): un objeto del suelo acepta una pulsación desde su quinto fotograma (`4 < TAKE_ITEM_FRAME_COUNTER`)
+y suena la confirmación (`playSound(0, 3)`); un cofre acepta el botón mantenido desde el sexto (`5 <`, `POLLED_INPUT`) y
+no suena. Una pulsación anterior se pierde. El contador vuelve a 0 con cada confirmación y no cuenta mientras se mueve
+el cajón. En el aspecto original, la caja crece desde el jugador en 5 fotogramas con su contorno gris y su sonido, y al
+cerrarse vuelve a él (`ui/common/original_box.lua`, como el menú del campo). Antes, el aviso paraba todo el campo y el
+reloj, salía entero en el mismo fotograma, aceptaba la confirmación en cualquier momento y el cofre se cerraba con la
+primera; el jugador no se giraba hacia el cofre y el compañero seguía en lo suyo.
+
+Medido en el original (2026-11-06, un objeto que suelta un enemigo vencido en mayo00, el campo a 20 fotogramas por
+segundo): el estado 7 del jugador empieza la animación 12 en el mismo fotograma en que se pisa el objeto; va del cuadro 2
+al 15 en 13 fotogramas (unos 0,65 s) y se queda en el 15. La caja se crea al fotograma siguiente, su contorno crece 5
+fotogramas y la primera confirmación aceptada llega a los 6 o 7 fotogramas de pisar el objeto (unos 0,3 s). El
+compañero sigue al jugador y el reloj corre mientras tanto. Medido en el motor (2026-11-07, control del juego, 60 ticks
+por segundo): la caja aparece 3 ticks después de pisar el objeto, su contorno crece hasta el tick 18 y una pulsación en
+los ticks 16 y 17 se pierde, en los 19 y 20 se acepta. Igual. El cofre no se pudo medir en el original (no hay forma de
+llegar a uno desde las partidas guardadas de referencia); sus números salen del código. Pruebas:
+`packages/session/tests/rules_tests.cpp` ("the original's player crouches with clip 12..."),
+`packages/game/field/tests/field_tests.cpp` ("an item on the ground's notice holds the player while the partner
+follows...", "a chest's notice stands the partner and turns the player to the chest"),
+`apps/game/tests/item_notice_counter_tests.cpp` y las rutas `tests/autotest/route-field-pickup-pose.yaml` y
+`tests/autotest/route-field-chest.yaml`.
+
+Diferencias con el original:
+
+- Mientras la caja se encoge al cerrarse (5 fotogramas), el original ya deja andar al jugador; en el motor el aviso
+  sigue delante y se queda con las teclas esos 0,25 s. El campo, el compañero y el reloj sí siguen.
+- La recogida de cacas por un compañero que se las come (`tickPoopDetection`, en su estado normal) espera a que se
+  cierre el aviso de un objeto del suelo; en el original sigue. Es un caso raro y dura menos de un segundo.
+
 ## Dormir
 
 «Dormir» del menú del campo juega la escena del original (`partner.c: partnerTickSleep`, en `sleep_screen.cpp` y

@@ -148,6 +148,10 @@ struct MapObject3D {
 // it running; partnerTickSleep stops it).
 enum class CareClock : std::uint8_t { Runs, Stops };
 
+// What an item's notice holds the player for (tamer.c: tamerTickPickupItem, the player's state 7,
+// for an item on the ground; tamerTickTakeChest, state 14, for a chest).
+enum class ItemHold : std::uint8_t { None, Ground, Chest };
+
 // The field's logic for one map at a time (docs/reference/campo.md): the player moves by intents
 // with the original's grid collision, steps on triggers and warps, and the partner follows. Player
 // and partner are entities of the scene world, with the shared components the app draws (Transform,
@@ -406,6 +410,15 @@ public:
   // The partner and the player turn to each other at once (partner.c: entityLookAtLocation on
   // both).
   void faceEachOther();
+  // An item's notice holds the player, who stands, while the game time and the NPCs run on (in
+  // the player's states of the notices tamerTickOverworld goes on with the field; only the player
+  // waits). For an item on the ground the partner follows as ever (partner.c:
+  // partnerTickNormal); for a chest it stands (tamerTickTakeChest: partnerSetState(0xb),
+  // partnerTickIdle) until let go (partnerSetState(1)). ItemHold::None lets go.
+  void holdForItem(ItemHold hold);
+  [[nodiscard]] ItemHold heldForItem() const { return itemHold_; }
+  // The player turns to `point` at once (tamerTickTakeChest: entityLookAtLocation on the chest).
+  void turnPlayerTo(glm::vec3 point);
 
   // A held character's scripted move, place, facing and clip. A place farther than half a cell
   // and a turn of more than an eighth are a jump, drawn at once; nearer ones are drawn as a move
@@ -607,6 +620,7 @@ private:
   // tickAnimation from tamerTickOverworld, partnerTickOverworld and NPCEntityTickOverworld).
   void applyClipRootMotion(float seconds);
   void tickCare(float seconds);
+  void tickItemHold(float seconds, bool wasFollowing);
   void tickCareWalk(float seconds);
   void tickCameraPan(float seconds);
   // One step of the partner's care walk along `heading`. A walk to a point does not collide: in
@@ -758,6 +772,7 @@ private:
   };
   bool careHeld_ = false;
   CareClock careClock_ = CareClock::Runs;
+  ItemHold itemHold_ = ItemHold::None;
   std::optional<CareWalk> careWalk_;
   // Seconds the partner's clip of its care walks has played, kept across walks on with it.
   float careClipSeconds_ = 0.0F;
