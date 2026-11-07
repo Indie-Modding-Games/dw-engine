@@ -300,6 +300,11 @@ void startShownClips(BattleState& state) {
   }
 }
 
+void faintAtTimeUp(Fighter& fighter, FighterId id) {
+  fighter.pose = Pose::Fainted;
+  start(fighter, id, FaintClip, "STD_faintDigimon (std_main.c:4724)");
+}
+
 void updateShownClips(const BattleContext& context) {
   for (FighterId id = 0; id < context.state->fighters.size(); ++id) {
     updateShownClip(context, id);

@@ -579,7 +579,11 @@ bool Battle::endMatch() {
   if (partnerDamage == enemyDamage) {
     finish(Outcome::Defeat, true);
   } else {
-    finish(partnerDamage < enemyDamage ? Outcome::Victory : Outcome::Defeat);
+    const bool won = partnerDamage < enemyDamage;
+    finish(won ? Outcome::Victory : Outcome::Defeat);
+    // STD_tickBattleResultScreen: the winner waits in its stance, the loser falls.
+    const FighterId loser = won ? FighterId{1} : PartnerId;
+    faintAtTimeUp(state_.fighters.at(loser), loser);
   }
   return true;
 }

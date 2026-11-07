@@ -187,3 +187,19 @@ TEST_CASE("a movie over the field holds its music and the map's song starts agai
   rig.music.releaseAfterMovie();
   CHECK(musicLog().starts - before.starts == 1);
 }
+
+TEST_CASE(
+    "std_main.c STD_combatMain: a tournament match plays the arena's song, not the battle's") {
+  MusicRig rig;
+  rig.enterMap(28);
+  const MusicLog before = musicLog();
+  // No data/music.yaml here: a battle would have no song, the match has its own.
+  rig.music.startBattle({.firstEnemy = "rival",
+                         .firstEnemyType = std::nullopt,
+                         .scripted = true,
+                         .song = session::MusicSong{.font = 1, .track = 1}});
+  CHECK(musicLog().starts - before.starts == 1);
+  rig.music.startBattle(
+      {.firstEnemy = "rival", .firstEnemyType = std::nullopt, .scripted = true, .song = {}});
+  CHECK(musicLog().starts - before.starts == 1);
+}

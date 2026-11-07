@@ -147,6 +147,12 @@ void SessionMusic::startBattle(const BattleMusicFacts& facts) {
   core::logDebug("[port:audio] scriptInstruction64to7E START_BATTLE (script_interp.c:1913): "
                  "stopBGM");
   stopBgm();
+  if (facts.song) {
+    core::logDebug("[port:audio] STD_combatMain (std_main.c:5589): playMusic(STD_MUSIC {}, {})",
+                   facts.song->font, facts.song->track);
+    playMusic(facts.song->font, facts.song->track);
+    return;
+  }
   const assets::MusicTable* music = table();
   if (music == nullptr || !music->battle) {
     core::logDebug("[port:audio] loadBattleData (btl.c:346): {} has no battle music", MusicTableId);

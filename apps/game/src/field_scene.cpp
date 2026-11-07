@@ -755,6 +755,10 @@ bool FieldScene::daytimeFadeRunning() const {
 }
 
 void FieldScene::applyLighting() {
+  if (stage_.lighting) {
+    models_->setLighting(*stage_.lighting);
+    return;
+  }
   render::ModelLighting lighting = mapLighting_;
   const glm::vec3 scale = render::timeOfDayLightScale(time_, fixedTime_, schedule_);
   for (render::DirectionalLight& light : lighting.lights) {
@@ -1404,8 +1408,12 @@ void FieldScene::setEntityYaw(scene::Entity entity, float yaw) {
 }
 
 void FieldScene::setStage(const FieldStage& stage) {
+  const bool relight = stage.lighting.has_value() || stage_.lighting.has_value();
   stage_ = stage;
   mapRenderer_->setStageCamera(stage_.view);
+  if (relight) {
+    applyLighting();
+  }
 }
 
 const render::MapCamera* FieldScene::camera() const {

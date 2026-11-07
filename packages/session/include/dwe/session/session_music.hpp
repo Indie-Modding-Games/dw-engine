@@ -31,6 +31,9 @@ struct BattleMusicFacts {
   std::string firstEnemy;
   std::optional<std::int64_t> firstEnemyType;
   bool scripted = false;
+  // A song of its own instead of the battle's: a tournament match's (std_main.c: STD_combatMain,
+  // playMusic(STD_MUSIC, 2)).
+  std::optional<MusicSong> song;
 };
 
 // The original's background music on the game's audio (docs/architecture/audio.md, "Música

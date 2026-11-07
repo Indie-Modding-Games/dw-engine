@@ -41,7 +41,7 @@ una partida normal:
 
 | # | Hueco | Decomp | Motor |
 |---:|---|---|---|
-| 1 | En los torneos faltan detalles: el brillo de las letras del campeón, que select oculte las barras de vida, que el que pierde se desplome tras la caja del resultado, la cámara de técnica del disparo de un luchador aplastado, y la música, luces y efectos propios de la copa | `std/` ([Torneos](#torneos): `STD_tickChampionScene`, `STD_tickBattleResultScreen`, `STD_startQueuedMove`, `STD_initializeTournament` y el HUD) | `packages/session/src/tournament_adapter.cpp`, `apps/game/src/story_tournament.cpp` |
+| 1 | En los torneos faltan detalles: el brillo de las letras del campeón, la cámara de técnica del disparo de un luchador aplastado y los efectos propios de la copa | `std/` ([Torneos](#torneos): `STD_tickChampionScene`, `STD_startQueuedMove`, `STD_initializeTournament`) | `packages/session/src/tournament_adapter.cpp`, `apps/game/src/story_tournament.cpp` |
 | 2 | Sin modo versus de dos jugadores ni la demo de combate del título (las 91 funciones de `vs/`); la máquina de guardar ya registra al compañero para él. Va a la fase 5 | `vs/` | — |
 
 ## Otros huecos que no son una función del índice

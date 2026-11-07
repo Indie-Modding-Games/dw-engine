@@ -15,6 +15,7 @@
 #include <numbers>
 #include <vector>
 
+#include "arena_lighting.hpp"
 #include "battle_motion.hpp"
 #include "place_command.hpp"
 
@@ -187,6 +188,7 @@ void StoryTournament::showArena(FieldScene& scene, game::tournament::ArenaPoint 
                             .backgroundSize = render::OriginalScreenSize * ArenaBackgroundScale};
   stage.shownProps = {arena_->model};
   stage.ground = arena_->collision;
+  stage.lighting = arenaLighting();
   // STD_addBracket, STD_addBracketIntro: the partner is off the map while the board shows.
   stage.partnerHidden = bracket_ != nullptr && bracket_->playing();
   scene.setStage(stage);
@@ -209,6 +211,7 @@ void StoryTournament::showArena(FieldScene& scene, const game::tournament::ShowV
     stage.shownProps.emplace_back(ChampionModel);
   }
   stage.ground = arena_->collision;
+  stage.lighting = arenaLighting();
   stage.partnerHidden = bracket_ != nullptr && bracket_->playing();
   scene.setStage(stage);
   showLetters(scene, view);
@@ -460,6 +463,19 @@ void StoryTournament::tick(double seconds, BattleScreen& battle, FieldScene& sce
   }
 }
 
+// STD_runIntro: as each fighter walks in, playMusic(STD_MUSIC, 0) for the partner and 1 for the
+// rival.
+void StoryTournament::playIntroSong(std::int32_t turn) {
+  if (!arena_ || !arena_->musicFont || !arena_->music || session_ == nullptr ||
+      session_->music() == nullptr) {
+    return;
+  }
+  const std::int32_t track = turn == 0 ? arena_->music->partnerIntro : arena_->music->rivalIntro;
+  core::logDebug("[port:audio] STD_runIntro (std_main.c:1918, 1948): playMusic(STD_MUSIC {}, {})",
+                 *arena_->musicFont, track);
+  session_->music()->playSong({.font = *arena_->musicFont, .track = track});
+}
+
 void StoryTournament::frame(BattleScreen& battle, FieldScene& scene, bool confirm) {
   using game::tournament::MatchEnding;
   if (champion_) {
@@ -474,9 +490,8 @@ void StoryTournament::frame(BattleScreen& battle, FieldScene& scene, bool confir
       return;
     }
     intro_->tick(confirm, {});
-    if (const std::optional<std::int32_t> track = intro_->takeMusic()) {
-      core::logDebug("[port:tournament] STD_runIntro (std_setup.c:263): STD_MUSIC track {}",
-                     *track);
+    if (const std::optional<std::int32_t> turn = intro_->takeMusic()) {
+      playIntroSong(*turn);
     }
     if (intro_->counting() && session_ != nullptr && session_->sound() != nullptr) {
       session_->sound()->playSound(SystemSoundSlot, StatsCountSound);

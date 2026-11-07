@@ -209,6 +209,9 @@ struct FieldStage {
   std::vector<std::string> shownProps;
   // The ground a battle is fought on instead of the map's (STD_loadArenaAssets: the arena's ATR).
   std::optional<assets::MapCollision> ground;
+  // The stage's own light instead of the map's (std_setup.c: STD_initializeLighting), with no
+  // time-of-day tint.
+  std::optional<render::ModelLighting> lighting;
 
   // Who of the field's characters the stage leaves drawn. The scenes take everyone but the partner
   // off the map (evl.c: EVL_setOtherEntitiesVisible(0); dooa.c: DOOA_setOtherEntitiesVisible(0)

@@ -43,6 +43,25 @@ struct BattleAdapterDesc {
   InventoryAdapter* inventory = nullptr;
 };
 
+// A tournament match's songs: the arena's font (std_setup.c: STD_initializeTournament, STD_MUSIC)
+// and its tracks for the fight (STD_combatMain) and the won or lost match (STD_deinitializeCombat).
+struct MatchMusic {
+  std::int64_t font = 0;
+  std::int64_t fight = 0;
+  std::int64_t won = 0;
+  std::int64_t lost = 0;
+
+  // The track the match's end plays: the won match's or the lost one's, none after a draw
+  // (STD_deinitializeCombat(1, 1) plays nothing).
+  [[nodiscard]] std::optional<std::int64_t> endTrack(game::battle::Outcome outcome,
+                                                     bool draw) const {
+    if (draw) {
+      return std::nullopt;
+    }
+    return outcome == game::battle::Outcome::Victory ? won : lost;
+  }
+};
+
 // A battle the game or a script starts: everything but the partner, which the adapter builds from
 // the session.
 struct BattleRequest {
@@ -60,6 +79,8 @@ struct BattleRequest {
   // The resident that joins the city if the partner wins; the session decides it (the story's
   // recruit triggers).
   std::optional<std::string> recruitOnVictory;
+  // A tournament match's own songs instead of the battle's (none: the battle's).
+  std::optional<MatchMusic> matchMusic;
 };
 
 // What a finished battle left, besides the partner's state: for the result screen and the recycle

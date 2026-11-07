@@ -178,6 +178,8 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   const std::string map = request.map;
   std::vector<game::battle::Combatant> introEnemies = request.enemies;
   const session::BattleMusicFacts music = musicFactsOf(request);
+  matchMusic_ = request.matchMusic;
+  matchEndSong_.reset();
   auto battle = desc_.battle->start(*desc_.session, std::move(request));
   if (!battle) {
     return std::unexpected{battle.error()};
@@ -673,6 +675,14 @@ void BattleScreen::tickMatchEnd(double seconds) {
   if (!matchEndSeconds_ || matchEndHeld_) {
     return;
   }
+  if (const std::optional<session::MusicSong> song = std::exchange(matchEndSong_, std::nullopt)) {
+    if (session::SessionMusic* music = desc_.session->music(); music != nullptr) {
+      core::logDebug("[port:audio] STD_deinitializeCombat (std_main.c:4561): playMusic(STD_MUSIC "
+                     "{}, {})",
+                     song->font, song->track);
+      music->playSong(*song);
+    }
+  }
   if (partnerPosing_ && desc_.scene != nullptr && desc_.scene->partnerClipFinished()) {
     desc_.scene->playPartnerClip(PartnerPoseClip);
   }
@@ -1063,6 +1073,13 @@ void BattleScreen::finish() {
     }
     matchEndSeconds_ = (won_ ? MatchWonFrames : MatchLostFrames) * IntroFrameSeconds +
                        (MatchAfterFrames * IntroFrameSeconds);
+    // STD_deinitializeCombat: a side won (no draw): playMusic(STD_MUSIC, 3) when the partner
+    // did, 4 when the rival did, once the time-up box (STD_tickBattleResultScreen) is gone.
+    const std::optional<std::int64_t> track =
+        matchMusic_ ? matchMusic_->endTrack(result.outcome, result.draw) : std::nullopt;
+    if (track) {
+      matchEndSong_ = session::MusicSong{.font = matchMusic_->font, .track = *track};
+    }
   } else if (won_) {
     standPartner(VictoryStanceClip, "BTL_handleVictorySequence (battle_main.c:886)");
     core::logDebug("[port:audio] BTL_handleVictorySequence (battle_main.c:889): the fanfare; "
@@ -1173,7 +1190,11 @@ void BattleScreen::close() {
 
 session::BattleMusicFacts BattleScreen::musicFactsOf(const session::BattleRequest& request) const {
   session::BattleMusicFacts facts{
-      .firstEnemy = {}, .firstEnemyType = std::nullopt, .scripted = request.scripted};
+      .firstEnemy = {}, .firstEnemyType = std::nullopt, .scripted = request.scripted, .song = {}};
+  if (request.matchMusic) {
+    facts.song =
+        session::MusicSong{.font = request.matchMusic->font, .track = request.matchMusic->fight};
+  }
   if (!request.enemies.empty()) {
     facts.firstEnemy = request.enemies.front().species;
     const assets::DigimonRow* row =

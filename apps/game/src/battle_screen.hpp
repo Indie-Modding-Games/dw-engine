@@ -277,6 +277,10 @@ private:
   std::optional<game::battle::Outcome> outcome_;
   // Whether the battle on the end box was won: the field's music comes back when it closes.
   bool won_ = false;
+  // A tournament match's songs (session::BattleRequest::matchMusic).
+  std::optional<session::MatchMusic> matchMusic_;
+  // The won or lost match's song, played once the match's end is no longer held.
+  std::optional<session::MusicSong> matchEndSong_;
   // The time left before the victory poses' sound, once a battle is won.
   std::optional<double> victoryPoseSeconds_;
   // A tournament match's end: the time left of the winner's pose and the frames after it, while

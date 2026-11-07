@@ -68,6 +68,34 @@ TEST_CASE("std_main.c STD_checkEndCondition: at time up the side that lost less 
   CHECK((result.outcome == Outcome::Victory) == (partnerDamage < enemyDamage));
 }
 
+TEST_CASE("std_main.c STD_tickBattleResultScreen: at time up with a winner the loser falls") {
+  // Seeds until a time-up with a winner and one with a draw have been seen.
+  bool fell = false;
+  bool drawn = false;
+  for (std::uint64_t seed = 1; seed < 40 && !(fell && drawn); ++seed) {
+    Battle battle = startBattle(match(evenStats(9000, 20), evenStats(9000, 20), 2), seed);
+    runToEnd(battle);
+    const BattleResult& result = resultOf(battle);
+    REQUIRE(result.timeUp);
+    const Fighter& partner = battle.state().partner();
+    const Fighter& rival = battle.state().fighters.at(1);
+    if (result.draw) {
+      // STD_tickBattleResultScreen: a draw leaves both standing.
+      CHECK(partner.shown.clip != 0x2B);
+      CHECK(rival.shown.clip != 0x2B);
+      drawn = true;
+      continue;
+    }
+    const Fighter& loser = result.outcome == Outcome::Victory ? rival : partner;
+    const Fighter& winner = result.outcome == Outcome::Victory ? partner : rival;
+    CHECK(loser.shown.clip == 0x2B);
+    CHECK(loser.shown.frame == 0);
+    CHECK(winner.shown.clip != 0x2B);
+    fell = true;
+  }
+  CHECK(fell);
+}
+
 namespace {
 
 // Whether the enemy fought cautiously at any frame of the first `frames`.
