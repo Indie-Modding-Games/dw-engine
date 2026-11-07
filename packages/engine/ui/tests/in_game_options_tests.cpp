@@ -201,17 +201,19 @@ TEST_CASE("each tab of the options page lists its rows, and only those, fitting 
             CHECK_FALSE(screen.ui->elementCenter(Menu, other.rows.front()).has_value());
           }
         }
-        // Every row, the description and the keys fit the box at 1280x720, without scrolling:
-        // the actions under the list sit below its last row.
+        // Every row, the description and the keys fit the box at 1280x720; a tab longer than the
+        // list (the game tab's twelve rows) scrolls to its last row when the focus gets there.
         for (const Ui::TextOverflow& overflow : screen.ui->overflowingTexts()) {
           MESSAGE(overflow.element << " '" << overflow.text << "' " << overflow.box << " by "
                                    << overflow.overflow << " dp");
         }
         CHECK(screen.ui->overflowingTexts().empty());
+        focusRow(screen, tab.rows.back());
         const auto last = screen.ui->elementRect(Menu, tab.rows.back());
         const auto list = screen.ui->elementRect(Menu, "option-list");
         REQUIRE(last.has_value());
         REQUIRE(list.has_value());
+        CHECK(last.value_or(Ui::Rect{}).top >= list.value_or(Ui::Rect{}).top - 0.5F);
         CHECK(last.value_or(Ui::Rect{}).bottom <= list.value_or(Ui::Rect{}).bottom + 0.5F);
       }
     }

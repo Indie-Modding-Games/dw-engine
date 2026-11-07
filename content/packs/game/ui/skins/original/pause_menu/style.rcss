@@ -91,8 +91,8 @@
    the value in the heading yellow, a switch's Sí/No in a 1-pixel frame (cyan while on), a list's value between the
    battle's arrows turned sideways, a number as a cyan bar in a frame and its digits, and the description in the grey
    of the original's descriptions, at 22dp (twice the font's cell, one of its two sharp sizes). The list scrolls only
-   past what a 1280x720 window leaves it (a larger UI scale, a mod's options), with a cyan bar. No motion: the original
-   has none. */
+   past what a 1280x720 window leaves it (the game tab's twelve rows, a larger UI scale, a mod's options), with a cyan
+   bar. No motion: the original has none. */
 #panel.on-options { top: 72dp; width: 980dp; margin-left: -490dp; }
 #panel.on-options #title { display: none; }
 #page-options { position: relative; }
