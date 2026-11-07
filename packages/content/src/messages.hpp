@@ -16,6 +16,9 @@ inline constexpr std::string_view ShadowedDevPack =
     "content: dev assets pack {} at {} left out: {} has its id";
 inline constexpr std::string_view UnknownPack = "?";
 inline constexpr std::string_view ModSkipped = "content: left out the mod at {}: {}";
+inline constexpr std::string_view ModWithoutApi =
+    "content: mod {} declares no api; it has no Lua files, so it still mounts, but add api: \"1.x\" to "
+    "its pack.yaml: a mod without it will be left out";
 inline constexpr std::string_view LooseTeamPack =
     "content: left out {}: a package loads the team's packs only from their .pak archives";
 

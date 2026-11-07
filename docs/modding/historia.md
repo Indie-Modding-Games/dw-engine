@@ -4,8 +4,9 @@ Los scripts de eventos del juego original llegan al motor como módulos Lua que 
 `story/<n>.lua` ([formato](../formats/scripts.md#lua)). Cada orden del script es una llamada a la tabla `story`. Esta
 página dice cómo se llaman esas funciones y las claves de sus textos, que es lo que un mod ve y puede reemplazar.
 
-> Estado: la partida publica `story` en su VM de historia y `LuaApiVersion` es **1.3.0**. Que el paquete base declare
-> `api:` y lo que un mod puede hacer con la historia son de la fase 5.
+> Estado: la partida publica `story` en su VM de historia y `LuaApiVersion` es **1.4.0**: un mod la usa desde su
+> script de entrada y sus eventos ([API de Lua](api-lua.md)), y los disparadores y variables caben lo que diga el
+> ruleset ([capacidad](#capacidad)).
 >
 > **CAMBIO DE CONTRATO (2026-10-23).** `story.play_sound(ranura, sonido)` toca el sonido de la ranura (0 y 1, los
 > bancos del sistema; 8, el del mapa) y sigue sin esperar; `story.set_bgm(fuente)` pone la música de la fuente (la

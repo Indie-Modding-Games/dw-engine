@@ -5,6 +5,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/ui/skin.hpp>
 
+#include <cstddef>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -27,6 +28,10 @@ struct SkinLook {
 class SkinCatalog {
 public:
   static SkinCatalog load(const assets::VirtualFileSystem& files);
+
+  // A fingerprint of what the catalog is read from (every skin.yaml and ui/ui_skin.yaml), so hot
+  // reload can tell an edit of one of them.
+  [[nodiscard]] static std::size_t sourceFingerprint(const assets::VirtualFileSystem& files);
 
   // The skins offered, by id.
   [[nodiscard]] const std::vector<Skin>& skins() const { return skins_; }

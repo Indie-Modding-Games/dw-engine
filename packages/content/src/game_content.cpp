@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <iterator>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -95,20 +96,39 @@ core::Result<std::vector<assets::FoundPack>> findGamePacks(const assets::FileSys
   return found;
 }
 
+// A mod that mounted without `api` because it brings no Lua (assets::mayLeaveOutApi).
+bool dataOnlyWithoutApi(const assets::MountedPack& pack, std::span<const std::string> scripted) {
+  return pack.origin == assets::PackOrigin::Mod && assets::mayLeaveOutApi(pack, scripted);
+}
+
 // Whether every mod of a stack declares a mod layer and every pack a Lua API the engine has. The
 // manifests are the ones the stack mounted, so a pack is checked as it is used.
 core::Result<void> checkMountedPacks(const assets::VirtualFileSystem& files) {
+  const std::vector<std::string> scripted = assets::packsWithLua(files);
   for (const assets::MountedPack& pack : files.packs()) {
     if (pack.origin == assets::PackOrigin::Mod) {
       if (auto layer = assets::checkModLayer(pack.manifest); !layer) {
         return layer;
       }
     }
+    if (assets::mayLeaveOutApi(pack, scripted)) {
+      continue;
+    }
     if (auto compatible = assets::checkPackApi(pack.manifest); !compatible) {
       return compatible;
     }
   }
   return {};
+}
+
+// Warns once about every mod that mounted without `api` (dataOnlyWithoutApi).
+void warnModsWithoutApi(const assets::VirtualFileSystem& files) {
+  const std::vector<std::string> scripted = assets::packsWithLua(files);
+  for (const assets::MountedPack& pack : files.packs()) {
+    if (dataOnlyWithoutApi(pack, scripted)) {
+      core::logWarning("{}", core::formatMessage(messages::ModWithoutApi, pack.manifest.id));
+    }
+  }
 }
 
 // Mounts a stack and checks its packs' layers and Lua APIs.
@@ -261,6 +281,7 @@ GameContent::mount(const std::filesystem::path& content,
   mounted->packs_.locations = std::move(mounting.stack);
   mounted->files_ = std::make_unique<assets::VirtualFileSystem>(std::move(*files));
   mounted->logStack();
+  warnModsWithoutApi(*mounted->files_);
   return mounted;
 }
 

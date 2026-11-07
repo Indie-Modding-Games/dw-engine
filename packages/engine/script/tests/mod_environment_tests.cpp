@@ -141,6 +141,15 @@ TEST_CASE("a pack written for another major version of the API gets no environme
   CHECK(vm->modEnvironment(pack).has_value());
 }
 
+TEST_CASE("a mod that declares no API gets no environment") {
+  auto vm = makeVm();
+  auto pack = packNamed("silent_mod");
+  pack.api.reset();
+  CHECK(errorOf(vm->modEnvironment(pack)).starts_with("pack 'silent_mod' is in the mods layer"));
+  pack.layer = assets::Layer::Base;
+  CHECK(vm->modEnvironment(pack).has_value());
+}
+
 TEST_CASE("a pack's scripts are stopped like the engine's: loops, pcall, coroutines and memory") {
   auto vm = makeVm(SmallLimits);
   auto mod = environmentOf(*vm, "my_mod");

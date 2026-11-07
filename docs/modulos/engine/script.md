@@ -120,8 +120,10 @@ Cada llamada del motor a tu script tiene un presupuesto, para que un mod roto o 
 piden sus scripts ([VFS](../../architecture/vfs.md)): `api: "1.x"`, cualquier 1.y, o `api: "1.3"`, la 1.3 o una
 posterior. `assets::checkPackApi` rechaza otra versión mayor o una menor más nueva que la del motor. `packages/content` lo comprueba al montar y deja fuera, con el motivo, el mod que no la cumple.
 
-Un paquete sin `api` se acepta por ahora. Está previsto exigirla a las capas `mods` y `user` en la fase 5, con la
-documentación para modders ([modding](../../modding/historia.md)).
+Un paquete de las capas `mods` o `user` tiene que declarar `api` (desde la 1.4.0, #115): `checkPackApi` y
+`modEnvironment` lo rechazan sin ella, y `packages/content` deja fuera, con el motivo, el mod con ficheros de Lua que
+no la declara. Un mod sin `api` que no trae ficheros de Lua (solo datos, como los paquetes que escribían el lanzador y el mapper antes de este cambio) todavía se monta, con un aviso en el log; un mod con Lua sin `api` se deja fuera. Los paquetes del motor (`base`, `remaster`) pueden omitirla. La documentación para quien hace mods está
+en [modding](../../modding/index.md).
 
 Subir la versión: la menor cuando se añade algo (una función, un evento, un argumento opcional); la mayor cuando se
 quita o cambia algo que un mod ya usa.

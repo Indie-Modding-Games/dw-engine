@@ -92,8 +92,9 @@ public:
 private:
   void add(const TestPack& pack, dwe::assets::PackOrigin origin) {
     memory_.addFile(std::format("{}/pack.yaml", pack.id),
-                    std::format("id: {}\nversion: 0.1.0\nlayer: {}\npriority: {}\n", pack.id,
-                                pack.layer, pack.priority));
+                    std::format("id: {}\nversion: 0.1.0\nlayer: {}\npriority: {}\n{}", pack.id,
+                                pack.layer, pack.priority,
+                                pack.layer == "base" ? "" : "api: \"1.x\"\n"));
     for (const PackFile& file : pack.files) {
       memory_.addFile(std::format("{}/{}", pack.id, file.path), std::string{file.text});
     }

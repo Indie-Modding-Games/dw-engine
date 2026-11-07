@@ -201,6 +201,7 @@ TEST_CASE("dwx validate reports every problem of a stack, sorted") {
   files.addFile("content/broken/pack.yaml", R"(id: broken
 version: 1.0.0
 layer: mods
+api: "1.x"
 schemas:
   other: ["notes/*"]
   map: ["sound/hit/bank_meta"]
@@ -306,6 +307,7 @@ TEST_CASE("a pack that needs another one is checked with --with") {
   files.addFile("packs/extra/pack.yaml", R"(id: extra
 version: 1.0.0
 layer: mods
+api: "1.x"
 name: Extra
 dependencies:
   - id: base
@@ -332,6 +334,7 @@ TEST_CASE(
   files.addFile("packs/my_mod/pack.yaml", R"(id: my_mod
 version: 1.0.0
 layer: mods
+api: "1.x"
 name: My mod
 dependencies:
   - id: base
@@ -380,6 +383,7 @@ TEST_CASE("dwx validate reports a map of the evolution rules that is no map of d
   files.addFile("packs/my_mod/pack.yaml", R"(id: my_mod
 version: 1.0.0
 layer: mods
+api: "1.x"
 name: My mod
 schemas:
   ruleset_evolution: ["rules/*/evolution"]
@@ -409,6 +413,7 @@ TEST_CASE(
   files.addFile("packs/my_mod/pack.yaml", R"(id: my_mod
 version: 1.0.0
 layer: mods
+api: "1.x"
 name: My mod
 dependencies:
   - id: base
@@ -493,6 +498,7 @@ TEST_CASE("dwx validate checks a mod's map patch as the game applies it, at the 
   files.addFile("packs/my_mod/pack.yaml", R"(id: my_mod
 version: 1.0.0
 layer: mods
+api: "1.x"
 name: My mod
 dependencies:
   - id: base
@@ -534,6 +540,7 @@ TEST_CASE(
   files.addFile("packs/my_mod/pack.yaml", R"(id: my_mod
 version: 1.0.0
 layer: mods
+api: "1.x"
 name: My mod
 schemas:
   map: ["map/*/*/data"]
@@ -629,6 +636,7 @@ TEST_CASE("a pack that the game's readers refuse fails validate") {
   files.addFile("packs/mod/pack.yaml", R"(id: mod
 version: 1.0.0
 layer: mods
+api: "1.x"
 name: Mod
 dependencies:
   - id: base
@@ -666,6 +674,7 @@ TEST_CASE("dwx validate compiles every Lua file of a pack and names the one that
   files.addFile("packs/mod/pack.yaml", R"(id: mod
 version: 1.0.0
 layer: mods
+api: "1.x"
 name: Mod
 dependencies:
   - id: base
@@ -682,6 +691,32 @@ dependencies:
   CHECK(text.contains("packs/mod/story/901.lua: the Lua does not compile: story/901:"));
 }
 
+TEST_CASE(
+    "dwx validate wants the API of a mod with Lua and lets a mod of data only go without it") {
+  MemoryFileSystem files;
+  addSchemas(files);
+  addBasePack(files);
+  constexpr std::string_view Manifest = R"(id: mod
+version: 1.0.0
+layer: mods
+name: Mod
+dependencies:
+  - id: base
+    min_version: 1.0.0
+)";
+  files.addFile("packs/mod/pack.yaml", std::string{Manifest});
+  const std::array<std::filesystem::path, 1> with{"content/base"};
+  const auto dataOnly = validatePacks(files, "packs/mod", "content/schemas", with);
+  REQUIRE_MESSAGE(dataOnly.has_value(), errorOf(dataOnly));
+  CHECK_MESSAGE(dataOnly->problems.empty(), textOf(*dataOnly));
+
+  files.addFile("packs/mod/story/900.lua",
+                "local story <const> = story\nreturn { script = 900, sections = {} }\n");
+  const auto scripted = validatePacks(files, "packs/mod", "content/schemas", with);
+  REQUIRE_MESSAGE(scripted.has_value(), errorOf(scripted));
+  CHECK(textOf(*scripted).contains("pack 'mod' is in the mods layer and declares no api"));
+}
+
 TEST_CASE("dwx validate checks every language against English") {
   MemoryFileSystem files;
   addSchemas(files);
@@ -691,6 +726,7 @@ TEST_CASE("dwx validate checks every language against English") {
   files.addFile("packs/es/pack.yaml", R"(id: es
 version: 1.0.0
 layer: mods
+api: "1.x"
 name: Spanish
 dependencies:
   - id: base
@@ -729,6 +765,7 @@ TEST_CASE("dwx validate reads a translation's lock and finds what changed in Eng
   files.addFile("packs/es/pack.yaml", R"(id: es
 version: 1.0.0
 layer: mods
+api: "1.x"
 name: Spanish
 dependencies:
   - id: base
@@ -824,6 +861,7 @@ TEST_CASE(
   folder.write("copies/pack.yaml", R"(id: copies
 version: 1.0.0
 layer: mods
+api: "1.x"
 name: Copies
 dependencies:
   - id: base

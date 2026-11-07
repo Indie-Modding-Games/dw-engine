@@ -1,6 +1,8 @@
 // The game events mods handle (game_hooks.hpp) and the mods' entry scripts (mod_scripts.hpp).
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/script/api_version.hpp>
+#include <dwe/script/script_vm.hpp>
 #include <dwe/session/game_hooks.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/mod_scripts.hpp>
@@ -10,7 +12,11 @@
 
 #include <array>
 #include <cstdint>
+#include <cstdlib>
+#include <filesystem>
 #include <format>
+#include <fstream>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -189,4 +195,82 @@ TEST_CASE("every game event is declared once and named as hooks.on wants") {
       CHECK(event != dwe::session::GameEvents[other].name);
     }
   }
+}
+
+namespace {
+
+// The part of docs/modding/api-lua.md this test writes: between these markers, the API the game
+// gives mods as the code publishes it.
+constexpr std::string_view GeneratedStart = "<!-- api-lua:generated -->";
+constexpr std::string_view GeneratedEnd = "<!-- /api-lua:generated -->";
+
+std::string fieldList(const dwe::session::GameEventInfo& event) {
+  if (event.fields.empty()) {
+    return "solo `version`";
+  }
+  std::string text;
+  for (const dwe::session::GameEventField& field : event.fields) {
+    if (!text.empty()) {
+      text += ", ";
+    }
+    const bool optional = field.type.ends_with('?');
+    const std::string_view type =
+        optional ? field.type.substr(0, field.type.size() - 1) : field.type;
+    text += std::format("`{}` ({}{})", field.name, type, optional ? " o nil" : "");
+  }
+  return text;
+}
+
+std::string generatedApi(const std::vector<std::string>& story) {
+  std::string text =
+      std::format("\nVersión de la API: **{}.{}.{}**. Tabla de cada evento: versión {}.\n\n",
+                  dwe::script::LuaApiVersion.major, dwe::script::LuaApiVersion.minor,
+                  dwe::script::LuaApiVersion.patch, dwe::session::GameEventTableVersion);
+  text += "| Evento | Campos de la tabla, además de `version` |\n|---|---|\n";
+  for (const dwe::session::GameEventInfo& event : dwe::session::GameEvents) {
+    text += std::format("| `{}` | {} |\n", event.name, fieldList(event));
+  }
+  text += std::format("\nFunciones de `story` ({}):\n\n", story.size());
+  for (const std::string& name : story) {
+    text += std::format("- `story.{}`\n", name);
+  }
+  text += "\n";
+  return text;
+}
+
+} // namespace
+
+TEST_CASE("the Lua API page lists every game event and story function the game publishes") {
+  // DWE_WRITE_API_DOC=1 rewrites the page's generated part instead of checking it.
+  const ModPacks packs{""};
+  HookSession game = hookSession(packs);
+  dwe::script::ScriptVm* vm = game.story->vm();
+  REQUIRE(vm != nullptr);
+  const std::string generated = generatedApi(vm->api().publishedNames("story"));
+
+  const std::filesystem::path page = std::filesystem::path{DWE_DOCS_DIR} / "modding" / "api-lua.md";
+  std::string text;
+  {
+    std::ifstream stream{page, std::ios::binary};
+    REQUIRE(stream.good());
+    text.assign(std::istreambuf_iterator<char>{stream}, std::istreambuf_iterator<char>{});
+  }
+  const std::size_t start = text.find(GeneratedStart);
+  const std::size_t end = text.find(GeneratedEnd);
+  REQUIRE(start != std::string::npos);
+  REQUIRE(end != std::string::npos);
+  const std::size_t from = start + GeneratedStart.size();
+  REQUIRE(from <= end);
+  // NOLINTNEXTLINE(concurrency-mt-unsafe)
+  const char* write = std::getenv("DWE_WRITE_API_DOC");
+  if (write != nullptr && std::string_view{write} == "1") {
+    text.replace(from, end - from, generated);
+    std::ofstream out{page, std::ios::binary};
+    out << text;
+    REQUIRE(out.good());
+    return;
+  }
+  CHECK_MESSAGE(text.substr(from, end - from) == generated,
+                "docs/modding/api-lua.md is out of date: run the session tests with "
+                "DWE_WRITE_API_DOC=1");
 }

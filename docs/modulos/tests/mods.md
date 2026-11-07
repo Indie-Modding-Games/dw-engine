@@ -6,7 +6,7 @@ llevan nada del juego original: todos los valores, la imagen y el modelo están 
 
 ## `example_mod`
 
-Un mod de la capa `mods` que depende de `base` y del paquete `game`. Muestra las tres cosas que puede hacer un mod:
+Un mod de la capa `mods` que depende de `base` y del paquete `game` y declara `api: "1.4"`, obligatoria en un mod. Muestra las tres cosas que puede hacer un mod:
 
 | Qué | Ficheros |
 |---|---|

@@ -274,9 +274,13 @@ private:
   // to the whole stack. The grammar of api is the manifest reader's, so a pack with a malformed one
   // does not even mount.
   void checkManifests() {
+    const std::vector<std::string> scripted = assets::packsWithLua(*stack_);
     for (const assets::MountedPack& pack : stack_->packs()) {
       const std::string manifest = assets::pathText(pack.root / ManifestFile);
-      if (auto api = assets::checkPackApi(pack.manifest); !api) {
+      // A mod of data only still mounts without `api` (the game warns), so it is no problem.
+      if (auto api = assets::mayLeaveOutApi(pack, scripted) ? core::Result<void>{}
+                                                            : assets::checkPackApi(pack.manifest);
+          !api) {
         add(manifest, 0, 0, api.error().message);
       }
       if (pack.origin == assets::PackOrigin::Mod) {

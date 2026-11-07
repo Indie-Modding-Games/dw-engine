@@ -115,6 +115,7 @@ dwe_add_module(session
 if(TARGET dwe_session_tests)
     target_compile_definitions(dwe_session_tests PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"
                                                          DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas"
+                                                         DWE_DOCS_DIR="${PROJECT_SOURCE_DIR}/docs"
                                                          DWE_EXAMPLE_MOD="${PROJECT_SOURCE_DIR}/tests/mods/example_mod"
                                                          DWE_SESSION_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
                                                          DWE_WRITTEN_STORY="${CMAKE_CURRENT_SOURCE_DIR}/tests/data/written_story")

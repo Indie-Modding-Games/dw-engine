@@ -2,6 +2,7 @@
 
 #include <doctest/doctest.h>
 
+#include <initializer_list>
 #include <optional>
 #include <string>
 
@@ -39,14 +40,25 @@ TEST_CASE("scripts that name a minor version need at least that one") {
   CHECK_FALSE(assets::checkApiCompatibility("2.x", EngineWithMinor3));
   CHECK_FALSE(assets::checkApiCompatibility("2.0", EngineWithMinor3));
   CHECK(assets::checkApiCompatibility("1.0"));
-  CHECK(assets::checkApiCompatibility("1.3"));
-  CHECK_FALSE(assets::checkApiCompatibility("1.4"));
+  CHECK(assets::checkApiCompatibility("1.4"));
+  CHECK_FALSE(assets::checkApiCompatibility("1.5"));
 }
 
-TEST_CASE("a pack that declares no API is taken to be written for this one") {
+TEST_CASE("an engine pack may leave out its API; a mod must declare it") {
   assets::PackManifest pack;
   pack.id = "my_mod";
+  pack.layer = assets::Layer::Base;
   CHECK(assets::checkPackApi(pack));
+  pack.layer = assets::Layer::Remaster;
+  CHECK(assets::checkPackApi(pack));
+  for (const assets::Layer layer : {assets::Layer::Mods, assets::Layer::User}) {
+    pack.layer = layer;
+    const auto missing = assets::checkPackApi(pack);
+    REQUIRE_FALSE(missing.has_value());
+    CHECK(missing.error().message.starts_with("pack 'my_mod' is in the "));
+    CHECK(missing.error().message.ends_with("such as api: \"1.x\" or api: \"1.4\""));
+  }
+  pack.layer = assets::Layer::Mods;
   pack.api = assets::ApiRequirement{.major = 3, .minimumMinor = std::nullopt};
   const auto refused = assets::checkPackApi(pack);
   REQUIRE_FALSE(refused.has_value());

@@ -1,9 +1,13 @@
 #pragma once
 
 #include <dwe/assets/pack_manifest.hpp>
+#include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 
+#include <span>
+#include <string>
 #include <string_view>
+#include <vector>
 
 namespace dwe::assets {
 
@@ -23,9 +27,19 @@ core::Result<void> checkApiCompatibility(const ApiRequirement& required,
 core::Result<void> checkApiCompatibility(std::string_view required,
                                          const Version& provided = SupportedLuaApi);
 
-// Whether a pack's scripts run on this engine. A pack that declares no API is taken to be written
-// for this one.
+// Whether a pack's scripts run on this engine. A pack of the mods or user layer must declare its
+// API; one of the engine's layers (base, remaster) that declares none is taken to be written for
+// this one.
 core::Result<void> checkPackApi(const PackManifest& pack,
                                 const Version& provided = SupportedLuaApi);
+
+// The ids of the packs of a stack that bring Lua files of their own.
+std::vector<std::string> packsWithLua(const VirtualFileSystem& files);
+
+// Whether a mounted pack may go without `api` whatever layer it asks for: one of the engine's own
+// packs (the content folder, the dev assets), or a mod of data only, with no Lua files (`scripted`,
+// from packsWithLua), written before the API was required, such as the launcher's images or the
+// mapper's map packs. Such a mod still mounts; the game warns about it.
+bool mayLeaveOutApi(const MountedPack& pack, std::span<const std::string> scripted);
 
 } // namespace dwe::assets

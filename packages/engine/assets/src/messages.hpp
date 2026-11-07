@@ -16,6 +16,9 @@ inline constexpr std::string_view ModInEngineLayer =
 inline constexpr std::string_view IncompatibleApi =
     "the scripts need the Lua API {}, and this engine has {}";
 inline constexpr std::string_view PackNeedsOtherApi = "pack '{}': {}";
+inline constexpr std::string_view ModWithoutApi =
+    "pack '{}' is in the {} layer and declares no api: a mod says the Lua API it is written for, such as "
+    "api: \"{}.x\" or api: \"{}.{}\"";
 
 // Palettes of extracted images (image_palettes.cpp, map_images.cpp).
 inline constexpr std::string_view PaletteColorNotHex =
