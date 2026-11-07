@@ -162,6 +162,12 @@ public:
   }
   // The sections now running, the first one requested first.
   [[nodiscard]] std::vector<SectionRef> runningSections() const;
+  // The same, each with where it stands in its code (SectionHost::lines).
+  struct RunningSectionLines {
+    SectionRef ref;
+    std::vector<std::int32_t> lines;
+  };
+  [[nodiscard]] std::vector<RunningSectionLines> runningSectionLines() const;
 
 private:
   struct RunningSection {

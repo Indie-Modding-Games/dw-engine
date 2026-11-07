@@ -3,6 +3,9 @@
 //! then reads the story, writes, reloads the map, puts the player where the event runs and
 //! presses confirm when it needs it; a moment later it reads the story again and keeps what
 //! changed for the story panel. Nothing waits: each frame looks at what the link said.
+//!
+//! The timeline's "Reproducir" and "Reproducir desde aquí" do the same first steps, then start
+//! the section with `story_run` (with the code sent for it, for the second) instead of pressing.
 
 use std::time::{Duration, Instant};
 
@@ -10,7 +13,7 @@ use dwe_story::Event;
 use dwe_story::needs::Need;
 use eframe::egui;
 use mapper_core::{Message, TestPlan, text};
-use mapper_live::{Command, StoryWrite};
+use mapper_live::{Command, StoryRun, StoryWrite};
 
 use crate::app::MapperApp;
 
@@ -52,6 +55,8 @@ enum Stage {
     },
     /// The player is at the event; confirm is pressed from `at`, once no script runs.
     Pressing { before: Snapshot, at: Instant },
+    /// The map is in again; the section is started from `at`, once no script runs.
+    Starting { run: StoryRun, at: Instant },
     /// The event runs.
     Running { before: Snapshot, until: Instant },
     /// Waiting for the story after the test.
@@ -139,6 +144,8 @@ pub struct Probe {
     /// The event of the test running or asked about, said.
     event: String,
     pub diff: Option<StoryDiff>,
+    /// What the test starts with `story_run` instead of pressing (the timeline's play).
+    run: Option<StoryRun>,
 }
 
 impl Probe {
@@ -151,11 +158,30 @@ impl Probe {
 /// Asks before testing an event of the map shown.
 pub fn ask(app: &mut MapperApp, event: &Event) {
     let plan = app.mapper.test_plan(event);
+    app.probe.run = None;
     app.probe.event = format!(
         "{} · {}",
         text::event_kind(event.kind),
         text::section_name(event.script, event.section)
     );
+    app.probe.stage = Stage::Asking { plan };
+}
+
+/// Asks before playing the open section in the game, with `story_run` doing the start.
+pub fn ask_play(app: &mut MapperApp, run: StoryRun) {
+    let Some(plan) = app.mapper.play_plan() else {
+        return;
+    };
+    app.probe.event = format!(
+        "{} · {}",
+        if run.code.is_some() {
+            text::PLAY_FROM_HERE
+        } else {
+            text::PLAY
+        },
+        text::section_name(run.script, run.section)
+    );
+    app.probe.run = Some(run);
     app.probe.stage = Stage::Asking { plan };
 }
 
@@ -168,7 +194,12 @@ pub fn show(app: &mut MapperApp, ctx: &egui::Context) {
     let mut open = true;
     let mut run = false;
     let mut cancel = false;
-    egui::Window::new(text::TEST_TITLE)
+    let title = if app.probe.run.is_some() {
+        text::PLAY_TITLE
+    } else {
+        text::TEST_TITLE
+    };
+    egui::Window::new(title)
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
@@ -224,11 +255,19 @@ pub fn show(app: &mut MapperApp, ctx: &egui::Context) {
             if plan.press {
                 ui.label(text::TEST_PRESS);
             }
+            if app.probe.run.is_some() {
+                ui.label(text::PLAY_STARTS);
+            }
             ui.add_space(6.0);
             ui.horizontal(|ui| {
                 let connected = app.live.is_connected();
+                let confirm = if app.probe.run.is_some() {
+                    text::PLAY
+                } else {
+                    text::TEST_RUN
+                };
                 if ui
-                    .add_enabled(connected, egui::Button::new(text::TEST_RUN))
+                    .add_enabled(connected, egui::Button::new(confirm))
                     .on_disabled_hover_text(text::TEST_EVENT_OFFLINE)
                     .clicked()
                 {
@@ -334,7 +373,12 @@ pub fn tick(app: &mut MapperApp) {
                 // The game refused a write or the reload: its error is in the messages.
                 Stage::Idle
             } else if app.live.reloads > reloads {
-                if plan.press {
+                if let Some(run) = app.probe.run.take() {
+                    Stage::Starting {
+                        run,
+                        at: now + PRESS_AFTER,
+                    }
+                } else if plan.press {
                     Stage::Pressing {
                         before,
                         at: now + PRESS_AFTER,
@@ -372,6 +416,13 @@ pub fn tick(app: &mut MapperApp) {
                 before,
                 until: now + RUN_FOR,
             }
+        }
+        Stage::Starting { run, at }
+            if now >= at
+                && (now >= at + BUSY_WAIT || !app.live.view.as_ref().is_some_and(|v| v.busy)) =>
+        {
+            app.live.send(Command::StoryRun(run));
+            Stage::Idle
         }
         Stage::Running { before, until } if now >= until => {
             app.live.send(Command::ReadStory);

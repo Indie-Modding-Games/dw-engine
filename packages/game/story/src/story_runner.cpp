@@ -187,6 +187,13 @@ std::vector<SectionRef> StoryRunner::runningSections() const {
   return sections_ | std::views::transform(&RunningSection::ref) | std::ranges::to<std::vector>();
 }
 
+std::vector<StoryRunner::RunningSectionLines> StoryRunner::runningSectionLines() const {
+  return sections_ | std::views::transform([this](const RunningSection& running) {
+           return RunningSectionLines{.ref = running.ref, .lines = host_->lines(running.handle)};
+         }) |
+         std::ranges::to<std::vector>();
+}
+
 void StoryRunner::runFrame() {
   if (const std::optional<PendingSection> pending = std::exchange(pending_, std::nullopt)) {
     beginScript(pending->ref, pending->source);

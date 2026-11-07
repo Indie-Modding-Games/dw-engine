@@ -9,7 +9,7 @@ use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use crate::answers::{
-    GameStatus, LiveView, LogEntry, PreviewApplied, ReloadedMap, StoryState, StoryWrite,
+    GameStatus, LiveView, LogEntry, PreviewApplied, ReloadedMap, StoryRun, StoryState, StoryWrite,
 };
 use crate::{Endpoint, Error, LiveClient};
 
@@ -48,6 +48,8 @@ pub enum Command {
         ticks: u64,
     },
     StorySet(StoryWrite),
+    /// `story_run`: a section, or code sent for it.
+    StoryRun(StoryRun),
     /// Reads the story once now.
     ReadStory,
     /// Reads the story every second, or stops.
@@ -69,6 +71,7 @@ impl Command {
             Self::Advance(_) => "advance",
             Self::Press { .. } => "press",
             Self::StorySet(_) => "story_set",
+            Self::StoryRun(_) => "story_run",
             Self::ReadStory | Self::FollowStory(_) => "story_state",
         }
     }
@@ -92,6 +95,12 @@ pub enum Done {
     Advanced(u64),
     Pressed,
     StoryWritten(StoryWrite),
+    /// The section started; whether it runs code that was sent.
+    StoryRan {
+        script: u16,
+        section: u16,
+        sent: bool,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -342,6 +351,11 @@ impl Worker {
                 client.press(&keys, ticks).map(|()| Done::Pressed)
             }
             Command::StorySet(write) => client.story_set(write).map(|()| Done::StoryWritten(write)),
+            Command::StoryRun(run) => client.story_run(&run).map(|sent| Done::StoryRan {
+                script: run.script,
+                section: run.section,
+                sent,
+            }),
             Command::ReadStory => match client.story_state() {
                 Ok(story) => {
                     self.tell(Event::Story(Box::new(story)));

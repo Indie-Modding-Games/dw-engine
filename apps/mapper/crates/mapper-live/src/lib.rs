@@ -15,7 +15,7 @@ mod link;
 
 pub use answers::{
     Actor, GameStatus, LiveView, LogEntry, LogLevel, PreviewApplied, ReloadedMap, Section,
-    StoryState, StoryWrite, ViewRect,
+    StoryRun, StoryState, StoryWrite, ViewRect,
 };
 pub use client::{LiveClient, MOST_EXITS};
 pub use link::{Command, Done, Event, LINK_POLL, LiveLink};

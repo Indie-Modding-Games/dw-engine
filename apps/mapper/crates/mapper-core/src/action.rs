@@ -14,6 +14,7 @@ use glam::Vec2;
 use crate::browser::GroupBy;
 use crate::layers::Layer;
 use crate::story::StoryEdit;
+use crate::timeline::NewCue;
 use crate::tools::{Modifiers, Selection, Tool};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -129,6 +130,32 @@ pub enum Action {
     SelectStmt(Option<StmtPath>),
     /// Changes the code shown (one undo step).
     EditStory(StoryEdit),
+    /// Shows or hides the open section's timeline.
+    ShowTimeline(bool),
+    /// Puts the timeline's playhead at a frame of the original.
+    SetPlayhead(f32),
+    /// Selects a statement from the timeline and puts the playhead at its start.
+    SelectCue(StmtPath),
+    /// Moves where a walk, a slide or a pan goes to the ground under a canvas point.
+    SetCuePoint {
+        path: StmtPath,
+        at: Vec2,
+    },
+    /// Sets the frames of a wait or a timed move (one undo step).
+    SetCueFrames {
+        path: StmtPath,
+        frames: u32,
+    },
+    /// Swaps a statement with the next one or the previous one, keeping the section's end last.
+    MoveCue {
+        path: StmtPath,
+        later: bool,
+    },
+    /// Adds a command at the playhead, to the ground under a canvas point when given.
+    AddCue {
+        kind: NewCue,
+        at: Option<Vec2>,
+    },
     /// Sets a dialogue line.
     SetText {
         key: String,

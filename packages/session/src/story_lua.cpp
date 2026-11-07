@@ -13,7 +13,9 @@
 #include <cstdint>
 #include <format>
 #include <limits>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -349,9 +351,11 @@ core::Result<game::story::SectionHandle> StoryLuaHost::start(SectionRef section)
   const std::array<ApiValue, 2> path{ApiValue{std::string{"sections"}},
                                      ApiValue{static_cast<std::int64_t>(section.section)}};
   const auto patched = patchedSections_.find({section.script, section.section});
+  const bool staged = staged_ && !staged_->handle && staged_->ref.script == section.script &&
+                      staged_->ref.section == section.section;
   // The module is optional under a patch: a patch may give a script no pack has.
-  const bool needsModule =
-      patched == patchedSections_.end() || files_->resolve(moduleId(section.script)) != nullptr;
+  const bool needsModule = (patched == patchedSections_.end() && !staged) ||
+                           files_->resolve(moduleId(section.script)) != nullptr;
   const script::ScriptModule* original = nullptr;
   if (needsModule) {
     const auto loaded = module(section.script);
@@ -361,6 +365,12 @@ core::Result<game::story::SectionHandle> StoryLuaHost::start(SectionRef section)
     original = *loaded;
   }
   auto coroutine = [&] {
+    if (staged) {
+      core::logInfo("[story] script {} section 0x{:04x} runs the section a tool sent",
+                    section.script, section.section);
+      return staged_->module.coroutine(path,
+                                       script::ModuleFunction{.module = original, .path = path});
+    }
     if (patched == patchedSections_.end()) {
       return original->coroutine(path);
     }
@@ -374,7 +384,62 @@ core::Result<game::story::SectionHandle> StoryLuaHost::start(SectionRef section)
   }
   const game::story::SectionHandle handle = nextHandle_++;
   sections_.emplace(handle, std::move(*coroutine));
+  if (staged) {
+    staged_->handle = handle;
+  }
   return handle;
+}
+
+std::vector<std::int32_t> StoryLuaHost::lines(game::story::SectionHandle handle) const {
+  const auto found = sections_.find(handle);
+  return found == sections_.end() ? std::vector<std::int32_t>{} : found->second.lines();
+}
+
+core::Result<void> StoryLuaHost::stageSection(SectionRef section, std::string_view source,
+                                              std::optional<std::string_view> pack) {
+  if (staged_ && staged_->handle) {
+    return core::fail("a section sent before still runs");
+  }
+  const auto& packs = files_->packs();
+  if (packs.empty()) {
+    return core::fail("no pack is mounted");
+  }
+  auto owner = packs.begin();
+  if (pack) {
+    owner = std::ranges::find(packs, *pack, [](const assets::MountedPack& mounted) {
+      return std::string_view{mounted.manifest.id};
+    });
+    if (owner == packs.end()) {
+      return core::fail(std::format("no pack '{}' is mounted", *pack));
+    }
+  } else if (const assets::AssetSource* module = files_->resolve(moduleId(section.script))) {
+    const auto giver =
+        std::ranges::find(packs, module->packId,
+                          [](const assets::MountedPack& mounted) { return mounted.manifest.id; });
+    owner = giver != packs.end() ? giver : owner;
+  }
+  auto environment = vm_->modEnvironment(owner->manifest);
+  if (!environment) {
+    return std::unexpected{environment.error()};
+  }
+  const std::string name = std::format("story_run_{:03}_{:04x}", section.script, section.section);
+  auto loaded = environment->loadModuleSource(source, name);
+  if (!loaded) {
+    return std::unexpected{loaded.error()};
+  }
+  const std::array<ApiValue, 1> scriptPath{ApiValue{std::string{"script"}}};
+  const auto script = loaded->value(scriptPath);
+  const auto* number = script ? std::get_if<std::int64_t>(&*script) : nullptr;
+  if (number == nullptr || *number != section.script) {
+    return core::fail(std::format("the source is not a patch of script {}", section.script));
+  }
+  const std::array<ApiValue, 1> sectionsPath{ApiValue{std::string{"sections"}}};
+  const auto sections = loaded->functionKeys(sectionsPath);
+  if (!sections || !std::ranges::contains(*sections, std::int64_t{section.section})) {
+    return core::fail(std::format("the source has no section 0x{:04x}", section.section));
+  }
+  staged_.emplace(StagedSection{.ref = section, .module = std::move(*loaded), .handle = {}});
+  return {};
 }
 
 std::optional<SectionStep> StoryLuaHost::driveTask(game::story::SectionHandle handle,
@@ -447,6 +512,9 @@ SectionStep StoryLuaHost::resume(game::story::SectionHandle handle,
 void StoryLuaHost::close(game::story::SectionHandle handle) {
   tasks_.erase(handle);
   sections_.erase(handle);
+  if (staged_ && staged_->handle == handle) {
+    staged_.reset();
+  }
 }
 
 } // namespace dwe::session

@@ -53,13 +53,14 @@ ticks o se ha escrito la imagen.
 | `quit` | | Cierra el juego |
 | `rescan` | | Vuelve a listar los ficheros de los packs montados, para ver los que una herramienta creó o borró con el juego en marcha |
 | `reload_map` | `exit` (0-9) | `rescan` y vuelve a leer y entrar en el mapa actual (ver [Edición de mapas en vivo](#edición-de-mapas-en-vivo)). Responde `map` y `exit` (`null` sin `exit`) |
-| `story_state` | `path` | El estado de la historia: `map`, `triggers` (los activos, de menor a mayor), `variables` (las distintas de 0, por número: `{"12": 3}`), `script` (`busy`, `map_script`, `sections` que corren: `script` y `section`), `stage` (la etapa del candado de historia) y `camera` (`eye`, `target`, `focal_length`, `background`, `viewport`, `scale`, `scroll`, en espacio de mundo; `null` sin mapa). Con `path`, solo esa parte: `variables.12`, `script.sections.0` |
+| `story_state` | `path` | El estado de la historia: `map`, `triggers` (los activos, de menor a mayor), `variables` (las distintas de 0, por número: `{"12": 3}`), `script` (`busy`, `map_script`, `sections` que corren: `script`, `section` y `lines`, las líneas del código de la sección por las que va, de la más externa a la de la orden que espera), `stage` (la etapa del candado de historia) y `camera` (`eye`, `target`, `focal_length`, `background`, `viewport`, `scale`, `scroll`, en espacio de mundo; `null` sin mapa). Con `path`, solo esa parte: `variables.12`, `script.sections.0` |
 | `overlay` | `on` (`true`/`false`) | Enciende o apaga la [capa de depuración del mapa](#capa-de-depuración-del-mapa); sin `on` la cambia. Responde `overlay` |
 | `live` | | Dónde está cada uno, en una línea corta para consultarla varias veces por segundo (ver [Estado en vivo](#estado-en-vivo)) |
 | `preview_map` | `map`, `patch`, `pack` | Enseña el mapa con un parche encima sin guardarlo (ver [Vista previa de un parche](#vista-previa-de-un-parche)). Responde `map`, `applied` (`collision` o `reentered`) y `tick` |
 | `preview_clear` | | Quita la vista previa. Responde `map` (vacío sin partida) y `cleared` (`false` si no había ninguna); nunca es un error |
 | `log_tail` | `since` | Los avisos y errores del log desde el número `since` (sin él, todos los que guarda): `next` (el número del último) y `entries` (`seq`, `level` (`warning` o `error`), `text`). Guarda los 256 últimos, solo con `--control` |
 | `story_set` | `kind` (`trigger` o `var`), `number`, `value` | Escribe un disparador (`value` `true`/`false` o 1/0) o una variable (0-255) de la historia, como `story_set` en la consola. No mientras corre un script de historia. Responde `kind`, `number` y `value` |
+| `story_run` | `script`, `section`, `code`, `pack` | Arranca una sección de historia en el frame siguiente, como si la pidiera el mapa. Con `code` (el texto de un parche de historia de ese script con esa sección) corre ese código una vez en lugar del de los packs, sin guardarlo; `pack` dice con qué pack se carga (sin él, el que da el script). No mientras corre un script de historia. Responde `script`, `section` y `sent` (si llevaba `code`) |
 
 Las teclas van por su nombre (`keyNamed`): `a` a `z`, `0` a `9`, `return`, `escape`, `backspace`, `tab`, `space`,
 `left`, `right`, `up`, `down`, `left_shift`, `right_shift`; en una lista o como `"right+return"`. Entran en el
@@ -76,6 +77,15 @@ Por ejemplo:
 ```
 
 El número de `story_set` va en `number` y no en `id`, que es el de la petición.
+
+`story_run` es lo que usa «Reproducir desde aquí» del [mapper](../modulos/apps/mapper.md#secuencias): manda un parche
+que coloca a cada uno donde estaría y corre el resto de la sección. Mientras corre, `story_state` dice por qué
+línea va (`lines`), y el mapper la convierte en la orden del parche que la escribió:
+
+```json
+{"id": 8, "cmd": "story_run", "script": 12, "section": 81,
+ "code": "return { script = 12, sections = { [81] = function() story.delay(5) end } }"}
+```
 
 ## Varios clientes
 

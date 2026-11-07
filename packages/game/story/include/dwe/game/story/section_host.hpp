@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <variant>
+#include <vector>
 
 // How the runner runs a section without knowing Lua: the session implements SectionHost with the
 // script VM, one coroutine per running section, and the tests with fakes
@@ -126,6 +127,11 @@ public:
   virtual SectionStep resume(SectionHandle section, ResumeValue value) = 0;
   // Drops a section, whether it finished or not.
   virtual void close(SectionHandle section) = 0;
+  // Where a section that waits stands in its code, for tools: the line of each function it is in,
+  // the innermost first (the last is the section's own). Empty when the host cannot say.
+  [[nodiscard]] virtual std::vector<std::int32_t> lines(SectionHandle /*section*/) const {
+    return {};
+  }
 };
 
 } // namespace dwe::game::story

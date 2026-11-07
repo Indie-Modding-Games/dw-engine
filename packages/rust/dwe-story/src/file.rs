@@ -128,6 +128,7 @@ impl StoryFile {
                     file.preamble.push(Stmt {
                         kind,
                         comment: stmt.comment,
+                        line: stmt.line,
                     })
                 }
                 _ => {

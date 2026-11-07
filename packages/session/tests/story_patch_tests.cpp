@@ -359,3 +359,46 @@ TEST_CASE("the walks read the map editor's patch, its own routine composed under
   CHECK(read->script == 900);
   CHECK(read->listing.sections.size() == 2);
 }
+
+TEST_CASE("a section a tool sends runs once in place of the packs' and says where it waits") {
+  const PatchPacks packs{};
+  StoryPlay player{packs.files()};
+  constexpr std::string_view Sent = R"lua(return { script = 1, sections = {
+  [1] = function(original)
+    story.set_trigger(30)
+    story.delay(3)
+    return story.ENDED
+  end,
+} }
+)lua";
+  REQUIRE(player.host().stageSection({.script = 1, .section = 1}, Sent));
+  CHECK(player.host().hasStagedSection());
+  // Sent code runs where its line is: the delay waits on line 4 of the source.
+  auto handle = player.host().start(SectionRef{.script = 1, .section = 1});
+  REQUIRE(handle.has_value());
+  CHECK_FALSE(player.host().hasStagedSection());
+  static_cast<void>(player.host().resume(*handle, {}));
+  CHECK(player.host().lines(*handle) == std::vector<std::int32_t>{4});
+  CHECK_FALSE(player.host().stageSection({.script = 1, .section = 1}, Sent));
+  player.host().close(*handle);
+  // Once: the next start runs the module's section again.
+  CHECK(play(packs, 1).events == std::vector<std::string>{"trigger 1 = 1", "delay(2)"});
+
+  REQUIRE(player.host().stageSection({.script = 1, .section = 1}, Sent));
+  const Played sent = player.play(SectionRef{.script = 1, .section = 1}, 1);
+  CHECK(sent.events == std::vector<std::string>{"trigger 30 = 1", "delay(3)"});
+}
+
+TEST_CASE("a sent section that does not load, is for another script or lacks it is refused") {
+  const PatchPacks packs{};
+  StoryPlay player{packs.files()};
+  CHECK_FALSE(player.host().stageSection({.script = 1, .section = 1}, "return {"));
+  CHECK_FALSE(player.host().stageSection(
+      {.script = 1, .section = 1}, "return { script = 2, sections = { [1] = function() end } }"));
+  CHECK_FALSE(player.host().stageSection(
+      {.script = 1, .section = 1}, "return { script = 1, sections = { [2] = function() end } }"));
+  CHECK_FALSE(player.host().stageSection(
+      {.script = 1, .section = 1}, "return { script = 1, sections = { [1] = function() end } }",
+      "no_such_pack"));
+  CHECK_FALSE(player.host().hasStagedSection());
+}

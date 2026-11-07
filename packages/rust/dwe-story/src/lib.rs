@@ -2,8 +2,9 @@
 //! `dwx extract`) that packs patch section by section (`story/patches/*.lua`,
 //! docs/modding/historia.md). This crate reads that Lua into a tree ([`ast`], [`parse`]), writes it
 //! back ([`write`]), applies the patches of the pack stack like the game's `StoryLuaHost`
-//! ([`script`]), names the commands for people ([`commands`]), reads the dialogue texts ([`texts`])
-//! and lists what can run a section on a map ([`events`]).
+//! ([`script`]), names the commands for people ([`commands`]), reads the dialogue texts ([`texts`]),
+//! lists what can run a section on a map ([`events`]) and lays a section out as a timeline
+//! ([`sequence`]).
 
 pub mod ast;
 pub mod commands;
@@ -16,6 +17,7 @@ pub mod needs;
 pub mod parse;
 pub mod save;
 pub mod script;
+pub mod sequence;
 pub mod texts;
 pub mod write;
 
@@ -24,6 +26,7 @@ pub use events::{Event, EventKind, MapEvents};
 pub use file::{Routine, Section, SectionBody, StoryFile};
 pub use save::{ScriptDraft, StoryProblem, StorySavePlan};
 pub use script::{LoadedScript, SectionOrigin, StoryFileSource};
+pub use sequence::{Cue, Hold, Sequence, Stage, Track};
 pub use texts::StoryTexts;
 
 /// What can go wrong reading story Lua.

@@ -1,5 +1,6 @@
 //! The keyboard shortcuts (the list the help shows is `text::SHORTCUT_LIST`). They wait while a
-//! text field has the keyboard.
+//! text field has the keyboard, except undo and redo while nothing was typed in it since it took
+//! the keyboard: the field has nothing of its own to undo then, so they undo the map's edits.
 
 use dwe_map::save::SaveMode;
 use eframe::egui::{self, Key, KeyboardShortcut, Modifiers};
@@ -26,23 +27,74 @@ const DIGITS: [Key; 10] = [
     Key::Num0,
 ];
 
+/// The text field that has the keyboard, and whether anything was typed in it since.
+#[derive(Debug, Default)]
+pub struct FieldFocus {
+    field: Option<egui::Id>,
+    typed: bool,
+}
+
+impl FieldFocus {
+    /// Follows the field with the keyboard this frame and what was typed.
+    fn observe(&mut self, field: Option<egui::Id>, typed: bool) {
+        if field != self.field {
+            self.field = field;
+            self.typed = false;
+        }
+        self.typed |= field.is_some() && typed;
+    }
+}
+
+/// Whether this frame's input changes a text field's text.
+fn types(input: &egui::InputState) -> bool {
+    input.events.iter().any(|event| {
+        matches!(
+            event,
+            egui::Event::Text(_)
+                | egui::Event::Paste(_)
+                | egui::Event::Cut
+                | egui::Event::Key {
+                    key: Key::Backspace | Key::Delete,
+                    pressed: true,
+                    ..
+                }
+        )
+    })
+}
+
+/// Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y as the model's undo and redo.
+fn undo_redo(input: &mut egui::InputState, actions: &mut Vec<Action>) {
+    let command = |key| KeyboardShortcut::new(Modifiers::COMMAND, key);
+    let command_shift = |key| KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, key);
+    // The longer shortcuts first: Ctrl+Z would also take Ctrl+Shift+Z.
+    if input.consume_shortcut(&command_shift(Key::Z)) || input.consume_shortcut(&command(Key::Y)) {
+        actions.push(Action::Redo);
+    }
+    if input.consume_shortcut(&command(Key::Z)) {
+        actions.push(Action::Undo);
+    }
+}
+
 pub fn handle(app: &mut MapperApp, ctx: &egui::Context) {
-    if ctx.egui_wants_keyboard_input() || app.mapper.pending.is_some() {
+    let field = ctx.memory(|memory| memory.focused());
+    let typed = ctx.input(types);
+    app.field_focus.observe(field, typed);
+    if app.mapper.pending.is_some() {
+        return;
+    }
+    let mut actions = Vec::new();
+    if ctx.egui_wants_keyboard_input() {
+        if !app.field_focus.typed {
+            ctx.input_mut(|input| undo_redo(input, &mut actions));
+            for action in actions {
+                app.apply(action);
+            }
+        }
         return;
     }
     let command = |key| KeyboardShortcut::new(Modifiers::COMMAND, key);
-    let command_shift = |key| KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, key);
-    let mut actions = Vec::new();
     ctx.input_mut(|input| {
-        // The longer shortcuts first: Ctrl+Z would also take Ctrl+Shift+Z.
-        if input.consume_shortcut(&command_shift(Key::Z))
-            || input.consume_shortcut(&command(Key::Y))
-        {
-            actions.push(Action::Redo);
-        }
-        if input.consume_shortcut(&command(Key::Z)) {
-            actions.push(Action::Undo);
-        }
+        undo_redo(input, &mut actions);
         if input.consume_shortcut(&command(Key::S)) {
             actions.push(Action::Save(SaveMode::Patch));
         }

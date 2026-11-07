@@ -29,6 +29,8 @@ pub struct MapperApp {
     pending_map: Option<(String, Option<i32>)>,
     /// The section of the command line, opened with the map.
     pending_section: Option<(u16, u16)>,
+    /// Shows the timeline of the command line's section.
+    pending_timeline: bool,
     /// Whether the primary button went down on the canvas and is still held.
     pub pointer_held: bool,
     /// The saves the live link has seen (to reload the game after each new one).
@@ -56,6 +58,12 @@ pub struct MapperApp {
     pub show_settings: bool,
     /// The dwx path as typed in the settings.
     pub dwx_text: String,
+    /// The text field with the keyboard, for undo while it has nothing typed.
+    pub field_focus: crate::keys::FieldFocus,
+    /// The timeline panel's zoom, drags and the section played in the game.
+    pub timeline_ui: crate::timeline::TimelineUi,
+    /// Where the canvas was drawn last frame (the section editor stays above the timeline).
+    pub canvas_rect: Option<egui::Rect>,
 }
 
 impl MapperApp {
@@ -104,6 +112,7 @@ impl MapperApp {
             revealed_map: None,
             pending_map: options.map.map(|map| (map, options.exit)),
             pending_section: options.section,
+            pending_timeline: options.timeline,
             pointer_held: false,
             seen_saves: 0,
             new_pack: None,
@@ -118,6 +127,9 @@ impl MapperApp {
             confirm_revert: false,
             show_settings: false,
             dwx_text: String::new(),
+            field_focus: crate::keys::FieldFocus::default(),
+            timeline_ui: crate::timeline::TimelineUi::default(),
+            canvas_rect: None,
         }
     }
 
@@ -203,6 +215,7 @@ impl eframe::App for MapperApp {
         crate::panels::top_bar(self, ui);
         crate::toolbar::show(self, ui);
         crate::panels::status_bar(self, ui);
+        crate::timeline::panel(self, ui);
         crate::dialogs::problems(self, ui);
         crate::panels::browser(self, ui);
         crate::panels::details(self, ui);
@@ -218,6 +231,9 @@ impl eframe::App for MapperApp {
                     }
                     if let Some((script, section)) = self.pending_section.take() {
                         self.apply(Action::OpenSection { script, section });
+                        if self.pending_timeline {
+                            self.apply(Action::ShowTimeline(true));
+                        }
                     }
                 }
                 self.refresh_background(&ctx);
@@ -227,6 +243,7 @@ impl eframe::App for MapperApp {
         crate::section::show(self, &ctx);
         crate::probe::show(self, &ctx);
         crate::probe::tick(self);
+        crate::timeline::tick(self);
         self.reload_after_save();
         self.handle_close(&ctx);
         if let Some(shot) = &mut self.shot {

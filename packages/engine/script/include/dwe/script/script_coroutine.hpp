@@ -110,6 +110,11 @@ public:
 
   [[nodiscard]] bool finished() const { return thread_ == nullptr; }
 
+  // The line each Lua function of the coroutine is at, the innermost first (the functions of C
+  // left out): where a waiting order was called and, last, the line of the coroutine's own
+  // function that leads there. Empty before the first resume and once it finished.
+  [[nodiscard]] std::vector<std::int32_t> lines() const;
+
 private:
   void close(lua_State* from);
 

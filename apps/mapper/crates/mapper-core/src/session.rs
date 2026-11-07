@@ -28,7 +28,7 @@ use crate::tools::{self, Drag, Modifiers, Selection, Tool};
 use crate::view::View;
 
 /// How near a marker the pointer picks it, in canvas pixels.
-const PICK_RADIUS: f32 = 10.0;
+pub(crate) const PICK_RADIUS: f32 = 10.0;
 /// How far from its NPC a new path point goes when no point is given, in world units.
 const NEW_POINT_OFFSET: i32 = 200;
 
@@ -168,6 +168,8 @@ pub struct Mapper {
     pub settings: Settings,
     /// Where the settings are kept; None keeps them in memory (the tests).
     pub settings_file: Option<PathBuf>,
+    /// The open section's timeline.
+    pub timeline: crate::timeline::Timeline,
 }
 
 impl Mapper {
@@ -304,6 +306,13 @@ impl Mapper {
                 }
             }
             Action::EditStory(change) => self.edit_story(change),
+            Action::ShowTimeline(shown) => self.timeline.shown = shown,
+            Action::SetPlayhead(frame) => self.timeline.playhead = frame.max(0.0),
+            Action::SelectCue(path) => self.select_cue(path),
+            Action::SetCuePoint { path, at } => self.set_cue_point(&path, at),
+            Action::SetCueFrames { path, frames } => self.set_cue_frames(&path, frames),
+            Action::MoveCue { path, later } => self.move_cue(&path, later),
+            Action::AddCue { kind, at } => self.add_cue(kind, at),
             Action::SetText { key, text } => self.set_text(&key, &text),
             Action::OpenAdjacentMap { later } => self.open_adjacent_map(later),
             Action::Revert => {
@@ -707,6 +716,15 @@ impl Mapper {
                     }
                     return;
                 }
+                if let Some(path) = self.handle_under(at) {
+                    if let Some(map) = &mut self.map {
+                        map.history.begin_group();
+                    }
+                    self.select_cue(path.clone());
+                    self.timeline.dragging = Some(path);
+                    self.drag = Some(Drag::Cue);
+                    return;
+                }
                 let picked = self.pick(at);
                 self.selection = picked.map(|(selection, _)| selection);
                 self.drag = Some(match picked {
@@ -754,11 +772,17 @@ impl Mapper {
             }
             Drag::Move(selection) => self.move_selection(selection, at),
             Drag::Turn(selection) => self.turn_selection(selection, at),
+            Drag::Cue => {
+                if let Some(path) = self.timeline.dragging.clone() {
+                    self.set_cue_point(&path, at);
+                }
+            }
         }
     }
 
     fn pointer_up(&mut self) {
         let drag = self.drag.take();
+        self.timeline.dragging = None;
         if let Some(Drag::Rectangle { from, to }) = drag {
             self.paint(&tools::rectangle_cells(from, to));
         }

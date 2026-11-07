@@ -202,6 +202,81 @@ así que enseña la sección que de verdad corre y quién la da.
   en ella: el editor lo dice y no prueba. El juego corre lo **guardado**: con cambios sin guardar, el diálogo lo
   avisa.
 
+## Secuencias
+
+Una escena es una sección de historia vista en el tiempo: quién anda adónde, cuándo se mueve la cámara, qué texto
+sale y qué espera a qué. «Línea de tiempo» en la cabecera del editor de sección (o `--timeline` con `--section`)
+abre un panel bajo el mapa con la sección como pistas.
+
+### El modelo
+
+`dwe-story::sequence` corre la sección como el [intérprete](../../architecture/interprete-historia.md), en cuadros del
+original (20 por segundo; el juego da 3 ticks a cada uno): las órdenes corren una tras otra en el mismo cuadro hasta
+que una espera.
+
+| Pista | Qué lleva |
+|---|---|
+| Jugador, Compañero, NPC n | Los movimientos de ese personaje (andar, deslizarse, girar) y sus animaciones |
+| Cámara | Los movimientos de cámara |
+| Texto | Diálogos y elecciones |
+| Audio | Sonidos y música |
+| Esperas | `delay`, `wait_for_entity` y las demás órdenes que paran la sección |
+| Estado | Disparadores, variables, modelos y el resto de órdenes sin duración |
+
+Cada orden dice cómo sigue la sección (la barra al pasar el ratón):
+
+- **No bloquea:** andar, deslizarse, girar, las animaciones y la cámara llenan el hueco de movimiento de su personaje
+  (o de la cámara) y la orden siguiente empieza a la vez. Un movimiento nuevo sobre un hueco ocupado sustituye al de
+  antes: el bloque viejo se corta con un borde rojo. `entity_move_to` y la cámara duran su operando de cuadros.
+- **Bloquea unos cuadros:** `delay` (y `fadeout_hud`, uno).
+- **Espera al jugador:** un diálogo, una elección, una batalla o una rutina del motor (barra blanca).
+- **Espera a que acabe el movimiento:** `wait_for_entity`, hasta que se vacía el hueco que nombra.
+- **Termina la sección:** un cambio de mapa.
+
+Lo que dura un paso andando sale de la distancia y la velocidad del personaje (unidades del mundo por cuadro, de los
+clips de `field/rules.yaml`): el jugador anda a 20 y corre a 50, el compañero a 22,6 y 43,5. Lo que el editor no
+puede saber lo **estima** y lo marca con rayas: un NPC va como el jugador, un diálogo dura 40 cuadros (lo que tarde
+el jugador en pasarlo), una animación 20 y una batalla o una rutina del motor 20. Un `if` sigue la rama de la orden
+elegida (o la más larga, pasando por los `if` que solo acaban la sección), un bucle corre una vez y una rutina del
+fichero corre dentro, con sus órdenes bajo la línea que la llama.
+
+### El panel
+
+- **Regla y cursor:** arrastrar en la regla o en una pista mueve el cursor; el mapa enseña a cada personaje y la
+  cámara donde el modelo los tiene en ese cuadro.
+- **Bloques:** un clic elige la orden (y su línea en el editor de sección); arrastrar el borde derecho cambia los
+  cuadros de un `delay` o de un movimiento con duración. «Antes» y «Después» cambian la orden de sitio con su vecina
+  del mismo bloque; el `return` final no se mueve.
+- **En el mapa:** cada movimiento se dibuja con su camino, una flecha y su número de orden, los giros con una flecha
+  discontinua y la cámara con su campo de visión. El rombo del final de la orden elegida se arrastra para cambiar el
+  destino. Clic derecho en el mapa: «Andar aquí», «Girar hacia aquí» y «Cámara aquí» en ese punto.
+- **Añadir en el cursor:** andar, girar, esperar, cámara aquí o al personaje, animación y texto (con una línea nueva
+  «…» para escribirla en el editor) detrás de la orden que corre en el cursor, para el personaje de la orden elegida.
+
+Cada cambio es una acción con su paso de deshacer y acaba en el mismo borrador de la sección: se guarda como
+[parche de historia](../../modding/historia.md#parches-por-sección) con Ctrl+S.
+
+### Reproducir en el juego
+
+Con un juego conectado ([En vivo](#en-vivo)):
+
+- **Reproducir** prepara el juego como [Probar evento](#eventos) (escribe la historia que la sección necesita, pone al
+  jugador y recarga el mapa) y después arranca la sección con `story_run`. Corre lo guardado.
+- **Reproducir desde aquí** arranca en la orden elegida. El editor escribe un parche de un solo uso: primero coloca a
+  cada personaje y la cámara donde el modelo los tiene al empezar esa orden (movimientos de un cuadro y giros),
+  después las órdenes anteriores que solo cambian el estado (disparadores, variables, modelos, NPC; sin sus esperas
+  ni movimientos) y luego la orden elegida con todo lo que la sigue. Lo manda con `story_run` y `code`: el juego lo
+  corre una vez y no se guarda en ningún sitio, así que incluye lo que aún no está guardado.
+- **Pausa / Seguir**, **+1 cuadro** (3 ticks) y **+1 s** paran y avanzan el juego.
+- **Seguir al juego:** el editor lee `story_state` cuatro veces por segundo; la sección da las líneas por las que va
+  (`lines`) y el editor las convierte en la orden del parche mandado o de la sección. Esa orden se marca en naranja,
+  el cursor la sigue y la cabecera dice «El juego va por #n».
+- **Desvío juego-modelo:** lo lejos que está cada personaje en el juego de donde lo pone el modelo en el cursor (100 =
+  una celda); en el mapa, una línea discontinua une los dos. Sirve para ver dónde el modelo estima mal.
+
+Los saltos de mapa que caen en el mismo sitio se agrupan en una etiqueta («destino ×n» o «primero (+n más)») con la
+lista entera al pasar el ratón.
+
 ## Guardar
 
 **Destino** («Archivo → Destino»): el paquete donde se escribe. Puede ser un paquete de mod montado (las carpetas de
@@ -265,7 +340,7 @@ La interfaz está en español y todos sus textos viven en `crates/mapper-core/sr
 |---|---|---|
 | `dwe-pack` | `packages/rust/dwe-pack` | Los packs como el motor ([sistema de archivos virtual](../../architecture/vfs.md)): `pack.yaml`, la pila por capa, prioridad y dependencias, los ids de asset, las tablas compuestas (`data/maps`) y el montaje del contenido del juego con los packs del equipo y los mods |
 | `dwe-map` | `packages/rust/dwe-map` | El documento de un mapa leído del YAML con sus parches y escrito de vuelta (`emit`, `diff`, `save`), la colisión con su leyenda o en hexadecimal, las bandas de disparo de `field/triggers`, los nombres de `story/names`, las coordenadas ([espacio del mundo](../../architecture/world-space.md)), la cámara con su proyección al fondo y las puertas y el baño de `data/maps` (`places`) |
-| `dwe-story` | `packages/rust/dwe-story` | Los scripts de historia en Lua: un lector y escritor del subconjunto que usan los módulos y los parches (`parse`, `write`), los scripts con sus parches aplicados como el juego (`script`), los eventos de un mapa (`events`), las frases en español (`describe`), la edición por líneas y condiciones (`edit`), las condiciones de una sección para probarla (`needs`) y el guardado como parche (`save`) |
+| `dwe-story` | `packages/rust/dwe-story` | Los scripts de historia en Lua: un lector y escritor del subconjunto que usan los módulos y los parches (`parse`, `write`), los scripts con sus parches aplicados como el juego (`script`), los eventos de un mapa (`events`), las frases en español (`describe`), la edición por líneas y condiciones (`edit`), las condiciones de una sección para probarla (`needs`), la sección como línea de tiempo y el parche de «Reproducir desde aquí» (`sequence`) y el guardado como parche (`save`) |
 | `mapper-core` | `apps/mapper/crates/mapper-core` | El modelo del editor sin ventana: el contenido abierto, el mapa, la vista, las capas, la lista de mapas, lo que se dibuja (`MapOverlay`), las herramientas (`tools`), el historial de deshacer (`edit`) y los destinos de guardado (`targets`). Todo cambio entra por el enum `Action` |
 | `mapper-live` | `apps/mapper/crates/mapper-live` | El cliente del control remoto (líneas JSON por socket Unix o TCP local) y `LiveLink`, el hilo que pregunta al juego, vuelve a conectar y le manda las órdenes del editor sin parar la ventana |
 | `dwe-mapper` | `apps/mapper` | La ventana: paneles, lienzo y línea de órdenes |
@@ -302,7 +377,12 @@ herramienta en Rust. Sus tests comprueban esas reglas con packs sintéticos de i
   juego y corre la sección. `mapper-core/tests/story.rs` edita una línea y una condición, deshace, guarda el parche y
   el texto, añade y quita NPC, guarda puertas y baño y prepara una prueba de evento. Con `DWE_MAPPER_CONTENT`,
   `dwe-story/tests/real_content.rs` lee y vuelve a escribir todos los módulos, saca cada sección a un parche y lista
-  los eventos de todos los mapas.
+  los eventos de todos los mapas, y además saca la línea de tiempo de cada sección y el parche de «Reproducir desde
+  aquí» de cada orden de primer nivel, que tiene que volver a leerse.
+- **Secuencias:** `dwe-story/tests/sequence.rs` comprueba las duraciones, las esperas, el corte de un movimiento por
+  el siguiente, las rutinas, las posiciones en el cursor, las líneas del juego y el parche de «Reproducir desde
+  aquí». `mapper-core/tests/timeline.rs` cambia cuadros, arrastra un destino, mueve y añade órdenes con deshacer y
+  rehacer, guarda el parche y prepara una reproducción desde una orden.
 - **En vivo:** `mapper-live` habla con un juego falso (un servidor en un hilo que responde como
   `remote_control.cpp`): las respuestas, los rechazos, el quinto cliente rechazado, que el enlace vuelve a conectar
   cuando el juego vuelve, que solo pide el registro cuando cambia y que al cerrarse quita la vista previa.
@@ -334,6 +414,7 @@ solo `content/packs` (los packs del equipo). Opciones (`dwe-mapper --help`):
 | `--mods <dir>` | Una carpeta de mods o un pack suelto (se repite); sus parches de mapa se aplican |
 | `--map <id>` y `--exit <n>` | El mapa que se abre primero, centrado en la llegada por esa salida |
 | `--section <script>:<sección>` | Con `--map`: abre esa sección en el editor (decimal o `0x…`) |
+| `--timeline` | Con `--section`: enseña su línea de tiempo |
 | `--variant <nombre>` | El fondo: `day`, `dusk`, `night`… |
 | `--layers <lista>` | Las capas encendidas: `walls,triggers,exits,npcs,waypoints,doors,toilet,grid,live,events` |
 | `--group-by name\|prefix` y `--filter <texto>` | La lista de mapas |

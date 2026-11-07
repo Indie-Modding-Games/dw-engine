@@ -23,6 +23,10 @@ const JUMP_ARROW: f32 = 90.0;
 const STACK_GAP: f32 = 18.0;
 /// How far inside the canvas's edges a map change's label stays.
 const JUMP_MARGIN: f32 = 40.0;
+/// Map change arrows that end this near each other (screen pixels) share one label.
+const PILE_RADIUS: f32 = 6.0;
+/// The most map changes a shared label's tooltip lists.
+const MOST_PILE_LINES: usize = 12;
 
 pub mod colors {
     use eframe::egui::Color32;
@@ -85,6 +89,7 @@ pub fn draw(
     let labels = mapper.view.zoom >= LABEL_ZOOM;
     let mut hits = Vec::new();
     let mut stacked = 0;
+    let mut piles: Vec<Pile> = Vec::new();
     for event in &map.events.events {
         let color = event_color(event);
         if !event.cells.is_empty() {
@@ -116,32 +121,76 @@ pub fn draw(
         }
         // The labels stay inside the canvas, one under the other.
         let area = painter.clip_rect().shrink(JUMP_MARGIN);
-        for (place, jump) in event.jumps.iter().enumerate() {
+        for jump in &event.jumps {
             let Some(target) = &jump.to_map else { continue };
             let Ok(exit) = i32::try_from(jump.exit) else {
                 continue;
             };
             let tooltip = jump_tooltip(names.as_ref(), jump);
-            let rect = if on_map {
+            if on_map {
                 let toward = jump_direction(map, mapper, anchor, target, to_screen);
                 let tip = area.clamp(anchor + toward * JUMP_ARROW);
                 painter.arrow(anchor, tip - anchor, Stroke::new(1.5, colors::JUMP));
-                let at = tip + egui::vec2(0.0, place as f32 * STACK_GAP);
-                crate::canvas::label_at(painter, at, &text::jump_label(jump), colors::JUMP)
+                let label = text::jump_label(jump);
+                match piles
+                    .iter_mut()
+                    .find(|pile| pile.tip.distance(tip) <= PILE_RADIUS)
+                {
+                    Some(pile) => pile.jumps.push((label, target.clone(), exit, tooltip)),
+                    None => piles.push(Pile {
+                        tip,
+                        jumps: vec![(label, target.clone(), exit, tooltip)],
+                    }),
+                }
             } else {
                 stacked += 1;
                 let at = to_screen(Vec2::ZERO) + egui::vec2(24.0, stacked as f32 * STACK_GAP);
-                crate::canvas::label_left(painter, at, &text::jump_label(jump), colors::JUMP)
-            };
-            hits.push(JumpHit {
-                rect,
-                map: target.clone(),
-                exit,
-                tooltip,
-            });
+                let rect =
+                    crate::canvas::label_left(painter, at, &text::jump_label(jump), colors::JUMP);
+                hits.push(JumpHit {
+                    rect,
+                    map: target.clone(),
+                    exit,
+                    tooltip,
+                });
+            }
         }
     }
+    // The map changes whose arrows end at one point show as one label with their count.
+    for pile in piles {
+        let labels: Vec<&str> = pile
+            .jumps
+            .iter()
+            .map(|(label, ..)| label.as_str())
+            .collect();
+        let rect =
+            crate::canvas::label_at(painter, pile.tip, &text::jump_pile(&labels), colors::JUMP);
+        let (_, map, exit, _) = &pile.jumps[0];
+        let tooltip = if pile.jumps.len() == 1 {
+            pile.jumps[0].3.clone()
+        } else {
+            pile.jumps
+                .iter()
+                .take(MOST_PILE_LINES)
+                .map(|(label, _, _, tooltip)| format!("{label}\n{tooltip}"))
+                .chain((pile.jumps.len() > MOST_PILE_LINES).then(|| "…".to_owned()))
+                .collect::<Vec<_>>()
+                .join("\n\n")
+        };
+        hits.push(JumpHit {
+            rect,
+            map: map.clone(),
+            exit: *exit,
+            tooltip,
+        });
+    }
     hits
+}
+
+/// Map change labels whose arrows end at one point: each one's label, map, exit and tooltip.
+struct Pile {
+    tip: Pos2,
+    jumps: Vec<(String, String, i32, String)>,
 }
 
 /// The badge of an NPC's talk section, beside its marker; returns where the marker is.

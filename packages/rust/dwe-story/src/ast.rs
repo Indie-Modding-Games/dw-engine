@@ -93,10 +93,19 @@ pub enum TableField {
 }
 
 /// A statement and the comment at the end of its line.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Stmt {
     pub kind: StmtKind,
     pub comment: Option<String>,
+    /// The line it starts on in the code it was read from (from 1); 0 when made, not read. Not
+    /// part of what the statement is: two statements on other lines are equal.
+    pub line: usize,
+}
+
+impl PartialEq for Stmt {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind && self.comment == other.comment
+    }
 }
 
 impl Stmt {
@@ -104,6 +113,7 @@ impl Stmt {
         Self {
             kind,
             comment: None,
+            line: 0,
         }
     }
 
@@ -111,6 +121,7 @@ impl Stmt {
         Self {
             kind,
             comment: Some(comment.into()),
+            line: 0,
         }
     }
 }

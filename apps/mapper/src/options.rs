@@ -16,6 +16,7 @@ Usage: dwe-mapper [options]
   --exit <n>           with --map: centre on where the player arrives through that exit
   --section <s>:<n>    with --map: opens section n (0x.. or decimal) of script s in the
                        section editor
+  --timeline           with --section: shows the section's timeline
   --variant <name>     the background: day, dusk, night...
   --layers <list>      the layers shown, by comma: walls,triggers,exits,npcs,waypoints,doors,
                        toilet,grid,live,events (default: all but grid)
@@ -35,6 +36,8 @@ pub struct Options {
     pub exit: Option<i32>,
     /// A section to open in the section editor: (script, section).
     pub section: Option<(u16, u16)>,
+    /// Shows the section's timeline.
+    pub timeline: bool,
     pub variant: Option<String>,
     pub layers: Option<Vec<Layer>>,
     pub group_by: Option<GroupBy>,
@@ -54,6 +57,7 @@ impl Default for Options {
             map: None,
             exit: None,
             section: None,
+            timeline: false,
             variant: None,
             layers: None,
             group_by: None,
@@ -132,6 +136,7 @@ impl Options {
                         .ok_or_else(|| format!("--size {text} is not <w>x<h>, at least 320x240"))?;
                 }
                 "--shot" => options.shot = Some(value()?.into()),
+                "--timeline" => options.timeline = true,
                 other => return Err(format!("unknown option '{other}'")),
             }
         }
@@ -191,7 +196,7 @@ mod tests {
     #[test]
     fn reads_every_option() {
         let options = parse(
-            "--content c --mods m1 --mods m2 --map area_a --exit 2 --section 12:0x33 --variant night \
+            "--content c --mods m1 --mods m2 --map area_a --exit 2 --section 12:0x33 --timeline --variant night \
              --layers walls,exits --group-by prefix --filter ar --live tcp:7000 --size 800x600 --shot s.png",
         )
         .unwrap();
@@ -199,6 +204,7 @@ mod tests {
         assert_eq!(options.mods.len(), 2);
         assert_eq!(options.exit, Some(2));
         assert_eq!(options.section, Some((12, 0x33)));
+        assert!(options.timeline);
         assert!(parse("--section 12").is_err());
         assert_eq!(options.layers, Some(vec![Layer::Walls, Layer::Exits]));
         assert_eq!(options.group_by, Some(GroupBy::Prefix));

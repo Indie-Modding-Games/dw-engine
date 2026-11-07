@@ -147,7 +147,10 @@ impl Parser {
             }
             // A comment after code that no statement took (after `then`, say) lands here too, so
             // it is not lost.
-            block.push(Stmt::new(StmtKind::Comment(comment.text.clone())));
+            block.push(Stmt {
+                line: comment.line,
+                ..Stmt::new(StmtKind::Comment(comment.text.clone()))
+            });
             self.next_comment += 1;
         }
     }
@@ -176,9 +179,14 @@ impl Parser {
                 // Comments before the closing keyword on their own lines belong here.
                 break;
             }
+            let line = self.peek().line;
             let kind = self.statement()?;
             let comment = self.trailing_comment();
-            block.push(Stmt { kind, comment });
+            block.push(Stmt {
+                kind,
+                comment,
+                line,
+            });
             self.accept_symbol(";");
         }
         Ok(block)

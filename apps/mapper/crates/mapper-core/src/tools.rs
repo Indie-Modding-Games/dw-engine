@@ -87,6 +87,8 @@ pub enum Drag {
     Turn(Selection),
     /// Pans the view; the pointer's last canvas point.
     Pan { last: Vec2 },
+    /// Moves where the timeline's statement being dragged goes (`Timeline::dragging`).
+    Cue,
 }
 
 /// The cells a brush of `size` covers around a cell.

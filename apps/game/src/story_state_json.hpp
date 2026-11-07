@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/game/story/section_host.hpp>
+#include <dwe/game/story/story_runner.hpp>
 #include <dwe/game/story/story_state.hpp>
 
 #include <glm/vec2.hpp>
@@ -32,10 +33,10 @@ struct StoryStateView {
   std::string map;
   game::story::StoryState state;
   // A script runs or is about to (StoryRunner::busy), the map's script set_script set up, and the
-  // sections running now, the first requested first.
+  // sections running now, the first requested first, with the lines of code they stand at.
   bool busy = false;
   std::optional<std::uint16_t> mapScript;
-  std::vector<game::story::SectionRef> sections;
+  std::vector<game::story::StoryRunner::RunningSectionLines> sections;
   // The story lock's stage (session::StoryLock), empty when none.
   std::string stage;
   // None while no map is shown.
@@ -44,8 +45,8 @@ struct StoryStateView {
 
 // The view as one JSON object: {"map", "triggers": the set ones, ascending, "variables": the
 // non-zero ones by number ({"12": 3}), "script": {"busy", "map_script", "sections": [{"script",
-// "section"}]}, "stage", "camera": {"eye", "target", "focal_length", "background", "viewport",
-// "scale", "scroll"}}. Absent values are null.
+// "section", "lines": the innermost first}]}, "stage", "camera": {"eye", "target", "focal_length",
+// "background", "viewport", "scale", "scroll"}}. Absent values are null.
 std::string storyStateJson(const StoryStateView& view);
 
 } // namespace dwe::app

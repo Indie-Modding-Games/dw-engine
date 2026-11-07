@@ -50,6 +50,7 @@ constexpr std::array Commands{
     CommandName{"preview_clear", Kind::PreviewClear},
     CommandName{"log_tail", Kind::LogTail},
     CommandName{"story_set", Kind::StorySet},
+    CommandName{"story_run", Kind::StoryRun},
 };
 
 // A press with no length holds its keys for a tenth of a second.
@@ -108,6 +109,38 @@ core::Result<std::uint64_t> wholeField(const JsonValue& value, std::string_view 
     return core::fail(std::format("'{}' must be a whole number from 0 to {}", key, last));
   }
   return static_cast<std::uint64_t>(*number);
+}
+
+// story_run: {"script": 12, "section": 81, "code": "...", "pack": "my_mod"}; code and pack may be
+// missing or null.
+core::Result<StoryRun> storyRunField(const JsonValue& request) {
+  constexpr double LastNumber = 65535.0;
+  StoryRun run;
+  for (const auto& [key, value] :
+       {std::pair<std::string_view, std::uint16_t*>{"script", &run.script},
+        std::pair<std::string_view, std::uint16_t*>{"section", &run.section}}) {
+    const JsonValue* field = request.find(key);
+    if (field == nullptr) {
+      return core::fail(std::format("'{}' is missing", key));
+    }
+    auto number = wholeField(*field, key, LastNumber);
+    if (!number) {
+      return std::unexpected{number.error()};
+    }
+    *value = static_cast<std::uint16_t>(*number);
+  }
+  for (const auto& [key, value] :
+       {std::pair<std::string_view, std::optional<std::string>*>{"code", &run.code},
+        std::pair<std::string_view, std::optional<std::string>*>{"pack", &run.pack}}) {
+    if (const JsonValue* field = request.find(key); field != nullptr && !field->isNull()) {
+      auto text = textField(request, key);
+      if (!text) {
+        return std::unexpected{text.error()};
+      }
+      *value = std::move(*text);
+    }
+  }
+  return run;
 }
 
 // story_set: {"kind": "trigger", "number": 12, "value": true} or {"kind": "var", "number": 3,
@@ -350,6 +383,12 @@ core::Result<ControlRequest> requestFrom(const JsonValue& request) {
     auto write = storyWriteField(request);
     read = write ? core::Result<void>{} : std::unexpected{write.error()};
     out.story = write.value_or(StoryWrite{});
+    break;
+  }
+  case Kind::StoryRun: {
+    auto run = storyRunField(request);
+    read = run ? core::Result<void>{} : std::unexpected{run.error()};
+    out.run = run.value_or(StoryRun{});
     break;
   }
   case Kind::Live:
@@ -783,6 +822,20 @@ void RemoteControl::handle(std::uint64_t client, const std::string& id,
                       request.story.number,
                       trigger ? std::string{request.story.value != 0 ? "true" : "false"}
                               : std::to_string(request.story.value)));
+    return;
+  }
+  case Kind::StoryRun: {
+    if (!host_.storyRun) {
+      fail(client, id, "story_run: this game has no story to run");
+      return;
+    }
+    if (auto ran = host_.storyRun(request.run); !ran) {
+      fail(client, id, std::format("story_run: {}", ran.error().message));
+      return;
+    }
+    reply(client, id,
+          std::format(R"(,"script":{},"section":{},"sent":{})", request.run.script,
+                      request.run.section, request.run.code ? "true" : "false"));
     return;
   }
   }

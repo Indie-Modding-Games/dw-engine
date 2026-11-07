@@ -37,6 +37,9 @@ public:
   // it again.
   core::Result<ScriptModule> loadModule(const assets::VirtualFileSystem& files,
                                         const assets::AssetId& id);
+  // A module from source that no file holds (a tool sent it); `name` names it in errors and is
+  // its chunk's name.
+  core::Result<ScriptModule> loadModuleSource(std::string_view source, std::string_view name);
 
 private:
   detail::VmState* vm_;

@@ -144,6 +144,25 @@ El [editor de mapas](../modulos/apps/mapper.md#eventos) escribe estos parches po
 Si el cambio añade o mueve un `story.warp_to`, vuelve a sacar `field/script_warps` con `dwx script-warps` (el editor
 lo hace solo si sabe dónde está `dwx`, en «Archivo → Ajustes…»). Antes de publicar, `dwx validate` sobre el mod.
 
+## Editar escenas con la línea de tiempo
+
+Una escena (el jugador anda, la cámara le sigue, alguien habla) se edita mejor en el tiempo que línea a línea. En el
+editor de sección, «Línea de tiempo» abre la [sección como pistas](../modulos/apps/mapper.md#secuencias): una por
+personaje, la cámara, los textos, el sonido, las esperas y el resto del estado.
+
+1. Mueve el cursor por la regla para ver a cada uno en el mapa donde estaría en ese cuadro (20 por segundo). Los
+   bloques con rayas son estimados: el editor no sabe cuánto tarda el jugador en leer un texto ni cuánto dura una
+   animación.
+2. Cambia la escena: arrastra el rombo del final de un movimiento en el mapa para cambiar adónde va, el borde de un
+   `delay` para alargarlo, «Antes» y «Después» para cambiar el orden, o añade órdenes en el cursor (clic derecho en el
+   mapa: «Andar aquí», «Cámara aquí»). Recuerda que andar no espera: si lo que sigue tiene que esperar a que llegue,
+   hace falta un `wait_for_entity`.
+3. Ctrl+Z deshace cada paso; Ctrl+S guarda la sección en el parche del paquete, como cualquier otra edición.
+4. Con el juego conectado, «Reproducir» arranca la sección guardada y «Reproducir desde aquí» la arranca en la orden
+   elegida, con todos colocados donde estarían, sin guardar nada. Pausa y «+1 cuadro» para ir despacio; «Seguir al
+   juego» lleva el cursor a la orden por la que va. Si el desvío entre el juego y el modelo es grande, mira el
+   bloque estimado de antes.
+
 ## Nombres de disparadores y variables
 
 La historia trabaja con números (disparadores 0–799, variables 0–255). `story/names.yaml` del paquete `game` da una
