@@ -74,10 +74,10 @@ constexpr int StableFrames = 5;
 
 // The other documents menu_select picks from while they are open: the battle screen, the partner's
 // menu, free exploration's chooser, the title screen's slot list, the save dialog, the sleep
-// menu, the shop and the item keeper.
-constexpr std::array<std::string_view, 9> ScreenDocuments{
-    "partner_menu", "battle",    "destination_choice", "dialog",        "save_slots",
-    "sleep_menu",   "shop_menu", "item_keeper",        "new_game_rules"};
+// menu, the shop, the item keeper and the new game's rules and mode.
+constexpr std::array<std::string_view, 10> ScreenDocuments{
+    "partner_menu", "battle",    "destination_choice", "dialog",         "save_slots",
+    "sleep_menu",   "shop_menu", "item_keeper",        "new_game_rules", "new_game_mode"};
 
 // The menu menu_select picks from: the pause menu while it is open (over the title too, as its
 // options), then the main menu, then the battle screen or the partner's menu; the pause menu when

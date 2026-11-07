@@ -10,6 +10,7 @@
 #include <string_view>
 
 #include "app_flow.hpp"
+#include "new_game_mode.hpp"
 #include "options.hpp"
 #include "save_flow.hpp"
 
@@ -18,6 +19,7 @@ namespace dwe::app {
 inline constexpr std::string_view SaveSlotsDocument = "save_slots";
 inline constexpr std::string_view DialogDocument = "dialog";
 inline constexpr std::string_view NewGameRulesDocument = "new_game_rules";
+inline constexpr std::string_view NewGameModeDocument = "new_game_mode";
 
 // The title screen with no game: the main menu, the slot lists and their dialogs, shown and hidden
 // by the game as SaveFlow decides (docs/architecture/guardar-y-cargar.md, 3.4 and 3.5), and the
@@ -44,8 +46,9 @@ public:
   // menu's script says with title_landing: only there does the boot movie come back on its own.
   [[nodiscard]] bool landing() const { return landing_; }
 
-  // Whether a new game first asks its rules (ui/new_game_rules): always for the player; a test
-  // route only when it says so (new_game_rules), the others start with the command line's ruleset.
+  // Whether a new game first asks its mode (ui/new_game_mode, only when the packs have more than
+  // one) and its rules (ui/new_game_rules): always for the player; a test route only when it says
+  // so (new_game_rules), the others start the original's story with the command line's ruleset.
   void setAsksRules(bool asks) { asksRules_ = asks; }
 
   // The game a command chose to start, once.
@@ -63,16 +66,20 @@ private:
   void showDialog(const SaveDialog& dialog);
   // Back from a dialog that started nothing: to the list, or to the main menu without one.
   void back();
-  // A chosen game starts, or a new one asks its rules first.
+  // A chosen game starts, or a new one asks its mode and rules first.
   void startOrAskRules(std::optional<PlayStart> start);
+  // The new game waiting goes on in a mode: it asks its rules, or starts.
+  void chooseMode(std::string_view mode);
+  void showRules();
 
   ui::Ui* ui_;
   std::unique_ptr<game::save::DiskSaveStorage> storage_;
   std::optional<game::save::SaveSlots> slots_;
   SaveFlow flow_;
   std::optional<PlayStart> start_;
-  // The new game waiting for its rules.
+  // The new game waiting for its mode or its rules.
   std::optional<PlayStart> pending_;
+  NewGameModes modes_;
   bool asksRules_ = true;
   // Whether the packs have the ruleset with the Mega step, which the rules offer.
   bool megaOffered_ = false;

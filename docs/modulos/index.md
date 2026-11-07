@@ -44,6 +44,7 @@ capas y lo que puede usar cada una están en las [reglas de dependencias](../arc
 | [curling](game/curling.md) | El juego de las piedras sobre el hielo: deslizamiento, choques, puntos y el rival |
 | [story](game/story.md) | El estado de la historia y el runtime de los scripts de eventos |
 | [save](game/save.md) | Partidas guardadas versionadas, ranuras y autoguardado |
+| [modes](game/modes.md) | Los modos de juego: el manifiesto `mode.yaml` y el catálogo de los paquetes |
 
 ## Librerías compartidas (`packages/`)
 

@@ -1,0 +1,7 @@
+/* How the new game's mode list behaves whatever the skin: the list wraps around. The look is the pause menu's (the skins'
+   pause_menu style). */
+
+#mode-1 { nav-up: #back; }
+#back { nav-down: #mode-1; }
+#title { margin-bottom: 6dp; }
+.about { margin: 6dp 0 12dp 18dp; }

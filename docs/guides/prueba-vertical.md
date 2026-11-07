@@ -309,6 +309,16 @@ for lang in en es; do
         --autotest tests/autotest/route-mod-map.yaml --shots <capturas>/$lang
 done
 ```
+- `route-game-modes.yaml`: con un segundo modo montado ([`tests/mods/game_mode`](../modulos/tests/mods.md)), la
+  partida nueva pregunta el modo; «Historia original» sigue a la pantalla de reglas y «Práctica» empieza sin ella.
+  Necesita una carpeta de partidas vacía. Se corre en los dos idiomas:
+
+```sh
+for lang in en es; do
+    scripts/dev.sh run --content <carpeta> --mods tests/mods/game_mode --saves <carpeta vacía> --lang $lang \
+        --autotest tests/autotest/route-game-modes.yaml --shots <capturas>/$lang
+done
+```
 - `route-etapa2.yaml` y `route-etapa2-jungla.yaml`: la Etapa 2 de la historia, con el candado tal como sale (la
   etapa activa del ruleset es la 2: la jungla y el túnel abiertos, la etapa 3 y siguientes cerradas) y una partida
   sembrada que empieza en el mapa de cada mitad. La del Drill Tunnel (`--start tunn06`) evoluciona al compañero a Champion, habla con el minero, ve rodar la
@@ -761,7 +771,7 @@ En Windows no hay contenedor: los mismos pasos con `dwx` del build de Windows
 
 Un gate corre, sobre el tip exacto, en Xvfb con lavapipe y con `--skip-steps fullscreen`:
 
-- [ ] Todas las rutas de `tests/autotest/route-*.yaml` (hoy 126) sobre el contenido extraído, en `en` y en `es`. `route-dev-assets` con `--dev-assets`, `route-mod-map` con `--mods tests/mods/example_mod`,
+- [ ] Todas las rutas de `tests/autotest/route-*.yaml` (hoy 126) sobre el contenido extraído, en `en` y en `es`. `route-dev-assets` con `--dev-assets`, `route-mod-map` con `--mods tests/mods/example_mod`, `route-game-modes` con `--mods tests/mods/game_mode`,
   `route-skins` con `--mods tests/mods/ui_skin` y la pareja `route-save-load` → `route-save-load-check` con una
   carpeta de partidas propia.
 - [ ] `check-full` con `DWE_CONTENT` (paso `cook-content`, desde cero en `build/gate-cooked`) con `0 problems` en

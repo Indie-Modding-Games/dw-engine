@@ -23,6 +23,7 @@ using core::YamlNode;
 using messages::formatMessage;
 
 constexpr std::string_view ElapsedFramesKey = "elapsed_frames";
+constexpr std::string_view ModeIdKey = "id";
 constexpr std::string_view PendingFramesKey = "pending_frames";
 constexpr std::string_view LevelKey = "level";
 constexpr std::string_view RaisedKey = "raised";
@@ -282,6 +283,30 @@ core::Result<void> RandomSave::read(const YamlNode& state) {
   return {};
 }
 
+core::Result<YamlNode> ModeSave::write() const {
+  YamlNode node = YamlNode::mapping();
+  node.set(std::string{ModeIdKey}, YamlNode::scalar(state_->mode));
+  return node;
+}
+
+core::Result<void> ModeSave::read(const YamlNode& state) {
+  YamlReader reader;
+  if (!reader.expectKeys(state, messages::ModeStateText, {ModeIdKey})) {
+    return std::unexpected{reader.error(messages::ModeStateText)};
+  }
+  std::string mode = reader.text(reader.field(state, ModeIdKey));
+  if (auto done = reader.finish(true, messages::ModeStateText); !done) {
+    return std::unexpected{done.error()};
+  }
+  state_->mode = std::move(mode);
+  return {};
+}
+
+core::Result<void> ModeSave::readMissing() {
+  state_->mode = std::string{game::modes::OriginalMode};
+  return {};
+}
+
 core::Result<void> SessionSerializers::addTo(game::save::SaveSections& sections) {
   for (auto& [name, serializer, migrations] :
        {SectionEntry{.name = ClockName, .serializer = &clock, .migrations = {}},
@@ -289,8 +314,8 @@ core::Result<void> SessionSerializers::addTo(game::save::SaveSections& sections)
             .name = PartnerName, .serializer = &partner, .migrations = partnerMigrations()},
         SectionEntry{.name = TamerName, .serializer = &tamer, .migrations = {}},
         SectionEntry{.name = FieldName, .serializer = &field, .migrations = {}},
-        SectionEntry{
-            .name = RandomName, .serializer = &random, .migrations = randomMigrations()}}) {
+        SectionEntry{.name = RandomName, .serializer = &random, .migrations = randomMigrations()},
+        SectionEntry{.name = ModeName, .serializer = &mode, .migrations = {}}}) {
     if (auto added = sections.add(std::string{name}, *serializer, migrations); !added) {
       return added;
     }

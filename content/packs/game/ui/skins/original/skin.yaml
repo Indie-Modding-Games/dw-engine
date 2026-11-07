@@ -41,6 +41,9 @@ screens:
   # Las reglas de la partida nueva (contenido oculto, paso Ultra → Mega), también.
   new_game_rules:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/new_game_rules/style]
+  # El modo de la partida nueva (solo con más de un modo), con la caja de las reglas.
+  new_game_mode:
+    styles: [ui/skins/original/pause_menu/style, ui/skins/original/new_game_rules/style]
   sleep_menu:
     styles: [ui/skins/original/pause_menu/style]
   item_keeper:
@@ -138,6 +141,8 @@ document_classes:
   dialog:
     panel: [skin-original]
   new_game_rules:
+    panel: [skin-original]
+  new_game_mode:
     panel: [skin-original]
   sleep_menu:
     panel: [skin-original]

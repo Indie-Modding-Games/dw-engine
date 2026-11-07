@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/game/field/field.hpp>
+#include <dwe/game/modes/game_mode.hpp>
 #include <dwe/game/partner/partner.hpp>
 #include <dwe/game/partner/rules.hpp>
 #include <dwe/game/partner/species.hpp>
@@ -53,6 +54,8 @@ struct SessionState {
   // movie, and continues on `clearedMap` when the ending's save named one.
   bool cleared = false;
   std::optional<std::string> clearedMap;
+  // The game mode the playthrough plays (packages/game/modes), saved in its own section.
+  std::string mode{game::modes::OriginalMode};
   const game::field::Field* field = nullptr;
 };
 

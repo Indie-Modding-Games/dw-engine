@@ -49,3 +49,9 @@ aspecto `modern` y su `theme.rcss` cambia los colores en todas las pantallas, co
 idiomas (`localization/<idioma>/test_contrast.yaml`). Prueba que un mod añade un aspecto sin tocar el motor. Lo usan
 `packages/engine/ui/tests/skin_switch_tests.cpp`, los tests de los ajustes de aspecto de `apps/game` y la ruta
 `tests/autotest/route-skins.yaml`.
+
+## `game_mode/practice_mode`
+
+Un mod sintético que solo añade un modo de juego, `practice` («Práctica»), con las reglas del original
+(`modes/practice/mode.yaml`) y sus textos en español e inglés. Con él montado la partida nueva enseña la lista de
+modos ([modes](../game/modes.md)); lo usa `route-game-modes.yaml` (`--mods tests/mods/game_mode`).

@@ -1,0 +1,3 @@
+# The test mode of tests/mods/game_mode.
+name: "Practice"
+description: "The original's rules, with no hidden content to choose: a test mode."

@@ -30,6 +30,9 @@ screens:
   # Las reglas de la partida nueva (contenido oculto, paso Ultra → Mega), también.
   new_game_rules:
     styles: [ui/skins/modern/pause_menu/style]
+  # El modo de la partida nueva (solo con más de un modo), también.
+  new_game_mode:
+    styles: [ui/skins/modern/pause_menu/style]
   sleep_menu:
     styles: [ui/skins/modern/pause_menu/style]
   # La máquina de guardado: las cajas del original donde el original las dibuja (main_menu.c: renderMenuBox).

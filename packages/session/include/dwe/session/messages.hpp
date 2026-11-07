@@ -62,6 +62,7 @@ inline constexpr std::string_view ClockStateText = "the clock state";
 inline constexpr std::string_view TamerStateText = "the tamer state";
 inline constexpr std::string_view FieldStateText = "the field state";
 inline constexpr std::string_view RandomStateText = "the random state";
+inline constexpr std::string_view ModeStateText = "the mode section";
 inline constexpr std::string_view NotAFraction = "'{}' is not a fraction of a frame";
 inline constexpr std::string_view NotARandomState = "'{}' is not a random state";
 inline constexpr std::string_view MissingRandomKey = "the random state has no '{}'";

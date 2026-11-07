@@ -1533,6 +1533,13 @@ comas; vacía sin él). Una casilla que no cabe en la rejilla de su caja (las de
 contenido oculto) pasa a una página siguiente del árbol ([etapas canónicas](#etapas-canónicas)).
 Una forma nueva usa el icono de otra especie con otra paleta hasta que haya iconos propios.
 
+**Modo de juego.** Antes de las reglas, `TitleScreen` pregunta el modo (`ui/new_game_mode`, `NewGameModes` en
+`new_game_mode.hpp`) solo si los paquetes traen más de uno ([modes](../game/modes.md)); el juego trae solo
+«Historia original», así que no sale. Publica `new_game_mode.count` y `new_game_mode.<n>.id`, `name` y `description`
+y recibe `new_game_mode` con el id o `new_game_mode_back`. El modo elegido va a `PlayStart::modeId` y a la sesión
+(`SessionDesc::modeId`, sección `mode` del guardado). Las reglas salen después solo para un modo que admite
+`original` y `oculto`; otro modo empieza con su `ruleset`.
+
 Las rutas de prueba solo ven esta pantalla si lo piden (`new_game_rules: true`); las demás empiezan con las reglas
 del original, como antes. `route-hidden-content.yaml` elige el contenido oculto y hace evolucionar al compañero a
 cada forma nueva; `route-hidden-content-off.yaml` deja el original y comprueba que todo sigue igual

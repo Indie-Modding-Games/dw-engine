@@ -111,3 +111,5 @@ schemas:
     - rules/*/difficulty
   sign_overlay:
     - signs/*
+  mode:
+    - modes/*/mode

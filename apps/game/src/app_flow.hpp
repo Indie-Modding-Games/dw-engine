@@ -29,6 +29,9 @@ struct PlayStart {
   // the original with the hidden content); nothing: the command line's --ruleset. A loaded game
   // plays with the ruleset its save records.
   std::optional<std::string> rulesetId = std::nullopt;
+  // The game mode a new game plays, as the new game's mode list chose it (packages/game/modes);
+  // nothing: the original's story. A loaded game plays the mode its save records.
+  std::optional<std::string> modeId = std::nullopt;
 
   friend bool operator==(const PlayStart&, const PlayStart&) = default;
 };

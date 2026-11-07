@@ -330,6 +330,7 @@ core::Result<void> GameSession::startNewGame(const NewGameChoice& choice) {
   state_->savedPlace.reset();
   state_->cleared = false;
   state_->clearedMap.reset();
+  state_->mode = desc_.modeId;
   file_ = {};
   file_.header.created = now();
   homeSlot_.reset();
@@ -550,6 +551,10 @@ const std::optional<FieldPlace>& GameSession::savedPlace() const {
 
 std::optional<FieldPlace> GameSession::currentPlace() const {
   return state_->currentPlace();
+}
+
+const std::string& GameSession::mode() const {
+  return state_->mode;
 }
 
 bool GameSession::gameCleared() const {
