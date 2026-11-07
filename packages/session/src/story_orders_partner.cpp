@@ -179,10 +179,11 @@ core::Result<ApiValue> changeStat(const StoryGameContext& context, std::int64_t 
 }
 
 // script_interp.c:1173 REDUCE_MERIT writes MERIT = -value into a 16-bit count and then stops it at
-// 0: the merit becomes 0 whatever it was (kept as the original does).
+// 0, so the merit became 0 whatever it was; no script of the disc uses it. dwe takes the amount
+// off and stops at 0, as its name says and as a mod's script expects.
 core::Result<ApiValue> reduceMerit(const StoryGameContext& context, std::int64_t amount) {
-  const auto merit = std::max<std::int64_t>(static_cast<std::int16_t>(-amount), 0);
   TamerRecord record = context.game().tamer().record;
+  const auto merit = std::max<std::int64_t>(record.merit - amount, 0);
   core::logDebug("[port:story] reduce_merit (script_interp.c:1173): by {}: {} -> {}", amount,
                  record.merit, merit);
   record.merit = static_cast<std::int32_t>(merit);
