@@ -439,6 +439,9 @@ scripts/dev.sh run --content <carpeta> --load slot_01 --start room06 --story-sta
   leom02`) baja a la cueva (leom01), pasa por la casilla 51 (el jugador mira la cueva, 134) y coge la tablilla de la
   casilla 52 (Leomonstone, 135). `route-etapa3-leomon.yaml` (`--start gias07`) ve el rescate de `species_al` en gias07
   (196), pone la Leomonstone en la bolsa y entra en gias09, donde `species_aj` lee la tablilla y se une (248).
+  `route-etapa3-keychain.yaml` (`--start leom02`) escribe ese 248 (la partida sembrada no ha reclutado a `species_aj`),
+  baja a leom01, donde la cabecera saca entonces al del llavero (hasta su charla, 333), y habla con él (script 109,
+  sección 5): la primera de las cinco charlas de la bolsa (20 huecos, 47; variable 21 a 1).
   `route-etapa3-arena.yaml` (`--start room13`) confirma en el mostrador del vestíbulo de la Arena (casillas 81): la
   bienvenida (91) y, a la segunda, la inscripción, que abre el calendario (rutina 18); el jugador vuelve a quedar
   libre y sale a la ciudad por la puerta (casillas 52). `route-etapa3-tournaments.yaml` (`--start room13`, en y es)
@@ -458,6 +461,8 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start leom02 --la
     --autotest tests/autotest/route-etapa3-leomon-tablet.yaml --shots <capturas>/etapa3
 scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start gias07 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa3-leomon.yaml --shots <capturas>/etapa3
+scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start leom02 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa3-keychain.yaml --shots <capturas>/etapa3
 scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start room13 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa3-arena.yaml --shots <capturas>/etapa3
 scripts/dev.sh run --content <carpeta> --story-stage stage_3 --start room13 --lang es --seed 1 \
@@ -583,9 +588,17 @@ done
   `route-etapa8-final.yaml` (con `movies: true`) gana al jefe final (disparador 50), llega a tend02 (con 50 puntos o
   más), dice que sí al guardado de fin de juego, ve los créditos y vuelve a la portada. `route-etapa9-huevo.yaml` y
   `route-etapa9-back.yaml` cargan esa partida terminada: el huevo y `species_az` en la cima (256), y la Back Dimension
-  de frzl05 por mgen11, mgen12 y mgen13 hasta icsa08. `route-etapa8-lock.yaml` (`--start frzl05`) pisa la entrada a
-  la Back Dimension con la etapa 8: el cambio de mapa del script no ocurre, sale el aviso y el jugador sigue en frzl05
-  (la casilla no vuelve a lanzar su sección hasta que el jugador sale de ella).
+  de frzl05 por mgen11, mgen12 y mgen13 hasta icsa08. `route-etapa9-back-mansion.yaml` (`--start dgha02`, variable 16
+  = 2) y `route-etapa9-back-canyon.yaml` (`--start gcan06`, variable 16 = 3) entran por las otras dos puertas (la del
+  cañón pone también el disparador 200: sin él, el guardián de gcan05 sigue en el paso a la casilla 51), cruzan
+  mgen11 a mgen13 y salen a chka01 u ogre02, cuya sección de llegada (0x3c) es el combate con el jefe del final:
+  ganado, pone 202, la variable 16 vuelve a 0 y el jugador acaba en la ciudad. `route-etapa9-back-again.yaml`
+  (`--start room08`) sigue desde ahí: el anciano da el premio (215) y, veinte días después (variable 28), la ciudad
+  sortea otra puerta (script 162: borra 202 y 215 y pone la variable 16 a 1, 2 o 3) para el segundo combate; pone el
+  disparador 203 para que la puerta del anciano lleve a la ciudad ya crecida (twna02 a twna13), donde está ese
+  sorteo. `route-etapa8-lock.yaml` (`--start frzl05`) pisa la entrada a la Back Dimension con la etapa 8: el cambio
+  de mapa del script no ocurre, sale el aviso y el jugador sigue en frzl05 (la casilla no vuelve a lanzar su sección
+  hasta que el jugador sale de ella).
 
 ```sh
 scripts/dev.sh run --content <carpeta> --story-stage stage_8 --start room08 --saves <partidas> --lang en --seed 1 \
@@ -600,6 +613,12 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_9 --saves <copia de p
     --start mgen99 --lang en --seed 1 --autotest tests/autotest/route-etapa9-huevo.yaml --shots <capturas>/etapa9
 scripts/dev.sh run --content <carpeta> --story-stage stage_9 --saves <copia de partidas> --load slot_01 \
     --start frzl05 --lang en --seed 1 --autotest tests/autotest/route-etapa9-back.yaml --shots <capturas>/etapa9
+scripts/dev.sh run --content <carpeta> --story-stage stage_9 --start dgha02 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa9-back-mansion.yaml --shots <capturas>/etapa9
+scripts/dev.sh run --content <carpeta> --story-stage stage_9 --start gcan06 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa9-back-canyon.yaml --shots <capturas>/etapa9
+scripts/dev.sh run --content <carpeta> --story-stage stage_9 --start room08 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa9-back-again.yaml --shots <capturas>/etapa9
 ```
 
 #### La cadena completa
@@ -838,5 +857,6 @@ fase 4:
 | `learn_move("<técnica> [hueco]")` | El compañero aprende esa técnica (y las que vienen con ella) como en el entrenamiento de inteligencia y, con un hueco de 0 a 3, la equipa ahí (`learn_move("meltdown 0")`), para ver una técnica que aún no sabe |
 | `clock_speed("<multiplicador>")` | Acelera el reloj: 1 es un minuto de juego por segundo real, 600 son diez horas |
 | `hd_scenery("on"\|"off")` | Enciende o apaga los escenarios en alta definición, como su fila de opciones (y lo guarda igual) |
+| `battle_speed("normal"\|"key"\|"fast")` | Cambia la velocidad de los combates, como su fila de opciones «Combates rápidos» (y la guarda igual) |
 | `model_characters("on"\|"off")` | Enciende o apaga los personajes en 3D para la partida (no lo guarda) |
 | `save("slot_NN")` | Guarda la partida en ese hueco manual (`save("slot_01")`), hasta que exista la pantalla de guardar; los autoguardados antiguos (`autosave_NN`) no se escriben nunca. Un autotest solo guarda con `--saves` |

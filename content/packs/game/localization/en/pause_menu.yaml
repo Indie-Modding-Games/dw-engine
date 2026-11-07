@@ -92,6 +92,8 @@ name_spacing: "Space after names"
 # Continuous music: a map whose song is already playing lets it go on instead of starting it again
 # (on by default).
 continuous_music: "Continuous music"
+# Reverb: the sound chip's reverb on the tones that ask for it, as the original (on by default).
+reverb: "Reverb"
 # Several needs: the bubble over the partner shows up to three of its needs at once, the most urgent first (on by
 # default; off, the original's: one at a time, the two most urgent taking turns).
 need_bubble_stack: "Several needs"
@@ -174,6 +176,14 @@ shadows: "Shadows"
 shadows.sun: "Sun"
 shadows.round: "Round"
 shadows.off: "Off"
+scenery_quality: "Scenery quality"
+scenery_quality.upscaled: "Upscaled"
+scenery_quality.smooth: "Smooth"
+antialiasing: "Antialiasing"
+texture_filter: "Model textures"
+texture_filter.upscaled: "Upscaled"
+texture_filter.smooth: "Smooth"
+texture_filter.nearest: "Pixels"
 enhanced_lighting: "Enhanced lighting"
 vivid_colors: "Vivid colours"
 
@@ -191,6 +201,16 @@ tag.original: "As the original"
 hint.tabs: "Tab"
 hint.change: "Change"
 options_reset: "Reset to defaults"
+# Enemy life bars: a bar over every enemy still standing for the whole fight, cups too (off by default: the original's,
+# a wild enemy's a while after it is hit and none in a cup).
+enemy_hp_bars: "Enemy life bars"
+# Gym sessions: how many sessions in a row a gym course runs (1, the original's, by default).
+gym_sessions: "Gym sessions"
+# Quick battles: fights at twice the speed, switched with R (the right trigger on a pad) or always (off by default).
+battle_speed: "Quick battles"
+battle_speed.normal: "Off"
+battle_speed.key: "With R"
+battle_speed.fast: "Always"
 # {tab} is the tab's name.
 reset_question: "Reset the {tab} options?"
 reset_note: "Window mode, look, language and font stay."
@@ -205,11 +225,17 @@ help.long_names: "Names take up to twelve letters instead of the original's six.
 help.evolution_requirements: "The evolution chart tells what each target needs and how your partner is doing."
 help.canonical_stages: "The chart names the stages as the series does and adds a Mega box."
 help.rare_items: "Some item spots may hide a rare evolution item. Needs the hidden content."
+help.battle_speed: "Fights run at twice the speed, always or switched with R (right trigger). Same results."
+help.enemy_hp_bars: "A life bar over every enemy for the whole fight, cups too. Off: only a while after a hit."
+help.gym_sessions: "A gym course trains this many sessions in a row. Stops if you cancel or your partner needs something."
 help.status_extras: "The status page shows tiredness, mistakes, battles, waking hours, lifetime and evolution."
 help.display_mode: "Play in a window or full screen."
 help.vsync: "Syncs the frames with the display so the picture does not tear."
 help.smooth_motion: "Characters and the camera glide between the original's frames."
 help.hd_scenery: "The scenery is drawn sharp at the window's resolution. Only the look changes."
+help.scenery_quality: "With HD scenery: upscaled once per map (sharper) or only smoothed."
+help.antialiasing: "Smooths the edges of the 3D models."
+help.texture_filter: "The models' textures in the field, in battle and in the menus: upscaled, smoothed or the original's pixels."
 help.model_characters: "The characters some places show as flat pictures are drawn with their 3D models. Only the look changes."
 help.enhanced_lighting: "The time of day tints the scene, and lamps and fires light what is near them."
 help.vivid_colors: "Richer colour, a gentle contrast and a glow on bright spots. Menus never change."
@@ -220,6 +246,7 @@ help.seasons: "Spring, summer, autumn and winter colour the outdoors every few d
 help.music_volume: "Volume of the music and the movies' sound. 10 is the original's level."
 help.effects_volume: "Volume of the effects and the menus' sounds. 10 is the original's level."
 help.continuous_music: "When the next map has the song already playing, it goes on instead of starting over."
+help.reverb: "The sound chip's room echo on the music and the effects, as the original. Off, everything sounds dry."
 help.ui_skin: "The look of the menus and the HUD: the original's or the modern one."
 help.ui_scale: "The size of the menus and the HUD."
 help.language: "The language of the texts."

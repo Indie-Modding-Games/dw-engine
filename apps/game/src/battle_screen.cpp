@@ -178,6 +178,8 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   const std::string map = request.map;
   std::vector<game::battle::Combatant> introEnemies = request.enemies;
   const session::BattleMusicFacts music = musicFactsOf(request);
+  matchMusic_ = request.matchMusic;
+  matchEndSong_.reset();
   auto battle = desc_.battle->start(*desc_.session, std::move(request));
   if (!battle) {
     return std::unexpected{battle.error()};
@@ -314,6 +316,7 @@ void BattleScreen::tickBattle(double seconds) {
         effects_->setView(effectViewOf(*camera));
       }
       effects_->frame(frame, battle_->moves());
+      ++effectFrames_;
     }
     stepNumbers(frame);
     stepFieldEffects(frame);
@@ -345,7 +348,7 @@ void BattleScreen::showEffects() const {
                        .palettes = effects_->palettesOf(draw.slot)});
     }
   }
-  desc_.scene->setEffects(std::move(shown));
+  desc_.scene->setEffects(std::move(shown), effectFrames_);
   desc_.scene->setMapLayerHidden(battle_ && effects_ && effects_->mapHidden());
 }
 
@@ -526,6 +529,22 @@ void BattleScreen::publishNumbers() const {
 // BTL_renderEnemyHPBars draws, every frame, the bar of each enemy whose bar shows
 // (Battle::hpBarShown) beside where its model's node 1 projects (getEntityScreenPos(entity, 1)), so
 // the bar follows the enemy. BTL_deinitializeCombat takes them all away (BTL_removeEnemyHPBars).
+void BattleScreen::setEnemyHpBars(bool always) {
+  enemyHpBarsAlways_ = always;
+  desc_.ui->setSetting(screens::EnemyHpBarsAlwaysSetting, always);
+  if (battle_) {
+    publishHpBars();
+  }
+}
+
+bool BattleScreen::reacting() const {
+  if (!battle_) {
+    return false;
+  }
+  return battle_->state().finisher.charging || screens::deathCountdownTimerOf(*battle_) ||
+         bagShown_ || thrown_.has_value() || battle_->state().thrownItem.has_value();
+}
+
 void BattleScreen::publishHpBars() {
   std::vector<screens::EnemyHpBar> bars;
   const render::MapCamera* camera = desc_.scene != nullptr ? desc_.scene->camera() : nullptr;
@@ -533,8 +552,13 @@ void BattleScreen::publishHpBars() {
     const double aspect = static_cast<double>(camera->viewportSize().x) /
                           static_cast<double>(camera->viewportSize().y);
     const auto& fighters = battle_->state().fighters;
+    const bool match = battle_->state().matchClock.has_value();
     for (game::battle::FighterId id = 1; id < fighters.size() && id <= enemyNpcs_.size(); ++id) {
-      if (!battle_->hpBarShown(id)) {
+      const game::battle::Fighter& enemy = fighters[id];
+      if (!screens::enemyHpBarShown({.always = enemyHpBarsAlways_,
+                                     .match = match,
+                                     .recentlyHit = battle_->hpBarShown(id),
+                                     .standing = enemy.hp > 0 && !enemy.fainted})) {
         continue;
       }
       const std::optional<glm::vec2> node =
@@ -542,12 +566,11 @@ void BattleScreen::publishHpBars() {
       if (!node) {
         continue;
       }
-      const game::battle::Fighter& fighter = fighters[id];
       bars.push_back(screens::enemyHpBarOf({.enemy = id,
                                             .node = {.x = node->x, .y = node->y},
                                             .aspect = aspect,
-                                            .hp = fighter.hp,
-                                            .maxHp = fighter.stats.maxHp}));
+                                            .hp = enemy.hp,
+                                            .maxHp = enemy.stats.maxHp}));
     }
   }
   // std_main.c: STD_renderPlayerMarker: each mark over node 1 of its fighter, moved right by
@@ -672,6 +695,14 @@ void BattleScreen::tickVictory(double seconds) {
 void BattleScreen::tickMatchEnd(double seconds) {
   if (!matchEndSeconds_ || matchEndHeld_) {
     return;
+  }
+  if (const std::optional<session::MusicSong> song = std::exchange(matchEndSong_, std::nullopt)) {
+    if (session::SessionMusic* music = desc_.session->music(); music != nullptr) {
+      core::logDebug("[port:audio] STD_deinitializeCombat (std_main.c:4561): playMusic(STD_MUSIC "
+                     "{}, {})",
+                     song->font, song->track);
+      music->playSong(*song);
+    }
   }
   if (partnerPosing_ && desc_.scene != nullptr && desc_.scene->partnerClipFinished()) {
     desc_.scene->playPartnerClip(PartnerPoseClip);
@@ -1063,6 +1094,13 @@ void BattleScreen::finish() {
     }
     matchEndSeconds_ = (won_ ? MatchWonFrames : MatchLostFrames) * IntroFrameSeconds +
                        (MatchAfterFrames * IntroFrameSeconds);
+    // STD_deinitializeCombat: a side won (no draw): playMusic(STD_MUSIC, 3) when the partner
+    // did, 4 when the rival did, once the time-up box (STD_tickBattleResultScreen) is gone.
+    const std::optional<std::int64_t> track =
+        matchMusic_ ? matchMusic_->endTrack(result.outcome, result.draw) : std::nullopt;
+    if (track) {
+      matchEndSong_ = session::MusicSong{.font = matchMusic_->font, .track = *track};
+    }
   } else if (won_) {
     standPartner(VictoryStanceClip, "BTL_handleVictorySequence (battle_main.c:886)");
     core::logDebug("[port:audio] BTL_handleVictorySequence (battle_main.c:889): the fanfare; "
@@ -1173,7 +1211,11 @@ void BattleScreen::close() {
 
 session::BattleMusicFacts BattleScreen::musicFactsOf(const session::BattleRequest& request) const {
   session::BattleMusicFacts facts{
-      .firstEnemy = {}, .firstEnemyType = std::nullopt, .scripted = request.scripted};
+      .firstEnemy = {}, .firstEnemyType = std::nullopt, .scripted = request.scripted, .song = {}};
+  if (request.matchMusic) {
+    facts.song =
+        session::MusicSong{.font = request.matchMusic->font, .track = request.matchMusic->fight};
+  }
   if (!request.enemies.empty()) {
     facts.firstEnemy = request.enemies.front().species;
     const assets::DigimonRow* row =

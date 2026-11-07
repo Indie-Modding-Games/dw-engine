@@ -252,7 +252,24 @@ TournamentAdapter::arenaStage(std::string_view map) const {
                     .walkIn = arena.walkIn,
                     .partnerYaw = arena_->partnerYaw,
                     .rivalYaw = arena_->rivalYaw,
-                    .camera = arena_->camera};
+                    .camera = arena_->camera,
+                    .musicFont = arena.musicFont,
+                    .music = arena_->music};
+}
+
+std::optional<MatchMusic> TournamentAdapter::matchMusicOf(std::string_view map) const {
+  if (!arena_ || !arena_->music) {
+    return std::nullopt;
+  }
+  const game::tournament::Arena& arena =
+      arena_->arenas.at(game::tournament::arenaFor(*arena_, map));
+  if (!arena.musicFont) {
+    return std::nullopt;
+  }
+  return MatchMusic{.font = *arena.musicFont,
+                    .fight = arena_->music->fight,
+                    .won = arena_->music->won,
+                    .lost = arena_->music->lost};
 }
 
 core::Result<BattleRequest> TournamentAdapter::matchRequest(GameSession& session,
@@ -300,6 +317,7 @@ core::Result<BattleRequest> TournamentAdapter::matchRequest(GameSession& session
   BattleRequest request;
   request.enemies.push_back(std::move(enemy));
   request.scripted = true;
+  request.matchMusic = matchMusicOf(map);
   request.map = std::move(map);
   request.tamer = tamer;
   request.partner = partner;

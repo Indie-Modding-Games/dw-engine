@@ -60,6 +60,69 @@ void FieldScene::setNpcSoundSlot(scene::Entity npc, std::int64_t slot) {
   (*found)->soundSlot = slot;
 }
 
+void FieldScene::settleActors(double seconds) {
+  field_->settle();
+  tickSeconds_ = seconds;
+  const auto glide = [seconds](Actor& actor) {
+    if (actor.fighter) {
+      actor.fighterGlide.advance(seconds);
+    }
+  };
+  glide(*partnerActor_);
+  for (const auto& actor : npcActors_) {
+    glide(*actor);
+  }
+  for (const auto& staged : stageFighters_) {
+    glide(*staged.second);
+  }
+  effectsSeconds_ = std::min(effectsSeconds_ + seconds, BattleFrameSeconds);
+}
+
+void FieldScene::setEffects(std::vector<SceneEffect> effects, std::uint64_t frame) {
+  if (frame != effectsFrame_) {
+    // Only the frame right after the last glides from it (not a new battle's first).
+    const bool next = frame == effectsFrame_ + 1;
+    effectsFrame_ = frame;
+    effectsFrom_ = std::exchange(effectsTo_, std::move(effects));
+    if (!next) {
+      effectsFrom_.clear();
+    }
+    effectsSeconds_ = 0.0;
+  } else {
+    effectsTo_ = std::move(effects);
+  }
+}
+
+scene::Pose FieldScene::heldPlace(const Actor& actor) const {
+  if (drawAhead_ && actor.fighter && actor.fighterGlide.started() && field_->smoothMotion()) {
+    return actor.fighterGlide.drawn(*drawAhead_);
+  }
+  const auto& transform = world_.registry().get<scene::Transform>(actor.entity);
+  return {.position = transform.position, .yaw = transform.yaw};
+}
+
+scene::Pose FieldScene::drawnPose(scene::Entity entity, float alpha) const {
+  if (drawAhead_ && field_->smoothMotion()) {
+    const auto held = [entity](const Actor& actor) {
+      return actor.entity == entity && actor.fighter && actor.fighterGlide.started();
+    };
+    if (held(*partnerActor_)) {
+      return heldPlace(*partnerActor_);
+    }
+    for (const auto& actor : npcActors_) {
+      if (held(*actor)) {
+        return heldPlace(*actor);
+      }
+    }
+    for (const auto& staged : stageFighters_) {
+      if (held(*staged.second)) {
+        return heldPlace(*staged.second);
+      }
+    }
+  }
+  return field_->drawnPose(entity, alpha);
+}
+
 // The battle moves the fighter's entity itself (battle_main.c: the fighters' positions and
 // rotations are their entities'), so the field finds it where the battle left it.
 bool FieldScene::holdFighter(std::optional<std::int32_t> npc, const FighterFigure& figure) {
@@ -72,6 +135,9 @@ bool FieldScene::holdFighter(std::optional<std::int32_t> npc, const FighterFigur
   transform.position.x = figure.x;
   transform.position.z = figure.z;
   transform.yaw = figure.yaw;
+  // Smooth motion draws it gliding to its frame's place (battle_glide.hpp); the first hold puts it
+  // there.
+  actor->fighterGlide.moveTo({.position = transform.position, .yaw = transform.yaw});
   const bool starts = !actor->fighter || actor->fighter->clip != figure.clip ||
                       actor->fighter->starts != figure.starts;
   if (!actor->fighter) {
@@ -186,6 +252,7 @@ void FieldScene::releaseFighters() {
       return;
     }
     actor.fighter.reset();
+    actor.fighterGlide = {};
     actor.motion.reset();
     scene::beginTick(world_.registry().get<scene::Transform>(actor.entity));
     // The battle moved it: an NPC's path starts over from where it stands (the engine's, as a

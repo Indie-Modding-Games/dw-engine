@@ -35,7 +35,11 @@ steps:
   - wait: {seconds: 0.3}
   - expect_text_fits: all
   - screenshot: tab-graphics
-  # Shadows, the seventh row: right and back left.
+  # Shadows, the eleventh row: right and back left.
+  - tap: {key: down}
+  - tap: {key: down}
+  - tap: {key: down}
+  - tap: {key: down}
   - tap: {key: down}
   - tap: {key: down}
   - tap: {key: down}

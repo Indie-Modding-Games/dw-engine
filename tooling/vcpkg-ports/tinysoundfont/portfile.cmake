@@ -9,6 +9,15 @@ vcpkg_from_github(
     HEAD_REF main
 )
 
+# The synthesizer reads but drops each zone's reverb send; the engine sends the voices that have it
+# to the sound chip's reverb (docs/architecture/audio.md, "Reverberación"), so the header keeps the
+# generator in its region. It is stored as read, never applied by the synthesizer itself.
+vcpkg_replace_string("${SOURCE_PATH}/tsf.h"
+    "int freqVibLFO, vibLfoToPitch;"
+    "int freqVibLFO, vibLfoToPitch;\n\tint reverbEffectsSend;")
+vcpkg_replace_string("${SOURCE_PATH}/tsf.h"
+    "{ 0                                , (0                                                  ) }, //16 ReverbEffectsSend (unsupported)"
+    "{ GEN_INT                          , _TSFREGIONOFFSET(         int, reverbEffectsSend    ) }, //16 ReverbEffectsSend (stored)")
 file(INSTALL "${SOURCE_PATH}/tsf.h" DESTINATION "${CURRENT_PACKAGES_DIR}/include")
 vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")
 set(VCPKG_POLICY_EMPTY_PACKAGE enabled)

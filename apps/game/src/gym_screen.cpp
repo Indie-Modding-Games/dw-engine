@@ -294,7 +294,33 @@ core::Result<void> GymScreen::startChosen() {
   }
   core::logDebug("[port:gym] call_routine 7 (script_interp.c:1682): choice {}, course {}", *choice,
                  course->id);
-  return start(course->id);
+  auto started = start(course->id);
+  if (started) {
+    batch_.begin(course->id, map);
+  }
+  return started;
+}
+
+void GymScreen::continueBatch(GymBatchMoment moment) {
+  if (run_ != nullptr) {
+    return;
+  }
+  moment.map = desc_.scene->field().mapId();
+  moment.fieldIdle = moment.fieldIdle && statsBox_.closed() && slotsBox_.closed();
+  const int left = batch_.left();
+  const auto course = batch_.next(moment);
+  if (left > 0 && batch_.left() == 0 && !course) {
+    core::logInfo("gym: the batch stops with {} sessions left: {}", left,
+                  moment.partnerNeedsCare ? "the partner needs care" : "the map changed");
+  }
+  if (!course) {
+    return;
+  }
+  core::logInfo("gym: next session of the batch on {}, {} more after it", *course, batch_.left());
+  if (auto started = start(*course); !started) {
+    core::logWarning("{}", started.error().message);
+    batch_.cancel();
+  }
 }
 
 core::Result<void> GymScreen::start(std::string_view course) {
@@ -339,6 +365,11 @@ void GymScreen::tick(double seconds, const game::field::FieldInput& intent) {
   if (run_ != nullptr) {
     const double framesPerSecond = desc_.session->clock().rules().framesPerSecond;
     const bool pressed = intent.cancelTarget || std::exchange(cancelPressed_, false);
+    // A cancel before the award ends the session early, and the batch with it; one that skips the
+    // stats' count does not.
+    if (pressed && !run_->record().award.has_value()) {
+      batch_.cancel();
+    }
     run_->tick(*ports_, seconds, 1.0 / framesPerSecond,
                {.confirm = intent.confirm,
                 .cancel = pressed,

@@ -1,8 +1,8 @@
 # Audio
 
 Estado: **diseño aprobado** (VAN-01; decidido por el coordinador el 2026-10-22: las 11 preguntas, como se
-recomienda, más un tramo de reverberación tras el 3; y Q12–Q14 del tramo 2). Están implementados los
-tramos 1, 2a, 2b, 3, 3b y 4; falta el 3c (la reverberación, Q10).
+recomienda, más un tramo de reverberación tras el 3; y Q12–Q14 del tramo 2). Están implementados todos los
+tramos: 1, 2a, 2b, 3, 3b, 3c (la reverberación, Q10) y 4.
 
 Este documento dice cómo suena el juego: el módulo `packages/engine/audio` (salida al dispositivo, mezclador, voces y
 volúmenes), cómo llegan a él los efectos (WAV u Opus) y la música (MIDI + SF2), cómo los piden los scripts y qué ve un
@@ -21,7 +21,7 @@ el gate y se sube por separado.
 | 2b | Los sonidos de los menús (`ui/ui_sounds.yaml`) y la orden `story.play_sound` de los scripts sobre el puerto de 2a, cuando la API `story` de S2 esté en `main` | Suenan los menús y los efectos de los scripts; se publica `story.play_sound` |
 | 3 | Música: el secuenciador MIDI (tempo, bucles), el sintetizador SF2 y las transiciones de música; las órdenes `set_bgm` y `stop_bgm` | Suena la música del mapa, del combate y de los scripts; se publican `story.set_bgm` y `story.stop_bgm` |
 | 3b | La música de los modos 2–10 de la variable 245, el cambio de día y noche (`updateBGM`) y la del combate (§6.6) | Suena la variante de la hora y la música del combate; `data/music.yaml` lleva los pares fijos y las pistas del combate |
-| 3c | La reverberación del chip (§7.4, Q10) | Envío por voz según el bit de reverberación del tono |
+| 3c | La reverberación del chip (§7.4, Q10) | Hecho: envío por voz según el bit de reverberación del tono, para los efectos y para las notas de la música; fila «Reverberación» de las opciones (encendida por defecto, como el original) |
 | 4 | El volumen en la pantalla de opciones (música y efectos; el maestro se queda en 1), guardado con los demás ajustes | Hecho: filas «Volumen de música» y «Volumen de efectos» de las opciones en partida ([game.md, Volumen](../modulos/apps/game.md#volumen)); los tests aplican los pasos a `Audio` con la salida nula |
 
 ## 2. Módulos y dependencias
@@ -430,8 +430,35 @@ ticks por segundo. Lo que es regla del juego queda igual en el ruleset `original
 
 El original enciende la reverberación del chip al arrancar y no la cambia: modo `STUDIO_B`, profundidad 0x7000
 (≈ 88 %), en las voces 0–22 (`sound.c: initializeMusic`), y cada tono decide si la usa (bit 2 de `mode`, que el SF2 ya
-lleva como `reverbEffectsSend`). Es parte de cómo suena el juego. Los buses del mezclador admiten después un envío
-de reverberación por voz sin cambiar la API de `Audio`; hacerla es la pregunta Q10.
+lleva como `reverbEffectsSend`). Es parte de cómo suena el juego.
+
+**Tramo 3c (hecho).** `ChipReverb` (`packages/engine/audio/src/chip_reverb.*`) sigue la descripción pública de los
+registros y la fórmula del chip (no el decomp): el reverberador estéreo de Schroeder a 22 050 Hz sobre un anillo de
+muestras de 16 bits del tamaño del área de trabajo del preset (0x4840 bytes), con las reflexiones del mismo lado y
+del otro, los cuatro peines, los dos filtros pasa todo y la profundidad 0x7000 de salida, y los 32 registros del
+preset «Studio Medium» (el `STUDIO_B` de la biblioteca). Lo que escribe en el anillo se satura y redondea a 16 bits,
+como el chip, así la cola acaba en silencio o en un ciclo de los últimos bits, nunca en una cola de coma flotante que
+no termina.
+
+- **Envío por voz.** `PlayRequest::reverbSend` (0 a 1): `EffectBank` pone 1 a los tonos con el bit 2 de `mode`
+  (`bank_meta.yaml`, que ahora se lee como `SoundBankTone::mode`). En la música, el port de TinySoundFont del
+  repositorio guarda el generador `reverbEffectsSend` de cada zona (el sintetizador lo leía y lo tiraba) y el
+  `MusicPlayer` mezcla cada voz por separado (`renderSynth`) para mandar al envío las que lo tienen.
+- **Dónde se suma.** El envío se toma después de la ganancia del bus (bajar la música baja también su eco) y la salida
+  de la reverberación se suma a la mezcla antes del recorte, como la del chip.
+- **Lo que es aproximado.** El paso de los 48 kHz del mezclador a los 22 050 Hz del chip y la vuelta: un pasa bajos de
+  dos polos a 10 kHz y pasos lineales, en vez del filtro de 39 coeficientes del chip. La voz 23 del chip queda fuera
+  de la reverberación en el original; aquí las voces no son canales del chip (§7.3) y no se reproduce.
+- **Opción.** «Reverberación» en la pestaña de sonido (`reverb` en `settings.yaml`, `Audio::setReverb`), encendida
+  por defecto porque así suena el original; apagada, todo suena seco y la cola se corta al momento. Cambia la mezcla
+  lo bastante como para que alguien la prefiera sin ella.
+- **Tests:** `reverb_tests.cpp` (silencio, primer eco a los 884 ticks del preset en los dos lados, la cola que se
+  apaga hasta el silencio, borrar, solo las voces con envío dejan cola, encendida al empezar),
+  `effect_bank_tests.cpp` y `sound_bank_tests.cpp` (el bit de `mode`), `volume_setting_tests.cpp` (la fila de
+  opciones aplica y guarda).
+- **Medida contra el original:** no hay forma de grabar el audio de DuckStation desde el MCP, y los registros del chip
+  (1F801DC0h…) no se pueden leer con él (solo la RAM principal); la configuración del original sale de
+  `initializeMusic` en el decomp, y los valores del preset, de la documentación pública.
 
 ## 8. Qué ve un mod
 
@@ -549,7 +576,7 @@ como en el original, pero es un límite de la máquina, no una regla.
 1. *(Recomendada)* No reproducirlo: guardia de 256 voces (§5).
 2. Reproducirlo como `quirk` del ruleset `original` (14 voces de efectos, robo por turno), desactivable.
 
-**Q10. Reverberación del chip (§7.4).**
+**Q10. Reverberación del chip (§7.4).** Decidida la 1; hecha en el tramo 3c.
 1. *(Recomendada)* Un tramo propio después del 3 (unas 300 líneas): la reverberación del chip con el modo `STUDIO_B`,
    a partir de la documentación pública del hardware (no del decomp), como envío por voz según el bit de reverb del
    tono. Mantiene el sonido del original; alarga VAN-01 en un tramo.

@@ -152,7 +152,8 @@ Lo que guarda `ScriptState` y lo que el motor reserva (comprobado, `script.h`, `
 - **Cartas:** 66 cuentas de 4 bits; `give_card` no pasa de 9 y `take_card` no baja de 0 (comprobado).
 - **Dinero:** `add_money` no pasa de 999 999; `reduce_money` no baja de 0 (comprobado).
 - **Méritos:** `set_merit` y `add_merit` no pasan de 9999 (comprobado). `reduce_merit` escribe `MERIT = -valor` y
-  lo detiene en 0: deja los méritos en 0 sea cual sea la cantidad (`script_interp.c:1173`; el motor lo conserva).
+  lo detiene en 0: deja los méritos en 0 sea cual sea la cantidad (`script_interp.c:1173`). Ningún guion del disco la
+  usa; el motor resta la cantidad y se detiene en 0, como dice su nombre, para los guiones de mods.
 - **Contadores:** combates empezados y huidas, +1 por `start_battle` y por huida, con tope 9999; los de torneos los
   lleva la rutina 6 (comprobado).
 - **Fecha:** año, día, hora y minuto; un año son 30 días (comprobado).
@@ -520,7 +521,7 @@ Cuentas sobre el disco americano (test lento `the user's disc, extracted: every 
 ## Rarezas
 
 - **`reduce_merit` pone los méritos a 0** sea cual sea el valor (los fija a −valor y luego recorta a 0) (comprobado).
-  El disco no la usa.
+  El disco no la usa; el motor la corrige (resta y se detiene en 0).
 - **La orden `39` resta minutos** aunque parece la gemela de `add_minutes_to_date_at` (comprobado).
 - **`add_stat` suma con signo de 16 bits**: un valor ≥ 0x8000 resta. `set_stat` y `add_stat` no tienen suelo
   (comprobado).

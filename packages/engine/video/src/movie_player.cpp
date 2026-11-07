@@ -9,6 +9,7 @@
 #include <format>
 #include <string>
 #include <utility>
+#include <variant>
 
 namespace dwe::video {
 
@@ -94,11 +95,18 @@ core::Result<MoviePlayer> MoviePlayer::open(const assets::VirtualFileSystem& fil
   if (!file) {
     return std::unexpected{file.error()};
   }
-  auto reader = Y4mReader::open(std::move(*file), id->str());
+  const assets::AssetSource* source = files.resolve(*id);
+  auto reader = source != nullptr && source->file.extension() == ".ivf"
+                    ? Av1Reader::open(std::move(*file), id->str()).transform([](Av1Reader opened) {
+                        return Reader{std::move(opened)};
+                      })
+                    : Y4mReader::open(std::move(*file), id->str()).transform([](Y4mReader opened) {
+                        return Reader{std::move(opened)};
+                      });
   if (!reader) {
     return std::unexpected{reader.error()};
   }
-  const Y4mStream& stream = reader->stream();
+  const Y4mStream stream = std::visit([](const auto& opened) { return opened.stream(); }, *reader);
   if (stream.width != info->width || stream.height != info->height) {
     return core::fail(std::format("the movie '{}' is {}x{}, but its video is {}x{}", name,
                                   info->width, info->height, stream.width, stream.height));
@@ -128,7 +136,11 @@ MoviePlayer::loadSound(const assets::VirtualFileSystem& files, std::string_view 
   if (!bytes) {
     return std::unexpected{bytes.error()};
   }
-  auto sound = assets::decodeWav(*bytes);
+  // The WAV dwx extract writes, or the Ogg Opus dwx cook makes of it (at 48 kHz: the clock follows
+  // the decoded sound's own rate).
+  const assets::AssetSource* source = files.resolve(*id);
+  auto sound = source != nullptr && source->file.extension() == ".wav" ? assets::decodeWav(*bytes)
+                                                                       : assets::decodeOpus(*bytes);
   if (!sound) {
     return core::fail(std::format("the sound of the movie '{}': {}", name, sound.error().message));
   }
@@ -152,13 +164,13 @@ core::Result<bool> MoviePlayer::advanceTo(double seconds) {
     return false;
   }
   while (nextFrame_ < target) {
-    auto skipped = reader_.skip();
+    auto skipped = std::visit([](auto& reader) { return reader.skip(); }, reader_);
     if (!skipped) {
       return std::unexpected{skipped.error()};
     }
     ++nextFrame_;
   }
-  auto read = reader_.read(yuv_);
+  auto read = std::visit([this](auto& reader) { return reader.read(yuv_); }, reader_);
   if (!read) {
     return std::unexpected{read.error()};
   }

@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <format>
 #include <map>
+#include <mutex>
 #include <optional>
 #include <print>
 #include <string>
@@ -23,6 +24,7 @@
 #include "audio_cooker.hpp"
 #include "dwx.hpp"
 #include "texture_cooker.hpp"
+#include "video_cooker.hpp"
 
 namespace dwe::dwx {
 
@@ -85,13 +87,13 @@ constexpr std::array Registry = {
            .outputExtension = "opus",
            .plan = nullptr,
            .cook = cookAudio},
+    Cooker{.name = "video",
+           .version = 1,
+           .sourceExtension = "y4m",
+           .outputExtension = "ivf",
+           .plan = nullptr,
+           .cook = cookVideo},
 };
-
-// The folder of the movies, which are copied as dwx extract writes them (Y4M video and WAV sound)
-// while the cooked video format is not decided. Their sound goes with the video frames and
-// movie.yaml describes it as extracted, so it is not cooked like the sounds the game plays on their
-// own.
-constexpr std::string_view MovieFolder = "movie/";
 
 // The id suffix and type of the YAML file that describes an asset, as dwx extract writes it
 // (asset_names: metadataOf).
@@ -353,6 +355,15 @@ core::Result<void> produce(Job& job, const std::filesystem::path& pack,
 
 } // namespace
 
+void printProgress(int& last, std::size_t done, std::size_t total, std::string_view step) {
+  const int percent = total == 0 ? 100 : static_cast<int>((done * 100) / total);
+  if (percent != last) {
+    last = percent;
+    std::println(stderr, "progress {} {}", percent, step);
+    std::fflush(stderr);
+  }
+}
+
 bool isWithin(const std::filesystem::path& path, const std::filesystem::path& folder) {
   const std::filesystem::path relative = path.lexically_relative(folder);
   return !relative.empty() && *relative.begin() != "..";
@@ -369,7 +380,7 @@ const Cooker* findCooker(std::span<const Cooker> registry, std::string_view exte
 
 core::Result<CookSummary> cookPack(std::span<const Cooker> registry,
                                    const std::filesystem::path& pack,
-                                   const std::filesystem::path& out) {
+                                   const std::filesystem::path& out, const CookProgress& progress) {
   const assets::DiskFileSystem disk;
   const auto manifest = disk.readFile(pack / ManifestName);
   if (!manifest) {
@@ -400,9 +411,7 @@ core::Result<CookSummary> cookPack(std::span<const Cooker> registry,
   runInParallel(jobs.size(), [&](std::size_t index) {
     Job& job = jobs[index];
     job.file = &(*files)[index];
-    job.cooker = job.file->path.starts_with(MovieFolder)
-                     ? nullptr
-                     : findCooker(registry, job.file->path.substr(job.file->path.rfind('.') + 1));
+    job.cooker = findCooker(registry, job.file->path.substr(job.file->path.rfind('.') + 1));
     const auto source = disk.readFile(pack / job.file->path);
     if (!source) {
       job.result = std::unexpected{source.error()};
@@ -460,9 +469,19 @@ core::Result<CookSummary> cookPack(std::span<const Cooker> registry,
     }
   }
 
+  const auto produced = [](const Job& job) {
+    return job.step == Step::Cook || job.step == Step::Copy;
+  };
+  const auto total = static_cast<std::size_t>(std::ranges::count_if(jobs, produced));
+  std::size_t done = 0;
+  std::mutex told;
   runInParallel(jobs.size(), [&](std::size_t index) {
-    if (jobs[index].step == Step::Cook || jobs[index].step == Step::Copy) {
+    if (produced(jobs[index])) {
       jobs[index].result = produce(jobs[index], pack, out);
+      if (progress) {
+        const std::scoped_lock lock{told};
+        progress(++done, total);
+      }
     }
   });
   if (auto failed = firstFailure(jobs); !failed) {
@@ -525,8 +544,12 @@ core::Result<CookSummary> cookPack(std::span<const Cooker> registry,
   return summary;
 }
 
-int cook(const std::filesystem::path& pack, const std::filesystem::path& out) {
-  const auto summary = cookPack(cookers(), pack, out);
+int cook(const std::filesystem::path& pack, const std::filesystem::path& out, bool progress) {
+  int lastPercent = -1;
+  const CookProgress print = [&](std::size_t done, std::size_t total) {
+    printProgress(lastPercent, done, total, "cook");
+  };
+  const auto summary = cookPack(cookers(), pack, out, progress ? print : CookProgress{});
   if (!summary) {
     std::println(stderr, "dwx: {}", summary.error().message);
     return ExitFailed;

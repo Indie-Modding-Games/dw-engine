@@ -68,14 +68,17 @@ void printUsage() {
       "      not there yet. Entries are named by the image's SHA-1 and the extractor version; nothing");
   std::println(stderr,
                "      else goes to the standard output. The game uses it with --dev-assets.");
-  std::println(stderr, "  dwx cook <pack folder> -o <folder>");
+  std::println(stderr, "  dwx cook <pack folder> -o <folder> [--progress]");
   std::println(
       stderr,
       "      Cooks a pack into the forms the game loads: PNG to KTX2 with mipmaps, binary glTF checked,");
   std::println(
       stderr,
-      "      everything else copied. A folder from an earlier cook is updated: only what changed is");
-  std::println(stderr, "      cooked again. A folder that dwx cook did not write is refused.");
+      "      WAV to Opus, Y4M movies to AV1, everything else copied. A folder from an earlier cook is");
+  std::println(
+      stderr,
+      "      updated: only what changed is cooked again. A folder that dwx cook did not write is");
+  std::println(stderr, "      refused. --progress prints \"progress <percent> cook\" lines.");
   std::println(stderr, "  dwx convert-script <script/dg/<n>.yaml|script/maphead.yaml> -o <folder>");
   std::println(
       stderr,
@@ -115,9 +118,10 @@ void printUsage() {
       "      compares it with the packs' field/script_warps (exit 1 when they differ). The transport");
   std::println(stderr,
                "      menu's destinations come from rules/<id>/bird_transport (default original).");
-  std::println(stderr, "  dwx pack <pack folder> -o <file.pak>");
+  std::println(stderr, "  dwx pack <pack folder> -o <file.pak> [--progress]");
   std::println(stderr,
                "      Writes a pack as a single .pak archive and checks that it reads back.");
+  std::println(stderr, "      --progress prints \"progress <percent> pack\" lines.");
   std::println(stderr, "  dwx upscale <recipe.yaml> <pack folder|content folder> -o <folder>");
   std::println(
       stderr,
@@ -280,12 +284,15 @@ int main(int argc, char** argv) {
                   : extractDisc(image, out.value_or(DefaultOutFolder), force, progress);
     }
   }
-  if ((command == "cook" || command == "pack") && arguments.size() == 5) {
+  if ((command == "cook" || command == "pack") &&
+      (arguments.size() == 5 ||
+       (arguments.size() == 6 && std::string_view{arguments[5]} == "--progress"))) {
     const std::string_view option{arguments[3]};
     if (option == "-o" || option == "--out") {
       const std::filesystem::path folder{arguments[2]};
       const std::filesystem::path out{arguments[4]};
-      return command == "cook" ? cook(folder, out) : pack(folder, out);
+      const bool progress = arguments.size() == 6;
+      return command == "cook" ? cook(folder, out, progress) : pack(folder, out, progress);
     }
   }
   if (command == "evolution-guide" && arguments.size() == 4) {

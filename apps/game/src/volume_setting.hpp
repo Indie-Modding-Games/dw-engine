@@ -20,6 +20,10 @@ namespace dwe::app {
 inline constexpr std::string_view MusicVolumeSetting = "music_volume";
 inline constexpr std::string_view EffectsVolumeSetting = "effects_volume";
 inline constexpr int VolumeSteps = 10;
+// The sound chip's reverb (docs/architecture/audio.md, "Reverberación"): on by default, as the
+// original turns it on at boot (sound.c: initializeMusic); off plays every voice dry. A UI setting
+// and its command, saved with the user's settings and applied to the audio at once.
+inline constexpr std::string_view ReverbSetting = "reverb";
 
 // A step's gain, from 0 to 1: the square of its share of VolumeSteps, so the steps sound evenly
 // spaced (half the steps is about 12 dB down) instead of crowding at the top. Steps outside
@@ -29,8 +33,8 @@ inline constexpr int VolumeSteps = 10;
 // A saved step, clamped to [0, VolumeSteps], or VolumeSteps when none is saved.
 [[nodiscard]] int volumeStep(std::optional<int> saved);
 
-// Applies the volumes to the audio, changes them while the game runs and saves them with the other
-// settings (settings.yaml).
+// Applies the volumes and the reverb to the audio, changes them while the game runs and saves them
+// with the other settings (settings.yaml).
 class VolumeChanger {
 public:
   // Applies the saved volumes to the audio. settingsFile is where the choices are saved; nothing
@@ -41,12 +45,13 @@ public:
 
   [[nodiscard]] int musicStep() const { return volumeStep(settings_->musicVolume); }
   [[nodiscard]] int effectsStep() const { return volumeStep(settings_->effectsVolume); }
+  [[nodiscard]] bool reverb() const { return settings_->reverb.value_or(true); }
 
-  // Takes a command; returns whether it was one of the two volumes. A number is rounded to a step
-  // and clamped; a value of another kind changes nothing but is still taken. Publishes the step in
-  // use either way.
+  // Takes a command; returns whether it was one of the two volumes or the reverb. A volume's number
+  // is rounded to a step and clamped; the reverb takes a boolean; a value of another kind changes
+  // nothing but is still taken. Publishes what is in use either way.
   bool handle(const ui::UiCommand& command, ui::Ui& ui);
-  // Publishes both steps.
+  // Publishes both steps and the reverb.
   void publish(ui::Ui& ui) const;
 
 private:

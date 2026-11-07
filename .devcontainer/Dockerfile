@@ -145,3 +145,8 @@ RUN npm ci --prefix ${DWE_DOCS_TOOLS} --ignore-scripts --no-audit --no-fund \
     && ln -s ${DWE_DOCS_TOOLS}/node_modules /node_modules \
     && npm ls --prefix ${DWE_DOCS_TOOLS} vitepress mermaid
 ENV PATH=${DWE_DOCS_TOOLS}/node_modules/.bin:${PATH}
+
+# The assembler of the AV1 codec's port (aom, the cooked movies: docs/architecture/peliculas.md), which
+# vcpkg takes from the system on a Linux host; last, so adding it reuses every layer above.
+RUN apt-get update && apt-get install -y --no-install-recommends nasm \
+    && rm -rf /var/lib/apt/lists/*

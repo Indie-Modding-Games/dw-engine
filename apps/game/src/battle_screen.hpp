@@ -117,6 +117,17 @@ public:
   [[nodiscard]] bool active() const {
     return battle_.has_value() || ending_ || exit_.has_value() || closing_;
   }
+  // Enemy life bars (an engine improvement, play_session.hpp: EnemyHpBarsSetting): a bar over every
+  // enemy still standing for the whole fight, cups too. Off, the original's: a wild enemy's bar a
+  // while after it is hit (Battle::hpBarShown) and none in a cup.
+  void setEnemyHpBars(bool always);
+  // Whether a fight runs (from its start to its end box), the time a quick battle plays at x2.
+  [[nodiscard]] bool fighting() const { return battle_.has_value(); }
+  // Whether the player has to react in time: the finisher's charge (command_menu.c:
+  // BTL_tickFinisherChargeup), the fallen partner's countdown (BTL_tickDeathCountdown), the bag
+  // open over the fight or an item in the hand or on its way. A quick battle waits at the
+  // original's speed meanwhile (battle_speed.hpp).
+  [[nodiscard]] bool reacting() const;
   // The outcome of the last battle, once, after its end box is closed: what a story battle reads.
   [[nodiscard]] std::optional<game::battle::Outcome> takeOutcome();
   // The battle_win debug command: the enemies fall at once; false when no fight is running.
@@ -246,11 +257,16 @@ private:
   std::optional<BattleEffectBodies> bodies_;
   std::optional<FighterGround> ground_;
   std::optional<session::BattleEffects> effects_;
+  // The effects' frames so far, for the scene to tell a new frame from the same one shown again
+  // (FieldScene::setEffects).
+  std::uint64_t effectFrames_ = 0;
   // When the techniques' effects reach their targets (game::battle::ScriptedFlights), from the
   // effect scripts and the bodies.
   std::optional<game::battle::ScriptedFlights> flights_;
   bool ending_ = false;
   // The field's bag document is open over the battle.
+  // Enemy life bars over every enemy still standing (setEnemyHpBars).
+  bool enemyHpBarsAlways_ = false;
   bool bagShown_ = false;
   // The numbers over the fighters (entity_text.c), and the time they have not run yet once the
   // battle is over: they go on through the victory until the last one goes.
@@ -277,6 +293,10 @@ private:
   std::optional<game::battle::Outcome> outcome_;
   // Whether the battle on the end box was won: the field's music comes back when it closes.
   bool won_ = false;
+  // A tournament match's songs (session::BattleRequest::matchMusic).
+  std::optional<session::MatchMusic> matchMusic_;
+  // The won or lost match's song, played once the match's end is no longer held.
+  std::optional<session::MusicSong> matchEndSong_;
   // The time left before the victory poses' sound, once a battle is won.
   std::optional<double> victoryPoseSeconds_;
   // A tournament match's end: the time left of the winner's pose and the frames after it, while

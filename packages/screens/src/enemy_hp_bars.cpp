@@ -52,6 +52,13 @@ std::pair<std::int32_t, std::int32_t> tintOf(std::int32_t fill) {
 
 } // namespace
 
+bool enemyHpBarShown(const EnemyHpBarCase& enemy) {
+  if (enemy.always) {
+    return enemy.standing;
+  }
+  return !enemy.match && enemy.recentlyHit;
+}
+
 EnemyHpBar enemyHpBarOf(const EnemyOnScreen& enemy) {
   // getEntityScreenPos: the node in the original's pixels from the screen's middle.
   const auto nodeX =

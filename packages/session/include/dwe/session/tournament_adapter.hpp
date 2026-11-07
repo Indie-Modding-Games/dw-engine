@@ -115,6 +115,9 @@ public:
     std::int32_t partnerYaw = 0;
     std::int32_t rivalYaw = 0;
     game::tournament::ArenaCamera camera;
+    // The arena's song font and its songs (STD_MUSIC); none when the rules give none.
+    std::optional<std::int32_t> musicFont;
+    std::optional<game::tournament::ArenaMusic> music;
   };
   core::Result<ArenaStage> arenaStage(std::string_view map) const;
 
@@ -165,6 +168,8 @@ private:
   std::int32_t wins_ = 0;
   bool lost_ = false;
   std::optional<game::tournament::ArenaRules> arena_;
+  // The songs of a match fought on the arena of `map`, when the rules give them.
+  [[nodiscard]] std::optional<MatchMusic> matchMusicOf(std::string_view map) const;
   std::optional<game::tournament::ScheduleRules> schedule_;
   std::optional<game::tournament::TournamentTable> table_;
   std::optional<MapHeadLineTables> lineTables_;

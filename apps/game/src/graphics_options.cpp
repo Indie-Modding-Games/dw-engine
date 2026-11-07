@@ -71,6 +71,28 @@ std::string_view sceneryQualityName(SceneryQuality quality) {
   return quality == SceneryQuality::Smooth ? QualitySmooth : QualityUpscaled;
 }
 
+render::TextureFilter renderTextureFilter(TextureFilter filter) {
+  switch (filter) {
+  case TextureFilter::Nearest:
+    return render::TextureFilter::Nearest;
+  case TextureFilter::Smooth:
+    return render::TextureFilter::Smooth;
+  case TextureFilter::Upscaled:
+    return render::TextureFilter::Upscaled;
+  }
+  return render::TextureFilter::Upscaled;
+}
+
+void applyTextureFilter(render::ModelRenderer& models, const GraphicsOptions& options) {
+  models.setTextureFilter(renderTextureFilter(options.textureFilter));
+}
+
+void prepareModels(render::ModelRenderer& models, const GraphicsOptions& options,
+                   std::shared_ptr<const render::UpscaleCache> cache) {
+  models.setUpscaleCache(std::move(cache));
+  applyTextureFilter(models, options);
+}
+
 std::optional<TextureFilter> parseTextureFilter(std::string_view name) {
   if (name == FilterNearest) {
     return TextureFilter::Nearest;

@@ -84,6 +84,18 @@ registra en la partida guardada y se lo da al campo.
   first step"; `field_tests`: "a scripted walk bumps on its clip's step, into what lies ahead or, the player, anyone",
   "a step under one unit moves no edge into the collision test". Queda: el motor desliza el paseo a la velocidad de
   suelo del clip (45 por fotograma en el compañero) en vez de por el impulso de cada fotograma (~30 medido).
+- **Un paseo a un punto en la esquina de su casilla no da vueltas sin fin** (`tamer.c: tickEntityWalkTo`,
+  `getModelTile`): el paseo acaba al pisar la casilla del punto, y un punto de coordenadas redondas está en la esquina
+  de su casilla. Quien llega por un lado que no es el de la casilla cruza la esquina sin pisarla, se vuelve hacia el
+  punto y la cruza otra vez: con pasos exactos, para siempre. En el original los pasos van en unidades enteras (el
+  paso del clip girado y desplazado), que se apartan un poco de la línea en cada pasada hasta que una cae en la
+  casilla. mgen13 por la mansión (script 63, sección 0x3c): tras el combate fijo el jefe vuelve a (−100, 800) desde
+  donde acabó el combate y `wait_for_entity(6)` no acababa nunca, así que el disparador 202 no llegaba. Ahora, si el
+  paso de este fotograma pasa el punto sin acabar en su casilla, el que camina se queda en el punto (que siempre
+  está en su casilla) y el paseo acaba. Suposición: el original acaba unas pasadas después y un poco más allá. Los
+  demás paseos acaban como antes, en el primer paso dentro de la casilla. `script_motion_tests`: "a walk at a point on
+  its cell's corner from outside the cell stops on the point", "a walk still ends as it steps into its point's
+  cell, short of the point"; `route-etapa9-back-mansion.yaml`.
 - **El paso de un deslizamiento es uno para todos** (`tamer.c: tickEntityMoveTo`, `tickEntityMoveToAxis`, con
   `MOVE_TO_DELTA_X`/`MOVE_TO_DELTA_Z` y `PREVIOUS_CAMERA_POS_INITIALIZED`): el primer fotograma de un `entity_move_to`
   o `entity_move_to_axis` toma su paso (la distancia en unidades enteras dividida entre los fotogramas, con división

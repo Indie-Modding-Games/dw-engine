@@ -149,6 +149,19 @@ lecturas vacías, así que la película que se ve puede acabar antes que el fich
 
 Para verlo o recodificarlo: `ffmpeg -i video.y4m -i audio.wav ...` (fuera del proyecto).
 
+## Película cocinada (`dwx cook`)
+
+| Fichero | Contenido |
+|---|---|
+| `movie/<nombre>/video.ivf` | AV1 de 8 bits 4:2:0, rango completo, en un IVF: cabecera de 32 bytes (`DKIF`, versión 0, tamaño de cabecera 32, `AV01`, ancho y alto `u16`, frecuencia y escala `u32` en 16 y 20, número de frames `u32` en 24) y, por frame, 12 bytes (tamaño `u32`, `pts` `u64`) y sus datos. Un frame del IVF por frame del Y4M, al mismo tamaño y frecuencia |
+| `movie/<nombre>/audio.opus` | El WAV pasado por el cocinero de sonido ([Opus](opus.md)): 48 kHz, los mismos canales |
+| `movie/<nombre>/movie.yaml` | Copiado: describe la película tal como se extrajo (el motor toma la frecuencia del sonido decodificado) |
+
+El cocinero (`apps/dwx/src/video_cooker.cpp`, cocinero `video` versión 1) codifica con libaom en modo de buena
+calidad con calidad constante y ajustes fijos y un hilo, así que el mismo Y4M da siempre los mismos bytes.
+`assets::readIvfHeader` comprueba la cabecera (`dwx validate`, `dwe-game --check-content`) y `video::Av1Reader` la
+decodifica frame a frame. Los motivos y las medidas están en [películas](../architecture/peliculas.md#fase-5).
+
 `packages/formats/src/video/mdec.cpp` se compila optimizado también en los builds de debug (como `sha1.cpp`): sin eso, la
 extracción en `ci` (debug con sanitizers) llevaba casi 9 minutos; ahora tarda unos 3,5. Al extraer, cada frame solo
 pasa por la etapa VLC (`decodeBitstream`, que comprueba su bitstream y su tamaño); la IDCT corre una sola vez, al

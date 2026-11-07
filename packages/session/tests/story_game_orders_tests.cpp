@@ -82,6 +82,19 @@ TEST_CASE("deal_damage freezes the world, takes the percent of the maximum HP an
   CHECK(game.orders->takePartnerDamage() == std::vector<std::int32_t>{160, 160});
 }
 
+TEST_CASE("reduce_merit takes the amount off the merit and stops at 0") {
+  const TestPacks packs;
+  const OrdersSession game = ordersSession(packs);
+  dwe::session::TamerRecord record = game.session->tamer().record;
+  record.merit = 500;
+  game.session->setTamerRecord(record);
+  // The original wrote -amount and stopped it at 0, leaving 0 (no script of the disc uses it).
+  run(*game.story, "story.reduce_merit(120)");
+  CHECK(game.session->tamer().record.merit == 380);
+  run(*game.story, "story.reduce_merit(1000)");
+  CHECK(game.session->tamer().record.merit == 0);
+}
+
 TEST_CASE("deal_damage leaves at least 1 HP and shows the damage it did") {
   const TestPacks packs;
   const OrdersSession game = ordersSession(packs);

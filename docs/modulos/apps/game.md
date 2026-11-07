@@ -451,6 +451,24 @@ cantidad de la tienda de cartas, y 57-59 del menú de trueque. Antes el trueque 
 una gris clara (`#b0b0b0`), y la tienda de cartas solo la azulada; ahora las tres (`card_shop`, `trade_menu`,
 `bird_transport`) llevan las tres filas. Igual.
 
+## Apertura de los menús
+
+Abrir un menú paraba un fotograma (#221). Medido con la ruta de medida (tienda, máquina de guardado, menú del juego,
+ficha del compañero, objetos, jugador, opciones) en la RTX 2060, 1280x720, tres pasadas de cada binario alternadas:
+el coste de CPU del fotograma más pesado de cada apertura (ticks, actualización, interfaz y grabado del dibujo, sin
+contar la presentación). El resto de fotogramas de los menús ya cabían de sobra (interfaz 1,3 a 1,9 ms de media).
+
+| Apertura (mediana de 3) | Antes | Ahora | Causa |
+|---|---|---|---|
+| Ficha del compañero, primera vez | 70 ms | 14 ms | el retrato (modelo y texturas) se cargaba en el primer fotograma de la ficha; ahora sigue a la forma del compañero y se carga al empezar la partida o al evolucionar |
+| Menú del juego, primera vez | 22 ms | 12 ms | la página del jugador llegaba ya con el menú visible y cada ajuste cambiado redibujaba su pestaña (la Ciudad cuatro veces); ahora se publica justo antes de mostrarlo (`PlaySession::preparePauseMenu`) y el menú la dibuja una vez al abrirse |
+| Ficha del compañero, siguientes | 13 ms | 9 ms | los dos ajustes que fija al abrirse redibujaban entero el menú del juego que deja (`pause_menu`: ya no) |
+| Tienda, primera visita | 17 ms | 5 ms | cada tienda y servicio leía el listado de MAPHEAD (un cuarto de MB) en su primera visita; ahora se lee al cargar la partida y una vez por contenido |
+
+Además el HUD redibujaba el minimapa con cada ajuste que no conocía: los cientos que publica la ficha del compañero al
+abrirse costaban 5 a 7 ms; ahora solo lo hace con los que lee (`minimap`, `minimap_size`, `battle.active`). La ruta
+de medida y las trazas quedan fuera del repositorio (`_work/tmp/w38-ui/`).
+
 ## Escena final
 
 `EndingScene` juega la última escena (`call_partner_routine 6`, que pide la rutina 53; en el original, el tick final del
@@ -763,6 +781,24 @@ de pausa, guardado en los ajustes del usuario) llega a `Field::setSmoothMotion` 
 personajes y la cámara se dibujan deslizándose entre los fotogramas de 1/20 s del original (`Field::drawnPose`, ver
 `docs/modulos/game/field.md`, «Interpolación»); apagado, cada uno se dibuja donde lo deja su tick, a saltos de
 fotograma como el original. La lógica es la misma en los dos casos.
+
+En combate el original mueve a los luchadores y redibuja los efectos de las técnicas una vez por fotograma (20 por
+segundo, uno de cada tres ticks del juego): dibujados donde los deja cada fotograma, avanzan a saltos aunque el campo
+se deslice. Con el movimiento suave encendido, `battle_glide.hpp` los desliza igual que al campo, un fotograma por
+detrás: `PoseGlide` lleva a cada luchador (posición y giro por el camino corto) desde donde se dibujaba hasta el sitio
+del fotograma nuevo en 1/20 s (`FieldScene::holdFighter`, que avanza con `settleActors` en cada tick), y un salto de más
+de 500 unidades en un fotograma se dibuja de golpe; `blendEffects` desliza los efectos entre los dos últimos
+fotogramas (el punto de cada sprite, la traslación de cada objeto de modelo, los extremos de cada partícula),
+emparejando cada dibujo con el del mismo orden entre los de su técnica y su clase; si una técnica cambió cuántos
+dibuja de una clase, ese fotograma se dibuja tal cual. Las sombras, las auras, los anillos y los demás efectos de
+estado que cuelgan de un luchador (`statusAnchor`, `nodePoint`) siguen su sitio deslizado; la lógica del combate
+(`BattleEffectBodies`, las probetas de vuelo) lee el del fotograma. Las animaciones de los luchadores siguen avanzando
+por ticks enteros (60 por segundo). Apagado, todo se dibuja como antes.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Luchadores entre fotogramas | Se dibujan en el sitio de cada fotograma (20 por segundo) | `PoseGlide` desliza la posición y el giro durante el fotograma, un fotograma por detrás; saltos de más de 500 unidades de golpe | `battle_glide_tests.cpp` («a fighter glides over the battle's frame…», «a fighter's turn glides the short way…»); capturas | Mejora opcional (`smooth_motion`, encendida por defecto) |
+| Efectos de las técnicas entre fotogramas | Se redibujan en cada fotograma | `blendEffects`: sprites, objetos de modelo y partículas emparejados por técnica, clase y orden | `battle_glide_tests.cpp` («the effects glide between two frames…», «an effect model glides its translation…») | Mejora opcional (`smooth_motion`) |
 
 ## Estilo chibi
 
@@ -1212,8 +1248,12 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
   modelos ampliadas al cargar y filtradas con mipmaps; `smooth`, solo filtradas; `nearest`, los texels del original).
   Se guardan en los ajustes del usuario, `--graphics scenery=smooth|upscaled,aa=on|off,textures=nearest|smooth|upscaled`
   los cambia para una partida y la consola y las rutas con `scenery_quality("smooth")`, `antialiasing("off")` y
-  `texture_filter("nearest")`. Aún no tienen fila en la pestaña «Gráficos»: irían «Calidad de escenarios» (Suave /
-  Ampliada), «Suavizado de bordes» (Sí / No) y «Texturas de modelos» (Píxeles / Suaves / Ampliadas).
+  `texture_filter("nearest")`. La pestaña «Gráficos» tiene sus filas, tras «Escenarios en alta definición»:
+  «Calidad de escenarios» (Ampliada / Suave, siempre «Mejora»), «Suavizado de bordes» (Sí / No) y «Texturas de
+  modelos» (Ampliadas / Suaves / Píxeles, «Como el original» en Píxeles). `texture_filter` vale para todos los modelos:
+  el campo y el combate (los luchadores y los modelos de las técnicas son del `ModelRenderer` del campo) y las figuras
+  en 3D de los menús (el compañero y el jugador de la ficha, la figura del guardado, la medalla y la entrevista de la
+  partida nueva), que comparten además la caché del escalador.
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
@@ -1289,9 +1329,9 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 
 | Pestaña | Filas |
 |---|---|
-| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros |
-| Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
-| Sonido | Volumen de música, Volumen de efectos, Música continua |
+| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Sesiones de gimnasio, Espacio tras los nombres |
+| Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
+| Sonido | Volumen de música, Volumen de efectos, Música continua, Reverberación |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
 
 | Qué | Teclado y ratón | Mando |
@@ -1373,7 +1413,7 @@ número entero que se ve tal cual). Cada entrada dice además su pestaña (`tab`
 sin él, la opción es siempre una mejora). `default` es también lo que envía «Restablecer valores». Las filas de
 pantalla, aspecto, escala, idioma y letra están en `pause_menu/logic.lua` (`display_entries`), con los mismos campos.
 
-El documento tiene 14 filas (`row-1`…`row-14`) que la página reparte al mostrar cada pestaña: les da el id de la
+El documento tiene 16 filas (`row-1`…`row-16`) que la página reparte al mostrar cada pestaña: les da el id de la
 opción (`<id>`, `<id>-label`, `<id>-value`, `<id>-less`, `<id>-more`, `<id>-bar`) y oculta las que sobran. Una opción
 nueva solo necesita su entrada en esa lista y que el juego atienda su ajuste; ningún documento necesita una fila
 propia. Las rutas y las pruebas eligen pestaña con `show_tab(document, "<pestaña>")` y cambian una opción por su id con
@@ -1411,6 +1451,7 @@ los pasos suenen repartidos en vez de apiñarse arriba. El control `Master` se q
 | Volumen de música | No existe: la música suena siempre al máximo (`sound.c`: `initializeMusic`, `SsSetMVol(127, 127)`) | Fila «Volumen de música», 0–10 (10 por defecto = el original); bus `Music`, que también lleva el sonido de las películas (`MovieScreen`) | `volume_setting_tests.cpp` («the options page's volume rows change the audio at once and save the steps», «the saved volumes reach the audio at start…»); `in_game_options_tests.cpp` («the options page steps the music's and the effects' volumes from 0 to 10», pieles original y moderna); `user_settings_tests.cpp` | Mejora (opción) |
 | Volumen de efectos | No existe: igual que la música | Fila «Volumen de efectos», 0–10; bus `Effects`: los efectos del juego y los sonidos de los menús | Los mismos | Mejora (opción) |
 | Estéreo/mono | No hay opción: el juego no cambia nunca el modo de la biblioteca de sonido | Siempre estéreo; no se añade fila de mono | — | Hueco (sin valor claro) |
+| Reverberación | La del chip, encendida al arrancar y para siempre (`sound.c`: `initializeMusic`, `STUDIO_B` a 0x7000) en los tonos con el bit de reverberación | Igual por defecto ([audio, §7.4](../../architecture/audio.md#74-reverberacion)); fila «Reverberación» («Reverb») para apagarla: la orden `reverb` (booleano) va a `VolumeChanger`, que llama a `Audio::setReverb` y la guarda (`reverb: false`) | `volume_setting_tests.cpp` («the reverb starts on, as the original, and its row turns it off and saves it»); `reverb_tests.cpp`; `user_settings_tests.cpp` | Igual (opción para quitarla) |
 
 ## Sombras, luz y colores vivos
 
@@ -1594,3 +1635,44 @@ contenido oculto (rulesets `oculto` u `oculto_mega`, que traen la sección `rare
 azar pueden dejar un objeto raro de evolución en vez del suyo
 ([evolution.md](../game/evolution.md#objetos-raros-de-evolución)). Apagado, o con el ruleset `original`, los objetos
 del campo son los del original. Su ayuda (`pause_menu.help.rare_items`) avisa de que necesita el contenido oculto.
+
+## Combates rápidos
+
+Mejora opcional, apagada por defecto: el ajuste `battle_speed` (fila «Combates rápidos», «Quick battles» en inglés, de
+la pestaña Juego de las opciones del menú de pausa y de las del título, guardado en los ajustes del usuario) tiene tres
+valores: `normal` (el original), `key` (cada combate empieza a su velocidad y la acción `battle_speed`, `R` o el
+gatillo derecho del mando, pone y quita el doble) y `fast` (empieza al doble y la misma tecla lo quita). Lo lleva
+`BattleSpeedChanger` (`battle_speed.hpp`) en el bucle de `game.cpp`.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Velocidad del combate | Un tick de la lógica por fotograma del bucle (`battle_main.c: BTL_battleTickFrame`); el reloj del juego está parado durante el combate | Con el doble puesto, cada tick del reloj corre dos ticks del combate (`ticksPerTick`), y lo que se dibuja entre ticks avanza igual. Cada tick es el del original: daño, IA, ganancias y tiempo de juego no cambian; solo se espera la mitad. El sonido y el tiempo de partida (`countPlayTime`) siguen el reloj real | «fast runs a fight at two ticks a frame, never the field, and the key switches it off» (`battle_speed_tests.cpp`) | Mejora (opción) |
+| Momentos de reacción | El jugador carga el golpe final pulsando (`command_menu.c: BTL_tickFinisherChargeup`), revive al compañero caído antes de que acabe la cuenta (`BTL_tickDeathCountdown`) y lanza objetos con la bolsa abierta | Mientras se carga el golpe final, corre la cuenta del compañero caído, la bolsa está abierta o hay un objeto en la mano o en el aire, el combate va a la velocidad del original (`BattleScreen::reacting`), así el doble nunca quita tiempo para reaccionar | «a fight waits at the original's speed while the player has to react» | Mejora (opción) |
+| Indicador | — | Con el doble puesto, el documento de combate muestra «x2» abajo a la derecha (`battle.fast`) | en vivo | Mejora (opción) |
+| Campo, menús y escenas | — | Solo el combate (de su inicio a su caja final, `BattleScreen::fighting`) va al doble; el campo, los menús, las escenas y los torneos fuera del combate van a su velocidad | «fast runs a fight at two ticks a frame, never the field…» | Mejora (opción) |
+
+## Vida de los rivales
+
+Mejora opcional, apagada por defecto: el ajuste `enemy_hp_bars` (fila «Vida de los rivales», «Enemy life bars» en
+inglés, de la pestaña Juego de las opciones del menú de pausa y de las del título, guardado en los ajustes del usuario)
+llega desde `PlaySession` (`EnemyHpBarsSetting`) a `BattleScreen::setEnemyHpBars`; la regla es
+`screens::enemyHpBarShown` (`enemy_hp_bars.hpp`).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Barras de los rivales en un combate salvaje | `battle_main.c: BTL_addEnemyHPBars` (solo la llama `BTL_initializeCombat`) añade el objeto que dibuja, cada fotograma, la barra de cada rival un rato después de recibir daño (`BTL_renderEnemyHPBars`, 21 fotogramas de `enemy_hp_bar_frames`) | Igual sin la opción (`Battle::hpBarShown`) | «the original's bars: a wild enemy's a while after a hit, never a cup's» (`enemy_hp_bars_tests.cpp`) | Igual |
+| Barras en un combate de copa | `std_main.c: STD_initializeCombat` no añade esas barras: la copa solo tiene sus paneles fijos de los dos luchadores | Sin la opción, ninguna barra sobre el rival en la copa (antes dwe la dibujaba tras cada golpe, como en un combate salvaje) | la misma prueba | Igual |
+| Con la opción | — | Una barra sobre cada rival que sigue en pie (con vida y sin caer) todo el combate, también en las copas; con el aspecto original es la barra del original con su línea, con el moderno una barra compacta con la vida en cifras (`#hp-bars.always`, ajuste `battle.hp_bars.always`) | «enemy life bars: every enemy still standing, cups too, and none once it falls» | Mejora (opción) |
+
+## Sesiones de gimnasio
+
+Mejora opcional, a 1 por defecto (el original): el ajuste `gym_sessions` (fila «Sesiones de gimnasio», «Gym sessions» en
+inglés, de 1 a 5, en la pestaña Juego de las opciones del menú de pausa y de las del título, guardado en los ajustes del
+usuario) llega a `GymScreen::setSessions`; la regla es `GymBatch` (`gym_batch.hpp`).
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Una sesión por diálogo | La máquina del curso pregunta (Normal / Ruleta / Salir) y el guion fija el curso y la ruleta (variables 254 y 246) y llama a la rutina 7 (`script_interp.c`), que corre una sola sesión; para otra hay que volver a hablar | Igual con 1 (`GymScreen::startChosen`) | «at the original's one session a course never starts again» (`gym_batch_tests.cpp`) | Igual |
+| Varias sesiones seguidas | — | Con 2 a 5, cuando acaba una sesión que empezó la historia, se cierra su caja de estadísticas y el campo queda libre (sin guion, texto, menú, combate ni escena del compañero: la caca, el baño, comer, felicitar, dormir, evolución, muerte), el mismo curso vuelve a empezar con la misma ruleta, hasta completar el número (`GymScreen::continueBatch`). Cada sesión es una del original: mismas ganancias, misma hora, mismo cansancio y lo que el compañero haga después | «a batch runs its course again each time the field is idle…», «a batch waits while something holds the field» | Mejora (opción) |
+| Cortar la tanda | — | La tanda se acaba si el jugador cancela una sesión antes del premio (cancelar durante la cuenta de estadísticas no la corta), si el compañero muestra una necesidad o estado (hambre, sueño, cansancio, baño, enfado, herida, enfermedad) o si el jugador cambia de mapa | «a cancel, a need of the partner's or another map stops a batch for good» | Mejora (opción) |
+| Consola | — | `gym("<curso>")` sigue corriendo una sola sesión: solo los cursos que empieza la historia van en tanda | en vivo | Mejora (opción) |

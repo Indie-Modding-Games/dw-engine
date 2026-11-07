@@ -66,6 +66,7 @@ programs:
     pan: 0
     sample: 2
     adsr: "a8ff 5fde"
+    mode: 4
 samples:
 - sample: 1
   file: "sample_001.wav"
@@ -142,6 +143,9 @@ TEST_CASE("a bank_meta reads its volumes, tones, samples and sounds") {
   CHECK(program->tones[1].pan == 0);
   CHECK(program->tones[1].adsr1 == 0xa8ff);
   CHECK(program->tones[1].adsr2 == 0x5fde);
+  // The reverb bit of the tone's mode; a tone without a mode has none.
+  CHECK(program->tones[1].reverb());
+  CHECK_FALSE(program->tones[0].reverb());
   REQUIRE(bank->sample(2) != nullptr);
   CHECK(bank->sample(2)->rate == 22050);
   CHECK(bank->sample(2)->file == "sample_002.wav");

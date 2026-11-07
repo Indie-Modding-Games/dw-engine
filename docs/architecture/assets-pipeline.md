@@ -101,7 +101,7 @@ fichero pasado por el **cocinero de su extensión**. Lo decide el [ADR 0017](../
 | PNG indexado cuyo YAML lateral lista más de una paleta, o TIM de mapa con CLUT | El mismo PNG: la paleta se elige al jugar | `texture` lo deja pasar |
 | GLB | El mismo GLB, con la cabecera comprobada | `glb` |
 | WAV | Ogg Opus a 48 kHz, con el bucle y la nota en comentarios ([Opus](../formats/opus.md)) | `audio` |
-| Película (`movie/`: Y4M, WAV y YAML) | Copiada tal cual: el formato cocinado del vídeo está pendiente ([ADR 0017](../adr/0017-cocinado-y-archivos-pak.md)) | — |
+| Vídeo de película (`movie/<nombre>/video.y4m`) | AV1 en un IVF, con libaom ([vídeo](../formats/video.md)) | `video` |
 | Cualquier otro (YAML, MIDI, SF2…) | Copiado tal cual | — |
 
 - Un tipo nuevo es una entrada más en el registro (`apps/dwx/src/cook.cpp`) y la función que cocina. Antes de

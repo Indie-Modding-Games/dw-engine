@@ -128,6 +128,19 @@ struct UserSettings {
   // VolumeSteps, the original's level; volume_setting.hpp), the full level when not chosen yet.
   std::optional<int> musicVolume = std::nullopt;
   std::optional<int> effectsVolume = std::nullopt;
+  // The sound chip's reverb (reverb: true, false; volume_setting.hpp): on, as the original plays
+  // every tone with its reverb bit through it; on when not chosen yet.
+  std::optional<bool> reverb = std::nullopt;
+  // Quick battles (battle_speed: normal, key, fast; battle_speed.hpp): fights at twice the speed,
+  // always or switched with a key; normal, the original's, when not chosen yet.
+  std::optional<std::string> battleSpeed = std::nullopt;
+  // Enemy life bars (enemy_hp_bars: true, false; BattleScreen::setEnemyHpBars): a bar over every
+  // enemy still standing in every fight, cups too, instead of the original's (a while after a wild
+  // enemy is hit, never in a cup); off when not chosen yet.
+  std::optional<bool> enemyHpBars = std::nullopt;
+  // Batch training (gym_sessions: 1 to 5; gym_batch.hpp): the sessions a course the story starts
+  // at a gym runs in a row; 1, the original's, when not chosen yet.
+  std::optional<int> gymSessions = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

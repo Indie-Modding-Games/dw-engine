@@ -53,6 +53,7 @@
 
 #include "app_flow.hpp"
 #include "autotest.hpp"
+#include "battle_speed.hpp"
 #include "bug_report.hpp"
 #include "bug_reporter.hpp"
 #include "chibi_style.hpp"
@@ -68,6 +69,7 @@
 #include "game_audio.hpp"
 #include "game_documents.hpp"
 #include "graphics_options.hpp"
+#include "gym_batch.hpp"
 #include "hd_scenery_setting.hpp"
 #include "language.hpp"
 #include "map_debug_overlay.hpp"
@@ -593,8 +595,28 @@ int runGame(const Options& requested) {
     core::logError("{}", uiRenderer.error().message);
     return EXIT_FAILURE;
   }
+  // The enhanced graphics: the saved choices, with --graphics on top for this run only.
+  GraphicsOptions startGraphics = startGraphicsOptions(userSettings);
+  if (options.graphics) {
+    startGraphics = withGraphicsFlag(startGraphics, *options.graphics).value_or(startGraphics);
+  }
+  // HD scenery's and the models' upscales, kept under the user's data like the settings (not by
+  // autotests).
+  std::optional<std::filesystem::path> upscaleFolder;
+  if (settingsFile) {
+    if (const auto data =
+            platform::userDataFolder(content::UserDataOrganization, content::UserDataApplication)) {
+      upscaleFolder = *data / "cache" / "upscale";
+    }
+  }
+  const auto upscaleCache = std::make_shared<const render::UpscaleCache>(upscaleFolder);
+  // The menus' 3D figures take the models' texture filter and the cache before their first model.
+  const auto prepareFigure = [&](render::ModelRenderer& models) {
+    prepareModels(models, startGraphics, upscaleCache);
+  };
   auto portrait = PartnerPortrait::create(**renderer);
   if (portrait) {
+    prepareFigure((*portrait)->models());
     if (auto bound = (*uiRenderer)->bindTexture("runtime/partner-portrait", (*portrait)->texture());
         !bound) {
       core::logError("Status portrait: {}", bound.error().message);
@@ -614,6 +636,7 @@ int runGame(const Options& requested) {
     core::logWarning("Status portrait: {}", portraitClips.error().message);
   auto playerPortrait = PartnerPortrait::create(**renderer);
   if (playerPortrait) {
+    prepareFigure((*playerPortrait)->models());
     if (auto bound =
             (*uiRenderer)->bindTexture("runtime/player-portrait", (*playerPortrait)->texture());
         !bound) {
@@ -633,6 +656,7 @@ int runGame(const Options& requested) {
   // indicator shows its text alone.
   auto saveFigure = SaveFigure::create(**renderer);
   if (saveFigure) {
+    prepareFigure((*saveFigure)->models());
     if (auto bound =
             (*uiRenderer)->bindTexture(std::string{SaveFigureTexture}, (*saveFigure)->texture());
         !bound) {
@@ -648,6 +672,7 @@ int runGame(const Options& requested) {
   // The medal that turns on the medals page (medal_figure.hpp); without it the page shows none.
   auto medalFigure = MedalFigure::create(**renderer);
   if (medalFigure) {
+    prepareFigure((*medalFigure)->models());
     if (auto bound =
             (*uiRenderer)->bindTexture(std::string{MedalFigureTexture}, (*medalFigure)->texture());
         !bound) {
@@ -724,22 +749,8 @@ int runGame(const Options& requested) {
   // (title.language_first; an addition, as a remaster's); an autotest only when its route asks.
   (*ui)->setSetting("title.language_first", autotest == nullptr || autotest->asksLanguageFirst());
   MinimapChanger minimapChanger{userSettings, settingsFile};
-  // The field's enhanced graphics: the saved choices, with --graphics on top for this run only.
-  GraphicsOptions startGraphics = startGraphicsOptions(userSettings);
-  if (options.graphics) {
-    startGraphics = withGraphicsFlag(startGraphics, *options.graphics).value_or(startGraphics);
-  }
   GraphicsChanger graphics{userSettings, settingsFile, startGraphics};
   graphics.publish(**ui);
-  // HD scenery's upscales, kept under the user's data like the settings (not by autotests).
-  std::optional<std::filesystem::path> upscaleFolder;
-  if (settingsFile) {
-    if (const auto data =
-            platform::userDataFolder(content::UserDataOrganization, content::UserDataApplication)) {
-      upscaleFolder = *data / "cache" / "upscale";
-    }
-  }
-  const auto upscaleCache = std::make_shared<const render::UpscaleCache>(upscaleFolder);
   // The music's and the effects' volumes: the saved steps, applied to the audio from the start.
   VolumeChanger volumes{userSettings, settingsFile, sound};
   volumes.publish(**ui);
@@ -752,6 +763,18 @@ int runGame(const Options& requested) {
     walkControl.use(autotest->walksWithMouse() ? WalkControl::Mouse : WalkControl::Keys, nullptr);
   }
   (*ui)->setSetting(WalkControlSetting, std::string{walkControlName(walkControl.control())});
+  // Quick battles (battle_speed.hpp): the saved speed; an autotest reads none, so it fights at the
+  // original's.
+  BattleSpeedChanger battleSpeed{userSettings, settingsFile};
+  (*ui)->setSetting(BattleSpeedSetting, std::string{battleSpeedName(battleSpeed.speed())});
+  std::optional<bool> battleFastShown;
+  // Batch training (gym_batch.hpp): the saved number of sessions; an autotest reads none, so it
+  // trains one session a course, as the original.
+  const auto gymSessions = [&userSettings] {
+    return std::clamp(userSettings.gymSessions.value_or(GymSessionsMin), GymSessionsMin,
+                      GymSessionsMax);
+  };
+  (*ui)->setSetting(GymSessionsSetting, static_cast<double>(gymSessions()));
   (*ui)->setSetting(AutosaveSetting, userSettings.autosave.value_or(true));
   // The options only a game applies, for the title's options page (title_options.hpp).
   publishGameToggles(**ui, userSettings);
@@ -811,6 +834,12 @@ int runGame(const Options& requested) {
   (*scripts)->bindCommand(AntialiasingSetting, [&consoleGraphics](std::string_view value) {
     consoleGraphics.push_back(
         {.name = std::string{AntialiasingSetting}, .value = ui::UiValue{value != "off"}});
+  });
+  // The console's and the routes' battle_speed("normal"|"key"|"fast"), the options row's setting
+  // (battle_speed.hpp), applied between frames in the same way.
+  std::optional<std::string> consoleBattleSpeed;
+  (*scripts)->bindCommand(BattleSpeedSetting, [&consoleBattleSpeed](std::string_view value) {
+    consoleBattleSpeed = std::string{value};
   });
   // The console's ui_skin("<id>"), the menus' skin setting, applied between frames in the same way.
   std::optional<std::string> consoleUiSkin;
@@ -875,13 +904,14 @@ int runGame(const Options& requested) {
       return false;
     }
     // The music stops before a movie and starts again after it (main.c:3441 finalizeMusic,
-    // playMovie, initializeMusic). The game plays music (session::SessionMusic), but this path
-    // neither stops nor restarts it yet.
-    core::logDebug("[port:movie] playMovie (main.c:{}): movie {} '{}'; finalizeMusic: no music to "
-                   "stop yet",
-                   movieCallSite(moment), static_cast<int>(moment), movieRules->of(moment).file);
+    // playMovie, initializeMusic): a game playing under the movie holds its music until afterMovie.
+    core::logDebug("[port:movie] playMovie (main.c:{}): movie {} '{}'", movieCallSite(moment),
+                   static_cast<int>(moment), movieRules->of(moment).file);
     if (!movies->play(files, movieRules->of(moment))) {
       return false;
+    }
+    if (PlaySession* play = flow.playing()) {
+      play->holdMusicForMovie(true);
     }
     title.hide();
     moviePlayed = true;
@@ -965,8 +995,10 @@ int runGame(const Options& requested) {
   };
   // After a movie: the game that waited for it, or the title.
   const auto afterMovie = [&] {
-    core::logDebug("[port:movie] playMovie (main.c:3443): the movie is over; initializeMusic: no "
-                   "music to start yet");
+    core::logDebug("[port:movie] playMovie (main.c:3443): the movie is over");
+    if (PlaySession* play = flow.playing()) {
+      play->holdMusicForMovie(false);
+    }
     if (const auto next = std::exchange(nextMovie, std::nullopt); next && playMovie(*next)) {
       // main.c: main goes round its loop: the boot movie, then the "Press Start" screen.
       titleIdleTicks = 0;
@@ -996,8 +1028,10 @@ int runGame(const Options& requested) {
     }
     NewGameSceneRules sceneRules = *newGameScene;
     sceneRules.naming.length = nameLength(sceneRules.naming, userSettings.longNames.value_or(true));
-    auto made =
-        NewGameInterview::create(**renderer, **ui, files, std::move(sceneRules), &openingSound);
+    auto made = NewGameInterview::create(**renderer, **ui, files, std::move(sceneRules),
+                                         &openingSound, [&](render::ModelRenderer& models) {
+                                           prepareModels(models, graphics.options(), upscaleCache);
+                                         });
     if (!made) {
       core::logWarning("new game scene: {}; the game starts without the questions",
                        made.error().message);
@@ -1363,6 +1397,19 @@ int runGame(const Options& requested) {
     // the logic's time, capped as the ticks are, never by more: a stall, a load or a slow machine
     // would otherwise play the animations ahead of the clock and the field.
     double gameSeconds = step.takenSeconds();
+    // A quick battle (battle_speed.hpp) runs each of the clock's ticks as two of the fight's, and
+    // what is drawn between them moves on as fast; the sound and the play time keep the clock's.
+    const int ticksPerTick = flow.playing() != nullptr
+                                 ? battleSpeed.ticksPerTick(flow.playing()->battleSpeedMoment())
+                                 : 1;
+    ticks *= ticksPerTick;
+    gameSeconds *= ticksPerTick;
+    // The battle document's x2 plate, while x2 is switched on.
+    if (const bool fast = battleSpeed.speed() != BattleSpeed::Normal && battleSpeed.fastSwitched();
+        fast != battleFastShown) {
+      (*ui)->setSetting(BattleFastSetting, fast);
+      battleFastShown = fast;
+    }
     // The control channel's pause: only the ticks it advances run, and the frame lasts as long as
     // they do, so what moves with the frame's time moves with them.
     if (control) {
@@ -1377,7 +1424,7 @@ int runGame(const Options& requested) {
         gameSeconds = ticks * TickSeconds;
       }
     }
-    sound.update(ticks * TickSeconds);
+    sound.update(ticks * TickSeconds / ticksPerTick);
     for (int tick = 0; tick < ticks; ++tick) {
       if (autotest && !routeOver) {
         autotest->feedTick(ticksRun, input);
@@ -1440,6 +1487,7 @@ int runGame(const Options& requested) {
       }
       if (flow.playing() != nullptr && input.wasPressed("menu")) {
         publishPlayerPoint(**ui, flow.playing()->scene());
+        flow.playing()->preparePauseMenu();
       }
       if (settingsAsked) {
         const bool open = (*ui)->isVisible(MenuDocument) && optionsDirect;
@@ -1450,6 +1498,7 @@ int runGame(const Options& requested) {
           // A menu another key opened (Tab) is already visible: the setting switches it to its
           // options page in place, without closing and reopening its box.
           publishPlayerPoint(**ui, flow.playing()->scene());
+          flow.playing()->preparePauseMenu();
           (*ui)->setSetting(MenuStartPageSetting, std::string{"options"});
           if (!(*ui)->isVisible(MenuDocument)) {
             (*ui)->show(MenuDocument, true);
@@ -1492,7 +1541,7 @@ int runGame(const Options& requested) {
       // (measured: 140 frames in 420 vblanks with the bag's options open, 100 in 307 in a battle)
       // and not under the pause (none in 476 vblanks) or a movie, which return above.
       if (play != nullptr) {
-        play->countPlayTime(TickSeconds);
+        play->countPlayTime(TickSeconds / ticksPerTick);
       }
       game::field::FieldInput intent;
       FishingButtons fishing;
@@ -1543,7 +1592,11 @@ int runGame(const Options& requested) {
         mouse.release();
       }
       if (play != nullptr) {
-        // The battle's document holds the input, but not the finisher's button.
+        // The battle's document holds the input, but not the finisher's button nor the quick
+        // battle's switch.
+        if (play->battleSpeedMoment().fighting && input.wasPressed(BattleSpeedAction)) {
+          battleSpeed.press();
+        }
         play->pressBattle(input);
         play->pressItemKeeper(input);
         play->pressPartnerMenu(input);
@@ -1594,6 +1647,27 @@ int runGame(const Options& requested) {
       if (command.name == AutosaveSetting) {
         // The autosave option from the title's options; the game's own are PlaySession's.
         changeAutosave(command.value, **ui, userSettings, settingsFile);
+        continue;
+      }
+      if (command.name == BattleSpeedSetting) {
+        battleSpeed.change(command.value);
+        (*ui)->setSetting(BattleSpeedSetting, std::string{battleSpeedName(battleSpeed.speed())});
+        continue;
+      }
+      if (command.name == GymSessionsSetting) {
+        // Batch training, from the title's options or the game's.
+        if (const double* number = std::get_if<double>(&command.value)) {
+          userSettings.gymSessions =
+              static_cast<int>(std::clamp(std::round(*number), static_cast<double>(GymSessionsMin),
+                                          static_cast<double>(GymSessionsMax)));
+          if (settingsFile) {
+            saveUserSettings(*settingsFile, userSettings);
+          }
+          if (PlaySession* play = flow.playing()) {
+            play->setGymSessions(gymSessions());
+          }
+        }
+        (*ui)->setSetting(GymSessionsSetting, static_cast<double>(gymSessions()));
         continue;
       }
       if (command.name == WalkControlSetting) {
@@ -1707,6 +1781,10 @@ int runGame(const Options& requested) {
     for (const ui::UiCommand& command : std::exchange(consoleGraphics, {})) {
       graphics.handle(command, **ui);
     }
+    if (consoleBattleSpeed) {
+      battleSpeed.change(ui::UiValue{*std::exchange(consoleBattleSpeed, std::nullopt)});
+      (*ui)->setSetting(BattleSpeedSetting, std::string{battleSpeedName(battleSpeed.speed())});
+    }
     if (consoleHdScenery) {
       const bool on = hdScenery.change(ui::UiValue{*std::exchange(consoleHdScenery, std::nullopt)});
       if (PlaySession* play = flow.playing()) {
@@ -1750,6 +1828,17 @@ int runGame(const Options& requested) {
     const bool showingMovie = movies && movies->playing();
     // Antialiasing (graphics_options.hpp) for every scene: the field, the interview, the figures.
     (*renderer)->setMultisampling(graphics.options().antialiasing);
+    // The models' texture filter for the menus' figures and the new game's host (the field's own
+    // takes it in setGraphics); each uploads its textures again only when the filter changes.
+    for (auto* figure : {portrait ? &(*portrait)->models() : nullptr,
+                         playerPortrait ? &(*playerPortrait)->models() : nullptr,
+                         saveFigure ? &(*saveFigure)->models() : nullptr,
+                         medalFigure ? &(*medalFigure)->models() : nullptr,
+                         interview ? &interview->models() : nullptr}) {
+      if (figure != nullptr) {
+        applyTextureFilter(*figure, graphics.options());
+      }
+    }
     std::span<render::Drawer* const> sceneDrawers;
     // The field's light and colour pass, over the field only (never a movie or the UI).
     render::Drawer* postDrawer = nullptr;
@@ -1770,9 +1859,10 @@ int runGame(const Options& requested) {
         portraitScenes.push_back(*hdPass);
       }
     }
-    if (!showingMovie && portrait && flow.playing() != nullptr &&
-        (*ui)->isVisible("partner_menu") &&
-        !(*ui)->elementHasClass("partner_menu", "page-status", "hidden")) {
+    if (!showingMovie && portrait && flow.playing() != nullptr) {
+      // The portrait follows the partner's form ahead of the status page: loaded on that page's
+      // first frame, its model and textures stalled the menu (#221). A new form comes in as the
+      // game starts (under its fade in) or evolves.
       const std::string species{flow.playing()->partnerSpecies()};
       if (species != portraitSpecies) {
         portraitSpecies = species;
@@ -1795,6 +1885,10 @@ int runGame(const Options& requested) {
           core::logWarning("Status portrait {}: no raise-table placement", species);
         }
       }
+    }
+    if (!showingMovie && portrait && flow.playing() != nullptr &&
+        (*ui)->isVisible("partner_menu") &&
+        !(*ui)->elementHasClass("partner_menu", "page-status", "hidden")) {
       // An addition: the model plays its idle, or the gesture of its first need, as on the field.
       const auto animation = game::partner::statusAnimation(flow.playing()->partnerConditions());
       const auto clip =

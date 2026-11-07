@@ -154,6 +154,9 @@ inline constexpr std::int32_t FaintClip = 0x2B;
 // frame's events.
 void startShownClips(BattleState& state);
 void updateShownClips(const BattleContext& context);
+// std_main.c: STD_tickBattleResultScreen: the time ran out with a winner; the loser falls at once
+// (STD_faintDigimon: startAnimation 0x2b) while the time-up box comes.
+void faintAtTimeUp(Fighter& fighter, FighterId id);
 // battle_main.c: BTL_setupQueuedMove: the species' clip of a move (FirstMoveAnimation plus the
 // move's place in the species' list); nothing for a move outside the list.
 std::optional<std::int32_t> moveClipOf(const BattleContext& context, const Fighter& fighter,

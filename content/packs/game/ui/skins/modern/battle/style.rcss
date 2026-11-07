@@ -367,6 +367,74 @@
 	display: none;
 }
 
+/* Enemy life bars (a dwe improvement, the enemy_hp_bars option): with it on, this look draws a compact bar over every
+   enemy still standing too, where the original look's bar hangs, without its leader line; the HP in plain digits. */
+#hp-bars.always {
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+}
+
+#hp-bars.always .hb {
+	position: absolute;
+	width: 0;
+	height: 0;
+}
+
+#hp-bars.always .hb-frame {
+	position: absolute;
+	width: 165dp;
+	height: 21dp;
+	box-sizing: border-box;
+	border: 3dp #10161ee0;
+	border-radius: 4dp;
+}
+
+#hp-bars.always .hb-line {
+	display: none;
+}
+
+#hp-bars.always .hb-fill {
+	position: absolute;
+	height: 9dp;
+	overflow: hidden;
+	background-color: #10161e80;
+}
+
+#hp-bars.always .hb-segment {
+	position: absolute;
+	top: 0;
+	height: 9dp;
+}
+
+#hp-bars.always .hb-value {
+	position: absolute;
+	width: 84dp;
+	height: 24dp;
+	font-size: 20dp;
+	color: #ffffff;
+}
+
+#hp-bars.always .hb-value .dd {
+	position: absolute;
+	top: 0;
+	width: 21dp;
+	height: 24dp;
+	text-align: center;
+}
+
+#hp-bars.always .hb-value .dd.hidden {
+	display: none;
+}
+
+#hp-bars.always #hd-1-0, #hp-bars.always #hd-2-0, #hp-bars.always #hd-3-0 { left: 0; }
+#hp-bars.always #hd-1-1, #hp-bars.always #hd-2-1, #hp-bars.always #hd-3-1 { left: 21dp; }
+#hp-bars.always #hd-1-2, #hp-bars.always #hd-2-2, #hp-bars.always #hd-3-2 { left: 42dp; }
+#hp-bars.always #hd-1-3, #hp-bars.always #hd-2-3, #hp-bars.always #hd-3-3 { left: 63dp; }
+
 /* The countdown sign over the fallen partner is the original look's; this look counts down in text (#revive). */
 #death-countdown {
 	display: none;
@@ -569,5 +637,22 @@
 }
 
 .pm.hidden {
+	display: none;
+}
+
+/* Quick battles (apps/game battle_speed.hpp, a dwe improvement): x2 in the bottom right corner, over the
+   prompts, while the fight runs at twice the speed. */
+#speed-plate {
+	position: absolute;
+	right: 24dp;
+	bottom: 60dp;
+	padding: 2dp 10dp;
+	font-size: 20dp;
+	color: #ffffff;
+	background-color: #000000b0;
+	border-radius: 8dp;
+}
+
+#speed-plate.hidden {
 	display: none;
 }

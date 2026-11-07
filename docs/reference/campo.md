@@ -171,7 +171,9 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
   suavizado ni zona muerta, y `updateDrawingOffsets` y `cameraIsAtEdge` la limitan al fondo, así que el jugador se
   descentra solo cerca de los bordes **(comprobado)**. Solo se mueve con el jugador en estado normal y con la cruceta
   pulsada, así que se queda quieta mientras el jugador sale de un mapa (`tamer.c: checkMapInteraction` llama a
-  `unsetCameraFollowPlayer` al pisar un warp); los scripts la mueven por su cuenta. Detalle en [mapas](../formats/mapas.md#en-el-motor). Lo hace la línea
+  `unsetCameraFollowPlayer` al pisar un warp); los scripts la mueven por su cuenta. Nada la vuelve a centrar: tras un
+  combate o un guion sigue por diferencias desde donde quedó, con el jugador descentrado, hasta el siguiente mapa
+  (`FieldCameraFollow` en `apps/game`). Detalle en [mapas](../formats/mapas.md#en-el-motor). Lo hace la línea
   de render del mapa, no `packages/game/field`.
 
 ### Hora del día

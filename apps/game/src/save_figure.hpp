@@ -36,6 +36,8 @@ public:
   core::Result<void> load(const assets::VirtualFileSystem& files);
   [[nodiscard]] bool loaded() const { return model_.has_value(); }
   [[nodiscard]] render::TextureId texture() const { return texture_; }
+  // Its models, for the graphics options (graphics_options.hpp: applyTextureFilter).
+  [[nodiscard]] render::ModelRenderer& models() { return *models_; }
   // Moves the run on and gives the frame's scene; only while the indicator is shown.
   render::TextureScene scene(double seconds);
 

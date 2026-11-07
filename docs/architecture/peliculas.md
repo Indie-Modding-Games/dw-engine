@@ -5,7 +5,8 @@ Estado: **aprobada por el coordinador** (VAN-02, 2026-10-22) con sus decisiones 
 Las cuatro películas del disco (`OP1`, `OP2`, `ED2`, `EDR`) ya se extraen como Y4M + WAV + `movie.yaml`
 ([formato](../formats/video.md)), pero nada las reproducía. VAN-02 las reproduce **tal como las escribe `dwx`**
 donde lo hace el original, con sus reglas de salto y lo que viene después. Fase 4: solo se traduce; sin tests ni
-rutas nuevos (regla «code now, test and fix in phase 5»). El formato cocinado (AV1 + Opus) va a la fase 5.
+rutas nuevos (regla «code now, test and fix in phase 5»). El formato cocinado (AV1 + Opus) llegó después (#105,
+abajo).
 
 ## Lo que hace el original
 
@@ -100,16 +101,32 @@ sobre 2652 frames en el fichero) va a la fase 5.
 
 ## Fase 5
 
-- **Formato cocinado AV1 + Opus** (decisión del coordinador: no en la fase 4): `dwx` codifica cada película a
-  `video.ivf` (AV1 con libaom, BSD-2-Clause + AOMedia Patent License 1.0) y `audio.opus` (libopusenc), deja de
-  escribir Y4M y WAV (−1,1 GB por extracción), sube `ExtractorVersion`; el motor decodifica con dav1d (BSD-2-Clause
-  + ISC), o con libaom si dav1d no compila en `windows-cross`. IVF en vez de WebM: sin dependencia más.
+- **Formato cocinado AV1 + Opus (hecho, #105).** `dwx cook` cocina cada película: el Y4M a `video.ivf` (AV1 en un
+  IVF, con libaom: BSD-2-Clause + AOMedia Patent License 1.0, vía vcpkg) y el WAV a `audio.opus` con el cocinero de
+  sonido de siempre; `movie.yaml` se copia. `dwx extract` sigue escribiendo Y4M + WAV: es la fuente que se cocina, y
+  el paquete distribuible es el cocinado (#227). El motor elige el lector por la extensión (`video::Av1Reader` o
+  `Y4mReader`, `decodeOpus` o `decodeWav`), así que juega las dos formas. Se usa libaom también para decodificar
+  (una sola dependencia nueva, que compila en `windows-cross`); IVF en vez de WebM, sin contenedor que añadir.
+  Ajustes fijos y deterministas: calidad constante `cq-level` 24, `cpu-used` 6 del modo de buena calidad, un hilo
+  por película (el cocinado ya reparte las películas entre hilos), un fotograma clave cada 300 como mucho, rango
+  completo. El `nasm` del contenedor de desarrollo compila el ensamblador de libaom.
+  - **Medidas** (extracción US, 4 películas, `dwx` de depuración con libaom en release, máquina compartida): 1171,8 MB
+    de Y4M + WAV pasan a 27,4 MB (vídeo 20,7 MB, sonido 6,7 MB); el `.pak` de las cuatro, 27,3 MB. Cocinar las
+    cuatro en paralelo, 4 min 33 s (una sola, 3 min); `dwx pack`, 3,5 s. Calidad de ED2 frente al Y4M: PSNR medio
+    42,6 dB (Y 41,7; mínimo 38,1 en un fotograma).
+  - **Música durante la película.** El original para la música antes de la película y la vuelve a arrancar después
+    (`main.c:3441` `finalizeMusic`, `playMovie`, `initializeMusic`); dwe no lo hacía, así que ED2 sobre una partida
+    terminada podía sonar con la canción del mapa debajo. Ahora `SessionMusic::holdForMovie` la para y retiene lo que
+    el campo pida mientras dure, y `releaseAfterMovie` toca después la canción del mapa desde el principio.
+  - **Queda:** el campo sigue actualizándose debajo de ED2 (animaciones y algún efecto de sonido del compañero);
+    el original no ha cargado el campo todavía en ese momento.
 - La versión EU (otra tabla y otra posición). La pantalla «pulsa Start» del original (`runLandingScreen`) ya está
   (`title_landing`, arriba).
 
 ## Decisiones (coordinador, 2026-10-22)
 
-- Q1/Q2: sin codificar en la fase 4; el motor reproduce Y4M + WAV + `movie.yaml` tal cual; AV1/Opus a la fase 5.
+- Q1/Q2: sin codificar en la fase 4; el motor reproduce Y4M + WAV + `movie.yaml` tal cual; AV1/Opus a la fase 5
+  (hecho después, en `dwx cook`: arriba).
 - Q3: el reloj es la posición de la voz (`Audio::position`).
 - Q4: solo los ganchos; HIST-S7 conecta las rutinas 53 y 54 y el campo del guardado.
 - Q5: `landing_idle_frames: 600` sobre la portada actual.

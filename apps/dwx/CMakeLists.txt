@@ -1,5 +1,11 @@
 find_package(Opus CONFIG REQUIRED)
 find_package(Ktx CONFIG REQUIRED)
+# The AV1 encoder of the movie cooker. Debug builds link its release build, as packages/engine/video does (the debug
+# build encodes far slower); not on Windows, where debug and release code use different C runtimes.
+find_package(AOM CONFIG REQUIRED)
+if(NOT WIN32)
+    set_target_properties(AOM::aom PROPERTIES MAP_IMPORTED_CONFIG_DEBUG Release)
+endif()
 # dwx validate compiles the Lua of the packs.
 find_package(Lua REQUIRED)
 # libopusenc ships no CMake package: its library and header, from the vcpkg tree.
@@ -47,10 +53,11 @@ dwe_add_module(dwx
         src/upscale_recipe.cpp
         src/validate.cpp
         src/verify.cpp
+        src/video_cooker.cpp
         src/video_extractors.cpp
     DEPS core formats assets
-    PRIVATE_LIBS dwe_opusenc KTX::ktx ${LUA_LIBRARIES}
-    TEST_LIBS dwe_cgltf)
+    PRIVATE_LIBS dwe_opusenc KTX::ktx AOM::aom ${LUA_LIBRARIES}
+    TEST_LIBS dwe_cgltf dwe::video)
 
 # The recipes dwx extract runs after the base pack (content/enhance), built into the tool so it needs no files beside
 # it. Editing a recipe reconfigures.

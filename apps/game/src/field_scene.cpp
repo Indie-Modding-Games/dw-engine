@@ -287,10 +287,9 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
       !entered) {
     return std::unexpected{entered.error()};
   }
-  if (!startAt) {
-    // main.c: main: fadeFromBlack(0x28) once the first map is in, with the player free.
-    scene->field_->startPlay();
-  }
+  // main.c: main: fadeFromBlack(0x28) once the first map is in, with the player free: after
+  // initializeMap for a new game, after initializeLoadedMap for a loaded one.
+  scene->field_->startPlay();
   return scene;
 }
 
@@ -501,6 +500,7 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
   lightingDelay_ = 0.0;
   cameraFocus_.reset();
   cameraPixel_.reset();
+  cameraFollow_.reset();
   minigamePrims_.clear();
   applyLighting();
   const auto done = Clock::now();
@@ -754,6 +754,10 @@ bool FieldScene::daytimeFadeRunning() const {
 }
 
 void FieldScene::applyLighting() {
+  if (stage_.lighting) {
+    models_->setLighting(*stage_.lighting);
+    return;
+  }
   render::ModelLighting lighting = mapLighting_;
   const glm::vec3 scale = render::timeOfDayLightScale(time_, fixedTime_, schedule_);
   for (render::DirectionalLight& light : lighting.lights) {
@@ -1025,7 +1029,7 @@ void FieldScene::submit(const Actor& actor, float alpha, const Look& look) {
   if (actor.fighter && actor.fighter->flatSprite) {
     return;
   }
-  const scene::Pose pose = field_->drawnPose(actor.entity, alpha);
+  const scene::Pose pose = drawnPose(actor.entity, alpha);
   const glm::vec3 scale = actor.fighter ? look.scale * actor.fighter->scale : look.scale;
   const glm::vec3 rise{0.0F, actor.fighter ? actor.fighter->rise : 0.0F, 0.0F};
   const glm::mat4 world =
@@ -1105,6 +1109,16 @@ void FieldScene::flickerFlames(const Actor& actor, std::uint32_t strip) {
 }
 
 void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
+  // The held fighters and the effects are drawn gliding between the battle's frames with smooth
+  // motion (battle_glide.hpp); the anchors that hang on them (nodePoint, statusAnchor) follow.
+  drawAhead_ = static_cast<double>(alpha) * tickSeconds_;
+  if (field_->smoothMotion() && !effectsTo_.empty()) {
+    effects_ = blendEffects(effectsFrom_, effectsTo_,
+                            static_cast<float>(std::clamp(
+                                (effectsSeconds_ + *drawAhead_) / BattleFrameSeconds, 0.0, 1.0)));
+  } else {
+    effects_ = effectsTo_;
+  }
   // Every frame, paused too: a language picked in the pause menu repaints the signs behind it.
   followSigns();
   const bool paused = clock != FieldClock::Running;
@@ -1187,15 +1201,18 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   // tamer.c: checkMapInteraction calls unsetCameraFollowPlayer when a warp fires, and map.c:
   // tickCameraFollowPlayer only follows while the tamer's state is 0: the camera stays put while
   // the player walks out, and in a battle (holdCamera).
-  if (const std::optional<glm::vec3> held = field_->scriptCamera()) {
-    cameraFocus_ = *held;
-  } else if (!cameraFocus_ || (!cameraHeld_ && !field_->mapChangePending())) {
+  const std::optional<glm::vec3> scripted = field_->scriptCamera();
+  const bool following = !scripted && !cameraHeld_ && !field_->mapChangePending();
+  if (scripted) {
+    cameraFocus_ = *scripted;
+  } else if (!cameraFocus_ || following) {
     cameraFocus_ = player.position;
   }
   // The sprite animations wait while paused. A time-of-day fade under way does not: map.c:
   // tickDaytimeTransition only waits for GAME_STATE, which the field's pause menu leaves alone; the
   // lights switch when it ends.
-  mapRenderer_->setFocusPixel(cameraPixel_);
+  mapRenderer_->setFocusPixel(cameraPixel_ ? cameraPixel_
+                                           : followPixel(player.position, following));
   mapRenderer_->update(animationSeconds, frameSeconds, *cameraFocus_);
   updateWeather(frameSeconds, paused);
   if (lightingDelay_ > 0.0) {
@@ -1214,6 +1231,30 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   drawGroundItems();
   drawShadows(alpha);
   gradeScene(frameSeconds);
+  drawAhead_.reset();
+}
+
+std::optional<glm::vec2> FieldScene::followPixel(glm::vec3 player, bool following) {
+  if (!mapRenderer_->hasMap()) {
+    return std::nullopt;
+  }
+  const render::MapCamera& camera = mapRenderer_->mapCamera();
+  const std::optional<render::BackgroundPoint> playerPoint = camera.projectToBackground(player);
+  if (!playerPoint) {
+    return std::nullopt;
+  }
+  std::optional<glm::vec2> script;
+  if (const std::optional<glm::vec3> scripted = field_->scriptCamera()) {
+    const std::optional<render::BackgroundPoint> point = camera.projectToBackground(*scripted);
+    if (!point) {
+      return std::nullopt;
+    }
+    script = point->pixel;
+  }
+  const glm::vec2 focus = cameraFollow_.update(playerPoint->pixel, following, script);
+  // The point under the focus on the player's ground, where a script's camera starts.
+  field_->setCameraRest(camera.pickGround(camera.backgroundToWindow(focus), player.y));
+  return focus;
 }
 
 void FieldScene::setPlayerClip(std::optional<std::uint32_t> clip) {
@@ -1294,9 +1335,9 @@ std::optional<glm::vec3> FieldScene::nodePoint(const Actor& actor, std::uint32_t
   const auto& inverseBind = skin.inverseBindMatrices;
   // A skin matrix is the joint's model-space transform times its inverse bind matrix.
   const glm::mat4 jointSpace = joints[joint] * glm::inverse(inverseBind[joint]);
-  const auto& transform = world_.registry().get<scene::Transform>(actor.entity);
-  const glm::mat4 world = glm::rotate(glm::translate(glm::mat4{1.0F}, transform.position),
-                                      transform.yaw, glm::vec3{0.0F, 1.0F, 0.0F});
+  const scene::Pose place = heldPlace(actor);
+  const glm::mat4 world = glm::rotate(glm::translate(glm::mat4{1.0F}, place.position), place.yaw,
+                                      glm::vec3{0.0F, 1.0F, 0.0F});
   // The original's axes: y and z point the other way.
   return glm::vec3{world * jointSpace * glm::vec4{offset.x, -offset.y, -offset.z, 1.0F}};
 }
@@ -1377,8 +1418,12 @@ void FieldScene::setEntityYaw(scene::Entity entity, float yaw) {
 }
 
 void FieldScene::setStage(const FieldStage& stage) {
+  const bool relight = stage.lighting.has_value() || stage_.lighting.has_value();
   stage_ = stage;
   mapRenderer_->setStageCamera(stage_.view);
+  if (relight) {
+    applyLighting();
+  }
 }
 
 const render::MapCamera* FieldScene::camera() const {

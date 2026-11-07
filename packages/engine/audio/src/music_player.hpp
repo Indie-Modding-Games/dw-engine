@@ -21,8 +21,10 @@ public:
   void start(const MusicOrder& order) noexcept;
   // A hard cut to silence.
   void stop() noexcept;
-  // Adds the music to the frames, each scaled by its gain (the Music bus).
-  void mixInto(std::span<float> frames, std::span<const float> gains) noexcept;
+  // Adds the music to the frames, each scaled by its gain (the Music bus), and the notes whose tone
+  // goes to the reverb to send, which is as long.
+  void mixInto(std::span<float> frames, std::span<float> send,
+               std::span<const float> gains) noexcept;
 
 private:
   // The synthesizer renders in blocks this long, so the events land within this many frames.
@@ -44,6 +46,8 @@ private:
   std::uint32_t loopStart_ = 0;
   std::uint32_t loopEnd_ = 0;
   std::array<float, BlockFrames * OutputChannels> block_{};
+  std::array<float, BlockFrames * OutputChannels> reverbBlock_{};
+  std::array<float, BlockFrames * OutputChannels> voiceBlock_{};
 };
 
 } // namespace dwe::audio

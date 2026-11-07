@@ -28,6 +28,7 @@
     "zstd",
     "opus",
     "libopusenc",
+    "aom",
     "ktx",
     "tinysoundfont",
     "entt",

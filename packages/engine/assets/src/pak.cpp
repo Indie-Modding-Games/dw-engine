@@ -557,7 +557,8 @@ PakFileSystem::readFile(const std::filesystem::path& file) const {
 
 core::Result<std::vector<PakEntry>> writePak(const FileSystem& fileSystem,
                                              const std::filesystem::path& packRoot,
-                                             const std::filesystem::path& archive) {
+                                             const std::filesystem::path& archive,
+                                             const PakProgress& progress) {
   const std::filesystem::path manifestPath = packRoot / ManifestName;
   const auto manifest = fileSystem.readFile(manifestPath);
   if (!manifest) {
@@ -627,6 +628,9 @@ core::Result<std::vector<PakEntry>> writePak(const FileSystem& fileSystem,
                                  .storedSize = stored.bytes->size(),
                                  .compression = stored.compression,
                                  .sha1 = stored.sha1});
+    }
+    if (progress) {
+      progress(first + count, files->size());
     }
   }
   const std::uint64_t tocOffset = alignUp(position, PakAlignment);

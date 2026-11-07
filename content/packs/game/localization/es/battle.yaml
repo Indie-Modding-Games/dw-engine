@@ -64,3 +64,5 @@ bag.open: "Objetos"
 # The marks over the fighters of a cup match between two of the same species (STD_renderPlayerMarker).
 mark.partner: "1P"
 mark.rival: "COM"
+# Quick battles: the plate while a fight runs at twice the speed.
+fast: "x2"

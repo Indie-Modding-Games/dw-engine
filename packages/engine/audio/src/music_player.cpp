@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "synth_render.hpp"
+
 namespace dwe::audio {
 
 namespace {
@@ -58,7 +60,8 @@ void MusicPlayer::stop() noexcept {
   sequencing_ = false;
 }
 
-void MusicPlayer::mixInto(std::span<float> frames, std::span<const float> gains) noexcept {
+void MusicPlayer::mixInto(std::span<float> frames, std::span<float> send,
+                          std::span<const float> gains) noexcept {
   if (synth_ == nullptr) {
     return;
   }
@@ -68,12 +71,15 @@ void MusicPlayer::mixInto(std::span<float> frames, std::span<const float> gains)
     if (sequencing_) {
       sequence();
     }
-    tsf_render_float(synth_, block_.data(), static_cast<int>(count), 0);
+    const std::size_t samples = count * OutputChannels;
+    renderSynth(synth_, std::span{block_}.first(samples), std::span{reverbBlock_}.first(samples),
+                voiceBlock_);
     for (std::size_t i = 0; i < count; ++i) {
       const float gain = gain_ * gains[frame + i];
       for (std::size_t channel = 0; channel < OutputChannels; ++channel) {
-        frames[((frame + i) * OutputChannels) + channel] +=
-            block_[(i * OutputChannels) + channel] * gain;
+        const std::size_t at = ((frame + i) * OutputChannels) + channel;
+        frames[at] += block_[(i * OutputChannels) + channel] * gain;
+        send[at] += reverbBlock_[(i * OutputChannels) + channel] * gain;
       }
     }
     // A song that played out stops counting, so the tick never outgrows its type.

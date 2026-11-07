@@ -113,6 +113,35 @@ TEST_CASE("a Y4M header gives the picture size") {
   CHECK(errorOf(readY4mHeader(bytesOf("YUV4MPEG2 W1 H1"))).contains("no line end"));
 }
 
+TEST_CASE("an IVF header gives the AV1 video's size, frame rate and frames") {
+  const auto header = [](std::string_view codec, std::uint16_t width, std::uint32_t rate) {
+    return ByteWriter{}
+        .text("DKIF")
+        .u16(0)
+        .u16(32)
+        .text(codec)
+        .u16(width)
+        .u16(176)
+        .u32(rate)
+        .u32(1)
+        .u32(3719)
+        .u32(0)
+        .data();
+  };
+  const auto video = readIvfHeader(header("AV01", 320, 30));
+  REQUIRE_MESSAGE(video.has_value(), errorOf(video));
+  CHECK(video->picture.width == 320);
+  CHECK(video->picture.height == 176);
+  CHECK(video->rateNumerator == 30);
+  CHECK(video->rateDenominator == 1);
+  CHECK(video->frames == 3719);
+  CHECK(openAsset("ivf", header("AV01", 320, 30)).has_value());
+  CHECK(errorOf(readIvfHeader(header("VP90", 320, 30))) == "the IVF video is not AV1");
+  CHECK(errorOf(readIvfHeader(header("AV01", 0, 30))) == "the IVF header has no width or height");
+  CHECK(errorOf(readIvfHeader(header("AV01", 320, 0))).contains("not a rate"));
+  CHECK(errorOf(readIvfHeader(bytesOf("DKIF"))) == "not an IVF video");
+}
+
 TEST_CASE("a glTF model gives its external files, the parents of its joints and its animations") {
   const auto model = readModel(bytesOf(testing::skinnedGltf()));
   REQUIRE_MESSAGE(model.has_value(), errorOf(model));

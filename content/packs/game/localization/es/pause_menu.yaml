@@ -94,6 +94,8 @@ name_spacing: "Espacio tras los nombres"
 # Música continua: un mapa cuya canción ya suena la deja seguir en vez de empezarla otra vez
 # (encendida por defecto).
 continuous_music: "Música continua"
+# Reverberación: la del chip de sonido en los tonos que la piden, como el original (encendida por defecto).
+reverb: "Reverberación"
 # Varias necesidades: la burbuja sobre el compañero enseña hasta tres de sus necesidades a la vez, la más urgente
 # primero (encendida por defecto; apagada, la del original: una cada vez, turnándose las dos más urgentes).
 need_bubble_stack: "Varias necesidades"
@@ -177,6 +179,14 @@ shadows: "Sombras"
 shadows.sun: "Del sol"
 shadows.round: "Redondas"
 shadows.off: "No"
+scenery_quality: "Calidad de escenarios"
+scenery_quality.upscaled: "Ampliada"
+scenery_quality.smooth: "Suave"
+antialiasing: "Suavizado de bordes"
+texture_filter: "Texturas de modelos"
+texture_filter.upscaled: "Ampliadas"
+texture_filter.smooth: "Suaves"
+texture_filter.nearest: "Píxeles"
 enhanced_lighting: "Luz mejorada"
 vivid_colors: "Colores vivos"
 
@@ -194,6 +204,16 @@ tag.original: "Como el original"
 hint.tabs: "Pestaña"
 hint.change: "Cambiar"
 options_reset: "Restablecer valores"
+# Enemy life bars: a bar over every enemy still standing for the whole fight, cups too (off by default: the original's,
+# a wild enemy's a while after it is hit and none in a cup).
+enemy_hp_bars: "Vida de los rivales"
+# Gym sessions: how many sessions in a row a gym course runs (1, the original's, by default).
+gym_sessions: "Sesiones de gimnasio"
+# Quick battles: fights at twice the speed, switched with R (the right trigger on a pad) or always (off by default).
+battle_speed: "Combates rápidos"
+battle_speed.normal: "No"
+battle_speed.key: "Con R"
+battle_speed.fast: "Siempre"
 # {tab} es el nombre de la pestaña.
 reset_question: "¿Restablecer los valores de «{tab}»?"
 reset_note: "Pantalla, aspecto, idioma y letra no cambian."
@@ -208,11 +228,17 @@ help.long_names: "Los nombres admiten hasta doce letras en vez de las seis del o
 help.evolution_requirements: "El árbol de evolución dice qué pide cada destino y cómo va tu compañero."
 help.canonical_stages: "El árbol nombra las etapas como la serie y añade la caja Mega."
 help.rare_items: "Algunos puntos de objetos pueden esconder un objeto raro de evolución. Requiere el contenido oculto."
+help.battle_speed: "Los combates van al doble de velocidad, siempre o con R (gatillo derecho). Mismo resultado."
+help.enemy_hp_bars: "Una barra de vida sobre cada rival todo el combate, también en copas. No: solo un rato tras un golpe."
+help.gym_sessions: "Un curso del gimnasio entrena estas sesiones seguidas. Para si cancelas o tu compañero necesita algo."
 help.status_extras: "La ficha enseña cansancio, errores, combates, horario, vida y contador de evolución."
 help.display_mode: "Juega en una ventana o a pantalla completa."
 help.vsync: "Sincroniza los fotogramas con la pantalla para que la imagen no se corte."
 help.smooth_motion: "Los personajes y la cámara se deslizan entre los fotogramas del original."
 help.hd_scenery: "Los escenarios se dibujan nítidos a la resolución de la ventana. Solo cambia el aspecto."
+help.scenery_quality: "Con escenarios en alta definición: ampliados una vez por mapa (más nítidos) o solo suavizados."
+help.antialiasing: "Suaviza los bordes de los modelos en 3D."
+help.texture_filter: "Texturas de los modelos en el campo, en combate y en los menús: ampliadas, suaves o con los píxeles del original."
 help.model_characters: "Los personajes que algunos lugares muestran como dibujos planos se ven con sus modelos en 3D. Solo cambia el aspecto."
 help.enhanced_lighting: "La hora tiñe la escena y las lámparas y fuegos iluminan lo que tienen cerca."
 help.vivid_colors: "Más color, un contraste suave y brillo en los puntos claros. Los menús no cambian."
@@ -223,6 +249,7 @@ help.seasons: "Primavera, verano, otoño e invierno colorean los exteriores cada
 help.music_volume: "Volumen de la música y del sonido de las películas. 10 es el nivel del original."
 help.effects_volume: "Volumen de los efectos y de los sonidos de los menús. 10 es el nivel del original."
 help.continuous_music: "Si el mapa nuevo tiene la canción que ya suena, sigue sin empezar de nuevo."
+help.reverb: "El eco de sala del chip de sonido en la música y los efectos, como el original. Apagada, todo suena seco."
 help.ui_skin: "El aspecto de los menús y del HUD: el del original o el moderno."
 help.ui_scale: "El tamaño de los menús y del HUD."
 help.language: "El idioma de los textos."

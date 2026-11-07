@@ -1547,7 +1547,7 @@ local title_quick_actions = { "options-quit" }
 local function shown_quick_actions()
   return at_title and title_quick_actions or quick_actions
 end
-local option_slots = 14
+local option_slots = 16
 local option_tab = "game"
 -- The rows of the tab shown, in order, and the pool's elements (bound once).
 local shown_entries = {}
@@ -2266,6 +2266,10 @@ function on_setting(document, name)
     if name == "evoreq.version" or name == "evoreq.ready" then
       refresh_requirements(document)
     end
+  elseif name:sub(1, 13) == "partner_menu." or name == "pause_menu.start_entry" then
+    -- The partner menu's, set as it opens over this one, and the entry read as this one shows:
+    -- nothing to draw again (a whole refresh here cost two of them per opening, #221).
+    return
   elseif name == "pause_menu.start_page" then
     -- Esc pressed with the menu already open: switch it to the options page in place, without
     -- closing its box (which would leave it minimized on the player page).

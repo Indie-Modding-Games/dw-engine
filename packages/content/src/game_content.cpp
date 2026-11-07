@@ -1,6 +1,7 @@
 #include <dwe/assets/dev_pack_selection.hpp>
 #include <dwe/assets/lua_api.hpp>
 #include <dwe/assets/pack_manifest.hpp>
+#include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/content/disc_install.hpp>
 #include <dwe/content/game_content.hpp>
 #include <dwe/core/log.hpp>
@@ -56,12 +57,20 @@ core::Result<std::vector<assets::FoundPack>> findGamePacks(const assets::FileSys
     folders.push_back(content / PacksFolder);
   }
   std::vector<assets::FoundPack> found;
-  const auto add = [&](const std::filesystem::path& folder) -> core::Result<void> {
+  const auto add = [&](const std::filesystem::path& folder,
+                       bool archivesOnly = false) -> core::Result<void> {
     auto packs = assets::findPacks(disk, folder);
     if (!packs) {
       return std::unexpected{packs.error()};
     }
-    found.insert(found.end(), packs->packs.begin(), packs->packs.end());
+    for (const assets::FoundPack& pack : packs->packs) {
+      if (archivesOnly && pack.path.extension() != assets::PakExtension) {
+        core::logWarning("{}",
+                         core::formatMessage(messages::LooseTeamPack, assets::pathText(pack.path)));
+        continue;
+      }
+      found.push_back(pack);
+    }
     return {};
   };
   for (const std::filesystem::path& folder : folders) {
@@ -74,7 +83,12 @@ core::Result<std::vector<assets::FoundPack>> findGamePacks(const assets::FileSys
   const bool hasGamePack = std::ranges::any_of(
       found, [](const assets::FoundPack& pack) { return pack.path.stem() == GamePackName; });
   if (!hasGamePack) {
-    if (auto added = add(teamPacksFolder()); !added) {
+#ifdef DWE_PACKAGE
+    constexpr bool ArchivesOnly = true;
+#else
+    constexpr bool ArchivesOnly = false;
+#endif
+    if (auto added = add(teamPacksFolder(), ArchivesOnly); !added) {
       return std::unexpected{added.error()};
     }
   }

@@ -338,6 +338,20 @@ struct Arena {
   std::string collision;
   std::int32_t startX = 0;
   std::int32_t walkIn = 0;
+  // The arena's song font (std_setup.c: STD_initializeTournament sets STD_MUSIC by the arena);
+  // none leaves the matches with the battle's songs.
+  std::optional<std::int32_t> musicFont;
+};
+
+// The songs of the arena's font a match plays (std_main.c: STD_runIntro plays the partner's and
+// the rival's entrance as each walks in, STD_combatMain the fight's, STD_deinitializeCombat the
+// won or lost match's when one side won).
+struct ArenaMusic {
+  std::int32_t partnerIntro = 0;
+  std::int32_t rivalIntro = 0;
+  std::int32_t fight = 0;
+  std::int32_t won = 0;
+  std::int32_t lost = 0;
 };
 
 // STD_setCameraOrbit: the camera looks across the fighters from the side, `eyeHeight` over the
@@ -362,6 +376,8 @@ struct ArenaRules {
   std::int32_t partnerYaw = 0;
   std::int32_t rivalYaw = 0;
   ArenaCamera camera;
+  // The songs of each arena's musicFont; none plays the battle's songs.
+  std::optional<ArenaMusic> music;
 };
 
 core::Result<ArenaRules> parseArenaRules(const ruleset::Section& section);

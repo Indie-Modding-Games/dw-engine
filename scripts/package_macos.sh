@@ -93,6 +93,8 @@ for program in dwe-game dwx; do
   strip -S "$app/MacOS/$program"
 done
 mv "$installed/packs" "$app/Resources/packs"
+# The team's packs ship cooked into .pak archives, which a package build loads (and only those).
+"$root/scripts/package/cook_team_packs.sh" "$app/Resources/packs" "$app/MacOS/dwx"
 rm -rf "$installed"
 
 # The Vulkan loader the game links (@rpath/libvulkan.1.dylib), copied as a plain file: the launcher
@@ -146,10 +148,18 @@ for program in "$app"/MacOS/*; do
     exit 1
   fi
 done
+# shellcheck source=scripts/package/pak_manifest.sh
+source "$root/scripts/package/pak_manifest.sh"
 if find "$stage" -name pack.yaml -exec grep -l '^id: base$' {} + | grep -q .; then
   echo "package_macos: a base pack is in the package; it must never ship" >&2
   exit 1
 fi
+for archive in "$app/Resources/packs"/*.pak; do
+  if package_pak_is_base "$archive"; then
+    echo "package_macos: a base pack is in the package; it must never ship: $archive" >&2
+    exit 1
+  fi
+done
 
 cat >"$app/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>

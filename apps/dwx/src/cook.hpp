@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <span>
 #include <string_view>
 #include <vector>
@@ -44,9 +45,8 @@ struct Cooker {
                                                const CookOptions& options) = nullptr;
 };
 
-// The cookers dwx knows: PNG to KTX2, GLB checked and kept, and WAV to Ogg Opus. A file of any
-// other type is copied as is, and so is every file of a movie (movie/), whose cooked format is not
-// decided.
+// The cookers dwx knows: PNG to KTX2, GLB checked and kept, WAV to Ogg Opus (the sound of a movie
+// too) and a movie's Y4M video to AV1 in IVF. A file of any other type is copied as is.
 std::span<const Cooker> cookers();
 
 // Returns the cooker for a source file's extension, or nullptr if the file is copied as is.
@@ -74,8 +74,12 @@ struct CookSummary {
 // options, so unchanged files are not cooked again, and files no asset makes any more are removed.
 // A folder that dwx cook did not write, or one inside the pack or holding it, is refused. The
 // result does not depend on the cache.
+// progress, if given, hears how many of the files to cook or copy are done, from the threads that
+// did them, one call at a time.
+using CookProgress = std::function<void(std::size_t done, std::size_t total)>;
 core::Result<CookSummary> cookPack(std::span<const Cooker> registry,
                                    const std::filesystem::path& pack,
-                                   const std::filesystem::path& out);
+                                   const std::filesystem::path& out,
+                                   const CookProgress& progress = {});
 
 } // namespace dwe::dwx

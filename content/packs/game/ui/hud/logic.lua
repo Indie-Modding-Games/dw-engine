@@ -530,7 +530,9 @@ function on_setting(document, name)
     if string.find(name, "%.label$") then
       draw_field_labels(document)
     end
-  else
+  elseif name == "minimap" or name == "minimap_size" or name == "battle.active" then
+    -- Only what refresh reads: a menu publishes hundreds of settings as it opens, and refreshing
+    -- the HUD for each of them stalled that frame (#221).
     refresh(document)
   end
 end

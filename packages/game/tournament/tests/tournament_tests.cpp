@@ -386,6 +386,16 @@ TEST_CASE("std_setup.c STD_tournamentMain: the arena, where the fighters stand, 
   CHECK(arenaStart(rules.arenas.at(1)).rival == ArenaPoint{.x = -500, .z = 0});
   CHECK(rules.partnerYaw == 0x400);
   CHECK(rules.rivalYaw == 0xC00);
+  // STD_initializeTournament: STD_MUSIC 0x1e for arena 0, 0x20 for arena 1; STD_runIntro plays
+  // its songs 0 and 1, STD_combatMain 2, STD_deinitializeCombat 3 (won) or 4 (lost).
+  CHECK(rules.arenas.at(0).musicFont == 0x1e);
+  CHECK(rules.arenas.at(1).musicFont == 0x20);
+  REQUIRE(rules.music);
+  CHECK(rules.music->partnerIntro == 0);
+  CHECK(rules.music->rivalIntro == 1);
+  CHECK(rules.music->fight == 2);
+  CHECK(rules.music->won == 3);
+  CHECK(rules.music->lost == 4);
 
   // STD_setCameraOrbit: 1000 apart, the eye 2500 back (1000 * 500 / 200) on the side, 1000 up,
   // looking at the midpoint 300 over the ground.

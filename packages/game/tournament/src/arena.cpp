@@ -30,6 +30,13 @@ constexpr std::string_view MinDistanceKey = "min_distance";
 constexpr std::string_view MaxDistanceKey = "max_distance";
 constexpr std::string_view EyeHeightKey = "eye_height";
 constexpr std::string_view DropKey = "drop";
+constexpr std::string_view MusicFontKey = "music_font";
+constexpr std::string_view MusicKey = "music";
+constexpr std::string_view PartnerIntroKey = "partner_intro";
+constexpr std::string_view RivalIntroKey = "rival_intro";
+constexpr std::string_view FightKey = "fight";
+constexpr std::string_view WonKey = "won";
+constexpr std::string_view LostKey = "lost";
 
 std::int32_t integer(YamlReader& reader, const YamlNode& parent, std::string_view key) {
   return reader.integer<std::int32_t>(reader.field(parent, key));
@@ -50,15 +57,29 @@ core::Result<ArenaRules> parseArenaRules(const ruleset::Section& section) {
   YamlReader reader;
   const YamlNode& arena = reader.field(section.node, ArenaKey);
   ArenaRules rules;
-  if (reader.expectKeys(arena, ArenaKey, {ArenasKey, SecondArenaMapKey, YawsKey, CameraKey})) {
+  if (reader.expectKeys(arena, ArenaKey, {ArenasKey, SecondArenaMapKey, YawsKey, CameraKey},
+                        {MusicKey})) {
     for (const YamlNode& item : reader.sequence(reader.field(arena, ArenasKey), ArenasKey)) {
-      if (!reader.expectKeys(item, ArenasKey, {ModelKey, CollisionKey, StartXKey, WalkInKey})) {
+      if (!reader.expectKeys(item, ArenasKey, {ModelKey, CollisionKey, StartXKey, WalkInKey},
+                             {MusicFontKey})) {
         continue;
       }
-      rules.arenas.push_back({.model = reader.text(reader.field(item, ModelKey)),
-                              .collision = reader.text(reader.field(item, CollisionKey)),
-                              .startX = integer(reader, item, StartXKey),
-                              .walkIn = integer(reader, item, WalkInKey)});
+      rules.arenas.push_back(
+          {.model = reader.text(reader.field(item, ModelKey)),
+           .collision = reader.text(reader.field(item, CollisionKey)),
+           .startX = integer(reader, item, StartXKey),
+           .walkIn = integer(reader, item, WalkInKey),
+           .musicFont = reader.optionalInteger<std::int32_t>(item, MusicFontKey)});
+    }
+    if (const YamlNode* music = arena.find(MusicKey); music != nullptr) {
+      if (reader.expectKeys(*music, MusicKey,
+                            {PartnerIntroKey, RivalIntroKey, FightKey, WonKey, LostKey})) {
+        rules.music = ArenaMusic{.partnerIntro = integer(reader, *music, PartnerIntroKey),
+                                 .rivalIntro = integer(reader, *music, RivalIntroKey),
+                                 .fight = integer(reader, *music, FightKey),
+                                 .won = integer(reader, *music, WonKey),
+                                 .lost = integer(reader, *music, LostKey)};
+      }
     }
     rules.secondArenaMap = reader.text(reader.field(arena, SecondArenaMapKey));
     const YamlNode& yaws = reader.field(arena, YawsKey);

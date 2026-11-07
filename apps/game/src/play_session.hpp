@@ -28,6 +28,7 @@
 #include "award_screen.hpp"
 #include "battle_ground.hpp"
 #include "battle_screen.hpp"
+#include "battle_speed.hpp"
 #include "boss_arrival_scene.hpp"
 #include "bug_report.hpp"
 #include "care_commands.hpp"
@@ -108,6 +109,9 @@ inline constexpr std::string_view LongNamesSetting = "long_names";
 inline constexpr std::string_view ContinuousMusicSetting = "continuous_music";
 // The need bubble with several needs at once (an engine improvement, on unless turned off).
 inline constexpr std::string_view NeedBubbleStackSetting = "need_bubble_stack";
+// Enemy life bars over every enemy still standing, cups too (an engine improvement, off unless
+// turned on; BattleScreen::setEnemyHpBars).
+inline constexpr std::string_view EnemyHpBarsSetting = "enemy_hp_bars";
 // The weather (an engine improvement, on unless turned off): a UI setting and the options'
 // command with the same name (true or false), on the title screen and in the game.
 inline constexpr std::string_view WeatherSetting = "weather";
@@ -208,6 +212,9 @@ public:
   // Takes the UI's commands for the game (the battle, free exploration, the partner's menu); false
   // for any other.
   bool handle(const ui::UiCommand& command);
+  // The player's page of the pause menu, published just before the menu shows (Tab, Esc, the
+  // HUD's button), so it draws it once as it opens (#221).
+  void preparePauseMenu() { partnerMenu_.publishPlayer(true); }
 
   // Once per frame after the commands: runs the queued session commands, follows the map changes
   // and publishes the HUD. An autotest hears of map changes and failed saves.
@@ -223,6 +230,12 @@ public:
   // Feeds the battle the buttons it reads outside its document: `extra`, the original's square,
   // calls the finisher.
   void pressBattle(const input::InputState& input);
+  // Batch training (gym_batch.hpp): the sessions a course the story starts runs in a row.
+  void setGymSessions(int sessions) { gymScreen_.setSessions(sessions); }
+  // What the fight on screen asks of a quick battle's speed (battle_speed.hpp).
+  [[nodiscard]] BattleSpeedMoment battleSpeedMoment() const {
+    return {.fighting = battleScreen_.fighting(), .reacting = battleScreen_.reacting()};
+  }
   // The item keeper's, the discard menu's and the trade menu's buttons the menus do not navigate
   // with (move by tens, move all, the jump to the ends, the description), and the confirm button
   // held for a chest's notice.
@@ -332,6 +345,9 @@ public:
   [[nodiscard]] std::optional<MovieMoment> takeMovieRequest() {
     return std::exchange(movieRequest_, std::nullopt);
   }
+  // A movie over this game holds its music, and lets it go once over (main.c: main, finalizeMusic
+  // and initializeMusic around playMovie; session::SessionMusic::holdForMovie).
+  void holdMusicForMovie(bool hold);
 
 private:
   void tickSystems(const game::field::FieldInput& intent, const FishingButtons& fishing);

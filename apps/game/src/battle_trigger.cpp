@@ -96,7 +96,8 @@ core::Result<MapBattle> mapBattleRequest(const game::field::Field& field,
              .partner = battlePointOf(field.partner().position),
              .kind = game::battle::BattleKind::Normal,
              .timeLimit = std::nullopt,
-             .recruitOnVictory = std::nullopt};
+             .recruitOnVictory = std::nullopt,
+             .matchMusic = std::nullopt};
   for (const std::size_t index : chosen) {
     if (index >= map.npcs.size()) {
       return core::fail(core::formatMessage(messages::NoMapNpc, field.mapId(), index));

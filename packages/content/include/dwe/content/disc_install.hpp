@@ -3,6 +3,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/platform/process.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -61,7 +62,18 @@ defaultContentFolder(const std::optional<std::filesystem::path>& userData);
 teamPacksCandidates(const std::optional<std::filesystem::path>& executableFolder);
 
 // The first candidate that has a game pack; else the last candidate (./packs when there is none).
+// A package ships the team's packs cooked into .pak archives (scripts/package/cook_team_packs.sh)
+// and a package build looks only for those; a development build takes a folder or an archive.
 [[nodiscard]] std::filesystem::path teamPacksFolder();
+
+// Whether a folder holds the team's game pack, as teamPacksFolder looks for it.
+[[nodiscard]] bool hasTeamGamePack(const std::filesystem::path& folder);
+
+// Reads a file of one of the team's packs in a folder of them (teamPacksFolder()): pack is its
+// folder or archive name and path is relative to the pack's root. From the pack's folder if there
+// is one and a development build takes it, else from the pack's .pak archive.
+[[nodiscard]] core::Result<std::vector<std::byte>>
+readTeamPackFile(const std::filesystem::path& packs, std::string_view pack, std::string_view path);
 
 // The files a CUE sheet names (FILE "<name>" ...) that are not next to it. Nothing for an image
 // that is not a CUE sheet or cannot be read: dwx says what is wrong with those.

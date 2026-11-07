@@ -193,7 +193,8 @@ BattleRequest duelWithFoe() {
           .partner = {.x = 0, .z = -600},
           .kind = BattleKind::Normal,
           .timeLimit = std::nullopt,
-          .recruitOnVictory = "foe"};
+          .recruitOnVictory = "foe",
+          .matchMusic = std::nullopt};
 }
 
 } // namespace
@@ -818,4 +819,12 @@ TEST_CASE("confirming a technique clears its slot when equipped, else takes the 
   CHECK(toggleTechnique(moves, species, catalog, 2) == TechniqueToggle::Removed);
   CHECK(toggleTechnique(moves, species, catalog, 0) == TechniqueToggle::Equipped);
   CHECK(equipped(1) == MoveSlot{0});
+}
+
+TEST_CASE(
+    "std_main.c STD_deinitializeCombat: a won match plays song 3, a lost one 4, a draw none") {
+  const dwe::session::MatchMusic music{.font = 30, .fight = 2, .won = 3, .lost = 4};
+  CHECK(music.endTrack(dwe::game::battle::Outcome::Victory, false) == 3);
+  CHECK(music.endTrack(dwe::game::battle::Outcome::Defeat, false) == 4);
+  CHECK_FALSE(music.endTrack(dwe::game::battle::Outcome::Defeat, true).has_value());
 }

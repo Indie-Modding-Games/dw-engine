@@ -63,6 +63,10 @@ constexpr std::string_view SeasonsKey = "seasons";
 constexpr std::string_view HdSceneryKey = "hd_scenery";
 constexpr std::string_view MusicVolumeKey = "music_volume";
 constexpr std::string_view EffectsVolumeKey = "effects_volume";
+constexpr std::string_view ReverbKey = "reverb";
+constexpr std::string_view BattleSpeedKey = "battle_speed";
+constexpr std::string_view EnemyHpBarsKey = "enemy_hp_bars";
+constexpr std::string_view GymSessionsKey = "gym_sessions";
 
 } // namespace
 
@@ -198,6 +202,18 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* effects = tree->find(EffectsVolumeKey)) {
       settings.effectsVolume = reader.integer<int>(*effects);
+    }
+    if (const core::YamlNode* reverb = tree->find(ReverbKey)) {
+      settings.reverb = reader.boolean(*reverb);
+    }
+    if (const core::YamlNode* speed = tree->find(BattleSpeedKey)) {
+      settings.battleSpeed = reader.text(*speed);
+    }
+    if (const core::YamlNode* bars = tree->find(EnemyHpBarsKey)) {
+      settings.enemyHpBars = reader.boolean(*bars);
+    }
+    if (const core::YamlNode* sessions = tree->find(GymSessionsKey)) {
+      settings.gymSessions = reader.integer<int>(*sessions);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -354,6 +370,20 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
   if (settings.effectsVolume) {
     root.set(std::string{EffectsVolumeKey},
              core::YamlNode::scalar(std::to_string(*settings.effectsVolume)));
+  }
+  if (settings.reverb) {
+    root.set(std::string{ReverbKey}, core::YamlNode::scalar(*settings.reverb ? "true" : "false"));
+  }
+  if (settings.battleSpeed) {
+    root.set(std::string{BattleSpeedKey}, core::YamlNode::scalar(*settings.battleSpeed));
+  }
+  if (settings.enemyHpBars) {
+    root.set(std::string{EnemyHpBarsKey},
+             core::YamlNode::scalar(*settings.enemyHpBars ? "true" : "false"));
+  }
+  if (settings.gymSessions) {
+    root.set(std::string{GymSessionsKey},
+             core::YamlNode::scalar(std::to_string(*settings.gymSessions)));
   }
   return core::emitYaml(root);
 }

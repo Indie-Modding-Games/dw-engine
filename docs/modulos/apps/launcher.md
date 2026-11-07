@@ -308,6 +308,11 @@ antes de compilar, con `scripts/package/third_party_notices.py`, y Tauri los cop
 (`bundle.resources`: junto al programa en Windows y Linux, en `Contents/Resources` en macOS). La interfaz no usa
 paquetes de npm. El flujo de publicación falla si un paquete no los lleva.
 
+La interfaz no se minifica: sus HTML, CSS y JavaScript ocupan unos 200 KB (55 KB con gzip), Tauri los mete en el
+programa comprimidos con brotli y los sirve desde memoria, así que minificar ahorraría unos pocos KB de un instalador
+de varios MB y obligaría a añadir npm y un empaquetador, y a depurar código ilegible en las herramientas del
+navegador. Se revisará si la interfaz crece mucho.
+
 Los tests de Rust cubren el manifiesto, la comparación de versiones, el SHA-256 y la firma, la instalación con
 cambio atómico y vuelta atrás, el desempaquetado de `.zip` y `.7z`, la hoja CUE, el registro `install.yaml` (con el
 formato del juego) y una extracción con un `dwx` falso; `tests/fake_release.rs` levanta un servidor que contesta como

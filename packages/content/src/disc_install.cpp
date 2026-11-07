@@ -1,5 +1,7 @@
 #include <dwe/assets/extractor_version.hpp>
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/pak.hpp>
+#include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/content/disc_install.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/yaml.hpp>
@@ -166,15 +168,41 @@ teamPacksCandidates(const std::optional<std::filesystem::path>& executableFolder
   return candidates;
 }
 
+bool hasTeamGamePack(const std::filesystem::path& folder) {
+  std::error_code error;
+  const bool archive = std::filesystem::is_regular_file(
+      folder / std::format("{}{}", GamePackFolderName, assets::PakExtension), error);
+#ifdef DWE_PACKAGE
+  return archive;
+#else
+  return archive || isFolder(folder / GamePackFolderName);
+#endif
+}
+
 std::filesystem::path teamPacksFolder() {
   const auto folder = platform::executableFolder();
   const auto candidates = teamPacksCandidates(folder ? std::optional{*folder} : std::nullopt);
   for (const std::filesystem::path& candidate : candidates) {
-    if (isFolder(candidate / GamePackFolderName)) {
+    if (hasTeamGamePack(candidate)) {
       return candidate;
     }
   }
   return candidates.empty() ? std::filesystem::path{TeamPacksFolderName} : candidates.back();
+}
+
+core::Result<std::vector<std::byte>>
+readTeamPackFile(const std::filesystem::path& packs, std::string_view pack, std::string_view path) {
+#ifndef DWE_PACKAGE
+  if (isFolder(packs / pack)) {
+    return assets::DiskFileSystem{}.readFile(packs / pack / path);
+  }
+#endif
+  const std::filesystem::path archive = packs / std::format("{}{}", pack, assets::PakExtension);
+  auto opened = assets::PakFileSystem::open(archive);
+  if (!opened) {
+    return std::unexpected{opened.error()};
+  }
+  return (*opened)->readFile(archive / path);
 }
 
 std::vector<std::string> missingCueFiles(const std::filesystem::path& image) {

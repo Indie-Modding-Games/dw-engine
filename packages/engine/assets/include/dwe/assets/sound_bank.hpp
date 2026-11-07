@@ -23,6 +23,11 @@ struct SoundBankTone {
   std::uint32_t sample = 0;
   std::uint16_t adsr1 = 0;
   std::uint16_t adsr2 = 0;
+  // The chip's tone mode; bit 2 (ReverbMode) sends the tone to the reverb.
+  std::uint8_t mode = 0;
+
+  static constexpr std::uint8_t ReverbMode = 0x04;
+  [[nodiscard]] bool reverb() const { return (mode & ReverbMode) != 0; }
 };
 
 struct SoundBankProgram {

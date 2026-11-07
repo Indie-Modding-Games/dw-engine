@@ -90,7 +90,8 @@ constexpr std::string_view PartnerArgument = "partner";
 core::Result<std::unique_ptr<NewGameInterview>>
 NewGameInterview::create(render::Renderer& renderer, ui::Ui& ui,
                          const assets::VirtualFileSystem& files, NewGameSceneRules rules,
-                         game::story::SoundPort* sound) {
+                         game::story::SoundPort* sound,
+                         const std::function<void(render::ModelRenderer&)>& prepareModels) {
   auto tables = session::readMapHeadLineTables(files);
   if (!tables) {
     return std::unexpected{tables.error()};
@@ -104,6 +105,9 @@ NewGameInterview::create(render::Renderer& renderer, ui::Ui& ui,
   auto models = render::ModelRenderer::create(renderer);
   if (!models) {
     return std::unexpected{models.error()};
+  }
+  if (prepareModels) {
+    prepareModels(**models);
   }
   std::string modelName{SpeciesModelFolder};
   modelName.append(assets::contentAssetPath(rules.host.species)).append(SpeciesModelName);

@@ -18,6 +18,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <span>
@@ -36,9 +37,12 @@ namespace dwe::app {
 // the naming box. Then it fades out and the game starts with the choice (main.c: main).
 class NewGameInterview {
 public:
+  // `prepareModels` sets up the scene's model renderer before the host loads (the graphics
+  // options' texture filter and upscale cache); it may be empty.
   static core::Result<std::unique_ptr<NewGameInterview>>
   create(render::Renderer& renderer, ui::Ui& ui, const assets::VirtualFileSystem& files,
-         NewGameSceneRules rules, game::story::SoundPort* sound);
+         NewGameSceneRules rules, game::story::SoundPort* sound,
+         const std::function<void(render::ModelRenderer&)>& prepareModels = {});
   ~NewGameInterview();
   NewGameInterview(const NewGameInterview&) = delete;
   NewGameInterview& operator=(const NewGameInterview&) = delete;
@@ -53,6 +57,8 @@ public:
   // Once per frame: the host's animation and the camera.
   void update(double frameSeconds, rhi::Extent extent);
   [[nodiscard]] std::span<render::Drawer* const> drawers() const { return drawers_; }
+  // Its models, for the graphics options (graphics_options.hpp: applyTextureFilter).
+  [[nodiscard]] render::ModelRenderer& models() { return *models_; }
   // How dark the screen is, from 0 to 1 (the fades in and out).
   [[nodiscard]] float fadeLevel() const;
   // Over once it faded out; the answers and the names.

@@ -865,6 +865,8 @@ local function draw_hp_value(document, enemy, hp)
 end
 
 local function draw_hp_bars(document)
+  -- Enemy life bars (a dwe improvement): the modern look draws them too while the option is on.
+  set_class(document, "hp-bars", "always", ui.setting("battle.hp_bars.always") == true)
   local values = {}
   for value in string.gmatch(setting("battle.hp_bars", ""), "%S+") do
     values[#values + 1] = tonumber(value)
@@ -1246,7 +1248,14 @@ local function draw_player_marks(document)
   end
 end
 
+-- Quick battles (apps/game battle_speed.hpp, a dwe improvement): a small x2 plate while the fight
+-- runs at twice the speed.
+local function draw_speed(document)
+  set_class(document, "speed-plate", "hidden", ui.setting("battle.fast") ~= true)
+end
+
 function on_show(document)
+  draw_speed(document)
   draw(document)
   draw_motion(document)
   draw_bars(document)
@@ -1271,12 +1280,14 @@ function on_setting(document, name)
     draw_intro(document)
   elseif name == "battle.damage.revision" then
     draw_damage(document)
-  elseif name == "battle.hp_bars.revision" then
+  elseif name == "battle.hp_bars.revision" or name == "battle.hp_bars.always" then
     draw_hp_bars(document)
     draw_player_marks(document)
     draw_death_countdown(document)
   elseif name == "battle.shout.revision" then
     draw_shout(document)
+  elseif name == "battle.fast" then
+    draw_speed(document)
   end
 end
 

@@ -149,6 +149,43 @@ game_options = {
     help = "pause_menu.help.rare_items",
     original = false,
   },
+  -- Quick battles: fights at twice the speed, switched with R (the right trigger on a pad) or
+  -- always (normal, the original's, by default). Every tick is the original's, so only the wait
+  -- changes.
+  {
+    id = "battle-speed",
+    setting = "battle_speed",
+    label = "pause_menu.battle_speed",
+    values = { "normal", "key", "fast" },
+    texts = "pause_menu.battle_speed",
+    default = "normal",
+    tab = "game",
+    help = "pause_menu.help.battle_speed",
+    original = "normal",
+  },
+  -- Enemy life bars: a bar over every enemy still standing for the whole fight, cups too (off by
+  -- default: the original's, a wild enemy's a while after it is hit and none in a cup).
+  {
+    id = "enemy-hp-bars",
+    setting = "enemy_hp_bars",
+    label = "pause_menu.enemy_hp_bars",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.enemy_hp_bars",
+    original = false,
+  },
+  -- Gym sessions: a course the story starts at a gym runs up to five sessions in a row, each the
+  -- original's (1 by default: one session each time, as the original).
+  {
+    id = "gym-sessions",
+    setting = "gym_sessions",
+    label = "pause_menu.gym_sessions",
+    range = { 1, 5 },
+    default = 1,
+    tab = "game",
+    help = "pause_menu.help.gym_sessions",
+    original = 1,
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).
@@ -172,6 +209,44 @@ game_options = {
     tab = "graphics",
     help = "pause_menu.help.hd_scenery",
     original = false,
+  },
+  -- Scenery quality: with HD scenery on, the background filtered smooth at the window's resolution
+  -- or doubled once per map by the engine's upscaler first (upscaled, the default; cached between
+  -- runs). It has no counterpart in the original, so it is always an improvement.
+  {
+    id = "scenery-quality",
+    setting = "scenery_quality",
+    label = "pause_menu.scenery_quality",
+    values = { "upscaled", "smooth" },
+    texts = "pause_menu.scenery_quality",
+    default = "upscaled",
+    tab = "graphics",
+    help = "pause_menu.help.scenery_quality",
+  },
+  -- Antialiasing: the scene drawn with 4x multisampling, smooth model outlines (on by default; off
+  -- shows the hard edges the original draws).
+  {
+    id = "antialiasing",
+    setting = "antialiasing",
+    label = "pause_menu.antialiasing",
+    default = true,
+    tab = "graphics",
+    help = "pause_menu.help.antialiasing",
+    original = false,
+  },
+  -- Model textures: the models' textures in the field, in battle and in the menus' figures, doubled
+  -- by the upscaler and filtered (upscaled, the default), filtered (smooth), or with the original's
+  -- square texels (nearest).
+  {
+    id = "texture-filter",
+    setting = "texture_filter",
+    label = "pause_menu.texture_filter",
+    values = { "upscaled", "smooth", "nearest" },
+    texts = "pause_menu.texture_filter",
+    default = "upscaled",
+    tab = "graphics",
+    help = "pause_menu.help.texture_filter",
+    original = "nearest",
   },
   -- 3D characters: the characters some maps draw as flat prerendered pictures (the opening and the
   -- ending, the farm, the elder's house, the market stall) are drawn with their species' models
@@ -291,6 +366,17 @@ game_options = {
     tab = "sound",
     help = "pause_menu.help.continuous_music",
     original = false,
+  },
+  -- Reverb: the sound chip's reverb on the tones that ask for it, as the original sets it at boot
+  -- (on by default; off plays every sound dry).
+  {
+    id = "reverb",
+    setting = "reverb",
+    label = "pause_menu.reverb",
+    default = true,
+    tab = "sound",
+    help = "pause_menu.help.reverb",
+    original = true,
   },
   -- Interface tab.
   -- Translated signs: the signs painted in the maps read in the player's language (on by default).

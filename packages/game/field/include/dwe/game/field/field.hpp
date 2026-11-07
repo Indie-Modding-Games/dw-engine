@@ -174,9 +174,10 @@ public:
   // before the player can move. Fails if the map has no such exit.
   core::Result<void> enterMap(const assets::MapDocument& map, std::int32_t exit);
 
-  // Enters a map at a given place, without a fade in, for a loaded game, tests and debug tools. The
-  // partner stands at `partner` when it is given and free (main.c: initializeLoadedMap puts it back
-  // where the save left it), else next to the player.
+  // Enters a map at a given place, without a fade in, for a loaded game (startPlay then gives it
+  // the start's fade in), tests and debug tools. The partner stands at `partner` when it is given
+  // and free (main.c: initializeLoadedMap puts it back where the save left it), else next to the
+  // player.
   void enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn,
                   std::optional<assets::SpawnPoint> partner = std::nullopt);
 
@@ -444,6 +445,11 @@ public:
   void holdClipInPlace(scene::Entity entity, bool held);
   // Where the camera looks while a script holds it; nothing: at the player.
   [[nodiscard]] std::optional<glm::vec3> scriptCamera() const { return scriptCamera_; }
+  // Where the field's camera points while it follows the player, on the player's ground: map.c:
+  // tickCameraFollowPlayer follows by differences, so after a battle it need not be the player. A
+  // script's camera starts there (script_interp.c: scriptPauseGame leaves it put); nothing: at the
+  // player. A new map forgets it.
+  void setCameraRest(std::optional<glm::vec3> point) { cameraRest_ = point; }
   // Pans the held camera to `focus` in `seconds` (map.c: tickCameraMovement).
   void panCameraByScript(glm::vec3 focus, float seconds);
   [[nodiscard]] bool cameraPanning() const { return cameraPan_.has_value(); }
@@ -632,6 +638,8 @@ private:
   void tickItemHold(float seconds, bool wasFollowing);
   void tickCareWalk(float seconds);
   void tickCameraPan(float seconds);
+  // Where a script's camera starts: the camera's rest point, or the player.
+  [[nodiscard]] glm::vec3 cameraStart() const;
   // One step of the partner's care walk along `heading`. A walk to a point does not collide: in
   // partner state 6 and 9 (tickPartnerToilet, partnerTickEatShit) the clip's root motion carries
   // the partner, with no partnerTickCollision, so it runs into the toilet's hut.
@@ -786,6 +794,7 @@ private:
   // Seconds the partner's clip of its care walks has played, kept across walks on with it.
   float careClipSeconds_ = 0.0F;
   std::optional<glm::vec3> scriptCamera_;
+  std::optional<glm::vec3> cameraRest_;
   std::optional<CameraPan> cameraPan_;
   std::vector<std::optional<MapObject3D>> mapObjects_;
 

@@ -23,6 +23,17 @@ VolumeChanger::VolumeChanger(UserSettings& settings,
 }
 
 bool VolumeChanger::handle(const ui::UiCommand& command, ui::Ui& ui) {
+  if (command.name == ReverbSetting) {
+    if (const bool* on = std::get_if<bool>(&command.value); on != nullptr && *on != reverb()) {
+      settings_->reverb = *on;
+      apply();
+      if (settingsFile_) {
+        saveUserSettings(*settingsFile_, *settings_);
+      }
+    }
+    publish(ui);
+    return true;
+  }
   std::optional<int>* saved = nullptr;
   if (command.name == MusicVolumeSetting) {
     saved = &settings_->musicVolume;
@@ -50,11 +61,15 @@ bool VolumeChanger::handle(const ui::UiCommand& command, ui::Ui& ui) {
 void VolumeChanger::publish(ui::Ui& ui) const {
   ui.setSetting(MusicVolumeSetting, static_cast<double>(musicStep()));
   ui.setSetting(EffectsVolumeSetting, static_cast<double>(effectsStep()));
+  ui.setSetting(ReverbSetting, reverb());
 }
 
 void VolumeChanger::apply() {
   audio_->setVolume(audio::VolumeControl::Music, volumeGain(musicStep()));
   audio_->setVolume(audio::VolumeControl::Effects, volumeGain(effectsStep()));
+  if (audio_->reverb() != reverb()) {
+    audio_->setReverb(reverb());
+  }
 }
 
 } // namespace dwe::app

@@ -126,47 +126,53 @@ void PartnerMenu::update() {
   const bool pauseMenuOpened = !pauseMenuOpen_;
   pauseMenuOpen_ = desc_.ui->isVisible(PauseMenuDocument) && desc_.session->playing();
   if (pauseMenuOpen_) {
-    desc_.ui->setSetting("player.name", desc_.session->names().tamer);
-    desc_.ui->setSetting("player.level", static_cast<double>(desc_.session->tamer().level));
-    desc_.ui->setSetting("player.bits", static_cast<double>(desc_.inventory->inventory().money()));
-    const auto minutes = static_cast<std::int64_t>(desc_.session->playSeconds()) / 60;
-    desc_.ui->setSetting("player.seconds", static_cast<double>(minutes * 60));
-    // game_menu.c: renderPlayerInfoView shows the player's raised count and the medals held.
-    desc_.ui->setSetting("player.raised", static_cast<double>(desc_.session->tamer().raised));
-    if (desc_.cards != nullptr) {
-      // renderCardsView and renderCardCount: the copies of each card, a held one with its icon.
-      desc_.ui->setSetting("player.cards.copies",
-                           numberList(PlayerCardSlots, [&](std::int32_t card) {
-                             return desc_.cards->copies(card);
-                           }));
-    }
-    if (desc_.story != nullptr) {
-      const session::StoryAdapter& story = *desc_.story;
-      desc_.ui->setSetting("player.medals", static_cast<double>(story.medalCount()));
-      // renderMedalView: a held medal shows uncovered, with its name and lines.
-      desc_.ui->setSetting("player.medals.held",
-                           numberList(session::ChartedMedalCount, [&](std::int32_t medal) {
-                             return story.hasMedal(medal) ? 1 : 0;
-                           }));
-      // renderPlayerInfoView: the item boxes' icons.
-      desc_.ui->setSetting("player.items.held",
-                           numberList(session::PlayerItemCount, [&](std::int32_t slot) {
-                             return story.hasPlayerItem(slot) ? 1 : 0;
-                           }));
-      std::string raised;
-      for (const auto index : desc_.story->raisedSpecies()) {
-        if (!raised.empty())
-          raised += ',';
-        raised += std::to_string(index);
-      }
-      desc_.ui->setSetting("player.chart.raised", std::move(raised));
-    }
-    if (desc_.city != nullptr && pauseMenuOpened) {
-      publishCityTab(*desc_.ui, cityTab(desc_.city->residents()), desc_.city->prosperity());
-    }
+    publishPlayer(pauseMenuOpened);
   }
   if (desc_.ui->isVisible(PartnerMenuDocument)) {
     publish();
+  }
+}
+
+void PartnerMenu::publishPlayer(bool withCity) const {
+  if (!desc_.session->playing()) {
+    return;
+  }
+  desc_.ui->setSetting("player.name", desc_.session->names().tamer);
+  desc_.ui->setSetting("player.level", static_cast<double>(desc_.session->tamer().level));
+  desc_.ui->setSetting("player.bits", static_cast<double>(desc_.inventory->inventory().money()));
+  const auto minutes = static_cast<std::int64_t>(desc_.session->playSeconds()) / 60;
+  desc_.ui->setSetting("player.seconds", static_cast<double>(minutes * 60));
+  // game_menu.c: renderPlayerInfoView shows the player's raised count and the medals held.
+  desc_.ui->setSetting("player.raised", static_cast<double>(desc_.session->tamer().raised));
+  if (desc_.cards != nullptr) {
+    // renderCardsView and renderCardCount: the copies of each card, a held one with its icon.
+    desc_.ui->setSetting("player.cards.copies", numberList(PlayerCardSlots, [&](std::int32_t card) {
+                           return desc_.cards->copies(card);
+                         }));
+  }
+  if (desc_.story != nullptr) {
+    const session::StoryAdapter& story = *desc_.story;
+    desc_.ui->setSetting("player.medals", static_cast<double>(story.medalCount()));
+    // renderMedalView: a held medal shows uncovered, with its name and lines.
+    desc_.ui->setSetting("player.medals.held",
+                         numberList(session::ChartedMedalCount, [&](std::int32_t medal) {
+                           return story.hasMedal(medal) ? 1 : 0;
+                         }));
+    // renderPlayerInfoView: the item boxes' icons.
+    desc_.ui->setSetting("player.items.held",
+                         numberList(session::PlayerItemCount, [&](std::int32_t slot) {
+                           return story.hasPlayerItem(slot) ? 1 : 0;
+                         }));
+    std::string raised;
+    for (const auto index : desc_.story->raisedSpecies()) {
+      if (!raised.empty())
+        raised += ',';
+      raised += std::to_string(index);
+    }
+    desc_.ui->setSetting("player.chart.raised", std::move(raised));
+  }
+  if (desc_.city != nullptr && withCity) {
+    publishCityTab(*desc_.ui, cityTab(desc_.city->residents()), desc_.city->prosperity());
   }
 }
 

@@ -89,6 +89,8 @@ private:
   // STD_runMatch after the intro: the battle with both fighters where the intro left them.
   void startMatch(session::StoryScenes& scenes, BattleScreen& battle, FieldScene& scene);
   void frame(BattleScreen& battle, FieldScene& scene, bool confirm);
+  // The arena's song of the intro's turn (0 the partner, 1 the rival).
+  void playIntroSong(std::int32_t turn);
   void watchFight(const game::battle::Battle& fight);
   // STD_setupMoveExecution's camera: tells the match camera of the moves that started.
   void noteMoveStarts(const game::battle::Battle& fight);

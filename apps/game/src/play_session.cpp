@@ -14,6 +14,7 @@
 #include <dwe/session/field_facts.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/map_head_lines.hpp>
 #include <dwe/session/map_visits.hpp>
 #include <dwe/session/session_music.hpp>
 #include <dwe/session/story_adapter.hpp>
@@ -392,6 +393,18 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
   return play;
 }
 
+void PlaySession::holdMusicForMovie(bool hold) {
+  session::SessionMusic* music = game_.session->music();
+  if (music == nullptr) {
+    return;
+  }
+  if (hold) {
+    music->holdForMovie();
+  } else {
+    music->releaseAfterMovie();
+  }
+}
+
 PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game,
                          std::unique_ptr<FieldScene> scene)
     : context_(context), game_(std::move(game)), scene_(std::move(scene)),
@@ -628,6 +641,12 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   // Several needs in the partner's bubble at once, on unless turned off.
   context_.ui->setSetting(NeedBubbleStackSetting,
                           context.userSettings->needBubbleStack.value_or(true));
+  // Enemy life bars over every enemy still standing, off unless turned on.
+  const bool enemyHpBars = context.userSettings->enemyHpBars.value_or(false);
+  battleScreen_.setEnemyHpBars(enemyHpBars);
+  context_.ui->setSetting(EnemyHpBarsSetting, enemyHpBars);
+  // Batch training: one session a course, the original's, unless more were chosen.
+  gymScreen_.setSessions(context.userSettings->gymSessions.value_or(GymSessionsMin));
   // The weather, on unless turned off: the playthrough's seed from the save, a kind --weather
   // forces, and its sound.
   if (game_.systems.weather != nullptr) {
@@ -650,6 +669,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   context_.ui->setSetting(MinimapEnemiesSetting, minimapEnemiesShown_);
   if (context.files != nullptr) {
     minimapEnemies_.emplace(*context.files);
+    // The shops' and services' lines, read as the game loads rather than on the first visit's
+    // frame (#221); they keep what this read (map_head_lines.cpp).
+    static_cast<void>(session::readMapHeadLineTables(*context.files));
   }
   // The items on the ground on the minimap, on unless turned off.
   minimapItemsShown_ = context.userSettings->minimapItems.value_or(true);
@@ -834,7 +856,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent,
   // Every tick starts with the characters where they stand: the screens below that run instead of
   // the field (a battle, the evolution, a sleep, the fishing, a menu) move them themselves or not
   // at all, and none is drawn sliding from where an older tick left it.
-  scene_->settleActors();
+  scene_->settleActors(TickSeconds);
   // The menus pause the field and the game time; a sleep or a battle runs instead of the field.
   sleepScreen_.tick(TickSeconds);
   saveMachine_.tick(TickSeconds);
@@ -1045,6 +1067,8 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       core::logDebug("[port:menu] walking state (tamer.c:520): the menu stays shut ({})", shutBy);
       return true;
     }
+    // game.cpp's apply shows the menu.
+    preparePauseMenu();
     return false;
   }
   if (command.name == SmoothMotionSetting) {
@@ -1091,6 +1115,17 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       minimapItemsShown_ = *shown;
       context_.ui->setSetting(MinimapItemsSetting, *shown);
       context_.userSettings->minimapItems = *shown;
+      if (context_.settingsFile) {
+        saveUserSettings(*context_.settingsFile, *context_.userSettings);
+      }
+    }
+    return true;
+  }
+  if (command.name == EnemyHpBarsSetting) {
+    if (const bool* shown = std::get_if<bool>(&command.value)) {
+      battleScreen_.setEnemyHpBars(*shown);
+      context_.ui->setSetting(EnemyHpBarsSetting, *shown);
+      context_.userSettings->enemyHpBars = *shown;
       if (context_.settingsFile) {
         saveUserSettings(*context_.settingsFile, *context_.userSettings);
       }
@@ -1509,6 +1544,14 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (playerIdle && !fieldToilet_.active()) {
     fieldPoop_.update();
   }
+  // Batch training (gym_batch.hpp): the next session of a batch waits until nothing holds the
+  // field, and a need of the partner's ends the batch.
+  gymScreen_.continueBatch(
+      {.fieldIdle = playerIdle && !fieldToilet_.active() && !fieldPoop_.active() &&
+                    !praiseScold_.active() && !sleepScreen_.active() && !awardScreen_.active() &&
+                    !field.heldByScript() && !game_.systems.story->scriptRunning(),
+       .partnerNeedsCare = !session.partnerView().conditions.none(),
+       .map = {}});
   // item.c: handleChips: the auto pilot chip calls its map-head section if no script runs; the
   // story drops the request otherwise, and the chip is gone either way.
   if (const auto section = game_.systems.inventory->takeScriptSection(); section) {

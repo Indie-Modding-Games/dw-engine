@@ -38,6 +38,9 @@ release, `DWE_PACKAGE`) y deja `dwe-beta-<versión>-<commit>-windows-x86_64.tar.
 `README.md`, `VERSION`, `EXTRACTOR_VERSION` y `dwe.cmd` para arrancarlo sin lanzador. Los `.pdb` quedan aparte, para
 los informes de fallos.
 
+- `packs/` lleva los paquetes del equipo cocinados y empaquetados en `.pak`. Como `dwx.exe` no corre en Linux, el
+  script los cocina con el `dwx` del preset `linux-clang-package` (lo compila si hace falta); cocinar da los mismos
+  bytes en los dos sistemas dentro del alcance de la [ADR 0017](../adr/0017-cocinado-y-archivos-pak.md#determinismo).
 - El CRT y la librería estándar de C++ van dentro de los programas (`/MT`), así que no hace falta instalar ningún
   redistribuible. La única DLL que se reparte es el cargador de Vulkan; el script lee las importaciones de cada
   programa (`llvm-readobj --coff-imports`) y se niega a empaquetar si alguna DLL no está en `bin/` ni es de Windows.
@@ -125,7 +128,7 @@ con:
 |---|---|
 | `dwe-game.app/Contents/MacOS/` | `dwe-game` y `dwx`. |
 | `dwe-game.app/Contents/Frameworks/` | El cargador de Vulkan (`libvulkan.1.dylib`) y MoltenVK, que implementa Vulkan sobre Metal. |
-| `dwe-game.app/Contents/Resources/packs/` | Los paquetes del equipo; `content::teamPacksFolder` los busca ahí. |
+| `dwe-game.app/Contents/Resources/packs/` | Los paquetes del equipo en `.pak` (`game.pak`, `es-translation.pak`); `content::teamPacksFolder` los busca ahí. |
 | `dwe-game.app/Contents/Resources/vulkan/icd.d/MoltenVK_icd.json` | Donde el cargador busca los controladores dentro de un paquete de aplicación. |
 | `README.md`, `VERSION`, `EXTRACTOR_VERSION`, `licenses/`, `LICENSE`, `THIRD_PARTY_NOTICES.txt` | Como en Linux. |
 
