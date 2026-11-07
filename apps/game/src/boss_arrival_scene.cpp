@@ -44,6 +44,8 @@ constexpr float OrbitLookUp = 100.0F;
 constexpr float ParticleNearest = 0x20 * 16.0F;
 constexpr float ParticleFarthest = 0x1000 * 16.0F;
 constexpr float ChannelMax = 255.0F;
+// ETCDAT/SPOT256.TIM: the glow the flashes draw.
+constexpr std::string_view GlowImage = "texture/etcdat/spot256";
 // The arrival's first NPC when no charge named the boss: ENTITY_TABLE[2].
 constexpr std::size_t FirstNpc = 0;
 
@@ -286,6 +288,27 @@ void BossArrivalScene::showStage(std::optional<scene::Entity> entity) {
       line.corners[0].clip = clipBehind(frame.clip(from));
       line.corners[1].clip = clipBehind(frame.clip(to));
       stage.prims.push_back(line);
+    }
+  }
+  // renderEFEFlash: EAB_tick's nine dark flashes, the glow's first half subtracted from the screen,
+  // in front of everything (ordering-table entry 0x22).
+  if (!arrival_.flashes().empty()) {
+    if (const std::optional<rhi::TextureId> glow = scene_->sceneImage(GlowImage)) {
+      std::vector<SortedPrim> flashes;
+      for (const game::field::BossFlash& flash : arrival_.flashes()) {
+        addFlashPrims(EvolutionFlash{.position = core::fromOriginalAxes(glm::vec3{flash.point}),
+                                     .mode = game::field::BossFlashMode,
+                                     .fixedDepth = game::field::BossFlashOrder,
+                                     .length = game::field::BossFlashFrames,
+                                     .scaleFrom = 0,
+                                     .scaleTo = flash.scaleTo,
+                                     .colorFrom = glm::ivec3{game::field::BossFlashGreyFrom},
+                                     .colorTo = glm::ivec3{game::field::BossFlashGreyTo},
+                                     .progress = flash.progress},
+                      frame, scene_->mapCamera().desc().focalLength, *glow, flashes);
+      }
+      std::vector<ScenePrim> sorted = sortedPrims(std::move(flashes));
+      stage.prims.insert(stage.prims.end(), sorted.begin(), sorted.end());
     }
   }
   // EAB_renderFlash: the whole screen less the level, in front of everything (subtractive).

@@ -106,8 +106,10 @@ struct SceneGlow {
   glm::vec2 texel{0.0F};
   glm::vec2 side{0.0F};
   glm::vec2 imageSize{1.0F};
+  ScenePrimBlend blend = ScenePrimBlend::Additive;
 };
-// The four quarters, additive, the outer corner of each taking the quarter's top left.
+// The four quarters, mixed by the glow's blend (additive by default), the outer corner of each
+// taking the quarter's top left.
 [[nodiscard]] inline std::array<ScenePrim, 4> glowQuarters(const SceneGlow& glow) {
   const glm::vec2 from = glow.texel / glow.imageSize;
   const glm::vec2 to = (glow.texel + glow.side) / glow.imageSize;
@@ -119,7 +121,7 @@ struct SceneGlow {
     quarter = {.shape = ScenePrim::Shape::Quad,
                .color = glm::vec4{glow.color, 1.0F},
                .texture = glow.texture,
-               .blend = ScenePrimBlend::Additive};
+               .blend = glow.blend};
     quarter.corners[0] = {.clip = glow.centre, .offset = sign * glow.half, .uv = from};
     quarter.corners[1] = {
         .clip = glow.centre, .offset = {0.0F, sign.y * glow.half}, .uv = {to.x, from.y}};

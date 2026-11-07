@@ -57,7 +57,10 @@ if (auto change = field.takeMapChange()) {
   0x15c a 0xd98 de alto, con `_sin` de 512 por vuelta). `effectLerp` es el `lerp` del original con su vuelta pasado
   `t1`. Suposición sin medir (no hay estado guardado cerca del jefe): el anillo nuevo cuenta un fotograma en el mismo en
   que nace, como si su objeto fuera detrás del de la carga en la tabla de objetos.
-  La llegada (rutina de compañero 8, `EAB_tick` y `EAB_tickSpawn`) cuenta desde el fotograma siguiente: del 45 la
+  La llegada (rutina de compañero 8, `EAB_tick` y `EAB_tickSpawn`) empieza con 9 destellos oscuros (`flashes`:
+  `EFECreateFlash` en modo 0x20, la primera mitad del brillo restada de la pantalla, en el orden 0x22, de escala 0 a
+  5120 y de gris 0x14 a 0xff en 0x32 fotogramas, en los puntos de `EAB_D_8006170C`, leídos del módulo del original) y
+  cuenta desde el fotograma siguiente: del 45 la
   pantalla se resta a negro (`blackout`); en el 50 el jefe vuelve con la animación 0x21, se para el zumbido y suena el 2,
   el jefe pasa a `vabId` 5 (`bossSoundSlot`: el banco 4 de sus clips suena de la ranura 5, la que cargó la rutina 51;
   `FieldScene::setNpcSoundSlot`),

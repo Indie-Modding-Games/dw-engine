@@ -211,3 +211,25 @@ TEST_CASE("eab.c EAB_tickSpawn: the boss turns from wireframe to solid over fram
   runTo(arrival, 290);
   CHECK(arrival.solidShares() == BossArrival::SolidShares);
 }
+
+TEST_CASE("eab.c EAB_tick: nine dark flashes start with the arrival and last 50 frames") {
+  BossArrival arrival;
+  CHECK(arrival.flashes().empty());
+  arrival.startArrival();
+  REQUIRE(arrival.flashes().size() == 9);
+  const auto& first = arrival.flashes().front();
+  CHECK(first.point == glm::ivec3{0, -300, -900});
+  CHECK(first.scaleTo == 5120);
+  CHECK(first.progress == 0);
+  // tickEFEFlash counts each frame and takes them away at 0x32.
+  runTo(arrival, 49);
+  REQUIRE(arrival.flashes().size() == 9);
+  CHECK(arrival.flashes().back().progress == 49);
+  CHECK(arrival.flashes().back().point == glm::ivec3{-1200, -300, -2500});
+  arrival.frame({});
+  CHECK(arrival.flashes().empty());
+  // A map change takes them with the rest.
+  arrival.startArrival();
+  arrival.clear();
+  CHECK(arrival.flashes().empty());
+}
