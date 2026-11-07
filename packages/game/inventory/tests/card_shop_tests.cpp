@@ -67,6 +67,31 @@ TEST_CASE("a card stock keeps a card twice, as the original's check never retrie
   CHECK(rollCardStock({.size = 3, .first = 1, .last = 1, .skipped = {1}}, random).empty());
 }
 
+TEST_CASE("without the stock_repeats quirk a new day's stock holds each card once") {
+  // Cards 2 and 3 only: the quirk fills the stock as it rolls, the fix rolls a held card again.
+  CardStockRules rules{.size = 2, .first = 1, .last = 3, .skipped = {1}, .repeats = false};
+  for (std::uint32_t seed = 1; seed < 64; ++seed) {
+    Random random{seed};
+    const std::vector<std::int32_t> stock = rollCardStock(rules, random);
+    REQUIRE(stock.size() == 2);
+    CHECK(stock[0] != stock[1]);
+  }
+  rules.repeats = true;
+  bool twice = false;
+  for (std::uint32_t seed = 1; seed < 64 && !twice; ++seed) {
+    Random random{seed};
+    const std::vector<std::int32_t> stock = rollCardStock(rules, random);
+    twice = stock[0] == stock[1];
+  }
+  CHECK(twice);
+  // More slots than good cards: once every card is in, the rest repeat instead of rolling forever.
+  rules = {.size = 3, .first = 1, .last = 3, .skipped = {1}, .repeats = false};
+  Random random{9};
+  const std::vector<std::int32_t> stock = rollCardStock(rules, random);
+  REQUIRE(stock.size() == 3);
+  CHECK(stock[0] != stock[1]);
+}
+
 TEST_CASE("the buy list prices each card and tells what the player can buy") {
   CardCollection cards = collection();
   REQUIRE(cards.giveCopy(2));

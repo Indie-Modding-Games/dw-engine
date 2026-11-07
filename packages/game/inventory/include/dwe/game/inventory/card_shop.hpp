@@ -16,17 +16,20 @@ namespace dwe::game::inventory {
 inline constexpr std::int32_t SoldCard = -1;
 
 // How a new day fills the stock (dailyPStatTrigger): `size` slots, each a card rolled from `first`
-// to `last` that is not one of `skipped`.
+// to `last` that is not one of `skipped`. `repeats` is the quirk card_shop.quirks.stock_repeats:
+// the original's check for a card already in the stock compares the slot with itself, so it never
+// retries and one card can fill two slots; false rolls a slot again while its card is in the stock.
 struct CardStockRules {
   std::int32_t size = 0;
   std::int32_t first = 0;
   std::int32_t last = 0;
   std::vector<std::int32_t> skipped;
+  bool repeats = true;
 };
 
 // A new day's stock. Each slot rolls first + randomLimit(last - first + 1) again while it lands on
-// a skipped card. The original's check for a card already in the stock compares the slot with
-// itself, so it never retries: a stock can hold one card twice, as here.
+// a skipped card (and, without `repeats`, on a card already in the stock, as long as the range has
+// a good card left to give).
 [[nodiscard]] std::vector<std::int32_t> rollCardStock(const CardStockRules& rules,
                                                       ruleset::Random& random);
 

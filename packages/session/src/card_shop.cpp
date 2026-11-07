@@ -1,6 +1,7 @@
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/assert.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/ruleset/ruleset.hpp>
 #include <dwe/session/card_shop.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
@@ -38,6 +39,8 @@ constexpr std::string_view MapKey = "map";
 constexpr std::string_view SlotKey = "slot";
 constexpr std::string_view SoundKey = "sound";
 constexpr std::string_view PackPriceKey = "pack_price";
+// card_shop.quirks: dailyPStatTrigger's check for a repeated card never retries.
+constexpr std::string_view StockRepeatsQuirk = "stock_repeats";
 // The save section of the stock; a sold slot is saved as SoldCard.
 constexpr std::string_view ShopSaveName = "card_shop";
 
@@ -68,7 +71,7 @@ core::Result<CardShopRules> readCardShopRules(const ruleset::Section& section) {
   const YamlNode& root = section.node;
   if (!reader.expectKeys(root, CardShopSection,
                          {StockKey, SellDivisorKey, LinesSectionKey, LinesKey, ConfirmSectionKey,
-                          ConfirmLineKey, FailSoundKey, TradeSoundKey},
+                          ConfirmLineKey, FailSoundKey, TradeSoundKey, ruleset::QuirksKey},
                          {PackPriceKey})) {
     return std::unexpected{reader.error(section.file)};
   }
@@ -101,6 +104,9 @@ core::Result<CardShopRules> readCardShopRules(const ruleset::Section& section) {
       rules.stock.skipped.push_back(reader.integer<std::int32_t>(card));
     }
   }
+  rules.stock.repeats =
+      ruleset::readQuirks(reader, reader.field(root, ruleset::QuirksKey), {StockRepeatsQuirk})
+          .on(StockRepeatsQuirk);
   const YamlNode& lines = reader.field(root, LinesKey);
   if (reader.expectKeys(lines, LinesKey, {TodayKey, SoldOutKey, SellPromptKey})) {
     rules.lines = {.today = nonNegative(reader, lines, TodayKey),

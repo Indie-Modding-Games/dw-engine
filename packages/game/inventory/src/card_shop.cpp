@@ -14,18 +14,21 @@ std::vector<std::int32_t> rollCardStock(const CardStockRules& rules, ruleset::Ra
     return stock;
   }
   // A span made only of skipped cards would roll forever; the original's has 63 good ones.
-  bool anyGood = false;
-  for (std::int32_t card = rules.first; card <= rules.last && !anyGood; ++card) {
-    anyGood = !std::ranges::contains(rules.skipped, card);
+  std::int32_t good = 0;
+  for (std::int32_t card = rules.first; card <= rules.last; ++card) {
+    good += std::ranges::contains(rules.skipped, card) ? 0 : 1;
   }
-  if (!anyGood) {
+  if (good == 0) {
     return stock;
   }
   for (std::int32_t slot = 0; slot < rules.size; ++slot) {
+    // Without the quirk a card already in the stock rolls again, while the span has another.
+    const bool distinct = !rules.repeats && std::cmp_less(stock.size(), good);
     std::int32_t card = 0;
     do {
       card = rules.first + random.below(span);
-    } while (std::ranges::contains(rules.skipped, card));
+    } while (std::ranges::contains(rules.skipped, card) ||
+             (distinct && std::ranges::contains(stock, card)));
     stock.push_back(card);
   }
   std::string shown;
