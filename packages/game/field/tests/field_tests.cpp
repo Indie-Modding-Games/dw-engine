@@ -287,6 +287,32 @@ TEST_CASE("against a wall straight ahead the player turns 0x50 aside and slides"
   CHECK(field.player().position.z == doctest::Approx(-400.0F));
 }
 
+TEST_CASE("a step aside of a wall's edge goes on along the turned facing, not along the wall") {
+  auto map = roomMap("room");
+  // A wall's corner: an overhang ahead (world -Z) and a ledge the player stands in, as it can after
+  // a battle's retreat (the original tests only where a whole step ends).
+  fill(map, {.column = 55, .row = 38}, {.column = 61, .row = 43}, Blocked);
+  fill(map, {.column = 55, .row = 44}, {.column = 57, .row = 44}, Blocked);
+  const glm::vec3 start{788.0F, 0.0F, -506.0F};
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(map, at(start.x, start.z, dwe::assets::yawFromOriginal(0xEEB)));
+  field.placeAt(field.partnerEntity(), {1300.0F, 0.0F, -300.0F}, Pi);
+  field.setInput({.stick = {std::numbers::sqrt2_v<float> / 2.0F,
+                            std::numbers::sqrt2_v<float> / 2.0F}}); // up and right: 0xA00
+  run(field, 0.5F);
+  // map.c: collisionGrace: up (0x800) is blocked, right (0xC00) free: the player turns 0x50 toward
+  // it. anim.c: applyRootMomentum moves it along 0xA50 and tests the map no more, so it walks into
+  // the overhang until every side is blocked; it does not slide along the wall (measured in the
+  // original: 0xA50 and (+78, +61) in 30 frames).
+  CHECK(dwe::assets::yawToOriginal(field.player().yaw) == 0xA50);
+  const glm::vec3 moved = field.player().position - start;
+  CHECK(moved.x == doctest::Approx(63.0F).epsilon(0.02));
+  CHECK(moved.z == doctest::Approx(-49.0F).epsilon(0.02));
+  run(field, 0.5F);
+  CHECK(glm::distance(field.player().position, start + moved) < 0.5F);
+}
+
 TEST_CASE("a placed partner stays where it was put, close to the player") {
   dwe::scene::World world;
   Field field{world, originalRules()};

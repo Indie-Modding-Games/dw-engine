@@ -1078,8 +1078,9 @@ void Field::walkForward(float distance) {
   // then the NPCs, past the partner (it is the test's source). An NPC stops the player (animFlag
   // 2); the map turns it aside (collisionGrace).
   if (!stepCollides(collision_, start, step, radius)) {
+    // anim.c: applyRootMomentum: the whole step, the map tested no more.
     if (!npcs_.blocks(start, start + glm::vec3{step.x, 0.0F, step.y}, radius)) {
-      transform.position = moveOnGrid(collision_, start, step, radius).position;
+      transform.position += glm::vec3{step.x, 0.0F, step.y};
     }
     return;
   }
@@ -1089,7 +1090,11 @@ void Field::walkForward(float distance) {
     return stepCollides(collision_, start, probe, radius) || playerTouchesSomeone(start, probe);
   });
   transform.yaw = grace.yaw;
-  transform.position = moveOnGrid(collision_, start, grace.step, radius).position;
+  // anim.c: applyRootMomentum moves by the step along the turned facing less the blocked sides'
+  // parts and tests the map no more: a step aside of a wall's edge goes on until every side is
+  // blocked (measured in trop01 at (2788, -1494): right turns to 0xA50 and goes (+78, +61) in 30
+  // frames, not along the wall).
+  transform.position += glm::vec3{grace.step.x, 0.0F, grace.step.y};
 }
 
 glm::vec2 Field::followPath(glm::vec3& position, float distance) {
