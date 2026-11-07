@@ -4,12 +4,27 @@
 use dwe_map::save::SaveMode;
 use eframe::egui::{self, Key, KeyboardShortcut, Modifiers};
 use mapper_core::tools::{self, BRUSH_SIZES};
-use mapper_core::{Action, Selection, Tool};
+use mapper_core::{Action, Layer, Selection, Tool};
 
 use crate::app::MapperApp;
 
 /// A turn of Q or E: 45 degrees (4096 a turn).
 const TURN_STEP: i32 = 512;
+
+/// The number keys in order: 1 to 9, then 0. Each toggles a layer of `Layer::ALL`; with Alt it
+/// selects the exit of its number.
+const DIGITS: [Key; 10] = [
+    Key::Num1,
+    Key::Num2,
+    Key::Num3,
+    Key::Num4,
+    Key::Num5,
+    Key::Num6,
+    Key::Num7,
+    Key::Num8,
+    Key::Num9,
+    Key::Num0,
+];
 
 pub fn handle(app: &mut MapperApp, ctx: &egui::Context) {
     if ctx.egui_wants_keyboard_input() || app.mapper.pending.is_some() {
@@ -30,6 +45,28 @@ pub fn handle(app: &mut MapperApp, ctx: &egui::Context) {
         }
         if input.consume_shortcut(&command(Key::S)) {
             actions.push(Action::Save(SaveMode::Patch));
+        }
+        if input.consume_shortcut(&command(Key::F)) {
+            app.focus_filter = true;
+        }
+        // Alt before the plain digits: a plain key also takes it with Alt held.
+        for (place, &digit) in DIGITS.iter().enumerate() {
+            let exit = (place as i32 + 1) % 10;
+            if input.consume_key(Modifiers::ALT, digit) {
+                actions.push(Action::Select(Some(Selection::Exit(exit))));
+                actions.push(Action::CenterSelection);
+            }
+        }
+        for (&digit, layer) in DIGITS.iter().zip(Layer::ALL) {
+            if input.consume_key(Modifiers::NONE, digit) {
+                actions.push(Action::SetLayer(layer, !app.mapper.layers.shows(layer)));
+            }
+        }
+        if input.consume_key(Modifiers::NONE, Key::PageUp) {
+            actions.push(Action::OpenAdjacentMap { later: false });
+        }
+        if input.consume_key(Modifiers::NONE, Key::PageDown) {
+            actions.push(Action::OpenAdjacentMap { later: true });
         }
         let mut key = |key| input.consume_key(Modifiers::NONE, key);
         for (letter, tool) in [
@@ -70,6 +107,9 @@ pub fn handle(app: &mut MapperApp, ctx: &egui::Context) {
         }
         if key(Key::Delete) {
             actions.push(Action::DeleteSelection);
+        }
+        if key(Key::C) {
+            actions.push(Action::CenterSelection);
         }
         if key(Key::Escape) {
             actions.push(Action::Select(None));

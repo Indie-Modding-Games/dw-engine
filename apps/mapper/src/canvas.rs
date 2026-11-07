@@ -1,9 +1,10 @@
 //! The map canvas: the background with the layers over it. The primary button works with the
 //! tool chosen (select and drag, paint, rectangle, fill, eyedropper; Ctrl+click follows an exit);
 //! the right or middle button pans, the wheel (or a pinch) zooms, and a double click with
-//! Seleccionar fits the map. With a game connected on the same map, the game's characters are
-//! drawn where they are now, and a right click (without dragging) opens a menu that puts the player
-//! there or tests an exit.
+//! Seleccionar fits the map. A right click (without dragging) opens a menu that adds an NPC there
+//! or opens the section of the event under it; with a game connected on the same map, the game's
+//! characters are drawn where they are now, and the menu also puts the player there or tests an
+//! exit. The Eventos layer is drawn by [`crate::events`].
 
 use dwe_map::world::{self, Cell};
 use dwe_map::{CellKind, TriggerBand};
@@ -72,6 +73,7 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
     if response.secondary_clicked() {
         app.context_point = context_point(&app.mapper);
     }
+    remember_event(app);
     if response.double_clicked() && app.mapper.tool == Tool::Select {
         app.apply(Action::FitView);
     }
@@ -216,20 +218,42 @@ pub fn show(app: &mut MapperApp, ui: &mut egui::Ui) {
             }
         }
     }
+    let hits = if layers.shows(Layer::Events) {
+        crate::events::draw(&painter, mapper, &to_screen)
+    } else {
+        Vec::new()
+    };
     if let Some(at) = selected_point(mapper) {
         painter.circle_stroke(to_screen(at), 10.0, Stroke::new(2.5, colors::SELECTED));
     }
     if layers.shows(Layer::Live) {
         draw_live(&painter, &app.live, mapper, &to_screen);
     }
-    live_menu(app, &response);
+    crate::events::click(app, &response, &hits);
+    if let Some(action) = context_menu(app, &response) {
+        app.apply(action);
+    }
 }
 
-/// Where the canvas's menu was opened: the ground point, and the exit whose trigger cell it is.
+/// Keeps the event under the cursor for the hover panel, which the cursor reaches after leaving
+/// the canvas.
+fn remember_event(app: &mut MapperApp) {
+    let Some(hover) = app.mapper.hover else {
+        return;
+    };
+    if let Some(event) = crate::events::event_at(&app.mapper, hover.cell) {
+        app.last_event = Some((event.script, event.section, event.kind));
+    }
+}
+
+/// Where the canvas's menu was opened: the ground point, the canvas point, the exit whose
+/// trigger cell it is and the event that runs the cell (script, section).
 #[derive(Clone, Copy, Debug)]
 pub struct ContextPoint {
     pub world: glam::Vec3,
+    pub canvas: Vec2,
     pub exit: Option<i32>,
+    pub event: Option<(u16, u16)>,
 }
 
 fn context_point(mapper: &Mapper) -> Option<ContextPoint> {
@@ -239,49 +263,75 @@ fn context_point(mapper: &Mapper) -> Option<ContextPoint> {
         .as_ref()
         .and_then(|map| map.overlay.exit_at(hover.value, &mapper.bands))
         .map(|mark| mark.exit);
+    let event =
+        crate::events::event_at(mapper, hover.cell).map(|event| (event.script, event.section));
     Some(ContextPoint {
         world: hover.world,
+        canvas: mapper.view.to_canvas(hover.background),
         exit,
+        event,
     })
 }
 
-/// The canvas's menu while a game shows the map: put the player on the point, or test the exit
-/// under it.
-fn live_menu(app: &MapperApp, response: &egui::Response) {
-    let (Some(point), Some(view)) = (app.context_point, app.live.shows(&app.mapper)) else {
+/// The canvas's menu: add an NPC on the point, open the section of the event under it, and while
+/// a game shows the map, put the player on the point or test the exit under it.
+fn context_menu(app: &MapperApp, response: &egui::Response) -> Option<Action> {
+    let point = app.context_point?;
+    app.mapper.map.as_ref()?;
+    let mut action = None;
+    response.context_menu(|ui| {
+        if ui.button(text::ADD_NPC_HERE).clicked() {
+            action = Some(Action::AddNpc(Some(point.canvas)));
+            ui.close();
+        }
+        if let Some((script, section)) = point.event
+            && ui
+                .button(format!("{} {section:#04x}", text::OPEN_SECTION))
+                .clicked()
+        {
+            action = Some(Action::OpenSection { script, section });
+            ui.close();
+        }
+        live_items(app, ui, point);
+    });
+    action
+}
+
+/// The menu's items while a game shows the map.
+fn live_items(app: &MapperApp, ui: &mut egui::Ui, point: ContextPoint) {
+    let Some(view) = app.live.shows(&app.mapper) else {
         return;
     };
     let rotation = view
         .player
         .map_or(0, |player| mapper_core::live::rotation_of_yaw(player.yaw));
-    response.context_menu(|ui| {
-        if ui.button(text::LIVE_PLACE_HERE).clicked() {
-            let at = mapper_core::live::place_player(point.world, rotation);
+    ui.separator();
+    if ui.button(text::LIVE_PLACE_HERE).clicked() {
+        let at = mapper_core::live::place_player(point.world, rotation);
+        app.live.place(at, false);
+        ui.close();
+    }
+    if let Some(exit) = point.exit {
+        // The centre of the cell clicked, which has the exit's trigger.
+        let cell = world::cell_center(world::cell_at(point.world));
+        if ui
+            .button(format!("{} {exit}", text::LIVE_TEST_EXIT))
+            .on_hover_text(text::LIVE_TEST_EXIT_HINT)
+            .clicked()
+        {
+            app.live
+                .place(mapper_core::live::place_player(cell, rotation), true);
+            ui.close();
+        }
+        if let Some(at) = app.mapper.place_at_arrival(exit)
+            && ui
+                .button(format!("{} {exit}", text::LIVE_TO_ARRIVAL))
+                .clicked()
+        {
             app.live.place(at, false);
             ui.close();
         }
-        if let Some(exit) = point.exit {
-            // The centre of the cell clicked, which has the exit's trigger.
-            let cell = world::cell_center(world::cell_at(point.world));
-            if ui
-                .button(format!("{} {exit}", text::LIVE_TEST_EXIT))
-                .on_hover_text(text::LIVE_TEST_EXIT_HINT)
-                .clicked()
-            {
-                app.live
-                    .place(mapper_core::live::place_player(cell, rotation), true);
-                ui.close();
-            }
-            if let Some(at) = app.mapper.place_at_arrival(exit)
-                && ui
-                    .button(format!("{} {exit}", text::LIVE_TO_ARRIVAL))
-                    .clicked()
-            {
-                app.live.place(at, false);
-                ui.close();
-            }
-        }
-    });
+    }
 }
 
 /// The game's characters where they are now, and the part of the background its window shows.
@@ -306,7 +356,8 @@ fn draw_live(
             egui::StrokeKind::Middle,
         );
     }
-    let actor = |actor: &mapper_live::Actor, color: Color32, name: &str| {
+    let mut labels = LabelStack::default();
+    let mut actor = |actor: &mapper_live::Actor, color: Color32, name: &str| {
         let from = glam::Vec3::new(actor.x, actor.y, actor.z);
         let [dx, dz] = actor.facing();
         let to = from + glam::Vec3::new(dx, 0.0, dz) * LIVE_ARROW;
@@ -318,7 +369,7 @@ fn draw_live(
         painter.arrow(from, to - from, Stroke::new(2.5, color));
         painter.circle_filled(from, 6.0, color);
         painter.circle_stroke(from, 6.0, Stroke::new(1.5, Color32::BLACK));
-        label(painter, from, name, color);
+        labels.place(painter, from, name, color);
     };
     for npc in &view.npcs {
         let name = format!("{} {}", text::LIVE_NPC, npc.id.unwrap_or(-1));
@@ -363,7 +414,8 @@ fn pointer_gesture(app: &mut MapperApp, ui: &egui::Ui, response: &egui::Response
     }
 }
 
-/// Where the selection is drawn: an exit's arrival, an NPC or a point of its path.
+/// Where the selection is drawn: an exit's arrival, an NPC, a point of its path, a door or a
+/// toilet point.
 fn selected_point(mapper: &Mapper) -> Option<Vec2> {
     let overlay = &mapper.map.as_ref()?.overlay;
     match mapper.selection? {
@@ -384,6 +436,12 @@ fn selected_point(mapper: &Mapper) -> Option<Vec2> {
             let index = npc.parts.iter().position(|&known| known == part)?;
             npc.waypoints.get(index).copied()
         }
+        Selection::Door(slot) => overlay
+            .doors
+            .iter()
+            .find(|door| door.slot == slot)
+            .map(|door| door.position.from),
+        Selection::Toilet(index) => overlay.toilet.map(|points| points[index.min(1)]),
     }
 }
 
@@ -501,7 +559,8 @@ fn draw_hover(painter: &egui::Painter, mapper: &Mapper, to_screen: &impl Fn(Vec2
     }
 }
 
-fn cell_corners(cell: Cell) -> [glam::Vec3; 4] {
+/// The corners of a cell on the ground: -z edge first, then +x, +z and -x.
+pub fn cell_corners(cell: Cell) -> [glam::Vec3; 4] {
     let min = world::cell_min(cell);
     let size = world::CELL_SIZE;
     [
@@ -540,11 +599,59 @@ fn diamond(center: Pos2, radius: f32, color: Color32) -> Shape {
 
 /// Text on a dark box, above a point.
 fn label(painter: &egui::Painter, at: Pos2, text: &str, color: Color32) {
+    label_at(painter, at, text, color);
+}
+
+/// The box of a label above a point.
+fn label_rect(painter: &egui::Painter, at: Pos2, text: &str, color: Color32) -> egui::Rect {
     let galley = painter.layout_no_wrap(text.to_owned(), egui::FontId::monospace(11.0), color);
-    let rect = egui::Rect::from_center_size(
+    egui::Rect::from_center_size(
         at - egui::vec2(0.0, 14.0),
         galley.size() + egui::vec2(6.0, 2.0),
-    );
+    )
+}
+
+/// Text on a dark box in a rectangle.
+fn label_in(painter: &egui::Painter, rect: egui::Rect, text: &str, color: Color32) {
+    let galley = painter.layout_no_wrap(text.to_owned(), egui::FontId::monospace(11.0), color);
     painter.rect_filled(rect, 2.0, colors::LABEL_BACK);
     painter.galley(rect.min + egui::vec2(3.0, 1.0), galley, color);
+}
+
+/// Text on a dark box, above a point; returns its box.
+pub fn label_at(painter: &egui::Painter, at: Pos2, text: &str, color: Color32) -> egui::Rect {
+    let rect = label_rect(painter, at, text, color);
+    label_in(painter, rect, text, color);
+    rect
+}
+
+/// Text on a dark box that starts at a point (its left middle); returns its box.
+pub fn label_left(painter: &egui::Painter, at: Pos2, text: &str, color: Color32) -> egui::Rect {
+    let size = label_rect(painter, at, text, color).size();
+    let rect = egui::Rect::from_min_size(at - egui::vec2(0.0, size.y * 0.5), size);
+    label_in(painter, rect, text, color);
+    rect
+}
+
+/// Labels that move up out of each other's way (the game's characters often stand together).
+#[derive(Default)]
+struct LabelStack {
+    placed: Vec<egui::Rect>,
+}
+
+impl LabelStack {
+    /// The most a label moves up before it is drawn where it overlaps.
+    const MOST_STEPS: usize = 6;
+
+    fn place(&mut self, painter: &egui::Painter, at: Pos2, text: &str, color: Color32) {
+        let mut rect = label_rect(painter, at, text, color);
+        for _ in 0..Self::MOST_STEPS {
+            if !self.placed.iter().any(|known| known.intersects(rect)) {
+                break;
+            }
+            rect = rect.translate(egui::vec2(0.0, -(rect.height() + 1.0)));
+        }
+        label_in(painter, rect, text, color);
+        self.placed.push(rect);
+    }
 }

@@ -59,13 +59,17 @@ pub enum Selection {
     Npc(usize),
     /// A part of an NPC's path (its place in `ai_sections` / `waypoints`).
     Waypoint { slot: usize, part: usize },
+    /// A door slot of the map's set.
+    Door(usize),
+    /// One of the toilet's two points.
+    Toilet(usize),
 }
 
 impl Selection {
     pub fn npc_slot(self) -> Option<usize> {
         match self {
             Self::Npc(slot) | Self::Waypoint { slot, .. } => Some(slot),
-            Self::Exit(_) => None,
+            Self::Exit(_) | Self::Door(_) | Self::Toilet(_) => None,
         }
     }
 }

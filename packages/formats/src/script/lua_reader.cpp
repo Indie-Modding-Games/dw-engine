@@ -1567,6 +1567,8 @@ namespace {
 
 // The functions a composed module gives patched sections: routines.patch_<section>.
 constexpr std::string_view PatchRoutinePrefix = "patch_";
+// The private routines of the n-th patch (from 1): routines.patch<n>_<name>.
+constexpr std::string_view PrivateRoutinePrefix = "patch";
 // The names of story's that the modules give locals of (lua_emitter.hpp), so a patch's
 // `story.ENDED` reads as the module's `ENDED`.
 constexpr std::array<std::string_view, 3> StoryConstants = {"ENDED", "PLAYER", "PARTNER"};
@@ -1607,6 +1609,34 @@ std::size_t newlines(std::string_view text) {
   return static_cast<std::size_t>(std::ranges::count(text, '\n'));
 }
 
+using RoutineNames = std::map<std::string, std::string, std::less<>>;
+
+// A patch's code with each routines.<name> it gives a new name renamed.
+std::string renamed(std::string_view code, const RoutineNames& names) {
+  const auto tokens = tokenize(code);
+  if (!tokens || names.empty()) {
+    return std::string{code};
+  }
+  std::string result;
+  std::size_t copied = 0;
+  for (std::size_t index = 0; index + 2 < tokens->size(); ++index) {
+    const Token& table = (*tokens)[index];
+    const Token& name = (*tokens)[index + 2];
+    const bool field = index > 0 && (*tokens)[index - 1].text == ".";
+    if (table.kind != TokenKind::Name || table.text != RoutinesTable || field ||
+        (*tokens)[index + 1].text != "." || name.kind != TokenKind::Name) {
+      continue;
+    }
+    if (const auto found = names.find(name.text); found != names.end()) {
+      result += code.substr(copied, name.begin - copied);
+      result += found->second;
+      copied = name.end;
+    }
+  }
+  result += code.substr(copied);
+  return result;
+}
+
 // Reads a patch's tokens: the shape readLuaPatch describes, each section's body cut out of the
 // code.
 class PatchReader {
@@ -1615,8 +1645,16 @@ public:
       : code_(code), tokens_(std::move(tokens)), patch_(&patch) {}
 
   core::Result<void> read() {
-    while (!error_ && accept("local")) {
-      topLocal();
+    while (!error_) {
+      if (is("local") && is(RoutinesTable, 1)) {
+        routinesLocal();
+      } else if (accept("local")) {
+        topLocal();
+      } else if (is("function")) {
+        privateRoutine();
+      } else {
+        break;
+      }
     }
     const Token& returned = peek();
     expect("return");
@@ -1652,6 +1690,13 @@ public:
     }
     if (!error_ && (!script || !sections)) {
       fail(returned, "the patch does not return { script = <id>, sections = { ... } }");
+    }
+    for (const auto& [name, line] : references_) {
+      if (!error_ && !std::ranges::contains(patch_->routines, name, &LuaPatchRoutine::name)) {
+        error_ = std::format("{}:{}: {}.{} is not defined in the patch (a patch reaches no routine "
+                             "of the module's but through original())",
+                             patch_->name, line, RoutinesTable, name);
+      }
     }
     if (error_) {
       return core::fail(*error_);
@@ -1715,6 +1760,54 @@ private:
     }
   }
 
+  // local routines = {}: the table of the patch's private routines.
+  void routinesLocal() {
+    const Token& local = next();
+    next();
+    if (routinesTable_) {
+      fail(local, std::format("local {} twice at the top of the patch", RoutinesTable));
+    }
+    expect("=");
+    expect("{");
+    expect("}");
+    routinesTable_ = true;
+  }
+
+  // function routines.<name>() ... end: a routine of the patch's own.
+  void privateRoutine() {
+    const Token& open = next();
+    if (!routinesTable_) {
+      fail(open,
+           std::format("a function at the top of a patch before local {} = {{}}", RoutinesTable));
+      return;
+    }
+    expect(RoutinesTable);
+    expect(".");
+    const Token& name = next();
+    if (name.kind != TokenKind::Name) {
+      fail(name, "a routine whose name is not a name");
+    }
+    expect("(");
+    const Token& close = peek();
+    if (!is(")")) {
+      fail(close, "a routine of the patch with parameters: the walk cannot follow them");
+    }
+    expect(")");
+    if (error_) {
+      return;
+    }
+    if (std::ranges::contains(patch_->routines, name.text, &LuaPatchRoutine::name)) {
+      fail(name, std::format("{}.{} is defined twice in the patch", RoutinesTable, name.text));
+      return;
+    }
+    auto pieces = body(open, {}, close.end, "a routine's function that does not end");
+    if (!pieces) {
+      return;
+    }
+    patch_->routines.push_back(
+        {.name = name.text, .body = std::move(pieces->front()), .line = close.line});
+  }
+
   void readSections() {
     expect("{");
     while (!error_ && !is("}")) {
@@ -1755,15 +1848,28 @@ private:
       fail(open, std::format("section {:#06x} is in the patch twice", section.id));
       return;
     }
+    auto pieces = body(open, original, close.end, "a section's function that does not end");
+    if (!pieces) {
+      return;
+    }
+    section.pieces = std::move(*pieces);
+    patch_->sections.push_back(std::move(section));
+  }
+
+  // A function's body, from `copied` to its own `end` (consumed): cut where it calls `original`
+  // (none: a name it does not have), with story's constants as the module's locals, and its
+  // routines.<name> noted for read() to check.
+  std::optional<std::vector<std::string>> body(const Token& open, std::string_view original,
+                                               std::size_t copied, std::string_view unended) {
+    std::vector<std::string> pieces;
     std::string piece;
-    std::size_t copied = close.end;
     // The blocks open in the body: the function's own `end` closes the last.
     std::size_t depth = 1;
     while (!error_) {
       const Token& token = peek();
       if (token.kind == TokenKind::End) {
-        fail(open, "a section's function that does not end");
-        return;
+        fail(open, unended);
+        return std::nullopt;
       }
       if (token.kind == TokenKind::Name) {
         if (token.text == "function" || token.text == "do" || token.text == "if" ||
@@ -1771,17 +1877,17 @@ private:
           ++depth;
         } else if ((token.text == "end" || token.text == "until") && --depth == 0) {
           piece += code_.substr(copied, token.begin - copied);
-          section.pieces.push_back(std::move(piece));
+          pieces.push_back(std::move(piece));
           next();
-          break;
+          return pieces;
         } else if (!original.empty() && token.text == original) {
           if (!is("(", 1) || !is(")", 2)) {
             fail(token, std::format("{} used other than as {}(): the walk cannot follow it",
                                     original, original));
-            return;
+            return std::nullopt;
           }
           piece += code_.substr(copied, token.begin - copied);
-          section.pieces.push_back(std::exchange(piece, {}));
+          pieces.push_back(std::exchange(piece, {}));
           copied = peek(2).end;
           at_ += 3;
           continue;
@@ -1792,11 +1898,13 @@ private:
           copied = peek(2).end;
           at_ += 3;
           continue;
+        } else if (token.text == RoutinesTable && is(".", 1) && peek(2).kind == TokenKind::Name) {
+          references_.emplace_back(peek(2).text, token.line);
         }
       }
       next();
     }
-    patch_->sections.push_back(std::move(section));
+    return std::nullopt;
   }
 
   std::string_view code_;
@@ -1804,12 +1912,15 @@ private:
   LuaPatch* patch_;
   std::size_t at_ = 0;
   std::optional<std::string> error_;
+  bool routinesTable_ = false;
+  // Each routines.<name> the bodies use, and its line.
+  std::vector<std::pair<std::string, std::size_t>> references_;
 };
 
 } // namespace
 
 core::Result<LuaPatch> readLuaPatch(std::string_view code, std::string name) {
-  LuaPatch patch{.name = std::move(name), .script = 0, .sections = {}};
+  LuaPatch patch{.name = std::move(name), .script = 0, .sections = {}, .routines = {}};
   auto tokens = tokenize(code);
   if (!tokens) {
     return core::fail(inPatch(patch.name, tokens.error().message));
@@ -1848,6 +1959,15 @@ core::Result<ComposedLuaModule> composeLuaPatches(std::optional<std::string_view
     }
   }
   ComposedLuaModule result;
+  // The routines' names in the composed module: the module's and the ones given so far.
+  std::set<std::string, std::less<>> taken;
+  const auto unique = [&taken](std::string name) {
+    while (taken.contains(name)) {
+      name += '_';
+    }
+    taken.insert(name);
+    return name;
+  };
   // The returned table's sections, in the module's order, by their routine.
   std::vector<std::pair<std::uint16_t, std::string>> table;
   if (module) {
@@ -1883,6 +2003,12 @@ core::Result<ComposedLuaModule> composeLuaPatches(std::optional<std::string_view
           "line {}: the module does not return {{ script = <id>, sections = {{ ... }} }}",
           chunk->empty() ? 1 : chunk->back().line));
     }
+    for (const LuaStatement& statement : *chunk) {
+      if (statement.kind == LuaStatement::Kind::Function &&
+          statement.name.starts_with(std::string{RoutinesTable} + ".")) {
+        taken.insert(statement.name.substr(RoutinesTable.size() + 1));
+      }
+    }
     for (std::size_t index = 0; index < sections->keys.size(); ++index) {
       const auto id = sections->keys[index].index;
       const LuaExpression& value = sections->operands[index];
@@ -1900,6 +2026,31 @@ core::Result<ComposedLuaModule> composeLuaPatches(std::optional<std::string_view
   if (!result.code.empty() && result.code.back() != '\n') {
     result.code += '\n';
   }
+  const auto addFunction = [&result](std::string_view routine, std::string_view body,
+                                     const std::string& patch, std::size_t patchLine) {
+    const std::size_t first = newlines(result.code) + 1;
+    result.patchLines.push_back(
+        {.first = first, .last = first + newlines(body), .patch = patch, .patchLine = patchLine});
+    result.code += std::format("function {}.{}(){} end\n", RoutinesTable, routine, body);
+  };
+  // The private routines of each patch that wins a section, under names of the composed module's.
+  std::map<const LuaPatch*, RoutineNames> privateNames;
+  for (std::size_t index = 0; index < patches.size(); ++index) {
+    const LuaPatch& patch = patches[index];
+    const bool wins = std::ranges::any_of(
+        winners, [&patch](const auto& winner) { return winner.second.first == &patch; });
+    if (!wins || patch.routines.empty()) {
+      continue;
+    }
+    RoutineNames& names = privateNames[&patch];
+    for (const LuaPatchRoutine& routine : patch.routines) {
+      names.emplace(routine.name,
+                    unique(std::format("{}{}_{}", PrivateRoutinePrefix, index + 1, routine.name)));
+    }
+    for (const LuaPatchRoutine& routine : patch.routines) {
+      addFunction(names.at(routine.name), renamed(routine.body, names), patch.name, routine.line);
+    }
+  }
   for (const auto& [id, winner] : winners) {
     const auto& [patch, section] = winner;
     const auto entry = std::ranges::find(table, id, &std::pair<std::uint16_t, std::string>::first);
@@ -1908,17 +2059,14 @@ core::Result<ComposedLuaModule> composeLuaPatches(std::optional<std::string_view
                                     "does not have",
                                     patch->name, section->line, id, script));
     }
-    std::string body = section->pieces.front();
+    const RoutineNames& names = privateNames[patch];
+    std::string body = renamed(section->pieces.front(), names);
     for (std::size_t piece = 1; piece < section->pieces.size(); ++piece) {
-      body += std::format("{}.{}(){}", RoutinesTable, entry->second, section->pieces[piece]);
+      body += std::format("{}.{}(){}", RoutinesTable, entry->second,
+                          renamed(section->pieces[piece], names));
     }
-    const std::string routine = std::format("{}{:04x}", PatchRoutinePrefix, id);
-    const std::size_t first = newlines(result.code) + 1;
-    result.patchLines.push_back({.first = first,
-                                 .last = first + newlines(body),
-                                 .patch = patch->name,
-                                 .patchLine = section->line});
-    result.code += std::format("function {}.{}(){} end\n", RoutinesTable, routine, body);
+    const std::string routine = unique(std::format("{}{:04x}", PatchRoutinePrefix, id));
+    addFunction(routine, body, patch->name, section->line);
     if (entry != table.end()) {
       entry->second = routine;
     } else {

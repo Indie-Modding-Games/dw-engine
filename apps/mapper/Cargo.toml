@@ -6,6 +6,7 @@ members = [
   "crates/mapper-live",
   "../../packages/rust/dwe-pack",
   "../../packages/rust/dwe-map",
+  "../../packages/rust/dwe-story",
 ]
 
 [workspace.package]
@@ -17,6 +18,7 @@ rust-version = "1.85"
 [workspace.dependencies]
 dwe-pack = { path = "../../packages/rust/dwe-pack" }
 dwe-map = { path = "../../packages/rust/dwe-map" }
+dwe-story = { path = "../../packages/rust/dwe-story" }
 mapper-core = { path = "crates/mapper-core" }
 mapper-live = { path = "crates/mapper-live" }
 glam = "0.30"
@@ -48,6 +50,7 @@ path = "src/main.rs"
 [dependencies]
 dwe-map.workspace = true
 dwe-pack.workspace = true
+dwe-story.workspace = true
 mapper-core.workspace = true
 mapper-live.workspace = true
 eframe = { version = "0.37", default-features = false, features = ["wgpu", "default_fonts", "x11", "wayland"] }

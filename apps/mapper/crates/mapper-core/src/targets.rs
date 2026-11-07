@@ -105,6 +105,9 @@ pub struct Settings {
     pub last_target: Option<PathBuf>,
     /// Whether a save asks a connected game to read the map again.
     pub reload_on_save: Option<bool>,
+    /// The dwx program that makes `field/script_warps` again when a save changes map changes.
+    #[serde(default)]
+    pub dwx: Option<PathBuf>,
 }
 
 impl Settings {
@@ -160,6 +163,7 @@ mod tests {
         let settings = Settings {
             last_target: Some(PathBuf::from("/x/mods/mine")),
             reload_on_save: Some(false),
+            dwx: Some(PathBuf::from("/x/bin/dwx")),
         };
         settings.store(&file).unwrap();
         assert_eq!(Settings::load(&file), settings);

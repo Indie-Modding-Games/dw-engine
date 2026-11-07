@@ -149,8 +149,8 @@ pub const VALUE_TOILET: &str = "Baño";
 pub const VALUE_RAW: &str = "Crudo";
 
 pub const INSPECTOR: &str = "Selección";
-pub const NOTHING_SELECTED: &str =
-    "Nada seleccionado: elige una salida, un NPC o un punto de ruta con Seleccionar.";
+pub const NOTHING_SELECTED: &str = "Nada seleccionado: elige una salida, un NPC, un punto de ruta, \
+     una puerta o el baño con Seleccionar.";
 pub const EXIT: &str = "Salida";
 pub const TARGET_MAP: &str = "Mapa de destino";
 pub const TARGET_MAP_NONE: &str = "(ninguno)";
@@ -208,10 +208,11 @@ pub const UNSAVED_DISCARD: &str = "Descartar";
 pub const UNSAVED_CANCEL: &str = "Cancelar";
 
 /// The keyboard shortcuts, as the help shows them.
-pub const SHORTCUT_LIST: [(&str, &str); 16] = [
+pub const SHORTCUT_LIST: [(&str, &str); 22] = [
     ("Ctrl+S", "Guardar (parche)"),
     ("Ctrl+Z", "Deshacer"),
     ("Ctrl+Y / Ctrl+Mayús+Z", "Rehacer"),
+    ("Ctrl+F", "Buscar un mapa en la lista"),
     ("V", "Seleccionar"),
     ("B", "Pincel"),
     ("R", "Rectángulo"),
@@ -228,10 +229,25 @@ pub const SHORTCUT_LIST: [(&str, &str); 16] = [
         "W",
         "Añadir un punto de ruta al NPC seleccionado bajo el cursor",
     ),
+    ("C", "Centrar la vista en la selección"),
     ("Esc", "Deseleccionar"),
+    ("1 … 9, 0", LAYER_KEYS_HINT),
+    (
+        "Alt+0 … Alt+9",
+        "Seleccionar la salida de ese número y centrarla",
+    ),
+    ("RePág / AvPág", "Mapa anterior / siguiente de la lista"),
     ("Ctrl+clic", "Ir adonde lleva la salida"),
     ("Mayús+arrastrar", "Orientar la selección hacia el cursor"),
+    (
+        "Clic en un evento",
+        "Con la capa Eventos y Seleccionar: abre su sección",
+    ),
 ];
+
+/// What the number keys do, as the help and the layer bar say it.
+pub const LAYER_KEYS_HINT: &str = "Mostrar u ocultar una capa: 1 paredes, 2 disparadores, 3 salidas, \
+     4 NPC, 5 puntos de ruta, 6 puertas, 7 baño, 8 rejilla, 9 juego, 0 eventos";
 
 /// The name of a tool.
 pub fn tool_name(tool: crate::tools::Tool) -> &'static str {
@@ -265,6 +281,10 @@ pub fn problem(problem: &dwe_map::save::Problem) -> String {
         }
         Problem::BadPath { slot } => {
             format!("NPC {slot}: la ruta no cabe en el registro (8 partes, como mucho 8 puntos).")
+        }
+        Problem::NpcSlotsInPatch => {
+            "Hay NPC añadidos o quitados: un parche no puede decirlo, guarda el mapa entero."
+                .to_owned()
         }
         Problem::Overridden { packs } => format!(
             "Aviso: un parche de encima ({}) cambia lo mismo; el juego verá el suyo.",
@@ -313,3 +333,241 @@ pub fn game_mode(mode: &str) -> &str {
         other => other,
     }
 }
+
+// The story.
+pub const LAYER_EVENTS: &str = "Eventos";
+pub const NOT_SAVED: &str = "sin guardar";
+pub const TOO_MANY_NPCS: &str = "El mapa ya tiene 8 NPC, los que el juego admite.";
+pub const NO_NPC_TEMPLATE: &str = "No hay ningún NPC que copiar en el contenido.";
+pub const NO_ENTRY_SECTION: &str = "El mapa no tiene sección de entrada (script 0): el NPC nuevo no aparecerá hasta que una sección lo haga aparecer.";
+pub const NO_CODE: &str = "La sección o la rutina abierta no tiene código.";
+pub const NPCS_SAVE_WHOLE: &str = "Hay NPC añadidos o quitados: el mapa se guarda entero (los parches nombran los NPC por su posición).";
+pub const WARPS_BY_HAND: &str =
+    "El guardado cambia saltos de mapa de la historia; vuelve a sacar field/script_warps con";
+pub const WARPS_MADE: &str = "field/script_warps sacado de nuevo";
+pub const WARPS_FAILED: &str = "dwx script-warps falló";
+
+// The events layer and panel.
+pub const EVENTS: &str = "Eventos";
+pub const EVENT_MAP_ENTRY: &str = "Al entrar al mapa";
+pub const EVENT_MAP_LOADED: &str = "Mapa cargado";
+pub const EVENT_STEP: &str = "Pisar";
+pub const EVENT_CONFIRM: &str = "Botón";
+pub const EVENT_TALK: &str = "Hablar NPC";
+pub const EVENTS_FILTER_HINT: &str = "Filtrar por tipo o sección";
+pub const EVENTS_NONE: &str = "Este mapa no tiene eventos.";
+pub const EVENT_MISSING: &str =
+    "El script no tiene esta sección: no pasa nada (se crea al editarla)";
+pub const EVENT_PATCHED: &str = "parcheado por";
+pub const EVENT_OPEN_HINT: &str = "Clic: abrir la sección y centrar la vista";
+pub const JUMP_HINT: &str = "Clic: abrir el mapa de destino en esa salida";
+pub const JUMP_ALWAYS: &str = "Siempre";
+pub const JUMP_WHEN: &str = "Cuando";
+pub const TEST_EVENT: &str = "Probar";
+pub const TEST_EVENT_HINT: &str = "Probar el evento en el juego conectado";
+pub const TEST_EVENT_OFFLINE: &str = "Conecta un juego (En vivo) para probar eventos";
+
+/// The kind of an event, in words.
+pub fn event_kind(kind: dwe_story::EventKind) -> String {
+    use dwe_story::EventKind;
+    match kind {
+        EventKind::MapEntry => EVENT_MAP_ENTRY.to_owned(),
+        EventKind::MapLoaded => EVENT_MAP_LOADED.to_owned(),
+        EventKind::Step => EVENT_STEP.to_owned(),
+        EventKind::Confirm => EVENT_CONFIRM.to_owned(),
+        EventKind::Talk { slot } => format!("{EVENT_TALK} {slot}"),
+    }
+}
+
+/// A section of a script: `script 12 · sección 0x33`.
+pub fn section_name(script: u16, section: u16) -> String {
+    format!("script {script} · sección {section:#04x}")
+}
+
+/// Where a jump of the story goes: `→ area_b salida 2`, or another script's section.
+pub fn jump_label(jump: &dwe_story::events::Jump) -> String {
+    match &jump.to_map {
+        Some(map) => format!("→ {map} salida {}", jump.exit),
+        None if jump.file_jump => {
+            format!("→ script {} sección {:#04x}", jump.map_index, jump.section)
+        }
+        None => format!("→ mapa {} salida {}", jump.map_index, jump.exit),
+    }
+}
+
+/// How many jumps an event has, for its row.
+pub fn jump_count(count: usize) -> String {
+    match count {
+        1 => "1 salto".to_owned(),
+        count => format!("{count} saltos"),
+    }
+}
+
+// The section editor.
+pub const SECTION_EDITOR: &str = "Sección";
+pub const ORIGIN_MODULE: &str = "Módulo";
+pub const ORIGIN_PATCHED: &str = "Parcheado por";
+pub const TAB_STRUCTURE: &str = "Estructura";
+pub const TAB_LUA: &str = "Lua";
+pub const NO_SECTION_CODE: &str =
+    "El script no tiene esta sección: al editarla se crea en el borrador.";
+pub const EMPTY_BLOCK: &str = "(vacío)";
+pub const ARM_ELSEIF: &str = "O si";
+pub const ARM_ELSE: &str = "Si no";
+pub const DELETE_STMT: &str = "Borrar";
+pub const OPEN_ROUTINE: &str = "Abrir rutina";
+pub const BACK_TO_SECTION: &str = "Volver a la sección";
+pub const ROUTINE: &str = "Rutina";
+pub const PALETTE: &str = "Paleta";
+pub const PALETTE_FILTER_HINT: &str = "Filtrar comandos";
+pub const PALETTE_PLAIN: &str = "Comandos";
+pub const PALETTE_ENDS: &str = "Cambian de mapa o de script (acaban la sección)";
+pub const PALETTE_BLOCKS: &str = "Bloques";
+pub const NEW_IF: &str = "Si…";
+pub const NEW_END: &str = "Fin";
+pub const INSERT_INSIDE: &str = "Insertar dentro del bloque seleccionado";
+pub const INSERT_HINT: &str =
+    "Lo nuevo va después de la línea seleccionada (al final si no hay ninguna)";
+pub const OPERANDS: &str = "Operandos";
+pub const NOTHING_TO_EDIT: &str = "Esta línea no tiene campos: cámbiala en la pestaña Lua.";
+pub const SELECT_A_LINE: &str = "Elige una línea para cambiar sus campos.";
+pub const TEXT_KEY: &str = "Clave";
+pub const TEXT_LINE: &str = "Línea";
+pub const NEW_LINE: &str = "Línea nueva";
+pub const NEW_LINE_HINT: &str = "Da a este comando una clave propia con el texto de ahora, para cambiarlo sin tocar otros sitios";
+pub const TEXT_LINE_HINT: &str =
+    "Se aplica al salir del campo; cambia la línea en todos los sitios que usan la clave";
+pub const ENTITY_PLAYER: &str = "jugador";
+pub const ENTITY_PARTNER: &str = "compañero";
+pub const ENTITY_NPC: &str = "NPC";
+pub const SECTION_NONE: &str = "sin sección";
+pub const CONDITION: &str = "Condición";
+pub const QUICK_TRIGGER_ON: &str = "disparador encendido";
+pub const QUICK_TRIGGER_OFF: &str = "disparador apagado";
+pub const QUICK_VAR: &str = "variable";
+pub const QUICK_OTHER: &str = "otra (escríbela en Lua)";
+pub const APPLY: &str = "Aplicar";
+pub const EXPR_HINT: &str = "Lua; Intro para aplicar";
+pub const LUA_OK: &str = "Lua correcto";
+pub const LUA_APPLY_HINT: &str = "Cambia el código de la sección por este (un paso de deshacer)";
+pub const REVERT_SECTION: &str = "Revertir sección";
+pub const REVERT_SECTION_HINT: &str =
+    "Quita la sección del borrador del paquete destino: corre como la tienen los paquetes";
+pub const CLOSE: &str = "Cerrar";
+pub const SECTION_NO_TARGET: &str =
+    "Sin paquete destino: los cambios se ven, pero para guardarlos elige uno en Archivo → Destino.";
+
+/// The origin line of the section editor.
+pub fn origin(patched_by: Option<&str>) -> String {
+    match patched_by {
+        Some(patch) => format!("{ORIGIN_PATCHED} {patch}"),
+        None => ORIGIN_MODULE.to_owned(),
+    }
+}
+
+/// A Lua error said for the editor: `línea 3: …`.
+pub fn lua_error(error: &dwe_story::Error) -> String {
+    match error {
+        dwe_story::Error::Syntax { line, message } => format!("línea {line}: {message}"),
+        other => other.to_string(),
+    }
+}
+
+/// The label of an arm of an `if` (the first is the statement's own line).
+pub fn arm_label(arm: usize) -> &'static str {
+    if arm == 0 { CONDITION } else { ARM_ELSEIF }
+}
+
+// Trigger cells and their sections.
+pub const PICK_SECTION: &str = "Sección…";
+pub const SECTION_EXISTS: &str = "existe";
+pub const SECTION_MISSING: &str = "no existe";
+pub const NO_MAP_SCRIPT: &str = "el mapa no tiene script";
+pub const OPEN_SECTION: &str = "Abrir sección";
+pub const HOVER_EVENT: &str = "Evento";
+pub const LAST_EVENT_HINT: &str = "El último evento bajo el cursor";
+
+/// What a trigger value runs: `Pisar → sección 0x33 (script 12)`.
+pub fn trigger_section(confirm: bool, section: u16, script: Option<u16>) -> String {
+    let kind = if confirm { EVENT_CONFIRM } else { EVENT_STEP };
+    match script {
+        Some(script) => format!("{kind} → sección {section:#04x} (script {script})"),
+        None => format!("{kind} → sección {section:#04x} ({NO_MAP_SCRIPT})"),
+    }
+}
+
+// "Probar evento".
+pub const TEST_TITLE: &str = "Probar evento";
+pub const TEST_WRITES: &str = "Se escribe en la historia del juego";
+pub const TEST_NO_WRITES: &str = "Nada que escribir";
+pub const TEST_UNSAVED: &str =
+    "Hay cambios sin guardar: el juego corre lo guardado (Ctrl+S antes de probar).";
+pub const TEST_TO_SELECTED: &str = "Para llegar también a la línea elegida en el editor";
+pub const TEST_OTHERS: &str = "Condiciones que no se pueden poner (cúmplelas a mano)";
+pub const TEST_PLACE: &str = "El jugador va a";
+pub const TEST_NO_PLACE: &str = "El evento corre al entrar: solo se recarga el mapa";
+pub const TEST_PRESS: &str = "Después se pulsa confirmar";
+pub const TEST_RUN: &str = "Probar";
+pub const TEST_CANCEL: &str = "Cancelar";
+pub const TEST_RUNNING: &str = "Probando el evento…";
+pub const TEST_BUSY: &str = "El juego está corriendo un script de historia y no deja escribir en ella: \
+     espera a que acabe (o pasa sus diálogos) y vuelve a probar.";
+pub const TEST_NO_RELOAD: &str = "El juego no volvió a cargar el mapa a tiempo: prueba otra vez.";
+pub const TEST_DIFF: &str = "Lo que cambió la prueba";
+pub const TEST_DIFF_NONE: &str = "La historia no cambió";
+pub const TEST_SKIPPED: &str = "No se puede escribir (fuera de 0 a 255)";
+
+/// A story write of the test, said: `disparador 12 door_open: encendido`.
+pub fn need_trigger(name: &str, on: bool) -> String {
+    format!("disparador {name}: {}", on_off(on))
+}
+
+pub fn need_var(name: &str, value: i64) -> String {
+    format!("variable {name} = {value}")
+}
+
+pub fn on_off(on: bool) -> &'static str {
+    if on { "encendido" } else { "apagado" }
+}
+
+/// A trigger that changed: `disparador 12 door_open: apagado → encendido`.
+pub fn trigger_change(name: &str, on: bool) -> String {
+    format!("disparador {name}: {} → {}", on_off(!on), on_off(on))
+}
+
+pub fn var_change(name: &str, before: i64, after: i64) -> String {
+    format!("variable {name}: {before} → {after}")
+}
+
+// NPC slots, doors and the toilet.
+pub const ADD_NPC: &str = "Añadir NPC";
+pub const ADD_NPC_HERE: &str = "Añadir un NPC aquí";
+pub const REMOVE_NPC: &str = "Quitar el último NPC";
+pub const REMOVE_NPC_HINT: &str =
+    "Solo se puede quitar el último: la historia nombra los NPC por su número";
+pub const DOOR: &str = "Puerta";
+pub const DOOR_MODEL: &str = "Modelo";
+pub const DOOR_NO_MODEL: &str = "sin modelo";
+pub const ROTATION: &str = "Giro";
+pub const ADD_DOOR: &str = "Añadir puerta";
+pub const NO_FREE_DOOR: &str = "Todas las puertas del mapa tienen modelo";
+pub const TOILET: &str = "Baño";
+pub const TOILET_FIRST: &str = "Punto 1 (x, z)";
+pub const TOILET_SECOND: &str = "Punto 2 (x, z)";
+pub const TOILET_HINT: &str = "El compañero corre al punto 1 y después al 2";
+pub const ADD_TOILET: &str = "Añadir baño";
+pub const REMOVE_TOILET: &str = "Quitar baño";
+pub const ADD_THINGS: &str = "Añadir al mapa";
+
+// The file menu and the settings.
+pub const REVERT: &str = "Revertir";
+pub const REVERT_QUESTION: &str = "¿Descartar los cambios sin guardar de este mapa?";
+pub const SETTINGS: &str = "Ajustes…";
+pub const SETTINGS_TITLE: &str = "Ajustes";
+pub const DWX_PATH: &str = "Programa dwx";
+pub const DWX_PATH_HINT: &str = "/ruta/a/dwx";
+pub const DWX_HELP: &str = "Con él, un guardado que cambia saltos de mapa de la historia vuelve a sacar \
+     field/script_warps solo. Sin él, el editor dice el comando que hay que ejecutar:";
+pub const DWX_CLEAR: &str = "Quitar";
+pub const PACK_PLACEHOLDER: &str = "<paquete>";
+pub const STORY_PROBLEMS: &str = "Problemas de la historia al guardar";

@@ -448,6 +448,7 @@ version = "0.1.0"
 dependencies = [
  "dwe-map",
  "dwe-pack",
+ "dwe-story",
  "eframe",
  "glam",
  "image",
@@ -462,6 +463,17 @@ name = "dwe-pack"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_yaml_ng",
+ "tempfile",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "dwe-story"
+version = "0.1.0"
+dependencies = [
+ "dwe-map",
+ "dwe-pack",
  "serde_yaml_ng",
  "tempfile",
  "thiserror 2.0.21",
@@ -1241,6 +1253,7 @@ version = "0.1.0"
 dependencies = [
  "dwe-map",
  "dwe-pack",
+ "dwe-story",
  "glam",
  "serde",
  "serde_yaml_ng",

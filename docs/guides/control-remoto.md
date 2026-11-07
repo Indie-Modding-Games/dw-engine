@@ -109,8 +109,9 @@ pide `reload_map` para ver el cambio en el juego que corre:
    [Mapas](../formats/mapas.md)), `field/script_warps`, `field/rules` con las bandas de `field/triggers` y la tabla
    de mapas (`data/maps`). Los módulos de historia (`story/<n>`) y sus parches (`story/patches/*`) se descartan y se
    vuelven a leer de los packs en la siguiente sección que corra, así que un `story/<n>.lua` editado o un parche
-   nuevo valen desde la recarga ([Historia](../modding/historia.md)). Si el mapa ya no carga, o no tiene la salida
-   pedida, falla antes de tocar nada.
+   nuevo valen desde la recarga ([Historia](../modding/historia.md)). Las tablas de texto (`text/<idioma>`) del
+   idioma en uso se vuelven a leer, así que una línea que trae o cambia un parche de historia se ve ya. Si el mapa
+   ya no carga, o no tiene la salida pedida, falla antes de tocar nada.
 3. Se vuelve a entrar en el mapa: sin `exit`, donde están el jugador y el compañero, sin fundido; con `exit`, por
    esa salida, como al cruzar una puerta. La historia, el inventario, el reloj y la sesión siguen igual: el juego
    hace lo mismo que al entrar en un mapa (corre la cabecera del script del mapa, que coloca sus NPCs).

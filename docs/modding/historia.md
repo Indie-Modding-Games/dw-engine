@@ -99,6 +99,50 @@ return {
   (`return original()`, o `if original() == ENDED then return ENDED end` y seguir), no guardado en una variable
   (`local r = original()`). Un parche así corre bien en el juego, pero `dwx script-warps` falla y nombra el fichero
   del parche y su línea.
+- Un parche no ve las `routines` del módulo: corre en su propio entorno. Si una sección necesita código compartido del
+  script (el `return routines.at_0100()` del Lua generado), el parche trae su copia como rutina privada: arriba,
+  `local routines = {}` y después `function routines.<nombre>() ... end` (sin parámetros y sin `original`). Dentro del
+  parche, `routines.<nombre>` es siempre la suya; una que el parche no define es un error de `dwx script-warps` con
+  su línea (en el juego fallaría al correr). Las secciones que el parche no toca siguen usando las del módulo. Así
+  guarda el editor de mapas una sección editada:
+
+  ```lua
+  local routines = {}
+
+  function routines.at_0100()
+    story.set_var(5, 2)
+    return story.ENDED
+  end
+
+  return {
+    script = 900,
+    sections = {
+      [0x51] = function(original)
+        story.set_trigger(73)
+        return routines.at_0100()
+      end,
+    },
+  }
+  ```
+
+## Editar eventos con el mapper
+
+El [editor de mapas](../modulos/apps/mapper.md#eventos) escribe estos parches por ti:
+
+1. Abre el contenido y el mapa, elige el paquete de mod en «Archivo → Destino» y enciende la capa **Eventos** (tecla
+   0). El panel «Eventos» lista lo que hace el mapa al entrar, al pisar o pulsar en cada celda de disparo y al hablar
+   con cada NPC, con la sección que corre y el parche que la da, si lo hay.
+2. Un clic en un evento (en el panel o en el lienzo) abre su sección. En «Estructura», elige una línea y cambia sus
+   campos: el texto de un diálogo, el número de un disparador, la condición de un `if`. La paleta añade comandos y
+   la pestaña «Lua» deja escribir la sección a mano. Ctrl+Z deshace.
+3. Ctrl+S guarda `story/patches/<paquete>_<script>.lua` con las secciones cambiadas (y las rutinas que usan, como
+   rutinas privadas) y las líneas de texto en el `text/<idioma>` del paquete. Si ya había un parche del paquete para
+   ese script, se edita ese.
+4. Con el juego abierto y conectado ([En vivo](../modulos/apps/mapper.md#en-vivo)), «Probar» pone la historia del
+   juego en el estado que la sección necesita, recarga el mapa, lleva al jugador al evento y enseña lo que cambió.
+
+Si el cambio añade o mueve un `story.warp_to`, vuelve a sacar `field/script_warps` con `dwx script-warps` (el editor
+lo hace solo si sabe dónde está `dwx`, en «Archivo → Ajustes…»). Antes de publicar, `dwx validate` sobre el mod.
 
 ## Nombres de disparadores y variables
 

@@ -4,7 +4,7 @@
 use std::collections::BTreeSet;
 
 use glam::Vec3;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::document::RawVec3;
 use crate::world::from_original_axes;
@@ -48,7 +48,7 @@ impl MapEntry {
 }
 
 /// A door model placed on a map (DoorStruct).
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct MapDoor {
     /// None for an unused slot.
     pub model_id: Option<i32>,
@@ -64,7 +64,7 @@ pub struct MapDoorSet {
 
 /// The toilet's two points, in the original's x and z: the partner runs to the first, then to the
 /// second.
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct MapToilet {
     pub index: i32,
     pub x1: i32,

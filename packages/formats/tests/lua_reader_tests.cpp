@@ -725,3 +725,142 @@ TEST_CASE("a story patch the walk cannot follow is an error that names the patch
   REQUIRE_FALSE(module.has_value());
   CHECK(composed->located(module.error().message).starts_with("my_mod:story/patches/wrap.lua:4: "));
 }
+
+TEST_CASE("a patch's private routines compose under names that clash with no other routine") {
+  // The module has its own at_0100 and a routine named as patch 1's copy would be.
+  constexpr std::string_view Module = R"lua(local story <const> = story
+local ENDED <const> = story.ENDED
+local routines = {}
+
+function routines.step()
+  return routines.at_0100()
+end
+
+function routines.door()
+  return routines.at_0100()
+end
+
+function routines.at_0100()
+  return story.warp_to(7, 2, 255)
+end
+
+function routines.patch1_at_0100()
+  return ENDED
+end
+
+return { script = 1, sections = { [51] = routines.step, [52] = routines.door,
+                                   [53] = routines.patch1_at_0100 } }
+)lua";
+  // Both patches copy at_0100; the first one's leads to room 8, the second one's to room 9.
+  const auto first = script::readLuaPatch(R"lua(local story <const> = story
+local ENDED <const> = story.ENDED
+
+local routines = {}
+
+function routines.at_0100()
+  if story.trigger(5) then
+    return routines.tail()
+  end
+  return story.warp_to(8, 1, 255)
+end
+
+function routines.tail()
+  story.set_trigger(6)
+  return story.ENDED
+end
+
+return { script = 1, sections = {
+  [51] = function(original)
+    if story.trigger(4) then
+      return original()
+    end
+    return routines.at_0100()
+  end,
+} }
+)lua",
+                                          "first:story/patches/a.lua");
+  REQUIRE_MESSAGE(first.has_value(), errorOf(first));
+  REQUIRE(first->routines.size() == 2);
+  CHECK(first->routines[0].name == "at_0100");
+  CHECK(first->routines[0].line == 6);
+  CHECK(first->routines[1].name == "tail");
+  const auto second = script::readLuaPatch(R"lua(local routines = {}
+function routines.at_0100()
+  return story.warp_to(9, 0, 255)
+end
+return { script = 1, sections = { [52] = function() return routines.at_0100() end } }
+)lua",
+                                           "second:story/patches/b.lua");
+  REQUIRE_MESSAGE(second.has_value(), errorOf(second));
+
+  const std::vector<script::LuaPatch> patches{*first, *second};
+  const auto composed = script::composeLuaPatches(Module, 1, patches);
+  REQUIRE_MESSAGE(composed.has_value(), errorOf(composed));
+  // The module's patch1_at_0100 keeps its name; the first patch's copy takes an underscore.
+  CHECK(composed->code.contains("function routines.patch1_at_0100_()"));
+  CHECK(composed->code.contains("return routines.patch1_tail()"));
+  CHECK(composed->code.contains("function routines.patch2_at_0100()"));
+  CHECK(composed->code.contains("return routines.patch1_at_0100_()\n"));
+  CHECK(composed->code.contains("return routines.step()"));
+  CHECK(composed->code.contains("function routines.patch_0034() return routines.patch2_at_0100()"));
+  const auto module = script::readLuaModule(composed->code);
+  REQUIRE_MESSAGE(module.has_value(), composed->located(errorOf(module)));
+  CHECK(module->listing.sections.size() == 3);
+
+  // The walk follows the warps in the private routines: room 8 behind 51, room 9 behind 52, and the
+  // module's room 7 only through 51's original.
+  std::map<std::uint16_t, script::LuaListing> modules;
+  modules.emplace(script::MapHeadScript, read(HandMapHead));
+  modules.emplace(1, *module);
+  const std::string yaml = warpsYaml(lookupOf(modules));
+  CHECK(yaml.contains("    map: room_7\n"));
+  CHECK(yaml.contains("    map: room_8\n"));
+  CHECK(yaml.contains("    map: room_9\n"));
+
+  // An error in a private routine names the patch's line.
+  const auto broken = script::readLuaPatch(R"lua(local routines = {}
+
+function routines.at_0100()
+  story.not_an_op(1)
+  return
+end
+return { script = 1, sections = { [51] = function() return routines.at_0100() end } }
+)lua",
+                                           "broken:story/patches/c.lua");
+  REQUIRE_MESSAGE(broken.has_value(), errorOf(broken));
+  const std::vector<script::LuaPatch> brokenOnly{*broken};
+  const auto brokenComposed = script::composeLuaPatches(Module, 1, brokenOnly);
+  REQUIRE_MESSAGE(brokenComposed.has_value(), errorOf(brokenComposed));
+  const auto brokenModule = script::readLuaModule(brokenComposed->code);
+  REQUIRE_FALSE(brokenModule.has_value());
+  CHECK(brokenComposed->located(brokenModule.error().message)
+            .starts_with("broken:story/patches/c.lua:4: "));
+}
+
+TEST_CASE("a patch reaches only its own routines, and says so with its line") {
+  const auto patchError = [](std::string_view code) {
+    return errorOf(script::readLuaPatch(code, "my_mod:story/patches/p.lua"));
+  };
+  // The module's routines are out of the patch's reach.
+  CHECK(patchError("return { script = 1, sections = {\n  [1] = function()\n"
+                   "    return routines.at_0100()\n  end,\n} }")
+            .starts_with("my_mod:story/patches/p.lua:3: routines.at_0100 is not defined in the "
+                         "patch"));
+  CHECK(patchError("local routines = {}\nfunction routines.a()\n  return routines.b()\nend\n"
+                   "return { script = 1, sections = { [1] = function() return routines.a() end "
+                   "} }")
+            .starts_with("my_mod:story/patches/p.lua:3: routines.b is not defined in the patch"));
+  CHECK(patchError("function routines.a() end\nreturn { script = 1, sections = {} }")
+            .starts_with("my_mod:story/patches/p.lua:1: a function at the top of a patch before"));
+  CHECK(patchError("local routines = {}\nlocal routines = {}\nreturn { script = 1, sections = {} }")
+            .starts_with("my_mod:story/patches/p.lua:2: local routines twice"));
+  CHECK(patchError("local routines = {}\nfunction routines.a(x) end\n"
+                   "return { script = 1, sections = {} }")
+            .contains("a routine of the patch with parameters"));
+  CHECK(patchError("local routines = {}\nfunction routines.a() end\nfunction routines.a() end\n"
+                   "return { script = 1, sections = {} }")
+            .starts_with("my_mod:story/patches/p.lua:3: routines.a is defined twice"));
+  CHECK(patchError("local routines = {}\nfunction routines.a()\n  if x then\nend\n"
+                   "return { script = 1, sections = {} }")
+            .contains("a routine's function that does not end"));
+}

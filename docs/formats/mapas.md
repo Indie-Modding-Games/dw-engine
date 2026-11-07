@@ -257,7 +257,9 @@ collision:
 - **Cada cambio nombra una entrada** que el dato ya tiene (una salida por su `exit`; una luz, un NPC, un sprite o una
   instancia por su posición) y da solo los campos que sustituye, con las mismas claves que el dato. Cada campo se
   sustituye **entero**: un vector, la lista de `waypoints` o los `frames` de una instancia. No se añaden ni se quitan
-  entradas: una salida, un NPC o un índice que el dato no tiene es un error.
+  entradas: una salida, un NPC o un índice que el dato no tiene es un error. Por eso un mod que añade o quita NPC trae el
+  `data` del mapa entero (el [mapper](../modulos/apps/mapper.md#editar) lo guarda así solo); el NPC nuevo aparece
+  cuando una sección de la historia lo hace aparecer con `story.spawn_npc`.
 - **La colisión** se da entera en `collision.grid` (con la forma de la `collision` del dato) o por rectángulos en
   `collision.cells` (columna y fila de la primera celda, `width` y `height` de 1 por defecto, y el valor crudo: 0 libre,
   el bit `0x80` bloqueado, otro un disparador). Los rectángulos se aplican después de la rejilla, en orden. La rejilla
@@ -290,7 +292,8 @@ un mapa dice qué juego de puertas (`doors`) y qué baño (`toilet`) usa, por su
 que quiere que un mapa use otro juego de puertas o de baño que ya existe trae solo la entrada de ese mapa con el índice
 cambiado; uno que quiere mover una puerta o un punto del baño, o añadir un juego nuevo (al final, con el siguiente
 `index`), trae la sección `doors` o `toilets` entera, copiada de la base y editada. Dos mods que traen la misma sección
-no se suman: gana el de más arriba.
+no se suman: gana el de más arriba. El mapper guarda así las puertas y el baño que se editan: la sección entera y, si el
+conjunto lo comparten otros mapas, uno nuevo con la entrada del mapa cambiada.
 
 ## Cómo se dibuja
 

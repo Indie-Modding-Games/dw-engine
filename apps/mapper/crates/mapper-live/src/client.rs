@@ -11,8 +11,8 @@ use crate::answers::{
 };
 use crate::{Endpoint, Error, Result};
 
-/// How long a request waits for its answer.
-const ANSWER_TIMEOUT: Duration = Duration::from_secs(10);
+/// How long a request waits for its answer (a debug build of the game takes seconds to load a map).
+const ANSWER_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// The exits a map has: `reload_map` takes 0 to 9.
 pub const MOST_EXITS: i32 = 10;
@@ -243,6 +243,14 @@ impl LiveClient {
         let mut fields = Map::new();
         fields.insert("ticks".into(), json!(ticks));
         self.request("advance", fields).map(|_| ())
+    }
+
+    /// Holds keys for some ticks, after the presses already queued (`space` confirms).
+    pub fn press(&mut self, keys: &[&str], ticks: u64) -> Result<()> {
+        let mut fields = Map::new();
+        fields.insert("keys".into(), json!(keys));
+        fields.insert("ticks".into(), json!(ticks));
+        self.request("press", fields).map(|_| ())
     }
 }
 
@@ -532,6 +540,12 @@ pub(crate) mod tests {
         next();
         client.advance(6).unwrap();
         assert_eq!(next()["ticks"], 6);
+        client.press(&["space"], 4).unwrap();
+        let request = next();
+        assert_eq!(
+            (&request["cmd"], &request["keys"], &request["ticks"]),
+            (&json!("press"), &json!(["space"]), &json!(4))
+        );
     }
 
     #[test]

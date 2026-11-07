@@ -1,0 +1,22 @@
+[package]
+name = "dwe-story"
+version = "0.1.0"
+# The crate is built by the map editor's workspace, which holds the lock file.
+workspace = "../../../apps/mapper"
+description = "dwe's story scripts for the tools: the Lua the extractor writes read into commands, story patches written back, and the events of a map"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+dwe-map.workspace = true
+dwe-pack.workspace = true
+serde_yaml_ng.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

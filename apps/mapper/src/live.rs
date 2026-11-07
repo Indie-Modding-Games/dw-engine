@@ -43,6 +43,11 @@ pub struct LivePanel {
     sync: PreviewSync,
     next_preview: Instant,
     pub story: Option<StoryState>,
+    /// How many story reads have come back, so a test can wait for the next one.
+    pub story_reads: u64,
+    /// How many `reload_map` answers came, and how many orders the game refused or did not answer.
+    pub reloads: u64,
+    pub failures: u64,
     /// The story is read again every second.
     pub story_follow: bool,
     pub story_filter: String,
@@ -72,6 +77,9 @@ impl Default for LivePanel {
             sync: PreviewSync::default(),
             next_preview: Instant::now(),
             story: None,
+            story_reads: 0,
+            reloads: 0,
+            failures: 0,
             story_follow: false,
             story_filter: String::new(),
             story_trigger: 0,
@@ -196,7 +204,10 @@ impl LivePanel {
                 self.view = Some(*view);
                 self.round_trip = round_trip;
             }
-            Event::Story(story) => self.story = Some(*story),
+            Event::Story(story) => {
+                self.story = Some(*story);
+                self.story_reads += 1;
+            }
             Event::Log(entries) => {
                 self.log.extend(entries);
                 while self.log.len() > MOST_LOG_LINES {
@@ -205,6 +216,7 @@ impl LivePanel {
             }
             Event::Done(done) => self.done(done, mapper),
             Event::Failed { command, message } => {
+                self.failures += 1;
                 let line = format!("{command}: {message}");
                 mapper.messages.push(Message::Error(line.clone()));
                 self.problems.push(line);
@@ -225,7 +237,10 @@ impl LivePanel {
                 self.overlay = on;
                 return;
             }
-            Done::Reloaded(reloaded) => format!("{}: {}", text::LIVE_RELOADED, reloaded.map),
+            Done::Reloaded(reloaded) => {
+                self.reloads += 1;
+                format!("{}: {}", text::LIVE_RELOADED, reloaded.map)
+            }
             Done::Previewed { map, applied } => {
                 self.sync.confirm();
                 // The last `live` may predate the preview: until the next one says otherwise,
@@ -249,7 +264,7 @@ impl LivePanel {
                 text::LIVE_PREVIEW_CLEARED.to_owned()
             }
             Done::Placed => text::LIVE_PLACED.to_owned(),
-            Done::Paused(_) | Done::Advanced(_) | Done::StoryWritten(_) => return,
+            Done::Paused(_) | Done::Advanced(_) | Done::Pressed | Done::StoryWritten(_) => return,
         };
         mapper.messages.push(Message::Info(info));
     }

@@ -1,19 +1,28 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/formats/script/lua_reader.hpp>
 #include <dwe/session/story_lua.hpp>
 
 #include <doctest/doctest.h>
 
+#include <filesystem>
 #include <format>
+#include <fstream>
 #include <initializer_list>
 #include <memory>
 #include <optional>
+#include <span>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
 #include "story_lua_fixture.hpp"
+
+#ifndef DWE_WRITTEN_STORY
+#error "DWE_WRITTEN_STORY must name the folder of the map editor's written story"
+#endif
 
 using story_play::Played;
 using story_play::SectionRef;
@@ -102,6 +111,18 @@ private:
 Played play(const PatchPacks& packs, std::uint16_t section) {
   StoryPlay player{packs.files()};
   return player.play(SectionRef{.script = 1, .section = section}, 1);
+}
+
+// A file of the map editor's written story (DWE_WRITTEN_STORY): the module story/900.lua and the
+// patch story/patches/mapper_900.lua it saves after editing section 0x51, with a routine of the
+// module's copied into the patch. The editor's own tests check that it writes the patch so.
+std::string writtenStory(std::string_view path) {
+  const std::filesystem::path file = std::filesystem::path{DWE_WRITTEN_STORY} / path;
+  std::ifstream in{file, std::ios::binary};
+  REQUIRE_MESSAGE(in.good(), file.string());
+  std::ostringstream text;
+  text << in.rdbuf();
+  return text.str();
 }
 
 } // namespace
@@ -268,4 +289,73 @@ TEST_CASE("the scripts do not reload while a section runs") {
   CHECK(refused.error().message == "a story section is running");
   player.host().close(*handle);
   CHECK(player.host().reloadScripts());
+}
+
+TEST_CASE("a patch the map editor wrote runs its own copy of the module's shared routine") {
+  const std::string module = writtenStory("story/900.lua");
+  const std::string patch = writtenStory("story/patches/mapper_900.lua");
+  const PatchPacks packs{{.id = "mapper",
+                          .layer = "mods",
+                          .priority = 5,
+                          .files = {{.path = "story/patches/mapper_900.lua", .text = patch}}},
+                         {.id = "story_900",
+                          .layer = "mods",
+                          .priority = 1,
+                          .files = {{.path = "story/900.lua", .text = module}}}};
+  StoryPlay player{packs.files()};
+  for (const std::string_view name : {"set_dialog_owner", "show_textbox"}) {
+    REQUIRE(player.vm().api().publish(
+        "story", name,
+        [&player,
+         name](const dwe::script::ApiCall& call) -> dwe::core::Result<dwe::script::ApiValue> {
+          const auto argument = call.arguments().empty()
+                                    ? std::string{}
+                                    : story_play::textOf(call.arguments().front());
+          player.recorder().record(std::format("{}({})", name, argument));
+          return dwe::script::ApiValue{};
+        }));
+  }
+  CHECK(player.host().patchOf({.script = 900, .section = 0x51}) ==
+        std::optional<std::string>{"mapper:story/patches/mapper_900"});
+  CHECK_FALSE(player.host().patchOf({.script = 900, .section = 0x52}).has_value());
+
+  const Played open = player.play(SectionRef{.script = 900, .section = 0x51}, 1);
+  CHECK(open.status == "ended");
+  CHECK(open.events == std::vector<std::string>{"set_dialog_owner(5)",
+                                                "show_textbox(story_900.text.0200)",
+                                                "trigger 73 = 1", "var 5 = 2"});
+
+  REQUIRE(player.state().setTrigger(72, true));
+  REQUIRE(player.state().setTrigger(73, false));
+  const Played shut = player.play(SectionRef{.script = 900, .section = 0x51}, 1);
+  CHECK(shut.status == "ended");
+  CHECK(shut.events.empty());
+  CHECK_FALSE(player.state().trigger(73).value_or(true));
+
+  // The section the patch leaves: the module's own routine, not the patch's copy.
+  const Played kept = player.play(SectionRef{.script = 900, .section = 0x52}, 1);
+  CHECK(kept.status == "ended");
+  CHECK(kept.events == std::vector<std::string>{"trigger 74 = 1", "var 5 = 1"});
+  CHECK(player.state().variable(5).value_or(0) == 1);
+}
+
+TEST_CASE("the walks read the map editor's patch, its own routine composed under a name of its") {
+  namespace script = dwe::formats::script;
+  const std::string module = writtenStory("story/900.lua");
+  const auto patch =
+      script::readLuaPatch(writtenStory("story/patches/mapper_900.lua"), "mapper_900");
+  REQUIRE_MESSAGE(patch.has_value(), story_play::errorText(patch));
+  REQUIRE(patch->routines.size() == 1);
+  CHECK(patch->routines.front().name == "at_0100");
+  const std::vector<script::LuaPatch> patches{*patch};
+  const auto composed = script::composeLuaPatches(module, 900, patches);
+  REQUIRE_MESSAGE(composed.has_value(), story_play::errorText(composed));
+  CHECK(composed->code.contains("function routines.patch1_at_0100()"));
+  CHECK(composed->code.contains("      return routines.patch1_at_0100()\n"));
+  CHECK(composed->code.contains("    [0x0051] = routines.patch_0051,\n"
+                                "    [0x0052] = routines.at_0080,\n"));
+  const auto read = script::readLuaModule(composed->code);
+  REQUIRE_MESSAGE(read.has_value(), composed->located(story_play::errorText(read)));
+  CHECK(read->script == 900);
+  CHECK(read->listing.sections.size() == 2);
 }
