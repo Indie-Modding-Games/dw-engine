@@ -41,8 +41,7 @@ una partida normal:
 
 | # | Hueco | Decomp | Motor |
 |---:|---|---|---|
-| 1 | En los torneos faltan detalles: el brillo de las letras del campeón, la cámara de técnica del disparo de un luchador aplastado y los efectos propios de la copa | `std/` ([Torneos](#torneos): `STD_tickChampionScene`, `STD_startQueuedMove`, `STD_initializeTournament`) | `packages/session/src/tournament_adapter.cpp`, `apps/game/src/story_tournament.cpp` |
-| 2 | Sin modo versus de dos jugadores ni la demo de combate del título (las 91 funciones de `vs/`); la máquina de guardar ya registra al compañero para él. Va a la fase 5 | `vs/` | — |
+| 1 | Sin modo versus de dos jugadores ni la demo de combate del título (las 91 funciones de `vs/`); la máquina de guardar ya registra al compañero para él. Va a la fase 5 | `vs/` | — |
 
 ## Otros huecos que no son una función del índice
 
@@ -76,13 +75,13 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 95 | 95 | 0 | 0 | 100 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 40 | 40 | 0 | 0 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 11 | 11 | 0 | 0 | 100 % |
-| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 111 | 106 | 5 | 0 | 98 % |
+| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 113 | 113 | 0 | 0 | 100 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 91 | 0 | 0 | 91 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 44 | 44 | 0 | 0 | 100 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#vídeos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 30 | 30 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#núcleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1438 funciones a portar | 1438 | 1341 | 6 | 91 | 93 % |
+| **Total** | 1440 funciones a portar | 1440 | 1348 | 1 | 91 | 94 % |
 
 ## Batalla
 
@@ -198,15 +197,7 @@ Inscripción, calendario y el overlay de copas, que trae su propio motor de comb
 
 Ficheros del decomp: `dget/dget.c`, `main/tournament.c`, `std/std_effect.c`, `std/std_hud.c`, `std/std_main.c`, `std/std_setup.c`.
 
-Portado 106, parcial 5, falta 0.
-
-| Función | Decomp | Estado | Qué hace | Motor / nota |
-|---|---|---|---|---|
-| `STD_tickChampionScene` | `std/std_effect.c:1259` | parcial | Anima la escena del campeón: letras, giro de cámara y podio. | `packages/game/tournament/src/champion_show.cpp:1` · falta el brillo que recorre cada letra (copia dentro de la memoria de vídeo) |
-| `STD_tickTamerTournament` | `std/std_hud.c:540` | parcial | Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes. | `packages/game/battle/src/battle.cpp:1` · las órdenes sí; select no oculta las barras de vida |
-| `STD_tickBattleResultScreen` | `std/std_main.c:4641` | parcial | Gestiona la pantalla de resultado tras el combate de copa. | `apps/game/src/story_tournament.cpp:1` · TIME UP, la caja de daño y el empate; el que pierde no se desploma tras la caja |
-| `STD_startQueuedMove` | `std/std_main.c:6599` | parcial | — | `apps/game/src/story_tournament.cpp:627` · The flattened fighter's shot has no technique camera (STD_startQueuedMove skips |
-| `STD_initializeTournament` | `std/std_setup.c:243` | parcial | Prepara la arena de la copa: música, cámara, luces, escenario y efectos. | `apps/game/src/story_tournament.cpp:1` · modelo, suelo y cámara de la arena; sin música propia, luces ni efectos de la copa |
+Portado 113, parcial 0, falta 0.
 
 ## Versus y demo
 
@@ -344,6 +335,6 @@ Portado 51, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-1000 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+998 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

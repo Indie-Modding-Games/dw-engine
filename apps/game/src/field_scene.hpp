@@ -352,6 +352,8 @@ public:
     std::vector<glm::mat4> joints;
     // Multiplies the model's colours (eab.c: EAB_setModelColor sets its primitives' colour).
     glm::vec4 tint{1.0F};
+    // Moves its texel coordinates (render::ModelInstance::texelOffset).
+    glm::vec2 texelOffset{0.0F};
   };
   void setPosedProps(const assets::AssetId& model, std::vector<PropPlace> places);
   // Screen sprites the story hangs at world points until replaced (the mood bubble:

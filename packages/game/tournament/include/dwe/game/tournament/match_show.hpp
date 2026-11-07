@@ -297,6 +297,9 @@ struct LetterPose {
   ShowPoint rotation{};
   // Its height's scale, 4096 for none (the champion's title is drawn twice as tall).
   std::int32_t scaleY = 0x1000;
+  // How many texels to the left of where its face rests the face reads the title's gold strip,
+  // 0 at rest (std_effect.c: STD_tickChampionScene: the gleam that sweeps over each letter).
+  std::int32_t gleamShift = 0;
 };
 struct LetterScene {
   std::vector<LetterPose> letters;

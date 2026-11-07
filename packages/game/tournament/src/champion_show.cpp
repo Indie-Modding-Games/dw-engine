@@ -31,6 +31,13 @@ constexpr std::int32_t LetterGap = 5;
 constexpr std::int32_t SpinFrames = 0x14;
 constexpr std::int32_t SpinStep = 0x200;
 constexpr std::int32_t LiftFrom = 0x61;
+// STD_tickChampionScene: from frame 0x3d each letter in turn, one frame apart, copies a 6-wide
+// column of the gold strip into its own face, 2 columns further left each frame for 10 frames,
+// then the resting column again (MoveImage from x 0x378 - (step + 1) * 2; the strip is 4-bit, 4
+// texels a column).
+constexpr std::int32_t GleamFrom = 0x3d;
+constexpr std::int32_t GleamSteps = 0xb;
+constexpr std::int32_t GleamColumnTexels = 4 * 2;
 // The lift: 25 a frame for the partner and the podium, 50 for the letters until they are 600
 // down; the camera circles for 0x4f frames.
 constexpr std::int32_t LiftStep = 0x19;
@@ -48,6 +55,12 @@ constexpr std::int32_t ClimbFrames = 0x15;
 // STD_tournamentMain: fadeToBlack(10), fadeFromBlack(15).
 constexpr double FadeOutLength = 10.0;
 constexpr double FadeInLength = 15.0;
+
+// The column a letter's face shows after `steps` copies: the resting one before the first and
+// after the last.
+std::int32_t gleamShift(std::int32_t steps) {
+  return steps > 0 && steps < GleamSteps ? steps * GleamColumnTexels : 0;
+}
 
 } // namespace
 
@@ -124,10 +137,11 @@ void ChampionShow::tickScene(bool poseEnded) {
   switch (state_) {
   case 0:
     ++timer_;
-    // The gleam that sweeps over each letter from frame 0x3d (MoveImage within the screen's
-    // memory) is not drawn.
     for (std::int32_t i = 0; i < Letters; ++i) {
       const auto at = static_cast<std::size_t>(i);
+      if (timer_ >= i + GleamFrom && gleam_.at(at) < GleamSteps) {
+        ++gleam_.at(at);
+      }
       if (timer_ < i * LetterGap) {
         continue;
       }
@@ -192,7 +206,8 @@ LetterScene ChampionShow::letters() const {
       scene.letters.push_back({.object = at,
                                .location = {LetterX.at(at), lettersY_, LettersZ},
                                .rotation = {0, spin_.at(at), 0},
-                               .scaleY = LetterScaleY});
+                               .scaleY = LetterScaleY,
+                               .gleamShift = gleamShift(gleam_.at(at))});
     }
   }
   return scene;
