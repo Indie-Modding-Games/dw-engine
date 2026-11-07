@@ -875,13 +875,14 @@ int runGame(const Options& requested) {
       return false;
     }
     // The music stops before a movie and starts again after it (main.c:3441 finalizeMusic,
-    // playMovie, initializeMusic). The game plays music (session::SessionMusic), but this path
-    // neither stops nor restarts it yet.
-    core::logDebug("[port:movie] playMovie (main.c:{}): movie {} '{}'; finalizeMusic: no music to "
-                   "stop yet",
-                   movieCallSite(moment), static_cast<int>(moment), movieRules->of(moment).file);
+    // playMovie, initializeMusic): a game playing under the movie holds its music until afterMovie.
+    core::logDebug("[port:movie] playMovie (main.c:{}): movie {} '{}'", movieCallSite(moment),
+                   static_cast<int>(moment), movieRules->of(moment).file);
     if (!movies->play(files, movieRules->of(moment))) {
       return false;
+    }
+    if (PlaySession* play = flow.playing()) {
+      play->holdMusicForMovie(true);
     }
     title.hide();
     moviePlayed = true;
@@ -965,8 +966,10 @@ int runGame(const Options& requested) {
   };
   // After a movie: the game that waited for it, or the title.
   const auto afterMovie = [&] {
-    core::logDebug("[port:movie] playMovie (main.c:3443): the movie is over; initializeMusic: no "
-                   "music to start yet");
+    core::logDebug("[port:movie] playMovie (main.c:3443): the movie is over");
+    if (PlaySession* play = flow.playing()) {
+      play->holdMusicForMovie(false);
+    }
     if (const auto next = std::exchange(nextMovie, std::nullopt); next && playMovie(*next)) {
       // main.c: main goes round its loop: the boot movie, then the "Press Start" screen.
       titleIdleTicks = 0;

@@ -193,6 +193,22 @@ void SessionMusic::leaveBattle(bool won) {
   replayActive();
 }
 
+void SessionMusic::holdForMovie() {
+  core::logDebug("[port:audio] main (main.c:3441): finalizeMusic before the movie");
+  stopBgm();
+  held_ = true;
+}
+
+void SessionMusic::releaseAfterMovie() {
+  if (!std::exchange(held_, false)) {
+    return;
+  }
+  core::logDebug("[port:audio] main (main.c:3443): initializeMusic after the movie");
+  if (activeFont_ && !battling_) {
+    playMusic(*activeFont_, activeTrack_);
+  }
+}
+
 std::optional<MusicSong> SessionMusic::activeSong() const {
   if (!activeFont_) {
     return std::nullopt;
@@ -259,6 +275,11 @@ void SessionMusic::stopBgm() {
 
 // sound.c: playMusic, seqOpen and seqPlay. The font stays loaded across songs.
 void SessionMusic::playMusic(std::int64_t font, std::int64_t track) {
+  if (held_) {
+    core::logDebug("[port:audio] playMusic (sound.c:753): font={} track={} held by a movie", font,
+                   track);
+    return;
+  }
   if (font < FirstFont || font > LastFont) {
     core::logDebug("[port:audio] playMusic (sound.c:753): font {} is not a music font", font);
     return;

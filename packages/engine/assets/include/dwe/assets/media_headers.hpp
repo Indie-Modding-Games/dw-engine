@@ -49,4 +49,19 @@ struct VideoInfo {
 // Reads the header line of a YUV4MPEG2 (.y4m) video.
 core::Result<VideoInfo> readY4mHeader(std::span<const std::byte> y4m);
 
+// An IVF file (.ivf), the container of the cooked movies' AV1 video (docs/formats/video.md): a
+// 32-byte header, then each frame as a 12-byte header (its size and time) and its bytes.
+inline constexpr std::size_t IvfHeaderSize = 32;
+inline constexpr std::size_t IvfFrameHeaderSize = 12;
+struct IvfInfo {
+  VideoInfo picture;
+  // Frames per second as a fraction, and the frames the header counts.
+  std::uint32_t rateNumerator = 0;
+  std::uint32_t rateDenominator = 1;
+  std::uint32_t frames = 0;
+};
+
+// Reads the header of an IVF file of AV1 video.
+core::Result<IvfInfo> readIvfHeader(std::span<const std::byte> ivf);
+
 } // namespace dwe::assets

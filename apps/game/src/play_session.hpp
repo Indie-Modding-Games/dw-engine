@@ -332,6 +332,9 @@ public:
   [[nodiscard]] std::optional<MovieMoment> takeMovieRequest() {
     return std::exchange(movieRequest_, std::nullopt);
   }
+  // A movie over this game holds its music, and lets it go once over (main.c: main, finalizeMusic
+  // and initializeMusic around playMovie; session::SessionMusic::holdForMovie).
+  void holdMusicForMovie(bool hold);
 
 private:
   void tickSystems(const game::field::FieldInput& intent, const FishingButtons& fishing);

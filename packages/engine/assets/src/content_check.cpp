@@ -147,7 +147,7 @@ core::Result<void> openFont(std::span<const std::byte> bytes) {
   return core::fail("not a TrueType or OpenType font");
 }
 
-constexpr std::array<std::pair<std::string_view, Opener>, 18> Openers = {{
+constexpr std::array<std::pair<std::string_view, Opener>, 19> Openers = {{
     {"png", discardValue<decodePng>},
     {"ktx2", openKtx2},
     {"glb", discardValue<parseModel>},
@@ -159,6 +159,7 @@ constexpr std::array<std::pair<std::string_view, Opener>, 18> Openers = {{
     {"sf2", discardValue<readSoundFontHeader>},
     {"mid", discardValue<readMidiHeader>},
     {"y4m", discardValue<readY4mHeader>},
+    {"ivf", discardValue<readIvfHeader>},
     {"rml", openText},
     {"rcss", openText},
     {"lua", openText},

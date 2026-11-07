@@ -166,3 +166,24 @@ TEST_CASE("the game's song stops when the game ends, so the title screen is sile
   // main.c: cleanupGame then finalizeMusic.
   CHECK(musicLog().stops - playing.stops == 1);
 }
+
+TEST_CASE("a movie over the field holds its music and the map's song starts again after it") {
+  MusicRig rig;
+  rig.enterMap(28);
+  const MusicLog before = musicLog();
+  rig.music.holdForMovie();
+  CHECK(rig.music.heldForMovie());
+  CHECK(musicLog().stops - before.stops == 1);
+  // What the field asks for meanwhile does not play over the movie.
+  rig.enterMap(1);
+  rig.music.updateBgm();
+  CHECK(musicLog().starts - before.starts == 0);
+  rig.music.releaseAfterMovie();
+  CHECK_FALSE(rig.music.heldForMovie());
+  CHECK(musicLog().starts - before.starts == 1);
+  REQUIRE(rig.music.activeSong().has_value());
+  CHECK(rig.music.activeSong()->font == 1);
+  // A second release plays nothing more.
+  rig.music.releaseAfterMovie();
+  CHECK(musicLog().starts - before.starts == 1);
+}

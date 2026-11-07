@@ -10,12 +10,15 @@ está en [películas](../../architecture/peliculas.md); el formato en disco, en 
 | Pieza | Qué hace |
 |---|---|
 | `y4m_reader.hpp` | `Y4mReader`: lee un vídeo YUV4MPEG2 (`.y4m`) de un `assets::FileReader`, frame a frame (`read`) o saltándolos (`skip`); `Y4mStream` es lo que dice su cabecera |
+| `av1_reader.hpp` | `Av1Reader`: lo mismo para el vídeo cocinado, AV1 en un IVF (`.ivf`), decodificado con libaom; `skip` también decodifica, porque los frames siguientes se construyen sobre él |
 | `picture.hpp` | `YuvPicture` (un frame 4:2:0 en planos, rango completo) y `toRgba`, que lo pasa a RGBA de 8 bits con la conversión de color del decodificador del original |
 | `movie_player.hpp` | `readMovieInfo` (lee `movie.yaml`), `MovieInfo` y `MoviePlayer`: abre una película, avanza con el reloj y da la imagen del momento |
 
 ## Una película
 
-Cada película es una carpeta del paquete base con tres ficheros: `video.y4m`, `audio.wav` y `movie.yaml`. El YAML dice
+Cada película es una carpeta del paquete base con tres ficheros: `video.y4m`, `audio.wav` y `movie.yaml` tal como los
+escribe `dwx extract`, o `video.ivf` (AV1) y `audio.opus` en un paquete cocinado (`dwx cook`). `MoviePlayer` elige el
+lector por la extensión del fichero que resuelve el sistema de ficheros virtual. El YAML dice
 el tamaño, los frames por segundo (`video.fps.numerator` y `denominator`), cuántos frames tiene el fichero
 (`video.frames`), el número del primero (`video.first_frame`) y, si el original la corta antes, en qué frame para
 (`playback.frame_count`). `MovieInfo::shownFrames` son los frames que se ven: hasta ese corte, o todos si la tabla no
@@ -24,8 +27,8 @@ la corta o pide más de los que hay.
 ## Uso
 
 ```cpp
-auto player = video::MoviePlayer::open(vfs, nombre);     // lee movie.yaml y abre video.y4m
-auto sound = video::MoviePlayer::loadSound(vfs, nombre); // el WAV entero, o nada si no tiene
+auto player = video::MoviePlayer::open(vfs, nombre);     // lee movie.yaml y abre video.y4m o video.ivf
+auto sound = video::MoviePlayer::loadSound(vfs, nombre); // el WAV o el Opus entero, o nada si no tiene
 // Cada frame del juego: el tiempo sale de la posición del sonido (o del reloj, sin sonido).
 if (auto changed = player->advanceTo(seconds); changed && *changed) {
   subirTextura(player->picture());                       // ancho × alto × 4 bytes, filas desde arriba

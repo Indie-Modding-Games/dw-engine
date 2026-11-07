@@ -78,6 +78,15 @@ public:
   // after a defeat or an escape the music stays stopped.
   void leaveBattle(bool won);
 
+  // main.c: main, around playMovie: finalizeMusic stops the music before a movie and
+  // initializeMusic lets it play again after it. While held, nothing the game asks plays, so a
+  // movie over a loaded field is silent but for its own sound; on release the song the story
+  // asked for meanwhile starts from its beginning, as the field's head plays it after the movie in
+  // the original.
+  void holdForMovie();
+  void releaseAfterMovie();
+  [[nodiscard]] bool heldForMovie() const { return held_; }
+
   // The jukebox's (shop/script_menu.c: jukeboxFillTitleList, tickJukeboxMenu, openJukebox).
   [[nodiscard]] std::optional<MusicSong> activeSong() const override;
   void playSong(MusicSong song) override;
@@ -119,6 +128,8 @@ private:
   // The option continuous_music, and whether a map head runs with the song before it still on.
   bool continuous_ = false;
   bool carrying_ = false;
+  // Whether a movie holds the music (holdForMovie).
+  bool held_ = false;
 };
 
 } // namespace dwe::session

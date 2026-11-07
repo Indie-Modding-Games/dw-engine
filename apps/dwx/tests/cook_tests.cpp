@@ -6,17 +6,23 @@
 #include <dwe/formats/audio/wav.hpp>
 #include <dwe/formats/image/png.hpp>
 #include <dwe/test_support/temp_folder.hpp>
+#include <dwe/video/av1_reader.hpp>
+#include <dwe/video/picture.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
+#include <format>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include "cook.hpp"
+#include "video_cooker.hpp"
 
 using namespace dwe::dwx;
 using dwe::assets::DiskFileSystem;
@@ -287,7 +293,24 @@ TEST_CASE("a WAV in a pack cooks to Ogg Opus with the same id") {
   CHECK_MESSAGE(opened.has_value(), (opened ? std::string{} : opened.error().message));
 }
 
-TEST_CASE("movies are copied as extracted, their sound too") {
+// A small Y4M as dwx extract writes the movies: full-range 4:2:0, a gradient that moves a little
+// each frame.
+std::string movieY4m(std::uint32_t width, std::uint32_t height, std::uint32_t frames) {
+  std::string y4m =
+      std::format("YUV4MPEG2 W{} H{} F30:1 Ip A1:1 C420jpeg XCOLORRANGE=FULL\n", width, height);
+  for (std::uint32_t frame = 0; frame < frames; ++frame) {
+    y4m += "FRAME\n";
+    for (std::uint32_t y = 0; y < height; ++y) {
+      for (std::uint32_t x = 0; x < width; ++x) {
+        y4m += static_cast<char>((((x + frame) * 255) / width + (y * 64) / height) & 0xFFU);
+      }
+    }
+    y4m.append(2 * std::size_t{(width + 1) / 2} * ((height + 1) / 2), static_cast<char>(128));
+  }
+  return y4m;
+}
+
+TEST_CASE("movies cook to AV1 video and Opus sound that the engine plays back") {
   const TempFolder folder;
   writeSourcePack(folder);
   const std::vector<std::int16_t> pcm(3780, 1000);
@@ -295,16 +318,82 @@ TEST_CASE("movies are copied as extracted, their sound too") {
       dwe::formats::audio::WavSound{.pcm = pcm, .sampleRate = 37800, .loop = {}, .unityNote = 60});
   folder.write("src/movie/op1/audio.wav",
                std::string{reinterpret_cast<const char*>(wav.data()), wav.size()});
-  folder.write("src/movie/op1/video.y4m", "YUV4MPEG2 W2 H2 F30:1 Ip A1:1 C420jpeg\n");
+  constexpr std::uint32_t Width = 64;
+  constexpr std::uint32_t Height = 48;
+  constexpr std::uint32_t Frames = 4;
+  const std::string y4m = movieY4m(Width, Height, Frames);
+  folder.write("src/movie/op1/video.y4m", y4m);
   folder.write("src/movie/op1/movie.yaml", "source: MOVIE/OP1.STR\n");
   const CookSummary summary = cooked(folder);
   CHECK(summary.assets == 6);
-  CHECK(summary.cooked == 2);
-  CHECK(summary.copied == 4);
+  CHECK(summary.cooked == 4);
+  CHECK(summary.copied == 2);
   const std::filesystem::path out = folder.path() / "out";
-  for (const std::string_view file :
-       {"movie/op1/audio.wav", "movie/op1/video.y4m", "movie/op1/movie.yaml"}) {
-    CHECK_MESSAGE(readOrEmpty(out / file) == readOrEmpty(folder.path() / "src" / file), file);
+  CHECK(readOrEmpty(out / "movie/op1/movie.yaml") ==
+        readOrEmpty(folder.path() / "src/movie/op1/movie.yaml"));
+  CHECK_FALSE(std::filesystem::exists(out / "movie/op1/video.y4m"));
+  CHECK_FALSE(std::filesystem::exists(out / "movie/op1/audio.wav"));
+
+  const auto sound = dwe::assets::decodeOpus(readOrEmpty(out / "movie/op1/audio.opus"));
+  REQUIRE_MESSAGE(sound.has_value(), (sound ? std::string{} : sound.error().message));
+  // A tenth of a second at 37 800 Hz, resampled to 48 kHz.
+  CHECK(sound->pcm.size() == 4800);
+
+  // The engine's reader gives back every frame at the source's size, close to the source.
+  const auto ivf = readOrEmpty(out / "movie/op1/video.ivf");
+  const auto opened = dwe::assets::openAsset("ivf", ivf);
+  CHECK_MESSAGE(opened.has_value(), (opened ? std::string{} : opened.error().message));
+  const DiskFileSystem disk;
+  auto file = disk.openFile(out / "movie/op1/video.ivf");
+  REQUIRE(file.has_value());
+  auto reader = dwe::video::Av1Reader::open(std::move(*file), "video.ivf");
+  REQUIRE_MESSAGE(reader.has_value(), (reader ? std::string{} : reader.error().message));
+  CHECK(reader->stream().width == Width);
+  CHECK(reader->stream().height == Height);
+  dwe::video::YuvPicture picture;
+  std::uint32_t frames = 0;
+  for (;;) {
+    const auto read = reader->read(picture);
+    REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+    if (!*read) {
+      break;
+    }
+    const std::size_t lumaStart = y4m.find("FRAME\n", 0);
+    std::size_t at = lumaStart;
+    for (std::uint32_t skipped = 0; skipped < frames; ++skipped) {
+      at = y4m.find("FRAME\n", at + 1);
+    }
+    at += 6;
+    double error = 0.0;
+    for (std::size_t i = 0; i < picture.luma.size(); ++i) {
+      error += std::abs(static_cast<int>(picture.luma[i]) -
+                        static_cast<int>(static_cast<std::uint8_t>(y4m[at + i])));
+    }
+    CHECK(error / static_cast<double>(picture.luma.size()) < 4.0);
+    ++frames;
   }
-  CHECK_FALSE(std::filesystem::exists(out / "movie/op1/audio.opus"));
+  CHECK(frames == Frames);
+}
+
+TEST_CASE("the same movie cooks to the same AV1 bytes") {
+  const std::string y4m = movieY4m(32, 16, 3);
+  const auto bytes = std::as_bytes(std::span{y4m});
+  const auto first = cookVideo(bytes, {});
+  const auto second = cookVideo(bytes, {});
+  REQUIRE_MESSAGE(first.has_value(), (first ? std::string{} : first.error().message));
+  REQUIRE(second.has_value());
+  CHECK(*first == *second);
+  CHECK(u32At(*first, 24) == 3);
+}
+
+TEST_CASE("the video cooker turns down what is not an 8-bit 4:2:0 progressive Y4M") {
+  const auto fails = [](std::string_view text) {
+    return !cookVideo(std::as_bytes(std::span{text}), {}).has_value();
+  };
+  CHECK(fails("not a video\n"));
+  CHECK(fails("YUV4MPEG2 W4 H4 F30:1 Ip C444\nFRAME\n"));
+  CHECK(fails("YUV4MPEG2 W4 H4 F30:1 It C420jpeg\nFRAME\n"));
+  CHECK(fails("YUV4MPEG2 W4 H4 F30:1 Ip C420jpeg\n"));
+  // A frame cut short.
+  CHECK(fails("YUV4MPEG2 W4 H4 F30:1 Ip C420jpeg\nFRAME\nabc"));
 }

@@ -337,6 +337,32 @@ core::Result<VideoInfo> readY4mHeader(std::span<const std::byte> y4m) {
   return info;
 }
 
+core::Result<IvfInfo> readIvfHeader(std::span<const std::byte> ivf) {
+  const Bytes view{ivf};
+  if (!view.fits(0, IvfHeaderSize) || !view.hasTag(0, "DKIF")) {
+    return core::fail("not an IVF video");
+  }
+  if (view.u16(4) != 0 || view.u16(6) != IvfHeaderSize) {
+    return core::fail(std::format("IVF version {} with a {}-byte header, not version 0 with {}",
+                                  view.u16(4), view.u16(6), IvfHeaderSize));
+  }
+  if (!view.hasTag(8, "AV01")) {
+    return core::fail("the IVF video is not AV1");
+  }
+  // The frame rate is the time base upside down: its denominator (30) over its numerator (1).
+  const IvfInfo info{.picture = {.width = view.u16(12), .height = view.u16(14)},
+                     .rateNumerator = view.u32(16),
+                     .rateDenominator = view.u32(20),
+                     .frames = view.u32(24)};
+  if (info.picture.width == 0 || info.picture.height == 0) {
+    return core::fail("the IVF header has no width or height");
+  }
+  if (info.rateNumerator == 0 || info.rateDenominator == 0) {
+    return core::fail("the IVF header's frame rate is not a rate");
+  }
+  return info;
+}
+
 core::Result<Sound> decodeWav(std::span<const std::byte> file) {
   auto info = readWavHeader(file);
   if (!info) {

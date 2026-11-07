@@ -29,12 +29,10 @@ dependencias que hacen falta para ellos.
     serie fijo) y el bucle y la nota del WAV en comentarios ([Opus](../formats/opus.md)). El motor lo decodifica con
     libopus (`assets::decodeOpus`) y un lector de páginas Ogg propio. SF2 y MIDI se copian tal cual, con las muestras
     del SF2 sin tocar.
-  - **Películas (`movie/`): pendiente.** El formato cocinado del vídeo **no está decidido**, así que `dwx cook` copia
-    cada película tal como la escribe `dwx extract`: `video.y4m`, `audio.wav` y `movie.yaml`. El WAV de una película
-    tampoco pasa a Opus: es la pista que va con los frames del vídeo, `movie.yaml` la describe tal como se extrajo
-    (frecuencia, canales, muestras) y el motor no la reproduce como los demás sonidos, así que cocinarla aparte
-    adelantaría parte de esa decisión. Las películas son la mayor parte del tamaño del paquete (ver Medidas); cuando
-    se decida el formato, será un cocinero más y una nueva versión de este ADR.
+  - **Y4M → AV1 en IVF** con libaom (añadido después, #105): cada película pasa a `video.ivf` y su WAV a Opus como
+    los demás sonidos; `movie.yaml` se copia ([vídeo](../formats/video.md), medidas en
+    [películas](../architecture/peliculas.md#fase-5)). Las películas, tres cuartas partes del paquete extraído
+    (abajo), quedan en unos 27 MB.
 - **Imágenes que el juego lee de su PNG, tal cual.** Las que un lector del motor decodifica él mismo, y no como
   textura, se copian como PNG: lo dice, por tipo de asset y no por el YAML lateral, la lista `assets::PngOnlyImages`
   (`packages/engine/assets/include/dwe/assets/png_only_images.hpp`). Hoy son los fondos de mapa (`map/<id>/background_*`) y las
@@ -109,8 +107,9 @@ compilado en release (`linux-clang-release`). Cada tamaño, con la carpeta `movi
 | — de ellos, los 513 fondos de mapa | 166,1 MB | 244,1 MB |
 | Los 642 WAV → Opus | 17,1 MB | 7,0 MB |
 
-- **Películas:** `movie/` ocupa 1171,8 MB (4 Y4M, 4 WAV y 4 YAML), tres cuartas partes del paquete, y se copia tal
-  cual (formato pendiente, arriba). En el `.pak`, zstd la deja en unos 370 MB.
+- **Películas:** `movie/` ocupa 1171,8 MB (4 Y4M, 4 WAV y 4 YAML), tres cuartas partes del paquete. Estas medidas
+  son de cuando se copiaba tal cual (en el `.pak`, zstd la dejaba en unos 370 MB); cocinada a AV1 y Opus ocupa
+  27,4 MB ([películas](../architecture/peliculas.md#fase-5)).
 - **Qué pasa tal cual:** 885 PNG indexados se quedan como PNG (14,2 MB): 580 TIM de mapa, 179 texturas de Digimon,
   93 de efectos y 33 texturas sueltas de varias paletas. Se convierten 645: los 513 fondos de mapa, 66 cartas,
   36 texturas sueltas, 28 de efectos, una de Digimon y la fuente. `dwx cook` cuenta 611 copias de PNG porque los

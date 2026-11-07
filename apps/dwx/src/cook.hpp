@@ -44,9 +44,8 @@ struct Cooker {
                                                const CookOptions& options) = nullptr;
 };
 
-// The cookers dwx knows: PNG to KTX2, GLB checked and kept, and WAV to Ogg Opus. A file of any
-// other type is copied as is, and so is every file of a movie (movie/), whose cooked format is not
-// decided.
+// The cookers dwx knows: PNG to KTX2, GLB checked and kept, WAV to Ogg Opus (the sound of a movie
+// too) and a movie's Y4M video to AV1 in IVF. A file of any other type is copied as is.
 std::span<const Cooker> cookers();
 
 // Returns the cooker for a source file's extension, or nullptr if the file is copied as is.

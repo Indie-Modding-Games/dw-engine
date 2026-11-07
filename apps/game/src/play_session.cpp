@@ -392,6 +392,18 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
   return play;
 }
 
+void PlaySession::holdMusicForMovie(bool hold) {
+  session::SessionMusic* music = game_.session->music();
+  if (music == nullptr) {
+    return;
+  }
+  if (hold) {
+    music->holdForMovie();
+  } else {
+    music->releaseAfterMovie();
+  }
+}
+
 PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game,
                          std::unique_ptr<FieldScene> scene)
     : context_(context), game_(std::move(game)), scene_(std::move(scene)),

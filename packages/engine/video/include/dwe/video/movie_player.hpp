@@ -3,6 +3,7 @@
 #include <dwe/assets/sound.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
+#include <dwe/video/av1_reader.hpp>
 #include <dwe/video/picture.hpp>
 #include <dwe/video/y4m_reader.hpp>
 
@@ -12,6 +13,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 namespace dwe::video {
@@ -36,8 +38,10 @@ struct MovieInfo {
 core::Result<MovieInfo> readMovieInfo(const assets::VirtualFileSystem& files,
                                       std::string_view name);
 
-// Plays one movie of the packs (movie/<name>/: video.y4m, audio.wav and movie.yaml): it reads the
-// video as the clock moves and gives the picture of the moment as RGBA. It knows nothing of the
+// Plays one movie of the packs (movie/<name>/: the video, the sound and movie.yaml): it reads the
+// video as the clock moves and gives the picture of the moment as RGBA. The video is the Y4M dwx
+// extract writes or the AV1 (IVF) dwx cook makes of it, the sound the WAV or its Ogg Opus; the
+// same asset ids give either (docs/architecture/peliculas.md). It knows nothing of the
 // screen or the sound device; its caller draws the picture and plays the sound, and drives the
 // clock with the sound's position (mov.c: MOV_playMovie shows each frame as the stream brings it,
 // so the sound leads and the pictures follow).
@@ -64,12 +68,14 @@ public:
   [[nodiscard]] bool finishedAt(double seconds) const;
 
 private:
-  MoviePlayer(MovieInfo info, Y4mReader reader) : info_(info), reader_(std::move(reader)) {}
+  using Reader = std::variant<Y4mReader, Av1Reader>;
+
+  MoviePlayer(MovieInfo info, Reader reader) : info_(info), reader_(std::move(reader)) {}
 
   [[nodiscard]] std::uint64_t frameAt(double seconds) const;
 
   MovieInfo info_;
-  Y4mReader reader_;
+  Reader reader_;
   // The index of the next frame the reader gives.
   std::uint64_t nextFrame_ = 0;
   YuvPicture yuv_;
