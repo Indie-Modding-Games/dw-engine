@@ -303,6 +303,7 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn,
     placePartnerNearPlayer();
   }
   partnerTeleports_ = 0;
+  cameraRest_.reset();
   if (scriptHeld_) {
     scriptCamera_ = spawn.position;
   }

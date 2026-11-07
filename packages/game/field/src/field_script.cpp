@@ -47,7 +47,7 @@ void Field::holdForScript(bool held) {
   core::logDebug("{}", core::formatMessage(script_messages::Held, held));
   if (held) {
     // script_interp.c: scriptPauseGame stops following the player: the camera stays put.
-    scriptCamera_ = registry.get<Transform>(player_).position;
+    scriptCamera_ = cameraStart();
     moveTarget_.reset();
     path_.clear();
     // A held partner stands on its idle clip until the script picks one (partner.c:
@@ -149,15 +149,18 @@ void Field::holdClipInPlace(scene::Entity entity, bool held) {
 }
 
 void Field::panCameraByScript(glm::vec3 focus, float seconds) {
-  const glm::vec3 from =
-      scriptCamera_.value_or(world_->registry().get<Transform>(player_).position);
+  const glm::vec3 from = scriptCamera_.value_or(cameraStart());
   core::logDebug("{}", core::formatMessage(script_messages::Pan, focus.x, focus.z, seconds));
   scriptCamera_ = from;
   cameraPan_ = CameraPan{.from = from, .to = focus, .seconds = seconds, .elapsed = 0.0F};
 }
 
 void Field::shiftCameraByScript(glm::vec3 by) {
-  scriptCamera_ = scriptCamera_.value_or(world_->registry().get<Transform>(player_).position) + by;
+  scriptCamera_ = scriptCamera_.value_or(cameraStart()) + by;
+}
+
+glm::vec3 Field::cameraStart() const {
+  return cameraRest_.value_or(world_->registry().get<Transform>(player_).position);
 }
 
 void Field::applyClipRootMotion(float seconds) {

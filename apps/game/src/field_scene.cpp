@@ -501,6 +501,7 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
   lightingDelay_ = 0.0;
   cameraFocus_.reset();
   cameraPixel_.reset();
+  cameraFollow_.reset();
   minigamePrims_.clear();
   applyLighting();
   const auto done = Clock::now();
@@ -1187,15 +1188,18 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   // tamer.c: checkMapInteraction calls unsetCameraFollowPlayer when a warp fires, and map.c:
   // tickCameraFollowPlayer only follows while the tamer's state is 0: the camera stays put while
   // the player walks out, and in a battle (holdCamera).
-  if (const std::optional<glm::vec3> held = field_->scriptCamera()) {
-    cameraFocus_ = *held;
-  } else if (!cameraFocus_ || (!cameraHeld_ && !field_->mapChangePending())) {
+  const std::optional<glm::vec3> scripted = field_->scriptCamera();
+  const bool following = !scripted && !cameraHeld_ && !field_->mapChangePending();
+  if (scripted) {
+    cameraFocus_ = *scripted;
+  } else if (!cameraFocus_ || following) {
     cameraFocus_ = player.position;
   }
   // The sprite animations wait while paused. A time-of-day fade under way does not: map.c:
   // tickDaytimeTransition only waits for GAME_STATE, which the field's pause menu leaves alone; the
   // lights switch when it ends.
-  mapRenderer_->setFocusPixel(cameraPixel_);
+  mapRenderer_->setFocusPixel(cameraPixel_ ? cameraPixel_
+                                           : followPixel(player.position, following));
   mapRenderer_->update(animationSeconds, frameSeconds, *cameraFocus_);
   updateWeather(frameSeconds, paused);
   if (lightingDelay_ > 0.0) {
@@ -1214,6 +1218,29 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   drawGroundItems();
   drawShadows(alpha);
   gradeScene(frameSeconds);
+}
+
+std::optional<glm::vec2> FieldScene::followPixel(glm::vec3 player, bool following) {
+  if (!mapRenderer_->hasMap()) {
+    return std::nullopt;
+  }
+  const render::MapCamera& camera = mapRenderer_->mapCamera();
+  const std::optional<render::BackgroundPoint> playerPoint = camera.projectToBackground(player);
+  if (!playerPoint) {
+    return std::nullopt;
+  }
+  std::optional<glm::vec2> script;
+  if (const std::optional<glm::vec3> scripted = field_->scriptCamera()) {
+    const std::optional<render::BackgroundPoint> point = camera.projectToBackground(*scripted);
+    if (!point) {
+      return std::nullopt;
+    }
+    script = point->pixel;
+  }
+  const glm::vec2 focus = cameraFollow_.update(playerPoint->pixel, following, script);
+  // The point under the focus on the player's ground, where a script's camera starts.
+  field_->setCameraRest(camera.pickGround(camera.backgroundToWindow(focus), player.y));
+  return focus;
 }
 
 void FieldScene::setPlayerClip(std::optional<std::uint32_t> clip) {

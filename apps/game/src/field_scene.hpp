@@ -50,6 +50,7 @@
 
 #include "chibi_style.hpp"
 #include "evolution_effects.hpp"
+#include "field_camera_follow.hpp"
 #include "field_clock.hpp"
 #include "field_effects.hpp"
 #include "field_mist.hpp"
@@ -760,6 +761,9 @@ private:
   // frame's flame strip on every flame species shown (flame_texture.hpp).
   void advanceFlames(double seconds);
   void flickerFlames(const Actor& actor, std::uint32_t strip);
+  // The background pixel the map's camera centres on (FieldCameraFollow), and the field told where
+  // that is on the ground; nothing without a map.
+  [[nodiscard]] std::optional<glm::vec2> followPixel(glm::vec3 player, bool following);
 
   // A point in the space of one of an actor's model nodes (the original's object index), in
   // original axes and units, in the world; nothing if the node is no joint of the skin.
@@ -1052,6 +1056,7 @@ private:
   // What the camera centres on; it stays put during a map change's walk-out.
   std::optional<glm::vec3> cameraFocus_;
   bool cameraHeld_ = false;
+  FieldCameraFollow cameraFollow_;
   render::MapSceneData map_;
   std::optional<MapPreview> preview_;
   std::string mapNameKey_;

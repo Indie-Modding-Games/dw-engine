@@ -210,6 +210,8 @@ public:
   // The map's camera, or the stage's: the view and projection models must be drawn with. Only
   // valid with a map; sized to the frame being drawn once backgroundDrawer() has prepared it.
   [[nodiscard]] const MapCamera& camera() const { return stageCamera_ ? *stageCamera_ : camera_; }
+  // The map's own camera, a stage's camera set or not: where the field's camera points.
+  [[nodiscard]] const MapCamera& mapCamera() const { return camera_; }
 
   [[nodiscard]] MapDepthLayers& layers() { return layers_; }
 

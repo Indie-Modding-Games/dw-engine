@@ -971,6 +971,31 @@ TEST_CASE("a care scene runs the partner to a point and pans the camera, given b
   CHECK_FALSE(field.scriptCamera().has_value());
 }
 
+TEST_CASE("a script's camera starts where the field's camera rests, not on the player") {
+  // script_interp.c: scriptPauseGame only stops following the player: after a battle the camera
+  // rests off the player (map.c: tickCameraFollowPlayer follows by differences), and a talk keeps
+  // it there. A new map forgets the rest point.
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  const MapDocument map = roomMap("room");
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  const glm::vec3 rest{300.0F, 0.0F, -200.0F};
+  field.setCameraRest(rest);
+  field.holdForScript(true);
+  REQUIRE(field.scriptCamera().has_value());
+  CHECK(field.scriptCamera().value_or(glm::vec3{}).x == doctest::Approx(300.0F));
+  CHECK(field.scriptCamera().value_or(glm::vec3{}).z == doctest::Approx(-200.0F));
+  field.panCameraByScript(glm::vec3{0.0F}, 1.0F);
+  field.tick(Tick);
+  CHECK(field.scriptCamera().value_or(glm::vec3{}).x < 300.0F);
+  CHECK(field.scriptCamera().value_or(glm::vec3{}).x > 200.0F);
+  field.holdForScript(false);
+  CHECK_FALSE(field.scriptCamera().has_value());
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  field.holdForScript(true);
+  CHECK(field.scriptCamera().value_or(glm::vec3{1.0F}).x == doctest::Approx(0.0F));
+}
+
 TEST_CASE("a care walk walks from its first frame, and let go on its point the partner walks on") {
   // partner.c: tickPartnerToilet: sub state 3 starts the walk clip 2 as it sets the walk back,
   // sub state 4 lets the script go on the point with the clip still on, and partnerTickWalking
