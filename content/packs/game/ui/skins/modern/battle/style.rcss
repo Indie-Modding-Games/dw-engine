@@ -571,3 +571,20 @@
 .pm.hidden {
 	display: none;
 }
+
+/* Quick battles (apps/game battle_speed.hpp, a dwe improvement): x2 in the bottom right corner, over the
+   prompts, while the fight runs at twice the speed. */
+#speed-plate {
+	position: absolute;
+	right: 24dp;
+	bottom: 60dp;
+	padding: 2dp 10dp;
+	font-size: 20dp;
+	color: #ffffff;
+	background-color: #000000b0;
+	border-radius: 8dp;
+}
+
+#speed-plate.hidden {
+	display: none;
+}

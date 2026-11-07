@@ -1246,7 +1246,14 @@ local function draw_player_marks(document)
   end
 end
 
+-- Quick battles (apps/game battle_speed.hpp, a dwe improvement): a small x2 plate while the fight
+-- runs at twice the speed.
+local function draw_speed(document)
+  set_class(document, "speed-plate", "hidden", ui.setting("battle.fast") ~= true)
+end
+
 function on_show(document)
+  draw_speed(document)
   draw(document)
   draw_motion(document)
   draw_bars(document)
@@ -1277,6 +1284,8 @@ function on_setting(document, name)
     draw_death_countdown(document)
   elseif name == "battle.shout.revision" then
     draw_shout(document)
+  elseif name == "battle.fast" then
+    draw_speed(document)
   end
 end
 

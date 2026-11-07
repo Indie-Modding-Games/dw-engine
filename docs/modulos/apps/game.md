@@ -1329,7 +1329,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 
 | Pestaña | Filas |
 |---|---|
-| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros |
+| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Espacio tras los nombres |
 | Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua, Reverberación |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
@@ -1635,3 +1635,18 @@ contenido oculto (rulesets `oculto` u `oculto_mega`, que traen la sección `rare
 azar pueden dejar un objeto raro de evolución en vez del suyo
 ([evolution.md](../game/evolution.md#objetos-raros-de-evolución)). Apagado, o con el ruleset `original`, los objetos
 del campo son los del original. Su ayuda (`pause_menu.help.rare_items`) avisa de que necesita el contenido oculto.
+
+## Combates rápidos
+
+Mejora opcional, apagada por defecto: el ajuste `battle_speed` (fila «Combates rápidos», «Quick battles» en inglés, de
+la pestaña Juego de las opciones del menú de pausa y de las del título, guardado en los ajustes del usuario) tiene tres
+valores: `normal` (el original), `key` (cada combate empieza a su velocidad y la acción `battle_speed`, `R` o el
+gatillo derecho del mando, pone y quita el doble) y `fast` (empieza al doble y la misma tecla lo quita). Lo lleva
+`BattleSpeedChanger` (`battle_speed.hpp`) en el bucle de `game.cpp`.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Velocidad del combate | Un tick de la lógica por fotograma del bucle (`battle_main.c: BTL_battleTickFrame`); el reloj del juego está parado durante el combate | Con el doble puesto, cada tick del reloj corre dos ticks del combate (`ticksPerTick`), y lo que se dibuja entre ticks avanza igual. Cada tick es el del original: daño, IA, ganancias y tiempo de juego no cambian; solo se espera la mitad. El sonido y el tiempo de partida (`countPlayTime`) siguen el reloj real | «fast runs a fight at two ticks a frame, never the field, and the key switches it off» (`battle_speed_tests.cpp`) | Mejora (opción) |
+| Momentos de reacción | El jugador carga el golpe final pulsando (`command_menu.c: BTL_tickFinisherChargeup`), revive al compañero caído antes de que acabe la cuenta (`BTL_tickDeathCountdown`) y lanza objetos con la bolsa abierta | Mientras se carga el golpe final, corre la cuenta del compañero caído, la bolsa está abierta o hay un objeto en la mano o en el aire, el combate va a la velocidad del original (`BattleScreen::reacting`), así el doble nunca quita tiempo para reaccionar | «a fight waits at the original's speed while the player has to react» | Mejora (opción) |
+| Indicador | — | Con el doble puesto, el documento de combate muestra «x2» abajo a la derecha (`battle.fast`) | en vivo | Mejora (opción) |
+| Campo, menús y escenas | — | Solo el combate (de su inicio a su caja final, `BattleScreen::fighting`) va al doble; el campo, los menús, las escenas y los torneos fuera del combate van a su velocidad | «fast runs a fight at two ticks a frame, never the field…» | Mejora (opción) |

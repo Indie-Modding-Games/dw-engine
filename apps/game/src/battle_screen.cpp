@@ -529,6 +529,14 @@ void BattleScreen::publishNumbers() const {
 // BTL_renderEnemyHPBars draws, every frame, the bar of each enemy whose bar shows
 // (Battle::hpBarShown) beside where its model's node 1 projects (getEntityScreenPos(entity, 1)), so
 // the bar follows the enemy. BTL_deinitializeCombat takes them all away (BTL_removeEnemyHPBars).
+bool BattleScreen::reacting() const {
+  if (!battle_) {
+    return false;
+  }
+  return battle_->state().finisher.charging || screens::deathCountdownTimerOf(*battle_) ||
+         bagShown_ || thrown_.has_value() || battle_->state().thrownItem.has_value();
+}
+
 void BattleScreen::publishHpBars() {
   std::vector<screens::EnemyHpBar> bars;
   const render::MapCamera* camera = desc_.scene != nullptr ? desc_.scene->camera() : nullptr;

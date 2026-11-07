@@ -131,6 +131,9 @@ struct UserSettings {
   // The sound chip's reverb (reverb: true, false; volume_setting.hpp): on, as the original plays
   // every tone with its reverb bit through it; on when not chosen yet.
   std::optional<bool> reverb = std::nullopt;
+  // Quick battles (battle_speed: normal, key, fast; battle_speed.hpp): fights at twice the speed,
+  // always or switched with a key; normal, the original's, when not chosen yet.
+  std::optional<std::string> battleSpeed = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

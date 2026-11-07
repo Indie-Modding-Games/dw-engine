@@ -117,6 +117,13 @@ public:
   [[nodiscard]] bool active() const {
     return battle_.has_value() || ending_ || exit_.has_value() || closing_;
   }
+  // Whether a fight runs (from its start to its end box), the time a quick battle plays at x2.
+  [[nodiscard]] bool fighting() const { return battle_.has_value(); }
+  // Whether the player has to react in time: the finisher's charge (command_menu.c:
+  // BTL_tickFinisherChargeup), the fallen partner's countdown (BTL_tickDeathCountdown), the bag
+  // open over the fight or an item in the hand or on its way. A quick battle waits at the
+  // original's speed meanwhile (battle_speed.hpp).
+  [[nodiscard]] bool reacting() const;
   // The outcome of the last battle, once, after its end box is closed: what a story battle reads.
   [[nodiscard]] std::optional<game::battle::Outcome> takeOutcome();
   // The battle_win debug command: the enemies fall at once; false when no fight is running.

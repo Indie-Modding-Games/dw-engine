@@ -149,6 +149,20 @@ game_options = {
     help = "pause_menu.help.rare_items",
     original = false,
   },
+  -- Quick battles: fights at twice the speed, switched with R (the right trigger on a pad) or
+  -- always (normal, the original's, by default). Every tick is the original's, so only the wait
+  -- changes.
+  {
+    id = "battle-speed",
+    setting = "battle_speed",
+    label = "pause_menu.battle_speed",
+    values = { "normal", "key", "fast" },
+    texts = "pause_menu.battle_speed",
+    default = "normal",
+    tab = "game",
+    help = "pause_menu.help.battle_speed",
+    original = "normal",
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).

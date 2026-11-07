@@ -19,4 +19,4 @@ pausa directamente en su página de opciones, también desde la pausa de Start, 
 
 Otras acciones del mapa por defecto: `pause` (P, Start en el mando), `world_map` (M o el botón superior izquierdo
 L1: abre el [mapa de la isla](../apps/game.md#mapa-de-la-isla)), `tab_previous` y `tab_next` (Q y E, L1 y R1) para pasar de
-pestaña en los menús y `debug_console` (`º` o F1) para la [consola de desarrollo](debug.md).
+pestaña en los menús, `battle_speed` (R o el gatillo derecho: cambia un combate entre la velocidad del original y el doble, con la [opción de combates rápidos](../apps/game.md#opciones-en-partida)) y `debug_console` (`º` o F1) para la [consola de desarrollo](debug.md).

@@ -28,6 +28,7 @@
 #include "award_screen.hpp"
 #include "battle_ground.hpp"
 #include "battle_screen.hpp"
+#include "battle_speed.hpp"
 #include "boss_arrival_scene.hpp"
 #include "bug_report.hpp"
 #include "care_commands.hpp"
@@ -226,6 +227,10 @@ public:
   // Feeds the battle the buttons it reads outside its document: `extra`, the original's square,
   // calls the finisher.
   void pressBattle(const input::InputState& input);
+  // What the fight on screen asks of a quick battle's speed (battle_speed.hpp).
+  [[nodiscard]] BattleSpeedMoment battleSpeedMoment() const {
+    return {.fighting = battleScreen_.fighting(), .reacting = battleScreen_.reacting()};
+  }
   // The item keeper's, the discard menu's and the trade menu's buttons the menus do not navigate
   // with (move by tens, move all, the jump to the ends, the description), and the confirm button
   // held for a chest's notice.

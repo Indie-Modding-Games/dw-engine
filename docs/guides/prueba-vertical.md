@@ -857,5 +857,6 @@ fase 4:
 | `learn_move("<técnica> [hueco]")` | El compañero aprende esa técnica (y las que vienen con ella) como en el entrenamiento de inteligencia y, con un hueco de 0 a 3, la equipa ahí (`learn_move("meltdown 0")`), para ver una técnica que aún no sabe |
 | `clock_speed("<multiplicador>")` | Acelera el reloj: 1 es un minuto de juego por segundo real, 600 son diez horas |
 | `hd_scenery("on"\|"off")` | Enciende o apaga los escenarios en alta definición, como su fila de opciones (y lo guarda igual) |
+| `battle_speed("normal"\|"key"\|"fast")` | Cambia la velocidad de los combates, como su fila de opciones «Combates rápidos» (y la guarda igual) |
 | `model_characters("on"\|"off")` | Enciende o apaga los personajes en 3D para la partida (no lo guarda) |
 | `save("slot_NN")` | Guarda la partida en ese hueco manual (`save("slot_01")`), hasta que exista la pantalla de guardar; los autoguardados antiguos (`autosave_NN`) no se escriben nunca. Un autotest solo guarda con `--saves` |

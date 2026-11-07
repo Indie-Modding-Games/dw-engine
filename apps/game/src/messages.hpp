@@ -62,6 +62,10 @@ inline constexpr std::string_view UnknownSavedMinimapSize =
 inline constexpr std::string_view UnknownSavedWalkControl =
     "game: the saved walk control '{}' is unknown; walking with the keys";
 
+// The battle speed (battle_speed.cpp): a saved value that is not normal, key or fast.
+inline constexpr std::string_view UnknownSavedBattleSpeed =
+    "game: the saved battle speed '{}' is unknown; fighting at the original's speed";
+
 // The field's shadows (graphics_options.cpp): a saved value that is not off, round or sun.
 inline constexpr std::string_view UnknownSavedShadows =
     "game: the saved shadow mode '{}' is unknown; drawing the round shadows and the sun's";

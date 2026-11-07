@@ -120,6 +120,13 @@ ActionMap defaultActionMap() {
   map.bind("tab_next", KeyBinding{keys::E});
   map.bind("tab_next", GamepadButtonBinding{GamepadButton::RightShoulder});
 
+  // Quick battles (a dwe improvement; apps/game battle_speed.hpp): switches a fight between the
+  // original's speed and twice it. R, and the pad's right trigger, which the original's fights
+  // leave without a use.
+  map.bind("battle_speed", KeyBinding{keys::R});
+  map.bind("battle_speed",
+           GamepadAxisBinding{.axis = GamepadAxis::RightTrigger, .direction = 1.0F});
+
   map.bind("debug_console", KeyBinding{keys::Grave});
   map.bind("debug_console", KeyBinding{keys::F1});
 

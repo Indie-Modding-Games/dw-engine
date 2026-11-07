@@ -53,6 +53,7 @@
 
 #include "app_flow.hpp"
 #include "autotest.hpp"
+#include "battle_speed.hpp"
 #include "bug_report.hpp"
 #include "bug_reporter.hpp"
 #include "chibi_style.hpp"
@@ -761,6 +762,11 @@ int runGame(const Options& requested) {
     walkControl.use(autotest->walksWithMouse() ? WalkControl::Mouse : WalkControl::Keys, nullptr);
   }
   (*ui)->setSetting(WalkControlSetting, std::string{walkControlName(walkControl.control())});
+  // Quick battles (battle_speed.hpp): the saved speed; an autotest reads none, so it fights at the
+  // original's.
+  BattleSpeedChanger battleSpeed{userSettings, settingsFile};
+  (*ui)->setSetting(BattleSpeedSetting, std::string{battleSpeedName(battleSpeed.speed())});
+  std::optional<bool> battleFastShown;
   (*ui)->setSetting(AutosaveSetting, userSettings.autosave.value_or(true));
   // The options only a game applies, for the title's options page (title_options.hpp).
   publishGameToggles(**ui, userSettings);
@@ -820,6 +826,12 @@ int runGame(const Options& requested) {
   (*scripts)->bindCommand(AntialiasingSetting, [&consoleGraphics](std::string_view value) {
     consoleGraphics.push_back(
         {.name = std::string{AntialiasingSetting}, .value = ui::UiValue{value != "off"}});
+  });
+  // The console's and the routes' battle_speed("normal"|"key"|"fast"), the options row's setting
+  // (battle_speed.hpp), applied between frames in the same way.
+  std::optional<std::string> consoleBattleSpeed;
+  (*scripts)->bindCommand(BattleSpeedSetting, [&consoleBattleSpeed](std::string_view value) {
+    consoleBattleSpeed = std::string{value};
   });
   // The console's ui_skin("<id>"), the menus' skin setting, applied between frames in the same way.
   std::optional<std::string> consoleUiSkin;
@@ -1377,6 +1389,19 @@ int runGame(const Options& requested) {
     // the logic's time, capped as the ticks are, never by more: a stall, a load or a slow machine
     // would otherwise play the animations ahead of the clock and the field.
     double gameSeconds = step.takenSeconds();
+    // A quick battle (battle_speed.hpp) runs each of the clock's ticks as two of the fight's, and
+    // what is drawn between them moves on as fast; the sound and the play time keep the clock's.
+    const int ticksPerTick = flow.playing() != nullptr
+                                 ? battleSpeed.ticksPerTick(flow.playing()->battleSpeedMoment())
+                                 : 1;
+    ticks *= ticksPerTick;
+    gameSeconds *= ticksPerTick;
+    // The battle document's x2 plate, while x2 is switched on.
+    if (const bool fast = battleSpeed.speed() != BattleSpeed::Normal && battleSpeed.fastSwitched();
+        fast != battleFastShown) {
+      (*ui)->setSetting(BattleFastSetting, fast);
+      battleFastShown = fast;
+    }
     // The control channel's pause: only the ticks it advances run, and the frame lasts as long as
     // they do, so what moves with the frame's time moves with them.
     if (control) {
@@ -1391,7 +1416,7 @@ int runGame(const Options& requested) {
         gameSeconds = ticks * TickSeconds;
       }
     }
-    sound.update(ticks * TickSeconds);
+    sound.update(ticks * TickSeconds / ticksPerTick);
     for (int tick = 0; tick < ticks; ++tick) {
       if (autotest && !routeOver) {
         autotest->feedTick(ticksRun, input);
@@ -1508,7 +1533,7 @@ int runGame(const Options& requested) {
       // (measured: 140 frames in 420 vblanks with the bag's options open, 100 in 307 in a battle)
       // and not under the pause (none in 476 vblanks) or a movie, which return above.
       if (play != nullptr) {
-        play->countPlayTime(TickSeconds);
+        play->countPlayTime(TickSeconds / ticksPerTick);
       }
       game::field::FieldInput intent;
       FishingButtons fishing;
@@ -1559,7 +1584,11 @@ int runGame(const Options& requested) {
         mouse.release();
       }
       if (play != nullptr) {
-        // The battle's document holds the input, but not the finisher's button.
+        // The battle's document holds the input, but not the finisher's button nor the quick
+        // battle's switch.
+        if (play->battleSpeedMoment().fighting && input.wasPressed(BattleSpeedAction)) {
+          battleSpeed.press();
+        }
         play->pressBattle(input);
         play->pressItemKeeper(input);
         play->pressPartnerMenu(input);
@@ -1610,6 +1639,11 @@ int runGame(const Options& requested) {
       if (command.name == AutosaveSetting) {
         // The autosave option from the title's options; the game's own are PlaySession's.
         changeAutosave(command.value, **ui, userSettings, settingsFile);
+        continue;
+      }
+      if (command.name == BattleSpeedSetting) {
+        battleSpeed.change(command.value);
+        (*ui)->setSetting(BattleSpeedSetting, std::string{battleSpeedName(battleSpeed.speed())});
         continue;
       }
       if (command.name == WalkControlSetting) {
@@ -1722,6 +1756,10 @@ int runGame(const Options& requested) {
     }
     for (const ui::UiCommand& command : std::exchange(consoleGraphics, {})) {
       graphics.handle(command, **ui);
+    }
+    if (consoleBattleSpeed) {
+      battleSpeed.change(ui::UiValue{*std::exchange(consoleBattleSpeed, std::nullopt)});
+      (*ui)->setSetting(BattleSpeedSetting, std::string{battleSpeedName(battleSpeed.speed())});
     }
     if (consoleHdScenery) {
       const bool on = hdScenery.change(ui::UiValue{*std::exchange(consoleHdScenery, std::nullopt)});
