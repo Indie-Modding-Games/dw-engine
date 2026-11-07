@@ -22,18 +22,18 @@ using Kind = PartnerWrite::Kind;
 
 constexpr std::int32_t ValueLimit = 99999;
 
-constexpr std::array<std::pair<std::string_view, Kind>, 11> Names{
-    {{"hp", Kind::Hp},
-     {"mp", Kind::Mp},
-     {"offense", Kind::Offense},
-     {"defense", Kind::Defense},
-     {"speed", Kind::Speed},
-     {"brains", Kind::Brains},
-     {"weight", Kind::Weight},
-     {"care", Kind::CareMistakes},
-     {"battles", Kind::Battles},
-     {"hours", Kind::Hours},
-     {"discipline", Kind::Discipline}}};
+constexpr std::array<std::pair<std::string_view, Kind>, 12> Names{{{"hp", Kind::Hp},
+                                                                   {"mp", Kind::Mp},
+                                                                   {"offense", Kind::Offense},
+                                                                   {"defense", Kind::Defense},
+                                                                   {"speed", Kind::Speed},
+                                                                   {"brains", Kind::Brains},
+                                                                   {"weight", Kind::Weight},
+                                                                   {"care", Kind::CareMistakes},
+                                                                   {"battles", Kind::Battles},
+                                                                   {"hours", Kind::Hours},
+                                                                   {"discipline", Kind::Discipline},
+                                                                   {"poop", Kind::Poop}}};
 
 std::optional<std::int32_t> integerOf(std::string_view text) {
   std::int32_t value = 0;
@@ -72,7 +72,7 @@ core::Result<PartnerWrite> partnerWriteFromText(std::string_view text) {
   }
   const auto usage = [&] {
     return core::fail(std::format("'{}': expected '<hp|mp|offense|defense|speed|brains|weight|"
-                                  "care|battles|hours|discipline> <0-{}>'",
+                                  "care|battles|hours|discipline|poop> <0-{}>'",
                                   text, ValueLimit));
   };
   if (words.size() != 2) {
@@ -109,6 +109,15 @@ void applyPartnerWrite(game::partner::Partner& partner, const PartnerWrite& writ
     // Set in place, as a story order would, between 0 and 100.
     game::partner::PartnerState changed = state;
     changed.mood.discipline = std::clamp(write.value, 0, 100);
+    partner.takeStoryChange(std::move(changed));
+    return;
+  }
+  case Kind::Poop: {
+    // The need of the toilet with the frames it holds on (partner_impl.c: tickPoopingMechanic,
+    // poopingTimer); at 0 it goes on the ground at the next tick it may.
+    game::partner::PartnerState changed = state;
+    changed.conditions.set(game::partner::Condition::NeedsToilet);
+    changed.toilet.urgeFrames = write.value;
     partner.takeStoryChange(std::move(changed));
     return;
   }
