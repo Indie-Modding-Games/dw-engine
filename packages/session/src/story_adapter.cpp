@@ -38,10 +38,22 @@ constexpr std::string_view ShowNameVariableKey = "show_name_variable";
 constexpr std::string_view ShowNameByEventKey = "show_name_by_event";
 constexpr std::string_view ShowNameAlwaysKey = "show_name_always";
 constexpr std::string_view ShowNameNeverKey = "show_name_never";
+constexpr std::string_view CapacityKey = "capacity";
+constexpr std::string_view ExtraTriggersKey = "extra_triggers";
+constexpr std::string_view ExtraVariablesKey = "extra_variables";
+constexpr std::string_view ExtraVariableMaxKey = "extra_variable_max";
+constexpr std::string_view ExtraRaisedKey = "extra_raised";
+constexpr std::string_view FirstTriggerKey = "first_trigger";
+constexpr std::string_view SpeciesKey = "species";
 // An engine guard, not a rule: past a second per frame of the original the story would crawl.
 constexpr std::int64_t MaxTicksPerFrame = 60;
 // A story variable is one byte in the state and in saves (script.h:158: ScriptState.pstats).
 constexpr std::int64_t MaxVariableMax = std::numeric_limits<std::uint8_t>::max();
+// Engine guards on what a ruleset adds for mods: room for any story, small enough that a typo
+// cannot make every save huge. An extra variable is a plain 32-bit integer from 0.
+constexpr std::int64_t MaxExtraTriggers = 1 << 16;
+constexpr std::int64_t MaxExtraVariables = 1 << 12;
+constexpr std::int64_t MaxExtraVariableMax = std::numeric_limits<std::int32_t>::max();
 
 // loadSavegame copies back only the saved variables (main_menu.c:5058) and leaves the others as
 // they were in memory. The engine starts them at 0, as a freshly started original holds them
@@ -72,6 +84,55 @@ std::int32_t stateIndex(std::int64_t index) {
   return std::in_range<std::int32_t>(index) ? static_cast<std::int32_t>(index) : -1;
 }
 
+// A whole number of the capacity from 0 to `highest`.
+std::int64_t capacityNumber(assets::YamlReader& reader, const core::YamlNode& mapping,
+                            std::string_view key, std::int64_t highest) {
+  const core::YamlNode& node = reader.field(mapping, key);
+  const auto value = reader.integer<std::int64_t>(node);
+  if (reader.ok() && (value < 0 || value > highest)) {
+    reader.fail(node, messages::formatMessage(messages::StoryNumberOutside, key, value, highest));
+  }
+  return value;
+}
+
+// The section's `capacity`, when it has one: extra triggers and variables, the extra variables'
+// highest value and the extra raised range, which must lie in the extra triggers.
+void readCapacity(assets::YamlReader& reader, const core::YamlNode& root,
+                  StorySectionRules& rules) {
+  const core::YamlNode* capacity = root.isMapping() ? root.find(CapacityKey) : nullptr;
+  if (capacity == nullptr || !reader.ok()) {
+    rules.rules.extraVariableMax = MaxExtraVariableMax;
+    return;
+  }
+  if (!reader.expectKeys(
+          *capacity, messages::StoryCapacityText,
+          {ExtraTriggersKey, ExtraVariablesKey, ExtraVariableMaxKey, ExtraRaisedKey})) {
+    return;
+  }
+  rules.capacity = {.extraTriggers = static_cast<std::int32_t>(
+                        capacityNumber(reader, *capacity, ExtraTriggersKey, MaxExtraTriggers)),
+                    .extraVariables = static_cast<std::int32_t>(
+                        capacityNumber(reader, *capacity, ExtraVariablesKey, MaxExtraVariables))};
+  rules.rules.extraVariableMax =
+      capacityNumber(reader, *capacity, ExtraVariableMaxKey, MaxExtraVariableMax);
+  const core::YamlNode& raised = reader.field(*capacity, ExtraRaisedKey);
+  if (!reader.ok() ||
+      !reader.expectKeys(raised, messages::StoryExtraRaisedText, {FirstTriggerKey, SpeciesKey})) {
+    return;
+  }
+  const std::int64_t triggers = rules.capacity.triggers();
+  const auto first = capacityNumber(reader, raised, FirstTriggerKey, triggers);
+  const auto species = capacityNumber(reader, raised, SpeciesKey, MaxExtraTriggers);
+  if (reader.ok() && species > 0 &&
+      (first < game::story::BaseTriggerCount || first + species > triggers)) {
+    reader.fail(raised, messages::formatMessage(messages::StoryExtraRaisedOutside, first,
+                                                first + species - 1, game::story::BaseTriggerCount,
+                                                triggers - 1));
+  }
+  rules.extraRaised = {.firstTrigger = static_cast<std::int32_t>(first),
+                       .species = static_cast<std::int32_t>(species)};
+}
+
 } // namespace
 
 core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section) {
@@ -80,7 +141,8 @@ core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section) 
   if (!reader.expectKeys(root, messages::StorySectionText,
                          {TicksPerFrameKey, VariableMaxKey, FrozenVariableKey, FrozenValueKey,
                           TalkFacingTriggerKey, ShowNameVariableKey, ShowNameByEventKey,
-                          ShowNameAlwaysKey, ShowNameNeverKey})) {
+                          ShowNameAlwaysKey, ShowNameNeverKey},
+                         {CapacityKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   const core::YamlNode& ticksNode = reader.field(root, TicksPerFrameKey);
@@ -93,20 +155,23 @@ core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section) 
   if (reader.ok() && (variableMax < 1 || variableMax > MaxVariableMax)) {
     reader.fail(maxNode, formatMessage(messages::StoryVariableMax, variableMax, MaxVariableMax));
   }
-  constexpr std::int64_t Variables = game::story::VariableCount;
+  constexpr std::int64_t Variables = game::story::BaseVariableCount;
   constexpr std::int64_t Values = MaxVariableMax + 1;
   const game::story::StoryFlowRules flow{
       .frozenVariable = stateNumber(reader, root, FrozenVariableKey, Variables),
       .frozenValue = stateNumber(reader, root, FrozenValueKey, Values),
       .talkFacingTrigger =
-          stateNumber(reader, root, TalkFacingTriggerKey, game::story::TriggerCount),
+          stateNumber(reader, root, TalkFacingTriggerKey, game::story::BaseTriggerCount),
       .showNameVariable = stateNumber(reader, root, ShowNameVariableKey, Variables),
       .showNameByEvent = stateNumber(reader, root, ShowNameByEventKey, Values),
       .showNameAlways = stateNumber(reader, root, ShowNameAlwaysKey, Values),
       .showNameNever = stateNumber(reader, root, ShowNameNeverKey, Values)};
-  const StorySectionRules rules{.ticksPerFrame = static_cast<std::uint32_t>(ticks),
-                                .rules = {.variableMax = variableMax},
-                                .flow = flow};
+  StorySectionRules rules{.ticksPerFrame = static_cast<std::uint32_t>(ticks),
+                          .rules = {.variableMax = variableMax},
+                          .flow = flow,
+                          .capacity = {},
+                          .extraRaised = {}};
+  readCapacity(reader, root, rules);
   return reader.finish(rules, section.file);
 }
 
@@ -116,8 +181,8 @@ class StoryAdapter::StatePort final : public game::story::StoryStatePort {
 public:
   explicit StatePort(game::story::StoryState& state) : state_(&state) {}
 
-  [[nodiscard]] std::int64_t triggerCount() const override { return game::story::TriggerCount; }
-  [[nodiscard]] std::int64_t variableCount() const override { return game::story::VariableCount; }
+  [[nodiscard]] std::int64_t triggerCount() const override { return state_->triggerCount(); }
+  [[nodiscard]] std::int64_t variableCount() const override { return state_->variableCount(); }
 
   [[nodiscard]] core::Result<bool> trigger(std::int64_t trigger) const override {
     return state_->trigger(stateIndex(trigger));
@@ -138,11 +203,12 @@ public:
   }
 
   core::Result<void> setVariable(std::int64_t variable, std::int64_t value) override {
-    // StoryOrders keeps a value within variable_max, which fits a byte.
-    DWE_ASSERT(std::in_range<std::uint8_t>(value));
+    // StoryOrders keeps a value within its variable's range: a byte for the base set, at most a
+    // 32-bit integer for the extra variables.
+    DWE_ASSERT(std::in_range<std::int32_t>(value));
     core::logDebug("[port:story] writePStat (script_interp.c:2775): variable {} = {}", variable,
                    value);
-    return state_->setVariable(stateIndex(variable), static_cast<std::uint8_t>(value));
+    return state_->setVariable(stateIndex(variable), static_cast<std::int32_t>(value));
   }
 
 private:
@@ -248,13 +314,13 @@ public:
   }
 
   core::Result<void> read(const core::YamlNode& state) override {
-    auto read = game::story::fromYaml(state);
+    auto read = game::story::fromYaml(state, adapter_->capacity_);
     if (!read) {
       return std::unexpected{read.error()};
     }
     if constexpr (!ResetUnsavedVariablesOnLoad) {
       for (std::int32_t variable = game::story::SavedVariableCount;
-           variable < game::story::VariableCount; ++variable) {
+           variable < game::story::BaseVariableCount; ++variable) {
         if (auto kept =
                 read->setVariable(variable, adapter_->state_.variable(variable).value_or(0));
             !kept) {
@@ -271,7 +337,7 @@ public:
     adapter_->extraRaised_.clear();
     if (adapter_->savedRaised_) {
       for (const std::int32_t species : adapter_->savedRaised_()) {
-        if (species >= RaisedSpeciesLimit) {
+        if (species >= RaisedSpeciesLimit && !adapter_->raisedTrigger(species)) {
           adapter_->extraRaised_.insert(species);
         }
       }
@@ -349,6 +415,7 @@ core::Result<void> StoryAdapter::readRules(const ruleset::Ruleset& rules) {
     return std::unexpected{lock.error()};
   }
   lock_ = std::move(*lock);
+  followCapacity(*storyRules);
   if (vm_ == nullptr) {
     if (auto wired = wire(*storyRules, *dialogueRules); !wired) {
       return wired;
@@ -374,31 +441,46 @@ core::Result<void> StoryAdapter::readRules(const ruleset::Ruleset& rules) {
   return {};
 }
 
-bool StoryAdapter::raised(std::int32_t species) const {
-  if (species >= RaisedSpeciesLimit) {
-    return extraRaised_.contains(species);
+std::optional<std::int32_t> StoryAdapter::raisedTrigger(std::int32_t species) const {
+  if (species < 0) {
+    return std::nullopt;
   }
-  return species >= 0 && state_.trigger(FirstRaisedTrigger + species).value_or(false);
+  if (species < RaisedSpeciesLimit) {
+    return FirstRaisedTrigger + species;
+  }
+  const std::int32_t past = species - RaisedSpeciesLimit;
+  if (past < extraRaisedRange_.species) {
+    return extraRaisedRange_.firstTrigger + past;
+  }
+  return std::nullopt;
+}
+
+bool StoryAdapter::raised(std::int32_t species) const {
+  if (const auto trigger = raisedTrigger(species)) {
+    return state_.trigger(*trigger).value_or(false);
+  }
+  return species >= 0 && extraRaised_.contains(species);
 }
 
 void StoryAdapter::markRaised(std::int32_t species) {
-  if (species >= RaisedSpeciesLimit) {
-    extraRaised_.insert(species);
-    return;
-  }
   if (species < 0) {
     core::logWarning("{}",
                      formatMessage(messages::StoryRaisedUnnumbered, species, RaisedSpeciesLimit));
     return;
   }
-  if (auto written = state_.setTrigger(FirstRaisedTrigger + species, true); !written) {
+  const auto trigger = raisedTrigger(species);
+  if (!trigger) {
+    extraRaised_.insert(species);
+    return;
+  }
+  if (auto written = state_.setTrigger(*trigger, true); !written) {
     core::logWarning("{}", written.error().message);
   }
 }
 
 std::set<std::int32_t> StoryAdapter::raisedSpecies() const {
   std::set<std::int32_t> species;
-  for (std::int32_t number = 0; number < RaisedSpeciesLimit; ++number) {
+  for (std::int32_t number = 0; number < RaisedSpeciesLimit + extraRaisedRange_.species; ++number) {
     if (raised(number)) {
       species.insert(number);
     }
@@ -428,7 +510,9 @@ bool StoryAdapter::hasPlayerItem(std::int32_t slot) const {
 }
 
 core::Result<void> StoryAdapter::addSaveSections(game::save::SaveSections& sections) {
-  return sections.add(std::string{StorySaveName}, *serializer_, game::save::MigrationChain{});
+  game::save::MigrationChain chain;
+  chain.add(game::story::storyStateFromVersion1);
+  return sections.add(std::string{StorySaveName}, *serializer_, chain);
 }
 
 core::Result<void> StoryAdapter::wire(const StorySectionRules& story,
@@ -490,6 +574,16 @@ core::Result<void> StoryAdapter::startRunner(const StorySectionRules& story) {
   ticksPerFrame_ = story.ticksPerFrame;
   flow_ = story.flow;
   return {};
+}
+
+void StoryAdapter::followCapacity(const StorySectionRules& story) {
+  if (story.capacity != capacity_) {
+    core::logInfo("{}", formatMessage(messages::StoryCapacity, story.capacity.triggers(),
+                                      story.capacity.variables(), story.extraRaised.species));
+  }
+  capacity_ = story.capacity;
+  extraRaisedRange_ = story.extraRaised;
+  state_.setCapacity(capacity_);
 }
 
 void StoryAdapter::followRules(const StorySectionRules& story,
@@ -558,20 +652,19 @@ game::story::StoryStatePort* StoryAdapter::statePort() {
 }
 
 game::story::StoryState StoryAdapter::newGameState(std::string_view firstPartner) const {
-  game::story::StoryState state;
+  game::story::StoryState state{capacity_};
   std::optional<std::int32_t> raised;
   if (!firstPartner.empty()) {
     const assets::DigimonRow* row = digimon_ ? digimon_->find(firstPartner) : nullptr;
-    if (row != nullptr && row->index >= 0 && row->index < RaisedSpeciesLimit) {
-      raised = FirstRaisedTrigger + row->index;
-    } else {
+    raised = row != nullptr ? raisedTrigger(row->index) : std::nullopt;
+    if (!raised) {
       core::logWarning("{}", formatMessage(messages::StoryPartnerUnnumbered, firstPartner));
     }
   }
   if (newGame_ && seedNewGame_) {
     const game::field::TriggerState start =
         game::field::newGameTriggers(*newGame_, fieldStartMap_, fieldStartExit_);
-    for (std::int32_t trigger = 0; trigger < game::story::TriggerCount; ++trigger) {
+    for (std::int32_t trigger = 0; trigger < game::story::BaseTriggerCount; ++trigger) {
       const std::optional<bool> set = start(trigger);
       if (set) {
         if (auto written = state.setTrigger(trigger, *set); !written) {

@@ -221,7 +221,7 @@ std::optional<std::string> storySettingText(const game::story::StoryState& story
     const core::Result<bool> set = story.trigger(number);
     return set ? std::optional<std::string>{*set ? "true" : "false"} : std::nullopt;
   }
-  const core::Result<std::uint8_t> value = story.variable(number);
+  const core::Result<std::int32_t> value = story.variable(number);
   return value ? std::optional<std::string>{std::to_string(*value)} : std::nullopt;
 }
 

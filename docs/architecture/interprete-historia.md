@@ -465,11 +465,15 @@ forma:
 ```yaml
 sections:
   story:
-    version: 1
+    version: 2
     state:
-      triggers: "0000…"     # 800 bits en 200 cifras hexadecimales, bit n = disparador n
-      variables: [0, 0, …]  # todas las variables de la capacidad configurada
+      triggers: "0000…"     # 800 bits en 200 cifras hexadecimales, bit n = disparador n, y luego los extra
+      variables: [0, 0, …]  # las 35 que guardaba el original (0–34)
+      extra_variables: []   # las que añade el ruleset (capacity), todas
 ```
+
+La versión 2 (#97) añade la capacidad del ruleset ([capacidad](../modding/historia.md#capacidad)); una partida de la
+versión 1 se migra sin cambios.
 
 - **La siguiente versión de la sección** guarda todas las variables (antes, las 0–34), con migración aditiva y su
   test.

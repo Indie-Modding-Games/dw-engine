@@ -177,3 +177,29 @@ variables:
 ```
 
 Un mod puede traer su propio `story/names.yaml` (gana por ID, entero). Los nombres no cambian nada del juego.
+
+## Capacidad
+
+El original tiene 800 disparadores (0–799) y 256 variables (0–255) de un byte, y marca «criado» a cada especie con
+el disparador `0x200 + número`, solo para las 63 primeras. Un ruleset amplía todo eso en su sección `story`, con
+`capacity` (el original no añade nada):
+
+```yaml
+capacity:
+  extra_triggers: 64           # disparadores 800–863
+  extra_variables: 4           # variables 256–259
+  extra_variable_max: 100000   # el valor más alto de una variable extra (las del original siguen en variable_max)
+  extra_raised:                # «criado» para las especies a partir de la 63
+    first_trigger: 800         # la especie 63 usa el 800, la 64 el 801…
+    species: 32                # cuántas especies cubre; tiene que caber en los disparadores extra
+```
+
+- Lo añadido se numera a continuación de lo del original, así que los números del original no cambian. Las órdenes
+  de la historia (`set_var`, `add_to_var`, `copy_var`…) limitan cada variable a su rango: 0–`variable_max` las del
+  original y 0–`extra_variable_max` las extra.
+- Límites: 65 536 disparadores extra y 4 096 variables extra. `extra_raised` tiene que quedar dentro de los
+  disparadores extra; una especie fuera de todos los rangos se sigue marcando aparte, como antes.
+- **Partidas guardadas.** La sección `story` del guardado está en la versión 2: `triggers` tiene todos los
+  disparadores (bytes en hexadecimal) y `extra_variables`, las variables extra. Una partida de la versión 1 se
+  carga sin cambios. Si se carga con un ruleset más pequeño (sin el mod que amplió la capacidad), lo que no cabe se
+  descarta, con un aviso en el log cuando había algo puesto.

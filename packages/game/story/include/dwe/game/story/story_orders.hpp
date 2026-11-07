@@ -14,13 +14,16 @@ namespace dwe::game::story {
 
 // The game rules of the story's state, from the ruleset.
 struct StoryRules {
-  // A variable holds 0 to this; a write past either end stops there. The original's is 255.
+  // A base variable (BaseVariableCount) holds 0 to this; a write past either end stops there. The
+  // original's is 255.
   std::int64_t variableMax = 0;
+  // The same for the ruleset's extra variables (StoryCapacity), which mods use as plain integers.
+  std::int64_t extraVariableMax = 0;
 };
 
 class StoryOrders {
 public:
-  // The rules must give a variable range past 0.
+  // The rules must give a base variable range past 0.
   StoryOrders(StoryStatePort& state, StoryRandomPort& random, StoryRules rules);
 
   // set_trigger and unset_trigger.
@@ -32,7 +35,7 @@ public:
   // variable range.
   core::Result<void> addToVariable(std::int64_t variable, std::int64_t amount);
   core::Result<void> reduceVariable(std::int64_t variable, std::int64_t amount);
-  // copy_pstat: the target variable takes the source's value.
+  // copy_pstat: the target variable takes the source's value, kept in the target's range.
   core::Result<void> copyVariable(std::int64_t source, std::int64_t target);
   // store_random: the variable takes a random number from 0 to `highest`, which stops at the ends
   // of the variable range, drawn as math.c: randomLimit draws it.
@@ -52,7 +55,9 @@ private:
   [[nodiscard]] core::Result<void> checkVariable(std::int64_t variable) const;
   [[nodiscard]] core::Result<std::int64_t> readVariable(std::int64_t variable) const;
   core::Result<void> writeVariable(std::int64_t variable, std::int64_t value);
-  [[nodiscard]] std::int64_t inVariableRange(std::int64_t value) const;
+  // The highest value of a variable: the base set's range or the extra variables'.
+  [[nodiscard]] std::int64_t highestOf(std::int64_t variable) const;
+  [[nodiscard]] std::int64_t inVariableRange(std::int64_t variable, std::int64_t value) const;
 
   StoryStatePort* state_;
   StoryRandomPort* random_;

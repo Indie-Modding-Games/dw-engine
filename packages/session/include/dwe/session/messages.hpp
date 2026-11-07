@@ -131,6 +131,16 @@ inline constexpr std::string_view StoryRunnerKept =
     "story: ticks_per_frame or the flow keys changed while a script runs; the new values apply to "
     "the next game";
 inline constexpr std::string_view StoryNumberOutside = "{} is {}, outside 0 to {}";
+// The story section's capacity for mods (#97).
+inline constexpr std::string_view StoryCapacityText = "the story section's capacity";
+inline constexpr std::string_view StoryExtraRaisedText = "the capacity's extra_raised";
+// The extra raised range (its first and last trigger) is not within the extra triggers (the first
+// and last of those).
+inline constexpr std::string_view StoryExtraRaisedOutside =
+    "extra_raised takes triggers {} to {}, and must lie in the extra triggers, {} to {}";
+// The rules changed the state's capacity (triggers, variables, extra raised species).
+inline constexpr std::string_view StoryCapacity =
+    "story: the state holds {} triggers and {} variables, {} extra raised species";
 
 // The story lock (story_lock.hpp).
 inline constexpr std::string_view StoryLockSectionText = "the story_lock section";

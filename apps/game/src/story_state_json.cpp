@@ -39,7 +39,7 @@ std::string storyStateJson(const StoryStateView& view) {
   out += jsonString(view.map);
   out += R"(,"triggers":[)";
   bool first = true;
-  for (std::int32_t trigger = 0; trigger < game::story::TriggerCount; ++trigger) {
+  for (std::int32_t trigger = 0; trigger < view.state.triggerCount(); ++trigger) {
     if (view.state.trigger(trigger).value_or(false)) {
       std::format_to(std::back_inserter(out), "{}{}", first ? "" : ",", trigger);
       first = false;
@@ -47,8 +47,8 @@ std::string storyStateJson(const StoryStateView& view) {
   }
   out += R"(],"variables":{)";
   first = true;
-  for (std::int32_t variable = 0; variable < game::story::VariableCount; ++variable) {
-    if (const std::uint8_t value = view.state.variable(variable).value_or(0); value != 0) {
+  for (std::int32_t variable = 0; variable < view.state.variableCount(); ++variable) {
+    if (const std::int32_t value = view.state.variable(variable).value_or(0); value != 0) {
       std::format_to(std::back_inserter(out), R"({}"{}":{})", first ? "" : ",", variable, value);
       first = false;
     }

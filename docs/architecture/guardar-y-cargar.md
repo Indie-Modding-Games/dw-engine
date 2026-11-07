@@ -102,6 +102,7 @@ vuelve a la portada (`script_interp.c: 516-520`, `main.c: main: 3522-3524`).
 - Guardar desde una ruta: el comando de depuración `save("slot_NN")` (`apps/game/src/save_command.hpp`) y el par
   `route-save-load` + `route-save-load-check`, dos ejecuciones unidas por `scripts/gate/route_jobs.sh`.
 - Parte (b): `StoryState` y su sección `story` (versión 1, disparadores y las 35 variables que guardaba el original;
+  desde #97 versión 2, con los disparadores y variables extra del ruleset y migración desde la 1;
   `readMissing` empieza de partida nueva y marca criadas las especies de la sección `evolution`). Esta parte no la
   cambia; al recrear la sesión se recrea también su adaptador.
 

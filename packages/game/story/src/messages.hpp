@@ -18,9 +18,20 @@ inline constexpr std::string_view VariableOutOfRange = "story: variable {} is ou
 // The saved story state.
 inline constexpr std::string_view StoryStateText = "the story state";
 // The triggers of a save are not their hex digits (the count wanted).
-inline constexpr std::string_view TriggerDigitsWrong = "triggers must be {} hex digits";
+inline constexpr std::string_view TriggerDigitsWrong =
+    "triggers must be whole bytes of hex digits, at least {}";
 // A saved variable outside a byte (the value).
 inline constexpr std::string_view VariableNotAByte = "a variable must be 0-255, not {}";
+// A saved extra variable below 0 (the value).
+inline constexpr std::string_view ExtraVariableNegative =
+    "an extra variable must be 0 or more, not {}";
+// What a save held past the ruleset's capacity (set triggers, extra variables not 0).
+inline constexpr std::string_view StoryStateDropped =
+    "story: the save holds {} set triggers and {} extra variables past the ruleset's capacity; "
+    "they were dropped (was it made with a mod that is not loaded now?)";
+// The migration step from version 1 got something else.
+inline constexpr std::string_view StoryStateNotVersion1 =
+    "the story state is not a version 1 story state";
 
 // The File City screen a finished game continues on: no choice matched the triggers.
 inline constexpr std::string_view NoClearedCityMap =

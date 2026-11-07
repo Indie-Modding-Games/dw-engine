@@ -92,10 +92,10 @@ core::Result<StoryNames> parseStoryNames(std::string_view yaml) {
   }
   StoryNames names;
   if (const YamlNode* triggers = tree->find("triggers"); triggers != nullptr) {
-    names.triggers = readNames(reader, *triggers, "triggers", TriggerCount);
+    names.triggers = readNames(reader, *triggers, "triggers", BaseTriggerCount);
   }
   if (const YamlNode* variables = tree->find("variables"); variables != nullptr) {
-    names.variables = readNames(reader, *variables, "variables", VariableCount);
+    names.variables = readNames(reader, *variables, "variables", BaseVariableCount);
   }
   return reader.finish(std::move(names), "story names");
 }

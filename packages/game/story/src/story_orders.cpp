@@ -1,6 +1,7 @@
 #include <dwe/core/assert.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/story/story_orders.hpp>
+#include <dwe/game/story/story_state.hpp>
 
 #include <algorithm>
 #include <optional>
@@ -53,29 +54,29 @@ core::Result<void> StoryOrders::unsetTrigger(std::int64_t trigger) {
 }
 
 core::Result<void> StoryOrders::setVariable(std::int64_t variable, std::int64_t value) {
-  return writeVariable(variable, inVariableRange(value));
+  return writeVariable(variable, inVariableRange(variable, value));
 }
 
 core::Result<void> StoryOrders::addToVariable(std::int64_t variable, std::int64_t amount) {
   // script_interp.c: scriptInstruction28to3F stops a sum past 255 at 255.
   return readVariable(variable).and_then([&](std::int64_t current) {
-    return writeVariable(variable, addInRange(current, amount, rules_.variableMax));
+    return writeVariable(variable, addInRange(current, amount, highestOf(variable)));
   });
 }
 
 core::Result<void> StoryOrders::reduceVariable(std::int64_t variable, std::int64_t amount) {
   return readVariable(variable).and_then([&](std::int64_t current) {
-    return writeVariable(variable, subtractInRange(current, amount, rules_.variableMax));
+    return writeVariable(variable, subtractInRange(current, amount, highestOf(variable)));
   });
 }
 
 core::Result<void> StoryOrders::copyVariable(std::int64_t source, std::int64_t target) {
   return readVariable(source).and_then(
-      [&](std::int64_t value) { return writeVariable(target, value); });
+      [&](std::int64_t value) { return writeVariable(target, inVariableRange(target, value)); });
 }
 
 core::Result<void> StoryOrders::storeRandom(std::int64_t variable, std::int64_t highest) {
-  const std::int64_t limit = inVariableRange(highest) + 1;
+  const std::int64_t limit = inVariableRange(variable, highest) + 1;
   const std::int64_t r = random_->next();
   DWE_ASSERT(r >= 0 && r <= StoryRandomPort::RandomMax);
   return writeVariable(variable, (limit * r) >> RandomBits);
@@ -144,8 +145,12 @@ core::Result<void> StoryOrders::writeVariable(std::int64_t variable, std::int64_
   return checkVariable(variable).and_then([&] { return state_->setVariable(variable, value); });
 }
 
-std::int64_t StoryOrders::inVariableRange(std::int64_t value) const {
-  return std::clamp<std::int64_t>(value, 0, rules_.variableMax);
+std::int64_t StoryOrders::highestOf(std::int64_t variable) const {
+  return variable < BaseVariableCount ? rules_.variableMax : rules_.extraVariableMax;
+}
+
+std::int64_t StoryOrders::inVariableRange(std::int64_t variable, std::int64_t value) const {
+  return std::clamp<std::int64_t>(value, 0, highestOf(variable));
 }
 
 } // namespace dwe::game::story

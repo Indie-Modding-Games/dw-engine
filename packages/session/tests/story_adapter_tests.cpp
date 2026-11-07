@@ -1,3 +1,4 @@
+#include <dwe/game/save/migration.hpp>
 #include <dwe/game/story/story_state_yaml.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/story_adapter.hpp>
@@ -8,6 +9,7 @@
 #include <format>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -170,4 +172,88 @@ TEST_CASE("a save made before the story section loads, with the story as a new g
   CHECK_FALSE(isSet(*loaded.story, FirstRaisedTrigger + FirstPartnerNumber));
   // The rest of the save loads as it was.
   CHECK(loaded.session->partner().state() == saved.session->partner().state());
+}
+
+namespace {
+
+// A made-up ruleset that extends the original with room for a mod's story: 64 extra triggers, 4
+// extra variables up to 100000, and raised triggers from 800 on for 32 species past the base's 63.
+constexpr std::string_view ModdedRuleset =
+    "id: modded\nname: \"Modded\"\nversion: 0.1.0\nextends: original\nsections: [story]\n";
+constexpr std::string_view ModdedStory = R"(ticks_per_frame: 3
+variable_max: 255
+frozen_variable: 0
+frozen_value: 3
+talk_facing_trigger: 44
+show_name_variable: 6
+show_name_by_event: 0
+show_name_always: 1
+show_name_never: 2
+capacity:
+  extra_triggers: 64
+  extra_variables: 4
+  extra_variable_max: 100000
+  extra_raised: {first_trigger: 800, species: 32}
+)";
+
+StorySession moddedStorySession(const TestPacks& packs) {
+  auto adapter =
+      std::make_unique<StoryAdapter>(dwe::session::StoryAdapterDesc{.files = &packs.files()});
+  StoryAdapter* story = adapter.get();
+  std::vector<std::unique_ptr<SessionSystem>> systems;
+  systems.push_back(std::move(adapter));
+  return {.session = newGameWith(packs, std::move(systems), nullptr, 7, "modded"), .story = story};
+}
+
+} // namespace
+
+TEST_CASE("a ruleset's capacity sizes the story and gives more species raised triggers") {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory},
+                        {"rules/modded/ruleset.yaml", ModdedRuleset},
+                        {"rules/modded/story.yaml", ModdedStory}};
+  const auto saved = moddedStorySession(packs);
+  StoryAdapter& story = *saved.story;
+  CHECK(story.state().triggerCount() == 864);
+  CHECK(story.state().variableCount() == 260);
+  CHECK(story.statePort()->triggerCount() == 864);
+
+  // Species 63 + 7 is raised as trigger 807; one past the range is kept apart, as before.
+  story.markRaised(70);
+  CHECK(isSet(story, 807));
+  CHECK(story.raised(70));
+  story.markRaised(95);
+  CHECK_FALSE(story.state().trigger(832).value());
+  CHECK(story.raised(95));
+  CHECK(story.raisedSpecies().contains(70));
+  CHECK(story.raisedSpecies().contains(95));
+
+  REQUIRE(story.state().setVariable(259, 90'000).has_value());
+  auto file = saved.session->saveFile();
+  REQUIRE_MESSAGE(file.has_value(), errorOf(file));
+  const auto loaded = moddedStorySession(packs);
+  const auto read = loaded.session->loadFile(*file);
+  REQUIRE_MESSAGE(read.has_value(), errorOf(read));
+  CHECK(isSet(*loaded.story, 807));
+  CHECK(loaded.story->state().variable(259).value() == 90'000);
+}
+
+TEST_CASE("a story section saved at version 1 still loads") {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory}};
+  const auto saved = storySession(packs);
+  REQUIRE(saved.story->state().setTrigger(PlayedTrigger, true).has_value());
+  REQUIRE(saved.story->state().setVariable(20, 9).has_value());
+  auto file = saved.session->saveFile();
+  REQUIRE_MESSAGE(file.has_value(), errorOf(file));
+  auto& section = file->sections.at(std::string{StorySaveName});
+  // What a version 1 save holds: the 100 trigger bytes and the 35 variables, nothing else.
+  section.version = 1;
+  section.state = dwe::game::save::withoutKey(section.state, "extra_variables");
+
+  const auto loaded = storySession(packs);
+  const auto read = loaded.session->loadFile(*file);
+  REQUIRE_MESSAGE(read.has_value(), errorOf(read));
+  CHECK(isSet(*loaded.story, PlayedTrigger));
+  CHECK(loaded.story->state().variable(20).value() == 9);
 }

@@ -49,7 +49,7 @@ struct Picking {
   [[nodiscard]] bool cancelSet() const {
     return story->state().trigger(CancelTrigger).value_or(false);
   }
-  [[nodiscard]] std::uint8_t chosen() const {
+  [[nodiscard]] std::int32_t chosen() const {
     return story->state().variable(ChosenVariable).value_or(0);
   }
   void setCancel(bool set) const { REQUIRE(story->state().setTrigger(CancelTrigger, set)); }
