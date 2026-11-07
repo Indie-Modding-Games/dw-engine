@@ -1994,6 +1994,8 @@ TraceFrame PlaySession::traceFrame(std::uint64_t tick, const input::InputState& 
           .speed = fighter.stats.speed,
           .brain = fighter.stats.brain,
           .pose = std::string{poseName(fighter.pose)},
+          .pending = fighter.pendingDamage,
+          .move = fighter.attack ? battle->moves().at(fighter.attack->move).index : -1,
       });
     }
     frame.battle = std::move(traced);

@@ -54,6 +54,11 @@ struct TraceFighter {
   std::int32_t speed = 0;
   std::int32_t brain = 0;
   std::string pose;
+  // The damage taken and not yet drained from hp (FighterData.hpDamageBuffer): hp - pending is
+  // what a hit lowers at once.
+  std::int32_t pending = 0;
+  // The original's number of the move being used, or -1 for none.
+  std::int32_t move = -1;
 };
 
 struct TraceBattle {

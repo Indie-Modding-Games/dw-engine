@@ -46,7 +46,8 @@ void appendFighter(std::string& out, const TraceFighter& fighter) {
                  fighter.maxHp, fighter.maxMp, fighter.offense, fighter.defense, fighter.speed,
                  fighter.brain);
   appendText(out, fighter.pose);
-  out += '}';
+  std::format_to(std::back_inserter(out), R"(,"pending":{},"move":{}}})", fighter.pending,
+                 fighter.move);
 }
 
 } // namespace
