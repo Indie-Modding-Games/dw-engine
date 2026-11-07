@@ -160,13 +160,10 @@ void startBattle(BattleScreen& screen, const assets::DigimonTable* species, cons
     // Without NPC numbers this is the battle touching the first NPC that can fight starts: the
     // others on screen may join it, as in the story's battles with no predefined enemies.
     if (chosen->empty() && !story && !request->enemyNpcs.empty()) {
-      std::vector<std::int32_t> enemies{request->enemyNpcs.front()};
-      std::ranges::copy(screen.joiningNpcs(enemies.front(), false), std::back_inserter(enemies));
-      std::vector<std::size_t> indices;
-      const auto& records = scene.map().npcs;
-      for (const std::int32_t npc : enemies) {
-        const auto found = std::ranges::find(records, npc, &assets::MapNpc::scriptId);
-        indices.push_back(static_cast<std::size_t>(found - records.begin()));
+      const std::int32_t touched = request->enemyNpcs.front();
+      std::vector<std::size_t> indices{static_cast<std::size_t>(touched)};
+      for (const std::int32_t joiner : screen.joiningNpcs(touched, false)) {
+        indices.push_back(static_cast<std::size_t>(joiner));
       }
       request = mapBattleRequest(scene.field(), scene.map(), *species, indices);
       if (!request) {

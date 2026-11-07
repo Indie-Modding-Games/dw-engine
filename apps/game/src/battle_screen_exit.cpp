@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -35,10 +36,19 @@ constexpr float RunOffPace = 2.0F;
 // (its walk clip has no motion) stops the exit after this long.
 constexpr double ExitGuardSeconds = 10.0;
 
+// The battle names the map's NPCs by slot (MapDocument::npcs index): NPCs can share a script id.
 const assets::MapNpc* recordOf(const FieldScene& scene, std::int32_t npc) {
   const auto& records = scene.map().npcs;
-  const auto found = std::ranges::find(records, npc, &assets::MapNpc::scriptId);
-  return found != records.end() ? &*found : nullptr;
+  return npc >= 0 && std::cmp_less(npc, records.size()) ? &records[static_cast<std::size_t>(npc)]
+                                                        : nullptr;
+}
+
+std::optional<glm::vec3> positionOf(const FieldScene& scene, std::int32_t npc) {
+  return npc >= 0 ? scene.field().npcs().positionAt(static_cast<std::size_t>(npc)) : std::nullopt;
+}
+
+bool unload(FieldScene& scene, std::int32_t npc) {
+  return npc >= 0 && scene.npcs().unloadAt(static_cast<std::size_t>(npc));
 }
 
 } // namespace
@@ -47,7 +57,7 @@ const assets::MapNpc* recordOf(const FieldScene& scene, std::int32_t npc) {
 // height make around it shows in the window.
 bool BattleScreen::offScreen(std::int32_t npc, float x, float z) const {
   const FieldScene& scene = *desc_.scene;
-  const std::optional<glm::vec3> position = scene.field().npcs().positionOf(npc);
+  const std::optional<glm::vec3> position = positionOf(scene, npc);
   const assets::MapNpc* record = recordOf(scene, npc);
   if (!position || record == nullptr) {
     return true;
@@ -77,11 +87,12 @@ std::vector<std::int32_t> BattleScreen::npcsOnScreen() const {
   if (desc_.scene == nullptr || desc_.scene->stage().sceneryHidden) {
     return shown;
   }
-  for (const assets::MapNpc& record : desc_.scene->map().npcs) {
-    const std::optional<glm::vec3> position =
-        desc_.scene->field().npcs().positionOf(record.scriptId);
-    if (position && !offScreen(record.scriptId, position->x, position->z)) {
-      shown.push_back(record.scriptId);
+  const std::size_t slots = desc_.scene->map().npcs.size();
+  for (std::size_t slot = 0; slot < slots; ++slot) {
+    const auto npc = static_cast<std::int32_t>(slot);
+    const std::optional<glm::vec3> position = positionOf(*desc_.scene, npc);
+    if (position && !offScreen(npc, position->x, position->z)) {
+      shown.push_back(npc);
     }
   }
   return shown;
@@ -107,7 +118,7 @@ std::vector<std::int32_t> BattleScreen::joiningNpcs(std::int32_t touched, bool f
   std::vector<game::battle::DigimonType> asked;
   for (const std::int32_t npc : npcsOnScreen()) {
     const assets::MapNpc* record = recordOf(scene, npc);
-    const std::optional<glm::vec3> position = field.npcs().positionOf(npc);
+    const std::optional<glm::vec3> position = positionOf(scene, npc);
     if (npc == touched || record == nullptr || !position || !canFight(*record, *desc_.species)) {
       continue;
     }
@@ -153,7 +164,9 @@ std::vector<std::int32_t> BattleScreen::joiningNpcs(std::int32_t touched, bool f
 // The walk clip's own ground speed (its root motion moves the entity, animFlag 4); the battle's
 // walk when the clip carries none.
 float BattleScreen::walkSpeed(std::int32_t npc) const {
-  if (const auto entity = desc_.scene->field().npcs().entityOf(npc)) {
+  if (const auto entity = npc >= 0
+                              ? desc_.scene->field().npcs().entityAt(static_cast<std::size_t>(npc))
+                              : std::nullopt) {
     if (const float speed = desc_.scene->clipGroundSpeed(*entity, WalkClip); speed > 0.0F) {
       return speed;
     }
@@ -194,7 +207,7 @@ void BattleScreen::startExit() {
     ++figure.starts;
     figure.frozen = false;
     const std::int32_t npc = enemyNpcs_[index - 1];
-    if (!fixedFight_ && desc_.scene->field().npcs().positionOf(npc)) {
+    if (!fixedFight_ && positionOf(*desc_.scene, npc)) {
       exit.leavers.push_back({.npc = npc, .figure = figure, .walking = false});
     }
   }
@@ -227,12 +240,13 @@ void BattleScreen::startFlight() {
   // and keeps them.
   if (!desc_.scene->stage().sceneryHidden) {
     std::int32_t gone = 0;
-    for (const assets::MapNpc& record : desc_.scene->map().npcs) {
-      const std::int32_t npc = record.scriptId;
+    const std::size_t slots = desc_.scene->map().npcs.size();
+    for (std::size_t slot = 0; slot < slots; ++slot) {
+      const auto npc = static_cast<std::int32_t>(slot);
       if (std::ranges::contains(onScreenAtStart_, npc) || std::ranges::contains(enemyNpcs_, npc)) {
         continue;
       }
-      if (desc_.scene->field().npcs().positionOf(npc) && desc_.scene->npcs().unload(npc)) {
+      if (unload(*desc_.scene, npc)) {
         ++gone;
       }
     }
@@ -241,7 +255,7 @@ void BattleScreen::startFlight() {
                    gone);
   }
   for (const std::int32_t npc : onScreenAtStart_) {
-    const auto position = desc_.scene->field().npcs().positionOf(npc);
+    const auto position = positionOf(*desc_.scene, npc);
     if (!position || std::ranges::contains(enemyNpcs_, npc)) {
       continue;
     }
@@ -282,7 +296,7 @@ std::vector<screens::AngerAnchor> BattleScreen::runOffAnchors(float lift) const 
     if (std::ranges::contains(enemyNpcs_, npc) || anchors.size() >= screens::FleeMarkSlots) {
       continue;
     }
-    const std::optional<glm::vec3> position = desc_.scene->field().npcs().positionOf(npc);
+    const std::optional<glm::vec3> position = positionOf(*desc_.scene, npc);
     const assets::MapNpc* record = recordOf(*desc_.scene, npc);
     if (!position || record == nullptr) {
       continue;
@@ -332,8 +346,9 @@ void BattleScreen::endFlight() {
     return;
   }
   for (const Leaver& leaver : std::exchange(fleers_, {})) {
-    if (desc_.scene->npcs().unload(leaver.npc)) {
-      core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:316): NPC {} off the map",
+    if (unload(*desc_.scene, leaver.npc)) {
+      core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:316): NPC slot {} off "
+                     "the map",
                      leaver.npc);
     }
   }
@@ -384,8 +399,8 @@ void BattleScreen::endExit() {
       if (fixedFight_ && std::ranges::contains(enemyNpcs_, npc)) {
         continue;
       }
-      if (desc_.scene->npcs().unload(npc)) {
-        core::logDebug("[port:battle] BTL_battleMain (battle_main.c:{}): NPC {} off the map",
+      if (unload(*desc_.scene, npc)) {
+        core::logDebug("[port:battle] BTL_battleMain (battle_main.c:{}): NPC slot {} off the map",
                        fixedFight_ ? 794 : 806, npc);
       }
     }

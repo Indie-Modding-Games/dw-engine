@@ -230,6 +230,42 @@ std::optional<std::size_t> FieldNpcs::instanceOf(std::int32_t scriptId) const {
   return npc != nullptr ? std::optional{FirstNpcInstance + npc->slot} : std::nullopt;
 }
 
+std::optional<scene::Entity> FieldNpcs::entityAt(std::size_t slot) const {
+  const Npc* npc = findSlot(slot);
+  return npc != nullptr ? std::optional{npc->entity} : std::nullopt;
+}
+
+std::optional<glm::vec3> FieldNpcs::positionAt(std::size_t slot) const {
+  const Npc* npc = findSlot(slot);
+  return npc != nullptr ? std::optional{world_->registry().get<Transform>(npc->entity).position}
+                        : std::nullopt;
+}
+
+bool FieldNpcs::unloadAt(std::size_t slot) {
+  const auto found = std::ranges::find(npcs_, slot, &Npc::slot);
+  if (found == npcs_.end()) {
+    return false;
+  }
+  core::logDebug("[port:npc] scriptUnloadEntity (overworld.c:1142): slot {} (script id {}) off",
+                 slot, found->scriptId);
+  remove(static_cast<std::size_t>(found - npcs_.begin()));
+  return true;
+}
+
+bool FieldNpcs::restartPathAt(std::size_t slot) {
+  const auto found = std::ranges::find(npcs_, slot, &Npc::slot);
+  if (found == npcs_.end()) {
+    return false;
+  }
+  restart(*found);
+  return true;
+}
+
+std::optional<std::size_t> FieldNpcs::slotOf(scene::Entity entity) const {
+  const auto found = std::ranges::find(npcs_, entity, &Npc::entity);
+  return found != npcs_.end() ? std::optional{found->slot} : std::nullopt;
+}
+
 bool FieldNpcs::hold(std::int32_t scriptId, bool held) {
   Npc* npc = find(scriptId);
   if (npc == nullptr) {
@@ -325,6 +361,11 @@ FieldNpcs::Npc* FieldNpcs::find(std::int32_t scriptId) {
 
 const FieldNpcs::Npc* FieldNpcs::find(std::int32_t scriptId) const {
   const auto found = std::ranges::find(npcs_, scriptId, &Npc::scriptId);
+  return found != npcs_.end() ? &*found : nullptr;
+}
+
+const FieldNpcs::Npc* FieldNpcs::findSlot(std::size_t slot) const {
+  const auto found = std::ranges::find(npcs_, slot, &Npc::slot);
   return found != npcs_.end() ? &*found : nullptr;
 }
 

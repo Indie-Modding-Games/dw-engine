@@ -2,9 +2,11 @@
 #include <dwe/session/messages.hpp>
 #include <dwe/session/story_adapter.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 
 namespace dwe::session {
 
@@ -53,6 +55,7 @@ void StoryAdapter::runNpcContacts(std::span<const game::field::NpcContact> conta
                                                     game::story::SectionSource::Event);
     if (outcome == game::story::RequestOutcome::Accepted) {
       talkedTo_ = contact.scriptId;
+      talkedNpc_ = contact.entity;
     }
     core::logDebug("[port:npc] callScriptSection (tamer.c:677, overworld.c:1333): NPC section {} "
                    "({}): {}",
@@ -61,6 +64,27 @@ void StoryAdapter::runNpcContacts(std::span<const game::field::NpcContact> conta
                    outcome == game::story::RequestOutcome::Accepted ? "accepted"
                                                                     : "dropped, a script runs");
   }
+}
+
+std::optional<std::int64_t> StoryAdapter::talkedEntity() const {
+  const game::field::FieldNpcs* field = npcs_ != nullptr ? npcs_->field() : nullptr;
+  if (field == nullptr || !talkedNpc_) {
+    return std::nullopt;
+  }
+  const std::optional<std::size_t> slot = field->slotOf(*talkedNpc_);
+  if (!slot) {
+    return std::nullopt;
+  }
+  return static_cast<std::int64_t>(game::field::FirstNpcInstance + *slot);
+}
+
+std::optional<std::int64_t> StoryAdapter::npcEntity(std::int32_t scriptId) const {
+  const game::field::FieldNpcs* field = npcs_ != nullptr ? npcs_->field() : nullptr;
+  if (field == nullptr) {
+    return std::nullopt;
+  }
+  const std::optional<std::size_t> instance = field->instanceOf(scriptId);
+  return instance ? std::optional{static_cast<std::int64_t>(*instance)} : std::nullopt;
 }
 
 } // namespace dwe::session

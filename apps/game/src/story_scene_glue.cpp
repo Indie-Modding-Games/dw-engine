@@ -2,11 +2,13 @@
 
 #include <dwe/core/log.hpp>
 #include <dwe/game/field/field.hpp>
+#include <dwe/game/field/npcs.hpp>
 #include <dwe/render/map_layers.hpp>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "battle_trigger.hpp"
@@ -193,29 +195,26 @@ bool StorySceneGlue::takeSaveMachine(const session::StoryScreenRequest& request)
   return true;
 }
 
-// The enemies are the map's NPCs by script id (MapNpc::scriptId). A battle with none predefined is
-// the one against the NPC the player talked to (btl.c: handleBattleStart), which the story names,
-// with the NPCs on screen that join it.
+// The enemies are the map's NPCs as entities (game::field::FirstNpcInstance + their slot), as
+// btl.c: handleBattleStart reads COMBAT_DATA.player.entityIds: NPCs that share a script id (a map's
+// wild NPCs of one species) are each their own fighter. A battle with none predefined is the one
+// against the NPC the player talked to, which the story names, with the NPCs on screen that join
+// it; the others with its script id roll to join as any other.
 void StorySceneGlue::startBattle(session::StoryScenes& scenes, BattleScreen& battle,
                                  const assets::DigimonTable* species, const FieldScene& scene,
                                  const game::story::ScriptedBattle& request) {
   std::vector<std::size_t> npcs;
   const auto& mapNpcs = scene.map().npcs;
   for (const std::int64_t enemy : request.enemies) {
-    for (std::size_t index = 0; index < mapNpcs.size(); ++index) {
-      if (mapNpcs[index].scriptId == enemy) {
-        npcs.push_back(index);
-      }
+    const std::int64_t slot = enemy - static_cast<std::int64_t>(game::field::FirstNpcInstance);
+    if (slot >= 0 && std::cmp_less(slot, mapNpcs.size())) {
+      npcs.push_back(static_cast<std::size_t>(slot));
     }
   }
   if (request.joinable && npcs.size() == 1) {
     for (const std::int32_t joiner :
-         battle.joiningNpcs(mapNpcs[npcs.front()].scriptId, request.fixedFight)) {
-      for (std::size_t index = 0; index < mapNpcs.size(); ++index) {
-        if (mapNpcs[index].scriptId == joiner) {
-          npcs.push_back(index);
-        }
-      }
+         battle.joiningNpcs(static_cast<std::int32_t>(npcs.front()), request.fixedFight)) {
+      npcs.push_back(static_cast<std::size_t>(joiner));
     }
   }
   auto started = [&]() -> core::Result<void> {

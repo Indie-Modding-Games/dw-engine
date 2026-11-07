@@ -120,6 +120,19 @@ public:
   // Its entity instance, FirstNpcInstance + its record's slot (the scripts' move slot).
   [[nodiscard]] std::optional<std::size_t> instanceOf(std::int32_t scriptId) const;
 
+  // The same by the NPC's slot (its map record), for what tells apart NPCs that share a script id
+  // (a map's wild NPCs of one species): the battle's fighters, which are entities (btl.c:
+  // handleBattleStart fills COMBAT_DATA.player.entityIds). Nothing when that slot's NPC is not on
+  // the map.
+  [[nodiscard]] std::optional<scene::Entity> entityAt(std::size_t slot) const;
+  [[nodiscard]] std::optional<glm::vec3> positionAt(std::size_t slot) const;
+  // Takes the slot's NPC off the map; false when it is not on it.
+  bool unloadAt(std::size_t slot);
+  // restartPath by slot.
+  bool restartPathAt(std::size_t slot);
+  // The slot of the NPC on an entity, or nothing.
+  [[nodiscard]] std::optional<std::size_t> slotOf(scene::Entity entity) const;
+
   // Holds an NPC still for a script, or lets it go (overworld.c: setMovementEnabled, stopAnim):
   // held, it stands idle; holding it starts its path over (clearMapAITable). False when no NPC has
   // that script id.
@@ -205,6 +218,7 @@ private:
 
   [[nodiscard]] Npc* find(std::int32_t scriptId);
   [[nodiscard]] const Npc* find(std::int32_t scriptId) const;
+  [[nodiscard]] const Npc* findSlot(std::size_t slot) const;
   void remove(std::size_t index);
   void setHeld(Npc& npc, bool held);
   static void restart(Npc& npc);

@@ -9,6 +9,7 @@
 #include <dwe/scene/components.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <format>
 #include <memory>
 #include <optional>
@@ -41,7 +42,8 @@ FieldScene::Actor* FieldScene::fighterActor(std::optional<std::int32_t> npc) con
       staged != stageFighters_.end()) {
     return staged->second.get();
   }
-  const std::optional<scene::Entity> entity = field_->npcs().entityOf(*npc);
+  const std::optional<scene::Entity> entity =
+      *npc >= 0 ? field_->npcs().entityAt(static_cast<std::size_t>(*npc)) : std::nullopt;
   if (!entity) {
     return nullptr;
   }
@@ -162,8 +164,8 @@ void FieldScene::releaseFighters() {
   // there the player cannot reach them again (the off-map fighters of #163): put the NPC back at
   // its record's spot, where the map loaded it (an engine improvement,
   // docs/modulos/game/battle.md).
-  const auto standOnFreeGround = [this](std::int32_t scriptId, scene::Entity entity) {
-    const assets::MapNpc* record = field_->npcs().recordOf(scriptId);
+  const auto standOnFreeGround = [this](std::size_t slot, scene::Entity entity) {
+    const assets::MapNpc* record = field_->npcs().record(slot);
     if (record == nullptr || !record->digimon || !speciesRadius_) {
       return;
     }
@@ -174,9 +176,9 @@ void FieldScene::releaseFighters() {
     }
     const glm::vec3 home = assets::toWorldPosition(record->position);
     core::logWarning(
-        "[port:battle] the fight left NPC {} at ({:.0f}, {:.0f}), not free ground; it stands at "
+        "[port:battle] the fight left the NPC in slot {} at ({:.0f}, {:.0f}), not free ground; it stands at "
         "its record's spot again ({:.0f}, {:.0f})",
-        scriptId, transform.position.x, transform.position.z, home.x, home.z);
+        slot, transform.position.x, transform.position.z, home.x, home.z);
     transform.position = home;
   };
   const auto release = [this, &standOnFreeGround](Actor& actor) {
@@ -188,9 +190,9 @@ void FieldScene::releaseFighters() {
     scene::beginTick(world_.registry().get<scene::Transform>(actor.entity));
     // The battle moved it: an NPC's path starts over from where it stands (the engine's, as a
     // hold does), so it does not head back to a waypoint target it had before the fight.
-    if (const auto* tag = world_.registry().try_get<game::field::NpcTag>(actor.entity)) {
-      standOnFreeGround(tag->scriptId, actor.entity);
-      static_cast<void>(field_->npcs().restartPath(tag->scriptId));
+    if (const auto slot = field_->npcs().slotOf(actor.entity)) {
+      standOnFreeGround(*slot, actor.entity);
+      static_cast<void>(field_->npcs().restartPathAt(*slot));
     }
   };
   release(*partnerActor_);

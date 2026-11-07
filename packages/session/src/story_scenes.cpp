@@ -102,9 +102,12 @@ public:
     if (scriptId == PartnerScriptId) {
       return PartnerEntity;
     }
-    // The field's NPCs are known to the app by their script id (MapNpc::scriptId), which stands
-    // for the entity until the field numbers its NPCs as entities.
-    return scriptId;
+    // A field NPC's entity is FirstNpcInstance + its slot: the app tells apart by it the NPCs
+    // that share a script id.
+    if (!std::in_range<std::int32_t>(scriptId)) {
+      return std::nullopt;
+    }
+    return scenes_->desc.story->npcEntity(static_cast<std::int32_t>(scriptId));
   }
 
   [[nodiscard]] std::optional<std::int64_t> talkedTo() const override {
@@ -112,6 +115,10 @@ public:
       return *talked;
     }
     return std::nullopt;
+  }
+
+  [[nodiscard]] std::optional<std::int64_t> talkedEntity() const override {
+    return scenes_->desc.story->talkedEntity();
   }
 
   void startBattle(const ScriptedBattle& battle) override {

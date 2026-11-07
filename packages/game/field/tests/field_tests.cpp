@@ -1962,6 +1962,37 @@ TEST_CASE("a script id names the spawned NPC's record when the map has several w
   CHECK(field.npcs().recordOf(5)->typeId == 2);
 }
 
+TEST_CASE("NPCs that share a script id are told apart by slot") {
+  // gcan08_1's three wild NPCs of one species share script id 5; the battle fights each from where
+  // it stands (btl.c: handleBattleStart fills COMBAT_DATA.player.entityIds with entities).
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  const std::size_t first = addNpc(map, 300.0F, 0.0F, 5);
+  const std::size_t second = addNpc(map, 600.0F, 300.0F, 5);
+  const std::size_t third = addNpc(map, 900.0F, -300.0F, 5);
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  REQUIRE(spawnNpc(field, first));
+  REQUIRE(spawnNpc(field, second));
+  REQUIRE(spawnNpc(field, third));
+  const glm::vec3 home = *field.npcs().positionAt(second);
+  CHECK(home != *field.npcs().positionAt(first));
+  CHECK(home != *field.npcs().positionAt(third));
+  // By script id the first by slot answers (script_value.c: scriptIdToEntityId).
+  CHECK(*field.npcs().positionOf(5) == *field.npcs().positionAt(first));
+  CHECK(*field.npcs().instanceOf(5) == dwe::game::field::FirstNpcInstance + first);
+  const auto entity = field.npcs().entityAt(second);
+  REQUIRE(entity.has_value());
+  CHECK(field.npcs().slotOf(*entity) == second);
+  CHECK(field.npcs().unloadAt(second));
+  CHECK_FALSE(field.npcs().positionAt(second).has_value());
+  CHECK_FALSE(field.npcs().unloadAt(second));
+  CHECK(field.npcs().positionAt(first).has_value());
+  CHECK(field.npcs().positionAt(third).has_value());
+  CHECK(field.npcs().restartPathAt(third));
+  CHECK_FALSE(field.npcs().restartPathAt(second));
+}
+
 TEST_CASE("an NPC put on the player stays where it was put; the player walks off it") {
   dwe::scene::World world;
   Field field{world, originalRules()};

@@ -3,6 +3,7 @@
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/assets/new_game_story.hpp>
 #include <dwe/core/error.hpp>
+#include <dwe/game/field/npcs.hpp>
 #include <dwe/game/save/sections.hpp>
 #include <dwe/game/story/script_motion.hpp>
 #include <dwe/game/story/story_orders.hpp>
@@ -115,6 +116,12 @@ public:
   // The script id of the NPC whose section last ran from a contact (TALKED_TO_ENTITY): a battle
   // with no predefined enemies fights it.
   [[nodiscard]] std::optional<std::int32_t> talkedTo() const { return talkedTo_; }
+  // The entity of that NPC (TALKED_TO_ENTITY is an entity: FirstNpcInstance + its slot), which
+  // tells it apart from NPCs with the same script id; nothing when it is no longer on the field.
+  [[nodiscard]] std::optional<std::int64_t> talkedEntity() const;
+  // The entity of the field's NPC with a script id, the first by slot (script_value.c:
+  // scriptIdToEntityId walks ENTITY_TABLE in order); nothing without the field or such an NPC.
+  [[nodiscard]] std::optional<std::int64_t> npcEntity(std::int32_t scriptId) const;
   // The NPC orders, for the other orders that hold an NPC (a textbox's speaker: holdOwner); null
   // before the rules are read.
   [[nodiscard]] game::story::NpcOrders* npcOrders() { return npcOrders_.get(); }
@@ -250,6 +257,7 @@ private:
   // Whether a script ran at the end of the last tick.
   bool scriptRan_ = false;
   std::optional<std::int32_t> talkedTo_;
+  std::optional<scene::Entity> talkedNpc_;
   std::unique_ptr<StoryMapChanges> mapChanges_;
   std::unique_ptr<StoryFieldControl> fieldControl_;
   std::unique_ptr<StoryActorsLink> actors_;

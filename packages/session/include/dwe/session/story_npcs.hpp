@@ -46,6 +46,9 @@ public:
   bool holdNpc(std::int64_t scriptId, bool held) override;
   void holdAllNpcs(bool held) override;
 
+  // The field's NPCs, or nullptr while none is attached.
+  [[nodiscard]] const game::field::FieldNpcs* field() const { return npcs_; }
+
 private:
   game::field::FieldNpcs* npcs_ = nullptr;
   const std::optional<assets::DigimonTable>* species_ = nullptr;
