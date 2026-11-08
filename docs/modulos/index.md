@@ -27,6 +27,7 @@ capas y lo que puede usar cada una están en las [reglas de dependencias](../arc
 | [video](engine/video.md) | Las películas: leer el vídeo frame a frame y dar la imagen de cada momento |
 | [ruleset](engine/ruleset.md) | El formato de ruleset, las estrategias por nombre y el reloj de juego |
 | [debug](engine/debug.md) | Consola y paneles de desarrollo con Dear ImGui |
+| [net](engine/net.md) | Red entre dos máquinas: UDP, canal fiable y ordenado, lockstep y códigos para unirse |
 
 ## Juego (`packages/game/`)
 
@@ -42,6 +43,7 @@ capas y lo que puede usar cada una están en las [reglas de dependencias](../arc
 | [gym](game/gym.md) | El gimnasio del pueblo: la coreografía de los cursos y la cuenta de las ganancias |
 | [tournament](game/tournament.md) | Los torneos de la arena: rivales, cuadro, rivales generados y victorias |
 | [curling](game/curling.md) | El juego de las piedras sobre el hielo: deslizamiento, choques, puntos y el rival |
+| [versus](game/versus.md) | El versus en línea: identidad, serie, alineaciones y resultados entre dos máquinas en lockstep |
 | [story](game/story.md) | El estado de la historia y el runtime de los scripts de eventos |
 | [save](game/save.md) | Partidas guardadas versionadas, ranuras y autoguardado |
 | [modes](game/modes.md) | Los modos de juego: el manifiesto `mode.yaml` y el catálogo de los paquetes |

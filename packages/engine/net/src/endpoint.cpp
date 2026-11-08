@@ -4,6 +4,7 @@
 #include <charconv>
 #include <cstddef>
 #include <format>
+#include <optional>
 #include <string>
 
 namespace dwe::net {
@@ -123,12 +124,16 @@ core::Result<Endpoint> parseJoinCode(std::string_view code) {
   return endpoint;
 }
 
-core::Result<Endpoint> parseJoinTarget(std::string_view text) {
+core::Result<Endpoint> parseJoinTarget(std::string_view text, std::uint16_t defaultPort) {
   while (!text.empty() && text.front() == ' ') {
     text.remove_prefix(1);
   }
   while (!text.empty() && text.back() == ' ') {
     text.remove_suffix(1);
+  }
+  if (text.find(':') == std::string_view::npos && text.find('.') != std::string_view::npos &&
+      defaultPort != 0) {
+    return parseEndpoint(std::format("{}:{}", text, defaultPort));
   }
   if (text.find('.') != std::string_view::npos || text.find(':') != std::string_view::npos) {
     return parseEndpoint(text);

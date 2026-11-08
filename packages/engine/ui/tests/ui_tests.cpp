@@ -1951,8 +1951,12 @@ TEST_CASE("the main menu opens the options over the title with the keyboard and 
   CHECK(ui->elementText("main_menu", "options") == "Opciones");
   CHECK(ui->elementText("main_menu", "quit") == "Salir del juego");
 
-  // Continue is greyed without a save, so down goes to Options, which asks the title for the
-  // pause menu's options page (title_options.hpp) and hides the menu's box meanwhile.
+  // Continue is greyed without a save, so down goes to the online versus and then to Options,
+  // which asks the title for the pause menu's options page (title_options.hpp) and hides the
+  // menu's box meanwhile.
+  press(*ui, input, input::keys::Down);
+  CHECK(ui->focusedElementId("main_menu") == "versus");
+  CHECK(ui->elementText("main_menu", "versus") == "Versus en línea");
   press(*ui, input, input::keys::Down);
   REQUIRE(ui->focusedElementId("main_menu") == "options");
   press(*ui, input, input::keys::Return);
@@ -1968,6 +1972,7 @@ TEST_CASE("the main menu opens the options over the title with the keyboard and 
   press(*ui, input, input::keys::LeftCtrl);
   CHECK(ui->isVisible("main_menu"));
 
+  press(*ui, input, input::keys::Up);
   press(*ui, input, input::keys::Up);
   REQUIRE(ui->focusedElementId("main_menu") == "play");
   press(*ui, input, input::keys::Return);

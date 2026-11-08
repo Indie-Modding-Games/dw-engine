@@ -36,11 +36,11 @@ La carpeta de un módulo también limita lo que puede usar ([estructura del repo
 | Capa | Puede depender de |
 |---|---|
 | `core` | La librería estándar y dependencias de terceros básicas |
-| `platform`, `rhi` | `core` |
+| `platform`, `rhi`, `net` | `core` |
 | `render`, `audio`, `input`, `assets`, `localization`, `animation`, `scene`, `signs`, `video` | Capas base, `core` y otros sistemas, sin ciclos (`animation`, `audio`, `render`, `localization`, `signs` y `video` usan `assets`) |
 | `script`, `ui`, `debug`, `ruleset` | Sistemas, base y `core` |
-| `packages/game/*` | Servicios, sistemas y `core`; **no** `rhi` ni `platform` |
-| `packages/session` | `packages/game/*`, servicios, sistemas y `core`; **no** `rhi`, `platform` ni `render` (corre sin ventana en `dwe-sim` y en los tests) |
+| `packages/game/*` | Servicios, sistemas, `net` y `core`; **no** `rhi` ni `platform` |
+| `packages/session` | `packages/game/*`, servicios, sistemas, `net` y `core`; **no** `rhi`, `platform` ni `render` (corre sin ventana en `dwe-sim` y en los tests) |
 | `packages/screens` | `packages/session`, `packages/game/*`, `ui`, `ruleset`, `localization`, `assets` y `core`; **no** `rhi`, `platform` ni `render` (los modelos de vista de las pantallas, probados sin ventana) |
 | `apps/game` | Todo excepto `formats` |
 | `packages/content` | `assets`, `platform` y `core` (`platform` para la carpeta de datos del usuario y para ejecutar `dwx`) |

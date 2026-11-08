@@ -1817,3 +1817,40 @@ dificultad.
 | Tienda de cartas sin repetidas («Card stock without repeats») | `fair_card_stock` | `card_shop.quirks.stock_repeats` | `dailyPStatTrigger` compara el hueco consigo mismo, así que una carta puede ocupar dos huecos el mismo día. Con la opción la repetida se vuelve a sortear |
 
 Prueba: `rule_options_tests.cpp`.
+
+## Versus en línea
+
+«Versus en línea» («Online versus» en inglés) sale en el menú del título (con el aspecto moderno es su propia fila;
+con el original, «Modo batalla» pregunta si jugarlo). El versus del original era de dos mandos en una consola; aquí es
+de dos máquinas: cada jugador trae los compañeros que registró en la máquina de registro de su partida, y el combate
+corre en las dos a la vez en lockstep ([versus](../game/versus.md), [net](../engine/net.md)). La demostración del
+título no cambia: no usa red.
+
+`VersusFlow` (`versus_flow.hpp`) es el flujo sin UI y `VersusScreen` lo pone en el documento `ui/versus` con enlaces
+UDP de verdad; los tests usan dos flujos sobre `net::LoopbackNetwork`. Nada de esto escribe la partida: el original
+tampoco guarda nada del versus.
+
+1. **Crear partida**: el anfitrión elige 1, 3 o 5 combates y espera. La pantalla enseña sus direcciones con el puerto
+   (UDP 47120) y el código corto de cada una, y avisa de que por internet hay que abrir o redirigir ese puerto.
+2. **Unirse a una partida**: el invitado escribe el código o la dirección (con o sin puerto); una entrada que no vale
+   se queda en la pantalla con un aviso, y Volver borra la última letra.
+3. Los dos eligen la partida de la que traen compañeros (una partida necesita tantos registrados como combates tiene
+   la serie) y un compañero por combate, sin repetir.
+4. Cada combate: el reloj, el marcador, los dos luchadores con barras de PV, PM y remate, las órdenes del menú de este
+   lado y lo último que pasó. Las órdenes viajan con 3 frames de retraso; si el otro se retrasa, el combate espera y
+   lo dice. Volver dos veces abandona la serie.
+5. Entre combates, el resultado y el marcador; al final, el ganador de la serie y cada combate.
+6. Si algo falla, un mensaje claro: el anfitrión no responde, se perdió la conexión, el otro abandonó, otra versión,
+   otro contenido, un compañero que este contenido no tiene, desincronización o un mensaje dañado.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Número de combates | `vs_select.c: VS__tickSelectMode`: 1, 3 o 5 (`VS__BATTLE_COUNTS`), y 3 o 5 solo si los dos registraron al menos tantos | El anfitrión elige de `versus.series` del ruleset; como no conoce aún la partida del invitado, una partida con menos registrados que combates no se puede elegir | `vs_select.c: a partner is picked once and a save needs one per battle` | Suposición (adaptado a dos máquinas) |
+| Un compañero por combate, sin repetir | `vs_select.c: VS__isAlreadySelected`, `VS__handleDigimonSelected` | `VersusFlow::pickPartner`; Volver quita el último | el mismo test | Igual |
+| Elegir arena | `vs_select.c: VS__tickSelectMap` | Sin elección: la serie lleva arena 0 y el combate se dibuja como panel | — | Hueco |
+| La serie entera | `vs_scene.c: VS_initializeVS` | `VersusFlow` sobre `session::VersusSeries` | `two machines play an online versus series from the menus to the result` | Igual (las reglas); presentación propia |
+| Abandonar y fallos de red | — (una consola) | Mensajes por motivo, tiempos de 10 s y 8 s | `a wrong address stays on the entry...`, `a player who leaves a battle ends the series...` | Mejora (en línea) |
+| Presentación 3D | `vs_scene.c: VS_playVersusIntroSequence`, cámaras `VS_*Camera*`, letreros `VS_*ModelScene` | El combate se enseña como panel (barras, reloj, órdenes y registro), no en la arena 3D | — | Hueco |
+
+Se probó en vivo con dos juegos en la misma máquina por `127.0.0.1`: unirse, elegir, órdenes de los dos lados y el
+abandono de uno, que el otro ve como «El otro jugador ha abandonado la serie».

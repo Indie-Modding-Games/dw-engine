@@ -27,7 +27,9 @@ struct Endpoint {
 [[nodiscard]] std::string joinCodeOf(const Endpoint& endpoint);
 // Reads a join code back, ignoring case, spaces and dashes, and taking I and L for 1 and O for 0.
 [[nodiscard]] core::Result<Endpoint> parseJoinCode(std::string_view code);
-// A join code or an address, whichever the text is.
-[[nodiscard]] core::Result<Endpoint> parseJoinTarget(std::string_view text);
+// A join code or an address, whichever the text is; an address without a port takes
+// `defaultPort` (none: it needs one).
+[[nodiscard]] core::Result<Endpoint> parseJoinTarget(std::string_view text,
+                                                     std::uint16_t defaultPort = 0);
 
 } // namespace dwe::net

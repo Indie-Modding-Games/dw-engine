@@ -20,6 +20,7 @@ dw-engine/
 │  ├─ engine/               módulos del motor (modulos/engine/)
 │  │  ├─ core/              Result, log, YAML, JSON Schema, matemáticas
 │  │  ├─ platform/          ventana, eventos y mandos (SDL3)
+│  │  ├─ net/               UDP, canal fiable, lockstep y códigos para unirse
 │  │  ├─ rhi/               el único que habla con Vulkan; shaders/ tiene los módulos de Slang compartidos
 │  │  ├─ render/
 │  │  ├─ audio/
@@ -41,6 +42,7 @@ dw-engine/
 │  │  ├─ field/             movimiento, colisión, warps, seguimiento del partner
 │  │  ├─ inventory/         bolsa, dinero, uso de objetos y tiendas
 │  │  ├─ fishing/ · weather/ · gym/ · tournament/ · curling/
+│  │  ├─ versus/            el versus en línea entre dos máquinas
 │  │  ├─ story/             estado de la historia y scripts de eventos
 │  │  └─ save/              partidas guardadas: ranuras, autoguardado y migraciones
 │  ├─ session/              la partida: junta los sistemas de packages/game/, sin ventana

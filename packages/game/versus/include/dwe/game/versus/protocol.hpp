@@ -15,6 +15,11 @@ namespace dwe::game::versus {
 
 // The version of the messages below: two machines talk only with the same one.
 inline constexpr std::uint32_t ProtocolVersion = 1;
+// The UDP port a host listens on, and a guest's address without one goes to.
+inline constexpr std::uint16_t DefaultPort = 47120;
+// The battle frames each side's commands are scheduled ahead: a 150 ms delay at 20 frames a
+// second, which hides most of a home connection's round trip.
+inline constexpr std::uint32_t DefaultInputDelay = 3;
 
 // A partner a player brings to a versus series: its registered record (main_menu.c:
 // registerBattleData), which is all the other machine needs to build the same fighter from its own

@@ -159,11 +159,14 @@ dwe_add_app(game
         src/ui_demo.cpp
         src/ui_skin_setting.cpp
         src/user_settings.cpp
+        src/versus_flow.cpp
+        src/versus_screen.cpp
         src/field_scene_weather.cpp
         src/weather_particles.cpp
         src/weather_drawer.cpp
         src/weather_ambience.cpp
     DEPS core platform audio video rhi assets localization animation render signs input script ui debug scene ruleset field partner save content session battle inventory screens story evolution gym fishing tournament curling weather modes
+    DEPS core platform audio video rhi assets localization animation render signs input script ui debug scene ruleset field partner save content session battle inventory screens story evolution gym fishing tournament curling weather versus net
     OUTPUT_NAME dwe-game)
 
 dwe_add_shaders(game FILES shaders/test_scene.slang shaders/scene_prims.slang shaders/weather.slang)
@@ -234,6 +237,12 @@ if(BUILD_TESTING)
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::field dwe::evolution
                                                  dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render dwe::signs
                                                  dwe::ruleset dwe::curling dwe::weather dwe::audio dwe::debug dwe::modes dwe_test_main)
+                                  src/title_options.cpp src/versus_flow.cpp)
+    target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
+                                                 dwe::script dwe::save dwe::partner dwe::session dwe::field dwe::evolution
+                                                 dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render dwe::signs
+                                                 dwe::ruleset dwe::curling dwe::weather dwe::audio dwe::debug dwe::versus dwe::net
+                                                 dwe_test_main)
     # The session's test packs and made-up species (session_fixture.hpp), for the save debug command.
     target_include_directories(dwe_game_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
                                                       ${PROJECT_SOURCE_DIR}/packages/session/tests

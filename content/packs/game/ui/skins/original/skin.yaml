@@ -49,6 +49,9 @@ screens:
   # El menú de desarrollo (F2), también.
   dev_menu:
     styles: [ui/skins/original/pause_menu/style]
+  # El versus en línea: los paneles del menú de pausa.
+  versus:
+    styles: [ui/skins/original/pause_menu/style]
   item_keeper:
     styles: [ui/skins/original/item_keeper/style]
   # El menú para elegir un objeto de la bolsa (tirar uno con la bolsa llena): las cajas y los rótulos del guardián.
@@ -146,6 +149,8 @@ document_classes:
   new_game_rules:
     panel: [skin-original]
   new_game_mode:
+    panel: [skin-original]
+  versus:
     panel: [skin-original]
   sleep_menu:
     panel: [skin-original]

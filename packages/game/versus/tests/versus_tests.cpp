@@ -182,8 +182,9 @@ TEST_CASE("a whole series in lockstep over a bad link, round by round") {
     pair.run(5);
     REQUIRE(pair.guest.startRound());
     for (int frame = 0; frame < 400 && pair.host.series().round() == round; ++frame) {
-      playFrame(pair.host, hostBattle, frame % 4, 120 + (round * 10));
-      playFrame(pair.guest, guestBattle, frame % 3, 120 + (round * 10));
+      const auto length = static_cast<std::uint32_t>(120 + (round * 10));
+      playFrame(pair.host, hostBattle, static_cast<std::uint32_t>(frame % 4), length);
+      playFrame(pair.guest, guestBattle, static_cast<std::uint32_t>(frame % 3), length);
       pair.run(1);
     }
     pair.run(20);

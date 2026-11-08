@@ -42,6 +42,8 @@ TEST_CASE("a join code holds the endpoint in ten letters and reads back") {
   CHECK(parseJoinCode(loose).value_or(Endpoint{}) == endpoint);
   CHECK(parseJoinTarget(" " + code + " ").value_or(Endpoint{}) == endpoint);
   CHECK(parseJoinTarget("203.0.113.7:7250").value_or(Endpoint{}) == endpoint);
+  CHECK(parseJoinTarget("203.0.113.7", 7250).value_or(Endpoint{}) == endpoint);
+  CHECK_FALSE(parseJoinTarget("203.0.113.7"));
   CHECK_FALSE(parseJoinCode("ABCDE"));
   CHECK_FALSE(parseJoinCode("ZZZZZ-ZZZZZ"));
   CHECK_FALSE(parseJoinCode("ABCDE-1234U"));

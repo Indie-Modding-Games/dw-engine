@@ -96,6 +96,7 @@
 #include "title_screen.hpp"
 #include "ui_skin_setting.hpp"
 #include "user_settings.hpp"
+#include "versus_screen.hpp"
 #include "volume_setting.hpp"
 #include "walk_control.hpp"
 
@@ -886,6 +887,8 @@ int runGame(const Options& requested) {
                                start);
   }};
   TitleScreen title{files, options, !autotest, **ui};
+  // «Versus en línea» from the title's menu (versus_screen.hpp): no game behind it.
+  VersusScreen versus{files, options, !autotest, **ui};
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
   // What waits for the movie that plays: the title, or a game to start (main.c: main).
@@ -1365,7 +1368,8 @@ int runGame(const Options& requested) {
 
     // A naming box open takes the keyboard's text as well as its keys.
     const bool takesText = (interview && interview->takesText()) ||
-                           (flow.playing() != nullptr && flow.playing()->takesText());
+                           (flow.playing() != nullptr && flow.playing()->takesText()) ||
+                           (flow.playing() == nullptr && versus.takesText());
     if (auto switched = window->setTextInput(takesText); !switched) {
       core::logDebug("game: {}", switched.error().message);
     }
@@ -1373,6 +1377,8 @@ int runGame(const Options& requested) {
       interview->type(typed, typedEnter);
     } else if (flow.playing() != nullptr && flow.playing()->takesText()) {
       flow.playing()->type(typed, typedEnter);
+    } else if (flow.playing() == nullptr && versus.takesText()) {
+      versus.type(typed, typedEnter);
     }
 
     const double now = platform->nowSeconds();
@@ -1545,6 +1551,12 @@ int runGame(const Options& requested) {
         input.endTick();
         ++ticksRun;
         continue;
+      }
+      if (flow.playing() == nullptr && versus.active()) {
+        versus.tick(platform->nowSeconds());
+        if (versus.takeClosed()) {
+          title.show();
+        }
       }
       if (flow.playing() != nullptr || !title.landing()) {
         titleIdleTicks = 0;
@@ -1764,6 +1776,15 @@ int runGame(const Options& requested) {
       // With no game the options page's rows that only a game applies are kept for the next one.
       if (flow.playing() == nullptr &&
           changeGameToggle(command, **ui, userSettings, settingsFile)) {
+        continue;
+      }
+      if (flow.playing() == nullptr && command.name == VersusCommand) {
+        if (versus.open()) {
+          title.hide();
+        }
+        continue;
+      }
+      if (flow.playing() == nullptr && versus.handle(command)) {
         continue;
       }
       if (flow.playing() == nullptr && title.handle(command)) {

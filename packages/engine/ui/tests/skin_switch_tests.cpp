@@ -36,19 +36,11 @@ constexpr std::array<std::string_view, 6> Screens{"hud",    "pause_menu",   "mai
                                                   "battle", "partner_menu", "save_slots"};
 
 // The other screens that take the pause menu's panel and entries in both looks (skin.yaml).
-constexpr std::array<std::string_view, 13> PanelScreens{"destination_choice",
-                                                        "dialog",
-                                                        "new_game_rules",
-                                                        "sleep_menu",
-                                                        "gym_stats",
-                                                        "shop_menu",
-                                                        "naming_box",
-                                                        "fishing_bait",
-                                                        "fishing_notice",
-                                                        "gym_slots",
-                                                        "egg_box",
-                                                        "new_game_mode",
-                                                        "dev_menu"};
+constexpr std::array<std::string_view, 14> PanelScreens{
+    "destination_choice", "dialog",    "new_game_rules", "sleep_menu",
+    "gym_stats",          "shop_menu", "naming_box",     "fishing_bait",
+    "fishing_notice",     "gym_slots", "egg_box",        "new_game_mode",
+    "dev_menu",           "versus"};
 
 assets::AssetId idOf(std::string_view text) {
   auto id = assets::AssetId::parse(text);
@@ -588,6 +580,8 @@ TEST_CASE("a live switch restyles every document in place and keeps its state") 
   ui->show("hud");
   ui->show("main_menu", true);
   frame(*ui, input);
+  // Continue is greyed without a save: down goes to the online versus, then to Options.
+  press(*ui, input, input::keys::Down);
   press(*ui, input, input::keys::Down);
   REQUIRE(ui->focusedElementId("main_menu") == "options");
   const std::vector<std::string> modern = textColours(*ui);

@@ -51,7 +51,7 @@ void closeNative(Native socket) {
 
 bool makeNonBlocking(Native socket) {
   u_long on = 1;
-  return ioctlsocket(socket, FIONBIO, &on) == 0;
+  return ioctlsocket(socket, static_cast<long>(FIONBIO), &on) == 0;
 }
 
 std::string lastError() {

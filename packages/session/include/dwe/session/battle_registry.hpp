@@ -9,6 +9,11 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
+
+namespace dwe::game::save {
+struct SaveFile;
+} // namespace dwe::game::save
 
 namespace dwe::session {
 
@@ -80,5 +85,10 @@ private:
 // name the player gave it, its maximum stats, its discipline and its first three equipped moves.
 [[nodiscard]] core::Result<RegisteredPartner> registeredPartnerOf(const GameSession& session,
                                                                   const BattleAdapter& battle);
+
+// The partners a save file registered, in slot order, without starting its game: what a versus
+// player picks its lineup from (main_menu.c: drawRegisteredDigimonSlots lists a card's records).
+[[nodiscard]] core::Result<std::vector<RegisteredPartner>>
+registeredPartnersIn(const game::save::SaveFile& file);
 
 } // namespace dwe::session

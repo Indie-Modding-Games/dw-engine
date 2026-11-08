@@ -54,7 +54,7 @@ flowchart TB
         game_app[game] --- session[session] --- screens[screens] --- content[content] --- dwx[dwx] --- sim[sim]
     end
     subgraph gameplay[game: reglas del juego]
-        partner --- evolution --- battle --- field --- story --- inventory --- save --- minigames[fishing, weather, gym, tournament, curling]
+        partner --- evolution --- battle --- field --- story --- inventory --- save --- minigames[fishing, weather, gym, tournament, curling, versus]
     end
     subgraph services[servicios]
         script[script: Lua 5.5 + sol2] --- ui[ui: RmlUi] --- debug[debug: Dear ImGui] --- ruleset[ruleset: reglas y reloj]
@@ -63,7 +63,7 @@ flowchart TB
         render --- audio --- video[video: películas] --- input[input: acciones] --- assets[assets: VFS y paquetes] --- localization[localization: textos por idioma] --- signs[signs: carteles] --- animation --- scene[scene: ECS]
     end
     subgraph base[base]
-        rhi[rhi: Vulkan] --- platform[platform: SDL3]
+        rhi[rhi: Vulkan] --- platform[platform: SDL3] --- net[net: UDP y lockstep]
     end
     core[core: tipos, matemáticas, log, memoria, errores]
     formats[formats: lectores de PS1]

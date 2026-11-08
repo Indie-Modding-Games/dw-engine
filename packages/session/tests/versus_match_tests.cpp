@@ -1,11 +1,13 @@
-#include <dwe/assets/digimon_table.hpp>
 #include <dwe/game/battle/battle.hpp>
+#include <dwe/game/save/save_file.hpp>
+#include <dwe/game/save/sections.hpp>
 #include <dwe/game/versus/link.hpp>
 #include <dwe/net/loopback.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/battle_registry.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/versus_match.hpp>
+#include <dwe/session/versus_series.hpp>
 
 #include <doctest/doctest.h>
 
@@ -19,11 +21,9 @@
 
 #include "adapter_fixture.hpp"
 #include "packages/game/battle/tests/fixture.hpp"
+#include "versus_fixture.hpp"
 
-using dwe::assets::DigimonRow;
-using dwe::assets::DigimonTable;
 using dwe::game::battle::Battle;
-using dwe::game::battle::BattleKind;
 using dwe::game::battle::BattleResult;
 using dwe::game::battle::Command;
 using dwe::game::battle::Outcome;
@@ -32,85 +32,21 @@ using dwe::game::battle::RivalId;
 using dwe::game::versus::LinkPhase;
 using dwe::game::versus::RoundResult;
 using dwe::game::versus::SeriesSetup;
-using dwe::game::versus::Side;
 using dwe::game::versus::VersusFighter;
 using dwe::game::versus::VersusLink;
-using dwe::net::LinkConditions;
 using dwe::net::LoopbackNetwork;
 using dwe::net::Millis;
-using dwe::session::BattleAdapter;
-using dwe::session::BattleAdapterDesc;
-using dwe::session::GameSession;
 using dwe::session::RegisteredPartner;
-using dwe::session::SessionSystem;
 using dwe::session::VersusPlacement;
+using dwe::session::VersusSeries;
 using dwe::session::testing::errorOf;
-using dwe::session::testing::newGameWith;
 using dwe::session::testing::TestPacks;
+using versus_test::Machine;
+using versus_test::registered;
 
 namespace {
 
 constexpr Millis Frame{50};
-
-DigimonRow madeUpRow(std::string id, std::int32_t index, std::vector<std::string> moves) {
-  DigimonRow row;
-  row.id = std::move(id);
-  row.index = index;
-  row.name = row.id;
-  row.radius = 100;
-  row.type = 2;
-  row.level = 3;
-  row.special = {1, std::nullopt, std::nullopt};
-  for (std::size_t slot = 0; slot < moves.size(); ++slot) {
-    if (!moves[slot].empty()) {
-      row.moves.at(slot) = moves[slot];
-    }
-  }
-  return row;
-}
-
-// The new game partner the session needs, and two made-up species for the registries.
-DigimonTable madeUpSpecies() {
-  std::vector<DigimonRow> rows;
-  rows.push_back(madeUpRow("agum", 8, {"punch", "shot", "", "", "big_finish"}));
-  rows.push_back(madeUpRow("first_kind", 20, {"punch", "shot", "dynamite_kick", "", "big_finish"}));
-  rows.push_back(madeUpRow("second_kind", 21, {"punch", "shot", "", "big_finish"}));
-  return DigimonTable{std::move(rows)};
-}
-
-// The adapter's description with the made-up tables.
-BattleAdapterDesc madeUpTables(const TestPacks& packs) {
-  BattleAdapterDesc desc{&packs.files(), madeUpSpecies(), battle_test::testMoveTable(), nullptr};
-  return desc;
-}
-
-// One player's machine: its own session and battle adapter over the same packs.
-struct Machine {
-  explicit Machine(const TestPacks& packs) {
-    auto adapter = std::make_unique<BattleAdapter>(madeUpTables(packs));
-    battle = adapter.get();
-    std::vector<std::unique_ptr<SessionSystem>> systems;
-    systems.push_back(std::move(adapter));
-    session = newGameWith(packs, std::move(systems));
-  }
-
-  std::unique_ptr<GameSession> session;
-  BattleAdapter* battle = nullptr;
-};
-
-RegisteredPartner registered(std::string name, std::string species, std::int32_t brains,
-                             std::int32_t discipline) {
-  return {.name = std::move(name),
-          .species = std::move(species),
-          .hp = 400,
-          .mp = 300,
-          .offense = 120,
-          .defense = 60,
-          .speed = 100,
-          .brains = brains,
-          .discipline = discipline,
-          .techniques = {std::string{"punch"}, std::string{"shot"}, std::nullopt}};
-}
 
 VersusFighter fighterOf(RegisteredPartner partner) {
   return dwe::session::versusFighterOf(partner);
@@ -129,56 +65,6 @@ std::uint32_t inputAt(const Battle& battle, dwe::game::battle::FighterId side, s
   }
   return dwe::session::versusInputOf(menu.at(static_cast<std::size_t>(frame / 37) % menu.size()));
 }
-
-// A side of the series: the link and the battle that runs on its machine.
-struct Player {
-  Machine* machine;
-  VersusLink link;
-  std::optional<Battle> battle;
-  std::int64_t frame = 0;
-
-  void startIfDue() {
-    if (link.phase() != LinkPhase::Playing || battle || link.lockstep() != nullptr) {
-      return;
-    }
-    REQUIRE(link.startRound());
-    const std::int32_t round = link.series().round();
-    const VersusFighter& host = link.lineup(Side::Host)->at(static_cast<std::size_t>(round));
-    const VersusFighter& guest = link.lineup(Side::Guest)->at(static_cast<std::size_t>(round));
-    auto started = machine->battle->startVersus(host, guest, Arena,
-                                                dwe::session::roundSeed(*link.setup(), round));
-    REQUIRE_MESSAGE(started, errorOf(started));
-    battle.emplace(std::move(*started));
-  }
-
-  void playFrame() {
-    startIfDue();
-    if (!battle || link.lockstep() == nullptr || link.awaitingResult()) {
-      return;
-    }
-    const auto side = link.side() == Side::Host ? PartnerId : RivalId;
-    link.submitInput(inputAt(*battle, side, frame++));
-    while (link.lockstep() != nullptr && !link.awaitingResult()) {
-      const auto inputs = link.lockstep()->ready();
-      if (!inputs) {
-        break;
-      }
-      dwe::session::commandVersus(*battle, *inputs);
-      battle->step();
-      link.playedTick(battle->checksum());
-      if (battle->finished()) {
-        link.finishRound(dwe::session::roundResultOf(*battle->result()), battle->checksum());
-      }
-    }
-  }
-
-  // Once both agreed on the battle's result, the next one may start.
-  void settle() {
-    if (battle && battle->finished() && !link.awaitingResult()) {
-      battle.reset();
-    }
-  }
-};
 
 } // namespace
 
@@ -284,42 +170,73 @@ TEST_CASE("a whole versus series between two machines over a bad link plays the 
   REQUIRE_MESSAGE(identity, errorOf(identity));
   LoopbackNetwork network{{.latency = Millis{30}, .jitter = Millis{40}, .lossPercent = 10}, 9};
   const SeriesSetup setup{.battles = 3, .arena = 0, .seed = 1234, .inputDelay = 3};
-  Player host{.machine = &hostMachine,
-              .link = VersusLink::host(network.peer(0), *identity, setup),
-              .battle = std::nullopt};
-  Player guest{.machine = &guestMachine,
-               .link = VersusLink::guest(network.peer(1), *identity),
-               .battle = std::nullopt};
+  VersusSeries host{*hostMachine.battle, VersusLink::host(network.peer(0), *identity, setup),
+                    Arena};
+  VersusSeries guest{*guestMachine.battle, VersusLink::guest(network.peer(1), *identity), Arena};
+  CHECK(host.localFighter() == PartnerId);
+  CHECK(guest.localFighter() == RivalId);
   const auto run = [&](int frames) {
     for (int frame = 0; frame < frames; ++frame) {
-      host.link.poll(network.now());
-      guest.link.poll(network.now());
+      host.poll(network.now());
+      guest.poll(network.now());
       network.advance(Frame);
     }
   };
   run(20);
-  REQUIRE(host.link.phase() == LinkPhase::Lineups);
-  REQUIRE(host.link.sendLineup({fighterOf(registered("a", "first_kind", 300, 90)),
-                                fighterOf(registered("b", "second_kind", 150, 40)),
-                                fighterOf(registered("c", "first_kind", 600, 70))}));
-  REQUIRE(guest.link.sendLineup({fighterOf(registered("x", "second_kind", 500, 60)),
-                                 fighterOf(registered("y", "first_kind", 250, 100)),
-                                 fighterOf(registered("z", "second_kind", 50, 10))}));
+  REQUIRE(host.link().phase() == LinkPhase::Lineups);
+  CHECK_FALSE(host.startNext());
+  REQUIRE(host.link().sendLineup({fighterOf(registered("a", "first_kind", 300, 90)),
+                                  fighterOf(registered("b", "second_kind", 150, 40)),
+                                  fighterOf(registered("c", "first_kind", 600, 70))}));
+  REQUIRE(guest.link().sendLineup({fighterOf(registered("x", "second_kind", 500, 60)),
+                                   fighterOf(registered("y", "first_kind", 250, 100)),
+                                   fighterOf(registered("z", "second_kind", 50, 10))}));
   run(20);
-  REQUIRE(host.link.phase() == LinkPhase::Playing);
+  REQUIRE(host.link().phase() == LinkPhase::Playing);
+  std::int32_t battles = 0;
   // Three battles of at most 99 seconds and their ends, at a frame a tick.
-  for (int frame = 0; frame < 9000 && host.link.phase() == LinkPhase::Playing; ++frame) {
-    host.playFrame();
-    guest.playFrame();
+  for (std::int64_t frame = 0; frame < 9000 && host.link().phase() == LinkPhase::Playing; ++frame) {
+    for (VersusSeries* side : {&host, &guest}) {
+      if (side->battle() == nullptr || side->roundSettled()) {
+        if (side->startNext() && side == &host) {
+          ++battles;
+        }
+      }
+      if (const Battle* battle = side->battle()) {
+        if (const std::uint32_t input = inputAt(*battle, side->localFighter(), frame)) {
+          side->command(dwe::session::versusCommandOf(input));
+        }
+      }
+      (void)side->frame();
+    }
     run(1);
-    host.settle();
-    guest.settle();
   }
   run(20);
-  INFO("host failure ", static_cast<int>(host.link.failure()), ", guest failure ",
-       static_cast<int>(guest.link.failure()));
-  CHECK(host.link.phase() == LinkPhase::Finished);
-  CHECK(guest.link.phase() == LinkPhase::Finished);
-  CHECK(host.link.series().results() == guest.link.series().results());
-  CHECK(host.link.series().results().size() == 3);
+  INFO("host failure ", static_cast<int>(host.link().failure()), ", guest failure ",
+       static_cast<int>(guest.link().failure()));
+  CHECK(battles == 3);
+  CHECK(host.link().phase() == LinkPhase::Finished);
+  CHECK(guest.link().phase() == LinkPhase::Finished);
+  CHECK(host.link().series().results() == guest.link().series().results());
+  CHECK(host.link().series().results().size() == 3);
+  CHECK(host.battle()->checksum() == guest.battle()->checksum());
+}
+
+TEST_CASE("a save's registered partners are read without starting its game") {
+  dwe::session::BattleRegistry registry;
+  REQUIRE(registry.registerAt(4, registered("late", "second_kind", 100, 50)));
+  REQUIRE(registry.registerAt(1, registered("early", "first_kind", 200, 60)));
+  dwe::game::save::SaveSections sections;
+  REQUIRE(registry.addSaveSections(sections));
+  dwe::game::save::SaveFile file;
+  REQUIRE(sections.write(file));
+  auto partners = dwe::session::registeredPartnersIn(file);
+  REQUIRE_MESSAGE(partners, errorOf(partners));
+  REQUIRE(partners->size() == 2);
+  CHECK(partners->at(0).name == "early");
+  CHECK(partners->at(1) == registered("late", "second_kind", 100, 50));
+  // A save from before the registry has none.
+  auto none = dwe::session::registeredPartnersIn(dwe::game::save::SaveFile{});
+  REQUIRE_MESSAGE(none, errorOf(none));
+  CHECK(none->empty());
 }

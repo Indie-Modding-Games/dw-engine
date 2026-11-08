@@ -83,6 +83,7 @@ public:
   core::Result<void> startRound();
   // The battle that runs, if any.
   [[nodiscard]] net::Lockstep* lockstep() { return lockstep_ ? &*lockstep_ : nullptr; }
+  [[nodiscard]] const net::Lockstep* lockstep() const { return lockstep_ ? &*lockstep_ : nullptr; }
   // Sends this side's input of the next tick when the lockstep wants it.
   void submitInput(std::uint32_t input);
   // Sends that the tick to play was played and left the battle with `checksum`.

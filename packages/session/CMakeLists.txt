@@ -16,6 +16,7 @@ dwe_add_module(session
         src/game_hooks.cpp
         src/tournament_adapter.cpp
         src/versus_match.cpp
+        src/versus_series.cpp
         src/curling_adapter.cpp
         src/poop_adapter.cpp
         src/cards_adapter.cpp
