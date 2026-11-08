@@ -23,9 +23,9 @@ using Matrix = EffectMatrix;
 [[nodiscard]] std::int32_t cos512(std::int32_t angle);
 using core::original::atan4096;
 // libgte rsin, rcos (4096 per turn) and ratan2 (from -2048 to 2048).
+using core::original::ratan2;
 using core::original::rcos;
 using core::original::rsin;
-[[nodiscard]] std::int32_t ratan2(std::int32_t y, std::int32_t x);
 
 // libgte RotMatrix (Rx·Ry·Rz), RotMatrixYXZ (Ry·Rx·Rz) and RotMatrixZYX (Rz·Ry·Rx), translation 0.
 [[nodiscard]] Matrix rotXYZ(const Vector& angles);

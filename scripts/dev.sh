@@ -19,7 +19,8 @@ default_ccache_size="20G"
 xwin_volume="dwe-xwin"
 xwin_dir="${DWE_XWIN_DIR:-}"
 preset="${PRESET:-linux-clang-debug}"
-jobs="${DWE_JOBS:-$(nproc)}"
+# macOS has no nproc.
+jobs="${DWE_JOBS:-$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN)}"
 log_dir="${DWE_LOG_DIR:-$root/build/logs}"
 # The cooked forms of DWE_CONTENT's base pack (cook-content): a cooked pack folder and its .pak
 # archive, each in a content folder of its own, since the game and dwx validate would see two packs
@@ -184,13 +185,13 @@ EOF
 
 # Every container is named, so whoever sees it running knows whose it is and what it does:
 # DWE_CONTAINER_NAME (a gate's step) or dwe-<worktree>, then the command, the PID of the shell that
-# starts it (BASHPID: a pipeline's part has its own) and a count of the containers that shell
-# started.
+# starts it (BASHPID: a pipeline's part has its own; bash 3.2, macOS's, only has $$) and a count of
+# the containers that shell started.
 container_count=0
 # Extra options of the next containers' docker run, such as a published port.
 container_options=()
 next_container_name() {
-  local shell_pid="$BASHPID"
+  local shell_pid="${BASHPID:-$$}"
   container_count=$((container_count + 1))
   container_name="${DWE_CONTAINER_NAME:-dwe-$(basename "$root")}"
   container_name+="-${command:-setup}-$shell_pid-$container_count"
@@ -203,6 +204,7 @@ in_container() {
   local tty_flags=(-i)
   if [[ -t 0 && -t 1 ]]; then tty_flags=(-it); fi
   next_container_name
+  # The ${name[@]+...} forms: bash 3.2 (macOS's) counts an empty array as unset.
   docker run --rm --name "$container_name" "${tty_flags[@]}" \
     --user "$(id -u):$(id -g)" \
     -e HOME=/tmp/home \
@@ -215,8 +217,8 @@ in_container() {
     -v "$(mount_of "$cache_dir" "$cache_volume"):/cache/vcpkg" \
     -v "$(mount_of "$ccache_dir" "$ccache_volume"):/cache/ccache" \
     -v "$(mount_of "$xwin_dir" "$xwin_volume"):/opt/xwin" \
-    "${disc_flags[@]}" \
-    "${container_options[@]}" \
+    ${disc_flags[@]+"${disc_flags[@]}"} \
+    ${container_options[@]+"${container_options[@]}"} \
     "$image" "$@"
 }
 
@@ -287,7 +289,7 @@ protected_folders() {
   [[ -n "${DWE_DECOMP:-}" ]] && folders+=("$DWE_DECOMP")
   local folder
   for folder in "${folders[@]}"; do
-    realpath -m "$folder"
+    resolved_path "$folder"
   done
 }
 
@@ -296,8 +298,8 @@ protected_folders() {
 # failure stops the script.
 check_not_protected() {
   local folder main_checkout protected
-  folder="$(realpath -m "$1")"
-  if [[ "$folder" == "$(realpath -m "$root")" ]]; then
+  folder="$(resolved_path "$1")"
+  if [[ "$folder" == "$(resolved_path "$root")" ]]; then
     echo "$repository_cooked_dir_message: $folder" >&2
     exit 1
   fi
@@ -318,9 +320,11 @@ if [[ "${1:-}" == "cook-content" ]]; then
     echo "$missing_content_message" >&2
     exit 1
   fi
+  # shellcheck source=lib/paths.sh
+  source "$root/scripts/lib/paths.sh"
   check_not_protected "$cooked_dir"
   mkdir -p "$cooked_dir"
-  cooked_dir="$(realpath "$cooked_dir")"
+  cooked_dir="$(resolved_path "$cooked_dir")"
   if [[ "$cooked_dir/" != "$root/"* ]]; then
     disc_flags+=(-v "$cooked_dir:$cooked_dir")
   fi
@@ -348,6 +352,12 @@ ensure_caches() {
   ensure_cache "$cache_dir" "$cache_volume"
   ensure_cache "$ccache_dir" "$ccache_volume"
   ensure_cache "$xwin_dir" "$xwin_volume"
+}
+
+# read_lines <array>: the lines of the input, without the empty ones, as the items of the array
+# (mapfile -t, which bash 3.2, macOS's, lacks).
+read_lines() {
+  IFS=$'\n' read -r -d '' -a "$1" || true
 }
 
 # git with the paths as they are, not quoted, non-ASCII names too.
@@ -417,7 +427,7 @@ changed_style_sources() {
 # whose working tree differs from the index, so staging them adds only the formatting.
 format_staged() {
   local files=()
-  mapfile -t files < <(staged_style_sources --report)
+  read_lines files < <(staged_style_sources --report)
   ((${#files[@]} > 0)) || return 0
   run_style "$style_dir/format_files.sh" --jobs "$jobs" -- "${files[@]}" || return 1
   git -C "$root" --literal-pathspecs add -- "${files[@]}"
@@ -429,7 +439,7 @@ no_goto() {
   local found
   found="$(git -C "$root" ls-files --cached --others --exclude-standard -z \
     -- '*.cpp' '*.hpp' '*.h' '*.lua' \
-    | xargs -0 -r grep -nwH 'goto' --)" || true
+    | xargs -0 grep -nwH 'goto' --)" || true
   [[ -z "$found" ]] && return 0
   printf 'goto is not allowed:\n%s\n' "$found"
   return 1
@@ -545,7 +555,7 @@ select_packages() {
     package_selection=true
     listed+="$(python3 "$packages_tool" affected --kinds --base "$affected_base")"$'\n'
   fi
-  mapfile -t selected_packages < <(sed '/^$/d' <<<"$listed" | sort -u)
+  read_lines selected_packages < <(sed '/^$/d' <<<"$listed" | sort -u)
   if [[ "$package_selection" == true ]]; then
     echo "dev.sh: packages: $(cut -f1 <<<"$listed" | sed '/^$/d' | sort -u | tr '\n' ' ')" >&2
   fi
@@ -555,7 +565,7 @@ select_packages() {
 # and their ctest labels, the others with their own tools.
 run_packages() {
   local action="$1" entry name kind targets=() labels=()
-  for entry in "${selected_packages[@]}"; do
+  for entry in ${selected_packages[@]+"${selected_packages[@]}"}; do
     name="${entry%%$'\t'*}"
     kind="${entry##*$'\t'}"
     case "$kind" in
@@ -570,7 +580,7 @@ run_packages() {
   ensure_caches
   if [[ "$action" == build ]]; then
     in_container cmake --build --preset "$preset" -j "$jobs" --target "${targets[@]}" \
-      "${package_args[@]}"
+      ${package_args[@]+"${package_args[@]}"}
     return
   fi
   in_container cmake --build --preset "$preset" -j "$jobs" --target "${targets[@]}"
@@ -580,7 +590,7 @@ run_packages() {
       IFS='|'
       echo "${labels[*]}"
     ))\$"
-    in_container ctest --preset "$preset" -L "$pattern" "${package_args[@]}"
+    in_container ctest --preset "$preset" -L "$pattern" ${package_args[@]+"${package_args[@]}"}
   fi
 }
 
@@ -832,10 +842,11 @@ case "$command" in
       run_packages "$command"
     elif [[ "$command" == build ]]; then
       ensure_caches
-      in_container cmake --build --preset "$preset" -j "$jobs" "${package_args[@]}"
+      in_container cmake --build --preset "$preset" -j "$jobs" \
+        ${package_args[@]+"${package_args[@]}"}
     else
       ensure_caches
-      in_container ctest --preset "$preset" "${package_args[@]}"
+      in_container ctest --preset "$preset" ${package_args[@]+"${package_args[@]}"}
     fi
     ;;
   packages)
@@ -848,13 +859,13 @@ case "$command" in
     case "${1:-}" in
       --staged) format_staged ;;
       --since)
-        mapfile -t files < <(changed_style_sources "${2:?format --since needs a commit}")
+        read_lines files < <(changed_style_sources "${2:?format --since needs a commit}")
         echo "format: ${#files[@]} changed sources"
         ((${#files[@]} == 0)) \
           || run_style "$style_dir/format_files.sh" --check --jobs "$jobs" -- "${files[@]}"
         ;;
       --check | "")
-        mapfile -t files < <(style_sources)
+        read_lines files < <(style_sources)
         run_style "$style_dir/format_files.sh" ${1:+"$1"} --jobs "$jobs" -- "${files[@]}"
         ;;
       *)
@@ -867,12 +878,12 @@ case "$command" in
     ;;
   lint)
     if [[ "${1:-}" == "--staged" ]]; then
-      mapfile -t files < <(staged_style_sources)
+      read_lines files < <(staged_style_sources)
     elif [[ "${1:-}" == "--since" ]]; then
-      mapfile -t files < <(changed_style_sources "${2:?lint --since needs a commit}")
+      read_lines files < <(changed_style_sources "${2:?lint --since needs a commit}")
       echo "lint: ${#files[@]} changed sources"
     else
-      mapfile -t files < <(style_sources)
+      read_lines files < <(style_sources)
     fi
     ((${#files[@]} == 0)) || run_style "$style_dir/lint_files.sh" -- "${files[@]}"
     ;;

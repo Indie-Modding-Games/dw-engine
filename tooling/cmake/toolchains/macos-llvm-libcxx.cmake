@@ -31,9 +31,19 @@ set(CMAKE_CXX_COMPILER "${DWE_LLVM_ROOT}/bin/clang++")
 set(CMAKE_OSX_DEPLOYMENT_TARGET "13.3" CACHE STRING "")
 
 # Homebrew's clang reads its own libc++ headers; the link takes its static libc++ and libc++abi instead of the
-# system's dynamic ones (-nostdlib++).
+# system's dynamic ones (-nostdlib++). Their symbols stay hidden in each program (-load_hidden): exported, the system's
+# libc++ (loaded in every process) took some of them at run time, and Clang 23's typed operator new then aborted
+# every program at start ("typed operator new being invoked before its static initializer").
 string(APPEND CMAKE_CXX_FLAGS_INIT " -stdlib=libc++")
-set(DWE_LIBCXX_STATIC "-nostdlib++ ${DWE_LLVM_ROOT}/lib/c++/libc++.a ${DWE_LLVM_ROOT}/lib/c++/libc++abi.a")
+set(DWE_LIBCXX_STATIC "-nostdlib++ -Wl,-load_hidden,${DWE_LLVM_ROOT}/lib/c++/libc++.a")
+string(APPEND DWE_LIBCXX_STATIC " -Wl,-load_hidden,${DWE_LLVM_ROOT}/lib/c++/libc++abi.a")
 foreach(kind EXE SHARED MODULE)
     string(APPEND CMAKE_${kind}_LINKER_FLAGS_INIT " ${DWE_LIBCXX_STATIC}")
 endforeach()
+
+# Apple's archiver, not llvm-ar next to Homebrew's clang: llvm-ar wrote an archive whose objects have no symbols
+# (mbedtls' libeverest on arm64) in the GNU format, which the linker of Xcode 16 refuses.
+find_program(DWE_APPLE_AR ar PATHS /usr/bin NO_DEFAULT_PATH REQUIRED)
+find_program(DWE_APPLE_RANLIB ranlib PATHS /usr/bin NO_DEFAULT_PATH REQUIRED)
+set(CMAKE_AR "${DWE_APPLE_AR}" CACHE FILEPATH "")
+set(CMAKE_RANLIB "${DWE_APPLE_RANLIB}" CACHE FILEPATH "")

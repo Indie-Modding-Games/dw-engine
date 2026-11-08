@@ -4,6 +4,12 @@
 # when it passed, and its saves folder starts empty. The runs of the game are stubbed: run_game
 # writes the log a route would.
 set -uo pipefail
+# route_jobs.sh keeps its routes in associative arrays, which bash 3.2 (macOS's) lacks: the gate
+# runs only on Linux.
+if ((BASH_VERSINFO[0] < 4)); then
+  echo "skipped: route_jobs.sh needs bash 4 or newer, not $BASH_VERSION; the gate runs on Linux"
+  exit 0
+fi
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 # shellcheck source=../route_jobs.sh
 source "$root/scripts/gate/route_jobs.sh"

@@ -67,18 +67,25 @@ jobs:
       - name: Test
         run: ctest --preset windows-ci -j 4
 
+      # PowerShell, not bash: Git's bash puts its own coreutils `link` before MSVC's link.exe, which cargo calls.
       - name: Launcher tests
         working-directory: apps/launcher/src-tauri
-        shell: bash
+        shell: pwsh
         run: |
-          fonts=../../../content/packs/game/ui/fonts
-          mkdir -p ../ui/fonts
-          cp "$fonts/noto_sans_regular.ttf" "$fonts/noto_sans_bold.ttf" "$fonts/noto_sans_license.txt" ../ui/fonts/
+          $fonts = '../../../content/packs/game/ui/fonts'
+          New-Item -ItemType Directory -Force ../ui/fonts | Out-Null
+          Copy-Item "$fonts/noto_sans_regular.ttf", "$fonts/noto_sans_bold.ttf", "$fonts/noto_sans_license.txt" ../ui/fonts/
+          # The bundle's notices, which the build looks for (scripts/launcher.sh, write_notices).
+          New-Item -ItemType Directory -Force notices | Out-Null
+          Copy-Item ../../../LICENSE notices/LICENSE
+          python ../../../scripts/package/third_party_notices.py launcher --manifest-path Cargo.toml `
+            --target x86_64-pc-windows-msvc --extra "Noto Sans (the font)=../ui/fonts/noto_sans_license.txt" `
+            --out notices/THIRD_PARTY_NOTICES.txt
           cargo test --locked
 
   macos:
     if: inputs.macos
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -94,7 +101,8 @@ jobs:
           echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
 
       - name: Restore the vcpkg binary cache
-        uses: actions/cache@v4
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
           key: vcpkg-platform-macos-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**') }}
@@ -102,6 +110,15 @@ jobs:
 
       - name: Configure
         run: cmake --preset macos-arm64-release
+
+      # Saved even when a later step fails, as on Windows: the packages built so far are not downloaded again.
+      - name: Save the vcpkg binary cache
+        if: always() && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-platform-macos-${{ hashFiles('vcpkg.json', 'tooling/vcpkg-ports/**', 'tooling/triplets/**', 'tooling/cmake/toolchains/**') }}
 
       - name: Build
         run: cmake --build --preset macos-arm64-release
@@ -115,4 +132,10 @@ jobs:
           fonts=../../../content/packs/game/ui/fonts
           mkdir -p ../ui/fonts
           cp "$fonts/noto_sans_regular.ttf" "$fonts/noto_sans_bold.ttf" "$fonts/noto_sans_license.txt" ../ui/fonts/
+          # The bundle's notices, which the build looks for (scripts/launcher.sh, write_notices).
+          mkdir -p notices
+          cp ../../../LICENSE notices/LICENSE
+          python3 ../../../scripts/package/third_party_notices.py launcher --manifest-path Cargo.toml \
+            --target aarch64-apple-darwin --extra "Noto Sans (the font)=../ui/fonts/noto_sans_license.txt" \
+            --out notices/THIRD_PARTY_NOTICES.txt
           cargo test --locked

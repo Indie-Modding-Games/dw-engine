@@ -3,6 +3,9 @@
 # needs from its caller: root, logs, DWE_CONTENT, cooked_archive, routes_extra, die, and run_game
 # <display> <log> <arguments separated by tabs>.
 
+# shellcheck source=../lib/paths.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/paths.sh"
+
 # The caller's variables the job lists read: an unset one stops the gate here, not halfway through.
 caller_variables() {
   : "${root:?}" "${logs:?}" "${DWE_CONTENT:?}" "${cooked_archive:?}" "${routes_extra?}"
@@ -61,14 +64,14 @@ follow_up() {
 empty_saves_folder() {
   local folder="$1" logs_root resolved logs_as_written as_written
   [[ -n "${logs:-}" && -n "$folder" ]] || return 1
-  logs_root="$(realpath -m "$logs")"
-  resolved="$(realpath -m "$folder")"
+  logs_root="$(resolved_path "$logs")"
+  resolved="$(resolved_path "$folder")"
   [[ "$resolved" == "$logs_root"/*/*/saves && "$resolved" != *saves-play* && ! -L "$folder" ]] \
     || return 1
   # The same path with its links left as they are: a link anywhere below the logs folder makes the
   # two differ.
-  logs_as_written="$(realpath -ms "$logs")"
-  as_written="$(realpath -ms "$folder")"
+  logs_as_written="$(absolute_path "$logs")"
+  as_written="$(absolute_path "$folder")"
   [[ "$as_written" == "$logs_as_written"/* ]] || return 1
   [[ "${as_written#"$logs_as_written"}" == "${resolved#"$logs_root"}" ]] || return 1
   rm -rf "$resolved"

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Tests of the pre-commit hook (scripts/hooks/pre-commit) in a scratch repository: with
 # DWE_HOOK_RUNNER=direct it runs the formatters and linters found in PATH, the image's own when
-# ctest runs in it; a stub docker stands for a host without Docker.
+# ctest runs in it, or skips the cases that need them where PATH has none (macOS); a stub docker
+# stands for a host without Docker.
 set -uo pipefail
 
 # The user's and the system's git configuration stay out of the scratch repository.
@@ -49,6 +50,75 @@ committed() { git_in show "HEAD:$1"; }
 same_text() { [[ "$1" == "$2" ]]; }
 log_says() { grep -q "$1" "$scratch/commit.log"; }
 fails() { ! "$@"; }
+# report: the count of failures, or that all passed; fails when any failed.
+report() {
+  ((failures == 0)) || {
+    echo "$failures failed"
+    return 1
+  }
+  echo "all passed"
+}
+
+# DWE_SKIP_HOOK=1 skips the hook: one line, and the commit goes through unformatted.
+mkdir -p "$repo/engine"
+printf 'int skipped() {\n        return 1;\n}\n' >"$repo/engine/skipped.cpp"
+git_in add engine/skipped.cpp
+check "with DWE_SKIP_HOOK=1 the commit passes" commit_with DWE_SKIP_HOOK=1
+check "  with one line" test "$(wc -l <"$scratch/commit.log")" -eq 1
+check "  that says so" log_says "DWE_SKIP_HOOK=1"
+check "  unformatted" \
+  same_text "$(committed engine/skipped.cpp)" $'int skipped() {\n        return 1;\n}'
+
+# Without Docker the hook warns and lets the commit through, unformatted.
+stubs="$scratch/stubs"
+mkdir -p "$stubs"
+printf '#!/bin/sh\nexit 1\n' >"$stubs/docker"
+cp "$stubs/docker" "$stubs/sg"
+chmod +x "$stubs/docker" "$stubs/sg"
+printf 'int other() {\n        return 1;\n}\n' >"$repo/engine/other.cpp"
+git_in add engine/other.cpp
+without_docker() { PATH="$stubs:$PATH" DWE_HOOK_RUNNER="" "$@"; }
+check "without Docker the commit passes" without_docker commit "No Docker"
+check "  with a warning" log_says "Docker is not reachable"
+check "  unformatted" \
+  same_text "$(committed engine/other.cpp)" $'int other() {\n        return 1;\n}'
+
+# An image without the formatters warns in one line, as without Docker, and lets the commit
+# through: the stub docker answers, has the image and lacks two tools.
+# shellcheck disable=SC2016 # the text of a stub that reads its own argument
+printf '#!/bin/sh\n[ "$1" = run ] && printf "stylua shfmt "\nexit 0\n' >"$stubs/docker"
+printf 'int lacking() {\n        return 1;\n}\n' >"$repo/engine/lacking.cpp"
+git_in add engine/lacking.cpp
+check "with an image without the formatters the commit passes" without_docker commit "No tools"
+check "  with one line" test "$(wc -l <"$scratch/commit.log")" -eq 1
+check "  that names the missing tools and the image that has them" \
+  log_says "has no stylua shfmt, so .*DWE_IMAGE=dwe-dev-speed"
+check "  unformatted" \
+  same_text "$(committed engine/lacking.cpp)" $'int lacking() {\n        return 1;\n}'
+
+# A docker that never answers counts as no Docker after the timeout, sg included.
+printf '#!/bin/sh\nexec sleep 30\n' >"$stubs/docker"
+cp "$stubs/docker" "$stubs/sg"
+printf 'int hanging() {\n        return 1;\n}\n' >"$repo/engine/hanging.cpp"
+git_in add engine/hanging.cpp
+started=$SECONDS
+check "with a docker that hangs the commit passes" \
+  commit_with DWE_HOOK_DOCKER_TIMEOUT=1 PATH="$stubs:$PATH" DWE_HOOK_RUNNER=""
+check "  with a warning" log_says "Docker is not reachable"
+check "  within a few seconds" test $((SECONDS - started)) -lt 10
+
+# The formatting and the lint run the formatters and linters found in PATH, the image's: where they
+# are missing (macOS, or a host outside the image) those cases are skipped, as the hook itself skips
+# them without Docker; the gate checks the same.
+missing_tools=""
+for tool in clang-format stylua shfmt luacheck shellcheck python3; do
+  command -v "$tool" >/dev/null || missing_tools+=" $tool"
+done
+if [[ -n "$missing_tools" ]]; then
+  echo "skipped: the formatting and lint cases, PATH has no$missing_tools (the image has them)"
+  report
+  exit
+fi
 
 # Only the staged C++, Lua and shell files are formatted, and they are committed formatted.
 mkdir -p "$repo/engine" "$repo/apps/game/scripts" "$repo/scripts/tools" "$repo/docs"
@@ -116,7 +186,10 @@ check "  and the non-ASCII name" \
   same_text "$(committed engine/año.cpp)" $'int accented() {\n  return 4;\n}'
 
 # The hook formats itself while it runs: bash must not read on in the rewritten file.
-sed -i 's/^  local root dev image$/    local root dev image/' "$repo/scripts/hooks/pre-commit"
+# Rewritten in place, so the hook keeps its mode (macOS's sed has no -i without a suffix).
+sed 's/^  local root dev image$/    local root dev image/' "$repo/scripts/hooks/pre-commit" \
+  >"$scratch/pre-commit"
+cat "$scratch/pre-commit" >"$repo/scripts/hooks/pre-commit"
 git_in add scripts/hooks/pre-commit
 check "a commit of the hook itself, unformatted, passes" commit "The hook"
 check "  without errors from the rewritten file" fails log_says "command not found\|syntax error"
@@ -155,55 +228,4 @@ check "  with the message" log_says "NOLINTNEXTLINE"
 git_in rm -q --cached engine/leak.cpp
 check "  and nothing was committed" same_text "$(git_in rev-parse HEAD)" "$head_before"
 
-# DWE_SKIP_HOOK=1 skips the hook: one line, and the commit goes through unformatted.
-printf 'int skipped() {\n        return 1;\n}\n' >"$repo/engine/skipped.cpp"
-git_in add engine/skipped.cpp
-check "with DWE_SKIP_HOOK=1 the commit passes" commit_with DWE_SKIP_HOOK=1
-check "  with one line" test "$(wc -l <"$scratch/commit.log")" -eq 1
-check "  that says so" log_says "DWE_SKIP_HOOK=1"
-check "  unformatted" \
-  same_text "$(committed engine/skipped.cpp)" $'int skipped() {\n        return 1;\n}'
-
-# Without Docker the hook warns and lets the commit through, unformatted.
-stubs="$scratch/stubs"
-mkdir -p "$stubs"
-printf '#!/bin/sh\nexit 1\n' >"$stubs/docker"
-cp "$stubs/docker" "$stubs/sg"
-chmod +x "$stubs/docker" "$stubs/sg"
-printf 'int other() {\n        return 1;\n}\n' >"$repo/engine/other.cpp"
-git_in add engine/other.cpp
-without_docker() { PATH="$stubs:$PATH" DWE_HOOK_RUNNER="" "$@"; }
-check "without Docker the commit passes" without_docker commit "No Docker"
-check "  with a warning" log_says "Docker is not reachable"
-check "  unformatted" \
-  same_text "$(committed engine/other.cpp)" $'int other() {\n        return 1;\n}'
-
-# An image without the formatters warns in one line, as without Docker, and lets the commit
-# through: the stub docker answers, has the image and lacks two tools.
-# shellcheck disable=SC2016 # the text of a stub that reads its own argument
-printf '#!/bin/sh\n[ "$1" = run ] && printf "stylua shfmt "\nexit 0\n' >"$stubs/docker"
-printf 'int lacking() {\n        return 1;\n}\n' >"$repo/engine/lacking.cpp"
-git_in add engine/lacking.cpp
-check "with an image without the formatters the commit passes" without_docker commit "No tools"
-check "  with one line" test "$(wc -l <"$scratch/commit.log")" -eq 1
-check "  that names the missing tools and the image that has them" \
-  log_says "has no stylua shfmt, so .*DWE_IMAGE=dwe-dev-speed"
-check "  unformatted" \
-  same_text "$(committed engine/lacking.cpp)" $'int lacking() {\n        return 1;\n}'
-
-# A docker that never answers counts as no Docker after the timeout, sg included.
-printf '#!/bin/sh\nexec sleep 30\n' >"$stubs/docker"
-cp "$stubs/docker" "$stubs/sg"
-printf 'int hanging() {\n        return 1;\n}\n' >"$repo/engine/hanging.cpp"
-git_in add engine/hanging.cpp
-started=$SECONDS
-check "with a docker that hangs the commit passes" \
-  commit_with DWE_HOOK_DOCKER_TIMEOUT=1 PATH="$stubs:$PATH" DWE_HOOK_RUNNER=""
-check "  with a warning" log_says "Docker is not reachable"
-check "  within a few seconds" test $((SECONDS - started)) -lt 10
-
-((failures == 0)) || {
-  echo "$failures failed"
-  exit 1
-}
-echo "all passed"
+report

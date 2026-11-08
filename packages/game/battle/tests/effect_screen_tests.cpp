@@ -422,7 +422,9 @@ TEST_CASE("a ribbon turned by the camera's rotation faces the camera") {
 
 namespace {
 
-// One instruction of a made-up script at `address`, then the next free address.
+// One instruction of a made-up script at `address`, then the next free address. The script runs its
+// instructions in address order, so the helpers that take `address` are called one statement after
+// another: as operands of one expression (a + b) any compiler may call them in either order.
 std::string instruction(std::int32_t& address, std::string_view body) {
   std::string out = std::format("- at: \"0x{:04x}\"\n{}\n", address, body);
   address += 2;
@@ -468,9 +470,10 @@ std::string renderOf(const auto& body) {
 TEST_CASE("a screen sprite is scaled and turned round its pivot, from the projection's centre or "
           "the screen's") {
   const std::string render = renderOf([](std::int32_t& at) {
-    return screenSprite(at, 20, 30, 0, 100, 8192, 0) +
-           screenSprite(at, 20, 30, 90, 3000, 4096, -5) +
-           screenSprite(at, 20, 30, 0, 4096, 4096, 0);
+    std::string out = screenSprite(at, 20, 30, 0, 100, 8192, 0);
+    out += screenSprite(at, 20, 30, 90, 3000, 4096, -5);
+    out += screenSprite(at, 20, 30, 0, 4096, 4096, 0);
+    return out;
   });
   NoSounds sounds;
   EffectRunner runner{sounds};
@@ -603,8 +606,9 @@ std::string subOf(std::int32_t& at, std::string_view name, std::size_t count) {
 std::string zeroInstance(std::int32_t& at) {
   std::string out;
   for (const std::string_view offset : {"instance+0x0004", "instance+0x0010"}) {
-    out += instruction(at, std::format("  op: push_address\n  address: \"{}\"", offset)) +
-           pushes(at, {"base+0x00f0"}) + subOf(at, "copy_vector", 2);
+    out += instruction(at, std::format("  op: push_address\n  address: \"{}\"", offset));
+    out += pushes(at, {"base+0x00f0"});
+    out += subOf(at, "copy_vector", 2);
   }
   return out;
 }
@@ -614,12 +618,13 @@ std::string zeroInstance(std::int32_t& at) {
 TEST_CASE("a line is drawn from the projection's centre, four times round at half the colour "
           "with flag 0x20") {
   const std::string render = renderOf([](std::int32_t& at) {
-    return pushes(at, {"10", "20", "30", "40", "base+0x00a0", "100", "0"}) +
-           subOf(at, "render_line", 7) +
-           pushes(at, {"10", "20", "30", "40", "base+0x00a0", "100", "32"}) +
-           subOf(at, "render_line", 7) +
-           pushes(at, {"10", "20", "30", "40", "base+0x00a0", "32", "0"}) +
-           subOf(at, "render_line", 7);
+    std::string out = pushes(at, {"10", "20", "30", "40", "base+0x00a0", "100", "0"});
+    out += subOf(at, "render_line", 7);
+    out += pushes(at, {"10", "20", "30", "40", "base+0x00a0", "100", "32"});
+    out += subOf(at, "render_line", 7);
+    out += pushes(at, {"10", "20", "30", "40", "base+0x00a0", "32", "0"});
+    out += subOf(at, "render_line", 7);
+    return out;
   });
   constexpr std::string_view Data = R"(- at: "0x00a0"
   kind: color
@@ -650,14 +655,16 @@ TEST_CASE("wireframes project through the fixed effect camera from the screen's 
           "is restored") {
   const std::string render = renderOf([](std::int32_t& at) {
     std::string out = subOf(at, "setup_fixed_camera", 0);
-    out += pushes(at, {"base+0x00d0"}) + subOf(at, "get_viewport_distance_2", 1);
+    out += pushes(at, {"base+0x00d0"});
+    out += subOf(at, "get_viewport_distance_2", 1);
     // A 1000 x 1000 square at y 0 through the origin, two lines each way.
     out += pushes(at, {"base+0x00a0", "base+0x00b0", "base+0x00c0", "-500", "500", "1", "-500",
-                       "500", "1", "0"}) +
-           subOf(at, "render_wireframe_grid", 10);
+                       "500", "1", "0"});
+    out += subOf(at, "render_wireframe_grid", 10);
     out += subOf(at, "restore_camera", 0);
-    return out + pushes(at, {"base+0x00a0", "base+0x00a0", "base+0x00c0"}) +
-           subOf(at, "render_wireframe_box", 3);
+    out += pushes(at, {"base+0x00a0", "base+0x00a0", "base+0x00c0"});
+    out += subOf(at, "render_wireframe_box", 3);
+    return out;
   });
   constexpr std::string_view Data = R"(- at: "0x00a0"
   kind: vector
@@ -700,9 +707,13 @@ TEST_CASE("wireframes project through the fixed effect camera from the screen's 
 
 TEST_CASE("palette loads rewrite a row of the effect's palette from a colour on, and keep it") {
   const std::string render = renderOf([](std::int32_t& at) {
-    return pushes(at, {"10000", "2", "base+0x00a0", "3"}) + subOf(at, "queue_clut_load", 4) +
-           pushes(at, {"3", "14", "3", "base+0x00e0"}) + subOf(at, "load_clut_colors", 4) +
-           pushes(at, {"4", "0", "17", "base+0x00e0"}) + subOf(at, "load_clut_colors", 4);
+    std::string out = pushes(at, {"10000", "2", "base+0x00a0", "3"});
+    out += subOf(at, "queue_clut_load", 4);
+    out += pushes(at, {"3", "14", "3", "base+0x00e0"});
+    out += subOf(at, "load_clut_colors", 4);
+    out += pushes(at, {"4", "0", "17", "base+0x00e0"});
+    out += subOf(at, "load_clut_colors", 4);
+    return out;
   });
   constexpr std::string_view Data = R"(- at: "0x00a0"
   kind: clut_row
@@ -743,12 +754,13 @@ TEST_CASE("palette loads rewrite a row of the effect's palette from a colour on,
 
 TEST_CASE("a particle flash draws its texels four times round its point, mirrored, in two rows") {
   const std::string render = renderOf([](std::int32_t& at) {
-    return pushes(at, {"10", "20", "128", "0", "32", "32", "1024", "100", "1"}) +
-           subOf(at, "render_particle_flash", 9) +
-           pushes(at, {"10", "20", "128", "0", "32", "32", "1024", "32", "1"}) +
-           subOf(at, "render_particle_flash", 9) +
-           pushes(at, {"400", "20", "128", "0", "32", "32", "1024", "100", "1"}) +
-           subOf(at, "render_particle_flash", 9);
+    std::string out = pushes(at, {"10", "20", "128", "0", "32", "32", "1024", "100", "1"});
+    out += subOf(at, "render_particle_flash", 9);
+    out += pushes(at, {"10", "20", "128", "0", "32", "32", "1024", "32", "1"});
+    out += subOf(at, "render_particle_flash", 9);
+    out += pushes(at, {"400", "20", "128", "0", "32", "32", "1024", "100", "1"});
+    out += subOf(at, "render_particle_flash", 9);
+    return out;
   });
   NoSounds sounds;
   EffectRunner runner{sounds};
@@ -822,15 +834,15 @@ TEST_CASE("battle_effect.c BTL_render2DTexturedQuad: a textured quad from a plac
   const std::string render = renderOf([](std::int32_t& at) {
     // x, y, width, height, entry, colour, u, v, texel width and height, palette row, rate.
     std::string out =
-        pushes(at, {"10", "20", "30", "40", "256", "base+0x00a0", "1", "2", "3", "4", "2", "64"}) +
-        subOf(at, "render_2d_quad", 12);
+        pushes(at, {"10", "20", "30", "40", "256", "base+0x00a0", "1", "2", "3", "4", "2", "64"});
+    out += subOf(at, "render_2d_quad", 12);
     out += pushes(at, {"base+0x00b0", "base+0x00c0", "base+0x00d0", "base+0x00e0", "300",
-                       "base+0x00a0", "0", "0", "31", "31", "0", "-32"}) +
-           subOf(at, "render_2d_quad", 12);
+                       "base+0x00a0", "0", "0", "31", "31", "0", "-32"});
+    out += subOf(at, "render_2d_quad", 12);
     // Entry 0x20 is too near: nothing.
-    return out +
-           pushes(at, {"0", "0", "8", "8", "32", "base+0x00a0", "0", "0", "8", "8", "0", "0"}) +
-           subOf(at, "render_2d_quad", 12);
+    out += pushes(at, {"0", "0", "8", "8", "32", "base+0x00a0", "0", "0", "8", "8", "0", "0"});
+    out += subOf(at, "render_2d_quad", 12);
+    return out;
   });
   constexpr std::string_view Data = R"(- at: "0x00a0"
   kind: color
@@ -880,9 +892,10 @@ TEST_CASE("battle_effect.c BTL_render2DTexturedQuad: a textured quad from a plac
 TEST_CASE("battle_effect.c BTL_render3DTexturedQuad: four world points projected, at their average "
           "depth") {
   const std::string render = renderOf([](std::int32_t& at) {
-    return pushes(at, {"base+0x00b0", "base+0x00c0", "base+0x00d0", "base+0x00e0", "base+0x00a0",
-                       "0", "0", "15", "15", "1", "32"}) +
-           subOf(at, "render_3d_quad", 11);
+    std::string out = pushes(at, {"base+0x00b0", "base+0x00c0", "base+0x00d0", "base+0x00e0",
+                                  "base+0x00a0", "0", "0", "15", "15", "1", "32"});
+    out += subOf(at, "render_3d_quad", 11);
+    return out;
   });
   constexpr std::string_view Data = R"(- at: "0x00a0"
   kind: color
@@ -926,8 +939,10 @@ TEST_CASE("battle_effect.c BTL_renderRingTube: ten points a ring, a quad between
           "every other ring's texels 24 to the right") {
   const std::string render = renderOf([](std::int32_t& at) {
     // Centre, two rings, radii, heights, grey levels, first ring's texels.
-    return pushes(at, {"base+0x00a0", "2", "base+0x00b0", "base+0x00b8", "base+0x00c0", "1"}) +
-           subOf(at, "render_ring_tube", 6);
+    std::string out =
+        pushes(at, {"base+0x00a0", "2", "base+0x00b0", "base+0x00b8", "base+0x00c0", "1"});
+    out += subOf(at, "render_ring_tube", 6);
+    return out;
   });
   constexpr std::string_view Data = R"(- at: "0x00a0"
   kind: vector
@@ -972,7 +987,10 @@ TEST_CASE("battle_effect.c BTL_renderRingTube: ten points a ring, a quad between
 TEST_CASE("battle_effect.c BTL_renderRadialWaves: six rays of 27 quads out from the instance, the "
           "first and last quads with their own texels") {
   const std::string render = renderOf([](std::int32_t& at) {
-    return zeroInstance(at) + pushes(at, {"base+0x00a0"}) + subOf(at, "render_radial_waves", 1);
+    std::string out = zeroInstance(at);
+    out += pushes(at, {"base+0x00a0"});
+    out += subOf(at, "render_radial_waves", 1);
+    return out;
   });
   constexpr std::string_view Data = R"(- at: "0x00a0"
   kind: vector
@@ -1008,8 +1026,11 @@ TEST_CASE("battle_effect.c BTL_renderRadialWaves: six rays of 27 quads out from 
 TEST_CASE("battle_effect.c BTL_disableMapLayer hides the map until the next tick; "
           "BTL_drawTMDScreenSpace places a model in front of the camera") {
   const std::string render = renderOf([](std::int32_t& at) {
-    return zeroInstance(at) + subOf(at, "disable_map_layer", 0) + pushes(at, {"0", "base+0x00a0"}) +
-           subOf(at, "draw_tmd_on_screen", 2);
+    std::string out = zeroInstance(at);
+    out += subOf(at, "disable_map_layer", 0);
+    out += pushes(at, {"0", "base+0x00a0"});
+    out += subOf(at, "draw_tmd_on_screen", 2);
+    return out;
   });
   constexpr std::string_view Data = R"(- at: "0x00a0"
   kind: vector

@@ -1,6 +1,9 @@
 # The one way scripts/gate.sh deletes a folder: a build folder of this worktree, never anything
 # else. Sourced.
 
+# shellcheck source=../lib/paths.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/paths.sh"
+
 # remove_build_dir <repository root> <folder>: deletes the folder when, resolved (symbolic links
 # too), it is strictly inside <root>/build, and build/ is a real folder of the worktree, not a
 # symbolic link to somewhere else; refuses anything else with a message and status 1. A missing
@@ -11,8 +14,8 @@ remove_build_dir() {
     echo "refusing to delete $folder: $root/build is a symbolic link" >&2
     return 1
   fi
-  builds="$(realpath -m "$root/build")"
-  resolved="$(realpath -m "$folder")"
+  builds="$(resolved_path "$root/build")"
+  resolved="$(resolved_path "$folder")"
   if [[ "$resolved" != "$builds/"?* ]]; then
     echo "refusing to delete $folder: not inside $builds" >&2
     return 1

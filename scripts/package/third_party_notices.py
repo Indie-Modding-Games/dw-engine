@@ -177,7 +177,9 @@ def launcher(args) -> int:
     command = ["cargo", "metadata", "--locked", "--format-version", "1", "--manifest-path", args.manifest_path]
     for target in args.target:
         command += ["--filter-platform", target]
-    metadata = json.loads(subprocess.run(command, check=True, capture_output=True, text=True).stdout)
+    # cargo writes UTF-8 whatever the locale (Windows reads cp1252 by default).
+    result = subprocess.run(command, check=True, capture_output=True, text=True, encoding="utf-8")
+    metadata = json.loads(result.stdout)
     texts = []
     notices = []
     missing = set()
