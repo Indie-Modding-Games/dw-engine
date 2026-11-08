@@ -170,6 +170,9 @@ struct UserSettings {
   // rule_options.hpp): life.rebirth.random_egg_without_lives off, so a partner reborn with no
   // lives left comes from the egg the player takes in the egg box; off when not chosen yet.
   std::optional<bool> chooseEggAfterLivesLost = std::nullopt;
+  // Generous talk range (generous_talk: true, false; game::field::Field::setGenerousTalk): a
+  // confirm reaches characters and signs a little further; off when not chosen yet.
+  std::optional<bool> generousTalk = std::nullopt;
   // Shop extras (shop_extras: true, false; the shop document reads it): the focused item's
   // description under a shop's list, the bag's count of each item and the money a trade leaves; off
   // when not chosen yet.

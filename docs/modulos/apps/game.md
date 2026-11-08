@@ -1854,6 +1854,32 @@ igual que la dificultad.
 
 Prueba: `rule_options_tests.cpp`.
 
+## Hablar desde más lejos
+
+Un probador no podía hablar con un personaje estando a su lado. Medido en el original (`tamer.c: checkMapInteraction`,
+`map.c: entityCheckCollision`, `entityCheckEntityCollision`, `isRectInRect`, `entityIsInEntity`) y comparado con
+`game::field::FieldNpcs::touchFromPlayer`: dwe hace lo mismo, así que no es un fallo.
+
+| Qué | Original | dwe | Estado |
+|---|---|---|---|
+| Qué se compara | El cuadrado del jugador (medio lado = su radio, `DIGIMON_DATA[tipo].radius`, 100) contra el del NPC (el radio de su especie), centrados en sus posiciones; sin cono de ángulo: cuenta cualquier lado que toque, bordes incluidos | Igual (`touchFromPlayer`, `npc.half`, `player.radius`) | Igual |
+| Alcance al confirmar | Solo parado (`animId == 0`) y con confirmar recién pulsado: el cuadrado crece 50 hacia los lados a los que mira (`rotation` en (0, 0x800) a −x, en (0x800, 0x1000) a +x, < 0x400 o > 0xC00 a −z, en (0x400, 0xC00) a +z; en diagonal, en los dos ejes) | Igual (`talk_reach: 50` de `field/rules.yaml`, por el vector hacia el que mira) | Igual |
+| Andando | Sin alcance: cuenta el cuadrado un paso de su animación por delante | Igual (`ahead` en `Field::touchNpcs`) | Igual |
+| Varios NPC | El primero de la tabla que toca | Igual | Igual |
+| Carteles | Las casillas de confirmar (80–109) solo bajo la posición del jugador (`getTileTrigger`) | Igual (`Field::checkConfirm`) | Igual |
+
+Así, de lado o de espaldas a un NPC, a menos de un paso pero sin tocarlo, el original tampoco habla: el choque de
+andar para al jugador hasta un paso antes (corriendo, 870 / 20 = 43,5 unidades).
+
+Mejora opcional, apagada por defecto: el ajuste `generous_talk` (fila «Hablar desde más lejos», «Generous talk range»
+en inglés, pestaña Juego, guardado en los ajustes del usuario) llega a `game::field::Field::setGenerousTalk`. Con ella,
+al confirmar (parado o andando) el cuadrado del jugador crece 45 por todos los lados (`GenerousTalkAround`: más que el
+paso de 43,5 que el choque puede dejar, así que pegado a un NPC se habla mire hacia donde mire) y 100 hacia donde mira
+en vez de 50 (`GenerousTalkAhead`, el doble del original); y si la casilla del jugador no es de confirmar, mira la
+casilla de 100 unidades por delante (`GenerousSignAhead`, una casilla: el cartel que tiene delante). Pruebas: «a confirm
+talks to an NPC the player's square reaches, 50 further the way it faces» y «with the generous talk range a confirm
+reads the sign's cell in front of the player» (`field_tests.cpp`).
+
 ## Versus en línea
 
 «Versus en línea» («Online versus» en inglés) sale en el menú del título (con el aspecto moderno es su propia fila;

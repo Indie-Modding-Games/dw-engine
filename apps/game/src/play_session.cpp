@@ -1141,7 +1141,8 @@ constexpr std::array PlayOptions{
     PlayOption{.setting = FairMoveForgettingSetting, .saved = &UserSettings::fairMoveForgetting},
     PlayOption{.setting = FairCardStockSetting, .saved = &UserSettings::fairCardStock},
     PlayOption{.setting = ChooseEggAfterLivesLostSetting,
-               .saved = &UserSettings::chooseEggAfterLivesLost}};
+               .saved = &UserSettings::chooseEggAfterLivesLost},
+    PlayOption{.setting = GenerousTalkSetting, .saved = &UserSettings::generousTalk}};
 
 RuleChoices ruleChoicesOf(const UserSettings& settings) {
   const std::string difficulty = settings.difficulty.value_or(std::string{DifficultyNormal});
@@ -1164,6 +1165,7 @@ void PlaySession::applyPlayOptions() {
   context_.ui->setSetting(DifficultySetting, rules.difficulty);
   battleScreen_.setQuickStart(settings.quickBattleStart.value_or(false));
   skipEvolution_ = settings.skipEvolution.value_or(false);
+  scene_->field().setGenerousTalk(settings.generousTalk.value_or(false));
   if (game_.systems.story != nullptr) {
     game_.systems.story->dialogue().setCancelClosesChoice(
         settings.choiceCancelCloses.value_or(false));

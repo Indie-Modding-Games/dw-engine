@@ -287,6 +287,17 @@ game_options = {
     help = "pause_menu.help.choose_egg_after_lives_lost",
     original = false,
   },
+  -- Generous talk range: a confirm reaches characters a little further on every side and further
+  -- ahead, and reads a sign's cell in front of the player (off by default: the original's reach).
+  {
+    id = "generous-talk",
+    setting = "generous_talk",
+    label = "pause_menu.generous_talk",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.generous_talk",
+    original = false,
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).

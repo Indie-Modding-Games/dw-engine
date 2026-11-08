@@ -470,7 +470,7 @@ bool Field::touchNpcs() {
       ground(transform.position) + (facing * (speed * rules_.transition.frameSeconds));
   const std::size_t before = npcs_.contacts().size();
   npcs_.touchFromPlayer({.centre = ahead, .half = rules_.player.radius}, facing,
-                        motion == Motion::Idle, input_.confirm);
+                        motion == Motion::Idle, input_.confirm, generousTalk_);
   return npcs_.contacts().size() > before;
 }
 
@@ -1202,8 +1202,14 @@ void Field::checkConfirm() {
   if (!std::exchange(input_.confirm, false) || leaving_) {
     return;
   }
-  const glm::vec3 position = world_->registry().get<Transform>(player_).position;
-  const std::int32_t value = collision_.trigger(assets::originalCellAt(position)).value_or(0);
+  const auto& transform = world_->registry().get<Transform>(player_);
+  std::int32_t value = collision_.trigger(assets::originalCellAt(transform.position)).value_or(0);
+  if (generousTalk_ && warpViaOf(value, rules_.triggers) != WarpVia::Confirm) {
+    // The generous talk range: the sign's cell in front of the player.
+    const glm::vec3 ahead =
+        transform.position + (assets::forwardOfYaw(transform.yaw) * GenerousSignAhead);
+    value = collision_.trigger(assets::originalCellAt(ahead)).value_or(0);
+  }
   if (warpViaOf(value, rules_.triggers) != WarpVia::Confirm) {
     return;
   }

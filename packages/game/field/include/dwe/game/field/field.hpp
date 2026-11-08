@@ -207,6 +207,13 @@ public:
   // the same either way; only the drawing changes.
   void setSmoothMotion(bool on) { smoothMotion_ = on; }
   [[nodiscard]] bool smoothMotion() const { return smoothMotion_; }
+  // A more generous talk range (an engine improvement, off by default as the original's): a
+  // confirm reaches NPCs GenerousTalkAround further on every side of the player's square and
+  // GenerousTalkAhead (instead of the rules' talkReach) the way it faces, standing or walking; and
+  // on a cell that is not a confirm cell it reads the cell GenerousSignAhead ahead (a sign in front
+  // of the player).
+  void setGenerousTalk(bool on) { generousTalk_ = on; }
+  [[nodiscard]] bool generousTalk() const { return generousTalk_; }
 
   // The warp the player stepped on, once the fade out has ended: after taking it the app loads the
   // map and calls enterMap.
@@ -690,6 +697,7 @@ private:
   // Whether the field's tick ran since the last settle: the glides go on only then.
   bool fieldRan_ = false;
   bool smoothMotion_ = true;
+  bool generousTalk_ = false;
   // Seconds since the current frame of the original began, not counting this tick.
   float frameClock_ = 0.0F;
   float tickSeconds_ = 0.0F;

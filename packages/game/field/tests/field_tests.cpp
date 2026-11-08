@@ -2135,6 +2135,64 @@ TEST_CASE("an NPC path past its map's waypoints uses the zeroed slots, as the or
   CHECK(groundDistance(*field.npcs().positionOf(7), glm::vec3{0.0F}) < 900.0F);
 }
 
+TEST_CASE("a confirm talks to an NPC the player's square reaches, 50 further the way it faces") {
+  // map.c: entityCheckEntityCollision: standing, the player's square (half its radius) stretched
+  // 50 toward the sides it faces against the NPC's; tamer.c: checkMapInteraction. The generous
+  // talk range (an engine improvement) adds GenerousTalkAround on every side and reaches
+  // GenerousTalkAhead the way it faces.
+  constexpr float East = Pi / 2.0F;
+  constexpr float West = -Pi / 2.0F;
+  const auto talks = [](float gap, float yaw, bool generous) {
+    dwe::scene::World world;
+    Field field{world, originalRules()};
+    field.setGenerousTalk(generous);
+    MapDocument map = roomMap("room");
+    const std::size_t slot = addNpc(map, 0.0F, 0.0F, 7);
+    // The player west of the NPC: both squares are 100 from their middles.
+    field.enterMapAt(map, at(-(200.0F + gap), 0.0F, yaw));
+    REQUIRE(spawnNpc(field, slot));
+    field.setInput({});
+    run(field, 0.5F);
+    field.setInput({.confirm = true});
+    field.tick(Tick);
+    return std::ranges::any_of(field.npcContacts(), [](const auto& contact) {
+      return contact.scriptId == 7 && contact.cause == dwe::game::field::NpcContactCause::Confirm;
+    });
+  };
+  // Facing it: the original's reach.
+  CHECK(talks(40.0F, East, false));
+  CHECK_FALSE(talks(80.0F, East, false));
+  CHECK(talks(80.0F, East, true));
+  CHECK(talks(140.0F, East, true));
+  CHECK_FALSE(talks(160.0F, East, true));
+  // Facing away: only the squares touching, or the generous margin around.
+  CHECK(talks(0.0F, West, false));
+  CHECK_FALSE(talks(30.0F, West, false));
+  CHECK(talks(30.0F, West, true));
+  CHECK_FALSE(talks(60.0F, West, true));
+}
+
+TEST_CASE("with the generous talk range a confirm reads the sign's cell in front of the player") {
+  // tamer.c: checkMapInteraction reads the cell under the player only; the improvement also reads
+  // the one GenerousSignAhead ahead when the player's own is not a confirm cell.
+  const auto reads = [](bool generous) {
+    MapDocument house = roomMap("house");
+    // A confirm cell row east of the player, who stands one cell short of it, facing it.
+    fill(house, {.column = 52, .row = 45}, {.column = 52, .row = 55}, 80);
+    dwe::scene::World world;
+    Field field{world, originalRules()};
+    field.setGenerousTalk(generous);
+    field.enterMapAt(house, at(150.0F, 0.0F, Pi / 2.0F));
+    field.setInput({});
+    run(field, 0.5F);
+    field.setInput({.confirm = true});
+    field.tick(Tick);
+    return std::ranges::contains(field.cellSections(), 80);
+  };
+  CHECK_FALSE(reads(false));
+  CHECK(reads(true));
+}
+
 TEST_CASE("an NPC on a wall cell stays there when it appears and after a talk") {
   // Kunemon's bed in mayo02 is a wall cell: the original keeps it at (143, -1000) through a talk
   // and 300 frames after (DuckStation, e1-cp28).
