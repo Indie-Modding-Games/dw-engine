@@ -15,7 +15,8 @@ ejecutable (`packs/`, o `Resources/packs/` en macOS) o, en un build de desarroll
 
 Los paquetes del juego (la carpeta de contenido, `packs/` y los del equipo) tienen que montar todos y pedir una API de
 Lua que el motor tiene (`assets::checkPackApi`); si no, montar falla. Un mod que no puede montar (un `pack.yaml` roto,
-una dependencia que falta, otra versión de la API) se deja fuera y va al log, y los demás se montan igual:
+una dependencia que falta, otra versión de la API, ficheros de Lua sin `api`) se deja fuera y va al log, y los demás se montan igual
+(un mod solo de datos sin `api` se monta con un aviso, `warnModsWithoutApi`):
 `skippedMods()` da la lista con el motivo de cada uno, para la futura lista de mods del jugador. Primero se prueban
 todos los mods juntos; solo si eso falla se prueban uno a uno, en rondas, para que un mod que necesita otro entre
 aunque aparezca antes. Con assets de desarrollo, un mod con el id de un paquete de desarrollo se deja fuera y el

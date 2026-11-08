@@ -23,3 +23,8 @@ total: "Total {total}"
 less: "-"
 more: "+"
 max: "Max"
+# Shop extras (an optional improvement): a buy row with how many the player already has, {owned}.
+buy_row_owned: "{name}  {price}  x{owned}"
+# Shop extras: in the amount box, how many the player has and the money left after the trade.
+owned: "You have {owned}"
+money_after: "{bits} bits left after"

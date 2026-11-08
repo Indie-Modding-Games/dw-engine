@@ -69,7 +69,8 @@ public:
 private:
   void add(std::string_view pack, std::string_view layer, Modules modules) {
     memory_.addFile(std::format("{}/pack.yaml", pack),
-                    std::format("id: {}\nversion: 0.1.0\nlayer: {}\n", pack, layer));
+                    std::format("id: {}\nversion: 0.1.0\nlayer: {}\n{}", pack, layer,
+                                layer == "base" ? "" : "api: \"1.x\"\n"));
     for (const auto& [script, body] : modules) {
       memory_.addFile(std::format("{}/story/{:03}.lua", pack, script),
                       std::format("{}{}", Header, body));

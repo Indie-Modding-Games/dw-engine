@@ -205,6 +205,29 @@ readTeamPackFile(const std::filesystem::path& packs, std::string_view pack, std:
   return (*opened)->readFile(archive / path);
 }
 
+core::Result<std::vector<std::string>> listTeamPackFiles(const std::filesystem::path& packs,
+                                                         std::string_view pack,
+                                                         std::string_view folder) {
+#ifndef DWE_PACKAGE
+  if (isFolder(packs / pack)) {
+    return assets::DiskFileSystem{}.listFiles(packs / pack / folder);
+  }
+#endif
+  const std::filesystem::path archive = packs / std::format("{}{}", pack, assets::PakExtension);
+  auto opened = assets::PakFileSystem::open(archive);
+  if (!opened) {
+    return std::unexpected{opened.error()};
+  }
+  const std::string prefix = std::format("{}/", folder);
+  std::vector<std::string> files;
+  for (const assets::PakEntry& entry : (*opened)->entries()) {
+    if (entry.path.starts_with(prefix)) {
+      files.push_back(entry.path.substr(prefix.size()));
+    }
+  }
+  return files;
+}
+
 std::vector<std::string> missingCueFiles(const std::filesystem::path& image) {
   std::string extension = image.extension().string();
   std::ranges::transform(extension, extension.begin(),

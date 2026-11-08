@@ -66,7 +66,7 @@ jobs:
           mapper_paths='^(apps/mapper/|packages/rust/|scripts/mapper\.sh$)'
           grep -vE "$docs" <<<"$files" | grep -qvE "$mapper_paths" && code=true
           grep -qE "$mapper_paths" <<<"$files" && mapper=true
-          launcher_paths='^(apps/launcher/|apps/beta-gateway/|scripts/launcher\.sh$|scripts/ci/|'
+          launcher_paths='^(apps/launcher/|apps/beta-gateway/|apps/versus-signal/|scripts/launcher\.sh$|scripts/ci/|'
           launcher_paths+='scripts/package/|scripts/release_local\.sh$|\.devcontainer/launcher\.Dockerfile$)'
           grep -qE "$launcher_paths" <<<"$files" && launcher=true
           echo "code=$code launcher=$launcher mapper=$mapper base=$base"
@@ -259,6 +259,14 @@ jobs:
 
       - name: Beta gateway tests
         working-directory: apps/beta-gateway
+        run: node --test
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Versus signaling server tests
+        working-directory: apps/versus-signal
         run: node --test
 
       - name: Release scripts tests

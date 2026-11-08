@@ -1,0 +1,34 @@
+# The new game's mode list (docs/modulos/game/modes.md): with a second mode mounted (--mods tests/mods/game_mode, a
+# synthetic mod whose «practice» mode plays the original's rules), a new game from the main menu asks the mode first.
+# The original's story goes on to the rules screen; the practice mode starts right away, with no rules screen. Run it
+# with --saves <empty folder>, once per language (--lang en, --lang es); how to run it: docs/guides/prueba-vertical.md.
+name: game-modes
+device: keyboard
+timeout: 300
+main_menu: true
+new_game_rules: true
+text_fit: true
+steps:
+  - resize: [1280, 720]
+  - wait: {shown: main_menu, seconds: 1, timeout: 60}
+  - menu_select: play
+  - wait: {shown: save_slots, seconds: 0.5, timeout: 30}
+  - menu_select: slot-1
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - menu_select: yes
+  - wait: {shown: new_game_mode, seconds: 0.5, timeout: 30}
+  - expect_text_fits: all
+  - screenshot: modes
+  # The original's story asks its rules next; back from them goes to the slot list.
+  - menu_select: mode-1
+  - wait: {shown: new_game_rules, hidden: new_game_mode, seconds: 0.5, timeout: 30}
+  - screenshot: modes-original-rules
+  - menu_select: back
+  - wait: {shown: save_slots, seconds: 0.5, timeout: 30}
+  - menu_select: slot-1
+  - wait: {shown: dialog, seconds: 0.5, timeout: 30}
+  - menu_select: yes
+  - wait: {shown: new_game_mode, seconds: 0.5, timeout: 30}
+  - menu_select: mode-2
+  - wait: {map: twna01, hidden: new_game_mode, seconds: 2, timeout: 120}
+  - screenshot: modes-practice-started

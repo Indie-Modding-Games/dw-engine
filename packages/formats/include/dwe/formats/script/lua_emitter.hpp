@@ -31,6 +31,9 @@
 // - story.show_textbox(key) and story.set_selection(key, count), which returns the option picked
 // from 0 or count for
 //   a cancel, with key a text key (LuaModuleName::textSource);
+// - story.cancel_closes_choice(), a boolean: the first line of the cancel arm of a selection
+// without
+//   its end marker returns ENDED when it is true (CancelGuard; since version 4);
 // - the pure reads the IF tests use, each in the domain the original compares it in
 // (script_value.c:
 //   scriptCompareValue compares unsigned 32-bit values, scriptCompareSignedValue signed ones):
@@ -47,6 +50,12 @@ namespace dwe::formats::script {
 // (core/story_modules.hpp, which the session checks). A change to the output raises it and dwx's
 // ExtractorVersion.
 inline constexpr int LuaEmitterVersion = core::story_modules::Version;
+
+// The first line of the cancel arm of a selection without its end marker: in the original that
+// cancel runs on into the code after the selection (the first option's); with the «cancel closes
+// the choice» improvement on, the script ends there instead.
+inline constexpr std::string_view CancelGuard =
+    "if story.cancel_closes_choice() then return ENDED end";
 
 // Names a module.
 struct LuaModuleName {

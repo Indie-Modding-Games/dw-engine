@@ -53,6 +53,22 @@ struct BossParticle {
 // Its colour this frame, each channel 0 to 255.
 [[nodiscard]] std::array<std::int32_t, 3> bossParticleColour(const BossParticle& particle);
 
+// One of the nine dark flashes EAB_tick starts on the arrival's first frame (efe.c: EFECreateFlash
+// in mode 0x20: the glow's first half, subtracted from the screen): at `point` in the original's
+// axes (y down), sorted at ordering-table entry BossFlashOrder, its scale growing from 0 to
+// `scaleTo` and its grey from 0x14 to 0xff over BossFlashFrames frames (tickEFEFlash counts
+// `progress` up and takes it away there).
+struct BossFlash {
+  glm::ivec3 point{0};
+  std::int32_t scaleTo = 0;
+  std::int32_t progress = 0;
+};
+inline constexpr std::int32_t BossFlashMode = 0x20;
+inline constexpr std::int32_t BossFlashOrder = 0x22;
+inline constexpr std::int32_t BossFlashFrames = 0x32;
+inline constexpr std::int32_t BossFlashGreyFrom = 0x14;
+inline constexpr std::int32_t BossFlashGreyTo = 0xff;
+
 // What a step asks of the boss and of the sounds. Sounds are in slot 8 (the map's bank, the boss
 // bank routine 51 loaded).
 struct BossArrivalCues {
@@ -119,6 +135,8 @@ public:
     return rings_;
   }
   [[nodiscard]] const std::vector<BossParticle>& particles() const { return particles_; }
+  // The arrival's flashes still alive.
+  [[nodiscard]] const std::vector<BossFlash>& flashes() const { return flashes_; }
 
 private:
   void tickBuildup();
@@ -128,6 +146,7 @@ private:
   void addParticle(glm::vec3 point);
   void tickRings();
   void tickParticles();
+  void tickFlashes();
   void orbitAt(std::int32_t frame);
 
   bool charging_ = false;
@@ -143,6 +162,7 @@ private:
   std::int32_t solidShares_ = SolidShares;
   std::array<std::optional<BossRing>, RingSlots> rings_{};
   std::vector<BossParticle> particles_;
+  std::vector<BossFlash> flashes_;
 };
 
 } // namespace dwe::game::field

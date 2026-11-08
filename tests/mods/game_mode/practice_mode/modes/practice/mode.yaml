@@ -1,0 +1,6 @@
+id: practice
+name: practice_mode.name
+description: practice_mode.description
+ruleset: original
+rulesets: [original]
+order: 10

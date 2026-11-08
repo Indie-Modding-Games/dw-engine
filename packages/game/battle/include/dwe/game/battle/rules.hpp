@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -247,6 +248,11 @@ struct DamageRules {
   std::int32_t enemyFinisherMax = 0;
   std::int32_t min = 0;
   std::int32_t max = 0;
+  // An engine improvement: the partner's hits and the hits on it, in percent of the formula's
+  // damage, before min and max (100, the original's, when the section has none; the difficulty
+  // changes them).
+  std::int32_t partnerDealtPercent = 100;
+  std::int32_t partnerTakenPercent = 100;
 };
 
 struct StatusRules {
@@ -370,6 +376,15 @@ struct JoiningRules {
   std::vector<std::string> concaveMaps;
 };
 
+// A versus match between two players' registered partners (vs_main.c, vs_combat.c).
+struct VersusRules {
+  // The series a match may be: the number of battles (VS__BATTLE_COUNTS); a series of n needs n
+  // registered partners on each side.
+  std::vector<std::int32_t> series;
+  // Each battle's clock (VS__combatInit: VS_addFighterCounter(99)).
+  std::int32_t timeLimitSeconds = 0;
+};
+
 // Engine values for what the original's animations and map collision decide (Hueco until measured).
 struct TimingRules {
   std::int32_t attackFrames = 0;
@@ -419,6 +434,9 @@ struct BattleRules {
   SpacingRules spacing;
   ObedienceRules obedience;
   std::vector<MenuTier> menus;
+  // A versus match's menus by brain (vs_combat.c: VS__combatInit, VS__COMMANDS): no flee and no
+  // change. Empty in a ruleset without them: the battle menus then serve, without those two.
+  std::vector<MenuTier> versusMenus;
   PartnerAiRules partnerAi;
   EnemyAiRules enemyAi;
   HitRules hit;
@@ -433,6 +451,8 @@ struct BattleRules {
   RewardRules rewards;
   JoiningRules joining;
   TimingRules timing;
+  // None in a ruleset without versus matches.
+  std::optional<VersusRules> versus;
   ruleset::Quirks quirks;
   EffectRules effects;
 };

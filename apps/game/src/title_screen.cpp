@@ -79,7 +79,7 @@ TitleScreen::TitleScreen(const assets::VirtualFileSystem& files, const Options& 
     : ui_(&ui), storage_(saveStorageFor(options, keepsSaves)),
       slots_(slotsIn(files, storage_.get())),
       flow_(slots_ ? &*slots_ : nullptr, namesOf(files, options)),
-      megaOffered_(hasRuleset(files, MegaRuleset)) {}
+      modes_(game::modes::ModeCatalog::load(files)), megaOffered_(hasRuleset(files, MegaRuleset)) {}
 
 void TitleScreen::show() {
   showMenu(false);
@@ -109,6 +109,7 @@ void TitleScreen::hide() {
   ui_->hide(SaveSlotsDocument);
   ui_->hide(DialogDocument);
   ui_->hide(NewGameRulesDocument);
+  ui_->hide(NewGameModeDocument);
 }
 
 bool TitleScreen::handle(const ui::UiCommand& command) {
@@ -179,6 +180,16 @@ bool TitleScreen::handle(const ui::UiCommand& command) {
     ui_->hide(NewGameRulesDocument);
     pending_.reset();
     back();
+  } else if (name == "new_game_mode") {
+    const std::string* mode = std::get_if<std::string>(&command.value);
+    if (pending_ && mode != nullptr) {
+      ui_->hide(NewGameModeDocument);
+      chooseMode(*mode);
+    }
+  } else if (name == "new_game_mode_back") {
+    ui_->hide(NewGameModeDocument);
+    pending_.reset();
+    back();
   } else {
     return false;
   }
@@ -232,6 +243,27 @@ void TitleScreen::startOrAskRules(std::optional<PlayStart> start) {
   pending_ = std::move(start);
   ui_->hide(MainMenuDocument);
   ui_->hide(SaveSlotsDocument);
+  if (modes_.asks()) {
+    screens::publish(*ui_, modes_.settings(), "new_game_mode.revision");
+    ui_->show(NewGameModeDocument, true);
+    return;
+  }
+  if (const game::modes::GameMode* mode = modes_.catalog().defaultMode()) {
+    chooseMode(mode->id);
+    return;
+  }
+  showRules();
+}
+
+void TitleScreen::chooseMode(std::string_view mode) {
+  if (modes_.choose(mode, *pending_) == NewGameModes::Next::Start) {
+    start_ = std::exchange(pending_, std::nullopt);
+    return;
+  }
+  showRules();
+}
+
+void TitleScreen::showRules() {
   screens::publish(*ui_, {{.name = "new_game_rules.mega", .value = megaOffered_}},
                    "new_game_rules.revision");
   ui_->show(NewGameRulesDocument, true);

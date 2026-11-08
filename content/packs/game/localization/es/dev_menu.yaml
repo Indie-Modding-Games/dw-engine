@@ -1,0 +1,28 @@
+# El menú de desarrollo (F2 con las herramientas de desarrollo activadas; apps/game/src/dev_menu_screen.hpp): ejecuta
+# órdenes de la consola para probar el juego.
+title: "Menú de desarrollo"
+items: "Objetos"
+money: "Dinero"
+clock: "Velocidad del reloj"
+stats: "Estadísticas"
+care: "Cuidados"
+evolve: "Evolucionar"
+warp: "Viajar a un mapa"
+save: "Guardar ahora"
+close: "Cerrar"
+# Cuántas unidades de un objeto da cada entrada de la lista, {amount}.
+amount: "Cantidad: {amount}"
+# Pone el dinero en {bits}.
+money_set: "Dinero a {bits}"
+# El reloj del juego a {speed} veces su velocidad.
+clock_speed: "Reloj x{speed}"
+# Ataque, defensa, velocidad e inteligencia a {value}; vida y energía a {life}.
+stats_set: "Estadísticas a {value} (vida y energía {life})"
+happiness_full: "Felicidad al máximo"
+discipline_full: "Disciplina al máximo"
+rested: "Sin cansancio"
+no_mistakes: "Sin errores de cuidado"
+sleep: "Dormir"
+toilet: "Ir al baño"
+# Lo último que hizo el menú, {what}.
+done: "Hecho: {what}"

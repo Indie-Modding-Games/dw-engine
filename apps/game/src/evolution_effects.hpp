@@ -55,9 +55,11 @@ public:
 // A flash of efe.c: EFECreateFlash, as the evolution makes them.
 struct EvolutionFlash {
   glm::vec3 position{0.0F};
-  // 0 or 1: which half of the glow image it draws (MAIN_D_8013421C).
+  // 0 or 1: which half of the glow image it draws (MAIN_D_8013421C); 0x20 draws half 0
+  // subtracted from the screen (renderEFEFlash: getTPage(1, 2, ...)).
   std::int32_t mode = 0;
-  // An ordering-table entry it is sorted at, or <= 0 to sort it at its depth.
+  // An ordering-table entry it is sorted at, or <= 0 to sort it at its depth. An entry up to
+  // FlashFrontOrder draws in front of everything, a farther one behind everything.
   std::int32_t fixedDepth = -1;
   std::int32_t length = 0;
   std::int32_t scaleFrom = 0;
@@ -66,6 +68,9 @@ struct EvolutionFlash {
   glm::ivec3 colorTo{0};
   std::int32_t progress = 0;
 };
+
+inline constexpr std::int32_t FlashFrontOrder = 0x22;
+inline constexpr std::int32_t FlashSubtractMode = 0x20;
 
 // efe.c: renderEFEFlash: a flash's glow (the glow image), mirrored into four around its point.
 void addFlashPrims(const EvolutionFlash& flash, const ScenePrimFrame& frame, float focalLength,

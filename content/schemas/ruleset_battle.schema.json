@@ -521,6 +521,29 @@
               }
             }
           }
+        },
+        "versus_menus": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "brain",
+              "commands"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "brain": {
+                "type": "integer"
+              },
+              "commands": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "description": "The versus battle's menu by brain (vs_combat.c: VS__combatInit): no flee or change; optional, the battle menu when missing."
         }
       },
       "description": "The battle menu by brain."
@@ -739,6 +762,16 @@
         },
         "max": {
           "type": "integer"
+        },
+        "partner_dealt_percent": {
+          "description": "The partner's hits on the enemies, in percent of the formula's damage (100, the original's, when missing; the difficulty changes it).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "partner_taken_percent": {
+          "description": "The hits on the partner, in percent of the formula's damage (100, the original's, when missing; the difficulty changes it).",
+          "type": "integer",
+          "minimum": 0
         }
       },
       "description": "Damage formula (battle_main.c: BTL_calculateDamage)."
@@ -1264,6 +1297,31 @@
         }
       },
       "description": "Engine values for what the original's animations decide (Hueco)."
+    },
+    "versus": {
+      "type": "object",
+      "required": [
+        "series",
+        "time_limit_seconds"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "series": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "description": "The series lengths a host offers (VS__BATTLE_COUNTS)."
+        },
+        "time_limit_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The clock of each versus battle, in seconds."
+        }
+      },
+      "description": "The versus series (vs_scene.c: VS_initializeVS); optional, no versus without it."
     },
     "quirks": {
       "type": "object",

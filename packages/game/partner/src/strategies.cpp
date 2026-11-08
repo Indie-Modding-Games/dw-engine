@@ -19,6 +19,8 @@ constexpr std::int32_t ByteRange = 256;
 // Gains and multipliers are in tenths.
 constexpr std::int32_t Tenths = 10;
 constexpr std::int32_t Hundredths = 100;
+// The training section's gain_percent: 100 keeps the formula's gains.
+constexpr std::int32_t WholeGains = 100;
 
 // The original: a missed hunger window counts only when the partner did not eat enough before it
 // closed (tickHungerMechanics: `energyLevel < energyThreshold`); a missed sleep and a poop on the
@@ -129,6 +131,7 @@ public:
         value = gain.base * multiplier / Tenths;
       }
       value = value * slot / Tenths;
+      value = value * inputs.rules.get().gainPercent / WholeGains;
       if (inputs.state.get().mood.tiredness >= inputs.rules.get().tiredOutTiredness) {
         value = inputs.rules.get().tiredOutGain;
       }

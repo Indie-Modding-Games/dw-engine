@@ -50,6 +50,23 @@ constexpr std::array<std::int32_t, 18> ParticleStrength{1, 2, 3, 4, 5, 4, 3, 2, 
                                                         0, 0, 0, 0, 0, 0, 0, 0, 0};
 // MAIN_D_80134C3C: the particles' colour, its green replaced.
 constexpr std::array<std::int32_t, 3> ParticleBase{0x0a, 0xff, 0x0a};
+// EAB_D_8006170C: where EAB_tick's nine flashes glow (x, y, z in the original's axes) and the
+// scale each grows to (the vector's fourth word).
+struct FlashPlace {
+  std::int32_t x = 0;
+  std::int32_t y = 0;
+  std::int32_t z = 0;
+  std::int32_t scaleTo = 0;
+};
+constexpr std::array<FlashPlace, 9> FlashPlaces{{{0, -300, -900, 5120},
+                                                 {500, -300, -2100, 5120},
+                                                 {1000, -300, -1500, 5120},
+                                                 {600, -300, -700, 5120},
+                                                 {-800, -300, 500, 5120},
+                                                 {900, -300, -100, 5120},
+                                                 {-200, -300, -2800, 5120},
+                                                 {-1200, -300, 100, 5120},
+                                                 {-1200, -300, -2500, 5120}}};
 // EAB_tickSpawn's camera.
 constexpr std::int32_t OrbitAngleFrom = 0x71c;
 constexpr std::int32_t OrbitAngleTo = 0x171c;
@@ -113,6 +130,12 @@ BossArrivalCues BossArrival::startArrival() {
   arrivalOver_ = false;
   // eab.c: EAB_initializeParticles: no particle left from an earlier arrival.
   particles_.clear();
+  // EAB_tick: nine flashes (EFECreateFlash(0x20, place, 0x22, 0x32, 0, scale, grey 0x14, white)).
+  flashes_.clear();
+  for (const FlashPlace& place : FlashPlaces) {
+    flashes_.push_back(
+        {.point = {place.x, place.y, place.z}, .scaleTo = place.scaleTo, .progress = 0});
+  }
   BossArrivalCues cues;
   cues.sound = CallSound;
   return cues;
@@ -131,6 +154,7 @@ BossArrivalCues BossArrival::frame(glm::vec3 bossPoint,
   }
   tickRings();
   tickParticles();
+  tickFlashes();
   return cues;
 }
 
@@ -261,6 +285,14 @@ void BossArrival::tickParticles() {
   for (BossParticle& particle : particles_) {
     ++particle.timer;
   }
+}
+
+void BossArrival::tickFlashes() {
+  // efe.c: tickEFEFlash: one more frame; at its last it goes.
+  for (BossFlash& flash : flashes_) {
+    ++flash.progress;
+  }
+  std::erase_if(flashes_, [](const BossFlash& flash) { return flash.progress >= BossFlashFrames; });
 }
 
 } // namespace dwe::game::field

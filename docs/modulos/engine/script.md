@@ -110,14 +110,20 @@ Cada llamada del motor a tu script tiene un presupuesto, para que un mod roto o 
 
 ## Versión de la API
 
+> **CAMBIO DE CONTRATO (2026-11-07).** `LuaApiVersion` sube de 1.3.0 a **1.4.0**: los eventos pueden llevar una
+> tabla versionada (`HookTable`), el juego publica sus eventos para los mods y ejecuta su `scripts/main.lua`
+> ([API de Lua](../../modding/api-lua.md)), y `api` es obligatoria en las capas `mods` y `user`.
+
 `LuaApiVersion` (`api_version.hpp`) es la versión semántica de toda la API de Lua. Es un alias de
 `assets::SupportedLuaApi` (`packages/engine/assets`, `lua_api.hpp`), que es su dueño: la versión es un contrato de datos con el
 `pack.yaml`, y así `dwx validate` la comprueba sin depender de Lua. Un paquete declara en su `pack.yaml` la versión que
 piden sus scripts ([VFS](../../architecture/vfs.md)): `api: "1.x"`, cualquier 1.y, o `api: "1.3"`, la 1.3 o una
 posterior. `assets::checkPackApi` rechaza otra versión mayor o una menor más nueva que la del motor. `packages/content` lo comprueba al montar y deja fuera, con el motivo, el mod que no la cumple.
 
-Un paquete sin `api` se acepta por ahora. Está previsto exigirla a las capas `mods` y `user` en la fase 5, con la
-documentación para modders ([modding](../../modding/historia.md)).
+Un paquete de las capas `mods` o `user` tiene que declarar `api` (desde la 1.4.0, #115): `checkPackApi` y
+`modEnvironment` lo rechazan sin ella, y `packages/content` deja fuera, con el motivo, el mod con ficheros de Lua que
+no la declara. Un mod sin `api` que no trae ficheros de Lua (solo datos, como los paquetes que escribían el lanzador y el mapper antes de este cambio) todavía se monta, con un aviso en el log; un mod con Lua sin `api` se deja fuera. Los paquetes del motor (`base`, `remaster`) pueden omitirla. La documentación para quien hace mods está
+en [modding](../../modding/index.md).
 
 Subir la versión: la menor cuando se añade algo (una función, un evento, un argumento opcional); la mayor cuando se
 quita o cambia algo que un mod ya usa.
@@ -177,7 +183,12 @@ vm.hooks().declare("field.map_entered");
 vm.hooks().fire("field.map_entered", arguments);
 ```
 
-Un mod se suscribe con `hooks.on("field.map_entered", function(map) ... end)`. Los manejadores se ejecutan en el
+Un evento también se lanza con una tabla (`fire(evento, HookTable)`, desde la 1.4.0): sus campos escalares y
+`version`, la versión de la tabla; cada manejador recibe una tabla nueva, así que lo que uno cambia no lo ve el
+siguiente. Los eventos del juego (`session::GameHooks`, `game_hooks.hpp`) se lanzan así
+([API de Lua](../../modding/api-lua.md#eventos-del-juego)).
+
+Un mod se suscribe con `hooks.on("field.map_entered", function(t) ... end)`. Los manejadores se ejecutan en el
 orden de los paquetes y, dentro de cada uno, en el orden en que se registraron. Los manejadores de un paquete
 comparten una llamada, con su cuota de memoria y un presupuesto menor que el de una llamada: `instructionsPerHook`
 (250 000, unos 2 ms en release) y el techo `hookDeadline` (20 ms) por evento lanzado. Además, todos los manejadores de

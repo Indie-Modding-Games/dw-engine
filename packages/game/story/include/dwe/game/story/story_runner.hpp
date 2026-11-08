@@ -38,10 +38,12 @@ enum class RequestOutcome : std::uint8_t {
 
 // What started a script. The original marks the map's chain and talking as events
 // (script_interp.c: callScriptSection); a cell, the toilet and the systems' sections are not. An
-// event's map change shows no map name unless a script asks (consumeMapChangeShowName).
+// event's map change shows no map name unless a script asks (consumeMapChangeShowName). A cell is
+// no event, but like a talk it may name a section the map's script lacks, which ends at once.
 enum class SectionSource : std::uint8_t {
   Plain,
   Event,
+  Cell,
 };
 
 // The game rules of the script flow, from the ruleset's story section.
@@ -253,6 +255,9 @@ private:
   bool changingMap_ = false;
   bool frozen_ = false;
   SectionSource source_ = SectionSource::Plain;
+  // The cells' sections the map's script lacks: a step cell asks for its section every frame, and
+  // after the first time such a one ends at once without a word (until the script is set again).
+  std::vector<SectionRef> missingCells_;
   std::int64_t variableAtStart_ = 0;
   bool showName_ = false;
 };

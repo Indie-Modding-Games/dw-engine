@@ -59,6 +59,9 @@ struct PartnerMoveRules {
   // evolution.c: reincarnatePartner: the reborn partner's only equipped move; it keeps the learned
   // ones.
   MoveSlot rebornSlot = 0;
+  // The quirk partner_moves.quirks.forget_mask_16_bits (movesClearedBy): forgetting a move also
+  // clears other learned bits, as the original's 16-bit mask does.
+  bool forgetMask16Bits = true;
 
   // The position a new game's partner of this species equips and learns.
   [[nodiscard]] MoveSlot newGameSlotOf(std::string_view species) const;
@@ -80,10 +83,11 @@ inline constexpr std::int32_t ForgettableMoves = 0x3A;
 // percent of them, rounded half up; none at trainer level 10 or more.
 [[nodiscard]] std::int32_t movesToForget(std::int32_t known, std::int32_t trainerLevel);
 
-// utils2.c: unlearnMove: the original numbers whose learned bits forgetting a move clears. The
-// mask is 16 bits wide, so the upper sixteen moves of the move's word of 32 always go with it (an
-// original bug); 0x30 clears 0x2C's bit and 0x37 and 0x39 only that upper half.
-[[nodiscard]] std::vector<std::int32_t> movesClearedBy(std::int32_t number);
+// utils2.c: unlearnMove: the original numbers whose learned bits forgetting a move clears. With
+// `mask16Bits` (the original) the mask is 16 bits wide, so the upper sixteen moves of the move's
+// word of 32 always go with it; 0x30 clears 0x2C's bit and 0x37 and 0x39 only that upper half.
+// Without it only the move itself goes.
+[[nodiscard]] std::vector<std::int32_t> movesClearedBy(std::int32_t number, bool mask16Bits = true);
 
 // Adds a learned move, keeping the list sorted; false if it was known.
 bool learn(PartnerMoves& moves, std::string_view move);

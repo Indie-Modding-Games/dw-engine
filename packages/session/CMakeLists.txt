@@ -13,7 +13,10 @@ dwe_add_module(session
         src/field_facts.cpp
         src/field_items_adapter.cpp
         src/fishing_adapter.cpp
+        src/game_hooks.cpp
         src/tournament_adapter.cpp
+        src/versus_match.cpp
+        src/versus_series.cpp
         src/curling_adapter.cpp
         src/poop_adapter.cpp
         src/cards_adapter.cpp
@@ -41,6 +44,7 @@ dwe_add_module(session
         src/jukebox.cpp
         src/card_shop.cpp
         src/merit_shop.cpp
+        src/mod_scripts.cpp
         src/shop_counter.cpp
         src/slot_names.cpp
         src/story_adapter.cpp
@@ -105,7 +109,7 @@ dwe_add_module(session
         src/story_routines/routine_trade_shop.cpp
         src/story_routines/routine_variable_at_start.cpp
         src/story_routines/screen_routines.cpp
-    DEPS core assets audio scene ruleset field partner save evolution inventory battle story gym script fishing tournament curling weather
+    DEPS core assets audio scene ruleset field partner save evolution inventory battle story gym script fishing tournament curling weather modes versus net
     # The story tests check the API against the Lua emitter and run its listings' reference.
     TEST_LIBS dwe::formats ${LUA_LIBRARIES})
 
@@ -113,6 +117,7 @@ dwe_add_module(session
 if(TARGET dwe_session_tests)
     target_compile_definitions(dwe_session_tests PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"
                                                          DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas"
+                                                         DWE_DOCS_DIR="${PROJECT_SOURCE_DIR}/docs"
                                                          DWE_EXAMPLE_MOD="${PROJECT_SOURCE_DIR}/tests/mods/example_mod"
                                                          DWE_SESSION_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
                                                          DWE_WRITTEN_STORY="${CMAKE_CURRENT_SOURCE_DIR}/tests/data/written_story")

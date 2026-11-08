@@ -117,7 +117,8 @@ public:
     memory_.addFile("base/data/maps.yaml", dwe::assets::testing::FixtureTable);
     memory_.addFile(std::format("base/map/{}/data.yaml", OriginalMap),
                     dwe::assets::testing::fixtureMap());
-    memory_.addFile("link/pack.yaml", "id: link\nversion: 1.0.0\nlayer: mods\npriority: 1\n");
+    memory_.addFile("link/pack.yaml",
+                    "id: link\nversion: 1.0.0\nlayer: mods\npriority: 1\napi: \"1.x\"\n");
     memory_.addFile(std::format("link/map/{}/data.yaml", OriginalMap), originalMapToNewMap());
     const std::array<dwe::assets::PackLocation, 4> packs{
         dwe::assets::PackLocation{.fileSystem = &memory_,

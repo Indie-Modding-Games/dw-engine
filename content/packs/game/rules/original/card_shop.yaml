@@ -2,7 +2,8 @@
 # openBuyCardMenu, openSellCardMenu; packages/session: CardShop). Los precios son los de data/cards (CARD_PRICES por rareza).
 
 # dailyPStatTrigger (script_common.c:1398): cada día nuevo llena 6 huecos con randomLimit(0x40) + 1, otra vez si sale
-# la carta 4. Su comprobación de repetidas compara el hueco consigo mismo y nunca repite: una carta puede salir dos veces.
+# la carta 4. Su comprobación de repetidas compara el hueco consigo mismo y nunca repite: una carta puede salir dos veces
+# (rareza stock_repeats, abajo).
 stock:
   size: 6
   first: 1
@@ -29,3 +30,8 @@ trade_sound: {map: gias06b, slot: 0, sound: 23}
 # rutina 14). Solo lo usa la compra en lote del motor (opción bulk_trades): cada sobre de más cobra este precio y saca
 # sus cartas como una compra suelta. Sin la clave no hay compra en lote.
 pack_price: 500
+# Rarezas del original (true reproduce el original; otro ruleset las apaga).
+quirks:
+  # dailyPStatTrigger compara el hueco consigo mismo (st->smth[i] en vez de [j]), así que una carta puede llenar dos
+  # huecos el mismo día; medido en el código del original el 2026-11-07. false vuelve a sortear la repetida.
+  stock_repeats: true

@@ -36,9 +36,11 @@ constexpr std::array<std::string_view, 6> Screens{"hud",    "pause_menu",   "mai
                                                   "battle", "partner_menu", "save_slots"};
 
 // The other screens that take the pause menu's panel and entries in both looks (skin.yaml).
-constexpr std::array<std::string_view, 11> PanelScreens{
-    "destination_choice", "dialog",       "new_game_rules", "sleep_menu", "gym_stats", "shop_menu",
-    "naming_box",         "fishing_bait", "fishing_notice", "gym_slots",  "egg_box"};
+constexpr std::array<std::string_view, 14> PanelScreens{
+    "destination_choice", "dialog",    "new_game_rules", "sleep_menu",
+    "gym_stats",          "shop_menu", "naming_box",     "fishing_bait",
+    "fishing_notice",     "gym_slots", "egg_box",        "new_game_mode",
+    "dev_menu",           "versus"};
 
 assets::AssetId idOf(std::string_view text) {
   auto id = assets::AssetId::parse(text);
@@ -61,7 +63,8 @@ struct Content {
     // Above the game pack, so the tests' files override its own.
     memory.addFile("packs/tests/pack.yaml",
                    "id: tests\nversion: 0.1.0\nlayer: base\npriority: 2\n");
-    memory.addFile("packs/mod/pack.yaml", "id: mod\nversion: 0.1.0\nlayer: mods\npriority: 1\n");
+    memory.addFile("packs/mod/pack.yaml",
+                   "id: mod\nversion: 0.1.0\nlayer: mods\npriority: 1\napi: \"1.x\"\n");
   }
 
   void copyPack(const std::filesystem::path& folder, const std::filesystem::path& into) {
@@ -577,6 +580,8 @@ TEST_CASE("a live switch restyles every document in place and keeps its state") 
   ui->show("hud");
   ui->show("main_menu", true);
   frame(*ui, input);
+  // Continue is greyed without a save: down goes to the online versus, then to Options.
+  press(*ui, input, input::keys::Down);
   press(*ui, input, input::keys::Down);
   REQUIRE(ui->focusedElementId("main_menu") == "options");
   const std::vector<std::string> modern = textColours(*ui);
@@ -912,6 +917,43 @@ TEST_CASE("hot reload picks up an edited style sheet of the current skin") {
   CHECK(after != before);
   CHECK(ui->skin() == "edited");
   CHECK(ui->isVisible("test"));
+}
+
+TEST_CASE("hot reload picks up an edited skin.yaml of the current skin") {
+  Content content;
+  content.add("ui/test/document.rml", TestDocument);
+  content.add("ui/test/logic.lua", TestLogic);
+  constexpr std::string_view Manifest =
+      "id: edited\nname: ui_skin.modern\nextends: modern\ntheme: [ui/skins/edited/";
+  content.add("ui/skins/edited/skin.yaml", std::format("{}first]\n", Manifest));
+  content.add("ui/skins/edited/first.rcss", "body { color: #102030; }\n");
+  content.add("ui/skins/edited/second.rcss", "body { color: #405060; }\n");
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "en");
+  FakeClock clock;
+  auto ui = createUi(files, texts, &clock);
+  REQUIRE(ui->loadDocument("test", idOf("ui/test/document")));
+  ui->show("test");
+  REQUIRE(ui->setSkin("edited"));
+  ui->update();
+  const std::string before = ui->styleProperty("test", "", "color");
+
+  content.add("ui/skins/edited/skin.yaml", std::format("{}second]\n", Manifest));
+  clock.now = 1.0;
+  ui->reloadChanged();
+  ui->update();
+  const std::string after = ui->styleProperty("test", "", "color");
+  CHECK(after != before);
+  CHECK(ui->skin() == "edited");
+  CHECK(ui->isVisible("test"));
+
+  // An edit that breaks the skin in use is not taken: the look stays until the next edit.
+  content.add("ui/skins/edited/skin.yaml", "id: edited\nname: ui_skin.modern\nextends: none\n");
+  clock.now = 2.0;
+  ui->reloadChanged();
+  ui->update();
+  CHECK(ui->skin() == "edited");
+  CHECK(ui->styleProperty("test", "", "color") == after);
 }
 
 TEST_CASE(

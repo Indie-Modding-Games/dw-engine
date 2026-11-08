@@ -37,11 +37,29 @@ struct Tab {
   std::string_view id;
   std::span<const std::string_view> rows;
 };
-constexpr std::array<std::string_view, 15> GameRows{
-    "free-exploration", "walk-control",  "autosave",    "world-map",
-    "minimap-items",    "bulk-trades",   "long-names",  "evolution-requirements",
-    "canonical-stages", "status-extras", "rare-items",  "battle-speed",
-    "enemy-hp-bars",    "gym-sessions",  "name-spacing"};
+constexpr std::array<std::string_view, 23> GameRows{"free-exploration",
+                                                    "walk-control",
+                                                    "autosave",
+                                                    "world-map",
+                                                    "minimap-items",
+                                                    "bulk-trades",
+                                                    "long-names",
+                                                    "evolution-requirements",
+                                                    "canonical-stages",
+                                                    "status-extras",
+                                                    "rare-items",
+                                                    "battle-speed",
+                                                    "enemy-hp-bars",
+                                                    "gym-sessions",
+                                                    "quick-battle-start",
+                                                    "difficulty",
+                                                    "skip-evolution",
+                                                    "choice-cancel-closes",
+                                                    "fair-sickness-chance",
+                                                    "fair-evolution-average",
+                                                    "fair-move-forgetting",
+                                                    "fair-card-stock",
+                                                    "name-spacing"};
 constexpr std::array<std::string_view, 14> GraphicsRows{
     "display-mode",      "vsync",        "smooth-motion",  "hd-scenery",
     "scenery-quality",   "antialiasing", "texture-filter", "model-characters",
@@ -49,10 +67,10 @@ constexpr std::array<std::string_view, 14> GraphicsRows{
     "weather",           "seasons"};
 constexpr std::array<std::string_view, 4> SoundRows{"music-volume", "effects-volume",
                                                     "continuous-music", "reverb"};
-constexpr std::array<std::string_view, 11> InterfaceRows{
-    "ui-skin",          "ui-scale",          "language",        "text-font",
-    "translated-signs", "show-minimap",      "minimap-enemies", "digital-time",
-    "save-notice",      "need-bubble-stack", "shop-job-bar"};
+constexpr std::array<std::string_view, 14> InterfaceRows{
+    "ui-skin",      "ui-scale",        "language",     "text-font",   "translated-signs",
+    "show-minimap", "minimap-enemies", "digital-time", "save-notice", "need-bubble-stack",
+    "shop-job-bar", "shop-extras",     "art-fixes",    "dev-tools"};
 const std::array<Tab, 4> Tabs{{{.id = "game", .rows = GameRows},
                                {.id = "graphics", .rows = GraphicsRows},
                                {.id = "sound", .rows = SoundRows},
@@ -102,7 +120,7 @@ bool sentAny(const std::vector<UiCommand>& commands, std::string_view name) {
 
 // Down from the tab's first row until the row is focused.
 void focusRow(Screen& screen, std::string_view id) {
-  for (int step = 0; step < 16 && screen.ui->focusedElementId(Menu) != id; ++step) {
+  for (int step = 0; step < 32 && screen.ui->focusedElementId(Menu) != id; ++step) {
     screen.press(input::keys::Down);
   }
   REQUIRE(screen.ui->focusedElementId(Menu) == id);

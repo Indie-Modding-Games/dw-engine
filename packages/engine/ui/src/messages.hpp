@@ -132,6 +132,9 @@ inline constexpr std::string_view SkinStyleUnreadable =
 // Switching skins (ui.cpp).
 inline constexpr std::string_view UnknownSkin = "no skin '{}' in the packs";
 inline constexpr std::string_view SkinChanged = "ui: skin {}";
+inline constexpr std::string_view SkinsReloaded = "ui: skins read again ({} offered)";
+inline constexpr std::string_view SkinReloadLostSkin =
+    "ui: the edited skins no longer offer '{}', the skin in use; the old ones stay until the next edit";
 inline constexpr std::string_view SkinSwitchFailed =
     "the skin '{}' cannot be used: {}; the UI keeps '{}'";
 inline constexpr std::string_view DocumentReloadFailed = "could not reload {}: {}";

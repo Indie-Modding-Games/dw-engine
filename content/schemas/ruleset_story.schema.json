@@ -69,6 +69,57 @@
       "type": "integer",
       "minimum": 0,
       "maximum": 255
+    },
+    "capacity": {
+      "description": "What the ruleset adds to the original's 800 triggers and 256 variables, for mods (docs/modding/historia.md). Left out, nothing.",
+      "type": "object",
+      "required": [
+        "extra_triggers",
+        "extra_variables",
+        "extra_variable_max",
+        "extra_raised"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "extra_triggers": {
+          "description": "Triggers after the base's 800, numbered from 800.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        },
+        "extra_variables": {
+          "description": "Variables after the base's 256, numbered from 256; every one is saved.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "extra_variable_max": {
+          "description": "The highest value of an extra variable; a write past either end stops there.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "extra_raised": {
+          "description": "Raised triggers for the species from 63 on: species 63 + k is trigger first_trigger + k, for k below species. They must lie in the extra triggers.",
+          "type": "object",
+          "required": [
+            "first_trigger",
+            "species"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "first_trigger": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "species": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65536
+            }
+          }
+        }
+      }
     }
   }
 }

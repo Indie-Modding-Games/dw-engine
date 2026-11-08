@@ -22,7 +22,8 @@ constexpr std::int32_t ChoiceCount = 3;
 constexpr std::int32_t RecycleChoiceCount = 2;
 
 const char* phaseName(std::uint8_t phase) {
-  constexpr std::array<const char*, 5> Names{"closed", "talk", "choice", "list", "amount"};
+  constexpr std::array<const char*, 6> Names{"closed", "talk",   "choice",
+                                             "list",   "amount", "description"};
   return phase < Names.size() ? Names.at(phase) : "?";
 }
 
@@ -48,6 +49,33 @@ void ShopScreen::update() {
   }
   if (phase_ != Phase::Closed) {
     screens::publish(*desc_.ui, settings(), Revision);
+  }
+}
+
+bool ShopScreen::holdsPause() const {
+  return phase_ == Phase::List || phase_ == Phase::Description;
+}
+
+void ShopScreen::press(const input::InputState& input) {
+  // While the shop holds pause, the UI hands both pause and the menu button (Tab, the pad's top
+  // button) to the document as `menu`, which it then ignores in the list and the description: the
+  // two are told apart here. The menu button keeps working as a cancel, as it does in the other
+  // phases.
+  const bool pause = input.wasPressed("pause") && !input.wasPressed("menu");
+  const bool menu = input.wasPressed("menu");
+  if (phase_ == Phase::Description && (pause || menu)) {
+    // tickItemMenuDescriptionBox: confirm, cancel or Start closes it (the document takes the
+    // first two).
+    setPhase(Phase::List);
+  } else if (phase_ == Phase::List && menu) {
+    back();
+  } else if (phase_ == Phase::List && pause) {
+    // tickItemMenu: Start opens the description of the item under the cursor
+    // (createItemMenuDescriptionBox), none on an empty row.
+    const std::vector<Row> shown = rows();
+    if (cursor_ >= 0 && static_cast<std::size_t>(cursor_) < shown.size()) {
+      setPhase(Phase::Description);
+    }
   }
 }
 
@@ -78,6 +106,8 @@ bool ShopScreen::handle(const ui::UiCommand& command) {
     }
   } else if (name == "shop_choice" && phase_ == Phase::Choice) {
     choose(numberOf(command.value));
+  } else if (name == "shop_cursor") {
+    cursor_ = numberOf(command.value);
   } else if (name == "shop_pick" && phase_ == Phase::List) {
     pick(numberOf(command.value));
   } else if (name == "shop_amount" && phase_ == Phase::Amount) {
@@ -99,6 +129,7 @@ void ShopScreen::start() {
   saved_ = 0;
   bitsShown_ = false;
   picked_.reset();
+  cursor_ = -1;
   desc_.ui->show(ShopMenuDocument, true);
   // openShop state 0: a keeper with nothing in stock says so and the visit ends.
   const auto stock = desc_.shop->stock();
@@ -211,6 +242,10 @@ void ShopScreen::back() {
     picked_.reset();
     setPhase(Phase::List);
     break;
+  case Phase::Description:
+    // tickItemMenuDescriptionBox: the box closes and the list takes the buttons again.
+    setPhase(Phase::List);
+    break;
   case Phase::List:
     // openShop state 8: "anything else?" and the choice again.
     talk(desc_.shop->rules().lines.anythingElse, After::Choice);
@@ -258,6 +293,7 @@ std::vector<ShopScreen::Row> ShopScreen::rows() const {
       shown.push_back({.item = offer.item,
                        .price = desc_.shop->shownBuyPrice(offer.item),
                        .count = 0,
+                       .owned = desc_.shop->owned(offer.item),
                        .enabled = offer.buyable});
     }
   } else {
@@ -265,6 +301,7 @@ std::vector<ShopScreen::Row> ShopScreen::rows() const {
       shown.push_back({.item = offer.item,
                        .price = desc_.shop->sellPrice(offer.item),
                        .count = offer.count,
+                       .owned = desc_.shop->owned(offer.item),
                        .enabled = offer.sellable});
     }
   }
@@ -290,7 +327,7 @@ std::int32_t ShopScreen::maxAmount() const {
 screens::ScreenSettings ShopScreen::settings() const {
   const session::ShopCounter& shop = *desc_.shop;
   const session::ShopLines& lines = shop.rules().lines;
-  const screens::NameKeys names{nullptr, &shop.items(), nullptr};
+  const screens::NameKeys names{species_, &shop.items(), nullptr};
   // The line the counter shows: the chosen line, or the choice of the shop or the recycle shop.
   std::int32_t lineShown = line_;
   if (phase_ == Phase::Choice) {
@@ -306,6 +343,8 @@ screens::ScreenSettings ShopScreen::settings() const {
       {.name = "shop.money", .value = static_cast<double>(shop.money())},
       {.name = "shop.bits_shown", .value = bitsShown_},
       {.name = "shop.saved", .value = static_cast<double>(saved_)},
+      {.name = "shop.described",
+       .value = static_cast<double>(phase_ == Phase::Description ? cursor_ : -1)},
   };
   const std::vector<Row> shown = rows();
   out.push_back({.name = "shop.rows", .value = static_cast<double>(shown.size())});
@@ -316,8 +355,14 @@ screens::ScreenSettings ShopScreen::settings() const {
                    .value = static_cast<double>(shown[i].price)});
     out.push_back({.name = screens::listEntryName(RowsList, i, "count"),
                    .value = static_cast<double>(shown[i].count)});
+    out.push_back({.name = screens::listEntryName(RowsList, i, "owned"),
+                   .value = static_cast<double>(shown[i].owned)});
     out.push_back(
         {.name = screens::listEntryName(RowsList, i, "enabled"), .value = shown[i].enabled});
+    out.push_back({.name = screens::listEntryName(RowsList, i, "description"),
+                   .value = names.itemDescription(shown[i].item)});
+    out.push_back({.name = screens::listEntryName(RowsList, i, "description_species"),
+                   .value = names.itemDescriptionSpecies(shown[i].item)});
   }
   if (picked_) {
     const std::int32_t price =
@@ -332,6 +377,15 @@ screens::ScreenSettings ShopScreen::settings() const {
     out.push_back({.name = "shop.amount.total", .value = static_cast<double>(total)});
     out.push_back(
         {.name = "shop.amount.step", .value = static_cast<double>(shop.rules().amountStep)});
+    // Shop extras: what the bag holds and the money the trade leaves.
+    const std::int64_t after =
+        mode_ == Mode::Buy ? static_cast<std::int64_t>(shop.money()) - total
+                           : std::min<std::int64_t>(static_cast<std::int64_t>(shop.money()) + total,
+                                                    shop.maxMoney());
+    out.push_back(
+        {.name = "shop.amount.owned", .value = static_cast<double>(shop.owned(*picked_))});
+    out.push_back({.name = "shop.amount.money_after",
+                   .value = static_cast<double>(std::max<std::int64_t>(0, after))});
   }
   return out;
 }

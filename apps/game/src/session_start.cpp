@@ -2,6 +2,7 @@
 
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
+#include <dwe/game/modes/game_mode.hpp>
 #include <dwe/game/save/settings.hpp>
 #include <dwe/game/save/slots.hpp>
 #include <dwe/session/battle_adapter.hpp>
@@ -131,6 +132,7 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
       {.files = &files,
        .rulesetId = rulesetFor(files, options, play, start.storage.get()),
        .rules = std::nullopt,
+       .modeId = play.modeId.value_or(std::string{game::modes::OriginalMode}),
        .species = nullptr,
        .seed = seed,
        .storage = start.storage.get(),

@@ -311,6 +311,21 @@ void EvolutionScene::restore() {
   setPhase(Phase::Finishing);
 }
 
+void EvolutionScene::skip() {
+  if (!active()) {
+    return;
+  }
+  core::logDebug("[port:evolution] skip: the scene ends at {} frame {} as {}",
+                 phaseName(static_cast<std::uint8_t>(phase_)), frame_, target_);
+  // restore's state 3 to 4 (evl.c:569) without its last clip, then the end (partner.c:774).
+  stage_ = {};
+  scene_->setStage(stage_);
+  effects_.clear();
+  session_->useSceneSounds(std::nullopt);
+  burstClipPlaying_ = false;
+  finish();
+}
+
 void EvolutionScene::finish() {
   // partnerTickEvolving (partner.c:774): the game time and the player go on.
   core::logDebug("[port:evolution] partnerTickEvolving (partner.c:774): scene ends as {}", drawn_);

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Game mode",
+  "description": "modes/<id>/mode.yaml: a game mode, a way to play the packs' content (packages/game/modes: parseGameMode, docs/modding/modos.md).",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "description",
+    "ruleset",
+    "rulesets",
+    "order"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The mode's folder name.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "name": {
+      "description": "The localization key of the mode's name.",
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "description": "The localization key of the mode's line in the mode list.",
+      "type": "string",
+      "minLength": 1
+    },
+    "ruleset": {
+      "description": "The ruleset a new game of the mode starts with; one of rulesets.",
+      "type": "string",
+      "minLength": 1
+    },
+    "rulesets": {
+      "description": "The rulesets the new game's rules screen may choose from; with one, the screen is not shown.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "order": {
+      "description": "Where the mode goes in the mode list: lower first, then by id.",
+      "type": "integer"
+    }
+  }
+}

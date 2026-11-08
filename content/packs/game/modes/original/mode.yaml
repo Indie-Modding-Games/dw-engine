@@ -1,0 +1,10 @@
+# El modo «Historia original» (docs/modding/modos.md): la historia del juego original con sus reglas. Es el único modo
+# que trae el motor; un mod añade el suyo en modes/<id>/mode.yaml.
+id: original
+name: modes.original_name
+description: modes.original_description
+# La partida nueva empieza con las reglas del original; la pantalla de reglas deja elegir el contenido oculto
+# (docs/modulos/game/evolution.md, «Contenido oculto»).
+ruleset: original
+rulesets: [original, oculto, oculto_mega]
+order: 0

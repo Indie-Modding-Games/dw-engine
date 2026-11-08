@@ -85,12 +85,34 @@ struct HandlerCall {
   std::string_view event;
   lua_Integer index;
   std::span<const ApiValue> arguments;
+  // The table argument instead of the arguments, when the event has one.
+  const HookTable* table;
 };
+
+// The key of a hook table's version.
+constexpr const char* TableVersionKey = "version";
+
+// Pushes a fresh Lua table with the hook table's fields and its version. It is made inside the
+// pack's call, so the pack pays for it.
+void pushHookTable(lua_State* state, const HookTable& table) {
+  lua_createtable(state, 0, static_cast<int>(table.fields.size()) + 1);
+  for (const HookField& field : table.fields) {
+    pushApiValue(state, field.value);
+    lua_setfield(state, -2, field.name.c_str());
+  }
+  lua_pushinteger(state, static_cast<lua_Integer>(table.version));
+  lua_setfield(state, -2, TableVersionKey);
+}
 
 int callHandler(lua_State* state) {
   const auto* call = static_cast<const HandlerCall*>(lua_touserdata(state, 1));
   pushEventHandlers(state, call->handlers, call->event);
   if (lua_type(state, -1) != LUA_TTABLE || lua_rawgeti(state, -1, call->index) != LUA_TFUNCTION) {
+    return 0;
+  }
+  if (call->table != nullptr) {
+    pushHookTable(state, *call->table);
+    lua_call(state, 1, 0);
     return 0;
   }
   luaL_checkstack(state, static_cast<int>(call->arguments.size()), nullptr);
@@ -140,6 +162,16 @@ bool HookRegistry::isDeclared(std::string_view event) const {
 
 core::Result<HookReport> HookRegistry::fire(std::string_view event,
                                             std::span<const ApiValue> arguments) {
+  return fireWith(event, arguments, nullptr);
+}
+
+core::Result<HookReport> HookRegistry::fire(std::string_view event, const HookTable& table) {
+  return fireWith(event, {}, &table);
+}
+
+core::Result<HookReport> HookRegistry::fireWith(std::string_view event,
+                                                std::span<const ApiValue> arguments,
+                                                const HookTable* table) {
   if (!isDeclared(event)) {
     return core::fail(core::formatMessage(messages::UndeclaredEvent, event));
   }
@@ -185,7 +217,8 @@ core::Result<HookReport> HookRegistry::fire(std::string_view event,
       detail::HandlerCall call{.handlers = handlers,
                                .event = event,
                                .index = static_cast<lua_Integer>(index),
-                               .arguments = arguments};
+                               .arguments = arguments,
+                               .table = table};
       ++report.handlersRun;
       if (auto called = detail::runProtected(state, detail::callHandler, &call); !called) {
         ++report.handlersFailed;

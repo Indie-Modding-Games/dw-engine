@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace dwe::session {
@@ -21,6 +22,9 @@ namespace {
 
 using game::inventory::ItemEffect;
 using game::inventory::UseContext;
+
+// The context mods see for an item used from the bag (inventory.item_used).
+constexpr std::string_view ItemUsedOnField = "field";
 using game::partner::RefusalCheck;
 using game::partner::Stat;
 using game::partner::StatBlock;
@@ -387,6 +391,9 @@ core::Result<game::inventory::UseResult> InventoryAdapter::give(GameSession& ses
   }
   if (used->outcome == game::inventory::UseOutcome::Used && used->keyItem) {
     session.requestAutosave(game::save::AutosaveReason::KeyItem);
+  }
+  if (used->outcome == game::inventory::UseOutcome::Used) {
+    session.hooks().itemUsed(items().at(item).id, ItemUsedOnField);
   }
   session.afterSystemCommand();
   return used;

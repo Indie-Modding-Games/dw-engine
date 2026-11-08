@@ -41,8 +41,7 @@ una partida normal:
 
 | # | Hueco | Decomp | Motor |
 |---:|---|---|---|
-| 1 | En los torneos faltan detalles: el brillo de las letras del campeón, la cámara de técnica del disparo de un luchador aplastado y los efectos propios de la copa | `std/` ([Torneos](#torneos): `STD_tickChampionScene`, `STD_startQueuedMove`, `STD_initializeTournament`) | `packages/session/src/tournament_adapter.cpp`, `apps/game/src/story_tournament.cpp` |
-| 2 | Sin modo versus de dos jugadores ni la demo de combate del título (las 91 funciones de `vs/`); la máquina de guardar ya registra al compañero para él. Va a la fase 5 | `vs/` | — |
+| 1 | Sin modo versus de dos jugadores ni la demo de combate del título (las 91 funciones de `vs/`); la máquina de guardar ya registra al compañero para él. Va a la fase 5 | `vs/` | — |
 
 ## Otros huecos que no son una función del índice
 
@@ -75,14 +74,14 @@ Solo cuentan las funciones a portar (portado + parcial + falta); las atadas a la
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 38 | 37 | 1 | 0 | 99 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 95 | 95 | 0 | 0 | 100 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 40 | 40 | 0 | 0 | 100 % |
-| [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 11 | 11 | 0 | 0 | 100 % |
-| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 111 | 106 | 5 | 0 | 98 % |
-| [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 91 | 0 | 0 | 91 | 0 % |
+| [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 12 | 12 | 0 | 0 | 100 % |
+| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 113 | 113 | 0 | 0 | 100 % |
+| [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 93 | 27 | 2 | 64 | 30 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 44 | 44 | 0 | 0 | 100 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 21 | 0 | 0 | 100 % |
 | [Vídeos y final](#vídeos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 30 | 30 | 0 | 0 | 100 % |
 | [Núcleo y plataforma](#núcleo-y-plataforma) | `main/` (11 ficheros) | 51 | 51 | 0 | 0 | 100 % |
-| **Total** | 1438 funciones a portar | 1438 | 1341 | 6 | 91 | 93 % |
+| **Total** | 1443 funciones a portar | 1443 | 1376 | 3 | 64 | 95 % |
 
 ## Batalla
 
@@ -190,7 +189,7 @@ La partida en la tarjeta de memoria, la máquina de guardar y el registro para e
 
 Ficheros del decomp: `main/main_menu.c`.
 
-Portado 11, parcial 0, falta 0.
+Portado 12, parcial 0, falta 0.
 
 ## Torneos
 
@@ -198,15 +197,7 @@ Inscripción, calendario y el overlay de copas, que trae su propio motor de comb
 
 Ficheros del decomp: `dget/dget.c`, `main/tournament.c`, `std/std_effect.c`, `std/std_hud.c`, `std/std_main.c`, `std/std_setup.c`.
 
-Portado 106, parcial 5, falta 0.
-
-| Función | Decomp | Estado | Qué hace | Motor / nota |
-|---|---|---|---|---|
-| `STD_tickChampionScene` | `std/std_effect.c:1259` | parcial | Anima la escena del campeón: letras, giro de cámara y podio. | `packages/game/tournament/src/champion_show.cpp:1` · falta el brillo que recorre cada letra (copia dentro de la memoria de vídeo) |
-| `STD_tickTamerTournament` | `std/std_hud.c:540` | parcial | Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes. | `packages/game/battle/src/battle.cpp:1` · las órdenes sí; select no oculta las barras de vida |
-| `STD_tickBattleResultScreen` | `std/std_main.c:4641` | parcial | Gestiona la pantalla de resultado tras el combate de copa. | `apps/game/src/story_tournament.cpp:1` · TIME UP, la caja de daño y el empate; el que pierde no se desploma tras la caja |
-| `STD_startQueuedMove` | `std/std_main.c:6599` | parcial | — | `apps/game/src/story_tournament.cpp:627` · The flattened fighter's shot has no technique camera (STD_startQueuedMove skips |
-| `STD_initializeTournament` | `std/std_setup.c:243` | parcial | Prepara la arena de la copa: música, cámara, luces, escenario y efectos. | `apps/game/src/story_tournament.cpp:1` · modelo, suelo y cámara de la arena; sin música propia, luces ni efectos de la copa |
+Portado 113, parcial 0, falta 0.
 
 ## Versus y demo
 
@@ -214,7 +205,7 @@ El modo versus de dos jugadores y la demo de combate del título.
 
 Ficheros del decomp: `main/sound.c`, `vs/vs_camera.c`, `vs/vs_combat.c`, `vs/vs_demo.c`, `vs/vs_effect.c`, `vs/vs_hud.c`, `vs/vs_intro.c`, `vs/vs_main.c`, `vs/vs_scene.c`, `vs/vs_select.c`.
 
-Portado 0, parcial 0, falta 91.
+Portado 27, parcial 2, falta 64.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -234,17 +225,11 @@ Portado 0, parcial 0, falta 91.
 | `VS_tickCameraIntro` | `vs/vs_camera.c:658` | falta | Avanza la secuencia de cámara de la presentación del versus. | — |
 | `VS_startCameraIntro` | `vs/vs_camera.c:683` | falta | Inicia el recorrido de cámara entre los luchadores del versus. | — |
 | `VS_applyEntityViewpoint` | `vs/vs_camera.c:755` | falta | Cámara del versus anclada a la vista del luchador. | — |
-| `VS_addFighterCounter` | `vs/vs_camera.c:819` | falta | Inicia el reloj de tiempo del combate versus. | — |
-| `VS_tickFighterCounter` | `vs/vs_camera.c:828` | falta | Descuenta el reloj del combate versus. | — |
-| `VS__combatInit` | `vs/vs_combat.c:280` | falta | Prepara el combate versus: daño, reloj, marcas y fichas de ambos luchadores. | — |
-| `VS_setupDemoCombat` | `vs/vs_combat.c:449` | falta | Prepara el combate automático de la demostración. | — |
-| `VS_checkDemoEndCondition` | `vs/vs_combat.c:552` | falta | Comprueba si la demostración termina por KO, tiempo o botón. | — |
-| `VS_cleanupDemoCombat` | `vs/vs_combat.c:750` | falta | Cierra el combate de demostración y libera sus objetos. | — |
-| `VS__combatSetup` | `vs/vs_combat.c:780` | falta | Prepara los datos de combate de los dos jugadores del versus. | — |
-| `VS__checkEndCondition` | `vs/vs_combat.c:871` | falta | Comprueba fin del combate versus por KO o tiempo y decide ganador. | — |
-| `VS__tickBattle` | `vs/vs_combat.c:1143` | falta | Avanza un cuadro del combate versus. | — |
+| `VS__combatInit` | `vs/vs_combat.c:280` | parcial | Prepara el combate versus: daño, reloj, marcas y fichas de ambos luchadores. | `packages/game/battle/src/rules.cpp:1` · sin las marcas de jugador ni las fichas del HUD 3D; el versus en línea se enseña como panel |
+| `VS_setupDemoCombat` | `vs/vs_combat.c:449` | falta | Prepara el combate automático de la demostración. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
+| `VS_checkDemoEndCondition` | `vs/vs_combat.c:552` | falta | Comprueba si la demostración termina por KO, tiempo o botón. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
+| `VS_cleanupDemoCombat` | `vs/vs_combat.c:750` | falta | Cierra el combate de demostración y libera sus objetos. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
 | `VS__handlePause` | `vs/vs_combat.c:1233` | falta | Gestiona la pausa del versus por cualquiera de los jugadores. | — |
-| `VS__areAllEnemyDigimonDead` | `vs/vs_combat.c:1414` | falta | Indica si todos los rivales del versus han caído. | — |
 | `VS__addTimeoutWindow` | `vs/vs_combat.c:1505` | falta | Muestra el aviso de tiempo agotado del versus. | — |
 | `VS__tickDigimonStun` | `vs/vs_combat.c:1622` | falta | Mantiene al luchador aturdido con su animación. | — |
 | `VS__tickDigimonSenile` | `vs/vs_combat.c:1684` | falta | Mantiene al luchador senil hasta que se agote su contador. | — |
@@ -254,25 +239,19 @@ Portado 0, parcial 0, falta 91.
 | `VS__hasAffordableMoves2` | `vs/vs_combat.c:2292` | falta | Indica si el luchador tiene técnicas que pueda pagar con su MP. | — |
 | `VS__initializePlayerMarker` | `vs/vs_combat.c:2337` | falta | Añade la marca que distingue a los luchadores de la misma especie. | — |
 | `VS__clearFighterDataTables` | `vs/vs_combat.c:2343` | falta | Vacía las tablas internas de la ficha de un luchador. | — |
-| `VS_runDemoCombat` | `vs/vs_combat.c:2429` | falta | Ejecuta el combate de demostración con música y sin menús. | — |
-| `VS__combatMain` | `vs/vs_combat.c:2474` | falta | Bucle principal de un combate versus hasta el resultado. | — |
-| `VS__tickVSInput` | `vs/vs_combat.c:2592` | falta | Lee las órdenes de los jugadores durante el combate versus. | — |
-| `VS___tickVSInput` | `vs/vs_combat.c:2599` | falta | — | — |
-| `VS__tickDigimonP1` | `vs/vs_combat.c:2679` | falta | Actualiza cada cuadro al luchador del jugador 1. | — |
-| `VS__tickDigimonP2` | `vs/vs_combat.c:2684` | falta | Actualiza cada cuadro al luchador del jugador 2. | — |
-| `VS_setupDemoBattle` | `vs/vs_demo.c:107` | falta | Prepara la demostración: arena, dos luchadores al azar y sus sonidos. | — |
-| `VS_cleanupDemoBattle` | `vs/vs_demo.c:133` | falta | Retira a los luchadores y la arena al acabar la demostración. | — |
-| `VS_loadDemoAssets` | `vs/vs_demo.c:155` | falta | Elige arena y música al azar para la demostración y prepara efectos. | — |
-| `VS_loadDemoFighters` | `vs/vs_demo.c:180` | falta | Elige al azar las dos criaturas de la demostración. | — |
-| `VS_randomizeDemoFighter` | `vs/vs_demo.c:195` | falta | Genera valores y técnicas al azar para un luchador de demostración. | — |
+| `VS_runDemoCombat` | `vs/vs_combat.c:2429` | falta | Ejecuta el combate de demostración con música y sin menús. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
+| `VS_setupDemoBattle` | `vs/vs_demo.c:107` | falta | Prepara la demostración: arena, dos luchadores al azar y sus sonidos. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
+| `VS_cleanupDemoBattle` | `vs/vs_demo.c:133` | falta | Retira a los luchadores y la arena al acabar la demostración. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
+| `VS_loadDemoAssets` | `vs/vs_demo.c:155` | falta | Elige arena y música al azar para la demostración y prepara efectos. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
+| `VS_loadDemoFighters` | `vs/vs_demo.c:180` | falta | Elige al azar las dos criaturas de la demostración. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
+| `VS_randomizeDemoFighter` | `vs/vs_demo.c:195` | falta | Genera valores y técnicas al azar para un luchador de demostración. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
 | `VS_setupTrialBattle` | `vs/vs_demo.c:348` | falta | Prepara el versus de prueba con tres criaturas al azar por bando. | — |
 | `VS_randomizeTrialDigimonList` | `vs/vs_demo.c:373` | falta | Rellena la lista de criaturas al azar de un bando del versus de prueba. | — |
 | `VS_randomizeTrialDigimon` | `vs/vs_demo.c:383` | falta | Genera valores y técnicas al azar para una criatura del versus de prueba. | — |
-| `VS_playDemo` | `vs/vs_demo.c:477` | falta | Reproduce la demostración automática de combate de la pantalla de título. | — |
+| `VS_playDemo` | `vs/vs_demo.c:477` | falta | Reproduce la demostración automática de combate de la pantalla de título. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
 | `VS_initializeTrialBattle` | `vs/vs_demo.c:486` | falta | Inicia el versus de prueba con las listas de ambos jugadores. | — |
 | `VS_addCommandMenu` | `vs/vs_hud.c:449` | falta | Muestra el menú de órdenes de un jugador del versus. | — |
 | `VS_tickTargetCursor` | `vs/vs_hud.c:652` | falta | Mueve el cursor de objetivo del jugador del versus. | — |
-| `VS___tickVSInput` | `vs/vs_hud.c:688` | falta | Procesa las órdenes de un jugador del versus con su propio mando. | — |
 | `VS_addVersusModelScene` | `vs/vs_hud.c:1349` | falta | Inicia la animación del letrero de enfrentamiento del versus. | — |
 | `VS_tickVersusModelScene` | `vs/vs_hud.c:1355` | falta | Anima el letrero de enfrentamiento del versus. | — |
 | `VS_isVersusModelSceneFinished` | `vs/vs_hud.c:1401` | falta | Indica si terminó el letrero de enfrentamiento del versus. | — |
@@ -281,8 +260,6 @@ Portado 0, parcial 0, falta 91.
 | `VS_setVersusModelSceneTimer` | `vs/vs_hud.c:1549` | falta | Fija el temporizador de la escena de letreros del versus. | — |
 | `VS__setPostIntroPosition` | `vs/vs_intro.c:256` | falta | Deja al luchador en su posición final tras la presentación del versus. | — |
 | `VS__tickIntroName` | `vs/vs_intro.c:540` | falta | Muestra el nombre del luchador durante la presentación del versus. | — |
-| `VS_applyPartnerStatsToFighter` | `vs/vs_main.c:292` | falta | Copia los valores de la criatura a su ficha de luchador del versus. | — |
-| `VS_rollAttackOutcome` | `vs/vs_main.c:346` | falta | Tira el resultado de un ataque: acierto, daño y efectos. | — |
 | `VS_startAttackAnimation` | `vs/vs_main.c:553` | falta | Inicia la animación y partículas de una técnica. | — |
 | `VS_resolveAttack` | `vs/vs_main.c:562` | falta | Resuelve los impactos de las técnicas en vuelo. | — |
 | `VS_startFighterMove` | `vs/vs_main.c:797` | falta | Hace que el luchador empiece a ejecutar una técnica. | — |
@@ -291,24 +268,13 @@ Portado 0, parcial 0, falta 91.
 | `VS_updateFighterStatusVisuals` | `vs/vs_main.c:1035` | falta | Actualiza los efectos visibles de estados alterados en el versus. | — |
 | `VS_applyMoveResult` | `vs/vs_main.c:1151` | falta | Aplica el daño y efectos de una técnica que impacta en el versus. | — |
 | `VS_queueRandomMove` | `vs/vs_main.c:1735` | falta | Elige al azar técnica y objetivo para la IA del luchador. | — |
-| `VS_initializeVS` | `vs/vs_scene.c:1069` | falta | Flujo del versus: presentación y serie de combates hasta acabar. | — |
-| `VS_resetMatchState` | `vs/vs_scene.c:1128` | falta | Reinicia victorias, derrotas y ronda del versus. | — |
 | `VS_loadVSAssets` | `vs/vs_scene.c:1147` | falta | Prepara la arena del versus: música por escenario, cámara, luces y efectos. | solo lo cita la extracción del disco |
-| `VS_addInputObjects` | `vs/vs_scene.c:1184` | falta | Registra la lectura de órdenes de ambos jugadores del versus. | — |
-| `VS_loadFighterEntities` | `vs/vs_scene.c:1194` | falta | Crea a los dos luchadores del combate actual del versus. | — |
-| `VS_getFirstSpecialMove` | `vs/vs_scene.c:1545` | falta | Busca la última técnica especial que conoce una especie. | — |
-| `VS_playVersusIntroSequence` | `vs/vs_scene.c:1558` | falta | Reproduce la presentación inicial del versus. | — |
+| `VS_playVersusIntroSequence` | `vs/vs_scene.c:1558` | falta | Reproduce la presentación inicial del versus. | `apps/game/src/versus_flow.cpp:29` |
 | `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | falta | Avanza la presentación del versus por estados. | — |
 | `VS_initializeCamera` | `vs/vs_scene.c:1851` | falta | Coloca la cámara inicial de la arena del versus. | — |
-| `VS__loadTextures` | `vs/vs_select.c:271` | falta | Prepara la pantalla de selección: listas de criaturas de cada jugador. | — |
-| `VS__tickSelectDigimon` | `vs/vs_select.c:330` | falta | Bucle de selección de criaturas de los dos jugadores. | — |
-| `VS__isAlreadySelected` | `vs/vs_select.c:363` | falta | Indica si una criatura ya fue elegida para el equipo. | — |
-| `VS__handleDigimonSelected` | `vs/vs_select.c:384` | falta | Añade la criatura elegida al equipo del jugador. | — |
 | `VS__createPressStartToBeginBox` | `vs/vs_select.c:409` | falta | Muestra el aviso de pulsar Start para empezar. | — |
-| `VS__initialize` | `vs/vs_select.c:442` | falta | Flujo de preparación del versus: modo, mapa y selección de criaturas. | — |
-| `VS__tickSelectMode` | `vs/vs_select.c:989` | falta | Pantalla de elección del modo del versus (número de combates). | — |
-| `VS__tickSelectBox` | `vs/vs_select.c:1053` | falta | Mueve y confirma la opción del cuadro de selección del versus. | — |
-| `VS__tickSelectMap` | `vs/vs_select.c:1166` | falta | Pantalla de elección del escenario del versus. | — |
+| `VS__initialize` | `vs/vs_select.c:442` | parcial | Flujo de preparación del versus: modo, mapa y selección de criaturas. | `apps/game/src/versus_flow.cpp:1` · sin elección de arena (VS__tickSelectMap) |
+| `VS__tickSelectMap` | `vs/vs_select.c:1166` | falta (citada en docs) | Pantalla de elección del escenario del versus. | — |
 
 ## Minijuego de piedras
 
@@ -344,6 +310,6 @@ Portado 51, parcial 0, falta 0.
 
 ## Fuera de las cuentas
 
-1000 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
+995 funciones del decomp están atadas a la consola (dibujo, memoria, lectura del disco, sonido del hardware, tablas internas, depuración, copias del código de batalla en otros overlays) y no cuentan en ninguna cifra. `python3 scripts/port_coverage.py --list` las da con su motivo (estado `no-aplica`).
 
 <!-- port-coverage:end -->

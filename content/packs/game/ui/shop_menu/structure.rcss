@@ -40,6 +40,33 @@
 	text-align: right;
 }
 
+/* tickItemMenuDescriptionBox: pause (Start) on a row of the list opens the item's description in a box 264 x 22 like
+   the original's (createItemMenuDescriptionBox). The original puts it by the row; this list sits in the middle of the
+   screen, so the box goes right under it, over everything (from x 28 to 292, y 196 to 218). */
+#description {
+	position: absolute;
+	z-index: 10;
+	left: 84dp;
+	top: 588dp;
+	width: 792dp;
+	height: 66dp;
+	padding: 9dp 9dp;
+	box-sizing: border-box;
+	background-color: #000000e0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 39dp;
+	white-space: pre;
+}
+
+#description.hidden, #list-description.hidden, #amount-owned.hidden, #amount-after.hidden { display: none; }
+
+/* Shop extras: the focused item's description under the list. */
+#list-description {
+	display: block;
+	white-space: pre-wrap;
+}
+
 #choice-1 { nav-up: #choice-3; }
 #choice-3 { nav-down: #choice-1; }
 #row-1 { nav-up: #list-back; }

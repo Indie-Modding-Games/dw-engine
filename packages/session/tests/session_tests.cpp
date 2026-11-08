@@ -833,3 +833,32 @@ TEST_CASE(
   CHECK(shown / static_cast<std::int64_t>(Hour) == 999);
   CHECK(shown % static_cast<std::int64_t>(Hour) / static_cast<std::int64_t>(Minute) == 59);
 }
+
+TEST_CASE("a game saves the mode it plays; a save from before the modes plays the original") {
+  const TestPacks packs;
+  auto created = GameSession::create({.files = &packs.files(),
+                                      .rulesetId = "original",
+                                      .rules = std::nullopt,
+                                      .modeId = "arena",
+                                      .species = dwe::session::testing::madeUpTable(),
+                                      .seed = 7,
+                                      .storage = nullptr,
+                                      .gameVersion = "test",
+                                      .wallClock = [] { return dwe::session::testing::SaveDate; },
+                                      .systems = {}});
+  REQUIRE_MESSAGE(created.has_value(), errorOf(created));
+  GameSession& session = **created;
+  REQUIRE(session.startNewGame());
+  CHECK(session.mode() == "arena");
+
+  SaveFile file = throughText(session.saveFile().value());
+  REQUIRE(file.sections.contains("mode"));
+  const auto loaded = newGame(packs, nullptr, 99);
+  CHECK(loaded->mode() == "original");
+  REQUIRE(loaded->loadFile(file));
+  CHECK(loaded->mode() == "arena");
+
+  file.sections.erase("mode");
+  REQUIRE(loaded->loadFile(file));
+  CHECK(loaded->mode() == "original");
+}

@@ -75,6 +75,13 @@ teamPacksCandidates(const std::optional<std::filesystem::path>& executableFolder
 [[nodiscard]] core::Result<std::vector<std::byte>>
 readTeamPackFile(const std::filesystem::path& packs, std::string_view pack, std::string_view path);
 
+// Lists the files of one of the team's packs under a folder of it (relative to the pack's root),
+// as readTeamPackFile finds the pack: paths relative to that folder, with '/' between folders, in
+// no particular order.
+[[nodiscard]] core::Result<std::vector<std::string>>
+listTeamPackFiles(const std::filesystem::path& packs, std::string_view pack,
+                  std::string_view folder);
+
 // The files a CUE sheet names (FILE "<name>" ...) that are not next to it. Nothing for an image
 // that is not a CUE sheet or cannot be read: dwx says what is wrong with those.
 [[nodiscard]] std::vector<std::string> missingCueFiles(const std::filesystem::path& image);

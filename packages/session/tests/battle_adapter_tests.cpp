@@ -528,6 +528,27 @@ TEST_CASE("utils2.c unlearnMove: the 16-bit mask also clears the upper half of t
   std::ranges::copy(upperHalf(1), std::back_inserter(expected));
   CHECK(movesClearedBy(0x30) == expected);
   CHECK(movesClearedBy(0x37) == upperHalf(1));
+  // Without the quirk (partner_moves.quirks.forget_mask_16_bits false) only the move goes.
+  CHECK(movesClearedBy(1, false) == std::vector<std::int32_t>{1});
+  CHECK(movesClearedBy(0x30, false) == std::vector<std::int32_t>{0x30});
+  CHECK(movesClearedBy(0x37, false) == std::vector<std::int32_t>{0x37});
+}
+
+TEST_CASE("the original ruleset keeps unlearnMove's 16-bit mask, and another can fix it") {
+  const TestPacks packs;
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters);
+  REQUIRE(adapters.battle->finish(*session, victory()).has_value());
+  REQUIRE(adapters.battle->learnMoveNumber(1).has_value());
+  REQUIRE(adapters.battle->learnMoveNumber(22).has_value());
+  REQUIRE(session->rules()
+              .setValue("partner_moves", "quirks.forget_mask_16_bits", "false")
+              .has_value());
+  // The session reads changed rules on its next tick.
+  session->tick(0.0);
+  const std::vector<std::string> forgotten = adapters.battle->unlearnMoveNumber(*session, 1);
+  CHECK(forgotten == std::vector<std::string>{"shot"});
+  CHECK(dwe::session::knows(adapters.battle->moves(), "aqua_magic"));
 }
 
 TEST_CASE("utils2.c unlearnMove: the partner forgets the move, its place empties, others go too") {

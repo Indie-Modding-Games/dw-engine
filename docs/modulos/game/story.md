@@ -14,12 +14,17 @@ como los guarda el original (`script.h: ScriptState`). Lo usan el intérprete (`
 los warps de script del campo, que leen los disparadores y aplican sus `sets_flags`
 ([warps de script](../../architecture/warps-de-script.md)).
 
-- `StoryState`: 800 disparadores (0–799) y 256 variables de un byte. Un número fuera de rango es un error y no cambia
-  nada.
-- `toYaml`/`fromYaml`: la sección `story` de la partida guardada, versión `StoryStateVersion` (1). `triggers` son los
-  100 bytes de bits en 200 cifras hexadecimales (el byte k lleva los disparadores 8k a 8k + 7; el n, en el bit n % 8,
-  como el original), y `variables`, las 35 primeras (0–34, las que guarda `main_menu.c: writeSavegame`); las demás
-  solo viven mientras corre el juego.
+- `StoryState`: los 800 disparadores (0–799) y 256 variables del original (`BaseTriggerCount`,
+  `BaseVariableCount`) más lo que añade el ruleset (`StoryCapacity`: `capacity` de la sección `story`, numerado a
+  continuación; [capacidad](../../modding/historia.md#capacidad)). Las variables son enteros: el rango de cada una lo
+  ponen las reglas (`StoryRules::variableMax` para las del original, `extraVariableMax` para las extra). Un número
+  fuera de la capacidad es un error y no cambia nada; `setCapacity` cambia la capacidad conservando lo que cabe.
+- `toYaml`/`fromYaml`: la sección `story` de la partida guardada, versión `StoryStateVersion` (2). `triggers` son
+  los bytes de bits en cifras hexadecimales (el byte k lleva los disparadores 8k a 8k + 7; el n, en el bit n % 8,
+  como el original; 100 bytes del original y luego los extra), `variables`, las 35 primeras (0–34, las que guarda
+  `main_menu.c: writeSavegame`; las demás del original solo viven mientras corre el juego) y `extra_variables`,
+  todas las extra. `fromYaml` lee en la capacidad del ruleset y descarta, con un aviso, lo que no cabe.
+  `storyStateFromVersion1` es la migración de la versión 1 (exactamente 100 bytes y sin variables extra).
 
 - `ScreenHistory`: la pantalla actual y la anterior con sus salidas (`map.c: changeMap`, `PREVIOUS_SCREEN`,
   `PREVIOUS_EXIT`), adonde vuelve una huida (`script_interp.c`: `START_BATTLE`). `arrive` sigue cada cambio de mapa
@@ -158,6 +163,12 @@ Hablar con un personaje cuya sección no está en el guion del mapa no es un err
 `getScriptSection` da un puntero nulo, el intérprete lee los bytes de la dirección 0 y el guion acaba al momento
 (medido en el original con el personaje 0 de room08 apuntado a la sección 0x60: no pasa nada). Así le pasa al
 tendero de cartas de gias06b, el personaje 5 del guion 126, que solo tiene las secciones 0x51 y 0x52 del mostrador.
+Lo mismo vale para una casilla del mapa (`tamer.c: checkMapInteraction`, `SectionSource::Cell`): en topn01 fuera de
+la apertura la casilla de la sección 0x42 no tiene sección en el guion 193 y el runner la acaba sin anotar un error
+(antes dejaba una línea `[error]` por segundo de pie en ella). La casilla pide su sección cada fotograma: tras la primera
+vez el runner recuerda que falta y la acaba sin más líneas hasta el siguiente `set_script`; de una casilla con
+sección solo se anota la primera petición mientras el jugador sigue en ella. Las demás fuentes sin sección siguen
+siendo un error del contenido.
 
 ## Pruebas
 

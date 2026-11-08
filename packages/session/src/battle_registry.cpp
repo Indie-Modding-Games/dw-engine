@@ -212,4 +212,23 @@ core::Result<RegisteredPartner> registeredPartnerOf(const GameSession& session,
   return partner;
 }
 
+core::Result<std::vector<RegisteredPartner>>
+registeredPartnersIn(const game::save::SaveFile& file) {
+  BattleRegistry registry;
+  game::save::SaveSections sections;
+  if (auto added = registry.addSaveSections(sections); !added) {
+    return std::unexpected{added.error()};
+  }
+  if (auto read = sections.read(file); !read) {
+    return std::unexpected{read.error()};
+  }
+  std::vector<RegisteredPartner> partners;
+  for (std::size_t slot = 0; slot < BattleRegistry::Slots; ++slot) {
+    if (const auto& partner = registry.at(slot)) {
+      partners.push_back(*partner);
+    }
+  }
+  return partners;
+}
+
 } // namespace dwe::session

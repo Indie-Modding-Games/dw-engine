@@ -390,6 +390,11 @@ public:
     });
     read("money",
          [](const World& world, std::size_t /*n*/) { return ApiValue{std::int64_t{world.money}}; });
+    // The «cancel closes the choice» improvement is off: the original's cancel, as the reference.
+    REQUIRE(registry.publish(dwe::session::StoryNamespace, "cancel_closes_choice",
+                             [](const dwe::script::ApiCall&) -> dwe::core::Result<ApiValue> {
+                               return ApiValue{false};
+                             }));
     REQUIRE(registry.publish(
         dwe::session::StoryNamespace, "set_selection",
         [this](const dwe::script::ApiCall& call) -> dwe::core::Result<ApiValue> {

@@ -2,6 +2,7 @@
 #include <dwe/session/messages.hpp>
 #include <dwe/session/story_adapter.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -79,20 +80,25 @@ void StoryAdapter::runCellSections(std::span<const std::int32_t> sections) {
   if (!runner_->frameRunsNextTick()) {
     return;
   }
+  std::vector<std::int32_t> asked;
   for (const std::int32_t section : sections) {
     if (!std::in_range<std::uint16_t>(section)) {
       core::logError("[port:story] checkMapInteraction (tamer.c:660): cell {} is no section",
                      section);
       continue;
     }
-    // A step cell asks every frame: only the accepted ones are logged.
+    // A step cell asks every frame: only an accepted one the last frame did not ask is logged.
     const auto outcome = runner_->requestMapSection(static_cast<std::uint16_t>(section),
                                                     game::story::StartTiming::NextFrame,
-                                                    game::story::SectionSource::Plain);
+                                                    game::story::SectionSource::Cell);
     if (outcome == game::story::RequestOutcome::Accepted) {
-      core::logDebug("[port:story] checkMapInteraction (tamer.c:660): cell section {}", section);
+      if (!std::ranges::contains(askedCells_, section)) {
+        core::logDebug("[port:story] checkMapInteraction (tamer.c:660): cell section {}", section);
+      }
+      asked.push_back(section);
     }
   }
+  askedCells_ = std::move(asked);
 }
 
 bool StoryAdapter::scriptsMap(std::int32_t map) const {

@@ -175,6 +175,17 @@ commands:
     - { brain: 300, commands: [finisher, flee, change, distance, moderate, attack, your_call] }
     - { brain: 400, commands: [finisher, flee, change, defend, distance, moderate, attack, your_call] }
     - { brain: 500, commands: [finisher, flee, change, defend, distance, techniques, your_call] }
+  # Menús de un combate versus por inteligencia (vs_combat.c: VS__combatInit, VS__COMMANDS):
+  # sin huir ni cambiar de objetivo. Medido: inteligencia 300 da [finisher, distance, moderate,
+  # attack, your_call]; 600 sin tercera técnica da [finisher, defend, distance, técnica 2,
+  # técnica 1, your_call].
+  versus_menus:
+    - { brain: 0, commands: [finisher, your_call] }
+    - { brain: 100, commands: [finisher, attack, your_call] }
+    - { brain: 200, commands: [finisher, moderate, attack, your_call] }
+    - { brain: 300, commands: [finisher, distance, moderate, attack, your_call] }
+    - { brain: 400, commands: [finisher, defend, distance, moderate, attack, your_call] }
+    - { brain: 500, commands: [finisher, defend, distance, techniques, your_call] }
 
 # IA del partner (battle_main.c: BTL_selectPartnerMove, BTL_selectFighterTarget).
 partner_ai:
@@ -257,6 +268,11 @@ damage:
   enemy_finisher_max: 200
   min: 1
   max: 9999
+  # Mejora de dwe (no está en el original): el daño de los golpes del partner y el de los que recibe, en tanto por
+  # ciento del de la fórmula, antes del mínimo y el máximo. 100 es el original; la dificultad fácil los cambia
+  # (difficulty.yaml).
+  partner_dealt_percent: 100
+  partner_taken_percent: 100
 
 # Estados alterados (battle_main.c: BTL_applyMoveStatus, BTL_tickStatusEffects).
 status:
@@ -521,6 +537,13 @@ timing:
   retreat_trail_area_height: 230
   retreat_entry_area_width: 300
   retreat_entry_area_height: 220
+
+# Combates versus entre los partners registrados de dos jugadores (vs_main.c, vs_combat.c).
+versus:
+  # Los combates de una serie (VS__BATTLE_COUNTS); una serie de n pide n registrados a cada lado.
+  series: [1, 3, 5]
+  # El reloj de cada combate en segundos (VS__combatInit: VS_addFighterCounter(99)).
+  time_limit_seconds: 99
 
 # Rarezas del original (docs/reference/battle.md, "Rarezas"). true reproduce el original; otro ruleset las apaga.
 quirks:

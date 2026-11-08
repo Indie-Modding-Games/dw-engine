@@ -15,6 +15,8 @@
 #include <cmath>
 #include <functional>
 #include <memory>
+#include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -328,6 +330,7 @@ core::Result<void> GameSession::startNewGame(const NewGameChoice& choice) {
   state_->savedPlace.reset();
   state_->cleared = false;
   state_->clearedMap.reset();
+  state_->mode = desc_.modeId;
   file_ = {};
   file_.header.created = now();
   homeSlot_.reset();
@@ -343,6 +346,7 @@ core::Result<void> GameSession::startNewGame(const NewGameChoice& choice) {
     }
   }
   routePartnerEvents();
+  hooks_.newGame(start.partner);
   return {};
 }
 
@@ -387,6 +391,7 @@ core::Result<void> GameSession::loadFile(const game::save::SaveFile& file) {
   for (const std::unique_ptr<SessionSystem>& system : desc_.systems) {
     system->afterLoad(*this);
   }
+  hooks_.loaded();
   return {};
 }
 
@@ -436,6 +441,7 @@ bool GameSession::playing() const {
 }
 
 void GameSession::tick(double realSeconds) {
+  hooks_.beginFrame();
   followRules();
   followMap();
   advanceGameTime(realSeconds);
@@ -527,6 +533,9 @@ void GameSession::attachField(const game::field::Field& field) {
     sound_->enterMap(lastMap_);
   }
   area_ = areaOfFieldMap();
+  if (state_->playing) {
+    hooks_.mapEntered(lastMap_, std::nullopt);
+  }
 }
 
 void GameSession::detachField() {
@@ -542,6 +551,10 @@ const std::optional<FieldPlace>& GameSession::savedPlace() const {
 
 std::optional<FieldPlace> GameSession::currentPlace() const {
   return state_->currentPlace();
+}
+
+const std::string& GameSession::mode() const {
+  return state_->mode;
 }
 
 bool GameSession::gameCleared() const {
@@ -568,7 +581,7 @@ void GameSession::followMap() {
     return;
   }
   const bool changed = !lastMap_.empty();
-  lastMap_ = state_->field->mapId();
+  const std::string previous = std::exchange(lastMap_, std::string{state_->field->mapId()});
   if (sound_) {
     sound_->enterMap(lastMap_);
   }
@@ -581,6 +594,8 @@ void GameSession::followMap() {
   }
   // partner.c: setupPartnerOnWarp starts the area effects again on every map.
   state_->partner.enterMap();
+  hooks_.mapLeft(previous, lastMap_);
+  hooks_.mapEntered(lastMap_, previous);
   requestAutosave(AutosaveReason::MapChange);
 }
 
@@ -614,9 +629,12 @@ void GameSession::routePartnerEvent(const PartnerEvent& event) {
   case EventKind::Slept:
     requestAutosave(AutosaveReason::PartnerSleep);
     break;
-  case EventKind::NewDay:
+  case EventKind::NewDay: {
     requestAutosave(AutosaveReason::NewDay);
+    const ruleset::GameTime time = state_->clock.time();
+    hooks_.newDay(time.year, time.day);
     break;
+  }
   case EventKind::TamerLevelChanged:
     changeTamerLevel(event.value);
     break;

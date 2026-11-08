@@ -77,7 +77,7 @@ ProgressSession progressSession(const TestPacks& packs, MemorySaveStorage* stora
   return made;
 }
 
-std::uint8_t prosperity(const StoryAdapter& story) {
+std::int32_t prosperity(const StoryAdapter& story) {
   return story.state().variable(1).value_or(0xff);
 }
 

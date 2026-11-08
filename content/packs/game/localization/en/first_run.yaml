@@ -31,3 +31,8 @@ region.jp_rev1: "Japanese (revision 1)"
 region.other: "another region's"
 error.extract_failed: "Reading the disc failed: {detail}"
 error.no_tool: "The disc cannot be read: {detail}"
+# The language step, the game's very first start (before any was chosen): a button per language, named in itself
+# (language.yaml: name).
+language_title: "Choose your language"
+language_intro: "The game and this screen will use the language you choose. You can change it later in the options."
+language_keys: "Arrows: move   Enter: choose   Esc: quit"

@@ -14,3 +14,10 @@ new_game_species_slots: { gabu: 2 }
 # evolution.c: reincarnatePartner: el renacido equipa solo la posición 0 (moves[0] = 0x2E, el resto 0xFF) y conserva
 # las técnicas aprendidas.
 reborn_slot: 0
+# Rarezas del original (true reproduce el original; otro ruleset las apaga).
+quirks:
+  # utils2.c: unlearnMove (rutina 47, lostAllLives) borra el bit de la técnica con una máscara de 16 bits sobre una
+  # palabra de 32 (andi 0xffff, xori 0xffff, and sobre lw/sw; medido en el código del original el 2026-11-07): con ella
+  # se van las 16 técnicas altas de la palabra; 0x30 borra el bit de 0x2C y 0x37 y 0x39 solo esa mitad alta. false olvida
+  # solo la técnica elegida.
+  forget_mask_16_bits: true

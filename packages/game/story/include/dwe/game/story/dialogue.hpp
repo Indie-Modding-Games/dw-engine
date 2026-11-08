@@ -177,6 +177,12 @@ public:
 
   [[nodiscard]] const DialogueView& view() const { return view_; }
 
+  // The «cancel closes the choice» improvement (docs/modulos/game/story.md): in the original a
+  // cancel in a choice without an end marker runs the code after it, the first option's. Off by
+  // default; the extracted scripts ask for it before that code (story.cancel_closes_choice).
+  void setCancelClosesChoice(bool on) { cancelClosesChoice_ = on; }
+  [[nodiscard]] bool cancelClosesChoice() const { return cancelClosesChoice_; }
+
   std::optional<ResumeValue> poll() override;
   void scriptStarted() override;
   void frameBegan() override;
@@ -238,6 +244,7 @@ private:
   bool closeAfterPage_ = false;
   // The player skipped the sized box's pages: the pages that follow it show nothing.
   bool skipPages_ = false;
+  bool cancelClosesChoice_ = false;
 
   DialogueKeys latched_;
   bool confirmHeld_ = false;

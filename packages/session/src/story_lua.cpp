@@ -14,6 +14,7 @@
 #include <format>
 #include <limits>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -206,9 +207,14 @@ core::Result<void> StoryLuaHost::checkHeader(const assets::AssetId& id) const {
     return std::unexpected{bytes.error()};
   }
   const std::string_view text{reinterpret_cast<const char*>(bytes->data()), bytes->size()};
-  const std::string header =
-      std::format("{}{}:", core::story_modules::HeaderPrefix, core::story_modules::Version);
-  if (!text.starts_with(header)) {
+  // An older module still loads while what changed since only adds calls it lacks (a content
+  // extracted before the «cancel closes the choice» guard keeps the original's cancel).
+  const bool readable = std::ranges::any_of(
+      std::views::iota(core::story_modules::OldestReadable, core::story_modules::Version + 1),
+      [&](int version) {
+        return text.starts_with(std::format("{}{}:", core::story_modules::HeaderPrefix, version));
+      });
+  if (!readable) {
     return core::fail(messages::formatMessage(messages::StoryModuleOutdated, id.str(),
                                               core::story_modules::HeaderPrefix,
                                               core::story_modules::Version));

@@ -5,6 +5,7 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/game/field/field.hpp>
+#include <dwe/game/modes/game_mode.hpp>
 #include <dwe/game/partner/effects.hpp>
 #include <dwe/game/partner/events.hpp>
 #include <dwe/game/partner/partner.hpp>
@@ -18,6 +19,7 @@
 #include <dwe/ruleset/random.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/ruleset/ruleset_store.hpp>
+#include <dwe/session/game_hooks.hpp>
 #include <dwe/session/partner_view.hpp>
 #include <dwe/session/session_rules.hpp>
 #include <dwe/session/session_system.hpp>
@@ -122,6 +124,8 @@ struct SessionDesc {
   // --set values).
   std::string rulesetId{ruleset::OriginalRuleset};
   std::optional<ruleset::Ruleset> rules;
+  // The game mode a new game plays (packages/game/modes); a loaded game plays its save's.
+  std::string modeId{game::modes::OriginalMode};
   // The partner species, when already read (dwe-sim shares one table between its runs, tests make
   // their own); otherwise read from the ruleset's digimon and raise tables.
   std::shared_ptr<const game::partner::SpeciesTable> species;
@@ -346,6 +350,10 @@ public:
   // The play time counted (countPlayTime), as the save's header and the player page show it.
   [[nodiscard]] double playSeconds() const { return playSeconds_; }
   [[nodiscard]] std::uint64_t seed() const { return seed_; }
+  // The game mode the playthrough plays: the new game's (SessionDesc::modeId) or the loaded save's.
+  [[nodiscard]] const std::string& mode() const;
+  // The game events mods handle (game_hooks.hpp); they fire once ModScripts bound them.
+  [[nodiscard]] GameHooks& hooks() { return hooks_; }
   // The story's sound slots, or nullptr for a silent session.
   [[nodiscard]] game::story::SoundPort* sound();
   // The music: the story's, the clock's and the battles', or nullptr for a silent session.
@@ -424,6 +432,7 @@ private:
   std::string lastMap_;
   std::unique_ptr<SessionSound> sound_;
   std::unique_ptr<SessionMusic> music_;
+  GameHooks hooks_;
   game::partner::AreaResponse area_ = game::partner::AreaResponse::Neutral;
   double playSeconds_ = 0.0;
   // Real seconds saves have waited for the current care scene or wake; 0 when they do not wait.

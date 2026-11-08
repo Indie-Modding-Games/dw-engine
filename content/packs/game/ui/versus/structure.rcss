@@ -1,0 +1,27 @@
+/* The online versus (apps/game/src/versus_screen.cpp): the pause menu's panel with one view at a time. The bars and the
+   command strip are this document's own; the skins give the panel, the buttons and the texts. */
+
+#panel { width: 760dp; }
+.view { display: block; }
+.view.hidden { display: none; }
+.label { margin-top: 10dp; }
+.entry { margin: 4dp 0 4dp 18dp; font-size: 26dp; white-space: pre-line; }
+.entry.code { font-size: 44dp; letter-spacing: 8dp; }
+.warning { color: #ffb070; }
+.about { margin: 10dp 0 0 0; font-size: 18dp; }
+.row { display: block; }
+
+#match-top { text-align: center; font-size: 20dp; }
+.fighter { display: block; margin: 4dp 0; }
+.fighter-name { margin-bottom: 2dp; font-size: 20dp; }
+.bar { display: block; height: 10dp; margin: 2dp 0; background-color: #00000080; border: 1dp #d0d0d0; }
+.bar.thin { height: 4dp; }
+.fill { display: block; height: 100%; width: 0%; }
+.fill.hp { background-color: #50d060; }
+.fill.mp { background-color: #5080e0; }
+.fill.finisher { background-color: #e0c040; }
+.numbers { font-size: 16dp; }
+#commands { display: block; margin: 6dp 0; }
+.command { display: inline-block; width: auto; margin: 2dp 6dp 2dp 0; padding: 1dp 6dp; font-size: 20dp; }
+.command.current { text-decoration: underline; }
+.log { font-size: 15dp; margin: 0; }

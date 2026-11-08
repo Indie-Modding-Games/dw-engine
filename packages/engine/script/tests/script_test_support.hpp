@@ -4,6 +4,7 @@
 #include <dwe/assets/pack_manifest.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/script/api_version.hpp>
 #include <dwe/script/script_vm.hpp>
 
 #include <doctest/doctest.h>
@@ -101,8 +102,14 @@ public:
   void addPack(std::string_view id, std::string_view manifestExtra = {},
                std::string_view layer = "mods",
                assets::PackOrigin origin = assets::PackOrigin::Mod) {
-    files_.addFile(std::filesystem::path{std::string{id}} / "pack.yaml",
-                   std::format("id: {}\nversion: 1.0.0\nlayer: {}\n{}", id, layer, manifestExtra));
+    // A mod's manifest declares the API (required in the mods and user layers) unless the test
+    // gives its own.
+    const bool engineLayer = layer == "base" || layer == "remaster";
+    const std::string_view api =
+        engineLayer || manifestExtra.contains("api:") ? std::string_view{} : "api: \"1.x\"\n";
+    files_.addFile(
+        std::filesystem::path{std::string{id}} / "pack.yaml",
+        std::format("id: {}\nversion: 1.0.0\nlayer: {}\n{}{}", id, layer, api, manifestExtra));
     locations_.push_back(
         {.fileSystem = &files_, .root = std::string{id}, .fillsGaps = false, .origin = origin});
   }
@@ -149,9 +156,11 @@ std::string errorOf(const Result& result) {
   return result.error().message;
 }
 
+// A mod's manifest, written for this API (api: "1.x").
 inline assets::PackManifest packNamed(std::string_view id) {
   assets::PackManifest pack;
   pack.id = id;
+  pack.api = assets::ApiRequirement{.major = LuaApiVersion.major, .minimumMinor = std::nullopt};
   return pack;
 }
 

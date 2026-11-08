@@ -74,10 +74,10 @@ constexpr int StableFrames = 5;
 
 // The other documents menu_select picks from while they are open: the battle screen, the partner's
 // menu, free exploration's chooser, the title screen's slot list, the save dialog, the sleep
-// menu, the shop and the item keeper.
-constexpr std::array<std::string_view, 9> ScreenDocuments{
-    "partner_menu", "battle",    "destination_choice", "dialog",        "save_slots",
-    "sleep_menu",   "shop_menu", "item_keeper",        "new_game_rules"};
+// menu, the shop, the item keeper and the new game's rules and mode.
+constexpr std::array<std::string_view, 10> ScreenDocuments{
+    "partner_menu", "battle",    "destination_choice", "dialog",         "save_slots",
+    "sleep_menu",   "shop_menu", "item_keeper",        "new_game_rules", "new_game_mode"};
 
 // The menu menu_select picks from: the pause menu while it is open (over the title too, as its
 // options), then the main menu, then the battle screen or the partner's menu; the pause menu when
@@ -221,7 +221,7 @@ std::optional<std::string> storySettingText(const game::story::StoryState& story
     const core::Result<bool> set = story.trigger(number);
     return set ? std::optional<std::string>{*set ? "true" : "false"} : std::nullopt;
   }
-  const core::Result<std::uint8_t> value = story.variable(number);
+  const core::Result<std::int32_t> value = story.variable(number);
   return value ? std::optional<std::string>{std::to_string(*value)} : std::nullopt;
 }
 

@@ -38,7 +38,7 @@ dependencies:
 | `name`, `description` | No | Texto para las personas |
 | `dependencies` | No | Lista de `id` y `min_version` |
 | `schemas` | No | Qué esquema sigue cada documento YAML del paquete (ver abajo) |
-| `api` | No | Versión de la API de Lua que piden sus scripts: `1.x` (cualquier 1.y) o `1.3` (la 1.3 o posterior) ([script](../modulos/engine/script.md)). Prevista como obligatoria para `mods` y `user`; hoy sigue siendo opcional |
+| `api` | En `mods` y `user` | Versión de la API de Lua que piden sus scripts: `1.x` (cualquier 1.y) o `1.4` (la 1.4 o posterior) ([script](../modulos/engine/script.md)). Obligatoria en las capas `mods` y `user`: un mod con ficheros de Lua sin ella se deja fuera, y uno solo de datos se monta con un aviso (los escritos antes de exigirla); los paquetes del motor pueden omitirla |
 
 Una clave desconocida es un error, para que una errata no pase desapercibida. El formato también está como JSON
 Schema en [`content/schemas/pack.schema.json`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/pack.schema.json), para editores y herramientas.

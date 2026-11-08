@@ -32,6 +32,7 @@ constexpr std::string_view ManualBonusKey = "manual_bonus";
 constexpr std::string_view TiredOutTirednessKey = "tired_out_tiredness";
 constexpr std::string_view TiredOutGainKey = "tired_out_gain";
 constexpr std::string_view SlotDefaultKey = "slot_default_tenths";
+constexpr std::string_view GainPercentKey = "gain_percent";
 constexpr std::string_view OverworkTirednessKey = "overwork_tiredness";
 constexpr std::string_view OverworkHappinessKey = "overwork_happiness";
 constexpr std::string_view OverworkDisciplineKey = "overwork_discipline";
@@ -239,7 +240,8 @@ core::Result<TrainingRules> readTrainingRules(const ruleset::Section& section) {
                           PracticeBonusKey, PracticeSessionsKey, PracticeLevelBelowKey,
                           ManualBonusKey, TiredOutTirednessKey, TiredOutGainKey, SlotDefaultKey,
                           OverworkTirednessKey, OverworkHappinessKey, OverworkDisciplineKey,
-                          GainFormulaKey, PlacesKey, ruleset::QuirksKey})) {
+                          GainFormulaKey, PlacesKey, ruleset::QuirksKey},
+                         {GainPercentKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   TrainingRules rules;
@@ -257,6 +259,9 @@ core::Result<TrainingRules> readTrainingRules(const ruleset::Section& section) {
   rules.tiredOutTiredness = nonNegative(reader, root, TiredOutTirednessKey);
   rules.tiredOutGain = nonNegative(reader, root, TiredOutGainKey);
   rules.slotDefaultTenths = positive(reader, root, SlotDefaultKey);
+  if (root.find(GainPercentKey) != nullptr) {
+    rules.gainPercent = nonNegative(reader, root, GainPercentKey);
+  }
   rules.overworkTiredness = nonNegative(reader, root, OverworkTirednessKey);
   rules.overworkHappiness = integer(reader, root, OverworkHappinessKey);
   rules.overworkDiscipline = integer(reader, root, OverworkDisciplineKey);

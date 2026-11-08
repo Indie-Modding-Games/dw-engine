@@ -72,6 +72,8 @@ private:
   ShowView view_;
   std::array<bool, Letters> shown_{};
   std::array<std::int32_t, Letters> spin_{};
+  // STD_MODEL_SCENE_STEPS: how far each letter's gleam went.
+  std::array<std::int32_t, Letters> gleam_{};
   std::int32_t lettersY_ = 0;
   // STD_CHAMPION_ORBIT_ANGLES: the camera's way round the partner as the podium lifts it.
   std::array<std::int32_t, 79> orbit_{};

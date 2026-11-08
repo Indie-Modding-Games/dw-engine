@@ -1,5 +1,6 @@
 add_subdirectory(core)
 add_subdirectory(platform)
+add_subdirectory(net)
 add_subdirectory(rhi)
 add_subdirectory(input)
 add_subdirectory(assets)

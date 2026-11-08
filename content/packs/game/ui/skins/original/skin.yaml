@@ -41,7 +41,16 @@ screens:
   # Las reglas de la partida nueva (contenido oculto, paso Ultra → Mega), también.
   new_game_rules:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/new_game_rules/style]
+  # El modo de la partida nueva (solo con más de un modo), con la caja de las reglas.
+  new_game_mode:
+    styles: [ui/skins/original/pause_menu/style, ui/skins/original/new_game_rules/style]
   sleep_menu:
+    styles: [ui/skins/original/pause_menu/style]
+  # El menú de desarrollo (F2), también.
+  dev_menu:
+    styles: [ui/skins/original/pause_menu/style]
+  # El versus en línea: los paneles del menú de pausa.
+  versus:
     styles: [ui/skins/original/pause_menu/style]
   item_keeper:
     styles: [ui/skins/original/item_keeper/style]
@@ -139,7 +148,13 @@ document_classes:
     panel: [skin-original]
   new_game_rules:
     panel: [skin-original]
+  new_game_mode:
+    panel: [skin-original]
+  versus:
+    panel: [skin-original]
   sleep_menu:
+    panel: [skin-original]
+  dev_menu:
     panel: [skin-original]
   gym_stats:
     panel: [skin-original]
@@ -399,6 +414,9 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       status-happiness-name: [212, 58, 36, 12]
+      # The same word where it is in the texture (x 214 to 254, rows 60 to 67), for the art fixes option: the
+      # original's rectangle above starts two columns early and ends before the last letter.
+      status-happiness-name-fixed: [214, 60, 41, 8]
       status-speed-name: [212, 70, 36, 12]
       status-brains-name: [212, 82, 36, 12]
   - name: status-meter-icons

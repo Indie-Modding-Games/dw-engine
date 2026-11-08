@@ -208,34 +208,53 @@ TEST_CASE("a mod that cannot mount is left out with its reason, and the others s
   writeContent(folder);
   addMod(folder, "good_mod", "id: good_mod\nversion: 1.0.0\nlayer: mods\napi: \"1.x\"\n");
   addMod(folder, "other_api", "id: other_api\nversion: 1.0.0\nlayer: mods\napi: \"2.x\"\n");
-  addMod(folder, "newer_minor", "id: newer_minor\nversion: 1.0.0\nlayer: mods\napi: \"1.4\"\n");
+  addMod(folder, "newer_minor", "id: newer_minor\nversion: 1.0.0\nlayer: mods\napi: \"1.5\"\n");
   addMod(folder, "broken", "id: Broken\nversion: 1.0.0\nlayer: mods\n");
   addMod(
       folder, "lonely",
-      "id: lonely\nversion: 1.0.0\nlayer: mods\ndependencies:\n  - id: missing\n    min_version: 1.0.0\n");
+      "id: lonely\nversion: 1.0.0\nlayer: mods\napi: \"1.x\"\ndependencies:\n  - id: missing\n    min_version: 1.0.0\n");
   // Found before the mod it needs, so it mounts in a later round.
   addMod(
       folder, "a_needs_good",
-      "id: a_needs_good\nversion: 1.0.0\nlayer: mods\ndependencies:\n  - id: good_mod\n    min_version: 1.0.0\n");
+      "id: a_needs_good\nversion: 1.0.0\nlayer: mods\napi: \"1.x\"\ndependencies:\n  - id: good_mod\n"
+      "    min_version: 1.0.0\n");
+  addMod(folder, "no_api", "id: no_api\nversion: 1.0.0\nlayer: user\n");
+  folder.write(std::filesystem::path{"mods"} / "no_api" / "scripts" / "main.lua", "print(1)\n");
   const std::array mods{folder.path() / "mods"};
   auto content = GameContent::mount(folder.path() / "content", mods);
   REQUIRE_MESSAGE(content.has_value(), content.error().message);
   CHECK(packIds(**content) == std::vector<std::string>{"a_needs_good", "base", "game", "good_mod"});
-  REQUIRE((*content)->skippedMods().size() == 4);
+  REQUIRE((*content)->skippedMods().size() == 5);
+  const SkippedMod* noApi = skippedFolder(**content, "no_api");
+  REQUIRE(noApi != nullptr);
+  CHECK(noApi->reason.starts_with("pack 'no_api' is in the user layer and declares no api"));
   const SkippedMod* otherApi = skippedFolder(**content, "other_api");
   REQUIRE(otherApi != nullptr);
   CHECK(otherApi->reason ==
-        "pack 'other_api': the scripts need the Lua API 2.x, and this engine has 1.3.0");
+        "pack 'other_api': the scripts need the Lua API 2.x, and this engine has 1.4.0");
   const SkippedMod* newerMinor = skippedFolder(**content, "newer_minor");
   REQUIRE(newerMinor != nullptr);
   CHECK(newerMinor->reason ==
-        "pack 'newer_minor': the scripts need the Lua API 1.4, and this engine has 1.3.0");
+        "pack 'newer_minor': the scripts need the Lua API 1.5, and this engine has 1.4.0");
   const SkippedMod* broken = skippedFolder(**content, "broken");
   REQUIRE(broken != nullptr);
   CHECK(broken->reason.contains("pack id 'Broken' may only use a-z, 0-9 and '_'"));
   const SkippedMod* lonely = skippedFolder(**content, "lonely");
   REQUIRE(lonely != nullptr);
   CHECK(lonely->reason.contains("missing"));
+}
+
+TEST_CASE(
+    "a mod of data only without an API still mounts, as packs written before it was required") {
+  const TempFolder folder;
+  writeContent(folder);
+  addMod(folder, "images", "id: images\nversion: 1.0.0\nlayer: user\n");
+  folder.write(std::filesystem::path{"mods"} / "images" / "texture" / "a.yaml", "a: 1\n");
+  const std::array mods{folder.path() / "mods"};
+  auto content = GameContent::mount(folder.path() / "content", mods);
+  REQUIRE_MESSAGE(content.has_value(), content.error().message);
+  CHECK(packIds(**content) == std::vector<std::string>{"base", "game", "images"});
+  CHECK((*content)->skippedMods().empty());
 }
 
 TEST_CASE("a mods folder that does not exist is left out") {
@@ -253,7 +272,7 @@ TEST_CASE("with dev assets, a mod whose manifest is broken is left out like with
   writeContent(folder);
   writePack(folder, "extracted/extra", "extra", "base");
   addMod(folder, "broken", "id: Broken\nversion: 1.0.0\nlayer: mods\n");
-  addMod(folder, "good_mod", "id: good_mod\nversion: 1.0.0\nlayer: mods\n");
+  addMod(folder, "good_mod", "id: good_mod\nversion: 1.0.0\nlayer: mods\napi: \"1.x\"\n");
   const std::array mods{folder.path() / "mods"};
   auto content = GameContent::mount(folder.path() / "content", mods,
                                     extractedOnly({folder.path() / "extracted"}));
@@ -316,7 +335,7 @@ TEST_CASE(
   writePack(folder, "extracted/extra", "extra", "base");
   addMod(folder, "fake_base", "id: fake_base\nversion: 1.0.0\nlayer: base\n");
   addMod(folder, "fake_remaster", "id: fake_remaster\nversion: 1.0.0\nlayer: remaster\n");
-  addMod(folder, "good_mod", "id: good_mod\nversion: 1.0.0\nlayer: mods\n");
+  addMod(folder, "good_mod", "id: good_mod\nversion: 1.0.0\nlayer: mods\napi: \"1.x\"\n");
   // A folder given with --mods is a mods folder like any other.
   writePack(folder, "elsewhere/path_mod", "path_mod", "user");
   const std::array mods{folder.path() / "mods", folder.path() / "elsewhere"};

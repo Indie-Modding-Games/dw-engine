@@ -27,6 +27,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace dwe::assets {
 class VirtualFileSystem;
@@ -59,12 +60,26 @@ inline constexpr std::int32_t PlayerItemCount = 4;
 // The ruleset section of the story (rules/<id>/story.yaml).
 inline constexpr std::string_view StorySection = "story";
 
+// The raised triggers of the species past the base range (RaisedSpeciesLimit): species
+// RaisedSpeciesLimit + k is raised as trigger firstTrigger + k, for k below `species`. They live in
+// the ruleset's extra triggers, so a mod with more species keeps them where scripts can test them.
+struct ExtraRaisedRange {
+  std::int32_t firstTrigger = game::story::BaseTriggerCount;
+  std::int32_t species = 0;
+
+  friend bool operator==(const ExtraRaisedRange&, const ExtraRaisedRange&) = default;
+};
+
 struct StorySectionRules {
   // Engine ticks per frame of the original: the engine ticks at 60 Hz and the original's story ran
   // at 20 frames a second, so the original's is 3.
   std::uint32_t ticksPerFrame = 0;
   game::story::StoryRules rules;
   game::story::StoryFlowRules flow;
+  // What the ruleset adds to the original's 800 triggers and 256 variables (`capacity`; none when
+  // the section leaves it out).
+  game::story::StoryCapacity capacity;
+  ExtraRaisedRange extraRaised;
 };
 
 core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section);
@@ -162,8 +177,9 @@ public:
   [[nodiscard]] game::story::StoryState newGameState(std::string_view firstPartner) const;
 
   // The raised species, by number: the story owns them as triggers 0x200 + number, as the original
-  // does (script_common.c: setDigimonRaised). A number past the triggers' (the hidden content's
-  // partners) is kept apart and saved by the evolution section; a negative one is never raised.
+  // does (script_common.c: setDigimonRaised), and the ruleset's extra range (ExtraRaisedRange) past
+  // those. A number past both (the hidden content's partners) is kept apart and saved by the
+  // evolution section; a negative one is never raised.
   [[nodiscard]] bool raised(std::int32_t species) const;
   void markRaised(std::int32_t species);
   [[nodiscard]] std::set<std::int32_t> raisedSpecies() const;
@@ -228,6 +244,10 @@ private:
   // Runs a map's head section between the music's enterMap and mapHeadDone.
   void runMapHead(std::int32_t map);
   void followRules(const StorySectionRules& story, const game::story::DialogueRules& dialogue);
+  // Sizes the state to the rules' capacity and takes their extra raised range.
+  void followCapacity(const StorySectionRules& story);
+  // The trigger that marks a species raised, if it has one.
+  [[nodiscard]] std::optional<std::int32_t> raisedTrigger(std::int32_t species) const;
   core::Result<void> startRunner(const StorySectionRules& story);
 
   StoryAdapterDesc desc_;
@@ -238,9 +258,12 @@ private:
   std::int32_t fieldStartExit_ = 0;
   std::optional<assets::DigimonTable> digimon_;
   RaisedSource savedRaised_;
-  // The raised species with no trigger of their own (numbers from RaisedSpeciesLimit: the hidden
-  // content's partners); the evolution section saves them with the rest.
+  // The raised species with no trigger of their own (numbers from RaisedSpeciesLimit past the
+  // extra range: the hidden content's partners); the evolution section saves them with the rest.
   std::set<std::int32_t> extraRaised_;
+  // The capacity and the extra raised range of the rules last read.
+  game::story::StoryCapacity capacity_;
+  ExtraRaisedRange extraRaisedRange_;
   game::story::StoryState state_;
   std::int64_t shopTally_ = 0;
   std::unique_ptr<Serializer> serializer_;
@@ -271,6 +294,8 @@ private:
   std::uint32_t ticksPerFrame_ = 0;
   game::story::StoryFlowRules flow_;
   bool seedNewGame_ = true;
+  // The cell sections asked on the last frame: a step cell asks every frame, logged once.
+  std::vector<std::int32_t> askedCells_;
 };
 
 } // namespace dwe::session

@@ -779,6 +779,11 @@ void BattleScreen::openEndBox() const {
 // The opening runs at the original's battle rate, a frame each 3 of the screen's
 // (BTL_battleTickFrame waits for VSync(3)), and the battle does not run meanwhile.
 void BattleScreen::tickIntro(double seconds) {
+  if (quickStart_ && intro_->current() == screens::IntroStep::Anger &&
+      !battle_->state().matchClock) {
+    skipIntro();
+    return;
+  }
   introSeconds_ += seconds;
   while (intro_ && introSeconds_ >= IntroFrameSeconds) {
     introSeconds_ -= IntroFrameSeconds;
@@ -832,6 +837,32 @@ void BattleScreen::tickIntro(double seconds) {
       publish();
     }
   }
+}
+
+// Quick battle start (an engine improvement): the fight starts on the frame the opening would
+// have begun. The opening's end comes at once (battle_setup.c: BTL_handleBattleIntro:303-328): the
+// command strip is open, the NPCs on screen that do not fight leave the map with those off it
+// (btl.c: handleBattleStart:277), and the player stands in his battle stance where he was, with
+// the way he kept untouched; the burst's sound marks the start. The original waits at least 20
+// frames of anger marks and the banner's 200 (fewer once the player is back), at 20 a second.
+void BattleScreen::skipIntro() {
+  menu_.open();
+  publishMenu();
+  startFlight();
+  endFlight();
+  if (desc_.scene != nullptr) {
+    standPlayer();
+    desc_.scene->field().startBattleTrail(partnerWorld());
+  }
+  if (game::story::SoundPort* sound = desc_.session->sound(); sound != nullptr) {
+    sound->playSound(0, BurstSound);
+  }
+  core::logDebug("[port:battle] quick battle start: BTL_handleBattleIntro (battle_setup.c:207) "
+                 "skipped, GAME_STATE 1 at once");
+  intro_.reset();
+  desc_.ui->setSetting(BattlePhaseSetting, std::string{FightPhase});
+  publish();
+  publishIntro();
 }
 
 // Once a drawn frame, not once a tick: the banner's document redraws its hundred and more pieces
@@ -924,8 +955,8 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
     return true;
   }
   if (command.name == BattleEndCountCommand) {
-    core::logDebug("[port:audio] tickBitBox (battle_ui.c:438), renderPostBattleStatsBox "
-                   "(battle_ui.c:609): a point or a bit counted; playSound(0, 0x16)");
+    // battle_ui.c: tickBitBox, renderPostBattleStatsBox: a point or a bit counted (one a frame,
+    // so not logged).
     playSound(EndCountSound);
     return true;
   }

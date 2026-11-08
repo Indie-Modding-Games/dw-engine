@@ -25,6 +25,10 @@ namespace dwe::assets {
 class VirtualFileSystem;
 } // namespace dwe::assets
 
+namespace dwe::game::versus {
+struct VersusFighter;
+} // namespace dwe::game::versus
+
 namespace dwe::session {
 
 class InventoryAdapter;
@@ -83,6 +87,15 @@ struct BattleRequest {
   std::optional<MatchMusic> matchMusic;
 };
 
+// Where a versus battle's two fighters stand, on which map, and the spot off the field the
+// fighters walk around, as the player stands in other battles (no one stands there in a versus).
+struct VersusPlacement {
+  std::string map;
+  game::battle::Point host;
+  game::battle::Point guest;
+  game::battle::Point bystander;
+};
+
 // What a finished battle left, besides the partner's state: for the result screen and the recycle
 // shop.
 struct BattleAftermath {
@@ -131,6 +144,19 @@ public:
   // Starts a battle with the partner, at the clock's minute, seeded from the session's random
   // numbers.
   core::Result<game::battle::Battle> start(GameSession& session, BattleRequest request);
+  // A registered partner as a versus fighter (vs_scene.c: VS_loadFighterEntities): its species'
+  // row, its record's stats at full HP and MP, its three techniques and its species' finisher
+  // (VS_getFirstSpecialMove), with the normal charge mode. Fails on a species or a move this
+  // content does not have.
+  [[nodiscard]] core::Result<game::battle::Combatant>
+  versusCombatant(const game::versus::VersusFighter& fighter) const;
+  // Starts one battle of a versus series between the host's partner (1P, the battle's partner)
+  // and the guest's (2P, its rival), with the rules' clock and the seed both machines agreed on.
+  // Nothing of the session takes part, so both machines build the same battle.
+  core::Result<game::battle::Battle> startVersus(const game::versus::VersusFighter& host,
+                                                 const game::versus::VersusFighter& guest,
+                                                 const VersusPlacement& placement,
+                                                 std::uint64_t seed) const;
   // An oracle run (--original-rolls): the battles from here on roll with the original's generator
   // from this state instead (game::battle::Battle::useOriginalRolls).
   void useOriginalRolls(std::optional<std::uint32_t> state) { originalRolls_ = state; }

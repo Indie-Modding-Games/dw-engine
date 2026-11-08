@@ -273,6 +273,8 @@ struct Ui::Impl {
   Rml::Context* context = nullptr;
   SkinCatalog skins;
   SkinStyler styler{*desc.files, skins};
+  // What the skin catalog was read from, for hot reload of skin.yaml.
+  std::size_t skinSources = 0;
   // The skin's sprite sheet images not yet loaded ahead (warmOne).
   std::vector<std::string> warming;
 
@@ -1177,6 +1179,9 @@ struct Ui::Impl {
       return;
     }
     lastReloadCheck = now;
+    if (reloadSkins()) {
+      return;
+    }
     std::vector<std::string> stale;
     for (const auto& [name, document] : documents) {
       const bool changed = std::ranges::any_of(document.files, [&](const auto& file) {
@@ -1200,6 +1205,41 @@ struct Ui::Impl {
         }
       }
     }
+  }
+
+  // Reads the skin catalog again when a skin.yaml or ui/ui_skin.yaml changed, and loads every
+  // document again in the current skin as the new catalog has it. A catalog that no longer offers
+  // the current skin (a broken edit) is not taken: the old one stays until the next edit. True when
+  // the catalog was read again.
+  bool reloadSkins() {
+    const std::size_t fingerprint = SkinCatalog::sourceFingerprint(*desc.files);
+    if (fingerprint == skinSources) {
+      return false;
+    }
+    skinSources = fingerprint;
+    const std::string current{skinIdOf(styler.skin())};
+    SkinCatalog fresh = SkinCatalog::load(*desc.files);
+    if (!current.empty() && fresh.find(current) == nullptr) {
+      core::logError("{}", core::formatMessage(messages::SkinReloadLostSkin, current));
+      return true;
+    }
+    skins = std::move(fresh);
+    styler.use(current.empty() ? nullptr : skins.find(current));
+    clearRmlCaches();
+    styler.forget();
+    std::vector<std::string> names;
+    names.reserve(documents.size());
+    for (const auto& [name, document] : documents) {
+      names.push_back(name);
+    }
+    for (const std::string& name : names) {
+      if (auto swapped = replace(name); !swapped) {
+        core::logError("ui: {}", swapped.error().message);
+      }
+    }
+    warming = styler.spriteImages();
+    core::logInfo("{}", core::formatMessage(messages::SkinsReloaded, skins.skins().size()));
+    return true;
   }
 
   // Loads a document again, in the current skin, and swaps it in only when that worked: on an error
@@ -1286,6 +1326,7 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
   }
   impl->resize(desc.width, desc.height);
   impl->skins = SkinCatalog::load(*desc.files);
+  impl->skinSources = SkinCatalog::sourceFingerprint(*desc.files);
   impl->styler.use(impl->skins.find(impl->skins.defaultSkin()));
   impl->warming = impl->styler.spriteImages();
   core::logInfo("RmlUi {} started", Rml::GetVersion());

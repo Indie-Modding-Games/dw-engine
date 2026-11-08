@@ -57,7 +57,10 @@ if (auto change = field.takeMapChange()) {
   0x15c a 0xd98 de alto, con `_sin` de 512 por vuelta). `effectLerp` es el `lerp` del original con su vuelta pasado
   `t1`. Suposición sin medir (no hay estado guardado cerca del jefe): el anillo nuevo cuenta un fotograma en el mismo en
   que nace, como si su objeto fuera detrás del de la carga en la tabla de objetos.
-  La llegada (rutina de compañero 8, `EAB_tick` y `EAB_tickSpawn`) cuenta desde el fotograma siguiente: del 45 la
+  La llegada (rutina de compañero 8, `EAB_tick` y `EAB_tickSpawn`) empieza con 9 destellos oscuros (`flashes`:
+  `EFECreateFlash` en modo 0x20, la primera mitad del brillo restada de la pantalla, en el orden 0x22, de escala 0 a
+  5120 y de gris 0x14 a 0xff en 0x32 fotogramas, en los puntos de `EAB_D_8006170C`, leídos del módulo del original) y
+  cuenta desde el fotograma siguiente: del 45 la
   pantalla se resta a negro (`blackout`); en el 50 el jefe vuelve con la animación 0x21, se para el zumbido y suena el 2,
   el jefe pasa a `vabId` 5 (`bossSoundSlot`: el banco 4 de sus clips suena de la ranura 5, la que cargó la rutina 51;
   `FieldScene::setNpcSoundSlot`),
@@ -180,7 +183,9 @@ Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y
   contra las bloqueadas de antes; si ninguna está libre, gira 32 y no avanza. Para el jugador cuentan la rejilla, los
   NPC y el compañero (en el campo el original lo cuenta aquí aunque lo atraviese en la prueba de antes); el compañero
   lo hace en `PartnerFollow` (arriba). Contra una pared de frente
-  el jugador gira 0x50 y se desliza.
+  el jugador gira 0x50 y se desliza. Después el paso se aplica entero, sin volver a probar la rejilla
+  (`anim.c: applyRootMomentum`): junto al borde de una pared el jugador sigue por el rumbo girado hasta que todas
+  las salidas quedan bloqueadas, sin deslizarse a lo largo de ella (#217).
 - **Colocar** (`placeAt`, el comando de script `place`): pone al personaje exactamente donde se pide, sin pedir la
   regla de suelta.
 - **Interpolación** (del motor: el original dibuja cada personaje en su sitio de cada fotograma, sin nada en medio).
@@ -256,6 +261,7 @@ decomp no lo deja claro) o **Hueco** (falta).
 | NPC fuera de pantalla fuera del choque | `isInvisible` (`isOnScreen` 0) en `entityCheckCollision`; `species_s` en mayo04a: 0, el jugador llega a la puerta (306, 2198) | `FieldNpcs::setOnScreen`, `collides`, `FieldScene::followNpcs` | `field_tests`: "an NPC off screen is out of the collision ..."; antes el jugador se paraba en z = 1600, ahora llega a (331, 2200) | Igual |
 | Choque del compañero con un NPC | `entityCheckEntityCollision` con los cuadrados de los NPC | `FieldNpcs::blocks` en `npcBlocks` | — | Suposición |
 | Choque con desvío de hasta 0x50 | `map.c: collisionGrace`, `COLLISION_GRACE_ROTATION` | `collisionGrace`, `walkForward`, `stepCollides` | `field_tests`: "against a wall straight ahead ..."; oráculo `field_walk` | Igual |
+| Paso tras el desvío junto al borde de una pared (#217) | `anim.c: applyRootMomentum` mueve por el rumbo girado menos las salidas bloqueadas y no prueba más el mapa; medido en trop01 en (2788, −1494), ejes del original, con giro inicial 0xEEB: derecha 30 fotogramas gira a 0xA50 y va (+78, +61); izquierda (−283, −323); abajo (+318, −319); arriba no se mueve (gira a 0x650) | `walkForward` suma el paso (antes `moveOnGrid`, que lo recortaba por ejes y deslizaba junto a la pared: derecha (+355, 0)); ahora derecha (+79, +62), izquierda (−283, −322), abajo (+318, −318), arriba nada | `field_tests`: "a step aside of a wall's edge goes on along the turned facing, not along the wall" | Igual |
 | Compañero contra un NPC | `map.c: partnerTickCollision` | `PartnerFollow::collisionGrace` | oráculo `field_walk` | Igual |
 | Andar o pararse del compañero | `partner.c: getPartnerTamerCloseness`, solo la distancia | igual, también siguiendo el rastro | `field_tests`: seguimiento | Igual |
 | Rumbo del compañero con el jugador delante | recupera el que tenía (`partnerTickCollision`) | igual | oráculo `field_walk_seen` | Igual |

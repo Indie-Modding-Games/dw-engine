@@ -39,6 +39,8 @@ schemas:
     - rules/*/save
   save_settings:
     - save/settings
+  versus_network:
+    - versus/network
   ruleset_life:
     - rules/*/life
   ruleset_species_extra:
@@ -107,5 +109,9 @@ schemas:
     - rules/*/city
   ruleset_medals:
     - rules/*/medals
+  ruleset_difficulty:
+    - rules/*/difficulty
   sign_overlay:
     - signs/*
+  mode:
+    - modes/*/mode

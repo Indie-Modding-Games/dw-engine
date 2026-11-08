@@ -66,7 +66,18 @@ constexpr std::string_view EffectsVolumeKey = "effects_volume";
 constexpr std::string_view ReverbKey = "reverb";
 constexpr std::string_view BattleSpeedKey = "battle_speed";
 constexpr std::string_view EnemyHpBarsKey = "enemy_hp_bars";
+constexpr std::string_view ShopExtrasKey = "shop_extras";
+constexpr std::string_view ArtFixesKey = "art_fixes";
+constexpr std::string_view DevToolsKey = "dev_tools";
 constexpr std::string_view GymSessionsKey = "gym_sessions";
+constexpr std::string_view QuickBattleStartKey = "quick_battle_start";
+constexpr std::string_view DifficultyKey = "difficulty";
+constexpr std::string_view SkipEvolutionKey = "skip_evolution";
+constexpr std::string_view ChoiceCancelClosesKey = "choice_cancel_closes";
+constexpr std::string_view FairSicknessChanceKey = "fair_sickness_chance";
+constexpr std::string_view FairEvolutionAverageKey = "fair_evolution_average";
+constexpr std::string_view FairMoveForgettingKey = "fair_move_forgetting";
+constexpr std::string_view FairCardStockKey = "fair_card_stock";
 
 } // namespace
 
@@ -214,6 +225,30 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
     }
     if (const core::YamlNode* sessions = tree->find(GymSessionsKey)) {
       settings.gymSessions = reader.integer<int>(*sessions);
+    }
+    for (const auto& [key, flag] :
+         {std::pair{QuickBattleStartKey, &UserSettings::quickBattleStart},
+          std::pair{SkipEvolutionKey, &UserSettings::skipEvolution},
+          std::pair{ChoiceCancelClosesKey, &UserSettings::choiceCancelCloses},
+          std::pair{FairSicknessChanceKey, &UserSettings::fairSicknessChance},
+          std::pair{FairEvolutionAverageKey, &UserSettings::fairEvolutionAverage},
+          std::pair{FairMoveForgettingKey, &UserSettings::fairMoveForgetting},
+          std::pair{FairCardStockKey, &UserSettings::fairCardStock}}) {
+      if (const core::YamlNode* value = tree->find(key)) {
+        settings.*flag = reader.boolean(*value);
+      }
+    }
+    if (const core::YamlNode* difficulty = tree->find(DifficultyKey)) {
+      settings.difficulty = reader.text(*difficulty);
+    }
+    if (const core::YamlNode* extras = tree->find(ShopExtrasKey)) {
+      settings.shopExtras = reader.boolean(*extras);
+    }
+    if (const core::YamlNode* fixes = tree->find(ArtFixesKey)) {
+      settings.artFixes = reader.boolean(*fixes);
+    }
+    if (const core::YamlNode* tools = tree->find(DevToolsKey)) {
+      settings.devTools = reader.boolean(*tools);
     }
   }
   return reader.finish(std::move(settings), messages::UserSettingsContext);
@@ -385,6 +420,29 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
     root.set(std::string{GymSessionsKey},
              core::YamlNode::scalar(std::to_string(*settings.gymSessions)));
   }
+  for (const auto& [key, flag] :
+       {std::pair{QuickBattleStartKey, &UserSettings::quickBattleStart},
+        std::pair{SkipEvolutionKey, &UserSettings::skipEvolution},
+        std::pair{ChoiceCancelClosesKey, &UserSettings::choiceCancelCloses},
+        std::pair{FairSicknessChanceKey, &UserSettings::fairSicknessChance},
+        std::pair{FairEvolutionAverageKey, &UserSettings::fairEvolutionAverage},
+        std::pair{FairMoveForgettingKey, &UserSettings::fairMoveForgetting},
+        std::pair{FairCardStockKey, &UserSettings::fairCardStock}}) {
+    if (const std::optional<bool>& value = settings.*flag; value) {
+      root.set(std::string{key}, core::YamlNode::scalar(*value ? "true" : "false"));
+    }
+  }
+  if (settings.difficulty) {
+    root.set(std::string{DifficultyKey}, core::YamlNode::scalar(*settings.difficulty));
+  }
+  const auto flag = [&root](std::string_view key, const std::optional<bool>& value) {
+    if (value) {
+      root.set(std::string{key}, core::YamlNode::scalar(*value ? "true" : "false"));
+    }
+  };
+  flag(ShopExtrasKey, settings.shopExtras);
+  flag(ArtFixesKey, settings.artFixes);
+  flag(DevToolsKey, settings.devTools);
   return core::emitYaml(root);
 }
 

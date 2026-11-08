@@ -1,6 +1,7 @@
 id: test_contrast
 version: 0.1.0
 layer: mods
+api: "1.4"
 priority: 0
 name: "Aspecto de prueba"
 description: "Un aspecto sintético y mínimo para los tests y la ruta de aspectos: extiende el moderno y cambia colores en todas las pantallas. Prueba que un mod añade un aspecto sin tocar el motor."

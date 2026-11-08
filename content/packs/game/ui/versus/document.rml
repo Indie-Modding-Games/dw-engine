@@ -1,0 +1,140 @@
+<rml>
+<head>
+	<title>Online versus</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<div id="panel">
+			<h1 id="title" text-key="versus.title"></h1>
+
+			<!-- Host or join. -->
+			<div id="view-menu" class="view">
+				<button id="menu-0" onclick="pick(0)" text-key="versus.menu.host"></button>
+				<button id="menu-1" onclick="pick(1)" text-key="versus.menu.join"></button>
+				<button id="menu-2" onclick="pick(2)" text-key="common.back"></button>
+				<p class="about" text-key="versus.menu.about"></p>
+			</div>
+
+			<!-- The host's series length. -->
+			<div id="view-host_setup" class="view">
+				<p text-key="versus.host_setup.question"></p>
+				<button id="series" onclick="act('confirm')"></button>
+				<p class="about" text-key="versus.host_setup.hint"></p>
+			</div>
+
+			<!-- The host waits for the guest with its room code. -->
+			<div id="view-hosting" class="view">
+				<p id="hosting-stage"></p>
+				<p id="hosting-code-label" class="label" text-key="versus.hosting.code"></p>
+				<p id="hosting-code" class="entry code"></p>
+				<p class="about" text-key="versus.hosting.network"></p>
+			</div>
+
+			<!-- The guest types the host's room code. -->
+			<div id="view-join_entry" class="view">
+				<p text-key="versus.join.prompt"></p>
+				<p id="typed" class="entry"></p>
+				<p id="bad-entry" class="warning" text-key="versus.join.bad"></p>
+				<p class="about" text-key="versus.join.hint"></p>
+			</div>
+
+			<div id="view-joining" class="view">
+				<p text-key="versus.joining"></p>
+			</div>
+
+			<!-- The save to bring partners from. -->
+			<div id="view-save_pick" class="view">
+				<p text-key="versus.save_pick.title"></p>
+				<button id="save-0" class="row" onclick="pick(0)"></button>
+				<button id="save-1" class="row" onclick="pick(1)"></button>
+				<button id="save-2" class="row" onclick="pick(2)"></button>
+				<button id="save-3" class="row" onclick="pick(3)"></button>
+				<button id="save-4" class="row" onclick="pick(4)"></button>
+				<button id="save-5" class="row" onclick="pick(5)"></button>
+				<button id="save-6" class="row" onclick="pick(6)"></button>
+				<button id="save-7" class="row" onclick="pick(7)"></button>
+				<p id="no-saves" class="warning" text-key="versus.save_pick.none"></p>
+			</div>
+
+			<!-- The partners for each battle, in order. -->
+			<div id="view-lineup" class="view">
+				<p id="lineup-title"></p>
+				<button id="partner-0" class="row" onclick="pick(0)"></button>
+				<button id="partner-1" class="row" onclick="pick(1)"></button>
+				<button id="partner-2" class="row" onclick="pick(2)"></button>
+				<button id="partner-3" class="row" onclick="pick(3)"></button>
+				<button id="partner-4" class="row" onclick="pick(4)"></button>
+				<button id="partner-5" class="row" onclick="pick(5)"></button>
+				<button id="partner-6" class="row" onclick="pick(6)"></button>
+				<button id="partner-7" class="row" onclick="pick(7)"></button>
+				<button id="partner-8" class="row" onclick="pick(8)"></button>
+				<button id="partner-9" class="row" onclick="pick(9)"></button>
+				<p id="picks" class="about"></p>
+			</div>
+
+			<div id="view-waiting_lineup" class="view">
+				<p text-key="versus.waiting_lineup"></p>
+			</div>
+
+			<!-- A battle: the score, the clock, both fighters, this side's commands and what happened. -->
+			<div id="view-match" class="view">
+				<p id="match-top"></p>
+				<div class="fighter" id="fighter-0">
+					<p id="f0-name" class="fighter-name"></p>
+					<div class="bar"><div id="f0-hp" class="fill hp"></div></div>
+					<div class="bar"><div id="f0-mp" class="fill mp"></div></div>
+					<div class="bar thin"><div id="f0-finisher" class="fill finisher"></div></div>
+					<p id="f0-numbers" class="numbers"></p>
+				</div>
+				<div class="fighter" id="fighter-1">
+					<p id="f1-name" class="fighter-name"></p>
+					<div class="bar"><div id="f1-hp" class="fill hp"></div></div>
+					<div class="bar"><div id="f1-mp" class="fill mp"></div></div>
+					<div class="bar thin"><div id="f1-finisher" class="fill finisher"></div></div>
+					<p id="f1-numbers" class="numbers"></p>
+				</div>
+				<div id="commands">
+					<button id="command-0" class="command" onclick="pick(0)"></button>
+					<button id="command-1" class="command" onclick="pick(1)"></button>
+					<button id="command-2" class="command" onclick="pick(2)"></button>
+					<button id="command-3" class="command" onclick="pick(3)"></button>
+					<button id="command-4" class="command" onclick="pick(4)"></button>
+					<button id="command-5" class="command" onclick="pick(5)"></button>
+					<button id="command-6" class="command" onclick="pick(6)"></button>
+					<button id="command-7" class="command" onclick="pick(7)"></button>
+				</div>
+				<p id="log-0" class="log"></p>
+				<p id="log-1" class="log"></p>
+				<p id="log-2" class="log"></p>
+				<p id="log-3" class="log"></p>
+				<p id="stalled" class="warning" text-key="versus.match.stalled"></p>
+				<p id="leave-asked" class="warning" text-key="versus.match.leave"></p>
+			</div>
+
+			<!-- Between battles and at the end: the score. -->
+			<div id="view-intermission" class="view">
+				<p id="round-result"></p>
+				<p id="intermission-score"></p>
+			</div>
+			<div id="view-result" class="view">
+				<p id="winner"></p>
+				<p id="result-score"></p>
+				<p id="result-rounds" class="about"></p>
+			</div>
+
+			<div id="view-error" class="view">
+				<p id="error" class="warning"></p>
+				<p id="error-detail" class="about"></p>
+			</div>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="common.back"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

@@ -268,14 +268,14 @@ bool ItemTrader::open(ItemTraderVisit visit) {
   }
   auto& state = desc_.story->state();
   const auto table = state.variable(static_cast<std::int32_t>(rules_->tableVariable));
-  if (!table || *table >= rules_->tables.size()) {
+  if (!table || *table < 0 || static_cast<std::size_t>(*table) >= rules_->tables.size()) {
     core::logWarning("[port:trader] openMojyamonShop (shop/script_menu.c:1051): variable {} names "
                      "no trade table; the routine closes at once",
                      rules_->tableVariable);
     return false;
   }
   // State 0: the table, then writePStat(249, 0xff).
-  table_ = *table;
+  table_ = static_cast<std::size_t>(*table);
   if (auto set = state.setVariable(static_cast<std::int32_t>(rules_->tableVariable),
                                    static_cast<std::uint8_t>(rules_->noItem));
       !set) {

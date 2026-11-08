@@ -138,7 +138,7 @@ private:
   static std::optional<std::size_t>
   strongestOrCheapest(const BattleView& view, const std::array<bool, EquippedSlots>& usable,
                       bool strongest) {
-    const Fighter& self = view.state->partner();
+    const Fighter& self = view.state->fighters.at(view.actor);
     std::array<bool, EquippedSlots> marks = usable;
     SlotValues values{};
     for (std::size_t slot = 0; slot < TechniqueSlots; ++slot) {
@@ -171,7 +171,7 @@ private:
   // battle_main.c: BTL_selectPartnerMove.
   static MoveDecision yourCall(const BattleView& view,
                                const std::array<bool, EquippedSlots>& usable) {
-    const Fighter& self = view.state->partner();
+    const Fighter& self = view.state->fighters.at(view.actor);
     const PartnerAiRules& rules = view.rules->partnerAi;
     std::array<std::int32_t, TechniqueSlots> weights{};
     Ranking ranking = unsortedRanking();
@@ -228,7 +228,8 @@ private:
       if (move.range != MoveRange::Area) {
         continue;
       }
-      const std::int32_t living = view.state->livingEnemies();
+      const std::int32_t living =
+          static_cast<std::int32_t>(view.state->remainingOthers(view.actor).size());
       const bool crowd = self.stats.brain >= rules.areaBrain && living >= rules.areaMinEnemies;
       if (crowd) {
         weights.at(slot) +=

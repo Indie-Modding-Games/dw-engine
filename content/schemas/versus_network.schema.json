@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Versus network",
+  "description": "versus/network.yaml of the game pack: the servers the online versus uses to pair two machines and open a route between them (packages/game/versus/network.hpp, docs/modulos/game/versus.md).",
+  "type": "object",
+  "required": ["signal_server", "ice_servers"],
+  "additionalProperties": false,
+  "properties": {
+    "signal_server": {
+      "description": "The signaling server (services/versus-signal), ws:// or wss://. Empty: none is set up.",
+      "type": "string",
+      "pattern": "^(|wss?://.+)$"
+    },
+    "ice_servers": {
+      "description": "STUN or TURN servers, as stun:, turn: or turns: URLs.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^(stun|turn|turns):.+$" }
+    }
+  }
+}

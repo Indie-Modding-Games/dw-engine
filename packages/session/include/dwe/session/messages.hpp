@@ -62,6 +62,7 @@ inline constexpr std::string_view ClockStateText = "the clock state";
 inline constexpr std::string_view TamerStateText = "the tamer state";
 inline constexpr std::string_view FieldStateText = "the field state";
 inline constexpr std::string_view RandomStateText = "the random state";
+inline constexpr std::string_view ModeStateText = "the mode section";
 inline constexpr std::string_view NotAFraction = "'{}' is not a fraction of a frame";
 inline constexpr std::string_view NotARandomState = "'{}' is not a random state";
 inline constexpr std::string_view MissingRandomKey = "the random state has no '{}'";
@@ -99,10 +100,24 @@ inline constexpr std::string_view UnknownPartnerSpecies =
     "battle: the partner's species '{}' is not in data/digimon";
 inline constexpr std::string_view UnknownPartnerMove =
     "species_extra: {}'s partner_moves names '{}', which is not in the moves table";
+inline constexpr std::string_view VersusUnknownSpecies =
+    "versus: the partner '{}' is of a species '{}' this content does not have";
+inline constexpr std::string_view VersusUnknownMove =
+    "versus: the partner '{}' brings a move '{}' this content does not have";
+inline constexpr std::string_view VersusStatOutside =
+    "versus: the partner '{}' has a {} of {}, outside {} to {}";
+inline constexpr std::string_view VersusNotRead = "versus: the ruleset has no versus rules";
 inline constexpr std::string_view MovePlaceOutside =
     "battle: place {} is not one of the {} equipped places";
 inline constexpr std::string_view MoveNotLearned = "battle: the partner has not learned '{}'";
 inline constexpr std::string_view NoMoveAtSlot = "battle: '{}' has no move at position {}";
+
+// The game events mods handle (GameHooks, ModScripts).
+inline constexpr std::string_view GameEventFailed = "mods: the event {} could not be fired: {}";
+inline constexpr std::string_view ModScriptsNoVm =
+    "mods: the game has no script VM, so no mod script runs and no game event is fired";
+inline constexpr std::string_view ModScriptFailed = "mods: {}'s {} failed: {}";
+inline constexpr std::string_view ModScriptRan = "mods: ran {}'s {}";
 
 // The story state (StoryAdapter).
 inline constexpr std::string_view StoryNewGame = "story: a new game starts with {} triggers set";
@@ -131,6 +146,16 @@ inline constexpr std::string_view StoryRunnerKept =
     "story: ticks_per_frame or the flow keys changed while a script runs; the new values apply to "
     "the next game";
 inline constexpr std::string_view StoryNumberOutside = "{} is {}, outside 0 to {}";
+// The story section's capacity for mods (#97).
+inline constexpr std::string_view StoryCapacityText = "the story section's capacity";
+inline constexpr std::string_view StoryExtraRaisedText = "the capacity's extra_raised";
+// The extra raised range (its first and last trigger) is not within the extra triggers (the first
+// and last of those).
+inline constexpr std::string_view StoryExtraRaisedOutside =
+    "extra_raised takes triggers {} to {}, and must lie in the extra triggers, {} to {}";
+// The rules changed the state's capacity (triggers, variables, extra raised species).
+inline constexpr std::string_view StoryCapacity =
+    "story: the state holds {} triggers and {} variables, {} extra raised species";
 
 // The story lock (story_lock.hpp).
 inline constexpr std::string_view StoryLockSectionText = "the story_lock section";

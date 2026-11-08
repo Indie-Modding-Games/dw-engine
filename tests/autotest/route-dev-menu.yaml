@@ -1,0 +1,61 @@
+# The developer menu (docs/modulos/apps/game.md, «Herramientas de desarrollo»): F2 opens it over the field while the
+# developer tools are on (a development build's default). Money and stats pages run their console lines; the items
+# list gives the first item; cancel goes back a page and closes the menu from the first. Then the option off: F2 and
+# the console keys do nothing. From a new game with the keyboard.
+name: dev-menu
+device: keyboard
+timeout: 200
+text_fit: true
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {dev_tools: "true"}
+  - tap: {key: f2}
+  - wait: {shown: dev_menu, seconds: 0.5, timeout: 5}
+  - screenshot: main
+  # Money: the third amount.
+  - tap: {key: down}
+  - tap: {key: return}
+  - wait: {seconds: 0.3}
+  - screenshot: money
+  - tap: {key: down}
+  - tap: {key: down}
+  - tap: {key: return}
+  - wait: {seconds: 0.3}
+  - screenshot: money-set
+  - tap: {key: backspace}
+  - wait: {seconds: 0.3}
+  # Items: the first one of the list.
+  - tap: {key: return}
+  - wait: {seconds: 0.3}
+  - screenshot: items
+  - tap: {key: return}
+  - wait: {seconds: 0.3}
+  - tap: {key: backspace}
+  - wait: {seconds: 0.3}
+  - tap: {key: backspace}
+  - wait: {hidden: dev_menu, seconds: 0.3, timeout: 5}
+  # The option off: F2 does nothing.
+  - menu: open
+  - wait: {seconds: 0.6}
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - wait: {seconds: 0.3}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.3}
+  - menu_select: dev-tools
+  - expect_setting: {dev_tools: "false"}
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 0.5}
+  - tap: {key: f2}
+  - wait: {seconds: 0.5}
+  - wait: {hidden: dev_menu, timeout: 2}

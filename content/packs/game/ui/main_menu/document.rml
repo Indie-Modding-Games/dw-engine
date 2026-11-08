@@ -14,6 +14,8 @@
 			<button id="play" autofocus="autofocus" onclick="play()"></button>
 			<button id="continue" onclick="continue_game()"></button>
 			<button id="erase" class="hidden" onclick="erase_game()" text-key="main_menu.original.erase"></button>
+			<!-- The online versus (versus_screen.hpp), in the modern layout; the original one reaches it through battle mode. -->
+			<button id="versus" onclick="open_versus()" text-key="main_menu.versus"></button>
 			<button id="battle" class="hidden" onclick="open_view(document, 'battle')" text-key="main_menu.original.battle_mode"></button>
 			<!-- The pause menu's options page over the title (logic.lua: open_options). -->
 			<button id="options" onclick="open_options(document)"></button>
@@ -42,7 +44,7 @@
 			<div id="battle-heading"><p text-key="main_menu.original.battle_mode"></p></div>
 			<div id="battle-message"><p text-key="main_menu.original.battle_mode_message"></p></div>
 			<div id="battle-answers">
-				<button id="battle-yes" onclick="close_view(document)" text-key="common.yes"></button>
+				<button id="battle-yes" onclick="open_versus()" text-key="common.yes"></button>
 				<button id="battle-no" onclick="close_view(document)" text-key="common.no"></button>
 			</div>
 		</div>

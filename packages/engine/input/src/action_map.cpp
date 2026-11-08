@@ -130,6 +130,10 @@ ActionMap defaultActionMap() {
   map.bind("debug_console", KeyBinding{keys::Grave});
   map.bind("debug_console", KeyBinding{keys::F1});
 
+  // The developer menu (apps/game dev_menu_screen.hpp): F2, like the console only while the
+  // developer tools option is on.
+  map.bind("dev_menu", KeyBinding{keys::F2});
+
   // Writes a bug report of the game being played (docs/guides/prueba-vertical.md).
   map.bind("report_bug", KeyBinding{keys::F12});
 

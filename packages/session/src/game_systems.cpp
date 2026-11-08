@@ -24,6 +24,7 @@
 #include <dwe/session/medals_adapter.hpp>
 #include <dwe/session/merit_shop.hpp>
 #include <dwe/session/messages.hpp>
+#include <dwe/session/mod_scripts.hpp>
 #include <dwe/session/poop_adapter.hpp>
 #include <dwe/session/shop_counter.hpp>
 #include <dwe/session/story_adapter.hpp>
@@ -194,7 +195,11 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   game.systems.push_back(std::move(battle));
   game.systems.push_back(std::move(storyOrders));
   game.systems.push_back(std::move(scenes));
+  // The mods' scripts run once the story's VM exists, after its readRules.
+  auto modScripts = std::make_unique<ModScripts>(*story);
+  game.mods = modScripts.get();
   game.systems.push_back(std::move(story));
+  game.systems.push_back(std::move(modScripts));
   game.systems.push_back(std::make_unique<GymAdapter>());
   game.systems.push_back(std::move(shop));
   game.systems.push_back(std::move(itemKeeper));

@@ -62,6 +62,7 @@
 #include "control_log.hpp"
 #include "control_socket.hpp"
 #include "dev_assets_banner.hpp"
+#include "dev_tools.hpp"
 #include "display_settings.hpp"
 #include "field_scene.hpp"
 #include "first_run_screen.hpp"
@@ -88,12 +89,14 @@
 #include "save_figure.hpp"
 #include "save_indicator.hpp"
 #include "screenshot.hpp"
+#include "slow_frame_log.hpp"
 #include "state_trace.hpp"
 #include "text_font_setting.hpp"
 #include "title_options.hpp"
 #include "title_screen.hpp"
 #include "ui_skin_setting.hpp"
 #include "user_settings.hpp"
+#include "versus_screen.hpp"
 #include "volume_setting.hpp"
 #include "walk_control.hpp"
 
@@ -775,6 +778,8 @@ int runGame(const Options& requested) {
                       GymSessionsMax);
   };
   (*ui)->setSetting(GymSessionsSetting, static_cast<double>(gymSessions()));
+  (*ui)->setSetting(DifficultySetting,
+                    userSettings.difficulty.value_or(std::string{DifficultyNormal}));
   (*ui)->setSetting(AutosaveSetting, userSettings.autosave.value_or(true));
   // The options only a game applies, for the title's options page (title_options.hpp).
   publishGameToggles(**ui, userSettings);
@@ -882,6 +887,8 @@ int runGame(const Options& requested) {
                                start);
   }};
   TitleScreen title{files, options, !autotest, **ui};
+  // «Versus en línea» from the title's menu (versus_screen.hpp): no game behind it.
+  VersusScreen versus{files, options, !autotest, **ui};
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
   // What waits for the movie that plays: the title, or a game to start (main.c: main).
@@ -947,6 +954,7 @@ int runGame(const Options& requested) {
   bool reportAsked = false;
 
   FrameStats frameStats;
+  SlowFrameLog slowFrames;
   MinimapCover minimapCover;
   AutotestHost host{
       .platform = &*platform,
@@ -1360,7 +1368,8 @@ int runGame(const Options& requested) {
 
     // A naming box open takes the keyboard's text as well as its keys.
     const bool takesText = (interview && interview->takesText()) ||
-                           (flow.playing() != nullptr && flow.playing()->takesText());
+                           (flow.playing() != nullptr && flow.playing()->takesText()) ||
+                           (flow.playing() == nullptr && versus.takesText());
     if (auto switched = window->setTextInput(takesText); !switched) {
       core::logDebug("game: {}", switched.error().message);
     }
@@ -1368,6 +1377,8 @@ int runGame(const Options& requested) {
       interview->type(typed, typedEnter);
     } else if (flow.playing() != nullptr && flow.playing()->takesText()) {
       flow.playing()->type(typed, typedEnter);
+    } else if (flow.playing() == nullptr && versus.takesText()) {
+      versus.type(typed, typedEnter);
     }
 
     const double now = platform->nowSeconds();
@@ -1387,8 +1398,11 @@ int runGame(const Options& requested) {
     // ticks count as slow.
     if (constexpr double SlowFrameSeconds = 1.5 * TickSeconds;
         frameSeconds > SlowFrameSeconds && ticksRun > 0) {
-      core::logInfo("game: slow frame, {:.1f} ms, at tick {}{} ({})", frameSeconds * 1000.0,
-                    ticksRun, steady ? "" : " (expected: load, resize or capture)", phases.text());
+      if (auto left = slowFrames.slow(frameSeconds * 1000.0, ticksRun)) {
+        core::logInfo("game: slow frame, {:.1f} ms, at tick {}{} ({}){}", frameSeconds * 1000.0,
+                      ticksRun, steady ? "" : " (expected: load, resize or capture)", phases.text(),
+                      *left);
+      }
     }
     phases.start(now);
 
@@ -1436,10 +1450,22 @@ int runGame(const Options& requested) {
           input.handle(change);
         }
       }
-      if (input.wasPressed("debug_console")) {
+      // The developer tools (dev_tools.hpp): while the option is off their keys do nothing, and
+      // turning it off closes the console and the developer menu. --tuning asks for the console.
+      const bool devTools = userSettings.devTools.value_or(DevToolsDefault) || options.tuning;
+      if (!devTools && (*debugUi)->visible()) {
         (*debugUi)->toggle();
       }
-      if (input.wasPressed("debug_map_overlay")) {
+      if (PlaySession* play = flow.playing();
+          play != nullptr && play->devMenuOpen() && (!devTools || input.wasPressed("dev_menu"))) {
+        play->toggleDevMenu();
+      } else if (play != nullptr && devTools && input.wasPressed("dev_menu")) {
+        play->toggleDevMenu();
+      }
+      if (devTools && input.wasPressed("debug_console")) {
+        (*debugUi)->toggle();
+      }
+      if (devTools && input.wasPressed("debug_map_overlay")) {
         showMapOverlay(std::nullopt);
       }
       reportAsked = input.wasPressed("report_bug") || reportAsked;
@@ -1525,6 +1551,12 @@ int runGame(const Options& requested) {
         input.endTick();
         ++ticksRun;
         continue;
+      }
+      if (flow.playing() == nullptr && versus.active()) {
+        versus.tick(platform->nowSeconds());
+        if (versus.takeClosed()) {
+          title.show();
+        }
       }
       if (flow.playing() != nullptr || !title.landing()) {
         titleIdleTicks = 0;
@@ -1618,6 +1650,25 @@ int runGame(const Options& requested) {
     }
 
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
+      // The options the documents apply by themselves: shop extras, art fixes, developer tools.
+      if (changeUiToggle(command, **ui, userSettings, settingsFile)) {
+        continue;
+      }
+      if (command.name == DevMenuRunCommand) {
+        // The developer menu's console line, only while the developer tools are on and only the
+        // commands the menu offers.
+        const std::string* line = std::get_if<std::string>(&command.value);
+        if (line == nullptr || !userSettings.devTools.value_or(DevToolsDefault) ||
+            !devMenuLineAllowed(*line)) {
+          core::logWarning("game: developer menu: refused {}",
+                           line != nullptr ? *line : std::string{"?"});
+        } else if (auto ran = (*scripts)->runString(*line, "dev_menu"); !ran) {
+          core::logWarning("game: developer menu: {}", ran.error().message);
+        } else {
+          core::logInfo("game: developer menu: {}", *line);
+        }
+        continue;
+      }
       if (flow.playing() != nullptr && flow.playing()->handle(command)) {
         continue;
       }
@@ -1670,6 +1721,23 @@ int runGame(const Options& requested) {
         (*ui)->setSetting(GymSessionsSetting, static_cast<double>(gymSessions()));
         continue;
       }
+      if (command.name == DifficultySetting) {
+        // The difficulty (rule_options.hpp), from the title's options or the game's: normal or
+        // easy; anything else changes nothing.
+        if (const std::string* level = std::get_if<std::string>(&command.value);
+            level != nullptr && (*level == DifficultyNormal || *level == DifficultyEasy)) {
+          userSettings.difficulty = *level;
+          if (settingsFile) {
+            saveUserSettings(*settingsFile, userSettings);
+          }
+          if (PlaySession* play = flow.playing()) {
+            play->applyPlayOptions();
+          }
+        }
+        (*ui)->setSetting(DifficultySetting,
+                          userSettings.difficulty.value_or(std::string{DifficultyNormal}));
+        continue;
+      }
       if (command.name == WalkControlSetting) {
         PlaySession* play = flow.playing();
         walkControl.change(command.value, play != nullptr ? &play->scene().field() : nullptr);
@@ -1708,6 +1776,15 @@ int runGame(const Options& requested) {
       // With no game the options page's rows that only a game applies are kept for the next one.
       if (flow.playing() == nullptr &&
           changeGameToggle(command, **ui, userSettings, settingsFile)) {
+        continue;
+      }
+      if (flow.playing() == nullptr && command.name == VersusCommand) {
+        if (versus.open()) {
+          title.hide();
+        }
+        continue;
+      }
+      if (flow.playing() == nullptr && versus.handle(command)) {
         continue;
       }
       if (flow.playing() == nullptr && title.handle(command)) {

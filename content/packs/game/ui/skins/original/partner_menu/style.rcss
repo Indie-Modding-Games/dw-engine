@@ -971,6 +971,9 @@ button:focus .original-look, button.original-look:focus {
 #meter-1-label.low { decorator: image(discipline-low scale-none left top); }
 #meter-2-label { decorator: image(status-virus scale-none left top); }
 .status-native-happiness { display: block; position: absolute; left: 36dp; top: -6dp; width: 108dp; height: 36dp; decorator: image(status-happiness-name); }
+/* Art fixes: the word's own rectangle, 41 x 8, two rows lower; it starts where the original's rectangle does (without
+   its stray mark) and ends where the meter begins. */
+.status-native-happiness.fixed { left: 36dp; top: 0; width: 123dp; height: 24dp; decorator: image(status-happiness-name-fixed); }
 /* renderInsetBox includes its right/bottom outline; the fills draw over the right outline at full width. */
 #status-condition .meter { position: absolute; left: 159dp; top: 0; width: 153dp; height: 27dp; box-sizing: border-box; margin: 0; overflow: visible; border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0; background-color: #354b5c; decorator: none; }
 #status-condition .meter .fill { position: absolute; left: 0; top: 3dp; height: 18dp; decorator: image(status-meter-pink scale-none left top); }

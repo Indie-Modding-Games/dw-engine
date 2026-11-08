@@ -141,6 +141,42 @@ struct UserSettings {
   // Batch training (gym_sessions: 1 to 5; gym_batch.hpp): the sessions a course the story starts
   // at a gym runs in a row; 1, the original's, when not chosen yet.
   std::optional<int> gymSessions = std::nullopt;
+  // Quick battle start (quick_battle_start: true, false; BattleScreen::setQuickStart): a field
+  // fight starts the moment it triggers, without the original's opening; off when not chosen yet.
+  std::optional<bool> quickBattleStart = std::nullopt;
+  // The difficulty (difficulty: normal, easy; rule_options.hpp): a level of the ruleset's
+  // difficulty section; normal, the original's, when not chosen yet.
+  std::optional<std::string> difficulty = std::nullopt;
+  // Skip the evolution (skip_evolution: true, false; EvolutionScene::skip): confirm or cancel ends
+  // the evolution's scene at once; off when not chosen yet.
+  std::optional<bool> skipEvolution = std::nullopt;
+  // A cancel closes a choice (choice_cancel_closes: true, false; story.cancel_closes_choice): a
+  // cancel in a script's choice without its end marker ends the script instead of running the
+  // first option; off when not chosen yet.
+  std::optional<bool> choiceCancelCloses = std::nullopt;
+  // Fair sickness chance (fair_sickness_chance: true, false; rule_options.hpp): the care quirk
+  // sickness_chance_wraps off, so a negative chance is none; off when not chosen yet.
+  std::optional<bool> fairSicknessChance = std::nullopt;
+  // Fair evolution average (fair_evolution_average: true, false; rule_options.hpp): the evolution
+  // quirk selection_average_carries_over off; off when not chosen yet.
+  std::optional<bool> fairEvolutionAverage = std::nullopt;
+  // Fair move forgetting (fair_move_forgetting: true, false; rule_options.hpp): the partner moves
+  // quirk forget_mask_16_bits off, so forgetting a move clears only that one; off when not chosen.
+  std::optional<bool> fairMoveForgetting = std::nullopt;
+  // Fair card stock (fair_card_stock: true, false; rule_options.hpp): the card shop quirk
+  // stock_repeats off, so a day's stock shows each card once; off when not chosen yet.
+  std::optional<bool> fairCardStock = std::nullopt;
+  // Shop extras (shop_extras: true, false; the shop document reads it): the focused item's
+  // description under a shop's list, the bag's count of each item and the money a trade leaves; off
+  // when not chosen yet.
+  std::optional<bool> shopExtras = std::nullopt;
+  // Art fixes (art_fixes: true, false): the original skin draws the pictures the original reads
+  // from the wrong part of its textures (the partner card's happiness label) where they are; off,
+  // as the original, when not chosen yet.
+  std::optional<bool> artFixes = std::nullopt;
+  // Developer tools (dev_tools: true, false; dev_tools.hpp): the debug console, the developer menu
+  // and the map overlay; when not chosen yet, on in a development build and off in a package.
+  std::optional<bool> devTools = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

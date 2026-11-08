@@ -48,6 +48,9 @@ struct ListingInstruction {
   // SHOW_TEXTBOX and SET_SELECTION: the text as the listing writes it (text::decodeScriptText; a
   // selection's options one per line).
   std::optional<std::string> text;
+  // SET_SELECTION followed by its end marker (cancel_marker): a cancel goes on after the marker.
+  // Without it the original's cancel runs on into the code that follows, the first option's.
+  bool cancelMarker = false;
 
   // The value of the operand with this name, if the instruction has one.
   [[nodiscard]] std::optional<std::int32_t> argument(std::string_view name) const;

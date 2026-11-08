@@ -11,7 +11,8 @@
     "confirm_section",
     "confirm_line",
     "fail_sound",
-    "trade_sound"
+    "trade_sound",
+    "quirks"
   ],
   "additionalProperties": false,
   "$defs": {
@@ -134,6 +135,20 @@
         "sound": {
           "type": "integer",
           "minimum": 0
+        }
+      }
+    },
+    "quirks": {
+      "description": "The original's oddities (true reproduces them; ADR 0022).",
+      "type": "object",
+      "required": [
+        "stock_repeats"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "stock_repeats": {
+          "description": "dailyPStatTrigger's check for a card already in the stock compares the slot with itself, so one card can fill two slots; false rolls such a slot again.",
+          "type": "boolean"
         }
       }
     }

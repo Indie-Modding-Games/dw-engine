@@ -1,0 +1,38 @@
+<rml>
+<head>
+	<title>Developer menu</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<div id="panel">
+			<p id="title"></p>
+			<button id="amount" class="hidden" onclick="next_amount(document)"></button>
+			<div id="entries">
+				<button id="entry-1" class="entry" onclick="choose(document, 1)"></button>
+				<button id="entry-2" class="entry" onclick="choose(document, 2)"></button>
+				<button id="entry-3" class="entry" onclick="choose(document, 3)"></button>
+				<button id="entry-4" class="entry" onclick="choose(document, 4)"></button>
+				<button id="entry-5" class="entry" onclick="choose(document, 5)"></button>
+				<button id="entry-6" class="entry" onclick="choose(document, 6)"></button>
+				<button id="entry-7" class="entry" onclick="choose(document, 7)"></button>
+				<button id="entry-8" class="entry" onclick="choose(document, 8)"></button>
+			</div>
+			<div id="pages">
+				<span id="page"></span>
+				<button id="previous" class="page-turn" onclick="turn(document, -1)" text-key="shop.previous"></button>
+				<button id="next-page" class="page-turn" onclick="turn(document, 1)" text-key="shop.next_page"></button>
+			</div>
+			<button id="back" class="back" onclick="back(document)" text-key="common.back"></button>
+			<p id="done"></p>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="common.back"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

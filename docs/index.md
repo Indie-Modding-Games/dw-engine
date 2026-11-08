@@ -71,7 +71,7 @@ Además: `conventions/` (normas del equipo: [código](conventions/code.md), [com
 
 - Toda la documentación vive en `docs/` y forma este sitio (VitePress). No hay README por módulo: cada módulo tiene su
   página en [`modulos/`](modulos/index.md). Solo las herramientas que no son parte del motor (`apps/studio`,
-  `apps/beta-gateway`, `apps/mapper`) guardan junto al código un README con los pasos para usarlas o desplegarlas.
+  `apps/beta-gateway`, `apps/versus-signal`, `apps/mapper`) guardan junto al código un README con los pasos para usarlas o desplegarlas.
 - Markdown, una idea por sección y frases cortas, en español.
 - Los diagramas van en [Mermaid](https://mermaid.js.org/), como texto: el sitio y GitHub los dibujan y se revisan en
   los PR.

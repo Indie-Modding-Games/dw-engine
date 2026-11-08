@@ -29,6 +29,9 @@ tired_out_tiredness: 100
 tired_out_gain: 1
 # trn_slots.c: sin la ruleta, el resultado es 10 (× 1).
 slot_default_tenths: 10
+# Mejora de dwe (no está en el original): las ganancias de cada sesión en tanto por ciento de las de la fórmula, antes
+# del cansancio total. 100 es el original; la dificultad fácil lo cambia (difficulty.yaml).
+gain_percent: 100
 # TRN_advanceTrainingTime: con cansancio 70 o más tras la sesión, felicidad -3 y disciplina -3.
 overwork_tiredness: 70
 overwork_happiness: -3

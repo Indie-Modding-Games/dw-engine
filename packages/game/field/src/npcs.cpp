@@ -694,10 +694,8 @@ void FieldNpcs::waitOnPath(Npc& npc, const assets::MapNpc& record, float seconds
   npc.waitSeconds += seconds;
   const std::int32_t frames = waypointOf(record, npc.activeSection).x;
   const float wait = static_cast<float>(frames) * frameSeconds_;
+  // overworld.c: tickWaypointWait: the wait over, the next part of the way.
   if (npc.waitSeconds >= wait) {
-    core::logDebug("[port:npc] tickWaypointWait (overworld.c:1706): script id {} waited {} "
-                   "frames on part {}",
-                   npc.scriptId, frames, npc.activeSection);
     npc.hasTarget = false;
     npc.waitSeconds = 0.0F;
     ++npc.activeSection;

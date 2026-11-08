@@ -109,7 +109,8 @@ void FieldScene::submitStageProps() {
       models_->submit({.model = *found->second.model,
                        .world = place.world,
                        .joints = place.joints,
-                       .tint = place.tint});
+                       .tint = place.tint,
+                       .texelOffset = place.texelOffset});
     }
   }
 }
@@ -123,7 +124,8 @@ void FieldScene::submitProps() {
       models_->submit({.model = *set.model,
                        .world = place.world,
                        .joints = place.joints,
-                       .tint = place.tint * sceneryTint()});
+                       .tint = place.tint * sceneryTint(),
+                       .texelOffset = place.texelOffset});
     }
   }
 }

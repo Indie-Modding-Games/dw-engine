@@ -25,8 +25,9 @@ struct StoryNames {
   [[nodiscard]] const std::string* variable(std::int32_t variable) const;
 };
 
-// Parses the text of `story/names`: numbers within the state (TriggerCount, VariableCount), ids
-// of lower-case letters, digits and '_', each name once per kind. Unknown keys are errors.
+// Parses the text of `story/names`: numbers within the base set (BaseTriggerCount,
+// BaseVariableCount), ids of lower-case letters, digits and '_', each name once per kind. Unknown
+// keys are errors.
 core::Result<StoryNames> parseStoryNames(std::string_view yaml);
 
 // Reads `story/names` from the virtual file system; without one, no names.

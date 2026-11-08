@@ -23,3 +23,8 @@ total: "Total {total}"
 less: "-"
 more: "+"
 max: "Máx"
+# Extras de la tienda (una mejora opcional): una fila de compra con cuántos tienes ya, {owned}.
+buy_row_owned: "{name}  {price}  x{owned}"
+# Extras de la tienda: en la caja de cantidad, cuántos tienes y el dinero que te queda tras el trato.
+owned: "Tienes {owned}"
+money_after: "Te quedarán {bits} bits"

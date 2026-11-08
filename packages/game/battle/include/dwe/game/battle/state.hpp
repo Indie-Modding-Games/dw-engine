@@ -17,6 +17,8 @@ namespace dwe::game::battle {
 // Fighters are numbered as in the original: the partner is 0 and the enemies 1 to 3.
 using FighterId = std::size_t;
 inline constexpr FighterId PartnerId = 0;
+// In a versus match (vs_combat.c) the other player's partner is fighter 1.
+inline constexpr FighterId RivalId = 1;
 
 // The player's commands, numbered as the original's (battle_tick.c: handleCommands).
 enum class Command : std::uint8_t {
@@ -303,6 +305,13 @@ struct CommandState {
   ChargeMode savedChargeMode = ChargeMode::Normal;
 };
 
+// The rival's side of a versus match (vs_combat.c: COMBAT_DATA player.currentCommand[1],
+// VS_DISCIPLINE[1]): a player commands it as the partner is commanded.
+struct VersusRival {
+  CommandState commands;
+  std::int32_t discipline = 0;
+};
+
 // What the partner did in this battle, for the stat gains and the outcome (COMBAT_DATA player
 // counters).
 struct BattleCounters {
@@ -375,6 +384,8 @@ struct BattleState {
   bool tamerless = false;
   // Only in a tournament match.
   std::optional<MatchClock> matchClock;
+  // Only in a versus match, which also runs on a match clock.
+  std::optional<VersusRival> rival;
 
   [[nodiscard]] Fighter& partner() { return fighters.front(); }
   [[nodiscard]] const Fighter& partner() const { return fighters.front(); }
@@ -386,6 +397,18 @@ struct BattleState {
   // each).
   [[nodiscard]] std::int32_t livingEnemies() const;
   [[nodiscard]] bool frozenByFinisher() const { return finisher.fighter.has_value(); }
+  [[nodiscard]] bool versus() const { return rival.has_value(); }
+  // A fighter a player commands: the partner, and the rival in a versus match.
+  [[nodiscard]] bool commanded(FighterId id) const {
+    return id == PartnerId || (rival.has_value() && id == RivalId);
+  }
+  // The commands of a commanded fighter.
+  [[nodiscard]] CommandState& commandsOf(FighterId id) {
+    return id == PartnerId ? commands : rival->commands;
+  }
+  [[nodiscard]] const CommandState& commandsOf(FighterId id) const {
+    return id == PartnerId ? commands : rival->commands;
+  }
 };
 
 // The clip a fighter stands with (btl.c: startBattleIdleAnimation): weak while poisoned or at a

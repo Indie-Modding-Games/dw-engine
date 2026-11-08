@@ -707,7 +707,22 @@ void StoryTournament::showLetters(FieldScene& scene, const game::tournament::Sho
   const float depthScale = letters->projection > 0 ? static_cast<float>(view.projection) /
                                                          static_cast<float>(letters->projection)
                                                    : 1.0F;
-  std::vector<glm::mat4> joints(objects, glm::mat4{0.0F});
+  // One place per gleam column: a letter whose face shows another column of the gold strip is
+  // drawn on its own, its texel coordinates moved, the other letters collapsed.
+  std::vector<FieldScene::PropPlace> places;
+  const auto placeOf = [&](std::int32_t gleamShift) -> std::vector<glm::mat4>& {
+    const glm::vec2 offset{-static_cast<float>(gleamShift), 0.0F};
+    for (FieldScene::PropPlace& place : places) {
+      if (place.texelOffset == offset) {
+        return place.joints;
+      }
+    }
+    places.push_back({.world = glm::mat4{1.0F},
+                      .joints = std::vector<glm::mat4>(objects, glm::mat4{0.0F}),
+                      .tint = glm::vec4{1.0F},
+                      .texelOffset = offset});
+    return places.back().joints;
+  };
   for (const game::tournament::LetterPose& letter : letters->letters) {
     if (letter.object >= objects) {
       continue;
@@ -721,11 +736,9 @@ void StoryTournament::showLetters(FieldScene& scene, const game::tournament::Sho
                            scale * toOriginal * LetterNear;
     glm::mat4 joint{turn};
     joint[3] = glm::vec4{eye + (eyeAxes * at * LetterNear), 1.0F};
-    joints.at(letter.object) = joint;
+    placeOf(letter.gleamShift).at(letter.object) = joint;
   }
-  scene.setPosedProps(*id, {FieldScene::PropPlace{.world = glm::mat4{1.0F},
-                                                  .joints = std::move(joints),
-                                                  .tint = glm::vec4{1.0F}}});
+  scene.setPosedProps(*id, std::move(places));
 }
 
 bool StoryTournament::startChampion() {

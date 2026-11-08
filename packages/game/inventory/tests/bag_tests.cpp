@@ -193,6 +193,16 @@ TEST_CASE("discarding a slot takes its count from every other stack of the item 
   CHECK(inventory.countOf(handleOf(Tonic)) == 0);
 }
 
+TEST_CASE("the total of an item counts every stack of it, the first stack's count only the first") {
+  const Inventory inventory = bagHolding({stackOf(handleOf(Tonic), 2), stackOf(handleOf(Steak), 3),
+                                          std::nullopt, stackOf(handleOf(Tonic), 5)},
+                                         10);
+  CHECK(inventory.totalOf(handleOf(Tonic)) == 7);
+  CHECK(inventory.countOf(handleOf(Tonic)) == 2);
+  CHECK(inventory.totalOf(handleOf(Steak)) == 3);
+  CHECK(inventory.totalOf(handleOf(Bun)) == 0);
+}
+
 TEST_CASE(
     "sorting groups the categories in the mode's order, each by item number, with the holes at the end") {
   const auto& items = fixtureItems();

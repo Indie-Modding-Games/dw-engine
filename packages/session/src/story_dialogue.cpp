@@ -237,6 +237,10 @@ core::Result<void> StoryLuaHost::publishDialogue(Dialogue& dialogue) {
                                 pendingWait_ = dialogue.closeBox(*box);
                                 return ApiValue{};
                               }));
+  published.push_back(registry.publish(StoryNamespace, api::CancelClosesChoice,
+                                       [&dialogue](const ApiCall&) -> core::Result<ApiValue> {
+                                         return ApiValue{dialogue.cancelClosesChoice()};
+                                       }));
   const auto failed = std::ranges::find_if(published, [](const auto& result) { return !result; });
   if (failed != published.end()) {
     return core::fail(messages::formatMessage(msg::PublishFailed, failed->error().message));

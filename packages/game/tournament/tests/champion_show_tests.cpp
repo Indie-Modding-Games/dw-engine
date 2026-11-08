@@ -69,6 +69,37 @@ TEST_CASE("the title's letters show 5 frames apart, spinning, then stand still")
   }
 }
 
+TEST_CASE("std_effect.c STD_tickChampionScene: a gleam sweeps each letter from frame 0x3d") {
+  ChampionShow show = inScene();
+  for (int i = 0; i < 0x3c; ++i) {
+    show.tick(false);
+  }
+  for (const auto& letter : show.letters().letters) {
+    CHECK(letter.gleamShift == 0);
+  }
+  // Frame 0x3d: the first letter shows the column 2 to the left (8 texels of the 4-bit strip).
+  show.tick(false);
+  CHECK(show.letters().letters[0].gleamShift == 8);
+  CHECK(show.letters().letters[1].gleamShift == 0);
+  show.tick(false);
+  CHECK(show.letters().letters[0].gleamShift == 16);
+  CHECK(show.letters().letters[1].gleamShift == 8);
+  // Ten steps further left, then the resting column again on the eleventh.
+  for (int i = 0; i < 8; ++i) {
+    show.tick(false);
+  }
+  CHECK(show.letters().letters[0].gleamShift == 80);
+  show.tick(false);
+  CHECK(show.letters().letters[0].gleamShift == 0);
+  CHECK(show.letters().letters[8].gleamShift == 24);
+  for (int i = 0; i < 9; ++i) {
+    show.tick(false);
+  }
+  for (const auto& letter : show.letters().letters) {
+    CHECK(letter.gleamShift == 0);
+  }
+}
+
 TEST_CASE("the podium lifts the partner while the camera circles it, then it poses") {
   ChampionShow show = inScene();
   for (int i = 0; i < 0x61; ++i) {

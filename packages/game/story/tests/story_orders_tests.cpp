@@ -83,11 +83,11 @@ TEST_CASE(
 TEST_CASE("a state that holds more than the base set takes triggers and variables past it") {
   FakeState state{1200, 512};
   FixedRandom random{0};
-  StoryOrders orders{state, random, OriginalRules};
+  StoryOrders orders{state, random, {.variableMax = 255, .extraVariableMax = 1000}};
   REQUIRE(orders.setTrigger(1000));
   CHECK(state.trigger(1000).value_or(false));
-  REQUIRE(orders.setVariable(400, 9));
-  CHECK(variableOf(state, 400) == 9);
+  REQUIRE(orders.setVariable(400, 900));
+  CHECK(variableOf(state, 400) == 900);
   CHECK_FALSE(orders.setTrigger(1200));
   CHECK_FALSE(orders.setVariable(512, 1));
 }

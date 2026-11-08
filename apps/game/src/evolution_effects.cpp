@@ -497,7 +497,7 @@ void addFlashPrims(const EvolutionFlash& flash, const ScenePrimFrame& frame, flo
   const float half = static_cast<float>(reach + 1);
   float sortDepth = depth;
   glm::vec4 centre = frame.clip(flash.position);
-  if (flash.fixedDepth == ClimaxFront) {
+  if (flash.fixedDepth > 0 && flash.fixedDepth <= FlashFrontOrder) {
     centre = clipInFront(centre);
     sortDepth = InFrontOfAll;
   } else if (flash.fixedDepth > 0) {
@@ -512,7 +512,9 @@ void addFlashPrims(const EvolutionFlash& flash, const ScenePrimFrame& frame, flo
                        .texture = image,
                        .texel = {GlowHalfU.at(static_cast<std::size_t>(flash.mode & 1)), GlowV},
                        .side = glm::vec2{GlowSide},
-                       .imageSize = GlowImageSize};
+                       .imageSize = GlowImageSize,
+                       .blend = flash.mode == FlashSubtractMode ? ScenePrimBlend::Subtractive
+                                                                : ScenePrimBlend::Additive};
   for (const ScenePrim& quarter : glowQuarters(glow)) {
     out.push_back(SortedPrim{.depth = sortDepth, .prim = quarter});
   }

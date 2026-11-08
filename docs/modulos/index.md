@@ -3,7 +3,7 @@
 Cada módulo del repositorio tiene aquí su página: qué hace, su API pública y cómo se usa. La página vive en
 `docs/modulos/<grupo>/<módulo>.md` y se actualiza en el mismo PR que cambia el módulo; el README de la carpeta del
 módulo es corto y enlaza a ella. Las páginas conservan su dirección aunque el código se movió a `packages/` y `apps/`
-(las de session, screens y content siguen en `modulos/apps/` y la de beta-gateway en `modulos/services/`). Las
+(las de session, screens y content siguen en `modulos/apps/` y las de beta-gateway y versus-signal en `modulos/services/`). Las
 capas y lo que puede usar cada una están en las [reglas de dependencias](../architecture/dependency-rules.md); la forma de un paquete, en la
 [estructura del repositorio](../architecture/repository-layout.md#forma-de-un-paquete).
 
@@ -27,6 +27,7 @@ capas y lo que puede usar cada una están en las [reglas de dependencias](../arc
 | [video](engine/video.md) | Las películas: leer el vídeo frame a frame y dar la imagen de cada momento |
 | [ruleset](engine/ruleset.md) | El formato de ruleset, las estrategias por nombre y el reloj de juego |
 | [debug](engine/debug.md) | Consola y paneles de desarrollo con Dear ImGui |
+| [net](engine/net.md) | Red entre dos máquinas: WebRTC con un carril fiable y otro sin garantías, lockstep y el cliente de señalización |
 
 ## Juego (`packages/game/`)
 
@@ -42,8 +43,10 @@ capas y lo que puede usar cada una están en las [reglas de dependencias](../arc
 | [gym](game/gym.md) | El gimnasio del pueblo: la coreografía de los cursos y la cuenta de las ganancias |
 | [tournament](game/tournament.md) | Los torneos de la arena: rivales, cuadro, rivales generados y victorias |
 | [curling](game/curling.md) | El juego de las piedras sobre el hielo: deslizamiento, choques, puntos y el rival |
+| [versus](game/versus.md) | El versus en línea: identidad, serie, alineaciones y resultados entre dos máquinas en lockstep |
 | [story](game/story.md) | El estado de la historia y el runtime de los scripts de eventos |
 | [save](game/save.md) | Partidas guardadas versionadas, ranuras y autoguardado |
+| [modes](game/modes.md) | Los modos de juego: el manifiesto `mode.yaml` y el catálogo de los paquetes |
 
 ## Librerías compartidas (`packages/`)
 
@@ -65,6 +68,7 @@ capas y lo que puede usar cada una están en las [reglas de dependencias](../arc
 | [studio](apps/studio.md) | DWE Studio, banco de trabajo de desarrollo: editor, compilar, arrancar y comparar con el original |
 | [mapper](apps/mapper.md) | `dwe-mapper`, el editor de mapas (por ahora visor de solo lectura): colisiones, salidas y personajes sobre el fondo |
 | [beta-gateway](services/beta-gateway.md) | La pasarela de la beta entre el lanzador y las versiones de GitHub, con la clave de la beta |
+| [versus-signal](services/versus-signal.md) | El servidor de señalización del versus en línea: salas con código para que dos juegos se conecten por WebRTC |
 
 ## Otros
 

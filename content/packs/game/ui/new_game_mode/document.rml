@@ -1,0 +1,28 @@
+<rml>
+<head>
+	<title>New game mode</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<div id="panel">
+			<h1 id="title" text-key="modes.title"></h1>
+			<button id="mode-1" class="mode" onclick="choose(1)" onfocus="mode_focus(document, 1)"></button>
+			<button id="mode-2" class="mode" onclick="choose(2)" onfocus="mode_focus(document, 2)"></button>
+			<button id="mode-3" class="mode" onclick="choose(3)" onfocus="mode_focus(document, 3)"></button>
+			<button id="mode-4" class="mode" onclick="choose(4)" onfocus="mode_focus(document, 4)"></button>
+			<button id="mode-5" class="mode" onclick="choose(5)" onfocus="mode_focus(document, 5)"></button>
+			<button id="mode-6" class="mode" onclick="choose(6)" onfocus="mode_focus(document, 6)"></button>
+			<p id="about" class="about"></p>
+			<button id="back" class="back" onclick="back()" text-key="common.back"></button>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="common.back"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

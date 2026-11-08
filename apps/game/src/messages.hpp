@@ -124,6 +124,9 @@ inline constexpr std::string_view BadNpcList = "'{}' is not a list of NPC number
 inline constexpr std::string_view BattleAlreadyRunning = "a battle is already under way";
 inline constexpr std::string_view BattleStartFailed = "game: battle: {}";
 inline constexpr std::string_view PlaceFailed = "game: place: {}";
+inline constexpr std::string_view WarpFailed = "game: warp: {}";
+inline constexpr std::string_view WarpUsage =
+    "'{}': expected '<map> [exit]' with a map of the packs";
 inline constexpr std::string_view StorySetFailed = "game: story_set: {}";
 inline constexpr std::string_view PartnerSetFailed = "game: partner_set: {}";
 inline constexpr std::string_view LearnMoveFailed = "game: learn_move: {}";
@@ -219,5 +222,21 @@ inline constexpr std::string_view SpriteCharactersUnreadable =
     "field: {}: {}; the sprite characters stay sprites";
 inline constexpr std::string_view SpriteCharacterModelMissing =
     "field: the {} of map {} stays a sprite: {}";
+
+// The options that change the rules (rule_options.hpp).
+inline constexpr std::string_view DifficultyNoLevels =
+    "the difficulty section needs `levels`, a mapping of each level's changes";
+inline constexpr std::string_view DifficultyChangeShape =
+    "a difficulty level is a list of changes, each with `section`, `path` and either `value` or "
+    "`percent`";
+inline constexpr std::string_view DifficultyPercent =
+    "a difficulty change's `percent` is a whole number from 0";
+inline constexpr std::string_view RuleOptionsUnread = "options: the rules' options: {}";
+inline constexpr std::string_view RuleOptionNoValue =
+    "options: the ruleset has no value {}.{}; the option leaves it";
+inline constexpr std::string_view RuleOptionNotNumber =
+    "options: {}.{} is not a whole number, so no percent of it is set";
+inline constexpr std::string_view RuleOptionRefused = "options: {}.{} cannot take {}";
+inline constexpr std::string_view RuleOptionSet = "options: {}.{} = {}";
 
 } // namespace dwe::app::messages

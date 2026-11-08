@@ -8,8 +8,10 @@
 #include <dwe/game/partner/partner.hpp>
 #include <dwe/game/save/autosave.hpp>
 #include <dwe/game/save/sections.hpp>
+#include <dwe/game/versus/protocol.hpp>
 #include <dwe/ruleset/species_extra.hpp>
 #include <dwe/session/battle_adapter.hpp>
+#include <dwe/session/game_hooks.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/messages.hpp>
@@ -20,11 +22,39 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace dwe::session {
 
 namespace {
+
+// The names mods see for a battle's kind and outcome (game_hooks.hpp).
+std::string_view kindName(game::battle::BattleKind kind) {
+  switch (kind) {
+  case game::battle::BattleKind::Normal:
+    return "normal";
+  case game::battle::BattleKind::Tournament:
+    return "tournament";
+  case game::battle::BattleKind::Arena:
+    return "arena";
+  case game::battle::BattleKind::Versus:
+    return "versus";
+  }
+  return "normal";
+}
+
+std::string_view outcomeName(game::battle::Outcome outcome) {
+  switch (outcome) {
+  case game::battle::Outcome::Victory:
+    return "victory";
+  case game::battle::Outcome::Fled:
+    return "fled";
+  case game::battle::Outcome::Defeat:
+    return "defeat";
+  }
+  return "defeat";
+}
 
 using game::battle::BattleResult;
 using game::battle::Outcome;
@@ -38,6 +68,35 @@ constexpr std::string_view DigimonTableRole = "digimon";
 constexpr std::string_view MoveTableRole = "moves";
 
 constexpr unsigned SeedHalfBits = 32;
+
+// The widest stats a raised partner reaches, and so a registered one (partner care caps).
+constexpr std::int32_t MaxPool = 9999;
+constexpr std::int32_t MaxStat = 999;
+constexpr std::int32_t MaxDiscipline = 100;
+
+// A versus fighter's stats as another machine sent them: each within what a raised partner has.
+core::Result<void> checkVersusStats(const game::versus::VersusFighter& fighter) {
+  struct Range {
+    std::string_view name;
+    std::int32_t value;
+    std::int32_t low;
+    std::int32_t high;
+  };
+  const std::array ranges{Range{"hp", fighter.hp, 1, MaxPool},
+                          Range{"mp", fighter.mp, 0, MaxPool},
+                          Range{"offense", fighter.offense, 0, MaxStat},
+                          Range{"defense", fighter.defense, 0, MaxStat},
+                          Range{"speed", fighter.speed, 0, MaxStat},
+                          Range{"brains", fighter.brains, 0, MaxStat},
+                          Range{"discipline", fighter.discipline, 0, MaxDiscipline}};
+  for (const Range& range : ranges) {
+    if (range.value < range.low || range.value > range.high) {
+      return core::fail(formatMessage(messages::VersusStatOutside, fighter.name, range.name,
+                                      range.value, range.low, range.high));
+    }
+  }
+  return {};
+}
 
 // The battle's stat raises, in the partner's order (both go HP, MP, offense, defense, speed,
 // brain).
@@ -404,6 +463,15 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
   if (!strategies) {
     return std::unexpected{strategies.error()};
   }
+  // What mods hear once the battle started (battle.started), taken before the request moves.
+  const std::string firstEnemy =
+      request.enemies.empty() ? std::string{} : request.enemies[0].species;
+  const std::string map = request.map;
+  const BattleStartedEvent started{.kind = kindName(request.kind),
+                                   .map = map,
+                                   .enemies = static_cast<std::int64_t>(request.enemies.size()),
+                                   .firstEnemy = firstEnemy,
+                                   .scripted = request.scripted};
   const game::partner::PartnerState& state = session.partner().state();
   game::battle::BattleSetup setup{
       .partner = std::move(*partner),
@@ -420,7 +488,8 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
       .tamer = request.tamer,
       .kind = request.kind,
       .timeLimit = request.timeLimit,
-      .recruitOnVictory = std::move(request.recruitOnVictory)};
+      .recruitOnVictory = std::move(request.recruitOnVictory),
+      .versus = std::nullopt};
   ruleset::Random& random = session.random();
   const std::uint64_t high = random.next();
   const std::uint64_t seed = (high << SeedHalfBits) | random.next();
@@ -429,7 +498,105 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
   if (battle && originalRolls_) {
     battle->useOriginalRolls(*originalRolls_);
   }
+  if (battle) {
+    session.hooks().battleStarted(started);
+  }
   return battle;
+}
+
+core::Result<game::battle::Combatant>
+BattleAdapter::versusCombatant(const game::versus::VersusFighter& fighter) const {
+  if (!catalog_) {
+    return core::fail(std::string{messages::BattleNotRead});
+  }
+  const assets::DigimonRow* row = rowOf(fighter.species);
+  if (row == nullptr) {
+    return core::fail(formatMessage(messages::VersusUnknownSpecies, fighter.name, fighter.species));
+  }
+  if (auto checked = checkVersusStats(fighter); !checked) {
+    return std::unexpected{checked.error()};
+  }
+  game::battle::Combatant combatant = game::battle::combatantOf(*row);
+  if (const auto type = partnerTypes_.find(fighter.species); type != partnerTypes_.end()) {
+    combatant.type = type->second;
+  }
+  if (const auto variants = partnerVariants_.find(fighter.species);
+      variants != partnerVariants_.end()) {
+    combatant.moveVariants = variants->second;
+  }
+  // vs_scene.c: VS_loadFighterEntities: the record's stats, full HP and MP, charge mode 0.
+  combatant.stats = {.maxHp = fighter.hp,
+                     .maxMp = fighter.mp,
+                     .offense = fighter.offense,
+                     .defense = fighter.defense,
+                     .speed = fighter.speed,
+                     .brain = fighter.brains};
+  combatant.hp = fighter.hp;
+  combatant.mp = fighter.mp;
+  combatant.chargeMode = game::battle::ChargeMode::Normal;
+  for (std::size_t place = 0; place < fighter.techniques.size(); ++place) {
+    const std::optional<std::string>& move = fighter.techniques.at(place);
+    if (!move) {
+      continue;
+    }
+    if (!catalog_->find(*move)) {
+      return core::fail(formatMessage(messages::VersusUnknownMove, fighter.name, *move));
+    }
+    combatant.moves.at(place) = move;
+  }
+  // moves[3] = VS_getFirstSpecialMove(species): the species' finisher, as a raised partner's.
+  if (const std::optional<MoveSlot> slot = finisherSlot(*row)) {
+    combatant.moves.at(game::battle::FinisherSlot) = row->moves.at(static_cast<std::size_t>(*slot));
+  }
+  return combatant;
+}
+
+core::Result<game::battle::Battle>
+BattleAdapter::startVersus(const game::versus::VersusFighter& host,
+                           const game::versus::VersusFighter& guest,
+                           const VersusPlacement& placement, std::uint64_t seed) const {
+  if (!rules_ || !section_) {
+    return core::fail(std::string{messages::BattleNotRead});
+  }
+  if (!rules_->versus) {
+    return core::fail(std::string{messages::VersusNotRead});
+  }
+  auto first = versusCombatant(host);
+  if (!first) {
+    return std::unexpected{first.error()};
+  }
+  auto second = versusCombatant(guest);
+  if (!second) {
+    return std::unexpected{second.error()};
+  }
+  first->position = placement.host;
+  second->position = placement.guest;
+  auto strategies = game::battle::createStrategies(*section_);
+  if (!strategies) {
+    return std::unexpected{strategies.error()};
+  }
+  std::vector<game::battle::Combatant> enemies;
+  enemies.push_back(std::move(*second));
+  // VS_DISCIPLINE[0] and [1]: each side obeys with its own record's discipline.
+  game::battle::BattleSetup setup{
+      .partner = std::move(*first),
+      .condition = {.discipline = host.discipline,
+                    .tiredness = 0,
+                    .sick = false,
+                    .injured = false,
+                    .knownMoves = {}},
+      .enemies = std::move(enemies),
+      .scripted = true,
+      .tamerless = false,
+      .map = placement.map,
+      .startMinute = 0,
+      .tamer = placement.bystander,
+      .kind = game::battle::BattleKind::Versus,
+      .timeLimit = rules_->versus->timeLimitSeconds,
+      .recruitOnVictory = std::nullopt,
+      .versus = game::battle::VersusSetup{.rivalDiscipline = guest.discipline}};
+  return game::battle::Battle::start(std::move(setup), *rules_, *catalog_, std::move(*strategies),
+                                     seed);
 }
 
 void BattleAdapter::giveRewards(GameSession& session, const BattleResult& result,
@@ -475,6 +642,9 @@ core::Result<BattleAftermath> BattleAdapter::finish(GameSession& session,
   if (result.kind != game::battle::BattleKind::Normal) {
     session.requestAutosave(AutosaveReason::TournamentResult);
   }
+  session.hooks().battleEnded({.kind = kindName(result.kind),
+                               .outcome = outcomeName(result.outcome),
+                               .recruit = aftermath.recruitJoined.value_or(std::string{})});
   session.afterSystemCommand();
   return aftermath;
 }

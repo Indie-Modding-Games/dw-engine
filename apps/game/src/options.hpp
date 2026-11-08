@@ -43,6 +43,9 @@ struct Options {
   std::optional<std::filesystem::path> saves;
   // Where the bug reports (F12) go (--reports); `reports` in the user's data folder when not given.
   std::optional<std::filesystem::path> reports;
+  // The online versus' signaling server (--versus-server <wss://...>), over the game pack's
+  // versus/network.yaml.
+  std::string versusServer;
   // Set by --list-saves: log the save slots and quit, without a window.
   bool listSaves = false;
   // Set by --check-content: open every asset of the folder's packs and quit, without a window.
@@ -155,7 +158,7 @@ struct Options {
 
 inline constexpr std::string_view Usage =
     "dwe-game [--content <folder>] [--mods <folder>]... [--dev-assets] [--ruleset <id>] [--story-stage <id>|all] "
-    "[--saves <folder>] [--reports <folder>] [--size "
+    "[--saves <folder>] [--reports <folder>] [--versus-server <url>] [--size "
     "<width>x<height>] "
     "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--chibi] [--start <map>[,<exit>]] [--time day|dusk|night] [--weather <kind>] [--season <season>] [--lang "
     "<language>] "

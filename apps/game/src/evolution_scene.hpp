@@ -57,6 +57,12 @@ public:
 
   void tick(double seconds);
 
+  // Skip the evolution (an engine improvement, play_session.hpp: SkipEvolutionSetting): the scene
+  // ends at once, as its own end leaves it (the scenery, the camera and the map's sounds back, the
+  // new form drawn idle); the evolution itself, done by the session before the scene, is the same.
+  // Nothing while no scene runs.
+  void skip();
+
 private:
   // The original's states: the two waits of tickEvoSequenceLoading, then EVL_tickEvoSequence's
   // 0 (dimming), 1 (camera), 2 (burst), 3 (camera back) and 4 (the last clip).

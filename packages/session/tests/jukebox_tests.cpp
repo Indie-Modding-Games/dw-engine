@@ -76,7 +76,7 @@ struct Visit {
   StoryAdapter* story = nullptr;
   Jukebox* jukebox = nullptr;
 
-  [[nodiscard]] std::uint8_t chosen() const {
+  [[nodiscard]] std::int32_t chosen() const {
     return story->state().variable(ChosenVariable).value_or(0);
   }
   void unlock() const { REQUIRE(story->state().setTrigger(UnlockTrigger, true)); }

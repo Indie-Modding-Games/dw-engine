@@ -121,6 +121,10 @@ public:
   // enemy still standing for the whole fight, cups too. Off, the original's: a wild enemy's bar a
   // while after it is hit (Battle::hpBarShown) and none in a cup.
   void setEnemyHpBars(bool always);
+  // Quick battle start (an engine improvement, play_session.hpp: QuickBattleStartSetting): a field
+  // fight starts on its first frame, without the original's opening (the anger marks, the banner
+  // and the player running back); a cup's match keeps its own.
+  void setQuickStart(bool quick) { quickStart_ = quick; }
   // Whether a fight runs (from its start to its end box), the time a quick battle plays at x2.
   [[nodiscard]] bool fighting() const { return battle_.has_value(); }
   // Whether the player has to react in time: the finisher's charge (command_menu.c:
@@ -170,6 +174,8 @@ private:
   [[nodiscard]] screens::NameKeys names() const;
   void publish() const;
   void tickIntro(double seconds);
+  // Quick battle start: what the opening leaves behind, at once.
+  void skipIntro();
   // battle_screen_retreat.cpp: the player's run back during the banner.
   void startRetreat();
   void stepRetreat();
@@ -267,6 +273,8 @@ private:
   // The field's bag document is open over the battle.
   // Enemy life bars over every enemy still standing (setEnemyHpBars).
   bool enemyHpBarsAlways_ = false;
+  // Field fights start without the opening (setQuickStart).
+  bool quickStart_ = false;
   bool bagShown_ = false;
   // The numbers over the fighters (entity_text.c), and the time they have not run yet once the
   // battle is over: they go on through the victory until the last one goes.

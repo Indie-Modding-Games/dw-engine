@@ -100,6 +100,16 @@ std::int32_t Inventory::countOf(assets::ItemHandle item) const {
   return 0;
 }
 
+std::int32_t Inventory::totalOf(assets::ItemHandle item) const {
+  std::int32_t total = 0;
+  for (const std::optional<Stack>& slot : slots()) {
+    if (slot && slot->item == item) {
+      total += slot->count;
+    }
+  }
+  return total;
+}
+
 void Inventory::remove(assets::ItemHandle item, std::int32_t count) {
   for (std::optional<Stack>& slot : usableSlots()) {
     if (!slot || slot->item != item) {

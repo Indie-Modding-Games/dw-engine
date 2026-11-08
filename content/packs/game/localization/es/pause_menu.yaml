@@ -91,6 +91,14 @@ shop_job_bar: "Barra de reclutamiento"
 # Espacio tras los nombres: un nombre que inserta un texto lleva un espacio cuando el texto lo pega a la palabra
 # siguiente (encendido por defecto).
 name_spacing: "Espacio tras los nombres"
+# Extras de la tienda: la descripción del objeto bajo la lista, cuántos tienes de cada uno y el dinero que deja el trato
+# (apagado por defecto: la tienda del original solo enseña la descripción con Pausa).
+shop_extras: "Extras de la tienda"
+# Arreglos gráficos: el aspecto original dibuja bien lo que el original lee de una parte equivocada de sus texturas (la
+# etiqueta de felicidad de la ficha). Apagado por defecto, como el original.
+art_fixes: "Arreglos gráficos"
+# Herramientas de desarrollo: la consola (F1), el menú de desarrollo (F2) y la capa del mapa (F3).
+dev_tools: "Herramientas de desarrollo"
 # Música continua: un mapa cuya canción ya suena la deja seguir en vez de empezarla otra vez
 # (encendida por defecto).
 continuous_music: "Música continua"
@@ -214,6 +222,22 @@ battle_speed: "Combates rápidos"
 battle_speed.normal: "No"
 battle_speed.key: "Con R"
 battle_speed.fast: "Siempre"
+# Battles without the wait: a field fight starts the moment it triggers (off by default: the original's lead-in).
+quick_battle_start: "Combates sin espera"
+# Difficulty: normal is the original's; easy eases fights, training and care as the ruleset says.
+difficulty: "Dificultad"
+difficulty.normal: "Normal"
+difficulty.easy: "Fácil"
+# Skip evolutions: confirm or cancel ends an evolution's scene at once (off by default).
+skip_evolution: "Saltar evoluciones"
+# Cancel closes choices: a cancel in a choice only closes it (off by default: the original's cancel).
+choice_cancel_closes: "Cancelar cierra elecciones"
+# Fair sickness chance, evolution averages, move forgetting and card stock: the original's quirks turned off
+# (off by default).
+fair_sickness_chance: "Enfermar justo"
+fair_evolution_average: "Media de evolución justa"
+fair_move_forgetting: "Olvidar técnicas justo"
+fair_card_stock: "Tienda de cartas sin repetidas"
 # {tab} es el nombre de la pestaña.
 reset_question: "¿Restablecer los valores de «{tab}»?"
 reset_note: "Pantalla, aspecto, idioma y letra no cambian."
@@ -230,7 +254,15 @@ help.canonical_stages: "El árbol nombra las etapas como la serie y añade la ca
 help.rare_items: "Algunos puntos de objetos pueden esconder un objeto raro de evolución. Requiere el contenido oculto."
 help.battle_speed: "Los combates van al doble de velocidad, siempre o con R (gatillo derecho). Mismo resultado."
 help.enemy_hp_bars: "Una barra de vida sobre cada rival todo el combate, también en copas. No: solo un rato tras un golpe."
-help.gym_sessions: "Un curso del gimnasio entrena estas sesiones seguidas. Para si cancelas o tu compañero necesita algo."
+help.gym_sessions: "Un curso del gimnasio entrena estas sesiones seguidas. Espera a que atiendas a tu compañero; para si cancelas, te alejas o se hiere o enferma."
+help.quick_battle_start: "Un combate en el mapa empieza en cuanto salta, sin la espera previa. Las copas mantienen la suya."
+help.difficulty: "Normal es el original. Fácil: tu compañero pega más, recibe menos, entrena más, tiene más tiempo para comer y enferma menos."
+help.skip_evolution: "Confirmar o cancelar acaba al momento la escena de una evolución. La nueva forma es la misma."
+help.choice_cancel_closes: "Cancelar una elección solo la cierra. En el original algunas ejecutan su primera respuesta."
+help.fair_sickness_chance: "Una probabilidad de enfermar bajo cero no enferma. En el original enferma siempre."
+help.fair_evolution_average: "Cada candidato a evolución se mide por sus propios stats, no con sumas que arrastra del anterior."
+help.fair_move_forgetting: "Olvidar una técnica quita solo esa. En el original puede llevarse otra con ella."
+help.fair_card_stock: "La tienda de cartas no ofrece la misma carta dos veces el mismo día. En el original puede."
 help.status_extras: "La ficha enseña cansancio, errores, combates, horario, vida y contador de evolución."
 help.display_mode: "Juega en una ventana o a pantalla completa."
 help.vsync: "Sincroniza los fotogramas con la pantalla para que la imagen no se corte."
@@ -263,6 +295,9 @@ help.save_notice: "Una figura pequeña y «Guardando» en una esquina mientras e
 help.need_bubble_stack: "La burbuja del compañero enseña hasta cinco necesidades a la vez, primero la que antes le hará daño."
 help.shop_job_bar: "Una barra enseña cuánto falta mientras un trabajo o una partida decide si alguien se une."
 help.name_spacing: "Un nombre dentro de un texto nunca queda pegado a la palabra siguiente."
+help.shop_extras: "En las tiendas: descripción del objeto elegido, cuántos tienes y el dinero que te quedará."
+help.art_fixes: "Corrige dibujos que el original saca de una zona equivocada de su textura (felicidad en la ficha)."
+help.dev_tools: "Activa la consola (F1), el menú de desarrollo (F2) y la capa del mapa (F3). Para pruebas."
 help.options_reset: "Devuelve las opciones de esta pestaña a sus valores por defecto. Pregunta antes."
 help.options_back: "Vuelve al menú."
 help.quick_save: "Guarda la partida ahora en su ranura, sin cerrar nada más."

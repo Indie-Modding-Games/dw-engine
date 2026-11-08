@@ -7,7 +7,7 @@
 --
 -- Two layouts of the same entries, as the skin marks #panel (document_classes):
 -- - The modern one: play (a new game), continue (greyed and skipped unless the game publishes
---   save.can_continue), options, quit.
+--   save.can_continue), online versus, options, quit.
 -- - The original look's (class title-original), the original's title screen (main.c: main):
 --   - "boot": the "Press Start" screen (runLandingScreen), when the game says so (title.boot).
 --     It fades in from black, its line blinks, and Start fades it out (40 frames each).
@@ -22,8 +22,9 @@
 --     before the "Press Start" screen each time the title starts there (title.language_first), as a
 --     remaster's: an addition. One confirm picks the language and goes on, with a fade, to the
 --     "Press Start" screen. The options page changes the language too.
---   - "battle": the original's battle mode question (renderConfirmVSSlot), on no. Battle mode is
---     not made yet: both answers come back to the menu.
+--   - "battle": the original's battle mode question (renderConfirmVSSlot), on no. Yes opens the
+--     online versus (the game's versus document, an addition: the original's battle mode is two
+--     players on one console); no comes back to the menu.
 --   The cursor does not wrap: it stops at the first and the last entry (tickMenuInput), and each
 --   view remembers its entry when it comes back, as the original's cursors keep their place.
 --   Cancel goes back one view. The sounds are the UI's cues, the original's (ui/ui_sounds.yaml:
@@ -65,7 +66,7 @@ local leaving = false
 local pending_view = nil
 
 local entries = {
-  menu = { "play", "continue", "erase", "battle", "options", "quit" },
+  menu = { "play", "continue", "erase", "versus", "battle", "options", "quit" },
   battle = { "battle-yes", "battle-no" },
   language = {
     "language-1",
@@ -195,6 +196,7 @@ local function lay_out(document)
   -- Quit is the options page's in the original layout, whose menu has the original's entries and
   -- options.
   show("quit", not orig)
+  show("versus", not orig)
   show("language-box", shown == "language")
   if shown == "language" then
     -- The box in the middle of the screen: its heading and START (180dp with its padding) and a
@@ -313,6 +315,13 @@ function continue_game()
     ui.hide(document_name)
     ui.send("continue")
   end
+end
+
+-- The online versus: the game hides this menu once the versus screen opens (TitleScreen::hide),
+-- and shows it again, on this entry, when the player leaves it.
+function open_versus()
+  remembered.menu = was_original and "battle" or "versus"
+  ui.send("versus")
 end
 
 function erase_game()

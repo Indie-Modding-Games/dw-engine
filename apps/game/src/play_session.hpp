@@ -35,6 +35,7 @@
 #include "chart_requirements.hpp"
 #include "curling_screen.hpp"
 #include "death_scene.hpp"
+#include "dev_menu_screen.hpp"
 #include "egg_box_screen.hpp"
 #include "evolution_scene.hpp"
 #include "feed_scene.hpp"
@@ -61,6 +62,7 @@
 #include "praise_scold_call.hpp"
 #include "recruit_bar.hpp"
 #include "remote_control.hpp"
+#include "rule_options.hpp"
 #include "save_command.hpp"
 #include "save_indicator.hpp"
 #include "save_machine.hpp"
@@ -112,6 +114,20 @@ inline constexpr std::string_view NeedBubbleStackSetting = "need_bubble_stack";
 // Enemy life bars over every enemy still standing, cups too (an engine improvement, off unless
 // turned on; BattleScreen::setEnemyHpBars).
 inline constexpr std::string_view EnemyHpBarsSetting = "enemy_hp_bars";
+// Quick battle start (an engine improvement, off unless turned on; BattleScreen::setQuickStart): a
+// field fight starts the moment it triggers.
+inline constexpr std::string_view QuickBattleStartSetting = "quick_battle_start";
+// Skip the evolution (an engine improvement, off unless turned on; EvolutionScene::skip): confirm
+// or cancel ends the evolution's scene at once.
+inline constexpr std::string_view SkipEvolutionSetting = "skip_evolution";
+// A cancel closes a choice (an engine improvement, off unless turned on;
+// game::story::Dialogue::setCancelClosesChoice): a cancel in a script's choice that has no end
+// marker ends the script instead of running on into the first option.
+inline constexpr std::string_view ChoiceCancelClosesSetting = "choice_cancel_closes";
+// The console's and the developer menu's warp("<map> [exit]"): the player goes to that map, at that
+// exit (0 when not given), as a script's map change takes him (FieldScene::startScriptedMapChange),
+// whatever the story. A debug aid.
+inline constexpr std::string_view WarpCommand = "warp";
 // The weather (an engine improvement, on unless turned off): a UI setting and the options'
 // command with the same name (true or false), on the title screen and in the game.
 inline constexpr std::string_view WeatherSetting = "weather";
@@ -166,6 +182,9 @@ struct SessionCommands {
   std::vector<std::string> partnerWrites;
   // learn_move("<move>") commands, in order (partner_events.hpp).
   std::vector<std::string> lessons;
+  // warp("<map> [exit]"): the player goes to that map's exit as a script's map change takes him
+  // (WarpCommand).
+  std::optional<std::string> warp;
 
   void bind(script::ScriptVm& scripts);
   // Forgets what was queued with no game to apply it to, and says so; a route that asked for a save
@@ -232,6 +251,9 @@ public:
   void pressBattle(const input::InputState& input);
   // Batch training (gym_batch.hpp): the sessions a course the story starts runs in a row.
   void setGymSessions(int sessions) { gymScreen_.setSessions(sessions); }
+  // Applies the play options of the user's settings (quick battle start, skip the evolution, a
+  // cancel closes a choice and the rules' options: rule_options.hpp) after one of them changed.
+  void applyPlayOptions();
   // What the fight on screen asks of a quick battle's speed (battle_speed.hpp).
   [[nodiscard]] BattleSpeedMoment battleSpeedMoment() const {
     return {.fighting = battleScreen_.fighting(), .reacting = battleScreen_.reacting()};
@@ -253,6 +275,10 @@ public:
   // Whether the menu button belongs to the game rather than opening the menu: a naming box takes
   // it, and a gym course takes it as the original's cancel.
   [[nodiscard]] bool holdsMenu() const;
+  // F2 with the developer tools on: opens the developer menu (dev_menu_screen.hpp) over the field,
+  // or closes it. Nothing while another menu or screen is up.
+  void toggleDevMenu();
+  [[nodiscard]] bool devMenuOpen() const { return devMenu_.isOpen(); }
   // Why the game menu stays shut now (player_menu_gate.hpp: a fade, a script, the dialogue, a
   // battle or scene, the player held), or empty when Tab or the HUD's button opens it.
   [[nodiscard]] std::string_view menuShutBy() const;
@@ -350,6 +376,9 @@ public:
   void holdMusicForMovie(bool hold);
 
 private:
+  // Takes the play options' commands (applyPlayOptions): keeps the value in the settings, saves
+  // them and applies it. False for any other command.
+  bool handlePlayOption(const ui::UiCommand& command);
   void tickSystems(const game::field::FieldInput& intent, const FishingButtons& fishing);
   void tickWater();
   [[nodiscard]] bool paused() const;
@@ -378,6 +407,8 @@ private:
   // Shows the story lock's message in the dialog, unless the dialog is on screen already.
   // Opens the island map over the field, with the maps the player has visited.
   void openWorldMap();
+  // warp("<map> [exit]"): a map change to that map's exit, as a script's.
+  void warpTo(std::string_view where);
   void showLockNotice(const std::string& textKey);
   // The pause menu's quick save (docs/architecture/guardar-y-cargar.md, 3.8): writes the game to
   // its home slot, or the first empty manual slot for a playthrough that never saved; a notice
@@ -426,6 +457,7 @@ private:
   EggBoxScreen eggBoxScreen_;
   GymScreen gymScreen_;
   ShopScreen shopScreen_;
+  DevMenuScreen devMenu_;
   ItemKeeperScreen itemKeeperScreen_;
   DiscardScreen discardScreen_;
   JukeboxScreen jukeboxScreen_;
@@ -453,6 +485,10 @@ private:
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;
   bool evolutionRanLastFrame_ = false;
+  // The play options (applyPlayOptions): skip the evolution's scene on confirm or cancel, and the
+  // options that change the running game's rules.
+  bool skipEvolution_ = false;
+  RuleOptions ruleOptions_;
   // What hud.minimap_allowed last said (minimap_setting.hpp: minimapAllowed); nothing before the
   // first frame publishes it.
   std::optional<bool> minimapAllowed_;

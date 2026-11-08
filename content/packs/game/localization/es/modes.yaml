@@ -1,0 +1,5 @@
+# Los modos de juego (modes/<id>/mode.yaml) y la lista donde se elige uno (ui/new_game_mode). Términos del glosario
+# (docs/guides/glosario-es.md).
+title: "Modo de juego"
+original_name: "Historia original"
+original_description: "La historia del juego original con sus reglas."

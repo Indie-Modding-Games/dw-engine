@@ -23,6 +23,9 @@ struct BattleView {
   // The partner is sick (PARTNER_PARA.condition & 0x40) or injured (& 0x20).
   bool partnerSick = false;
   bool partnerInjured = false;
+  // The commanded fighter the partner strategies decide for: the partner, or the rival of a versus
+  // match (vs_combat.c: VS__tickDigimonAI runs the partner's decisions for each side).
+  FighterId actor = PartnerId;
 };
 
 // A decision about the next move: a slot to queue, or a wait with no move (cooldown and charge).

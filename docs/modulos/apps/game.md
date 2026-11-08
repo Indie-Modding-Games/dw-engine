@@ -1087,6 +1087,62 @@ que llega como ajuste de la UI desde `PlaySession` (`NameSpacingSetting`, `story
 |---|---|---|---|---|
 | Nombre insertado pegado a la palabra siguiente | `script_textbox.c: showTextbox` copia el nombre tal cual (códigos 5, 6, 7, 8, 9, 0x11 y 0x12; `getSpeakerName`, `DIGIMON_NAME`, `MOVE_NAMES`, `ITEM_NAME`, `BGM_TRACK_NAMES`, `TOURNAMENT_NAMES`) y `drawString2` no añade nada; diez textos del original no llevan espacio tras el nombre (MAPHEAD 0x5cbe, el nombre de una técnica y la palabra siguiente; 0x5b94, 0x4ac4 tras `{partner}`; cinco de las cartas y dos del guion 132 tras el nombre de una especie). Medido: los bytes del guion en la RAM (`MAPHEAD_SCRIPT_PTR` + 0x5cbe) son `08 F3` y luego la primera letra de la palabra, sin espacio; con `SCRIPT_POINTER` llevado a ese texto en un cuadro abierto (estado `save_machine_intro`) el juego dibuja el nombre y la palabra juntos | Cada nombre que rellena una etiqueta (`StoryTextbox::pageText`, `TournamentScheduleScreen`) acaba en la marca `NameEnd`; `appendPageRows` la quita y, con la opción, pone un espacio si lo siguiente (tras las etiquetas de color) es una letra o una cifra; ante un signo, un espacio, un salto de línea o el final de la página no pone nada. Sin la opción, el texto pegado como en el original | «a name the text runs into the next word gets a space with name spacing» (`story_text_rows_tests.cpp`) | Mejora (opción) |
 
+## Descripción en las tiendas
+
+Como el original: en la lista de una tienda, Pausa (P, o Start en el mando) sobre un objeto abre su descripción en una
+caja de una línea bajo la lista, con el aspecto de la caja del dinero (`ui/shop_menu`, fase `description` de
+`ShopScreen`); aceptar, cancelar o Pausa la cierran y vuelven a la lista con el mismo objeto. Mientras la tienda está en
+la lista o en la descripción, Pausa no abre el menú de pausa (`ShopScreen::holdsPause`); la UI entrega Pausa y el botón
+de menú (Tab, el botón superior del mando) al documento como la misma acción `menu`, así que `ShopScreen::press` los
+distingue: el botón de menú sigue volviendo atrás como antes.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Descripción del objeto en la tienda | `tickItemMenu`: Start sobre una fila llama a `createItemMenuDescriptionBox` (caja de 264 × 22 junto a la fila); `tickItemMenuDescriptionBox` la cierra con aceptar, cancelar o Start | `ShopScreen` pasa a la fase `description` con la fila del cursor (`shop_cursor`) y publica `shop.described` y la descripción de cada fila; el documento muestra la caja en el sitio de la de la bolsa | Ruta `route-shop-description.yaml` (en las dos pieles: Pausa abre y aceptar cierra la caja, que no tapa la lista) | Igual que el original |
+
+## Extras de la tienda
+
+Mejora opcional, apagada por defecto: el ajuste `shop_extras` (fila «Extras de la tienda», «Shop extras» en inglés,
+de la pestaña Interfaz de las opciones, guardado en los ajustes del usuario). Lo leen los documentos como ajuste de la
+UI; `Game` lo cambia en el título y en la partida (`changeUiToggle`, `title_options.cpp`). Encendido, la tienda
+enseña bajo la lista la descripción de la fila con foco, cuántos tiene ya el jugador de cada objeto en venta
+(`ShopCounter::owned`, la suma de las casillas de la bolsa), y en la caja de cantidad cuántos tiene y el dinero que
+le quedará tras la compra o la venta (`shop.amount.owned`, `shop.amount.money_after`). El dinero ya estaba siempre a la
+vista. Apagado, la tienda del original. Cubre las tiendas de objetos y el reciclaje; las tiendas de cartas y de
+méritos no. Lo comprueban la ruta `route-shop-description.yaml` (compra uno y la fila pasa a `x1`) y
+`bag_tests.cpp` («the total of an item counts every stack…», `Inventory::totalOf`).
+
+## Arreglos gráficos
+
+Mejora opcional, apagada por defecto: el ajuste `art_fixes` (fila «Arreglos gráficos», «Art fixes», pestaña
+Interfaz). Junta los dibujos que el original saca de una zona equivocada de su textura; el original los enseña mal
+igual, así que apagado se ven como en él.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Rótulo de la felicidad en la ficha del compañero (piel original) | La vista de estado dibuja el rótulo con columnas que no son las de la palabra (sale cortado, igual en el original) | Con la opción, la clase `fixed` de `#status-happiness-name` usa el sprite `status-happiness-name-fixed` (columnas 214–254, filas 60–67, medido en la textura) y acaba donde empieza la barra; sin ella, el dibujo del original | Ruta `route-art-fixes.yaml` (con `--lang en --ui-skin original`, donde la ficha usa el rótulo de la textura) | Mejora (opción) |
+
+## Herramientas de desarrollo
+
+El ajuste `dev_tools` (fila «Herramientas de desarrollo», «Developer tools», pestaña Interfaz) enciende la consola
+(F1 o `), el menú de desarrollo (F2) y la capa del mapa (F3). Apagado, esas teclas no hacen nada y, si la consola o el
+menú estaban abiertos, se cierran. Su valor por defecto depende de la compilación (`dev_tools.hpp`): apagado en los
+paquetes (`DWE_PACKAGE`) y encendido en las compilaciones de desarrollo; `--tuning` las enciende siempre.
+«Restablecer valores» lo deja apagado.
+
+El menú de desarrollo (`ui/dev_menu`, `DevMenuScreen`) es un menú modal sobre la partida que solo escribe líneas de
+consola: dar objetos (de 1, 10 o 99), fijar el dinero, la velocidad del reloj, las estadísticas, los cuidados
+(felicidad, disciplina, cansancio, errores, dormir, baño), hacer evolucionar, viajar a un mapa ya visitado y
+guardar (con el `quick_save` del menú de pausa). Las listas (objetos, especies, mapas) salen de las tablas del jugador con sus claves de nombre
+(`dev_menu.<lista>.count`, `.N.id`, `.N.name`). `Game` solo ejecuta una línea `dev_menu_run` si las herramientas
+están encendidas y la orden es de las que ofrece el menú (`devMenuLineAllowed`). Para ello la consola ganó:
+
+- `warp("<mapa> [salida]")`: cambia de mapa como un guion (`startScriptedMapChange`), con la salida 0 si no se da.
+- `partner_set("happiness <n>")` y `partner_set("tiredness <n>")`, de 0 a 100.
+
+Pruebas: `dev_tools_tests.cpp` (qué líneas acepta el menú y cómo publica sus listas), `partner_set_command_tests.cpp`
+y la ruta `route-dev-menu.yaml` (F2, dinero, un objeto, y con la opción apagada F2 no abre nada).
+
 ## Barras de reclutamiento
 
 Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no enseña cuánto le falta al jugador):
@@ -1329,10 +1385,10 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 
 | Pestaña | Filas |
 |---|---|
-| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Sesiones de gimnasio, Espacio tras los nombres |
+| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Sesiones de gimnasio, Combates sin espera, Dificultad, Saltar evoluciones, Cancelar cierra elecciones, Enfermar justo, Media de evolución justa, Olvidar técnicas justo, Tienda de cartas sin repetidas, Espacio tras los nombres |
 | Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua, Reverberación |
-| Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
+| Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento, Extras de la tienda, Arreglos gráficos, Herramientas de desarrollo |
 
 | Qué | Teclado y ratón | Mando |
 |---|---|---|
@@ -1533,6 +1589,13 @@ comas; vacía sin él). Una casilla que no cabe en la rejilla de su caja (las de
 contenido oculto) pasa a una página siguiente del árbol ([etapas canónicas](#etapas-canónicas)).
 Una forma nueva usa el icono de otra especie con otra paleta hasta que haya iconos propios.
 
+**Modo de juego.** Antes de las reglas, `TitleScreen` pregunta el modo (`ui/new_game_mode`, `NewGameModes` en
+`new_game_mode.hpp`) solo si los paquetes traen más de uno ([modes](../game/modes.md)); el juego trae solo
+«Historia original», así que no sale. Publica `new_game_mode.count` y `new_game_mode.<n>.id`, `name` y `description`
+y recibe `new_game_mode` con el id o `new_game_mode_back`. El modo elegido va a `PlayStart::modeId` y a la sesión
+(`SessionDesc::modeId`, sección `mode` del guardado). Las reglas salen después solo para un modo que admite
+`original` y `oculto`; otro modo empieza con su `ruleset`.
+
 Las rutas de prueba solo ven esta pantalla si lo piden (`new_game_rules: true`); las demás empiezan con las reglas
 del original, como antes. `route-hidden-content.yaml` elige el contenido oculto y hace evolucionar al compañero a
 cada forma nueva; `route-hidden-content-off.yaml` deja el original y comprueba que todo sigue igual
@@ -1674,5 +1737,127 @@ usuario) llega a `GymScreen::setSessions`; la regla es `GymBatch` (`gym_batch.hp
 |---|---|---|---|---|
 | Una sesión por diálogo | La máquina del curso pregunta (Normal / Ruleta / Salir) y el guion fija el curso y la ruleta (variables 254 y 246) y llama a la rutina 7 (`script_interp.c`), que corre una sola sesión; para otra hay que volver a hablar | Igual con 1 (`GymScreen::startChosen`) | «at the original's one session a course never starts again» (`gym_batch_tests.cpp`) | Igual |
 | Varias sesiones seguidas | — | Con 2 a 5, cuando acaba una sesión que empezó la historia, se cierra su caja de estadísticas y el campo queda libre (sin guion, texto, menú, combate ni escena del compañero: la caca, el baño, comer, felicitar, dormir, evolución, muerte), el mismo curso vuelve a empezar con la misma ruleta, hasta completar el número (`GymScreen::continueBatch`). Cada sesión es una del original: mismas ganancias, misma hora, mismo cansancio y lo que el compañero haga después | «a batch runs its course again each time the field is idle…», «a batch waits while something holds the field» | Mejora (opción) |
-| Cortar la tanda | — | La tanda se acaba si el jugador cancela una sesión antes del premio (cancelar durante la cuenta de estadísticas no la corta), si el compañero muestra una necesidad o estado (hambre, sueño, cansancio, baño, enfado, herida, enfermedad) o si el jugador cambia de mapa | «a cancel, a need of the partner's or another map stops a batch for good» | Mejora (opción) |
+| Esperar al compañero | — | Si entre dos sesiones el compañero muestra una necesidad que el jugador puede atender (hambre, baño, sueño, cansancio), la tanda no se corta: espera a que el jugador la atienda (darle de comer, la caca o el baño, dormir, descansar o un objeto) y sigue con las sesiones que faltan en cuanto la necesidad desaparece y el campo queda libre, mientras el jugador siga en el mapa y cerca de la máquina (`GymBatch::waitingForCare`). El cansancio cuenta como necesidad porque es lo que deja el propio entrenamiento: la tanda espera a que baje en vez de entrenar con él | «a hungry partner pauses a batch, which goes on once it is fed and the field is free», «a batch waiting for the partner stops on another map» | Mejora (opción) |
+| Cortar la tanda | — | La tanda se acaba si el jugador cancela una sesión antes del premio (cancelar durante la cuenta de estadísticas no la corta), si cambia de mapa, si el compañero está enfadado, herido o enfermo (estados que no se arreglan junto a la máquina), o si el jugador se aleja de la máquina: el primer fotograma tras cada sesión marca dónde está y alejarse más de 500 unidades (5 casillas, `GymBatchLeash`) de ahí corta la tanda; hay sitio para dar de comer o limpiar al lado, no para irse a otra parte del mapa | «a cancel, a sulking, injured or sick partner or a walk away stops a batch for good», «each session marks again where the player stands» | Mejora (opción) |
 | Consola | — | `gym("<curso>")` sigue corriendo una sola sesión: solo los cursos que empieza la historia van en tanda | en vivo | Mejora (opción) |
+
+## Combates sin espera
+
+Mejora opcional, apagada por defecto: el ajuste `quick_battle_start` (fila «Combates sin espera», «Battles without wait»
+en inglés, pestaña Juego de las opciones del menú de pausa y del título, guardado en los ajustes del usuario) llega desde
+`PlaySession` (`QuickBattleStartSetting`) a `BattleScreen::setQuickStart`.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Espera antes del combate | `battle_setup.c: BTL_handleBattleIntro`: 20 fotogramas de marcas de enfado y luego el rótulo, que dura 200 fotogramas o dos más desde que el domador llega a su sitio, a 20 por segundo (medido, ver [battle](../game/battle.md)): de 1,1 a 11 segundos sin poder dar órdenes | Igual sin la opción | — | Igual |
+| Con la opción | — | En un combate del campo (no en las copas, que guardan su apertura) la apertura se salta el mismo fotograma en que empezaría (`BattleScreen::skipIntro`): la tira de órdenes se abre, el domador se queda donde estaba en su postura de combate con su camino guardado intacto (una huida corre por él como siempre), suena el estallido y el combate empieza. El combate en sí es el del original | en vivo | Mejora (opción) |
+
+## Dificultad
+
+Mejora opcional, `normal` por defecto (el original): el ajuste `difficulty` (fila «Dificultad», «Difficulty» en inglés,
+valores Normal y Fácil, pestaña Juego de las opciones del menú de pausa y del título, guardado en los ajustes del
+usuario). `RuleOptions` (`rule_options.hpp`) cambia valores del ruleset de la partida con los mismos cambios que el panel
+de ajuste (`RulesetStore::setValue`), así cada sistema los lee como cualquier regla; al volver a Normal cada valor vuelve
+al suyo, y tras recargar o cambiar de ruleset los cambios se hacen otra vez (un valor que el panel cambió entre medias se
+queda como lo dejó el panel).
+
+Qué cambia Fácil lo dice la sección `difficulty` del ruleset (`rules/original/difficulty.yaml`, esquema
+`ruleset_difficulty`): cada nivel es una lista de cambios `{ section, path, value | percent }`, un valor YAML nuevo o un
+tanto por ciento del valor del ruleset, redondeado hacia abajo. Un mod ajusta la dificultad con su propia sección. El
+ruleset original:
+
+| Qué | Normal (original) | Fácil |
+|---|---|---|
+| Daño que hace el compañero (golpes, remates, bloqueos; también en copas) | 100 % (`battle.damage.partner_dealt_percent`) | 150 % |
+| Daño que recibe el compañero | 100 % (`battle.damage.partner_taken_percent`) | 50 % |
+| Ganancias de cada sesión de entrenamiento | 100 % (`training.gain_percent`) | 150 % |
+| Tiempo para darle de comer antes del error de cuidado | 90 minutos (`care.hunger.window_minutes`) | 180 minutos |
+| Parte de la probabilidad de enfermar que crece con las ocasiones | 5 (`care.sickness.tries_percent`) | 2 |
+
+Los dos porcentajes de combate y el de entrenamiento son valores nuevos del ruleset, a 100 en el original: el daño de
+`attack_hits.cpp` (`damageOf`) y las ganancias de `strategies.cpp` se multiplican por ellos (redondeo hacia abajo, con
+los límites de daño de siempre). Pruebas: `rule_options_tests.cpp` (los cambios de Fácil existen en el ruleset, se
+aplican, se mantienen tras recargar y se deshacen).
+
+## Saltar evoluciones
+
+Mejora opcional, apagada por defecto: el ajuste `skip_evolution` (fila «Saltar evoluciones», «Skip evolutions» en
+inglés, pestaña Juego, guardado en los ajustes del usuario). Con ella, confirmar o cancelar durante la escena de
+evolución ([La escena de evolución](#la-escena-de-evolución)) la acaba al momento (`EvolutionScene::skip`): se repone el
+campo y se dibuja la forma nueva. El resultado es el mismo: la evolución ya está hecha en el estado del compañero antes
+de la escena, que solo la enseña. Sin la opción la escena del original dura sus 0x162 cuadros y no atiende botones.
+
+## Cancelar cierra elecciones
+
+Mejora opcional, apagada por defecto: el ajuste `choice_cancel_closes` (fila «Cancelar cierra elecciones», «Cancel
+closes choices» en inglés, pestaña Juego, guardado en los ajustes del usuario) llega a
+`game::story::Dialogue::setCancelClosesChoice`.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Cancelar una elección con marca de fin | `script_interp.c: tickSelectionDialogue`: el cancel sigue tras la marca `0x12 0x00` que cierra la elección | Igual: el brazo `else` de `story.set_selection` es el código tras la marca | `lua_emitter_tests.cpp` | Igual |
+| Cancelar una elección sin marca | 23 de las 330 elecciones no la tienen: el cancel sigue en el código que va detrás, el de la primera opción (en la venta del manual de entrenamiento, cancelar compra) | Igual sin la opción | «a selection without its end marker asks before its cancel arm, and reads back so» | Igual |
+| Con la opción | — | dwx escribe al principio del brazo de cancelar de esas elecciones `if story.cancel_closes_choice() then return ENDED end` (`CancelGuard`, ver [guiones](../../formats/scripts.md)): con la opción el guion acaba ahí y la elección solo se cierra | la misma prueba | Mejora (opción) |
+
+La opción necesita contenido extraído con `ExtractorVersion` 13 o posterior (módulos `-- dwx lua 4`): la partida vuelve
+a leer el disco del jugador sola cuando su contenido es de otra versión. Un contenido más viejo (`-- dwx lua 3`) sigue
+cargando y se juega como el original, con la opción sin efecto.
+
+## Rarezas como opciones
+
+Mejoras opcionales, apagadas por defecto (las rarezas del original se mantienen): cuatro filas de la pestaña Juego,
+guardadas en los ajustes del usuario, que apagan una rareza del ruleset de la partida con `RuleOptions`, igual que la
+dificultad.
+
+| Fila | Ajuste | Rareza que apaga | Original |
+|---|---|---|---|
+| Enfermar justo («Fair sickness chance») | `fair_sickness_chance` | `care.quirks.sickness_chance_wraps` | `tickSicknessMechanics` guarda la probabilidad en un `uint8_t`: una negativa da la vuelta y la tirada siempre acierta. Con la opción una negativa no enferma |
+| Media de evolución justa («Fair evolution average») | `fair_evolution_average` | `evolution.quirks.selection_average_carries_over` | `getRookieEvolutionTarget` y `getChampionEvolutionTarget` solo reinician la suma y la cuenta de stats cuando un candidato pasa a ser el mejor; si no, se arrastran a la media del siguiente. Con la opción cada candidato se mide por la suya |
+| Olvidar técnicas justo («Fair move forgetting») | `fair_move_forgetting` | `partner_moves.quirks.forget_mask_16_bits` | `unlearnMove` (`utils2.c`) borra el bit de la técnica con una máscara de 16 bits, así que con ella se va la técnica 16 puestos más allá en su palabra de 32. Con la opción solo se olvida la elegida |
+| Tienda de cartas sin repetidas («Card stock without repeats») | `fair_card_stock` | `card_shop.quirks.stock_repeats` | `dailyPStatTrigger` compara el hueco consigo mismo, así que una carta puede ocupar dos huecos el mismo día. Con la opción la repetida se vuelve a sortear |
+
+Prueba: `rule_options_tests.cpp`.
+
+## Versus en línea
+
+«Versus en línea» («Online versus» en inglés) sale en el menú del título (con el aspecto moderno es su propia fila;
+con el original, «Modo batalla» pregunta si jugarlo). El versus del original era de dos mandos en una consola; aquí es
+de dos máquinas: cada jugador trae los compañeros que registró en la máquina de registro de su partida, y el combate
+corre en las dos a la vez en lockstep ([versus](../game/versus.md), [net](../engine/net.md)). La demostración del
+título no cambia: no usa red.
+
+`VersusFlow` (`versus_flow.hpp`) es el flujo sin UI y `VersusScreen` lo pone en el documento `ui/versus` con enlaces
+WebRTC de verdad (`net::RtcPeerLink`, con el servidor de señalización de `versus/network.yaml` o de
+`--versus-server wss://…`); los tests usan dos flujos sobre `net::LoopbackNetwork`. Nada de esto escribe la partida: el original
+tampoco guarda nada del versus.
+
+1. **Crear partida**: el anfitrión elige 1, 3 o 5 combates. La pantalla dice en qué va (creando la sala, esperando al
+   otro, abriendo la conexión directa) y enseña en grande el código de la sala, de cuatro caracteres, para dárselo al
+   otro jugador. No hay que abrir puertos: el servidor solo los presenta y la partida va directa entre los dos.
+2. **Unirse a una partida**: el invitado escribe el código (letras y cifras, sin distinguir mayúsculas); un código que
+   no puede serlo se queda en la pantalla con un aviso, y Volver borra la última letra.
+3. Los dos eligen la partida de la que traen compañeros (una partida necesita tantos registrados como combates tiene
+   la serie) y un compañero por combate, sin repetir.
+4. Cada combate: el reloj, el marcador, los dos luchadores con barras de PV, PM y remate, las órdenes del menú de este
+   lado y lo último que pasó. Las órdenes viajan con 3 frames de retraso; si el otro se retrasa, el combate espera y
+   lo dice. Volver dos veces abandona la serie.
+5. Entre combates, el resultado y el marcador; al final, el ganador de la serie y cada combate.
+6. Si algo falla, un mensaje claro: no hay servidor configurado, no se llega al servidor, no hay sala con ese código,
+   la sala está llena, se acabó el tiempo para conectar, no hay ruta directa (con la sugerencia de probar desde otra
+   red), se cortó la conexión, el anfitrión no responde, el otro abandonó, otra versión, otro contenido, un compañero
+   que este contenido no tiene, desincronización o un mensaje dañado.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Número de combates | `vs_select.c: VS__tickSelectMode`: 1, 3 o 5 (`VS__BATTLE_COUNTS`), y 3 o 5 solo si los dos registraron al menos tantos | El anfitrión elige de `versus.series` del ruleset; como no conoce aún la partida del invitado, una partida con menos registrados que combates no se puede elegir | `vs_select.c: a partner is picked once and a save needs one per battle` | Suposición (adaptado a dos máquinas) |
+| Un compañero por combate, sin repetir | `vs_select.c: VS__isAlreadySelected`, `VS__handleDigimonSelected` | `VersusFlow::pickPartner`; Volver quita el último | el mismo test | Igual |
+| Elegir arena | `vs_select.c: VS__tickSelectMap` | Sin elección: la serie lleva arena 0 y el combate se dibuja como panel | — | Hueco |
+| La serie entera | `vs_scene.c: VS_initializeVS` | `VersusFlow` sobre `session::VersusSeries` | `two machines play an online versus series from the menus to the result` | Igual (las reglas); presentación propia |
+| Abandonar y fallos de red | — (una consola) | Mensajes por motivo, tiempos de 10 s y 8 s, 30 s para abrir la ruta y salas de 5 minutos | `a code that cannot be one stays on the entry...`, `a player who leaves a battle ends the series...` | Mejora (en línea) |
+| Demostración de versus | `VS_playDemo` solo existe en la versión de prueba japonesa | La demostración del título sigue como estaba, sin red | — | No aplica |
+| Presentación 3D | `vs_scene.c: VS_playVersusIntroSequence`, cámaras `VS_*Camera*`, letreros `VS_*ModelScene` | El combate se enseña como panel (barras, reloj, órdenes y registro), no en la arena 3D | — | Hueco |
+
+Con UDP directo se probó en vivo con dos juegos en la misma máquina: unirse, elegir, órdenes de los dos lados y el
+abandono de uno, que el otro ve como «El otro jugador ha abandonado la serie». Con WebRTC la conexión se prueba con
+dos `RtcPeerLink` de verdad y un servidor de señalización en memoria (`dwe_net_tests`); la prueba en vivo de dos
+juegos espera a que el servidor esté desplegado.

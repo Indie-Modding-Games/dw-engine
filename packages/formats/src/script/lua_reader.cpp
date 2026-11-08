@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <optional>
@@ -35,6 +36,7 @@ constexpr std::int64_t ByteLimit = 0x100;
 constexpr std::string_view RoutinesTable = "routines";
 constexpr std::string_view StoryTable = "story";
 constexpr std::string_view EndedName = "ENDED";
+constexpr std::string_view CancelClosesChoiceName = "cancel_closes_choice";
 constexpr std::string_view RoutinePrefix = "at_";
 
 // The comparisons of the story reads, in the order of the listing's compare codes
@@ -640,6 +642,21 @@ bool isCallOf(const LuaExpression& expression, std::string_view object) {
 
 bool isName(const LuaExpression& expression, std::string_view name) {
   return expression.kind == LuaExpression::Kind::Name && expression.text == name;
+}
+
+// `if story.cancel_closes_choice() then return ENDED end`, the first line the emitter writes in the
+// cancel arm of a selection without its end marker (CancelGuard).
+bool isCancelGuard(const LuaStatement& statement) {
+  if (statement.kind != LuaStatement::Kind::If || statement.clauses.size() != 1 ||
+      statement.hasElse) {
+    return false;
+  }
+  const LuaExpression& condition = unwrap(statement.clauses[0].condition);
+  const LuaBlock& body = statement.clauses[0].body;
+  return isCallOf(condition, StoryTable) && condition.text == CancelClosesChoiceName &&
+         condition.operands.empty() && body.size() == 1 &&
+         body[0].kind == LuaStatement::Kind::Return && body[0].value &&
+         isName(unwrap(*body[0].value), EndedName);
 }
 
 // `<name> == <number>`, the arm test of a choice or a state machine.
@@ -1347,6 +1364,18 @@ private:
       instruction.arguments =
           argumentsOf(opcode ? opcodeOperands(*opcode) : std::vector<OperandField>{},
                       {{"pstat", static_cast<std::int32_t>(value.operands[0].number)}});
+    }
+    // The cancel arm of a selection without its end marker starts with the improvement's guard,
+    // which is no instruction of the original; a selection without it has its marker (or comes
+    // from a module written before the guard, which runs the same).
+    LuaBlock cancelArm;
+    if (instruction.role == FlowRole::Selection) {
+      const LuaBlock& last = *blocks.back();
+      instruction.cancelMarker = last.empty() || !isCancelGuard(last.front());
+      if (!instruction.cancelMarker) {
+        cancelArm.assign(std::next(last.begin()), last.end());
+        blocks.back() = &cancelArm;
+      }
     }
     ChoiceStatement choice{.instruction = place(local.line, std::move(instruction)), .arms = {}};
     for (const LuaBlock* block : blocks) {

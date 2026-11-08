@@ -215,6 +215,7 @@ TEST_CASE(
   CHECK(textOf(46) == "A");
   CHECK(textOf(66) == "A");
   CHECK_FALSE(textOf(30).has_value());
+  CHECK(listing->instructions[*listing->indexAt(66)].cancelMarker);
 }
 
 TEST_CASE(

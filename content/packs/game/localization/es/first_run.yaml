@@ -31,3 +31,8 @@ region.jp_rev1: "japonesa (revisión 1)"
 region.other: "de otra región"
 error.extract_failed: "La lectura del disco falló: {detail}"
 error.no_tool: "No se puede leer el disco: {detail}"
+# El paso del idioma, la primera vez que arranca el juego (antes de elegir ninguno): un botón por idioma, con su nombre
+# en ese idioma (language.yaml: name).
+language_title: "Elige tu idioma"
+language_intro: "El juego y esta pantalla se verán en el idioma que elijas. Puedes cambiarlo luego en las opciones."
+language_keys: "Flechas: moverse   Intro: elegir   Esc: salir"

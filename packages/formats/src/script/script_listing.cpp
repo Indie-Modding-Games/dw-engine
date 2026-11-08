@@ -32,6 +32,7 @@ constexpr std::string_view TargetKey = "target";
 constexpr std::string_view ConditionsKey = "conditions";
 constexpr std::string_view CasesKey = "cases";
 constexpr std::string_view OptionsKey = "options";
+constexpr std::string_view CancelMarkerKey = "cancel_marker";
 constexpr std::string_view ScriptKey = "script";
 constexpr std::string_view SectionKey = "section";
 constexpr std::string_view LabelPrefix = "l_";
@@ -371,16 +372,19 @@ core::Result<ListingInstruction> readInstruction(const YamlNode& node, std::size
   if (!text) {
     return std::unexpected{text.error()};
   }
-  return withFlow({.offset = *offset,
-                   .op = op->text(),
-                   .role = role,
-                   .targets = {},
-                   .conditionalJumps = {},
-                   .reference = std::nullopt,
-                   .arguments = std::move(*arguments),
-                   .conditions = std::move(*conditions),
-                   .text = std::move(*text)},
-                  std::move(*choices));
+  const YamlNode* marker = node.find(CancelMarkerKey);
+  return withFlow(
+      {.offset = *offset,
+       .op = op->text(),
+       .role = role,
+       .targets = {},
+       .conditionalJumps = {},
+       .reference = std::nullopt,
+       .arguments = std::move(*arguments),
+       .conditions = std::move(*conditions),
+       .text = std::move(*text),
+       .cancelMarker = marker != nullptr && marker->isScalar() && marker->text() == "true"},
+      std::move(*choices));
 }
 
 core::Result<std::vector<ListingSection>> readSections(const YamlNode& sections) {
@@ -495,7 +499,8 @@ ScriptListing listingOf(const Disassembly& disassembly) {
                                              .reference = std::nullopt,
                                              .arguments = instruction.arguments,
                                              .conditions = instruction.conditions,
-                                             .text = instruction.text},
+                                             .text = instruction.text,
+                                             .cancelMarker = instruction.selectionEndMarker},
                                             std::move(choices)));
   }
   return listing;

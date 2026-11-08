@@ -89,6 +89,14 @@ long_names: "Long names"
 shop_job_bar: "Recruit bar"
 # Space after names: a name a text inserts gets a space when the text runs it into the next word (on by default).
 name_spacing: "Space after names"
+# Shop extras: the item's description under the list, how many of each the player has and the money the trade leaves
+# (off by default: the original's shop only shows the description with Pause).
+shop_extras: "Shop extras"
+# Art fixes: the original look draws right what the original reads from the wrong part of its textures (the status
+# page's happiness label). Off by default, as the original.
+art_fixes: "Art fixes"
+# Developer tools: the console (F1), the developer menu (F2) and the map overlay (F3).
+dev_tools: "Developer tools"
 # Continuous music: a map whose song is already playing lets it go on instead of starting it again
 # (on by default).
 continuous_music: "Continuous music"
@@ -211,6 +219,22 @@ battle_speed: "Quick battles"
 battle_speed.normal: "Off"
 battle_speed.key: "With R"
 battle_speed.fast: "Always"
+# Battles without the wait: a field fight starts the moment it triggers (off by default: the original's lead-in).
+quick_battle_start: "Battles without wait"
+# Difficulty: normal is the original's; easy eases fights, training and care as the ruleset says.
+difficulty: "Difficulty"
+difficulty.normal: "Normal"
+difficulty.easy: "Easy"
+# Skip evolutions: confirm or cancel ends an evolution's scene at once (off by default).
+skip_evolution: "Skip evolutions"
+# Cancel closes choices: a cancel in a choice only closes it (off by default: the original's cancel).
+choice_cancel_closes: "Cancel closes choices"
+# Fair sickness chance, evolution averages, move forgetting and card stock: the original's quirks turned off
+# (off by default).
+fair_sickness_chance: "Fair sickness chance"
+fair_evolution_average: "Fair evolution average"
+fair_move_forgetting: "Fair move forgetting"
+fair_card_stock: "Card stock without repeats"
 # {tab} is the tab's name.
 reset_question: "Reset the {tab} options?"
 reset_note: "Window mode, look, language and font stay."
@@ -227,7 +251,15 @@ help.canonical_stages: "The chart names the stages as the series does and adds a
 help.rare_items: "Some item spots may hide a rare evolution item. Needs the hidden content."
 help.battle_speed: "Fights run at twice the speed, always or switched with R (right trigger). Same results."
 help.enemy_hp_bars: "A life bar over every enemy for the whole fight, cups too. Off: only a while after a hit."
-help.gym_sessions: "A gym course trains this many sessions in a row. Stops if you cancel or your partner needs something."
+help.gym_sessions: "A gym course trains this many sessions in a row. Waits while you tend your partner; stops if you cancel, walk away or it gets hurt or sick."
+help.quick_battle_start: "A fight in the field starts as soon as it triggers, without the lead-in. Cups keep theirs."
+help.difficulty: "Normal is the original. Easy: your partner hits harder, takes less, trains more, has longer to eat and gets sick less."
+help.skip_evolution: "Confirm or cancel ends an evolution's scene at once. The new form is the same."
+help.choice_cancel_closes: "Cancelling a choice only closes it. In the original some choices run their first answer."
+help.fair_sickness_chance: "A sickness chance below zero means no sickness. In the original it always makes your partner sick."
+help.fair_evolution_average: "Each evolution candidate is weighed by its own stats, not by sums left over from the one before."
+help.fair_move_forgetting: "Forgetting a move removes only that move. In the original it can take another move with it."
+help.fair_card_stock: "The card shop never offers the same card twice in a day. In the original it can."
 help.status_extras: "The status page shows tiredness, mistakes, battles, waking hours, lifetime and evolution."
 help.display_mode: "Play in a window or full screen."
 help.vsync: "Syncs the frames with the display so the picture does not tear."
@@ -260,6 +292,9 @@ help.save_notice: "A small figure and \"Saving\" in a corner while the game save
 help.need_bubble_stack: "Your partner's bubble shows up to five needs at once, the one that harms it soonest first."
 help.shop_job_bar: "A bar shows how close you are while a job or a match decides whether someone joins."
 help.name_spacing: "A name inside a text never runs into the next word."
+help.shop_extras: "In shops: the chosen item's description, how many you have and the money you will have left."
+help.art_fixes: "Fixes pictures the original takes from the wrong part of its texture (the status page's happiness)."
+help.dev_tools: "Turns on the console (F1), the developer menu (F2) and the map overlay (F3). For testing."
 help.options_reset: "Puts this tab's options back to their defaults. Asks first."
 help.options_back: "Back to the menu."
 help.quick_save: "Saves the game now to its slot."

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: difficulty",
+  "description": "rules/<id>/difficulty.yaml: the levels of the player's difficulty setting (apps/game: RuleOptions), an engine improvement. Normal, the original, changes nothing; each other level changes values of the ruleset's other sections while it is played.",
+  "type": "object",
+  "required": ["levels"],
+  "additionalProperties": false,
+  "properties": {
+    "levels": {
+      "description": "The changes of each level by its name (easy...).",
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["section", "path"],
+          "additionalProperties": false,
+          "properties": {
+            "section": { "description": "The section of the value.", "type": "string", "minLength": 1 },
+            "path": { "description": "The value's dotted path in the section (hunger.window_minutes, patterns.2.hours).", "type": "string", "minLength": 1 },
+            "value": { "description": "The new value." },
+            "percent": { "description": "The new value as a percent of the ruleset's own whole number, rounded down.", "type": "integer", "minimum": 0 }
+          },
+          "oneOf": [{ "required": ["value"] }, { "required": ["percent"] }]
+        }
+      }
+    }
+  }
+}

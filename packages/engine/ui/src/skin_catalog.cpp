@@ -4,6 +4,8 @@
 #include <dwe/ui/skin_catalog.hpp>
 
 #include <algorithm>
+#include <cstddef>
+#include <functional>
 #include <map>
 #include <span>
 #include <string>
@@ -157,6 +159,23 @@ std::optional<SkinChoice> readSkinChoice(const assets::VirtualFileSystem& files)
 }
 
 } // namespace
+
+std::size_t SkinCatalog::sourceFingerprint(const assets::VirtualFileSystem& files) {
+  std::size_t fingerprint = 0;
+  const auto mix = [&](const assets::AssetId& id) {
+    auto bytes = files.read(id);
+    const std::size_t hash = bytes ? std::hash<std::string_view>{}(textOf(*bytes))
+                                   : std::hash<std::string_view>{}(id.str());
+    // boost::hash_combine's mix.
+    fingerprint ^= hash + 0x9e3779b97f4a7c15ULL + (fingerprint << 6U) + (fingerprint >> 2U);
+  };
+  for (const assets::AssetId& id : files.ids()) {
+    if (skinFolderOf(id) || id.str() == SkinChoiceAsset) {
+      mix(id);
+    }
+  }
+  return fingerprint;
+}
 
 SkinCatalog SkinCatalog::load(const assets::VirtualFileSystem& files) {
   SkinCatalog catalog;

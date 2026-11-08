@@ -138,10 +138,14 @@ Command commandOf(MenuEntry entry) {
   return Command::None;
 }
 
-// battle_setup.c: BTL_initializeCombat: the menu by the partner's brain before any penalty.
-std::vector<Command> buildMenu(const BattleRules& rules, const Fighter& partner, bool scripted) {
-  const MenuTier* tier = &rules.menus.front();
-  for (const MenuTier& candidate : rules.menus) {
+// battle_setup.c: BTL_initializeCombat: the menu by the partner's brain before any penalty. A
+// versus side's comes from the versus menus (vs_combat.c: VS__combatInit), without flee or change.
+std::vector<Command> buildMenu(const BattleRules& rules, const Fighter& partner, bool scripted,
+                               bool versus) {
+  const std::vector<MenuTier>& tiers =
+      versus && !rules.versusMenus.empty() ? rules.versusMenus : rules.menus;
+  const MenuTier* tier = &tiers.front();
+  for (const MenuTier& candidate : tiers) {
     if (partner.startStats.brain >= candidate.brain) {
       tier = &candidate;
     }
@@ -166,6 +170,8 @@ std::vector<Command> buildMenu(const BattleRules& rules, const Fighter& partner,
           menu.push_back(technique);
         }
       }
+    } else if (versus && (entry == MenuEntry::Flee || entry == MenuEntry::Change)) {
+      continue;
     } else if (entry != MenuEntry::Flee || !scripted) {
       menu.push_back(commandOf(entry));
     }
@@ -208,6 +214,11 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
     return core::fail(
         messages::formatMessage(messages::NoEnemies, rules.limits.maxEnemies, enemies));
   }
+  const bool versus = setup.versus.has_value();
+  if ((versus || setup.kind == BattleKind::Versus) &&
+      (!versus || setup.kind != BattleKind::Versus || enemies != 1 || !setup.timeLimit)) {
+    return core::fail(std::string{messages::VersusShape});
+  }
   Battle battle{rules, moves, std::move(strategies), seed};
   BattleState& state = battle.state_;
   auto partner = makeFighter(setup.partner, rules, moves, Side::Partner);
@@ -216,7 +227,8 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
   }
   state.fighters.push_back(std::move(*partner));
   for (const Combatant& combatant : setup.enemies) {
-    auto enemy = makeFighter(combatant, rules, moves, Side::Enemy);
+    // vs_combat.c: VS_loadFighterEntities: a versus rival equips as a partner does.
+    auto enemy = makeFighter(combatant, rules, moves, versus ? Side::Partner : Side::Enemy);
     if (!enemy) {
       return std::unexpected{enemy.error()};
     }
@@ -232,8 +244,14 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
   if (setup.condition.sick || setup.condition.injured) {
     applySicknessPenalty(fighter, rules);
   }
-  state.commands.menu = buildMenu(rules, fighter, setup.scripted);
+  state.commands.menu = buildMenu(rules, fighter, setup.scripted, versus);
   state.commands.savedChargeMode = fighter.chargeMode;
+  if (versus) {
+    const Fighter& rival = state.fighters.at(RivalId);
+    state.rival = VersusRival{.commands = {}, .discipline = setup.versus->rivalDiscipline};
+    state.rival->commands.menu = buildMenu(rules, rival, false, true);
+    state.rival->commands.savedChargeMode = rival.chargeMode;
+  }
   state.frame = FirstFrame;
   state.tamer = setup.tamer;
   state.scripted = setup.scripted;
@@ -257,8 +275,15 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
 }
 
 core::Result<void> Battle::command(Command command) {
+  return this->command(command, PartnerId);
+}
+
+core::Result<void> Battle::command(Command command, FighterId side) {
   if (result_) {
     return core::fail(std::string{messages::BattleOver});
+  }
+  if (!state_.commanded(side)) {
+    return core::fail(std::string{messages::NotCommanded});
   }
   if (state_.tamerless) {
     return core::fail(std::string{messages::NoCommands});
@@ -271,14 +296,14 @@ core::Result<void> Battle::command(Command command) {
   if (state_.fleeFrames) {
     return core::fail(std::string{messages::Fleeing});
   }
-  if (std::ranges::find(state_.commands.menu, command) == state_.commands.menu.end()) {
+  CommandState& commands = state_.commandsOf(side);
+  if (std::ranges::find(commands.menu, command) == commands.menu.end()) {
     return core::fail(std::string{messages::CommandNotInMenu});
   }
-  if (state_.livingEnemies() == 0) {
+  if (state_.remainingOthers(side).empty()) {
     return {};
   }
-  CommandState& commands = state_.commands;
-  const Fighter& partner = state_.partner();
+  const Fighter& partner = state_.fighters.at(side);
   switch (command) {
   case Command::Finisher:
     if (!partner.hasFinisher() || partner.finisherProgress < partner.finisherGoal) {
@@ -287,7 +312,7 @@ core::Result<void> Battle::command(Command command) {
     commands.buffered = command;
     commands.current = command;
     pending().push_back({.kind = EventKind::CommandGiven,
-                         .fighter = PartnerId,
+                         .fighter = side,
                          .other = std::nullopt,
                          .move = std::nullopt,
                          .amount = 0,
@@ -326,7 +351,11 @@ core::Result<void> Battle::command(Command command) {
                         .particles = &hitParticles_,
                         .originalRolls = originalRolls_,
                         .visuals = &statusVisuals_};
-  commands.delay = strategies_.obedience->commandDelay(context.view(), setup_.condition.discipline);
+  // vs_combat.c: VS___tickVSInput works the delay out and then sets it to 0.
+  commands.delay =
+      state_.versus()
+          ? 0
+          : strategies_.obedience->commandDelay(context.view(), setup_.condition.discipline);
   return {};
 }
 
