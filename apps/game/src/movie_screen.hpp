@@ -5,7 +5,6 @@
 #include <dwe/audio/clip.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/input/input_state.hpp>
-#include <dwe/render/quad_batch.hpp>
 #include <dwe/render/renderer.hpp>
 #include <dwe/video/movie_player.hpp>
 
@@ -15,6 +14,7 @@
 #include <string>
 #include <utility>
 
+#include "movie_drawer.hpp"
 #include "movie_rules.hpp"
 
 namespace dwe::app {
@@ -38,7 +38,7 @@ public:
   MovieScreen(MovieScreen&&) = delete;
   MovieScreen& operator=(MovieScreen&&) = delete;
   ~MovieScreen();
-  MovieScreen(Key /*key*/, render::Renderer& renderer, audio::Audio& sound, render::QuadBatch quads)
+  MovieScreen(Key /*key*/, render::Renderer& renderer, audio::Audio& sound, MovieDrawer quads)
       : renderer_(&renderer), sound_(&sound), quads_(std::move(quads)) {}
 
   // Starts a movie; false, with a warning, when it cannot play (a pack without it, an old
@@ -61,6 +61,10 @@ public:
 
   // Draws the picture; nothing when no movie plays.
   [[nodiscard]] render::Drawer& drawer() { return quads_; }
+  // The frame's post pass while a movie shows: the upscaled picture's sharpen, or nothing.
+  [[nodiscard]] render::Drawer* postDrawer() { return quads_.post(); }
+  // The texture filter «upscaled»: the picture upscaled and sharpened instead of stretched.
+  void setUpscaled(bool upscaled) { quads_.setUpscaled(upscaled); }
 
 private:
   [[nodiscard]] double clockAfter(double frameSeconds) const;
@@ -70,7 +74,7 @@ private:
 
   render::Renderer* renderer_;
   audio::Audio* sound_;
-  render::QuadBatch quads_;
+  MovieDrawer quads_;
   std::optional<video::MoviePlayer> player_;
   std::optional<render::TextureId> texture_;
   std::optional<audio::VoiceId> voice_;

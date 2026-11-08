@@ -73,6 +73,7 @@ dwe_add_app(game
         src/free_exploration.cpp
         src/game_saves.cpp
         src/model_viewer.cpp
+        src/movie_drawer.cpp
         src/movie_rules.cpp
         src/movie_screen.cpp
         src/naming_box.cpp
@@ -169,7 +170,8 @@ dwe_add_app(game
     DEPS core platform audio video rhi assets localization animation render signs input script ui debug scene ruleset field partner save content session battle inventory screens story evolution gym fishing tournament curling weather modes versus net
     OUTPUT_NAME dwe-game)
 
-dwe_add_shaders(game FILES shaders/test_scene.slang shaders/scene_prims.slang shaders/weather.slang)
+dwe_add_shaders(game FILES shaders/test_scene.slang shaders/scene_prims.slang shaders/weather.slang
+                 shaders/movie_upscale.slang shaders/movie_sharpen.slang)
 
 # The first start's screen asks for the player's disc before the game's UI has any content to draw with, so it uses
 # Dear ImGui on the game's window and device (first_run_screen.hpp).

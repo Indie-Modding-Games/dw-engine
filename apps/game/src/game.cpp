@@ -1926,6 +1926,9 @@ int runGame(const Options& requested) {
     render::Drawer* postDrawer = nullptr;
     if (showingMovie) {
       sceneDrawers = movieDrawers;
+      // The texture filter «upscaled» upscales the movie too, with a sharpen pass after it.
+      movies->setUpscaled(graphics.options().textureFilter == TextureFilter::Upscaled);
+      postDrawer = movies->postDrawer();
     } else if (flow.playing() != nullptr) {
       FieldScene& field = flow.playing()->scene();
       field.setGraphics(graphics.options());

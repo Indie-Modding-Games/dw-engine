@@ -22,7 +22,7 @@ constexpr std::array<std::string_view, 4> SkipActions = {"pause", "menu", "confi
 
 core::Result<std::unique_ptr<MovieScreen>> MovieScreen::create(render::Renderer& renderer,
                                                                audio::Audio& sound) {
-  auto quads = render::QuadBatch::create(renderer, rhi::BlendMode::Opaque);
+  auto quads = MovieDrawer::create(renderer);
   if (!quads) {
     return std::unexpected{quads.error()};
   }
