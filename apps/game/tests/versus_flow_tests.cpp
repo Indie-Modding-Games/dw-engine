@@ -1,5 +1,5 @@
-#include <dwe/net/datagram.hpp>
 #include <dwe/net/loopback.hpp>
+#include <dwe/net/peer_link.hpp>
 #include <dwe/session/versus_match.hpp>
 
 #include <doctest/doctest.h>
@@ -21,9 +21,12 @@ using dwe::app::VersusFlow;
 using dwe::app::VersusFlowDesc;
 using dwe::app::VersusSave;
 using dwe::net::Bytes;
-using dwe::net::DatagramLink;
+using dwe::net::Lane;
 using dwe::net::LoopbackNetwork;
 using dwe::net::Millis;
+using dwe::net::PeerFailure;
+using dwe::net::PeerLink;
+using dwe::net::PeerState;
 using dwe::session::testing::errorOf;
 using dwe::session::testing::TestPacks;
 using versus_test::Machine;
@@ -35,15 +38,33 @@ namespace {
 // A game tick, as the flow is ticked: 60 a second.
 constexpr Millis Tick{17};
 
-// One of the loopback network's peers handed to a flow, which owns its link.
-class BorrowedLink final : public DatagramLink {
+// One of the loopback network's peer links handed to a flow, which owns its link.
+class BorrowedLink final : public PeerLink {
 public:
-  explicit BorrowedLink(DatagramLink& peer) : peer_{&peer} {}
-  void send(std::span<const std::uint8_t> datagram) override { peer_->send(datagram); }
-  std::optional<Bytes> receive() override { return peer_->receive(); }
+  explicit BorrowedLink(PeerLink& peer) : peer_{&peer} {}
+  void send(Lane lane, std::span<const std::uint8_t> message) override {
+    peer_->send(lane, message);
+  }
+  std::optional<Bytes> receive(Lane lane) override { return peer_->receive(lane); }
+  void poll(Millis now) override { peer_->poll(now); }
+  [[nodiscard]] PeerState state() const override { return peer_->state(); }
+  [[nodiscard]] PeerFailure failure() const override { return peer_->failure(); }
+  [[nodiscard]] std::optional<Millis> lastHeard() const override { return peer_->lastHeard(); }
+  [[nodiscard]] std::string roomCode() const override { return peer_->roomCode(); }
 
 private:
-  DatagramLink* peer_;
+  PeerLink* peer_;
+};
+
+// What the signaling server answers to a code no room has.
+class NoRoomLink final : public PeerLink {
+public:
+  void send(Lane /*lane*/, std::span<const std::uint8_t> /*message*/) override {}
+  std::optional<Bytes> receive(Lane /*lane*/) override { return std::nullopt; }
+  void poll(Millis /*now*/) override {}
+  [[nodiscard]] PeerState state() const override { return PeerState::Failed; }
+  [[nodiscard]] PeerFailure failure() const override { return PeerFailure::WrongCode; }
+  [[nodiscard]] std::optional<Millis> lastHeard() const override { return std::nullopt; }
 };
 
 std::vector<VersusSave> savesOf(std::vector<dwe::session::RegisteredPartner> partners) {
@@ -61,20 +82,22 @@ struct Player {
     auto identity =
         dwe::session::versusIdentity("0.1.0", machine.session->rules().current(), packs.files());
     REQUIRE_MESSAGE(identity, errorOf(identity));
-    DatagramLink* peer = &network.peer(side);
-    flow = std::make_unique<VersusFlow>(VersusFlowDesc{
-        .battles = machine.battle,
-        .identity = std::move(*identity),
-        .saves = [partners = std::move(partners)] { return savesOf(partners); },
-        .host = [peer](std::uint16_t) -> dwe::core::Result<std::unique_ptr<DatagramLink>> {
-          return std::make_unique<BorrowedLink>(*peer);
-        },
-        .join =
-            [peer](const dwe::net::Endpoint&) -> dwe::core::Result<std::unique_ptr<DatagramLink>> {
-          return std::make_unique<BorrowedLink>(*peer);
-        },
-        .addresses = [] { return std::vector<std::array<std::uint8_t, 4>>{{192, 168, 1, 20}}; },
-        .seed = [] { return std::uint64_t{4321}; }});
+    PeerLink* peer = &network.link(side);
+    flow = std::make_unique<VersusFlow>(
+        VersusFlowDesc{.battles = machine.battle,
+                       .identity = std::move(*identity),
+                       .saves = [partners = std::move(partners)] { return savesOf(partners); },
+                       .host = [peer]() -> std::unique_ptr<PeerLink> {
+                         return std::make_unique<BorrowedLink>(*peer);
+                       },
+                       // Only the loopback room's code has a room.
+                       .join = [peer](std::string_view code) -> std::unique_ptr<PeerLink> {
+                         if (code != peer->roomCode()) {
+                           return std::make_unique<NoRoomLink>();
+                         }
+                         return std::make_unique<BorrowedLink>(*peer);
+                       },
+                       .seed = [] { return std::uint64_t{4321}; }});
     flow->open();
   }
 
@@ -133,16 +156,16 @@ void connect(LoopbackNetwork& network, Player& host, Player& guest) {
   CHECK(number(*host.flow, "versus.battles") == 3);
   host.flow->act("confirm");
   REQUIRE(host.flow->view() == View::Hosting);
-  CHECK(text(*host.flow, "versus.addresses") == "192.168.1.20:47120");
 
   guest.flow->act("down");
   guest.flow->act("confirm");
   REQUIRE(guest.flow->view() == View::JoinEntry);
   CHECK(guest.flow->takesText());
-  // The guest types the host's join code.
-  const std::string code = text(*host.flow, "versus.codes");
-  REQUIRE_FALSE(code.empty());
-  guest.flow->type(code, true);
+  // The guest types the host's room code, as it reads it.
+  const std::string code = text(*host.flow, "versus.code");
+  REQUIRE(code == "TEST");
+  guest.flow->type("te", false);
+  guest.flow->type("st", true);
   REQUIRE(guest.flow->view() == View::Joining);
 
   play(network, host, guest, 600,
@@ -220,23 +243,38 @@ TEST_CASE("two machines play an online versus series from the menus to the resul
   CHECK(host.flow->series() == nullptr);
 }
 
-TEST_CASE("a wrong address stays on the entry and a host that never answers ends the join") {
+TEST_CASE(
+    "a code that cannot be one stays on the entry; a wrong one or a silent host ends the join") {
   const TestPacks packs;
   LoopbackNetwork network{{}, 1};
   Player guest{packs, network, 1, guestPartners()};
   guest.flow->act("pick:1");
   REQUIRE(guest.flow->view() == View::JoinEntry);
-  guest.flow->type("192.168.1", true);
+  // Three characters, and a fourth that no code has (0 looks like O).
+  guest.flow->type("k7q", true);
   CHECK(guest.flow->view() == View::JoinEntry);
   const dwe::screens::ScreenSettings settings = guest.flow->settings();
   const dwe::ui::UiValue* bad = valueOf(settings, "versus.bad_entry");
   REQUIRE(bad != nullptr);
   CHECK(std::get<bool>(*bad));
+  guest.flow->type("0", true);
+  CHECK(guest.flow->view() == View::JoinEntry);
   guest.flow->act("cancel");
-  CHECK(text(*guest.flow, "versus.typed") == "192.168.");
-  guest.flow->type("1.20:47120", false);
+  CHECK(text(*guest.flow, "versus.typed") == "k7q");
+  // A well-formed code no room has: the server says so.
+  guest.flow->type("2", false);
   guest.flow->act("confirm");
+  guest.flow->tick(network.now());
+  REQUIRE(guest.flow->view() == View::Error);
+  CHECK(text(*guest.flow, "versus.error_key") == "versus.error.wrong_code");
+  guest.flow->act("confirm");
+  REQUIRE(guest.flow->view() == View::Menu);
+
+  // The room's code, but nobody answers in it.
+  guest.flow->act("pick:1");
+  guest.flow->type("TEST", true);
   REQUIRE(guest.flow->view() == View::Joining);
+  CHECK(text(*guest.flow, "versus.stage") == "connecting");
   for (int tick = 0; tick < 60 * 30 && guest.flow->view() == View::Joining; ++tick) {
     guest.flow->tick(network.now());
     network.advance(Tick);

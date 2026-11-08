@@ -1,4 +1,5 @@
 #include <dwe/game/versus/link.hpp>
+#include <dwe/game/versus/network.hpp>
 #include <dwe/game/versus/protocol.hpp>
 #include <dwe/game/versus/series.hpp>
 #include <dwe/net/loopback.hpp>
@@ -43,8 +44,8 @@ SeriesSetup threeBattles() {
 
 struct Pair {
   explicit Pair(LinkConditions conditions = {}, Identity guestIdentity = identity())
-      : network{conditions, 5}, host{VersusLink::host(network.peer(0), identity(), threeBattles())},
-        guest{VersusLink::guest(network.peer(1), std::move(guestIdentity))} {}
+      : network{conditions, 5}, host{VersusLink::host(network.link(0), identity(), threeBattles())},
+        guest{VersusLink::guest(network.link(1), std::move(guestIdentity))} {}
 
   void run(int frames) {
     for (int frame = 0; frame < frames; ++frame) {
@@ -167,7 +168,8 @@ TEST_CASE("a guest with another game version or other content is refused, with t
 }
 
 TEST_CASE("a whole series in lockstep over a bad link, round by round") {
-  Pair pair{{.latency = Millis{30}, .jitter = Millis{50}, .lossPercent = 15}};
+  // A third of the datagrams lost: the inputs go again until acknowledged.
+  Pair pair{{.latency = Millis{30}, .jitter = Millis{50}, .lossPercent = 33}};
   pair.run(30);
   REQUIRE(pair.host.sendLineup({fighter("a", 100), fighter("b", 200), fighter("c", 300)}));
   REQUIRE(pair.guest.sendLineup({fighter("x", 100), fighter("y", 200), fighter("z", 300)}));
@@ -218,7 +220,7 @@ TEST_CASE("results that disagree end the series as a desync on both sides") {
 
 TEST_CASE("a guest that hears nothing gives up, and a silent peer ends the series") {
   LoopbackNetwork nobody{{}};
-  VersusLink alone = VersusLink::guest(nobody.peer(1), identity());
+  VersusLink alone = VersusLink::guest(nobody.link(1), identity());
   for (int frame = 0; frame < 300; ++frame) {
     alone.poll(nobody.now());
     nobody.advance(Frame);
@@ -241,4 +243,58 @@ TEST_CASE("a side that leaves tells the other one") {
   pair.run(10);
   CHECK(pair.guest.failure() == LinkFailure::Left);
   CHECK(pair.host.failure() == LinkFailure::Left);
+}
+
+namespace {
+
+// A connection that never opens, or that closes, for what its failure reads as.
+class BrokenLink final : public dwe::net::PeerLink {
+public:
+  explicit BrokenLink(dwe::net::PeerFailure failure) : failure_{failure} {}
+  void send(dwe::net::Lane /*lane*/, std::span<const std::uint8_t> /*message*/) override {}
+  std::optional<dwe::net::Bytes> receive(dwe::net::Lane /*lane*/) override { return std::nullopt; }
+  void poll(Millis /*now*/) override {}
+  [[nodiscard]] dwe::net::PeerState state() const override { return dwe::net::PeerState::Failed; }
+  [[nodiscard]] dwe::net::PeerFailure failure() const override { return failure_; }
+  [[nodiscard]] std::optional<Millis> lastHeard() const override { return std::nullopt; }
+
+private:
+  dwe::net::PeerFailure failure_;
+};
+
+} // namespace
+
+TEST_CASE("a connection that fails ends the series with its reason") {
+  using dwe::net::PeerFailure;
+  const std::vector<std::pair<PeerFailure, LinkFailure>> cases{
+      {PeerFailure::NoServer, LinkFailure::NoServer},
+      {PeerFailure::ServerUnreachable, LinkFailure::ServerUnreachable},
+      {PeerFailure::WrongCode, LinkFailure::WrongCode},
+      {PeerFailure::RoomFull, LinkFailure::RoomFull},
+      {PeerFailure::TimedOut, LinkFailure::TimedOut},
+      {PeerFailure::NoRoute, LinkFailure::NoRoute},
+      {PeerFailure::Closed, LinkFailure::Disconnected},
+  };
+  for (const auto& [peer, expected] : cases) {
+    BrokenLink link{peer};
+    VersusLink guest = VersusLink::guest(link, identity());
+    guest.poll(Millis{0});
+    CHECK(guest.phase() == LinkPhase::Failed);
+    CHECK(guest.failure() == expected);
+  }
+}
+
+TEST_CASE("the versus network reads its servers and refuses what is not an address") {
+  const auto config = dwe::game::versus::parseNetworkConfig(
+      "signal_server: wss://signal.example/versus\nice_servers:\n  - stun:stun.example:3478\n");
+  REQUIRE(config);
+  CHECK(config->signalServer == "wss://signal.example/versus");
+  CHECK(config->iceServers == std::vector<std::string>{"stun:stun.example:3478"});
+  const auto none = dwe::game::versus::parseNetworkConfig("signal_server: \"\"\nice_servers: []\n");
+  REQUIRE(none);
+  CHECK(none->signalServer.empty());
+  CHECK_FALSE(dwe::game::versus::parseNetworkConfig(
+      "signal_server: http://signal.example\nice_servers: []\n"));
+  CHECK_FALSE(
+      dwe::game::versus::parseNetworkConfig("signal_server: \"\"\nice_servers: [example:3478]\n"));
 }

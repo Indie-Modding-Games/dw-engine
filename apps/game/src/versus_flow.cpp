@@ -2,6 +2,7 @@
 
 #include <dwe/core/log.hpp>
 #include <dwe/game/battle/moves.hpp>
+#include <dwe/net/signal.hpp>
 #include <dwe/screens/name_keys.hpp>
 #include <dwe/session/versus_match.hpp>
 #include <dwe/ui/ui.hpp>
@@ -95,6 +96,20 @@ std::string failureKey(LinkFailure failure) {
     return "versus.error.desync";
   case LinkFailure::Damaged:
     return "versus.error.damaged";
+  case LinkFailure::NoServer:
+    return "versus.error.no_server";
+  case LinkFailure::ServerUnreachable:
+    return "versus.error.server_unreachable";
+  case LinkFailure::WrongCode:
+    return "versus.error.wrong_code";
+  case LinkFailure::RoomFull:
+    return "versus.error.room_full";
+  case LinkFailure::TimedOut:
+    return "versus.error.timed_out";
+  case LinkFailure::NoRoute:
+    return "versus.error.no_route";
+  case LinkFailure::Disconnected:
+    return "versus.error.disconnected";
   }
   return "versus.error.unknown";
 }
@@ -108,18 +123,11 @@ std::string_view resultFor(RoundResult result, Side side) {
   return hostWon == (side == Side::Host) ? "won" : "lost";
 }
 
-std::string address(const std::array<std::uint8_t, 4>& bytes, std::uint16_t port) {
-  return net::formatEndpoint({.address = bytes, .port = port});
-}
-
-// The keyboard's characters an address or a join code has.
+// The keyboard's characters a room code has; the code itself is checked on Enter.
 bool entryCharacter(char letter) {
   return (letter >= '0' && letter <= '9') || (letter >= 'a' && letter <= 'z') ||
-         (letter >= 'A' && letter <= 'Z') || letter == '.' || letter == ':' || letter == '-';
+         (letter >= 'A' && letter <= 'Z');
 }
-
-// The longest entry: an address with its port ("255.255.255.255:65535").
-constexpr std::size_t MaxEntry = 21;
 
 } // namespace
 
@@ -178,41 +186,27 @@ void VersusFlow::fail(std::string key, std::string detail) {
 }
 
 void VersusFlow::startHosting() {
-  auto link = desc_.host(game::versus::DefaultPort);
-  if (!link) {
-    core::logWarning("versus: cannot host: {}", link.error().message);
-    fail("versus.error.cannot_host", link.error().message);
-    return;
-  }
-  link_ = std::move(*link);
-  port_ = game::versus::DefaultPort;
+  link_ = desc_.host();
   const game::versus::SeriesSetup setup{.battles = battles(),
                                         .arena = 0,
                                         .seed = desc_.seed(),
                                         .inputDelay = game::versus::DefaultInputDelay};
   series_.emplace(*desc_.battles, game::versus::VersusLink::host(*link_, desc_.identity, setup),
                   Placement);
-  core::logInfo("versus: hosting a series of {} on port {}", setup.battles, port_);
+  core::logInfo("versus: hosting a series of {}", setup.battles);
   view_ = View::Hosting;
 }
 
 void VersusFlow::startJoining() {
-  auto target = net::parseJoinTarget(typed_, game::versus::DefaultPort);
-  if (!target) {
+  const std::optional<std::string> code = net::normalizedRoomCode(typed_);
+  if (!code) {
     badEntry_ = true;
     return;
   }
-  auto link = desc_.join(*target);
-  if (!link) {
-    core::logWarning("versus: cannot join {}: {}", net::formatEndpoint(*target),
-                     link.error().message);
-    fail("versus.error.cannot_join", link.error().message);
-    return;
-  }
-  link_ = std::move(*link);
+  link_ = desc_.join(*code);
   series_.emplace(*desc_.battles, game::versus::VersusLink::guest(*link_, desc_.identity),
                   Placement);
-  core::logInfo("versus: joining {}", net::formatEndpoint(*target));
+  core::logInfo("versus: joining room {}", *code);
   view_ = View::Joining;
 }
 
@@ -409,7 +403,7 @@ void VersusFlow::type(std::string_view text, bool enter) {
     return;
   }
   for (const char letter : text) {
-    if (entryCharacter(letter) && typed_.size() < MaxEntry) {
+    if (entryCharacter(letter) && typed_.size() < net::RoomCodeLength) {
       typed_.push_back(letter);
       badEntry_ = false;
     }
@@ -520,17 +514,19 @@ screens::ScreenSettings VersusFlow::settings() const {
     add("versus.choices", static_cast<double>(choices));
     break;
   }
-  case View::Hosting: {
-    std::string addresses;
-    std::string codes;
-    for (const auto& bytes :
-         desc_.addresses ? desc_.addresses() : std::vector<std::array<std::uint8_t, 4>>{}) {
-      addresses += (addresses.empty() ? "" : "\n") + address(bytes, port_);
-      codes += (codes.empty() ? "" : "\n") + net::joinCodeOf({.address = bytes, .port = port_});
+  case View::Hosting:
+  case View::Joining: {
+    // How far the connection got: the host's room, the guest that arrived, the route.
+    const net::PeerLink* link = link_.get();
+    const std::string code = link != nullptr ? link->roomCode() : std::string{};
+    std::string stage = "connecting";
+    if (view_ == View::Hosting && code.empty()) {
+      stage = "creating";
+    } else if (view_ == View::Hosting && link != nullptr && !link->peerFound()) {
+      stage = "waiting";
     }
-    add("versus.port", static_cast<double>(port_));
-    add("versus.addresses", addresses);
-    add("versus.codes", codes);
+    add("versus.code", code);
+    add("versus.stage", stage);
     break;
   }
   case View::JoinEntry:
@@ -650,7 +646,6 @@ screens::ScreenSettings VersusFlow::settings() const {
     add("versus.error_detail", errorDetail_);
     break;
   case View::Menu:
-  case View::Joining:
   case View::WaitingLineup:
     break;
   }

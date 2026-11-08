@@ -24,7 +24,8 @@ inline constexpr std::string_view VersusActionCommand = "versus_action";
 
 // «Versus en línea» from the title screen: the versus flow (versus_flow.hpp) on the versus
 // document, with the battles read from the command line's ruleset, the saves of the saves folder
-// and real UDP links (net::UdpLink). It never writes a save.
+// and WebRTC links (net::RtcPeerLink) through the signaling server of the game pack's
+// versus/network.yaml or --versus-server. It never writes a save.
 class VersusScreen {
 public:
   VersusScreen(const assets::VirtualFileSystem& files, const Options& options, bool keepsSaves,

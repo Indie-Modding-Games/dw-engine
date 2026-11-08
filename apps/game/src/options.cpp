@@ -94,6 +94,10 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     options.reports = std::filesystem::path{value};
     return true;
   }
+  if (argument == "--versus-server") {
+    options.versusServer = value;
+    return value.starts_with("ws://") || value.starts_with("wss://");
+  }
   if (argument == "--mods") {
     options.mods.emplace_back(value);
     return true;

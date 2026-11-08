@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/net/datagram.hpp>
+#include <dwe/net/peer_link.hpp>
 
 #include <array>
 #include <cstdint>
@@ -9,6 +10,8 @@
 #include <random>
 
 namespace dwe::net {
+
+class ChannelPeerLink;
 
 // What the loopback network does to the datagrams on their way, to test the code above it against
 // a bad connection.
@@ -33,8 +36,11 @@ public:
   LoopbackNetwork(LoopbackNetwork&&) = delete;
   LoopbackNetwork& operator=(LoopbackNetwork&&) = delete;
 
-  // The link of peer 0 or 1; it lives as long as the network.
+  // The datagram link of peer 0 or 1; it lives as long as the network.
   [[nodiscard]] DatagramLink& peer(std::size_t side);
+  // The peer link of peer 0 or 1 over its datagram link (ChannelPeerLink), with a made-up room
+  // code; it lives as long as the network.
+  [[nodiscard]] PeerLink& link(std::size_t side);
   // Moves the clock on; the datagrams due by then can be received.
   void advance(Millis elapsed);
   [[nodiscard]] Millis now() const { return now_; }
@@ -63,6 +69,7 @@ private:
   // The datagrams on their way to each side.
   std::array<std::deque<InFlight>, 2> toward_;
   std::array<std::unique_ptr<End>, 2> ends_;
+  std::array<std::unique_ptr<ChannelPeerLink>, 2> links_;
 };
 
 } // namespace dwe::net

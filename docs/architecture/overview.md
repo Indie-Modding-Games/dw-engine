@@ -63,7 +63,7 @@ flowchart TB
         render --- audio --- video[video: películas] --- input[input: acciones] --- assets[assets: VFS y paquetes] --- localization[localization: textos por idioma] --- signs[signs: carteles] --- animation --- scene[scene: ECS]
     end
     subgraph base[base]
-        rhi[rhi: Vulkan] --- platform[platform: SDL3] --- net[net: UDP y lockstep]
+        rhi[rhi: Vulkan] --- platform[platform: SDL3] --- net[net: WebRTC y lockstep]
     end
     core[core: tipos, matemáticas, log, memoria, errores]
     formats[formats: lectores de PS1]

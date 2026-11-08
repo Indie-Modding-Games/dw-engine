@@ -25,17 +25,15 @@
 				<p class="about" text-key="versus.host_setup.hint"></p>
 			</div>
 
-			<!-- The host waits for the guest: its join codes and addresses. -->
+			<!-- The host waits for the guest with its room code. -->
 			<div id="view-hosting" class="view">
-				<p text-key="versus.hosting.waiting"></p>
-				<p class="label" text-key="versus.hosting.codes"></p>
-				<p id="hosting-codes" class="entry"></p>
-				<p class="label" text-key="versus.hosting.addresses"></p>
-				<p id="hosting-addresses" class="entry"></p>
+				<p id="hosting-stage"></p>
+				<p id="hosting-code-label" class="label" text-key="versus.hosting.code"></p>
+				<p id="hosting-code" class="entry code"></p>
 				<p class="about" text-key="versus.hosting.network"></p>
 			</div>
 
-			<!-- The guest types the host's code or address. -->
+			<!-- The guest types the host's room code. -->
 			<div id="view-join_entry" class="view">
 				<p text-key="versus.join.prompt"></p>
 				<p id="typed" class="entry"></p>

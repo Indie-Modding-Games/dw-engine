@@ -1827,21 +1827,25 @@ corre en las dos a la vez en lockstep ([versus](../game/versus.md), [net](../eng
 título no cambia: no usa red.
 
 `VersusFlow` (`versus_flow.hpp`) es el flujo sin UI y `VersusScreen` lo pone en el documento `ui/versus` con enlaces
-UDP de verdad; los tests usan dos flujos sobre `net::LoopbackNetwork`. Nada de esto escribe la partida: el original
+WebRTC de verdad (`net::RtcPeerLink`, con el servidor de señalización de `versus/network.yaml` o de
+`--versus-server wss://…`); los tests usan dos flujos sobre `net::LoopbackNetwork`. Nada de esto escribe la partida: el original
 tampoco guarda nada del versus.
 
-1. **Crear partida**: el anfitrión elige 1, 3 o 5 combates y espera. La pantalla enseña sus direcciones con el puerto
-   (UDP 47120) y el código corto de cada una, y avisa de que por internet hay que abrir o redirigir ese puerto.
-2. **Unirse a una partida**: el invitado escribe el código o la dirección (con o sin puerto); una entrada que no vale
-   se queda en la pantalla con un aviso, y Volver borra la última letra.
+1. **Crear partida**: el anfitrión elige 1, 3 o 5 combates. La pantalla dice en qué va (creando la sala, esperando al
+   otro, abriendo la conexión directa) y enseña en grande el código de la sala, de cuatro caracteres, para dárselo al
+   otro jugador. No hay que abrir puertos: el servidor solo los presenta y la partida va directa entre los dos.
+2. **Unirse a una partida**: el invitado escribe el código (letras y cifras, sin distinguir mayúsculas); un código que
+   no puede serlo se queda en la pantalla con un aviso, y Volver borra la última letra.
 3. Los dos eligen la partida de la que traen compañeros (una partida necesita tantos registrados como combates tiene
    la serie) y un compañero por combate, sin repetir.
 4. Cada combate: el reloj, el marcador, los dos luchadores con barras de PV, PM y remate, las órdenes del menú de este
    lado y lo último que pasó. Las órdenes viajan con 3 frames de retraso; si el otro se retrasa, el combate espera y
    lo dice. Volver dos veces abandona la serie.
 5. Entre combates, el resultado y el marcador; al final, el ganador de la serie y cada combate.
-6. Si algo falla, un mensaje claro: el anfitrión no responde, se perdió la conexión, el otro abandonó, otra versión,
-   otro contenido, un compañero que este contenido no tiene, desincronización o un mensaje dañado.
+6. Si algo falla, un mensaje claro: no hay servidor configurado, no se llega al servidor, no hay sala con ese código,
+   la sala está llena, se acabó el tiempo para conectar, no hay ruta directa (con la sugerencia de probar desde otra
+   red), se cortó la conexión, el anfitrión no responde, el otro abandonó, otra versión, otro contenido, un compañero
+   que este contenido no tiene, desincronización o un mensaje dañado.
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
@@ -1849,8 +1853,11 @@ tampoco guarda nada del versus.
 | Un compañero por combate, sin repetir | `vs_select.c: VS__isAlreadySelected`, `VS__handleDigimonSelected` | `VersusFlow::pickPartner`; Volver quita el último | el mismo test | Igual |
 | Elegir arena | `vs_select.c: VS__tickSelectMap` | Sin elección: la serie lleva arena 0 y el combate se dibuja como panel | — | Hueco |
 | La serie entera | `vs_scene.c: VS_initializeVS` | `VersusFlow` sobre `session::VersusSeries` | `two machines play an online versus series from the menus to the result` | Igual (las reglas); presentación propia |
-| Abandonar y fallos de red | — (una consola) | Mensajes por motivo, tiempos de 10 s y 8 s | `a wrong address stays on the entry...`, `a player who leaves a battle ends the series...` | Mejora (en línea) |
+| Abandonar y fallos de red | — (una consola) | Mensajes por motivo, tiempos de 10 s y 8 s, 30 s para abrir la ruta y salas de 5 minutos | `a code that cannot be one stays on the entry...`, `a player who leaves a battle ends the series...` | Mejora (en línea) |
+| Demostración de versus | `VS_playDemo` solo existe en la versión de prueba japonesa | La demostración del título sigue como estaba, sin red | — | No aplica |
 | Presentación 3D | `vs_scene.c: VS_playVersusIntroSequence`, cámaras `VS_*Camera*`, letreros `VS_*ModelScene` | El combate se enseña como panel (barras, reloj, órdenes y registro), no en la arena 3D | — | Hueco |
 
-Se probó en vivo con dos juegos en la misma máquina por `127.0.0.1`: unirse, elegir, órdenes de los dos lados y el
-abandono de uno, que el otro ve como «El otro jugador ha abandonado la serie».
+Con UDP directo se probó en vivo con dos juegos en la misma máquina: unirse, elegir, órdenes de los dos lados y el
+abandono de uno, que el otro ve como «El otro jugador ha abandonado la serie». Con WebRTC la conexión se prueba con
+dos `RtcPeerLink` de verdad y un servidor de señalización en memoria (`dwe_net_tests`); la prueba en vivo de dos
+juegos espera a que el servidor esté desplegado.

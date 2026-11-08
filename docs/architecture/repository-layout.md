@@ -15,12 +15,13 @@ dw-engine/
 │  ├─ launcher/             el lanzador de escritorio (Tauri)
 │  ├─ studio/               DWE Studio, banco de trabajo de desarrollo (Electron)
 │  ├─ studio-vscode/        maqueta de DWE Studio como extensión de editor (no se compila)
-│  └─ beta-gateway/         la pasarela de la beta entre el lanzador y GitHub (Cloudflare Worker)
+│  ├─ beta-gateway/         la pasarela de la beta entre el lanzador y GitHub (Cloudflare Worker)
+│  └─ versus-signal/        el servidor de señalización del versus en línea (Cloudflare Worker)
 ├─ packages/                librerías, agrupadas por capa
 │  ├─ engine/               módulos del motor (modulos/engine/)
 │  │  ├─ core/              Result, log, YAML, JSON Schema, matemáticas
 │  │  ├─ platform/          ventana, eventos y mandos (SDL3)
-│  │  ├─ net/               UDP, canal fiable, lockstep y códigos para unirse
+│  │  ├─ net/               WebRTC, canal fiable, lockstep y cliente de señalización
 │  │  ├─ rhi/               el único que habla con Vulkan; shaders/ tiene los módulos de Slang compartidos
 │  │  ├─ render/
 │  │  ├─ audio/

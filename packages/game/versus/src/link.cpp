@@ -15,9 +15,29 @@ Side otherOf(Side side) {
   return side == Side::Host ? Side::Guest : Side::Host;
 }
 
-bool isLockstep(const net::Bytes& message) {
-  return !message.empty() && (message.front() == net::LockstepInputMessage ||
-                              message.front() == net::LockstepChecksumMessage);
+bool isChecksum(const net::Bytes& message) {
+  return !message.empty() && message.front() == net::LockstepChecksumMessage;
+}
+
+LinkFailure failureOf(net::PeerFailure failure) {
+  switch (failure) {
+  case net::PeerFailure::None:
+  case net::PeerFailure::Closed:
+    return LinkFailure::Disconnected;
+  case net::PeerFailure::NoServer:
+    return LinkFailure::NoServer;
+  case net::PeerFailure::ServerUnreachable:
+    return LinkFailure::ServerUnreachable;
+  case net::PeerFailure::WrongCode:
+    return LinkFailure::WrongCode;
+  case net::PeerFailure::RoomFull:
+    return LinkFailure::RoomFull;
+  case net::PeerFailure::TimedOut:
+    return LinkFailure::TimedOut;
+  case net::PeerFailure::NoRoute:
+    return LinkFailure::NoRoute;
+  }
+  return LinkFailure::Disconnected;
 }
 
 LinkFailure failureOf(LeaveReason reason) {
@@ -40,11 +60,10 @@ LinkFailure failureOf(LeaveReason reason) {
 
 } // namespace
 
-VersusLink::VersusLink(net::DatagramLink& link, Side side, Identity identity, LinkTimeouts timeouts)
-    : channel_{std::make_unique<net::ReliableChannel>(link)}, side_{side},
-      identity_{std::move(identity)}, timeouts_{timeouts} {}
+VersusLink::VersusLink(net::PeerLink& link, Side side, Identity identity, LinkTimeouts timeouts)
+    : link_{&link}, side_{side}, identity_{std::move(identity)}, timeouts_{timeouts} {}
 
-VersusLink VersusLink::host(net::DatagramLink& link, Identity identity, SeriesSetup setup,
+VersusLink VersusLink::host(net::PeerLink& link, Identity identity, SeriesSetup setup,
                             LinkTimeouts timeouts) {
   VersusLink versus{link, Side::Host, std::move(identity), timeouts};
   versus.setup_ = setup;
@@ -52,7 +71,7 @@ VersusLink VersusLink::host(net::DatagramLink& link, Identity identity, SeriesSe
   return versus;
 }
 
-VersusLink VersusLink::guest(net::DatagramLink& link, Identity identity, LinkTimeouts timeouts) {
+VersusLink VersusLink::guest(net::PeerLink& link, Identity identity, LinkTimeouts timeouts) {
   VersusLink versus{link, Side::Guest, std::move(identity), timeouts};
   versus.send(Hello{.identity = versus.identity_});
   return versus;
@@ -60,27 +79,42 @@ VersusLink VersusLink::guest(net::DatagramLink& link, Identity identity, LinkTim
 
 void VersusLink::poll(net::Millis now) {
   now_ = now;
-  if (!started_) {
-    started_ = now;
-  }
-  channel_->poll(now);
-  while (std::optional<net::Bytes> message = channel_->receive()) {
+  link_->poll(now);
+  while (std::optional<net::Bytes> message = link_->receive(net::Lane::Reliable)) {
     if (phase_ == LinkPhase::Failed) {
       continue;
     }
     take(*message);
   }
+  while (std::optional<net::Bytes> message = link_->receive(net::Lane::Unreliable)) {
+    if (phase_ != LinkPhase::Failed) {
+      takeInputs(*message);
+    }
+  }
   if (phase_ == LinkPhase::Failed || phase_ == LinkPhase::Finished) {
     return;
   }
-  const std::optional<net::Millis> heard = channel_->lastHeard();
-  if (!heard) {
-    if (side_ == Side::Guest && now - *started_ >= timeouts_.answer) {
+  if (link_->state() == net::PeerState::Failed) {
+    fail(failureOf(link_->failure()));
+    return;
+  }
+  if (link_->state() != net::PeerState::Open) {
+    return;
+  }
+  if (!opened_) {
+    opened_ = now;
+  }
+  if (lockstep_ && now - lastInputs_ >= InputsEvery) {
+    sendInputs();
+  }
+  if (side_ == Side::Guest && phase_ == LinkPhase::Connecting) {
+    if (now - *opened_ >= timeouts_.answer) {
       fail(LinkFailure::NoAnswer);
     }
     return;
   }
-  if (now - *heard >= timeouts_.silence) {
+  const std::optional<net::Millis> heard = link_->lastHeard();
+  if (heard && now - *heard >= timeouts_.silence) {
     fail(LinkFailure::Silence);
   }
 }
@@ -103,7 +137,8 @@ core::Result<void> VersusLink::startRound() {
   if (phase_ != LinkPhase::Playing || lockstep_ || localResult_ || series_.finished()) {
     return core::fail("no versus battle can start now");
   }
-  lockstep_.emplace(indexOf(side_), setup_->inputDelay);
+  lockstep_.emplace(indexOf(side_), setup_->inputDelay,
+                    static_cast<std::uint32_t>(series_.round()));
   std::deque<net::Bytes> waiting = std::exchange(nextRound_, {});
   for (const net::Bytes& message : waiting) {
     take(message);
@@ -113,9 +148,8 @@ core::Result<void> VersusLink::startRound() {
 
 void VersusLink::submitInput(std::uint32_t input) {
   if (phase_ == LinkPhase::Playing && lockstep_ && !localResult_ && lockstep_->wantsInput()) {
-    if (!channel_->send(lockstep_->submit(input))) {
-      fail(LinkFailure::Damaged);
-    }
+    lockstep_->submit(input);
+    sendInputs();
   }
 }
 
@@ -123,10 +157,7 @@ void VersusLink::playedTick(std::uint64_t checksum) {
   if (phase_ != LinkPhase::Playing || !lockstep_) {
     return;
   }
-  if (!channel_->send(lockstep_->played(checksum))) {
-    fail(LinkFailure::Damaged);
-    return;
-  }
+  link_->send(net::Lane::Reliable, lockstep_->played(checksum));
   if (lockstep_->desyncAt()) {
     fail(LinkFailure::Desync, LeaveReason::Desync);
   }
@@ -149,9 +180,14 @@ void VersusLink::leave(LeaveReason reason) {
 }
 
 void VersusLink::send(const Message& message) {
-  if (!channel_->send(encode(message))) {
-    fail(LinkFailure::Damaged);
-  }
+  link_->send(net::Lane::Reliable, encode(message));
+}
+
+void VersusLink::sendInputs() {
+  // The inputs go again until the battle settles: the other side may still lack the last ones
+  // after this side finished, and it finishes too only once it has them.
+  link_->send(net::Lane::Unreliable, lockstep_->inputs());
+  lastInputs_ = now_;
 }
 
 void VersusLink::fail(LinkFailure failure, std::optional<LeaveReason> tell) {
@@ -161,15 +197,26 @@ void VersusLink::fail(LinkFailure failure, std::optional<LeaveReason> tell) {
   if (tell) {
     send(Leave{.reason = *tell});
     // It goes now: the screens may stop polling soon after.
-    channel_->poll(now_);
+    link_->poll(now_);
   }
   phase_ = LinkPhase::Failed;
   failure_ = failure;
   lockstep_.reset();
 }
 
+void VersusLink::takeInputs(const net::Bytes& message) {
+  // Inputs of another battle (run) are ignored by the lockstep; between battles they are dropped,
+  // and the other side sends them again.
+  if (!lockstep_ || message.empty() || message.front() != net::LockstepInputMessage) {
+    return;
+  }
+  if (!lockstep_->receive(message)) {
+    fail(LinkFailure::Damaged);
+  }
+}
+
 void VersusLink::take(const net::Bytes& message) {
-  if (isLockstep(message)) {
+  if (isChecksum(message)) {
     if (!lockstep_ || remoteRoundOver_) {
       nextRound_.push_back(message);
       return;

@@ -4,7 +4,8 @@
 #include <dwe/game/save/settings.hpp>
 #include <dwe/game/save/slots.hpp>
 #include <dwe/game/save/storage.hpp>
-#include <dwe/net/udp.hpp>
+#include <dwe/game/versus/network.hpp>
+#include <dwe/net/rtc_peer_link.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/battle_adapter.hpp>
@@ -87,6 +88,18 @@ bool VersusScreen::open() {
       return false;
     }
     battles_ = std::move(battles);
+    // The servers: the game pack's, and the command line's signaling server over it. Without a
+    // signaling server the links fail at once and the screen says that none is set up.
+    net::RtcSettings settings;
+    if (auto network = game::versus::loadNetworkConfig(*files_); network) {
+      settings.signalServer = std::move(network->signalServer);
+      settings.iceServers = std::move(network->iceServers);
+    } else {
+      core::logWarning("versus: {}", network.error().message);
+    }
+    if (!options_->versusServer.empty()) {
+      settings.signalServer = options_->versusServer;
+    }
     const assets::VirtualFileSystem* files = files_;
     const Options* options = options_;
     const bool keepsSaves = keepsSaves_;
@@ -94,22 +107,11 @@ bool VersusScreen::open() {
         .battles = battles_.get(),
         .identity = std::move(*identity),
         .saves = [files, options, keepsSaves] { return savesIn(*files, *options, keepsSaves); },
-        .host = [](std::uint16_t port) -> core::Result<std::unique_ptr<net::DatagramLink>> {
-          auto link = net::UdpLink::host(port);
-          if (!link) {
-            return std::unexpected{link.error()};
-          }
-          return std::unique_ptr<net::DatagramLink>{std::move(*link)};
-        },
+        .host = [settings] { return net::RtcPeerLink::host(settings, net::openWebSocket); },
         .join =
-            [](const net::Endpoint& endpoint) -> core::Result<std::unique_ptr<net::DatagramLink>> {
-          auto link = net::UdpLink::join(endpoint);
-          if (!link) {
-            return std::unexpected{link.error()};
-          }
-          return std::unique_ptr<net::DatagramLink>{std::move(*link)};
-        },
-        .addresses = [] { return net::localAddresses(); },
+            [settings](std::string_view code) {
+              return net::RtcPeerLink::join(settings, code, net::openWebSocket);
+            },
         .seed =
             [] {
               std::random_device device;

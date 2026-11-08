@@ -3,8 +3,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/game/battle/events.hpp>
 #include <dwe/game/versus/protocol.hpp>
-#include <dwe/net/datagram.hpp>
-#include <dwe/net/endpoint.hpp>
+#include <dwe/net/peer_link.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/battle_registry.hpp>
 #include <dwe/session/versus_series.hpp>
@@ -38,19 +37,18 @@ struct VersusFlowDesc {
   game::versus::Identity identity;
   // The saves to pick partners from, read when the player gets to pick.
   std::function<std::vector<VersusSave>()> saves;
-  // A link listening on the port, for the host; one to the endpoint, for the guest.
-  std::function<core::Result<std::unique_ptr<net::DatagramLink>>(std::uint16_t)> host;
-  std::function<core::Result<std::unique_ptr<net::DatagramLink>>(const net::Endpoint&)> join;
-  // This machine's addresses, for the host's screen.
-  std::function<std::vector<std::array<std::uint8_t, 4>>()> addresses;
+  // A link that makes a room, for the host; one that joins the room with its code, for the guest.
+  // What goes wrong on the way (no server, a wrong code, no route) is the link's failure.
+  std::function<std::unique_ptr<net::PeerLink>()> host;
+  std::function<std::unique_ptr<net::PeerLink>(std::string_view code)> join;
   // The seed of a new series, for the host.
   std::function<std::uint64_t()> seed;
 };
 
 // The screens of an online versus series (docs/modulos/apps/game.md, «Versus en línea»), without
-// the UI: a menu to host or join, the host's series length and its address and join code, the
-// guest's address entry, the pick of a save and of its registered partners, the battles with this
-// side's commands, the result of each and the series' end, and what went wrong when it ends early.
+// the UI: a menu to host or join, the host's series length and its room code, the guest's code
+// entry, the pick of a save and of its registered partners, the battles with this side's commands,
+// the result of each and the series' end, and what went wrong when it ends early.
 // It takes the document's actions and the keyboard's text, and gives the settings the document
 // shows. Nothing here writes a save.
 class VersusFlow {
@@ -82,7 +80,7 @@ public:
   [[nodiscard]] View view() const { return view_; }
   // Whether the player left the versus screens (back to the title).
   [[nodiscard]] bool closed() const { return closed_; }
-  // Whether the view takes the keyboard's text (the guest's address entry).
+  // Whether the view takes the keyboard's text (the guest's code entry).
   [[nodiscard]] bool takesText() const { return view_ == View::JoinEntry; }
 
   // A document action: up, down, left, right, confirm, cancel, or a row's "pick:<n>".
@@ -119,15 +117,14 @@ private:
   // The series length the host picks, by its place in the rules' series.
   std::int32_t seriesChoice_ = 0;
   std::string typed_;
-  // A wrong address or code, shown under the entry.
+  // A code that cannot be one, shown under the entry.
   bool badEntry_ = false;
-  std::uint16_t port_ = 0;
   std::vector<VersusSave> saves_;
   std::int32_t save_ = 0;
   // The picked partners, by their row in the save's registered partners.
   std::vector<std::int32_t> picks_;
   // The link before the series: the series refers to it, so it goes after it.
-  std::unique_ptr<net::DatagramLink> link_;
+  std::unique_ptr<net::PeerLink> link_;
   std::optional<session::VersusSeries> series_;
   std::int64_t ticks_ = 0;
   // Battle frames in a row with no tick played: the other machine is behind.

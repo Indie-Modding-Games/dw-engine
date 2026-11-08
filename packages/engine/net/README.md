@@ -1,9 +1,9 @@
 # net
 
-La red entre dos máquinas: UDP, un canal fiable y ordenado, lockstep y códigos para unirse.
+La red entre dos máquinas: WebRTC con un carril fiable y otro sin garantías, lockstep y el cliente de señalización.
 
 - Carpeta: `packages/engine/net`; objetivos de CMake: `dwe::net` (capa `base`).
-- Depende de: `core`.
+- Depende de: `core`; de fuera, libdatachannel (WebRTC y WebSocket, con Mbed TLS) y nlohmann-json.
 - Estructura: `CMakeLists.txt` (el paquete y sus dependencias, con `dwe_add_module`), `include/` (lo público, como
   `<dwe/...>`), `src/` y `tests/`.
 - Documentación: [modulos/engine/net](https://indie-modding-games.github.io/dw-engine/modulos/engine/net).

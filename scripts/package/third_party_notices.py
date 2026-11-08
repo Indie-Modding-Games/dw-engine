@@ -41,12 +41,31 @@ APACHE_NOTICES = {
     "egl-registry": "No NOTICE file upstream.",
     "ktx": "Its NOTICE.md is the same file as its LICENSE.md, included below.",
     "llvm-libcxx": "No NOTICE file upstream (Apache-2.0 WITH LLVM-exception).",
+    "mbedtls": "No NOTICE file upstream (Apache-2.0 OR GPL-2.0-or-later; used under Apache-2.0).",
     "moltenvk": "No NOTICE file upstream.",
     "sdl3": "No NOTICE file upstream (Apache-2.0 covers one OpenGL ES header only).",
     "shader-slang": "No NOTICE file upstream. A build tool only: it compiles the shaders, and no part of it ships.",
     "vulkan-headers": "No NOTICE file upstream.",
     "vulkan-loader": "No NOTICE file upstream.",
 }
+
+# Where the source of each MPL-2.0 component is: section 3.2 of the licence asks a program shipped
+# in executable form to tell its users how to get it. They are built unmodified from these tags.
+MPL_SOURCES = {
+    "libdatachannel": "https://github.com/paullouisageneau/libdatachannel",
+    "libjuice": "https://github.com/paullouisageneau/libjuice",
+}
+
+
+def mpl_credit(names: set[str]) -> list[str]:
+    shipped = sorted(name for name in MPL_SOURCES if name in names)
+    if not shipped:
+        return []
+    lines = ["The following components are under the Mozilla Public License 2.0, unmodified; their "
+             "source code is available at:"]
+    lines += [f"  {name}: {MPL_SOURCES[name]}" for name in shipped]
+    return ["\n".join(lines)]
+
 
 # The FreeType License asks for this credit in the documentation of a program that uses it.
 def freetype_credit() -> str:
@@ -120,6 +139,7 @@ def game(args) -> int:
         texts.append((["Apache License 2.0 (the full text)"], read(STANDARD / "Apache-2.0.txt")))
     names = {path.stem for path in files if path.parent == folder}
     credits = [freetype_credit()] if "freetype" in names else []
+    credits += mpl_credit(names)
     intro = ("dwe is under the MIT License (LICENSE). The game is built with the software below, under "
              "their own licences,\nwhose texts follow.")
     Path(args.out).write_text(render(intro, credits, notices, texts), encoding="utf-8")

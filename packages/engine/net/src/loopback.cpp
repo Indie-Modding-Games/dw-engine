@@ -1,3 +1,4 @@
+#include <dwe/net/channel_peer_link.hpp>
 #include <dwe/net/loopback.hpp>
 
 #include <algorithm>
@@ -39,12 +40,18 @@ LoopbackNetwork::LoopbackNetwork(LinkConditions conditions, std::uint32_t seed)
     : conditions_{conditions}, random_{seed} {
   ends_.at(0) = std::make_unique<End>(*this, 0);
   ends_.at(1) = std::make_unique<End>(*this, 1);
+  links_.at(0) = std::make_unique<ChannelPeerLink>(*ends_.at(0), "TEST");
+  links_.at(1) = std::make_unique<ChannelPeerLink>(*ends_.at(1), "TEST");
 }
 
 LoopbackNetwork::~LoopbackNetwork() = default;
 
 DatagramLink& LoopbackNetwork::peer(std::size_t side) {
   return *ends_.at(side);
+}
+
+PeerLink& LoopbackNetwork::link(std::size_t side) {
+  return *links_.at(side);
 }
 
 void LoopbackNetwork::advance(Millis elapsed) {

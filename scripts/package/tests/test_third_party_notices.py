@@ -49,6 +49,15 @@ class Game(unittest.TestCase):
                      "Apache License 2.0 (the full text)"):
             self.assertIn(part, text)
 
+    def test_mpl_components_say_where_their_source_is(self):
+        self.write("libdatachannel.txt", "Mozilla Public License Version 2.0\n")
+        self.write("mbedtls.txt", APACHE)
+        self.assertEqual(self.run_game(), 0)
+        text = self.text()
+        self.assertIn("libdatachannel: https://github.com/paullouisageneau/libdatachannel", text)
+        self.assertNotIn("libjuice:", text)
+        self.assertIn("mbedtls:\nNo NOTICE file upstream", text)
+
     def test_an_unknown_apache_component_fails(self):
         self.write("new-port.txt", APACHE)
         self.assertEqual(self.run_game(), 1)

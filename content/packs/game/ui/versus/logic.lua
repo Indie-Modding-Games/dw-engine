@@ -79,13 +79,16 @@ local function draw_host_setup(document)
   focus(document, "series")
 end
 
+-- The host's stage (creating the room, waiting for the guest, connecting) and its room code.
 local function draw_hosting(document)
-  local codes = text("versus.codes")
-  local addresses = text("versus.addresses")
-  document:get("hosting-codes"):set_text(codes ~= "" and codes or t("versus.hosting.no_address"))
-  document:get("hosting-addresses"):set_text(
-    addresses ~= "" and addresses or say("versus.hosting.port", { port = number("versus.port") })
-  )
+  local code = text("versus.code")
+  local stage = text("versus.stage")
+  document
+    :get("hosting-stage")
+    :set_text(t("versus.hosting." .. (stage ~= "" and stage or "creating")))
+  show(document, "hosting-code-label", code ~= "")
+  show(document, "hosting-code", code ~= "")
+  document:get("hosting-code"):set_text(code)
 end
 
 local function draw_join(document)

@@ -3,7 +3,7 @@
 #include <dwe/game/versus/protocol.hpp>
 #include <dwe/game/versus/series.hpp>
 #include <dwe/net/lockstep.hpp>
-#include <dwe/net/reliable_channel.hpp>
+#include <dwe/net/peer_link.hpp>
 
 #include <deque>
 #include <optional>
@@ -41,29 +41,46 @@ enum class LinkFailure : std::uint8_t {
   Desync,
   // A message could not be read.
   Damaged,
+  // The connection (net::PeerFailure): no signaling server set up, the server out of reach, no
+  // room with that code, a room that already has two players, no route in time, no direct route
+  // between the two machines, or a connection that closed.
+  NoServer,
+  ServerUnreachable,
+  WrongCode,
+  RoomFull,
+  TimedOut,
+  NoRoute,
+  Disconnected,
 };
 
 struct LinkTimeouts {
-  // How long a guest waits for the host's answer.
+  // How long a guest waits for the host's answer once the connection is open.
   net::Millis answer{10000};
   // How long either waits with nothing from the other once they talk.
   net::Millis silence{8000};
 };
 
-// The versus protocol between two machines over one reliable channel: the guest says hello, the
-// host checks the protocol, the game version and the content hash and welcomes it with the series,
-// both send their lineups, and then each battle runs in lockstep (net::Lockstep) and ends with both
-// sides telling each other its result, which must agree. Leaving, silence and any disagreement end
-// it with a reason the screens can tell the player. It never touches a save.
+// The versus protocol between two machines over a peer link (net::PeerLink): the guest says hello,
+// the host checks the protocol, the game version and the content hash and welcomes it with the
+// series, both send their lineups, and then each battle runs in lockstep (net::Lockstep, its
+// inputs on the unreliable lane, sent again every InputsEvery until acknowledged) and ends with
+// both sides telling each other its result, which must agree. Everything else goes on the reliable
+// lane. A connection that fails, leaving, silence and any disagreement end it with a reason the
+// screens can tell the player. It never touches a save.
 class VersusLink {
 public:
   // The host offers `setup`; the guest learns it from the welcome.
-  static VersusLink host(net::DatagramLink& link, Identity identity, SeriesSetup setup,
-                         LinkTimeouts timeouts = {});
-  static VersusLink guest(net::DatagramLink& link, Identity identity, LinkTimeouts timeouts = {});
+  // How often the inputs message goes again while a battle runs.
+  static constexpr net::Millis InputsEvery{50};
 
-  // Reads what arrived, sends what is due and checks the timeouts.
+  // The host offers `setup`; the guest learns it from the welcome. The link must outlive this.
+  static VersusLink host(net::PeerLink& link, Identity identity, SeriesSetup setup,
+                         LinkTimeouts timeouts = {});
+  static VersusLink guest(net::PeerLink& link, Identity identity, LinkTimeouts timeouts = {});
+
+  // Moves the link on, reads what arrived, sends what is due and checks the timeouts.
   void poll(net::Millis now);
+  [[nodiscard]] const net::PeerLink& peerLink() const { return *link_; }
 
   [[nodiscard]] Side side() const { return side_; }
   [[nodiscard]] LinkPhase phase() const { return phase_; }
@@ -99,16 +116,18 @@ public:
   void leave(LeaveReason reason = LeaveReason::Quit);
 
 private:
-  VersusLink(net::DatagramLink& link, Side side, Identity identity, LinkTimeouts timeouts);
+  VersusLink(net::PeerLink& link, Side side, Identity identity, LinkTimeouts timeouts);
   void send(const Message& message);
+  void sendInputs();
   void fail(LinkFailure failure, std::optional<LeaveReason> tell = std::nullopt);
   void take(const net::Bytes& message);
+  void takeInputs(const net::Bytes& message);
   void handle(const Message& message);
   void checkIdentity(const Identity& other);
   void settleRound();
   void beginPlayingIfReady();
 
-  std::unique_ptr<net::ReliableChannel> channel_;
+  net::PeerLink* link_;
   Side side_;
   Identity identity_;
   LinkTimeouts timeouts_;
@@ -119,12 +138,14 @@ private:
   std::array<std::optional<std::vector<VersusFighter>>, 2> lineups_;
   Series series_{1};
   std::optional<net::Lockstep> lockstep_;
-  // The other side's lockstep messages that came after it finished the battle that runs here.
+  // The other side's checksums that came after it finished the battle that runs here.
   std::deque<net::Bytes> nextRound_;
   bool remoteRoundOver_ = false;
   std::optional<RoundOver> localResult_;
   std::optional<RoundOver> remoteResult_;
-  std::optional<net::Millis> started_;
+  // When the connection opened, for the answer timeout.
+  std::optional<net::Millis> opened_;
+  net::Millis lastInputs_{0};
   net::Millis now_{0};
 };
 

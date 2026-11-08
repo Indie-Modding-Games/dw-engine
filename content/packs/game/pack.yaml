@@ -39,6 +39,8 @@ schemas:
     - rules/*/save
   save_settings:
     - save/settings
+  versus_network:
+    - versus/network
   ruleset_life:
     - rules/*/life
   ruleset_species_extra:

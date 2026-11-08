@@ -1,0 +1,51 @@
+{
+  "name": "libdatachannel",
+  "version-semver": "0.24.6",
+  "description": "WebRTC data channels and WebSockets in C++ (overlay: built with Mbed TLS instead of OpenSSL).",
+  "homepage": "https://github.com/paullouisageneau/libdatachannel",
+  "license": "MPL-2.0",
+  "supports": "!xbox",
+  "dependencies": [
+    "libjuice",
+    "nlohmann-json",
+    {
+      "name": "mbedtls",
+      "features": [
+        "pthreads"
+      ],
+      "platform": "!windows"
+    },
+    {
+      "name": "mbedtls",
+      "platform": "windows"
+    },
+    "plog",
+    "usrsctp",
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    }
+  ],
+  "default-features": [
+    "ws"
+  ],
+  "features": {
+    "srtp": {
+      "description": "Use Cisco's libSRTP for media transport.",
+      "dependencies": [
+        "libsrtp"
+      ]
+    },
+    "stdcall": {
+      "description": "Use stdcall convention in callbacks"
+    },
+    "ws": {
+      "description": "Web Socket support"
+    }
+  },
+  "port-version": 1
+}

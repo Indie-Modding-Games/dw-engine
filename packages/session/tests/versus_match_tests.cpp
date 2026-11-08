@@ -170,9 +170,9 @@ TEST_CASE("a whole versus series between two machines over a bad link plays the 
   REQUIRE_MESSAGE(identity, errorOf(identity));
   LoopbackNetwork network{{.latency = Millis{30}, .jitter = Millis{40}, .lossPercent = 10}, 9};
   const SeriesSetup setup{.battles = 3, .arena = 0, .seed = 1234, .inputDelay = 3};
-  VersusSeries host{*hostMachine.battle, VersusLink::host(network.peer(0), *identity, setup),
+  VersusSeries host{*hostMachine.battle, VersusLink::host(network.link(0), *identity, setup),
                     Arena};
-  VersusSeries guest{*guestMachine.battle, VersusLink::guest(network.peer(1), *identity), Arena};
+  VersusSeries guest{*guestMachine.battle, VersusLink::guest(network.link(1), *identity), Arena};
   CHECK(host.localFighter() == PartnerId);
   CHECK(guest.localFighter() == RivalId);
   const auto run = [&](int frames) {

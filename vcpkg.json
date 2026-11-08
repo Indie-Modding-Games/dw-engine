@@ -32,6 +32,8 @@
     "ktx",
     "tinysoundfont",
     "entt",
+    { "name": "libdatachannel", "default-features": false, "features": ["ws"] },
+    "nlohmann-json",
     { "name": "rmlui", "default-features": false, "features": ["freetype"] }
   ],
   "default-features": ["validation"],
