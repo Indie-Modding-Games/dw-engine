@@ -213,6 +213,35 @@ TEST_CASE("an image reference may ask for a grey tone, with or without a palette
   CHECK_FALSE(parseImageReference("texture/time.png?tone").has_value());
 }
 
+TEST_CASE(
+    "an image reference may ask to be smoothed by the texture upscaler, which is not pixel art") {
+  auto smooth = parseImageReference("/ui/x/picture?upscale=smooth&palette=0");
+  REQUIRE_MESSAGE(smooth.has_value(), smooth.error().message);
+  CHECK(smooth->smooth);
+  CHECK(smooth->palette == std::optional<std::size_t>{0});
+  CHECK_FALSE(isPixelArt(*smooth));
+  CHECK(imageReferenceText(*smooth) == "/ui/x/picture?palette=0&upscale=smooth");
+
+  auto alone = parseImageReference("ui/x/picture?upscale=smooth");
+  REQUIRE(alone.has_value());
+  CHECK(imageReferenceText(*alone) == "/ui/x/picture?upscale=smooth");
+
+  CHECK_FALSE(parseImageReference("ui/x/picture?palette=0")->smooth);
+  CHECK(isPixelArt(*parseImageReference("ui/x/picture?palette=0")));
+  CHECK_FALSE(parseImageReference("ui/x/picture?upscale=sharp").has_value());
+  CHECK_FALSE(parseImageReference("ui/x/picture?upscale").has_value());
+}
+
+TEST_CASE("a smoothed image doubles up to SmoothUpscaleWidth, at most twice") {
+  CHECK(smoothDoublings(320) == 2);
+  CHECK(smoothDoublings(640) == 1);
+  CHECK(smoothDoublings(SmoothUpscaleWidth) == 0);
+  CHECK(smoothDoublings(2560) == 0);
+  // A small icon still grows only twice.
+  CHECK(smoothDoublings(16) == SmoothUpscaleMaxDoublings);
+  CHECK(smoothDoublings(0) == 0);
+}
+
 TEST_CASE("a grey image is a light grey silhouette: its shading kept, its alpha untouched") {
   CHECK(greyToneOf(0, 0, 0) == GreyToneDarkest);
   CHECK(greyToneOf(255, 255, 255) == GreyToneLightest);

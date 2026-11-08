@@ -116,7 +116,7 @@ void readOriginalSize(assets::YamlReader& reader, const core::YamlNode& node,
 std::optional<SkinSpriteSheet> readSpriteSheet(assets::YamlReader& reader,
                                                const core::YamlNode& node) {
   reader.expectKeys(node, messages::SpriteSheetWhat, {"name", "image", "sprites"},
-                    {"palette", "original_size", "dp_per_pixel"});
+                    {"palette", "original_size", "dp_per_pixel", "upscale"});
   std::string name = styleName(reader, reader.field(node, "name"));
   std::optional<assets::AssetId> image = assetId(reader, reader.field(node, "image"));
   if (!image) {
@@ -130,6 +130,13 @@ std::optional<SkinSpriteSheet> readSpriteSheet(assets::YamlReader& reader,
                         .sprites = {}};
   if (const core::YamlNode* palette = node.find("palette")) {
     sheet.image.palette = reader.integer<std::uint32_t>(*palette);
+  }
+  if (const core::YamlNode* upscale = node.find("upscale")) {
+    const std::string mode = reader.text(*upscale);
+    if (reader.ok() && mode != SmoothUpscaleName) {
+      reader.fail(*upscale, core::formatMessage(messages::UnknownSheetUpscale, mode));
+    }
+    sheet.smooth = reader.ok();
   }
   if (const core::YamlNode* size = node.find("original_size")) {
     readOriginalSize(reader, *size, sheet);

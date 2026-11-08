@@ -25,6 +25,15 @@ inline constexpr std::string_view PaletteQuery = "?palette=";
 inline constexpr std::string_view PaletteOption = "palette";
 inline constexpr std::string_view ToneOption = "tone";
 inline constexpr std::string_view GreyToneName = "grey";
+// What follows an image's path, its palette or its tone, to draw it smoothed by the texture
+// upscaler the field's models get (render::upscaleRgba): `ui/x/picture?palette=0&upscale=smooth`.
+inline constexpr std::string_view UpscaleOption = "upscale";
+inline constexpr std::string_view SmoothUpscaleName = "smooth";
+// The width a smoothed image is doubled up to (at most SmoothUpscaleMaxDoublings times): a
+// 320-pixel picture of the original's screen grows to 1280, as dwx's recipes grow the interface's
+// sprites.
+inline constexpr std::uint32_t SmoothUpscaleWidth = 1280;
+inline constexpr std::uint32_t SmoothUpscaleMaxDoublings = 2;
 
 // The tone an image is drawn in. Grey is a light grey silhouette that keeps the image's shading and
 // shape: an item, a species or a place the player has not reached yet.
@@ -87,22 +96,29 @@ struct ImageReference {
   assets::AssetId asset;
   std::optional<std::size_t> palette;
   ImageTone tone = ImageTone::Natural;
+  // Drawn smoothed (UpscaleOption): doubled by the texture upscaler up to SmoothUpscaleWidth, and
+  // filtered instead of sharp, so its curves and cut-out edges lose their stairs.
+  bool smooth = false;
 };
 
 // Reads a reference as RmlUi passes it, already joined to the document's folder: `ui/x/frame.png`,
 // `/texture/stddat/time?palette=3`, `/texture/etcdat/sboy?palette=15&tone=grey`,
-// `ui/x/a?tone=grey`. Options are `name=value` pairs after `?`, joined by `&`, in any order; an
-// unknown one fails.
+// `ui/x/a?tone=grey`, `ui/x/b?palette=0&upscale=smooth`. Options are `name=value` pairs after `?`,
+// joined by `&`, in any order; an unknown one fails.
 core::Result<ImageReference> parseImageReference(std::string_view path);
 
 // Whether the UI draws an image as the disc's pixel art, with sharp texel edges at any size
 // (rml.slang: sharpUv): an indexed image drawn with one of its palettes, as the original look's
-// sprites are. Any other image is filtered.
+// sprites are, unless it is drawn smoothed. Any other image is filtered.
 bool isPixelArt(const ImageReference& reference);
 
 // The text of a reference, as a style sheet writes it: `/texture/stddat/time?palette=3`, the
-// palette first and the tone after it.
+// palette first, the tone and the smoothing after it.
 std::string imageReferenceText(const ImageReference& reference);
+
+// How many times a smoothed image of this width is doubled: until it is SmoothUpscaleWidth wide, at
+// most SmoothUpscaleMaxDoublings times (0 for an image already that wide, a dwx recipe's).
+[[nodiscard]] std::uint32_t smoothDoublings(std::uint32_t width);
 
 // The size of an image in pixels, from the header of its file only.
 struct ImageSize {

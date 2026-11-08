@@ -21,6 +21,10 @@
 #include <variant>
 #include <vector>
 
+namespace dwe::render {
+class UpscaleCache;
+} // namespace dwe::render
+
 namespace dwe::ui {
 
 // A value passed between the menus and the app: nothing, a switch, a number or a text.
@@ -219,6 +223,13 @@ public:
   // logged as a warning. The game calls it once its documents are loaded; a switch checks again,
   // unless no document is loaded yet.
   [[nodiscard]] std::vector<std::string> checkSkinDocuments() const;
+
+  // Whether the skins' pictures that may be smoothed (skin.yaml `upscale: smooth`, the title's) are
+  // drawn smoothed by the texture upscaler, as the field's models are with the texture filter
+  // «upscaled». Every document takes the change at once. Off until set.
+  void setSmoothPictures(bool smooth);
+  // Where smoothed pictures keep their upscaled pixels, so each is upscaled once.
+  void setUpscaleCache(std::shared_ptr<const render::UpscaleCache> cache);
 
   // Replaces the minimap with a new map's: its walkable area and the key of its name
   // (localization::mapNameKey; empty for none), shown in the hud:: elements.

@@ -41,7 +41,11 @@ cambiar de aspecto.
 Las hojas de sprites de un aspecto nombran imágenes del paquete base por su asset id (`texture/etcdat/system_w`), su
 paleta y su tamaño en el original (`original_size`); si un paquete de capa remaster trae la misma imagen más grande
 (su `_meta.yaml` dice `scale`), el aspecto la usa sin cambiar nada y se ve más nítida. Así llegan las del aspecto
-original: `dwx extract` las agranda ×4 con la receta incluida `content/enhance/ui_original.recipe.yaml`. Un aspecto
+original: `dwx extract` las agranda ×4 con la receta incluida `content/enhance/ui_original.recipe.yaml`. Una hoja
+con `upscale: smooth` (las dos de la portada) se dibuja en cambio suavizada por el reescalador de texturas de los
+modelos (`render::upscaleRgba`, el alfa interpolado como un color, así el borde recortado no hace escalones), desde
+los píxeles del original hasta 1280 de ancho, cuando el filtro de texturas del jugador es «reescalado»; con los otros
+filtros se dibuja nítida como el resto. Un aspecto
 de un mod que quiere sus propias imágenes agrandadas escribe una receta igual (las imágenes que dibuja, `scale` y el
 modo de `index_scale`) y la pasa a mano por `dwx upscale <receta> <paquetes> -o <carpeta>`, que escribe un paquete
 remaster para montar al lado ([página de dwx](../modulos/apps/dwx.md#dwx-upscale-y-las-recetas-incluidas)). Nunca

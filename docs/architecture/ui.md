@@ -539,6 +539,7 @@ sprite_sheets:                      # opcional: hojas de sprites para RCSS
     palette: 3                      # opcional: otra paleta de la imagen indexada
     original_size: [66, 29]         # opcional: el tamaño del original, para copias escaladas
     dp_per_pixel: 3                 # opcional: cuántos dp ocupa un píxel del original (1 por defecto)
+    upscale: smooth                 # opcional: suavizada por el reescalador de texturas (ver abajo)
     sprites:
       corner: [0, 0, 8, 8]          # x, y, ancho, alto en píxeles del original
 document_classes:                   # opcional: clases que pone en elementos de los documentos compartidos
@@ -553,6 +554,14 @@ document_classes:                   # opcional: clases que pone en elementos de 
 | `SkinStyler` (`src/skin_styler.*`) | La hoja de cada pantalla con el aspecto actual: sus hojas de sprites y las de `theme` y `screens.<pantalla>.styles` de cada aspecto de la cadena, el aspecto base primero, encima de las hojas propias del documento |
 | `spriteSheetRcss` (`sprite_sheet_rcss.hpp`) | Escribe el `@spritesheet` de RCSS de una hoja de sprites. Si la imagen es un múltiplo entero de `original_size` (una copia escalada del remaster), multiplica los rectángulos y ajusta `resolution`, así que los sprites ocupan los mismos dp. Del archivo de la imagen solo lee la cabecera, para su tamaño (`imageSize`) |
 
+- **Imágenes suavizadas (`upscale: smooth`).** Una hoja que lo dice se dibuja, con el filtro de texturas
+  «reescalado» (`Ui::setSmoothPictures`, que el juego llama al publicar las opciones gráficas), pasada por el mismo
+  reescalador que las texturas de los modelos (`render::upscaleRgba`): se dobla hasta 1280 píxeles de ancho (dos veces
+  como mucho; `smoothDoublings`), el alfa se interpola como un color y se filtra en vez de dibujarse nítida. El
+  resultado queda en la caché del reescalador (`Ui::setUpscaleCache`). La referencia de la imagen lleva entonces
+  `&upscale=smooth`, así que al cambiar el filtro RmlUi la carga de nuevo. Así se dibujan las dos imágenes de la
+  portada del aspecto original; una extracción anterior a la versión 14 trae su copia ×4 de `index_scale`, que no se
+  dobla más y se dibuja filtrada.
 - **Cambio en vivo:** `Ui::setSkin(id)` cambia la hoja de cada documento abierto sin volver a cargarlo: los scripts,
   su estado, el foco y lo que está visible siguen igual. Solo un documento cuyo RML cambia (`document`) se carga de
   nuevo, y se muestra donde estaba. `Ui::skins()` da el catálogo, `Ui::skin()` el aspecto actual. Desde Lua,

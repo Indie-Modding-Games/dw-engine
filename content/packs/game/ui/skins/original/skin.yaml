@@ -913,19 +913,23 @@ sprite_sheets:
       need-sick-1: [192, 32, 16, 16]
   # La portada detrás del menú principal (main_menu.c: renderInitialMenu dibuja sobre TITLE2). Es indexada con su única
   # CLUT (main.c carga ETCNA\TITLE2.TIM con loadTIMFile, que la sube con la imagen; clut_rect (0, 480)): la paleta 0
-  # de sus metadatos, así se dibuja nítida como el resto del arte del disco.
+  # de sus metadatos, así se dibuja nítida como el resto del arte del disco. Con el filtro de texturas «reescalado»
+  # (el de los modelos del campo) se dibuja suavizada por el mismo reescalador (upscale: smooth): el logotipo pierde
+  # los dientes de sierra; con los otros filtros, nítida.
   - name: ow-title
     image: texture/etcna/title2
     palette: 0
+    upscale: smooth
     original_size: [320, 240]
     dp_per_pixel: 3
     sprites:
       title-screen: [0, 0, 320, 240]
   # La pantalla de antes del menú (main.c: runLandingScreen dibuja TITLE256 con su única CLUT, (0, 480)). El sprite
-  # se para en la fila 206: debajo está el aviso de copyright del original, que se deja fuera.
+  # se para en la fila 206: debajo está el aviso de copyright del original, que se deja fuera. Suavizada como la portada.
   - name: ow-boot
     image: texture/etcna/title256
     palette: 0
+    upscale: smooth
     original_size: [320, 256]
     dp_per_pixel: 3
     sprites:

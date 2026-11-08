@@ -67,6 +67,11 @@ constexpr std::array Fingerprints{
                    .fingerprint = "70513072c099bf21d22916d0c65454af3f259af8",
                    .unseenBySyntheticDisc = true},
     FingerprintRow{.version = 13, .fingerprint = "f267bd3d03d77cd687031714369bfdb5e343ed6c"},
+    // The bundled recipe no longer grows the title's pictures (the skin smooths them): the
+    // synthetic disc has none of them.
+    FingerprintRow{.version = 14,
+                   .fingerprint = "f267bd3d03d77cd687031714369bfdb5e343ed6c",
+                   .unseenBySyntheticDisc = true},
 };
 
 std::vector<std::byte> bytesOf(std::initializer_list<unsigned> values) {

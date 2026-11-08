@@ -55,6 +55,10 @@ struct SkinSpriteSheet {
   // How many dp an original pixel covers: 3 draws the original's 240 lines over the UI's 720 dp.
   float dpPerPixel = DefaultDpPerPixel;
   std::vector<SkinSprite> sprites;
+  // Whether the image may be drawn smoothed by the texture upscaler (skin.yaml `upscale: smooth`),
+  // when the player's texture filter is the upscaler (Ui::setSmoothPictures): a picture, such as
+  // the title's, whose curves and cut-out edges show stairs as pixel art.
+  bool smooth = false;
 };
 
 // What a skin does to one screen, a document the game loads by name (hud, main_menu,

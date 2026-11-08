@@ -753,6 +753,9 @@ int runGame(const Options& requested) {
   (*ui)->setSetting("title.language_first", autotest == nullptr || autotest->asksLanguageFirst());
   MinimapChanger minimapChanger{userSettings, settingsFile};
   GraphicsChanger graphics{userSettings, settingsFile, startGraphics};
+  // The title's pictures, smoothed with the texture filter «upscaled», keep what the upscaler made
+  // where the models' textures do.
+  (*ui)->setUpscaleCache(upscaleCache);
   graphics.publish(**ui);
   // The music's and the effects' volumes: the saved steps, applied to the audio from the start.
   VolumeChanger volumes{userSettings, settingsFile, sound};

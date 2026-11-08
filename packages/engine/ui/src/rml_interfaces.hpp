@@ -107,6 +107,8 @@ public:
   // Whether a source is the disc's pixel art (isPixelArt of its reference); a generated image never
   // is.
   [[nodiscard]] static bool isPixelArt(std::string_view source);
+  // Whether a source asks to be drawn smoothed by the texture upscaler (ImageReference::smooth).
+  [[nodiscard]] static bool isSmoothed(std::string_view source);
 
 private:
   const assets::VirtualFileSystem* files_;

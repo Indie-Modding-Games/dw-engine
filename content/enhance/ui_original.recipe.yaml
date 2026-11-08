@@ -2,7 +2,9 @@
 # built-in index_scale step: pixel-art neighbour rules on palette indices, integer only, the same bytes on every
 # machine. dwx extract runs it after writing the base pack and writes the result as the remaster pack ui_original next
 # to it; dwx upscale runs it (or another recipe) by hand. Only the recipe is shared: what it writes is made from the
-# user's own disc and never leaves their machine (docs/architecture/remaster-pipeline.md).
+# user's own disc and never leaves their machine (docs/architecture/remaster-pipeline.md). The title's two pictures are
+# not here: the skin smooths them with the models' texture upscaler (skin.yaml, upscale: smooth), which starts from
+# the original's pixels; an extraction made before keeps their grown copies, drawn as they are.
 recipe: 1
 id: ui_original
 asset_type: ui
@@ -13,8 +15,6 @@ select:
     - texture/etcdat/bi_in
     - texture/etcdat/btlcomnd
     - texture/etcdat/feel_ef
-    - texture/etcna/title2
-    - texture/etcna/title256
     - texture/stddat/time
     - texture/stddat/stdtim/002
 scale: 4
