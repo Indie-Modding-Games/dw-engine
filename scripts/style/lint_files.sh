@@ -10,7 +10,7 @@ max_columns=100
 # A NOLINT after code: when clang-format splits the statement, the comment lands on a line the
 # diagnostic is not on.
 # NOLINTNEXTLINE on the line above stays right.
-trailing_nolint='\S.*//\s*NOLINT([^A-Z]|$)'
+trailing_nolint='[^[:space:]].*//[[:space:]]*NOLINT([^A-Z]|$)'
 # An array key with hyphens and no quotes, such as route-save-load in a subscript: shfmt reads it as
 # arithmetic and spaces it out, which changes the key. Such keys go in quotes.
 unquoted_key='\[[A-Za-z_][A-Za-z0-9_]+( ?- ?[A-Za-z_][A-Za-z0-9_]+)+\](=|})'
@@ -36,6 +36,11 @@ for tool in luacheck shellcheck; do
   fi
 done
 
+# The column limit counts characters, not bytes: a UTF-8 locale, C.UTF-8 or, on macOS, which has
+# none, en_US.UTF-8.
+utf8_locale="C.UTF-8"
+locale -a 2>/dev/null | grep -iE '^c\.utf-?8$' >/dev/null || utf8_locale="en_US.UTF-8"
+
 status=0
 if ((${#cpp_files[@]} > 0)) && grep -nHE "$trailing_nolint" -- "${cpp_files[@]}"; then
   echo "lint: put the NOLINT comments above on a NOLINTNEXTLINE line before the code"
@@ -50,7 +55,7 @@ if ((${#shell_files[@]} > 0)); then
     echo "lint: quote the array keys above (shfmt reads an unquoted key with hyphens as arithmetic)"
     status=1
   fi
-  if LC_ALL=C.UTF-8 grep -nHE "^.{$((max_columns + 1)),}" -- "${shell_files[@]}"; then
+  if LC_ALL="$utf8_locale" grep -nHE "^.{$((max_columns + 1)),}" -- "${shell_files[@]}"; then
     echo "lint: the lines above pass $max_columns columns"
     status=1
   fi

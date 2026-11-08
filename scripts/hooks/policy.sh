@@ -151,13 +151,14 @@ policy_forbidden_staged() {
 
 # Reads NUL-separated paths and prints "<path>: <pattern>" for every one that a forbidden pattern
 # matches, and succeeds only when it prints any. The release checks run it on the packages' files.
-policy_forbidden_paths_in() {
-  local path lower pattern found=1
+# A subshell, so nocasematch (the lowercase patterns match any case) stays in it.
+policy_forbidden_paths_in() (
+  local path pattern found=1
+  shopt -s nocasematch
   while IFS= read -r -d '' path; do
-    lower="${path,,}"
     for pattern in "${policy_forbidden_paths[@]}"; do
       # shellcheck disable=SC2053 # the pattern is a glob
-      if [[ "$lower" == $pattern ]]; then
+      if [[ "$path" == $pattern ]]; then
         echo "$path: $pattern"
         found=0
         break
@@ -165,7 +166,7 @@ policy_forbidden_paths_in() {
     done
   done
   return "$found"
-}
+)
 
 # The author's identity without its date, as git will record it.
 policy_author() {

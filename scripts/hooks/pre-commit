@@ -24,23 +24,37 @@ stop() {
   exit 1
 }
 
+# run_for <seconds> <command...>: runs the command and stops it after the seconds, as timeout(1)
+# does. macOS has no timeout: there perl's alarm, which the command inherits, stops it.
+run_for() {
+  local seconds="$1"
+  shift
+  if command -v timeout >/dev/null; then
+    timeout "$seconds" "$@"
+  else
+    # shellcheck disable=SC2016 # perl's program
+    perl -e 'alarm shift @ARGV; exec { $ARGV[0] } @ARGV or exit 127' "$seconds" "$@"
+  fi
+}
+
 docker_reachable() {
-  timeout "$docker_timeout" docker info </dev/null >/dev/null 2>&1
+  run_for "$docker_timeout" docker info </dev/null >/dev/null 2>&1
 }
 
 # Prints the formatters and linters the image lacks, on one line; nothing when it has them all or
 # the look fails.
 missing_style_tools() {
   # shellcheck disable=SC2016 # code for the image's sh, which expands it
-  timeout "$image_timeout" docker run --rm "$1" sh -c \
+  run_for "$image_timeout" docker run --rm "$1" sh -c \
     'for tool in "$@"; do command -v "$tool" >/dev/null || printf "%s " "$tool"; done' \
     sh "${style_tools[@]}" </dev/null 2>/dev/null | sed 's/ $//'
 }
 
 # The user is in the docker group, but this session started before they joined it: only sg reaches
-# Docker.
+# Docker. macOS has no getent, and no sg either.
 docker_group_pending() {
   local user
+  command -v getent >/dev/null || return 1
   user="$(id -un 2>/dev/null)" && [[ -n "$user" ]] || return 1
   getent group docker | cut -d: -f4 | tr ',' '\n' | grep -qxF -- "$user" \
     && ! id -nG | tr ' ' '\n' | grep -qxF docker
@@ -85,7 +99,7 @@ main() {
   if [[ "${DWE_HOOK_RUNNER:-}" != "direct" ]]; then
     if ! docker_reachable; then
       if [[ -z "${DWE_HOOK_IN_SG:-}" ]] && command -v sg >/dev/null && docker_group_pending \
-        && timeout "$docker_timeout" sg docker -c 'docker info' </dev/null >/dev/null 2>&1; then
+        && run_for "$docker_timeout" sg docker -c 'docker info' </dev/null >/dev/null 2>&1; then
         exec sg docker -c "DWE_HOOK_IN_SG=1 $(printf '%q' "$0")"
       fi
       echo "pre-commit: Docker is not reachable, so the staged files are not formatted or linted;" \
@@ -93,7 +107,7 @@ main() {
       exit 0
     fi
     image="$("$dev" image-name)"
-    if ! timeout "$docker_timeout" docker image inspect "$image" </dev/null >/dev/null 2>&1; then
+    if ! run_for "$docker_timeout" docker image inspect "$image" </dev/null >/dev/null 2>&1; then
       echo "pre-commit: there is no image $image (scripts/dev.sh image builds it)," \
         "so the staged files are not formatted or linted; the gate checks them" >&2
       exit 0

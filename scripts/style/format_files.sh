@@ -26,9 +26,9 @@ check_tools() {
 
 format_cpp() {
   if $check; then
-    printf '%s\0' "$@" | xargs -0 -r -P "$jobs" -n 16 clang-format --dry-run --Werror
+    printf '%s\0' "$@" | xargs -0 -P "$jobs" -n 16 clang-format --dry-run --Werror
   else
-    printf '%s\0' "$@" | xargs -0 -r -P "$jobs" -n 16 clang-format -i
+    printf '%s\0' "$@" | xargs -0 -P "$jobs" -n 16 clang-format -i
   fi
 }
 
@@ -59,7 +59,8 @@ wrap_comments() {
 
 main() {
   check=false
-  jobs="$(nproc)"
+  # macOS has no nproc.
+  jobs="$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN)"
   while (($# > 0)); do
     case "$1" in
       --check) check=true ;;
@@ -90,7 +91,8 @@ main() {
   ((${#cpp_files[@]} == 0)) || format_cpp "${cpp_files[@]}" || status=1
   ((${#lua_files[@]} == 0)) || format_lua "${lua_files[@]}" || status=1
   ((${#shell_files[@]} == 0)) || format_shell "${shell_files[@]}" || status=1
-  local comment_files=("${lua_files[@]}" "${shell_files[@]}")
+  # The ${...+...} forms: bash 3.2 (macOS's) counts an empty array as unset.
+  local comment_files=(${lua_files[@]+"${lua_files[@]}"} ${shell_files[@]+"${shell_files[@]}"})
   ((${#comment_files[@]} == 0)) || wrap_comments "${comment_files[@]}" || status=1
   return "$status"
 }
