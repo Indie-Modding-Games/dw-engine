@@ -1,8 +1,8 @@
 // Runs the gateway on this computer with node, for tests and trying the launcher against it
 // (README.md, "Probar en local"). Not deployed: Cloudflare runs worker.js by itself.
 //
-//   BETA_KEY=... GITHUB_TOKEN=... GITHUB_REPO=owner/repo [GITHUB_API=http://127.0.0.1:8765] \
-//     node apps/beta-gateway/dev/serve.js [--port 8787]
+//   BETA_KEY=... [BETA_KEY_PREVIOUS=...] GITHUB_TOKEN=... GITHUB_REPO=owner/repo \
+//     [GITHUB_API=http://127.0.0.1:8765] node apps/beta-gateway/dev/serve.js [--port 8787]
 //
 // Prints "listening <url>" once it accepts requests.
 import http from "node:http";
@@ -12,6 +12,7 @@ const portIndex = process.argv.indexOf("--port");
 const port = portIndex > 0 ? Number(process.argv[portIndex + 1]) : 8787;
 const env = {
   BETA_KEY: process.env.BETA_KEY,
+  BETA_KEY_PREVIOUS: process.env.BETA_KEY_PREVIOUS,
   GITHUB_TOKEN: process.env.GITHUB_TOKEN,
   GITHUB_REPO: process.env.GITHUB_REPO,
   GITHUB_API: process.env.GITHUB_API,

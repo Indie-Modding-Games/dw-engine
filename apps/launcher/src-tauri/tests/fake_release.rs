@@ -321,6 +321,8 @@ async fn through_the_beta_gateway() {
     let github = format!("http://127.0.0.1:{github_port}");
     let gateway = format!("http://127.0.0.1:{gateway_port}");
     const GITHUB_TOKEN: &str = "placeholder-github-token";
+    // The key before the last change: launchers that still carry it keep working.
+    const PREVIOUS_KEY: &str = "placeholder-previous-beta-key-0123456789";
 
     // One release: the game package, its manifest, a launcher bundle and its latest.json, which
     // names the bundle by its GitHub API URL (as the release workflow writes it).
@@ -359,6 +361,7 @@ async fn through_the_beta_gateway() {
             .arg(&gateway_program)
             .args(["--port", &gateway_port.to_string()])
             .env("BETA_KEY", KEY)
+            .env("BETA_KEY_PREVIOUS", PREVIOUS_KEY)
             .env("GITHUB_TOKEN", GITHUB_TOKEN)
             .env("GITHUB_REPO", REPO)
             .env("GITHUB_API", &github)
@@ -369,11 +372,15 @@ async fn through_the_beta_gateway() {
     wait_for(github_port);
     wait_for(gateway_port);
 
-    // No key or a wrong one: the "needs the key" failure.
+    // No key or a wrong one (an old launcher's after the key changed twice): the "update the
+    // launcher" failure.
     for wrong in [None, Some("not-the-beta-key".to_string()), Some(GITHUB_TOKEN.to_string())] {
         let refused = Client::new(&gateway, REPO, wrong).unwrap().latest(TESTING).await.unwrap_err();
         assert_eq!(refused.code, code::AUTH);
     }
+    // The previous key still opens the releases.
+    let previous = Client::new(&gateway, REPO, Some(PREVIOUS_KEY.into())).unwrap();
+    assert_eq!(previous.latest(TESTING).await.unwrap().tag, "v0.4.0-beta.1");
 
     // The key: the release, every file on the gateway, the game installed through a redirect
     // to the storage host (which refuses any request that carries a key).

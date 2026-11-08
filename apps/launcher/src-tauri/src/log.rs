@@ -38,9 +38,11 @@ pub fn line(text: &str) {
     }
 }
 
-/// Hides anything that looks like a GitHub token, in case one ever reaches a message.
+/// Hides the beta key and anything that looks like a GitHub token, in case one ever reaches a
+/// message.
 pub fn redact(text: &str) -> String {
     const PREFIXES: [&str; 5] = ["ghp_", "gho_", "ghu_", "ghs_", "github_pat_"];
+    let text = crate::beta_key::hide(text);
     let mut out = String::with_capacity(text.len());
     for (i, word) in text.split(' ').enumerate() {
         if i > 0 {

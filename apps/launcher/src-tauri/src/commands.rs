@@ -1,5 +1,5 @@
 //! The commands the launcher's page calls. They are the launcher's privileged surface (disc,
-//! keyring, downloads, starting programs): nothing else in the page can do these things, and a
+//! downloads, starting programs): nothing else in the page can do these things, and a
 //! future add-on bridge must not forward them.
 
 use base64::Engine;
@@ -11,7 +11,6 @@ use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_updater::UpdaterExt;
 
 use crate::auto_update::{self, Action, LastCheck};
-use crate::beta_key;
 use crate::content::{self, Identity};
 use crate::disc::{self, Pick};
 use crate::failure::{code, Failure, Result};
@@ -56,9 +55,6 @@ pub struct Status {
     content_extractor_version: Option<i32>,
     disc_source: Option<String>,
     disc_source_exists: bool,
-    /// The beta key: "saved", "none" or "unavailable" (no system keyring). The field and the
-    /// save_token / clear_token commands keep the page's names.
-    token: &'static str,
     signing_ready: bool,
     busy: bool,
     game_running: bool,
@@ -143,7 +139,6 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
     let content = content::content_folder(&data);
     let installed = content::has_base_pack(&content);
     let record = content::read_record(&content);
-    let token = key_state(state);
     Status {
         language: settings.language.clone(),
         launcher_version: launcher_version(app),
@@ -164,7 +159,6 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
         disc_source_exists: settings.disc_source.as_ref().is_some_and(|d| d.is_file()),
         disc_source: settings.disc_source.as_ref().map(|d| d.display().to_string()),
         game,
-        token,
         signing_ready: public_key(app).is_some(),
         busy: state.busy.load(Ordering::SeqCst),
         game_running: state.game_running.load(Ordering::SeqCst),
@@ -175,23 +169,6 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
         },
         links: crate::links::built_in(),
     }
-}
-
-fn key_state(state: &AppState) -> &'static str {
-    let mut cached = state.key_state.lock().unwrap();
-    if let Some(value) = *cached {
-        return value;
-    }
-    let value = match state.keys.get() {
-        Ok(Some(_)) => "saved",
-        Ok(None) => "none",
-        Err(failure) => {
-            log_line!("the system keyring cannot be used: {}", failure.detail);
-            "unavailable"
-        }
-    };
-    *cached = Some(value);
-    value
 }
 
 #[tauri::command]
@@ -214,8 +191,7 @@ pub fn background(state: State<'_, AppState>) -> Option<String> {
 
 fn client(state: &AppState) -> Result<Client> {
     let settings = state.settings.lock().unwrap().clone();
-    let key = state.keys.get().ok().flatten();
-    Client::new(&settings.api_base, &settings.repository, key)
+    Client::new(&settings.api_base, &settings.repository, state.beta_key.get())
 }
 
 fn channel(state: &AppState) -> UpdateChannel {
@@ -696,28 +672,6 @@ pub fn set_data_folder(app: AppHandle, state: State<'_, AppState>, path: Option<
         log_line!("data folder: {}", settings.data_folder().display());
     }
     *state.release.lock().unwrap() = None;
-    Ok(status_of(&app, &state))
-}
-
-/// Saves the beta key the tester pasted (empty: removes it).
-#[tauri::command]
-pub fn save_token(app: AppHandle, state: State<'_, AppState>, token: String) -> Result<Status> {
-    let saved = match beta_key::clean(&token) {
-        Some(key) => state.keys.set(&key).map(|()| "saved"),
-        None => state.keys.clear().map(|()| "none"),
-    };
-    let saved = saved.inspect_err(|f| log_line!("the beta key was not saved: {}", f.detail))?;
-    *state.key_state.lock().unwrap() = Some(saved);
-    log_line!("the beta key was saved in the system keyring");
-    *state.release.lock().unwrap() = None;
-    Ok(status_of(&app, &state))
-}
-
-#[tauri::command]
-pub fn clear_token(app: AppHandle, state: State<'_, AppState>) -> Result<Status> {
-    state.keys.clear()?;
-    *state.key_state.lock().unwrap() = Some("none");
-    log_line!("the beta key was removed");
     Ok(status_of(&app, &state))
 }
 

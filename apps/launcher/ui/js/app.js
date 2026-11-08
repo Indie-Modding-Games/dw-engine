@@ -869,28 +869,6 @@ function registerBuiltIns() {
     );
   });
 
-  section("token", "account", 0, "s.tokenTitle", (box) => {
-    const s = state.status;
-    const input = el("input", { type: "password", id: "tokenInput", autocomplete: "off", spellcheck: "false", disabled: s.token === "unavailable" });
-    const statusText = { saved: t("s.tokenSaved"), none: t("s.tokenNone"), unavailable: t("s.tokenUnavailable") }[s.token];
-    add(box,
-      el("p", { text: t("s.tokenBody") }),
-      el("p", { class: `status-line ${s.token === "saved" ? "accent" : s.token === "unavailable" ? "warning" : "muted"}`, role: "status", text: statusText }),
-      el("label", { for: "tokenInput", class: "field-label", text: t("s.tokenLabel") }),
-      el(
-        "div",
-        { class: "row" },
-        input,
-        el("button", {
-          class: "button primary", type: "button", text: t("s.tokenSave"), disabled: s.token === "unavailable",
-          onclick: () => { const value = input.value; input.value = ""; settingCall(() => api.saveToken(value)); },
-        }),
-        s.token === "saved" ? el("button", { class: "button subtle", type: "button", text: t("s.tokenClear"), onclick: () => settingCall(() => api.clearToken()) }) : null,
-      ),
-      el("p", { class: "muted small", text: t("s.tokenHint") }),
-    );
-  });
-
   section("disc", "disc", 0, "s.discTitle", (box) => {
     const s = state.status;
     add(box,

@@ -13,9 +13,11 @@
 // the gateway too; any other file is a 302 to GitHub's short-lived signed download URL, which
 // carries no token. The GitHub token never leaves the Worker.
 //
-// Settings: secret BETA_KEY (the shared key the testers paste), secret GITHUB_TOKEN (fine-grained,
-// read-only Contents on the repository), variable GITHUB_REPO (owner/repo). GITHUB_API (default
-// https://api.github.com) exists only for local tests. Plain JavaScript, no dependencies: the
+// Settings: secret BETA_KEY (the shared key, built into the launcher by the release workflow),
+// optional secret BETA_KEY_PREVIOUS (the key before a change, so launchers already handed out keep
+// working until they update), secret GITHUB_TOKEN (fine-grained, read-only Contents on the
+// repository), variable GITHUB_REPO (owner/repo). GITHUB_API (default https://api.github.com)
+// exists only for local tests. Plain JavaScript, no dependencies: the
 // whole Worker is this file.
 
 const DEFAULT_UPSTREAM = "https://api.github.com";
@@ -25,7 +27,8 @@ const USER_AGENT = "dwe-beta-gateway";
 const CACHE_SECONDS = 60;
 /** JSON release files up to this size are read and rewritten by the gateway; larger files redirect. */
 const MANIFEST_LIMIT = 1024 * 1024;
-/** A shorter BETA_KEY is treated as a mistake: the gateway refuses everything until it is fixed. */
+/** A shorter BETA_KEY (or BETA_KEY_PREVIOUS, when set) is treated as a mistake: the gateway
+ *  refuses everything until it is fixed. */
 const MIN_KEY_LENGTH = 24;
 const LISTING_SIZE = 100;
 
@@ -47,10 +50,10 @@ async function handle(request, env, ctx) {
   }
   const config = configuration(env);
   if (!config) {
-    console.error("beta-gateway: BETA_KEY, GITHUB_TOKEN or GITHUB_REPO is missing or too short");
+    console.error("beta-gateway: BETA_KEY, BETA_KEY_PREVIOUS, GITHUB_TOKEN or GITHUB_REPO is missing or too short");
     return message(503, "Gateway not configured");
   }
-  if (!(await authorized(request, config.key))) {
+  if (!(await authorized(request, config.keys))) {
     return message(401, "Bad credentials: this needs the beta key", { "WWW-Authenticate": 'Bearer realm="dwe beta"' });
   }
   const url = new URL(request.url);
@@ -73,26 +76,36 @@ async function handle(request, env, ctx) {
 }
 
 function configuration(env) {
-  const key = typeof env.BETA_KEY === "string" ? env.BETA_KEY.trim() : "";
-  const token = typeof env.GITHUB_TOKEN === "string" ? env.GITHUB_TOKEN.trim() : "";
-  const repo = typeof env.GITHUB_REPO === "string" ? env.GITHUB_REPO.trim() : "";
-  if (key.length < MIN_KEY_LENGTH || !token || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) return null;
-  const upstream = (typeof env.GITHUB_API === "string" && env.GITHUB_API.trim()) || DEFAULT_UPSTREAM;
-  return { key, token, repo, upstream: upstream.replace(/\/+$/, "") };
+  const text = (value) => (typeof value === "string" ? value.trim() : "");
+  const key = text(env.BETA_KEY);
+  const previous = text(env.BETA_KEY_PREVIOUS);
+  const token = text(env.GITHUB_TOKEN);
+  const repo = text(env.GITHUB_REPO);
+  if (key.length < MIN_KEY_LENGTH || (previous && previous.length < MIN_KEY_LENGTH)) return null;
+  if (!token || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) return null;
+  const upstream = text(env.GITHUB_API) || DEFAULT_UPSTREAM;
+  const keys = previous ? [key, previous] : [key];
+  return { keys, token, repo, upstream: upstream.replace(/\/+$/, "") };
 }
 
 // ---- The beta key -------------------------------------------------------------------------------
 
-/** Compares the request's bearer with the key in constant time (both hashed first, so neither
- *  the length nor the first differing byte shows in the timing). */
-async function authorized(request, key) {
+/** Compares the request's bearer with every accepted key in constant time: all hashed first, so
+ *  neither the length nor the first differing byte shows in the timing, and every key is always
+ *  compared, so the timing does not tell which one matched. */
+async function authorized(request, keys) {
   const header = request.headers.get("Authorization") || "";
   const match = /^Bearer\s+(.+)$/i.exec(header.trim());
   const given = match ? match[1].trim() : "";
-  const [a, b] = await Promise.all([sha256(given), sha256(key)]);
-  let difference = given.length === 0 ? 1 : 0;
-  for (let i = 0; i < a.length; i++) difference |= a[i] ^ b[i];
-  return difference === 0;
+  const [a, ...wanted] = await Promise.all([given, ...keys].map(sha256));
+  let matched = 0;
+  for (const b of wanted) {
+    let difference = 0;
+    for (let i = 0; i < a.length; i++) difference |= a[i] ^ b[i];
+    // 1 when difference is 0, else 0, without a branch.
+    matched |= ((difference - 1) >>> 8) & 1;
+  }
+  return given.length > 0 && matched === 1;
 }
 
 async function sha256(text) {

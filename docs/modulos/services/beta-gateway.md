@@ -5,7 +5,11 @@ dependencias) entre el [lanzador](../apps/launcher.md) y las versiones del repos
 habla con GitHub: pide las versiones, los paquetes del juego y sus propias actualizaciones a la pasarela, con la
 **clave de la beta** en la cabecera. Sin clave, o con otra, la pasarela no enseña nada.
 
-Cómo desplegarla, crear el token, generar y rotar la clave: el
+La clave va compilada dentro del lanzador (`release.yml`, desde el secreto del repositorio `DWE_BETA_KEY`, con el
+mismo valor que `BETA_KEY`): el probador nunca la escribe. Es una barrera ligera, no un secreto: el repositorio y sus
+versiones son públicos y quien tenga el lanzador puede sacarla.
+
+Cómo desplegarla, crear el token, generar y cambiar la clave: el
 [README de la pasarela](https://github.com/Indie-Modding-Games/dw-engine/blob/main/apps/beta-gateway/README.md).
 
 ```text
@@ -33,8 +37,11 @@ estable sin compilar nada ([publicar una versión](../apps/launcher.md#publicar-
 
 ## Reglas
 
-- **La clave** se compara en tiempo constante con el secreto `BETA_KEY` (24 caracteres como mínimo; con menos, la
-  pasarela lo rechaza todo). Sin ella: `401`, que el lanzador enseña como «Falta la clave de la beta o no es válida».
+- **La clave** se compara en tiempo constante con el secreto `BETA_KEY` y, si está puesto, con `BETA_KEY_PREVIOUS`,
+  la clave anterior durante un cambio, para que los lanzadores ya repartidos sigan funcionando hasta actualizarse
+  (las dos de 24 caracteres como mínimo; con menos, la pasarela lo rechaza todo). Sin ella: `401`, que el lanzador
+  enseña como «El servidor de la beta ya no acepta este lanzador. Actualiza el lanzador o vuelve a instalarlo desde
+  la última versión publicada.».
 - **Las URL** de los archivos (también las de dentro de `latest.json`) se reescriben para apuntar a la pasarela. El
   lanzador rechaza un archivo de otro servidor, así que la clave nunca sale hacia otro sitio.
 - **Las descargas grandes** no pasan por el Worker: la pasarela pide el archivo a GitHub sin seguir la redirección y
@@ -49,14 +56,17 @@ estable sin compilar nada ([publicar una versión](../apps/launcher.md#publicar-
 
 | Nombre | Tipo | Qué es |
 |---|---|---|
-| `BETA_KEY` | Secreto | La clave de la beta |
+| `BETA_KEY` | Secreto | La clave de la beta; el mismo valor que el secreto `DWE_BETA_KEY` del repositorio |
+| `BETA_KEY_PREVIOUS` | Secreto, opcional | La clave anterior, solo mientras dura un cambio de clave |
 | `GITHUB_TOKEN` | Secreto | El token de GitHub de solo lectura |
 | `GITHUB_REPO` | Texto | `Indie-Modding-Games/dw-engine` |
 | `GITHUB_API` | Texto | Solo en las pruebas locales: la URL del servidor que hace de GitHub |
 
 El lanzador lleva compilada la URL de la pasarela: `DWE_LAUNCHER_GATEWAY` al compilarlo a mano y la variable del
 repositorio `DWE_BETA_GATEWAY` en `release.yml`, que no compila sin ella. Sin URL apunta a
-`https://beta-gateway.invalid`, que no existe. `DWE_LAUNCHER_API` la cambia para una ejecución.
+`https://beta-gateway.invalid`, que no existe. `DWE_LAUNCHER_API` la cambia para una ejecución. La clave, igual:
+`DWE_LAUNCHER_BETA_KEY` al compilar (en `release.yml`, el secreto `DWE_BETA_KEY`, sin el que no publica) y
+`DWE_LAUNCHER_BETA_KEY` al ejecutar para una ejecución.
 
 ## Tests
 
@@ -67,8 +77,8 @@ scripts/launcher.sh test               # incluye through_the_beta_gateway, de pu
 
 `through_the_beta_gateway` (`apps/launcher/src-tauri/tests/fake_release.rs`) arranca un servidor que hace de GitHub
 (`apps/launcher/tools/fake_release_server.py`), la pasarela delante con `dev/serve.js` y el cliente del lanzador
-contra ella: sin clave, con otra, la lista de versiones, la instalación del juego y `latest.json`. La CI corre las dos
-cuando un pull request toca el lanzador, la pasarela o los scripts de publicación.
+contra ella: sin clave, con otra, con la anterior, la lista de versiones, la instalación del juego y `latest.json`.
+La CI corre las dos cuando un pull request toca el lanzador, la pasarela o los scripts de publicación.
 
 ## Pendiente
 

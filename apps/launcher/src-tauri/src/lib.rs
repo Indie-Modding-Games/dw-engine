@@ -1,6 +1,6 @@
 //! dwe's desktop launcher (docs/modulos/apps/launcher.md): reads the player's disc with dwx,
 //! keeps the game up to date from the repository's releases and starts it. Everything that
-//! touches the disc, the keyring, the network or other programs is a command here; the page only
+//! touches the disc, the network or other programs is a command here; the page only
 //! shows state and asks for these commands.
 
 pub mod addons;
@@ -31,7 +31,6 @@ use std::sync::{Arc, Mutex};
 
 use releases::Release;
 use settings::Settings;
-use beta_key::KeyStore;
 
 pub struct AppState {
     pub settings: Mutex<Settings>,
@@ -41,11 +40,8 @@ pub struct AppState {
     pub cancel: Arc<AtomicBool>,
     /// The newest release, as the last check saw it.
     pub release: Mutex<Option<Release>>,
-    /// The beta key's keyring entry.
-    pub keys: Box<dyn KeyStore>,
-    /// What the keyring said last ("saved", "none", "unavailable"): asked once, then kept, so
-    /// drawing the page never waits on the keyring.
-    pub key_state: Mutex<Option<&'static str>>,
+    /// The key the release server asks for (beta_key.rs).
+    pub beta_key: beta_key::BetaKey,
     pub game_running: AtomicBool,
     /// Community add-ons: safe mode, the last run's crash, installs waiting for the player.
     pub addons: addons::Runtime,
@@ -113,9 +109,24 @@ fn serve_addon(app: &tauri::AppHandle, path: &str) -> tauri::http::Response<Vec<
     response.body(served.body).expect("a response with plain headers")
 }
 
+/// A launcher with the beta key built in no longer needs the one an older launcher kept in the
+/// system keyring: removed once (Settings::old_beta_key_removed), on a thread of its own so the
+/// window never waits on the keyring.
+fn forget_old_beta_key(settings: &mut Settings) {
+    if beta_key::BUILT_IN.is_none() || settings.old_beta_key_removed {
+        return;
+    }
+    settings.old_beta_key_removed = true;
+    if let Err(failure) = settings.save() {
+        log_line!("the settings were not saved: {}", failure.detail);
+    }
+    std::thread::spawn(|| beta_key::remove_stored(&beta_key::Keyring));
+}
+
 pub fn run() {
-    let settings = Settings::load();
+    let mut settings = Settings::load();
     log::open(&settings.data_folder());
+    forget_old_beta_key(&mut settings);
     let safe_mode = std::env::args().any(|a| a == SAFE_MODE_FLAG);
     let addon_store = addons::AddonStore::new(&settings.data_folder());
     addon_store.clean_staging();
@@ -136,8 +147,7 @@ pub fn run() {
         busy: AtomicBool::new(false),
         cancel: Arc::new(AtomicBool::new(false)),
         release: Mutex::new(None),
-        keys: Box::new(beta_key::Keyring),
-        key_state: Mutex::new(None),
+        beta_key: beta_key::BetaKey::from_build(),
         game_running: AtomicBool::new(false),
         addons: addons::Runtime::new(safe_mode, crashed),
         run_marker,
@@ -164,8 +174,6 @@ pub fn run() {
             commands::set_language,
             commands::set_check_updates,
             commands::set_data_folder,
-            commands::save_token,
-            commands::clear_token,
             commands::open_logs,
             commands::install_launcher_update,
             commands::restart_launcher,

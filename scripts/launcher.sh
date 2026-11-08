@@ -17,6 +17,9 @@
 #                         against it); without it the build refuses every update
 #   DWE_LAUNCHER_GATEWAY  the beta gateway's URL to build with (apps/beta-gateway); without it
 #                         the build points at https://beta-gateway.invalid, which never answers
+#   DWE_LAUNCHER_BETA_KEY the beta key to build in (the gateway's BETA_KEY); without it the
+#                         launcher sends the one an older launcher kept in the system keyring, if
+#                         any. Passed to the container by name, never on a command line
 #   DWE_LAUNCHER_LINKS    the main screen's links to build with, a JSON object of https URLs by
 #   kind:
 #                         {"repo": ..., "community": ..., "web": ...}; kinds left out are not shown
@@ -104,6 +107,7 @@ run() {
     -e CARGO_TARGET_DIR="$target_dir" \
     -e DWE_LAUNCHER_PUBKEY="${DWE_LAUNCHER_PUBKEY:-}" \
     -e DWE_LAUNCHER_GATEWAY="${DWE_LAUNCHER_GATEWAY:-}" \
+    -e DWE_LAUNCHER_BETA_KEY \
     -e DWE_LAUNCHER_LINKS="${DWE_LAUNCHER_LINKS:-}" \
     -e TAURI_SIGNING_PRIVATE_KEY -e TAURI_SIGNING_PRIVATE_KEY_PASSWORD \
     -e APPIMAGE_EXTRACT_AND_RUN=1 -e NO_STRIP=1 \
