@@ -93,7 +93,7 @@ YamlNode movieToYaml(const MovieInfo& info) {
   video.set("first_frame", number(info.firstFrame));
   video.set("fps", std::move(fps));
   video.set("bitstream_version", number(info.bitstreamVersion));
-  video.set("chroma", YamlNode::scalar("420jpeg"));
+  video.set("chroma", YamlNode::scalar("420p10"));
   video.set("range", YamlNode::scalar("full"));
 
   YamlNode audio = null();

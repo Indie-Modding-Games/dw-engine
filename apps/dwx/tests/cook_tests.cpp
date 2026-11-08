@@ -407,12 +407,105 @@ TEST_CASE("the same movie cooks to the same AV1 bytes") {
   CHECK(u32At(*first, 24) == 3);
 }
 
-TEST_CASE("the video cooker turns down what is not an 8-bit 4:2:0 progressive Y4M") {
+// The same gradient as movieY4m in a 10-bit stream (C420p10), as dwx extract now writes the movies:
+// each luma sample four times the 8-bit one plus a fraction the 8-bit stream cannot hold.
+std::string movieY4m10(std::uint32_t width, std::uint32_t height, std::uint32_t frames) {
+  std::string y4m =
+      std::format("YUV4MPEG2 W{} H{} F30:1 Ip A1:1 C420p10 XCOLORRANGE=FULL\n", width, height);
+  const auto put = [&](unsigned sample) {
+    y4m += static_cast<char>(sample & 0xFFU);
+    y4m += static_cast<char>(sample >> 8U);
+  };
+  for (std::uint32_t frame = 0; frame < frames; ++frame) {
+    y4m += "FRAME\n";
+    for (std::uint32_t y = 0; y < height; ++y) {
+      for (std::uint32_t x = 0; x < width; ++x) {
+        put(((((x + frame) * 1020) / width) + ((y * 256) / height) + (x % 4)) & 0x3FFU);
+      }
+    }
+    for (std::size_t i = 0; i < 2 * std::size_t{(width + 1) / 2} * ((height + 1) / 2); ++i) {
+      put(512);
+    }
+  }
+  return y4m;
+}
+
+TEST_CASE("a 10-bit movie cooks to 10-bit AV1 that the engine reads at full depth") {
+  constexpr std::uint32_t Width = 64;
+  constexpr std::uint32_t Height = 48;
+  const std::string y4m = movieY4m10(Width, Height, 2);
+  const auto cooked = cookVideo(std::as_bytes(std::span{y4m}), {});
+  REQUIRE_MESSAGE(cooked.has_value(), (cooked ? std::string{} : cooked.error().message));
+  CHECK(u32At(*cooked, 24) == 2);
+  const TempFolder folder;
+  const auto path = folder.path() / "video.ivf";
+  folder.write("video.ivf",
+               std::string{reinterpret_cast<const char*>(cooked->data()), cooked->size()});
+  const DiskFileSystem disk;
+  auto file = disk.openFile(path);
+  REQUIRE(file.has_value());
+  auto reader = dwe::video::Av1Reader::open(std::move(*file), "video.ivf");
+  REQUIRE_MESSAGE(reader.has_value(), (reader ? std::string{} : reader.error().message));
+  dwe::video::YuvPicture picture;
+  const auto read = reader->read(picture);
+  REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+  REQUIRE(*read);
+  CHECK(picture.bitDepth == 10);
+  const std::size_t start = y4m.find("FRAME\n") + 6;
+  double error = 0.0;
+  for (std::size_t i = 0; i < picture.luma.size(); ++i) {
+    const unsigned source =
+        static_cast<unsigned char>(y4m[start + (2 * i)]) |
+        (static_cast<unsigned>(static_cast<unsigned char>(y4m[start + (2 * i) + 1])) << 8U);
+    error += std::abs(static_cast<int>(picture.luma[i]) - static_cast<int>(source));
+  }
+  // Within a quarter of an 8-bit level on average.
+  CHECK(error / static_cast<double>(picture.luma.size()) < 8.0);
+  CHECK(std::ranges::all_of(picture.blue,
+                            [](std::uint16_t sample) { return std::abs(int{sample} - 512) <= 2; }));
+}
+
+TEST_CASE("pictures convert to RGB with full-range BT.601 and interpolated chroma") {
+  dwe::video::YuvPicture picture{.width = 4,
+                                 .height = 2,
+                                 .bitDepth = 10,
+                                 .luma = std::vector<std::uint16_t>(8, 514),
+                                 .blue = {512, 512},
+                                 .red = {512, 1021}};
+  std::vector<std::byte> rgba;
+  dwe::video::toRgba(picture, rgba);
+  REQUIRE(rgba.size() == 32);
+  const auto red = [&](std::size_t x) { return std::to_integer<int>(rgba[x * 4]); };
+  const auto green = [&](std::size_t x) { return std::to_integer<int>(rgba[(x * 4) + 1]); };
+  // Grey on the left (128), the red chroma rising to the right through 3/4 - 1/4 mixes.
+  CHECK(red(0) == 128);
+  CHECK(green(0) == 128);
+  CHECK(std::to_integer<int>(rgba[3]) == 255);
+  CHECK(red(1) > red(0));
+  CHECK(red(2) > red(1));
+  CHECK(red(3) == 255);
+  CHECK(green(3) < green(2));
+  // Cr 1021 is +126.9 levels: R = 128.1 + 1.402 * 126.9 saturates, G = 128.1 - 0.714 * 126.9.
+  CHECK(green(3) == 38);
+  // The 8-bit grey of an old extraction converts to the same grey.
+  picture.bitDepth = 8;
+  picture.luma.assign(8, 128);
+  picture.blue = {128, 128};
+  picture.red = {128, 128};
+  dwe::video::toRgba(picture, rgba);
+  CHECK(std::ranges::all_of(std::span{rgba}.first(3),
+                            [](std::byte value) { return std::to_integer<int>(value) == 128; }));
+}
+
+TEST_CASE("the video cooker turns down what is not an 8- or 10-bit 4:2:0 progressive Y4M") {
   const auto fails = [](std::string_view text) {
     return !cookVideo(std::as_bytes(std::span{text}), {}).has_value();
   };
   CHECK(fails("not a video\n"));
   CHECK(fails("YUV4MPEG2 W4 H4 F30:1 Ip C444\nFRAME\n"));
+  CHECK(fails("YUV4MPEG2 W4 H4 F30:1 Ip C420p12\nFRAME\n"));
+  // A 10-bit frame takes two bytes a sample.
+  CHECK(fails("YUV4MPEG2 W4 H4 F30:1 Ip C420p10\nFRAME\n" + std::string(24, '\0')));
   CHECK(fails("YUV4MPEG2 W4 H4 F30:1 It C420jpeg\nFRAME\n"));
   CHECK(fails("YUV4MPEG2 W4 H4 F30:1 Ip C420jpeg\n"));
   // A frame cut short.

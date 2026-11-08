@@ -1,5 +1,6 @@
 #include <dwe/formats/video/media_files.hpp>
 
+#include <algorithm>
 #include <format>
 #include <limits>
 #include <string_view>
@@ -31,8 +32,26 @@ void appendLittleEndian(std::vector<std::byte>& out, std::uint32_t value, std::s
 } // namespace
 
 std::string y4mHeader(const Y4mFormat& format) {
-  return std::format("YUV4MPEG2 W{} H{} F{}:{} Ip A1:1 C420jpeg XCOLORRANGE=FULL\n", format.width,
-                     format.height, format.fpsNumerator, format.fpsDenominator);
+  return std::format("YUV4MPEG2 W{} H{} F{}:{} Ip A1:1 {} XCOLORRANGE=FULL\n", format.width,
+                     format.height, format.fpsNumerator, format.fpsDenominator,
+                     format.bitDepth == 10 ? "C420p10" : "C420jpeg");
+}
+
+std::uint16_t tenBitLuma(int precise) {
+  constexpr int Scale = 1023;
+  const int clamped = std::clamp(precise, 0, PreciseMax);
+  return static_cast<std::uint16_t>(((clamped * Scale) + (PreciseMax / 2)) / PreciseMax);
+}
+
+std::uint16_t tenBitChroma(int precise) {
+  constexpr int Scale = 1023;
+  constexpr int Grey = 128 * PreciseOne;
+  constexpr int TenBitGrey = 512;
+  // Rounded half away from zero, so grey's both sides are symmetric.
+  const int offset = (std::clamp(precise, 0, PreciseMax) - Grey) * Scale;
+  const int rounded = offset >= 0 ? (offset + (PreciseMax / 2)) / PreciseMax
+                                  : -((-offset + (PreciseMax / 2)) / PreciseMax);
+  return static_cast<std::uint16_t>(std::clamp(TenBitGrey + rounded, 0, 1023));
 }
 
 core::Result<void> appendY4mFrame(const Y4mFormat& format, const YCbCrFrame& frame,
@@ -48,6 +67,28 @@ core::Result<void> appendY4mFrame(const Y4mFormat& format, const YCbCrFrame& fra
   appendPlane(out, frame.y);
   appendPlane(out, frame.cb);
   appendPlane(out, frame.cr);
+  return {};
+}
+
+core::Result<void> appendY4mFrame(const Y4mFormat& format, const PreciseFrame& frame,
+                                  std::vector<std::byte>& out) {
+  const std::size_t luma = std::size_t{format.width} * format.height;
+  if (format.bitDepth != 10 || frame.width != format.width || frame.height != format.height ||
+      frame.y.size() != luma || frame.cb.size() != luma / 4 || frame.cr.size() != luma / 4) {
+    return core::fail(std::format("a {}x{} precise frame does not fit a {}x{} {}-bit stream",
+                                  frame.width, frame.height, format.width, format.height,
+                                  format.bitDepth));
+  }
+  out.reserve(out.size() + FrameMarker.size() + (3 * luma));
+  appendText(out, FrameMarker);
+  const auto append = [&](std::span<const std::int16_t> plane, auto convert) {
+    for (const std::int16_t sample : plane) {
+      appendLittleEndian(out, convert(sample), 2);
+    }
+  };
+  append(frame.y, tenBitLuma);
+  append(frame.cb, tenBitChroma);
+  append(frame.cr, tenBitChroma);
   return {};
 }
 

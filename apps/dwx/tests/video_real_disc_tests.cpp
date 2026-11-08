@@ -96,9 +96,10 @@ TEST_CASE("the user's disc: every movie is extracted without unknowns") {
     });
     REQUIRE_MESSAGE(streamed.has_value(), file.path, ": ", errorOf(streamed));
     CHECK(parts == frames + 1);
-    const std::size_t frameSize = 6 + (std::size_t{320} * 176 * 3 / 2);
+    // 10-bit samples, two bytes each.
+    const std::size_t frameSize = 6 + (std::size_t{320} * 176 * 3);
     CHECK(bytes - (frames * frameSize) ==
-          std::string_view{"YUV4MPEG2 W320 H176 F30:1 Ip A1:1 C420jpeg "
+          std::string_view{"YUV4MPEG2 W320 H176 F30:1 Ip A1:1 C420p10 "
                            "XCOLORRANGE=FULL\n"}
               .size());
   }

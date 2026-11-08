@@ -5,6 +5,7 @@
 #include <dwe/formats/video/mdec.hpp>
 #include <dwe/formats/video/media_files.hpp>
 #include <dwe/formats/video/movie.hpp>
+#include <dwe/formats/video/restore.hpp>
 #include <dwe/formats/video/str.hpp>
 #include <dwe/formats/video/xa_adpcm.hpp>
 
@@ -274,7 +275,7 @@ void findTableEntry(const Disc& disc, MovieInfo& info, Extraction& extraction, P
 }
 
 // The decoded video, written frame by frame: the frames' bitstreams stay in memory, their planes do
-// not.
+// not. Each frame is decoded precisely and cleaned up (formats/video restore.hpp) into 10 bits.
 OutputStream videoStream(std::shared_ptr<const std::vector<StrFrame>> frames,
                          const formats::video::Y4mFormat& format) {
   return [frames = std::move(frames), format](const ByteSink& sink) -> core::Result<void> {
@@ -284,10 +285,13 @@ OutputStream videoStream(std::shared_ptr<const std::vector<StrFrame>> frames,
     }
     std::vector<std::byte> buffer;
     for (const StrFrame& frame : *frames) {
-      const auto planes = formats::video::decodeFrame(frame.bitstream, format.width, format.height);
+      auto planes =
+          formats::video::decodePreciseFrame(frame.bitstream, format.width, format.height);
       if (!planes) {
         return core::fail(std::format("frame {}: {}", frame.number, planes.error().message));
       }
+      formats::video::deblock(*planes);
+      formats::video::dering(*planes);
       buffer.clear();
       if (auto appended = formats::video::appendY4mFrame(format, *planes, buffer); !appended) {
         return appended;
@@ -341,7 +345,8 @@ core::Result<Extraction> extractMovie(const Disc& disc, const IsoFile& file) {
     const formats::video::Y4mFormat format{.width = info.width,
                                            .height = info.height,
                                            .fpsNumerator = info.fpsNumerator,
-                                           .fpsDenominator = info.fpsDenominator};
+                                           .fpsDenominator = info.fpsDenominator,
+                                           .bitDepth = 10};
     auto frames = std::make_shared<const std::vector<StrFrame>>(std::move(demux->frames));
     extraction.outputs.push_back(OutputFile{.id = *video,
                                             .extension = "y4m",

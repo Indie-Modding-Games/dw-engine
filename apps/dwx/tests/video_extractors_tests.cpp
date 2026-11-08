@@ -183,14 +183,21 @@ TEST_CASE("a movie becomes its video, its audio and its document") {
         return {};
       });
   REQUIRE_MESSAGE(streamed.has_value(), errorOf(streamed));
-  const std::string header = "YUV4MPEG2 W16 H16 F30:1 Ip A1:1 C420jpeg XCOLORRANGE=FULL\n";
+  const std::string header = "YUV4MPEG2 W16 H16 F30:1 Ip A1:1 C420p10 XCOLORRANGE=FULL\n";
   CHECK(parts == 3);
-  REQUIRE(written.size() == header.size() + (std::size_t{2} * (6 + 256 + 128)));
+  REQUIRE(written.size() == header.size() + (std::size_t{2} * (6 + (2 * (256 + 128)))));
   CHECK(written.starts_with(header));
   CHECK(written.substr(header.size(), 6) == "FRAME\n");
-  // Every block is a DC of 0: mid grey.
-  CHECK(std::ranges::all_of(std::string_view{written}.substr(header.size() + 6, 384),
-                            [](char sample) { return static_cast<unsigned char>(sample) == 128; }));
+  // Every block is a DC of 0: mid grey, 10-bit little-endian. Luma 128 is 514 in the full
+  // 10-bit range, chroma's grey 512 (0x0200).
+  const std::string_view planes = std::string_view{written}.substr(header.size() + 6, 768);
+  const auto sampleAt = [&](std::size_t index) {
+    return static_cast<unsigned>(static_cast<unsigned char>(planes[index * 2])) |
+           (static_cast<unsigned>(static_cast<unsigned char>(planes[(index * 2) + 1])) << 8U);
+  };
+  for (std::size_t i = 0; i < 384; ++i) {
+    CHECK(sampleAt(i) == (i < 256 ? 514U : 512U));
+  }
 
   const OutputFile& audio = outputOf(*extraction, "movie/a/audio");
   CHECK(audio.extension == "wav");

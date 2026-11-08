@@ -108,6 +108,46 @@ TEST_CASE("the Y4M header and frames hold the planes as decoded") {
                   .has_value());
 }
 
+TEST_CASE("a 10-bit Y4M holds precise planes rescaled to the full 10-bit range") {
+  const Y4mFormat format{
+      .width = 16, .height = 16, .fpsNumerator = 30, .fpsDenominator = 1, .bitDepth = 10};
+  CHECK(y4mHeader(format) == "YUV4MPEG2 W16 H16 F30:1 Ip A1:1 C420p10 XCOLORRANGE=FULL\n");
+
+  // Black, white and the levels between map onto 0..1023; chroma's grey is 512 and its ends
+  // are symmetric around it.
+  CHECK(tenBitLuma(0) == 0);
+  CHECK(tenBitLuma(PreciseMax) == 1023);
+  CHECK(tenBitLuma(128 * PreciseOne) == 514);
+  CHECK(tenBitLuma(-5) == 0);
+  CHECK(tenBitChroma(128 * PreciseOne) == 512);
+  CHECK(tenBitChroma((128 * PreciseOne) + 16) == 516);
+  CHECK(tenBitChroma((128 * PreciseOne) - 16) == 508);
+  CHECK(tenBitChroma(0) == 0);
+  CHECK(tenBitChroma(PreciseMax) == 1021);
+
+  const PreciseFrame frame{.width = 16,
+                           .height = 16,
+                           .quantizationScale = 1,
+                           .y = std::vector<std::int16_t>(256, PreciseMax),
+                           .cb = std::vector<std::int16_t>(64, 128 * PreciseOne),
+                           .cr = std::vector<std::int16_t>(64, 0)};
+  Bytes out;
+  REQUIRE(appendY4mFrame(format, frame, out).has_value());
+  REQUIRE(out.size() == 6 + (2 * (256 + 128)));
+  CHECK(textOf(std::span{out}.first(6)) == "FRAME\n");
+  CHECK(out[6] == std::byte{0xFF});
+  CHECK(out[7] == std::byte{0x03});
+  CHECK(out[6 + 512] == std::byte{0x00});
+  CHECK(out[6 + 513] == std::byte{0x02});
+  CHECK(out[6 + 640] == std::byte{0x00});
+  CHECK(out[6 + 641] == std::byte{0x00});
+
+  // An 8-bit stream does not take precise planes.
+  CHECK_FALSE(appendY4mFrame({.width = 16, .height = 16, .fpsNumerator = 30, .fpsDenominator = 1},
+                             frame, out)
+                  .has_value());
+}
+
 TEST_CASE("a WAVE file holds 16-bit PCM after a 44-byte header") {
   const std::vector<std::int16_t> samples = {1, -1, 0x1234, -32768};
   const auto wav = encodeWav(samples, 2, 37800);

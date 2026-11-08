@@ -72,6 +72,11 @@ constexpr std::array Fingerprints{
     FingerprintRow{.version = 14,
                    .fingerprint = "f267bd3d03d77cd687031714369bfdb5e343ed6c",
                    .unseenBySyntheticDisc = true},
+    // The movies are decoded precisely, cleaned up and written in 10 bits: the synthetic disc has
+    // no movie.
+    FingerprintRow{.version = 15,
+                   .fingerprint = "f267bd3d03d77cd687031714369bfdb5e343ed6c",
+                   .unseenBySyntheticDisc = true},
 };
 
 std::vector<std::byte> bytesOf(std::initializer_list<unsigned> values) {
