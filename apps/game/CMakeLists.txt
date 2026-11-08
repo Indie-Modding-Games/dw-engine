@@ -3,6 +3,7 @@ dwe_add_app(game
     SOURCES
         src/autotest.cpp
         src/battle_ground.cpp
+        src/battle_scene_view.cpp
         src/battle_screen.cpp
         src/battle_screen_exit.cpp
         src/battle_screen_retreat.cpp

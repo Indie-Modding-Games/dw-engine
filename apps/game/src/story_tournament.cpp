@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "arena_lighting.hpp"
+#include "arena_view.hpp"
 #include "battle_motion.hpp"
 #include "place_command.hpp"
 
@@ -28,26 +29,9 @@ namespace {
 constexpr std::int32_t RivalDistance = 1000;
 // The id the battle holds the rival under (FieldScene::addStageFighter), past any script id.
 constexpr std::int32_t RivalFighter = 0x1000;
-// The arena's camera centres on its own background, wide enough that no bars show at any window
-// size (the original draws the arena over its whole 320 x 240 screen).
-constexpr float ArenaBackgroundScale = 100.0F;
-
 game::battle::Point pointOf(glm::vec3 world) {
   return {.x = static_cast<std::int32_t>(std::lround(world.x)),
           .z = static_cast<std::int32_t>(std::lround(world.z))};
-}
-
-// The original's z points into the screen, the world's out of it (core::fromOriginalAxes).
-game::battle::Point battlePointOf(game::tournament::ArenaPoint point) {
-  return {.x = point.x, .z = -point.z};
-}
-
-game::tournament::ArenaPoint arenaPointOf(game::battle::Point point) {
-  return {.x = point.x, .z = -point.z};
-}
-
-glm::vec3 worldOf(const std::array<std::int32_t, 3>& original) {
-  return assets::toWorldPosition(glm::ivec3{original[0], original[1], original[2]});
 }
 
 void placeCharacter(FieldScene& scene, Placement::Who who, glm::vec2 ground, float yaw) {
@@ -607,18 +591,7 @@ void StoryTournament::watchFight(const game::battle::Battle& fight) {
             .seconds = -1,
             .partnerDown = partner.defeated(),
             .rivalDown = rival.defeated()};
-  const game::battle::MoveCatalog& moves = fight.moves();
-  for (std::size_t i = 0; i < seen.figures.size(); ++i) {
-    const game::battle::Fighter& fighter = state.fighters.at(i);
-    game::tournament::FightFigure& figure = seen.figures.at(i);
-    figure.at = arenaPointOf(fighter.position);
-    // The facing is (sin, -cos) of the original's yaw in world axes.
-    figure.yaw = core::original::atan4096(fighter.facing.x, -fighter.facing.z) & 0xfff;
-    figure.moveRange.reset();
-    if (fighter.attack) {
-      figure.moveRange = static_cast<std::int32_t>(moves.at(fighter.attack->move).range);
-    }
-  }
+  seen.figures = fightFiguresOf(fight);
   if (state.matchClock) {
     // STD_DAMAGE: the HP each side lost since the match started.
     seen.partnerLost = state.matchClock->partnerStartHp - partner.hp;

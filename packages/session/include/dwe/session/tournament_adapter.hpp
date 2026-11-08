@@ -120,6 +120,9 @@ public:
     std::optional<game::tournament::ArenaMusic> music;
   };
   core::Result<ArenaStage> arenaStage(std::string_view map) const;
+  // The arena by its id in the rules (STD_ARENA_MODELS), as the versus picks it
+  // (vs_scene.c: VS_loadArenaAssets(VS_BATTLE_SETUP.stage)); it fails past the last one.
+  core::Result<ArenaStage> arenaStageAt(std::size_t index) const;
 
   // The bracket the cup shows before each match (data/stadium's tables and tournament.yaml's
   // bracket); nullptr for an extraction or a ruleset without them.
