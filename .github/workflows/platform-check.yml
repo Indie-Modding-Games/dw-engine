@@ -96,9 +96,12 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git "$root"
           git -C "$root" checkout "$(python3 -c 'import json; print(json.load(open("vcpkg.json"))["builtin-baseline"])')"
           "$root/bootstrap-vcpkg.sh" -disableMetrics
-          mkdir -p "$RUNNER_TEMP/vcpkg-cache"
+          # The sources' downloads go in the cache too, as in the development image: a source host that is
+          # down (lua.org) then stops only a run that has never downloaded it.
+          mkdir -p "$RUNNER_TEMP/vcpkg-cache/downloads"
           echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
           echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-cache" >> "$GITHUB_ENV"
+          echo "VCPKG_DOWNLOADS=$RUNNER_TEMP/vcpkg-cache/downloads" >> "$GITHUB_ENV"
 
       - name: Restore the vcpkg binary cache
         id: vcpkg-cache
