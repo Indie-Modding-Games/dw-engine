@@ -511,8 +511,11 @@ bool ScriptMotion::tick(std::int64_t character, Walk& move) {
 bool ScriptMotion::tick(std::int64_t character, MoveTo& move) {
   // tamer.c: tickEntityMoveTo. With no slide in progress it takes the step on this frame and moves
   // from the next; a slide ordered while another runs goes on with that one's step (the original
-  // keeps one step for every slot). Each axis stops on the point once past it, and the slide is
-  // done on the frame both are there.
+  // keeps one step for every slot). The slide is done on the frame both axes are at or past the
+  // point, and the character stays where that step left it: the original sets each axis on the
+  // point once past it, but the animation's own position, which the step moved too, overwrites it
+  // on the next animation tick (anim.c: applyRootMomentum), so an axis already past keeps stepping
+  // and the slide ends up to one step beyond the point.
   const glm::vec3 position = actors_->position(character);
   if (move.target && !move.aimed) {
     // tamer.c: tickEntityMoveTo aims at where the target stands on the first frame.
@@ -533,26 +536,12 @@ bool ScriptMotion::tick(std::int64_t character, MoveTo& move) {
     return false;
   }
   const glm::vec3 step{slideStep_->x, 0.0F, slideStep_->z};
-  const bool doneX = reached(position.x, move.point.x, step.x);
-  const bool doneZ = reached(position.z, move.point.z, step.z);
-  glm::vec3 clamped = position;
-  glm::vec3 velocity = step / rules_.frameSeconds;
-  if (doneX) {
-    clamped.x = move.point.x;
-    velocity.x = 0.0F;
-  }
-  if (doneZ) {
-    clamped.z = move.point.z;
-    velocity.z = 0.0F;
-  }
-  if (doneX || doneZ) {
-    actors_->place(character, clamped);
-  }
-  actors_->drive(character, velocity, Glide::Move);
-  if (doneX && doneZ) {
+  if (reached(position.x, move.point.x, step.x) && reached(position.z, move.point.z, step.z)) {
+    actors_->drive(character, {}, Glide::Move);
     slideStep_.reset();
     return true;
   }
+  actors_->drive(character, step / rules_.frameSeconds, Glide::Move);
   return false;
 }
 
@@ -570,7 +559,7 @@ bool ScriptMotion::tick(std::int64_t character, MoveToAxis& move) {
     actors_->drive(character, axis * (slideStep_->x / rules_.frameSeconds), Glide::Move);
     return false;
   }
-  actors_->place(character, position + (axis * (move.position - value)));
+  // It stays where its last step left it, up to one step past the position, as tickEntityMoveTo.
   actors_->drive(character, {}, Glide::Walk);
   slideStep_.reset();
   return true;

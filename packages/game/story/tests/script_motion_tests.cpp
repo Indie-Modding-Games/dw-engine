@@ -196,7 +196,7 @@ TEST_CASE("a move to a point ordered while another runs goes on with that one's 
   // mgen06's boss (script 194, section 0x35): play_animation(10, 28), entity_move_to(10, -4562,
   // 41, 20), delay(20), and again. Measured in the original: the second order comes while the
   // first slide is still on its way, and the slide goes on with the first step (-107, -12 there)
-  // and ends on the point (tamer.c: tickEntityMoveTo keeps one step, MOVE_TO_DELTA_X/Z, while
+  // until it is past the point (tamer.c: tickEntityMoveTo keeps one step, MOVE_TO_DELTA_X/Z, while
   // PREVIOUS_CAMERA_POS_INITIALIZED is set). Taking a new step from where it stands would make a
   // short one that the clip's own steps beat, and wait_for_entity(10) would never end.
   constexpr std::int64_t Boss = 10;
@@ -222,7 +222,9 @@ TEST_CASE("a move to a point ordered while another runs goes on with that one's 
   }
   REQUIRE(done());
   CHECK(frame <= 12);
-  CHECK(floor.actors[Boss].position.z == -41.0F); // the script's z runs the other way
+  // The script's z runs the other way: twenty steps of 32 from 600 leave it at -40, short of the
+  // point (-41), and the 21st takes it past and leaves it there.
+  CHECK(floor.actors[Boss].position.z == doctest::Approx(600.0F - (21.0F * 32.0F)));
 }
 
 TEST_CASE("a move to a point ordered after one ended takes a new step") {
@@ -245,9 +247,10 @@ TEST_CASE("a move to a point ordered after one ended takes a new step") {
   CHECK(floor.actors[Boss].velocity.z * FrameSeconds == doctest::Approx(-4.0F));
 }
 
-TEST_CASE("a move to a point closer than its count ends on the point at once") {
+TEST_CASE("a move to a point closer than its count ends at once where it stands") {
   // tickEntityMoveTo's step is 0 on an axis shorter than the count, and a 0 step is there once
-  // at or past the point the way up.
+  // at or past the point the way up. It sets the axis on the point, but the animation puts it
+  // back where it stands on its next tick (anim.c: applyRootMomentum).
   constexpr std::int64_t Boss = 10;
   Floor floor;
   floor.actors[Boss] = {.slot = 7, .position = {-4552.0F, 0.0F, -41.0F}};
@@ -258,7 +261,48 @@ TEST_CASE("a move to a point closer than its count ends on the point at once") {
   CHECK_FALSE(done());
   motion.scriptFrame();
   REQUIRE(done());
-  CHECK(floor.actors[Boss].position.x == -4562.0F);
+  CHECK(floor.actors[Boss].position.x == -4552.0F);
+}
+
+TEST_CASE("a move to a point ends where the step that takes it past the point leaves it") {
+  // The item shop keeper with the crate as the town's market opens (script 163, map entry):
+  // entity_move_to(7, -1232, 2903, 10) from (225, -143). Measured in the original: steps of
+  // (-1457 / 10, 3046 / 10) = (-145, 304) and it stops at (-1370, 3201), eleven steps on, not on
+  // the point: tickEntityMoveTo sets each axis on the point once past it, but the animation's own
+  // position, which the step moved too, overwrites it on its next tick (anim.c:
+  // applyRootMomentum).
+  constexpr std::int64_t Keeper = 7;
+  Floor floor;
+  floor.actors[Keeper] = {.slot = 4, .position = {225.0F, 0.0F, 143.0F}};
+  ScriptMotion motion{floor, MotionRules{.frameSeconds = FrameSeconds}};
+  motion.moveTo(Keeper, -1232, 2903, 10);
+  const auto done = motion.waitFor(Keeper);
+  int frame = 0;
+  for (; frame < 40 && !done(); ++frame) {
+    motion.scriptFrame();
+    floor.step();
+  }
+  REQUIRE(done());
+  CHECK(frame == 12);
+  CHECK(floor.actors[Keeper].position.x == doctest::Approx(-1370.0F));
+  CHECK(floor.actors[Keeper].position.z == doctest::Approx(-3201.0F)); // z runs the other way
+}
+
+TEST_CASE("a move to an axis position ends where the step that takes it past leaves it") {
+  // tickEntityMoveToAxis sets the axis on the position the same way, and the animation puts it
+  // back where the step left it.
+  constexpr std::int64_t Keeper = 7;
+  Floor floor;
+  floor.actors[Keeper] = {.slot = 4, .position = {225.0F, 0.0F, 0.0F}};
+  ScriptMotion motion{floor, MotionRules{.frameSeconds = FrameSeconds}};
+  motion.moveToAxis(Keeper, -1232, 0, 10);
+  const auto done = motion.waitFor(Keeper);
+  for (int frame = 0; frame < 40 && !done(); ++frame) {
+    motion.scriptFrame();
+    floor.step();
+  }
+  REQUIRE(done());
+  CHECK(floor.actors[Keeper].position.x == doctest::Approx(225.0F - (11.0F * 145.0F)));
 }
 
 TEST_CASE("a move to a point still ends on its own count when nothing holds it back") {
