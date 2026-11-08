@@ -4,11 +4,37 @@
 #
 # Cada `period_hours` horas de juego la zona tira si sigue con el clima de antes (`keep_chance`) o saca uno nuevo
 # por sus pesos. Un cambio se funde en `fade_seconds` segundos reales. Todos los mapas de una zona comparten clima.
-# Pesos: clear (despejado, soleado de día), cloudy (nublado), light_rain, heavy_rain, light_snow, heavy_snow; un
-# clima que falta no sale nunca.
+# Pesos: clear (despejado, soleado de día), cloudy (nublado), light_rain, heavy_rain, light_snow, heavy_snow, fog
+# (niebla), storm (tormenta: lluvia fuerte con viento, relámpagos y truenos) y wind (viento: hojas o polvo, según
+# `wind` de la zona); un clima que falta no sale nunca. Todos son solo aspecto.
 period_hours: 3
 keep_chance: 0.45
 fade_seconds: 8
+# Momentos del día: multiplican los pesos del clima como las estaciones y se apilan con ellas (los dos factores se
+# multiplican). `from` es la hora del día (0 a 23) en que empieza cada uno; dura hasta el siguiente. El reloj solo
+# tiene día (desde las 6), tarde (16) y noche (20): el amanecer es un momento propio de estas reglas. Cuenta el
+# momento en que empieza el periodo que tira el clima, como con las estaciones. Nunca cambian una regla.
+day_parts:
+  # Amanecer: nubes bajas y niebla; casi sin tormentas.
+  dawn: { from: 5, odds: { clear: 0.8, cloudy: 1.3, fog: 3, storm: 0.4, wind: 0.7 } }
+  # Día: más sol y viento, la niebla se levanta.
+  day: { from: 8, odds: { clear: 1.2, fog: 0.4, storm: 1.2, wind: 1.3 } }
+  # Tarde: chubascos y tormentas.
+  dusk: { from: 16, odds: { heavy_rain: 1.4, cloudy: 1.1, storm: 1.8, wind: 1.2 } }
+  # Noche: más despejada, algo de niebla.
+  night: { from: 20, odds: { clear: 1.1, heavy_rain: 0.8, fog: 1.5, storm: 0.8, wind: 0.8 } }
+# Frentes: un clima que una zona saca de nuevo (no el que sigue) puede viajar a las zonas vecinas (`neighbours` de cada
+# zona). Llega a una zona más cada `delay_hours` horas de juego, hasta `reach` zonas de distancia, y se queda allí
+# `period_hours` horas. Solo viajan los climas de `kinds` y solo llegan a una zona que puede tenerlos (con peso a esa
+# hora: un frente de nieve no entra en la jungla). Si llegan dos, gana el último en llegar. Sale de la semilla de
+# clima como todo lo demás: cargar una partida o cruzar de zona no lo cambia.
+fronts:
+  # Probabilidad de que un clima nuevo viaje.
+  chance: 0.2
+  delay_hours: 2
+  reach: 2
+  # La niebla es local: no viaja.
+  kinds: [cloudy, light_rain, heavy_rain, light_snow, heavy_snow, storm, wind]
 # Estaciones (opción «Estaciones», también mejora del motor): primavera, verano, otoño e invierno se turnan cada
 # `days` días de juego desde el año 0, día 0, empezando por la primavera. Con la opción apagada no hay estación y todo
 # es como sin este bloque. Nunca cambian una regla: solo el aspecto del escenario, partículas y las probabilidades
@@ -25,21 +51,25 @@ seasons:
   days: 3
   # Verdes frescos, pétalos, lluvia.
   spring:
-    odds: { clear: 1, cloudy: 1, light_rain: 1.5, heavy_rain: 1.2, light_snow: 0.4, heavy_snow: 0.3 }
+    odds: { clear: 1, cloudy: 1, light_rain: 1.5, heavy_rain: 1.2, light_snow: 0.4, heavy_snow: 0.3,
+            fog: 1.2, storm: 1.1, wind: 1.3 }
     grade: { foliage_hue: 105, foliage: 0.25, saturation: 1.18, gain: [1.0, 1.05, 0.97], lift: 0.015 }
     petals: 1
   # Luminoso y cálido, más sol.
   summer:
-    odds: { clear: 1.8, cloudy: 0.8, light_rain: 0.6, heavy_rain: 0.7, light_snow: 0.3, heavy_snow: 0.2 }
+    odds: { clear: 1.8, cloudy: 0.8, light_rain: 0.6, heavy_rain: 0.7, light_snow: 0.3, heavy_snow: 0.2,
+            fog: 0.5, storm: 1.6, wind: 0.9 }
     grade: { saturation: 1.15, gain: [1.1, 1.05, 0.9], lift: 0.02 }
   # Follaje naranja y marrón, hojas que caen, lluvia y nubes.
   autumn:
-    odds: { clear: 0.9, cloudy: 1.3, light_rain: 1.5, heavy_rain: 1.3, light_snow: 0.8, heavy_snow: 0.6 }
+    odds: { clear: 0.9, cloudy: 1.3, light_rain: 1.5, heavy_rain: 1.3, light_snow: 0.8, heavy_snow: 0.6,
+            fog: 1.5, storm: 0.9, wind: 1.4 }
     grade: { foliage_hue: 25, foliage: 0.42, saturation: 1.05, gain: [1.06, 0.97, 0.86] }
     leaves: 1
   # Frío y pálido: la lluvia cae como nieve.
   winter:
-    odds: { clear: 0.9, cloudy: 1.3, light_rain: 1, heavy_rain: 0.8, light_snow: 1.6, heavy_snow: 1.6 }
+    odds: { clear: 0.9, cloudy: 1.3, light_rain: 1, heavy_rain: 0.8, light_snow: 1.6, heavy_snow: 1.6,
+            fog: 1.2, storm: 0.3, wind: 1.3 }
     rain_to_snow: 0.75
     grade: { saturation: 0.6, gain: [0.94, 0.99, 1.08], lift: 0.07 }
 # Sin clima: además de estos, los mapas con hora fija (interiores, cuevas, edificios) nunca lo tienen.
@@ -58,79 +88,104 @@ no_weather:
   - leom*
   - ogre*
   - gcan11
+# Zonas. `neighbours`: las zonas de al lado, a las que viajan sus frentes (basta con listar un lado: cuentan en los
+# dos). Salen de las salidas entre mapas de zonas distintas (a pie o por los pasos de la historia); los teletransportes
+# de la ciudad no cuentan.
 areas:
   # Bosque Nativo, punta Coela, lago Ojo de Dragón y el puente: bosque, lluvia corriente.
   - id: native_forest
     maps: [mayo*]
-    weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1 }
+    weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1, fog: 1, storm: 1, wind: 1 }
+    neighbours: [file_city, mt_panorama, tropical_jungle, beetle_land]
   # Jungla tropical, manglar y bosque Amida: la zona más lluviosa.
   - id: tropical_jungle
     maps: [trop*]
-    weights: { clear: 3, cloudy: 2, light_rain: 3, heavy_rain: 2 }
+    weights: { clear: 3, cloudy: 2, light_rain: 3, heavy_rain: 2, fog: 1, storm: 2, wind: 1 }
+    neighbours: [native_forest, great_canyon, overdell, ancient_regions]
     # Trópico: las estaciones apenas lo mueven y nunca nieva.
     season_strength: 0.5
     snow_from_rain: false
   # Monte Panorama: montaña, nubes a menudo.
   - id: mt_panorama
     maps: [miha*]
-    weights: { clear: 4, cloudy: 4, light_rain: 2, heavy_rain: 1 }
+    weights: { clear: 4, cloudy: 4, light_rain: 2, heavy_rain: 1, fog: 2, storm: 1, wind: 2 }
+    neighbours: [native_forest, gear_savanna]
   # Overdell: tierra gris, casi siempre nublado.
   - id: overdell
     maps: [dgha*]
-    weights: { clear: 1, cloudy: 5, light_rain: 3, heavy_rain: 1 }
+    weights: { clear: 1, cloudy: 5, light_rain: 3, heavy_rain: 1, fog: 2, storm: 1, wind: 1 }
+    neighbours: [tropical_jungle, great_canyon]
   # Gran Cañón: seco.
   - id: great_canyon
     maps: [gcan*]
-    weights: { clear: 7, cloudy: 3, light_rain: 1 }
+    weights: { clear: 7, cloudy: 3, light_rain: 1, storm: 1, wind: 3 }
+    # Viento con polvo: zona seca.
+    wind: dust
+    neighbours: [tropical_jungle, overdell, freezeland]
     # Desierto: sigue seco y sin nieve en cualquier estación.
     season_strength: 0.4
     snow_from_rain: false
   # Sabana de engranajes: sol, alguna tormenta.
   - id: gear_savanna
     maps: [gias*]
-    weights: { clear: 6, cloudy: 3, light_rain: 1, heavy_rain: 1 }
+    weights: { clear: 6, cloudy: 3, light_rain: 1, heavy_rain: 1, storm: 1, wind: 2 }
+    # Viento con polvo: zona seca.
+    wind: dust
+    neighbours: [mt_panorama, factorial_town, geko_swamp]
     season_strength: 0.7
     snow_from_rain: false
   # Región glaciar antigua: nieve, nunca lluvia.
   - id: ancient_glacial
     maps: [koda01, koda02, koda03]
-    weights: { clear: 2, cloudy: 3, light_snow: 4, heavy_snow: 2 }
+    weights: { clear: 2, cloudy: 3, light_snow: 4, heavy_snow: 2, fog: 1, wind: 2 }
+    neighbours: [ancient_regions]
     # Siempre nieve: la estación solo la empuja un poco.
     season_strength: 0.4
   # Regiones dino y veloz antiguas.
   - id: ancient_regions
     maps: [koda*]
-    weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1 }
+    weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1, fog: 1, storm: 1, wind: 1 }
+    neighbours: [tropical_jungle, ancient_glacial]
   # Freezeland: nieve, nunca lluvia.
   - id: freezeland
     maps: [frzl*]
-    weights: { clear: 2, cloudy: 2, light_snow: 4, heavy_snow: 3 }
+    weights: { clear: 2, cloudy: 2, light_snow: 4, heavy_snow: 3, fog: 1, wind: 2 }
+    neighbours: [great_canyon, misty_trees]
     season_strength: 0.4
   # Tierra de los escarabajos: bosque.
   - id: beetle_land
     maps: [betl*]
-    weights: { clear: 4, cloudy: 3, light_rain: 2, heavy_rain: 1 }
-  # Árboles Brumosos: nublado y lluvia a menudo (la niebla es la del original).
+    weights: { clear: 4, cloudy: 3, light_rain: 2, heavy_rain: 1, fog: 1, storm: 1, wind: 1 }
+    neighbours: [native_forest, factorial_town]
+  # Árboles Brumosos: nublado, lluvia y niebla a menudo (más espesa sobre la del original).
   - id: misty_trees
     maps: [mist*]
-    weights: { clear: 1, cloudy: 4, light_rain: 3, heavy_rain: 1 }
-  # Pantano Geko: lluvia corriente.
+    weights: { clear: 1, cloudy: 4, light_rain: 3, heavy_rain: 1, fog: 3, storm: 1 }
+    neighbours: [geko_swamp, freezeland, toy_town]
+  # Pantano Geko: lluvia corriente, niebla y tormentas.
   - id: geko_swamp
     maps: [stic*]
-    weights: { clear: 2, cloudy: 3, light_rain: 3, heavy_rain: 2 }
+    weights: { clear: 2, cloudy: 3, light_rain: 3, heavy_rain: 2, fog: 3, storm: 2 }
+    neighbours: [gear_savanna, misty_trees, volume_villa]
   # Villa Volumen.
   - id: volume_villa
     maps: [gkyo*]
-    weights: { clear: 4, cloudy: 3, light_rain: 2 }
+    weights: { clear: 4, cloudy: 3, light_rain: 2, fog: 1, wind: 1 }
+    neighbours: [geko_swamp]
   # Ciudad de los Juguetes.
   - id: toy_town
     maps: [omoc*]
-    weights: { clear: 5, cloudy: 3, light_rain: 1 }
-  # Ciudad Factorial y la montaña de basura: humo, nublado a menudo.
+    weights: { clear: 5, cloudy: 3, light_rain: 1, wind: 1 }
+    neighbours: [misty_trees]
+  # Ciudad Factorial y la montaña de basura: humo, nublado y neblina a menudo.
   - id: factorial_town
     maps: [fact*, gomi*]
-    weights: { clear: 3, cloudy: 4, light_rain: 2 }
+    weights: { clear: 3, cloudy: 4, light_rain: 2, fog: 2, wind: 1 }
+    # Viento con polvo: zona seca.
+    wind: dust
+    neighbours: [gear_savanna, beetle_land]
   # Ciudad File y el gimnasio verde.
   - id: file_city
     maps: [twna*, twnb*, trai*]
-    weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1 }
+    weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1, fog: 1, storm: 1, wind: 1 }
+    neighbours: [native_forest]

@@ -97,6 +97,21 @@
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 1000
+              },
+              "fog": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "storm": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "wind": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
               }
             }
           },
@@ -109,6 +124,21 @@
           "snow_from_rain": {
             "description": "Whether a cold season turns part of the area's rain into snow (default true).",
             "type": "boolean"
+          },
+          "neighbours": {
+            "description": "Ids of the areas next to this one, where its weather fronts spread (both ways: listing one side is enough).",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]+$"
+            }
+          },
+          "wind": {
+            "description": "What the area's wind blows about: leaves (default) or dust (the dry areas).",
+            "enum": [
+              "leaves",
+              "dust"
+            ]
           }
         }
       }
@@ -144,6 +174,68 @@
           "$ref": "#/$defs/season"
         }
       }
+    },
+    "day_parts": {
+      "description": "Weather odds by part of the day, stacked on the season's: dawn, day, dusk and night, each from an hour of the day, in that order.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dawn",
+        "day",
+        "dusk",
+        "night"
+      ],
+      "properties": {
+        "dawn": {
+          "$ref": "#/$defs/dayPart"
+        },
+        "day": {
+          "$ref": "#/$defs/dayPart"
+        },
+        "dusk": {
+          "$ref": "#/$defs/dayPart"
+        },
+        "night": {
+          "$ref": "#/$defs/dayPart"
+        }
+      }
+    },
+    "fronts": {
+      "description": "Weather fronts: a weather an area rolls anew may spread to its neighbours, one more area every delay_hours, and stays a period there.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chance",
+        "delay_hours",
+        "reach"
+      ],
+      "properties": {
+        "chance": {
+          "description": "The chance that a weather rolled anew spreads.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "delay_hours": {
+          "description": "Game hours a front takes to reach the next area.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 240
+        },
+        "reach": {
+          "description": "How many areas away a front reaches.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "kinds": {
+          "description": "The weathers that travel; every one when left out.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/kind"
+          }
+        }
+      }
     }
   },
   "$defs": {
@@ -152,41 +244,7 @@
       "additionalProperties": false,
       "properties": {
         "odds": {
-          "description": "Multiplies the area's weight of each weather (1 leaves it as it is).",
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "clear": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10
-            },
-            "cloudy": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10
-            },
-            "light_rain": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10
-            },
-            "heavy_rain": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10
-            },
-            "light_snow": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10
-            },
-            "heavy_snow": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10
-            }
-          }
+          "$ref": "#/$defs/odds"
         },
         "rain_to_snow": {
           "type": "number",
@@ -246,6 +304,90 @@
           "minimum": 0,
           "maximum": 1,
           "description": "Leaves falling over the map, 0 to 1."
+        }
+      }
+    },
+    "kind": {
+      "description": "A weather an area can have.",
+      "enum": [
+        "clear",
+        "cloudy",
+        "light_rain",
+        "heavy_rain",
+        "light_snow",
+        "heavy_snow",
+        "fog",
+        "storm",
+        "wind"
+      ]
+    },
+    "odds": {
+      "description": "Multiplies the area's weight of each weather (1 leaves it as it is).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "clear": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "cloudy": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "light_rain": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "heavy_rain": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "light_snow": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "heavy_snow": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "fog": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "storm": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "wind": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        }
+      }
+    },
+    "dayPart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from"
+      ],
+      "properties": {
+        "from": {
+          "description": "The hour of the day the part starts at; it lasts until the next one.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 23
+        },
+        "odds": {
+          "$ref": "#/$defs/odds"
         }
       }
     }

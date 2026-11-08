@@ -9,6 +9,8 @@ namespace {
 
 // How strong light rain and snow are next to heavy.
 constexpr float Light = 0.45F;
+// A storm's wind, which slants its rain.
+constexpr float StormWind = 0.55F;
 
 float toward(float from, float to, float step) {
   return from < to ? std::min(from + step, to) : std::max(from - step, to);
@@ -30,12 +32,19 @@ float WeatherLook::intensity() const {
   case WeatherKind::LightSnow:
   case WeatherKind::HeavySnow:
     return snow;
+  case WeatherKind::Fog:
+    return fog;
+  case WeatherKind::Storm:
+    return storm;
+  case WeatherKind::Wind:
+    return wind;
   }
   return 0.0F;
 }
 
 bool WeatherLook::clear() const {
-  return cloudCover <= 0.0F && rain <= 0.0F && snow <= 0.0F && sunshine <= 0.0F;
+  return cloudCover <= 0.0F && rain <= 0.0F && snow <= 0.0F && sunshine <= 0.0F && fog <= 0.0F &&
+         storm <= 0.0F && wind <= 0.0F;
 }
 
 WeatherLook lookOf(WeatherKind kind) {
@@ -54,6 +63,12 @@ WeatherLook lookOf(WeatherKind kind) {
     return {.kind = kind, .cloudCover = 0.6F, .snow = Light};
   case WeatherKind::HeavySnow:
     return {.kind = kind, .cloudCover = 0.9F, .snow = 1.0F};
+  case WeatherKind::Fog:
+    return {.kind = kind, .cloudCover = 0.35F, .fog = 1.0F};
+  case WeatherKind::Storm:
+    return {.kind = kind, .cloudCover = 1.0F, .rain = 1.0F, .storm = 1.0F, .wind = StormWind};
+  case WeatherKind::Wind:
+    return {.kind = kind, .cloudCover = 0.2F, .wind = 1.0F};
   }
   return {};
 }
@@ -70,6 +85,9 @@ void WeatherBlend::advance(WeatherKind target, double seconds) {
   shown_.rain = toward(shown_.rain, to.rain, step);
   shown_.snow = toward(shown_.snow, to.snow, step);
   shown_.sunshine = toward(shown_.sunshine, to.sunshine, step);
+  shown_.fog = toward(shown_.fog, to.fog, step);
+  shown_.storm = toward(shown_.storm, to.storm, step);
+  shown_.wind = toward(shown_.wind, to.wind, step);
 }
 
 bool SeasonLook::neutral() const {

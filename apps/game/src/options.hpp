@@ -98,7 +98,7 @@ struct Options {
   // when not given.
   std::optional<render::TimeOfDay> time;
   // A weather forced on every map that has weather (--weather clear|cloudy|rain|heavy-rain|snow|
-  // heavy-snow|none), for captures; the climate's own weather otherwise.
+  // heavy-snow|fog|storm|wind|none), for captures; the climate's own weather otherwise.
   std::optional<game::weather::WeatherKind> weather;
   // A season forced in place of the calendar's (--season spring|summer|autumn|winter|none), for
   // captures: its look and its name, with the Seasons option on.

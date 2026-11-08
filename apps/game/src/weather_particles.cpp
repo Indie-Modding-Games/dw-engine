@@ -27,8 +27,13 @@ constexpr float SplashRadius = 5.0F;
 // How flat a splash ring is on the ground.
 constexpr float SplashFlatness = 0.4F;
 
+// How much farther right a drop moves for each pixel it falls in full wind.
+constexpr float WindSlant = 0.85F;
+
 // Snow.
 constexpr float SnowWind = 7.0F;
+// The snow's extra drift in full wind, in pixels a second.
+constexpr float SnowGust = 75.0F;
 constexpr float SnowSmallest = 0.7F;
 constexpr float SnowLargest = 1.9F;
 
@@ -48,6 +53,34 @@ constexpr std::array LeafColours{glm::vec3{0.90F, 0.48F, 0.12F}, glm::vec3{0.74F
 // Clouds: one tile of the noise covers this many background pixels, and they drift this fast.
 constexpr float CloudTile = 420.0F;
 constexpr glm::vec2 CloudWind{9.0F, 3.0F};
+
+// Fog: its wisps are a larger tile of the same noise drifting slowly, moving at this part of the
+// camera's pan (a haze between the camera and the ground); thicker at the top of the map (farther)
+// than at the bottom.
+constexpr float FogTile = 300.0F;
+constexpr glm::vec2 FogDrift{5.0F, 0.8F};
+constexpr float FogParallax = 0.6F;
+constexpr float FogFar = 0.62F;
+constexpr float FogNear = 0.26F;
+constexpr glm::vec3 FogDay{0.80F, 0.83F, 0.86F};
+constexpr glm::vec3 FogNight{0.17F, 0.20F, 0.26F};
+
+// Wind: leaves and dust in pixels a second, and the dry areas' dusty haze.
+constexpr float WindLeafSpeed = 120.0F;
+constexpr float WindDustSpeed = 160.0F;
+constexpr glm::vec3 DustHaze{0.80F, 0.66F, 0.46F};
+constexpr glm::vec4 DustMote{0.93F, 0.83F, 0.63F, 0.8F};
+// Light enough to show over grass: yellowed, brown, pale green and orange.
+constexpr std::array WindLeafColours{glm::vec3{0.80F, 0.68F, 0.28F}, glm::vec3{0.58F, 0.38F, 0.16F},
+                                     glm::vec3{0.66F, 0.78F, 0.32F},
+                                     glm::vec3{0.88F, 0.52F, 0.18F}};
+// How much faster the season's petals and leaves drift sideways in full wind.
+constexpr float FallingGust = 90.0F;
+
+// Lightning: how often a slot strikes and the flash's colour and strength over the map.
+constexpr float StrikeChance = 0.7F;
+constexpr glm::vec3 LightningColour{0.86F, 0.90F, 1.0F};
+constexpr float LightningBrightest = 0.6F;
 
 // Colours by day and by night.
 constexpr glm::vec3 OvercastDay{0.46F, 0.49F, 0.55F};
@@ -134,6 +167,25 @@ public:
     quads.push_back(quad);
   }
 
+  // The fog's haze: thicker at the top of the area than at the bottom, cut into wisps.
+  void fog(glm::vec3 colour, float far, float near) {
+    if (far <= 0.0F && near <= 0.0F) {
+      return;
+    }
+    WeatherQuad quad{.color = glm::vec4{colour, 1.0F},
+                     .cornerAlpha = {far, far, near, near},
+                     .shape = WeatherShape::Fog};
+    quad.corners = {frame_->areaOrigin, frame_->areaOrigin + glm::vec2{frame_->areaSize.x, 0.0F},
+                    frame_->areaOrigin + glm::vec2{0.0F, frame_->areaSize.y},
+                    frame_->areaOrigin + frame_->areaSize};
+    const glm::vec2 from = (frame_->scroll * FogParallax) +
+                           (FogDrift * static_cast<float>(std::fmod(frame_->seconds, 3600.0)));
+    const glm::vec2 size{width(), height()};
+    quad.uv = {from / FogTile, (from + glm::vec2{size.x, 0.0F}) / FogTile,
+               (from + glm::vec2{0.0F, size.y}) / FogTile, (from + size) / FogTile};
+    quads.push_back(quad);
+  }
+
   // A quad around a centre in original pixels, half sizes `half`.
   void blob(glm::vec2 centre, glm::vec2 half, glm::vec4 color, WeatherShape shape) {
     WeatherQuad quad{.color = color, .shape = shape};
@@ -181,7 +233,9 @@ void addRain(Builder& out, const WeatherLook& look, const WeatherFrame& frame) {
   const Count count = countOf(HeavyRainDrops, width, look.rain);
   const glm::vec4 color = glm::mix(RainNight, RainDay, frame.daylight);
   const float length = RainShortest + ((RainLongest - RainShortest) * std::min(look.rain, 1.0F));
-  const glm::vec2 fall = glm::normalize(glm::vec2{RainSlant, 1.0F});
+  // The wind slants the rain.
+  const float slant = RainSlant + (WindSlant * std::clamp(look.wind, 0.0F, 1.0F));
+  const glm::vec2 fall = glm::normalize(glm::vec2{slant, 1.0F});
   const auto seconds = static_cast<float>(std::fmod(frame.seconds, 86400.0));
   for (std::size_t i = 0; i < count.whole; ++i) {
     const float shown = i + 1 == count.whole ? count.last : 1.0F;
@@ -201,7 +255,7 @@ void addRain(Builder& out, const WeatherLook& look, const WeatherFrame& frame) {
                              Margin};
     if (local < fallSeconds) {
       const float left = (fallSeconds - local) * RainSpeed;
-      const glm::vec2 head = land - (glm::vec2{RainSlant, 1.0F} * left);
+      const glm::vec2 head = land - (glm::vec2{slant, 1.0F} * left);
       out.streak(head - (fall * length), head, {glm::vec3{color}, color.a * shown});
     } else {
       const float age = (local - fallSeconds) / SplashSeconds;
@@ -218,6 +272,8 @@ void addSnow(Builder& out, const WeatherLook& look, const WeatherFrame& frame) {
   const Count count = countOf(HeavySnowFlakes, out.width(), look.snow);
   const glm::vec4 color = glm::mix(SnowNight, SnowDay, frame.daylight);
   const auto seconds = static_cast<float>(std::fmod(frame.seconds, 86400.0));
+  // The wind drives the flakes sideways.
+  const float drift = SnowWind + (SnowGust * std::clamp(look.wind, 0.0F, 1.0F));
   constexpr float Tau = 2.0F * std::numbers::pi_v<float>;
   for (std::size_t i = 0; i < count.whole; ++i) {
     const float shown = i + 1 == count.whole ? count.last : 1.0F;
@@ -229,7 +285,7 @@ void addSnow(Builder& out, const WeatherLook& look, const WeatherFrame& frame) {
     const float swayRate = 0.2F + (0.45F * unit(i, 0, 4));
     const float phase = unit(i, 0, 5) * Tau;
     const glm::vec2 at{
-        wrap((unit(i, 0, 6) * width) + (SnowWind * depth * seconds) +
+        wrap((unit(i, 0, 6) * width) + (drift * depth * seconds) +
                  (sway * std::sin((Tau * swayRate * seconds) + phase)) - (frame.scroll.x * depth),
              width) -
             Margin,
@@ -239,10 +295,68 @@ void addSnow(Builder& out, const WeatherLook& look, const WeatherFrame& frame) {
   }
 }
 
+// The wind's leaves or dust motes blowing sideways across the map, and a few faint streaks of
+// moving air.
+void addWind(Builder& out, const WeatherLook& look, const WeatherFrame& frame) {
+  const float width = out.width() + (2.0F * Margin);
+  const float height = out.height() + (2.0F * Margin);
+  const auto seconds = static_cast<float>(std::fmod(frame.seconds, 86400.0));
+  const float light = 0.45F + (0.55F * frame.daylight);
+  const float strength = std::clamp(look.wind, 0.0F, 1.0F);
+  constexpr float Tau = 2.0F * std::numbers::pi_v<float>;
+  // Numbers of their own, so the wind never moves the snow's or the season's.
+  const std::uint64_t kind = frame.dust ? 0xD0570000ULL : 0x313D0000ULL;
+  const Count count = countOf(frame.dust ? WindDust : WindLeaves, out.width(), strength);
+  for (std::size_t n = 0; n < count.whole; ++n) {
+    const std::uint64_t i = kind + n;
+    const float shown = n + 1 == count.whole ? count.last : 1.0F;
+    const float depth = 0.6F + (0.6F * unit(i, 0, 1));
+    const float speed = (frame.dust ? WindDustSpeed : WindLeafSpeed) *
+                        (0.7F + (0.6F * unit(i, 0, 2))) * depth * (0.5F + (0.5F * strength));
+    const float bob =
+        (frame.dust ? 3.0F : 9.0F) *
+        std::sin((Tau * (0.3F + (0.5F * unit(i, 0, 3))) * seconds) + (Tau * unit(i, 0, 4)));
+    const float sink = frame.dust ? 0.0F : 10.0F * depth;
+    const glm::vec2 at{
+        wrap((unit(i, 0, 5) * width) + (speed * seconds) - (frame.scroll.x * depth), width) -
+            Margin,
+        wrap((unit(i, 0, 6) * height) + (sink * seconds) + bob - (frame.scroll.y * depth), height) -
+            Margin};
+    if (frame.dust) {
+      const float size = 1.0F + (1.2F * unit(i, 0, 7));
+      out.blob(at, {size * 2.6F, size * 1.2F}, {glm::vec3{DustMote} * light, DustMote.a * shown},
+               WeatherShape::Dot);
+      continue;
+    }
+    const float size = 3.4F + (1.6F * unit(i, 0, 7));
+    const float angle = (Tau * unit(i, 0, 8)) + ((4.0F + (4.0F * unit(i, 0, 9))) * seconds);
+    const float flip =
+        0.3F + (0.7F * std::abs(std::cos((3.0F * seconds) + (Tau * unit(i, 0, 10)))));
+    const glm::vec3 colour = WindLeafColours.at(static_cast<std::size_t>(unit(i, 0, 11) * 4.0F) %
+                                                WindLeafColours.size()) *
+                             light;
+    out.turned(at, {size, size * 0.55F * flip}, angle, {colour, 0.95F * shown}, WeatherShape::Leaf);
+  }
+  // Streaks of air: long, faint and fast.
+  const Count streaks = countOf(WindStreaks, out.width(), strength);
+  const glm::vec4 streak{1.0F, 1.0F, 1.0F, 0.3F * light};
+  for (std::size_t n = 0; n < streaks.whole; ++n) {
+    const std::uint64_t i = 0x5743A000ULL + n;
+    const float shown = n + 1 == streaks.whole ? streaks.last : 1.0F;
+    const float length = 30.0F + (40.0F * unit(i, 0, 1));
+    const float speed = 260.0F + (120.0F * unit(i, 0, 2));
+    const glm::vec2 head{
+        wrap((unit(i, 0, 3) * (width + length)) + (speed * seconds), width + length) - Margin,
+        (unit(i, 0, 4) * height) - Margin};
+    out.streak(head - glm::vec2{length, 0.0F}, head, {glm::vec3{streak}, streak.a * shown});
+  }
+}
+
 // Petals or leaves: `amount` of the most, falling slowly with the wind, swaying and tumbling.
 template <std::size_t Colours>
 void addFalling(Builder& out, float amount, float perScreen, bool leaves,
-                const std::array<glm::vec3, Colours>& colours, const WeatherFrame& frame) {
+                const std::array<glm::vec3, Colours>& colours, float wind,
+                const WeatherFrame& frame) {
   const float width = out.width() + (2.0F * Margin);
   const float height = out.height() + (2.0F * Margin);
   const Count count = countOf(perScreen, out.width(), amount);
@@ -265,7 +379,7 @@ void addFalling(Builder& out, float amount, float perScreen, bool leaves,
     const float swayRate = 0.18F + (0.3F * unit(i, 0, 4));
     const float phase = unit(i, 0, 5) * Tau;
     const glm::vec2 at{
-        wrap((unit(i, 0, 6) * width) + (FallingWind * depth * seconds) +
+        wrap((unit(i, 0, 6) * width) + ((FallingWind + (FallingGust * wind)) * depth * seconds) +
                  (sway * std::sin((Tau * swayRate * seconds) + phase)) - (frame.scroll.x * depth),
              width) -
             Margin,
@@ -299,13 +413,15 @@ std::vector<WeatherQuad> seasonQuads(const game::weather::SeasonLook& season,
   }
   WeatherFrame lit = frame;
   lit.daylight = std::clamp(frame.daylight, 0.0F, 1.0F);
+  // The wind blows them sideways too.
+  const float wind = std::clamp(weather.wind, 0.0F, 1.0F);
   const float falling = 1.0F - ((1.0F - FallingInWeather) *
                                 std::clamp(std::max(weather.rain, weather.snow), 0.0F, 1.0F));
   if (season.petals > 0.0F) {
-    addFalling(out, season.petals * falling, SeasonPetals, false, PetalColours, lit);
+    addFalling(out, season.petals * falling, SeasonPetals, false, PetalColours, wind, lit);
   }
   if (season.leaves > 0.0F) {
-    addFalling(out, season.leaves * falling, SeasonLeaves, true, LeafColours, lit);
+    addFalling(out, season.leaves * falling, SeasonLeaves, true, LeafColours, wind, lit);
   }
   return std::move(out.quads);
 }
@@ -331,6 +447,16 @@ std::vector<WeatherQuad> weatherQuads(const WeatherLook& look, const WeatherFram
   out.sky(tint > 0.0F ? tinted / tint : glm::vec3{0.0F}, tint, shadow);
   // A clear day is warmer and a little brighter.
   out.solid(Sunlight, look.sunshine * 0.09F * daylight, WeatherBlendMode::Additive);
+  // The fog's haze, paler by day and dark blue by night.
+  if (look.fog > 0.0F) {
+    const float fog = std::clamp(look.fog, 0.0F, 1.0F);
+    out.fog(glm::mix(FogNight, FogDay, daylight), FogFar * fog, FogNear * fog);
+  }
+  // Dry wind raises a dusty haze.
+  if (frame.dust) {
+    out.solid(DustHaze * (0.5F + (0.5F * daylight)), look.wind * 0.2F * (0.5F + (0.5F * daylight)),
+              WeatherBlendMode::Alpha);
+  }
   WeatherFrame lit = frame;
   lit.daylight = daylight;
   if (look.rain > 0.0F) {
@@ -339,7 +465,48 @@ std::vector<WeatherQuad> weatherQuads(const WeatherLook& look, const WeatherFram
   if (look.snow > 0.0F) {
     addSnow(out, look, lit);
   }
+  if (look.wind > 0.0F) {
+    addWind(out, look, lit);
+  }
+  // The lightning brightens the whole map, background and characters, for a moment.
+  if (look.storm > 0.0F) {
+    out.solid(LightningColour,
+              LightningBrightest * lightningFlash(frame.seconds) * std::min(look.storm, 1.0F),
+              WeatherBlendMode::Additive);
+  }
   return std::move(out.quads);
+}
+
+std::optional<LightningStrike> lightningStrike(std::int64_t slot) {
+  const auto key = static_cast<std::uint64_t>(slot) ^ 0x7A3D0000ULL;
+  if (unit(key, 0, 1) >= StrikeChance) {
+    return std::nullopt;
+  }
+  // It flashes in the slot early enough to fade within it.
+  const double at = (static_cast<double>(slot) * LightningSlotSeconds) +
+                    (static_cast<double>(unit(key, 0, 2)) * (LightningSlotSeconds - 1.0));
+  // A near strike is bright and its thunder comes soon; a far one is dim and late.
+  const float near = unit(key, 0, 3);
+  return LightningStrike{.at = at,
+                         .strength = 0.45F + (0.55F * near),
+                         .thunder = at + 0.4 + ((LongestThunderDelay - 0.4) * (1.0 - near))};
+}
+
+float lightningFlash(double seconds) {
+  const auto slot = static_cast<std::int64_t>(std::floor(seconds / LightningSlotSeconds));
+  const std::optional<LightningStrike> strike = lightningStrike(slot);
+  if (!strike) {
+    return 0.0F;
+  }
+  const auto since = static_cast<float>(seconds - strike->at);
+  if (since < 0.0F || since > 0.7F) {
+    return 0.0F;
+  }
+  // A first flicker and a second, brighter one just after.
+  constexpr float Second = 0.13F;
+  const float first = std::exp(-since * 14.0F);
+  const float again = since >= Second ? std::exp(-(since - Second) * 8.0F) : 0.0F;
+  return strike->strength * std::min(std::max(first * 0.8F, again), 1.0F);
 }
 
 std::vector<std::byte> cloudNoisePixels(std::uint32_t side) {

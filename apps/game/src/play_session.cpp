@@ -1789,7 +1789,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   const game::partner::PartnerState& partner = session.partner().state();
   scene_->setPartnerMood(partner.conditions, partner.mood.happiness);
   scene_->update(frameSeconds, alpha, fieldClock());
-  weatherAmbience_->update(scene_->weather(), frameSeconds);
+  weatherAmbience_->update(scene_->weather(), frameSeconds, scene_->weatherSeconds());
   // The season's name next to the day in the menu, when it changes.
   const auto season = scene_->season();
   const std::string_view seasonName =

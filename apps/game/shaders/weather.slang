@@ -1,7 +1,8 @@
 // The field's weather (apps/game WeatherDrawer, an engine improvement): screen quads over the scene and under the UI,
 // shaded by kind: a flat tint, a rain streak that fades toward its tail, a soft snowflake, a splash ring, a falling leaf
-// or petal (the seasons) and the sky's veil (a flat tint under the moving cloud shadows, cut out of a tileable noise
-// picture), in one pass.
+// or petal (the seasons), the sky's veil (a flat tint under the moving cloud shadows, cut out of a tileable noise
+// picture) and the fog's haze (its alpha a gradient from the vertices, broken into wisps by the same noise), in one
+// pass.
 import dwe.bindless;
 
 struct VertexIn {
@@ -93,6 +94,16 @@ float4 fragmentMain(VertexOut input) : SV_Target {
             discard;
         }
         return float4(lerp(input.color.rgb, float3(1.0, 1.0, 1.0), 0.15 * (1.0 - r)), a);
+    }
+    case 7u: {
+        // Fog: the vertices' alpha (thicker far up the map) thinned and thickened by the noise.
+        const float n = sampleTexture(input.info.x, SamplerLinearRepeat, input.uv).r;
+        alpha = lerp(0.55, 1.3, smoothstep(0.25, 0.8, n));
+        const float a = saturate(alpha * input.color.a);
+        if (a <= 0.002) {
+            discard;
+        }
+        return float4(input.color.rgb, a);
     }
     default:
         break;

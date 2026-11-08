@@ -1,7 +1,8 @@
 # weather
 
 El clima del campo (`dwe::game::weather`, capa `game`): despejado (soleado de día), nublado, lluvia ligera y fuerte,
-nieve ligera y fuerte, y las estaciones. **Mejora del motor**: el original no tiene clima ni estaciones. Son dos
+nieve ligera y fuerte, niebla, tormenta y viento, los frentes que viajan entre zonas, las probabilidades por momento
+del día y las estaciones. **Mejora del motor**: el original no tiene clima ni estaciones. Son dos
 opciones («Clima» / "Weather" y «Estaciones» / "Seasons"), activas por defecto, y nunca cambian una regla: stats,
 encuentros, comida, evolución, precios, eventos, tiempos y colisiones son los mismos con o sin ellas.
 
@@ -18,28 +19,31 @@ del `pack.yaml`), que lee `loadClimateRules`.
 - `fade_seconds` (8): segundos reales que tarda en fundirse un cambio.
 - `no_weather`: mapas sin clima (patrones con `*` al final). Además, ningún mapa con hora fija (interiores, cuevas,
   edificios, la arena del torneo) tiene clima, lo liste o no una zona.
-- `areas`: zonas con sus mapas y pesos (`clear`, `cloudy`, `light_rain`, `heavy_rain`, `light_snow`, `heavy_snow`;
-  el que falta no sale nunca). Todos los mapas de una zona comparten clima, así que no cambia al pasar de un mapa a
+- `areas`: zonas con sus mapas y pesos (`clear`, `cloudy`, `light_rain`, `heavy_rain`, `light_snow`, `heavy_snow`,
+  `fog`, `storm`, `wind`; el que falta no sale nunca), sus vecinas (`neighbours`, ver Frentes) y qué lleva su viento
+  (`wind`: `leaves`, hojas, por defecto, o `dust`, polvo, en las zonas secas). Todos los mapas de una zona comparten clima, así que no cambia al pasar de un mapa a
   otro de la misma zona. La primera zona que casa gana.
 
-| Zona | Mapas | Pesos (despejado / nublado / lluvia / lluvia fuerte / nieve / nieve fuerte) |
+| Zona | Mapas | Pesos (despejado / nublado / lluvia / lluvia fuerte / nieve / nieve fuerte / niebla / tormenta / viento) |
 |---|---|---|
-| Bosque Nativo | `mayo*` | 5 / 3 / 2 / 1 / - / - |
-| Jungla tropical | `trop*` | 3 / 2 / 3 / 2 / - / - |
-| Monte Panorama | `miha*` | 4 / 4 / 2 / 1 / - / - |
-| Overdell | `dgha*` | 1 / 5 / 3 / 1 / - / - |
-| Gran Cañón | `gcan*` (no `gcan11`) | 7 / 3 / 1 / - / - / - |
-| Sabana de engranajes | `gias*` | 6 / 3 / 1 / 1 / - / - |
-| Región glaciar antigua | `koda01`-`koda03` | 2 / 3 / - / - / 4 / 2 |
-| Regiones antiguas | resto de `koda*` | 5 / 3 / 2 / 1 / - / - |
-| Freezeland | `frzl*` | 2 / 2 / - / - / 4 / 3 |
-| Tierra de escarabajos | `betl*` | 4 / 3 / 2 / 1 / - / - |
-| Árboles Brumosos | `mist*` | 1 / 4 / 3 / 1 / - / - |
-| Pantano Geko | `stic*` | 2 / 3 / 3 / 2 / - / - |
-| Villa Volumen | `gkyo*` | 4 / 3 / 2 / - / - / - |
-| Ciudad de los Juguetes | `omoc*` | 5 / 3 / 1 / - / - / - |
-| Ciudad Factorial | `fact*`, `gomi*` | 3 / 4 / 2 / - / - / - |
-| Ciudad File | `twna*`, `twnb*`, `trai*` | 5 / 3 / 2 / 1 / - / - |
+| Bosque Nativo | `mayo*` | 5 / 3 / 2 / 1 / - / - / 1 / 1 / 1 |
+| Jungla tropical | `trop*` | 3 / 2 / 3 / 2 / - / - / 1 / 2 / 1 |
+| Monte Panorama | `miha*` | 4 / 4 / 2 / 1 / - / - / 2 / 1 / 2 |
+| Overdell | `dgha*` | 1 / 5 / 3 / 1 / - / - / 2 / 1 / 1 |
+| Gran Cañón | `gcan*` (no `gcan11`) | 7 / 3 / 1 / - / - / - / - / 1 / 3 (polvo) |
+| Sabana de engranajes | `gias*` | 6 / 3 / 1 / 1 / - / - / - / 1 / 2 (polvo) |
+| Región glaciar antigua | `koda01`-`koda03` | 2 / 3 / - / - / 4 / 2 / 1 / - / 2 |
+| Regiones antiguas | resto de `koda*` | 5 / 3 / 2 / 1 / - / - / 1 / 1 / 1 |
+| Freezeland | `frzl*` | 2 / 2 / - / - / 4 / 3 / 1 / - / 2 |
+| Tierra de escarabajos | `betl*` | 4 / 3 / 2 / 1 / - / - / 1 / 1 / 1 |
+| Árboles Brumosos | `mist*` | 1 / 4 / 3 / 1 / - / - / 3 / 1 / - |
+| Pantano Geko | `stic*` | 2 / 3 / 3 / 2 / - / - / 3 / 2 / - |
+| Villa Volumen | `gkyo*` | 4 / 3 / 2 / - / - / - / 1 / - / 1 |
+| Ciudad de los Juguetes | `omoc*` | 5 / 3 / 1 / - / - / - / - / - / 1 |
+| Ciudad Factorial | `fact*`, `gomi*` | 3 / 4 / 2 / - / - / - / 2 / - / 1 (polvo) |
+| Ciudad File | `twna*`, `twnb*`, `trai*` | 5 / 3 / 2 / 1 / - / - / 1 / 1 / 1 |
+
+Las zonas frías no tienen tormentas (su lluvia es nieve) y las secas no tienen niebla.
 
 Sin clima: `tunn*`, `room*`, `tend*`, `topn*`, `mgen*`, `yaka*`, `chka*`, `saib*`, `icsa*`, `leom*`, `ogre*`,
 `gcan11` y los mapas de hora fija.
@@ -63,10 +67,10 @@ Cada estación del bloque `seasons` de `field/weather.yaml` tiene:
 
 | Estación | Clima (multiplica) | Color | Partículas |
 |---|---|---|---|
-| Primavera | lluvia ×1,5, lluvia fuerte ×1,2, nieve ×0,4 | verdes hacia 105° (frescos) 0,25, saturación 1,18, algo más verde | pétalos |
-| Verano | despejado ×1,8, nublado ×0,8, lluvia ×0,6 | saturación 1,15, ganancia cálida (1,1 / 1,05 / 0,9), algo más claro | — |
-| Otoño | nublado ×1,3, lluvia ×1,5, lluvia fuerte ×1,3 | verdes hacia 25° (naranja, algo más oscuros) 0,42, ganancia (1,06 / 0,97 / 0,86) | hojas |
-| Invierno | nieve ×1,6, nublado ×1,3; 75 % de la lluvia como nieve | saturación 0,6, ganancia fría (0,94 / 0,99 / 1,08), más pálido (0,07) | — |
+| Primavera | lluvia ×1,5, lluvia fuerte ×1,2, nieve ×0,4, viento ×1,3, niebla ×1,2 | verdes hacia 105° (frescos) 0,25, saturación 1,18, algo más verde | pétalos |
+| Verano | despejado ×1,8, nublado ×0,8, lluvia ×0,6, tormenta ×1,6, niebla ×0,5 | saturación 1,15, ganancia cálida (1,1 / 1,05 / 0,9), algo más claro | — |
+| Otoño | nublado ×1,3, lluvia ×1,5, lluvia fuerte ×1,3, niebla ×1,5, viento ×1,4 | verdes hacia 25° (naranja, algo más oscuros) 0,42, ganancia (1,06 / 0,97 / 0,86) | hojas |
+| Invierno | nieve ×1,6, nublado ×1,3, tormenta ×0,3; 75 % de la lluvia como nieve | saturación 0,6, ganancia fría (0,94 / 0,99 / 1,08), más pálido (0,07) | — |
 
 Las zonas con clima propio guardan su identidad: `season_strength` acerca la estación a «sin cambio» (los factores,
 el color y las partículas) y `snow_from_rain: false` impide la nieve.
@@ -87,10 +91,83 @@ El aspecto es `SeasonLook` (color, pétalos y hojas); `SeasonBlend` lo funde com
 de estación a medianoche, y cambia de golpe al entrar a otra zona, a un mapa sin clima (neutro) o al cambiar la
 opción. Solo hay estación visible en los mapas con clima: los interiores, cuevas y mapas de hora fija no cambian.
 
+## Momentos del día
+
+El bloque `day_parts` de `field/weather.yaml` da probabilidades por momento del día: amanecer (`dawn`), día (`day`),
+tarde (`dusk`) y noche (`night`). Cada uno tiene `from`, la hora del día (0 a 23) en que empieza (dura hasta el
+siguiente; la noche sigue hasta el amanecer), y `odds`, que multiplica el peso de cada clima como los de las
+estaciones. Se apilan: con estaciones, el peso es el de la zona por el factor de la estación (acercado a 1 por
+`season_strength`) por el del momento del día. Los momentos del día no dependen de la opción «Estaciones» ni de
+`season_strength`.
+
+El reloj del juego solo tiene día (desde las 6), tarde (16) y noche (20), y el amanecer no existe; por eso las horas
+son datos de estas reglas. Las del paquete siguen al reloj en la tarde y la noche y ponen el amanecer de 5 a 8.
+
+| Momento | Desde | Clima (multiplica) |
+|---|---|---|
+| Amanecer | 5 | niebla ×3, nublado ×1,3, despejado ×0,8, viento ×0,7, tormenta ×0,4 |
+| Día | 8 | viento ×1,3, despejado ×1,2, tormenta ×1,2, niebla ×0,4 |
+| Tarde | 16 | tormenta ×1,8, lluvia fuerte ×1,4, viento ×1,2, nublado ×1,1 |
+| Noche | 20 | niebla ×1,5, despejado ×1,1, lluvia fuerte ×0,8, tormenta ×0,8, viento ×0,8 |
+
+Así hay más niebla al amanecer (y algo de noche) y más tormentas por la tarde.
+
+Como con las estaciones, cuenta el momento en que empieza el periodo que tira el clima (`dayPartOfHour`), así que un
+clima sacado al final de la tarde puede seguir de noche. `oddsWeights(rules, area, season, part)` da los pesos con
+los dos factores, en centésimas; sin bloque `day_parts` el clima sale exactamente como antes.
+
+## Frentes
+
+Un clima que una zona saca de nuevo (un periodo que no sigue con el de antes) puede viajar a las zonas de al lado, como
+un frente. Es solo aspecto: ninguna regla lo lee. Los datos son el bloque `fronts` de `field/weather.yaml` y la lista
+`neighbours` de cada zona:
+
+- `chance` (0,2): probabilidad de que un clima nuevo viaje. Con 0,2 el tiempo de una zona cambia unas 5,6 veces al día
+  en vez de 3,4 sin frentes; con 0,5 serían más de 7.
+- `delay_hours` (2): horas de juego que tarda en llegar a la zona siguiente; a dos zonas, el doble.
+- `reach` (2): hasta cuántas zonas de distancia llega.
+- `kinds`: los climas que viajan (nublado, lluvias, nevadas, tormenta y viento; la niebla es local); todos si falta.
+- `neighbours`: las zonas de al lado. Basta con listar un lado: cuentan en los dos.
+
+Llega a una zona a `distancia × delay_hours` horas del principio del periodo en que salió, y se queda allí
+`period_hours` horas; mientras está, es el clima de la zona. Solo llega a una zona que puede tener ese clima a esa
+hora (peso mayor que 0 con la estación y el momento del día), así que un frente de nieve nunca entra en la jungla ni
+en el cañón. Viaja el clima propio de la zona de salida, nunca uno que le llegó de otra. Si hay varios, gana el
+último en llegar, luego el más cercano, luego la primera zona de la lista.
+
+Las vecinas salen de las salidas entre mapas de zonas distintas (las de a pie y los pasos de la historia, como el del
+Bosque Nativo a la Tierra de escarabajos); los teletransportes de la ciudad no cuentan. Están escritas en el YAML y
+no se leen de los mapas al cargar, porque así un paquete las cambia sin tocar los mapas.
+
+| Zona | Vecinas |
+|---|---|
+| Ciudad File | Bosque Nativo |
+| Bosque Nativo | Ciudad File, Monte Panorama, Jungla tropical, Tierra de escarabajos |
+| Jungla tropical | Bosque Nativo, Gran Cañón, Overdell, Regiones antiguas |
+| Monte Panorama | Bosque Nativo, Sabana de engranajes |
+| Overdell | Jungla tropical, Gran Cañón |
+| Gran Cañón | Jungla tropical, Overdell, Freezeland |
+| Sabana de engranajes | Monte Panorama, Ciudad Factorial, Pantano Geko |
+| Regiones antiguas | Jungla tropical, Región glaciar antigua |
+| Freezeland | Gran Cañón, Árboles Brumosos |
+| Tierra de escarabajos | Bosque Nativo, Ciudad Factorial |
+| Árboles Brumosos | Pantano Geko, Freezeland, Ciudad de los Juguetes |
+| Pantano Geko | Sabana de engranajes, Árboles Brumosos, Villa Volumen |
+| Ciudad Factorial | Sabana de engranajes, Tierra de escarabajos |
+| Región glaciar antigua | Regiones antiguas |
+| Villa Volumen | Pantano Geko |
+| Ciudad de los Juguetes | Árboles Brumosos |
+
+`frontAt` dice el frente que hay sobre una zona a una hora (clima, zona de salida, hora de llegada, distancia) y
+`weatherAtHour` el clima que se ve: el del frente o, sin frente, el propio del periodo (`weatherAt`). `areaSteps` da
+la distancia entre dos zonas por sus vecinas.
+
 ## Determinismo
 
 `weatherAt(rules, area, seed, period)` es una función pura: el clima sale de un hash (splitmix64) de la semilla de
-clima, la zona y el periodo (`periodOf(rules, gameHour)`, horas desde el principio del reloj). No tira nunca los
+clima, la zona y el periodo (`periodOf(rules, gameHour)`, horas desde el principio del reloj). Los frentes también
+(`weatherAtHour(rules, area, seed, gameHour)`, que es lo que usa el campo): una tirada más por periodo y zona, así que
+cargar una partida o cruzar de zona no cambia el clima. No tira nunca los
 números aleatorios del juego, así que el orden de tiradas que compara el oráculo es el mismo con o sin clima.
 
 La semilla es el sistema de sesión `WeatherSeed` (`packages/session`, sección `weather` del guardado, `{seed}`). En una
@@ -99,7 +176,9 @@ no trae la sección y toma la misma semilla derivada, que se guarda en el siguie
 
 ## Transiciones
 
-`WeatherLook` es el aspecto del clima: cobertura de nubes, lluvia, nieve y sol, cada uno de 0 a 1. `WeatherBlend`
+`WeatherLook` es el aspecto del clima: cobertura de nubes, lluvia, nieve, sol, niebla (`fog`), relámpagos (`storm`)
+y viento (`wind`), cada uno de 0 a 1. La tormenta es nubes y lluvia a tope, relámpagos y algo de viento (0,55); el
+viento solo, pocas nubes y viento a tope; la niebla, algo de nube y niebla a tope. `WeatherBlend`
 lo lleva hacia el del clima que toca a `1 / fade_seconds` por segundo. Cambia de golpe (sin fundido) al entrar a otra
 zona o a un mapa sin clima, al cambiar la opción y con `--weather`.
 
@@ -112,6 +191,18 @@ zona o a un mapa sin clima, al cambiar la opción y con `--weather`.
   de día, gotas inclinadas con salpicaduras en el suelo, copos que caen con deriva. Tamaños y velocidades en píxeles
   del original, así que se ven igual a cualquier escala; la densidad sigue el ancho. De noche la lluvia y la nieve
   son más tenues, y el sol y las sombras de nubes se van.
+- Niebla: una capa de bruma (forma `Fog` del shader) sobre el rectángulo del fondo, más espesa arriba (lo lejano en
+  las cámaras fijas del campo) que abajo, con jirones que se mueven despacio (la misma textura de ruido, más grande
+  y con algo de paralaje). Su color es claro de día y azul oscuro de noche. Además apaga y aclara el escenario: el
+  color del mapa (`MapGrade`) pierde un 35 % de saturación y sube un poco (`lift`), encima del de la estación; el
+  fondo prerrenderizado se sigue viendo por debajo, solo más pálido.
+- Tormenta: la lluvia fuerte inclinada por su viento y relámpagos: `lightningStrike` decide por hash de cada tramo de
+  6 s si cae uno (7 de cada 10), cuándo y con qué fuerza; `lightningFlash` da un doble parpadeo de medio segundo que
+  aclara todo el mapa, fondo y personajes (un quad aditivo azulado).
+- Viento: hojas amarillentas, pardas, verde claro y naranja (26 por el ancho del original) o motas de polvo (70) que
+  cruzan de izquierda a derecha con algo de vaivén, unas rayas tenues de aire, y en las zonas de polvo un velo
+  arenoso. Inclina la lluvia (hasta 0,85 píxeles a la derecha por píxel que cae) y empuja de lado la nieve y los
+  pétalos y hojas de la estación.
 - `seasonQuads` (`weather_particles.cpp`) genera los pétalos (óvalos rosados) y las hojas (puntiagudas, con nervio;
   naranja, rojo, amarillo y marrón) que caen despacio con el viento, giran y se voltean. Pocos (18 pétalos o 14
   hojas por el ancho del original), un 40 % bajo lluvia o nieve fuerte, más tenues de noche.
@@ -125,16 +216,21 @@ zona o a un mapa sin clima, al cambiar la opción y con `--weather`.
 
 ## Sonido
 
-`WeatherAmbience` (`weather_ambience.cpp`) suena un bucle de lluvia y ráfagas de viento con la nieve, con su propio
-contador de hash. No hay grabaciones de lluvia ni viento en los bancos extraídos; usa sustitutos: lluvia
-`sound/esall/008/sample_004` (siseo continuo, en bucle con fundido cruzado de 0,25 s) y viento
-`sound/esall/011/sample_004`, cada 3 a 8 s. La API de audio no cambia el volumen de una voz sonando, así que el bucle
+`WeatherAmbience` (`weather_ambience.cpp`) suena un bucle de lluvia, ráfagas de viento con la nieve y con el viento,
+con su propio contador de hash, y los truenos de la tormenta. No hay grabaciones de lluvia, viento ni truenos en los
+bancos extraídos; usa sustitutos que se leen en tiempo de ejecución (nada de audio en el repositorio): lluvia
+`sound/esall/008/sample_004` (siseo continuo, en bucle con fundido cruzado de 0,25 s), viento
+`sound/esall/011/sample_004`, cada 3 a 8 s (hasta la mitad con viento fuerte), y trueno `sound/esall/005/sample_006`,
+un retumbo largo y grave, algo más lento. Cada trueno sale del mismo relámpago que se ve (`lightningStrike`), entre
+0,4 y 3,5 s después: los cercanos antes, más fuertes y menos graves. Va con los segundos de animación del clima
+(`FieldScene::weatherSeconds`), así que se para con la pausa y un salto (otro mapa, una carga) no suelta truenos
+viejos. La API de audio no cambia el volumen de una voz sonando, así que el bucle
 de lluvia se reinicia en escalones de volumen (`RainStep`). Un paquete puede cambiar esos clips por otros.
 
 ## Interfaz para la iluminación
 
 `FieldScene::weather()` devuelve el `WeatherLook` fundido de este fotograma (solo lectura): `cloudCover`, `rain`,
-`snow`, `sunshine`, `intensity()`. Una pasada de luz puede usarlo para bajar el sol o apagar las sombras con nubes sin
+`snow`, `sunshine`, `fog`, `storm`, `wind`, `intensity()`. Una pasada de luz puede usarlo para bajar el sol o apagar las sombras con nubes sin
 conocer el módulo ni sus reglas. `FieldScene::weatherArea()` dice la zona (`nullptr` sin clima).
 
 ## Opción y depuración
@@ -142,7 +238,7 @@ conocer el módulo ni sus reglas. `FieldScene::weatherArea()` dice la zona (`nul
 | Qué | Dónde | Notas |
 |---|---|---|
 | Opción «Clima» / "Weather" | Opciones del título y del menú de pausa; ajuste `weather` de `settings.yaml` | Mejora, activa por defecto; se aplica al momento |
-| `--weather <clima>` | Línea de órdenes | Fuerza un clima (`clear`, `sunny`, `cloudy`, `rain`, `heavy_rain`, `snow`, `heavy_snow`, `none`) en los mapas con clima |
+| `--weather <clima>` | Línea de órdenes | Fuerza un clima (`clear`, `sunny`, `cloudy`, `rain`, `heavy_rain`, `snow`, `heavy_snow`, `fog`, `storm`/`thunderstorm`, `wind`, `none`) en los mapas con clima |
 | Opción «Estaciones» / "Seasons" | Opciones del título y del menú de pausa, debajo de «Clima»; ajuste `seasons` de `settings.yaml` | Mejora, activa por defecto; se aplica al momento; apagada = como sin estaciones |
 | Nombre de la estación | Menú de pausa, tras el día (piel moderna; ajuste de UI `season`) | Vacío con la opción apagada; la piel original no tiene sitio |
 | `--season <estación>` | Línea de órdenes | Fuerza el aspecto y el nombre de una estación (`spring`, `summer`, `autumn`/`fall`, `winter`; el clima sigue el calendario); `none` las apaga como la opción |
@@ -154,15 +250,28 @@ conocer el módulo ni sus reglas. `FieldScene::weatherArea()` dice la zona (`nul
   invierno y más sol en verano en el bosque, las zonas de clima propio (Freezeland sigue nevando, la jungla y el
   cañón nunca nievan), apagadas = mismo clima en cada periodo que sin estaciones, fundido del aspecto, estaciones
   malas.
+- `dwe_weather_tests` (`day_parts_tests.cpp`): momento del día por hora (horas negativas y días siguientes), los
+  factores multiplican los pesos y se apilan con la estación, un momento sin lluvia no la saca nunca, sin bloque es
+  como antes, momentos malos.
+- `dwe_weather_tests` (`fronts_tests.cpp`): las vecinas del paquete van en los dos sentidos y unen todas las zonas;
+  un frente llega a la zona de al lado a las `delay_hours` horas y se queda un periodo; a dos zonas tarda el doble,
+  no pasa del alcance y no entra en una zona sin ese clima; función pura de semilla, zona y hora; ningún frente lleva
+  nieve a la jungla, el cañón ni la sabana; frentes y vecinas malos.
+- `dwe_weather_tests` (`kinds_tests.cpp`): nombres de niebla, tormenta y viento; su aspecto y su fundido; en el
+  paquete, polvo en las zonas secas, ni nieve en la jungla ni tormentas en Freezeland, mucha niebla en los Árboles
+  Brumosos; más niebla al amanecer y más tormentas por la tarde (pesos y tiradas); viento malo.
+- `dwe_weather_tests` (`schema_tests.cpp`): el `field/weather.yaml` del paquete cumple su esquema y carga.
 - `dwe_session_tests` (`weather_seed_tests.cpp`): los números aleatorios del juego y del partner son los mismos con y
   sin clima; ida y vuelta del guardado; guardado viejo sin sección; sección mala.
 - `dwe_game_tests` (`weather_particles_tests.cpp`): nada en despejado de noche, gotas y salpicaduras, determinismo,
-  copos, fundido a la mitad, nubes; pétalos y hojas (cuántos, se mueven, menos con lluvia, más tenues de noche).
+  copos, fundido a la mitad, nubes; pétalos y hojas (cuántos, se mueven, menos con lluvia, más tenues de noche);
+  niebla (una bruma más espesa arriba que se mueve), viento (hojas o polvo, se mueven, inclina la lluvia de la
+  tormenta), relámpagos (deterministas, dentro de su tramo, el trueno después, el quad aditivo del destello).
 
 ## Pendiente
 
 - Las estaciones no cambian los personajes ni el mapa del mundo; tampoco hay nieve acumulada en el suelo.
 
-- Niebla como clima propio.
 - La lluvia no se tapa bajo techos ni aleros (se dibuja sobre todo el fondo).
-- Grabaciones reales de lluvia y viento, y volumen por voz en la API de audio.
+- La niebla es un degradado de pantalla (más espesa arriba), no lee la profundidad de las capas del fondo.
+- Grabaciones reales de lluvia, viento y truenos, y volumen por voz en la API de audio.

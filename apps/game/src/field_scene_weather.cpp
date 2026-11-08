@@ -3,6 +3,8 @@
 #include <dwe/core/log.hpp>
 #include <dwe/game/weather/climate.hpp>
 
+#include <algorithm>
+
 #include "field_scene.hpp"
 
 namespace dwe::app {
@@ -21,14 +23,18 @@ float daylightOf(render::TimeOfDay time) {
   return 1.0F;
 }
 
-// The season's grade as the map renderer takes it; the lift (a paler picture) is gentler at night,
-// so the dark stays dark.
-render::MapGrade mapGradeOf(const game::weather::SeasonGrade& grade, float daylight) {
+// How much the fog dulls the scenery's colours and lifts it toward its pale haze.
+constexpr float FogDulls = 0.35F;
+constexpr float FogLifts = 0.05F;
+
+// The season's grade as the map renderer takes it, with the fog's on top (duller and paler); the
+// lift (a paler picture) is gentler at night, so the dark stays dark.
+render::MapGrade mapGradeOf(const game::weather::SeasonGrade& grade, float fog, float daylight) {
   return {.foliageHue = grade.foliageHue,
           .foliage = grade.foliage,
-          .saturation = grade.saturation,
+          .saturation = grade.saturation * (1.0F - (FogDulls * fog)),
           .gain = {grade.gain[0], grade.gain[1], grade.gain[2]},
-          .lift = grade.lift * (0.4F + (0.6F * daylight))};
+          .lift = (grade.lift + (FogLifts * fog)) * (0.4F + (0.6F * daylight))};
 }
 
 } // namespace
@@ -92,9 +98,9 @@ game::weather::WeatherKind FieldScene::weatherTarget() const {
   if (forcedWeather_) {
     return *forcedWeather_;
   }
-  return game::weather::weatherAt(*climate_, *weatherArea_, weatherSeed_,
-                                  game::weather::periodOf(*climate_, weatherHour()),
-                                  seasonsEnabled_);
+  // The area's own weather, or a front from an area around it.
+  return game::weather::weatherAtHour(*climate_, *weatherArea_, weatherSeed_, weatherHour(),
+                                      seasonsEnabled_);
 }
 
 void FieldScene::enterWeatherArea(std::string_view mapId, bool fixedTimeOfDay) {
@@ -117,7 +123,8 @@ void FieldScene::updateWeather(double frameSeconds, bool paused) {
     weatherSeconds_ += frameSeconds;
   }
   const game::weather::SeasonLook& season = seasonBlend_.look();
-  mapRenderer_->setGrade(mapGradeOf(season.grade, daylightOf(time_)));
+  mapRenderer_->setGrade(mapGradeOf(season.grade, std::clamp(weatherBlend_.look().fog, 0.0F, 1.0F),
+                                    daylightOf(time_)));
   const bool drawn = mapRenderer_->hasMap() && !mapLayerHidden_ && !stage_.sceneryHidden &&
                      !stage_.camera && (!weatherBlend_.look().clear() || !season.neutral());
   if (!drawn) {
@@ -131,7 +138,9 @@ void FieldScene::updateWeather(double frameSeconds, bool paused) {
                            .scale = camera.scale(),
                            .scroll = camera.scroll(),
                            .seconds = weatherSeconds_,
-                           .daylight = daylightOf(time_)};
+                           .daylight = daylightOf(time_),
+                           .dust = weatherArea_ != nullptr &&
+                                   weatherArea_->wind == game::weather::WindDebris::Dust};
   std::vector<WeatherQuad> quads = weatherQuads(weatherBlend_.look(), frame);
   std::vector<WeatherQuad> falling = seasonQuads(season, weatherBlend_.look(), frame);
   quads.insert(quads.end(), falling.begin(), falling.end());
