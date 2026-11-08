@@ -98,6 +98,22 @@ struct ClimateArea {
   float seasonStrength = 1.0F;
   // Whether a cold season turns part of its rain into snow.
   bool snowFromRain = true;
+  // The ids of the areas next to this one (a walk or a ride away), where its fronts spread. Both
+  // ways: an area listed by another is its neighbour too.
+  std::vector<std::string> neighbours;
+};
+
+// Weather fronts: a weather an area rolls anew may spread to the areas around it, one more area
+// every delayHours, and stays a period there (a purely visual drift: no rule reads it).
+struct FrontRules {
+  // The chance, from 0 to 1, that a weather an area rolls anew spreads; 0 for no fronts.
+  float chance = 0.0F;
+  // Game hours a front takes to reach the next area.
+  std::int32_t delayHours = 2;
+  // How many areas away a front reaches (1: only the neighbours).
+  std::int32_t reach = 1;
+  // The kinds that travel; every kind when empty.
+  std::vector<WeatherKind> kinds;
 };
 
 struct ClimateRules {
@@ -116,14 +132,19 @@ struct ClimateRules {
   std::int32_t seasonDays = 0;
   // Spring, summer, autumn and winter.
   std::array<SeasonRules, SeasonCount> seasons{};
+  FrontRules fronts;
 
   [[nodiscard]] bool hasSeasons() const { return seasonDays > 0; }
   [[nodiscard]] const SeasonRules& season(Season which) const {
     return seasons.at(static_cast<std::size_t>(which));
   }
 
+  [[nodiscard]] bool hasFronts() const { return fronts.chance > 0.0F && fronts.reach > 0; }
+
   // The area of a map: none for the maps without weather. `fixedTimeOfDay` is the map table's flag.
   [[nodiscard]] const ClimateArea* areaOf(std::string_view mapId, bool fixedTimeOfDay) const;
+  // An area by its id; none when no area has it.
+  [[nodiscard]] const ClimateArea* areaNamed(std::string_view id) const;
 };
 
 // Whether a map id matches a pattern: the same id, or a prefix of it when the pattern ends in `*`.
@@ -166,6 +187,37 @@ struct ClimateRules {
 // it (seasonalWeights); without, by the area's own, exactly as with no seasons at all.
 [[nodiscard]] WeatherKind weatherAt(const ClimateRules& rules, const ClimateArea& area,
                                     std::uint64_t seed, std::int64_t period, bool seasonal = false);
+
+// How many areas apart two areas are through their neighbours: 0 for the same area, nothing when
+// no chain of neighbours joins them.
+[[nodiscard]] std::optional<std::int32_t> areaSteps(const ClimateRules& rules,
+                                                    const ClimateArea& from, const ClimateArea& to);
+
+// A front over an area: the weather another area rolled anew, arrived after travelling `steps`
+// areas.
+struct Front {
+  WeatherKind kind = WeatherKind::None;
+  // The id of the area it started in.
+  std::string from;
+  // The game hour it arrived at; it stays periodHours from then.
+  std::int64_t arrived = 0;
+  std::int32_t steps = 0;
+};
+
+// The front over an area at a game hour, if any: an area `steps` away (1 to the fronts' reach)
+// rolled a new weather in the period that started steps * delayHours before it arrives (that
+// area's own weather, never one that reached it), its spread roll passed, the kind travels and the
+// area can have it at that hour (a weight above 0). When several are over it, the latest to arrive,
+// then the nearest, then the first area of the rules. A pure function, as weatherAt.
+[[nodiscard]] std::optional<Front> frontAt(const ClimateRules& rules, const ClimateArea& area,
+                                           std::uint64_t seed, std::int64_t gameHour,
+                                           bool seasonal = false);
+
+// The weather shown over an area at a game hour: the front over it if one is, otherwise its own
+// weather of the hour's period (weatherAt). The same as weatherAt without fronts.
+[[nodiscard]] WeatherKind weatherAtHour(const ClimateRules& rules, const ClimateArea& area,
+                                        std::uint64_t seed, std::int64_t gameHour,
+                                        bool seasonal = false);
 
 // A playthrough's weather seed from its game seed, so a new game started with --seed has the same
 // weather every time (a mix of the seed, never a roll of the game's random stream).

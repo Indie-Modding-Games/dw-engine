@@ -109,6 +109,14 @@
           "snow_from_rain": {
             "description": "Whether a cold season turns part of the area's rain into snow (default true).",
             "type": "boolean"
+          },
+          "neighbours": {
+            "description": "Ids of the areas next to this one, where its weather fronts spread (both ways: listing one side is enough).",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]+$"
+            }
           }
         }
       }
@@ -142,6 +150,43 @@
         },
         "winter": {
           "$ref": "#/$defs/season"
+        }
+      }
+    },
+    "fronts": {
+      "description": "Weather fronts: a weather an area rolls anew may spread to its neighbours, one more area every delay_hours, and stays a period there.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chance",
+        "delay_hours",
+        "reach"
+      ],
+      "properties": {
+        "chance": {
+          "description": "The chance that a weather rolled anew spreads.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "delay_hours": {
+          "description": "Game hours a front takes to reach the next area.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 240
+        },
+        "reach": {
+          "description": "How many areas away a front reaches.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "kinds": {
+          "description": "The weathers that travel; every one when left out.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/kind"
+          }
         }
       }
     }
@@ -248,6 +293,17 @@
           "description": "Leaves falling over the map, 0 to 1."
         }
       }
+    },
+    "kind": {
+      "description": "A weather an area can have.",
+      "enum": [
+        "clear",
+        "cloudy",
+        "light_rain",
+        "heavy_rain",
+        "light_snow",
+        "heavy_snow"
+      ]
     }
   }
 }

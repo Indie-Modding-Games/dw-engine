@@ -87,10 +87,58 @@ El aspecto es `SeasonLook` (color, pétalos y hojas); `SeasonBlend` lo funde com
 de estación a medianoche, y cambia de golpe al entrar a otra zona, a un mapa sin clima (neutro) o al cambiar la
 opción. Solo hay estación visible en los mapas con clima: los interiores, cuevas y mapas de hora fija no cambian.
 
+## Frentes
+
+Un clima que una zona saca de nuevo (un periodo que no sigue con el de antes) puede viajar a las zonas de al lado, como
+un frente. Es solo aspecto: ninguna regla lo lee. Los datos son el bloque `fronts` de `field/weather.yaml` y la lista
+`neighbours` de cada zona:
+
+- `chance` (0,2): probabilidad de que un clima nuevo viaje. Con 0,2 el tiempo de una zona cambia unas 5,6 veces al día
+  en vez de 3,4 sin frentes; con 0,5 serían más de 7.
+- `delay_hours` (2): horas de juego que tarda en llegar a la zona siguiente; a dos zonas, el doble.
+- `reach` (2): hasta cuántas zonas de distancia llega.
+- `kinds`: los climas que viajan (nublado, lluvias y nevadas); todos si falta.
+- `neighbours`: las zonas de al lado. Basta con listar un lado: cuentan en los dos.
+
+Llega a una zona a `distancia × delay_hours` horas del principio del periodo en que salió, y se queda allí
+`period_hours` horas; mientras está, es el clima de la zona. Solo llega a una zona que puede tener ese clima a esa
+hora (peso mayor que 0 con la estación y el momento del día), así que un frente de nieve nunca entra en la jungla ni
+en el cañón. Viaja el clima propio de la zona de salida, nunca uno que le llegó de otra. Si hay varios, gana el
+último en llegar, luego el más cercano, luego la primera zona de la lista.
+
+Las vecinas salen de las salidas entre mapas de zonas distintas (las de a pie y los pasos de la historia, como el del
+Bosque Nativo a la Tierra de escarabajos); los teletransportes de la ciudad no cuentan. Están escritas en el YAML y
+no se leen de los mapas al cargar, porque así un paquete las cambia sin tocar los mapas.
+
+| Zona | Vecinas |
+|---|---|
+| Ciudad File | Bosque Nativo |
+| Bosque Nativo | Ciudad File, Monte Panorama, Jungla tropical, Tierra de escarabajos |
+| Jungla tropical | Bosque Nativo, Gran Cañón, Overdell, Regiones antiguas |
+| Monte Panorama | Bosque Nativo, Sabana de engranajes |
+| Overdell | Jungla tropical, Gran Cañón |
+| Gran Cañón | Jungla tropical, Overdell, Freezeland |
+| Sabana de engranajes | Monte Panorama, Ciudad Factorial, Pantano Geko |
+| Regiones antiguas | Jungla tropical, Región glaciar antigua |
+| Freezeland | Gran Cañón, Árboles Brumosos |
+| Tierra de escarabajos | Bosque Nativo, Ciudad Factorial |
+| Árboles Brumosos | Pantano Geko, Freezeland, Ciudad de los Juguetes |
+| Pantano Geko | Sabana de engranajes, Árboles Brumosos, Villa Volumen |
+| Ciudad Factorial | Sabana de engranajes, Tierra de escarabajos |
+| Región glaciar antigua | Regiones antiguas |
+| Villa Volumen | Pantano Geko |
+| Ciudad de los Juguetes | Árboles Brumosos |
+
+`frontAt` dice el frente que hay sobre una zona a una hora (clima, zona de salida, hora de llegada, distancia) y
+`weatherAtHour` el clima que se ve: el del frente o, sin frente, el propio del periodo (`weatherAt`). `areaSteps` da
+la distancia entre dos zonas por sus vecinas.
+
 ## Determinismo
 
 `weatherAt(rules, area, seed, period)` es una función pura: el clima sale de un hash (splitmix64) de la semilla de
-clima, la zona y el periodo (`periodOf(rules, gameHour)`, horas desde el principio del reloj). No tira nunca los
+clima, la zona y el periodo (`periodOf(rules, gameHour)`, horas desde el principio del reloj). Los frentes también
+(`weatherAtHour(rules, area, seed, gameHour)`, que es lo que usa el campo): una tirada más por periodo y zona, así que
+cargar una partida o cruzar de zona no cambia el clima. No tira nunca los
 números aleatorios del juego, así que el orden de tiradas que compara el oráculo es el mismo con o sin clima.
 
 La semilla es el sistema de sesión `WeatherSeed` (`packages/session`, sección `weather` del guardado, `{seed}`). En una
@@ -154,6 +202,10 @@ conocer el módulo ni sus reglas. `FieldScene::weatherArea()` dice la zona (`nul
   invierno y más sol en verano en el bosque, las zonas de clima propio (Freezeland sigue nevando, la jungla y el
   cañón nunca nievan), apagadas = mismo clima en cada periodo que sin estaciones, fundido del aspecto, estaciones
   malas.
+- `dwe_weather_tests` (`fronts_tests.cpp`): las vecinas del paquete van en los dos sentidos y unen todas las zonas;
+  un frente llega a la zona de al lado a las `delay_hours` horas y se queda un periodo; a dos zonas tarda el doble,
+  no pasa del alcance y no entra en una zona sin ese clima; función pura de semilla, zona y hora; ningún frente lleva
+  nieve a la jungla, el cañón ni la sabana; frentes y vecinas malos.
 - `dwe_session_tests` (`weather_seed_tests.cpp`): los números aleatorios del juego y del partner son los mismos con y
   sin clima; ida y vuelta del guardado; guardado viejo sin sección; sección mala.
 - `dwe_game_tests` (`weather_particles_tests.cpp`): nada en despejado de noche, gotas y salpicaduras, determinismo,

@@ -37,6 +37,11 @@ constexpr std::int64_t LongestRun = 8;
 // The salts of the two rolls of a period.
 constexpr std::uint64_t KeepSalt = 1;
 constexpr std::uint64_t KindSalt = 2;
+// The salt of a new weather's roll to spread as a front.
+constexpr std::uint64_t SpreadSalt = 3;
+// The most areas a front can cross, and the longest it can take to cross one.
+constexpr std::int32_t LongestReach = 16;
+constexpr std::int32_t LongestDelay = 240;
 
 std::uint64_t splitmix(std::uint64_t value) {
   value += 0x9E3779B97F4A7C15ULL;
@@ -83,6 +88,16 @@ WeatherWeights readWeights(YamlReader& reader, const YamlNode& node) {
         reader.integer<std::uint32_t>(entry.value);
   }
   return weights;
+}
+
+WeatherKind readRolledKind(YamlReader& reader, const YamlNode& node) {
+  const std::string name = reader.text(node);
+  const auto kind = weatherKindNamed(name);
+  if (reader.ok() && (!kind || std::ranges::find(RolledKinds, *kind) == RolledKinds.end())) {
+    reader.fail(node, std::format("{} is not a weather an area can have", name));
+    return WeatherKind::None;
+  }
+  return kind.value_or(WeatherKind::None);
 }
 
 float readUnit(YamlReader& reader, const YamlNode& node, std::string_view what) {
@@ -188,6 +203,53 @@ void readSeasons(YamlReader& reader, const YamlNode& node, ClimateRules& rules) 
   }
 }
 
+void readFronts(YamlReader& reader, const YamlNode& node, FrontRules& fronts) {
+  if (!reader.expectKeys(node, "the fronts", {"chance", "delay_hours", "reach"}, {"kinds"})) {
+    return;
+  }
+  fronts.chance = readUnit(reader, reader.field(node, "chance"), "a front's chance");
+  fronts.delayHours = reader.integer<std::int32_t>(reader.field(node, "delay_hours"));
+  if (reader.ok() && (fronts.delayHours < 1 || fronts.delayHours > LongestDelay)) {
+    reader.fail(reader.field(node, "delay_hours"),
+                std::format("a front takes from 1 to {} hours to the next area", LongestDelay));
+  }
+  fronts.reach = reader.integer<std::int32_t>(reader.field(node, "reach"));
+  if (reader.ok() && (fronts.reach < 1 || fronts.reach > LongestReach)) {
+    reader.fail(reader.field(node, "reach"),
+                std::format("a front reaches from 1 to {} areas away", LongestReach));
+  }
+  if (const YamlNode* kinds = node.find("kinds")) {
+    for (const YamlNode& kind : reader.sequence(*kinds, "kinds")) {
+      fronts.kinds.push_back(readRolledKind(reader, kind));
+    }
+  }
+}
+
+// Makes every neighbour both ways and checks that each one is an area other than itself.
+void joinNeighbours(YamlReader& reader, const YamlNode& node, ClimateRules& rules) {
+  for (const ClimateArea& area : rules.areas) {
+    for (const std::string& id : area.neighbours) {
+      if (id == area.id) {
+        reader.fail(node, std::format("area {} is its own neighbour", area.id));
+        return;
+      }
+      if (rules.areaNamed(id) == nullptr) {
+        reader.fail(node, std::format("area {} has an unknown neighbour {}", area.id, id));
+        return;
+      }
+    }
+  }
+  for (std::size_t i = 0; i < rules.areas.size(); ++i) {
+    for (std::size_t n = 0; n < rules.areas[i].neighbours.size(); ++n) {
+      const std::string id = rules.areas[i].neighbours[n];
+      ClimateArea& other = *std::ranges::find(rules.areas, id, &ClimateArea::id);
+      if (std::ranges::find(other.neighbours, rules.areas[i].id) == other.neighbours.end()) {
+        other.neighbours.push_back(rules.areas[i].id);
+      }
+    }
+  }
+}
+
 // Floor division, so a time before year 0 still falls in a turn.
 std::int64_t floorDiv(std::int64_t value, std::int64_t by) {
   return value >= 0 ? value / by : -((-value + by - 1) / by);
@@ -242,6 +304,11 @@ bool mapMatches(std::string_view pattern, std::string_view mapId) {
   return pattern == mapId;
 }
 
+const ClimateArea* ClimateRules::areaNamed(std::string_view id) const {
+  const auto at = std::ranges::find(areas, id, &ClimateArea::id);
+  return at == areas.end() ? nullptr : &*at;
+}
+
 const ClimateArea* ClimateRules::areaOf(std::string_view mapId, bool fixedTimeOfDay) const {
   if (fixedTimeOfDay || mapId.empty()) {
     return nullptr;
@@ -268,7 +335,7 @@ core::Result<ClimateRules> parseClimateRules(std::string_view yaml) {
   ClimateRules rules;
   if (!reader.expectKeys(*tree, "the field weather",
                          {"period_hours", "keep_chance", "fade_seconds", "areas"},
-                         {"no_weather", "seasons"})) {
+                         {"no_weather", "seasons", "fronts"})) {
     return std::unexpected{reader.error("field weather")};
   }
   rules.periodHours = reader.integer<std::int32_t>(reader.field(*tree, "period_hours"));
@@ -288,17 +355,23 @@ core::Result<ClimateRules> parseClimateRules(std::string_view yaml) {
   }
   for (const YamlNode& node : reader.sequence(reader.field(*tree, "areas"), "areas")) {
     if (!reader.expectKeys(node, "an area", {"id", "maps", "weights"},
-                           {"season_strength", "snow_from_rain"})) {
+                           {"season_strength", "snow_from_rain", "neighbours"})) {
       break;
     }
-    ClimateArea area{.id = reader.text(reader.field(node, "id")),
-                     .maps = readMaps(reader, reader.field(node, "maps"), "maps"),
-                     .weights = readWeights(reader, reader.field(node, "weights"))};
+    ClimateArea area;
+    area.id = reader.text(reader.field(node, "id"));
+    area.maps = readMaps(reader, reader.field(node, "maps"), "maps");
+    area.weights = readWeights(reader, reader.field(node, "weights"));
     if (const YamlNode* strength = node.find("season_strength")) {
       area.seasonStrength = readUnit(reader, *strength, "the season's strength");
     }
     if (const YamlNode* snow = node.find("snow_from_rain")) {
       area.snowFromRain = reader.boolean(*snow);
+    }
+    if (const YamlNode* neighbours = node.find("neighbours")) {
+      for (const YamlNode& id : reader.sequence(*neighbours, "neighbours")) {
+        area.neighbours.push_back(reader.text(id));
+      }
     }
     if (reader.ok() && std::ranges::any_of(rules.areas, [&](const ClimateArea& other) {
           return other.id == area.id;
@@ -310,8 +383,14 @@ core::Result<ClimateRules> parseClimateRules(std::string_view yaml) {
     }
     rules.areas.push_back(std::move(area));
   }
+  if (reader.ok()) {
+    joinNeighbours(reader, reader.field(*tree, "areas"), rules);
+  }
   if (const YamlNode* seasons = tree->find("seasons")) {
     readSeasons(reader, *seasons, rules);
+  }
+  if (const YamlNode* fronts = tree->find("fronts")) {
+    readFronts(reader, *fronts, rules.fronts);
   }
   return reader.finish(std::move(rules), "field weather");
 }
@@ -402,6 +481,62 @@ std::uint64_t weatherRoll(std::uint64_t seed, std::string_view area, std::int64_
   return splitmix(value ^ salt);
 }
 
+namespace {
+
+// The weights a kind is rolled by at a game hour: the season's (with `seasonal`) or the area's own.
+WeatherWeights rollWeights(const ClimateRules& rules, const ClimateArea& area,
+                           std::int64_t gameHour, bool seasonal) {
+  return seasonal && rules.hasSeasons()
+             ? seasonalWeights(rules, area, seasonOfHour(rules, gameHour))
+             : area.weights;
+}
+
+// A roll as a fraction of 1: its top 24 bits.
+float fraction(std::uint64_t roll) {
+  return static_cast<float>(roll >> 40U) / static_cast<float>(1U << 24U);
+}
+
+// Whether a period rolls a weather anew instead of keeping the one before.
+bool rollsAnew(const ClimateRules& rules, const ClimateArea& area, std::uint64_t seed,
+               std::int64_t period) {
+  return fraction(weatherRoll(seed, area.id, period, KeepSalt)) >= rules.keepChance;
+}
+
+std::int64_t periodHoursOf(const ClimateRules& rules) {
+  return std::int64_t{std::max(rules.periodHours, 1)};
+}
+
+// The areas up to `reach` steps from an area (not itself), each with its steps, in the rules'
+// order: one breadth-first walk, so a front costs the same however many areas the pack has.
+std::vector<std::pair<const ClimateArea*, std::int32_t>>
+areasAround(const ClimateRules& rules, const ClimateArea& area, std::int32_t reach) {
+  const ClimateArea* start = rules.areaNamed(area.id);
+  if (start == nullptr) {
+    return {};
+  }
+  std::vector<std::pair<const ClimateArea*, std::int32_t>> found{{start, 0}};
+  for (std::size_t next = 0; next < found.size(); ++next) {
+    const auto [at, steps] = found.at(next);
+    if (steps >= reach) {
+      continue;
+    }
+    for (const std::string& id : at->neighbours) {
+      const ClimateArea* neighbour = rules.areaNamed(id);
+      if (neighbour != nullptr && std::ranges::none_of(found, [neighbour](const auto& seen) {
+            return seen.first == neighbour;
+          })) {
+        found.emplace_back(neighbour, steps + 1);
+      }
+    }
+  }
+  found.erase(found.begin());
+  std::ranges::sort(found, {},
+                    [&rules](const auto& seen) { return seen.first - rules.areas.data(); });
+  return found;
+}
+
+} // namespace
+
 WeatherKind weatherAt(const ClimateRules& rules, const ClimateArea& area, std::uint64_t seed,
                       std::int64_t period, bool seasonal) {
   const std::uint32_t total = std::reduce(area.weights.begin(), area.weights.end(), 0U);
@@ -412,22 +547,14 @@ WeatherKind weatherAt(const ClimateRules& rules, const ClimateArea& area, std::u
   // the weather before it.
   std::int64_t from = period - LongestRun;
   for (std::int64_t at = period; at > period - LongestRun; --at) {
-    const std::uint64_t keep = weatherRoll(seed, area.id, at, KeepSalt);
-    // The top 24 bits as a fraction of 1.
-    const float chance = static_cast<float>(keep >> 40U) / static_cast<float>(1U << 24U);
-    if (chance >= rules.keepChance) {
+    if (rollsAnew(rules, area, seed, at)) {
       from = at;
       break;
     }
   }
   // With seasons, the kind comes from the weights of the season the rolling period starts in, so a
   // weather rolled late in one season may last into the next.
-  const WeatherWeights weights =
-      seasonal && rules.hasSeasons()
-          ? seasonalWeights(
-                rules, area,
-                seasonOfHour(rules, from * std::int64_t{std::max(rules.periodHours, 1)}))
-          : area.weights;
+  const WeatherWeights weights = rollWeights(rules, area, from * periodHoursOf(rules), seasonal);
   const std::uint32_t sum = std::reduce(weights.begin(), weights.end(), 0U);
   std::uint32_t pick = static_cast<std::uint32_t>(weatherRoll(seed, area.id, from, KindSalt) % sum);
   for (std::size_t i = 0; i < RolledKinds.size(); ++i) {
@@ -437,6 +564,75 @@ WeatherKind weatherAt(const ClimateRules& rules, const ClimateArea& area, std::u
     pick -= weights.at(i);
   }
   return RolledKinds.back();
+}
+
+std::optional<std::int32_t> areaSteps(const ClimateRules& rules, const ClimateArea& from,
+                                      const ClimateArea& to) {
+  // Breadth first through the neighbours.
+  std::vector<const ClimateArea*> seen{&from};
+  std::vector<const ClimateArea*> ring{&from};
+  for (std::int32_t steps = 0; !ring.empty(); ++steps) {
+    std::vector<const ClimateArea*> next;
+    for (const ClimateArea* area : ring) {
+      if (area->id == to.id) {
+        return steps;
+      }
+      for (const std::string& id : area->neighbours) {
+        const ClimateArea* neighbour = rules.areaNamed(id);
+        if (neighbour != nullptr && std::ranges::find(seen, neighbour) == seen.end()) {
+          seen.push_back(neighbour);
+          next.push_back(neighbour);
+        }
+      }
+    }
+    ring = std::move(next);
+  }
+  return std::nullopt;
+}
+
+std::optional<Front> frontAt(const ClimateRules& rules, const ClimateArea& area, std::uint64_t seed,
+                             std::int64_t gameHour, bool seasonal) {
+  if (!rules.hasFronts()) {
+    return std::nullopt;
+  }
+  const std::int64_t periodHours = periodHoursOf(rules);
+  std::optional<Front> latest;
+  for (const auto& [from, steps] : areasAround(rules, area, rules.fronts.reach)) {
+    const ClimateArea& origin = *from;
+    // The one period whose new weather would be over this area now: it arrives steps * delay
+    // after its period starts and stays a period.
+    const std::int64_t travel = std::int64_t{steps} * rules.fronts.delayHours;
+    const std::int64_t period = floorDiv(gameHour - travel, periodHours);
+    const std::int64_t arrived = (period * periodHours) + travel;
+    if (!rollsAnew(rules, origin, seed, period) ||
+        fraction(weatherRoll(seed, origin.id, period, SpreadSalt)) >= rules.fronts.chance) {
+      continue;
+    }
+    const WeatherKind kind = weatherAt(rules, origin, seed, period, seasonal);
+    if (!rules.fronts.kinds.empty() &&
+        std::ranges::find(rules.fronts.kinds, kind) == rules.fronts.kinds.end()) {
+      continue;
+    }
+    const auto at = std::ranges::find(RolledKinds, kind);
+    if (at == RolledKinds.end() ||
+        rollWeights(rules, area, arrived, seasonal)
+                .at(static_cast<std::size_t>(at - RolledKinds.begin())) == 0U) {
+      continue;
+    }
+    if (!latest || arrived > latest->arrived ||
+        (arrived == latest->arrived && steps < latest->steps)) {
+      latest = Front{.kind = kind, .from = origin.id, .arrived = arrived, .steps = steps};
+    }
+  }
+  return latest;
+}
+
+WeatherKind weatherAtHour(const ClimateRules& rules, const ClimateArea& area, std::uint64_t seed,
+                          std::int64_t gameHour, bool seasonal) {
+  if (const std::optional<Front> front = frontAt(rules, area, seed, gameHour, seasonal)) {
+    return front->kind;
+  }
+  return weatherAt(rules, area, seed, periodOf(rules, gameHour), seasonal);
 }
 
 std::uint64_t weatherSeedOf(std::uint64_t gameSeed) {

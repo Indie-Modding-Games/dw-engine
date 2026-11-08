@@ -92,9 +92,9 @@ game::weather::WeatherKind FieldScene::weatherTarget() const {
   if (forcedWeather_) {
     return *forcedWeather_;
   }
-  return game::weather::weatherAt(*climate_, *weatherArea_, weatherSeed_,
-                                  game::weather::periodOf(*climate_, weatherHour()),
-                                  seasonsEnabled_);
+  // The area's own weather, or a front from an area around it.
+  return game::weather::weatherAtHour(*climate_, *weatherArea_, weatherSeed_, weatherHour(),
+                                      seasonsEnabled_);
 }
 
 void FieldScene::enterWeatherArea(std::string_view mapId, bool fixedTimeOfDay) {

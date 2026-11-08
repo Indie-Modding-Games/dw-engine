@@ -9,6 +9,17 @@
 period_hours: 3
 keep_chance: 0.45
 fade_seconds: 8
+# Frentes: un clima que una zona saca de nuevo (no el que sigue) puede viajar a las zonas vecinas (`neighbours` de cada
+# zona). Llega a una zona más cada `delay_hours` horas de juego, hasta `reach` zonas de distancia, y se queda allí
+# `period_hours` horas. Solo viajan los climas de `kinds` y solo llegan a una zona que puede tenerlos (con peso a esa
+# hora: un frente de nieve no entra en la jungla). Si llegan dos, gana el último en llegar. Sale de la semilla de
+# clima como todo lo demás: cargar una partida o cruzar de zona no lo cambia.
+fronts:
+  # Probabilidad de que un clima nuevo viaje.
+  chance: 0.2
+  delay_hours: 2
+  reach: 2
+  kinds: [cloudy, light_rain, heavy_rain, light_snow, heavy_snow]
 # Estaciones (opción «Estaciones», también mejora del motor): primavera, verano, otoño e invierno se turnan cada
 # `days` días de juego desde el año 0, día 0, empezando por la primavera. Con la opción apagada no hay estación y todo
 # es como sin este bloque. Nunca cambian una regla: solo el aspecto del escenario, partículas y las probabilidades
@@ -58,15 +69,20 @@ no_weather:
   - leom*
   - ogre*
   - gcan11
+# Zonas. `neighbours`: las zonas de al lado, a las que viajan sus frentes (basta con listar un lado: cuentan en los
+# dos). Salen de las salidas entre mapas de zonas distintas (a pie o por los pasos de la historia); los teletransportes
+# de la ciudad no cuentan.
 areas:
   # Bosque Nativo, punta Coela, lago Ojo de Dragón y el puente: bosque, lluvia corriente.
   - id: native_forest
     maps: [mayo*]
     weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1 }
+    neighbours: [file_city, mt_panorama, tropical_jungle, beetle_land]
   # Jungla tropical, manglar y bosque Amida: la zona más lluviosa.
   - id: tropical_jungle
     maps: [trop*]
     weights: { clear: 3, cloudy: 2, light_rain: 3, heavy_rain: 2 }
+    neighbours: [native_forest, great_canyon, overdell, ancient_regions]
     # Trópico: las estaciones apenas lo mueven y nunca nieva.
     season_strength: 0.5
     snow_from_rain: false
@@ -74,14 +90,17 @@ areas:
   - id: mt_panorama
     maps: [miha*]
     weights: { clear: 4, cloudy: 4, light_rain: 2, heavy_rain: 1 }
+    neighbours: [native_forest, gear_savanna]
   # Overdell: tierra gris, casi siempre nublado.
   - id: overdell
     maps: [dgha*]
     weights: { clear: 1, cloudy: 5, light_rain: 3, heavy_rain: 1 }
+    neighbours: [tropical_jungle, great_canyon]
   # Gran Cañón: seco.
   - id: great_canyon
     maps: [gcan*]
     weights: { clear: 7, cloudy: 3, light_rain: 1 }
+    neighbours: [tropical_jungle, overdell, freezeland]
     # Desierto: sigue seco y sin nieve en cualquier estación.
     season_strength: 0.4
     snow_from_rain: false
@@ -89,48 +108,59 @@ areas:
   - id: gear_savanna
     maps: [gias*]
     weights: { clear: 6, cloudy: 3, light_rain: 1, heavy_rain: 1 }
+    neighbours: [mt_panorama, factorial_town, geko_swamp]
     season_strength: 0.7
     snow_from_rain: false
   # Región glaciar antigua: nieve, nunca lluvia.
   - id: ancient_glacial
     maps: [koda01, koda02, koda03]
     weights: { clear: 2, cloudy: 3, light_snow: 4, heavy_snow: 2 }
+    neighbours: [ancient_regions]
     # Siempre nieve: la estación solo la empuja un poco.
     season_strength: 0.4
   # Regiones dino y veloz antiguas.
   - id: ancient_regions
     maps: [koda*]
     weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1 }
+    neighbours: [tropical_jungle, ancient_glacial]
   # Freezeland: nieve, nunca lluvia.
   - id: freezeland
     maps: [frzl*]
     weights: { clear: 2, cloudy: 2, light_snow: 4, heavy_snow: 3 }
+    neighbours: [great_canyon, misty_trees]
     season_strength: 0.4
   # Tierra de los escarabajos: bosque.
   - id: beetle_land
     maps: [betl*]
     weights: { clear: 4, cloudy: 3, light_rain: 2, heavy_rain: 1 }
+    neighbours: [native_forest, factorial_town]
   # Árboles Brumosos: nublado y lluvia a menudo (la niebla es la del original).
   - id: misty_trees
     maps: [mist*]
     weights: { clear: 1, cloudy: 4, light_rain: 3, heavy_rain: 1 }
+    neighbours: [geko_swamp, freezeland, toy_town]
   # Pantano Geko: lluvia corriente.
   - id: geko_swamp
     maps: [stic*]
     weights: { clear: 2, cloudy: 3, light_rain: 3, heavy_rain: 2 }
+    neighbours: [gear_savanna, misty_trees, volume_villa]
   # Villa Volumen.
   - id: volume_villa
     maps: [gkyo*]
     weights: { clear: 4, cloudy: 3, light_rain: 2 }
+    neighbours: [geko_swamp]
   # Ciudad de los Juguetes.
   - id: toy_town
     maps: [omoc*]
     weights: { clear: 5, cloudy: 3, light_rain: 1 }
+    neighbours: [misty_trees]
   # Ciudad Factorial y la montaña de basura: humo, nublado a menudo.
   - id: factorial_town
     maps: [fact*, gomi*]
     weights: { clear: 3, cloudy: 4, light_rain: 2 }
+    neighbours: [gear_savanna, beetle_land]
   # Ciudad File y el gimnasio verde.
   - id: file_city
     maps: [twna*, twnb*, trai*]
     weights: { clear: 5, cloudy: 3, light_rain: 2, heavy_rain: 1 }
+    neighbours: [native_forest]
