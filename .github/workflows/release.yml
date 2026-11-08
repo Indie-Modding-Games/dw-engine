@@ -32,7 +32,7 @@ name: Release
 on:
   push:
     branches: [main]
-    paths-ignore: ['docs/**', 'docs-site/**', '**/*.md', '**/tests/**', '.github/**', 'scripts/ci/**']
+    paths-ignore: ['docs/**', 'docs-site/**', '**/*.md', '**/tests/**', '.github/**', 'scripts/ci/**', 'apps/versus-signal/**']
   workflow_dispatch:
 
 permissions:
