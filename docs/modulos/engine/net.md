@@ -63,8 +63,8 @@ la señalización. Se usa su API en C (`rtc.h`) porque el proyecto compila sin e
 
 - Sin TURN: dos redes que no dejan ruta directa (algunos NAT simétricos, redes de empresa) acaban en `NoRoute`. El
   servidor podría dar más adelante credenciales TURN de corta vida, y `ice_servers` ya es una lista de datos.
-- El servidor de señalización no está desplegado todavía: hasta que alguien ponga su dirección en
-  `versus/network.yaml` (o el jugador use `--versus-server`), el versus en línea dice que no hay servidor.
+- El servidor de señalización está desplegado en `wss://dwe-versus-signal.regamelabs.workers.dev`
+  (`versus/network.yaml`); `--versus-server` lo cambia al arrancar.
 
 ## Tests
 

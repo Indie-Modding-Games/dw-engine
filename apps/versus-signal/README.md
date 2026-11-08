@@ -45,7 +45,8 @@ reglas, con el que dos pares reales de libdatachannel se conectan en una prueba 
 
 ## Desplegarlo
 
-No está desplegado. `wrangler.toml` no lleva cuenta, ruta ni secretos. Quien lo despliegue:
+Está desplegado en `wss://dwe-versus-signal.regamelabs.workers.dev`. `wrangler.toml` no lleva cuenta, ruta ni secretos;
+se despliega con la cuenta de quien lo hace:
 
 ```sh
 cd apps/versus-signal
