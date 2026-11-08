@@ -25,7 +25,7 @@ triplet="x64-windows-static-cross"
 system_dlls="kernel32 user32 gdi32 shell32 ole32 oleaut32 advapi32 imm32 version winmm setupapi \
 cfgmgr32 hid ws2_32 shlwapi dwmapi uxtheme comdlg32 crypt32 bcrypt bcryptprimitives ntdll dbghelp \
 powrprof dxgi d3d11 d3d12 dinput8 xinput1_4 winhttp userenv secur32 mfplat mfreadwrite mf \
-avrt synchronization"
+avrt synchronization iphlpapi"
 
 while (($#)); do
   case "$1" in
