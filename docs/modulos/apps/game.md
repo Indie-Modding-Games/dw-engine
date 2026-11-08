@@ -1338,9 +1338,17 @@ ven los dibujos del original. La consola y las rutas lo cambian para la partida 
   del juego (esquema `field_sprite_characters.schema.json`).
 - **Dónde**: `sprite_characters.hpp` lee la tabla y calcula el sitio: los pies son el centro de la sombra, el pie
   del primer dibujo o un píxel dado (`feet`); `MapCamera::pickGround` los lleva al suelo, a la altura `height` (una
-  jardinera, una cama), y el modelo mira a la cámara salvo que la tabla dé `facing` (`species_y` tumbado en la alfombra
-  del puesto, 2560) o `look_at`, un punto del suelo en unidades del original hacia el que gira (`yawOfDirection`). `FieldScene` carga el modelo de cada especie al entrar al mapa (`standInSpriteCharacters`) y lo
-  dibuja cada frame con su reposo (`drawSpriteCharacters`) mientras el primer dibujo no esté oculto.
+  jardinera, una cama), y el modelo mira a la cámara salvo que la tabla dé `facing` (el tendero del puesto, 3584) o
+  `look_at`, un punto del suelo en unidades del original hacia el que gira (`yawOfDirection`). `FieldScene` carga el
+  modelo de cada especie al entrar al mapa (`standInSpriteCharacters`) y lo dibuja cada frame con su reposo
+  (`drawSpriteCharacters`) mientras el primer dibujo no esté oculto.
+- **Postura**: un dibujo que no muestra al personaje de pie lleva `animation` (el número de animación del original) y
+  `frame` (el tick que enseña el dibujo); el modelo toma esa animación y se queda quieto en ese tick en vez del reposo.
+  Si el modelo no tiene esa animación avisa en el log y usa el reposo. El tendero del puesto del mercado (`twnb02` a
+  `twnb09`, la misma instancia en el píxel 279, 86 en todas las variantes, de día y de noche) es un dibujo de 48×48 en
+  tres cuadros de 12 ticks tumbado boca abajo sobre la alfombra, la cabeza hacia la cámara y a la derecha; su reposo
+  flota de pie (cuerpo de 190 a 373 unidades sobre el suelo), y antes se veía flotando delante de la alfombra. Ahora
+  lleva `feet: [305, 118]`, `facing: 3584`, `animation: 41`, `frame: 7` (el tick tumbado de su caída de golpe).
   `MapDepthLayers::setStoodIn` saca los dibujos del pintado sin tocar la marca de oculto que ponen los guiones; las
   sombras se siguen dibujando.
 - **Semitransparencia**: `additive` dibuja el modelo sumado a lo de detrás con sus colores por ese factor
@@ -1353,8 +1361,9 @@ ven los dibujos del original. La consola y las rutas lo cambian para la partida 
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
-| Personajes en 3D | Dibujos prerenderizados, objetos del mapa (`renderMapOverlays`, `buildMapOverlayPrim`), mostrados y ocultados por los guiones (`setMapObjectsFlag`) | `field/sprite_characters.yaml`; `sprite_characters.hpp` (`placeOf`, `standInFor`); `FieldScene::drawSpriteCharacters` dibuja el modelo de la especie con su reposo donde estaba el dibujo; `MapDepthLayers::setStoodIn` | `sprite_characters_tests.cpp` (tabla con `additive`, pies, sitio en el suelo, cuándo se ve, ajuste); `map_layers_tests.cpp` («an instance stood in for is not drawn…»); `in_game_options_tests.cpp`; capturas antes y después en `topn01`, `tend01`, `tend02`, `twna02`, `room08` y `twnb02` a `twnb09` | Mejora (opción) |
+| Personajes en 3D | Dibujos prerenderizados, objetos del mapa (`renderMapOverlays`, `buildMapOverlayPrim`), mostrados y ocultados por los guiones (`setMapObjectsFlag`) | `field/sprite_characters.yaml`; `sprite_characters.hpp` (`placeOf`, `standInFor`); `FieldScene::drawSpriteCharacters` dibuja el modelo de la especie con su reposo donde estaba el dibujo; `MapDepthLayers::setStoodIn` | `sprite_characters_tests.cpp` (tabla con `additive`, postura, pies, sitio en el suelo, cuándo se ve, ajuste); `map_layers_tests.cpp` («an instance stood in for is not drawn…»); `in_game_options_tests.cpp`; capturas antes y después en `topn01`, `tend01`, `tend02`, `twna02`, `room08` y `twnb02` a `twnb09` | Mejora (opción) |
 | Hacia dónde miran los bebés de la apertura | Sus dibujos (`topn01`, objetos 0 a 17) están girados hacia el jugador que despierta en medio, tumbado en (266, −2330) al empezar la escena (medido con el original: savestate `00_intro_arrival`; el de la izquierda se ve de lado mirando a la derecha, el de la derecha mirando a la izquierda, los de abajo de espaldas). El guion (193, sección 0x36) no gira a ninguno de ellos: no son entidades; solo gira a la entidad 10 con `entity_look_at_entity` | Los seis llevan `look_at: [266, -2330]` en `field/sprite_characters.yaml` y sus modelos giran hacia ese punto, como sus dibujos. Antes miraban todos a la cámara | `sprite_characters_tests.cpp` («a character with a point to look at faces it, not the camera», la tabla del pack); capturas antes/después y del original | Igual (con la opción) |
+| La postura del tendero del puesto | Un dibujo prerenderizado (objeto del mapa, instancia en el píxel 279, 86 de `twnb02` a `twnb09`, cuadros de 48×48, 12 ticks cada uno, igual de día y de noche): tumbado boca abajo sobre la alfombra, la cabeza hacia la cámara y a la derecha, junto a la caja registradora | `animation: 41`, `frame: 7`, `facing: 3584`, `feet: [305, 118]` en las ocho entradas de `field/sprite_characters.yaml`; el modelo se queda quieto en ese tick. Antes flotaba de pie con su reposo delante de la alfombra | `sprite_characters_tests.cpp` («a sprite character holds the pose its drawing shows…», la tabla del pack); capturas del original, antes y después | Igual (con la opción) |
 | El sonido de la celebración de la apertura | Tras la primera frase del anciano las dos entidades que saltan (10 y 12, clip 11) suenan `playSound(3, 49)` desde su animación (`tickAnimation`, instrucción 0x4000), una vez por salto; los seis bebés dibujados no suenan (son objetos del mapa) y el guion no pide ningún sonido (medido con el original: savestate `00_intro_arrival`, parada en `playSound`) | Las mismas dos llamadas, desde los sonidos del clip (`FieldScene::playClipSounds`, log `[port:anim] … playSound(3, 49)`); los modelos de los bebés no suenan, como sus dibujos | Ruta de la apertura con el log de depuración | Igual |
 
 ## Opciones en partida

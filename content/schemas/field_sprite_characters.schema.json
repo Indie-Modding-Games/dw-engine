@@ -74,6 +74,16 @@
             "minItems": 2,
             "maxItems": 2
           },
+          "animation": {
+            "description": "The original's animation id of the pose its drawing shows (a character lying on a rug); the idle clip when left out.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "frame": {
+            "description": "The tick of its animation that its drawing holds: the model keeps that pose instead of playing the clip.",
+            "type": "integer",
+            "minimum": 0
+          },
           "additive": {
             "description": "Draws the model added to what is behind, its colours scaled by this, as a sprite drawn with the additive semi-transparency.",
             "type": "number",

@@ -1,11 +1,14 @@
 #include <dwe/assets/asset_id.hpp>
+#include <dwe/assets/model_data.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/scene/components.hpp>
 
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <utility>
@@ -80,11 +83,29 @@ void FieldScene::standInSpriteCharacters(std::string_view mapId) {
       continue;
     }
     Actor& standIn = **actor;
-    if (const std::optional<std::uint32_t> idle =
-            standIn.character.clipOf(scene::motionName(scene::Motion::Idle))) {
+    // The pose its drawing shows when the table names one, else the idle.
+    std::optional<std::uint32_t> clip = character.animation;
+    if (clip && standIn.model->findClip(*clip) == nullptr) {
+      core::logWarning("{}", core::formatMessage(messages::SpriteCharacterClipMissing,
+                                                 character.species, mapId, *clip));
+      clip.reset();
+    }
+    if (!clip) {
+      clip = standIn.character.clipOf(scene::motionName(scene::Motion::Idle));
       standIn.motion = scene::Motion::Idle;
-      standIn.motionClip = idle;
-      standIn.player->play(*idle, 0.0F);
+    }
+    if (clip) {
+      standIn.motionClip = clip;
+      standIn.player->play(*clip, 0.0F);
+      if (character.frame && clip == character.animation) {
+        // A still drawing of one tick of the clip: the model holds that pose.
+        const assets::AnimationClip& played = *standIn.player->clip();
+        const float ticksPerSecond =
+            played.ticksPerSecond > 0 ? static_cast<float>(played.ticksPerSecond) : 1.0F;
+        static_cast<void>(
+            standIn.player->advance(static_cast<float>(*character.frame) / ticksPerSecond));
+        standIn.player->setSpeed(0.0F);
+      }
     }
     standInFor(std::span{&character, 1}, layers, true);
     standIns_.push_back({.character = character, .actor = std::move(*actor)});
