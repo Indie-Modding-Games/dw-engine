@@ -232,12 +232,66 @@ TEST_CASE(
   CHECK_FALSE(parseImageReference("ui/x/picture?upscale").has_value());
 }
 
-TEST_CASE("a smoothed image doubles up to SmoothUpscaleWidth, at most twice") {
-  CHECK(smoothDoublings(320) == 2);
-  CHECK(smoothDoublings(640) == 1);
+TEST_CASE("an image reference may ask for mirrored sides, counts in any order after the rest") {
+  auto wide = parseImageReference("/ui/x/picture?mirror_right=26&palette=0&mirror_left=100");
+  REQUIRE_MESSAGE(wide.has_value(), wide.error().message);
+  CHECK(wide->mirrorLeft == 100);
+  CHECK(wide->mirrorRight == 26);
+  // Still the disc's pixel art: only smoothing makes it filtered.
+  CHECK(isPixelArt(*wide));
+  CHECK(imageReferenceText(*wide) == "/ui/x/picture?palette=0&mirror_left=100&mirror_right=26");
+  CHECK(imageReferenceText(*parseImageReference("ui/x/picture?mirror_right=4")) ==
+        "/ui/x/picture?mirror_right=4");
+  CHECK(parseImageReference("ui/x/picture?palette=0")->mirrorLeft == 0);
+  CHECK(parseImageReference("ui/x/picture?mirror_left=1024").has_value());
+  for (const std::string_view bad :
+       {"ui/x/picture?mirror_left=1025", "ui/x/picture?mirror_left=-1",
+        "ui/x/picture?mirror_left=", "ui/x/picture?mirror_right=2x", "ui/x/picture?mirror_left"}) {
+    CAPTURE(bad);
+    CHECK_FALSE(parseImageReference(bad).has_value());
+  }
+}
+
+namespace {
+
+// A one-row image whose pixels are 1, 2, 3... in every channel.
+assets::Image countingRow(std::uint32_t width) {
+  assets::Image image{.width = width, .height = 1, .pixels = {}};
+  for (std::uint32_t x = 0; x < width; ++x) {
+    image.pixels.insert(image.pixels.end(), 4, static_cast<std::byte>(x + 1));
+  }
+  return image;
+}
+
+std::vector<int> rowOf(const assets::Image& image) {
+  std::vector<int> values;
+  for (std::size_t at = 0; at < image.pixels.size(); at += 4) {
+    values.push_back(std::to_integer<int>(image.pixels[at]));
+  }
+  return values;
+}
+
+} // namespace
+
+TEST_CASE("mirrored sides carry the edge columns on, the edge itself repeated, at most the width") {
+  const assets::Image wide = withMirroredSides(countingRow(4), 2, 3);
+  CHECK(wide.width == 9);
+  CHECK(wide.height == 1);
+  CHECK(rowOf(wide) == std::vector<int>{2, 1, 1, 2, 3, 4, 4, 3, 2});
+  // A side mirrors the whole image at most.
+  CHECK(rowOf(withMirroredSides(countingRow(2), 5, 0)) == std::vector<int>{2, 1, 1, 2});
+  CHECK(rowOf(withMirroredSides(countingRow(3), 0, 0)) == std::vector<int>{1, 2, 3});
+  CHECK(withMirroredSides(assets::Image{}, 2, 2).pixels.empty());
+}
+
+TEST_CASE("a smoothed image doubles up to SmoothUpscaleWidth, at most three times") {
+  CHECK(smoothDoublings(320) == 3);
+  CHECK(smoothDoublings(446) == 3);
+  CHECK(smoothDoublings(640) == 2);
+  CHECK(smoothDoublings(1280) == 1);
   CHECK(smoothDoublings(SmoothUpscaleWidth) == 0);
-  CHECK(smoothDoublings(2560) == 0);
-  // A small icon still grows only twice.
+  CHECK(smoothDoublings(4096) == 0);
+  // A small icon still grows only three times.
   CHECK(smoothDoublings(16) == SmoothUpscaleMaxDoublings);
   CHECK(smoothDoublings(0) == 0);
 }

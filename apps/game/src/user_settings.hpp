@@ -184,6 +184,10 @@ struct UserSettings {
   // from the wrong part of its textures (the partner card's happiness label) where they are; off,
   // as the original, when not chosen yet.
   std::optional<bool> artFixes = std::nullopt;
+  // Widescreen pictures (widescreen_pictures: true, false; the title's documents read it, and
+  // MovieScreen::setFillWindow): the title's pictures and the movies fill the window; on when not
+  // chosen yet.
+  std::optional<bool> widescreenPictures = std::nullopt;
   // Developer tools (dev_tools: true, false; dev_tools.hpp): the debug console, the developer menu
   // and the map overlay; when not chosen yet, on in a development build and off in a package.
   std::optional<bool> devTools = std::nullopt;

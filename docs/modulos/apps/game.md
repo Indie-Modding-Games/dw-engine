@@ -1436,6 +1436,63 @@ ven los dibujos del original. La consola y las rutas lo cambian para la partida 
 | La postura del tendero del puesto | Un dibujo prerenderizado (objeto del mapa, instancia en el píxel 279, 86 de `twnb02` a `twnb09`, cuadros de 48×48, 12 ticks cada uno, igual de día y de noche): tumbado boca abajo sobre la alfombra, la cabeza hacia la cámara y a la derecha, junto a la caja registradora | `animation: 41`, `frame: 7`, `facing: 3584`, `feet: [305, 118]` en las ocho entradas de `field/sprite_characters.yaml`; el modelo se queda quieto en ese tick. Antes flotaba de pie con su reposo delante de la alfombra | `sprite_characters_tests.cpp` («a sprite character holds the pose its drawing shows…», la tabla del pack); capturas del original, antes y después | Igual (con la opción) |
 | El sonido de la celebración de la apertura | Tras la primera frase del anciano las dos entidades que saltan (10 y 12, clip 11) suenan `playSound(3, 49)` desde su animación (`tickAnimation`, instrucción 0x4000), una vez por salto; los seis bebés dibujados no suenan (son objetos del mapa) y el guion no pide ningún sonido (medido con el original: savestate `00_intro_arrival`, parada en `playSound`) | Las mismas dos llamadas, desde los sonidos del clip (`FieldScene::playClipSounds`, log `[port:anim] … playSound(3, 49)`); los modelos de los bebés no suenan, como sus dibujos | Ruta de la apertura con el log de depuración | Igual |
 
+## Imágenes a pantalla ancha
+
+Mejora opcional, encendida por defecto (solo cambia el aspecto): el ajuste `widescreen_pictures` (fila «Imágenes a
+pantalla ancha», «Widescreen pictures» en inglés, pestaña «Gráficos»; guardado en los ajustes del usuario). dwe no
+tiene otra opción de proporción: el campo y los combates ya llenan la ventana, así que esta opción es la que decide
+cómo se ven las imágenes a pantalla completa del original, hechas para una pantalla 4:3. Apagada, se ven como en él:
+en su marco 4:3, en medio, sobre negro.
+
+Las imágenes a pantalla completa que enseña el juego (el aspecto moderno no dibuja ninguna: su título es un fondo
+liso):
+
+| Imagen | Tamaño | Reescalado | Antes | Con la opción |
+|---|---|---|---|---|
+| Pantalla de antes del menú («Press Start», TITLE256; `main.c: runLandingScreen`) | 320 × 256, se dibujan las filas 0–205 | Suavizada (`upscale: smooth`) con el filtro de texturas «reescalado» | A 3 dp por píxel arriba en medio (960 × 618 dp); a los lados y debajo, negro | Cubre la ventana desde arriba: a 16:9, 4 dp por píxel (1280 dp de ancho) y se ven las filas 0–179; la línea «Press Start» sube a la fila 162 de la imagen (la 168 del original quedaría pegada al borde), debajo del logotipo |
+| Portada del menú principal (TITLE2; `main_menu.c: renderInitialMenu`), también detrás del idioma, del modo de combate, de las ranuras de guardado, de las reglas de la partida nueva y de las opciones sobre el título | 320 × 240 | Suavizada (`upscale: smooth`) | Ajustada al alto (`contain`), negro a los lados | Cubre la ventana con el borde de abajo fijo: a 16:9, 4 dp por píxel y se ven las filas 60–239 (arriba solo hay rejilla); las cajas se apartan del logotipo |
+| Películas (OP1 al arrancar y tras 600 frames en el título, OP2 en la partida nueva, ED2 al cargar tras el final, EDR en el final; `mov.c`) | Vídeo de 320 × 176 | Filtrado lineal (es vídeo, no pasa por el reescalador) | En la pantalla 4:3 del original ajustada a la ventana: a 1920 × 1080, 1440 × 792 con barras en los cuatro lados | La imagen sola ajustada a la ventana con su proporción (`movieFrame`): a 1920 × 1080, 1920 × 1056 |
+
+Cómo se llena cada una, y por qué:
+
+- **Portada y pantalla de antes del menú: la imagen ampliada hasta cubrir la ventana.** Se escala entera, igual en
+  los dos ejes, hasta llenar el ancho, y sobran filas: la portada las pierde por arriba, donde solo hay rejilla (su
+  logotipo está abajo a la derecha, filas 165–227, y queda entero con 12 filas de margen); la pantalla de antes del
+  menú las pierde por abajo, donde es negra (su logotipo está en las filas 37–149). Nunca se recorta más que en una
+  ventana 16:9 (se ven al menos 180 de sus 240 filas): en una más ancha (21:9) la imagen se queda a esa escala y cada
+  lado sigue como un espejo de sus columnas del borde (`mirror_sides` en `skin.yaml`), que se oscurece hacia el borde
+  de la ventana. Los espejos no llegan al logotipo: la portada refleja a la derecha solo las 26 columnas que deja
+  libres el logotipo y a la izquierda hasta 100, así el logotipo se va un poco a la derecha; la otra refleja 52 y 56.
+  En una ventana 4:3 se ve como el original; en una más estrecha se recortan los lados sin tocar el logotipo.
+- **Las cajas, en su sitio a lo ancho de la imagen y fuera del logotipo.** El menú, el idioma, el modo de combate,
+  las ranuras y las reglas de la partida nueva van a la columna de la imagen del original (el menú en la 72, las
+  ranuras en la 60), a su altura de siempre en la ventana. Si una tapara el logotipo, se aparta a la izquierda y, las
+  que pueden (las ranuras con su resumen, las reglas), hacia arriba, sin salirse de la ventana. Las opciones sobre el
+  título son las del menú de pausa, con su propio sitio.
+- **Nitidez.** El reescalador dobla la imagen hasta 2560 píxeles de ancho (tres veces; antes, dos hasta 1280), así a
+  1920 × 1080 y a 2560 × 1440 cada píxel de la pantalla sale de al menos un texel suavizado, sin estirar texels
+  filtrados.
+- **Películas: la imagen entera, sin recortar.** El vídeo ya es casi 16:9 (320 × 176); el original lo enseña con
+  barras arriba y abajo dentro de su pantalla 4:3. Con la opción se ajusta a la ventana: llena el ancho de una 16:9
+  con 12 píxeles de barra arriba y abajo, y en una ventana 4:3 queda igual que en el original.
+
+Los documentos del título (`main_menu`, `save_slots`, `new_game_rules`) tienen, primero en `#scrim`, los elementos
+`#picture`, `#picture-fade-left` y `#picture-fade-right`, y cargan `ui/common/title_picture.lua`. Con la opción y el
+aspecto original pone la clase `wide` en `#scrim`, calcula cada tick con el tamaño de la ventana la escala y el sitio
+de la imagen (`title_picture.layout`), coloca esos elementos y mueve las cajas que cada documento le pasa; apagada,
+las cajas vuelven al sitio de su hoja de estilo. El aspecto dibuja `#picture` con las hojas `title-wide` y
+`boot-wide` (las mismas imágenes con los lados en espejo, [ui](../../architecture/ui.md#aspectos)) y los degradados
+de los lados. Las películas leen el ajuste al empezar cada una (`MovieScreen::setFillWindow`).
+
+Pruebas: `title_picture_tests.cpp` («the title's picture covers the window, its logo whole and the menu off it», «a
+window wider than 16:9 sees the picture's mirrored sides…», «a 4:3 window draws the title as the original…», «the
+slot list and its summary move off the logo…», «the modern look's title draws no picture…»), «an image reference may
+ask for mirrored sides…» y «mirrored sides carry the edge columns on…» (`image_reference_tests.cpp`), «mirrored
+sides count the game's pixels…» (`image_replacement_tests.cpp`), «a sprite sheet may mirror its picture's sides…»
+(`skin_tests.cpp`), «a movie sits on the original's 4:3 screen, or fills a wide window with the option»
+(`movie_frame_tests.cpp`), «the widescreen pictures are the UI's option…» (`title_options_tests.cpp`); capturas a
+1920 × 1080, 2560 × 1440 y 2560 × 1080.
+
 ## Opciones en partida
 
 Las opciones se cambian sin volver al título: la página «Opciones» del menú de pausa abre con las tres acciones del
@@ -1465,7 +1522,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 | Pestaña | Filas |
 |---|---|
 | Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Sesiones de gimnasio, Combates sin espera, Dificultad, Saltar evoluciones, Cancelar cierra elecciones, Enfermar justo, Media de evolución justa, Olvidar técnicas justo, Tienda de cartas sin repetidas, Espacio tras los nombres |
-| Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
+| Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Imágenes a pantalla ancha, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua, Reverberación |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento, Extras de la tienda, Arreglos gráficos, Herramientas de desarrollo |
 

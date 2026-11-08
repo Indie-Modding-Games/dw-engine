@@ -7,3 +7,5 @@
 /* The original look's rows (the skin's slots-original layout): logic.lua moves the cursor and stops it at the ends, as
    the original's, so the wrapping moves above stay out. */
 #panel.slots-original button { nav: none; }
+/* The title picture filling the window (../common/title_picture.lua): only a skin that draws it shows it. */
+#picture, .picture-fade { display: none; pointer-events: none; }

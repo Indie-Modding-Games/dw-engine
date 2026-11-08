@@ -59,12 +59,25 @@ local function prompts(document)
   document:get("prompt-cancel"):set_prompt("cancel")
 end
 
+-- The rules' box over the title's picture with the «widescreen pictures» option
+-- (../common/title_picture.lua), at the original's place across it.
+local PictureBoxes = { { { id = "panel", x = 60, top = 150 } } }
+
 function on_show(document)
+  title_picture.apply(document, PictureBoxes)
   hidden = false
   mega = false
   refresh(document)
   prompts(document)
   document:get("rules-start"):focus()
+end
+
+function on_setting(document, _name)
+  title_picture.apply(document, PictureBoxes)
+end
+
+function on_tick(document, _seconds)
+  title_picture.apply(document, PictureBoxes)
 end
 
 function on_language(document)

@@ -3,10 +3,15 @@
 	<title>Main menu</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/title_picture.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
 	<div id="scrim" onmousemove="pointer_moved(document)">
+		<!-- The original look's title picture filling the window (../common/title_picture.lua), under everything. -->
+		<div id="picture"></div>
+		<div id="picture-fade-left" class="picture-fade"></div>
+		<div id="picture-fade-right" class="picture-fade"></div>
 		<!-- The original look's screen before the menu: the whole screen is the button, so any confirm or click goes on. -->
 		<button id="press-start" class="hidden" onclick="leave_boot(document)"><span id="press-start-text"></span></button>
 		<div id="panel">

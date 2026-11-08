@@ -20,8 +20,9 @@
 namespace dwe::app {
 
 // Plays the packs' movies over a black screen: the picture letterboxed as the original shows it
-// (320 x 176 at line 32 of a 320 x 240 screen, mov.c: MOV_playMovie), scaled to the window, and
-// the sound on the music bus, whose position is the clock the pictures follow.
+// (320 x 176 at line 32 of a 320 x 240 screen, mov.c: MOV_playMovie), scaled to the window, or
+// the picture alone fitted to the window (setFillWindow; movieFrame), and the sound on the music
+// bus, whose position is the clock the pictures follow.
 class MovieScreen {
   // Only create builds one, which needs make_unique to reach the constructor.
   struct Key {
@@ -46,6 +47,10 @@ public:
   bool play(const assets::VirtualFileSystem& files, const MovieRule& rule);
 
   [[nodiscard]] bool playing() const { return player_.has_value(); }
+
+  // Whether the picture fills the window with its shape kept (the «widescreen pictures» option)
+  // instead of sitting on the original's 4:3 screen; from the next frame drawn.
+  void setFillWindow(bool fill) { fillWindow_ = fill; }
 
   // Once per tick: Start, confirm or cancel ends a skippable movie.
   void tick(const input::InputState& input);
@@ -72,6 +77,7 @@ private:
   std::uint32_t soundRate_ = 0;
   std::string file_;
   bool skippable_ = true;
+  bool fillWindow_ = true;
   // Set once a tick has seen no skip key since the movie started.
   bool armed_ = false;
   double clock_ = 0.0;

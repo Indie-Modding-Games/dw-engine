@@ -5,3 +5,5 @@
 #back { nav-down: #rules-hidden; }
 #title { margin-bottom: 6dp; }
 .about { margin: 0 0 12dp 18dp; }
+/* The title picture filling the window (../common/title_picture.lua): only a skin that draws it shows it. */
+#picture, .picture-fade { display: none; pointer-events: none; }

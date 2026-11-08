@@ -78,6 +78,17 @@ local function original(document)
   return document:get("panel"):has_class("slots-original")
 end
 
+-- The list, its summary and its marks over the title's picture with the «widescreen pictures»
+-- option (../common/title_picture.lua), moved as one, at the original's places across it.
+local PictureBoxes = {
+  {
+    { id = "panel", x = 60, top = 150 },
+    { id = "detail", x = 60, top = 522 },
+    { id = "more-up", x = 140 / 3, top = 162 },
+    { id = "more-down", x = 140 / 3, top = 414 },
+  },
+}
+
 local function mode()
   return ui.setting("save.slots.mode") or "continue"
 end
@@ -371,6 +382,7 @@ function scroll_rows(document, step)
 end
 
 function on_tick(document, _seconds)
+  title_picture.apply(document, PictureBoxes)
   if original(document) then
     refresh_detail(document)
   end
@@ -378,12 +390,14 @@ function on_tick(document, _seconds)
 end
 
 function on_show(document)
+  title_picture.apply(document, PictureBoxes)
   refresh(document)
   refresh_prompts(document)
   focus_chosen(document)
 end
 
 function on_setting(document, _name)
+  title_picture.apply(document, PictureBoxes)
   refresh(document)
 end
 

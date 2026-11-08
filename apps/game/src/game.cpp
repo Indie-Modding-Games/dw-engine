@@ -917,6 +917,7 @@ int runGame(const Options& requested) {
     // playMovie, initializeMusic): a game playing under the movie holds its music until afterMovie.
     core::logDebug("[port:movie] playMovie (main.c:{}): movie {} '{}'", movieCallSite(moment),
                    static_cast<int>(moment), movieRules->of(moment).file);
+    movies->setFillWindow(userSettings.widescreenPictures.value_or(WidescreenPicturesDefault));
     if (!movies->play(files, movieRules->of(moment))) {
       return false;
     }
@@ -1653,7 +1654,8 @@ int runGame(const Options& requested) {
     }
 
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
-      // The options the documents apply by themselves: shop extras, art fixes, developer tools.
+      // The options the documents apply by themselves: shop extras, art fixes, widescreen pictures
+      // (the movies read it as each starts), developer tools.
       if (changeUiToggle(command, **ui, userSettings, settingsFile)) {
         continue;
       }

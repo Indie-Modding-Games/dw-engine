@@ -31,7 +31,7 @@ MDEC, VRAM y el doble búfer, el modo de 24 bits. La versión EU (otra tabla y o
 | `MOV_MOVIES` | `movie.yaml` del paquete (`table`, ya lo escribe `dwx`): el frame final es dato del disco |
 | `MOV_playMovie` (bucle, condición de fin y de salto) | `packages/engine/video`: `MoviePlayer` (reloj, frame actual, fin); `apps/game`: `MovieScreen` (salto, dibujo, voz) |
 | `MOV_readFrame`, `MOV_decodeFrame`, `MOV_startStream`, `MOV_startRead`, `MOV_onSliceDecoded`, `MOV_waitForFlip` | `packages/engine/video`: `Y4mReader` (frame a frame, por trozos) + `toRgba`; el resto es máquina y desaparece |
-| `MOV_initEnvironment` (y = 32 en 240) | `MovieScreen`: rectángulo con la proporción 320 × 240 y la película centrada, escalado a la ventana |
+| `MOV_initEnvironment` (y = 32 en 240) | `MovieScreen`: rectángulo con la proporción 320 × 240 y la película centrada, escalado a la ventana; con «Imágenes a pantalla ancha» (encendida por defecto), la imagen de 320 × 176 sola, ajustada a la ventana con su proporción (`movieFrame`; [game](../modulos/apps/game.md#imágenes-a-pantalla-ancha)) |
 | `DecDCTvlc2`/`DecDCTin` + audio XA | ya en `formats/video` (`mdec`, `xa_adpcm`); `dwx` los usa al extraer |
 | `startMovie`, `playMovie` (parar y reiniciar música, fundido) | `apps/game`: `MovieScreen` con `GameAudio` y `ScreenFade` |
 | `main` (qué película y cuándo), `runLandingScreen` (600) | `apps/game`: estados de la app (`game.cpp`, `AppFlow`); números y reglas en el ruleset (`movies`) |

@@ -15,6 +15,36 @@
 	decorator: image(title-screen contain center center);
 }
 
+/* The «widescreen pictures» option (class wide, ui/common/title_picture.lua): instead of the 4:3 frame on black, the
+   title image covers the window (title-wide, skin.yaml: TITLE2 with its sides mirrored), cut at the top where it is
+   only grid; title_picture.lua sizes and places it, and moves the boxes off its logo. In a window wider than 16:9 its
+   mirrored sides show, darker towards the window's edges. */
+#scrim.wide {
+	decorator: none;
+}
+
+#scrim.wide #picture {
+	display: block;
+	position: absolute;
+	decorator: image(title-wide fill);
+}
+
+#scrim.wide .picture-fade {
+	display: block;
+	position: absolute;
+	top: 0;
+	height: 100%;
+}
+
+#picture-fade-left {
+	left: 0;
+	decorator: horizontal-gradient(#000000b0 #00000000);
+}
+
+#picture-fade-right {
+	decorator: horizontal-gradient(#00000000 #000000b0);
+}
+
 /* The screen before the menu (runLandingScreen): TITLE256 above the line where the original's copyright notice is,
    which is left out (the boot-screen sprite stops at row 206), on black. The whole screen is the button. */
 #scrim.boot {
@@ -31,6 +61,18 @@
 	border: 0;
 	background-color: #000000;
 	decorator: image(boot-screen scale-none center top);
+}
+
+/* With the option, the screen before the menu fills the window the same way: TITLE256 (boot-wide, its sides
+   mirrored) covers it from the top, cut at the bottom, where it is black; the button lets it show through, and
+   title_picture.lua pins the line under its logo. */
+#scrim.wide.boot #picture {
+	decorator: image(boot-wide fill);
+}
+
+#scrim.wide #press-start {
+	background-color: transparent;
+	decorator: none;
 }
 
 #press-start:focus {

@@ -46,6 +46,8 @@ inline constexpr std::string_view TextFontChanged = "ui: original look text font
 inline constexpr std::string_view BadPaletteNumber = "'{}' is not a palette number";
 inline constexpr std::string_view BadImageOption =
     "'{}' is not an image option: palette=<number> or tone=grey";
+inline constexpr std::string_view BadMirroredColumns =
+    "'{}' is not a count of mirrored columns: a whole number from 0 to {}";
 inline constexpr std::string_view NoImage = "no image {} in the packs";
 // A player's image of one (assets/image_replacement.hpp) that cannot be drawn: the game's is.
 inline constexpr std::string_view ReplacementUnusable =
@@ -78,6 +80,9 @@ inline constexpr std::string_view SpriteSheetsWhat = "sprite_sheets";
 inline constexpr std::string_view SpriteSheetWhat = "a sprite sheet";
 inline constexpr std::string_view SpriteRectangleWhat = "a sprite: [x, y, width, height]";
 inline constexpr std::string_view OriginalSizeWhat = "original_size: [width, height]";
+inline constexpr std::string_view MirrorSidesWhat = "mirror_sides: [left, right]";
+inline constexpr std::string_view TooManyMirroredColumns =
+    "mirror_sides counts at most {} columns a side";
 inline constexpr std::string_view DocumentClassesNotMapping =
     "must map each name to its entries (document_classes: <document>: <element id>: [classes])";
 inline constexpr std::string_view BadElementId =

@@ -934,3 +934,26 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       boot-screen: [0, 0, 320, 206]
+  # Las mismas dos imágenes más anchas, para la opción «Imágenes a pantalla ancha» (ui/common/title_picture.lua): cada
+  # lado sigue como un espejo de sus columnas del borde (mirror_sides: [izquierda, derecha], en píxeles de la imagen del
+  # juego; original_size las cuenta), y así una ventana más ancha que la imagen ampliada ve la rejilla seguir en vez de
+  # negro. Los espejos no llegan al logotipo: TITLE2 lo tiene entre las columnas 172 y 293 (a la derecha quedan 26
+  # columnas libres) y TITLE256 su marco entre la 52 y la 263.
+  - name: ow-title-wide
+    image: texture/etcna/title2
+    palette: 0
+    upscale: smooth
+    mirror_sides: [100, 26]
+    original_size: [446, 240]
+    dp_per_pixel: 3
+    sprites:
+      title-wide: [0, 0, 446, 240]
+  - name: ow-boot-wide
+    image: texture/etcna/title256
+    palette: 0
+    upscale: smooth
+    mirror_sides: [52, 56]
+    original_size: [428, 256]
+    dp_per_pixel: 3
+    sprites:
+      boot-wide: [0, 0, 428, 206]

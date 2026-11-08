@@ -4,10 +4,15 @@
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
 	<script src="../common/fit_text.lua"></script>
+	<script src="../common/title_picture.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
 	<div id="scrim">
+		<!-- The original look's title picture filling the window (../common/title_picture.lua), under everything. -->
+		<div id="picture"></div>
+		<div id="picture-fade-left" class="picture-fade"></div>
+		<div id="picture-fade-right" class="picture-fade"></div>
 		<div id="panel">
 			<h1 id="title"></h1>
 			<p id="full" text-key="save.slots.full"></p>
