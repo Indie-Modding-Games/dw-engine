@@ -38,6 +38,8 @@ std::string_view kindName(game::battle::BattleKind kind) {
     return "tournament";
   case game::battle::BattleKind::Arena:
     return "arena";
+  case game::battle::BattleKind::Versus:
+    return "versus";
   }
   return "normal";
 }

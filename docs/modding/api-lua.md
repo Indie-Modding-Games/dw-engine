@@ -42,7 +42,7 @@ Un evento que el juego no publica es un error de `hooks.on`.
 |---|---|
 | `field.map_entered` | El jugador está en un mapa: al empezar la partida (`previous` es nil) y tras cada cambio de mapa |
 | `field.map_left` | El jugador deja un mapa por otro (`next`), justo antes de `field.map_entered` del nuevo |
-| `battle.started` | Empieza un combate. `kind`: `normal`, `tournament` o `arena`; `enemies`, cuántos rivales; `first_enemy`, el id de la especie del primero; `scripted`, si lo abre la historia |
+| `battle.started` | Empieza un combate. `kind`: `normal`, `tournament`, `arena` o `versus`; `enemies`, cuántos rivales; `first_enemy`, el id de la especie del primero; `scripted`, si lo abre la historia |
 | `battle.ended` | Termina un combate y ya se dieron sus premios. `outcome`: `victory`, `fled` o `defeat`; `recruit`, el residente que se une a la ciudad, si hay uno |
 | `evolution.evolved` | El compañero evoluciona de una especie (`from`) a otra (`to`), por id |
 | `clock.new_day` | Empieza un día nuevo (la medianoche del compañero) |
