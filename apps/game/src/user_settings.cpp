@@ -78,6 +78,9 @@ constexpr std::string_view FairSicknessChanceKey = "fair_sickness_chance";
 constexpr std::string_view FairEvolutionAverageKey = "fair_evolution_average";
 constexpr std::string_view FairMoveForgettingKey = "fair_move_forgetting";
 constexpr std::string_view FairCardStockKey = "fair_card_stock";
+constexpr std::string_view ChooseEggAfterLivesLostKey = "choose_egg_after_lives_lost";
+constexpr std::string_view GenerousTalkKey = "generous_talk";
+constexpr std::string_view ExtraToiletsKey = "extra_toilets";
 
 } // namespace
 
@@ -233,7 +236,10 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
           std::pair{FairSicknessChanceKey, &UserSettings::fairSicknessChance},
           std::pair{FairEvolutionAverageKey, &UserSettings::fairEvolutionAverage},
           std::pair{FairMoveForgettingKey, &UserSettings::fairMoveForgetting},
-          std::pair{FairCardStockKey, &UserSettings::fairCardStock}}) {
+          std::pair{FairCardStockKey, &UserSettings::fairCardStock},
+          std::pair{ChooseEggAfterLivesLostKey, &UserSettings::chooseEggAfterLivesLost},
+          std::pair{GenerousTalkKey, &UserSettings::generousTalk},
+          std::pair{ExtraToiletsKey, &UserSettings::extraToilets}}) {
       if (const core::YamlNode* value = tree->find(key)) {
         settings.*flag = reader.boolean(*value);
       }
@@ -427,7 +433,10 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
         std::pair{FairSicknessChanceKey, &UserSettings::fairSicknessChance},
         std::pair{FairEvolutionAverageKey, &UserSettings::fairEvolutionAverage},
         std::pair{FairMoveForgettingKey, &UserSettings::fairMoveForgetting},
-        std::pair{FairCardStockKey, &UserSettings::fairCardStock}}) {
+        std::pair{FairCardStockKey, &UserSettings::fairCardStock},
+        std::pair{ChooseEggAfterLivesLostKey, &UserSettings::chooseEggAfterLivesLost},
+        std::pair{GenerousTalkKey, &UserSettings::generousTalk},
+        std::pair{ExtraToiletsKey, &UserSettings::extraToilets}}) {
     if (const std::optional<bool>& value = settings.*flag; value) {
       root.set(std::string{key}, core::YamlNode::scalar(*value ? "true" : "false"));
     }

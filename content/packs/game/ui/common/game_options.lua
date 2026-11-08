@@ -276,6 +276,39 @@ game_options = {
     help = "pause_menu.help.fair_card_stock",
     original = false,
   },
+  -- Choose the egg after losing all lives: the egg box opens then too, as after a natural death
+  -- (off by default: the original draws the egg at random).
+  {
+    id = "choose-egg-after-lives-lost",
+    setting = "choose_egg_after_lives_lost",
+    label = "pause_menu.choose_egg_after_lives_lost",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.choose_egg_after_lives_lost",
+    original = false,
+  },
+  -- Generous talk range: a confirm reaches characters a little further on every side and further
+  -- ahead, and reads a sign's cell in front of the player (off by default: the original's reach).
+  {
+    id = "generous-talk",
+    setting = "generous_talk",
+    label = "pause_menu.generous_talk",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.generous_talk",
+    original = false,
+  },
+  -- Extra toilets: the toilet booths the game pack lists (field/extra_toilets) stand on their
+  -- maps (off by default: only the original's toilets).
+  {
+    id = "extra-toilets",
+    setting = "extra_toilets",
+    label = "pause_menu.extra_toilets",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.extra_toilets",
+    original = false,
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).

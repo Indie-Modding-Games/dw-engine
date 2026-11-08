@@ -20,6 +20,16 @@
 // other characters, and report the touches and talks that run their script section.
 namespace dwe::game::field {
 
+// The generous talk range (Field::setGenerousTalk, an engine improvement), in world units. Around:
+// a running player stops against an NPC up to one frame's step short of it (870 units a second at
+// 20 frames, 43.5), so 45 on every side counts standing next to one from any side, whichever way
+// the player faces. Ahead: twice the original's 50 (map.c: entityCheckEntityCollision), a step
+// short of an NPC's or a sign's side still counts.
+inline constexpr float GenerousTalkAround = 45.0F;
+inline constexpr float GenerousTalkAhead = 100.0F;
+// How far ahead a confirm reads a sign's cell when the player's own is not one: one collision cell.
+inline constexpr float GenerousSignAhead = 100.0F;
+
 // Marks an NPC entity: the script id the story names it by (NPCEntity.scriptId).
 struct NpcTag {
   std::int32_t scriptId = 0;
@@ -172,8 +182,11 @@ public:
 
   // The player's side (tamer.c: checkMapInteraction): the NPC under the player's square, reaching
   // talkReach further the way it faces when confirm is pressed while standing. A touch when it has
-  // autotalk, a talk when confirm is pressed and it has not.
-  void touchFromPlayer(GroundSquare player, glm::vec2 facing, bool standing, bool confirm);
+  // autotalk, a talk when confirm is pressed and it has not. With `generous` (Field::
+  // setGenerousTalk), a confirm reaches GenerousTalkAround further on every side and
+  // GenerousTalkAhead the way it faces, standing or not.
+  void touchFromPlayer(GroundSquare player, glm::vec2 facing, bool standing, bool confirm,
+                       bool generous = false);
 
   // One tick of every NPC: its waypoint path, its move with the collision of the map and the other
   // characters, and its touch of the player.

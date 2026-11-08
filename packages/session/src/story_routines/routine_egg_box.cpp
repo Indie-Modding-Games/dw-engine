@@ -2,6 +2,7 @@
 
 #include <cstddef>
 
+#include "../story_death.hpp"
 #include "../story_scenes_context.hpp"
 #include "routines.hpp"
 
@@ -9,7 +10,7 @@ namespace dwe::session {
 
 namespace {
 
-constexpr game::story::RoutineNumber Routine = 29;
+constexpr game::story::RoutineNumber Routine = EggBoxRoutine;
 // DOO2_openEggBox starts on the first egg.
 constexpr std::size_t FirstEgg = 0;
 

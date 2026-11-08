@@ -26,8 +26,6 @@ constexpr float FixedOneF = 4096.0F;
 // Not in the original: a scene clip that never ends (a model whose last clip repeats) gives the
 // field back after this many frames instead of holding it forever.
 constexpr std::int32_t ClipWaitGuardFrames = 200;
-// Slot 8 plays the scene's bank (playSound2(8, n)).
-constexpr std::int64_t SceneSoundSlot = 8;
 // State 0 (evl.c:384): the map's and the other characters' palettes go to black, 0 to 255 over
 // the dimming's frames.
 constexpr std::int32_t PaletteLevelMax = 0xFF;
@@ -123,9 +121,11 @@ void EvolutionScene::setPhase(Phase phase) {
 }
 
 void EvolutionScene::playSound(std::int32_t sound) {
-  if (game::story::SoundPort* port = session_->sound()) {
-    port->playSound(SceneSoundSlot, sound);
-  }
+  sounds_.play(session_->sound(), sound);
+}
+
+void EvolutionScene::stopSounds() {
+  sounds_.stopAll(session_->sound());
 }
 
 void EvolutionScene::step() {
@@ -271,6 +271,8 @@ void EvolutionScene::stepBursting() {
     scene_->setStage(stage_);
   }
   if (frame_ == rules_.roarFrame) {
+    // evl.c:503: stopSound, then the roar: the burst's sounds loop until they are stopped here.
+    stopSounds();
     playSound(rules_.roarSound);
   }
   if (frame_ == rules_.swapFrame) {
@@ -317,7 +319,9 @@ void EvolutionScene::skip() {
   }
   core::logDebug("[port:evolution] skip: the scene ends at {} frame {} as {}",
                  phaseName(static_cast<std::uint8_t>(phase_)), frame_, target_);
-  // restore's state 3 to 4 (evl.c:569) without its last clip, then the end (partner.c:774).
+  // restore's state 3 to 4 (evl.c:569) without its last clip, then the end (partner.c:774). A
+  // skip before the roar would leave the burst's sounds looping: they stop with the scene.
+  stopSounds();
   stage_ = {};
   scene_->setStage(stage_);
   effects_.clear();
@@ -329,6 +333,8 @@ void EvolutionScene::skip() {
 void EvolutionScene::finish() {
   // partnerTickEvolving (partner.c:774): the game time and the player go on.
   core::logDebug("[port:evolution] partnerTickEvolving (partner.c:774): scene ends as {}", drawn_);
+  // Nothing the scene played outlives it.
+  stopSounds();
   if (drawn_ != target_) {
     drawNewForm();
   }

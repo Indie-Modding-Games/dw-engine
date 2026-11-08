@@ -4,6 +4,7 @@
 #include <dwe/core/message.hpp>
 #include <dwe/game/field/field.hpp>
 
+#include <map>
 #include <optional>
 #include <string>
 #include <utility>
@@ -97,6 +98,31 @@ void FieldScene::setPosedProps(const assets::AssetId& model, std::vector<PropPla
     return;
   }
   set.model = *handle;
+}
+
+void FieldScene::showExtraToilets() {
+  std::map<std::string, std::vector<glm::mat4>> shown;
+  for (const std::string& model : extraToiletModels_) {
+    shown[model];
+  }
+  extraToiletModels_.clear();
+  for (const game::field::ExtraToilet* toilet : field_->extraToiletsHere()) {
+    shown[toilet->model].push_back(
+        glm::rotate(glm::translate(glm::mat4{1.0F}, toilet->worldPosition()), toilet->yaw(),
+                    glm::vec3{0.0F, 1.0F, 0.0F}));
+  }
+  for (auto& [model, places] : shown) {
+    const auto id = assets::AssetId::parse(model);
+    if (!id) {
+      core::logWarning("{}",
+                       core::formatMessage(messages::PropModelMissing, model, id.error().message));
+      continue;
+    }
+    if (!places.empty()) {
+      extraToiletModels_.push_back(model);
+    }
+    setProps(*id, std::move(places));
+  }
 }
 
 void FieldScene::submitStageProps() {

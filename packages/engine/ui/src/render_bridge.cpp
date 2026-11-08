@@ -1,6 +1,8 @@
 #include "render_bridge.hpp"
 
 #include <dwe/core/log.hpp>
+#include <dwe/render/scenery_upscale.hpp>
+#include <dwe/ui/image_reference.hpp>
 
 #include <algorithm>
 #include <array>
@@ -30,6 +32,31 @@ void premultiply(std::vector<std::byte>& pixels) {
       pixel[channel] = static_cast<std::byte>(((value * alpha) + (MaxValue / 2)) / MaxValue);
     }
   }
+}
+
+// The version of what smoothed returns: a change to it upscales every kept image again.
+constexpr std::uint32_t SmoothImageVersion = 1;
+
+// An image a source asks to smooth, doubled by the texture upscaler the field's models get
+// (render::upscaleRgba: alpha interpolated like a colour, transparent texels taking their opaque
+// neighbours' colour first) until it is SmoothUpscaleWidth wide. Straight alpha in and out.
+std::vector<std::byte> smoothed(std::uint32_t width, std::uint32_t height,
+                                std::vector<std::byte> pixels, std::uint32_t doublings,
+                                const render::UpscaleCache* cache) {
+  const std::size_t bytes = pixels.size() << (2U * doublings);
+  render::UpscaleKey key;
+  key.add(SmoothImageVersion).add(doublings).add(width).add(height);
+  key.add(std::span<const std::byte>{pixels});
+  if (cache != nullptr) {
+    if (auto kept = cache->load(key.value(), bytes)) {
+      return std::move(*kept);
+    }
+  }
+  std::vector<std::byte> grown = render::upscaleRgba(width, height, pixels, doublings);
+  if (cache != nullptr && grown.size() == bytes) {
+    cache->store(key.value(), grown);
+  }
+  return grown;
 }
 
 // Renderer textures are handed to RmlUi as their generation in the high 32 bits and their index
@@ -155,9 +182,17 @@ Rml::TextureHandle RenderBridge::LoadTexture(Rml::Vector2i& dimensions, const Rm
   }
   // RmlUi lays out and cuts sprites in the drawn size; the texture keeps every pixel.
   dimensions = {static_cast<int>(image->size.width), static_cast<int>(image->size.height)};
-  const Rml::Vector2i texels{static_cast<int>(image->pixels.width),
-                             static_cast<int>(image->pixels.height)};
+  std::uint32_t width = image->pixels.width;
+  std::uint32_t height = image->pixels.height;
   std::vector<std::byte> pixels = std::move(image->pixels.pixels);
+  if (TextureSources::isSmoothed(source)) {
+    if (const std::uint32_t doublings = smoothDoublings(width); doublings > 0) {
+      pixels = smoothed(width, height, std::move(pixels), doublings, upscaleCache_.get());
+      width <<= doublings;
+      height <<= doublings;
+    }
+  }
+  const Rml::Vector2i texels{static_cast<int>(width), static_cast<int>(height)};
   premultiply(pixels);
   const Rml::TextureHandle texture = createTexture(texels, pixels);
   if (texture != 0 && TextureSources::isPixelArt(source)) {

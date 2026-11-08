@@ -356,6 +356,10 @@ public:
     glm::vec2 texelOffset{0.0F};
   };
   void setPosedProps(const assets::AssetId& model, std::vector<PropPlace> places);
+  // Draws the booths of the current map's extra toilets while they are on, and none while off or
+  // on another map (game::field::Field::extraToiletsHere); call it after each map entry and after
+  // the option changes.
+  void showExtraToilets();
   // Screen sprites the story hangs at world points until replaced (the mood bubble:
   // field_story_props.hpp).
   void setStorySprites(std::vector<StorySprite> sprites) { storySprites_ = std::move(sprites); }
@@ -1169,6 +1173,8 @@ private:
     std::vector<PropPlace> places;
   };
   std::map<std::string, PropSet> props_;
+  // The models showExtraToilets last drew, emptied the next time.
+  std::vector<std::string> extraToiletModels_;
   std::vector<StorySprite> storySprites_;
   std::vector<scene::Entity> hiddenNpcs_;
   std::vector<ScenePrim> storyScreenPrims_;

@@ -8,6 +8,8 @@
 # planter, a bed). facing: the original Y rotation (0-4095) it faces; the camera when left out.
 # look_at: the ground point (x, z, the original's world units) it faces, where its drawing looks.
 # additive: draws the model added to what is behind, its colours scaled by this (a sprite that glows).
+# animation: the original's animation id of the pose its drawing shows (the idle when left out); frame:
+# the tick of it the drawing holds, which the model keeps instead of playing the clip.
 characters:
   # The opening, in front of the elder's house: the babies cheering for the player. Their drawings are
   # turned to the player waking up in the middle (lying at 266, -2330 when the scene starts), not to the
@@ -42,11 +44,13 @@ characters:
   # The elder's house: Punimon bouncing on the bed and Poyomon by the wall.
   - {maps: [room08], species: puni, sprites: [7], feet: [528, 158], height: 120}
   - {maps: [room08], species: poyo, sprites: [8], height: 60}
-  # The market stall: Coelamon lying on the rug, one instance in each town variant that has the stall.
-  - {maps: [twnb02, twnb07], species: sira, sprites: [108], facing: 2560}
-  - {maps: [twnb03], species: sira, sprites: [109], facing: 2560}
-  - {maps: [twnb04], species: sira, sprites: [111], facing: 2560}
-  - {maps: [twnb05], species: sira, sprites: [143], facing: 2560}
-  - {maps: [twnb06], species: sira, sprites: [141], facing: 2560}
-  - {maps: [twnb08], species: sira, sprites: [140], facing: 2560}
-  - {maps: [twnb09], species: sira, sprites: [138], facing: 2560}
+  # The market stall: its keeper lying on the rug, one instance in each town variant that has the stall,
+  # all at the same pixel. Its drawing shows it lying on its belly on the rug, its head to the camera and
+  # to the right: the prone tick of its knocked-down clip, not its floating idle.
+  - {maps: [twnb02, twnb07], species: sira, sprites: [108], feet: [305, 118], facing: 3584, animation: 41, frame: 7}
+  - {maps: [twnb03], species: sira, sprites: [109], feet: [305, 118], facing: 3584, animation: 41, frame: 7}
+  - {maps: [twnb04], species: sira, sprites: [111], feet: [305, 118], facing: 3584, animation: 41, frame: 7}
+  - {maps: [twnb05], species: sira, sprites: [143], feet: [305, 118], facing: 3584, animation: 41, frame: 7}
+  - {maps: [twnb06], species: sira, sprites: [141], feet: [305, 118], facing: 3584, animation: 41, frame: 7}
+  - {maps: [twnb08], species: sira, sprites: [140], feet: [305, 118], facing: 3584, animation: 41, frame: 7}
+  - {maps: [twnb09], species: sira, sprites: [138], feet: [305, 118], facing: 3584, animation: 41, frame: 7}

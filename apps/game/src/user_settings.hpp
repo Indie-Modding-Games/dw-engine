@@ -166,6 +166,16 @@ struct UserSettings {
   // Fair card stock (fair_card_stock: true, false; rule_options.hpp): the card shop quirk
   // stock_repeats off, so a day's stock shows each card once; off when not chosen yet.
   std::optional<bool> fairCardStock = std::nullopt;
+  // Choose the egg after losing all lives (choose_egg_after_lives_lost: true, false;
+  // rule_options.hpp): life.rebirth.random_egg_without_lives off, so a partner reborn with no
+  // lives left comes from the egg the player takes in the egg box; off when not chosen yet.
+  std::optional<bool> chooseEggAfterLivesLost = std::nullopt;
+  // Generous talk range (generous_talk: true, false; game::field::Field::setGenerousTalk): a
+  // confirm reaches characters and signs a little further; off when not chosen yet.
+  std::optional<bool> generousTalk = std::nullopt;
+  // Extra toilets (extra_toilets: true, false; game::field::ExtraToilet): the toilet booths the
+  // game pack lists stand on their maps; off when not chosen yet.
+  std::optional<bool> extraToilets = std::nullopt;
   // Shop extras (shop_extras: true, false; the shop document reads it): the focused item's
   // description under a shop's list, the bag's count of each item and the money a trade leaves; off
   // when not chosen yet.

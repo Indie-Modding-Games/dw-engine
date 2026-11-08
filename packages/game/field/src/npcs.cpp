@@ -410,16 +410,21 @@ bool FieldNpcs::overlaps(glm::vec3 at, float half) const {
   });
 }
 
-void FieldNpcs::touchFromPlayer(GroundSquare player, glm::vec2 facing, bool standing,
-                                bool confirm) {
+void FieldNpcs::touchFromPlayer(GroundSquare player, glm::vec2 facing, bool standing, bool confirm,
+                                bool generous) {
   glm::vec2 low = player.centre - glm::vec2{player.half};
   glm::vec2 high = player.centre + glm::vec2{player.half};
-  if (confirm && standing) {
+  if (confirm && (standing || generous)) {
     // map.c: entityCheckEntityCollision stretches the player's box toward the sides it faces.
-    low.x -= facing.x < -AxisEpsilon ? rules_.talkReach : 0.0F;
-    high.x += facing.x > AxisEpsilon ? rules_.talkReach : 0.0F;
-    low.y -= facing.y < -AxisEpsilon ? rules_.talkReach : 0.0F;
-    high.y += facing.y > AxisEpsilon ? rules_.talkReach : 0.0F;
+    const float reach = generous ? GenerousTalkAhead : rules_.talkReach;
+    low.x -= facing.x < -AxisEpsilon ? reach : 0.0F;
+    high.x += facing.x > AxisEpsilon ? reach : 0.0F;
+    low.y -= facing.y < -AxisEpsilon ? reach : 0.0F;
+    high.y += facing.y > AxisEpsilon ? reach : 0.0F;
+    if (generous) {
+      low -= glm::vec2{GenerousTalkAround};
+      high += glm::vec2{GenerousTalkAround};
+    }
   }
   for (const Npc& npc : npcs_) {
     if (!collides(npc)) {

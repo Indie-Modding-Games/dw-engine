@@ -108,6 +108,28 @@ TEST_CASE("a skin.yaml marks elements of shared documents with document_classes"
   CHECK_FALSE(parseSkin("id: p\nname: x\ndocument_classes: [hud]\n").has_value());
 }
 
+TEST_CASE(
+    "a sprite sheet may let its picture be smoothed, which its RCSS asks only when smoothing is on") {
+  SkinSpriteSheet sheet = sheetOf(
+      "id: p\nname: x\nsprite_sheets:\n- {name: s, image: a/b, palette: 0, upscale: smooth, sprites: {c: [0, 0, 1, 1]}}\n");
+  CHECK(sheet.smooth);
+  // The skin reads the flag; the image is smoothed only once the styler sets it on the reference.
+  CHECK_FALSE(sheet.image.smooth);
+  sheet.image.smooth = true;
+  const auto rcss = spriteSheetRcss(sheet, 1, 1);
+  REQUIRE(rcss.has_value());
+  CHECK(rcss->contains("src: /a/b?palette=0&upscale=smooth;"));
+
+  CHECK_FALSE(
+      sheetOf(
+          "id: p\nname: x\nsprite_sheets:\n- {name: s, image: a/b, sprites: {c: [0, 0, 1, 1]}}\n")
+          .smooth);
+  CHECK(
+      errorOf(
+          "id: p\nname: x\nsprite_sheets:\n- {name: s, image: a, upscale: sharp, sprites: {b: [0, 0, 1, 1]}}\n")
+          .contains("upscale must be smooth"));
+}
+
 TEST_CASE("ui/ui_skin.yaml names the skin the game starts with") {
   const auto choice = parseSkinChoice("default: modern\n");
   REQUIRE(choice.has_value());

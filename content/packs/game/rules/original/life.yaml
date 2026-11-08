@@ -25,6 +25,10 @@ rebirth:
   # setReincarnateStats: tras una muerte natural hereda un % de cada stat del partner muerto igual al nivel del
   # tamer; si no, nada.
   inherit_percent_per_tamer_level: 1
+  # dooa/dooa.c: DOOA_getSequenceState: sin vidas el huevo sale al azar (rand() % 4) aunque la caja diga otro; la
+  # sección 0x49 del script 212 ni la abre. En false (opción choose_egg_after_lives_lost) la caja se abre también y
+  # cuenta el huevo elegido.
+  random_egg_without_lives: true
 # Las escenas de una vida perdida, de la muerte y del renacer, en fotogramas del original (20 por segundo). Sin esta
 # sección el partner cambia al momento.
 scenes:

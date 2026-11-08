@@ -35,6 +35,9 @@ struct RebirthRules {
   std::string babyChoice;
   std::vector<RebirthBaby> babies;
   std::int32_t inheritPercentPerTamerLevel = 0;
+  // dooa.c: DOOA_getSequenceState: a partner with no lives left gets a random egg, whatever the
+  // egg box said. Off (the option choose_egg_after_lives_lost), the egg box's egg counts too.
+  bool randomEggWithoutLives = true;
 };
 
 // A moment of a scene, in frames of the original, and the sound of slot 8 it plays then.

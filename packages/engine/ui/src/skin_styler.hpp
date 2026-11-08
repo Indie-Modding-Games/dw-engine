@@ -47,6 +47,12 @@ public:
   // The images of the skin's sprite sheets, by the path RmlUi reads each one with.
   [[nodiscard]] std::vector<std::string> spriteImages() const;
 
+  // Whether the sprite sheets a skin lets smooth (SkinSpriteSheet::smooth) are drawn smoothed by
+  // the texture upscaler; off, they draw as the skin's other sheets. Forgets the sheets built so
+  // far when it changes; true then.
+  bool setSmoothPictures(bool smooth);
+  [[nodiscard]] bool smoothPictures() const { return smoothPictures_; }
+
 private:
   struct ScreenSheet {
     Rml::SharedPtr<Rml::StyleSheetContainer> sheet;
@@ -57,6 +63,8 @@ private:
   // Takes off the document's elements every class a skin of the catalog puts on them, then puts on
   // the current skin's, warning about the ids the document lacks.
   void applyClasses(Rml::ElementDocument& document, std::string_view screen) const;
+  // A sheet's image as RmlUi reads it: smoothed when the sheet lets it and smoothing is on.
+  [[nodiscard]] ImageReference imageOf(const SkinSpriteSheet& sheet) const;
   // The skin's sprite sheets as one style sheet, or nullptr for none.
   [[nodiscard]] Rml::SharedPtr<Rml::StyleSheetContainer> buildSpriteSheets() const;
 
@@ -65,6 +73,7 @@ private:
   const Skin* skin_ = nullptr;
   Rml::SharedPtr<Rml::StyleSheetContainer> spriteSheets_;
   std::map<std::string, ScreenSheet, std::less<>> sheets_;
+  bool smoothPictures_ = false;
 };
 
 } // namespace dwe::ui

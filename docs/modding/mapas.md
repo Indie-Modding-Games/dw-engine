@@ -82,3 +82,10 @@ Para comprobar el paquete sin abrir el juego:
 ```sh
 dwx validate <carpeta de mods>/<id del paquete>
 ```
+
+## Poner un baño en un mapa
+
+Con la opción «Baños extra», cualquier mapa puede tener una caseta de baño: una línea en `field/extra_toilets.yaml` del
+paquete (mapa, posición y hacia dónde mira) da la caseta dibujada, sus casillas sólidas, las casillas de delante que
+llevan al compañero al baño y la rutina del baño de siempre. Los detalles y un ejemplo están en
+[Baños extra](../modulos/apps/game.md#banos-extra).

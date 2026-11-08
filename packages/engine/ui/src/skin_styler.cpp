@@ -119,9 +119,24 @@ std::vector<std::string> SkinStyler::spriteImages() const {
     return images;
   }
   for (const SkinSpriteSheet& sheet : catalog_->spriteSheetsOf(*skin_)) {
-    images.push_back(imageReferenceText(sheet.image));
+    images.push_back(imageReferenceText(imageOf(sheet)));
   }
   return images;
+}
+
+bool SkinStyler::setSmoothPictures(bool smooth) {
+  if (smooth == smoothPictures_) {
+    return false;
+  }
+  smoothPictures_ = smooth;
+  forget();
+  return true;
+}
+
+ImageReference SkinStyler::imageOf(const SkinSpriteSheet& sheet) const {
+  ImageReference image = sheet.image;
+  image.smooth = sheet.smooth && smoothPictures_;
+  return image;
 }
 
 Rml::SharedPtr<Rml::StyleSheetContainer> SkinStyler::buildSpriteSheets() const {
@@ -134,7 +149,9 @@ Rml::SharedPtr<Rml::StyleSheetContainer> SkinStyler::buildSpriteSheets() const {
                                                  skin_->id, size.error().message));
       continue;
     }
-    auto text = spriteSheetRcss(sheet, size->width, size->height);
+    SkinSpriteSheet drawn = sheet;
+    drawn.image = imageOf(sheet);
+    auto text = spriteSheetRcss(drawn, size->width, size->height);
     if (!text) {
       core::logWarning("{}", core::formatMessage(messages::SpriteSheetUnusable, sheet.name,
                                                  skin_->id, text.error().message));

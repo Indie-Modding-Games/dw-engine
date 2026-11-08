@@ -50,6 +50,7 @@
 #include "bulk_amount.hpp"
 #include "common.hpp"
 #include "condition_point.hpp"
+#include "gym_box_close.hpp"
 #include "hd_scenery_setting.hpp"
 #include "messages.hpp"
 #include "partner_events.hpp"
@@ -935,23 +936,28 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent,
   const auto& fieldRules = game_.systems.fieldItems->rules();
   sleepScreen_.tickField(*scene_, static_cast<float>(TickSeconds),
                          fieldRules ? std::optional{fieldRules->sleepSound} : std::nullopt);
+  // partner.c: partnerTickOverworld runs the partner's state: the care scenes below (praise and
+  // scold 4 and 15, feeding 5, the toilet 6), the sleep (3), the evolution (13) and the death (8,
+  // 14) each run instead of the field; the normal state (1) is the field's following, and the
+  // condition bubble (10) the HUD's. A pile on the field (7) and eating one (9) are FieldPoop's.
+  // The gym's last box still closes beside them (gym_box_close.hpp): a pile or an evolution right
+  // after a session left its outline on screen until the scene ended.
+  const PartnerSceneHolds holds{.sleep = sleepScreen_.active(),
+                                .pile = fieldPoop_.active(),
+                                .toilet = fieldToilet_.active(),
+                                .feed = feedScene_.active(),
+                                .praiseScold = praiseScold_.active(),
+                                .evolution = evolutionScene_.active(),
+                                .death = !battleScreen_.active() && deathScene_.holdsField()};
+  if (closesGymBoxBesideScene(gymScreen_.active(), holds)) {
+    gymScreen_.tick(TickSeconds, {});
+  }
   if (sleepScreen_.active() || shopScreen_.active() || devMenu_.isOpen() ||
       itemKeeperScreen_.active() || discardScreen_.active() || jukeboxScreen_.active() ||
       tradeScreen_.active() || birdScreen_.active() || cardShopScreen_.active() ||
       meritShopScreen_.active() || scheduleScreen_.active() || bracketScreen_.playing() ||
       storyScenes_.tournamentIntro() || worldMapScreen_.isOpen()) {
     return;
-  }
-  // partner.c: partnerTickOverworld runs the partner's state: the care scenes below (praise and
-  // scold 4 and 15, feeding 5, the toilet 6), the sleep (3), the evolution (13) and the death (8,
-  // 14) each run instead of the field; the normal state (1) is the field's following, and the
-  // condition bubble (10) the HUD's. A pile on the field (7) and eating one (9) are FieldPoop's.
-  // ui.c: an animated box grows and shrinks in its own render (renderUIBoxAnimated), whatever the
-  // partner does: the last course's stats box still closes while a care scene holds the field (a
-  // pile right after a session left its outline on screen until the scene ended).
-  if (!gymScreen_.active() && (fieldPoop_.active() || fieldToilet_.active() ||
-                               feedScene_.active() || praiseScold_.active())) {
-    gymScreen_.tick(TickSeconds, {});
   }
   if (fieldPoop_.active()) {
     guardFactsChanged_ = fieldPoop_.tick(static_cast<float>(TickSeconds)) || guardFactsChanged_;
@@ -1133,7 +1139,11 @@ constexpr std::array PlayOptions{
     PlayOption{.setting = FairEvolutionAverageSetting,
                .saved = &UserSettings::fairEvolutionAverage},
     PlayOption{.setting = FairMoveForgettingSetting, .saved = &UserSettings::fairMoveForgetting},
-    PlayOption{.setting = FairCardStockSetting, .saved = &UserSettings::fairCardStock}};
+    PlayOption{.setting = FairCardStockSetting, .saved = &UserSettings::fairCardStock},
+    PlayOption{.setting = ChooseEggAfterLivesLostSetting,
+               .saved = &UserSettings::chooseEggAfterLivesLost},
+    PlayOption{.setting = GenerousTalkSetting, .saved = &UserSettings::generousTalk},
+    PlayOption{.setting = ExtraToiletsSetting, .saved = &UserSettings::extraToilets}};
 
 RuleChoices ruleChoicesOf(const UserSettings& settings) {
   const std::string difficulty = settings.difficulty.value_or(std::string{DifficultyNormal});
@@ -1141,7 +1151,8 @@ RuleChoices ruleChoicesOf(const UserSettings& settings) {
           .fairSicknessChance = settings.fairSicknessChance.value_or(false),
           .fairEvolutionAverage = settings.fairEvolutionAverage.value_or(false),
           .fairMoveForgetting = settings.fairMoveForgetting.value_or(false),
-          .fairCardStock = settings.fairCardStock.value_or(false)};
+          .fairCardStock = settings.fairCardStock.value_or(false),
+          .chooseEggAfterLivesLost = settings.chooseEggAfterLivesLost.value_or(false)};
 }
 
 } // namespace
@@ -1155,6 +1166,9 @@ void PlaySession::applyPlayOptions() {
   context_.ui->setSetting(DifficultySetting, rules.difficulty);
   battleScreen_.setQuickStart(settings.quickBattleStart.value_or(false));
   skipEvolution_ = settings.skipEvolution.value_or(false);
+  scene_->field().setGenerousTalk(settings.generousTalk.value_or(false));
+  scene_->field().setExtraToiletsOn(settings.extraToilets.value_or(false));
+  scene_->showExtraToilets();
   if (game_.systems.story != nullptr) {
     game_.systems.story->dialogue().setCancelClosesChoice(
         settings.choiceCancelCloses.value_or(false));
@@ -1641,6 +1655,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   ui::Ui& ui = *context_.ui;
   if (scene_->mapSerial() != mapSerial_) {
     mapSerial_ = scene_->mapSerial();
+    scene_->showExtraToilets();
     ui.setMinimap(ui::minimapGridOf(scene_->map()), scene_->mapNameKey());
     fishingScreen_.enterMap(*scene_, scene_->field().mapId());
     if (const auto& change = scene_->lastMapChange(); change && autotest != nullptr) {

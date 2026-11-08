@@ -222,6 +222,8 @@ inline constexpr std::string_view SpriteCharactersUnreadable =
     "field: {}: {}; the sprite characters stay sprites";
 inline constexpr std::string_view SpriteCharacterModelMissing =
     "field: the {} of map {} stays a sprite: {}";
+inline constexpr std::string_view SpriteCharacterClipMissing =
+    "field: the {} of map {} has no animation {}; it stands with its idle";
 
 // The options that change the rules (rule_options.hpp).
 inline constexpr std::string_view DifficultyNoLevels =

@@ -46,9 +46,10 @@ core::Result<std::size_t> parsePalette(std::string_view text) {
 struct ImageOptions {
   std::optional<std::size_t> palette;
   ImageTone tone = ImageTone::Natural;
+  bool smooth = false;
 };
 
-// Reads the options after an image's path: `palette=3&tone=grey`.
+// Reads the options after an image's path: `palette=3&tone=grey&upscale=smooth`.
 core::Result<ImageOptions> parseImageOptions(std::string_view options) {
   ImageOptions parsed;
   while (true) {
@@ -66,6 +67,9 @@ core::Result<ImageOptions> parseImageOptions(std::string_view options) {
       parsed.palette = *number;
     } else if (equals != std::string_view::npos && name == ToneOption && value == GreyToneName) {
       parsed.tone = ImageTone::Grey;
+    } else if (equals != std::string_view::npos && name == UpscaleOption &&
+               value == SmoothUpscaleName) {
+      parsed.smooth = true;
     } else {
       return core::fail(core::formatMessage(messages::BadImageOption, option));
     }
@@ -139,12 +143,23 @@ core::Result<ImageReference> parseImageReference(std::string_view path) {
   if (!asset) {
     return std::unexpected{asset.error()};
   }
-  return ImageReference{
-      .asset = std::move(*asset), .palette = options.palette, .tone = options.tone};
+  return ImageReference{.asset = std::move(*asset),
+                        .palette = options.palette,
+                        .tone = options.tone,
+                        .smooth = options.smooth};
 }
 
 bool isPixelArt(const ImageReference& reference) {
-  return reference.palette.has_value();
+  return reference.palette.has_value() && !reference.smooth;
+}
+
+std::uint32_t smoothDoublings(std::uint32_t width) {
+  std::uint32_t doublings = 0;
+  while (doublings < SmoothUpscaleMaxDoublings && width > 0 &&
+         (width << doublings) < SmoothUpscaleWidth) {
+    ++doublings;
+  }
+  return doublings;
 }
 
 std::string imageReferenceText(const ImageReference& reference) {
@@ -155,6 +170,10 @@ std::string imageReferenceText(const ImageReference& reference) {
   if (reference.tone == ImageTone::Grey) {
     text += reference.palette ? "&" : "?";
     text += std::string{ToneOption} + "=" + std::string{GreyToneName};
+  }
+  if (reference.smooth) {
+    text += text.contains('?') ? "&" : "?";
+    text += std::string{UpscaleOption} + "=" + std::string{SmoothUpscaleName};
   }
   return text;
 }
@@ -270,8 +289,10 @@ std::optional<Replacement> findReplacement(const assets::VirtualFileSystem& file
   if (source == nullptr) {
     return std::nullopt;
   }
-  ImageReference replacement{
-      .asset = std::move(*id), .palette = std::nullopt, .tone = reference.tone};
+  ImageReference replacement{.asset = std::move(*id),
+                             .palette = std::nullopt,
+                             .tone = reference.tone,
+                             .smooth = reference.smooth};
   const auto unusable = [&](const std::string& reason) {
     core::logWarning("{}",
                      core::formatMessage(messages::ReplacementUnusable, replacement.asset.str(),

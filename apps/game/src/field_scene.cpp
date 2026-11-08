@@ -6,6 +6,7 @@
 #include <dwe/assets/map_warps.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
+#include <dwe/game/field/extra_toilets.hpp>
 #include <dwe/game/field/rules.hpp>
 #include <dwe/game/field/script_warps.hpp>
 #include <dwe/localization/catalog.hpp>
@@ -108,6 +109,17 @@ render::TimeOfDaySchedule scheduleOf(const game::field::TimeOfDayRules& rules) {
           .nightStart = rules.nightStart,
           .duskLight = rules.duskLight,
           .nightLight = rules.nightLight};
+}
+
+// The extra toilets of the packs (an improvement the option turns on); a pack without the list has
+// none.
+void loadExtraToiletsInto(game::field::Field& field, const assets::VirtualFileSystem& files) {
+  auto toilets = game::field::loadExtraToilets(files);
+  if (!toilets) {
+    core::logWarning("field: no extra toilets: {}", toilets.error().message);
+    toilets.emplace();
+  }
+  field.setExtraToilets(std::move(*toilets));
 }
 
 // The hour --time jumps the clock to: the first hour of that time of day (field rules), or for day
@@ -249,6 +261,7 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
                                      const auto id = assets::mapDataId(map);
                                      return id && files.resolve(*id) != nullptr;
                                    }});
+  loadExtraToiletsInto(*scene->field_, files);
   scene->schedule_ = scheduleOf(rules->timeOfDay);
   scene->clock_ = desc.clock;
   if (desc.time) {
@@ -569,6 +582,7 @@ core::Result<void> FieldScene::reloadMap(std::optional<std::int32_t> exit) {
                      table.error().message);
   }
   field_->reloadData(std::move(*rules), std::move(*scriptWarps));
+  loadExtraToiletsInto(*field_, *files_);
   schedule_ = scheduleOf(field_->rules().timeOfDay);
   // The packs are what is shown from now on.
   if (preview_) {

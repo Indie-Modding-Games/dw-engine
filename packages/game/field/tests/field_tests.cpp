@@ -24,6 +24,7 @@
 using dwe::assets::CollisionCell;
 using dwe::assets::MapCollision;
 using dwe::assets::MapDocument;
+using dwe::game::field::ExtraToilet;
 using dwe::game::field::Field;
 using dwe::game::field::FieldInput;
 using dwe::game::field::MapChange;
@@ -2133,6 +2134,125 @@ TEST_CASE("an NPC path past its map's waypoints uses the zeroed slots, as the or
   REQUIRE(spawnNpc(field, slot));
   run(field, 3.0F);
   CHECK(groundDistance(*field.npcs().positionOf(7), glm::vec3{0.0F}) < 900.0F);
+}
+
+TEST_CASE("a confirm talks to an NPC the player's square reaches, 50 further the way it faces") {
+  // map.c: entityCheckEntityCollision: standing, the player's square (half its radius) stretched
+  // 50 toward the sides it faces against the NPC's; tamer.c: checkMapInteraction. The generous
+  // talk range (an engine improvement) adds GenerousTalkAround on every side and reaches
+  // GenerousTalkAhead the way it faces.
+  constexpr float East = Pi / 2.0F;
+  constexpr float West = -Pi / 2.0F;
+  const auto talks = [](float gap, float yaw, bool generous) {
+    dwe::scene::World world;
+    Field field{world, originalRules()};
+    field.setGenerousTalk(generous);
+    MapDocument map = roomMap("room");
+    const std::size_t slot = addNpc(map, 0.0F, 0.0F, 7);
+    // The player west of the NPC: both squares are 100 from their middles.
+    field.enterMapAt(map, at(-(200.0F + gap), 0.0F, yaw));
+    REQUIRE(spawnNpc(field, slot));
+    field.setInput({});
+    run(field, 0.5F);
+    field.setInput({.confirm = true});
+    field.tick(Tick);
+    return std::ranges::any_of(field.npcContacts(), [](const auto& contact) {
+      return contact.scriptId == 7 && contact.cause == dwe::game::field::NpcContactCause::Confirm;
+    });
+  };
+  // Facing it: the original's reach.
+  CHECK(talks(40.0F, East, false));
+  CHECK_FALSE(talks(80.0F, East, false));
+  CHECK(talks(80.0F, East, true));
+  CHECK(talks(140.0F, East, true));
+  CHECK_FALSE(talks(160.0F, East, true));
+  // Facing away: only the squares touching, or the generous margin around.
+  CHECK(talks(0.0F, West, false));
+  CHECK_FALSE(talks(30.0F, West, false));
+  CHECK(talks(30.0F, West, true));
+  CHECK_FALSE(talks(60.0F, West, true));
+}
+
+TEST_CASE("with the generous talk range a confirm reads the sign's cell in front of the player") {
+  // tamer.c: checkMapInteraction reads the cell under the player only; the improvement also reads
+  // the one GenerousSignAhead ahead when the player's own is not a confirm cell.
+  const auto reads = [](bool generous) {
+    MapDocument house = roomMap("house");
+    // A confirm cell row east of the player, who stands one cell short of it, facing it.
+    fill(house, {.column = 52, .row = 45}, {.column = 52, .row = 55}, 80);
+    dwe::scene::World world;
+    Field field{world, originalRules()};
+    field.setGenerousTalk(generous);
+    field.enterMapAt(house, at(150.0F, 0.0F, Pi / 2.0F));
+    field.setInput({});
+    run(field, 0.5F);
+    field.setInput({.confirm = true});
+    field.tick(Tick);
+    return std::ranges::contains(field.cellSections(), 80);
+  };
+  CHECK_FALSE(reads(false));
+  CHECK(reads(true));
+}
+
+TEST_CASE("an extra toilet's booth is solid and its front takes the toilet trigger only while on") {
+  // An engine improvement: the free cells under each extra toilet's booth on the current map are
+  // solid and those in front of it hold the toilet trigger (tamer.c: checkMapInteraction, value
+  // 120); walls and other triggers stay as the map has them.
+  MapDocument room = roomMap("room");
+  // Original (1000, -1000) is world (1000, 0, 1000): the booth on cells 59-60 x 59-60, facing world
+  // +z, so the trigger strip is rows 61-62.
+  fill(room, {.column = 59, .row = 59}, {.column = 59, .row = 59}, Blocked);
+  fill(room, {.column = 60, .row = 61}, {.column = 60, .row = 61}, 110);
+  const MapDocument hall = roomMap("hall");
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.setExtraToilets(
+      {ExtraToilet{.map = "room", .position = {1000, -1000}, .facing = 0, .model = "props/booth"}});
+  field.enterMapAt(room, at(-1000.0F, -1000.0F, 0.0F));
+  const auto count = [](auto&& holds) {
+    std::size_t found = 0;
+    for (std::int32_t row = 58; row <= 63; ++row) {
+      for (std::int32_t column = 58; column <= 61; ++column) {
+        found += holds(CollisionCell{.column = column, .row = row}) ? 1 : 0;
+      }
+    }
+    return found;
+  };
+  const auto toiletCells = [&] {
+    return count([&field](CollisionCell cell) { return field.collision().trigger(cell) == 120; });
+  };
+  const auto solidCells = [&] {
+    return count([&field](CollisionCell cell) { return field.collision().isBlocked(cell); });
+  };
+  CHECK(toiletCells() == 0);
+  CHECK(solidCells() == 1);
+  CHECK(field.extraToiletsHere().empty());
+
+  field.setExtraToiletsOn(true);
+  CHECK(solidCells() == 4);
+  CHECK(toiletCells() == 3);
+  CHECK(field.collision().trigger({.column = 60, .row = 61}) == 110);
+  const ExtraToilet* toilet = field.extraToiletAt({.column = 59, .row = 62});
+  REQUIRE(toilet != nullptr);
+  CHECK(toilet->position == glm::ivec2{1000, -1000});
+  CHECK(field.extraToiletAt({.column = 60, .row = 60}) == nullptr);
+  CHECK(field.extraToiletAt({.column = 60, .row = 61}) == nullptr);
+  REQUIRE(field.extraToiletsHere().size() == 1);
+
+  // Another map has none; coming back gives them again.
+  field.enterMapAt(hall, at(-1000.0F, -1000.0F, 0.0F));
+  CHECK(toiletCells() == 0);
+  CHECK(solidCells() == 0);
+  CHECK(field.extraToiletsHere().empty());
+  field.enterMapAt(room, at(-1000.0F, -1000.0F, 0.0F));
+  CHECK(toiletCells() == 3);
+  CHECK(solidCells() == 4);
+
+  field.setExtraToiletsOn(false);
+  CHECK(toiletCells() == 0);
+  CHECK(solidCells() == 1);
+  CHECK(field.collision().trigger({.column = 60, .row = 61}) == 110);
+  CHECK(field.extraToiletsHere().empty());
 }
 
 TEST_CASE("an NPC on a wall cell stays there when it appears and after a talk") {

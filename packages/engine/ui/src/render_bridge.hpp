@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/core/math.hpp>
+#include <dwe/render/upscale_cache.hpp>
 #include <dwe/rhi/types.hpp>
 #include <dwe/ui/ui_renderer.hpp>
 
@@ -11,6 +12,7 @@
 #include <memory>
 #include <optional>
 #include <set>
+#include <utility>
 
 #include "rml_interfaces.hpp"
 #include "ui_renderer_impl.hpp"
@@ -47,6 +49,12 @@ public:
     return sharpTextures_.contains(texture);
   }
 
+  // Where the images a source asks to smooth (TextureSources::isSmoothed) keep their upscaled
+  // pixels, so each is upscaled once; none upscales them on every load.
+  void setUpscaleCache(std::shared_ptr<const render::UpscaleCache> cache) {
+    upscaleCache_ = std::move(cache);
+  }
+
 private:
   // A texture for premultiplied RGBA pixels: a renderer texture, or a plain handle when headless.
   Rml::TextureHandle createTexture(Rml::Vector2i dimensions, std::span<const std::byte> pixels);
@@ -58,6 +66,7 @@ private:
   // The textures of the disc's pixel art (TextureSources::isPixelArt), drawn with sharp texel
   // edges.
   std::set<Rml::TextureHandle> sharpTextures_;
+  std::shared_ptr<const render::UpscaleCache> upscaleCache_;
   bool scissorEnabled_ = false;
   rhi::Rect scissor_;
   glm::mat4 transform_{1.0F};

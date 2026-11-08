@@ -52,6 +52,11 @@ constexpr std::array Toggles{
                .fallback = false},
     GameToggle{
         .setting = "fair_card_stock", .saved = &UserSettings::fairCardStock, .fallback = false},
+    GameToggle{.setting = "choose_egg_after_lives_lost",
+               .saved = &UserSettings::chooseEggAfterLivesLost,
+               .fallback = false},
+    GameToggle{.setting = "generous_talk", .saved = &UserSettings::generousTalk, .fallback = false},
+    GameToggle{.setting = "extra_toilets", .saved = &UserSettings::extraToilets, .fallback = false},
     // Graphics tab.
     GameToggle{.setting = "smooth_motion", .saved = &UserSettings::smoothMotion, .fallback = true},
     GameToggle{

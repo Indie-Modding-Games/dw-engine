@@ -37,7 +37,7 @@ struct Tab {
   std::string_view id;
   std::span<const std::string_view> rows;
 };
-constexpr std::array<std::string_view, 23> GameRows{"free-exploration",
+constexpr std::array<std::string_view, 26> GameRows{"free-exploration",
                                                     "walk-control",
                                                     "autosave",
                                                     "world-map",
@@ -59,6 +59,9 @@ constexpr std::array<std::string_view, 23> GameRows{"free-exploration",
                                                     "fair-evolution-average",
                                                     "fair-move-forgetting",
                                                     "fair-card-stock",
+                                                    "choose-egg-after-lives-lost",
+                                                    "generous-talk",
+                                                    "extra-toilets",
                                                     "name-spacing"};
 constexpr std::array<std::string_view, 14> GraphicsRows{
     "display-mode",      "vsync",        "smooth-motion",  "hd-scenery",

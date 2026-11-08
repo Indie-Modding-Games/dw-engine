@@ -35,6 +35,9 @@ constexpr std::string_view ForgetMaskPath = "quirks.forget_mask_16_bits";
 constexpr std::string_view CardShopSection = "card_shop";
 constexpr std::string_view StockRepeatsPath = "quirks.stock_repeats";
 constexpr std::string_view QuirkOff = "false";
+// The rule the option choose_egg_after_lives_lost turns off (life.yaml).
+constexpr std::string_view LifeSection = "life";
+constexpr std::string_view RandomEggPath = "rebirth.random_egg_without_lives";
 
 // A value as one text, so two values compare whatever their spelling ("false", false, [1, 2]).
 std::string emitted(const YamlNode& node) {
@@ -136,6 +139,11 @@ core::Result<std::vector<RuleChange>> ruleChanges(const ruleset::Ruleset& rules,
   if (choices.fairCardStock) {
     changes.push_back({.section = std::string{CardShopSection},
                        .path = std::string{StockRepeatsPath},
+                       .value = std::string{QuirkOff}});
+  }
+  if (choices.chooseEggAfterLivesLost) {
+    changes.push_back({.section = std::string{LifeSection},
+                       .path = std::string{RandomEggPath},
                        .value = std::string{QuirkOff}});
   }
   auto difficulty = difficultyChanges(rules, choices.difficulty);

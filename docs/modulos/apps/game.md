@@ -170,6 +170,50 @@ fotogramas) con la cámara encima; luego vuelve andando (animación 2) al primer
 atascos (`dwe_assets_tests`: "a toilet's points turn the original's z the other way into world space"; `field_tests`:
 "a care walk to a point goes through walls and ends on the point's cell").
 
+### Baños extra
+
+Mejora opcional, apagada por defecto, que propuso un probador para no tener que volver siempre al mismo baño. El
+ajuste `extra_toilets` (fila «Baños extra», «Extra toilets» en inglés, pestaña Juego, guardado en los ajustes del
+usuario) llega a `game::field::Field::setExtraToiletsOn`. Las casetas salen de `field/extra_toilets.yaml` del paquete
+del juego (esquema `field_extra_toilets.schema.json`). Cada entrada da todo lo necesario:
+
+- **La caseta dibujada.** `FieldScene::showExtraToilets` la pone con `setProps`, el mismo camino que los objetos de la
+  historia: un modelo 3D en la escena del mapa, con profundidad frente a los personajes y a las capas del fondo, y la
+  luz del mapa. El modelo es `props/toilet_booth`, nuestro: una caseta de madera de pocos polígonos, abierta por
+  delante, con el asiento a la vista, tejado inclinado hacia atrás y una placa con un dibujo de un váter (sin texto). Lo genera `scripts/art/make_toilet_booth.py` (solo biblioteca
+  estándar, siempre igual); está en el espacio del mundo, +Y arriba, sobre 200 × 200 y con el frente hacia +Z.
+- **Las casillas.** Al entrar en el mapa (y al encender la opción), las casillas libres bajo la caseta se vuelven
+  sólidas y las de la franja de delante (dos casillas de fondo, tan ancha como la caseta) toman el valor del baño
+  (120, `field/triggers`). Las paredes, los warps y los demás disparadores quedan como están. Al apagarla vuelven a
+  estar libres y la caseta deja de dibujarse.
+- **La rutina del baño.** `FieldToilet` ve la casilla; si es de una caseta (`Field::extraToiletAt`), el compañero
+  corre al punto justo delante del frente (`ExtraToiletFront`, 200) y entra hasta el centro, en vez de ir a los puntos
+  del mapa. Esa carrera no choca con el mapa (`Field::walkPartnerTo`), así que entra aunque la caseta sea sólida.
+
+La lista trae una caseta: trai00 (el gimnasio verde), en la hierba junto a la valla, a la izquierda del cartel, en
+(−800, −3400) y abierta hacia la cámara y el camino (3584). Comprobado en vivo: se ve desde la cámara del mapa, el
+jugador choca con ella y el compañero que necesita ir corre delante, entra y queda tapado por la caseta.
+
+**Añadir una caseta.** Basta una línea más en `toilets` de `content/packs/game/field/extra_toilets.yaml` (o en el mismo
+archivo de un mod):
+
+```yaml
+  - {map: <id del mapa>, position: [x, z], facing: <0-4095>}
+```
+
+- `position` es el centro de la caseta, en los ejes del original (los de `place()` en la consola y los de la tabla de
+  mapas). En una esquina de casillas (múltiplos de 100) ocupa justo 2 × 2.
+- `facing` es la rotación Y del original hacia la que mira el frente abierto. Con un cuarto de vuelta (0, 1024, 2048,
+  3072) encaja en la rejilla; en diagonal, 512 por ejemplo, también ocupa cuatro casillas y deja cinco delante.
+- `model` (opcional) cambia el modelo de esa caseta. El de todas es la clave `model` de arriba.
+- Para buscar el sitio, el MCP `dwe` (`start` con `scene`, luego `place` y `screenshot`) o la consola sirven: el sitio
+  debe estar libre en la rejilla y tener libre la franja de delante.
+
+Pruebas: «an extra toilet's booth is solid and its front takes the toilet trigger only while on» (`field_tests.cpp`);
+«extra toilets read their booth's map, place, facing and model, and refuse a bad one», «an extra toilet's booth stands
+on 2 x 2 cells and its trigger strip is in front» y «the game pack's field data is valid», que además carga cada
+modelo (`rules_tests.cpp`).
+
 ## Felicitar y regañar
 
 «Felicitar» y «Regañar» del menú del campo (Tab) juegan la escena del original (`partner.c: partnerTickPraiseScold`,
@@ -295,6 +339,14 @@ Medido en el original (forzado con la hora en `twna01`) y comparado por fotogram
   `FieldStage::sceneryHidden` en el mismo cuadro (`showsPlayer`, `showsNpcs`) y lo quita con `stage_ = {}`
   (`EvolutionScene::restore`). La etapa solo enmascara el dibujo, así que quien estaba oculto antes de la escena
   sigue oculto después, como con la copia del original.
+- Igual (2026-11-08, informe de un probador: «el sonido de la evolución no se va hasta cerrar el juego»): en el
+  estallido (0x6A) suenan los efectos 1 y 0 de la ranura 8 (banco 18), cuyas muestras se repiten en bucle hasta que algo
+  las para; el original las corta en el cuadro 0xD6 con `stopSound` justo antes del rugido (efecto 5, sin bucle). dwe
+  las tocaba sin guardar sus voces y no las paraba nunca. Ahora la escena guarda cada sonido que toca
+  (`HeldSceneSounds`, `scene_sounds.cpp`, el mismo que usa la muerte), los para en 0xD6 antes del rugido y para lo que
+  quede al acabar o al saltarla (`skip_evolution`: un salto antes de 0xD6 también cortaba en dwe el bucle a medias).
+  Pruebas: `scene_sounds_tests.cpp` («the burst's looping sounds stop with stopSound…»); en vivo, el registro muestra
+  `thunkStopSoundMask` de los dos bucles en 0xD6 y al saltar en el cuadro 181.
 - Igual: al empezar, `EVL_initShardSets`, `EVL_resetParticles` y `EVL_resetSparks` dejan libres los 30 grupos de
   trozos, los 100 cuadrados y los 16 rayos; `EvolutionEffects::start` empieza con las listas vacías y los mismos topes
   (prueba `a new evolution starts with none of the last one's objects and keeps the caps`). La alineación de la
@@ -502,6 +554,24 @@ acabar el fundido a blanco (`MURD_removeLivesBox`). Si era la última, la caja v
 ya ido, en negro. Entonces corre la sección del mapa de despertar: los textos, la caja de los huevos (`EggBoxScreen`,
 documento `ui/egg_box`) y la rutina 4, que da al compañero su forma nueva y juega el renacer. Izquierda y derecha cambian
 de huevo y confirmar elige uno; no se puede salir sin elegir. Lo que no está: la carga del overlay.
+
+- Igual (2026-11-08, informe de un probador: «al morir el huevo se elige al azar»): la caja de huevos solo sale tras la
+  muerte natural (sección 0x47 del script 212: pregunta qué huevo quiere y abre la rutina 29). Si el compañero perdió
+  todas las vidas, la sección 0x49 no abre caja: dice que por el peligro el huevo no heredó todas las habilidades (esa
+  línea solo sale en este caso), baja el nivel del jugador si puede, corre la rutina 47 (olvidar técnicas) y renace; y
+  `DOOA_getSequenceState` sortea el huevo (`lives == 0`: `eggSlot = rand() % 4`). dwe hace lo mismo
+  (`Partner::rebirth`: el huevo de la caja solo cuenta con vidas; sin ellas decide `life.rebirth.baby_choice`, al azar).
+  No es un fallo. Mejora (opción, apagada por defecto): «Elegir el huevo al perder todas las vidas»
+  (`choose_egg_after_lives_lost`, [Rarezas como opciones](#rarezas-como-opciones)) apaga
+  `life.rebirth.random_egg_without_lives`; entonces la rutina 4 de la sección 0x49 abre antes la caja de los huevos
+  (`rebirthOpensEggBox`, `StoryScenes::screenClosed` sigue con el renacer) y cuenta el huevo elegido. Los textos, la
+  bajada de nivel y las técnicas olvidadas de esa sección siguen igual. Pruebas: `story_death_tests.cpp`,
+  `life_tests.cpp` («without the random egg…»), `rule_options_tests.cpp`.
+- Corregido (2026-11-08): tras una muerte natural, al acabar el renacer volvía a correr la sección 0x4DE con el
+  compañero nuevo y salía la escena de vida perdida con «sobrevivió con lo poco que le quedaba de vida». El original
+  llama a la sección una vez (`tickDeathCondition`); en dwe el evento `Died` llegaba un fotograma después de pedirla y
+  la pedía otra vez. Ahora un evento de muerte no la pide si su sección ya corrió (`deathEventAsksForSection`, prueba
+  `story_death_tests.cpp`).
 
 - Igual: con el aspecto original la caja crece en 5 cuadros a 20 por segundo desde el cuadrado de 16 píxeles del centro
   de la pantalla (`DOO2_openEggBox`: `createAnimatedUIBox(3, …)` desde `MAIN_D_80134B98` {-8, -8, 16, 16}) y, al elegir,
@@ -1338,9 +1408,17 @@ ven los dibujos del original. La consola y las rutas lo cambian para la partida 
   del juego (esquema `field_sprite_characters.schema.json`).
 - **Dónde**: `sprite_characters.hpp` lee la tabla y calcula el sitio: los pies son el centro de la sombra, el pie
   del primer dibujo o un píxel dado (`feet`); `MapCamera::pickGround` los lleva al suelo, a la altura `height` (una
-  jardinera, una cama), y el modelo mira a la cámara salvo que la tabla dé `facing` (`species_y` tumbado en la alfombra
-  del puesto, 2560) o `look_at`, un punto del suelo en unidades del original hacia el que gira (`yawOfDirection`). `FieldScene` carga el modelo de cada especie al entrar al mapa (`standInSpriteCharacters`) y lo
-  dibuja cada frame con su reposo (`drawSpriteCharacters`) mientras el primer dibujo no esté oculto.
+  jardinera, una cama), y el modelo mira a la cámara salvo que la tabla dé `facing` (el tendero del puesto, 3584) o
+  `look_at`, un punto del suelo en unidades del original hacia el que gira (`yawOfDirection`). `FieldScene` carga el
+  modelo de cada especie al entrar al mapa (`standInSpriteCharacters`) y lo dibuja cada frame con su reposo
+  (`drawSpriteCharacters`) mientras el primer dibujo no esté oculto.
+- **Postura**: un dibujo que no muestra al personaje de pie lleva `animation` (el número de animación del original) y
+  `frame` (el tick que enseña el dibujo); el modelo toma esa animación y se queda quieto en ese tick en vez del reposo.
+  Si el modelo no tiene esa animación avisa en el log y usa el reposo. El tendero del puesto del mercado (`twnb02` a
+  `twnb09`, la misma instancia en el píxel 279, 86 en todas las variantes, de día y de noche) es un dibujo de 48×48 en
+  tres cuadros de 12 ticks tumbado boca abajo sobre la alfombra, la cabeza hacia la cámara y a la derecha; su reposo
+  flota de pie (cuerpo de 190 a 373 unidades sobre el suelo), y antes se veía flotando delante de la alfombra. Ahora
+  lleva `feet: [305, 118]`, `facing: 3584`, `animation: 41`, `frame: 7` (el tick tumbado de su caída de golpe).
   `MapDepthLayers::setStoodIn` saca los dibujos del pintado sin tocar la marca de oculto que ponen los guiones; las
   sombras se siguen dibujando.
 - **Semitransparencia**: `additive` dibuja el modelo sumado a lo de detrás con sus colores por ese factor
@@ -1353,8 +1431,9 @@ ven los dibujos del original. La consola y las rutas lo cambian para la partida 
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
-| Personajes en 3D | Dibujos prerenderizados, objetos del mapa (`renderMapOverlays`, `buildMapOverlayPrim`), mostrados y ocultados por los guiones (`setMapObjectsFlag`) | `field/sprite_characters.yaml`; `sprite_characters.hpp` (`placeOf`, `standInFor`); `FieldScene::drawSpriteCharacters` dibuja el modelo de la especie con su reposo donde estaba el dibujo; `MapDepthLayers::setStoodIn` | `sprite_characters_tests.cpp` (tabla con `additive`, pies, sitio en el suelo, cuándo se ve, ajuste); `map_layers_tests.cpp` («an instance stood in for is not drawn…»); `in_game_options_tests.cpp`; capturas antes y después en `topn01`, `tend01`, `tend02`, `twna02`, `room08` y `twnb02` a `twnb09` | Mejora (opción) |
+| Personajes en 3D | Dibujos prerenderizados, objetos del mapa (`renderMapOverlays`, `buildMapOverlayPrim`), mostrados y ocultados por los guiones (`setMapObjectsFlag`) | `field/sprite_characters.yaml`; `sprite_characters.hpp` (`placeOf`, `standInFor`); `FieldScene::drawSpriteCharacters` dibuja el modelo de la especie con su reposo donde estaba el dibujo; `MapDepthLayers::setStoodIn` | `sprite_characters_tests.cpp` (tabla con `additive`, postura, pies, sitio en el suelo, cuándo se ve, ajuste); `map_layers_tests.cpp` («an instance stood in for is not drawn…»); `in_game_options_tests.cpp`; capturas antes y después en `topn01`, `tend01`, `tend02`, `twna02`, `room08` y `twnb02` a `twnb09` | Mejora (opción) |
 | Hacia dónde miran los bebés de la apertura | Sus dibujos (`topn01`, objetos 0 a 17) están girados hacia el jugador que despierta en medio, tumbado en (266, −2330) al empezar la escena (medido con el original: savestate `00_intro_arrival`; el de la izquierda se ve de lado mirando a la derecha, el de la derecha mirando a la izquierda, los de abajo de espaldas). El guion (193, sección 0x36) no gira a ninguno de ellos: no son entidades; solo gira a la entidad 10 con `entity_look_at_entity` | Los seis llevan `look_at: [266, -2330]` en `field/sprite_characters.yaml` y sus modelos giran hacia ese punto, como sus dibujos. Antes miraban todos a la cámara | `sprite_characters_tests.cpp` («a character with a point to look at faces it, not the camera», la tabla del pack); capturas antes/después y del original | Igual (con la opción) |
+| La postura del tendero del puesto | Un dibujo prerenderizado (objeto del mapa, instancia en el píxel 279, 86 de `twnb02` a `twnb09`, cuadros de 48×48, 12 ticks cada uno, igual de día y de noche): tumbado boca abajo sobre la alfombra, la cabeza hacia la cámara y a la derecha, junto a la caja registradora | `animation: 41`, `frame: 7`, `facing: 3584`, `feet: [305, 118]` en las ocho entradas de `field/sprite_characters.yaml`; el modelo se queda quieto en ese tick. Antes flotaba de pie con su reposo delante de la alfombra | `sprite_characters_tests.cpp` («a sprite character holds the pose its drawing shows…», la tabla del pack); capturas del original, antes y después | Igual (con la opción) |
 | El sonido de la celebración de la apertura | Tras la primera frase del anciano las dos entidades que saltan (10 y 12, clip 11) suenan `playSound(3, 49)` desde su animación (`tickAnimation`, instrucción 0x4000), una vez por salto; los seis bebés dibujados no suenan (son objetos del mapa) y el guion no pide ningún sonido (medido con el original: savestate `00_intro_arrival`, parada en `playSound`) | Las mismas dos llamadas, desde los sonidos del clip (`FieldScene::playClipSounds`, log `[port:anim] … playSound(3, 49)`); los modelos de los bebés no suenan, como sus dibujos | Ruta de la apertura con el log de depuración | Igual |
 
 ## Opciones en partida
@@ -1805,18 +1884,45 @@ cargando y se juega como el original, con la opción sin efecto.
 
 ## Rarezas como opciones
 
-Mejoras opcionales, apagadas por defecto (las rarezas del original se mantienen): cuatro filas de la pestaña Juego,
-guardadas en los ajustes del usuario, que apagan una rareza del ruleset de la partida con `RuleOptions`, igual que la
-dificultad.
+Mejoras opcionales, apagadas por defecto (las rarezas del original se mantienen): cinco filas de la pestaña Juego,
+guardadas en los ajustes del usuario, que apagan una rareza o una regla del ruleset de la partida con `RuleOptions`,
+igual que la dificultad.
 
-| Fila | Ajuste | Rareza que apaga | Original |
+| Fila | Ajuste | Valor que apaga | Original |
 |---|---|---|---|
 | Enfermar justo («Fair sickness chance») | `fair_sickness_chance` | `care.quirks.sickness_chance_wraps` | `tickSicknessMechanics` guarda la probabilidad en un `uint8_t`: una negativa da la vuelta y la tirada siempre acierta. Con la opción una negativa no enferma |
 | Media de evolución justa («Fair evolution average») | `fair_evolution_average` | `evolution.quirks.selection_average_carries_over` | `getRookieEvolutionTarget` y `getChampionEvolutionTarget` solo reinician la suma y la cuenta de stats cuando un candidato pasa a ser el mejor; si no, se arrastran a la media del siguiente. Con la opción cada candidato se mide por la suya |
 | Olvidar técnicas justo («Fair move forgetting») | `fair_move_forgetting` | `partner_moves.quirks.forget_mask_16_bits` | `unlearnMove` (`utils2.c`) borra el bit de la técnica con una máscara de 16 bits, así que con ella se va la técnica 16 puestos más allá en su palabra de 32. Con la opción solo se olvida la elegida |
 | Tienda de cartas sin repetidas («Card stock without repeats») | `fair_card_stock` | `card_shop.quirks.stock_repeats` | `dailyPStatTrigger` compara el hueco consigo mismo, así que una carta puede ocupar dos huecos el mismo día. Con la opción la repetida se vuelve a sortear |
+| Elegir el huevo al perder todas las vidas («Choose the egg after losing all lives») | `choose_egg_after_lives_lost` | `life.rebirth.random_egg_without_lives` | Sin vidas, la sección 0x49 del script 212 no abre la caja y `DOOA_getSequenceState` sortea el huevo (`rand() % 4`). Con la opción la caja se abre antes del renacer y cuenta el huevo elegido; el resto de la sección no cambia |
 
 Prueba: `rule_options_tests.cpp`.
+
+## Hablar desde más lejos
+
+Un probador no podía hablar con un personaje estando a su lado. Medido en el original (`tamer.c: checkMapInteraction`,
+`map.c: entityCheckCollision`, `entityCheckEntityCollision`, `isRectInRect`, `entityIsInEntity`) y comparado con
+`game::field::FieldNpcs::touchFromPlayer`: dwe hace lo mismo, así que no es un fallo.
+
+| Qué | Original | dwe | Estado |
+|---|---|---|---|
+| Qué se compara | El cuadrado del jugador (medio lado = su radio, el `radius` de su especie en la tabla del original, 100) contra el del NPC (el radio de su especie), centrados en sus posiciones; sin cono de ángulo: cuenta cualquier lado que toque, bordes incluidos | Igual (`touchFromPlayer`, `npc.half`, `player.radius`) | Igual |
+| Alcance al confirmar | Solo parado (`animId == 0`) y con confirmar recién pulsado: el cuadrado crece 50 hacia los lados a los que mira (`rotation` en (0, 0x800) a −x, en (0x800, 0x1000) a +x, < 0x400 o > 0xC00 a −z, en (0x400, 0xC00) a +z; en diagonal, en los dos ejes) | Igual (`talk_reach: 50` de `field/rules.yaml`, por el vector hacia el que mira) | Igual |
+| Andando | Sin alcance: cuenta el cuadrado un paso de su animación por delante | Igual (`ahead` en `Field::touchNpcs`) | Igual |
+| Varios NPC | El primero de la tabla que toca | Igual | Igual |
+| Carteles | Las casillas de confirmar (80–109) solo bajo la posición del jugador (`getTileTrigger`) | Igual (`Field::checkConfirm`) | Igual |
+
+Así, de lado o de espaldas a un NPC, a menos de un paso pero sin tocarlo, el original tampoco habla: el choque de
+andar para al jugador hasta un paso antes (corriendo, 870 / 20 = 43,5 unidades).
+
+Mejora opcional, apagada por defecto: el ajuste `generous_talk` (fila «Hablar desde más lejos», «Generous talk range»
+en inglés, pestaña Juego, guardado en los ajustes del usuario) llega a `game::field::Field::setGenerousTalk`. Con ella,
+al confirmar (parado o andando) el cuadrado del jugador crece 45 por todos los lados (`GenerousTalkAround`: más que el
+paso de 43,5 que el choque puede dejar, así que pegado a un NPC se habla mire hacia donde mire) y 100 hacia donde mira
+en vez de 50 (`GenerousTalkAhead`, el doble del original); y si la casilla del jugador no es de confirmar, mira la
+casilla de 100 unidades por delante (`GenerousSignAhead`, una casilla: el cartel que tiene delante). Pruebas: «a confirm
+talks to an NPC the player's square reaches, 50 further the way it faces» y «with the generous talk range a confirm
+reads the sign's cell in front of the player» (`field_tests.cpp`).
 
 ## Versus en línea
 

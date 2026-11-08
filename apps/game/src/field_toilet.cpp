@@ -59,7 +59,11 @@ bool FieldToilet::checkCell() {
     return false;
   }
   const session::ToiletWalkRules* rules = toiletWalkOf(*fieldItems_);
-  const assets::MapToilet* toilet = toiletOf(scene_->mapTable(), field.mapId());
+  // An extra toilet's cell (an engine improvement) goes to that toilet, any other to the map's.
+  const game::field::ExtraToilet* extra = field.extraToiletAt(cell);
+  extraPoints_ = extra != nullptr ? std::optional{extra->points()} : std::nullopt;
+  const assets::MapToilet* toilet =
+      extraPoints_ ? &*extraPoints_ : toiletOf(scene_->mapTable(), field.mapId());
   if (rules == nullptr || toilet == nullptr) {
     core::logDebug("[port:toilet] checkMapInteraction (tamer.c:689): toilet cell ({}, {}): no "
                    "toilet walk {}, the partner goes where it stands",

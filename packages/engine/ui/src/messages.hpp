@@ -100,6 +100,7 @@ inline constexpr std::string_view EmptyOriginalSize =
 inline constexpr std::string_view DpPerPixelOutOfRange =
     "dp_per_pixel must be a number from {} to {}";
 inline constexpr std::string_view NoSprites = "sprites must map sprite names to rectangles";
+inline constexpr std::string_view UnknownSheetUpscale = "upscale must be smooth, not '{}'";
 
 // The skins of the packs (skin_catalog.cpp): the skin's folder or id, then the problem.
 inline constexpr std::string_view SkinLeftOut = "ui: the skin {} is left out: {}";

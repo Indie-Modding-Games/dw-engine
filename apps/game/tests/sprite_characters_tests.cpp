@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -103,6 +104,25 @@ TEST_CASE("the sprite character table gives each listed map the character") {
   CHECK_FALSE(punimon.additive);
   CHECK_FALSE(punimon.lookAt);
   CHECK(table->of("topn01")[0].lookAt == std::optional<glm::vec2>{glm::vec2{266.0F, -2330.0F}});
+  CHECK_FALSE(punimon.animation);
+  CHECK_FALSE(punimon.frame);
+}
+
+TEST_CASE("a sprite character holds the pose its drawing shows: a tick of one of its animations") {
+  const auto table = parseSpriteCharacters(R"(characters:
+  - {maps: [twnb03], species: sira, sprites: [109], facing: 3584, animation: 41, frame: 7}
+  - {maps: [twnb04], species: sira, sprites: [111], animation: 9}
+)");
+  REQUIRE(table);
+  const SpriteCharacter& lying = table->of("twnb03")[0];
+  CHECK(lying.animation == std::optional<std::uint32_t>{41});
+  CHECK(lying.frame == std::optional<std::uint32_t>{7});
+  // An animation alone plays that clip.
+  CHECK(table->of("twnb04")[0].animation == std::optional<std::uint32_t>{9});
+  CHECK_FALSE(table->of("twnb04")[0].frame);
+  // A frame is a tick of the character's animation, so it needs one.
+  CHECK_FALSE(parseSpriteCharacters(
+      "characters:\n  - {maps: [twnb03], species: sira, sprites: [109], frame: 7}\n"));
 }
 
 TEST_CASE("a sprite character needs its maps, species and sprites, takes no other key and glows "
@@ -133,6 +153,14 @@ TEST_CASE("the game pack's sprite characters read, each with a species and its s
   CHECK(table->of("tend02").size() == 9);
   CHECK(table->of("twna02").size() == 2);
   CHECK(table->of("room08").size() == 2);
+  // The market stall's keeper lies on the rug in every town variant, as its drawing shows: a held
+  // tick of a clip, not the floating idle.
+  for (const std::string_view map :
+       {"twnb02", "twnb03", "twnb04", "twnb05", "twnb06", "twnb07", "twnb08", "twnb09"}) {
+    REQUIRE(table->of(map).size() == 1);
+    CHECK(table->of(map)[0].animation);
+    CHECK(table->of(map)[0].frame);
+  }
   for (const auto& [map, characters] : table->maps) {
     for (const SpriteCharacter& character : characters) {
       CHECK_FALSE(character.species.empty());

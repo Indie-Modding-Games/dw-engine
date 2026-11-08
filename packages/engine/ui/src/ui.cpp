@@ -624,6 +624,20 @@ struct Ui::Impl {
     return {};
   }
 
+  // Smoothing on or off for the sheets that let it: their images change name (the reference's
+  // upscale option), so every document takes the new sprite sheets and RmlUi loads the images
+  // again.
+  void setSmoothPictures(bool smooth) {
+    if (!styler.setSmoothPictures(smooth)) {
+      return;
+    }
+    clearRmlCaches();
+    for (auto& [name, document] : documents) {
+      applySkin(document);
+    }
+    warming = styler.spriteImages();
+  }
+
   [[nodiscard]] std::vector<std::string> checkSkinDocuments() const {
     std::vector<std::string> loaded;
     loaded.reserve(documents.size());
@@ -1367,6 +1381,14 @@ const SkinCatalog& Ui::skins() const {
 
 core::Result<void> Ui::setSkin(std::string_view id) {
   return impl_->setSkin(id);
+}
+
+void Ui::setSmoothPictures(bool smooth) {
+  impl_->setSmoothPictures(smooth);
+}
+
+void Ui::setUpscaleCache(std::shared_ptr<const render::UpscaleCache> cache) {
+  impl_->render.setUpscaleCache(std::move(cache));
 }
 
 std::vector<std::string> Ui::checkSkinDocuments() const {

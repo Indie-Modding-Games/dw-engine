@@ -1547,7 +1547,7 @@ local title_quick_actions = { "options-quit" }
 local function shown_quick_actions()
   return at_title and title_quick_actions or quick_actions
 end
-local option_slots = 24
+local option_slots = 27
 local option_tab = "game"
 -- The rows of the tab shown, in order, and the pool's elements (bound once).
 local shown_entries = {}

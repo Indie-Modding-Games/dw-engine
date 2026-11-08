@@ -18,6 +18,7 @@
 #include <string>
 #include <utility>
 
+#include "story_death.hpp"
 #include "story_routines/routines.hpp"
 #include "story_scenes_context.hpp"
 
@@ -164,6 +165,10 @@ public:
       scenes_->sync.finish();
       return;
     }
+    if (scene == PartnerScene::LostAllLives && waitsForEggBox()) {
+      scenes_->desc.story->setPartnerSync(false);
+      return;
+    }
     if (scenes_->rules.death.has_value()) {
       startDeathScene(scene);
     }
@@ -172,6 +177,32 @@ public:
   }
 
 private:
+  // A rebirth with no lives left whose egg may be chosen opens the egg box first, as section 0x47
+  // does with routine 29 (doo2.c: DOO2_openEggBox), and goes on once the box closes
+  // (StoryScenes::screenClosed). The script waits on the scene's sync meanwhile.
+  [[nodiscard]] bool waitsForEggBox() const {
+    GameSession* session = scenes_->session;
+    if (!scenes_->rules.death.has_value() || session == nullptr || session->partner().alive()) {
+      return false;
+    }
+    if (!rebirthOpensEggBox(session->partner().state().life.lives,
+                            session->partnerRules().life.rebirth.randomEggWithoutLives,
+                            scenes_->egg.has_value())) {
+      return false;
+    }
+    constexpr std::size_t FirstEgg = 0;
+    scenes_->egg = FirstEgg;
+    scenes_->rebirthAfterEggBox = true;
+    scenes_->screenRequests.push_back({.screen = StoryScreen::EggBox,
+                                       .routine = EggBoxRoutine,
+                                       .first = 0,
+                                       .second = 0,
+                                       .waits = true});
+    core::logDebug("[port:death] DOOA_getSequenceState (dooa.c:1745): no lives left, the egg box "
+                   "opens first (random_egg_without_lives off)");
+    return true;
+  }
+
   // The death section ran its scene: the lost life or the death is the app's to play; the
   // rebirth's scene gives the dead partner its new form first.
   void startDeathScene(PartnerScene scene) const {
@@ -378,6 +409,7 @@ core::Result<void> StoryScenes::startNewGame(GameSession& session) {
   scenes.deathPending = false;
   scenes.dying = false;
   scenes.egg.reset();
+  scenes.rebirthAfterEggBox = false;
   // main.c: main runs the first map's map-head section once the new game is set up
   // (runMapHeadScript(0xCC)); the field does when it enters that map (newGameStart).
   core::logDebug("[port:story] initializeMap (map.c:3936): screen {} exit {}, chain={}",
@@ -399,7 +431,8 @@ void StoryScenes::tick(GameSession& session, const ruleset::ClockAdvance& /*adva
 
 void StoryScenes::routePartnerEvent(GameSession& /*session*/,
                                     const game::partner::PartnerEvent& event) {
-  if (playsDeath() && (event.kind == EventKind::LostLife || event.kind == EventKind::Died)) {
+  if (playsDeath() && (event.kind == EventKind::LostLife || event.kind == EventKind::Died) &&
+      deathEventAsksForSection(context_->dying)) {
     context_->deathPending = true;
   }
 }
@@ -491,6 +524,10 @@ std::optional<StoryPropRequest> StoryScenes::takePropRequest() {
 void StoryScenes::screenClosed(std::optional<game::story::SectionRef> jump) {
   context_->screenOpen = false;
   context_->screenJump = jump;
+  if (std::exchange(context_->rebirthAfterEggBox, false) && context_->partnerPort != nullptr) {
+    // The egg box a rebirth with no lives left opened first: the rebirth goes on with its egg.
+    context_->partnerPort->startScene(PartnerScene::LostAllLives, std::nullopt);
+  }
 }
 
 std::optional<PartnerSceneRequest> StoryScenes::takePartnerScene() {

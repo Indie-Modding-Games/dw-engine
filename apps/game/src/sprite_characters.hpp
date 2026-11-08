@@ -47,6 +47,12 @@ struct SpriteCharacter {
   // Draws the model added to what is behind, its colours scaled by this: a sprite drawn with the
   // additive semi-transparency (a glow).
   std::optional<float> additive;
+  // The original's animation id of the pose its drawing shows (a character lying on a rug); the
+  // idle clip when left out.
+  std::optional<std::uint32_t> animation;
+  // The tick of that animation its drawing holds: the model keeps that pose instead of playing
+  // the clip (a still drawing of one moment of it).
+  std::optional<std::uint32_t> frame;
 };
 
 struct SpriteCharacterTable {

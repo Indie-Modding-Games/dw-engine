@@ -227,6 +227,14 @@ bool TextureSources::isPixelArt(std::string_view source) {
   return reference && ui::isPixelArt(*reference);
 }
 
+bool TextureSources::isSmoothed(std::string_view source) {
+  if (source.starts_with(GeneratedPrefix) || source.starts_with(GlyphPrefix)) {
+    return false;
+  }
+  const auto reference = parseImageReference(source);
+  return reference && reference->smooth;
+}
+
 core::Result<DrawnImage> TextureSources::load(std::string_view source) const {
   const auto drawnAsItIs = [](assets::Image image) {
     const ImageSize size{.width = image.width, .height = image.height};

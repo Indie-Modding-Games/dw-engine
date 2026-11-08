@@ -111,8 +111,20 @@ registra en la partida guardada y se lo da al campo.
   toma (46, 4) desde (−5487, −47) y llega a los ~21. Antes el motor tomaba un paso nuevo por orden y, como el jefe se
   aleja con su raíz, no llegaba nunca: lo cortaba a los 40 fotogramas de más (ya quitado). `script_motion_tests`:
   "a move to a point ordered while another runs goes on with that one's step", "a move to a point ordered after one
-  ended takes a new step", "a move to a point closer than its count ends on the point at once". Queda: en el
+  ended takes a new step", "a move to a point closer than its count ends at once where it stands". Queda: en el
   original el paseo con cámara (`entity_walk_to` con cámara) también usa esa marca; el motor no la comparte.
+- **Un deslizamiento acaba donde lo deja el paso que pasa el punto, no en el punto** (`tamer.c: tickEntityMoveTo`,
+  `tickEntityMoveToAxis`; `anim.c: applyRootMomentum`): cada fotograma el paso mueve la posición y también la
+  posición propia de la animación (`setEntityPosition`); el eje que pasa el punto se pone en el punto, pero el
+  siguiente tick de la animación vuelve a copiar su posición propia (`anim->locX >> 15`) y lo deja donde lo llevó el
+  paso. Un eje que ya pasó sigue dando pasos hasta que pasan los dos, y el deslizamiento acaba con el personaje hasta
+  un paso más allá. Igual. Medido en el original (2026-11-08, `twnb03` de noche, el tendero de la caja del mercado,
+  entidad 7, script 163 al entrar: `entity_move_to(7, -1232, 2903, 10)` desde (225, −143)): paso (−145, 304), acaba
+  en (−1370, 0, 3201) a los once pasos, con la posición de la animación igual (−1370 y 3201 en `anim.locX`/`locZ`
+  desplazados 15 bits). Antes el motor lo ponía en el punto, (−1232, 2903), más cerca de la cámara y medio hundido
+  en su caja; ahora (−1370, 3201). `entity_move_to_axis` hace lo mismo en su eje (Suposición: mismo código, no
+  medido aparte). `script_motion_tests`: "a move to a point ends where the step that takes it past the point leaves
+  it", "a move to an axis position ends where the step that takes it past leaves it".
 - **Cada sección empieza con las cajas en modo confirmar** (`script_interp.c: callScriptSection`, `TEXTBOX_CLOSE_MODE`
   0, y su `initializeTextbox`, que pone a 0 los fotogramas del modo temporizado): el modo que dejó la sección anterior
   (automático o temporizado) no pasa a la siguiente. Antes el motor lo arrastraba: una sección que acababa en modo

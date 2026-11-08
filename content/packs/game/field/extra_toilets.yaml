@@ -1,0 +1,13 @@
+# Casetas de baño que se pueden poner en cualquier mapa con la opción «Baños extra» (una mejora del motor,
+# apagada por defecto; docs/modulos/apps/game.md, «Baños extra»; content/schemas/field_extra_toilets.schema.json).
+# Una entrada lo da todo: la caseta dibujada, sus casillas sólidas, las de delante con el disparador del baño y la
+# rutina del baño del original. Un mod puede añadir más entradas o cambiar el modelo.
+# model: el modelo de la caseta (props/toilet_booth, nuestro, hecho por scripts/art/make_toilet_booth.py); una
+# entrada puede llevar el suyo. map: el mapa. position: el centro de la caseta, adonde va el compañero (x, z en los
+# ejes del original, como los puntos de los baños de la tabla de mapas); en una esquina de casillas (múltiplos de
+# 100) ocupa justo 2 x 2. facing: la rotación Y del original (0-4095) hacia la que mira el frente abierto; delante
+# quedan las casillas que hay que pisar.
+model: props/toilet_booth
+toilets:
+  # El gimnasio verde: la hierba junto a la valla, a la izquierda del cartel, abierta hacia la cámara y el camino.
+  - {map: trai00, position: [-800, -3400], facing: 3584}

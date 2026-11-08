@@ -25,8 +25,6 @@ using game::partner::PartnerEvent;
 // Not in the original: a last clip that never ends (a model whose clip repeats) gives the field
 // back after this many frames instead of holding it forever.
 constexpr std::int32_t ClipWaitGuardFrames = 200;
-// Slot 8 plays the scene's bank (playSound2(8, n)).
-constexpr std::int64_t SceneSoundSlot = 8;
 // fadeoutCLUT1's full level: the palettes are black.
 constexpr float PaletteLevelMax = 255.0F;
 // The lives box's sounds are the UI's, in slot 0 (ui.c: createAnimatedUIBox, renderUIBoxAnim).
@@ -253,20 +251,11 @@ void DeathScene::setPhase(Phase phase) {
 }
 
 void DeathScene::playSound(std::int32_t sound) {
-  if (game::story::SoundPort* port = session_->sound()) {
-    if (const std::optional<std::int64_t> held = port->playHeldSound(SceneSoundSlot, sound)) {
-      heldSounds_.push_back(*held);
-    }
-  }
+  sounds_.play(session_->sound(), sound);
 }
 
 void DeathScene::stopSounds() {
-  if (game::story::SoundPort* port = session_->sound()) {
-    for (const std::int64_t held : heldSounds_) {
-      port->stopHeldSound(held);
-    }
-  }
-  heldSounds_.clear();
+  sounds_.stopAll(session_->sound());
 }
 
 float DeathScene::partnerHeight() const {

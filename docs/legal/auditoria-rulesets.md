@@ -107,6 +107,7 @@ comportamiento, no guardan datos.
 | `rebirth.baby_choice` | `original` | a | Nombre de estrategia. |
 | `rebirth.babies` | tabla de 4 entradas por especie (id + 6 stats) | **b** | Stats fijos por especie. En el ejecutable: `REINCARNATE_BABY_TYPE` (dato de 8 bytes; dooa.c) y los argumentos inmediatos de las cuatro llamadas a `setReincarnateStats` en `initializeReincarnatedPartner` (partner_impl.c). Destino: `data/rebirth`. |
 | `rebirth.inherit_percent_per_tamer_level` | 1 | a | Factor de la fórmula de herencia. |
+| `rebirth.random_egg_without_lives` | `true` | a | Regla de juego (sí o no). |
 | `scenes.lost_life.*` | 35, 95, 135, 145, 185 fotogramas; sombras 160 y 255 | a | Temporizador o duración; nivel de fundido. |
 | `scenes.wake_map.story_map`, `early_map`, `exit` | 205, 218, 1 | a | Referencia a mapas por su índice. |
 | `scenes.wake_map.story_triggers`, `story_variable`, `story_variable_at_least` | [220, 214], 1, 50 | a | Condición de la historia (umbral). |

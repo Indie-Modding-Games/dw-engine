@@ -48,7 +48,8 @@ DWE_DISC="/ruta/al/disco.bin" scripts/dev.sh test -R dwx   # incluye la prueba c
 6. Imprime el resumen: ficheros totales, extraídos, parciales y pendientes, bytes cubiertos y número de salidas.
 7. Ejecuta las **recetas incluidas** (`content/enhance/*.recipe.yaml`, metidas en `dwx` al compilarlo): hoy solo
    `ui_original`, que agranda ×4 con `index_scale` en modo `edge` las imágenes de la UI que dibuja el aspecto
-   original (iconos, marcos, reloj, barras, la portada). Escribe el paquete `ui_original`, de capa `remaster`, **al
+   original (iconos, marcos, reloj, barras). Las dos imágenes de la portada no están: el aspecto las suaviza con el
+   reescalador de texturas de los modelos (`upscale: smooth` en `skin.yaml`; desde la versión 14). Escribe el paquete `ui_original`, de capa `remaster`, **al
    lado** del paquete base (`--out content/base` da `content/ui_original`) e imprime dónde:
    `Upscaled pack: <carpeta> (5 images grown 4x, 0 not in the base pack)`. Las imágenes guardan su asset id, así que
    tapan las de la base, y su `_meta.yaml` gana `scale: 4`; el aspecto mide sus sprites en píxeles del original y

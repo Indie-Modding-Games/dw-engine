@@ -240,6 +240,8 @@ void GraphicsChanger::publish(ui::Ui& ui) const {
   ui.setSetting(SceneryQualitySetting, std::string{sceneryQualityName(options_.sceneryQuality)});
   ui.setSetting(AntialiasingSetting, options_.antialiasing);
   ui.setSetting(TextureFilterSetting, std::string{textureFilterName(options_.textureFilter)});
+  // The skins' pictures that may be smoothed (the title's) go through the models' upscaler with it.
+  ui.setSmoothPictures(options_.textureFilter == TextureFilter::Upscaled);
 }
 
 void GraphicsChanger::save() {
