@@ -67,13 +67,14 @@ jobs:
       - name: Test
         run: ctest --preset windows-ci -j 4
 
+      # PowerShell, not bash: Git's bash puts its own coreutils `link` before MSVC's link.exe, which cargo calls.
       - name: Launcher tests
         working-directory: apps/launcher/src-tauri
-        shell: bash
+        shell: pwsh
         run: |
-          fonts=../../../content/packs/game/ui/fonts
-          mkdir -p ../ui/fonts
-          cp "$fonts/noto_sans_regular.ttf" "$fonts/noto_sans_bold.ttf" "$fonts/noto_sans_license.txt" ../ui/fonts/
+          $fonts = '../../../content/packs/game/ui/fonts'
+          New-Item -ItemType Directory -Force ../ui/fonts | Out-Null
+          Copy-Item "$fonts/noto_sans_regular.ttf", "$fonts/noto_sans_bold.ttf", "$fonts/noto_sans_license.txt" ../ui/fonts/
           cargo test --locked
 
   macos:
