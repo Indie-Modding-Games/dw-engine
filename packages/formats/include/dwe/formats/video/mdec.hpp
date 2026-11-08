@@ -88,6 +88,50 @@ constexpr std::array<std::int16_t, 64> IdctTable = {
 // clamped to a signed byte.
 std::array<std::int8_t, 64> inverseDct(const std::array<std::int16_t, 64>& coefficients);
 
+// The same frames decoded as the encoder meant them, without the hardware's shortcuts: each
+// coefficient dequantised exactly (level * scale * weight / 8, no truncation or bias), a
+// high-precision IDCT (PreciseIdctTable, 64-bit sums, one rounding at the end) and the result
+// saturated, never wrapped. Samples are kept in sixteenths of a level (PreciseOne), so the
+// clean-up filters (restore.hpp) and a 10-bit output keep the fractions the 8-bit hardware drops.
+// Integer arithmetic throughout: every platform gives the same samples.
+inline constexpr int PreciseOne = 16;
+inline constexpr int PreciseMax = 255 * PreciseOne;
+
+struct PreciseFrame {
+  std::uint32_t width = 0;  // a multiple of 16
+  std::uint32_t height = 0; // a multiple of 16
+  // The frame's quantisation scale (1..63), which sets how strong the clean-up filters are.
+  std::uint16_t quantizationScale = 0;
+  std::vector<std::int16_t> y;  // width x height, 0..PreciseMax
+  std::vector<std::int16_t> cb; // width / 2 x height / 2, 0..PreciseMax (128 * PreciseOne is grey)
+  std::vector<std::int16_t> cr; // width / 2 x height / 2
+};
+
+// Decodes a frame's bitstream as decodeFrame does, with the precise arithmetic above.
+core::Result<PreciseFrame> decodePreciseFrame(std::span<const std::byte> bitstream,
+                                              std::uint32_t width, std::uint32_t height);
+
+// The orthonormal 8-point IDCT basis, indexed [sample * 8 + frequency]:
+// round(2^24 * c(u) / 2 * cos((2x + 1) * u * pi / 16)) with c(0) = 1/sqrt(2) and c(u) = 1
+// otherwise. Written out, as IdctTable is, so no platform's cos changes it; a test checks it
+// against the formula.
+constexpr std::array<std::int32_t, 64> PreciseIdctTable = {
+    5931642, 8227423,  7750063,  6974873,  5931642,  4660461,  3210181,  1636536,  //
+    5931642, 6974873,  3210181,  -1636536, -5931642, -8227423, -7750063, -4660461, //
+    5931642, 4660461,  -3210181, -8227423, -5931642, 1636536,  7750063,  6974873,  //
+    5931642, 1636536,  -7750063, -4660461, 5931642,  6974873,  -3210181, -8227423, //
+    5931642, -1636536, -7750063, 4660461,  5931642,  -6974873, -3210181, 8227423,  //
+    5931642, -4660461, -3210181, 8227423,  -5931642, -1636536, 7750063,  -6974873, //
+    5931642, -6974873, 3210181,  1636536,  -5931642, 8227423,  -7750063, 4660461,  //
+    5931642, -8227423, 7750063,  -6974873, 5931642,  -4660461, 3210181,  -1636536, //
+};
+
+// The precise IDCT of one block: coefficients in natural order times 8 (so that every dequantised
+// value is a whole number), samples centred on 0 in sixteenths of a level, rounded once and not
+// saturated.
+std::array<std::int32_t, 64>
+preciseInverseDct(const std::array<std::int32_t, 64>& coefficientsTimesEight);
+
 // One pixel of the MDEC's 24-bit output.
 struct Rgb8 {
   std::uint8_t r;

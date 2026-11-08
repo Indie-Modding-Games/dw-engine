@@ -72,6 +72,7 @@ dwe_add_module(formats
         src/video/mdec.cpp
         src/video/media_files.cpp
         src/video/movie.cpp
+        src/video/restore.cpp
         src/video/str.cpp
         src/video/xa_adpcm.cpp
     DEPS core
@@ -88,9 +89,10 @@ if(NOT WIN32)
     set_target_properties(lodepng PROPERTIES MAP_IMPORTED_CONFIG_DEBUG Release)
 endif()
 
-# dwx decodes every frame of the movies, about 13 000 of them, and the unoptimised MDEC decoder takes minutes for that,
-# so this file is optimised in debug builds too; it keeps its debug info and sanitizers.
-set_source_files_properties(src/video/mdec.cpp PROPERTIES COMPILE_OPTIONS "$<$<CONFIG:Debug>:-O2>")
+# dwx decodes and cleans up every frame of the movies, about 13 000 of them, and the unoptimised MDEC decoder and
+# filters take minutes for that, so these files are optimised in debug builds too; they keep their debug info and
+# sanitizers.
+set_source_files_properties(src/video/mdec.cpp src/video/restore.cpp PROPERTIES COMPILE_OPTIONS "$<$<CONFIG:Debug>:-O2>")
 
 # The tests check the YAML documents against the JSON Schemas of content/schemas.
 if(TARGET dwe_formats_tests)
