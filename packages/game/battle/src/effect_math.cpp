@@ -4,7 +4,6 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <numbers>
 #include <utility>
 
 namespace dwe::game::battle::effect_math {
@@ -12,7 +11,6 @@ namespace dwe::game::battle::effect_math {
 namespace {
 
 constexpr std::int32_t One = 4096;
-constexpr double Turn = 4096.0;
 constexpr std::int32_t AngleMask = 0xFFF;
 constexpr std::int32_t HalfTurn = 0x800;
 constexpr std::int32_t QuarterTurn = 0x400;
@@ -99,14 +97,6 @@ std::int32_t sin512(std::int32_t angle) {
 
 std::int32_t cos512(std::int32_t angle) {
   return core::original::cos512(angle);
-}
-
-std::int32_t ratan2(std::int32_t y, std::int32_t x) {
-  if (y == 0 && x == 0) {
-    return 0;
-  }
-  const double angle = std::atan2(static_cast<double>(y), static_cast<double>(x));
-  return static_cast<std::int32_t>(std::lround(angle / (2.0 * std::numbers::pi) * Turn));
 }
 
 Matrix rotXYZ(const Vector& angles) {
