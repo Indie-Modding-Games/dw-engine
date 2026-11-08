@@ -165,8 +165,7 @@ dwe_add_app(game
         src/weather_particles.cpp
         src/weather_drawer.cpp
         src/weather_ambience.cpp
-    DEPS core platform audio video rhi assets localization animation render signs input script ui debug scene ruleset field partner save content session battle inventory screens story evolution gym fishing tournament curling weather modes
-    DEPS core platform audio video rhi assets localization animation render signs input script ui debug scene ruleset field partner save content session battle inventory screens story evolution gym fishing tournament curling weather versus net
+    DEPS core platform audio video rhi assets localization animation render signs input script ui debug scene ruleset field partner save content session battle inventory screens story evolution gym fishing tournament curling weather modes versus net
     OUTPUT_NAME dwe-game)
 
 dwe_add_shaders(game FILES shaders/test_scene.slang shaders/scene_prims.slang shaders/weather.slang)
@@ -232,17 +231,12 @@ if(BUILD_TESTING)
                                   src/pause_box.cpp src/place_command.cpp src/player_chart.cpp src/player_city.cpp src/partner_set_command.cpp src/story_set_command.cpp src/story_state_json.cpp src/shop_job_bar.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
                                   src/save_indicator.cpp src/save_machine_flow.cpp src/award_screen.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_skin_setting.cpp src/user_settings.cpp src/walk_control.cpp src/battle_speed.cpp src/gym_batch.cpp src/rule_options.cpp src/world_map.cpp
                                   src/graphics_options.cpp src/weather_particles.cpp src/volume_setting.cpp src/sprite_characters.cpp
-                                  src/title_options.cpp src/new_game_mode.cpp)
+                                  src/title_options.cpp src/new_game_mode.cpp src/versus_flow.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::field dwe::evolution
                                                  dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render dwe::signs
-                                                 dwe::ruleset dwe::curling dwe::weather dwe::audio dwe::debug dwe::modes dwe_test_main)
-                                  src/title_options.cpp src/versus_flow.cpp)
-    target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
-                                                 dwe::script dwe::save dwe::partner dwe::session dwe::field dwe::evolution
-                                                 dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render dwe::signs
-                                                 dwe::ruleset dwe::curling dwe::weather dwe::audio dwe::debug dwe::versus dwe::net
-                                                 dwe_test_main)
+                                                 dwe::ruleset dwe::curling dwe::weather dwe::audio dwe::debug dwe::modes
+                                                 dwe::versus dwe::net dwe_test_main)
     # The session's test packs and made-up species (session_fixture.hpp), for the save debug command.
     target_include_directories(dwe_game_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
                                                       ${PROJECT_SOURCE_DIR}/packages/session/tests
