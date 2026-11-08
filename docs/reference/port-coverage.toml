@@ -1055,14 +1055,14 @@ VS_startAttackAnimation = { status = "falta", what = "Inicia la animación y par
 VS_resolveAttack = { status = "falta", what = "Resuelve los impactos de las técnicas en vuelo." }
 VS_startFighterMove = { status = "falta", what = "Hace que el luchador empiece a ejecutar una técnica." }
 VS_selectMoveTarget = { status = "falta", what = "Elige el objetivo de la técnica del luchador en el versus." }
-VS_playMoveEffect = { status = "falta", what = "Lanza el efecto visual y sonoro de una técnica." }
+VS_playMoveEffect = { status = "portado", dwe = "apps/game/src/versus_arena.cpp:1", note = "los efectos de los combates de la historia (session::BattleEffects) en la arena", what = "Lanza el efecto visual y sonoro de una técnica." }
 VS_tickFrame = { status = "no-aplica", note = "bucle de cuadros del original", what = "Avanza un cuadro de juego: entrada, lógica y dibujo." }
-VS_updateFighterStatusVisuals = { status = "falta", what = "Actualiza los efectos visibles de estados alterados en el versus." }
+VS_updateFighterStatusVisuals = { status = "portado", dwe = "apps/game/src/battle_scene_view.cpp:1", note = "los mismos que en los combates de la historia", what = "Actualiza los efectos visibles de estados alterados en el versus." }
 VS_applyMoveResult = { status = "falta", what = "Aplica el daño y efectos de una técnica que impacta en el versus." }
 VS_queueRandomMove = { status = "falta", what = "Elige al azar técnica y objetivo para la IA del luchador." }
-VS_initializeVS = { status = "portado", dwe = "packages/session/src/versus_series.cpp:1", note = "la serie en línea entre dos máquinas; sin la presentación 3D", what = "Flujo del versus: presentación y serie de combates hasta acabar." }
+VS_initializeVS = { status = "portado", dwe = "packages/session/src/versus_series.cpp:1", note = "la serie en línea entre dos máquinas, en la arena (versus_arena.hpp); sin la entrada de los luchadores", what = "Flujo del versus: presentación y serie de combates hasta acabar." }
 VS_resetMatchState = { status = "portado", dwe = "packages/game/versus/src/series.cpp:1", what = "Reinicia victorias, derrotas y ronda del versus." }
-VS_loadVSAssets = { status = "falta", what = "Prepara la arena del versus: música por escenario, cámara, luces y efectos." }
+VS_loadVSAssets = { status = "parcial", dwe = "apps/game/src/versus_arena.cpp:1", note = "la arena 0 con su cámara, sus luces y los efectos; sin la música por escenario", what = "Prepara la arena del versus: música por escenario, cámara, luces y efectos." }
 VS_addInputObjects = { status = "portado", dwe = "packages/session/src/versus_series.cpp:1", what = "Registra la lectura de órdenes de ambos jugadores del versus." }
 VS_loadFighterEntities = { status = "portado", dwe = "packages/session/src/battle_adapter.cpp:1", what = "Crea a los dos luchadores del combate actual del versus." }
 VS_initializeLighting = { status = "no-aplica", note = "configuración de luces del original", what = "Configura las luces de la arena del versus." }
@@ -1072,7 +1072,7 @@ VS_tickPlaytime = { status = "no-aplica", note = "contador genérico de cuadros"
 VS_tickVersusIntro = { status = "falta", what = "Avanza la presentación del versus por estados." }
 VS_loadArenaAssets = { status = "no-aplica", note = "carga de modelos, texturas y colisión del original", what = "Carga el escenario del versus elegido." }
 VS_addArenaRenderers = { status = "no-aplica", note = "registro de dibujo del original", what = "Registra el dibujo del escenario del versus." }
-VS_initializeCamera = { status = "falta", what = "Coloca la cámara inicial de la arena del versus." }
+VS_initializeCamera = { status = "parcial", dwe = "apps/game/src/versus_arena.cpp:1", note = "la cámara de la copa (game::tournament::MatchCamera); sin medir contra la del versus", what = "Coloca la cámara inicial de la arena del versus." }
 "VS__loadTextures" = { status = "portado", dwe = "apps/game/src/versus_screen.cpp:1", note = "las listas son los registrados de la partida que elige cada jugador", what = "Prepara la pantalla de selección: listas de criaturas de cada jugador." }
 "VS__tickSelectDigimon" = { status = "portado", dwe = "apps/game/src/versus_flow.cpp:1", what = "Bucle de selección de criaturas de los dos jugadores." }
 "VS__isAlreadySelected" = { status = "portado", dwe = "apps/game/src/versus_flow.cpp:1", what = "Indica si una criatura ya fue elegida para el equipo." }

@@ -2010,9 +2010,11 @@ nuevo.
    no puede serlo se queda en la pantalla con un aviso, y Volver borra la última letra.
 3. Los dos eligen la partida de la que traen compañeros (una partida necesita tantos registrados como combates tiene
    la serie) y un compañero por combate, sin repetir.
-4. Cada combate: el reloj, el marcador, los dos luchadores con barras de PV, PM y remate, las órdenes del menú de este
-   lado y lo último que pasó. Las órdenes viajan con 3 frames de retraso; si el otro se retrasa, el combate espera y
-   lo dice. Volver dos veces abandona la serie.
+4. Cada combate se ve en la arena, como un combate de la historia: los dos luchadores se mueven, se animan y lanzan sus
+   técnicas con sus efectos, chispas y estados, y la cámara de la arena los sigue. Encima, como en el versus del
+   original, las barras de PV, PM y remate de cada lado en las esquinas de arriba, el reloj y el marcador entre ellas y
+   las órdenes del menú de este lado abajo a la izquierda. Las órdenes viajan con 3 frames de retraso; si el otro se
+   retrasa, el combate espera y lo dice. Volver dos veces abandona la serie.
 5. Entre combates, el resultado y el marcador; al final, el ganador de la serie y cada combate.
 6. Si algo falla, un mensaje claro: no hay servidor configurado, no se llega al servidor, no hay sala con ese código,
    la sala está llena, se acabó el tiempo para conectar, no hay ruta directa (con la sugerencia de probar desde otra
@@ -2023,11 +2025,12 @@ nuevo.
 |---|---|---|---|---|
 | Número de combates | `vs_select.c: VS__tickSelectMode`: 1, 3 o 5 (`VS__BATTLE_COUNTS`), y 3 o 5 solo si los dos registraron al menos tantos | El anfitrión elige de `versus.series` del ruleset; como no conoce aún la partida del invitado, una partida con menos registrados que combates no se puede elegir | `vs_select.c: a partner is picked once and a save needs one per battle` | Suposición (adaptado a dos máquinas) |
 | Un compañero por combate, sin repetir | `vs_select.c: VS__isAlreadySelected`, `VS__handleDigimonSelected` | `VersusFlow::pickPartner`; Volver quita el último | el mismo test | Igual |
-| Elegir arena | `vs_select.c: VS__tickSelectMap` | Sin elección: la serie lleva arena 0 y el combate se dibuja como panel | — | Hueco |
+| Elegir arena | `vs_select.c: VS__tickSelectMap` | Sin elección: la serie lleva siempre la arena 0 (`VersusArena`, `TournamentAdapter::arenaStageAt(0)`) | — | Hueco |
 | La serie entera | `vs_scene.c: VS_initializeVS` | `VersusFlow` sobre `session::VersusSeries` | `two machines play an online versus series from the menus to the result` | Igual (las reglas); presentación propia |
 | Abandonar y fallos de red | — (una consola) | Mensajes por motivo, tiempos de 10 s y 8 s, 30 s para abrir la ruta y salas de 5 minutos | `a code that cannot be one stays on the entry...`, `a player who leaves a battle ends the series...` | Mejora (en línea) |
 | Demostración de versus | `VS_playDemo` solo existe en la versión de prueba japonesa | La demostración del título sigue como estaba, sin red | — | No aplica |
-| Presentación 3D | `vs_scene.c: VS_playVersusIntroSequence`, cámaras `VS_*Camera*`, letreros `VS_*ModelScene` | El combate se enseña como panel (barras, reloj, órdenes y registro), no en la arena 3D | — | Hueco |
+| Combate en la arena | `vs_scene.c: VS_initializeVS`, `VS_loadVSAssets`, `VS_loadFighterEntities`; `vs_combat.c: VS__combatMain`. Medido en el original (estado `vs_fight`): `VS_BATTLE_SETUP.stage` = 0, la arena de la primera copa; en 40 vblanks las dos entidades cambian de animación (46 → 40 y 34 → 40) y de sitio | `VersusArena` (`versus_arena.hpp`) dibuja la arena 0 en su propia `FieldScene`, la de los combates de la historia: el luchador del anfitrión como compañero y el del invitado como luchador de escenario, con sus clips, efectos de técnicas, estados y chispas (`battle_scene_view.hpp`) y la cámara de la copa (`game::tournament::MatchCamera`). Antes del primer frame prepara cada combate igual en las dos máquinas, con lo que da solo el contenido (los clips de los modelos y los vuelos de los guiones de efecto); la cámara tira de sus propios números y las chispas del atacante no se comparten | `vs_scene.c: VS_initializeVS: both machines show and ready each battle alike` | Igual |
+| Presentación 3D | `vs_scene.c: VS_playVersusIntroSequence`, cámaras `VS_*Camera*`, letreros `VS_*ModelScene` | Sin la entrada de los luchadores, sin la música de la arena ni las letras de victoria o derrota: el combate empieza ya en la arena y el resultado sale en el panel sobre ella | — | Hueco |
 
 Con UDP directo se probó en vivo con dos juegos en la misma máquina: unirse, elegir, órdenes de los dos lados y el
 abandono de uno, que el otro ve como «El otro jugador ha abandonado la serie». Con WebRTC la conexión se prueba con

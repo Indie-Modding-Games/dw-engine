@@ -136,6 +136,9 @@ VersusFlow::VersusFlow(VersusFlowDesc desc) : desc_{std::move(desc)} {}
 VersusFlow::~VersusFlow() = default;
 
 void VersusFlow::open() {
+  if (series_ && desc_.view != nullptr) {
+    desc_.view->battlesOver();
+  }
   series_.reset();
   link_.reset();
   view_ = View::Menu;
@@ -179,6 +182,9 @@ void VersusFlow::leave() {
 }
 
 void VersusFlow::fail(std::string key, std::string detail) {
+  if (desc_.view != nullptr) {
+    desc_.view->battlesOver();
+  }
   errorKey_ = std::move(key);
   errorDetail_ = std::move(detail);
   view_ = View::Error;
@@ -244,7 +250,13 @@ void VersusFlow::pickPartner() {
 }
 
 void VersusFlow::startBattle() {
-  if (auto started = series_->startNext(); !started) {
+  VersusBattleView* view = desc_.view;
+  auto started = series_->startNext([view](game::battle::Battle& battle) {
+    if (view != nullptr) {
+      view->battleStarted(battle);
+    }
+  });
+  if (!started) {
     core::logWarning("versus: {}", started.error().message);
     fail("versus.error.lineup", started.error().message);
     return;
@@ -480,7 +492,11 @@ void VersusFlow::tick(net::Millis now) {
   if (view_ == View::Match) {
     leaveFrames_ = std::max(leaveFrames_ - 1, 0);
     const std::int64_t before = series_->battle()->state().frame;
-    takeEvents(series_->frame());
+    const game::battle::BattleEvents events = series_->frame();
+    takeEvents(events);
+    if (desc_.view != nullptr) {
+      desc_.view->battleFrame(*series_->battle(), events);
+    }
     stalledFrames_ = series_->battle()->state().frame == before ? stalledFrames_ + 1 : 0;
     if (series_->roundSettled()) {
       view_ = link.phase() == LinkPhase::Finished ? View::Result : View::Intermission;

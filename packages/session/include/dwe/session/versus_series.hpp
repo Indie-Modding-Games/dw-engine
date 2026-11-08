@@ -5,6 +5,7 @@
 #include <dwe/game/versus/link.hpp>
 #include <dwe/session/battle_adapter.hpp>
 
+#include <functional>
 #include <optional>
 
 namespace dwe::session {
@@ -33,7 +34,13 @@ public:
   // Starts the series' next battle with both lineups' fighters of its number and the agreed seed:
   // only while the series plays and no battle is on. A lineup this content cannot build ends the
   // series for both (BadLineup) and fails.
-  core::Result<void> startNext();
+  //
+  // `prepare` readies the new battle before its first tick: what both machines' content gives it
+  // and the battles of the story get too (the clips its fighters' models time their moves with,
+  // the flights of its techniques; battle_screen.cpp). It must do the same on both machines, and
+  // never anything one machine's screen alone decides, or the lockstep's checksums part.
+  using BattlePrep = std::function<void(game::battle::Battle&)>;
+  core::Result<void> startNext(const BattlePrep& prepare = {});
   // The battle on screen: the one that runs, or the last one until the next starts.
   [[nodiscard]] const game::battle::Battle* battle() const { return battle_ ? &*battle_ : nullptr; }
   // The command the player gives with this side's next input; a later one replaces it.

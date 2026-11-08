@@ -29,6 +29,27 @@ struct VersusSave {
   std::vector<session::RegisteredPartner> partners;
 };
 
+// What shows the series' battles besides the document: the arena with both fighters
+// (versus_arena.hpp). The flow tells it each battle's start, frames and the end of the series.
+class VersusBattleView {
+public:
+  VersusBattleView() = default;
+  VersusBattleView(const VersusBattleView&) = delete;
+  VersusBattleView& operator=(const VersusBattleView&) = delete;
+  VersusBattleView(VersusBattleView&&) = delete;
+  VersusBattleView& operator=(VersusBattleView&&) = delete;
+  virtual ~VersusBattleView() = default;
+
+  // A battle of the series starts: the view shows its fighters and readies the battle before its
+  // first tick (session::VersusSeries::BattlePrep: the same on both machines).
+  virtual void battleStarted(game::battle::Battle& battle) = 0;
+  // A battle frame played the ticks of `events` (none while the other machine is behind).
+  virtual void battleFrame(const game::battle::Battle& battle,
+                           const game::battle::BattleEvents& events) = 0;
+  // The series is over, failed or left: the battle it showed goes.
+  virtual void battlesOver() = 0;
+};
+
 // What the versus flow needs from the game: the battles, who this machine is, the saves and the
 // network. The callbacks let the tests run two flows over a simulated network.
 struct VersusFlowDesc {
@@ -43,6 +64,8 @@ struct VersusFlowDesc {
   std::function<std::unique_ptr<net::PeerLink>(std::string_view code)> join;
   // The seed of a new series, for the host.
   std::function<std::uint64_t()> seed;
+  // What shows the battles; none shows only the document. It must outlive the flow.
+  VersusBattleView* view = nullptr;
 };
 
 // The screens of an online versus series (docs/modulos/apps/game.md, «Versus en línea»), without

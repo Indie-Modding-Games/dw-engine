@@ -249,6 +249,8 @@ local function refresh(document)
   for _, name in ipairs(Views) do
     show(document, "view-" .. name, name == view)
   end
+  -- The battle shows on its arena under the document (versus_arena.hpp): the panel steps aside.
+  document:get("scrim"):set_class("arena", view == "match")
   if view == "menu" then
     focus(document, "menu-" .. number("versus.cursor"))
   elseif view == "host_setup" then

@@ -25,3 +25,22 @@
 .command { display: inline-block; width: auto; margin: 2dp 6dp 2dp 0; padding: 1dp 6dp; font-size: 20dp; }
 .command.current { text-decoration: underline; }
 .log { font-size: 15dp; margin: 0; }
+
+/* A battle on its arena (apps/game/src/versus_arena.hpp), laid out as the original's versus screen (vs_combat.c): the
+   fighters' bars at the top corners, the clock and the score between them, the player's commands at the bottom left,
+   over the arena without the panel, its title, its log or its prompts. */
+#scrim.arena { background-color: transparent; }
+#scrim.arena #panel {
+	position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0; padding: 0;
+	background-color: transparent; decorator: none; border-width: 0; border-radius: 0;
+}
+#scrim.arena #title, #scrim.arena .log, #scrim.arena #prompts { display: none; }
+#scrim.arena #match-top { position: absolute; top: 8dp; left: 36%; width: 28%; font-size: 18dp; }
+#scrim.arena .fighter { position: absolute; top: 6dp; width: 34%; margin: 0; padding: 2dp 6dp; background-color: #00000070; }
+#scrim.arena #fighter-0 { left: 8dp; }
+#scrim.arena #fighter-1 { right: 8dp; }
+#scrim.arena .fighter-name { font-size: 16dp; margin-bottom: 0; }
+#scrim.arena .numbers { font-size: 14dp; }
+#scrim.arena #commands { position: absolute; left: 8dp; bottom: 8dp; margin: 0; }
+#scrim.arena .command { background-color: #00000090; }
+#scrim.arena .warning { position: absolute; top: 45%; left: 0; width: 100%; text-align: center; }

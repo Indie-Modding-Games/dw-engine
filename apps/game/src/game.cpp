@@ -891,7 +891,7 @@ int runGame(const Options& requested) {
   }};
   TitleScreen title{files, options, !autotest, **ui};
   // «Versus en línea» from the title's menu (versus_screen.hpp): no game behind it.
-  VersusScreen versus{files, options, !autotest, **ui};
+  VersusScreen versus{files, options, !autotest, **ui, renderer->get(), &sound};
   // A new game asks its rules (an addition); an autotest only when its route asks.
   title.setAsksRules(autotest == nullptr || autotest->asksNewGameRules());
   // What waits for the movie that plays: the title, or a game to start (main.c: main).
@@ -1833,6 +1833,9 @@ int runGame(const Options& requested) {
         beginNewGame(start);
       }
     }
+    if (flow.playing() == nullptr) {
+      versus.update(gameSeconds, static_cast<float>(step.alpha()), graphics.options());
+    }
     if (PlaySession* play = flow.playing()) {
       play->update(sessionCommands, autotest.get(), frameStats, gameSeconds,
                    static_cast<float>(step.alpha()));
@@ -1936,6 +1939,10 @@ int runGame(const Options& requested) {
       postDrawer = field.postDrawer();
     } else if (interview) {
       sceneDrawers = interview->drawers();
+    } else if (FieldScene* arena = versus.arenaScene()) {
+      // The versus' battle on its arena, under the versus document.
+      sceneDrawers = arena->drawers();
+      postDrawer = arena->postDrawer();
     }
     std::vector<render::TextureScene> portraitScenes;
     // HD scenery's background pass: what the scroll uncovered, before the scene pass reads it.

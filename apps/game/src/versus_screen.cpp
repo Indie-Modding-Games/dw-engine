@@ -10,6 +10,7 @@
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/slot_names.hpp>
+#include <dwe/session/tournament_adapter.hpp>
 #include <dwe/session/versus_match.hpp>
 
 #include <algorithm>
@@ -17,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "common.hpp"
 #include "session_start.hpp"
 
 #ifndef DWE_GAME_VERSION
@@ -62,11 +64,64 @@ std::vector<VersusSave> savesIn(const assets::VirtualFileSystem& files, const Op
   return saves;
 }
 
+// vs_scene.c: VS_loadArenaAssets(VS_BATTLE_SETUP.stage): the versus' setup always leaves stage 0,
+// the tournaments' first arena (measured: VS_BATTLE_SETUP.stage = 0 in a versus battle).
+constexpr std::size_t VersusArenaIndex = 0;
+
+// The other player's flow of --versus-loopback: its battles are readied as this machine's are, so
+// both play the same battle, and shown nowhere.
+class ReadiedOnly final : public VersusBattleView {
+public:
+  explicit ReadiedOnly(VersusArena& arena) : arena_{&arena} {}
+  void battleStarted(game::battle::Battle& battle) override { arena_->prepare(battle); }
+  void battleFrame(const game::battle::Battle& /*battle*/,
+                   const game::battle::BattleEvents& /*events*/) override {}
+  void battlesOver() override {}
+
+private:
+  VersusArena* arena_;
+};
+
+// The arena of the versus' battles; none, logged, when the rules or the renderer give none.
+std::unique_ptr<VersusArena> arenaFor(const assets::VirtualFileSystem& files,
+                                      const ruleset::Ruleset& rules,
+                                      const session::BattleAdapter& battles,
+                                      render::Renderer* renderer, audio::Audio* audio) {
+  if (renderer == nullptr) {
+    return nullptr;
+  }
+  session::TournamentAdapterDesc arenasDesc;
+  arenasDesc.files = &files;
+  session::TournamentAdapter arenas{arenasDesc};
+  if (auto read = arenas.readRules(rules); !read) {
+    core::logWarning("versus: no arena: {}", read.error().message);
+    return nullptr;
+  }
+  auto stage = arenas.arenaStageAt(VersusArenaIndex);
+  if (!stage) {
+    core::logWarning("versus: no arena: {}", stage.error().message);
+    return nullptr;
+  }
+  auto arena = VersusArena::create(VersusArenaDesc{.renderer = renderer,
+                                                   .files = &files,
+                                                   .species = battles.digimonTable(),
+                                                   .audio = audio,
+                                                   .arena = std::move(*stage),
+                                                   .clock = {}});
+  if (!arena) {
+    core::logWarning("versus: no arena: {}", arena.error().message);
+    return nullptr;
+  }
+  return std::move(*arena);
+}
+
 } // namespace
 
 VersusScreen::VersusScreen(const assets::VirtualFileSystem& files, const Options& options,
-                           bool keepsSaves, ui::Ui& ui)
-    : files_{&files}, options_{&options}, keepsSaves_{keepsSaves}, ui_{&ui} {}
+                           bool keepsSaves, ui::Ui& ui, render::Renderer* renderer,
+                           audio::Audio* audio)
+    : files_{&files}, options_{&options}, keepsSaves_{keepsSaves}, ui_{&ui}, renderer_{renderer},
+      audio_{audio} {}
 
 VersusScreen::~VersusScreen() = default;
 
@@ -89,6 +144,7 @@ bool VersusScreen::open() {
       return false;
     }
     battles_ = std::move(battles);
+    arena_ = arenaFor(*files_, *rules, *battles_, renderer_, audio_);
     // The servers: the game pack's, and the command line's signaling server over it. Without a
     // signaling server the links fail at once and the screen says that none is set up.
     net::RtcSettings settings;
@@ -117,9 +173,14 @@ bool VersusScreen::open() {
             [] {
               std::random_device device;
               return (static_cast<std::uint64_t>(device()) << 32U) | device();
-            }};
+            },
+        .view = arena_.get()};
     if (options_->versusLoopback) {
       rivalDesc_ = desc;
+      if (arena_) {
+        rivalView_ = std::make_unique<ReadiedOnly>(*arena_);
+      }
+      rivalDesc_->view = rivalView_.get();
       desc.host = [this] { return loopback_->host(); };
       desc.join = &VersusLoopback::join;
       core::logInfo("versus: --versus-loopback: the other player is this process' own");
@@ -178,6 +239,9 @@ void VersusScreen::tick(double nowSeconds) {
     flow_->tick(net::Millis{static_cast<std::int64_t>(nowSeconds * MillisPerSecond)});
   }
   lastSeconds_ = nowSeconds;
+  if (arena_) {
+    arena_->tick(TickSeconds);
+  }
   if (flow_->closed()) {
     close();
     return;
@@ -187,6 +251,16 @@ void VersusScreen::tick(double nowSeconds) {
 
 bool VersusScreen::takeClosed() {
   return std::exchange(closed_, false);
+}
+
+FieldScene* VersusScreen::arenaScene() {
+  return active_ && arena_ && arena_->showing() ? &arena_->scene() : nullptr;
+}
+
+void VersusScreen::update(double frameSeconds, float alpha, const GraphicsOptions& graphics) {
+  if (arenaScene() != nullptr) {
+    arena_->update(frameSeconds, alpha, graphics);
+  }
 }
 
 } // namespace dwe::app

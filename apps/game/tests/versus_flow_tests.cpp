@@ -1,3 +1,4 @@
+#include <dwe/game/battle/flights.hpp>
 #include <dwe/net/loopback.hpp>
 #include <dwe/net/peer_link.hpp>
 #include <dwe/session/versus_match.hpp>
@@ -7,6 +8,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -17,6 +19,7 @@
 #include "versus_fixture.hpp"
 #include "versus_flow.hpp"
 
+using dwe::app::VersusBattleView;
 using dwe::app::VersusFlow;
 using dwe::app::VersusFlowDesc;
 using dwe::app::VersusSave;
@@ -77,7 +80,7 @@ std::vector<VersusSave> savesOf(std::vector<dwe::session::RegisteredPartner> par
 // One player's machine with its versus flow on one side of the network.
 struct Player {
   Player(const TestPacks& packs, LoopbackNetwork& network, std::size_t side,
-         std::vector<dwe::session::RegisteredPartner> partners)
+         std::vector<dwe::session::RegisteredPartner> partners, VersusBattleView* view = nullptr)
       : machine{packs} {
     auto identity =
         dwe::session::versusIdentity("0.1.0", machine.session->rules().current(), packs.files());
@@ -97,7 +100,8 @@ struct Player {
                          }
                          return std::make_unique<BorrowedLink>(*peer);
                        },
-                       .seed = [] { return std::uint64_t{4321}; }});
+                       .seed = [] { return std::uint64_t{4321}; },
+                       .view = view});
     flow->open();
   }
 
@@ -197,6 +201,49 @@ std::vector<dwe::session::RegisteredPartner> guestPartners() {
   return {registered("x", "second_kind", 500, 60), registered("y", "first_kind", 250, 100),
           registered("z", "second_kind", 50, 10)};
 }
+
+// Every technique lands a fixed number of frames after it starts, as a model's effect script
+// would time it.
+class SlowFlights final : public dwe::game::battle::AttackFlights {
+public:
+  [[nodiscard]] std::optional<dwe::game::battle::EffectLanding>
+  landing(std::string_view /*move*/, dwe::game::battle::FighterId /*attacker*/,
+          dwe::game::battle::FighterId /*defender*/,
+          std::optional<std::int32_t> /*clip*/) const override {
+    return dwe::game::battle::EffectLanding{.frame = 37, .at = {}, .touch = {}, .facingTarget = {}};
+  }
+};
+
+// What the arena sees of a series (versus_arena.hpp): it readies each battle with its flights, as
+// the arena does with the models' clips and the effect scripts' flights.
+class RecordingView final : public VersusBattleView {
+public:
+  void battleStarted(dwe::game::battle::Battle& battle) override {
+    startFrames.push_back(battle.state().frame);
+    battle.setFlights(&flights);
+    shown = &battle;
+  }
+  void battleFrame(const dwe::game::battle::Battle& battle,
+                   const dwe::game::battle::BattleEvents& /*events*/) override {
+    if (&battle == shown && battle.state().frame != lastFrame) {
+      lastFrame = battle.state().frame;
+      ++frames;
+    }
+    framesOfOthers += &battle == shown ? 0 : 1;
+  }
+  void battlesOver() override {
+    ++overs;
+    shown = nullptr;
+  }
+
+  SlowFlights flights;
+  std::vector<std::int64_t> startFrames;
+  const dwe::game::battle::Battle* shown = nullptr;
+  std::int64_t lastFrame = -1;
+  int frames = 0;
+  int framesOfOthers = 0;
+  int overs = 0;
+};
 
 } // namespace
 
@@ -337,4 +384,39 @@ TEST_CASE("vs_select.c: a partner is picked once and a save needs one per battle
   host.flow->act("cancel");
   CHECK(number(*host.flow, "versus.picks") == 0);
   CHECK(host.flow->view() == View::Lineup);
+}
+
+TEST_CASE("vs_scene.c: VS_initializeVS: both machines show and ready each battle alike") {
+  const TestPacks packs;
+  LoopbackNetwork network{{.latency = Millis{40}, .jitter = Millis{30}, .lossPercent = 5}, 3};
+  RecordingView hostView;
+  RecordingView guestView;
+  Player host{packs, network, 0, hostPartners(), &hostView};
+  Player guest{packs, network, 1, guestPartners(), &guestView};
+  connect(network, host, guest);
+  pickLineup(host, {0, 1, 2});
+  pickLineup(guest, {1, 0, 2});
+
+  play(network, host, guest, 60 * 60 * 20,
+       [&] { return host.flow->view() == View::Result && guest.flow->view() == View::Result; });
+  INFO("host error: " << text(*host.flow, "versus.error_key"));
+  INFO("guest error: " << text(*guest.flow, "versus.error_key"));
+  // The readied battles stay in step: no checksum tells them apart.
+  REQUIRE(host.flow->view() == View::Result);
+  REQUIRE(guest.flow->view() == View::Result);
+  CHECK(number(*host.flow, "versus.wins.0") == number(*guest.flow, "versus.wins.0"));
+  CHECK(number(*host.flow, "versus.wins.1") == number(*guest.flow, "versus.wins.1"));
+  // Each battle is readied before its first frame (BATTLE_FRAME_COUNT starts at 1), once on each
+  // machine.
+  CHECK(hostView.startFrames == std::vector<std::int64_t>{1, 1, 1});
+  CHECK(guestView.startFrames == std::vector<std::int64_t>{1, 1, 1});
+  CHECK(hostView.frames > 0);
+  CHECK(hostView.framesOfOthers == 0);
+  CHECK(hostView.overs == 0);
+
+  // Leaving the result ends what the view shows.
+  host.flow->act("confirm");
+  CHECK(host.flow->view() == View::Menu);
+  CHECK(hostView.overs == 1);
+  CHECK(hostView.shown == nullptr);
 }
