@@ -87,9 +87,23 @@ tablas que sube libpress (`DecDCTReset`):
 - **Planos.** Las muestras con signo se guardan + 128 como bytes sin signo. Los macrobloques llenan el frame por
   columnas: de arriba abajo y luego de izquierda a derecha.
 
-**Por qué esta IDCT.** Una IDCT en coma flotante da casi lo mismo pero no lo mismo, y el redondeo cambiaría según el
-compilador. La entera es la del hardware: la salida es determinista, igual en cualquier plataforma, y es lo que el
-original ve antes de su paso a RGB.
+**Por qué esta IDCT.** Es la del hardware: entera, determinista, igual en cualquier plataforma, y es lo que el
+original ve antes de su paso a RGB. `decodeMacroblocks` la conserva para las pruebas y para comparar con el original,
+pero pierde detalle por el camino: la tabla redondea hacia abajo, cada pasada redondea, el resultado se queda en 8 bits
+y un valor fuera de rango da la vuelta en 9 bits antes de saturar. La decuantización también trunca (`>> 3` y el sesgo
+de 8 hacia cero).
+
+**Decodificación precisa** (una mejora del motor; la usa `dwx` al escribir el vídeo). `decodePreciseFrame` lee el mismo
+bitstream con la misma matriz y la misma escala, pero sin perder nada antes de la IDCT:
+
+- **Decuantización exacta.** Los coeficientes se guardan × 8, así que `nivel · escala · Q[k]` (el AC) y
+  `nivel · Q[0] · 8` (el DC) son enteros exactos: sin `>> 3`, sin sesgo y sin saturar a 15 bits.
+- **IDCT exacta en enteros.** Base `round(2^24 · c(u)/2 · cos((2x + 1)uπ/16))` (`PreciseIdctTable`, escrita en el
+  código y comparada con la fórmula en una prueba), sumas en 64 bits, columnas `>> 12` y filas `>> 35`, las dos
+  redondeadas. Es la IDCT ideal a menos de una milésima de nivel y sigue siendo entera: el mismo bitstream da las
+  mismas muestras en cualquier plataforma.
+- **Más bits.** Las muestras se guardan en dieciseisavos de nivel (`PreciseOne = 16`, de 0 a `PreciseMax = 4080`) y
+  se saturan, nunca dan la vuelta. Con la decodificación del hardware, a menos de un nivel en cada muestra.
 
 **Color.** `toRgb` es la conversión del MDEC (Mednafen): `r = y + ((359 · cr + 0x80) >> 8)`,
 `b = y + ((454 · cb + 0x80) >> 8)` y en el verde cada producto pierde bits bajos
@@ -127,16 +141,40 @@ startFrame`, `s32 frameCount`. `MOV_readFrame` deja de leer cuando el número de
 lecturas vacías, así que la película que se ve puede acabar antes que el fichero. Direcciones: US `0x8001094C`, EU
 `0x80010B64`, JP y JP rev 1 `0x80010B70` (`movieTableAddress`).
 
+## Restauración
+
+Una mejora del motor (`packages/formats/src/video/restore.cpp`): `dwx` limpia cada frame decodificado con precisión
+antes de escribirlo. Las películas están muy cuantizadas (escala 2 a 12 según el frame) y se ven los bordes de los
+bloques de 8 × 8 en degradados y cielos, y halos alrededor de los bordes fuertes. La escala del MDEC tiene el sentido
+del cuantizador de MPEG (un paso de AC de `escala · peso / 8`), así que sirven los filtros posteriores de MPEG-4
+(ISO/IEC 14496-2, anexo F.3) tal cual, con la escala del frame como `QP`:
+
+- **Desbloqueo (`deblock`).** Cada línea de diez muestras que cruza un borde de bloque (cinco a cada lado), primero
+  los bordes verticales y luego los horizontales, en los tres planos. Si la línea es plana (al menos 6 de sus 9
+  diferencias valen 2 niveles o menos) y su rango es menor que `2 · QP`, un paso bajo de 9 tomas
+  `{1, 1, 2, 2, 4, 2, 2, 1, 1} / 16` reparte el escalón. Si no, solo se reduce el escalón del propio borde (su término
+  de tercer orden) hasta el menor de sus vecinos, cuando es menor que `QP`, y nunca más de la mitad del escalón. Un
+  borde real de la imagen, mayor de lo que la cuantización explica, no se toca.
+- **Deringing (`dering`).** Dentro de cada bloque con un rango de al menos 16 niveles, las muestras a un lado del
+  nivel medio del bloque se suavizan con `[1 2 1; 2 4 2; 1 2 1] / 16` solo si sus 9 vecinas están del mismo lado (lejos
+  del borde), y ninguna se mueve más de `QP / 2`.
+
+Todo en aritmética entera: el mismo frame da siempre las mismas muestras. No hay filtro temporal: los frames ya son
+reales a 30 fps (pocos repetidos) y un filtro entre frames emborronaría el movimiento rápido de las películas.
+
 ## Salida de `dwx`
 
 | Fichero | Contenido |
 |---|---|
-| `movie/<nombre>/video.y4m` | YUV4MPEG2 `C420jpeg`, `XCOLORRANGE=FULL`, `Ip`, `A1:1`, a la frecuencia real (`F30:1`): cada frame son los planos Y, Cb y Cr tal como salen del MDEC |
+| `movie/<nombre>/video.y4m` | YUV4MPEG2 `C420p10` (10 bits, cada muestra en 2 bytes little-endian), `XCOLORRANGE=FULL`, `Ip`, `A1:1`, a la frecuencia real (`F30:1`): cada frame son los planos Y, Cb y Cr de la decodificación precisa, ya restaurados |
 | `movie/<nombre>/audio.wav` | PCM de 16 bits little-endian, los canales y la frecuencia del XA |
-| `movie/<nombre>/movie.yaml` | `source`, `video` (tamaño, frames, primer frame, fps, versión del bitstream, `chroma: 420jpeg`, `range: full`), `audio` (frecuencia, canales, muestras, bits del XA) o `null`, `sectors` (total, vídeo, audio, relleno) y `playback` (índice, ruta, `start_frame` y `frame_count` de `MOV_MOVIES`) o `null` si no se conoce la versión. Esquema: `content/schemas/movie.schema.json` |
+| `movie/<nombre>/movie.yaml` | `source`, `video` (tamaño, frames, primer frame, fps, versión del bitstream, `chroma: 420p10`, `range: full`), `audio` (frecuencia, canales, muestras, bits del XA) o `null`, `sectors` (total, vídeo, audio, relleno) y `playback` (índice, ruta, `start_frame` y `frame_count` de `MOV_MOVIES`) o `null` si no se conoce la versión. Esquema: `content/schemas/movie.schema.json` |
 
 - **Croma.** El MDEC usa la misma muestra de croma para los 4 píxeles de su cuadro de 2 × 2 (vecino más cercano), así
-  que la muestra está en el centro del cuadro: `C420jpeg`. Los planos son de rango completo (0..255 sin escalar).
+  que la muestra está en el centro del cuadro, como en `C420jpeg`. Los planos son de rango completo: el luma de 0 a
+  1023 (`nivel · 1023 / 255`, redondeado) y el croma centrado en 512 con el mismo factor, como H.273 escala el rango
+  completo a 10 bits. Los 10 bits guardan los dieciseisavos de nivel de la decodificación precisa que 8 bits
+  redondearían, y evitan bandas en los degradados oscuros.
 - **Escritura por partes.** `OutputFile::stream` (extractor.hpp) es una salida que el paquete base pide por trozos:
   el extractor guarda solo los bitstreams (unos 35 MB por película) y el vídeo se decodifica frame a frame al
   escribirlo, así que nunca está entero en memoria (unos 300 MB por película). Los bitstreams y los WAV de las cuatro
@@ -153,25 +191,30 @@ Para verlo o recodificarlo: `ffmpeg -i video.y4m -i audio.wav ...` (fuera del pr
 
 | Fichero | Contenido |
 |---|---|
-| `movie/<nombre>/video.ivf` | AV1 de 8 bits 4:2:0, rango completo, en un IVF: cabecera de 32 bytes (`DKIF`, versión 0, tamaño de cabecera 32, `AV01`, ancho y alto `u16`, frecuencia y escala `u32` en 16 y 20, número de frames `u32` en 24) y, por frame, 12 bytes (tamaño `u32`, `pts` `u64`) y sus datos. Un frame del IVF por frame del Y4M, al mismo tamaño y frecuencia |
+| `movie/<nombre>/video.ivf` | AV1 de 10 bits 4:2:0 (8 bits si el Y4M es de 8), rango completo, matriz BT.601, en un IVF: cabecera de 32 bytes (`DKIF`, versión 0, tamaño de cabecera 32, `AV01`, ancho y alto `u16`, frecuencia y escala `u32` en 16 y 20, número de frames `u32` en 24) y, por frame, 12 bytes (tamaño `u32`, `pts` `u64`) y sus datos. Un frame del IVF por frame del Y4M, al mismo tamaño y frecuencia |
 | `movie/<nombre>/audio.opus` | El WAV pasado por el cocinero de sonido ([Opus](opus.md)): 48 kHz, los mismos canales |
 | `movie/<nombre>/movie.yaml` | Copiado: describe la película tal como se extrajo (el motor toma la frecuencia del sonido decodificado) |
 
-El cocinero (`apps/dwx/src/video_cooker.cpp`, cocinero `video` versión 1) codifica con libaom en modo de buena
-calidad con calidad constante y ajustes fijos y un hilo, así que el mismo Y4M da siempre los mismos bytes.
+El cocinero (`apps/dwx/src/video_cooker.cpp`, cocinero `video` versión 2) codifica con libaom en modo de buena
+calidad con calidad constante (`cq-level` 14) y ajustes fijos y un hilo, así que el mismo Y4M da siempre los mismos
+bytes. Lee Y4M de 8 bits (`C420jpeg`) y de 10 (`C420p10`); otra profundidad se rechaza.
 `assets::readIvfHeader` comprueba la cabecera (`dwx validate`, `dwe-game --check-content`) y `video::Av1Reader` la
 decodifica frame a frame. Los motivos y las medidas están en [películas](../architecture/peliculas.md#fase-5).
 
-`packages/formats/src/video/mdec.cpp` se compila optimizado también en los builds de debug (como `sha1.cpp`): sin eso, la
-extracción en `ci` (debug con sanitizers) llevaba casi 9 minutos; ahora tarda unos 3,5. Al extraer, cada frame solo
-pasa por la etapa VLC (`decodeBitstream`, que comprueba su bitstream y su tamaño); la IDCT corre una sola vez, al
-escribir el Y4M.
+`packages/formats/src/video/mdec.cpp` y `restore.cpp` se compilan optimizados también en los builds de debug (como
+`sha1.cpp`): sin eso, la extracción en `ci` (debug con sanitizers) llevaba casi 9 minutos con la decodificación del
+hardware. Al extraer, cada frame solo pasa por la etapa VLC (`decodeBitstream`, que comprueba su bitstream y su
+tamaño); la decodificación precisa y la restauración corren una sola vez, al escribir el Y4M. Con ellas, la
+extracción entera en `ci` pasa de unos 6 minutos a unos 16 (medido el 2026-11-08 en una máquina compartida); un
+build optimizado de `dwx` tarda mucho menos.
 
 ## Pruebas
 
 - `packages/formats/tests/mdec_tests.cpp`, `xa_adpcm_tests.cpp`, `str_tests.cpp` y `movie_tests.cpp`: bitstreams y sectores
-  sintéticos (DC, predictores, versión 2, AC de 15 y 16 bits, escape, fin de bloque, IDCT, macrobloques, todos los
-  filtros XA, estéreo, 8 bits, intercalado de 8 sectores, entradas mal formadas, Y4M, WAV, `MOV_MOVIES` y esquema).
+  sintéticos (DC, predictores, versión 2, AC de 15 y 16 bits, escape, fin de bloque, IDCT, IDCT precisa, macrobloques,
+  todos los filtros XA, estéreo, 8 bits, intercalado de 8 sectores, entradas mal formadas, Y4M de 8 y 10 bits, WAV,
+  `MOV_MOVIES` y esquema). `restore_tests.cpp`: el desbloqueo iguala un escalón pequeño y respeta un borde real, su
+  fuerza sigue la escala, el deringing no mueve nada más de media escala y todo es determinista.
 - `apps/dwx/tests/video_extractors_tests.cpp`: una imagen en bruto sintética con un STR.
 - Con `DWE_DISC`: `packages/formats/tests/video_real_disc_tests.cpp` decodifica los primeros frames y el audio de cada
   película, y `apps/dwx/tests/video_real_disc_tests.cpp` extrae las cuatro (sin `unknowns`) y decodifica entera la

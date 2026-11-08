@@ -48,8 +48,8 @@ apps/game (MovieScreen) ──► packages/engine/video ──► packages/engin
 ```
 
 - **`packages/engine/video`** ([su página](../modulos/engine/video.md)), módulo de la capa de sistemas: `Y4mReader` (lee el Y4M frame a frame de un
-  `assets::FileReader`: nunca tiene el fichero entero, que son unos 300 MB), `toRgba` (la fórmula del MDEC, la de
-  `formats/video` `toRgb`, reescrita en el motor porque el runtime no usa `formats`) y `MoviePlayer`: lee
+  `assets::FileReader`: nunca tiene el fichero entero, que son unos 300 MB), `toRgba` (de YCbCr a RGBA con el croma interpolado y la BT.601 exacta;
+  [su página](../modulos/engine/video.md#color)) y `MoviePlayer`: lee
   `movie.yaml`, da el frame RGBA que toca para un tiempo dado y dice cuándo acaba (frame final =
   `playback.frame_count`, o el último del fichero si es mayor). `MoviePlayer::loadSound` decodifica el WAV entero
   (unos 18 MB). No conoce ni `render` ni `audio`.
@@ -75,6 +75,24 @@ apps/game (MovieScreen) ──► packages/engine/video ──► packages/engin
   terminada, la partida espera) y de EDR (cierra la partida → EDR → OP1 → portada «Press Start»: el `main` del original da la vuelta a su
   bucle y pone `playMovie(0, 1)` antes de `runLandingScreen`; `movieAfter`), que HIST-S7 llama al portar las
   rutinas 53 y 54. Un autotest y los arranques directos (`--new-game`, `--load`, `--start`) no ven películas.
+
+## Escalado
+
+Una mejora del motor (`apps/game/src/movie_drawer.cpp`), con el filtro de texturas `texture_filter`. Con «Ampliadas»
+(`upscaled`, el de por defecto) la imagen de 320 × 176 se amplía en dos pasos, un escalado adaptativo a los bordes y
+un enfoque adaptativo al contraste, escritos para este caso (no hay código de terceros):
+
+- **Escalado adaptativo a los bordes** (`movie_upscale.slang`, en el pase de escena): cada píxel de la ventana es un
+  Lanczos-2 de los 12 texels más cercanos. El gradiente local del luma gira el núcleo a lo largo del borde y lo
+  estira en esa dirección, así que los bordes quedan rectos y nítidos en vez de escalonados o borrosos; en zonas
+  planas el núcleo es redondo y más suave. El resultado se sujeta al mínimo y al máximo de los 4 texels más
+  cercanos: los lóbulos negativos no dejan halos.
+- **Enfoque** (`movie_sharpen.slang`, en el pase posterior `FrameDesc::post`, sobre la escena dibujada en una
+  textura del tamaño de la ventana): una cruz de 5 tomas con un peso limitado por píxel (sin pasarse del mínimo ni del
+  máximo de los vecinos), menos fuerte donde hay ruido; fuerza 0,8.
+
+Con «Suaves» o «Píxeles» la película se estira con filtro lineal, como siempre. El marco (`showPicture`, el
+rectángulo de la imagen) no cambia, ni el reloj: el frame sigue siendo `floor(t · 30)` con `t` la posición del sonido.
 
 ## Tramos (≤ ~800 líneas cambiadas cada uno, sin docs)
 
@@ -114,6 +132,21 @@ sobre 2652 frames en el fichero) va a la fase 5.
     de Y4M + WAV pasan a 27,4 MB (vídeo 20,7 MB, sonido 6,7 MB); el `.pak` de las cuatro, 27,3 MB. Cocinar las
     cuatro en paralelo, 4 min 33 s (una sola, 3 min); `dwx pack`, 3,5 s. Calidad de ED2 frente al Y4M: PSNR medio
     42,6 dB (Y 41,7; mínimo 38,1 en un fotograma).
+  - **Calidad (hecho, 2026-11-08).** Lo que se perdía por el camino: la IDCT del hardware (tabla redondeada hacia
+    abajo, 8 bits, vuelta en 9 bits), la decuantización truncada, el croma repetido en cuadros de 2 × 2, la matriz
+    aproximada del MDEC y un AV1 de 8 bits a `cq-level` 24. Ahora `dwx extract` decodifica con precisión, quita bloques
+    y halos (MPEG-4 anexo F.3) y escribe Y4M de 10 bits ([vídeo](../formats/video.md#restauración)); `dwx cook` cocina
+    AV1 de 10 bits a `cq-level` 14; `toRgba` interpola el croma y usa la BT.601 exacta; con «Ampliadas» la imagen se
+    amplía y enfoca en la GPU ([Escalado](#escalado)). Sin filtro temporal ni fotogramas intermedios: las películas
+    son de 30 fps reales (en OP1 se repiten 539 de 3719 frames y en ED2 216 de 2652, y un frame se ve 2 ticks), y
+    mezclar frames emborronaría el movimiento rápido. El reloj y el marco no cambian: a los mismos ticks se ve el
+    mismo frame de la fuente antes y después.
+    - **Medidas** (extracción US, 4 películas): Y4M de 1105,8 MB a 2211,6 MB (el doble, por los 10 bits); vídeo
+      cocinado de 20,7 MB a 37,3 MB (ED2 3,8 → 7,2; EDR 4,9 → 9,2; OP1 6,0 → 10,3; OP2 6,0 → 10,6); el sonido no
+      cambia. Cocinar el paquete entero, 5 min 15 s → 5 min 48 s. ED2 cocinada frente a su Y4M: PSNR medio 46,7 dB
+      (antes 42,6), el peor fotograma 41,6. En la misma prueba con `cq-level` 24 / 18 / 14 / 10: 3,3 / 5,0 / 7,4 /
+      11,0 MB y 43,1 / 44,8 / 46,8 / 49,3 dB (SSIM 0,988 / 0,991 / 0,994 / 0,996); 14 es donde la diferencia deja de
+      verse ampliada.
   - **Música durante la película.** El original para la música antes de la película y la vuelve a arrancar después
     (`main.c:3441` `finalizeMusic`, `playMovie`, `initializeMusic`); dwe no lo hacía, así que ED2 sobre una partida
     terminada podía sonar con la canción del mapa debajo. Ahora `SessionMusic::holdForMovie` la para y retiene lo que

@@ -1379,7 +1379,8 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
   modelos» (Ampliadas / Suaves / Píxeles, «Como el original» en Píxeles). `texture_filter` vale para todos los modelos:
   el campo y el combate (los luchadores y los modelos de las técnicas son del `ModelRenderer` del campo) y las figuras
   en 3D de los menús (el compañero y el jugador de la ficha, la figura del guardado, la medalla y la entrevista de la
-  partida nueva), que comparten además la caché del escalador.
+  partida nueva), que comparten además la caché del escalador, y también las películas (con «Ampliadas», el
+  escalado de películas de abajo).
 
 | Qué | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
@@ -1387,6 +1388,8 @@ usuario) se aplica al momento; apagado, se ven los píxeles del original exactos
 | Escenarios ampliados (`scenery_quality`) | No existe | `render::upscaleScenery` dobla el fondo en cada variante de paleta (interpolación dirigida por bordes propia, tramado fundido, enfoque adaptativo suave) en un hilo, con caché en disco (`render::UpscaleCache`); `map.slang` (`SamplingUpscaledPrefilter`) lo remuestrea a la ventana con Catmull-Rom sujeto, mezcla las variantes con los pesos del fundido y toma la clase de cada píxel del texel original más cercano | `scenery_upscale_tests.cpp` de `packages/engine/render` (bordes, diagonales sin escalones, degradados, fundidos, clases, tramado, caché); `graphics_options_tests.cpp` («the sharpness options start on their best…»); capturas del mismo frame original / HD de antes / nuevo en siete mapas | Mejora (opción) |
 | Suavizado de bordes (`antialiasing`) | No existe | `Renderer::setMultisampling`: el pase de escena con 4 muestras (`GraphicsPipeline` con variante multimuestreada), resuelto en la ventana o en la textura del paso de luz | `pipeline_test.cpp` de `packages/engine/rhi`; capturas | Mejora (opción) |
 | Texturas de modelos (`texture_filter`) | Texels cuadrados | `ModelRenderer::setTextureFilter`: filtrado con mipmaps y anisotropía (`FlagSmooth` en `skinned_model.slang`), sobre las texturas dobladas por `upscaleRgba` (alfa interpolado, sin borde oscuro) | `scenery_upscale_tests.cpp` («a model texture's cut-out edge takes no dark fringe…»); `pipeline_test.cpp` (niveles de mip); capturas | Mejora (opción) |
+| Películas restauradas | El MDEC decodifica con su IDCT entera de 8 bits y repite el croma de cada cuadro de 2 × 2: bloques en los degradados, halos en los bordes, bandas en lo oscuro | `dwx` decodifica con la IDCT exacta en dieciseisavos de nivel (`decodePreciseFrame`), quita bloques y halos con los filtros de MPEG-4 según la escala del frame (`deblock`, `dering`) y escribe 10 bits; `dwx cook` cocina AV1 de 10 bits; `video::toRgba` interpola el croma y usa la BT.601 exacta ([vídeo](../../formats/video.md#restauración)) | `mdec_tests.cpp` y `restore_tests.cpp` de `packages/formats`; `cook_tests.cpp` de `apps/dwx` («a 10-bit movie cooks…», «pictures convert to RGB with full-range BT.601…»); capturas `video-before-*` / `video-after-*` de OP1 | Mejora |
+| Películas ampliadas (`texture_filter`) | La imagen de 320 × 176 ampliada | Con «Ampliadas», `MovieDrawer` amplía la imagen a los píxeles de la ventana con un escalado adaptativo a los bordes (`movie_upscale.slang`) y la enfoca en el pase posterior con un enfoque adaptativo al contraste (`movie_sharpen.slang`); con «Suaves» o «Píxeles», estirada con filtro lineal como siempre ([películas](../../architecture/peliculas.md#escalado)) | capturas `video-compare-*` (recortes 1:1 del mismo frame antes y después) | Mejora (opción) |
 
 ## Personajes en 3D
 

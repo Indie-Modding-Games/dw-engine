@@ -9,9 +9,9 @@ está en [películas](../../architecture/peliculas.md); el formato en disco, en 
 
 | Pieza | Qué hace |
 |---|---|
-| `y4m_reader.hpp` | `Y4mReader`: lee un vídeo YUV4MPEG2 (`.y4m`) de un `assets::FileReader`, frame a frame (`read`) o saltándolos (`skip`); `Y4mStream` es lo que dice su cabecera |
-| `av1_reader.hpp` | `Av1Reader`: lo mismo para el vídeo cocinado, AV1 en un IVF (`.ivf`), decodificado con libaom; `skip` también decodifica, porque los frames siguientes se construyen sobre él |
-| `picture.hpp` | `YuvPicture` (un frame 4:2:0 en planos, rango completo) y `toRgba`, que lo pasa a RGBA de 8 bits con la conversión de color del decodificador del original |
+| `y4m_reader.hpp` | `Y4mReader`: lee un vídeo YUV4MPEG2 (`.y4m`) de 8 bits (`C420jpeg`) o 10 bits (`C420p10`) de un `assets::FileReader`, frame a frame (`read`) o saltándolos (`skip`); `Y4mStream` es lo que dice su cabecera |
+| `av1_reader.hpp` | `Av1Reader`: lo mismo para el vídeo cocinado, AV1 de 8 o 10 bits en un IVF (`.ivf`), decodificado con libaom; `skip` también decodifica, porque los frames siguientes se construyen sobre él |
+| `picture.hpp` | `YuvPicture` (un frame 4:2:0 en planos de 16 bits, rango completo, con su `bitDepth` de 8 o 10) y `toRgba`, que lo pasa a RGBA de 8 bits |
 | `movie_player.hpp` | `readMovieInfo` (lee `movie.yaml`), `MovieInfo` y `MoviePlayer`: abre una película, avanza con el reloj y da la imagen del momento |
 
 ## Una película
@@ -23,6 +23,18 @@ el tamaño, los frames por segundo (`video.fps.numerator` y `denominator`), cuá
 (`video.frames`), el número del primero (`video.first_frame`) y, si el original la corta antes, en qué frame para
 (`playback.frame_count`). `MovieInfo::shownFrames` son los frames que se ven: hasta ese corte, o todos si la tabla no
 la corta o pide más de los que hay.
+
+## Color
+
+`toRgba` es una mejora del motor sobre el decodificador del original, que repite cada muestra de croma en los 4
+píxeles de su cuadro y convierte con enteros truncados:
+
+- **Croma interpolado.** Cada píxel mezcla las 4 muestras de croma más cercanas con pesos 9, 3, 3 y 1 (de 16): la
+  bilineal para muestras en el centro de cada cuadro de 2 × 2, como las escribe `dwx`. Sin escalones de 2 píxeles en
+  los bordes de color.
+- **BT.601 exacta, rango completo.** `r = y + 1,402 · cr`, `g = y − 0,344136 · cb − 0,714136 · cr`,
+  `b = y + 1,772 · cb`, en coma flotante, sobre valores pasados a 0..255 desde su profundidad (`/ 1023 · 255` con
+  10 bits), y cada canal redondeado y saturado a un byte. El verde ya no pierde los bits bajos de sus productos.
 
 ## Uso
 
