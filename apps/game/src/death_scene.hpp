@@ -23,6 +23,7 @@
 
 #include "death_effects.hpp"
 #include "field_scene.hpp"
+#include "scene_sounds.hpp"
 
 namespace dwe::app {
 
@@ -184,7 +185,7 @@ private:
   // The death's and the rebirth's effects, with their own rand() state for each scene.
   DeathEffects effects_;
   std::uint32_t effectSeed_ = 0;
-  std::vector<std::int64_t> heldSounds_;
+  HeldSceneSounds sounds_;
   // The iris's primitives this frame.
   std::vector<ScenePrim> iris_;
   // The camera the scene's camera moves from (DOOA_CAMERA_START_VIEW and its offsets and

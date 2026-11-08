@@ -16,6 +16,7 @@
 
 #include "evolution_effects.hpp"
 #include "field_scene.hpp"
+#include "scene_sounds.hpp"
 
 namespace dwe::app {
 
@@ -96,7 +97,10 @@ private:
   void restore();
   void finish();
   void setPhase(Phase phase);
+  // A sound of the scene's bank, kept until stopSounds (sound.c: playSound2).
   void playSound(std::int32_t sound);
+  // sound.c: stopSound: every sound the scene still plays stops.
+  void stopSounds();
   void drawNewForm();
   [[nodiscard]] Size sizeOf(std::string_view species) const;
   // The partner's size on the scene's frame: the old form's, then growing to the new one's.
@@ -146,6 +150,8 @@ private:
   EvolutionEffects effects_;
   // Each scene rolls its effects from its own seed.
   std::uint32_t effectSeed_ = 0;
+  // The scene's sounds: the burst's two loop until the roar stops them (evl.c:504, stopSound).
+  HeldSceneSounds sounds_;
 };
 
 } // namespace dwe::app

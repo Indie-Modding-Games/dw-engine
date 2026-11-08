@@ -295,6 +295,14 @@ Medido en el original (forzado con la hora en `twna01`) y comparado por fotogram
   `FieldStage::sceneryHidden` en el mismo cuadro (`showsPlayer`, `showsNpcs`) y lo quita con `stage_ = {}`
   (`EvolutionScene::restore`). La etapa solo enmascara el dibujo, así que quien estaba oculto antes de la escena
   sigue oculto después, como con la copia del original.
+- Igual (2026-11-08, informe de un probador: «el sonido de la evolución no se va hasta cerrar el juego»): en el
+  estallido (0x6A) suenan los efectos 1 y 0 de la ranura 8 (banco 18), cuyas muestras se repiten en bucle hasta que algo
+  las para; el original las corta en el cuadro 0xD6 con `stopSound` justo antes del rugido (efecto 5, sin bucle). dwe
+  las tocaba sin guardar sus voces y no las paraba nunca. Ahora la escena guarda cada sonido que toca
+  (`HeldSceneSounds`, `scene_sounds.cpp`, el mismo que usa la muerte), los para en 0xD6 antes del rugido y para lo que
+  quede al acabar o al saltarla (`skip_evolution`: un salto antes de 0xD6 también cortaba en dwe el bucle a medias).
+  Pruebas: `scene_sounds_tests.cpp` («the burst's looping sounds stop with stopSound…»); en vivo, el registro muestra
+  `thunkStopSoundMask` de los dos bucles en 0xD6 y al saltar en el cuadro 181.
 - Igual: al empezar, `EVL_initShardSets`, `EVL_resetParticles` y `EVL_resetSparks` dejan libres los 30 grupos de
   trozos, los 100 cuadrados y los 16 rayos; `EvolutionEffects::start` empieza con las listas vacías y los mismos topes
   (prueba `a new evolution starts with none of the last one's objects and keeps the caps`). La alineación de la
@@ -502,6 +510,14 @@ acabar el fundido a blanco (`MURD_removeLivesBox`). Si era la última, la caja v
 ya ido, en negro. Entonces corre la sección del mapa de despertar: los textos, la caja de los huevos (`EggBoxScreen`,
 documento `ui/egg_box`) y la rutina 4, que da al compañero su forma nueva y juega el renacer. Izquierda y derecha cambian
 de huevo y confirmar elige uno; no se puede salir sin elegir. Lo que no está: la carga del overlay.
+
+- Igual (2026-11-08, informe de un probador: «al morir el huevo se elige al azar»): la caja de huevos solo sale tras la
+  muerte natural (sección 0x47 del script 212: pregunta qué huevo quiere y abre la rutina 29). Si el compañero perdió
+  todas las vidas, la sección 0x49 no abre caja: dice que por el peligro el huevo no heredó todas las habilidades (esa
+  línea solo sale en este caso), baja el nivel del jugador si puede, corre la rutina 47 (olvidar técnicas) y renace; y
+  `DOOA_getSequenceState` sortea el huevo (`lives == 0`: `eggSlot = rand() % 4`). dwe hace lo mismo
+  (`Partner::rebirth`: el huevo de la caja solo cuenta con vidas; sin ellas decide `life.rebirth.baby_choice`, al azar).
+  No es un fallo. Dejar elegir el huevo también en ese caso sería una Mejora opcional, sin hacer: decisión pendiente.
 
 - Igual: con el aspecto original la caja crece en 5 cuadros a 20 por segundo desde el cuadrado de 16 píxeles del centro
   de la pantalla (`DOO2_openEggBox`: `createAnimatedUIBox(3, …)` desde `MAIN_D_80134B98` {-8, -8, 16, 16}) y, al elegir,
