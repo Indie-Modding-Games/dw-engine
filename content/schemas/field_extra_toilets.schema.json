@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Field extra toilets",
+  "description": "field/extra_toilets.yaml of the game pack: more places where the partner can go, used with the extra toilets option (an engine improvement, docs/modulos/apps/game.md). Positions and rotations are on the original's axes and units, like the map table's toilets.",
+  "type": "object",
+  "required": [
+    "toilets"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "toilets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "map",
+          "position",
+          "facing"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "map": {
+            "description": "The map id it is on.",
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "position": {
+            "description": "Where the partner goes (x, z on the original's axes); its cell and the eight around it take the toilet trigger where they are free.",
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "facing": {
+            "description": "The original Y rotation (0-4095) its front faces: the partner stops one cell that way before walking in.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4095
+          }
+        }
+      }
+    }
+  }
+}

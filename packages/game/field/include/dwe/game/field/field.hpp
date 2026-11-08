@@ -5,6 +5,7 @@
 #include <dwe/assets/map_table.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
+#include <dwe/game/field/extra_toilets.hpp>
 #include <dwe/game/field/npcs.hpp>
 #include <dwe/game/field/partner_follow.hpp>
 #include <dwe/game/field/player_trail.hpp>
@@ -346,6 +347,15 @@ public:
   // entry; a trigger under the player fires only once stepped onto again.
   void setCollision(const assets::MapCollision& collision);
 
+  // Extra toilets (extra_toilets.hpp, an engine improvement, off by default): the list of every
+  // map's, and whether they are on. While on, the free cells of the current map's take the toilet
+  // trigger (set on each map entry); turned off, they are free again.
+  void setExtraToilets(std::vector<ExtraToilet> toilets);
+  void setExtraToiletsOn(bool on);
+  [[nodiscard]] bool extraToiletsOn() const { return extraToiletsOn_; }
+  // The extra toilet of the current map whose trigger the cell holds, if any.
+  [[nodiscard]] const ExtraToilet* extraToiletAt(assets::CollisionCell cell) const;
+
   // The current map's region lists, which say how the partner feels about the map.
   [[nodiscard]] const assets::MapRegions& regions() const { return regions_; }
 
@@ -558,6 +568,9 @@ private:
   };
 
   Step playerStep();
+  // Gives the current map's extra toilets their cells, or frees the cells they took.
+  void placeExtraToilets();
+  void clearExtraToilets();
   [[nodiscard]] bool playerWantsToMove() const;
   void planPath(glm::vec3 target);
   // How many frames of the original start on this tick of `seconds` (frameClock_).
@@ -698,6 +711,10 @@ private:
   bool fieldRan_ = false;
   bool smoothMotion_ = true;
   bool generousTalk_ = false;
+  std::vector<ExtraToilet> extraToilets_;
+  bool extraToiletsOn_ = false;
+  // The cells the extra toilets of the current map took, each with the extra toilet's index.
+  std::vector<std::pair<assets::CollisionCell, std::size_t>> extraToiletCells_;
   // Seconds since the current frame of the original began, not counting this tick.
   float frameClock_ = 0.0F;
   float tickSeconds_ = 0.0F;

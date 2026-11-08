@@ -127,6 +127,9 @@ inline constexpr std::string_view ChoiceCancelClosesSetting = "choice_cancel_clo
 // The generous talk range (an engine improvement, off unless turned on;
 // game::field::Field::setGenerousTalk): a confirm reaches characters and signs a little further.
 inline constexpr std::string_view GenerousTalkSetting = "generous_talk";
+// Extra toilets (an engine improvement, off unless turned on; game::field::ExtraToilet): the places
+// field/extra_toilets of the game pack lists work as toilets too.
+inline constexpr std::string_view ExtraToiletsSetting = "extra_toilets";
 // The console's and the developer menu's warp("<map> [exit]"): the player goes to that map, at that
 // exit (0 when not given), as a script's map change takes him (FieldScene::startScriptedMapChange),
 // whatever the story. A debug aid.

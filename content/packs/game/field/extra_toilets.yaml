@@ -1,0 +1,9 @@
+# Sitios que también sirven de baño con la opción «Baños extra» (una mejora del motor, apagada por defecto;
+# docs/modulos/apps/game.md, «Baños extra»; content/schemas/field_extra_toilets.schema.json). Un mod puede añadir
+# más. map: el mapa. position: adonde va el compañero (x, z en los ejes del original, como los puntos de los baños
+# de la tabla de mapas); su casilla y las ocho de alrededor que estén libres llevan el disparador del baño.
+# facing: la rotación Y del original (0-4095) hacia la que mira el frente: el compañero para una casilla antes por
+# ese lado y luego entra.
+toilets:
+  # El gimnasio verde: la hierba junto a la valla, a la izquierda del cartel, de frente a la cámara.
+  - {map: trai00, position: [-800, -3400], facing: 512}

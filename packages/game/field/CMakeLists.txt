@@ -9,6 +9,7 @@ dwe_add_module(field
         src/npcs.cpp
         src/field_script.cpp
         src/field_edits.cpp
+        src/extra_toilets.cpp
         src/map_objects.cpp
         src/field_items.cpp
         src/field_partner_call.cpp

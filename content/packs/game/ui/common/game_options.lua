@@ -298,6 +298,17 @@ game_options = {
     help = "pause_menu.help.generous_talk",
     original = false,
   },
+  -- Extra toilets: the places the game pack lists (field/extra_toilets) work as toilets too (off by
+  -- default: only the original's toilets).
+  {
+    id = "extra-toilets",
+    setting = "extra_toilets",
+    label = "pause_menu.extra_toilets",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.extra_toilets",
+    original = false,
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).

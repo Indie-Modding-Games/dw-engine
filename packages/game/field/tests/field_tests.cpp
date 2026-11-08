@@ -22,8 +22,10 @@
 #include "fixture.hpp"
 
 using dwe::assets::CollisionCell;
+using dwe::assets::CollisionKind;
 using dwe::assets::MapCollision;
 using dwe::assets::MapDocument;
+using dwe::game::field::ExtraToilet;
 using dwe::game::field::Field;
 using dwe::game::field::FieldInput;
 using dwe::game::field::MapChange;
@@ -2191,6 +2193,53 @@ TEST_CASE("with the generous talk range a confirm reads the sign's cell in front
   };
   CHECK_FALSE(reads(false));
   CHECK(reads(true));
+}
+
+TEST_CASE("extra toilets take the free cells around them only while on, on their own map") {
+  // An engine improvement: the toilet trigger (tamer.c: checkMapInteraction, value 120) on the free
+  // cells around each extra toilet of the current map; walls and other triggers stay.
+  MapDocument room = roomMap("room");
+  // Original (1000, -1000) is world (1000, 0, 1000): cell (60, 60).
+  fill(room, {.column = 59, .row = 59}, {.column = 59, .row = 59}, Blocked);
+  fill(room, {.column = 61, .row = 61}, {.column = 61, .row = 61}, 110);
+  const MapDocument hall = roomMap("hall");
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.setExtraToilets({ExtraToilet{.map = "room", .position = {1000, -1000}, .facing = 0}});
+  field.enterMapAt(room, at(-1000.0F, -1000.0F, 0.0F));
+  const CollisionCell middle{.column = 60, .row = 60};
+  const auto toiletCells = [&field] {
+    std::size_t count = 0;
+    for (std::int32_t row = 59; row <= 61; ++row) {
+      for (std::int32_t column = 59; column <= 61; ++column) {
+        count += field.collision().trigger({.column = column, .row = row}) == 120 ? 1 : 0;
+      }
+    }
+    return count;
+  };
+  CHECK(toiletCells() == 0);
+  CHECK(field.extraToiletAt(middle) == nullptr);
+
+  field.setExtraToiletsOn(true);
+  CHECK(toiletCells() == 7);
+  CHECK(field.collision().isBlocked({.column = 59, .row = 59}));
+  CHECK(field.collision().trigger({.column = 61, .row = 61}) == 110);
+  const ExtraToilet* toilet = field.extraToiletAt(middle);
+  REQUIRE(toilet != nullptr);
+  CHECK(toilet->position == glm::ivec2{1000, -1000});
+  CHECK(field.extraToiletAt({.column = 61, .row = 61}) == nullptr);
+
+  // Another map has none; coming back gives them again.
+  field.enterMapAt(hall, at(-1000.0F, -1000.0F, 0.0F));
+  CHECK(toiletCells() == 0);
+  field.enterMapAt(room, at(-1000.0F, -1000.0F, 0.0F));
+  CHECK(toiletCells() == 7);
+
+  field.setExtraToiletsOn(false);
+  CHECK(toiletCells() == 0);
+  CHECK(field.collision().kind(middle) == CollisionKind::Free);
+  CHECK(field.collision().isBlocked({.column = 59, .row = 59}));
+  CHECK(field.collision().trigger({.column = 61, .row = 61}) == 110);
 }
 
 TEST_CASE("an NPC on a wall cell stays there when it appears and after a talk") {

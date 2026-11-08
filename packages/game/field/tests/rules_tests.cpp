@@ -1,5 +1,6 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/game/field/extra_toilets.hpp>
 #include <dwe/game/field/rules.hpp>
 
 #include <doctest/doctest.h>
@@ -192,4 +193,31 @@ TEST_CASE("the game pack's field data is valid") {
   CHECK((rules && rules->triggers == dwe::game::field::TriggerBands{}));
   const auto warps = dwe::game::field::loadFieldWarps(*vfs);
   CHECK_MESSAGE(warps.has_value(), errorOf(warps));
+  const auto toilets = dwe::game::field::loadExtraToilets(*vfs);
+  CHECK_MESSAGE(toilets.has_value(), errorOf(toilets));
+  CHECK((toilets && !toilets->empty()));
+}
+
+TEST_CASE("extra toilets read their map, position and facing, and refuse a bad facing") {
+  using dwe::game::field::parseExtraToilets;
+  const auto toilets = parseExtraToilets("toilets:\n"
+                                         "  - {map: room, position: [-800, -3400], facing: 0}\n"
+                                         "  - {map: hall, position: [100, 200], facing: 1024}\n");
+  REQUIRE_MESSAGE(toilets.has_value(), errorOf(toilets));
+  REQUIRE(toilets->size() == 2);
+  CHECK(toilets->at(0).map == "room");
+  CHECK(toilets->at(0).position == glm::ivec2{-800, -3400});
+  // Rotation 0 faces -z on the original's axes, 1024 faces -x: the partner stops a cell that way.
+  const auto first = toilets->at(0).points();
+  CHECK(first.x1 == -800);
+  CHECK(first.z1 == -3500);
+  CHECK(first.x2 == -800);
+  CHECK(first.z2 == -3400);
+  const auto second = toilets->at(1).points();
+  CHECK(second.x1 == 0);
+  CHECK(second.z1 == 200);
+  CHECK_FALSE(parseExtraToilets("toilets:\n  - {map: room, position: [0, 0], facing: 4096}\n"));
+  CHECK_FALSE(parseExtraToilets("toilets:\n  - {map: room, position: [0, 0]}\n"));
+  CHECK_FALSE(parseExtraToilets("toilets:\n  - {map: room, position: [0], facing: 0}\n"));
+  CHECK_FALSE(parseExtraToilets("toilets:\n  - {map: room, position: [0, 0], facing: 0, x: 1}\n"));
 }

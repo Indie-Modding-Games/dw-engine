@@ -21,6 +21,8 @@ schemas:
     - field/lights
   field_sprite_characters:
     - field/sprite_characters
+  field_extra_toilets:
+    - field/extra_toilets
   field_weather:
     - field/weather
   field_triggers:

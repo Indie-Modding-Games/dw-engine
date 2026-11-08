@@ -247,6 +247,8 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn,
                        std::optional<assets::SpawnPoint> partner) {
   mapId_ = map.id;
   collision_ = map.collision;
+  extraToiletCells_.clear();
+  placeExtraToilets();
   regions_ = map.regions;
   warps_ = map.warps;
   npcs_.enterMap(map.npcs);

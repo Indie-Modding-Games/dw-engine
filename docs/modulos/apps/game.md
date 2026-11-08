@@ -170,6 +170,27 @@ fotogramas) con la cámara encima; luego vuelve andando (animación 2) al primer
 atascos (`dwe_assets_tests`: "a toilet's points turn the original's z the other way into world space"; `field_tests`:
 "a care walk to a point goes through walls and ends on the point's cell").
 
+### Baños extra
+
+Mejora opcional, apagada por defecto, que propuso un probador para no tener que volver siempre al mismo baño. El
+ajuste `extra_toilets` (fila «Baños extra», «Extra toilets» en inglés, pestaña Juego, guardado en los ajustes del
+usuario) llega a `game::field::Field::setExtraToiletsOn`. La lista sale de `field/extra_toilets.yaml` del paquete del
+juego (esquema `field_extra_toilets.schema.json`), así que un mod puede añadir más: cada sitio lleva el mapa, la
+posición adonde va el compañero (x, z en los ejes del original, como `TOILET_DATA`) y `facing`, la rotación Y del
+original hacia la que mira su frente.
+
+Con la opción, al entrar en el mapa (y al encenderla) la casilla de la posición y las ocho de alrededor que estén libres
+toman el valor del baño (120, `field/triggers`); las paredes, los warps y los demás disparadores quedan como están. Al
+apagarla vuelven a estar libres. El resto es el baño de siempre: `FieldToilet` ve la casilla, y si es de un baño extra
+(`Field::extraToiletAt`) el compañero corre al punto una casilla por delante (`ExtraToiletFront`, 100 unidades hacia
+`facing`) y luego a la posición, en vez de a los puntos del mapa. La lista trae un sitio: trai00 (el gimnasio verde),
+en la hierba junto a la valla, a la izquierda del cartel, en (−800, −3400) y de frente a la cámara (512).
+
+Falta: no hay caseta ni dibujo. Los baños del original son parte del fondo prerenderizado y no hay un modelo que
+reutilizar, así que el sitio no se ve; el texto de ayuda dice dónde está. Pruebas: «extra toilets take the free cells
+around them only while on, on their own map» (`field_tests.cpp`) y «extra toilets read their map, position and facing,
+and refuse a bad facing» (`rules_tests.cpp`).
+
 ## Felicitar y regañar
 
 «Felicitar» y «Regañar» del menú del campo (Tab) juegan la escena del original (`partner.c: partnerTickPraiseScold`,

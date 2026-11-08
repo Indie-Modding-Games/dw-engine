@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/map_table.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/session/field_items_adapter.hpp>
 #include <dwe/session/game_session.hpp>
@@ -8,6 +9,7 @@
 #include <glm/vec3.hpp>
 
 #include <cstdint>
+#include <optional>
 
 #include "field_scene.hpp"
 
@@ -18,7 +20,8 @@ namespace dwe::app {
 // partner state 6; then play_sound(0, 10)). The player stands while the game time runs; the camera
 // moves to the toilet; the partner runs to the map's two toilet points, goes (partner_impl.c:
 // handleToilet) and walks back to the first point (partner.c: tickPartnerToilet). Without the
-// ruleset's toilet_walk, or without toilet points for the map, it goes where it stands.
+// ruleset's toilet_walk, or without toilet points for the map, it goes where it stands. The cells
+// of an extra toilet (game::field::ExtraToilet, an engine improvement) walk to that one.
 class FieldToilet {
 public:
   // Everything must outlive this object.
@@ -50,6 +53,8 @@ private:
   Step step_ = Step::None;
   // The ruleset's toilet walk while the partner goes.
   const session::ToiletWalkRules* rules_ = nullptr;
+  // The points of the extra toilet the player stands by, while one is used.
+  std::optional<assets::MapToilet> extraPoints_;
   glm::vec3 first_{};
   glm::vec3 second_{};
 };
