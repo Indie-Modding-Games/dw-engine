@@ -153,6 +153,31 @@
         }
       }
     },
+    "day_parts": {
+      "description": "Weather odds by part of the day, stacked on the season's: dawn, day, dusk and night, each from an hour of the day, in that order.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dawn",
+        "day",
+        "dusk",
+        "night"
+      ],
+      "properties": {
+        "dawn": {
+          "$ref": "#/$defs/dayPart"
+        },
+        "day": {
+          "$ref": "#/$defs/dayPart"
+        },
+        "dusk": {
+          "$ref": "#/$defs/dayPart"
+        },
+        "night": {
+          "$ref": "#/$defs/dayPart"
+        }
+      }
+    },
     "fronts": {
       "description": "Weather fronts: a weather an area rolls anew may spread to its neighbours, one more area every delay_hours, and stays a period there.",
       "type": "object",
@@ -197,41 +222,7 @@
       "additionalProperties": false,
       "properties": {
         "odds": {
-          "description": "Multiplies the area's weight of each weather (1 leaves it as it is).",
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "clear": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10
-            },
-            "cloudy": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10
-            },
-            "light_rain": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10
-            },
-            "heavy_rain": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10
-            },
-            "light_snow": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10
-            },
-            "heavy_snow": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10
-            }
-          }
+          "$ref": "#/$defs/odds"
         },
         "rain_to_snow": {
           "type": "number",
@@ -304,6 +295,61 @@
         "light_snow",
         "heavy_snow"
       ]
+    },
+    "odds": {
+      "description": "Multiplies the area's weight of each weather (1 leaves it as it is).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "clear": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "cloudy": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "light_rain": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "heavy_rain": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "light_snow": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "heavy_snow": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        }
+      }
+    },
+    "dayPart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from"
+      ],
+      "properties": {
+        "from": {
+          "description": "The hour of the day the part starts at; it lasts until the next one.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 23
+        },
+        "odds": {
+          "$ref": "#/$defs/odds"
+        }
+      }
     }
   }
 }

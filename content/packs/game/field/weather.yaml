@@ -9,6 +9,19 @@
 period_hours: 3
 keep_chance: 0.45
 fade_seconds: 8
+# Momentos del día: multiplican los pesos del clima como las estaciones y se apilan con ellas (los dos factores se
+# multiplican). `from` es la hora del día (0 a 23) en que empieza cada uno; dura hasta el siguiente. El reloj solo
+# tiene día (desde las 6), tarde (16) y noche (20): el amanecer es un momento propio de estas reglas. Cuenta el
+# momento en que empieza el periodo que tira el clima, como con las estaciones. Nunca cambian una regla.
+day_parts:
+  # Amanecer: nubes bajas.
+  dawn: { from: 5, odds: { clear: 0.8, cloudy: 1.3 } }
+  # Día: más sol.
+  day: { from: 8, odds: { clear: 1.2 } }
+  # Tarde: chubascos.
+  dusk: { from: 16, odds: { heavy_rain: 1.4, cloudy: 1.1 } }
+  # Noche: más despejada.
+  night: { from: 20, odds: { clear: 1.1, heavy_rain: 0.8 } }
 # Frentes: un clima que una zona saca de nuevo (no el que sigue) puede viajar a las zonas vecinas (`neighbours` de cada
 # zona). Llega a una zona más cada `delay_hours` horas de juego, hasta `reach` zonas de distancia, y se queda allí
 # `period_hours` horas. Solo viajan los climas de `kinds` y solo llegan a una zona que puede tenerlos (con peso a esa

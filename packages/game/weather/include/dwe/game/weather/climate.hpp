@@ -45,6 +45,31 @@ inline constexpr std::array RolledKinds{WeatherKind::Clear,     WeatherKind::Clo
 // How often an area rolls each kind: a weight per kind of RolledKinds, 0 for never.
 using WeatherWeights = std::array<std::uint32_t, RolledKinds.size()>;
 
+// A factor per kind of RolledKinds that multiplies an area's weights (1 leaves a kind as it is).
+using WeatherOdds = std::array<float, RolledKinds.size()>;
+inline constexpr WeatherOdds EvenOdds = [] {
+  WeatherOdds odds{};
+  odds.fill(1.0F);
+  return odds;
+}();
+
+// The parts of the day the weather's odds follow: dawn, day, dusk and night. The clock's time of
+// day has no dawn, so each part starts at an hour of its own (ClimateRules::dayParts).
+enum class DayPart : std::uint8_t { Dawn, Day, Dusk, Night };
+
+inline constexpr std::size_t DayPartCount = 4;
+
+// The part's name in the pack (dawn, day, dusk, night).
+[[nodiscard]] std::string_view dayPartName(DayPart part);
+[[nodiscard]] std::optional<DayPart> dayPartNamed(std::string_view name);
+
+// A part of the day: the hour it starts at and its odds, stacked on the season's.
+struct DayPartRules {
+  // The hour of the day, 0 to 23, it starts at; it lasts until the next part starts.
+  std::int32_t from = 0;
+  WeatherOdds odds = EvenOdds;
+};
+
 // The seasons (an engine improvement on top of the weather: the original has none). They follow the
 // game calendar in turns of ClimateRules::seasonDays days from year 0, day 0, spring first.
 enum class Season : std::uint8_t { Spring, Summer, Autumn, Winter };
@@ -76,7 +101,7 @@ struct SeasonGrade {
 // What a season does: its weather odds, its grade and its falling particles.
 struct SeasonRules {
   // Multiplies an area's weight of each kind of RolledKinds (1 leaves it as it is).
-  std::array<float, RolledKinds.size()> odds{1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F};
+  WeatherOdds odds = EvenOdds;
   // The part of the rain, 0 to 1, that falls as snow (light rain as light snow, heavy as heavy) in
   // the areas whose rain can turn to snow.
   float rainToSnow = 0.0F;
@@ -133,6 +158,9 @@ struct ClimateRules {
   // Spring, summer, autumn and winter.
   std::array<SeasonRules, SeasonCount> seasons{};
   FrontRules fronts;
+  // Whether the pack gives odds by part of the day, and those of dawn, day, dusk and night.
+  bool hasDayParts = false;
+  std::array<DayPartRules, DayPartCount> dayParts{};
 
   [[nodiscard]] bool hasSeasons() const { return seasonDays > 0; }
   [[nodiscard]] const SeasonRules& season(Season which) const {
@@ -164,6 +192,16 @@ struct ClimateRules {
 // The season of a game hour since year 0.
 [[nodiscard]] Season seasonOfHour(const ClimateRules& rules, std::int64_t gameHour);
 
+// The part of the day of a game hour since year 0: the last part that starts at or before its hour
+// of the day (night before dawn). Day without parts in the rules.
+[[nodiscard]] DayPart dayPartOfHour(const ClimateRules& rules, std::int64_t gameHour);
+
+// An area's weights with the odds of a season (as seasonalWeights) and of a part of the day
+// multiplied in, in hundredths; the area's own weights with neither (or when no kind would be
+// left).
+[[nodiscard]] WeatherWeights oddsWeights(const ClimateRules& rules, const ClimateArea& area,
+                                         std::optional<Season> season, std::optional<DayPart> part);
+
 // An area's weights in a season: each kind times the season's odds (moved toward 1 by the area's
 // seasonStrength), and part of the rain as snow where the area lets it. In hundredths, so the
 // odds keep two decimals; the area's own weights when no kind would be left.
@@ -181,7 +219,8 @@ struct ClimateRules {
                                         std::int64_t period, std::uint64_t salt);
 
 // The weather of an area in a period: each period rolls whether it keeps the last one's weather
-// (keepChance) and, when it changes, a kind by the area's weights. A pure function: the same seed,
+// (keepChance) and, when it changes, a kind by the area's weights times the odds of the part of the
+// day the rolling period starts in (when the rules have day parts). A pure function: the same seed,
 // area and period always give the same kind. None for an area without weights. With `seasonal`
 // (and seasons in the rules) a kind is rolled by the weights of the season of the period that rolls
 // it (seasonalWeights); without, by the area's own, exactly as with no seasons at all.

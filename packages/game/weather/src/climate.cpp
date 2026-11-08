@@ -27,6 +27,10 @@ constexpr std::array SeasonNames{std::string_view{"spring"}, std::string_view{"s
                                  std::string_view{"autumn"}, std::string_view{"winter"}};
 static_assert(SeasonNames.size() == SeasonCount);
 
+constexpr std::array DayPartNames{std::string_view{"dawn"}, std::string_view{"day"},
+                                  std::string_view{"dusk"}, std::string_view{"night"}};
+static_assert(DayPartNames.size() == DayPartCount);
+
 // The calendar's hours in a day (fixed, as GameClock's).
 constexpr std::int64_t HoursPerDay = 24;
 // Seasonal weights are in hundredths of the area's.
@@ -150,6 +154,28 @@ SeasonGrade readGrade(YamlReader& reader, const YamlNode& node) {
   return grade;
 }
 
+WeatherOdds readOdds(YamlReader& reader, const YamlNode& node) {
+  WeatherOdds odds = EvenOdds;
+  if (!node.isMapping()) {
+    reader.fail(node, "the odds are a mapping of weather to a factor");
+    return odds;
+  }
+  for (const core::YamlEntry& entry : node.entries()) {
+    const auto kind = weatherKindNamed(entry.key);
+    const auto at = std::ranges::find(RolledKinds, kind.value_or(WeatherKind::None));
+    if (!kind || at == RolledKinds.end()) {
+      reader.fail(entry.value, std::format("{} is not a weather an area can have", entry.key));
+      continue;
+    }
+    const float factor = reader.number(entry.value);
+    if (reader.ok() && (factor < 0.0F || factor > 10.0F)) {
+      reader.fail(entry.value, "an odds factor is from 0 to 10");
+    }
+    odds.at(static_cast<std::size_t>(at - RolledKinds.begin())) = factor;
+  }
+  return odds;
+}
+
 SeasonRules readSeason(YamlReader& reader, const YamlNode& node) {
   SeasonRules season;
   if (!reader.expectKeys(node, "a season", {},
@@ -157,23 +183,7 @@ SeasonRules readSeason(YamlReader& reader, const YamlNode& node) {
     return season;
   }
   if (const YamlNode* odds = node.find("odds")) {
-    if (!odds->isMapping()) {
-      reader.fail(*odds, "the odds are a mapping of weather to a factor");
-    } else {
-      for (const core::YamlEntry& entry : odds->entries()) {
-        const auto kind = weatherKindNamed(entry.key);
-        const auto at = std::ranges::find(RolledKinds, kind.value_or(WeatherKind::None));
-        if (!kind || at == RolledKinds.end()) {
-          reader.fail(entry.value, std::format("{} is not a weather an area can have", entry.key));
-          continue;
-        }
-        const float factor = reader.number(entry.value);
-        if (reader.ok() && (factor < 0.0F || factor > 10.0F)) {
-          reader.fail(entry.value, "an odds factor is from 0 to 10");
-        }
-        season.odds.at(static_cast<std::size_t>(at - RolledKinds.begin())) = factor;
-      }
-    }
+    season.odds = readOdds(reader, *odds);
   }
   if (const YamlNode* toSnow = node.find("rain_to_snow")) {
     season.rainToSnow = readUnit(reader, *toSnow, "the rain that falls as snow");
@@ -200,6 +210,31 @@ void readSeasons(YamlReader& reader, const YamlNode& node, ClimateRules& rules) 
   }
   for (std::size_t i = 0; i < SeasonCount; ++i) {
     rules.seasons.at(i) = readSeason(reader, reader.field(node, SeasonNames.at(i)));
+  }
+}
+
+void readDayParts(YamlReader& reader, const YamlNode& node, ClimateRules& rules) {
+  if (!reader.expectKeys(node, "the parts of the day", {"dawn", "day", "dusk", "night"})) {
+    return;
+  }
+  rules.hasDayParts = true;
+  for (std::size_t i = 0; reader.ok() && i < DayPartCount; ++i) {
+    const YamlNode& part = reader.field(node, DayPartNames.at(i));
+    if (!reader.expectKeys(part, "a part of the day", {"from"}, {"odds"})) {
+      return;
+    }
+    DayPartRules& rule = rules.dayParts.at(i);
+    rule.from = reader.integer<std::int32_t>(reader.field(part, "from"));
+    if (reader.ok() && (rule.from < 0 || rule.from >= HoursPerDay)) {
+      reader.fail(reader.field(part, "from"), "a part of the day starts at an hour from 0 to 23");
+    }
+    if (reader.ok() && i > 0 && rule.from <= rules.dayParts.at(i - 1).from) {
+      reader.fail(reader.field(part, "from"),
+                  "dawn, day, dusk and night start in that order within the day");
+    }
+    if (const YamlNode* odds = part.find("odds")) {
+      rule.odds = readOdds(reader, *odds);
+    }
   }
 }
 
@@ -273,6 +308,19 @@ std::optional<Season> seasonNamed(std::string_view name) {
   return std::nullopt;
 }
 
+std::string_view dayPartName(DayPart part) {
+  return DayPartNames.at(static_cast<std::size_t>(part));
+}
+
+std::optional<DayPart> dayPartNamed(std::string_view name) {
+  for (std::size_t i = 0; i < DayPartNames.size(); ++i) {
+    if (DayPartNames.at(i) == name) {
+      return static_cast<DayPart>(i);
+    }
+  }
+  return std::nullopt;
+}
+
 std::string_view weatherKindName(WeatherKind kind) {
   return KindNames.at(static_cast<std::size_t>(kind));
 }
@@ -335,7 +383,7 @@ core::Result<ClimateRules> parseClimateRules(std::string_view yaml) {
   ClimateRules rules;
   if (!reader.expectKeys(*tree, "the field weather",
                          {"period_hours", "keep_chance", "fade_seconds", "areas"},
-                         {"no_weather", "seasons", "fronts"})) {
+                         {"no_weather", "seasons", "day_parts", "fronts"})) {
     return std::unexpected{reader.error("field weather")};
   }
   rules.periodHours = reader.integer<std::int32_t>(reader.field(*tree, "period_hours"));
@@ -389,6 +437,9 @@ core::Result<ClimateRules> parseClimateRules(std::string_view yaml) {
   if (const YamlNode* seasons = tree->find("seasons")) {
     readSeasons(reader, *seasons, rules);
   }
+  if (const YamlNode* parts = tree->find("day_parts")) {
+    readDayParts(reader, *parts, rules);
+  }
   if (const YamlNode* fronts = tree->find("fronts")) {
     readFronts(reader, *fronts, rules.fronts);
   }
@@ -425,17 +476,44 @@ Season seasonOfHour(const ClimateRules& rules, std::int64_t gameHour) {
   return seasonOfDay(rules, floorDiv(gameHour, HoursPerDay));
 }
 
-WeatherWeights seasonalWeights(const ClimateRules& rules, const ClimateArea& area, Season season) {
-  const SeasonRules& of = rules.season(season);
-  const float strength = std::clamp(area.seasonStrength, 0.0F, 1.0F);
-  std::array<float, RolledKinds.size()> weights{};
-  for (std::size_t i = 0; i < weights.size(); ++i) {
-    const float factor = 1.0F + (strength * (of.odds.at(i) - 1.0F));
-    weights.at(i) = static_cast<float>(area.weights.at(i)) * std::max(factor, 0.0F);
+DayPart dayPartOfHour(const ClimateRules& rules, std::int64_t gameHour) {
+  if (!rules.hasDayParts) {
+    return DayPart::Day;
   }
-  if (area.snowFromRain) {
+  const std::int64_t hour = gameHour - (floorDiv(gameHour, HoursPerDay) * HoursPerDay);
+  DayPart part = DayPart::Night;
+  for (std::size_t i = 0; i < DayPartCount; ++i) {
+    if (rules.dayParts.at(i).from <= hour) {
+      part = static_cast<DayPart>(i);
+    }
+  }
+  return part;
+}
+
+WeatherWeights seasonalWeights(const ClimateRules& rules, const ClimateArea& area, Season season) {
+  return oddsWeights(rules, area, season, std::nullopt);
+}
+
+WeatherWeights oddsWeights(const ClimateRules& rules, const ClimateArea& area,
+                           std::optional<Season> season, std::optional<DayPart> part) {
+  if (!season && !part) {
+    return area.weights;
+  }
+  const float strength = std::clamp(area.seasonStrength, 0.0F, 1.0F);
+  WeatherOdds weights{};
+  for (std::size_t i = 0; i < weights.size(); ++i) {
+    float factor = 1.0F;
+    if (season) {
+      factor *= std::max(1.0F + (strength * (rules.season(*season).odds.at(i) - 1.0F)), 0.0F);
+    }
+    if (part) {
+      factor *= std::max(rules.dayParts.at(static_cast<std::size_t>(*part)).odds.at(i), 0.0F);
+    }
+    weights.at(i) = static_cast<float>(area.weights.at(i)) * factor;
+  }
+  if (season && area.snowFromRain) {
     // Light rain falls as light snow and heavy as heavy: RolledKinds keeps them two apart.
-    const float toSnow = std::clamp(of.rainToSnow * strength, 0.0F, 1.0F);
+    const float toSnow = std::clamp(rules.season(*season).rainToSnow * strength, 0.0F, 1.0F);
     for (const auto [rain, snow] : {std::pair{WeatherKind::LightRain, WeatherKind::LightSnow},
                                     std::pair{WeatherKind::HeavyRain, WeatherKind::HeavySnow}}) {
       const auto r =
@@ -483,12 +561,15 @@ std::uint64_t weatherRoll(std::uint64_t seed, std::string_view area, std::int64_
 
 namespace {
 
-// The weights a kind is rolled by at a game hour: the season's (with `seasonal`) or the area's own.
+// The weights a kind is rolled by at a game hour: the area's own, times the season's odds (with
+// `seasonal`) and the part of the day's.
 WeatherWeights rollWeights(const ClimateRules& rules, const ClimateArea& area,
                            std::int64_t gameHour, bool seasonal) {
-  return seasonal && rules.hasSeasons()
-             ? seasonalWeights(rules, area, seasonOfHour(rules, gameHour))
-             : area.weights;
+  const std::optional<Season> season =
+      seasonal && rules.hasSeasons() ? std::optional{seasonOfHour(rules, gameHour)} : std::nullopt;
+  const std::optional<DayPart> part =
+      rules.hasDayParts ? std::optional{dayPartOfHour(rules, gameHour)} : std::nullopt;
+  return oddsWeights(rules, area, season, part);
 }
 
 // A roll as a fraction of 1: its top 24 bits.
@@ -553,7 +634,7 @@ WeatherKind weatherAt(const ClimateRules& rules, const ClimateArea& area, std::u
     }
   }
   // With seasons, the kind comes from the weights of the season the rolling period starts in, so a
-  // weather rolled late in one season may last into the next.
+  // weather rolled late in one season may last into the next; the same for the part of the day.
   const WeatherWeights weights = rollWeights(rules, area, from * periodHoursOf(rules), seasonal);
   const std::uint32_t sum = std::reduce(weights.begin(), weights.end(), 0U);
   std::uint32_t pick = static_cast<std::uint32_t>(weatherRoll(seed, area.id, from, KindSalt) % sum);

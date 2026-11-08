@@ -87,6 +87,29 @@ El aspecto es `SeasonLook` (color, pétalos y hojas); `SeasonBlend` lo funde com
 de estación a medianoche, y cambia de golpe al entrar a otra zona, a un mapa sin clima (neutro) o al cambiar la
 opción. Solo hay estación visible en los mapas con clima: los interiores, cuevas y mapas de hora fija no cambian.
 
+## Momentos del día
+
+El bloque `day_parts` de `field/weather.yaml` da probabilidades por momento del día: amanecer (`dawn`), día (`day`),
+tarde (`dusk`) y noche (`night`). Cada uno tiene `from`, la hora del día (0 a 23) en que empieza (dura hasta el
+siguiente; la noche sigue hasta el amanecer), y `odds`, que multiplica el peso de cada clima como los de las
+estaciones. Se apilan: con estaciones, el peso es el de la zona por el factor de la estación (acercado a 1 por
+`season_strength`) por el del momento del día. Los momentos del día no dependen de la opción «Estaciones» ni de
+`season_strength`.
+
+El reloj del juego solo tiene día (desde las 6), tarde (16) y noche (20), y el amanecer no existe; por eso las horas
+son datos de estas reglas. Las del paquete siguen al reloj en la tarde y la noche y ponen el amanecer de 5 a 8.
+
+| Momento | Desde | Clima (multiplica) |
+|---|---|---|
+| Amanecer | 5 | despejado ×0,8, nublado ×1,3 |
+| Día | 8 | despejado ×1,2 |
+| Tarde | 16 | lluvia fuerte ×1,4, nublado ×1,1 |
+| Noche | 20 | despejado ×1,1, lluvia fuerte ×0,8 |
+
+Como con las estaciones, cuenta el momento en que empieza el periodo que tira el clima (`dayPartOfHour`), así que un
+clima sacado al final de la tarde puede seguir de noche. `oddsWeights(rules, area, season, part)` da los pesos con
+los dos factores, en centésimas; sin bloque `day_parts` el clima sale exactamente como antes.
+
 ## Frentes
 
 Un clima que una zona saca de nuevo (un periodo que no sigue con el de antes) puede viajar a las zonas de al lado, como
@@ -202,6 +225,9 @@ conocer el módulo ni sus reglas. `FieldScene::weatherArea()` dice la zona (`nul
   invierno y más sol en verano en el bosque, las zonas de clima propio (Freezeland sigue nevando, la jungla y el
   cañón nunca nievan), apagadas = mismo clima en cada periodo que sin estaciones, fundido del aspecto, estaciones
   malas.
+- `dwe_weather_tests` (`day_parts_tests.cpp`): momento del día por hora (horas negativas y días siguientes), los
+  factores multiplican los pesos y se apilan con la estación, un momento sin lluvia no la saca nunca, sin bloque es
+  como antes, momentos malos.
 - `dwe_weather_tests` (`fronts_tests.cpp`): las vecinas del paquete van en los dos sentidos y unen todas las zonas;
   un frente llega a la zona de al lado a las `delay_hours` horas y se queda un periodo; a dos zonas tarda el doble,
   no pasa del alcance y no entra en una zona sin ese clima; función pura de semilla, zona y hora; ningún frente lleva
