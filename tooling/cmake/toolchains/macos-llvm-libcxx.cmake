@@ -37,3 +37,20 @@ set(DWE_LIBCXX_STATIC "-nostdlib++ ${DWE_LLVM_ROOT}/lib/c++/libc++.a ${DWE_LLVM_
 foreach(kind EXE SHARED MODULE)
     string(APPEND CMAKE_${kind}_LINKER_FLAGS_INIT " ${DWE_LIBCXX_STATIC}")
 endforeach()
+
+# Clang 23 calls typed operator new on macOS by default, and a static libc++ aborts when a static initializer reaches
+# it before libc++'s own one ran ("typed operator new being invoked before its static initializer"): every program
+# and test stopped at start. Older Clang has no such flag, so it is only passed when the compiler takes it.
+execute_process(
+    COMMAND "${CMAKE_CXX_COMPILER}" -fno-typed-cxx-new-delete -x c++ -fsyntax-only -
+    INPUT_FILE /dev/null RESULT_VARIABLE dwe_no_typed_new ERROR_QUIET OUTPUT_QUIET)
+if(dwe_no_typed_new EQUAL 0)
+    string(APPEND CMAKE_CXX_FLAGS_INIT " -fno-typed-cxx-new-delete")
+endif()
+
+# Apple's archiver, not llvm-ar next to Homebrew's clang: llvm-ar wrote an archive whose objects have no symbols
+# (mbedtls' libeverest on arm64) in the GNU format, which the linker of Xcode 16 refuses.
+find_program(DWE_APPLE_AR ar PATHS /usr/bin NO_DEFAULT_PATH REQUIRED)
+find_program(DWE_APPLE_RANLIB ranlib PATHS /usr/bin NO_DEFAULT_PATH REQUIRED)
+set(CMAKE_AR "${DWE_APPLE_AR}" CACHE FILEPATH "")
+set(CMAKE_RANLIB "${DWE_APPLE_RANLIB}" CACHE FILEPATH "")
