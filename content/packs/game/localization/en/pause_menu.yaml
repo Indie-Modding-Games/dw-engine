@@ -240,7 +240,7 @@ help.canonical_stages: "The chart names the stages as the series does and adds a
 help.rare_items: "Some item spots may hide a rare evolution item. Needs the hidden content."
 help.battle_speed: "Fights run at twice the speed, always or switched with R (right trigger). Same results."
 help.enemy_hp_bars: "A life bar over every enemy for the whole fight, cups too. Off: only a while after a hit."
-help.gym_sessions: "A gym course trains this many sessions in a row. Stops if you cancel or your partner needs something."
+help.gym_sessions: "A gym course trains this many sessions in a row. Waits while you tend your partner; stops if you cancel, walk away or it gets hurt or sick."
 help.quick_battle_start: "A fight in the field starts as soon as it triggers, without the lead-in. Cups keep theirs."
 help.difficulty: "Normal is the original. Easy: your partner hits harder, takes less, trains more, has longer to eat and gets sick less."
 help.skip_evolution: "Confirm or cancel ends an evolution's scene at once. The new form is the same."

@@ -243,7 +243,7 @@ help.canonical_stages: "El árbol nombra las etapas como la serie y añade la ca
 help.rare_items: "Algunos puntos de objetos pueden esconder un objeto raro de evolución. Requiere el contenido oculto."
 help.battle_speed: "Los combates van al doble de velocidad, siempre o con R (gatillo derecho). Mismo resultado."
 help.enemy_hp_bars: "Una barra de vida sobre cada rival todo el combate, también en copas. No: solo un rato tras un golpe."
-help.gym_sessions: "Un curso del gimnasio entrena estas sesiones seguidas. Para si cancelas o tu compañero necesita algo."
+help.gym_sessions: "Un curso del gimnasio entrena estas sesiones seguidas. Espera a que atiendas a tu compañero; para si cancelas, te alejas o se hiere o enferma."
 help.quick_battle_start: "Un combate en el mapa empieza en cuanto salta, sin la espera previa. Las copas mantienen la suya."
 help.difficulty: "Normal es el original. Fácil: tu compañero pega más, recibe menos, entrena más, tiene más tiempo para comer y enferma menos."
 help.skip_evolution: "Confirmar o cancelar acaba al momento la escena de una evolución. La nueva forma es la misma."

@@ -26,6 +26,22 @@
 namespace dwe::app {
 namespace {
 
+std::string_view batchStopReason(GymBatchStop why) {
+  switch (why) {
+  case GymBatchStop::Cancelled:
+    return "the session was cancelled";
+  case GymBatchStop::MapChanged:
+    return "the map changed";
+  case GymBatchStop::PartnerUnfit:
+    return "the partner is sulking, injured or sick";
+  case GymBatchStop::WalkedAway:
+    return "the player walked away from the machine";
+  case GymBatchStop::None:
+    break;
+  }
+  return "no reason";
+}
+
 using game::gym::Actor;
 using game::gym::Award;
 using game::gym::CourseRules;
@@ -305,13 +321,20 @@ void GymScreen::continueBatch(GymBatchMoment moment) {
   if (run_ != nullptr) {
     return;
   }
-  moment.map = desc_.scene->field().mapId();
+  const game::field::Field& field = desc_.scene->field();
+  moment.map = field.mapId();
+  moment.player = {field.player().position.x, field.player().position.z};
   moment.fieldIdle = moment.fieldIdle && statsBox_.closed() && slotsBox_.closed();
   const int left = batch_.left();
+  const bool waited = batch_.waitingForCare();
   const auto course = batch_.next(moment);
   if (left > 0 && batch_.left() == 0 && !course) {
     core::logInfo("gym: the batch stops with {} sessions left: {}", left,
-                  moment.partnerNeedsCare ? "the partner needs care" : "the map changed");
+                  batchStopReason(batch_.stopped()));
+  }
+  if (batch_.waitingForCare() != waited) {
+    core::logInfo("gym: the batch {} the partner's needs",
+                  batch_.waitingForCare() ? "waits for" : "goes on after");
   }
   if (!course) {
     return;

@@ -1614,13 +1614,22 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     fieldPoop_.update();
   }
   // Batch training (gym_batch.hpp): the next session of a batch waits until nothing holds the
-  // field, and a need of the partner's ends the batch.
-  gymScreen_.continueBatch(
-      {.fieldIdle = playerIdle && !fieldToilet_.active() && !fieldPoop_.active() &&
-                    !praiseScold_.active() && !sleepScreen_.active() && !awardScreen_.active() &&
-                    !field.heldByScript() && !game_.systems.story->scriptRunning(),
-       .partnerNeedsCare = !session.partnerView().conditions.none(),
-       .map = {}});
+  // field and the player saw to the partner's needs; a sulking, injured or sick partner ends it.
+  {
+    using game::partner::Condition;
+    const auto& conditions = session.partnerView().conditions;
+    gymScreen_.continueBatch(
+        {.fieldIdle = playerIdle && !fieldToilet_.active() && !fieldPoop_.active() &&
+                      !praiseScold_.active() && !sleepScreen_.active() && !awardScreen_.active() &&
+                      !field.heldByScript() && !game_.systems.story->scriptRunning(),
+         .partnerNeedsCare = conditions.has(Condition::Hungry) ||
+                             conditions.has(Condition::NeedsToilet) ||
+                             conditions.has(Condition::Sleepy) || conditions.has(Condition::Tired),
+         .partnerUnfit = conditions.has(Condition::Sulking) || conditions.has(Condition::Injured) ||
+                         conditions.has(Condition::Sick),
+         .map = {},
+         .player = {}});
+  }
   // item.c: handleChips: the auto pilot chip calls its map-head section if no script runs; the
   // story drops the request otherwise, and the chip is gone either way.
   if (const auto section = game_.systems.inventory->takeScriptSection(); section) {
