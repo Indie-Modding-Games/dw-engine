@@ -107,9 +107,9 @@ core::Result<void> Partner::rebirth(const ruleset::GameClock& clock, std::int32_
     return core::fail(std::string{messages::NoBabies});
   }
   // dooa.c: DOOA_getSequenceState: the egg box's egg, but a partner with no lives left gets a
-  // random one.
+  // random one (unless the rules let the egg box choose then too).
   std::size_t index = 0;
-  if (egg.has_value() && state_.life.lives > 0) {
+  if (egg.has_value() && (state_.life.lives > 0 || !life().rebirth.randomEggWithoutLives)) {
     index = *egg;
   } else {
     index = strategies().rebirthChoice->pick(babies, state_, random_);

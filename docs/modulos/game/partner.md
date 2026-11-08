@@ -113,6 +113,9 @@ La lógica que se puede rediseñar va detrás de `StrategyRegistry` (ver
 bebé al azar (`rand() % 4` en `dooa.c`) y un mod puede querer que dependa de la especie muerta, de los errores o de
 una elección del jugador. La herencia de stats (un % por nivel del tamer, solo con muerte natural) son números en
 `life.yaml`; la elección del huevo es lógica y por eso va detrás de una interfaz que recibe el partner muerto.
+`Partner::rebirth` usa el huevo de la caja si quedan vidas; sin ellas solo si `life.rebirth.random_egg_without_lives`
+es `false` (en el original es `true`: el huevo sale al azar). La opción «Elegir el huevo al perder todas las vidas»
+lo apaga ([game.md](../apps/game.md#rarezas-como-opciones)).
 
 ## Rarezas
 

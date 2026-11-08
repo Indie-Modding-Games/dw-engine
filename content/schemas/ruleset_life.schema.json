@@ -46,7 +46,8 @@
       "required": [
         "baby_choice",
         "babies",
-        "inherit_percent_per_tamer_level"
+        "inherit_percent_per_tamer_level",
+        "random_egg_without_lives"
       ],
       "additionalProperties": false,
       "properties": {
@@ -97,6 +98,10 @@
         },
         "inherit_percent_per_tamer_level": {
           "type": "integer"
+        },
+        "random_egg_without_lives": {
+          "description": "A partner with no lives left gets a random egg (dooa.c: DOOA_getSequenceState); false lets the egg box's egg count too.",
+          "type": "boolean"
         }
       }
     },

@@ -1139,7 +1139,9 @@ constexpr std::array PlayOptions{
     PlayOption{.setting = FairEvolutionAverageSetting,
                .saved = &UserSettings::fairEvolutionAverage},
     PlayOption{.setting = FairMoveForgettingSetting, .saved = &UserSettings::fairMoveForgetting},
-    PlayOption{.setting = FairCardStockSetting, .saved = &UserSettings::fairCardStock}};
+    PlayOption{.setting = FairCardStockSetting, .saved = &UserSettings::fairCardStock},
+    PlayOption{.setting = ChooseEggAfterLivesLostSetting,
+               .saved = &UserSettings::chooseEggAfterLivesLost}};
 
 RuleChoices ruleChoicesOf(const UserSettings& settings) {
   const std::string difficulty = settings.difficulty.value_or(std::string{DifficultyNormal});
@@ -1147,7 +1149,8 @@ RuleChoices ruleChoicesOf(const UserSettings& settings) {
           .fairSicknessChance = settings.fairSicknessChance.value_or(false),
           .fairEvolutionAverage = settings.fairEvolutionAverage.value_or(false),
           .fairMoveForgetting = settings.fairMoveForgetting.value_or(false),
-          .fairCardStock = settings.fairCardStock.value_or(false)};
+          .fairCardStock = settings.fairCardStock.value_or(false),
+          .chooseEggAfterLivesLost = settings.chooseEggAfterLivesLost.value_or(false)};
 }
 
 } // namespace

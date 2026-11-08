@@ -32,6 +32,8 @@ inline constexpr std::string_view FairSicknessChanceSetting = "fair_sickness_cha
 inline constexpr std::string_view FairEvolutionAverageSetting = "fair_evolution_average";
 inline constexpr std::string_view FairMoveForgettingSetting = "fair_move_forgetting";
 inline constexpr std::string_view FairCardStockSetting = "fair_card_stock";
+// An improvement of the original's rules the player may turn on (true or false).
+inline constexpr std::string_view ChooseEggAfterLivesLostSetting = "choose_egg_after_lives_lost";
 
 // A change of a ruleset value: its section, its dotted path ("hunger.window_minutes") and either
 // the new value (a YAML text) or a percent of the ruleset's own whole number, rounded down.
@@ -52,6 +54,8 @@ struct RuleChoices {
   bool fairMoveForgetting = false;
   // card_shop.quirks.stock_repeats off: the card shop's daily stock never shows a card twice.
   bool fairCardStock = false;
+  // life.rebirth.random_egg_without_lives off: the egg box opens after losing all lives too.
+  bool chooseEggAfterLivesLost = false;
 
   friend bool operator==(const RuleChoices&, const RuleChoices&) = default;
 };

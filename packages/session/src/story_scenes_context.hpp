@@ -91,6 +91,9 @@ struct StoryScenesContext {
   // A lost life or a death whose section has not run yet, and the egg box's egg (rules.death).
   bool deathPending = false;
   std::optional<std::size_t> egg;
+  // A rebirth with no lives left that waits for the egg box first (life.rebirth's
+  // random_egg_without_lives off, the option choose_egg_after_lives_lost).
+  bool rebirthAfterEggBox = false;
   // A death whose section ran: the partner stays dead until the rebirth's scene.
   bool dying = false;
 };

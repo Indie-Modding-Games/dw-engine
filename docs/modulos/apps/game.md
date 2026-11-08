@@ -517,7 +517,17 @@ de huevo y confirmar elige uno; no se puede salir sin elegir. Lo que no está: l
   línea solo sale en este caso), baja el nivel del jugador si puede, corre la rutina 47 (olvidar técnicas) y renace; y
   `DOOA_getSequenceState` sortea el huevo (`lives == 0`: `eggSlot = rand() % 4`). dwe hace lo mismo
   (`Partner::rebirth`: el huevo de la caja solo cuenta con vidas; sin ellas decide `life.rebirth.baby_choice`, al azar).
-  No es un fallo. Dejar elegir el huevo también en ese caso sería una Mejora opcional, sin hacer: decisión pendiente.
+  No es un fallo. Mejora (opción, apagada por defecto): «Elegir el huevo al perder todas las vidas»
+  (`choose_egg_after_lives_lost`, [Rarezas como opciones](#rarezas-como-opciones)) apaga
+  `life.rebirth.random_egg_without_lives`; entonces la rutina 4 de la sección 0x49 abre antes la caja de los huevos
+  (`rebirthOpensEggBox`, `StoryScenes::screenClosed` sigue con el renacer) y cuenta el huevo elegido. Los textos, la
+  bajada de nivel y las técnicas olvidadas de esa sección siguen igual. Pruebas: `story_death_tests.cpp`,
+  `life_tests.cpp` («without the random egg…»), `rule_options_tests.cpp`.
+- Corregido (2026-11-08): tras una muerte natural, al acabar el renacer volvía a correr la sección 0x4DE con el
+  compañero nuevo y salía la escena de vida perdida con «sobrevivió con lo poco que le quedaba de vida». El original
+  llama a la sección una vez (`tickDeathCondition`); en dwe el evento `Died` llegaba un fotograma después de pedirla y
+  la pedía otra vez. Ahora un evento de muerte no la pide si su sección ya corrió (`deathEventAsksForSection`, prueba
+  `story_death_tests.cpp`).
 
 - Igual: con el aspecto original la caja crece en 5 cuadros a 20 por segundo desde el cuadrado de 16 píxeles del centro
   de la pantalla (`DOO2_openEggBox`: `createAnimatedUIBox(3, …)` desde `MAIN_D_80134B98` {-8, -8, 16, 16}) y, al elegir,
@@ -1830,16 +1840,17 @@ cargando y se juega como el original, con la opción sin efecto.
 
 ## Rarezas como opciones
 
-Mejoras opcionales, apagadas por defecto (las rarezas del original se mantienen): cuatro filas de la pestaña Juego,
-guardadas en los ajustes del usuario, que apagan una rareza del ruleset de la partida con `RuleOptions`, igual que la
-dificultad.
+Mejoras opcionales, apagadas por defecto (las rarezas del original se mantienen): cinco filas de la pestaña Juego,
+guardadas en los ajustes del usuario, que apagan una rareza o una regla del ruleset de la partida con `RuleOptions`,
+igual que la dificultad.
 
-| Fila | Ajuste | Rareza que apaga | Original |
+| Fila | Ajuste | Valor que apaga | Original |
 |---|---|---|---|
 | Enfermar justo («Fair sickness chance») | `fair_sickness_chance` | `care.quirks.sickness_chance_wraps` | `tickSicknessMechanics` guarda la probabilidad en un `uint8_t`: una negativa da la vuelta y la tirada siempre acierta. Con la opción una negativa no enferma |
 | Media de evolución justa («Fair evolution average») | `fair_evolution_average` | `evolution.quirks.selection_average_carries_over` | `getRookieEvolutionTarget` y `getChampionEvolutionTarget` solo reinician la suma y la cuenta de stats cuando un candidato pasa a ser el mejor; si no, se arrastran a la media del siguiente. Con la opción cada candidato se mide por la suya |
 | Olvidar técnicas justo («Fair move forgetting») | `fair_move_forgetting` | `partner_moves.quirks.forget_mask_16_bits` | `unlearnMove` (`utils2.c`) borra el bit de la técnica con una máscara de 16 bits, así que con ella se va la técnica 16 puestos más allá en su palabra de 32. Con la opción solo se olvida la elegida |
 | Tienda de cartas sin repetidas («Card stock without repeats») | `fair_card_stock` | `card_shop.quirks.stock_repeats` | `dailyPStatTrigger` compara el hueco consigo mismo, así que una carta puede ocupar dos huecos el mismo día. Con la opción la repetida se vuelve a sortear |
+| Elegir el huevo al perder todas las vidas («Choose the egg after losing all lives») | `choose_egg_after_lives_lost` | `life.rebirth.random_egg_without_lives` | Sin vidas, la sección 0x49 del script 212 no abre la caja y `DOOA_getSequenceState` sortea el huevo (`rand() % 4`). Con la opción la caja se abre antes del renacer y cuenta el huevo elegido; el resto de la sección no cambia |
 
 Prueba: `rule_options_tests.cpp`.
 

@@ -70,6 +70,7 @@ TEST_CASE("easy and the fair quirks change the running ruleset and give its valu
   REQUIRE(valueAt(store, "evolution", "quirks.selection_average_carries_over") == "true");
   REQUIRE(valueAt(store, "partner_moves", "quirks.forget_mask_16_bits") == "true");
   REQUIRE(valueAt(store, "card_shop", "quirks.stock_repeats") == "true");
+  REQUIRE(valueAt(store, "life", "rebirth.random_egg_without_lives") == "true");
 
   RuleOptions options;
   options.keep(store); // the original's choices: nothing changes
@@ -82,7 +83,8 @@ TEST_CASE("easy and the fair quirks change the running ruleset and give its valu
                   .fairSicknessChance = true,
                   .fairEvolutionAverage = true,
                   .fairMoveForgetting = true,
-                  .fairCardStock = true});
+                  .fairCardStock = true,
+                  .chooseEggAfterLivesLost = true});
   options.keep(store);
   CHECK(valueAt(store, "care", "hunger.window_minutes") == std::to_string(std::stoi(window) * 2));
   CHECK(valueAt(store, "battle", "damage.partner_dealt_percent") ==
@@ -91,6 +93,7 @@ TEST_CASE("easy and the fair quirks change the running ruleset and give its valu
   CHECK(valueAt(store, "evolution", "quirks.selection_average_carries_over") == "false");
   CHECK(valueAt(store, "partner_moves", "quirks.forget_mask_16_bits") == "false");
   CHECK(valueAt(store, "card_shop", "quirks.stock_repeats") == "false");
+  CHECK(valueAt(store, "life", "rebirth.random_egg_without_lives") == "false");
   // Kept every frame, the changes are made once: the percent is of the ruleset's own value.
   options.keep(store);
   options.keep(store);
@@ -111,6 +114,7 @@ TEST_CASE("easy and the fair quirks change the running ruleset and give its valu
   CHECK(valueAt(store, "evolution", "quirks.selection_average_carries_over") == "true");
   CHECK(valueAt(store, "partner_moves", "quirks.forget_mask_16_bits") == "true");
   CHECK(valueAt(store, "card_shop", "quirks.stock_repeats") == "true");
+  CHECK(valueAt(store, "life", "rebirth.random_egg_without_lives") == "true");
 }
 
 TEST_CASE("a value the tuning panel changed after a choice is not taken back with it") {

@@ -276,6 +276,17 @@ game_options = {
     help = "pause_menu.help.fair_card_stock",
     original = false,
   },
+  -- Choose the egg after losing all lives: the egg box opens then too, as after a natural death
+  -- (off by default: the original draws the egg at random).
+  {
+    id = "choose-egg-after-lives-lost",
+    setting = "choose_egg_after_lives_lost",
+    label = "pause_menu.choose_egg_after_lives_lost",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.choose_egg_after_lives_lost",
+    original = false,
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).

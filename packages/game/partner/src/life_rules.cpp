@@ -28,6 +28,7 @@ constexpr std::string_view RebirthKey = "rebirth";
 constexpr std::string_view BabyChoiceKey = "baby_choice";
 constexpr std::string_view BabiesKey = "babies";
 constexpr std::string_view InheritKey = "inherit_percent_per_tamer_level";
+constexpr std::string_view RandomEggKey = "random_egg_without_lives";
 constexpr std::string_view DigimonKey = "digimon";
 
 constexpr std::string_view ScenesKey = "scenes";
@@ -101,7 +102,8 @@ RebirthBaby readBaby(YamlReader& reader, const YamlNode& node) {
 
 RebirthRules readRebirth(YamlReader& reader, const YamlNode& root) {
   const YamlNode* node = nullptr;
-  if (!group(reader, root, RebirthKey, {BabyChoiceKey, BabiesKey, InheritKey}, node)) {
+  if (!group(reader, root, RebirthKey, {BabyChoiceKey, BabiesKey, InheritKey, RandomEggKey},
+             node)) {
     return {};
   }
   RebirthRules rules;
@@ -117,6 +119,10 @@ RebirthRules readRebirth(YamlReader& reader, const YamlNode& root) {
     }
   }
   rules.inheritPercentPerTamerLevel = nonNegative(reader, *node, InheritKey);
+  const YamlNode& randomEgg = reader.field(*node, RandomEggKey);
+  if (reader.ok()) {
+    rules.randomEggWithoutLives = reader.boolean(randomEgg);
+  }
   return rules;
 }
 

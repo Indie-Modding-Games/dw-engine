@@ -211,6 +211,38 @@ TEST_CASE("care.md rebirth: the egg box's egg counts only while the partner has 
   CHECK(lastLife.state().species == lastLife.rules().life.rebirth.babies.front().digimon);
 }
 
+TEST_CASE("care.md rebirth: without the random egg, the egg box's egg counts with no lives left") {
+  // The option choose_egg_after_lives_lost turns life.rebirth.random_egg_without_lives off.
+  auto registries = std::make_shared<PartnerStrategyRegistries>();
+  registries->rebirthChoices.add("first", [] { return std::make_unique<FirstBaby>(); });
+  OriginalRuleset original(registries);
+  original.set("life", "rebirth.baby_choice", "first");
+  REQUIRE(original.rules().life.rebirth.randomEggWithoutLives);
+  original.set("life", "rebirth.random_egg_without_lives", "false");
+  // The species of an egg, from a natural death's rebirth.
+  const auto hatched = [&](std::size_t egg) {
+    Raising natural(original.rules());
+    natural.quiet();
+    dieNaturally(natural);
+    REQUIRE(natural.partner().rebirth(natural.clock(), 0, egg).has_value());
+    return natural.state().species;
+  };
+  constexpr std::size_t FirstEgg = 0;
+  constexpr std::size_t ThirdEgg = 2;
+  Raising lastLife(original.rules());
+  lastLife.edit([](PartnerState& state) { state.life.lives = 1; });
+  loseBattle(lastLife);
+  REQUIRE(lastLife.state().life.lives == 0);
+  REQUIRE(lastLife.partner().rebirth(lastLife.clock(), 0, ThirdEgg).has_value());
+  CHECK(lastLife.state().species == hatched(ThirdEgg));
+  // With no egg (a rebirth no box asked for) the rules still pick one.
+  Raising noBox(original.rules());
+  noBox.edit([](PartnerState& state) { state.life.lives = 1; });
+  loseBattle(noBox);
+  REQUIRE(noBox.partner().rebirth(noBox.clock(), 0).has_value());
+  CHECK(noBox.state().species == hatched(FirstEgg));
+}
+
 TEST_CASE("evolution: a partner that becomes another species says so, for the field to draw it") {
   OriginalRuleset original;
   Raising raising(original.rules());
