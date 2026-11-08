@@ -84,7 +84,7 @@ jobs:
 
       - name: Install the tools
         run: |
-          brew install llvm ninja
+          brew install llvm ninja nasm
           root="$RUNNER_TEMP/vcpkg"
           git clone https://github.com/microsoft/vcpkg.git "$root"
           git -C "$root" checkout "$(python3 -c 'import json; print(json.load(open("vcpkg.json"))["builtin-baseline"])')"

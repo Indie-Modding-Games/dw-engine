@@ -175,7 +175,7 @@ jobs:
       - name: Install the macOS tools
         if: runner.os == 'macOS'
         run: |
-          brew install llvm molten-vk ninja ccache
+          brew install llvm molten-vk ninja nasm ccache
           echo "DWE_LLVM_ROOT=$(brew --prefix llvm)" >> "$GITHUB_ENV"
           {
             echo "DWE_COMPILER_LAUNCHER=ccache"

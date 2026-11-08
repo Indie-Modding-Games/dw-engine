@@ -1,0 +1,25 @@
+diff --git a/src/configuration.cpp b/src/configuration.cpp
+index fe28aef..897be5e 100644
+--- a/src/configuration.cpp
++++ b/src/configuration.cpp
+@@ -10,6 +10,7 @@
+ 
+ #include "impl/utils.hpp"
+ 
++#include <algorithm>
+ #include <cassert>
+ #include <regex>
+ 
+diff --git a/src/message.cpp b/src/message.cpp
+index 0ce3256..dd4ef73 100644
+--- a/src/message.cpp
++++ b/src/message.cpp
+@@ -8,6 +8,8 @@
+ 
+ #include "message.hpp"
+ 
++#include <algorithm>
++
+ namespace rtc {
+ 
+ message_ptr make_message(size_t size, Message::Type type, unsigned int stream,

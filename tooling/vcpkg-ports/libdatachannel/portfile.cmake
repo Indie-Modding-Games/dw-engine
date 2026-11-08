@@ -1,5 +1,6 @@
 # The upstream vcpkg port, built with Mbed TLS instead of OpenSSL: OpenSSL needs kernel headers on
-# Linux and cmd.exe for the Windows cross build. Only the build files change, never the sources.
+# Linux and cmd.exe for the Windows cross build. Only the build files change, apart from the
+# <algorithm> includes newer libc++ (macOS) no longer brings in through other headers.
 
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
@@ -10,6 +11,7 @@ vcpkg_from_github(
     PATCHES
         dependencies.diff
         uwp-warnings.patch
+        algorithm-include.patch
 )
 
 vcpkg_check_features(OUT_FEATURE_OPTIONS FEATURE_OPTIONS
