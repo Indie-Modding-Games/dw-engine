@@ -9,6 +9,7 @@
 
 #include "options.hpp"
 #include "versus_flow.hpp"
+#include "versus_loopback.hpp"
 
 namespace dwe::session {
 class BattleAdapter;
@@ -57,7 +58,13 @@ private:
   bool keepsSaves_;
   ui::Ui* ui_;
   std::unique_ptr<session::BattleAdapter> battles_;
+  // With --versus-loopback: the other player's flow desc (the links aside) and the other player of
+  // this opening, before the flow, whose links borrow its network.
+  std::optional<VersusFlowDesc> rivalDesc_;
+  std::unique_ptr<VersusLoopback> loopback_;
   std::optional<VersusFlow> flow_;
+  // The last tick's time, for the loopback's clock.
+  std::optional<double> lastSeconds_;
   bool active_ = false;
   bool closed_ = false;
 };

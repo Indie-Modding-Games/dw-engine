@@ -162,6 +162,7 @@ dwe_add_app(game
         src/ui_skin_setting.cpp
         src/user_settings.cpp
         src/versus_flow.cpp
+        src/versus_loopback.cpp
         src/versus_screen.cpp
         src/field_scene_weather.cpp
         src/weather_particles.cpp

@@ -12,6 +12,7 @@
 #include <dwe/session/slot_names.hpp>
 #include <dwe/session/versus_match.hpp>
 
+#include <algorithm>
 #include <random>
 #include <utility>
 #include <vector>
@@ -103,7 +104,7 @@ bool VersusScreen::open() {
     const assets::VirtualFileSystem* files = files_;
     const Options* options = options_;
     const bool keepsSaves = keepsSaves_;
-    flow_.emplace(VersusFlowDesc{
+    VersusFlowDesc desc{
         .battles = battles_.get(),
         .identity = std::move(*identity),
         .saves = [files, options, keepsSaves] { return savesIn(*files, *options, keepsSaves); },
@@ -116,9 +117,22 @@ bool VersusScreen::open() {
             [] {
               std::random_device device;
               return (static_cast<std::uint64_t>(device()) << 32U) | device();
-            }});
+            }};
+    if (options_->versusLoopback) {
+      rivalDesc_ = desc;
+      desc.host = [this] { return loopback_->host(); };
+      desc.join = &VersusLoopback::join;
+      core::logInfo("versus: --versus-loopback: the other player is this process' own");
+    }
+    flow_.emplace(std::move(desc));
   }
   flow_->open();
+  // A new opening, a new other player (once the flow let go of the last one's link): the last one
+  // may have left its series.
+  if (rivalDesc_) {
+    loopback_ = std::make_unique<VersusLoopback>(*rivalDesc_);
+  }
+  lastSeconds_.reset();
   active_ = true;
   closed_ = false;
   screens::publish(*ui_, flow_->settings(), Revision);
@@ -156,7 +170,14 @@ void VersusScreen::tick(double nowSeconds) {
     return;
   }
   constexpr double MillisPerSecond = 1000.0;
-  flow_->tick(net::Millis{static_cast<std::int64_t>(nowSeconds * MillisPerSecond)});
+  if (loopback_) {
+    const double elapsed = lastSeconds_ ? std::max(nowSeconds - *lastSeconds_, 0.0) : 0.0;
+    flow_->tick(loopback_->now());
+    loopback_->tick(net::Millis{static_cast<std::int64_t>(elapsed * MillisPerSecond)});
+  } else {
+    flow_->tick(net::Millis{static_cast<std::int64_t>(nowSeconds * MillisPerSecond)});
+  }
+  lastSeconds_ = nowSeconds;
   if (flow_->closed()) {
     close();
     return;

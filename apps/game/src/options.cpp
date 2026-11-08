@@ -291,6 +291,8 @@ bool readFlag(Options& options, std::string_view argument) {
     options.controlPaused = true;
   } else if (argument == "--new-game") {
     options.newGame = true;
+  } else if (argument == "--versus-loopback") {
+    options.versusLoopback = true;
   } else if (argument == "--list-saves") {
     options.listSaves = true;
   } else if (argument == CheckSystemOption) {

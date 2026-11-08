@@ -1997,6 +1997,12 @@ WebRTC de verdad (`net::RtcPeerLink`, con el servidor de señalización de `vers
 `--versus-server wss://…`); los tests usan dos flujos sobre `net::LoopbackNetwork`. Nada de esto escribe la partida: el original
 tampoco guarda nada del versus.
 
+Para probarlo con una sola máquina, `--versus-loopback` (opción de desarrollo, `VersusLoopback`) pone al otro jugador en
+el mismo proceso: los dos flujos se hablan por una `net::LoopbackNetwork` con su propio reloj, y el otro jugador se une a
+la sala que se crea, trae la primera partida con compañeros suficientes, elige los primeros y no da órdenes (sus
+luchadores actúan solos). Los combates van en lockstep como en línea. Cada vez que se abre el versus hay otro jugador
+nuevo.
+
 1. **Crear partida**: el anfitrión elige 1, 3 o 5 combates. La pantalla dice en qué va (creando la sala, esperando al
    otro, abriendo la conexión directa) y enseña en grande el código de la sala, de cuatro caracteres, para dárselo al
    otro jugador. No hay que abrir puertos: el servidor solo los presenta y la partida va directa entre los dos.
