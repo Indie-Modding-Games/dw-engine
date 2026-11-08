@@ -1,0 +1,13 @@
+# The online versus' signaling server (README.md). No account id, route or secret here: whoever
+# deploys it gives them to wrangler.
+name = "dwe-versus-signal"
+main = "src/worker.ts"
+compatibility_date = "2026-10-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "RoomObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomObject"]

@@ -1,0 +1,8 @@
+{
+  "name": "dwe-versus-signal",
+  "private": true,
+  "type": "module",
+  "description": "Signaling server of the online versus: pairs two games by a room code (no dependencies)",
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=22.18" }
+}
