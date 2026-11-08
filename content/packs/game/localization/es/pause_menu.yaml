@@ -276,7 +276,7 @@ help.enhanced_lighting: "La hora tiñe la escena y las lámparas y fuegos ilumin
 help.vivid_colors: "Más color, un contraste suave y brillo en los puntos claros. Los menús no cambian."
 help.shadows: "Sin sombras, la redonda del original o además la del sol, que gira con la hora."
 help.chibi_style: "Dibuja con las proporciones del original los modelos de fuera (de mods o importados)."
-help.weather: "Lluvia, nieve, nubes y sol en los mapas exteriores. No cambia ninguna regla."
+help.weather: "Lluvia, tormentas, nieve, niebla, viento, nubes y sol en los mapas exteriores. No cambia ninguna regla."
 help.seasons: "Primavera, verano, otoño e invierno colorean los exteriores cada pocos días."
 help.music_volume: "Volumen de la música y del sonido de las películas. 10 es el nivel del original."
 help.effects_volume: "Volumen de los efectos y de los sonidos de los menús. 10 es el nivel del original."

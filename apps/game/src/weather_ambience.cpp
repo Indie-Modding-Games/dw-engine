@@ -8,6 +8,8 @@
 #include <cmath>
 #include <string_view>
 
+#include "weather_particles.hpp"
+
 namespace dwe::app {
 
 namespace {
@@ -16,10 +18,15 @@ namespace {
 // frozen area's bank (sound/esall/<map sound id>).
 constexpr std::string_view RainSound = "sound/esall/008/sample_004";
 constexpr std::string_view GustSound = "sound/esall/011/sample_004";
+// A long low rumble of the ancient area's bank, slowed down a little for the thunder.
+constexpr std::string_view ThunderSound = "sound/esall/005/sample_006";
 // The rain loop's crossfade, in seconds: its end fades into its start.
 constexpr double CrossfadeSeconds = 0.25;
 constexpr float RainLoudest = 0.5F;
 constexpr float GustLoudest = 0.45F;
+constexpr float ThunderLoudest = 0.8F;
+// A jump of the weather's seconds longer than this (a new map, a load) sounds no old thunder.
+constexpr double LongestThunderGap = 1.0;
 
 std::shared_ptr<audio::Clip> loadClip(const assets::VirtualFileSystem& files, std::string_view id) {
   auto parsed = assets::AssetId::parse(id);
@@ -105,14 +112,37 @@ void WeatherAmbience::loadClips() {
     }
   }
   gust_ = loadClip(*files_, GustSound);
+  thunder_ = loadClip(*files_, ThunderSound);
 }
 
-void WeatherAmbience::update(const game::weather::WeatherLook& look, double seconds) {
+void WeatherAmbience::update(const game::weather::WeatherLook& look, double seconds,
+                             double weatherSeconds) {
   if (audio_ == nullptr) {
     return;
   }
-  if (!loaded_ && (look.rain > 0.0F || look.snow > 0.0F)) {
+  if (!loaded_ && (look.rain > 0.0F || look.snow > 0.0F || look.wind > 0.0F)) {
     loadClips();
+  }
+  // Thunder: each strike whose thunder time passed since the last frame.
+  const std::optional<double> from = heardUntil_;
+  heardUntil_ = weatherSeconds;
+  if (thunder_ && look.storm > 0.0F && from && weatherSeconds > *from &&
+      weatherSeconds - *from < LongestThunderGap) {
+    const auto first =
+        static_cast<std::int64_t>(std::floor((*from - LongestThunderDelay) / LightningSlotSeconds));
+    const auto last = static_cast<std::int64_t>(std::floor(weatherSeconds / LightningSlotSeconds));
+    for (std::int64_t slot = first; slot <= last; ++slot) {
+      const std::optional<LightningStrike> strike = lightningStrike(slot);
+      if (!strike || strike->thunder <= *from || strike->thunder > weatherSeconds) {
+        continue;
+      }
+      // Far strikes are lower and quieter.
+      const auto key = static_cast<std::uint64_t>(slot);
+      static_cast<void>(audio_->play(
+          {.clip = thunder_,
+           .gain = ThunderLoudest * look.storm * strike->strength,
+           .pitch = 0.62F + (0.25F * strike->strength) + (0.08F * unit((key * 5) + 1))}));
+    }
   }
   const float gain = rainGain(look.rain);
   if (rain_ && gain != rainPlaying_) {
@@ -127,7 +157,9 @@ void WeatherAmbience::update(const game::weather::WeatherLook& look, double seco
       }
     }
   }
-  if (!gust_ || look.snow <= 0.0F) {
+  // Gusts with the snow and the wind, closer together in a strong wind.
+  const float blowing = std::max(look.snow, look.wind);
+  if (!gust_ || blowing <= 0.0F) {
     return;
   }
   gustSeconds_ -= seconds;
@@ -135,9 +167,10 @@ void WeatherAmbience::update(const game::weather::WeatherLook& look, double seco
     return;
   }
   ++gusts_;
-  // Every 3 to 8 seconds, at its own volume and pitch.
-  gustSeconds_ = 3.0 + (5.0 * unit(gusts_ * 3));
-  const float gustGain = GustLoudest * look.snow * (0.5F + (0.5F * unit((gusts_ * 3) + 1)));
+  // Every 3 to 8 seconds (down to about half in full wind), at its own volume and pitch.
+  gustSeconds_ = (3.0 + (5.0 * unit(gusts_ * 3))) *
+                 (1.0 - (0.55 * static_cast<double>(std::clamp(look.wind, 0.0F, 1.0F))));
+  const float gustGain = GustLoudest * blowing * (0.5F + (0.5F * unit((gusts_ * 3) + 1)));
   const float pitch = 0.8F + (0.35F * unit((gusts_ * 3) + 2));
   static_cast<void>(audio_->play({.clip = gust_, .gain = gustGain, .pitch = pitch}));
 }

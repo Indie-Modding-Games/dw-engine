@@ -7,6 +7,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace dwe::app {
@@ -29,6 +30,9 @@ enum class WeatherShape : std::uint32_t {
   Leaf = 5,
   // A falling petal: a soft oval, lighter in the middle.
   Petal = 6,
+  // The fog's haze: the colour, its alpha fading between the corners (cornerAlpha), thinned and
+  // thickened by the noise picture into drifting wisps.
+  Fog = 7,
 };
 
 enum class WeatherBlendMode : std::uint8_t { Alpha, Additive };
@@ -41,6 +45,8 @@ struct WeatherQuad {
   glm::vec4 color{1.0F};
   // Clouds only: the shadows' colour and strength over the tint.
   glm::vec4 shadow{0.0F};
+  // Multiplies the colour's alpha at each corner: a gradient across the quad (the fog).
+  std::array<float, 4> cornerAlpha{1.0F, 1.0F, 1.0F, 1.0F};
   WeatherShape shape = WeatherShape::Solid;
   WeatherBlendMode blend = WeatherBlendMode::Alpha;
 };
@@ -62,12 +68,35 @@ struct WeatherFrame {
   // 1 by day, 0.5 at dusk, 0 at night: the sun's warmth and the cloud shadows go with the daylight,
   // and rain and snow are dimmer at night.
   float daylight = 1.0F;
+  // Whether the wind carries dust (the dry areas) instead of leaves.
+  bool dust = false;
 };
 
+// A storm's lightning strike: when it flashes (in seconds of weather animation), how bright, 0 to
+// 1, and when its thunder is heard.
+struct LightningStrike {
+  double at = 0.0;
+  float strength = 0.0F;
+  double thunder = 0.0;
+};
+
+// Strikes come at most one in each slot of this many seconds.
+inline constexpr double LightningSlotSeconds = 6.0;
+// The longest a thunder comes after its flash.
+inline constexpr double LongestThunderDelay = 3.5;
+
+// The strike of a slot (seconds / LightningSlotSeconds), if it has one: a hash of the slot, never a
+// random stream, so the flash and its thunder agree.
+[[nodiscard]] std::optional<LightningStrike> lightningStrike(std::int64_t slot);
+// How bright the lightning is at a moment, 0 to 1: a quick double flicker that fades in about half
+// a second.
+[[nodiscard]] float lightningFlash(double seconds);
+
 // The quads of a weather look, back to front: the sky's veil (overcast tint, snow haze and cloud
-// shadows in one quad), the sun's warmth, then the rain's streaks and splashes or the snowflakes. A
-// pure function of the look and the frame: the particles are placed by hashing their number and
-// cycle, never by a random stream.
+// shadows in one quad), the sun's warmth, the fog's haze, the wind's dust haze, then the rain's
+// streaks and splashes (slanted by the wind), the snowflakes, the leaves or dust the wind blows and
+// the lightning's flash. A pure function of the look and the frame: the particles are placed by
+// hashing their number and cycle, never by a random stream.
 [[nodiscard]] std::vector<WeatherQuad> weatherQuads(const game::weather::WeatherLook& look,
                                                     const WeatherFrame& frame);
 
@@ -89,5 +118,9 @@ inline constexpr float HeavySnowFlakes = 200.0F;
 // How many petals and leaves a full season draws over the original's screen width: light.
 inline constexpr float SeasonPetals = 18.0F;
 inline constexpr float SeasonLeaves = 14.0F;
+// How many leaves or dust motes full wind blows over the original's screen width, and its streaks.
+inline constexpr float WindLeaves = 26.0F;
+inline constexpr float WindDust = 70.0F;
+inline constexpr float WindStreaks = 12.0F;
 
 } // namespace dwe::app

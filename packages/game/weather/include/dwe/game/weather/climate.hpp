@@ -27,17 +27,24 @@ enum class WeatherKind : std::uint8_t {
   HeavyRain,
   LightSnow,
   HeavySnow,
+  // A haze that thickens toward the far (upper) part of the map and dulls its colours.
+  Fog,
+  // Heavy rain driven by the wind, with lightning and thunder.
+  Storm,
+  // Leaves or dust blowing sideways (ClimateArea::wind).
+  Wind,
 };
 
-inline constexpr std::size_t WeatherKindCount = 7;
+inline constexpr std::size_t WeatherKindCount = 10;
 
 // The kinds an area can roll (every kind but None), in the order of WeatherWeights.
-inline constexpr std::array RolledKinds{WeatherKind::Clear,     WeatherKind::Cloudy,
-                                        WeatherKind::LightRain, WeatherKind::HeavyRain,
-                                        WeatherKind::LightSnow, WeatherKind::HeavySnow};
+inline constexpr std::array RolledKinds{
+    WeatherKind::Clear,     WeatherKind::Cloudy,    WeatherKind::LightRain,
+    WeatherKind::HeavyRain, WeatherKind::LightSnow, WeatherKind::HeavySnow,
+    WeatherKind::Fog,       WeatherKind::Storm,     WeatherKind::Wind};
 
 // The kind's name in the pack and on the command line (none, clear, cloudy, light_rain,
-// heavy_rain, light_snow, heavy_snow).
+// heavy_rain, light_snow, heavy_snow, fog, storm, wind).
 [[nodiscard]] std::string_view weatherKindName(WeatherKind kind);
 // A kind by name; `rain` and `snow` are the light ones, and dashes count as underscores.
 [[nodiscard]] std::optional<WeatherKind> weatherKindNamed(std::string_view name);
@@ -112,6 +119,9 @@ struct SeasonRules {
   float leaves = 0.0F;
 };
 
+// What the wind carries over an area: leaves, or dust in the dry areas.
+enum class WindDebris : std::uint8_t { Leaves, Dust };
+
 // A group of maps that share their weather.
 struct ClimateArea {
   std::string id;
@@ -123,6 +133,8 @@ struct ClimateArea {
   float seasonStrength = 1.0F;
   // Whether a cold season turns part of its rain into snow.
   bool snowFromRain = true;
+  // What its wind blows about.
+  WindDebris wind = WindDebris::Leaves;
   // The ids of the areas next to this one (a walk or a ride away), where its fronts spread. Both
   // ways: an area listed by another is its neighbour too.
   std::vector<std::string> neighbours;

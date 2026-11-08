@@ -17,6 +17,12 @@ struct WeatherLook {
   float snow = 0.0F;
   // Sunshine: a slightly warmer, brighter light (only a clear sky has it).
   float sunshine = 0.0F;
+  // How thick the fog is.
+  float fog = 0.0F;
+  // How often and how bright the lightning flashes (a storm).
+  float storm = 0.0F;
+  // How hard the wind blows: leaves or dust sideways, rain and snow slanted.
+  float wind = 0.0F;
 
   // How strong the weather's kind is, 0 to 1 (light rain or snow are about half of heavy).
   [[nodiscard]] float intensity() const;

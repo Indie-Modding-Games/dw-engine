@@ -97,6 +97,21 @@
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 1000
+              },
+              "fog": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "storm": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "wind": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
               }
             }
           },
@@ -117,6 +132,13 @@
               "type": "string",
               "pattern": "^[a-z0-9_]+$"
             }
+          },
+          "wind": {
+            "description": "What the area's wind blows about: leaves (default) or dust (the dry areas).",
+            "enum": [
+              "leaves",
+              "dust"
+            ]
           }
         }
       }
@@ -293,7 +315,10 @@
         "light_rain",
         "heavy_rain",
         "light_snow",
-        "heavy_snow"
+        "heavy_snow",
+        "fog",
+        "storm",
+        "wind"
       ]
     },
     "odds": {
@@ -327,6 +352,21 @@
           "maximum": 10
         },
         "heavy_snow": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "fog": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "storm": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "wind": {
           "type": "number",
           "minimum": 0,
           "maximum": 10

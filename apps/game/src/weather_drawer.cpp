@@ -89,7 +89,7 @@ WeatherDrawer::triangles(const std::vector<WeatherQuad>& quads, glm::vec2 extent
       const glm::vec2 ndc = (quad.corners.at(i) / extent * 2.0F) - 1.0F;
       corners.at(i) = {.position = {ndc, 0.0F, 1.0F},
                        .uv = quad.uv.at(i),
-                       .color = quad.color,
+                       .color = {glm::vec3{quad.color}, quad.color.a * quad.cornerAlpha.at(i)},
                        .info = {clouds, static_cast<std::uint32_t>(quad.shape)},
                        .shadow = quad.shadow};
     }

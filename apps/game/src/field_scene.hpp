@@ -384,6 +384,9 @@ public:
   [[nodiscard]] const game::weather::WeatherLook& weather() const { return weatherBlend_.look(); }
   // The climate area of the map shown (field/weather.yaml), nothing for a map without weather.
   [[nodiscard]] const game::weather::ClimateArea* weatherArea() const { return weatherArea_; }
+  // Seconds of weather animation (they stop with the pause): the clock of the particles and of the
+  // storm's lightning, which its thunder follows.
+  [[nodiscard]] double weatherSeconds() const { return weatherSeconds_; }
   // The seasons (game::weather, an engine improvement; field_scene_weather.cpp): whether the
   // option shows them (shown or hidden at once; off draws and rolls the weather exactly as without
   // seasons), and a season forced in place of the calendar's (--season, for captures: the look and

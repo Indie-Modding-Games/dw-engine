@@ -400,8 +400,8 @@ game_options = {
     help = "pause_menu.help.chibi_style",
     original = "off",
   },
-  -- Weather: rain, snow, clouds and sun on the island's outdoor maps (on by default; off shows
-  -- every map as the original, which has no weather). It never changes a rule.
+  -- Weather: rain, storms, snow, fog, wind, clouds and sun on the island's outdoor maps (on by
+  -- default; off shows every map as the original, which has no weather). It never changes a rule.
   {
     id = "weather",
     setting = "weather",

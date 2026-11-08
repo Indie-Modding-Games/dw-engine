@@ -20,7 +20,8 @@ using core::YamlNode;
 constexpr std::array KindNames{std::string_view{"none"},       std::string_view{"clear"},
                                std::string_view{"cloudy"},     std::string_view{"light_rain"},
                                std::string_view{"heavy_rain"}, std::string_view{"light_snow"},
-                               std::string_view{"heavy_snow"}};
+                               std::string_view{"heavy_snow"}, std::string_view{"fog"},
+                               std::string_view{"storm"},      std::string_view{"wind"}};
 static_assert(KindNames.size() == WeatherKindCount);
 
 constexpr std::array SeasonNames{std::string_view{"spring"}, std::string_view{"summer"},
@@ -337,6 +338,9 @@ std::optional<WeatherKind> weatherKindNamed(std::string_view name) {
   if (key == "sunny") {
     return WeatherKind::Clear;
   }
+  if (key == "thunderstorm") {
+    return WeatherKind::Storm;
+  }
   for (std::size_t i = 0; i < KindNames.size(); ++i) {
     if (KindNames.at(i) == key) {
       return static_cast<WeatherKind>(i);
@@ -403,7 +407,7 @@ core::Result<ClimateRules> parseClimateRules(std::string_view yaml) {
   }
   for (const YamlNode& node : reader.sequence(reader.field(*tree, "areas"), "areas")) {
     if (!reader.expectKeys(node, "an area", {"id", "maps", "weights"},
-                           {"season_strength", "snow_from_rain", "neighbours"})) {
+                           {"season_strength", "snow_from_rain", "neighbours", "wind"})) {
       break;
     }
     ClimateArea area;
@@ -415,6 +419,14 @@ core::Result<ClimateRules> parseClimateRules(std::string_view yaml) {
     }
     if (const YamlNode* snow = node.find("snow_from_rain")) {
       area.snowFromRain = reader.boolean(*snow);
+    }
+    if (const YamlNode* wind = node.find("wind")) {
+      const std::string carries = reader.text(*wind);
+      if (carries == "dust") {
+        area.wind = WindDebris::Dust;
+      } else if (reader.ok() && carries != "leaves") {
+        reader.fail(*wind, "the wind carries leaves or dust");
+      }
     }
     if (const YamlNode* neighbours = node.find("neighbours")) {
       for (const YamlNode& id : reader.sequence(*neighbours, "neighbours")) {
