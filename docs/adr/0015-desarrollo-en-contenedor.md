@@ -51,7 +51,11 @@ instalarlas a mano ensucia la máquina de cada desarrollador y da builds que sol
 - La CI se aparta en dos cosas para tardar menos sin caché, y ninguna cambia el código que compila:
   - no instala la capa de validación de Vulkan, que es la feature `validation` de `vcpkg.json`, activa por defecto en
     local, porque ningún test dibuja;
-  - en Linux usa el triplet `x64-linux-libcxx-release`, que compila cada dependencia una vez en lugar de dos.
+  - en Linux usa el triplet `x64-linux-libcxx-release`, que compila cada dependencia una vez en lugar de dos. Ese
+    triplet compila libdatachannel con AddressSanitizer, como los tests que la usan: su código de `std::vector` en
+    release, sin instrumentar, se mezcla al enlazar con el del motor y escribe en la capacidad que libc++ marca como
+    envenenada, y ASan lo da como desbordamiento. En depuración (`x64-linux-libcxx`) no pasa, porque nada se expande
+    en línea.
 - La caché binaria de vcpkg guarda cada paquete por separado, así que una dependencia nueva solo compila esa.
 - La imagen no puede ser más nueva que el sistema donde se juega: el ejecutable enlaza la glibc de la imagen. Por eso
   es Ubuntu 24.04 aunque 26.04 ya trae LLVM 22 en sus repositorios.
