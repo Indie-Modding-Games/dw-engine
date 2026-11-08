@@ -31,22 +31,15 @@ set(CMAKE_CXX_COMPILER "${DWE_LLVM_ROOT}/bin/clang++")
 set(CMAKE_OSX_DEPLOYMENT_TARGET "13.3" CACHE STRING "")
 
 # Homebrew's clang reads its own libc++ headers; the link takes its static libc++ and libc++abi instead of the
-# system's dynamic ones (-nostdlib++).
+# system's dynamic ones (-nostdlib++). Their symbols stay hidden in each program (-load_hidden): exported, the system's
+# libc++ (loaded in every process) took some of them at run time, and Clang 23's typed operator new then aborted
+# every program at start ("typed operator new being invoked before its static initializer").
 string(APPEND CMAKE_CXX_FLAGS_INIT " -stdlib=libc++")
-set(DWE_LIBCXX_STATIC "-nostdlib++ ${DWE_LLVM_ROOT}/lib/c++/libc++.a ${DWE_LLVM_ROOT}/lib/c++/libc++abi.a")
+set(DWE_LIBCXX_STATIC "-nostdlib++ -Wl,-load_hidden,${DWE_LLVM_ROOT}/lib/c++/libc++.a")
+string(APPEND DWE_LIBCXX_STATIC " -Wl,-load_hidden,${DWE_LLVM_ROOT}/lib/c++/libc++abi.a")
 foreach(kind EXE SHARED MODULE)
     string(APPEND CMAKE_${kind}_LINKER_FLAGS_INIT " ${DWE_LIBCXX_STATIC}")
 endforeach()
-
-# Clang 23 calls typed operator new on macOS by default, and a static libc++ aborts when a static initializer reaches
-# it before libc++'s own one ran ("typed operator new being invoked before its static initializer"): every program
-# and test stopped at start. Older Clang has no such flag, so it is only passed when the compiler takes it.
-execute_process(
-    COMMAND "${CMAKE_CXX_COMPILER}" -fno-typed-cxx-new-delete -x c++ -fsyntax-only -
-    INPUT_FILE /dev/null RESULT_VARIABLE dwe_no_typed_new ERROR_QUIET OUTPUT_QUIET)
-if(dwe_no_typed_new EQUAL 0)
-    string(APPEND CMAKE_CXX_FLAGS_INIT " -fno-typed-cxx-new-delete")
-endif()
 
 # Apple's archiver, not llvm-ar next to Homebrew's clang: llvm-ar wrote an archive whose objects have no symbols
 # (mbedtls' libeverest on arm64) in the GNU format, which the linker of Xcode 16 refuses.
