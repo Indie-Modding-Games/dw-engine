@@ -38,7 +38,7 @@ vez hablan.
 `loadNetworkConfig` lee `versus/network` del pack del juego (esquema `versus_network.schema.json`):
 
 ```yaml
-signal_server: ""                         # ws:// o wss://; vacío: no hay servidor y el juego lo dice
+signal_server: "wss://dwe-versus-signal.regamelabs.workers.dev"  # ws:// o wss://; vacío: no hay servidor y el juego lo dice
 ice_servers: [stun:stun.cloudflare.com:3478]   # stun:, turn: o turns:
 ```
 

@@ -2,7 +2,7 @@
 # signal_server: el servidor de señalización (services/versus-signal) que empareja a los dos jugadores por un
 # código de sala, como wss://servidor/ruta. Vacío: no hay ninguno configurado y «Versus en línea» lo dice.
 # También se puede dar al arrancar con --versus-server <url>.
-signal_server: ""
+signal_server: "wss://dwe-versus-signal.regamelabs.workers.dev"
 # Los servidores STUN (y más adelante TURN) que ayudan a abrir la ruta directa entre los dos equipos.
 ice_servers:
   - stun:stun.cloudflare.com:3478

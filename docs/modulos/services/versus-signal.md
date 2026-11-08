@@ -29,9 +29,9 @@ El Durable Object usa la API de hibernación de WebSockets: una sala esperando n
 
 ## Estado
 
-No está desplegado. `wrangler.toml` no lleva cuenta, ruta ni secretos; quien lo despliegue pone su dirección (`wss://…`)
-en `content/packs/game/versus/network.yaml` (`signal_server`). Más adelante podrá dar credenciales TURN de corta vida
-para las redes sin ruta directa.
+Desplegado en Cloudflare (Workers con Durable Objects) en `wss://dwe-versus-signal.regamelabs.workers.dev`, la dirección que trae `content/packs/game/versus/network.yaml` (`signal_server`). `wrangler.toml` no lleva cuenta, ruta ni
+secretos: se despliega con `npx wrangler deploy` y la cuenta de quien despliega. Más adelante podrá dar credenciales TURN
+de corta vida para las redes sin ruta directa.
 
 ## Tests
 
