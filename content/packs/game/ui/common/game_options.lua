@@ -298,8 +298,8 @@ game_options = {
     help = "pause_menu.help.generous_talk",
     original = false,
   },
-  -- Extra toilets: the places the game pack lists (field/extra_toilets) work as toilets too (off by
-  -- default: only the original's toilets).
+  -- Extra toilets: the toilet booths the game pack lists (field/extra_toilets) stand on their
+  -- maps (off by default: only the original's toilets).
   {
     id = "extra-toilets",
     setting = "extra_toilets",

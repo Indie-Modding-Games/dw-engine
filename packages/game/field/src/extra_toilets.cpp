@@ -18,9 +18,9 @@ using core::YamlNode;
 constexpr std::string_view ExtraToiletsId = "field/extra_toilets";
 constexpr std::string_view Context = "extra toilets";
 
-ExtraToilet readToilet(YamlReader& reader, const YamlNode& node) {
+ExtraToilet readToilet(YamlReader& reader, const YamlNode& node, const std::string& model) {
   ExtraToilet toilet;
-  if (!reader.expectKeys(node, "an extra toilet", {"map", "position", "facing"})) {
+  if (!reader.expectKeys(node, "an extra toilet", {"map", "position", "facing"}, {"model"})) {
     return toilet;
   }
   toilet.map = reader.text(reader.field(node, "map"));
@@ -34,14 +34,48 @@ ExtraToilet readToilet(YamlReader& reader, const YamlNode& node) {
   if (toilet.facing < 0 || toilet.facing >= core::OriginalAnglePerTurn) {
     reader.fail(facing, "facing is an original rotation, 0 to 4095");
   }
+  const YamlNode* own = node.find("model");
+  toilet.model = own != nullptr ? reader.text(*own) : model;
   return toilet;
+}
+
+// The cells around the booth whose middles fall in a rectangle of its own axes: from `near` to
+// `far` along its front (exclusive, inclusive) and up to `half` to either side.
+std::vector<assets::CollisionCell> cellsIn(const ExtraToilet& toilet, float near, float far,
+                                           float half) {
+  const glm::vec3 middle = toilet.worldPosition();
+  const glm::vec3 forward = assets::forwardOfYaw(toilet.yaw());
+  const glm::vec3 right{forward.z, 0.0F, -forward.x};
+  const assets::CollisionCell centre = assets::collisionCellAt(middle);
+  constexpr std::int32_t Reach = 4;
+  std::vector<assets::CollisionCell> cells;
+  for (std::int32_t row = centre.row - Reach; row <= centre.row + Reach; ++row) {
+    for (std::int32_t column = centre.column - Reach; column <= centre.column + Reach; ++column) {
+      const assets::CollisionCell cell{.column = column, .row = row};
+      glm::vec3 offset = assets::collisionCellCenter(cell) - middle;
+      offset.y = 0.0F;
+      const float along = glm::dot(offset, forward);
+      if (along > near && along <= far && std::abs(glm::dot(offset, right)) <= half) {
+        cells.push_back(cell);
+      }
+    }
+  }
+  return cells;
 }
 
 } // namespace
 
+glm::vec3 ExtraToilet::worldPosition() const {
+  return assets::toWorldPosition({position.x, 0, position.y});
+}
+
+float ExtraToilet::yaw() const {
+  return assets::yawFromOriginal(facing);
+}
+
 assets::MapToilet ExtraToilet::points() const {
   // The world's forward of the rotation, back on the original's axes (its z the other way).
-  const glm::vec3 forward = assets::forwardOfYaw(assets::yawFromOriginal(facing));
+  const glm::vec3 forward = assets::forwardOfYaw(yaw());
   const glm::ivec2 front{static_cast<std::int32_t>(std::lround(forward.x * ExtraToiletFront)),
                          static_cast<std::int32_t>(std::lround(-forward.z * ExtraToiletFront))};
   return {.index = 0,
@@ -51,17 +85,13 @@ assets::MapToilet ExtraToilet::points() const {
           .z2 = position.y};
 }
 
-std::array<assets::CollisionCell, 9> ExtraToilet::cells() const {
-  const assets::CollisionCell middle =
-      assets::collisionCellAt(assets::toWorldPosition({position.x, 0, position.y}));
-  std::array<assets::CollisionCell, 9> around{};
-  std::size_t next = 0;
-  for (std::int32_t row = -1; row <= 1; ++row) {
-    for (std::int32_t column = -1; column <= 1; ++column) {
-      around.at(next++) = {.column = middle.column + column, .row = middle.row + row};
-    }
-  }
-  return around;
+std::vector<assets::CollisionCell> ExtraToilet::footprint() const {
+  return cellsIn(*this, -ExtraToiletHalfSize - 1.0F, ExtraToiletHalfSize, ExtraToiletHalfSize);
+}
+
+std::vector<assets::CollisionCell> ExtraToilet::frontCells() const {
+  return cellsIn(*this, ExtraToiletHalfSize, ExtraToiletHalfSize + ExtraToiletStrip,
+                 ExtraToiletHalfSize);
 }
 
 core::Result<std::vector<ExtraToilet>> parseExtraToilets(std::string_view yaml) {
@@ -71,9 +101,10 @@ core::Result<std::vector<ExtraToilet>> parseExtraToilets(std::string_view yaml) 
   }
   YamlReader reader;
   std::vector<ExtraToilet> toilets;
-  if (reader.expectKeys(*tree, Context, {"toilets"})) {
+  if (reader.expectKeys(*tree, Context, {"model", "toilets"})) {
+    const std::string model = reader.text(reader.field(*tree, "model"));
     for (const YamlNode& node : reader.sequence(reader.field(*tree, "toilets"), "toilets")) {
-      toilets.push_back(readToilet(reader, node));
+      toilets.push_back(readToilet(reader, node, model));
     }
   }
   return reader.finish(std::move(toilets), Context);

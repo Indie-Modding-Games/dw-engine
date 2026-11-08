@@ -348,13 +348,16 @@ public:
   void setCollision(const assets::MapCollision& collision);
 
   // Extra toilets (extra_toilets.hpp, an engine improvement, off by default): the list of every
-  // map's, and whether they are on. While on, the free cells of the current map's take the toilet
-  // trigger (set on each map entry); turned off, they are free again.
+  // map's, and whether they are on. While on, the free cells under the current map's booths are
+  // solid and those in front of them take the toilet trigger (set on each map entry); turned off,
+  // they are free again.
   void setExtraToilets(std::vector<ExtraToilet> toilets);
   void setExtraToiletsOn(bool on);
   [[nodiscard]] bool extraToiletsOn() const { return extraToiletsOn_; }
   // The extra toilet of the current map whose trigger the cell holds, if any.
   [[nodiscard]] const ExtraToilet* extraToiletAt(assets::CollisionCell cell) const;
+  // The extra toilets of the current map while they are on, to draw; none while off.
+  [[nodiscard]] std::vector<const ExtraToilet*> extraToiletsHere() const;
 
   // The current map's region lists, which say how the partner feels about the map.
   [[nodiscard]] const assets::MapRegions& regions() const { return regions_; }
@@ -713,8 +716,14 @@ private:
   bool generousTalk_ = false;
   std::vector<ExtraToilet> extraToilets_;
   bool extraToiletsOn_ = false;
-  // The cells the extra toilets of the current map took, each with the extra toilet's index.
-  std::vector<std::pair<assets::CollisionCell, std::size_t>> extraToiletCells_;
+  // A cell an extra toilet of the current map took: solid under the booth, the toilet trigger in
+  // front of it.
+  struct ExtraToiletCell {
+    assets::CollisionCell cell;
+    std::size_t toilet = 0;
+    bool trigger = false;
+  };
+  std::vector<ExtraToiletCell> extraToiletCells_;
   // Seconds since the current frame of the original began, not counting this tick.
   float frameClock_ = 0.0F;
   float tickSeconds_ = 0.0F;

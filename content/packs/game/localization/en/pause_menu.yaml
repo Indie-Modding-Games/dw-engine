@@ -238,7 +238,7 @@ fair_card_stock: "Card stock without repeats"
 choose_egg_after_lives_lost: "Choose the egg after losing all lives"
 # Generous talk range: talking and reading signs reach a little further (off by default).
 generous_talk: "Generous talk range"
-# Extra toilets: a few more places where the partner can go (off by default).
+# Extra toilets: a few more toilet booths where the partner can go (off by default).
 extra_toilets: "Extra toilets"
 # {tab} is the tab's name.
 reset_question: "Reset the {tab} options?"
@@ -267,7 +267,7 @@ help.fair_move_forgetting: "Forgetting a move removes only that move. In the ori
 help.fair_card_stock: "The card shop never offers the same card twice in a day. In the original it can."
 help.choose_egg_after_lives_lost: "When your partner loses all its lives, you choose the new egg, as after a natural death. In the original it is random."
 help.generous_talk: "Talk to characters and read signs from a little further, whichever way you face. The original needs you closer."
-help.extra_toilets: "A few more places work as toilets, such as the grass by the gym sign. Stand there when your partner needs to go. The original has only its own toilets."
+help.extra_toilets: "Adds a few more toilet booths, such as the one by the gym sign. Stand in front of one when your partner needs to go. The original has only its own toilets."
 help.status_extras: "The status page shows tiredness, mistakes, battles, waking hours, lifetime and evolution."
 help.display_mode: "Play in a window or full screen."
 help.vsync: "Syncs the frames with the display so the picture does not tear."

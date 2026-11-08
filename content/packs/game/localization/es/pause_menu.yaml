@@ -241,7 +241,7 @@ fair_card_stock: "Tienda de cartas sin repetidas"
 choose_egg_after_lives_lost: "Elegir el huevo al perder todas las vidas"
 # Hablar desde más lejos: hablar y leer carteles llega un poco más lejos (apagado por defecto).
 generous_talk: "Hablar desde más lejos"
-# Baños extra: unos pocos sitios más donde el compañero puede ir (apagado por defecto).
+# Baños extra: unas pocas casetas de baño más donde el compañero puede ir (apagado por defecto).
 extra_toilets: "Baños extra"
 # {tab} es el nombre de la pestaña.
 reset_question: "¿Restablecer los valores de «{tab}»?"
@@ -270,7 +270,7 @@ help.fair_move_forgetting: "Olvidar una técnica quita solo esa. En el original 
 help.fair_card_stock: "La tienda de cartas no ofrece la misma carta dos veces el mismo día. En el original puede."
 help.choose_egg_after_lives_lost: "Cuando tu compañero pierde todas sus vidas, eliges tú el huevo nuevo, como tras una muerte natural. En el original sale al azar."
 help.generous_talk: "Habla con los personajes y lee los carteles desde un poco más lejos, mires hacia donde mires. El original pide estar más cerca."
-help.extra_toilets: "Unos pocos sitios más sirven de baño, como la hierba junto al cartel del gimnasio. Ponte ahí cuando tu compañero necesite ir. El original solo tiene sus propios baños."
+help.extra_toilets: "Añade unas pocas casetas de baño más, como la que está junto al cartel del gimnasio. Ponte delante de una cuando tu compañero necesite ir. El original solo tiene sus propios baños."
 help.status_extras: "La ficha enseña cansancio, errores, combates, horario, vida y contador de evolución."
 help.display_mode: "Juega en una ventana o a pantalla completa."
 help.vsync: "Sincroniza los fotogramas con la pantalla para que la imagen no se corte."

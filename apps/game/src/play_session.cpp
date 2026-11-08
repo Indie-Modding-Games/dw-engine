@@ -1168,6 +1168,7 @@ void PlaySession::applyPlayOptions() {
   skipEvolution_ = settings.skipEvolution.value_or(false);
   scene_->field().setGenerousTalk(settings.generousTalk.value_or(false));
   scene_->field().setExtraToiletsOn(settings.extraToilets.value_or(false));
+  scene_->showExtraToilets();
   if (game_.systems.story != nullptr) {
     game_.systems.story->dialogue().setCancelClosesChoice(
         settings.choiceCancelCloses.value_or(false));
@@ -1654,6 +1655,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   ui::Ui& ui = *context_.ui;
   if (scene_->mapSerial() != mapSerial_) {
     mapSerial_ = scene_->mapSerial();
+    scene_->showExtraToilets();
     ui.setMinimap(ui::minimapGridOf(scene_->map()), scene_->mapNameKey());
     fishingScreen_.enterMap(*scene_, scene_->field().mapId());
     if (const auto& change = scene_->lastMapChange(); change && autotest != nullptr) {

@@ -174,22 +174,45 @@ atascos (`dwe_assets_tests`: "a toilet's points turn the original's z the other 
 
 Mejora opcional, apagada por defecto, que propuso un probador para no tener que volver siempre al mismo baño. El
 ajuste `extra_toilets` (fila «Baños extra», «Extra toilets» en inglés, pestaña Juego, guardado en los ajustes del
-usuario) llega a `game::field::Field::setExtraToiletsOn`. La lista sale de `field/extra_toilets.yaml` del paquete del
-juego (esquema `field_extra_toilets.schema.json`), así que un mod puede añadir más: cada sitio lleva el mapa, la
-posición adonde va el compañero (x, z en los ejes del original, como `TOILET_DATA`) y `facing`, la rotación Y del
-original hacia la que mira su frente.
+usuario) llega a `game::field::Field::setExtraToiletsOn`. Las casetas salen de `field/extra_toilets.yaml` del paquete
+del juego (esquema `field_extra_toilets.schema.json`). Cada entrada da todo lo necesario:
 
-Con la opción, al entrar en el mapa (y al encenderla) la casilla de la posición y las ocho de alrededor que estén libres
-toman el valor del baño (120, `field/triggers`); las paredes, los warps y los demás disparadores quedan como están. Al
-apagarla vuelven a estar libres. El resto es el baño de siempre: `FieldToilet` ve la casilla, y si es de un baño extra
-(`Field::extraToiletAt`) el compañero corre al punto una casilla por delante (`ExtraToiletFront`, 100 unidades hacia
-`facing`) y luego a la posición, en vez de a los puntos del mapa. La lista trae un sitio: trai00 (el gimnasio verde),
-en la hierba junto a la valla, a la izquierda del cartel, en (−800, −3400) y de frente a la cámara (512).
+- **La caseta dibujada.** `FieldScene::showExtraToilets` la pone con `setProps`, el mismo camino que los objetos de la
+  historia: un modelo 3D en la escena del mapa, con profundidad frente a los personajes y a las capas del fondo, y la
+  luz del mapa. El modelo es `props/toilet_booth`, nuestro: una caseta de madera de pocos polígonos, abierta por
+  delante, con el asiento a la vista, tejado inclinado hacia atrás y una placa con un dibujo de un váter (sin texto). Lo genera `scripts/art/make_toilet_booth.py` (solo biblioteca
+  estándar, siempre igual); está en el espacio del mundo, +Y arriba, sobre 200 × 200 y con el frente hacia +Z.
+- **Las casillas.** Al entrar en el mapa (y al encender la opción), las casillas libres bajo la caseta se vuelven
+  sólidas y las de la franja de delante (dos casillas de fondo, tan ancha como la caseta) toman el valor del baño
+  (120, `field/triggers`). Las paredes, los warps y los demás disparadores quedan como están. Al apagarla vuelven a
+  estar libres y la caseta deja de dibujarse.
+- **La rutina del baño.** `FieldToilet` ve la casilla; si es de una caseta (`Field::extraToiletAt`), el compañero
+  corre al punto justo delante del frente (`ExtraToiletFront`, 200) y entra hasta el centro, en vez de ir a los puntos
+  del mapa. Esa carrera no choca con el mapa (`Field::walkPartnerTo`), así que entra aunque la caseta sea sólida.
 
-Falta: no hay caseta ni dibujo. Los baños del original son parte del fondo prerenderizado y no hay un modelo que
-reutilizar, así que el sitio no se ve; el texto de ayuda dice dónde está. Pruebas: «extra toilets take the free cells
-around them only while on, on their own map» (`field_tests.cpp`) y «extra toilets read their map, position and facing,
-and refuse a bad facing» (`rules_tests.cpp`).
+La lista trae una caseta: trai00 (el gimnasio verde), en la hierba junto a la valla, a la izquierda del cartel, en
+(−800, −3400) y abierta hacia la cámara y el camino (3584). Comprobado en vivo: se ve desde la cámara del mapa, el
+jugador choca con ella y el compañero que necesita ir corre delante, entra y queda tapado por la caseta.
+
+**Añadir una caseta.** Basta una línea más en `toilets` de `content/packs/game/field/extra_toilets.yaml` (o en el mismo
+archivo de un mod):
+
+```yaml
+  - {map: <id del mapa>, position: [x, z], facing: <0-4095>}
+```
+
+- `position` es el centro de la caseta, en los ejes del original (los de `place()` en la consola y los de la tabla de
+  mapas). En una esquina de casillas (múltiplos de 100) ocupa justo 2 × 2.
+- `facing` es la rotación Y del original hacia la que mira el frente abierto. Con un cuarto de vuelta (0, 1024, 2048,
+  3072) encaja en la rejilla; en diagonal, 512 por ejemplo, también ocupa cuatro casillas y deja cinco delante.
+- `model` (opcional) cambia el modelo de esa caseta. El de todas es la clave `model` de arriba.
+- Para buscar el sitio, el MCP `dwe` (`start` con `scene`, luego `place` y `screenshot`) o la consola sirven: el sitio
+  debe estar libre en la rejilla y tener libre la franja de delante.
+
+Pruebas: «an extra toilet's booth is solid and its front takes the toilet trigger only while on» (`field_tests.cpp`);
+«extra toilets read their booth's map, place, facing and model, and refuse a bad one», «an extra toilet's booth stands
+on 2 x 2 cells and its trigger strip is in front» y «the game pack's field data is valid», que además carga cada
+modelo (`rules_tests.cpp`).
 
 ## Felicitar y regañar
 

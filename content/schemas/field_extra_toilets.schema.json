@@ -1,13 +1,18 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Field extra toilets",
-  "description": "field/extra_toilets.yaml of the game pack: more places where the partner can go, used with the extra toilets option (an engine improvement, docs/modulos/apps/game.md). Positions and rotations are on the original's axes and units, like the map table's toilets.",
+  "description": "field/extra_toilets.yaml of the game pack: toilet booths placed on any map with the extra toilets option (an engine improvement, docs/modulos/apps/game.md). One entry gives the drawn booth, its solid cells, the toilet trigger cells in front and the toilet routine. Positions and rotations are on the original's axes and units, like the map table's toilets.",
   "type": "object",
   "required": [
+    "model",
     "toilets"
   ],
   "additionalProperties": false,
   "properties": {
+    "model": {
+      "description": "The booth's model, an asset id of the packs (a binary glTF in world units, +Y up, its open front to +Z).",
+      "type": "string"
+    },
     "toilets": {
       "type": "array",
       "items": {
@@ -25,7 +30,7 @@
             "pattern": "^[a-z0-9_]+$"
           },
           "position": {
-            "description": "Where the partner goes (x, z on the original's axes); its cell and the eight around it take the toilet trigger where they are free.",
+            "description": "The booth's middle, where the partner goes (x, z on the original's axes); on a cell corner (multiples of 100) it stands on exactly 2 x 2 cells.",
             "type": "array",
             "items": {
               "type": "integer"
@@ -34,10 +39,14 @@
             "maxItems": 2
           },
           "facing": {
-            "description": "The original Y rotation (0-4095) its front faces: the partner stops one cell that way before walking in.",
+            "description": "The original Y rotation (0-4095) its open front faces; the toilet trigger cells are in front.",
             "type": "integer",
             "minimum": 0,
             "maximum": 4095
+          },
+          "model": {
+            "description": "This booth's own model, instead of the document's.",
+            "type": "string"
           }
         }
       }

@@ -1,13 +1,18 @@
+#include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/model_data.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/game/field/extra_toilets.hpp>
 #include <dwe/game/field/rules.hpp>
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -195,29 +200,76 @@ TEST_CASE("the game pack's field data is valid") {
   CHECK_MESSAGE(warps.has_value(), errorOf(warps));
   const auto toilets = dwe::game::field::loadExtraToilets(*vfs);
   CHECK_MESSAGE(toilets.has_value(), errorOf(toilets));
-  CHECK((toilets && !toilets->empty()));
+  REQUIRE((toilets && !toilets->empty()));
+  // Every booth's model is in the packs and loads.
+  for (const auto& toilet : *toilets) {
+    const auto id = dwe::assets::AssetId::parse(toilet.model);
+    REQUIRE_MESSAGE(id.has_value(), toilet.model);
+    const auto model = dwe::assets::loadModel(*vfs, *id);
+    CHECK_MESSAGE(model.has_value(), errorOf(model));
+  }
 }
 
-TEST_CASE("extra toilets read their map, position and facing, and refuse a bad facing") {
+TEST_CASE("extra toilets read their booth's map, place, facing and model, and refuse a bad one") {
   using dwe::game::field::parseExtraToilets;
-  const auto toilets = parseExtraToilets("toilets:\n"
-                                         "  - {map: room, position: [-800, -3400], facing: 0}\n"
-                                         "  - {map: hall, position: [100, 200], facing: 1024}\n");
+  const auto toilets = parseExtraToilets(
+      "model: props/booth\n"
+      "toilets:\n"
+      "  - {map: room, position: [-800, -3400], facing: 0}\n"
+      "  - {map: hall, position: [100, 200], facing: 1024, model: props/other}\n");
   REQUIRE_MESSAGE(toilets.has_value(), errorOf(toilets));
   REQUIRE(toilets->size() == 2);
   CHECK(toilets->at(0).map == "room");
   CHECK(toilets->at(0).position == glm::ivec2{-800, -3400});
-  // Rotation 0 faces -z on the original's axes, 1024 faces -x: the partner stops a cell that way.
+  CHECK(toilets->at(0).model == "props/booth");
+  CHECK(toilets->at(1).model == "props/other");
+  // Rotation 0 faces -z on the original's axes, 1024 faces -x: the partner stops just outside the
+  // booth's front that way, then walks to its middle.
   const auto first = toilets->at(0).points();
   CHECK(first.x1 == -800);
-  CHECK(first.z1 == -3500);
+  CHECK(first.z1 == -3600);
   CHECK(first.x2 == -800);
   CHECK(first.z2 == -3400);
   const auto second = toilets->at(1).points();
-  CHECK(second.x1 == 0);
+  CHECK(second.x1 == -100);
   CHECK(second.z1 == 200);
-  CHECK_FALSE(parseExtraToilets("toilets:\n  - {map: room, position: [0, 0], facing: 4096}\n"));
-  CHECK_FALSE(parseExtraToilets("toilets:\n  - {map: room, position: [0, 0]}\n"));
-  CHECK_FALSE(parseExtraToilets("toilets:\n  - {map: room, position: [0], facing: 0}\n"));
-  CHECK_FALSE(parseExtraToilets("toilets:\n  - {map: room, position: [0, 0], facing: 0, x: 1}\n"));
+  const std::string_view model = "model: props/booth\ntoilets:\n";
+  const auto refused = [&model](std::string_view entry) {
+    return !parseExtraToilets(std::string{model} + std::string{entry});
+  };
+  CHECK(refused("  - {map: room, position: [0, 0], facing: 4096}\n"));
+  CHECK(refused("  - {map: room, position: [0, 0]}\n"));
+  CHECK(refused("  - {map: room, position: [0], facing: 0}\n"));
+  CHECK(refused("  - {map: room, position: [0, 0], facing: 0, x: 1}\n"));
+  CHECK_FALSE(parseExtraToilets("toilets:\n  - {map: room, position: [0, 0], facing: 0}\n"));
+}
+
+TEST_CASE("an extra toilet's booth stands on 2 x 2 cells and its trigger strip is in front") {
+  using dwe::assets::CollisionCell;
+  // Original (1000, -1000) is world (1000, 0, 1000), the corner of cells 59 and 60; rotation 0
+  // faces world +z (rows grow), 1024 world -x (columns shrink).
+  dwe::game::field::ExtraToilet toilet{
+      .map = "room", .position = {1000, -1000}, .facing = 0, .model = "props/booth"};
+  const auto sorted = [](std::vector<CollisionCell> cells) {
+    std::ranges::sort(cells, {},
+                      [](CollisionCell cell) { return std::pair{cell.row, cell.column}; });
+    return cells;
+  };
+  CHECK(sorted(toilet.footprint()) == std::vector<CollisionCell>{{.column = 59, .row = 59},
+                                                                 {.column = 60, .row = 59},
+                                                                 {.column = 59, .row = 60},
+                                                                 {.column = 60, .row = 60}});
+  CHECK(sorted(toilet.frontCells()) == std::vector<CollisionCell>{{.column = 59, .row = 61},
+                                                                  {.column = 60, .row = 61},
+                                                                  {.column = 59, .row = 62},
+                                                                  {.column = 60, .row = 62}});
+  toilet.facing = 1024;
+  CHECK(sorted(toilet.frontCells()) == std::vector<CollisionCell>{{.column = 57, .row = 59},
+                                                                  {.column = 58, .row = 59},
+                                                                  {.column = 57, .row = 60},
+                                                                  {.column = 58, .row = 60}});
+  // Turned an eighth, it still stands on four cells and keeps a strip in front.
+  toilet.facing = 512;
+  CHECK(toilet.footprint().size() == 4);
+  CHECK(toilet.frontCells().size() == 5);
 }

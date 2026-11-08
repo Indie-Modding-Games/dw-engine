@@ -173,8 +173,8 @@ struct UserSettings {
   // Generous talk range (generous_talk: true, false; game::field::Field::setGenerousTalk): a
   // confirm reaches characters and signs a little further; off when not chosen yet.
   std::optional<bool> generousTalk = std::nullopt;
-  // Extra toilets (extra_toilets: true, false; game::field::ExtraToilet): the places the game pack
-  // lists work as toilets too; off when not chosen yet.
+  // Extra toilets (extra_toilets: true, false; game::field::ExtraToilet): the toilet booths the
+  // game pack lists stand on their maps; off when not chosen yet.
   std::optional<bool> extraToilets = std::nullopt;
   // Shop extras (shop_extras: true, false; the shop document reads it): the focused item's
   // description under a shop's list, the bag's count of each item and the money a trade leaves; off
