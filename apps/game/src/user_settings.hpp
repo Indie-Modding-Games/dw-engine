@@ -160,6 +160,12 @@ struct UserSettings {
   // Fair evolution average (fair_evolution_average: true, false; rule_options.hpp): the evolution
   // quirk selection_average_carries_over off; off when not chosen yet.
   std::optional<bool> fairEvolutionAverage = std::nullopt;
+  // Fair move forgetting (fair_move_forgetting: true, false; rule_options.hpp): the partner moves
+  // quirk forget_mask_16_bits off, so forgetting a move clears only that one; off when not chosen.
+  std::optional<bool> fairMoveForgetting = std::nullopt;
+  // Fair card stock (fair_card_stock: true, false; rule_options.hpp): the card shop quirk
+  // stock_repeats off, so a day's stock shows each card once; off when not chosen yet.
+  std::optional<bool> fairCardStock = std::nullopt;
   // Shop extras (shop_extras: true, false; the shop document reads it): the focused item's
   // description under a shop's list, the bag's count of each item and the money a trade leaves; off
   // when not chosen yet.

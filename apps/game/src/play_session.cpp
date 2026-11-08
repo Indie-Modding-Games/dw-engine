@@ -1131,13 +1131,17 @@ constexpr std::array PlayOptions{
     PlayOption{.setting = ChoiceCancelClosesSetting, .saved = &UserSettings::choiceCancelCloses},
     PlayOption{.setting = FairSicknessChanceSetting, .saved = &UserSettings::fairSicknessChance},
     PlayOption{.setting = FairEvolutionAverageSetting,
-               .saved = &UserSettings::fairEvolutionAverage}};
+               .saved = &UserSettings::fairEvolutionAverage},
+    PlayOption{.setting = FairMoveForgettingSetting, .saved = &UserSettings::fairMoveForgetting},
+    PlayOption{.setting = FairCardStockSetting, .saved = &UserSettings::fairCardStock}};
 
 RuleChoices ruleChoicesOf(const UserSettings& settings) {
   const std::string difficulty = settings.difficulty.value_or(std::string{DifficultyNormal});
   return {.difficulty = difficulty == DifficultyEasy ? difficulty : std::string{DifficultyNormal},
           .fairSicknessChance = settings.fairSicknessChance.value_or(false),
-          .fairEvolutionAverage = settings.fairEvolutionAverage.value_or(false)};
+          .fairEvolutionAverage = settings.fairEvolutionAverage.value_or(false),
+          .fairMoveForgetting = settings.fairMoveForgetting.value_or(false),
+          .fairCardStock = settings.fairCardStock.value_or(false)};
 }
 
 } // namespace

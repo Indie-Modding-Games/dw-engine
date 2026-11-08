@@ -254,6 +254,28 @@ game_options = {
     help = "pause_menu.help.fair_evolution_average",
     original = false,
   },
+  -- Fair move forgetting: forgetting a move clears only that move, not another one sixteen places
+  -- after it too (off by default: the original's quirk).
+  {
+    id = "fair-move-forgetting",
+    setting = "fair_move_forgetting",
+    label = "pause_menu.fair_move_forgetting",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.fair_move_forgetting",
+    original = false,
+  },
+  -- Fair card stock: the card shop's daily stock never shows the same card twice (off by
+  -- default: the original's quirk).
+  {
+    id = "fair-card-stock",
+    setting = "fair_card_stock",
+    label = "pause_menu.fair_card_stock",
+    default = false,
+    tab = "game",
+    help = "pause_menu.help.fair_card_stock",
+    original = false,
+  },
   -- Graphics tab.
   -- Smooth motion: the characters and the camera glide between the original's frames (on by
   -- default; off draws them where each frame leaves them, as the original).

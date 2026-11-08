@@ -1385,7 +1385,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 
 | Pestaña | Filas |
 |---|---|
-| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Sesiones de gimnasio, Combates sin espera, Dificultad, Saltar evoluciones, Cancelar cierra elecciones, Enfermar justo, Media de evolución justa, Espacio tras los nombres |
+| Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Sesiones de gimnasio, Combates sin espera, Dificultad, Saltar evoluciones, Cancelar cierra elecciones, Enfermar justo, Media de evolución justa, Olvidar técnicas justo, Tienda de cartas sin repetidas, Espacio tras los nombres |
 | Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua, Reverberación |
 | Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento, Extras de la tienda, Arreglos gráficos, Herramientas de desarrollo |
@@ -1805,7 +1805,7 @@ cargando y se juega como el original, con la opción sin efecto.
 
 ## Rarezas como opciones
 
-Mejoras opcionales, apagadas por defecto (las rarezas del original se mantienen): dos filas de la pestaña Juego,
+Mejoras opcionales, apagadas por defecto (las rarezas del original se mantienen): cuatro filas de la pestaña Juego,
 guardadas en los ajustes del usuario, que apagan una rareza del ruleset de la partida con `RuleOptions`, igual que la
 dificultad.
 
@@ -1813,5 +1813,7 @@ dificultad.
 |---|---|---|---|
 | Enfermar justo («Fair sickness chance») | `fair_sickness_chance` | `care.quirks.sickness_chance_wraps` | `tickSicknessMechanics` guarda la probabilidad en un `uint8_t`: una negativa da la vuelta y la tirada siempre acierta. Con la opción una negativa no enferma |
 | Media de evolución justa («Fair evolution average») | `fair_evolution_average` | `evolution.quirks.selection_average_carries_over` | `getRookieEvolutionTarget` y `getChampionEvolutionTarget` solo reinician la suma y la cuenta de stats cuando un candidato pasa a ser el mejor; si no, se arrastran a la media del siguiente. Con la opción cada candidato se mide por la suya |
+| Olvidar técnicas justo («Fair move forgetting») | `fair_move_forgetting` | `partner_moves.quirks.forget_mask_16_bits` | `unlearnMove` (`utils2.c`) borra el bit de la técnica con una máscara de 16 bits, así que con ella se va la técnica 16 puestos más allá en su palabra de 32. Con la opción solo se olvida la elegida |
+| Tienda de cartas sin repetidas («Card stock without repeats») | `fair_card_stock` | `card_shop.quirks.stock_repeats` | `dailyPStatTrigger` compara el hueco consigo mismo, así que una carta puede ocupar dos huecos el mismo día. Con la opción la repetida se vuelve a sortear |
 
 Prueba: `rule_options_tests.cpp`.

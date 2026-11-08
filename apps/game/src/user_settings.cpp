@@ -76,6 +76,8 @@ constexpr std::string_view SkipEvolutionKey = "skip_evolution";
 constexpr std::string_view ChoiceCancelClosesKey = "choice_cancel_closes";
 constexpr std::string_view FairSicknessChanceKey = "fair_sickness_chance";
 constexpr std::string_view FairEvolutionAverageKey = "fair_evolution_average";
+constexpr std::string_view FairMoveForgettingKey = "fair_move_forgetting";
+constexpr std::string_view FairCardStockKey = "fair_card_stock";
 
 } // namespace
 
@@ -229,7 +231,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
           std::pair{SkipEvolutionKey, &UserSettings::skipEvolution},
           std::pair{ChoiceCancelClosesKey, &UserSettings::choiceCancelCloses},
           std::pair{FairSicknessChanceKey, &UserSettings::fairSicknessChance},
-          std::pair{FairEvolutionAverageKey, &UserSettings::fairEvolutionAverage}}) {
+          std::pair{FairEvolutionAverageKey, &UserSettings::fairEvolutionAverage},
+          std::pair{FairMoveForgettingKey, &UserSettings::fairMoveForgetting},
+          std::pair{FairCardStockKey, &UserSettings::fairCardStock}}) {
       if (const core::YamlNode* value = tree->find(key)) {
         settings.*flag = reader.boolean(*value);
       }
@@ -421,7 +425,9 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
         std::pair{SkipEvolutionKey, &UserSettings::skipEvolution},
         std::pair{ChoiceCancelClosesKey, &UserSettings::choiceCancelCloses},
         std::pair{FairSicknessChanceKey, &UserSettings::fairSicknessChance},
-        std::pair{FairEvolutionAverageKey, &UserSettings::fairEvolutionAverage}}) {
+        std::pair{FairEvolutionAverageKey, &UserSettings::fairEvolutionAverage},
+        std::pair{FairMoveForgettingKey, &UserSettings::fairMoveForgetting},
+        std::pair{FairCardStockKey, &UserSettings::fairCardStock}}) {
     if (const std::optional<bool>& value = settings.*flag; value) {
       root.set(std::string{key}, core::YamlNode::scalar(*value ? "true" : "false"));
     }

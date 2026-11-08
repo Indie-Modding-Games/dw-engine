@@ -229,9 +229,12 @@ difficulty.easy: "Easy"
 skip_evolution: "Skip evolutions"
 # Cancel closes choices: a cancel in a choice only closes it (off by default: the original's cancel).
 choice_cancel_closes: "Cancel closes choices"
-# Fair sickness chance and fair evolution averages: the original's quirks turned off (off by default).
+# Fair sickness chance, evolution averages, move forgetting and card stock: the original's quirks turned off
+# (off by default).
 fair_sickness_chance: "Fair sickness chance"
 fair_evolution_average: "Fair evolution average"
+fair_move_forgetting: "Fair move forgetting"
+fair_card_stock: "Card stock without repeats"
 # {tab} is the tab's name.
 reset_question: "Reset the {tab} options?"
 reset_note: "Window mode, look, language and font stay."
@@ -255,6 +258,8 @@ help.skip_evolution: "Confirm or cancel ends an evolution's scene at once. The n
 help.choice_cancel_closes: "Cancelling a choice only closes it. In the original some choices run their first answer."
 help.fair_sickness_chance: "A sickness chance below zero means no sickness. In the original it always makes your partner sick."
 help.fair_evolution_average: "Each evolution candidate is weighed by its own stats, not by sums left over from the one before."
+help.fair_move_forgetting: "Forgetting a move removes only that move. In the original it can take another move with it."
+help.fair_card_stock: "The card shop never offers the same card twice in a day. In the original it can."
 help.status_extras: "The status page shows tiredness, mistakes, battles, waking hours, lifetime and evolution."
 help.display_mode: "Play in a window or full screen."
 help.vsync: "Syncs the frames with the display so the picture does not tear."

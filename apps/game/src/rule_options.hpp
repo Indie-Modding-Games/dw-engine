@@ -30,6 +30,8 @@ inline constexpr std::string_view DifficultySection = "difficulty";
 // The original's quirks the player may turn off (true or false; on turns the quirk off).
 inline constexpr std::string_view FairSicknessChanceSetting = "fair_sickness_chance";
 inline constexpr std::string_view FairEvolutionAverageSetting = "fair_evolution_average";
+inline constexpr std::string_view FairMoveForgettingSetting = "fair_move_forgetting";
+inline constexpr std::string_view FairCardStockSetting = "fair_card_stock";
 
 // A change of a ruleset value: its section, its dotted path ("hunger.window_minutes") and either
 // the new value (a YAML text) or a percent of the ruleset's own whole number, rounded down.
@@ -46,6 +48,10 @@ struct RuleChoices {
   bool fairSicknessChance = false;
   // evolution.quirks.selection_average_carries_over off: each candidate's average is its own.
   bool fairEvolutionAverage = false;
+  // partner_moves.quirks.forget_mask_16_bits off: forgetting a move clears only that move.
+  bool fairMoveForgetting = false;
+  // card_shop.quirks.stock_repeats off: the card shop's daily stock never shows a card twice.
+  bool fairCardStock = false;
 
   friend bool operator==(const RuleChoices&, const RuleChoices&) = default;
 };

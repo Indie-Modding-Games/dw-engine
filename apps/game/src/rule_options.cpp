@@ -25,11 +25,15 @@ constexpr std::string_view ValueKey = "value";
 constexpr std::string_view PercentKey = "percent";
 constexpr std::int64_t WholePercent = 100;
 
-// The quirks the options turn off (care.yaml, evolution.yaml).
+// The quirks the options turn off (care.yaml, evolution.yaml, partner_moves.yaml, card_shop.yaml).
 constexpr std::string_view CareSection = "care";
 constexpr std::string_view SicknessWrapPath = "quirks.sickness_chance_wraps";
 constexpr std::string_view EvolutionSection = "evolution";
 constexpr std::string_view AverageCarryPath = "quirks.selection_average_carries_over";
+constexpr std::string_view MovesSection = "partner_moves";
+constexpr std::string_view ForgetMaskPath = "quirks.forget_mask_16_bits";
+constexpr std::string_view CardShopSection = "card_shop";
+constexpr std::string_view StockRepeatsPath = "quirks.stock_repeats";
 constexpr std::string_view QuirkOff = "false";
 
 // A value as one text, so two values compare whatever their spelling ("false", false, [1, 2]).
@@ -122,6 +126,16 @@ core::Result<std::vector<RuleChange>> ruleChanges(const ruleset::Ruleset& rules,
   if (choices.fairEvolutionAverage) {
     changes.push_back({.section = std::string{EvolutionSection},
                        .path = std::string{AverageCarryPath},
+                       .value = std::string{QuirkOff}});
+  }
+  if (choices.fairMoveForgetting) {
+    changes.push_back({.section = std::string{MovesSection},
+                       .path = std::string{ForgetMaskPath},
+                       .value = std::string{QuirkOff}});
+  }
+  if (choices.fairCardStock) {
+    changes.push_back({.section = std::string{CardShopSection},
+                       .path = std::string{StockRepeatsPath},
                        .value = std::string{QuirkOff}});
   }
   auto difficulty = difficultyChanges(rules, choices.difficulty);
