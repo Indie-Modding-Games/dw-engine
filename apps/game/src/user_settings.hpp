@@ -160,6 +160,17 @@ struct UserSettings {
   // Fair evolution average (fair_evolution_average: true, false; rule_options.hpp): the evolution
   // quirk selection_average_carries_over off; off when not chosen yet.
   std::optional<bool> fairEvolutionAverage = std::nullopt;
+  // Shop extras (shop_extras: true, false; the shop document reads it): the focused item's
+  // description under a shop's list, the bag's count of each item and the money a trade leaves; off
+  // when not chosen yet.
+  std::optional<bool> shopExtras = std::nullopt;
+  // Art fixes (art_fixes: true, false): the original skin draws the pictures the original reads
+  // from the wrong part of its textures (the partner card's happiness label) where they are; off,
+  // as the original, when not chosen yet.
+  std::optional<bool> artFixes = std::nullopt;
+  // Developer tools (dev_tools: true, false; dev_tools.hpp): the debug console, the developer menu
+  // and the map overlay; when not chosen yet, on in a development build and off in a package.
+  std::optional<bool> devTools = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

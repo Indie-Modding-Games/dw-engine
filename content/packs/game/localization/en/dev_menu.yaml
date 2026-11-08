@@ -1,0 +1,28 @@
+# The developer menu (F2 with the developer tools on; apps/game/src/dev_menu_screen.hpp): runs console commands to
+# test the game.
+title: "Developer menu"
+items: "Items"
+money: "Money"
+clock: "Clock speed"
+stats: "Stats"
+care: "Care"
+evolve: "Evolve"
+warp: "Warp to a map"
+save: "Save now"
+close: "Close"
+# How many of an item each entry of the list gives, {amount}.
+amount: "Amount: {amount}"
+# Sets the money to {bits}.
+money_set: "Money to {bits}"
+# The game clock at {speed} times its speed.
+clock_speed: "Clock x{speed}"
+# Offense, defense, speed and brains to {value}; HP and MP to {life}.
+stats_set: "Stats to {value} (HP and MP {life})"
+happiness_full: "Full happiness"
+discipline_full: "Full discipline"
+rested: "No tiredness"
+no_mistakes: "No care mistakes"
+sleep: "Sleep"
+toilet: "Go to the toilet"
+# What the menu did last, {what}.
+done: "Done: {what}"

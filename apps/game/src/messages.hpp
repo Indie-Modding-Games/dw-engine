@@ -124,6 +124,9 @@ inline constexpr std::string_view BadNpcList = "'{}' is not a list of NPC number
 inline constexpr std::string_view BattleAlreadyRunning = "a battle is already under way";
 inline constexpr std::string_view BattleStartFailed = "game: battle: {}";
 inline constexpr std::string_view PlaceFailed = "game: place: {}";
+inline constexpr std::string_view WarpFailed = "game: warp: {}";
+inline constexpr std::string_view WarpUsage =
+    "'{}': expected '<map> [exit]' with a map of the packs";
 inline constexpr std::string_view StorySetFailed = "game: story_set: {}";
 inline constexpr std::string_view PartnerSetFailed = "game: partner_set: {}";
 inline constexpr std::string_view LearnMoveFailed = "game: learn_move: {}";

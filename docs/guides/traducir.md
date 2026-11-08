@@ -124,3 +124,29 @@ claves de `localization/<idioma>/signs.yaml` del paquete `game`, como el resto d
 dónde y cómo se dibujan, que va en un overlay por mapa. Un cartel que el original ya tiene en inglés y solo hace falta
 en español va en `content/packs/es-translation/signs/es/<mapa>.yaml`. Cómo encontrar un cartel y escribir su
 overlay: [guía de carteles](carteles.md).
+
+## Un idioma nuevo
+
+El juego está preparado para más idiomas que el español y el inglés, pero un idioma solo se publica cuando hay una
+traducción hecha por una persona: no se traduce nada a máquina. Quien traduzca a un idioma nuevo (código `fr`, por
+ejemplo) necesita:
+
+1. **Los textos del motor**: una carpeta `content/packs/game/localization/<código>/` con una copia de cada tabla de
+   `localization/en/` (`common.yaml`, `pause_menu.yaml`, `shop.yaml`, `first_run.yaml`...) con las mismas claves
+   y los argumentos `{nombre}` tal cual. Una clave que falta se muestra en el idioma de reserva.
+2. **El nombre del idioma**: `name` en su `language.yaml`, y `native.<código>` y `flag.<código>` en el
+   `language.yaml` de **todos** los idiomas (la caja de idiomas los lista desde ahí).
+3. **La bandera**: su imagen en `ui/flags/<código>`, que genera `scripts/art/make_flags.py`.
+4. **Los textos del original**: un paquete delta como `content/packs/es-translation` con `text/<código>/`, su
+   `.sources.lock` y el mismo flujo de arriba (`scripts/translation.sh`); sin él, el diálogo del juego sale en inglés.
+5. **Los carteles**: las claves de `localization/<código>/signs.yaml` y, si hace falta, overlays por mapa
+   ([guía de carteles](carteles.md)).
+
+En el primer arranque, la pantalla del disco pregunta el idioma si hay más de uno: los lista desde las carpetas de
+`localization/` que tienen `first_run.yaml`, así que un idioma nuevo aparece en cuanto trae esa tabla. Con un solo
+idioma no pregunta.
+
+La fuente clásica compone las letras con acento agudo, grave o circunflejo, diéresis, cedilla y virgulilla, los
+signos `¡ ¿ « » ‹ › „ ‚ ß º ª … ·` y las ligaduras `æ œ` ([Textos y fuente](../formats/textos.md#fuente)). Lo que no
+compone (Æ, Œ, otros alfabetos) sale con la fuente de reserva: se ve, pero con otro estilo. Un idioma con
+alfabeto propio necesita además glifos o una fuente nueva; eso no está hecho.

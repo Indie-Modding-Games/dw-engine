@@ -33,8 +33,18 @@ struct GameToggle {
 // Every such option, in the order of the options page.
 [[nodiscard]] std::span<const GameToggle> gameToggles();
 
-// Publishes each option's saved value (or its fallback), so the page shows it before any game.
+// The on/off options the UI applies by itself, at the title and in a game alike (the documents read
+// their settings): shop extras, the art fixes and the developer tools.
+[[nodiscard]] std::span<const GameToggle> uiToggles();
+
+// Publishes each option's saved value (or its fallback), so the page shows it before any game; the
+// UI's own toggles too.
 void publishGameToggles(ui::Ui& ui, const UserSettings& settings);
+
+// Takes one of the UI's own toggles' commands at any time: keeps the value in the settings, saves
+// them and publishes it. False for any other command.
+bool changeUiToggle(const ui::UiCommand& command, ui::Ui& ui, UserSettings& settings,
+                    const std::optional<std::filesystem::path>& settingsFile);
 
 // Takes one of those options' commands while no game runs: keeps the value in the settings, saves
 // them to settingsFile (nothing for runs that must not touch them) and publishes it; the next game

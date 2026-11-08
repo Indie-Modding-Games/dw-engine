@@ -35,6 +35,7 @@
 #include "chart_requirements.hpp"
 #include "curling_screen.hpp"
 #include "death_scene.hpp"
+#include "dev_menu_screen.hpp"
 #include "egg_box_screen.hpp"
 #include "evolution_scene.hpp"
 #include "feed_scene.hpp"
@@ -123,6 +124,10 @@ inline constexpr std::string_view SkipEvolutionSetting = "skip_evolution";
 // game::story::Dialogue::setCancelClosesChoice): a cancel in a script's choice that has no end
 // marker ends the script instead of running on into the first option.
 inline constexpr std::string_view ChoiceCancelClosesSetting = "choice_cancel_closes";
+// The console's and the developer menu's warp("<map> [exit]"): the player goes to that map, at that
+// exit (0 when not given), as a script's map change takes him (FieldScene::startScriptedMapChange),
+// whatever the story. A debug aid.
+inline constexpr std::string_view WarpCommand = "warp";
 // The weather (an engine improvement, on unless turned off): a UI setting and the options'
 // command with the same name (true or false), on the title screen and in the game.
 inline constexpr std::string_view WeatherSetting = "weather";
@@ -177,6 +182,9 @@ struct SessionCommands {
   std::vector<std::string> partnerWrites;
   // learn_move("<move>") commands, in order (partner_events.hpp).
   std::vector<std::string> lessons;
+  // warp("<map> [exit]"): the player goes to that map's exit as a script's map change takes him
+  // (WarpCommand).
+  std::optional<std::string> warp;
 
   void bind(script::ScriptVm& scripts);
   // Forgets what was queued with no game to apply it to, and says so; a route that asked for a save
@@ -267,6 +275,10 @@ public:
   // Whether the menu button belongs to the game rather than opening the menu: a naming box takes
   // it, and a gym course takes it as the original's cancel.
   [[nodiscard]] bool holdsMenu() const;
+  // F2 with the developer tools on: opens the developer menu (dev_menu_screen.hpp) over the field,
+  // or closes it. Nothing while another menu or screen is up.
+  void toggleDevMenu();
+  [[nodiscard]] bool devMenuOpen() const { return devMenu_.isOpen(); }
   // Why the game menu stays shut now (player_menu_gate.hpp: a fade, a script, the dialogue, a
   // battle or scene, the player held), or empty when Tab or the HUD's button opens it.
   [[nodiscard]] std::string_view menuShutBy() const;
@@ -395,6 +407,8 @@ private:
   // Shows the story lock's message in the dialog, unless the dialog is on screen already.
   // Opens the island map over the field, with the maps the player has visited.
   void openWorldMap();
+  // warp("<map> [exit]"): a map change to that map's exit, as a script's.
+  void warpTo(std::string_view where);
   void showLockNotice(const std::string& textKey);
   // The pause menu's quick save (docs/architecture/guardar-y-cargar.md, 3.8): writes the game to
   // its home slot, or the first empty manual slot for a playthrough that never saved; a notice
@@ -443,6 +457,7 @@ private:
   EggBoxScreen eggBoxScreen_;
   GymScreen gymScreen_;
   ShopScreen shopScreen_;
+  DevMenuScreen devMenu_;
   ItemKeeperScreen itemKeeperScreen_;
   DiscardScreen discardScreen_;
   JukeboxScreen jukeboxScreen_;

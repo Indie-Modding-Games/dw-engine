@@ -1,0 +1,15 @@
+/* How the developer menu behaves whatever the skin: its entries wrap around. The look is the pause menu's (the skins'
+   pause_menu style). */
+
+#entry-1 { nav-up: #back; }
+#back { nav-down: #entry-1; }
+#done { white-space: pre-wrap; }
+
+/* A list's page and its turns share one row, so a page of eight fits the window in both looks. */
+#pages { display: block; }
+#page, #pages .page-turn {
+	display: inline-block;
+	width: auto;
+	margin-right: 24dp;
+}
+#page.hidden, #pages .page-turn.hidden { display: none; }

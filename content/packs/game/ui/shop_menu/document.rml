@@ -12,6 +12,7 @@
 				<div class="bits-row" id="bits-label"></div>
 				<div class="bits-row" id="bits-value"></div>
 			</div>
+			<div id="description" class="original-box original-look hidden"><span id="description-text"></span></div>
 		</div>
 		<div id="panel">
 			<p id="line"></p>
@@ -24,19 +25,20 @@
 			</div>
 
 			<div id="list">
-				<button id="row-1" class="row" onclick="pick(1)"></button>
-				<button id="row-2" class="row" onclick="pick(2)"></button>
-				<button id="row-3" class="row" onclick="pick(3)"></button>
-				<button id="row-4" class="row" onclick="pick(4)"></button>
-				<button id="row-5" class="row" onclick="pick(5)"></button>
-				<button id="row-6" class="row" onclick="pick(6)"></button>
-				<button id="row-7" class="row" onclick="pick(7)"></button>
-				<button id="row-8" class="row" onclick="pick(8)"></button>
+				<button id="row-1" class="row" onclick="pick(1)" onfocus="row_focus(document, 1)"></button>
+				<button id="row-2" class="row" onclick="pick(2)" onfocus="row_focus(document, 2)"></button>
+				<button id="row-3" class="row" onclick="pick(3)" onfocus="row_focus(document, 3)"></button>
+				<button id="row-4" class="row" onclick="pick(4)" onfocus="row_focus(document, 4)"></button>
+				<button id="row-5" class="row" onclick="pick(5)" onfocus="row_focus(document, 5)"></button>
+				<button id="row-6" class="row" onclick="pick(6)" onfocus="row_focus(document, 6)"></button>
+				<button id="row-7" class="row" onclick="pick(7)" onfocus="row_focus(document, 7)"></button>
+				<button id="row-8" class="row" onclick="pick(8)" onfocus="row_focus(document, 8)"></button>
 				<p id="empty" text-key="shop.empty"></p>
 				<p id="page"></p>
 				<button id="previous" class="page-turn" onclick="turn(document, -1)" text-key="shop.previous"></button>
 				<button id="next-page" class="page-turn" onclick="turn(document, 1)" text-key="shop.next_page"></button>
-				<button id="list-back" class="back" onclick="ui.send('shop_back', true)" text-key="shop.back"></button>
+				<button id="list-back" class="back" onclick="ui.send('shop_back', true)" onfocus="row_focus(document, 0)" text-key="shop.back"></button>
+				<p id="list-description" class="hidden"></p>
 			</div>
 
 			<div id="amount">
@@ -44,6 +46,8 @@
 				<p id="amount-price"></p>
 				<p id="amount-value"></p>
 				<p id="amount-total"></p>
+				<p id="amount-owned" class="hidden"></p>
+				<p id="amount-after" class="hidden"></p>
 				<button id="amount-less" onclick="ui.send('shop_amount', -1)" text-key="shop.less"></button>
 				<button id="amount-more" onclick="ui.send('shop_amount', 1)" text-key="shop.more"></button>
 				<button id="amount-max" onclick="ui.send('shop_amount_max', true)" text-key="shop.max"></button>

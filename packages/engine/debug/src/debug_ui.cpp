@@ -181,6 +181,10 @@ void DebugUi::mountContent(const std::filesystem::path& folder) {
   impl_->assets->mount(folder);
 }
 
+bool DebugUi::visible() const {
+  return impl_->visible;
+}
+
 void DebugUi::toggle() {
   impl_->visible = !impl_->visible;
   impl_->scrollToBottom = true;

@@ -15,6 +15,8 @@ TEST_CASE("partner_set reads a value's name and an amount") {
   CHECK(partnerWriteFromText("hours 120")->kind == PartnerWrite::Kind::Hours);
   CHECK(partnerWriteFromText("discipline 80")->kind == PartnerWrite::Kind::Discipline);
   CHECK(partnerWriteFromText("poop 1")->kind == PartnerWrite::Kind::Poop);
+  CHECK(partnerWriteFromText("happiness 100")->kind == PartnerWrite::Kind::Happiness);
+  CHECK(partnerWriteFromText("tiredness 0")->kind == PartnerWrite::Kind::Tiredness);
   CHECK_FALSE(partnerWriteFromText("offense").has_value());
   CHECK_FALSE(partnerWriteFromText("luck 3").has_value());
   CHECK_FALSE(partnerWriteFromText("hp -1").has_value());

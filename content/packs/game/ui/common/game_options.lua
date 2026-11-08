@@ -537,6 +537,39 @@ game_options = {
     help = "pause_menu.help.name_spacing",
     original = false,
   },
+  -- Shop extras: the focused item's description under a shop's list, how many of each the bag
+  -- holds and the money a trade leaves (off by default: the original's shop shows a description
+  -- only when Pause asks for it). The shop document reads the setting itself.
+  {
+    id = "shop-extras",
+    setting = "shop_extras",
+    label = "pause_menu.shop_extras",
+    default = false,
+    tab = "interface",
+    help = "pause_menu.help.shop_extras",
+    original = false,
+  },
+  -- Art fixes: the original look draws right what the original reads from the wrong part of its
+  -- textures, the status page's happiness label (off by default, as the original).
+  {
+    id = "art-fixes",
+    setting = "art_fixes",
+    label = "pause_menu.art_fixes",
+    default = false,
+    tab = "interface",
+    help = "pause_menu.help.art_fixes",
+    original = false,
+  },
+  -- Developer tools: the debug console, the developer menu and the map overlay. Its default is the
+  -- game's (on in a development build, off in a package), which it publishes at start.
+  {
+    id = "dev-tools",
+    setting = "dev_tools",
+    label = "pause_menu.dev_tools",
+    default = false,
+    tab = "interface",
+    help = "pause_menu.help.dev_tools",
+  },
 }
 
 -- The option's current value: what the game published, or its default.

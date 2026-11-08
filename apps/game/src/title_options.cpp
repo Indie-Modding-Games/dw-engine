@@ -7,6 +7,8 @@
 #include <string>
 #include <variant>
 
+#include "dev_tools.hpp"
+
 namespace dwe::app {
 namespace {
 
@@ -65,16 +67,56 @@ constexpr std::array Toggles{
     GameToggle{.setting = "name_spacing", .saved = &UserSettings::nameSpacing, .fallback = true},
 };
 
+// The options the UI applies by itself (the documents read their settings), at the title and in a
+// game alike: shop extras, the art fixes and the developer tools.
+constexpr std::array UiToggles{
+    GameToggle{.setting = "shop_extras", .saved = &UserSettings::shopExtras, .fallback = false},
+    GameToggle{.setting = "art_fixes", .saved = &UserSettings::artFixes, .fallback = false},
+    GameToggle{
+        .setting = DevToolsSetting, .saved = &UserSettings::devTools, .fallback = DevToolsDefault},
+};
+
+// Keeps a toggle's value in the settings, saves them and publishes it.
+void changeToggle(const GameToggle& toggle, const ui::UiCommand& command, ui::Ui& ui,
+                  UserSettings& settings,
+                  const std::optional<std::filesystem::path>& settingsFile) {
+  std::optional<bool>& saved = settings.*toggle.saved;
+  if (const bool* on = std::get_if<bool>(&command.value)) {
+    saved = *on;
+    if (settingsFile) {
+      saveUserSettings(*settingsFile, settings);
+    }
+    core::logInfo("game: {} = {}", command.name, *on);
+  }
+  ui.setSetting(toggle.setting, saved.value_or(toggle.fallback));
+}
+
 } // namespace
 
 std::span<const GameToggle> gameToggles() {
   return Toggles;
 }
 
+std::span<const GameToggle> uiToggles() {
+  return UiToggles;
+}
+
 void publishGameToggles(ui::Ui& ui, const UserSettings& settings) {
-  for (const GameToggle& toggle : Toggles) {
-    ui.setSetting(toggle.setting, (settings.*toggle.saved).value_or(toggle.fallback));
+  for (const auto& toggles : {std::span<const GameToggle>{Toggles}, uiToggles()}) {
+    for (const GameToggle& toggle : toggles) {
+      ui.setSetting(toggle.setting, (settings.*toggle.saved).value_or(toggle.fallback));
+    }
   }
+}
+
+bool changeUiToggle(const ui::UiCommand& command, ui::Ui& ui, UserSettings& settings,
+                    const std::optional<std::filesystem::path>& settingsFile) {
+  const auto toggle = std::ranges::find(UiToggles, command.name, &GameToggle::setting);
+  if (toggle == UiToggles.end()) {
+    return false;
+  }
+  changeToggle(*toggle, command, ui, settings, settingsFile);
+  return true;
 }
 
 bool changeGameToggle(const ui::UiCommand& command, ui::Ui& ui, UserSettings& settings,
@@ -83,15 +125,7 @@ bool changeGameToggle(const ui::UiCommand& command, ui::Ui& ui, UserSettings& se
   if (toggle == Toggles.end()) {
     return false;
   }
-  std::optional<bool>& saved = settings.*toggle->saved;
-  if (const bool* on = std::get_if<bool>(&command.value)) {
-    saved = *on;
-    if (settingsFile) {
-      saveUserSettings(*settingsFile, settings);
-    }
-    core::logInfo("game: {} = {} on the title screen", command.name, *on);
-  }
-  ui.setSetting(toggle->setting, saved.value_or(toggle->fallback));
+  changeToggle(*toggle, command, ui, settings, settingsFile);
   return true;
 }
 

@@ -127,6 +127,8 @@ public:
   [[nodiscard]] std::int32_t maxPurchase(GameSession& session, assets::ItemHandle item) const;
   [[nodiscard]] std::int32_t money() const;
   [[nodiscard]] std::int32_t maxMoney() const;
+  // How many of an item the bag holds, all its stacks.
+  [[nodiscard]] std::int32_t owned(assets::ItemHandle item) const;
   [[nodiscard]] const assets::ItemTable& items() const;
 
   core::Result<game::inventory::Purchase> buy(GameSession& session, assets::ItemHandle item,

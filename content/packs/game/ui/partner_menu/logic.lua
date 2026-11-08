@@ -909,7 +909,14 @@ local function fit_to_window(document)
 end
 
 -- inventory.c: initializeInventoryUI: the bag opens with no box and no move under way.
+-- Art fixes (the art_fixes setting): the happiness label's picture from where the word is in the
+-- texture, instead of the original's columns, which cut its last letter and show a stray mark.
+local function draw_art_fixes(document)
+  document:get("status-happiness-name"):set_class("fixed", ui.setting("art_fixes") == true)
+end
+
 function on_show(document)
+  draw_art_fixes(document)
   panel_enter.start(document)
   status_condition_bob = nil
   tech_info_focus = nil
@@ -939,6 +946,10 @@ function on_hide(document)
 end
 
 function on_setting(document, name)
+  if name == "art_fixes" then
+    draw_art_fixes(document)
+    return
+  end
   -- tickDigimonMenu: the square opens the help page from the change view, with playSound(0, 3).
   if name == "partner_menu.extra_presses" then
     if editing_tech and not tech_help_open and original_skin() and not original_box.busy() then

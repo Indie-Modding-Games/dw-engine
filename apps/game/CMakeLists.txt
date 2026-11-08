@@ -120,6 +120,8 @@ dwe_add_app(game
         src/item_keeper_screen.cpp
         src/jukebox_screen.cpp
         src/shop_screen.cpp
+        src/dev_menu_screen.cpp
+        src/dev_tools.cpp
         src/sleep_screen.cpp
         src/sleep_steps.cpp
         src/state_trace.cpp
@@ -203,7 +205,10 @@ endif()
 target_compile_definitions(game PRIVATE DWE_GAME_VERSION="${PROJECT_VERSION}")
 # A development build reads from the source tree, so editing reloads live; a package build (DWE_PACKAGE) names no
 # folder of the build machine: it finds the team's packs next to the executable (content::teamPacksFolder) and its
-# bug reports name DWE_BUILD_COMMIT.
+# bug reports name DWE_BUILD_COMMIT. A package also starts with the developer tools off (dev_tools.hpp).
+if(DWE_PACKAGE)
+    target_compile_definitions(game PRIVATE DWE_PACKAGE)
+endif()
 if(NOT DWE_PACKAGE)
     # A bug report names the commit of the source the game was built from (git describe in this folder).
     target_compile_definitions(game PRIVATE DWE_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
@@ -220,7 +225,7 @@ if(BUILD_TESTING)
     add_executable(dwe_game_tests ${game_test_sources} src/battle_glide.cpp src/battle_motion.cpp src/battle_trigger.cpp src/bug_report.cpp src/chibi_style.cpp src/chart_requirements.cpp src/control_json.cpp src/control_log.cpp src/control_socket.cpp src/curling_recruit_bar.cpp
                                   src/evolution_effects.cpp src/field_effects.cpp src/field_mist.cpp src/field_numbers.cpp src/flame_texture.cpp
                                   src/death_effects.cpp src/ending_effects.cpp
-                                  src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/money_box_screen.cpp src/hd_scenery_setting.cpp src/map_debug_overlay.cpp src/minimap_enemies.cpp src/minimap_items.cpp src/minimap_setting.cpp src/display_settings.cpp
+                                  src/device_names.cpp src/dev_menu_screen.cpp src/dev_tools.cpp src/discard_screen.cpp src/game_saves.cpp src/money_box_screen.cpp src/hd_scenery_setting.cpp src/map_debug_overlay.cpp src/minimap_enemies.cpp src/minimap_items.cpp src/minimap_setting.cpp src/display_settings.cpp
                                   src/pause_box.cpp src/place_command.cpp src/player_chart.cpp src/player_city.cpp src/partner_set_command.cpp src/story_set_command.cpp src/story_state_json.cpp src/shop_job_bar.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
                                   src/save_indicator.cpp src/save_machine_flow.cpp src/award_screen.cpp src/sleep_steps.cpp src/slot_description.cpp src/state_trace.cpp src/story_text_rows.cpp src/ui_skin_setting.cpp src/user_settings.cpp src/walk_control.cpp src/battle_speed.cpp src/gym_batch.cpp src/rule_options.cpp src/world_map.cpp
                                   src/graphics_options.cpp src/weather_particles.cpp src/volume_setting.cpp src/sprite_characters.cpp

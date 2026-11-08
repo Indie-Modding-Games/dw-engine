@@ -14,9 +14,10 @@
 
 // The letters and signs the original's bitmap font lacks, composed in its own pixel style: an
 // accented letter is the font's base letter with a mark drawn over (or under) it, ¡ and ¿ are its
-// ! and ? turned over, and a few signs («, », º, ª, …, ·) are small drawings of our own. Nothing
-// here comes from the game's data: the marks and drawings are written below, and the base glyphs
-// are read from the atlas the player's copy gives.
+// ! and ? turned over, a few signs («, », º, ª, …, ·, ß, the low and single quotes) are small
+// drawings of our own, and the small ligatures (æ, œ) join two of its letters on a shared stroke.
+// Nothing here comes from the game's data: the marks and drawings are written below, and the base
+// glyphs are read from the atlas the player's copy gives.
 namespace dwe::ui {
 namespace {
 
@@ -221,6 +222,15 @@ constexpr std::array<std::string_view, 6> FeminineOrdinal{".##.", "#..#", "#.##"
                                                           ".#.#", "....", "####"};
 constexpr std::array<std::string_view, 2> Ellipsis{".##..##..##", ".##..##..##"};
 constexpr std::array<std::string_view, 2> MiddleDot{"..##", "..##"};
+// The German sharp s, as tall as the font's b and h (rows 0 to 8) and as wide as their bowls.
+constexpr std::array<std::string_view, 9> SharpS{".####.", "#....#", "#....#", "#...#.", "#.##..",
+                                                 "#...#.", "#....#", "#....#", "#.###."};
+// The low quotes (German and others) sit where the comma does; the single guillemets are the
+// double ones' halves.
+constexpr std::array<std::string_view, 3> LowDoubleQuote{"..#.#", "..#.#", ".#.#."};
+constexpr std::array<std::string_view, 3> LowSingleQuote{"..#", "..#", ".#."};
+constexpr std::array<std::string_view, 5> LeftSingleGuillemet{"..#", ".#.", "#..", ".#.", "..#"};
+constexpr std::array<std::string_view, 5> RightSingleGuillemet{"#..", ".#.", "..#", ".#.", "#.."};
 
 // In rows of the original's 11-row cells: the guillemets sit on the small letters' middle, the
 // ordinals at the capitals' top, the dots where the font's full stop has its own.
@@ -228,6 +238,10 @@ constexpr int GuillemetTop = 3;
 constexpr int OrdinalTop = 0;
 constexpr int StopTop = 7;
 constexpr int MiddleDotTop = 4;
+constexpr int TallTop = 0;
+constexpr int LowQuoteTop = 7;
+constexpr int LetterAdvance = 8;
+constexpr int SingleGuillemetAdvance = 5;
 constexpr int SmallAdvance = 8;
 constexpr int OrdinalAdvance = 6;
 constexpr int EllipsisAdvance = 12;
@@ -248,6 +262,34 @@ constexpr std::array DrawnSigns{
           .advance = OrdinalAdvance},
     Drawn{.character = U'…', .drawing = Ellipsis, .top = StopTop, .advance = EllipsisAdvance},
     Drawn{.character = U'·', .drawing = MiddleDot, .top = MiddleDotTop, .advance = DotAdvance},
+    Drawn{.character = U'ß', .drawing = SharpS, .top = TallTop, .advance = LetterAdvance},
+    Drawn{
+        .character = U'„', .drawing = LowDoubleQuote, .top = LowQuoteTop, .advance = LetterAdvance},
+    Drawn{.character = U'‚', .drawing = LowSingleQuote, .top = LowQuoteTop, .advance = DotAdvance},
+    Drawn{.character = U'‹',
+          .drawing = LeftSingleGuillemet,
+          .top = GuillemetTop,
+          .advance = SingleGuillemetAdvance},
+    Drawn{.character = U'›',
+          .drawing = RightSingleGuillemet,
+          .top = GuillemetTop,
+          .advance = SingleGuillemetAdvance},
+};
+
+// The ligatures made of two of the font's letters, the second drawn from the first's last inked
+// column on, so the two share that stroke. One wider than the cell is left to the fallback font
+// (the capitals Æ and Œ in the original's cells).
+struct Joined {
+  char32_t character;
+  char32_t first;
+  char32_t second;
+};
+
+constexpr std::array JoinedLetters{
+    Joined{.character = U'æ', .first = U'a', .second = U'e'},
+    Joined{.character = U'œ', .first = U'o', .second = U'e'},
+    Joined{.character = U'Æ', .first = U'A', .second = U'E'},
+    Joined{.character = U'Œ', .first = U'O', .second = U'E'},
 };
 
 // Characters drawn with another one's glyph: the curly quotes the original only has closing, and
@@ -381,6 +423,32 @@ Cell accented(Cell cell, const Mark& mark, int advance) {
   return cell;
 }
 
+// Two letters on one shared column, or nothing when they do not fit in the cell. The advance keeps
+// the gap the first letter leaves after its ink.
+std::optional<std::pair<Cell, int>> joined(const Cell& first, int firstAdvance,
+                                           const Cell& second) {
+  const auto left = inkBox(first);
+  const auto right = inkBox(second);
+  if (!left || !right) {
+    return std::nullopt;
+  }
+  const int shift = left->right - right->left;
+  const int inkRight = right->right + shift;
+  if (inkRight >= first.width()) {
+    return std::nullopt;
+  }
+  Cell result = first;
+  for (int y = 0; y < second.height(); ++y) {
+    for (int x = right->left; x <= right->right; ++x) {
+      if (second.at(x, y)) {
+        result.set(x + shift, y);
+      }
+    }
+  }
+  const int gap = std::max(1, firstAdvance - 1 - left->right);
+  return std::pair{std::move(result), std::min(first.width(), inkRight + 1 + gap)};
+}
+
 Cell turned(const Cell& cell, bool mirrored) {
   Cell result{cell.width(), cell.height()};
   const auto box = inkBox(cell);
@@ -428,6 +496,15 @@ void BitmapFont::addComposedGlyphs() {
     const BitmapGlyph* base = glyph(sign.base);
     if (base != nullptr && missing(sign.character)) {
       added.push_back({sign.character, {turned(readCell(*base), sign.mirrored), base->advance}});
+    }
+  }
+  for (const Joined& letter : JoinedLetters) {
+    const BitmapGlyph* first = glyph(letter.first);
+    const BitmapGlyph* second = glyph(letter.second);
+    if (first != nullptr && second != nullptr && missing(letter.character)) {
+      if (auto both = joined(readCell(*first), first->advance, readCell(*second))) {
+        added.push_back({letter.character, std::move(*both)});
+      }
     }
   }
   for (const Drawn& sign : DrawnSigns) {

@@ -65,10 +65,10 @@ constexpr std::array<std::string_view, 14> GraphicsRows{
     "weather",           "seasons"};
 constexpr std::array<std::string_view, 4> SoundRows{"music-volume", "effects-volume",
                                                     "continuous-music", "reverb"};
-constexpr std::array<std::string_view, 11> InterfaceRows{
-    "ui-skin",          "ui-scale",          "language",        "text-font",
-    "translated-signs", "show-minimap",      "minimap-enemies", "digital-time",
-    "save-notice",      "need-bubble-stack", "shop-job-bar"};
+constexpr std::array<std::string_view, 14> InterfaceRows{
+    "ui-skin",      "ui-scale",        "language",     "text-font",   "translated-signs",
+    "show-minimap", "minimap-enemies", "digital-time", "save-notice", "need-bubble-stack",
+    "shop-job-bar", "shop-extras",     "art-fixes",    "dev-tools"};
 const std::array<Tab, 4> Tabs{{{.id = "game", .rows = GameRows},
                                {.id = "graphics", .rows = GraphicsRows},
                                {.id = "sound", .rows = SoundRows},

@@ -1087,6 +1087,62 @@ que llega como ajuste de la UI desde `PlaySession` (`NameSpacingSetting`, `story
 |---|---|---|---|---|
 | Nombre insertado pegado a la palabra siguiente | `script_textbox.c: showTextbox` copia el nombre tal cual (códigos 5, 6, 7, 8, 9, 0x11 y 0x12; `getSpeakerName`, `DIGIMON_NAME`, `MOVE_NAMES`, `ITEM_NAME`, `BGM_TRACK_NAMES`, `TOURNAMENT_NAMES`) y `drawString2` no añade nada; diez textos del original no llevan espacio tras el nombre (MAPHEAD 0x5cbe, el nombre de una técnica y la palabra siguiente; 0x5b94, 0x4ac4 tras `{partner}`; cinco de las cartas y dos del guion 132 tras el nombre de una especie). Medido: los bytes del guion en la RAM (`MAPHEAD_SCRIPT_PTR` + 0x5cbe) son `08 F3` y luego la primera letra de la palabra, sin espacio; con `SCRIPT_POINTER` llevado a ese texto en un cuadro abierto (estado `save_machine_intro`) el juego dibuja el nombre y la palabra juntos | Cada nombre que rellena una etiqueta (`StoryTextbox::pageText`, `TournamentScheduleScreen`) acaba en la marca `NameEnd`; `appendPageRows` la quita y, con la opción, pone un espacio si lo siguiente (tras las etiquetas de color) es una letra o una cifra; ante un signo, un espacio, un salto de línea o el final de la página no pone nada. Sin la opción, el texto pegado como en el original | «a name the text runs into the next word gets a space with name spacing» (`story_text_rows_tests.cpp`) | Mejora (opción) |
 
+## Descripción en las tiendas
+
+Como el original: en la lista de una tienda, Pausa (P, o Start en el mando) sobre un objeto abre su descripción en una
+caja de una línea bajo la lista, con el aspecto de la caja del dinero (`ui/shop_menu`, fase `description` de
+`ShopScreen`); aceptar, cancelar o Pausa la cierran y vuelven a la lista con el mismo objeto. Mientras la tienda está en
+la lista o en la descripción, Pausa no abre el menú de pausa (`ShopScreen::holdsPause`); la UI entrega Pausa y el botón
+de menú (Tab, el botón superior del mando) al documento como la misma acción `menu`, así que `ShopScreen::press` los
+distingue: el botón de menú sigue volviendo atrás como antes.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Descripción del objeto en la tienda | `tickItemMenu`: Start sobre una fila llama a `createItemMenuDescriptionBox` (caja de 264 × 22 junto a la fila); `tickItemMenuDescriptionBox` la cierra con aceptar, cancelar o Start | `ShopScreen` pasa a la fase `description` con la fila del cursor (`shop_cursor`) y publica `shop.described` y la descripción de cada fila; el documento muestra la caja en el sitio de la de la bolsa | Ruta `route-shop-description.yaml` (en las dos pieles: Pausa abre y aceptar cierra la caja, que no tapa la lista) | Igual que el original |
+
+## Extras de la tienda
+
+Mejora opcional, apagada por defecto: el ajuste `shop_extras` (fila «Extras de la tienda», «Shop extras» en inglés,
+de la pestaña Interfaz de las opciones, guardado en los ajustes del usuario). Lo leen los documentos como ajuste de la
+UI; `Game` lo cambia en el título y en la partida (`changeUiToggle`, `title_options.cpp`). Encendido, la tienda
+enseña bajo la lista la descripción de la fila con foco, cuántos tiene ya el jugador de cada objeto en venta
+(`ShopCounter::owned`, la suma de las casillas de la bolsa), y en la caja de cantidad cuántos tiene y el dinero que
+le quedará tras la compra o la venta (`shop.amount.owned`, `shop.amount.money_after`). El dinero ya estaba siempre a la
+vista. Apagado, la tienda del original. Cubre las tiendas de objetos y el reciclaje; las tiendas de cartas y de
+méritos no. Lo comprueban la ruta `route-shop-description.yaml` (compra uno y la fila pasa a `x1`) y
+`bag_tests.cpp` («the total of an item counts every stack…», `Inventory::totalOf`).
+
+## Arreglos gráficos
+
+Mejora opcional, apagada por defecto: el ajuste `art_fixes` (fila «Arreglos gráficos», «Art fixes», pestaña
+Interfaz). Junta los dibujos que el original saca de una zona equivocada de su textura; el original los enseña mal
+igual, así que apagado se ven como en él.
+
+| Qué | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Rótulo de la felicidad en la ficha del compañero (piel original) | La vista de estado dibuja el rótulo con columnas que no son las de la palabra (sale cortado, igual en el original) | Con la opción, la clase `fixed` de `#status-happiness-name` usa el sprite `status-happiness-name-fixed` (columnas 214–254, filas 60–67, medido en la textura) y acaba donde empieza la barra; sin ella, el dibujo del original | Ruta `route-art-fixes.yaml` (con `--lang en --ui-skin original`, donde la ficha usa el rótulo de la textura) | Mejora (opción) |
+
+## Herramientas de desarrollo
+
+El ajuste `dev_tools` (fila «Herramientas de desarrollo», «Developer tools», pestaña Interfaz) enciende la consola
+(F1 o `), el menú de desarrollo (F2) y la capa del mapa (F3). Apagado, esas teclas no hacen nada y, si la consola o el
+menú estaban abiertos, se cierran. Su valor por defecto depende de la compilación (`dev_tools.hpp`): apagado en los
+paquetes (`DWE_PACKAGE`) y encendido en las compilaciones de desarrollo; `--tuning` las enciende siempre.
+«Restablecer valores» lo deja apagado.
+
+El menú de desarrollo (`ui/dev_menu`, `DevMenuScreen`) es un menú modal sobre la partida que solo escribe líneas de
+consola: dar objetos (de 1, 10 o 99), fijar el dinero, la velocidad del reloj, las estadísticas, los cuidados
+(felicidad, disciplina, cansancio, errores, dormir, baño), hacer evolucionar, viajar a un mapa ya visitado y
+guardar (con el `quick_save` del menú de pausa). Las listas (objetos, especies, mapas) salen de las tablas del jugador con sus claves de nombre
+(`dev_menu.<lista>.count`, `.N.id`, `.N.name`). `Game` solo ejecuta una línea `dev_menu_run` si las herramientas
+están encendidas y la orden es de las que ofrece el menú (`devMenuLineAllowed`). Para ello la consola ganó:
+
+- `warp("<mapa> [salida]")`: cambia de mapa como un guion (`startScriptedMapChange`), con la salida 0 si no se da.
+- `partner_set("happiness <n>")` y `partner_set("tiredness <n>")`, de 0 a 100.
+
+Pruebas: `dev_tools_tests.cpp` (qué líneas acepta el menú y cómo publica sus listas), `partner_set_command_tests.cpp`
+y la ruta `route-dev-menu.yaml` (F2, dinero, un objeto, y con la opción apagada F2 no abre nada).
+
 ## Barras de reclutamiento
 
 Mejora opcional, encendida por defecto (no cambia ninguna regla; el original no enseña cuánto le falta al jugador):
@@ -1332,7 +1388,7 @@ La página se divide en cuatro pestañas; cada fila sale en una sola:
 | Juego | Exploración libre, Caminar con, Autoguardado, Mapa de la isla, Objetos en el minimapa, Cambios en lote, Nombres largos, Requisitos de evolución, Etapas canónicas, Extras de la ficha, Objetos raros, Combates rápidos, Vida de los rivales, Sesiones de gimnasio, Combates sin espera, Dificultad, Saltar evoluciones, Cancelar cierra elecciones, Enfermar justo, Media de evolución justa, Espacio tras los nombres |
 | Gráficos | Pantalla, Sincronización vertical, Movimiento suave, Escenarios en alta definición, Calidad de escenarios, Suavizado de bordes, Texturas de modelos, Personajes en 3D, Luz mejorada, Colores vivos, Sombras, Estilo chibi, Clima, Estaciones |
 | Sonido | Volumen de música, Volumen de efectos, Música continua, Reverberación |
-| Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento |
+| Interfaz | Aspecto de la interfaz, Escala de la interfaz, Idioma, Texto con aspecto original, Carteles traducidos, Mostrar minimapa, Enemigos en el minimapa, Hora en dígitos, Aviso de guardado, Varias necesidades, Barra de reclutamiento, Extras de la tienda, Arreglos gráficos, Herramientas de desarrollo |
 
 | Qué | Teclado y ratón | Mando |
 |---|---|---|

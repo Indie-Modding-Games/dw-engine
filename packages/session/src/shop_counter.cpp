@@ -292,6 +292,10 @@ std::vector<game::inventory::SaleOffer> ShopCounter::saleOffers() const {
   return game::inventory::saleOffers(desc_.inventory->inventory(), items());
 }
 
+std::int32_t ShopCounter::owned(assets::ItemHandle item) const {
+  return desc_.inventory->inventory().totalOf(item);
+}
+
 std::int32_t ShopCounter::shownBuyPrice(assets::ItemHandle item) const {
   return game::inventory::buyPrice(desc_.inventory->inventory(), items().at(item),
                                    game::inventory::Buyer{});

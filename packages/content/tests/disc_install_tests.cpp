@@ -6,6 +6,7 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -114,6 +115,24 @@ TEST_CASE("the team's packs are read from their .pak archives, and from folders 
   std::filesystem::remove(packs / "game.pak");
   CHECK(hasTeamGamePack(packs));
 #endif
+}
+
+TEST_CASE("a team pack's folder lists the same from its archive and from a loose folder") {
+  const TempFolder temp;
+  temp.write("source/game/pack.yaml", "id: game\nversion: 1.0.0\nlayer: base\n");
+  temp.write("source/game/localization/en/first_run.yaml", "title: x\n");
+  temp.write("source/game/localization/xx/first_run.yaml", "title: y\n");
+  temp.write("source/game/ui/fonts/font.ttf", "font bytes");
+  const std::filesystem::path packs = temp.path() / "packs";
+  std::filesystem::create_directories(packs);
+  REQUIRE(dwe::assets::writePak(dwe::assets::DiskFileSystem{}, temp.path() / "source/game",
+                                packs / "game.pak")
+              .has_value());
+  auto listed = listTeamPackFiles(packs, "game", "localization");
+  REQUIRE_MESSAGE(listed.has_value(), (listed ? std::string{} : listed.error().message));
+  std::ranges::sort(*listed);
+  CHECK(*listed == std::vector<std::string>{"en/first_run.yaml", "xx/first_run.yaml"});
+  CHECK_FALSE(listTeamPackFiles(temp.path() / "none", "game", "localization").has_value());
 }
 
 TEST_CASE("a CUE sheet's files that are not next to it are missing") {

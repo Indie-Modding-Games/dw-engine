@@ -54,6 +54,8 @@ public:
   [[nodiscard]] bool capturesMouse() const;
 
   void toggle();
+  // Whether the overlay is up.
+  [[nodiscard]] bool visible() const;
 
   // Mounts the packs of a content folder in the asset viewer: the folder itself if it is a pack,
   // otherwise the packs right under it.

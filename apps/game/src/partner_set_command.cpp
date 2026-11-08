@@ -22,7 +22,7 @@ using Kind = PartnerWrite::Kind;
 
 constexpr std::int32_t ValueLimit = 99999;
 
-constexpr std::array<std::pair<std::string_view, Kind>, 12> Names{{{"hp", Kind::Hp},
+constexpr std::array<std::pair<std::string_view, Kind>, 14> Names{{{"hp", Kind::Hp},
                                                                    {"mp", Kind::Mp},
                                                                    {"offense", Kind::Offense},
                                                                    {"defense", Kind::Defense},
@@ -33,7 +33,9 @@ constexpr std::array<std::pair<std::string_view, Kind>, 12> Names{{{"hp", Kind::
                                                                    {"battles", Kind::Battles},
                                                                    {"hours", Kind::Hours},
                                                                    {"discipline", Kind::Discipline},
-                                                                   {"poop", Kind::Poop}}};
+                                                                   {"poop", Kind::Poop},
+                                                                   {"happiness", Kind::Happiness},
+                                                                   {"tiredness", Kind::Tiredness}}};
 
 std::optional<std::int32_t> integerOf(std::string_view text) {
   std::int32_t value = 0;
@@ -72,7 +74,7 @@ core::Result<PartnerWrite> partnerWriteFromText(std::string_view text) {
   }
   const auto usage = [&] {
     return core::fail(std::format("'{}': expected '<hp|mp|offense|defense|speed|brains|weight|"
-                                  "care|battles|hours|discipline|poop> <0-{}>'",
+                                  "care|battles|hours|discipline|poop|happiness|tiredness> <0-{}>'",
                                   text, ValueLimit));
   };
   if (words.size() != 2) {
@@ -109,6 +111,15 @@ void applyPartnerWrite(game::partner::Partner& partner, const PartnerWrite& writ
     // Set in place, as a story order would, between 0 and 100.
     game::partner::PartnerState changed = state;
     changed.mood.discipline = std::clamp(write.value, 0, 100);
+    partner.takeStoryChange(std::move(changed));
+    return;
+  }
+  case Kind::Happiness:
+  case Kind::Tiredness: {
+    // Set in place like discipline, between 0 and 100.
+    game::partner::PartnerState changed = state;
+    (write.kind == Kind::Happiness ? changed.mood.happiness : changed.mood.tiredness) =
+        std::clamp(write.value, 0, 100);
     partner.takeStoryChange(std::move(changed));
     return;
   }

@@ -22,7 +22,9 @@
 #include <format>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <span>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <variant>
@@ -34,9 +36,11 @@
 namespace dwe::app {
 namespace {
 
-// The languages the screen has texts for, and the table they are in.
-constexpr std::array<std::string_view, 2> Languages{"en", "es"};
+// The table of the screen's texts, and the one with each language's own name (its key `name`). The
+// screen offers every language of the game pack that has the first table.
 constexpr std::string_view TextTable = "first_run";
+constexpr std::string_view LanguageTable = "language";
+constexpr std::string_view LanguageNameKey = "language.name";
 // The font of the screen, from the game pack, and its sizes at a 720-pixel-high window.
 // The team's game pack and the files of it the screen reads (content::readTeamPackFile).
 constexpr std::string_view GamePack = "game";
@@ -57,14 +61,66 @@ void checkVulkan(VkResult result) {
   }
 }
 
+// A table of texts of one language, read from the team's game pack; empty (logged) when missing.
+assets::TextTable readTable(std::string_view language, std::string_view name) {
+  const std::string file = std::format("{}/{}/{}.yaml", assets::EngineTextFolder, language, name);
+  const auto bytes = content::readTeamPackFile(content::teamPacksFolder(), GamePack, file);
+  if (!bytes) {
+    core::logWarning("first run: {}: {}", file, bytes.error().message);
+    return {};
+  }
+  auto table = assets::parseTextTable(
+      {.kind = assets::TextTableKind::Engine,
+       .language = std::string{language},
+       .name = std::string{name}},
+      std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+  if (!table) {
+    core::logWarning("first run: {}: {}", file, table.error().message);
+    return {};
+  }
+  return std::move(*table);
+}
+
+// A language the screen offers: its code and its name in itself.
+struct LanguageChoice {
+  std::string code;
+  std::string name;
+};
+
+// The game pack's languages with the screen's texts, by code, each named by its own
+// language.yaml; the reference language alone when the pack cannot be listed.
+std::vector<LanguageChoice> languageChoices() {
+  std::set<std::string> codes{std::string{assets::ReferenceLanguage}};
+  const auto files =
+      content::listTeamPackFiles(content::teamPacksFolder(), GamePack, assets::EngineTextFolder);
+  if (!files) {
+    core::logWarning("first run: {}", files.error().message);
+  } else {
+    const std::string table = std::format("/{}.yaml", TextTable);
+    for (const std::string& file : *files) {
+      const std::size_t slash = file.find('/');
+      if (slash != std::string::npos && file.substr(slash) == table) {
+        codes.insert(file.substr(0, slash));
+      }
+    }
+  }
+  std::vector<LanguageChoice> choices;
+  for (const std::string& code : codes) {
+    const assets::TextTable names = readTable(code, LanguageTable);
+    const auto found = names.find(LanguageNameKey);
+    choices.push_back({.code = code, .name = found != names.end() ? found->second : code});
+  }
+  return choices;
+}
+
 // The texts of one language, read from the team's game pack; a missing one shows as its key.
 class Texts {
 public:
   void load(std::string_view language) {
     language_ = language;
-    texts_ = read(language);
+    texts_ = readTable(language, TextTable);
     if (language != assets::ReferenceLanguage) {
-      fallback_ = read(assets::ReferenceLanguage);
+      fallback_ = readTable(assets::ReferenceLanguage, TextTable);
     } else {
       fallback_ = texts_;
     }
@@ -85,26 +141,6 @@ public:
   }
 
 private:
-  [[nodiscard]] static assets::TextTable read(std::string_view language) {
-    const std::string file =
-        std::format("{}/{}/{}.yaml", assets::EngineTextFolder, language, TextTable);
-    const auto bytes = content::readTeamPackFile(content::teamPacksFolder(), GamePack, file);
-    if (!bytes) {
-      core::logWarning("first run: {}: {}", file, bytes.error().message);
-      return {};
-    }
-    auto table = assets::parseTextTable(
-        {.kind = assets::TextTableKind::Engine,
-         .language = std::string{language},
-         .name = std::string{TextTable}},
-        std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
-    if (!table) {
-      core::logWarning("first run: {}: {}", file, table.error().message);
-      return {};
-    }
-    return std::move(*table);
-  }
-
   std::string language_;
   assets::TextTable texts_;
   assets::TextTable fallback_;
@@ -327,7 +363,11 @@ runFirstRun(platform::Platform& platform, platform::Window& window, rhi::Device&
   // The player's language: --lang, the saved one, or the system's, as the game picks it.
   const std::optional<std::filesystem::path> settingsFile = userSettingsFile();
   UserSettings settings = settingsFile ? loadUserSettings(*settingsFile) : UserSettings{};
-  const std::vector<std::string> available{Languages.begin(), Languages.end()};
+  const std::vector<LanguageChoice> choices = languageChoices();
+  std::vector<std::string> available;
+  for (const LanguageChoice& choice : choices) {
+    available.push_back(choice.code);
+  }
   Texts tr;
   tr.load(startLanguage(available, language, settings.language, platform::systemLanguage())
               .value_or(std::string{assets::ReferenceLanguage}));
@@ -353,6 +393,17 @@ runFirstRun(platform::Platform& platform, platform::Window& window, rhi::Device&
       update ? content::readInstallRecord(*userData / content::InstalledContentFolderName)
              : std::nullopt;
   std::optional<content::DiscInstall> install;
+  // The very first start, before any language was chosen (none saved, no --lang): the screen asks
+  // for the language first, with the system's one under the cursor.
+  bool choosingLanguage = !language && !settings.language && choices.size() > 1;
+  bool focusLanguage = true;
+  const auto chooseLanguage = [&](std::string_view code) {
+    tr.load(code);
+    settings.language = std::string{code};
+    if (settingsFile) {
+      saveUserSettings(*settingsFile, settings);
+    }
+  };
   bool focusPath = true;
   std::vector<platform::Event> events;
   const auto begin = [&] {
@@ -417,89 +468,115 @@ runFirstRun(platform::Platform& platform, platform::Window& window, rhi::Device&
     ImGui::Begin("first-run", nullptr,
                  ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
                      ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::PushFont(nullptr, TitleSize);
-    ImGui::TextUnformatted(tr(update ? "update_title" : "title").c_str());
-    ImGui::PopFont();
-    ImGui::Separator();
-    ImGui::Spacing();
-    ImGui::TextWrapped("%s", tr(update ? "update_intro" : "intro").c_str());
-    ImGui::Spacing();
-    ImGui::TextWrapped("%s", tr("space").c_str());
-    if (userData) {
-      const std::array arguments{localization::TextArgument{
-          .name = "folder",
-          .value = assets::pathText(*userData / content::InstalledContentFolderName)}};
-      ImGui::TextWrapped("%s", tr("destination", arguments).c_str());
-    }
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
-
-    ImGui::BeginDisabled(working);
-    ImGui::TextUnformatted(tr("image_label").c_str());
-    const float browseWidth =
-        ImGui::CalcTextSize(tr("browse").c_str()).x + ImGui::GetStyle().FramePadding.x * 4.0F;
-    ImGui::SetNextItemWidth(-browseWidth - ImGui::GetStyle().ItemSpacing.x);
-    if (std::exchange(focusPath, false)) {
-      ImGui::SetKeyboardFocusHere();
-    }
-    const bool entered =
-        ImGui::InputText("##image", path.data(), path.size(), ImGuiInputTextFlags_EnterReturnsTrue);
-    ImGui::SameLine();
-    if (ImGui::Button(tr("browse").c_str())) {
-      openFileDialog(window, tr("image_filter"));
-    }
-    ImGui::TextDisabled("%s", tr("drop_hint").c_str());
-    ImGui::Spacing();
-    const bool start = ImGui::Button(tr("install").c_str()) || entered;
-    ImGui::SameLine();
-    const bool leave = ImGui::Button(tr("quit").c_str());
-    ImGui::EndDisabled();
-    if (working) {
-      ImGui::SameLine();
-      if (ImGui::Button(tr("cancel").c_str())) {
-        install->cancel();
-        install.reset();
-        focusPath = true;
-      }
-    }
-
-    ImGui::Spacing();
-    if (install && install->stage() == content::DiscInstall::Stage::Identifying) {
-      ImGui::TextUnformatted(tr("step.identify").c_str());
-      ImGui::ProgressBar(-1.0F * static_cast<float>(ImGui::GetTime()), {-1.0F, 0.0F});
-    } else if (install && install->stage() == content::DiscInstall::Stage::Extracting) {
-      ImGui::TextUnformatted(tr(std::format("step.{}", install->step())).c_str());
-      ImGui::ProgressBar(static_cast<float>(install->percent()) / 100.0F, {-1.0F, 0.0F});
-    } else if (install && install->stage() == content::DiscInstall::Stage::Failed &&
-               install->problem() != content::InstallProblem::None) {
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1.0F, 0.45F, 0.4F, 1.0F});
-      ImGui::TextWrapped("%s", problemText(tr, *install).c_str());
-      ImGui::PopStyleColor();
-    }
-
-    // The language, at the bottom: the screen and the game that follows switch to it.
-    ImGui::SetCursorPosY(ImGui::GetWindowHeight() - ImGui::GetFrameHeightWithSpacing() * 2.0F);
-    ImGui::Separator();
-    ImGui::TextDisabled("%s", tr("keys").c_str());
-    ImGui::SameLine();
-    ImGui::SetCursorPosX(ImGui::GetWindowWidth() - ImGui::CalcTextSize("English  Español").x -
-                         ImGui::GetStyle().FramePadding.x * 6.0F);
-    for (const auto& [code, name] : std::array<std::pair<std::string_view, const char*>, 2>{
-             {{"en", "English"}, {"es", "Español"}}}) {
-      if (code != Languages.front()) {
-        ImGui::SameLine();
-      }
-      const bool chosen = tr.language() == code;
-      ImGui::BeginDisabled(chosen);
-      if (ImGui::Button(name)) {
-        tr.load(code);
-        settings.language = std::string{code};
-        if (settingsFile) {
-          saveUserSettings(*settingsFile, settings);
+    bool start = false;
+    bool leave = false;
+    if (choosingLanguage) {
+      // The first start's language step: one button per language, in its own name.
+      ImGui::PushFont(nullptr, TitleSize);
+      ImGui::TextUnformatted(tr("language_title").c_str());
+      ImGui::PopFont();
+      ImGui::Separator();
+      ImGui::Spacing();
+      ImGui::TextWrapped("%s", tr("language_intro").c_str());
+      ImGui::Spacing();
+      for (const LanguageChoice& choice : choices) {
+        if (focusLanguage && choice.code == tr.language()) {
+          ImGui::SetKeyboardFocusHere();
+          focusLanguage = false;
+        }
+        if (ImGui::Button(choice.name.c_str(), {-1.0F, 0.0F})) {
+          chooseLanguage(choice.code);
+          choosingLanguage = false;
+          focusPath = true;
         }
       }
+      ImGui::SetCursorPosY(ImGui::GetWindowHeight() - ImGui::GetFrameHeightWithSpacing() * 2.0F);
+      ImGui::Separator();
+      ImGui::TextDisabled("%s", tr("language_keys").c_str());
+    } else {
+      ImGui::PushFont(nullptr, TitleSize);
+      ImGui::TextUnformatted(tr(update ? "update_title" : "title").c_str());
+      ImGui::PopFont();
+      ImGui::Separator();
+      ImGui::Spacing();
+      ImGui::TextWrapped("%s", tr(update ? "update_intro" : "intro").c_str());
+      ImGui::Spacing();
+      ImGui::TextWrapped("%s", tr("space").c_str());
+      if (userData) {
+        const std::array arguments{localization::TextArgument{
+            .name = "folder",
+            .value = assets::pathText(*userData / content::InstalledContentFolderName)}};
+        ImGui::TextWrapped("%s", tr("destination", arguments).c_str());
+      }
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
+
+      ImGui::BeginDisabled(working);
+      ImGui::TextUnformatted(tr("image_label").c_str());
+      const float browseWidth =
+          ImGui::CalcTextSize(tr("browse").c_str()).x + ImGui::GetStyle().FramePadding.x * 4.0F;
+      ImGui::SetNextItemWidth(-browseWidth - ImGui::GetStyle().ItemSpacing.x);
+      if (std::exchange(focusPath, false)) {
+        ImGui::SetKeyboardFocusHere();
+      }
+      const bool entered = ImGui::InputText("##image", path.data(), path.size(),
+                                            ImGuiInputTextFlags_EnterReturnsTrue);
+      ImGui::SameLine();
+      if (ImGui::Button(tr("browse").c_str())) {
+        openFileDialog(window, tr("image_filter"));
+      }
+      ImGui::TextDisabled("%s", tr("drop_hint").c_str());
+      ImGui::Spacing();
+      start = ImGui::Button(tr("install").c_str()) || entered;
+      ImGui::SameLine();
+      leave = ImGui::Button(tr("quit").c_str());
       ImGui::EndDisabled();
+      if (working) {
+        ImGui::SameLine();
+        if (ImGui::Button(tr("cancel").c_str())) {
+          install->cancel();
+          install.reset();
+          focusPath = true;
+        }
+      }
+
+      ImGui::Spacing();
+      if (install && install->stage() == content::DiscInstall::Stage::Identifying) {
+        ImGui::TextUnformatted(tr("step.identify").c_str());
+        ImGui::ProgressBar(-1.0F * static_cast<float>(ImGui::GetTime()), {-1.0F, 0.0F});
+      } else if (install && install->stage() == content::DiscInstall::Stage::Extracting) {
+        ImGui::TextUnformatted(tr(std::format("step.{}", install->step())).c_str());
+        ImGui::ProgressBar(static_cast<float>(install->percent()) / 100.0F, {-1.0F, 0.0F});
+      } else if (install && install->stage() == content::DiscInstall::Stage::Failed &&
+                 install->problem() != content::InstallProblem::None) {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1.0F, 0.45F, 0.4F, 1.0F});
+        ImGui::TextWrapped("%s", problemText(tr, *install).c_str());
+        ImGui::PopStyleColor();
+      }
+
+      // The language, at the bottom: the screen and the game that follows switch to it.
+      ImGui::SetCursorPosY(ImGui::GetWindowHeight() - ImGui::GetFrameHeightWithSpacing() * 2.0F);
+      ImGui::Separator();
+      ImGui::TextDisabled("%s", tr("keys").c_str());
+      float barWidth = 0.0F;
+      for (const LanguageChoice& choice : choices) {
+        barWidth += ImGui::CalcTextSize(choice.name.c_str()).x +
+                    (ImGui::GetStyle().FramePadding.x * 2.0F) + ImGui::GetStyle().ItemSpacing.x;
+      }
+      ImGui::SameLine();
+      ImGui::SetCursorPosX(ImGui::GetWindowWidth() - barWidth - ImGui::GetStyle().WindowPadding.x);
+      for (const LanguageChoice& choice : choices) {
+        if (&choice != &choices.front()) {
+          ImGui::SameLine();
+        }
+        const bool chosen = tr.language() == choice.code;
+        ImGui::BeginDisabled(chosen);
+        if (ImGui::Button(choice.name.c_str())) {
+          chooseLanguage(choice.code);
+        }
+        ImGui::EndDisabled();
+      }
     }
     ImGui::End();
     ImGui::Render();

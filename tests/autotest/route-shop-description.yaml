@@ -1,0 +1,108 @@
+# The shop's item description and the shop extras (docs/modulos/apps/game.md, «Descripción en las tiendas» and
+# «Extras de la tienda»). In the buy list, pause (P) opens the description of the item under the cursor in a one-line
+# box, as the original does (tickItemMenu, createItemMenuDescriptionBox), and confirm closes it back to the list. Then
+# shop extras on: the focused item's description under the list, the bag's count on each row and, in the amount box,
+# the count and the money the purchase leaves; one item bought shows the count grow. The shop is gias06b's (its
+# "regular item" choice); from a new game: --story-stage all --new-game --start gias06b. Run it once per skin. It
+# checks no text fit: the money box and the keeper's line already overlap in the original look.
+name: shop-description
+device: keyboard
+timeout: 300
+steps:
+  - wait: {map: gias06b, seconds: 1.5, timeout: 90}
+  - resize: [1280, 720]
+  - expect_setting: {shop_extras: "false"}
+  - script: story_set("money 5000")
+  - script: place("player 143 800 0")
+  - wait: {seconds: 0.5}
+  # The keeper's choice, "regular item": the shop greets, then buy. The keeper walks about the stall, so confirm
+  # until it answers.
+  - repeat: {times: 15, steps: [{when: {hidden: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1}}]}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 10}
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - tap: {key: return}
+  - wait: {shown: shop_menu, timeout: 10}
+  - wait: {hidden: story_textbox, seconds: 0.5, timeout: 5}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {shop.phase: choice}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {shop.phase: list}
+  - expect_setting: {has_class.shop_menu#list-description.hidden: "true"}
+  - screenshot: list
+  # Pause on the first row: its description, the list still behind; the pause box stays shut.
+  - tap: {key: p}
+  - wait: {seconds: 0.5}
+  - expect_setting: {shop.phase: description}
+  - expect_setting: {shop.described: 0}
+  - expect_setting: {has_class.shop_menu#description.hidden: "false"}
+  - expect_clear: shop_menu#description
+  - screenshot: description
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {shop.phase: list}
+  - expect_setting: {has_class.shop_menu#description.hidden: "true"}
+  # The menu button (Tab) still goes back: to the choice, then "See ya" and the farewell.
+  - tap: {key: tab}
+  - wait: {seconds: 0.5}
+  - when: {setting: {shop.phase: talk}, steps: [{tap: {key: return}}, {wait: {seconds: 0.5}}]}
+  - expect_setting: {shop.phase: choice}
+  - tap: {key: down}
+  - tap: {key: down}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {hidden: shop_menu, seconds: 1, timeout: 10}
+  # Shop extras on, from the options' Interface tab.
+  - menu: open
+  - wait: {seconds: 0.6}
+  - when:
+      setting: {ui_skin: original}
+      steps:
+        - menu_select: open-player
+        - wait: {seconds: 0.5}
+        - tap: {key: tab}
+        - wait: {seconds: 0.3}
+        - menu_select: player-options
+  - when:
+      setting: {ui_skin: modern}
+      steps:
+        - menu_select: open-options
+  - wait: {seconds: 0.3}
+  - menu_select: shop-extras
+  - expect_setting: {shop_extras: "true"}
+  - menu: close
+  - wait: {menu_open: false}
+  - wait: {seconds: 2}
+  # The shop again: the description under the list, then one of the first item bought.
+  - repeat: {times: 15, steps: [{when: {hidden: story_textbox, steps: [{tap: {key: return}}]}}, {wait: {seconds: 1}}]}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 10}
+  - tap: {key: return}
+  - wait: {seconds: 1.5}
+  - tap: {key: return}
+  - wait: {shown: shop_menu, timeout: 10}
+  - wait: {hidden: story_textbox, seconds: 0.5, timeout: 5}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {shop.phase: list}
+  - expect_setting: {has_class.shop_menu#list-description.hidden: "false"}
+  - expect_setting: {shop.row.0.owned: 0}
+  - screenshot: extras-list
+  - tap: {key: return}
+  - wait: {seconds: 0.5}
+  - expect_setting: {shop.phase: amount}
+  - expect_setting: {has_class.shop_menu#amount-after.hidden: "false"}
+  - screenshot: extras-amount
+  - tap: {key: return}
+  - wait: {seconds: 1}
+  # The keeper's thanks and the choice, then the list again.
+  - repeat: {times: 4, steps: [{when: {setting: {shop.phase: talk}, steps: [{tap: {key: return}}]}}, {wait: {seconds: 0.5}}]}
+  - expect_setting: {shop.phase: choice}
+  - tap: {key: return}
+  - wait: {setting: {shop.phase: list}, timeout: 10}
+  - expect_setting: {shop.row.0.owned: 1}
+  - screenshot: extras-owned

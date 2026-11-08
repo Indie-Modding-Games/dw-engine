@@ -60,6 +60,9 @@ public:
 
   // How many of the item the bag holds: its first stack (item.c: getItemCount).
   [[nodiscard]] std::int32_t countOf(assets::ItemHandle item) const;
+  // How many of the item the bag holds in all its stacks (what shop extras show; the original only
+  // reads the first stack).
+  [[nodiscard]] std::int32_t totalOf(assets::ItemHandle item) const;
 
   // Takes `count` of the item from every stack of it; a stack that runs out leaves its slot empty
   // (item.c: removeItem).

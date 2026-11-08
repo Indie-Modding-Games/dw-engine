@@ -62,6 +62,7 @@
 #include "control_log.hpp"
 #include "control_socket.hpp"
 #include "dev_assets_banner.hpp"
+#include "dev_tools.hpp"
 #include "display_settings.hpp"
 #include "field_scene.hpp"
 #include "first_run_screen.hpp"
@@ -1443,10 +1444,22 @@ int runGame(const Options& requested) {
           input.handle(change);
         }
       }
-      if (input.wasPressed("debug_console")) {
+      // The developer tools (dev_tools.hpp): while the option is off their keys do nothing, and
+      // turning it off closes the console and the developer menu. --tuning asks for the console.
+      const bool devTools = userSettings.devTools.value_or(DevToolsDefault) || options.tuning;
+      if (!devTools && (*debugUi)->visible()) {
         (*debugUi)->toggle();
       }
-      if (input.wasPressed("debug_map_overlay")) {
+      if (PlaySession* play = flow.playing();
+          play != nullptr && play->devMenuOpen() && (!devTools || input.wasPressed("dev_menu"))) {
+        play->toggleDevMenu();
+      } else if (play != nullptr && devTools && input.wasPressed("dev_menu")) {
+        play->toggleDevMenu();
+      }
+      if (devTools && input.wasPressed("debug_console")) {
+        (*debugUi)->toggle();
+      }
+      if (devTools && input.wasPressed("debug_map_overlay")) {
         showMapOverlay(std::nullopt);
       }
       reportAsked = input.wasPressed("report_bug") || reportAsked;
@@ -1625,6 +1638,25 @@ int runGame(const Options& requested) {
     }
 
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
+      // The options the documents apply by themselves: shop extras, art fixes, developer tools.
+      if (changeUiToggle(command, **ui, userSettings, settingsFile)) {
+        continue;
+      }
+      if (command.name == DevMenuRunCommand) {
+        // The developer menu's console line, only while the developer tools are on and only the
+        // commands the menu offers.
+        const std::string* line = std::get_if<std::string>(&command.value);
+        if (line == nullptr || !userSettings.devTools.value_or(DevToolsDefault) ||
+            !devMenuLineAllowed(*line)) {
+          core::logWarning("game: developer menu: refused {}",
+                           line != nullptr ? *line : std::string{"?"});
+        } else if (auto ran = (*scripts)->runString(*line, "dev_menu"); !ran) {
+          core::logWarning("game: developer menu: {}", ran.error().message);
+        } else {
+          core::logInfo("game: developer menu: {}", *line);
+        }
+        continue;
+      }
       if (flow.playing() != nullptr && flow.playing()->handle(command)) {
         continue;
       }

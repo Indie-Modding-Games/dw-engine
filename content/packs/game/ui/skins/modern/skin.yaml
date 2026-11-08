@@ -35,6 +35,9 @@ screens:
     styles: [ui/skins/modern/pause_menu/style]
   sleep_menu:
     styles: [ui/skins/modern/pause_menu/style]
+  # El menú de desarrollo (F2), también.
+  dev_menu:
+    styles: [ui/skins/modern/pause_menu/style]
   # La máquina de guardado: las cajas del original donde el original las dibuja (main_menu.c: renderMenuBox).
   save_machine:
     styles: [ui/skins/modern/pause_menu/style, ui/skins/modern/save_machine/style]

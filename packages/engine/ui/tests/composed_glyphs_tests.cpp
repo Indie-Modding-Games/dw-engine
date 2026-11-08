@@ -28,7 +28,7 @@ struct TestGlyph {
   std::array<std::string_view, CellHeight> rows;
 };
 
-constexpr std::array<TestGlyph, 6> Glyphs{{
+constexpr std::array<TestGlyph, 8> Glyphs{{
     {"a", 8, {"", "", "", ".####", "#....#", "#....#", "######", "#....#", ".####", "", ""}},
     {"A",
      12,
@@ -38,6 +38,8 @@ constexpr std::array<TestGlyph, 6> Glyphs{{
     {"!", 5, {"..#", "..#", "..#", "..#", "..#", "..#", "..#", "", "", "..#", ""}},
     {"?", 8, {".####", "#....#", ".....#", "....#", "...#", "...#", "", "", "", "...#", ""}},
     {"é", 8, {"", "", "#####", "", "", "", "", "", "", "", ""}},
+    {"e", 8, {"", "", "", ".####", "#....#", "######", "#", "#....#", ".####", "", ""}},
+    {"E", 12, {"#########", "#", "#", "#", "########", "#", "#", "#", "#", "#########", ""}},
 }};
 
 struct TestFont {
@@ -171,6 +173,23 @@ TEST_CASE("signs without a base are drawn whole, and a letter the font has is ke
   // A letter whose base the font lacks is not made up: no o, so no ó.
   CHECK(font.glyph(U'ó') == nullptr);
   CHECK(font.glyph(U'Ó') == nullptr);
+}
+
+TEST_CASE("the other languages' signs are drawn whole and the small ligatures share a stroke") {
+  const BitmapFont font = parsed(Glyphs.size());
+  for (char32_t sign : {U'ß', U'„', U'‚', U'‹', U'›'}) {
+    CAPTURE(static_cast<std::uint32_t>(sign));
+    CHECK(font.glyph(sign) != nullptr);
+  }
+  CHECK(font.glyph(U'ß')->advance == 8);
+  // æ: the a, then the e from the a's last column, in one cell.
+  CHECK(cellOf(font, U'æ') == std::vector<std::string>{"", "", "", ".####.####", "#....#....#",
+                                                       "#....######", "######", "#....#....#",
+                                                       ".####.####", "", ""});
+  CHECK(font.glyph(U'æ')->advance == 12);
+  // Æ would not fit in the cell (nor œ without an o): the fallback font draws them.
+  CHECK(font.glyph(U'Æ') == nullptr);
+  CHECK(font.glyph(U'œ') == nullptr);
 }
 
 TEST_CASE("a space advances as far as the glyph before it only in the dialogue family") {

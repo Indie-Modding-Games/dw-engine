@@ -8,6 +8,7 @@
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/ruleset/species_extra.hpp>
 #include <dwe/scene/components.hpp>
+#include <dwe/screens/name_keys.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/cards_adapter.hpp>
 #include <dwe/session/evolution_adapter.hpp>
@@ -36,6 +37,7 @@
 #include <format>
 #include <iterator>
 #include <optional>
+#include <ranges>
 #include <set>
 #include <string>
 #include <string_view>
@@ -284,6 +286,9 @@ void SessionCommands::drop(Autotest* autotest) {
   if (!std::exchange(placements, {}).empty()) {
     dropped(messages::PlaceFailed);
   }
+  if (std::exchange(warp, std::nullopt)) {
+    dropped(messages::WarpFailed);
+  }
   if (!std::exchange(storyWrites, {}).empty()) {
     dropped(messages::StorySetFailed);
   }
@@ -340,6 +345,7 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
   save.bind(scripts);
   scripts.bindCommand(SaveMachineCommand, [this](std::string_view) { saveMachine = true; });
   scripts.bindCommand(GymCommand, [this](std::string_view course) { gym = std::string{course}; });
+  scripts.bindCommand(WarpCommand, [this](std::string_view where) { warp = std::string{where}; });
   scripts.bindCommand(ModelCharactersSetting,
                       [this](std::string_view value) { modelCharacters = value != "off"; });
 }
@@ -477,6 +483,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                   .scene = scene_.get(),
                   .ui = context.ui}),
       shopScreen_({.session = game_.session.get(), .shop = game_.systems.shop, .ui = context.ui}),
+      devMenu_(*context.ui),
       itemKeeperScreen_({.keeper = game_.systems.itemKeeper, .ui = context.ui}),
       discardScreen_({.menu = game_.systems.discardMenu,
                       .inventory = game_.systems.inventory,
@@ -532,6 +539,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachItemKeeper(game_.systems.itemKeeper);
   itemKeeperScreen_.setSpecies(species_ ? &*species_ : nullptr);
   discardScreen_.setSpecies(species_ ? &*species_ : nullptr);
+  shopScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyScenes_.attachGym(&gymScreen_);
   storyScenes_.attachTournament(game_.systems.tournament, &session);
   storyScenes_.attachCurling(&curlingScreen_);
@@ -753,9 +761,10 @@ void PlaySession::type(std::string_view text, bool enter) {
 }
 
 bool PlaySession::holdsMenu() const {
-  // The item keeper and the discard menu read pause (P) for an item's description.
+  // The item keeper, the discard menu and the shop's list read pause (P) for an item's
+  // description.
   return takesText() || gymScreen_.active() || itemKeeperScreen_.active() ||
-         discardScreen_.active() || scheduleScreen_.active();
+         discardScreen_.active() || scheduleScreen_.active() || shopScreen_.holdsPause();
 }
 
 void PlaySession::pressStory(const input::InputState& input) {
@@ -775,6 +784,58 @@ void PlaySession::pressStory(const input::InputState& input) {
   if (storyTextbox_) {
     storyTextbox_->press(input);
   }
+}
+
+void PlaySession::toggleDevMenu() {
+  if (devMenu_.isOpen()) {
+    devMenu_.close();
+    return;
+  }
+  if (context_.ui->hasModal() || screenStops()) {
+    return;
+  }
+  DevMenuLists lists;
+  const assets::ItemTable& items = game_.systems.inventory->items();
+  const screens::NameKeys names{species_ ? &*species_ : nullptr, &items, nullptr};
+  for (const assets::ItemEntry& entry : items.entries()) {
+    lists.items.push_back({.id = entry.id, .nameKey = names.item(items.handleOf(entry))});
+  }
+  if (species_) {
+    for (const assets::DigimonRow& row : species_->digimon) {
+      // Only the partner's species (a level), not the enemies and NPCs that are no partner.
+      if (row.level > 0) {
+        lists.species.push_back({.id = row.id, .nameKey = names.species(row.id)});
+      }
+    }
+  }
+  if (const session::MapVisits* visits = game_.systems.mapVisits; visits != nullptr) {
+    for (const std::string& map : visits->maps()) {
+      lists.maps.push_back({.id = map, .nameKey = scene_->nameKeyOf(map)});
+    }
+  }
+  devMenu_.open(lists);
+}
+
+void PlaySession::warpTo(std::string_view where) {
+  std::vector<std::string_view> words;
+  for (const auto word : std::views::split(where, ' ')) {
+    if (!std::ranges::empty(word)) {
+      words.emplace_back(std::ranges::begin(word), std::ranges::end(word));
+    }
+  }
+  std::int32_t exit = 0;
+  const bool exitRead =
+      words.size() < 2 ||
+      std::from_chars(words[1].data(), words[1].data() + words[1].size(), exit).ec == std::errc{};
+  const assets::MapTable* maps = scene_->mapTable();
+  if (words.empty() || words.size() > 2 || !exitRead || exit < 0 || maps == nullptr ||
+      maps->find(words[0]) == nullptr) {
+    core::logWarning("{}", core::formatMessage(messages::WarpFailed,
+                                               core::formatMessage(messages::WarpUsage, where)));
+    return;
+  }
+  core::logInfo("game: warp to {} exit {}", words[0], exit);
+  scene_->startScriptedMapChange({.map = std::string{words[0]}, .exit = exit, .trigger = 0}, true);
 }
 
 void PlaySession::openWorldMap() {
@@ -802,6 +863,7 @@ void PlaySession::pressWorldMap(const input::InputState& input, bool canOpen) {
 void PlaySession::pressItemKeeper(const input::InputState& input) {
   itemKeeperScreen_.press(input);
   discardScreen_.press(input);
+  shopScreen_.press(input);
   jukeboxScreen_.press(input);
   scheduleScreen_.press(input);
   tradeScreen_.press(input);
@@ -873,11 +935,11 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent,
   const auto& fieldRules = game_.systems.fieldItems->rules();
   sleepScreen_.tickField(*scene_, static_cast<float>(TickSeconds),
                          fieldRules ? std::optional{fieldRules->sleepSound} : std::nullopt);
-  if (sleepScreen_.active() || shopScreen_.active() || itemKeeperScreen_.active() ||
-      discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
-      birdScreen_.active() || cardShopScreen_.active() || meritShopScreen_.active() ||
-      scheduleScreen_.active() || bracketScreen_.playing() || storyScenes_.tournamentIntro() ||
-      worldMapScreen_.isOpen()) {
+  if (sleepScreen_.active() || shopScreen_.active() || devMenu_.isOpen() ||
+      itemKeeperScreen_.active() || discardScreen_.active() || jukeboxScreen_.active() ||
+      tradeScreen_.active() || birdScreen_.active() || cardShopScreen_.active() ||
+      meritShopScreen_.active() || scheduleScreen_.active() || bracketScreen_.playing() ||
+      storyScenes_.tournamentIntro() || worldMapScreen_.isOpen()) {
     return;
   }
   // partner.c: partnerTickOverworld runs the partner's state: the care scenes below (praise and
@@ -1113,7 +1175,7 @@ bool PlaySession::handlePlayOption(const ui::UiCommand& command) {
 }
 
 bool PlaySession::handle(const ui::UiCommand& command) {
-  if (eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
+  if (devMenu_.handle(command) || eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
       itemKeeperScreen_.handle(command) || discardScreen_.handle(command) ||
       jukeboxScreen_.handle(command) || scheduleScreen_.handle(command) ||
       tradeScreen_.handle(command) || birdScreen_.handle(command) ||
@@ -1461,6 +1523,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
                                             field.collision())) {
       core::logWarning("{}", core::formatMessage(messages::DropItemFailed, *item));
     }
+  }
+  if (const auto where = std::exchange(commands.warp, std::nullopt)) {
+    warpTo(*where);
   }
   for (const std::string& where : std::exchange(commands.placements, {})) {
     const auto placement = placementFromText(where);
@@ -1858,11 +1923,11 @@ FieldClock PlaySession::fieldClock() const {
 bool PlaySession::screenStops() const {
   return battleScreen_.active() || (sleepScreen_.active() && !sleepScreen_.fieldRuns()) ||
          saveMachine_.active() || toTitleAsked_ || evolutionScene_.active() ||
-         deathScene_.active() || shopScreen_.active() || itemKeeperScreen_.active() ||
-         discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
-         birdScreen_.active() || cardShopScreen_.active() || meritShopScreen_.active() ||
-         awardScreen_.active() || scheduleScreen_.active() || bracketScreen_.playing() ||
-         storyScenes_.tournamentIntro() || worldMapScreen_.isOpen();
+         deathScene_.active() || shopScreen_.active() || devMenu_.isOpen() ||
+         itemKeeperScreen_.active() || discardScreen_.active() || jukeboxScreen_.active() ||
+         tradeScreen_.active() || birdScreen_.active() || cardShopScreen_.active() ||
+         meritShopScreen_.active() || awardScreen_.active() || scheduleScreen_.active() ||
+         bracketScreen_.playing() || storyScenes_.tournamentIntro() || worldMapScreen_.isOpen();
 }
 
 float PlaySession::fadeLevel() const {
