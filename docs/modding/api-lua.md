@@ -91,12 +91,13 @@ Versión de la API: **1.4.0**. Tabla de cada evento: versión 1.
 | `game.new_game` | `partner` (string) |
 | `game.loaded` | solo `version` |
 
-Funciones de `story` (52):
+Funciones de `story` (53):
 
 - `story.ENDED`
 - `story.PARTNER`
 - `story.PLAYER`
 - `story.add_to_var`
+- `story.cancel_closes_choice`
 - `story.copy_var`
 - `story.delay`
 - `story.entity_look_at_entity`
