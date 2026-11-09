@@ -20,7 +20,7 @@ UpscalePush upscalePush;
 struct VertexIn {
     [[vk::location(0)]] float2 position;
     [[vk::location(1)]] float2 uv;
-    [[vk::location(2)]] float4 color;
+    // Location 2, the quad's colour, is left out: the movie is drawn as it is.
     // x: texture index, y: sampler (unused: the upscaler reads texels).
     [[vk::location(3)]] uint2 texture;
 };

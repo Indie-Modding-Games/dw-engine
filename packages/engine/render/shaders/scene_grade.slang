@@ -37,7 +37,7 @@ struct VertexOut {
 
 // One triangle that covers the window: (0, 0), (2, 0), (0, 2) in uv.
 [shader("vertex")]
-VertexOut vertexMain(uint vertex : SV_VertexID) {
+VertexOut vertexMain(uint vertex : SV_VulkanVertexID) {
     VertexOut output;
     const float2 uv = float2(float((vertex << 1) & 2), float(vertex & 2));
     output.uv = uv;
