@@ -31,6 +31,13 @@ Cada fase usa lo que deja la anterior. Dos fases pueden solaparse cuando la sigu
 terminado de la anterior. Por ejemplo, la fase 2 empezó con la extracción completa de la fase 1, mientras se integraba
 la compresión del cocinado.
 
+## Propuestas de diseño
+
+Diseños de la fase 5 que se acuerdan antes de programar y terminan divididos en tarjetas:
+
+- [Online: salas, búsqueda de partida y perfil](online-salas.md) (#289): salas públicas y «Buscar partida» como Mejora
+  opcional junto al versus por código.
+
 ## Cómo es una especificación
 
 Todas siguen la misma estructura:
