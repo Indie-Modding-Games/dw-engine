@@ -408,8 +408,9 @@ void MatchCamera::tickFight(bool busy, ruleset::Random& random) {
     mode_ = Mode::Corner;
     timer_ = random.below(0x29) + 0x3c;
   }
-  // Nobody attacking or knocked back and no corner left: the orbit again.
-  if (!busy && timer_ == 0) {
+  // Nobody attacking or knocked back and no corner left: the orbit again; the versus' does not
+  // wait for the corner (VS__tickBattle has no CAMERA_TIMER test in that loop).
+  if (!busy && (timer_ == 0 || kind_ == Kind::Versus)) {
     mode_ = Mode::Orbit;
   }
 }
@@ -724,6 +725,146 @@ LetterScene MatchLetters::scene() const {
     break;
   }
   return scene;
+}
+
+// --- the versus' winner's letters ---
+
+namespace {
+
+// vs_hud.c: VS_RESULT_MODEL_INDICES: the objects of "1P WIN" and of "2P WIN", in their order.
+constexpr std::array<std::array<std::size_t, 5>, 2> VersusLetterObjects{
+    {{0, 1, 4, 5, 6}, {2, 3, 4, 5, 6}}};
+
+// VS_loadStageModels: the letters' turns and the outer two letters' x, step by step (20 steps); the
+// first letter's x differs for the two winners (VS_D_800729CC, VS_D_800729F8).
+struct VersusCurves {
+  std::array<std::int32_t, 21> rotationX{};
+  std::array<std::int32_t, 21> rotationY{};
+  std::array<std::array<std::int32_t, 21>, 2> firstX{};
+  std::array<std::int32_t, 21> lastX{};
+};
+
+VersusCurves versusCurves() {
+  VersusCurves curves;
+  for (std::int32_t i = 0x14; i < 0x29; ++i) {
+    const auto k = static_cast<std::size_t>(i - 0x14);
+    curves.rotationX.at(k) = ((i * 0x2000) / 40) & AngleMask;
+    curves.rotationY.at(k) = (((i * 0x800) / 40) + 0x800) & AngleMask;
+    const std::int32_t curve = i < 0x25 ? WinXCurve.at(static_cast<std::size_t>(0x24 - i))
+                                        : WinXCurve.at(static_cast<std::size_t>(i - 0x24));
+    curves.firstX.at(0).at(k) = curve - 0x134;
+    curves.firstX.at(1).at(k) = curve - 0x140;
+    curves.lastX.at(k) = 0x111 - curve;
+  }
+  return curves;
+}
+
+} // namespace
+
+VersusWinLetters::VersusWinLetters(std::size_t winner) : winner_(std::min<std::size_t>(winner, 1)) {
+  // VS_addResultModelScene: each letter 0x4d0 behind the eye's scene, at its own x.
+  constexpr std::array<std::int32_t, 5> StartX{-0x154, -0x9b, 0, 0x84, 0xfd};
+  for (std::size_t i = 0; i < locations_.size(); ++i) {
+    locations_.at(i) = {StartX.at(i), 0, -0x4d0};
+  }
+}
+
+void VersusWinLetters::tick() {
+  static const VersusCurves curves = versusCurves();
+  if (frame_ < 0xa0) {
+    ++frame_;
+  }
+  for (std::size_t i = 0; i < locations_.size(); ++i) {
+    if (frame_ <= static_cast<std::int32_t>(i) * 6 + 0x3c) {
+      continue;
+    }
+    ShowPoint& at = locations_.at(i);
+    if (at[2] < 0xdc) {
+      at[2] += 0x42;
+    }
+    if (steps_.at(i) < 0x14) {
+      ++steps_.at(i);
+    }
+    const auto step = static_cast<std::size_t>(steps_.at(i));
+    rotations_.at(i) = {curves.rotationX.at(step), curves.rotationY.at(step), 0};
+    if (i == 0) {
+      at[0] = curves.firstX.at(winner_).at(step);
+    } else if (i == 4) {
+      at[0] = curves.lastX.at(step);
+    }
+  }
+}
+
+LetterScene VersusWinLetters::scene() const {
+  // VS_renderResultModelScene: projection 0x15e.
+  LetterScene scene;
+  scene.projection = 0x15e;
+  for (std::size_t i = 0; i < locations_.size(); ++i) {
+    scene.letters.push_back({.object = VersusLetterObjects.at(winner_).at(i),
+                             .location = locations_.at(i),
+                             .rotation = rotations_.at(i)});
+  }
+  return scene;
+}
+
+void VersusScoreShow::start(Moment moment) {
+  moment_ = moment;
+  timer_ = 0;
+  done_ = false;
+  shown_ = 0;
+  fadeOut_ = 0;
+}
+
+void VersusScoreShow::tick() {
+  ++shown_;
+  if (done_) {
+    fadeOut_ = std::min(fadeOut_ + 1, fadeOutFrames());
+    return;
+  }
+  switch (state_) {
+  case 0:
+    if (++offset_ == SlideFrames) {
+      ++state_;
+    }
+    break;
+  case 1:
+    if (++timer_ == FlashFrames) {
+      ++state_;
+      done_ = true;
+    }
+    break;
+  case 2:
+    if (--offset_ == 0) {
+      ++state_;
+      timer_ = 0;
+    }
+    break;
+  case 3:
+    if (++timer_ == PauseFrames) {
+      ++state_;
+    }
+    break;
+  case 4:
+    if (++round_ == battles_) {
+      ++state_;
+    } else {
+      state_ = 0;
+      timer_ = 0;
+    }
+    break;
+  default:
+    if (++timer_ == LastFrames) {
+      done_ = true;
+    }
+    break;
+  }
+}
+
+float VersusScoreShow::black() const {
+  if (done_ && fadeOutFrames() > 0) {
+    return std::min(1.0F, static_cast<float>(fadeOut_) / static_cast<float>(FadeFrames));
+  }
+  return std::max(0.0F, 1.0F - (static_cast<float>(shown_) / static_cast<float>(FadeFrames)));
 }
 
 } // namespace dwe::game::tournament

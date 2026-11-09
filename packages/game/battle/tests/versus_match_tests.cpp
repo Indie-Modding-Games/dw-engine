@@ -145,4 +145,6 @@ TEST_CASE("vs_scene.c VS__BATTLE_COUNTS and VS__combatInit: the original rules' 
   REQUIRE(rules.versus);
   CHECK(rules.versus->series == std::vector<std::int32_t>{1, 3, 5});
   CHECK(rules.versus->timeLimitSeconds == 99);
+  // vs_select.c: VS__tickSelectMap: the three arenas of VS_ARENA_MODELS.
+  CHECK(rules.versus->arenas == std::vector<std::int32_t>{0, 1, 2});
 }

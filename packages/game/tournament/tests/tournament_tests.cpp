@@ -374,7 +374,11 @@ TEST_CASE("std_setup.c STD_tournamentMain: the arena, where the fighters stand, 
       {.name = "tournament", .owner = "test", .file = "tournament.yaml", .node = *node});
   REQUIRE_MESSAGE(read, (read ? std::string{} : read.error().message));
   const ArenaRules& rules = *read;
-  REQUIRE(rules.arenas.size() == 2);
+  // The versus' third arena (vs_scene.c: VS_ARENA_MODELS[2]) follows the cups' two.
+  REQUIRE(rules.arenas.size() == 3);
+  CHECK(rules.arenas.at(2).model == "model/stddat/e_togi");
+  CHECK(rules.arenas.at(2).collision == "arena/e_togi/collision");
+  CHECK(arenaStart(rules.arenas.at(2)).partner == ArenaPoint{.x = 500, .z = 0});
   // CURRENT_SCREEN 0x6a (betl02) takes arena 1, every other map arena 0.
   CHECK(arenaFor(rules, "betl02") == 1);
   CHECK(arenaFor(rules, "room13") == 0);
@@ -390,6 +394,8 @@ TEST_CASE("std_setup.c STD_tournamentMain: the arena, where the fighters stand, 
   // its songs 0 and 1, STD_combatMain 2, STD_deinitializeCombat 3 (won) or 4 (lost).
   CHECK(rules.arenas.at(0).musicFont == 0x1e);
   CHECK(rules.arenas.at(1).musicFont == 0x20);
+  // vs_scene.c: VS_loadVSAssets: VS_MUSIC 0x1f for the versus' third arena.
+  CHECK(rules.arenas.at(2).musicFont == 0x1f);
   REQUIRE(rules.music);
   CHECK(rules.music->partnerIntro == 0);
   CHECK(rules.music->rivalIntro == 1);

@@ -10,9 +10,12 @@
 #include <dwe/render/renderer.hpp>
 #include <dwe/ruleset/game_clock.hpp>
 #include <dwe/ruleset/random.hpp>
+#include <dwe/screens/battle_intro.hpp>
 #include <dwe/session/battle_effects.hpp>
+#include <dwe/session/session_music.hpp>
 #include <dwe/session/session_sound.hpp>
 #include <dwe/session/tournament_adapter.hpp>
+#include <dwe/ui/ui.hpp>
 
 #include <array>
 #include <cstdint>
@@ -27,6 +30,7 @@
 #include "field_scene.hpp"
 #include "fighter_figure.hpp"
 #include "graphics_options.hpp"
+#include "tournament_match_screen.hpp"
 #include "versus_flow.hpp"
 
 namespace dwe::app {
@@ -39,10 +43,14 @@ struct VersusArenaDesc {
   const assets::DigimonTable* species = nullptr;
   // The sound the techniques and the fighters' clips play through; it may be null (silent).
   audio::Audio* audio = nullptr;
-  // The versus' arena (vs_scene.c: VS_loadArenaAssets(VS_BATTLE_SETUP.stage)).
-  session::TournamentAdapter::ArenaStage arena;
+  // The versus' arenas (vs_scene.c: VS_loadArenaAssets(VS_BATTLE_SETUP.stage)), by the series'
+  // arena number; the first shows until the series picks one.
+  std::vector<session::TournamentAdapter::ArenaStage> arenas;
   // The game clock's rules, for the field the arena stands on.
   ruleset::ClockRules clock;
+  // Where the entrance's stats and the time-up box show (the tournament's match document); it may
+  // be null.
+  ui::Ui* ui = nullptr;
 };
 
 // The versus' battles as the original shows them (vs_scene.c: VS_initializeVS, VS_loadVSAssets,
@@ -53,6 +61,12 @@ struct VersusArenaDesc {
 // overlay runs the same camera code). It draws on a field scene of its own, the one the battles of
 // the story are drawn on (field_scene.hpp, battle_scene_view.hpp), and shows the battle the flow
 // plays: it decides nothing of it.
+//
+// Around each battle it shows what the original does, at its 20 frames a second while the flow
+// holds the battle (presenting()): the fighters' entrance (vs_intro.c: VS__runIntro, the
+// tournament's STD_runIntro), the "BATTLE" banner (vs_combat.c: VS__combatSetup) and, once the
+// battle is over, its end (VS__checkEndCondition, VS__deinitializeCombat): the time-up box, the
+// winner's "1P WIN" or "2P WIN" letters, the winner's pose and the arena's songs.
 //
 // It also readies each battle before its first tick as the battles of the story are (the clips of
 // its fighters' models, the flights of its techniques), for this machine's flow and for the other
@@ -68,14 +82,28 @@ public:
 
   // The fighters' models and the battle's clips and flights, without showing it.
   void prepare(game::battle::Battle& battle);
+  // Loads one more arena's model ahead, hidden, so a series on it does not wait for it; false once
+  // every arena's is loaded.
+  bool preloadArena();
 
   void battleStarted(game::battle::Battle& battle) override;
   void battleFrame(const game::battle::Battle& battle,
                    const game::battle::BattleEvents& events) override;
   void battlesOver() override;
+  void useArena(std::int32_t arena) override;
+  [[nodiscard]] bool presenting() const override;
+  void presentFrame(bool confirm) override;
+  void showScore(bool shown, bool last, std::optional<std::size_t> winner) override;
+  void menuSound(std::int32_t sound) override;
+  void addSettings(screens::ScreenSettings& out) const override;
 
-  // Whether a battle shows: then the game draws scene().
-  [[nodiscard]] bool showing() const { return shown_ != nullptr; }
+  // Whether the arena shows: then the game draws scene(). Over the score screen only the series'
+  // winner's letters show.
+  [[nodiscard]] bool showing() const {
+    return shown_ != nullptr && (!scoring_ || finalLetters_ || finalDraw_);
+  }
+  // Whether the score screen shows over a black screen (the arena hidden).
+  [[nodiscard]] bool scoring() const { return scoring_; }
   [[nodiscard]] FieldScene& scene() { return *scene_; }
   // Once per game tick: the fighters' clips run on.
   void tick(double seconds);
@@ -86,6 +114,13 @@ public:
   static constexpr std::int32_t RivalFighter = 0x1000;
 
 private:
+  // What shows of a battle: its entrance, its banner, the fight, its end and the end's last frames
+  // with the HUD gone.
+  enum class Phase : std::uint8_t { Intro, Banner, Fight, Ending, Done };
+  // The end's steps (VS__deinitializeCombat): the time-up box, the letters with the winner's pose
+  // (or the drawn letters) and the frames after it.
+  enum class EndStep : std::uint8_t { TimeUp, Letters, Tail };
+
   // What a battle needs that its fighters' models give (battle_screen.cpp does the same): kept
   // while the battle lives, by its address.
   struct Rig {
@@ -101,12 +136,36 @@ private:
   [[nodiscard]] Rig* rigOf(const game::battle::Battle& battle);
   void noteMoveStarts(const game::battle::Battle& battle);
   void showStage(const game::tournament::ShowView& view);
+  void startIntro(const game::battle::Battle& battle);
+  void introFrame(bool confirm);
+  void startBanner();
+  void bannerFrame();
+  // The battle's fall or its time up: the winner's letters and the end camera, or the drawn
+  // letters.
+  // The battle ended: the end's steps start (the time-up box or the letters).
+  void endOnResult(const game::battle::Battle& battle);
+  void startLetters(std::optional<std::size_t> winner);
+  void endFrame(bool confirm);
+  void timeUpFrame(bool confirm);
+  void startWinnerPose();
+  // The fighter the end camera hangs on: the one that lost.
+  [[nodiscard]] std::size_t loserShown() const;
+  void playSong(std::int32_t track);
+  void playSound(std::int32_t sound);
+  void showLetters(const game::tournament::ShowView& view);
+  [[nodiscard]] const session::TournamentAdapter::ArenaStage& arena() const;
+  [[nodiscard]] std::string speciesName(const std::string& id) const;
 
   VersusArenaDesc desc_;
   // The game clock the field stands in, before the field that reads it.
   std::unique_ptr<ruleset::GameClock> clock_;
   std::unique_ptr<FieldScene> scene_;
   std::optional<session::SessionSound> sound_;
+  std::optional<session::SessionMusic> music_;
+  std::optional<TournamentMatchScreen> matchScreen_;
+  std::size_t arenaIndex_ = 0;
+  // The arenas preloadArena went through.
+  std::size_t preloaded_ = 0;
   ShotColumns shotColumns_;
   // The fighter k > 0 is the stage fighter enemyNpcs_[k - 1].
   std::vector<std::int32_t> enemyNpcs_{RivalFighter};
@@ -125,6 +184,30 @@ private:
   std::array<std::optional<std::int32_t>, 2> attackFrames_{};
   // The battle frame last shown: a frame the other machine held back shows nothing new.
   std::optional<std::int64_t> lastFrame_;
+
+  Phase phase_ = Phase::Done;
+  EndStep endStep_ = EndStep::Letters;
+  std::int32_t endFrames_ = 0;
+  std::optional<game::tournament::MatchIntro> intro_;
+  std::optional<screens::BattleIntro> banner_;
+  std::array<std::string, 2> names_;
+  std::optional<game::tournament::TimeUpNotice> timeUp_;
+  std::optional<game::tournament::VersusWinLetters> letters_;
+  std::optional<game::tournament::MatchLetters> drawLetters_;
+  std::optional<game::tournament::EndCamera> endCamera_;
+  // The series' winner's letters over the last score screen.
+  std::optional<game::tournament::VersusWinLetters> finalLetters_;
+  std::optional<game::tournament::MatchLetters> finalDraw_;
+  bool scoring_ = false;
+  double letterSeconds_ = 0.0;
+  // The battle's end as last seen: who won, the damage each side dealt, where each one stands.
+  std::optional<std::size_t> winner_;
+  std::array<std::int32_t, 2> lost_{};
+  std::array<game::tournament::ArenaPoint, 2> standing_{};
+  std::array<game::tournament::ShowBody, 2> bodies_{};
+  // The winner's pose clip and how long it runs (it starts again when it ends).
+  std::size_t poseLength_ = 0;
+  game::tournament::ShowView view_{};
 };
 
 } // namespace dwe::app

@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 #include "field_scene.hpp"
 #include "graphics_options.hpp"
@@ -16,8 +17,13 @@
 #include "versus_flow.hpp"
 #include "versus_loopback.hpp"
 
+namespace dwe::ruleset {
+class Ruleset;
+} // namespace dwe::ruleset
+
 namespace dwe::session {
 class BattleAdapter;
+struct VersusPlacement;
 } // namespace dwe::session
 
 namespace dwe::app {
@@ -53,6 +59,8 @@ public:
   bool handle(const ui::UiCommand& command);
   [[nodiscard]] bool takesText() const { return active_ && flow_ && flow_->takesText(); }
   void type(std::string_view text, bool enter);
+  // The finisher's own button (the "extra" input; vs_combat.c: VS__tickInput's square).
+  void pressFinisher();
   // Once per game tick: the network, the battle and the document's values.
   void tick(double nowSeconds);
   // Whether the player left the versus screens since the last call (the title shows again).
@@ -65,6 +73,10 @@ public:
 
 private:
   void close();
+  // Builds the arena ahead of the battles: once the players link, on the tick after the wait
+  // shows (it takes a second or two), then one more arena's model a tick.
+  void readyArena();
+  void buildArena();
 
   const assets::VirtualFileSystem* files_;
   const Options* options_;
@@ -72,7 +84,15 @@ private:
   ui::Ui* ui_;
   render::Renderer* renderer_;
   audio::Audio* audio_;
+  std::unique_ptr<ruleset::Ruleset> rules_;
   std::unique_ptr<session::BattleAdapter> battles_;
+  // Where each arena's battles start (vs_intro.c: VS__placePlayer1), once the arena is built.
+  std::vector<session::VersusPlacement> placements_;
+  bool arenaBuilt_ = false;
+  // Whether the last tick's view was one where the players link, and the arena models are left to
+  // load ahead.
+  bool linking_ = false;
+  bool preloading_ = true;
   // The arena the battles show on, and the other player's view of --versus-loopback, which readies
   // its battles as this machine's are; both before the flows that call them.
   std::unique_ptr<VersusArena> arena_;

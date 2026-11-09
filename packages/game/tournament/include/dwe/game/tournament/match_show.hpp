@@ -191,7 +191,12 @@ struct FightFigure {
 // (STD_combatSetup: STD_DEFAULT_CAM_MIN_DISTANCE).
 class MatchCamera {
 public:
-  explicit MatchCamera(ArenaCamera orbit) : orbit_(orbit) {}
+  // Whose camera it is: a cup's (std_main.c: STD_tickBattle) or the versus' (vs_combat.c:
+  // VS__tickBattle), which goes back to the orbit as soon as nobody attacks or is knocked back, the
+  // corner's timer still running.
+  enum class Kind : std::uint8_t { Cup, Versus };
+
+  explicit MatchCamera(ArenaCamera orbit, Kind kind = Kind::Cup) : orbit_(orbit), kind_(kind) {}
 
   // STD_combatSetup: the banner shows (true) or bursts (false); the nearest distance moves 400.
   void tickBanner(bool showing);
@@ -221,6 +226,7 @@ private:
   enum class Mode : std::uint8_t { Orbit, Technique, Corner };
 
   ArenaCamera orbit_;
+  Kind kind_ = Kind::Cup;
   std::int32_t minDistance_ = BannerMinDistance;
   std::int32_t frame_ = 0;
   std::int32_t timer_ = 0;
@@ -322,6 +328,9 @@ public:
   [[nodiscard]] MatchEnding ending() const { return ending_; }
   // STD_isVersusModelSceneFinished: the drawn match's letters are in.
   [[nodiscard]] bool finished() const;
+  // vs_hud.c: VS_setVersusModelSceneTimer: the versus' series end starts the drawn letters at
+  // frame -10 (VS_playVersusIntroSequence).
+  void setFrame(std::int32_t frame) { frame_ = frame; }
 
 private:
   MatchEnding ending_;
@@ -331,6 +340,82 @@ private:
   std::array<std::int32_t, 32> wipe_{};
   std::array<std::int32_t, 32> order_{};
   std::array<std::int32_t, 4> drawX_{};
+};
+
+// vs_hud.c: VS_loadStageModels, VS_addResultModelScene, VS_tickResultModelScene: the winner's
+// letters of a versus battle (STDDAT\1P2PWIN.TMD: "1P" is objects 0 and 1, "2P" 2 and 3, "WIN" 4 to
+// 6). The five letters wait far behind the eye; from frame 61 one every 6 frames flies in 66 a
+// frame and spins to rest upright, the first and the last sliding sideways as they turn.
+class VersusWinLetters {
+public:
+  // `winner` 0 for the host's fighter (ENTITY_TABLE[1]), 1 for the guest's.
+  explicit VersusWinLetters(std::size_t winner);
+  void tick();
+  [[nodiscard]] LetterScene scene() const;
+  [[nodiscard]] std::size_t winner() const { return winner_; }
+  // VS_setVersusModelSceneTimer: the series' end shows them from frame 60
+  // (VS_playVersusIntroSequence).
+  void setFrame(std::int32_t frame) { frame_ = frame; }
+
+  static constexpr std::size_t Objects = 7;
+
+private:
+  std::size_t winner_;
+  std::int32_t frame_ = 0;
+  std::array<std::int32_t, 5> steps_{};
+  std::array<ShowPoint, 5> locations_{};
+  std::array<ShowPoint, 5> rotations_{};
+};
+
+// vs_scene.c: VS_playVersusIntroSequence, VS_tickVersusIntro, VS_renderVersusIntro: the score of a
+// versus series on its own screen, before the first battle (VS_CURRENT_BATTLE -1), after each one
+// and after the last. Its state runs on from one showing to the next (VS_STATE_STATE,
+// VS_STATE_ROUND, VS_STATE_OFFSET): before the first battle the first row slides out 10 pixels and
+// the round's flash shows for 20 frames; after a battle that row slides back with its result, waits
+// 10 frames, and the next one slides out and flashes, or after the last one the screen stays 80
+// frames. It fades in from black over 3 frames and, but after the last battle, out over 3 more and
+// a frame. One tick per frame of the original (20 a second).
+class VersusScoreShow {
+public:
+  enum class Moment : std::uint8_t { First, Between, Last };
+
+  explicit VersusScoreShow(std::int32_t battles) : battles_(battles) {}
+  // A new showing: VS_playVersusIntroSequence sets VS_STATE_TIMER to 0, the rest runs on.
+  void start(Moment moment);
+  void tick();
+  // VS_STATE_DONE, and the fade out after it.
+  [[nodiscard]] bool done() const { return done_ && fadeOut_ >= fadeOutFrames(); }
+  [[nodiscard]] Moment moment() const { return moment_; }
+  // VS_STATE_ROUND: the row that slides; the rows above it have their result.
+  [[nodiscard]] std::int32_t round() const { return round_; }
+  // VS_STATE_OFFSET: how far (pixels) that row stands out, the host's to the right and the guest's
+  // to the left.
+  [[nodiscard]] std::int32_t offset() const { return offset_; }
+  // VS_renderVersusFlash: the round's flash over that row, in state 1.
+  [[nodiscard]] bool flash() const { return state_ == 1; }
+  // How black the screen is (fadeFromBlack(3), fadeToBlack(3)): 0 to 1.
+  [[nodiscard]] float black() const;
+
+  static constexpr std::int32_t SlideFrames = 10;
+  static constexpr std::int32_t FlashFrames = 20;
+  static constexpr std::int32_t PauseFrames = 10;
+  static constexpr std::int32_t LastFrames = 0x50;
+  static constexpr std::int32_t FadeFrames = 3;
+
+private:
+  [[nodiscard]] std::int32_t fadeOutFrames() const {
+    return moment_ == Moment::Last ? 0 : FadeFrames + 1;
+  }
+
+  std::int32_t battles_;
+  Moment moment_ = Moment::First;
+  std::int32_t state_ = 0;
+  std::int32_t round_ = 0;
+  std::int32_t offset_ = 0;
+  std::int32_t timer_ = 0;
+  bool done_ = false;
+  std::int32_t shown_ = 0;
+  std::int32_t fadeOut_ = 0;
 };
 
 } // namespace dwe::game::tournament

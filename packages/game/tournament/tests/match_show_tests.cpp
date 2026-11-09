@@ -405,3 +405,96 @@ TEST_CASE("std_setup.c STD_initializeCamera, STD_applyRotatingCamera: the arena 
   }
   CHECK(camera.yaw() == 0);
 }
+
+TEST_CASE(
+    "vs_combat.c VS__tickBattle: the versus' corner camera only holds while a fighter is busy") {
+  dwe::ruleset::Random always{1};
+  MatchCamera camera{ArenaCamera{}, MatchCamera::Kind::Versus};
+  while (!camera.corner()) {
+    camera.tickFight(true, always);
+  }
+  camera.tickFight(true, always);
+  CHECK(camera.corner());
+  // Idle, the cups' corner would stay its 60 to 100 frames; the versus' goes back to the orbit.
+  camera.tickFight(false, always);
+  CHECK_FALSE(camera.corner());
+}
+
+TEST_CASE("vs_hud.c VS_tickResultModelScene: 1P WIN and 2P WIN fly in and rest upright") {
+  for (const std::size_t winner : {std::size_t{0}, std::size_t{1}}) {
+    VersusWinLetters letters{winner};
+    const LetterScene start = letters.scene();
+    REQUIRE(start.letters.size() == 5);
+    // VS_RESULT_MODEL_INDICES: the winner's two objects, then WIN's three.
+    CHECK(start.letters[0].object == winner * 2);
+    CHECK(start.letters[1].object == winner * 2 + 1);
+    CHECK(start.letters[4].object == 6);
+    CHECK(start.letters[0].location == ShowPoint{-0x154, 0, -0x4d0});
+    // Nothing moves before frame 61.
+    for (int i = 0; i < 0x3c; ++i) {
+      letters.tick();
+    }
+    CHECK(letters.scene().letters[0].location[2] == -0x4d0);
+    letters.tick();
+    CHECK(letters.scene().letters[0].location[2] == -0x4d0 + 0x42);
+    CHECK(letters.scene().letters[1].location[2] == -0x4d0);
+    for (int i = 0; i < 0xa0; ++i) {
+      letters.tick();
+    }
+    const LetterScene end = letters.scene();
+    CHECK(end.projection == 0x15e);
+    for (const LetterPose& letter : end.letters) {
+      CHECK(letter.location[2] == 0xdc);
+      CHECK(letter.rotation == ShowPoint{0, 0, 0});
+    }
+    // VS_D_800729CC (1P) and VS_D_800729F8 (2P) at step 20; VS_RESULT_LAST_X for the last letter.
+    CHECK(end.letters[0].location[0] == (winner == 0 ? 0x14 - 0x134 : 0x14 - 0x140));
+    CHECK(end.letters[1].location[0] == -0x9b);
+    CHECK(end.letters[4].location[0] == 0x111 - 0x14);
+  }
+}
+
+TEST_CASE("vs_scene.c VS_tickVersusIntro: each row slides out, flashes, slides back and the next") {
+  using Moment = VersusScoreShow::Moment;
+  VersusScoreShow show{2};
+  // Before the first battle: it fades in, the first row slides out 10 and flashes 20.
+  show.start(Moment::First);
+  int frames = 0;
+  for (; !show.done() && frames < 1000; ++frames) {
+    show.tick();
+    if (frames == VersusScoreShow::SlideFrames) {
+      CHECK(show.flash());
+      CHECK(show.offset() == VersusScoreShow::SlideFrames);
+    }
+  }
+  CHECK(show.round() == 0);
+  // Slide 10, flash 20, then the fade out over 3 frames and one more.
+  CHECK(frames == VersusScoreShow::SlideFrames + VersusScoreShow::FlashFrames + 4);
+  CHECK(show.black() == doctest::Approx(1.0F));
+
+  // After the first battle the row slides back, a pause, then the second slides out and flashes.
+  show.start(Moment::Between);
+  CHECK(show.black() == doctest::Approx(1.0F));
+  show.tick();
+  CHECK(show.offset() == VersusScoreShow::SlideFrames - 1);
+  frames = 1;
+  for (; !show.done() && frames < 1000; ++frames) {
+    show.tick();
+  }
+  CHECK(show.round() == 1);
+  CHECK(frames == VersusScoreShow::SlideFrames + VersusScoreShow::PauseFrames + 1 +
+                      VersusScoreShow::SlideFrames + VersusScoreShow::FlashFrames + 4);
+
+  // After the last battle: back, the pause, then until VS_STATE_TIMER reaches 80, which the pause
+  // left at 10, and no fade.
+  show.start(Moment::Last);
+  frames = 0;
+  for (; !show.done() && frames < 1000; ++frames) {
+    show.tick();
+  }
+  CHECK(show.round() == 2);
+  CHECK(show.offset() == 0);
+  CHECK_FALSE(show.flash());
+  CHECK(frames == VersusScoreShow::SlideFrames + 1 + VersusScoreShow::LastFrames);
+  CHECK(show.black() == doctest::Approx(0.0F));
+}

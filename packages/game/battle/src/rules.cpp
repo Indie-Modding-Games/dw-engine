@@ -398,16 +398,24 @@ Menus readMenus(ValueReader& in, const YamlNode& node) {
 }
 
 VersusRules readVersus(ValueReader& in, const YamlNode& node) {
-  if (!in.group(node, "versus", {"series", "time_limit_seconds"})) {
+  if (!in.group(node, "versus", {"series", "time_limit_seconds", "arenas"})) {
     return {};
   }
-  VersusRules versus{.series = {}, .timeLimitSeconds = in.positive(node, "time_limit_seconds")};
+  VersusRules versus{
+      .series = {}, .timeLimitSeconds = in.positive(node, "time_limit_seconds"), .arenas = {}};
   for (const YamlNode& item : in.yaml().sequence(in.field(node, "series"), "series")) {
     const auto battles = in.yaml().integer<std::int32_t>(item);
     if (in.yaml().ok() && battles <= 0) {
       in.yaml().fail(item, messages::formatMessage(messages::NotPositive, "series"));
     }
     versus.series.push_back(battles);
+  }
+  for (const YamlNode& item : in.yaml().sequence(in.field(node, "arenas"), "arenas")) {
+    const auto arena = in.yaml().integer<std::int32_t>(item);
+    if (in.yaml().ok() && arena < 0) {
+      in.yaml().fail(item, messages::formatMessage(messages::NotPositive, "arenas"));
+    }
+    versus.arenas.push_back(arena);
   }
   return versus;
 }

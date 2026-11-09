@@ -79,40 +79,6 @@ FighterView fighterViewOf(const battle::Fighter& fighter, bool hpBarShown, const
                            : std::string{battle::statusTextKey(status)}};
 }
 
-// A technique's or the finisher's entry shows its move's name; the others the original's command
-// name.
-std::string labelOf(battle::Command command, const battle::Fighter& partner,
-                    const NameKeys& names) {
-  const auto number = static_cast<std::size_t>(command);
-  constexpr auto FirstTechnique = static_cast<std::size_t>(battle::Command::Technique1);
-  if (number < FirstTechnique) {
-    return commandLabelKey(command);
-  }
-  const std::size_t slot =
-      command == battle::Command::Finisher ? battle::FinisherSlot : number - FirstTechnique;
-  const auto& move = partner.moves.at(slot);
-  return move ? names.move(*move) : std::string{};
-}
-
-// battle_main.c: BTL_setCommandIconUV: a command's own icon, or for a technique the icon of its
-// move's special effect.
-std::string iconOf(battle::Command command, const battle::Fighter& partner,
-                   const battle::MoveCatalog& moves) {
-  const auto number = static_cast<std::int32_t>(command);
-  constexpr auto FirstTechnique = static_cast<std::int32_t>(battle::Command::Technique1);
-  if (command == battle::Command::Finisher || command == battle::Command::None) {
-    return {};
-  }
-  if (number < FirstTechnique) {
-    return std::format("command-{}", number);
-  }
-  const auto& move = partner.moves.at(static_cast<std::size_t>(number - FirstTechnique));
-  if (!move) {
-    return {};
-  }
-  return std::format("special-{}", std::clamp(moves.at(*move).special, 0, IconsPerRow - 1));
-}
-
 bool gaugeFull(const battle::Fighter& fighter) {
   return fighter.hasFinisher() && fighter.finisherGoal > 0 &&
          fighter.finisherProgress >= fighter.finisherGoal;
@@ -161,6 +127,40 @@ std::string countName(std::string_view list) {
 
 } // namespace
 
+// A technique's or the finisher's entry shows its move's name; the others the original's command
+// name.
+std::string commandLabelOf(battle::Command command, const battle::Fighter& partner,
+                           const NameKeys& names) {
+  const auto number = static_cast<std::size_t>(command);
+  constexpr auto FirstTechnique = static_cast<std::size_t>(battle::Command::Technique1);
+  if (number < FirstTechnique) {
+    return commandLabelKey(command);
+  }
+  const std::size_t slot =
+      command == battle::Command::Finisher ? battle::FinisherSlot : number - FirstTechnique;
+  const auto& move = partner.moves.at(slot);
+  return move ? names.move(*move) : std::string{};
+}
+
+// battle_main.c: BTL_setCommandIconUV: a command's own icon, or for a technique the icon of its
+// move's special effect.
+std::string commandIconOf(battle::Command command, const battle::Fighter& partner,
+                          const battle::MoveCatalog& moves) {
+  const auto number = static_cast<std::int32_t>(command);
+  constexpr auto FirstTechnique = static_cast<std::int32_t>(battle::Command::Technique1);
+  if (command == battle::Command::Finisher || command == battle::Command::None) {
+    return {};
+  }
+  if (number < FirstTechnique) {
+    return std::format("command-{}", number);
+  }
+  const auto& move = partner.moves.at(static_cast<std::size_t>(number - FirstTechnique));
+  if (!move) {
+    return {};
+  }
+  return std::format("special-{}", std::clamp(moves.at(*move).special, 0, IconsPerRow - 1));
+}
+
 BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names) {
   const battle::BattleState& state = battle.state();
   BattleView view;
@@ -170,10 +170,10 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names) {
   const battle::Fighter& partner = state.partner();
   for (const battle::Command command : battle.menu()) {
     view.menu.push_back({.command = command,
-                         .labelKey = labelOf(command, partner, names),
+                         .labelKey = commandLabelOf(command, partner, names),
                          .available = command != battle::Command::Finisher || gaugeFull(partner),
                          .current = command == state.commands.current,
-                         .icon = iconOf(command, partner, battle.moves())});
+                         .icon = commandIconOf(command, partner, battle.moves())});
   }
   const bool partnerCharging = state.finisher.fighter == battle::PartnerId;
   view.finisher = {.progress = partner.finisherProgress,

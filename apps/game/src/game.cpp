@@ -1557,6 +1557,9 @@ int runGame(const Options& requested) {
         continue;
       }
       if (flow.playing() == nullptr && versus.active()) {
+        if (input.wasPressed("extra")) {
+          versus.pressFinisher();
+        }
         versus.tick(platform->nowSeconds());
         if (versus.takeClosed()) {
           title.show();

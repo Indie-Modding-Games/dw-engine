@@ -101,7 +101,8 @@ struct Player {
                          return std::make_unique<BorrowedLink>(*peer);
                        },
                        .seed = [] { return std::uint64_t{4321}; },
-                       .view = view});
+                       .view = view,
+                       .placement = {}});
     flow->open();
   }
 
@@ -153,11 +154,21 @@ void play(LoopbackNetwork& network, Player& host, Player& guest, int ticks, Done
 
 // Both players get from the menu to their save pick: the host hosts a series of `battles`, the
 // guest types its join code and joins.
-void connect(LoopbackNetwork& network, Player& host, Player& guest) {
+// The host may also step left through the arenas on the setup's second row.
+void connect(LoopbackNetwork& network, Player& host, Player& guest, int arenaStepsLeft = 0) {
   host.flow->act("confirm");
   REQUIRE(host.flow->view() == View::HostSetup);
   host.flow->act("right");
   CHECK(number(*host.flow, "versus.battles") == 3);
+  if (arenaStepsLeft > 0) {
+    host.flow->act("down");
+    CHECK(number(*host.flow, "versus.cursor") == 1);
+    for (int step = 0; step < arenaStepsLeft; ++step) {
+      host.flow->act("left");
+    }
+    // The row does not change the battles.
+    CHECK(number(*host.flow, "versus.battles") == 3);
+  }
   host.flow->act("confirm");
   REQUIRE(host.flow->view() == View::Hosting);
 
@@ -225,6 +236,7 @@ public:
   }
   void battleFrame(const dwe::game::battle::Battle& battle,
                    const dwe::game::battle::BattleEvents& /*events*/) override {
+    framesWhilePresenting += presentLeft > 0 ? 1 : 0;
     if (&battle == shown && battle.state().frame != lastFrame) {
       lastFrame = battle.state().frame;
       ++frames;
@@ -235,6 +247,14 @@ public:
     ++overs;
     shown = nullptr;
   }
+  void useArena(std::int32_t arena) override { arenas.push_back(arena); }
+  // A view may hold each battle for its entrance (vs_intro.c: VS__runIntro) and its end.
+  [[nodiscard]] bool presenting() const override { return presentLeft > 0; }
+  void presentFrame(bool /*confirm*/) override { --presentLeft; }
+  void showScore(bool shownNow, bool /*last*/, std::optional<std::size_t> /*winner*/) override {
+    scores += shownNow ? 1 : 0;
+    presentLeft = shownNow ? 0 : presentFor;
+  }
 
   SlowFlights flights;
   std::vector<std::int64_t> startFrames;
@@ -243,6 +263,11 @@ public:
   int frames = 0;
   int framesOfOthers = 0;
   int overs = 0;
+  std::vector<std::int32_t> arenas;
+  int presentFor = 0;
+  int presentLeft = 0;
+  int framesWhilePresenting = 0;
+  int scores = 0;
 };
 
 } // namespace
@@ -262,9 +287,15 @@ TEST_CASE("two machines play an online versus series from the menus to the resul
   REQUIRE(guest.flow->view() == View::Match);
   CHECK(number(*host.flow, "versus.local") == 0);
   CHECK(number(*guest.flow, "versus.local") == 1);
-  CHECK(text(*host.flow, "versus.f.0.name") == "a");
-  CHECK(text(*guest.flow, "versus.f.1.name") == "y");
-  CHECK(number(*host.flow, "versus.menu") > 0);
+  // vs_combat.c: VS__combatInit: each side's command icons, the hovered one starting on Auto, the
+  // list's last.
+  const double commands = number(*host.flow, "versus.f.0.menu");
+  CHECK(commands > 1);
+  CHECK(number(*host.flow, "versus.f.0.hover") == commands - 1);
+  CHECK(number(*guest.flow, "versus.f.1.menu") > 1);
+  CHECK_FALSE(text(*host.flow, "versus.f.0.menu.1.icon").empty());
+  // vs_main.c: VS_COMMAND_NAMES: the hovered command goes by the versus' own name.
+  CHECK(text(*host.flow, "versus.f.0.command_name").starts_with("versus.command."));
 
   play(network, host, guest, 60 * 60 * 20,
        [&] { return host.flow->view() == View::Result && guest.flow->view() == View::Result; });
@@ -412,11 +443,69 @@ TEST_CASE("vs_scene.c: VS_initializeVS: both machines show and ready each battle
   CHECK(guestView.startFrames == std::vector<std::int64_t>{1, 1, 1});
   CHECK(hostView.frames > 0);
   CHECK(hostView.framesOfOthers == 0);
-  CHECK(hostView.overs == 0);
-
-  // Leaving the result ends what the view shows.
+  // The last score screen ends what the view shows, once.
+  CHECK(hostView.overs == 1);
   host.flow->act("confirm");
   CHECK(host.flow->view() == View::Menu);
   CHECK(hostView.overs == 1);
   CHECK(hostView.shown == nullptr);
+}
+
+TEST_CASE("vs_select.c: the host's arena and each battle's entrance and score, on both machines") {
+  const TestPacks packs;
+  LoopbackNetwork network{{.latency = Millis{40}, .jitter = Millis{30}, .lossPercent = 5}, 3};
+  RecordingView hostView;
+  RecordingView guestView;
+  hostView.presentFor = 90;
+  guestView.presentFor = 20;
+  Player host{packs, network, 0, hostPartners(), &hostView};
+  Player guest{packs, network, 1, guestPartners(), &guestView};
+  // VS__tickSelectMap: left from the first arena goes round to the last.
+  connect(network, host, guest, 1);
+  pickLineup(host, {0, 1, 2});
+  pickLineup(guest, {1, 0, 2});
+
+  play(network, host, guest, 60 * 60 * 30,
+       [&] { return host.flow->view() == View::Result && guest.flow->view() == View::Result; });
+  INFO("host error: " << text(*host.flow, "versus.error_key"));
+  INFO("guest error: " << text(*guest.flow, "versus.error_key"));
+  REQUIRE(host.flow->view() == View::Result);
+  REQUIRE(guest.flow->view() == View::Result);
+  // Both fight on the host's pick, the third arena, for the whole series.
+  CHECK(hostView.arenas == std::vector<std::int32_t>{2, 2, 2, 2});
+  CHECK(guestView.arenas == hostView.arenas);
+  // The score before the first battle, after each and after the last
+  // (vs_scene.c: VS_playVersusIntroSequence).
+  CHECK(hostView.scores == 4);
+  CHECK(guestView.scores == 4);
+  // Each machine holds its battles while it presents, however long, and they stay in step.
+  CHECK(hostView.framesWhilePresenting == 0);
+  CHECK(guestView.framesWhilePresenting == 0);
+  CHECK(number(*host.flow, "versus.wins.0") == number(*guest.flow, "versus.wins.0"));
+  CHECK(number(*host.flow, "versus.wins.1") == number(*guest.flow, "versus.wins.1"));
+}
+
+TEST_CASE("vs_combat.c: VS__tickInput: left and right go round the commands past the finisher") {
+  const TestPacks packs;
+  LoopbackNetwork network{{}, 3};
+  Player host{packs, network, 0, hostPartners()};
+  Player guest{packs, network, 1, guestPartners()};
+  connect(network, host, guest);
+  pickLineup(host, {0, 1, 2});
+  pickLineup(guest, {1, 0, 2});
+  play(network, host, guest, 600,
+       [&] { return host.flow->view() == View::Match && guest.flow->view() == View::Match; });
+  REQUIRE(host.flow->view() == View::Match);
+  const double count = number(*host.flow, "versus.f.0.menu");
+  REQUIRE(count > 2);
+  // Right lowers the hovered index, down to 1 and round to the last; the finisher (0) is never
+  // hovered.
+  host.flow->act("right");
+  CHECK(number(*host.flow, "versus.f.0.hover") == count - 2);
+  for (int step = 0; step < static_cast<int>(count) - 2; ++step) {
+    host.flow->act("right");
+  }
+  CHECK(number(*host.flow, "versus.f.0.hover") == count - 1);
+  host.flow->act("left");
+  CHECK(number(*host.flow, "versus.f.0.hover") == 1);
 }

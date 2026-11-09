@@ -15,6 +15,7 @@
 #include <numbers>
 #include <vector>
 
+#include "arena_letters.hpp"
 #include "arena_lighting.hpp"
 #include "arena_view.hpp"
 #include "battle_motion.hpp"
@@ -43,17 +44,6 @@ constexpr double ShowFrameSeconds = 1.0 / 20.0;
 // std_main.c: STD_tickIntroStats: playSound(0, 0x16) while the stats count.
 constexpr std::int64_t SystemSoundSlot = 0;
 constexpr std::int32_t StatsCountSound = 0x16;
-// The letters' models (std_hud.c: STD_loadWinLoseModel: STDDAT\WIN_LOSE.TMD, four objects for the
-// won match and four for the lost one; STD_loadVersusSceneModel: STDDAT\DRAW.TMD).
-constexpr std::string_view WinLoseModel = "model/stddat/win_lose";
-constexpr std::size_t WinLoseObjects = 8;
-constexpr std::string_view DrawModel = "model/stddat/draw";
-constexpr std::size_t DrawObjects = 4;
-// std_hud.c: STD_loadChampionModels: the champion's title (STDDAT\CHAMP.TMD, nine objects) and the
-// podium of the arena (STDDAT\B_DAI.TMD for B_TOGI's arena, T_DAI.TMD for the other).
-constexpr std::string_view ChampionModel = "model/stddat/champ";
-constexpr std::size_t ChampionObjects = 9;
-
 std::string podiumOf(std::string_view arenaModel) {
   std::string podium{arenaModel};
   if (const auto at = podium.rfind("togi"); at != std::string::npos) {
@@ -61,13 +51,6 @@ std::string podiumOf(std::string_view arenaModel) {
   }
   return podium;
 }
-// STD_MODEL_SCENE_MATRIX: the letters' scene stands 1000 in front of the eye.
-constexpr float LetterSceneDepth = 1000.0F;
-// The letters are drawn this much nearer the eye, as large on screen, so the arena and the
-// fighters never hide them (the original draws them on their own ordering table).
-constexpr float LetterNear = 0.2F;
-constexpr float OriginalTurn = 4096.0F;
-constexpr float OriginalOne = 4096.0F;
 
 std::string firstLetters(std::string_view text, std::int32_t count) {
   std::size_t at = 0;
@@ -83,17 +66,6 @@ std::string firstLetters(std::string_view text, std::int32_t count) {
 std::int32_t letterCount(std::string_view text) {
   return static_cast<std::int32_t>(std::ranges::count_if(
       text, [](char c) { return (static_cast<unsigned char>(c) & 0xC0U) != 0x80U; }));
-}
-
-// The original's rotation of an object (RotMatrix with no z): about y, then x.
-glm::mat3 originalRotation(std::int32_t x, std::int32_t y) {
-  const float ax = static_cast<float>(x) * 2.0F * std::numbers::pi_v<float> / OriginalTurn;
-  const float ay = static_cast<float>(y) * 2.0F * std::numbers::pi_v<float> / OriginalTurn;
-  const glm::mat3 rx{1.0F,         0.0F, 0.0F,          0.0F,        std::cos(ax),
-                     std::sin(ax), 0.0F, -std::sin(ax), std::cos(ax)};
-  const glm::mat3 ry{std::cos(ay), 0.0F,         -std::sin(ay), 0.0F,        1.0F,
-                     0.0F,         std::sin(ay), 0.0F,          std::cos(ay)};
-  return ry * rx;
 }
 
 } // namespace
@@ -192,7 +164,7 @@ void StoryTournament::showArena(FieldScene& scene, const game::tournament::ShowV
   }
   if (champion_) {
     stage.shownProps.push_back(podiumModel_);
-    stage.shownProps.emplace_back(ChampionModel);
+    stage.shownProps.emplace_back(ChampionLetters.model);
   }
   stage.ground = arena_->collision;
   stage.lighting = arenaLighting();
@@ -629,8 +601,8 @@ void StoryTournament::noteMoveStarts(const game::battle::Battle& fight) {
 
 void StoryTournament::startLetters(game::tournament::MatchEnding ending) {
   letters_.emplace(ending, random_);
-  lettersModel_ =
-      std::string{ending == game::tournament::MatchEnding::Drawn ? DrawModel : WinLoseModel};
+  lettersModel_ = std::string{
+      ending == game::tournament::MatchEnding::Drawn ? DrawLetters.model : WinLoseLetters.model};
   if (ending != game::tournament::MatchEnding::Drawn && seen_) {
     endCamera_.emplace(seen_->partner, seen_->partnerBody, seen_->rival, seen_->rivalBody, random_);
   }
@@ -647,71 +619,16 @@ void StoryTournament::showLetters(FieldScene& scene, const game::tournament::Sho
   std::size_t objects = 0;
   if (champion_ && champion_->podiumShown()) {
     letters = champion_->letters();
-    shownModel = ChampionModel;
-    objects = ChampionObjects;
+    shownModel = ChampionLetters.model;
+    objects = ChampionLetters.objects;
   } else if (letters_) {
     letters = letters_->scene();
     shownModel = lettersModel_;
-    objects = lettersModel_ == DrawModel ? DrawObjects : WinLoseObjects;
+    objects = lettersModel_ == DrawLetters.model ? DrawLetters.objects : WinLoseLetters.objects;
   }
-  for (const std::string_view model : {WinLoseModel, DrawModel, ChampionModel}) {
-    if (model == shownModel) {
-      continue;
-    }
-    if (auto id = assets::AssetId::parse(model)) {
-      scene.setPosedProps(*id, {});
-    }
-  }
-  if (!letters) {
-    return;
-  }
-  const auto id = assets::AssetId::parse(shownModel);
-  if (!id) {
-    return;
-  }
-  // The eye's axes in the world: the letters' scene is the eye's own space (x right, y down, z
-  // ahead), 1000 ahead (STD_MODEL_SCENE_MATRIX), seen with the scene's projection.
-  const glm::vec3 eye = worldOf(view.eye);
-  const glm::vec3 ahead = glm::normalize(worldOf(view.target) - eye);
-  const glm::vec3 right = glm::normalize(glm::cross(ahead, glm::vec3{0.0F, 1.0F, 0.0F}));
-  const glm::vec3 up = glm::cross(right, ahead);
-  const glm::mat3 eyeAxes{right, -up, ahead};
-  const glm::mat3 toOriginal{1.0F, 0.0F, 0.0F, 0.0F, -1.0F, 0.0F, 0.0F, 0.0F, -1.0F};
-  const float depthScale = letters->projection > 0 ? static_cast<float>(view.projection) /
-                                                         static_cast<float>(letters->projection)
-                                                   : 1.0F;
-  // One place per gleam column: a letter whose face shows another column of the gold strip is
-  // drawn on its own, its texel coordinates moved, the other letters collapsed.
-  std::vector<FieldScene::PropPlace> places;
-  const auto placeOf = [&](std::int32_t gleamShift) -> std::vector<glm::mat4>& {
-    const glm::vec2 offset{-static_cast<float>(gleamShift), 0.0F};
-    for (FieldScene::PropPlace& place : places) {
-      if (place.texelOffset == offset) {
-        return place.joints;
-      }
-    }
-    places.push_back({.world = glm::mat4{1.0F},
-                      .joints = std::vector<glm::mat4>(objects, glm::mat4{0.0F}),
-                      .tint = glm::vec4{1.0F},
-                      .texelOffset = offset});
-    return places.back().joints;
-  };
-  for (const game::tournament::LetterPose& letter : letters->letters) {
-    if (letter.object >= objects) {
-      continue;
-    }
-    const glm::vec3 at{static_cast<float>(letter.location[0]),
-                       static_cast<float>(letter.location[1]),
-                       (static_cast<float>(letter.location[2]) + LetterSceneDepth) * depthScale};
-    const glm::mat3 scale{1.0F, 0.0F, 0.0F, 0.0F, static_cast<float>(letter.scaleY) / OriginalOne,
-                          0.0F, 0.0F, 0.0F, 1.0F};
-    const glm::mat3 turn = eyeAxes * originalRotation(letter.rotation[0], letter.rotation[1]) *
-                           scale * toOriginal * LetterNear;
-    glm::mat4 joint{turn};
-    joint[3] = glm::vec4{eye + (eyeAxes * at * LetterNear), 1.0F};
-    placeOf(letter.gleamShift).at(letter.object) = joint;
-  }
-  scene.setPosedProps(*id, std::move(places));
+  const std::array<LetterModel, 3> models{WinLoseLetters, DrawLetters, ChampionLetters};
+  showLetterModel(scene, models, LetterModel{.model = shownModel, .objects = objects}, letters,
+                  view);
 }
 
 bool StoryTournament::startChampion() {

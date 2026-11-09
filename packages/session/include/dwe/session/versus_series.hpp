@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <optional>
+#include <utility>
 
 namespace dwe::session {
 
@@ -27,6 +28,9 @@ public:
 
   [[nodiscard]] game::versus::VersusLink& link() { return link_; }
   [[nodiscard]] const game::versus::VersusLink& link() const { return link_; }
+  // Where the next battles place their fighters: the series' arena is known only once the host's
+  // setup arrived, so the flow sets it then; both machines must set the same.
+  void setPlacement(VersusPlacement placement) { placement_ = std::move(placement); }
   // This machine's fighter in the battles: the partner (1P) for the host, the rival (2P) for the
   // guest.
   [[nodiscard]] game::battle::FighterId localFighter() const;

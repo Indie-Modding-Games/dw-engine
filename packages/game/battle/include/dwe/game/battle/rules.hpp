@@ -383,6 +383,9 @@ struct VersusRules {
   std::vector<std::int32_t> series;
   // Each battle's clock (VS__combatInit: VS_addFighterCounter(99)).
   std::int32_t timeLimitSeconds = 0;
+  // The arenas the players choose from (vs_select.c: VS__tickSelectMap), by their number in the
+  // tournament's arenas (tournament.yaml: arena.arenas).
+  std::vector<std::int32_t> arenas;
 };
 
 // Engine values for what the original's animations and map collision decide (Hueco until measured).

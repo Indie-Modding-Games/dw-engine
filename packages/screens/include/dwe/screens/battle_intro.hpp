@@ -90,6 +90,12 @@ public:
   // The NPCs not fighting are still running off: the banner waits for them before it bursts
   // (BTL_handleBattleIntro loops until all of them are off screen).
   void holdBurst(bool held) { burstHeld_ = held; }
+  // The frames the banner shows at least before it bursts: a field battle's 200
+  // (BTL_handleBattleIntro), a versus battle's 60 (vs_combat.c: VS__combatSetup).
+  static constexpr std::int32_t FieldBannerFrames = 200;
+  void burstAfter(std::int32_t frames) { bannerFrames_ = frames; }
+  // The banner at once, without the anger marks (a versus battle has none: VS__combatSetup).
+  void skipAnger();
   [[nodiscard]] IntroStep current() const { return step_; }
   [[nodiscard]] bool done() const { return step_ == IntroStep::Done; }
   // battle_hud.c: BTL_isBattleStartTextFinished: the banner's pieces are all in place (while it
@@ -141,6 +147,7 @@ private:
   // BTL_BATTLE_TEXT_FINISHED.
   bool finished_ = false;
   bool burstHeld_ = false;
+  std::int32_t bannerFrames_ = FieldBannerFrames;
   std::vector<BannerPlace> places_;
   std::vector<Piece> pieces_;
 };

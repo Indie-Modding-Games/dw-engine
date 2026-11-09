@@ -138,6 +138,7 @@ dwe_add_app(game
         src/story_naming.cpp
         src/story_item_keeper.cpp
         src/story_shop.cpp
+        src/arena_letters.cpp
         src/story_tournament.cpp
         src/tournament_bracket_screen.cpp
         src/tournament_match_screen.cpp

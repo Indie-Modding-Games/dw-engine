@@ -2,6 +2,7 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/game/battle/events.hpp>
+#include <dwe/game/tournament/match_show.hpp>
 #include <dwe/game/versus/protocol.hpp>
 #include <dwe/net/peer_link.hpp>
 #include <dwe/screens/screen_settings.hpp>
@@ -48,6 +49,24 @@ public:
                            const game::battle::BattleEvents& events) = 0;
   // The series is over, failed or left: the battle it showed goes.
   virtual void battlesOver() = 0;
+
+  // The arena the series' battles are on (battle.yaml: versus.arenas; the same on both machines),
+  // before the first battle starts.
+  virtual void useArena(std::int32_t /*arena*/) {}
+  // Whether the view shows something the battle waits for (the fighters' entrance and the banner
+  // before the fight, its end after it): the flow holds the battle frames meanwhile, which is
+  // lockstep-safe (the other machine waits for this one's inputs) and confirms nothing.
+  [[nodiscard]] virtual bool presenting() const { return false; }
+  // A battle frame (20 a second) while presenting(); `confirm` was pressed since the last one.
+  virtual void presentFrame(bool /*confirm*/) {}
+  // The score screen between battles (vs_scene.c: VS_playVersusIntroSequence) is drawn on its own:
+  // the arena hides meanwhile. After the `last` battle it shows the series' winner's letters over
+  // it, or the drawn series' (`winner` 0 the host, 1 the guest; none a draw).
+  virtual void showScore(bool /*shown*/, bool /*last*/, std::optional<std::size_t> /*winner*/) {}
+  // A sound of the menus (the system bank's: 2 a move, 3 a pick).
+  virtual void menuSound(std::int32_t /*sound*/) {}
+  // What the view adds to the versus document's settings.
+  virtual void addSettings(screens::ScreenSettings& /*out*/) const {}
 };
 
 // What the versus flow needs from the game: the battles, who this machine is, the saves and the
@@ -66,6 +85,9 @@ struct VersusFlowDesc {
   std::function<std::uint64_t()> seed;
   // What shows the battles; none shows only the document. It must outlive the flow.
   VersusBattleView* view = nullptr;
+  // Where an arena puts the host's and the guest's fighters (its start: vs_intro.c:
+  // VS__placePlayer1, VS__placePlayer2); none keeps them on the rules' arena radius.
+  std::function<std::optional<session::VersusPlacement>(std::int32_t arena)> placement;
 };
 
 // The screens of an online versus series (docs/modulos/apps/game.md, «Versus en línea»), without
@@ -101,6 +123,9 @@ public:
   // Starts again at the menu, with no link.
   void open();
   [[nodiscard]] View view() const { return view_; }
+  // Gives the battles their view once it is built (the screen builds its arena while the players
+  // link, not when the menu opens); before a series starts.
+  void attachView(VersusBattleView* view) { desc_.view = view; }
   // Whether the player left the versus screens (back to the title).
   [[nodiscard]] bool closed() const { return closed_; }
   // Whether the view takes the keyboard's text (the guest's code entry).
@@ -129,6 +154,11 @@ private:
   void takeEvents(const game::battle::BattleEvents& events);
   void actInMatch(std::string_view action);
   void moveCursor(std::int32_t step, std::int32_t count);
+  void startScore(game::tournament::VersusScoreShow::Moment moment);
+  void tickPresentation();
+  [[nodiscard]] std::int32_t arenaOf() const;
+  void addHud(screens::ScreenSettings& out) const;
+  void addScore(screens::ScreenSettings& out) const;
   [[nodiscard]] bool enoughPartners(const VersusSave& save) const;
   [[nodiscard]] std::int32_t battles() const;
   [[nodiscard]] std::vector<game::battle::Command> localMenu() const;
@@ -137,8 +167,10 @@ private:
   View view_ = View::Menu;
   bool closed_ = false;
   std::int32_t cursor_ = 0;
-  // The series length the host picks, by its place in the rules' series.
+  // The series length the host picks, by its place in the rules' series, and its arena, by its
+  // place in the rules' versus arenas.
   std::int32_t seriesChoice_ = 0;
+  std::int32_t arenaChoice_ = 0;
   std::string typed_;
   // A code that cannot be one, shown under the entry.
   bool badEntry_ = false;
@@ -156,6 +188,13 @@ private:
   std::int32_t intermissionFrames_ = 0;
   // A first cancel in a battle asks for a second to leave; the frames it waits for it.
   std::int32_t leaveFrames_ = 0;
+  // A confirm pressed since the last battle frame, for what the view presents.
+  bool confirmed_ = false;
+  // The battle frames a battle has shown (vs_hud.c: VS_COMMAND_MENU_BLINK turns every 8).
+  std::int64_t shownFrames_ = 0;
+  // The score screen on show, with a view: before the first battle, between two and at the end.
+  std::optional<game::tournament::VersusScoreShow> score_;
+  bool scoring_ = false;
   // The last lines of what happened in the battle: a text key and its names and number.
   struct LogLine {
     std::string key;

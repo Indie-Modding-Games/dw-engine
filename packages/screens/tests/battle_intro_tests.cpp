@@ -42,6 +42,19 @@ TEST_CASE("the banner stays 200 frames unless the player is back, then until its
   CHECK(bannerFrames(150) == 151);
 }
 
+TEST_CASE("vs_combat.c VS__combatSetup: a versus banner opens at once and bursts after 60") {
+  BattleIntro intro(1);
+  intro.skipAnger();
+  CHECK(intro.current() == IntroStep::Banner);
+  intro.burstAfter(60);
+  std::int32_t frames = 0;
+  while (intro.current() == IntroStep::Banner && frames < 1000) {
+    ++frames;
+    intro.step();
+  }
+  CHECK(frames == 60);
+}
+
 TEST_CASE("the banner waits for the NPCs that run off before it bursts") {
   BattleIntro intro(1);
   while (intro.current() == IntroStep::Anger) {

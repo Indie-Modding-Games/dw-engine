@@ -36,6 +36,8 @@ public:
   // Once per game tick, after this machine's flow ticked at now(): the other player's flow ticks
   // and acts, and the clock moves on by `elapsed`.
   void tick(net::Millis elapsed);
+  // The other player's view of the battles, once it is built (VersusFlow::attachView).
+  void attachView(VersusBattleView* view) { rival_.attachView(view); }
 
 private:
   void act();

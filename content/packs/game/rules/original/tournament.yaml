@@ -63,9 +63,10 @@ schedule:
 # La arena de las copas (std_setup.c: STD_initializeTournament, STD_loadArenaAssets; std_main.c: STD_placePlayer1/2,
 # STD_runIntro, STD_setCameraOrbit). Por número de arena: modelo y rejilla de colisión del pack, dónde empiezan los
 # luchadores (el partner en +start_x, el rival en -start_x) y cuánto camina cada uno hacia el centro en su
-# presentación. Las copas de betl02 (CURRENT_SCREEN 0x6a) usan la arena 1; las demás, la 0. La cámara del combate
-# mira a los luchadores desde un lado: su distancia por projection / distance_divisor, entre min_distance (1000 con
-# el combate en marcha) y max_distance, a eye_height del suelo y bajando drop hasta el punto medio.
+# presentación. Las copas de betl02 (CURRENT_SCREEN 0x6a) usan la arena 1; las demás, la 0; el versus elige entre las
+# tres (battle.yaml: versus.arenas). La cámara del combate mira a los luchadores desde un lado: su distancia por
+# projection / distance_divisor, entre min_distance (1000 con el combate en marcha) y max_distance, a eye_height del
+# suelo y bajando drop hasta el punto medio.
 # La música es la del banco de cada arena (STD_initializeTournament: STD_MUSIC 30 en la arena 0, 32 en la 1) y sus
 # pistas (playMusic(STD_MUSIC, pista)): la entrada del compañero y la del rival (STD_runIntro), el combate
 # (STD_combatMain) y la del combate ganado o perdido (STD_deinitializeCombat, si no hubo empate).
@@ -73,6 +74,9 @@ arena:
   arenas:
     - {model: "model/stddat/t_togi", collision: "arena/b_togi/collision", start_x: 2500, walk_in: 2000, music_font: 30}
     - {model: "model/stddat/b_togi", collision: "arena/b_togi/collision", start_x: 1800, walk_in: 1300, music_font: 32}
+    # Sólo la del versus (vs_scene.c: VS_ARENA_MODELS[2], VS_ARENA_COLLISIONS[2]; VS_loadVSAssets: VS_MUSIC 31;
+    # vs_intro.c: VS__runIntro y VS__placePlayer1/2 la tratan como la 0).
+    - {model: "model/stddat/e_togi", collision: "arena/e_togi/collision", start_x: 2500, walk_in: 2000, music_font: 31}
   music: {partner_intro: 0, rival_intro: 1, fight: 2, won: 3, lost: 4}
   second_arena_map: betl02
   yaws: {partner: 1024, rival: 3072}
