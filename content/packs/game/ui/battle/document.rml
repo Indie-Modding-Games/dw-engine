@@ -2,6 +2,7 @@
 <head>
 	<title>Battle</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
+	<script src="../common/hud_digits.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -106,8 +107,8 @@
 		<div id="partner-panel">
 			<div id="fighter-0" class="fighter partner hidden">
 				<div class="fighter-head"><span class="original-look fighter-name" id="fighter-0-name"></span><span class="fighter-status" id="fighter-0-status"></span></div>
-				<div class="bar-row" id="fighter-0-hp-row"><span class="bar-label original-look" id="fighter-0-hp-label"></span><div class="bar hp"><div class="fill" id="fighter-0-hp-fill"></div></div><span class="bar-value original-look" id="fighter-0-hp"></span></div>
-				<div class="bar-row" id="fighter-0-mp-row"><span class="bar-label original-look" id="fighter-0-mp-label"></span><div class="bar mp"><div class="fill" id="fighter-0-mp-fill"></div></div><span class="bar-value original-look" id="fighter-0-mp"></span></div>
+				<div class="bar-row" id="fighter-0-hp-row"><span class="bar-label original-look" id="fighter-0-hp-label"></span><div class="bar hp"><div class="fill" id="fighter-0-hp-fill"></div></div><span class="bar-value original-look" id="fighter-0-hp"></span><div class="bar-digits"><div id="fighter-0-hp-d-0" class="hud-digit place-0 hidden"></div><div id="fighter-0-hp-d-1" class="hud-digit place-1 hidden"></div><div id="fighter-0-hp-d-2" class="hud-digit place-2 hidden"></div><div id="fighter-0-hp-d-3" class="hud-digit place-3 hidden"></div></div></div>
+				<div class="bar-row" id="fighter-0-mp-row"><span class="bar-label original-look" id="fighter-0-mp-label"></span><div class="bar mp"><div class="fill" id="fighter-0-mp-fill"></div></div><span class="bar-value original-look" id="fighter-0-mp"></span><div class="bar-digits"><div id="fighter-0-mp-d-0" class="hud-digit place-0 hidden"></div><div id="fighter-0-mp-d-1" class="hud-digit place-1 hidden"></div><div id="fighter-0-mp-d-2" class="hud-digit place-2 hidden"></div><div id="fighter-0-mp-d-3" class="hud-digit place-3 hidden"></div></div></div>
 			</div>
 			<div id="finisher">
 				<span class="original-look" id="finisher-label" text-key="battle.finisher"></span>

@@ -3,6 +3,7 @@
 	<title>Online versus</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/hud_digits.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -10,8 +11,8 @@
 	     each side's bars, finisher letters, command name and command strip, and the clock between them. -->
 	<div id="hud" class="hidden">
 		<div id="side-0" class="vs-side side-0">
-			<div class="vs-bar hp"><div class="vs-icon"></div><div class="vs-gauge"><div id="f0-hp-fill" class="vs-fill"></div></div><div class="vs-value"><div id="f0-hp-d-0" class="vs-digit place-0 hidden"></div><div id="f0-hp-d-1" class="vs-digit place-1 hidden"></div><div id="f0-hp-d-2" class="vs-digit place-2 hidden"></div><div id="f0-hp-d-3" class="vs-digit place-3 hidden"></div><span id="f0-hp-value" class="vs-value-text original-look"></span></div></div>
-			<div class="vs-bar mp"><div class="vs-icon"></div><div class="vs-gauge"><div id="f0-mp-fill" class="vs-fill"></div></div><div class="vs-value"><div id="f0-mp-d-0" class="vs-digit place-0 hidden"></div><div id="f0-mp-d-1" class="vs-digit place-1 hidden"></div><div id="f0-mp-d-2" class="vs-digit place-2 hidden"></div><div id="f0-mp-d-3" class="vs-digit place-3 hidden"></div><span id="f0-mp-value" class="vs-value-text original-look"></span></div></div>
+			<div class="vs-bar hp"><div class="vs-icon"></div><div class="vs-gauge"><div id="f0-hp-fill" class="vs-fill"></div></div><div class="vs-value"><div id="f0-hp-d-0" class="hud-digit place-0 hidden"></div><div id="f0-hp-d-1" class="hud-digit place-1 hidden"></div><div id="f0-hp-d-2" class="hud-digit place-2 hidden"></div><div id="f0-hp-d-3" class="hud-digit place-3 hidden"></div><span id="f0-hp-value" class="vs-value-text original-look"></span></div></div>
+			<div class="vs-bar mp"><div class="vs-icon"></div><div class="vs-gauge"><div id="f0-mp-fill" class="vs-fill"></div></div><div class="vs-value"><div id="f0-mp-d-0" class="hud-digit place-0 hidden"></div><div id="f0-mp-d-1" class="hud-digit place-1 hidden"></div><div id="f0-mp-d-2" class="hud-digit place-2 hidden"></div><div id="f0-mp-d-3" class="hud-digit place-3 hidden"></div><span id="f0-mp-value" class="vs-value-text original-look"></span></div></div>
 			<div class="vs-finish"><span id="f0-word" class="vs-word original-look"></span><div id="f0-seg-0" class="vs-seg seg-0"></div><div id="f0-seg-1" class="vs-seg seg-1"></div><div id="f0-seg-2" class="vs-seg seg-2"></div><div id="f0-seg-3" class="vs-seg seg-3"></div><div id="f0-seg-4" class="vs-seg seg-4"></div><div id="f0-seg-5" class="vs-seg seg-5"></div><div id="f0-seg-6" class="vs-seg seg-6"></div><div id="f0-seg-7" class="vs-seg seg-7"></div></div>
 			<div id="f0-push" class="vs-push hidden" onclick="act('finisher')"><span class="key" id="f0-push-key"></span><div class="vs-push-word" text-key="battle.finisher_push"></div></div>
 			<p id="f0-command" class="vs-name original-look"></p>
@@ -42,8 +43,8 @@
 			</div>
 		</div>
 		<div id="side-1" class="vs-side side-1">
-			<div class="vs-bar hp"><div class="vs-icon"></div><div class="vs-gauge"><div id="f1-hp-fill" class="vs-fill"></div></div><div class="vs-value"><div id="f1-hp-d-0" class="vs-digit place-0 hidden"></div><div id="f1-hp-d-1" class="vs-digit place-1 hidden"></div><div id="f1-hp-d-2" class="vs-digit place-2 hidden"></div><div id="f1-hp-d-3" class="vs-digit place-3 hidden"></div><span id="f1-hp-value" class="vs-value-text original-look"></span></div></div>
-			<div class="vs-bar mp"><div class="vs-icon"></div><div class="vs-gauge"><div id="f1-mp-fill" class="vs-fill"></div></div><div class="vs-value"><div id="f1-mp-d-0" class="vs-digit place-0 hidden"></div><div id="f1-mp-d-1" class="vs-digit place-1 hidden"></div><div id="f1-mp-d-2" class="vs-digit place-2 hidden"></div><div id="f1-mp-d-3" class="vs-digit place-3 hidden"></div><span id="f1-mp-value" class="vs-value-text original-look"></span></div></div>
+			<div class="vs-bar hp"><div class="vs-icon"></div><div class="vs-gauge"><div id="f1-hp-fill" class="vs-fill"></div></div><div class="vs-value"><div id="f1-hp-d-0" class="hud-digit place-0 hidden"></div><div id="f1-hp-d-1" class="hud-digit place-1 hidden"></div><div id="f1-hp-d-2" class="hud-digit place-2 hidden"></div><div id="f1-hp-d-3" class="hud-digit place-3 hidden"></div><span id="f1-hp-value" class="vs-value-text original-look"></span></div></div>
+			<div class="vs-bar mp"><div class="vs-icon"></div><div class="vs-gauge"><div id="f1-mp-fill" class="vs-fill"></div></div><div class="vs-value"><div id="f1-mp-d-0" class="hud-digit place-0 hidden"></div><div id="f1-mp-d-1" class="hud-digit place-1 hidden"></div><div id="f1-mp-d-2" class="hud-digit place-2 hidden"></div><div id="f1-mp-d-3" class="hud-digit place-3 hidden"></div><span id="f1-mp-value" class="vs-value-text original-look"></span></div></div>
 			<div class="vs-finish"><span id="f1-word" class="vs-word original-look"></span><div id="f1-seg-0" class="vs-seg seg-0"></div><div id="f1-seg-1" class="vs-seg seg-1"></div><div id="f1-seg-2" class="vs-seg seg-2"></div><div id="f1-seg-3" class="vs-seg seg-3"></div><div id="f1-seg-4" class="vs-seg seg-4"></div><div id="f1-seg-5" class="vs-seg seg-5"></div><div id="f1-seg-6" class="vs-seg seg-6"></div><div id="f1-seg-7" class="vs-seg seg-7"></div></div>
 			<div id="f1-push" class="vs-push hidden" onclick="act('finisher')"><span class="key" id="f1-push-key"></span><div class="vs-push-word" text-key="battle.finisher_push"></div></div>
 			<p id="f1-command" class="vs-name original-look"></p>

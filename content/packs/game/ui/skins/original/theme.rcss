@@ -90,3 +90,30 @@ button:active {
 	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
 		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
+
+/* A bar's value as the original's HUD digits (vs_hud.c: VS_renderNumber, battle_hud.c: BTL_renderNumber; placed by
+   common/hud_digits.lua): BI_IN's 7 x 11 digits (u = digit x 7, v 0xac, CLUT (256, 492), palette 12) drawn untinted,
+   four places 7 apart, 3 pixels above the top of the box that holds them. */
+.hud-digit {
+	display: block;
+	position: absolute;
+	top: -9dp;
+	width: 21dp;
+	height: 33dp;
+}
+
+.hud-digit.hidden { display: none; }
+.hud-digit.place-0 { left: 0; }
+.hud-digit.place-1 { left: 21dp; }
+.hud-digit.place-2 { left: 42dp; }
+.hud-digit.place-3 { left: 63dp; }
+.hud-digit.d-0 { decorator: image(battle-hud-digit-0); }
+.hud-digit.d-1 { decorator: image(battle-hud-digit-1); }
+.hud-digit.d-2 { decorator: image(battle-hud-digit-2); }
+.hud-digit.d-3 { decorator: image(battle-hud-digit-3); }
+.hud-digit.d-4 { decorator: image(battle-hud-digit-4); }
+.hud-digit.d-5 { decorator: image(battle-hud-digit-5); }
+.hud-digit.d-6 { decorator: image(battle-hud-digit-6); }
+.hud-digit.d-7 { decorator: image(battle-hud-digit-7); }
+.hud-digit.d-8 { decorator: image(battle-hud-digit-8); }
+.hud-digit.d-9 { decorator: image(battle-hud-digit-9); }

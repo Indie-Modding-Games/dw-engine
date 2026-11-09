@@ -9,33 +9,9 @@
 .mp .vs-icon { decorator: image(battle-mp); }
 .vs-gauge { background-color: transparent; }
 
-/* VS_renderNumber(0, 4, x + 0x49, y - 3, value, 8): BI_IN's 7 x 11 digits (u = digit x 7, v 0xac, CLUT (256, 492),
-   palette 12) drawn untinted, right-aligned in four places 7 apart from the frame's (73, -3). */
+/* VS_renderNumber(0, 4, x + 0x49, y - 3, value, 8): the value as the original's digits (.hud-digit, theme.rcss)
+   from the frame's (73, -3), instead of the text. */
 .vs-value-text { display: none; }
-
-.vs-digit {
-	display: block;
-	position: absolute;
-	top: -9dp;
-	width: 21dp;
-	height: 33dp;
-}
-
-.vs-digit.hidden { display: none; }
-.vs-digit.place-0 { left: 0; }
-.vs-digit.place-1 { left: 21dp; }
-.vs-digit.place-2 { left: 42dp; }
-.vs-digit.place-3 { left: 63dp; }
-.vs-digit.d-0 { decorator: image(battle-hud-digit-0); }
-.vs-digit.d-1 { decorator: image(battle-hud-digit-1); }
-.vs-digit.d-2 { decorator: image(battle-hud-digit-2); }
-.vs-digit.d-3 { decorator: image(battle-hud-digit-3); }
-.vs-digit.d-4 { decorator: image(battle-hud-digit-4); }
-.vs-digit.d-5 { decorator: image(battle-hud-digit-5); }
-.vs-digit.d-6 { decorator: image(battle-hud-digit-6); }
-.vs-digit.d-7 { decorator: image(battle-hud-digit-7); }
-.vs-digit.d-8 { decorator: image(battle-hud-digit-8); }
-.vs-digit.d-9 { decorator: image(battle-hud-digit-9); }
 
 /* VS_renderHPBarDigits: the English picture of "FINISH!!" (BI_IN, palette 12); in another language the word in the
    original's font. */

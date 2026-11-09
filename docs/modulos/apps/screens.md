@@ -51,6 +51,11 @@ El juego añade `battle.phase` (`intro`, `fight`, `victory`, `end` o `closing`; 
 sonidos), `battle_bag_open`, `battle_bag_close` y `battle_throw` (el número de la ranura)
 ([ui.md](../../architecture/ui.md)).
 
+Con el aspecto original, el HP y el MP del compañero se dibujan con las cifras del original
+(`battle_hud.c: BTL_renderNumber`: las de 7 × 11 de BI_IN, blancas y sin tinte, a la derecha en cuatro posiciones),
+las mismas que el HUD del versus. Las coloca `ui/common/hud_digits.lua` y les da su imagen
+`skins/original/theme.rcss`. El aspecto moderno escribe el número como texto.
+
 ### Apertura del combate
 
 `BattleIntro` es la apertura del original paso a paso, a su ritmo de combate (20 frames por segundo): la marca de

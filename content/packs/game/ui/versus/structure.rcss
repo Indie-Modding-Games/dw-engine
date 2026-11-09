@@ -106,9 +106,6 @@
 	color: #d0d0d0;
 }
 
-/* The value as the original's digit sprites, for the skins that have them (skins/original/versus). */
-.vs-digit { display: none; }
-
 /* VS_renderHPBarDigits: "FINISH!!" from the frame's x -1, y 41 (35 here): one letter per sixth of the gauge. */
 .vs-finish {
 	position: absolute;
