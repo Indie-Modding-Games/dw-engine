@@ -18,7 +18,7 @@ El [plan por fases](../roadmap.md) es el resumen con el estado del día. Aquí e
 | 4 | [Contenido y modos](fase-4-contenido-y-modos.md) | Desde el 2026-10-22, el juego original entero y jugable, entregado por etapas, con la beta por el lanzador. La especificación es la del plan anterior: de ella siguen en la fase 4 la historia convertida a Lua y la base de los mods |
 | 5 | Sin especificación todavía | Lo que no es del original: historia reescrita, personajes, modos de juego, el modo versus y la API de mods completa; termina con la primera versión del mod |
 
-Dónde está el proyecto hoy y qué viene después: [plan por fases](../roadmap.md#dónde-estamos-2026-11-06).
+Dónde está el proyecto hoy y qué viene después: [plan por fases](../roadmap.md#dónde-estamos-2026-11-09).
 
 ```mermaid
 flowchart LR

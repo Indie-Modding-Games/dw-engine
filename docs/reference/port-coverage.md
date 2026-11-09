@@ -41,7 +41,7 @@ una partida normal:
 
 | # | Hueco | Decomp | Motor |
 |---:|---|---|---|
-| 1 | Sin modo versus de dos jugadores ni la demo de combate del título (las 91 funciones de `vs/`); la máquina de guardar ya registra al compañero para él. Va a la fase 5 | `vs/` | — |
+| 1 | El versus de dos jugadores ya se juega, en línea y en la Arena ([versus](../modulos/game/versus.md)), pero sin la demo de combate del título ni parte de la escena del original (las 60 funciones de `vs/` que faltan y 4 a medias). Va a la fase 5 | `vs/` | `packages/game/versus` |
 
 ## Otros huecos que no son una función del índice
 

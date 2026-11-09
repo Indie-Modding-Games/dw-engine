@@ -193,7 +193,9 @@ interfaz se cambian en vivo desde el menú y cubren todas las pantallas, con rut
 
 ## Criterio de cierre
 
-Se publica la primera versión del mod. La fase sigue abierta después para nuevo contenido.
+Desde el 2026-10-22: el juego original se juega entero, de la portada a los créditos, con las rutas `route-full-01` a
+`route-full-09` en verde en `main`, y hay una versión estable publicada ([plan por fases](../roadmap.md#fase-4-el-juego-original-entero)).
+La primera versión del mod, el criterio de antes, es ahora el de la fase 5.
 
 ## Dependencias y riesgos
 
@@ -202,12 +204,36 @@ Se publica la primera versión del mod. La fase sigue abierta después para nuev
 - Riesgo: Digimon de otros juegos. Se resuelve con un importador desde el disco del usuario o con modelos propios del
   equipo.
 
-## Estado (2026-10-21)
+## Estado (2026-11-09)
 
-Fase 4a empezada.
+Fase 4 abierta: el juego se juega entero, pero aún no hay una versión estable.
 
-Nota (2026-11-06): desde el 2026-10-22 la fase 4 es solo el juego original entero, entregado por etapas detrás del
-candado de historia; lo demás de esta especificación pasó a la fase 5. De la fase 4a ya están la conversión de los
-scripts a Lua (R4.1), el mod de ejemplo (`tests/mods/example_mod`, R4.2), la API de Lua versionada (R4.3), los aspectos
-de la interfaz y los tests de ida y vuelta del editor de mapas (R4.7). El framework de modos y la Arena están en la
-fase 5. Estado de hoy: [plan por fases](../roadmap.md#dónde-estamos-2026-11-06).
+- **Cumplido: la historia entera.** La cadena `route-full-01` a `route-full-09` juega de la portada a los créditos
+  (VAN-11, cerrada el 2026-11-04). No es parte de ctest: corre con `scripts/story-chain.sh`, con pantalla y GPU o
+  lavapipe ([prueba vertical](../guides/prueba-vertical.md)).
+- **Cobertura del port:** 1391 de las 1456 funciones a portar están portadas y 5 a medias. Las 60 que faltan y 4 de las
+  parciales son del versus y la demo del título (fase 5); la otra parcial es de entrenamiento
+  ([cobertura](../reference/port-coverage.md)).
+- **ctest con `DWE_DISC` y `DWE_CONTENT`** (preset `ci`, sobre `main` del 2026-11-09): pasan 150 de 154 tests. Fallan
+  dos tests de rutas del campo y dos de `dwx validate` (abajo). El de los objetos de `EVOLUTION_ITEM_TARGET` fallaba
+  porque contaba también los objetos raros del paquete `game`, que solo dan forma con los rulesets del contenido
+  oculto; ya los salta.
+
+Lo que bloquea el cierre, cada uno con su tarjeta propuesta:
+
+1. **No hay versión estable.** Solo hay versiones de prueba (la última, `v0.1.0-beta.1051`, del 2026-11-09). Tarjeta:
+   «Promover la primera estable cuando acabe la ronda de testers».
+2. **Las rutas del campo con el disco no llegan a la casa del anciano.** Los tests «the route with stick directions» y
+   «the route with click-to-move» (`packages/game/field/tests/route_tests.cpp`) se quedan en `twna01` sin llegar al
+   disparador 112. Tarjeta: «Arreglar las rutas de prueba del campo de File City a la casa del anciano».
+3. **`dwx validate` encuentra problemas en el paquete `game`.** Claves que los esquemas no conocen, documentos de
+   `rules/original/` sin regla de esquema y esquemas con palabras clave que el validador no admite. Tarjeta: «Poner al
+   día los esquemas de `content/schemas` con el paquete `game` y dejar `dwx validate` sin problemas».
+4. **La cadena de la historia no ha corrido sobre el `main` de hoy.** VAN-11 la dejó en verde el 2026-11-04 y desde
+   entonces han entrado más cambios. Tarjeta: «Correr `route-full-01` a `route-full-09` sobre el commit que se promueva a
+   estable».
+
+De la especificación de arriba, la fase 4a dejó en `main` la conversión de los scripts a Lua (R4.1), el mod de
+ejemplo (`tests/mods/example_mod`, R4.2), la API de Lua versionada (R4.3), los aspectos de la interfaz y los tests de
+ida y vuelta del editor de mapas (R4.7). El framework de modos, el versus y la Arena son de la fase 5. Estado de hoy:
+[plan por fases](../roadmap.md#dónde-estamos-2026-11-09).
