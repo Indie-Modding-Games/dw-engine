@@ -39,7 +39,8 @@ el audio del sistema en tiempo de ejecución. `scripts/package_linux.sh` comprue
 
 ## Primer arranque
 
-Sin `--content`, el juego monta `./content` si tiene paquete base (lo que deja `dwx extract` por defecto) y, si no, la
+Sin `--content`, el juego monta `./content` si tiene paquete base (`base.pak`, o la carpeta `base/` que deja
+`dwx extract` por defecto) y, si no, la
 carpeta `content/` de los datos del usuario (`~/.local/share/indie-modding-games/dwe/`, o bajo `$XDG_DATA_HOME`).
 Cuando esa carpeta no tiene paquete base, antes de montar nada el juego abre la pantalla de primer arranque
 (`apps/game/src/first_run_screen.cpp`), en inglés o español según el idioma guardado o el del sistema:
@@ -49,10 +50,18 @@ Cuando esa carpeta no tiene paquete base, antes de montar nada el juego abre la 
    `dwx identify`: `supported us` sigue; `other-version` (otra región) y `unknown` (otro juego) se explican al
    jugador, igual que una imagen que no se puede leer.
 3. Ejecuta `dwx extract --progress --out <datos>/content.partial/base` y muestra el paso y el porcentaje de las
-   líneas `progress <porcentaje> <paso>`. Con la imagen norteamericana tarda menos de un minuto y ocupa unos 1,5 GB.
-4. Mueve `base/` y `ui_original/` a `<datos>/content/`, escribe `<datos>/content/install.yaml` (la
-   `ExtractorVersion` del `dwx` que lo leyó y la ruta absoluta de la imagen) y el juego sigue como siempre, hasta la
-   pantalla de título.
+   líneas `progress <porcentaje> <paso>`. Con la imagen norteamericana tarda menos de un minuto.
+4. Ejecuta `dwx cook-pak <datos>/content.partial/base -o <datos>/content.partial/base.pak --progress`: cocina el
+   paquete base (texturas a KTX2, sonidos a Opus, películas a AV1) en un solo archivo y comprueba que el motor lo abre
+   entero. Es la parte larga (varios minutos); la barra le da el 80 % y la extracción el 20 % primero.
+5. Borra la carpeta `base/` de `content.partial`, mueve `base.pak` y `ui_original/` a `<datos>/content/` (un `base/`
+   suelto de una instalación anterior se quita después de que `base.pak` esté en su sitio), escribe
+   `<datos>/content/install.yaml` (la `ExtractorVersion` del `dwx` que lo leyó y la ruta absoluta de la imagen) y el
+   juego sigue como siempre, hasta la pantalla de título.
+
+`--content <carpeta>` acepta las dos formas del paquete base: `base.pak` o una carpeta `base/` (la de un desarrollador,
+de `dwx extract`). Si están las dos, gana la carpeta. El juego sin lanzador no convierte una instalación suelta
+antigua: la sigue jugando así; la convierte el lanzador al abrirse.
 
 Si el contenido instalado tiene paquete base pero su `install.yaml` falta o es de otra `ExtractorVersion` (el juego
 se actualizó y lee el disco de otra forma), la misma pantalla se abre con el título «El juego se actualizó», explica

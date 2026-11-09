@@ -21,8 +21,11 @@ inline constexpr std::string_view InstalledContentFolderName = "content";
 // Where an extraction writes before its packs move into the installed content folder, so a stopped
 // one never leaves half a pack where the game mounts it.
 inline constexpr std::string_view PartialContentFolderName = "content.partial";
-// The base pack's folder in a content folder, as dwx extract writes it.
+// The base pack's folder in a content folder, as dwx extract writes it (a developer's content).
 inline constexpr std::string_view BasePackFolderName = "base";
+// The base pack's archive in a content folder, as an install leaves it: dwx cook-pak cooks the
+// extracted folder into it (ADR 0017). A folder of the same name hides it (assets::findPacks).
+inline constexpr std::string_view BasePackArchiveName = "base.pak";
 // The record an install leaves in the installed content folder (InstallRecord).
 inline constexpr std::string_view InstallRecordFileName = "install.yaml";
 
@@ -44,7 +47,8 @@ core::Result<void> writeInstallRecord(const std::filesystem::path& content,
 // and settings are not in it, so reading again never touches them.
 [[nodiscard]] bool installIsOutdated(const std::filesystem::path& content);
 
-// Whether a content folder has the base pack that dwx extract writes (base/pack.yaml).
+// Whether a content folder has the base pack: the archive an install leaves (base.pak) or the
+// folder that dwx extract writes (base/pack.yaml).
 [[nodiscard]] bool hasBasePack(const std::filesystem::path& content);
 
 // The content folder the game mounts when --content is not given: a ./content with a base pack, as
@@ -111,8 +115,10 @@ enum class InstallProblem : std::uint8_t {
 };
 
 // Installs the player's disc into the installed content folder: dwx identify, then dwx extract
-// --progress into the partial folder, then its packs move into place. update() moves it on without
-// ever waiting, so a screen can show its progress every frame.
+// --progress into the partial folder, then dwx cook-pak --progress cooks the extracted base pack
+// into base.pak there, and the packs move into place: base.pak, which replaces a base folder of an
+// older install, and the others as dwx extract wrote them. update() moves it on without ever
+// waiting, so a screen can show its progress every frame.
 class DiscInstall {
 public:
   enum class Stage : std::uint8_t { Identifying, Extracting, Finished, Failed };
@@ -141,8 +147,10 @@ public:
   [[nodiscard]] const std::string& detail() const { return detail_; }
   // The release's version that dwx identify gave ("us", "eu"...), once known.
   [[nodiscard]] const std::string& version() const { return version_; }
+  // Of the whole install: the extraction, then the cook into base.pak.
   [[nodiscard]] int percent() const { return percent_; }
-  // The step of dwx extract --progress (read, extract, write, check, upscale, done).
+  // The step of dwx extract --progress (read, extract, write, check, upscale), then of dwx cook-pak
+  // --progress (cook, pack, check), then done.
   [[nodiscard]] const std::string& step() const { return step_; }
   // The content folder the packs went to, once finished.
   [[nodiscard]] const std::filesystem::path& contentFolder() const { return content_; }
@@ -154,6 +162,9 @@ private:
   void startExtraction();
   void finishIdentify(int exitCode);
   void finishExtraction(int exitCode);
+  void startCooking();
+  void finishCooking(int exitCode);
+  void startDwx(std::span<const std::string> arguments);
   void removePartial();
 
   std::filesystem::path image_;
@@ -163,6 +174,8 @@ private:
   std::optional<platform::ChildProcess> process_;
   std::vector<std::string> output_;
   Stage stage_ = Stage::Failed;
+  // Within Extracting: dwx cook-pak runs, after dwx extract.
+  bool cooking_ = false;
   InstallProblem problem_ = InstallProblem::None;
   std::string detail_;
   std::string version_;

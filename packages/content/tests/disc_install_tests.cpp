@@ -1,6 +1,7 @@
 #include <dwe/assets/extractor_version.hpp>
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/pak.hpp>
+#include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/content/disc_install.hpp>
 #include <dwe/test_support/temp_folder.hpp>
 
@@ -26,6 +27,13 @@ TEST_CASE("a content folder has a base pack when base/pack.yaml is there") {
   CHECK_FALSE(hasBasePack(temp.path()));
   std::ofstream{temp.path() / "base/pack.yaml"} << "id: base\n";
   CHECK(hasBasePack(temp.path()));
+}
+
+TEST_CASE("a content folder has a base pack when base.pak is there") {
+  const TempFolder temp;
+  std::ofstream{temp.path() / "base.pak"} << "x";
+  CHECK(hasBasePack(temp.path()));
+  CHECK(installIsOutdated(temp.path()));
 }
 
 TEST_CASE("an install record keeps the extractor version and the disc image") {
@@ -194,20 +202,52 @@ TEST_CASE("an install with no dwx to run fails") {
 #ifndef _WIN32
 namespace {
 
+constexpr std::string_view BaseManifest = "id: base\nversion: 1.0.0\nlayer: base\n";
+
+// A real base.pak with one asset, for the stand-in's cook-pak to hand over.
+std::filesystem::path baseArchive(const std::filesystem::path& folder) {
+  const std::filesystem::path pack = folder / "archive-source";
+  std::filesystem::create_directories(pack / "text");
+  std::ofstream{pack / "pack.yaml"} << BaseManifest;
+  std::ofstream{pack / "text/hello.yaml"} << "hello: world\n";
+  const std::filesystem::path archive = folder / "prepared.pak";
+  REQUIRE(dwe::assets::writePak(dwe::assets::DiskFileSystem{}, pack, archive).has_value());
+  return archive;
+}
+
 // A stand-in for dwx: a shell script that answers identify with identifyLine and its exit code,
-// and whose extract writes a base pack.
+// whose extract writes a base pack folder and an ui_original pack beside it, and whose cook-pak
+// writes the archive baseArchive made, leaving its cooked folder behind (cookCode: its exit code).
 std::filesystem::path fakeDwx(const std::filesystem::path& folder, std::string_view identifyLine,
-                              int identifyCode) {
+                              int identifyCode, int cookCode = 0) {
+  const std::filesystem::path archive = baseArchive(folder);
   const std::filesystem::path script = folder / "fake-dwx";
   std::ofstream{script} << "#!/bin/sh\n"
                         << "case \"$1\" in\n"
                         << "identify) echo '" << identifyLine << "'; exit " << identifyCode
                         << ";;\n"
-                        << "extract) mkdir -p \"$3\" && echo 'id: base' > \"$3/pack.yaml\" && "
+                        << "extract) mkdir -p \"$3\" \"$3/../ui_original\" && "
+                           "echo 'id: base' > \"$3/pack.yaml\" && "
+                           "echo 'id: ui_original' > \"$3/../ui_original/pack.yaml\" && "
                            "echo 'progress 100 done'; exit 0;;\n"
+                        << "cook-pak) [ -f \"$2/pack.yaml\" ] || exit 2; echo 'progress 50 cook'; "
+                        << R"(mkdir -p "$4.cook" && echo 'id: base' > "$4.cook/pack.yaml"; )"
+                        << "[ " << cookCode << " -eq 0 ] || { echo 'dwx: the cook failed'; exit "
+                        << cookCode << "; }; cp '" << dwe::assets::pathText(archive)
+                        << "' \"$4\" && echo 'progress 100 done'; exit 0;;\n"
                         << "esac\nexit 2\n";
   std::filesystem::permissions(script, std::filesystem::perms::owner_all);
   return script;
+}
+
+// The names in a folder, sorted.
+std::vector<std::string> namesIn(const std::filesystem::path& folder) {
+  std::vector<std::string> names;
+  for (const auto& entry : std::filesystem::directory_iterator{folder}) {
+    names.push_back(entry.path().filename().string());
+  }
+  std::ranges::sort(names);
+  return names;
 }
 
 // Runs an install until it finishes or fails, for at most half a minute.
@@ -256,12 +296,61 @@ TEST_CASE("reading the disc again replaces the packs and its record, never the s
   REQUIRE(record.has_value());
   CHECK(record->extractorVersion == dwe::assets::ExtractorVersion);
   CHECK(record->image == std::filesystem::absolute(temp.path() / "disc.iso"));
-  std::ifstream pack{data / "content/base/pack.yaml"};
-  CHECK(std::string{std::istreambuf_iterator<char>{pack}, {}} == "id: base\n");
+  // The older install's base folder made way for the archive.
+  CHECK(namesIn(data / "content") ==
+        std::vector<std::string>{"base.pak", "install.yaml", "ui_original"});
   std::ifstream save{data / "saves/slot1.yaml"};
   CHECK(std::string{std::istreambuf_iterator<char>{save}, {}} == "kept\n");
   std::ifstream settings{data / "settings.yaml"};
   CHECK(std::string{std::istreambuf_iterator<char>{settings}, {}} == "language: es\n");
+  CHECK_FALSE(std::filesystem::exists(data / PartialContentFolderName));
+}
+TEST_CASE("an install from scratch ends with base.pak alone, and the base pack mounts from it") {
+  const TempFolder temp;
+  const std::filesystem::path data = temp.path() / "data";
+  std::ofstream{temp.path() / "disc.iso"} << "x";
+  DiscInstall install =
+      DiscInstall::start(temp.path() / "disc.iso", data, fakeDwx(temp.path(), "supported us", 0));
+  runToEnd(install);
+  REQUIRE(install.stage() == DiscInstall::Stage::Finished);
+  CHECK(install.percent() == 100);
+  CHECK(namesIn(data) == std::vector<std::string>{"content"});
+  CHECK(namesIn(data / "content") ==
+        std::vector<std::string>{"base.pak", "install.yaml", "ui_original"});
+  CHECK(hasBasePack(data / "content"));
+  CHECK_FALSE(installIsOutdated(data / "content"));
+
+  // The game finds the archive as the base pack, and reads its assets from it.
+  const dwe::assets::DiskFileSystem disk;
+  const auto found = dwe::assets::findPacks(disk, data / "content");
+  REQUIRE(found.has_value());
+  const std::vector<dwe::assets::FoundPack> base{found->packs.front()};
+  CHECK(base.front().path == data / "content/base.pak");
+  const auto opened = dwe::assets::openPacks(disk, base, dwe::assets::PackOrigin::Engine);
+  REQUIRE(opened.has_value());
+  const auto files = dwe::assets::VirtualFileSystem::mount(opened->locations);
+  REQUIRE(files.has_value());
+  const auto id = dwe::assets::AssetId::parse("text/hello");
+  REQUIRE(id.has_value());
+  const auto text = files->read(*id);
+  REQUIRE(text.has_value());
+  CHECK(std::string_view{reinterpret_cast<const char*>(text->data()), text->size()} ==
+        "hello: world\n");
+}
+
+TEST_CASE("a cook that fails installs nothing and keeps the installed content") {
+  const TempFolder temp;
+  const std::filesystem::path data = temp.path() / "data";
+  std::filesystem::create_directories(data / "content/base");
+  std::ofstream{data / "content/base/pack.yaml"} << "id: base\nold: true\n";
+  std::ofstream{temp.path() / "disc.iso"} << "x";
+  DiscInstall install = DiscInstall::start(temp.path() / "disc.iso", data,
+                                           fakeDwx(temp.path(), "supported us", 0, 2));
+  runToEnd(install);
+  CHECK(install.stage() == DiscInstall::Stage::Failed);
+  CHECK(install.problem() == InstallProblem::ExtractFailed);
+  CHECK(install.detail() == "the cook failed");
+  CHECK(namesIn(data / "content") == std::vector<std::string>{"base"});
   CHECK_FALSE(std::filesystem::exists(data / PartialContentFolderName));
 }
 #endif
