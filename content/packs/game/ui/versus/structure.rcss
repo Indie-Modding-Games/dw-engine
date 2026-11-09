@@ -93,12 +93,21 @@
 	position: absolute;
 	left: 219dp;
 	top: 0;
+	width: 84dp;
+	height: 24dp;
+}
+
+.vs-value-text {
+	display: block;
 	width: 78dp;
 	font-size: 24dp;
 	line-height: 24dp;
 	text-align: right;
 	color: #d0d0d0;
 }
+
+/* The value as the original's digit sprites, for the skins that have them (skins/original/versus). */
+.vs-digit { display: none; }
 
 /* VS_renderHPBarDigits: "FINISH!!" from the frame's x -1, y 41 (35 here): one letter per sixth of the gauge. */
 .vs-finish {

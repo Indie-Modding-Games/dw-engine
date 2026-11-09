@@ -601,6 +601,18 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       battle-bar-frame: [128, 40, 104, 8]
+      # The bars' digits (btl/battle_hud.c: BTL_renderNumber; vs/vs_hud.c: VS_renderNumber): 7 x 11 at u = digit x 7,
+      # v 0xac of the page (896, 256), the frame's palette.
+      battle-hud-digit-0: [0, 44, 7, 11]
+      battle-hud-digit-1: [7, 44, 7, 11]
+      battle-hud-digit-2: [14, 44, 7, 11]
+      battle-hud-digit-3: [21, 44, 7, 11]
+      battle-hud-digit-4: [28, 44, 7, 11]
+      battle-hud-digit-5: [35, 44, 7, 11]
+      battle-hud-digit-6: [42, 44, 7, 11]
+      battle-hud-digit-7: [49, 44, 7, 11]
+      battle-hud-digit-8: [56, 44, 7, 11]
+      battle-hud-digit-9: [63, 44, 7, 11]
   - name: ow-battle-icons
     image: texture/etcdat/bi_in
     palette: 11

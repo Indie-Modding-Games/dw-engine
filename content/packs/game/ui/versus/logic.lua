@@ -27,6 +27,8 @@ local LogRows = 4
 -- commands and the three techniques.
 local StripSlots = 11
 local FinisherMarks = 8
+-- The bars' values (vs_hud.c: VS_renderNumber(0, 4, ...)): four places, right-aligned.
+local ValuePlaces = 4
 local BannerPieces = 200
 local ScoreRows = 5
 
@@ -312,6 +314,20 @@ local function draw_error(document)
   document:get("error-detail"):set_text(text("versus.error_detail"))
 end
 
+-- A bar's value as BI_IN's digit sprites (vs_hud.c: VS_renderNumber; utils.c:
+-- convertValueToDigits): the units in the last place, the leading zeros left out, each place a
+-- sprite class d-<digit>.
+local function draw_value_digits(document, prefix, value)
+  local shown = math.max(0, math.min(math.floor(value), math.floor(10 ^ ValuePlaces) - 1))
+  local digits = string.format("%" .. ValuePlaces .. "d", shown)
+  for place = 0, ValuePlaces - 1 do
+    local id = prefix .. place
+    local glyph = string.sub(digits, place + 1, place + 1)
+    set_class(document, id, "hidden", glyph == " ")
+    swap_class(document, id, "digit", glyph ~= " " and ("d-" .. glyph) or nil)
+  end
+end
+
 -- One side's bars (vs_hud.c: VS_renderFighterStatusBars): the fill is 50 pixels at most, 3dp each.
 local function draw_bar(document, side, name)
   local prefix = "versus.f." .. side .. "."
@@ -319,6 +335,7 @@ local function draw_bar(document, side, name)
   local pixels = total > 0 and math.floor(math.max(0, math.min(value, total)) * 50 / total) or 0
   set_property(document, "f" .. side .. "-" .. name .. "-fill", "width", (pixels * 3) .. "dp")
   set_text(document, "f" .. side .. "-" .. name .. "-value", tostring(value))
+  draw_value_digits(document, "f" .. side .. "-" .. name .. "-d-", value)
 end
 
 -- The finisher's letters (vs_hud.c: VS_renderHPBarDigits): "FINISH" a letter per sixth of the
