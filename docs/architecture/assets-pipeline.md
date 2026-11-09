@@ -97,7 +97,7 @@ fichero pasado por el **cocinero de su extensión**. Lo decide el [ADR 0017](../
 | Fuente | Cocinado | Cocinero |
 |---|---|---|
 | PNG | KTX2 con Basis Universal UASTC y supercompresión zstd, con todos los mipmaps, sRGB o lineal ([KTX2](../formats/ktx2.md)) | `texture` |
-| PNG que el juego lee de su PNG (`assets::PngOnlyImages`: fondos y páginas de textura de los mapas, atlas de la fuente) | El mismo PNG: su lector necesita los índices o los píxeles exactos | `texture` lo deja pasar |
+| PNG que el juego lee de su PNG (`assets::PngOnlyImages`: fondos y páginas de textura de los mapas, las dos imágenes del título del aspecto original, atlas de la fuente) | El mismo PNG: su lector necesita los índices o los píxeles exactos | `texture` lo deja pasar |
 | PNG indexado cuyo YAML lateral lista más de una paleta, o TIM de mapa con CLUT | El mismo PNG: la paleta se elige al jugar | `texture` lo deja pasar |
 | GLB | El mismo GLB, con la cabecera comprobada | `glb` |
 | WAV | Ogg Opus a 48 kHz, con el bucle y la nota en comentarios ([Opus](../formats/opus.md)) | `audio` |
